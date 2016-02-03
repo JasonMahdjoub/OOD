@@ -1,0 +1,108 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>Object Oriented Database for SqlJet tutorial</title>
+	</head>
+	<body>
+		<h3>Tutorial</h3>
+		<h4>Plan</h4>
+		<ol>
+			<li><a href='#thedatabase'>The database</a>
+			<li><a href='#creationdatabase'>Creation of the database throw OODForSqlJet</a>
+			<li><a href='#loadingdatabase'>Loading/creating database, and instantiating table classes.</a>
+			<li><a href='#addingrecords'>Adding records</a>
+			<li><a href='#getrecords'>Get records</a>
+			<li><a href='#removerecords'>Remove records</a>
+			<li><a href='#alterrecords'>Alter records</a>
+			<li><a href='#closedatabase'>Close database</a>
+			<li><a href='#howaltertable'>How to alter the table definitions ?</a>
+		</ol>
+
+		<h4><a name="thedatabase">The database</a></h4>
+		Here, we present a tutorial to construct the next database through OODForSqlJet :<br>
+
+		<img SRC="images/database_merise.png" width=700 ALT="Bad link" TITLE="Merise representation of the desired database"></img><br>
+		
+		In this database representing a school or a university, a student can have several groups. A teacher can give several lectures, and a lecture is associated to a group.
+
+		<h4><a name="creationdatabase">Creation of the database throw OODForSqlJet</a></h4>
+		<ul>
+			<li>Each table of the database is represent by a class which inherits the class oodforsqljet.database.Table
+			<li>One database is represented by one java package. So each table of the database must be placed into the same package.
+			<li>To create a table, for example the table Teacher, you have to :
+				<ol>
+					<li>inherit the class oodforsqljet.database.Table and name your class Teacher as follows : <div style='background:#FFFFFF; font-family: Courier New, Courier; font-size: 10pt; COLOR: #000000; padding-bottom: 0px; padding-left: 0px; padding-right: 0px; padding-top: 0px;'><strong><font color='#7f0055'>public</font></strong>&nbsp;<strong><font color='#7f0055'>final</font></strong>&nbsp;<strong><font color='#7f0055'>class</font></strong>&nbsp;Teacher&nbsp;<strong><font color='#7f0055'>extends</font></strong>&nbsp;Table&lsaquo;Teacher.Record&rsaquo;</div>
+					<li>Declare this class as final.
+					<li>Declare a default protected constructor
+					<li>Add the annotation @LoadToMemory just before your class declaration, if you want the content of table being loaded into memory to speed up querries. Note that this option is not recommended for tables which have a huge number of records if you want to save your RAM. Moreover, the number of maximum records is limited to Integer.MAX_VALUE with this option. Note also that all pointed tables through the foreign keys of the current table must also loaded into memory. If you do not that, an exception will be generated.
+					<li>Create an inner static class named Record which inherits the class oodforsqljet.database.DatabaseRecord. This record contains the fields of your table. To declare a field, you have to :
+						<ol>
+							<li>Declare a public/protected/private Java field whose types can be boolean, byte, char, short, int, long, float, double, Boolean, Byte, Character, Short, Integer, Long, Float, Double, String, BigDecimal, BigInteger, byte[], or oodforsqljet.database.DatabaseRecord (for ForeignKeys). Dates can be represented in milliseconds through a long or a Long.
+							<li>Add one of the following annotations to declare the field as a database field : @Field, @PrimaryKey, @AutoPrimaryKey, @RandomPrimaryKey, @ForeignKey. If you declare your field with the annotation @AutoPrimaryKey, the java type must be a long. It can have only one auto incremented primary key, be you can combine it with several primary keys and several random primary keys. If you declare your field with the annotation @RandomPrimaryKey, the java type must be a long (generation of a positive 63 bits random value) or a BigInteger (generation of a positive 128 bits random value). Random values are secured, that is to say that it is very very difficult to predict their values. That is important for secured systems. If you declare your field with the annotation @ForeignKey, the java type must a class which inherits the class oodforsqljet.database.DatabaseRecord. This enables to point other records of other tables. Note that a foreign key can be also a primary key. 
+							<li>Add others optional annotations : @Unique (for unique fields), @NotNull (for fields which can't be null). Note that for java native types, fields are always not null. 
+						</ol>
+					<li>Declare a default protected constructor into the inner class Record.
+					<li>That's all !
+				</ol>
+		</ul>
+		On the next frame, you will find the code corresponding to the declaration of each table :<a href='Teacher.java.html' target='srctabledeclarations'>Teacher</a>, <a href='Student.java.html' target='srctabledeclarations'>Student</a>, <a href='Group.java.html' target='srctabledeclarations'>Group</a>, <a href='StudentGroup.java.html' target='srctabledeclarations'>StudentGroup</a>, <a href='Lecture.java.html' target='srctabledeclarations'>Lecture</a>, <a href='TeacherLecture.java.html' target='srctabledeclarations'>TeacherLecture</a>.<br><br>
+
+		<iframe frameborder=0 SRC="Teacher.java.html" name="srctabledeclarations" width="620" height="480"></iframe> 
+		
+		<h4><a name="loadingdatabase">Loading/creating database, and instantiating table classes.</a></h4>
+<font color="red"><h5>Never instanciate directly a table through its constructor. Never instantiate also directly a record through its constructor. Never Never Never alter a record directly by altering its java fields. If you do that you will induce severe data intigrity and the entire intigrity of your program will be compromized.</h5></font><br>
+
+		To load the database call the static function Table.associatePackageToSqlJetDatabase(Package, SqlJetWrapper). Call this function only one time before every database querry. In our example, follow the next code : <pre style='background:#FFFFFF; font-family: Courier New, Courier; font-size: 10pt; COLOR: #000000; padding-bottom: 0px; padding-left: 0px; padding-right: 0px; padding-top: 0px;'>Table.associatePackageToSqlJetDatabase(Teacher.<strong><font color='#7f0055'>class</font></strong>.getPackage(),<br>&nbsp;<strong><font color='#7f0055'>new</font></strong>&nbsp;SqlJetWrapper(<strong><font color='#7f0055'>new</font></strong>&nbsp;File(<font color='#2a00ff'>"database.sqlite"</font>,&nbsp;<strong><font color='#7f0055'>false</font></strong>))</pre>
+		To instantiate a class, call the static function Table.getTableInstance(Class). In our example, to instantiate the class Teacher follow the next code : <pre style='background:#FFFFFF; font-family: Courier New, Courier; font-size: 10pt; COLOR: #000000; padding-bottom: 0px; padding-left: 0px; padding-right: 0px; padding-top: 0px;'>Table.getTableInstance(Teacher.<strong><font color='#7f0055'>class</font></strong>)</pre>
+		At this moment, the table is loaded. If the table does not exists into the database, the table is automatically created.
+
+		<h4><a name="addingrecords">Adding records</a></h4>
+		To add a record, use the function table.addRecord(Map&lsaquo;String, Object&rsaquo;). In our example, to add a new teacher, follow the next code : <pre style='background:#FFFFFF; font-family: Courier New, Courier; font-size: 10pt; COLOR: #000000; padding-bottom: 0px; padding-left: 0px; padding-right: 0px; padding-top: 0px;'>HashMap&lsaquo;String,&nbsp;Object&rsaquo;&nbsp;fields=<strong><font color='#7f0055'>new</font></strong>&nbsp;HashMap&lsaquo;&rsaquo;();
+<br/>fields.put(<font color='#2a00ff'>"name"</font>,<font color='#2a00ff'>"Hemet&nbsp;Brown"</font>);
+<br/>fields.put(<font color='#2a00ff'>"DateOfBirth"</font>,<strong><font color='#7f0055'>new</font></strong>&nbsp;Long(System.getTimeMili()));
+<br/>getTableInstance(Teacher.<strong><font color='#7f0055'>class</font></strong>).addRecord(fields);
+<br/></pre>
+		To simplifiate the code, you can add the next function into the class Teacher : <pre style='background:#FFFFFF; font-family: Courier New, Courier; font-size: 10pt; COLOR: #000000; padding-bottom: 0px; padding-left: 0px; padding-right: 0px; padding-top: 0px;'><strong><font color='#7f0055'>public</font></strong>&nbsp;Teacher.Record&nbsp;addRecord(String&nbsp;name,&nbsp;<strong><font color='#7f0055'>long</font></strong>&nbsp;dateOfBirth)&nbsp;<strong><font color='#7f0055'>throws</font></strong>&nbsp;DatabaseException
+<br/>{
+<br/>&nbsp;&nbsp;&nbsp;&nbsp;HashMap&lsaquo;String,&nbsp;Object&rsaquo;&nbsp;fields=<strong><font color='#7f0055'>new</font></strong>&nbsp;HashMap&lsaquo;&rsaquo;();
+<br/>&nbsp;&nbsp;&nbsp;&nbsp;fields.put(<font color='#2a00ff'>"name"</font>,name);
+<br/>&nbsp;&nbsp;&nbsp;&nbsp;fields.put(<font color='#2a00ff'>"DateOfBirth"</font>,<strong><font color='#7f0055'>new</font></strong>&nbsp;Long(dateOfBirth));
+<br/>&nbsp;&nbsp;&nbsp;&nbsp;<strong><font color='#7f0055'>return</font></strong>&nbsp;<strong><font color='#7f0055'>super</font></strong>.addRecord(fields);
+<br/>}
+<br/></pre>
+		<h4><a name="getrecords">Get records</a></h4>
+		To get records, you can use several functions inherited from the class oodforsqljet.database.Table. The function getRecords() enables you to get all the records of table. However, do not use this function if your table contains a huge number of records and if you want to save your RAM. Use instead of this function, the function getRecords(Filter).<br><br>
+		To get ordered records, use the functions getOrderedRecords(boolean ascendant, String...fields), or getOrderedRecords(Filter _filter, boolean ascendant, String...fields), or getOrderedRecords(Collection<T> _records, boolean ascendant, String...fields). <br><br>
+		Here an example of the use of a filter. In this example, we added a function getLectures(Teacher.Record _teacher) in the table Teacher : <pre style='background:#FFFFFF; font-family: Courier New, Courier; font-size: 10pt; COLOR: #000000; padding-bottom: 0px; padding-left: 0px; padding-right: 0px; padding-top: 0px;'><strong><font color='#7f0055'>public</font></strong>&nbsp;ArrayList<Lecture.Record>&nbsp;getLectures(<strong><font color='#7f0055'>final</font></strong>&nbsp;Teacher.Record&nbsp;_teacher)&nbsp;<strong><font color='#7f0055'>throws</font></strong>&nbsp;DatabaseException
+<br/>{
+<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TeacherLecture&nbsp;tl=(TeacherLecture)getTableInstance(TeacherLecture.<strong><font color='#7f0055'>class</font></strong>);
+<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ArrayList<TeacherLecture.Record>&nbsp;tls=tl.getRecords(<strong><font color='#7f0055'>new</font></strong>&nbsp;Filter<TeacherLecture.Record>()&nbsp;{
+<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color='#646464'>@Override</font>
+<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong><font color='#7f0055'>public</font></strong>&nbsp;<strong><font color='#7f0055'>boolean</font></strong>&nbsp;nextRecord(TeacherLecture.Record&nbsp;_record)&nbsp;<strong><font color='#7f0055'>throws</font></strong>&nbsp;DatabaseException
+<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{
+<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong><font color='#7f0055'>if</font></strong>&nbsp;(Teacher.<strong><font color='#7f0055'>this</font></strong>.equals(_record.teacher,&nbsp;_teacher))
+<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong><font color='#7f0055'>return</font></strong>&nbsp;<strong><font color='#7f0055'>true</font></strong>;
+<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong><font color='#7f0055'>return</font></strong>&nbsp;<strong><font color='#7f0055'>false</font></strong>;
+<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}
+<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;});
+<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ArrayList<Lecture.Record>&nbsp;res=<strong><font color='#7f0055'>new</font></strong>&nbsp;ArrayList<>(tls.size());
+<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong><font color='#7f0055'>for</font></strong>&nbsp;(TeacherLecture.Record&nbsp;r&nbsp;:&nbsp;tls)
+<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;res.add(r.lecture);
+<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong><font color='#7f0055'>return</font></strong>&nbsp;res;
+<br/>}
+<br/></pre>
+
+		<h4><a name="removerecords">Remove records</a></h4>
+		To remove a record, use the inherited functions from the class oodforsqljet.database.Table. <br>
+		The functions removeRecord(T _record), removeRecords(Collections _records), and removeRecords(Filter _records) enables you to remove one or several records. However, if these records are pointed by foreign keys, a ConstraintNotRespectedDatabaseException is generated. To delete these pointing records, prefer the functions removeRecordWithCascade(T _record), removeRecordsWithCascade(Collections _records), or removeRecordsWithCascade(Filter _records).
+		<h4><a name="alterrecords">Alter records</a></h4>
+		<font color="red"><h5>Never alter a record directly by altering its java fields. If you do that you will induce severe data intigrity and the entire intigrity of your program will be compromized.</h5></font><br>
+		To alter a record, use the inherited functions from the class oodforsqljet.database.Table like alterRecord(T record), or alterRecords(AlterRecordFilter _filter).
+		<h4><a name="closedatabase">Close database</a></h4>
+		When you ended to use your database, don't forget to call the static function Table.closeDatabase(Package _package).
+		<h4><a name="howaltertable">How to alter the table definitions ?</a></h4>
+		It is not possible to alter directly the tables of your database. If you change your Java Record definition, a DatabaseVersionException will be generated excepted if you replace your older database file. To migrate from an older database to a newer database, the only way is to duplicate the older classes before changing them. Then, load two databases (the older and the newer) at the same time (with two different packages), and launch a process of transfert between the older database and the newer database.
+	</body>
+</html>
+
