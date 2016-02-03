@@ -6,39 +6,4 @@
       <class name="ood.tests.TestDatabase"/>
     </classes>
   </test> <!-- Default test -->
-  <test name="Default test(failed)">
-    <classes>
-      <class name="ood.tests.TestDatabase">
-        <methods>
-          <include name="alterRecordWithCascade"/>
-          <include name="unloadDatabase"/>
-          <include name="addForeignKeyAndTestUniqueKeys"/>
-          <include name="firstReload"/>
-          <include name="removeWithCascade"/>
-          <include name="testIsPointed"/>
-          <include name="testFirstAdd"/>
-          <include name="firstLoad"/>
-          <include name="getRecord"/>
-          <include name="removeRecords"/>
-          <include name="prepareMultipleTest"/>
-          <include name="addSecondRecord"/>
-          <include name="alterRecord"/>
-          <include name="removeForeignKeyRecords"/>
-          <include name="multipleTests"/>
-          <include name="testCheckPoint"/>
-          <include name="firstAdd"/>
-          <include name="removePointedRecords"/>
-          <include name="getRecordFilter"/>
-          <include name="isLoadedIntoMemory"/>
-          <include name="firstTestSize"/>
-          <include name="removeRecord"/>
-          <include name="testThreadSafe"/>
-          <include name="testFilters"/>
-          <include name="testRemoveFilters"/>
-          <include name="secondTestSize"/>
-          <include name="setAutoRandomFields"/>
-        </methods>
-      </class> <!-- ood.tests.TestDatabase -->
-    </classes>
-  </test> <!-- Default test(failed) -->
 </suite> <!-- Failed suite [Default suite] -->
