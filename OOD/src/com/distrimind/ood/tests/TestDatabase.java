@@ -1,0 +1,3945 @@
+/*
+ * Object Oriented Database (created by Jason MAHDJOUB (jason.mahdjoub@free.fr)) Copyright (c)
+ * 2012, JBoss Inc., and individual contributors as indicated by the @authors
+ * tag.
+ * 
+ * This is free software; you can redistribute it and/or modify it under the
+ * terms of the GNU Lesser General Public License as published by the Free
+ * Software Foundation; either version 3.0 of the License.
+ * 
+ * This software is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this software; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA, or see the FSF
+ * site: http://www.fsf.org.
+ */
+
+package com.distrimind.ood.tests;
+
+import java.io.File;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.testng.Assert;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.Test;
+
+import com.distrimind.ood.database.AlterRecordFilter;
+import com.distrimind.ood.database.DatabaseRecord;
+import com.distrimind.ood.database.Filter;
+import com.distrimind.ood.database.GroupedResults;
+import com.distrimind.ood.database.HSQLDBWrapper;
+import com.distrimind.ood.database.Table;
+import com.distrimind.ood.database.exceptions.ConcurentTransactionDatabaseException;
+import com.distrimind.ood.database.exceptions.ConstraintsNotRespectedDatabaseException;
+import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.exceptions.FieldDatabaseException;
+import com.distrimind.ood.database.exceptions.RecordNotFoundDatabaseException;
+import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
+import com.distrimind.ood.tests.database.Table1;
+import com.distrimind.ood.tests.database.Table2;
+import com.distrimind.ood.tests.database.Table3;
+import com.distrimind.ood.tests.database.Table4;
+import com.distrimind.ood.tests.database.Table5;
+import com.distrimind.ood.tests.database.Table6;
+import com.distrimind.ood.tests.database.Table7;
+import com.distrimind.ood.tests.database.Table1.Record;
+
+
+@Test
+public class TestDatabase
+{
+    private static int MULTI_TESTS_NUMBER=400;
+    private static int THREAD_TESTS_NUMBER=200;
+    private static boolean MULTI_CONCURRENT_DATABASE=false;
+    
+    private static Table1 table1;
+    private static Table2 table2;
+    private static Table3 table3;
+    private static Table4 table4;
+    private static Table5 table5;
+    private static Table6 table6;
+    private static Table7 table7;
+    private static Table1 table1b;
+    private static Table2 table2b;
+    private static Table3 table3b;
+    private static Table4 table4b;
+    private static Table5 table5b;
+    private static Table6 table6b;
+    
+    private static Package pk=Table1.class.getPackage(); 
+    private static HSQLDBWrapper sql_db;
+    private static HSQLDBWrapper sql_dbb;
+    private static String database_file_name="databasetest";
+    private static String database_file_nameb="databasetestb";
+    
+    
+    
+    @AfterClass public static void unloadDatabase() throws DatabaseException
+    {
+	Table.closeDatabase(sql_db);
+	HSQLDBWrapper.deleteDatabaseFiles(new File(database_file_name+".data"));
+	HSQLDBWrapper.deleteDatabaseFiles(new File(database_file_nameb+".data"));
+    }
+    @Test public void firstLoad() throws IllegalArgumentException, DatabaseException
+    {
+	HSQLDBWrapper.deleteDatabaseFiles(new File(database_file_name+".data"));
+	    
+	    sql_db=new HSQLDBWrapper(new File(database_file_name));
+	    Table.loadDatabase(pk, sql_db);
+	    table2=(Table2)Table.getTableInstance(sql_db, Table2.class);
+	    table1=(Table1)Table.getTableInstance(sql_db, Table1.class);
+	    table3=(Table3)Table.getTableInstance(sql_db, Table3.class);
+	    table4=(Table4)Table.getTableInstance(sql_db, Table4.class);
+	    table5=(Table5)Table.getTableInstance(sql_db, Table5.class);
+	    table6=(Table6)Table.getTableInstance(sql_db, Table6.class);
+	    table7=(Table7)Table.getTableInstance(sql_db, Table7.class);
+    }
+    
+    @Test(dependsOnMethods={"firstLoad"}) public void isLoadedIntoMemory()
+    {
+	Assert.assertTrue(!table1.isLoadedInMemory());
+	Assert.assertTrue(!table2.isLoadedInMemory());
+	Assert.assertTrue(table3.isLoadedInMemory());
+	Assert.assertTrue(!table4.isLoadedInMemory());
+	Assert.assertTrue(table5.isLoadedInMemory());
+    }
+    Date date=Calendar.getInstance().getTime();
+    Calendar calendar=Calendar.getInstance();
+    @Test(dependsOnMethods={"firstLoad"}) public void firstAdd() throws DatabaseException
+    {
+	    HashMap<String, Object> map=new HashMap<String, Object>();
+	    map.put("pk1", new Integer(0));
+	    map.put("int_value", new Integer(3));
+	    map.put("byte_value", new Byte((byte)3));
+	    map.put("char_value", new Character('x'));
+	    map.put("boolean_value", new Boolean(true));
+	    map.put("short_value", new Short((short)3));
+	    map.put("long_value", new Long(3));
+	    map.put("float_value", new Float(3.3f));
+	    map.put("double_value", new Double(3.3));
+	    map.put("string_value", new String("test string"));
+	    map.put("IntegerNumber_value", new Integer(3));
+	    map.put("ByteNumber_value", new Byte((byte)3));
+	    map.put("CharacterNumber_value", new Character('x'));
+	    map.put("BooleanNumber_value", new Boolean(true));
+	    map.put("ShortNumber_value", new Short((short)3));
+	    map.put("LongNumber_value", new Long((long)3));
+	    map.put("FloatNumber_value", new Float(3.3f));
+	    map.put("DoubleNumber_value", new Double(3.3));
+	    map.put("BigInteger_value", new BigInteger("5"));
+	    map.put("BigDecimal_value", new BigDecimal("8.8"));
+	    map.put("DateValue", date);
+	    map.put("CalendarValue", calendar);
+	    byte[] tab=new byte[3];
+	    tab[0]=0;
+	    tab[1]=1;
+	    tab[2]=2;
+	    map.put("byte_array_value", tab);
+	    Table1.Record r1=table1.addRecord(map);
+	    Table3.Record r2=table3.addRecord(map);
+	    Assert.assertTrue(r1.pk1==0);
+	    Assert.assertTrue(r2.pk1==0);
+	    
+	    Assert.assertTrue(r1.pk2==1);
+	    Assert.assertTrue(r2.pk2==1);
+    }
+    @Test(dependsOnMethods={"firstAdd"}) public void firstTestSize() throws DatabaseException
+    {
+	Assert.assertTrue(table1.getRecordsNumber()==1);
+	Assert.assertTrue(table3.getRecordsNumber()==1);
+    }
+    @Test(dependsOnMethods={"firstTestSize"}) public void firstReload() throws DatabaseException
+    {
+	    Table.closeDatabase(sql_db);
+	    sql_db=new HSQLDBWrapper(new File(database_file_name));
+	    Table.loadDatabase(pk, sql_db);
+	    table2=(Table2)Table.getTableInstance(sql_db, Table2.class);
+	    table1=(Table1)Table.getTableInstance(sql_db, Table1.class);
+	    table3=(Table3)Table.getTableInstance(sql_db, Table3.class);
+	    table4=(Table4)Table.getTableInstance(sql_db, Table4.class);
+	    table5=(Table5)Table.getTableInstance(sql_db, Table5.class);
+	    table6=(Table6)Table.getTableInstance(sql_db, Table6.class);
+	    table7=(Table7)Table.getTableInstance(sql_db, Table7.class);
+	    sql_dbb=new HSQLDBWrapper(new File(database_file_nameb));
+	    Table.loadDatabase(pk, sql_dbb);
+	    table2b=(Table2)Table.getTableInstance(sql_dbb, Table2.class);
+	    table1b=(Table1)Table.getTableInstance(sql_dbb, Table1.class);
+	    table3b=(Table3)Table.getTableInstance(sql_dbb, Table3.class);
+	    table4b=(Table4)Table.getTableInstance(sql_dbb, Table4.class);
+	    table5b=(Table5)Table.getTableInstance(sql_dbb, Table5.class);
+	    table6b=(Table6)Table.getTableInstance(sql_dbb, Table6.class);
+	    
+	    Assert.assertTrue(sql_db.equals(sql_db));
+	    Assert.assertFalse(sql_db.equals(sql_dbb));
+
+	    Assert.assertFalse(table1.getHSQLDBWrapper().equals(table1b.getHSQLDBWrapper()));
+	    Assert.assertFalse(table2.getHSQLDBWrapper().equals(table2b.getHSQLDBWrapper()));
+	    Assert.assertFalse(table3.getHSQLDBWrapper().equals(table3b.getHSQLDBWrapper()));
+	    Assert.assertFalse(table4.getHSQLDBWrapper().equals(table4b.getHSQLDBWrapper()));
+	    Assert.assertFalse(table5.getHSQLDBWrapper().equals(table5b.getHSQLDBWrapper()));
+	    Assert.assertFalse(table6.getHSQLDBWrapper().equals(table6b.getHSQLDBWrapper()));
+	    
+	    Assert.assertFalse(table1.equals(table1b));
+	    Assert.assertFalse(table2.equals(table2b));
+	    Assert.assertFalse(table3.equals(table3b));
+	    Assert.assertFalse(table4.equals(table4b));
+	    Assert.assertFalse(table5.equals(table5b));
+	    Assert.assertFalse(table6.equals(table6b));
+	    
+	    
+	    
+    }
+    @Test(dependsOnMethods={"firstReload"}) public void secondTestSize() throws DatabaseException
+    {
+	Assert.assertTrue(table1.getRecordsNumber()==1);
+	Assert.assertTrue(table3.getRecordsNumber()==1);
+    }
+    
+    @Test(dependsOnMethods={"firstReload"}) public void testFirstAdd() throws DatabaseException
+    {
+	    byte[] tab=new byte[3];
+	    tab[0]=0;
+	    tab[1]=1;
+	    tab[2]=2;
+	    Table1.Record r=table1.getRecords().get(0);
+	    Assert.assertTrue(r.pk1==0);
+	    Assert.assertTrue(r.int_value==3);
+	    Assert.assertTrue(r.byte_value==(byte)3);
+	    Assert.assertTrue(r.char_value=='x');
+	    Assert.assertTrue(r.boolean_value);
+	    Assert.assertTrue(r.short_value==(short)3);
+	    Assert.assertTrue(r.long_value==(long)3);
+	    Assert.assertTrue(r.float_value==3.3f);
+	    Assert.assertTrue(r.double_value==3.3);
+	    Assert.assertTrue(r.string_value.equals("test string"));
+	    Assert.assertTrue(r.IntegerNumber_value.intValue()==3);
+	    Assert.assertTrue(r.ByteNumber_value.byteValue()==(byte)3);
+	    Assert.assertTrue(r.CharacterNumber_value.charValue()=='x');
+	    Assert.assertTrue(r.BooleanNumber_value.booleanValue());
+	    Assert.assertTrue(r.ShortNumber_value.shortValue()==(short)3);
+	    Assert.assertTrue(r.LongNumber_value.longValue()==(long)3);
+	    Assert.assertTrue(r.FloatNumber_value.floatValue()==3.3f);
+	    Assert.assertTrue(r.DoubleNumber_value.doubleValue()==3.3);
+	    Assert.assertTrue(r.BigInteger_value.equals(new BigInteger("5")));
+	    Assert.assertTrue(r.BigDecimal_value.equals(new BigDecimal("8.8")));
+	    Assert.assertTrue(r.DateValue.equals(date));
+	    Assert.assertTrue(r.CalendarValue.equals(calendar));
+	    
+	    for (int i=0;i<3;i++)
+		Assert.assertTrue(r.byte_array_value[i]==tab[i]);
+
+	    Table3.Record r2=table3.getRecords().get(0);
+	    Assert.assertTrue(r2.pk1==0);
+	    Assert.assertTrue(r2.int_value==3);
+	    Assert.assertTrue(r2.byte_value==(byte)3);
+	    Assert.assertTrue(r2.char_value=='x');
+	    Assert.assertTrue(r2.boolean_value);
+	    Assert.assertTrue(r2.short_value==(short)3);
+	    Assert.assertTrue(r2.long_value==(long)3);
+	    Assert.assertTrue(r2.float_value==3.3f);
+	    Assert.assertTrue(r2.double_value==3.3);
+	    Assert.assertTrue(r2.string_value.equals("test string"));
+	    Assert.assertTrue(r2.IntegerNumber_value.intValue()==3);
+	    Assert.assertTrue(r2.ByteNumber_value.byteValue()==(byte)3);
+	    Assert.assertTrue(r2.CharacterNumber_value.charValue()=='x');
+	    Assert.assertTrue(r2.BooleanNumber_value.booleanValue());
+	    Assert.assertTrue(r2.ShortNumber_value.shortValue()==(short)3);
+	    Assert.assertTrue(r2.LongNumber_value.longValue()==(long)3);
+	    Assert.assertTrue(r2.FloatNumber_value.floatValue()==3.3f);
+	    Assert.assertTrue(r2.DoubleNumber_value.doubleValue()==3.3);
+	    Assert.assertTrue(r2.BigInteger_value.equals(new BigInteger("5")));
+	    Assert.assertTrue(r2.BigDecimal_value.equals(new BigDecimal("8.8")));
+	    Assert.assertTrue(r2.DateValue.equals(date));
+	    Assert.assertTrue(r2.CalendarValue.equals(calendar));
+	    for (int i=0;i<3;i++)
+		Assert.assertTrue(r2.byte_array_value[i]==tab[i]);
+    }
+    @Test(dependsOnMethods={"alterRecord"}) public void addSecondRecord() throws DatabaseException
+    {
+	try
+	{
+	    table1.addRecord(null);
+	    Assert.assertTrue(false);
+	}
+	catch(NullPointerException e)
+	{
+	    Assert.assertTrue(true);
+	}
+	try
+	{
+	    table1.addRecord(new HashMap<String, Object>());
+	    Assert.assertTrue(false);
+	}
+	catch(DatabaseException e)
+	{
+	    Assert.assertTrue(true);
+	}
+	
+	    HashMap<String, Object> map=new HashMap<String, Object>();
+	    map.put("pk1", new Integer(0));
+	    map.put("int_value", new Integer(3));
+	    map.put("byte_value", new Byte((byte)3));
+	    map.put("char_value", new Character('x'));
+	    map.put("boolean_value", new Boolean(true));
+	    map.put("short_value", new Short((short)3));
+	    map.put("long_value", new Long(3));
+	    map.put("float_value", new Float(3.3f));
+	    map.put("double_value", new Double(3.3));
+	    map.put("string_value", new String("test string"));
+	    map.put("IntegerNumber_value", new Integer(3));
+	    map.put("ByteNumber_value", new Byte((byte)3));
+	    map.put("CharacterNumber_value", new Character('x'));
+	    map.put("BooleanNumber_value", new Boolean(true));
+	    map.put("ShortNumber_value", new Short((short)3));
+	    map.put("LongNumber_value", new Long((long)3));
+	    map.put("FloatNumber_value", new Float(3.3f));
+	    map.put("DoubleNumber_value", new Double(3.3));
+	    map.put("BigInteger_value", new BigInteger("5"));
+	    map.put("BigDecimal_value", new BigDecimal("8.8"));
+	    map.put("DateValue", date);
+	    map.put("CalendarValue", calendar);
+	    byte[] tab=new byte[3];
+	    tab[0]=0;
+	    tab[1]=1;
+	    tab[2]=2;
+	    map.put("byte_array_value", tab);
+	    table1.addRecord(map);
+	    table3.addRecord(map);
+	    table1.checkDataIntegrity();
+	    table3.checkDataIntegrity();
+	    table2.checkDataIntegrity();
+	    table4.checkDataIntegrity();
+	    table5.checkDataIntegrity();
+	    table6.checkDataIntegrity();
+	    
+
+    }
+    @Test(dependsOnMethods={"testFirstAdd"}) public void alterRecord() throws DatabaseException
+    {
+	    HashMap<String, Object> map=new HashMap<String, Object>();
+	    map.put("pk1", new Integer(1));
+	    map.put("byte_value", new Byte((byte)6));
+	    map.put("char_value", new Character('y'));
+	    map.put("DoubleNumber_value", new Double(6.6));
+	    byte[] tab=new byte[3];
+	    tab[0]=3;
+	    tab[1]=5;
+	    tab[2]=6;
+	    map.put("byte_array_value", tab);
+	    
+	    Table1.Record r1=table1.getRecords().get(0);
+	    table1.alterRecord(r1, map);
+	    Table3.Record r2=table3.getRecords().get(0);
+	    table3.alterRecord(r2, map);
+	    
+	    Assert.assertTrue(r1.pk1==1);
+	    Assert.assertTrue(r1.int_value==3);
+	    Assert.assertTrue(r1.byte_value==(byte)6);
+	    Assert.assertTrue(r1.char_value=='y');
+	    Assert.assertTrue(r1.boolean_value);
+	    Assert.assertTrue(r1.short_value==(short)3);
+	    Assert.assertTrue(r1.long_value==(long)3);
+	    Assert.assertTrue(r1.float_value==3.3f);
+	    Assert.assertTrue(r1.double_value==3.3);
+	    Assert.assertTrue(r1.string_value.equals("test string"));
+	    Assert.assertTrue(r1.IntegerNumber_value.intValue()==3);
+	    Assert.assertTrue(r1.ByteNumber_value.byteValue()==(byte)3);
+	    Assert.assertTrue(r1.CharacterNumber_value.charValue()=='x');
+	    Assert.assertTrue(r1.BooleanNumber_value.booleanValue());
+	    Assert.assertTrue(r1.ShortNumber_value.shortValue()==(short)3);
+	    Assert.assertTrue(r1.LongNumber_value.longValue()==(long)3);
+	    Assert.assertTrue(r1.FloatNumber_value.floatValue()==3.3f);
+	    Assert.assertTrue(r1.DoubleNumber_value.doubleValue()==6.6);
+	    Assert.assertTrue(r1.BigInteger_value.equals(new BigInteger("5")));
+	    Assert.assertTrue(r1.BigDecimal_value.equals(new BigDecimal("8.8")));
+	    Assert.assertTrue(r1.DateValue.equals(date));
+	    Assert.assertTrue(r1.CalendarValue.equals(calendar));
+	    for (int i=0;i<3;i++)
+		Assert.assertTrue(r1.byte_array_value[i]==tab[i]);
+
+	    Assert.assertTrue(r2.pk1==1);
+	    Assert.assertTrue(r2.int_value==3);
+	    Assert.assertTrue(r2.byte_value==(byte)6);
+	    Assert.assertTrue(r2.char_value=='y');
+	    Assert.assertTrue(r2.boolean_value);
+	    Assert.assertTrue(r2.short_value==(short)3);
+	    Assert.assertTrue(r2.long_value==(long)3);
+	    Assert.assertTrue(r2.float_value==3.3f);
+	    Assert.assertTrue(r2.double_value==3.3);
+	    Assert.assertTrue(r2.string_value.equals("test string"));
+	    Assert.assertTrue(r2.IntegerNumber_value.intValue()==3);
+	    Assert.assertTrue(r2.ByteNumber_value.byteValue()==(byte)3);
+	    Assert.assertTrue(r2.CharacterNumber_value.charValue()=='x');
+	    Assert.assertTrue(r2.BooleanNumber_value.booleanValue());
+	    Assert.assertTrue(r2.ShortNumber_value.shortValue()==(short)3);
+	    Assert.assertTrue(r2.LongNumber_value.longValue()==(long)3);
+	    Assert.assertTrue(r2.FloatNumber_value.floatValue()==3.3f);
+	    Assert.assertTrue(r2.DoubleNumber_value.doubleValue()==6.6);
+	    Assert.assertTrue(r2.BigInteger_value.equals(new BigInteger("5")));
+	    Assert.assertTrue(r2.BigDecimal_value.equals(new BigDecimal("8.8")));
+	    Assert.assertTrue(r2.DateValue.equals(date));
+	    Assert.assertTrue(r2.CalendarValue.equals(calendar));
+	    for (int i=0;i<3;i++)
+		Assert.assertTrue(r2.byte_array_value[i]==tab[i]);
+	
+	    r1=table1.getRecords().get(0);
+	    r2=table3.getRecords().get(0);
+	    
+	    Assert.assertTrue(r1.pk1==1);
+	    Assert.assertTrue(r1.int_value==3);
+	    Assert.assertTrue(r1.byte_value==(byte)6);
+	    Assert.assertTrue(r1.char_value=='y');
+	    Assert.assertTrue(r1.boolean_value);
+	    Assert.assertTrue(r1.short_value==(short)3);
+	    Assert.assertTrue(r1.long_value==(long)3);
+	    Assert.assertTrue(r1.float_value==3.3f);
+	    Assert.assertTrue(r1.double_value==3.3);
+	    Assert.assertTrue(r1.string_value.equals("test string"));
+	    Assert.assertTrue(r1.IntegerNumber_value.intValue()==3);
+	    Assert.assertTrue(r1.ByteNumber_value.byteValue()==(byte)3);
+	    Assert.assertTrue(r1.CharacterNumber_value.charValue()=='x');
+	    Assert.assertTrue(r1.BooleanNumber_value.booleanValue());
+	    Assert.assertTrue(r1.ShortNumber_value.shortValue()==(short)3);
+	    Assert.assertTrue(r1.LongNumber_value.longValue()==(long)3);
+	    Assert.assertTrue(r1.FloatNumber_value.floatValue()==3.3f);
+	    Assert.assertTrue(r1.DoubleNumber_value.doubleValue()==6.6);
+	    Assert.assertTrue(r1.BigInteger_value.equals(new BigInteger("5")));
+	    Assert.assertTrue(r1.BigDecimal_value.equals(new BigDecimal("8.8")));
+	    Assert.assertTrue(r1.DateValue.equals(date));
+	    Assert.assertTrue(r1.CalendarValue.equals(calendar));
+	    for (int i=0;i<3;i++)
+		Assert.assertTrue(r1.byte_array_value[i]==tab[i]);
+
+	    Assert.assertTrue(r2.pk1==1);
+	    Assert.assertTrue(r2.int_value==3);
+	    Assert.assertTrue(r2.byte_value==(byte)6);
+	    Assert.assertTrue(r2.char_value=='y');
+	    Assert.assertTrue(r2.boolean_value);
+	    Assert.assertTrue(r2.short_value==(short)3);
+	    Assert.assertTrue(r2.long_value==(long)3);
+	    Assert.assertTrue(r2.float_value==3.3f);
+	    Assert.assertTrue(r2.double_value==3.3);
+	    Assert.assertTrue(r2.string_value.equals("test string"));
+	    Assert.assertTrue(r2.IntegerNumber_value.intValue()==3);
+	    Assert.assertTrue(r2.ByteNumber_value.byteValue()==(byte)3);
+	    Assert.assertTrue(r2.CharacterNumber_value.charValue()=='x');
+	    Assert.assertTrue(r2.BooleanNumber_value.booleanValue());
+	    Assert.assertTrue(r2.ShortNumber_value.shortValue()==(short)3);
+	    Assert.assertTrue(r2.LongNumber_value.longValue()==(long)3);
+	    Assert.assertTrue(r2.FloatNumber_value.floatValue()==3.3f);
+	    Assert.assertTrue(r2.DoubleNumber_value.doubleValue()==6.6);
+	    Assert.assertTrue(r2.BigInteger_value.equals(new BigInteger("5")));
+	    Assert.assertTrue(r2.BigDecimal_value.equals(new BigDecimal("8.8")));
+	    Assert.assertTrue(r2.DateValue.equals(date));
+	    Assert.assertTrue(r2.CalendarValue.equals(calendar));
+	    for (int i=0;i<3;i++)
+		Assert.assertTrue(r2.byte_array_value[i]==tab[i]);
+	    table1.checkDataIntegrity();
+	    table3.checkDataIntegrity();
+	    table2.checkDataIntegrity();
+	    table4.checkDataIntegrity();
+	    table5.checkDataIntegrity();
+	    table6.checkDataIntegrity();
+
+    }
+    
+    @Test(dependsOnMethods={"addSecondRecord"}) public void getRecord() throws DatabaseException
+    {
+	Table1.Record r1a=table1.getRecords().get(0);
+	Table3.Record r2a=table3.getRecords().get(0);
+	
+	HashMap<String, Object> keys1=new HashMap<String, Object>();
+	keys1.put("pk1", new Integer(r1a.pk1));
+	keys1.put("pk2", new Long(r1a.pk2));
+	keys1.put("pk3", r1a.pk3);
+	keys1.put("pk4", new Long(r1a.pk4));
+	
+	HashMap<String, Object> keys2=new HashMap<String, Object>();
+	keys2.put("pk1", new Integer(r2a.pk1));
+	keys2.put("pk2", new Long(r2a.pk2));
+	keys2.put("pk3", r2a.pk3);
+	keys2.put("pk4", new Long(r2a.pk4));
+
+	Table1.Record r1b=table1.getRecord(keys1);
+	Table3.Record r2b=table3.getRecord(keys2);
+	
+	Assert.assertTrue(r1a.pk1==r1b.pk1);
+	Assert.assertTrue(r1a.pk2==r1b.pk2);
+	Assert.assertTrue(r1a.pk3.equals(r1b.pk3));
+	Assert.assertTrue(r1a.pk4==r1b.pk4);
+	Assert.assertTrue(r1a.int_value==r1b.int_value);
+	Assert.assertTrue(r1a.byte_value==r1b.byte_value);
+	Assert.assertTrue(r1a.char_value==r1b.char_value);
+	Assert.assertTrue(r1a.boolean_value==r1b.boolean_value);
+	Assert.assertTrue(r1a.short_value==r1b.short_value);
+	Assert.assertTrue(r1a.long_value==r1b.long_value);
+	Assert.assertTrue(r1a.float_value==r1b.float_value);
+	Assert.assertTrue(r1a.double_value==r1b.double_value);
+	Assert.assertTrue(r1a.string_value.equals(r1b.string_value));
+	Assert.assertTrue(r1a.IntegerNumber_value.equals(r1b.IntegerNumber_value));
+	Assert.assertTrue(r1a.ByteNumber_value.equals(r1b.ByteNumber_value));
+	Assert.assertTrue(r1a.CharacterNumber_value.equals(r1b.CharacterNumber_value));
+	Assert.assertTrue(r1a.BooleanNumber_value.equals(r1b.BooleanNumber_value));
+	Assert.assertTrue(r1a.ShortNumber_value.equals(r1b.ShortNumber_value));
+	Assert.assertTrue(r1a.LongNumber_value.equals(r1b.LongNumber_value));
+	Assert.assertTrue(r1a.FloatNumber_value.equals(r1b.FloatNumber_value));
+	Assert.assertTrue(r1a.DoubleNumber_value.equals(r1b.DoubleNumber_value));
+	Assert.assertTrue(r1a.BigInteger_value.equals(new BigInteger("5")));
+	Assert.assertTrue(r1a.BigDecimal_value.equals(new BigDecimal("8.8")));
+	Assert.assertTrue(r1a.DateValue.equals(date));
+	Assert.assertTrue(r1a.CalendarValue.equals(calendar));
+	for (int i=0;i<3;i++)
+	    Assert.assertTrue(r1a.byte_array_value[i]==r1b.byte_array_value[i]);
+	
+	Assert.assertTrue(r2a.pk1==r2b.pk1);
+	Assert.assertTrue(r2a.pk2==r2b.pk2);
+	Assert.assertTrue(r2a.pk3.equals(r2b.pk3));
+	Assert.assertTrue(r2a.pk4==r2b.pk4);
+	Assert.assertTrue(r2a.int_value==r2b.int_value);
+	Assert.assertTrue(r2a.byte_value==r2b.byte_value);
+	Assert.assertTrue(r2a.char_value==r2b.char_value);
+	Assert.assertTrue(r2a.boolean_value==r2b.boolean_value);
+	Assert.assertTrue(r2a.short_value==r2b.short_value);
+	Assert.assertTrue(r2a.long_value==r2b.long_value);
+	Assert.assertTrue(r2a.float_value==r2b.float_value);
+	Assert.assertTrue(r2a.double_value==r2b.double_value);
+	Assert.assertTrue(r2a.string_value.equals(r2b.string_value));
+	Assert.assertTrue(r2a.IntegerNumber_value.equals(r2b.IntegerNumber_value));
+	Assert.assertTrue(r2a.ByteNumber_value.equals(r2b.ByteNumber_value));
+	Assert.assertTrue(r2a.CharacterNumber_value.equals(r2b.CharacterNumber_value));
+	Assert.assertTrue(r2a.BooleanNumber_value.equals(r2b.BooleanNumber_value));
+	Assert.assertTrue(r2a.ShortNumber_value.equals(r2b.ShortNumber_value));
+	Assert.assertTrue(r2a.LongNumber_value.equals(r2b.LongNumber_value));
+	Assert.assertTrue(r2a.FloatNumber_value.equals(r2b.FloatNumber_value));
+	Assert.assertTrue(r2a.DoubleNumber_value.equals(r2b.DoubleNumber_value));
+	Assert.assertTrue(r2a.BigInteger_value.equals(new BigInteger("5")));
+	Assert.assertTrue(r2a.BigDecimal_value.equals(new BigDecimal("8.8")));
+	Assert.assertTrue(r2a.DateValue.equals(date));
+	Assert.assertTrue(r2a.CalendarValue.equals(calendar));
+	for (int i=0;i<3;i++)
+	    Assert.assertTrue(r2a.byte_array_value[i]==r2b.byte_array_value[i]);
+	    table1.checkDataIntegrity();
+	    table3.checkDataIntegrity();
+	    table2.checkDataIntegrity();
+	    table4.checkDataIntegrity();
+	    table5.checkDataIntegrity();
+	    table6.checkDataIntegrity();
+    
+    }
+    
+    @Test(dependsOnMethods={"addSecondRecord"}) public void getRecordFilter() throws DatabaseException
+    {
+	final Table1.Record r1a=table1.getRecords().get(0);
+	final Table3.Record r2a=table3.getRecords().get(0);
+	
+	ArrayList<Table1.Record> col1=table1.getRecords(new Filter<Table1.Record>() {
+	    
+	    @Override
+	    public boolean nextRecord(Record _record) 
+	    {
+		if (_record.pk1==r1a.pk1 && _record.pk2==r1a.pk2 && _record.pk4==r1a.pk4)
+		    return true;
+		return false;
+	    }
+	});
+	Assert.assertTrue(col1.size()==1);
+	Table1.Record r1b=col1.get(0);
+	
+	ArrayList<Table3.Record> col2=table3.getRecords(new Filter<Table3.Record>() {
+	    
+	    @Override
+	    public boolean nextRecord(Table3.Record _record) 
+	    {
+		if (_record.pk1==r2a.pk1 && _record.pk2==r2a.pk2 && _record.pk4==r2a.pk4)
+		    return true;
+		return false;
+	    }
+	});
+	Assert.assertTrue(col2.size()==1);
+	Table3.Record r2b=col2.get(0);
+	
+	Assert.assertTrue(r1a.pk1==r1b.pk1);
+	Assert.assertTrue(r1a.pk2==r1b.pk2);
+	Assert.assertTrue(r1a.pk3.equals(r1b.pk3));
+	Assert.assertTrue(r1a.pk4==r1b.pk4);
+	Assert.assertTrue(r1a.int_value==r1b.int_value);
+	Assert.assertTrue(r1a.byte_value==r1b.byte_value);
+	Assert.assertTrue(r1a.char_value==r1b.char_value);
+	Assert.assertTrue(r1a.boolean_value==r1b.boolean_value);
+	Assert.assertTrue(r1a.short_value==r1b.short_value);
+	Assert.assertTrue(r1a.long_value==r1b.long_value);
+	Assert.assertTrue(r1a.float_value==r1b.float_value);
+	Assert.assertTrue(r1a.double_value==r1b.double_value);
+	Assert.assertTrue(r1a.string_value.equals(r1b.string_value));
+	Assert.assertTrue(r1a.IntegerNumber_value.equals(r1b.IntegerNumber_value));
+	Assert.assertTrue(r1a.ByteNumber_value.equals(r1b.ByteNumber_value));
+	Assert.assertTrue(r1a.CharacterNumber_value.equals(r1b.CharacterNumber_value));
+	Assert.assertTrue(r1a.BooleanNumber_value.equals(r1b.BooleanNumber_value));
+	Assert.assertTrue(r1a.ShortNumber_value.equals(r1b.ShortNumber_value));
+	Assert.assertTrue(r1a.LongNumber_value.equals(r1b.LongNumber_value));
+	Assert.assertTrue(r1a.FloatNumber_value.equals(r1b.FloatNumber_value));
+	Assert.assertTrue(r1a.DoubleNumber_value.equals(r1b.DoubleNumber_value));
+	Assert.assertTrue(r1a.BigInteger_value.equals(r1b.BigInteger_value));
+	Assert.assertTrue(r1a.BigDecimal_value.equals(r1b.BigDecimal_value));
+	Assert.assertTrue(r1a.DateValue.equals(r1b.DateValue));
+	Assert.assertTrue(r1a.CalendarValue.equals(r1b.CalendarValue));
+	for (int i=0;i<3;i++)
+	    Assert.assertTrue(r1a.byte_array_value[i]==r1b.byte_array_value[i]);
+	
+	Assert.assertTrue(r2a.pk1==r2b.pk1);
+	Assert.assertTrue(r2a.pk2==r2b.pk2);
+	Assert.assertTrue(r2a.pk3.equals(r2b.pk3));
+	Assert.assertTrue(r2a.pk4==r2b.pk4);
+	Assert.assertTrue(r2a.int_value==r2b.int_value);
+	Assert.assertTrue(r2a.byte_value==r2b.byte_value);
+	Assert.assertTrue(r2a.char_value==r2b.char_value);
+	Assert.assertTrue(r2a.boolean_value==r2b.boolean_value);
+	Assert.assertTrue(r2a.short_value==r2b.short_value);
+	Assert.assertTrue(r2a.long_value==r2b.long_value);
+	Assert.assertTrue(r2a.float_value==r2b.float_value);
+	Assert.assertTrue(r2a.double_value==r2b.double_value);
+	Assert.assertTrue(r2a.string_value.equals(r2b.string_value));
+	Assert.assertTrue(r2a.IntegerNumber_value.equals(r2b.IntegerNumber_value));
+	Assert.assertTrue(r2a.ByteNumber_value.equals(r2b.ByteNumber_value));
+	Assert.assertTrue(r2a.CharacterNumber_value.equals(r2b.CharacterNumber_value));
+	Assert.assertTrue(r2a.BooleanNumber_value.equals(r2b.BooleanNumber_value));
+	Assert.assertTrue(r2a.ShortNumber_value.equals(r2b.ShortNumber_value));
+	Assert.assertTrue(r2a.LongNumber_value.equals(r2b.LongNumber_value));
+	Assert.assertTrue(r2a.FloatNumber_value.equals(r2b.FloatNumber_value));
+	Assert.assertTrue(r2a.DoubleNumber_value.equals(r2b.DoubleNumber_value));
+	Assert.assertTrue(r2a.BigInteger_value.equals(r2b.BigInteger_value));
+	Assert.assertTrue(r2a.BigDecimal_value.equals(r2b.BigDecimal_value));
+	Assert.assertTrue(r2a.DateValue.equals(r2b.DateValue));
+	Assert.assertTrue(r2a.CalendarValue.equals(r2b.CalendarValue));
+	for (int i=0;i<3;i++)
+	    Assert.assertTrue(r2a.byte_array_value[i]==r2b.byte_array_value[i]);
+	
+	HashMap<String, Object> map=new HashMap<>();
+	map.put("fr1_pk1", table1.getRecords().get(0));
+	map.put("int_value", new Integer(0));
+	table2.addRecord(map);
+	
+	table1.getRecords(new Filter<Table1.Record>() {
+
+	    @SuppressWarnings("synthetic-access")
+	    @Override
+	    public boolean nextRecord(Record _record) throws DatabaseException
+	    {
+		table1.getRecords();
+		return true;
+	    }
+	});
+	
+	table1.getRecords(new Filter<Table1.Record>() {
+
+	    @SuppressWarnings("synthetic-access")
+	    @Override
+	    public boolean nextRecord(Record _record) throws DatabaseException
+	    {
+		table2.getRecords();
+		return true;
+	    }
+	});
+	table2.getRecords(new Filter<Table2.Record>() {
+
+	    @SuppressWarnings("synthetic-access")
+	    @Override
+	    public boolean nextRecord(Table2.Record _record) throws DatabaseException
+	    {
+		table1.getRecords();
+		return true;
+	    }
+	});
+
+	try
+	{
+	    table1.removeRecordsWithCascade(new Filter<Table1.Record>() {
+
+		@SuppressWarnings("synthetic-access")
+		@Override
+		public boolean nextRecord(Record _record) throws DatabaseException
+		{
+		    table1.getRecords();
+		    return false;
+		}
+	    });
+	    Assert.assertTrue(false);
+	}
+	catch(ConcurentTransactionDatabaseException e)
+	{
+	    Assert.assertTrue(true);
+	}
+
+	try
+	{
+	    table1.removeRecordsWithCascade(new Filter<Table1.Record>() {
+
+		@SuppressWarnings("synthetic-access")
+		@Override
+		public boolean nextRecord(Record _record) throws DatabaseException
+		{
+		    table2.getRecords();
+		    return false;
+		}
+	    });
+	    Assert.assertTrue(false);
+	}
+	catch(ConcurentTransactionDatabaseException e)
+	{
+	    Assert.assertTrue(true);
+	}
+	try
+	{
+	    table2.removeRecordsWithCascade(new Filter<Table2.Record>() {
+
+		@SuppressWarnings("synthetic-access")
+		@Override
+		public boolean nextRecord(Table2.Record _record) throws DatabaseException
+		{
+		    table1.getRecords();
+		    return false;
+		}
+	    });
+	}
+	catch(ConcurentTransactionDatabaseException e)
+	{
+	    Assert.assertTrue(true);
+	}
+	
+
+	try
+	{
+	    table1.getRecords(new Filter<Table1.Record>() {
+		@SuppressWarnings("synthetic-access")
+		@Override
+		public boolean nextRecord(Record _record) throws DatabaseException
+		{
+		    table1.removeRecordsWithCascade(new Filter<Table1.Record>() {
+
+			@Override
+			public boolean nextRecord(Record _record) 
+			{
+			    return false;
+			}
+		    });
+		    return false;
+		}
+	    });
+	    Assert.assertTrue(false);
+	}
+	catch(ConcurentTransactionDatabaseException e)
+	{
+	    Assert.assertTrue(true);
+	}
+	
+	table1.getRecords(new Filter<Table1.Record>() {
+	    @SuppressWarnings("synthetic-access")
+	    @Override
+	    public boolean nextRecord(Record _record) throws DatabaseException
+	    {
+		table2.removeRecordsWithCascade(new Filter<Table2.Record>() {
+		    @Override
+		    public boolean nextRecord(Table2.Record _record) 
+		    {
+			return false;
+		    }
+		});
+		return false;
+	    }
+	});
+	
+	try
+	{
+	    table2.getRecords(new Filter<Table2.Record>() {
+
+		@SuppressWarnings("synthetic-access")
+		@Override
+		public boolean nextRecord(Table2.Record _record) throws DatabaseException
+		{
+		    table1.removeRecordsWithCascade(new Filter<Table1.Record>() {
+
+			@Override
+			public boolean nextRecord(Record _record) 
+			{
+			    return false;
+			}
+		    });
+		    return false;
+		}
+	    });
+	    Assert.assertTrue(false);
+	}
+	catch(ConcurentTransactionDatabaseException e)
+	{
+	    Assert.assertTrue(true);
+	}
+	table2.removeRecords(table2.getRecords());
+	table1.checkDataIntegrity();
+	table3.checkDataIntegrity();
+	table2.checkDataIntegrity();
+	table4.checkDataIntegrity();
+	table5.checkDataIntegrity();
+	table6.checkDataIntegrity();
+	
+	
+    }
+    
+    @Test(dependsOnMethods={"getRecordFilter", "getRecord", "alterRecord"}) public void removeRecord() throws DatabaseException
+    {
+	Table1.Record r1=table1.getRecords().get(0);
+	Table3.Record r2=table3.getRecords().get(0);
+	table1.removeRecord(r1);
+	table3.removeRecord(r2);
+	Assert.assertTrue(table1.getRecordsNumber()==1);
+	Assert.assertTrue(table3.getRecordsNumber()==1);
+	Assert.assertTrue(table1.getRecords().size()==1);
+	Assert.assertTrue(table3.getRecords().size()==1);
+	    table1.checkDataIntegrity();
+	    table3.checkDataIntegrity();
+	    table2.checkDataIntegrity();
+	    table4.checkDataIntegrity();
+	    table5.checkDataIntegrity();
+	    table6.checkDataIntegrity();
+	
+	
+    }
+    @Test(dependsOnMethods={"removeRecord"}) public void removeRecords() throws DatabaseException
+    {
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	ArrayList<Table1.Record> r1=table1.getRecords();
+	ArrayList<Table3.Record> r2=table3.getRecords();
+	table1.removeRecords(r1);
+	table3.removeRecords(r2);
+	Assert.assertTrue(table1.getRecords().size()==0);
+	Assert.assertTrue(table1.getRecordsNumber()==0);
+	Assert.assertTrue(table3.getRecords().size()==0);
+	Assert.assertTrue(table3.getRecordsNumber()==0);
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	long size1=table1.getRecordsNumber();
+	long size2=table3.getRecordsNumber();
+	table1.removeRecords(new Filter<Table1.Record>() {
+
+	    @Override
+	    public boolean nextRecord(Record _record)
+	    {
+		return false;
+	    }
+	});
+	table3.removeRecords(new Filter<Table3.Record>() {
+
+	    @Override
+	    public boolean nextRecord(com.distrimind.ood.tests.database.Table3.Record _record) 
+	    {
+		return false;
+	    }
+	});
+	Assert.assertTrue(size1==table1.getRecordsNumber());
+	Assert.assertTrue(size1==table1.getRecords().size());
+	Assert.assertTrue(size2==table3.getRecordsNumber());
+	Assert.assertTrue(size2==table3.getRecords().size());
+	table1.removeRecords(new Filter<Table1.Record>() {
+
+	    @Override
+	    public boolean nextRecord(Record _record)
+	    {
+		return true;
+	    }
+	});
+	table3.removeRecords(new Filter<Table3.Record>() {
+
+	    @Override
+	    public boolean nextRecord(com.distrimind.ood.tests.database.Table3.Record _record) 
+	    {
+		return true;
+	    }
+	});
+	Assert.assertTrue(0==table1.getRecordsNumber());
+	Assert.assertTrue(0==table1.getRecords().size());
+	
+	Assert.assertTrue(0==table3.getRecordsNumber());
+	Assert.assertTrue(0==table3.getRecords().size());
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	table1.alterRecords(new AlterRecordFilter<Table1.Record>() {
+
+	    @Override
+	    public void nextRecord(Record _record)
+	    {
+		this.remove();
+		
+	    }
+	});
+	table3.alterRecords(new AlterRecordFilter<Table3.Record>() {
+
+	    @Override
+	    public void nextRecord(Table3.Record _record)
+	    {
+		this.remove();
+		
+	    }
+	});
+	Assert.assertTrue(0==table1.getRecordsNumber());
+	Assert.assertTrue(0==table1.getRecords().size());
+	
+	Assert.assertTrue(0==table3.getRecordsNumber());
+	Assert.assertTrue(0==table3.getRecords().size());
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	addSecondRecord();
+	table1.alterRecords(new AlterRecordFilter<Table1.Record>() {
+
+	    @Override
+	    public void nextRecord(Record _record)
+	    {
+		this.removeWithCascade();
+	    }
+	});
+	table3.alterRecords(new AlterRecordFilter<Table3.Record>() {
+
+	    @Override
+	    public void nextRecord(Table3.Record _record)
+	    {
+		this.removeWithCascade();
+	    }
+	});
+	Assert.assertTrue(0==table1.getRecordsNumber());
+	Assert.assertTrue(0==table1.getRecords().size());
+	
+	Assert.assertTrue(0==table3.getRecordsNumber());
+	Assert.assertTrue(0==table3.getRecords().size());
+	
+	
+	    table1.checkDataIntegrity();
+	    table3.checkDataIntegrity();
+	    table2.checkDataIntegrity();
+	    table4.checkDataIntegrity();
+	    table5.checkDataIntegrity();
+	    table6.checkDataIntegrity();
+	
+    }
+    
+    @Test(dependsOnMethods={"removeRecords"}) public void testFilters() throws DatabaseException
+    {
+	HashMap<String, Object> map=new HashMap<String, Object>();
+	map.put("val1", new Integer(1));
+	map.put("val2", new Integer(2));
+	map.put("val3", new Integer(3));
+	table7.addRecord(map);
+	HashMap<String, Object> map2=new HashMap<String, Object>();
+	map2.put("val1", new Integer(0));
+	map2.put("val2", new Integer(2));
+	map2.put("val3", new Integer(3));
+	table7.addRecord(map2);
+	HashMap<String, Object> map3=new HashMap<String, Object>();
+	map3.put("val1", new Integer(0));
+	map3.put("val2", new Integer(2));
+	map3.put("val3", new Integer(4));
+	table7.addRecord(map3);
+	
+	HashMap<String, Object> mg0=new HashMap<String, Object>();
+	mg0.put("val2", new Integer(2));
+	mg0.put("val3", new Integer(4));
+	HashMap<String, Object> mg1=new HashMap<String, Object>();
+	mg1.put("val2", new Integer(2));
+	mg1.put("val3", new Integer(3));
+	Assert.assertTrue(table7.hasRecordsWithAllFields(mg1));
+	Assert.assertTrue(table7.hasRecordsWithOneOfFields(mg1));
+	ArrayList<Table7.Record> res=table7.getRecordsWithAllFields(mg1);
+	Assert.assertTrue(res.size()==2);
+	Assert.assertTrue(res.get(0).val1==1);
+	Assert.assertTrue(res.get(0).val2==2);
+	Assert.assertTrue(res.get(0).val3==3);
+	Assert.assertTrue(res.get(1).val1==0);
+	Assert.assertTrue(res.get(1).val2==2);
+	Assert.assertTrue(res.get(1).val3==3);
+	res=table7.getRecordsWithOneOfFields(mg1);
+	Assert.assertTrue(res.size()==3);
+	HashMap<String, Object> mg2=new HashMap<String, Object>();
+	mg2.put("val1", new Integer(1));
+	mg2.put("val3", new Integer(4));
+	res=table7.getRecordsWithOneOfFields(mg2);
+	Assert.assertTrue(table7.hasRecordsWithOneOfFields(mg2));
+	Assert.assertTrue(res.size()==2);
+	Assert.assertTrue(res.get(0).val1==1);
+	Assert.assertTrue(res.get(0).val2==2);
+	Assert.assertTrue(res.get(0).val3==3);
+	Assert.assertTrue(res.get(1).val1==0);
+	Assert.assertTrue(res.get(1).val2==2);
+	Assert.assertTrue(res.get(1).val3==4);
+	
+	
+	Assert.assertTrue(table7.hasRecordsWithAllFields(mg1, mg0));
+	Assert.assertTrue(table7.hasRecordsWithOneOfFields(mg1, mg0));
+	Assert.assertTrue(table7.getRecordsWithAllFields(mg1, mg0).size()==3);
+	Assert.assertTrue(table7.getRecordsWithOneOfFields(mg1, mg0).size()==3);
+	    table1.checkDataIntegrity();
+	    table3.checkDataIntegrity();
+	    table2.checkDataIntegrity();
+	    table4.checkDataIntegrity();
+	    table5.checkDataIntegrity();
+	    table6.checkDataIntegrity();
+	
+    }
+    @Test(dependsOnMethods={"testFilters"}) public void testRemoveFilters() throws DatabaseException
+    {
+	HashMap<String, Object> mg0=new HashMap<String, Object>();
+	mg0.put("val2", new Integer(9));
+	mg0.put("val3", new Integer(9));
+	HashMap<String, Object> mg1=new HashMap<String, Object>();
+	mg1.put("val2", new Integer(2));
+	mg1.put("val3", new Integer(3));
+	HashMap<String, Object> mg2=new HashMap<String, Object>();
+	mg2.put("val1", new Integer(2));
+	mg2.put("val3", new Integer(4));
+	
+	Assert.assertTrue(table7.removeRecordsWithAllFields(mg0)==0);
+	Assert.assertTrue(table7.getRecordsNumber()==3);
+	Assert.assertTrue(table7.removeRecordsWithOneOfFields(mg0)==0);
+	Assert.assertTrue(table7.getRecordsNumber()==3);
+	Assert.assertTrue(table7.removeRecordsWithAllFields(mg2)==0);
+	Assert.assertTrue(table7.getRecordsNumber()==3);
+	Assert.assertTrue(table7.removeRecordsWithOneOfFields(mg2)==1);
+	Assert.assertTrue(table7.getRecordsNumber()==2);
+	Assert.assertTrue(table7.removeRecordsWithAllFields(mg1)==2);
+	Assert.assertTrue(table7.getRecordsNumber()==0);
+	    table1.checkDataIntegrity();
+	    table3.checkDataIntegrity();
+	    table2.checkDataIntegrity();
+	    table4.checkDataIntegrity();
+	    table5.checkDataIntegrity();
+	    table6.checkDataIntegrity();
+	
+	
+    }
+    
+    @Test(dependsOnMethods={"testRemoveFilters"}) public void addForeignKeyAndTestUniqueKeys() throws DatabaseException
+    {
+	addSecondRecord();
+	addSecondRecord();
+	Table1.Record r1=table1.getRecords().get(0);
+	Table3.Record r2=table3.getRecords().get(0);
+	Table1.Record r1b=table1.getRecords().get(1);
+	Table3.Record r2b=table3.getRecords().get(1);
+	Assert.assertTrue(table1.getRecordsNumber()==2);
+	Assert.assertTrue(table3.getRecordsNumber()==2);
+	Assert.assertTrue(table1.getRecords().size()==2);
+	Assert.assertTrue(table3.getRecords().size()==2);
+	
+	HashMap<String, Object> map1=new HashMap<String, Object>();
+	map1.put("fr1_pk1", r1);
+	map1.put("int_value", new Integer(0));
+	HashMap<String, Object> map2=new HashMap<String, Object>();
+	map2.put("fr1_pk1", r2);
+	map2.put("int_value", new Integer(0));
+	try
+	{
+	    table2.addRecord(map2);
+	    Assert.assertTrue(false);
+	}
+	catch(DatabaseException e)
+	{
+	    Assert.assertTrue(true);
+	}
+	table2.addRecord(map1);
+	table4.addRecord(map2);
+	table5.addRecord(map2);
+	
+	Table1.Record r1fr2=table2.getRecords().get(0).fr1_pk1;
+	Table3.Record r2fr4=table4.getRecords().get(0).fr1_pk1;
+	Table3.Record r2fr5=table5.getRecords().get(0).fr1_pk1;
+	
+	Assert.assertTrue(table2.getRecords().get(0).int_value==0);
+	Assert.assertTrue(table4.getRecords().get(0).int_value==0);
+	Assert.assertTrue(table5.getRecords().get(0).int_value==0);
+	
+	Assert.assertTrue(r1.pk1==r1fr2.pk1);
+	Assert.assertTrue(r1.pk2==r1fr2.pk2);
+	Assert.assertTrue(r1.pk3.equals(r1fr2.pk3));
+	Assert.assertTrue(r1.pk4==r1fr2.pk4);
+	Assert.assertTrue(r1.int_value==r1fr2.int_value);
+	Assert.assertTrue(r1.byte_value==r1fr2.byte_value);
+	Assert.assertTrue(r1.char_value==r1fr2.char_value);
+	Assert.assertTrue(r1.boolean_value==r1fr2.boolean_value);
+	Assert.assertTrue(r1.short_value==r1fr2.short_value);
+	Assert.assertTrue(r1.long_value==r1fr2.long_value);
+	Assert.assertTrue(r1.float_value==r1fr2.float_value);
+	Assert.assertTrue(r1.double_value==r1fr2.double_value);
+	Assert.assertTrue(r1.string_value.equals(r1fr2.string_value));
+	Assert.assertTrue(r1.IntegerNumber_value.equals(r1fr2.IntegerNumber_value));
+	Assert.assertTrue(r1.ByteNumber_value.equals(r1fr2.ByteNumber_value));
+	Assert.assertTrue(r1.CharacterNumber_value.equals(r1fr2.CharacterNumber_value));
+	Assert.assertTrue(r1.BooleanNumber_value.equals(r1fr2.BooleanNumber_value));
+	Assert.assertTrue(r1.ShortNumber_value.equals(r1fr2.ShortNumber_value));
+	Assert.assertTrue(r1.LongNumber_value.equals(r1fr2.LongNumber_value));
+	Assert.assertTrue(r1.FloatNumber_value.equals(r1fr2.FloatNumber_value));
+	Assert.assertTrue(r1.DoubleNumber_value.equals(r1fr2.DoubleNumber_value));
+	Assert.assertTrue(r1.BigInteger_value.equals(r1fr2.BigInteger_value));
+	Assert.assertTrue(r1.BigDecimal_value.equals(r1fr2.BigDecimal_value));
+	Assert.assertTrue(r1.DateValue.equals(r1fr2.DateValue));
+	Assert.assertTrue(r1.CalendarValue.equals(r1fr2.CalendarValue));
+	
+	
+	Assert.assertTrue(r2.pk1==r2fr4.pk1);
+	Assert.assertTrue(r2.pk2==r2fr4.pk2);
+	Assert.assertTrue(r2.pk3.equals(r2fr4.pk3));
+	Assert.assertTrue(r2.pk4==r2fr4.pk4);
+	Assert.assertTrue(r2.int_value==r2fr4.int_value);
+	Assert.assertTrue(r2.byte_value==r2fr4.byte_value);
+	Assert.assertTrue(r2.char_value==r2fr4.char_value);
+	Assert.assertTrue(r2.boolean_value==r2fr4.boolean_value);
+	Assert.assertTrue(r2.short_value==r2fr4.short_value);
+	Assert.assertTrue(r2.long_value==r2fr4.long_value);
+	Assert.assertTrue(r2.float_value==r2fr4.float_value);
+	Assert.assertTrue(r2.double_value==r2fr4.double_value);
+	Assert.assertTrue(r2.string_value.equals(r2fr4.string_value));
+	Assert.assertTrue(r2.IntegerNumber_value.equals(r2fr4.IntegerNumber_value));
+	Assert.assertTrue(r2.ByteNumber_value.equals(r2fr4.ByteNumber_value));
+	Assert.assertTrue(r2.CharacterNumber_value.equals(r2fr4.CharacterNumber_value));
+	Assert.assertTrue(r2.BooleanNumber_value.equals(r2fr4.BooleanNumber_value));
+	Assert.assertTrue(r2.ShortNumber_value.equals(r2fr4.ShortNumber_value));
+	Assert.assertTrue(r2.LongNumber_value.equals(r2fr4.LongNumber_value));
+	Assert.assertTrue(r2.FloatNumber_value.equals(r2fr4.FloatNumber_value));
+	Assert.assertTrue(r2.DoubleNumber_value.equals(r2fr4.DoubleNumber_value));
+	Assert.assertTrue(r2.BigInteger_value.equals(r2fr4.BigInteger_value));
+	Assert.assertTrue(r2.BigDecimal_value.equals(r2fr4.BigDecimal_value));
+	Assert.assertTrue(r2.DateValue.equals(r2fr4.DateValue));
+	Assert.assertTrue(r2.CalendarValue.equals(r2fr4.CalendarValue));
+
+	
+	Assert.assertTrue(r2.pk1==r2fr5.pk1);
+	Assert.assertTrue(r2.pk2==r2fr5.pk2);
+	Assert.assertTrue(r2.pk3.equals(r2fr5.pk3));
+	Assert.assertTrue(r2.pk4==r2fr5.pk4);
+	Assert.assertTrue(r2.int_value==r2fr5.int_value);
+	Assert.assertTrue(r2.byte_value==r2fr5.byte_value);
+	Assert.assertTrue(r2.char_value==r2fr5.char_value);
+	Assert.assertTrue(r2.boolean_value==r2fr5.boolean_value);
+	Assert.assertTrue(r2.short_value==r2fr5.short_value);
+	Assert.assertTrue(r2.long_value==r2fr5.long_value);
+	Assert.assertTrue(r2.float_value==r2fr5.float_value);
+	Assert.assertTrue(r2.double_value==r2fr5.double_value);
+	Assert.assertTrue(r2.string_value.equals(r2fr5.string_value));
+	Assert.assertTrue(r2.IntegerNumber_value.equals(r2fr5.IntegerNumber_value));
+	Assert.assertTrue(r2.ByteNumber_value.equals(r2fr5.ByteNumber_value));
+	Assert.assertTrue(r2.CharacterNumber_value.equals(r2fr5.CharacterNumber_value));
+	Assert.assertTrue(r2.BooleanNumber_value.equals(r2fr5.BooleanNumber_value));
+	Assert.assertTrue(r2.ShortNumber_value.equals(r2fr5.ShortNumber_value));
+	Assert.assertTrue(r2.LongNumber_value.equals(r2fr5.LongNumber_value));
+	Assert.assertTrue(r2.FloatNumber_value.equals(r2fr5.FloatNumber_value));
+	Assert.assertTrue(r2.DoubleNumber_value.equals(r2fr5.DoubleNumber_value));
+	Assert.assertTrue(r2.BigInteger_value.equals(r2fr5.BigInteger_value));
+	Assert.assertTrue(r2.BigDecimal_value.equals(r2fr5.BigDecimal_value));
+	Assert.assertTrue(r2.DateValue.equals(r2fr5.DateValue));
+	Assert.assertTrue(r2.CalendarValue.equals(r2fr5.CalendarValue));
+	
+	
+	HashMap<String, Object> map1b=new HashMap<String, Object>();
+	map1b.put("fr1_pk1", r1);
+	map1b.put("int_value", new Integer(1));
+	HashMap<String, Object> map2b=new HashMap<String, Object>();
+	map2b.put("fr1_pk1", r2);
+	map2b.put("int_value", new Integer(1));
+	try
+	{
+	    table2.addRecord(map1b);
+	    Assert.assertTrue(false);
+	}
+	catch(DatabaseException e)
+	{
+	    Assert.assertTrue(true);
+	}
+	try
+	{
+	    table4.addRecord(map2b);
+	    Assert.assertTrue(false);
+	}
+	catch(DatabaseException e)
+	{
+	    Assert.assertTrue(true);
+	}
+	try
+	{
+	    table5.addRecord(map2b);
+	    Assert.assertTrue(false);
+	}
+	catch(DatabaseException e)
+	{
+	    Assert.assertTrue(true);
+	}
+	HashMap<String, Object> map1c=new HashMap<String, Object>();
+	map1c.put("fr1_pk1", r1b);
+	map1c.put("int_value", new Integer(0));
+	HashMap<String, Object> map2c=new HashMap<String, Object>();
+	map2c.put("fr1_pk1", r2b);
+	map2c.put("int_value", new Integer(0));
+	try
+	{
+	    table2.addRecord(map1c);
+	    Assert.assertTrue(false);
+	}
+	catch(DatabaseException e)
+	{
+	    Assert.assertTrue(true);
+	}
+	try
+	{
+	    table4.addRecord(map2c);
+	    Assert.assertTrue(false);
+	}
+	catch(DatabaseException e)
+	{
+	    Assert.assertTrue(true);
+	}
+	try
+	{
+	    table5.addRecord(map2c);
+	    Assert.assertTrue(false);
+	}
+	catch(DatabaseException e)
+	{
+	    Assert.assertTrue(true);
+	}
+
+	
+	
+	
+	Assert.assertTrue(table2.getRecordsNumber()==1);
+	Assert.assertTrue(table4.getRecordsNumber()==1);
+	Assert.assertTrue(table5.getRecordsNumber()==1);
+	HashMap<String, Object> map6=new HashMap<String, Object>();
+	map6.put("fk1_pk1", table2.getRecords().get(0));
+	map6.put("fk2", table5.getRecords().get(0));
+	Table6.Record r6=table6.addRecord(map6);
+	Assert.assertTrue(equals(r6.fk1_pk1, table2.getRecords().get(0)));
+	Assert.assertTrue(equals(r6.fk2, table5.getRecords().get(0)));
+	Assert.assertTrue(table6.getRecordsNumber()==1);
+	r6=table6.getRecords().get(0);
+	Assert.assertTrue(equals(r6.fk1_pk1, table2.getRecords().get(0)));
+	Assert.assertTrue(equals(r6.fk2, table5.getRecords().get(0)));
+	
+	try
+	{
+	    table6.addRecord(map6);
+	    Assert.assertTrue(false);
+	}
+	catch(DatabaseException e)
+	{
+	    Assert.assertTrue(true);
+	}
+	    table1.checkDataIntegrity();
+	    table3.checkDataIntegrity();
+	    table2.checkDataIntegrity();
+	    table4.checkDataIntegrity();
+	    table5.checkDataIntegrity();
+	    table6.checkDataIntegrity();
+	
+    }
+    @Test(dependsOnMethods={"addForeignKeyAndTestUniqueKeys"}) public void alterRecordWithCascade() throws DatabaseException
+    {
+	    HashMap<String, Object> map=new HashMap<String, Object>();
+	    map.put("pk1", new Integer(10));
+	    map.put("pk2", new Long(1526345));
+	    BigInteger val=null;
+	    do
+	    {
+		val=BigInteger.valueOf(random.nextLong());
+		if (val.longValue()<0)
+		    val=null;
+		else if (table1.getRecords().get(0).pk3.equals(val))
+		    val=null;
+		else if (table1.getRecords().get(1).pk3.equals(val))
+		    val=null;
+		else if (table3.getRecords().get(0).pk3.equals(val))
+		    val=null;
+		else if (table3.getRecords().get(1).pk3.equals(val))
+		    val=null;
+	    } while (val==null);
+	    map.put("pk3", val);
+	    map.put("byte_value", new Byte((byte)9));
+	    map.put("char_value", new Character('s'));
+	    map.put("DoubleNumber_value", new Double(7.7));
+	    byte[] tab=new byte[3];
+	    tab[0]=7;
+	    tab[1]=8;
+	    tab[2]=9;
+	    map.put("byte_array_value", tab);
+	    
+	    Table1.Record r1=table1.getRecords().get(0);
+	    table1.alterRecord(r1, map);
+	    table1.alterRecord(r1, map);
+	    Table3.Record r2=table3.getRecords().get(0);
+	    table3.alterRecord(r2, map);
+	    table3.alterRecord(r2, map);
+	    
+	    Table1.Record r1a=table1.getRecords().get(0);
+	    Table3.Record r2a=table3.getRecords().get(0);
+	    
+	    map.remove("pk2");
+	    map.remove("pk3");
+	    map.put("pk3", table1.getRecords().get(1).pk3);
+	    try
+	    {
+		table1.alterRecord(r1a, map);
+		Assert.assertTrue(false);
+	    }
+	    catch(ConstraintsNotRespectedDatabaseException e)
+	    {
+		Assert.assertTrue(true);
+	    }
+	    map.remove("pk3");
+	    map.put("pk3", table3.getRecords().get(1).pk3);
+	    try
+	    {
+		table3.alterRecord(r2a, map);
+		Assert.assertTrue(false);
+	    }
+	    catch(ConstraintsNotRespectedDatabaseException e)
+	    {
+		Assert.assertTrue(true);
+	    }
+
+	    r1a=table1.getRecords().get(0);
+	    r2a=table3.getRecords().get(0);
+	    
+	    map.remove("pk3");
+	    map.put("pk2", new Long(table1.getRecords().get(1).pk2));
+	    try
+	    {
+		table1.alterRecord(r1a, map);
+		Assert.assertTrue(false);
+	    }
+	    catch(ConstraintsNotRespectedDatabaseException e)
+	    {
+		Assert.assertTrue(true);
+	    }
+	    map.put("pk2", new Long(table3.getRecords().get(1).pk2));
+	    try
+	    {
+		table3.alterRecord(r2a, map);
+		Assert.assertTrue(false);
+	    }
+	    catch(ConstraintsNotRespectedDatabaseException e)
+	    {
+		Assert.assertTrue(true);
+	    }
+	    
+	    
+	    Assert.assertTrue(r1.pk1==10);
+	    Assert.assertTrue(r1.int_value==3);
+	    Assert.assertTrue(r1.byte_value==(byte)9);
+	    Assert.assertTrue(r1.char_value=='s');
+	    Assert.assertTrue(r1.boolean_value);
+	    Assert.assertTrue(r1.short_value==(short)3);
+	    Assert.assertTrue(r1.long_value==(long)3);
+	    Assert.assertTrue(r1.float_value==3.3f);
+	    Assert.assertTrue(r1.double_value==3.3);
+	    Assert.assertTrue(r1.string_value.equals("test string"));
+	    Assert.assertTrue(r1.IntegerNumber_value.intValue()==3);
+	    Assert.assertTrue(r1.ByteNumber_value.byteValue()==(byte)3);
+	    Assert.assertTrue(r1.CharacterNumber_value.charValue()=='x');
+	    Assert.assertTrue(r1.BooleanNumber_value.booleanValue());
+	    Assert.assertTrue(r1.ShortNumber_value.shortValue()==(short)3);
+	    Assert.assertTrue(r1.LongNumber_value.longValue()==(long)3);
+	    Assert.assertTrue(r1.FloatNumber_value.floatValue()==3.3f);
+	    Assert.assertTrue(r1.DoubleNumber_value.doubleValue()==7.7);
+	    Assert.assertTrue(r1.BigInteger_value.equals(new BigInteger("5")));
+	    Assert.assertTrue(r1.BigDecimal_value.equals(new BigDecimal("8.8")));
+	    Assert.assertTrue(r1.DateValue.equals(date));
+	    Assert.assertTrue(r1.CalendarValue.equals(calendar));
+	    for (int i=0;i<3;i++)
+		Assert.assertTrue(r1.byte_array_value[i]==tab[i]);
+
+	    Assert.assertTrue(r2.pk1==10);
+	    Assert.assertTrue(r2.int_value==3);
+	    Assert.assertTrue(r2.byte_value==(byte)9);
+	    Assert.assertTrue(r2.char_value=='s');
+	    Assert.assertTrue(r2.boolean_value);
+	    Assert.assertTrue(r2.short_value==(short)3);
+	    Assert.assertTrue(r2.long_value==(long)3);
+	    Assert.assertTrue(r2.float_value==3.3f);
+	    Assert.assertTrue(r2.double_value==3.3);
+	    Assert.assertTrue(r2.string_value.equals("test string"));
+	    Assert.assertTrue(r2.IntegerNumber_value.intValue()==3);
+	    Assert.assertTrue(r2.ByteNumber_value.byteValue()==(byte)3);
+	    Assert.assertTrue(r2.CharacterNumber_value.charValue()=='x');
+	    Assert.assertTrue(r2.BooleanNumber_value.booleanValue());
+	    Assert.assertTrue(r2.ShortNumber_value.shortValue()==(short)3);
+	    Assert.assertTrue(r2.LongNumber_value.longValue()==(long)3);
+	    Assert.assertTrue(r2.FloatNumber_value.floatValue()==3.3f);
+	    Assert.assertTrue(r2.DoubleNumber_value.doubleValue()==7.7);
+	    Assert.assertTrue(r2.BigInteger_value.equals(new BigInteger("5")));
+	    Assert.assertTrue(r2.BigDecimal_value.equals(new BigDecimal("8.8")));
+	    Assert.assertTrue(r2.DateValue.equals(date));
+	    Assert.assertTrue(r2.CalendarValue.equals(calendar));
+	    for (int i=0;i<3;i++)
+		Assert.assertTrue(r2.byte_array_value[i]==tab[i]);
+	    
+	    Table1.Record ra=table2.getRecords().get(0).fr1_pk1;
+	    Table3.Record rb=table4.getRecords().get(0).fr1_pk1;
+	    Table3.Record rc=table5.getRecords().get(0).fr1_pk1;
+	    Table1.Record rd=table6.getRecords().get(0).fk1_pk1.fr1_pk1;
+	    Table3.Record re=table6.getRecords().get(0).fk2.fr1_pk1;
+	    
+	    
+	    Assert.assertTrue(r1.pk1==ra.pk1);
+	    Assert.assertTrue(r1.pk2==ra.pk2);
+	    Assert.assertTrue(r1.pk3.equals(ra.pk3));
+	    Assert.assertTrue(r1.pk4==ra.pk4);
+	    Assert.assertTrue(r1.int_value==ra.int_value);
+	    Assert.assertTrue(r1.byte_value==ra.byte_value);
+	    Assert.assertTrue(r1.char_value==ra.char_value);
+	    Assert.assertTrue(r1.boolean_value==ra.boolean_value);
+	    Assert.assertTrue(r1.short_value==ra.short_value);
+	    Assert.assertTrue(r1.long_value==ra.long_value);
+	    Assert.assertTrue(r1.float_value==ra.float_value);
+	    Assert.assertTrue(r1.double_value==ra.double_value);
+	    Assert.assertTrue(r1.string_value.equals(ra.string_value));
+	    Assert.assertTrue(r1.IntegerNumber_value.equals(ra.IntegerNumber_value));
+	    Assert.assertTrue(r1.ByteNumber_value.equals(ra.ByteNumber_value));
+	    Assert.assertTrue(r1.CharacterNumber_value.equals(ra.CharacterNumber_value));
+	    Assert.assertTrue(r1.BooleanNumber_value.equals(ra.BooleanNumber_value));
+	    Assert.assertTrue(r1.ShortNumber_value.equals(ra.ShortNumber_value));
+	    Assert.assertTrue(r1.LongNumber_value.equals(ra.LongNumber_value));
+	    Assert.assertTrue(r1.FloatNumber_value.equals(ra.FloatNumber_value));
+	    Assert.assertTrue(r1.DoubleNumber_value.equals(ra.DoubleNumber_value));
+	    Assert.assertTrue(r1.BigInteger_value.equals(ra.BigInteger_value));
+	    Assert.assertTrue(r1.BigDecimal_value.equals(ra.BigDecimal_value));
+	    Assert.assertTrue(r1.DateValue.equals(ra.DateValue));
+	    Assert.assertTrue(r1.CalendarValue.equals(ra.CalendarValue));
+	    
+	    for (int i=0;i<3;i++)
+		Assert.assertTrue(ra.byte_array_value[i]==tab[i]);
+
+	    Assert.assertTrue(r1.pk1==rd.pk1);
+	    Assert.assertTrue(r1.pk2==rd.pk2);
+	    Assert.assertTrue(r1.pk3.equals(rd.pk3));
+	    Assert.assertTrue(r1.pk4==rd.pk4);
+	    Assert.assertTrue(r1.int_value==rd.int_value);
+	    Assert.assertTrue(r1.byte_value==rd.byte_value);
+	    Assert.assertTrue(r1.char_value==rd.char_value);
+	    Assert.assertTrue(r1.boolean_value==rd.boolean_value);
+	    Assert.assertTrue(r1.short_value==rd.short_value);
+	    Assert.assertTrue(r1.long_value==rd.long_value);
+	    Assert.assertTrue(r1.float_value==rd.float_value);
+	    Assert.assertTrue(r1.double_value==rd.double_value);
+	    Assert.assertTrue(r1.string_value.equals(rd.string_value));
+	    Assert.assertTrue(r1.IntegerNumber_value.equals(rd.IntegerNumber_value));
+	    Assert.assertTrue(r1.ByteNumber_value.equals(rd.ByteNumber_value));
+	    Assert.assertTrue(r1.CharacterNumber_value.equals(rd.CharacterNumber_value));
+	    Assert.assertTrue(r1.BooleanNumber_value.equals(rd.BooleanNumber_value));
+	    Assert.assertTrue(r1.ShortNumber_value.equals(rd.ShortNumber_value));
+	    Assert.assertTrue(r1.LongNumber_value.equals(rd.LongNumber_value));
+	    Assert.assertTrue(r1.FloatNumber_value.equals(rd.FloatNumber_value));
+	    Assert.assertTrue(r1.DoubleNumber_value.equals(rd.DoubleNumber_value));
+	    Assert.assertTrue(r1.BigInteger_value.equals(rd.BigInteger_value));
+	    Assert.assertTrue(r1.BigDecimal_value.equals(rd.BigDecimal_value));
+	    Assert.assertTrue(r1.DateValue.equals(rd.DateValue));
+	    Assert.assertTrue(r1.CalendarValue.equals(rd.CalendarValue));
+	    
+	    for (int i=0;i<3;i++)
+		Assert.assertTrue(rd.byte_array_value[i]==tab[i]);
+	    
+	    Assert.assertTrue(r2.pk1==rb.pk1);
+	    Assert.assertTrue(r2.pk2==rb.pk2);
+	    Assert.assertTrue(r2.pk3.equals(rb.pk3));
+	    Assert.assertTrue(r2.pk4==rb.pk4);
+	    Assert.assertTrue(r2.int_value==rb.int_value);
+	    Assert.assertTrue(r2.byte_value==rb.byte_value);
+	    Assert.assertTrue(r2.char_value==rb.char_value);
+	    Assert.assertTrue(r2.boolean_value==rb.boolean_value);
+	    Assert.assertTrue(r2.short_value==rb.short_value);
+	    Assert.assertTrue(r2.long_value==rb.long_value);
+	    Assert.assertTrue(r2.float_value==rb.float_value);
+	    Assert.assertTrue(r2.double_value==rb.double_value);
+	    Assert.assertTrue(r2.string_value.equals(rb.string_value));
+	    Assert.assertTrue(r2.IntegerNumber_value.equals(rb.IntegerNumber_value));
+	    Assert.assertTrue(r2.ByteNumber_value.equals(rb.ByteNumber_value));
+	    Assert.assertTrue(r2.CharacterNumber_value.equals(rb.CharacterNumber_value));
+	    Assert.assertTrue(r2.BooleanNumber_value.equals(rb.BooleanNumber_value));
+	    Assert.assertTrue(r2.ShortNumber_value.equals(rb.ShortNumber_value));
+	    Assert.assertTrue(r2.LongNumber_value.equals(rb.LongNumber_value));
+	    Assert.assertTrue(r2.FloatNumber_value.equals(rb.FloatNumber_value));
+	    Assert.assertTrue(r2.DoubleNumber_value.equals(rb.DoubleNumber_value));
+	    Assert.assertTrue(r2.BigInteger_value.equals(rb.BigInteger_value));
+	    Assert.assertTrue(r2.BigDecimal_value.equals(rb.BigDecimal_value));
+	    Assert.assertTrue(r2.DateValue.equals(rb.DateValue));
+	    Assert.assertTrue(r2.CalendarValue.equals(rb.CalendarValue));
+	    
+	    for (int i=0;i<3;i++)
+		Assert.assertTrue(rb.byte_array_value[i]==tab[i]);
+	    
+	    Assert.assertTrue(r2.pk1==rc.pk1);
+	    Assert.assertTrue(r2.pk2==rc.pk2);
+	    Assert.assertTrue(r2.pk3.equals(rc.pk3));
+	    Assert.assertTrue(r2.pk4==rc.pk4);
+	    Assert.assertTrue(r2.int_value==rc.int_value);
+	    Assert.assertTrue(r2.byte_value==rc.byte_value);
+	    Assert.assertTrue(r2.char_value==rc.char_value);
+	    Assert.assertTrue(r2.boolean_value==rc.boolean_value);
+	    Assert.assertTrue(r2.short_value==rc.short_value);
+	    Assert.assertTrue(r2.long_value==rc.long_value);
+	    Assert.assertTrue(r2.float_value==rc.float_value);
+	    Assert.assertTrue(r2.double_value==rc.double_value);
+	    Assert.assertTrue(r2.string_value.equals(rc.string_value));
+	    Assert.assertTrue(r2.IntegerNumber_value.equals(rc.IntegerNumber_value));
+	    Assert.assertTrue(r2.ByteNumber_value.equals(rc.ByteNumber_value));
+	    Assert.assertTrue(r2.CharacterNumber_value.equals(rc.CharacterNumber_value));
+	    Assert.assertTrue(r2.BooleanNumber_value.equals(rc.BooleanNumber_value));
+	    Assert.assertTrue(r2.ShortNumber_value.equals(rc.ShortNumber_value));
+	    Assert.assertTrue(r2.LongNumber_value.equals(rc.LongNumber_value));
+	    Assert.assertTrue(r2.FloatNumber_value.equals(rc.FloatNumber_value));
+	    Assert.assertTrue(r2.DoubleNumber_value.equals(rc.DoubleNumber_value));
+	    Assert.assertTrue(r2.BigInteger_value.equals(rc.BigInteger_value));
+	    Assert.assertTrue(r2.BigDecimal_value.equals(rc.BigDecimal_value));
+	    Assert.assertTrue(r2.DateValue.equals(rc.DateValue));
+	    Assert.assertTrue(r2.CalendarValue.equals(rc.CalendarValue));
+	    for (int i=0;i<3;i++)
+		Assert.assertTrue(rc.byte_array_value[i]==tab[i]);
+	    
+	    Assert.assertTrue(r2.pk1==re.pk1);
+	    Assert.assertTrue(r2.pk2==re.pk2);
+	    Assert.assertTrue(r2.pk3.equals(re.pk3));
+	    Assert.assertTrue(r2.pk4==re.pk4);
+	    Assert.assertTrue(r2.int_value==re.int_value);
+	    Assert.assertTrue(r2.byte_value==re.byte_value);
+	    Assert.assertTrue(r2.char_value==re.char_value);
+	    Assert.assertTrue(r2.boolean_value==re.boolean_value);
+	    Assert.assertTrue(r2.short_value==re.short_value);
+	    Assert.assertTrue(r2.long_value==re.long_value);
+	    Assert.assertTrue(r2.float_value==re.float_value);
+	    Assert.assertTrue(r2.double_value==re.double_value);
+	    Assert.assertTrue(r2.string_value.equals(re.string_value));
+	    Assert.assertTrue(r2.IntegerNumber_value.equals(re.IntegerNumber_value));
+	    Assert.assertTrue(r2.ByteNumber_value.equals(re.ByteNumber_value));
+	    Assert.assertTrue(r2.CharacterNumber_value.equals(re.CharacterNumber_value));
+	    Assert.assertTrue(r2.BooleanNumber_value.equals(re.BooleanNumber_value));
+	    Assert.assertTrue(r2.ShortNumber_value.equals(re.ShortNumber_value));
+	    Assert.assertTrue(r2.LongNumber_value.equals(re.LongNumber_value));
+	    Assert.assertTrue(r2.FloatNumber_value.equals(re.FloatNumber_value));
+	    Assert.assertTrue(r2.DoubleNumber_value.equals(re.DoubleNumber_value));
+	    Assert.assertTrue(r2.BigInteger_value.equals(re.BigInteger_value));
+	    Assert.assertTrue(r2.BigDecimal_value.equals(re.BigDecimal_value));
+	    Assert.assertTrue(r2.DateValue.equals(re.DateValue));
+	    Assert.assertTrue(r2.CalendarValue.equals(re.CalendarValue));
+	    for (int i=0;i<3;i++)
+		Assert.assertTrue(re.byte_array_value[i]==tab[i]);
+
+    
+	    
+	    Table2.Record t2=table2.getRecords().get(0);
+	    HashMap<String, Object> t2map=new HashMap<String, Object>();
+	    t2map.put("fr1_pk1", table1.getRecords().get(1));
+	    table2.alterRecord(t2, t2map);
+	    
+	    Table2.Record t2bis=table6.getRecords().get(0).fk1_pk1;
+	    Table1.Record t1=table1.getRecords().get(1);
+	    
+	    Assert.assertTrue(t2.fr1_pk1.pk1==t2bis.fr1_pk1.pk1);
+	    Assert.assertTrue(t2.fr1_pk1.pk2==t2bis.fr1_pk1.pk2);
+	    Assert.assertTrue(t2.fr1_pk1.pk4==t2bis.fr1_pk1.pk4);
+	    
+	    Assert.assertTrue(t1.pk1==t2bis.fr1_pk1.pk1);
+	    Assert.assertTrue(t1.pk2==t2bis.fr1_pk1.pk2);
+	    Assert.assertTrue(t1.pk4==t2bis.fr1_pk1.pk4);
+	    
+	    HashMap<String, Object> t2map2=new HashMap<String, Object>();
+	    t2map2.put("int_value", new Integer(t2.int_value));
+	    
+	    table2.alterRecord(t2, t2map2);
+	    t2map2.put("fr1_pk1", table1.getRecords().get(1));
+	    
+
+	    try
+	    {
+		table2.addRecord(t2map2);
+		Assert.assertTrue(false);
+	    }
+	    catch(ConstraintsNotRespectedDatabaseException e)
+	    {
+		Assert.assertTrue(true);
+	    }
+	    t2map.put("int_value", new Integer(t2.int_value+1));
+	    try
+	    {
+		table2.addRecord(t2map);
+		Assert.assertTrue(false);
+	    }
+	    catch(ConstraintsNotRespectedDatabaseException e)
+	    {
+		Assert.assertTrue(true);
+	    }
+	    t2map.remove("fr1_pk1");
+	    t2map.put("fr1_pk1", table1.getRecords().get(0));
+	    table2.addRecord(t2map);
+	    t2map.remove("fr1_pk1");
+	    try
+	    {
+		table2.alterRecord(t2, t2map);
+		Assert.assertTrue(false);
+	    }
+	    catch(ConstraintsNotRespectedDatabaseException e)
+	    {
+		Assert.assertTrue(true);
+	    }
+	    
+	    
+	    table1.alterRecords(new AlterRecordFilter<Table1.Record>() {
+	        
+	        @Override
+	        public void nextRecord(Record _record)
+	        {
+	            HashMap<String, Object> m=new HashMap<String, Object>();
+	            m.put("int_value", new Integer(15));
+	            this.alter(m);
+	        }
+	    });
+	    ArrayList<Table1.Record> records1=table1.getRecords();
+	    for (Table1.Record r : records1)
+		Assert.assertTrue(r.int_value==15);
+	    
+	    ArrayList<Table3.Record> records3=table3.getRecords();
+	    table3.alterRecords(new AlterRecordFilter<Table3.Record>() {
+	        
+	        @Override
+	        public void nextRecord(Table3.Record _record)
+	        {
+	            HashMap<String, Object> m=new HashMap<String, Object>();
+	            m.put("int_value", new Integer(15));
+	            
+	            this.alter(m);
+	        }
+	    });
+	    
+	    for (Table3.Record r : records3)
+		Assert.assertTrue(r.int_value==15);
+	    
+	    try
+	    {
+		table1.alterRecords(new AlterRecordFilter<Table1.Record>() {
+		    
+		    @Override
+		    public void nextRecord(Record _record)
+		    {
+			HashMap<String, Object> m=new HashMap<String, Object>();
+			m.put("pk1", new Integer(15));
+			this.alter(m);
+		    }
+		});
+		Assert.assertTrue(false);
+	    }
+	    catch(FieldDatabaseException e)
+	    {
+		Assert.assertTrue(true);
+	    }
+	    try
+	    {
+		table3.alterRecords(new AlterRecordFilter<Table3.Record>() {
+		    
+		    @Override
+		    public void nextRecord(Table3.Record _record)
+		    {
+			HashMap<String, Object> m=new HashMap<String, Object>();
+			m.put("pk1", new Integer(15));
+			this.alter(m);
+		    }
+		});
+		Assert.assertTrue(false);
+	    }
+	    catch(FieldDatabaseException e)
+	    {
+		Assert.assertTrue(true);
+	    }
+	    try
+	    {
+		table2.alterRecords(new AlterRecordFilter<Table2.Record>() {
+		    
+		    @Override
+		    public void nextRecord(Table2.Record _record)
+		    {
+			HashMap<String, Object> m=new HashMap<String, Object>();
+			m.put("int_value", new Integer(15));
+			this.alter(m);
+		    }
+		});
+		Assert.assertTrue(false);
+	    }
+	    catch(FieldDatabaseException e)
+	    {
+		Assert.assertTrue(true);
+	    }
+	    
+	    
+	    
+	    table1.checkDataIntegrity();
+	    table3.checkDataIntegrity();
+	    table2.checkDataIntegrity();
+	    table4.checkDataIntegrity();
+	    table5.checkDataIntegrity();
+	    table6.checkDataIntegrity();
+	
+    }
+    private final boolean equals(DatabaseRecord _instance1, DatabaseRecord _instance2) throws DatabaseException
+    {
+	    if (_instance1==null || _instance2==null)
+		return _instance1==_instance2;
+	    if (_instance1==_instance2)
+		return true;
+	    Table<?> t=Table.getTableInstance(sql_db, Table.getTableClass(_instance1.getClass()));
+	    
+	    for (FieldAccessor fa : t.getPrimaryKeysFieldAccessors())
+	    {
+		if (!fa.equals(_instance1, fa.getValue(_instance2)))
+		    return false;
+	    }
+	    return true;
+
+    }
+    
+    @Test(dependsOnMethods={"alterRecordWithCascade"}) public void removePointedRecords() throws DatabaseException
+    {
+	Assert.assertTrue(table1.getRecordsNumber()==2);
+	Assert.assertTrue(table3.getRecordsNumber()==2);
+	Assert.assertTrue(table2.getRecordsNumber()==2);
+	Assert.assertTrue(table4.getRecordsNumber()==1);
+	Assert.assertTrue(table5.getRecordsNumber()==1);
+	Assert.assertTrue(table1.getRecords().size()==2);
+	Assert.assertTrue(table2.getRecords().size()==2);
+	Assert.assertTrue(table3.getRecords().size()==2);
+	Assert.assertTrue(table4.getRecords().size()==1);
+	Assert.assertTrue(table5.getRecords().size()==1);
+	Assert.assertTrue(table6.getRecords().size()==1);
+	
+	table1.removeRecords(new Filter<Table1.Record>() {
+
+	    @Override
+	    public boolean nextRecord(Record _record)
+	    {
+		return true;
+	    }
+	});
+	table3.removeRecords(new Filter<Table3.Record>() {
+
+	    @Override
+	    public boolean nextRecord(Table3.Record _record)
+	    {
+		return true;
+	    }
+	});
+	
+	Assert.assertTrue(table1.getRecordsNumber()==2);
+	Assert.assertTrue(table3.getRecordsNumber()==1);
+	Assert.assertTrue(table2.getRecordsNumber()==2);
+	Assert.assertTrue(table4.getRecordsNumber()==1);
+	Assert.assertTrue(table5.getRecordsNumber()==1);
+	Assert.assertTrue(table1.getRecords().size()==2);
+	Assert.assertTrue(table2.getRecords().size()==2);
+	Assert.assertTrue(table3.getRecords().size()==1);
+	Assert.assertTrue(table4.getRecords().size()==1);
+	Assert.assertTrue(table5.getRecords().size()==1);
+	
+	try
+	{
+	    table1.removeRecords(table1.getRecords());
+	    Assert.assertTrue(false);
+	}
+	catch(ConstraintsNotRespectedDatabaseException e)
+	{
+	    Assert.assertTrue(true);
+	}
+	try
+	{
+	    table3.removeRecords(table3.getRecords());
+	    Assert.assertTrue(false);
+	}
+	catch(ConstraintsNotRespectedDatabaseException e)
+	{
+	    Assert.assertTrue(true);
+	}
+	Assert.assertTrue(table1.getRecordsNumber()==2);
+	Assert.assertTrue(table3.getRecordsNumber()==1);
+	Assert.assertTrue(table1.getRecords().size()==2);
+	Assert.assertTrue(table3.getRecords().size()==1);
+	try
+	{
+	    table1.removeRecord(table1.getRecords().get(0));
+	    Assert.assertTrue(false);
+	}
+	catch(ConstraintsNotRespectedDatabaseException e)
+	{
+	    Assert.assertTrue(true);
+	}
+	try
+	{
+	    table3.removeRecord(table3.getRecords().get(0));
+	    Assert.assertTrue(false);
+	}
+	catch(ConstraintsNotRespectedDatabaseException e)
+	{
+	    Assert.assertTrue(true);
+	}
+	    table1.checkDataIntegrity();
+	    table3.checkDataIntegrity();
+	    table2.checkDataIntegrity();
+	    table4.checkDataIntegrity();
+	    table5.checkDataIntegrity();
+	    table6.checkDataIntegrity();
+	
+	
+    }
+    @Test(dependsOnMethods={"removePointedRecords"}) public void removeForeignKeyRecords() throws DatabaseException
+    {
+	table1.removeRecords(new Filter<Table1.Record>() {
+
+	    @Override
+	    public boolean nextRecord(com.distrimind.ood.tests.database.Table1.Record _record)
+	    {
+		return true;
+	    }
+	});
+	table3.removeRecords(new Filter<Table3.Record>() {
+
+	    @Override
+	    public boolean nextRecord(com.distrimind.ood.tests.database.Table3.Record _record)
+	    {
+		return true;
+	    }
+	});
+	table2.removeRecords(new Filter<Table2.Record>() {
+
+	    @Override
+	    public boolean nextRecord(com.distrimind.ood.tests.database.Table2.Record _record)
+	    {
+		return true;
+	    }
+	});
+	table4.removeRecords(new Filter<Table4.Record>() {
+
+	    @Override
+	    public boolean nextRecord(com.distrimind.ood.tests.database.Table4.Record _record)
+	    {
+		return true;
+	    }
+	});
+	table5.removeRecords(new Filter<Table5.Record>() {
+
+	    @Override
+	    public boolean nextRecord(com.distrimind.ood.tests.database.Table5.Record _record)
+	    {
+		return true;
+	    }
+	});
+	Assert.assertTrue(table1.getRecordsNumber()==2);
+	Assert.assertTrue(table3.getRecordsNumber()==1);
+	Assert.assertTrue(table2.getRecordsNumber()==1);
+	Assert.assertTrue(table4.getRecordsNumber()==0);
+	Assert.assertTrue(table5.getRecordsNumber()==1);
+	Assert.assertTrue(table1.getRecords().size()==2);
+	Assert.assertTrue(table3.getRecords().size()==1);
+	Assert.assertTrue(table2.getRecords().size()==1);
+	Assert.assertTrue(table4.getRecords().size()==0);
+	Assert.assertTrue(table5.getRecords().size()==1);
+	
+	table6.removeRecords(new Filter<Table6.Record>() {
+
+	    @Override
+	    public boolean nextRecord(com.distrimind.ood.tests.database.Table6.Record _record)
+	    {
+		return true;
+	    }
+	});
+	Assert.assertTrue(table6.getRecordsNumber()==0);
+	HashMap<String, Object> map6=new HashMap<String, Object>();
+	map6.put("fk1_pk1", table2.getRecords().get(0));
+	map6.put("fk2", table5.getRecords().get(0));
+	table6.addRecord(map6);
+	    table1.checkDataIntegrity();
+	    table3.checkDataIntegrity();
+	    table2.checkDataIntegrity();
+	    table4.checkDataIntegrity();
+	    table5.checkDataIntegrity();
+	    table6.checkDataIntegrity();
+	
+    }
+    @Test(invocationCount=0) private void addRecords() throws DatabaseException
+    {
+	addSecondRecord();
+	addSecondRecord();
+	Table1.Record r1=table1.getRecords().get(0);
+	Table3.Record r2=table3.getRecords().get(0);
+	HashMap<String, Object> map1=new HashMap<String, Object>();
+	map1.put("fr1_pk1", r1);
+	map1.put("int_value", new Integer(0));
+	HashMap<String, Object> map2=new HashMap<String, Object>();
+	map2.put("fr1_pk1", r2);
+	map2.put("int_value", new Integer(0));
+	Table2.Record r22=table2.addRecord(map1);
+	table4.addRecord(map2);
+	Table5.Record r55=table5.addRecord(map2);
+	
+	HashMap<String, Object> map6=new HashMap<String, Object>();
+	map6.put("fk1_pk1", r22);
+	map6.put("fk2", r55);
+	table6.addRecord(map6);
+	    table1.checkDataIntegrity();
+	    table3.checkDataIntegrity();
+	    table2.checkDataIntegrity();
+	    table4.checkDataIntegrity();
+	    table5.checkDataIntegrity();
+	    table6.checkDataIntegrity();
+	
+    }
+    @Test(dependsOnMethods={"removeForeignKeyRecords"}) public void testIsPointed() throws DatabaseException
+    {
+	boolean b1=false;
+	Table1.Record r1=table1.getRecords().get(0);
+	for (Table2.Record r2 : table2.getRecords())
+	{
+	    if (table1.equals(r2.fr1_pk1, r1))
+	    {
+		b1=true;
+		break;
+	    }
+	}
+	boolean b3=false;
+	Table3.Record r3=table3.getRecords().get(0);
+	for (Table4.Record r4 : table4.getRecords())
+	{
+	    if (table3.equals(r4.fr1_pk1, r3))
+	    {
+		b3=true;
+		break;
+	    }
+	}
+	for (Table5.Record r5 : table5.getRecords())
+	{
+	    if (table3.equals(r5.fr1_pk1, r3))
+	    {
+		b3=true;
+		break;
+	    }
+	}
+	Assert.assertTrue(table1.isRecordPointedByForeignKeys(r1)==b1);
+	Assert.assertTrue(table3.isRecordPointedByForeignKeys(r3)==b3);
+	    table1.checkDataIntegrity();
+	    table3.checkDataIntegrity();
+	    table2.checkDataIntegrity();
+	    table4.checkDataIntegrity();
+	    table5.checkDataIntegrity();
+	    table6.checkDataIntegrity();
+	
+    }
+    @Test(dependsOnMethods={"testIsPointed"}) public void removeWithCascade() throws DatabaseException
+    {
+	table2.removeRecordsWithCascade(new Filter<Table2.Record>() {
+
+	    @Override
+	    public boolean nextRecord(com.distrimind.ood.tests.database.Table2.Record _record)
+	    {
+		return true;
+	    }
+	});
+	table5.removeRecordsWithCascade(new Filter<Table5.Record>() {
+
+	    @Override
+	    public boolean nextRecord(com.distrimind.ood.tests.database.Table5.Record _record)
+	    {
+		return true;
+	    }
+	});
+	Assert.assertTrue(table2.getRecordsNumber()==0);
+	Assert.assertTrue(table5.getRecordsNumber()==0);
+	Assert.assertTrue(table6.getRecordsNumber()==0);
+	Assert.assertTrue(table2.getRecords().size()==0);
+	Assert.assertTrue(table5.getRecords().size()==0);
+	Assert.assertTrue(table6.getRecords().size()==0);
+	
+	addRecords();
+	table1.removeRecordsWithCascade(new Filter<Table1.Record>() {
+
+	    @Override
+	    public boolean nextRecord(Record _record)
+	    {
+		return true;
+	    }
+	});
+	table3.removeRecordsWithCascade(new Filter<Table3.Record>() {
+
+	    @Override
+	    public boolean nextRecord(Table3.Record _record)
+	    {
+		return true;
+	    }
+	});
+	Assert.assertTrue(table1.getRecordsNumber()==0);
+	Assert.assertTrue(table3.getRecordsNumber()==0);
+	Assert.assertTrue(table2.getRecordsNumber()==0);
+	Assert.assertTrue(table4.getRecordsNumber()==0);
+	Assert.assertTrue(table5.getRecordsNumber()==0);
+	Assert.assertTrue(table6.getRecordsNumber()==0);
+	Assert.assertTrue(table1.getRecords().size()==0);
+	Assert.assertTrue(table2.getRecords().size()==0);
+	Assert.assertTrue(table3.getRecords().size()==0);
+	Assert.assertTrue(table4.getRecords().size()==0);
+	Assert.assertTrue(table5.getRecords().size()==0);
+	Assert.assertTrue(table6.getRecords().size()==0);
+
+    
+	addRecords();
+	table1.removeRecordWithCascade(table1.getRecords().get(0));
+	table3.removeRecordWithCascade(table3.getRecords().get(0));
+	Assert.assertTrue(table1.getRecordsNumber()==1);
+	Assert.assertTrue(table3.getRecordsNumber()==1);
+	Assert.assertTrue(table2.getRecordsNumber()==0);
+	Assert.assertTrue(table4.getRecordsNumber()==0);
+	Assert.assertTrue(table5.getRecordsNumber()==0);
+	Assert.assertTrue(table6.getRecordsNumber()==0);
+	Assert.assertTrue(table1.getRecords().size()==1);
+	Assert.assertTrue(table2.getRecords().size()==0);
+	Assert.assertTrue(table3.getRecords().size()==1);
+	Assert.assertTrue(table4.getRecords().size()==0);
+	Assert.assertTrue(table5.getRecords().size()==0);
+	Assert.assertTrue(table6.getRecords().size()==0);
+	table1.removeRecordsWithCascade(new Filter<Table1.Record>() {
+
+	    @Override
+	    public boolean nextRecord(Record _record)
+	    {
+		return true;
+	    }
+	});
+	table3.removeRecordsWithCascade(new Filter<Table3.Record>() {
+
+	    @Override
+	    public boolean nextRecord(Table3.Record _record)
+	    {
+		return true;
+	    }
+	});
+	Assert.assertTrue(table1.getRecordsNumber()==0);
+	Assert.assertTrue(table3.getRecordsNumber()==0);
+	Assert.assertTrue(table2.getRecordsNumber()==0);
+	Assert.assertTrue(table4.getRecordsNumber()==0);
+	Assert.assertTrue(table5.getRecordsNumber()==0);
+	Assert.assertTrue(table6.getRecordsNumber()==0);
+	Assert.assertTrue(table1.getRecords().size()==0);
+	Assert.assertTrue(table2.getRecords().size()==0);
+	Assert.assertTrue(table3.getRecords().size()==0);
+	Assert.assertTrue(table4.getRecords().size()==0);
+	Assert.assertTrue(table5.getRecords().size()==0);
+	Assert.assertTrue(table6.getRecords().size()==0);
+	addRecords();
+	table1.removeRecordsWithCascade(table1.getRecords());
+	table3.removeRecordsWithCascade(table3.getRecords());
+	Assert.assertTrue(table1.getRecordsNumber()==0);
+	Assert.assertTrue(table3.getRecordsNumber()==0);
+	Assert.assertTrue(table2.getRecordsNumber()==0);
+	Assert.assertTrue(table4.getRecordsNumber()==0);
+	Assert.assertTrue(table5.getRecordsNumber()==0);
+	Assert.assertTrue(table6.getRecordsNumber()==0);
+	Assert.assertTrue(table1.getRecords().size()==0);
+	Assert.assertTrue(table2.getRecords().size()==0);
+	Assert.assertTrue(table3.getRecords().size()==0);
+	Assert.assertTrue(table4.getRecords().size()==0);
+	Assert.assertTrue(table5.getRecords().size()==0);
+	Assert.assertTrue(table6.getRecords().size()==0);
+	
+	prepareMultipleTest();
+
+	table1.alterRecords(new AlterRecordFilter<Table1.Record>() {
+
+	    @Override
+	    public void nextRecord(Record _record)
+	    {
+		this.removeWithCascade();
+	    }
+	});
+	table3.alterRecords(new AlterRecordFilter<Table3.Record>() {
+
+	    @Override
+	    public void nextRecord(Table3.Record _record)
+	    {
+		this.removeWithCascade();
+	    }
+	});
+	Assert.assertTrue(0==table1.getRecordsNumber());
+	Assert.assertTrue(0==table1.getRecords().size());
+	
+	Assert.assertTrue(0==table3.getRecordsNumber());
+	Assert.assertTrue(0==table3.getRecords().size());
+	
+	
+	table1.checkDataIntegrity();
+	table3.checkDataIntegrity();
+	table2.checkDataIntegrity();
+	table4.checkDataIntegrity();
+	table5.checkDataIntegrity();
+	table6.checkDataIntegrity();
+    }
+    
+    @SuppressWarnings("unchecked")
+    @Test(dependsOnMethods={"removeWithCascade"}) public void setAutoRandomFields() throws DatabaseException
+    {
+	    HashMap<String, Object> map=new HashMap<String, Object>();
+	    map.put("pk1", new Integer(0));
+	    map.put("pk2", new Long(1));
+	    map.put("pk3", new BigInteger("0"));
+	    map.put("pk4", new Long(0));
+	    map.put("int_value", new Integer(3));
+	    map.put("byte_value", new Byte((byte)3));
+	    map.put("char_value", new Character('x'));
+	    map.put("boolean_value", new Boolean(false));
+	    map.put("short_value", new Short((short)3));
+	    map.put("long_value", new Long(3));
+	    map.put("float_value", new Float(3.3f));
+	    map.put("double_value", new Double(3.3));
+	    map.put("string_value", new String("test string"));
+	    map.put("IntegerNumber_value", new Integer(3));
+	    map.put("ByteNumber_value", new Byte((byte)3));
+	    map.put("CharacterNumber_value", new Character('x'));
+	    map.put("BooleanNumber_value", new Boolean(false));
+	    map.put("ShortNumber_value", new Short((short)3));
+	    map.put("LongNumber_value", new Long((long)3));
+	    map.put("FloatNumber_value", new Float(3.3f));
+	    map.put("DoubleNumber_value", new Double(3.3));
+	    map.put("BigInteger_value", new BigInteger("5"));
+	    map.put("BigDecimal_value", new BigDecimal("8.8"));
+	    map.put("DateValue", date);
+	    map.put("CalendarValue", calendar);
+	table1.addRecord(map);
+	table3.addRecord(map);
+	Table1.Record r1=table1.getRecords().get(0);
+	
+	Assert.assertTrue(map.get("pk1").equals(new Integer(r1.pk1)));
+	Assert.assertTrue(map.get("pk2").equals(new Long(r1.pk2)));
+	Assert.assertTrue(map.get("pk3").equals(r1.pk3));
+	Assert.assertTrue(map.get("pk4").equals(new Long(r1.pk4)));
+	Assert.assertTrue(map.get("int_value").equals(new Integer(r1.int_value)));
+	Assert.assertTrue(map.get("byte_value").equals(new Byte(r1.byte_value)));
+	Assert.assertTrue(map.get("char_value").equals(new Character(r1.char_value)));
+	Assert.assertTrue(map.get("boolean_value").equals(new Boolean(r1.boolean_value)));
+	Assert.assertTrue(map.get("short_value").equals(new Short(r1.short_value)));
+	Assert.assertTrue(map.get("long_value").equals(new Long(r1.long_value)));
+	Assert.assertTrue(map.get("float_value").equals(new Float(r1.float_value)));
+	Assert.assertTrue(map.get("double_value").equals(new Double(r1.double_value)));
+	Assert.assertTrue(map.get("string_value").equals(r1.string_value));
+	Assert.assertTrue(map.get("IntegerNumber_value").equals(r1.IntegerNumber_value));
+	Assert.assertTrue(map.get("ByteNumber_value").equals(r1.ByteNumber_value));
+	Assert.assertTrue(map.get("CharacterNumber_value").equals(r1.CharacterNumber_value));
+	Assert.assertTrue(map.get("BooleanNumber_value").equals(r1.BooleanNumber_value));
+	Assert.assertTrue(map.get("ShortNumber_value").equals(r1.ShortNumber_value));
+	Assert.assertTrue(map.get("LongNumber_value").equals(r1.LongNumber_value));
+	Assert.assertTrue(map.get("FloatNumber_value").equals(r1.FloatNumber_value));
+	Assert.assertTrue(map.get("DoubleNumber_value").equals(r1.DoubleNumber_value));
+	Assert.assertTrue(map.get("BigInteger_value").equals(r1.BigInteger_value));
+	Assert.assertTrue(map.get("BigDecimal_value").equals(r1.BigDecimal_value));
+	Assert.assertTrue(map.get("DateValue").equals(r1.DateValue));
+	Assert.assertTrue(map.get("CalendarValue").equals(r1.CalendarValue));
+	
+	Table3.Record r3=table3.getRecords().get(0);
+	
+	Assert.assertTrue(map.get("pk1").equals(new Integer(r3.pk1)));
+	Assert.assertTrue(map.get("pk2").equals(new Long(r3.pk2)));
+	Assert.assertTrue(map.get("pk3").equals(r3.pk3));
+	Assert.assertTrue(map.get("pk4").equals(new Long(r3.pk4)));
+	Assert.assertTrue(map.get("int_value").equals(new Integer(r3.int_value)));
+	Assert.assertTrue(map.get("byte_value").equals(new Byte(r3.byte_value)));
+	Assert.assertTrue(map.get("char_value").equals(new Character(r3.char_value)));
+	Assert.assertTrue(map.get("boolean_value").equals(new Boolean(r3.boolean_value)));
+	Assert.assertTrue(map.get("short_value").equals(new Short(r3.short_value)));
+	Assert.assertTrue(map.get("long_value").equals(new Long(r3.long_value)));
+	Assert.assertTrue(map.get("float_value").equals(new Float(r3.float_value)));
+	Assert.assertTrue(map.get("double_value").equals(new Double(r3.double_value)));
+	Assert.assertTrue(map.get("string_value").equals(r3.string_value));
+	Assert.assertTrue(map.get("IntegerNumber_value").equals(r3.IntegerNumber_value));
+	Assert.assertTrue(map.get("ByteNumber_value").equals(r3.ByteNumber_value));
+	Assert.assertTrue(map.get("CharacterNumber_value").equals(r3.CharacterNumber_value));
+	Assert.assertTrue(map.get("BooleanNumber_value").equals(r3.BooleanNumber_value));
+	Assert.assertTrue(map.get("ShortNumber_value").equals(r3.ShortNumber_value));
+	Assert.assertTrue(map.get("LongNumber_value").equals(r3.LongNumber_value));
+	Assert.assertTrue(map.get("FloatNumber_value").equals(r3.FloatNumber_value));
+	Assert.assertTrue(map.get("DoubleNumber_value").equals(r3.DoubleNumber_value));
+	Assert.assertTrue(map.get("BigInteger_value").equals(r3.BigInteger_value));
+	Assert.assertTrue(map.get("BigDecimal_value").equals(r3.BigDecimal_value));
+	Assert.assertTrue(map.get("DateValue").equals(r3.DateValue));
+	Assert.assertTrue(map.get("CalendarValue").equals(r3.CalendarValue));
+	
+	try
+	{
+	    table1.addRecord(map);
+	    Assert.assertTrue(false);
+	}
+	catch(ConstraintsNotRespectedDatabaseException e)
+	{
+	    Assert.assertTrue(true);
+	}
+	try
+	{
+	    table3.addRecord(map);
+	    Assert.assertTrue(false);
+	}
+	catch(ConstraintsNotRespectedDatabaseException e)
+	{
+	    Assert.assertTrue(true);
+	}
+	map.put("pk4", new Long(1));
+	try
+	{
+	    table1.addRecord(map);
+	    Assert.assertTrue(false);
+	}
+	catch(ConstraintsNotRespectedDatabaseException e)
+	{
+	    Assert.assertTrue(true);
+	}
+	try
+	{
+	    table3.addRecord(map);
+	    Assert.assertTrue(false);
+	}
+	catch(ConstraintsNotRespectedDatabaseException e)
+	{
+	    Assert.assertTrue(true);
+	}
+	
+	map.put("pk3", new BigInteger("1"));
+	table1.addRecord(map);
+	table3.addRecord(map);
+	map.put("pk2", new Long(2));
+	try
+	{
+	    table1.addRecord(map);
+	    Assert.assertTrue(false);
+	}
+	catch(ConstraintsNotRespectedDatabaseException e)
+	{
+	    Assert.assertTrue(true);
+	}
+	try
+	{
+	    table3.addRecord(map);
+	    Assert.assertTrue(false);
+	}
+	catch(ConstraintsNotRespectedDatabaseException e)
+	{
+	    Assert.assertTrue(true);
+	}
+	map.put("pk2", new Long("2"));
+	map.put("pk3", new BigInteger("2"));
+	Map<String, Object> maps[]=new Map[2];
+	maps[0]=map;
+	maps[1]=map;
+	try
+	{
+	    table1.addRecords(maps);
+	    Assert.assertTrue(false);
+	}
+	catch(ConstraintsNotRespectedDatabaseException e)
+	{
+	    Assert.assertTrue(true);
+	}
+	try
+	{
+	    table3.addRecords(maps);
+	    Assert.assertTrue(false);
+	}
+	catch(ConstraintsNotRespectedDatabaseException e)
+	{
+	    Assert.assertTrue(true);
+	}
+	maps[1]=(HashMap<String, Object>)map.clone();
+	maps[1].remove("pk2");
+	try
+	{
+	    table1.addRecords(maps);
+	    Assert.assertTrue(false);
+	}
+	catch(ConstraintsNotRespectedDatabaseException e)
+	{
+	    Assert.assertTrue(true);
+	}
+	try
+	{
+	    table3.addRecords(maps);
+	    Assert.assertTrue(false);
+	}
+	catch(ConstraintsNotRespectedDatabaseException e)
+	{
+	    Assert.assertTrue(true);
+	}
+
+	maps[1].remove("pk3");
+	
+	try
+	{
+	    table1.addRecords(maps);
+	    Assert.assertTrue(false);
+	}
+	catch(ConstraintsNotRespectedDatabaseException e)
+	{
+	    Assert.assertTrue(true);
+	}
+	try
+	{
+	    table3.addRecords(maps);
+	    Assert.assertTrue(false);
+	}
+	catch(ConstraintsNotRespectedDatabaseException e)
+	{
+	    Assert.assertTrue(true);
+	}
+	
+	
+	Assert.assertTrue(table1.getRecordsNumber()==2);
+	Assert.assertTrue(table3.getRecordsNumber()==2);
+	    table1.checkDataIntegrity();
+	    table3.checkDataIntegrity();
+	    table2.checkDataIntegrity();
+	    table4.checkDataIntegrity();
+	    table5.checkDataIntegrity();
+	    table6.checkDataIntegrity();
+	
+	removeWithCascade();
+	
+	maps[1].remove("pk4");
+
+	table1.addRecords(maps);
+	table3.addRecords(maps);
+	Assert.assertTrue(table1.getRecordsNumber()==2);
+	Assert.assertTrue(table3.getRecordsNumber()==2);
+	r1=table1.getRecords().get(0);
+	
+	Assert.assertTrue(map.get("pk1").equals(new Integer(r1.pk1)));
+	Assert.assertTrue(map.get("pk2").equals(new Long(r1.pk2)));
+	Assert.assertTrue(map.get("pk3").equals(r1.pk3));
+	Assert.assertTrue(map.get("pk4").equals(new Long(r1.pk4)));
+	Assert.assertTrue(map.get("int_value").equals(new Integer(r1.int_value)));
+	Assert.assertTrue(map.get("byte_value").equals(new Byte(r1.byte_value)));
+	Assert.assertTrue(map.get("char_value").equals(new Character(r1.char_value)));
+	Assert.assertTrue(map.get("boolean_value").equals(new Boolean(r1.boolean_value)));
+	Assert.assertTrue(map.get("short_value").equals(new Short(r1.short_value)));
+	Assert.assertTrue(map.get("long_value").equals(new Long(r1.long_value)));
+	Assert.assertTrue(map.get("float_value").equals(new Float(r1.float_value)));
+	Assert.assertTrue(map.get("double_value").equals(new Double(r1.double_value)));
+	Assert.assertTrue(map.get("string_value").equals(r1.string_value));
+	Assert.assertTrue(map.get("IntegerNumber_value").equals(r1.IntegerNumber_value));
+	Assert.assertTrue(map.get("ByteNumber_value").equals(r1.ByteNumber_value));
+	Assert.assertTrue(map.get("CharacterNumber_value").equals(r1.CharacterNumber_value));
+	Assert.assertTrue(map.get("BooleanNumber_value").equals(r1.BooleanNumber_value));
+	Assert.assertTrue(map.get("ShortNumber_value").equals(r1.ShortNumber_value));
+	Assert.assertTrue(map.get("LongNumber_value").equals(r1.LongNumber_value));
+	Assert.assertTrue(map.get("FloatNumber_value").equals(r1.FloatNumber_value));
+	Assert.assertTrue(map.get("DoubleNumber_value").equals(r1.DoubleNumber_value));
+	Assert.assertTrue(map.get("BigInteger_value").equals(r1.BigInteger_value));
+	Assert.assertTrue(map.get("BigDecimal_value").equals(r1.BigDecimal_value));
+	
+	r3=table3.getRecords().get(0);
+	
+	Assert.assertTrue(map.get("pk1").equals(new Integer(r3.pk1)));
+	Assert.assertTrue(map.get("pk2").equals(new Long(r3.pk2)));
+	Assert.assertTrue(map.get("pk3").equals(r3.pk3));
+	Assert.assertTrue(map.get("pk4").equals(new Long(r3.pk4)));
+	Assert.assertTrue(map.get("int_value").equals(new Integer(r3.int_value)));
+	Assert.assertTrue(map.get("byte_value").equals(new Byte(r3.byte_value)));
+	Assert.assertTrue(map.get("char_value").equals(new Character(r3.char_value)));
+	Assert.assertTrue(map.get("boolean_value").equals(new Boolean(r3.boolean_value)));
+	Assert.assertTrue(map.get("short_value").equals(new Short(r3.short_value)));
+	Assert.assertTrue(map.get("long_value").equals(new Long(r3.long_value)));
+	Assert.assertTrue(map.get("float_value").equals(new Float(r3.float_value)));
+	Assert.assertTrue(map.get("double_value").equals(new Double(r3.double_value)));
+	Assert.assertTrue(map.get("string_value").equals(r3.string_value));
+	Assert.assertTrue(map.get("IntegerNumber_value").equals(r3.IntegerNumber_value));
+	Assert.assertTrue(map.get("ByteNumber_value").equals(r3.ByteNumber_value));
+	Assert.assertTrue(map.get("CharacterNumber_value").equals(r3.CharacterNumber_value));
+	Assert.assertTrue(map.get("BooleanNumber_value").equals(r3.BooleanNumber_value));
+	Assert.assertTrue(map.get("ShortNumber_value").equals(r3.ShortNumber_value));
+	Assert.assertTrue(map.get("LongNumber_value").equals(r3.LongNumber_value));
+	Assert.assertTrue(map.get("FloatNumber_value").equals(r3.FloatNumber_value));
+	Assert.assertTrue(map.get("DoubleNumber_value").equals(r3.DoubleNumber_value));
+	Assert.assertTrue(map.get("BigInteger_value").equals(r3.BigInteger_value));
+	Assert.assertTrue(map.get("BigDecimal_value").equals(r3.BigDecimal_value));
+	
+	Map<String, Object> maps2[]=new Map[1];
+	maps2[0]=maps[0];
+
+	try
+	{
+	    table1.addRecords(maps2);
+	    Assert.assertTrue(false);
+	}
+	catch(ConstraintsNotRespectedDatabaseException e)
+	{
+	    Assert.assertTrue(true);
+	}
+	try
+	{
+	    table3.addRecords(maps2);
+	    Assert.assertTrue(false);
+	}
+	catch(ConstraintsNotRespectedDatabaseException e)
+	{
+	    Assert.assertTrue(true);
+	}
+	    table1.checkDataIntegrity();
+	    table3.checkDataIntegrity();
+	    table2.checkDataIntegrity();
+	    table4.checkDataIntegrity();
+	    table5.checkDataIntegrity();
+	    table6.checkDataIntegrity();
+	
+    }
+    
+    private static AtomicInteger next_unique=new AtomicInteger(0);
+    private static AtomicInteger number_thread_test=new AtomicInteger(0);
+    @Test(dependsOnMethods={"setAutoRandomFields"}) public void prepareMultipleTest() throws DatabaseException
+    {
+	
+	HashMap<String, Object> map=new HashMap<String, Object>();
+	
+	map.put("pk1", new Integer(random.nextInt()));
+	map.put("int_value", new Integer(3));
+	map.put("byte_value", new Byte((byte)3));
+	map.put("char_value", new Character('x'));
+	map.put("boolean_value", new Boolean(true));
+	map.put("short_value", new Short((short)random.nextInt()));
+	map.put("long_value", new Long(3));
+	map.put("float_value", new Float(3.3f));
+	map.put("double_value", new Double(3.3));
+	map.put("string_value", new String("test string"));
+	map.put("IntegerNumber_value", new Integer(3));
+	map.put("ByteNumber_value", new Byte((byte)3));
+	map.put("CharacterNumber_value", new Character('x'));
+	map.put("BooleanNumber_value", new Boolean(true));
+	map.put("ShortNumber_value", new Short((short)3));
+	map.put("LongNumber_value", new Long(random.nextLong()));
+	map.put("FloatNumber_value", new Float(3.3f));
+	map.put("DoubleNumber_value", new Double(3.3));
+	map.put("BigInteger_value", new BigInteger("6"));
+	map.put("BigDecimal_value", new BigDecimal("9.9"));
+	map.put("DateValue", Calendar.getInstance().getTime());
+	map.put("CalendarValue", Calendar.getInstance());
+	byte[] tab=new byte[3];
+	tab[0]=0;
+	tab[1]=1;
+	tab[2]=2;
+	map.put("byte_array_value", tab);
+	table1.addRecord(map);
+	table3.addRecord(map);
+	@SuppressWarnings("unchecked")
+	HashMap<String, Object> list[]=new HashMap[10];
+	for (int i=0;i<list.length;i++)
+	    list[i]=map;
+	table1.addRecords(list);
+	table3.addRecords(list);
+	
+	for (int i=0;i<8;i++)
+	{
+	    try
+	    {
+		ArrayList<Table1.Record> records=table1.getRecords();
+		HashMap<String, Object> map2=new HashMap<String, Object>();
+		map2.put("fr1_pk1", records.get(random.nextInt(records.size())));
+		map2.put("int_value", new Integer(random.nextInt()));
+		table2.addRecord(map2);
+	    }
+	    catch(ConstraintsNotRespectedDatabaseException e)
+	    {
+	    }
+	    catch(RecordNotFoundDatabaseException e)
+	    {
+		if (no_thread)
+		    throw e;
+	    }
+	}
+	for (int i=0;i<8;i++)
+	{
+	    try
+	    {
+		ArrayList<Table3.Record> records=table3.getRecords();
+		HashMap<String, Object> map2=new HashMap<String, Object>();
+		map2.put("fr1_pk1", records.get(random.nextInt(records.size())));
+		map2.put("int_value", new Integer(random.nextInt()));
+		
+		table4.addRecord(map2);
+		table5.addRecord(map2);
+	    }
+	    catch(ConstraintsNotRespectedDatabaseException e)
+	    {
+		
+	    }
+	    catch(RecordNotFoundDatabaseException e)
+	    {
+		if (no_thread)
+		    throw e;
+	    }
+	}
+	for (int i=0;i<6;i++)
+	{
+	    try
+	    {
+		ArrayList<Table2.Record> records2=table2.getRecords();
+		ArrayList<Table5.Record> records5=table5.getRecords();
+		HashMap<String, Object> map2=new HashMap<String, Object>();
+		map2.put("fk1_pk1", records2.get(random.nextInt(records2.size())));
+		map2.put("fk2", records5.get(random.nextInt(records5.size())));
+		table6.addRecord(map2);
+	    }
+	    catch(ConstraintsNotRespectedDatabaseException e)
+	    {
+	    }
+	    catch(RecordNotFoundDatabaseException e)
+	    {
+		if (no_thread)
+		    throw e;
+	    }
+	}
+    }
+    @Test(dependsOnMethods={"prepareMultipleTest"}) public void multipleTests() throws DatabaseException
+    {
+	System.out.println("No thread="+no_thread);
+	for (int i=0;i<MULTI_TESTS_NUMBER;i++)
+	    subMultipleTests();
+    }
+    public static boolean no_thread=true;
+    public final ThreadLocalRandom random=ThreadLocalRandom.current();
+    @Test(invocationCount=0) public void subMultipleTests() throws DatabaseException
+    {
+	Table1 table1;
+	Table2 table2;
+	Table3 table3;
+	Table4 table4;
+	Table5 table5;
+	Table6 table6;
+	if (!MULTI_CONCURRENT_DATABASE || random.nextInt(2)==0)
+	{
+	    table1=TestDatabase.table1;
+	    table2=TestDatabase.table2;
+	    table3=TestDatabase.table3;
+	    table4=TestDatabase.table4;
+	    table5=TestDatabase.table5;
+	    table6=TestDatabase.table6;
+	}
+	else
+	{
+	    table1=TestDatabase.table1b;
+	    table2=TestDatabase.table2b;
+	    table3=TestDatabase.table3b;
+	    table4=TestDatabase.table4b;
+	    table5=TestDatabase.table5b;
+	    table6=TestDatabase.table6b;
+	}
+	int r=random.nextInt(29);
+	
+	int number;
+	synchronized(number_thread_test)
+	{
+	    number_thread_test.set(number=number_thread_test.intValue()+1);
+	}
+	
+	System.out.println("Test "+number+" number "+r+" in progress.");
+	switch(r)
+	{
+	    case 0:
+	    {
+		table1.getRecords();
+		table2.getRecords();
+		table3.getRecords();
+		table4.getRecords();
+		table5.getRecords();
+		table6.getRecords();
+	    }
+	    break;
+	    case 1:
+	    {
+		HashMap<String, Object> map=new HashMap<String, Object>();
+		map.put("pk1", new Integer(random.nextInt()));
+		map.put("int_value", new Integer(3));
+		map.put("byte_value", new Byte((byte)3));
+		map.put("char_value", new Character('x'));
+		map.put("boolean_value", new Boolean(true));
+		map.put("short_value", new Short((short)random.nextInt()));
+		map.put("long_value", new Long(3));
+		map.put("float_value", new Float(3.3f));
+		map.put("double_value", new Double(3.3));
+		map.put("string_value", new String("test string"));
+		map.put("IntegerNumber_value", new Integer(3));
+		map.put("ByteNumber_value", new Byte((byte)3));
+		map.put("CharacterNumber_value", new Character('x'));
+		map.put("BooleanNumber_value", new Boolean(true));
+		map.put("ShortNumber_value", new Short((short)3));
+		map.put("LongNumber_value", new Long(random.nextLong()));
+		map.put("FloatNumber_value", new Float(3.3f));
+		map.put("DoubleNumber_value", new Double(3.3));
+		map.put("BigInteger_value", new BigInteger("6"));
+		map.put("BigDecimal_value", new BigDecimal("1.10"));
+		map.put("DateValue", Calendar.getInstance().getTime());
+		map.put("CalendarValue", Calendar.getInstance());
+		byte[] tab=new byte[3];
+		tab[0]=0;
+		tab[1]=1;
+		tab[2]=2;
+		map.put("byte_array_value", tab);
+		try
+		{
+		    Table1.Record r1=table1.addRecord(map);
+		    Table3.Record r3=table3.addRecord(map);
+		    if (no_thread)
+		    {
+			Assert.assertTrue(table1.contains(r1));
+			Assert.assertTrue(table3.contains(r3));
+		    }
+		
+		    Assert.assertTrue(r1.pk1==((Integer)map.get("pk1")).intValue());
+		    Assert.assertTrue(r1.int_value==((Integer)map.get("int_value")).intValue());
+		    Assert.assertTrue(r1.byte_value==((Byte)map.get("byte_value")).byteValue());
+		    Assert.assertTrue(r1.char_value==((Character)map.get("char_value")).charValue());
+		    Assert.assertTrue(r1.boolean_value==((Boolean)map.get("boolean_value")).booleanValue());
+		    Assert.assertTrue(r1.short_value==((Short)map.get("short_value")).shortValue());
+		    Assert.assertTrue(r1.long_value==((Long)map.get("long_value")).longValue());
+		    Assert.assertTrue(r1.float_value==((Float)map.get("float_value")).floatValue());
+		    Assert.assertTrue(r1.double_value==((Double)map.get("double_value")).doubleValue());
+		    Assert.assertTrue(r1.string_value.equals(map.get("string_value")));
+		    Assert.assertTrue(r1.IntegerNumber_value.equals(map.get("IntegerNumber_value")));
+		    Assert.assertTrue(r1.ByteNumber_value.equals(map.get("ByteNumber_value")));
+		    Assert.assertTrue(r1.CharacterNumber_value.equals(map.get("CharacterNumber_value")));
+		    Assert.assertTrue(r1.BooleanNumber_value.equals(map.get("BooleanNumber_value")));
+		    Assert.assertTrue(r1.ShortNumber_value.equals(map.get("ShortNumber_value")));
+		    Assert.assertTrue(r1.LongNumber_value.equals(map.get("LongNumber_value")));
+		    Assert.assertTrue(r1.FloatNumber_value.equals(map.get("FloatNumber_value")));
+		    Assert.assertTrue(r1.DoubleNumber_value.equals(map.get("DoubleNumber_value")));
+		    Assert.assertTrue(r1.BigInteger_value.equals(map.get("BigInteger_value")));
+		    Assert.assertTrue(r1.BigDecimal_value.equals(map.get("BigDecimal_value")));
+		    for (int i=0;i<3;i++)
+			Assert.assertTrue(r1.byte_array_value[i]==((byte[])map.get("byte_array_value"))[i]);
+
+		    Assert.assertTrue(r3.pk1==((Integer)map.get("pk1")).intValue());
+		    Assert.assertTrue(r3.int_value==((Integer)map.get("int_value")).intValue());
+		    Assert.assertTrue(r3.byte_value==((Byte)map.get("byte_value")).byteValue());
+		    Assert.assertTrue(r3.char_value==((Character)map.get("char_value")).charValue());
+		    Assert.assertTrue(r3.boolean_value==((Boolean)map.get("boolean_value")).booleanValue());
+		    Assert.assertTrue(r3.short_value==((Short)map.get("short_value")).shortValue());
+		    Assert.assertTrue(r3.long_value==((Long)map.get("long_value")).longValue());
+		    Assert.assertTrue(r3.float_value==((Float)map.get("float_value")).floatValue());
+		    Assert.assertTrue(r3.double_value==((Double)map.get("double_value")).doubleValue());
+		    Assert.assertTrue(r3.string_value.equals(map.get("string_value")));
+		    Assert.assertTrue(r3.IntegerNumber_value.equals(map.get("IntegerNumber_value")));
+		    Assert.assertTrue(r3.ByteNumber_value.equals(map.get("ByteNumber_value")));
+		    Assert.assertTrue(r3.CharacterNumber_value.equals(map.get("CharacterNumber_value")));
+		    Assert.assertTrue(r3.BooleanNumber_value.equals(map.get("BooleanNumber_value")));
+		    Assert.assertTrue(r3.ShortNumber_value.equals(map.get("ShortNumber_value")));
+		    Assert.assertTrue(r3.LongNumber_value.equals(map.get("LongNumber_value")));
+		    Assert.assertTrue(r3.FloatNumber_value.equals(map.get("FloatNumber_value")));
+		    Assert.assertTrue(r3.DoubleNumber_value.equals(map.get("DoubleNumber_value")));
+		    Assert.assertTrue(r3.BigInteger_value.equals(map.get("BigInteger_value")));
+		    Assert.assertTrue(r3.BigDecimal_value.equals(map.get("BigDecimal_value")));
+		    for (int i=0;i<3;i++)
+			Assert.assertTrue(r3.byte_array_value[i]==((byte[])map.get("byte_array_value"))[i]);
+		}
+		catch(ConstraintsNotRespectedDatabaseException e)
+		{
+		    if (no_thread)
+		    {
+			throw e;
+		    }
+		}
+	    }
+	    break;
+	    case 2:
+	    {
+		int next;
+		synchronized(next_unique)
+		{
+		    next=next_unique.intValue();
+		    next_unique.set(next+1);
+		}
+		ArrayList<Table1.Record> records=table1.getRecords();
+		if (records.size()>0)
+		{
+		    HashMap<String, Object> map=new HashMap<String, Object>();
+		    map.put("fr1_pk1", records.get(random.nextInt(records.size())));
+		    map.put("int_value", new Integer(next));
+		    try
+		    {
+			ArrayList<Table2.Record> records2=table2.getRecords();
+			boolean found=false;
+			for (Table2.Record r2 : records2)
+			{
+			    if (table1.equals(r2.fr1_pk1, (Table1.Record)map.get("fr1_pk1")))
+			    {
+				found=true;
+				break;
+			    }
+			}
+			if (!found)
+			{
+			    Table2.Record r2=table2.addRecord(map);
+			    if (no_thread)
+			    {
+				Assert.assertTrue(table1.equals(r2.fr1_pk1, (Table1.Record)map.get("fr1_pk1")));
+				Assert.assertTrue(r2.int_value==((Integer)map.get("int_value")).intValue());
+			    }
+			}
+		    }
+		    catch(RecordNotFoundDatabaseException e)
+		    {
+			if (no_thread)
+			    throw e;
+		    }
+		    catch(ConstraintsNotRespectedDatabaseException e)
+		    {
+			if (no_thread)
+			    throw e;
+		    }
+		   
+		}
+	    }
+	    break;
+	    case 3:
+	    {
+		int next;
+		synchronized(next_unique)
+		{
+		    next=next_unique.intValue();
+		    next_unique.set(next+1);
+		}
+		ArrayList<Table3.Record> records=table3.getRecords();
+		if (records.size()>0)
+		{
+		    Table3.Record rec1=records.get(random.nextInt(records.size()));
+		    HashMap<String, Object> map=new HashMap<String, Object>();
+		    map.put("fr1_pk1", rec1);
+		    map.put("int_value", new Integer(next));
+		    try
+		    {
+			ArrayList<Table4.Record> records4=table4.getRecords();
+			boolean found=false;
+			for (Table4.Record r4 : records4)
+			{
+			    if (table3.equals(r4.fr1_pk1, (Table3.Record)map.get("fr1_pk1")))
+			    {
+				found=true;
+				break;
+			    }
+			}
+			if (!found)
+			{
+			    Table4.Record r4=table4.addRecord(map);
+			    if (no_thread)
+			    {
+				Assert.assertTrue(table3.equals(r4.fr1_pk1, (Table3.Record)map.get("fr1_pk1")));
+				Assert.assertTrue(r4.int_value==((Integer)map.get("int_value")).intValue());
+			    }
+			}			    
+		    }
+		    catch(RecordNotFoundDatabaseException e)
+		    {
+			if (no_thread)
+			    throw e;
+		    }
+		    catch(ConstraintsNotRespectedDatabaseException e)
+		    {
+			if (no_thread)
+			    throw e;
+		    }
+		}
+	    }
+	    break;
+	    case 4:
+	    {
+		int next;
+		synchronized(next_unique)
+		{
+		    next=next_unique.intValue();
+		    next_unique.set(next+1);
+		}
+		ArrayList<Table3.Record> records=table3.getRecords();
+		if (records.size()>0)
+		{
+		    Table3.Record rec1=records.get(random.nextInt(records.size()));
+		    HashMap<String, Object> map=new HashMap<String, Object>();
+		    map.put("fr1_pk1", rec1);
+		    map.put("int_value", new Integer(next));
+		    try
+		    {
+			ArrayList<Table5.Record> records5=table5.getRecords();
+			boolean found=false;
+			for (Table5.Record r5 : records5)
+			{
+			    if (table3.equals(r5.fr1_pk1, (Table3.Record)map.get("fr1_pk1")))
+			    {
+				found=true;
+				break;
+			    }
+			}
+			if (!found)
+			{
+			    Table5.Record r5=table5.addRecord(map);
+			    if (no_thread)
+			    {
+				Assert.assertTrue(table3.equals(r5.fr1_pk1, (Table3.Record)map.get("fr1_pk1")));
+				Assert.assertTrue(r5.int_value==((Integer)map.get("int_value")).intValue());
+			    }
+			}
+		    }
+		    catch(RecordNotFoundDatabaseException e)
+		    {
+			if (no_thread)
+			    throw e;
+		    }
+		    catch(ConstraintsNotRespectedDatabaseException e)
+		    {
+			if (no_thread)
+			    throw e;
+		    }
+		    
+		}
+	    }
+	    break;
+	    case 5:
+	    {
+		final ArrayList<Table1.Record> removed_records=new ArrayList<Table1.Record>();
+		table1.removeRecords(new Filter<Table1.Record>() {
+
+		    @Override
+		    public boolean nextRecord(Record _record)
+		    {
+			boolean toremove=random.nextInt(2)==0;
+			if (toremove)
+			    removed_records.add(_record);
+			return toremove;
+		    }
+		});
+		if (no_thread)
+		{
+		    for (Table1.Record r1 : removed_records)
+		    {
+			Assert.assertFalse(table1.contains(r1));
+			for (Table2.Record r2 : table2.getRecords())
+			{
+			    Assert.assertFalse(table1.equals(r2.fr1_pk1, r1));
+			}
+		    }
+		}
+		else
+		    table2.getRecords();
+		table6.getRecords();
+	    }
+	    break;
+	    case 6:
+	    {
+		final ArrayList<Table3.Record> removed_records=new ArrayList<Table3.Record>();
+		table3.removeRecords(new Filter<Table3.Record>() {
+
+		    @Override
+		    public boolean nextRecord(Table3.Record _record)
+		    {
+			boolean toremove=random.nextInt(2)==0;
+			if (toremove)
+			    removed_records.add(_record);
+			return toremove;
+		    }
+		});
+		if (no_thread)
+		{
+		    for (Table3.Record r3 : removed_records)
+		    {
+			Assert.assertFalse(table3.contains(r3));
+			for (Table4.Record r4 : table4.getRecords())
+			{
+			    Assert.assertFalse(table3.equals(r4.fr1_pk1, r3));
+			}
+			for (Table5.Record r5 : table5.getRecords())
+			{
+			    Assert.assertFalse(table3.equals(r5.fr1_pk1, r3));
+			}
+		    }
+		}
+		else
+		{
+		    table4.getRecords();
+		    table5.getRecords();
+		}
+		table6.getRecords();
+	    }
+	    break;
+	    case 7:
+	    {
+		
+		final ArrayList<Table4.Record> removed_records=new ArrayList<Table4.Record>();
+		table4.removeRecords(new Filter<Table4.Record>() {
+
+		    @Override
+		    public boolean nextRecord(Table4.Record _record)
+		    {
+			boolean toremove=random.nextInt(2)==0;
+
+			if (toremove)
+			    removed_records.add(_record);
+			return toremove;
+		    }
+		});
+		if (no_thread)
+		{
+		    for (Table4.Record r4 : removed_records)
+		    {
+			Assert.assertFalse(table4.contains(r4));
+		    }
+		}
+	    }
+	    break;
+	    case 8:
+	    {
+		final ArrayList<Table2.Record> removed_records=new ArrayList<Table2.Record>();
+		table2.removeRecords(new Filter<Table2.Record>() {
+
+		    @Override
+		    public boolean nextRecord(Table2.Record _record)
+		    {
+			boolean toremove=random.nextInt(2)==0;
+
+			if (toremove)
+			    removed_records.add(_record);
+			return toremove;
+		    }
+		});
+		if (no_thread)
+		{
+		    for (Table2.Record r2 : removed_records)
+		    {
+			Assert.assertFalse(table2.contains(r2));
+			for (Table6.Record r6 : table6.getRecords())
+			{
+			    Assert.assertFalse(table2.equals(r6.fk1_pk1, r2));
+			}
+		    }
+		}
+		table6.getRecords();
+	    }
+	    break;
+	    case 9:
+	    {
+		final ArrayList<Table5.Record> removed_records=new ArrayList<Table5.Record>();
+		table5.removeRecords(new Filter<Table5.Record>() {
+
+		    @Override
+		    public boolean nextRecord(Table5.Record _record)
+		    {
+			boolean toremove=random.nextInt(2)==0;
+
+			if (toremove)
+			    removed_records.add(_record);
+			return toremove;
+		    }
+		});
+		if (no_thread)
+		{
+		    for (Table5.Record r5 : removed_records)
+		    {
+			Assert.assertFalse(table5.contains(r5));
+			for (Table6.Record r6 : table6.getRecords())
+			{
+			    Assert.assertFalse(table5.equals(r6.fk2, r5));
+			}
+		    }
+		}
+		table6.getRecords();
+	    }
+	    break;
+	    case 10:
+	    {
+		final ArrayList<Table1.Record> removed_records=new ArrayList<Table1.Record>();
+		table1.removeRecordsWithCascade(new Filter<Table1.Record>() {
+
+		    @Override
+		    public boolean nextRecord(Record _record)
+		    {
+			boolean toremove=random.nextInt(2)==0;
+
+			if (toremove)
+			    removed_records.add(_record);
+			return toremove;
+		    }
+		});
+		if(no_thread)
+		{
+		    for (Table1.Record r1 : removed_records)
+		    {
+			Assert.assertFalse(table1.contains(r1));
+			for (Table2.Record r2 : table2.getRecords())
+			{
+			    Assert.assertFalse(table1.equals(r2.fr1_pk1, r1));
+			}
+		    }
+		}
+		else
+		{
+		    table2.getRecords();
+		}
+		table6.getRecords();
+	    }
+	    break;
+	    case 11:
+	    {
+		table6.getRecords();
+		final ArrayList<Table3.Record> removed_records=new ArrayList<Table3.Record>();
+		table3.removeRecordsWithCascade(new Filter<Table3.Record>() {
+
+		    @Override
+		    public boolean nextRecord(Table3.Record _record)
+		    {
+			boolean toremove=random.nextInt(2)==0;
+
+			if (toremove)
+			    removed_records.add(_record);
+			return toremove;
+		    }
+		});
+		if (no_thread)
+		{
+		    for (Table3.Record r3 : removed_records)
+		    {
+			Assert.assertFalse(table3.contains(r3));
+			for (Table4.Record r4 : table4.getRecords())
+			{
+			    Assert.assertFalse(table3.equals(r4.fr1_pk1, r3));
+			}
+			for (Table5.Record r5 : table5.getRecords())
+			{
+			    Assert.assertFalse(table3.equals(r5.fr1_pk1, r3));
+			
+			}
+		    }
+		}
+		else
+		{
+		    table4.getRecords();
+		    table5.getRecords();
+		}
+		table6.getRecords();
+	    }
+	    break;
+	    case 12:
+	    {
+		ArrayList<Table1.Record> records=table1.getRecords();
+		if (records.size()>0)
+		{
+		    Table1.Record rec1=records.get(random.nextInt(records.size()));
+		    HashMap<String, Object> map=new HashMap<String, Object>();
+		    map.put("pk1", new Integer(random.nextInt()));
+		    map.put("byte_value", new Byte((byte)9));
+		    map.put("char_value", new Character('s'));
+		    map.put("DoubleNumber_value", new Double(7.7));
+		    try
+		    {
+			table1.alterRecord(rec1, map);
+			Assert.assertTrue(rec1.pk1==((Integer)map.get("pk1")).intValue());
+			Assert.assertTrue(rec1.byte_value==((Byte)map.get("byte_value")).byteValue());
+			Assert.assertTrue(rec1.char_value==((Character)map.get("char_value")).charValue());
+			Assert.assertTrue(rec1.DoubleNumber_value.equals(map.get("DoubleNumber_value")));
+		    }
+		    catch(RecordNotFoundDatabaseException e)
+		    {
+			if (no_thread)
+			    throw e;
+		    }
+		    catch(ConstraintsNotRespectedDatabaseException e)
+		    {
+			if (no_thread)
+			    throw e;
+		    }
+		    table2.getRecords();
+		    table6.getRecords();
+		}
+	    }
+	    break;
+	    case 13:
+	    {
+		ArrayList<Table3.Record> records=table3.getRecords();
+		if (records.size()>0)
+		{
+		    Table3.Record rec1=records.get(random.nextInt(records.size()));
+		    HashMap<String, Object> map=new HashMap<String, Object>();
+		    map.put("pk1", new Integer(random.nextInt()));
+		    map.put("byte_value", new Byte((byte)9));
+		    map.put("char_value", new Character('s'));
+		    map.put("DoubleNumber_value", new Double(7.7));
+		    try
+		    {
+			table3.alterRecord(rec1, map);
+			Assert.assertTrue(rec1.pk1==((Integer)map.get("pk1")).intValue());
+			Assert.assertTrue(rec1.byte_value==((Byte)map.get("byte_value")).byteValue());
+			Assert.assertTrue(rec1.char_value==((Character)map.get("char_value")).charValue());
+			Assert.assertTrue(rec1.DoubleNumber_value.equals(map.get("DoubleNumber_value")));
+		    }
+		    catch(RecordNotFoundDatabaseException e)
+		    {
+			if (no_thread)
+			    throw e;
+		    }
+		    catch(ConstraintsNotRespectedDatabaseException e)
+		    {
+			if (no_thread)
+			    throw e;
+		    }
+		    table4.getRecords();
+		    table5.getRecords();
+		    table6.getRecords();
+		}
+	    }
+	    break;
+	    case 14:
+	    {
+		long l=table1.getRecordsNumber();
+		Assert.assertTrue(table1.removeRecordsWithCascade(new Filter<Table1.Record>() {
+
+		    @Override
+		    public boolean nextRecord(Record _record)
+		    {
+			return false;
+		    }
+		})==0);
+		if (no_thread)
+		    Assert.assertTrue(l==table1.getRecordsNumber());
+		table2.getRecords();
+		table6.getRecords();
+	    }
+	    break;
+	    case 15:
+	    {
+		long l=table3.getRecordsNumber();
+		Assert.assertTrue(table3.removeRecordsWithCascade(new Filter<Table3.Record>() {
+
+		    @Override
+		    public boolean nextRecord(Table3.Record _record)
+		    {
+			return false;
+		    }
+		})==0);
+		if (no_thread)
+		    Assert.assertTrue(l==table3.getRecordsNumber());
+		table4.getRecords();
+		table5.getRecords();
+		table6.getRecords();
+	    }
+	    break;
+	    case 16:
+	    {
+		ArrayList<Table1.Record> records=table1.getRecords();
+		if (records.size()>0)
+		{
+		    Table1.Record rec=records.get(random.nextInt(records.size()));
+		    try
+		    {
+			table1.removeRecordWithCascade(rec);
+			if (no_thread)
+			{
+			    Assert.assertFalse(table1.contains(rec));
+			    for (Table2.Record r2 : table2.getRecords())
+			    {
+				Assert.assertFalse(table1.equals(r2.fr1_pk1, rec));
+			    }
+			}
+			else
+			    table2.getRecords();
+			table6.getRecords();
+		    }
+		    catch(RecordNotFoundDatabaseException e)
+		    {
+			if (no_thread)
+			{
+			    throw e;
+			}
+		    }
+		}
+	    }
+	    break;
+	    case 17:
+	    {
+		ArrayList<Table3.Record> records=table3.getRecords();
+		if (records.size()>0)
+		{
+		    Table3.Record rec=records.get(random.nextInt(records.size()));
+		    try
+		    {
+			table3.removeRecordWithCascade(rec);
+			if (no_thread)
+			{
+			    Assert.assertFalse(table3.contains(rec));
+			    for (Table4.Record r4 : table4.getRecords())
+			    {
+				Assert.assertFalse(table3.equals(r4.fr1_pk1, rec));
+			    }
+			    for (Table5.Record r5 : table5.getRecords())
+			    {
+				Assert.assertFalse(table3.equals(r5.fr1_pk1, rec));
+			    }
+			}
+			else
+			{
+			    table4.getRecords();
+			    table5.getRecords();
+			}
+			table6.getRecords();
+		    }
+		    catch(RecordNotFoundDatabaseException e)
+		    {
+			if (no_thread)
+			{
+			    throw e;
+			}
+		    }
+		}
+	    }
+	    break;
+	    case 18:
+	    {
+		ArrayList<Table4.Record> records=table4.getRecords();
+		if (records.size()>0)
+		{
+		    Table4.Record rec=records.get(random.nextInt(records.size()));
+		    try
+		    {
+			table4.removeRecordWithCascade(rec);
+			if (no_thread)
+			    Assert.assertFalse(table4.contains(rec));
+		    }
+		    catch(RecordNotFoundDatabaseException e)
+		    {
+			if (no_thread)
+			    throw e;
+		    }
+		}
+	    }
+	    break;
+	    case 19:
+	    {
+		ArrayList<Table4.Record> records=table4.getRecords();
+		if (records.size()>0)
+		{
+		    Table4.Record rec=records.get(random.nextInt(records.size()));
+		    try
+		    {
+			table4.removeRecord(rec);
+			if (no_thread)
+			    Assert.assertFalse(table4.contains(rec));
+		    }
+		    catch(RecordNotFoundDatabaseException e)
+		    {
+			if (no_thread)
+			    throw e;
+		    }
+		}
+	    }
+	    break;
+	    case 20:
+	    {
+		ArrayList<Table2.Record> records=table2.getRecords();
+		if (records.size()>0)
+		{
+		    Table2.Record rec=records.get(random.nextInt(records.size()));
+		    try
+		    {
+			table2.removeRecordWithCascade(rec);
+			if (no_thread)
+			{
+			    Assert.assertFalse(table2.contains(rec));
+			    for (Table6.Record r6 : table6.getRecords())
+			    {
+				Assert.assertFalse(table2.equals(r6.fk1_pk1, rec));
+			    }
+			}
+			else
+			    table6.getRecords();
+		    }
+		    catch(RecordNotFoundDatabaseException e)
+		    {
+			if (no_thread)
+			    throw e;
+		    }
+		}
+	    }
+	    break;
+	    case 21:
+	    {
+		    table1.alterRecords(new AlterRecordFilter<Table1.Record>() {
+		        
+		        @Override
+		        public void nextRecord(Record _record)
+		        {
+		            HashMap<String, Object> m=new HashMap<String, Object>();
+			    m.put("int_value", new Integer(18));
+			    this.alter(m);
+		        }
+		    });
+		    if (no_thread)
+		    {
+			ArrayList<Table1.Record> records1=table1.getRecords();
+			for (Table1.Record r1 : records1)
+			    Assert.assertTrue(r1.int_value==18);
+		    }
+		    
+		    
+		    table3.alterRecords(new AlterRecordFilter<Table3.Record>() {
+		        
+		        @Override
+		        public void nextRecord(Table3.Record _record)
+		        {
+		            HashMap<String, Object> m=new HashMap<String, Object>();
+			    m.put("int_value", new Integer(18));
+			    this.alter(m);
+		        }
+		    });
+		    if (no_thread)
+		    {
+			ArrayList<Table3.Record> records3=table3.getRecords();
+			for (Table3.Record r3 : records3)
+			    Assert.assertTrue(r3.int_value==18);
+		    }
+		
+	    }
+	    break;
+	    case 22:
+	    {
+		{
+		    ArrayList<Table1.Record> recs=table1.getRecords(new Filter<Table1.Record>() {
+			private int val=0;
+			@Override
+			public boolean nextRecord(Table1.Record _record) 
+			{
+			    if ((val++)%3==0)
+				return true;
+			    return false;
+			}
+		    });
+		    try
+		    {
+			if (recs.size()>0)
+			{
+			    table1.removeRecordsWithCascade(recs);
+			    if (no_thread)
+			    {
+				for (Table1.Record rec : recs)
+				{
+				    Assert.assertFalse(table1.contains(rec));
+				    for (Table2.Record r2 : table2.getRecords())
+				    {
+					Assert.assertFalse(table1.equals(r2.fr1_pk1, rec));
+				    }
+				}
+			    }
+			    else
+				table2.getRecords();
+			    table6.getRecords();
+			}
+		    }
+		    catch(RecordNotFoundDatabaseException e)
+		    {
+			if (no_thread)
+			{
+			    throw e;
+			}
+		    }
+		}
+	    }
+	    break;
+	    case 23:
+	    {
+		{
+		    ArrayList<Table3.Record> recs=table3.getRecords(new Filter<Table3.Record>() {
+			private int val=0;
+			@Override
+			public boolean nextRecord(Table3.Record _record) 
+			{
+			    if ((val++)%3==0)
+				return true;
+			    return false;
+			}
+		    });
+		    try
+		    {
+			if (recs.size()>0)
+			{
+			    table3.removeRecordsWithCascade(recs);
+			    if (no_thread)
+			    {
+				for (Table3.Record rec : recs)
+				{
+				    Assert.assertFalse(table3.contains(rec));
+				    for (Table4.Record r4 : table4.getRecords())
+				    {	
+					Assert.assertFalse(table3.equals(r4.fr1_pk1, rec));
+				    }
+				    for (Table5.Record r5 : table5.getRecords())
+				    {
+					Assert.assertFalse(table3.equals(r5.fr1_pk1, rec));
+				    }
+				}
+			    }
+			    else
+			    {
+				table4.getRecords();
+				table5.getRecords();
+			    }
+			    table6.getRecords();
+			}
+		    }
+		    catch(RecordNotFoundDatabaseException e)
+		    {
+			if (no_thread)
+			{
+			    throw e;
+			}
+		    }
+		}
+	    }
+	    break;
+	    case 24:
+	    {
+		{
+		    ArrayList<Table1.Record> recs=table1.getRecords(new Filter<Table1.Record>() {
+			private int val=0;
+			@Override
+			public boolean nextRecord(Table1.Record _record) 
+			{
+			    if ((val++)%3==0)
+				return true;
+			    return false;
+			}
+		    });
+		    for (Iterator<Table1.Record> it=recs.iterator();it.hasNext();)
+		    {
+			if (table1.isRecordPointedByForeignKeys(it.next()))
+			    it.remove();
+		    }
+		    try
+		    {
+			if (recs.size()>0)
+			{
+			    table1.removeRecords(recs);
+			    if (no_thread)
+			    {
+				for (Table1.Record rec : recs)
+				{
+				    Assert.assertFalse(table1.contains(rec));
+				    for (Table2.Record r2 : table2.getRecords())
+				    {
+					Assert.assertFalse(table1.equals(r2.fr1_pk1, rec));
+				    }
+				}
+			    }
+			    else
+				table2.getRecords();
+			    table6.getRecords();
+			}
+		    }
+		    catch(RecordNotFoundDatabaseException e)
+		    {
+			if (no_thread)
+			{
+			    throw e;
+			}
+		    }
+		    catch(ConstraintsNotRespectedDatabaseException e)
+		    {
+			if (no_thread)
+			    throw e;
+		    }
+		}
+	    }
+	    break;
+	    case 25:
+	    {
+		{
+		    ArrayList<Table3.Record> recs=table3.getRecords(new Filter<Table3.Record>() {
+			private int val=0;
+			@Override
+			public boolean nextRecord(Table3.Record _record) 
+			{
+			    if ((val++)%3==0)
+				return true;
+			    return false;
+			}
+		    });
+		    for (Iterator<Table3.Record> it=recs.iterator();it.hasNext();)
+		    {
+			if (table3.isRecordPointedByForeignKeys(it.next()))
+			    it.remove();
+		    }
+		    
+		    try
+		    {
+			if (recs.size()>0)
+			{
+			    table3.removeRecords(recs);
+			    if (no_thread)
+			    {
+				for (Table3.Record rec : recs)
+				{
+				    Assert.assertFalse(table3.contains(rec));
+				    for (Table4.Record r4 : table4.getRecords())
+				    {	
+					Assert.assertFalse(table3.equals(r4.fr1_pk1, rec));
+				    }
+				    for (Table5.Record r5 : table5.getRecords())
+				    {
+					Assert.assertFalse(table3.equals(r5.fr1_pk1, rec));
+				    }
+				}
+			    }
+			    else
+			    {
+				table4.getRecords();
+				table5.getRecords();
+			    }
+			    table6.getRecords();
+			}
+		    }
+		    catch(RecordNotFoundDatabaseException e)
+		    {
+			if (no_thread)
+			{
+			    throw e;
+			}
+		    }
+		    catch(ConstraintsNotRespectedDatabaseException e)
+		    {
+			if (no_thread)
+			    throw e;
+		    }
+		}
+	    }
+	    break;
+	    case 26:
+	    {
+		Assert.assertFalse(table1.hasRecords(new Filter<Table1.Record>() {
+
+		    @Override
+		    public boolean nextRecord(Table1.Record _record) 
+		    {
+			return false;
+		    }
+		}));
+		if (no_thread)
+		{
+		    if (table1.getRecordsNumber()>0)
+		    {
+			Assert.assertTrue(table1.hasRecords(new Filter<Table1.Record>() {
+
+			    @Override
+			    public boolean nextRecord(Table1.Record _record) 
+			    {
+				return true;
+			    }
+			}));
+		    }
+		}
+		Assert.assertFalse(table2.hasRecords(new Filter<Table2.Record>() {
+
+		    @Override
+		    public boolean nextRecord(Table2.Record _record) 
+		    {
+			return false;
+		    }
+		}));
+		if (no_thread)
+		{
+		    if (table2.getRecordsNumber()>0)
+		    {
+		
+			Assert.assertTrue(table2.hasRecords(new Filter<Table2.Record>() {
+
+			    @Override
+			    public boolean nextRecord(Table2.Record _record) 
+			    {
+				return true;
+			    }
+			}));
+		    }
+		}
+		Assert.assertFalse(table3.hasRecords(new Filter<Table3.Record>() {
+
+		    @Override
+		    public boolean nextRecord(Table3.Record _record) 
+		    {
+			return false;
+		    }
+		}));
+		if (no_thread)
+		{
+		    if (table3.getRecordsNumber()>0)
+		    {
+
+			Assert.assertTrue(table3.hasRecords(new Filter<Table3.Record>() {
+
+			    @Override
+			    public boolean nextRecord(Table3.Record _record) 
+			    {
+				return true;
+			    }
+			}));
+		    }
+		}
+		Assert.assertFalse(table4.hasRecords(new Filter<Table4.Record>() {
+
+		    @Override
+		    public boolean nextRecord(Table4.Record _record) 
+		    {
+			return false;
+		    }
+		}));
+		if (no_thread)
+		{
+		    if (table4.getRecordsNumber()>0)
+		    {
+
+			Assert.assertTrue(table4.hasRecords(new Filter<Table4.Record>() {
+
+			    @Override
+			    public boolean nextRecord(Table4.Record _record) 
+			    {
+				return true;
+			    }
+			}));
+		    }
+		}
+		Assert.assertFalse(table5.hasRecords(new Filter<Table5.Record>() {
+
+		    @Override
+		    public boolean nextRecord(Table5.Record _record) 
+		    {
+			return false;
+		    }
+		}));
+		if (no_thread)
+		{
+		    if (table6.getRecordsNumber()>0)
+		    {
+
+			Assert.assertTrue(table5.hasRecords(new Filter<Table5.Record>() {
+
+			    @Override
+			    public boolean nextRecord(Table5.Record _record) 
+			    {
+				return true;
+			    }
+			}));
+		    }
+		}
+		Assert.assertFalse(table6.hasRecords(new Filter<Table6.Record>() {
+
+		    @Override
+		    public boolean nextRecord(Table6.Record _record) 
+		    {
+			return false;
+		    }
+		}));
+		if (no_thread)
+		{
+		    if (table6.getRecordsNumber()>0)
+		    {
+
+			Assert.assertTrue(table6.hasRecords(new Filter<Table6.Record>() {
+
+			    @Override
+			    public boolean nextRecord(Table6.Record _record) 
+			    {
+				return true;
+			    }
+			}));
+		    }
+		}
+		
+	    }
+		break;
+	    case 27:
+	    {
+		ArrayList<Table1.Record> r1=table1.getOrderedRecords(new Filter<Table1.Record>() {
+
+		    @Override
+		    public boolean nextRecord(Table1.Record _record)
+		    {
+			return random.nextInt(2)==0;
+		    }
+		}, true, "short_value", "LongNumber_value");
+		testOrderedTable1(r1);
+		r1=table1.getOrderedRecords(new Filter<Table1.Record>() {
+
+		    @Override
+		    public boolean nextRecord(Table1.Record _record)
+		    {
+			return random.nextInt(2)==0;
+		    }
+		}, false, "short_value", "LongNumber_value");
+		testInverseOrderedTable1(r1);
+		r1=table1.getOrderedRecords(true, "short_value", "LongNumber_value");
+		testOrderedTable1(r1);
+		if (no_thread)
+		{
+		    ArrayList<Table1.Record> r1b=table1.getOrderedRecords(table1.getRecords(), true, "short_value", "LongNumber_value");
+		    Assert.assertTrue(r1.size()==r1b.size());
+		    
+		    for (int i=0;i<r1.size();i++)
+		    {
+			Assert.assertTrue(table1.equalsAllFields(r1.get(i), r1b.get(i)));
+		    }
+		}
+		r1=table1.getOrderedRecords(false, "short_value", "LongNumber_value");
+		testInverseOrderedTable1(r1);
+		if (no_thread)
+		{
+		    ArrayList<Table1.Record> r1b=table1.getOrderedRecords(table1.getRecords(), false, "short_value", "LongNumber_value");
+		    Assert.assertTrue(r1.size()==r1b.size());
+		    
+		    for (int i=0;i<r1.size();i++)
+		    {
+			Assert.assertTrue(table1.equalsAllFields(r1.get(i), r1b.get(i)));
+		    }
+		}
+	    }    
+	    {
+		ArrayList<Table3.Record> r3=table3.getOrderedRecords(new Filter<Table3.Record>() {
+
+		    @Override
+		    public boolean nextRecord(Table3.Record _record)
+		    {
+			return random.nextInt(2)==0;
+		    }
+		}, true, "short_value", "LongNumber_value");
+		testOrderedTable3(r3);
+		GroupedResults<Table3.Record> grouped_results=table3.getGroupedResults(r3, "FloatNumber_value");
+		for (GroupedResults<Table3.Record>.Group l : grouped_results.getGroupedResults())
+		{
+		    testOrderedTable3(l.getResults());		    
+		}
+		    
+		r3=table3.getOrderedRecords(new Filter<Table3.Record>() {
+
+		    @Override
+		    public boolean nextRecord(Table3.Record _record)
+		    {
+			return random.nextInt(2)==0;
+		    }
+		}, false, "short_value", "LongNumber_value");
+		testInverseOrderedTable3(r3);
+		grouped_results=table3.getGroupedResults(r3, "FloatNumber_value", "BigInteger_value");
+		for (GroupedResults<Table3.Record>.Group l : grouped_results.getGroupedResults())
+		{
+		    testInverseOrderedTable3(l.getResults());		    
+		}
+		table3.getOrderedRecords(true, "DateValue", "LongNumber_value");
+		table3.getOrderedRecords(true, "CalendarValue", "LongNumber_value");
+		
+		r3=table3.getOrderedRecords(true, "short_value", "LongNumber_value");
+		testOrderedTable3(r3);
+		if (no_thread)
+		{
+		    ArrayList<Table3.Record> r3b=table3.getOrderedRecords(table3.getRecords(), true, "short_value", "LongNumber_value");
+		    Assert.assertTrue(r3.size()==r3b.size());
+		    
+		    for (int i=0;i<r3.size();i++)
+		    {
+			Assert.assertTrue(table3.equalsAllFields(r3.get(i), r3b.get(i)));
+		    }
+		}
+		r3=table3.getOrderedRecords(false, "short_value", "LongNumber_value");
+		testInverseOrderedTable3(r3);
+		if (no_thread)
+		{
+		    ArrayList<Table3.Record> r3b=table3.getOrderedRecords(table3.getRecords(), false, "short_value", "LongNumber_value");
+		    Assert.assertTrue(r3.size()==r3b.size());
+		    
+		    for (int i=0;i<r3.size();i++)
+		    {
+			Assert.assertTrue(table3.equalsAllFields(r3.get(i), r3b.get(i)));
+		    }
+		}
+	    }    
+		break;
+	    case 28:
+	    {
+		    table1.alterRecords(new AlterRecordFilter<Table1.Record>() {
+		        
+		        @Override
+		        public void nextRecord(Record _record)
+		        {
+		            switch(random.nextInt(4))
+		            {
+		        	case 1:
+		        	    this.remove();
+		        	    break;
+		        	case 2:
+		        	    this.removeWithCascade();
+		        	    break;
+		            }
+		        }
+		    });
+		    
+		    
+		    table3.alterRecords(new AlterRecordFilter<Table3.Record>() {
+		        
+		        @Override
+		        public void nextRecord(Table3.Record _record)
+		        {
+		            switch(random.nextInt(4))
+		            {
+		        	case 1:
+		        	    this.remove();
+		        	    break;
+		        	case 2:
+		        	    this.removeWithCascade();
+		        	    break;
+		            }
+		        }
+		    });
+		
+	    }
+	    break;
+		
+	    	
+	}
+	try
+	{
+	    table1.checkDataIntegrity();
+	    table3.checkDataIntegrity();
+	    table2.checkDataIntegrity();
+	    table4.checkDataIntegrity();
+	    table5.checkDataIntegrity();
+	    table6.checkDataIntegrity();
+	}
+	catch(DatabaseException e)
+	{
+	    System.out.println("Exception in test number "+r);
+	    e.printStackTrace();
+	    throw e;
+	}
+	if (table1.getRecordsNumber()==0 || table2.getRecordsNumber()==0 || table3.getRecordsNumber()==0 || table4.getRecordsNumber()==0 || table5.getRecordsNumber()==0 || table6.getRecordsNumber()==0)
+	{
+	    System.out.println("\tAdding new records.");
+	    prepareMultipleTest();
+	}
+	System.out.println("\tTest "+number+" number "+r+" OK!!!");
+    }
+    @Test(threadPoolSize = 5, invocationCount = 5,  timeOut = 1000000, dependsOnMethods={"multipleTests"}) public void testThreadSafe() 
+    {
+	try
+	{
+	    no_thread=false;
+	    System.out.println("No thread="+no_thread);
+	    for (int i=0;i<THREAD_TESTS_NUMBER;i++)
+		subMultipleTests();
+	}
+	catch(Exception e)
+	{
+	    e.printStackTrace();
+	    System.exit(-1);
+	}
+    }
+    @Test(threadPoolSize = 1, invocationCount = 1,  dependsOnMethods={"testThreadSafe"}) public void testCheckPoint() throws DatabaseException
+    {
+	table1.getHSQLDBWrapper().checkPoint(false);
+	table1.getHSQLDBWrapper().checkPoint(true);
+    }
+    @Test(threadPoolSize = 0, invocationCount = 0,  timeOut = 0) private void testOrderedTable1(ArrayList<Table1.Record> res)
+    {
+	if (res.size()>1)
+	{
+	    for (int i=1;i<res.size();i++)
+	    {
+		Assert.assertTrue(res.get(i-1).short_value<=res.get(i).short_value);
+		Assert.assertTrue(res.get(i-1).short_value!=res.get(i).short_value || (res.get(i-1).short_value==res.get(i).short_value) && res.get(i-1).LongNumber_value.longValue()<=res.get(i).LongNumber_value.longValue());
+	    }
+	}
+    }
+    @Test(threadPoolSize = 0, invocationCount = 0,  timeOut = 0) private void testInverseOrderedTable1(ArrayList<Table1.Record> res)
+    {
+	if (res.size()>1)
+	{
+	    for (int i=1;i<res.size();i++)
+	    {
+		Assert.assertTrue(res.get(i-1).short_value>=res.get(i).short_value);
+		Assert.assertTrue(res.get(i-1).short_value!=res.get(i).short_value || (res.get(i-1).short_value==res.get(i).short_value) && res.get(i-1).LongNumber_value.longValue()>=res.get(i).LongNumber_value.longValue());
+	    }
+	}
+    }
+    @Test(threadPoolSize = 0, invocationCount = 0,  timeOut = 0) private void testOrderedTable3(ArrayList<Table3.Record> res)
+    {
+	if (res.size()>1)
+	{
+	    for (int i=1;i<res.size();i++)
+	    {
+		Assert.assertTrue(res.get(i-1).short_value<=res.get(i).short_value);
+		Assert.assertTrue(res.get(i-1).short_value!=res.get(i).short_value || (res.get(i-1).short_value==res.get(i).short_value) && res.get(i-1).LongNumber_value.longValue()<=res.get(i).LongNumber_value.longValue());
+	    }
+	}
+    }
+    @Test(threadPoolSize = 0, invocationCount = 0,  timeOut = 0) private void testInverseOrderedTable3(ArrayList<Table3.Record> res)
+    {
+	if (res.size()>1)
+	{
+	    for (int i=1;i<res.size();i++)
+	    {
+		Assert.assertTrue(res.get(i-1).short_value>=res.get(i).short_value);
+		Assert.assertTrue(res.get(i-1).short_value!=res.get(i).short_value || (res.get(i-1).short_value==res.get(i).short_value) && res.get(i-1).LongNumber_value.longValue()>=res.get(i).LongNumber_value.longValue());
+	    }
+	}
+    }
+}
+
+
