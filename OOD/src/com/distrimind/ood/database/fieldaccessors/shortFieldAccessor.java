@@ -28,6 +28,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 
 import com.distrimind.ood.database.DatabaseRecord;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.SqlField;
 import com.distrimind.ood.database.SqlFieldInstance;
 import com.distrimind.ood.database.exceptions.DatabaseException;
@@ -38,11 +39,11 @@ public class shortFieldAccessor extends FieldAccessor
 {
     protected final SqlField sql_fields[];
     
-    protected shortFieldAccessor(Field _field) throws DatabaseException
+    protected shortFieldAccessor(DatabaseWrapper _sql_connection, Field _field) throws DatabaseException
     {
-	super(null, _field);
+	super(_sql_connection, _field);
 	sql_fields=new SqlField[1];
-	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), "SMALLINT", null, null);
+	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), sql_connection.getShortType(), null, null);
 	
     }
 
@@ -152,7 +153,7 @@ public class shortFieldAccessor extends FieldAccessor
     }
 
     @Override
-    public boolean isAlwaysNutNull()
+    public boolean isAlwaysNotNull()
     {
 	return true;
     }
@@ -187,7 +188,7 @@ public class shortFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    field.setShort(_class_instance, _result_set.getShort(sql_fields[0].field));
+	    field.setShort(_class_instance, _result_set.getShort(sql_fields[0].short_field));
 	}
 	catch(Exception e)
 	{
@@ -217,7 +218,7 @@ public class shortFieldAccessor extends FieldAccessor
 	setValue(_class_instance, _field_instance);
 	try
 	{
-	    _result_set.updateShort(sql_fields[0].field, field.getShort(_class_instance));
+	    _result_set.updateShort(sql_fields[0].short_field, field.getShort(_class_instance));
 	}
 	catch(Exception e)
 	{

@@ -21,15 +21,21 @@
 
 package com.distrimind.ood.database.fieldaccessors;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.sql.Blob;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 
 import com.distrimind.ood.database.DatabaseRecord;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.SqlField;
 import com.distrimind.ood.database.SqlFieldInstance;
 import com.distrimind.ood.database.exceptions.DatabaseException;
@@ -41,15 +47,15 @@ public class SerializableFieldAccessor extends FieldAccessor
     protected final Class<?> compatible_classes[];
     protected final SqlField sql_fields[];
     protected Method compareTo_method;
-    protected SerializableFieldAccessor(Field _field) throws DatabaseException
+    protected SerializableFieldAccessor(DatabaseWrapper _sql_connection, Field _field) throws DatabaseException
     {
-	super(null, _field);
+	super(_sql_connection, _field);
 	if (!Serializable.class.isAssignableFrom(field.getType()))
 	    throw new FieldDatabaseException("The given field "+field.getName()+" of type "+field.getType().getName()+" must be a serializable field.");
 	compatible_classes=new Class<?>[1];
 	compatible_classes[0]=field.getType();
 	sql_fields=new SqlField[1];
-	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), "OTHER", null, null);
+	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), sql_connection.getSerializableType(), null, null);
 	
 	if (Comparable.class.isAssignableFrom(field.getType()))
 	{
@@ -100,10 +106,17 @@ public class SerializableFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    Object res=_result_set.getObject(sql_fields[0].field);
-	    if (res==null && isNotNull())
-		throw new DatabaseIntegrityException("Unexpected exception.");
-	    field.set(_class_instance, res);
+	    Blob b=_result_set.getBlob(sql_fields[0].short_field);
+	    try(ByteArrayInputStream bais=new ByteArrayInputStream(b.getBytes(1, (int)b.length())))
+	    {
+		try(ObjectInputStream ois=new ObjectInputStream(bais))
+		{
+		    Object res=ois.readObject();
+		    if (res==null && isNotNull())
+			throw new DatabaseIntegrityException("Unexpected exception.");
+		    field.set(_class_instance, res);
+		}
+	    }
 	}
 	catch(Exception e)
 	{
@@ -117,7 +130,23 @@ public class SerializableFieldAccessor extends FieldAccessor
 	setValue(_class_instance, _field_instance);
 	try
 	{
-	    _result_set.updateObject(sql_fields[0].field, field.get(_class_instance));
+	    if (sql_connection.getSerializableType().equals("BLOB"))
+	    {
+		try(ByteArrayOutputStream baos=new ByteArrayOutputStream())
+		{
+		    try(ObjectOutputStream os=new ObjectOutputStream(baos))
+		    {
+			os.writeObject(field.get(_class_instance));
+		
+			try(ByteArrayInputStream bais=new ByteArrayInputStream(baos.toByteArray()))
+			{
+			    _result_set.updateBlob(sql_fields[0].short_field, bais);
+			}
+		    }
+		}    
+	    }
+	    else
+		_result_set.updateObject(sql_fields[0].short_field, field.get(_class_instance));
 	}
 	catch(Exception e)
 	{
@@ -131,7 +160,23 @@ public class SerializableFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    _result_set.updateObject(_sft.translateField(sql_fields[0]), field.get(_class_instance));
+	    if (sql_connection.getSerializableType().equals("BLOB"))
+	    {
+		try(ByteArrayOutputStream baos=new ByteArrayOutputStream())
+		{
+		    try(ObjectOutputStream os=new ObjectOutputStream(baos))
+		    {
+			os.writeObject(field.get(_class_instance));
+		
+			try(ByteArrayInputStream bais=new ByteArrayInputStream(baos.toByteArray()))
+			{
+			    _result_set.updateBlob(_sft.translateField(sql_fields[0]), bais);
+			}
+		    }
+		}    
+	    }
+	    else
+		_result_set.updateObject(_sft.translateField(sql_fields[0]), field.get(_class_instance));
 	}
 	catch(Exception e)
 	{
@@ -162,12 +207,19 @@ public class SerializableFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    Object val1=_result_set.getObject(_sft.translateField(sql_fields[0]));
-	    if (val1==null || _field_instance==null)
-		return _field_instance==val1;
-	    if ((!(field.getType().isAssignableFrom(_field_instance.getClass()))))
-		return false;
-	    return val1.equals(_field_instance);
+	    Blob b=_result_set.getBlob(sql_fields[0].short_field);
+	    try(ByteArrayInputStream bais=new ByteArrayInputStream(b.getBytes(1, (int)b.length())))
+	    {
+		try(ObjectInputStream ois=new ObjectInputStream(bais))
+		{
+		    Object val1=ois.readObject();
+		    if (val1==null || _field_instance==null)
+			return _field_instance==val1;
+		    if ((!(field.getType().isAssignableFrom(_field_instance.getClass()))))
+			return false;
+		    return val1.equals(_field_instance);
+		}
+	    }
 	}
 	catch(Exception e)
 	{
@@ -199,7 +251,23 @@ public class SerializableFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    _prepared_statement.setObject(_field_start, field.get(_class_instance));
+	    if (sql_connection.getSerializableType().equals("BLOB"))
+	    {
+		try(ByteArrayOutputStream baos=new ByteArrayOutputStream())
+		{
+		    try(ObjectOutputStream os=new ObjectOutputStream(baos))
+		    {
+			os.writeObject(field.get(_class_instance));
+		
+			try(ByteArrayInputStream bais=new ByteArrayInputStream(baos.toByteArray()))
+			{
+			    _prepared_statement.setBlob(_field_start, bais);
+			}
+		    }
+		}    
+	    }
+	    else
+		_prepared_statement.setObject(_field_start, field.get(_class_instance));
 	}
 	catch(Exception e)
 	{
@@ -222,7 +290,7 @@ public class SerializableFieldAccessor extends FieldAccessor
     }
 
     @Override
-    public boolean isAlwaysNutNull()
+    public boolean isAlwaysNotNull()
     {
 	return false;
     }

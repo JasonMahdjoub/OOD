@@ -29,6 +29,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 
 import com.distrimind.ood.database.DatabaseRecord;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.SqlField;
 import com.distrimind.ood.database.SqlFieldInstance;
 import com.distrimind.ood.database.exceptions.DatabaseException;
@@ -39,11 +40,11 @@ public class BigIntegerFieldAccessor extends FieldAccessor
 {
     protected final SqlField sql_fields[];
 
-    protected BigIntegerFieldAccessor(Field _field) throws DatabaseException
+    protected BigIntegerFieldAccessor(DatabaseWrapper _sql_connection, Field _field) throws DatabaseException
     {
-	super(null, _field);
+	super(_sql_connection, _field);
 	sql_fields=new SqlField[1];
-	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), "NUMERIC", null, null);
+	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), sql_connection.getBigIntegerType(), null, null);
     }
 
     @Override
@@ -154,7 +155,7 @@ public class BigIntegerFieldAccessor extends FieldAccessor
     }
 
     @Override
-    public boolean isAlwaysNutNull()
+    public boolean isAlwaysNotNull()
     {
 	return false;
     }
@@ -192,10 +193,8 @@ public class BigIntegerFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    BigDecimal bd=_result_set.getBigDecimal(sql_fields[0].field);
-	    BigInteger res=null;
-	    if (bd!=null)
-		res=bd.toBigInteger();
+	    String s=_result_set.getString(sql_fields[0].short_field);
+	    BigInteger res=(s==null)?null:new BigInteger(s);
 	    if (res==null && isNotNull())
 		throw new DatabaseIntegrityException("Unexpected exception.");
 	    field.set(_class_instance, res);
@@ -211,7 +210,8 @@ public class BigIntegerFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    _prepared_statement.setBigDecimal(_field_start, new BigDecimal((BigInteger)field.get(_class_instance)));
+	    Object o=field.get(_class_instance);
+	    _prepared_statement.setString(_field_start, o==null?null:o.toString());
 	}
 	catch(Exception e)
 	{
@@ -225,7 +225,8 @@ public class BigIntegerFieldAccessor extends FieldAccessor
 	setValue(_class_instance, _field_instance);
 	try
 	{
-	    _result_set.updateBigDecimal(sql_fields[0].field, new BigDecimal((BigInteger)field.get(_class_instance)));
+	    Object o=field.get(_class_instance);
+	    _result_set.updateString(sql_fields[0].short_field, o==null?null:o.toString());
 	}
 	catch(Exception e)
 	{
@@ -239,7 +240,8 @@ public class BigIntegerFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    _result_set.updateBigDecimal(_sft.translateField(sql_fields[0]), new BigDecimal((BigInteger)field.get(_class_instance)));
+	    Object o=field.get(_class_instance);
+	    _result_set.updateString(_sft.translateField(sql_fields[0]), o==null?null:o.toString());
 	}
 	catch(Exception e)
 	{

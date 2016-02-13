@@ -28,6 +28,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 
 import com.distrimind.ood.database.DatabaseRecord;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.SqlField;
 import com.distrimind.ood.database.SqlFieldInstance;
 import com.distrimind.ood.database.exceptions.DatabaseException;
@@ -37,11 +38,11 @@ import com.distrimind.ood.database.exceptions.FieldDatabaseException;
 public class longFieldAccessor extends FieldAccessor
 {
     protected final SqlField sql_fields[];
-    protected longFieldAccessor(Field _field) throws DatabaseException
+    protected longFieldAccessor(DatabaseWrapper _sql_connection, Field _field) throws DatabaseException
     {
-	super(null, _field);
+	super(_sql_connection, _field);
 	sql_fields=new SqlField[1];
-	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), "BIGINT", null, null);
+	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), sql_connection.getLongType(), null, null);
 	
     }
 
@@ -144,7 +145,7 @@ public class longFieldAccessor extends FieldAccessor
     }
 
     @Override
-    public boolean isAlwaysNutNull()
+    public boolean isAlwaysNotNull()
     {
 	return true;
     }
@@ -179,7 +180,7 @@ public class longFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    field.setLong(_class_instance, _result_set.getLong(sql_fields[0].field));
+	    field.setLong(_class_instance, _result_set.getLong(sql_fields[0].short_field));
 	}
 	catch(Exception e)
 	{
@@ -208,7 +209,7 @@ public class longFieldAccessor extends FieldAccessor
 	setValue(_class_instance, _field_instance);
 	try
 	{
-	    _result_set.updateDouble(sql_fields[0].field, field.getLong(_class_instance));
+	    _result_set.updateDouble(sql_fields[0].short_field, field.getLong(_class_instance));
 	}
 	catch(Exception e)
 	{

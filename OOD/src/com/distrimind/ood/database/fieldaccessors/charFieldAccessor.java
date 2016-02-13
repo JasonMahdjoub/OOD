@@ -148,7 +148,7 @@ public class charFieldAccessor extends FieldAccessor
     }
 
     @Override
-    public boolean isAlwaysNutNull()
+    public boolean isAlwaysNotNull()
     {
 	return true;
     }
@@ -183,7 +183,7 @@ public class charFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    String s=_result_set.getString(sql_fields[0].field);
+	    String s=_result_set.getString(sql_fields[0].short_field);
 	    Character c=null;
 	    if (s!=null)
 		c=new Character(s.charAt(0));
@@ -218,7 +218,7 @@ public class charFieldAccessor extends FieldAccessor
 	setValue(_class_instance, _field_instance);
 	try
 	{
-	    _result_set.updateString(sql_fields[0].field, String.valueOf(field.getChar(_class_instance)));
+	    _result_set.updateString(sql_fields[0].short_field, String.valueOf(field.getChar(_class_instance)));
 	}
 	catch(Exception e)
 	{

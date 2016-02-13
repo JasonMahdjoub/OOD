@@ -79,7 +79,7 @@ public class DateFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    Timestamp res=_result_set.getTimestamp(sql_fields[0].field);
+	    Timestamp res=_result_set.getTimestamp(sql_fields[0].short_field);
 	    if (res==null && isNotNull())
 		throw new DatabaseIntegrityException("Unexpected exception.");
 	    field.set(_class_instance, new Date(res.getTime()));
@@ -97,7 +97,7 @@ public class DateFieldAccessor extends FieldAccessor
 	try
 	{
 	    Date d=(Date)field.get(_class_instance);
-	    _result_set.updateTimestamp(sql_fields[0].field, d==null?null:new Timestamp(d.getTime()));
+	    _result_set.updateTimestamp(sql_fields[0].short_field, d==null?null:new Timestamp(d.getTime()));
 	}
 	catch(Exception e)
 	{
@@ -202,7 +202,7 @@ public class DateFieldAccessor extends FieldAccessor
     }
 
     @Override
-    public boolean isAlwaysNutNull()
+    public boolean isAlwaysNotNull()
     {
 	return false;
     }

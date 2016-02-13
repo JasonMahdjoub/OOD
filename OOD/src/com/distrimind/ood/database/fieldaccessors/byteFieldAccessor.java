@@ -28,6 +28,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 
 import com.distrimind.ood.database.DatabaseRecord;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.SqlField;
 import com.distrimind.ood.database.SqlFieldInstance;
 import com.distrimind.ood.database.exceptions.DatabaseException;
@@ -38,11 +39,11 @@ public class byteFieldAccessor extends FieldAccessor
 {
     protected final SqlField sql_fields[];
     
-    protected byteFieldAccessor(Field _field) throws DatabaseException
+    protected byteFieldAccessor(DatabaseWrapper _sql_connection, Field _field) throws DatabaseException
     {
-	super(null, _field);
+	super(_sql_connection, _field);
 	sql_fields=new SqlField[1];
-	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), "TINYINT", null, null);
+	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), sql_connection.getByteType(), null, null);
     }
 
     @Override
@@ -148,7 +149,7 @@ public class byteFieldAccessor extends FieldAccessor
     }
 
     @Override
-    public boolean isAlwaysNutNull()
+    public boolean isAlwaysNotNull()
     {
 	return true;
     }
@@ -183,7 +184,7 @@ public class byteFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    field.setByte(_class_instance, _result_set.getByte(sql_fields[0].field));
+	    field.setByte(_class_instance, _result_set.getByte(sql_fields[0].short_field));
 	}
 	catch(Exception e)
 	{
@@ -211,7 +212,7 @@ public class byteFieldAccessor extends FieldAccessor
 	setValue(_class_instance, _field_instance);
 	try
 	{
-	    _result_set.updateByte(sql_fields[0].field, field.getByte(_class_instance));
+	    _result_set.updateByte(sql_fields[0].short_field, field.getByte(_class_instance));
 	}
 	catch(Exception e)
 	{

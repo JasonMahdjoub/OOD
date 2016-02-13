@@ -29,6 +29,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 
 import com.distrimind.ood.database.DatabaseRecord;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.SqlField;
 import com.distrimind.ood.database.SqlFieldInstance;
 import com.distrimind.ood.database.exceptions.DatabaseException;
@@ -40,11 +41,11 @@ public class ByteTabFieldAccessor extends FieldAccessor
 {
     protected final SqlField sql_fields[];
 
-    protected ByteTabFieldAccessor(Field _field) throws DatabaseException
+    protected ByteTabFieldAccessor(DatabaseWrapper _sql_connection, Field _field) throws DatabaseException
     {
-	super(null, _field);
+	super(_sql_connection, _field);
 	sql_fields=new SqlField[1];
-	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), (limit==0)?"VARBINARY(16777216)":((limit>4096)?("BLOB("+limit+")"):("VARBINARY("+limit+")")), null, null);
+	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), (limit==0)?(sql_connection.isVarBinarySupported()?"VARBINARY("+16777216+")":"BLOB"):((limit>4096 || !sql_connection.isVarBinarySupported())?("BLOB("+limit+")"):("VARBINARY("+limit+")")), null, null);
     }
 
     @Override
@@ -125,7 +126,7 @@ public class ByteTabFieldAccessor extends FieldAccessor
 	    else
 	    {
 		Blob b=_result_set.getBlob(_sft.translateField(sql_fields[0]));
-		val2=b.getBytes(0, (int)b.length());
+		val2=b==null?null:b.getBytes(1, (int)b.length());
 	    }
 	    
 	    if (val1==null|| val2==null)
@@ -184,7 +185,7 @@ public class ByteTabFieldAccessor extends FieldAccessor
     }
 
     @Override
-    public boolean isAlwaysNutNull()
+    public boolean isAlwaysNotNull()
     {
 	return false;
     }
@@ -207,15 +208,15 @@ public class ByteTabFieldAccessor extends FieldAccessor
 	{
 	    if (sql_fields[0].type.startsWith("VARBINARY"))
 	    {
-		byte[] res=_result_set.getBytes(sql_fields[0].field);
+		byte[] res=_result_set.getBytes(sql_fields[0].short_field);
 		if (res==null && isNotNull())
 		    throw new DatabaseIntegrityException("Unexpected exception.");
 		field.set(_class_instance, res);
 	    }
 	    else
 	    {
-		Blob b=_result_set.getBlob(sql_fields[0].field);
-		byte[] res=b.getBytes(0, (int)b.length());
+		Blob b=_result_set.getBlob(sql_fields[0].short_field);
+		byte[] res=b==null?null:b.getBytes(1, (int)b.length());
 		if (res==null && isNotNull())
 		    throw new DatabaseIntegrityException("Unexpected exception.");
 		field.set(_class_instance, res);
@@ -248,7 +249,7 @@ public class ByteTabFieldAccessor extends FieldAccessor
 	setValue(_class_instance, _field_instance);
 	try
 	{
-	    _result_set.updateBytes(sql_fields[0].field, (byte[])field.get(_class_instance));
+	    _result_set.updateBytes(sql_fields[0].short_field, (byte[])field.get(_class_instance));
 	}
 	catch(Exception e)
 	{

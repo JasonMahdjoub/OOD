@@ -30,6 +30,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 
 import com.distrimind.ood.database.DatabaseRecord;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.SqlField;
 import com.distrimind.ood.database.SqlFieldInstance;
 import com.distrimind.ood.database.exceptions.DatabaseException;
@@ -40,11 +41,11 @@ public class BigDecimalFieldAccessor extends FieldAccessor
 {
     protected final SqlField sql_fields[];
 
-    protected BigDecimalFieldAccessor(Field _field) throws DatabaseException
+    protected BigDecimalFieldAccessor(DatabaseWrapper _sql_connection, Field _field) throws DatabaseException
     {
-	super(null, _field);
+	super(_sql_connection, _field);
 	sql_fields=new SqlField[1];
-	sql_fields[0]=new SqlField(this.table_name+"."+this.getFieldName(), "VARCHAR(16374)", null, null);
+	sql_fields[0]=new SqlField(this.table_name+"."+this.getFieldName(), sql_connection.getBigDecimalType(), null, null);
     }
 
     @Override
@@ -168,7 +169,7 @@ public class BigDecimalFieldAccessor extends FieldAccessor
     }
 
     @Override
-    public boolean isAlwaysNutNull()
+    public boolean isAlwaysNotNull()
     {
 	return false;
     }
@@ -205,7 +206,7 @@ public class BigDecimalFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    String s=_result_set.getString(sql_fields[0].field);
+	    String s=_result_set.getString(sql_fields[0].short_field);
 	    BigDecimal res=s==null?null:new BigDecimal(s);
 	    if (res==null && isNotNull())
 		throw new DatabaseIntegrityException("Unexpected exception.");
@@ -238,7 +239,7 @@ public class BigDecimalFieldAccessor extends FieldAccessor
 	try
 	{
 	    BigDecimal bd=(BigDecimal)field.get(_class_instance);
-	    _result_set.updateString(sql_fields[0].field, bd==null?null:bd.toString());
+	    _result_set.updateString(sql_fields[0].short_field, bd==null?null:bd.toString());
 	}
 	catch(Exception e)
 	{

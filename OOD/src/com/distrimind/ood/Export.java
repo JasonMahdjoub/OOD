@@ -26,7 +26,7 @@ import java.util.ArrayList;
 
 import javax.lang.model.SourceVersion;
 
-import com.distrimind.ood.tests.TestDatabase;
+import com.distrimind.ood.tests.HSQLDBTestDatabase;
 import com.distrimind.util.Utils;
 import com.distrimind.util.export.BinaryDependency;
 import com.distrimind.util.export.Dependency;
@@ -48,6 +48,7 @@ class Export
 	File bin_dir=new File(root_dir, "bin");
 	File src_dir=new File(root_dir, "src");
 	Package root_package=Export.class.getPackage();
+	ArrayList<File> additional_files=new ArrayList<>();
 	
 	ArrayList<BinaryDependency> dependencies=new ArrayList<BinaryDependency>();
 	dependencies.add(new JarDependency("commons-net", 
@@ -55,25 +56,33 @@ class Export
 		org.apache.commons.net.SocketClient.class.getPackage(), 
 		new License(new File("/home/jason/projets/commons-net-3.4/LICENSE.txt")), new File("/home/jason/projets/commons-net-3.4/commons-net-3.4.jar"), null, null));
 	
-	dependencies.add(new JarDependency("hsqldb", 
+	dependencies.add(new JarDependency("HSQLDB", 
 		new DirectorySourceDependency(new File("/home/jason/projets/hsqldb/src")),
 		org.apache.commons.net.SocketClient.class.getPackage(), 
 		new License(new File("/home/jason/projets/commons-net-3.4/LICENSE.txt")), 
 		new File("/home/jason/projets/hsqldb/lib/hsqldb.jar"), 
 		Dependency.getDefaultBinaryExcludeRegex(), Dependency.getDefaultBinaryIncludeRegex()));
 
+	dependencies.add(new JarDependency("Derby", 
+		new DirectorySourceDependency(new File("/home/jason/projets/db-derby/src/java/engine")),
+		org.apache.commons.net.SocketClient.class.getPackage(), 
+		new License(new File("/home/jason/projets/db-derby/LICENSE")), 
+		new File("/home/jason/projets/db-derby/lib/derby.jar"), 
+		Dependency.getDefaultBinaryExcludeRegex(), Dependency.getDefaultBinaryIncludeRegex()));
+	additional_files.add(new File("/home/jason/projets/db-derby/DERBY_NOTICE"));
 	File utilsjarfile=new File("/home/jason/git_projects/Utils/exports/Utils-1.0.0-Stable_withSource.jar");
 	dependencies.add(new JarDependency("Utils", 
 		new JarSourceDependancy(utilsjarfile),
 		Utils.class.getPackage(), 
 		Utils.LICENSE, utilsjarfile, Dependency.getDefaultBinaryExcludeRegex(), Dependency.getDefaultBinaryIncludeRegex()));
 
-	String regex_exlude=Dependency.mixRegexes(Dependency.getRegexMatchClass(Export.class),Dependency.getRegexMatchPackage(TestDatabase.class.getPackage()));
+	
+	String regex_exlude=Dependency.mixRegexes(Dependency.getRegexMatchClass(Export.class),Dependency.getRegexMatchPackage(HSQLDBTestDatabase.class.getPackage()));
 	exports.setProject(new JavaProjectDependency(root_dir, bin_dir, root_package, OOD.LICENSE, 
 		new JavaProjectSourceDependency(src_dir, regex_exlude, null), "com/distrimind/ood/build.txt", 
 		null, "OOD is an Object Oriented Data which aims to manage database only with Java language without using SQL querries", 
 		OOD.VERSION,
-		dependencies,null,
+		dependencies,additional_files,
 		regex_exlude, null));
 	
 	
@@ -81,11 +90,14 @@ class Export
 	exports.setExportDirectory(new File(root_dir, "exports"));
 	exports.setJavaVersion(SourceVersion.RELEASE_7);
 	exports.setTemporaryDirectory(new File(root_dir, ".tmp_export"));
+	
 	ArrayList<ExportProperties> export_properties=new ArrayList<>();
 	export_properties.add(new ExportProperties(true, Exports.SourceCodeExportType.SOURCE_CODE_IN_SEPERATE_FILE, true));
 	export_properties.add(new ExportProperties(false, Exports.SourceCodeExportType.NO_SOURCE_CODE, false));
 	export_properties.add(new ExportProperties(false, Exports.SourceCodeExportType.SOURCE_CODE_IN_JAR_FILE, false));
 	export_properties.add(new ExportProperties(true, Exports.SourceCodeExportType.SOURCE_CODE_IN_JAR_FILE, false));
+	export_properties.add(new ExportProperties(true, Exports.SourceCodeExportType.NO_SOURCE_CODE, false));
+	
 	exports.setExportsSenarios(export_properties);
 	exports.export();
     }

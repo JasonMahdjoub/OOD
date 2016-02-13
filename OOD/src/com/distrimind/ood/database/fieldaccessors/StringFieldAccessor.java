@@ -29,6 +29,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 
 import com.distrimind.ood.database.DatabaseRecord;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.SqlField;
 import com.distrimind.ood.database.SqlFieldInstance;
 import com.distrimind.ood.database.exceptions.DatabaseException;
@@ -40,11 +41,11 @@ public class StringFieldAccessor extends FieldAccessor
 {
     protected final SqlField sql_fields[];
     
-    protected StringFieldAccessor(Field _field) throws DatabaseException
+    protected StringFieldAccessor(DatabaseWrapper _sql_connection, Field _field) throws DatabaseException
     {
-	super(null, _field);
+	super(_sql_connection, _field);
 	sql_fields=new SqlField[1];
-	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), limit==0?"VARCHAR(16777216)":(limit<4096?"VARCHAR("+limit+")":"CLOB("+limit+")"), null, null);
+	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), limit==0?"VARCHAR("+sql_connection.getVarCharLimit()+")":(limit<sql_connection.getVarCharLimit()?"VARCHAR("+limit+")":"CLOB("+limit+")"), null, null);
     }
 
     @Override
@@ -144,7 +145,7 @@ public class StringFieldAccessor extends FieldAccessor
     }
 
     @Override
-    public boolean isAlwaysNutNull()
+    public boolean isAlwaysNotNull()
     {
 	return false;
     }
@@ -185,14 +186,14 @@ public class StringFieldAccessor extends FieldAccessor
 	{
 	    if (sql_fields[0].type.startsWith("VARCHAR"))
 	    {
-		String res=_result_set.getString(sql_fields[0].field);
+		String res=_result_set.getString(sql_fields[0].short_field);
 		if (res==null && isNotNull())
 		    throw new DatabaseIntegrityException("Unexpected exception.");
 		field.set(_class_instance, res);
 	    }
 	    else
 	    {
-		Clob c=_result_set.getClob(sql_fields[0].field);
+		Clob c=_result_set.getClob(sql_fields[0].short_field);
 		String res=c.getSubString(0, (int)c.length());
 		if (res==null && isNotNull())
 		    throw new DatabaseIntegrityException("Unexpected exception.");
@@ -226,7 +227,7 @@ public class StringFieldAccessor extends FieldAccessor
 	setValue(_class_instance, _field_instance);
 	try
 	{
-	    _result_set.updateString(sql_fields[0].field, (String)field.get(_class_instance));
+	    _result_set.updateString(sql_fields[0].short_field, (String)field.get(_class_instance));
 	}
 	catch(Exception e)
 	{

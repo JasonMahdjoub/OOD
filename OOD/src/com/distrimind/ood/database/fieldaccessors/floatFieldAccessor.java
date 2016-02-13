@@ -28,6 +28,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 
 import com.distrimind.ood.database.DatabaseRecord;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.SqlField;
 import com.distrimind.ood.database.SqlFieldInstance;
 import com.distrimind.ood.database.exceptions.DatabaseException;
@@ -39,11 +40,11 @@ public class floatFieldAccessor extends FieldAccessor
 {
     protected final SqlField sql_fields[];
     
-    protected floatFieldAccessor(Field _field) throws DatabaseException
+    protected floatFieldAccessor(DatabaseWrapper _sql_connection, Field _field) throws DatabaseException
     {
-	super(null, _field);
+	super(_sql_connection, _field);
 	sql_fields=new SqlField[1];
-	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), "DOUBLE", null, null);
+	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), sql_connection.getFloatType(), null, null);
     }
 
     @Override
@@ -149,7 +150,7 @@ public class floatFieldAccessor extends FieldAccessor
     }
 
     @Override
-    public boolean isAlwaysNutNull()
+    public boolean isAlwaysNotNull()
     {
 	return true;
     }
@@ -184,7 +185,7 @@ public class floatFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    field.setFloat(_class_instance, _result_set.getFloat(sql_fields[0].field));
+	    field.setFloat(_class_instance, _result_set.getFloat(sql_fields[0].short_field));
 	}
 	catch(Exception e)
 	{
@@ -213,7 +214,7 @@ public class floatFieldAccessor extends FieldAccessor
 	setValue(_class_instance, _field_instance);
 	try
 	{
-	    _result_set.updateFloat(sql_fields[0].field, field.getFloat(_class_instance));
+	    _result_set.updateFloat(sql_fields[0].short_field, field.getFloat(_class_instance));
 	}
 	catch(Exception e)
 	{

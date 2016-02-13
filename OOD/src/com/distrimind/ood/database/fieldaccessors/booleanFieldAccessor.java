@@ -148,7 +148,7 @@ public class booleanFieldAccessor extends FieldAccessor
     }
 
     @Override
-    public boolean isAlwaysNutNull()
+    public boolean isAlwaysNotNull()
     {
 	return true;
     }
@@ -170,7 +170,7 @@ public class booleanFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    field.setBoolean(_class_instance, _result_set.getBoolean(sql_fields[0].field));
+	    field.setBoolean(_class_instance, _result_set.getBoolean(sql_fields[0].short_field));
 	}
 	catch(Exception e)
 	{
@@ -197,7 +197,7 @@ public class booleanFieldAccessor extends FieldAccessor
 	setValue(_class_instance, _field_instance);
 	try
 	{
-	    _result_set.updateBoolean(sql_fields[0].field, field.getBoolean(_class_instance));
+	    _result_set.updateBoolean(sql_fields[0].short_field, field.getBoolean(_class_instance));
 	}
 	catch(Exception e)
 	{

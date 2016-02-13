@@ -50,6 +50,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
+import com.distrimind.ood.database.DatabaseWrapper.TableColumnsResultSet;
 import com.distrimind.ood.database.annotations.ForeignKey;
 import com.distrimind.ood.database.annotations.LoadToMemory;
 import com.distrimind.ood.database.exceptions.ConcurentTransactionDatabaseException;
@@ -81,13 +82,13 @@ import com.distrimind.util.ReadWriteLock;
  * It is possible also to add the annotation {@link com.distrimind.ood.database.annotations.LoadToMemory} just before the table class declaration. If this annotation is present, the content of the table will loaded into the memory which will speed up queries. But note that every table pointed throw a foreign key in this table must have the same annotation. An exception will be generated, during the class instantiation, if this condition is not respected.
  * The user must be careful to not generate a problem of circularity with the declared foreign keys between every database table. An exception is generated during the table instantiation if this problem occurs.
  * 
- * To get the unique instance of its table, the user must call the static functions {@link #getTableInstance(HSQLDBWrapper, Class)} or {@link #getTableInstance(HSQLDBWrapper, String)}. The user must never call the default constructor of the class. This constructor must be protected.
- * Before getting any table instance, the user must associate the package containing the class tables of the same database to a Sql database throw the function {@link #loadDatabase(Package, HSQLDBWrapper)}.
+ * To get the unique instance of its table, the user must call the static functions {@link DatabaseWrapper#getTableInstance(Class)} or {@link DatabaseWrapper#getTableInstance(String)}. The user must never call the default constructor of the class. This constructor must be protected.
+ * Before getting any table instance, the user must associate the package containing the class tables of the same database to a Sql database throw the function {@link DatabaseWrapper#loadDatabase(Package)}.
  * 
  * This class is thread safe
  * 
  * @author Jason Mahdjoub
- * @version 1.0
+ * @version 1.1
  * @param <T> the type of the record
  */
 public abstract class Table<T extends DatabaseRecord>
@@ -100,21 +101,22 @@ public abstract class Table<T extends DatabaseRecord>
     private final ArrayList<FieldAccessor> primary_keys_fields=new ArrayList<FieldAccessor>();
     private final ArrayList<FieldAccessor> unique_fields_no_auto_random_primary_keys=new ArrayList<FieldAccessor>();
     final ArrayList<ForeignKeyFieldAccessor> foreign_keys_fields=new ArrayList<ForeignKeyFieldAccessor>();
-    private final ArrayList<FieldAccessor> fields;
+    private ArrayList<FieldAccessor> fields;
     private final ArrayList<FieldAccessor> fields_without_primary_and_foreign_keys=new ArrayList<FieldAccessor>();
     private AtomicReference<ArrayList<T>> records_instances=new AtomicReference<ArrayList<T>>(new ArrayList<T>());
     private final boolean is_loaded_in_memory;
+    private final String table_name;
     
     
     private static class NeighboringTable
     {
-	public final HSQLDBWrapper sql_connection;
+	public final DatabaseWrapper sql_connection;
 	public final Class<? extends Table<?>> class_table;
 	public final ArrayList<Field> concerned_fields;
 	private Table<?> t=null;
 	private final Class<? extends DatabaseRecord> class_record;
 	
-	public NeighboringTable(HSQLDBWrapper _sql_connection, Class<? extends DatabaseRecord> _class_record, Class<? extends Table<?>> _class_table, ArrayList<Field> _concerned_fields)
+	public NeighboringTable(DatabaseWrapper _sql_connection, Class<? extends DatabaseRecord> _class_record, Class<? extends Table<?>> _class_table, ArrayList<Field> _concerned_fields)
 	{
 	    sql_connection=_sql_connection;
 	    class_table=_class_table;
@@ -134,7 +136,7 @@ public abstract class Table<T extends DatabaseRecord>
 	public Table<?> getPointedTable() throws DatabaseException
 	{
 	    if (t==null)
-		t=getTableInstance(sql_connection, class_table);
+		t=sql_connection.getTableInstance(class_table);
 	    return t;
 	}
 	
@@ -179,25 +181,26 @@ public abstract class Table<T extends DatabaseRecord>
     
     private AtomicBoolean is_synchronized_with_sql_database=new AtomicBoolean(false);
     
-    final HSQLDBWrapper sql_connection;
+    DatabaseWrapper sql_connection;
     
     @SuppressWarnings("rawtypes")
     private final Constructor<GroupedResults> grouped_results_constructor;
     
-    private final static String ROW_COUNT_TABLES="ROW_COUNT_TABLES__";
     
-    private String getSqlPrimaryKeyName()
+    
+    String getSqlPrimaryKeyName()
     {
 	return this.getName()+"__PK";
     }
     
     /**
-     * This constructor must never be called. Please use the static functions {@link #getTableInstance(HSQLDBWrapper, Class)} or {@link #getTableInstance(HSQLDBWrapper, String)}.
+     * This constructor must never be called. Please use the static functions {@link DatabaseWrapper#getTableInstance(Class)} or {@link DatabaseWrapper#getTableInstance(String)}.
      * @throws DatabaseException is database constraints are not respected or if a problem of database version occured during the Sql loading (typically, when the user have modified the fields of its database). 
      */
     @SuppressWarnings("rawtypes")
     protected Table() throws DatabaseException
     {
+	table_name=getName(this.getClass());
 	try
 	{
 	    rand=SecureRandom.getInstance("SHA1PRNG", "SUN");
@@ -252,7 +255,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    Constructor<GroupedResults> res;
 		    try
 		    {
-			res = (Constructor<GroupedResults>)GroupedResults.class.getDeclaredConstructor(HSQLDBWrapper.class, Collection.class, Class.class, (new String[1]).getClass());
+			res = (Constructor<GroupedResults>)GroupedResults.class.getDeclaredConstructor(DatabaseWrapper.class, Collection.class, Class.class, (new String[1]).getClass());
 			res.setAccessible(true);
 			return res;
 		    }
@@ -265,7 +268,7 @@ public abstract class Table<T extends DatabaseRecord>
 		}
 	    });
 	
-	sql_connection=current_sql_connection;
+	/*sql_connection=current_sql_connection;
 	if (sql_connection==null)
 	    throw new DatabaseException("The database associated to the package "+this.getClass().getPackage().getName()+" was not loaded. Impossible to instantiate the class/table "+this.getClass().getName()+". Please use the function associatePackageToSqlJetDatabase before !");
 	
@@ -316,13 +319,66 @@ public abstract class Table<T extends DatabaseRecord>
 	
 	
 	if (this.getName().equals(ROW_COUNT_TABLES))
-	    throw new DatabaseException("This table cannot have the name "+ROW_COUNT_TABLES+" (case ignored)");
+	    throw new DatabaseException("This table cannot have the name "+ROW_COUNT_TABLES+" (case ignored)");*/
     }
     
-    private static HSQLDBWrapper current_sql_connection=null;
+    void initializeStep0(DatabaseWrapper wrapper) throws DatabaseException
+    {
+	sql_connection=wrapper;
+	if (sql_connection==null)
+	    throw new DatabaseException("No database was given to instanciate the class/table "+this.getClass().getName()+". Please use the function associatePackageToSqlJetDatabase before !");
+	
+	
+	@SuppressWarnings("unchecked")
+	Class<? extends Table<?>> table_class=(Class<? extends Table<?>>)this.getClass();
+	fields=FieldAccessor.getFields(sql_connection, table_class);
+	if (fields.size()==0)
+	    throw new DatabaseException("No field has been declared in the class "+class_record.getName());
+	for (FieldAccessor f : fields)
+	{
+	    if (f.isPrimaryKey())
+		primary_keys_fields.add(f);
+	    if (f.isAutoPrimaryKey() || f.isRandomPrimaryKey())
+		auto_random_primary_keys_fields.add(f);
+	    if (f.isAutoPrimaryKey())
+		auto_primary_keys_fields.add(f);
+	    if (!f.isAutoPrimaryKey() && !f.isRandomPrimaryKey() && f.isPrimaryKey())
+		primary_keys_fields_no_auto_no_random.add(f);
+	    if (f.isForeignKey())
+	    {
+		foreign_keys_fields.add((ForeignKeyFieldAccessor)f);
+	    }
+	    if (!f.isPrimaryKey() && !f.isForeignKey())
+		fields_without_primary_and_foreign_keys.add(f);
+	    if (f.isUnique() && !f.isAutoPrimaryKey() && !f.isRandomPrimaryKey())
+	    {
+		unique_fields_no_auto_random_primary_keys.add(f);
+	    }
+	}
+	for (FieldAccessor f : fields)
+	{
+	    for (FieldAccessor f2 : fields)
+	    {
+		if (f!=f2)
+		{
+		    if (f.getFieldName().equalsIgnoreCase(f2.getFieldName()))
+		    {
+			throw new DatabaseException("The fields "+f.getFieldName()+" and "+f2.getFieldName()+" have the same name considering that Sql fields is not case sensitive !");
+		    }
+		}
+	    }
+	}
+	if (auto_primary_keys_fields.size()>1)
+	    throw new DatabaseException("It can have only one autoincrement primary key with Annotation {@link oodforsqljet.annotations.AutoPrimaryKey}. The record "+class_record.getName()+" has "+auto_primary_keys_fields.size()+" AutoPrimary keys.");
+	if (primary_keys_fields.size()==0)
+	    throw new DatabaseException("There is no primary key declared into the Record "+class_record.getName());
+	
+	
+	if (this.getName().equals(DatabaseWrapper.ROW_COUNT_TABLES))
+	    throw new DatabaseException("This table cannot have the name "+DatabaseWrapper.ROW_COUNT_TABLES+" (case ignored)");
+    }
     
-    
-    private void initializeStep1() throws DatabaseException
+    void initializeStep1() throws DatabaseException
     {
 	for (ForeignKeyFieldAccessor fa : foreign_keys_fields)
 	{
@@ -332,7 +388,7 @@ public abstract class Table<T extends DatabaseRecord>
     
     boolean foreign_keys_to_create=false;
     
-    private void initializeStep2() throws DatabaseException
+    void initializeStep2() throws DatabaseException
     {
 	/*
 	 * Load table in Sql database
@@ -347,18 +403,11 @@ public abstract class Table<T extends DatabaseRecord>
 		    return false;
 		}
 		@Override
-		public Boolean run(HSQLDBWrapper sql_connection) throws DatabaseException
+		public Boolean run(DatabaseWrapper sql_connection) throws DatabaseException
 		{
 		    try
 		    {
-			boolean table_found=false;
-			try (ReadQuerry rq=new ReadQuerry(sql_connection.getSqlConnection(), "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"+Table.this.getName()+"'"))
-			{
-			    if (rq.result_set.next())
-				table_found=true;
-			}
-			
-			return new Boolean(table_found);
+			return new Boolean(sql_connection.doesTableExists(Table.this.getName()));
 		    }
 		    catch(Exception e)
 		    {
@@ -382,16 +431,19 @@ public abstract class Table<T extends DatabaseRecord>
 			
 		        @SuppressWarnings("synthetic-access")
 			@Override
-		        public Object run(HSQLDBWrapper _sql_connection) throws DatabaseException
+		        public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 		        {
 		            try
 		            {
 		        	Pattern col_size_matcher=Pattern.compile("([0-9]+)");
-				try(ReadQuerry rq=new ReadQuerry(_sql_connection.getSqlConnection(), "SELECT COLUMN_NAME, TYPE_NAME, COLUMN_SIZE, IS_NULLABLE, IS_AUTOINCREMENT FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"+Table.this.getName()+"';"))
+				//try(ReadQuerry rq=new ReadQuerry(_sql_connection.getSqlConnection(), "SELECT COLUMN_NAME, TYPE_NAME, COLUMN_SIZE, IS_NULLABLE, IS_AUTOINCREMENT FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"+Table.this.getName()+"';"))
+		        	try(ColumnsReadQuerry rq=sql_connection.getColumnMetaData(Table.this.getName()))
 				{
-				    while (rq.result_set.next())
+		        	    //while (rq.result_set.next())
+				    while (rq.tableColumnsResultSet.next())
 				    {
-					String col=Table.this.getName()+"."+rq.result_set.getString("COLUMN_NAME");
+					//String col=Table.this.getName()+"."+rq.result_set.getString("COLUMN_NAME");
+					String col=Table.this.getName()+"."+rq.tableColumnsResultSet.getColumnName();
 					FieldAccessor founded_fa=null;
 					SqlField founded_sf=null;
 					for (FieldAccessor fa : fields)
@@ -411,17 +463,20 @@ public abstract class Table<T extends DatabaseRecord>
 				    
 					if (founded_fa==null)
 					    throw new DatabaseVersionException(Table.this, "The table "+Table.this.getName()+" contains a column named "+col+" which does not correspond to any field of the class "+class_record.getName());
-					String type=rq.result_set.getString("TYPE_NAME").toUpperCase();
+					//String type=rq.result_set.getString("TYPE_NAME").toUpperCase();
+					String type=rq.tableColumnsResultSet.getTypeName().toUpperCase();
 					if (!founded_sf.type.toUpperCase().startsWith(type))
 					    throw new DatabaseVersionException(Table.this, "The type of the column "+col+" should  be "+founded_sf.type+" and not "+type);
 					if (col_size_matcher.matcher(founded_sf.type).matches())
 					{
-					    int col_size=rq.result_set.getInt("COLUMN_SIZE");
+					    //int col_size=rq.result_set.getInt("COLUMN_SIZE");
+					    int col_size=rq.tableColumnsResultSet.getColumnSize();
 					    Pattern pattern2=Pattern.compile("("+col_size+")");
 					    if (!pattern2.matcher(founded_sf.type).matches())
 						throw new DatabaseVersionException(Table.this, "The column "+col+" has a size equals to "+col_size+" (expected "+founded_sf.type+")");
 					}
-					boolean is_null=rq.result_set.getString("IS_NULLABLE").equals("YES");
+					//boolean is_null=rq.result_set.getString("IS_NULLABLE").equals("YES");
+					boolean is_null=rq.tableColumnsResultSet.isNullable();
 					if (is_null==founded_fa.isNotNull())
 					    throw new DatabaseVersionException(Table.this, "The column "+col+" is expected to be "+(founded_fa.isNotNull()?"not null":"nullable"));
 					boolean is_autoincrement=rq.result_set.getString("IS_AUTOINCREMENT").equals("YES");
@@ -429,160 +484,7 @@ public abstract class Table<T extends DatabaseRecord>
 					    throw new DatabaseVersionException(Table.this, "The column "+col+" is "+(is_autoincrement?"":"not ")+"autoincremented into the Sql database where it is "+(is_autoincrement?"not ":"")+" into the OOD database.");
 				    }
 				}
-				try(ReadQuerry rq=new ReadQuerry(_sql_connection.getSqlConnection(), "select CONSTRAINT_NAME, CONSTRAINT_TYPE from INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_NAME='"+Table.this.getName()+"';"))
-				{
-				    while (rq.result_set.next())
-				    {
-					String constraint_name=rq.result_set.getString("CONSTRAINT_NAME");
-					String constraint_type=rq.result_set.getString("CONSTRAINT_TYPE");
-					switch(constraint_type)
-					{
-					    case "PRIMARY KEY":
-					    {
-						if (!constraint_name.equals(getSqlPrimaryKeyName()))
-						    throw new DatabaseVersionException(Table.this, "There a grouped primary key named "+constraint_name+" which should be named "+getSqlPrimaryKeyName());
-					    }
-					    break;
-					    case "FOREIGN KEY":
-					    {
-					    
-					    }	
-					    break;
-					    case "UNIQUE":
-					    {
-						try(ReadQuerry rq2=new ReadQuerry(_sql_connection.getSqlConnection(), "select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"+Table.this.getName()+"' AND CONSTRAINT_NAME='"+constraint_name+"';"))
-						{
-						    if (rq2.result_set.next())
-						    {
-							String col=(Table.this.getName()+"."+rq2.result_set.getString("COLUMN_NAME")).toUpperCase();
-							boolean found=false;
-							for (FieldAccessor fa : fields)
-							{
-							    for (SqlField sf : fa.getDeclaredSqlFields())
-							    {
-								if (sf.field.equals(col) && fa.isUnique())
-								{
-								    found=true;
-								    break;
-								}
-							    }
-							    if (found)
-								break;
-							}
-							if (!found)
-							    throw new DatabaseVersionException(Table.this, "There is a unique sql field "+col+" which does not exists into the OOD database.");
-						    }
-						}
-						
-					    }
-					    break;
-					    case "CHECK":
-						break;
-					    default :
-						throw new DatabaseVersionException(Table.this, "Unknow constraint "+constraint_type);
-					}
-				    }
-				}
-				try(ReadQuerry rq=new ReadQuerry(_sql_connection.getSqlConnection(), "select PKTABLE_NAME, PKCOLUMN_NAME, FKCOLUMN_NAME from INFORMATION_SCHEMA.SYSTEM_CROSSREFERENCE WHERE FKTABLE_NAME='"+Table.this.getName()+"';"))
-				{
-				    while (rq.result_set.next())
-				    {
-					String pointed_table=rq.result_set.getString("PKTABLE_NAME");
-					String pointed_col=pointed_table+"."+rq.result_set.getString("PKCOLUMN_NAME");
-					String fk=Table.this.getName()+"."+rq.result_set.getString("FKCOLUMN_NAME");
-					boolean found=false;
-					for (ForeignKeyFieldAccessor fa : foreign_keys_fields)
-					{
-					    for (SqlField sf : fa.getDeclaredSqlFields())
-					    {
-						if (sf.field.equals(fk) && sf.pointed_field.equals(pointed_col) && sf.pointed_table.equals(pointed_table))
-						{
-						    found=true;
-						    break;
-						}
-					    }
-					    if (found)
-						break;
-					}
-					if (!found)
-					    throw new DatabaseVersionException(Table.this, "There is foreign keys defined into the Sql database which have not been found in the OOD database.");
-				    }
-				}
-				for (FieldAccessor fa : fields)
-				{
-				    for (SqlField sf : fa.getDeclaredSqlFields())
-				    {
-					try(ReadQuerry rq=new ReadQuerry(_sql_connection.getSqlConnection(), "SELECT TYPE_NAME, COLUMN_SIZE, IS_NULLABLE, ORDINAL_POSITION, IS_AUTOINCREMENT FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"+Table.this.getName()+"' AND COLUMN_NAME='"+sf.short_field+"'"))
-					{
-					    if (rq.result_set.next())
-					    {
-						String type=rq.result_set.getString("TYPE_NAME").toUpperCase();
-						if (!sf.type.toUpperCase().startsWith(type))
-						    throw new DatabaseVersionException(Table.this, "The type of the field "+sf.field+" should  be "+sf.type+" and not "+type);
-						if (col_size_matcher.matcher(sf.type).matches())
-						{
-						    int col_size=rq.result_set.getInt("COLUMN_SIZE");
-						    Pattern pattern2=Pattern.compile("("+col_size+")");
-						    if (!pattern2.matcher(sf.type).matches())
-							throw new DatabaseVersionException(Table.this, "The column "+sf.field+" has a size equals to "+col_size+" (expected "+sf.type+")");
-						}
-						boolean is_null=rq.result_set.getString("IS_NULLABLE").equals("YES");
-						if (is_null==fa.isNotNull())
-						    throw new DatabaseVersionException(Table.this, "The field "+fa.getFieldName()+" is expected to be "+(fa.isNotNull()?"not null":"nullable"));
-						boolean is_autoincrement=rq.result_set.getString("IS_AUTOINCREMENT").equals("YES");
-						if (is_autoincrement!=fa.isAutoPrimaryKey())
-						    throw new DatabaseVersionException(Table.this, "The field "+fa.getFieldName()+" is "+(is_autoincrement?"":"not ")+"autoincremented into the Sql database where it is "+(is_autoincrement?"not ":"")+" into the OOD database.");
-						sf.sql_position=rq.result_set.getInt("ORDINAL_POSITION");
-					    }
-					    else
-						throw new DatabaseVersionException(Table.this, "The field "+fa.getFieldName()+" was not found into the database.");
-					}
-					if (fa.isPrimaryKey())
-					{
-					    try(ReadQuerry rq=new ReadQuerry(_sql_connection.getSqlConnection(), "select * from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"+Table.this.getName()+"' AND COLUMN_NAME='"+sf.short_field+"' AND CONSTRAINT_NAME='"+getSqlPrimaryKeyName()+"';"))
-					    {
-						if (!rq.result_set.next())
-						    throw new DatabaseVersionException(Table.this, "The field "+fa.getFieldName()+" is not declared as a primary key into the Sql database.");
-					    }
-					}
-					if (fa.isForeignKey())
-					{
-					    try(ReadQuerry rq=new ReadQuerry(_sql_connection.getSqlConnection(), "select PKTABLE_NAME, PKCOLUMN_NAME, FKCOLUMN_NAME from INFORMATION_SCHEMA.SYSTEM_CROSSREFERENCE WHERE FKTABLE_NAME='"+Table.this.getName()+"' AND PKCOLUMN_NAME='"+sf.short_pointed_field+"' AND FKCOLUMN_NAME='"+sf.short_field+"';"))
-					    {
-						if (!rq.result_set.next())
-						    throw new DatabaseVersionException(Table.this, "The field "+fa.getFieldName()+" is a foreign key one of its Sql fields "+sf.field+" is not a foreign key pointing to the table "+sf.pointed_table);
-					    }
-					}
-					if (fa.isUnique())
-					{
-					    boolean found=false;
-					    try(ReadQuerry rq=new ReadQuerry(_sql_connection.getSqlConnection(), "select CONSTRAINT_NAME, CONSTRAINT_TYPE from INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_NAME='"+Table.this.getName()+"';"))
-					    {
-						while (rq.result_set.next())
-						{
-						    if (rq.result_set.getString("CONSTRAINT_TYPE").equals("UNIQUE"))
-						    {
-							String constraint_name=rq.result_set.getString("CONSTRAINT_NAME");
-							try(ReadQuerry rq2=new ReadQuerry(_sql_connection.getSqlConnection(), "select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"+Table.this.getName()+"' AND CONSTRAINT_NAME='"+constraint_name+"';"))
-							{
-							    if (rq2.result_set.next())
-							    {
-								String col=Table.this.getName()+"."+rq2.result_set.getString("COLUMN_NAME");
-								if (col.equals(sf.field))
-								{
-								    found=true;
-								    break;
-								}
-							    }
-							}
-						    }
-						}
-					    }
-					    if (!found)
-						throw new DatabaseVersionException(Table.this, "The OOD field "+fa.getFieldName()+" is a unique key, but it not declared as unique into the Sql database.");
-					}
-				    }
-				}
+		        	sql_connection.checkConstraints(Table.this);
 				return null;
 		            }
 		            catch(Exception e)
@@ -594,10 +496,9 @@ public abstract class Table<T extends DatabaseRecord>
 	    }
 	    else
 	    {
-		//try(ReadWriteLock.WriteLock lock2=sql_connection.locker.getAutoCloseableWriteLock())
 		{
 		    
-		    final StringBuffer SqlQuerry=new StringBuffer("CREATE CACHED TABLE "+this.getName()+"(");
+		    final StringBuffer SqlQuerry=new StringBuffer("CREATE "+sql_connection.getCachedKeyword()+" TABLE "+this.getName()+"(");
 		    boolean first=true;
 		    for (FieldAccessor f : fields)
 		    {
@@ -636,7 +537,7 @@ public abstract class Table<T extends DatabaseRecord>
 			}
 		    }
 		
-		    SqlQuerry.append(");");
+		    SqlQuerry.append(")"+sql_connection.getSqlComma());
 		
 		    sql_connection.runTransaction(new Transaction() {
 		    
@@ -645,11 +546,12 @@ public abstract class Table<T extends DatabaseRecord>
 			    return true;
 			}
 			@Override
-			public Object run(HSQLDBWrapper sql_connection) throws DatabaseException
+			public Object run(DatabaseWrapper sql_connection) throws DatabaseException
 			{
 			    try
 			    {
 				Statement st=sql_connection.getSqlConnection().createStatement();
+				
 				st.executeUpdate(SqlQuerry.toString());
 				st.close();
 			    }
@@ -667,22 +569,22 @@ public abstract class Table<T extends DatabaseRecord>
 			}
 		    
 			@Override
-			public Object run(HSQLDBWrapper sql_connection) throws DatabaseException
+			public Object run(DatabaseWrapper sql_connection) throws DatabaseException
 			{
 			    try
 			    {
 				Statement st=sql_connection.getSqlConnection().createStatement();
-				st.executeUpdate("INSERT INTO "+ROW_COUNT_TABLES+" VALUES('"+Table.this.getName()+"', 0)");
+				st.executeUpdate("INSERT INTO "+DatabaseWrapper.ROW_COUNT_TABLES+" VALUES('"+Table.this.getName()+"', 0)");
 				st.close();
 				st=sql_connection.getSqlConnection().createStatement();
 				st.executeUpdate("CREATE TRIGGER "+Table.this.getName()+"_ROW_COUNT_TRIGGER_INSERT__ AFTER INSERT ON "+Table.this.getName()+"\n" +
 						"FOR EACH ROW \n" +
-						"UPDATE "+ROW_COUNT_TABLES+" SET ROW_COUNT=ROW_COUNT+1 WHERE TABLE_NAME='"+Table.this.getName()+"'\n");
+						"UPDATE "+DatabaseWrapper.ROW_COUNT_TABLES+" SET ROW_COUNT=ROW_COUNT+1 WHERE TABLE_NAME='"+Table.this.getName()+"'\n");
 				st.close();
 				st=sql_connection.getSqlConnection().createStatement();
 				st.executeUpdate("CREATE TRIGGER "+Table.this.getName()+"_ROW_COUNT_TRIGGER_DELETE__ AFTER DELETE ON "+Table.this.getName()+"\n" +
 						"FOR EACH ROW \n" +
-						"UPDATE "+ROW_COUNT_TABLES+" SET ROW_COUNT=ROW_COUNT-1 WHERE TABLE_NAME='"+Table.this.getName()+"'\n");
+						"UPDATE "+DatabaseWrapper.ROW_COUNT_TABLES+" SET ROW_COUNT=ROW_COUNT-1 WHERE TABLE_NAME='"+Table.this.getName()+"'\n");
 				st.close();
 			    }
 			    catch(SQLException e)
@@ -739,7 +641,7 @@ public abstract class Table<T extends DatabaseRecord>
 	
     }
     
-    private void initializeStep3() throws DatabaseException
+    void initializeStep3() throws DatabaseException
     {
 	try(ReadWriteLock.WriteLock lock2=sql_connection.locker.getAutoCloseableWriteLock())
 	{
@@ -771,7 +673,8 @@ public abstract class Table<T extends DatabaseRecord>
 			    SqlQuerry.append(", ");
 			SqlQuerry.append(sf.short_pointed_field);
 		    }
-		    SqlQuerry.append(") ON UPDATE CASCADE ON DELETE CASCADE");
+		    //SqlQuerry.append(") ON UPDATE CASCADE ON DELETE CASCADE");
+		    SqlQuerry.append(") "+sql_connection.getOnDeleteCascadeSqlQuerry()+" "+sql_connection.getOnUpdateCascadeSqlQuerry());
 		    sql_connection.runTransaction(new Transaction() {
 		        
 			public boolean doesWriteData()
@@ -779,7 +682,7 @@ public abstract class Table<T extends DatabaseRecord>
 			    return true;
 			}
 		        @Override
-		        public Object run(HSQLDBWrapper _sql_connection) throws DatabaseException
+		        public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 		        {
 		            try
 		            {
@@ -794,6 +697,7 @@ public abstract class Table<T extends DatabaseRecord>
 		            }
 		        }
 		    });
+		    
 		    
 		}
 	    }
@@ -910,7 +814,7 @@ public abstract class Table<T extends DatabaseRecord>
 		querry.append(sfi.pointed_field);
 		querry.append(" = ?");
 	    }
-	    querry.append(";");
+	    querry.append(sql_connection.getSqlComma());
 	    
 	    return (T)sql_connection.runTransaction(new Transaction() {
 	        
@@ -920,7 +824,7 @@ public abstract class Table<T extends DatabaseRecord>
 		}
 	        @SuppressWarnings("synthetic-access")
 		@Override
-	        public Object run(HSQLDBWrapper _sql_connection) throws DatabaseException
+	        public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 	        {
 		    try(PreparedReadQuerry rq=new PreparedReadQuerry(_sql_connection.getSqlConnection(), querry.toString()))
 		    {
@@ -1006,9 +910,9 @@ public abstract class Table<T extends DatabaseRecord>
 		    }
 
 		    @Override
-		    public Object run(HSQLDBWrapper _sql_connection) throws DatabaseException
+		    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 		    {
-			try(ReadQuerry rq=new ReadQuerry(_sql_connection.getSqlConnection(), "SELECT ROW_COUNT FROM "+ROW_COUNT_TABLES+" WHERE TABLE_NAME='"+Table.this.getName()+"'"))
+			try(ReadQuerry rq=new ReadQuerry(_sql_connection.getSqlConnection(), "SELECT ROW_COUNT FROM "+DatabaseWrapper.ROW_COUNT_TABLES+" WHERE TABLE_NAME='"+Table.this.getName()+"'"))
 			{
 			    if (rq.result_set.next())
 			    {
@@ -1035,6 +939,16 @@ public abstract class Table<T extends DatabaseRecord>
     {
 	return fields;
     }
+
+    /**
+     * 
+     * @return the fields corresponding to this table
+     */
+    public final ArrayList<ForeignKeyFieldAccessor> getForeignKeysFieldAccessors()
+    {
+	return this.foreign_keys_fields;
+    }
+    
     /**
      * 
      * @return the primary keys corresponding to this table
@@ -1048,9 +962,9 @@ public abstract class Table<T extends DatabaseRecord>
     {
 	String tmp;
 	if (field.isNotNull())
-	    tmp=" NOT NULL";
+	    tmp=" "+sql_connection.getSqlNotNULL();
 	else
-	    tmp=" NULL";
+	    tmp=" "+sql_connection.getSqlNULL();
 	
 	if (field.isForeignKey())
 	{
@@ -1168,8 +1082,19 @@ public abstract class Table<T extends DatabaseRecord>
      */
     public final String getName()
     {
-	return this.getClass().getSimpleName().toUpperCase();
+	return table_name;
     }
+
+    /**
+     * Format the a class name by replacing '.' chars by '_' chars. Use also upper case. 
+     * @param c a class
+     * @return the new class name format
+     */
+    public static final String getName(Class<?> c)
+    {
+	return c.getCanonicalName().replace(".", "_").toUpperCase();
+    }
+    
     
     @Override public String toString()
     {
@@ -2422,7 +2347,7 @@ public abstract class Table<T extends DatabaseRecord>
 		        
 			    @SuppressWarnings("synthetic-access")
 			    @Override
-			    public Object run(HSQLDBWrapper _sql_connection) throws DatabaseException
+			    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 			    {
 				StringBuffer sb=new StringBuffer("DELETE FROM "+Table.this.getName()+" WHERE "+getSqlPrimaryKeyCondition(records_to_remove.size()));
 				
@@ -2519,6 +2444,7 @@ public abstract class Table<T extends DatabaseRecord>
     private void checkMemory() throws DatabaseException
     {
 	{
+	    
 	    if (isLoadedInMemory())
 	    {
 		for (final T r : getRecords())
@@ -2786,7 +2712,7 @@ public abstract class Table<T extends DatabaseRecord>
 		}
 		
 	        @Override
-	        public Object run(HSQLDBWrapper _sql_connection) throws DatabaseException
+	        public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 	        {
 		    try(PreparedReadQuerry prq = new PreparedReadQuerry(_sql_connection.getSqlConnection(), querry.toString()))
 		    {
@@ -2838,7 +2764,7 @@ public abstract class Table<T extends DatabaseRecord>
 		        
 			    @SuppressWarnings("synthetic-access")
 			    @Override
-			    public Object run(HSQLDBWrapper _sql_connection) throws DatabaseException
+			    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 			    {
 				StringBuffer sb=new StringBuffer("DELETE FROM "+Table.this.getName()+" WHERE "+getSqlPrimaryKeyCondition(records_to_remove.size()));
 
@@ -2968,7 +2894,7 @@ public abstract class Table<T extends DatabaseRecord>
 	    
 		    @SuppressWarnings("synthetic-access")
 		    @Override
-		    public Object run(HSQLDBWrapper _sql_connection) throws DatabaseException
+		    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 		    {
 			StringBuffer querry=new StringBuffer("DELETE FROM "+Table.this.getName()+" WHERE "+getSqlPrimaryKeyCondition(1));
 		
@@ -3035,7 +2961,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    
 		    @SuppressWarnings("synthetic-access")
 		    @Override
-		    public Object run(HSQLDBWrapper _sql_connection) throws DatabaseException
+		    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 		    {
 			StringBuffer querry=new StringBuffer("DELETE FROM "+Table.this.getName()+" WHERE "+getSqlPrimaryKeyCondition(1));
 		
@@ -3302,7 +3228,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    
 		    @SuppressWarnings("synthetic-access")
 		    @Override
-		    public Object run(HSQLDBWrapper _sql_connection) throws DatabaseException
+		    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 		    {
 			try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getSqlConnection(), "DELETE FROM "+Table.this.getName()+" WHERE "+getSqlPrimaryKeyCondition(_records.size())))
 			{
@@ -3381,7 +3307,7 @@ public abstract class Table<T extends DatabaseRecord>
 
 		@SuppressWarnings("synthetic-access")
 		@Override
-		public Object run(HSQLDBWrapper _sql_connection) throws DatabaseException
+		public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 		{
 		    StringBuffer sb=new StringBuffer("DELETE FROM "+Table.this.getName()+" WHERE "+getSqlPrimaryKeyCondition(_records.size()));
 		    
@@ -3459,7 +3385,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    }
 		    @SuppressWarnings("synthetic-access")
 		    @Override
-		    public Object run(HSQLDBWrapper sql_connection) throws DatabaseException
+		    public Object run(DatabaseWrapper sql_connection) throws DatabaseException
 		    {
 			
 			try(AbstractReadQuerry rq=(updatable?new UpdatableReadQuerry(sql_connection.getSqlConnection(), querry):new ReadQuerry(sql_connection.getSqlConnection(), querry)))
@@ -3532,7 +3458,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    {
 		    }
 		    @Override
-		    public Object run(HSQLDBWrapper _sql_connection) throws DatabaseException
+		    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 		    {
 			try(AbstractReadQuerry rq=(updatable?new UpdatableReadQuerry(_sql_connection.getSqlConnection(), querry):new ReadQuerry(_sql_connection.getSqlConnection(), querry)))
 			{
@@ -3614,7 +3540,7 @@ public abstract class Table<T extends DatabaseRecord>
 		        
 			    @SuppressWarnings("synthetic-access")
 			    @Override
-			    public Object run(HSQLDBWrapper _sql_connection) throws DatabaseException
+			    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 			    {
 				try(PreparedReadQuerry rq=new PreparedReadQuerry(_sql_connection.getSqlConnection(), "SELECT * FROM "+Table.this.getName()+" WHERE "+getSqlPrimaryKeyCondition(1)))
 				{
@@ -3957,7 +3883,7 @@ public abstract class Table<T extends DatabaseRecord>
 			
 			@SuppressWarnings("synthetic-access")
 			@Override
-			public Object run(HSQLDBWrapper _db) throws DatabaseException
+			public Object run(DatabaseWrapper _db) throws DatabaseException
 			{
 			    try
 			    {
@@ -4000,7 +3926,7 @@ public abstract class Table<T extends DatabaseRecord>
 					}
 				    }
 				}
-				querry.append(");");
+				querry.append(")"+sql_connection.getSqlComma());
 				
 				try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_db.getSqlConnection(), querry.toString()))
 				{
@@ -4014,6 +3940,11 @@ public abstract class Table<T extends DatabaseRecord>
 					}
 				    }
 				    puq.statement.executeUpdate();
+				    /*if (auto_primary_keys_fields.size()>0 && !ct.include_auto_pk)
+				    {
+					puq.statement.getGeneratedKeys().next();
+					autovalue=new Long(puq.statement.getGeneratedKeys().getLong(1));
+				    }*/
 				}
 				catch(SQLIntegrityConstraintViolationException e)
 				{
@@ -4026,26 +3957,27 @@ public abstract class Table<T extends DatabaseRecord>
 				
 				if (auto_primary_keys_fields.size()>0 && !ct.include_auto_pk)
 				{
-				    try(ReadQuerry rq=new ReadQuerry(_db.getSqlConnection(), "CALL IDENTITY()"))
+				    try(ReadQuerry rq=new ReadQuerry(_db.getSqlConnection(), sql_connection.getSqlQuerryToGetLastGeneratedID()))
 				    {
 					rq.result_set.next();
-					long autovalue=rq.result_set.getLong(1);
+					Long autovalue=new Long(rq.result_set.getLong(1));
 					FieldAccessor fa=auto_primary_keys_fields.get(0);
 					if (fa.isAssignableTo(byte.class))
-					    fa.setValue(instance, new Byte((byte)autovalue));
+					    fa.setValue(instance, new Byte((byte)autovalue.longValue()));
 					else if (fa.isAssignableTo(short.class))
-					    fa.setValue(instance, new Short((short)autovalue));
+					    fa.setValue(instance, new Short((short)autovalue.longValue()));
 					else if (fa.isAssignableTo(int.class))
-					    fa.setValue(instance, new Integer((int)autovalue));
+					    fa.setValue(instance, new Integer((int)autovalue.longValue()));
 					else if (fa.isAssignableTo(long.class))
-					    fa.setValue(instance, new Long(autovalue));
+					    fa.setValue(instance, autovalue);
 				    }
 				    catch(Exception e)
 				    {
 					throw DatabaseException.getDatabaseException(e);
 				    }
-				    
 				}
+
+				
 				return null;
 			    }
 			    catch(Exception e)
@@ -4821,7 +4753,7 @@ public abstract class Table<T extends DatabaseRecord>
 		
 		    @SuppressWarnings("synthetic-access")
 		    @Override
-		    public Object run(HSQLDBWrapper _sql_connection) throws DatabaseException
+		    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 		    {
 			try
 			{
@@ -5008,7 +4940,7 @@ public abstract class Table<T extends DatabaseRecord>
 			        
 				    @SuppressWarnings("synthetic-access")
 				    @Override
-				    public Object run(HSQLDBWrapper _sql_connection) throws DatabaseException
+				    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 				    {
 					try
 					{
@@ -5103,7 +5035,7 @@ public abstract class Table<T extends DatabaseRecord>
 			        
 				    @SuppressWarnings("synthetic-access")
 				    @Override
-				    public Object run(HSQLDBWrapper _sql_connection) throws DatabaseException
+				    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 				    {
 					StringBuffer sb=new StringBuffer("DELETE FROM "+Table.this.getName()+" WHERE "+getSqlPrimaryKeyCondition(records_to_delete.size()));
 					
@@ -5149,7 +5081,7 @@ public abstract class Table<T extends DatabaseRecord>
 			        
 			    @SuppressWarnings("synthetic-access")
 			    @Override
-			    public Object run(HSQLDBWrapper _sql_connection) throws DatabaseException
+			    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 			    {
 				StringBuffer sb=new StringBuffer("DELETE FROM "+Table.this.getName()+" WHERE "+getSqlPrimaryKeyCondition(records_to_delete_with_cascade.size()));
 
@@ -5481,239 +5413,15 @@ public abstract class Table<T extends DatabaseRecord>
 	    throw new DatabaseIntegrityException("Unexpected exception");
 	records_instances.set(res);
     }
-    private static HashMap<HSQLDBWrapper, Database> sql_database=new HashMap<HSQLDBWrapper, Database>();
-    
-    private static class Database
-    {
-	public final Package pack;
-	public final HashMap<Class<? extends Table<?>>, Table<?>> tables_instances=new HashMap<Class<? extends Table<?>>, Table<?>>();
-	
-	public Database(Package _package)
-	{
-	    pack=_package;
-	}
-    }
-    
-    /**
-     * Associate a Sql database with a given package. Every table/class in the given package which inherits to the class <code>Table&lsaquo;T extends DatabaseRecord&rsaquo;</code> will be included into the same database.
-     * This function must be called before every any operation with the corresponding tables.
-     * @param _package the package which correspond to the collection of tables/classes.
-     * @param sql_connection the SqlJetWrapper which corresponds to a Sql database.
-     * @throws DatabaseException if the given package is already associated to a database.
-     * @throws NullPointerException if the given parameters are null.
-     */
-    @SuppressWarnings("unchecked")
-    public final static void loadDatabase(Package _package, HSQLDBWrapper sql_connection) throws DatabaseException
-    {
-	synchronized(Table.class)
-	{
-	    if (_package==null)
-		throw new NullPointerException("_package is a null pointer.");
-	    if (sql_connection==null)
-		throw new NullPointerException("_sql_jet_wrapper is a null pointer.");
-	    if (sql_database.containsKey(sql_connection))
-		throw new DatabaseException("There is already a database associated to the given HSQLDBWrapper "+sql_connection);
-	    
-	    current_sql_connection=sql_connection;
-	    Database db=new Database(_package);
-	    sql_database.put(sql_connection, db);
-	    
-	    sql_connection.runTransaction(new Transaction() {
-		    
-		@Override
-		public Boolean run(HSQLDBWrapper sql_connection) throws DatabaseException
-		{
-		    try
-		    {
-			boolean table_found=false;
-			try (ReadQuerry rq=new ReadQuerry(sql_connection.getSqlConnection(), "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"+ROW_COUNT_TABLES+"'"))
-			{
-			    if (rq.result_set.next())
-				table_found=true;
-			}
-			if (!table_found)
-			{
-			    Statement st=sql_connection.getSqlConnection().createStatement();
-			    st.executeUpdate("CREATE TABLE "+ROW_COUNT_TABLES+" (TABLE_NAME VARCHAR(512), ROW_COUNT INTEGER)");
-			    st.close();
-			}
-			
-			
-			return null;
-		    }
-		    catch(Exception e)
-		    {
-			throw DatabaseException.getDatabaseException(e);
-		    }
-		}
-		@Override
-		public boolean doesWriteData()
-		{
-		    return true;
-		}
-		
-	    });
-	    
-	    
-	    ArrayList<Class<?>> list_classes;
-	    try
-	    {
-		list_classes = ListClasses.getClasses(_package);
-		ArrayList<Table<?>> list_tables=new ArrayList<>();
-		for (Class<?> c : list_classes)
-		{
-		    if (Table.class.isAssignableFrom(c))
-		    {
-			DefaultConstructorAccessPrivilegedAction<Table<?>> class_privelege=new DefaultConstructorAccessPrivilegedAction<Table<?>>((Class<Table<?>>)c); 
-			
-			Constructor<Table<?>> const_table=(Constructor<Table<?>>)AccessController.doPrivileged(class_privelege);
-
-			Table<?> t=(Table<?>)const_table.newInstance();
-			list_tables.add(t);
-			db.tables_instances.put((Class<? extends Table<?>>)c, t);
-		    }
-		}
-		for (Table<?> t : list_tables)
-		{
-		    t.initializeStep1();
-		}
-		for (Table<?> t : list_tables)
-		{
-		    t.initializeStep2();
-		}
-		for (Table<?> t : list_tables)
-		{
-		    t.initializeStep3();
-		}
-	    }
-	    catch (ClassNotFoundException e)
-	    {
-		throw new DatabaseException("Impossible to access to t)he list of classes contained into the package "+_package.getName(), e);
-	    }
-	    catch (IOException e)
-	    {
-		throw new DatabaseException("Impossible to access to the list of classes contained into the package "+_package.getName(), e);	
-	    }
-	    catch(Exception e)
-	    {
-		throw DatabaseException.getDatabaseException(e);
-	    }
-	    
-	    current_sql_connection=null;
-	}
-    }
-    /**
-     * Close the Sql database associated with a given package. Removes also all table instances associated to this package. 
-     * To reload the database, it is necessary to call the function {@link #loadDatabase(Package, HSQLDBWrapper)}. 
-     * @param _sql_connection the HSQLDBWrapper connection
-     * @throws DatabaseException if the given package does not point to any Sql database, or if a Sql exception occurs.
-     * @throws NullPointerException if the given parameters are null.
-     */
-    public final static void closeDatabase(HSQLDBWrapper _sql_connection) throws DatabaseException
-    {
-	synchronized(Table.class)
-	{
-	    if (_sql_connection==null)
-		throw new NullPointerException("_sql_connection is a null pointer.");
-	    Database db=sql_database.get(_sql_connection);
-	    if (db==null)
-		throw new DatabaseException("The given sql connection "+_sql_connection+" is not associated to any Package.");
-	    synchronized (sql_database)
-	    {
-		sql_database.remove(_sql_connection);
-	
-		_sql_connection.finalize();
-	    }
-	}
-    }
-    
-    /**
-     * Returns the Sql database package which is associated to a sql connection.
-     * @param _sql_connection the HSQLDBWrapper
-     * @return the associated Package database
-     * @throws NullPointerException if parameters are null pointers.
-     */
-    public final static Package getPackage(HSQLDBWrapper _sql_connection)
-    {
-	synchronized(Table.class)
-	{
-	    if (_sql_connection==null)
-		throw new NullPointerException("The parameter _sql_connection is a null pointer !");
-
-	    return sql_database.get(_sql_connection).pack;
-	}
-    }
-    
     /**
      * Returns the Sql database which is associated to this table.
      * @return the associated Sql database
      */
-    public final HSQLDBWrapper getHSQLDBWrapper()
+    public final DatabaseWrapper getDatabaseWrapper()
     {
 	return sql_connection;
     }
-    
-    /**
-     * According a class name, returns the instance of a table which inherits the class <code>Table&lsaquo;T extends DatabaseRecord&rsaquo;</code>. The returned table is always the same instance.
-     * @param _sql_connection the SQLDB connection
-     * @param _table_name the full class name (with its package)
-     * @return the corresponding table.
-     * @throws DatabaseException if the class have not be found or if problems occur during the instantiation.
-     * @throws NullPointerException if parameters are null pointers.
-     */
-    public final static Table<?> getTableInstance(HSQLDBWrapper _sql_connection, String _table_name) throws DatabaseException
-    {
-	synchronized(Table.class)
-	{
-	    if (_table_name==null)
-		throw new NullPointerException("The parameter _table_name is a null pointer !");
-
-	    try
-	    {
-		Class<?> c=Class.forName(_table_name);
-		if (Table.class.isAssignableFrom(c))
-		{
-		    @SuppressWarnings("unchecked")
-		    Class<? extends Table<?>> class_table=(Class<? extends Table<?>>)c;
-		    return getTableInstance(_sql_connection, class_table);
-		}
-		else
-		    throw new DatabaseException("The class "+_table_name+" does not extends "+Table.class.getName());
-	    }
-	    catch (ClassNotFoundException e)
-	    {
-		throw new DatabaseException("Impossible to found the class/table "+_table_name);
-	    }
-	}
-    }
-    
-    /**
-     * According a Class&lsaquo;? extends Table&lsaquo;?&rsaquo;&rsaquo;, returns the instance of a table which inherits the class <code>Table&lsaquo;T extends DatabaseRecord&rsaquo;</code>. The returned table is always the same instance. 
-     * @param _sql_connection the SQLDB connection
-     * @param _class_table the class type
-     * @return the corresponding table.
-     * @throws DatabaseException if problems occur during the instantiation.
-     * @throws NullPointerException if parameters are null pointers.
-     * @param <TT> The table type
-     */
-    public final static <TT extends Table<?>> Table<? extends DatabaseRecord> getTableInstance(HSQLDBWrapper _sql_connection, Class<TT> _class_table) throws DatabaseException 
-    {
-	synchronized(Table.class)
-	{
-	    if (_class_table==null)
-		throw new NullPointerException("The parameter _class_table is a null pointer !");
-	    Database db=sql_database.get(_sql_connection);
-	    if (db==null)
-		throw new DatabaseException("The given HSQLDBWrapper was not loaded : "+_sql_connection);
-	    Table<?> founded_table=db.tables_instances.get(_class_table);
-	    if (founded_table!=null)
-		return founded_table;
-	    else
-		throw new DatabaseException("Impossible to find the instance of the table "+_class_table.getName()+". It is possible that no HSQLDBWrapper was associated to the corresponding table.");
-	}
-    }
-
-    private static final class DefaultConstructorAccessPrivilegedAction<TC> implements PrivilegedExceptionAction<Constructor<TC>>
+    static final class DefaultConstructorAccessPrivilegedAction<TC> implements PrivilegedExceptionAction<Constructor<TC>>
     {
 	private final Class<TC> m_cls;
 	
@@ -5961,7 +5669,7 @@ public abstract class Table<T extends DatabaseRecord>
     }
     
     
-    private static abstract class Querry implements AutoCloseable
+    static abstract class Querry implements AutoCloseable
     {
 	protected final Connection sql_connection;
 	public Querry(Connection _sql_connection)
@@ -5970,7 +5678,7 @@ public abstract class Table<T extends DatabaseRecord>
 	}
 	
     }
-    private static abstract class AbstractReadQuerry extends Querry
+    static abstract class AbstractReadQuerry extends Querry
     {
 	public Statement statement;
 	public ResultSet result_set;
@@ -5980,24 +5688,54 @@ public abstract class Table<T extends DatabaseRecord>
 	    statement=sql_connection.createStatement(_result_set_type, _result_set_concurency);
 	    result_set=statement.executeQuery(querry);
 	}
+	protected AbstractReadQuerry(Connection _sql_connection, ResultSet resultSet)
+	{
+	    super(_sql_connection);
+	    statement=null;
+	    result_set=resultSet;
+	}
 	@Override
 	public void close() throws Exception
 	{
 	    result_set.close();
 	    result_set=null;
-	    statement.close();
-	    statement=null;
+	    if (statement!=null)
+	    {
+		statement.close();
+		statement=null;
+	    }
 	}
     }
     
-    private static class ReadQuerry extends AbstractReadQuerry
+    static class ReadQuerry extends AbstractReadQuerry
     {
 	public ReadQuerry(Connection _sql_connection, String querry) throws SQLException
 	{
 	    super(_sql_connection, querry, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 	}
+	public ReadQuerry(Connection _sql_connection, ResultSet resultSet)
+	{
+	    super(_sql_connection, resultSet);
+	}
     }
-    private static class UpdatableReadQuerry extends AbstractReadQuerry
+    static abstract class ColumnsReadQuerry extends AbstractReadQuerry
+    {
+	TableColumnsResultSet tableColumnsResultSet;
+	
+	public ColumnsReadQuerry(Connection _sql_connection, String querry) throws SQLException
+	{
+	    super(_sql_connection, querry, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+	}
+	public ColumnsReadQuerry(Connection _sql_connection, ResultSet resultSet)
+	{
+	    super(_sql_connection, resultSet);
+	}
+	public void setTableColumnsResultSet(TableColumnsResultSet tableColumnsResultSet)
+	{
+	    this.tableColumnsResultSet=tableColumnsResultSet;
+	}
+    }
+    static class UpdatableReadQuerry extends AbstractReadQuerry
     {
 	public UpdatableReadQuerry(Connection _sql_connection, String querry) throws SQLException
 	{
@@ -6005,7 +5743,7 @@ public abstract class Table<T extends DatabaseRecord>
 	}
     }
     
-    private static class PreparedReadQuerry extends Querry
+    static class PreparedReadQuerry extends Querry
     {
 	public PreparedStatement statement;
 	public ResultSet result_set=null;
@@ -6033,7 +5771,7 @@ public abstract class Table<T extends DatabaseRecord>
 	}
     }
     
-    private static class PreparedUpdateQuerry extends Querry
+    static class PreparedUpdateQuerry extends Querry
     {
 	public PreparedStatement statement;
 	public PreparedUpdateQuerry(Connection _sql_connection, String querry) throws SQLException

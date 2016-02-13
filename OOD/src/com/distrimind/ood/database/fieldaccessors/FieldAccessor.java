@@ -38,7 +38,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import com.distrimind.ood.database.DatabaseRecord;
-import com.distrimind.ood.database.HSQLDBWrapper;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.SqlField;
 import com.distrimind.ood.database.SqlFieldInstance;
 import com.distrimind.ood.database.Table;
@@ -56,7 +56,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 
 public abstract class FieldAccessor
 {
-    protected final HSQLDBWrapper sql_connection;
+    protected final DatabaseWrapper sql_connection;
     protected final Field field;
     protected final String table_name;
     protected final boolean auto_primary_key;
@@ -70,11 +70,11 @@ public abstract class FieldAccessor
     protected final int bits_number;
     
     @SuppressWarnings("unchecked")
-    protected FieldAccessor(HSQLDBWrapper _sql_connection, Field _field) throws DatabaseException
+    protected FieldAccessor(DatabaseWrapper _sql_connection, Field _field) throws DatabaseException
     {
 	sql_connection=_sql_connection;
 	field=_field;
-	table_name=Table.getTableClass((Class<? extends DatabaseRecord>)field.getDeclaringClass()).getSimpleName().toUpperCase();
+	table_name=Table.getName(Table.getTableClass((Class<? extends DatabaseRecord>)field.getDeclaringClass()));
 	auto_primary_key=_field.isAnnotationPresent(AutoPrimaryKey.class);
 	random_primary_key=field.isAnnotationPresent(RandomPrimaryKey.class);
 	if (auto_primary_key && random_primary_key)
@@ -88,7 +88,7 @@ public abstract class FieldAccessor
 	if (random_primary_key && !isAssignableTo(long.class) && !isAssignableTo(BigInteger.class) && !isAssignableTo(int.class))
 	    throw new DatabaseException("The field "+field.getName()+" of the DatabaseRecord "+field.getDeclaringClass().getName()+" is a a random primary key which must be an int, a long or a BigInteger.");
 	unique=field.isAnnotationPresent(Unique.class) && !auto_primary_key && !random_primary_key;
-	not_null=field.isAnnotationPresent(NotNull.class) || primary_key || isAlwaysNutNull() || (isAssignableTo(BigInteger.class) && random_primary_key);
+	not_null=field.isAnnotationPresent(NotNull.class) || primary_key || isAlwaysNotNull() || (isAssignableTo(BigInteger.class) && random_primary_key);
 	if (foreign_key && not_null && field.getType().equals(field.getDeclaringClass()))
 	    throw new DatabaseException("The field "+field.getName()+" of the class "+field.getDeclaringClass().getName()+" points to same class. So this field cannot have the annotation NotNull.");
 	
@@ -141,6 +141,11 @@ public abstract class FieldAccessor
 	    bits_number=-1;
 	    limit=_field.getAnnotation(com.distrimind.ood.database.annotations.Field.class).limit();
 	}
+    }
+    
+    public Class<?> getFieldClassType()
+    {
+	return field.getType();
     }
     
     public boolean isTypeCompatible(Class<?> _cls)
@@ -219,7 +224,7 @@ public abstract class FieldAccessor
     
     public abstract SqlField[] getDeclaredSqlFields();
     public abstract SqlFieldInstance[] getSqlFieldsInstances(DatabaseRecord _instance)  throws DatabaseException;
-    public abstract boolean isAlwaysNutNull();
+    public abstract boolean isAlwaysNotNull();
     public abstract boolean isComparable();
     public abstract boolean canBePrimaryOrUniqueKey();
     
@@ -230,7 +235,7 @@ public abstract class FieldAccessor
 	return field;
     }
     
-    public static ArrayList<FieldAccessor> getFields(HSQLDBWrapper _sql_connection, Class<? extends Table<?>> _table_class) throws DatabaseException
+    public static ArrayList<FieldAccessor> getFields(DatabaseWrapper _sql_connection, Class<? extends Table<?>> _table_class) throws DatabaseException
     {
 	Class<? extends DatabaseRecord> database_record_class=Table.getDatabaseRecord(_table_class);
 	ArrayList<FieldAccessor> res=new ArrayList<FieldAccessor>();
@@ -270,49 +275,49 @@ public abstract class FieldAccessor
 			if (type.equals(boolean.class))
 			    res.add(new booleanFieldAccessor(f));
 			else if (type.equals(byte.class))
-			    res.add(new byteFieldAccessor(f));
+			    res.add(new byteFieldAccessor(_sql_connection, f));
 			else if (type.equals(short.class))
-			    res.add(new shortFieldAccessor(f));
+			    res.add(new shortFieldAccessor(_sql_connection, f));
 			else if (type.equals(char.class))
 			    res.add(new charFieldAccessor(f));
 			else if (type.equals(int.class))
-			    res.add(new intFieldAccessor(f));
+			    res.add(new intFieldAccessor(_sql_connection, f));
 			else if (type.equals(long.class))
-			    res.add(new longFieldAccessor(f));
+			    res.add(new longFieldAccessor(_sql_connection, f));
 			else if (type.equals(float.class))
-			    res.add(new floatFieldAccessor(f));
+			    res.add(new floatFieldAccessor(_sql_connection, f));
 			else if (type.equals(double.class))
-			    res.add(new doubleFieldAccessor(f));
+			    res.add(new doubleFieldAccessor(_sql_connection, f));
 			else if (type.equals(String.class))
-			    res.add(new StringFieldAccessor(f));
+			    res.add(new StringFieldAccessor(_sql_connection, f));
 			else if (type.equals(class_array_byte))
-			    res.add(new ByteTabFieldAccessor(f));
+			    res.add(new ByteTabFieldAccessor(_sql_connection, f));
 			else if (type.equals(Boolean.class))
 			    res.add(new BooleanNumberFieldAccessor(f));
 			else if (type.equals(Byte.class))
-			    res.add(new ByteNumberFieldAccessor(f));
+			    res.add(new ByteNumberFieldAccessor(_sql_connection, f));
 			else if (type.equals(Short.class))
-			    res.add(new ShortNumberFieldAccessor(f));
+			    res.add(new ShortNumberFieldAccessor(_sql_connection, f));
 			else if (type.equals(Character.class))
 			    res.add(new CharacterNumberFieldAccessor(f));
 			else if (type.equals(Integer.class))
-			    res.add(new IntegerNumberFieldAccessor(f));
+			    res.add(new IntegerNumberFieldAccessor(_sql_connection, f));
 			else if (type.equals(Long.class))
-			    res.add(new LongNumberFieldAccessor(f));
+			    res.add(new LongNumberFieldAccessor(_sql_connection, f));
 			else if (type.equals(Float.class))
-			    res.add(new FloatNumberFieldAccessor(f));
+			    res.add(new FloatNumberFieldAccessor(_sql_connection, f));
 			else if (type.equals(Double.class))
-			    res.add(new DoubleNumberFieldAccessor(f));
+			    res.add(new DoubleNumberFieldAccessor(_sql_connection, f));
 			else if (type.equals(BigDecimal.class))
-			    res.add(new BigDecimalFieldAccessor(f));
+			    res.add(new BigDecimalFieldAccessor(_sql_connection, f));
 			else if (type.equals(BigInteger.class))
-			    res.add(new BigIntegerFieldAccessor(f));
+			    res.add(new BigIntegerFieldAccessor(_sql_connection, f));
 			else if (Calendar.class.isAssignableFrom(type))
-			    res.add(new CalendarFieldAccessor(f));
+			    res.add(new CalendarFieldAccessor(_sql_connection, f));
 			else if (Date.class.isAssignableFrom(type))
 			    res.add(new DateFieldAccessor(f));
 			else if (Serializable.class.isAssignableFrom(type))
-			    res.add(new SerializableFieldAccessor(f));
+			    res.add(new SerializableFieldAccessor(_sql_connection, f));
 			else
 			    throw new DatabaseException("The field "+f.getName()+" of the class "+database_record_class.getName()+" have a type which can't be used on the SqlJet database ");
 		    }
@@ -557,10 +562,10 @@ public abstract class FieldAccessor
 	}
 	else if (val1.getClass().equals(BigInteger.class))
 	{
-	    if (val2.getClass().equals(class_array_byte))
-		return val1.equals(new BigInteger((byte[])val2));
+	    if (val2.getClass().equals(String.class))
+		return val1.equals(new BigInteger((String)val2));
 	    else if (val2.getClass().equals(BigInteger.class))
-		return val1.equals(val2);
+		return val1.equals((BigInteger)val2);
 	    else if (val2.getClass().equals(BigDecimal.class))
 		return val2.equals(new BigDecimal((BigInteger)val1));
 	    else
@@ -633,9 +638,9 @@ public abstract class FieldAccessor
 	    for (SqlField sf : fa.getDeclaredSqlFields())
 	    {
 		if (sf.pointed_field!=null)
-		    sql_fields.put(sf.pointed_field, sf.field);
+		    sql_fields.put(sf.pointed_field, sf.short_field);
 		else
-		    sql_fields.put(sf.field, sf.field);
+		    sql_fields.put(sf.field, sf.short_field);
 	    }
 	}
 	
@@ -657,9 +662,9 @@ public abstract class FieldAccessor
 		if (sf_pointing_founded==null || t==null)
 		{
 		    if (sf.pointed_field!=null)
-			sql_fields.put(sf.pointed_field, sf.field);
+			sql_fields.put(sf.pointed_field, sf.short_field);
 		    else
-			sql_fields.put(sf.field, sf.field);
+			sql_fields.put(sf.field, sf.short_field);
 		}
 		else
 		{
@@ -676,7 +681,7 @@ public abstract class FieldAccessor
 	    field_accessor=fa;
 	    for (SqlField sf : fa.getDeclaredSqlFields())
 	    {
-		sql_fields.put(sf.field, sf.field);
+		sql_fields.put(sf.field, sf.short_field);
 	    }
 	}
 	

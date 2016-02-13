@@ -17,39 +17,33 @@
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA, or see the FSF
  * site: http://www.fsf.org.
  */
-
-
-
 package com.distrimind.ood.database;
 
 import java.io.File;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashMap;
+import java.util.regex.Pattern;
 
+import com.distrimind.ood.database.Table.ColumnsReadQuerry;
+import com.distrimind.ood.database.Table.ReadQuerry;
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
+import com.distrimind.ood.database.exceptions.DatabaseVersionException;
+import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
+import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.util.ReadWriteLock;
 
-
 /**
- * This class represent a SqlJet database contained into one file.
+ * Sql connection wrapper for HSQLDB
  * @author Jason Mahdjoub
- * @version 1.0
- *
+ * @version 1.1
  */
-public final class HSQLDBWrapper
+public class HSQLDBWrapper extends DatabaseWrapper
 {
-    protected final Connection sql_connection;
     private static boolean hsql_loaded=false;
-    private boolean closed=false;
-    private final String database_name;
-    private static final HashMap<String, ReadWriteLock> lockers=new HashMap<String, ReadWriteLock>();
-    private static final HashMap<String, Integer> number_of_shared_lockers=new HashMap<String, Integer>();
-
     
     private static void ensureHSQLLoading() throws DatabaseLoadingException
     {
@@ -59,7 +53,6 @@ public final class HSQLDBWrapper
 	    {
 		try
 		{
-		    
 		    Class.forName("org.hsqldb.jdbc.JDBCDriver" );
 		    hsql_loaded=true;
 		}
@@ -70,8 +63,7 @@ public final class HSQLDBWrapper
 	    }
 	}
     }
-    
-    
+
     /**
      * Constructor
      * @param _file_name The file which contains the database. If this file does not exists, it will be automatically created with the correspondent database.
@@ -98,6 +90,11 @@ public final class HSQLDBWrapper
      */
     public HSQLDBWrapper(File _file_name, int _cache_rows, int _cache_size, int _result_max_memory_rows, int _cache_free_count) throws IllegalArgumentException, DatabaseException
     {
+	super(getConnection(_file_name, _cache_rows, _cache_size, _result_max_memory_rows, _cache_free_count), "Database from file : "+getHSQLDBDataFileName(_file_name)+".data");
+    }
+    
+    private static Connection getConnection(File _file_name, int _cache_rows, int _cache_size, int _result_max_memory_rows, int _cache_free_count) throws DatabaseLoadingException
+    {
 	if (_file_name==null)
 	    throw new NullPointerException("The parameter _file_name is a null pointer !");
 	if (_file_name.isDirectory())
@@ -105,35 +102,32 @@ public final class HSQLDBWrapper
 	ensureHSQLLoading();
 	try
 	{
-	    database_name="Database from file : "+getHSQLDBDataFileName(_file_name)+".data";
-	    sql_connection=DriverManager.getConnection("jdbc:hsqldb:file:"+getHSQLDBDataFileName(_file_name)+";hsqldb.cache_rows="+_cache_rows+";hsqldb.cache_size="+_cache_size+";hsqldb.result_max_memory_rows="+_result_max_memory_rows+";hsqldb.cache_free_count="+_cache_free_count+";shutdown=true", "SA", "");
-	    sql_connection.setAutoCommit(false);
-	    locker=getLocker();
+	    Connection c=DriverManager.getConnection("jdbc:hsqldb:file:"+getHSQLDBDataFileName(_file_name)+";hsqldb.cache_rows="+_cache_rows+";hsqldb.cache_size="+_cache_size+";hsqldb.result_max_memory_rows="+_result_max_memory_rows+";hsqldb.cache_free_count="+_cache_free_count+";shutdown=true", "SA", "");
+	    c.setAutoCommit(false);
+	    return c;
 	}
-	catch (Exception e)
+	catch(Exception e)
 	{
 	    throw new DatabaseLoadingException("Impossible to create the database into the file "+_file_name, e);
 	}
     }
-    
-    private ReadWriteLock getLocker()
+    private static Connection getConnection(URL _url) throws DatabaseLoadingException
     {
-	    synchronized(HSQLDBWrapper.class)
-	    {
-		String f=database_name;
-		ReadWriteLock rwl=lockers.get(f);
-		if (rwl==null)
-		{
-		    rwl=new ReadWriteLock();
-		    lockers.put(f, rwl);
-		    number_of_shared_lockers.put(f, new Integer(1));
-		}
-		else
-		    number_of_shared_lockers.put(f, new Integer(number_of_shared_lockers.get(f).intValue()+1));
-		
-		return rwl;
-	    }
+	if (_url==null)
+	    throw new NullPointerException("The parameter _url is a null pointer !");
+	ensureHSQLLoading();
+	try
+	{
+	    Connection c=DriverManager.getConnection("jdbc:hsqldb:"+_url.getPath()+";hsqldb.cache_rows=0;shutdown=true", "SA", "");
+	    c.setAutoCommit(false);
+	    return c;
+	}
+	catch(Exception e)
+	{
+	    throw new DatabaseLoadingException("Impossible to create the database into the file "+_url, e);
+	}
     }
+    
     
     private static String getHSQLDBDataFileName(File _file_name)
     {
@@ -176,199 +170,378 @@ public final class HSQLDBWrapper
      */
     public HSQLDBWrapper(URL _url) throws IllegalArgumentException, DatabaseException
     {
-	if (_url==null)
-	    throw new NullPointerException("The parameter _url is a null pointer !");
-	ensureHSQLLoading();
-	try
-	{
-	    database_name="Database from URL : "+_url.getPath();
-	    sql_connection=DriverManager.getConnection("jdbc:hsqldb:"+_url.getPath()+";hsqldb.cache_rows=0;shutdown=true", "SA", "");
-	    sql_connection.setAutoCommit(false);
-	    locker=getLocker();
-	}
-	catch (Exception e)
-	{
-	    throw new DatabaseLoadingException("Impossible to create the database into the file "+_url, e);
-	}
+	super(getConnection(_url), "Database from URL : "+_url.getPath());
     }
     
-    /**
-     * 
-     * @return The Sql connection.
-     */
-    public Connection getSqlConnection()
+    @Override
+    protected void closeConnection() throws SQLException
     {
-	return sql_connection;
+	Statement s=sql_connection.createStatement();
+	s.executeQuery("SHUTDOWN");
+	s.close();
+	sql_connection.close();
     }
     
-    private void close() throws DatabaseException
+    @Override
+    protected String getCachedKeyword()
     {
-	if (!closed)
+	return "CACHED";
+    }
+    
+    @Override
+    boolean doesTableExists(String table_name) throws Exception
+    {
+	try (ReadQuerry rq=new ReadQuerry(getSqlConnection(), "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"+table_name+"'"))
 	{
-	    try(ReadWriteLock.Lock lock=locker.getAutoCloseableWriteLock())
+	    if (rq.result_set.next())
+		return true;
+	}
+	return false;
+	
+    }
+    
+    @Override
+    ColumnsReadQuerry getColumnMetaData(String tableName) throws Exception
+    {
+	return new CReadQuerry(this.sql_connection, "SELECT COLUMN_NAME, TYPE_NAME, COLUMN_SIZE, IS_NULLABLE, IS_AUTOINCREMENT FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"+tableName+"';");
+    }
+    
+    @Override
+    void checkConstraints(Table<?> table) throws DatabaseException
+    {
+	try(ReadQuerry rq=new ReadQuerry(sql_connection, "select CONSTRAINT_NAME, CONSTRAINT_TYPE from INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_NAME='"+table.getName()+"';"))
+	{
+	    while (rq.result_set.next())
 	    {
-		Statement s=sql_connection.createStatement();
-		s.executeQuery("SHUTDOWN");
-		s.close();
-		sql_connection.close();
-	    }
-	    catch(SQLException se)
-	    {
-		throw DatabaseException.getDatabaseException(se);
-	    }
-	    finally
-	    {
-		synchronized(HSQLDBWrapper.class)
+		String constraint_name=rq.result_set.getString("CONSTRAINT_NAME");
+		String constraint_type=rq.result_set.getString("CONSTRAINT_TYPE");
+		switch(constraint_type)
 		{
-		    HSQLDBWrapper.lockers.remove(database_name);
-		    int v=HSQLDBWrapper.number_of_shared_lockers.get(database_name).intValue()-1;
-		    if (v==0)
-			HSQLDBWrapper.number_of_shared_lockers.remove(database_name);
-		    else if (v>0)
-			HSQLDBWrapper.number_of_shared_lockers.put(database_name, new Integer(v));
-		    else
-			throw new IllegalAccessError();
+		    case "PRIMARY KEY":
+		    {
+			if (!constraint_name.equals(table.getSqlPrimaryKeyName()))
+			    throw new DatabaseVersionException(table, "There a grouped primary key named "+constraint_name+" which should be named "+table.getSqlPrimaryKeyName());
+		    }
+		    break;
+		    case "FOREIGN KEY":
+		    {
+		    
+		    }	
+		    break;
+		    case "UNIQUE":
+		    {
+			try(ReadQuerry rq2=new ReadQuerry(sql_connection, "select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"+table.getName()+"' AND CONSTRAINT_NAME='"+constraint_name+"';"))
+			{
+			    if (rq2.result_set.next())
+			    {
+				String col=(table.getName()+"."+rq2.result_set.getString("COLUMN_NAME")).toUpperCase();
+				boolean found=false;
+				for (FieldAccessor fa : table.getFieldAccessors())
+				{
+				    for (SqlField sf : fa.getDeclaredSqlFields())
+				    {
+					if (sf.field.equals(col) && fa.isUnique())
+					{
+					    found=true;
+					    break;
+					}
+				    }
+				    if (found)
+					break;
+				}
+				if (!found)
+				    throw new DatabaseVersionException(table, "There is a unique sql field "+col+" which does not exists into the OOD database.");
+			    }
+			}
+			
+		    }
+		    break;
+		    case "CHECK":
+			break;
+		    default :
+			throw new DatabaseVersionException(table, "Unknow constraint "+constraint_type);
 		}
-		closed=true;
 	    }
 	}
-    }
-    @Override public void finalize()
-    {
-	try
+	catch(SQLException e)
 	{
-	    close();
+	    throw new DatabaseException("Impossible to check constraints of the table "+table.getName(), e);
 	}
 	catch(Exception e)
 	{
-	    
+	    throw DatabaseException.getDatabaseException(e);
 	}
-    }
-    
-    @Override public int hashCode()
-    {
-	return database_name.hashCode();
-    }
-    
-    @Override public boolean equals(Object o)
-    {
-	return o==this;
-	/*if (o==null)
-	    return false;
-	if (o==this)
-	    return true;
-	if (o instanceof HSQLDBWrapper)
+	try(ReadQuerry rq=new ReadQuerry(sql_connection, "select PKTABLE_NAME, PKCOLUMN_NAME, FKCOLUMN_NAME from INFORMATION_SCHEMA.SYSTEM_CROSSREFERENCE WHERE FKTABLE_NAME='"+table.getName()+"';"))
 	{
-	    return this.database_name.equals(((HSQLDBWrapper) o).database_name);
-	}
-	return false;*/
-    }
-    
-    @Override public String toString()
-    {
-	return database_name;
-    }
-    
-    final ReadWriteLock locker;
-    private boolean transaction_already_running=false;
-    
-    
-    Object runTransaction(final Transaction _transaction) throws DatabaseException
-    {
-	Object res=null;
-	if (_transaction.doesWriteData())
-	{
-	    if (!transaction_already_running)
+	    while (rq.result_set.next())
 	    {
-		transaction_already_running=true;
-		try
+		String pointed_table=rq.result_set.getString("PKTABLE_NAME");
+		String pointed_col=pointed_table+"."+rq.result_set.getString("PKCOLUMN_NAME");
+		String fk=table.getName()+"."+rq.result_set.getString("FKCOLUMN_NAME");
+		boolean found=false;
+		for (ForeignKeyFieldAccessor fa : table.getForeignKeysFieldAccessors())
 		{
-		    res=_transaction.run(this);
-		    sql_connection.commit();
-		}
-		catch(DatabaseException e)
-		{
-		    try
+		    for (SqlField sf : fa.getDeclaredSqlFields())
 		    {
-			sql_connection.rollback();
+			if (sf.field.equals(fk) && sf.pointed_field.equals(pointed_col) && sf.pointed_table.equals(pointed_table))
+			{
+			    found=true;
+			    break;
+			}
 		    }
-		    catch(SQLException se)
-		    {
-			throw new DatabaseIntegrityException("Impossible to rollback the database changments", se);
-		    }
-		    throw e;
+		    if (found)
+			break;
 		}
-		catch(SQLException e)
-		{
-		    throw DatabaseException.getDatabaseException(e);
-		}
-		finally
-		{
-		    transaction_already_running=false;
-		}	
-	    }
-	    else
-	    {
-		res=_transaction.run(this);
+		if (!found)
+		    throw new DatabaseVersionException(table, "There is foreign keys defined into the Sql database which have not been found in the OOD database.");
 	    }
 	}
-	else
+	catch(SQLException e)
 	{
-	    res=_transaction.run(this);
+	    throw new DatabaseException("Impossible to check constraints of the table "+table.getName(), e);
 	}
-	return res;
-    }
-    
-    
-    /**
-     * Run a transaction by locking this database with the current thread. During this transaction execution, no transaction will be able to be run thanks to another thread. 
-     * @param _transaction the transaction to run
-     * @return the result of the transaction
-     * @throws Exception if an exception occurs during the transaction running
-     * @param <O> a type 
-     */
-    @SuppressWarnings("unchecked")
-    public <O> O runSynchronizedTransaction(final SynchronizedTransaction<O> _transaction) throws Exception
-    {
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
 	try
 	{
-	    return (O)this.runTransaction(new Transaction() {
-	    
-		@Override
-		public Object run(HSQLDBWrapper _sql_connection) throws DatabaseException
+	    Pattern col_size_matcher=Pattern.compile("([0-9]+)");
+	    for (FieldAccessor fa : table.getFieldAccessors())
+	    {
+		for (SqlField sf : fa.getDeclaredSqlFields())
 		{
-		    try
+		    /*System.out.println("SF : "+sf.short_field);
+		    System.out.println("SF : "+table.getName());
+		    try(ReadQuerry rq=new ReadQuerry(sql_connection, "SELECT TYPE_NAME, COLUMN_SIZE, IS_NULLABLE, ORDINAL_POSITION, IS_AUTOINCREMENT FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS"+getSqlComma()))
 		    {
-			locker.lockWrite();
-			return (Object)_transaction.run();
+			while (rq.result_set.next())
+			{
+			    System.out.println("\t"+rq.result_set.getString("TABLE_NAME"));
+			}
+		    }*/
+		    try(ReadQuerry rq=new ReadQuerry(sql_connection, "SELECT TYPE_NAME, COLUMN_SIZE, IS_NULLABLE, ORDINAL_POSITION, IS_AUTOINCREMENT FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"+table.getName()+"' AND COLUMN_NAME='"+sf.short_field+"'"+getSqlComma()))
+		    {
+			if (rq.result_set.next())
+			{
+			    String type=rq.result_set.getString("TYPE_NAME").toUpperCase();
+			    if (!sf.type.toUpperCase().startsWith(type))
+				throw new DatabaseVersionException(table, "The type of the field "+sf.field+" should  be "+sf.type+" and not "+type);
+			    if (col_size_matcher.matcher(sf.type).matches())
+			    {
+				int col_size=rq.result_set.getInt("COLUMN_SIZE");
+				Pattern pattern2=Pattern.compile("("+col_size+")");
+				if (!pattern2.matcher(sf.type).matches())
+				    throw new DatabaseVersionException(table, "The column "+sf.field+" has a size equals to "+col_size+" (expected "+sf.type+")");
+			    }
+			    boolean is_null=rq.result_set.getString("IS_NULLABLE").equals("YES");
+			    if (is_null==fa.isNotNull())
+				throw new DatabaseVersionException(table, "The field "+fa.getFieldName()+" is expected to be "+(fa.isNotNull()?"not null":"nullable"));
+			    boolean is_autoincrement=rq.result_set.getString("IS_AUTOINCREMENT").equals("YES");
+			    if (is_autoincrement!=fa.isAutoPrimaryKey())
+				throw new DatabaseVersionException(table, "The field "+fa.getFieldName()+" is "+(is_autoincrement?"":"not ")+"autoincremented into the Sql database where it is "+(is_autoincrement?"not ":"")+" into the OOD database.");
+			    sf.sql_position=rq.result_set.getInt("ORDINAL_POSITION");
+			}
+			else
+			    throw new DatabaseVersionException(table, "The field "+fa.getFieldName()+" was not found into the database.");
 		    }
-		    catch(Exception e)
+		    if (fa.isPrimaryKey())
 		    {
-			throw new DatabaseException("",e);
+			try(ReadQuerry rq=new ReadQuerry(sql_connection, "select * from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"+table.getName()+"' AND COLUMN_NAME='"+sf.short_field+"' AND CONSTRAINT_NAME='"+table.getSqlPrimaryKeyName()+"';"))
+			{	
+			    if (!rq.result_set.next())
+				throw new DatabaseVersionException(table, "The field "+fa.getFieldName()+" is not declared as a primary key into the Sql database.");
+			}
 		    }
-		    finally
+		    if (fa.isForeignKey())
 		    {
-			locker.unlockWrite();
+			try(ReadQuerry rq=new ReadQuerry(sql_connection, "select PKTABLE_NAME, PKCOLUMN_NAME, FKCOLUMN_NAME from INFORMATION_SCHEMA.SYSTEM_CROSSREFERENCE WHERE FKTABLE_NAME='"+table.getName()+"' AND PKCOLUMN_NAME='"+sf.short_pointed_field+"' AND FKCOLUMN_NAME='"+sf.short_field+"';"))
+			{
+			    if (!rq.result_set.next())
+				throw new DatabaseVersionException(table, "The field "+fa.getFieldName()+" is a foreign key one of its Sql fields "+sf.field+" is not a foreign key pointing to the table "+sf.pointed_table);
+			}
+		    }
+		    if (fa.isUnique())
+		    {
+			boolean found=false;
+			try(ReadQuerry rq=new ReadQuerry(sql_connection, "select CONSTRAINT_NAME, CONSTRAINT_TYPE from INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_NAME='"+table.getName()+"';"))
+			{
+			    while (rq.result_set.next())
+			    {
+				if (rq.result_set.getString("CONSTRAINT_TYPE").equals("UNIQUE"))
+				{
+				    String constraint_name=rq.result_set.getString("CONSTRAINT_NAME");
+				    try(ReadQuerry rq2=new ReadQuerry(sql_connection, "select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"+table.getName()+"' AND CONSTRAINT_NAME='"+constraint_name+"';"))
+				    {
+					if (rq2.result_set.next())
+					{	
+					    String col=table.getName()+"."+rq2.result_set.getString("COLUMN_NAME");
+					    if (col.equals(sf.field))
+					    {
+						found=true;
+						break;
+					    }
+					}
+				    }
+				}
+			    }
+			}
+			if (!found)
+			    throw new DatabaseVersionException(table, "The OOD field "+fa.getFieldName()+" is a unique key, but it not declared as unique into the Sql database.");
 		    }
 		}
-	    
-		@Override
-		public boolean doesWriteData()
-		{
-		    return true;
-		}
-	    });
+	    }
 	}
-	catch(DatabaseException e)
+	catch(SQLException e)
 	{
-	    if (e.getCause()!=null && e.getCause() instanceof Exception)
-		throw (Exception)e.getCause();
-	    else
-		throw e;
+	    throw new DatabaseException("Impossible to check constraints of the table "+table.getName(), e);
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
 	}
     }
     
+    static class CReadQuerry extends ColumnsReadQuerry
+    {
+
+	public CReadQuerry(Connection _sql_connection, String _querry) throws SQLException
+	{
+	    super(_sql_connection, _querry);
+	    setTableColumnsResultSet(new TCResultSet(this.result_set));
+	}
+	
+    }
     
+    
+    static class TCResultSet extends TableColumnsResultSet
+    {
+
+	TCResultSet(ResultSet _rs)
+	{
+	    super(_rs);
+	}
+
+	@Override
+	public String getColumnName() throws SQLException
+	{
+	    return resultSet.getString("COLUMN_NAME");
+	}
+
+	@Override
+	public String getTypeName() throws SQLException
+	{
+	    return resultSet.getString("TYPE_NAME");
+	}
+
+	@Override
+	public int getColumnSize() throws SQLException
+	{
+	    return resultSet.getInt("COLUMN_SIZE");
+	}
+
+	@Override
+	public boolean isNullable() throws SQLException
+	{
+	    return resultSet.getString("IS_NULLABLE").equals("YES");
+	}
+
+	@Override
+	public boolean isAutoIncrement() throws SQLException
+	{
+	    return resultSet.getString("IS_AUTOINCREMENT").equals("YES");
+	}
+	
+    }
+    
+    @Override
+    String getSqlComma()
+    {
+	return ";";
+    }
+    @Override
+    public int getVarCharLimit()
+    {
+	return 16777216;
+    }
+    @Override
+    public boolean isVarBinarySupported()
+    {
+	return true;
+    }
+    @Override
+    public String getByteType()
+    {
+	return "TINYINT";
+    }
+    @Override
+    public String getIntType()
+    {
+	return "INTEGER";
+    }
+    
+    @Override
+    public String getFloatType()
+    {
+	return "DOUBLE";
+    }
+    @Override
+    public String getDoubleType()
+    {
+	return "DOUBLE";
+    }
+    @Override
+    public String getLongType()
+    {
+	return "BIGINT";
+    }
+    @Override
+    public String getShortType()
+    {
+	return "SMALLINT";
+    }
+    @Override
+    public String getBigDecimalType()
+    {
+	return "VARCHAR(16374)";
+    }
+    @Override
+    public String getBigIntegerType()
+    {
+	return "VARCHAR(16374)";
+    }
+    
+
+    @Override
+    String getSqlNULL()
+    {
+	return "NULL";
+    }
+    @Override
+    String getSqlNotNULL()
+    {
+	return "NOT NULL";
+    }
+    @Override
+    public String getSerializableType()
+    {
+	return "BLOB";
+    }
+    @Override
+    String getSqlQuerryToGetLastGeneratedID()
+    {
+	return "CALL IDENTITY()";
+    }
+    @Override
+    String getOnUpdateCascadeSqlQuerry()
+    {
+	return "ON UPDATE CASCADE";
+    }
+    @Override
+    String getOnDeleteCascadeSqlQuerry()
+    {
+	return "ON DELETE CASCADE";
+    }
     /**
      * Closes the database files, rewrites the script file, deletes the log file and opens the database.
      * @param _defrag If true is specified, this command also shrinks the .data file to its minimal size.
@@ -390,5 +563,5 @@ public final class HSQLDBWrapper
 	    }
 	}
     }
-    
+
 }

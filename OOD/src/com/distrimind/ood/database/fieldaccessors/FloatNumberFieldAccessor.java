@@ -28,6 +28,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 
 import com.distrimind.ood.database.DatabaseRecord;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.SqlField;
 import com.distrimind.ood.database.SqlFieldInstance;
 import com.distrimind.ood.database.exceptions.DatabaseException;
@@ -40,11 +41,11 @@ public class FloatNumberFieldAccessor extends FieldAccessor
 {
     protected final SqlField sql_fields[];
     
-    protected FloatNumberFieldAccessor(Field _field) throws DatabaseException
+    protected FloatNumberFieldAccessor(DatabaseWrapper _sql_connection, Field _field) throws DatabaseException
     {
-	super(null, _field);
+	super(_sql_connection, _field);
 	sql_fields=new SqlField[1];
-	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), "DOUBLE", null, null);
+	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), sql_connection.getFloatType(), null, null);
 
     }
 
@@ -152,7 +153,7 @@ public class FloatNumberFieldAccessor extends FieldAccessor
     }
 
     @Override
-    public boolean isAlwaysNutNull()
+    public boolean isAlwaysNotNull()
     {
 	return false;
     }
@@ -197,11 +198,13 @@ public class FloatNumberFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    Object val=_result_set.getObject(sql_fields[0].field);
+	    Object val=_result_set.getObject(sql_fields[0].short_field);
 	    if (val==null && isNotNull())
 		throw new DatabaseIntegrityException("Unexpected exception");
-	    
-	    field.set(_class_instance, new Float(((Double)val).floatValue()));
+	    if (val instanceof Double)
+		field.set(_class_instance, new Float(((Double)val).floatValue()));
+	    else 
+		field.set(_class_instance, (Float)val);
 	}
 	catch(Exception e)
 	{
@@ -235,7 +238,7 @@ public class FloatNumberFieldAccessor extends FieldAccessor
 	setValue(_class_instance, _field_instance);
 	try
 	{
-	    _result_set.updateObject(sql_fields[0].field, field.get(_class_instance));
+	    _result_set.updateObject(sql_fields[0].short_field, field.get(_class_instance));
 	}
 	catch(Exception e)
 	{

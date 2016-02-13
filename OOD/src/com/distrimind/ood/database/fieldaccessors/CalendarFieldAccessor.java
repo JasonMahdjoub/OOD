@@ -23,6 +23,7 @@ package com.distrimind.ood.database.fieldaccessors;
 import java.lang.reflect.Field;
 import java.util.Calendar;
 
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
 
@@ -30,9 +31,9 @@ import com.distrimind.ood.database.exceptions.FieldDatabaseException;
 public class CalendarFieldAccessor extends SerializableFieldAccessor
 {
 
-    protected CalendarFieldAccessor(Field _field) throws DatabaseException
+    protected CalendarFieldAccessor(DatabaseWrapper _sql_connection, Field _field) throws DatabaseException
     {
-	super(_field);
+	super(_sql_connection, _field);
 	if (!Calendar.class.isAssignableFrom(_field.getType()))
 	    throw new FieldDatabaseException("The field "+_field.getName()+" of the class "+_field.getDeclaringClass().getName()+" of type "+_field.getType()+" must be a Calendar type."); 
     }

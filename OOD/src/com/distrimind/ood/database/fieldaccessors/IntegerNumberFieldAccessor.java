@@ -27,6 +27,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 
 import com.distrimind.ood.database.DatabaseRecord;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.SqlField;
 import com.distrimind.ood.database.SqlFieldInstance;
 import com.distrimind.ood.database.exceptions.DatabaseException;
@@ -38,11 +39,11 @@ public class IntegerNumberFieldAccessor extends FieldAccessor
 {
     protected final SqlField[] sql_fields;
 
-    protected IntegerNumberFieldAccessor(Field _field) throws DatabaseException
+    protected IntegerNumberFieldAccessor(DatabaseWrapper _sql_connection, Field _field) throws DatabaseException
     {
-	super(null, _field);
+	super(_sql_connection, _field);
 	sql_fields=new SqlField[1];
-	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), "INTEGER", null, null);
+	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), sql_connection.getIntType(), null, null);
     }
 
     @Override
@@ -147,7 +148,7 @@ public class IntegerNumberFieldAccessor extends FieldAccessor
     }
 
     @Override
-    public boolean isAlwaysNutNull()
+    public boolean isAlwaysNotNull()
     {
 	return false;
     }
@@ -191,7 +192,7 @@ public class IntegerNumberFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    Object res=_result_set.getObject(sql_fields[0].field);
+	    Object res=_result_set.getObject(sql_fields[0].short_field);
 	    if (res==null && isNotNull())
 		throw new DatabaseIntegrityException("Unexpected exception");
 	    field.set(_class_instance, res);
@@ -225,7 +226,7 @@ public class IntegerNumberFieldAccessor extends FieldAccessor
 	setValue(_class_instance, _field_instance);
 	try
 	{
-	    _result_set.updateObject(sql_fields[0].field, field.get(_class_instance));
+	    _result_set.updateObject(sql_fields[0].short_field, field.get(_class_instance));
 	}
 	catch(Exception e)
 	{

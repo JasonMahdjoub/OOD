@@ -24,6 +24,6 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 
 public interface Transaction
 {
-    public Object run(HSQLDBWrapper _sql_connection) throws DatabaseException;
+    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException;
     public boolean doesWriteData();
 }

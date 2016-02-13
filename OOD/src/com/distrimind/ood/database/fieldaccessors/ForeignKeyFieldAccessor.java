@@ -28,7 +28,7 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 
 import com.distrimind.ood.database.DatabaseRecord;
-import com.distrimind.ood.database.HSQLDBWrapper;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.SqlField;
 import com.distrimind.ood.database.SqlFieldInstance;
 import com.distrimind.ood.database.Table;
@@ -42,7 +42,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
     protected ArrayList<FieldAccessor> linked_primary_keys=null; 
     protected String linked_table_name=null;
     protected Table<? extends DatabaseRecord> pointed_table=null;
-    private final Class<?>[] compatible_classes;
+    //private final Class<?>[] compatible_classes;
     
     private static Method get_record_method;
     static
@@ -68,15 +68,13 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
     }
     
     
-    protected ForeignKeyFieldAccessor(HSQLDBWrapper _sql_connection, Field _field) throws DatabaseException
+    protected ForeignKeyFieldAccessor(DatabaseWrapper _sql_connection, Field _field) throws DatabaseException
     {
 	super(_sql_connection, _field);
 	if (!DatabaseRecord.class.isAssignableFrom(_field.getType()))
 	    throw new DatabaseException("The field "+_field.getName()+" of the class "+_field.getDeclaringClass().getName()+" is not a DatabaseRecord.");
 	if (!field.getType().getPackage().equals(field.getDeclaringClass().getPackage()))
 	    throw new DatabaseException("The package of the pointed DatabaseRecord class "+field.getType().getName()+", is not the same then the package of the containing class "+field.getDeclaringClass().getName()+" (Foregin key="+field.getName()+").");
-	compatible_classes=new Class<?>[1];
-	compatible_classes[0]=field.getType();
 	
     }
     public void initialize() throws DatabaseException
@@ -85,7 +83,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
 	{
 	    @SuppressWarnings("unchecked")
 	    Class<? extends DatabaseRecord> c=(Class<? extends DatabaseRecord>)field.getType();
-	    pointed_table=Table.getTableInstance(sql_connection, Table.getTableClass(c));
+	    pointed_table=sql_connection.getTableInstance(Table.getTableClass(c));
 	    linked_primary_keys=pointed_table.getPrimaryKeysFieldAccessors();
 	    linked_table_name=pointed_table.getName();
 	    
@@ -99,6 +97,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
 		for (SqlField sf : fa.getDeclaredSqlFields())
 		{
 		    sql_fields.add(new SqlField(table_name+"."+this.getFieldName()+"__"+pointed_table.getName()+"_"+sf.short_field, sf.type, pointed_table.getName(), sf.field));
+		    
 		}
 	    }
 	    this.sql_fields=new SqlField[sql_fields.size()];
@@ -190,6 +189,9 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
     @Override
     public Class<?>[] getCompatibleClasses()
     {
+	Class<?> compatible_classes[]=new Class<?>[1];
+	compatible_classes[0]=field.getType();
+
 	return compatible_classes;
     }
 
@@ -242,7 +244,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
     }
 
     @Override
-    public boolean isAlwaysNutNull()
+    public boolean isAlwaysNotNull()
     {
 	return false;
     }
@@ -269,7 +271,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
 	    SqlFieldInstance sfis[]=new SqlFieldInstance[sfs.length];
 	    for (int i=0;i<sfs.length;i++)
 	    {
-		sfis[i]=new SqlFieldInstance(sfs[i], _result_set.getObject(sfs[i].field));
+		sfis[i]=new SqlFieldInstance(sfs[i], _result_set.getObject(sfs[i].short_field));
 	    }
 	    field.set(_class_instance, get_record_method.invoke(getPointedTable(), sfis, list));
 	}
@@ -320,7 +322,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
 		{
 		    for (SqlField sf : sql_fields)
 		    {
-			_result_set.updateObject(sf.field, null);
+			_result_set.updateObject(sf.short_field, null);
 		    }
 		}
 		else
@@ -370,4 +372,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
     {
 	return true;
     }
+    
+    
+
 }

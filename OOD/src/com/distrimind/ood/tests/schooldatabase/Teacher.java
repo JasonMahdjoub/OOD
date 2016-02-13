@@ -4,7 +4,7 @@ import java.util.ArrayList;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.Filter;
-import com.distrimind.ood.database.HSQLDBWrapper;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.annotations.AutoPrimaryKey;
 import com.distrimind.ood.database.annotations.Field;
@@ -31,9 +31,9 @@ public final class Teacher extends Table<Teacher.Record>
 	@Field @NotNull long DateOfBirth;
     }
     
-    public ArrayList<Lecture.Record> getLectures(HSQLDBWrapper sql_connection, final Teacher.Record _teacher) throws DatabaseException
+    public ArrayList<Lecture.Record> getLectures(DatabaseWrapper sql_connection, final Teacher.Record _teacher) throws DatabaseException
     {
-	TeacherLecture tl=(TeacherLecture)getTableInstance(sql_connection, TeacherLecture.class);
+	TeacherLecture tl=(TeacherLecture)sql_connection.getTableInstance(TeacherLecture.class);
 	ArrayList<TeacherLecture.Record> tls=tl.getRecords(new Filter<TeacherLecture.Record>() {
 	    
 	    @Override
