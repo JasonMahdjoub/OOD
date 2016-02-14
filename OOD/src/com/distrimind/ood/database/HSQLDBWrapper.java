@@ -160,6 +160,9 @@ public class HSQLDBWrapper extends DatabaseWrapper
 	f=new File(file_base+".tmp");
 	if (f.exists())
 	    f.delete();
+	f=new File(file_base+".lobs");
+	if (f.exists())
+	    f.delete();
     }
     /**
      * Constructor
@@ -551,15 +554,27 @@ public class HSQLDBWrapper extends DatabaseWrapper
     {
 	try(ReadWriteLock.Lock lock=locker.getAutoCloseableWriteLock())
 	{
+	    Statement st=null;
 	    try
 	    {
-		Statement st=sql_connection.createStatement();
+		st=sql_connection.createStatement();
 		st.execute("CHECKPOINT"+(_defrag?" DEFRAG":""));
-		st.close();
 	    }
 	    catch(SQLException e)
 	    {
 		throw DatabaseException.getDatabaseException(e);
+	    }
+	    finally
+	    {
+		try
+		{
+		    st.close();
+		}
+		catch(SQLException e)
+		{
+		    throw DatabaseException.getDatabaseException(e);
+		}
+		
 	    }
 	}
     }

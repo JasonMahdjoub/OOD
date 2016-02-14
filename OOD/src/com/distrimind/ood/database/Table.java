@@ -548,17 +548,29 @@ public abstract class Table<T extends DatabaseRecord>
 			@Override
 			public Object run(DatabaseWrapper sql_connection) throws DatabaseException
 			{
+			    Statement st=null;
 			    try
 			    {
-				Statement st=sql_connection.getSqlConnection().createStatement();
+				st=sql_connection.getSqlConnection().createStatement();
 				
 				st.executeUpdate(SqlQuerry.toString());
-				st.close();
+				
 			    }
 			    catch(SQLException e)
 			    {
 				throw DatabaseException.getDatabaseException(e);
 			    }	
+			    finally
+			    {
+				try
+				{
+				    st.close();
+				}
+				catch(SQLException e)
+				{
+				    throw DatabaseException.getDatabaseException(e);
+				}	
+			    }
 			    return null;
 			}
 		    });
@@ -571,9 +583,10 @@ public abstract class Table<T extends DatabaseRecord>
 			@Override
 			public Object run(DatabaseWrapper sql_connection) throws DatabaseException
 			{
+			    Statement st=null;
 			    try
 			    {
-				Statement st=sql_connection.getSqlConnection().createStatement();
+				st=sql_connection.getSqlConnection().createStatement();
 				st.executeUpdate("INSERT INTO "+DatabaseWrapper.ROW_COUNT_TABLES+" VALUES('"+Table.this.getName()+"', 0)");
 				st.close();
 				st=sql_connection.getSqlConnection().createStatement();
@@ -586,10 +599,23 @@ public abstract class Table<T extends DatabaseRecord>
 						"FOR EACH ROW \n" +
 						"UPDATE "+DatabaseWrapper.ROW_COUNT_TABLES+" SET ROW_COUNT=ROW_COUNT-1 WHERE TABLE_NAME='"+Table.this.getName()+"'\n");
 				st.close();
+				st=null;
 			    }
 			    catch(SQLException e)
 			    {
 				throw DatabaseException.getDatabaseException(e);
+			    }
+			    finally
+			    {
+				try
+				{
+				    if (st!=null)
+					st.close();
+				}
+				catch(SQLException e)
+				{
+				    throw DatabaseException.getDatabaseException(e);
+				}
 			    }
 			    return null;
 			}
@@ -684,16 +710,28 @@ public abstract class Table<T extends DatabaseRecord>
 		        @Override
 		        public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 		        {
+		            Statement st=null;
 		            try
 		            {
-		    		Statement st=_sql_connection.getSqlConnection().createStatement();
+		    		st=_sql_connection.getSqlConnection().createStatement();
 		    		st.executeUpdate(SqlQuerry.toString());
-		    		st.close();
+		    		
 		    		return null;
 		            }
 		            catch(Exception e)
 		            {
 		        	throw DatabaseException.getDatabaseException(e);
+		            }
+		            finally
+		            {
+		        	try
+		        	{
+		        	    st.close();
+		        	}
+		        	catch(Exception e)
+		        	{
+		        	    throw DatabaseException.getDatabaseException(e);
+			        }
 		            }
 		        }
 		    });
@@ -5438,25 +5476,27 @@ public abstract class Table<T extends DatabaseRecord>
 	}
     }
     
-    Lock current_lock=null;
+    //Lock current_lock=null;
+    final HashMap<Thread, Lock> current_locks=new HashMap<>();
     
     private static abstract class Lock implements AutoCloseable
     {
-	protected final Table<?> current_table;
-	protected final Lock previous_lock;
-	protected Lock(Table<?> _current_table)
+	protected Table<?> current_table;
+	protected Lock previous_lock;
+	protected Lock(/*Table<?> _current_table*/)
 	{
-	    current_table=_current_table;
-	    current_table.sql_connection.locker.lockWrite();
-	    previous_lock=current_table.current_lock;
+	    /*current_table=_current_table;
+	    previous_lock=current_table.current_lock;*/
 	}
 	
-	protected boolean isValid()
+	protected void initialize(Table<?> _current_table)
 	{
-	    return isValid(current_table.current_lock);
-
+	    current_table=_current_table;
+	    //previous_lock=current_table.current_lock;
+	    previous_lock=current_table.current_locks.get(Thread.currentThread());
 	}
-	protected abstract boolean isValid(Lock cur);
+	
+	protected abstract boolean isValid();
 	
 	protected abstract void close(ArrayList<Table<?>> _comes_from_tables) throws DatabaseException;
 
@@ -5481,9 +5521,14 @@ public abstract class Table<T extends DatabaseRecord>
 	    list.add(this.current_table);
 	    for (Table<?> t : _comes_from_tables)
 	    {
-		if (t.current_lock!=null)
-		    t.current_lock.close(list);
+		Lock l=t.current_locks.get(Thread.currentThread());
+		if (l!=null)
+		    l.close(list);
 	    }
+	    if (previous_lock==null)
+		current_table.current_locks.remove(Thread.currentThread());
+	    else
+		current_table.current_locks.put(Thread.currentThread(), previous_lock);
 	    
 	}
     }
@@ -5497,51 +5542,62 @@ public abstract class Table<T extends DatabaseRecord>
 
 	protected WriteLock(Table<?> _current_table, ArrayList<Table<?>> _comes_from_tables, Table<?> _from_comes_original_table) throws DatabaseException
 	{
-	    super(_current_table);
-	    try
+	    super();
+	    synchronized(_current_table.sql_connection.locker)
 	    {
-		_comes_from_tables.add(current_table);
-	    
-		if (!isValid())
-		    throw new ConcurentTransactionDatabaseException("Attempting to write, through several nested queries, on the table "+current_table.getName()+".");
-		for (NeighboringTable nt : current_table.list_tables_pointing_to_this_table)
-		{
-		    Table<?> t=nt.getPointedTable();
-		    if (!_comes_from_tables.contains(t))
-		    {
-			new WriteLock(t, _comes_from_tables, _from_comes_original_table);
-		    }
-		}
-		for (ForeignKeyFieldAccessor fa : current_table.foreign_keys_fields)
-		{
-		    Table<?> t=fa.getPointedTable();
-		    if(_comes_from_tables.size()==1 || (!_comes_from_tables.contains(t) && !Lock.indirectlyPointTo(t, _from_comes_original_table)))
-		    {
-			new ReadLock(t, _comes_from_tables);
-		    }
-		}
-		current_table.current_lock=this;
-	    }
-	    catch(DatabaseException e)
-	    {
+		
 		try
 		{
-		    this.cancel(_comes_from_tables);
+		    _current_table.sql_connection.locker.lockWrite();
+		    initialize(_current_table);
+		    _comes_from_tables.add(current_table);
+	    
+		    if (!isValid())
+			throw new ConcurentTransactionDatabaseException("Attempting to write, through several nested queries, on the table "+current_table.getName()+".");
+		    for (NeighboringTable nt : current_table.list_tables_pointing_to_this_table)
+		    {
+			Table<?> t=nt.getPointedTable();
+			if (!_comes_from_tables.contains(t))
+			{
+			    new WriteLock(t, _comes_from_tables, _from_comes_original_table);
+			}
+		    }
+		    for (ForeignKeyFieldAccessor fa : current_table.foreign_keys_fields)
+		    {
+			Table<?> t=fa.getPointedTable();
+			if(_comes_from_tables.size()==1 || (!_comes_from_tables.contains(t) && !Lock.indirectlyPointTo(t, _from_comes_original_table)))
+			{
+			    new ReadLock(t, _comes_from_tables);
+			}
+		    }
+		    
+		    current_table.current_locks.put(Thread.currentThread(), this);
+		    
 		}
-		catch(DatabaseException e2)
+		catch(DatabaseException e)
 		{
-		    e2.printStackTrace();
-		    throw new IllegalAccessError("");
+		    try
+		    {
+			this.cancel(_comes_from_tables);
+		    }
+		    catch(DatabaseException e2)
+		    {
+			e2.printStackTrace();
+			throw new IllegalAccessError("");
+		    }
+		    current_table.sql_connection.locker.unlockWrite();
+		    throw e;
 		}
-		current_table.sql_connection.locker.unlockWrite();
-		throw e;
 	    }
 	}
 	
 	@Override
-	protected boolean isValid(Lock cur)
+	protected boolean isValid()
 	{
-	    return cur==null;
+	    if (current_table.current_locks.size()==0)
+		return true;
+	    Lock l=current_table.current_locks.get(Thread.currentThread());
+	    return l==null;
 	}
 	
 	@Override
@@ -5553,29 +5609,36 @@ public abstract class Table<T extends DatabaseRecord>
 	@Override
 	protected void close(ArrayList<Table<?>> _comes_from_tables) throws DatabaseException
 	{
-	    try
+	    synchronized(current_table.sql_connection.locker)
 	    {
-		//current_table.current_lock=null;
-		current_table.current_lock=previous_lock;
-		_comes_from_tables.add(current_table);
-		for (NeighboringTable nt : current_table.list_tables_pointing_to_this_table)
+		try
 		{
-		    Table<?> t=nt.getPointedTable();
-		    if (!_comes_from_tables.contains(t))
+		    //current_table.current_lock=null;
+		    if (previous_lock==null)
+			current_table.current_locks.remove(Thread.currentThread());
+		    else
+			current_table.current_locks.put(Thread.currentThread(), previous_lock);
+		    //current_table.current_lock=previous_lock;
+		    _comes_from_tables.add(current_table);
+		    for (NeighboringTable nt : current_table.list_tables_pointing_to_this_table)
 		    {
-			t.current_lock.close(_comes_from_tables);
+			Table<?> t=nt.getPointedTable();
+			if (!_comes_from_tables.contains(t))
+			{
+			    t.current_locks.get(Thread.currentThread()).close(_comes_from_tables);
+			}
+		    }
+		    for (ForeignKeyFieldAccessor fa : current_table.foreign_keys_fields)
+		    {
+			Table<?> t=fa.getPointedTable();
+			if (!_comes_from_tables.contains(t))
+			    t.current_locks.get(Thread.currentThread()).close(_comes_from_tables);
 		    }
 		}
-		for (ForeignKeyFieldAccessor fa : current_table.foreign_keys_fields)
+		finally
 		{
-		    Table<?> t=fa.getPointedTable();
-		    if (!_comes_from_tables.contains(t))
-			t.current_lock.close(_comes_from_tables);
+		    current_table.sql_connection.locker.unlockWrite();
 		}
-	    }
-	    finally
-	    {
-		current_table.sql_connection.locker.unlockWrite();
 	    }
 	}
     }
@@ -5588,47 +5651,56 @@ public abstract class Table<T extends DatabaseRecord>
 
 	protected ReadLock(Table<?> _current_table, ArrayList<Table<?>> _comes_from_tables) throws DatabaseException
 	{
-	    super(_current_table);
-	    try
+	    super();
+	    synchronized(_current_table.sql_connection.locker)
 	    {
-		if (!isValid())
-		    throw new ConcurentTransactionDatabaseException("Attempting to read and write, through several nested queries, on the table "+current_table.getName()+".");
-		_comes_from_tables.add(current_table);
-		/*for (NeighboringTable nt : current_table.list_tables_pointing_to_this_table)
-	    	{
-			Table<?> t=nt.getPointedTable();
-			if (!_comes_from_tables.contains(t))
-		    	new ReadLock(t, _comes_from_tables);
-	    	}*/
-		for (ForeignKeyFieldAccessor fa : current_table.foreign_keys_fields)
-		{
-		    Table<?> t=fa.getPointedTable();
-		    if (!_comes_from_tables.contains(t))
-			new ReadLock(t, _comes_from_tables);
-		}
 		
-		current_table.current_lock=this;
-	    }
-	    catch(DatabaseException e)
-	    {
 		try
 		{
-		    this.cancel(_comes_from_tables);
+		    _current_table.sql_connection.locker.lockRead();
+		    initialize(_current_table);
+		    if (!isValid())
+			throw new ConcurentTransactionDatabaseException("Attempting to read and write, through several nested queries, on the table "+current_table.getName()+".");
+		    _comes_from_tables.add(current_table);
+		    /*for (NeighboringTable nt : current_table.list_tables_pointing_to_this_table)
+	    		{	
+				Table<?> t=nt.getPointedTable();
+				if (!_comes_from_tables.contains(t))
+		    		new ReadLock(t, _comes_from_tables);
+	    		}*/
+		    for (ForeignKeyFieldAccessor fa : current_table.foreign_keys_fields)
+		    {
+			Table<?> t=fa.getPointedTable();
+			if (!_comes_from_tables.contains(t))
+			    new ReadLock(t, _comes_from_tables);
+		    }
+		    
+		    current_table.current_locks.put(Thread.currentThread(), this);
+		    
 		}
-		catch(DatabaseException e2)
+		catch(DatabaseException e)
 		{
-		    e2.printStackTrace();
-		    throw new IllegalAccessError("");
+		    try
+		    {
+			this.cancel(_comes_from_tables);
+		    }	
+		    catch(DatabaseException e2)
+		    {
+			e2.printStackTrace();
+			throw new IllegalAccessError("");
+		    }
+		    current_table.sql_connection.locker.unlockRead();
+		    throw e;
 		}
-
-		current_table.sql_connection.locker.unlockWrite();
-		throw e;
 	    }
 	}
 	
 	@Override
-	protected boolean isValid(Lock cur)
+	protected boolean isValid()
 	{
+	    if (current_table.current_locks.size()==0)
+		return true;
+	    Lock cur=current_table.current_locks.get(Thread.currentThread());
 	    return cur==null || cur instanceof ReadLock;
 	}
 	
@@ -5643,29 +5715,35 @@ public abstract class Table<T extends DatabaseRecord>
 	@Override
 	protected void close(ArrayList<Table<?>> _comes_from_tables) throws DatabaseException 
 	{
-	    try
+	    synchronized(current_table.sql_connection.locker)
 	    {
-		current_table.current_lock=previous_lock;
-		_comes_from_tables.add(current_table);
-		/*for (NeighboringTable nt : current_table.list_tables_pointing_to_this_table)
-	    	{
-			Table<?> t=nt.getPointedTable();
-			if (!_comes_from_tables.contains(t))
-		    	t.current_lock.close(_comes_from_tables);
-	    	}*/
-		for (ForeignKeyFieldAccessor fa : current_table.foreign_keys_fields)
+		try
 		{
-		    Table<?> t=fa.getPointedTable();
-		    if(!_comes_from_tables.contains(t))
-			t.current_lock.close(_comes_from_tables);
+		    if (previous_lock==null)
+			current_table.current_locks.remove(Thread.currentThread());
+		    else
+			current_table.current_locks.put(Thread.currentThread(), previous_lock);
+		    //current_table.current_lock=previous_lock;
+		    _comes_from_tables.add(current_table);
+		    /*for (NeighboringTable nt : current_table.list_tables_pointing_to_this_table)
+	    		{
+				Table<?> t=nt.getPointedTable();
+				if (!_comes_from_tables.contains(t))
+		    		t.current_lock.close(_comes_from_tables);
+	    		}*/
+		    for (ForeignKeyFieldAccessor fa : current_table.foreign_keys_fields)
+		    {
+			Table<?> t=fa.getPointedTable();
+			if(!_comes_from_tables.contains(t))
+			    t.current_locks.get(Thread.currentThread()).close(_comes_from_tables);
+		    }
+		}
+		finally
+		{
+		    current_table.sql_connection.locker.unlockRead();
 		}
 	    }
-	    finally
-	    {
-		current_table.sql_connection.locker.unlockWrite();
-	    }
 	}
-	
     }
     
     

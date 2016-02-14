@@ -18,8 +18,8 @@ public class OOD
 	Calendar c1=Calendar.getInstance();
 	c1.set(2013, 3, 1);
 	Calendar c2=Calendar.getInstance();
-	c2.set(2016, 1, 8);
-	VERSION=new Version("Object Oriented Database", 1, 4, 0, Version.Type.Stable, 0, c1.getTime(), c2.getTime());
+	c2.set(2016, 1, 14);
+	VERSION=new Version("Object Oriented Database", 1, 4, 1, Version.Type.Stable, 0, c1.getTime(), c2.getTime());
 	try
 	{
 	    InputStream is=OOD.class.getResourceAsStream("build.txt");
@@ -30,8 +30,15 @@ public class OOD
 	    VERSION.addDeveloper(new PersonDeveloper("mahdjoub", "jason", c.getTime()));
 	
 	    c=Calendar.getInstance();
+	    c.set(2016, 1, 14);
+	    Description d=new Description(1,4,1,Version.Type.Stable, 0, c.getTime());
+	    d.addItem("Adding some close statements corrections.");
+	    d.addItem("Adding some multi-thread optimisations.");
+	    VERSION.addDescription(d);
+
+	    c=Calendar.getInstance();
 	    c.set(2016, 1, 8);
-	    Description d=new Description(1,4,0,Version.Type.Stable, 0, c.getTime());
+	    d=new Description(1,4,0,Version.Type.Stable, 0, c.getTime());
 	    d.addItem("One databse is associated to one package. Now, its is possible to load several database/packages into the same file.");
 	    d.addItem("OOD works now with HSQLDB or Apache Derby.");
 	    VERSION.addDescription(d);
