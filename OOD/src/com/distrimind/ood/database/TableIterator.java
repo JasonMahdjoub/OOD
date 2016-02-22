@@ -17,24 +17,31 @@
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA, or see the FSF
  * site: http://www.fsf.org.
  */
+package com.distrimind.ood.database;
 
+import java.util.Iterator;
 
+import com.distrimind.ood.database.exceptions.DatabaseException;
 
-package com.distrimind.ood.database.annotations;
-
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
 /**
- * This annotation must be used just before a class which inherits {@link com.distrimind.ood.database.Table}. It means that the database table will be loaded into memory to increase queries computing.
- * Be informed that the use of this annotation limit the number of records into a table to Integer.MAX_VALUE. 
- *  
+ * Defines a table iterator. 
+ * 
+ * This iterator must be closed when it becomes unused. 
+ * Without being closed, the table will become locked.
+ * Note that this interface implements {@link AutoCloseable} interface. 
+ * 
  * @author Jason Mahdjoub
- * @version 1.0
  *
+ * @param <DR> The database record type 
+ * @version 1.0
+ * @since OOD 1.5
  */
-@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
-public @interface LoadToMemory {
+public interface TableIterator<DR extends DatabaseRecord> extends Iterator<DR>, AutoCloseable
+{
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void close() throws DatabaseException;
 }

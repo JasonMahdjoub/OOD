@@ -1,5 +1,5 @@
 /*
- * Object Oriented Database (created by Jason MAHDJOUB (jason.mahdjoub@free.fr)) Copyright (c)
+ * Object Oriented Database (created by Jason MAHDJOUB (jason.mahdjoub@distri-mind.fr)) Copyright (c)
  * 2012, JBoss Inc., and individual contributors as indicated by the @authors
  * tag.
  * 
@@ -34,7 +34,13 @@ import com.distrimind.ood.database.SqlFieldInstance;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
 
-
+/**
+ * 
+ * @author Jason Mahdjoub
+ * @version 1.1
+ * @since OOD 1.0
+ * 
+ */
 public class intFieldAccessor extends FieldAccessor
 {
     protected final SqlField[] sql_fields;
@@ -205,9 +211,21 @@ public class intFieldAccessor extends FieldAccessor
 	{
 	    throw DatabaseException.getDatabaseException(e);
 	}
-	
-	
     }
+    
+    @Override
+    public void getValue(Object o, PreparedStatement _prepared_statement, int _field_start) throws DatabaseException
+    {
+	try
+	{
+	    _prepared_statement.setInt(_field_start, ((Integer)o).intValue());
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+        
     @Override
     public void updateValue(DatabaseRecord _class_instance, Object _field_instance, ResultSet _result_set) throws DatabaseException
     {

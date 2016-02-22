@@ -1,5 +1,5 @@
 /*
- * Object Oriented Database (created by Jason MAHDJOUB (jason.mahdjoub@free.fr)) Copyright (c)
+ * Object Oriented Database (created by Jason MAHDJOUB (jason.mahdjoub@distri-mind.fr)) Copyright (c)
  * 2012, JBoss Inc., and individual contributors as indicated by the @authors
  * tag.
  * 
@@ -35,7 +35,12 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
 
-
+/**
+ * 
+ * @author Jason Mahdjoub
+ * @version 1.1
+ * @since OOD 1.0
+ */
 public class LongNumberFieldAccessor extends FieldAccessor
 {
     protected final SqlField sql_fields[];
@@ -208,14 +213,25 @@ public class LongNumberFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    _prepared_statement.setObject(_field_start, field.get(_class_instance));
+	    getValue(field.get(_class_instance), _prepared_statement, _field_start);
 	}
 	catch(Exception e)
 	{
 	    throw DatabaseException.getDatabaseException(e);
 	}
-	
-	
+    }
+    
+    @Override
+    public void getValue(Object o, PreparedStatement _prepared_statement, int _field_start) throws DatabaseException
+    {
+	try
+	{
+	    _prepared_statement.setObject(_field_start, o);
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
     }
     
     @Override

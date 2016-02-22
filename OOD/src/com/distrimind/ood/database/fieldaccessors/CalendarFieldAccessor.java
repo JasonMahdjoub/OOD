@@ -1,5 +1,5 @@
 /*
- * Object Oriented Database (created by Jason MAHDJOUB (jason.mahdjoub@free.fr)) Copyright (c)
+ * Object Oriented Database (created by Jason MAHDJOUB (jason.mahdjoub@distri-mind.fr)) Copyright (c)
  * 2012, JBoss Inc., and individual contributors as indicated by the @authors
  * tag.
  * 
@@ -27,7 +27,13 @@ import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
 
-
+/**
+ * 
+ * @author Jason Mahdjoub
+ * @version 1.0
+ * @since OOD 1.0
+ * 
+ */
 public class CalendarFieldAccessor extends SerializableFieldAccessor
 {
 

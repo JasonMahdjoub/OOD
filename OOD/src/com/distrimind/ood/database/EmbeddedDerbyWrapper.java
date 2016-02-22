@@ -1,5 +1,5 @@
 /*
- * Object Oriented Database (created by Jason MAHDJOUB (jason.mahdjoub@free.fr)) Copyright (c)
+ * Object Oriented Database (created by Jason MAHDJOUB (jason.mahdjoub@distri-mind.fr)) Copyright (c)
  * 2012, JBoss Inc., and individual contributors as indicated by the @authors
  * tag.
  * 
@@ -20,6 +20,7 @@
 package com.distrimind.ood.database;
 
 import java.io.File;
+import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
@@ -40,7 +41,8 @@ import com.distrimind.util.FileTools;
  * Sql connection wrapper for Derby DB
  * 
  * @author Jason Mahdjoub
- * @version 1.0
+ * @version 1.1
+ * @since OOD 1.4
  */
 public class EmbeddedDerbyWrapper extends DatabaseWrapper
 {
@@ -516,6 +518,12 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
     String getOnDeleteCascadeSqlQuerry()
     {
 	return "ON DELETE CASCADE";
+    }
+
+    @Override
+    public Blob getBlob(byte[] _bytes)
+    {
+	return null;
     }
     
 }

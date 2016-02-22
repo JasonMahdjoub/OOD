@@ -1,5 +1,5 @@
 /*
- * Object Oriented Database (created by Jason MAHDJOUB (jason.mahdjoub@free.fr)) Copyright (c)
+ * Object Oriented Database (created by Jason MAHDJOUB (jason.mahdjoub@distri-mind.fr)) Copyright (c)
  * 2012, JBoss Inc., and individual contributors as indicated by the @authors
  * tag.
  * 
@@ -21,6 +21,7 @@ package com.distrimind.ood.database;
 
 import java.io.File;
 import java.net.URL;
+import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -28,8 +29,11 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.regex.Pattern;
 
+import org.hsqldb.jdbc.JDBCBlob;
+
 import com.distrimind.ood.database.Table.ColumnsReadQuerry;
 import com.distrimind.ood.database.Table.ReadQuerry;
+import com.distrimind.ood.database.Table.SqlQuerry;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseVersionException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
@@ -39,7 +43,8 @@ import com.distrimind.util.ReadWriteLock;
 /**
  * Sql connection wrapper for HSQLDB
  * @author Jason Mahdjoub
- * @version 1.1
+ * @version 1.2
+ * @since OOD 1.0
  */
 public class HSQLDBWrapper extends DatabaseWrapper
 {
@@ -194,7 +199,7 @@ public class HSQLDBWrapper extends DatabaseWrapper
     @Override
     boolean doesTableExists(String table_name) throws Exception
     {
-	try (ReadQuerry rq=new ReadQuerry(getSqlConnection(), "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"+table_name+"'"))
+	try (ReadQuerry rq=new ReadQuerry(getSqlConnection(), new Table.SqlQuerry("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"+table_name+"'")))
 	{
 	    if (rq.result_set.next())
 		return true;
@@ -206,13 +211,13 @@ public class HSQLDBWrapper extends DatabaseWrapper
     @Override
     ColumnsReadQuerry getColumnMetaData(String tableName) throws Exception
     {
-	return new CReadQuerry(this.sql_connection, "SELECT COLUMN_NAME, TYPE_NAME, COLUMN_SIZE, IS_NULLABLE, IS_AUTOINCREMENT FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"+tableName+"';");
+	return new CReadQuerry(this.sql_connection, new Table.SqlQuerry("SELECT COLUMN_NAME, TYPE_NAME, COLUMN_SIZE, IS_NULLABLE, IS_AUTOINCREMENT FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"+tableName+"';"));
     }
     
     @Override
     void checkConstraints(Table<?> table) throws DatabaseException
     {
-	try(ReadQuerry rq=new ReadQuerry(sql_connection, "select CONSTRAINT_NAME, CONSTRAINT_TYPE from INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_NAME='"+table.getName()+"';"))
+	try(ReadQuerry rq=new ReadQuerry(sql_connection, new Table.SqlQuerry("select CONSTRAINT_NAME, CONSTRAINT_TYPE from INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_NAME='"+table.getName()+"';")))
 	{
 	    while (rq.result_set.next())
 	    {
@@ -233,7 +238,7 @@ public class HSQLDBWrapper extends DatabaseWrapper
 		    break;
 		    case "UNIQUE":
 		    {
-			try(ReadQuerry rq2=new ReadQuerry(sql_connection, "select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"+table.getName()+"' AND CONSTRAINT_NAME='"+constraint_name+"';"))
+			try(ReadQuerry rq2=new ReadQuerry(sql_connection, new Table.SqlQuerry("select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"+table.getName()+"' AND CONSTRAINT_NAME='"+constraint_name+"';")))
 			{
 			    if (rq2.result_set.next())
 			    {
@@ -274,7 +279,7 @@ public class HSQLDBWrapper extends DatabaseWrapper
 	{
 	    throw DatabaseException.getDatabaseException(e);
 	}
-	try(ReadQuerry rq=new ReadQuerry(sql_connection, "select PKTABLE_NAME, PKCOLUMN_NAME, FKCOLUMN_NAME from INFORMATION_SCHEMA.SYSTEM_CROSSREFERENCE WHERE FKTABLE_NAME='"+table.getName()+"';"))
+	try(ReadQuerry rq=new ReadQuerry(sql_connection, new Table.SqlQuerry("select PKTABLE_NAME, PKCOLUMN_NAME, FKCOLUMN_NAME from INFORMATION_SCHEMA.SYSTEM_CROSSREFERENCE WHERE FKTABLE_NAME='"+table.getName()+"';")))
 	{
 	    while (rq.result_set.next())
 	    {
@@ -323,7 +328,7 @@ public class HSQLDBWrapper extends DatabaseWrapper
 			    System.out.println("\t"+rq.result_set.getString("TABLE_NAME"));
 			}
 		    }*/
-		    try(ReadQuerry rq=new ReadQuerry(sql_connection, "SELECT TYPE_NAME, COLUMN_SIZE, IS_NULLABLE, ORDINAL_POSITION, IS_AUTOINCREMENT FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"+table.getName()+"' AND COLUMN_NAME='"+sf.short_field+"'"+getSqlComma()))
+		    try(ReadQuerry rq=new ReadQuerry(sql_connection, new Table.SqlQuerry("SELECT TYPE_NAME, COLUMN_SIZE, IS_NULLABLE, ORDINAL_POSITION, IS_AUTOINCREMENT FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"+table.getName()+"' AND COLUMN_NAME='"+sf.short_field+"'"+getSqlComma())))
 		    {
 			if (rq.result_set.next())
 			{
@@ -350,7 +355,7 @@ public class HSQLDBWrapper extends DatabaseWrapper
 		    }
 		    if (fa.isPrimaryKey())
 		    {
-			try(ReadQuerry rq=new ReadQuerry(sql_connection, "select * from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"+table.getName()+"' AND COLUMN_NAME='"+sf.short_field+"' AND CONSTRAINT_NAME='"+table.getSqlPrimaryKeyName()+"';"))
+			try(ReadQuerry rq=new ReadQuerry(sql_connection, new Table.SqlQuerry("select * from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"+table.getName()+"' AND COLUMN_NAME='"+sf.short_field+"' AND CONSTRAINT_NAME='"+table.getSqlPrimaryKeyName()+"';")))
 			{	
 			    if (!rq.result_set.next())
 				throw new DatabaseVersionException(table, "The field "+fa.getFieldName()+" is not declared as a primary key into the Sql database.");
@@ -358,7 +363,7 @@ public class HSQLDBWrapper extends DatabaseWrapper
 		    }
 		    if (fa.isForeignKey())
 		    {
-			try(ReadQuerry rq=new ReadQuerry(sql_connection, "select PKTABLE_NAME, PKCOLUMN_NAME, FKCOLUMN_NAME from INFORMATION_SCHEMA.SYSTEM_CROSSREFERENCE WHERE FKTABLE_NAME='"+table.getName()+"' AND PKCOLUMN_NAME='"+sf.short_pointed_field+"' AND FKCOLUMN_NAME='"+sf.short_field+"';"))
+			try(ReadQuerry rq=new ReadQuerry(sql_connection, new Table.SqlQuerry("select PKTABLE_NAME, PKCOLUMN_NAME, FKCOLUMN_NAME from INFORMATION_SCHEMA.SYSTEM_CROSSREFERENCE WHERE FKTABLE_NAME='"+table.getName()+"' AND PKCOLUMN_NAME='"+sf.short_pointed_field+"' AND FKCOLUMN_NAME='"+sf.short_field+"';")))
 			{
 			    if (!rq.result_set.next())
 				throw new DatabaseVersionException(table, "The field "+fa.getFieldName()+" is a foreign key one of its Sql fields "+sf.field+" is not a foreign key pointing to the table "+sf.pointed_table);
@@ -367,14 +372,14 @@ public class HSQLDBWrapper extends DatabaseWrapper
 		    if (fa.isUnique())
 		    {
 			boolean found=false;
-			try(ReadQuerry rq=new ReadQuerry(sql_connection, "select CONSTRAINT_NAME, CONSTRAINT_TYPE from INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_NAME='"+table.getName()+"';"))
+			try(ReadQuerry rq=new ReadQuerry(sql_connection, new Table.SqlQuerry("select CONSTRAINT_NAME, CONSTRAINT_TYPE from INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_NAME='"+table.getName()+"';")))
 			{
 			    while (rq.result_set.next())
 			    {
 				if (rq.result_set.getString("CONSTRAINT_TYPE").equals("UNIQUE"))
 				{
 				    String constraint_name=rq.result_set.getString("CONSTRAINT_NAME");
-				    try(ReadQuerry rq2=new ReadQuerry(sql_connection, "select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"+table.getName()+"' AND CONSTRAINT_NAME='"+constraint_name+"';"))
+				    try(ReadQuerry rq2=new ReadQuerry(sql_connection, new Table.SqlQuerry("select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"+table.getName()+"' AND CONSTRAINT_NAME='"+constraint_name+"';")))
 				    {
 					if (rq2.result_set.next())
 					{	
@@ -408,7 +413,7 @@ public class HSQLDBWrapper extends DatabaseWrapper
     static class CReadQuerry extends ColumnsReadQuerry
     {
 
-	public CReadQuerry(Connection _sql_connection, String _querry) throws SQLException
+	public CReadQuerry(Connection _sql_connection, SqlQuerry _querry) throws SQLException, DatabaseException
 	{
 	    super(_sql_connection, _querry);
 	    setTableColumnsResultSet(new TCResultSet(this.result_set));
@@ -577,6 +582,12 @@ public class HSQLDBWrapper extends DatabaseWrapper
 		
 	    }
 	}
+    }
+
+    @Override
+    public Blob getBlob(byte[] _bytes) throws SQLException
+    {
+	return new JDBCBlob(_bytes);
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Object Oriented Database (created by Jason MAHDJOUB (jason.mahdjoub@free.fr)) Copyright (c)
+ * Object Oriented Database (created by Jason MAHDJOUB (jason.mahdjoub@distri-mind.fr)) Copyright (c)
  * 2012, JBoss Inc., and individual contributors as indicated by the @authors
  * tag.
  * 
@@ -21,6 +21,11 @@
 
 package com.distrimind.ood.database.fieldaccessors;
 
+/**
+ * @author Jason Mahdjoub
+ * @version 1.1
+ * @since OOD 1.0
+ */
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -221,6 +226,7 @@ public abstract class FieldAccessor
     public abstract Class<?>[] getCompatibleClasses();
     public abstract Object getValue(DatabaseRecord _class_instance) throws DatabaseException;
     public abstract void getValue(DatabaseRecord _class_instance, PreparedStatement _prepared_statement, int _field_start)  throws DatabaseException;
+    public abstract void getValue(Object field_content, PreparedStatement _prepared_statement, int _field_start)  throws DatabaseException;
     
     public abstract SqlField[] getDeclaredSqlFields();
     public abstract SqlFieldInstance[] getSqlFieldsInstances(DatabaseRecord _instance)  throws DatabaseException;
@@ -272,6 +278,7 @@ public abstract class FieldAccessor
 		    }
 		    else
 		    {
+			ByteTabObjectConverter converter=null;
 			if (type.equals(boolean.class))
 			    res.add(new booleanFieldAccessor(f));
 			else if (type.equals(byte.class))
@@ -316,6 +323,8 @@ public abstract class FieldAccessor
 			    res.add(new CalendarFieldAccessor(_sql_connection, f));
 			else if (Date.class.isAssignableFrom(type))
 			    res.add(new DateFieldAccessor(f));
+			else if ((converter=_sql_connection.getByteTabObjectConverter(type))!=null)
+			    res.add(new ByteTabConvertibleFieldAccessor(_sql_connection, f, converter));
 			else if (Serializable.class.isAssignableFrom(type))
 			    res.add(new SerializableFieldAccessor(_sql_connection, f));
 			else
@@ -338,7 +347,7 @@ public abstract class FieldAccessor
 	ArrayList<Class<?>> list_classes=new ArrayList<Class<?>>();
 	
 	FieldAccessPrivilegedAction fapa=new FieldAccessPrivilegedAction(_original_class);
-	java.lang.reflect.Field fields[]=AccessController.doPrivileged(fapa);
+	ArrayList<Field> fields=AccessController.doPrivileged(fapa);
 	
 	for (java.lang.reflect.Field f : fields)
 	{
@@ -366,7 +375,7 @@ public abstract class FieldAccessor
 	_list_classes.add(_new_class);
 	
 	FieldAccessPrivilegedAction fapa=new FieldAccessPrivilegedAction(_new_class);
-	java.lang.reflect.Field fields[]=AccessController.doPrivileged(fapa);
+	ArrayList<Field> fields=AccessController.doPrivileged(fapa);
 	
 	for (java.lang.reflect.Field f : fields)
 	{
@@ -391,7 +400,7 @@ public abstract class FieldAccessor
 	ArrayList<Class<?>> list_classes=new ArrayList<Class<?>>();
 	
 	FieldAccessPrivilegedAction fapa=new FieldAccessPrivilegedAction(_original_class);
-	java.lang.reflect.Field fields[]=AccessController.doPrivileged(fapa);
+	ArrayList<Field> fields=AccessController.doPrivileged(fapa);
 	
 	for (java.lang.reflect.Field f : fields)
 	{
@@ -416,7 +425,7 @@ public abstract class FieldAccessor
 	_list_classes.add(_new_class);
 	
 	FieldAccessPrivilegedAction fapa=new FieldAccessPrivilegedAction(_new_class);
-	java.lang.reflect.Field fields[]=AccessController.doPrivileged(fapa);
+	ArrayList<Field> fields=AccessController.doPrivileged(fapa);
 	
 	for (java.lang.reflect.Field f : fields)
 	{
@@ -695,7 +704,7 @@ public abstract class FieldAccessor
     }
     
     protected static final class FieldAccessPrivilegedAction
-	implements PrivilegedExceptionAction<Field[]>
+	implements PrivilegedExceptionAction<ArrayList<Field>>
     {
 	private final Class<?> m_cls;
 
@@ -704,12 +713,22 @@ public abstract class FieldAccessor
 	    m_cls=_cls;
 	}
 	
-	public Field[] run () throws Exception
+	@Override
+	public ArrayList<Field> run () throws Exception
 	{
-	    Field fields[]=m_cls.getDeclaredFields();
-	    for (java.lang.reflect.Field f : fields)
+	    ArrayList<Field> fields=new ArrayList<>();
+	    Class<?> sup=m_cls.getSuperclass();
+	    if (sup!=Object.class && sup!=DatabaseRecord.class)
+	    {
+		FieldAccessPrivilegedAction fapa=new FieldAccessPrivilegedAction(sup);
+		fields.addAll(fapa.run());
+	    }
+	    
+	    Field fs[]=m_cls.getDeclaredFields();
+	    for (java.lang.reflect.Field f : fs)
 	    {
 		f.setAccessible(true);
+		fields.add(f);
 	    }
 
 	    return fields;

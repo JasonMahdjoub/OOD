@@ -1,5 +1,5 @@
 /*
- * Object Oriented Database (created by Jason MAHDJOUB (jason.mahdjoub@free.fr)) Copyright (c)
+ * Object Oriented Database (created by Jason MAHDJOUB (jason.mahdjoub@distri-mind.fr)) Copyright (c)
  * 2012, JBoss Inc., and individual contributors as indicated by the @authors
  * tag.
  * 
@@ -34,7 +34,12 @@ import com.distrimind.ood.database.SqlFieldInstance;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
 
-
+/**
+ * 
+ * @author Jason Mahdjoub
+ * @version 1.1
+ * @since OOD 1.0
+ */
 public class byteFieldAccessor extends FieldAccessor
 {
     protected final SqlField sql_fields[];
@@ -199,6 +204,18 @@ public class byteFieldAccessor extends FieldAccessor
 	try
 	{
 	    _prepared_statement.setByte(_field_start, field.getByte(_class_instance));
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+    @Override
+    public void getValue(Object _field_content, PreparedStatement _prepared_statement, int _field_start) throws DatabaseException
+    {
+	try
+	{
+	    _prepared_statement.setByte(_field_start, ((Byte)_field_content).byteValue());
 	}
 	catch(Exception e)
 	{

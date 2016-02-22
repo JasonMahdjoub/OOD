@@ -1,5 +1,5 @@
 /*
- * Object Oriented Database (created by Jason MAHDJOUB (jason.mahdjoub@free.fr)) Copyright (c)
+ * Object Oriented Database (created by Jason MAHDJOUB (jason.mahdjoub@distri-mind.fr)) Copyright (c)
  * 2012, JBoss Inc., and individual contributors as indicated by the @authors
  * tag.
  * 
@@ -45,6 +45,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -268,58 +269,6 @@ public abstract class Table<T extends DatabaseRecord>
 		}
 	    });
 	
-	/*sql_connection=current_sql_connection;
-	if (sql_connection==null)
-	    throw new DatabaseException("The database associated to the package "+this.getClass().getPackage().getName()+" was not loaded. Impossible to instantiate the class/table "+this.getClass().getName()+". Please use the function associatePackageToSqlJetDatabase before !");
-	
-	
-	@SuppressWarnings("unchecked")
-	Class<? extends Table<?>> table_class=(Class<? extends Table<?>>)this.getClass();
-	fields=FieldAccessor.getFields(sql_connection, table_class);
-	if (fields.size()==0)
-	    throw new DatabaseException("No field has been declared in the class "+class_record.getName());
-	for (FieldAccessor f : fields)
-	{
-	    if (f.isPrimaryKey())
-		primary_keys_fields.add(f);
-	    if (f.isAutoPrimaryKey() || f.isRandomPrimaryKey())
-		auto_random_primary_keys_fields.add(f);
-	    if (f.isAutoPrimaryKey())
-		auto_primary_keys_fields.add(f);
-	    if (!f.isAutoPrimaryKey() && !f.isRandomPrimaryKey() && f.isPrimaryKey())
-		primary_keys_fields_no_auto_no_random.add(f);
-	    if (f.isForeignKey())
-	    {
-		foreign_keys_fields.add((ForeignKeyFieldAccessor)f);
-	    }
-	    if (!f.isPrimaryKey() && !f.isForeignKey())
-		fields_without_primary_and_foreign_keys.add(f);
-	    if (f.isUnique() && !f.isAutoPrimaryKey() && !f.isRandomPrimaryKey())
-	    {
-		unique_fields_no_auto_random_primary_keys.add(f);
-	    }
-	}
-	for (FieldAccessor f : fields)
-	{
-	    for (FieldAccessor f2 : fields)
-	    {
-		if (f!=f2)
-		{
-		    if (f.getFieldName().equalsIgnoreCase(f2.getFieldName()))
-		    {
-			throw new DatabaseException("The fields "+f.getFieldName()+" and "+f2.getFieldName()+" have the same name considering that Sql fields is not case sensitive !");
-		    }
-		}
-	    }
-	}
-	if (auto_primary_keys_fields.size()>1)
-	    throw new DatabaseException("It can have only one autoincrement primary key with Annotation {@link oodforsqljet.annotations.AutoPrimaryKey}. The record "+class_record.getName()+" has "+auto_primary_keys_fields.size()+" AutoPrimary keys.");
-	if (primary_keys_fields.size()==0)
-	    throw new DatabaseException("There is no primary key declared into the Record "+class_record.getName());
-	
-	
-	if (this.getName().equals(ROW_COUNT_TABLES))
-	    throw new DatabaseException("This table cannot have the name "+ROW_COUNT_TABLES+" (case ignored)");*/
     }
     
     void initializeStep0(DatabaseWrapper wrapper) throws DatabaseException
@@ -744,6 +693,8 @@ public abstract class Table<T extends DatabaseRecord>
 	}
     }
     
+    
+    
     @SuppressWarnings({ "unchecked", "unused" })
     private T getRecordFromPointingRecord(final SqlFieldInstance[] _sql_field_instances, final ArrayList<DatabaseRecord> _previous_pointing_records) throws DatabaseException
     {
@@ -854,6 +805,20 @@ public abstract class Table<T extends DatabaseRecord>
 	    }
 	    querry.append(sql_connection.getSqlComma());
 	    
+	    final SqlQuerry sqlquerry=new SqlQuerry(querry.toString()){
+
+		@Override
+		void finishPrepareStatement(PreparedStatement st) throws SQLException
+		{
+			int i=1;
+			for (SqlFieldInstance sfi : _sql_field_instances)
+			{
+			    st.setObject(i++, sfi.instance);
+			}
+		}
+		
+	    };
+	    
 	    return (T)sql_connection.runTransaction(new Transaction() {
 	        
 		public boolean doesWriteData()
@@ -864,14 +829,9 @@ public abstract class Table<T extends DatabaseRecord>
 		@Override
 	        public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 	        {
-		    try(PreparedReadQuerry rq=new PreparedReadQuerry(_sql_connection.getSqlConnection(), querry.toString()))
+		    try(ReadQuerry rq=new ReadQuerry(_sql_connection.getSqlConnection(), sqlquerry))
 		    {
-			int i=1;
-			for (SqlFieldInstance sfi : _sql_field_instances)
-			{
-			    rq.statement.setObject(i++, sfi.instance);
-			}
-			if (rq.execute() && rq.result_set.next())
+			if (rq.result_set.next())
 			{
 			    T res=default_constructor_field.newInstance();
 			    for (FieldAccessor fa : fields)
@@ -910,10 +870,139 @@ public abstract class Table<T extends DatabaseRecord>
 	return sb.toString();
     }
     
-    private String getSqlGeneralSelect()
+    SqlQuerry getSqlGeneralSelect()
     {
-	return "SELECT "+getSqlSelectStep1Fields()+" FROM "+this.getName();
+	return new SqlQuerry("SELECT "+getSqlSelectStep1Fields()+" FROM "+this.getName());
     }
+    
+    private class SqlGeneralSelectQuerryWithFieldMatch extends SqlQuerry
+    {
+	private final Map<String, Object> fields;
+	
+	SqlGeneralSelectQuerryWithFieldMatch(Map<String, Object> fields, String AndOr)
+	{
+	    super(getSqlGeneralSelectWithFieldMatch(fields, AndOr));
+	    this.fields=fields;
+	}
+	
+	@Override
+	    public void finishPrepareStatement(PreparedStatement st) throws DatabaseException
+	    {
+		int index=1;
+		for (String key : fields.keySet())
+		{
+		    for (FieldAccessor fa : getFieldAccessors())
+		    {
+			if (fa.getFieldName().equals(key))
+			{
+			    fa.getValue(fields.get(key), st, index++);
+			    break;
+			}
+		    }
+		}
+	    }
+    }
+    private class SqlGeneralSelectQuerryWithMultipleFieldMatch extends SqlQuerry
+    {
+	private final Map<String, Object> records[];
+	
+	SqlGeneralSelectQuerryWithMultipleFieldMatch(Map<String, Object> records[], String AndOr)
+	{
+	    super(getSqlGeneralSelectWithMultipleFieldMatch(records, AndOr));
+	    this.records=records;
+	}
+	
+	@Override
+	    public void finishPrepareStatement(PreparedStatement st) throws DatabaseException
+	    {
+		int index=1;
+		for (Map<String, Object> fields : records)
+		{
+		    for (String key : fields.keySet())
+		    {
+			for (FieldAccessor fa : getFieldAccessors())
+			{
+			    if (fa.getFieldName().equals(key))
+			    {
+				fa.getValue(fields.get(key), st, index++);
+				break;
+			    }
+			}
+		    }
+		}
+	    }
+    }
+
+    
+    String getSqlGeneralSelectWithFieldMatch(Map<String, Object> fields, String AndOr)
+    {
+	StringBuffer sb=new StringBuffer(getSqlGeneralSelect().getQuerry());
+	boolean first=true;
+	sb.append(" WHERE");
+	for (String key : fields.keySet())
+	{
+	    for (FieldAccessor fa : getFieldAccessors())
+	    {
+		if (fa.getFieldName().equals(key))
+		{
+		    for (SqlField sf : fa.getDeclaredSqlFields())
+		    {
+			sb.append(" ");
+			if (first)
+			    first=false;
+			else
+			    sb.append(AndOr+" ");
+			sb.append(sf.short_field+"=?");
+		    }
+		    break;
+		}
+	    }
+	}
+	sb.append(sql_connection.getSqlComma());
+	return sb.toString();
+    }    
+    
+
+    
+    String getSqlGeneralSelectWithMultipleFieldMatch(Map<String, Object> records[], String AndOr)
+    {
+	StringBuffer sb=new StringBuffer(getSqlGeneralSelect().getQuerry());
+	
+	boolean firstOR=true;
+	sb.append(" WHERE");
+	for (Map<String, Object> fields : records)
+	{
+	    if (firstOR)
+		firstOR=false;
+	    else
+		sb.append(" OR");
+	    sb.append(" (");
+	    boolean first=true;
+	    for (String key : fields.keySet())
+	    {
+		for (FieldAccessor fa : getFieldAccessors())
+		{
+		    if (fa.getFieldName().equals(key))
+		    {
+			for (SqlField sf : fa.getDeclaredSqlFields())
+			{
+			    sb.append(" ");
+			    if (first)
+				first=false;
+			    else
+				sb.append(AndOr+" ");
+			    sb.append(sf.short_field+"=?");
+			}
+			break;
+		    }
+		}
+	    }
+	    sb.append(")");
+	}
+	sb.append(sql_connection.getSqlComma());
+	return sb.toString();
+    }
+    
     
     
     /**
@@ -950,7 +1039,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    @Override
 		    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 		    {
-			try(ReadQuerry rq=new ReadQuerry(_sql_connection.getSqlConnection(), "SELECT ROW_COUNT FROM "+DatabaseWrapper.ROW_COUNT_TABLES+" WHERE TABLE_NAME='"+Table.this.getName()+"'"))
+			try(ReadQuerry rq=new ReadQuerry(_sql_connection.getSqlConnection(), new SqlQuerry("SELECT ROW_COUNT FROM "+DatabaseWrapper.ROW_COUNT_TABLES+" WHERE TABLE_NAME='"+Table.this.getName()+"'")))
 			{
 			    if (rq.result_set.next())
 			    {
@@ -1480,6 +1569,190 @@ public abstract class Table<T extends DatabaseRecord>
 	    }
 	}
     }
+    
+   
+    protected class MemoryTableIterator implements TableIterator<T>
+    {
+	private Iterator<T> iterator;
+	MemoryTableIterator(Iterator<T> iterator)
+	{
+	    this.iterator=iterator;
+	}
+	
+	@Override
+	public boolean hasNext()
+	{
+	    return iterator.hasNext();
+	}
+
+	@Override
+	public T next()
+	{
+	    return iterator.next();
+	}
+
+	@Override
+	public void close()
+	{
+	    
+	}
+    }
+    protected class DirectTableIterator implements TableIterator<T>
+    {
+	final AbstractReadQuerry readQuerry;
+	protected final Constructor<T> default_constructor_field;
+	protected final ArrayList<FieldAccessor> fields_accessor;
+	private boolean checkNext=true;
+	private boolean curNext=false;
+	final Lock lock;
+	private boolean closed=false;
+	
+	DirectTableIterator(Constructor<T> _default_constructor_field, ArrayList<FieldAccessor> _fields_accessor) throws DatabaseException
+	{
+	    try
+	    {
+		lock=new ReadLock(Table.this);
+		default_constructor_field=_default_constructor_field;
+		fields_accessor=_fields_accessor;
+		readQuerry=new ReadQuerry(sql_connection.getSqlConnection(), getSqlGeneralSelect());
+	    }
+	    catch(SQLException e)
+	    {
+		throw DatabaseException.getDatabaseException(e);
+	    }
+	}
+
+	@Override
+	public boolean hasNext()
+	{
+	    if (closed)
+		return false;
+	    try
+	    {
+		if (checkNext)
+		{
+		    curNext=readQuerry.result_set.next();
+		    if (!curNext)
+			close();
+		    checkNext=false;
+		}
+		return curNext;
+	    }
+	    catch(Exception e)
+	    {
+		e.printStackTrace();
+		throw new NoSuchElementException("Unexpected exception");
+	    }
+	}
+	@Override 
+	public void finalize()
+	{
+	    try
+	    {
+		close();
+	    }
+	    catch(Exception e)
+	    {
+		
+	    }
+	}
+
+	@Override
+	public T next()
+	{
+	    if (closed)
+		throw new NoSuchElementException("Iterator closed");
+	    if (!curNext)
+		throw new NoSuchElementException();
+	    try
+	    {
+		T field_instance = default_constructor_field.newInstance();
+		
+		for (FieldAccessor f : fields_accessor)
+		{
+		    f.setValue(field_instance, readQuerry.result_set);
+		}
+		checkNext=true;
+		return field_instance;
+	    }
+	    catch(Exception e)
+	    {
+		e.printStackTrace();
+		throw new NoSuchElementException("Unexpected exception");
+	    }
+	}
+
+	@Override
+	public void close() throws DatabaseException
+	{
+	    try
+	    {
+		if (!closed)
+		{
+		    readQuerry.close();
+		    lock.close();
+		    closed=true;
+		}
+	    }
+	    catch(Exception e)
+	    {
+		throw DatabaseException.getDatabaseException(e);
+	    }
+	    
+	}
+	
+    }
+    /**
+     * Returns an iterator parsing records of this table. This iterator is {@link AutoCloseable}. Do not forget to close the iterator. 
+     * @return an iterator representing all the records of the table.
+     * @throws DatabaseException if a Sql exception occurs.
+     */
+    public final TableIterator<T> getIterator() throws DatabaseException
+    {
+	//try(ReadWriteLock.Lock lock=sql_connection.locker.getAutoCloseableReadLock())
+	{
+	    if (isLoadedInMemory())
+	    {
+		try (Lock lock=new ReadLock(this))
+		{
+			if (!is_synchronized_with_sql_database.get())
+			{
+			    final ArrayList<T>  res=new ArrayList<T>();
+			    getListRecordsFromSqlConnection(new Runnable() {
+				    
+				@Override
+				public boolean setInstance(T _instance, ResultSet _cursor)
+				{
+				    res.add(_instance);
+				    return true;
+				}
+				    
+				@Override
+				public void init(int _field_count)
+				{
+				    res.clear();
+				    res.ensureCapacity((int)_field_count);
+				}
+			    }, getSqlGeneralSelect());
+			    records_instances.set(res);
+			    is_synchronized_with_sql_database.set(true);
+			}
+			return new MemoryTableIterator(records_instances.get().iterator());
+		    
+		}
+		catch(Exception e)
+		{
+		    throw DatabaseException.getDatabaseException(e);
+		}
+		
+	    }
+	    else
+	    {
+		return new DirectTableIterator(default_constructor_field, fields);
+	    }
+	}
+    
+    }
     /**
      * Returns the records of this table corresponding to a given filter. 
      * @param _filter the filter
@@ -1534,7 +1807,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    public void init(int _field_count)
 		    {
 		    }
-		}, getSqlGeneralSelect());
+		}, (_filter instanceof Table.PersonnalFilter)?((PersonnalFilter)_filter).getSQLQuerry():getSqlGeneralSelect());
 	    }
 	return res;
     }
@@ -1598,11 +1871,16 @@ public abstract class Table<T extends DatabaseRecord>
 		    
 		}
 		RunnableTmp runnable=new RunnableTmp();
-		getListRecordsFromSqlConnection(runnable, getSqlGeneralSelect());
+		getListRecordsFromSqlConnection(runnable, (_filter instanceof Table.PersonnalFilter)?((PersonnalFilter)_filter).getSQLQuerry():getSqlGeneralSelect());
 		return runnable.res;
 	    }
     }
-    private abstract class SimpleFieldFilter implements Filter<T>
+    abstract class PersonnalFilter implements Filter<T>
+    {
+	public abstract SqlQuerry getSQLQuerry();
+    }
+    
+    private abstract class SimpleFieldFilter extends PersonnalFilter
     {
 	protected final Map<String, Object> given_fields;
 	protected final ArrayList<FieldAccessor> fields_accessor;
@@ -1625,8 +1903,9 @@ public abstract class Table<T extends DatabaseRecord>
 		}
 		given_fields=_fields;
 	}
+	
     }
-    private abstract class MultipleFieldFilter implements Filter<T>
+    private abstract class MultipleFieldFilter extends PersonnalFilter
     {
 	protected final Map<String, Object> given_fields[];
 	protected final ArrayList<FieldAccessor> fields_accessor;
@@ -1670,6 +1949,9 @@ public abstract class Table<T extends DatabaseRecord>
 		given_fields=_fields;
 	    
 	}
+	
+	
+	
     }
     private class SimpleAllFieldsFilter extends SimpleFieldFilter
     {
@@ -1705,6 +1987,12 @@ public abstract class Table<T extends DatabaseRecord>
 		}
 	    
 		return toadd;
+	}
+	
+	@Override
+	public SqlQuerry getSQLQuerry()
+	{
+	    return new SqlGeneralSelectQuerryWithFieldMatch(this.given_fields, "AND");
 	}
 	
     }
@@ -1751,6 +2039,12 @@ public abstract class Table<T extends DatabaseRecord>
 		    return toadd;
 	}
 	
+	@Override
+	public SqlQuerry getSQLQuerry()
+	{
+	    return new SqlGeneralSelectQuerryWithMultipleFieldMatch(this.given_fields, "AND");
+	}
+	
     }
     
     private class SimpleOneOfFieldsFilter extends SimpleFieldFilter
@@ -1786,6 +2080,13 @@ public abstract class Table<T extends DatabaseRecord>
 
 		    return toadd;
 	}
+	
+	@Override
+	public SqlQuerry getSQLQuerry()
+	{
+	    return new SqlGeneralSelectQuerryWithFieldMatch(this.given_fields, "OR");
+	}
+	
 	
     }
     
@@ -1831,6 +2132,12 @@ public abstract class Table<T extends DatabaseRecord>
 		    return toadd;
 	}
 	
+	@Override
+	public SqlQuerry getSQLQuerry()
+	{
+	    return new SqlGeneralSelectQuerryWithMultipleFieldMatch(this.given_fields, "OR");
+	}
+	
     }
     
     
@@ -1867,6 +2174,20 @@ public abstract class Table<T extends DatabaseRecord>
     }
     
     
+    
+    /**
+     * Returns the records which correspond to the given fields. All given fields must correspond exactly to the returned records. 
+     * @param _fields the fields that filter the result. Must be formated as follow : {"field1", value1,"field2", value2, etc.}
+     * @return the corresponding records.
+     * @throws DatabaseException if a Sql exception occurs.
+     * @throws NullPointerException if parameters are null pointers.
+     * @throws FieldDatabaseException if the given fields do not correspond to the table fields.
+     */
+    public final ArrayList<T> getRecordsWithAllFields(Object[] _fields) throws DatabaseException
+    {
+	return getRecordsWithAllFields(transformToMapField(_fields));
+    }
+    
     /**
      * Returns the records which correspond to the given fields. All given fields must correspond exactly to the returned records. 
      * @param _fields the fields that filter the result.
@@ -1890,6 +2211,21 @@ public abstract class Table<T extends DatabaseRecord>
 		throw DatabaseException.getDatabaseException(e);
 	    }
 	}
+    }
+    
+    
+
+    /**
+     * Returns true if there is at least one record which correspond the given fields. All given fields must correspond exactly one the records. 
+     * @param _fields the fields that must match to one of the records. Must be formated as follow : {"field1", value1,"field2", value2, etc.}
+     * @return true if there is at least one record which correspond the given fields. 
+     * @throws DatabaseException if a Sql exception occurs.
+     * @throws NullPointerException if parameters are null pointers.
+     * @throws FieldDatabaseException if the given fields do not correspond to the table fields.
+     */
+    public final boolean hasRecordsWithAllFields(Object[] _fields) throws DatabaseException
+    {
+	return hasRecordsWithAllFields(transformToMapField(_fields));
     }
 
     /**
@@ -1916,6 +2252,23 @@ public abstract class Table<T extends DatabaseRecord>
 	    }
 	}
     }
+    
+    
+    
+    /**
+     * Returns the records which correspond to one group of fields of the array of fields. For one considered record, it must have one group of fields (record) that all corresponds exactly. 
+     * @param _records the fields that filter the result. Must be formated as follow : {"field1", value1,"field2", value2, etc.}
+     * @return the corresponding records.
+     * @throws DatabaseException if a Sql exception occurs.
+     * @throws NullPointerException if parameters are null pointers.
+     * @throws FieldDatabaseException if the given fields do not correspond to the table fields.
+     */
+    @SafeVarargs
+    public final ArrayList<T> getRecordsWithAllFields(Object[] ..._records) throws DatabaseException
+    {
+	return getRecordsWithAllFields(transformToMapField(_records));
+    }
+
     /**
      * Returns the records which correspond to one group of fields of the array of fields. For one considered record, it must have one group of fields (record) that all corresponds exactly. 
      * @param _records the fields that filter the result.
@@ -1942,6 +2295,19 @@ public abstract class Table<T extends DatabaseRecord>
 		throw DatabaseException.getDatabaseException(e);
 	    }
 	}
+    }
+    /**
+     * Returns true if there is at least one record which correspond to one group of fields of the array of fields. For one considered record, it must have one group of fields (record) that all corresponds exactly.
+     * @param _records the array fields that must match to one of the records. Must be formated as follow : {"field1", value1,"field2", value2, etc.}
+     * @return true if there is at least one record which correspond to one group of fields of the array of fields. 
+     * @throws DatabaseException if a Sql exception occurs.
+     * @throws NullPointerException if parameters are null pointers.
+     * @throws FieldDatabaseException if the given fields do not correspond to the table fields.
+     */
+    @SafeVarargs
+    public final boolean hasRecordsWithAllFields(Object[] ..._records) throws DatabaseException
+    {
+	return hasRecordsWithAllFields(transformToMapField(_records));
     }
     /**
      * Returns true if there is at least one record which correspond to one group of fields of the array of fields. For one considered record, it must have one group of fields (record) that all corresponds exactly.
@@ -1973,6 +2339,18 @@ public abstract class Table<T extends DatabaseRecord>
     
     /**
      * Returns the records which correspond to one of the given fields. One of the given fields must correspond exactly to the returned records. 
+     * @param _fields the fields that filter the result. Must be formated as follow : {"field1", value1,"field2", value2, etc.}
+     * @return the corresponding records.
+     * @throws DatabaseException if a Sql exception occurs.
+     * @throws NullPointerException if parameters are null pointers.
+     * @throws FieldDatabaseException if the given fields do not correspond to the table fields.
+     */
+    public final ArrayList<T> getRecordsWithOneOfFields(Object[] _fields) throws DatabaseException
+    {
+	return getRecordsWithOneOfFields(transformToMapField(_fields));
+    }
+    /**
+     * Returns the records which correspond to one of the given fields. One of the given fields must correspond exactly to the returned records. 
      * @param _fields the fields that filter the result.
      * @return the corresponding records.
      * @throws DatabaseException if a Sql exception occurs.
@@ -1996,6 +2374,19 @@ public abstract class Table<T extends DatabaseRecord>
 	}
     }
 
+    /**
+     * Returns true if there is at least one record which corresponds to one of the given fields. One of the given fields must corresponds exactly one the records. 
+     * @param _fields the fields. Must be formated as follow : {"field1", value1,"field2", value2, etc.}
+     * @return true if there is at least one record which correspond one of the given fields. 
+     * @throws DatabaseException if a Sql exception occurs.
+     * @throws NullPointerException if parameters are null pointers.
+     * @throws FieldDatabaseException if the given fields do not correspond to the table fields.
+     */
+    public final boolean hasRecordsWithOneOfFields(final Object[] _fields) throws DatabaseException
+    {
+	return hasRecordsWithOneOfFields(transformToMapField(_fields));
+    }
+    
     /**
      * Returns true if there is at least one record which corresponds to one of the given fields. One of the given fields must corresponds exactly one the records. 
      * @param _fields the fields.
@@ -2028,6 +2419,19 @@ public abstract class Table<T extends DatabaseRecord>
     
     /**
      * Returns the records which correspond to one of the fields of one group of the array of fields.  
+     * @param _records the fields that filter the result. Must be formated as follow : {"field1", value1,"field2", value2, etc.}
+     * @return the corresponding records.
+     * @throws DatabaseException if a Sql exception occurs.
+     * @throws NullPointerException if parameters are null pointers.
+     * @throws FieldDatabaseException if the given fields do not correspond to the table fields.
+     */
+    @SafeVarargs
+    public final ArrayList<T> getRecordsWithOneOfFields(final Object[] ..._records) throws DatabaseException
+    {
+	return getRecordsWithOneOfFields(transformToMapField(_records));
+    }
+    /**
+     * Returns the records which correspond to one of the fields of one group of the array of fields.  
      * @param _records the fields that filter the result.
      * @return the corresponding records.
      * @throws DatabaseException if a Sql exception occurs.
@@ -2052,6 +2456,19 @@ public abstract class Table<T extends DatabaseRecord>
 		throw DatabaseException.getDatabaseException(e);
 	    }
 	}
+    }
+    /**
+     * Returns if there is at least one record which correspond to one of the fields of one group of the array of fields.  
+     * @param _records the fields that filter the result. Must be formated as follow : {"field1", value1,"field2", value2, etc.}
+     * @return the corresponding records.
+     * @throws DatabaseException if a Sql exception occurs.
+     * @throws NullPointerException if parameters are null pointers.
+     * @throws FieldDatabaseException if the given fields do not correspond to the table fields.
+     */
+    @SafeVarargs
+    public final boolean hasRecordsWithOneOfFields(final Object[] ..._records) throws DatabaseException
+    {
+	return hasRecordsWithOneOfFields(transformToMapField(_records));
     }
     /**
      * Returns if there is at least one record which correspond to one of the fields of one group of the array of fields.  
@@ -2084,6 +2501,19 @@ public abstract class Table<T extends DatabaseRecord>
     /**
      * Remove records which correspond to the given fields. All given fields must correspond exactly to the records.
      * The deleted records do not have link with other table's records throw foreign keys.
+     * @param _fields the fields that filter the result. Must be formated as follow : {"field1", value1,"field2", value2, etc.}
+     * @return the number of deleted records.
+     * @throws DatabaseException if a Sql exception occurs.
+     * @throws NullPointerException if parameters are null pointers.
+     * @throws FieldDatabaseException if the given fields do not correspond to the table fields.
+     */
+    public final long removeRecordsWithAllFields(Object[] _fields) throws DatabaseException
+    {
+	return removeRecordsWithAllFields(transformToMapField(_fields));
+    }
+    /**
+     * Remove records which correspond to the given fields. All given fields must correspond exactly to the records.
+     * The deleted records do not have link with other table's records throw foreign keys.
      * @param _fields the fields that filter the result.
      * @return the number of deleted records.
      * @throws DatabaseException if a Sql exception occurs.
@@ -2105,6 +2535,20 @@ public abstract class Table<T extends DatabaseRecord>
 		throw DatabaseException.getDatabaseException(e);
 	    }
 	}
+    }
+    /**
+     * Remove records which correspond to one group of fields of the array of fields. For one considered record, it must have one group of fields (record) that all corresponds exactly.
+     * The deleted records do not have link with other table's records throw foreign keys. 
+     * @param _records the fields that filter the result. Must be formated as follow : {"field1", value1,"field2", value2, etc.}
+     * @return the number of deleted records.
+     * @throws DatabaseException if a Sql exception occurs.
+     * @throws NullPointerException if parameters are null pointers.
+     * @throws FieldDatabaseException if the given fields do not correspond to the table fields.
+     */
+    @SafeVarargs
+    public final long removeRecordsWithAllFields(Object[] ..._records) throws DatabaseException
+    {
+	return removeRecordsWithAllFields(transformToMapField(_records));
     }
     /**
      * Remove records which correspond to one group of fields of the array of fields. For one considered record, it must have one group of fields (record) that all corresponds exactly.
@@ -2137,6 +2581,19 @@ public abstract class Table<T extends DatabaseRecord>
     /**
      * Remove records which correspond to one of the given fields. One of the given fields must correspond exactly to deleted records.
      * The deleted records do not have link with other table's records throw foreign keys. 
+     * @param _fields the fields that filter the result. Must be formated as follow : {"field1", value1,"field2", value2, etc.}
+     * @return the number of deleted records.
+     * @throws DatabaseException if a Sql exception occurs.
+     * @throws NullPointerException if parameters are null pointers.
+     * @throws FieldDatabaseException if the given fields do not correspond to the table fields.
+     */
+    public final long removeRecordsWithOneOfFields(Object[] _fields) throws DatabaseException
+    {
+	return removeRecordsWithOneOfFields(transformToMapField(_fields));
+    }
+    /**
+     * Remove records which correspond to one of the given fields. One of the given fields must correspond exactly to deleted records.
+     * The deleted records do not have link with other table's records throw foreign keys. 
      * @param _fields the fields that filter the result.
      * @return the number of deleted records.
      * @throws DatabaseException if a Sql exception occurs.
@@ -2158,6 +2615,20 @@ public abstract class Table<T extends DatabaseRecord>
 		throw DatabaseException.getDatabaseException(e);
 	    }
 	}
+    }
+    /**
+     * Remove records which correspond to one of the fields of one group of the array of fields.
+     * The deleted records do not have link with other table's records throw foreign keys.  
+     * @param _records the fields that filter the result. Must be formated as follow : {"field1", value1,"field2", value2, etc.}
+     * @return the number of deleted records.
+     * @throws DatabaseException if a Sql exception occurs.
+     * @throws NullPointerException if parameters are null pointers.
+     * @throws FieldDatabaseException if the given fields do not correspond to the table fields.
+     */
+    @SafeVarargs
+    public final long removeRecordsWithOneOfFields(Object[] ..._records) throws DatabaseException
+    {
+	return removeRecordsWithOneOfFields(transformToMapField(_records));
     }
     /**
      * Remove records which correspond to one of the fields of one group of the array of fields.
@@ -2191,6 +2662,19 @@ public abstract class Table<T extends DatabaseRecord>
     /**
      * Remove records which correspond to the given fields. All given fields must correspond exactly to the records.
      * Records of other tables which have Foreign keys which points to the deleted records are also deleted.
+     * @param _fields the fields that filter the result. Must be formated as follow : {"field1", value1,"field2", value2, etc.}
+     * @return the number of deleted records.
+     * @throws DatabaseException if a Sql exception occurs.
+     * @throws NullPointerException if parameters are null pointers.
+     * @throws FieldDatabaseException if the given fields do not correspond to the table fields.
+     */
+    public final long removeRecordsWithAllFieldsWithCascade(Object[] _fields) throws DatabaseException
+    {
+	return removeRecordsWithAllFieldsWithCascade(transformToMapField(_fields));
+    }
+    /**
+     * Remove records which correspond to the given fields. All given fields must correspond exactly to the records.
+     * Records of other tables which have Foreign keys which points to the deleted records are also deleted.
      * @param _fields the fields that filter the result.
      * @return the number of deleted records.
      * @throws DatabaseException if a Sql exception occurs.
@@ -2212,6 +2696,20 @@ public abstract class Table<T extends DatabaseRecord>
 		throw DatabaseException.getDatabaseException(e);
 	    }
 	}
+    }
+    /**
+     * Remove records which correspond to one group of fields of the array of fields. For one considered record, it must have one group of fields (record) that all corresponds exactly.
+     * Records of other tables which have Foreign keys which points to the deleted records are also deleted. 
+     * @param _records the fields that filter the result. Must be formated as follow : {"field1", value1,"field2", value2, etc.}
+     * @return the number of deleted records.
+     * @throws DatabaseException if a Sql exception occurs.
+     * @throws NullPointerException if parameters are null pointers.
+     * @throws FieldDatabaseException if the given fields do not correspond to the table fields.
+     */
+    @SafeVarargs
+    public final long removeRecordsWithAllFieldsWithCascade(Object[] ..._records) throws DatabaseException
+    {
+	return removeRecordsWithAllFieldsWithCascade(transformToMapField(_records));
     }
     /**
      * Remove records which correspond to one group of fields of the array of fields. For one considered record, it must have one group of fields (record) that all corresponds exactly.
@@ -2244,6 +2742,19 @@ public abstract class Table<T extends DatabaseRecord>
     /**
      * Remove records which correspond to one of the given fields. One of the given fields must correspond exactly to deleted records.
      * Records of other tables which have Foreign keys which points to the deleted records are also deleted. 
+     * @param _fields the fields that filter the result. Must be formated as follow : {"field1", value1,"field2", value2, etc.}
+     * @return the number of deleted records.
+     * @throws DatabaseException if a Sql exception occurs.
+     * @throws NullPointerException if parameters are null pointers.
+     * @throws FieldDatabaseException if the given fields do not correspond to the table fields.
+     */
+    public final long removeRecordsWithOneOfFieldsWithCascade(Object[] _fields) throws DatabaseException
+    {
+	return removeRecordsWithOneOfFieldsWithCascade(transformToMapField(_fields));
+    }
+    /**
+     * Remove records which correspond to one of the given fields. One of the given fields must correspond exactly to deleted records.
+     * Records of other tables which have Foreign keys which points to the deleted records are also deleted. 
      * @param _fields the fields that filter the result.
      * @return the number of deleted records.
      * @throws DatabaseException if a Sql exception occurs.
@@ -2270,6 +2781,23 @@ public abstract class Table<T extends DatabaseRecord>
     {
 	return removeRecordsWithCascade(new SimpleOneOfFieldsFilter(_fields, fields), _is_already_sql_transaction);
     }
+    
+    /**
+     * Remove records which correspond to one of the fields of one group of the array of fields.
+     * Records of other tables which have Foreign keys which points to the deleted records are also deleted.  
+     * @param _records the fields that filter the result. Must be formated as follow : {"field1", value1,"field2", value2, etc.}
+     * @return the number of deleted records.
+     * @throws DatabaseException if a Sql exception occurs.
+     * @throws NullPointerException if parameters are null pointers.
+     * @throws FieldDatabaseException if the given fields do not correspond to the table fields.
+     */
+    @SafeVarargs
+    public final long removeRecordsWithOneOfFieldsWithCascade(Object[] ..._records) throws DatabaseException
+    {
+	return removeRecordsWithOneOfFieldsWithCascade(transformToMapField(_records));
+    }
+    
+    
     /**
      * Remove records which correspond to one of the fields of one group of the array of fields.
      * Records of other tables which have Foreign keys which points to the deleted records are also deleted.  
@@ -2473,7 +3001,7 @@ public abstract class Table<T extends DatabaseRecord>
 	    }
 	    
 	    RunnableTmp runnable=new RunnableTmp();
-	    getListRecordsFromSqlConnection(runnable, getSqlGeneralSelect(), true);
+	    getListRecordsFromSqlConnection(runnable, (_filter instanceof Table.PersonnalFilter)?((PersonnalFilter)_filter).getSQLQuerry():getSqlGeneralSelect(), true);
 	    return runnable.deleted_records_number;
 	}
 	}
@@ -2741,6 +3269,21 @@ public abstract class Table<T extends DatabaseRecord>
 		    querry.append(")");
 	    }
 		
+	    final SqlQuerry sqlquerry=new SqlQuerry(querry.toString()){
+		@Override 
+		void finishPrepareStatement(PreparedStatement st) throws SQLException
+		{
+			int index=1;
+			for (HashMap<String, Object> hm : _foreign_keys)
+			{
+			    for (String f : hm.keySet())
+			    {
+				st.setObject(index++, hm.get(f));
+			    }
+			}
+		}
+	    };
+	    
 	    return ((Boolean)sql_connection.runTransaction(new Transaction() {
 	        
 		@Override
@@ -2752,17 +3295,9 @@ public abstract class Table<T extends DatabaseRecord>
 	        @Override
 	        public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 	        {
-		    try(PreparedReadQuerry prq = new PreparedReadQuerry(_sql_connection.getSqlConnection(), querry.toString()))
+		    try(ReadQuerry prq = new ReadQuerry(_sql_connection.getSqlConnection(), sqlquerry))
 		    {
-			int index=1;
-			for (HashMap<String, Object> hm : _foreign_keys)
-			{
-			    for (String f : hm.keySet())
-			    {
-				prq.statement.setObject(index++, hm.get(f));
-			    }
-			}
-			if (prq.execute() && prq.result_set.next())
+			if (prq.result_set.next())
 			{
 			    return new Boolean(true);
 			}
@@ -2883,7 +3418,7 @@ public abstract class Table<T extends DatabaseRecord>
 	    RunnableTmp runnable=new RunnableTmp();
 	    try
 	    {
-		getListRecordsFromSqlConnection(runnable, getSqlGeneralSelect(), true);
+		getListRecordsFromSqlConnection(runnable, (_filter instanceof Table.PersonnalFilter)?((PersonnalFilter)_filter).getSQLQuerry():getSqlGeneralSelect(), true);
 	    }
 	    catch(DatabaseException e)
 	    {
@@ -3396,15 +3931,39 @@ public abstract class Table<T extends DatabaseRecord>
 	{
 	    
 	}
-	public abstract void init(int _field_count);
+	public abstract void init(int _max_field_count);
+	public void init()
+	{
+	    init(20);
+	}
 	public abstract boolean setInstance(T _instance, ResultSet _cursor) throws DatabaseException;
     }
     
-    private final void getListRecordsFromSqlConnection(final Runnable _runnable, final String querry) throws DatabaseException
+    static class SqlQuerry
+    {
+	String querry;
+	SqlQuerry(String querry)
+	{
+	    this.querry=querry;
+	}
+	
+	String getQuerry()
+	{
+	    return this.querry;
+	}
+	@SuppressWarnings("unused")
+	void finishPrepareStatement(PreparedStatement st) throws SQLException, DatabaseException
+	{
+	    
+	}
+	
+    }
+    
+    private final void getListRecordsFromSqlConnection(final Runnable _runnable, final SqlQuerry querry) throws DatabaseException
     {
 	getListRecordsFromSqlConnection(_runnable, querry, false);
     }
-    private final void getListRecordsFromSqlConnection(final Runnable _runnable, final String querry, final boolean updatable) throws DatabaseException
+    private final void getListRecordsFromSqlConnection(final Runnable _runnable, final SqlQuerry querry, final boolean updatable) throws DatabaseException
     {
 	//synchronized(sql_connection)
 	{
@@ -3421,15 +3980,14 @@ public abstract class Table<T extends DatabaseRecord>
 			fields_accessor=_fields_accessor;
 			
 		    }
-		    @SuppressWarnings("synthetic-access")
 		    @Override
 		    public Object run(DatabaseWrapper sql_connection) throws DatabaseException
 		    {
-			
 			try(AbstractReadQuerry rq=(updatable?new UpdatableReadQuerry(sql_connection.getSqlConnection(), querry):new ReadQuerry(sql_connection.getSqlConnection(), querry)))
 			{
-			    int rowcount=getRowCount();
-			    _runnable.init(rowcount);
+			    //int rowcount=getRowCount();
+
+			    _runnable.init();
 			    
 			    while (rq.result_set.next())
 			    {
@@ -3439,15 +3997,15 @@ public abstract class Table<T extends DatabaseRecord>
 				{
 				    f.setValue(field_instance, rq.result_set);
 				}
-				rowcount--;
+				//rowcount--;
 				if (!_runnable.setInstance(field_instance, rq.result_set))
 				{
-				    rowcount=0;
+				    //rowcount=0;
 				    break;
 				}
 			    }
-			    if (rowcount!=0)
-				throw new DatabaseException("Unexpected exception "+rowcount);
+			    /*if (rowcount!=0)
+				throw new DatabaseException("Unexpected exception "+rowcount);*/
 			    return null;
 			}
 			catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
@@ -3479,14 +4037,18 @@ public abstract class Table<T extends DatabaseRecord>
 	    
 	}
 	public abstract void init(int _field_count);
+	public void init()
+	{
+	    init(20);
+	}
 	public abstract boolean setInstance(ResultSet _cursor) throws DatabaseException;
     }
 
-    private final void getListRecordsFromSqlConnection(final Runnable2 _runnable, final String querry) throws DatabaseException
+    private final void getListRecordsFromSqlConnection(final Runnable2 _runnable, final SqlQuerry querry) throws DatabaseException
     {
 	getListRecordsFromSqlConnection(_runnable, querry, false);
     }
-    private final void getListRecordsFromSqlConnection(final Runnable2 _runnable, final String querry, final boolean updatable) throws DatabaseException
+    private final void getListRecordsFromSqlConnection(final Runnable2 _runnable, final SqlQuerry querry, final boolean updatable) throws DatabaseException
     {
 	//synchronized(sql_connection)
 	{
@@ -3500,21 +4062,20 @@ public abstract class Table<T extends DatabaseRecord>
 		    {
 			try(AbstractReadQuerry rq=(updatable?new UpdatableReadQuerry(_sql_connection.getSqlConnection(), querry):new ReadQuerry(_sql_connection.getSqlConnection(), querry)))
 			{
-			    @SuppressWarnings("synthetic-access")
-			    int rowcount=getRowCount();
-			    _runnable.init(rowcount);
+			    //int rowcount=getRowCount();
+			    _runnable.init();
 			    
 			    while (rq.result_set.next())
 			    {
-				rowcount--;
+				//rowcount--;
 				if (!_runnable.setInstance(rq.result_set))
 				{
-				    rowcount=0;
+				    //rowcount=0;
 				    break;
 				}
 			    }
-			    if (rowcount!=0)
-				throw new DatabaseException("Unexpected exception "+rowcount);
+			    /*if (rowcount!=0)
+				throw new DatabaseException("Unexpected exception "+rowcount);*/
 			    return null;
 			}
 			catch(Exception e)
@@ -3574,21 +4135,27 @@ public abstract class Table<T extends DatabaseRecord>
 	}
 	else
 	{
+	    
+	    final SqlQuerry sqlquerry=new SqlQuerry("SELECT * FROM "+Table.this.getName()+" WHERE "+getSqlPrimaryKeyCondition(1)){
+		@Override void finishPrepareStatement(PreparedStatement st) throws DatabaseException
+		{
+		    int index=1;
+		    for (FieldAccessor fa : getPrimaryKeysFieldAccessors())
+		    {
+			fa.getValue(_record, st, index);
+			index+=fa.getDeclaredSqlFields().length;
+		    }
+		}
+	    };
+	    
 		Transaction transaction=new Transaction() {
 		        
-			    @SuppressWarnings("synthetic-access")
 			    @Override
 			    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 			    {
-				try(PreparedReadQuerry rq=new PreparedReadQuerry(_sql_connection.getSqlConnection(), "SELECT * FROM "+Table.this.getName()+" WHERE "+getSqlPrimaryKeyCondition(1)))
+				try(ReadQuerry rq=new ReadQuerry(_sql_connection.getSqlConnection(), sqlquerry))
 				{
-				    int index=1;
-				    for (FieldAccessor fa : primary_keys_fields)
-				    {
-					fa.getValue(_record, rq.statement, index);
-					index+=fa.getDeclaredSqlFields().length;
-				    }
-				    if (rq.execute() && rq.result_set.next())
+				    if (rq.result_set.next())
 					return new Boolean(true);
 				    else
 					return new Boolean(false);
@@ -3609,6 +4176,47 @@ public abstract class Table<T extends DatabaseRecord>
 		Boolean found=(Boolean)sql_connection.runTransaction(transaction);
 		return found.booleanValue();
 	}
+    }
+    
+    private Map<String, Object> transformToMapField(Object[] _fields) throws DatabaseException
+    {
+	HashMap<String, Object> res=new HashMap<>();
+	if (_fields==null)
+	    throw new NullPointerException("_fields");
+	if (_fields.length==0 || _fields.length%2!=0)
+	    throw new DatabaseException("Bad field tab format !");
+	for (int i=0;i<_fields.length;i+=2)
+	{
+	    if (_fields[i]==null || !(_fields[i] instanceof String))
+		throw new DatabaseException("Bad field tab format !");
+	    res.put((String)_fields[i], _fields[i+1]);
+	}
+	return res;
+    }
+    private Map<String, Object>[] transformToMapField(Object[] ..._records) throws DatabaseException
+    {
+    
+	@SuppressWarnings("unchecked")
+	Map<String, Object>[] tab=new Map[_records.length];
+	for (int i=0;i<_records.length;i++)
+	    tab[i]=transformToMapField(_records[i]);
+	return tab;
+    }
+
+    /**
+     * Add a record into the database with a map of fields corresponding to this record. 
+     * The string type in the Map corresponds to the name of the field, and the Object type field corresponds the value of the field.   
+     * @param _fields the list of fields to include into the new record. Must be formated as follow : {"field1", value1,"field2", value2, etc.} 
+     * @return the created record
+     * @throws DatabaseException if a problem occurs during the insertion into the Sql database.
+     * @throws NullPointerException if parameters are null pointers.
+     * @throws ConstraintsNotRespectedDatabaseException if the given primary keys already exists into the table, or if a field which has the unique property exists already into the table.
+     * @throws FieldDatabaseException if one of the given fields does not exists into the database, or if fields are lacking.
+     * @throws RecordNotFoundDatabaseException if one of the field is a foreign key and point to a record of another table which does not exist. 
+     */
+    public final T addRecord(Object[] _fields) throws DatabaseException
+    {
+	return addRecord(transformToMapField(_fields));
     }
     
     /**
@@ -3995,7 +4603,7 @@ public abstract class Table<T extends DatabaseRecord>
 				
 				if (auto_primary_keys_fields.size()>0 && !ct.include_auto_pk)
 				{
-				    try(ReadQuerry rq=new ReadQuerry(_db.getSqlConnection(), sql_connection.getSqlQuerryToGetLastGeneratedID()))
+				    try(ReadQuerry rq=new ReadQuerry(_db.getSqlConnection(), new SqlQuerry(sql_connection.getSqlQuerryToGetLastGeneratedID())))
 				    {
 					rq.result_set.next();
 					Long autovalue=new Long(rq.result_set.getLong(1));
@@ -4052,6 +4660,24 @@ public abstract class Table<T extends DatabaseRecord>
 	
 	    }
 	}
+    }
+    
+    
+    /**
+     * Add a collection of records into the database with a collection of maps of fields corresponding to these records. 
+     * The string type in the Map corresponds to the name of the field, and the Object type field corresponds the value of the field.   
+     * @param _records the list of fields of every record to include into the database. Must be formated as follow : {"field1", value1,"field2", value2, etc.}
+     * @return the created records
+     * @throws DatabaseException if a problem occurs during the insertion into the Sql database.
+     * @throws NullPointerException if parameters are null pointers.
+     * @throws ConstraintsNotRespectedDatabaseException if the given primary keys already exists into the table, or if a field which has the unique property exists already into the table.
+     * @throws FieldDatabaseException if one of the given fields does not exists into the database, or if fields are lacking.
+     * @throws RecordNotFoundDatabaseException if one of the field is a foreign key and point to a record of another table which does not exist. 
+     */
+    @SafeVarargs
+    public final ArrayList<T> addRecords(Object[] ..._records) throws DatabaseException
+    {
+	return addRecords(transformToMapField(_records));
     }
     /**
      * Add a collection of records into the database with a collection of maps of fields corresponding to these records. 
@@ -4673,6 +5299,24 @@ public abstract class Table<T extends DatabaseRecord>
     }*/
     
     
+    
+    
+    /**
+     * Alter a record into the database with a map of fields corresponding to this record. 
+     * The string type in the Map corresponds to the name of the field, and the Object type field corresponds the value of the field.   
+     * If primary keys are altered, every foreign key pointing to this record will be transparently altered. However, if records pointing to this altered record remain in memory, they will no be altered if the current table has not the annotation {#link oodforsqljet.annotations.LoadToMemory}. The only solution in this case is to reload the concerned records through the functions starting with "getRecord". 
+     * @param _record the record to alter 
+     * @param _fields the list of fields to include into the new record. Must be formated as follow : {"field1", value1,"field2", value2, etc.}
+     * @throws DatabaseException if a problem occurs during the insertion into the Sql database.
+     * @throws NullPointerException if parameters are null pointers.
+     * @throws ConstraintsNotRespectedDatabaseException if the given primary keys already exists into the table, if a field which has the unique property exists alreay into the table, or if primary keys changing induce a problem of constraints through foreign keys into other tables, which are also primary keys.
+     * @throws FieldDatabaseException if one of the given fields does not exists into the database, or if one of the given fields are auto or random primary keys.
+     * @throws RecordNotFoundDatabaseException if the given record is not included into the database, or if one of the field is a foreign key and point to a record of another table which does not exist. 
+     */
+    public final void alterRecord(final T _record, Object[] _fields) throws DatabaseException
+    {
+	alterRecord(_record, transformToMapField(_fields));
+    }
     /**
      * Alter a record into the database with a map of fields corresponding to this record. 
      * The string type in the Map corresponds to the name of the field, and the Object type field corresponds the value of the field.   
@@ -5279,7 +5923,22 @@ public abstract class Table<T extends DatabaseRecord>
     {
 	return new BigInteger(bits, rand);
     }
-
+    
+    /**
+     * Return the record stored into the database, which corresponds to the given primary keys.
+     * The string type in the Map corresponds to the name of the field, and the Object type field corresponds the value of the field.
+     * Just include the primary keys into the fields.
+     * @param keys the primary keys values. Must be formated as follow : {"field1", value1,"field2", value2, etc.}
+     * @return the corresponding record. Return null if no record have been founded.
+     * @throws DatabaseException if a Sql problem have occured.
+     * @throws FieldDatabaseException if all primary keys have not been given, or if fields which are not primary keys were given.
+     * @throws NullPointerException if parameters are null pointers.
+     */
+    public final T getRecord(Object[] keys) throws DatabaseException
+    {
+	return getRecord(transformToMapField(keys));
+    }
+    
     /**
      * Return the record stored into the database, which corresponds to the given primary keys.
      * The string type in the Map corresponds to the name of the field, and the Object type field corresponds the value of the field.
@@ -5383,7 +6042,7 @@ public abstract class Table<T extends DatabaseRecord>
 			}
 		    }
 		    RunnableTmp runnable=new RunnableTmp(primary_keys_fields);
-		    getListRecordsFromSqlConnection(runnable, getSqlGeneralSelect());
+		    getListRecordsFromSqlConnection(runnable, new SqlGeneralSelectQuerryWithFieldMatch(keys, "AND"));
 		    return runnable.instance;
 		}
 	    }
@@ -5758,13 +6417,15 @@ public abstract class Table<T extends DatabaseRecord>
     }
     static abstract class AbstractReadQuerry extends Querry
     {
-	public Statement statement;
+	public PreparedStatement statement;
 	public ResultSet result_set;
-	protected AbstractReadQuerry(Connection _sql_connection, String querry, int _result_set_type, int _result_set_concurency) throws SQLException
+	protected AbstractReadQuerry(Connection _sql_connection, SqlQuerry querry, int _result_set_type, int _result_set_concurency) throws SQLException, DatabaseException
 	{
 	    super(_sql_connection);
-	    statement=sql_connection.createStatement(_result_set_type, _result_set_concurency);
-	    result_set=statement.executeQuery(querry);
+	    
+	    statement=sql_connection.prepareStatement(querry.getQuerry(), _result_set_type, _result_set_concurency);
+	    querry.finishPrepareStatement(statement);
+	    result_set=statement.executeQuery();
 	}
 	protected AbstractReadQuerry(Connection _sql_connection, ResultSet resultSet)
 	{
@@ -5787,7 +6448,7 @@ public abstract class Table<T extends DatabaseRecord>
     
     static class ReadQuerry extends AbstractReadQuerry
     {
-	public ReadQuerry(Connection _sql_connection, String querry) throws SQLException
+	public ReadQuerry(Connection _sql_connection, SqlQuerry querry) throws SQLException, DatabaseException
 	{
 	    super(_sql_connection, querry, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 	}
@@ -5800,7 +6461,7 @@ public abstract class Table<T extends DatabaseRecord>
     {
 	TableColumnsResultSet tableColumnsResultSet;
 	
-	public ColumnsReadQuerry(Connection _sql_connection, String querry) throws SQLException
+	public ColumnsReadQuerry(Connection _sql_connection, SqlQuerry querry) throws SQLException, DatabaseException
 	{
 	    super(_sql_connection, querry, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 	}
@@ -5815,13 +6476,13 @@ public abstract class Table<T extends DatabaseRecord>
     }
     static class UpdatableReadQuerry extends AbstractReadQuerry
     {
-	public UpdatableReadQuerry(Connection _sql_connection, String querry) throws SQLException
+	public UpdatableReadQuerry(Connection _sql_connection, SqlQuerry querry) throws SQLException, DatabaseException
 	{
 	    super(_sql_connection, querry, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE);
 	}
     }
     
-    static class PreparedReadQuerry extends Querry
+    /*static class PreparedReadQuerry extends Querry
     {
 	public PreparedStatement statement;
 	public ResultSet result_set=null;
@@ -5848,6 +6509,34 @@ public abstract class Table<T extends DatabaseRecord>
 	    statement=null;
 	}
     }
+    static class PreparedUpdatableReadQuerry extends Querry
+    {
+	public PreparedStatement statement;
+	public ResultSet result_set=null;
+	public PreparedUpdatableReadQuerry(Connection _sql_connection, String querry) throws SQLException
+	{
+	    super(_sql_connection);
+	    statement=sql_connection.prepareStatement(querry);
+	}
+	
+	public boolean execute() throws SQLException
+	{
+	    boolean res=statement.execute();
+	    result_set=statement.getResultSet();
+	    return res;
+	}
+	
+	@Override
+	public void close() throws Exception
+	{
+	    if (result_set!=null)
+		result_set.close();
+	    result_set=null;
+	    statement.close();
+	    statement=null;
+	}
+    }*/
+    
     
     static class PreparedUpdateQuerry extends Querry
     {

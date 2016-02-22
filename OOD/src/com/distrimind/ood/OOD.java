@@ -1,3 +1,22 @@
+/*
+ * Object Oriented Database (created by Jason MAHDJOUB (jason.mahdjoub@free.fr)) Copyright (c)
+ * 2012, JBoss Inc., and individual contributors as indicated by the @authors
+ * tag.
+ * 
+ * This is free software; you can redistribute it and/or modify it under the
+ * terms of the GNU Lesser General Public License as published by the Free
+ * Software Foundation; either version 3.0 of the License.
+ * 
+ * This software is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this software; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA, or see the FSF
+ * site: http://www.fsf.org.
+ */
 package com.distrimind.ood;
 
 import java.io.InputStream;
@@ -9,6 +28,12 @@ import com.distrimind.util.version.Person;
 import com.distrimind.util.version.PersonDeveloper;
 import com.distrimind.util.version.Version;
 
+/**
+ * 
+ * @author Jason Mahdjoub
+ * @version 1.5
+ * @since OOD 1.0
+ */
 public class OOD
 {
     public static final Version VERSION;
@@ -18,8 +43,8 @@ public class OOD
 	Calendar c1=Calendar.getInstance();
 	c1.set(2013, 3, 1);
 	Calendar c2=Calendar.getInstance();
-	c2.set(2016, 1, 14);
-	VERSION=new Version("Object Oriented Database", 1, 4, 1, Version.Type.Stable, 0, c1.getTime(), c2.getTime());
+	c2.set(2016, 1, 15);
+	VERSION=new Version("Object Oriented Database", 1, 5, 0, Version.Type.Stable, 0, c1.getTime(), c2.getTime());
 	try
 	{
 	    InputStream is=OOD.class.getResourceAsStream("build.txt");
@@ -30,8 +55,24 @@ public class OOD
 	    VERSION.addDeveloper(new PersonDeveloper("mahdjoub", "jason", c.getTime()));
 	
 	    c=Calendar.getInstance();
+	    c.set(2016, 1, 15);
+	    Description d=new Description(1,5,0,Version.Type.Stable, 0, c.getTime());
+	    d.addItem("Adding iterator functionality in class Table.");
+	    d.addItem("Adding ByteTabObjectConverter class.");
+	    d.addItem("Adding DefaultByteTabObjectConverter class.");
+	    d.addItem("Adding ByteTabConvertibleFieldAccessor class.");
+	    d.addItem("Adding function addByteTabObjectConverter in DatabaseWrapper class.");
+	    d.addItem("Adding possibility to use Object tabs as an alternative of use of maps when reffering to fields.");
+	    d.addItem("Optimizing use of SQL database.");
+	    d.addItem("Linking with Utils 1.3.");
+	    
+	    
+	    
+	    VERSION.addDescription(d);
+
+	    c=Calendar.getInstance();
 	    c.set(2016, 1, 14);
-	    Description d=new Description(1,4,1,Version.Type.Stable, 0, c.getTime());
+	    d=new Description(1,4,1,Version.Type.Stable, 0, c.getTime());
 	    d.addItem("Adding some close statements corrections.");
 	    d.addItem("Adding some multi-thread optimisations.");
 	    VERSION.addDescription(d);

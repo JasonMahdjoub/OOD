@@ -27,6 +27,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
+import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -39,6 +40,8 @@ import com.distrimind.ood.database.Table.ColumnsReadQuerry;
 import com.distrimind.ood.database.Table.DefaultConstructorAccessPrivilegedAction;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
+import com.distrimind.ood.database.fieldaccessors.ByteTabObjectConverter;
+import com.distrimind.ood.database.fieldaccessors.DefaultByteTabObjectConverter;
 import com.distrimind.util.ListClasses;
 import com.distrimind.util.ReadWriteLock;
 
@@ -47,8 +50,8 @@ import com.distrimind.util.ReadWriteLock;
 /**
  * This class represent a SqlJet database.
  * @author Jason Mahdjoub
- * @version 1.0
- *
+ * @version 1.2
+ * @since OOD 1.4
  */
 public abstract class DatabaseWrapper
 {
@@ -59,7 +62,7 @@ public abstract class DatabaseWrapper
     private static final HashMap<String, Integer> number_of_shared_lockers=new HashMap<String, Integer>();
     final static String ROW_COUNT_TABLES="ROW_COUNT_TABLES__";
     //private final HashMap<Class<? extends Table<?>>, Table<?>> tables_instances=new HashMap<>();
-    
+    private final ArrayList<ByteTabObjectConverter> converters;
     
     private HashMap<Package, Database> sql_database=new HashMap<Package, Database>();
     
@@ -73,8 +76,26 @@ public abstract class DatabaseWrapper
 	}
     }
     
+    public void addByteTabObjectConverter(ByteTabObjectConverter converter)
+    {
+	converters.add(converter);
+    }
     
+    public ArrayList<ByteTabObjectConverter> getByteTabObjectConverters()
+    {
+	return converters;
+    }
     
+    public ByteTabObjectConverter getByteTabObjectConverter(Class<?> object_type)
+    {
+	for (int i=converters.size()-1;i>=0;i--)
+	{
+	    ByteTabObjectConverter btoc=converters.get(i);
+	    if (btoc.isCompatible(object_type))
+		return btoc;
+	}
+	return null;
+    }
     
     
     /**
@@ -92,6 +113,8 @@ public abstract class DatabaseWrapper
 	database_name=_database_name;
 	sql_connection=_sql_connection;
 	locker=getLocker();
+	converters=new ArrayList<>();
+	converters.add(new DefaultByteTabObjectConverter());
     }
     
     private ReadWriteLock getLocker()
@@ -640,5 +663,7 @@ public abstract class DatabaseWrapper
     {
 	return !getOnUpdateCascadeSqlQuerry().equals("");
     }
+    
+    public abstract Blob getBlob(byte[] bytes) throws SQLException;
     
 }

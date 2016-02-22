@@ -1,5 +1,5 @@
 /*
- * Object Oriented Database (created by Jason MAHDJOUB (jason.mahdjoub@free.fr)) Copyright (c)
+ * Object Oriented Database (created by Jason MAHDJOUB (jason.mahdjoub@distri-mind.fr)) Copyright (c)
  * 2012, JBoss Inc., and individual contributors as indicated by the @authors
  * tag.
  * 
@@ -35,7 +35,12 @@ import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
 
-
+/**
+ * 
+ * @author Jason Mahdjoub
+ * @version 1.1
+ * @since OOD 1.0
+ */
 public class ForeignKeyFieldAccessor extends FieldAccessor
 {
     protected SqlField sql_fields[]=null;
@@ -286,9 +291,22 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
     {
 	try
 	{
+	    getValue(field.get(_class_instance), _prepared_statement, _field_start);
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+    
+    @Override
+    public void getValue(Object o, PreparedStatement _prepared_statement, int _field_start) throws DatabaseException
+    {
+	try
+	{
+	    DatabaseRecord dr=(DatabaseRecord)o;
 	    for (FieldAccessor fa : linked_primary_keys)
 	    {
-		DatabaseRecord dr=(DatabaseRecord)field.get(_class_instance);
 		if (dr==null)
 		{
 		    for (int i=0;i<this.sql_fields.length;i++)
@@ -309,6 +327,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
 	    throw DatabaseException.getDatabaseException(e);
 	}
     }
+        
     @Override
     public void updateValue(DatabaseRecord _class_instance, Object _field_instance, ResultSet _result_set) throws DatabaseException
     {

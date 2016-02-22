@@ -1,5 +1,5 @@
 /*
- * Object Oriented Database (created by Jason MAHDJOUB (jason.mahdjoub@free.fr)) Copyright (c)
+ * Object Oriented Database (created by Jason MAHDJOUB (jason.mahdjoub@distri-mind.fr)) Copyright (c)
  * 2012, JBoss Inc., and individual contributors as indicated by the @authors
  * tag.
  * 
@@ -39,6 +39,12 @@ import com.distrimind.util.export.JavaProjectSourceDependency;
 import com.distrimind.util.export.License;
 import com.distrimind.util.export.Exports.ExportProperties;
 
+/**
+ * 
+ * @author Jason Mahdjoub
+ * @version 1.0
+ * @since OOD 1.0
+ */
 class Export
 {
     static void export() throws Exception
