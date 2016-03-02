@@ -4054,32 +4054,27 @@ public class DerbyTestDatabase
 		{
 		    while (it.hasNext())
 			it.next();
-		    System.out.println("ici1");
 		    try(TableIterator<Table3.Record> it2=table3.getIterator())
 		    {
 			while (it2.hasNext())
 			    it2.next();
 		    }
 		}
-		System.out.println("ici2");
 		try(TableIterator<Table2.Record> it=table2.getIterator())
 		{
 		    while (it.hasNext())
 			it.next();
 		}
-		System.out.println("ici3");
 		try(TableIterator<Table4.Record> it=table4.getIterator())
 		{
 		    while (it.hasNext())
 			it.next();
 		}
-		System.out.println("ici4");
 		try(TableIterator<Table5.Record> it=table5.getIterator())
 		{
 		    while (it.hasNext())
 			it.next();
 		}
-		System.out.println("ici5");
 		try(TableIterator<Table6.Record> it=table6.getIterator())
 		{
 		    while (it.hasNext())

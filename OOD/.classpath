@@ -6,6 +6,6 @@
 	<classpathentry kind="con" path="org.testng.TESTNG_CONTAINER"/>
 	<classpathentry kind="lib" path="/home/jason/projets/hsqldb/lib/hsqldb.jar" sourcepath="/home/jason/projets/hsqldb/src"/>
 	<classpathentry kind="lib" path="/home/jason/projets/db-derby/lib/derby.jar" sourcepath="/home/jason/projets/db-derby/db-derby-10.12.1.1-src/db-derby-10.12.1.1-src/java/engine"/>
-	<classpathentry kind="lib" path="/home/jason/git_projects/Utils/exports/Utils-1.3.0-Stable_withSource.jar"/>
+	<classpathentry kind="lib" path="/home/jason/git_projects/Utils/exports/Utils-1.4.0-Stable_withSource.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

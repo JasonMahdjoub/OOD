@@ -1,0 +1,17 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
+
+<suite name="TestAll">
+
+	<test name="testDerby">
+		<classes>
+			<class name="com.distrimind.ood.tests.DerbyTestDatabase" />
+		</classes>
+	</test>
+
+	<test name="testHDQLDB">  
+		<classes>
+		    <class name="com.distrimind.ood.tests.HSQLDBTestDatabase" />
+		</classes>
+	</test>
+
+</suite>

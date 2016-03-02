@@ -1,0 +1,239 @@
+<html>
+<head>
+<title>TestNG:  testHDQLDB</title>
+<link href="../testng.css" rel="stylesheet" type="text/css" />
+<link href="../my-testng.css" rel="stylesheet" type="text/css" />
+
+<style type="text/css">
+.log { display: none;} 
+.stack-trace { display: none;} 
+</style>
+<script type="text/javascript">
+<!--
+function flip(e) {
+  current = e.style.display;
+  if (current == 'block') {
+    e.style.display = 'none';
+    return 0;
+  }
+  else {
+    e.style.display = 'block';
+    return 1;
+  }
+}
+
+function toggleBox(szDivId, elem, msg1, msg2)
+{
+  var res = -1;  if (document.getElementById) {
+    res = flip(document.getElementById(szDivId));
+  }
+  else if (document.all) {
+    // this is the way old msie versions work
+    res = flip(document.all[szDivId]);
+  }
+  if(elem) {
+    if(res == 0) elem.innerHTML = msg1; else elem.innerHTML = msg2;
+  }
+
+}
+
+function toggleAllBoxes() {
+  if (document.getElementsByTagName) {
+    d = document.getElementsByTagName('div');
+    for (i = 0; i < d.length; i++) {
+      if (d[i].className == 'log') {
+        flip(d[i]);
+      }
+    }
+  }
+}
+
+// -->
+</script>
+
+</head>
+<body>
+<h2 align='center'>testHDQLDB</h2><table border='1' align="center">
+<tr>
+<td>Tests passed/Failed/Skipped:</td><td>32/0/0</td>
+</tr><tr>
+<td>Started on:</td><td>Wed Mar 02 00:07:04 CET 2016</td>
+</tr>
+<tr><td>Total time:</td><td>549 seconds (549306 ms)</td>
+</tr><tr>
+<td>Included groups:</td><td></td>
+</tr><tr>
+<td>Excluded groups:</td><td></td>
+</tr>
+</table><p/>
+<small><i>(Hover the method name to see the test class name)</i></small><p/>
+<table width='100%' border='1' class='invocation-passed'>
+<tr><td colspan='4' align='center'><b>PASSED TESTS</b></td></tr>
+<tr><td><b>Test method</b></td>
+<td width="30%"><b>Exception</b></td>
+<td width="10%"><b>Time (seconds)</b></td>
+<td><b>Instance</b></td>
+</tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.addForeignKeyAndTestUniqueKeys()'><b>addForeignKeyAndTestUniqueKeys</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
+<td></td>
+<td>0</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@1b0375b3</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.addSecondRecord()'><b>addSecondRecord</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
+<td></td>
+<td>0</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@1b0375b3</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.alterRecord()'><b>alterRecord</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
+<td></td>
+<td>0</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@1b0375b3</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.alterRecordWithCascade()'><b>alterRecordWithCascade</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
+<td></td>
+<td>0</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@1b0375b3</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.firstAdd()'><b>firstAdd</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
+<td></td>
+<td>0</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@1b0375b3</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.firstLoad()'><b>firstLoad</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
+<td></td>
+<td>0</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@1b0375b3</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.firstReload()'><b>firstReload</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
+<td></td>
+<td>0</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@1b0375b3</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.firstTestSize()'><b>firstTestSize</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
+<td></td>
+<td>0</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@1b0375b3</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.getRecord()'><b>getRecord</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
+<td></td>
+<td>0</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@1b0375b3</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.getRecordFilter()'><b>getRecordFilter</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
+<td></td>
+<td>0</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@1b0375b3</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.getRecordIterator()'><b>getRecordIterator</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
+<td></td>
+<td>0</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@1b0375b3</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.isLoadedIntoMemory()'><b>isLoadedIntoMemory</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
+<td></td>
+<td>0</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@1b0375b3</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.multipleTests()'><b>multipleTests</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
+<td></td>
+<td>41</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@1b0375b3</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.prepareMultipleTest()'><b>prepareMultipleTest</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
+<td></td>
+<td>1</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@1b0375b3</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.removeForeignKeyRecords()'><b>removeForeignKeyRecords</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
+<td></td>
+<td>0</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@1b0375b3</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.removePointedRecords()'><b>removePointedRecords</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
+<td></td>
+<td>0</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@1b0375b3</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.removeRecord()'><b>removeRecord</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
+<td></td>
+<td>0</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@1b0375b3</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.removeRecords()'><b>removeRecords</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
+<td></td>
+<td>6</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@1b0375b3</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.removeWithCascade()'><b>removeWithCascade</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
+<td></td>
+<td>2</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@1b0375b3</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.secondTestSize()'><b>secondTestSize</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
+<td></td>
+<td>0</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@1b0375b3</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.setAutoRandomFields()'><b>setAutoRandomFields</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
+<td></td>
+<td>2</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@1b0375b3</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.testArrayRecordParameters()'><b>testArrayRecordParameters</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
+<td></td>
+<td>0</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@1b0375b3</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.testCheckPoint()'><b>testCheckPoint</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
+<td></td>
+<td>0</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@1b0375b3</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.testFilters()'><b>testFilters</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
+<td></td>
+<td>0</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@1b0375b3</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.testFirstAdd()'><b>testFirstAdd</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
+<td></td>
+<td>0</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@1b0375b3</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.testIsPointed()'><b>testIsPointed</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
+<td></td>
+<td>0</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@1b0375b3</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.testRemoveFilters()'><b>testRemoveFilters</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
+<td></td>
+<td>0</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@1b0375b3</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.testThreadSafe()'><b>testThreadSafe</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase</td>
+<td></td>
+<td>488</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@1b0375b3</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.testThreadSafe()'><b>testThreadSafe</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase</td>
+<td></td>
+<td>488</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@1b0375b3</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.testThreadSafe()'><b>testThreadSafe</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase</td>
+<td></td>
+<td>492</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@1b0375b3</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.testThreadSafe()'><b>testThreadSafe</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase</td>
+<td></td>
+<td>492</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@1b0375b3</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.testThreadSafe()'><b>testThreadSafe</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase</td>
+<td></td>
+<td>492</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@1b0375b3</td></tr>
+</table><p>
+</body>
+</html>
