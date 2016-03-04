@@ -76,7 +76,7 @@ class Export
 		new File("/home/jason/projets/db-derby/lib/derby.jar"), 
 		Dependency.getDefaultBinaryExcludeRegex(), Dependency.getDefaultBinaryIncludeRegex()));
 	additional_files.add(new File("/home/jason/projets/db-derby/DERBY_NOTICE"));
-	File utilsjarfile=new File("/home/jason/git_projects/Utils/exports/Utils-1.0.0-Stable_withSource.jar");
+	File utilsjarfile=new File("/home/jason/git_projects/Utils/exports/Utils-1.5.0-Stable_withSource.jar");
 	dependencies.add(new JarDependency("Utils", 
 		new JarSourceDependancy(utilsjarfile),
 		Utils.class.getPackage(), 

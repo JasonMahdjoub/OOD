@@ -24,6 +24,8 @@ package com.distrimind.ood.tests;
 import java.io.File;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -32,6 +34,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.crypto.SecretKey;
 
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -59,6 +63,7 @@ import com.distrimind.ood.tests.database.Table6;
 import com.distrimind.ood.tests.database.Table7;
 import com.distrimind.ood.tests.database.Table1.Record;
 import com.distrimind.ood.tests.schooldatabase.Lecture;
+import com.distrimind.util.crypto.SymmetricEncryptionType;
 
 /**
  * 
@@ -94,6 +99,15 @@ public class DerbyTestDatabase
     private static File data_directory=new File("tt");
     private static File data_directoryb=new File("ttb");
     
+
+    final SecretKey secretKey;
+    final SymmetricEncryptionType typeSecretKey;
+    
+    public DerbyTestDatabase() throws NoSuchAlgorithmException
+    {
+	typeSecretKey=SymmetricEncryptionType.AES;
+	secretKey=typeSecretKey.getKeyGenerator(new SecureRandom()).generateKey();
+    }
     
     
     @AfterClass public static void unloadDatabase() throws DatabaseException
@@ -155,6 +169,8 @@ public class DerbyTestDatabase
 	    map.put("BigDecimal_value", new BigDecimal("8.8"));
 	    map.put("DateValue", date);
 	    map.put("CalendarValue", calendar);
+	    map.put("secretKey", secretKey);
+	    map.put("typeSecretKey", typeSecretKey);
 	    byte[] tab=new byte[3];
 	    tab[0]=0;
 	    tab[1]=1;
@@ -252,6 +268,8 @@ public class DerbyTestDatabase
 	    Assert.assertTrue(r.BigDecimal_value.equals(new BigDecimal("8.8")));
 	    Assert.assertTrue(r.DateValue.equals(date));
 	    Assert.assertTrue(r.CalendarValue.equals(calendar));
+	    Assert.assertTrue(r.secretKey.equals(secretKey));
+	    Assert.assertTrue(r.typeSecretKey.equals(typeSecretKey));
 	    
 	    for (int i=0;i<3;i++)
 		Assert.assertTrue(r.byte_array_value[i]==tab[i]);
@@ -279,6 +297,8 @@ public class DerbyTestDatabase
 	    Assert.assertTrue(r2.BigDecimal_value.equals(new BigDecimal("8.8")));
 	    Assert.assertTrue(r2.DateValue.equals(date));
 	    Assert.assertTrue(r2.CalendarValue.equals(calendar));
+	    Assert.assertTrue(r2.secretKey.equals(secretKey));
+	    Assert.assertTrue(r2.typeSecretKey.equals(typeSecretKey));
 	    for (int i=0;i<3;i++)
 		Assert.assertTrue(r2.byte_array_value[i]==tab[i]);
     }
@@ -327,6 +347,9 @@ public class DerbyTestDatabase
 	    map.put("BigDecimal_value", new BigDecimal("8.8"));
 	    map.put("DateValue", date);
 	    map.put("CalendarValue", calendar);
+	    map.put("secretKey", secretKey);
+	    map.put("typeSecretKey", typeSecretKey);
+	    
 	    byte[] tab=new byte[3];
 	    tab[0]=0;
 	    tab[1]=1;
@@ -383,6 +406,8 @@ public class DerbyTestDatabase
 	    Assert.assertTrue(r1.BigDecimal_value.equals(new BigDecimal("8.8")));
 	    Assert.assertTrue(r1.DateValue.equals(date));
 	    Assert.assertTrue(r1.CalendarValue.equals(calendar));
+	    Assert.assertTrue(r1.secretKey.equals(secretKey));
+	    Assert.assertTrue(r1.typeSecretKey.equals(typeSecretKey));
 	    for (int i=0;i<3;i++)
 		Assert.assertTrue(r1.byte_array_value[i]==tab[i]);
 
@@ -408,6 +433,8 @@ public class DerbyTestDatabase
 	    Assert.assertTrue(r2.BigDecimal_value.equals(new BigDecimal("8.8")));
 	    Assert.assertTrue(r2.DateValue.equals(date));
 	    Assert.assertTrue(r2.CalendarValue.equals(calendar));
+	    Assert.assertTrue(r2.secretKey.equals(secretKey));
+	    Assert.assertTrue(r2.typeSecretKey.equals(typeSecretKey));
 	    for (int i=0;i<3;i++)
 		Assert.assertTrue(r2.byte_array_value[i]==tab[i]);
 	
@@ -436,6 +463,8 @@ public class DerbyTestDatabase
 	    Assert.assertTrue(r1.BigDecimal_value.equals(new BigDecimal("8.8")));
 	    Assert.assertTrue(r1.DateValue.equals(date));
 	    Assert.assertTrue(r1.CalendarValue.equals(calendar));
+	    Assert.assertTrue(r1.secretKey.equals(secretKey));
+	    Assert.assertTrue(r1.typeSecretKey.equals(typeSecretKey));
 	    for (int i=0;i<3;i++)
 		Assert.assertTrue(r1.byte_array_value[i]==tab[i]);
 
@@ -461,6 +490,8 @@ public class DerbyTestDatabase
 	    Assert.assertTrue(r2.BigDecimal_value.equals(new BigDecimal("8.8")));
 	    Assert.assertTrue(r2.DateValue.equals(date));
 	    Assert.assertTrue(r2.CalendarValue.equals(calendar));
+	    Assert.assertTrue(r2.secretKey.equals(secretKey));
+	    Assert.assertTrue(r2.typeSecretKey.equals(typeSecretKey));
 	    for (int i=0;i<3;i++)
 		Assert.assertTrue(r2.byte_array_value[i]==tab[i]);
 	    table1.checkDataIntegrity();
@@ -517,6 +548,8 @@ public class DerbyTestDatabase
 	Assert.assertTrue(r1a.BigDecimal_value.equals(new BigDecimal("8.8")));
 	Assert.assertTrue(r1a.DateValue.equals(date));
 	Assert.assertTrue(r1a.CalendarValue.equals(calendar));
+	Assert.assertTrue(r1a.secretKey.equals(secretKey));
+	Assert.assertTrue(r1a.typeSecretKey.equals(typeSecretKey));
 	for (int i=0;i<3;i++)
 	    Assert.assertTrue(r1a.byte_array_value[i]==r1b.byte_array_value[i]);
 	
@@ -545,6 +578,8 @@ public class DerbyTestDatabase
 	Assert.assertTrue(r2a.BigDecimal_value.equals(new BigDecimal("8.8")));
 	Assert.assertTrue(r2a.DateValue.equals(date));
 	Assert.assertTrue(r2a.CalendarValue.equals(calendar));
+	Assert.assertTrue(r2a.secretKey.equals(secretKey));
+	Assert.assertTrue(r2a.typeSecretKey.equals(typeSecretKey));
 	for (int i=0;i<3;i++)
 	    Assert.assertTrue(r2a.byte_array_value[i]==r2b.byte_array_value[i]);
 	    table1.checkDataIntegrity();
@@ -608,6 +643,8 @@ public class DerbyTestDatabase
 		Assert.assertTrue(r1a.BigDecimal_value.equals(new BigDecimal("8.8")));
 		Assert.assertTrue(r1a.DateValue.equals(date));
 		Assert.assertTrue(r1a.CalendarValue.equals(calendar));
+		Assert.assertTrue(r1a.secretKey.equals(secretKey));
+		Assert.assertTrue(r1a.typeSecretKey.equals(typeSecretKey));
 		for (int i=0;i<3;i++)
 		    Assert.assertTrue(r1a.byte_array_value[i]==r1b.byte_array_value[i]);
 		
@@ -636,6 +673,8 @@ public class DerbyTestDatabase
 		Assert.assertTrue(r2a.BigDecimal_value.equals(new BigDecimal("8.8")));
 		Assert.assertTrue(r2a.DateValue.equals(date));
 		Assert.assertTrue(r2a.CalendarValue.equals(calendar));
+		Assert.assertTrue(r2a.secretKey.equals(secretKey));
+		Assert.assertTrue(r2a.typeSecretKey.equals(typeSecretKey));
 		for (int i=0;i<3;i++)
 		    Assert.assertTrue(r2a.byte_array_value[i]==r2b.byte_array_value[i]);
 		table1.checkDataIntegrity();
@@ -704,6 +743,9 @@ public class DerbyTestDatabase
 	Assert.assertTrue(r1a.BigDecimal_value.equals(r1b.BigDecimal_value));
 	Assert.assertTrue(r1a.DateValue.equals(r1b.DateValue));
 	Assert.assertTrue(r1a.CalendarValue.equals(r1b.CalendarValue));
+	Assert.assertTrue(r1a.secretKey.equals(r1b.secretKey));
+	Assert.assertTrue(r1a.typeSecretKey.equals(r1b.typeSecretKey));
+	
 	for (int i=0;i<3;i++)
 	    Assert.assertTrue(r1a.byte_array_value[i]==r1b.byte_array_value[i]);
 	
@@ -732,6 +774,9 @@ public class DerbyTestDatabase
 	Assert.assertTrue(r2a.BigDecimal_value.equals(r2b.BigDecimal_value));
 	Assert.assertTrue(r2a.DateValue.equals(r2b.DateValue));
 	Assert.assertTrue(r2a.CalendarValue.equals(r2b.CalendarValue));
+	Assert.assertTrue(r2a.secretKey.equals(r2b.secretKey));
+	Assert.assertTrue(r2a.typeSecretKey.equals(r2b.typeSecretKey));
+
 	for (int i=0;i<3;i++)
 	    Assert.assertTrue(r2a.byte_array_value[i]==r2b.byte_array_value[i]);
 	
@@ -953,6 +998,8 @@ public class DerbyTestDatabase
 		    "BigDecimal_value", new BigDecimal("8.8"),
 		    "DateValue", date,
 		    "CalendarValue", calendar,
+		    "secretKey", secretKey,
+		    "typeSecretKey", typeSecretKey,
 		    "byte_array_value", tab
 		    };
 	    Table1.Record r1=table1.addRecord(parameters);
@@ -1321,6 +1368,8 @@ public class DerbyTestDatabase
 	Assert.assertTrue(r1.BigDecimal_value.equals(r1fr2.BigDecimal_value));
 	Assert.assertTrue(r1.DateValue.equals(r1fr2.DateValue));
 	Assert.assertTrue(r1.CalendarValue.equals(r1fr2.CalendarValue));
+	Assert.assertTrue(r1.secretKey.equals(r1fr2.secretKey));
+	Assert.assertTrue(r1.typeSecretKey.equals(r1fr2.typeSecretKey));
 	
 	
 	Assert.assertTrue(r2.pk1==r2fr4.pk1);
@@ -1348,6 +1397,8 @@ public class DerbyTestDatabase
 	Assert.assertTrue(r2.BigDecimal_value.equals(r2fr4.BigDecimal_value));
 	Assert.assertTrue(r2.DateValue.equals(r2fr4.DateValue));
 	Assert.assertTrue(r2.CalendarValue.equals(r2fr4.CalendarValue));
+	Assert.assertTrue(r2.secretKey.equals(r2fr4.secretKey));
+	Assert.assertTrue(r2.typeSecretKey.equals(r2fr4.typeSecretKey));
 
 	
 	Assert.assertTrue(r2.pk1==r2fr5.pk1);
@@ -1375,6 +1426,8 @@ public class DerbyTestDatabase
 	Assert.assertTrue(r2.BigDecimal_value.equals(r2fr5.BigDecimal_value));
 	Assert.assertTrue(r2.DateValue.equals(r2fr5.DateValue));
 	Assert.assertTrue(r2.CalendarValue.equals(r2fr5.CalendarValue));
+	Assert.assertTrue(r2.secretKey.equals(r2fr5.secretKey));
+	Assert.assertTrue(r2.typeSecretKey.equals(r2fr5.typeSecretKey));
 	
 	
 	HashMap<String, Object> map1b=new HashMap<String, Object>();
@@ -2360,6 +2413,8 @@ public class DerbyTestDatabase
 	    map.put("BigDecimal_value", new BigDecimal("8.8"));
 	    map.put("DateValue", date);
 	    map.put("CalendarValue", calendar);
+	    map.put("secretKey", secretKey);
+	    map.put("typeSecretKey", typeSecretKey);
 	table1.addRecord(map);
 	table3.addRecord(map);
 	Table1.Record r1=table1.getRecords().get(0);
@@ -2389,6 +2444,8 @@ public class DerbyTestDatabase
 	Assert.assertTrue(map.get("BigDecimal_value").equals(r1.BigDecimal_value));
 	Assert.assertTrue(map.get("DateValue").equals(r1.DateValue));
 	Assert.assertTrue(map.get("CalendarValue").equals(r1.CalendarValue));
+	Assert.assertTrue(map.get("secretKey").equals(r1.secretKey));
+	Assert.assertTrue(map.get("typeSecretKey").equals(r1.typeSecretKey));
 	
 	Table3.Record r3=table3.getRecords().get(0);
 	
@@ -2417,6 +2474,8 @@ public class DerbyTestDatabase
 	Assert.assertTrue(map.get("BigDecimal_value").equals(r3.BigDecimal_value));
 	Assert.assertTrue(map.get("DateValue").equals(r3.DateValue));
 	Assert.assertTrue(map.get("CalendarValue").equals(r3.CalendarValue));
+	Assert.assertTrue(map.get("secretKey").equals(r3.secretKey));
+	Assert.assertTrue(map.get("typeSecretKey").equals(r3.typeSecretKey));
 	
 	try
 	{
@@ -2586,6 +2645,8 @@ public class DerbyTestDatabase
 	Assert.assertTrue(map.get("DoubleNumber_value").equals(r1.DoubleNumber_value));
 	Assert.assertTrue(map.get("BigInteger_value").equals(r1.BigInteger_value));
 	Assert.assertTrue(map.get("BigDecimal_value").equals(r1.BigDecimal_value));
+	Assert.assertTrue(map.get("secretKey").equals(r1.secretKey));
+	Assert.assertTrue(map.get("typeSecretKey").equals(r1.typeSecretKey));
 	
 	r3=table3.getRecords().get(0);
 	
@@ -2612,6 +2673,8 @@ public class DerbyTestDatabase
 	Assert.assertTrue(map.get("DoubleNumber_value").equals(r3.DoubleNumber_value));
 	Assert.assertTrue(map.get("BigInteger_value").equals(r3.BigInteger_value));
 	Assert.assertTrue(map.get("BigDecimal_value").equals(r3.BigDecimal_value));
+	Assert.assertTrue(map.get("secretKey").equals(r3.secretKey));
+	Assert.assertTrue(map.get("typeSecretKey").equals(r3.typeSecretKey));
 	
 	Map<String, Object> maps2[]=new Map[1];
 	maps2[0]=maps[0];
@@ -2672,6 +2735,8 @@ public class DerbyTestDatabase
 	map.put("BigDecimal_value", new BigDecimal("9.9"));
 	map.put("DateValue", Calendar.getInstance().getTime());
 	map.put("CalendarValue", Calendar.getInstance());
+	map.put("secretKey", secretKey);
+	map.put("typeSecretKey", typeSecretKey);
 	byte[] tab=new byte[3];
 	tab[0]=0;
 	tab[1]=1;
@@ -2828,6 +2893,8 @@ public class DerbyTestDatabase
 		map.put("BigDecimal_value", new BigDecimal("1.10"));
 		map.put("DateValue", Calendar.getInstance().getTime());
 		map.put("CalendarValue", Calendar.getInstance());
+		map.put("secretKey", secretKey);
+		map.put("typeSecretKey", typeSecretKey);
 		byte[] tab=new byte[3];
 		tab[0]=0;
 		tab[1]=1;
@@ -2863,6 +2930,8 @@ public class DerbyTestDatabase
 		    Assert.assertTrue(r1.DoubleNumber_value.equals(map.get("DoubleNumber_value")));
 		    Assert.assertTrue(r1.BigInteger_value.equals(map.get("BigInteger_value")));
 		    Assert.assertTrue(r1.BigDecimal_value.equals(map.get("BigDecimal_value")));
+		    Assert.assertTrue(r1.secretKey.equals(map.get("secretKey")));
+		    Assert.assertTrue(r1.typeSecretKey.equals(map.get("typeSecretKey")));
 		    for (int i=0;i<3;i++)
 			Assert.assertTrue(r1.byte_array_value[i]==((byte[])map.get("byte_array_value"))[i]);
 
@@ -2886,6 +2955,8 @@ public class DerbyTestDatabase
 		    Assert.assertTrue(r3.DoubleNumber_value.equals(map.get("DoubleNumber_value")));
 		    Assert.assertTrue(r3.BigInteger_value.equals(map.get("BigInteger_value")));
 		    Assert.assertTrue(r3.BigDecimal_value.equals(map.get("BigDecimal_value")));
+		    Assert.assertTrue(r3.secretKey.equals(map.get("secretKey")));
+		    Assert.assertTrue(r3.typeSecretKey.equals(map.get("typeSecretKey")));
 		    for (int i=0;i<3;i++)
 			Assert.assertTrue(r3.byte_array_value[i]==((byte[])map.get("byte_array_value"))[i]);
 		}
@@ -4110,6 +4181,8 @@ public class DerbyTestDatabase
 			    "BigDecimal_value", new BigDecimal("8.8"),
 			    "DateValue", date,
 			    "CalendarValue", calendar,
+			    "secretKey", secretKey,
+			    "typeSecretKey", typeSecretKey,
 			    "byte_array_value", tab
 			    };
 		    

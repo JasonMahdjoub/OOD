@@ -66,7 +66,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor
 	    if (isNotNull())
 		throw new FieldDatabaseException("The given _field_instance, used to store the field "+field.getName()+" (type="+field.getType().getName()+", declaring_class="+field.getDeclaringClass().getName()+") into the DatabaseField class "+field.getDeclaringClass().getName()+", is null and should not be (property NotNull present).");
 	}
-	else if (!(field.getType().equals(_field_instance.getClass())))
+	else if (!(field.getType().isAssignableFrom(_field_instance.getClass())))
 	    throw new FieldDatabaseException("The given _field_instance parameter, destinated to the field "+field.getName()+" of the class "+field.getDeclaringClass().getName()+", should be a "+field.getType().getName()+" and not a "+_field_instance.getClass().getName());
 	try
 	{
@@ -87,28 +87,12 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    byte tab1[]=(byte[])field.get(_class_instance);
-	    if (_field_instance==null)
-	    {
-		if (isNotNull())
-		    return false;
-		else 
-		    return tab1==null;
-	    }
-	    byte tab2[];
-	    if (_field_instance.getClass().equals(this.getCompatibleClasses()[0]))
-		tab2=(byte[])_field_instance;
-	    else
-		return false;
-	    
-	    if (tab1.length!=tab2.length)
-	    {
-		return false;
-	    }
-	    for (int i=0;i<tab1.length;i++)
-		if (tab1[i]!=tab2[i])
-		    return false;
-	    return true;
+	    Object o=field.get(_class_instance);
+	    if (o==_field_instance)
+		return true;
+	    if (o!=null)
+		return o.equals(_field_instance);
+	    return false;
 	}
 	catch(Exception e)
 	{

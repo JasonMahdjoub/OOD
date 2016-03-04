@@ -23,9 +23,18 @@ import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
 
+import javax.crypto.SecretKey;
 
 import com.distrimind.ood.database.exceptions.IncompatibleFieldDatabaseException;
+import com.distrimind.util.crypto.ASymmetricEncryptionType;
+import com.distrimind.util.crypto.SymmetricEncryptionType;
+
 /**
  * 
  * {@inheritDoc}
@@ -48,6 +57,15 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter
 	    return null;
 	if (_o.getClass()==Inet6Address.class || _o.getClass()==Inet4Address.class)
 	    return ((InetAddress)_o).getAddress();
+	else if (_o instanceof KeyPair)
+	    return ASymmetricEncryptionType.encodeKeyPair((KeyPair)_o);
+	else if (_o instanceof PublicKey)
+	    return ASymmetricEncryptionType.encodePublicKey((PublicKey)_o);
+	else if (_o instanceof PrivateKey)
+	    return ASymmetricEncryptionType.encodePrivateKey((PrivateKey)_o);
+	else if (_o instanceof SecretKey)
+	    return SymmetricEncryptionType.encodeSecretKey((SecretKey)_o);
+	
 	throw new IncompatibleFieldDatabaseException("Incompatible type "+_o.getClass().getCanonicalName());
     }
 
@@ -64,8 +82,24 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter
 		return null;
 	    if (_object_type==Inet6Address.class || _object_type==Inet4Address.class)
 		return InetAddress.getByAddress(_bytesTab);
+	    else if (KeyPair.class.isAssignableFrom(_object_type))
+	    {
+		return ASymmetricEncryptionType.decodeKeyPair(_bytesTab);
+	    }
+	    else if (PublicKey.class.isAssignableFrom(_object_type))
+	    {
+		return ASymmetricEncryptionType.decodePublicKey(_bytesTab);
+	    }
+	    else if (PrivateKey.class.isAssignableFrom(_object_type))
+	    {
+		return ASymmetricEncryptionType.decodePrivateKey(_bytesTab);
+	    }
+	    else if (SecretKey.class.isAssignableFrom(_object_type))
+	    {
+		return SymmetricEncryptionType.decodeSecretKey(_bytesTab);
+	    }
 	}
-	catch (UnknownHostException e)
+	catch (UnknownHostException | NoSuchAlgorithmException | InvalidKeySpecException e)
 	{
 	    throw new IncompatibleFieldDatabaseException("A problems occurs", e);
 	}
@@ -81,7 +115,11 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter
     public boolean isCompatible(Class<?> field_type)
     {
 	return field_type==Inet4Address.class
-		|| field_type==Inet6Address.class;
+		|| field_type==Inet6Address.class
+		|| field_type==KeyPair.class
+		|| field_type==PublicKey.class
+		|| field_type==PrivateKey.class
+		|| field_type==SecretKey.class;
     }
 
 }
