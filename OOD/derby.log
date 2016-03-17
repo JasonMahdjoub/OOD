@@ -1,45 +1,45 @@
 ----------------------------------------------------------------
-Fri Mar 04 10:24:03 CET 2016:
-Amorçage de Derby version The Apache Software Foundation - Apache Derby - 10.12.1.1 - (1704137) : instance a816c00e-0153-40f0-ea1f-00000c98f918 
-dans le répertoire de base de données /home/jason/git_projects/OOD/OOD/tt avec le chargeur de classe sun.misc.Launcher$AppClassLoader@55f96302
-Chargé de file:/home/jason/projets/db-derby/lib/derby.jar
+Wed Mar 16 18:52:22 CET 2016:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.12.1.1 - (1704137): instance a816c00e-0153-808e-986d-00000a337058 
+on database directory /home/jason/git_projects/OOD/OOD/databasetestDerby with class loader sun.misc.Launcher$AppClassLoader@55f96302 
+Loaded from file:/home/jason/git_projects/OOD/OOD/exports/OOD-Tests-1.6.0-Stable_withDependencies.jar
 java.vendor=Oracle Corporation
 java.runtime.version=1.8.0_74-b02
 user.dir=/home/jason/git_projects/OOD/OOD
 os.name=Linux
 os.arch=amd64
-os.version=4.2.0-30-generic
+os.version=4.2.0-34-generic
 derby.system.home=null
-Chargeur de classe de la base de données démarré - derby.database.classpath = ''
+Database Class Loader started - derby.database.classpath=''
 ----------------------------------------------------------------
-Fri Mar 04 10:24:13 CET 2016:
-Fermeture de l'instance a816c00e-0153-40f0-ea1f-00000c98f918 sur le répertoire de base de données /home/jason/git_projects/OOD/OOD/tt avec le chargeur de classe sun.misc.Launcher$AppClassLoader@55f96302 
+Wed Mar 16 18:52:31 CET 2016:
+Shutting down instance a816c00e-0153-808e-986d-00000a337058 on database directory /home/jason/git_projects/OOD/OOD/databasetestDerby with class loader sun.misc.Launcher$AppClassLoader@55f96302 
 ----------------------------------------------------------------
-Fri Mar 04 10:24:13 CET 2016:
-Amorçage de Derby version The Apache Software Foundation - Apache Derby - 10.12.1.1 - (1704137) : instance 45ee0190-0153-40f0-ea1f-00000c98f918 
-dans le répertoire de base de données /home/jason/git_projects/OOD/OOD/tt avec le chargeur de classe sun.misc.Launcher$AppClassLoader@55f96302
-Chargé de file:/home/jason/projets/db-derby/lib/derby.jar
+Wed Mar 16 18:52:31 CET 2016:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.12.1.1 - (1704137): instance 45ee0190-0153-808e-986d-00000a337058 
+on database directory /home/jason/git_projects/OOD/OOD/databasetestDerby with class loader sun.misc.Launcher$AppClassLoader@55f96302 
+Loaded from file:/home/jason/git_projects/OOD/OOD/exports/OOD-Tests-1.6.0-Stable_withDependencies.jar
 java.vendor=Oracle Corporation
 java.runtime.version=1.8.0_74-b02
 user.dir=/home/jason/git_projects/OOD/OOD
 os.name=Linux
 os.arch=amd64
-os.version=4.2.0-30-generic
+os.version=4.2.0-34-generic
 derby.system.home=null
-Chargeur de classe de la base de données démarré - derby.database.classpath = ''
+Database Class Loader started - derby.database.classpath=''
 ----------------------------------------------------------------
-Fri Mar 04 10:24:17 CET 2016:
-Amorçage de Derby version The Apache Software Foundation - Apache Derby - 10.12.1.1 - (1704137) : instance 0618c63e-0153-40f0-ea1f-00000c98f918 
-dans le répertoire de base de données /home/jason/git_projects/OOD/OOD/ttb avec le chargeur de classe sun.misc.Launcher$AppClassLoader@55f96302
-Chargé de file:/home/jason/projets/db-derby/lib/derby.jar
+Wed Mar 16 18:52:36 CET 2016:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.12.1.1 - (1704137): instance 0c34c6de-0153-808e-986d-00000a337058 
+on database directory /home/jason/git_projects/OOD/OOD/databasetestDerbyb with class loader sun.misc.Launcher$AppClassLoader@55f96302 
+Loaded from file:/home/jason/git_projects/OOD/OOD/exports/OOD-Tests-1.6.0-Stable_withDependencies.jar
 java.vendor=Oracle Corporation
 java.runtime.version=1.8.0_74-b02
 user.dir=/home/jason/git_projects/OOD/OOD
 os.name=Linux
 os.arch=amd64
-os.version=4.2.0-30-generic
+os.version=4.2.0-34-generic
 derby.system.home=null
-Chargeur de classe de la base de données démarré - derby.database.classpath = ''
+Database Class Loader started - derby.database.classpath=''
 ----------------------------------------------------------------
-Fri Mar 04 10:30:25 CET 2016:
-Fermeture de l'instance 45ee0190-0153-40f0-ea1f-00000c98f918 sur le répertoire de base de données /home/jason/git_projects/OOD/OOD/tt avec le chargeur de classe sun.misc.Launcher$AppClassLoader@55f96302 
+Wed Mar 16 18:59:00 CET 2016:
+Shutting down instance 45ee0190-0153-808e-986d-00000a337058 on database directory /home/jason/git_projects/OOD/OOD/databasetestDerby with class loader sun.misc.Launcher$AppClassLoader@55f96302 

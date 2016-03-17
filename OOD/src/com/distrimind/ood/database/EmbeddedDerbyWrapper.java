@@ -24,6 +24,7 @@ import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLNonTransientConnectionException;
@@ -524,6 +525,63 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
     public Blob getBlob(byte[] _bytes)
     {
 	return null;
+    }
+
+    /**
+     * Backup the database into the given directory. 
+     * @param directory the directory where to save the database.  
+     * @throws DatabaseException if a problem occurs
+     */
+    @Override
+    public void backup(File directory) throws DatabaseException
+    {
+	if (directory==null)
+	    throw new NullPointerException("file");
+	
+	if (directory.exists())
+	{
+	    if (!directory.isDirectory())
+		throw new IllegalArgumentException("The given path ("+directory.getAbsolutePath()+") must be a directory !");
+	}
+	final String f=directory.getAbsolutePath();
+	
+	final String querry="CALL SYSCS_UTIL.SYSCS_BACKUP_DATABASE(?)";
+	    this.runTransaction(new Transaction() {
+	    
+		@Override
+		public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
+		{
+		    try
+		    {
+			locker.lockRead();
+			PreparedStatement preparedStatement = sql_connection.prepareStatement(querry);
+			try
+			{
+			    preparedStatement.setString(1, f);
+			    preparedStatement.execute();
+			}
+			finally
+			{
+			    preparedStatement.close();
+			}
+			return null;
+		    }
+		    catch(Exception e)
+		    {
+			throw new DatabaseException("",e);
+		    }
+		    finally
+		    {
+			    locker.unlockRead();
+		    }
+		}
+	    
+		@Override
+		public boolean doesWriteData()
+		{
+		    return false;
+		}
+	    });
     }
     
 }

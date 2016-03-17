@@ -96,8 +96,9 @@ public class DerbyTestDatabase
     private static Package pk2=Lecture.class.getPackage();
     private static DatabaseWrapper sql_db;
     private static DatabaseWrapper sql_dbb;
-    private static File data_directory=new File("tt");
-    private static File data_directoryb=new File("ttb");
+    private static File data_directory=new File("databasetestDerby");
+    private static File data_directoryb=new File("databasetestDerbyb");
+    private static File database_backup_directory=new File("databasebackupDerby");
     
 
     final SecretKey secretKey;
@@ -116,6 +117,7 @@ public class DerbyTestDatabase
 	    sql_db.close();
 	EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directory);
 	EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directoryb);
+	EmbeddedDerbyWrapper.deleteDatabaseFiles(database_backup_directory);
     }
     @Test public void firstLoad() throws IllegalArgumentException, DatabaseException
     {
@@ -380,9 +382,9 @@ public class DerbyTestDatabase
 	    map.put("byte_array_value", tab);
 	    
 	    Table1.Record r1=table1.getRecords().get(0);
-	    table1.alterRecord(r1, map);
+	    table1.updateRecord(r1, map);
 	    Table3.Record r2=table3.getRecords().get(0);
-	    table3.alterRecord(r2, map);
+	    table3.updateRecord(r2, map);
 	    
 	    Assert.assertTrue(r1.pk1==1);
 	    Assert.assertTrue(r1.int_value==3);
@@ -1098,7 +1100,7 @@ public class DerbyTestDatabase
 	table3.removeRecords(new Filter<Table3.Record>() {
 
 	    @Override
-	    public boolean nextRecord(com.distrimind.ood.tests.database.Table3.Record _record) 
+	    public boolean nextRecord(Table3.Record _record) 
 	    {
 		return false;
 	    }
@@ -1118,7 +1120,7 @@ public class DerbyTestDatabase
 	table3.removeRecords(new Filter<Table3.Record>() {
 
 	    @Override
-	    public boolean nextRecord(com.distrimind.ood.tests.database.Table3.Record _record) 
+	    public boolean nextRecord(Table3.Record _record) 
 	    {
 		return true;
 	    }
@@ -1141,7 +1143,7 @@ public class DerbyTestDatabase
 	addSecondRecord();
 	addSecondRecord();
 	addSecondRecord();
-	table1.alterRecords(new AlterRecordFilter<Table1.Record>() {
+	table1.updateRecords(new AlterRecordFilter<Table1.Record>() {
 
 	    @Override
 	    public void nextRecord(Record _record)
@@ -1150,7 +1152,7 @@ public class DerbyTestDatabase
 		
 	    }
 	});
-	table3.alterRecords(new AlterRecordFilter<Table3.Record>() {
+	table3.updateRecords(new AlterRecordFilter<Table3.Record>() {
 
 	    @Override
 	    public void nextRecord(Table3.Record _record)
@@ -1177,7 +1179,7 @@ public class DerbyTestDatabase
 	addSecondRecord();
 	addSecondRecord();
 	addSecondRecord();
-	table1.alterRecords(new AlterRecordFilter<Table1.Record>() {
+	table1.updateRecords(new AlterRecordFilter<Table1.Record>() {
 
 	    @Override
 	    public void nextRecord(Record _record)
@@ -1185,7 +1187,7 @@ public class DerbyTestDatabase
 		this.removeWithCascade();
 	    }
 	});
-	table3.alterRecords(new AlterRecordFilter<Table3.Record>() {
+	table3.updateRecords(new AlterRecordFilter<Table3.Record>() {
 
 	    @Override
 	    public void nextRecord(Table3.Record _record)
@@ -2099,7 +2101,7 @@ public class DerbyTestDatabase
 	table1.removeRecords(new Filter<Table1.Record>() {
 
 	    @Override
-	    public boolean nextRecord(com.distrimind.ood.tests.database.Table1.Record _record)
+	    public boolean nextRecord(Table1.Record _record)
 	    {
 		return true;
 	    }
@@ -2107,7 +2109,7 @@ public class DerbyTestDatabase
 	table3.removeRecords(new Filter<Table3.Record>() {
 
 	    @Override
-	    public boolean nextRecord(com.distrimind.ood.tests.database.Table3.Record _record)
+	    public boolean nextRecord(Table3.Record _record)
 	    {
 		return true;
 	    }
@@ -2115,7 +2117,7 @@ public class DerbyTestDatabase
 	table2.removeRecords(new Filter<Table2.Record>() {
 
 	    @Override
-	    public boolean nextRecord(com.distrimind.ood.tests.database.Table2.Record _record)
+	    public boolean nextRecord(Table2.Record _record)
 	    {
 		return true;
 	    }
@@ -2123,7 +2125,7 @@ public class DerbyTestDatabase
 	table4.removeRecords(new Filter<Table4.Record>() {
 
 	    @Override
-	    public boolean nextRecord(com.distrimind.ood.tests.database.Table4.Record _record)
+	    public boolean nextRecord(Table4.Record _record)
 	    {
 		return true;
 	    }
@@ -2131,7 +2133,7 @@ public class DerbyTestDatabase
 	table5.removeRecords(new Filter<Table5.Record>() {
 
 	    @Override
-	    public boolean nextRecord(com.distrimind.ood.tests.database.Table5.Record _record)
+	    public boolean nextRecord(Table5.Record _record)
 	    {
 		return true;
 	    }
@@ -2150,7 +2152,7 @@ public class DerbyTestDatabase
 	table6.removeRecords(new Filter<Table6.Record>() {
 
 	    @Override
-	    public boolean nextRecord(com.distrimind.ood.tests.database.Table6.Record _record)
+	    public boolean nextRecord(Table6.Record _record)
 	    {
 		return true;
 	    }
@@ -2241,7 +2243,7 @@ public class DerbyTestDatabase
 	table2.removeRecordsWithCascade(new Filter<Table2.Record>() {
 
 	    @Override
-	    public boolean nextRecord(com.distrimind.ood.tests.database.Table2.Record _record)
+	    public boolean nextRecord(Table2.Record _record)
 	    {
 		return true;
 	    }
@@ -2249,7 +2251,7 @@ public class DerbyTestDatabase
 	table5.removeRecordsWithCascade(new Filter<Table5.Record>() {
 
 	    @Override
-	    public boolean nextRecord(com.distrimind.ood.tests.database.Table5.Record _record)
+	    public boolean nextRecord(Table5.Record _record)
 	    {
 		return true;
 	    }
@@ -2353,7 +2355,7 @@ public class DerbyTestDatabase
 	
 	prepareMultipleTest();
 
-	table1.alterRecords(new AlterRecordFilter<Table1.Record>() {
+	table1.updateRecords(new AlterRecordFilter<Table1.Record>() {
 
 	    @Override
 	    public void nextRecord(Record _record)
@@ -2361,7 +2363,7 @@ public class DerbyTestDatabase
 		this.removeWithCascade();
 	    }
 	});
-	table3.alterRecords(new AlterRecordFilter<Table3.Record>() {
+	table3.updateRecords(new AlterRecordFilter<Table3.Record>() {
 
 	    @Override
 	    public void nextRecord(Table3.Record _record)
@@ -2847,7 +2849,7 @@ public class DerbyTestDatabase
 	    table5=DerbyTestDatabase.table5b;
 	    table6=DerbyTestDatabase.table6b;
 	}
-	int r=random.nextInt(31);
+	int r=random.nextInt(33);
 	
 	int number;
 	synchronized(number_thread_test)
@@ -3586,14 +3588,14 @@ public class DerbyTestDatabase
 	    break;
 	    case 21:
 	    {
-		    table1.alterRecords(new AlterRecordFilter<Table1.Record>() {
+		    table1.updateRecords(new AlterRecordFilter<Table1.Record>() {
 		        
 		        @Override
 		        public void nextRecord(Record _record)
 		        {
 		            HashMap<String, Object> m=new HashMap<String, Object>();
 			    m.put("int_value", new Integer(18));
-			    this.alter(m);
+			    this.update(m);
 		        }
 		    });
 		    if (no_thread)
@@ -3604,14 +3606,14 @@ public class DerbyTestDatabase
 		    }
 		    
 		    
-		    table3.alterRecords(new AlterRecordFilter<Table3.Record>() {
+		    table3.updateRecords(new AlterRecordFilter<Table3.Record>() {
 		        
 		        @Override
 		        public void nextRecord(Table3.Record _record)
 		        {
 		            HashMap<String, Object> m=new HashMap<String, Object>();
 			    m.put("int_value", new Integer(18));
-			    this.alter(m);
+			    this.update(m);
 		        }
 		    });
 		    if (no_thread)
@@ -4082,7 +4084,7 @@ public class DerbyTestDatabase
 		break;
 	    case 28:
 	    {
-		    table1.alterRecords(new AlterRecordFilter<Table1.Record>() {
+		    table1.updateRecords(new AlterRecordFilter<Table1.Record>() {
 		        
 		        @Override
 		        public void nextRecord(Record _record)
@@ -4100,7 +4102,7 @@ public class DerbyTestDatabase
 		    });
 		    
 		    
-		    table3.alterRecords(new AlterRecordFilter<Table3.Record>() {
+		    table3.updateRecords(new AlterRecordFilter<Table3.Record>() {
 		        
 		        @Override
 		        public void nextRecord(Table3.Record _record)
@@ -4203,11 +4205,22 @@ public class DerbyTestDatabase
 				throw e;
 			    }
 			}
-		    
-		    Table1.Record r1=table1.addRecord(parameters);
-		    Table3.Record r2=table3.addRecord(parameters);
-		    table1.removeRecord(r1);
-		    table3.removeRecord(r2);
+		    try
+		    {
+			Table1.Record r1=table1.addRecord(parameters);
+			Table3.Record r2=table3.addRecord(parameters);
+			table1.removeRecord(r1);
+			table3.removeRecord(r2);
+		    }
+		    catch(ConstraintsNotRespectedDatabaseException e)
+		    {
+			
+		    }
+		    catch(RecordNotFoundDatabaseException e)
+		    {
+			if (no_thread)
+			    throw e;
+		    }
 
 		    Object []p2={"rert"};
 		    Object []p3={new Integer(125), "rert"};
@@ -4247,6 +4260,130 @@ public class DerbyTestDatabase
 		    {
 			Assert.assertTrue(true);
 		    }
+	    }
+	    break;
+	    case 31:
+	    {
+		Table1.Record r1=new Table1.Record();
+		
+		r1.pk1=random.nextInt();
+		r1.int_value=3;
+		r1.byte_value=(byte)3;
+		r1.char_value='x';
+		r1.boolean_value=true;
+		r1.short_value=(short)random.nextInt();
+		r1.long_value=3;
+		r1.float_value=3.3f;
+		r1.double_value=3.3;
+		r1.string_value="test string";
+		r1.IntegerNumber_value=new Integer(3);
+		r1.ByteNumber_value=new Byte((byte)3);
+		r1.CharacterNumber_value=new Character('x');
+		r1.BooleanNumber_value=new Boolean(true);
+		r1.ShortNumber_value=new Short((short)3);
+		r1.LongNumber_value=new Long(random.nextLong());
+		r1.FloatNumber_value=new Float(3.3f);
+		r1.DoubleNumber_value=new Double(3.3);
+		r1.BigInteger_value=new BigInteger("6");
+		r1.BigDecimal_value=new BigDecimal("1.10");
+		r1.DateValue=Calendar.getInstance().getTime();
+		r1.CalendarValue=Calendar.getInstance();
+		r1.secretKey=secretKey;
+		r1.typeSecretKey=typeSecretKey;
+		byte[] tab=new byte[3];
+		tab[0]=0;
+		tab[1]=1;
+		tab[2]=2;
+		r1.byte_array_value=tab;
+
+		Table3.Record r3=new Table3.Record();
+		
+		r3.pk1=random.nextInt();
+		r3.int_value=3;
+		r3.byte_value=(byte)3;
+		r3.char_value='x';
+		r3.boolean_value=true;
+		r3.short_value=(short)random.nextInt();
+		r3.long_value=3;
+		r3.float_value=3.3f;
+		r3.double_value=3.3;
+		r3.string_value="test string";
+		r3.IntegerNumber_value=new Integer(3);
+		r3.ByteNumber_value=new Byte((byte)3);
+		r3.CharacterNumber_value=new Character('x');
+		r3.BooleanNumber_value=new Boolean(true);
+		r3.ShortNumber_value=new Short((short)3);
+		r3.LongNumber_value=new Long(random.nextLong());
+		r3.FloatNumber_value=new Float(3.3f);
+		r3.DoubleNumber_value=new Double(3.3);
+		r3.BigInteger_value=new BigInteger("6");
+		r3.BigDecimal_value=new BigDecimal("1.10");
+		r3.DateValue=Calendar.getInstance().getTime();
+		r3.CalendarValue=Calendar.getInstance();
+		r3.secretKey=secretKey;
+		r3.typeSecretKey=typeSecretKey;
+		r3.byte_array_value=tab;
+		try
+		{
+		    Table1.Record r1b=table1.addRecord(r1);
+		    Table3.Record r3b=table3.addRecord(r3);
+		    if (no_thread)
+		    {
+			Assert.assertTrue(table1.contains(r1));
+			Assert.assertTrue(table3.contains(r3));
+		    }
+		    Assert.assertTrue(r1==r1b);
+		    Assert.assertTrue(r3==r3b);
+		}
+		catch(ConstraintsNotRespectedDatabaseException e)
+		{
+		    if (no_thread)
+		    {
+			throw e;
+		    }
+		}
+	    }
+	    break;
+	    case 32:
+	    {
+		try
+		{
+		    ArrayList<Table1.Record> records1=table1.getRecords();
+		    if (records1.size()>0)
+		    {
+		    
+			Table1.Record r1=records1.get(0);
+			r1.long_value=123456789l;
+			table1.updateRecord(r1);
+			
+			if (no_thread)
+			{
+			    Table1.Record r1b=table1.getRecords().get(0);
+			    Assert.assertTrue(r1b.long_value==r1.long_value);
+			}
+		    }
+		    ArrayList<Table3.Record> records3=table3.getRecords();
+		    if (records3.size()>0)
+		    {
+		    
+			Table3.Record r3=records3.get(0);
+			r3.long_value=123456789l;
+			table3.updateRecord(r3);
+			
+			if (no_thread)
+			{
+			    Table3.Record r3b=table3.getRecords().get(0);
+			    Assert.assertTrue(r3b.long_value==r3.long_value);
+			}
+			    
+		    }
+		}
+		catch(RecordNotFoundDatabaseException e)
+		{
+		    if (no_thread)
+			throw e;
+		}
+		
 	    }
 	    break;
 	    	
@@ -4292,6 +4429,17 @@ public class DerbyTestDatabase
     {
 	/*table1.getDatabaseWrapper().checkPoint(false);
 	table1.getDatabaseWrapper().checkPoint(true);*/
+    }
+    @Test(threadPoolSize = 1, invocationCount = 1,  dependsOnMethods={"testCheckPoint"}) public void testBackup() throws DatabaseException
+    {
+	((EmbeddedDerbyWrapper)table1.getDatabaseWrapper()).backup(database_backup_directory);
+	table1.checkDataIntegrity();
+	table2.checkDataIntegrity();
+	table3.checkDataIntegrity();
+	table4.checkDataIntegrity();
+	table5.checkDataIntegrity();
+	table6.checkDataIntegrity();
+	table7.checkDataIntegrity();
     }
     @Test(threadPoolSize = 0, invocationCount = 0,  timeOut = 0) private void testOrderedTable1(ArrayList<Table1.Record> res)
     {

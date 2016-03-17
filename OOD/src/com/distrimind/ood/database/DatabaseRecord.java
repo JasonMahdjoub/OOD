@@ -33,7 +33,7 @@ package com.distrimind.ood.database;
  * Fields which have the annotation {@link com.distrimind.ood.database.annotations.RandomPrimaryKey} must be 'long' values.
  * Fields which have the annotation {@link com.distrimind.ood.database.annotations.ForeignKey} must be DatabaseRecord instances. 
  *
- * Never alter a field directly throw a function of the child class. Do it with the function {@link com.distrimind.ood.database.Table#alterRecord(DatabaseRecord, java.util.Map)}.
+ * Never alter a field directly throw a function of the child class. Do it with the function {@link com.distrimind.ood.database.Table#updateRecord(DatabaseRecord, java.util.Map)}.
  * Moreover, the constructor of the child class must be protected with no parameter (if this constraint is not respected, an exception will be generated). So it is not possible to instantiate directly this class. To do that, you must use the function {@link com.distrimind.ood.database.Table#addRecord(java.util.Map)}, or the function {@link com.distrimind.ood.database.Table#addRecords(java.util.Map...)}. 
  * 
  * The inner database fields do not need to be initialized. However, fields which have no annotation (which are not included into the database) are not concerned.
@@ -43,7 +43,9 @@ package com.distrimind.ood.database;
  */
 public abstract class DatabaseRecord
 {
-    protected DatabaseRecord()
+    boolean __createdIntoDatabase=false;
+    
+    public DatabaseRecord()
     {
 	
     }

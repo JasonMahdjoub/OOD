@@ -20,16 +20,20 @@
 package com.distrimind.ood.database;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.regex.Pattern;
 
 import org.hsqldb.jdbc.JDBCBlob;
+import org.hsqldb.lib.tar.DbBackupMain;
+import org.hsqldb.lib.tar.TarMalformatException;
 
 import com.distrimind.ood.database.Table.ColumnsReadQuerry;
 import com.distrimind.ood.database.Table.ReadQuerry;
@@ -38,6 +42,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseVersionException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
+import com.distrimind.util.OSValidator;
 import com.distrimind.util.ReadWriteLock;
 
 /**
@@ -589,5 +594,128 @@ public class HSQLDBWrapper extends DatabaseWrapper
     {
 	return new JDBCBlob(_bytes);
     }
+    
+    /**
+     * Backup the database into the given directory. During this backup, the database will not be available. 
+     * @param file the file name where to save the database.  
+     * @throws DatabaseException if a problem occurs
+     */
+    @Override
+    public void backup(File file) throws DatabaseException
+    {
+	this.backup(file, true, false, false);
+    }
+    /**
+     * Backup the database into the given directory. 
+     * @param file the file name where to save the database. 
+     * @param blockDatabase if set to true, database can't be used during the backup. Hot backup is performed if NOT BLOCKING is specified. In this mode, the database can be used during backup. This mode should only be used with very large databases. A hot backup set is less compact and takes longer to restore and use than a normal backup set produced with the BLOCKING option. You can perform a CHECKPOINT just before a hot backup in order to reduce the size of the backup set.
+     * @throws DatabaseException if a problem occurs
+     */
+    public void backup(File file, final boolean blockDatabase) throws DatabaseException
+    {
+	this.backup(file, blockDatabase, false, !blockDatabase);
+    }
+    
+    /**
+     * Backup the database into the given directory. 
+     * @param path the path where to save the database. If <code>saveAsFiles</code> is set to false, it must be a directory, else it must be a file. 
+     * @param blockDatabase if set to true, database can't be used during the backup. Hot backup is performed if NOT BLOCKING is specified. In this mode, the database can be used during backup. This mode should only be used with very large databases. A hot backup set is less compact and takes longer to restore and use than a normal backup set produced with the BLOCKING option. You can perform a CHECKPOINT just before a hot backup in order to reduce the size of the backup set.
+     * @param saveAsFiles if set to true, the database files are copied to a directory specified by <code>path</code> without any compression. The file path must be a directory. If the directory does not exist, it is created. The file path may be absolute or relative. If it is relative, it is interpreted as relative to the location of database files. When set to true, the database will be compressed. 
+     * @param performCheckPoint if set to true, calls the function {@link #checkPoint(boolean)}
+     * @throws DatabaseException if a problem occurs
+     */
+    public void backup(File path, final boolean blockDatabase, boolean saveAsFiles, boolean performCheckPoint) throws DatabaseException
+    {
+	if (path==null)
+	    throw new NullPointerException("file");
+	if (performCheckPoint)
+	    checkPoint(false);
+	
+	if (path.exists())
+	{
+	    if (saveAsFiles && !path.isFile())
+		throw new IllegalArgumentException("The given path ("+path.getAbsolutePath()+") must be a file !");
+	    if (!saveAsFiles && !path.isDirectory())
+		throw new IllegalArgumentException("The given path ("+path.getAbsolutePath()+") must be a directory !");
+	}
+	String f=path.getAbsolutePath();
+	
+	if (!saveAsFiles)
+	{
+	    if (OSValidator.isWindows())
+	    {
+		if (!f.endsWith("\\"))
+		    f=f+"\\";
+	    }
+	    else
+	    {
+		if (!f.endsWith("/"))
+		    f=f+"/";
+	    }
+	}
+	final String querry="BACKUP DATABASE TO '"+f+(blockDatabase?"' BLOCKING":"' NOT BLOCKING")+(saveAsFiles?" AS FILES":"")+getSqlComma();
+	    this.runTransaction(new Transaction() {
+	    
+		@Override
+		public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
+		{
+		    try
+		    {
+			if (blockDatabase)
+			    locker.lockWrite();
+			else
+			    locker.lockRead();
+			PreparedStatement preparedStatement = sql_connection.prepareStatement(querry);
+			try
+			{
+			    preparedStatement.execute();
+			}
+			finally
+			{
+			    preparedStatement.close();
+			}
+			return null;
+		    }
+		    catch(Exception e)
+		    {
+			throw new DatabaseException("",e);
+		    }
+		    finally
+		    {
+			if (blockDatabase)
+			    locker.unlockWrite();
+			else
+			    locker.unlockRead();
+		    }
+		}
+	    
+		@Override
+		public boolean doesWriteData()
+		{
+		    return false;
+		}
+	    });
+
+    }
+    
+    /**
+     * Restore a database from a source to a directory
+     * @param sourcePath the database source. It can be a directory containing several files, or a simple tar file. 
+     * @param databaseDirectory the restored database directory
+     * @throws IOException if a problem occurs
+     * @throws TarMalformatException if a problem occurs
+     */
+    public static void restore(File sourcePath, File databaseDirectory) throws IOException, TarMalformatException
+    {
+	if (sourcePath==null)
+	    throw new NullPointerException("sourcePath");
+	if (databaseDirectory==null)
+	    throw new NullPointerException("databaseDirectory");
+	if (databaseDirectory.exists() && !databaseDirectory.isDirectory())
+	    throw new IllegalArgumentException("databaseDirectory must be a directory !");
+	String args[]={"--extract", sourcePath.getAbsolutePath(), databaseDirectory.getAbsolutePath()};
+	DbBackupMain.main(args);
+    }
+    
 
 }

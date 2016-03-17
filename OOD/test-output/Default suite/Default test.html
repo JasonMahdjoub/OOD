@@ -55,11 +55,11 @@ function toggleAllBoxes() {
 <body>
 <h2 align='center'>Default test</h2><table border='1' align="center">
 <tr>
-<td>Tests passed/Failed/Skipped:</td><td>25/1/2</td>
+<td>Tests passed/Failed/Skipped:</td><td>31/0/0</td>
 </tr><tr>
-<td>Started on:</td><td>Fri Mar 04 10:05:49 CET 2016</td>
+<td>Started on:</td><td>Fri Mar 11 13:19:09 CET 2016</td>
 </tr>
-<tr><td>Total time:</td><td>43 seconds (43903 ms)</td>
+<tr><td>Total time:</td><td>28 seconds (28729 ms)</td>
 </tr><tr>
 <td>Included groups:</td><td></td>
 </tr><tr>
@@ -67,86 +67,6 @@ function toggleAllBoxes() {
 </tr>
 </table><p/>
 <small><i>(Hover the method name to see the test class name)</i></small><p/>
-<table width='100%' border='1' class='invocation-failed'>
-<tr><td colspan='4' align='center'><b>FAILED TESTS</b></td></tr>
-<tr><td><b>Test method</b></td>
-<td width="30%"><b>Exception</b></td>
-<td width="10%"><b>Time (seconds)</b></td>
-<td><b>Instance</b></td>
-</tr>
-<tr>
-<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.multipleTests()'><b>multipleTests</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
-<td><div><pre>com.distrimind.ood.database.exceptions.DatabaseException: Unexpected exception
-	at com.distrimind.ood.database.exceptions.DatabaseException.getDatabaseException(DatabaseException.java:68)
-	at com.distrimind.ood.database.fieldaccessors.ByteTabConvertibleFieldAccessor.equals(ByteTabConvertibleFieldAccessor.java:115)
-	at com.distrimind.ood.database.Table.equalsAllFields(Table.java:3160)
-	at com.distrimind.ood.tests.HSQLDBTestDatabase.subMultipleTests(HSQLDBTestDatabase.java:4013)
-	at com.distrimind.ood.tests.HSQLDBTestDatabase.multipleTests(HSQLDBTestDatabase.java:2825)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:86)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:645)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:822)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1130)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
-	at org.testng.TestRunner.privateRun(TestRunner.java:782)
-	at org.testng.TestRunner.run(TestRunner.java:632)
-	at org.testng.SuiteRunner.runTest(SuiteRunner.java:366)
-	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:361)
-	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:319)
-	at org.testng.SuiteRunner.run(SuiteRunner.java:268)
-	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
-	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
-	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1244)
-	at org.testng.TestNG.runSuitesLocally(TestNG.java:1169)
-	at org.testng.TestNG.run(TestNG.java:1064)
-	at org.testng.remote.RemoteTestNG.run(RemoteTestNG.java:113)
-	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:206)
-	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:177)
-Caused by: java.lang.ClassCastException: javax.crypto.spec.SecretKeySpec cannot be cast to [B
-	at com.distrimind.ood.database.fieldaccessors.ByteTabConvertibleFieldAccessor.equals(ByteTabConvertibleFieldAccessor.java:90)
-	... 27 more
-</pre></div><a href='#' onClick='toggleBox("stack-trace1025463690", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
-<div class='stack-trace' id='stack-trace1025463690'><pre>com.distrimind.ood.database.exceptions.DatabaseException: Unexpected exception
-	at com.distrimind.ood.database.exceptions.DatabaseException.getDatabaseException(DatabaseException.java:68)
-	at com.distrimind.ood.database.fieldaccessors.ByteTabConvertibleFieldAccessor.equals(ByteTabConvertibleFieldAccessor.java:115)
-	at com.distrimind.ood.database.Table.equalsAllFields(Table.java:3160)
-	at com.distrimind.ood.tests.HSQLDBTestDatabase.subMultipleTests(HSQLDBTestDatabase.java:4013)
-	at com.distrimind.ood.tests.HSQLDBTestDatabase.multipleTests(HSQLDBTestDatabase.java:2825)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:86)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:645)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:822)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1130)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
-	at org.testng.TestRunner.privateRun(TestRunner.java:782)
-	at org.testng.TestRunner.run(TestRunner.java:632)
-	at org.testng.SuiteRunner.runTest(SuiteRunner.java:366)
-	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:361)
-	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:319)
-	at org.testng.SuiteRunner.run(SuiteRunner.java:268)
-	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
-	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
-	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1244)
-	at org.testng.TestNG.runSuitesLocally(TestNG.java:1169)
-	at org.testng.TestNG.run(TestNG.java:1064)
-	at org.testng.remote.RemoteTestNG.run(RemoteTestNG.java:113)
-	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:206)
-	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:177)
-Caused by: java.lang.ClassCastException: javax.crypto.spec.SecretKeySpec cannot be cast to [B
-	at com.distrimind.ood.database.fieldaccessors.ByteTabConvertibleFieldAccessor.equals(ByteTabConvertibleFieldAccessor.java:90)
-	... 27 more
-</pre></div></td>
-<td>16</td>
-<td>com.distrimind.ood.tests.HSQLDBTestDatabase@56aac163</td></tr>
-</table><p>
 <table width='100%' border='1' class='invocation-passed'>
 <tr><td colspan='4' align='center'><b>PASSED TESTS</b></td></tr>
 <tr><td><b>Test method</b></td>
@@ -158,219 +78,157 @@ Caused by: java.lang.ClassCastException: javax.crypto.spec.SecretKeySpec cannot 
 <td title='com.distrimind.ood.tests.HSQLDBTestDatabase.addForeignKeyAndTestUniqueKeys()'><b>addForeignKeyAndTestUniqueKeys</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
 <td></td>
 <td>0</td>
-<td>com.distrimind.ood.tests.HSQLDBTestDatabase@56aac163</td></tr>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@394e1a0f</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.HSQLDBTestDatabase.addSecondRecord()'><b>addSecondRecord</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
 <td></td>
 <td>0</td>
-<td>com.distrimind.ood.tests.HSQLDBTestDatabase@56aac163</td></tr>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@394e1a0f</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.HSQLDBTestDatabase.alterRecord()'><b>alterRecord</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
 <td></td>
 <td>0</td>
-<td>com.distrimind.ood.tests.HSQLDBTestDatabase@56aac163</td></tr>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@394e1a0f</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.HSQLDBTestDatabase.alterRecordWithCascade()'><b>alterRecordWithCascade</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
 <td></td>
 <td>0</td>
-<td>com.distrimind.ood.tests.HSQLDBTestDatabase@56aac163</td></tr>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@394e1a0f</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.HSQLDBTestDatabase.firstAdd()'><b>firstAdd</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
 <td></td>
 <td>0</td>
-<td>com.distrimind.ood.tests.HSQLDBTestDatabase@56aac163</td></tr>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@394e1a0f</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.HSQLDBTestDatabase.firstLoad()'><b>firstLoad</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
 <td></td>
 <td>0</td>
-<td>com.distrimind.ood.tests.HSQLDBTestDatabase@56aac163</td></tr>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@394e1a0f</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.HSQLDBTestDatabase.firstReload()'><b>firstReload</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
 <td></td>
 <td>0</td>
-<td>com.distrimind.ood.tests.HSQLDBTestDatabase@56aac163</td></tr>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@394e1a0f</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.HSQLDBTestDatabase.firstTestSize()'><b>firstTestSize</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
 <td></td>
 <td>0</td>
-<td>com.distrimind.ood.tests.HSQLDBTestDatabase@56aac163</td></tr>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@394e1a0f</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.HSQLDBTestDatabase.getRecord()'><b>getRecord</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
 <td></td>
 <td>0</td>
-<td>com.distrimind.ood.tests.HSQLDBTestDatabase@56aac163</td></tr>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@394e1a0f</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.HSQLDBTestDatabase.getRecordFilter()'><b>getRecordFilter</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
 <td></td>
 <td>0</td>
-<td>com.distrimind.ood.tests.HSQLDBTestDatabase@56aac163</td></tr>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@394e1a0f</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.HSQLDBTestDatabase.getRecordIterator()'><b>getRecordIterator</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
 <td></td>
 <td>0</td>
-<td>com.distrimind.ood.tests.HSQLDBTestDatabase@56aac163</td></tr>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@394e1a0f</td></tr>
 <tr>
-<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.isLoadedIntoMemory()'><b>isLoadedIntoMemory</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.multipleTests()'><b>multipleTests</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
 <td></td>
 <td>0</td>
-<td>com.distrimind.ood.tests.HSQLDBTestDatabase@56aac163</td></tr>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@394e1a0f</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.HSQLDBTestDatabase.prepareMultipleTest()'><b>prepareMultipleTest</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
 <td></td>
 <td>2</td>
-<td>com.distrimind.ood.tests.HSQLDBTestDatabase@56aac163</td></tr>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@394e1a0f</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.HSQLDBTestDatabase.removeForeignKeyRecords()'><b>removeForeignKeyRecords</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
 <td></td>
 <td>0</td>
-<td>com.distrimind.ood.tests.HSQLDBTestDatabase@56aac163</td></tr>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@394e1a0f</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.HSQLDBTestDatabase.removePointedRecords()'><b>removePointedRecords</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
 <td></td>
 <td>0</td>
-<td>com.distrimind.ood.tests.HSQLDBTestDatabase@56aac163</td></tr>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@394e1a0f</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.HSQLDBTestDatabase.removeRecord()'><b>removeRecord</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
 <td></td>
 <td>0</td>
-<td>com.distrimind.ood.tests.HSQLDBTestDatabase@56aac163</td></tr>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@394e1a0f</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.HSQLDBTestDatabase.removeRecords()'><b>removeRecords</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
 <td></td>
-<td>13</td>
-<td>com.distrimind.ood.tests.HSQLDBTestDatabase@56aac163</td></tr>
+<td>12</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@394e1a0f</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.HSQLDBTestDatabase.removeWithCascade()'><b>removeWithCascade</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
 <td></td>
 <td>3</td>
-<td>com.distrimind.ood.tests.HSQLDBTestDatabase@56aac163</td></tr>
-<tr>
-<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.secondTestSize()'><b>secondTestSize</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
-<td></td>
-<td>0</td>
-<td>com.distrimind.ood.tests.HSQLDBTestDatabase@56aac163</td></tr>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@394e1a0f</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.HSQLDBTestDatabase.setAutoRandomFields()'><b>setAutoRandomFields</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
 <td></td>
 <td>4</td>
-<td>com.distrimind.ood.tests.HSQLDBTestDatabase@56aac163</td></tr>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@394e1a0f</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.HSQLDBTestDatabase.testArrayRecordParameters()'><b>testArrayRecordParameters</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
 <td></td>
 <td>0</td>
-<td>com.distrimind.ood.tests.HSQLDBTestDatabase@56aac163</td></tr>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@394e1a0f</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.testBackup()'><b>testBackup</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
+<td></td>
+<td>0</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@394e1a0f</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.testCheckPoint()'><b>testCheckPoint</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
+<td></td>
+<td>0</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@394e1a0f</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.HSQLDBTestDatabase.testFilters()'><b>testFilters</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
 <td></td>
 <td>0</td>
-<td>com.distrimind.ood.tests.HSQLDBTestDatabase@56aac163</td></tr>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@394e1a0f</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.HSQLDBTestDatabase.testFirstAdd()'><b>testFirstAdd</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
 <td></td>
 <td>0</td>
-<td>com.distrimind.ood.tests.HSQLDBTestDatabase@56aac163</td></tr>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@394e1a0f</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.HSQLDBTestDatabase.testIsPointed()'><b>testIsPointed</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
 <td></td>
 <td>0</td>
-<td>com.distrimind.ood.tests.HSQLDBTestDatabase@56aac163</td></tr>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@394e1a0f</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.HSQLDBTestDatabase.testRemoveFilters()'><b>testRemoveFilters</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
 <td></td>
 <td>0</td>
-<td>com.distrimind.ood.tests.HSQLDBTestDatabase@56aac163</td></tr>
-</table><p>
-<table width='100%' border='1' class='invocation-skipped'>
-<tr><td colspan='4' align='center'><b>SKIPPED TESTS</b></td></tr>
-<tr><td><b>Test method</b></td>
-<td width="30%"><b>Exception</b></td>
-<td width="10%"><b>Time (seconds)</b></td>
-<td><b>Instance</b></td>
-</tr>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@394e1a0f</td></tr>
 <tr>
-<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.testCheckPoint()'><b>testCheckPoint</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
-<td><div><pre>java.lang.Throwable: Method HSQLDBTestDatabase.testCheckPoint()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@56aac163] depends on not successfully finished methods
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1039)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
-	at org.testng.TestRunner.privateRun(TestRunner.java:782)
-	at org.testng.TestRunner.run(TestRunner.java:632)
-	at org.testng.SuiteRunner.runTest(SuiteRunner.java:366)
-	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:361)
-	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:319)
-	at org.testng.SuiteRunner.run(SuiteRunner.java:268)
-	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
-	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
-	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1244)
-	at org.testng.TestNG.runSuitesLocally(TestNG.java:1169)
-	at org.testng.TestNG.run(TestNG.java:1064)
-	at org.testng.remote.RemoteTestNG.run(RemoteTestNG.java:113)
-	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:206)
-	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:177)
-</pre></div><a href='#' onClick='toggleBox("stack-trace1157624710", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
-<div class='stack-trace' id='stack-trace1157624710'><pre>java.lang.Throwable: Method HSQLDBTestDatabase.testCheckPoint()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@56aac163] depends on not successfully finished methods
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1039)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
-	at org.testng.TestRunner.privateRun(TestRunner.java:782)
-	at org.testng.TestRunner.run(TestRunner.java:632)
-	at org.testng.SuiteRunner.runTest(SuiteRunner.java:366)
-	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:361)
-	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:319)
-	at org.testng.SuiteRunner.run(SuiteRunner.java:268)
-	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
-	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
-	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1244)
-	at org.testng.TestNG.runSuitesLocally(TestNG.java:1169)
-	at org.testng.TestNG.run(TestNG.java:1064)
-	at org.testng.remote.RemoteTestNG.run(RemoteTestNG.java:113)
-	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:206)
-	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:177)
-</pre></div></td>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.testThreadSafe()'><b>testThreadSafe</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase</td>
+<td></td>
 <td>0</td>
-<td>null</td></tr>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@394e1a0f</td></tr>
 <tr>
-<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.testThreadSafe()'><b>testThreadSafe</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase ()</td>
-<td><div><pre>java.lang.Throwable: Method HSQLDBTestDatabase.testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@56aac163] depends on not successfully finished methods
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1039)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
-	at org.testng.TestRunner.privateRun(TestRunner.java:782)
-	at org.testng.TestRunner.run(TestRunner.java:632)
-	at org.testng.SuiteRunner.runTest(SuiteRunner.java:366)
-	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:361)
-	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:319)
-	at org.testng.SuiteRunner.run(SuiteRunner.java:268)
-	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
-	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
-	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1244)
-	at org.testng.TestNG.runSuitesLocally(TestNG.java:1169)
-	at org.testng.TestNG.run(TestNG.java:1064)
-	at org.testng.remote.RemoteTestNG.run(RemoteTestNG.java:113)
-	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:206)
-	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:177)
-</pre></div><a href='#' onClick='toggleBox("stack-trace2024084964", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
-<div class='stack-trace' id='stack-trace2024084964'><pre>java.lang.Throwable: Method HSQLDBTestDatabase.testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@56aac163] depends on not successfully finished methods
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1039)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
-	at org.testng.TestRunner.privateRun(TestRunner.java:782)
-	at org.testng.TestRunner.run(TestRunner.java:632)
-	at org.testng.SuiteRunner.runTest(SuiteRunner.java:366)
-	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:361)
-	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:319)
-	at org.testng.SuiteRunner.run(SuiteRunner.java:268)
-	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
-	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
-	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1244)
-	at org.testng.TestNG.runSuitesLocally(TestNG.java:1169)
-	at org.testng.TestNG.run(TestNG.java:1064)
-	at org.testng.remote.RemoteTestNG.run(RemoteTestNG.java:113)
-	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:206)
-	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:177)
-</pre></div></td>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.testThreadSafe()'><b>testThreadSafe</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase</td>
+<td></td>
 <td>0</td>
-<td>null</td></tr>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@394e1a0f</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.testThreadSafe()'><b>testThreadSafe</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase</td>
+<td></td>
+<td>0</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@394e1a0f</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.testThreadSafe()'><b>testThreadSafe</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase</td>
+<td></td>
+<td>0</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@394e1a0f</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.HSQLDBTestDatabase.testThreadSafe()'><b>testThreadSafe</b><br>Test class: com.distrimind.ood.tests.HSQLDBTestDatabase</td>
+<td></td>
+<td>0</td>
+<td>com.distrimind.ood.tests.HSQLDBTestDatabase@394e1a0f</td></tr>
 </table><p>
 </body>
 </html>

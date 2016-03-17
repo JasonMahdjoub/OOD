@@ -28,10 +28,6 @@ public final class Table3 extends Table<Table3.Record>
 
     public static class Record extends DatabaseRecord
     {
-	protected Record()
-	{
-	    
-	}
 	public @PrimaryKey int pk1;
 	public @AutoPrimaryKey long pk2;
 	public @RandomPrimaryKey BigInteger pk3;

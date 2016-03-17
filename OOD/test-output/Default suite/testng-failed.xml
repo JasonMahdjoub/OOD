@@ -3,42 +3,37 @@
 <suite guice-stage="DEVELOPMENT" name="Failed suite [Default suite]">
   <test verbose="2" name="Default test">
     <classes>
-      <class name="com.distrimind.ood.tests.HSQLDBTestDatabase"/>
-    </classes>
-  </test> <!-- Default test -->
-  <test name="Default test(failed)">
-    <classes>
       <class name="com.distrimind.ood.tests.HSQLDBTestDatabase">
         <methods>
-          <include name="removeRecord"/>
+          <include name="testCheckPoint"/>
+          <include name="prepareMultipleTest"/>
+          <include name="testFirstAdd"/>
+          <include name="alterRecord"/>
+          <include name="testBackup"/>
+          <include name="firstAdd"/>
+          <include name="testThreadSafe"/>
           <include name="setAutoRandomFields"/>
           <include name="getRecordFilter"/>
-          <include name="removeForeignKeyRecords"/>
-          <include name="testThreadSafe"/>
-          <include name="testFilters"/>
+          <include name="alterRecordWithCascade"/>
+          <include name="firstReload"/>
           <include name="getRecordIterator"/>
-          <include name="alterRecord"/>
-          <include name="multipleTests"/>
-          <include name="firstTestSize"/>
-          <include name="firstAdd"/>
+          <include name="getRecord"/>
           <include name="removePointedRecords"/>
-          <include name="testCheckPoint"/>
+          <include name="testRemoveFilters"/>
+          <include name="firstTestSize"/>
+          <include name="firstLoad"/>
+          <include name="removeRecord"/>
+          <include name="testFilters"/>
+          <include name="removeForeignKeyRecords"/>
           <include name="addSecondRecord"/>
           <include name="testArrayRecordParameters"/>
-          <include name="removeRecords"/>
-          <include name="prepareMultipleTest"/>
-          <include name="getRecord"/>
-          <include name="testRemoveFilters"/>
-          <include name="firstLoad"/>
-          <include name="alterRecordWithCascade"/>
-          <include name="testIsPointed"/>
-          <include name="removeWithCascade"/>
-          <include name="firstReload"/>
-          <include name="testFirstAdd"/>
-          <include name="unloadDatabase"/>
+          <include name="multipleTests"/>
           <include name="addForeignKeyAndTestUniqueKeys"/>
+          <include name="testIsPointed"/>
+          <include name="removeRecords"/>
+          <include name="removeWithCascade"/>
         </methods>
       </class> <!-- com.distrimind.ood.tests.HSQLDBTestDatabase -->
     </classes>
-  </test> <!-- Default test(failed) -->
+  </test> <!-- Default test -->
 </suite> <!-- Failed suite [Default suite] -->

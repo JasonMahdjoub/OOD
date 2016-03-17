@@ -96,8 +96,9 @@ public class HSQLDBTestDatabase
     private static Package pk2=Lecture.class.getPackage();
     private static DatabaseWrapper sql_db;
     private static DatabaseWrapper sql_dbb;
-    private static String database_file_name="databasetest";
-    private static String database_file_nameb="databasetestb";
+    private static String database_file_name="databasetestHSQLDB";
+    private static String database_file_nameb="databasetestHSQLDBb";
+    private static File database_backup_file=new File("databasebackupHSQLDB.tar");
     
     public HSQLDBTestDatabase() throws NoSuchAlgorithmException
     {
@@ -111,6 +112,7 @@ public class HSQLDBTestDatabase
 	sql_db.close();
 	HSQLDBWrapper.deleteDatabaseFiles(new File(database_file_name+".data"));
 	HSQLDBWrapper.deleteDatabaseFiles(new File(database_file_nameb+".data"));
+	database_backup_file.delete();
     }
     @Test public void firstLoad() throws IllegalArgumentException, DatabaseException
     {
@@ -375,9 +377,9 @@ public class HSQLDBTestDatabase
 	    map.put("byte_array_value", tab);
 	    
 	    Table1.Record r1=table1.getRecords().get(0);
-	    table1.alterRecord(r1, map);
+	    table1.updateRecord(r1, map);
 	    Table3.Record r2=table3.getRecords().get(0);
-	    table3.alterRecord(r2, map);
+	    table3.updateRecord(r2, map);
 	    
 	    Assert.assertTrue(r1.pk1==1);
 	    Assert.assertTrue(r1.int_value==3);
@@ -1146,7 +1148,7 @@ public class HSQLDBTestDatabase
 	addSecondRecord();
 	addSecondRecord();
 	addSecondRecord();
-	table1.alterRecords(new AlterRecordFilter<Table1.Record>() {
+	table1.updateRecords(new AlterRecordFilter<Table1.Record>() {
 
 	    @Override
 	    public void nextRecord(Record _record)
@@ -1155,7 +1157,7 @@ public class HSQLDBTestDatabase
 		
 	    }
 	});
-	table3.alterRecords(new AlterRecordFilter<Table3.Record>() {
+	table3.updateRecords(new AlterRecordFilter<Table3.Record>() {
 
 	    @Override
 	    public void nextRecord(Table3.Record _record)
@@ -1182,7 +1184,7 @@ public class HSQLDBTestDatabase
 	addSecondRecord();
 	addSecondRecord();
 	addSecondRecord();
-	table1.alterRecords(new AlterRecordFilter<Table1.Record>() {
+	table1.updateRecords(new AlterRecordFilter<Table1.Record>() {
 
 	    @Override
 	    public void nextRecord(Record _record)
@@ -1190,7 +1192,7 @@ public class HSQLDBTestDatabase
 		this.removeWithCascade();
 	    }
 	});
-	table3.alterRecords(new AlterRecordFilter<Table3.Record>() {
+	table3.updateRecords(new AlterRecordFilter<Table3.Record>() {
 
 	    @Override
 	    public void nextRecord(Table3.Record _record)
@@ -1567,11 +1569,11 @@ public class HSQLDBTestDatabase
 	    map.put("byte_array_value", tab);
 	    
 	    Table1.Record r1=table1.getRecords().get(0);
-	    table1.alterRecord(r1, map);
-	    table1.alterRecord(r1, map);
+	    table1.updateRecord(r1, map);
+	    table1.updateRecord(r1, map);
 	    Table3.Record r2=table3.getRecords().get(0);
-	    table3.alterRecord(r2, map);
-	    table3.alterRecord(r2, map);
+	    table3.updateRecord(r2, map);
+	    table3.updateRecord(r2, map);
 	    
 	    Table1.Record r1a=table1.getRecords().get(0);
 	    Table3.Record r2a=table3.getRecords().get(0);
@@ -1581,7 +1583,7 @@ public class HSQLDBTestDatabase
 	    map.put("pk3", table1.getRecords().get(1).pk3);
 	    try
 	    {
-		table1.alterRecord(r1a, map);
+		table1.updateRecord(r1a, map);
 		Assert.assertTrue(false);
 	    }
 	    catch(ConstraintsNotRespectedDatabaseException e)
@@ -1592,7 +1594,7 @@ public class HSQLDBTestDatabase
 	    map.put("pk3", table3.getRecords().get(1).pk3);
 	    try
 	    {
-		table3.alterRecord(r2a, map);
+		table3.updateRecord(r2a, map);
 		Assert.assertTrue(false);
 	    }
 	    catch(ConstraintsNotRespectedDatabaseException e)
@@ -1607,7 +1609,7 @@ public class HSQLDBTestDatabase
 	    map.put("pk2", new Long(table1.getRecords().get(1).pk2));
 	    try
 	    {
-		table1.alterRecord(r1a, map);
+		table1.updateRecord(r1a, map);
 		Assert.assertTrue(false);
 	    }
 	    catch(ConstraintsNotRespectedDatabaseException e)
@@ -1617,7 +1619,7 @@ public class HSQLDBTestDatabase
 	    map.put("pk2", new Long(table3.getRecords().get(1).pk2));
 	    try
 	    {
-		table3.alterRecord(r2a, map);
+		table3.updateRecord(r2a, map);
 		Assert.assertTrue(false);
 	    }
 	    catch(ConstraintsNotRespectedDatabaseException e)
@@ -1846,7 +1848,7 @@ public class HSQLDBTestDatabase
 	    Table2.Record t2=table2.getRecords().get(0);
 	    HashMap<String, Object> t2map=new HashMap<String, Object>();
 	    t2map.put("fr1_pk1", table1.getRecords().get(1));
-	    table2.alterRecord(t2, t2map);
+	    table2.updateRecord(t2, t2map);
 	    
 	    Table2.Record t2bis=table6.getRecords().get(0).fk1_pk1;
 	    Table1.Record t1=table1.getRecords().get(1);
@@ -1862,7 +1864,7 @@ public class HSQLDBTestDatabase
 	    HashMap<String, Object> t2map2=new HashMap<String, Object>();
 	    t2map2.put("int_value", new Integer(t2.int_value));
 	    
-	    table2.alterRecord(t2, t2map2);
+	    table2.updateRecord(t2, t2map2);
 	    t2map2.put("fr1_pk1", table1.getRecords().get(1));
 	    
 
@@ -1891,7 +1893,7 @@ public class HSQLDBTestDatabase
 	    t2map.remove("fr1_pk1");
 	    try
 	    {
-		table2.alterRecord(t2, t2map);
+		table2.updateRecord(t2, t2map);
 		Assert.assertTrue(false);
 	    }
 	    catch(ConstraintsNotRespectedDatabaseException e)
@@ -1900,14 +1902,14 @@ public class HSQLDBTestDatabase
 	    }
 	    
 	    
-	    table1.alterRecords(new AlterRecordFilter<Table1.Record>() {
+	    table1.updateRecords(new AlterRecordFilter<Table1.Record>() {
 	        
 	        @Override
 	        public void nextRecord(Record _record)
 	        {
 	            HashMap<String, Object> m=new HashMap<String, Object>();
 	            m.put("int_value", new Integer(15));
-	            this.alter(m);
+	            this.update(m);
 	        }
 	    });
 	    ArrayList<Table1.Record> records1=table1.getRecords();
@@ -1915,7 +1917,7 @@ public class HSQLDBTestDatabase
 		Assert.assertTrue(r.int_value==15);
 	    
 	    ArrayList<Table3.Record> records3=table3.getRecords();
-	    table3.alterRecords(new AlterRecordFilter<Table3.Record>() {
+	    table3.updateRecords(new AlterRecordFilter<Table3.Record>() {
 	        
 	        @Override
 	        public void nextRecord(Table3.Record _record)
@@ -1923,7 +1925,7 @@ public class HSQLDBTestDatabase
 	            HashMap<String, Object> m=new HashMap<String, Object>();
 	            m.put("int_value", new Integer(15));
 	            
-	            this.alter(m);
+	            this.update(m);
 	        }
 	    });
 	    
@@ -1932,14 +1934,14 @@ public class HSQLDBTestDatabase
 	    
 	    try
 	    {
-		table1.alterRecords(new AlterRecordFilter<Table1.Record>() {
+		table1.updateRecords(new AlterRecordFilter<Table1.Record>() {
 		    
 		    @Override
 		    public void nextRecord(Record _record)
 		    {
 			HashMap<String, Object> m=new HashMap<String, Object>();
 			m.put("pk1", new Integer(15));
-			this.alter(m);
+			this.update(m);
 		    }
 		});
 		Assert.assertTrue(false);
@@ -1950,14 +1952,14 @@ public class HSQLDBTestDatabase
 	    }
 	    try
 	    {
-		table3.alterRecords(new AlterRecordFilter<Table3.Record>() {
+		table3.updateRecords(new AlterRecordFilter<Table3.Record>() {
 		    
 		    @Override
 		    public void nextRecord(Table3.Record _record)
 		    {
 			HashMap<String, Object> m=new HashMap<String, Object>();
 			m.put("pk1", new Integer(15));
-			this.alter(m);
+			this.update(m);
 		    }
 		});
 		Assert.assertTrue(false);
@@ -1968,14 +1970,14 @@ public class HSQLDBTestDatabase
 	    }
 	    try
 	    {
-		table2.alterRecords(new AlterRecordFilter<Table2.Record>() {
+		table2.updateRecords(new AlterRecordFilter<Table2.Record>() {
 		    
 		    @Override
 		    public void nextRecord(Table2.Record _record)
 		    {
 			HashMap<String, Object> m=new HashMap<String, Object>();
 			m.put("int_value", new Integer(15));
-			this.alter(m);
+			this.update(m);
 		    }
 		});
 		Assert.assertTrue(false);
@@ -2362,7 +2364,7 @@ public class HSQLDBTestDatabase
 	
 	prepareMultipleTest();
 
-	table1.alterRecords(new AlterRecordFilter<Table1.Record>() {
+	table1.updateRecords(new AlterRecordFilter<Table1.Record>() {
 
 	    @Override
 	    public void nextRecord(Record _record)
@@ -2370,7 +2372,7 @@ public class HSQLDBTestDatabase
 		this.removeWithCascade();
 	    }
 	});
-	table3.alterRecords(new AlterRecordFilter<Table3.Record>() {
+	table3.updateRecords(new AlterRecordFilter<Table3.Record>() {
 
 	    @Override
 	    public void nextRecord(Table3.Record _record)
@@ -2852,7 +2854,7 @@ public class HSQLDBTestDatabase
 	    table5=HSQLDBTestDatabase.table5b;
 	    table6=HSQLDBTestDatabase.table6b;
 	}
-	int r=random.nextInt(31);
+	int r=random.nextInt(33);
 	
 	int number;
 	synchronized(number_thread_test)
@@ -3361,7 +3363,7 @@ public class HSQLDBTestDatabase
 		    map.put("DoubleNumber_value", new Double(7.7));
 		    try
 		    {
-			table1.alterRecord(rec1, map);
+			table1.updateRecord(rec1, map);
 			Assert.assertTrue(rec1.pk1==((Integer)map.get("pk1")).intValue());
 			Assert.assertTrue(rec1.byte_value==((Byte)map.get("byte_value")).byteValue());
 			Assert.assertTrue(rec1.char_value==((Character)map.get("char_value")).charValue());
@@ -3395,7 +3397,7 @@ public class HSQLDBTestDatabase
 		    map.put("DoubleNumber_value", new Double(7.7));
 		    try
 		    {
-			table3.alterRecord(rec1, map);
+			table3.updateRecord(rec1, map);
 			Assert.assertTrue(rec1.pk1==((Integer)map.get("pk1")).intValue());
 			Assert.assertTrue(rec1.byte_value==((Byte)map.get("byte_value")).byteValue());
 			Assert.assertTrue(rec1.char_value==((Character)map.get("char_value")).charValue());
@@ -3591,14 +3593,14 @@ public class HSQLDBTestDatabase
 	    break;
 	    case 21:
 	    {
-		    table1.alterRecords(new AlterRecordFilter<Table1.Record>() {
+		    table1.updateRecords(new AlterRecordFilter<Table1.Record>() {
 		        
 		        @Override
 		        public void nextRecord(Record _record)
 		        {
 		            HashMap<String, Object> m=new HashMap<String, Object>();
 			    m.put("int_value", new Integer(18));
-			    this.alter(m);
+			    this.update(m);
 		        }
 		    });
 		    if (no_thread)
@@ -3609,14 +3611,14 @@ public class HSQLDBTestDatabase
 		    }
 		    
 		    
-		    table3.alterRecords(new AlterRecordFilter<Table3.Record>() {
+		    table3.updateRecords(new AlterRecordFilter<Table3.Record>() {
 		        
 		        @Override
 		        public void nextRecord(Table3.Record _record)
 		        {
 		            HashMap<String, Object> m=new HashMap<String, Object>();
 			    m.put("int_value", new Integer(18));
-			    this.alter(m);
+			    this.update(m);
 		        }
 		    });
 		    if (no_thread)
@@ -4087,7 +4089,7 @@ public class HSQLDBTestDatabase
 		break;
 	    case 28:
 	    {
-		    table1.alterRecords(new AlterRecordFilter<Table1.Record>() {
+		    table1.updateRecords(new AlterRecordFilter<Table1.Record>() {
 		        
 		        @Override
 		        public void nextRecord(Record _record)
@@ -4105,7 +4107,7 @@ public class HSQLDBTestDatabase
 		    });
 		    
 		    
-		    table3.alterRecords(new AlterRecordFilter<Table3.Record>() {
+		    table3.updateRecords(new AlterRecordFilter<Table3.Record>() {
 		        
 		        @Override
 		        public void nextRecord(Table3.Record _record)
@@ -4209,10 +4211,22 @@ public class HSQLDBTestDatabase
 			    }
 			}
 		    
-		    Table1.Record r1=table1.addRecord(parameters);
-		    Table3.Record r2=table3.addRecord(parameters);
-		    table1.removeRecord(r1);
-		    table3.removeRecord(r2);
+			    try
+			    {
+				Table1.Record r1=table1.addRecord(parameters);
+				Table3.Record r2=table3.addRecord(parameters);
+				table1.removeRecord(r1);
+				table3.removeRecord(r2);
+			    }
+			    catch(ConstraintsNotRespectedDatabaseException e)
+			    {
+				
+			    }
+			    catch(RecordNotFoundDatabaseException e)
+			    {
+				if (no_thread)
+				    throw e;
+			    }
 
 		    Object []p2={"rert"};
 		    Object []p3={new Integer(125), "rert"};
@@ -4252,6 +4266,126 @@ public class HSQLDBTestDatabase
 		    {
 			Assert.assertTrue(true);
 		    }
+	    }
+	    break;
+	    case 31:
+	    {
+		Table1.Record r1=new Table1.Record();
+		
+		r1.pk1=random.nextInt();
+		r1.int_value=3;
+		r1.byte_value=(byte)3;
+		r1.char_value='x';
+		r1.boolean_value=true;
+		r1.short_value=(short)random.nextInt();
+		r1.long_value=3;
+		r1.float_value=3.3f;
+		r1.double_value=3.3;
+		r1.string_value="test string";
+		r1.IntegerNumber_value=new Integer(3);
+		r1.ByteNumber_value=new Byte((byte)3);
+		r1.CharacterNumber_value=new Character('x');
+		r1.BooleanNumber_value=new Boolean(true);
+		r1.ShortNumber_value=new Short((short)3);
+		r1.LongNumber_value=new Long(random.nextLong());
+		r1.FloatNumber_value=new Float(3.3f);
+		r1.DoubleNumber_value=new Double(3.3);
+		r1.BigInteger_value=new BigInteger("6");
+		r1.BigDecimal_value=new BigDecimal("1.10");
+		r1.DateValue=Calendar.getInstance().getTime();
+		r1.CalendarValue=Calendar.getInstance();
+		r1.secretKey=secretKey;
+		r1.typeSecretKey=typeSecretKey;
+		byte[] tab=new byte[3];
+		tab[0]=0;
+		tab[1]=1;
+		tab[2]=2;
+		r1.byte_array_value=tab;
+
+		Table3.Record r3=new Table3.Record();
+		
+		r3.pk1=random.nextInt();
+		r3.int_value=3;
+		r3.byte_value=(byte)3;
+		r3.char_value='x';
+		r3.boolean_value=true;
+		r3.short_value=(short)random.nextInt();
+		r3.long_value=3;
+		r3.float_value=3.3f;
+		r3.double_value=3.3;
+		r3.string_value="test string";
+		r3.IntegerNumber_value=new Integer(3);
+		r3.ByteNumber_value=new Byte((byte)3);
+		r3.CharacterNumber_value=new Character('x');
+		r3.BooleanNumber_value=new Boolean(true);
+		r3.ShortNumber_value=new Short((short)3);
+		r3.LongNumber_value=new Long(random.nextLong());
+		r3.FloatNumber_value=new Float(3.3f);
+		r3.DoubleNumber_value=new Double(3.3);
+		r3.BigInteger_value=new BigInteger("6");
+		r3.BigDecimal_value=new BigDecimal("1.10");
+		r3.DateValue=Calendar.getInstance().getTime();
+		r3.CalendarValue=Calendar.getInstance();
+		r3.secretKey=secretKey;
+		r3.typeSecretKey=typeSecretKey;
+		r3.byte_array_value=tab;
+		try
+		{
+		    Table1.Record r1b=table1.addRecord(r1);
+		    Table3.Record r3b=table3.addRecord(r3);
+		    if (no_thread)
+		    {
+			Assert.assertTrue(table1.contains(r1));
+			Assert.assertTrue(table3.contains(r3));
+		    }
+		    Assert.assertTrue(r1==r1b);
+		    Assert.assertTrue(r3==r3b);
+		}
+		catch(ConstraintsNotRespectedDatabaseException e)
+		{
+		    if (no_thread)
+		    {
+			throw e;
+		    }
+		}
+	    }
+	    break;
+	    case 32:
+	    {
+		try
+		{
+		    ArrayList<Table1.Record> records1=table1.getRecords();
+		    if (records1.size()>0)
+		    {
+		    
+			Table1.Record r1=records1.get(0);
+			r1.long_value=123456789l;
+			table1.updateRecord(r1);
+			if (no_thread)
+			{
+			    Table1.Record r1b=table1.getRecords().get(0);
+			    Assert.assertTrue(r1b.long_value==r1.long_value);
+			}
+		    }
+		    ArrayList<Table3.Record> records3=table3.getRecords();
+		    if (records3.size()>0)
+		    {
+			
+			Table3.Record r3=records3.get(0);
+			r3.long_value=123456789l;
+			table3.updateRecord(r3);
+			if (no_thread)
+			{
+			    Table3.Record r3b=table3.getRecords().get(0);
+			    Assert.assertTrue(r3b.long_value==r3.long_value);
+			}
+		    }
+		}
+		catch(RecordNotFoundDatabaseException e)
+		{
+		    if (no_thread)
+			throw e;
+		}
 	    }
 	    break;
 		
@@ -4298,6 +4432,17 @@ public class HSQLDBTestDatabase
     {
 	((HSQLDBWrapper)table1.getDatabaseWrapper()).checkPoint(false);
 	((HSQLDBWrapper)table1.getDatabaseWrapper()).checkPoint(true);
+    }
+    @Test(threadPoolSize = 1, invocationCount = 1,  dependsOnMethods={"testCheckPoint"}) public void testBackup() throws DatabaseException
+    {
+	((HSQLDBWrapper)table1.getDatabaseWrapper()).backup(database_backup_file);
+	table1.checkDataIntegrity();
+	table2.checkDataIntegrity();
+	table3.checkDataIntegrity();
+	table4.checkDataIntegrity();
+	table5.checkDataIntegrity();
+	table6.checkDataIntegrity();
+	table7.checkDataIntegrity();
     }
     @Test(threadPoolSize = 0, invocationCount = 0,  timeOut = 0) private void testOrderedTable1(ArrayList<Table1.Record> res)
     {

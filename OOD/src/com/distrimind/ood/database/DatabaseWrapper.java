@@ -22,6 +22,7 @@
 
 package com.distrimind.ood.database;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -665,5 +666,13 @@ public abstract class DatabaseWrapper
     }
     
     public abstract Blob getBlob(byte[] bytes) throws SQLException;
+
+    /**
+     * Backup the database into the given path. 
+     * @param path the path where to save the database.  
+     * @throws DatabaseException if a problem occurs
+     */
+    public abstract void backup(File path) throws DatabaseException;
     
+
 }

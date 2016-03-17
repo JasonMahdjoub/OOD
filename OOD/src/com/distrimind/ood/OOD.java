@@ -43,8 +43,8 @@ public class OOD
 	Calendar c1=Calendar.getInstance();
 	c1.set(2013, 3, 1);
 	Calendar c2=Calendar.getInstance();
-	c2.set(2016, 2, 4);
-	VERSION=new Version("Object Oriented Database", 1, 5, 2, Version.Type.Stable, 0, c1.getTime(), c2.getTime());
+	c2.set(2016, 2, 11);
+	VERSION=new Version("Object Oriented Database", 1, 6, 0, Version.Type.Stable, 0, c1.getTime(), c2.getTime());
 	try
 	{
 	    InputStream is=OOD.class.getResourceAsStream("build.txt");
@@ -55,8 +55,16 @@ public class OOD
 	    VERSION.addDeveloper(new PersonDeveloper("mahdjoub", "jason", c.getTime()));
 	
 	    c=Calendar.getInstance();
+	    c.set(2016, 2, 11);
+	    Description d=new Description(1,6,0,Version.Type.Stable, 0, c.getTime());
+	    d.addItem("Updating with Utils 1.6.");
+	    d.addItem("Adding database backup tools.");
+	    d.addItem("renaming alterRecord functions to updateRecord.");
+	    d.addItem("Adding functions Table.addRecord(record), Table.updateRecord(record).");
+
+	    c=Calendar.getInstance();
 	    c.set(2016, 2, 4);
-	    Description d=new Description(1,5,2,Version.Type.Stable, 0, c.getTime());
+	    d=new Description(1,5,2,Version.Type.Stable, 0, c.getTime());
 	    d.addItem("Updating with Utils 1.5");
 	    d.addItem("Adding encryption keys encoding/decoding.");
 	    d.addItem("Correcting bugs with ByteTabConvertibleFieldAccessor class.");

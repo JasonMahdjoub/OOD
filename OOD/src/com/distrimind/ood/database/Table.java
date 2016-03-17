@@ -833,7 +833,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    {
 			if (rq.result_set.next())
 			{
-			    T res=default_constructor_field.newInstance();
+			    T res=getNewRecordInstance();
 			    for (FieldAccessor fa : fields)
 			    {
 				fa.setValue(res, rq.result_set, _previous_pointing_records);
@@ -852,6 +852,18 @@ public abstract class Table<T extends DatabaseRecord>
 	
     }
     
+    T getNewRecordInstance(Constructor<T> constructor) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException
+    {
+	T res=constructor.newInstance();
+	res.__createdIntoDatabase=true;
+	return res;
+    }
+    
+    T getNewRecordInstance() throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException
+    {
+	return getNewRecordInstance(default_constructor_field);
+    }
+
     private String getSqlSelectStep1Fields()
     {
 	StringBuffer sb=new StringBuffer();
@@ -1180,16 +1192,11 @@ public abstract class Table<T extends DatabaseRecord>
 	    else
 	    {
 		Constructor<?> constructor=constructors[0];
-		if (!Modifier.isProtected(constructor.getModifiers()))
+		if (constructor.getParameterTypes().length!=0)
 		    ok=false;
-		else
-		{
-		    if (constructor.getParameterTypes().length!=0)
-			ok=false;
-		}
 	    }
 	    if (!ok)
-		throw new DatabaseException("The class "+res.getName()+" must have only one constructor which must be protected and without any parameter (default constructor).");
+		throw new DatabaseException("The class "+res.getName()+" must have only one constructor and without any parameter (default constructor).");
 	}
 	return res;
     }
@@ -1596,6 +1603,13 @@ public abstract class Table<T extends DatabaseRecord>
 	{
 	    
 	}
+
+	@Override
+	public void remove()
+	{
+	    throw new IllegalAccessError();
+	    
+	}
     }
     protected class DirectTableIterator implements TableIterator<T>
     {
@@ -1666,7 +1680,7 @@ public abstract class Table<T extends DatabaseRecord>
 		throw new NoSuchElementException();
 	    try
 	    {
-		T field_instance = default_constructor_field.newInstance();
+		T field_instance = getNewRecordInstance(default_constructor_field);
 		
 		for (FieldAccessor f : fields_accessor)
 		{
@@ -1699,6 +1713,12 @@ public abstract class Table<T extends DatabaseRecord>
 		throw DatabaseException.getDatabaseException(e);
 	    }
 	    
+	}
+
+	@Override
+	public void remove()
+	{
+	    throw new IllegalAccessError();
 	}
 	
     }
@@ -2150,7 +2170,7 @@ public abstract class Table<T extends DatabaseRecord>
      * @throws DatabaseException when a database exception occurs
      */
     @SuppressWarnings("unchecked")
-    public GroupedResults<T> getGroupedResults(Collection<T> _records, String ..._fields) throws DatabaseException
+    public final GroupedResults<T> getGroupedResults(Collection<T> _records, String ..._fields) throws DatabaseException
     {
 	try
 	{
@@ -2168,7 +2188,7 @@ public abstract class Table<T extends DatabaseRecord>
      * @return a GroupedResults instance.
      * @throws DatabaseException when a database exception occurs
      */
-    public GroupedResults<T> getGroupedResults(String ..._fields) throws DatabaseException
+    public final GroupedResults<T> getGroupedResults(String ..._fields) throws DatabaseException
     {
 	return getGroupedResults(null, _fields);
     }
@@ -2929,6 +2949,7 @@ public abstract class Table<T extends DatabaseRecord>
 					    fa.getValue(r, puq.statement, index);
 					    index+=fa.getDeclaredSqlFields().length;
 					}
+					r.__createdIntoDatabase=false;
 				    }
 				    nb=puq.statement.executeUpdate();
 				}
@@ -2988,6 +3009,7 @@ public abstract class Table<T extends DatabaseRecord>
 			{
 			    _cursor.deleteRow();
 			    ++deleted_records_number;
+			    _instance.__createdIntoDatabase=false;
 			}
 			return true;
 		    }
@@ -3074,7 +3096,7 @@ public abstract class Table<T extends DatabaseRecord>
      * This function is used principally with unit tests. Note that the call of this function will load all the table into memory. 
      * @throws DatabaseException if a problem occurs. Don't throw to any DatabaseException if the table integrity is fine.
      */
-    public void checkDataIntegrity() throws DatabaseException
+    public final void checkDataIntegrity() throws DatabaseException
     {
 	//synchronized(sql_connection)
 	{
@@ -3352,6 +3374,7 @@ public abstract class Table<T extends DatabaseRecord>
 					    fa.getValue(r, puq.statement, index);
 					    index+=fa.getDeclaredSqlFields().length;
 					}
+					r.__createdIntoDatabase=false;
 				    }
 				    nb=puq.statement.executeUpdate();
 				}
@@ -3402,7 +3425,7 @@ public abstract class Table<T extends DatabaseRecord>
 			{
 			    _cursor.deleteRow();
 			    ++deleted_records_number;
-			    
+			    _instance.__createdIntoDatabase=false;
 			    updateMemoryForRemovingRecordWithCascade(_instance);
 			}
 			return true;
@@ -3502,6 +3525,7 @@ public abstract class Table<T extends DatabaseRecord>
 	
 		if (Table.this.isLoadedInMemory() && is_synchronized_with_sql_database.get())
 		    Table.this.__removeRecord(_record);
+		_record.__createdIntoDatabase=false;
 	    }
 	    catch(Exception e)
 	    {
@@ -3573,6 +3597,7 @@ public abstract class Table<T extends DatabaseRecord>
 		sql_connection.runTransaction(transaction);
 		if (this.isLoadedInMemory() && is_synchronized_with_sql_database.get())
 		    __removeRecord(_record);
+		_record.__createdIntoDatabase=false;
 		updateMemoryForRemovingRecordWithCascade(_record);
 	    }
 	    catch(Exception e)
@@ -3813,6 +3838,7 @@ public abstract class Table<T extends DatabaseRecord>
 				    fa.getValue(r, puq.statement, index);
 				    index+=fa.getDeclaredSqlFields().length;
 				}
+				r.__createdIntoDatabase=false;
 			    }
 			    int number=puq.statement.executeUpdate();
 			    if (number!=_records.size())
@@ -3894,6 +3920,7 @@ public abstract class Table<T extends DatabaseRecord>
 				fa.getValue(r, puq.statement, index);
 				index+=fa.getDeclaredSqlFields().length;
 			    }
+			    r.__createdIntoDatabase=false;
 			}
 			int nb=puq.statement.executeUpdate();
 			if (nb!=_records.size())
@@ -3991,7 +4018,7 @@ public abstract class Table<T extends DatabaseRecord>
 			    
 			    while (rq.result_set.next())
 			    {
-				T field_instance = default_constructor_field.newInstance();
+				T field_instance = getNewRecordInstance(default_constructor_field);
 				
 				for (FieldAccessor f : fields_accessor)
 				{
@@ -4247,7 +4274,65 @@ public abstract class Table<T extends DatabaseRecord>
 	    }
 	}
     }
+
+    /**
+     * Add a record into the database. 
+     *    
+     * @param record the record to add
+     * @return the added record with its new auto generated identifiers
+     * @throws DatabaseException if a problem occurs during the insertion into the Sql database.
+     * @throws NullPointerException if parameters are null pointers.
+     * @throws ConstraintsNotRespectedDatabaseException if the given primary keys already exists into the table, or if a field which has the unique property exists already into the table.
+     * @throws FieldDatabaseException if one of the given fields does not exists into the database, or if fields are lacking.
+     * @throws RecordNotFoundDatabaseException if one of the field is a foreign key and point to a record of another table which does not exist. 
+     */
+    public final T addRecord(T record) throws DatabaseException
+    {
+	if (record==null)
+	    throw new NullPointerException("The parameter record is a null pointer !");
+	if (record.__createdIntoDatabase)
+	    throw new IllegalArgumentException("The given record has already been removed !");
+	
+	try (Lock lock=new WriteLock(this))
+	{
+	    Map<String, Object> map=getMap(record, true, false);
+	    T res=addRecord(map, false, record);
+	    res.__createdIntoDatabase=true;
+	    return res;
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+    
+    private Map<String, Object> getMap(T record, boolean includePrimaryKeys, boolean includeAutoGeneratedKeys) throws DatabaseException
+    {
+	    Map<String, Object> map=new HashMap<>();
+	    for (FieldAccessor fa : getFieldAccessors())
+	    {
+		
+		boolean include=true;
+		if (fa.isPrimaryKey())
+		{
+		    if (!includePrimaryKeys)
+			include=false;
+		    else if ((fa.isAutoPrimaryKey() || fa.isRandomPrimaryKey()) && !includeAutoGeneratedKeys)
+			include=false;
+		}
+		if (include)
+		{
+		    map.put(fa.getFieldName(), fa.getValue(record));
+		}
+	    }
+	    return map;
+    }
+    
     private final T addRecord(final Map<String, Object> _fields, boolean already_in_transaction) throws DatabaseException
+    {
+	return addRecord(_fields, already_in_transaction, null);
+    }
+    private final T addRecord(final Map<String, Object> _fields, boolean already_in_transaction, T originalRecord) throws DatabaseException
     {
 
 	{
@@ -4322,7 +4407,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    if (ct.check_necessary)
 			getListRecordsFromSqlConnection(ct, getSqlGeneralSelect());
 	    
-		    final T instance=default_constructor_field.newInstance();
+		    final T instance=originalRecord==null?getNewRecordInstance():originalRecord;
 		    if (isLoadedInMemory())
 		    {
 			for (FieldAccessor fa : fields)
@@ -4709,596 +4794,24 @@ public abstract class Table<T extends DatabaseRecord>
 	}
     }
     
-    /*@SafeVarargs
-    public final ArrayList<T> addRecords(final Map<String, Object> ..._records) throws DatabaseException
+    
+    /**
+     * Alter a record into the database. 
+     * The string type in the Map corresponds to the name of the field, and the Object type field corresponds the value of the field.
+     * Internal record field must altered before calling this function.   
+     * It is not possible to alter primary keys with this function. Please call instead {@link #updateRecord(DatabaseRecord, Map)} or {@link #updateRecord(DatabaseRecord, Object[])} 
+     * @param _record the record to alter 
+     * @throws DatabaseException if a problem occurs during the insertion into the Sql database.
+     * @throws NullPointerException if parameters are null pointers.
+     * @throws ConstraintsNotRespectedDatabaseException if the given primary keys already exists into the table, if a field which has the unique property exists alreay into the table, or if primary keys changing induce a problem of constraints through foreign keys into other tables, which are also primary keys.
+     * @throws FieldDatabaseException if one of the given fields does not exists into the database, or if one of the given fields are auto or random primary keys.
+     * @throws RecordNotFoundDatabaseException if the given record is not included into the database, or if one of the field is a foreign key and point to a record of another table which does not exist. 
+     */
+    public final void updateRecord(final T _record) throws DatabaseException
     {
-	if (_records==null)
-	    throw new NullPointerException("The parameter _records is a null pointer !");
-	if (_records.length==0)
-	    throw new NullPointerException("The parameter _records is an empty tab !");
-	synchronized(sql_jet_db)
-	{
-	try (Lock lock=new WriteLock(this))
-	{
-	for (Map<String, Object> m : _records)
-	{
-	    int number=0;
-	    for (FieldAccessor fa : fields)
-	    {
-		if (!fa.isAutoPrimaryKey() && !fa.isRandomPrimaryKey())
-		{
-		    Object obj = m.get(fa.getFieldName());
-		    if (obj==null)
-		    {
-			if (fa.isNotNull())
-			    throw new FieldDatabaseException("The field "+fa.getFieldName()+"is not present into the given fields.");
-		    }
-		    else
-			number++;
-		}
-	    }
-	    if (number>m.size())
-		throw new FieldDatabaseException("The number ("+m.size()+") of given fields does into one of the given records not correspond to the expected number ("+number+") of minimum fields (Null fields, AutoPrimaryKeys and RandomPrimaryKeys are excluded).");
-	}
-	try
-	{
-	    class CheckTmp extends Runnable2
-	    {
-		public boolean check_necessary=false;
-		private boolean check_pk=false;
-		private boolean check_unique=false;
-		protected final ArrayList<FieldAccessor> primary_keys_fields_no_auto_no_random;
-		protected final ArrayList<FieldAccessor> unique_fields_no_auto_random_primary_keys;
-		private ArrayList<HashMap<String, Object>> fields_instances=new ArrayList<HashMap<String, Object>>();
-		public ArrayList<ArrayList<FieldAccessor>> auto_random_fields_to_check=new ArrayList<ArrayList<FieldAccessor>>();
-		public ArrayList<Boolean> has_auto_field=new ArrayList<Boolean>();
-		public CheckTmp(ArrayList<FieldAccessor> _primary_keys_fields_no_auto_no_random, ArrayList<FieldAccessor> _unique_fields_no_auto_random_primary_keys, ArrayList<FieldAccessor> _auto_random_primary_keys_fields) 
-		{
-		    primary_keys_fields_no_auto_no_random=_primary_keys_fields_no_auto_no_random;
-		    unique_fields_no_auto_random_primary_keys=_unique_fields_no_auto_random_primary_keys;
-		    
-		    if (_auto_random_primary_keys_fields.size()==0 && primary_keys_fields_no_auto_no_random.size()>0)
-			check_necessary=check_pk=true;
-		    if (unique_fields_no_auto_random_primary_keys.size()>0)
-			check_necessary=check_unique=true;
-		    for (int i=0;i<_records.length;i++)
-		    {
-			ArrayList<FieldAccessor> arf=new ArrayList<FieldAccessor>(); 
-			for (FieldAccessor fa : _auto_random_primary_keys_fields)
-			{
-			    Map<String, Object> m=_records[i];
-			    if (m.containsKey(fa.getFieldName()))
-			    {
-				if (m.get(fa.getFieldName())==null)
-				{
-				    m.remove(fa.getFieldName());
-				    has_auto_field.add(new Boolean(false));
-				}
-				else
-				{
-				    if (fa.isAutoPrimaryKey())
-					has_auto_field.add(new Boolean(true));
-				    else
-					has_auto_field.add(new Boolean(false));
-				    arf.add(fa);
-				    check_necessary=check_unique=true;
-				}
-			    }
-			    else
-				has_auto_field.add(new Boolean(false));
-			}
-			random_fields_to_check.add(arf);
-		    }
-		    if (check_necessary)
-		    {
-			fields_instances.ensureCapacity(_records.length);
-			for (int i=0;i<_records.length;i++)
-			{
-			    fields_instances.add(new HashMap<String, Object>());
-			}
-		    }
-		    if (check_pk)
-		    {
-			for (int i=0;i<_records.length;i++)
-			{
-			    Map<String, Object> m=_records[i];
-			    HashMap<String, Object> newm=fields_instances.get(i);
-			    for (FieldAccessor fa : primary_keys_fields_no_auto_no_random)
-			    {
-				if (fa.isForeignKey())
-				{
-				    DatabaseRecord dr=(DatabaseRecord)m.get(fa.getFieldName());
-				    SqlField sf = fa.getDeclaredSqlField();
-				    newm.put(sf.field, new Long(dr.getRecordID()));
-				}
-				else
-				{
-				    newm.put(fa.getDeclaredSqlField().field, m.get(fa.getFieldName()));
-				}
-			    }
-			}
-		    }
-		    if (check_unique)
-		    {
-			for (int i=0;i<_records.length;i++)
-			{
-			    Map<String, Object> m=_records[i];
-			    HashMap<String, Object> newm=fields_instances.get(i);
-			    for (FieldAccessor fa : unique_fields_no_auto_random_primary_keys)
-			    {
-				if (!primary_keys_fields_no_auto_no_random.contains(fa))
-				{
-				    if (fa.isForeignKey())
-				    {
-					DatabaseRecord dr=(DatabaseRecord)m.get(fa.getFieldName());
-					SqlField sf = fa.getDeclaredSqlField();
-					newm.put(sf.field, new Long(dr.getRecordID()));
-				    }
-				    else
-				    {
-					newm.put(fa.getDeclaredSqlField().field, m.get(fa.getFieldName()));
-				    }
-				}
-			    }
-			    for (FieldAccessor fa : random_fields_to_check.get(i))
-			    {
-				newm.put(fa.getDeclaredSqlField().field, m.get(fa.getFieldName()));
-			    }
-			}
-		    }
-		}
-		@Override
-		public void init(long _field_count)
-		{
-		}
-
-		@Override
-		public boolean setInstance(Cursor _cursor) throws DatabaseException
-		{
-			if (check_pk)
-			{
-			    for (HashMap<String, Object> m : fields_instances)
-			    {
-				boolean allok=true;
-				for (FieldAccessor fa : primary_keys_fields_no_auto_no_random)
-				{
-				    SqlField sf = fa.getDeclaredSqlField();
-				    if (!FieldAccessor.equals(_cursor.getValue(sf.field), m.get(sf.field)))
-				    {
-					allok=false;
-					break;
-				    }
-				}
-				if (allok)
-				    throw new ConstraintsNotRespectedDatabaseException("One of the given record have the same primary keys of one of the records stored into the database. No record have been added");
-			    }
-			}
-			if (check_unique)
-			{
-			    for (int i=0;i<fields_instances.size();i++)
-			    {
-				HashMap<String, Object> m =fields_instances.get(i);
-				for (FieldAccessor fa : unique_fields_no_auto_random_primary_keys)
-				{
-				    boolean allequals=true;
-				    SqlField sf = fa.getDeclaredSqlField();
-				    if (!FieldAccessor.equals(_cursor.getValue(sf.field), m.get(sf.field)))
-				    {
-					allequals=false;
-					break;
-				    }
-				    if (allequals)
-					throw new ConstraintsNotRespectedDatabaseException("the given record have the same unique field "+fa.getFieldName()+" of one of the records stored into the database. No record have been added.");
-				}
-				for (FieldAccessor fa : random_fields_to_check.get(i))
-				{
-				    boolean allequals=true;
-				    SqlField sf = fa.getDeclaredSqlField();
-				    if (!FieldAccessor.equals(_cursor.getValue(sf.field), m.get(sf.field)))
-				    {
-					allequals=false;
-					break;
-				    }
-				    if (allequals)
-					throw new ConstraintsNotRespectedDatabaseException("the given record have the same unique auto/random primary key field "+fa.getFieldName()+" of one of the records stored into the database. No record have been added.");
-				}
-			    }
-			}
-			return true;
-		}
-		
-	    }
-	    final CheckTmp ct=new CheckTmp(primary_keys_fields_no_auto_no_random, unique_fields_no_auto_random_primary_keys, auto_random_primary_keys_fields);
-	    if (ct.check_necessary)
-		getListRecordsFromSqlJet(ct);
-	    
-	    
-	    final ArrayList<T> instances=new ArrayList<T>(_records.length);
-	    for (int i=0;i<_records.length;i++)
-		instances.add(default_constructor_field.newInstance());
-	    ArrayList<ArrayList<Object>> random_values=new ArrayList<ArrayList<Object>>();
-	    
-	    for (int i=0;i<fields.size();i++)
-	    {
-		FieldAccessor fa = fields.get(i);
-		if (fa.isRandomPrimaryKey())
-		{
-		    ArrayList<Object> values=new ArrayList<Object>(_records.length);
-		    random_values.add(values);
-		    for (int j=0;j<_records.length;j++)
-		    {
-			Map<String, Object> map = _records[j];
-			if (map.containsKey(fa.getFieldName()))
-			{
-			    Object val=map.get(fa.getFieldName());
-			    for (Object val2 : values)
-			    {
-				if (FieldAccessor.equals(val, val2))
-				    throw new ConstraintsNotRespectedDatabaseException("There at minimum two of the given records whose fields "+fa.getFieldName()+" have the same random primary keys. Random primary keys must be unique values.");
-			    }
-			    values.add(val);
-			}
-		    }
-		}
-		else
-		    random_values.add(new ArrayList<Object>());
-	    }
-	    final ArrayList<Long> auto_primarykeys_values=new ArrayList<Long>(_records.length);
-	    if (isLoadedInMemory())
-	    {
-		
-		for (int i=0;i<instances.size();i++)
-		{
-		    T instance=instances.get(i);
-		    Map<String, Object> map=_records[i];
-		    
-		    for (int j=0;j<fields.size();j++)
-		    {
-			FieldAccessor fa = fields.get(j);
-			if (fa.isRandomPrimaryKey())
-			{
-			    ArrayList<Object> values=random_values.get(j);
-			    if (ct.auto_random_fields_to_check.get(i).contains(fa))
-			    {
-				fa.setValue(instance, map.get(fa.getFieldName()));
-			    }
-			    else
-			    {
-				if (fa.isAssignableTo(BigInteger.class))
-				{
-				    ArrayList<T> fields_instances=getRecords(false);
-				    BigInteger value;
-				    boolean ok=false;
-				    do
-				    {
-					ok=false;
-					value=getRandomPositive128BitsValue();
-					for (T f : fields_instances)
-					{
-					    if (fa.equals(f, value))
-					    {
-						ok=true;
-						break;
-					    }
-					}
-					if (!ok)
-					{
-					    for (Object val : values)
-					    {
-						if (FieldAccessor.equals(val, value))
-						{
-						    ok=true;
-						}
-					    }
-					}
-				    } while (ok);
-				    values.add(value);
-				    fa.setValue(instance, value);
-				}
-				else
-				{
-				    ArrayList<T> fields_instances=getRecords(false);
-				    long value;
-				    boolean ok=false;
-				    do
-				    {
-					ok=false;
-					value=getRandomPositiveLongValue();
-					for (T f : fields_instances)
-					{
-					    if (fa.equals(f, new Long(value)))
-					    {
-						ok=true;
-						break;
-					    }
-					}
-					if (!ok)
-					{
-					    for (Object val : values)
-					    {
-						if (FieldAccessor.equals(val, new Long(value)))
-						{
-						    ok=true;
-						}
-					    }
-					}
-				    } while (ok);
-				    values.add(new Long(value));
-				    fa.setValue(instance, new Long(value));
-				}
-			    }
-			}
-			else if ((fa.isAutoPrimaryKey() && ct.has_auto_field.get(i).booleanValue()) || !fa.isAutoPrimaryKey())
-			{
-			    Object val=map.get(fa.getFieldName());
-			    if (fa.isAutoPrimaryKey())
-			    {
-				for (Long val2 : auto_primarykeys_values)
-				{
-				    if (FieldAccessor.equals(val, val2))
-					throw new ConstraintsNotRespectedDatabaseException("There at minimum two of the given records whose fields "+fa.getFieldName()+" have the same auto primary keys. Auto primary keys must be unique values.");
-				}
-				auto_primarykeys_values.add((Long)fa.getValue(instance));
-			    }
-			    fa.setValue(instance, val);
-			    
-			}
-		    }
-		}
-	    }
-	    else
-	    {
-		for (int i=0;i<instances.size();i++)
-		{
-		    T instance=instances.get(i);
-		    Map<String, Object> map=_records[i];
-		    
-		    for (int j=0;j<fields.size();j++)
-		    {
-			final FieldAccessor fa = fields.get(j);
-			if (fa.isRandomPrimaryKey())
-			{
-			    ArrayList<Object> values=random_values.get(j);
-			    if (ct.auto_random_fields_to_check.get(i).contains(fa))
-			    {
-				fa.setValue(instance, map.get(fa.getFieldName()));
-			    }
-			    else
-			    {
-				if (fa.isAssignableTo(BigInteger.class))
-				{
-				    BigInteger value;
-				    boolean ok=false;
-				    do
-				    {
-					do
-					{
-					    ok=false;
-					    value=getRandomPositive128BitsValue();
-					    for (Object val : values)
-					    {
-						if (FieldAccessor.equals(val, value))
-						{
-						    ok=true;
-						}
-					    }
-					} while(ok);
-			    	    	final BigInteger val=value;
-			    	    
-					class RunnableTmp extends Runnable2
-			    	    	{
-			    	    	    public boolean ok=false;
-			    	    	    @Override
-			    	    	    public void init(long _field_count)
-			    	    	    {
-			    	    	    }
-
-			    	    	    @Override
-			    	    	    public boolean setInstance(Cursor _cursor) throws DatabaseException
-			    	    	    {
-			    	    		    boolean res=!FieldAccessor.equals(_cursor.getValue(fa.getDeclaredSqlField().field), val);
-			    	    		    if (!ok && !res)
-			    	    			ok=true;
-			    	    		    return res;
-			    	    	    }
-			    	    	}
-			    	    	
-			    	    	RunnableTmp runnable=new RunnableTmp();
-			    	    	getListRecordsFromSqlJet(runnable);
-			    	    	ok=runnable.ok;
-				    } while (ok);
-				    values.add(value);
-				    fa.setValue(instance, value);
-				}
-				else
-				{
-				    long value;
-				    boolean ok=false;
-				    do
-				    {
-					do
-					{
-					    ok=false;
-					    value=getRandomPositiveLongValue();
-					    for (Object val : values)
-					    {
-						if (FieldAccessor.equals(val, new Long(value)))
-						{
-						    ok=true;
-						}
-					    }
-					} while(ok);
-
-			    	    	final Long val=new Long(value);
-			    	    	
-					class RunnableTmp extends Runnable2
-			    	    	{
-			    	    	    public boolean ok=false;
-			    	    	    @Override
-			    	    	    public void init(long _field_count)
-			    	    	    {
-			    	    	    }
-			    	    	    
-			    	    	    @Override
-			    	    	    public boolean setInstance(Cursor _cursor) throws DatabaseException
-			    	    	    {
-			    	    		    boolean res=!FieldAccessor.equals(_cursor.getValue(fa.getDeclaredSqlField().field), val);
-			    	    		    if (!ok && !res)
-			    	    			ok=true;
-			    	    		    return res;
-			    	    	    }
-			    	    	}
-			    	    	RunnableTmp runnable=new RunnableTmp();
-			    	    	getListRecordsFromSqlJet(runnable);
-			    	    	ok=runnable.ok;
-				    } while (ok);
-				    values.add(new Long(value));
-				    fa.setValue(instance, new Long(value));
-				}
-			    }
-			}
-			else if ((fa.isAutoPrimaryKey() && ct.has_auto_field.get(i).booleanValue()) || !fa.isAutoPrimaryKey())
-			{
-			    Object val=map.get(fa.getFieldName());
-			    if (fa.isAutoPrimaryKey())
-			    {
-				for (Long val2 : auto_primarykeys_values)
-				{
-				    if (FieldAccessor.equals(val, val2))
-					throw new ConstraintsNotRespectedDatabaseException("There at minimum two of the given records whose fields "+fa.getFieldName()+" have the same auto primary keys. Auto primary keys must be unique values.");
-				}
-				auto_primarykeys_values.add((Long)fa.getValue(instance));
-			    }
-			    fa.setValue(instance, val);
-			}
-		    }
-		}
-	    }
-		class TransactionTmp implements Transaction
-		{
-		    protected final ISqlJetTable sql_jet_table;
-		    protected final ArrayList<FieldAccessor> auto_primary_keys_fields;
-		    protected final ArrayList<ForeignKeyFieldAccessor> foreign_keys_fields;
-		    public TransactionTmp(ISqlJetTable _sql_jet_table, ArrayList<FieldAccessor> _auto_primary_keys_fields, ArrayList<ForeignKeyFieldAccessor> _foreign_keys_fields)
-		    {
-			sql_jet_table=_sql_jet_table;
-			auto_primary_keys_fields=_auto_primary_keys_fields;
-			foreign_keys_fields=_foreign_keys_fields;
-		    }
-		    @SuppressWarnings("synthetic-access")
-		    @Override
-		    public Object run(HSQLDBWrapper _db) throws DatabaseException
-		    {
-			try
-			{
-			    for (ForeignKeyFieldAccessor fa : foreign_keys_fields)
-			    {
-				for (T instance : instances)
-				{
-				    Object val=fa.getValue(instance);
-				    if (!fa.getPointedTable().contains(true, (DatabaseRecord)val))
-					throw new RecordNotFoundDatabaseException("The record, contained as foreign key into the field "+fa.getFieldName()+" into the table "+Table.this.getName()+" does not exists into the table "+fa.getPointedTable().getName());
-				}
-			    }
-			    if (auto_primarykeys_values.size()>0)
-			    {
-				for (int i=0;i<instances.size();i++)
-				{
-				    T instance=instances.get(i);
-				    if (ct.has_auto_field.get(i).booleanValue())
-				    {
-					long rowid=sql_jet_table.insertByFieldNames(getSqlFieldsInstances(instance, true));
-					setRecordID(instance, rowid);
-				    }
-				}
-				for (int i=0;i<instances.size();i++)
-				{
-				    T instance=instances.get(i);
-				    if (!ct.has_auto_field.get(i).booleanValue())
-				    {
-					long rowid=sql_jet_table.insertByFieldNames(getSqlFieldsInstances(instance, false));
-					setRecordID(instance, rowid);
-					if (auto_primary_keys_fields.size()>0)
-					{
-					    try(Cursor isjc=new Cursor(sql_jet_table, Table.this.getClass().getPackage()))
-					    {
-						isjc.goTo(rowid);
-					    
-						for (FieldAccessor fa : auto_primary_keys_fields)
-						{
-						    fa.setValue(instance, isjc.getValue(fa.getDeclaredSqlField().field));
-						}
-					    }
-					}
-				    }
-				}
-			    }
-			    else
-			    {
-				for (T instance : instances)
-				{
-				    long rowid=sql_jet_table.insertByFieldNames(getSqlFieldsInstances(instance, false));
-				    setRecordID(instance, rowid);
-				    
-				    if (auto_primary_keys_fields.size()>0)
-				    {
-					try(Cursor isjc=new Cursor(sql_jet_table, Table.this.getClass().getPackage()))
-					{
-					    isjc.goTo(rowid);
-				    
-					    for (FieldAccessor fa : auto_primary_keys_fields)
-					    {
-						fa.setValue(instance, isjc.getValue(fa.getDeclaredSqlField().field));
-					    }
-					}
-				    }
-				}
-			    }
-			    return null;
-			}
-			catch(SqlJetException e)
-			{
-			    throw new DatabaseException(e);
-			}
-		    }
-		    
-		}
-		
-		sql_jet_db.sql_connection.runTransaction(new TransactionTmp(sql_jet_table, auto_primary_keys_fields, foreign_keys_fields));
-	    
-	    if (isLoadedInMemory() && is_synchronized_with_sql_database.get())
-		__AddRecords(instances);
-	    return instances;
-
-	}
-	catch(IllegalArgumentException e)
-	{
-	    throw new DatabaseException("Impossible to add a new field on the table/class "+this.getName()+".", e);
-	}
-	catch(InstantiationException e)
-	{
-	    throw new DatabaseException("Impossible to add a new field on the table/class "+this.getName()+".", e);
-	}
-	catch(IllegalAccessException e)
-	{
-	    throw new DatabaseException("Impossible to add a new field on the table/class "+this.getName()+".", e);
-	}
-	catch(InvocationTargetException e)
-	{
-	    throw new DatabaseException("Impossible to add a new field on the table/class "+this.getName()+".", e);
-	}
-	}
-	catch(Exception e)
-	{
-	    DatabaseException de=getOriginalDatabaseException(e);
-	    if (de!=null)
-		throw de;
-	    throw new DatabaseException("", e);
-	}
-	}
-    }*/
-    
-    
+	Map<String, Object> map=getMap(_record, false, false);
+	updateRecord(_record, map);
+    }
     
     
     /**
@@ -5313,9 +4826,9 @@ public abstract class Table<T extends DatabaseRecord>
      * @throws FieldDatabaseException if one of the given fields does not exists into the database, or if one of the given fields are auto or random primary keys.
      * @throws RecordNotFoundDatabaseException if the given record is not included into the database, or if one of the field is a foreign key and point to a record of another table which does not exist. 
      */
-    public final void alterRecord(final T _record, Object[] _fields) throws DatabaseException
+    public final void updateRecord(final T _record, Object[] _fields) throws DatabaseException
     {
-	alterRecord(_record, transformToMapField(_fields));
+	updateRecord(_record, transformToMapField(_fields));
     }
     /**
      * Alter a record into the database with a map of fields corresponding to this record. 
@@ -5330,7 +4843,7 @@ public abstract class Table<T extends DatabaseRecord>
      * @throws RecordNotFoundDatabaseException if the given record is not included into the database, or if one of the field is a foreign key and point to a record of another table which does not exist. 
      */
 
-    public final void alterRecord(final T _record, final Map<String, Object> _fields) throws DatabaseException
+    public final void updateRecord(final T _record, final Map<String, Object> _fields) throws DatabaseException
     {
 	if (_record==null)
 	    throw new NullPointerException("The parameter _record is a null pointer !");
@@ -5440,7 +4953,7 @@ public abstract class Table<T extends DatabaseRecord>
 			try
 			{
 			    StringBuffer querry=new StringBuffer("UPDATE "+Table.this.getName()+" SET ");
-			    T instance=default_constructor_field.newInstance();
+			    T instance=getNewRecordInstance();
 			    boolean first=true;
 			    for (FieldAccessor fa : fields_accessor)
 			    {
@@ -5534,10 +5047,10 @@ public abstract class Table<T extends DatabaseRecord>
      * The function parse all records present into this table. 
      * For each of them, it calls the function {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(DatabaseRecord)}.
      * 
-     * If the function {@link com.distrimind.ood.database.AlterRecordFilter#alter(Map)} is called into the inherited function {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(DatabaseRecord)}, 
+     * If the function {@link com.distrimind.ood.database.AlterRecordFilter#update(Map)} is called into the inherited function {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(DatabaseRecord)}, 
      * then all fields present in the given map will be updated into the record, after the end of the {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(DatabaseRecord)} function call. 
      * If the given map is a null reference, the correspondent record will not be altered.
-     * Note that modification of primary keys and unique keys are not permitted with this function. To do that, please use the function {@link #alterRecord(DatabaseRecord, Map)}.
+     * Note that modification of primary keys and unique keys are not permitted with this function. To do that, please use the function {@link #updateRecord(DatabaseRecord, Map)}.
      * 
      * If the function {@link com.distrimind.ood.database.AlterRecordFilter#remove()} is called, then the current record will be deleted after the end of the {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(DatabaseRecord)} function call, only if no record point to this record.
      * 
@@ -5552,7 +5065,7 @@ public abstract class Table<T extends DatabaseRecord>
      * @throws RecordNotFoundDatabaseException if one of the given field to alter is a foreign key which points to a non-existing record.
      * @see AlterRecordFilter
      */
-    public final void alterRecords(final AlterRecordFilter<T> _filter) throws DatabaseException
+    public final void updateRecords(final AlterRecordFilter<T> _filter) throws DatabaseException
     {
 	if (_filter==null)
 	    throw new NullPointerException("The parameter _filter is a null pointer !");
@@ -5591,7 +5104,10 @@ public abstract class Table<T extends DatabaseRecord>
 			}
 			else
 			{
-			    final Map<String, Object> map=_filter.getModifications();
+			    Map<String, Object> m=_filter.getModifications();
+			    if (m==null && _filter.isModificatiedFromRecordInstance())
+				m=getMap(r, false, false);
+			    final Map<String, Object> map=m;
 			    if (map!=null && map.size()>0)
 			    {
 				for (String s : map.keySet())
@@ -5627,7 +5143,7 @@ public abstract class Table<T extends DatabaseRecord>
 					try
 					{
 					    StringBuffer querry=new StringBuffer("UPDATE "+Table.this.getName()+" SET ");
-					    T instance=default_constructor_field.newInstance();
+					    T instance=getNewRecordInstance();
 					    boolean first=true;
 					    for (FieldAccessor fa : fields)
 					    {
@@ -5862,7 +5378,11 @@ public abstract class Table<T extends DatabaseRecord>
 				}
 				else
 				{
-				    Map<String, Object> map=_filter.getModifications();
+				    Map<String, Object> m=_filter.getModifications();
+				    if (m==null && _filter.isModificatiedFromRecordInstance())
+					m=getMap(_instance, false, false);
+				    final Map<String, Object> map=m;
+
 				    if (map!=null && map.size()>0)
 				    {
 					for (String s : map.keySet())
