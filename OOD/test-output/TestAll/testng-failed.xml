@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
-<suite name="Failed suite [TestAll]">
-  <test name="testDerby">
+<suite verbose="10" name="Failed suite [TestAll]">
+  <test name="testCyrpto(failed)">
     <classes>
-      <class name="com.distrimind.ood.tests.DerbyTestDatabase"/>
+      <class name="com.distrimind.util.tests.crypto.CryptoTests">
+        <methods>
+          <include name="testEncodeAndSeparateEncoding"/>
+          <include name="testASymmetricKeyPairEncoding"/>
+          <include name="testASymmetricSecretMessageExchanger" invocation-numbers="0 1"/>
+        </methods>
+      </class> <!-- com.distrimind.util.tests.crypto.CryptoTests -->
     </classes>
-  </test> <!-- testDerby -->
-  <test name="testHDQLDB">
-    <classes>
-      <class name="com.distrimind.ood.tests.HSQLDBTestDatabase"/>
-    </classes>
-  </test> <!-- testHDQLDB -->
+  </test> <!-- testCyrpto(failed) -->
 </suite> <!-- Failed suite [TestAll] -->
