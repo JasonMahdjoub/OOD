@@ -77,15 +77,15 @@ class Export
 	ArrayList<File> additional_files=new ArrayList<>();
 	
 	License licenses[]=new License[1];
-	licenses[0]=new License(new File("/home/jason/projets/commons-net-3.4/LICENSE.txt"));
+	licenses[0]=new License(new File("/home/jason/projets/commons-net-3.5/LICENSE.txt"));
 	ArrayList<BinaryDependency> dependencies=new ArrayList<BinaryDependency>();
 	dependencies.add(new JarDependency("commons-net", 
-		new JarSourceDependancy(false, new File("/home/jason/projets/commons-net-3.4/commons-net-3.4-sources.jar"), null, null),
+		new JarSourceDependancy(false, new File("/home/jason/projets/commons-net-3.5/commons-net-3.5-sources.jar"), null, null),
 		org.apache.commons.net.SocketClient.class.getPackage(), 
-		licenses, new File("/home/jason/projets/commons-net-3.4/commons-net-3.4.jar"), null, null));
+		licenses, new File("/home/jason/projets/commons-net-3.5/commons-net-3.5.jar"), null, null));
 	
 	licenses=new License[1];
-	licenses[0]=new License(new File("/home/jason/projets/commons-net-3.4/LICENSE.txt"));
+	licenses[0]=new License(new File("/home/jason/projets/commons-net-3.5/LICENSE.txt"));
 	dependencies.add(new JarDependency("HSQLDB", 
 		new DirectorySourceDependency(false, new File("/home/jason/projets/hsqldb/src")),
 		org.apache.commons.net.SocketClient.class.getPackage(), 

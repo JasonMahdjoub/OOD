@@ -1,45 +1,45 @@
 ----------------------------------------------------------------
-Fri Jun 10 12:39:08 CEST 2016:
-Booting Derby version The Apache Software Foundation - Apache Derby - 10.12.1.1 - (1704137): instance a816c00e-0155-39e4-dfe1-00001c5cb438 
+Tue Aug 23 14:32:38 CEST 2016:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.12.1.1 - (1704137): instance a816c00e-0156-b763-614f-00000bca4198 
 on database directory /home/jason/git_projects/OOD/OOD/databasetestDerby with class loader sun.misc.Launcher$AppClassLoader@55f96302 
-Loaded from file:/home/jason/git_projects/OOD/OOD/exports/OOD-Tests-1.6.1-Stable_withDependencies.jar
+Loaded from file:/home/jason/git_projects/OOD/OOD/exports/OOD-Tests-1.6.3-Stable_withDependencies.jar
 java.vendor=Oracle Corporation
-java.runtime.version=1.8.0_92-b14
+java.runtime.version=1.8.0_101-b13
 user.dir=/home/jason/git_projects/OOD/OOD
 os.name=Linux
 os.arch=amd64
-os.version=4.4.0-22-generic
+os.version=4.4.0-34-generic
 derby.system.home=null
 Database Class Loader started - derby.database.classpath=''
 ----------------------------------------------------------------
-Fri Jun 10 12:39:10 CEST 2016:
-Shutting down instance a816c00e-0155-39e4-dfe1-00001c5cb438 on database directory /home/jason/git_projects/OOD/OOD/databasetestDerby with class loader sun.misc.Launcher$AppClassLoader@55f96302 
+Tue Aug 23 14:32:40 CEST 2016:
+Shutting down instance a816c00e-0156-b763-614f-00000bca4198 on database directory /home/jason/git_projects/OOD/OOD/databasetestDerby with class loader sun.misc.Launcher$AppClassLoader@55f96302 
 ----------------------------------------------------------------
-Fri Jun 10 12:39:10 CEST 2016:
-Booting Derby version The Apache Software Foundation - Apache Derby - 10.12.1.1 - (1704137): instance 45ee0190-0155-39e4-dfe1-00001c5cb438 
+Tue Aug 23 14:32:40 CEST 2016:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.12.1.1 - (1704137): instance 45ee0190-0156-b763-614f-00000bca4198 
 on database directory /home/jason/git_projects/OOD/OOD/databasetestDerby with class loader sun.misc.Launcher$AppClassLoader@55f96302 
-Loaded from file:/home/jason/git_projects/OOD/OOD/exports/OOD-Tests-1.6.1-Stable_withDependencies.jar
+Loaded from file:/home/jason/git_projects/OOD/OOD/exports/OOD-Tests-1.6.3-Stable_withDependencies.jar
 java.vendor=Oracle Corporation
-java.runtime.version=1.8.0_92-b14
+java.runtime.version=1.8.0_101-b13
 user.dir=/home/jason/git_projects/OOD/OOD
 os.name=Linux
 os.arch=amd64
-os.version=4.4.0-22-generic
+os.version=4.4.0-34-generic
 derby.system.home=null
 Database Class Loader started - derby.database.classpath=''
 ----------------------------------------------------------------
-Fri Jun 10 12:39:13 CEST 2016:
-Booting Derby version The Apache Software Foundation - Apache Derby - 10.12.1.1 - (1704137): instance 0606c68e-0155-39e4-dfe1-00001c5cb438 
+Tue Aug 23 14:32:43 CEST 2016:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.12.1.1 - (1704137): instance 6bf0c67e-0156-b763-614f-00000bca4198 
 on database directory /home/jason/git_projects/OOD/OOD/databasetestDerbyb with class loader sun.misc.Launcher$AppClassLoader@55f96302 
-Loaded from file:/home/jason/git_projects/OOD/OOD/exports/OOD-Tests-1.6.1-Stable_withDependencies.jar
+Loaded from file:/home/jason/git_projects/OOD/OOD/exports/OOD-Tests-1.6.3-Stable_withDependencies.jar
 java.vendor=Oracle Corporation
-java.runtime.version=1.8.0_92-b14
+java.runtime.version=1.8.0_101-b13
 user.dir=/home/jason/git_projects/OOD/OOD
 os.name=Linux
 os.arch=amd64
-os.version=4.4.0-22-generic
+os.version=4.4.0-34-generic
 derby.system.home=null
 Database Class Loader started - derby.database.classpath=''
 ----------------------------------------------------------------
-Fri Jun 10 12:42:20 CEST 2016:
-Shutting down instance 45ee0190-0155-39e4-dfe1-00001c5cb438 on database directory /home/jason/git_projects/OOD/OOD/databasetestDerby with class loader sun.misc.Launcher$AppClassLoader@55f96302 
+Tue Aug 23 14:36:12 CEST 2016:
+Shutting down instance 45ee0190-0156-b763-614f-00000bca4198 on database directory /home/jason/git_projects/OOD/OOD/databasetestDerby with class loader sun.misc.Launcher$AppClassLoader@55f96302 

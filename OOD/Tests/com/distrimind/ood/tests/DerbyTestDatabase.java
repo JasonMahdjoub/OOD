@@ -52,8 +52,6 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.crypto.SecretKey;
-
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
@@ -81,6 +79,7 @@ import com.distrimind.ood.tests.database.Table7;
 import com.distrimind.ood.tests.database.Table1.Record;
 import com.distrimind.ood.tests.schooldatabase.Lecture;
 import com.distrimind.util.crypto.SymmetricEncryptionType;
+import com.distrimind.util.crypto.SymmetricSecretKey;
 
 /**
  * 
@@ -118,13 +117,13 @@ public class DerbyTestDatabase
     private static File database_backup_directory=new File("databasebackupDerby");
     
 
-    final SecretKey secretKey;
+    final SymmetricSecretKey secretKey;
     final SymmetricEncryptionType typeSecretKey;
     
     public DerbyTestDatabase() throws NoSuchAlgorithmException
     {
 	typeSecretKey=SymmetricEncryptionType.AES;
-	secretKey=typeSecretKey.getKeyGenerator(new SecureRandom()).generateKey();
+	secretKey=SymmetricSecretKey.generate(new SecureRandom(), typeSecretKey);
     }
     
     

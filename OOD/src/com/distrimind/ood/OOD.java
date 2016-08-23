@@ -60,8 +60,8 @@ public class OOD
 	Calendar c1=Calendar.getInstance();
 	c1.set(2013, 3, 1);
 	Calendar c2=Calendar.getInstance();
-	c2.set(2016, 5, 10);
-	VERSION=new Version("Object Oriented Database", "OOD", 1, 6, 1, Version.Type.Stable, 0, c1.getTime(), c2.getTime());
+	c2.set(2016, 6, 27);
+	VERSION=new Version("Object Oriented Database", "OOD", 1, 6, 3, Version.Type.Stable, 0, c1.getTime(), c2.getTime());
 	try
 	{
 	    InputStream is=OOD.class.getResourceAsStream("build.txt");
@@ -72,8 +72,20 @@ public class OOD
 	    VERSION.addDeveloper(new PersonDeveloper("mahdjoub", "jason", c.getTime()));
 	
 	    c=Calendar.getInstance();
-	    c.set(2016, 5, 3);
-	    Description d=new Description(1,6,1,Version.Type.Stable, 0, c.getTime());
+	    c.set(2016, 6, 27);
+	    Description d=new Description(1,6,3,Version.Type.Stable, 0, c.getTime());
+	    d.addItem("Updating Utils to 1.7.1.");
+
+	    c=Calendar.getInstance();
+	    c.set(2016, 6, 4);
+	    d=new Description(1,6,2,Version.Type.Stable, 0, c.getTime());
+	    d.addItem("Updating Utils to 1.7.");
+	    d.addItem("Updating to Common-Net 3.5.");
+	    d.addItem("Updating to HSDQLDB 3.3.4.");
+
+	    c=Calendar.getInstance();
+	    c.set(2016, 5, 10);
+	    d=new Description(1,6,1,Version.Type.Stable, 0, c.getTime());
 	    d.addItem("Correction a bug into the constructor of ByteTabConvertibleFieldAccessor.");
 	    d.addItem("Adding version tests.");
 	    d.addItem("Changing license to CECILL-C.");

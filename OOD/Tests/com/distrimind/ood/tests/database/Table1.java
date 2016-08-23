@@ -5,8 +5,6 @@ import java.math.BigInteger;
 import java.util.Calendar;
 import java.util.Date;
 
-import javax.crypto.SecretKey;
-
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.annotations.AutoPrimaryKey;
@@ -16,6 +14,7 @@ import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.annotations.RandomPrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.crypto.SymmetricEncryptionType;
+import com.distrimind.util.crypto.SymmetricSecretKey;
 
 public final class Table1 extends Table<Table1.Record>
 {
@@ -52,7 +51,7 @@ public final class Table1 extends Table<Table1.Record>
 	public @NotNull @Field BigDecimal BigDecimal_value;
 	public @NotNull @Field Date DateValue;
 	public @NotNull @Field Calendar CalendarValue;
-	public @NotNull @Field SecretKey secretKey;
+	public @NotNull @Field SymmetricSecretKey secretKey;
 	public @NotNull @Field SymmetricEncryptionType typeSecretKey;
     }
 }

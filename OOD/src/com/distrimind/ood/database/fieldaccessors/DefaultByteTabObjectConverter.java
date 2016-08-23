@@ -49,8 +49,10 @@ import java.security.spec.InvalidKeySpecException;
 import javax.crypto.SecretKey;
 
 import com.distrimind.ood.database.exceptions.IncompatibleFieldDatabaseException;
-import com.distrimind.util.crypto.ASymmetricEncryptionType;
-import com.distrimind.util.crypto.SymmetricEncryptionType;
+import com.distrimind.util.crypto.ASymmetricKeyPair;
+import com.distrimind.util.crypto.ASymmetricPrivateKey;
+import com.distrimind.util.crypto.ASymmetricPublicKey;
+import com.distrimind.util.crypto.SymmetricSecretKey;
 
 /**
  * 
@@ -74,14 +76,14 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter
 	    return null;
 	if (_o.getClass()==Inet6Address.class || _o.getClass()==Inet4Address.class)
 	    return ((InetAddress)_o).getAddress();
-	else if (_o instanceof KeyPair)
-	    return ASymmetricEncryptionType.encodeKeyPair((KeyPair)_o);
-	else if (_o instanceof PublicKey)
-	    return ASymmetricEncryptionType.encodePublicKey((PublicKey)_o);
-	else if (_o instanceof PrivateKey)
-	    return ASymmetricEncryptionType.encodePrivateKey((PrivateKey)_o);
-	else if (_o instanceof SecretKey)
-	    return SymmetricEncryptionType.encodeSecretKey((SecretKey)_o);
+	else if (_o instanceof ASymmetricKeyPair)
+	    return ((ASymmetricKeyPair)_o).encode();
+	else if (_o instanceof ASymmetricPublicKey)
+	    return ((ASymmetricPublicKey)_o).encode();
+	else if (_o instanceof ASymmetricPrivateKey)
+	    return ((ASymmetricPrivateKey)_o).encode();
+	else if (_o instanceof SymmetricSecretKey)
+	    return ((SymmetricSecretKey)_o).encode();
 	
 	throw new IncompatibleFieldDatabaseException("Incompatible type "+_o.getClass().getCanonicalName());
     }
@@ -101,19 +103,19 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter
 		return InetAddress.getByAddress(_bytesTab);
 	    else if (KeyPair.class.isAssignableFrom(_object_type))
 	    {
-		return ASymmetricEncryptionType.decodeKeyPair(_bytesTab);
+		return ASymmetricKeyPair.decode(_bytesTab);
 	    }
 	    else if (PublicKey.class.isAssignableFrom(_object_type))
 	    {
-		return ASymmetricEncryptionType.decodePublicKey(_bytesTab);
+		return ASymmetricPublicKey.decode(_bytesTab);
 	    }
 	    else if (PrivateKey.class.isAssignableFrom(_object_type))
 	    {
-		return ASymmetricEncryptionType.decodePrivateKey(_bytesTab);
+		return ASymmetricPrivateKey.decode(_bytesTab);
 	    }
 	    else if (SecretKey.class.isAssignableFrom(_object_type))
 	    {
-		return SymmetricEncryptionType.decodeSecretKey(_bytesTab);
+		return SymmetricSecretKey.decode(_bytesTab);
 	    }
 	}
 	catch (UnknownHostException | NoSuchAlgorithmException | InvalidKeySpecException e)
