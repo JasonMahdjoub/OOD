@@ -64,7 +64,7 @@ public class charFieldAccessor extends FieldAccessor
     
     protected charFieldAccessor(Field _field) throws DatabaseException
     {
-	super(null, _field);
+	super(null, _field, compatible_classes);
 	sql_fields=new SqlField[1];
 	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), "CHARACTER", null, null);
     }
@@ -133,12 +133,6 @@ public class charFieldAccessor extends FieldAccessor
     }
     
     
-    @Override
-    public Class<?> [] getCompatibleClasses()
-    {
-	return compatible_classes;
-    }
-
     private static final Class<?>[] compatible_classes={char.class, Character.class};
 
 

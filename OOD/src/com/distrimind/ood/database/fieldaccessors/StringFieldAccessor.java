@@ -65,7 +65,7 @@ public class StringFieldAccessor extends FieldAccessor
     
     protected StringFieldAccessor(DatabaseWrapper _sql_connection, Field _field) throws DatabaseException
     {
-	super(_sql_connection, _field);
+	super(_sql_connection, _field, compatible_classes);
 	sql_fields=new SqlField[1];
 	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), limit==0?"VARCHAR("+sql_connection.getVarCharLimit()+")":(limit<sql_connection.getVarCharLimit()?"VARCHAR("+limit+")":"CLOB("+limit+")"), null, null);
     }
@@ -130,12 +130,6 @@ public class StringFieldAccessor extends FieldAccessor
 	}
     }
     
-    
-    @Override
-    public Class<?>[] getCompatibleClasses()
-    {
-	return compatible_classes;
-    }
 
     private static final Class<?>[] compatible_classes={String.class};
 

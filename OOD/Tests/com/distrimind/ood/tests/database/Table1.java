@@ -13,6 +13,7 @@ import com.distrimind.ood.database.annotations.NotNull;
 import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.annotations.RandomPrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.crypto.SymmetricEncryptionType;
 import com.distrimind.util.crypto.SymmetricSecretKey;
 
@@ -29,6 +30,7 @@ public final class Table1 extends Table<Table1.Record>
 	public @AutoPrimaryKey long pk2;
 	public @RandomPrimaryKey BigInteger pk3;
 	public @RandomPrimaryKey long pk4;
+	public @RandomPrimaryKey AbstractDecentralizedID pk5;
 	public @NotNull @Field int int_value;
 	public @NotNull @Field byte byte_value;
 	public @NotNull @Field char char_value;

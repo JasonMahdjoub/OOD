@@ -66,16 +66,13 @@ import com.distrimind.ood.database.exceptions.FieldDatabaseException;
  */
 public class SerializableFieldAccessor extends FieldAccessor
 {
-    protected final Class<?> compatible_classes[];
     protected final SqlField sql_fields[];
     protected Method compareTo_method;
     protected SerializableFieldAccessor(DatabaseWrapper _sql_connection, Field _field) throws DatabaseException
     {
-	super(_sql_connection, _field);
+	super(_sql_connection, _field, getCompatibleClasses(_field));
 	if (!Serializable.class.isAssignableFrom(field.getType()))
 	    throw new FieldDatabaseException("The given field "+field.getName()+" of type "+field.getType().getName()+" must be a serializable field.");
-	compatible_classes=new Class<?>[1];
-	compatible_classes[0]=field.getType();
 	sql_fields=new SqlField[1];
 	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), sql_connection.getSerializableType(), null, null);
 	
@@ -98,7 +95,13 @@ public class SerializableFieldAccessor extends FieldAccessor
 	    compareTo_method=null;
 	
     }
-
+    private static Class<?>[] getCompatibleClasses(Field field)
+    {
+	Class<?> res[]=new Class<?>[1];
+	res[0]=field.getType();
+	return res;
+    }
+    
     @Override
     public void setValue(DatabaseRecord _class_instance, Object _field_instance) throws DatabaseException
     {
@@ -247,12 +250,6 @@ public class SerializableFieldAccessor extends FieldAccessor
 	{
 	    throw DatabaseException.getDatabaseException(e);
 	}
-    }
-
-    @Override
-    public Class<?>[] getCompatibleClasses()
-    {
-	return compatible_classes;
     }
 
     @Override

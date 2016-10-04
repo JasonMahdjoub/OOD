@@ -60,8 +60,8 @@ public class OOD
 	Calendar c1=Calendar.getInstance();
 	c1.set(2013, 3, 1);
 	Calendar c2=Calendar.getInstance();
-	c2.set(2016, 6, 27);
-	VERSION=new Version("Object Oriented Database", "OOD", 1, 6, 3, Version.Type.Stable, 0, c1.getTime(), c2.getTime());
+	c2.set(2016, 8, 19);
+	VERSION=new Version("Object Oriented Database", "OOD", 1, 7, 0, Version.Type.Stable, 0, c1.getTime(), c2.getTime());
 	try
 	{
 	    InputStream is=OOD.class.getResourceAsStream("build.txt");
@@ -72,8 +72,20 @@ public class OOD
 	    VERSION.addDeveloper(new PersonDeveloper("mahdjoub", "jason", c.getTime()));
 	
 	    c=Calendar.getInstance();
-	    c.set(2016, 6, 27);
-	    Description d=new Description(1,6,3,Version.Type.Stable, 0, c.getTime());
+	    c.set(2016, 8, 19);
+	    Description d=new Description(1,7,0,Version.Type.Stable, 0, c.getTime());
+	    d.addItem("Correcting bug into FieldAccessor (null pointer exception).");
+	    d.addItem("Adding enum support.");
+	    d.addItem("Adding Decentralized ID support.");
+
+	    c=Calendar.getInstance();
+	    c.set(2016, 7, 29);
+	    d=new Description(1,6,4,Version.Type.Stable, 0, c.getTime());
+	    d.addItem("Updating Utils to 1.7.2.");
+
+	    c=Calendar.getInstance();
+	    c.set(2016, 7, 23);
+	    d=new Description(1,6,3,Version.Type.Stable, 0, c.getTime());
 	    d.addItem("Updating Utils to 1.7.1.");
 
 	    c=Calendar.getInstance();

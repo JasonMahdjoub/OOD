@@ -63,7 +63,7 @@ public class DoubleNumberFieldAccessor extends FieldAccessor
     
     protected DoubleNumberFieldAccessor(DatabaseWrapper _sql_connection, Field _field) throws DatabaseException
     {
-	super(_sql_connection, _field);
+	super(_sql_connection, _field, compatible_classes);
 	sql_fields=new SqlField[1];
 	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), sql_connection.getDoubleType(), null, null);
 	
@@ -139,12 +139,6 @@ public class DoubleNumberFieldAccessor extends FieldAccessor
 	}
     }
 
-    
-    @Override
-    public Class<?> [] getCompatibleClasses()
-    {
-	return compatible_classes;
-    }
 
     private static final Class<?>[] compatible_classes={double.class, Double.class};
 

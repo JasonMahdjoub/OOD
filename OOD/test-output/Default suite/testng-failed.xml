@@ -1,39 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
 <suite guice-stage="DEVELOPMENT" name="Failed suite [Default suite]">
-  <test verbose="2" name="Default test">
+  <test name="Default test(failed)">
     <classes>
-      <class name="com.distrimind.ood.tests.HSQLDBTestDatabase">
+      <class name="com.distrimind.ood.tests.DerbyTestDatabase">
         <methods>
-          <include name="testCheckPoint"/>
-          <include name="prepareMultipleTest"/>
-          <include name="testFirstAdd"/>
-          <include name="alterRecord"/>
-          <include name="testBackup"/>
-          <include name="firstAdd"/>
-          <include name="testThreadSafe"/>
-          <include name="setAutoRandomFields"/>
-          <include name="getRecordFilter"/>
-          <include name="alterRecordWithCascade"/>
-          <include name="firstReload"/>
-          <include name="getRecordIterator"/>
-          <include name="getRecord"/>
-          <include name="removePointedRecords"/>
-          <include name="testRemoveFilters"/>
-          <include name="firstTestSize"/>
-          <include name="firstLoad"/>
-          <include name="removeRecord"/>
-          <include name="testFilters"/>
-          <include name="removeForeignKeyRecords"/>
-          <include name="addSecondRecord"/>
-          <include name="testArrayRecordParameters"/>
-          <include name="multipleTests"/>
-          <include name="addForeignKeyAndTestUniqueKeys"/>
-          <include name="testIsPointed"/>
           <include name="removeRecords"/>
+          <include name="removePointedRecords"/>
+          <include name="firstAdd"/>
+          <include name="testBackup"/>
+          <include name="alterRecord"/>
+          <include name="testRemoveFilters"/>
+          <include name="testCheckPoint"/>
+          <include name="getRecordFilter"/>
+          <include name="testFirstAdd"/>
+          <include name="removeRecord"/>
+          <include name="secondTestSize"/>
+          <include name="firstTestSize"/>
+          <include name="firstReload"/>
+          <include name="testArrayRecordParameters"/>
+          <include name="testIsPointed"/>
+          <include name="setAutoRandomFields"/>
+          <include name="prepareMultipleTest"/>
+          <include name="getRecord"/>
+          <include name="testFilters"/>
+          <include name="multipleTests"/>
+          <include name="firstLoad"/>
+          <include name="addForeignKeyAndTestUniqueKeys"/>
+          <include name="getRecordIterator"/>
+          <include name="removeForeignKeyRecords"/>
           <include name="removeWithCascade"/>
+          <include name="addSecondRecord"/>
+          <include name="unloadDatabase"/>
+          <include name="testThreadSafe"/>
         </methods>
-      </class> <!-- com.distrimind.ood.tests.HSQLDBTestDatabase -->
+      </class> <!-- com.distrimind.ood.tests.DerbyTestDatabase -->
     </classes>
-  </test> <!-- Default test -->
+  </test> <!-- Default test(failed) -->
 </suite> <!-- Failed suite [Default suite] -->

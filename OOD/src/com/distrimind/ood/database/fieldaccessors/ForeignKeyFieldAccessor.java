@@ -92,7 +92,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
     
     protected ForeignKeyFieldAccessor(DatabaseWrapper _sql_connection, Field _field) throws DatabaseException
     {
-	super(_sql_connection, _field);
+	super(_sql_connection, _field, getCompatibleClasses(_field));
 	if (!DatabaseRecord.class.isAssignableFrom(_field.getType()))
 	    throw new DatabaseException("The field "+_field.getName()+" of the class "+_field.getDeclaringClass().getName()+" is not a DatabaseRecord.");
 	if (!field.getType().getPackage().equals(field.getDeclaringClass().getPackage()))
@@ -208,8 +208,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
     }
     
     
-    @Override
-    public Class<?>[] getCompatibleClasses()
+    private static Class<?>[] getCompatibleClasses(Field field)
     {
 	Class<?> compatible_classes[]=new Class<?>[1];
 	compatible_classes[0]=field.getType();

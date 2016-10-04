@@ -63,7 +63,7 @@ public class BooleanNumberFieldAccessor extends FieldAccessor
     
     protected BooleanNumberFieldAccessor(Field _field) throws DatabaseException
     {
-	super(null, _field);
+	super(null, _field, compatible_classes);
 	sql_fields=new SqlField[1];
 	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), "BOOLEAN", null, null);
     }
@@ -133,12 +133,6 @@ public class BooleanNumberFieldAccessor extends FieldAccessor
 	}
     }
 
-    
-    @Override
-    public Class<?> [] getCompatibleClasses()
-    {
-	return compatible_classes;
-    }
 
     private static final Class<?>[] compatible_classes={boolean.class, Boolean.class};
 

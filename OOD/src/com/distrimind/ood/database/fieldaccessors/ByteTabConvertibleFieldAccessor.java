@@ -62,17 +62,21 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor
 {
     protected final SqlField sql_fields[];
     private final ByteTabObjectConverter converter;
-    private final Class<?> compatible_classes[];
+    private final boolean isVarBinary;
     
     protected ByteTabConvertibleFieldAccessor(DatabaseWrapper _sql_connection, Field _field, ByteTabObjectConverter converter) throws DatabaseException
     {
-	super(_sql_connection, _field);
+	super(_sql_connection, _field,getCompatibleClasses(_field));
 	sql_fields=new SqlField[1];
 	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), (limit==0)?(sql_connection.isVarBinarySupported()?"VARBINARY("+16777216+")":"BLOB"):((limit>16777216 || !sql_connection.isVarBinarySupported())?("BLOB("+limit+")"):("VARBINARY("+limit+")")), null, null);
 	this.converter=converter;
-	compatible_classes=new Class<?>[1];
-	compatible_classes[0]=field.getType();
-	
+	isVarBinary=sql_fields[0].type.startsWith("VARBINARY");
+    }
+    private static Class<?>[] getCompatibleClasses(Field field)
+    {
+	Class<?>[] res=new Class<?>[1];
+	res[0]=field.getType();
+	return res;
     }
 
     @Override
@@ -128,7 +132,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor
 	    
 	    byte[] val2=null;
 	    
-	    if (sql_fields[0].type.startsWith("VARBINARY"))
+	    if (isVarBinary)
 	    {
 		val2=_result_set.getBytes(_sft.translateField(sql_fields[0]));
 	    }
@@ -155,12 +159,6 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor
 	{
 	    throw DatabaseException.getDatabaseException(e);
 	}
-    }
-    
-    @Override
-    public Class<?>[] getCompatibleClasses()
-    {
-	return compatible_classes;
     }
     
     
@@ -191,7 +189,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor
     public SqlFieldInstance[] getSqlFieldsInstances(DatabaseRecord _instance) throws DatabaseException
     {
 	SqlFieldInstance res[]=new SqlFieldInstance[1];
-	res[0]=new SqlFieldInstance(sql_fields[0], getValue(_instance));
+	res[0]=new SqlFieldInstance(sql_fields[0], converter.getByte(getValue(_instance)));
 	return res;
     }
 
@@ -218,7 +216,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor
 	try
 	{
 	    byte[] res=null;
-	    if (sql_fields[0].type.startsWith("VARBINARY"))
+	    if (isVarBinary)
 	    {
 		res=_result_set.getBytes(sql_fields[0].short_field);
 		if (res==null && isNotNull())
@@ -276,7 +274,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor
 		if (b==null)
 		    throw new FieldDatabaseException("The given ByteTabObjectConverter should produce an byte tab and not a null reference. This concern the affectation of the field "+field.getName()+" into the class "+field.getDeclaringClass().getCanonicalName());
 	    }
-	    if (sql_fields[0].type.startsWith("VARBINARY"))
+	    if (isVarBinary)
 		_prepared_statement.setBytes(_field_start, b);
 	    else
 	    {
@@ -307,7 +305,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor
 		if (b==null)
 		    throw new FieldDatabaseException("The given ByteTabObjectConverter should produce an byte tab and not a null reference. This concern the affectation of the field "+field.getName()+" into the class "+field.getDeclaringClass().getCanonicalName());
 	    }
-	    if (sql_fields[0].type.startsWith("VARBINARY"))
+	    if (isVarBinary)
 		_result_set.updateBytes(sql_fields[0].short_field, b);
 	    else
 	    {
@@ -338,7 +336,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor
 		if (b==null)
 		    throw new FieldDatabaseException("The given ByteTabObjectConverter should produce an byte tab and not a null reference. This concern the affectation of the field "+field.getName()+" into the class "+field.getDeclaringClass().getCanonicalName());
 	    }
-	    if (sql_fields[0].type.startsWith("VARBINARY"))
+	    if (isVarBinary)
 		_result_set.updateBytes(_sft.translateField(sql_fields[0]), b);
 	    else
 	    {

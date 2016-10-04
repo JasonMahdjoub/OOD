@@ -78,6 +78,7 @@ import com.distrimind.ood.tests.database.Table6;
 import com.distrimind.ood.tests.database.Table7;
 import com.distrimind.ood.tests.database.Table1.Record;
 import com.distrimind.ood.tests.schooldatabase.Lecture;
+import com.distrimind.util.DecentralizedIDGenerator;
 import com.distrimind.util.crypto.SymmetricEncryptionType;
 import com.distrimind.util.crypto.SymmetricSecretKey;
 
@@ -531,13 +532,15 @@ public class DerbyTestDatabase
 	keys1.put("pk2", new Long(r1a.pk2));
 	keys1.put("pk3", r1a.pk3);
 	keys1.put("pk4", new Long(r1a.pk4));
+	keys1.put("pk5", r1a.pk5);
 	
 	HashMap<String, Object> keys2=new HashMap<String, Object>();
 	keys2.put("pk1", new Integer(r2a.pk1));
 	keys2.put("pk2", new Long(r2a.pk2));
 	keys2.put("pk3", r2a.pk3);
 	keys2.put("pk4", new Long(r2a.pk4));
-
+	keys2.put("pk5", r2a.pk5);
+	
 	Table1.Record r1b=table1.getRecord(keys1);
 	Table3.Record r2b=table3.getRecord(keys2);
 	
@@ -545,6 +548,7 @@ public class DerbyTestDatabase
 	Assert.assertTrue(r1a.pk2==r1b.pk2);
 	Assert.assertTrue(r1a.pk3.equals(r1b.pk3));
 	Assert.assertTrue(r1a.pk4==r1b.pk4);
+	Assert.assertTrue(r1a.pk5.equals(r1b.pk5));
 	Assert.assertTrue(r1a.int_value==r1b.int_value);
 	Assert.assertTrue(r1a.byte_value==r1b.byte_value);
 	Assert.assertTrue(r1a.char_value==r1b.char_value);
@@ -575,6 +579,7 @@ public class DerbyTestDatabase
 	Assert.assertTrue(r2a.pk2==r2b.pk2);
 	Assert.assertTrue(r2a.pk3.equals(r2b.pk3));
 	Assert.assertTrue(r2a.pk4==r2b.pk4);
+	Assert.assertTrue(r2a.pk5.equals(r2b.pk5));
 	Assert.assertTrue(r2a.int_value==r2b.int_value);
 	Assert.assertTrue(r2a.byte_value==r2b.byte_value);
 	Assert.assertTrue(r2a.char_value==r2b.char_value);
@@ -626,13 +631,15 @@ public class DerbyTestDatabase
 		keys1.put("pk2", new Long(r1a.pk2));
 		keys1.put("pk3", r1a.pk3);
 		keys1.put("pk4", new Long(r1a.pk4));
-	
+		keys1.put("pk5", r1a.pk5);
+		
 		HashMap<String, Object> keys2=new HashMap<String, Object>();
 		keys2.put("pk1", new Integer(r2a.pk1));
 		keys2.put("pk2", new Long(r2a.pk2));
 		keys2.put("pk3", r2a.pk3);
 		keys2.put("pk4", new Long(r2a.pk4));
-
+		keys2.put("pk5", r2a.pk5);
+		
 		Table1.Record r1b=table1.getRecord(keys1);
 		Table3.Record r2b=table3.getRecord(keys2);
 	
@@ -640,6 +647,7 @@ public class DerbyTestDatabase
 		Assert.assertTrue(r1a.pk2==r1b.pk2);
 		Assert.assertTrue(r1a.pk3.equals(r1b.pk3));
 		Assert.assertTrue(r1a.pk4==r1b.pk4);
+		Assert.assertTrue(r1a.pk5.equals(r1b.pk5));
 		Assert.assertTrue(r1a.int_value==r1b.int_value);
 		Assert.assertTrue(r1a.byte_value==r1b.byte_value);
 		Assert.assertTrue(r1a.char_value==r1b.char_value);
@@ -670,6 +678,7 @@ public class DerbyTestDatabase
 		Assert.assertTrue(r2a.pk2==r2b.pk2);
 		Assert.assertTrue(r2a.pk3.equals(r2b.pk3));
 		Assert.assertTrue(r2a.pk4==r2b.pk4);
+		Assert.assertTrue(r2a.pk5.equals(r2b.pk5));
 		Assert.assertTrue(r2a.int_value==r2b.int_value);
 		Assert.assertTrue(r2a.byte_value==r2b.byte_value);
 		Assert.assertTrue(r2a.char_value==r2b.char_value);
@@ -740,6 +749,7 @@ public class DerbyTestDatabase
 	Assert.assertTrue(r1a.pk2==r1b.pk2);
 	Assert.assertTrue(r1a.pk3.equals(r1b.pk3));
 	Assert.assertTrue(r1a.pk4==r1b.pk4);
+	Assert.assertTrue(r1a.pk5.equals(r1b.pk5));
 	Assert.assertTrue(r1a.int_value==r1b.int_value);
 	Assert.assertTrue(r1a.byte_value==r1b.byte_value);
 	Assert.assertTrue(r1a.char_value==r1b.char_value);
@@ -771,6 +781,7 @@ public class DerbyTestDatabase
 	Assert.assertTrue(r2a.pk2==r2b.pk2);
 	Assert.assertTrue(r2a.pk3.equals(r2b.pk3));
 	Assert.assertTrue(r2a.pk4==r2b.pk4);
+	Assert.assertTrue(r2a.pk5.equals(r2b.pk5));
 	Assert.assertTrue(r2a.int_value==r2b.int_value);
 	Assert.assertTrue(r2a.byte_value==r2b.byte_value);
 	Assert.assertTrue(r2a.char_value==r2b.char_value);
@@ -1365,6 +1376,7 @@ public class DerbyTestDatabase
 	Assert.assertTrue(r1.pk2==r1fr2.pk2);
 	Assert.assertTrue(r1.pk3.equals(r1fr2.pk3));
 	Assert.assertTrue(r1.pk4==r1fr2.pk4);
+	Assert.assertTrue(r1.pk5.equals(r1fr2.pk5));
 	Assert.assertTrue(r1.int_value==r1fr2.int_value);
 	Assert.assertTrue(r1.byte_value==r1fr2.byte_value);
 	Assert.assertTrue(r1.char_value==r1fr2.char_value);
@@ -1394,6 +1406,7 @@ public class DerbyTestDatabase
 	Assert.assertTrue(r2.pk2==r2fr4.pk2);
 	Assert.assertTrue(r2.pk3.equals(r2fr4.pk3));
 	Assert.assertTrue(r2.pk4==r2fr4.pk4);
+	Assert.assertTrue(r2.pk5.equals(r2fr4.pk5));
 	Assert.assertTrue(r2.int_value==r2fr4.int_value);
 	Assert.assertTrue(r2.byte_value==r2fr4.byte_value);
 	Assert.assertTrue(r2.char_value==r2fr4.char_value);
@@ -1423,6 +1436,7 @@ public class DerbyTestDatabase
 	Assert.assertTrue(r2.pk2==r2fr5.pk2);
 	Assert.assertTrue(r2.pk3.equals(r2fr5.pk3));
 	Assert.assertTrue(r2.pk4==r2fr5.pk4);
+	Assert.assertTrue(r2.pk5.equals(r2fr5.pk5));
 	Assert.assertTrue(r2.int_value==r2fr5.int_value);
 	Assert.assertTrue(r2.byte_value==r2fr5.byte_value);
 	Assert.assertTrue(r2.char_value==r2fr5.char_value);
@@ -2410,6 +2424,7 @@ public class DerbyTestDatabase
 	    map.put("pk2", new Long(1));
 	    map.put("pk3", new BigInteger("0"));
 	    map.put("pk4", new Long(0));
+	    map.put("pk5", new DecentralizedIDGenerator());
 	    map.put("int_value", new Integer(3));
 	    map.put("byte_value", new Byte((byte)3));
 	    map.put("char_value", new Character('x'));
@@ -2441,6 +2456,7 @@ public class DerbyTestDatabase
 	Assert.assertTrue(map.get("pk2").equals(new Long(r1.pk2)));
 	Assert.assertTrue(map.get("pk3").equals(r1.pk3));
 	Assert.assertTrue(map.get("pk4").equals(new Long(r1.pk4)));
+	Assert.assertTrue(map.get("pk5").equals(r1.pk5));
 	Assert.assertTrue(map.get("int_value").equals(new Integer(r1.int_value)));
 	Assert.assertTrue(map.get("byte_value").equals(new Byte(r1.byte_value)));
 	Assert.assertTrue(map.get("char_value").equals(new Character(r1.char_value)));
@@ -2471,6 +2487,7 @@ public class DerbyTestDatabase
 	Assert.assertTrue(map.get("pk2").equals(new Long(r3.pk2)));
 	Assert.assertTrue(map.get("pk3").equals(r3.pk3));
 	Assert.assertTrue(map.get("pk4").equals(new Long(r3.pk4)));
+	Assert.assertTrue(map.get("pk5").equals(r3.pk5));
 	Assert.assertTrue(map.get("int_value").equals(new Integer(r3.int_value)));
 	Assert.assertTrue(map.get("byte_value").equals(new Byte(r3.byte_value)));
 	Assert.assertTrue(map.get("char_value").equals(new Character(r3.char_value)));
@@ -2514,6 +2531,7 @@ public class DerbyTestDatabase
 	    Assert.assertTrue(true);
 	}
 	map.put("pk4", new Long(1));
+	map.put("pk5", new DecentralizedIDGenerator());
 	try
 	{
 	    table1.addRecord(map);
@@ -2633,6 +2651,7 @@ public class DerbyTestDatabase
 	removeWithCascade();
 	
 	maps[1].remove("pk4");
+	maps[1].remove("pk5");
 
 	table1.addRecords(maps);
 	table3.addRecords(maps);
@@ -2644,6 +2663,7 @@ public class DerbyTestDatabase
 	Assert.assertTrue(map.get("pk2").equals(new Long(r1.pk2)));
 	Assert.assertTrue(map.get("pk3").equals(r1.pk3));
 	Assert.assertTrue(map.get("pk4").equals(new Long(r1.pk4)));
+	Assert.assertTrue(map.get("pk5").equals(r1.pk5));
 	Assert.assertTrue(map.get("int_value").equals(new Integer(r1.int_value)));
 	Assert.assertTrue(map.get("byte_value").equals(new Byte(r1.byte_value)));
 	Assert.assertTrue(map.get("char_value").equals(new Character(r1.char_value)));
@@ -2672,6 +2692,7 @@ public class DerbyTestDatabase
 	Assert.assertTrue(map.get("pk2").equals(new Long(r3.pk2)));
 	Assert.assertTrue(map.get("pk3").equals(r3.pk3));
 	Assert.assertTrue(map.get("pk4").equals(new Long(r3.pk4)));
+	Assert.assertTrue(map.get("pk5").equals(r3.pk5));
 	Assert.assertTrue(map.get("int_value").equals(new Integer(r3.int_value)));
 	Assert.assertTrue(map.get("byte_value").equals(new Byte(r3.byte_value)));
 	Assert.assertTrue(map.get("char_value").equals(new Character(r3.char_value)));

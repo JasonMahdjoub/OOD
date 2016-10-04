@@ -1,87 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
-<suite verbose="5" name="Failed suite [TestAll]">
-  <test name="testDerby(failed)">
+<suite guice-stage="DEVELOPMENT" name="Failed suite [Default suite]">
+  <test name="Default test(failed)">
     <classes>
-      <class name="com.distrimind.ood.tests.HSQLDBTestDatabase">
-        <methods>
-          <include name="unloadDatabase"/>
-        </methods>
-      </class> <!-- com.distrimind.ood.tests.HSQLDBTestDatabase -->
       <class name="com.distrimind.ood.tests.DerbyTestDatabase">
         <methods>
-          <include name="removeWithCascade"/>
-          <include name="firstReload"/>
-          <include name="unloadDatabase"/>
-          <include name="addForeignKeyAndTestUniqueKeys"/>
-          <include name="firstLoad"/>
-          <include name="getRecord"/>
-          <include name="removeForeignKeyRecords"/>
-          <include name="testFirstAdd"/>
-          <include name="addSecondRecord"/>
-          <include name="testArrayRecordParameters"/>
-          <include name="prepareMultipleTest"/>
-          <include name="testBackup"/>
           <include name="removeRecords"/>
           <include name="removePointedRecords"/>
           <include name="firstAdd"/>
-          <include name="testCheckPoint"/>
-          <include name="alterRecord"/>
-          <include name="multipleTests"/>
-          <include name="testFilters"/>
-          <include name="testRemoveFilters"/>
-          <include name="removeRecord"/>
-          <include name="testThreadSafe"/>
-          <include name="getRecordFilter"/>
-          <include name="secondTestSize"/>
-          <include name="getRecordIterator"/>
-          <include name="setAutoRandomFields"/>
-          <include name="firstTestSize"/>
-          <include name="testIsPointed"/>
-        </methods>
-      </class> <!-- com.distrimind.ood.tests.DerbyTestDatabase -->
-    </classes>
-  </test> <!-- testDerby(failed) -->
-  <test name="testHDQLDB(failed)">
-    <classes>
-      <class name="com.distrimind.ood.tests.HSQLDBTestDatabase">
-        <methods>
-          <include name="removeRecord"/>
-          <include name="setAutoRandomFields"/>
-          <include name="secondTestSize"/>
-          <include name="getRecordFilter"/>
-          <include name="removeForeignKeyRecords"/>
-          <include name="testThreadSafe"/>
-          <include name="testFilters"/>
-          <include name="getRecordIterator"/>
-          <include name="alterRecord"/>
-          <include name="multipleTests"/>
-          <include name="firstTestSize"/>
-          <include name="firstAdd"/>
-          <include name="removePointedRecords"/>
-          <include name="testCheckPoint"/>
           <include name="testBackup"/>
-          <include name="addSecondRecord"/>
+          <include name="alterRecord"/>
+          <include name="testRemoveFilters"/>
+          <include name="testCheckPoint"/>
+          <include name="getRecordFilter"/>
+          <include name="testFirstAdd"/>
+          <include name="removeRecord"/>
+          <include name="secondTestSize"/>
+          <include name="firstTestSize"/>
+          <include name="firstReload"/>
           <include name="testArrayRecordParameters"/>
-          <include name="removeRecords"/>
+          <include name="testIsPointed"/>
+          <include name="setAutoRandomFields"/>
           <include name="prepareMultipleTest"/>
           <include name="getRecord"/>
-          <include name="testRemoveFilters"/>
+          <include name="testFilters"/>
+          <include name="multipleTests"/>
           <include name="firstLoad"/>
-          <include name="alterRecordWithCascade"/>
-          <include name="testIsPointed"/>
-          <include name="removeWithCascade"/>
-          <include name="firstReload"/>
-          <include name="testFirstAdd"/>
-          <include name="unloadDatabase"/>
           <include name="addForeignKeyAndTestUniqueKeys"/>
-        </methods>
-      </class> <!-- com.distrimind.ood.tests.HSQLDBTestDatabase -->
-      <class name="com.distrimind.ood.tests.DerbyTestDatabase">
-        <methods>
+          <include name="getRecordIterator"/>
+          <include name="removeForeignKeyRecords"/>
+          <include name="removeWithCascade"/>
+          <include name="addSecondRecord"/>
           <include name="unloadDatabase"/>
+          <include name="testThreadSafe"/>
         </methods>
       </class> <!-- com.distrimind.ood.tests.DerbyTestDatabase -->
     </classes>
-  </test> <!-- testHDQLDB(failed) -->
-</suite> <!-- Failed suite [TestAll] -->
+  </test> <!-- Default test(failed) -->
+</suite> <!-- Failed suite [Default suite] -->

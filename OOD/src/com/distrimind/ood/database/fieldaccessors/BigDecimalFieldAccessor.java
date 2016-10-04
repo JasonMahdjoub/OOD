@@ -66,10 +66,12 @@ public class BigDecimalFieldAccessor extends FieldAccessor
 
     protected BigDecimalFieldAccessor(DatabaseWrapper _sql_connection, Field _field) throws DatabaseException
     {
-	super(_sql_connection, _field);
+	super(_sql_connection, _field, compatible_classes);
 	sql_fields=new SqlField[1];
 	sql_fields[0]=new SqlField(this.table_name+"."+this.getFieldName(), sql_connection.getBigDecimalType(), null, null);
     }
+    
+    
 
     @Override
     public void setValue(DatabaseRecord _class_instance, Object _field_instance) throws DatabaseException
@@ -154,12 +156,6 @@ public class BigDecimalFieldAccessor extends FieldAccessor
 	}
     }
     
-    
-    @Override
-    public Class<?>[] getCompatibleClasses()
-    {
-	return compatible_classes;
-    }
     
     private static final Class<?>[] compatible_classes={BigDecimal.class};
 
