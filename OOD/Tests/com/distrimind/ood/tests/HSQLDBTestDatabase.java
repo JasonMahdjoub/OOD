@@ -79,6 +79,7 @@ import com.distrimind.ood.tests.database.Table7;
 import com.distrimind.ood.tests.database.Table1.Record;
 import com.distrimind.ood.tests.schooldatabase.Lecture;
 import com.distrimind.util.DecentralizedIDGenerator;
+import com.distrimind.util.FileTools;
 import com.distrimind.util.RenforcedDecentralizedIDGenerator;
 import com.distrimind.util.crypto.SymmetricEncryptionType;
 import com.distrimind.util.crypto.SymmetricSecretKey;
@@ -130,7 +131,8 @@ public class HSQLDBTestDatabase
 	sql_db.close();
 	HSQLDBWrapper.deleteDatabaseFiles(new File(database_file_name+".data"));
 	HSQLDBWrapper.deleteDatabaseFiles(new File(database_file_nameb+".data"));
-	database_backup_file.delete();
+	FileTools.deleteDirectory(database_backup_file);
+	
     }
     @Test public void firstLoad() throws IllegalArgumentException, DatabaseException
     {

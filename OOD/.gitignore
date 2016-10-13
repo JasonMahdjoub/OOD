@@ -1,1 +1,6 @@
 /bin/
+/exports/
+/test-output/
+/DatabaseExample/
+/databasebackupHSQLDB.tar/
+/tutorial/

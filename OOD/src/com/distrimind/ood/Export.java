@@ -43,6 +43,7 @@ import java.util.ArrayList;
 import javax.lang.model.SourceVersion;
 
 import com.distrimind.ood.tests.HSQLDBTestDatabase;
+import com.distrimind.util.EmptyClass;
 import com.distrimind.util.Utils;
 import com.distrimind.util.export.BinaryDependency;
 import com.distrimind.util.export.Dependency;
@@ -56,7 +57,6 @@ import com.distrimind.util.export.TestNGFile;
 import com.distrimind.util.export.TestSuite;
 import com.distrimind.util.export.Exports.ExportProperties;
 import com.distrimind.util.export.License.PredefinedLicense;
-import com.distrimind.util.tests.EmptyClass;
 
 /**
  * 

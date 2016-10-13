@@ -79,6 +79,7 @@ import com.distrimind.ood.tests.database.Table7;
 import com.distrimind.ood.tests.database.Table1.Record;
 import com.distrimind.ood.tests.schooldatabase.Lecture;
 import com.distrimind.util.DecentralizedIDGenerator;
+import com.distrimind.util.FileTools;
 import com.distrimind.util.crypto.SymmetricEncryptionType;
 import com.distrimind.util.crypto.SymmetricSecretKey;
 
@@ -134,7 +135,7 @@ public class DerbyTestDatabase
 	    sql_db.close();
 	EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directory);
 	EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directoryb);
-	EmbeddedDerbyWrapper.deleteDatabaseFiles(database_backup_directory);
+	FileTools.deleteDirectory(database_backup_directory);
     }
     @Test public void firstLoad() throws IllegalArgumentException, DatabaseException
     {
