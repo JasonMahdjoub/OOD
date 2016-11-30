@@ -47,12 +47,14 @@ import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.sql.Blob;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.distrimind.ood.database.Table.ColumnsReadQuerry;
 import com.distrimind.ood.database.Table.DefaultConstructorAccessPrivilegedAction;
@@ -68,13 +70,15 @@ import com.distrimind.util.ReadWriteLock;
 /**
  * This class represent a SqlJet database.
  * @author Jason Mahdjoub
- * @version 1.2
+ * @version 1.3
  * @since OOD 1.4
  */
 public abstract class DatabaseWrapper
 {
+    
+    
     protected final Connection sql_connection;
-    private boolean closed=false;
+    private volatile boolean closed=false;
     private final String database_name;
     private static final HashMap<String, ReadWriteLock> lockers=new HashMap<String, ReadWriteLock>();
     private static final HashMap<String, Integer> number_of_shared_lockers=new HashMap<String, Integer>();
@@ -83,6 +87,7 @@ public abstract class DatabaseWrapper
     private final ArrayList<ByteTabObjectConverter> converters;
     
     private HashMap<Package, Database> sql_database=new HashMap<Package, Database>();
+    private final DatabaseMetaData dmd;
     
     private static class Database
     {
@@ -120,9 +125,10 @@ public abstract class DatabaseWrapper
      * Constructor
      * @param _sql_connection the sql_connection
      * @param _database_name the database name
+     * @throws DatabaseException 
      * 
      */
-    protected DatabaseWrapper(Connection _sql_connection, String _database_name)
+    protected DatabaseWrapper(Connection _sql_connection, String _database_name) throws DatabaseException
     {
 	if (_database_name==null)
 	    throw new NullPointerException("_database_name");
@@ -130,10 +136,48 @@ public abstract class DatabaseWrapper
 	    throw new NullPointerException("_sql_connection");
 	database_name=_database_name;
 	sql_connection=_sql_connection;
+	
 	locker=getLocker();
 	converters=new ArrayList<>();
 	converters.add(new DefaultByteTabObjectConverter());
+	try
+	{
+	    sql_connection.setAutoCommit(false);
+	    dmd=sql_connection.getMetaData();
+	}
+	catch(SQLException se)
+	{
+	    throw DatabaseException.getDatabaseException(se);
+	}
+	
     }
+    
+    public boolean isReadOnly() throws DatabaseException
+    {
+	try
+	{
+	    return sql_connection.isReadOnly();
+	}
+	catch(SQLException se)
+	{
+	    throw DatabaseException.getDatabaseException(se);
+	}
+	
+    }
+    
+    public int getNetworkTimeout() throws DatabaseException
+    {
+	try
+	{
+	    return sql_connection.getNetworkTimeout();
+	}
+	catch(SQLException se)
+	{
+	    throw DatabaseException.getDatabaseException(se);
+	}	
+	
+    }
+    
     
     private ReadWriteLock getLocker()
     {
@@ -173,7 +217,34 @@ public abstract class DatabaseWrapper
     {
 	if (!closed)
 	{
-	    try(ReadWriteLock.Lock lock=locker.getAutoCloseableWriteLock())
+	    //synchronized(this)
+	    {
+		try(ReadWriteLock.Lock lock=locker.getAutoCloseableWriteLock())
+		{
+		    closeConnection();
+		}
+		catch(SQLException se)
+		{
+		    throw DatabaseException.getDatabaseException(se);
+		}
+		finally
+		{
+		    try(ReadWriteLock.Lock lock=locker.getAutoCloseableWriteLock())
+		    {
+			DatabaseWrapper.lockers.remove(database_name);
+			int v=DatabaseWrapper.number_of_shared_lockers.get(database_name).intValue()-1;
+			if (v==0)
+			    DatabaseWrapper.number_of_shared_lockers.remove(database_name);
+			else if (v>0)
+			    DatabaseWrapper.number_of_shared_lockers.put(database_name, new Integer(v));
+			else
+			    throw new IllegalAccessError();
+			sql_database.clear();
+		    }
+		    closed=true;
+		}
+	    }
+	    /*try(ReadWriteLock.Lock lock=locker.getAutoCloseableWriteLock())
 	    {
 		closeConnection();
 	    }
@@ -196,7 +267,7 @@ public abstract class DatabaseWrapper
 		    sql_database.clear();
 		}
 		closed=true;
-	    }
+	    }*/
 	}
     }
     @Override public void finalize()
@@ -236,12 +307,114 @@ public abstract class DatabaseWrapper
     }
     
     final ReadWriteLock locker;
-    private boolean transaction_already_running=false;
+    private final AtomicBoolean transaction_already_running=new AtomicBoolean(false);
+    //private volatile boolean transaction_already_running=false;
     
+    private boolean setTransactionIsolation(TransactionIsolation transactionIsolation) throws SQLException
+    {
+	transactionIsolation=getValidTransactionIsolation(transactionIsolation);
+	if (transactionIsolation!=null)
+	{
+	    sql_connection.setTransactionIsolation(transactionIsolation.getCode());
+	    return true;
+	}
+	else return false;
+		    
+    }
+    
+    protected TransactionIsolation getValidTransactionIsolation(TransactionIsolation transactionIsolation) throws SQLException
+    {
+	
+	if (supportTransactions())
+	{
+	    if (dmd.supportsTransactionIsolationLevel(transactionIsolation.getCode()))
+	    {
+		return transactionIsolation;
+	    }
+	    else
+	    {
+		TransactionIsolation ti=transactionIsolation.getNext();
+		while (ti!=null)
+		{
+		    if (dmd.supportsTransactionIsolationLevel(transactionIsolation.getCode()))
+		    {
+			return ti;
+		    }
+		    ti=ti.getNext();
+		}
+		ti=transactionIsolation.getPrevious();
+		while (ti!=null)
+		{
+		    if (dmd.supportsTransactionIsolationLevel(transactionIsolation.getCode()))
+		    {
+			return ti;
+		    }
+		    ti=ti.getPrevious();
+		}
+		
+	    }
+	}
+	return null;
+    }
+
+    public boolean supportTransactions() throws SQLException
+    {
+	return dmd.supportsTransactions();
+    }
     
     Object runTransaction(final Transaction _transaction) throws DatabaseException
     {
 	Object res=null;
+	if (transaction_already_running.weakCompareAndSet(false, true))
+	{
+	    try
+	    {
+		setTransactionIsolation(_transaction.getTransactionIsolation());
+		if (_transaction.doesWriteData())
+		    sql_connection.setSavepoint();
+		res=_transaction.run(this);
+		if (_transaction.doesWriteData())
+		    sql_connection.commit();
+	    }
+	    catch(DatabaseException e)
+	    {
+		try
+		{
+		    if (_transaction.doesWriteData())
+			sql_connection.rollback();
+		}
+		catch(SQLException se)
+		{
+		    throw new DatabaseIntegrityException("Impossible to rollback the database changments", se);
+		}
+		throw e;
+	    }
+	    catch(SQLException e)
+	    {
+		throw DatabaseException.getDatabaseException(e);
+	    }
+	    finally
+	    {
+		try
+		{
+		    setTransactionIsolation(TransactionIsolation.TRANSACTION_NONE);
+		}
+		catch(SQLException e)
+		{
+		    throw DatabaseException.getDatabaseException(e);
+		}
+		finally
+		{
+		    transaction_already_running.set(false);
+		}
+	    }	
+	}
+	else
+	{
+	    res=_transaction.run(this);
+	}
+	return res;
+	/*Object res=null;
 	if (_transaction.doesWriteData())
 	{
 	    if (!transaction_already_running)
@@ -282,7 +455,7 @@ public abstract class DatabaseWrapper
 	{
 	    res=_transaction.run(this);
 	}
-	return res;
+	return res;*/
     }
     
     
@@ -317,11 +490,15 @@ public abstract class DatabaseWrapper
 			locker.unlockWrite();
 		    }
 		}
-	    
+		@Override
+		public TransactionIsolation getTransactionIsolation()
+		{
+		    return _transaction.getTransactionIsolation();
+		}
 		@Override
 		public boolean doesWriteData()
 		{
-		    return true;
+		    return _transaction.doesWriteData();
 		}
 	    });
 	}
@@ -345,7 +522,7 @@ public abstract class DatabaseWrapper
      */
     public final Table<?> getTableInstance(String _table_name) throws DatabaseException
     {
-	try(ReadWriteLock.Lock lock=locker.getAutoCloseableWriteLock())
+	synchronized(this)
 	{
 	    if (_table_name==null)
 		throw new NullPointerException("The parameter _table_name is a null pointer !");
@@ -366,7 +543,29 @@ public abstract class DatabaseWrapper
 	    {
 		throw new DatabaseException("Impossible to found the class/table "+_table_name);
 	    }
-	}
+	}	
+	/*try(ReadWriteLock.Lock lock=locker.getAutoCloseableWriteLock())
+	{
+	    if (_table_name==null)
+		throw new NullPointerException("The parameter _table_name is a null pointer !");
+
+	    try
+	    {
+		Class<?> c=Class.forName(_table_name);
+		if (Table.class.isAssignableFrom(c))
+		{
+		    @SuppressWarnings("unchecked")
+		    Class<? extends Table<?>> class_table=(Class<? extends Table<?>>)c;
+		    return getTableInstance(class_table);
+		}
+		else
+		    throw new DatabaseException("The class "+_table_name+" does not extends "+Table.class.getName());
+	    }
+	    catch (ClassNotFoundException e)
+	    {
+		throw new DatabaseException("Impossible to found the class/table "+_table_name);
+	    }
+	}*/
     }
     
     /**
@@ -377,7 +576,7 @@ public abstract class DatabaseWrapper
      * @throws NullPointerException if parameters are null pointers.
      * @param <TT> The table type
      */
-    public final <TT extends Table<?>> Table<? extends DatabaseRecord> getTableInstance(Class<TT> _class_table) throws DatabaseException 
+    public final <TT extends Table<?>> Table<? extends Object> getTableInstance(Class<TT> _class_table) throws DatabaseException 
     {
 	synchronized(Table.class)
 	{
@@ -515,9 +714,10 @@ public abstract class DatabaseWrapper
      * @throws DatabaseException if the given package is already associated to a database.
      * @throws NullPointerException if the given parameters are null.
      */
-    public final void loadDatabase(Package _package) throws DatabaseException
+    public final void loadDatabase(final Package _package) throws DatabaseException
     {
 	try(ReadWriteLock.Lock lock=locker.getAutoCloseableWriteLock())
+	//synchronized(this)
 	{
 	    if (this.closed)
 		throw new DatabaseException("The given Database was closed : "+this);
@@ -526,7 +726,7 @@ public abstract class DatabaseWrapper
 	    if (sql_database.containsKey(_package))
 		throw new DatabaseException("There is already a database associated to the given HSQLDBWrapper "+sql_connection);
 	    
-	    Database db=new Database(_package);
+	    final Database db=new Database(_package);
 	    sql_database.put(_package, db);
 	    
 	    runTransaction(new Transaction() {
@@ -551,68 +751,69 @@ public abstract class DatabaseWrapper
 			}
 			
 			
-			return null;
+			ArrayList<Class<?>> list_classes;
+			list_classes = ListClasses.getClasses(_package);
+			ArrayList<Table<?>> list_tables=new ArrayList<>();
+			for (Class<?> c : list_classes)
+			{
+			    if (Table.class.isAssignableFrom(c))
+			    {
+				@SuppressWarnings("unchecked")
+				Class<? extends Table<?>> class_to_load=(Class<? extends Table<?>>)c;
+				Table<?> t=newInstance(class_to_load);
+				list_tables.add(t);
+				db.tables_instances.put(class_to_load, t);
+			    }
+			}
+			for (Table<?> t : list_tables)
+			{
+			    t.initializeStep1();
+			}
+			for (Table<?> t : list_tables)
+			{
+			    t.initializeStep2();
+			}
+			for (Table<?> t : list_tables)
+			{
+			    t.initializeStep3();
+			}
+		    }
+		    catch (ClassNotFoundException e)
+		    {
+			throw new DatabaseException("Impossible to access to t)he list of classes contained into the package "+_package.getName(), e);
+		    }
+		    catch (IOException e)
+		    {
+			throw new DatabaseException("Impossible to access to the list of classes contained into the package "+_package.getName(), e);	
 		    }
 		    catch(Exception e)
 		    {
 			throw DatabaseException.getDatabaseException(e);
 		    }
+		    return null;
 		}
+		
 		@Override
 		public boolean doesWriteData()
 		{
 		    return true;
 		}
+
+
+
+		@Override
+		public TransactionIsolation getTransactionIsolation()
+		{
+		    return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+		}
 		
 	    });
 	    
-	    
-	    ArrayList<Class<?>> list_classes;
-	    try
-	    {
-		list_classes = ListClasses.getClasses(_package);
-		ArrayList<Table<?>> list_tables=new ArrayList<>();
-		for (Class<?> c : list_classes)
-		{
-		    if (Table.class.isAssignableFrom(c))
-		    {
-			@SuppressWarnings("unchecked")
-			Class<? extends Table<?>> class_to_load=(Class<? extends Table<?>>)c;
-			Table<?> t=newInstance(class_to_load);
-			list_tables.add(t);
-			db.tables_instances.put(class_to_load, t);
-		    }
-		}
-		for (Table<?> t : list_tables)
-		{
-		    t.initializeStep1();
-		}
-		for (Table<?> t : list_tables)
-		{
-		    t.initializeStep2();
-		}
-		for (Table<?> t : list_tables)
-		{
-		    t.initializeStep3();
-		}
-	    }
-	    catch (ClassNotFoundException e)
-	    {
-		throw new DatabaseException("Impossible to access to t)he list of classes contained into the package "+_package.getName(), e);
-	    }
-	    catch (IOException e)
-	    {
-		throw new DatabaseException("Impossible to access to the list of classes contained into the package "+_package.getName(), e);	
-	    }
-	    catch(Exception e)
-	    {
-		throw DatabaseException.getDatabaseException(e);
-	    }
 	}
     }
     
     
-    private <TT extends Table<?>> TT newInstance(Class<TT> _class_table) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, DatabaseException, PrivilegedActionException
+    <TT extends Table<?>> TT newInstance(Class<TT> _class_table) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, DatabaseException, PrivilegedActionException
     {
 	DefaultConstructorAccessPrivilegedAction<TT> class_privelege=new DefaultConstructorAccessPrivilegedAction<TT>(_class_table); 
 	

@@ -54,4 +54,10 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface LoadToMemory {
+    
+    /**
+     * 
+     * @return the refresh interval of the memory in milliseconds. 0 means there is no refresh.
+     */
+    long refreshInterval() default 0;
 }

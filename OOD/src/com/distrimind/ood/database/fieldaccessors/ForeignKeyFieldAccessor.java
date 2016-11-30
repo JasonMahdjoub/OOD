@@ -55,7 +55,7 @@ import com.distrimind.ood.database.exceptions.FieldDatabaseException;
 /**
  * 
  * @author Jason Mahdjoub
- * @version 1.1
+ * @version 1.2
  * @since OOD 1.0
  */
 public class ForeignKeyFieldAccessor extends FieldAccessor
@@ -90,9 +90,9 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
     }
     
     
-    protected ForeignKeyFieldAccessor(DatabaseWrapper _sql_connection, Field _field) throws DatabaseException
+    protected ForeignKeyFieldAccessor(Class<? extends Table<?>> table_class, DatabaseWrapper _sql_connection, Field _field, String parentFieldName) throws DatabaseException
     {
-	super(_sql_connection, _field, getCompatibleClasses(_field));
+	super(_sql_connection, _field, parentFieldName, getCompatibleClasses(_field), table_class);
 	if (!DatabaseRecord.class.isAssignableFrom(_field.getType()))
 	    throw new DatabaseException("The field "+_field.getName()+" of the class "+_field.getDeclaringClass().getName()+" is not a DatabaseRecord.");
 	if (!field.getType().getPackage().equals(field.getDeclaringClass().getPackage()))
@@ -134,7 +134,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
 	return pointed_table;
     }
     @Override
-    public void setValue(DatabaseRecord _class_instance, Object _field_instance) throws DatabaseException
+    public void setValue(Object _class_instance, Object _field_instance) throws DatabaseException
     {
 	try
 	{
@@ -160,7 +160,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
     }
 
     @Override
-    public boolean equals(DatabaseRecord _class_instance, Object _field_instance) throws DatabaseException
+    public boolean equals(Object _class_instance, Object _field_instance) throws DatabaseException
     {
 	if (_field_instance!=null && !(_field_instance.getClass().equals(field.getType())))
 	    return false;
@@ -169,8 +169,8 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
 	    
 	    if (_field_instance==null && isNotNull())
 		return false;
-	    DatabaseRecord val1=(DatabaseRecord)field.get(_class_instance);
-	    DatabaseRecord val2=(DatabaseRecord)_field_instance;
+	    Object val1=(Object)field.get(_class_instance);
+	    Object val2=(Object)_field_instance;
 	    if (val1==val2)
 		return true;
 	    if (val1==null || val2==null)
@@ -197,7 +197,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
 	if (_field_instance!=null && !(_field_instance.getClass().equals(field.getType())))
 	    return false;
 	    
-	DatabaseRecord val1=(DatabaseRecord)_field_instance;
+	Object val1=(Object)_field_instance;
 	    
 	for (FieldAccessor fa : linked_primary_keys)
 	{
@@ -220,7 +220,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
     
 
     @Override
-    public Object getValue(DatabaseRecord _class_instance) throws DatabaseException
+    public Object getValue(Object _class_instance) throws DatabaseException
     {
 	try
 	{
@@ -239,7 +239,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
     }
     
     @Override
-    public SqlFieldInstance[] getSqlFieldsInstances(DatabaseRecord _instance) throws DatabaseException
+    public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException
     {
 	Object val=this.getValue(_instance);
 	SqlFieldInstance res[]=new SqlFieldInstance[sql_fields.length];
@@ -253,7 +253,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
 	    int i=0;
 	    for (FieldAccessor fa : linked_primary_keys)
 	    {
-		SqlFieldInstance linked_sql_field_instances[]=fa.getSqlFieldsInstances((DatabaseRecord)val);
+		SqlFieldInstance linked_sql_field_instances[]=fa.getSqlFieldsInstances((Object)val);
 		for (SqlFieldInstance sfi : linked_sql_field_instances)
 		{
 		    res[i++]=new SqlFieldInstance(table_name+"."+this.getFieldName()+"__"+pointed_table.getName()+"_"+sfi.short_field, sfi.type, linked_table_name, sfi.field, sfi.instance);
@@ -277,17 +277,17 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
     }
 
     @Override
-    public int compare(DatabaseRecord _r1, DatabaseRecord _r2) throws DatabaseException
+    public int compare(Object _r1, Object _r2) throws DatabaseException
     {
 	throw new DatabaseException("Unexpected exception");
     }
     @Override
-    public void setValue(DatabaseRecord _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records) throws DatabaseException
+    public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records) throws DatabaseException
     {
 	try
 	{
 	    ArrayList<DatabaseRecord> list=_pointing_records==null?new ArrayList<DatabaseRecord>():_pointing_records;
-	    list.add(_class_instance);
+	    list.add((DatabaseRecord)_class_instance);
 	    SqlField sfs[]=getDeclaredSqlFields();
 	    SqlFieldInstance sfis[]=new SqlFieldInstance[sfs.length];
 	    for (int i=0;i<sfs.length;i++)
@@ -303,11 +303,11 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
 	
     }
     @Override
-    public void getValue(DatabaseRecord _class_instance, PreparedStatement _prepared_statement, int _field_start) throws DatabaseException
+    public void getValue(Object _class_instance, PreparedStatement _prepared_statement, int _field_start) throws DatabaseException
     {
 	try
 	{
-	    getValue(field.get(_class_instance), _prepared_statement, _field_start);
+	    getValue(_prepared_statement, _field_start, field.get(_class_instance));
 	}
 	catch(Exception e)
 	{
@@ -316,7 +316,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
     }
     
     @Override
-    public void getValue(Object o, PreparedStatement _prepared_statement, int _field_start) throws DatabaseException
+    public void getValue(PreparedStatement _prepared_statement, int _field_start, Object o) throws DatabaseException
     {
 	try
 	{
@@ -345,7 +345,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
     }
         
     @Override
-    public void updateValue(DatabaseRecord _class_instance, Object _field_instance, ResultSet _result_set) throws DatabaseException
+    public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set) throws DatabaseException
     {
 	setValue(_class_instance, _field_instance);
 	try
@@ -375,7 +375,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
     }
     
     @Override
-    protected void updateResultSetValue(DatabaseRecord _class_instance, ResultSet _result_set, SqlFieldTranslation _sft) throws DatabaseException
+    protected void updateResultSetValue(Object _class_instance, ResultSet _result_set, SqlFieldTranslation _sft) throws DatabaseException
     {
 	try
 	{

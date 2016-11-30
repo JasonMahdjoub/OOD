@@ -50,4 +50,6 @@ package com.distrimind.ood.database;
 public interface SynchronizedTransaction<O>
 {
     public O run() throws Exception;
+    public TransactionIsolation getTransactionIsolation();
+    public boolean doesWriteData();
 }

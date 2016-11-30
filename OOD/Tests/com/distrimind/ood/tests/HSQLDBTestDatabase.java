@@ -69,6 +69,8 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
 import com.distrimind.ood.database.exceptions.RecordNotFoundDatabaseException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
+import com.distrimind.ood.tests.database.SubField;
+import com.distrimind.ood.tests.database.SubSubField;
 import com.distrimind.ood.tests.database.Table1;
 import com.distrimind.ood.tests.database.Table2;
 import com.distrimind.ood.tests.database.Table3;
@@ -90,7 +92,6 @@ import com.distrimind.util.crypto.SymmetricSecretKey;
  * @version 1.1
  * @since OOD 1.0
  */
-@Test
 public class HSQLDBTestDatabase
 {
     private static int MULTI_TESTS_NUMBER=400;
@@ -119,10 +120,145 @@ public class HSQLDBTestDatabase
     private static String database_file_nameb="databasetestHSQLDBb";
     private static File database_backup_file=new File("databasebackupHSQLDB.tar");
     
-    public HSQLDBTestDatabase() throws NoSuchAlgorithmException
+    public static final SecureRandom secureRandom=new SecureRandom();
+    
+    public static SubField getSubField() throws DatabaseException 
+    {
+	try
+	{
+	    
+	SubField res=new SubField();
+	res.BigDecimal_value=new BigDecimal(3.0);
+	res.BigInteger_value=new BigInteger("54");
+	res.boolean_value=false;
+	res.BooleanNumber_value=new Boolean(true);
+	res.byte_array_value=new byte[]{1,2,3,4,5};
+	res.byte_value=25;
+	res.ByteNumber_value=new Byte((byte)98);
+	res.CalendarValue=Calendar.getInstance();
+	res.char_value='f';
+	res.CharacterNumber_value=new Character('c');
+	res.DateValue=new Date();
+	res.double_value=0.245;
+	res.DoubleNumber_value=new Double(0.4);
+	res.float_value=0.478f;
+	res.FloatNumber_value=new Float(0.86f);
+	res.int_value=5244;
+	res.IntegerNumber_value=new Integer(2214);
+	res.long_value=254545;
+	res.LongNumber_value=new Long(1452);
+	res.secretKey=SymmetricSecretKey.generate(secureRandom);
+	res.typeSecretKey=SymmetricEncryptionType.Blowfish;
+	res.subField=getSubSubField();
+	res.string_value="not null";
+	res.ShortNumber_value=new Short((short)12);
+	return res;
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+	
+	
+    }
+    
+    public static SubSubField getSubSubField() throws DatabaseException
+    {
+	try
+	{
+	SubSubField res=new SubSubField();
+	res.BigDecimal_value=new BigDecimal(3.0);
+	res.BigInteger_value=new BigInteger("54");
+	res.boolean_value=false;
+	res.BooleanNumber_value=new Boolean(true);
+	res.byte_array_value=new byte[]{1,2,3,4,5};
+	res.byte_value=25;
+	res.ByteNumber_value=new Byte((byte)98);
+	res.CalendarValue=Calendar.getInstance();
+	res.char_value='f';
+	res.CharacterNumber_value=new Character('c');
+	res.DateValue=new Date();
+	res.double_value=0.245;
+	res.DoubleNumber_value=new Double(0.4);
+	res.float_value=0.478f;
+	res.FloatNumber_value=new Float(0.86f);
+	res.int_value=5244;
+	res.IntegerNumber_value=new Integer(2214);
+	res.long_value=254545;
+	res.LongNumber_value=new Long(1452);
+	res.secretKey=SymmetricSecretKey.generate(secureRandom);
+	res.typeSecretKey=SymmetricEncryptionType.Blowfish;
+	res.string_value="not null";
+	res.ShortNumber_value=new Short((short)12);
+	return res;
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+    
+    public static void assertEquals(SubField actual, SubField expected)
+    {
+	Assert.assertEquals(actual.boolean_value, expected.boolean_value);
+	Assert.assertEquals(actual.byte_value, expected.byte_value);
+	Assert.assertEquals(actual.char_value, expected.char_value);
+	Assert.assertEquals(new Double(actual.double_value), new Double(expected.double_value));
+	Assert.assertEquals(new Float(actual.float_value), new Float(expected.float_value));
+	Assert.assertEquals(actual.int_value, expected.int_value);
+	Assert.assertEquals(actual.long_value, expected.long_value);
+	Assert.assertEquals(actual.short_value, expected.short_value);
+	Assert.assertEquals(actual.string_value, expected.string_value);
+	Assert.assertEquals(actual.BigDecimal_value, expected.BigDecimal_value);
+	Assert.assertEquals(actual.BigInteger_value, expected.BigInteger_value);
+	Assert.assertEquals(actual.BooleanNumber_value, expected.BooleanNumber_value);
+	Assert.assertEquals(actual.ByteNumber_value, expected.ByteNumber_value);
+	Assert.assertEquals(actual.CharacterNumber_value, expected.CharacterNumber_value);
+	Assert.assertEquals(actual.DoubleNumber_value, expected.DoubleNumber_value);
+	Assert.assertEquals(actual.FloatNumber_value, expected.FloatNumber_value);
+	Assert.assertEquals(actual.IntegerNumber_value, expected.IntegerNumber_value);
+	Assert.assertEquals(actual.LongNumber_value, expected.LongNumber_value);
+	Assert.assertEquals(actual.ShortNumber_value, expected.ShortNumber_value);
+	/*Assert.assertEquals(actual.CalendarValue, expected.CalendarValue);
+	Assert.assertEquals(actual.DateValue, expected.DateValue);*/
+	//Assert.assertEquals(actual.secretKey, expected.secretKey);
+	Assert.assertEquals(actual.typeSecretKey, expected.typeSecretKey);
+	assertEquals(actual.subField, expected.subField);
+    }
+
+    public static void assertEquals(SubSubField actual, SubSubField expected)
+    {
+	Assert.assertEquals(actual.boolean_value, expected.boolean_value);
+	Assert.assertEquals(actual.byte_value, expected.byte_value);
+	Assert.assertEquals(actual.char_value, expected.char_value);
+	Assert.assertEquals(new Double(actual.double_value), new Double(expected.double_value));
+	Assert.assertEquals(new Float(actual.float_value), new Float(expected.float_value));
+	Assert.assertEquals(actual.int_value, expected.int_value);
+	Assert.assertEquals(actual.long_value, expected.long_value);
+	Assert.assertEquals(actual.short_value, expected.short_value);
+	Assert.assertEquals(actual.string_value, expected.string_value);
+	Assert.assertEquals(actual.BigDecimal_value, expected.BigDecimal_value);
+	Assert.assertEquals(actual.BigInteger_value, expected.BigInteger_value);
+	Assert.assertEquals(actual.BooleanNumber_value, expected.BooleanNumber_value);
+	Assert.assertEquals(actual.ByteNumber_value, expected.ByteNumber_value);
+	Assert.assertEquals(actual.CharacterNumber_value, expected.CharacterNumber_value);
+	Assert.assertEquals(actual.DoubleNumber_value, expected.DoubleNumber_value);
+	Assert.assertEquals(actual.FloatNumber_value, expected.FloatNumber_value);
+	Assert.assertEquals(actual.IntegerNumber_value, expected.IntegerNumber_value);
+	Assert.assertEquals(actual.LongNumber_value, expected.LongNumber_value);
+	Assert.assertEquals(actual.ShortNumber_value, expected.ShortNumber_value);
+	/*Assert.assertEquals(actual.CalendarValue, expected.CalendarValue);
+	Assert.assertEquals(actual.DateValue, expected.DateValue);*/
+	//Assert.assertEquals(actual.secretKey, expected.secretKey);
+	Assert.assertEquals(actual.typeSecretKey, expected.typeSecretKey);
+    }
+    
+    public HSQLDBTestDatabase() throws DatabaseException, NoSuchAlgorithmException
     {
 	typeSecretKey=SymmetricEncryptionType.AES;
 	secretKey=SymmetricSecretKey.generate(new SecureRandom(), typeSecretKey);
+	subField=getSubField();
+	subSubField=getSubSubField();
     }
     
     
@@ -161,6 +297,8 @@ public class HSQLDBTestDatabase
     Calendar calendar=Calendar.getInstance();
     final SymmetricEncryptionType typeSecretKey;
     final SymmetricSecretKey secretKey;
+    final SubField subField;
+    final SubSubField subSubField;
     
     @Test(dependsOnMethods={"firstLoad"}) public void firstAdd() throws DatabaseException
     {
@@ -189,6 +327,10 @@ public class HSQLDBTestDatabase
 	    map.put("CalendarValue", calendar);
 	    map.put("secretKey", secretKey);
 	    map.put("typeSecretKey", typeSecretKey);
+	    map.put("secretKey", secretKey);
+	    map.put("typeSecretKey", typeSecretKey);
+	    map.put("subField", subField);
+	    map.put("subSubField", subSubField);
 	    byte[] tab=new byte[3];
 	    tab[0]=0;
 	    tab[1]=1;
@@ -287,6 +429,8 @@ public class HSQLDBTestDatabase
 	    Assert.assertTrue(r.CalendarValue.equals(calendar));
 	    Assert.assertTrue(r.secretKey.equals(secretKey));
 	    Assert.assertTrue(r.typeSecretKey.equals(typeSecretKey));
+	    assertEquals(r.subField, subField);
+	    assertEquals(r.subSubField, subSubField);
 	    
 	    for (int i=0;i<3;i++)
 		Assert.assertTrue(r.byte_array_value[i]==tab[i]);
@@ -316,6 +460,9 @@ public class HSQLDBTestDatabase
 	    Assert.assertTrue(r2.CalendarValue.equals(calendar));
 	    Assert.assertTrue(r2.secretKey.equals(secretKey));
 	    Assert.assertTrue(r2.typeSecretKey.equals(typeSecretKey));
+	    assertEquals(r2.subField, subField);
+	    assertEquals(r2.subSubField, subSubField);
+	    
 	    
 	    for (int i=0;i<3;i++)
 		Assert.assertTrue(r2.byte_array_value[i]==tab[i]);
@@ -367,6 +514,9 @@ public class HSQLDBTestDatabase
 	    map.put("CalendarValue", calendar);
 	    map.put("secretKey", secretKey);
 	    map.put("typeSecretKey", typeSecretKey);
+	    map.put("subField", subField);
+	    map.put("subSubField", subSubField);
+	    
 	    byte[] tab=new byte[3];
 	    tab[0]=0;
 	    tab[1]=1;
@@ -390,6 +540,8 @@ public class HSQLDBTestDatabase
 	    map.put("byte_value", new Byte((byte)6));
 	    map.put("char_value", new Character('y'));
 	    map.put("DoubleNumber_value", new Double(6.6));
+	    map.put("subField", getSubField());
+	    map.put("subSubField", getSubSubField());
 	    byte[] tab=new byte[3];
 	    tab[0]=3;
 	    tab[1]=5;
@@ -425,6 +577,9 @@ public class HSQLDBTestDatabase
 	    Assert.assertTrue(r1.CalendarValue.equals(calendar));
 	    Assert.assertTrue(r1.secretKey.equals(secretKey));
 	    Assert.assertTrue(r1.typeSecretKey.equals(typeSecretKey));
+	    assertEquals(r1.subField, subField);
+	    assertEquals(r1.subSubField, subSubField);
+	    
 	    
 	    for (int i=0;i<3;i++)
 		Assert.assertTrue(r1.byte_array_value[i]==tab[i]);
@@ -453,6 +608,8 @@ public class HSQLDBTestDatabase
 	    Assert.assertTrue(r2.CalendarValue.equals(calendar));
 	    Assert.assertTrue(r2.secretKey.equals(secretKey));
 	    Assert.assertTrue(r2.typeSecretKey.equals(typeSecretKey));
+	    assertEquals(r2.subField, subField);
+	    assertEquals(r2.subSubField, subSubField);
 	    
 	    for (int i=0;i<3;i++)
 		Assert.assertTrue(r2.byte_array_value[i]==tab[i]);
@@ -484,6 +641,8 @@ public class HSQLDBTestDatabase
 	    Assert.assertTrue(r1.CalendarValue.equals(calendar));
 	    Assert.assertTrue(r1.secretKey.equals(secretKey));
 	    Assert.assertTrue(r1.typeSecretKey.equals(typeSecretKey));
+	    assertEquals(r1.subField, subField);
+	    assertEquals(r1.subSubField, subSubField);
 	    
 	    for (int i=0;i<3;i++)
 		Assert.assertTrue(r1.byte_array_value[i]==tab[i]);
@@ -512,6 +671,8 @@ public class HSQLDBTestDatabase
 	    Assert.assertTrue(r2.CalendarValue.equals(calendar));
 	    Assert.assertTrue(r2.secretKey.equals(secretKey));
 	    Assert.assertTrue(r2.typeSecretKey.equals(typeSecretKey));
+	    assertEquals(r2.subField, subField);
+	    assertEquals(r2.subSubField, subSubField);
 	    
 	    for (int i=0;i<3;i++)
 		Assert.assertTrue(r2.byte_array_value[i]==tab[i]);
@@ -574,6 +735,8 @@ public class HSQLDBTestDatabase
 	Assert.assertTrue(r1a.CalendarValue.equals(calendar));
 	Assert.assertTrue(r1a.secretKey.equals(secretKey));
 	Assert.assertTrue(r1a.typeSecretKey.equals(typeSecretKey));
+	    assertEquals(r1a.subField, subField);
+	    assertEquals(r1a.subSubField, subSubField);
 	
 	for (int i=0;i<3;i++)
 	    Assert.assertTrue(r1a.byte_array_value[i]==r1b.byte_array_value[i]);
@@ -606,6 +769,8 @@ public class HSQLDBTestDatabase
 	Assert.assertTrue(r2a.CalendarValue.equals(calendar));
 	Assert.assertTrue(r2a.secretKey.equals(secretKey));
 	Assert.assertTrue(r2a.typeSecretKey.equals(typeSecretKey));
+	    assertEquals(r2a.subField, subField);
+	    assertEquals(r2a.subSubField, subSubField);
 	
 	for (int i=0;i<3;i++)
 	    Assert.assertTrue(r2a.byte_array_value[i]==r2b.byte_array_value[i]);
@@ -676,6 +841,8 @@ public class HSQLDBTestDatabase
 		Assert.assertTrue(r1a.CalendarValue.equals(calendar));
 		Assert.assertTrue(r1a.secretKey.equals(secretKey));
 		Assert.assertTrue(r1a.typeSecretKey.equals(typeSecretKey));
+		    assertEquals(r1a.subField, subField);
+		    assertEquals(r1a.subSubField, subSubField);
 		
 		for (int i=0;i<3;i++)
 		    Assert.assertTrue(r1a.byte_array_value[i]==r1b.byte_array_value[i]);
@@ -708,6 +875,8 @@ public class HSQLDBTestDatabase
 		Assert.assertTrue(r2a.CalendarValue.equals(calendar));
 		Assert.assertTrue(r2a.secretKey.equals(secretKey));
 		Assert.assertTrue(r2a.typeSecretKey.equals(typeSecretKey));
+		    assertEquals(r2a.subField, subField);
+		    assertEquals(r2a.subSubField, subSubField);
 		
 		for (int i=0;i<3;i++)
 		    Assert.assertTrue(r2a.byte_array_value[i]==r2b.byte_array_value[i]);
@@ -781,6 +950,8 @@ public class HSQLDBTestDatabase
 	Assert.assertTrue(r1a.CalendarValue.equals(r1b.CalendarValue));
 	Assert.assertTrue(r1a.secretKey.equals(secretKey));
 	Assert.assertTrue(r1a.typeSecretKey.equals(typeSecretKey));
+	    assertEquals(r1a.subField, subField);
+	    assertEquals(r1a.subSubField, subSubField);
 	
 	for (int i=0;i<3;i++)
 	    Assert.assertTrue(r1a.byte_array_value[i]==r1b.byte_array_value[i]);
@@ -813,6 +984,8 @@ public class HSQLDBTestDatabase
 	Assert.assertTrue(r2a.CalendarValue.equals(r2b.CalendarValue));
 	Assert.assertTrue(r2a.secretKey.equals(secretKey));
 	Assert.assertTrue(r2a.typeSecretKey.equals(typeSecretKey));
+	    assertEquals(r2a.subField, subField);
+	    assertEquals(r2a.subSubField, subSubField);
 	
 	for (int i=0;i<3;i++)
 	    Assert.assertTrue(r2a.byte_array_value[i]==r2b.byte_array_value[i]);
@@ -1037,7 +1210,9 @@ public class HSQLDBTestDatabase
 		    "CalendarValue", calendar,
 		    "secretKey", secretKey,
 		    "typeSecretKey", typeSecretKey,
-		    "byte_array_value", tab
+		    "byte_array_value", tab,
+		    "subField", subField,
+		    "subSubField", subSubField
 		    };
 	    Table1.Record r1=table1.addRecord(parameters);
 	    Table3.Record r2=table3.addRecord(parameters);
@@ -1408,6 +1583,8 @@ public class HSQLDBTestDatabase
 	Assert.assertTrue(r1.CalendarValue.equals(r1fr2.CalendarValue));
 	Assert.assertTrue(r1.secretKey.equals(r1fr2.secretKey));
 	Assert.assertTrue(r1.typeSecretKey.equals(r1fr2.typeSecretKey));
+	assertEquals(r1.subField, subField);
+	assertEquals(r1.subSubField, subSubField);
 	
 	
 	Assert.assertTrue(r2.pk1==r2fr4.pk1);
@@ -1438,6 +1615,8 @@ public class HSQLDBTestDatabase
 	Assert.assertTrue(r2.CalendarValue.equals(r2fr4.CalendarValue));
 	Assert.assertTrue(r2.secretKey.equals(r2fr4.secretKey));
 	Assert.assertTrue(r2.typeSecretKey.equals(r2fr4.typeSecretKey));
+	assertEquals(r2.subField, subField);
+	assertEquals(r2.subSubField, subSubField);
 
 	
 	Assert.assertTrue(r2.pk1==r2fr5.pk1);
@@ -1468,6 +1647,8 @@ public class HSQLDBTestDatabase
 	Assert.assertTrue(r2.CalendarValue.equals(r2fr5.CalendarValue));
 	Assert.assertTrue(r2.secretKey.equals(r2fr5.secretKey));
 	Assert.assertTrue(r2.typeSecretKey.equals(r2fr5.typeSecretKey));
+	assertEquals(r2.subField, subField);
+	assertEquals(r2.subSubField, subSubField);
 
 	
 	HashMap<String, Object> map1b=new HashMap<String, Object>();
@@ -1596,6 +1777,8 @@ public class HSQLDBTestDatabase
 	    map.put("byte_value", new Byte((byte)9));
 	    map.put("char_value", new Character('s'));
 	    map.put("DoubleNumber_value", new Double(7.7));
+	    map.put("subField", subField);
+	    map.put("subSubField", subSubField);
 	    byte[] tab=new byte[3];
 	    tab[0]=7;
 	    tab[1]=8;
@@ -1687,6 +1870,8 @@ public class HSQLDBTestDatabase
 	    Assert.assertTrue(r1.CalendarValue.equals(calendar));
 	    Assert.assertTrue(r1.secretKey.equals(secretKey));
 	    Assert.assertTrue(r1.typeSecretKey.equals(typeSecretKey));
+	    assertEquals(r1.subField, subField);
+	    assertEquals(r1.subSubField, subSubField);
 	    
 	    for (int i=0;i<3;i++)
 		Assert.assertTrue(r1.byte_array_value[i]==tab[i]);
@@ -1715,6 +1900,9 @@ public class HSQLDBTestDatabase
 	    Assert.assertTrue(r2.CalendarValue.equals(calendar));
 	    Assert.assertTrue(r2.secretKey.equals(secretKey));
 	    Assert.assertTrue(r2.typeSecretKey.equals(typeSecretKey));
+	    assertEquals(r2.subField, subField);
+	    assertEquals(r2.subSubField, subSubField);
+	    
 	    for (int i=0;i<3;i++)
 		Assert.assertTrue(r2.byte_array_value[i]==tab[i]);
 	    
@@ -1753,6 +1941,8 @@ public class HSQLDBTestDatabase
 	    Assert.assertTrue(r1.CalendarValue.equals(ra.CalendarValue));
 	    Assert.assertTrue(r1.secretKey.equals(ra.secretKey));
 	    Assert.assertTrue(r1.typeSecretKey.equals(ra.typeSecretKey));
+	    assertEquals(r1.subField, subField);
+	    assertEquals(r1.subSubField, subSubField);
 	    
 	    for (int i=0;i<3;i++)
 		Assert.assertTrue(ra.byte_array_value[i]==tab[i]);
@@ -1785,6 +1975,8 @@ public class HSQLDBTestDatabase
 	    Assert.assertTrue(r1.CalendarValue.equals(rd.CalendarValue));
 	    Assert.assertTrue(r1.secretKey.equals(rd.secretKey));
 	    Assert.assertTrue(r1.typeSecretKey.equals(rd.typeSecretKey));
+	    assertEquals(r1.subField, subField);
+	    assertEquals(r1.subSubField, subSubField);
 	    
 	    for (int i=0;i<3;i++)
 		Assert.assertTrue(rd.byte_array_value[i]==tab[i]);
@@ -2467,6 +2659,8 @@ public class HSQLDBTestDatabase
 	    map.put("CalendarValue", calendar);
 	    map.put("secretKey", secretKey);
 	    map.put("typeSecretKey", typeSecretKey);
+	    map.put("subField", subField);
+	    map.put("subSubField", subSubField);
 	table1.addRecord(map);
 	table3.addRecord(map);
 	Table1.Record r1=table1.getRecords().get(0);
@@ -2499,6 +2693,8 @@ public class HSQLDBTestDatabase
 	Assert.assertTrue(map.get("CalendarValue").equals(r1.CalendarValue));
 	Assert.assertTrue(map.get("secretKey").equals(r1.secretKey));
 	Assert.assertTrue(map.get("typeSecretKey").equals(r1.typeSecretKey));
+	assertEquals((SubField)map.get("subField"), r1.subField);
+	assertEquals((SubSubField)map.get("subSubField"), r1.subSubField);
 	
 	Table3.Record r3=table3.getRecords().get(0);
 	
@@ -2530,6 +2726,8 @@ public class HSQLDBTestDatabase
 	Assert.assertTrue(map.get("CalendarValue").equals(r3.CalendarValue));
 	Assert.assertTrue(map.get("secretKey").equals(r3.secretKey));
 	Assert.assertTrue(map.get("typeSecretKey").equals(r3.typeSecretKey));
+	assertEquals((SubField)map.get("subField"), r3.subField);
+	assertEquals((SubSubField)map.get("subSubField"), r3.subSubField);
 	
 	try
 	{
@@ -2702,6 +2900,8 @@ public class HSQLDBTestDatabase
 	Assert.assertTrue(map.get("DoubleNumber_value").equals(r1.DoubleNumber_value));
 	Assert.assertTrue(map.get("BigInteger_value").equals(r1.BigInteger_value));
 	Assert.assertTrue(map.get("BigDecimal_value").equals(r1.BigDecimal_value));
+	assertEquals((SubField)map.get("subField"), r1.subField);
+	assertEquals((SubSubField)map.get("subSubField"), r1.subSubField);
 	
 	r3=table3.getRecords().get(0);
 	
@@ -2729,6 +2929,8 @@ public class HSQLDBTestDatabase
 	Assert.assertTrue(map.get("DoubleNumber_value").equals(r3.DoubleNumber_value));
 	Assert.assertTrue(map.get("BigInteger_value").equals(r3.BigInteger_value));
 	Assert.assertTrue(map.get("BigDecimal_value").equals(r3.BigDecimal_value));
+	assertEquals((SubField)map.get("subField"), r3.subField);
+	assertEquals((SubSubField)map.get("subSubField"), r3.subSubField);
 	
 	Map<String, Object> maps2[]=new Map[1];
 	maps2[0]=maps[0];
@@ -2791,6 +2993,8 @@ public class HSQLDBTestDatabase
 	map.put("CalendarValue", Calendar.getInstance());
 	map.put("secretKey", secretKey);
 	map.put("typeSecretKey", typeSecretKey);
+	map.put("subField", subField);
+	map.put("subSubField", subSubField);
 	byte[] tab=new byte[3];
 	tab[0]=0;
 	tab[1]=1;
@@ -2949,6 +3153,8 @@ public class HSQLDBTestDatabase
 		map.put("CalendarValue", Calendar.getInstance());
 		map.put("secretKey", secretKey);
 		map.put("typeSecretKey", typeSecretKey);
+		map.put("subField", subField);
+		map.put("subSubField", subSubField);
 		byte[] tab=new byte[3];
 		tab[0]=0;
 		tab[1]=1;
@@ -2986,6 +3192,9 @@ public class HSQLDBTestDatabase
 		    Assert.assertTrue(r1.BigDecimal_value.equals(map.get("BigDecimal_value")));
 		    Assert.assertTrue(r1.secretKey.equals(map.get("secretKey")));
 		    Assert.assertTrue(r1.typeSecretKey.equals(map.get("typeSecretKey")));
+		    assertEquals((SubField)map.get("subField"), r1.subField);
+		    assertEquals((SubSubField)map.get("subSubField"), r1.subSubField);
+
 		    for (int i=0;i<3;i++)
 			Assert.assertTrue(r1.byte_array_value[i]==((byte[])map.get("byte_array_value"))[i]);
 
@@ -3011,6 +3220,9 @@ public class HSQLDBTestDatabase
 		    Assert.assertTrue(r3.BigDecimal_value.equals(map.get("BigDecimal_value")));
 		    Assert.assertTrue(r3.secretKey.equals(map.get("secretKey")));
 		    Assert.assertTrue(r3.typeSecretKey.equals(map.get("typeSecretKey")));
+		    assertEquals((SubField)map.get("subField"), r3.subField);
+		    assertEquals((SubSubField)map.get("subSubField"), r3.subSubField);
+		    
 		    for (int i=0;i<3;i++)
 			Assert.assertTrue(r3.byte_array_value[i]==((byte[])map.get("byte_array_value"))[i]);
 		}
@@ -4237,7 +4449,9 @@ public class HSQLDBTestDatabase
 			    "CalendarValue", calendar,
 			    "secretKey", secretKey,
 			    "typeSecretKey", typeSecretKey,
-			    "byte_array_value", tab
+			    "byte_array_value", tab,
+			    "subField", subField,
+			    "subSubField", subSubField
 			    };
 		    
 			try
@@ -4343,6 +4557,9 @@ public class HSQLDBTestDatabase
 		r1.CalendarValue=Calendar.getInstance();
 		r1.secretKey=secretKey;
 		r1.typeSecretKey=typeSecretKey;
+		r1.subField=subField;
+		r1.subSubField=subSubField;
+			
 		byte[] tab=new byte[3];
 		tab[0]=0;
 		tab[1]=1;
@@ -4376,6 +4593,8 @@ public class HSQLDBTestDatabase
 		r3.secretKey=secretKey;
 		r3.typeSecretKey=typeSecretKey;
 		r3.byte_array_value=tab;
+		r3.subField=subField;
+		r3.subSubField=subSubField;
 		try
 		{
 		    Table1.Record r1b=table1.addRecord(r1);

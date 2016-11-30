@@ -50,9 +50,9 @@ import java.lang.annotation.Target;
  * The accepted field types are all native java types, there correspondent class (i.e. 'Float' for 'float'), array of bytes, String, BigInteger, BigDecimal, and DatabaseRecord for foreign keys.
  * 
  * @author Jason Mahdjoub
- * @version 1.0
+ * @version 1.1
  */
-@Target(ElementType.FIELD)
+@Target({ElementType.FIELD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Field {
     

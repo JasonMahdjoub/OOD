@@ -69,6 +69,8 @@ import com.distrimind.ood.database.exceptions.ConstraintsNotRespectedDatabaseExc
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.RecordNotFoundDatabaseException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
+import com.distrimind.ood.tests.database.SubField;
+import com.distrimind.ood.tests.database.SubSubField;
 import com.distrimind.ood.tests.database.Table1;
 import com.distrimind.ood.tests.database.Table2;
 import com.distrimind.ood.tests.database.Table3;
@@ -77,11 +79,15 @@ import com.distrimind.ood.tests.database.Table5;
 import com.distrimind.ood.tests.database.Table6;
 import com.distrimind.ood.tests.database.Table7;
 import com.distrimind.ood.tests.database.Table1.Record;
+import static com.distrimind.ood.tests.HSQLDBTestDatabase.getSubField;
+import static com.distrimind.ood.tests.HSQLDBTestDatabase.getSubSubField;
+import static com.distrimind.ood.tests.HSQLDBTestDatabase.assertEquals;
 import com.distrimind.ood.tests.schooldatabase.Lecture;
 import com.distrimind.util.DecentralizedIDGenerator;
 import com.distrimind.util.FileTools;
 import com.distrimind.util.crypto.SymmetricEncryptionType;
 import com.distrimind.util.crypto.SymmetricSecretKey;
+
 
 /**
  * 
@@ -121,11 +127,16 @@ public class DerbyTestDatabase
 
     final SymmetricSecretKey secretKey;
     final SymmetricEncryptionType typeSecretKey;
+    final SubField subField;
+    final SubSubField subSubField;
     
-    public DerbyTestDatabase() throws NoSuchAlgorithmException
+    public DerbyTestDatabase() throws NoSuchAlgorithmException, DatabaseException
     {
 	typeSecretKey=SymmetricEncryptionType.AES;
 	secretKey=SymmetricSecretKey.generate(new SecureRandom(), typeSecretKey);
+	subField=getSubField();
+	subSubField=getSubSubField();
+	
     }
     
     
@@ -191,6 +202,9 @@ public class DerbyTestDatabase
 	    map.put("CalendarValue", calendar);
 	    map.put("secretKey", secretKey);
 	    map.put("typeSecretKey", typeSecretKey);
+	    map.put("subField", subField);
+	    map.put("subSubField", subSubField);
+	    
 	    byte[] tab=new byte[3];
 	    tab[0]=0;
 	    tab[1]=1;
@@ -290,6 +304,8 @@ public class DerbyTestDatabase
 	    Assert.assertTrue(r.CalendarValue.equals(calendar));
 	    Assert.assertTrue(r.secretKey.equals(secretKey));
 	    Assert.assertTrue(r.typeSecretKey.equals(typeSecretKey));
+	    assertEquals(r.subField, subField);
+	    assertEquals(r.subSubField, subSubField);
 	    
 	    for (int i=0;i<3;i++)
 		Assert.assertTrue(r.byte_array_value[i]==tab[i]);
@@ -319,6 +335,9 @@ public class DerbyTestDatabase
 	    Assert.assertTrue(r2.CalendarValue.equals(calendar));
 	    Assert.assertTrue(r2.secretKey.equals(secretKey));
 	    Assert.assertTrue(r2.typeSecretKey.equals(typeSecretKey));
+	    assertEquals(r2.subField, subField);
+	    assertEquals(r2.subSubField, subSubField);
+	    
 	    for (int i=0;i<3;i++)
 		Assert.assertTrue(r2.byte_array_value[i]==tab[i]);
     }
@@ -369,6 +388,8 @@ public class DerbyTestDatabase
 	    map.put("CalendarValue", calendar);
 	    map.put("secretKey", secretKey);
 	    map.put("typeSecretKey", typeSecretKey);
+	    map.put("subField", subField);
+	    map.put("subSubField", subSubField);
 	    
 	    byte[] tab=new byte[3];
 	    tab[0]=0;
@@ -428,6 +449,9 @@ public class DerbyTestDatabase
 	    Assert.assertTrue(r1.CalendarValue.equals(calendar));
 	    Assert.assertTrue(r1.secretKey.equals(secretKey));
 	    Assert.assertTrue(r1.typeSecretKey.equals(typeSecretKey));
+	    assertEquals(r1.subField, subField);
+	    assertEquals(r1.subSubField, subSubField);
+	    
 	    for (int i=0;i<3;i++)
 		Assert.assertTrue(r1.byte_array_value[i]==tab[i]);
 
@@ -455,6 +479,9 @@ public class DerbyTestDatabase
 	    Assert.assertTrue(r2.CalendarValue.equals(calendar));
 	    Assert.assertTrue(r2.secretKey.equals(secretKey));
 	    Assert.assertTrue(r2.typeSecretKey.equals(typeSecretKey));
+	    assertEquals(r2.subField, subField);
+	    assertEquals(r2.subSubField, subSubField);
+	    
 	    for (int i=0;i<3;i++)
 		Assert.assertTrue(r2.byte_array_value[i]==tab[i]);
 	
@@ -485,6 +512,8 @@ public class DerbyTestDatabase
 	    Assert.assertTrue(r1.CalendarValue.equals(calendar));
 	    Assert.assertTrue(r1.secretKey.equals(secretKey));
 	    Assert.assertTrue(r1.typeSecretKey.equals(typeSecretKey));
+	    assertEquals(r1.subField, subField);
+	    assertEquals(r1.subSubField, subSubField);
 	    for (int i=0;i<3;i++)
 		Assert.assertTrue(r1.byte_array_value[i]==tab[i]);
 
@@ -512,6 +541,9 @@ public class DerbyTestDatabase
 	    Assert.assertTrue(r2.CalendarValue.equals(calendar));
 	    Assert.assertTrue(r2.secretKey.equals(secretKey));
 	    Assert.assertTrue(r2.typeSecretKey.equals(typeSecretKey));
+	    assertEquals(r2.subField, subField);
+	    assertEquals(r2.subSubField, subSubField);
+	    
 	    for (int i=0;i<3;i++)
 		Assert.assertTrue(r2.byte_array_value[i]==tab[i]);
 	    table1.checkDataIntegrity();
@@ -573,6 +605,9 @@ public class DerbyTestDatabase
 	Assert.assertTrue(r1a.CalendarValue.equals(calendar));
 	Assert.assertTrue(r1a.secretKey.equals(secretKey));
 	Assert.assertTrue(r1a.typeSecretKey.equals(typeSecretKey));
+	    assertEquals(r1a.subField, subField);
+	    assertEquals(r1a.subSubField, subSubField);
+	
 	for (int i=0;i<3;i++)
 	    Assert.assertTrue(r1a.byte_array_value[i]==r1b.byte_array_value[i]);
 	
@@ -604,6 +639,9 @@ public class DerbyTestDatabase
 	Assert.assertTrue(r2a.CalendarValue.equals(calendar));
 	Assert.assertTrue(r2a.secretKey.equals(secretKey));
 	Assert.assertTrue(r2a.typeSecretKey.equals(typeSecretKey));
+	    assertEquals(r2a.subField, subField);
+	    assertEquals(r2a.subSubField, subSubField);
+	
 	for (int i=0;i<3;i++)
 	    Assert.assertTrue(r2a.byte_array_value[i]==r2b.byte_array_value[i]);
 	    table1.checkDataIntegrity();
@@ -672,6 +710,9 @@ public class DerbyTestDatabase
 		Assert.assertTrue(r1a.CalendarValue.equals(calendar));
 		Assert.assertTrue(r1a.secretKey.equals(secretKey));
 		Assert.assertTrue(r1a.typeSecretKey.equals(typeSecretKey));
+		    assertEquals(r1a.subField, subField);
+		    assertEquals(r1a.subSubField, subSubField);
+		
 		for (int i=0;i<3;i++)
 		    Assert.assertTrue(r1a.byte_array_value[i]==r1b.byte_array_value[i]);
 		
@@ -703,6 +744,9 @@ public class DerbyTestDatabase
 		Assert.assertTrue(r2a.CalendarValue.equals(calendar));
 		Assert.assertTrue(r2a.secretKey.equals(secretKey));
 		Assert.assertTrue(r2a.typeSecretKey.equals(typeSecretKey));
+		assertEquals(r2a.subField, subField);
+		assertEquals(r2a.subSubField, subSubField);
+		
 		for (int i=0;i<3;i++)
 		    Assert.assertTrue(r2a.byte_array_value[i]==r2b.byte_array_value[i]);
 		table1.checkDataIntegrity();
@@ -774,6 +818,8 @@ public class DerbyTestDatabase
 	Assert.assertTrue(r1a.CalendarValue.equals(r1b.CalendarValue));
 	Assert.assertTrue(r1a.secretKey.equals(r1b.secretKey));
 	Assert.assertTrue(r1a.typeSecretKey.equals(r1b.typeSecretKey));
+	    assertEquals(r1a.subField, subField);
+	    assertEquals(r1a.subSubField, subSubField);
 	
 	for (int i=0;i<3;i++)
 	    Assert.assertTrue(r1a.byte_array_value[i]==r1b.byte_array_value[i]);
@@ -806,6 +852,8 @@ public class DerbyTestDatabase
 	Assert.assertTrue(r2a.CalendarValue.equals(r2b.CalendarValue));
 	Assert.assertTrue(r2a.secretKey.equals(r2b.secretKey));
 	Assert.assertTrue(r2a.typeSecretKey.equals(r2b.typeSecretKey));
+	    assertEquals(r2a.subField, subField);
+	    assertEquals(r2a.subSubField, subSubField);
 
 	for (int i=0;i<3;i++)
 	    Assert.assertTrue(r2a.byte_array_value[i]==r2b.byte_array_value[i]);
@@ -1030,7 +1078,10 @@ public class DerbyTestDatabase
 		    "CalendarValue", calendar,
 		    "secretKey", secretKey,
 		    "typeSecretKey", typeSecretKey,
-		    "byte_array_value", tab
+		    "byte_array_value", tab,
+		    "subField", subField,
+		    "subSubField", subSubField
+		    
 		    };
 	    Table1.Record r1=table1.addRecord(parameters);
 	    Table3.Record r2=table3.addRecord(parameters);
@@ -2449,6 +2500,9 @@ public class DerbyTestDatabase
 	    map.put("CalendarValue", calendar);
 	    map.put("secretKey", secretKey);
 	    map.put("typeSecretKey", typeSecretKey);
+	    map.put("subField", subField);
+	    map.put("subSubField", subSubField);
+	    
 	table1.addRecord(map);
 	table3.addRecord(map);
 	Table1.Record r1=table1.getRecords().get(0);
@@ -2481,6 +2535,8 @@ public class DerbyTestDatabase
 	Assert.assertTrue(map.get("CalendarValue").equals(r1.CalendarValue));
 	Assert.assertTrue(map.get("secretKey").equals(r1.secretKey));
 	Assert.assertTrue(map.get("typeSecretKey").equals(r1.typeSecretKey));
+	assertEquals((SubField)map.get("subField"), r1.subField);
+	assertEquals((SubSubField)map.get("subSubField"), r1.subSubField);
 	
 	Table3.Record r3=table3.getRecords().get(0);
 	
@@ -2512,6 +2568,8 @@ public class DerbyTestDatabase
 	Assert.assertTrue(map.get("CalendarValue").equals(r3.CalendarValue));
 	Assert.assertTrue(map.get("secretKey").equals(r3.secretKey));
 	Assert.assertTrue(map.get("typeSecretKey").equals(r3.typeSecretKey));
+	assertEquals((SubField)map.get("subField"), r3.subField);
+	assertEquals((SubSubField)map.get("subSubField"), r3.subSubField);
 	
 	try
 	{
@@ -2686,6 +2744,9 @@ public class DerbyTestDatabase
 	Assert.assertTrue(map.get("BigDecimal_value").equals(r1.BigDecimal_value));
 	Assert.assertTrue(map.get("secretKey").equals(r1.secretKey));
 	Assert.assertTrue(map.get("typeSecretKey").equals(r1.typeSecretKey));
+	assertEquals((SubField)map.get("subField"), r1.subField);
+	assertEquals((SubSubField)map.get("subSubField"), r1.subSubField);
+	
 	
 	r3=table3.getRecords().get(0);
 	
@@ -2715,6 +2776,9 @@ public class DerbyTestDatabase
 	Assert.assertTrue(map.get("BigDecimal_value").equals(r3.BigDecimal_value));
 	Assert.assertTrue(map.get("secretKey").equals(r3.secretKey));
 	Assert.assertTrue(map.get("typeSecretKey").equals(r3.typeSecretKey));
+	assertEquals((SubField)map.get("subField"), r3.subField);
+	assertEquals((SubSubField)map.get("subSubField"), r3.subSubField);
+	
 	
 	Map<String, Object> maps2[]=new Map[1];
 	maps2[0]=maps[0];
@@ -2777,6 +2841,9 @@ public class DerbyTestDatabase
 	map.put("CalendarValue", Calendar.getInstance());
 	map.put("secretKey", secretKey);
 	map.put("typeSecretKey", typeSecretKey);
+	map.put("subField", subField);
+	map.put("subSubField", subSubField);
+	
 	byte[] tab=new byte[3];
 	tab[0]=0;
 	tab[1]=1;
@@ -2935,6 +3002,9 @@ public class DerbyTestDatabase
 		map.put("CalendarValue", Calendar.getInstance());
 		map.put("secretKey", secretKey);
 		map.put("typeSecretKey", typeSecretKey);
+		map.put("subField", subField);
+		map.put("subSubField", subSubField);
+		
 		byte[] tab=new byte[3];
 		tab[0]=0;
 		tab[1]=1;
@@ -2971,6 +3041,9 @@ public class DerbyTestDatabase
 		    Assert.assertTrue(r1.BigInteger_value.equals(map.get("BigInteger_value")));
 		    Assert.assertTrue(r1.BigDecimal_value.equals(map.get("BigDecimal_value")));
 		    Assert.assertTrue(r1.secretKey.equals(map.get("secretKey")));
+		    assertEquals((SubField)map.get("subField"), r1.subField);
+		    assertEquals((SubSubField)map.get("subSubField"), r1.subSubField);
+		    
 		    Assert.assertTrue(r1.typeSecretKey.equals(map.get("typeSecretKey")));
 		    for (int i=0;i<3;i++)
 			Assert.assertTrue(r1.byte_array_value[i]==((byte[])map.get("byte_array_value"))[i]);
@@ -2997,6 +3070,9 @@ public class DerbyTestDatabase
 		    Assert.assertTrue(r3.BigDecimal_value.equals(map.get("BigDecimal_value")));
 		    Assert.assertTrue(r3.secretKey.equals(map.get("secretKey")));
 		    Assert.assertTrue(r3.typeSecretKey.equals(map.get("typeSecretKey")));
+		    assertEquals((SubField)map.get("subField"), r3.subField);
+		    assertEquals((SubSubField)map.get("subSubField"), r3.subSubField);
+		    
 		    for (int i=0;i<3;i++)
 			Assert.assertTrue(r3.byte_array_value[i]==((byte[])map.get("byte_array_value"))[i]);
 		}
@@ -4223,7 +4299,10 @@ public class DerbyTestDatabase
 			    "CalendarValue", calendar,
 			    "secretKey", secretKey,
 			    "typeSecretKey", typeSecretKey,
-			    "byte_array_value", tab
+			    "byte_array_value", tab,
+			    "subField", subField,
+			    "subSubField", subSubField
+			    
 			    };
 		    
 			try
@@ -4328,6 +4407,9 @@ public class DerbyTestDatabase
 		r1.CalendarValue=Calendar.getInstance();
 		r1.secretKey=secretKey;
 		r1.typeSecretKey=typeSecretKey;
+		r1.subField=subField;
+		r1.subSubField=subSubField;
+		
 		byte[] tab=new byte[3];
 		tab[0]=0;
 		tab[1]=1;
@@ -4361,6 +4443,9 @@ public class DerbyTestDatabase
 		r3.secretKey=secretKey;
 		r3.typeSecretKey=typeSecretKey;
 		r3.byte_array_value=tab;
+		r3.subField=subField;
+		r3.subSubField=subSubField;
+		
 		try
 		{
 		    Table1.Record r1b=table1.addRecord(r1);

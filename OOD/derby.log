@@ -1,45 +1,45 @@
 ----------------------------------------------------------------
-Thu Oct 13 15:25:23 CEST 2016:
-Booting Derby version The Apache Software Foundation - Apache Derby - 10.12.1.1 - (1704137): instance a816c00e-0157-be37-fe20-00000b04b1e0 
+Wed Nov 30 09:40:11 CET 2016:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.12.1.1 - (1704137): instance a816c00e-0158-b464-2322-00000987af28 
 on database directory /home/jason/git_projects/OOD/OOD/databasetestDerby with class loader sun.misc.Launcher$AppClassLoader@55f96302 
-Loaded from file:/home/jason/git_projects/OOD/OOD/exports/OOD-Tests-1.7.1-Stable_withDependencies.jar
+Loaded from file:/home/jason/git_projects/OOD/OOD/exports/OOD-Tests-1.8.0-Stable_withDependencies.jar
 java.vendor=Oracle Corporation
 java.runtime.version=1.8.0_101-b13
 user.dir=/home/jason/git_projects/OOD/OOD
 os.name=Linux
 os.arch=amd64
-os.version=4.4.0-42-generic
+os.version=4.4.0-47-generic
 derby.system.home=null
 Database Class Loader started - derby.database.classpath=''
 ----------------------------------------------------------------
-Thu Oct 13 15:25:25 CEST 2016:
-Shutting down instance a816c00e-0157-be37-fe20-00000b04b1e0 on database directory /home/jason/git_projects/OOD/OOD/databasetestDerby with class loader sun.misc.Launcher$AppClassLoader@55f96302 
+Wed Nov 30 09:40:13 CET 2016:
+Shutting down instance a816c00e-0158-b464-2322-00000987af28 on database directory /home/jason/git_projects/OOD/OOD/databasetestDerby with class loader sun.misc.Launcher$AppClassLoader@55f96302 
 ----------------------------------------------------------------
-Thu Oct 13 15:25:25 CEST 2016:
-Booting Derby version The Apache Software Foundation - Apache Derby - 10.12.1.1 - (1704137): instance 45ee0190-0157-be37-fe20-00000b04b1e0 
+Wed Nov 30 09:40:13 CET 2016:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.12.1.1 - (1704137): instance 7b7cc19e-0158-b464-2322-00000987af28 
 on database directory /home/jason/git_projects/OOD/OOD/databasetestDerby with class loader sun.misc.Launcher$AppClassLoader@55f96302 
-Loaded from file:/home/jason/git_projects/OOD/OOD/exports/OOD-Tests-1.7.1-Stable_withDependencies.jar
+Loaded from file:/home/jason/git_projects/OOD/OOD/exports/OOD-Tests-1.8.0-Stable_withDependencies.jar
 java.vendor=Oracle Corporation
 java.runtime.version=1.8.0_101-b13
 user.dir=/home/jason/git_projects/OOD/OOD
 os.name=Linux
 os.arch=amd64
-os.version=4.4.0-42-generic
+os.version=4.4.0-47-generic
 derby.system.home=null
 Database Class Loader started - derby.database.classpath=''
 ----------------------------------------------------------------
-Thu Oct 13 15:25:28 CEST 2016:
-Booting Derby version The Apache Software Foundation - Apache Derby - 10.12.1.1 - (1704137): instance 11a3c706-0157-be37-fe20-00000b04b1e0 
+Wed Nov 30 09:40:17 CET 2016:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.12.1.1 - (1704137): instance 7e96496f-0158-b464-2322-00000987af28 
 on database directory /home/jason/git_projects/OOD/OOD/databasetestDerbyb with class loader sun.misc.Launcher$AppClassLoader@55f96302 
-Loaded from file:/home/jason/git_projects/OOD/OOD/exports/OOD-Tests-1.7.1-Stable_withDependencies.jar
+Loaded from file:/home/jason/git_projects/OOD/OOD/exports/OOD-Tests-1.8.0-Stable_withDependencies.jar
 java.vendor=Oracle Corporation
 java.runtime.version=1.8.0_101-b13
 user.dir=/home/jason/git_projects/OOD/OOD
 os.name=Linux
 os.arch=amd64
-os.version=4.4.0-42-generic
+os.version=4.4.0-47-generic
 derby.system.home=null
 Database Class Loader started - derby.database.classpath=''
 ----------------------------------------------------------------
-Thu Oct 13 15:28:34 CEST 2016:
-Shutting down instance 45ee0190-0157-be37-fe20-00000b04b1e0 on database directory /home/jason/git_projects/OOD/OOD/databasetestDerby with class loader sun.misc.Launcher$AppClassLoader@55f96302 
+Wed Nov 30 09:48:44 CET 2016:
+Shutting down instance 7b7cc19e-0158-b464-2322-00000987af28 on database directory /home/jason/git_projects/OOD/OOD/databasetestDerby with class loader sun.misc.Launcher$AppClassLoader@55f96302 

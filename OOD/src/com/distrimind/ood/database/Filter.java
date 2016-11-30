@@ -49,7 +49,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  * @version 1.0
  * @param <T> the record type which correspond to its database class.
  */
-public interface Filter<T extends DatabaseRecord>
+public interface Filter<T extends Object>
 {
     /**
      * this function is called for every instance record present on the database. 

@@ -40,7 +40,7 @@ package com.distrimind.ood.database.fieldaccessors;
 
 /**
  * @author Jason Mahdjoub
- * @version 1.2
+ * @version 1.3
  * @since OOD 1.0
  */
 import java.io.Serializable;
@@ -82,6 +82,8 @@ public abstract class FieldAccessor
 {
     protected final DatabaseWrapper sql_connection;
     protected final Field field;
+    protected final String parentFieldName;
+    protected final String fieldName;
     protected final String table_name;
     protected final boolean auto_primary_key;
     protected final boolean random_primary_key;
@@ -95,14 +97,16 @@ public abstract class FieldAccessor
     private final Class<?> compatible_classes[];
     
     @SuppressWarnings("unchecked")
-    protected FieldAccessor(DatabaseWrapper _sql_connection, Field _field, Class<?> compatible_classes[]) throws DatabaseException
+    protected FieldAccessor(DatabaseWrapper _sql_connection, Field _field, String parentFieldName, Class<?> compatible_classes[], Class<? extends Table<?>> table_class) throws DatabaseException
     {
 	if (compatible_classes==null)
 	    throw new NullPointerException("compatible_classes");
 	this.compatible_classes=compatible_classes;
 	sql_connection=_sql_connection;
 	field=_field;
-	table_name=Table.getName(Table.getTableClass((Class<? extends DatabaseRecord>)field.getDeclaringClass()));
+	this.parentFieldName=parentFieldName;
+	this.fieldName=((this.parentFieldName==null || this.parentFieldName.isEmpty())?"":(this.parentFieldName+"_"))+field.getName();
+	table_name=table_class==null?(DatabaseRecord.class.isAssignableFrom(field.getDeclaringClass())?(Table.getName(Table.getTableClass((Class<? extends DatabaseRecord>)field.getDeclaringClass()))):null):Table.getName(table_class);
 	auto_primary_key=_field.isAnnotationPresent(AutoPrimaryKey.class);
 	random_primary_key=field.isAnnotationPresent(RandomPrimaryKey.class);
 	if (auto_primary_key && random_primary_key)
@@ -208,7 +212,7 @@ public abstract class FieldAccessor
     
     public String getFieldName()
     {
-	return field.getName();
+	return fieldName;
     }
     public final long getLimit()
     {
@@ -222,15 +226,15 @@ public abstract class FieldAccessor
     {
 	return bits_number;
     }
-    public abstract void setValue(DatabaseRecord _class_instance, Object _field_instance)  throws DatabaseException;
-    public final void setValue(DatabaseRecord _class_instance, ResultSet _result_set)  throws DatabaseException
+    public abstract void setValue(Object _class_instance, Object _field_instance)  throws DatabaseException;
+    public final void setValue(Object _class_instance, ResultSet _result_set)  throws DatabaseException
     {
 	setValue(_class_instance, _result_set, null);
     }
-    public abstract void setValue(DatabaseRecord _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)  throws DatabaseException;
-    public abstract void updateValue(DatabaseRecord _class_instance, Object _field_instance, ResultSet _result_set) throws DatabaseException;
-    protected abstract void updateResultSetValue(DatabaseRecord _class_instance, ResultSet _result_set, SqlFieldTranslation _sft) throws DatabaseException;
-    public abstract boolean equals(DatabaseRecord _class_instance, Object _field_instance)  throws DatabaseException;
+    public abstract void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)  throws DatabaseException;
+    public abstract void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set) throws DatabaseException;
+    protected abstract void updateResultSetValue(Object _class_instance, ResultSet _result_set, SqlFieldTranslation _sft) throws DatabaseException;
+    public abstract boolean equals(Object _class_instance, Object _field_instance)  throws DatabaseException;
     protected abstract boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)  throws DatabaseException;
     public final boolean equals(Object _field_instance, ResultSet _result_set) throws DatabaseException
     {
@@ -241,17 +245,17 @@ public abstract class FieldAccessor
     {
 	return compatible_classes;
     }
-    public abstract Object getValue(DatabaseRecord _class_instance) throws DatabaseException;
-    public abstract void getValue(DatabaseRecord _class_instance, PreparedStatement _prepared_statement, int _field_start)  throws DatabaseException;
-    public abstract void getValue(Object field_content, PreparedStatement _prepared_statement, int _field_start)  throws DatabaseException;
+    public abstract Object getValue(Object _class_instance) throws DatabaseException;
+    public abstract void getValue(Object _class_instance, PreparedStatement _prepared_statement, int _field_start)  throws DatabaseException;
+    public abstract void getValue(PreparedStatement _prepared_statement, int _field_start, Object field_content)  throws DatabaseException;
     
     public abstract SqlField[] getDeclaredSqlFields();
-    public abstract SqlFieldInstance[] getSqlFieldsInstances(DatabaseRecord _instance)  throws DatabaseException;
+    public abstract SqlFieldInstance[] getSqlFieldsInstances(Object _instance)  throws DatabaseException;
     public abstract boolean isAlwaysNotNull();
     public abstract boolean isComparable();
     public abstract boolean canBePrimaryOrUniqueKey();
     
-    public abstract int compare(DatabaseRecord r1, DatabaseRecord _r2) throws DatabaseException;
+    public abstract int compare(Object r1, Object _r2) throws DatabaseException;
     
     public boolean canAutoGenerateValues()
     {
@@ -293,25 +297,20 @@ public abstract class FieldAccessor
 	return field;
     }
     
-    public static ArrayList<FieldAccessor> getFields(DatabaseWrapper _sql_connection, Class<? extends Table<?>> _table_class) throws DatabaseException
+    public static ArrayList<FieldAccessor> getFields(DatabaseWrapper _sql_connection, Class<? extends Table<?>> _table_class, Class<?> database_record_class, String parentFieldName, List<Class<?>> parentFields) throws DatabaseException
     {
-	Class<? extends DatabaseRecord> database_record_class=Table.getDatabaseRecord(_table_class);
+	
 	ArrayList<FieldAccessor> res=new ArrayList<FieldAccessor>();
 	try
 	{
-	    if (!checkCircularityWithPrimaryForeignKeys(database_record_class))
-		throw new DatabaseException("The class/table "+_table_class.getSimpleName()+" has a problem of circularity with other tables, through primary foreign keys !");
-	    if (!checkCircularityWithNotNullForeignKeys(database_record_class))
-		throw new DatabaseException("The class/table "+_table_class.getSimpleName()+" has a problem of circularity with other tables, through not null foreign keys !");
-		
 	    FieldAccessPrivilegedAction fapa=new FieldAccessPrivilegedAction(database_record_class);
 	    
 	    for (java.lang.reflect.Field f : AccessController.doPrivileged(fapa))
 	    {
-		if (f.isAnnotationPresent(com.distrimind.ood.database.annotations.Field.class) || f.isAnnotationPresent(PrimaryKey.class) || f.isAnnotationPresent(ForeignKey.class) || f.isAnnotationPresent(AutoPrimaryKey.class) || f.isAnnotationPresent(RandomPrimaryKey.class))
+		if (f.isAnnotationPresent(com.distrimind.ood.database.annotations.Field.class) || (parentFieldName==null && (f.isAnnotationPresent(PrimaryKey.class) || f.isAnnotationPresent(ForeignKey.class) || f.isAnnotationPresent(AutoPrimaryKey.class) || f.isAnnotationPresent(RandomPrimaryKey.class))))
 		{
 		    Class<?> type=f.getType();
-		    if (f.isAnnotationPresent(ForeignKey.class))
+		    if (parentFieldName==null && f.isAnnotationPresent(ForeignKey.class))
 		    {
 			
 			if (!DatabaseRecord.class.isAssignableFrom(type))
@@ -326,61 +325,73 @@ public abstract class FieldAccessor
 			    throw new DatabaseException("The class "+database_record_class.getName()+" contains a foreign key which points to a DatabaseRecord ("+type.getName()+") which have not the same package of the considered table.");
 			if (!t.isAnnotationPresent(LoadToMemory.class) && _table_class.isAnnotationPresent(LoadToMemory.class))
 			    throw new IllegalAccessError("The Table "+t.getSimpleName()+" is not loaded into memory whereas the table "+_table_class.getSimpleName()+" is ! It is a problem since the table "+_table_class.getSimpleName()+" has a foreign key which points to "+t.getSimpleName());
-			res.add(new ForeignKeyFieldAccessor(_sql_connection, f));
+			res.add(new ForeignKeyFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 		    }
 		    else
 		    {
 			ByteTabObjectConverter converter=null;
 			if (type.equals(boolean.class))
-			    res.add(new booleanFieldAccessor(f));
+			    res.add(new booleanFieldAccessor(_table_class, f, parentFieldName));
 			else if (type.equals(byte.class))
-			    res.add(new byteFieldAccessor(_sql_connection, f));
+			    res.add(new byteFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 			else if (type.equals(short.class))
-			    res.add(new shortFieldAccessor(_sql_connection, f));
+			    res.add(new shortFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 			else if (type.equals(char.class))
-			    res.add(new charFieldAccessor(f));
+			    res.add(new charFieldAccessor(_table_class, f, parentFieldName));
 			else if (type.equals(int.class))
-			    res.add(new intFieldAccessor(_sql_connection, f));
+			    res.add(new intFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 			else if (type.equals(long.class))
-			    res.add(new longFieldAccessor(_sql_connection, f));
+			    res.add(new longFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 			else if (type.equals(float.class))
-			    res.add(new floatFieldAccessor(_sql_connection, f));
+			    res.add(new floatFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 			else if (type.equals(double.class))
-			    res.add(new doubleFieldAccessor(_sql_connection, f));
+			    res.add(new doubleFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 			else if (type.equals(String.class))
-			    res.add(new StringFieldAccessor(_sql_connection, f));
+			    res.add(new StringFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 			else if (type.equals(class_array_byte))
-			    res.add(new ByteTabFieldAccessor(_sql_connection, f));
+			    res.add(new ByteTabFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 			else if (type.equals(Boolean.class))
-			    res.add(new BooleanNumberFieldAccessor(f));
+			    res.add(new BooleanNumberFieldAccessor(_table_class, f, parentFieldName));
 			else if (type.equals(Byte.class))
-			    res.add(new ByteNumberFieldAccessor(_sql_connection, f));
+			    res.add(new ByteNumberFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 			else if (type.equals(Short.class))
-			    res.add(new ShortNumberFieldAccessor(_sql_connection, f));
+			    res.add(new ShortNumberFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 			else if (type.equals(Character.class))
-			    res.add(new CharacterNumberFieldAccessor(f));
+			    res.add(new CharacterNumberFieldAccessor(_table_class, f, parentFieldName));
 			else if (type.equals(Integer.class))
-			    res.add(new IntegerNumberFieldAccessor(_sql_connection, f));
+			    res.add(new IntegerNumberFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 			else if (type.equals(Long.class))
-			    res.add(new LongNumberFieldAccessor(_sql_connection, f));
+			    res.add(new LongNumberFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 			else if (type.equals(Float.class))
-			    res.add(new FloatNumberFieldAccessor(_sql_connection, f));
+			    res.add(new FloatNumberFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 			else if (type.equals(Double.class))
-			    res.add(new DoubleNumberFieldAccessor(_sql_connection, f));
+			    res.add(new DoubleNumberFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 			else if (type.equals(BigDecimal.class))
-			    res.add(new BigDecimalFieldAccessor(_sql_connection, f));
+			    res.add(new BigDecimalFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 			else if (type.equals(BigInteger.class))
-			    res.add(new BigIntegerFieldAccessor(_sql_connection, f));
+			    res.add(new BigIntegerFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 			else if (Calendar.class.isAssignableFrom(type))
-			    res.add(new CalendarFieldAccessor(_sql_connection, f));
+			    res.add(new CalendarFieldAccessor(_table_class, _sql_connection, f,parentFieldName));
 			else if (Date.class.isAssignableFrom(type))
-			    res.add(new DateFieldAccessor(f));
+			    res.add(new DateFieldAccessor(_table_class, f, parentFieldName));
 			else if ((converter=_sql_connection.getByteTabObjectConverter(type))!=null)
-			    res.add(new ByteTabConvertibleFieldAccessor(_sql_connection, f, converter));
+			    res.add(new ByteTabConvertibleFieldAccessor(_table_class, _sql_connection, f, parentFieldName, converter));
 			else if (AbstractDecentralizedID.class.isAssignableFrom(type))
-			    res.add(new DencetralizedIDFieldAccessor(_sql_connection, f));
+			    res.add(new DencetralizedIDFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
+			else if (isComposedField(type))
+			{
+			    for (Class<?> cpf : parentFields)
+				if (cpf.isAssignableFrom(type))
+				    throw new DatabaseException("The class/table "+_table_class.getSimpleName()+" has a problem of circularity with its fields.");
+			    
+			    ArrayList<Class<?>> pf=new ArrayList<>();
+			    pf.addAll(parentFields);
+			    pf.add(type);
+			    
+			    res.add(new ComposedFieldAccessor(_sql_connection, _table_class, f, parentFieldName, pf));
+			}
 			else if (Serializable.class.isAssignableFrom(type))
-			    res.add(new SerializableFieldAccessor(_sql_connection, f));
+			    res.add(new SerializableFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 			else
 			    throw new DatabaseException("The field "+f.getName()+" of the class "+database_record_class.getName()+" have a type which can't be used on the SqlJet database ");
 		    }
@@ -395,6 +406,33 @@ public abstract class FieldAccessor
 	return res;
     }
     
+    public static ArrayList<FieldAccessor> getFields(DatabaseWrapper _sql_connection, Class<? extends Table<?>> _table_class) throws DatabaseException
+    {
+	Class<? extends DatabaseRecord> database_record_class=Table.getDatabaseRecord(_table_class);
+	
+	try
+	{
+	    if (!checkCircularityWithPrimaryForeignKeys(database_record_class))
+		throw new DatabaseException("The class/table "+_table_class.getSimpleName()+" has a problem of circularity with other tables, through primary foreign keys !");
+	    if (!checkCircularityWithNotNullForeignKeys(database_record_class))
+		throw new DatabaseException("The class/table "+_table_class.getSimpleName()+" has a problem of circularity with other tables, through not null foreign keys !");
+	    ArrayList<Class<?>> parentFields=new ArrayList<>();
+	    parentFields.add(database_record_class);
+	    return getFields(_sql_connection, _table_class, database_record_class, null, parentFields);
+	}
+	catch(PrivilegedActionException e)
+	{
+	    throw new DatabaseException("Impossible to access to fields of the class "+database_record_class.getName(), e);
+	}
+	
+	
+    }
+    
+    
+    private static boolean isComposedField(Class<?> type)
+    {
+	return type.isAnnotationPresent(com.distrimind.ood.database.annotations.Field.class);
+    }
     
     private static boolean checkCircularityWithNotNullForeignKeys(Class<?> _original_class) throws PrivilegedActionException
     {
@@ -497,7 +535,7 @@ public abstract class FieldAccessor
 	return true;
     }
     private static Class<?> class_array_byte=(new byte[0]).getClass();
-    public final static boolean equals(Object val1, Object val2) throws DatabaseException
+    public final static boolean equalsBetween(Object val1, Object val2) throws DatabaseException
     {
 	if (val1==val2)
 	    return true;

@@ -48,7 +48,7 @@ import com.distrimind.util.version.Version;
 /**
  * 
  * @author Jason Mahdjoub
- * @version 1.5
+ * @version 1.8
  * @since OOD 1.0
  */
 public class OOD
@@ -60,8 +60,8 @@ public class OOD
 	Calendar c1=Calendar.getInstance();
 	c1.set(2013, 3, 1);
 	Calendar c2=Calendar.getInstance();
-	c2.set(2016, 9, 13);
-	VERSION=new Version("Object Oriented Database", "OOD", 1, 7, 1, Version.Type.Stable, 0, c1.getTime(), c2.getTime());
+	c2.set(2016, 11, 30);
+	VERSION=new Version("Object Oriented Database", "OOD", 1, 8, 0, Version.Type.Stable, 0, c1.getTime(), c2.getTime());
 	try
 	{
 	    InputStream is=OOD.class.getResourceAsStream("build.txt");
@@ -72,8 +72,16 @@ public class OOD
 	    VERSION.addDeveloper(new PersonDeveloper("mahdjoub", "jason", c.getTime()));
 	
 	    c=Calendar.getInstance();
+	    c.set(2016, 11, 30);
+	    Description d=new Description(1,8,0,Version.Type.Stable, 0, c.getTime());
+	    d.addItem("Using ACID transactions instead of semaphores.");
+	    d.addItem("Adding HSQLDBConcurrencyControl class.");
+	    d.addItem("Adding memory refresh interval (see LoadToMemory annotation).");
+	    d.addItem("Adding the possibility to set composed fields by adding @Field to a class.");
+
+	    c=Calendar.getInstance();
 	    c.set(2016, 9, 13);
-	    Description d=new Description(1,7,1,Version.Type.Stable, 0, c.getTime());
+	    d=new Description(1,7,1,Version.Type.Stable, 0, c.getTime());
 	    d.addItem("Updating Utils to 1.8.0.");
 
 	    c=Calendar.getInstance();

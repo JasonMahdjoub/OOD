@@ -50,7 +50,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  * @version 1.0
  * @param <T> the record type which correspond to its database class.
  */
-public abstract class AlterRecordFilter<T extends DatabaseRecord>
+public abstract class AlterRecordFilter<T extends Object>
 {
     private boolean to_delete=false;
     private boolean to_delete_with_cascade=false;
@@ -69,7 +69,7 @@ public abstract class AlterRecordFilter<T extends DatabaseRecord>
     public abstract void nextRecord(T _record) throws DatabaseException;
     
     /**
-     * Must be called into the function {@link #nextRecord(DatabaseRecord)}. This function aims to remove the current record. Do not works if the current record is pointed by other records.
+     * Must be called into the function {@link #nextRecord(Object)}. This function aims to remove the current record. Do not works if the current record is pointed by other records.
      * 
      */
     protected final void remove()
@@ -79,7 +79,7 @@ public abstract class AlterRecordFilter<T extends DatabaseRecord>
     }
     
     /**
-     * Must be called into the function {@link #nextRecord(DatabaseRecord)}. This function aims to remove the current record and all records pointing to it.
+     * Must be called into the function {@link #nextRecord(Object)}. This function aims to remove the current record and all records pointing to it.
      * 
      */
     protected final void removeWithCascade()
@@ -89,9 +89,9 @@ public abstract class AlterRecordFilter<T extends DatabaseRecord>
     }
 
     /**
-     * Must be called into the function {@link #nextRecord(DatabaseRecord)}. This function aims to alter the current record. 
+     * Must be called into the function {@link #nextRecord(Object)}. This function aims to alter the current record. 
      *  
-     * @param fields a map containing the fields to alter with the given record. Note that primary keys, and unique keys cannot be altered with this filter. To do that, please use the function {@link com.distrimind.ood.database.Table#updateRecord(DatabaseRecord, Map)}. 
+     * @param fields a map containing the fields to alter with the given record. Note that primary keys, and unique keys cannot be altered with this filter. To do that, please use the function {@link com.distrimind.ood.database.Table#updateRecord(Object, Map)}. 
      */
     protected final void update(Map<String, Object> fields)
     {
@@ -99,7 +99,7 @@ public abstract class AlterRecordFilter<T extends DatabaseRecord>
     }
     
     /**
-     * Must be called into the function {@link #nextRecord(DatabaseRecord)}. This function aims to alter the current record. 
+     * Must be called into the function {@link #nextRecord(Object)}. This function aims to alter the current record. 
      *  
      */
     protected final void update()

@@ -55,11 +55,11 @@ function toggleAllBoxes() {
 <body>
 <h2 align='center'>Default test</h2><table border='1' align="center">
 <tr>
-<td>Tests passed/Failed/Skipped:</td><td>5/2/21</td>
+<td>Tests passed/Failed/Skipped:</td><td>4/1/23</td>
 </tr><tr>
-<td>Started on:</td><td>Mon Sep 19 11:56:04 CEST 2016</td>
+<td>Started on:</td><td>Wed Nov 30 09:25:17 CET 2016</td>
 </tr>
-<tr><td>Total time:</td><td>8 seconds (8910 ms)</td>
+<tr><td>Total time:</td><td>9 seconds (9522 ms)</td>
 </tr><tr>
 <td>Included groups:</td><td></td>
 </tr><tr>
@@ -75,19 +75,17 @@ function toggleAllBoxes() {
 <td><b>Instance</b></td>
 </tr>
 <tr>
-<td title='com.distrimind.ood.tests.DerbyTestDatabase.secondTestSize()'><b>secondTestSize</b><br>Test class: com.distrimind.ood.tests.DerbyTestDatabase</td>
-<td><div><pre>com.distrimind.ood.database.exceptions.DatabaseException: Unexpected exception
-	at com.distrimind.ood.database.exceptions.DatabaseException.getDatabaseException(DatabaseException.java:85)
-	at com.distrimind.ood.database.fieldaccessors.DencetralizedIDFieldAccessor.setValue(DencetralizedIDFieldAccessor.java:282)
-	at com.distrimind.ood.database.fieldaccessors.FieldAccessor.setValue(FieldAccessor.java:228)
-	at com.distrimind.ood.database.Table$3TransactionTmp.run(Table.java:4041)
-	at com.distrimind.ood.database.DatabaseWrapper.runTransaction(DatabaseWrapper.java:283)
-	at com.distrimind.ood.database.Table.getListRecordsFromSqlConnection(Table.java:4073)
-	at com.distrimind.ood.database.Table.getListRecordsFromSqlConnection(Table.java:4007)
-	at com.distrimind.ood.database.Table.getRecords(Table.java:1551)
-	at com.distrimind.ood.database.Table.getRecords(Table.java:1532)
-	at com.distrimind.ood.database.Table.getRecordsNumber(Table.java:1046)
-	at com.distrimind.ood.tests.DerbyTestDatabase.secondTestSize(DerbyTestDatabase.java:258)
+<td title='com.distrimind.ood.tests.DerbyTestDatabase.firstReload()'><b>firstReload</b><br>Test class: com.distrimind.ood.tests.DerbyTestDatabase</td>
+<td><div><pre>com.distrimind.ood.database.exceptions.DatabaseVersionException: The table COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1 exists into the database but does not corresponds to the class COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1 coded into this program. This is a problem of Version. The field subField was not found into the database.
+	at com.distrimind.ood.database.EmbeddedDerbyWrapper.checkConstraints(EmbeddedDerbyWrapper.java:328)
+	at com.distrimind.ood.database.Table$3.run(Table.java:487)
+	at com.distrimind.ood.database.DatabaseWrapper.runTransaction(DatabaseWrapper.java:414)
+	at com.distrimind.ood.database.Table.initializeStep2(Table.java:418)
+	at com.distrimind.ood.database.DatabaseWrapper$2.run(DatabaseWrapper.java:774)
+	at com.distrimind.ood.database.DatabaseWrapper$2.run(DatabaseWrapper.java:1)
+	at com.distrimind.ood.database.DatabaseWrapper.runTransaction(DatabaseWrapper.java:375)
+	at com.distrimind.ood.database.DatabaseWrapper.loadDatabase(DatabaseWrapper.java:732)
+	at com.distrimind.ood.tests.DerbyTestDatabase.firstReload(DerbyTestDatabase.java:242)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -113,24 +111,17 @@ function toggleAllBoxes() {
 	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:126)
 	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:137)
 	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:58)
-Caused by: java.lang.IllegalArgumentException
-	at com.distrimind.util.AbstractDecentralizedID.instanceOf(Unknown Source)
-	at com.distrimind.util.AbstractDecentralizedID.instanceOf(Unknown Source)
-	at com.distrimind.ood.database.fieldaccessors.DencetralizedIDFieldAccessor.setValue(DencetralizedIDFieldAccessor.java:278)
-	... 34 more
-</pre></div><a href='#' onClick='toggleBox("stack-trace1943586320", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
-<div class='stack-trace' id='stack-trace1943586320'><pre>com.distrimind.ood.database.exceptions.DatabaseException: Unexpected exception
-	at com.distrimind.ood.database.exceptions.DatabaseException.getDatabaseException(DatabaseException.java:85)
-	at com.distrimind.ood.database.fieldaccessors.DencetralizedIDFieldAccessor.setValue(DencetralizedIDFieldAccessor.java:282)
-	at com.distrimind.ood.database.fieldaccessors.FieldAccessor.setValue(FieldAccessor.java:228)
-	at com.distrimind.ood.database.Table$3TransactionTmp.run(Table.java:4041)
-	at com.distrimind.ood.database.DatabaseWrapper.runTransaction(DatabaseWrapper.java:283)
-	at com.distrimind.ood.database.Table.getListRecordsFromSqlConnection(Table.java:4073)
-	at com.distrimind.ood.database.Table.getListRecordsFromSqlConnection(Table.java:4007)
-	at com.distrimind.ood.database.Table.getRecords(Table.java:1551)
-	at com.distrimind.ood.database.Table.getRecords(Table.java:1532)
-	at com.distrimind.ood.database.Table.getRecordsNumber(Table.java:1046)
-	at com.distrimind.ood.tests.DerbyTestDatabase.secondTestSize(DerbyTestDatabase.java:258)
+</pre></div><a href='#' onClick='toggleBox("stack-trace2049900236", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
+<div class='stack-trace' id='stack-trace2049900236'><pre>com.distrimind.ood.database.exceptions.DatabaseVersionException: The table COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1 exists into the database but does not corresponds to the class COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1 coded into this program. This is a problem of Version. The field subField was not found into the database.
+	at com.distrimind.ood.database.EmbeddedDerbyWrapper.checkConstraints(EmbeddedDerbyWrapper.java:328)
+	at com.distrimind.ood.database.Table$3.run(Table.java:487)
+	at com.distrimind.ood.database.DatabaseWrapper.runTransaction(DatabaseWrapper.java:414)
+	at com.distrimind.ood.database.Table.initializeStep2(Table.java:418)
+	at com.distrimind.ood.database.DatabaseWrapper$2.run(DatabaseWrapper.java:774)
+	at com.distrimind.ood.database.DatabaseWrapper$2.run(DatabaseWrapper.java:1)
+	at com.distrimind.ood.database.DatabaseWrapper.runTransaction(DatabaseWrapper.java:375)
+	at com.distrimind.ood.database.DatabaseWrapper.loadDatabase(DatabaseWrapper.java:732)
+	at com.distrimind.ood.tests.DerbyTestDatabase.firstReload(DerbyTestDatabase.java:242)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -156,102 +147,9 @@ Caused by: java.lang.IllegalArgumentException
 	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:126)
 	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:137)
 	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:58)
-Caused by: java.lang.IllegalArgumentException
-	at com.distrimind.util.AbstractDecentralizedID.instanceOf(Unknown Source)
-	at com.distrimind.util.AbstractDecentralizedID.instanceOf(Unknown Source)
-	at com.distrimind.ood.database.fieldaccessors.DencetralizedIDFieldAccessor.setValue(DencetralizedIDFieldAccessor.java:278)
-	... 34 more
 </pre></div></td>
-<td>0</td>
-<td>com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3</td></tr>
-<tr>
-<td title='com.distrimind.ood.tests.DerbyTestDatabase.testFirstAdd()'><b>testFirstAdd</b><br>Test class: com.distrimind.ood.tests.DerbyTestDatabase</td>
-<td><div><pre>com.distrimind.ood.database.exceptions.DatabaseException: Unexpected exception
-	at com.distrimind.ood.database.exceptions.DatabaseException.getDatabaseException(DatabaseException.java:85)
-	at com.distrimind.ood.database.fieldaccessors.DencetralizedIDFieldAccessor.setValue(DencetralizedIDFieldAccessor.java:282)
-	at com.distrimind.ood.database.fieldaccessors.FieldAccessor.setValue(FieldAccessor.java:228)
-	at com.distrimind.ood.database.Table$3TransactionTmp.run(Table.java:4041)
-	at com.distrimind.ood.database.DatabaseWrapper.runTransaction(DatabaseWrapper.java:283)
-	at com.distrimind.ood.database.Table.getListRecordsFromSqlConnection(Table.java:4073)
-	at com.distrimind.ood.database.Table.getListRecordsFromSqlConnection(Table.java:4007)
-	at com.distrimind.ood.database.Table.getRecords(Table.java:1575)
-	at com.distrimind.ood.database.Table.getRecords(Table.java:1532)
-	at com.distrimind.ood.tests.DerbyTestDatabase.testFirstAdd(DerbyTestDatabase.java:267)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:606)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:86)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:646)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:823)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1131)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
-	at org.testng.TestRunner.privateRun(TestRunner.java:778)
-	at org.testng.TestRunner.run(TestRunner.java:632)
-	at org.testng.SuiteRunner.runTest(SuiteRunner.java:366)
-	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:361)
-	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:319)
-	at org.testng.SuiteRunner.run(SuiteRunner.java:268)
-	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
-	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
-	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1225)
-	at org.testng.TestNG.runSuitesLocally(TestNG.java:1150)
-	at org.testng.TestNG.runSuites(TestNG.java:1075)
-	at org.testng.TestNG.run(TestNG.java:1047)
-	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:126)
-	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:137)
-	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:58)
-Caused by: java.lang.IllegalArgumentException
-	at com.distrimind.util.AbstractDecentralizedID.instanceOf(Unknown Source)
-	at com.distrimind.util.AbstractDecentralizedID.instanceOf(Unknown Source)
-	at com.distrimind.ood.database.fieldaccessors.DencetralizedIDFieldAccessor.setValue(DencetralizedIDFieldAccessor.java:278)
-	... 33 more
-</pre></div><a href='#' onClick='toggleBox("stack-trace1075611823", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
-<div class='stack-trace' id='stack-trace1075611823'><pre>com.distrimind.ood.database.exceptions.DatabaseException: Unexpected exception
-	at com.distrimind.ood.database.exceptions.DatabaseException.getDatabaseException(DatabaseException.java:85)
-	at com.distrimind.ood.database.fieldaccessors.DencetralizedIDFieldAccessor.setValue(DencetralizedIDFieldAccessor.java:282)
-	at com.distrimind.ood.database.fieldaccessors.FieldAccessor.setValue(FieldAccessor.java:228)
-	at com.distrimind.ood.database.Table$3TransactionTmp.run(Table.java:4041)
-	at com.distrimind.ood.database.DatabaseWrapper.runTransaction(DatabaseWrapper.java:283)
-	at com.distrimind.ood.database.Table.getListRecordsFromSqlConnection(Table.java:4073)
-	at com.distrimind.ood.database.Table.getListRecordsFromSqlConnection(Table.java:4007)
-	at com.distrimind.ood.database.Table.getRecords(Table.java:1575)
-	at com.distrimind.ood.database.Table.getRecords(Table.java:1532)
-	at com.distrimind.ood.tests.DerbyTestDatabase.testFirstAdd(DerbyTestDatabase.java:267)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:606)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:86)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:646)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:823)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1131)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
-	at org.testng.TestRunner.privateRun(TestRunner.java:778)
-	at org.testng.TestRunner.run(TestRunner.java:632)
-	at org.testng.SuiteRunner.runTest(SuiteRunner.java:366)
-	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:361)
-	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:319)
-	at org.testng.SuiteRunner.run(SuiteRunner.java:268)
-	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
-	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
-	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1225)
-	at org.testng.TestNG.runSuitesLocally(TestNG.java:1150)
-	at org.testng.TestNG.runSuites(TestNG.java:1075)
-	at org.testng.TestNG.run(TestNG.java:1047)
-	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:126)
-	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:137)
-	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:58)
-Caused by: java.lang.IllegalArgumentException
-	at com.distrimind.util.AbstractDecentralizedID.instanceOf(Unknown Source)
-	at com.distrimind.util.AbstractDecentralizedID.instanceOf(Unknown Source)
-	at com.distrimind.ood.database.fieldaccessors.DencetralizedIDFieldAccessor.setValue(DencetralizedIDFieldAccessor.java:278)
-	... 33 more
-</pre></div></td>
-<td>0</td>
-<td>com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3</td></tr>
+<td>6</td>
+<td>com.distrimind.ood.tests.DerbyTestDatabase@52606914</td></tr>
 </table><p>
 <table width='100%' border='1' class='invocation-passed'>
 <tr><td colspan='4' align='center'><b>PASSED TESTS</b></td></tr>
@@ -264,27 +162,22 @@ Caused by: java.lang.IllegalArgumentException
 <td title='com.distrimind.ood.tests.DerbyTestDatabase.firstAdd()'><b>firstAdd</b><br>Test class: com.distrimind.ood.tests.DerbyTestDatabase</td>
 <td></td>
 <td>0</td>
-<td>com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3</td></tr>
+<td>com.distrimind.ood.tests.DerbyTestDatabase@52606914</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.DerbyTestDatabase.firstLoad()'><b>firstLoad</b><br>Test class: com.distrimind.ood.tests.DerbyTestDatabase</td>
 <td></td>
 <td>2</td>
-<td>com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3</td></tr>
-<tr>
-<td title='com.distrimind.ood.tests.DerbyTestDatabase.firstReload()'><b>firstReload</b><br>Test class: com.distrimind.ood.tests.DerbyTestDatabase</td>
-<td></td>
-<td>5</td>
-<td>com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3</td></tr>
+<td>com.distrimind.ood.tests.DerbyTestDatabase@52606914</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.DerbyTestDatabase.firstTestSize()'><b>firstTestSize</b><br>Test class: com.distrimind.ood.tests.DerbyTestDatabase</td>
 <td></td>
 <td>0</td>
-<td>com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3</td></tr>
+<td>com.distrimind.ood.tests.DerbyTestDatabase@52606914</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.DerbyTestDatabase.isLoadedIntoMemory()'><b>isLoadedIntoMemory</b><br>Test class: com.distrimind.ood.tests.DerbyTestDatabase</td>
 <td></td>
 <td>0</td>
-<td>com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3</td></tr>
+<td>com.distrimind.ood.tests.DerbyTestDatabase@52606914</td></tr>
 </table><p>
 <table width='100%' border='1' class='invocation-skipped'>
 <tr><td colspan='4' align='center'><b>SKIPPED TESTS</b></td></tr>
@@ -295,7 +188,7 @@ Caused by: java.lang.IllegalArgumentException
 </tr>
 <tr>
 <td title='com.distrimind.ood.tests.DerbyTestDatabase.addForeignKeyAndTestUniqueKeys()'><b>addForeignKeyAndTestUniqueKeys</b><br>Test class: com.distrimind.ood.tests.DerbyTestDatabase</td>
-<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.addForeignKeyAndTestUniqueKeys()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.addForeignKeyAndTestUniqueKeys()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -314,8 +207,8 @@ Caused by: java.lang.IllegalArgumentException
 	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:126)
 	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:137)
 	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:58)
-</pre></div><a href='#' onClick='toggleBox("stack-trace276440784", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
-<div class='stack-trace' id='stack-trace276440784'><pre>java.lang.Throwable: Method DerbyTestDatabase.addForeignKeyAndTestUniqueKeys()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+</pre></div><a href='#' onClick='toggleBox("stack-trace1136193213", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
+<div class='stack-trace' id='stack-trace1136193213'><pre>java.lang.Throwable: Method DerbyTestDatabase.addForeignKeyAndTestUniqueKeys()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -339,7 +232,7 @@ Caused by: java.lang.IllegalArgumentException
 <td>null</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.DerbyTestDatabase.addSecondRecord()'><b>addSecondRecord</b><br>Test class: com.distrimind.ood.tests.DerbyTestDatabase</td>
-<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.addSecondRecord()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.addSecondRecord()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -358,8 +251,8 @@ Caused by: java.lang.IllegalArgumentException
 	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:126)
 	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:137)
 	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:58)
-</pre></div><a href='#' onClick='toggleBox("stack-trace1111047446", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
-<div class='stack-trace' id='stack-trace1111047446'><pre>java.lang.Throwable: Method DerbyTestDatabase.addSecondRecord()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+</pre></div><a href='#' onClick='toggleBox("stack-trace688140087", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
+<div class='stack-trace' id='stack-trace688140087'><pre>java.lang.Throwable: Method DerbyTestDatabase.addSecondRecord()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -383,7 +276,7 @@ Caused by: java.lang.IllegalArgumentException
 <td>null</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.DerbyTestDatabase.alterRecord()'><b>alterRecord</b><br>Test class: com.distrimind.ood.tests.DerbyTestDatabase</td>
-<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.alterRecord()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.alterRecord()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -402,8 +295,8 @@ Caused by: java.lang.IllegalArgumentException
 	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:126)
 	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:137)
 	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:58)
-</pre></div><a href='#' onClick='toggleBox("stack-trace210579727", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
-<div class='stack-trace' id='stack-trace210579727'><pre>java.lang.Throwable: Method DerbyTestDatabase.alterRecord()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+</pre></div><a href='#' onClick='toggleBox("stack-trace1564056103", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
+<div class='stack-trace' id='stack-trace1564056103'><pre>java.lang.Throwable: Method DerbyTestDatabase.alterRecord()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -427,7 +320,7 @@ Caused by: java.lang.IllegalArgumentException
 <td>null</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.DerbyTestDatabase.getRecord()'><b>getRecord</b><br>Test class: com.distrimind.ood.tests.DerbyTestDatabase</td>
-<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.getRecord()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.getRecord()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -446,8 +339,8 @@ Caused by: java.lang.IllegalArgumentException
 	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:126)
 	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:137)
 	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:58)
-</pre></div><a href='#' onClick='toggleBox("stack-trace1221819273", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
-<div class='stack-trace' id='stack-trace1221819273'><pre>java.lang.Throwable: Method DerbyTestDatabase.getRecord()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+</pre></div><a href='#' onClick='toggleBox("stack-trace2097288335", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
+<div class='stack-trace' id='stack-trace2097288335'><pre>java.lang.Throwable: Method DerbyTestDatabase.getRecord()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -471,7 +364,7 @@ Caused by: java.lang.IllegalArgumentException
 <td>null</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.DerbyTestDatabase.getRecordFilter()'><b>getRecordFilter</b><br>Test class: com.distrimind.ood.tests.DerbyTestDatabase</td>
-<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.getRecordFilter()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.getRecordFilter()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -490,8 +383,8 @@ Caused by: java.lang.IllegalArgumentException
 	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:126)
 	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:137)
 	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:58)
-</pre></div><a href='#' onClick='toggleBox("stack-trace1462675589", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
-<div class='stack-trace' id='stack-trace1462675589'><pre>java.lang.Throwable: Method DerbyTestDatabase.getRecordFilter()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+</pre></div><a href='#' onClick='toggleBox("stack-trace1469660219", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
+<div class='stack-trace' id='stack-trace1469660219'><pre>java.lang.Throwable: Method DerbyTestDatabase.getRecordFilter()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -515,7 +408,7 @@ Caused by: java.lang.IllegalArgumentException
 <td>null</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.DerbyTestDatabase.getRecordIterator()'><b>getRecordIterator</b><br>Test class: com.distrimind.ood.tests.DerbyTestDatabase</td>
-<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.getRecordIterator()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.getRecordIterator()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -534,8 +427,8 @@ Caused by: java.lang.IllegalArgumentException
 	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:126)
 	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:137)
 	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:58)
-</pre></div><a href='#' onClick='toggleBox("stack-trace1606452844", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
-<div class='stack-trace' id='stack-trace1606452844'><pre>java.lang.Throwable: Method DerbyTestDatabase.getRecordIterator()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+</pre></div><a href='#' onClick='toggleBox("stack-trace1136579993", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
+<div class='stack-trace' id='stack-trace1136579993'><pre>java.lang.Throwable: Method DerbyTestDatabase.getRecordIterator()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -559,7 +452,7 @@ Caused by: java.lang.IllegalArgumentException
 <td>null</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.DerbyTestDatabase.multipleTests()'><b>multipleTests</b><br>Test class: com.distrimind.ood.tests.DerbyTestDatabase</td>
-<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.multipleTests()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.multipleTests()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -578,8 +471,8 @@ Caused by: java.lang.IllegalArgumentException
 	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:126)
 	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:137)
 	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:58)
-</pre></div><a href='#' onClick='toggleBox("stack-trace727451701", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
-<div class='stack-trace' id='stack-trace727451701'><pre>java.lang.Throwable: Method DerbyTestDatabase.multipleTests()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+</pre></div><a href='#' onClick='toggleBox("stack-trace1987530255", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
+<div class='stack-trace' id='stack-trace1987530255'><pre>java.lang.Throwable: Method DerbyTestDatabase.multipleTests()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -603,7 +496,7 @@ Caused by: java.lang.IllegalArgumentException
 <td>null</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.DerbyTestDatabase.prepareMultipleTest()'><b>prepareMultipleTest</b><br>Test class: com.distrimind.ood.tests.DerbyTestDatabase</td>
-<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.prepareMultipleTest()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.prepareMultipleTest()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -622,8 +515,8 @@ Caused by: java.lang.IllegalArgumentException
 	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:126)
 	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:137)
 	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:58)
-</pre></div><a href='#' onClick='toggleBox("stack-trace251043117", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
-<div class='stack-trace' id='stack-trace251043117'><pre>java.lang.Throwable: Method DerbyTestDatabase.prepareMultipleTest()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+</pre></div><a href='#' onClick='toggleBox("stack-trace1918717569", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
+<div class='stack-trace' id='stack-trace1918717569'><pre>java.lang.Throwable: Method DerbyTestDatabase.prepareMultipleTest()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -647,7 +540,7 @@ Caused by: java.lang.IllegalArgumentException
 <td>null</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.DerbyTestDatabase.removeForeignKeyRecords()'><b>removeForeignKeyRecords</b><br>Test class: com.distrimind.ood.tests.DerbyTestDatabase</td>
-<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.removeForeignKeyRecords()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.removeForeignKeyRecords()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -666,8 +559,8 @@ Caused by: java.lang.IllegalArgumentException
 	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:126)
 	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:137)
 	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:58)
-</pre></div><a href='#' onClick='toggleBox("stack-trace108709378", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
-<div class='stack-trace' id='stack-trace108709378'><pre>java.lang.Throwable: Method DerbyTestDatabase.removeForeignKeyRecords()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+</pre></div><a href='#' onClick='toggleBox("stack-trace1398202741", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
+<div class='stack-trace' id='stack-trace1398202741'><pre>java.lang.Throwable: Method DerbyTestDatabase.removeForeignKeyRecords()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -691,7 +584,7 @@ Caused by: java.lang.IllegalArgumentException
 <td>null</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.DerbyTestDatabase.removePointedRecords()'><b>removePointedRecords</b><br>Test class: com.distrimind.ood.tests.DerbyTestDatabase</td>
-<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.removePointedRecords()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.removePointedRecords()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -710,8 +603,8 @@ Caused by: java.lang.IllegalArgumentException
 	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:126)
 	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:137)
 	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:58)
-</pre></div><a href='#' onClick='toggleBox("stack-trace601129593", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
-<div class='stack-trace' id='stack-trace601129593'><pre>java.lang.Throwable: Method DerbyTestDatabase.removePointedRecords()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+</pre></div><a href='#' onClick='toggleBox("stack-trace550757297", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
+<div class='stack-trace' id='stack-trace550757297'><pre>java.lang.Throwable: Method DerbyTestDatabase.removePointedRecords()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -735,7 +628,7 @@ Caused by: java.lang.IllegalArgumentException
 <td>null</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.DerbyTestDatabase.removeRecord()'><b>removeRecord</b><br>Test class: com.distrimind.ood.tests.DerbyTestDatabase</td>
-<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.removeRecord()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.removeRecord()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -754,8 +647,8 @@ Caused by: java.lang.IllegalArgumentException
 	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:126)
 	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:137)
 	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:58)
-</pre></div><a href='#' onClick='toggleBox("stack-trace1838372465", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
-<div class='stack-trace' id='stack-trace1838372465'><pre>java.lang.Throwable: Method DerbyTestDatabase.removeRecord()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+</pre></div><a href='#' onClick='toggleBox("stack-trace702217211", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
+<div class='stack-trace' id='stack-trace702217211'><pre>java.lang.Throwable: Method DerbyTestDatabase.removeRecord()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -779,7 +672,7 @@ Caused by: java.lang.IllegalArgumentException
 <td>null</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.DerbyTestDatabase.removeRecords()'><b>removeRecords</b><br>Test class: com.distrimind.ood.tests.DerbyTestDatabase</td>
-<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.removeRecords()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.removeRecords()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -798,8 +691,8 @@ Caused by: java.lang.IllegalArgumentException
 	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:126)
 	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:137)
 	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:58)
-</pre></div><a href='#' onClick='toggleBox("stack-trace1281374839", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
-<div class='stack-trace' id='stack-trace1281374839'><pre>java.lang.Throwable: Method DerbyTestDatabase.removeRecords()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+</pre></div><a href='#' onClick='toggleBox("stack-trace996575486", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
+<div class='stack-trace' id='stack-trace996575486'><pre>java.lang.Throwable: Method DerbyTestDatabase.removeRecords()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -823,7 +716,7 @@ Caused by: java.lang.IllegalArgumentException
 <td>null</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.DerbyTestDatabase.removeWithCascade()'><b>removeWithCascade</b><br>Test class: com.distrimind.ood.tests.DerbyTestDatabase</td>
-<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.removeWithCascade()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.removeWithCascade()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -842,8 +735,52 @@ Caused by: java.lang.IllegalArgumentException
 	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:126)
 	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:137)
 	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:58)
-</pre></div><a href='#' onClick='toggleBox("stack-trace1204772934", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
-<div class='stack-trace' id='stack-trace1204772934'><pre>java.lang.Throwable: Method DerbyTestDatabase.removeWithCascade()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+</pre></div><a href='#' onClick='toggleBox("stack-trace1321515041", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
+<div class='stack-trace' id='stack-trace1321515041'><pre>java.lang.Throwable: Method DerbyTestDatabase.removeWithCascade()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:778)
+	at org.testng.TestRunner.run(TestRunner.java:632)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:366)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:361)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:319)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:268)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1225)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1150)
+	at org.testng.TestNG.runSuites(TestNG.java:1075)
+	at org.testng.TestNG.run(TestNG.java:1047)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:126)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:137)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:58)
+</pre></div></td>
+<td>0</td>
+<td>null</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.DerbyTestDatabase.secondTestSize()'><b>secondTestSize</b><br>Test class: com.distrimind.ood.tests.DerbyTestDatabase</td>
+<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.secondTestSize()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:778)
+	at org.testng.TestRunner.run(TestRunner.java:632)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:366)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:361)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:319)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:268)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1225)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1150)
+	at org.testng.TestNG.runSuites(TestNG.java:1075)
+	at org.testng.TestNG.run(TestNG.java:1047)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:126)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:137)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:58)
+</pre></div><a href='#' onClick='toggleBox("stack-trace2056418490", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
+<div class='stack-trace' id='stack-trace2056418490'><pre>java.lang.Throwable: Method DerbyTestDatabase.secondTestSize()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -867,7 +804,7 @@ Caused by: java.lang.IllegalArgumentException
 <td>null</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.DerbyTestDatabase.setAutoRandomFields()'><b>setAutoRandomFields</b><br>Test class: com.distrimind.ood.tests.DerbyTestDatabase</td>
-<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.setAutoRandomFields()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.setAutoRandomFields()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -886,8 +823,8 @@ Caused by: java.lang.IllegalArgumentException
 	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:126)
 	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:137)
 	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:58)
-</pre></div><a href='#' onClick='toggleBox("stack-trace2046794164", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
-<div class='stack-trace' id='stack-trace2046794164'><pre>java.lang.Throwable: Method DerbyTestDatabase.setAutoRandomFields()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+</pre></div><a href='#' onClick='toggleBox("stack-trace1054555454", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
+<div class='stack-trace' id='stack-trace1054555454'><pre>java.lang.Throwable: Method DerbyTestDatabase.setAutoRandomFields()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -911,7 +848,7 @@ Caused by: java.lang.IllegalArgumentException
 <td>null</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.DerbyTestDatabase.testArrayRecordParameters()'><b>testArrayRecordParameters</b><br>Test class: com.distrimind.ood.tests.DerbyTestDatabase</td>
-<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.testArrayRecordParameters()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.testArrayRecordParameters()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -930,8 +867,8 @@ Caused by: java.lang.IllegalArgumentException
 	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:126)
 	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:137)
 	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:58)
-</pre></div><a href='#' onClick='toggleBox("stack-trace1781123576", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
-<div class='stack-trace' id='stack-trace1781123576'><pre>java.lang.Throwable: Method DerbyTestDatabase.testArrayRecordParameters()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+</pre></div><a href='#' onClick='toggleBox("stack-trace1569817133", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
+<div class='stack-trace' id='stack-trace1569817133'><pre>java.lang.Throwable: Method DerbyTestDatabase.testArrayRecordParameters()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -955,7 +892,7 @@ Caused by: java.lang.IllegalArgumentException
 <td>null</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.DerbyTestDatabase.testBackup()'><b>testBackup</b><br>Test class: com.distrimind.ood.tests.DerbyTestDatabase</td>
-<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.testBackup()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.testBackup()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -974,8 +911,8 @@ Caused by: java.lang.IllegalArgumentException
 	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:126)
 	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:137)
 	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:58)
-</pre></div><a href='#' onClick='toggleBox("stack-trace189236502", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
-<div class='stack-trace' id='stack-trace189236502'><pre>java.lang.Throwable: Method DerbyTestDatabase.testBackup()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+</pre></div><a href='#' onClick='toggleBox("stack-trace939012831", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
+<div class='stack-trace' id='stack-trace939012831'><pre>java.lang.Throwable: Method DerbyTestDatabase.testBackup()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -999,7 +936,7 @@ Caused by: java.lang.IllegalArgumentException
 <td>null</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.DerbyTestDatabase.testCheckPoint()'><b>testCheckPoint</b><br>Test class: com.distrimind.ood.tests.DerbyTestDatabase</td>
-<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.testCheckPoint()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.testCheckPoint()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -1018,8 +955,8 @@ Caused by: java.lang.IllegalArgumentException
 	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:126)
 	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:137)
 	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:58)
-</pre></div><a href='#' onClick='toggleBox("stack-trace198756779", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
-<div class='stack-trace' id='stack-trace198756779'><pre>java.lang.Throwable: Method DerbyTestDatabase.testCheckPoint()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+</pre></div><a href='#' onClick='toggleBox("stack-trace1412178379", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
+<div class='stack-trace' id='stack-trace1412178379'><pre>java.lang.Throwable: Method DerbyTestDatabase.testCheckPoint()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -1043,7 +980,7 @@ Caused by: java.lang.IllegalArgumentException
 <td>null</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.DerbyTestDatabase.testFilters()'><b>testFilters</b><br>Test class: com.distrimind.ood.tests.DerbyTestDatabase</td>
-<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.testFilters()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.testFilters()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -1062,8 +999,52 @@ Caused by: java.lang.IllegalArgumentException
 	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:126)
 	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:137)
 	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:58)
-</pre></div><a href='#' onClick='toggleBox("stack-trace224123747", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
-<div class='stack-trace' id='stack-trace224123747'><pre>java.lang.Throwable: Method DerbyTestDatabase.testFilters()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+</pre></div><a href='#' onClick='toggleBox("stack-trace313835269", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
+<div class='stack-trace' id='stack-trace313835269'><pre>java.lang.Throwable: Method DerbyTestDatabase.testFilters()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:778)
+	at org.testng.TestRunner.run(TestRunner.java:632)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:366)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:361)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:319)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:268)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1225)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1150)
+	at org.testng.TestNG.runSuites(TestNG.java:1075)
+	at org.testng.TestNG.run(TestNG.java:1047)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:126)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:137)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:58)
+</pre></div></td>
+<td>0</td>
+<td>null</td></tr>
+<tr>
+<td title='com.distrimind.ood.tests.DerbyTestDatabase.testFirstAdd()'><b>testFirstAdd</b><br>Test class: com.distrimind.ood.tests.DerbyTestDatabase</td>
+<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.testFirstAdd()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:778)
+	at org.testng.TestRunner.run(TestRunner.java:632)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:366)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:361)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:319)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:268)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1225)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1150)
+	at org.testng.TestNG.runSuites(TestNG.java:1075)
+	at org.testng.TestNG.run(TestNG.java:1047)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:126)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:137)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:58)
+</pre></div><a href='#' onClick='toggleBox("stack-trace1441626877", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
+<div class='stack-trace' id='stack-trace1441626877'><pre>java.lang.Throwable: Method DerbyTestDatabase.testFirstAdd()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -1087,7 +1068,7 @@ Caused by: java.lang.IllegalArgumentException
 <td>null</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.DerbyTestDatabase.testIsPointed()'><b>testIsPointed</b><br>Test class: com.distrimind.ood.tests.DerbyTestDatabase</td>
-<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.testIsPointed()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.testIsPointed()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -1106,8 +1087,8 @@ Caused by: java.lang.IllegalArgumentException
 	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:126)
 	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:137)
 	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:58)
-</pre></div><a href='#' onClick='toggleBox("stack-trace284626145", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
-<div class='stack-trace' id='stack-trace284626145'><pre>java.lang.Throwable: Method DerbyTestDatabase.testIsPointed()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+</pre></div><a href='#' onClick='toggleBox("stack-trace1990400244", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
+<div class='stack-trace' id='stack-trace1990400244'><pre>java.lang.Throwable: Method DerbyTestDatabase.testIsPointed()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -1131,7 +1112,7 @@ Caused by: java.lang.IllegalArgumentException
 <td>null</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.DerbyTestDatabase.testRemoveFilters()'><b>testRemoveFilters</b><br>Test class: com.distrimind.ood.tests.DerbyTestDatabase</td>
-<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.testRemoveFilters()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.testRemoveFilters()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -1150,8 +1131,8 @@ Caused by: java.lang.IllegalArgumentException
 	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:126)
 	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:137)
 	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:58)
-</pre></div><a href='#' onClick='toggleBox("stack-trace2041695576", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
-<div class='stack-trace' id='stack-trace2041695576'><pre>java.lang.Throwable: Method DerbyTestDatabase.testRemoveFilters()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+</pre></div><a href='#' onClick='toggleBox("stack-trace269671522", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
+<div class='stack-trace' id='stack-trace269671522'><pre>java.lang.Throwable: Method DerbyTestDatabase.testRemoveFilters()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -1175,7 +1156,7 @@ Caused by: java.lang.IllegalArgumentException
 <td>null</td></tr>
 <tr>
 <td title='com.distrimind.ood.tests.DerbyTestDatabase.testThreadSafe()'><b>testThreadSafe</b><br>Test class: com.distrimind.ood.tests.DerbyTestDatabase</td>
-<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+<td><div><pre>java.lang.Throwable: Method DerbyTestDatabase.testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
@@ -1194,8 +1175,8 @@ Caused by: java.lang.IllegalArgumentException
 	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:126)
 	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:137)
 	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:58)
-</pre></div><a href='#' onClick='toggleBox("stack-trace1568788160", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
-<div class='stack-trace' id='stack-trace1568788160'><pre>java.lang.Throwable: Method DerbyTestDatabase.testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@2c2815d3] depends on not successfully finished methods
+</pre></div><a href='#' onClick='toggleBox("stack-trace1310659044", this, "Click to show all stack frames", "Click to hide stack frames")'>Click to show all stack frames</a>
+<div class='stack-trace' id='stack-trace1310659044'><pre>java.lang.Throwable: Method DerbyTestDatabase.testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@52606914] depends on not successfully finished methods
 	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1040)
 	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
 	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)

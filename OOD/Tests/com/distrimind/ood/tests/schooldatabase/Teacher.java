@@ -2,8 +2,8 @@ package com.distrimind.ood.tests.schooldatabase;
 
 import java.util.ArrayList;
 
-import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.Filter;
+import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.annotations.AutoPrimaryKey;

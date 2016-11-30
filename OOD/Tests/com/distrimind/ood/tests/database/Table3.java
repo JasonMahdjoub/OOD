@@ -57,6 +57,11 @@ public final class Table3 extends Table<Table3.Record>
 	public @NotNull @Field Calendar CalendarValue;
 	public @NotNull @Field SymmetricSecretKey secretKey;
 	public @NotNull @Field SymmetricEncryptionType typeSecretKey;
+	@Field
+	public @NotNull SubField subField;
+	@Field
+	public @NotNull SubSubField subSubField;
+	
 	
     }
 }

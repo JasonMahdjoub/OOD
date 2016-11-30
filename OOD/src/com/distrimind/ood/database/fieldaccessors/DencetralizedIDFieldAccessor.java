@@ -49,6 +49,7 @@ import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.SqlField;
 import com.distrimind.ood.database.SqlFieldInstance;
+import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
@@ -61,7 +62,7 @@ import com.distrimind.util.SecuredDecentralizedID;
 /**
  * 
  * @author Jason Mahdjoub
- * @version 1.0
+ * @version 1.1
  * @since OOD 1.7.0
  * 
  */
@@ -70,9 +71,9 @@ public class DencetralizedIDFieldAccessor extends FieldAccessor
     protected final SqlField sql_fields[];
     private final boolean isVarBinary;
     
-    protected DencetralizedIDFieldAccessor(DatabaseWrapper _sql_connection, Field _field) throws DatabaseException
+    protected DencetralizedIDFieldAccessor(Class<? extends Table<?>> table_class, DatabaseWrapper _sql_connection, Field _field, String parentFieldName) throws DatabaseException
     {
-	super(_sql_connection, _field,compatibleClasses);
+	super(_sql_connection, _field,parentFieldName, compatibleClasses, table_class);
 	sql_fields=new SqlField[1];
 	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), sql_connection.isVarBinarySupported()?"VARBINARY(70)":sql_connection.getBigIntegerType(), null, null);
 	isVarBinary=sql_connection.isVarBinarySupported();
@@ -123,7 +124,7 @@ public class DencetralizedIDFieldAccessor extends FieldAccessor
     
     
     @Override
-    public void setValue(DatabaseRecord _class_instance, Object _field_instance) throws DatabaseException
+    public void setValue(Object _class_instance, Object _field_instance) throws DatabaseException
     {
 	if (_field_instance==null)
 	{
@@ -147,7 +148,7 @@ public class DencetralizedIDFieldAccessor extends FieldAccessor
     }
 
     @Override
-    public boolean equals(DatabaseRecord _class_instance, Object _field_instance) throws DatabaseException
+    public boolean equals(Object _class_instance, Object _field_instance) throws DatabaseException
     {
 	try
 	{
@@ -211,7 +212,7 @@ public class DencetralizedIDFieldAccessor extends FieldAccessor
 
 
     @Override
-    public Object getValue(DatabaseRecord _class_instance) throws DatabaseException
+    public Object getValue(Object _class_instance) throws DatabaseException
     {
 	try
 	{
@@ -232,7 +233,7 @@ public class DencetralizedIDFieldAccessor extends FieldAccessor
     }
 
     @Override
-    public SqlFieldInstance[] getSqlFieldsInstances(DatabaseRecord _instance) throws DatabaseException
+    public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException
     {
 	SqlFieldInstance res[]=new SqlFieldInstance[1];
 	if (isVarBinary)
@@ -254,13 +255,13 @@ public class DencetralizedIDFieldAccessor extends FieldAccessor
     }
 
     @Override
-    public int compare(DatabaseRecord _r1, DatabaseRecord _r2) throws DatabaseException
+    public int compare(Object _r1, Object _r2) throws DatabaseException
     {
 	throw new DatabaseException("Unexpected exception");
     }
 
     @Override
-    public void setValue(DatabaseRecord _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records) throws DatabaseException
+    public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records) throws DatabaseException
     {
 	try
 	{
@@ -285,11 +286,11 @@ public class DencetralizedIDFieldAccessor extends FieldAccessor
     }
 
     @Override
-    public void getValue(DatabaseRecord _class_instance, PreparedStatement _prepared_statement, int _field_start) throws DatabaseException
+    public void getValue(Object _class_instance, PreparedStatement _prepared_statement, int _field_start) throws DatabaseException
     {
 	try
 	{
-	    getValue(field.get(_class_instance), _prepared_statement, _field_start);
+	    getValue(_prepared_statement, _field_start, field.get(_class_instance));
 	}
 	catch(Exception e)
 	{
@@ -298,7 +299,7 @@ public class DencetralizedIDFieldAccessor extends FieldAccessor
 	
     }
     @Override
-    public void getValue(Object o, PreparedStatement _prepared_statement, int _field_start) throws DatabaseException
+    public void getValue(PreparedStatement _prepared_statement, int _field_start, Object o) throws DatabaseException
     {
 	try
 	{
@@ -321,7 +322,7 @@ public class DencetralizedIDFieldAccessor extends FieldAccessor
     }
     
     @Override
-    public void updateValue(DatabaseRecord _class_instance, Object _field_instance, ResultSet _result_set) throws DatabaseException
+    public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set) throws DatabaseException
     {
 	setValue(_class_instance, _field_instance);
 	try
@@ -347,7 +348,7 @@ public class DencetralizedIDFieldAccessor extends FieldAccessor
     }
     
     @Override
-    protected void updateResultSetValue(DatabaseRecord _class_instance, ResultSet _result_set, SqlFieldTranslation _sft) throws DatabaseException
+    protected void updateResultSetValue(Object _class_instance, ResultSet _result_set, SqlFieldTranslation _sft) throws DatabaseException
     {
 	try
 	{

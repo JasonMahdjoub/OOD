@@ -42,5 +42,8 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 public interface Transaction
 {
     public Object run(DatabaseWrapper _sql_connection) throws DatabaseException;
+    
+    public TransactionIsolation getTransactionIsolation();
+    
     public boolean doesWriteData();
 }

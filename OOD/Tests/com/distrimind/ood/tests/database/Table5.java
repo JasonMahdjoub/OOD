@@ -9,7 +9,7 @@ import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.annotations.Unique;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 
-@LoadToMemory
+@LoadToMemory(refreshInterval=100)
 public final class Table5 extends Table<Table5.Record>
 {
     protected Table5() throws DatabaseException
@@ -25,6 +25,7 @@ public final class Table5 extends Table<Table5.Record>
 	}
 	public @PrimaryKey @ForeignKey Table3.Record fr1_pk1;
 	public @Unique @Field int int_value;
+	
     }
     
     

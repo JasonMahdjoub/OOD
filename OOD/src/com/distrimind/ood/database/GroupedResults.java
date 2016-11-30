@@ -123,13 +123,13 @@ public final class GroupedResults<T extends DatabaseRecord>
 	
 	public boolean equals(T o1, Object o2) throws DatabaseException
 	{
-	    DatabaseRecord r1=o1;
+	    Object r1=o1;
 	    for (int i=0;i<fields.size()-1;i++)
 	    {
 		if (r1==null)
 		    return r1==o2;
 		ForeignKeyFieldAccessor f=(ForeignKeyFieldAccessor)fields.get(i);
-		r1=(DatabaseRecord)f.getValue(r1);
+		r1=(Object)f.getValue(r1);
 	    }
 	    if (r1==null)
 		return r1==o2;
@@ -139,13 +139,13 @@ public final class GroupedResults<T extends DatabaseRecord>
 	
 	public Object getValue(T o) throws DatabaseException
 	{
-	    DatabaseRecord r=o;
+	    Object r=o;
 	    for (int i=0;i<fields.size()-1;i++)
 	    {
 		if (r==null)
 		    return null;
 		ForeignKeyFieldAccessor f=(ForeignKeyFieldAccessor)fields.get(i);
-		r=(DatabaseRecord)f.getValue(r);
+		r=(Object)f.getValue(r);
 	    }
 	    if (r==null)
 		return null;

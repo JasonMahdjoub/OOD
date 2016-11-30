@@ -45,7 +45,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * This annotation must be declared before a field contained into a class which inherits the class {@link com.distrimind.ood.database.DatabaseRecord}. The use of this annotation means that the correspondent field is unique into the database. 
+ * This annotation must be declared before a field contained into a class which inherits the class {@link com.distrimind.ood.database.Object}. The use of this annotation means that the correspondent field is unique into the database. 
  * This annotation is not sufficient to declare a field and must be used with one of the annotations {@link com.distrimind.ood.database.annotations.Field}, {@link com.distrimind.ood.database.annotations.PrimaryKey}, {@link com.distrimind.ood.database.annotations.AutoPrimaryKey}, {@link com.distrimind.ood.database.annotations.RandomPrimaryKey}, or {@link com.distrimind.ood.database.annotations.ForeignKey}.
  *   
  * @author Jason Mahdjoub

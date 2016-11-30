@@ -59,7 +59,7 @@ import com.distrimind.util.FileTools;
  * Sql connection wrapper for Derby DB
  * 
  * @author Jason Mahdjoub
- * @version 1.1
+ * @version 1.2
  * @since OOD 1.4
  */
 public class EmbeddedDerbyWrapper extends DatabaseWrapper
@@ -98,13 +98,19 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
      *             if parameters are null pointers.
      * @throws IllegalArgumentException
      *             If the given _directory is not a directory.
-     * @throws DatabaseLoadingException
-     *             If a Sql exception exception occurs.
+     * @throws DatabaseException 
      */
-    public EmbeddedDerbyWrapper(File _directory) throws IllegalArgumentException, DatabaseLoadingException
+    public EmbeddedDerbyWrapper(File _directory) throws IllegalArgumentException, DatabaseException
     {
 	super(getConnection(_directory), "Database from file : " + _directory.getAbsolutePath());
 	dbURL = getDBUrl(_directory);
+    }
+
+    @Override
+    public boolean supportTransactions()
+    {
+	return false;
+	
     }
 
     private static String getDBUrl(File _directory)
@@ -565,6 +571,12 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
 	final String querry="CALL SYSCS_UTIL.SYSCS_BACKUP_DATABASE(?)";
 	    this.runTransaction(new Transaction() {
 	    
+		@Override
+		public TransactionIsolation getTransactionIsolation()
+		{
+		    return TransactionIsolation.TRANSACTION_READ_COMMITTED;
+		}
+		
 		@Override
 		public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 		{

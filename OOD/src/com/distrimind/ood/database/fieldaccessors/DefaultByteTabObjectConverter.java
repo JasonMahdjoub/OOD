@@ -54,7 +54,7 @@ import com.distrimind.util.crypto.SymmetricSecretKey;
  * {@inheritDoc}
  * 
  * @author Jason Mahdjoub
- * @version 1.0
+ * @version 1.1
  * @since OOD 1.5
  * 
  */

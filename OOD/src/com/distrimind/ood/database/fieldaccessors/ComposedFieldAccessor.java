@@ -1,4 +1,3 @@
-
 /*
 Copyright or © or Copr. Jason Mahdjoub (01/04/2013)
 
@@ -34,63 +33,91 @@ same conditions as regards security.
 The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
-
 package com.distrimind.ood.database.fieldaccessors;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Date;
+import java.util.List;
 
 import com.distrimind.ood.database.DatabaseRecord;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.SqlField;
 import com.distrimind.ood.database.SqlFieldInstance;
 import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
+
 /**
  * 
  * @author Jason Mahdjoub
- * @version 1.2
- * @since OOD 1.0
- * 
+ * @version 1.0
+ * @since OOD 1.8
  */
-public class DateFieldAccessor extends FieldAccessor
+public class ComposedFieldAccessor extends FieldAccessor
 {
-    private final SqlField sql_fields[];
+    private final ArrayList<FieldAccessor> fieldsAccessor;
+    private final Constructor<?> defaultConstructor;
+    private final SqlField sqlFields[];
     
-    protected DateFieldAccessor(Class<? extends Table<?>> table_class, Field _field, String parentFieldName) throws DatabaseException
+    protected ComposedFieldAccessor(DatabaseWrapper _sql_connection, Class<? extends Table<?>> _table_class, Field _field, String parentFieldName, List<Class<?>> parentFields) throws DatabaseException
     {
-	super(null, _field, parentFieldName, getCompatibleClasses(_field), table_class);
-	if (!Date.class.isAssignableFrom(_field.getType()))
-	    throw new FieldDatabaseException("The field "+_field.getName()+" of the class "+_field.getDeclaringClass().getName()+" of type "+_field.getType()+" must be a Date type.");
-	sql_fields=new SqlField[1];
-	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), "TIMESTAMP", null, null);
+	super(_sql_connection, _field, parentFieldName, new Class<?>[]{_field.getType()},_table_class);
+	try
+	{
+	    defaultConstructor=_field.getType().getDeclaredConstructor();
+	    if (!Modifier.isPublic(defaultConstructor.getModifiers()))
+	    {
+		throw new DatabaseException("The class "+_field.getType().getCanonicalName()+" must have a public default constructor ");
+	    }
+	    
+	    fieldsAccessor=FieldAccessor.getFields(_sql_connection, _table_class, _field.getType(), getFieldName(), parentFields);
+	    ArrayList<SqlField> sfs=new ArrayList<>();
+	    
+	   
+	    for (FieldAccessor fa : fieldsAccessor)
+	    {
+		for (SqlField sf : fa.getDeclaredSqlFields())
+		{
+		    sfs.add(sf);
+		    
+		}
+	    }
+	    sqlFields=new SqlField[sfs.size()];
+	    sfs.toArray(sqlFields);
+	}
+	catch (NoSuchMethodException | SecurityException e)
+	{
+	    throw new DatabaseException("The class "+_field.getType().getCanonicalName()+" must have a public default constructor ", e);
+	}
+	    
+	
+	
     }
-    private static Class<?>[] getCompatibleClasses(Field field)
-    {
-	Class<?>[] res=new Class<?>[1];
-	res[0]=field.getType();
-	return res;
-    }
-    
 
+    public ArrayList<FieldAccessor> getFieldAccessors()
+    {
+	return fieldsAccessor;
+    }
+    
     @Override
     public void setValue(Object _class_instance, Object _field_instance) throws DatabaseException
     {
-	if (_field_instance==null)
+	if (_field_instance==null && isNotNull())
 	{
-	    if (isNotNull())
-		throw new FieldDatabaseException("The given _field_instance, used to store the field "+field.getName()+" (type="+field.getType().getName()+", declaring_class="+field.getDeclaringClass().getName()+") into the DatabaseField class "+field.getDeclaringClass().getName()+", is null and should not be (property NotNull present).");
+	    throw new FieldDatabaseException("The given _field_instance, used to store the field "+field.getName()+" (type="+field.getType().getName()+", declaring_class="+field.getDeclaringClass().getName()+") into the DatabaseField class "+field.getDeclaringClass().getName()+", is null and should not be (property NotNull present).");
 	}
-	else if (!(field.getType().isAssignableFrom(_field_instance.getClass())))
-	    throw new FieldDatabaseException("The given _field_instance parameter, destinated to the field "+field.getName()+" of the class "+field.getDeclaringClass().getName()+", should be a "+field.getType().getName()+" and not a "+_field_instance.getClass().getName());
 	try
 	{
-	    field.set(_class_instance, _field_instance);
+	    if (_field_instance==null)
+		field.set(_class_instance, null);
+	    else if (field.getType().isAssignableFrom(_field_instance.getClass()))
+		field.set(_class_instance, _field_instance);
+	    else
+		throw new FieldDatabaseException("The given _field_instance parameter, destinated to the field "+field.getName()+" of the class "+field.getDeclaringClass().getName()+", should be an instance of "+field.getType().getCanonicalName()+" and not a "+_field_instance.getClass().getName());
 	}
 	catch(IllegalArgumentException e)
 	{
@@ -100,6 +127,8 @@ public class DateFieldAccessor extends FieldAccessor
 	{
 	    throw new DatabaseException("Unexpected exception.",e);
 	}
+	
+	
     }
 
     @Override
@@ -107,25 +136,32 @@ public class DateFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    Timestamp res=_result_set.getTimestamp(sql_fields[0].short_field);
-	    if (res==null && isNotNull())
-		throw new DatabaseIntegrityException("Unexpected exception.");
-	    field.set(_class_instance, new Date(res.getTime()));
+	    Object instance=(Object)defaultConstructor.newInstance();
+	    
+	    for (FieldAccessor fa : fieldsAccessor)
+	    {
+		fa.setValue(instance, _result_set, _pointing_records);
+	    }
+	    field.set(_class_instance, instance);
 	}
 	catch(Exception e)
 	{
 	    throw DatabaseException.getDatabaseException(e);
 	}
+
+	
     }
 
     @Override
     public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set) throws DatabaseException
     {
-	setValue(_class_instance, _field_instance);
 	try
 	{
-	    Date d=(Date)field.get(_class_instance);
-	    _result_set.updateTimestamp(sql_fields[0].short_field, d==null?null:new Timestamp(d.getTime()));
+	    setValue(_class_instance, _field_instance);
+	    for (FieldAccessor fa : fieldsAccessor)
+	    {
+	    	fa.updateValue(_field_instance, fa.field.get(_field_instance), _result_set);
+	    }
 	}
 	catch(Exception e)
 	{
@@ -138,30 +174,50 @@ public class DateFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    Date d=(Date)field.get(_class_instance);
-	    _result_set.updateTimestamp(_sft.translateField(sql_fields[0]), d==null?null:new Timestamp(d.getTime()));
+	    Object fi=field.get(_class_instance);
+	    for (FieldAccessor fa : fieldsAccessor)
+	    {
+		fa.updateResultSetValue(fi, _result_set, _sft);
+	    }
 	}
 	catch(Exception e)
 	{
 	    throw DatabaseException.getDatabaseException(e);
 	}
+	
     }
 
     @Override
     public boolean equals(Object _class_instance, Object _field_instance) throws DatabaseException
     {
+	
 	try
 	{
-	    Date val=(Date)field.get(_class_instance);
-	    if (val==null || _field_instance==null)
-		return _field_instance==val;
-	    if ((!(field.getType().isAssignableFrom(_field_instance.getClass()))))
+	    if (_field_instance==null)
+	    {
+		if (isNotNull())
+		    return false;
+		else 
+		    return field.get(_class_instance)==null;
+	    }
+	    if (field.getType().isAssignableFrom(_field_instance.getClass()))
+	    {
+		Object instance=field.get(_class_instance);
+		
+		
+		for (FieldAccessor fa : fieldsAccessor)
+		{
+		    if (!fa.equals(instance, fa.field.get(_field_instance)))
+			return false;
+		}
+		return true;
+	    }
+	    else
 		return false;
-	    return val.equals(_field_instance);
 	}
 	catch(Exception e)
 	{
-	    throw DatabaseException.getDatabaseException(e);
+	    throw new DatabaseException("",e);
 	}
     }
 
@@ -170,14 +226,16 @@ public class DateFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    Timestamp val1=_result_set.getTimestamp(_sft.translateField(sql_fields[0]));
-	    if (val1==null || _field_instance==null)
-		return _field_instance==val1;
-	    if ((!(field.getType().isAssignableFrom(_field_instance.getClass()))))
-		return false;
-	    return new Date(val1.getTime()).equals(_field_instance);
+	    
+	    
+	    for (FieldAccessor fa : fieldsAccessor)
+	    {
+		if (!fa.equals(fa.field.get(_field_instance), _result_set, _sft))
+		    return false;
+	    }
+	    return true;
 	}
-	catch(Exception e)
+	catch(IllegalArgumentException | IllegalAccessException e)
 	{
 	    throw DatabaseException.getDatabaseException(e);
 	}
@@ -192,8 +250,9 @@ public class DateFieldAccessor extends FieldAccessor
 	}
 	catch(Exception e)
 	{
-	    throw DatabaseException.getDatabaseException(e);
+	    throw new DatabaseException("",e);
 	}
+
     }
 
     @Override
@@ -207,13 +266,20 @@ public class DateFieldAccessor extends FieldAccessor
 	{
 	    throw DatabaseException.getDatabaseException(e);
 	}
+
+	
     }
+
     @Override
-    public void getValue(PreparedStatement _prepared_statement, int _field_start, Object o) throws DatabaseException
+    public void getValue(PreparedStatement _prepared_statement, int _field_start, Object _field_content) throws DatabaseException
     {
 	try
 	{
-	    _prepared_statement.setTimestamp(_field_start, new Timestamp(((Date)o).getTime()));
+	    for (FieldAccessor fa : fieldsAccessor)
+	    {
+		fa.getValue(_field_content, _prepared_statement, _field_start);
+		_field_start+=fa.getDeclaredSqlFields().length;
+	    }
 	}
 	catch(Exception e)
 	{
@@ -224,15 +290,29 @@ public class DateFieldAccessor extends FieldAccessor
     @Override
     public SqlField[] getDeclaredSqlFields()
     {
-	return sql_fields;
+	return sqlFields;
     }
 
     @Override
     public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException
     {
-	SqlFieldInstance res[]=new SqlFieldInstance[1];
-	res[0]=new SqlFieldInstance(sql_fields[0], getValue(_instance));
-	return res;
+	try
+	{
+	    SqlFieldInstance res[]=new SqlFieldInstance[getDeclaredSqlFields().length];
+	    int index=0;
+	    for (FieldAccessor fa : fieldsAccessor)
+	    {
+		SqlFieldInstance r[]=fa.getSqlFieldsInstances(fa.field.get(_instance));
+		for (SqlFieldInstance sfi : r)
+		    res[index++]=sfi;
+	    }
+	    return res;
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+	
     }
 
     @Override
@@ -244,36 +324,19 @@ public class DateFieldAccessor extends FieldAccessor
     @Override
     public boolean isComparable()
     {
-	return true;
+	return false;
     }
 
     @Override
     public boolean canBePrimaryOrUniqueKey()
     {
-	return false;
+	return parentFieldName==null || parentFieldName.isEmpty();
     }
 
     @Override
-    public int compare(Object _r1, Object _r2) throws DatabaseException
+    public int compare(Object _r1, Object _r2)
     {
-	try
-	{
-	    Date obj1=(Date)field.get(_r1);
-	    Date obj2=(Date)field.get(_r2);
-	    if (obj1==null && obj2!=null)
-		return -1;
-	    else if (obj1!=null && obj2==null)
-		return 1;
-	    else if (obj1==obj2)
-		return 0;
-	
-	    return obj1.compareTo(obj2);
-	}
-	catch(Exception e)
-	{
-	    throw new DatabaseException("", e);
-	}
+	return 0;
     }
-	
 
 }

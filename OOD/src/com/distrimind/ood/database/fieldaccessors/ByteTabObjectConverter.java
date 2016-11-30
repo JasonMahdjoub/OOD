@@ -43,7 +43,7 @@ import com.distrimind.ood.database.exceptions.IncompatibleFieldDatabaseException
  * This class aims to get better performance than object serialization.
  *  
  * @author Jason Mahdjoub
- * @version 1.0
+ * @version 1.1
  * @since OOD 1.5
  */
 public abstract class ByteTabObjectConverter

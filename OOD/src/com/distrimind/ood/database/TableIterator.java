@@ -53,7 +53,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  * @version 1.0
  * @since OOD 1.5
  */
-public interface TableIterator<DR extends DatabaseRecord> extends Iterator<DR>, AutoCloseable
+public interface TableIterator<DR extends Object> extends Iterator<DR>, AutoCloseable
 {
 
     /**

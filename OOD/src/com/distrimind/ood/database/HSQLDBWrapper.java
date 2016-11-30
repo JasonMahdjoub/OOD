@@ -65,7 +65,7 @@ import com.distrimind.util.ReadWriteLock;
 /**
  * Sql connection wrapper for HSQLDB
  * @author Jason Mahdjoub
- * @version 1.2
+ * @version 1.3
  * @since OOD 1.0
  */
 public class HSQLDBWrapper extends DatabaseWrapper
@@ -100,7 +100,7 @@ public class HSQLDBWrapper extends DatabaseWrapper
      */
     public HSQLDBWrapper(File _file_name) throws IllegalArgumentException, DatabaseException
     {
-	this(_file_name, 100, 10000, 0, 512);
+	this(_file_name, HSQLDBConcurrencyControl.DEFAULT, 100, 10000, 0, 512);
     }
     
     
@@ -115,9 +115,18 @@ public class HSQLDBWrapper extends DatabaseWrapper
      * @throws IllegalArgumentException If the given file is a directory.
      * @throws DatabaseLoadingException If a Sql exception exception occurs.
      */
-    public HSQLDBWrapper(File _file_name, int _cache_rows, int _cache_size, int _result_max_memory_rows, int _cache_free_count) throws IllegalArgumentException, DatabaseException
+    public HSQLDBWrapper(File _file_name, HSQLDBConcurrencyControl concurrencyControl, int _cache_rows, int _cache_size, int _result_max_memory_rows, int _cache_free_count) throws IllegalArgumentException, DatabaseException
     {
 	super(getConnection(_file_name, _cache_rows, _cache_size, _result_max_memory_rows, _cache_free_count), "Database from file : "+getHSQLDBDataFileName(_file_name)+".data");
+	try(Statement s=sql_connection.createStatement())
+	{
+	    s.executeQuery("SET DATABASE TRANSACTION CONTROL "+concurrencyControl.getCode());
+	}
+	catch(SQLException e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+
     }
     
     private static Connection getConnection(File _file_name, int _cache_rows, int _cache_size, int _result_max_memory_rows, int _cache_free_count) throws DatabaseLoadingException
@@ -206,10 +215,14 @@ public class HSQLDBWrapper extends DatabaseWrapper
     @Override
     protected void closeConnection() throws SQLException
     {
-	Statement s=sql_connection.createStatement();
-	s.executeQuery("SHUTDOWN");
-	s.close();
-	sql_connection.close();
+	try(Statement s=sql_connection.createStatement())
+	{
+	    s.executeQuery("SHUTDOWN");
+	}
+	finally
+	{
+	    sql_connection.close();
+	}
     }
     
     @Override
@@ -673,6 +686,11 @@ public class HSQLDBWrapper extends DatabaseWrapper
 	final String querry="BACKUP DATABASE TO '"+f+(blockDatabase?"' BLOCKING":"' NOT BLOCKING")+(saveAsFiles?" AS FILES":"")+getSqlComma();
 	    this.runTransaction(new Transaction() {
 	    
+		@Override
+		public TransactionIsolation getTransactionIsolation()
+		{
+		    return TransactionIsolation.TRANSACTION_READ_COMMITTED;
+		}
 		@Override
 		public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 		{

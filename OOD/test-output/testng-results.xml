@@ -2,280 +2,280 @@
 <testng-results skipped="0" failed="0" total="65" passed="65">
   <reporter-output>
   </reporter-output>
-  <suite name="TestAll" duration-ms="368520" started-at="2016-10-13T13:25:22Z" finished-at="2016-10-13T13:31:31Z">
+  <suite name="TestAll" duration-ms="1103200" started-at="2016-11-30T08:40:11Z" finished-at="2016-11-30T08:58:34Z">
     <groups>
     </groups>
-    <test name="testDerby" duration-ms="191980" started-at="2016-10-13T13:25:22Z" finished-at="2016-10-13T13:28:34Z">
+    <test name="testDerby" duration-ms="513476" started-at="2016-11-30T08:40:11Z" finished-at="2016-11-30T08:48:44Z">
       <class name="com.distrimind.ood.tests.DerbyTestDatabase">
-        <test-method status="PASS" signature="firstLoad()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="firstLoad" duration-ms="1823" started-at="2016-10-13T15:25:22Z" finished-at="2016-10-13T15:25:24Z">
+        <test-method status="PASS" signature="firstLoad()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="firstLoad" duration-ms="1841" started-at="2016-11-30T09:40:11Z" finished-at="2016-11-30T09:40:13Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- firstLoad -->
-        <test-method status="PASS" signature="firstAdd()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="firstAdd" duration-ms="103" started-at="2016-10-13T15:25:24Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.firstLoad" finished-at="2016-10-13T15:25:24Z">
+        <test-method status="PASS" signature="firstAdd()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="firstAdd" duration-ms="109" started-at="2016-11-30T09:40:13Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.firstLoad" finished-at="2016-11-30T09:40:13Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- firstAdd -->
-        <test-method status="PASS" signature="isLoadedIntoMemory()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="isLoadedIntoMemory" duration-ms="0" started-at="2016-10-13T15:25:24Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.firstLoad" finished-at="2016-10-13T15:25:24Z">
+        <test-method status="PASS" signature="isLoadedIntoMemory()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="isLoadedIntoMemory" duration-ms="1" started-at="2016-11-30T09:40:13Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.firstLoad" finished-at="2016-11-30T09:40:13Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- isLoadedIntoMemory -->
-        <test-method status="PASS" signature="firstTestSize()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="firstTestSize" duration-ms="6" started-at="2016-10-13T15:25:24Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.firstAdd" finished-at="2016-10-13T15:25:24Z">
+        <test-method status="PASS" signature="firstTestSize()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="firstTestSize" duration-ms="4" started-at="2016-11-30T09:40:13Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.firstAdd" finished-at="2016-11-30T09:40:13Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- firstTestSize -->
-        <test-method status="PASS" signature="firstReload()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="firstReload" duration-ms="4115" started-at="2016-10-13T15:25:24Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.firstTestSize" finished-at="2016-10-13T15:25:29Z">
+        <test-method status="PASS" signature="firstReload()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="firstReload" duration-ms="6954" started-at="2016-11-30T09:40:13Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.firstTestSize" finished-at="2016-11-30T09:40:20Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- firstReload -->
-        <test-method status="PASS" signature="secondTestSize()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="secondTestSize" duration-ms="14" started-at="2016-10-13T15:25:29Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.firstReload" finished-at="2016-10-13T15:25:29Z">
+        <test-method status="PASS" signature="secondTestSize()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="secondTestSize" duration-ms="19" started-at="2016-11-30T09:40:20Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.firstReload" finished-at="2016-11-30T09:40:20Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- secondTestSize -->
-        <test-method status="PASS" signature="testFirstAdd()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="testFirstAdd" duration-ms="5" started-at="2016-10-13T15:25:29Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.firstReload" finished-at="2016-10-13T15:25:29Z">
+        <test-method status="PASS" signature="testFirstAdd()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="testFirstAdd" duration-ms="11" started-at="2016-11-30T09:40:20Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.firstReload" finished-at="2016-11-30T09:40:20Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testFirstAdd -->
-        <test-method status="PASS" signature="alterRecord()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="alterRecord" duration-ms="36" started-at="2016-10-13T15:25:29Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.testFirstAdd" finished-at="2016-10-13T15:25:29Z">
+        <test-method status="PASS" signature="alterRecord()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="alterRecord" duration-ms="58" started-at="2016-11-30T09:40:20Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.testFirstAdd" finished-at="2016-11-30T09:40:20Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- alterRecord -->
-        <test-method status="PASS" signature="addSecondRecord()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="addSecondRecord" duration-ms="35" started-at="2016-10-13T15:25:29Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.alterRecord" finished-at="2016-10-13T15:25:29Z">
+        <test-method status="PASS" signature="addSecondRecord()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="addSecondRecord" duration-ms="48" started-at="2016-11-30T09:40:20Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.alterRecord" finished-at="2016-11-30T09:40:20Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- addSecondRecord -->
-        <test-method status="PASS" signature="getRecord()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="getRecord" duration-ms="45" started-at="2016-10-13T15:25:29Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.addSecondRecord" finished-at="2016-10-13T15:25:29Z">
+        <test-method status="PASS" signature="getRecord()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="getRecord" duration-ms="30" started-at="2016-11-30T09:40:20Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.addSecondRecord" finished-at="2016-11-30T09:40:20Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- getRecord -->
-        <test-method status="PASS" signature="getRecordFilter()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="getRecordFilter" duration-ms="172" started-at="2016-10-13T15:25:29Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.addSecondRecord" finished-at="2016-10-13T15:25:29Z">
+        <test-method status="PASS" signature="getRecordFilter()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="getRecordFilter" duration-ms="187" started-at="2016-11-30T09:40:20Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.addSecondRecord" finished-at="2016-11-30T09:40:20Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- getRecordFilter -->
-        <test-method status="PASS" signature="getRecordIterator()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="getRecordIterator" duration-ms="11" started-at="2016-10-13T15:25:29Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.getRecord" finished-at="2016-10-13T15:25:29Z">
+        <test-method status="PASS" signature="getRecordIterator()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="getRecordIterator" duration-ms="16" started-at="2016-11-30T09:40:20Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.getRecord" finished-at="2016-11-30T09:40:20Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- getRecordIterator -->
-        <test-method status="PASS" signature="removeRecord()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="removeRecord" duration-ms="62" started-at="2016-10-13T15:25:29Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.getRecordFilter, com.distrimind.ood.tests.DerbyTestDatabase.alterRecord, com.distrimind.ood.tests.DerbyTestDatabase.getRecordIterator" finished-at="2016-10-13T15:25:29Z">
+        <test-method status="PASS" signature="removeRecord()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="removeRecord" duration-ms="61" started-at="2016-11-30T09:40:20Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.getRecordFilter, com.distrimind.ood.tests.DerbyTestDatabase.alterRecord, com.distrimind.ood.tests.DerbyTestDatabase.getRecordIterator" finished-at="2016-11-30T09:40:20Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- removeRecord -->
-        <test-method status="PASS" signature="testArrayRecordParameters()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="testArrayRecordParameters" duration-ms="29" started-at="2016-10-13T15:25:29Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.removeRecord" finished-at="2016-10-13T15:25:29Z">
+        <test-method status="PASS" signature="testArrayRecordParameters()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="testArrayRecordParameters" duration-ms="31" started-at="2016-11-30T09:40:20Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.removeRecord" finished-at="2016-11-30T09:40:20Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testArrayRecordParameters -->
-        <test-method status="PASS" signature="removeRecords()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="removeRecords" duration-ms="1394" started-at="2016-10-13T15:25:29Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.testArrayRecordParameters" finished-at="2016-10-13T15:25:30Z">
+        <test-method status="PASS" signature="removeRecords()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="removeRecords" duration-ms="1992" started-at="2016-11-30T09:40:20Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.testArrayRecordParameters" finished-at="2016-11-30T09:40:22Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- removeRecords -->
-        <test-method status="PASS" signature="testFilters()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="testFilters" duration-ms="60" started-at="2016-10-13T15:25:30Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.removeRecords" finished-at="2016-10-13T15:25:30Z">
+        <test-method status="PASS" signature="testFilters()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="testFilters" duration-ms="37" started-at="2016-11-30T09:40:22Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.removeRecords" finished-at="2016-11-30T09:40:22Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testFilters -->
-        <test-method status="PASS" signature="testRemoveFilters()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="testRemoveFilters" duration-ms="58" started-at="2016-10-13T15:25:30Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.testFilters" finished-at="2016-10-13T15:25:30Z">
+        <test-method status="PASS" signature="testRemoveFilters()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="testRemoveFilters" duration-ms="23" started-at="2016-11-30T09:40:22Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.testFilters" finished-at="2016-11-30T09:40:22Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testRemoveFilters -->
-        <test-method status="PASS" signature="addForeignKeyAndTestUniqueKeys()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="addForeignKeyAndTestUniqueKeys" duration-ms="155" started-at="2016-10-13T15:25:30Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.testRemoveFilters" finished-at="2016-10-13T15:25:31Z">
+        <test-method status="PASS" signature="addForeignKeyAndTestUniqueKeys()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="addForeignKeyAndTestUniqueKeys" duration-ms="132" started-at="2016-11-30T09:40:22Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.testRemoveFilters" finished-at="2016-11-30T09:40:22Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- addForeignKeyAndTestUniqueKeys -->
-        <test-method status="PASS" signature="removePointedRecords()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="removePointedRecords" duration-ms="20" started-at="2016-10-13T15:25:31Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.addForeignKeyAndTestUniqueKeys" finished-at="2016-10-13T15:25:31Z">
+        <test-method status="PASS" signature="removePointedRecords()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="removePointedRecords" duration-ms="34" started-at="2016-11-30T09:40:22Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.addForeignKeyAndTestUniqueKeys" finished-at="2016-11-30T09:40:22Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- removePointedRecords -->
-        <test-method status="PASS" signature="removeForeignKeyRecords()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="removeForeignKeyRecords" duration-ms="49" started-at="2016-10-13T15:25:31Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.removePointedRecords" finished-at="2016-10-13T15:25:31Z">
+        <test-method status="PASS" signature="removeForeignKeyRecords()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="removeForeignKeyRecords" duration-ms="53" started-at="2016-11-30T09:40:22Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.removePointedRecords" finished-at="2016-11-30T09:40:22Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- removeForeignKeyRecords -->
-        <test-method status="PASS" signature="testIsPointed()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="testIsPointed" duration-ms="26" started-at="2016-10-13T15:25:31Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.removeForeignKeyRecords" finished-at="2016-10-13T15:25:31Z">
+        <test-method status="PASS" signature="testIsPointed()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="testIsPointed" duration-ms="6" started-at="2016-11-30T09:40:22Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.removeForeignKeyRecords" finished-at="2016-11-30T09:40:22Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testIsPointed -->
-        <test-method status="PASS" signature="removeWithCascade()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="removeWithCascade" duration-ms="402" started-at="2016-10-13T15:25:31Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.testIsPointed" finished-at="2016-10-13T15:25:31Z">
+        <test-method status="PASS" signature="removeWithCascade()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="removeWithCascade" duration-ms="452" started-at="2016-11-30T09:40:22Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.testIsPointed" finished-at="2016-11-30T09:40:23Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- removeWithCascade -->
-        <test-method status="PASS" signature="setAutoRandomFields()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="setAutoRandomFields" duration-ms="353" started-at="2016-10-13T15:25:31Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.removeWithCascade" finished-at="2016-10-13T15:25:31Z">
+        <test-method status="PASS" signature="setAutoRandomFields()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="setAutoRandomFields" duration-ms="410" started-at="2016-11-30T09:40:23Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.removeWithCascade" finished-at="2016-11-30T09:40:23Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- setAutoRandomFields -->
-        <test-method status="PASS" signature="prepareMultipleTest()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="prepareMultipleTest" duration-ms="118" started-at="2016-10-13T15:25:31Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.setAutoRandomFields" finished-at="2016-10-13T15:25:32Z">
+        <test-method status="PASS" signature="prepareMultipleTest()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="prepareMultipleTest" duration-ms="174" started-at="2016-11-30T09:40:23Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.setAutoRandomFields" finished-at="2016-11-30T09:40:23Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- prepareMultipleTest -->
-        <test-method status="PASS" signature="multipleTests()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="multipleTests" duration-ms="14599" started-at="2016-10-13T15:25:32Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.prepareMultipleTest" finished-at="2016-10-13T15:25:46Z">
+        <test-method status="PASS" signature="multipleTests()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="multipleTests" duration-ms="34289" started-at="2016-11-30T09:40:23Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.prepareMultipleTest" finished-at="2016-11-30T09:40:58Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- multipleTests -->
-        <test-method status="PASS" signature="testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="testThreadSafe" duration-ms="167783" started-at="2016-10-13T15:25:46Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.multipleTests" finished-at="2016-10-13T15:28:34Z">
+        <test-method status="PASS" signature="testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="testThreadSafe" duration-ms="464223" started-at="2016-11-30T09:40:58Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.multipleTests" finished-at="2016-11-30T09:48:42Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testThreadSafe -->
-        <test-method status="PASS" signature="testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="testThreadSafe" duration-ms="167272" started-at="2016-10-13T15:25:46Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.multipleTests" finished-at="2016-10-13T15:28:33Z">
+        <test-method status="PASS" signature="testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="testThreadSafe" duration-ms="466017" started-at="2016-11-30T09:40:58Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.multipleTests" finished-at="2016-11-30T09:48:44Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testThreadSafe -->
-        <test-method status="PASS" signature="testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="testThreadSafe" duration-ms="167528" started-at="2016-10-13T15:25:46Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.multipleTests" finished-at="2016-10-13T15:28:34Z">
+        <test-method status="PASS" signature="testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="testThreadSafe" duration-ms="464283" started-at="2016-11-30T09:40:58Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.multipleTests" finished-at="2016-11-30T09:48:42Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testThreadSafe -->
-        <test-method status="PASS" signature="testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="testThreadSafe" duration-ms="167259" started-at="2016-10-13T15:25:46Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.multipleTests" finished-at="2016-10-13T15:28:33Z">
+        <test-method status="PASS" signature="testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="testThreadSafe" duration-ms="463781" started-at="2016-11-30T09:40:58Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.multipleTests" finished-at="2016-11-30T09:48:41Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testThreadSafe -->
-        <test-method status="PASS" signature="testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="testThreadSafe" duration-ms="166868" started-at="2016-10-13T15:25:46Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.multipleTests" finished-at="2016-10-13T15:28:33Z">
+        <test-method status="PASS" signature="testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="testThreadSafe" duration-ms="465651" started-at="2016-11-30T09:40:58Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.multipleTests" finished-at="2016-11-30T09:48:43Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testThreadSafe -->
-        <test-method status="PASS" signature="testBackup()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="testBackup" duration-ms="443" started-at="2016-10-13T15:28:34Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.testCheckPoint" finished-at="2016-10-13T15:28:34Z">
+        <test-method status="PASS" signature="testBackup()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="testBackup" duration-ms="448" started-at="2016-11-30T09:48:44Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.testCheckPoint" finished-at="2016-11-30T09:48:44Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testBackup -->
-        <test-method status="PASS" signature="testCheckPoint()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="testCheckPoint" duration-ms="0" started-at="2016-10-13T15:28:34Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.testThreadSafe" finished-at="2016-10-13T15:28:34Z">
+        <test-method status="PASS" signature="testCheckPoint()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="testCheckPoint" duration-ms="0" started-at="2016-11-30T09:48:44Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.testThreadSafe" finished-at="2016-11-30T09:48:44Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testCheckPoint -->
-        <test-method status="PASS" signature="unloadDatabase()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@130161f7]" name="unloadDatabase" is-config="true" duration-ms="31" started-at="2016-10-13T15:28:34Z" finished-at="2016-10-13T15:28:34Z">
+        <test-method status="PASS" signature="unloadDatabase()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@6e171cd7]" name="unloadDatabase" is-config="true" duration-ms="27" started-at="2016-11-30T09:48:44Z" finished-at="2016-11-30T09:48:44Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- unloadDatabase -->
       </class> <!-- com.distrimind.ood.tests.DerbyTestDatabase -->
     </test> <!-- testDerby -->
-    <test name="testHDQLDB" duration-ms="176537" started-at="2016-10-13T13:28:34Z" finished-at="2016-10-13T13:31:31Z">
+    <test name="testHDQLDB" duration-ms="589723" started-at="2016-11-30T08:48:44Z" finished-at="2016-11-30T08:58:34Z">
       <class name="com.distrimind.ood.tests.HSQLDBTestDatabase">
-        <test-method status="PASS" signature="firstLoad()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="firstLoad" duration-ms="512" started-at="2016-10-13T15:28:34Z" finished-at="2016-10-13T15:28:35Z">
+        <test-method status="PASS" signature="firstLoad()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="firstLoad" duration-ms="440" started-at="2016-11-30T09:48:44Z" finished-at="2016-11-30T09:48:45Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- firstLoad -->
-        <test-method status="PASS" signature="firstAdd()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="firstAdd" duration-ms="26" started-at="2016-10-13T15:28:35Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.firstLoad" finished-at="2016-10-13T15:28:35Z">
+        <test-method status="PASS" signature="firstAdd()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="firstAdd" duration-ms="60" started-at="2016-11-30T09:48:45Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.firstLoad" finished-at="2016-11-30T09:48:45Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- firstAdd -->
-        <test-method status="PASS" signature="isLoadedIntoMemory()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="isLoadedIntoMemory" duration-ms="0" started-at="2016-10-13T15:28:35Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.firstLoad" finished-at="2016-10-13T15:28:35Z">
+        <test-method status="PASS" signature="isLoadedIntoMemory()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="isLoadedIntoMemory" duration-ms="1" started-at="2016-11-30T09:48:45Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.firstLoad" finished-at="2016-11-30T09:48:45Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- isLoadedIntoMemory -->
-        <test-method status="PASS" signature="firstTestSize()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="firstTestSize" duration-ms="1" started-at="2016-10-13T15:28:35Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.firstAdd" finished-at="2016-10-13T15:28:35Z">
+        <test-method status="PASS" signature="firstTestSize()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="firstTestSize" duration-ms="1" started-at="2016-11-30T09:48:45Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.firstAdd" finished-at="2016-11-30T09:48:45Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- firstTestSize -->
-        <test-method status="PASS" signature="firstReload()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="firstReload" duration-ms="501" started-at="2016-10-13T15:28:35Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.firstTestSize" finished-at="2016-10-13T15:28:36Z">
+        <test-method status="PASS" signature="firstReload()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="firstReload" duration-ms="519" started-at="2016-11-30T09:48:45Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.firstTestSize" finished-at="2016-11-30T09:48:45Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- firstReload -->
-        <test-method status="PASS" signature="secondTestSize()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="secondTestSize" duration-ms="3" started-at="2016-10-13T15:28:36Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.firstReload" finished-at="2016-10-13T15:28:36Z">
+        <test-method status="PASS" signature="secondTestSize()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="secondTestSize" duration-ms="4" started-at="2016-11-30T09:48:45Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.firstReload" finished-at="2016-11-30T09:48:45Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- secondTestSize -->
-        <test-method status="PASS" signature="testFirstAdd()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="testFirstAdd" duration-ms="1" started-at="2016-10-13T15:28:36Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.firstReload" finished-at="2016-10-13T15:28:36Z">
+        <test-method status="PASS" signature="testFirstAdd()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="testFirstAdd" duration-ms="2" started-at="2016-11-30T09:48:45Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.firstReload" finished-at="2016-11-30T09:48:45Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testFirstAdd -->
-        <test-method status="PASS" signature="alterRecord()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="alterRecord" duration-ms="6" started-at="2016-10-13T15:28:36Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.testFirstAdd" finished-at="2016-10-13T15:28:36Z">
+        <test-method status="PASS" signature="alterRecord()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="alterRecord" duration-ms="44" started-at="2016-11-30T09:48:45Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.testFirstAdd" finished-at="2016-11-30T09:48:45Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- alterRecord -->
-        <test-method status="PASS" signature="addSecondRecord()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="addSecondRecord" duration-ms="23" started-at="2016-10-13T15:28:36Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.alterRecord" finished-at="2016-10-13T15:28:36Z">
+        <test-method status="PASS" signature="addSecondRecord()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="addSecondRecord" duration-ms="52" started-at="2016-11-30T09:48:45Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.alterRecord" finished-at="2016-11-30T09:48:45Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- addSecondRecord -->
-        <test-method status="PASS" signature="getRecord()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="getRecord" duration-ms="9" started-at="2016-10-13T15:28:36Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.addSecondRecord" finished-at="2016-10-13T15:28:36Z">
+        <test-method status="PASS" signature="getRecord()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="getRecord" duration-ms="13" started-at="2016-11-30T09:48:45Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.addSecondRecord" finished-at="2016-11-30T09:48:45Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- getRecord -->
-        <test-method status="PASS" signature="getRecordFilter()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="getRecordFilter" duration-ms="51" started-at="2016-10-13T15:28:36Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.addSecondRecord" finished-at="2016-10-13T15:28:36Z">
+        <test-method status="PASS" signature="getRecordFilter()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="getRecordFilter" duration-ms="74" started-at="2016-11-30T09:48:45Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.addSecondRecord" finished-at="2016-11-30T09:48:45Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- getRecordFilter -->
-        <test-method status="PASS" signature="getRecordIterator()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="getRecordIterator" duration-ms="4" started-at="2016-10-13T15:28:36Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.getRecord" finished-at="2016-10-13T15:28:36Z">
+        <test-method status="PASS" signature="getRecordIterator()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="getRecordIterator" duration-ms="9" started-at="2016-11-30T09:48:45Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.getRecord" finished-at="2016-11-30T09:48:45Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- getRecordIterator -->
-        <test-method status="PASS" signature="removeRecord()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="removeRecord" duration-ms="14" started-at="2016-10-13T15:28:36Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.getRecordFilter, com.distrimind.ood.tests.HSQLDBTestDatabase.alterRecord, com.distrimind.ood.tests.HSQLDBTestDatabase.getRecordIterator" finished-at="2016-10-13T15:28:36Z">
+        <test-method status="PASS" signature="removeRecord()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="removeRecord" duration-ms="11" started-at="2016-11-30T09:48:45Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.getRecordFilter, com.distrimind.ood.tests.HSQLDBTestDatabase.alterRecord, com.distrimind.ood.tests.HSQLDBTestDatabase.getRecordIterator" finished-at="2016-11-30T09:48:45Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- removeRecord -->
-        <test-method status="PASS" signature="testArrayRecordParameters()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="testArrayRecordParameters" duration-ms="19" started-at="2016-10-13T15:28:36Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.removeRecord" finished-at="2016-10-13T15:28:36Z">
+        <test-method status="PASS" signature="testArrayRecordParameters()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="testArrayRecordParameters" duration-ms="49" started-at="2016-11-30T09:48:45Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.removeRecord" finished-at="2016-11-30T09:48:45Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testArrayRecordParameters -->
-        <test-method status="PASS" signature="removeRecords()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="removeRecords" duration-ms="1419" started-at="2016-10-13T15:28:36Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.testArrayRecordParameters" finished-at="2016-10-13T15:28:37Z">
+        <test-method status="PASS" signature="removeRecords()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="removeRecords" duration-ms="3520" started-at="2016-11-30T09:48:45Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.testArrayRecordParameters" finished-at="2016-11-30T09:48:49Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- removeRecords -->
-        <test-method status="PASS" signature="testFilters()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="testFilters" duration-ms="6" started-at="2016-10-13T15:28:37Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.removeRecords" finished-at="2016-10-13T15:28:37Z">
+        <test-method status="PASS" signature="testFilters()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="testFilters" duration-ms="3" started-at="2016-11-30T09:48:49Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.removeRecords" finished-at="2016-11-30T09:48:49Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testFilters -->
-        <test-method status="PASS" signature="testRemoveFilters()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="testRemoveFilters" duration-ms="5" started-at="2016-10-13T15:28:37Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.testFilters" finished-at="2016-10-13T15:28:37Z">
+        <test-method status="PASS" signature="testRemoveFilters()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="testRemoveFilters" duration-ms="3" started-at="2016-11-30T09:48:49Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.testFilters" finished-at="2016-11-30T09:48:49Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testRemoveFilters -->
-        <test-method status="PASS" signature="addForeignKeyAndTestUniqueKeys()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="addForeignKeyAndTestUniqueKeys" duration-ms="48" started-at="2016-10-13T15:28:37Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.testRemoveFilters" finished-at="2016-10-13T15:28:37Z">
+        <test-method status="PASS" signature="addForeignKeyAndTestUniqueKeys()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="addForeignKeyAndTestUniqueKeys" duration-ms="101" started-at="2016-11-30T09:48:49Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.testRemoveFilters" finished-at="2016-11-30T09:48:49Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- addForeignKeyAndTestUniqueKeys -->
-        <test-method status="PASS" signature="alterRecordWithCascade()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="alterRecordWithCascade" duration-ms="31" started-at="2016-10-13T15:28:37Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.addForeignKeyAndTestUniqueKeys" finished-at="2016-10-13T15:28:37Z">
+        <test-method status="PASS" signature="alterRecordWithCascade()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="alterRecordWithCascade" duration-ms="95" started-at="2016-11-30T09:48:49Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.addForeignKeyAndTestUniqueKeys" finished-at="2016-11-30T09:48:49Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- alterRecordWithCascade -->
-        <test-method status="PASS" signature="removePointedRecords()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="removePointedRecords" duration-ms="19" started-at="2016-10-13T15:28:37Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.alterRecordWithCascade" finished-at="2016-10-13T15:28:37Z">
+        <test-method status="PASS" signature="removePointedRecords()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="removePointedRecords" duration-ms="23" started-at="2016-11-30T09:48:49Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.alterRecordWithCascade" finished-at="2016-11-30T09:48:49Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- removePointedRecords -->
-        <test-method status="PASS" signature="removeForeignKeyRecords()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="removeForeignKeyRecords" duration-ms="26" started-at="2016-10-13T15:28:37Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.removePointedRecords" finished-at="2016-10-13T15:28:37Z">
+        <test-method status="PASS" signature="removeForeignKeyRecords()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="removeForeignKeyRecords" duration-ms="19" started-at="2016-11-30T09:48:49Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.removePointedRecords" finished-at="2016-11-30T09:48:49Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- removeForeignKeyRecords -->
-        <test-method status="PASS" signature="testIsPointed()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="testIsPointed" duration-ms="7" started-at="2016-10-13T15:28:37Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.removeForeignKeyRecords" finished-at="2016-10-13T15:28:37Z">
+        <test-method status="PASS" signature="testIsPointed()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="testIsPointed" duration-ms="8" started-at="2016-11-30T09:48:49Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.removeForeignKeyRecords" finished-at="2016-11-30T09:48:49Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testIsPointed -->
-        <test-method status="PASS" signature="removeWithCascade()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="removeWithCascade" duration-ms="366" started-at="2016-10-13T15:28:37Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.testIsPointed" finished-at="2016-10-13T15:28:38Z">
+        <test-method status="PASS" signature="removeWithCascade()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="removeWithCascade" duration-ms="816" started-at="2016-11-30T09:48:49Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.testIsPointed" finished-at="2016-11-30T09:48:50Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- removeWithCascade -->
-        <test-method status="PASS" signature="setAutoRandomFields()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="setAutoRandomFields" duration-ms="398" started-at="2016-10-13T15:28:38Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.removeWithCascade" finished-at="2016-10-13T15:28:38Z">
+        <test-method status="PASS" signature="setAutoRandomFields()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="setAutoRandomFields" duration-ms="1030" started-at="2016-11-30T09:48:50Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.removeWithCascade" finished-at="2016-11-30T09:48:51Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- setAutoRandomFields -->
-        <test-method status="PASS" signature="prepareMultipleTest()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="prepareMultipleTest" duration-ms="174" started-at="2016-10-13T15:28:38Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.setAutoRandomFields" finished-at="2016-10-13T15:28:38Z">
+        <test-method status="PASS" signature="prepareMultipleTest()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="prepareMultipleTest" duration-ms="487" started-at="2016-11-30T09:48:51Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.setAutoRandomFields" finished-at="2016-11-30T09:48:52Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- prepareMultipleTest -->
-        <test-method status="PASS" signature="multipleTests()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="multipleTests" duration-ms="11809" started-at="2016-10-13T15:28:38Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.prepareMultipleTest" finished-at="2016-10-13T15:28:50Z">
+        <test-method status="PASS" signature="multipleTests()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="multipleTests" duration-ms="39049" started-at="2016-11-30T09:48:52Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.prepareMultipleTest" finished-at="2016-11-30T09:49:31Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- multipleTests -->
-        <test-method status="PASS" signature="testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="testThreadSafe" duration-ms="157822" started-at="2016-10-13T15:28:50Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.multipleTests" finished-at="2016-10-13T15:31:28Z">
+        <test-method status="PASS" signature="testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="testThreadSafe" duration-ms="532463" started-at="2016-11-30T09:49:31Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.multipleTests" finished-at="2016-11-30T09:58:23Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testThreadSafe -->
-        <test-method status="PASS" signature="testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="testThreadSafe" duration-ms="156682" started-at="2016-10-13T15:28:50Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.multipleTests" finished-at="2016-10-13T15:31:27Z">
+        <test-method status="PASS" signature="testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="testThreadSafe" duration-ms="529335" started-at="2016-11-30T09:49:31Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.multipleTests" finished-at="2016-11-30T09:58:20Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testThreadSafe -->
-        <test-method status="PASS" signature="testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="testThreadSafe" duration-ms="157820" started-at="2016-10-13T15:28:50Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.multipleTests" finished-at="2016-10-13T15:31:28Z">
+        <test-method status="PASS" signature="testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="testThreadSafe" duration-ms="532694" started-at="2016-11-30T09:49:31Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.multipleTests" finished-at="2016-11-30T09:58:23Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testThreadSafe -->
-        <test-method status="PASS" signature="testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="testThreadSafe" duration-ms="157702" started-at="2016-10-13T15:28:50Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.multipleTests" finished-at="2016-10-13T15:31:28Z">
+        <test-method status="PASS" signature="testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="testThreadSafe" duration-ms="532442" started-at="2016-11-30T09:49:31Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.multipleTests" finished-at="2016-11-30T09:58:23Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testThreadSafe -->
-        <test-method status="PASS" signature="testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="testThreadSafe" duration-ms="156999" started-at="2016-10-13T15:28:50Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.multipleTests" finished-at="2016-10-13T15:31:27Z">
+        <test-method status="PASS" signature="testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="testThreadSafe" duration-ms="531773" started-at="2016-11-30T09:49:31Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.multipleTests" finished-at="2016-11-30T09:58:22Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testThreadSafe -->
-        <test-method status="PASS" signature="testCheckPoint()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="testCheckPoint" duration-ms="309" started-at="2016-10-13T15:31:28Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.testThreadSafe" finished-at="2016-10-13T15:31:28Z">
+        <test-method status="PASS" signature="testCheckPoint()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="testCheckPoint" duration-ms="818" started-at="2016-11-30T09:58:23Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.testThreadSafe" finished-at="2016-11-30T09:58:24Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testCheckPoint -->
-        <test-method status="PASS" signature="testBackup()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="testBackup" duration-ms="2754" started-at="2016-10-13T15:31:28Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.testCheckPoint" finished-at="2016-10-13T15:31:31Z">
+        <test-method status="PASS" signature="testBackup()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="testBackup" duration-ms="9500" started-at="2016-11-30T09:58:24Z" depends-on-methods="com.distrimind.ood.tests.HSQLDBTestDatabase.testCheckPoint" finished-at="2016-11-30T09:58:34Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testBackup -->
-        <test-method status="PASS" signature="unloadDatabase()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6dc17b83]" name="unloadDatabase" is-config="true" duration-ms="155" started-at="2016-10-13T15:31:31Z" finished-at="2016-10-13T15:31:31Z">
+        <test-method status="PASS" signature="unloadDatabase()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6e20b53a]" name="unloadDatabase" is-config="true" duration-ms="267" started-at="2016-11-30T09:58:34Z" finished-at="2016-11-30T09:58:34Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- unloadDatabase -->

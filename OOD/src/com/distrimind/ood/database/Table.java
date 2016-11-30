@@ -63,7 +63,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
@@ -92,7 +91,7 @@ import com.distrimind.util.ReadWriteLock;
  * Every field which must be included into the database must have an annotation ({@link com.distrimind.ood.database.annotations.Field}, {@link com.distrimind.ood.database.annotations.PrimaryKey}, {@link com.distrimind.ood.database.annotations.AutoPrimaryKey}, {@link com.distrimind.ood.database.annotations.RandomPrimaryKey}, {@link com.distrimind.ood.database.annotations.NotNull}, {@link com.distrimind.ood.database.annotations.Unique}, {@link com.distrimind.ood.database.annotations.ForeignKey}).
  * If no annotation is given, the corresponding field will not be added into the database.
  * Note that the native types are always NotNull. 
- * Fields which have the annotation {@link com.distrimind.ood.database.annotations.AutoPrimaryKey} must be int or short values.
+ * Fields which have the annotation {@link com.distrimind.ood.database.annotations.AutoPrimaryKey} must be integer or short values.
  * Fields which have the annotation {@link com.distrimind.ood.database.annotations.RandomPrimaryKey} must be long values.
  * Fields which have the annotation {@link com.distrimind.ood.database.annotations.ForeignKey} must be DatabaseRecord instances. 
  * 
@@ -105,20 +104,20 @@ import com.distrimind.util.ReadWriteLock;
  * This class is thread safe
  * 
  * @author Jason Mahdjoub
- * @version 1.2
+ * @version 1.3
  * @param <T> the type of the record
  */
 public abstract class Table<T extends DatabaseRecord>
 {
-    private final Class<T> class_record;
+    final Class<T> class_record;
     private final Constructor<T> default_constructor_field;
-    private final ArrayList<FieldAccessor> auto_random_primary_keys_fields=new ArrayList<FieldAccessor>();
-    private final ArrayList<FieldAccessor> auto_primary_keys_fields=new ArrayList<FieldAccessor>();
+    final ArrayList<FieldAccessor> auto_random_primary_keys_fields=new ArrayList<FieldAccessor>();
+    final ArrayList<FieldAccessor> auto_primary_keys_fields=new ArrayList<FieldAccessor>();
     private final ArrayList<FieldAccessor> primary_keys_fields_no_auto_no_random=new ArrayList<FieldAccessor>();
     private final ArrayList<FieldAccessor> primary_keys_fields=new ArrayList<FieldAccessor>();
     private final ArrayList<FieldAccessor> unique_fields_no_auto_random_primary_keys=new ArrayList<FieldAccessor>();
     final ArrayList<ForeignKeyFieldAccessor> foreign_keys_fields=new ArrayList<ForeignKeyFieldAccessor>();
-    private ArrayList<FieldAccessor> fields;
+    ArrayList<FieldAccessor> fields;
     private final ArrayList<FieldAccessor> fields_without_primary_and_foreign_keys=new ArrayList<FieldAccessor>();
     private AtomicReference<ArrayList<T>> records_instances=new AtomicReference<ArrayList<T>>(new ArrayList<T>());
     private final boolean is_loaded_in_memory;
@@ -194,9 +193,27 @@ public abstract class Table<T extends DatabaseRecord>
     
     final ArrayList<NeighboringTable> list_tables_pointing_to_this_table=new ArrayList<NeighboringTable>();
     
-    private final SecureRandom rand;
+    final SecureRandom rand;
     
-    private AtomicBoolean is_synchronized_with_sql_database=new AtomicBoolean(false);
+    private volatile boolean is_synchronized_with_sql_database=false;
+    private volatile long last_refresh=System.currentTimeMillis();
+    private final long refreshInterval;
+    
+    boolean isSynchronizedWithSqlDatabase()
+    {
+	return (refreshInterval>0 && last_refresh+refreshInterval>System.currentTimeMillis()) || is_synchronized_with_sql_database;
+    }
+    
+    void memoryRefreshed()
+    {
+	is_synchronized_with_sql_database=true;
+	last_refresh=System.currentTimeMillis();
+    }
+    
+    void memoryToRefresh()
+    {
+	is_synchronized_with_sql_database=false;
+    }
     
     DatabaseWrapper sql_connection;
     
@@ -229,6 +246,10 @@ public abstract class Table<T extends DatabaseRecord>
 	}
 
 	is_loaded_in_memory=this.getClass().isAnnotationPresent(LoadToMemory.class);
+	if (is_loaded_in_memory)
+	    refreshInterval=this.getClass().getAnnotation(LoadToMemory.class).refreshInterval();
+	else
+	    refreshInterval=0;
 	
 	if (!Modifier.isFinal(this.getClass().getModifiers()))
 	{
@@ -362,7 +383,14 @@ public abstract class Table<T extends DatabaseRecord>
 	try(ReadWriteLock.Lock lock=sql_connection.locker.getAutoCloseableWriteLock())
 	{
 	    boolean table_found=((Boolean)sql_connection.runTransaction(new Transaction() {
-		    
+		
+		@Override
+		public TransactionIsolation getTransactionIsolation()
+		{
+		    return TransactionIsolation.TRANSACTION_READ_COMMITTED;
+		}
+
+		@Override
 		public boolean doesWriteData()
 		{
 		    return false;
@@ -389,12 +417,19 @@ public abstract class Table<T extends DatabaseRecord>
 	     */
 		    sql_connection.runTransaction(new Transaction() {
 		        
+			@Override
+			public TransactionIsolation getTransactionIsolation()
+			{
+			    return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+			}
+			
+			@Override
 			public boolean doesWriteData()
 			{
 			    return false;
 			}
 			
-		        @SuppressWarnings("synthetic-access")
+		        
 			@Override
 		        public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 		        {
@@ -498,14 +533,34 @@ public abstract class Table<T extends DatabaseRecord>
 		    {
 			if (f.isUnique() && !f.isForeignKey())
 			{
-			    SqlQuerry.append(", UNIQUE("+f.getDeclaredSqlFields()[0].short_field+")");
+			    first=true;
+			    SqlQuerry.append(", UNIQUE(");
+			    for (SqlField sf : f.getDeclaredSqlFields())
+			    {
+				if (first)
+				    first=false;
+				else 
+				    SqlQuerry.append(", ");
+				SqlQuerry.append(sf.short_field);
+			    }
+			    SqlQuerry.append(")");
 			}
 		    }
 		
 		    SqlQuerry.append(")"+sql_connection.getSqlComma());
 		
+
+		    
+		    
 		    sql_connection.runTransaction(new Transaction() {
 		    
+			@Override
+			public TransactionIsolation getTransactionIsolation()
+			{
+			    return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+			}
+			
+			@Override
 			public boolean doesWriteData()
 			{
 			    return true;
@@ -540,6 +595,13 @@ public abstract class Table<T extends DatabaseRecord>
 			}
 		    });
 		    sql_connection.runTransaction(new Transaction() {
+			@Override
+			public TransactionIsolation getTransactionIsolation()
+			{
+			    return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+			}
+			
+			@Override
 			public boolean doesWriteData()
 			{
 			    return true;
@@ -668,6 +730,13 @@ public abstract class Table<T extends DatabaseRecord>
 		    SqlQuerry.append(") "+sql_connection.getOnDeleteCascadeSqlQuerry()+" "+sql_connection.getOnUpdateCascadeSqlQuerry());
 		    sql_connection.runTransaction(new Transaction() {
 		        
+			@Override
+			public TransactionIsolation getTransactionIsolation()
+			{
+			    return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+			}
+
+			@Override
 			public boolean doesWriteData()
 			{
 			    return true;
@@ -714,7 +783,7 @@ public abstract class Table<T extends DatabaseRecord>
     @SuppressWarnings({ "unchecked", "unused" })
     private T getRecordFromPointingRecord(final SqlFieldInstance[] _sql_field_instances, final ArrayList<DatabaseRecord> _previous_pointing_records) throws DatabaseException
     {
-	if (isLoadedInMemory() && is_synchronized_with_sql_database.get())
+	if (isLoadedInMemory() && isSynchronizedWithSqlDatabase())
 	{
 	    for (T r : getRecords(false))
 	    {
@@ -729,7 +798,7 @@ public abstract class Table<T extends DatabaseRecord>
 			    if (sfi2.pointed_field.equals(sfi.field))
 			    {
 				found=true;
-				if (!FieldAccessor.equals(sfi.instance, sfi2.instance))
+				if (!FieldAccessor.equalsBetween(sfi.instance, sfi2.instance))
 				{
 				    all_equals=false;
 				}
@@ -767,7 +836,7 @@ public abstract class Table<T extends DatabaseRecord>
 				if (sfi2.pointed_field.equals(sfi.field))
 				{
 				    found=true;
-				    if (!FieldAccessor.equals(sfi.instance, sfi2.instance))
+				    if (!FieldAccessor.equalsBetween(sfi.instance, sfi2.instance))
 				    {
 					all_equals=false;
 				    }
@@ -837,11 +906,19 @@ public abstract class Table<T extends DatabaseRecord>
 	    
 	    return (T)sql_connection.runTransaction(new Transaction() {
 	        
+		@Override
+		public TransactionIsolation getTransactionIsolation()
+		{
+		    return TransactionIsolation.TRANSACTION_READ_COMMITTED;
+		}
+		
+		
+		@Override
 		public boolean doesWriteData()
 		{
 		    return false;
 		}
-	        @SuppressWarnings("synthetic-access")
+	        
 		@Override
 	        public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 	        {
@@ -923,7 +1000,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    {
 			if (fa.getFieldName().equals(key))
 			{
-			    fa.getValue(fields.get(key), st, index++);
+			    fa.getValue(st, index++, fields.get(key));
 			    break;
 			}
 		    }
@@ -952,7 +1029,7 @@ public abstract class Table<T extends DatabaseRecord>
 			{
 			    if (fa.getFieldName().equals(key))
 			    {
-				fa.getValue(fields.get(key), st, index++);
+				fa.getValue(st, index++, fields.get(key));
 				break;
 			    }
 			}
@@ -1058,6 +1135,12 @@ public abstract class Table<T extends DatabaseRecord>
     {
 	Transaction t=new Transaction() {
 		
+		@Override
+		public TransactionIsolation getTransactionIsolation()
+		{
+		    return TransactionIsolation.TRANSACTION_READ_COMMITTED;
+		}
+	    
 	    	    @Override
 	    	    public boolean doesWriteData()
 		    {
@@ -1140,10 +1223,21 @@ public abstract class Table<T extends DatabaseRecord>
 	}
 	else
 	{
-	    String res=field.getDeclaredSqlFields()[0].short_field+" "+field.getDeclaredSqlFields()[0].type;
-	    if (field.isAutoPrimaryKey())
-		res+=" GENERATED BY DEFAULT AS IDENTITY(START WITH "+field.getStartValue()+")";
-	    res+=tmp;
+	    String res="";
+	    boolean first=true;
+	    
+	    for (SqlField sf : field.getDeclaredSqlFields())
+	    {
+		if (first)
+		    first=false;
+		else
+		    res+=", ";
+		
+		res+=sf.short_field+" "+sf.type;
+		if (field.isAutoPrimaryKey())
+		    res+=" GENERATED BY DEFAULT AS IDENTITY(START WITH "+field.getStartValue()+")";
+		res+=tmp;
+	    }
 	    return res;
 	}
 	
@@ -1313,7 +1407,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    public void init(int _field_count)
 		    {
 		    }
-		}, getSqlGeneralSelect());
+		}, getSqlGeneralSelect(), TransactionIsolation.TRANSACTION_READ_COMMITTED);
 	    }
 	    return res.getRecords();
 	}
@@ -1405,7 +1499,7 @@ public abstract class Table<T extends DatabaseRecord>
 	    }
 	    return getResult(res);
 	}
-	@SuppressWarnings("synthetic-access")
+	
 	public FieldComparator getFieldComparator(String field) throws ConstraintsNotRespectedDatabaseException
 	{
 	    ArrayList<String> strings=splitPoint(field);
@@ -1539,13 +1633,13 @@ public abstract class Table<T extends DatabaseRecord>
     }
     
     
-    private final ArrayList<T> getRecords(boolean is_already_in_transaction) throws DatabaseException
+    final ArrayList<T> getRecords(boolean is_already_in_transaction) throws DatabaseException
     {
 	//try(ReadWriteLock.Lock lock=sql_connection.locker.getAutoCloseableReadLock())
 	{
 	    if (isLoadedInMemory())
 	    {
-		if (!is_synchronized_with_sql_database.get())
+		if (!isSynchronizedWithSqlDatabase())
 		{
 		    final ArrayList<T>  res=new ArrayList<T>();
 		    getListRecordsFromSqlConnection(new Runnable() {
@@ -1563,9 +1657,9 @@ public abstract class Table<T extends DatabaseRecord>
 			    res.clear();
 			    res.ensureCapacity((int)_field_count);
 			}
-		    }, getSqlGeneralSelect());
+		    }, getSqlGeneralSelect(), TransactionIsolation.TRANSACTION_READ_COMMITTED);
 		    records_instances.set(res);
-		    is_synchronized_with_sql_database.set(true);
+		    memoryRefreshed();
 		}
 		return records_instances.get();
 	    }
@@ -1587,7 +1681,7 @@ public abstract class Table<T extends DatabaseRecord>
 			res.clear();
 			res.ensureCapacity((int)_field_count);
 		    }
-		}, getSqlGeneralSelect());
+		}, getSqlGeneralSelect(), TransactionIsolation.TRANSACTION_READ_COMMITTED);
 		return res;
 	    }
 	}
@@ -1751,7 +1845,7 @@ public abstract class Table<T extends DatabaseRecord>
 	    {
 		try (Lock lock=new ReadLock(this))
 		{
-			if (!is_synchronized_with_sql_database.get())
+			if (!isSynchronizedWithSqlDatabase())
 			{
 			    final ArrayList<T>  res=new ArrayList<T>();
 			    getListRecordsFromSqlConnection(new Runnable() {
@@ -1769,9 +1863,9 @@ public abstract class Table<T extends DatabaseRecord>
 				    res.clear();
 				    res.ensureCapacity((int)_field_count);
 				}
-			    }, getSqlGeneralSelect());
+			    }, getSqlGeneralSelect(), TransactionIsolation.TRANSACTION_REPEATABLE_READ);
 			    records_instances.set(res);
-			    is_synchronized_with_sql_database.set(true);
+			    memoryRefreshed();
 			}
 			return new MemoryTableIterator(records_instances.get().iterator());
 		    
@@ -1843,7 +1937,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    public void init(int _field_count)
 		    {
 		    }
-		}, (_filter instanceof Table.PersonnalFilter)?((PersonnalFilter)_filter).getSQLQuerry():getSqlGeneralSelect());
+		}, (_filter instanceof Table.PersonnalFilter)?((PersonnalFilter)_filter).getSQLQuerry():getSqlGeneralSelect(), TransactionIsolation.TRANSACTION_READ_COMMITTED);
 	    }
 	return res;
     }
@@ -1907,7 +2001,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    
 		}
 		RunnableTmp runnable=new RunnableTmp();
-		getListRecordsFromSqlConnection(runnable, (_filter instanceof Table.PersonnalFilter)?((PersonnalFilter)_filter).getSQLQuerry():getSqlGeneralSelect());
+		getListRecordsFromSqlConnection(runnable, (_filter instanceof Table.PersonnalFilter)?((PersonnalFilter)_filter).getSQLQuerry():getSqlGeneralSelect(), TransactionIsolation.TRANSACTION_READ_COMMITTED);
 		return runnable.res;
 	    }
     }
@@ -2448,7 +2542,7 @@ public abstract class Table<T extends DatabaseRecord>
 	}
 	
     }
-    private final boolean hasRecordsWithOneOfFields(final Map<String, Object> _fields, boolean is_sql_transaction) throws DatabaseException
+    final boolean hasRecordsWithOneOfFields(final Map<String, Object> _fields, boolean is_sql_transaction) throws DatabaseException
     {
 	return hasRecords(new SimpleOneOfFieldsFilter(_fields, fields), is_sql_transaction);
     }
@@ -2941,7 +3035,13 @@ public abstract class Table<T extends DatabaseRecord>
 		{
 		    Transaction transaction=new Transaction() {
 
-			    @Override
+			@Override
+			public TransactionIsolation getTransactionIsolation()
+			{
+			    return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
+			}
+
+				@Override
 		    	    public boolean doesWriteData()
 			    {
 			        return true;
@@ -3039,7 +3139,7 @@ public abstract class Table<T extends DatabaseRecord>
 	    }
 	    
 	    RunnableTmp runnable=new RunnableTmp();
-	    getListRecordsFromSqlConnection(runnable, (_filter instanceof Table.PersonnalFilter)?((PersonnalFilter)_filter).getSQLQuerry():getSqlGeneralSelect(), true);
+	    getListRecordsFromSqlConnection(runnable, (_filter instanceof Table.PersonnalFilter)?((PersonnalFilter)_filter).getSQLQuerry():getSqlGeneralSelect(), TransactionIsolation.TRANSACTION_REPEATABLE_READ, true);
 	    return runnable.deleted_records_number;
 	}
 	}
@@ -3075,7 +3175,7 @@ public abstract class Table<T extends DatabaseRecord>
 			}
 		    }
 		    RunnableTmp runnable=new RunnableTmp();
-		    getListRecordsFromSqlConnection(runnable, getSqlGeneralSelect());
+		    getListRecordsFromSqlConnection(runnable, getSqlGeneralSelect(), TransactionIsolation.TRANSACTION_SERIALIZABLE);
 		    if (!runnable.found)
 			throw new DatabaseIntegrityException("All records present in the memory were not found into the database.");
 		}
@@ -3100,7 +3200,7 @@ public abstract class Table<T extends DatabaseRecord>
 			throw new DatabaseIntegrityException("All records present into the database were not found into the memory.");
 		    }
 		}
-		getListRecordsFromSqlConnection(new RunnableTmp(), getSqlGeneralSelect());
+		getListRecordsFromSqlConnection(new RunnableTmp(), getSqlGeneralSelect(), TransactionIsolation.TRANSACTION_SERIALIZABLE);
 	    }
 	}
     }
@@ -3325,6 +3425,12 @@ public abstract class Table<T extends DatabaseRecord>
 	    return ((Boolean)sql_connection.runTransaction(new Transaction() {
 	        
 		@Override
+		public TransactionIsolation getTransactionIsolation()
+		{
+		    return TransactionIsolation.TRANSACTION_READ_COMMITTED;
+		}
+
+		@Override
 		public boolean doesWriteData()
 		{
 		    return false;
@@ -3372,7 +3478,13 @@ public abstract class Table<T extends DatabaseRecord>
 	    if (records_to_remove.size()>0)
 	    {
 		Transaction transaction=new Transaction() {
+			@Override
+			public TransactionIsolation getTransactionIsolation()
+			{
+			    return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+			}
 		        
+		    
 			    @SuppressWarnings("synthetic-access")
 			    @Override
 			    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
@@ -3457,16 +3569,16 @@ public abstract class Table<T extends DatabaseRecord>
 	    RunnableTmp runnable=new RunnableTmp();
 	    try
 	    {
-		getListRecordsFromSqlConnection(runnable, (_filter instanceof Table.PersonnalFilter)?((PersonnalFilter)_filter).getSQLQuerry():getSqlGeneralSelect(), true);
+		getListRecordsFromSqlConnection(runnable, (_filter instanceof Table.PersonnalFilter)?((PersonnalFilter)_filter).getSQLQuerry():getSqlGeneralSelect(), TransactionIsolation.TRANSACTION_SERIALIZABLE, true);
 	    }
 	    catch(DatabaseException e)
 	    {
 		for (NeighboringTable nt : list_tables_pointing_to_this_table)
 		{
 		    Table<?> t=nt.getPointedTable();
-		    if (t.isLoadedInMemory() && t.is_synchronized_with_sql_database.get())
+		    if (t.isLoadedInMemory() && t.isSynchronizedWithSqlDatabase())
 		    {
-			t.is_synchronized_with_sql_database.set(false);
+			t.memoryToRefresh();
 			t.records_instances.set(null);
 		    }
 		}
@@ -3503,7 +3615,13 @@ public abstract class Table<T extends DatabaseRecord>
 		}
 	
 		sql_connection.runTransaction(new Transaction() {
+			@Override
+			public TransactionIsolation getTransactionIsolation()
+			{
+			    return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
+			}
 	    
+		    
 		    @SuppressWarnings("synthetic-access")
 		    @Override
 		    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
@@ -3539,7 +3657,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    
 		});
 	
-		if (Table.this.isLoadedInMemory() && is_synchronized_with_sql_database.get())
+		if (Table.this.isLoadedInMemory() && isSynchronizedWithSqlDatabase())
 		    Table.this.__removeRecord(_record);
 		_record.__createdIntoDatabase=false;
 	    }
@@ -3570,6 +3688,11 @@ public abstract class Table<T extends DatabaseRecord>
 
 		class TransactionTmp implements Transaction
 		{
+			@Override
+			public TransactionIsolation getTransactionIsolation()
+			{
+			    return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+			}
 		    
 		    
 		    @SuppressWarnings("synthetic-access")
@@ -3611,7 +3734,7 @@ public abstract class Table<T extends DatabaseRecord>
 	    
 		TransactionTmp transaction=new TransactionTmp();
 		sql_connection.runTransaction(transaction);
-		if (this.isLoadedInMemory() && is_synchronized_with_sql_database.get())
+		if (this.isLoadedInMemory() && isSynchronizedWithSqlDatabase())
 		    __removeRecord(_record);
 		_record.__createdIntoDatabase=false;
 		updateMemoryForRemovingRecordWithCascade(_record);
@@ -3628,7 +3751,7 @@ public abstract class Table<T extends DatabaseRecord>
 	for (NeighboringTable nt : list_tables_pointing_to_this_table)
 	{
 	    Table<?> t=nt.getPointedTable();
-	    if (t.isLoadedInMemory() && t.is_synchronized_with_sql_database.get())
+	    if (t.isLoadedInMemory() && t.isSynchronizedWithSqlDatabase())
 	    {
 		ArrayList<DatabaseRecord> removed_records=new ArrayList<DatabaseRecord>();
 		Iterator<?> it=t.records_instances.get().iterator();
@@ -3649,12 +3772,12 @@ public abstract class Table<T extends DatabaseRecord>
 	    }
 	}
     }
-    private void updateMemoryForRemovingRecordsWithCascade(Collection<T> _records) throws DatabaseException
+    void updateMemoryForRemovingRecordsWithCascade(Collection<T> _records) throws DatabaseException
     {
 	for (NeighboringTable nt : list_tables_pointing_to_this_table)
 	{
 	    Table<?> t=nt.getPointedTable();
-	    if (t.isLoadedInMemory() && t.is_synchronized_with_sql_database.get())
+	    if (t.isLoadedInMemory() && t.isSynchronizedWithSqlDatabase())
 	    {
 		ArrayList<DatabaseRecord> removed_records=new ArrayList<DatabaseRecord>();
 		Iterator<?> it=t.records_instances.get().iterator();
@@ -3687,7 +3810,7 @@ public abstract class Table<T extends DatabaseRecord>
 	for (NeighboringTable nt : list_tables_pointing_to_this_table)
 	{
 	    Table<?> t=nt.getPointedTable();
-	    if (t.isLoadedInMemory() && t.is_synchronized_with_sql_database.get())
+	    if (t.isLoadedInMemory() && t.isSynchronizedWithSqlDatabase())
 	    {
 		ArrayList<DatabaseRecord> removed_records=new ArrayList<DatabaseRecord>();
 		Iterator<?> it=t.records_instances.get().iterator();
@@ -3840,6 +3963,12 @@ public abstract class Table<T extends DatabaseRecord>
 		
 		sql_connection.runTransaction(new Transaction() {
 		    
+			@Override
+			public TransactionIsolation getTransactionIsolation()
+			{
+			    return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+			}
+		    
 		    @SuppressWarnings("synthetic-access")
 		    @Override
 		    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
@@ -3875,7 +4004,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    
 		});
 	
-		if (isLoadedInMemory() && is_synchronized_with_sql_database.get())
+		if (isLoadedInMemory() && isSynchronizedWithSqlDatabase())
 		{
 		    __removeRecords(_records);
 		}
@@ -3919,6 +4048,11 @@ public abstract class Table<T extends DatabaseRecord>
 		public TransactionTmp()
 		{
 		 }
+		@Override
+		public TransactionIsolation getTransactionIsolation()
+		{
+		    return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+		}
 
 		@SuppressWarnings("synthetic-access")
 		@Override
@@ -3960,7 +4094,7 @@ public abstract class Table<T extends DatabaseRecord>
 	    }
 	    TransactionTmp transaction=new TransactionTmp();
 	    sql_connection.runTransaction(transaction);
-	    if (isLoadedInMemory() && is_synchronized_with_sql_database.get())
+	    if (isLoadedInMemory() && isSynchronizedWithSqlDatabase())
 	    {
 		__removeRecords(_records);
 	    }
@@ -4002,11 +4136,11 @@ public abstract class Table<T extends DatabaseRecord>
 	
     }
     
-    private final void getListRecordsFromSqlConnection(final Runnable _runnable, final SqlQuerry querry) throws DatabaseException
+    private final void getListRecordsFromSqlConnection(final Runnable _runnable, final SqlQuerry querry, final TransactionIsolation transactionIsolation) throws DatabaseException
     {
-	getListRecordsFromSqlConnection(_runnable, querry, false);
+	getListRecordsFromSqlConnection(_runnable, querry, transactionIsolation, false);
     }
-    private final void getListRecordsFromSqlConnection(final Runnable _runnable, final SqlQuerry querry, final boolean updatable) throws DatabaseException
+    final void getListRecordsFromSqlConnection(final Runnable _runnable, final SqlQuerry querry, final TransactionIsolation transactionIsolation, final boolean updatable) throws DatabaseException
     {
 	//synchronized(sql_connection)
 	{
@@ -4017,12 +4151,21 @@ public abstract class Table<T extends DatabaseRecord>
 		    protected final Constructor<T> default_constructor_field;
 		    protected final ArrayList<FieldAccessor> fields_accessor;
 		    
+			@Override
+			public TransactionIsolation getTransactionIsolation()
+			{
+			    return transactionIsolation;
+			}
+		    
+		    
 		    public TransactionTmp(Constructor<T> _default_constructor_field, ArrayList<FieldAccessor> _fields_accessor)
 		    {
 			default_constructor_field=_default_constructor_field;
 			fields_accessor=_fields_accessor;
 			
 		    }
+		    
+		    
 		    @Override
 		    public Object run(DatabaseWrapper sql_connection) throws DatabaseException
 		    {
@@ -4087,11 +4230,11 @@ public abstract class Table<T extends DatabaseRecord>
 	public abstract boolean setInstance(ResultSet _cursor) throws DatabaseException;
     }
 
-    private final void getListRecordsFromSqlConnection(final Runnable2 _runnable, final SqlQuerry querry) throws DatabaseException
+    final void getListRecordsFromSqlConnection(final Runnable2 _runnable, final SqlQuerry querry, TransactionIsolation transactionIsolation) throws DatabaseException
     {
-	getListRecordsFromSqlConnection(_runnable, querry, false);
+	getListRecordsFromSqlConnection(_runnable, querry, transactionIsolation, false);
     }
-    private final void getListRecordsFromSqlConnection(final Runnable2 _runnable, final SqlQuerry querry, final boolean updatable) throws DatabaseException
+    private final void getListRecordsFromSqlConnection(final Runnable2 _runnable, final SqlQuerry querry, final TransactionIsolation transactionIsolation, final boolean updatable) throws DatabaseException
     {
 	//synchronized(sql_connection)
 	{
@@ -4100,6 +4243,12 @@ public abstract class Table<T extends DatabaseRecord>
 		    public TransactionTmp()
 		    {
 		    }
+		    
+		    @Override public TransactionIsolation getTransactionIsolation()
+		    {
+			return transactionIsolation;
+		    }
+		    
 		    @Override
 		    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 		    {
@@ -4160,7 +4309,7 @@ public abstract class Table<T extends DatabaseRecord>
 	}
     }
     @SuppressWarnings("unchecked")
-    private final boolean contains(boolean is_already_in_transaction, final DatabaseRecord _record) throws DatabaseException
+    final boolean contains(boolean is_already_in_transaction, final DatabaseRecord _record) throws DatabaseException
     {
 	return contains((T)_record, false);
     }
@@ -4214,6 +4363,13 @@ public abstract class Table<T extends DatabaseRecord>
 			    {
 			        return false;
 			    }
+		    	    
+				@Override
+				public TransactionIsolation getTransactionIsolation()
+				{
+				    return TransactionIsolation.TRANSACTION_READ_COMMITTED;
+				}
+		    	    
 			    
 			};
 		Boolean found=(Boolean)sql_connection.runTransaction(transaction);
@@ -4322,7 +4478,7 @@ public abstract class Table<T extends DatabaseRecord>
 	}
     }
     
-    private Map<String, Object> getMap(T record, boolean includePrimaryKeys, boolean includeAutoGeneratedKeys) throws DatabaseException
+    Map<String, Object> getMap(T record, boolean includePrimaryKeys, boolean includeAutoGeneratedKeys) throws DatabaseException
     {
 	    Map<String, Object> map=new HashMap<>();
 	    for (FieldAccessor fa : getFieldAccessors())
@@ -4348,11 +4504,26 @@ public abstract class Table<T extends DatabaseRecord>
     {
 	return addRecord(_fields, already_in_transaction, null);
     }
-    private final T addRecord(final Map<String, Object> _fields, boolean already_in_transaction, T originalRecord) throws DatabaseException
+    @SuppressWarnings("unchecked")
+    private final T addRecord(final Map<String, Object> _fields, final boolean already_in_transaction, final T originalRecord) throws DatabaseException
     {
 
-	{
-	    
+	return (T)sql_connection.runTransaction(new Transaction() {
+	        
+	        
+	    @Override
+	    public TransactionIsolation getTransactionIsolation()
+	    {
+		return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+	    }
+	       
+	    @Override
+	    public boolean doesWriteData()
+	    {
+		return true;
+	    }
+	    @Override
+	    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 	    {
 		int number=0;
 		for (FieldAccessor fa : fields)
@@ -4363,7 +4534,7 @@ public abstract class Table<T extends DatabaseRecord>
 			if (obj==null)
 			{
 			    if (fa.isNotNull())
-				throw new FieldDatabaseException("The field "+fa.getFieldName()+"is not present into the given fields.");
+				throw new FieldDatabaseException("The field "+fa.getFieldName()+" is not present into the given fields.");
 			}
 			else
 			    number++;
@@ -4421,7 +4592,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    }
 		    final CheckTmp ct=new CheckTmp(auto_random_primary_keys_fields);
 		    if (ct.check_necessary)
-			getListRecordsFromSqlConnection(ct, getSqlGeneralSelect());
+			getListRecordsFromSqlConnection(ct, getSqlGeneralSelect(), TransactionIsolation.TRANSACTION_READ_COMMITTED);
 	    
 		    final T instance=originalRecord==null?getNewRecordInstance():originalRecord;
 		    if (isLoadedInMemory())
@@ -4494,7 +4665,7 @@ public abstract class Table<T extends DatabaseRecord>
 			    	    	}
 			    	    	RunnableTmp runnable=new RunnableTmp();
 			    	
-			    	    	getListRecordsFromSqlConnection(runnable, getSqlGeneralSelect());
+			    	    	getListRecordsFromSqlConnection(runnable, getSqlGeneralSelect(), TransactionIsolation.TRANSACTION_READ_COMMITTED);
 			    	    	ok=runnable.ok;
 			    	    	if (ok)
 			    	    	    value=fa.autoGenerateValue(rand);
@@ -4525,7 +4696,13 @@ public abstract class Table<T extends DatabaseRecord>
 			    return true;
 			}
 			
-			@SuppressWarnings("synthetic-access")
+			    @Override
+			    public TransactionIsolation getTransactionIsolation()
+			    {
+				return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+			    }
+			
+			
 			@Override
 			public Object run(DatabaseWrapper _db) throws DatabaseException
 			{
@@ -4634,30 +4811,30 @@ public abstract class Table<T extends DatabaseRecord>
 		
 		    sql_connection.runTransaction(new TransactionTmp(auto_primary_keys_fields, foreign_keys_fields));
 	    
-		    if (isLoadedInMemory() && is_synchronized_with_sql_database.get())
+		    if (isLoadedInMemory() && isSynchronizedWithSqlDatabase())
 			__AddRecord(instance);
 		    return instance;
 
 		}
 		catch(IllegalArgumentException e)
 		{
-		    throw new DatabaseException("Impossible to add a new field on the table/class "+this.getName()+".", e);
+		    throw new DatabaseException("Impossible to add a new field on the table/class "+getName()+".", e);
 		}
 		catch(InstantiationException e)
 		{
-		    throw new DatabaseException("Impossible to add a new field on the table/class "+this.getName()+".", e);
+		    throw new DatabaseException("Impossible to add a new field on the table/class "+getName()+".", e);
 		}
 		catch(IllegalAccessException e)
 		{
-		    throw new DatabaseException("Impossible to add a new field on the table/class "+this.getName()+".", e);
+		    throw new DatabaseException("Impossible to add a new field on the table/class "+getName()+".", e);
 		}
 		catch(InvocationTargetException e)
 		{
-		    throw new DatabaseException("Impossible to add a new field on the table/class "+this.getName()+".", e);
+		    throw new DatabaseException("Impossible to add a new field on the table/class "+getName()+".", e);
 		}
-	
 	    }
-	}
+	    
+	});
     }
     
     
@@ -4762,9 +4939,24 @@ public abstract class Table<T extends DatabaseRecord>
 	    throw new NullPointerException("The parameter _record is a null pointer !");
 	if (_fields==null)
 	    throw new NullPointerException("The parameter _fields is a null pointer !");
-	//synchronized(sql_connection)
-	{
-	    try (Lock lock=new WriteLock(this))
+	sql_connection.runTransaction(new Transaction() {
+	    
+	    
+	    @Override
+	    public TransactionIsolation getTransactionIsolation()
+	    {
+		return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+	    }
+	    
+	    @Override
+	    public boolean doesWriteData()
+	    {
+		return true;
+	    }
+	    @Override
+	    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
+	    {
+	    try (Lock lock=new WriteLock(Table.this))
 	    {
 		for (String s : _fields.keySet())
 		{
@@ -4786,7 +4978,7 @@ public abstract class Table<T extends DatabaseRecord>
 			}
 		    }
 		    if (!found)
-			throw new FieldDatabaseException("The given field "+s+" is not contained into the table "+this.getName());
+			throw new FieldDatabaseException("The given field "+s+" is not contained into the table "+getName());
 		}
 	
 		class CheckTmp extends Runnable2
@@ -4841,7 +5033,7 @@ public abstract class Table<T extends DatabaseRecord>
 		}
 		CheckTmp ct=new CheckTmp(auto_random_primary_keys_fields);
 		if (ct.check_necessary)
-		    getListRecordsFromSqlConnection(ct, getSqlGeneralSelect());
+		    getListRecordsFromSqlConnection(ct, getSqlGeneralSelect(), TransactionIsolation.TRANSACTION_REPEATABLE_READ);
 	    
 
 		class TransactionTmp implements Transaction
@@ -4858,7 +5050,12 @@ public abstract class Table<T extends DatabaseRecord>
 		        return true;
 		    }
 		
-		
+		    @Override
+		    public TransactionIsolation getTransactionIsolation()
+		    {
+			return TransactionIsolation.TRANSACTION_READ_COMMITTED;
+		    }
+
 		    @SuppressWarnings("synthetic-access")
 		    @Override
 		    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
@@ -4951,8 +5148,10 @@ public abstract class Table<T extends DatabaseRecord>
 	    {
 		throw DatabaseException.getDatabaseException(e);
 	    }
+	    return null;
+	    }
 	    
-	}
+	});
     }
     /**
      * Alter records into the database through a given inherited {@link com.distrimind.ood.database.AlterRecordFilter} class.
@@ -4984,9 +5183,24 @@ public abstract class Table<T extends DatabaseRecord>
 	    throw new NullPointerException("The parameter _filter is a null pointer !");
 	
 	
-	//synchronized(sql_connection)
-	{
-	    try (Lock lock=new WriteLock(this))
+	sql_connection.runTransaction(new Transaction() {
+	    
+	    
+	    @Override
+	    public TransactionIsolation getTransactionIsolation()
+	    {
+		return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+	    }
+	    
+	    @Override
+	    public boolean doesWriteData()
+	    {
+		return true;
+	    }
+	    @Override
+	    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
+	    {
+	    try (Lock lock=new WriteLock(Table.this))
 	    {
 		if (isLoadedInMemory())
 		{
@@ -5049,6 +5263,11 @@ public abstract class Table<T extends DatabaseRecord>
 				}
 				sql_connection.runTransaction(new Transaction() {
 			        
+				    @Override
+				    public TransactionIsolation getTransactionIsolation()
+				    {
+					return TransactionIsolation.TRANSACTION_READ_COMMITTED;
+				    }
 				    @SuppressWarnings("synthetic-access")
 				    @Override
 				    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
@@ -5144,6 +5363,11 @@ public abstract class Table<T extends DatabaseRecord>
 		    {
 			    Transaction transaction=new Transaction() {
 			        
+				    @Override
+				    public TransactionIsolation getTransactionIsolation()
+				    {
+					return TransactionIsolation.TRANSACTION_READ_COMMITTED;
+				    }
 				    @SuppressWarnings("synthetic-access")
 				    @Override
 				    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
@@ -5190,6 +5414,12 @@ public abstract class Table<T extends DatabaseRecord>
 		    {
 			Transaction transaction=new Transaction() {
 			        
+			    @Override
+			    public TransactionIsolation getTransactionIsolation()
+			    {
+				return TransactionIsolation.TRANSACTION_READ_COMMITTED;
+			    }
+			    
 			    @SuppressWarnings("synthetic-access")
 			    @Override
 			    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
@@ -5341,15 +5571,17 @@ public abstract class Table<T extends DatabaseRecord>
 			}
 		    }
 		    RunnableTmp runnable=new RunnableTmp(fields);
-		    getListRecordsFromSqlConnection(runnable, getSqlGeneralSelect(), true);
+		    getListRecordsFromSqlConnection(runnable, getSqlGeneralSelect(), TransactionIsolation.TRANSACTION_SERIALIZABLE, true);
 		}
 	    }
 	    catch(Exception e)
 	    {
 		throw DatabaseException.getDatabaseException(e);
 	    }
+	    return null;
+	    }
 	    
-	}
+	});
     }
     
     /*protected final BigInteger getRandomPositiveBigIntegerValue(int bits)
@@ -5475,7 +5707,7 @@ public abstract class Table<T extends DatabaseRecord>
 			}
 		    }
 		    RunnableTmp runnable=new RunnableTmp(primary_keys_fields);
-		    getListRecordsFromSqlConnection(runnable, new SqlGeneralSelectQuerryWithFieldMatch(keys, "AND"));
+		    getListRecordsFromSqlConnection(runnable, new SqlGeneralSelectQuerryWithFieldMatch(keys, "AND"), TransactionIsolation.TRANSACTION_READ_COMMITTED);
 		    return runnable.instance;
 		}
 	    }
@@ -5487,7 +5719,7 @@ public abstract class Table<T extends DatabaseRecord>
     }
     
     
-    private final void __AddRecord(T _record)
+    final void __AddRecord(T _record)
     {
 	@SuppressWarnings("unchecked")
 	ArrayList<T> res=(ArrayList<T>)records_instances.get().clone();
@@ -5521,7 +5753,7 @@ public abstract class Table<T extends DatabaseRecord>
 	    throw new DatabaseIntegrityException("Unexpected exception");
 	records_instances.set(res);
     }
-    private final void __removeRecords(Collection<T> _records) throws DatabaseException
+    final void __removeRecords(Collection<T> _records) throws DatabaseException
     {
 	@SuppressWarnings("unchecked")
 	ArrayList<T> res=(ArrayList<T>)records_instances.get().clone();
@@ -5625,7 +5857,7 @@ public abstract class Table<T extends DatabaseRecord>
 	}
     }
     
-    private static class WriteLock extends Lock
+    static class WriteLock extends Lock
     {
 	public WriteLock(Table<?> _current_table) throws DatabaseException
 	{
