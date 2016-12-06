@@ -114,8 +114,8 @@ public abstract class Table<T extends DatabaseRecord>
     final ArrayList<FieldAccessor> auto_random_primary_keys_fields=new ArrayList<FieldAccessor>();
     final ArrayList<FieldAccessor> auto_primary_keys_fields=new ArrayList<FieldAccessor>();
     private final ArrayList<FieldAccessor> primary_keys_fields_no_auto_no_random=new ArrayList<FieldAccessor>();
-    private final ArrayList<FieldAccessor> primary_keys_fields=new ArrayList<FieldAccessor>();
-    private final ArrayList<FieldAccessor> unique_fields_no_auto_random_primary_keys=new ArrayList<FieldAccessor>();
+    final ArrayList<FieldAccessor> primary_keys_fields=new ArrayList<FieldAccessor>();
+    final ArrayList<FieldAccessor> unique_fields_no_auto_random_primary_keys=new ArrayList<FieldAccessor>();
     final ArrayList<ForeignKeyFieldAccessor> foreign_keys_fields=new ArrayList<ForeignKeyFieldAccessor>();
     ArrayList<FieldAccessor> fields;
     private final ArrayList<FieldAccessor> fields_without_primary_and_foreign_keys=new ArrayList<FieldAccessor>();
@@ -3145,7 +3145,7 @@ public abstract class Table<T extends DatabaseRecord>
 	}
     }
     
-    private void checkMemory() throws DatabaseException
+    void checkMemory() throws DatabaseException
     {
 	{
 	    
@@ -3214,37 +3214,57 @@ public abstract class Table<T extends DatabaseRecord>
      */
     public final void checkDataIntegrity() throws DatabaseException
     {
-	//synchronized(sql_connection)
+	
 	{
 	    try(ReadLock l=new ReadLock(this))
 	    {
-		checkMemory();
-		ArrayList<T> records=getRecords();
-		for (T r1 : records)
-		{
-		    for (T r2 : records)
+		sql_connection.runTransaction(new Transaction() {
+		    
+		    @Override
+		    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 		    {
-			if (r1!=r2)
+			checkMemory();
+			ArrayList<T> records=getRecords();
+			for (T r1 : records)
 			{
-			    boolean allequals=true;
-			    for (FieldAccessor fa : primary_keys_fields)
+			    for (T r2 : records)
 			    {
-				if (!fa.equals(r1, fa.getValue(r2)))
+				if (r1!=r2)
 				{
-				    allequals=false;
-				    break;
+				    boolean allequals=true;
+				    for (FieldAccessor fa : primary_keys_fields)
+				    {
+					if (!fa.equals(r1, fa.getValue(r2)))
+					{
+					    allequals=false;
+					    break;
+					}
+				    }
+				    if (allequals)
+					throw new DatabaseIntegrityException("There is records into the table "+getName()+" which have the same primary keys.");
+				    for (FieldAccessor fa : unique_fields_no_auto_random_primary_keys)
+				    {
+					if (fa.equals(r1, fa.getValue(r2)))
+					    throw new DatabaseIntegrityException("There is records into the table "+getName()+" which have the same unique key into the field "+fa.getFieldName());
+				    }
 				}
 			    }
-			    if (allequals)
-				throw new DatabaseIntegrityException("There is records into the table "+this.getName()+" which have the same primary keys.");
-			    for (FieldAccessor fa : unique_fields_no_auto_random_primary_keys)
-			    {
-				if (fa.equals(r1, fa.getValue(r2)))
-				    throw new DatabaseIntegrityException("There is records into the table "+this.getName()+" which have the same unique key into the field "+fa.getFieldName());
-			    }
 			}
+			return null;
 		    }
-		}
+		    
+		    @Override
+		    public TransactionIsolation getTransactionIsolation()
+		    {
+			return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+		    }
+		    
+		    @Override
+		    public boolean doesWriteData()
+		    {
+			return false;
+		    }
+		});
 	    }
 	    catch(Exception e)
 	    {
@@ -5056,7 +5076,6 @@ public abstract class Table<T extends DatabaseRecord>
 			return TransactionIsolation.TRANSACTION_READ_COMMITTED;
 		    }
 
-		    @SuppressWarnings("synthetic-access")
 		    @Override
 		    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 		    {
@@ -5268,7 +5287,6 @@ public abstract class Table<T extends DatabaseRecord>
 				    {
 					return TransactionIsolation.TRANSACTION_READ_COMMITTED;
 				    }
-				    @SuppressWarnings("synthetic-access")
 				    @Override
 				    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 				    {
