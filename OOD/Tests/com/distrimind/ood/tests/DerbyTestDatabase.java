@@ -41,8 +41,6 @@ package com.distrimind.ood.tests;
 import java.io.File;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -85,8 +83,11 @@ import static com.distrimind.ood.tests.HSQLDBTestDatabase.assertEquals;
 import com.distrimind.ood.tests.schooldatabase.Lecture;
 import com.distrimind.util.DecentralizedIDGenerator;
 import com.distrimind.util.FileTools;
+import com.distrimind.util.crypto.SecureRandomType;
 import com.distrimind.util.crypto.SymmetricEncryptionType;
 import com.distrimind.util.crypto.SymmetricSecretKey;
+
+import gnu.vm.java.security.NoSuchProviderException;
 
 
 /**
@@ -130,10 +131,10 @@ public class DerbyTestDatabase
     final SubField subField;
     final SubSubField subSubField;
     
-    public DerbyTestDatabase() throws NoSuchAlgorithmException, DatabaseException
+    public DerbyTestDatabase() throws DatabaseException, gnu.vm.java.security.NoSuchAlgorithmException, NoSuchProviderException
     {
 	typeSecretKey=SymmetricEncryptionType.AES;
-	secretKey=SymmetricSecretKey.generate(new SecureRandom(), typeSecretKey);
+	secretKey=typeSecretKey.getKeyGenerator(SecureRandomType.DEFAULT.getInstance()).generateKey();
 	subField=getSubField();
 	subSubField=getSubSubField();
 	

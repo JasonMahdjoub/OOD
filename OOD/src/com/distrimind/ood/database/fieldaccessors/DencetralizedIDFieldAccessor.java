@@ -38,7 +38,6 @@ package com.distrimind.ood.database.fieldaccessors;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.security.SecureRandom;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -58,6 +57,7 @@ import com.distrimind.util.AbstractDecentralizedIDGenerator;
 import com.distrimind.util.DecentralizedIDGenerator;
 import com.distrimind.util.RenforcedDecentralizedIDGenerator;
 import com.distrimind.util.SecuredDecentralizedID;
+import com.distrimind.util.crypto.SecureRandomType;
 
 /**
  * 
@@ -405,7 +405,7 @@ public class DencetralizedIDFieldAccessor extends FieldAccessor
 	    }
 	    else if (field.getType()==SecuredDecentralizedID.class)
 	    {
-		return new SecuredDecentralizedID(new DecentralizedIDGenerator(), new SecureRandom());
+		return new SecuredDecentralizedID(new DecentralizedIDGenerator(), SecureRandomType.DEFAULT.getInstance());
 	    }
 	    throw new DatabaseException("Unexpected exception !");
 	}

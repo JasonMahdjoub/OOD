@@ -40,8 +40,6 @@ package com.distrimind.ood.tests;
 import java.io.File;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -83,8 +81,12 @@ import com.distrimind.ood.tests.schooldatabase.Lecture;
 import com.distrimind.util.DecentralizedIDGenerator;
 import com.distrimind.util.FileTools;
 import com.distrimind.util.RenforcedDecentralizedIDGenerator;
+import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.crypto.SecureRandomType;
 import com.distrimind.util.crypto.SymmetricEncryptionType;
 import com.distrimind.util.crypto.SymmetricSecretKey;
+
+import gnu.vm.java.security.NoSuchProviderException;
 
 /**
  * 
@@ -120,7 +122,20 @@ public class HSQLDBTestDatabase
     private static String database_file_nameb="databasetestHSQLDBb";
     private static File database_backup_file=new File("databasebackupHSQLDB.tar");
     
-    public static final SecureRandom secureRandom=new SecureRandom();
+    public static final AbstractSecureRandom secureRandom;
+    static
+    {
+	AbstractSecureRandom rand=null;
+	try
+	{
+	    rand=SecureRandomType.DEFAULT.getInstance();
+	}
+	catch(Exception e)
+	{
+	    e.printStackTrace();
+	}
+	secureRandom=rand;
+    }
     
     public static SubField getSubField() throws DatabaseException 
     {
@@ -147,8 +162,8 @@ public class HSQLDBTestDatabase
 	res.IntegerNumber_value=new Integer(2214);
 	res.long_value=254545;
 	res.LongNumber_value=new Long(1452);
-	res.secretKey=SymmetricSecretKey.generate(secureRandom);
-	res.typeSecretKey=SymmetricEncryptionType.Blowfish;
+	res.secretKey=SymmetricEncryptionType.AES.getKeyGenerator(secureRandom).generateKey();
+	res.typeSecretKey=SymmetricEncryptionType.AES;
 	res.subField=getSubSubField();
 	res.string_value="not null";
 	res.ShortNumber_value=new Short((short)12);
@@ -186,8 +201,8 @@ public class HSQLDBTestDatabase
 	res.IntegerNumber_value=new Integer(2214);
 	res.long_value=254545;
 	res.LongNumber_value=new Long(1452);
-	res.secretKey=SymmetricSecretKey.generate(secureRandom);
-	res.typeSecretKey=SymmetricEncryptionType.Blowfish;
+	res.secretKey=SymmetricEncryptionType.AES.getKeyGenerator(secureRandom).generateKey();
+	res.typeSecretKey=SymmetricEncryptionType.AES;
 	res.string_value="not null";
 	res.ShortNumber_value=new Short((short)12);
 	return res;
@@ -253,10 +268,10 @@ public class HSQLDBTestDatabase
 	Assert.assertEquals(actual.typeSecretKey, expected.typeSecretKey);
     }
     
-    public HSQLDBTestDatabase() throws DatabaseException, NoSuchAlgorithmException
+    public HSQLDBTestDatabase() throws DatabaseException, gnu.vm.java.security.NoSuchAlgorithmException, NoSuchProviderException
     {
 	typeSecretKey=SymmetricEncryptionType.AES;
-	secretKey=SymmetricSecretKey.generate(new SecureRandom(), typeSecretKey);
+	secretKey=typeSecretKey.getKeyGenerator(SecureRandomType.DEFAULT.getInstance()).generateKey();
 	subField=getSubField();
 	subSubField=getSubSubField();
     }

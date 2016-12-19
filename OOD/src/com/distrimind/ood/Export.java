@@ -84,6 +84,20 @@ class Export
 		org.apache.commons.net.SocketClient.class.getPackage(), 
 		licenses, new File("/home/jason/projets/commons-net-3.5/commons-net-3.5.jar"), null, null));
 	
+	License[] licensesGnuCryto = { new License(new File("/home/jason/git_projects/Gnu-Crypt/GNU-Crypto/LICENSE"))};
+	
+	dependencies.add(new JarDependency("GNU-Crypto",
+		new JarSourceDependancy(false,
+			new File(
+				"/home/jason/git_projects/Gnu-Crypt/GNU-Crypto/export/GNU-Crypto-0.99.jar"),
+			null, null),
+		gnu.Version.class.getPackage(),
+		licensesGnuCryto,
+		new File(
+			"/home/jason/git_projects/Gnu-Crypt/GNU-Crypto/export/GNU-Crypto-0.99.jar"),
+		null, null));
+	
+	
 	licenses=new License[1];
 	licenses[0]=new License(new File("/home/jason/projets/commons-net-3.5/LICENSE.txt"));
 	dependencies.add(new JarDependency("HSQLDB", 
