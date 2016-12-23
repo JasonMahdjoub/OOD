@@ -89,12 +89,12 @@ class Export
 	dependencies.add(new JarDependency("GNU-Crypto",
 		new JarSourceDependancy(false,
 			new File(
-				"/home/jason/git_projects/Gnu-Crypt/GNU-Crypto/export/GNU-Crypto-0.99.jar"),
+				"/home/jason/git_projects/Gnu-Crypt/GNU-Crypto/export/GNU-Crypto-0.99a.jar"),
 			null, null),
 		gnu.Version.class.getPackage(),
 		licensesGnuCryto,
 		new File(
-			"/home/jason/git_projects/Gnu-Crypt/GNU-Crypto/export/GNU-Crypto-0.99.jar"),
+			"/home/jason/git_projects/Gnu-Crypt/GNU-Crypto/export/GNU-Crypto-0.99a.jar"),
 		null, null));
 	
 	
@@ -132,7 +132,7 @@ class Export
 		"com/distrimind/ood/build.txt", 
 		null, "OOD is an Object Oriented Data which aims to manage database only with Java language without using SQL querries", 
 		OOD.VERSION,SourceVersion.RELEASE_7,
-		dependencies,additional_files,new File("/usr/lib/jvm/default-java-7"),
+		dependencies,additional_files,new File("/usr/lib/jvm/default-java"),
 		regex_exlude, null);
 	
 	dependencies=new ArrayList<BinaryDependency>();

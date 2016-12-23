@@ -86,7 +86,7 @@ import com.distrimind.util.crypto.SecureRandomType;
 import com.distrimind.util.crypto.SymmetricEncryptionType;
 import com.distrimind.util.crypto.SymmetricSecretKey;
 
-import gnu.vm.java.security.NoSuchProviderException;
+import gnu.vm.jgnu.security.NoSuchAlgorithmException;
 
 /**
  * 
@@ -268,7 +268,7 @@ public class HSQLDBTestDatabase
 	Assert.assertEquals(actual.typeSecretKey, expected.typeSecretKey);
     }
     
-    public HSQLDBTestDatabase() throws DatabaseException, gnu.vm.java.security.NoSuchAlgorithmException, NoSuchProviderException
+    public HSQLDBTestDatabase() throws DatabaseException, NoSuchAlgorithmException, gnu.vm.jgnu.security.NoSuchProviderException
     {
 	typeSecretKey=SymmetricEncryptionType.AES;
 	secretKey=typeSecretKey.getKeyGenerator(SecureRandomType.DEFAULT.getInstance()).generateKey();

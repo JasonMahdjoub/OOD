@@ -87,7 +87,8 @@ import com.distrimind.util.crypto.SecureRandomType;
 import com.distrimind.util.crypto.SymmetricEncryptionType;
 import com.distrimind.util.crypto.SymmetricSecretKey;
 
-import gnu.vm.java.security.NoSuchProviderException;
+import gnu.vm.jgnu.security.NoSuchAlgorithmException;
+import gnu.vm.jgnu.security.NoSuchProviderException;
 
 
 /**
@@ -131,7 +132,7 @@ public class DerbyTestDatabase
     final SubField subField;
     final SubSubField subSubField;
     
-    public DerbyTestDatabase() throws DatabaseException, gnu.vm.java.security.NoSuchAlgorithmException, NoSuchProviderException
+    public DerbyTestDatabase() throws DatabaseException, gnu.vm.jgnu.security.NoSuchAlgorithmException, NoSuchProviderException, NoSuchAlgorithmException, gnu.vm.jgnu.security.NoSuchProviderException
     {
 	typeSecretKey=SymmetricEncryptionType.AES;
 	secretKey=typeSecretKey.getKeyGenerator(SecureRandomType.DEFAULT.getInstance()).generateKey();
