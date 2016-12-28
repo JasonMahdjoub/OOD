@@ -48,7 +48,7 @@ import com.distrimind.util.version.Version;
 /**
  * 
  * @author Jason Mahdjoub
- * @version 1.8
+ * @version 1.9.2
  * @since OOD 1.0
  */
 public class OOD
@@ -60,8 +60,8 @@ public class OOD
 	Calendar c1=Calendar.getInstance();
 	c1.set(2013, 3, 1);
 	Calendar c2=Calendar.getInstance();
-	c2.set(2016, 11, 24);
-	VERSION=new Version("Object Oriented Database", "OOD", 1, 9, 1, Version.Type.Stable, 0, c1.getTime(), c2.getTime());
+	c2.set(2016, 11, 26);
+	VERSION=new Version("Object Oriented Database", "OOD", 1, 9, 2, Version.Type.Stable, 0, c1.getTime(), c2.getTime());
 	try
 	{
 	    InputStream is=OOD.class.getResourceAsStream("build.txt");
@@ -72,8 +72,15 @@ public class OOD
 	    VERSION.addDeveloper(new PersonDeveloper("mahdjoub", "jason", c.getTime()));
 	
 	    c=Calendar.getInstance();
+	    c.set(2016, 11, 26);
+	    Description d=new Description(1,9,2,Version.Type.Stable, 0, c.getTime());
+	    d.addItem("Correcting a problem of data integrity check.");
+	    d.addItem("Updating Derby DB to 10.13.1.1.");
+	    d.addItem("Solving a problem of multithread execution into windows (SQLNonTransientConnectionException).");
+
+	    c=Calendar.getInstance();
 	    c.set(2016, 11, 24);
-	    Description d=new Description(1,9,1,Version.Type.Stable, 0, c.getTime());
+	    d=new Description(1,9,1,Version.Type.Stable, 0, c.getTime());
 	    d.addItem("Updating Utils to version 2.0.1.");
 
 	    c=Calendar.getInstance();

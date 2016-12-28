@@ -57,7 +57,7 @@ import com.distrimind.ood.database.AlterRecordFilter;
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.Filter;
 import com.distrimind.ood.database.GroupedResults;
-import com.distrimind.ood.database.HSQLDBWrapper;
+import com.distrimind.ood.database.EmbeddedHSQLDBWrapper;
 import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.TableIterator;
@@ -91,7 +91,7 @@ import gnu.vm.jgnu.security.NoSuchAlgorithmException;
 /**
  * 
  * @author Jason Mahdjoub
- * @version 1.1
+ * @version 1.2
  * @since OOD 1.0
  */
 public class HSQLDBTestDatabase
@@ -275,21 +275,29 @@ public class HSQLDBTestDatabase
 	subField=getSubField();
 	subSubField=getSubSubField();
     }
+    @Override
+    public void finalize() throws DatabaseException
+    {
+	unloadDatabase();
+    }
     
     
     @AfterClass public static void unloadDatabase() throws DatabaseException
     {
-	sql_db.close();
-	HSQLDBWrapper.deleteDatabaseFiles(new File(database_file_name+".data"));
-	HSQLDBWrapper.deleteDatabaseFiles(new File(database_file_nameb+".data"));
+	if (sql_db!=null)
+	    sql_db.close();
+	if (sql_dbb!=null)
+	    sql_dbb.close();
+	EmbeddedHSQLDBWrapper.deleteDatabaseFiles(new File(database_file_name+".data"));
+	EmbeddedHSQLDBWrapper.deleteDatabaseFiles(new File(database_file_nameb+".data"));
 	FileTools.deleteDirectory(database_backup_file);
 	
     }
     @Test public void firstLoad() throws IllegalArgumentException, DatabaseException
     {
-	HSQLDBWrapper.deleteDatabaseFiles(new File(database_file_name+".data"));
+	EmbeddedHSQLDBWrapper.deleteDatabaseFiles(new File(database_file_name+".data"));
 	    
-	    sql_db=new HSQLDBWrapper(new File(database_file_name));
+	    sql_db=new EmbeddedHSQLDBWrapper(new File(database_file_name));
 	    sql_db.loadDatabase(pk);
 	    table2=(Table2)sql_db.getTableInstance(Table2.class);
 	    table1=(Table1)sql_db.getTableInstance(Table1.class);
@@ -367,7 +375,7 @@ public class HSQLDBTestDatabase
     @Test(dependsOnMethods={"firstTestSize"}) public void firstReload() throws DatabaseException
     {
 	sql_db.close();
-	    sql_db=new HSQLDBWrapper(new File(database_file_name));
+	    sql_db=new EmbeddedHSQLDBWrapper(new File(database_file_name));
 	    sql_db.loadDatabase(pk);
 	    sql_db.loadDatabase(pk2);
 	    
@@ -378,7 +386,7 @@ public class HSQLDBTestDatabase
 	    table5=(Table5)sql_db.getTableInstance(Table5.class);
 	    table6=(Table6)sql_db.getTableInstance(Table6.class);
 	    table7=(Table7)sql_db.getTableInstance(Table7.class);
-	    sql_dbb=new HSQLDBWrapper(new File(database_file_nameb));
+	    sql_dbb=new EmbeddedHSQLDBWrapper(new File(database_file_nameb));
 	    sql_dbb.loadDatabase(pk);
 	    table2b=(Table2)sql_dbb.getTableInstance(Table2.class);
 	    table1b=(Table1)sql_dbb.getTableInstance(Table1.class);
@@ -895,15 +903,15 @@ public class HSQLDBTestDatabase
 		
 		for (int i=0;i<3;i++)
 		    Assert.assertTrue(r2a.byte_array_value[i]==r2b.byte_array_value[i]);
-		table1.checkDataIntegrity();
-		table3.checkDataIntegrity();
-		table2.checkDataIntegrity();
-		table4.checkDataIntegrity();
-		table5.checkDataIntegrity();
-		table6.checkDataIntegrity();
 		
 	    }
 	}
+	table1.checkDataIntegrity();
+	table3.checkDataIntegrity();
+	table2.checkDataIntegrity();
+	table4.checkDataIntegrity();
+	table5.checkDataIntegrity();
+	table6.checkDataIntegrity();
     }
     
     @Test(dependsOnMethods={"addSecondRecord"}) public void getRecordFilter() throws DatabaseException
@@ -4711,12 +4719,12 @@ public class HSQLDBTestDatabase
     }
     @Test(threadPoolSize = 1, invocationCount = 1,  dependsOnMethods={"testThreadSafe"}) public void testCheckPoint() throws DatabaseException
     {
-	((HSQLDBWrapper)table1.getDatabaseWrapper()).checkPoint(false);
-	((HSQLDBWrapper)table1.getDatabaseWrapper()).checkPoint(true);
+	((EmbeddedHSQLDBWrapper)table1.getDatabaseWrapper()).checkPoint(false);
+	((EmbeddedHSQLDBWrapper)table1.getDatabaseWrapper()).checkPoint(true);
     }
     @Test(threadPoolSize = 1, invocationCount = 1,  dependsOnMethods={"testCheckPoint"}) public void testBackup() throws DatabaseException
     {
-	((HSQLDBWrapper)table1.getDatabaseWrapper()).backup(database_backup_file);
+	((EmbeddedHSQLDBWrapper)table1.getDatabaseWrapper()).backup(database_backup_file);
 	table1.checkDataIntegrity();
 	table2.checkDataIntegrity();
 	table3.checkDataIntegrity();

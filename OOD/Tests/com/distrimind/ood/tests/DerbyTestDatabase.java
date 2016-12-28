@@ -141,11 +141,17 @@ public class DerbyTestDatabase
 	
     }
     
-    
+    @Override
+    public void finalize() throws DatabaseException
+    {
+	unloadDatabase();
+    }
     @AfterClass public static void unloadDatabase() throws DatabaseException
     {
 	if (sql_db!=null)
 	    sql_db.close();
+	if (sql_dbb!=null)
+	    sql_dbb.close();
 	EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directory);
 	EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directoryb);
 	FileTools.deleteDirectory(database_backup_directory);
@@ -751,15 +757,15 @@ public class DerbyTestDatabase
 		
 		for (int i=0;i<3;i++)
 		    Assert.assertTrue(r2a.byte_array_value[i]==r2b.byte_array_value[i]);
-		table1.checkDataIntegrity();
-		table3.checkDataIntegrity();
-		table2.checkDataIntegrity();
-		table4.checkDataIntegrity();
-		table5.checkDataIntegrity();
-		table6.checkDataIntegrity();
 		
 	    }
 	}
+	table1.checkDataIntegrity();
+	table3.checkDataIntegrity();
+	table2.checkDataIntegrity();
+	table4.checkDataIntegrity();
+	table5.checkDataIntegrity();
+	table6.checkDataIntegrity();
     }
     @Test(dependsOnMethods={"addSecondRecord"}) public void getRecordFilter() throws DatabaseException
     {

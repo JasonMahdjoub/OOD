@@ -59,15 +59,14 @@ import com.distrimind.util.FileTools;
  * Sql connection wrapper for Derby DB
  * 
  * @author Jason Mahdjoub
- * @version 1.2
+ * @version 1.3
  * @since OOD 1.4
  */
 public class EmbeddedDerbyWrapper extends DatabaseWrapper
 {
     private static boolean derby_loaded = false;
-
     private final String dbURL;
-
+    private final File fileDirectory;
     private static void ensureDerbyLoading() throws DatabaseLoadingException
     {
 	synchronized (EmbeddedDerbyWrapper.class)
@@ -104,6 +103,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
     {
 	super(getConnection(_directory), "Database from file : " + _directory.getAbsolutePath());
 	dbURL = getDBUrl(_directory);
+	fileDirectory=_directory;
     }
 
     @Override
@@ -126,6 +126,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
 	if (_directory.exists() && !_directory.isDirectory())
 	    throw new IllegalArgumentException(
 		    "The given file name must be directory !");
+	System.gc();
 	ensureDerbyLoading();
 	try
 	{
@@ -183,6 +184,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
     @Override
     boolean doesTableExists(String tableName) throws Exception
     {
+	Connection sql_connection=getOpenedSqlConnection();
 	DatabaseMetaData dbmd = sql_connection.getMetaData();
 	ResultSet rs = dbmd.getTables(null, null, null, null);
 	while (rs.next())
@@ -196,13 +198,15 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
     @Override
     ColumnsReadQuerry getColumnMetaData(String tableName) throws Exception
     {
-	return new CReadQuerry(this.sql_connection, sql_connection.getMetaData()
+	Connection sql_connection=getOpenedSqlConnection();
+	return new CReadQuerry(sql_connection, sql_connection.getMetaData()
 		.getColumns(null, null, tableName, null));
     }
 
     @Override
     void checkConstraints(Table<?> table) throws DatabaseException
     {
+	Connection sql_connection=getOpenedSqlConnection();
 	try(ReadQuerry rq=new ReadQuerry(sql_connection, sql_connection.getMetaData().getPrimaryKeys(null, null, table.getName())))
 	{
 	    while (rq.result_set.next())
@@ -583,6 +587,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
 		    try
 		    {
 			locker.lockRead();
+			Connection sql_connection=getOpenedSqlConnection();
 			PreparedStatement preparedStatement = sql_connection.prepareStatement(querry);
 			try
 			{
@@ -611,6 +616,12 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
 		    return false;
 		}
 	    });
+    }
+
+    @Override
+    protected Connection reopenConnection() throws DatabaseLoadingException
+    {
+	return getConnection(fileDirectory);
     }
     
 }

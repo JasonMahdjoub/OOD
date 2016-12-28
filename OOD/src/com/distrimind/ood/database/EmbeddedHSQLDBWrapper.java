@@ -38,7 +38,6 @@ package com.distrimind.ood.database;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -65,16 +64,22 @@ import com.distrimind.util.ReadWriteLock;
 /**
  * Sql connection wrapper for HSQLDB
  * @author Jason Mahdjoub
- * @version 1.3
+ * @version 1.4
  * @since OOD 1.0
  */
-public class HSQLDBWrapper extends DatabaseWrapper
+public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
 {
     private static boolean hsql_loaded=false;
+    private final File file_name;
+    private final HSQLDBConcurrencyControl concurrencyControl;
+    private final int cache_rows;
+    private final int cache_size;
+    private final int result_max_memory_rows;
+    private final int cache_free_count;
     
     private static void ensureHSQLLoading() throws DatabaseLoadingException
     {
-	synchronized(HSQLDBWrapper.class)
+	synchronized(EmbeddedHSQLDBWrapper.class)
 	{
 	    if (!hsql_loaded)
 	    {
@@ -98,7 +103,7 @@ public class HSQLDBWrapper extends DatabaseWrapper
      * @throws IllegalArgumentException If the given file is a directory.
      * @throws DatabaseLoadingException If a Sql exception exception occurs.
      */
-    public HSQLDBWrapper(File _file_name) throws IllegalArgumentException, DatabaseException
+    public EmbeddedHSQLDBWrapper(File _file_name) throws IllegalArgumentException, DatabaseException
     {
 	this(_file_name, HSQLDBConcurrencyControl.DEFAULT, 100, 10000, 0, 512);
     }
@@ -115,21 +120,18 @@ public class HSQLDBWrapper extends DatabaseWrapper
      * @throws IllegalArgumentException If the given file is a directory.
      * @throws DatabaseLoadingException If a Sql exception exception occurs.
      */
-    public HSQLDBWrapper(File _file_name, HSQLDBConcurrencyControl concurrencyControl, int _cache_rows, int _cache_size, int _result_max_memory_rows, int _cache_free_count) throws IllegalArgumentException, DatabaseException
+    public EmbeddedHSQLDBWrapper(File _file_name, HSQLDBConcurrencyControl concurrencyControl, int _cache_rows, int _cache_size, int _result_max_memory_rows, int _cache_free_count) throws IllegalArgumentException, DatabaseException
     {
-	super(getConnection(_file_name, _cache_rows, _cache_size, _result_max_memory_rows, _cache_free_count), "Database from file : "+getHSQLDBDataFileName(_file_name)+".data");
-	try(Statement s=sql_connection.createStatement())
-	{
-	    s.executeQuery("SET DATABASE TRANSACTION CONTROL "+concurrencyControl.getCode());
-	}
-	catch(SQLException e)
-	{
-	    throw DatabaseException.getDatabaseException(e);
-	}
-
+	super(getConnection(_file_name, concurrencyControl, _cache_rows, _cache_size, _result_max_memory_rows, _cache_free_count), "Database from file : "+getHSQLDBDataFileName(_file_name)+".data");
+	this.file_name=_file_name;
+	this.concurrencyControl=concurrencyControl;
+	this.cache_rows=_cache_rows;
+	this.cache_size=_cache_size;
+	this.result_max_memory_rows=_result_max_memory_rows;
+	this.cache_free_count=_cache_free_count;
     }
     
-    private static Connection getConnection(File _file_name, int _cache_rows, int _cache_size, int _result_max_memory_rows, int _cache_free_count) throws DatabaseLoadingException
+    private static Connection getConnection(File _file_name, HSQLDBConcurrencyControl concurrencyControl, int _cache_rows, int _cache_size, int _result_max_memory_rows, int _cache_free_count) throws DatabaseLoadingException
     {
 	if (_file_name==null)
 	    throw new NullPointerException("The parameter _file_name is a null pointer !");
@@ -140,6 +142,11 @@ public class HSQLDBWrapper extends DatabaseWrapper
 	{
 	    Connection c=DriverManager.getConnection("jdbc:hsqldb:file:"+getHSQLDBDataFileName(_file_name)+";hsqldb.cache_rows="+_cache_rows+";hsqldb.cache_size="+_cache_size+";hsqldb.result_max_memory_rows="+_result_max_memory_rows+";hsqldb.cache_free_count="+_cache_free_count+";shutdown=true", "SA", "");
 	    c.setAutoCommit(false);
+	    try(Statement s=c.createStatement())
+	    {
+		s.executeQuery("SET DATABASE TRANSACTION CONTROL "+concurrencyControl.getCode());
+	    }
+	    
 	    return c;
 	}
 	catch(Exception e)
@@ -147,7 +154,7 @@ public class HSQLDBWrapper extends DatabaseWrapper
 	    throw new DatabaseLoadingException("Impossible to create the database into the file "+_file_name, e);
 	}
     }
-    private static Connection getConnection(URL _url) throws DatabaseLoadingException
+    /*private static Connection getConnection(URL _url) throws DatabaseLoadingException
     {
 	if (_url==null)
 	    throw new NullPointerException("The parameter _url is a null pointer !");
@@ -162,7 +169,7 @@ public class HSQLDBWrapper extends DatabaseWrapper
 	{
 	    throw new DatabaseLoadingException("Impossible to create the database into the file "+_url, e);
 	}
-    }
+    }*/
     
     
     private static String getHSQLDBDataFileName(File _file_name)
@@ -200,17 +207,17 @@ public class HSQLDBWrapper extends DatabaseWrapper
 	if (f.exists())
 	    f.delete();
     }
-    /**
+    /*
      * Constructor
      * @param _url The url pointing to the server which contains the database.
      * @throws NullPointerException if parameters are null pointers.
      * @throws IllegalArgumentException If the given file is a directory.
      * @throws DatabaseLoadingException If a Sql exception exception occurs.
      */
-    public HSQLDBWrapper(URL _url) throws IllegalArgumentException, DatabaseException
+    /*public HSQLDBWrapper(URL _url) throws IllegalArgumentException, DatabaseException
     {
 	super(getConnection(_url), "Database from URL : "+_url.getPath());
-    }
+    }*/
     
     @Override
     protected void closeConnection() throws SQLException
@@ -234,7 +241,7 @@ public class HSQLDBWrapper extends DatabaseWrapper
     @Override
     boolean doesTableExists(String table_name) throws Exception
     {
-	try (ReadQuerry rq=new ReadQuerry(getSqlConnection(), new Table.SqlQuerry("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"+table_name+"'")))
+	try (ReadQuerry rq=new ReadQuerry(getOpenedSqlConnection(), new Table.SqlQuerry("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"+table_name+"'")))
 	{
 	    if (rq.result_set.next())
 		return true;
@@ -246,12 +253,14 @@ public class HSQLDBWrapper extends DatabaseWrapper
     @Override
     ColumnsReadQuerry getColumnMetaData(String tableName) throws Exception
     {
-	return new CReadQuerry(this.sql_connection, new Table.SqlQuerry("SELECT COLUMN_NAME, TYPE_NAME, COLUMN_SIZE, IS_NULLABLE, IS_AUTOINCREMENT FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"+tableName+"';"));
+	Connection sql_connection=getOpenedSqlConnection();
+	return new CReadQuerry(sql_connection, new Table.SqlQuerry("SELECT COLUMN_NAME, TYPE_NAME, COLUMN_SIZE, IS_NULLABLE, IS_AUTOINCREMENT FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"+tableName+"';"));
     }
     
     @Override
     void checkConstraints(Table<?> table) throws DatabaseException
     {
+	Connection sql_connection=getOpenedSqlConnection();
 	try(ReadQuerry rq=new ReadQuerry(sql_connection, new Table.SqlQuerry("select CONSTRAINT_NAME, CONSTRAINT_TYPE from INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_NAME='"+table.getName()+"';")))
 	{
 	    while (rq.result_set.next())
@@ -592,6 +601,7 @@ public class HSQLDBWrapper extends DatabaseWrapper
      */
     public void checkPoint(boolean _defrag) throws DatabaseException
     {
+	Connection sql_connection=getOpenedSqlConnection();
 	try(ReadWriteLock.Lock lock=locker.getAutoCloseableWriteLock())
 	{
 	    Statement st=null;
@@ -700,6 +710,7 @@ public class HSQLDBWrapper extends DatabaseWrapper
 			    locker.lockWrite();
 			else
 			    locker.lockRead();
+			Connection sql_connection=getOpenedSqlConnection();
 			PreparedStatement preparedStatement = sql_connection.prepareStatement(querry);
 			try
 			{
@@ -750,6 +761,12 @@ public class HSQLDBWrapper extends DatabaseWrapper
 	    throw new IllegalArgumentException("databaseDirectory must be a directory !");
 	String args[]={"--extract", sourcePath.getAbsolutePath(), databaseDirectory.getAbsolutePath()};
 	DbBackupMain.main(args);
+    }
+
+    @Override
+    protected Connection reopenConnection() throws DatabaseLoadingException
+    {
+	return getConnection(file_name, concurrencyControl, cache_rows, cache_size, result_max_memory_rows, cache_free_count);
     }
     
 

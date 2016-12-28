@@ -70,14 +70,14 @@ import com.distrimind.util.ReadWriteLock;
 /**
  * This class represent a SqlJet database.
  * @author Jason Mahdjoub
- * @version 1.3
+ * @version 1.4
  * @since OOD 1.4
  */
 public abstract class DatabaseWrapper
 {
     
     
-    protected final Connection sql_connection;
+    protected Connection sql_connection;
     private volatile boolean closed=false;
     private final String database_name;
     private static final HashMap<String, ReadWriteLock> lockers=new HashMap<String, ReadWriteLock>();
@@ -88,7 +88,7 @@ public abstract class DatabaseWrapper
     
     private HashMap<Package, Database> sql_database=new HashMap<Package, Database>();
     private final DatabaseMetaData dmd;
-    
+    //private final boolean isWindows;
     private static class Database
     {
 	public final HashMap<Class<? extends Table<?>>, Table<?>> tables_instances=new HashMap<Class<? extends Table<?>>, Table<?>>();
@@ -136,6 +136,7 @@ public abstract class DatabaseWrapper
 	    throw new NullPointerException("_sql_connection");
 	database_name=_database_name;
 	sql_connection=_sql_connection;
+	//isWindows=OSValidator.isWindows();
 	
 	locker=getLocker();
 	converters=new ArrayList<>();
@@ -149,13 +150,14 @@ public abstract class DatabaseWrapper
 	{
 	    throw DatabaseException.getDatabaseException(se);
 	}
-	
+	System.gc();
     }
     
     public boolean isReadOnly() throws DatabaseException
     {
 	try
 	{
+	    Connection sql_connection=getOpenedSqlConnection();
 	    return sql_connection.isReadOnly();
 	}
 	catch(SQLException se)
@@ -169,6 +171,7 @@ public abstract class DatabaseWrapper
     {
 	try
 	{
+	    Connection sql_connection=getOpenedSqlConnection();
 	    return sql_connection.getNetworkTimeout();
 	}
 	catch(SQLException se)
@@ -177,6 +180,8 @@ public abstract class DatabaseWrapper
 	}	
 	
     }
+    
+    
     
     
     private ReadWriteLock getLocker()
@@ -199,21 +204,32 @@ public abstract class DatabaseWrapper
     }
     
 
+    protected abstract Connection reopenConnection()  throws DatabaseLoadingException;
     
     /**
      * 
      * @return The Sql connection.
+     * @throws SQLException 
      */
-    public Connection getSqlConnection()
+    public Connection getOpenedSqlConnection() throws DatabaseException
     {
-	return sql_connection;
+	try
+	{
+	    if (sql_connection.isClosed())
+		sql_connection=reopenConnection();
+	    return sql_connection;
+	}
+	catch(SQLException e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
     }
     
     protected abstract String getCachedKeyword();
     
     protected abstract void closeConnection() throws SQLException;
     
-    public void close() throws DatabaseException
+    public final void close() throws DatabaseException
     {
 	if (!closed)
 	{
@@ -242,6 +258,7 @@ public abstract class DatabaseWrapper
 			sql_database.clear();
 		    }
 		    closed=true;
+		    System.gc();
 		}
 	    }
 	    /*try(ReadWriteLock.Lock lock=locker.getAutoCloseableWriteLock())
@@ -310,8 +327,9 @@ public abstract class DatabaseWrapper
     private final AtomicBoolean transaction_already_running=new AtomicBoolean(false);
     //private volatile boolean transaction_already_running=false;
     
-    private boolean setTransactionIsolation(TransactionIsolation transactionIsolation) throws SQLException
+    private boolean setTransactionIsolation(TransactionIsolation transactionIsolation) throws SQLException, DatabaseException
     {
+	Connection sql_connection=getOpenedSqlConnection();
 	transactionIsolation=getValidTransactionIsolation(transactionIsolation);
 	if (transactionIsolation!=null)
 	{
@@ -365,11 +383,14 @@ public abstract class DatabaseWrapper
     Object runTransaction(final Transaction _transaction) throws DatabaseException
     {
 	Object res=null;
+	
 	if (transaction_already_running.weakCompareAndSet(false, true))
 	{
+	    Connection sql_connection=getOpenedSqlConnection();
 	    try
 	    {
 		setTransactionIsolation(_transaction.getTransactionIsolation());
+		
 		if (_transaction.doesWriteData())
 		    sql_connection.setSavepoint();
 		res=_transaction.run(this);
@@ -723,6 +744,7 @@ public abstract class DatabaseWrapper
 		throw new DatabaseException("The given Database was closed : "+this);
 	    if (_package==null)
 		throw new NullPointerException("_package is a null pointer.");
+	    Connection sql_connection=getOpenedSqlConnection();
 	    if (sql_database.containsKey(_package))
 		throw new DatabaseException("There is already a database associated to the given HSQLDBWrapper "+sql_connection);
 	    
@@ -745,7 +767,7 @@ public abstract class DatabaseWrapper
 			}*/
 			if (!doesTableExists(ROW_COUNT_TABLES))
 			{
-			    Statement st=sql_connection.getSqlConnection().createStatement();
+			    Statement st=sql_connection.getOpenedSqlConnection().createStatement();
 			    st.executeUpdate("CREATE TABLE "+ROW_COUNT_TABLES+" (TABLE_NAME VARCHAR(512), ROW_COUNT INTEGER)");
 			    st.close();
 			}

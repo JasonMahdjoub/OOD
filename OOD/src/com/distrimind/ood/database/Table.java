@@ -104,7 +104,7 @@ import com.distrimind.util.ReadWriteLock;
  * This class is thread safe
  * 
  * @author Jason Mahdjoub
- * @version 1.3
+ * @version 1.4
  * @param <T> the type of the record
  */
 public abstract class Table<T extends DatabaseRecord>
@@ -571,7 +571,7 @@ public abstract class Table<T extends DatabaseRecord>
 			    Statement st=null;
 			    try
 			    {
-				st=sql_connection.getSqlConnection().createStatement();
+				st=sql_connection.getOpenedSqlConnection().createStatement();
 				
 				st.executeUpdate(SqlQuerry.toString());
 				
@@ -613,15 +613,15 @@ public abstract class Table<T extends DatabaseRecord>
 			    Statement st=null;
 			    try
 			    {
-				st=sql_connection.getSqlConnection().createStatement();
+				st=sql_connection.getOpenedSqlConnection().createStatement();
 				st.executeUpdate("INSERT INTO "+DatabaseWrapper.ROW_COUNT_TABLES+" VALUES('"+Table.this.getName()+"', 0)");
 				st.close();
-				st=sql_connection.getSqlConnection().createStatement();
+				st=sql_connection.getOpenedSqlConnection().createStatement();
 				st.executeUpdate("CREATE TRIGGER "+Table.this.getName()+"_ROW_COUNT_TRIGGER_INSERT__ AFTER INSERT ON "+Table.this.getName()+"\n" +
 						"FOR EACH ROW \n" +
 						"UPDATE "+DatabaseWrapper.ROW_COUNT_TABLES+" SET ROW_COUNT=ROW_COUNT+1 WHERE TABLE_NAME='"+Table.this.getName()+"'\n");
 				st.close();
-				st=sql_connection.getSqlConnection().createStatement();
+				st=sql_connection.getOpenedSqlConnection().createStatement();
 				st.executeUpdate("CREATE TRIGGER "+Table.this.getName()+"_ROW_COUNT_TRIGGER_DELETE__ AFTER DELETE ON "+Table.this.getName()+"\n" +
 						"FOR EACH ROW \n" +
 						"UPDATE "+DatabaseWrapper.ROW_COUNT_TABLES+" SET ROW_COUNT=ROW_COUNT-1 WHERE TABLE_NAME='"+Table.this.getName()+"'\n");
@@ -747,7 +747,7 @@ public abstract class Table<T extends DatabaseRecord>
 		            Statement st=null;
 		            try
 		            {
-		    		st=_sql_connection.getSqlConnection().createStatement();
+		    		st=_sql_connection.getOpenedSqlConnection().createStatement();
 		    		st.executeUpdate(SqlQuerry.toString());
 		    		
 		    		return null;
@@ -922,7 +922,7 @@ public abstract class Table<T extends DatabaseRecord>
 		@Override
 	        public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 	        {
-		    try(ReadQuerry rq=new ReadQuerry(_sql_connection.getSqlConnection(), sqlquerry))
+		    try(ReadQuerry rq=new ReadQuerry(_sql_connection.getOpenedSqlConnection(), sqlquerry))
 		    {
 			if (rq.result_set.next())
 			{
@@ -1150,7 +1150,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    @Override
 		    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 		    {
-			try(ReadQuerry rq=new ReadQuerry(_sql_connection.getSqlConnection(), new SqlQuerry("SELECT ROW_COUNT FROM "+DatabaseWrapper.ROW_COUNT_TABLES+" WHERE TABLE_NAME='"+Table.this.getName()+"'")))
+			try(ReadQuerry rq=new ReadQuerry(_sql_connection.getOpenedSqlConnection(), new SqlQuerry("SELECT ROW_COUNT FROM "+DatabaseWrapper.ROW_COUNT_TABLES+" WHERE TABLE_NAME='"+Table.this.getName()+"'")))
 			{
 			    if (rq.result_set.next())
 			    {
@@ -1738,7 +1738,7 @@ public abstract class Table<T extends DatabaseRecord>
 		lock=new ReadLock(Table.this);
 		default_constructor_field=_default_constructor_field;
 		fields_accessor=_fields_accessor;
-		readQuerry=new ReadQuerry(sql_connection.getSqlConnection(), getSqlGeneralSelect());
+		readQuerry=new ReadQuerry(sql_connection.getOpenedSqlConnection(), getSqlGeneralSelect());
 	    }
 	    catch(SQLException e)
 	    {
@@ -3055,7 +3055,7 @@ public abstract class Table<T extends DatabaseRecord>
 				
 				
 				int nb=0;
-				try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getSqlConnection(), sb.toString()))
+				try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getOpenedSqlConnection(), sb.toString()))
 				{
 				    int index=1;
 				    for (T r : records_to_remove)
@@ -3151,7 +3151,7 @@ public abstract class Table<T extends DatabaseRecord>
 	    
 	    if (isLoadedInMemory())
 	    {
-		for (final T r : getRecords())
+		for (final T r : getRecords(false))
 		{
 		    class RunnableTmp extends Runnable
 		    {
@@ -3179,7 +3179,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    if (!runnable.found)
 			throw new DatabaseIntegrityException("All records present in the memory were not found into the database.");
 		}
-		final ArrayList<T> records=getRecords();
+		final ArrayList<T> records=getRecords(false);
 		class RunnableTmp extends Runnable
 		{
 
@@ -3224,7 +3224,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 		    {
 			checkMemory();
-			ArrayList<T> records=getRecords();
+			ArrayList<T> records=getRecords(false);
 			for (T r1 : records)
 			{
 			    for (T r2 : records)
@@ -3459,7 +3459,7 @@ public abstract class Table<T extends DatabaseRecord>
 	        @Override
 	        public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 	        {
-		    try(ReadQuerry prq = new ReadQuerry(_sql_connection.getSqlConnection(), sqlquerry))
+		    try(ReadQuerry prq = new ReadQuerry(_sql_connection.getOpenedSqlConnection(), sqlquerry))
 		    {
 			if (prq.result_set.next())
 			{
@@ -3512,7 +3512,7 @@ public abstract class Table<T extends DatabaseRecord>
 				StringBuffer sb=new StringBuffer("DELETE FROM "+Table.this.getName()+" WHERE "+getSqlPrimaryKeyCondition(records_to_remove.size()));
 
 				int nb=0;
-				try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getSqlConnection(), sb.toString()))
+				try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getOpenedSqlConnection(), sb.toString()))
 				{
 				    int index=1;
 				    for (T r : records_to_remove)
@@ -3648,7 +3648,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    {
 			StringBuffer querry=new StringBuffer("DELETE FROM "+Table.this.getName()+" WHERE "+getSqlPrimaryKeyCondition(1));
 		
-			try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getSqlConnection(), querry.toString()))
+			try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getOpenedSqlConnection(), querry.toString()))
 			{
 			    int index=1;
 			    for (FieldAccessor fa : primary_keys_fields)
@@ -3722,7 +3722,7 @@ public abstract class Table<T extends DatabaseRecord>
 			StringBuffer querry=new StringBuffer("DELETE FROM "+Table.this.getName()+" WHERE "+getSqlPrimaryKeyCondition(1));
 		
 		
-			try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getSqlConnection(), querry.toString()))
+			try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getOpenedSqlConnection(), querry.toString()))
 			{
 			    int index=1;
 			    for (FieldAccessor fa : primary_keys_fields)
@@ -3993,7 +3993,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    @Override
 		    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 		    {
-			try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getSqlConnection(), "DELETE FROM "+Table.this.getName()+" WHERE "+getSqlPrimaryKeyCondition(_records.size())))
+			try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getOpenedSqlConnection(), "DELETE FROM "+Table.this.getName()+" WHERE "+getSqlPrimaryKeyCondition(_records.size())))
 			{
 			    int index=1;
 			    for (T r : _records)
@@ -4080,7 +4080,7 @@ public abstract class Table<T extends DatabaseRecord>
 		{
 		    StringBuffer sb=new StringBuffer("DELETE FROM "+Table.this.getName()+" WHERE "+getSqlPrimaryKeyCondition(_records.size()));
 		    
-		    try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getSqlConnection(), sb.toString()))
+		    try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getOpenedSqlConnection(), sb.toString()))
 		    {
 			int index=1;
 			for (T r : _records)
@@ -4189,7 +4189,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    @Override
 		    public Object run(DatabaseWrapper sql_connection) throws DatabaseException
 		    {
-			try(AbstractReadQuerry rq=(updatable?new UpdatableReadQuerry(sql_connection.getSqlConnection(), querry):new ReadQuerry(sql_connection.getSqlConnection(), querry)))
+			try(AbstractReadQuerry rq=(updatable?new UpdatableReadQuerry(sql_connection.getOpenedSqlConnection(), querry):new ReadQuerry(sql_connection.getOpenedSqlConnection(), querry)))
 			{
 			    //int rowcount=getRowCount();
 
@@ -4272,7 +4272,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    @Override
 		    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 		    {
-			try(AbstractReadQuerry rq=(updatable?new UpdatableReadQuerry(_sql_connection.getSqlConnection(), querry):new ReadQuerry(_sql_connection.getSqlConnection(), querry)))
+			try(AbstractReadQuerry rq=(updatable?new UpdatableReadQuerry(_sql_connection.getOpenedSqlConnection(), querry):new ReadQuerry(_sql_connection.getOpenedSqlConnection(), querry)))
 			{
 			    //int rowcount=getRowCount();
 			    _runnable.init();
@@ -4365,7 +4365,7 @@ public abstract class Table<T extends DatabaseRecord>
 			    @Override
 			    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 			    {
-				try(ReadQuerry rq=new ReadQuerry(_sql_connection.getSqlConnection(), sqlquerry))
+				try(ReadQuerry rq=new ReadQuerry(_sql_connection.getOpenedSqlConnection(), sqlquerry))
 				{
 				    if (rq.result_set.next())
 					return new Boolean(true);
@@ -4769,7 +4769,7 @@ public abstract class Table<T extends DatabaseRecord>
 				}
 				querry.append(")"+sql_connection.getSqlComma());
 				
-				try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_db.getSqlConnection(), querry.toString()))
+				try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_db.getOpenedSqlConnection(), querry.toString()))
 				{
 				    int index=1;
 				    for(FieldAccessor fa : fields)
@@ -4798,7 +4798,7 @@ public abstract class Table<T extends DatabaseRecord>
 				
 				if (auto_primary_keys_fields.size()>0 && !ct.include_auto_pk)
 				{
-				    try(ReadQuerry rq=new ReadQuerry(_db.getSqlConnection(), new SqlQuerry(sql_connection.getSqlQuerryToGetLastGeneratedID())))
+				    try(ReadQuerry rq=new ReadQuerry(_db.getOpenedSqlConnection(), new SqlQuerry(sql_connection.getSqlQuerryToGetLastGeneratedID())))
 				    {
 					rq.result_set.next();
 					Long autovalue=new Long(rq.result_set.getLong(1));
@@ -4959,6 +4959,9 @@ public abstract class Table<T extends DatabaseRecord>
 	    throw new NullPointerException("The parameter _record is a null pointer !");
 	if (_fields==null)
 	    throw new NullPointerException("The parameter _fields is a null pointer !");
+	    try (Lock lock=new WriteLock(Table.this))
+	    {
+
 	sql_connection.runTransaction(new Transaction() {
 	    
 	    
@@ -4976,8 +4979,8 @@ public abstract class Table<T extends DatabaseRecord>
 	    @Override
 	    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 	    {
-	    try (Lock lock=new WriteLock(Table.this))
-	    {
+		try
+		{
 		for (String s : _fields.keySet())
 		{
 		    boolean found=false;
@@ -5114,7 +5117,7 @@ public abstract class Table<T extends DatabaseRecord>
 				}
 			    }
 			
-			    try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getSqlConnection(), querry.toString()))
+			    try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getOpenedSqlConnection(), querry.toString()))
 			    {
 				int index=1;
 				for (FieldAccessor fa : fields_accessor)
@@ -5171,6 +5174,12 @@ public abstract class Table<T extends DatabaseRecord>
 	    }
 	    
 	});
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+		
     }
     /**
      * Alter records into the database through a given inherited {@link com.distrimind.ood.database.AlterRecordFilter} class.
@@ -5201,6 +5210,8 @@ public abstract class Table<T extends DatabaseRecord>
 	if (_filter==null)
 	    throw new NullPointerException("The parameter _filter is a null pointer !");
 	
+	try (Lock lock=new WriteLock(Table.this))
+	{
 	
 	sql_connection.runTransaction(new Transaction() {
 	    
@@ -5219,8 +5230,8 @@ public abstract class Table<T extends DatabaseRecord>
 	    @Override
 	    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 	    {
-	    try (Lock lock=new WriteLock(Table.this))
-	    {
+		try
+		{
 		if (isLoadedInMemory())
 		{
 		    final ArrayList<T> records_to_delete=new ArrayList<>();
@@ -5325,7 +5336,7 @@ public abstract class Table<T extends DatabaseRecord>
 						}
 					    }
 					
-					    try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getSqlConnection(), querry.toString()))
+					    try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getOpenedSqlConnection(), querry.toString()))
 					    {
 						int index=1;
 						for (FieldAccessor fa : fields)
@@ -5393,7 +5404,7 @@ public abstract class Table<T extends DatabaseRecord>
 					StringBuffer sb=new StringBuffer("DELETE FROM "+Table.this.getName()+" WHERE "+getSqlPrimaryKeyCondition(records_to_delete.size()));
 					
 					int nb=0;
-					try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getSqlConnection(), sb.toString()))
+					try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getOpenedSqlConnection(), sb.toString()))
 					{
 					    int index=1;
 					    for (T r : records_to_delete)
@@ -5445,7 +5456,7 @@ public abstract class Table<T extends DatabaseRecord>
 				StringBuffer sb=new StringBuffer("DELETE FROM "+Table.this.getName()+" WHERE "+getSqlPrimaryKeyCondition(records_to_delete_with_cascade.size()));
 
 				int nb=0;
-				try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getSqlConnection(), sb.toString()))
+				try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getOpenedSqlConnection(), sb.toString()))
 				{
 				    int index=1;
 				    for (T r : records_to_delete_with_cascade)
@@ -5600,6 +5611,11 @@ public abstract class Table<T extends DatabaseRecord>
 	    }
 	    
 	});
+	}
+	catch (Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
     }
     
     /*protected final BigInteger getRandomPositiveBigIntegerValue(int bits)
