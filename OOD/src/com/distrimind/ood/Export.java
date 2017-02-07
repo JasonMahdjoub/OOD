@@ -75,6 +75,8 @@ class Export
 	String UtilsVersion=Utils.VERSION.getFileHeadVersion();
 	Package root_package=Export.class.getPackage();
 	ArrayList<File> additional_files=new ArrayList<>();
+	System.out.println(OOD.VERSION);
+	System.out.println(Utils.VERSION);
 	
 	License licenses[]=new License[1];
 	licenses[0]=new License(new File("/home/jason/projets/commons-net-3.5/LICENSE.txt"));
@@ -138,7 +140,7 @@ class Export
 	dependencies=new ArrayList<BinaryDependency>();
 	licenses=new License[1];
 	licenses[0]=new License(PredefinedLicense.APACHE_LICENSE_V2_0);
-	String testNGDir=".eclipse/org.eclipse.platform_4.5.2_1473617060_linux_gtk_x86_64/plugins/org.testng.eclipse_6.9.11.201604020423/lib";
+	String testNGDir=".eclipse/org.eclipse.platform_4.6.2_1473617060_linux_gtk_x86_64/plugins/org.testng.eclipse_6.10.0.201612030230/lib/";
 	dependencies.add(new JarDependency("TestNG", 
 		org.testng.TestNG.class.getPackage(), 
 		licenses, new File("/home/jason/"+testNGDir+"/testng.jar")));
