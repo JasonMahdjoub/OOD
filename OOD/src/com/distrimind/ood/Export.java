@@ -79,12 +79,12 @@ class Export
 	System.out.println(Utils.VERSION);
 	
 	License licenses[]=new License[1];
-	licenses[0]=new License(new File("/home/jason/projets/commons-net-3.5/LICENSE.txt"));
+	licenses[0]=new License(new File("/home/jason/projets/commons-net-3.6/LICENSE.txt"));
 	ArrayList<BinaryDependency> dependencies=new ArrayList<BinaryDependency>();
 	dependencies.add(new JarDependency("commons-net", 
-		new JarSourceDependancy(false, new File("/home/jason/projets/commons-net-3.5/commons-net-3.5-sources.jar"), null, null),
+		new JarSourceDependancy(false, new File("/home/jason/projets/commons-net-3.6/commons-net-3.6-sources.jar"), null, null),
 		org.apache.commons.net.SocketClient.class.getPackage(), 
-		licenses, new File("/home/jason/projets/commons-net-3.5/commons-net-3.5.jar"), null, null));
+		licenses, new File("/home/jason/projets/commons-net-3.6/commons-net-3.6.jar"), null, null));
 	
 	License[] licensesGnuCryto = { new License(new File("/home/jason/git_projects/Gnu-Crypt/GNU-Crypto/LICENSE"))};
 	
@@ -101,7 +101,7 @@ class Export
 	
 	
 	licenses=new License[1];
-	licenses[0]=new License(new File("/home/jason/projets/commons-net-3.5/LICENSE.txt"));
+	licenses[0]=new License(new File("/home/jason/projets/hsqldb/doc/hsqldb_lic.txt"));
 	dependencies.add(new JarDependency("HSQLDB", 
 		new DirectorySourceDependency(false, new File("/home/jason/projets/hsqldb/src")),
 		org.apache.commons.net.SocketClient.class.getPackage(), 
@@ -136,6 +136,8 @@ class Export
 		OOD.VERSION,SourceVersion.RELEASE_7,
 		dependencies,additional_files,new File("/usr/lib/jvm/default-java"),
 		regex_exlude, null);
+	javaProjectSource.setVerbose(false);
+	
 	
 	dependencies=new ArrayList<BinaryDependency>();
 	licenses=new License[1];
@@ -181,6 +183,7 @@ class Export
 	export_properties.add(new ExportProperties(true, Exports.SourceCodeExportType.NO_SOURCE_CODE, false));
 	
 	exports.setExportsSenarios(export_properties);
+	
 	exports.export();
     }
     
