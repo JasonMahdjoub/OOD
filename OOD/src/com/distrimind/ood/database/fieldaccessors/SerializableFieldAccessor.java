@@ -50,6 +50,7 @@ import java.sql.Blob;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
@@ -75,7 +76,7 @@ public class SerializableFieldAccessor extends FieldAccessor
 	if (!Serializable.class.isAssignableFrom(field.getType()))
 	    throw new FieldDatabaseException("The given field "+field.getName()+" of type "+field.getType().getName()+" must be a serializable field.");
 	sql_fields=new SqlField[1];
-	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), sql_connection.getSerializableType(), null, null);
+	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), DatabaseWrapperAccessor.getSerializableType(sql_connection), null, null);
 	
 	if (Comparable.class.isAssignableFrom(field.getType()))
 	{
@@ -156,7 +157,7 @@ public class SerializableFieldAccessor extends FieldAccessor
 	setValue(_class_instance, _field_instance);
 	try
 	{
-	    if (sql_connection.getSerializableType().equals("BLOB"))
+	    if (DatabaseWrapperAccessor.getSerializableType(sql_connection).equals("BLOB"))
 	    {
 		try(ByteArrayOutputStream baos=new ByteArrayOutputStream())
 		{
@@ -186,7 +187,7 @@ public class SerializableFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    if (sql_connection.getSerializableType().equals("BLOB"))
+	    if (DatabaseWrapperAccessor.getSerializableType(sql_connection).equals("BLOB"))
 	    {
 		try(ByteArrayOutputStream baos=new ByteArrayOutputStream())
 		{
@@ -283,7 +284,7 @@ public class SerializableFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    if (sql_connection.getSerializableType().equals("BLOB"))
+	    if (DatabaseWrapperAccessor.getSerializableType(sql_connection).equals("BLOB"))
 	    {
 		try(ByteArrayOutputStream baos=new ByteArrayOutputStream())
 		{
@@ -365,4 +366,56 @@ public class SerializableFieldAccessor extends FieldAccessor
     {
 	return false;
     }
+    
+    @Override
+    public void serialize(ObjectOutputStream _oos, Object _class_instance) throws DatabaseException
+    {
+	try
+	{
+	    _oos.writeObject(getValue(_class_instance));
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+
+
+
+    @Override
+    public void unserialize(ObjectInputStream _ois, HashMap<String, Object> _map) throws DatabaseException
+    {
+	try
+	{
+	    Object o=_ois.readObject();
+	    if (o!=null && !field.getType().isAssignableFrom(o.getClass()))
+		throw new DatabaseException("Incompatible class : "+o.getClass()+" (expected="+field.getType()+")");
+	    if (o==null && isNotNull())
+		throw new DatabaseException("The field should not be null");
+	    _map.put(getFieldName(), o);
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+    @Override
+    public Object unserialize(ObjectInputStream _ois, Object _classInstance) throws DatabaseException
+    {
+	try
+	{
+	    Object o=_ois.readObject();
+	    if (o!=null && !field.getType().isAssignableFrom(o.getClass()))
+		throw new DatabaseException("Incompatible class : "+o.getClass()+" (expected="+field.getType()+")");
+	    if (o==null && isNotNull())
+		throw new DatabaseException("The field should not be null");
+	    setValue(_classInstance, o);
+	    return o;
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }    
+    
 }

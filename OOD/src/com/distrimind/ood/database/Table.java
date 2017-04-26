@@ -38,7 +38,12 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -59,6 +64,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -76,10 +82,15 @@ import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
 import com.distrimind.ood.database.exceptions.DatabaseVersionException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
 import com.distrimind.ood.database.exceptions.RecordNotFoundDatabaseException;
+import com.distrimind.ood.database.exceptions.SerializationDatabaseException;
+import com.distrimind.ood.database.fieldaccessors.AbstractDencetralizedIDFieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
+import com.distrimind.ood.interpreter.Interpreter;
+import com.distrimind.ood.interpreter.RuleInstance;
 import com.distrimind.util.ListClasses;
 import com.distrimind.util.ReadWriteLock;
+
 
 
 
@@ -104,13 +115,14 @@ import com.distrimind.util.ReadWriteLock;
  * This class is thread safe
  * 
  * @author Jason Mahdjoub
- * @version 1.4
+ * @version 2.0
+ * @since OOD 1.0
  * @param <T> the type of the record
  */
 public abstract class Table<T extends DatabaseRecord>
 {
     final Class<T> class_record;
-    private final Constructor<T> default_constructor_field;
+    final Constructor<T> default_constructor_field;
     final ArrayList<FieldAccessor> auto_random_primary_keys_fields=new ArrayList<FieldAccessor>();
     final ArrayList<FieldAccessor> auto_primary_keys_fields=new ArrayList<FieldAccessor>();
     private final ArrayList<FieldAccessor> primary_keys_fields_no_auto_no_random=new ArrayList<FieldAccessor>();
@@ -122,8 +134,17 @@ public abstract class Table<T extends DatabaseRecord>
     private AtomicReference<ArrayList<T>> records_instances=new AtomicReference<ArrayList<T>>(new ArrayList<T>());
     private final boolean is_loaded_in_memory;
     private final String table_name;
+    private boolean supportSynchronizationWithOtherPeers=false;
+    public static final int maxTableNameSizeBytes=8192;
+    public static final int maxPrimaryKeysSizeBytes=65536;
     
     
+    public Constructor<T> getDefaultRecordConstructor()
+    {
+	return default_constructor_field;
+    }
+    
+   
     private static class NeighboringTable
     {
 	public final DatabaseWrapper sql_connection;
@@ -499,6 +520,7 @@ public abstract class Table<T extends DatabaseRecord>
 		{
 		    
 		    final StringBuffer SqlQuerry=new StringBuffer("CREATE "+sql_connection.getCachedKeyword()+" TABLE "+this.getName()+"(");
+		    
 		    boolean first=true;
 		    for (FieldAccessor f : fields)
 		    {
@@ -647,7 +669,69 @@ public abstract class Table<T extends DatabaseRecord>
 			    return null;
 			}
 		    });
-		    
+		    for (FieldAccessor fa : fields)
+		    {
+			if (fa.hasToCreateIndex())
+			{
+			    final StringBuffer indexCreationQuerry=new StringBuffer("CREATE INDEX ");
+			    indexCreationQuerry.append(fa.getIndexName());
+			    indexCreationQuerry.append(" ON ");
+			    indexCreationQuerry.append(getName()+" (");
+			    boolean first2=true;
+			    for (SqlField sf : fa.getDeclaredSqlFields())
+			    {
+				if (first2)
+				    first2=false;
+				else
+				    indexCreationQuerry.append(", ");
+				indexCreationQuerry.append(sf.short_field+(fa.isDescendentIndex()?" DESC":""));
+			    }
+			    indexCreationQuerry.append(")");
+			    
+			    sql_connection.runTransaction(new Transaction() {
+				    
+				@Override
+				public TransactionIsolation getTransactionIsolation()
+				{
+				    return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+				}
+				
+				@Override
+				public boolean doesWriteData()
+				{
+				    return true;
+				}
+				@Override
+				public Object run(DatabaseWrapper sql_connection) throws DatabaseException
+				{
+				    Statement st=null;
+				    try
+				    {
+					st=sql_connection.getOpenedSqlConnection().createStatement();
+					
+					st.executeUpdate(indexCreationQuerry.toString());
+					
+				    }
+				    catch(SQLException e)
+				    {
+					throw DatabaseException.getDatabaseException(e);
+				    }	
+				    finally
+				    {
+					try
+					{
+					    st.close();
+					}
+					catch(SQLException e)
+					{
+					    throw DatabaseException.getDatabaseException(e);
+					}	
+				    }
+				    return null;
+				}
+			    });
+			}
+		    }
 		
 		}
 	    }
@@ -775,10 +859,59 @@ public abstract class Table<T extends DatabaseRecord>
 	    }
 	    
 	}
+	supportSynchronizationWithOtherPeers=isGloballyDecentralizable(new HashSet<Table<?>>());
 	}
     }
+    public boolean supportSynchronizationWithOtherPeers()
+    {
+	return supportSynchronizationWithOtherPeers;
+    }
+    private boolean isGloballyDecentralizable(HashSet<Table<?>> checkedTables) throws DatabaseException
+    {
+	if (!isLocallyDecentralizable())
+	    return false;
+	checkedTables.add(this);
+	for (NeighboringTable nt : list_tables_pointing_to_this_table)
+	{
+	    Table<?> t=nt.getPointedTable();
+	    if (!checkedTables.contains(t))
+	    {
+		if (!t.isGloballyDecentralizable(checkedTables))
+		    return false;
+	    }
+	}
+	for (ForeignKeyFieldAccessor fa : foreign_keys_fields)
+	{
+	    Table<?> t=fa.getPointedTable();
+	    if (!checkedTables.contains(t) && !t.isGloballyDecentralizable(checkedTables))
+		return false;
+	}
+	return true;
+    }
     
+    private boolean isLocallyDecentralizable()
+    {
+	return hasDecentralizedPrimaryKey() && !hasNonDecentralizedIDUniqueKey();
+    }
     
+    private boolean hasDecentralizedPrimaryKey()
+    {
+	for (FieldAccessor fa : primary_keys_fields)
+	{
+	    if (fa instanceof AbstractDencetralizedIDFieldAccessor)
+		return true;
+	}
+	return false;
+    }
+    private boolean hasNonDecentralizedIDUniqueKey()
+    {
+	for (FieldAccessor fa : fields)
+	{
+	    if (!(fa instanceof AbstractDencetralizedIDFieldAccessor) && fa.isUnique())
+		return true;
+	}
+	return false;
+    }
     
     @SuppressWarnings({ "unchecked", "unused" })
     private T getRecordFromPointingRecord(final SqlFieldInstance[] _sql_field_instances, final ArrayList<DatabaseRecord> _previous_pointing_records) throws DatabaseException
@@ -980,6 +1113,30 @@ public abstract class Table<T extends DatabaseRecord>
 	return new SqlQuerry("SELECT "+getSqlSelectStep1Fields()+" FROM "+this.getName());
     }
     
+    SqlQuerry getSqlGeneralSelect(String condition, final Map<Integer, Object> parameters)
+    {
+	if (condition==null || condition.trim().equals(""))
+	    return getSqlGeneralSelect();
+	return new SqlQuerry("SELECT "+getSqlSelectStep1Fields()+" FROM "+this.getName()+" WHERE "+condition){
+	    @Override
+	    void finishPrepareStatement(PreparedStatement st) throws SQLException
+	    {
+		if (parameters!=null)
+		{
+		    int index=1;
+		    Object p=parameters.get(new Integer(index++));
+		    while (p!=null)
+		    {
+			st.setObject(index, p);
+			p=parameters.get(new Integer(index++));
+		    }
+			    
+		}
+	    }
+	};
+    }
+
+    
     private class SqlGeneralSelectQuerryWithFieldMatch extends SqlQuerry
     {
 	private final Map<String, Object> fields;
@@ -1178,6 +1335,24 @@ public abstract class Table<T extends DatabaseRecord>
 	return fields;
     }
 
+    /**
+     * @param fieldName the field name
+     * @return the field corresponding to this table and the given field name
+     * 
+     */
+    public final FieldAccessor getFieldAccessor(String fieldName)
+    {
+	for (FieldAccessor f : fields)
+	{
+	    if (f.getFieldName().equals(fieldName))
+	    {
+		return f;
+	    }
+    	}
+	return null;
+    }
+    
+    
     /**
      * 
      * @return the fields corresponding to this table
@@ -1378,19 +1553,56 @@ public abstract class Table<T extends DatabaseRecord>
      */
     public final ArrayList<T> getOrderedRecords(final Filter<T> _filter, boolean _ascendant, String..._fields) throws DatabaseException
     {
+	return getOrderedRecords(_filter, null, new HashMap<String, Object>(), _ascendant, _fields);
+    }
+
+    /**
+     * Returns the records of this table, corresponding to a given filter, and ordered according the given fields, in an ascendant way or in a descendant way. 
+     * @param _filter the filter which select records to include
+     * @param whereCondition the sql equivalent where condition
+     * @param parameters the sql parameters used for the where condition
+     * @param _ascendant this parameter must be true if the records should be sorted from the lower value to the highest value, false else.
+     * @param _fields the first given field corresponds to the field by which the table is sorted. If two records are equals, then the second given field is used, etc. It must have at minimum one field. Only comparable fields are authorized. It is possible to sort fields according records pointed by foreign keys. In this case, to sort according the field A of the foreign key FK1, please enter "FK1.A".
+     * @return the ordered filtered records
+     * @throws ConstraintsNotRespectedDatabaseException if a byte array field, a boolean field, or a foreign key field, is given or if an unknown field is given.
+     * @since 2.0.0
+     */
+    public final ArrayList<T> getOrderedRecords(final Filter<T> _filter, String whereCondition, Object[] parameters, boolean _ascendant, String..._fields) throws DatabaseException
+    {
+	return getOrderedRecords(_filter, whereCondition, convertToMap(parameters), _ascendant, _fields);
+    }
+    /**
+     * Returns the records of this table, corresponding to a given filter, and ordered according the given fields, in an ascendant way or in a descendant way. 
+     * @param _filter the filter which select records to include
+     * @param whereCondition the sql equivalent where condition
+     * @param parameters the sql parameters used for the where condition
+     * @param _ascendant this parameter must be true if the records should be sorted from the lower value to the highest value, false else.
+     * @param _fields the first given field corresponds to the field by which the table is sorted. If two records are equals, then the second given field is used, etc. It must have at minimum one field. Only comparable fields are authorized. It is possible to sort fields according records pointed by foreign keys. In this case, to sort according the field A of the foreign key FK1, please enter "FK1.A".
+     * @return the ordered filtered records
+     * @throws ConstraintsNotRespectedDatabaseException if a byte array field, a boolean field, or a foreign key field, is given or if an unknown field is given.
+     * @since 2.0.0
+     */
+    public final ArrayList<T> getOrderedRecords(final Filter<T> _filter, String whereCondition, Map<String, Object> parameters, boolean _ascendant, String..._fields) throws DatabaseException
+    {
 	try (Lock l=new ReadLock(this))
 	{
+	    final RuleInstance rule=whereCondition==null?null:Interpreter.getRuleInstance(whereCondition);
 	    final SortedArray res=new SortedArray(_ascendant, _fields);
 	    if (isLoadedInMemory())
 	    {
 		for (T r : getRecords(false))
 		{
-		    if (_filter.nextRecord(r))
+		    if ((rule==null || rule.isConcernedBy(this, parameters, r)) && _filter.nextRecord(r))
 			res.addRecord(r);
+		    if (_filter.isTableParsingStoped())
+			break;
 		}
 	    }
 	    else
 	    {
+		HashMap<Integer, Object> sqlParameters=new HashMap<>();
+		String sqlQuery=rule==null?null:rule.translateToSqlQuery(this, parameters, sqlParameters).toString();
+		
 		getListRecordsFromSqlConnection(new Runnable() {
 		    
 		    @Override
@@ -1400,14 +1612,14 @@ public abstract class Table<T extends DatabaseRecord>
 			{
 			    res.addRecord(_instance);
 		    	}
-			return true;
+			return !_filter.isTableParsingStoped();
 		    }
 		        
 		    @Override
 		    public void init(int _field_count)
 		    {
 		    }
-		}, getSqlGeneralSelect(), TransactionIsolation.TRANSACTION_READ_COMMITTED);
+		}, rule==null?getSqlGeneralSelect():getSqlGeneralSelect(sqlQuery, sqlParameters), TransactionIsolation.TRANSACTION_READ_COMMITTED);
 	    }
 	    return res.getRecords();
 	}
@@ -1908,6 +2120,141 @@ public abstract class Table<T extends DatabaseRecord>
 	}
     }
     
+    /**
+     * Returns the records of this table corresponding to a given SQL condition. 
+     * 
+     * @param whereCondition the SQL WHERE condition that filter the results 
+     * @param parameters the used parameters with the WHERE condition 
+     * @return the corresponding records.
+     * @throws DatabaseException if a Sql exception occurs.
+     * @throws NullPointerException if parameters are null pointers.
+     */
+    public final ArrayList<T> getRecords(String whereCondition, Object...parameters) throws DatabaseException
+    {
+	return getRecords(new Filter<T>() {
+
+	    @Override
+	    public boolean nextRecord(T _record) 
+	    {
+		return true;
+	    }
+	}, whereCondition, convertToMap(parameters));
+    }
+
+    
+    /**
+     * Returns the records of this table corresponding to a given filter and a given SQL condition. 
+     * @param _filter the filter
+     * @param whereCondition the SQL WHERE condition that filter the results 
+     * @param parameters the used parameters with the WHERE condition 
+     * @return the corresponding records.
+     * @throws DatabaseException if a Sql exception occurs.
+     * @throws NullPointerException if parameters are null pointers.
+     */
+    public final ArrayList<T> getRecords(final Filter<T> _filter, String whereCondition, Object...parameters) throws DatabaseException
+    {
+	return getRecords(_filter, whereCondition, convertToMap(parameters));
+    }
+	
+    /**
+     * Returns the records of this table corresponding to a given filter and a given SQL condition. 
+     * @param _filter the filter
+     * @param whereCondition the SQL WHERE condition that filter the results 
+     * @param parameters the used parameters with the WHERE condition 
+     * @return the corresponding records.
+     * @throws DatabaseException if a Sql exception occurs.
+     * @throws NullPointerException if parameters are null pointers.
+     */
+    public final ArrayList<T> getRecords(final Filter<T> _filter, String whereCondition, Map<String, Object> paramters) throws DatabaseException
+    {
+	if (_filter==null)
+	    throw new NullPointerException("The parameter _filter is a null pointer !");
+	//synchronized(sql_connection)
+	{
+	
+	    try (Lock lock=new ReadLock(this))
+	    {
+		return getRecords(_filter, whereCondition, paramters, false);
+	    }
+	    catch(Exception e)
+	    {
+		throw DatabaseException.getDatabaseException(e);
+	    }
+	}
+    }
+    
+    /**
+     * Returns the records of this table corresponding to a given SQL condition. 
+     * @param whereCondition the SQL WHERE condition that filter the results 
+     * @param parameters the used parameters with the WHERE condition 
+     * @return the corresponding records.
+     * @throws DatabaseException if a Sql exception occurs.
+     * @throws NullPointerException if parameters are null pointers.
+     */
+    public final ArrayList<T> getRecords(String whereCondition, Map<String, Object> paramters) throws DatabaseException
+    {
+	//synchronized(sql_connection)
+	{
+	
+	    try (Lock lock=new ReadLock(this))
+	    {
+		return getRecords(new Filter<T>() {
+
+		    @Override
+		    public boolean nextRecord(T _record) 
+		    {
+			return true;
+		    }
+		}, whereCondition, paramters, false);
+	    }
+	    catch(Exception e)
+	    {
+		throw DatabaseException.getDatabaseException(e);
+	    }
+	}
+    }
+    private final ArrayList<T> getRecords(final Filter<T> _filter, String where, Map<String, Object> parameters, boolean is_already_sql_transaction) throws DatabaseException
+    {
+	final ArrayList<T> res=new ArrayList<T>();
+	final RuleInstance rule=Interpreter.getRuleInstance(where);
+	    if (isLoadedInMemory())
+	    {
+		ArrayList<T> records=getRecords(is_already_sql_transaction);
+		
+		for (T r : records)
+		{
+		    if (rule.isConcernedBy(this, parameters, r))
+		    {
+			if (_filter.nextRecord(r))
+			    res.add(r);
+			if (_filter.isTableParsingStoped())
+			    break;
+		    }
+		}
+	    }
+	    else
+	    {
+		HashMap<Integer, Object> sqlParameters=new HashMap<>();
+		String sqlQuery=rule.translateToSqlQuery(this, parameters, sqlParameters).toString();
+		getListRecordsFromSqlConnection(new Runnable() {
+		    
+		    @Override
+		    public boolean setInstance(T r, ResultSet _cursor) throws DatabaseException
+		    {
+			if (_filter.nextRecord(r))
+			    res.add(r);
+			return !_filter.isTableParsingStoped();
+		    }
+		    
+		    @Override
+		    public void init(int _field_count)
+		    {
+		    }
+		}, getSqlGeneralSelect(sqlQuery, sqlParameters), TransactionIsolation.TRANSACTION_READ_COMMITTED, false);
+	    }
+	return res;
+    }
+    
     private final ArrayList<T> getRecords(final Filter<T> _filter, boolean is_already_sql_transaction) throws DatabaseException
     {
 	final ArrayList<T> res=new ArrayList<T>();
@@ -1919,6 +2266,8 @@ public abstract class Table<T extends DatabaseRecord>
 		{
 		    if (_filter.nextRecord(r))
 			res.add(r);
+		    if (_filter.isTableParsingStoped())
+			break;
 		}
 	    }
 	    else
@@ -1930,7 +2279,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    {
 			if (_filter.nextRecord(r))
 			    res.add(r);
-			return true;
+			return !_filter.isTableParsingStoped();
 		    }
 		    
 		    @Override
@@ -1974,6 +2323,8 @@ public abstract class Table<T extends DatabaseRecord>
 		{
 		    if (_filter.nextRecord(r))
 			return true;
+		    if (_filter.isTableParsingStoped())
+			break;
 		}
 		return false;
 	    }
@@ -1990,7 +2341,7 @@ public abstract class Table<T extends DatabaseRecord>
 			    res=true;
 			    return false;
 			}
-			return true;
+			return !_filter.isTableParsingStoped();
 		    }
 		    
 		    @Override
@@ -2005,7 +2356,7 @@ public abstract class Table<T extends DatabaseRecord>
 		return runnable.res;
 	    }
     }
-    abstract class PersonnalFilter implements Filter<T>
+    abstract class PersonnalFilter extends Filter<T>
     {
 	public abstract SqlQuerry getSQLQuerry();
     }
@@ -2313,7 +2664,7 @@ public abstract class Table<T extends DatabaseRecord>
      * @throws NullPointerException if parameters are null pointers.
      * @throws FieldDatabaseException if the given fields do not correspond to the table fields.
      */
-    public final ArrayList<T> getRecordsWithAllFields(Object[] _fields) throws DatabaseException
+    public final ArrayList<T> getRecordsWithAllFields(Object... _fields) throws DatabaseException
     {
 	return getRecordsWithAllFields(transformToMapField(_fields));
     }
@@ -2353,7 +2704,7 @@ public abstract class Table<T extends DatabaseRecord>
      * @throws NullPointerException if parameters are null pointers.
      * @throws FieldDatabaseException if the given fields do not correspond to the table fields.
      */
-    public final boolean hasRecordsWithAllFields(Object[] _fields) throws DatabaseException
+    public final boolean hasRecordsWithAllFields(Object... _fields) throws DatabaseException
     {
 	return hasRecordsWithAllFields(transformToMapField(_fields));
     }
@@ -2475,7 +2826,7 @@ public abstract class Table<T extends DatabaseRecord>
      * @throws NullPointerException if parameters are null pointers.
      * @throws FieldDatabaseException if the given fields do not correspond to the table fields.
      */
-    public final ArrayList<T> getRecordsWithOneOfFields(Object[] _fields) throws DatabaseException
+    public final ArrayList<T> getRecordsWithOneOfFields(Object... _fields) throws DatabaseException
     {
 	return getRecordsWithOneOfFields(transformToMapField(_fields));
     }
@@ -2512,7 +2863,7 @@ public abstract class Table<T extends DatabaseRecord>
      * @throws NullPointerException if parameters are null pointers.
      * @throws FieldDatabaseException if the given fields do not correspond to the table fields.
      */
-    public final boolean hasRecordsWithOneOfFields(final Object[] _fields) throws DatabaseException
+    public final boolean hasRecordsWithOneOfFields(final Object... _fields) throws DatabaseException
     {
 	return hasRecordsWithOneOfFields(transformToMapField(_fields));
     }
@@ -2637,7 +2988,7 @@ public abstract class Table<T extends DatabaseRecord>
      * @throws NullPointerException if parameters are null pointers.
      * @throws FieldDatabaseException if the given fields do not correspond to the table fields.
      */
-    public final long removeRecordsWithAllFields(Object[] _fields) throws DatabaseException
+    public final long removeRecordsWithAllFields(Object... _fields) throws DatabaseException
     {
 	return removeRecordsWithAllFields(transformToMapField(_fields));
     }
@@ -2717,7 +3068,7 @@ public abstract class Table<T extends DatabaseRecord>
      * @throws NullPointerException if parameters are null pointers.
      * @throws FieldDatabaseException if the given fields do not correspond to the table fields.
      */
-    public final long removeRecordsWithOneOfFields(Object[] _fields) throws DatabaseException
+    public final long removeRecordsWithOneOfFields(Object... _fields) throws DatabaseException
     {
 	return removeRecordsWithOneOfFields(transformToMapField(_fields));
     }
@@ -2798,7 +3149,7 @@ public abstract class Table<T extends DatabaseRecord>
      * @throws NullPointerException if parameters are null pointers.
      * @throws FieldDatabaseException if the given fields do not correspond to the table fields.
      */
-    public final long removeRecordsWithAllFieldsWithCascade(Object[] _fields) throws DatabaseException
+    public final long removeRecordsWithAllFieldsWithCascade(Object... _fields) throws DatabaseException
     {
 	return removeRecordsWithAllFieldsWithCascade(transformToMapField(_fields));
     }
@@ -2878,7 +3229,7 @@ public abstract class Table<T extends DatabaseRecord>
      * @throws NullPointerException if parameters are null pointers.
      * @throws FieldDatabaseException if the given fields do not correspond to the table fields.
      */
-    public final long removeRecordsWithOneOfFieldsWithCascade(Object[] _fields) throws DatabaseException
+    public final long removeRecordsWithOneOfFieldsWithCascade(Object... _fields) throws DatabaseException
     {
 	return removeRecordsWithOneOfFieldsWithCascade(transformToMapField(_fields));
     }
@@ -3003,17 +3354,115 @@ public abstract class Table<T extends DatabaseRecord>
 	    }
 	}
     }
+
+    /**
+     * Remove records which correspond to a WHERE condition. 
+     * These records are not pointed by other records through foreign keys of other tables. So they are not proposed to the filter class.  
+     * 
+     * @param whereCondition the SQL WHERE condition that filter the results 
+     * @param parameters the used parameters with the WHERE condition 
+     * @return the number of deleted records
+     * @throws DatabaseException if a Sql exception occurs.
+     * @throws NullPointerException if parameters are null pointers.
+     */
+    public final long removeRecords(String whereCommand, Object ... parameters) throws DatabaseException
+    {
+	return removeRecords(new Filter<T>() {
+
+	    @Override
+	    public boolean nextRecord(T _record) 
+	    {
+		return true;
+	    }
+	}, whereCommand, convertToMap(parameters));
+    }
     
+    /**
+     * Remove records which correspond to the given filter and WHERE condition. 
+     * These records are not pointed by other records through foreign keys of other tables. So they are not proposed to the filter class.  
+     * 
+     * @param _filter the filter
+     * @param whereCondition the SQL WHERE condition that filter the results 
+     * @param parameters the used parameters with the WHERE condition 
+     * @return the number of deleted records
+     * @throws DatabaseException if a Sql exception occurs.
+     * @throws NullPointerException if parameters are null pointers.
+     */
+    public final long removeRecords(final Filter<T> _filter, String whereCommand, Object ... parameters) throws DatabaseException
+    {
+	return removeRecords(_filter, whereCommand, convertToMap(parameters));
+    }
+
     
-    private final int removeRecords(final Filter<T> _filter, boolean is_already_in_transaction) throws DatabaseException
+    /**
+     * Remove records which correspond to the given filter and WHERE condition. 
+     * These records are not pointed by other records through foreign keys of other tables. So they are not proposed to the filter class.  
+     * 
+     * @param _filter the filter
+     * @param whereCondition the SQL WHERE condition that filter the results 
+     * @param parameters the used parameters with the WHERE condition 
+     * @return the number of deleted records
+     * @throws DatabaseException if a Sql exception occurs.
+     * @throws NullPointerException if parameters are null pointers.
+     */
+    public final long removeRecords(final Filter<T> _filter, String whereCommand, Map<String, Object> parameters) throws DatabaseException
+    {
+	if (_filter==null)
+	    throw new NullPointerException("The parameter _filter is a null pointer !");
+	//synchronized(sql_connection)
+	{
+	    try (Lock lock=new WriteLock(this))
+	    {
+		return removeRecords(_filter, whereCommand, parameters, false);
+	    }
+	    catch(Exception e)
+	    {
+		throw DatabaseException.getDatabaseException(e);
+	    }
+	}
+    }
+    
+    /**
+     * Remove records which correspond to the given WHERE condition. 
+     * These records are not pointed by other records through foreign keys of other tables. So they are not proposed to the filter class.  
+     * 
+     * @param whereCondition the SQL WHERE condition that filter the results 
+     * @param parameters the used parameters with the WHERE condition 
+     * @return the number of deleted records
+     * @throws DatabaseException if a Sql exception occurs.
+     * @throws NullPointerException if parameters are null pointers.
+     */
+    public final long removeRecords(String whereCommand, Map<String, Object> parameters) throws DatabaseException
+    {
+	{
+	    try (Lock lock=new WriteLock(this))
+	    {
+		return removeRecords(new Filter<T>(){
+
+		    @Override
+		    public boolean nextRecord(T _record) 
+		    {
+			return true;
+		    }
+		    
+		}, whereCommand, parameters, false);
+	    }
+	    catch(Exception e)
+	    {
+		throw DatabaseException.getDatabaseException(e);
+	    }
+	}
+    }
+    private final int removeRecords(final Filter<T> _filter, String where, Map<String, Object> parameters, boolean is_already_in_transaction) throws DatabaseException
     {
 	
 	//try(ReadWriteLock.Lock lock=sql_connection.locker.getAutoCloseableWriteLock())
 	{
+	    RuleInstance rule=Interpreter.getRuleInstance(where);
 	    if (isLoadedInMemory())
 	    {
 		final ArrayList<T> records_to_remove=new ArrayList<T>();
-	    
+		
 		for (final T r : getRecords(is_already_in_transaction))
 		{
 		    boolean toremove=true;
@@ -3026,10 +3475,12 @@ public abstract class Table<T extends DatabaseRecord>
 			}
 		    }
 		
-		    if (toremove && _filter.nextRecord(r))
+		    if (toremove && rule.isConcernedBy(this, parameters, r) && _filter.nextRecord(r))
 		    {
 			records_to_remove.add(r);
 		    }
+		    if (_filter.isTableParsingStoped())
+			break;
 		}
 		if (records_to_remove.size()>0)
 		{
@@ -3084,6 +3535,8 @@ public abstract class Table<T extends DatabaseRecord>
 		    sql_connection.runTransaction(transaction);
 	    
 		    __removeRecords(records_to_remove);
+		    for (T r : records_to_remove)
+			getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, r, null));
 		}
 		return records_to_remove.size();
 	}
@@ -3126,8 +3579,157 @@ public abstract class Table<T extends DatabaseRecord>
 			    _cursor.deleteRow();
 			    ++deleted_records_number;
 			    _instance.__createdIntoDatabase=false;
+			    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, _instance, null));
 			}
-			return true;
+			return !_filter.isTableParsingStoped();
+		    }
+		    catch(Exception e)
+		    {
+			throw DatabaseException.getDatabaseException(e);
+		    }
+		    
+		}
+		    
+	    }
+	    
+	    RunnableTmp runnable=new RunnableTmp();
+	    HashMap<Integer, Object> sqlParameters=new HashMap<>();
+	    String sqlQuery=rule.translateToSqlQuery(this, parameters, sqlParameters).toString();
+	    getListRecordsFromSqlConnection(runnable, getSqlGeneralSelect(sqlQuery, sqlParameters), TransactionIsolation.TRANSACTION_REPEATABLE_READ, true);
+	    return runnable.deleted_records_number;
+	}
+	}
+    }
+    
+    
+    private final int removeRecords(final Filter<T> _filter, boolean is_already_in_transaction) throws DatabaseException
+    {
+	
+	//try(ReadWriteLock.Lock lock=sql_connection.locker.getAutoCloseableWriteLock())
+	{
+	    if (isLoadedInMemory())
+	    {
+		final ArrayList<T> records_to_remove=new ArrayList<T>();
+	    
+		for (final T r : getRecords(is_already_in_transaction))
+		{
+		    boolean toremove=true;
+		    for (NeighboringTable nt : list_tables_pointing_to_this_table)
+		    {
+			if (nt.getPointedTable().hasRecordsWithOneOfFields(nt.getHashMapFields(r), false))
+			{
+			    toremove=false;
+			    break;
+			}
+		    }
+		
+		    if (toremove && _filter.nextRecord(r))
+		    {
+			records_to_remove.add(r);
+		    }
+		    if (_filter.isTableParsingStoped())
+			break;
+		}
+		if (records_to_remove.size()>0)
+		{
+		    Transaction transaction=new Transaction() {
+
+			@Override
+			public TransactionIsolation getTransactionIsolation()
+			{
+			    return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
+			}
+
+				@Override
+		    	    public boolean doesWriteData()
+			    {
+			        return true;
+			    }
+		        
+			    @SuppressWarnings("synthetic-access")
+			    @Override
+			    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
+			    {
+				StringBuffer sb=new StringBuffer("DELETE FROM "+Table.this.getName()+" WHERE "+getSqlPrimaryKeyCondition(records_to_remove.size()));
+				
+				
+				int nb=0;
+				try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getOpenedSqlConnection(), sb.toString()))
+				{
+				    int index=1;
+				    for (T r : records_to_remove)
+				    {
+					for (FieldAccessor fa : primary_keys_fields)
+					{
+					    fa.getValue(r, puq.statement, index);
+					    index+=fa.getDeclaredSqlFields().length;
+					}
+					r.__createdIntoDatabase=false;
+				    }
+				    nb=puq.statement.executeUpdate();
+				}
+				catch(Exception e)
+				{
+				    throw DatabaseException.getDatabaseException(e);
+				}
+
+				
+				if (nb!=records_to_remove.size())
+				    throw new DatabaseException("Unexpected exception.");
+				return null;
+			    }
+			};
+		    if (records_to_remove.size()>0)
+		    sql_connection.runTransaction(transaction);
+	    
+		    __removeRecords(records_to_remove);
+		    for (T r : records_to_remove)
+			getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, r, null));
+		}
+		return records_to_remove.size();
+	}
+	else
+	{
+	    
+	    class RunnableTmp extends Runnable
+	    {
+	 
+		public int deleted_records_number;
+		@Override
+		public void init(int _field_count)
+		{
+		    deleted_records_number=0;
+		}
+
+		@SuppressWarnings("synthetic-access")
+		@Override
+		public boolean setInstance(T _instance, ResultSet _cursor) throws DatabaseException
+		{
+		    try
+		    {
+			boolean toremove=true;
+			if (list_tables_pointing_to_this_table.size()>0)
+			{
+			    for (int i=0;i<list_tables_pointing_to_this_table.size();i++)
+			    {
+				
+				NeighboringTable nt=list_tables_pointing_to_this_table.get(i);
+				
+				if (nt.getPointedTable().hasRecordsWithOneOfSqlForeignKeyWithCascade(nt.getHashMapsSqlFields(getSqlPrimaryKeys(_instance))))
+				{
+				    toremove=false;
+				    break;
+				}
+			    }
+			}
+			if (toremove && _filter.nextRecord(_instance))
+			{
+			    _cursor.deleteRow();
+			    ++deleted_records_number;
+			    _instance.__createdIntoDatabase=false;
+			    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, _instance, null));
+			}
+			return !_filter.isTableParsingStoped();
 		    }
 		    catch(Exception e)
 		    {
@@ -3494,6 +4096,8 @@ public abstract class Table<T extends DatabaseRecord>
 		{
 		    records_to_remove.add(r);
 		}
+		if (_filter.isTableParsingStoped())
+		    break;
 	    }
 	    if (records_to_remove.size()>0)
 	    {
@@ -3549,6 +4153,8 @@ public abstract class Table<T extends DatabaseRecord>
 		
 		__removeRecords(records_to_remove);
 		updateMemoryForRemovingRecordsWithCascade(records_to_remove);
+		for (T r : records_to_remove)
+		    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, r, null));
 	    }
 	    return records_to_remove.size();
 	}
@@ -3575,8 +4181,9 @@ public abstract class Table<T extends DatabaseRecord>
 			    ++deleted_records_number;
 			    _instance.__createdIntoDatabase=false;
 			    updateMemoryForRemovingRecordWithCascade(_instance);
+			    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, _instance, null));
 			}
-			return true;
+			return !_filter.isTableParsingStoped();
 		    }
 		    catch(Exception e)
 		    {
@@ -3619,8 +4226,14 @@ public abstract class Table<T extends DatabaseRecord>
      */
     public final void removeRecord(final T _record) throws DatabaseException
     {
-	if (_record==null)
+	removeUntypedRecord((DatabaseRecord)_record);
+    }
+    final void removeUntypedRecord(final DatabaseRecord record) throws DatabaseException
+    {
+	if (record==null)
 	    throw new NullPointerException("The parameter _record is a null pointer !");
+	@SuppressWarnings("unchecked")
+	final T _record=(T)record;
 	//synchronized(sql_connection)
 	{
 	    try (Lock lock=new WriteLock(this))
@@ -3680,6 +4293,7 @@ public abstract class Table<T extends DatabaseRecord>
 		if (Table.this.isLoadedInMemory() && isSynchronizedWithSqlDatabase())
 		    Table.this.__removeRecord(_record);
 		_record.__createdIntoDatabase=false;
+		getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, _record, null));
 	    }
 	    catch(Exception e)
 	    {
@@ -3698,8 +4312,14 @@ public abstract class Table<T extends DatabaseRecord>
      */
     public final void removeRecordWithCascade(final T _record) throws DatabaseException
     {
-	if (_record==null)
+	removeUntypedRecordWithCascade(_record);
+    }
+    final void removeUntypedRecordWithCascade(final DatabaseRecord record) throws DatabaseException
+    {
+	if (record==null)
 	    throw new NullPointerException("The parameter _record is a null pointer !");
+	@SuppressWarnings("unchecked")
+	final T _record=(T)record;
 	//synchronized(sql_connection)
 	{
 	    try (Lock lock=new WriteLock(this))
@@ -3758,6 +4378,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    __removeRecord(_record);
 		_record.__createdIntoDatabase=false;
 		updateMemoryForRemovingRecordWithCascade(_record);
+		getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, _record, null));
 	    }
 	    catch(Exception e)
 	    {
@@ -4028,6 +4649,8 @@ public abstract class Table<T extends DatabaseRecord>
 		{
 		    __removeRecords(_records);
 		}
+		for (T r : _records)
+		    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, r, null));
 	
 	    }
 	    catch(Exception e)
@@ -4119,10 +4742,12 @@ public abstract class Table<T extends DatabaseRecord>
 		__removeRecords(_records);
 	    }
 	    updateMemoryForRemovingRecordsWithCascade(_records);
+	    for (T r : _records)
+		getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, r, null));
 	}
     }
     
-    private abstract class Runnable
+    abstract class Runnable
     {
 	public Runnable()
 	{
@@ -4236,7 +4861,7 @@ public abstract class Table<T extends DatabaseRecord>
 		sql_connection.runTransaction(transaction);
 	    }
     }
-    private abstract class Runnable2
+    static abstract class Runnable2
     {
 	public Runnable2()
 	{
@@ -4254,7 +4879,7 @@ public abstract class Table<T extends DatabaseRecord>
     {
 	getListRecordsFromSqlConnection(_runnable, querry, transactionIsolation, false);
     }
-    private final void getListRecordsFromSqlConnection(final Runnable2 _runnable, final SqlQuerry querry, final TransactionIsolation transactionIsolation, final boolean updatable) throws DatabaseException
+    final void getListRecordsFromSqlConnection(final Runnable2 _runnable, final SqlQuerry querry, final TransactionIsolation transactionIsolation, final boolean updatable) throws DatabaseException
     {
 	//synchronized(sql_connection)
 	{
@@ -4397,7 +5022,7 @@ public abstract class Table<T extends DatabaseRecord>
 	}
     }
     
-    private Map<String, Object> transformToMapField(Object[] _fields) throws DatabaseException
+    private Map<String, Object> transformToMapField(Object... _fields) throws DatabaseException
     {
 	HashMap<String, Object> res=new HashMap<>();
 	if (_fields==null)
@@ -4433,7 +5058,7 @@ public abstract class Table<T extends DatabaseRecord>
      * @throws FieldDatabaseException if one of the given fields does not exists into the database, or if fields are lacking.
      * @throws RecordNotFoundDatabaseException if one of the field is a foreign key and point to a record of another table which does not exist. 
      */
-    public final T addRecord(Object[] _fields) throws DatabaseException
+    public final T addRecord(Object... _fields) throws DatabaseException
     {
 	return addRecord(transformToMapField(_fields));
     }
@@ -4497,8 +5122,27 @@ public abstract class Table<T extends DatabaseRecord>
 	    throw DatabaseException.getDatabaseException(e);
 	}
     }
-    
-    Map<String, Object> getMap(T record, boolean includePrimaryKeys, boolean includeAutoGeneratedKeys) throws DatabaseException
+    final T addDatabaseRecord(DatabaseRecord record) throws DatabaseException
+    {
+	if (record==null)
+	    throw new NullPointerException("The parameter record is a null pointer !");
+	if (record.__createdIntoDatabase)
+	    throw new IllegalArgumentException("The given record has already been removed !");
+	
+	try (Lock lock=new WriteLock(this))
+	{
+	    Map<String, Object> map=getMap(record, true, false);
+	    T res=addRecord(map, false, record);
+	    res.__createdIntoDatabase=true;
+	    return res;
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+	
+    }    
+    Map<String, Object> getMap(DatabaseRecord record, boolean includePrimaryKeys, boolean includeAutoGeneratedKeys) throws DatabaseException
     {
 	    Map<String, Object> map=new HashMap<>();
 	    for (FieldAccessor fa : getFieldAccessors())
@@ -4525,7 +5169,7 @@ public abstract class Table<T extends DatabaseRecord>
 	return addRecord(_fields, already_in_transaction, null);
     }
     @SuppressWarnings("unchecked")
-    private final T addRecord(final Map<String, Object> _fields, final boolean already_in_transaction, final T originalRecord) throws DatabaseException
+    private final T addRecord(final Map<String, Object> _fields, final boolean already_in_transaction, final DatabaseRecord originalRecord) throws DatabaseException
     {
 
 	return (T)sql_connection.runTransaction(new Transaction() {
@@ -4614,7 +5258,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    if (ct.check_necessary)
 			getListRecordsFromSqlConnection(ct, getSqlGeneralSelect(), TransactionIsolation.TRANSACTION_READ_COMMITTED);
 	    
-		    final T instance=originalRecord==null?getNewRecordInstance():originalRecord;
+		    final T instance=originalRecord==null?getNewRecordInstance():(T)originalRecord;
 		    if (isLoadedInMemory())
 		    {
 			for (FieldAccessor fa : fields)
@@ -4833,6 +5477,7 @@ public abstract class Table<T extends DatabaseRecord>
 	    
 		    if (isLoadedInMemory() && isSynchronizedWithSqlDatabase())
 			__AddRecord(instance);
+		    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.ADD, null, instance));
 		    return instance;
 
 		}
@@ -4919,6 +5564,12 @@ public abstract class Table<T extends DatabaseRecord>
      */
     public final void updateRecord(final T _record) throws DatabaseException
     {
+	updateUntypedRecord(_record);
+    }
+    final void updateUntypedRecord(final DatabaseRecord record) throws DatabaseException
+    {
+	@SuppressWarnings("unchecked")
+	T _record=(T)record;
 	Map<String, Object> map=getMap(_record, false, false);
 	updateRecord(_record, map);
     }
@@ -4936,10 +5587,21 @@ public abstract class Table<T extends DatabaseRecord>
      * @throws FieldDatabaseException if one of the given fields does not exists into the database, or if one of the given fields are auto or random primary keys.
      * @throws RecordNotFoundDatabaseException if the given record is not included into the database, or if one of the field is a foreign key and point to a record of another table which does not exist. 
      */
-    public final void updateRecord(final T _record, Object[] _fields) throws DatabaseException
+    public final void updateRecord(final T _record, Object... _fields) throws DatabaseException
     {
 	updateRecord(_record, transformToMapField(_fields));
     }
+    
+    T copyRecord(T _record) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, DatabaseException
+    {
+	T oldRecord=default_constructor_field.newInstance();
+	for (FieldAccessor fa : fields)
+	{
+	    fa.setValue(oldRecord, fa.getValue(_record));
+	}
+	return oldRecord;
+    }
+    
     /**
      * Alter a record into the database with a map of fields corresponding to this record. 
      * The string type in the Map corresponds to the name of the field, and the Object type field corresponds the value of the field.   
@@ -4961,7 +5623,7 @@ public abstract class Table<T extends DatabaseRecord>
 	    throw new NullPointerException("The parameter _fields is a null pointer !");
 	    try (Lock lock=new WriteLock(Table.this))
 	    {
-
+		
 	sql_connection.runTransaction(new Transaction() {
 	    
 	    
@@ -4981,6 +5643,8 @@ public abstract class Table<T extends DatabaseRecord>
 	    {
 		try
 		{
+		T oldRecord=copyRecord(_record);
+		boolean pkChanged=false;
 		for (String s : _fields.keySet())
 		{
 		    boolean found=false;
@@ -4988,6 +5652,8 @@ public abstract class Table<T extends DatabaseRecord>
 		    {
 			if (fa.getFieldName().equals(s))
 			{
+			    if (fa.isPrimaryKey() && fa.equals(_record, _fields.get(s)))
+				pkChanged=true;
 			    if (fa.isForeignKey())
 			    {
 				ForeignKeyFieldAccessor fkfa=(ForeignKeyFieldAccessor)fa;
@@ -5164,6 +5830,13 @@ public abstract class Table<T extends DatabaseRecord>
 		}
 		
 		sql_connection.runTransaction(new TransactionTmp(fields));
+		if (pkChanged)
+		{
+		    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, oldRecord, null));
+		    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.ADD, null, _record));
+		}
+		else
+		    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.UPDATE, oldRecord, _record));
 		
 	    }
 	    catch(Exception e)
@@ -5181,6 +5854,7 @@ public abstract class Table<T extends DatabaseRecord>
 	}
 		
     }
+
     /**
      * Alter records into the database through a given inherited {@link com.distrimind.ood.database.AlterRecordFilter} class.
      * 
@@ -5207,12 +5881,89 @@ public abstract class Table<T extends DatabaseRecord>
      */
     public final void updateRecords(final AlterRecordFilter<T> _filter) throws DatabaseException
     {
+	updateRecords(_filter, null, new HashMap<>());
+    }
+    /**
+     * Alter records into the database through a given inherited {@link com.distrimind.ood.database.AlterRecordFilter} class.
+     * 
+     * The function parse all records present into this table, that verify the given WHERE condition. 
+     * For each of them, it calls the function {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(DatabaseRecord)}.
+     * 
+     * If the function {@link com.distrimind.ood.database.AlterRecordFilter#update(Map)} is called into the inherited function {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(DatabaseRecord)}, 
+     * then all fields present in the given map will be updated into the record, after the end of the {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(DatabaseRecord)} function call. 
+     * If the given map is a null reference, the correspondent record will not be altered.
+     * Note that modification of primary keys and unique keys are not permitted with this function. To do that, please use the function {@link #updateRecord(DatabaseRecord, Map)}.
+     * 
+     * If the function {@link com.distrimind.ood.database.AlterRecordFilter#remove()} is called, then the current record will be deleted after the end of the {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(DatabaseRecord)} function call, only if no record point to this record.
+     * 
+     * If the function {@link com.distrimind.ood.database.AlterRecordFilter#removeWithCascade()} is called, then the current record will be deleted after the end of the {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(DatabaseRecord)} function call. 
+     * Records pointing to this record will also be deleted. 
+     *    
+     * @param _filter the filter enabling to alter the desired records.
+     * @param whereCondition the SQL WHERE condition that filter the results 
+     * @param parameters the used parameters with the WHERE condition 
+     * @throws DatabaseException if a problem occurs during the insertion into the Sql database.
+     * @throws NullPointerException if parameters are null pointers.
+     * @throws ConstraintsNotRespectedDatabaseException if a primary key or a unique key is altered, or if one of the given fields is a null pointer whereas this field must be not null.
+     * @throws FieldDatabaseException if one of the given fields to change does not exists into the database, or if one of the given fields to change is a primary key or a unique field.
+     * @throws RecordNotFoundDatabaseException if one of the given field to alter is a foreign key which points to a non-existing record.
+     * @see AlterRecordFilter
+     */
+    public final void updateRecords(final AlterRecordFilter<T> _filter, String whereCommand, Object ... parameters) throws DatabaseException
+    {
+	updateRecords(_filter, whereCommand, convertToMap(parameters));
+    }
+    
+    private Map<String, Object> convertToMap(Object ...parameters)
+    {
+	Map<String, Object> res=new HashMap<>();
+	if (parameters==null)
+	    return res;
+	if (parameters.length%2!=0)
+	    throw new IllegalArgumentException("parameters must be a pair of name+value !");
+	for (int i=0;i<parameters.length;i+=2)
+	{
+	    if (!(parameters[i] instanceof String))
+		throw new IllegalArgumentException("The first pair parameter must be string !");
+	    res.put((String)parameters[i], parameters[i+1]);
+	}
+	return res;
+    }
+    
+    /**
+     * Alter records into the database through a given inherited {@link com.distrimind.ood.database.AlterRecordFilter} class.
+     * 
+     * The function parse all records present into this table, that verify the given WHERE condition. 
+     * For each of them, it calls the function {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(DatabaseRecord)}.
+     * 
+     * If the function {@link com.distrimind.ood.database.AlterRecordFilter#update(Map)} is called into the inherited function {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(DatabaseRecord)}, 
+     * then all fields present in the given map will be updated into the record, after the end of the {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(DatabaseRecord)} function call. 
+     * If the given map is a null reference, the correspondent record will not be altered.
+     * Note that modification of primary keys and unique keys are not permitted with this function. To do that, please use the function {@link #updateRecord(DatabaseRecord, Map)}.
+     * 
+     * If the function {@link com.distrimind.ood.database.AlterRecordFilter#remove()} is called, then the current record will be deleted after the end of the {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(DatabaseRecord)} function call, only if no record point to this record.
+     * 
+     * If the function {@link com.distrimind.ood.database.AlterRecordFilter#removeWithCascade()} is called, then the current record will be deleted after the end of the {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(DatabaseRecord)} function call. 
+     * Records pointing to this record will also be deleted. 
+     *    
+     * @param _filter the filter enabling to alter the desired records.
+     * @param whereCondition the SQL WHERE condition that filter the results 
+     * @param parameters the used parameters with the WHERE condition 
+     * @throws DatabaseException if a problem occurs during the insertion into the Sql database.
+     * @throws NullPointerException if parameters are null pointers.
+     * @throws ConstraintsNotRespectedDatabaseException if a primary key or a unique key is altered, or if one of the given fields is a null pointer whereas this field must be not null.
+     * @throws FieldDatabaseException if one of the given fields to change does not exists into the database, or if one of the given fields to change is a primary key or a unique field.
+     * @throws RecordNotFoundDatabaseException if one of the given field to alter is a foreign key which points to a non-existing record.
+     * @see AlterRecordFilter
+     */
+    public final void updateRecords(final AlterRecordFilter<T> _filter, String whereCommand, final Map<String, Object> parameters) throws DatabaseException
+    {
 	if (_filter==null)
 	    throw new NullPointerException("The parameter _filter is a null pointer !");
 	
 	try (Lock lock=new WriteLock(Table.this))
 	{
-	
+	final RuleInstance rule=(whereCommand!=null && !whereCommand.trim().equals(""))?Interpreter.getRuleInstance(whereCommand):null;
 	sql_connection.runTransaction(new Transaction() {
 	    
 	    
@@ -5239,59 +5990,67 @@ public abstract class Table<T extends DatabaseRecord>
 		    for (final T r : getRecords(false))
 		    {
 			_filter.reset();
-			_filter.nextRecord(r);
+			final T oldRecord=copyRecord(r);
+			if ((rule!=null && rule.isConcernedBy(Table.this, parameters, r)) || rule==null)
+			{
+			    _filter.nextRecord(r);
 			
-			if (_filter.hasToBeRemoved())
-			{
-			    boolean canberemoved=true;
-			    for (NeighboringTable nt : list_tables_pointing_to_this_table)
+			    if (_filter.hasToBeRemoved())
 			    {
-				if (nt.getPointedTable().hasRecordsWithOneOfFields(nt.getHashMapFields(r), false))
+				boolean canberemoved=true;
+				for (NeighboringTable nt : list_tables_pointing_to_this_table)
 				{
-				    canberemoved=false;
-				    break;
-				}
-			    }
-			    if (canberemoved)
-				records_to_delete.add(r);
-			}
-			else if (_filter.hasToBeRemovedWithCascade())
-			{
-			    records_to_delete_with_cascade.add(r);
-			}
-			else
-			{
-			    Map<String, Object> m=_filter.getModifications();
-			    if (m==null && _filter.isModificatiedFromRecordInstance())
-				m=getMap(r, false, false);
-			    final Map<String, Object> map=m;
-			    if (map!=null && map.size()>0)
-			    {
-				for (String s : map.keySet())
-				{
-				    FieldAccessor founded_field=null;
-				    for (FieldAccessor fa : fields)
+				    if (nt.getPointedTable().hasRecordsWithOneOfFields(nt.getHashMapFields(r), false))
 				    {
-					if (fa.getFieldName().equals(s))
+					canberemoved=false;
+					break;
+				    }
+				}
+				if (canberemoved)
+				    records_to_delete.add(r);
+			    }
+			    else if (_filter.hasToBeRemovedWithCascade())
+			    {
+				records_to_delete_with_cascade.add(r);
+			    }
+			    else
+			    {
+				Map<String, Object> m=_filter.getModifications();
+				if (m==null && _filter.isModificatiedFromRecordInstance())
+				    m=getMap(r, false, false);
+				final Map<String, Object> map=m;
+				boolean pkChangedTmp=false;
+				if (map!=null && map.size()>0)
+				{
+				    for (String s : map.keySet())
+				    {
+					FieldAccessor founded_field=null;
+					for (FieldAccessor fa : fields)
 					{
-					    founded_field=fa;
-					    break;
+					    if (fa.getFieldName().equals(s))
+					    {
+						if (fa.isPrimaryKey() && fa.equals(r, map.get(s)))
+						    pkChangedTmp=true;
+					    
+						founded_field=fa;
+						break;
+					    }
+					}
+					if (founded_field==null)
+					    throw new FieldDatabaseException("The given field "+s+" does not exists into the record "+class_record.getName()+". ");
+					if (founded_field.isPrimaryKey())
+					    throw new FieldDatabaseException("Attempting to alter the primary key field "+founded_field.getFieldName()+" into the table "+getName()+". This operation is not permitted into this function."+". ");
+					if (founded_field.isUnique())
+					    throw new FieldDatabaseException("Attempting to alter the unique field "+founded_field.getFieldName()+" into the table "+getName()+". This operation is not permitted into this function."+". ");
+					if (founded_field.isForeignKey())
+					{
+					    Object val=founded_field.getValue(r);
+					    if (!((ForeignKeyFieldAccessor)founded_field).getPointedTable().contains(true, (DatabaseRecord)val))
+						throw new RecordNotFoundDatabaseException("The record, contained as foreign key into the given field "+founded_field.getFieldName()+" into the table "+Table.this.getName()+" does not exists into the table "+((ForeignKeyFieldAccessor)founded_field).getPointedTable().getName()+". ");
 					}
 				    }
-				    if (founded_field==null)
-					throw new FieldDatabaseException("The given field "+s+" does not exists into the record "+class_record.getName()+". ");
-				    if (founded_field.isPrimaryKey())
-					throw new FieldDatabaseException("Attempting to alter the primary key field "+founded_field.getFieldName()+" into the table "+getName()+". This operation is not permitted into this function."+". ");
-				    if (founded_field.isUnique())
-					throw new FieldDatabaseException("Attempting to alter the unique field "+founded_field.getFieldName()+" into the table "+getName()+". This operation is not permitted into this function."+". ");
-				    if (founded_field.isForeignKey())
-				    {
-					Object val=founded_field.getValue(r);
-					if (!((ForeignKeyFieldAccessor)founded_field).getPointedTable().contains(true, (DatabaseRecord)val))
-					    throw new RecordNotFoundDatabaseException("The record, contained as foreign key into the given field "+founded_field.getFieldName()+" into the table "+Table.this.getName()+" does not exists into the table "+((ForeignKeyFieldAccessor)founded_field).getPointedTable().getName()+". ");
-				    }
-				}
-				sql_connection.runTransaction(new Transaction() {
+				    final boolean pkChanged=pkChangedTmp;
+				    sql_connection.runTransaction(new Transaction() {
 			        
 				    @Override
 				    public TransactionIsolation getTransactionIsolation()
@@ -5369,6 +6128,13 @@ public abstract class Table<T extends DatabaseRecord>
 					    {
 						throw new ConstraintsNotRespectedDatabaseException("Constraints was not respected. It possible that the given primary keys or the given unique keys does not respect constraints of unicity.", e);
 					    }
+					    if (pkChanged)
+					    {
+						getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, oldRecord, null));
+						getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.ADD, null, r));
+					    }
+					    else
+						getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.UPDATE, oldRecord, r));
 					    return null;
 					}
 					catch(Exception e)
@@ -5384,6 +6150,7 @@ public abstract class Table<T extends DatabaseRecord>
 				    
 				    
 				});
+				}
 			    }
 			}
 		    }
@@ -5438,6 +6205,9 @@ public abstract class Table<T extends DatabaseRecord>
 			    sql_connection.runTransaction(transaction);
 		    
 			    __removeRecords(records_to_delete);
+			    
+			    for (T r : records_to_delete)
+				getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, r, null));
 		    }
 		    if (records_to_delete_with_cascade.size()>0)
 		    {
@@ -5492,6 +6262,9 @@ public abstract class Table<T extends DatabaseRecord>
 		
 			__removeRecords(records_to_delete_with_cascade);
 			updateMemoryForRemovingRecordsWithCascade(records_to_delete_with_cascade);
+			for (T r : records_to_delete_with_cascade)
+			    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, r, null));
+			
 		    }
 		    
 		}
@@ -5520,6 +6293,7 @@ public abstract class Table<T extends DatabaseRecord>
 			    try
 			    {
 				_filter.reset();
+				final T oldRecord=copyRecord(_instance);
 				_filter.nextRecord(_instance);
 				if (_filter.hasToBeRemoved())
 				{
@@ -5541,12 +6315,14 @@ public abstract class Table<T extends DatabaseRecord>
 				    if (canberemoved)
 				    {
 					_result_set.deleteRow();
+					getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, oldRecord, null));
 				    }
 				}
 				else if(_filter.hasToBeRemovedWithCascade())
 				{
 				    _result_set.deleteRow();
 				    updateMemoryForRemovingRecordWithCascade(_instance);
+				    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, oldRecord, null));
 				}
 				else
 				{
@@ -5589,6 +6365,7 @@ public abstract class Table<T extends DatabaseRecord>
 					    }
 					}
 					_result_set.updateRow();
+					getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.UPDATE, oldRecord, _instance));
 				    }
 				}
 				return true;
@@ -5600,7 +6377,9 @@ public abstract class Table<T extends DatabaseRecord>
 			}
 		    }
 		    RunnableTmp runnable=new RunnableTmp(fields);
-		    getListRecordsFromSqlConnection(runnable, getSqlGeneralSelect(), TransactionIsolation.TRANSACTION_SERIALIZABLE, true);
+		    HashMap<Integer, Object> sqlParameters=new HashMap<>();
+		    String sqlQuery=rule==null?null:rule.translateToSqlQuery(Table.this, parameters, sqlParameters).toString();
+		    getListRecordsFromSqlConnection(runnable, getSqlGeneralSelect(sqlQuery, sqlParameters), TransactionIsolation.TRANSACTION_SERIALIZABLE, true);
 		}
 	    }
 	    catch(Exception e)
@@ -5633,7 +6412,7 @@ public abstract class Table<T extends DatabaseRecord>
      * @throws FieldDatabaseException if all primary keys have not been given, or if fields which are not primary keys were given.
      * @throws NullPointerException if parameters are null pointers.
      */
-    public final T getRecord(Object[] keys) throws DatabaseException
+    public final T getRecord(Object... keys) throws DatabaseException
     {
 	return getRecord(transformToMapField(keys));
     }
@@ -6243,7 +7022,8 @@ public abstract class Table<T extends DatabaseRecord>
 	public PreparedUpdateQuerry(Connection _sql_connection, String querry) throws SQLException
 	{
 	    super(_sql_connection);
-	    statement=sql_connection.prepareStatement(querry);
+	    
+	    statement=sql_connection.prepareStatement(querry, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE);
 	}
 	@Override
 	public void close() throws Exception
@@ -6251,7 +7031,161 @@ public abstract class Table<T extends DatabaseRecord>
 	    statement.close();
 	    statement=null;
 	}
+    }
+    
+    void serialize(DatabaseRecord record, ObjectOutputStream oos, boolean includePK, boolean includeFK) throws DatabaseException
+    {
+
+	try
+	{
+	    for (FieldAccessor fa : fields)
+	    {
+		
+		if ((includePK || !fa.isPrimaryKey()) && (includeFK || !fa.isForeignKey()))
+		    fa.serialize(oos, record);
+	    }
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+    
+    T unserialize(ObjectInputStream ois, boolean includePK, boolean includeFK) throws DatabaseException
+    {
+	try
+	{
+	    T res=default_constructor_field.newInstance();
 	
+	    for (FieldAccessor fa : fields)
+	    {
+		if ((includePK || !fa.isPrimaryKey()) && (includeFK || !fa.isForeignKey()))
+		    fa.unserialize(ois, res);
+	    }
+	    return res;
+	}
+	catch(DatabaseException e)
+	{
+	    if (e.getCause() instanceof EOFException)
+		throw new SerializationDatabaseException("Unexpected EOF", e);
+	    throw e;
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+    
+    void unserializePrimaryKeys(DatabaseRecord record, byte tab[]) throws DatabaseException
+    {
+	try(ByteArrayInputStream bais=new ByteArrayInputStream(tab))
+	{
+	    try(ObjectInputStream ois=new ObjectInputStream(bais))
+	    {
+		for (FieldAccessor fa : primary_keys_fields)
+		{
+		    fa.unserialize(ois, record);
+		}
+	    }
+	}
+	catch(DatabaseException e)
+	{
+	    if (e.getCause() instanceof EOFException)
+		throw new SerializationDatabaseException("Unexpected EOF", e);
+	    throw e;
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+    void unserializePrimaryKeys(HashMap<String, Object> map, byte tab[]) throws DatabaseException
+    {
+	try(ByteArrayInputStream bais=new ByteArrayInputStream(tab))
+	{
+	    try(ObjectInputStream ois=new ObjectInputStream(bais))
+	    {
+		for (FieldAccessor fa : primary_keys_fields)
+		{
+		    fa.unserialize(ois, map);
+		}
+	    }
+	}
+	catch(DatabaseException e)
+	{
+	    if (e.getCause() instanceof EOFException)
+		throw new SerializationDatabaseException("Unexpected EOF", e);
+	    throw e;
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+    
+    void unserializeFieldsNonPK(DatabaseRecord record, byte tab[]) throws DatabaseException
+    {
+	try(ByteArrayInputStream bais=new ByteArrayInputStream(tab))
+	{
+	    try(ObjectInputStream ois=new ObjectInputStream(bais))
+	    {
+		for (FieldAccessor fa : fields)
+		{
+		    if (!fa.isPrimaryKey())
+			fa.unserialize(ois, record);
+		}
+	    }
+	}
+	catch(DatabaseException e)
+	{
+	    if (e.getCause() instanceof EOFException)
+		throw new SerializationDatabaseException("Unexpected EOF", e);
+	    throw e;
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+    
+
+    byte[] serializePrimaryKeys(T record) throws DatabaseException
+    {
+	try(ByteArrayOutputStream baos=new ByteArrayOutputStream())
+	{
+	    try(ObjectOutputStream oos = new ObjectOutputStream(baos))
+	    {
+		for (FieldAccessor fa : primary_keys_fields)
+		{
+		    fa.serialize(oos, record);
+		}
+	    }
+	    return baos.toByteArray();
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+
+    byte[] serializeFieldsNonPK(T record) throws DatabaseException
+    {
+	try(ByteArrayOutputStream baos=new ByteArrayOutputStream())
+	{
+	    try(ObjectOutputStream oos = new ObjectOutputStream(baos))
+	    {
+		for (FieldAccessor fa : fields)
+		{
+		    if (!fa.isPrimaryKey())
+			fa.serialize(oos, record);
+		}
+	    }
+	    return baos.toByteArray();
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
     }
     
 }

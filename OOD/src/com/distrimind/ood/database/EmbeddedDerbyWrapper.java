@@ -462,12 +462,12 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
     }
 
     @Override
-    public int getVarCharLimit()
+    int getVarCharLimit()
     {
 	return 32672;
     }
     @Override
-    public boolean isVarBinarySupported()
+    boolean isVarBinarySupported()
     {
 	return false;
     }
@@ -484,51 +484,51 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
     }
 
     @Override
-    public String getByteType()
+    String getByteType()
     {
 	return "INTEGER";
     }
 
     @Override
-    public String getIntType()
+    String getIntType()
     {
 	return "INTEGER";
     }
 
     @Override
-    public String getSerializableType()
+    String getSerializableType()
     {
 	return "BLOB";
     }
 
     @Override
-    public String getFloatType()
+    String getFloatType()
     {
 	return "REAL";
     }
     @Override
-    public String getDoubleType()
+    String getDoubleType()
     {
 	return "DOUBLE";
     }
 
     @Override
-    public String getLongType()
+    String getLongType()
     {
 	return "BIGINT";
     }
     @Override
-    public String getShortType()
+    String getShortType()
     {
 	return "SMALLINT";
     }
     @Override
-    public String getBigDecimalType()
+    String getBigDecimalType()
     {
 	return "VARCHAR(16374)";
     }
     @Override
-    public String getBigIntegerType()
+    String getBigIntegerType()
     {
 	return "VARCHAR(16374)";
     }
@@ -549,7 +549,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
     }
 
     @Override
-    public Blob getBlob(byte[] _bytes)
+    Blob getBlob(byte[] _bytes)
     {
 	return null;
     }

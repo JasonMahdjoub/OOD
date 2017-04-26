@@ -61,7 +61,7 @@ import com.distrimind.util.export.License.PredefinedLicense;
 /**
  * 
  * @author Jason Mahdjoub
- * @version 1.1
+ * @version 1.2
  * @since OOD 1.0
  */
 class Export
@@ -134,7 +134,7 @@ class Export
 		"com/distrimind/ood/build.txt", 
 		null, "OOD is an Object Oriented Data which aims to manage database only with Java language without using SQL querries", 
 		OOD.VERSION,SourceVersion.RELEASE_7,
-		dependencies,additional_files,new File("/usr/lib/jvm/default-java"),
+		dependencies,additional_files,new File("/usr/lib/jvm/java-7-openjdk-amd64"),
 		regex_exlude, null);
 	javaProjectSource.setVerbose(false);
 	
@@ -142,7 +142,7 @@ class Export
 	dependencies=new ArrayList<BinaryDependency>();
 	licenses=new License[1];
 	licenses[0]=new License(PredefinedLicense.APACHE_LICENSE_V2_0);
-	String testNGDir=".eclipse/org.eclipse.platform_4.6.2_1473617060_linux_gtk_x86_64/plugins/org.testng.eclipse_6.10.0.201612030230/lib/";
+	String testNGDir=".eclipse/org.eclipse.platform_4.6.3_1473617060_linux_gtk_x86_64/plugins/org.testng.eclipse_6.10.0.201612030230/lib/";
 	dependencies.add(new JarDependency("TestNG", 
 		org.testng.TestNG.class.getPackage(), 
 		licenses, new File("/home/jason/"+testNGDir+"/testng.jar")));

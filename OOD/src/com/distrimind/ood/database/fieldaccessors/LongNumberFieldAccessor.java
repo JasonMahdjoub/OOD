@@ -38,12 +38,15 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database.fieldaccessors;
 
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Random;
 
 import com.distrimind.ood.database.DatabaseRecord;
@@ -68,7 +71,7 @@ public class LongNumberFieldAccessor extends FieldAccessor
     {
 	super(_sql_connection, _field, parentFieldName, compatible_classes, table_class);
 	sql_fields=new SqlField[1];
-	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), sql_connection.getLongType(), null, null);
+	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), DatabaseWrapperAccessor.getLongType(sql_connection), null, null);
     }
 
     @Override
@@ -310,4 +313,77 @@ public class LongNumberFieldAccessor extends FieldAccessor
 	return 63;
     }
 
+    @Override
+    public void serialize(ObjectOutputStream _oos, Object _class_instance) throws DatabaseException
+    {
+	try
+	{
+	    Long v=(Long)getValue(_class_instance);
+	    if (v==null)
+	    {
+		_oos.writeBoolean(false);
+	    }
+	    else
+	    {
+		_oos.writeBoolean(true);
+		_oos.writeLong(v.longValue());
+	    }
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+
+
+
+    @Override
+    public void unserialize(ObjectInputStream _ois, HashMap<String, Object> _map) throws DatabaseException
+    {
+	try
+	{
+	    boolean isNotNull=_ois.readBoolean();
+	    if (isNotNull)
+	    {
+		_map.put(getFieldName(), new Long(_ois.readLong()));
+	    }
+	    else if (isNotNull())
+		throw new DatabaseException("field should not be null");
+	    else
+	    {
+		_map.put(getFieldName(), null);
+	    }
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+
+    @Override
+    public Object unserialize(ObjectInputStream _ois, Object _classInstance) throws DatabaseException
+    {
+	try
+	{
+	    boolean isNotNull=_ois.readBoolean();
+	    if (isNotNull)
+	    {
+		Long l=new Long(_ois.readLong());
+		setValue(_classInstance, l);
+		return l;
+	    }
+	    else if (isNotNull())
+		throw new DatabaseException("field should not be null");
+	    else
+	    {
+		setValue(_classInstance, null);
+		return null;
+	    }
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+    
 }

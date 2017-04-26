@@ -512,53 +512,53 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
 	return ";";
     }
     @Override
-    public int getVarCharLimit()
+    int getVarCharLimit()
     {
 	return 16777216;
     }
     @Override
-    public boolean isVarBinarySupported()
+    boolean isVarBinarySupported()
     {
 	return true;
     }
     @Override
-    public String getByteType()
+    String getByteType()
     {
 	return "TINYINT";
     }
     @Override
-    public String getIntType()
+    String getIntType()
     {
 	return "INTEGER";
     }
     
     @Override
-    public String getFloatType()
+    String getFloatType()
     {
 	return "DOUBLE";
     }
     @Override
-    public String getDoubleType()
+    String getDoubleType()
     {
 	return "DOUBLE";
     }
     @Override
-    public String getLongType()
+    String getLongType()
     {
 	return "BIGINT";
     }
     @Override
-    public String getShortType()
+    String getShortType()
     {
 	return "SMALLINT";
     }
     @Override
-    public String getBigDecimalType()
+    String getBigDecimalType()
     {
 	return "VARCHAR(16374)";
     }
     @Override
-    public String getBigIntegerType()
+    String getBigIntegerType()
     {
 	return "VARCHAR(16374)";
     }
@@ -630,7 +630,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
     }
 
     @Override
-    public Blob getBlob(byte[] _bytes) throws SQLException
+    Blob getBlob(byte[] _bytes) throws SQLException
     {
 	return new JDBCBlob(_bytes);
     }

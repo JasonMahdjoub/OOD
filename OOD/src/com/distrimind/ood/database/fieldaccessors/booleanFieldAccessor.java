@@ -39,11 +39,14 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database.fieldaccessors;
 
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.SqlField;
@@ -253,6 +256,51 @@ public class booleanFieldAccessor extends FieldAccessor
     public boolean canBePrimaryOrUniqueKey()
     {
 	return false;
+    }
+
+    @Override
+    public void serialize(ObjectOutputStream _oos, Object _class_instance) throws DatabaseException
+    {
+	try
+	{
+	    _oos.writeBoolean(field.getBoolean(_class_instance));
+	    
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+
+
+
+    @Override
+    public void unserialize(ObjectInputStream _ois, HashMap<String, Object> _map) throws DatabaseException
+    {
+	try
+	{
+	    _map.put(getFieldName(), new Boolean(_ois.readBoolean()));
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+	
+    }
+
+    @Override
+    public Object unserialize(ObjectInputStream _ois, Object _classInstance) throws DatabaseException
+    {
+	try
+	{
+	    boolean v=_ois.readBoolean();	    
+	    field.setBoolean(_classInstance, v);
+	    return new Boolean(v);
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
     }
     
 }

@@ -37,12 +37,15 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database.fieldaccessors;
 
 import java.io.ByteArrayInputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Field;
 import java.sql.Blob;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
@@ -69,7 +72,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor
     {
 	super(_sql_connection, _field,parentFieldName, getCompatibleClasses(_field), table_class);
 	sql_fields=new SqlField[1];
-	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), (limit==0)?(sql_connection.isVarBinarySupported()?"VARBINARY("+16777216+")":"BLOB"):((limit>16777216 || !sql_connection.isVarBinarySupported())?("BLOB("+limit+")"):("VARBINARY("+limit+")")), null, null);
+	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), (limit==0)?(DatabaseWrapperAccessor.isVarBinarySupported(sql_connection)?"VARBINARY("+16777216+")":"BLOB"):((limit>16777216 || !DatabaseWrapperAccessor.isVarBinarySupported(sql_connection))?("BLOB("+limit+")"):("VARBINARY("+limit+")")), null, null);
 	this.converter=converter;
 	isVarBinary=sql_fields[0].type.startsWith("VARBINARY");
     }
@@ -279,7 +282,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor
 		_prepared_statement.setBytes(_field_start, b);
 	    else
 	    {
-		Blob blob=sql_connection.getBlob(b);
+		Blob blob=DatabaseWrapperAccessor.getBlob(sql_connection, b);
 		if (blob==null && b!=null)
 		    _prepared_statement.setBinaryStream(_field_start, new ByteArrayInputStream(b));
 		else
@@ -310,7 +313,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor
 		_result_set.updateBytes(sql_fields[0].short_field, b);
 	    else
 	    {
-		Blob blob=sql_connection.getBlob(b);
+		Blob blob=DatabaseWrapperAccessor.getBlob(sql_connection, b);
 		if (blob==null && b!=null)
 		    _result_set.updateBinaryStream(sql_fields[0].short_field, new ByteArrayInputStream(b));
 		else
@@ -341,7 +344,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor
 		_result_set.updateBytes(_sft.translateField(sql_fields[0]), b);
 	    else
 	    {
-		Blob blob=sql_connection.getBlob(b);
+		Blob blob=DatabaseWrapperAccessor.getBlob(sql_connection, b);
 		if (blob==null && b!=null)
 		    _result_set.updateBinaryStream(_sft.translateField(sql_fields[0]), new ByteArrayInputStream(b));    
 		else
@@ -360,4 +363,85 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor
 	return true;
     }
 
+    @Override
+    public void serialize(ObjectOutputStream _oos, Object _class_instance) throws DatabaseException
+    {
+	try
+	{
+	    Object o=getValue(_class_instance);
+	    
+	    if (o!=null)
+	    {
+		byte[] b=converter.getByte(o);		
+		_oos.writeInt(b.length);
+		_oos.write(b);
+	    }
+	    else
+	    {
+		_oos.writeInt(-1);
+	    }
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+
+
+
+    @Override
+    public void unserialize(ObjectInputStream _ois, HashMap<String, Object> _map) throws DatabaseException
+    {
+	try
+	{
+	    int size=_ois.readInt();
+	    if (size>-1)
+	    {
+		byte[] b=new byte[size];
+		int os=_ois.read(b);
+		if (os!=size)
+		    throw new DatabaseException("read bytes insuficiant (expected size="+size+", obtained size="+os+")");
+		
+		_map.put(getFieldName(), converter.getObject(field.getType(), b));
+	    }
+	    else if (isNotNull())
+		throw new DatabaseException("field should not be null");
+	    else
+		_map.put(getFieldName(), null);	
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+    @Override
+    public Object unserialize(ObjectInputStream _ois, Object _classInstance) throws DatabaseException
+    {
+	try
+	{
+	    int size=_ois.readInt();
+	    if (size>-1)
+	    {
+		byte[] b=new byte[size];
+		int os=_ois.read(b);
+		if (os!=size)
+		    throw new DatabaseException("read bytes insuficiant (expected size="+size+", obtained size="+os+")");
+		Object o=converter.getObject(field.getType(), b);
+		setValue(_classInstance, o);
+		return o;
+	    }
+	    else if (isNotNull())
+		throw new DatabaseException("field should not be null");
+	    else
+	    {
+		setValue(_classInstance, null);
+		return null;
+	    }
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }    
+    
 }

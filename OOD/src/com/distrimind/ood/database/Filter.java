@@ -49,8 +49,10 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  * @version 1.0
  * @param <T> the record type which correspond to its database class.
  */
-public interface Filter<T extends Object>
+public abstract class Filter<T extends Object>
 {
+    private boolean isStoped=false;
+    
     /**
      * this function is called for every instance record present on the database. 
      * It returns true if the instance must be considered, false else. 
@@ -59,5 +61,19 @@ public interface Filter<T extends Object>
      * @throws DatabaseException if a database exception occurs
      */
     public abstract boolean nextRecord(T _record) throws DatabaseException;
+    
+    /**
+     * Stop the parsing of the current table
+     */
+    public void stopTableParsing()
+    {
+	isStoped=true;
+    }
+    
+    boolean isTableParsingStoped()
+    {
+	return isStoped;
+    }
+    
     
 }

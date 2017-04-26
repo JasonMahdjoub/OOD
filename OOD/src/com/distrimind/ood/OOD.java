@@ -48,7 +48,7 @@ import com.distrimind.util.version.Version;
 /**
  * 
  * @author Jason Mahdjoub
- * @version 1.9.2
+ * @version 2.0.0
  * @since OOD 1.0
  */
 public class OOD
@@ -60,8 +60,8 @@ public class OOD
 	Calendar c1=Calendar.getInstance();
 	c1.set(2013, 3, 1);
 	Calendar c2=Calendar.getInstance();
-	c2.set(2017, 2, 7);
-	VERSION=new Version("Object Oriented Database", "OOD", 1, 9, 7, Version.Type.Stable, 0, c1.getTime(), c2.getTime());
+	c2.set(2017, 2, 26);
+	VERSION=new Version("Object Oriented Database", "OOD", 2, 0, 0, Version.Type.Stable, 0, c1.getTime(), c2.getTime());
 	try
 	{
 	    InputStream is=OOD.class.getResourceAsStream("build.txt");
@@ -72,8 +72,20 @@ public class OOD
 	    VERSION.addDeveloper(new PersonDeveloper("mahdjoub", "jason", c.getTime()));
 	
 	    c=Calendar.getInstance();
+	    c.set(2017, 2, 26);
+	    Description d=new Description(2,0,0,Version.Type.Stable, 0, c.getTime());
+	    d.addItem("Adding database synchronisation possibility between different peers.");
+	    d.addItem("Cleaning DatabaseWrapper functions.");
+	    d.addItem("Correcting a lock problem into DatabaseWrapper.runSynchronizedTransaction(SynchronizedTransaction) function.");
+	    d.addItem("Optimizing Decentralized IDs.");
+	    d.addItem("Adding SQL where treatments.");
+	    d.addItem("Add indexation field possibility (see annotation Field).");
+	    d.addItem("Updating to Utils 2.6.1.");
+	    d.addItem("Support indexation (see annotation @Field).");
+
+	    c=Calendar.getInstance();
 	    c.set(2017, 2, 7);
-	    Description d=new Description(1,9,7,Version.Type.Stable, 0, c.getTime());
+	    d=new Description(1,9,7,Version.Type.Stable, 0, c.getTime());
 	    d.addItem("Updating Utils to 2.5.0.");
 
 	    c=Calendar.getInstance();
@@ -243,4 +255,5 @@ public class OOD
 	    e.printStackTrace();
 	}
     }    
+    
 }

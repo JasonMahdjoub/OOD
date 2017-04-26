@@ -38,12 +38,15 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database.fieldaccessors;
 
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Random;
 
 import com.distrimind.ood.database.DatabaseRecord;
@@ -67,7 +70,7 @@ public class longFieldAccessor extends FieldAccessor
     {
 	super(_sql_connection, _field, parentFieldName, compatible_classes, table_class);
 	sql_fields=new SqlField[1];
-	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), sql_connection.getLongType(), null, null);
+	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), DatabaseWrapperAccessor.getLongType(sql_connection), null, null);
 	
     }
 
@@ -296,4 +299,49 @@ public class longFieldAccessor extends FieldAccessor
     {
 	return 63;
     }
+    
+    @Override
+    public void serialize(ObjectOutputStream _oos, Object _class_instance) throws DatabaseException
+    {
+	try
+	{
+	    _oos.writeLong(field.getLong(_class_instance));
+	    
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+
+
+
+    @Override
+    public void unserialize(ObjectInputStream _ois, HashMap<String, Object> _map) throws DatabaseException
+    {
+	try
+	{
+	    _map.put(getFieldName(), new Long(_ois.readLong()));
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+	
+    }    
+    @Override
+    public Object unserialize(ObjectInputStream _ois, Object _classInstance) throws DatabaseException
+    {
+	try
+	{
+	    long v=_ois.readLong();	    
+	    field.setLong(_classInstance, v);
+	    return new Long(v);
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+    
 }

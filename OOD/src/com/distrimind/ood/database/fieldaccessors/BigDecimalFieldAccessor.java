@@ -39,12 +39,15 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database.fieldaccessors;
 
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
@@ -69,7 +72,7 @@ public class BigDecimalFieldAccessor extends FieldAccessor
     {
 	super(_sql_connection, _field, parentFieldName, compatible_classes, table_class);
 	sql_fields=new SqlField[1];
-	sql_fields[0]=new SqlField(this.table_name+"."+this.getFieldName(), sql_connection.getBigDecimalType(), null, null);
+	sql_fields[0]=new SqlField(this.table_name+"."+this.getFieldName(), DatabaseWrapperAccessor.getBigDecimalType(sql_connection), null, null);
     }
     
     
@@ -301,5 +304,62 @@ public class BigDecimalFieldAccessor extends FieldAccessor
     {
 	return true;
     }
+
+
+
+    @Override
+    public void serialize(ObjectOutputStream _oos, Object _class_instance) throws DatabaseException
+    {
+	try
+	{
+	    _oos.writeObject(getValue(_class_instance));
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+
+
+
+    @Override
+    public void unserialize(ObjectInputStream _ois, HashMap<String, Object> _map) throws DatabaseException
+    {
+	try
+	{
+	    BigDecimal o = (BigDecimal)_ois.readObject();
+	    if (o==null && isNotNull())
+		throw new DatabaseException("field should not be null");
+	    _map.put(getFieldName(), o);
+
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+	
+    }
+
+
+
+    @Override
+    public Object unserialize(ObjectInputStream _ois, Object _classInstance) throws DatabaseException
+    {
+	try
+	{
+	    BigDecimal o = (BigDecimal)_ois.readObject();
+	    if (o==null && isNotNull())
+		throw new DatabaseException("field should not be null");
+	    setValue(_classInstance, o);
+	    return o;
+
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+
+
 
 }

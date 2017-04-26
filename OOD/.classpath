@@ -7,8 +7,9 @@
 	<classpathentry kind="lib" path="/home/jason/projets/db-derby/lib/derby.jar" sourcepath="/home/jason/projets/db-derby/db-derby-10.12.1.1-src/db-derby-10.12.1.1-src/java/engine"/>
 	<classpathentry kind="lib" path="/home/jason/projets/commons-net-3.5/commons-net-3.5.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/GNU-Crypto"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/java-8-openjdk-amd64"/>
-	<classpathentry kind="lib" path="/home/jason/git_projects/Utils/exports/Utils-2.5.0-Stable_withSource.jar"/>
-	<classpathentry kind="lib" path="/home/jason/git_projects/Utils/exports/Utils-Tests-2.5.0-Stable_withDependencies.jar"/>
+	<classpathentry kind="lib" path="/home/jason/git_projects/Gnu-Crypt/GNU-Crypto/export/GNU-Crypto-0.99a.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/java-7-openjdk-amd64"/>
+	<classpathentry kind="lib" path="/home/jason/git_projects/Utils/exports/Utils-2.6.1-Stable_withSource.jar"/>
+	<classpathentry kind="lib" path="/home/jason/git_projects/Utils/exports/Utils-Tests-2.6.1-Stable_withDependencies.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

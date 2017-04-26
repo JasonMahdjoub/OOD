@@ -38,11 +38,14 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database.fieldaccessors;
 
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
@@ -408,6 +411,78 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
 	return true;
     }
     
+    @Override
+    public void serialize(ObjectOutputStream _oos, Object _class_instance) throws DatabaseException
+    {
+	try
+	{
+	    DatabaseRecord dr=(DatabaseRecord)getValue(_class_instance);
+	    if (dr!=null)
+	    {
+		_oos.writeBoolean(true);
+		for (FieldAccessor fa : pointed_table.getFieldAccessors())
+		    fa.serialize(_oos, dr);
+	    }
+	    else 
+		_oos.writeBoolean(false);
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+
+
+
+    @Override
+    public void unserialize(ObjectInputStream _ois, HashMap<String, Object> _map) throws DatabaseException
+    {
+	try
+	{
+	    boolean isNotNull=_ois.readBoolean();
+	    if (isNotNull)
+	    {
+		DatabaseRecord dr=pointed_table.getDefaultRecordConstructor().newInstance();
+		for (FieldAccessor fa : pointed_table.getFieldAccessors())
+		    fa.unserialize(_ois, dr);
+		_map.put(getFieldName(), dr);
+	    }
+	    else if (isNotNull())
+		throw new DatabaseException("field should not be null");
+	    else
+		_map.put(getFieldName(), null);
+	    
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+    @Override
+    public Object unserialize(ObjectInputStream _ois, Object _classInstance) throws DatabaseException
+    {
+	try
+	{
+	    boolean isNotNull=_ois.readBoolean();
+	    if (isNotNull)
+	    {
+		DatabaseRecord dr=pointed_table.getDefaultRecordConstructor().newInstance();
+		for (FieldAccessor fa : pointed_table.getFieldAccessors())
+		    fa.unserialize(_ois, dr);
+		setValue(_classInstance, dr);
+		return dr;
+	    }
+	    else if (isNotNull())
+		throw new DatabaseException("field should not be null");
+	    else
+		return null;
+	    
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }      
     
 
 }

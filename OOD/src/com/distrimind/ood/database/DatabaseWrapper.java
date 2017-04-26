@@ -40,7 +40,13 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.security.AccessController;
@@ -54,6 +60,10 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.distrimind.ood.database.Table.ColumnsReadQuerry;
@@ -62,6 +72,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
 import com.distrimind.ood.database.fieldaccessors.ByteTabObjectConverter;
 import com.distrimind.ood.database.fieldaccessors.DefaultByteTabObjectConverter;
+import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.ListClasses;
 import com.distrimind.util.ReadWriteLock;
 
@@ -86,17 +97,76 @@ public abstract class DatabaseWrapper
     //private final HashMap<Class<? extends Table<?>>, Table<?>> tables_instances=new HashMap<>();
     private final ArrayList<ByteTabObjectConverter> converters;
     
-    private HashMap<Package, Database> sql_database=new HashMap<Package, Database>();
+    private volatile HashMap<Package, Database> sql_database=new HashMap<Package, Database>();
     private final DatabaseMetaData dmd;
+    private volatile DatabaseTransactionEventsTable transactionTable=null;
+    private volatile DatabaseHooksTable databaseHooksTable=null;
+    private volatile DatabaseTransactionsPerHostTable databaseTransactionsPerHostTable=null;
+    private volatile DatabaseEventsTable databaseEventsTable=null;
+    private volatile IDTable transactionIDTable=null;
+    private final File transactionsFile;
+    private volatile int maxTransactionsEventsKeepedIntoMemory=100; 
+    private OutputStream transactionOutputStream=null;
+    private ObjectOutputStream transactionObjectOutputStream=null;
+    private InputStream transactionInputStream=null;
+    private ObjectInputStream transactionObjectInputStream=null;
+    int currentTransactionsEventNummber=0;
+    int currentTransactionsEventReadNummber=0;
+    private final HashSet<Package> transactionPackages=new HashSet<>();
+    private byte transactionTypes=0;
+    private final DatabaseSynchronizer synchronizer=new DatabaseSynchronizer();
+    protected int maxEventsRecords=1000;
+    
+    public int getMaxEventsRecords()
+    {
+        return maxEventsRecords;
+    }
+
+    public void setMaxEventsRecords(int _maxEventsRecords)
+    {
+        maxEventsRecords = _maxEventsRecords;
+    }
+
+
     //private final boolean isWindows;
     private static class Database
     {
 	public final HashMap<Class<? extends Table<?>>, Table<?>> tables_instances=new HashMap<Class<? extends Table<?>>, Table<?>>();
+	private DatabaseTransactionEvent currentTransaction=null;
 	
 	public Database(Package _package)
 	{
 	    
 	}
+	
+	DatabaseTransactionEvent getCurrentTransaction()
+	{
+	    if (currentTransaction==null)
+		currentTransaction=new DatabaseTransactionEvent();
+	    return currentTransaction;
+	}
+	
+	void clearTransaction()
+	{
+	    currentTransaction=null;
+	}
+
+	public boolean hasTransaction()
+	{
+	    return currentTransaction!=null;
+	}
+	
+	
+    }
+    
+    public void setMaxTransactionsEventsKeepedIntoMemory(int v)
+    {
+	this.maxTransactionsEventsKeepedIntoMemory=v;
+    }
+    
+    public int getMaxTransactionsEventsKeepedIntoMemory()
+    {
+	return this.maxTransactionsEventsKeepedIntoMemory;
     }
     
     public void addByteTabObjectConverter(ByteTabObjectConverter converter)
@@ -151,6 +221,7 @@ public abstract class DatabaseWrapper
 	    throw DatabaseException.getDatabaseException(se);
 	}
 	System.gc();
+	this.transactionsFile=new File(database_name+".tmp.transactions");
     }
     
     public boolean isReadOnly() throws DatabaseException
@@ -181,8 +252,431 @@ public abstract class DatabaseWrapper
 	
     }
     
+    /**
+     * Gets the interface that enable database synchronization between different peers
+     * @return the interface that enable database synchronization between different peers
+     */
+    public DatabaseSynchronizer getSynchronizer()
+    {
+	return synchronizer;
+	
+    }
     
     
+    public class DatabaseSynchronizer
+    {
+	private DatabaseNotifier notifier=null;
+	private boolean canNotify=true;
+	private LinkedList<DatabaseEvent> events=new LinkedList<>();
+	private HashMap<AbstractDecentralizedID, DatabaseHooksTable.Record> initializedHooks=new HashMap<>();
+	DatabaseSynchronizer()
+	{
+	}
+	
+	public boolean isInitialized() throws DatabaseException
+	{
+	    return getHooksTransactionsTable().getLocalDatabaseHost()!=null;
+	}
+	private void notifyNewEvent()
+	{
+	    boolean notify=false;
+	    synchronized(this)
+	    {
+		if (canNotify && notifier!=null)
+		{
+		    notify=true;
+		    canNotify=false;
+		}
+		this.notifyAll();
+	    }
+	    if (notify)
+		notifier.newDatabaseEventDetected(DatabaseWrapper.this);
+	}
+	public DatabaseEvent nextEvent()
+	{
+	    synchronized(this)
+	    {
+		if (events.isEmpty())
+		    return null;
+		else
+		{
+		    DatabaseEvent e=events.removeFirst();
+		    if (events.isEmpty())
+			canNotify=true;
+		    return e;
+		}
+	    }
+	}
+	DatabaseNotifier getNotifier()
+	{
+	    synchronized(this)
+	    {
+		return notifier;
+	    }
+	}
+	
+	
+	public DatabaseEvent waitNextEvent() throws InterruptedException
+	{
+	    synchronized(this)
+	    {
+		DatabaseEvent de=nextEvent();
+		for (;de!=null;de=nextEvent())
+		{
+		    this.wait();
+		}
+		return de;
+	    }
+	}
+	
+	public void setNotifier(DatabaseNotifier notifier)
+	{
+	    synchronized(this)
+	    {
+		this.notifier=notifier;
+		this.canNotify=true;
+	    }
+	}
+	
+	public void initLocalHostID(AbstractDecentralizedID localHostID) throws DatabaseException
+	{
+	    DatabaseHooksTable.Record local=getHooksTransactionsTable().getLocalDatabaseHost();
+	    if (local!=null && !local.getHostID().equals(localHostID))
+		throw new DatabaseException("The given local host id is different from the stored local host id !");
+	    if (local==null)
+	    {
+		addHookForLocalDatabaseHost(localHostID);
+	    }
+	}
+	
+	public void addHookForLocalDatabaseHost(AbstractDecentralizedID hostID, Package ...databasePackages) throws DatabaseException
+	{
+	    getHooksTransactionsTable().addHooks(hostID, true, databasePackages);
+	}
+	
+	public void addHookForDistantHost(AbstractDecentralizedID hostID, Package ...databasePackages) throws DatabaseException
+	{
+	    getHooksTransactionsTable().addHooks(hostID, false, databasePackages);
+	}
+	
+	public void removeHook(AbstractDecentralizedID hostID, Package ...databasePackages) throws DatabaseException
+	{
+	    getHooksTransactionsTable().removeHooks(hostID, databasePackages);
+	}
+	
+	public void validateLastSynchronization(AbstractDecentralizedID hostID, long lastTransferedTransactionID) throws DatabaseException
+	{
+	    if (hostID==null)
+		throw new NullPointerException("hostID");
+	    if (!isInitialized())
+		throw new DatabaseException("The Synchronizer must be initialized (initLocalHostID function) !");
+	    synchronized(this)
+	    {
+		DatabaseHooksTable.Record r=initializedHooks.get(hostID);
+		if (r==null)
+		    throw DatabaseException.getDatabaseException(new IllegalArgumentException("The host ID "+hostID+" has not been initialized !"));
+		if (r.getLastValidatedTransaction()>lastTransferedTransactionID)
+		    throw new DatabaseException("The given transfer ID limit "+lastTransferedTransactionID+" is lower than the stored transfer ID limit "+r.getLastValidatedTransaction());	
+		getDatabaseTransactionsPerHostTable().validateTransactions(r, lastTransferedTransactionID);
+		long lastID=getTransactionIDTable().getLastTransactionID();
+		if (lastID>r.getLastValidatedTransaction())
+		    addNewDatabaseEvent(new DatabaseEventsToSynchronize(getHooksTransactionsTable().getLocalDatabaseHost().getHostID(), r, lastID, maxEventsRecords));
+		
+		Map<AbstractDecentralizedID, Long> lastIds=getHooksTransactionsTable().getLastValidatedDistantTransactions();
+		
+		for (AbstractDecentralizedID host : lastIds.keySet())
+		{
+		    if (!host.equals(hostID))
+		    {
+			Map<AbstractDecentralizedID, Long> map=new HashMap<AbstractDecentralizedID, Long>();
+			map.putAll(lastIds);
+			map.remove(hostID);
+			map.remove(host);
+			if (map.size()>0)
+			{
+			    addNewDatabaseEvent(new DatabaseTransactionsIdentifiersToSynchronize(getHooksTransactionsTable().getLocalDatabaseHost().getHostID(), host, map));
+			}
+		    }
+		}
+		
+	    }
+	}
+	
+	void addNewDatabaseEvent(DatabaseEvent e)
+	{
+	    if (e==null)
+		throw new NullPointerException("e");
+	    
+	    synchronized(this)
+	    {
+		boolean add=true;
+		if (e.getClass()==DatabaseEventsToSynchronize.class)
+		{
+		    DatabaseEventsToSynchronize dets=(DatabaseEventsToSynchronize)e;
+		    for (DatabaseEvent detmp : events)
+		    {
+			if (detmp.getClass()==DatabaseEventsToSynchronize.class && dets.tryToFusion((DatabaseEventsToSynchronize)detmp))
+			{
+			    add=false;
+			    break;
+			}
+		    }
+		}
+		if (add)
+		{
+		    events.add(e);
+		    notifyNewEvent();
+		}
+	    }
+	}
+
+	public void deconnectHook(final AbstractDecentralizedID hostID) throws DatabaseException
+	{
+	    if (hostID==null)
+		throw new NullPointerException("hostID");
+	    
+	    synchronized(this)
+	    {
+		if (initializedHooks.remove(hostID)==null)
+		    throw DatabaseException.getDatabaseException(new IllegalAccessException("hostID "+hostID+" has not be initialized !"));
+	    }
+	    
+	}
+	
+	public void initHook(final AbstractDecentralizedID hostID, final long lastValidatedTransacionID, DatabaseTransactionsIdentifiersToSynchronize lastTransactionFieldsBetweenDistantHosts) throws DatabaseException
+	{
+	    if (hostID==null)
+		throw new NullPointerException("hostID");
+	    if (!isInitialized())
+		throw new DatabaseException("The Synchronizer must be initialized (initLocalHostID function) !");
+
+	    synchronized(this)
+	    {
+		if (initializedHooks.remove(hostID)!=null)
+		    throw DatabaseException.getDatabaseException(new IllegalAccessException("hostID "+hostID+" already initialized !"));
+	    }
+	    DatabaseHooksTable.Record r=runSynchronizedTransaction(new SynchronizedTransaction<DatabaseHooksTable.Record>() {
+
+		@Override
+		public DatabaseHooksTable.Record run() throws Exception
+		{
+		    DatabaseHooksTable.Record r=getHooksTransactionsTable().getRecord(new Object[]{"hostID", hostID});
+		    if (r==null)
+			throw new NullPointerException("Unknow host "+hostID);
+		    if (r.getLastValidatedTransaction()>lastValidatedTransacionID)
+			throw DatabaseException.getDatabaseException(new IllegalArgumentException("The host "+hostID+" have a validated trnasaction ID greater than the given transaciton ID : "+lastValidatedTransacionID));
+		    
+		    return r;
+		}
+
+		@Override
+		public TransactionIsolation getTransactionIsolation()
+		{
+		    return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
+		}
+
+		@Override
+		public boolean doesWriteData()
+		{
+		    return true;
+		}
+	    });
+	    synchronized(this)
+	    {
+		if (initializedHooks.containsValue(r))
+		{
+		    throw DatabaseException.getDatabaseException(new IllegalAccessException("hostID "+hostID+" already initialized !"));
+		}
+		initializedHooks.put(hostID, r);
+		validateLastSynchronization(hostID, lastValidatedTransacionID);
+		received(lastTransactionFieldsBetweenDistantHosts);
+		
+	    }
+	}
+	public void received(DatabaseTransactionsIdentifiersToSynchronize d) throws DatabaseException
+	{
+	    if (!isInitialized())
+		throw new DatabaseException("The Synchronizer must be initialized (initLocalHostID function) !");
+	    
+	    getHooksTransactionsTable().validateDistantTransactions(d.getHostSource(), d.getLastDistantTransactionIdentifiers(), true);
+	}
+	public void received(BigDatabaseEventToSend data, InputStream inputStream) throws DatabaseException
+	{
+	    data.inportFromInputStream(inputStream);
+	}
+	public void received(DatabaseEventToSend data) throws DatabaseException
+	{
+	    if (data instanceof DatabaseTransactionsIdentifiersToSynchronize)
+		received((DatabaseTransactionsIdentifiersToSynchronize)data);
+	}
+    }
+    
+    public static abstract class DatabaseNotifier
+    {
+	public abstract void newDatabaseEventDetected(DatabaseWrapper wrapper);
+	public abstract void newRecordToAddFailed(Table<?> concernedTable, DatabaseRecord concernedRecord, DatabaseException e);
+	public abstract void recordToRemoveNotFound(Table<?> concernedTable, Map<String, Object> primary_keys);
+	public abstract void recordToRemoveFailed(Table<?> concernedTable, Map<String, Object> primary_keys, DatabaseException e);
+	public abstract void recordToUpdateNotFound(Table<?> concernedTable, Map<String, Object> primary_keys);
+	public abstract void recordToUpdateFailed(Table<?> concernedTable, Map<String, Object> primary_keys, DatabaseException e);
+	
+	/**
+	 * This function is called when a direct collision is detected during the synchronization process, when receiving data from a distant peer.
+	 * 
+	 * @param distantPeerID the concerned distant peer
+	 * @param type the database event type 
+	 * @param concernedTable the concerned table
+	 * @param keys the concerned field keys
+	 * @param newValues the new received values
+	 * @param actualValues the actual field values
+	 * @return true if the new event can replace the actual value and false if the actual value must replace the distant value.
+	 * @throws DatabaseException if a problem occurs
+	 */
+	public abstract boolean directCollisionDetected(AbstractDecentralizedID distantPeerID, DatabaseEventType type, Table<?> concernedTable, HashMap<String, Object> keys, DatabaseRecord newValues, DatabaseRecord actualValues) throws DatabaseException;
+	
+	/**
+	 * This function is called when an indirect collision is detected during the synchronization process, when receiving data from a distant peer.
+	 * Indirect collisions occurs when for example the actual peer has to synchronize data with distant peer, data in collision with received received from anther to distant peer to synchronize with the actual peer. 
+	 * 
+	 * @param distantPeerID the concerned distant peer
+	 * @param type the database event type 
+	 * @param concernedTable the concerned table
+	 * @param keys the concerned field keys
+	 * @param newValues the new received values
+	 * @param actualValues the actual field values
+	 * @param distantPeerInCollisionWithDataToSynchronize the distant peer in collision with the receive data to synchronize.
+	 * @return true if the new event can replace the actual value and false if the actual value must replace the distant value.
+	 * @throws DatabaseException if a problem occurs
+	 */
+	public abstract boolean indirectCollisionDetected(AbstractDecentralizedID distantPeerID, DatabaseEventType type, Table<?> concernedTable, HashMap<String, Object> keys, DatabaseRecord oldRecord, DatabaseRecord actualValues, AbstractDecentralizedID distantPeerInCollisionWithDataToSynchronize) throws DatabaseException;
+	
+    }
+    public static class DatabaseTransactionsIdentifiersToSynchronize extends DatabaseEvent implements DatabaseEventToSend
+    {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -925935481339233901L;
+	
+	protected final AbstractDecentralizedID hostIDSource, hostIDDestination;
+	final Map<AbstractDecentralizedID, Long> lastTransactionFieldsBetweenDistantHosts;
+	
+	DatabaseTransactionsIdentifiersToSynchronize(AbstractDecentralizedID hostIDSource, AbstractDecentralizedID hostIDDestination, Map<AbstractDecentralizedID, Long> lastTransactionFieldsBetweenDistantHosts)
+	{
+	    this.hostIDSource=hostIDSource;
+	    this.hostIDDestination=hostIDDestination;
+	    this.lastTransactionFieldsBetweenDistantHosts=lastTransactionFieldsBetweenDistantHosts;
+	}
+	
+	@Override
+	public AbstractDecentralizedID getHostDestination() 
+	{
+	    return hostIDDestination;
+	}
+	
+	@Override
+	public AbstractDecentralizedID getHostSource() 
+	{
+	    return hostIDSource;
+	}
+	
+	public Map<AbstractDecentralizedID, Long> getLastDistantTransactionIdentifiers()
+	{
+	    return lastTransactionFieldsBetweenDistantHosts;
+	}
+	
+	
+	public AbstractDecentralizedID getConcernedHost()
+	{
+	    return getHostDestination();
+	}
+	
+    }
+    
+    public class DatabaseEventsToSynchronize extends DatabaseEvent implements BigDatabaseEventToSend
+    {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -7594047077302832978L;
+	protected final transient DatabaseHooksTable.Record hook;
+	protected final int hookID;
+	protected final AbstractDecentralizedID hostIDSource, hostIDDestination;
+	private long lastTransactionIDIncluded;
+	final int maxEventsRecords;
+	
+	DatabaseEventsToSynchronize(AbstractDecentralizedID hostIDSource, DatabaseHooksTable.Record hook, long lastTransactionIDIncluded, int maxEventsRecords)
+	{
+	    this.hook=hook;
+	    this.hookID=hook.getID();
+	    this.hostIDDestination=hook.getHostID();
+	    this.hostIDSource=hostIDSource;
+	    this.lastTransactionIDIncluded=lastTransactionIDIncluded;
+	    this.maxEventsRecords=maxEventsRecords;
+	}
+	
+	@Override
+	public AbstractDecentralizedID getHostDestination() 
+	{
+	    return hostIDDestination;
+	}
+	
+	@Override
+	public AbstractDecentralizedID getHostSource() 
+	{
+	    return hostIDSource;
+	}
+	@Override
+	public void inportFromInputStream(final InputStream inputStream) throws DatabaseException
+	{
+	    getDatabaseTransactionsPerHostTable().alterDatabase(getHostSource(), inputStream);
+	}
+	@Override
+	public boolean exportToOutputStream(final OutputStream outputStream) throws DatabaseException
+	{
+	    if (maxEventsRecords==0)
+		return false;
+	    return ((Boolean)runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
+
+		@Override
+		public Boolean run() throws Exception
+		{
+		    int number=getDatabaseTransactionsPerHostTable().exportTransactions(outputStream, hookID, maxEventsRecords);
+		    if (number==0)
+		    {
+			hook.setLastValidatedTransaction(getTransactionIDTable().getLastTransactionID());
+			getHooksTransactionsTable().updateRecord(hook);
+		    }
+		    return new Boolean(number>0);
+		}
+
+		@Override
+		public TransactionIsolation getTransactionIsolation()
+		{
+		    return TransactionIsolation.TRANSACTION_READ_COMMITTED;
+		}
+
+		@Override
+		public boolean doesWriteData()
+		{
+		    return false;
+		}
+	    })).booleanValue();
+	    
+	}
+	
+	public boolean tryToFusion(DatabaseEventsToSynchronize dest)
+	{
+	    if (hookID==dest.hookID)
+	    {
+		lastTransactionIDIncluded=Math.max(lastTransactionIDIncluded, dest.lastTransactionIDIncluded);
+		return true;
+	    }
+	    else
+		return false;
+	}
+	
+    }
     
     private ReadWriteLock getLocker()
     {
@@ -203,6 +697,38 @@ public abstract class DatabaseWrapper
 	    }
     }
     
+    DatabaseTransactionEventsTable getTransactionsTable() throws DatabaseException
+    {
+	if (transactionTable==null)
+	    transactionTable=(DatabaseTransactionEventsTable)getTableInstance(DatabaseTransactionEventsTable.class);
+	return transactionTable;
+    }
+    
+    DatabaseHooksTable getHooksTransactionsTable() throws DatabaseException
+    {
+	if (databaseHooksTable==null)
+	    databaseHooksTable=(DatabaseHooksTable)getTableInstance(DatabaseHooksTable.class);
+	return databaseHooksTable;
+    }
+    DatabaseTransactionsPerHostTable getDatabaseTransactionsPerHostTable() throws DatabaseException
+    {
+	if (databaseTransactionsPerHostTable==null)
+	    databaseTransactionsPerHostTable=(DatabaseTransactionsPerHostTable)getTableInstance(DatabaseTransactionsPerHostTable.class);
+	return databaseTransactionsPerHostTable;
+    }
+    DatabaseEventsTable getDatabaseEventsTable() throws DatabaseException
+    {
+	if (databaseEventsTable==null)
+	    databaseEventsTable=(DatabaseEventsTable)getTableInstance(DatabaseEventsTable.class);
+	return databaseEventsTable;
+    }
+
+    IDTable getTransactionIDTable() throws DatabaseException
+    {
+	if (transactionIDTable==null)
+	    transactionIDTable=(IDTable)getTableInstance(IDTable.class);
+	return transactionIDTable;
+    }
 
     protected abstract Connection reopenConnection()  throws DatabaseLoadingException;
     
@@ -255,7 +781,7 @@ public abstract class DatabaseWrapper
 			    DatabaseWrapper.number_of_shared_lockers.put(database_name, new Integer(v));
 			else
 			    throw new IllegalAccessError();
-			sql_database.clear();
+			sql_database=new HashMap<>();
 		    }
 		    closed=true;
 		    System.gc();
@@ -330,10 +856,12 @@ public abstract class DatabaseWrapper
     private boolean setTransactionIsolation(TransactionIsolation transactionIsolation) throws SQLException, DatabaseException
     {
 	Connection sql_connection=getOpenedSqlConnection();
+	
 	transactionIsolation=getValidTransactionIsolation(transactionIsolation);
 	if (transactionIsolation!=null)
 	{
 	    sql_connection.setTransactionIsolation(transactionIsolation.getCode());
+	    startTransaction();
 	    return true;
 	}
 	else return false;
@@ -380,6 +908,362 @@ public abstract class DatabaseWrapper
 	return dmd.supportsTransactions();
     }
     
+    protected void startTransaction()
+    {
+	
+    }
+    
+    protected void endTransaction()
+    {
+	
+    }
+    
+    private void ensureTransactionOutputStreamClosed() throws DatabaseException
+    {
+	if (this.transactionObjectOutputStream!=null)
+	{
+	    try
+	    {
+		transactionObjectOutputStream.close();
+	    }
+	    catch(Exception e)
+	    {
+		throw DatabaseException.getDatabaseException(e);
+	    }
+	    finally
+	    {
+		try
+		{
+		    transactionOutputStream.close();
+		}
+		catch(Exception e)
+		{
+		    throw DatabaseException.getDatabaseException(e);
+		}
+		finally
+		{
+		    transactionObjectOutputStream=null;
+		    transactionOutputStream=null;
+		}
+	    }
+	}
+    }
+    
+    private void ensureTransactionInputStreamClosed() throws DatabaseException
+    {
+	if (this.transactionObjectInputStream!=null)
+	{
+	    try
+	    {
+		transactionObjectInputStream.close();
+	    }
+	    catch(Exception e)
+	    {
+		throw DatabaseException.getDatabaseException(e);
+	    }
+	    finally
+	    {
+		try
+		{
+		    transactionInputStream.close();
+		}
+		catch(Exception e)
+		{
+		    throw DatabaseException.getDatabaseException(e);
+		}
+		finally
+		{
+		    transactionObjectInputStream=null;
+		    transactionInputStream=null;
+		}
+	    }
+	}
+    }
+
+    private void clearTransactions(boolean commit) throws DatabaseException
+    {
+	if (currentTransactionsEventNummber>maxTransactionsEventsKeepedIntoMemory)
+	{
+	    if (commit)
+	    {
+		for (Package p : transactionPackages)
+		{
+		    getTransactionsTable().addTransactionIfNecessary(p, getEventsStoredInFileIterator(), transactionTypes);
+		}
+	    }
+	}
+	else
+	{
+	    for (Map.Entry<Package, Database> e : this.sql_database.entrySet())
+	    {
+		Database d=e.getValue();
+		if (commit)
+		{
+		    if (d.hasTransaction())
+			getTransactionsTable().addTransactionIfNecessary(e.getKey(), d.getCurrentTransaction(), transactionTypes);
+		}
+		d.clearTransaction();
+	    }
+	}
+	ensureTransactionOutputStreamClosed();
+	ensureTransactionInputStreamClosed();
+	if (this.transactionsFile.exists())
+	    this.transactionsFile.delete();
+	transactionPackages.clear();
+	currentTransactionsEventNummber=0;
+	transactionTypes=0;
+    }
+    
+    private boolean areTransactionsStoredIntoTemporaryFile()
+    {
+	return transactionObjectOutputStream!=null;
+    }
+    
+    private ObjectOutputStream getTransactionsOutputStream() throws DatabaseException
+    {
+	if (transactionObjectOutputStream==null)
+	{
+	    try
+	    {
+		transactionOutputStream=new FileOutputStream(transactionsFile);
+	    }
+	    catch(Exception e)
+	    {
+		throw DatabaseException.getDatabaseException(e);
+	    }
+	    try
+	    {
+		transactionObjectOutputStream=new ObjectOutputStream(transactionOutputStream);
+	    }
+	    catch(Exception e)
+	    {
+		try
+		{
+		    transactionOutputStream.close();
+		}
+		catch(Exception e2)
+		{
+		    e2.printStackTrace();
+		}
+		finally
+		{
+		    transactionOutputStream=null;
+		}
+		throw DatabaseException.getDatabaseException(e);
+	    }
+	}
+	return transactionObjectOutputStream;
+    }
+    
+    private ObjectInputStream getTransactionsInputStream() throws DatabaseException
+    {
+	ensureTransactionOutputStreamClosed();
+	if (transactionObjectInputStream==null)
+	{
+	    currentTransactionsEventReadNummber=0;
+	    try
+	    {
+		transactionInputStream=new FileInputStream(transactionsFile);
+	    }
+	    catch(Exception e)
+	    {
+		throw DatabaseException.getDatabaseException(e);
+	    }
+	    try
+	    {
+		transactionObjectInputStream=new ObjectInputStream(transactionInputStream);
+		
+	    }
+	    catch(Exception e)
+	    {
+		try
+		{
+		    transactionInputStream.close();
+		}
+		catch(Exception e2)
+		{
+		    e2.printStackTrace();
+		}
+		finally
+		{
+		    transactionInputStream=null;
+		}
+		throw DatabaseException.getDatabaseException(e);
+	    }
+	}
+	return transactionObjectInputStream;
+    }
+    
+    
+    private <T extends DatabaseRecord> boolean storeEvent(TableEvent<T> de) throws DatabaseException
+    {
+	try
+	{
+	    Table<T> table=de.getTable(this);
+	    transactionPackages.add(table.getClass().getPackage());
+	    ObjectOutputStream oos=getTransactionsOutputStream();
+	    String tableName=table.getClass().getName();
+	    oos.writeInt(tableName.length());
+	    oos.writeChars(tableName);
+	    oos.writeByte(de.getType().getByte());
+	    byte pk[];
+	    if (de.getOldDatabaseRecord()!=null)
+	    {
+		pk=table.serializePrimaryKeys(de.getOldDatabaseRecord());
+	    }
+	    else
+	    {
+		pk=table.serializePrimaryKeys(de.getNewDatabaseRecord());
+	    }
+	    oos.writeInt(pk.length);
+	    oos.write(pk);
+	    /*if (de.getOldDatabaseRecord()==null)
+		oos.writeInt(-1);
+	    else
+	    {
+		byte tab[]=table.serializeFieldsNonPK(de.getOldDatabaseRecord());
+		oos.writeInt(tab.length);
+		oos.write(tab);
+	    }*/
+	    return true;
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+    
+    
+    
+    private Iterator<DatabaseEventsTable.Record> getEventsStoredInFileIterator() throws DatabaseException
+    {
+	ensureTransactionInputStreamClosed();
+	return new Iterator<DatabaseEventsTable.Record>() {
+
+	    @Override
+	    public boolean hasNext()
+	    {
+		return currentTransactionsEventReadNummber<currentTransactionsEventNummber;
+	    }
+
+	    @Override
+	    public DatabaseEventsTable.Record next()
+	    {
+		try
+		{
+		    return getNextDatabaseEventRecord();
+		}
+		catch(Exception e)
+		{
+		    e.printStackTrace();
+		    return null;
+		}
+	    }
+
+	    @Override
+	    public void remove()
+	    {
+		throw new IllegalAccessError();
+		
+	    }
+	};	
+    }
+    
+    DatabaseEventsTable.Record getNextDatabaseEventRecord() throws DatabaseException
+    {
+	try
+	{
+	    ObjectInputStream ois=getTransactionsInputStream();
+	    int size=ois.readInt();
+	    char chars[]=new char[size];
+	    for (int i=0;i<size;i++)
+		chars[i]=ois.readChar();
+	    DatabaseEventsTable.Record r=new DatabaseEventsTable.Record();
+	    r.setConcernedTable(String.copyValueOf(chars));
+	    
+	    r.setType(ois.readByte());
+	    
+	    size=ois.readInt();
+	    byte pk[]=new byte[size];
+	    if (ois.read(pk)!=size)
+		throw new DatabaseException("Unexpected exception !");
+	    
+	    r.setConcernedSerializedPrimaryKey(pk);
+	    /*size=ois.readInt();
+	    if (size!=-1)
+	    {
+		byte old[]=new byte[size];
+		if (ois.read(old)!=size)
+		    throw new DatabaseException("Unexpected exception !");
+		r.setConcernedSerializedOldNonPK(old);
+	    }
+	    else
+		r.setConcernedSerializedOldNonPK(null);*/
+	    this.currentTransactionsEventReadNummber++;
+	    return r;
+	    
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+    
+    <T extends DatabaseRecord> boolean addEvent(Table<T> table, TableEvent<T> de) throws DatabaseException
+    {
+	if (table==null)
+	    throw new NullPointerException("table");
+	if (de==null)
+	    throw new NullPointerException("de");
+	if (!table.supportSynchronizationWithOtherPeers())
+	    return false;
+	Package p=table.getClass().getPackage();
+	if (p.equals(DatabaseWrapper.class.getPackage()))
+	    return false;
+	if (!getHooksTransactionsTable().supportPackage(p))
+	    return false;
+	Database d=sql_database.get(p);
+	if (d!=null)
+	{
+	    if (currentTransactionsEventNummber<this.maxTransactionsEventsKeepedIntoMemory)
+	    {
+		if (d.getCurrentTransaction().addEvent(de))
+		{
+		    transactionTypes|=de.getType().getByte();
+		    currentTransactionsEventNummber++;
+		    return true;
+		}
+		else
+		    return false;
+	    }
+	    else
+	    {
+		if (!areTransactionsStoredIntoTemporaryFile())
+		{
+		    for (Database d2 : sql_database.values())
+		    {
+			if (d2.hasTransaction())
+			{
+			    for (TableEvent<?> de2 : d2.getCurrentTransaction().getEvents())
+				storeEvent(de2);
+			    d2.clearTransaction();
+			}
+		    }
+		}
+		if (storeEvent(de))
+		{
+		    transactionTypes|=de.getType().getByte();
+		    currentTransactionsEventNummber++;
+		    return true;
+		}
+		else
+		    return false;
+	    }
+	}
+	else
+	    return false;
+    }
+
     Object runTransaction(final Transaction _transaction) throws DatabaseException
     {
 	Object res=null;
@@ -389,20 +1273,28 @@ public abstract class DatabaseWrapper
 	    Connection sql_connection=getOpenedSqlConnection();
 	    try
 	    {
+		
 		setTransactionIsolation(_transaction.getTransactionIsolation());
 		
 		if (_transaction.doesWriteData())
 		    sql_connection.setSavepoint();
 		res=_transaction.run(this);
 		if (_transaction.doesWriteData())
+		{
 		    sql_connection.commit();
+		    clearTransactions(true);
+		}
+		endTransaction();
 	    }
 	    catch(DatabaseException e)
 	    {
 		try
 		{
 		    if (_transaction.doesWriteData())
+		    {
 			sql_connection.rollback();
+			clearTransactions(false);
+		    }
 		}
 		catch(SQLException se)
 		{
@@ -412,6 +1304,7 @@ public abstract class DatabaseWrapper
 	    }
 	    catch(SQLException e)
 	    {
+		clearTransactions(false);
 		throw DatabaseException.getDatabaseException(e);
 	    }
 	    finally
@@ -488,10 +1381,8 @@ public abstract class DatabaseWrapper
      * @param <O> a type 
      */
     @SuppressWarnings("unchecked")
-    public <O> O runSynchronizedTransaction(final SynchronizedTransaction<O> _transaction) throws Exception
+    public <O> O runSynchronizedTransaction(final SynchronizedTransaction<O> _transaction) throws DatabaseException
     {
-	try
-	{
 	    return (O)this.runTransaction(new Transaction() {
 	    
 		@Override
@@ -499,7 +1390,10 @@ public abstract class DatabaseWrapper
 		{
 		    try
 		    {
-			locker.lockWrite();
+			if (_transaction.doesWriteData())
+			    locker.lockWrite();
+			else
+			    locker.lockRead();
 			return (Object)_transaction.run();
 		    }
 		    catch(Exception e)
@@ -508,7 +1402,10 @@ public abstract class DatabaseWrapper
 		    }
 		    finally
 		    {
-			locker.unlockWrite();
+			if (_transaction.doesWriteData())
+			    locker.unlockWrite();
+			else
+			    locker.unlockRead();
 		    }
 		}
 		@Override
@@ -522,14 +1419,6 @@ public abstract class DatabaseWrapper
 		    return _transaction.doesWriteData();
 		}
 	    });
-	}
-	catch(DatabaseException e)
-	{
-	    if (e.getCause()!=null && e.getCause() instanceof Exception)
-		throw (Exception)e.getCause();
-	    else
-		throw e;
-	}
     }
     
     
@@ -749,7 +1638,10 @@ public abstract class DatabaseWrapper
 		throw new DatabaseException("There is already a database associated to the given HSQLDBWrapper "+sql_connection);
 	    
 	    final Database db=new Database(_package);
-	    sql_database.put(_package, db);
+	    @SuppressWarnings("unchecked")
+	    HashMap<Package, Database> sd=(HashMap<Package, Database>)sql_database.clone();
+	    sd.put(_package, db);
+	    sql_database=sd;
 	    
 	    runTransaction(new Transaction() {
 		    
@@ -875,22 +1767,22 @@ public abstract class DatabaseWrapper
     }
     
     abstract String getSqlComma();
-    public abstract int getVarCharLimit();
-    public abstract boolean isVarBinarySupported();
+    abstract int getVarCharLimit();
+    abstract boolean isVarBinarySupported();
 
     abstract String getSqlNULL();
     
     abstract String getSqlNotNULL();
     
-    public abstract String getByteType();
-    public abstract String getIntType();
-    public abstract String getSerializableType();
-    public abstract String getFloatType();
-    public abstract String getDoubleType();
-    public abstract String getShortType();
-    public abstract String getLongType();
-    public abstract String getBigDecimalType();
-    public abstract String getBigIntegerType();
+    abstract String getByteType();
+    abstract String getIntType();
+    abstract String getSerializableType();
+    abstract String getFloatType();
+    abstract String getDoubleType();
+    abstract String getShortType();
+    abstract String getLongType();
+    abstract String getBigDecimalType();
+    abstract String getBigIntegerType();
     abstract String getSqlQuerryToGetLastGeneratedID();
     
     Collection<Table<?>> getListTables(Package p)
@@ -900,12 +1792,12 @@ public abstract class DatabaseWrapper
 
     abstract String getOnUpdateCascadeSqlQuerry();
     abstract String getOnDeleteCascadeSqlQuerry();
-    public boolean supportUpdateCascade()
+    boolean supportUpdateCascade()
     {
 	return !getOnUpdateCascadeSqlQuerry().equals("");
     }
     
-    public abstract Blob getBlob(byte[] bytes) throws SQLException;
+    abstract Blob getBlob(byte[] bytes) throws SQLException;
 
     /**
      * Backup the database into the given path. 

@@ -38,11 +38,14 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database.fieldaccessors;
 
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
@@ -66,7 +69,7 @@ public class byteFieldAccessor extends FieldAccessor
     {
 	super(_sql_connection, _field, parentFieldName, compatible_classes, table_class);
 	sql_fields=new SqlField[1];
-	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), sql_connection.getByteType(), null, null);
+	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), DatabaseWrapperAccessor.getByteType(sql_connection), null, null);
     }
 
     @Override
@@ -265,5 +268,48 @@ public class byteFieldAccessor extends FieldAccessor
     public boolean canBePrimaryOrUniqueKey()
     {
 	return true;
+    }
+    
+    @Override
+    public void serialize(ObjectOutputStream _oos, Object _class_instance) throws DatabaseException
+    {
+	try
+	{
+	    _oos.writeByte(field.getByte(_class_instance));
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+
+
+
+    @Override
+    public void unserialize(ObjectInputStream _ois, HashMap<String, Object> _map) throws DatabaseException
+    {
+	try
+	{
+	    _map.put(getFieldName(), new Byte(_ois.readByte()));
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+	
+    }    
+    @Override
+    public Object unserialize(ObjectInputStream _ois, Object _classInstance) throws DatabaseException
+    {
+	try
+	{
+	    byte v=_ois.readByte();	    
+	    field.setByte(_classInstance, v);
+	    return new Byte(v);
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
     }
 }

@@ -39,11 +39,14 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database.fieldaccessors;
 
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.SqlField;
@@ -293,4 +296,77 @@ public class CharacterNumberFieldAccessor extends FieldAccessor
 	return true;
     }
 
+    @Override
+    public void serialize(ObjectOutputStream _oos, Object _fieldInstance) throws DatabaseException
+    {
+	try
+	{
+	    Character v=(Character)getValue(_fieldInstance);
+	    if (v==null)
+	    {
+		_oos.writeBoolean(false);
+	    }
+	    else
+	    {
+		_oos.writeBoolean(true);
+		_oos.writeChar(v.charValue());
+	    }
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+
+
+
+    @Override
+    public void unserialize(ObjectInputStream _ois, HashMap<String, Object> _map) throws DatabaseException
+    {
+	try
+	{
+	    boolean isNotNull=_ois.readBoolean();
+	    if (isNotNull)
+	    {
+		_map.put(getFieldName(), new Character(_ois.readChar()));
+	    }
+	    else if (isNotNull())
+		throw new DatabaseException("field should not be null");
+	    else
+	    {
+		_map.put(getFieldName(), null);
+	    }
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+
+    @Override
+    public Object unserialize(ObjectInputStream _ois, Object _classInstance) throws DatabaseException
+    {
+	try
+	{
+	    boolean isNotNull=_ois.readBoolean();
+	    if (isNotNull)
+	    {
+		Character c=new Character(_ois.readChar());
+		setValue(_classInstance, c);
+		return c;
+	    }
+	    else if (isNotNull())
+		throw new DatabaseException("field should not be null");
+	    else
+	    {
+		setValue(_classInstance, null);
+		return null;
+	    }
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+    
 }

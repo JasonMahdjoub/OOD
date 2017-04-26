@@ -37,12 +37,15 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database.fieldaccessors;
 
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.SqlField;
@@ -275,5 +278,76 @@ public class DateFieldAccessor extends FieldAccessor
 	}
     }
 	
+    @Override
+    public void serialize(ObjectOutputStream _oos, Object _class_instance) throws DatabaseException
+    {
+	try
+	{
+	    Date d=(Date)getValue(_class_instance);
+	    if (d!=null)
+	    {
+		_oos.writeBoolean(true);
+		_oos.writeLong(d.getTime());
+	    }
+	    else
+		_oos.writeBoolean(false);
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+
+
+
+    @Override
+    public void unserialize(ObjectInputStream _ois, HashMap<String, Object> _map) throws DatabaseException
+    {
+	try
+	{
+	    boolean isNotNull= _ois.readBoolean();
+	    if (isNotNull)
+	    {
+		_map.put(getFieldName(), new Date(_ois.readLong()));
+	    }
+	    else if (isNotNull())
+		throw new DatabaseException("field should not be null");
+	    else
+		_map.put(getFieldName(), null);
+	    
+
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+    @Override
+    public Object unserialize(ObjectInputStream _ois, Object _classInstance) throws DatabaseException
+    {
+	try
+	{
+	    boolean isNotNull= _ois.readBoolean();
+	    if (isNotNull)
+	    {
+		Date d=new Date(_ois.readLong());
+		setValue(_classInstance, d);
+		return d;
+	    }
+	    else if (isNotNull())
+		throw new DatabaseException("field should not be null");
+	    else
+	    {
+		setValue(_classInstance, null);
+		return null;
+	    }
+	    
+
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }    
 
 }

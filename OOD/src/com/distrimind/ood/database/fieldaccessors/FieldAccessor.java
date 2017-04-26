@@ -38,6 +38,8 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database.fieldaccessors;
 
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 /**
  * @author Jason Mahdjoub
  * @version 1.3
@@ -74,11 +76,18 @@ import com.distrimind.ood.database.annotations.RandomPrimaryKey;
 import com.distrimind.ood.database.annotations.Unique;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.AbstractDecentralizedID;
+import com.distrimind.util.DecentralizedIDGenerator;
+import com.distrimind.util.RenforcedDecentralizedIDGenerator;
 
 
 
 
-public abstract class FieldAccessor
+/**
+ * 
+ * @author Jason Mahdjoub
+ * @version 2.0
+ * @Since OOD 1.0
+ */public abstract class FieldAccessor
 {
     protected final DatabaseWrapper sql_connection;
     protected final Field field;
@@ -94,6 +103,8 @@ public abstract class FieldAccessor
     protected final long limit;
     protected final long start_value;
     protected final int bits_number;
+    protected final boolean hasToCreateIndex;
+    protected final boolean descendantIndex;
     private final Class<?> compatible_classes[];
     
     @SuppressWarnings("unchecked")
@@ -164,7 +175,35 @@ public abstract class FieldAccessor
 	    bits_number=-1;
 	    limit=_field.getAnnotation(com.distrimind.ood.database.annotations.Field.class).limit();
 	}
+	if (field.isAnnotationPresent(com.distrimind.ood.database.annotations.Field.class) 
+		&& field.getAnnotation(com.distrimind.ood.database.annotations.Field.class).index()
+		&& !primary_key && !foreign_key)
+	{
+	    hasToCreateIndex=true;
+	    descendantIndex=field.getAnnotation(com.distrimind.ood.database.annotations.Field.class).descendingIndex();
+	}
+	else
+	{
+	    hasToCreateIndex=false;
+	    descendantIndex=true;
+	}
     }
+    
+    public boolean hasToCreateIndex()
+    {
+	return hasToCreateIndex;
+    }
+    
+    public boolean isDescendentIndex()
+    {
+	return descendantIndex;
+    }
+    
+    public String getIndexName()
+    {
+	return (this.getField().getDeclaringClass().getName()+"."+this.getField().getName()).replace(".", "_").toUpperCase();
+    }
+    
     
     public Class<?> getFieldClassType()
     {
@@ -256,6 +295,13 @@ public abstract class FieldAccessor
     public abstract boolean canBePrimaryOrUniqueKey();
     
     public abstract int compare(Object r1, Object _r2) throws DatabaseException;
+    
+    public abstract void serialize(ObjectOutputStream oos, Object classInstance) throws DatabaseException;
+    public abstract void unserialize(ObjectInputStream ois, HashMap<String, Object> map) throws DatabaseException;
+    public abstract Object unserialize(ObjectInputStream ois, Object classInstance) throws DatabaseException;
+    
+    
+    
     
     public boolean canAutoGenerateValues()
     {
@@ -376,8 +422,12 @@ public abstract class FieldAccessor
 			    res.add(new DateFieldAccessor(_table_class, f, parentFieldName));
 			else if ((converter=_sql_connection.getByteTabObjectConverter(type))!=null)
 			    res.add(new ByteTabConvertibleFieldAccessor(_table_class, _sql_connection, f, parentFieldName, converter));
-			else if (AbstractDecentralizedID.class.isAssignableFrom(type))
+			else if (type.equals(DecentralizedIDGenerator.class))
 			    res.add(new DencetralizedIDFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
+			else if (type.equals(RenforcedDecentralizedIDGenerator.class))
+			    res.add(new RenforcedDencetralizedIDFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
+			else if (AbstractDecentralizedID.class.isAssignableFrom(type))
+			    res.add(new AbstractDencetralizedIDFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 			else if (isComposedField(type))
 			{
 			    for (Class<?> cpf : parentFields)

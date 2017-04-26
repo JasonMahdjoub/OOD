@@ -35,13 +35,14 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database.fieldaccessors;
 
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Random;
 
 import com.distrimind.ood.database.DatabaseRecord;
@@ -50,89 +51,48 @@ import com.distrimind.ood.database.SqlField;
 import com.distrimind.ood.database.SqlFieldInstance;
 import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
-import com.distrimind.util.AbstractDecentralizedID;
-import com.distrimind.util.AbstractDecentralizedIDGenerator;
 import com.distrimind.util.DecentralizedIDGenerator;
-import com.distrimind.util.RenforcedDecentralizedIDGenerator;
-import com.distrimind.util.SecuredDecentralizedID;
-import com.distrimind.util.crypto.SecureRandomType;
 
 /**
  * 
  * @author Jason Mahdjoub
- * @version 1.1
+ * @version 2.0
  * @since OOD 1.7.0
  * 
  */
 public class DencetralizedIDFieldAccessor extends FieldAccessor
 {
     protected final SqlField sql_fields[];
-    private final boolean isVarBinary;
     
     protected DencetralizedIDFieldAccessor(Class<? extends Table<?>> table_class, DatabaseWrapper _sql_connection, Field _field, String parentFieldName) throws DatabaseException
     {
 	super(_sql_connection, _field,parentFieldName, compatibleClasses, table_class);
-	sql_fields=new SqlField[1];
-	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), sql_connection.isVarBinarySupported()?"VARBINARY(70)":sql_connection.getBigIntegerType(), null, null);
-	isVarBinary=sql_connection.isVarBinarySupported();
+	sql_fields=new SqlField[2];
+	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName()+"_ts", DatabaseWrapperAccessor.getLongType(sql_connection), null, null);
+	sql_fields[1]=new SqlField(table_name+"."+this.getFieldName()+"_widseq", DatabaseWrapperAccessor.getLongType(sql_connection), null, null);
     }
     
     private static final Class<?> compatibleClasses[];
     static
     {
-	compatibleClasses=new Class<?>[5];
-	compatibleClasses[0]=AbstractDecentralizedID.class;
-	compatibleClasses[1]=AbstractDecentralizedIDGenerator.class;
-	compatibleClasses[2]=DecentralizedIDGenerator.class;
-	compatibleClasses[3]=RenforcedDecentralizedIDGenerator.class;
-	compatibleClasses[4]=SecuredDecentralizedID.class;
+	compatibleClasses=new Class<?>[1];
+	compatibleClasses[0]=DecentralizedIDGenerator.class;
     }
     
-    private static BigDecimal getBigDecimal(byte bytes[])
-    {
-	if (bytes==null)
-	    return null;
-	
-	BigInteger res=BigInteger.valueOf(1);
-	for (int i=0;i<bytes.length;i++)
-	{
-	    res=res.shiftLeft(8).or(BigInteger.valueOf(bytes[i] & 0xFF));
-	}
-	return new BigDecimal(res);
-    }
-    private static byte[] getBytes(BigDecimal v)
-    {
-	if (v==null)
-	    return null;
-	BigInteger val=v.toBigInteger();
-	
-	ArrayList<Byte> res=new ArrayList<>();
-	do
-	{
-	    byte b=(byte)val.and(BigInteger.valueOf(0xFF)).intValue();
-	    val=val.shiftRight(8);
-	    res.add(new Byte(b));
-	} while (!val.equals(BigInteger.ZERO));
-	byte[] bytes=new byte[res.size()-1];
-	for (int i=0;i<bytes.length;i++)
-	    bytes[i]=res.get(res.size()-i-2).byteValue();
-	return bytes;
-	
-    }
-    
+  
     
     @Override
     public void setValue(Object _class_instance, Object _field_instance) throws DatabaseException
     {
+	
 	if (_field_instance==null)
 	{
 	    if (isNotNull())
-		throw new FieldDatabaseException("The given _field_instance, used to store the field "+field.getName()+" (type="+field.getType().getName()+", declaring_class="+field.getDeclaringClass().getName()+") into the DatabaseField class "+field.getDeclaringClass().getName()+", is null and should not be (property NotNull present).");
+		throw new FieldDatabaseException("The given _field_instance, used to store the field "+field.getName()+" (type="+field.getType().getName()+", declaring_class="+field.getDeclaringClass().getName()+") into the DatabaseField class "+field.getDeclaringClass().getName()+", is null and should not be.");
 	}
-	else if (!(field.getType().isAssignableFrom(_field_instance.getClass())))
-	    throw new FieldDatabaseException("The given _field_instance parameter, destinated to the field "+field.getName()+" of the class "+field.getDeclaringClass().getName()+", should be a "+field.getType().getName()+" and not a "+_field_instance.getClass().getName());
+	else if (!(_field_instance instanceof DecentralizedIDGenerator))
+	    throw new FieldDatabaseException("The given _field_instance parameter, destinated to the field "+field.getName()+" of the class "+field.getDeclaringClass().getName()+", should be an Long and not a "+_field_instance.getClass().getName());
 	try
 	{
 	    field.set(_class_instance, _field_instance);
@@ -170,37 +130,14 @@ public class DencetralizedIDFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    byte[] val1=null;
-	    if (_field_instance instanceof byte[])
-		val1=(byte[])_field_instance;
-	    else if (_field_instance instanceof AbstractDecentralizedID)
-		val1=((AbstractDecentralizedID)_field_instance).getBytes();
-		
-	    byte[] val2=null;
-	    
-	    if (isVarBinary)
-	    {
-		val2=_result_set.getBytes(_sft.translateField(sql_fields[0]));
-	    }
-	    else
-	    {
-		val2=getBytes(_result_set.getBigDecimal(_sft.translateField(sql_fields[0])));
-	    }
+	    DecentralizedIDGenerator val1=null;
+	    if (_field_instance instanceof DecentralizedIDGenerator)
+		val1=(DecentralizedIDGenerator)_field_instance;
+	    long ts=_result_set.getLong(_sft.translateField(sql_fields[0]));
+	    long wsseq=_result_set.getLong(_sft.translateField(sql_fields[1]));
 	    
 	    
-	    
-	    if (val1==null|| val2==null)
-		return val1==val2;
-	    else
-	    {
-		if (val1.length!=val2.length)
-		    return false;
-		for (int i=0;i<val1.length;i++)
-		    if (val1[i]!=val2[i])
-			return false;
-		return true;
-	    }
-	    
+	    return val1!=null && val1.getTimeStamp()==ts && val1.getWorkerIDAndSequence()==wsseq;
 	}
 	catch(SQLException e)
 	{
@@ -235,18 +172,17 @@ public class DencetralizedIDFieldAccessor extends FieldAccessor
     @Override
     public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException
     {
-	SqlFieldInstance res[]=new SqlFieldInstance[1];
-	if (isVarBinary)
-	    res[0]=new SqlFieldInstance(sql_fields[0], ((AbstractDecentralizedID)getValue(_instance)).getBytes());
-	else
-	    res[0]=new SqlFieldInstance(sql_fields[0], getBigDecimal(((AbstractDecentralizedID)getValue(_instance)).getBytes()));
-	return res;
+	SqlFieldInstance res[]=new SqlFieldInstance[2];
+	DecentralizedIDGenerator did=(DecentralizedIDGenerator)getValue(_instance);
+	res[0]=new SqlFieldInstance(sql_fields[0], new Long(did.getTimeStamp()));
+	res[1]=new SqlFieldInstance(sql_fields[1], new Long(did.getWorkerIDAndSequence()));
+	return res;	
     }
 
     @Override
     public boolean isAlwaysNotNull()
     {
-	return false;
+	return true;
     }
     @Override
     public boolean isComparable()
@@ -265,24 +201,15 @@ public class DencetralizedIDFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    byte[] res=null;
-	    if (isVarBinary)
-	    {
-		res=_result_set.getBytes(sql_fields[0].short_field);
-	    }
-	    else
-	    {
-		res=getBytes(_result_set.getBigDecimal(sql_fields[0].short_field));
-	    }
-	    if (res==null && isNotNull())
-		throw new DatabaseIntegrityException("Unexpected exception.");
-	    field.set(_class_instance, res==null?null:AbstractDecentralizedID.instanceOf(res));
+	    long ts=_result_set.getLong(sql_fields[0].short_field);
+	    long wsseq=_result_set.getLong(sql_fields[1].short_field);
+	    
+	    field.set(_class_instance, DatabaseWrapperAccessor.getDecentralizedIDGeneratorInstance(ts, wsseq));
 	}
 	catch(Exception e)
 	{
 	    throw DatabaseException.getDatabaseException(e);
 	}
-	
     }
 
     @Override
@@ -303,42 +230,9 @@ public class DencetralizedIDFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    byte[] b=null;
-	    if (o!=null)
-	    {
-		b=((AbstractDecentralizedID)o).getBytes();
-	    }
-	    if (isVarBinary)
-		_prepared_statement.setBytes(_field_start, b);
-	    else
-	    {
-		_prepared_statement.setBigDecimal(_field_start, getBigDecimal(b));
-	    }
-	}
-	catch(Exception e)
-	{
-	    throw DatabaseException.getDatabaseException(e);
-	}
-    }
-    
-    @Override
-    public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set) throws DatabaseException
-    {
-	setValue(_class_instance, _field_instance);
-	try
-	{
-	    Object o=field.get(_class_instance);
-	    byte[] b=null;
-	    if (o!=null)
-	    {
-		b=((AbstractDecentralizedID)o).getBytes();
-	    }
-	    if (isVarBinary)
-		_result_set.updateBytes(sql_fields[0].short_field, b);
-	    else
-	    {
-		_result_set.updateBigDecimal(sql_fields[0].short_field, getBigDecimal(b));
-	    }
+	    DecentralizedIDGenerator did=(DecentralizedIDGenerator)o;
+	    _prepared_statement.setObject(_field_start, new Long(did.getTimeStamp()));
+	    _prepared_statement.setObject(++_field_start, new Long(did.getWorkerIDAndSequence()));
 	}
 	catch(Exception e)
 	{
@@ -348,22 +242,29 @@ public class DencetralizedIDFieldAccessor extends FieldAccessor
     }
     
     @Override
+    public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set) throws DatabaseException
+    {
+	setValue(_class_instance, _field_instance);
+	try
+	{
+	    DecentralizedIDGenerator did=(DecentralizedIDGenerator)field.get(_class_instance);
+	    _result_set.updateObject(sql_fields[0].short_field, new Long(did.getTimeStamp()));
+	    _result_set.updateObject(sql_fields[1].short_field, new Long(did.getWorkerIDAndSequence()));
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+    
+    @Override
     protected void updateResultSetValue(Object _class_instance, ResultSet _result_set, SqlFieldTranslation _sft) throws DatabaseException
     {
 	try
 	{
-	    Object o=field.get(_class_instance);
-	    byte[] b=null;
-	    if (o!=null)
-	    {
-		b=((AbstractDecentralizedID)o).getBytes();
-	    }
-	    if (isVarBinary)
-		_result_set.updateBytes(_sft.translateField(sql_fields[0]), b);
-	    else
-	    {
-		_result_set.updateBigDecimal(sql_fields[0].short_field, getBigDecimal(b));
-	    }
+	    DecentralizedIDGenerator did=(DecentralizedIDGenerator)field.get(_class_instance);
+	    _result_set.updateObject(_sft.translateField(sql_fields[0]), new Long(did.getTimeStamp()));
+	    _result_set.updateObject(_sft.translateField(sql_fields[1]), new Long(did.getWorkerIDAndSequence()));
 	}
 	catch(Exception e)
 	{
@@ -395,24 +296,65 @@ public class DencetralizedIDFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    if (field.getType()==AbstractDecentralizedID.class || field.getType()==AbstractDecentralizedIDGenerator.class || field.getType()==DecentralizedIDGenerator.class)
-	    {
-		return new DecentralizedIDGenerator();
-	    }
-	    else if (field.getType()==RenforcedDecentralizedIDGenerator.class)
-	    {
-		return new RenforcedDecentralizedIDGenerator();
-	    }
-	    else if (field.getType()==SecuredDecentralizedID.class)
-	    {
-		return new SecuredDecentralizedID(new DecentralizedIDGenerator(), SecureRandomType.DEFAULT.getInstance());
-	    }
-	    throw new DatabaseException("Unexpected exception !");
+	    return new DecentralizedIDGenerator();
 	}
 	catch(Exception e)
 	{
 	    throw DatabaseException.getDatabaseException(e);
 	}
     }
+    
+    @Override
+    public void serialize(ObjectOutputStream _oos, Object _class_instance) throws DatabaseException
+    {
+	try
+	{
+	    DecentralizedIDGenerator a=(DecentralizedIDGenerator)getValue(_class_instance);
+	    if (a==null)
+		throw new FieldDatabaseException("The given _field_instance, used to store the field "+field.getName()+" (type="+field.getType().getName()+", declaring_class="+field.getDeclaringClass().getName()+") into the DatabaseField class "+field.getDeclaringClass().getName()+", is null and should not be.");
+	    
+	    _oos.writeLong(a.getTimeStamp());
+	    _oos.writeLong(a.getWorkerIDAndSequence());
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+
+
+
+    @Override
+    public void unserialize(ObjectInputStream _ois, HashMap<String, Object> _map) throws DatabaseException
+    {
+	try
+	{
+	    long ts=_ois.readLong();
+	    long wsseq=_ois.readLong();
+	    _map.put(getFieldName(), DatabaseWrapperAccessor.getDecentralizedIDGeneratorInstance(ts, wsseq));
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+    @Override
+    public Object unserialize(ObjectInputStream _ois, Object _classInstance) throws DatabaseException
+    {
+	try
+	{
+	    long ts=_ois.readLong();
+	    long wsseq=_ois.readLong();
+
+	    DecentralizedIDGenerator a=DatabaseWrapperAccessor.getDecentralizedIDGeneratorInstance(ts, wsseq);
+	    setValue(_classInstance, a);
+	    return a;
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }    
+    
 
 }

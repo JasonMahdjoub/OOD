@@ -39,12 +39,15 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database.fieldaccessors;
 
 import java.io.ByteArrayInputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Field;
 import java.sql.Blob;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Random;
 
 import com.distrimind.ood.database.DatabaseRecord;
@@ -70,7 +73,7 @@ public class ByteTabFieldAccessor extends FieldAccessor
     {
 	super(_sql_connection, _field, parentFieldName, compatible_classes, table_class);
 	sql_fields=new SqlField[1];
-	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), (limit==0)?(sql_connection.isVarBinarySupported()?"VARBINARY("+16777216+")":"BLOB"):((limit>4096 || !sql_connection.isVarBinarySupported())?("BLOB("+limit+")"):("VARBINARY("+limit+")")), null, null);
+	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), (limit==0)?(DatabaseWrapperAccessor.isVarBinarySupported(sql_connection)?"VARBINARY("+16777216+")":"BLOB"):((limit>4096 || !DatabaseWrapperAccessor.isVarBinarySupported(sql_connection))?("BLOB("+limit+")"):("VARBINARY("+limit+")")), null, null);
 	isVarBinary=sql_fields[0].type.startsWith("VARBINARY");
     }
 
@@ -273,7 +276,7 @@ public class ByteTabFieldAccessor extends FieldAccessor
 		_prepared_statement.setBytes(_field_start, (byte[])o);
 	    else
 	    {
-		Blob blob=sql_connection.getBlob((byte[])o);
+		Blob blob=DatabaseWrapperAccessor.getBlob(sql_connection, (byte[])o);
 		if (blob==null && o!=null)
 		    _prepared_statement.setBinaryStream(_field_start, new ByteArrayInputStream((byte[])o));
 		else
@@ -298,7 +301,7 @@ public class ByteTabFieldAccessor extends FieldAccessor
 	    else
 	    {
 		byte[] b=(byte[])field.get(_class_instance);
-		Blob blob=sql_connection.getBlob(b);
+		Blob blob=DatabaseWrapperAccessor.getBlob(sql_connection, b);
 		if (blob==null && b!=null)
 		    _result_set.updateBinaryStream(sql_fields[0].short_field, new ByteArrayInputStream(b));
 		else
@@ -322,7 +325,7 @@ public class ByteTabFieldAccessor extends FieldAccessor
 	    else
 	    {
 		byte[] b=(byte[])field.get(_class_instance);
-		Blob blob=sql_connection.getBlob(b);
+		Blob blob=DatabaseWrapperAccessor.getBlob(sql_connection, b);
 		if (blob==null && b!=null)
 		    _result_set.updateBinaryStream(_sft.translateField(sql_fields[0]), new ByteArrayInputStream(b));
 		else
@@ -372,4 +375,85 @@ public class ByteTabFieldAccessor extends FieldAccessor
     {
 	return Integer.MAX_VALUE;
     }
+    
+    @Override
+    public void serialize(ObjectOutputStream _oos, Object _class_instance) throws DatabaseException
+    {
+	try
+	{
+	    byte[] b=(byte[])getValue(_class_instance);
+	    if (b!=null)
+	    {
+		_oos.writeInt(b.length);
+		_oos.write(b);
+	    }
+	    else
+	    {
+		_oos.writeInt(-1);
+	    }
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+
+
+
+    @Override
+    public void unserialize(ObjectInputStream _ois, HashMap<String, Object> _map) throws DatabaseException
+    {
+	try
+	{
+	    int size=_ois.readInt();
+	    if (size>-1)
+	    {
+		byte[] b=new byte[size];
+		int os=_ois.read(b);
+		if (os!=size)
+		    throw new DatabaseException("read bytes insuficiant (expected size="+size+", obtained size="+os+")");
+		_map.put(getFieldName(), b);
+	    }
+	    else if (isNotNull())
+		throw new DatabaseException("field should not be null");
+	    else
+		_map.put(getFieldName(), null);	
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+
+    @Override
+    public Object unserialize(ObjectInputStream _ois, Object _classInstance) throws DatabaseException
+    {
+	try
+	{
+	    int size=_ois.readInt();
+	    if (size>-1)
+	    {
+		byte[] b=new byte[size];
+		int os=_ois.read(b);
+		if (os!=size)
+		    throw new DatabaseException("read bytes insuficiant (expected size="+size+", obtained size="+os+")");
+		setValue(_classInstance, b);
+		return b;
+		
+	    }
+	    else if (isNotNull())
+		throw new DatabaseException("field should not be null");
+	    else
+	    {
+		setValue(_classInstance, null);
+		return null;
+		
+	    }
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }    
+    
 }

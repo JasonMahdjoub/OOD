@@ -38,12 +38,15 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database.fieldaccessors;
 
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Field;
 import java.sql.Clob;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
@@ -68,7 +71,7 @@ public class StringFieldAccessor extends FieldAccessor
     {
 	super(_sql_connection, _field, parentFieldName, compatible_classes, table_class);
 	sql_fields=new SqlField[1];
-	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), limit==0?"VARCHAR("+sql_connection.getVarCharLimit()+")":(limit<sql_connection.getVarCharLimit()?"VARCHAR("+limit+")":"CLOB("+limit+")"), null, null);
+	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), limit==0?"VARCHAR("+DatabaseWrapperAccessor.getVarCharLimit(sql_connection)+")":(limit<DatabaseWrapperAccessor.getVarCharLimit(sql_connection)?"VARCHAR("+limit+")":"CLOB("+limit+")"), null, null);
     }
 
     @Override
@@ -282,4 +285,85 @@ public class StringFieldAccessor extends FieldAccessor
     {
 	return true;
     }
+    
+    @Override
+    public void serialize(ObjectOutputStream _oos, Object _class_instance) throws DatabaseException
+    {
+	try
+	{
+	    String s=(String)getValue(_class_instance);
+	    if (s!=null)
+	    {
+		_oos.writeInt(s.length());
+		_oos.writeChars(s);
+	    }
+	    else
+		_oos.writeInt(-1);
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+
+
+
+    @Override
+    public void unserialize(ObjectInputStream _ois, HashMap<String, Object> _map) throws DatabaseException
+    {
+	try
+	{
+	    int size=_ois.readInt();
+	    if (size>-1)
+	    {
+		char[] b=new char[size];
+		int index=0;
+		while (size-->0)
+		    b[index++]=_ois.readChar();
+		_map.put(getFieldName(), String.valueOf(b));
+	    }
+	    else if (isNotNull())
+		throw new DatabaseException("field should not be null");
+	    else
+		_map.put(getFieldName(), null);
+	    
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
+
+    @Override
+    public Object unserialize(ObjectInputStream _ois, Object _classInstance) throws DatabaseException
+    {
+	try
+	{
+	    int size=_ois.readInt();
+	    if (size>-1)
+	    {
+		char[] b=new char[size];
+		int index=0;
+		while (size-->0)
+		    b[index++]=_ois.readChar();
+		String s=String.valueOf(b);
+		setValue(_classInstance, s);
+		return s;
+	    }
+	    else if (isNotNull())
+		throw new DatabaseException("field should not be null");
+	    else
+	    {
+		setValue(_classInstance, null);
+		return null;
+
+	    }
+	    
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }    
+    
 }

@@ -50,7 +50,8 @@ import java.lang.annotation.Target;
  * The accepted field types are all native java types, there correspondent class (i.e. 'Float' for 'float'), array of bytes, String, BigInteger, BigDecimal, and DatabaseRecord for foreign keys.
  * 
  * @author Jason Mahdjoub
- * @version 1.1
+ * @version 1.2
+ * @Since OOD 1.0
  */
 @Target({ElementType.FIELD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
@@ -61,5 +62,18 @@ public @interface Field {
      * @return The value limit in elements. This parameter concerns only the String type, the native byte array type, and the Object array type.
      */
     long limit() default 0;
-
+    
+    /**
+     * 
+     * @return true if the field has to be indexed into the database in order to increase the database parse when this field is concerned.
+     */
+    boolean index() default false;
+    
+    /**
+     * If true, use descending order for the column to create the index. Else, use ascending order. 
+     * Using the descending order for a column can help improve the performance of queries that require the results in mixed sort order or descending order and for queries that select the minimum or maximum value of an indexed column.
+     * @return
+     */
+    boolean descendingIndex() default false;
+    
 }
