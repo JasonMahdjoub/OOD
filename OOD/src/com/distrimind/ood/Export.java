@@ -42,7 +42,7 @@ import java.util.ArrayList;
 
 import javax.lang.model.SourceVersion;
 
-import com.distrimind.ood.tests.HSQLDBTestDatabase;
+import com.distrimind.ood.tests.TestDatabase;
 import com.distrimind.util.EmptyClass;
 import com.distrimind.util.Utils;
 import com.distrimind.util.export.BinaryDependency;
@@ -129,7 +129,7 @@ class Export
 	
 	licenses=new License[1];
 	licenses[0]=OOD.LICENSE;
-	String regex_exlude=Dependency.mixRegexes(Dependency.getRegexMatchClass(Export.class),Dependency.getRegexMatchPackage(HSQLDBTestDatabase.class.getPackage()));
+	String regex_exlude=Dependency.mixRegexes(Dependency.getRegexMatchClass(Export.class),Dependency.getRegexMatchPackage(TestDatabase.class.getPackage()));
 	JavaProjectSource javaProjectSource=new JavaProjectSource(root_dir, src_dir, root_package, licenses, 
 		"com/distrimind/ood/build.txt", 
 		null, "OOD is an Object Oriented Data which aims to manage database only with Java language without using SQL querries", 
@@ -166,8 +166,8 @@ class Export
 		EmptyClass.class.getPackage(), 
 		licenses, new File("/home/jason/git_projects/Utils/exports/Utils-Tests-"+UtilsVersion+"_withDependencies.jar"), null, Dependency.getRegexMatchPackage(EmptyClass.class.getPackage())));
 	
-	javaProjectSource.setTestSuiteSource(root_dir, srctests_dir, HSQLDBTestDatabase.class.getPackage(), 
-		dependencies, null, new TestSuite(new TestNGFile(EmptyClass.class.getPackage(), "AllTestsNG.xml"), new TestNGFile(HSQLDBTestDatabase.class.getPackage(), "AllTestsNG.xml")));
+	javaProjectSource.setTestSuiteSource(root_dir, srctests_dir, TestDatabase.class.getPackage(), 
+		dependencies, null, new TestSuite(new TestNGFile(EmptyClass.class.getPackage(), "AllTestsNG.xml"), new TestNGFile(TestDatabase.class.getPackage(), "AllTestsNG.xml")));
 	
 	javaProjectSource.setGitHUBLink(new URL("https://github.com/JazZ51/OOD.git"));
 	

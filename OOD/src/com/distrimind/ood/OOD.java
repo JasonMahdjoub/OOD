@@ -82,6 +82,7 @@ public class OOD
 	    d.addItem("Add indexation field possibility (see annotation Field).");
 	    d.addItem("Updating to Utils 2.6.1.");
 	    d.addItem("Support indexation (see annotation @Field).");
+	    d.addItem("Downgrading to Derby 10.11.1.1 (JDK 7 Compatible).");
 
 	    c=Calendar.getInstance();
 	    c.set(2017, 2, 7);

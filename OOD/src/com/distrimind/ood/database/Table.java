@@ -1157,7 +1157,8 @@ public abstract class Table<T extends DatabaseRecord>
 		    {
 			if (fa.getFieldName().equals(key))
 			{
-			    fa.getValue(st, index++, fields.get(key));
+			    fa.getValue(st, index, fields.get(key));
+			    index+=fa.getDeclaredSqlFields().length;
 			    break;
 			}
 		    }
@@ -1569,7 +1570,7 @@ public abstract class Table<T extends DatabaseRecord>
      */
     public final ArrayList<T> getOrderedRecords(final Filter<T> _filter, String whereCondition, Object[] parameters, boolean _ascendant, String..._fields) throws DatabaseException
     {
-	return getOrderedRecords(_filter, whereCondition, convertToMap(parameters), _ascendant, _fields);
+	return getOrderedRecords(_filter, whereCondition, whereCondition==null?new HashMap<String, Object>():convertToMap(parameters), _ascendant, _fields);
     }
     /**
      * Returns the records of this table, corresponding to a given filter, and ordered according the given fields, in an ascendant way or in a descendant way. 
@@ -2138,7 +2139,7 @@ public abstract class Table<T extends DatabaseRecord>
 	    {
 		return true;
 	    }
-	}, whereCondition, convertToMap(parameters));
+	}, whereCondition, whereCondition==null?new HashMap<String, Object>():convertToMap(parameters));
     }
 
     
@@ -2153,7 +2154,7 @@ public abstract class Table<T extends DatabaseRecord>
      */
     public final ArrayList<T> getRecords(final Filter<T> _filter, String whereCondition, Object...parameters) throws DatabaseException
     {
-	return getRecords(_filter, whereCondition, convertToMap(parameters));
+	return getRecords(_filter, whereCondition, whereCondition==null?new HashMap<String, Object>():convertToMap(parameters));
     }
 	
     /**
@@ -3374,7 +3375,7 @@ public abstract class Table<T extends DatabaseRecord>
 	    {
 		return true;
 	    }
-	}, whereCommand, convertToMap(parameters));
+	}, whereCommand, whereCommand==null?new HashMap<String, Object>():convertToMap(parameters));
     }
     
     /**
@@ -3390,7 +3391,7 @@ public abstract class Table<T extends DatabaseRecord>
      */
     public final long removeRecords(final Filter<T> _filter, String whereCommand, Object ... parameters) throws DatabaseException
     {
-	return removeRecords(_filter, whereCommand, convertToMap(parameters));
+	return removeRecords(_filter, whereCommand, whereCommand==null?new HashMap<String, Object>():convertToMap(parameters));
     }
 
     
@@ -5911,7 +5912,7 @@ public abstract class Table<T extends DatabaseRecord>
      */
     public final void updateRecords(final AlterRecordFilter<T> _filter, String whereCommand, Object ... parameters) throws DatabaseException
     {
-	updateRecords(_filter, whereCommand, convertToMap(parameters));
+	updateRecords(_filter, whereCommand, whereCommand==null?new HashMap<String, Object>():convertToMap(parameters));
     }
     
     private Map<String, Object> convertToMap(Object ...parameters)

@@ -145,7 +145,8 @@ import com.distrimind.util.RenforcedDecentralizedIDGenerator;
 	    start_value=_field.getAnnotation(AutoPrimaryKey.class).startValue();
 	    bits_number=-1;
 	    limit=-1;
-	} else if (random_primary_key)
+	} 
+	else if (random_primary_key)
 	{
 	    start_value=-1;
 	    int nb=_field.getAnnotation(RandomPrimaryKey.class).byteNumber();
