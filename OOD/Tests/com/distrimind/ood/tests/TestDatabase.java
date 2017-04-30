@@ -37,20 +37,28 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.tests;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import com.distrimind.ood.database.AlterRecordFilter;
@@ -67,6 +75,8 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
 import com.distrimind.ood.database.exceptions.RecordNotFoundDatabaseException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
+import com.distrimind.ood.interpreter.Interpreter;
+import com.distrimind.ood.interpreter.SymbolType;
 import com.distrimind.ood.tests.database.SubField;
 import com.distrimind.ood.tests.database.SubSubField;
 import com.distrimind.ood.tests.database.Table1;
@@ -78,6 +88,7 @@ import com.distrimind.ood.tests.database.Table6;
 import com.distrimind.ood.tests.database.Table7;
 import com.distrimind.ood.tests.database.Table1.Record;
 import com.distrimind.ood.tests.schooldatabase.Lecture;
+import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.DecentralizedIDGenerator;
 import com.distrimind.util.RenforcedDecentralizedIDGenerator;
 import com.distrimind.util.SecuredDecentralizedID;
@@ -3044,9 +3055,224 @@ public abstract class TestDatabase
 	
     }
     
+    private ArrayList<Object> getExpectedParameter(Object o) throws IOException
+    {
+	ArrayList<Object> res=new ArrayList<>();
+	if (o==null)
+	{
+	    res.add(null);
+	    return res;
+	}
+	if (o.getClass()==DecentralizedIDGenerator.class)
+	{
+	    DecentralizedIDGenerator id=(DecentralizedIDGenerator)o;
+	    res.add(new Long(id.getTimeStamp()));
+	    res.add(new Long(id.getWorkerIDAndSequence()));
+	}
+	else if (o.getClass()==RenforcedDecentralizedIDGenerator.class)
+	{
+	    RenforcedDecentralizedIDGenerator id=(RenforcedDecentralizedIDGenerator)o;
+	    res.add(new Long(id.getTimeStamp()));
+	    res.add(new Long(id.getWorkerIDAndSequence()));
+	}
+	else if (o instanceof AbstractDecentralizedID)
+	{
+	    AbstractDecentralizedID id=(AbstractDecentralizedID)o;
+	    res.add(id.getBytes());
+	}
+	else if (o.getClass()==int.class 
+		|| o.getClass()==byte.class
+		|| o.getClass()==char.class
+		|| o.getClass()==boolean.class
+		|| o.getClass()==short.class
+		|| o.getClass()==long.class
+		|| o.getClass()==float.class
+		|| o.getClass()==double.class
+		|| o.getClass()==Integer.class
+		|| o.getClass()==Byte.class
+		|| o.getClass()==Character.class
+		|| o.getClass()==Boolean.class
+		|| o.getClass()==Short.class
+		|| o.getClass()==Long.class
+		|| o.getClass()==Float.class
+		|| o.getClass()==Double.class
+		|| o.getClass()==byte[].class
+		|| o.getClass()==String.class
+		)
+	{
+	    res.add(o);
+	    
+	}
+	else if (o.getClass()==BigInteger.class
+		|| o.getClass()==BigDecimal.class)
+	{
+	    res.add(o.toString());
+	}
+	else if (o instanceof Date)
+	{
+	    res.add(new Timestamp(((Date)o).getTime()));
+	}
+	else if (o instanceof Serializable)
+	{
+		try(ByteArrayOutputStream baos=new ByteArrayOutputStream())
+		{
+		    try(ObjectOutputStream os=new ObjectOutputStream(baos))
+		    {
+			os.writeObject(o);
+		
+			res.add(new ByteArrayInputStream(baos.toByteArray()));
+		    }
+		}    
+	    
+	}
+	return res;
+    }
+    private ArrayList<String> getExpectedParametersName(String variableName, Class<?> objectClass) 
+    {
+	ArrayList<String> res=new ArrayList<>();
+
+	if (objectClass==DecentralizedIDGenerator.class)
+	{
+	    res.add(variableName+"_ts");
+	    res.add(variableName+"_widseq");
+	}
+	else if (objectClass==RenforcedDecentralizedIDGenerator.class)
+	{
+	    res.add(variableName+"_ts");
+	    res.add(variableName+"_widseq");
+	}
+	else 
+	{
+	    res.add(variableName);
+	    
+	}
+	
+	return res;
+    }
+    
+    
+    
+    @DataProvider(name = "interpreterCommandsProvider", parallel = true)
+    public Object[][] interpreterCommandsProvider() throws IOException, NoSuchAlgorithmException, NoSuchProviderException
+    {
+	HashMap<String, Object> parametersTable1Equallable=new HashMap<>();
+	
+	AbstractSecureRandom rand=SecureRandomType.DEFAULT.getInstance();
+	ArrayList<Object[]> res=new ArrayList<>();
+	parametersTable1Equallable.put("pk5", new SecuredDecentralizedID(new DecentralizedIDGenerator(), rand));
+	parametersTable1Equallable.put("pk6", new DecentralizedIDGenerator());
+	parametersTable1Equallable.put("pk7", new RenforcedDecentralizedIDGenerator());
+	parametersTable1Equallable.put("int_value", new Integer(1));
+	parametersTable1Equallable.put("byte_value", new Byte((byte)1));
+	parametersTable1Equallable.put("char_value", new Character('a'));
+	parametersTable1Equallable.put("boolean_value", new Boolean(true));
+	parametersTable1Equallable.put("short_value", new Short((short)1));
+	parametersTable1Equallable.put("long_value", new Long(1));
+	parametersTable1Equallable.put("float_value", new Float(1.0f));
+	parametersTable1Equallable.put("double_value", new Double(1.0));
+	parametersTable1Equallable.put("string_value", "string");
+	
+	parametersTable1Equallable.put("IntegerNumber_value", new Integer(1));
+	parametersTable1Equallable.put("ByteNumber_value", new Byte((byte)1));
+	parametersTable1Equallable.put("CharacterNumber_value", new Character('a'));
+	parametersTable1Equallable.put("BooleanNumber_value", new Boolean(true));
+	parametersTable1Equallable.put("ShortNumber_value", new Short((short)1));
+	parametersTable1Equallable.put("LongNumber_value", new Long(1));
+	parametersTable1Equallable.put("FloatNumber_value", new Float(1.0f));
+	parametersTable1Equallable.put("DoubleNumber_value", new Double(1.0));
+	
+	Date date=new Date(1322423234l);
+	Calendar calendar=Calendar.getInstance(Locale.CANADA);
+	calendar.setTime(date);
+	
+	parametersTable1Equallable.put("byte_array_value", new byte[]{(byte)0, (byte)1});
+	parametersTable1Equallable.put("BigInteger_value", BigInteger.valueOf(3));
+	parametersTable1Equallable.put("BigDecimal_value", BigDecimal.valueOf(4));
+	parametersTable1Equallable.put("DateValue", date);
+	parametersTable1Equallable.put("CalendarValue", calendar);
+	
+	SymbolType []ops_cond=new SymbolType[]{SymbolType.AND_CONDITION, SymbolType.OR_CONDITION};
+	SymbolType []ops_comp=new SymbolType[]{SymbolType.EQUAL_OPERATOR, SymbolType.NOT_EQUAL_OPERATOR};
+	for (SymbolType op_cond : ops_cond)
+	{
+	    for (SymbolType op_comp : ops_comp)
+	    {
+		StringBuffer command=new StringBuffer();
+		StringBuffer expectedCommand=new StringBuffer();
+	    
+		HashMap<Integer, Object> expectedParameters=new HashMap<>();
+		int expectedParamterIndex=1;
+		for (Map.Entry<String, Object> m : parametersTable1Equallable.entrySet())
+		{
+		    if (command.length()>0)
+		    {
+			command.append(" ");
+			command.append(op_cond.getContent());
+			command.append(" ");
+			
+			expectedCommand.append(" ");
+			expectedCommand.append(op_cond.getContent());
+			expectedCommand.append(" ");
+		    }
+		    command.append(m.getKey());
+		    command.append(op_comp.getContent());
+		    command.append("%");
+		    command.append(m.getKey());
+		    
+		    
+		    ArrayList<Object> sqlInstance=getExpectedParameter(m.getValue());
+		    ArrayList<String> sqlVariablesName=getExpectedParametersName(m.getKey(), m.getValue().getClass());
+		    expectedCommand.append("(");
+		    for (int i=0;i<sqlInstance.size();i++)
+		    {
+			if (i>0)
+			    expectedCommand.append(" AND ");
+			expectedCommand.append(Table.getName(Table1.class));
+			expectedCommand.append(".");
+			expectedCommand.append(sqlVariablesName.get(i));
+			expectedCommand.append(op_comp.getContent());
+			expectedCommand.append("?");
+			expectedParameters.put(new Integer(expectedParamterIndex++), sqlInstance.get(i));
+		    }
+		    expectedCommand.append(")");
+		}
+		res.add(new Object[]{table1, command, parametersTable1Equallable, expectedCommand, expectedParameters});
+	    }
+	}
+	Object [][]resO=new Object[res.size()][];
+	for (int i=0;i<res.size();i++)
+	{
+	    resO[i]=res.get(i);
+	}
+	return resO;
+    }
+    
+    @DataProvider(name = "interpreterCommandsVerifProvider", parallel = true)
+    public Object[][] interpreterCommandsVerifProvider()
+    {
+	//TODO complete
+	return null;
+    }
+
+    @Test(dependsOnMethods={"setAutoRandomFields"}, dataProvider = "interpreterCommandsProvider") public <T extends DatabaseRecord> void testIsConcernedInterpreterFunction(Table<T> table, T record, String command, Map<String, Object> parameters, boolean expectedBoolean) throws DatabaseException
+    {
+	boolean bool=Interpreter.getRuleInstance(command).isConcernedBy(table, parameters, record);
+	Assert.assertEquals(bool, expectedBoolean);
+    }
+    
+    
+    @Test(dependsOnMethods={"testIsConcernedInterpreterFunction"}, dataProvider = "interpreterCommandsVerifProvider") public void testCommandTranslatorInterpreter(Table<?> table, String command, Map<String, Object> parameters, String expectedSqlCommand, Map<Integer, Object> expectedSqlParameters) throws DatabaseException
+    {
+	HashMap<Integer, Object> sqlParameters=new HashMap<>();
+	String sqlCommand=Interpreter.getRuleInstance(command).translateToSqlQuery(table, parameters, sqlParameters).toString();
+	Assert.assertEquals(sqlCommand, expectedSqlCommand);
+	Assert.assertEquals(sqlParameters, expectedSqlParameters);
+    }
+    
+    
     private static AtomicInteger next_unique=new AtomicInteger(0);
     private static AtomicInteger number_thread_test=new AtomicInteger(0);
-    @Test(dependsOnMethods={"setAutoRandomFields"}) public void prepareMultipleTest() throws DatabaseException
+    @Test(dependsOnMethods={"testCommandTranslatorInterpreter"}) public void prepareMultipleTest() throws DatabaseException
     {
 	
 	HashMap<String, Object> map=new HashMap<String, Object>();
@@ -4845,6 +5071,11 @@ public abstract class TestDatabase
 	    }
 	}
     }
+    
+    
+    
+    
+    
 }
 
 

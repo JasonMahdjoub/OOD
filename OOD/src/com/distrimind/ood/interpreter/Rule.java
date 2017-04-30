@@ -51,7 +51,7 @@ public enum Rule
     OP_ADD("^(<"+SymbolType.ADD_OPERATOR.name()+ ">|<"+SymbolType.ADD_OPERATOR.name()+">)$"),
     FACTEUR("^(<"+TERME.name()+ ">|<"+TERME.name()+ "><"+OP_MUL.name()+ "><FACTEUR>)$"),
     EXPRESSION("^(<"+FACTEUR.name()+">|<"+FACTEUR.name()+"><"+OP_ADD.name()+ "><EXPRESSION>)$"),
-    OP_COMP("^(<"+SymbolType.EQUAL_OPERATOR.name()+ ">|<"+SymbolType.LOWER_OPERATOR.name()+ ">|<"+SymbolType.LOWER_OR_EQUAL_OPERATOR.name()+ ">|<"+SymbolType.GREATER_OPERATOR.name()+">|<"+SymbolType.GREATER_OR_EQUAL_OPERATOR.name()+">)$"),
+    OP_COMP("^(<"+SymbolType.EQUAL_OPERATOR.name()+">|<"+SymbolType.NOT_EQUAL_OPERATOR.name()+ ">|<"+SymbolType.LOWER_OPERATOR.name()+ ">|<"+SymbolType.LOWER_OR_EQUAL_OPERATOR.name()+ ">|<"+SymbolType.GREATER_OPERATOR.name()+">|<"+SymbolType.GREATER_OR_EQUAL_OPERATOR.name()+">)$"),
     COMPARE("^(<"+EXPRESSION.name()+"><"+OP_COMP.name()+"><"+EXPRESSION.name()+">|\\(<QUERY>\\))$)"),
     OP_CONDITION("^(<"+SymbolType.AND_CONDITION.name()+">|<"+SymbolType.OR_CONDITION.name()+">)$"),
     QUERY("^(<"+COMPARE.name()+">|<"+COMPARE.name()+"><"+OP_CONDITION.name()+"><QUERY>)$");

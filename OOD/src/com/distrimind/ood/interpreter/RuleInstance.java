@@ -436,6 +436,10 @@ public class RuleInstance implements QueryPart
 			{
 			    return equals(table, record, ri1.getEquallable(table, parameters, record), ri3.getEquallable(table, parameters, record));
 			}
+			else if (comp.getType()==SymbolType.NOT_EQUAL_OPERATOR)
+			{
+			    return !equals(table, record, ri1.getEquallable(table, parameters, record), ri3.getEquallable(table, parameters, record));
+			}
 			else
 			{
 			    int c=compareTo(table, record, ri1.getComparable(table, parameters, record), ri3.getComparable(table, parameters, record));
@@ -520,16 +524,16 @@ public class RuleInstance implements QueryPart
 			RuleInstance ri3=(RuleInstance)parts.get(2);
 			Symbol comp=(Symbol)ri2.parts.get(0);
 			
-			if (comp.getType()==SymbolType.EQUAL_OPERATOR)
+			if (comp.getType()==SymbolType.EQUAL_OPERATOR || comp.getType()==SymbolType.NOT_EQUAL_OPERATOR)
 			{
 			    if (!ri1.isEqualable(table, parameters, ri3))
 			    {
 				throw new DatabaseSyntaxException("Cannot compare "+ri1.getContent()+" and "+ri3.getContent());
 			    }
-			    if (ri1.isMultiType(table, parameters))
+			    //if (ri1.isMultiType(table, parameters))
 			    {
 				Symbol s1=((Symbol)((RuleInstance)((RuleInstance)((RuleInstance)ri1.parts.get(0)).parts.get(0)).parts.get(0)).parts.get(0));
-				Symbol s2=((Symbol)((RuleInstance)((RuleInstance)((RuleInstance)ri1.parts.get(0)).parts.get(0)).parts.get(0)).parts.get(0));
+				Symbol s2=((Symbol)((RuleInstance)((RuleInstance)((RuleInstance)ri3.parts.get(0)).parts.get(0)).parts.get(0)).parts.get(0));
 				if (s1.getType()==SymbolType.PARAMETER && s2.getType()==SymbolType.PARAMETER)
 				    throw new DatabaseSyntaxException("Cannot do comparison between two paramters");
 				FieldAccessor fa1=null, fa2=null;
@@ -578,7 +582,7 @@ public class RuleInstance implements QueryPart
 				    parameter1=null;
 				}
 				int fieldsNumber=0;
-				StringBuffer res=new StringBuffer("");
+				StringBuffer res=new StringBuffer("(");
 				SqlField sfs[]=fa1.getDeclaredSqlFields();
 				SqlFieldInstance sfis[]=null;
 				try
@@ -611,7 +615,7 @@ public class RuleInstance implements QueryPart
 					    if (sfi.field==sf.field)
 					    {
 						int id=currentParameterID.getAndIncrement();
-						res.append("%"+id);
+						res.append("?");
 						outputParameters.put(new Integer(id), sfi.instance);
 						found=true;
 						break;
@@ -630,6 +634,7 @@ public class RuleInstance implements QueryPart
 					res.append(sfs2[fieldsNumber-1].field);
 				    }
 				}
+				res.append(")");
 				return res;
 				
 			    }
@@ -726,7 +731,7 @@ public class RuleInstance implements QueryPart
 			    throw new DatabaseSyntaxException("Cannot find parameter "+s.getSymbol());
 			int id=currentParameterID.getAndIncrement();
 			outputParameters.put(new Integer(id), parameter1);
-			return new StringBuffer("%"+id);
+			return new StringBuffer("?");
 		    }
 		    else
 			return new StringBuffer(s.getSymbol());

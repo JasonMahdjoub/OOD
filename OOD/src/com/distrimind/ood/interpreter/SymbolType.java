@@ -50,7 +50,8 @@ public enum SymbolType
     MUL_OPETATOR(true,"^\\*$", "*"),
     DIV_OPERATOR(true,"^/$", "/"),
     LOWER_OPERATOR(true,"^<$", "<"),
-    EQUAL_OPERATOR(true,"^=$", "="),
+    EQUAL_OPERATOR(true,"^(=){1,2}$", "="),
+    NOT_EQUAL_OPERATOR(true,"^(!=|<>)$", "<>"),
     GREATER_OPERATOR(true,"^>$", ">"),
     LOWER_OR_EQUAL_OPERATOR(true,"^<=$", "<="),
     GREATER_OR_EQUAL_OPERATOR(true,"^>=$", ">="),
@@ -60,7 +61,7 @@ public enum SymbolType
     OR_CONDITION(false,"^[Oo][Rr]$", "OR"),
     IDENTIFIER(false,"^[a-zA-Z][a-zA-Z0-9\\.]*+$", null),
     NUMBER(true,"^[0-9]+$", null),
-    PARAMETER(true,"\\(%|:)[0-9a-zA-Z\\-_]+$", null);
+    PARAMETER(true,"\\(%|:)[a-zA-Z\\-_][0-9a-zA-Z\\-_]+$", null);
     
     
     private final Pattern pattern;
