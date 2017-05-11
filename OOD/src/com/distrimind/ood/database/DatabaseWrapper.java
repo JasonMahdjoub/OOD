@@ -64,6 +64,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.distrimind.ood.database.Table.ColumnsReadQuerry;
@@ -252,6 +253,7 @@ public abstract class DatabaseWrapper
 	
     }
     
+    
     /**
      * Gets the interface that enable database synchronization between different peers
      * @return the interface that enable database synchronization between different peers
@@ -430,6 +432,7 @@ public abstract class DatabaseWrapper
 	    }
 	}
 
+	
 	public void deconnectHook(final AbstractDecentralizedID hostID) throws DatabaseException
 	{
 	    if (hostID==null)
@@ -741,8 +744,21 @@ public abstract class DatabaseWrapper
     {
 	try
 	{
-	    if (sql_connection.isClosed())
-		sql_connection=reopenConnection();
+	    if (sql_connection.isClosed() || !sql_connection.isValid(5))
+	    {
+		this.locker.lockWrite();
+		try
+		{
+		    if (!sql_connection.isValid(5))
+			sql_connection.close();
+		    if (sql_connection.isClosed())
+			sql_connection=reopenConnection();
+		}
+		finally
+		{
+		    this.locker.unlockWrite();
+		}
+	    }
 	    return sql_connection;
 	}
 	catch(SQLException e)
@@ -1614,9 +1630,6 @@ public abstract class DatabaseWrapper
     }*/
     
     
-    
-    
-    
     /**
      * Associate a Sql database with a given package. Every table/class in the given package which inherits to the class <code>Table&lsaquo;T extends DatabaseRecord&rsaquo;</code> will be included into the same database.
      * This function must be called before every any operation with the corresponding tables.
@@ -1625,6 +1638,22 @@ public abstract class DatabaseWrapper
      * @throws NullPointerException if the given parameters are null.
      */
     public final void loadDatabase(final Package _package) throws DatabaseException
+    {
+	loadDatabase(_package, null);
+    }
+    
+    
+    
+    /**
+     * Associate a Sql database with a given package. Every table/class in the given package which inherits to the class <code>Table&lsaquo;T extends DatabaseRecord&rsaquo;</code> will be included into the same database.
+     * This function must be called before every any operation with the corresponding tables.
+     * @param _package the package which correspond to the collection of tables/classes.
+     * @param onCreationDatabaseCallable callable that is runned when the database is created
+     * @return the result returned by onCreationDatabaseCallable or null if the database was already created 
+     * @throws DatabaseException if the given package is already associated to a database.
+     * @throws NullPointerException if the given parameters are null.
+     */
+    public final <T> T loadDatabase(final Package _package, final Callable<T> onCreationDatabaseCallable) throws DatabaseException
     {
 	try(ReadWriteLock.Lock lock=locker.getAutoCloseableWriteLock())
 	//synchronized(this)
@@ -1641,12 +1670,12 @@ public abstract class DatabaseWrapper
 	    @SuppressWarnings("unchecked")
 	    HashMap<Package, Database> sd=(HashMap<Package, Database>)sql_database.clone();
 	    sd.put(_package, db);
-	    sql_database=sd;
 	    
-	    runTransaction(new Transaction() {
+	    final AtomicBoolean allNotFound=new AtomicBoolean(true);
+	    Object res=runTransaction(new Transaction() {
 		    
 		@Override
-		public Boolean run(DatabaseWrapper sql_connection) throws DatabaseException
+		public T run(DatabaseWrapper sql_connection) throws DatabaseException
 		{
 		    try
 		    {
@@ -1679,18 +1708,33 @@ public abstract class DatabaseWrapper
 				db.tables_instances.put(class_to_load, t);
 			    }
 			}
+			
 			for (Table<?> t : list_tables)
 			{
 			    t.initializeStep1();
 			}
 			for (Table<?> t : list_tables)
 			{
-			    t.initializeStep2();
+			    allNotFound.set(!t.initializeStep2() && allNotFound.get());
 			}
 			for (Table<?> t : list_tables)
 			{
 			    t.initializeStep3();
 			}
+			if (allNotFound.get() && onCreationDatabaseCallable!=null)
+			{
+			    try
+			    {
+				return onCreationDatabaseCallable.call();
+			    }
+			    catch(Exception e)
+			    {
+				throw DatabaseException.getDatabaseException(e);
+			    }
+			}
+			else
+			    return null;
+			
 		    }
 		    catch (ClassNotFoundException e)
 		    {
@@ -1704,7 +1748,6 @@ public abstract class DatabaseWrapper
 		    {
 			throw DatabaseException.getDatabaseException(e);
 		    }
-		    return null;
 		}
 		
 		@Override
@@ -1722,7 +1765,15 @@ public abstract class DatabaseWrapper
 		}
 		
 	    });
-	    
+	    sql_database=sd;
+	    if (res==null)
+		return null;
+	    else
+	    {
+		@SuppressWarnings("unchecked")
+		T t=(T)res;
+		return t;
+	    }
 	}
     }
     

@@ -297,6 +297,7 @@ public abstract class TestDatabase
     @AfterClass 
     public static void unloadDatabase() throws DatabaseException
     {
+	System.out.println("Unload database !");
 	if (sql_db!=null)
 	{
 	    sql_db.close();
@@ -3127,7 +3128,7 @@ public abstract class TestDatabase
 	}
 	return res;
     }
-    private ArrayList<String> getExpectedParametersName(String variableName, Class<?> objectClass) 
+    /*private ArrayList<String> getExpectedParametersName(String variableName, Class<?> objectClass) 
     {
 	ArrayList<String> res=new ArrayList<>();
 
@@ -3267,12 +3268,12 @@ public abstract class TestDatabase
 	String sqlCommand=Interpreter.getRuleInstance(command).translateToSqlQuery(table, parameters, sqlParameters).toString();
 	Assert.assertEquals(sqlCommand, expectedSqlCommand);
 	Assert.assertEquals(sqlParameters, expectedSqlParameters);
-    }
+    }*/
     
     
     private static AtomicInteger next_unique=new AtomicInteger(0);
     private static AtomicInteger number_thread_test=new AtomicInteger(0);
-    @Test(dependsOnMethods={"testCommandTranslatorInterpreter"}) public void prepareMultipleTest() throws DatabaseException
+    @Test(dependsOnMethods={"setAutoRandomFields"}) public void prepareMultipleTest() throws DatabaseException
     {
 	
 	HashMap<String, Object> map=new HashMap<String, Object>();
@@ -3388,7 +3389,7 @@ public abstract class TestDatabase
     
     public abstract boolean isTestEnabled(int testNumber);
     
-    public static boolean no_thread=true;
+    public static volatile boolean no_thread=true;
     public final ThreadLocalRandom random=ThreadLocalRandom.current();
     @Test(invocationCount=0) public void subMultipleTests() throws DatabaseException
     {
@@ -3418,11 +3419,8 @@ public abstract class TestDatabase
 	}
 	int r=random.nextInt(33);
 	
-	int number;
-	synchronized(number_thread_test)
-	{
-	    number_thread_test.set(number=number_thread_test.intValue()+1);
-	}
+	int number=number_thread_test.incrementAndGet();
+
 	if (isTestEnabled(r))
 	{
 	System.out.println("Test "+number+" number "+r+" in progress.");
@@ -4996,7 +4994,7 @@ public abstract class TestDatabase
 	}
 	System.out.println("\tTest "+number+" number "+r+" OK!!!");
     }
-    @Test(threadPoolSize = 5, invocationCount = 5,  timeOut = 1000000, dependsOnMethods={"multipleTests"}) public void testThreadSafe() 
+    @Test(threadPoolSize = 5, invocationCount = 5, dependsOnMethods={"multipleTests"}) public void testThreadSafe() 
     {
 	try
 	{
@@ -5008,6 +5006,7 @@ public abstract class TestDatabase
 	catch(Exception e)
 	{
 	    e.printStackTrace();
+	    Assert.fail();
 	    System.exit(-1);
 	}
     }

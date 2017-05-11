@@ -395,15 +395,15 @@ public abstract class Table<T extends DatabaseRecord>
     
     boolean foreign_keys_to_create=false;
     
-    void initializeStep2() throws DatabaseException
+    boolean initializeStep2() throws DatabaseException
     {
 	/*
 	 * Load table in Sql database
 	 */
-	
+	boolean table_found;
 	try(ReadWriteLock.Lock lock=sql_connection.locker.getAutoCloseableWriteLock())
 	{
-	    boolean table_found=((Boolean)sql_connection.runTransaction(new Transaction() {
+	    table_found=((Boolean)sql_connection.runTransaction(new Transaction() {
 		
 		@Override
 		public TransactionIsolation getTransactionIsolation()
@@ -775,6 +775,7 @@ public abstract class Table<T extends DatabaseRecord>
 	}
 	if (!this_class_found)
 	    throw new DatabaseException("Impossible to list and found local classes.");
+	return table_found;
 	
     }
     
