@@ -119,6 +119,7 @@ public class DerbyTestDatabase extends TestDatabase
     {
 	
     }
+    @Override
     @Test(dependsOnMethods={"addForeignKeyAndTestUniqueKeys"}) public void removePointedRecords() throws DatabaseException
     {
 	Assert.assertTrue(table1.getRecordsNumber()==2);
@@ -221,49 +222,60 @@ public class DerbyTestDatabase extends TestDatabase
 	
 	
     }
-    
+    @Override
     @Test(dependsOnMethods={"removePointedRecords"}) public void removeForeignKeyRecords() throws DatabaseException
     {
 	super.removeForeignKeyRecords();
     }
-
+    @Override
     @Test(dependsOnMethods={"removeForeignKeyRecords"}) public void testIsPointed() throws DatabaseException
     {
 	super.testIsPointed();
     }
+    @Override
     @Test(dependsOnMethods={"testIsPointed"}) public void removeWithCascade() throws DatabaseException
     {
 	super.removeWithCascade();
     }
+    @Override
     @Test(dependsOnMethods={"removeWithCascade"}) public void setAutoRandomFields() throws DatabaseException
     {
 	super.setAutoRandomFields();
     }
+    @Override
     @Test(dependsOnMethods={"setAutoRandomFields"}) public void prepareMultipleTest() throws DatabaseException
     {
 	super.prepareMultipleTest();
     }
+    @Override
     @Test(dependsOnMethods={"prepareMultipleTest"}) public void multipleTests() throws DatabaseException
     {
 	super.multipleTests();
     }
+    @Override
     @Test(invocationCount=0) public void subMultipleTests() throws DatabaseException
     {
 	super.subMultipleTests();
     }
+    @Override
     @Test(threadPoolSize = 5, invocationCount = 5,  timeOut = 1000000, dependsOnMethods={"multipleTests"}) public void testThreadSafe()
     {
 	super.testThreadSafe();
     }
-    
+    @Override
     @Test(threadPoolSize = 1, invocationCount = 1,  dependsOnMethods={"testThreadSafe"}, enabled=false) public void testCheckPoint()
     {
 	
     }
-    
-    @Test(threadPoolSize = 1, invocationCount = 1,  dependsOnMethods={"testCheckPoint"}) public void testBackup() throws DatabaseException
+    @Override
+    @Test(threadPoolSize = 1, invocationCount = 1,  dependsOnMethods={"testThreadSafe"}) public void testBackup() throws DatabaseException
     {
-	super.testCheckPoint();
+	super.testBackup();
+    }
+    @Override
+    @Test(threadPoolSize = 1, invocationCount = 1,  dependsOnMethods={"testBackup"}) public void testDatabaseRemove() throws DatabaseException
+    {
+	super.testDatabaseRemove();
     }
     
     

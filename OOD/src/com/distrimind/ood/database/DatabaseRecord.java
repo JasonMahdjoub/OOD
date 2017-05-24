@@ -67,9 +67,4 @@ public abstract class DatabaseRecord
 	
     }
     
-    @Deprecated @Override public boolean equals(Object obj)
-    {
-	throw new IllegalAccessError("This function is deprecated.");
-    }
-    
 }

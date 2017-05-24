@@ -77,6 +77,7 @@ class Export
 	ArrayList<File> additional_files=new ArrayList<>();
 	System.out.println(OOD.VERSION);
 	System.out.println(Utils.VERSION);
+	System.out.println("Java version : "+System.getProperty("java.version"));
 	
 	License licenses[]=new License[1];
 	licenses[0]=new License(new File("/home/jason/projets/commons-net-3.6/LICENSE.txt"));

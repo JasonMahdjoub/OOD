@@ -44,6 +44,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Savepoint;
 import java.sql.Statement;
 import java.util.regex.Pattern;
 
@@ -141,10 +142,16 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
 	try
 	{
 	    Connection c=DriverManager.getConnection("jdbc:hsqldb:file:"+getHSQLDBDataFileName(_file_name)+";hsqldb.cache_rows="+_cache_rows+";hsqldb.cache_size="+_cache_size+";hsqldb.result_max_memory_rows="+_result_max_memory_rows+";hsqldb.cache_free_count="+_cache_free_count+";shutdown=true", "SA", "");
-	    c.setAutoCommit(false);
+	    
+
 	    try(Statement s=c.createStatement())
 	    {
-		s.executeQuery("SET DATABASE TRANSACTION CONTROL "+concurrencyControl.getCode());
+		s.executeQuery("SET DATABASE TRANSACTION CONTROL "+concurrencyControl.getCode()+";");
+	    }
+	    
+	    try(Statement s=c.createStatement())
+	    {
+		s.executeQuery("SET DATABASE TRANSACTION CONTROL "+concurrencyControl.getCode()+";");
 	    }
 	    
 	    return c;
@@ -224,7 +231,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
     {
 	try(Statement s=sql_connection.createStatement())
 	{
-	    s.executeQuery("SHUTDOWN");
+	    s.executeQuery("SHUTDOWN"+getSqlComma());
 	}
 	finally
 	{
@@ -239,7 +246,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
     }
     
     @Override
-    boolean doesTableExists(String table_name) throws Exception
+    protected boolean doesTableExists(String table_name) throws Exception
     {
 	try (ReadQuerry rq=new ReadQuerry(getOpenedSqlConnection(), new Table.SqlQuerry("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"+table_name+"'")))
 	{
@@ -251,14 +258,14 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
     }
     
     @Override
-    ColumnsReadQuerry getColumnMetaData(String tableName) throws Exception
+    protected ColumnsReadQuerry getColumnMetaData(String tableName) throws Exception
     {
 	Connection sql_connection=getOpenedSqlConnection();
 	return new CReadQuerry(sql_connection, new Table.SqlQuerry("SELECT COLUMN_NAME, TYPE_NAME, COLUMN_SIZE, IS_NULLABLE, IS_AUTOINCREMENT FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"+tableName+"';"));
     }
     
     @Override
-    void checkConstraints(Table<?> table) throws DatabaseException
+    protected void checkConstraints(Table<?> table) throws DatabaseException
     {
 	Connection sql_connection=getOpenedSqlConnection();
 	try(ReadQuerry rq=new ReadQuerry(sql_connection, new Table.SqlQuerry("select CONSTRAINT_NAME, CONSTRAINT_TYPE from INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_NAME='"+table.getName()+"';")))
@@ -407,10 +414,10 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
 		    }
 		    if (fa.isForeignKey())
 		    {
-			try(ReadQuerry rq=new ReadQuerry(sql_connection, new Table.SqlQuerry("select PKTABLE_NAME, PKCOLUMN_NAME, FKCOLUMN_NAME from INFORMATION_SCHEMA.SYSTEM_CROSSREFERENCE WHERE FKTABLE_NAME='"+table.getName()+"' AND PKCOLUMN_NAME='"+sf.short_pointed_field+"' AND FKCOLUMN_NAME='"+sf.short_field+"';")))
+			try(ReadQuerry rq=new ReadQuerry(sql_connection, new Table.SqlQuerry("select PKTABLE_NAME, FKTABLE_NAME, PKCOLUMN_NAME, FKCOLUMN_NAME from INFORMATION_SCHEMA.SYSTEM_CROSSREFERENCE WHERE FKTABLE_NAME='"+table.getName()+"' AND PKTABLE_NAME='"+sf.pointed_table+"' AND PKCOLUMN_NAME='"+sf.short_pointed_field+"' AND FKCOLUMN_NAME='"+sf.short_field+"'")))
 			{
 			    if (!rq.result_set.next())
-				throw new DatabaseVersionException(table, "The field "+fa.getFieldName()+" is a foreign key one of its Sql fields "+sf.field+" is not a foreign key pointing to the table "+sf.pointed_table);
+				throw new DatabaseVersionException(table, "The field "+fa.getFieldName()+" is a foreign key. One of its Sql fields "+sf.field+" is not a foreign key pointing to the table "+sf.pointed_table);
 			}
 		    }
 		    if (fa.isUnique())
@@ -507,93 +514,106 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
     }
     
     @Override
-    String getSqlComma()
+    protected String getSqlComma()
     {
 	return ";";
     }
     @Override
-    int getVarCharLimit()
+    protected int getVarCharLimit()
     {
 	return 16777216;
     }
     @Override
-    boolean isVarBinarySupported()
+    protected boolean isVarBinarySupported()
     {
 	return true;
     }
     @Override
-    String getByteType()
+    protected String getByteType()
     {
 	return "TINYINT";
     }
     @Override
-    String getIntType()
+    protected String getIntType()
     {
 	return "INTEGER";
     }
     
     @Override
-    String getFloatType()
+    protected String getFloatType()
     {
 	return "DOUBLE";
     }
     @Override
-    String getDoubleType()
+    protected String getDoubleType()
     {
 	return "DOUBLE";
     }
     @Override
-    String getLongType()
+    protected String getLongType()
     {
 	return "BIGINT";
     }
     @Override
-    String getShortType()
+    protected String getShortType()
     {
 	return "SMALLINT";
     }
     @Override
-    String getBigDecimalType()
+    protected String getBigDecimalType()
     {
 	return "VARCHAR(16374)";
     }
     @Override
-    String getBigIntegerType()
+    protected String getBigIntegerType()
     {
 	return "VARCHAR(16374)";
     }
     
 
     @Override
-    String getSqlNULL()
+    protected String getSqlNULL()
     {
 	return "NULL";
     }
     @Override
-    String getSqlNotNULL()
+    protected String getSqlNotNULL()
     {
 	return "NOT NULL";
     }
     @Override
-    public String getSerializableType()
+    protected String getSerializableType()
     {
 	return "BLOB";
     }
     @Override
-    String getSqlQuerryToGetLastGeneratedID()
+    protected String getSqlQuerryToGetLastGeneratedID()
     {
 	return "CALL IDENTITY()";
     }
     @Override
-    String getOnUpdateCascadeSqlQuerry()
+    protected String getOnUpdateCascadeSqlQuerry()
     {
 	return "ON UPDATE CASCADE";
     }
     @Override
-    String getOnDeleteCascadeSqlQuerry()
+    protected String getOnDeleteCascadeSqlQuerry()
     {
 	return "ON DELETE CASCADE";
     }
+    
+    @Override
+    protected String getDropTableIfExistsKeyWord()
+    {
+	return "IF EXISTS";
+    }
+    
+    @Override
+    protected String getDropTableCascadeKeyWord()
+    {
+	return "CASCADE";
+    }
+    
     /**
      * Closes the database files, rewrites the script file, deletes the log file and opens the database.
      * @param _defrag If true is specified, this command also shrinks the .data file to its minimal size.
@@ -630,7 +650,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
     }
 
     @Override
-    Blob getBlob(byte[] _bytes) throws SQLException
+    protected Blob getBlob(byte[] _bytes) throws SQLException
     {
 	return new JDBCBlob(_bytes);
     }
@@ -693,7 +713,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
 		    f=f+"/";
 	    }
 	}
-	final String querry="BACKUP DATABASE TO '"+f+(blockDatabase?"' BLOCKING":"' NOT BLOCKING")+(saveAsFiles?" AS FILES":"")+getSqlComma();
+	final String querry="BACKUP DATABASE TO '"+f+(blockDatabase?"' BLOCKING":"' NOT BLOCKING")+(saveAsFiles?" AS FILES":"");
 	    this.runTransaction(new Transaction() {
 	    
 		@Override
@@ -767,6 +787,59 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
     protected Connection reopenConnection() throws DatabaseLoadingException
     {
 	return getConnection(file_name, concurrencyControl, cache_rows, cache_size, result_max_memory_rows, cache_free_count);
+    }
+
+    @Override
+    protected void rollback(Connection openedConnection) throws SQLException
+    {
+	    try(Statement s=openedConnection.createStatement())
+	    {
+		s.executeQuery("ROLLBACK"+getSqlComma());
+	    }
+    }
+
+    @Override
+    protected void commit(Connection openedConnection) throws SQLException
+    {
+	    try(Statement s=openedConnection.createStatement())
+	    {
+		s.executeQuery("COMMIT"+getSqlComma());
+	    }
+    }
+
+    @Override
+    protected boolean supportSavePoint(Connection openedConnection) 
+    {
+	return true;
+    }
+
+    @Override
+    protected void rollback(Connection openedConnection, String _savePointName, Savepoint savepoint) throws SQLException
+    {
+	    try(Statement s=openedConnection.createStatement())
+	    {
+		s.executeQuery("ROLLBACK TO SAVEPOINT "+_savePointName+getSqlComma());
+	    }
+
+    }
+
+    @Override
+    protected void disableAutoCommit(Connection openedConnection) throws SQLException
+    {
+	    try(Statement s=openedConnection.createStatement())
+	    {
+		s.executeQuery("SET AUTOCOMMIT FALSE"+getSqlComma());
+	    }
+    }
+
+    @Override
+    protected Savepoint savePoint(Connection _openedConnection, String _savePoint) throws SQLException
+    {
+	    try(Statement s=_openedConnection.createStatement())
+	    {
+		s.executeQuery("SAVEPOINT "+_savePoint+getSqlComma());
+	    }
+	    return null;
     }
     
 

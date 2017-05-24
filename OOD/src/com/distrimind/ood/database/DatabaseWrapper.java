@@ -56,6 +56,7 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Savepoint;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -64,7 +65,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.distrimind.ood.database.Table.ColumnsReadQuerry;
@@ -74,7 +74,6 @@ import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
 import com.distrimind.ood.database.fieldaccessors.ByteTabObjectConverter;
 import com.distrimind.ood.database.fieldaccessors.DefaultByteTabObjectConverter;
 import com.distrimind.util.AbstractDecentralizedID;
-import com.distrimind.util.ListClasses;
 import com.distrimind.util.ReadWriteLock;
 
 
@@ -117,6 +116,8 @@ public abstract class DatabaseWrapper
     private byte transactionTypes=0;
     private final DatabaseSynchronizer synchronizer=new DatabaseSynchronizer();
     protected int maxEventsRecords=1000;
+    protected Database actualDatabaseLoading=null;
+    
     
     public int getMaxEventsRecords()
     {
@@ -132,12 +133,14 @@ public abstract class DatabaseWrapper
     //private final boolean isWindows;
     private static class Database
     {
-	public final HashMap<Class<? extends Table<?>>, Table<?>> tables_instances=new HashMap<Class<? extends Table<?>>, Table<?>>();
+	final HashMap<Class<? extends Table<?>>, Table<?>> tables_instances=new HashMap<Class<? extends Table<?>>, Table<?>>();
 	private DatabaseTransactionEvent currentTransaction=null;
-	
-	public Database(Package _package)
+	private final DatabaseConfiguration configuration;
+	public Database(DatabaseConfiguration configuration)
 	{
-	    
+	    if (configuration==null)
+		throw new NullPointerException("configuration");
+	    this.configuration=configuration;
 	}
 	
 	DatabaseTransactionEvent getCurrentTransaction()
@@ -152,11 +155,14 @@ public abstract class DatabaseWrapper
 	    currentTransaction=null;
 	}
 
-	public boolean hasTransaction()
+	boolean hasTransaction()
 	{
 	    return currentTransaction!=null;
 	}
-	
+	DatabaseConfiguration getConfiguration()
+	{
+	    return configuration;
+	}
 	
     }
     
@@ -207,22 +213,24 @@ public abstract class DatabaseWrapper
 	    throw new NullPointerException("_sql_connection");
 	database_name=_database_name;
 	sql_connection=_sql_connection;
+	
 	//isWindows=OSValidator.isWindows();
 	
 	locker=getLocker();
 	converters=new ArrayList<>();
 	converters.add(new DefaultByteTabObjectConverter());
+	this.transactionsFile=new File(database_name+".tmp.transactions");
 	try
 	{
-	    sql_connection.setAutoCommit(false);
+	    disableAutoCommit(sql_connection);
 	    dmd=sql_connection.getMetaData();
 	}
 	catch(SQLException se)
 	{
 	    throw DatabaseException.getDatabaseException(se);
 	}
-	System.gc();
-	this.transactionsFile=new File(database_name+".tmp.transactions");
+	
+	
     }
     
     public boolean isReadOnly() throws DatabaseException
@@ -1016,7 +1024,7 @@ public abstract class DatabaseWrapper
 		if (commit)
 		{
 		    if (d.hasTransaction())
-			getTransactionsTable().addTransactionIfNecessary(e.getKey(), d.getCurrentTransaction(), transactionTypes);
+			getTransactionsTable().addTransactionIfNecessary(e.getValue().getConfiguration(), d.getCurrentTransaction(), transactionTypes);
 		}
 		d.clearTransaction();
 	    }
@@ -1280,6 +1288,33 @@ public abstract class DatabaseWrapper
 	    return false;
     }
 
+    protected abstract void rollback(Connection openedConnection) throws SQLException;
+    
+    protected abstract void commit(Connection openedConnection) throws SQLException;
+    
+    protected abstract boolean supportSavePoint(Connection openedConnection) throws SQLException;
+
+    protected abstract void rollback(Connection openedConnection, String savePointName, Savepoint savePoint) throws SQLException;
+    
+    protected abstract void disableAutoCommit(Connection openedConnection) throws SQLException;
+    
+    protected abstract Savepoint savePoint(Connection openedConnection, String savePoint) throws SQLException;
+    
+    private volatile long savePoint=0;
+    
+    
+    protected String generateSavePointName() 
+    {
+	return "Savepoint"+(++savePoint);
+	/*HexadecimalEncodingAlgorithm h=new HexadecimalEncodingAlgorithm();
+	StringBuffer sb=new StringBuffer("S");
+	h.convertToCharacters(new DecentralizedIDGenerator().getBytes(), sb);
+	return sb.toString();*/
+    }
+    
+    
+    
+    
     Object runTransaction(final Transaction _transaction) throws DatabaseException
     {
 	Object res=null;
@@ -1287,17 +1322,22 @@ public abstract class DatabaseWrapper
 	if (transaction_already_running.weakCompareAndSet(false, true))
 	{
 	    Connection sql_connection=getOpenedSqlConnection();
+	    String savePointName=null;
+	    Savepoint savePoint=null;
 	    try
 	    {
 		
 		setTransactionIsolation(_transaction.getTransactionIsolation());
 		
-		if (_transaction.doesWriteData())
-		    sql_connection.setSavepoint();
+		if (_transaction.doesWriteData() && supportSavePoint(sql_connection))
+		{
+		    savePointName=generateSavePointName();
+		    savePoint=savePoint(sql_connection, savePointName);
+		}
 		res=_transaction.run(this);
 		if (_transaction.doesWriteData())
 		{
-		    sql_connection.commit();
+		    commit(sql_connection);
 		    clearTransactions(true);
 		}
 		endTransaction();
@@ -1308,7 +1348,10 @@ public abstract class DatabaseWrapper
 		{
 		    if (_transaction.doesWriteData())
 		    {
-			sql_connection.rollback();
+			if (savePoint!=null)
+			    rollback(sql_connection, savePointName, savePoint);
+			else
+			    rollback(sql_connection);
 			clearTransactions(false);
 		    }
 		}
@@ -1341,7 +1384,38 @@ public abstract class DatabaseWrapper
 	}
 	else
 	{
-	    res=_transaction.run(this);
+	    String savePointName=null;
+	    Savepoint savePoint=null;
+
+	    try
+	    {
+		if (_transaction.doesWriteData() && supportSavePoint(sql_connection))
+		{
+		    savePointName=generateSavePointName();
+		    savePoint=savePoint(sql_connection, savePointName);
+		}
+
+		res=_transaction.run(this);
+	    }
+	    catch(DatabaseException e)
+	    {
+		try
+		{
+		    if (_transaction.doesWriteData() && savePoint!=null)
+		    {
+			rollback(sql_connection, savePointName, savePoint);
+		    }
+		}
+		catch(SQLException se)
+		{
+		    throw DatabaseException.getDatabaseException(e);
+		}
+		throw e;
+	    }
+	    catch(SQLException e)
+	    {
+		throw DatabaseException.getDatabaseException(e);
+	    }
 	}
 	return res;
 	/*Object res=null;
@@ -1510,7 +1584,15 @@ public abstract class DatabaseWrapper
 		throw new NullPointerException("The parameter _class_table is a null pointer !");
 	    Database db=this.sql_database.get(_class_table.getPackage());
 	    if (db==null)
-		throw new DatabaseException("The given database was not loaded : "+_class_table.getPackage());
+	    {
+		try(ReadWriteLock.Lock lock=locker.getAutoCloseableWriteLock())
+		{
+		    if (actualDatabaseLoading!=null && actualDatabaseLoading.getConfiguration().getPackage().equals(_class_table.getPackage()))
+			db=actualDatabaseLoading;
+		    else
+			throw new DatabaseException("The given database was not loaded : "+_class_table.getPackage());
+		}
+	    }
 	    Table<?> founded_table=db.tables_instances.get(_class_table);
 	    if (founded_table!=null)
 		return founded_table;
@@ -1629,53 +1711,110 @@ public abstract class DatabaseWrapper
 	
     }*/
     
-    
     /**
-     * Associate a Sql database with a given package. Every table/class in the given package which inherits to the class <code>Table&lsaquo;T extends DatabaseRecord&rsaquo;</code> will be included into the same database.
-     * This function must be called before every any operation with the corresponding tables.
-     * @param _package the package which correspond to the collection of tables/classes.
-     * @throws DatabaseException if the given package is already associated to a database.
-     * @throws NullPointerException if the given parameters are null.
+     * Remove a database
+     * @param configuration the database configuration
+     * @throws DatabaseException if a problem occurs
      */
-    public final void loadDatabase(final Package _package) throws DatabaseException
-    {
-	loadDatabase(_package, null);
-    }
-    
-    
-    
-    /**
-     * Associate a Sql database with a given package. Every table/class in the given package which inherits to the class <code>Table&lsaquo;T extends DatabaseRecord&rsaquo;</code> will be included into the same database.
-     * This function must be called before every any operation with the corresponding tables.
-     * @param _package the package which correspond to the collection of tables/classes.
-     * @param onCreationDatabaseCallable callable that is runned when the database is created
-     * @return the result returned by onCreationDatabaseCallable or null if the database was already created 
-     * @throws DatabaseException if the given package is already associated to a database.
-     * @throws NullPointerException if the given parameters are null.
-     */
-    public final <T> T loadDatabase(final Package _package, final Callable<T> onCreationDatabaseCallable) throws DatabaseException
+    public final void deleteDatabase(final DatabaseConfiguration configuration) throws DatabaseException
     {
 	try(ReadWriteLock.Lock lock=locker.getAutoCloseableWriteLock())
-	//synchronized(this)
+	{
+	    
+	    runTransaction(new Transaction() {
+		    
+		@SuppressWarnings("synthetic-access")
+		@Override
+		public Void run(DatabaseWrapper sql_connection) throws DatabaseException
+		{
+		    try
+		    {
+			if (!sql_database.containsKey(configuration.getPackage()))
+			    loadDatabase(configuration, false);
+			
+		    }
+		    catch(DatabaseException e)
+		    {
+			return null;
+		    }
+		    
+		    Database db=sql_database.get(configuration.getPackage());
+		    if (db==null)
+			throw new IllegalAccessError();
+		    
+		    ArrayList<Table<?>> list_tables=new ArrayList<>(configuration.getTableClasses().size());
+		    for (Class<? extends Table<?>> c : configuration.getTableClasses())
+		    {
+			Table<?> t=getTableInstance(c);
+			list_tables.add(t);
+		    }
+		    for (Table<?> t : list_tables)
+		    {
+			t.removeTableFromDatabaseStep1();
+		    }
+		    for (Table<?> t : list_tables)
+		    {
+			t.removeTableFromDatabaseStep2();
+		    }
+		    
+		    @SuppressWarnings("unchecked")
+		    HashMap<Package, Database> sd=(HashMap<Package, Database>)sql_database.clone();
+		    sd.remove(configuration.getPackage());
+		    sql_database=sd;
+		    
+		    return null;
+		}
+		@Override
+		public boolean doesWriteData()
+		{
+		    return true;
+		}
+
+
+
+		@Override
+		public TransactionIsolation getTransactionIsolation()
+		{
+		    return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+		}
+	    });
+
+	    
+	    
+	    
+	    
+	}
+    }
+    
+    /**
+     * Associate a Sql database with a given database configuration. Every table/class in the given configuration which inherits to the class <code>Table&lsaquo;T extends DatabaseRecord&rsaquo;</code> will be included into the same database.
+     * This function must be called before every any operation with the corresponding tables.
+     * @param configuration the database configuration
+     * @param createDatabaseIfNecessaryAndCheckIt If set to false, and if the database does not exists, generate a DatabaseException. If set to true, and if the database does not exists, create it. Use {@link DatabaseConfiguration#getDatabaseCreationCallable()} if the database is created and if transfer from old database must done.
+     * @return the result returned by onCreationDatabaseCallable or null if the database was already created 
+     * @throws DatabaseException if the given package is already associated to a database, or if the database cannot be created.
+     * @throws NullPointerException if the given parameters are null.
+     */
+    public final void loadDatabase(final DatabaseConfiguration configuration, final boolean createDatabaseIfNecessaryAndCheckIt) throws DatabaseException
+    {
+	try(ReadWriteLock.Lock lock=locker.getAutoCloseableWriteLock())
 	{
 	    if (this.closed)
 		throw new DatabaseException("The given Database was closed : "+this);
-	    if (_package==null)
-		throw new NullPointerException("_package is a null pointer.");
+	    if (configuration==null)
+		throw new NullPointerException("tables is a null pointer.");
 	    Connection sql_connection=getOpenedSqlConnection();
-	    if (sql_database.containsKey(_package))
+	    if (sql_database.containsKey(configuration.getPackage()))
 		throw new DatabaseException("There is already a database associated to the given HSQLDBWrapper "+sql_connection);
+	    try
+	    {
+	    actualDatabaseLoading=new Database(configuration);
 	    
-	    final Database db=new Database(_package);
-	    @SuppressWarnings("unchecked")
-	    HashMap<Package, Database> sd=(HashMap<Package, Database>)sql_database.clone();
-	    sd.put(_package, db);
 	    
-	    final AtomicBoolean allNotFound=new AtomicBoolean(true);
-	    Object res=runTransaction(new Transaction() {
+	    runTransaction(new Transaction() {
 		    
 		@Override
-		public T run(DatabaseWrapper sql_connection) throws DatabaseException
+		public Void run(DatabaseWrapper sql_connection) throws DatabaseException
 		{
 		    try
 		    {
@@ -1686,63 +1825,79 @@ public abstract class DatabaseWrapper
 			    if (rq.result_set.next())
 				table_found=true;
 			}*/
+			boolean allNotFound=true;
 			if (!doesTableExists(ROW_COUNT_TABLES))
 			{
 			    Statement st=sql_connection.getOpenedSqlConnection().createStatement();
-			    st.executeUpdate("CREATE TABLE "+ROW_COUNT_TABLES+" (TABLE_NAME VARCHAR(512), ROW_COUNT INTEGER)");
+			    st.executeUpdate("CREATE TABLE "+ROW_COUNT_TABLES+" (TABLE_NAME VARCHAR(512), ROW_COUNT INTEGER)"+getSqlComma());
 			    st.close();
 			}
 			
 			
-			ArrayList<Class<?>> list_classes;
-			list_classes = ListClasses.getClasses(_package);
-			ArrayList<Table<?>> list_tables=new ArrayList<>();
-			for (Class<?> c : list_classes)
+			ArrayList<Table<?>> list_tables=new ArrayList<>(configuration.getTableClasses().size());
+			for (Class<? extends Table<?>> class_to_load : configuration.getTableClasses())
 			{
-			    if (Table.class.isAssignableFrom(c))
-			    {
-				@SuppressWarnings("unchecked")
-				Class<? extends Table<?>> class_to_load=(Class<? extends Table<?>>)c;
-				Table<?> t=newInstance(class_to_load);
-				list_tables.add(t);
-				db.tables_instances.put(class_to_load, t);
-			    }
+			    Table<?> t=newInstance(class_to_load);
+			    list_tables.add(t);
+			    actualDatabaseLoading.tables_instances.put(class_to_load, t);
 			}
 			
 			for (Table<?> t : list_tables)
 			{
-			    t.initializeStep1();
+			    t.initializeStep1(configuration);
 			}
 			for (Table<?> t : list_tables)
 			{
-			    allNotFound.set(!t.initializeStep2() && allNotFound.get());
+			    allNotFound=!t.initializeStep2(createDatabaseIfNecessaryAndCheckIt) && allNotFound;
 			}
 			for (Table<?> t : list_tables)
 			{
 			    t.initializeStep3();
 			}
-			if (allNotFound.get() && onCreationDatabaseCallable!=null)
+			if (allNotFound)
 			{
 			    try
 			    {
-				return onCreationDatabaseCallable.call();
+				DatabaseConfiguration oldConfig= configuration.getOldVersionOfDatabaseConfiguration();
+				DatabaseCreationCallable callable=configuration.getDatabaseCreationCallable();
+				boolean removeOldDatabase=false;
+				if (oldConfig!=null && callable!=null)
+				{
+				    try
+				    {
+					loadDatabase(oldConfig, false);
+					if (callable!=null)
+					    callable.transfertDatabaseFromOldVersion(configuration);
+					removeOldDatabase=callable.hasToRemoveOldDatabase();
+				    }
+				    catch(DatabaseException e)
+				    {
+					oldConfig=null;
+				    }
+				}
+				if (callable!=null)
+				{
+				    callable.afterDatabaseCreation(configuration);
+				    if (removeOldDatabase)
+					deleteDatabase(oldConfig);
+				}
 			    }
 			    catch(Exception e)
 			    {
 				throw DatabaseException.getDatabaseException(e);
 			    }
 			}
-			else
-			    return null;
+			
+			return null;
 			
 		    }
 		    catch (ClassNotFoundException e)
 		    {
-			throw new DatabaseException("Impossible to access to t)he list of classes contained into the package "+_package.getName(), e);
+			throw new DatabaseException("Impossible to access to t)he list of classes contained into the package "+configuration.getPackage().getName(), e);
 		    }
 		    catch (IOException e)
 		    {
-			throw new DatabaseException("Impossible to access to the list of classes contained into the package "+_package.getName(), e);	
+			throw new DatabaseException("Impossible to access to the list of classes contained into the package "+configuration.getPackage().getName(), e);	
 		    }
 		    catch(Exception e)
 		    {
@@ -1765,14 +1920,14 @@ public abstract class DatabaseWrapper
 		}
 		
 	    });
+	    @SuppressWarnings("unchecked")
+	    HashMap<Package, Database> sd=(HashMap<Package, Database>)sql_database.clone();
+	    sd.put(configuration.getPackage(), actualDatabaseLoading);
 	    sql_database=sd;
-	    if (res==null)
-		return null;
-	    else
+	    }
+	    finally
 	    {
-		@SuppressWarnings("unchecked")
-		T t=(T)res;
-		return t;
+		actualDatabaseLoading=null;
 	    }
 	}
     }
@@ -1789,9 +1944,9 @@ public abstract class DatabaseWrapper
 	return t;
     }
     
-    abstract boolean doesTableExists(String tableName) throws Exception;
-    abstract ColumnsReadQuerry getColumnMetaData(String tableName) throws Exception;
-    abstract void checkConstraints(Table<?> table) throws DatabaseException;
+    protected abstract boolean doesTableExists(String tableName) throws Exception;
+    protected abstract ColumnsReadQuerry getColumnMetaData(String tableName) throws Exception;
+    protected abstract void checkConstraints(Table<?> table) throws DatabaseException;
     
     
     
@@ -1817,38 +1972,49 @@ public abstract class DatabaseWrapper
 	public abstract boolean isAutoIncrement() throws SQLException;
     }
     
-    abstract String getSqlComma();
-    abstract int getVarCharLimit();
-    abstract boolean isVarBinarySupported();
+    protected abstract String getSqlComma();
+    protected abstract int getVarCharLimit();
+    protected abstract boolean isVarBinarySupported();
 
-    abstract String getSqlNULL();
+    protected abstract String getSqlNULL();
     
-    abstract String getSqlNotNULL();
+    protected abstract String getSqlNotNULL();
     
-    abstract String getByteType();
-    abstract String getIntType();
-    abstract String getSerializableType();
-    abstract String getFloatType();
-    abstract String getDoubleType();
-    abstract String getShortType();
-    abstract String getLongType();
-    abstract String getBigDecimalType();
-    abstract String getBigIntegerType();
-    abstract String getSqlQuerryToGetLastGeneratedID();
+    protected abstract String getByteType();
+    protected abstract String getIntType();
+    protected abstract String getSerializableType();
+    protected abstract String getFloatType();
+    protected abstract String getDoubleType();
+    protected abstract String getShortType();
+    protected abstract String getLongType();
+    protected abstract String getBigDecimalType();
+    protected abstract String getBigIntegerType();
+    protected abstract String getSqlQuerryToGetLastGeneratedID();
+    protected abstract String getDropTableIfExistsKeyWord();
+    protected abstract String getDropTableCascadeKeyWord();
     
     Collection<Table<?>> getListTables(Package p)
     {
-	return this.sql_database.get(p).tables_instances.values();
+	Database db=this.sql_database.get(p);
+	if (db==null)
+	{
+	    try(ReadWriteLock.Lock lock=locker.getAutoCloseableWriteLock())
+	    {
+		if (actualDatabaseLoading!=null && actualDatabaseLoading.getConfiguration().getPackage().equals(p))
+		    db=actualDatabaseLoading;
+	    }
+	}
+	return db.tables_instances.values();
     }
 
-    abstract String getOnUpdateCascadeSqlQuerry();
-    abstract String getOnDeleteCascadeSqlQuerry();
-    boolean supportUpdateCascade()
+    protected abstract String getOnUpdateCascadeSqlQuerry();
+    protected abstract String getOnDeleteCascadeSqlQuerry();
+    protected boolean supportUpdateCascade()
     {
 	return !getOnUpdateCascadeSqlQuerry().equals("");
     }
     
-    abstract Blob getBlob(byte[] bytes) throws SQLException;
+    protected abstract Blob getBlob(byte[] bytes) throws SQLException;
 
     /**
      * Backup the database into the given path. 

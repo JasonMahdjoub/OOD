@@ -58,10 +58,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
-import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import com.distrimind.ood.database.AlterRecordFilter;
+import com.distrimind.ood.database.DatabaseConfiguration;
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.Filter;
 import com.distrimind.ood.database.GroupedResults;
@@ -126,8 +126,8 @@ public abstract class TestDatabase
     static Table5 table5b;
     static Table6 table6b;
     
-    static Package pk=Table1.class.getPackage();
-    static Package pk2=Lecture.class.getPackage();
+    static DatabaseConfiguration dbConfig1=new DatabaseConfiguration(Table1.class.getPackage());
+    static DatabaseConfiguration dbConfig2=new DatabaseConfiguration(Lecture.class.getPackage());
     private static DatabaseWrapper sql_db;
     private static DatabaseWrapper sql_dbb;
     
@@ -318,12 +318,27 @@ public abstract class TestDatabase
     public abstract void deleteDatabaseFilesA() throws IllegalArgumentException, DatabaseException;
     public abstract void deleteDatabaseFilesB() throws IllegalArgumentException, DatabaseException;
     
-    @Test public void firstLoad() throws IllegalArgumentException, DatabaseException
+    @Test public void checkUnloadedDatabase() throws IllegalArgumentException, DatabaseException 
     {
 	deleteDatabaseFilesA();
+	sql_db=getDatabaseWrapperInstanceA();
+	try
+	{
+	    sql_db.loadDatabase(dbConfig1, false);
+	    Assert.fail();
+	}
+	catch(DatabaseException e)
+	{
 	    
-	    sql_db=getDatabaseWrapperInstanceA();
-	    sql_db.loadDatabase(pk);
+	}
+    }
+    
+    @Test(dependsOnMethods={"checkUnloadedDatabase"}) public void firstLoad() throws IllegalArgumentException, DatabaseException
+    {
+	
+	    
+	    
+	    sql_db.loadDatabase(dbConfig1, true);
 	    table2=(Table2)sql_db.getTableInstance(Table2.class);
 	    table1=(Table1)sql_db.getTableInstance(Table1.class);
 	    table3=(Table3)sql_db.getTableInstance(Table3.class);
@@ -401,8 +416,8 @@ public abstract class TestDatabase
     {
 	sql_db.close();
 	    sql_db=getDatabaseWrapperInstanceA();
-	    sql_db.loadDatabase(pk);
-	    sql_db.loadDatabase(pk2);
+	    sql_db.loadDatabase(dbConfig1, false);
+	    sql_db.loadDatabase(dbConfig2, true);
 	    
 	    table2=(Table2)sql_db.getTableInstance(Table2.class);
 	    table1=(Table1)sql_db.getTableInstance(Table1.class);
@@ -412,7 +427,7 @@ public abstract class TestDatabase
 	    table6=(Table6)sql_db.getTableInstance(Table6.class);
 	    table7=(Table7)sql_db.getTableInstance(Table7.class);
 	    sql_dbb=getDatabaseWrapperInstanceB();
-	    sql_dbb.loadDatabase(pk);
+	    sql_dbb.loadDatabase(dbConfig1, true);
 	    table2b=(Table2)sql_dbb.getTableInstance(Table2.class);
 	    table1b=(Table1)sql_dbb.getTableInstance(Table1.class);
 	    table3b=(Table3)sql_dbb.getTableInstance(Table3.class);
@@ -3128,7 +3143,7 @@ public abstract class TestDatabase
 	}
 	return res;
     }
-    /*private ArrayList<String> getExpectedParametersName(String variableName, Class<?> objectClass) 
+    private ArrayList<String> getExpectedParametersName(String variableName, Class<?> objectClass) 
     {
 	ArrayList<String> res=new ArrayList<>();
 
@@ -3153,7 +3168,7 @@ public abstract class TestDatabase
     
     
     
-    @DataProvider(name = "interpreterCommandsProvider", parallel = true)
+    //@DataProvider(name = "interpreterCommandsProvider", parallel = true)
     public Object[][] interpreterCommandsProvider() throws IOException, NoSuchAlgorithmException, NoSuchProviderException
     {
 	HashMap<String, Object> parametersTable1Equallable=new HashMap<>();
@@ -3248,27 +3263,29 @@ public abstract class TestDatabase
 	return resO;
     }
     
-    @DataProvider(name = "interpreterCommandsVerifProvider", parallel = true)
+    //@DataProvider(name = "interpreterCommandsVerifProvider", parallel = true)
     public Object[][] interpreterCommandsVerifProvider()
     {
 	//TODO complete
 	return null;
     }
 
-    @Test(dependsOnMethods={"setAutoRandomFields"}, dataProvider = "interpreterCommandsProvider") public <T extends DatabaseRecord> void testIsConcernedInterpreterFunction(Table<T> table, T record, String command, Map<String, Object> parameters, boolean expectedBoolean) throws DatabaseException
+    //@Test(dependsOnMethods={"setAutoRandomFields"}, dataProvider = "interpreterCommandsProvider") 
+    public <T extends DatabaseRecord> void testIsConcernedInterpreterFunction(Table<T> table, T record, String command, Map<String, Object> parameters, boolean expectedBoolean) throws DatabaseException
     {
 	boolean bool=Interpreter.getRuleInstance(command).isConcernedBy(table, parameters, record);
 	Assert.assertEquals(bool, expectedBoolean);
     }
     
     
-    @Test(dependsOnMethods={"testIsConcernedInterpreterFunction"}, dataProvider = "interpreterCommandsVerifProvider") public void testCommandTranslatorInterpreter(Table<?> table, String command, Map<String, Object> parameters, String expectedSqlCommand, Map<Integer, Object> expectedSqlParameters) throws DatabaseException
+    //@Test(dependsOnMethods={"testIsConcernedInterpreterFunction"}, dataProvider = "interpreterCommandsVerifProvider") 
+    public void testCommandTranslatorInterpreter(Table<?> table, String command, Map<String, Object> parameters, String expectedSqlCommand, Map<Integer, Object> expectedSqlParameters) throws DatabaseException
     {
 	HashMap<Integer, Object> sqlParameters=new HashMap<>();
 	String sqlCommand=Interpreter.getRuleInstance(command).translateToSqlQuery(table, parameters, sqlParameters).toString();
 	Assert.assertEquals(sqlCommand, expectedSqlCommand);
 	Assert.assertEquals(sqlParameters, expectedSqlParameters);
-    }*/
+    }
     
     
     private static AtomicInteger next_unique=new AtomicInteger(0);
@@ -5017,7 +5034,7 @@ public abstract class TestDatabase
     }
     @Test(threadPoolSize = 1, invocationCount = 1,  dependsOnMethods={"testCheckPoint"}) public void testBackup() throws DatabaseException
     {
-	((EmbeddedHSQLDBWrapper)table1.getDatabaseWrapper()).backup(getDatabaseBackupFileName());
+	table1.getDatabaseWrapper().backup(getDatabaseBackupFileName());
 	table1.checkDataIntegrity();
 	table2.checkDataIntegrity();
 	table3.checkDataIntegrity();
@@ -5025,6 +5042,19 @@ public abstract class TestDatabase
 	table5.checkDataIntegrity();
 	table6.checkDataIntegrity();
 	table7.checkDataIntegrity();
+    }
+    @Test(threadPoolSize = 1, invocationCount = 1,  dependsOnMethods={"testBackup"}) public void testDatabaseRemove() throws DatabaseException
+    {
+	sql_db.deleteDatabase(dbConfig1);
+	try
+	{
+	    sql_db.loadDatabase(dbConfig1, false);
+	    Assert.fail();
+	}
+	catch(Exception e)
+	{
+	    
+	}
     }
     @Test(threadPoolSize = 0, invocationCount = 0,  timeOut = 0) private void testOrderedTable1(ArrayList<Table1.Record> res)
     {

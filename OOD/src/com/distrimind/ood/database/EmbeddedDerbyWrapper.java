@@ -45,6 +45,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLNonTransientConnectionException;
+import java.sql.Savepoint;
 import java.util.regex.Pattern;
 
 import com.distrimind.ood.database.Table.ColumnsReadQuerry;
@@ -111,6 +112,18 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
     {
 	return false;
 	
+    }
+    
+    @Override
+    protected String getDropTableIfExistsKeyWord()
+    {
+	return "";
+    }
+    
+    @Override
+    protected String getDropTableCascadeKeyWord()
+    {
+	return "";
     }
 
     private static String getDBUrl(File _directory)
@@ -182,7 +195,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
     }
 
     @Override
-    boolean doesTableExists(String tableName) throws Exception
+    protected boolean doesTableExists(String tableName) throws Exception
     {
 	Connection sql_connection=getOpenedSqlConnection();
 	DatabaseMetaData dbmd = sql_connection.getMetaData();
@@ -196,7 +209,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
     }
 
     @Override
-    ColumnsReadQuerry getColumnMetaData(String tableName) throws Exception
+    protected ColumnsReadQuerry getColumnMetaData(String tableName) throws Exception
     {
 	Connection sql_connection=getOpenedSqlConnection();
 	return new CReadQuerry(sql_connection, sql_connection.getMetaData()
@@ -204,7 +217,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
     }
 
     @Override
-    void checkConstraints(Table<?> table) throws DatabaseException
+    protected void checkConstraints(Table<?> table) throws DatabaseException
     {
 	Connection sql_connection=getOpenedSqlConnection();
 	try(ReadQuerry rq=new ReadQuerry(sql_connection, sql_connection.getMetaData().getPrimaryKeys(null, null, table.getName())))
@@ -456,100 +469,100 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
     }
 
     @Override
-    String getSqlComma()
+    protected String getSqlComma()
     {
 	return "";
     }
 
     @Override
-    int getVarCharLimit()
+    protected int getVarCharLimit()
     {
 	return 32672;
     }
     @Override
-    boolean isVarBinarySupported()
+    protected boolean isVarBinarySupported()
     {
 	return false;
     }
     
     @Override
-    String getSqlNULL()
+    protected String getSqlNULL()
     {
 	return "";
     }
     @Override
-    String getSqlNotNULL()
+    protected String getSqlNotNULL()
     {
 	return "NOT NULL";
     }
 
     @Override
-    String getByteType()
+    protected String getByteType()
     {
 	return "INTEGER";
     }
 
     @Override
-    String getIntType()
+    protected String getIntType()
     {
 	return "INTEGER";
     }
 
     @Override
-    String getSerializableType()
+    protected String getSerializableType()
     {
 	return "BLOB";
     }
 
     @Override
-    String getFloatType()
+    protected String getFloatType()
     {
 	return "REAL";
     }
     @Override
-    String getDoubleType()
+    protected String getDoubleType()
     {
 	return "DOUBLE";
     }
 
     @Override
-    String getLongType()
+    protected String getLongType()
     {
 	return "BIGINT";
     }
     @Override
-    String getShortType()
+    protected String getShortType()
     {
 	return "SMALLINT";
     }
     @Override
-    String getBigDecimalType()
+    protected String getBigDecimalType()
     {
 	return "VARCHAR(16374)";
     }
     @Override
-    String getBigIntegerType()
+    protected String getBigIntegerType()
     {
 	return "VARCHAR(16374)";
     }
     @Override
-    String getSqlQuerryToGetLastGeneratedID()
+    protected String getSqlQuerryToGetLastGeneratedID()
     {
 	return "values IDENTITY_VAL_LOCAL()";
     }
     @Override
-    String getOnUpdateCascadeSqlQuerry()
+    protected String getOnUpdateCascadeSqlQuerry()
     {
 	return "";
     }
     @Override
-    String getOnDeleteCascadeSqlQuerry()
+    protected String getOnDeleteCascadeSqlQuerry()
     {
 	return "ON DELETE CASCADE";
     }
 
     @Override
-    Blob getBlob(byte[] _bytes)
+    protected Blob getBlob(byte[] _bytes)
     {
 	return null;
     }
@@ -623,5 +636,41 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
     {
 	return getConnection(fileDirectory);
     }
-    
+
+    @Override
+    protected void rollback(Connection openedConnection) throws SQLException
+    {
+	    openedConnection.rollback();
+    }
+
+    @Override
+    protected void commit(Connection openedConnection) throws SQLException
+    {
+	sql_connection.commit();
+    }
+
+    @Override
+    protected boolean supportSavePoint(Connection openedConnection) 
+    {
+	return true;
+    }
+
+    @Override
+    protected void rollback(Connection openedConnection, String _savePointName, Savepoint savepoint) throws SQLException
+    {
+	openedConnection.rollback(savepoint);
+
+    }
+
+    @Override
+    protected void disableAutoCommit(Connection openedConnection) throws SQLException
+    {
+	openedConnection.setAutoCommit(false);
+    }
+
+    @Override
+    protected Savepoint savePoint(Connection _openedConnection, String _savePoint) throws SQLException
+    {
+	return _openedConnection.setSavepoint(_savePoint);
+    }    
 }

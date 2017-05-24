@@ -41,7 +41,6 @@ package com.distrimind.ood.database;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
-import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.reflect.Constructor;
@@ -88,7 +87,6 @@ import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.ood.interpreter.Interpreter;
 import com.distrimind.ood.interpreter.RuleInstance;
-import com.distrimind.util.ListClasses;
 import com.distrimind.util.ReadWriteLock;
 
 
@@ -135,6 +133,7 @@ public abstract class Table<T extends DatabaseRecord>
     private final boolean is_loaded_in_memory;
     private final String table_name;
     private boolean supportSynchronizationWithOtherPeers=false;
+    private DatabaseConfiguration tables=null;
     public static final int maxTableNameSizeBytes=8192;
     public static final int maxPrimaryKeysSizeBytes=65536;
     
@@ -385,17 +384,84 @@ public abstract class Table<T extends DatabaseRecord>
 	    throw new DatabaseException("This table cannot have the name "+DatabaseWrapper.ROW_COUNT_TABLES+" (case ignored)");
     }
     
-    void initializeStep1() throws DatabaseException
+    void removeTableFromDatabaseStep1() throws DatabaseException
     {
+	try
+	{
+	    Statement st=sql_connection.getOpenedSqlConnection().createStatement();
+	    st.executeUpdate("DROP TRIGGER "+Table.this.getName()+"_ROW_COUNT_TRIGGER_DELETE__"+sql_connection.getSqlComma());
+	    st.close();
+	    st=sql_connection.getOpenedSqlConnection().createStatement();
+	    st.executeUpdate("DROP TRIGGER "+Table.this.getName()+"_ROW_COUNT_TRIGGER_INSERT__"+sql_connection.getSqlComma());
+	    st.close();
+	    st=sql_connection.getOpenedSqlConnection().createStatement();
+	    st.executeUpdate("DELETE FROM "+DatabaseWrapper.ROW_COUNT_TABLES+" WHERE TABLE_NAME='"+Table.this.getName()+"'"+sql_connection.getSqlComma());
+	    st.close();
+	}
+	catch(SQLException e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}	
+	
+    }
+    void removeTableFromDatabaseStep2() throws DatabaseException
+    {
+	    if (sql_connection==null)
+		return;
+	    for (NeighboringTable t : this.list_tables_pointing_to_this_table)
+	    {
+		if (t.getPointedTable().sql_connection!=null)
+		{
+		    t.getPointedTable().removeTableFromDatabaseStep2();
+		}
+	    }
+	    Statement st=null;
+	    try
+	    {
+		final StringBuffer SqlQuerry=new StringBuffer("DROP TABLE "+this.getName()+" "+sql_connection.getDropTableIfExistsKeyWord()+" "+sql_connection.getDropTableCascadeKeyWord());
+		
+		st=sql_connection.getOpenedSqlConnection().createStatement();
+		st.executeUpdate(SqlQuerry.toString());
+		sql_connection=null;
+	    }
+	    catch(SQLException e)
+	    {
+		throw DatabaseException.getDatabaseException(e);
+	    }	
+	    finally
+	    {
+		try
+		{
+		    st.close();
+		}
+		catch(SQLException e)
+		{
+		    throw DatabaseException.getDatabaseException(e);
+		}	
+	    }
+	    
+
+    }
+    void initializeStep1(DatabaseConfiguration tables) throws DatabaseException
+    {
+	if (tables==null)
+	    throw new NullPointerException("tables");
 	for (ForeignKeyFieldAccessor fa : foreign_keys_fields)
 	{
 	    fa.initialize();
 	}
+	this.tables=tables;
     }
+    
+    public DatabaseConfiguration getDatabaseConfiguration()
+    {
+	return tables;
+    }
+    
     
     boolean foreign_keys_to_create=false;
     
-    boolean initializeStep2() throws DatabaseException
+    boolean initializeStep2(final boolean createDatabaseIfNecessaryAndCheckIt) throws DatabaseException
     {
 	/*
 	 * Load table in Sql database
@@ -436,6 +502,7 @@ public abstract class Table<T extends DatabaseRecord>
 	    /*
 	     * check the database 
 	     */
+		if (createDatabaseIfNecessaryAndCheckIt)
 		    sql_connection.runTransaction(new Transaction() {
 		        
 			@Override
@@ -517,6 +584,7 @@ public abstract class Table<T extends DatabaseRecord>
 	    }
 	    else
 	    {
+		if (createDatabaseIfNecessaryAndCheckIt)
 		{
 		    
 		    final StringBuffer SqlQuerry=new StringBuffer("CREATE "+sql_connection.getCachedKeyword()+" TABLE "+this.getName()+"(");
@@ -636,17 +704,17 @@ public abstract class Table<T extends DatabaseRecord>
 			    try
 			    {
 				st=sql_connection.getOpenedSqlConnection().createStatement();
-				st.executeUpdate("INSERT INTO "+DatabaseWrapper.ROW_COUNT_TABLES+" VALUES('"+Table.this.getName()+"', 0)");
+				st.executeUpdate("INSERT INTO "+DatabaseWrapper.ROW_COUNT_TABLES+" VALUES('"+Table.this.getName()+"', 0)"+sql_connection.getSqlComma());
 				st.close();
 				st=sql_connection.getOpenedSqlConnection().createStatement();
 				st.executeUpdate("CREATE TRIGGER "+Table.this.getName()+"_ROW_COUNT_TRIGGER_INSERT__ AFTER INSERT ON "+Table.this.getName()+"\n" +
 						"FOR EACH ROW \n" +
-						"UPDATE "+DatabaseWrapper.ROW_COUNT_TABLES+" SET ROW_COUNT=ROW_COUNT+1 WHERE TABLE_NAME='"+Table.this.getName()+"'\n");
+						"UPDATE "+DatabaseWrapper.ROW_COUNT_TABLES+" SET ROW_COUNT=ROW_COUNT+1 WHERE TABLE_NAME='"+Table.this.getName()+"'\n"+sql_connection.getSqlComma());
 				st.close();
 				st=sql_connection.getOpenedSqlConnection().createStatement();
 				st.executeUpdate("CREATE TRIGGER "+Table.this.getName()+"_ROW_COUNT_TRIGGER_DELETE__ AFTER DELETE ON "+Table.this.getName()+"\n" +
 						"FOR EACH ROW \n" +
-						"UPDATE "+DatabaseWrapper.ROW_COUNT_TABLES+" SET ROW_COUNT=ROW_COUNT-1 WHERE TABLE_NAME='"+Table.this.getName()+"'\n");
+						"UPDATE "+DatabaseWrapper.ROW_COUNT_TABLES+" SET ROW_COUNT=ROW_COUNT-1 WHERE TABLE_NAME='"+Table.this.getName()+"'\n"+sql_connection.getSqlComma());
 				st.close();
 				st=null;
 			    }
@@ -734,44 +802,27 @@ public abstract class Table<T extends DatabaseRecord>
 		    }
 		
 		}
+		else 
+		    throw new DatabaseException("Table "+this.getName()+" doest not exists !");
 	    }
-	}
-	ArrayList<Class<?>> list_classes;
-	try
-	{
-	    list_classes = ListClasses.getClasses(this.getClass().getPackage());
-	}
-	catch (ClassNotFoundException e)
-	{
-	    throw new DatabaseException("Impossible to access to t)he list of classes contained into the package "+this.getClass().getPackage().getName(), e);
-	}
-	catch (IOException e)
-	{
-	    throw new DatabaseException("Impossible to access to the list of classes contained into the package "+this.getClass().getPackage().getName(), e);	
 	}
 	boolean this_class_found=false;
-	for (Class<?> c : list_classes)
+	for (Class<? extends Table<?>> c : tables.getTableClasses())
 	{
-	    if (Table.class.isAssignableFrom(c))
-	    {
-		if (c.equals(this.getClass()))
-		    this_class_found=true;
-
+	    if (c.equals(this.getClass()))
+		this_class_found=true;
 		
-		@SuppressWarnings("unchecked")
-		Class<? extends Table<?>> ct=(Class<? extends Table<?>>)c;
-		Class<? extends DatabaseRecord> cdf=getDatabaseRecord(ct);
-		ArrayList<Field> concerned_fields=new ArrayList<Field>();
-		for (Field f : cdf.getDeclaredFields())
+	    Class<? extends DatabaseRecord> cdf=getDatabaseRecord(c);
+	    ArrayList<Field> concerned_fields=new ArrayList<Field>();
+	    for (Field f : cdf.getDeclaredFields())
+	    {
+		if (f.isAnnotationPresent(ForeignKey.class) && f.getType().equals(class_record))
 		{
-		    if (f.isAnnotationPresent(ForeignKey.class) && f.getType().equals(class_record))
-		    {
-			concerned_fields.add(f);
-		    }
+		    concerned_fields.add(f);
 		}
-		if (concerned_fields.size()>0)
-		list_tables_pointing_to_this_table.add(new NeighboringTable(sql_connection, class_record, ct, concerned_fields));
 	    }
+	    if (concerned_fields.size()>0)
+		list_tables_pointing_to_this_table.add(new NeighboringTable(sql_connection, class_record, c, concerned_fields));
 	}
 	if (!this_class_found)
 	    throw new DatabaseException("Impossible to list and found local classes.");
@@ -4963,6 +5014,9 @@ public abstract class Table<T extends DatabaseRecord>
 
     private final boolean contains(final T _record, boolean is_already_in_transaction) throws DatabaseException
     {
+	if (_record==null)
+	    return false;
+	
 	if (isLoadedInMemory())
 	{
 	    for (T r : getRecords(is_already_in_transaction))
@@ -5377,7 +5431,7 @@ public abstract class Table<T extends DatabaseRecord>
 				for (ForeignKeyFieldAccessor fa : foreign_keys_fields)
 				{
 				    Object val=fa.getValue(instance);
-				    if (!fa.getPointedTable().contains(true, (DatabaseRecord)val))
+				    if (val!=null && !fa.getPointedTable().contains(true, (DatabaseRecord)val))
 					throw new RecordNotFoundDatabaseException("The record, contained as foreign key into the field "+fa.getFieldName()+" into the table "+Table.this.getName()+" does not exists into the table "+fa.getPointedTable().getName());
 				}
 				
@@ -5659,9 +5713,10 @@ public abstract class Table<T extends DatabaseRecord>
 			    if (fa.isForeignKey())
 			    {
 				ForeignKeyFieldAccessor fkfa=(ForeignKeyFieldAccessor)fa;
-				if (!fkfa.getPointedTable().contains(false,(DatabaseRecord)_fields.get(fa.getFieldName())))
+				DatabaseRecord dr=(DatabaseRecord)_fields.get(fa.getFieldName());
+				if (dr!=null && !fkfa.getPointedTable().contains(false,dr))
 				{
-				    throw new FieldDatabaseException("The field "+fa.getFieldName()+" given in parameters point to a DatabaseRecord which is not contained into the database.");
+				    throw new RecordNotFoundDatabaseException("The field "+fa.getFieldName()+" given in parameters point to a DatabaseRecord which is not contained into the database.");
 				}
 			    }
 			    found=true;
@@ -6638,9 +6693,14 @@ public abstract class Table<T extends DatabaseRecord>
 	protected abstract boolean isValid();
 	
 	protected abstract void close(ArrayList<Table<?>> _comes_from_tables) throws DatabaseException;
-
 	protected static boolean indirectlyPointTo(Table<?> _table, Table<?> _pointed_table)
 	{
+	    return indirectlyPointTo(_table, _pointed_table, new ArrayList<Table<?>>());
+	}
+	
+	private static boolean indirectlyPointTo(Table<?> _table, Table<?> _pointed_table, ArrayList<Table<?>> _tablesAlreadyParsed)
+	{
+	    _tablesAlreadyParsed.add(_table);
 	    for (ForeignKeyFieldAccessor fa : _table.foreign_keys_fields)
 	    {
 		if (fa.getPointedTable()==_pointed_table)
@@ -6648,7 +6708,10 @@ public abstract class Table<T extends DatabaseRecord>
 	    }
 	    for (ForeignKeyFieldAccessor fa : _table.foreign_keys_fields)
 	    {
-		return indirectlyPointTo(fa.getPointedTable(), _pointed_table);
+		if (_tablesAlreadyParsed.contains(fa.getPointedTable()))
+		    continue;
+		
+		return indirectlyPointTo(fa.getPointedTable(), _pointed_table, _tablesAlreadyParsed);
 	    }
 	    return false;
 	}

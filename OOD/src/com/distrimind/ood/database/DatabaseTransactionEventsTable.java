@@ -194,7 +194,7 @@ class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEventsTabl
 	
     }
     
-    DatabaseTransactionEventsTable.Record addTransactionIfNecessary(final Package databasePackage, final DatabaseTransactionEvent transaction, final byte eventsType) throws DatabaseException
+    DatabaseTransactionEventsTable.Record addTransactionIfNecessary(final DatabaseConfiguration configuration, final DatabaseTransactionEvent transaction, final byte eventsType) throws DatabaseException
     {
 	return (DatabaseTransactionEventsTable.Record)getDatabaseWrapper().runTransaction(new Transaction() {
 
@@ -209,11 +209,11 @@ class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEventsTabl
 		    @Override
 		    public boolean nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException
 		    {
-			if (_record.isConcernedDatabaseByPackage(databasePackage))
+			if (_record.isConcernedDatabaseByPackage(configuration.getPackage()))
 			{
 			    if (res.get()==null)
 			    {
-				res.set(addTransaction(databasePackage, transaction, eventsType));
+				res.set(addTransaction(configuration.getPackage(), transaction, eventsType));
 			    }
 			    DatabaseTransactionsPerHostTable.Record trhost=new DatabaseTransactionsPerHostTable.Record();
 			    trhost.set(res.get(), _record);

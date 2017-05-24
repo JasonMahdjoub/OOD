@@ -324,6 +324,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
 	try
 	{
 	    DatabaseRecord dr=(DatabaseRecord)o;
+
 	    for (FieldAccessor fa : linked_primary_keys)
 	    {
 		if (dr==null)
@@ -353,9 +354,10 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
 	setValue(_class_instance, _field_instance);
 	try
 	{
+	    DatabaseRecord dr=(DatabaseRecord)field.get(_class_instance);
 	    for (FieldAccessor fa : linked_primary_keys)
 	    {
-		DatabaseRecord dr=(DatabaseRecord)field.get(_class_instance);
+		
 		if (dr==null)
 		{
 		    for (SqlField sf : sql_fields)
@@ -382,9 +384,10 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
     {
 	try
 	{
+	    DatabaseRecord dr=(DatabaseRecord)field.get(_class_instance);
 	    for (FieldAccessor fa : linked_primary_keys)
 	    {
-		DatabaseRecord dr=(DatabaseRecord)field.get(_class_instance);
+		
 		if (dr==null)
 		{
 		    for (SqlField sf : sql_fields)
