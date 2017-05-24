@@ -672,5 +672,12 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
     protected Savepoint savePoint(Connection _openedConnection, String _savePoint) throws SQLException
     {
 	return _openedConnection.setSavepoint(_savePoint);
-    }    
+    }
+    
+    @Override
+    protected boolean isThreadSafe()
+    {
+	return false;
+    }
+    
 }

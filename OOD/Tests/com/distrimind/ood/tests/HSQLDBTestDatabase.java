@@ -111,7 +111,7 @@ public class HSQLDBTestDatabase extends TestDatabase
     @Override
     public int getMultiTestsNumber()
     {
-	return 400;
+	return 200;
     }
 
     @Override

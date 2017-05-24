@@ -291,7 +291,7 @@ public class DerbyTestDatabase extends TestDatabase
     @Override
     public int getMultiTestsNumber()
     {
-	return 400;
+	return 200;
     }
 
     @Override

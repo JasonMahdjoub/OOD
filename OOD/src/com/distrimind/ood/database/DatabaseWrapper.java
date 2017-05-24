@@ -2023,5 +2023,5 @@ public abstract class DatabaseWrapper
      */
     public abstract void backup(File path) throws DatabaseException;
     
-
+    protected abstract boolean isThreadSafe();
 }

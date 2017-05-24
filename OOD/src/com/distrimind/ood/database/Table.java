@@ -65,6 +65,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -212,7 +213,7 @@ public abstract class Table<T extends DatabaseRecord>
     }
     
     final ArrayList<NeighboringTable> list_tables_pointing_to_this_table=new ArrayList<NeighboringTable>();
-    
+    boolean isPointedByTableLoadedIntoMemory=false;
     final SecureRandom rand;
     
     private volatile boolean is_synchronized_with_sql_database=false;
@@ -240,7 +241,37 @@ public abstract class Table<T extends DatabaseRecord>
     @SuppressWarnings("rawtypes")
     private final Constructor<GroupedResults> grouped_results_constructor;
     
+    boolean isPointedDirectlyOrIndirectlyByTablesLoadedIntoMemory()
+    {
+	return isPointedByTableLoadedIntoMemory;
+    }
     
+    boolean hasToBeLocked()
+    {
+	return !sql_connection.isThreadSafe() || (isPointedDirectlyOrIndirectlyByTablesLoadedIntoMemory() && is_loaded_in_memory); 
+    }
+    
+    void lockIfNecessary(boolean writeLock)
+    {
+	if (hasToBeLocked())
+	{
+	    if (writeLock)
+		sql_connection.locker.lockWrite();
+	    else
+		sql_connection.locker.lockRead();
+	}
+    }
+    
+    void unlockIfNecessary(boolean writeLock)
+    {
+	if (hasToBeLocked())
+	{
+	    if (writeLock)
+		sql_connection.locker.unlockWrite();
+	    else
+		sql_connection.locker.unlockRead();
+	}	
+    }
     
     String getSqlPrimaryKeyName()
     {
@@ -822,18 +853,41 @@ public abstract class Table<T extends DatabaseRecord>
 		}
 	    }
 	    if (concerned_fields.size()>0)
+	    {
 		list_tables_pointing_to_this_table.add(new NeighboringTable(sql_connection, class_record, c, concerned_fields));
+	    }
+	    
 	}
+	
 	if (!this_class_found)
 	    throw new DatabaseException("Impossible to list and found local classes.");
 	return table_found;
 	
     }
     
+    boolean isPointedByTableLoadedIntoMemoryInCascade(List<NeighboringTable> list_tables_pointing_to_this_table, List<Class<?>> tableAlreadyParsed) throws DatabaseException
+    {
+	if (tableAlreadyParsed.contains(this.getClass()))
+	    return false;
+	tableAlreadyParsed.add(this.getClass());
+	for (NeighboringTable nt : list_tables_pointing_to_this_table)
+	{
+	    if (nt.class_table.isAnnotationPresent(LoadToMemory.class))
+		return true;
+	    Table<?> t=sql_connection.getTableInstance(nt.class_table);
+	    if (t.isPointedByTableLoadedIntoMemoryInCascade(t.list_tables_pointing_to_this_table, tableAlreadyParsed))
+		return true;
+	}
+	return false;
+    }
+    
     void initializeStep3() throws DatabaseException
     {
 	try(ReadWriteLock.WriteLock lock2=sql_connection.locker.getAutoCloseableWriteLock())
 	{
+
+	isPointedByTableLoadedIntoMemory=isPointedByTableLoadedIntoMemoryInCascade(list_tables_pointing_to_this_table, new ArrayList<Class<?>>());
+	    
 	if (foreign_keys_to_create)
 	{
 	    foreign_keys_to_create=false;
@@ -6750,7 +6804,7 @@ public abstract class Table<T extends DatabaseRecord>
 		
 		try
 		{
-		    _current_table.sql_connection.locker.lockWrite();
+		    _current_table.lockIfNecessary(true);
 		    initialize(_current_table);
 		    _comes_from_tables.add(current_table);
 	    
@@ -6787,7 +6841,7 @@ public abstract class Table<T extends DatabaseRecord>
 			e2.printStackTrace();
 			throw new IllegalAccessError("");
 		    }
-		    current_table.sql_connection.locker.unlockWrite();
+		    current_table.unlockIfNecessary(true);
 		    throw e;
 		}
 	    }
@@ -6839,7 +6893,7 @@ public abstract class Table<T extends DatabaseRecord>
 		}
 		finally
 		{
-		    current_table.sql_connection.locker.unlockWrite();
+		    current_table.unlockIfNecessary(true);
 		}
 	    }
 	}
@@ -6859,7 +6913,8 @@ public abstract class Table<T extends DatabaseRecord>
 		
 		try
 		{
-		    _current_table.sql_connection.locker.lockRead();
+		    _current_table.lockIfNecessary(false);
+		    
 		    initialize(_current_table);
 		    if (!isValid())
 			throw new ConcurentTransactionDatabaseException("Attempting to read and write, through several nested queries, on the table "+current_table.getName()+".");
@@ -6891,7 +6946,7 @@ public abstract class Table<T extends DatabaseRecord>
 			e2.printStackTrace();
 			throw new IllegalAccessError("");
 		    }
-		    current_table.sql_connection.locker.unlockRead();
+		    current_table.unlockIfNecessary(false);
 		    throw e;
 		}
 	    }
@@ -6942,7 +6997,7 @@ public abstract class Table<T extends DatabaseRecord>
 		}
 		finally
 		{
-		    current_table.sql_connection.locker.unlockRead();
+		    current_table.unlockIfNecessary(false);
 		}
 	    }
 	}

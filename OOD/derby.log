@@ -1,6 +1,6 @@
 ----------------------------------------------------------------
-Wed May 24 01:13:20 CEST 2017:
-Booting Derby version The Apache Software Foundation - Apache Derby - 10.11.1.1 - (1616546): instance a816c00e-015c-3796-10e3-0000134b99f8 
+Wed May 24 15:39:53 CEST 2017:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.11.1.1 - (1616546): instance a816c00e-015c-3aaf-6977-00000eee8d28 
 on database directory /home/jason/git_projects/OOD/OOD/databasetestDerby with class loader sun.misc.Launcher$AppClassLoader@677327b6 
 Loaded from file:/home/jason/git_projects/OOD/OOD/exports/OOD-Tests-2.0.0-Beta1_withDependencies.jar
 java.vendor=Oracle Corporation
@@ -12,11 +12,11 @@ os.version=4.4.0-78-generic
 derby.system.home=null
 Database Class Loader started - derby.database.classpath=''
 ----------------------------------------------------------------
-Wed May 24 01:13:22 CEST 2017:
-Shutting down instance a816c00e-015c-3796-10e3-0000134b99f8 on database directory /home/jason/git_projects/OOD/OOD/databasetestDerby with class loader sun.misc.Launcher$AppClassLoader@677327b6 
+Wed May 24 15:39:59 CEST 2017:
+Shutting down instance a816c00e-015c-3aaf-6977-00000eee8d28 on database directory /home/jason/git_projects/OOD/OOD/databasetestDerby with class loader sun.misc.Launcher$AppClassLoader@677327b6 
 ----------------------------------------------------------------
-Wed May 24 01:13:22 CEST 2017:
-Booting Derby version The Apache Software Foundation - Apache Derby - 10.11.1.1 - (1616546): instance 8f9301a8-015c-3796-10e3-0000134b99f8 
+Wed May 24 15:39:59 CEST 2017:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.11.1.1 - (1616546): instance 8f9301a8-015c-3aaf-6977-00000eee8d28 
 on database directory /home/jason/git_projects/OOD/OOD/databasetestDerby with class loader sun.misc.Launcher$AppClassLoader@677327b6 
 Loaded from file:/home/jason/git_projects/OOD/OOD/exports/OOD-Tests-2.0.0-Beta1_withDependencies.jar
 java.vendor=Oracle Corporation
@@ -28,8 +28,8 @@ os.version=4.4.0-78-generic
 derby.system.home=null
 Database Class Loader started - derby.database.classpath=''
 ----------------------------------------------------------------
-Wed May 24 01:13:23 CEST 2017:
-Booting Derby version The Apache Software Foundation - Apache Derby - 10.11.1.1 - (1616546): instance 9fc7c266-015c-3796-10e3-0000134b99f8 
+Wed May 24 15:40:01 CEST 2017:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.11.1.1 - (1616546): instance 9fc7c266-015c-3aaf-6977-00000eee8d28 
 on database directory /home/jason/git_projects/OOD/OOD/databasetestDerbyb with class loader sun.misc.Launcher$AppClassLoader@677327b6 
 Loaded from file:/home/jason/git_projects/OOD/OOD/exports/OOD-Tests-2.0.0-Beta1_withDependencies.jar
 java.vendor=Oracle Corporation
@@ -41,11 +41,11 @@ os.version=4.4.0-78-generic
 derby.system.home=null
 Database Class Loader started - derby.database.classpath=''
 ----------------------------------------------------------------
-Wed May 24 01:19:54 CEST 2017:
-Shutting down instance 8f9301a8-015c-3796-10e3-0000134b99f8 on database directory /home/jason/git_projects/OOD/OOD/databasetestDerby with class loader sun.misc.Launcher$AppClassLoader@677327b6 
+Wed May 24 15:57:38 CEST 2017:
+Shutting down instance 8f9301a8-015c-3aaf-6977-00000eee8d28 on database directory /home/jason/git_projects/OOD/OOD/databasetestDerby with class loader sun.misc.Launcher$AppClassLoader@677327b6 
 ----------------------------------------------------------------
-Wed May 24 01:19:54 CEST 2017:
-Shutting down instance 9fc7c266-015c-3796-10e3-0000134b99f8 on database directory /home/jason/git_projects/OOD/OOD/databasetestDerbyb with class loader sun.misc.Launcher$AppClassLoader@677327b6 
+Wed May 24 15:57:38 CEST 2017:
+Shutting down instance 9fc7c266-015c-3aaf-6977-00000eee8d28 on database directory /home/jason/git_projects/OOD/OOD/databasetestDerbyb with class loader sun.misc.Launcher$AppClassLoader@677327b6 
 New exception raised during cleanup null
 java.lang.NullPointerException
 	at org.apache.derby.impl.store.raw.log.LogToFile.flush(Unknown Source)

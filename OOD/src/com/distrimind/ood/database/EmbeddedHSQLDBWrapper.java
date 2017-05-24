@@ -842,5 +842,10 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
 	    return null;
     }
     
+    @Override
+    protected boolean isThreadSafe()
+    {
+	return false;
+    }
 
 }

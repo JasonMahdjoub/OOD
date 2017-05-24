@@ -5023,8 +5023,7 @@ public abstract class TestDatabase
 	catch(Exception e)
 	{
 	    e.printStackTrace();
-	    Assert.fail();
-	    System.exit(-1);
+	    Assert.fail("testThreadSafe", e);
 	}
     }
     @Test(threadPoolSize = 1, invocationCount = 1,  dependsOnMethods={"testThreadSafe"}) public void testCheckPoint() throws DatabaseException
