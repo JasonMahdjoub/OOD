@@ -102,7 +102,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
      */
     public EmbeddedDerbyWrapper(File _directory) throws IllegalArgumentException, DatabaseException
     {
-	super(getConnection(_directory), "Database from file : " + _directory.getAbsolutePath());
+	super(/*getConnection(_directory), */"Database from file : " + _directory.getAbsolutePath());
 	dbURL = getDBUrl(_directory);
 	fileDirectory=_directory;
     }
@@ -161,7 +161,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
     }
 
     @Override
-    protected void closeConnection() throws SQLException
+    protected void closeConnection(Connection connection) throws SQLException
     {
 	try
 	{
@@ -171,7 +171,10 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
 	{
 
 	}
-	sql_connection.close();
+	finally
+	{
+	    connection.close();
+	}
     }
 
     @Override
@@ -197,7 +200,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
     @Override
     protected boolean doesTableExists(String tableName) throws Exception
     {
-	Connection sql_connection=getOpenedSqlConnection();
+	Connection sql_connection=getConnectionAssociatedWithCurrentThread();
 	DatabaseMetaData dbmd = sql_connection.getMetaData();
 	ResultSet rs = dbmd.getTables(null, null, null, null);
 	while (rs.next())
@@ -211,7 +214,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
     @Override
     protected ColumnsReadQuerry getColumnMetaData(String tableName) throws Exception
     {
-	Connection sql_connection=getOpenedSqlConnection();
+	Connection sql_connection=getConnectionAssociatedWithCurrentThread();
 	return new CReadQuerry(sql_connection, sql_connection.getMetaData()
 		.getColumns(null, null, tableName, null));
     }
@@ -219,7 +222,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
     @Override
     protected void checkConstraints(Table<?> table) throws DatabaseException
     {
-	Connection sql_connection=getOpenedSqlConnection();
+	Connection sql_connection=getConnectionAssociatedWithCurrentThread();
 	try(ReadQuerry rq=new ReadQuerry(sql_connection, sql_connection.getMetaData().getPrimaryKeys(null, null, table.getName())))
 	{
 	    while (rq.result_set.next())
@@ -600,7 +603,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
 		    try
 		    {
 			locker.lockRead();
-			Connection sql_connection=getOpenedSqlConnection();
+			Connection sql_connection=getConnectionAssociatedWithCurrentThread();
 			PreparedStatement preparedStatement = sql_connection.prepareStatement(querry);
 			try
 			{
@@ -632,7 +635,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
     }
 
     @Override
-    protected Connection reopenConnection() throws DatabaseLoadingException
+    protected Connection reopenConnectionImpl() throws DatabaseLoadingException
     {
 	return getConnection(fileDirectory);
     }
@@ -644,9 +647,9 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
     }
 
     @Override
-    protected void commit(Connection openedConnection) throws SQLException
+    protected void commit(Connection openedConnection) throws SQLException, DatabaseException
     {
-	sql_connection.commit();
+	getConnectionAssociatedWithCurrentThread().commit();
     }
 
     @Override
@@ -678,6 +681,13 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
     protected boolean isThreadSafe()
     {
 	return false;
+    }
+
+    @Override
+    protected void releasePoint(Connection _openedConnection, String _savePointName, Savepoint savepoint) 
+    {
+	//_openedConnection.releaseSavepoint(savepoint);
+	
     }
     
 }

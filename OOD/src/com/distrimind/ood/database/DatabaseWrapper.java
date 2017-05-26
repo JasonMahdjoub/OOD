@@ -65,7 +65,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Map.Entry;
 
 import com.distrimind.ood.database.Table.ColumnsReadQuerry;
 import com.distrimind.ood.database.Table.DefaultConstructorAccessPrivilegedAction;
@@ -88,7 +88,7 @@ public abstract class DatabaseWrapper
 {
     
     
-    protected Connection sql_connection;
+    //protected Connection sql_connection;
     private volatile boolean closed=false;
     private final String database_name;
     private static final HashMap<String, ReadWriteLock> lockers=new HashMap<String, ReadWriteLock>();
@@ -98,7 +98,7 @@ public abstract class DatabaseWrapper
     private final ArrayList<ByteTabObjectConverter> converters;
     
     private volatile HashMap<Package, Database> sql_database=new HashMap<Package, Database>();
-    private final DatabaseMetaData dmd;
+    //private final DatabaseMetaData dmd;
     private volatile DatabaseTransactionEventsTable transactionTable=null;
     private volatile DatabaseHooksTable databaseHooksTable=null;
     private volatile DatabaseTransactionsPerHostTable databaseTransactionsPerHostTable=null;
@@ -205,14 +205,14 @@ public abstract class DatabaseWrapper
      * @throws DatabaseException 
      * 
      */
-    protected DatabaseWrapper(Connection _sql_connection, String _database_name) throws DatabaseException
+    protected DatabaseWrapper(/*Connection _sql_connection, */String _database_name) throws DatabaseException
     {
 	if (_database_name==null)
 	    throw new NullPointerException("_database_name");
-	if (_sql_connection==null)
-	    throw new NullPointerException("_sql_connection");
+	/*if (_sql_connection==null)
+	    throw new NullPointerException("_sql_connection");*/
 	database_name=_database_name;
-	sql_connection=_sql_connection;
+	//sql_connection=_sql_connection;
 	
 	//isWindows=OSValidator.isWindows();
 	
@@ -220,44 +220,75 @@ public abstract class DatabaseWrapper
 	converters=new ArrayList<>();
 	converters.add(new DefaultByteTabObjectConverter());
 	this.transactionsFile=new File(database_name+".tmp.transactions");
-	try
-	{
-	    disableAutoCommit(sql_connection);
-	    dmd=sql_connection.getMetaData();
-	}
-	catch(SQLException se)
-	{
-	    throw DatabaseException.getDatabaseException(se);
-	}
-	
 	
     }
     
     public boolean isReadOnly() throws DatabaseException
     {
-	try
-	{
-	    Connection sql_connection=getOpenedSqlConnection();
-	    return sql_connection.isReadOnly();
-	}
-	catch(SQLException se)
-	{
-	    throw DatabaseException.getDatabaseException(se);
-	}
+	    return ((Boolean)runTransaction(new Transaction() {
+	        
+	        @Override
+	        public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
+	        {
+	            try
+	            {
+	        	Connection sql_connection=getConnectionAssociatedWithCurrentThread();
+	        	return new Boolean(sql_connection.isReadOnly());
+	            }
+	            catch(SQLException e)
+	            {
+	        	throw DatabaseException.getDatabaseException(e);
+	            }
+	            
+	        }
+	        
+	        @Override
+	        public TransactionIsolation getTransactionIsolation()
+	        {
+	            return TransactionIsolation.TRANSACTION_READ_UNCOMMITTED;
+	        }
+	        
+	        @Override
+	        public boolean doesWriteData()
+	        {
+	    	return false;
+	        }
+	    })).booleanValue();
 	
     }
     
     public int getNetworkTimeout() throws DatabaseException
     {
-	try
-	{
-	    Connection sql_connection=getOpenedSqlConnection();
-	    return sql_connection.getNetworkTimeout();
-	}
-	catch(SQLException se)
-	{
-	    throw DatabaseException.getDatabaseException(se);
-	}	
+	    return ((Integer)runTransaction(new Transaction() {
+	        
+	        @Override
+	        public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
+	        {
+	            try
+	            {
+	        	Connection sql_connection=getConnectionAssociatedWithCurrentThread();
+	        	return new Integer(sql_connection.getNetworkTimeout());
+	            }
+	            catch(SQLException e)
+	            {
+	        	throw DatabaseException.getDatabaseException(e);
+	            }
+	            
+	        }
+	        
+	        @Override
+	        public TransactionIsolation getTransactionIsolation()
+	        {
+	            return TransactionIsolation.TRANSACTION_READ_UNCOMMITTED;
+	        }
+	        
+	        @Override
+	        public boolean doesWriteData()
+	        {
+	    	return false;
+	        }
+	    })).intValue();
+
 	
     }
     
@@ -741,31 +772,46 @@ public abstract class DatabaseWrapper
 	return transactionIDTable;
     }
 
-    protected abstract Connection reopenConnection()  throws DatabaseLoadingException;
+    protected abstract Connection reopenConnectionImpl()  throws DatabaseLoadingException;
+    final Connection reopenConnection()  throws DatabaseException
+    {
+	try
+	{
+	    Connection c=reopenConnectionImpl();
+	
+	    disableAutoCommit(c);
+	    return c;
+	}
+	catch(SQLException e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+	
+    }
     
     /**
      * 
      * @return The Sql connection.
      * @throws SQLException 
      */
-    public Connection getOpenedSqlConnection() throws DatabaseException
+    Connection getOpenedSqlConnection(Connection sql_connection) throws DatabaseException
     {
 	try
 	{
-	    if (sql_connection.isClosed() || !sql_connection.isValid(5))
+	    if (sql_connection==null || sql_connection.isClosed() || !sql_connection.isValid(5))
 	    {
-		this.locker.lockWrite();
-		try
-		{
-		    if (!sql_connection.isValid(5))
+		//this.locker.lockWrite();
+		/*try
+		{*/
+		    if (sql_connection!=null && !sql_connection.isValid(5))
 			sql_connection.close();
-		    if (sql_connection.isClosed())
+		    if (sql_connection==null || sql_connection.isClosed())
 			sql_connection=reopenConnection();
-		}
+		/*}
 		finally
 		{
 		    this.locker.unlockWrite();
-		}
+		}*/
 	    }
 	    return sql_connection;
 	}
@@ -777,21 +823,40 @@ public abstract class DatabaseWrapper
     
     protected abstract String getCachedKeyword();
     
-    protected abstract void closeConnection() throws SQLException;
+    protected abstract void closeConnection(Connection c) throws SQLException;
     
-    public final void close() throws DatabaseException
+    public final void close() 
     {
 	if (!closed)
 	{
+	    
 	    //synchronized(this)
 	    {
-		try(ReadWriteLock.Lock lock=locker.getAutoCloseableWriteLock())
+		try
 		{
-		    closeConnection();
-		}
-		catch(SQLException se)
-		{
-		    throw DatabaseException.getDatabaseException(se);
+		    
+		    synchronized(this.threadPerConnectionInProgress)
+		    {
+			closed=true;
+			for (Iterator<Entry<Thread, Connection>> it= threadPerConnection.entrySet().iterator();it.hasNext();)
+			{
+			    Entry<Thread, Connection> c=it.next();
+			    if (threadPerConnectionInProgress.containsKey(c.getKey()))
+				continue;
+			    try
+			    {
+				closeConnection(c.getValue());
+			    }
+			    catch(SQLException e)
+			    {
+				e.printStackTrace();
+			    }
+			    finally
+			    {
+				it.remove();
+			    }
+			}
+		    }
 		}
 		finally
 		{
@@ -807,7 +872,7 @@ public abstract class DatabaseWrapper
 			    throw new IllegalAccessError();
 			sql_database=new HashMap<>();
 		    }
-		    closed=true;
+		    
 		    System.gc();
 		}
 	    }
@@ -874,29 +939,114 @@ public abstract class DatabaseWrapper
     }
     
     final ReadWriteLock locker;
-    private final AtomicBoolean transaction_already_running=new AtomicBoolean(false);
+    //private final AtomicBoolean transaction_already_running=new AtomicBoolean(false);
+    private final Map<Thread, Connection> threadPerConnectionInProgress=new HashMap<>();
+    private final Map<Thread, Connection> threadPerConnection=new HashMap<>();
+    
+    
+    private static class ConnectionWrapper
+    {
+	final Connection connection;
+	final boolean newTransaction;
+	
+	ConnectionWrapper(Connection connection, boolean newTransaction)
+	{
+	    this.connection=connection;
+	    this.newTransaction=newTransaction;
+	}
+    }
+    
+    ConnectionWrapper isNewTransactionAndStartIt() throws DatabaseException
+    {
+	Thread t=Thread.currentThread();
+	synchronized(threadPerConnectionInProgress)
+	{
+	    Connection c=threadPerConnectionInProgress.get(t);
+	    
+	    if (c==null)
+	    {
+		c=getOpenedSqlConnection(threadPerConnection.get(t));
+		threadPerConnection.put(t, c);
+		threadPerConnectionInProgress.put(t, c);
+
+		return new ConnectionWrapper(c, true); 
+	    }
+	    else
+		return new ConnectionWrapper(c, false);
+	}
+    }
+    
+    protected Connection getConnectionAssociatedWithCurrentThread() throws DatabaseException
+    {
+	synchronized(threadPerConnectionInProgress)
+	{
+	    Connection c=threadPerConnectionInProgress.get(Thread.currentThread());
+	    
+	    Connection c2=getOpenedSqlConnection(c);
+	    if (c!=c2)
+		threadPerConnectionInProgress.put(Thread.currentThread(), c2);
+	    return c2;
+	}
+    }
+    
+    void releaseTransaction() throws DatabaseException
+    {
+	synchronized(threadPerConnectionInProgress)
+	{
+	    try
+	    {
+		Connection c=threadPerConnectionInProgress.remove(Thread.currentThread());
+		if (c==null)
+		    throw new IllegalAccessError();
+		if (closed)
+		{
+		    if (!c.isClosed())
+			closeConnection(c);
+		}
+	    
+		for (Iterator<Entry<Thread, Connection>> it=threadPerConnection.entrySet().iterator();it.hasNext();)
+		{
+		    Entry<Thread, Connection> e=it.next();
+		    
+		    if (!e.getKey().isAlive())
+		    {
+			if (!e.getValue().isClosed())
+			    e.getValue().close();
+			it.remove();
+		    }
+		}
+	    }
+	    catch(Exception e)
+	    {
+		throw DatabaseException.getDatabaseException(e);
+	    }
+	}
+    }
+    
+    
     //private volatile boolean transaction_already_running=false;
     
-    private boolean setTransactionIsolation(TransactionIsolation transactionIsolation) throws SQLException, DatabaseException
+    private boolean setTransactionIsolation(Connection sql_connection, TransactionIsolation transactionIsolation, boolean write) throws SQLException, DatabaseException
     {
-	Connection sql_connection=getOpenedSqlConnection();
+	//Connection sql_connection=getOpenedSqlConnection();
 	
 	transactionIsolation=getValidTransactionIsolation(transactionIsolation);
 	if (transactionIsolation!=null)
 	{
-	    sql_connection.setTransactionIsolation(transactionIsolation.getCode());
-	    startTransaction();
+	    
+	    startTransaction(sql_connection, transactionIsolation, write);
 	    return true;
 	}
 	else return false;
 		    
     }
     
-    protected TransactionIsolation getValidTransactionIsolation(TransactionIsolation transactionIsolation) throws SQLException
+    protected TransactionIsolation getValidTransactionIsolation(TransactionIsolation transactionIsolation) throws SQLException, DatabaseException
     {
 	
 	if (supportTransactions())
 	{
+	    DatabaseMetaData dmd=getConnectionAssociatedWithCurrentThread().getMetaData();
 	    if (dmd.supportsTransactionIsolationLevel(transactionIsolation.getCode()))
 	    {
 		return transactionIsolation;
@@ -927,17 +1077,43 @@ public abstract class DatabaseWrapper
 	return null;
     }
 
-    public boolean supportTransactions() throws SQLException
+    public boolean supportTransactions() throws DatabaseException
     {
-	return dmd.supportsTransactions();
+	return ((Boolean)runTransaction(new Transaction() {
+	    
+	    @Override
+	    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
+	    {
+		try
+		{
+		    return new Boolean(getConnectionAssociatedWithCurrentThread().getMetaData().supportsTransactions());
+		}
+		catch(SQLException e)
+		{
+		    throw DatabaseException.getDatabaseException(e);
+		}
+	    }
+	    
+	    @Override
+	    public TransactionIsolation getTransactionIsolation()
+	    {
+		return TransactionIsolation.TRANSACTION_READ_UNCOMMITTED;
+	    }
+	    
+	    @Override
+	    public boolean doesWriteData()
+	    {
+		return false;
+	    }
+	})).booleanValue();
     }
     
-    protected void startTransaction()
+    protected void startTransaction(Connection _openedConnection, TransactionIsolation transactionIsolation, boolean write) throws SQLException
     {
-	
+	_openedConnection.setTransactionIsolation(transactionIsolation.getCode());
     }
     
-    protected void endTransaction()
+    protected void endTransaction(Connection _openedConnection)
     {
 	
     }
@@ -1290,7 +1466,7 @@ public abstract class DatabaseWrapper
 
     protected abstract void rollback(Connection openedConnection) throws SQLException;
     
-    protected abstract void commit(Connection openedConnection) throws SQLException;
+    protected abstract void commit(Connection openedConnection) throws SQLException, DatabaseException;
     
     protected abstract boolean supportSavePoint(Connection openedConnection) throws SQLException;
 
@@ -1299,6 +1475,8 @@ public abstract class DatabaseWrapper
     protected abstract void disableAutoCommit(Connection openedConnection) throws SQLException;
     
     protected abstract Savepoint savePoint(Connection openedConnection, String savePoint) throws SQLException;
+    
+    protected abstract void releasePoint(Connection openedConnection, String _savePointName, Savepoint savepoint) throws SQLException;
     
     private volatile long savePoint=0;
     
@@ -1318,40 +1496,43 @@ public abstract class DatabaseWrapper
     Object runTransaction(final Transaction _transaction) throws DatabaseException
     {
 	Object res=null;
-	
-	if (transaction_already_running.weakCompareAndSet(false, true))
+	ConnectionWrapper cw=isNewTransactionAndStartIt();
+	if (cw.newTransaction)
 	{
-	    Connection sql_connection=getOpenedSqlConnection();
 	    String savePointName=null;
 	    Savepoint savePoint=null;
 	    try
 	    {
 		
-		setTransactionIsolation(_transaction.getTransactionIsolation());
+		setTransactionIsolation(cw.connection, _transaction.getTransactionIsolation(), _transaction.doesWriteData());
 		
-		if (_transaction.doesWriteData() && supportSavePoint(sql_connection))
+		if (_transaction.doesWriteData() && supportSavePoint(cw.connection))
 		{
 		    savePointName=generateSavePointName();
-		    savePoint=savePoint(sql_connection, savePointName);
+		    savePoint=savePoint(cw.connection, savePointName);
 		}
 		res=_transaction.run(this);
+		commit(cw.connection);
 		if (_transaction.doesWriteData())
 		{
-		    commit(sql_connection);
+		    if (savePoint!=null)
+			releasePoint(cw.connection, savePointName, savePoint);
 		    clearTransactions(true);
 		}
-		endTransaction();
+		
+		endTransaction(cw.connection);
 	    }
 	    catch(DatabaseException e)
 	    {
 		try
 		{
+		    rollback(cw.connection);
 		    if (_transaction.doesWriteData())
 		    {
-			if (savePoint!=null)
-			    rollback(sql_connection, savePointName, savePoint);
-			else
-			    rollback(sql_connection);
+			if (savePoint!=null || savePointName!=null)
+			{
+			    releasePoint(cw.connection, savePointName, savePoint);
+			}
 			clearTransactions(false);
 		    }
 		}
@@ -1363,12 +1544,28 @@ public abstract class DatabaseWrapper
 	    }
 	    catch(SQLException e)
 	    {
+		try
+		{
+		    rollback(cw.connection);
+		    if (_transaction.doesWriteData())
+		    {
+			if (savePoint!=null || savePointName!=null)
+			{
+			    releasePoint(cw.connection, savePointName, savePoint);
+			}
+			clearTransactions(false);
+		    }
+		}
+		catch(SQLException se)
+		{
+		    throw new DatabaseIntegrityException("Impossible to rollback the database changments", se);
+		}
 		clearTransactions(false);
 		throw DatabaseException.getDatabaseException(e);
 	    }
 	    finally
 	    {
-		try
+		/*try
 		{
 		    setTransactionIsolation(TransactionIsolation.TRANSACTION_NONE);
 		}
@@ -1377,9 +1574,9 @@ public abstract class DatabaseWrapper
 		    throw DatabaseException.getDatabaseException(e);
 		}
 		finally
-		{
-		    transaction_already_running.set(false);
-		}
+		{*/
+		    releaseTransaction();
+		//}
 	    }	
 	}
 	else
@@ -1389,13 +1586,16 @@ public abstract class DatabaseWrapper
 
 	    try
 	    {
-		if (_transaction.doesWriteData() && supportSavePoint(sql_connection))
+		if (_transaction.doesWriteData() && supportSavePoint(cw.connection))
 		{
 		    savePointName=generateSavePointName();
-		    savePoint=savePoint(sql_connection, savePointName);
+		    savePoint=savePoint(cw.connection, savePointName);
 		}
 
 		res=_transaction.run(this);
+		if (savePoint!=null)
+		    releasePoint(cw.connection, savePointName, savePoint);
+		
 	    }
 	    catch(DatabaseException e)
 	    {
@@ -1403,7 +1603,8 @@ public abstract class DatabaseWrapper
 		{
 		    if (_transaction.doesWriteData() && savePoint!=null)
 		    {
-			rollback(sql_connection, savePointName, savePoint);
+			rollback(cw.connection, savePointName, savePoint);
+			releasePoint(cw.connection, savePointName, savePoint);
 		    }
 		}
 		catch(SQLException se)
@@ -1480,23 +1681,23 @@ public abstract class DatabaseWrapper
 		{
 		    try
 		    {
-			if (_transaction.doesWriteData())
+			/*if (_transaction.doesWriteData())
 			    locker.lockWrite();
 			else
-			    locker.lockRead();
+			    locker.lockRead();*/
 			return (Object)_transaction.run();
 		    }
 		    catch(Exception e)
 		    {
 			throw new DatabaseException("",e);
 		    }
-		    finally
+		    /*finally
 		    {
 			if (_transaction.doesWriteData())
 			    locker.unlockWrite();
 			else
 			    locker.unlockRead();
-		    }
+		    }*/
 		}
 		@Override
 		public TransactionIsolation getTransactionIsolation()
@@ -1803,9 +2004,9 @@ public abstract class DatabaseWrapper
 		throw new DatabaseException("The given Database was closed : "+this);
 	    if (configuration==null)
 		throw new NullPointerException("tables is a null pointer.");
-	    Connection sql_connection=getOpenedSqlConnection();
+	    
 	    if (sql_database.containsKey(configuration.getPackage()))
-		throw new DatabaseException("There is already a database associated to the given HSQLDBWrapper "+sql_connection);
+		throw new DatabaseException("There is already a database associated to the given HSQLDBWrappe ");
 	    try
 	    {
 	    actualDatabaseLoading=new Database(configuration);
@@ -1828,7 +2029,7 @@ public abstract class DatabaseWrapper
 			boolean allNotFound=true;
 			if (!doesTableExists(ROW_COUNT_TABLES))
 			{
-			    Statement st=sql_connection.getOpenedSqlConnection().createStatement();
+			    Statement st=getConnectionAssociatedWithCurrentThread().createStatement();
 			    st.executeUpdate("CREATE TABLE "+ROW_COUNT_TABLES+" (TABLE_NAME VARCHAR(512), ROW_COUNT INTEGER)"+getSqlComma());
 			    st.close();
 			}

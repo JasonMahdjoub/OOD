@@ -59,7 +59,6 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseVersionException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
-import com.distrimind.util.OSValidator;
 import com.distrimind.util.ReadWriteLock;
 
 /**
@@ -123,7 +122,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
      */
     public EmbeddedHSQLDBWrapper(File _file_name, HSQLDBConcurrencyControl concurrencyControl, int _cache_rows, int _cache_size, int _result_max_memory_rows, int _cache_free_count) throws IllegalArgumentException, DatabaseException
     {
-	super(getConnection(_file_name, concurrencyControl, _cache_rows, _cache_size, _result_max_memory_rows, _cache_free_count), "Database from file : "+getHSQLDBDataFileName(_file_name)+".data");
+	super(/*getConnection(_file_name, concurrencyControl, _cache_rows, _cache_size, _result_max_memory_rows, _cache_free_count), */"Database from file : "+getHSQLDBDataFileName(_file_name)+".data");
 	this.file_name=_file_name;
 	this.concurrencyControl=concurrencyControl;
 	this.cache_rows=_cache_rows;
@@ -151,7 +150,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
 	    
 	    try(Statement s=c.createStatement())
 	    {
-		s.executeQuery("SET DATABASE TRANSACTION CONTROL "+concurrencyControl.getCode()+";");
+		s.executeQuery("COMMIT;");
 	    }
 	    
 	    return c;
@@ -227,15 +226,24 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
     }*/
     
     @Override
-    protected void closeConnection() throws SQLException
+    protected void closeConnection(Connection connection) throws SQLException
     {
-	try(Statement s=sql_connection.createStatement())
+	try(Statement s=connection.createStatement())
 	{
 	    s.executeQuery("SHUTDOWN"+getSqlComma());
+	    /*try(Statement s2=sql_connection.createStatement())
+	    {
+		s2.executeQuery("SHUTDOWN"+getSqlComma());
+	    }
+	    try(Statement s3=sql_connection.createStatement())
+	    {
+		s3.executeQuery("COMMIT"+getSqlComma());
+	    }*/
+
 	}
 	finally
 	{
-	    sql_connection.close();
+	    connection.close();
 	}
     }
     
@@ -248,7 +256,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
     @Override
     protected boolean doesTableExists(String table_name) throws Exception
     {
-	try (ReadQuerry rq=new ReadQuerry(getOpenedSqlConnection(), new Table.SqlQuerry("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"+table_name+"'")))
+	try (ReadQuerry rq=new ReadQuerry(getConnectionAssociatedWithCurrentThread(), new Table.SqlQuerry("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"+table_name+"'")))
 	{
 	    if (rq.result_set.next())
 		return true;
@@ -260,14 +268,14 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
     @Override
     protected ColumnsReadQuerry getColumnMetaData(String tableName) throws Exception
     {
-	Connection sql_connection=getOpenedSqlConnection();
+	Connection sql_connection=getConnectionAssociatedWithCurrentThread();
 	return new CReadQuerry(sql_connection, new Table.SqlQuerry("SELECT COLUMN_NAME, TYPE_NAME, COLUMN_SIZE, IS_NULLABLE, IS_AUTOINCREMENT FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"+tableName+"';"));
     }
     
     @Override
     protected void checkConstraints(Table<?> table) throws DatabaseException
     {
-	Connection sql_connection=getOpenedSqlConnection();
+	Connection sql_connection=getConnectionAssociatedWithCurrentThread();
 	try(ReadQuerry rq=new ReadQuerry(sql_connection, new Table.SqlQuerry("select CONSTRAINT_NAME, CONSTRAINT_TYPE from INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_NAME='"+table.getName()+"';")))
 	{
 	    while (rq.result_set.next())
@@ -619,34 +627,54 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
      * @param _defrag If true is specified, this command also shrinks the .data file to its minimal size.
      * @throws DatabaseException if a SQL exception occurs.
      */
-    public void checkPoint(boolean _defrag) throws DatabaseException
+    public void checkPoint(final boolean _defrag) throws DatabaseException
     {
-	Connection sql_connection=getOpenedSqlConnection();
-	try(ReadWriteLock.Lock lock=locker.getAutoCloseableWriteLock())
-	{
-	    Statement st=null;
-	    try
+
+	runTransaction(new Transaction() {
+	    
+	    @Override
+	    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 	    {
-		st=sql_connection.createStatement();
-		st.execute("CHECKPOINT"+(_defrag?" DEFRAG":""));
-	    }
-	    catch(SQLException e)
-	    {
-		throw DatabaseException.getDatabaseException(e);
-	    }
-	    finally
-	    {
-		try
+		try(ReadWriteLock.Lock lock=locker.getAutoCloseableWriteLock())
 		{
-		    st.close();
+		    Statement st=null;
+		    try
+		    {
+			st=getConnectionAssociatedWithCurrentThread().createStatement();
+			st.execute("CHECKPOINT"+(_defrag?" DEFRAG":""));
+		    }
+		    catch(SQLException e)
+		    {
+			throw DatabaseException.getDatabaseException(e);
+		    }
+		    finally
+		    {
+			try
+			{
+			    st.close();
+			}
+			catch(SQLException e)
+			{
+			    throw DatabaseException.getDatabaseException(e);
+			}
+			
+		    }
 		}
-		catch(SQLException e)
-		{
-		    throw DatabaseException.getDatabaseException(e);
-		}
-		
+		return null;
 	    }
-	}
+	    
+	    @Override
+	    public TransactionIsolation getTransactionIsolation()
+	    {
+		return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+	    }
+	    
+	    @Override
+	    public boolean doesWriteData()
+	    {
+		return true;
+	    }
+	});
     }
 
     @Override
@@ -675,6 +703,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
     {
 	this.backup(file, blockDatabase, false, !blockDatabase);
     }
+
     
     /**
      * Backup the database into the given directory. 
@@ -702,16 +731,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
 	
 	if (!saveAsFiles)
 	{
-	    if (OSValidator.isWindows())
-	    {
-		if (!f.endsWith("\\"))
-		    f=f+"\\";
-	    }
-	    else
-	    {
-		if (!f.endsWith("/"))
-		    f=f+"/";
-	    }
+	    f=f+File.separator;
 	}
 	final String querry="BACKUP DATABASE TO '"+f+(blockDatabase?"' BLOCKING":"' NOT BLOCKING")+(saveAsFiles?" AS FILES":"");
 	    this.runTransaction(new Transaction() {
@@ -719,7 +739,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
 		@Override
 		public TransactionIsolation getTransactionIsolation()
 		{
-		    return TransactionIsolation.TRANSACTION_READ_COMMITTED;
+		    return TransactionIsolation.TRANSACTION_NONE;
 		}
 		@Override
 		public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
@@ -730,7 +750,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
 			    locker.lockWrite();
 			else
 			    locker.lockRead();
-			Connection sql_connection=getOpenedSqlConnection();
+			Connection sql_connection=getConnectionAssociatedWithCurrentThread();
 			PreparedStatement preparedStatement = sql_connection.prepareStatement(querry);
 			try
 			{
@@ -784,7 +804,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
     }
 
     @Override
-    protected Connection reopenConnection() throws DatabaseLoadingException
+    protected Connection reopenConnectionImpl() throws DatabaseLoadingException
     {
 	return getConnection(file_name, concurrencyControl, cache_rows, cache_size, result_max_memory_rows, cache_free_count);
     }
@@ -796,6 +816,11 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
 	    {
 		s.executeQuery("ROLLBACK"+getSqlComma());
 	    }
+	    /*try(Statement s=openedConnection.createStatement())
+	    {
+		s.executeQuery("COMMIT"+getSqlComma());
+	    }*/
+	    
     }
 
     @Override
@@ -820,6 +845,10 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
 	    {
 		s.executeQuery("ROLLBACK TO SAVEPOINT "+_savePointName+getSqlComma());
 	    }
+	    /*try(Statement s=openedConnection.createStatement())
+	    {
+		s.executeQuery("COMMIT"+getSqlComma());
+	    }*/
 
     }
 
@@ -830,6 +859,11 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
 	    {
 		s.executeQuery("SET AUTOCOMMIT FALSE"+getSqlComma());
 	    }
+	    try(Statement s=openedConnection.createStatement())
+	    {
+		s.executeQuery("COMMIT"+getSqlComma());
+	    }
+	    
     }
 
     @Override
@@ -839,6 +873,11 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
 	    {
 		s.executeQuery("SAVEPOINT "+_savePoint+getSqlComma());
 	    }
+	    /*try(Statement s=_openedConnection.createStatement())
+	    {
+		s.executeQuery("COMMIT"+getSqlComma());
+	    }*/
+	    
 	    return null;
     }
     
@@ -848,4 +887,54 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
 	return false;
     }
 
+    @Override
+    protected void startTransaction(Connection _openedConnection, TransactionIsolation transactionIsolation, boolean write) throws SQLException
+    {
+	String isoLevel=null;
+	switch(transactionIsolation)
+	{
+	    case TRANSACTION_NONE:
+		isoLevel=null;
+		break;
+	    case TRANSACTION_READ_COMMITTED:
+		isoLevel="READ COMMITTED";
+		break;
+	    case TRANSACTION_READ_UNCOMMITTED:
+		isoLevel="READ UNCOMMITTED";
+		break;
+	    case TRANSACTION_REPEATABLE_READ:
+		isoLevel="REPEATABLE READ";
+		break;
+	    case TRANSACTION_SERIALIZABLE:
+		isoLevel="SERIALIZABLE";
+		break;
+	    default:
+		throw new IllegalAccessError();
+	    
+	}
+	
+	try(Statement s=_openedConnection.createStatement())
+	{
+	    s.executeQuery("START TRANSACTION"+(isoLevel!=null?(" ISOLATION LEVEL "+isoLevel+", "):"")+(write?"READ WRITE":"READ ONLY")+getSqlComma());
+	}
+	/*try(Statement s=_openedConnection.createStatement())
+	{
+	    s.executeQuery("COMMIT"+getSqlComma());
+	}*/
+	    
+    }
+
+    @Override
+    protected void releasePoint(Connection _openedConnection, String _savePointName, Savepoint savepoint) 
+    {
+	    /*try(Statement s=_openedConnection.createStatement())
+	    {
+		s.executeQuery("RELEASE SAVEPOINT "+_savePointName+getSqlComma());
+	    }*/
+		/*try(Statement s=_openedConnection.createStatement())
+		{
+		    s.executeQuery("COMMIT"+getSqlComma());
+		}*/
+	
+    }
 }

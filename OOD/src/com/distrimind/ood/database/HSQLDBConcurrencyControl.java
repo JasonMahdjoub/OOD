@@ -56,6 +56,6 @@ HyperSQL is fully multi threaded. It therefore allows different transactions to 
 	return code;
     }
     
-    public static HSQLDBConcurrencyControl DEFAULT=TWO_PHASE_LOCKING_MODEL;
+    public static HSQLDBConcurrencyControl DEFAULT=MULTI_VERSION_CONCURRENCY_CONTROL;
     
 }

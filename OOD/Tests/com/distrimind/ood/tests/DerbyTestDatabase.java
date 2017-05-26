@@ -122,17 +122,16 @@ public class DerbyTestDatabase extends TestDatabase
     @Override
     @Test(dependsOnMethods={"addForeignKeyAndTestUniqueKeys"}) public void removePointedRecords() throws DatabaseException
     {
-	Assert.assertTrue(table1.getRecordsNumber()==2);
-	Assert.assertTrue(table3.getRecordsNumber()==2);
-	Assert.assertTrue(table2.getRecordsNumber()==1);
-	Assert.assertTrue(table4.getRecordsNumber()==1);
-	Assert.assertTrue(table5.getRecordsNumber()==1);
-	Assert.assertTrue(table1.getRecords().size()==2);
-	Assert.assertTrue(table2.getRecords().size()==1);
-	Assert.assertTrue(table3.getRecords().size()==2);
-	Assert.assertTrue(table4.getRecords().size()==1);
-	Assert.assertTrue(table5.getRecords().size()==1);
-	Assert.assertTrue(table6.getRecords().size()==1);
+	Assert.assertEquals(table1.getRecordsNumber(), 2);
+	Assert.assertEquals(table3.getRecordsNumber(), 2);
+	Assert.assertEquals(table2.getRecordsNumber(), 1);
+	Assert.assertEquals(table4.getRecordsNumber(), 1);
+	Assert.assertEquals(table5.getRecordsNumber(), 1);
+	Assert.assertEquals(table1.getRecords().size(), 2);
+	Assert.assertEquals(table2.getRecords().size(), 1);
+	Assert.assertEquals(table3.getRecords().size(), 2);
+	Assert.assertEquals(table4.getRecords().size(), 1);
+	Assert.assertEquals(table5.getRecords().size(), 1);
 	
 	
 	HashMap<String, Object> map=new HashMap<>();
@@ -153,6 +152,7 @@ public class DerbyTestDatabase extends TestDatabase
 		return true;
 	    }
 	});
+
 	table3.removeRecords(new Filter<Table3.Record>() {
 
 	    @Override
@@ -162,16 +162,16 @@ public class DerbyTestDatabase extends TestDatabase
 	    }
 	});
 	
-	Assert.assertTrue(table1.getRecordsNumber()==2);
-	Assert.assertTrue(table3.getRecordsNumber()==1);
-	Assert.assertTrue(table2.getRecordsNumber()==2);
-	Assert.assertTrue(table4.getRecordsNumber()==1);
-	Assert.assertTrue(table5.getRecordsNumber()==1);
-	Assert.assertTrue(table1.getRecords().size()==2);
-	Assert.assertTrue(table2.getRecords().size()==2);
-	Assert.assertTrue(table3.getRecords().size()==1);
-	Assert.assertTrue(table4.getRecords().size()==1);
-	Assert.assertTrue(table5.getRecords().size()==1);
+	Assert.assertEquals(table1.getRecordsNumber(), 2);
+	Assert.assertEquals(table3.getRecordsNumber(), 1);
+	Assert.assertEquals(table2.getRecordsNumber(), 2);
+	Assert.assertEquals(table4.getRecordsNumber(), 1);
+	Assert.assertEquals(table5.getRecordsNumber(), 1);
+	Assert.assertEquals(table1.getRecords().size(), 2);
+	Assert.assertEquals(table2.getRecords().size(), 2);
+	Assert.assertEquals(table3.getRecords().size(), 1);
+	Assert.assertEquals(table4.getRecords().size(), 1);
+	Assert.assertEquals(table5.getRecords().size(), 1);
 	
 	try
 	{
