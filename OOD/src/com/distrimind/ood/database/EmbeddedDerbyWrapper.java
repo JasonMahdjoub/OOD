@@ -44,7 +44,6 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.SQLNonTransientConnectionException;
 import java.sql.Savepoint;
 import java.util.regex.Pattern;
 
@@ -66,7 +65,7 @@ import com.distrimind.util.FileTools;
 public class EmbeddedDerbyWrapper extends DatabaseWrapper
 {
     private static boolean derby_loaded = false;
-    private final String dbURL;
+    //private final String dbURL;
     private final File fileDirectory;
     private static void ensureDerbyLoading() throws DatabaseLoadingException
     {
@@ -103,7 +102,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
     public EmbeddedDerbyWrapper(File _directory) throws IllegalArgumentException, DatabaseException
     {
 	super(/*getConnection(_directory), */"Database from file : " + _directory.getAbsolutePath());
-	dbURL = getDBUrl(_directory);
+	//dbURL = getDBUrl(_directory);
 	fileDirectory=_directory;
     }
 
@@ -161,11 +160,12 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
     }
 
     @Override
-    protected void closeConnection(Connection connection) throws SQLException
+    protected void closeConnection(Connection connection, boolean deepClose) throws SQLException
     {
-	try
+	connection.close();
+	/*try
 	{
-	    DriverManager.getConnection(dbURL + ";shutdown=true");
+	    //DriverManager.getConnection(dbURL + ";shutdown=true");
 	}
 	catch (SQLNonTransientConnectionException e)
 	{
@@ -174,7 +174,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
 	finally
 	{
 	    connection.close();
-	}
+	}*/
     }
 
     @Override

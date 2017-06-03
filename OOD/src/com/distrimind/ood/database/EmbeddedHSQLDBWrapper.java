@@ -46,6 +46,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Savepoint;
 import java.sql.Statement;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 import org.hsqldb.jdbc.JDBCBlob;
@@ -140,8 +141,8 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
 	ensureHSQLLoading();
 	try
 	{
-	    Connection c=DriverManager.getConnection("jdbc:hsqldb:file:"+getHSQLDBDataFileName(_file_name)+";hsqldb.cache_rows="+_cache_rows+";hsqldb.cache_size="+_cache_size+";hsqldb.result_max_memory_rows="+_result_max_memory_rows+";hsqldb.cache_free_count="+_cache_free_count+";shutdown=true", "SA", "");
-	    
+	    Connection c=DriverManager.getConnection("jdbc:hsqldb:file:"+getHSQLDBDataFileName(_file_name)+";hsqldb.cache_rows="+_cache_rows+";hsqldb.cache_size="+_cache_size+";hsqldb.result_max_memory_rows="+_result_max_memory_rows+";hsqldb.cache_free_count="+_cache_free_count, "SA", "");
+	    databaseShutdown.set(false);
 
 	    try(Statement s=c.createStatement())
 	    {
@@ -225,26 +226,27 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
 	super(getConnection(_url), "Database from URL : "+_url.getPath());
     }*/
     
+    private final static AtomicBoolean databaseShutdown=new AtomicBoolean(false);
+    
     @Override
-    protected void closeConnection(Connection connection) throws SQLException
+    protected void closeConnection(Connection connection, boolean deepClose) throws SQLException
     {
-	try(Statement s=connection.createStatement())
-	{
-	    s.executeQuery("SHUTDOWN"+getSqlComma());
-	    /*try(Statement s2=sql_connection.createStatement())
-	    {
-		s2.executeQuery("SHUTDOWN"+getSqlComma());
-	    }
-	    try(Statement s3=sql_connection.createStatement())
-	    {
-		s3.executeQuery("COMMIT"+getSqlComma());
-	    }*/
-
-	}
-	finally
+	if (!deepClose || databaseShutdown.getAndSet(true))
 	{
 	    connection.close();
 	}
+	else
+	{
+	    try(Statement s=connection.createStatement())
+	    {
+		s.executeQuery("SHUTDOWN"+getSqlComma());
+	    }
+	    finally
+	    {
+		connection.close();
+	    }
+	}
+	
     }
     
     @Override

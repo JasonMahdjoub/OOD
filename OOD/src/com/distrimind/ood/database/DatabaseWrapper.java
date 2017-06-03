@@ -804,7 +804,7 @@ public abstract class DatabaseWrapper
 		/*try
 		{*/
 		    if (sql_connection!=null && !sql_connection.isValid(5))
-			sql_connection.close();
+			closeConnection(sql_connection, false);
 		    if (sql_connection==null || sql_connection.isClosed())
 			sql_connection=reopenConnection();
 		/*}
@@ -823,8 +823,12 @@ public abstract class DatabaseWrapper
     
     protected abstract String getCachedKeyword();
     
-    protected abstract void closeConnection(Connection c) throws SQLException;
+    protected abstract void closeConnection(Connection c, boolean deepClosing) throws SQLException;
     
+    public boolean isClosed()
+    {
+	return closed;
+    }
     public final void close() 
     {
 	if (!closed)
@@ -841,11 +845,12 @@ public abstract class DatabaseWrapper
 			for (Iterator<Entry<Thread, Connection>> it= threadPerConnection.entrySet().iterator();it.hasNext();)
 			{
 			    Entry<Thread, Connection> c=it.next();
-			    if (threadPerConnectionInProgress.containsKey(c.getKey()))
-				continue;
+			    /*if (threadPerConnectionInProgress.containsKey(c.getKey()))
+				continue;*/
 			    try
 			    {
-				closeConnection(c.getValue());
+				if (!c.getValue().isClosed())
+				    closeConnection(c.getValue(), true);
 			    }
 			    catch(SQLException e)
 			    {
@@ -1001,7 +1006,7 @@ public abstract class DatabaseWrapper
 		if (closed)
 		{
 		    if (!c.isClosed())
-			closeConnection(c);
+			closeConnection(c, true);
 		}
 	    
 		for (Iterator<Entry<Thread, Connection>> it=threadPerConnection.entrySet().iterator();it.hasNext();)
@@ -1010,8 +1015,9 @@ public abstract class DatabaseWrapper
 		    
 		    if (!e.getKey().isAlive())
 		    {
-			if (!e.getValue().isClosed())
-			    e.getValue().close();
+			if (!e.getValue().isClosed() && !e.getValue().isClosed())
+			    closeConnection(e.getValue(), false);
+
 			it.remove();
 		    }
 		}
