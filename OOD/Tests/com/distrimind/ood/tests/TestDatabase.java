@@ -58,6 +58,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import com.distrimind.ood.database.AlterRecordFilter;
@@ -3169,7 +3170,7 @@ public abstract class TestDatabase
     
     
     
-    //@DataProvider(name = "interpreterCommandsProvider", parallel = true)
+    @DataProvider(name = "interpreterCommandsProvider", parallel = true)
     public Object[][] interpreterCommandsProvider() throws IOException, NoSuchAlgorithmException, NoSuchProviderException
     {
 	HashMap<String, Object> parametersTable1Equallable=new HashMap<>();
@@ -3208,8 +3209,8 @@ public abstract class TestDatabase
 	parametersTable1Equallable.put("DateValue", date);
 	parametersTable1Equallable.put("CalendarValue", calendar);
 	
-	SymbolType []ops_cond=new SymbolType[]{SymbolType.AND_CONDITION, SymbolType.OR_CONDITION};
-	SymbolType []ops_comp=new SymbolType[]{SymbolType.EQUAL_OPERATOR, SymbolType.NOT_EQUAL_OPERATOR};
+	SymbolType []ops_cond=new SymbolType[]{SymbolType.ANDCONDITION, SymbolType.ORCONDITION};
+	SymbolType []ops_comp=new SymbolType[]{SymbolType.EQUALOPERATOR, SymbolType.NOTEQUALOPERATOR};
 	for (SymbolType op_cond : ops_cond)
 	{
 	    for (SymbolType op_comp : ops_comp)
@@ -3253,7 +3254,7 @@ public abstract class TestDatabase
 		    }
 		    expectedCommand.append(")");
 		}
-		res.add(new Object[]{table1, command, parametersTable1Equallable, expectedCommand, expectedParameters});
+		res.add(new Object[]{table1, command.toString(), parametersTable1Equallable, expectedCommand.toString(), expectedParameters});
 	    }
 	}
 	Object [][]resO=new Object[res.size()][];
@@ -3263,6 +3264,8 @@ public abstract class TestDatabase
 	}
 	return resO;
     }
+    
+    
     
     //@DataProvider(name = "interpreterCommandsVerifProvider", parallel = true)
     public Object[][] interpreterCommandsVerifProvider()
@@ -3279,7 +3282,7 @@ public abstract class TestDatabase
     }
     
     
-    //@Test(dependsOnMethods={"testIsConcernedInterpreterFunction"}, dataProvider = "interpreterCommandsVerifProvider") 
+    @Test(dependsOnMethods={"setAutoRandomFields"}, dataProvider = "interpreterCommandsProvider") 
     public void testCommandTranslatorInterpreter(Table<?> table, String command, Map<String, Object> parameters, String expectedSqlCommand, Map<Integer, Object> expectedSqlParameters) throws DatabaseException
     {
 	HashMap<Integer, Object> sqlParameters=new HashMap<>();

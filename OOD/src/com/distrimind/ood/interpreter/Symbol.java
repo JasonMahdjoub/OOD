@@ -82,16 +82,16 @@ public class Symbol implements QueryPart
     {
 	switch(type)
 	{
-	    case ADD_OPERATOR:case SUB_OPERATOR:
-		return new RuleInstance(Rule.OP_ADD, this);
-	    case AND_CONDITION:case OR_CONDITION:
-		return new RuleInstance(Rule.OP_CONDITION, this);
+	    case ADDOPERATOR:case SUBOPERATOR:
+		return new RuleInstance(Rule.OPADD, this);
+	    case ANDCONDITION:case ORCONDITION:
+		return new RuleInstance(Rule.OPCONDITION, this);
 	    case CLOSE_PARENTHESIS:
 		return null;
-	    case DIV_OPERATOR:case MUL_OPETATOR:
-		return new RuleInstance(Rule.OP_MUL, this);
-	    case EQUAL_OPERATOR:case GREATER_OPERATOR:case GREATER_OR_EQUAL_OPERATOR:case LOWER_OPERATOR:case LOWER_OR_EQUAL_OPERATOR:
-		return new RuleInstance(Rule.OP_COMP, this);
+	    case DIVOPERATOR:case MULOPETATOR:
+		return new RuleInstance(Rule.OPMUL, this);
+	    case EQUALOPERATOR:case GREATEROPERATOR:case GREATEROREQUALOPERATOR:case LOWEROPERATOR:case LOWEROREQUALOPERATOR:
+		return new RuleInstance(Rule.OPCOMP, this);
 	    case IDENTIFIER:case NUMBER:case PARAMETER:
 		return new RuleInstance(Rule.TERME, this);
 	    default:

@@ -63,6 +63,8 @@ public class Interpreter
     
     public static RuleInstance getRuleInstance(String whereCommand) throws DatabaseSyntaxException
     {
+	if (whereCommand==null)
+	    throw new NullPointerException("whereCommand");
 	ArrayList<QueryPart> qp=getRules(lexicalAnalyse(whereCommand));
 	RuleInstance query=getQuery(whereCommand, qp);
 	return query;
@@ -90,7 +92,10 @@ public class Interpreter
 	ArrayList<Symbol> symbols=new ArrayList<>(sls.length);
 	for (String s : sls)
 	{
-	    Symbol symbol=SymbolType.getSymbol(s.trim());
+	    String st=s.trim();
+	    if (st.isEmpty())
+		continue;
+	    Symbol symbol=SymbolType.getSymbol(st.trim());
 	    if (symbol==null)
 		throw new UnrecognizedSymbolException(s);
 	    symbols.add(symbol);

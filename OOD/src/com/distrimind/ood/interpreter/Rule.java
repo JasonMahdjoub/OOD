@@ -47,14 +47,14 @@ public enum Rule
 {
     
     TERME("^(<"+SymbolType.IDENTIFIER.name()+ ">|<"+SymbolType.NUMBER.name()+">|<"+SymbolType.PARAMETER.name()+">|\\(<EXPRESSION>\\))$"),
-    OP_MUL("^(<"+SymbolType.MUL_OPETATOR.name()+ ">|<"+SymbolType.DIV_OPERATOR.name()+">)$"),
-    OP_ADD("^(<"+SymbolType.ADD_OPERATOR.name()+ ">|<"+SymbolType.ADD_OPERATOR.name()+">)$"),
-    FACTEUR("^(<"+TERME.name()+ ">|<"+TERME.name()+ "><"+OP_MUL.name()+ "><FACTEUR>)$"),
-    EXPRESSION("^(<"+FACTEUR.name()+">|<"+FACTEUR.name()+"><"+OP_ADD.name()+ "><EXPRESSION>)$"),
-    OP_COMP("^(<"+SymbolType.EQUAL_OPERATOR.name()+">|<"+SymbolType.NOT_EQUAL_OPERATOR.name()+ ">|<"+SymbolType.LOWER_OPERATOR.name()+ ">|<"+SymbolType.LOWER_OR_EQUAL_OPERATOR.name()+ ">|<"+SymbolType.GREATER_OPERATOR.name()+">|<"+SymbolType.GREATER_OR_EQUAL_OPERATOR.name()+">)$"),
-    COMPARE("^(<"+EXPRESSION.name()+"><"+OP_COMP.name()+"><"+EXPRESSION.name()+">|\\(<QUERY>\\))$)"),
-    OP_CONDITION("^(<"+SymbolType.AND_CONDITION.name()+">|<"+SymbolType.OR_CONDITION.name()+">)$"),
-    QUERY("^(<"+COMPARE.name()+">|<"+COMPARE.name()+"><"+OP_CONDITION.name()+"><QUERY>)$");
+    OPMUL("^(<"+SymbolType.MULOPETATOR.name()+ ">|<"+SymbolType.DIVOPERATOR.name()+">)$"),
+    OPADD("^(<"+SymbolType.ADDOPERATOR.name()+ ">|<"+SymbolType.SUBOPERATOR.name()+">)$"),
+    FACTEUR("^(<"+TERME.name()+ ">|<"+TERME.name()+ "><"+OPMUL.name()+ "><FACTEUR>)$"),
+    EXPRESSION("^(<"+FACTEUR.name()+">|<"+FACTEUR.name()+"><"+OPADD.name()+ "><EXPRESSION>)$"),
+    OPCOMP("^(<"+SymbolType.EQUALOPERATOR.name()+">|<"+SymbolType.NOTEQUALOPERATOR.name()+ ">|<"+SymbolType.LOWEROPERATOR.name()+ ">|<"+SymbolType.LOWEROREQUALOPERATOR.name()+ ">|<"+SymbolType.GREATEROPERATOR.name()+">|<"+SymbolType.GREATEROREQUALOPERATOR.name()+">)$"),
+    COMPARE("^(<"+EXPRESSION.name()+"><"+OPCOMP.name()+"><"+EXPRESSION.name()+">|\\(<QUERY>\\))$"),
+    OPCONDITION("^(<"+SymbolType.ANDCONDITION.name()+">|<"+SymbolType.ORCONDITION.name()+">)$"),
+    QUERY("^(<"+COMPARE.name()+">|<"+COMPARE.name()+"><"+OPCONDITION.name()+"><QUERY>)$");
     
     
     

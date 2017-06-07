@@ -118,13 +118,13 @@ public class RuleInstance implements QueryPart
 		{
 		    return false;
 		}
-	    case OP_ADD:
+	    case OPADD:
 		return false;
-	    case OP_COMP:
+	    case OPCOMP:
 		return false;
-	    case OP_CONDITION:
+	    case OPCONDITION:
 		return false;
-	    case OP_MUL:
+	    case OPMUL:
 		return false;
 	    case QUERY:
 		return false;
@@ -174,13 +174,13 @@ public class RuleInstance implements QueryPart
 		    return parts.get(0).getValueType(table, parameters);
 		else
 		    return "comparable";
-	    case OP_ADD:
+	    case OPADD:
 		return "comparable";
-	    case OP_COMP:
+	    case OPCOMP:
 		return "boolean";
-	    case OP_CONDITION:
+	    case OPCONDITION:
 		return "boolean";
-	    case OP_MUL:
+	    case OPMUL:
 		return "comparable";
 	    case QUERY:
 		return "boolean";
@@ -227,19 +227,19 @@ public class RuleInstance implements QueryPart
 		    
 		    Symbol comp=(Symbol)((RuleInstance)parts.get(1)).parts.get(0);
 		    
-		    if (comp.getType()==SymbolType.ADD_OPERATOR)
+		    if (comp.getType()==SymbolType.ADDOPERATOR)
 		    {
 			return v1.add(v2);
 		    }
-		    else if (comp.getType()==SymbolType.SUB_OPERATOR)
+		    else if (comp.getType()==SymbolType.SUBOPERATOR)
 		    {
 			return v1.subtract(v2);
 		    }
-		    else if (comp.getType()==SymbolType.MUL_OPETATOR)
+		    else if (comp.getType()==SymbolType.MULOPETATOR)
 		    {
 			return v1.multiply(v2);
 		    }
-		    else if (comp.getType()==SymbolType.DIV_OPERATOR)
+		    else if (comp.getType()==SymbolType.DIVOPERATOR)
 		    {
 			return v1.divide(v2);
 		    }
@@ -250,7 +250,7 @@ public class RuleInstance implements QueryPart
 		    throw new IllegalAccessError();
 		
 		
-	    case OP_COMP:case OP_ADD:case OP_CONDITION:case OP_MUL:
+	    case OPCOMP:case OPADD:case OPCONDITION:case OPMUL:
 		throw new IllegalAccessError();
 	    case TERME:
 		if (parts.size()==1)
@@ -295,7 +295,7 @@ public class RuleInstance implements QueryPart
 	{
 	    case EXPRESSION:case FACTEUR:
 		return getNumber(table, parameters, record);
-	    case OP_COMP:case OP_ADD:case OP_CONDITION:case OP_MUL:case COMPARE:case QUERY:
+	    case OPCOMP:case OPADD:case OPCONDITION:case OPMUL:case COMPARE:case QUERY:
 		throw new IllegalAccessError();
 	    case TERME:
 		if (parts.size()==1)
@@ -432,30 +432,30 @@ public class RuleInstance implements QueryPart
 			RuleInstance ri3=(RuleInstance)parts.get(2);
 			
 			Symbol comp=(Symbol)ri2.parts.get(0);
-			if (comp.getType()==SymbolType.EQUAL_OPERATOR)
+			if (comp.getType()==SymbolType.EQUALOPERATOR)
 			{
 			    return equals(table, record, ri1.getEquallable(table, parameters, record), ri3.getEquallable(table, parameters, record));
 			}
-			else if (comp.getType()==SymbolType.NOT_EQUAL_OPERATOR)
+			else if (comp.getType()==SymbolType.NOTEQUALOPERATOR)
 			{
 			    return !equals(table, record, ri1.getEquallable(table, parameters, record), ri3.getEquallable(table, parameters, record));
 			}
 			else
 			{
 			    int c=compareTo(table, record, ri1.getComparable(table, parameters, record), ri3.getComparable(table, parameters, record));
-			    if (comp.getType()==SymbolType.LOWER_OPERATOR)
+			    if (comp.getType()==SymbolType.LOWEROPERATOR)
 			    {
 				return c<0;
 			    }
-			    else if (comp.getType()==SymbolType.GREATER_OPERATOR)
+			    else if (comp.getType()==SymbolType.GREATEROPERATOR)
 			    {
 				return c>0;
 			    }
-			    else if (comp.getType()==SymbolType.LOWER_OR_EQUAL_OPERATOR)
+			    else if (comp.getType()==SymbolType.LOWEROREQUALOPERATOR)
 			    {
 				return c<=0;
 			    }
-			    else if (comp.getType()==SymbolType.GREATER_OR_EQUAL_OPERATOR)
+			    else if (comp.getType()==SymbolType.GREATEROREQUALOPERATOR)
 			    {
 				return c>0;
 			    }
@@ -479,16 +479,16 @@ public class RuleInstance implements QueryPart
 		    
 		    boolean vri1=ri1.isConcernedBy(table, parameters, record);
 		    boolean vri2=ri3.isConcernedBy(table, parameters, record);
-		    if (comp.getType()==SymbolType.ADD_OPERATOR)
+		    if (comp.getType()==SymbolType.ADDOPERATOR)
 			return vri1 && vri2;
-		    else if (comp.getType()==SymbolType.OR_CONDITION)
+		    else if (comp.getType()==SymbolType.ORCONDITION)
 			return vri1 || vri2;
 		    else
 			throw new IllegalAccessError();
 		}
 		else
 		    throw new IllegalAccessError();
-	    case TERME:case FACTEUR:case EXPRESSION:case OP_COMP:case OP_ADD:case OP_CONDITION:case OP_MUL:
+	    case TERME:case FACTEUR:case EXPRESSION:case OPCOMP:case OPADD:case OPCONDITION:case OPMUL:
 		throw new IllegalAccessError();
 	}
 	throw new IllegalAccessError();
@@ -524,7 +524,7 @@ public class RuleInstance implements QueryPart
 			RuleInstance ri3=(RuleInstance)parts.get(2);
 			Symbol comp=(Symbol)ri2.parts.get(0);
 			
-			if (comp.getType()==SymbolType.EQUAL_OPERATOR || comp.getType()==SymbolType.NOT_EQUAL_OPERATOR)
+			if (comp.getType()==SymbolType.EQUALOPERATOR || comp.getType()==SymbolType.NOTEQUALOPERATOR)
 			{
 			    if (!ri1.isEqualable(table, parameters, ri3))
 			    {
@@ -707,7 +707,7 @@ public class RuleInstance implements QueryPart
 		else
 		    throw new IllegalAccessError();
 		break;
-	    case OP_COMP:case OP_ADD:case OP_CONDITION:case OP_MUL:
+	    case OPCOMP:case OPADD:case OPCONDITION:case OPMUL:
 		throw new IllegalAccessError();
 	    case TERME:
 		if (parts.size()==1)

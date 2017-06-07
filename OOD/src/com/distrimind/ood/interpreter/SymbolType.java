@@ -45,23 +45,23 @@ import java.util.regex.Pattern;
  */
 public enum SymbolType
 {
-    ADD_OPERATOR(true,"^\\+$", "+"),
-    SUB_OPERATOR(true,"^\\-$", "-"),
-    MUL_OPETATOR(true,"^\\*$", "*"),
-    DIV_OPERATOR(true,"^/$", "/"),
-    LOWER_OPERATOR(true,"^<$", "<"),
-    EQUAL_OPERATOR(true,"^(=){1,2}$", "="),
-    NOT_EQUAL_OPERATOR(true,"^(!=|<>)$", "<>"),
-    GREATER_OPERATOR(true,"^>$", ">"),
-    LOWER_OR_EQUAL_OPERATOR(true,"^<=$", "<="),
-    GREATER_OR_EQUAL_OPERATOR(true,"^>=$", ">="),
+    ADDOPERATOR(true,"^\\+$", "+"),
+    SUBOPERATOR(true,"^\\-$", "-"),
+    MULOPETATOR(true,"^\\*$", "*"),
+    DIVOPERATOR(true,"^/$", "/"),
+    LOWEROPERATOR(true,"^<$", "<"),
+    EQUALOPERATOR(true,"^(=){1,2}$", "="),
+    NOTEQUALOPERATOR(true,"^(!=|<>)$", "<>"),
+    GREATEROPERATOR(true,"^>$", ">"),
+    LOWEROREQUALOPERATOR(true,"^<=$", "<="),
+    GREATEROREQUALOPERATOR(true,"^>=$", ">="),
     OPEN_PARENTHESIS(true,"^\\($", "("),
     CLOSE_PARENTHESIS(true,"^\\)$", ")"),
-    AND_CONDITION(false,"^[Aa][Nn][Dd]$", "AND"),
-    OR_CONDITION(false,"^[Oo][Rr]$", "OR"),
-    IDENTIFIER(false,"^[a-zA-Z][a-zA-Z0-9\\.]*+$", null),
-    NUMBER(true,"^[0-9]+$", null),
-    PARAMETER(true,"\\(%|:)[a-zA-Z\\-_][0-9a-zA-Z\\-_]+$", null);
+    ANDCONDITION(false,"^[Aa][Nn][Dd]$", "AND"),
+    ORCONDITION(false,"^[Oo][Rr]$", "OR"),
+    IDENTIFIER(false,"^[a-zA-Z][a-zA-Z0-9\\._\\-]*+$", null),
+    NUMBER(false,"^[0-9]+$", null),
+    PARAMETER(false,"(\\%|\\:)[a-zA-Z\\-_][0-9a-zA-Z\\-_]+$", null);
     
     
     private final Pattern pattern;
