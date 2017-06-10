@@ -95,10 +95,12 @@ public class Interpreter
 	    String st=s.trim();
 	    if (st.isEmpty())
 		continue;
-	    Symbol symbol=SymbolType.getSymbol(st.trim());
+	    Symbol symbol=SymbolType.getSymbol(st);
 	    if (symbol==null)
 		throw new UnrecognizedSymbolException(s);
+
 	    symbols.add(symbol);
+	    
 	}
 	return symbols;
     }
@@ -109,8 +111,12 @@ public class Interpreter
 	for (Symbol s : symbols)
 	{
 	    RuleInstance r=s.getRule();
+	    
+	    
 	    if (r!=null)
+	    {
 		res.add(r);
+	    }
 	    else
 		res.add(s);
 	}
@@ -118,11 +124,14 @@ public class Interpreter
     }
     private static RuleInstance getQuery(String command, ArrayList<QueryPart> parts) throws DatabaseSyntaxException
     {
-	
 	while (parts.size()>1)
 	{
+	    
 	    parts=getNewQueryParts(command, parts);
 	}
+	
+	
+	
 	if (parts.isEmpty())
 	    throw new QueryInterpretationImpossible(command);
 	
@@ -142,13 +151,16 @@ public class Interpreter
 	    throw new NullPointerException("command");
 	
 	AtomicInteger index=new AtomicInteger(0);
-	ArrayList<QueryPart> res=new ArrayList<>();
+	ArrayList<QueryPart> res=new ArrayList<>(parts.size());
 	boolean changed=false;
 	while (index.get()<parts.size())
 	{
 	    RuleInstance ri=getQuery(command, parts, index.get(), index);
+	    
 	    if (ri==null)
+	    {
 		res.add(parts.get(index.getAndIncrement()));
+	    }
 	    else
 	    {
 		changed=true;
@@ -158,47 +170,50 @@ public class Interpreter
 	if (changed)
 	    return res;
 	else
+	{
 	    throw new QueryInterpretationImpossible(command);
+	}
     }
     private static RuleInstance getQuery(String command, ArrayList<QueryPart> parts, int index, AtomicInteger newIndex ) 
     {
-	String longestRule=null;
-	Rule choosenRule=null, choosenValidRule=null;
-	String longestValidRule=null;
+	
+	Rule choosenValidRule=null;
+	
 	StringBuffer currentRule=new StringBuffer("");
 	int len=0;
 	
 	for (int i=index;i<parts.size();i++)
 	{
 	    boolean valid=true;
-	    longestRule=null;
-	    choosenRule=null;
-	    currentRule.append(parts.get(index).getBackusNaurNotation());
+	    
+	    Rule choosenRule=null;
+	    currentRule.append(parts.get(i).getBackusNaurNotation());
+	    
 	    String rc=currentRule.toString();
 	    for (Rule r : Rule.values())
 	    {
 		if (r.match(rc))
 		{
-		    if (longestRule!=null)
+		    if (choosenRule!=null)
 		    {
 			valid=false;
 			break;
 		    }
-		    longestRule=rc;
 		    choosenRule=r;
 		}
 	    }
-	    if (valid && longestRule!=null)
+	    if (valid && choosenRule!=null)
 	    {
-		longestValidRule=longestRule;
 		choosenValidRule=choosenRule;
 		len=i-index+1;
-		newIndex.set(index+1);
 	    }
 	}
-	if (longestValidRule==null)
+	if (choosenValidRule==null)
+	{
 	    return null;
+	}
 	
+	newIndex.set(index+len);
 	RuleInstance ri=new RuleInstance(choosenValidRule, parts, index, len);
 	return ri;
     }

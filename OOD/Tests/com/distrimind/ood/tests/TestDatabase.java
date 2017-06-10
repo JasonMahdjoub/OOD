@@ -41,12 +41,14 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -3073,7 +3075,7 @@ public abstract class TestDatabase
 	
     }
     
-    private ArrayList<Object> getExpectedParameter(Object o) throws IOException
+    private ArrayList<Object> getExpectedParameter(Class<?> type, Object o) throws IOException
     {
 	ArrayList<Object> res=new ArrayList<>();
 	if (o==null)
@@ -3093,10 +3095,27 @@ public abstract class TestDatabase
 	    res.add(new Long(id.getTimeStamp()));
 	    res.add(new Long(id.getWorkerIDAndSequence()));
 	}
-	else if (o instanceof AbstractDecentralizedID)
+	else if (DecentralizedIDGenerator.class.isAssignableFrom(type))
+	{
+	    DecentralizedIDGenerator d=(DecentralizedIDGenerator)o;
+	    res.add(new Long(d.getTimeStamp()));
+	    res.add(new Long(d.getWorkerIDAndSequence()));
+	}
+	else if (AbstractDecentralizedID.class.isAssignableFrom(type))
 	{
 	    AbstractDecentralizedID id=(AbstractDecentralizedID)o;
-	    res.add(id.getBytes());
+	    if (DatabaseWrapperAccessor.isVarBinarySupported(sql_db))
+		res.add(id.getBytes());
+	    else
+	    {
+		byte[] bytes=id.getBytes();
+		BigInteger r=BigInteger.valueOf(1);
+		for (int i=0;i<bytes.length;i++)
+		{
+		    r=r.shiftLeft(8).or(BigInteger.valueOf(bytes[i] & 0xFF));
+		}
+		res.add(new BigDecimal(r));		
+	    }
 	}
 	else if (o.getClass()==int.class 
 		|| o.getClass()==byte.class
@@ -3132,16 +3151,19 @@ public abstract class TestDatabase
 	}
 	else if (o instanceof Serializable)
 	{
+	    if (DatabaseWrapperAccessor.getSerializableType(sql_db).equals("BLOB"))
+	    {
 		try(ByteArrayOutputStream baos=new ByteArrayOutputStream())
 		{
 		    try(ObjectOutputStream os=new ObjectOutputStream(baos))
 		    {
 			os.writeObject(o);
-		
-			res.add(new ByteArrayInputStream(baos.toByteArray()));
+			res.add(baos.toByteArray());
 		    }
 		}    
-	    
+	    }
+	    else
+		res.add(o);
 	}
 	return res;
     }
@@ -3170,8 +3192,8 @@ public abstract class TestDatabase
     
     
     
-    @DataProvider(name = "interpreterCommandsProvider", parallel = true)
-    public Object[][] interpreterCommandsProvider() throws IOException, NoSuchAlgorithmException, NoSuchProviderException
+    @DataProvider(name = "interpreterCommandsProvider")
+    public Object[][] interpreterCommandsProvider() throws IOException, NoSuchAlgorithmException, NoSuchProviderException, DatabaseException
     {
 	HashMap<String, Object> parametersTable1Equallable=new HashMap<>();
 	
@@ -3199,9 +3221,11 @@ public abstract class TestDatabase
 	parametersTable1Equallable.put("FloatNumber_value", new Float(1.0f));
 	parametersTable1Equallable.put("DoubleNumber_value", new Double(1.0));
 	
-	Date date=new Date(1322423234l);
 	Calendar calendar=Calendar.getInstance(Locale.CANADA);
-	calendar.setTime(date);
+	calendar.set(2045, 7, 29, 18, 32, 43);
+	
+	
+	
 	
 	parametersTable1Equallable.put("byte_array_value", new byte[]{(byte)0, (byte)1});
 	parametersTable1Equallable.put("BigInteger_value", BigInteger.valueOf(3));
@@ -3238,7 +3262,7 @@ public abstract class TestDatabase
 		    command.append(m.getKey());
 		    
 		    
-		    ArrayList<Object> sqlInstance=getExpectedParameter(m.getValue());
+		    ArrayList<Object> sqlInstance=getExpectedParameter(table1.getFieldAccessor(m.getKey()).getFieldClassType(), m.getValue());
 		    ArrayList<String> sqlVariablesName=getExpectedParametersName(m.getKey(), m.getValue().getClass());
 		    expectedCommand.append("(");
 		    for (int i=0;i<sqlInstance.size();i++)
@@ -3282,13 +3306,17 @@ public abstract class TestDatabase
     }
     
     
-    @Test(dependsOnMethods={"setAutoRandomFields"}, dataProvider = "interpreterCommandsProvider") 
+    @Test(dependsOnMethods={"firstLoad"}, dataProvider = "interpreterCommandsProvider") 
     public void testCommandTranslatorInterpreter(Table<?> table, String command, Map<String, Object> parameters, String expectedSqlCommand, Map<Integer, Object> expectedSqlParameters) throws DatabaseException
     {
+
 	HashMap<Integer, Object> sqlParameters=new HashMap<>();
 	String sqlCommand=Interpreter.getRuleInstance(command).translateToSqlQuery(table, parameters, sqlParameters).toString();
-	Assert.assertEquals(sqlCommand, expectedSqlCommand);
-	Assert.assertEquals(sqlParameters, expectedSqlParameters);
+	Assert.assertEquals(sqlCommand, expectedSqlCommand.toUpperCase());
+	for (Map.Entry<Integer, Object> e : sqlParameters.entrySet())
+	{
+	    Assert.assertEquals(e.getValue(), expectedSqlParameters.get(e.getKey()));
+	}
     }
     
     

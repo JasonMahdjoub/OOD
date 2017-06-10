@@ -138,7 +138,7 @@ public class SerializableFieldAccessor extends FieldAccessor
 	    {
 		try(ObjectInputStream ois=new ObjectInputStream(bais))
 		{
-		    Object res=ois.readObject();
+		    Object res=unserialize(ois);
 		    if (res==null && isNotNull())
 			throw new DatabaseIntegrityException("Unexpected exception.");
 		    field.set(_class_instance, res);
@@ -163,7 +163,8 @@ public class SerializableFieldAccessor extends FieldAccessor
 		{
 		    try(ObjectOutputStream os=new ObjectOutputStream(baos))
 		    {
-			os.writeObject(field.get(_class_instance));
+			serialize(os, _class_instance);
+			//os.writeObject(field.get(_class_instance));
 		
 			try(ByteArrayInputStream bais=new ByteArrayInputStream(baos.toByteArray()))
 			{
@@ -193,7 +194,8 @@ public class SerializableFieldAccessor extends FieldAccessor
 		{
 		    try(ObjectOutputStream os=new ObjectOutputStream(baos))
 		    {
-			os.writeObject(field.get(_class_instance));
+			serialize(os, _class_instance);
+			//os.writeObject(field.get(_class_instance));
 		
 			try(ByteArrayInputStream bais=new ByteArrayInputStream(baos.toByteArray()))
 			{
@@ -239,7 +241,8 @@ public class SerializableFieldAccessor extends FieldAccessor
 	    {
 		try(ObjectInputStream ois=new ObjectInputStream(bais))
 		{
-		    Object val1=ois.readObject();
+		    
+		    Object val1=unserialize(ois);
 		    if (val1==null || _field_instance==null)
 			return _field_instance==val1;
 		    if ((!(field.getType().isAssignableFrom(_field_instance.getClass()))))
@@ -290,7 +293,8 @@ public class SerializableFieldAccessor extends FieldAccessor
 		{
 		    try(ObjectOutputStream os=new ObjectOutputStream(baos))
 		    {
-			os.writeObject(o);
+			serializeObject(os, o);
+			//os.writeObject(o);
 		
 			try(ByteArrayInputStream bais=new ByteArrayInputStream(baos.toByteArray()))
 			{
@@ -318,8 +322,28 @@ public class SerializableFieldAccessor extends FieldAccessor
     public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException
     {
 	SqlFieldInstance res[]=new SqlFieldInstance[1];
-	res[0]=new SqlFieldInstance(sql_fields[0], getValue(_instance));
+	if (DatabaseWrapperAccessor.getSerializableType(sql_connection).equals("BLOB"))
+	{
+	    try(ByteArrayOutputStream baos=new ByteArrayOutputStream())
+	    {
+		try(ObjectOutputStream os=new ObjectOutputStream(baos))
+		{
+		    this.serialize(os, _instance);
+		}
+		res[0]=new SqlFieldInstance(sql_fields[0], baos.toByteArray());
+		
+	    }
+	    catch(Exception e)
+	    {
+		throw DatabaseException.getDatabaseException(e);
+	    }
+	}
+	else
+	{
+	    res[0]=new SqlFieldInstance(sql_fields[0], getValue(_instance));
+	}
 	return res;
+	
     }
 
     @Override
@@ -372,7 +396,7 @@ public class SerializableFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    _oos.writeObject(getValue(_class_instance));
+	    serializeObject(_oos, getValue(_class_instance));
 	}
 	catch(Exception e)
 	{
@@ -380,7 +404,17 @@ public class SerializableFieldAccessor extends FieldAccessor
 	}
     }
 
-
+    public void serializeObject(ObjectOutputStream _oos, Object object) throws DatabaseException
+    {
+	try
+	{
+	    _oos.writeObject(object);
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
 
     @Override
     public void unserialize(ObjectInputStream _ois, HashMap<String, Object> _map) throws DatabaseException
@@ -399,23 +433,29 @@ public class SerializableFieldAccessor extends FieldAccessor
 	    throw DatabaseException.getDatabaseException(e);
 	}
     }
+    
     @Override
     public Object unserialize(ObjectInputStream _ois, Object _classInstance) throws DatabaseException
     {
+	Object o=unserialize(_ois);
+	if (o!=null && !field.getType().isAssignableFrom(o.getClass()))
+	    throw new DatabaseException("Incompatible class : "+o.getClass()+" (expected="+field.getType()+")");
+	if (o==null && isNotNull())
+	    throw new DatabaseException("The field should not be null");
+	setValue(_classInstance, o);
+	return o;
+    }    
+    
+    
+    public Object unserialize(ObjectInputStream _ois) throws DatabaseException
+    {
 	try
 	{
-	    Object o=_ois.readObject();
-	    if (o!=null && !field.getType().isAssignableFrom(o.getClass()))
-		throw new DatabaseException("Incompatible class : "+o.getClass()+" (expected="+field.getType()+")");
-	    if (o==null && isNotNull())
-		throw new DatabaseException("The field should not be null");
-	    setValue(_classInstance, o);
-	    return o;
+	    return _ois.readObject();
 	}
 	catch(Exception e)
 	{
 	    throw DatabaseException.getDatabaseException(e);
 	}
     }    
-    
 }

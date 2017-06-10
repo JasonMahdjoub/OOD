@@ -1,289 +1,1172 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testng-results skipped="0" failed="0" ignored="2" total="68" passed="66">
+<testng-results skipped="26" failed="5" ignored="0" total="34" passed="3">
   <reporter-output>
   </reporter-output>
-  <suite name="TestAll" duration-ms="990033" started-at="2017-06-03T18:33:03Z" finished-at="2017-06-03T18:49:33Z">
+  <suite name="Default suite" duration-ms="2939" started-at="2017-06-09T13:00:13Z" finished-at="2017-06-09T13:00:16Z">
     <groups>
     </groups>
-    <test name="testDerby" duration-ms="419032" started-at="2017-06-03T18:33:03Z" finished-at="2017-06-03T18:40:02Z">
-      <class name="com.distrimind.ood.tests.DerbyTestDatabase">
-        <test-method status="PASS" signature="checkUnloadedDatabase()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="checkUnloadedDatabase" duration-ms="98840" started-at="2017-06-03T20:33:03Z" finished-at="2017-06-03T20:34:42Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- checkUnloadedDatabase -->
-        <test-method status="PASS" signature="firstLoad()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="firstLoad" duration-ms="756" started-at="2017-06-03T20:34:42Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.checkUnloadedDatabase" finished-at="2017-06-03T20:34:43Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- firstLoad -->
-        <test-method status="PASS" signature="firstAdd()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="firstAdd" duration-ms="111" started-at="2017-06-03T20:34:43Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.firstLoad" finished-at="2017-06-03T20:34:43Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- firstAdd -->
-        <test-method status="PASS" signature="isLoadedIntoMemory()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="isLoadedIntoMemory" duration-ms="0" started-at="2017-06-03T20:34:43Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.firstLoad" finished-at="2017-06-03T20:34:43Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- isLoadedIntoMemory -->
-        <test-method status="PASS" signature="firstTestSize()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="firstTestSize" duration-ms="4" started-at="2017-06-03T20:34:43Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.firstAdd" finished-at="2017-06-03T20:34:43Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- firstTestSize -->
-        <test-method status="PASS" signature="firstReload()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="firstReload" duration-ms="1396" started-at="2017-06-03T20:34:43Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.firstTestSize" finished-at="2017-06-03T20:34:44Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- firstReload -->
-        <test-method status="PASS" signature="secondTestSize()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="secondTestSize" duration-ms="10" started-at="2017-06-03T20:34:44Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.firstReload" finished-at="2017-06-03T20:34:44Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- secondTestSize -->
-        <test-method status="PASS" signature="testFirstAdd()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="testFirstAdd" duration-ms="3" started-at="2017-06-03T20:34:44Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.firstReload" finished-at="2017-06-03T20:34:44Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- testFirstAdd -->
-        <test-method status="PASS" signature="alterRecord()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="alterRecord" duration-ms="62" started-at="2017-06-03T20:34:44Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.testFirstAdd" finished-at="2017-06-03T20:34:44Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- alterRecord -->
-        <test-method status="PASS" signature="addSecondRecord()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="addSecondRecord" duration-ms="33" started-at="2017-06-03T20:34:44Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.alterRecord" finished-at="2017-06-03T20:34:44Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- addSecondRecord -->
-        <test-method status="PASS" signature="getRecord()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="getRecord" duration-ms="31" started-at="2017-06-03T20:34:44Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.addSecondRecord" finished-at="2017-06-03T20:34:44Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- getRecord -->
-        <test-method status="PASS" signature="getRecordFilter()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="getRecordFilter" duration-ms="137" started-at="2017-06-03T20:34:44Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.addSecondRecord" finished-at="2017-06-03T20:34:45Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- getRecordFilter -->
-        <test-method status="PASS" signature="removeRecord()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="removeRecord" duration-ms="55" started-at="2017-06-03T20:34:45Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.getRecordFilter, com.distrimind.ood.tests.TestDatabase.alterRecord, com.distrimind.ood.tests.TestDatabase.getRecord" finished-at="2017-06-03T20:34:45Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- removeRecord -->
-        <test-method status="PASS" signature="testArrayRecordParameters()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="testArrayRecordParameters" duration-ms="26" started-at="2017-06-03T20:34:45Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.removeRecord" finished-at="2017-06-03T20:34:45Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- testArrayRecordParameters -->
-        <test-method status="PASS" signature="removeRecords()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="removeRecords" duration-ms="1933" started-at="2017-06-03T20:34:45Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.testArrayRecordParameters" finished-at="2017-06-03T20:34:47Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- removeRecords -->
-        <test-method status="PASS" signature="testFilters()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="testFilters" duration-ms="35" started-at="2017-06-03T20:34:47Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.removeRecords" finished-at="2017-06-03T20:34:47Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- testFilters -->
-        <test-method status="PASS" signature="testRemoveFilters()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="testRemoveFilters" duration-ms="25" started-at="2017-06-03T20:34:47Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.testFilters" finished-at="2017-06-03T20:34:47Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- testRemoveFilters -->
-        <test-method status="PASS" signature="addForeignKeyAndTestUniqueKeys()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="addForeignKeyAndTestUniqueKeys" duration-ms="123" started-at="2017-06-03T20:34:47Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.testRemoveFilters" finished-at="2017-06-03T20:34:47Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- addForeignKeyAndTestUniqueKeys -->
-        <test-method status="PASS" signature="removePointedRecords()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="removePointedRecords" duration-ms="22" started-at="2017-06-03T20:34:47Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.addForeignKeyAndTestUniqueKeys" finished-at="2017-06-03T20:34:47Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- removePointedRecords -->
-        <test-method status="PASS" signature="removeForeignKeyRecords()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="removeForeignKeyRecords" duration-ms="51" started-at="2017-06-03T20:34:47Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.removePointedRecords" finished-at="2017-06-03T20:34:47Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- removeForeignKeyRecords -->
-        <test-method status="PASS" signature="testIsPointed()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="testIsPointed" duration-ms="8" started-at="2017-06-03T20:34:47Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.removeForeignKeyRecords" finished-at="2017-06-03T20:34:47Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- testIsPointed -->
-        <test-method status="PASS" signature="removeWithCascade()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="removeWithCascade" duration-ms="414" started-at="2017-06-03T20:34:47Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.testIsPointed" finished-at="2017-06-03T20:34:47Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- removeWithCascade -->
-        <test-method status="PASS" signature="setAutoRandomFields()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="setAutoRandomFields" duration-ms="431" started-at="2017-06-03T20:34:47Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.removeWithCascade" finished-at="2017-06-03T20:34:48Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- setAutoRandomFields -->
-        <test-method status="PASS" signature="prepareMultipleTest()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="prepareMultipleTest" duration-ms="159" started-at="2017-06-03T20:34:48Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.setAutoRandomFields" finished-at="2017-06-03T20:34:48Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- prepareMultipleTest -->
-        <test-method status="PASS" signature="multipleTests()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="multipleTests" duration-ms="9407" started-at="2017-06-03T20:34:48Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.prepareMultipleTest" finished-at="2017-06-03T20:34:57Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- multipleTests -->
-        <test-method status="PASS" signature="testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="testThreadSafe" duration-ms="303813" started-at="2017-06-03T20:34:57Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.multipleTests" finished-at="2017-06-03T20:40:01Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- testThreadSafe -->
-        <test-method status="PASS" signature="testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="testThreadSafe" duration-ms="294613" started-at="2017-06-03T20:34:57Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.multipleTests" finished-at="2017-06-03T20:39:52Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- testThreadSafe -->
-        <test-method status="PASS" signature="testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="testThreadSafe" duration-ms="302571" started-at="2017-06-03T20:34:57Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.multipleTests" finished-at="2017-06-03T20:40:00Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- testThreadSafe -->
-        <test-method status="PASS" signature="testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="testThreadSafe" duration-ms="301152" started-at="2017-06-03T20:34:57Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.multipleTests" finished-at="2017-06-03T20:39:58Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- testThreadSafe -->
-        <test-method status="PASS" signature="testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="testThreadSafe" duration-ms="300883" started-at="2017-06-03T20:34:57Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.multipleTests" finished-at="2017-06-03T20:39:58Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- testThreadSafe -->
-        <test-method status="PASS" signature="testBackup()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="testBackup" duration-ms="736" started-at="2017-06-03T20:40:01Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.testThreadSafe" finished-at="2017-06-03T20:40:02Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- testBackup -->
-        <test-method status="PASS" signature="testDatabaseRemove()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="testDatabaseRemove" duration-ms="159" started-at="2017-06-03T20:40:02Z" depends-on-methods="com.distrimind.ood.tests.DerbyTestDatabase.testBackup" finished-at="2017-06-03T20:40:02Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- testDatabaseRemove -->
-        <test-method status="PASS" signature="unloadDatabase()[pri:0, instance:com.distrimind.ood.tests.DerbyTestDatabase@7544a1e4]" name="unloadDatabase" is-config="true" duration-ms="232" started-at="2017-06-03T20:40:02Z" finished-at="2017-06-03T20:40:02Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- unloadDatabase -->
-      </class> <!-- com.distrimind.ood.tests.DerbyTestDatabase -->
-    </test> <!-- testDerby -->
-    <test name="testHDQLDB" duration-ms="570998" started-at="2017-06-03T18:40:02Z" finished-at="2017-06-03T18:49:33Z">
+    <test name="Default test" duration-ms="2939" started-at="2017-06-09T13:00:13Z" finished-at="2017-06-09T13:00:16Z">
       <class name="com.distrimind.ood.tests.HSQLDBTestDatabase">
-        <test-method status="PASS" signature="checkUnloadedDatabase()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="checkUnloadedDatabase" duration-ms="326" started-at="2017-06-03T20:40:02Z" finished-at="2017-06-03T20:40:02Z">
+        <test-method status="PASS" signature="checkUnloadedDatabase()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="checkUnloadedDatabase" duration-ms="1028" started-at="2017-06-09T14:00:13Z" finished-at="2017-06-09T14:00:14Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- checkUnloadedDatabase -->
-        <test-method status="PASS" signature="firstLoad()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="firstLoad" duration-ms="154" started-at="2017-06-03T20:40:02Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.checkUnloadedDatabase" finished-at="2017-06-03T20:40:03Z">
+        <test-method status="PASS" signature="firstLoad()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="firstLoad" duration-ms="638" started-at="2017-06-09T14:00:14Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.checkUnloadedDatabase" finished-at="2017-06-09T14:00:15Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- firstLoad -->
-        <test-method status="PASS" signature="firstAdd()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="firstAdd" duration-ms="60" started-at="2017-06-03T20:40:03Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.firstLoad" finished-at="2017-06-03T20:40:03Z">
+        <test-method status="FAIL" signature="firstAdd()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="firstAdd" duration-ms="48" started-at="2017-06-09T14:00:15Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.firstLoad" finished-at="2017-06-09T14:00:15Z">
+          <exception class="com.distrimind.ood.database.exceptions.DatabaseException">
+            <message>
+              <![CDATA[Unexpected exception]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[com.distrimind.ood.database.exceptions.DatabaseException: Unexpected exception
+	at com.distrimind.ood.database.exceptions.DatabaseException.getDatabaseException(DatabaseException.java:85)
+	at com.distrimind.ood.database.fieldaccessors.SerializableFieldAccessor.getValue(SerializableFieldAccessor.java:270)
+	at com.distrimind.ood.database.fieldaccessors.CalendarFieldAccessor.serializeObject(CalendarFieldAccessor.java:74)
+	at com.distrimind.ood.database.fieldaccessors.SerializableFieldAccessor.getValue(SerializableFieldAccessor.java:297)
+	at com.distrimind.ood.database.fieldaccessors.SerializableFieldAccessor.getValue(SerializableFieldAccessor.java:279)
+	at com.distrimind.ood.database.Table$35$1TransactionTmp.run(Table.java:6420)
+	at com.distrimind.ood.database.DatabaseWrapper.runTransaction(DatabaseWrapper.java:1601)
+	at com.distrimind.ood.database.Table$35.run(Table.java:6473)
+	at com.distrimind.ood.database.DatabaseWrapper.runTransaction(DatabaseWrapper.java:1520)
+	at com.distrimind.ood.database.Table.addRecord(Table.java:6172)
+	at com.distrimind.ood.database.Table.addRecord(Table.java:6166)
+	at com.distrimind.ood.database.Table.addRecord(Table.java:6083)
+	at com.distrimind.ood.tests.TestDatabase.firstAdd(TestDatabase.java:403)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:104)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:645)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:851)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1177)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+Caused by: java.lang.IllegalArgumentException: Can not set java.util.Calendar field com.distrimind.ood.tests.database.Table1$Record.CalendarValue to java.util.GregorianCalendar
+	at sun.reflect.UnsafeFieldAccessorImpl.throwSetIllegalArgumentException(UnsafeFieldAccessorImpl.java:164)
+	at sun.reflect.UnsafeFieldAccessorImpl.throwSetIllegalArgumentException(UnsafeFieldAccessorImpl.java:168)
+	at sun.reflect.UnsafeFieldAccessorImpl.ensureObj(UnsafeFieldAccessorImpl.java:55)
+	at sun.reflect.UnsafeObjectFieldAccessorImpl.get(UnsafeObjectFieldAccessorImpl.java:36)
+	at java.lang.reflect.Field.get(Field.java:379)
+	at com.distrimind.ood.database.fieldaccessors.SerializableFieldAccessor.getValue(SerializableFieldAccessor.java:265)
+	... 36 more
+]]>
+            </full-stacktrace>
+          </exception> <!-- com.distrimind.ood.database.exceptions.DatabaseException -->
           <reporter-output>
           </reporter-output>
         </test-method> <!-- firstAdd -->
-        <test-method status="PASS" signature="isLoadedIntoMemory()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="isLoadedIntoMemory" duration-ms="0" started-at="2017-06-03T20:40:03Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.firstLoad" finished-at="2017-06-03T20:40:03Z">
+        <test-method status="PASS" signature="isLoadedIntoMemory()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="isLoadedIntoMemory" duration-ms="5" started-at="2017-06-09T14:00:15Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.firstLoad" finished-at="2017-06-09T14:00:15Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- isLoadedIntoMemory -->
-        <test-method status="PASS" signature="firstTestSize()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="firstTestSize" duration-ms="1" started-at="2017-06-03T20:40:03Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.firstAdd" finished-at="2017-06-03T20:40:03Z">
+        <test-method status="FAIL" signature="testCommandTranslatorInterpreter(com.distrimind.ood.database.Table, java.lang.String, java.util.Map, java.lang.String, java.util.Map)[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="testCommandTranslatorInterpreter" duration-ms="167" started-at="2017-06-09T14:00:15Z" data-provider="interpreterCommandsProvider" depends-on-methods="com.distrimind.ood.tests.TestDatabase.firstLoad" finished-at="2017-06-09T14:00:15Z">
+          <params>
+            <param index="0">
+              <value>
+                <![CDATA[Database Table COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1]]>
+              </value>
+            </param>
+            <param index="1">
+              <value>
+                <![CDATA[FloatNumber_value=%FloatNumber_value AND double_value=%double_value AND DoubleNumber_value=%DoubleNumber_value AND short_value=%short_value AND boolean_value=%boolean_value AND ByteNumber_value=%ByteNumber_value AND LongNumber_value=%LongNumber_value AND IntegerNumber_value=%IntegerNumber_value AND int_value=%int_value AND byte_array_value=%byte_array_value AND DateValue=%DateValue AND byte_value=%byte_value AND long_value=%long_value AND BigInteger_value=%BigInteger_value AND float_value=%float_value AND BigDecimal_value=%BigDecimal_value AND ShortNumber_value=%ShortNumber_value AND char_value=%char_value AND CharacterNumber_value=%CharacterNumber_value AND BooleanNumber_value=%BooleanNumber_value AND CalendarValue=%CalendarValue AND pk5=%pk5 AND pk6=%pk6 AND string_value=%string_value AND pk7=%pk7]]>
+              </value>
+            </param>
+            <param index="2">
+              <value>
+                <![CDATA[{FloatNumber_value=1.0, DoubleNumber_value=1.0, double_value=1.0, boolean_value=true, short_value=1, ByteNumber_value=1, LongNumber_value=1, IntegerNumber_value=1, byte_array_value=[B@50432755, int_value=1, DateValue=Fri Jun 09 14:00:13 GMT+01:00 2017, byte_value=1, BigInteger_value=3, long_value=1, float_value=1.0, BigDecimal_value=4, ShortNumber_value=1, char_value=a, BooleanNumber_value=true, CharacterNumber_value=a, pk5=SecuredDecentralizedID[-7791399652802226959;5472717623773860333;5828176443844260036;4451577111291373600], CalendarValue=java.util.GregorianCalendar[time=2387640763646,areFieldsSet=true,areAllFieldsSet=false,lenient=true,zone=sun.util.calendar.ZoneInfo[id="GMT+01:00",offset=3600000,dstSavings=0,useDaylight=false,transitions=0,lastRule=null],firstDayOfWeek=1,minimalDaysInFirstWeek=1,ERA=1,YEAR=2045,MONTH=7,WEEK_OF_YEAR=35,WEEK_OF_MONTH=5,DAY_OF_MONTH=29,DAY_OF_YEAR=241,DAY_OF_WEEK=3,DAY_OF_WEEK_IN_MONTH=5,AM_PM=1,HOUR=6,HOUR_OF_DAY=18,MINUTE=32,SECOND=43,MILLISECOND=646,ZONE_OFFSET=3600000,DST_OFFSET=0], pk6=DecentralizedID[1497013215646;229658789101245;4], pk7=RenforcedDecentralizedID[1497013215646;229658789101245;6], string_value=string}]]>
+              </value>
+            </param>
+            <param index="3">
+              <value>
+                <![CDATA[(COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.FloatNumber_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.double_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.DoubleNumber_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.short_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.boolean_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.ByteNumber_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.LongNumber_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.IntegerNumber_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.int_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.byte_array_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.DateValue=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.byte_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.long_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.BigInteger_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.float_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.BigDecimal_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.ShortNumber_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.char_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.CharacterNumber_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.BooleanNumber_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.CalendarValue=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk5=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk6_ts=? AND COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk6_widseq=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.string_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk7_ts=? AND COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk7_widseq=?)]]>
+              </value>
+            </param>
+            <param index="4">
+              <value>
+                <![CDATA[{1=1.0, 2=1.0, 3=1.0, 4=1, 5=true, 6=1, 7=1, 8=1, 9=1, 10=[B@50432755, 11=2017-06-09 14:00:13.493, 12=1, 13=1, 14=3, 15=1.0, 17=1, 16=4, 19=a, 18=a, 21=java.io.ByteArrayInputStream@68cb669d, 20=true, 23=1497013215646, 22=[B@1be032b, 25=string, 24=1355558695943869, 27=1918508649365181, 26=1497013215646}]]>
+              </value>
+            </param>
+          </params>
+          <exception class="java.lang.AssertionError">
+            <message>
+              <![CDATA[Maps do not match for key:11 actual:Fri Jun 09 14:00:13 GMT+01:00 2017 expected:2017-06-09 14:00:13.493 expected [2017-06-09 14:00:13.493] but found [Fri Jun 09 14:00:13 GMT+01:00 2017]]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[java.lang.AssertionError: Maps do not match for key:11 actual:Fri Jun 09 14:00:13 GMT+01:00 2017 expected:2017-06-09 14:00:13.493 expected [2017-06-09 14:00:13.493] but found [Fri Jun 09 14:00:13 GMT+01:00 2017]
+	at org.testng.Assert.fail(Assert.java:94)
+	at org.testng.Assert.failNotEquals(Assert.java:513)
+	at org.testng.Assert.assertEqualsImpl(Assert.java:135)
+	at org.testng.Assert.assertEquals(Assert.java:812)
+	at com.distrimind.ood.tests.TestDatabase.testCommandTranslatorInterpreter(TestDatabase.java:3290)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:104)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:645)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:851)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1177)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+]]>
+            </full-stacktrace>
+          </exception> <!-- java.lang.AssertionError -->
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testCommandTranslatorInterpreter -->
+        <test-method status="FAIL" signature="testCommandTranslatorInterpreter(com.distrimind.ood.database.Table, java.lang.String, java.util.Map, java.lang.String, java.util.Map)[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="testCommandTranslatorInterpreter" duration-ms="312" started-at="2017-06-09T14:00:15Z" data-provider="interpreterCommandsProvider" depends-on-methods="com.distrimind.ood.tests.TestDatabase.firstLoad" finished-at="2017-06-09T14:00:16Z">
+          <params>
+            <param index="0">
+              <value>
+                <![CDATA[Database Table COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1]]>
+              </value>
+            </param>
+            <param index="1">
+              <value>
+                <![CDATA[FloatNumber_value<>%FloatNumber_value AND double_value<>%double_value AND DoubleNumber_value<>%DoubleNumber_value AND short_value<>%short_value AND boolean_value<>%boolean_value AND ByteNumber_value<>%ByteNumber_value AND LongNumber_value<>%LongNumber_value AND IntegerNumber_value<>%IntegerNumber_value AND int_value<>%int_value AND byte_array_value<>%byte_array_value AND DateValue<>%DateValue AND byte_value<>%byte_value AND long_value<>%long_value AND BigInteger_value<>%BigInteger_value AND float_value<>%float_value AND BigDecimal_value<>%BigDecimal_value AND ShortNumber_value<>%ShortNumber_value AND char_value<>%char_value AND CharacterNumber_value<>%CharacterNumber_value AND BooleanNumber_value<>%BooleanNumber_value AND CalendarValue<>%CalendarValue AND pk5<>%pk5 AND pk6<>%pk6 AND string_value<>%string_value AND pk7<>%pk7]]>
+              </value>
+            </param>
+            <param index="2">
+              <value>
+                <![CDATA[{FloatNumber_value=1.0, DoubleNumber_value=1.0, double_value=1.0, boolean_value=true, short_value=1, ByteNumber_value=1, LongNumber_value=1, IntegerNumber_value=1, byte_array_value=[B@50432755, int_value=1, DateValue=Fri Jun 09 14:00:13 GMT+01:00 2017, byte_value=1, BigInteger_value=3, long_value=1, float_value=1.0, BigDecimal_value=4, ShortNumber_value=1, char_value=a, BooleanNumber_value=true, CharacterNumber_value=a, pk5=SecuredDecentralizedID[-7791399652802226959;5472717623773860333;5828176443844260036;4451577111291373600], CalendarValue=java.util.GregorianCalendar[time=2387640763646,areFieldsSet=true,areAllFieldsSet=false,lenient=true,zone=sun.util.calendar.ZoneInfo[id="GMT+01:00",offset=3600000,dstSavings=0,useDaylight=false,transitions=0,lastRule=null],firstDayOfWeek=1,minimalDaysInFirstWeek=1,ERA=1,YEAR=2045,MONTH=7,WEEK_OF_YEAR=35,WEEK_OF_MONTH=5,DAY_OF_MONTH=29,DAY_OF_YEAR=241,DAY_OF_WEEK=3,DAY_OF_WEEK_IN_MONTH=5,AM_PM=1,HOUR=6,HOUR_OF_DAY=18,MINUTE=32,SECOND=43,MILLISECOND=646,ZONE_OFFSET=3600000,DST_OFFSET=0], pk6=DecentralizedID[1497013215646;229658789101245;4], pk7=RenforcedDecentralizedID[1497013215646;229658789101245;6], string_value=string}]]>
+              </value>
+            </param>
+            <param index="3">
+              <value>
+                <![CDATA[(COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.FloatNumber_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.double_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.DoubleNumber_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.short_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.boolean_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.ByteNumber_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.LongNumber_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.IntegerNumber_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.int_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.byte_array_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.DateValue<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.byte_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.long_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.BigInteger_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.float_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.BigDecimal_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.ShortNumber_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.char_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.CharacterNumber_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.BooleanNumber_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.CalendarValue<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk5<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk6_ts<>? AND COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk6_widseq<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.string_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk7_ts<>? AND COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk7_widseq<>?)]]>
+              </value>
+            </param>
+            <param index="4">
+              <value>
+                <![CDATA[{1=1.0, 2=1.0, 3=1.0, 4=1, 5=true, 6=1, 7=1, 8=1, 9=1, 10=[B@50432755, 11=2017-06-09 14:00:13.493, 12=1, 13=1, 14=3, 15=1.0, 17=1, 16=4, 19=a, 18=a, 21=java.io.ByteArrayInputStream@545e2452, 20=true, 23=1497013215646, 22=[B@70a2aec3, 25=string, 24=1355558695943869, 27=1918508649365181, 26=1497013215646}]]>
+              </value>
+            </param>
+          </params>
+          <exception class="com.distrimind.ood.database.exceptions.QueryInterpretationImpossible">
+            <message>
+              <![CDATA[The next querry can interpreted with several rules : FloatNumber_value<>%FloatNumber_value AND double_value<>%double_value AND DoubleNumber_value<>%DoubleNumber_value AND short_value<>%short_value AND boolean_value<>%boolean_value AND ByteNumber_value<>%ByteNumber_value AND LongNumber_value<>%LongNumber_value AND IntegerNumber_value<>%IntegerNumber_value AND int_value<>%int_value AND byte_array_value<>%byte_array_value AND DateValue<>%DateValue AND byte_value<>%byte_value AND long_value<>%long_value AND BigInteger_value<>%BigInteger_value AND float_value<>%float_value AND BigDecimal_value<>%BigDecimal_value AND ShortNumber_value<>%ShortNumber_value AND char_value<>%char_value AND CharacterNumber_value<>%CharacterNumber_value AND BooleanNumber_value<>%BooleanNumber_value AND CalendarValue<>%CalendarValue AND pk5<>%pk5 AND pk6<>%pk6 AND string_value<>%string_value AND pk7<>%pk7]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[com.distrimind.ood.database.exceptions.QueryInterpretationImpossible: The next querry can interpreted with several rules : FloatNumber_value<>%FloatNumber_value AND double_value<>%double_value AND DoubleNumber_value<>%DoubleNumber_value AND short_value<>%short_value AND boolean_value<>%boolean_value AND ByteNumber_value<>%ByteNumber_value AND LongNumber_value<>%LongNumber_value AND IntegerNumber_value<>%IntegerNumber_value AND int_value<>%int_value AND byte_array_value<>%byte_array_value AND DateValue<>%DateValue AND byte_value<>%byte_value AND long_value<>%long_value AND BigInteger_value<>%BigInteger_value AND float_value<>%float_value AND BigDecimal_value<>%BigDecimal_value AND ShortNumber_value<>%ShortNumber_value AND char_value<>%char_value AND CharacterNumber_value<>%CharacterNumber_value AND BooleanNumber_value<>%BooleanNumber_value AND CalendarValue<>%CalendarValue AND pk5<>%pk5 AND pk6<>%pk6 AND string_value<>%string_value AND pk7<>%pk7
+	at com.distrimind.ood.interpreter.Interpreter.getNewQueryParts(Interpreter.java:174)
+	at com.distrimind.ood.interpreter.Interpreter.getQuery(Interpreter.java:130)
+	at com.distrimind.ood.interpreter.Interpreter.getRuleInstance(Interpreter.java:69)
+	at com.distrimind.ood.tests.TestDatabase.testCommandTranslatorInterpreter(TestDatabase.java:3288)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:104)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:645)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:851)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1177)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+]]>
+            </full-stacktrace>
+          </exception> <!-- com.distrimind.ood.database.exceptions.QueryInterpretationImpossible -->
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testCommandTranslatorInterpreter -->
+        <test-method status="FAIL" signature="testCommandTranslatorInterpreter(com.distrimind.ood.database.Table, java.lang.String, java.util.Map, java.lang.String, java.util.Map)[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="testCommandTranslatorInterpreter" duration-ms="42" started-at="2017-06-09T14:00:16Z" data-provider="interpreterCommandsProvider" depends-on-methods="com.distrimind.ood.tests.TestDatabase.firstLoad" finished-at="2017-06-09T14:00:16Z">
+          <params>
+            <param index="0">
+              <value>
+                <![CDATA[Database Table COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1]]>
+              </value>
+            </param>
+            <param index="1">
+              <value>
+                <![CDATA[FloatNumber_value=%FloatNumber_value OR double_value=%double_value OR DoubleNumber_value=%DoubleNumber_value OR short_value=%short_value OR boolean_value=%boolean_value OR ByteNumber_value=%ByteNumber_value OR LongNumber_value=%LongNumber_value OR IntegerNumber_value=%IntegerNumber_value OR int_value=%int_value OR byte_array_value=%byte_array_value OR DateValue=%DateValue OR byte_value=%byte_value OR long_value=%long_value OR BigInteger_value=%BigInteger_value OR float_value=%float_value OR BigDecimal_value=%BigDecimal_value OR ShortNumber_value=%ShortNumber_value OR char_value=%char_value OR CharacterNumber_value=%CharacterNumber_value OR BooleanNumber_value=%BooleanNumber_value OR CalendarValue=%CalendarValue OR pk5=%pk5 OR pk6=%pk6 OR string_value=%string_value OR pk7=%pk7]]>
+              </value>
+            </param>
+            <param index="2">
+              <value>
+                <![CDATA[{FloatNumber_value=1.0, DoubleNumber_value=1.0, double_value=1.0, boolean_value=true, short_value=1, ByteNumber_value=1, LongNumber_value=1, IntegerNumber_value=1, byte_array_value=[B@50432755, int_value=1, DateValue=Fri Jun 09 14:00:13 GMT+01:00 2017, byte_value=1, BigInteger_value=3, long_value=1, float_value=1.0, BigDecimal_value=4, ShortNumber_value=1, char_value=a, BooleanNumber_value=true, CharacterNumber_value=a, pk5=SecuredDecentralizedID[-7791399652802226959;5472717623773860333;5828176443844260036;4451577111291373600], CalendarValue=java.util.GregorianCalendar[time=2387640763646,areFieldsSet=true,areAllFieldsSet=false,lenient=true,zone=sun.util.calendar.ZoneInfo[id="GMT+01:00",offset=3600000,dstSavings=0,useDaylight=false,transitions=0,lastRule=null],firstDayOfWeek=1,minimalDaysInFirstWeek=1,ERA=1,YEAR=2045,MONTH=7,WEEK_OF_YEAR=35,WEEK_OF_MONTH=5,DAY_OF_MONTH=29,DAY_OF_YEAR=241,DAY_OF_WEEK=3,DAY_OF_WEEK_IN_MONTH=5,AM_PM=1,HOUR=6,HOUR_OF_DAY=18,MINUTE=32,SECOND=43,MILLISECOND=646,ZONE_OFFSET=3600000,DST_OFFSET=0], pk6=DecentralizedID[1497013215646;229658789101245;4], pk7=RenforcedDecentralizedID[1497013215646;229658789101245;6], string_value=string}]]>
+              </value>
+            </param>
+            <param index="3">
+              <value>
+                <![CDATA[(COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.FloatNumber_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.double_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.DoubleNumber_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.short_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.boolean_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.ByteNumber_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.LongNumber_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.IntegerNumber_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.int_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.byte_array_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.DateValue=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.byte_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.long_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.BigInteger_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.float_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.BigDecimal_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.ShortNumber_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.char_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.CharacterNumber_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.BooleanNumber_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.CalendarValue=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk5=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk6_ts=? AND COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk6_widseq=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.string_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk7_ts=? AND COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk7_widseq=?)]]>
+              </value>
+            </param>
+            <param index="4">
+              <value>
+                <![CDATA[{1=1.0, 2=1.0, 3=1.0, 4=1, 5=true, 6=1, 7=1, 8=1, 9=1, 10=[B@50432755, 11=2017-06-09 14:00:13.493, 12=1, 13=1, 14=3, 15=1.0, 17=1, 16=4, 19=a, 18=a, 21=java.io.ByteArrayInputStream@c69d7ee, 20=true, 23=1497013215646, 22=[B@78df509f, 25=string, 24=1355558695943869, 27=1918508649365181, 26=1497013215646}]]>
+              </value>
+            </param>
+          </params>
+          <exception class="java.lang.AssertionError">
+            <message>
+              <![CDATA[Maps do not match for key:11 actual:Fri Jun 09 14:00:13 GMT+01:00 2017 expected:2017-06-09 14:00:13.493 expected [2017-06-09 14:00:13.493] but found [Fri Jun 09 14:00:13 GMT+01:00 2017]]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[java.lang.AssertionError: Maps do not match for key:11 actual:Fri Jun 09 14:00:13 GMT+01:00 2017 expected:2017-06-09 14:00:13.493 expected [2017-06-09 14:00:13.493] but found [Fri Jun 09 14:00:13 GMT+01:00 2017]
+	at org.testng.Assert.fail(Assert.java:94)
+	at org.testng.Assert.failNotEquals(Assert.java:513)
+	at org.testng.Assert.assertEqualsImpl(Assert.java:135)
+	at org.testng.Assert.assertEquals(Assert.java:812)
+	at com.distrimind.ood.tests.TestDatabase.testCommandTranslatorInterpreter(TestDatabase.java:3290)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:104)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:645)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:851)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1177)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+]]>
+            </full-stacktrace>
+          </exception> <!-- java.lang.AssertionError -->
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testCommandTranslatorInterpreter -->
+        <test-method status="FAIL" signature="testCommandTranslatorInterpreter(com.distrimind.ood.database.Table, java.lang.String, java.util.Map, java.lang.String, java.util.Map)[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="testCommandTranslatorInterpreter" duration-ms="94" started-at="2017-06-09T14:00:16Z" data-provider="interpreterCommandsProvider" depends-on-methods="com.distrimind.ood.tests.TestDatabase.firstLoad" finished-at="2017-06-09T14:00:16Z">
+          <params>
+            <param index="0">
+              <value>
+                <![CDATA[Database Table COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1]]>
+              </value>
+            </param>
+            <param index="1">
+              <value>
+                <![CDATA[FloatNumber_value<>%FloatNumber_value OR double_value<>%double_value OR DoubleNumber_value<>%DoubleNumber_value OR short_value<>%short_value OR boolean_value<>%boolean_value OR ByteNumber_value<>%ByteNumber_value OR LongNumber_value<>%LongNumber_value OR IntegerNumber_value<>%IntegerNumber_value OR int_value<>%int_value OR byte_array_value<>%byte_array_value OR DateValue<>%DateValue OR byte_value<>%byte_value OR long_value<>%long_value OR BigInteger_value<>%BigInteger_value OR float_value<>%float_value OR BigDecimal_value<>%BigDecimal_value OR ShortNumber_value<>%ShortNumber_value OR char_value<>%char_value OR CharacterNumber_value<>%CharacterNumber_value OR BooleanNumber_value<>%BooleanNumber_value OR CalendarValue<>%CalendarValue OR pk5<>%pk5 OR pk6<>%pk6 OR string_value<>%string_value OR pk7<>%pk7]]>
+              </value>
+            </param>
+            <param index="2">
+              <value>
+                <![CDATA[{FloatNumber_value=1.0, DoubleNumber_value=1.0, double_value=1.0, boolean_value=true, short_value=1, ByteNumber_value=1, LongNumber_value=1, IntegerNumber_value=1, byte_array_value=[B@50432755, int_value=1, DateValue=Fri Jun 09 14:00:13 GMT+01:00 2017, byte_value=1, BigInteger_value=3, long_value=1, float_value=1.0, BigDecimal_value=4, ShortNumber_value=1, char_value=a, BooleanNumber_value=true, CharacterNumber_value=a, pk5=SecuredDecentralizedID[-7791399652802226959;5472717623773860333;5828176443844260036;4451577111291373600], CalendarValue=java.util.GregorianCalendar[time=2387640763646,areFieldsSet=true,areAllFieldsSet=false,lenient=true,zone=sun.util.calendar.ZoneInfo[id="GMT+01:00",offset=3600000,dstSavings=0,useDaylight=false,transitions=0,lastRule=null],firstDayOfWeek=1,minimalDaysInFirstWeek=1,ERA=1,YEAR=2045,MONTH=7,WEEK_OF_YEAR=35,WEEK_OF_MONTH=5,DAY_OF_MONTH=29,DAY_OF_YEAR=241,DAY_OF_WEEK=3,DAY_OF_WEEK_IN_MONTH=5,AM_PM=1,HOUR=6,HOUR_OF_DAY=18,MINUTE=32,SECOND=43,MILLISECOND=646,ZONE_OFFSET=3600000,DST_OFFSET=0], pk6=DecentralizedID[1497013215646;229658789101245;4], pk7=RenforcedDecentralizedID[1497013215646;229658789101245;6], string_value=string}]]>
+              </value>
+            </param>
+            <param index="3">
+              <value>
+                <![CDATA[(COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.FloatNumber_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.double_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.DoubleNumber_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.short_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.boolean_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.ByteNumber_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.LongNumber_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.IntegerNumber_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.int_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.byte_array_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.DateValue<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.byte_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.long_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.BigInteger_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.float_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.BigDecimal_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.ShortNumber_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.char_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.CharacterNumber_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.BooleanNumber_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.CalendarValue<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk5<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk6_ts<>? AND COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk6_widseq<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.string_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk7_ts<>? AND COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk7_widseq<>?)]]>
+              </value>
+            </param>
+            <param index="4">
+              <value>
+                <![CDATA[{1=1.0, 2=1.0, 3=1.0, 4=1, 5=true, 6=1, 7=1, 8=1, 9=1, 10=[B@50432755, 11=2017-06-09 14:00:13.493, 12=1, 13=1, 14=3, 15=1.0, 17=1, 16=4, 19=a, 18=a, 21=java.io.ByteArrayInputStream@1c7419bd, 20=true, 23=1497013215646, 22=[B@a45d5e3, 25=string, 24=1355558695943869, 27=1918508649365181, 26=1497013215646}]]>
+              </value>
+            </param>
+          </params>
+          <exception class="com.distrimind.ood.database.exceptions.QueryInterpretationImpossible">
+            <message>
+              <![CDATA[The next querry can interpreted with several rules : FloatNumber_value<>%FloatNumber_value OR double_value<>%double_value OR DoubleNumber_value<>%DoubleNumber_value OR short_value<>%short_value OR boolean_value<>%boolean_value OR ByteNumber_value<>%ByteNumber_value OR LongNumber_value<>%LongNumber_value OR IntegerNumber_value<>%IntegerNumber_value OR int_value<>%int_value OR byte_array_value<>%byte_array_value OR DateValue<>%DateValue OR byte_value<>%byte_value OR long_value<>%long_value OR BigInteger_value<>%BigInteger_value OR float_value<>%float_value OR BigDecimal_value<>%BigDecimal_value OR ShortNumber_value<>%ShortNumber_value OR char_value<>%char_value OR CharacterNumber_value<>%CharacterNumber_value OR BooleanNumber_value<>%BooleanNumber_value OR CalendarValue<>%CalendarValue OR pk5<>%pk5 OR pk6<>%pk6 OR string_value<>%string_value OR pk7<>%pk7]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[com.distrimind.ood.database.exceptions.QueryInterpretationImpossible: The next querry can interpreted with several rules : FloatNumber_value<>%FloatNumber_value OR double_value<>%double_value OR DoubleNumber_value<>%DoubleNumber_value OR short_value<>%short_value OR boolean_value<>%boolean_value OR ByteNumber_value<>%ByteNumber_value OR LongNumber_value<>%LongNumber_value OR IntegerNumber_value<>%IntegerNumber_value OR int_value<>%int_value OR byte_array_value<>%byte_array_value OR DateValue<>%DateValue OR byte_value<>%byte_value OR long_value<>%long_value OR BigInteger_value<>%BigInteger_value OR float_value<>%float_value OR BigDecimal_value<>%BigDecimal_value OR ShortNumber_value<>%ShortNumber_value OR char_value<>%char_value OR CharacterNumber_value<>%CharacterNumber_value OR BooleanNumber_value<>%BooleanNumber_value OR CalendarValue<>%CalendarValue OR pk5<>%pk5 OR pk6<>%pk6 OR string_value<>%string_value OR pk7<>%pk7
+	at com.distrimind.ood.interpreter.Interpreter.getNewQueryParts(Interpreter.java:174)
+	at com.distrimind.ood.interpreter.Interpreter.getQuery(Interpreter.java:130)
+	at com.distrimind.ood.interpreter.Interpreter.getRuleInstance(Interpreter.java:69)
+	at com.distrimind.ood.tests.TestDatabase.testCommandTranslatorInterpreter(TestDatabase.java:3288)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:104)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:645)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:851)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1177)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+]]>
+            </full-stacktrace>
+          </exception> <!-- com.distrimind.ood.database.exceptions.QueryInterpretationImpossible -->
+          <reporter-output>
+          </reporter-output>
+        </test-method> <!-- testCommandTranslatorInterpreter -->
+        <test-method status="SKIP" signature="firstTestSize()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="firstTestSize" duration-ms="0" started-at="2017-06-09T14:00:16Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.firstAdd" finished-at="2017-06-09T14:00:16Z">
+          <exception class="java.lang.Throwable">
+            <message>
+              <![CDATA[Method TestDatabase.firstTestSize()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[java.lang.Throwable: Method TestDatabase.firstTestSize()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+]]>
+            </full-stacktrace>
+          </exception> <!-- java.lang.Throwable -->
           <reporter-output>
           </reporter-output>
         </test-method> <!-- firstTestSize -->
-        <test-method status="PASS" signature="firstReload()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="firstReload" duration-ms="535" started-at="2017-06-03T20:40:03Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.firstTestSize" finished-at="2017-06-03T20:40:03Z">
+        <test-method status="SKIP" signature="firstReload()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="firstReload" duration-ms="0" started-at="2017-06-09T14:00:16Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.firstTestSize" finished-at="2017-06-09T14:00:16Z">
+          <exception class="java.lang.Throwable">
+            <message>
+              <![CDATA[Method TestDatabase.firstReload()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[java.lang.Throwable: Method TestDatabase.firstReload()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+]]>
+            </full-stacktrace>
+          </exception> <!-- java.lang.Throwable -->
           <reporter-output>
           </reporter-output>
         </test-method> <!-- firstReload -->
-        <test-method status="PASS" signature="secondTestSize()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="secondTestSize" duration-ms="5" started-at="2017-06-03T20:40:03Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.firstReload" finished-at="2017-06-03T20:40:03Z">
+        <test-method status="SKIP" signature="secondTestSize()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="secondTestSize" duration-ms="0" started-at="2017-06-09T14:00:16Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.firstReload" finished-at="2017-06-09T14:00:16Z">
+          <exception class="java.lang.Throwable">
+            <message>
+              <![CDATA[Method TestDatabase.secondTestSize()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[java.lang.Throwable: Method TestDatabase.secondTestSize()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+]]>
+            </full-stacktrace>
+          </exception> <!-- java.lang.Throwable -->
           <reporter-output>
           </reporter-output>
         </test-method> <!-- secondTestSize -->
-        <test-method status="PASS" signature="testFirstAdd()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="testFirstAdd" duration-ms="3" started-at="2017-06-03T20:40:03Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.firstReload" finished-at="2017-06-03T20:40:03Z">
+        <test-method status="SKIP" signature="testFirstAdd()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="testFirstAdd" duration-ms="0" started-at="2017-06-09T14:00:16Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.firstReload" finished-at="2017-06-09T14:00:16Z">
+          <exception class="java.lang.Throwable">
+            <message>
+              <![CDATA[Method TestDatabase.testFirstAdd()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[java.lang.Throwable: Method TestDatabase.testFirstAdd()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+]]>
+            </full-stacktrace>
+          </exception> <!-- java.lang.Throwable -->
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testFirstAdd -->
-        <test-method status="PASS" signature="alterRecord()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="alterRecord" duration-ms="55" started-at="2017-06-03T20:40:03Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.testFirstAdd" finished-at="2017-06-03T20:40:03Z">
+        <test-method status="SKIP" signature="alterRecord()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="alterRecord" duration-ms="0" started-at="2017-06-09T14:00:16Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.testFirstAdd" finished-at="2017-06-09T14:00:16Z">
+          <exception class="java.lang.Throwable">
+            <message>
+              <![CDATA[Method TestDatabase.alterRecord()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[java.lang.Throwable: Method TestDatabase.alterRecord()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+]]>
+            </full-stacktrace>
+          </exception> <!-- java.lang.Throwable -->
           <reporter-output>
           </reporter-output>
         </test-method> <!-- alterRecord -->
-        <test-method status="PASS" signature="addSecondRecord()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="addSecondRecord" duration-ms="59" started-at="2017-06-03T20:40:03Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.alterRecord" finished-at="2017-06-03T20:40:03Z">
+        <test-method status="SKIP" signature="addSecondRecord()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="addSecondRecord" duration-ms="0" started-at="2017-06-09T14:00:16Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.alterRecord" finished-at="2017-06-09T14:00:16Z">
+          <exception class="java.lang.Throwable">
+            <message>
+              <![CDATA[Method TestDatabase.addSecondRecord()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[java.lang.Throwable: Method TestDatabase.addSecondRecord()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+]]>
+            </full-stacktrace>
+          </exception> <!-- java.lang.Throwable -->
           <reporter-output>
           </reporter-output>
         </test-method> <!-- addSecondRecord -->
-        <test-method status="PASS" signature="getRecord()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="getRecord" duration-ms="19" started-at="2017-06-03T20:40:03Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.addSecondRecord" finished-at="2017-06-03T20:40:03Z">
+        <test-method status="SKIP" signature="getRecord()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="getRecord" duration-ms="0" started-at="2017-06-09T14:00:16Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.addSecondRecord" finished-at="2017-06-09T14:00:16Z">
+          <exception class="java.lang.Throwable">
+            <message>
+              <![CDATA[Method TestDatabase.getRecord()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[java.lang.Throwable: Method TestDatabase.getRecord()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+]]>
+            </full-stacktrace>
+          </exception> <!-- java.lang.Throwable -->
           <reporter-output>
           </reporter-output>
         </test-method> <!-- getRecord -->
-        <test-method status="PASS" signature="getRecordFilter()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="getRecordFilter" duration-ms="53" started-at="2017-06-03T20:40:03Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.addSecondRecord" finished-at="2017-06-03T20:40:03Z">
+        <test-method status="SKIP" signature="getRecordFilter()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="getRecordFilter" duration-ms="0" started-at="2017-06-09T14:00:16Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.addSecondRecord" finished-at="2017-06-09T14:00:16Z">
+          <exception class="java.lang.Throwable">
+            <message>
+              <![CDATA[Method TestDatabase.getRecordFilter()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[java.lang.Throwable: Method TestDatabase.getRecordFilter()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+]]>
+            </full-stacktrace>
+          </exception> <!-- java.lang.Throwable -->
           <reporter-output>
           </reporter-output>
         </test-method> <!-- getRecordFilter -->
-        <test-method status="PASS" signature="removeRecord()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="removeRecord" duration-ms="11" started-at="2017-06-03T20:40:03Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.getRecordFilter, com.distrimind.ood.tests.TestDatabase.alterRecord, com.distrimind.ood.tests.TestDatabase.getRecord" finished-at="2017-06-03T20:40:03Z">
+        <test-method status="SKIP" signature="removeRecord()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="removeRecord" duration-ms="0" started-at="2017-06-09T14:00:16Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.getRecordFilter, com.distrimind.ood.tests.TestDatabase.alterRecord, com.distrimind.ood.tests.TestDatabase.getRecord" finished-at="2017-06-09T14:00:16Z">
+          <exception class="java.lang.Throwable">
+            <message>
+              <![CDATA[Method TestDatabase.removeRecord()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[java.lang.Throwable: Method TestDatabase.removeRecord()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+]]>
+            </full-stacktrace>
+          </exception> <!-- java.lang.Throwable -->
           <reporter-output>
           </reporter-output>
         </test-method> <!-- removeRecord -->
-        <test-method status="PASS" signature="testArrayRecordParameters()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="testArrayRecordParameters" duration-ms="47" started-at="2017-06-03T20:40:03Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.removeRecord" finished-at="2017-06-03T20:40:04Z">
+        <test-method status="SKIP" signature="testArrayRecordParameters()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="testArrayRecordParameters" duration-ms="0" started-at="2017-06-09T14:00:16Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.removeRecord" finished-at="2017-06-09T14:00:16Z">
+          <exception class="java.lang.Throwable">
+            <message>
+              <![CDATA[Method TestDatabase.testArrayRecordParameters()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[java.lang.Throwable: Method TestDatabase.testArrayRecordParameters()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+]]>
+            </full-stacktrace>
+          </exception> <!-- java.lang.Throwable -->
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testArrayRecordParameters -->
-        <test-method status="PASS" signature="removeRecords()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="removeRecords" duration-ms="3749" started-at="2017-06-03T20:40:04Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.testArrayRecordParameters" finished-at="2017-06-03T20:40:07Z">
+        <test-method status="SKIP" signature="removeRecords()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="removeRecords" duration-ms="0" started-at="2017-06-09T14:00:16Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.testArrayRecordParameters" finished-at="2017-06-09T14:00:16Z">
+          <exception class="java.lang.Throwable">
+            <message>
+              <![CDATA[Method TestDatabase.removeRecords()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[java.lang.Throwable: Method TestDatabase.removeRecords()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+]]>
+            </full-stacktrace>
+          </exception> <!-- java.lang.Throwable -->
           <reporter-output>
           </reporter-output>
         </test-method> <!-- removeRecords -->
-        <test-method status="PASS" signature="testFilters()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="testFilters" duration-ms="4" started-at="2017-06-03T20:40:07Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.removeRecords" finished-at="2017-06-03T20:40:07Z">
+        <test-method status="SKIP" signature="testFilters()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="testFilters" duration-ms="0" started-at="2017-06-09T14:00:16Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.removeRecords" finished-at="2017-06-09T14:00:16Z">
+          <exception class="java.lang.Throwable">
+            <message>
+              <![CDATA[Method TestDatabase.testFilters()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[java.lang.Throwable: Method TestDatabase.testFilters()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+]]>
+            </full-stacktrace>
+          </exception> <!-- java.lang.Throwable -->
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testFilters -->
-        <test-method status="PASS" signature="testRemoveFilters()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="testRemoveFilters" duration-ms="3" started-at="2017-06-03T20:40:07Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.testFilters" finished-at="2017-06-03T20:40:07Z">
+        <test-method status="SKIP" signature="testRemoveFilters()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="testRemoveFilters" duration-ms="0" started-at="2017-06-09T14:00:16Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.testFilters" finished-at="2017-06-09T14:00:16Z">
+          <exception class="java.lang.Throwable">
+            <message>
+              <![CDATA[Method TestDatabase.testRemoveFilters()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[java.lang.Throwable: Method TestDatabase.testRemoveFilters()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+]]>
+            </full-stacktrace>
+          </exception> <!-- java.lang.Throwable -->
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testRemoveFilters -->
-        <test-method status="PASS" signature="addForeignKeyAndTestUniqueKeys()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="addForeignKeyAndTestUniqueKeys" duration-ms="125" started-at="2017-06-03T20:40:07Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.testRemoveFilters" finished-at="2017-06-03T20:40:07Z">
+        <test-method status="SKIP" signature="addForeignKeyAndTestUniqueKeys()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="addForeignKeyAndTestUniqueKeys" duration-ms="0" started-at="2017-06-09T14:00:16Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.testRemoveFilters" finished-at="2017-06-09T14:00:16Z">
+          <exception class="java.lang.Throwable">
+            <message>
+              <![CDATA[Method TestDatabase.addForeignKeyAndTestUniqueKeys()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[java.lang.Throwable: Method TestDatabase.addForeignKeyAndTestUniqueKeys()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+]]>
+            </full-stacktrace>
+          </exception> <!-- java.lang.Throwable -->
           <reporter-output>
           </reporter-output>
         </test-method> <!-- addForeignKeyAndTestUniqueKeys -->
-        <test-method status="PASS" signature="alterRecordWithCascade()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="alterRecordWithCascade" duration-ms="132" started-at="2017-06-03T20:40:07Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.addForeignKeyAndTestUniqueKeys" finished-at="2017-06-03T20:40:08Z">
+        <test-method status="SKIP" signature="alterRecordWithCascade()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="alterRecordWithCascade" duration-ms="0" started-at="2017-06-09T14:00:16Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.addForeignKeyAndTestUniqueKeys" finished-at="2017-06-09T14:00:16Z">
+          <exception class="java.lang.Throwable">
+            <message>
+              <![CDATA[Method TestDatabase.alterRecordWithCascade()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[java.lang.Throwable: Method TestDatabase.alterRecordWithCascade()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+]]>
+            </full-stacktrace>
+          </exception> <!-- java.lang.Throwable -->
           <reporter-output>
           </reporter-output>
         </test-method> <!-- alterRecordWithCascade -->
-        <test-method status="PASS" signature="removePointedRecords()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="removePointedRecords" duration-ms="34" started-at="2017-06-03T20:40:08Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.alterRecordWithCascade" finished-at="2017-06-03T20:40:08Z">
+        <test-method status="SKIP" signature="removePointedRecords()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="removePointedRecords" duration-ms="0" started-at="2017-06-09T14:00:16Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.alterRecordWithCascade" finished-at="2017-06-09T14:00:16Z">
+          <exception class="java.lang.Throwable">
+            <message>
+              <![CDATA[Method TestDatabase.removePointedRecords()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[java.lang.Throwable: Method TestDatabase.removePointedRecords()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+]]>
+            </full-stacktrace>
+          </exception> <!-- java.lang.Throwable -->
           <reporter-output>
           </reporter-output>
         </test-method> <!-- removePointedRecords -->
-        <test-method status="PASS" signature="removeForeignKeyRecords()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="removeForeignKeyRecords" duration-ms="28" started-at="2017-06-03T20:40:08Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.removePointedRecords" finished-at="2017-06-03T20:40:08Z">
+        <test-method status="SKIP" signature="removeForeignKeyRecords()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="removeForeignKeyRecords" duration-ms="0" started-at="2017-06-09T14:00:16Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.removePointedRecords" finished-at="2017-06-09T14:00:16Z">
+          <exception class="java.lang.Throwable">
+            <message>
+              <![CDATA[Method TestDatabase.removeForeignKeyRecords()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[java.lang.Throwable: Method TestDatabase.removeForeignKeyRecords()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+]]>
+            </full-stacktrace>
+          </exception> <!-- java.lang.Throwable -->
           <reporter-output>
           </reporter-output>
         </test-method> <!-- removeForeignKeyRecords -->
-        <test-method status="PASS" signature="testIsPointed()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="testIsPointed" duration-ms="8" started-at="2017-06-03T20:40:08Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.removeForeignKeyRecords" finished-at="2017-06-03T20:40:08Z">
+        <test-method status="SKIP" signature="testIsPointed()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="testIsPointed" duration-ms="0" started-at="2017-06-09T14:00:16Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.removeForeignKeyRecords" finished-at="2017-06-09T14:00:16Z">
+          <exception class="java.lang.Throwable">
+            <message>
+              <![CDATA[Method TestDatabase.testIsPointed()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[java.lang.Throwable: Method TestDatabase.testIsPointed()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+]]>
+            </full-stacktrace>
+          </exception> <!-- java.lang.Throwable -->
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testIsPointed -->
-        <test-method status="PASS" signature="removeWithCascade()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="removeWithCascade" duration-ms="865" started-at="2017-06-03T20:40:08Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.testIsPointed" finished-at="2017-06-03T20:40:08Z">
+        <test-method status="SKIP" signature="removeWithCascade()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="removeWithCascade" duration-ms="0" started-at="2017-06-09T14:00:16Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.testIsPointed" finished-at="2017-06-09T14:00:16Z">
+          <exception class="java.lang.Throwable">
+            <message>
+              <![CDATA[Method TestDatabase.removeWithCascade()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[java.lang.Throwable: Method TestDatabase.removeWithCascade()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+]]>
+            </full-stacktrace>
+          </exception> <!-- java.lang.Throwable -->
           <reporter-output>
           </reporter-output>
         </test-method> <!-- removeWithCascade -->
-        <test-method status="PASS" signature="setAutoRandomFields()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="setAutoRandomFields" duration-ms="993" started-at="2017-06-03T20:40:08Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.removeWithCascade" finished-at="2017-06-03T20:40:09Z">
+        <test-method status="SKIP" signature="setAutoRandomFields()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="setAutoRandomFields" duration-ms="0" started-at="2017-06-09T14:00:16Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.removeWithCascade" finished-at="2017-06-09T14:00:16Z">
+          <exception class="java.lang.Throwable">
+            <message>
+              <![CDATA[Method TestDatabase.setAutoRandomFields()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[java.lang.Throwable: Method TestDatabase.setAutoRandomFields()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+]]>
+            </full-stacktrace>
+          </exception> <!-- java.lang.Throwable -->
           <reporter-output>
           </reporter-output>
         </test-method> <!-- setAutoRandomFields -->
-        <test-method status="PASS" signature="prepareMultipleTest()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="prepareMultipleTest" duration-ms="526" started-at="2017-06-03T20:40:09Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.setAutoRandomFields" finished-at="2017-06-03T20:40:10Z">
+        <test-method status="SKIP" signature="prepareMultipleTest()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="prepareMultipleTest" duration-ms="0" started-at="2017-06-09T14:00:16Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.setAutoRandomFields" finished-at="2017-06-09T14:00:16Z">
+          <exception class="java.lang.Throwable">
+            <message>
+              <![CDATA[Method TestDatabase.prepareMultipleTest()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[java.lang.Throwable: Method TestDatabase.prepareMultipleTest()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+]]>
+            </full-stacktrace>
+          </exception> <!-- java.lang.Throwable -->
           <reporter-output>
           </reporter-output>
         </test-method> <!-- prepareMultipleTest -->
-        <test-method status="PASS" signature="multipleTests()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="multipleTests" duration-ms="17696" started-at="2017-06-03T20:40:10Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.prepareMultipleTest" finished-at="2017-06-03T20:40:28Z">
+        <test-method status="SKIP" signature="multipleTests()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="multipleTests" duration-ms="0" started-at="2017-06-09T14:00:16Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.prepareMultipleTest" finished-at="2017-06-09T14:00:16Z">
+          <exception class="java.lang.Throwable">
+            <message>
+              <![CDATA[Method TestDatabase.multipleTests()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[java.lang.Throwable: Method TestDatabase.multipleTests()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+]]>
+            </full-stacktrace>
+          </exception> <!-- java.lang.Throwable -->
           <reporter-output>
           </reporter-output>
         </test-method> <!-- multipleTests -->
-        <test-method status="PASS" signature="testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="testThreadSafe" duration-ms="532152" started-at="2017-06-03T20:40:28Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.multipleTests" finished-at="2017-06-03T20:49:20Z">
+        <test-method status="SKIP" signature="testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="testThreadSafe" duration-ms="0" started-at="2017-06-09T14:00:16Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.multipleTests" finished-at="2017-06-09T14:00:16Z">
+          <exception class="java.lang.Throwable">
+            <message>
+              <![CDATA[Method TestDatabase.testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[java.lang.Throwable: Method TestDatabase.testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+]]>
+            </full-stacktrace>
+          </exception> <!-- java.lang.Throwable -->
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testThreadSafe -->
-        <test-method status="PASS" signature="testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="testThreadSafe" duration-ms="532216" started-at="2017-06-03T20:40:28Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.multipleTests" finished-at="2017-06-03T20:49:20Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- testThreadSafe -->
-        <test-method status="PASS" signature="testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="testThreadSafe" duration-ms="534450" started-at="2017-06-03T20:40:28Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.multipleTests" finished-at="2017-06-03T20:49:22Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- testThreadSafe -->
-        <test-method status="PASS" signature="testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="testThreadSafe" duration-ms="536185" started-at="2017-06-03T20:40:28Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.multipleTests" finished-at="2017-06-03T20:49:24Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- testThreadSafe -->
-        <test-method status="PASS" signature="testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="testThreadSafe" duration-ms="533280" started-at="2017-06-03T20:40:28Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.multipleTests" finished-at="2017-06-03T20:49:21Z">
-          <reporter-output>
-          </reporter-output>
-        </test-method> <!-- testThreadSafe -->
-        <test-method status="PASS" signature="testCheckPoint()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="testCheckPoint" duration-ms="750" started-at="2017-06-03T20:49:24Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.testThreadSafe" finished-at="2017-06-03T20:49:25Z">
+        <test-method status="SKIP" signature="testCheckPoint()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="testCheckPoint" duration-ms="0" started-at="2017-06-09T14:00:16Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.testThreadSafe" finished-at="2017-06-09T14:00:16Z">
+          <exception class="java.lang.Throwable">
+            <message>
+              <![CDATA[Method TestDatabase.testCheckPoint()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[java.lang.Throwable: Method TestDatabase.testCheckPoint()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+]]>
+            </full-stacktrace>
+          </exception> <!-- java.lang.Throwable -->
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testCheckPoint -->
-        <test-method status="PASS" signature="testBackup()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="testBackup" duration-ms="8076" started-at="2017-06-03T20:49:25Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.testCheckPoint" finished-at="2017-06-03T20:49:33Z">
+        <test-method status="SKIP" signature="testBackup()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="testBackup" duration-ms="0" started-at="2017-06-09T14:00:16Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.testCheckPoint" finished-at="2017-06-09T14:00:16Z">
+          <exception class="java.lang.Throwable">
+            <message>
+              <![CDATA[Method TestDatabase.testBackup()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[java.lang.Throwable: Method TestDatabase.testBackup()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+]]>
+            </full-stacktrace>
+          </exception> <!-- java.lang.Throwable -->
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testBackup -->
-        <test-method status="PASS" signature="testDatabaseRemove()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="testDatabaseRemove" duration-ms="33" started-at="2017-06-03T20:49:33Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.testBackup" finished-at="2017-06-03T20:49:33Z">
+        <test-method status="SKIP" signature="testDatabaseRemove()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="testDatabaseRemove" duration-ms="0" started-at="2017-06-09T14:00:16Z" depends-on-methods="com.distrimind.ood.tests.TestDatabase.testBackup" finished-at="2017-06-09T14:00:16Z">
+          <exception class="java.lang.Throwable">
+            <message>
+              <![CDATA[Method TestDatabase.testDatabaseRemove()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods]]>
+            </message>
+            <full-stacktrace>
+              <![CDATA[java.lang.Throwable: Method TestDatabase.testDatabaseRemove()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+]]>
+            </full-stacktrace>
+          </exception> <!-- java.lang.Throwable -->
           <reporter-output>
           </reporter-output>
         </test-method> <!-- testDatabaseRemove -->
-        <test-method status="PASS" signature="unloadDatabase()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@6ce1f601]" name="unloadDatabase" is-config="true" duration-ms="409" started-at="2017-06-03T20:49:33Z" finished-at="2017-06-03T20:49:33Z">
+        <test-method status="PASS" signature="unloadDatabase()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37]" name="unloadDatabase" is-config="true" duration-ms="342" started-at="2017-06-09T14:00:16Z" finished-at="2017-06-09T14:00:16Z">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- unloadDatabase -->
       </class> <!-- com.distrimind.ood.tests.HSQLDBTestDatabase -->
-    </test> <!-- testHDQLDB -->
-  </suite> <!-- TestAll -->
+    </test> <!-- Default test -->
+  </suite> <!-- Default suite -->
 </testng-results>

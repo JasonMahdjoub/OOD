@@ -60,9 +60,12 @@ public enum SymbolType
     ANDCONDITION(false,"^[Aa][Nn][Dd]$", "AND"),
     ORCONDITION(false,"^[Oo][Rr]$", "OR"),
     IDENTIFIER(false,"^[a-zA-Z][a-zA-Z0-9\\._\\-]*+$", null),
-    NUMBER(false,"^[0-9]+$", null),
-    PARAMETER(false,"(\\%|\\:)[a-zA-Z\\-_][0-9a-zA-Z\\-_]+$", null);
-    
+    NUMBER(false,"^\\-?(([0-9]+(\\.[0-9]+)(E(\\-|\\+)?[0-9]+)?)|([0-9]*\\.[0-9]+(E(\\-|\\+)?[0-9]+)?))$", null),
+    STRING(false,"^(\"|\\')[\\p{Alnum}\\p{Blank}\\!\\#\\$\\%\\&\\(\\)\\*\\+\\,\\-\\.\\/:;\\<\\=\\>\\?\\@\\[\\\\\\]\\^_\\`\\{\\|\\}\\~]+(\"|\\')$", null),
+    PARAMETER(false,"(\\%|\\:)[a-zA-Z\\-_][0-9a-zA-Z\\-_]+$", null),
+    LIKE(false,"^LIKE$", " LIKE "),
+    NOT_LIKE(false,"^NOT_LIKE$", " NOT LIKE "),
+    COMMA(false, "\\,", ",");
     
     private final Pattern pattern;
     private final String content;
@@ -103,5 +106,28 @@ public enum SymbolType
 	    }
 	}
 	return null;
+    }
+    
+    public static Pattern convertLikeStringToPattern(String likeContent)
+    {
+	if (likeContent==null)
+	    throw new NullPointerException("likeContent");
+	String regex=null;
+	if (likeContent.startsWith("\"") && likeContent.endsWith("\""))
+	    regex=likeContent.substring(1, likeContent.length()-1);
+	else
+	    regex=likeContent;
+	if (regex.startsWith("%"))
+	    regex=regex.substring(1, regex.length());
+	else
+	    regex="^"+likeContent;
+	if (regex.endsWith("%"))
+	    regex=regex.substring(0, regex.length()-1);
+	else
+	    regex=regex+"$";
+	    
+	regex=regex.replace("_", ".");
+	    
+	return Pattern.compile(regex);
     }
 }

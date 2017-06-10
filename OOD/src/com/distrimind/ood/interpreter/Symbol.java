@@ -41,6 +41,7 @@ import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.exceptions.DatabaseSyntaxException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
+import com.distrimind.util.AbstractDecentralizedID;
 
 /**
  * 
@@ -86,23 +87,23 @@ public class Symbol implements QueryPart
 		return new RuleInstance(Rule.OPADD, this);
 	    case ANDCONDITION:case ORCONDITION:
 		return new RuleInstance(Rule.OPCONDITION, this);
-	    case CLOSE_PARENTHESIS:
-		return null;
 	    case DIVOPERATOR:case MULOPETATOR:
 		return new RuleInstance(Rule.OPMUL, this);
-	    case EQUALOPERATOR:case GREATEROPERATOR:case GREATEROREQUALOPERATOR:case LOWEROPERATOR:case LOWEROREQUALOPERATOR:
+	    case EQUALOPERATOR:case NOTEQUALOPERATOR:case GREATEROPERATOR:case GREATEROREQUALOPERATOR:case LOWEROPERATOR:case LOWEROREQUALOPERATOR:case LIKE:case NOT_LIKE:
 		return new RuleInstance(Rule.OPCOMP, this);
-	    case IDENTIFIER:case NUMBER:case PARAMETER:
+	    case IDENTIFIER:case NUMBER:case PARAMETER:case STRING:
 		return new RuleInstance(Rule.TERME, this);
-	    default:
+	    case OPEN_PARENTHESIS:case CLOSE_PARENTHESIS:case COMMA:
 		return null;
+		
 	}
+	return null;
     }
         
     @Override
     public String getBackusNaurNotation()
     {
-	if (type==SymbolType.OPEN_PARENTHESIS || type==SymbolType.CLOSE_PARENTHESIS)
+	if (type==SymbolType.OPEN_PARENTHESIS || type==SymbolType.CLOSE_PARENTHESIS || type==SymbolType.COMMA)
 	    return type.getContent();
 	else
 	    return "<"+getType().name()+">";
@@ -127,7 +128,7 @@ public class Symbol implements QueryPart
 		if (fa!=null)
 		    return fa.getDeclaredSqlFields().length>1;
 		else
-		    return false;
+		    throw new DatabaseSyntaxException("No field accessor corresponds to parameter "+getSymbol()+" and type "+p.getClass().getName());
 	    }
 	    else
 		return false;
@@ -154,8 +155,12 @@ public class Symbol implements QueryPart
 		throw new DatabaseSyntaxException("Cannot find field "+getSymbol()+" into table "+table.getName());
 	    else if (fa.isComparable())
 		return "comparable";
+	    else if (fa.getFieldClassType()==Boolean.class)
+		return "boolean";
+	    else if (AbstractDecentralizedID.class.isAssignableFrom(fa.getFieldClassType()))
+		return "decentralizedID";
 	    else
-		return fa.getFieldName();
+		return fa.getFieldClassType().getName();
 	}
 	else if (getType()==SymbolType.PARAMETER)
 	{
@@ -163,10 +168,17 @@ public class Symbol implements QueryPart
 	    if (p==null)
 		throw new DatabaseSyntaxException("Impossible to find parameter "+getSymbol());
 	    FieldAccessor fa=getFieldAccessor(table, p);
-	    if (fa!=null && fa.isComparable())
+	    
+	    if (fa==null)
+		throw new DatabaseSyntaxException("No field accessor corresponds to parameter "+getSymbol()+" and type "+p.getClass().getName());
+	    else if (fa.isComparable())
 		return "comparable";
+	    else if (fa.getFieldClassType()==Boolean.class)
+		return "boolean";
+	    else if (AbstractDecentralizedID.class.isAssignableFrom(fa.getFieldClassType()))
+		return "decentralizedID";
 	    else
-		return p.getClass().getName();
+		return fa.getFieldClassType().getName();
 	}
 	else if (getType()==SymbolType.NUMBER)
 	    return "comparable";
@@ -180,8 +192,10 @@ public class Symbol implements QueryPart
 	    return null;
 	for (FieldAccessor fa : table.getFieldAccessors())
 	{
-	    if (fa.getField().getDeclaringClass().isAssignableFrom(o.getClass()))
-		return fa;
+	    Class<?> c=fa.getField().getType();
+	    if (c.isAssignableFrom(o.getClass()))
+		    return fa;
+
 	}
 	return null;
     }

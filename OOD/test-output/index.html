@@ -24,7 +24,7 @@
     <div class="top-banner-root">
       <span class="top-banner-title-font">Test results</span>
       <br/>
-      <span class="top-banner-font-1">1 suite</span>
+      <span class="top-banner-font-1">1 suite, 5 failed tests</span>
     </div> <!-- top-banner-root -->
     <div class="navigator-root">
       <div class="navigator-suite-header">
@@ -37,8 +37,8 @@
       <div class="suite">
         <div class="rounded-window">
           <div class="suite-header light-rounded-window-top">
-            <a href="#" class="navigator-link" panel-name="suite-TestAll">
-              <span class="suite-name border-passed">TestAll</span>
+            <a href="#" class="navigator-link" panel-name="suite-Default_suite">
+              <span class="suite-name border-failed">Default suite</span>
             </a> <!-- navigator-link -->
           </div> <!-- suite-header light-rounded-window-top -->
           <div class="navigator-suite-content">
@@ -48,37 +48,37 @@
             <div class="suite-section-content">
               <ul>
                 <li>
-                  <a href="#" class="navigator-link " panel-name="test-xml-TestAll">
-                    <span>[unset file name]</span>
+                  <a href="#" class="navigator-link " panel-name="test-xml-Default_suite">
+                    <span>testng-customsuite.xml</span>
                   </a> <!-- navigator-link  -->
                 </li>
                 <li>
-                  <a href="#" class="navigator-link " panel-name="testlist-TestAll">
-                    <span class="test-stats">2 tests</span>
+                  <a href="#" class="navigator-link " panel-name="testlist-Default_suite">
+                    <span class="test-stats">1 test</span>
                   </a> <!-- navigator-link  -->
                 </li>
                 <li>
-                  <a href="#" class="navigator-link " panel-name="group-TestAll">
+                  <a href="#" class="navigator-link " panel-name="group-Default_suite">
                     <span>0 groups</span>
                   </a> <!-- navigator-link  -->
                 </li>
                 <li>
-                  <a href="#" class="navigator-link " panel-name="times-TestAll">
+                  <a href="#" class="navigator-link " panel-name="times-Default_suite">
                     <span>Times</span>
                   </a> <!-- navigator-link  -->
                 </li>
                 <li>
-                  <a href="#" class="navigator-link " panel-name="reporter-TestAll">
+                  <a href="#" class="navigator-link " panel-name="reporter-Default_suite">
                     <span>Reporter output</span>
                   </a> <!-- navigator-link  -->
                 </li>
                 <li>
-                  <a href="#" class="navigator-link " panel-name="ignored-methods-TestAll">
+                  <a href="#" class="navigator-link " panel-name="ignored-methods-Default_suite">
                     <span>Ignored methods</span>
                   </a> <!-- navigator-link  -->
                 </li>
                 <li>
-                  <a href="#" class="navigator-link " panel-name="chronological-TestAll">
+                  <a href="#" class="navigator-link " panel-name="chronological-Default_suite">
                     <span>Chronological view</span>
                   </a> <!-- navigator-link  -->
                 </li>
@@ -91,346 +91,204 @@
               <div class="suite-section-content">
                 <ul>
                   <li>
-                    <span class="method-stats">66 methods,   66 passed</span>
+                    <span class="method-stats">34 methods, 5 failed,  26 skipped,  3 passed</span>
+                  </li>
+                  <li>
+                    <span class="method-list-title failed">Failed methods</span>
+                    <span class="show-or-hide-methods failed">
+                      <a href="#" panel-name="suite-Default_suite" class="hide-methods failed suite-Default_suite"> (hide)</a> <!-- hide-methods failed suite-Default_suite -->
+                      <a href="#" panel-name="suite-Default_suite" class="show-methods failed suite-Default_suite"> (show)</a> <!-- show-methods failed suite-Default_suite -->
+                    </span>
+                    <div class="method-list-content failed suite-Default_suite">
+                      <span>
+                        <img width="3%" src="failed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="firstAdd">firstAdd</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="failed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="testCommandTranslatorInterpreter(Database Table COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1, FloatNumber_value=%FloatNumber_value AND do...)">testCommandTranslatorInterpreter(Database Table COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1, FloatNumber_value=%FloatNumber_value AND do...)</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="failed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="testCommandTranslatorInterpreter(Database Table COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1, FloatNumber_value&lt;&gt;%FloatNumber_value AND d...)">testCommandTranslatorInterpreter(Database Table COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1, FloatNumber_value<>%FloatNumber_value AND d...)</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="failed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="testCommandTranslatorInterpreter(Database Table COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1, FloatNumber_value&lt;&gt;%FloatNumber_value OR do...)">testCommandTranslatorInterpreter(Database Table COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1, FloatNumber_value<>%FloatNumber_value OR do...)</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="failed.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="testCommandTranslatorInterpreter(Database Table COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1, FloatNumber_value=%FloatNumber_value OR dou...)">testCommandTranslatorInterpreter(Database Table COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1, FloatNumber_value=%FloatNumber_value OR dou...)</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                    </div> <!-- method-list-content failed suite-Default_suite -->
+                  </li>
+                  <li>
+                    <span class="method-list-title skipped">Skipped methods</span>
+                    <span class="show-or-hide-methods skipped">
+                      <a href="#" panel-name="suite-Default_suite" class="hide-methods skipped suite-Default_suite"> (hide)</a> <!-- hide-methods skipped suite-Default_suite -->
+                      <a href="#" panel-name="suite-Default_suite" class="show-methods skipped suite-Default_suite"> (show)</a> <!-- show-methods skipped suite-Default_suite -->
+                    </span>
+                    <div class="method-list-content skipped suite-Default_suite">
+                      <span>
+                        <img width="3%" src="skipped.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="addForeignKeyAndTestUniqueKeys">addForeignKeyAndTestUniqueKeys</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="skipped.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="addSecondRecord">addSecondRecord</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="skipped.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="alterRecord">alterRecord</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="skipped.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="alterRecordWithCascade">alterRecordWithCascade</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="skipped.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="firstReload">firstReload</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="skipped.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="firstTestSize">firstTestSize</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="skipped.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="getRecord">getRecord</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="skipped.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="getRecordFilter">getRecordFilter</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="skipped.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="multipleTests">multipleTests</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="skipped.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="prepareMultipleTest">prepareMultipleTest</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="skipped.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="removeForeignKeyRecords">removeForeignKeyRecords</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="skipped.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="removePointedRecords">removePointedRecords</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="skipped.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="removeRecord">removeRecord</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="skipped.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="removeRecords">removeRecords</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="skipped.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="removeWithCascade">removeWithCascade</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="skipped.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="secondTestSize">secondTestSize</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="skipped.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="setAutoRandomFields">setAutoRandomFields</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="skipped.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="testArrayRecordParameters">testArrayRecordParameters</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="skipped.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="testBackup">testBackup</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="skipped.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="testCheckPoint">testCheckPoint</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="skipped.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="testDatabaseRemove">testDatabaseRemove</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="skipped.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="testFilters">testFilters</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="skipped.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="testFirstAdd">testFirstAdd</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="skipped.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="testIsPointed">testIsPointed</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="skipped.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="testRemoveFilters">testRemoveFilters</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                      <span>
+                        <img width="3%" src="skipped.png"/>
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="testThreadSafe">testThreadSafe</a> <!-- method navigator-link -->
+                      </span>
+                      <br/>
+                    </div> <!-- method-list-content skipped suite-Default_suite -->
                   </li>
                   <li>
                     <span class="method-list-title passed">Passed methods</span>
                     <span class="show-or-hide-methods passed">
-                      <a href="#" panel-name="suite-TestAll" class="hide-methods passed suite-TestAll"> (hide)</a> <!-- hide-methods passed suite-TestAll -->
-                      <a href="#" panel-name="suite-TestAll" class="show-methods passed suite-TestAll"> (show)</a> <!-- show-methods passed suite-TestAll -->
+                      <a href="#" panel-name="suite-Default_suite" class="hide-methods passed suite-Default_suite"> (hide)</a> <!-- hide-methods passed suite-Default_suite -->
+                      <a href="#" panel-name="suite-Default_suite" class="show-methods passed suite-Default_suite"> (show)</a> <!-- show-methods passed suite-Default_suite -->
                     </span>
-                    <div class="method-list-content passed suite-TestAll">
+                    <div class="method-list-content passed suite-Default_suite">
                       <span>
                         <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.DerbyTestDatabase" hash-for-method="addForeignKeyAndTestUniqueKeys">addForeignKeyAndTestUniqueKeys</a> <!-- method navigator-link -->
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="checkUnloadedDatabase">checkUnloadedDatabase</a> <!-- method navigator-link -->
                       </span>
                       <br/>
                       <span>
                         <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="addForeignKeyAndTestUniqueKeys">addForeignKeyAndTestUniqueKeys</a> <!-- method navigator-link -->
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="firstLoad">firstLoad</a> <!-- method navigator-link -->
                       </span>
                       <br/>
                       <span>
                         <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.DerbyTestDatabase" hash-for-method="addSecondRecord">addSecondRecord</a> <!-- method navigator-link -->
+                        <a href="#" class="method navigator-link" panel-name="suite-Default_suite" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="isLoadedIntoMemory">isLoadedIntoMemory</a> <!-- method navigator-link -->
                       </span>
                       <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="addSecondRecord">addSecondRecord</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.DerbyTestDatabase" hash-for-method="alterRecord">alterRecord</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="alterRecord">alterRecord</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="alterRecordWithCascade">alterRecordWithCascade</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.DerbyTestDatabase" hash-for-method="checkUnloadedDatabase">checkUnloadedDatabase</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="checkUnloadedDatabase">checkUnloadedDatabase</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.DerbyTestDatabase" hash-for-method="firstAdd">firstAdd</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="firstAdd">firstAdd</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.DerbyTestDatabase" hash-for-method="firstLoad">firstLoad</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="firstLoad">firstLoad</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.DerbyTestDatabase" hash-for-method="firstReload">firstReload</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="firstReload">firstReload</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.DerbyTestDatabase" hash-for-method="firstTestSize">firstTestSize</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="firstTestSize">firstTestSize</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.DerbyTestDatabase" hash-for-method="getRecord">getRecord</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="getRecord">getRecord</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.DerbyTestDatabase" hash-for-method="getRecordFilter">getRecordFilter</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="getRecordFilter">getRecordFilter</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.DerbyTestDatabase" hash-for-method="isLoadedIntoMemory">isLoadedIntoMemory</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="isLoadedIntoMemory">isLoadedIntoMemory</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.DerbyTestDatabase" hash-for-method="multipleTests">multipleTests</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="multipleTests">multipleTests</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.DerbyTestDatabase" hash-for-method="prepareMultipleTest">prepareMultipleTest</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="prepareMultipleTest">prepareMultipleTest</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.DerbyTestDatabase" hash-for-method="removeForeignKeyRecords">removeForeignKeyRecords</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="removeForeignKeyRecords">removeForeignKeyRecords</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.DerbyTestDatabase" hash-for-method="removePointedRecords">removePointedRecords</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="removePointedRecords">removePointedRecords</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.DerbyTestDatabase" hash-for-method="removeRecord">removeRecord</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="removeRecord">removeRecord</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.DerbyTestDatabase" hash-for-method="removeRecords">removeRecords</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="removeRecords">removeRecords</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.DerbyTestDatabase" hash-for-method="removeWithCascade">removeWithCascade</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="removeWithCascade">removeWithCascade</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.DerbyTestDatabase" hash-for-method="secondTestSize">secondTestSize</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="secondTestSize">secondTestSize</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.DerbyTestDatabase" hash-for-method="setAutoRandomFields">setAutoRandomFields</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="setAutoRandomFields">setAutoRandomFields</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.DerbyTestDatabase" hash-for-method="testArrayRecordParameters">testArrayRecordParameters</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="testArrayRecordParameters">testArrayRecordParameters</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.DerbyTestDatabase" hash-for-method="testBackup">testBackup</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="testBackup">testBackup</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="testCheckPoint">testCheckPoint</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.DerbyTestDatabase" hash-for-method="testDatabaseRemove">testDatabaseRemove</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="testDatabaseRemove">testDatabaseRemove</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.DerbyTestDatabase" hash-for-method="testFilters">testFilters</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="testFilters">testFilters</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.DerbyTestDatabase" hash-for-method="testFirstAdd">testFirstAdd</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="testFirstAdd">testFirstAdd</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.DerbyTestDatabase" hash-for-method="testIsPointed">testIsPointed</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="testIsPointed">testIsPointed</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.DerbyTestDatabase" hash-for-method="testRemoveFilters">testRemoveFilters</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="testRemoveFilters">testRemoveFilters</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.DerbyTestDatabase" hash-for-method="testThreadSafe">testThreadSafe</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.DerbyTestDatabase" hash-for-method="testThreadSafe">testThreadSafe</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.DerbyTestDatabase" hash-for-method="testThreadSafe">testThreadSafe</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.DerbyTestDatabase" hash-for-method="testThreadSafe">testThreadSafe</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.DerbyTestDatabase" hash-for-method="testThreadSafe">testThreadSafe</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="testThreadSafe">testThreadSafe</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="testThreadSafe">testThreadSafe</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="testThreadSafe">testThreadSafe</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="testThreadSafe">testThreadSafe</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                      <span>
-                        <img width="3%" src="passed.png"/>
-                        <a href="#" class="method navigator-link" panel-name="suite-TestAll" title="com.distrimind.ood.tests.HSQLDBTestDatabase" hash-for-method="testThreadSafe">testThreadSafe</a> <!-- method navigator-link -->
-                      </span>
-                      <br/>
-                    </div> <!-- method-list-content passed suite-TestAll -->
+                    </div> <!-- method-list-content passed suite-Default_suite -->
                   </li>
                 </ul>
               </div> <!-- suite-section-content -->
@@ -441,10 +299,236 @@
     </div> <!-- navigator-root -->
     <div class="wrapper">
       <div class="main-panel-root">
-        <div panel-name="suite-TestAll" class="panel TestAll">
-          <div class="suite-TestAll-class-passed">
+        <div panel-name="suite-Default_suite" class="panel Default_suite">
+          <div class="suite-Default_suite-class-failed">
             <div class="main-panel-header rounded-window-top">
-              <img src="passed.png"/>
+              <img src="failed.png"/>
+              <span class="class-name">com.distrimind.ood.tests.HSQLDBTestDatabase</span>
+            </div> <!-- main-panel-header rounded-window-top -->
+            <div class="main-panel-content rounded-window-bottom">
+              <div class="method">
+                <div class="method-content">
+                  <a name="firstAdd">
+                  </a> <!-- firstAdd -->
+                  <span class="method-name">firstAdd</span>
+                  <div class="stack-trace">com.distrimind.ood.database.exceptions.DatabaseException: Unexpected exception
+	at com.distrimind.ood.database.exceptions.DatabaseException.getDatabaseException(DatabaseException.java:85)
+	at com.distrimind.ood.database.fieldaccessors.SerializableFieldAccessor.getValue(SerializableFieldAccessor.java:270)
+	at com.distrimind.ood.database.fieldaccessors.CalendarFieldAccessor.serializeObject(CalendarFieldAccessor.java:74)
+	at com.distrimind.ood.database.fieldaccessors.SerializableFieldAccessor.getValue(SerializableFieldAccessor.java:297)
+	at com.distrimind.ood.database.fieldaccessors.SerializableFieldAccessor.getValue(SerializableFieldAccessor.java:279)
+	at com.distrimind.ood.database.Table$35$1TransactionTmp.run(Table.java:6420)
+	at com.distrimind.ood.database.DatabaseWrapper.runTransaction(DatabaseWrapper.java:1601)
+	at com.distrimind.ood.database.Table$35.run(Table.java:6473)
+	at com.distrimind.ood.database.DatabaseWrapper.runTransaction(DatabaseWrapper.java:1520)
+	at com.distrimind.ood.database.Table.addRecord(Table.java:6172)
+	at com.distrimind.ood.database.Table.addRecord(Table.java:6166)
+	at com.distrimind.ood.database.Table.addRecord(Table.java:6083)
+	at com.distrimind.ood.tests.TestDatabase.firstAdd(TestDatabase.java:403)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:104)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:645)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:851)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1177)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+Caused by: java.lang.IllegalArgumentException: Can not set java.util.Calendar field com.distrimind.ood.tests.database.Table1$Record.CalendarValue to java.util.GregorianCalendar
+	at sun.reflect.UnsafeFieldAccessorImpl.throwSetIllegalArgumentException(UnsafeFieldAccessorImpl.java:164)
+	at sun.reflect.UnsafeFieldAccessorImpl.throwSetIllegalArgumentException(UnsafeFieldAccessorImpl.java:168)
+	at sun.reflect.UnsafeFieldAccessorImpl.ensureObj(UnsafeFieldAccessorImpl.java:55)
+	at sun.reflect.UnsafeObjectFieldAccessorImpl.get(UnsafeObjectFieldAccessorImpl.java:36)
+	at java.lang.reflect.Field.get(Field.java:379)
+	at com.distrimind.ood.database.fieldaccessors.SerializableFieldAccessor.getValue(SerializableFieldAccessor.java:265)
+	... 36 more
+
+</div> <!-- stack-trace -->
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testCommandTranslatorInterpreter(Database Table COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1, FloatNumber_value=%FloatNumber_value AND do...)">
+                  </a> <!-- testCommandTranslatorInterpreter(Database Table COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1, FloatNumber_value=%FloatNumber_value AND do...) -->
+                  <span class="method-name">testCommandTranslatorInterpreter</span>
+                  <span class="parameters">(Database Table COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1, FloatNumber_value=%FloatNumber_value AND double_value=%double_value AND DoubleNumber_value=%DoubleNumber_value AND short_value=%short_value AND boolean_value=%boolean_value AND ByteNumber_value=%ByteNumber_value AND LongNumber_value=%LongNumber_value AND IntegerNumber_value=%IntegerNumber_value AND int_value=%int_value AND byte_array_value=%byte_array_value AND DateValue=%DateValue AND byte_value=%byte_value AND long_value=%long_value AND BigInteger_value=%BigInteger_value AND float_value=%float_value AND BigDecimal_value=%BigDecimal_value AND ShortNumber_value=%ShortNumber_value AND char_value=%char_value AND CharacterNumber_value=%CharacterNumber_value AND BooleanNumber_value=%BooleanNumber_value AND CalendarValue=%CalendarValue AND pk5=%pk5 AND pk6=%pk6 AND string_value=%string_value AND pk7=%pk7, {FloatNumber_value=1.0, DoubleNumber_value=1.0, double_value=1.0, boolean_value=true, short_value=1, ByteNumber_value=1, LongNumber_value=1, IntegerNumber_value=1, byte_array_value=[B@50432755, int_value=1, DateValue=Fri Jun 09 14:00:13 GMT+01:00 2017, byte_value=1, BigInteger_value=3, long_value=1, float_value=1.0, BigDecimal_value=4, ShortNumber_value=1, char_value=a, BooleanNumber_value=true, CharacterNumber_value=a, pk5=SecuredDecentralizedID[-7791399652802226959;5472717623773860333;5828176443844260036;4451577111291373600], CalendarValue=java.util.GregorianCalendar[time=2387640763646,areFieldsSet=true,areAllFieldsSet=false,lenient=true,zone=sun.util.calendar.ZoneInfo[id="GMT+01:00",offset=3600000,dstSavings=0,useDaylight=false,transitions=0,lastRule=null],firstDayOfWeek=1,minimalDaysInFirstWeek=1,ERA=1,YEAR=2045,MONTH=7,WEEK_OF_YEAR=35,WEEK_OF_MONTH=5,DAY_OF_MONTH=29,DAY_OF_YEAR=241,DAY_OF_WEEK=3,DAY_OF_WEEK_IN_MONTH=5,AM_PM=1,HOUR=6,HOUR_OF_DAY=18,MINUTE=32,SECOND=43,MILLISECOND=646,ZONE_OFFSET=3600000,DST_OFFSET=0], pk6=DecentralizedID[1497013215646;229658789101245;4], pk7=RenforcedDecentralizedID[1497013215646;229658789101245;6], string_value=string}, (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.FloatNumber_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.double_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.DoubleNumber_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.short_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.boolean_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.ByteNumber_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.LongNumber_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.IntegerNumber_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.int_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.byte_array_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.DateValue=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.byte_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.long_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.BigInteger_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.float_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.BigDecimal_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.ShortNumber_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.char_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.CharacterNumber_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.BooleanNumber_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.CalendarValue=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk5=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk6_ts=? AND COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk6_widseq=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.string_value=?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk7_ts=? AND COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk7_widseq=?), {1=1.0, 2=1.0, 3=1.0, 4=1, 5=true, 6=1, 7=1, 8=1, 9=1, 10=[B@50432755, 11=2017-06-09 14:00:13.493, 12=1, 13=1, 14=3, 15=1.0, 17=1, 16=4, 19=a, 18=a, 21=java.io.ByteArrayInputStream@68cb669d, 20=true, 23=1497013215646, 22=[B@1be032b, 25=string, 24=1355558695943869, 27=1918508649365181, 26=1497013215646})</span>
+                  <div class="stack-trace">java.lang.AssertionError: Maps do not match for key:11 actual:Fri Jun 09 14:00:13 GMT+01:00 2017 expected:2017-06-09 14:00:13.493 expected [2017-06-09 14:00:13.493] but found [Fri Jun 09 14:00:13 GMT+01:00 2017]
+	at org.testng.Assert.fail(Assert.java:94)
+	at org.testng.Assert.failNotEquals(Assert.java:513)
+	at org.testng.Assert.assertEqualsImpl(Assert.java:135)
+	at org.testng.Assert.assertEquals(Assert.java:812)
+	at com.distrimind.ood.tests.TestDatabase.testCommandTranslatorInterpreter(TestDatabase.java:3290)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:104)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:645)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:851)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1177)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+
+</div> <!-- stack-trace -->
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testCommandTranslatorInterpreter(Database Table COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1, FloatNumber_value&lt;&gt;%FloatNumber_value AND d...)">
+                  </a> <!-- testCommandTranslatorInterpreter(Database Table COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1, FloatNumber_value<>%FloatNumber_value AND d...) -->
+                  <span class="method-name">testCommandTranslatorInterpreter</span>
+                  <span class="parameters">(Database Table COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1, FloatNumber_value<>%FloatNumber_value AND double_value<>%double_value AND DoubleNumber_value<>%DoubleNumber_value AND short_value<>%short_value AND boolean_value<>%boolean_value AND ByteNumber_value<>%ByteNumber_value AND LongNumber_value<>%LongNumber_value AND IntegerNumber_value<>%IntegerNumber_value AND int_value<>%int_value AND byte_array_value<>%byte_array_value AND DateValue<>%DateValue AND byte_value<>%byte_value AND long_value<>%long_value AND BigInteger_value<>%BigInteger_value AND float_value<>%float_value AND BigDecimal_value<>%BigDecimal_value AND ShortNumber_value<>%ShortNumber_value AND char_value<>%char_value AND CharacterNumber_value<>%CharacterNumber_value AND BooleanNumber_value<>%BooleanNumber_value AND CalendarValue<>%CalendarValue AND pk5<>%pk5 AND pk6<>%pk6 AND string_value<>%string_value AND pk7<>%pk7, {FloatNumber_value=1.0, DoubleNumber_value=1.0, double_value=1.0, boolean_value=true, short_value=1, ByteNumber_value=1, LongNumber_value=1, IntegerNumber_value=1, byte_array_value=[B@50432755, int_value=1, DateValue=Fri Jun 09 14:00:13 GMT+01:00 2017, byte_value=1, BigInteger_value=3, long_value=1, float_value=1.0, BigDecimal_value=4, ShortNumber_value=1, char_value=a, BooleanNumber_value=true, CharacterNumber_value=a, pk5=SecuredDecentralizedID[-7791399652802226959;5472717623773860333;5828176443844260036;4451577111291373600], CalendarValue=java.util.GregorianCalendar[time=2387640763646,areFieldsSet=true,areAllFieldsSet=false,lenient=true,zone=sun.util.calendar.ZoneInfo[id="GMT+01:00",offset=3600000,dstSavings=0,useDaylight=false,transitions=0,lastRule=null],firstDayOfWeek=1,minimalDaysInFirstWeek=1,ERA=1,YEAR=2045,MONTH=7,WEEK_OF_YEAR=35,WEEK_OF_MONTH=5,DAY_OF_MONTH=29,DAY_OF_YEAR=241,DAY_OF_WEEK=3,DAY_OF_WEEK_IN_MONTH=5,AM_PM=1,HOUR=6,HOUR_OF_DAY=18,MINUTE=32,SECOND=43,MILLISECOND=646,ZONE_OFFSET=3600000,DST_OFFSET=0], pk6=DecentralizedID[1497013215646;229658789101245;4], pk7=RenforcedDecentralizedID[1497013215646;229658789101245;6], string_value=string}, (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.FloatNumber_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.double_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.DoubleNumber_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.short_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.boolean_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.ByteNumber_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.LongNumber_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.IntegerNumber_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.int_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.byte_array_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.DateValue<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.byte_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.long_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.BigInteger_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.float_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.BigDecimal_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.ShortNumber_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.char_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.CharacterNumber_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.BooleanNumber_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.CalendarValue<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk5<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk6_ts<>? AND COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk6_widseq<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.string_value<>?) AND (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk7_ts<>? AND COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk7_widseq<>?), {1=1.0, 2=1.0, 3=1.0, 4=1, 5=true, 6=1, 7=1, 8=1, 9=1, 10=[B@50432755, 11=2017-06-09 14:00:13.493, 12=1, 13=1, 14=3, 15=1.0, 17=1, 16=4, 19=a, 18=a, 21=java.io.ByteArrayInputStream@545e2452, 20=true, 23=1497013215646, 22=[B@70a2aec3, 25=string, 24=1355558695943869, 27=1918508649365181, 26=1497013215646})</span>
+                  <div class="stack-trace">com.distrimind.ood.database.exceptions.QueryInterpretationImpossible: The next querry can interpreted with several rules : FloatNumber_value&lt;&gt;%FloatNumber_value AND double_value&lt;&gt;%double_value AND DoubleNumber_value&lt;&gt;%DoubleNumber_value AND short_value&lt;&gt;%short_value AND boolean_value&lt;&gt;%boolean_value AND ByteNumber_value&lt;&gt;%ByteNumber_value AND LongNumber_value&lt;&gt;%LongNumber_value AND IntegerNumber_value&lt;&gt;%IntegerNumber_value AND int_value&lt;&gt;%int_value AND byte_array_value&lt;&gt;%byte_array_value AND DateValue&lt;&gt;%DateValue AND byte_value&lt;&gt;%byte_value AND long_value&lt;&gt;%long_value AND BigInteger_value&lt;&gt;%BigInteger_value AND float_value&lt;&gt;%float_value AND BigDecimal_value&lt;&gt;%BigDecimal_value AND ShortNumber_value&lt;&gt;%ShortNumber_value AND char_value&lt;&gt;%char_value AND CharacterNumber_value&lt;&gt;%CharacterNumber_value AND BooleanNumber_value&lt;&gt;%BooleanNumber_value AND CalendarValue&lt;&gt;%CalendarValue AND pk5&lt;&gt;%pk5 AND pk6&lt;&gt;%pk6 AND string_value&lt;&gt;%string_value AND pk7&lt;&gt;%pk7
+	at com.distrimind.ood.interpreter.Interpreter.getNewQueryParts(Interpreter.java:174)
+	at com.distrimind.ood.interpreter.Interpreter.getQuery(Interpreter.java:130)
+	at com.distrimind.ood.interpreter.Interpreter.getRuleInstance(Interpreter.java:69)
+	at com.distrimind.ood.tests.TestDatabase.testCommandTranslatorInterpreter(TestDatabase.java:3288)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:104)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:645)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:851)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1177)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+
+</div> <!-- stack-trace -->
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testCommandTranslatorInterpreter(Database Table COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1, FloatNumber_value&lt;&gt;%FloatNumber_value OR do...)">
+                  </a> <!-- testCommandTranslatorInterpreter(Database Table COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1, FloatNumber_value<>%FloatNumber_value OR do...) -->
+                  <span class="method-name">testCommandTranslatorInterpreter</span>
+                  <span class="parameters">(Database Table COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1, FloatNumber_value<>%FloatNumber_value OR double_value<>%double_value OR DoubleNumber_value<>%DoubleNumber_value OR short_value<>%short_value OR boolean_value<>%boolean_value OR ByteNumber_value<>%ByteNumber_value OR LongNumber_value<>%LongNumber_value OR IntegerNumber_value<>%IntegerNumber_value OR int_value<>%int_value OR byte_array_value<>%byte_array_value OR DateValue<>%DateValue OR byte_value<>%byte_value OR long_value<>%long_value OR BigInteger_value<>%BigInteger_value OR float_value<>%float_value OR BigDecimal_value<>%BigDecimal_value OR ShortNumber_value<>%ShortNumber_value OR char_value<>%char_value OR CharacterNumber_value<>%CharacterNumber_value OR BooleanNumber_value<>%BooleanNumber_value OR CalendarValue<>%CalendarValue OR pk5<>%pk5 OR pk6<>%pk6 OR string_value<>%string_value OR pk7<>%pk7, {FloatNumber_value=1.0, DoubleNumber_value=1.0, double_value=1.0, boolean_value=true, short_value=1, ByteNumber_value=1, LongNumber_value=1, IntegerNumber_value=1, byte_array_value=[B@50432755, int_value=1, DateValue=Fri Jun 09 14:00:13 GMT+01:00 2017, byte_value=1, BigInteger_value=3, long_value=1, float_value=1.0, BigDecimal_value=4, ShortNumber_value=1, char_value=a, BooleanNumber_value=true, CharacterNumber_value=a, pk5=SecuredDecentralizedID[-7791399652802226959;5472717623773860333;5828176443844260036;4451577111291373600], CalendarValue=java.util.GregorianCalendar[time=2387640763646,areFieldsSet=true,areAllFieldsSet=false,lenient=true,zone=sun.util.calendar.ZoneInfo[id="GMT+01:00",offset=3600000,dstSavings=0,useDaylight=false,transitions=0,lastRule=null],firstDayOfWeek=1,minimalDaysInFirstWeek=1,ERA=1,YEAR=2045,MONTH=7,WEEK_OF_YEAR=35,WEEK_OF_MONTH=5,DAY_OF_MONTH=29,DAY_OF_YEAR=241,DAY_OF_WEEK=3,DAY_OF_WEEK_IN_MONTH=5,AM_PM=1,HOUR=6,HOUR_OF_DAY=18,MINUTE=32,SECOND=43,MILLISECOND=646,ZONE_OFFSET=3600000,DST_OFFSET=0], pk6=DecentralizedID[1497013215646;229658789101245;4], pk7=RenforcedDecentralizedID[1497013215646;229658789101245;6], string_value=string}, (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.FloatNumber_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.double_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.DoubleNumber_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.short_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.boolean_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.ByteNumber_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.LongNumber_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.IntegerNumber_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.int_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.byte_array_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.DateValue<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.byte_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.long_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.BigInteger_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.float_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.BigDecimal_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.ShortNumber_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.char_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.CharacterNumber_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.BooleanNumber_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.CalendarValue<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk5<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk6_ts<>? AND COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk6_widseq<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.string_value<>?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk7_ts<>? AND COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk7_widseq<>?), {1=1.0, 2=1.0, 3=1.0, 4=1, 5=true, 6=1, 7=1, 8=1, 9=1, 10=[B@50432755, 11=2017-06-09 14:00:13.493, 12=1, 13=1, 14=3, 15=1.0, 17=1, 16=4, 19=a, 18=a, 21=java.io.ByteArrayInputStream@1c7419bd, 20=true, 23=1497013215646, 22=[B@a45d5e3, 25=string, 24=1355558695943869, 27=1918508649365181, 26=1497013215646})</span>
+                  <div class="stack-trace">com.distrimind.ood.database.exceptions.QueryInterpretationImpossible: The next querry can interpreted with several rules : FloatNumber_value&lt;&gt;%FloatNumber_value OR double_value&lt;&gt;%double_value OR DoubleNumber_value&lt;&gt;%DoubleNumber_value OR short_value&lt;&gt;%short_value OR boolean_value&lt;&gt;%boolean_value OR ByteNumber_value&lt;&gt;%ByteNumber_value OR LongNumber_value&lt;&gt;%LongNumber_value OR IntegerNumber_value&lt;&gt;%IntegerNumber_value OR int_value&lt;&gt;%int_value OR byte_array_value&lt;&gt;%byte_array_value OR DateValue&lt;&gt;%DateValue OR byte_value&lt;&gt;%byte_value OR long_value&lt;&gt;%long_value OR BigInteger_value&lt;&gt;%BigInteger_value OR float_value&lt;&gt;%float_value OR BigDecimal_value&lt;&gt;%BigDecimal_value OR ShortNumber_value&lt;&gt;%ShortNumber_value OR char_value&lt;&gt;%char_value OR CharacterNumber_value&lt;&gt;%CharacterNumber_value OR BooleanNumber_value&lt;&gt;%BooleanNumber_value OR CalendarValue&lt;&gt;%CalendarValue OR pk5&lt;&gt;%pk5 OR pk6&lt;&gt;%pk6 OR string_value&lt;&gt;%string_value OR pk7&lt;&gt;%pk7
+	at com.distrimind.ood.interpreter.Interpreter.getNewQueryParts(Interpreter.java:174)
+	at com.distrimind.ood.interpreter.Interpreter.getQuery(Interpreter.java:130)
+	at com.distrimind.ood.interpreter.Interpreter.getRuleInstance(Interpreter.java:69)
+	at com.distrimind.ood.tests.TestDatabase.testCommandTranslatorInterpreter(TestDatabase.java:3288)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:104)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:645)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:851)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1177)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+
+</div> <!-- stack-trace -->
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+              <div class="method">
+                <div class="method-content">
+                  <a name="testCommandTranslatorInterpreter(Database Table COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1, FloatNumber_value=%FloatNumber_value OR dou...)">
+                  </a> <!-- testCommandTranslatorInterpreter(Database Table COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1, FloatNumber_value=%FloatNumber_value OR dou...) -->
+                  <span class="method-name">testCommandTranslatorInterpreter</span>
+                  <span class="parameters">(Database Table COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1, FloatNumber_value=%FloatNumber_value OR double_value=%double_value OR DoubleNumber_value=%DoubleNumber_value OR short_value=%short_value OR boolean_value=%boolean_value OR ByteNumber_value=%ByteNumber_value OR LongNumber_value=%LongNumber_value OR IntegerNumber_value=%IntegerNumber_value OR int_value=%int_value OR byte_array_value=%byte_array_value OR DateValue=%DateValue OR byte_value=%byte_value OR long_value=%long_value OR BigInteger_value=%BigInteger_value OR float_value=%float_value OR BigDecimal_value=%BigDecimal_value OR ShortNumber_value=%ShortNumber_value OR char_value=%char_value OR CharacterNumber_value=%CharacterNumber_value OR BooleanNumber_value=%BooleanNumber_value OR CalendarValue=%CalendarValue OR pk5=%pk5 OR pk6=%pk6 OR string_value=%string_value OR pk7=%pk7, {FloatNumber_value=1.0, DoubleNumber_value=1.0, double_value=1.0, boolean_value=true, short_value=1, ByteNumber_value=1, LongNumber_value=1, IntegerNumber_value=1, byte_array_value=[B@50432755, int_value=1, DateValue=Fri Jun 09 14:00:13 GMT+01:00 2017, byte_value=1, BigInteger_value=3, long_value=1, float_value=1.0, BigDecimal_value=4, ShortNumber_value=1, char_value=a, BooleanNumber_value=true, CharacterNumber_value=a, pk5=SecuredDecentralizedID[-7791399652802226959;5472717623773860333;5828176443844260036;4451577111291373600], CalendarValue=java.util.GregorianCalendar[time=2387640763646,areFieldsSet=true,areAllFieldsSet=false,lenient=true,zone=sun.util.calendar.ZoneInfo[id="GMT+01:00",offset=3600000,dstSavings=0,useDaylight=false,transitions=0,lastRule=null],firstDayOfWeek=1,minimalDaysInFirstWeek=1,ERA=1,YEAR=2045,MONTH=7,WEEK_OF_YEAR=35,WEEK_OF_MONTH=5,DAY_OF_MONTH=29,DAY_OF_YEAR=241,DAY_OF_WEEK=3,DAY_OF_WEEK_IN_MONTH=5,AM_PM=1,HOUR=6,HOUR_OF_DAY=18,MINUTE=32,SECOND=43,MILLISECOND=646,ZONE_OFFSET=3600000,DST_OFFSET=0], pk6=DecentralizedID[1497013215646;229658789101245;4], pk7=RenforcedDecentralizedID[1497013215646;229658789101245;6], string_value=string}, (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.FloatNumber_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.double_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.DoubleNumber_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.short_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.boolean_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.ByteNumber_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.LongNumber_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.IntegerNumber_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.int_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.byte_array_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.DateValue=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.byte_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.long_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.BigInteger_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.float_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.BigDecimal_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.ShortNumber_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.char_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.CharacterNumber_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.BooleanNumber_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.CalendarValue=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk5=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk6_ts=? AND COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk6_widseq=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.string_value=?) OR (COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk7_ts=? AND COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1.pk7_widseq=?), {1=1.0, 2=1.0, 3=1.0, 4=1, 5=true, 6=1, 7=1, 8=1, 9=1, 10=[B@50432755, 11=2017-06-09 14:00:13.493, 12=1, 13=1, 14=3, 15=1.0, 17=1, 16=4, 19=a, 18=a, 21=java.io.ByteArrayInputStream@c69d7ee, 20=true, 23=1497013215646, 22=[B@78df509f, 25=string, 24=1355558695943869, 27=1918508649365181, 26=1497013215646})</span>
+                  <div class="stack-trace">java.lang.AssertionError: Maps do not match for key:11 actual:Fri Jun 09 14:00:13 GMT+01:00 2017 expected:2017-06-09 14:00:13.493 expected [2017-06-09 14:00:13.493] but found [Fri Jun 09 14:00:13 GMT+01:00 2017]
+	at org.testng.Assert.fail(Assert.java:94)
+	at org.testng.Assert.failNotEquals(Assert.java:513)
+	at org.testng.Assert.assertEqualsImpl(Assert.java:135)
+	at org.testng.Assert.assertEquals(Assert.java:812)
+	at com.distrimind.ood.tests.TestDatabase.testCommandTranslatorInterpreter(TestDatabase.java:3290)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:104)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:645)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:851)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1177)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+
+</div> <!-- stack-trace -->
+                </div> <!-- method-content -->
+              </div> <!-- method -->
+            </div> <!-- main-panel-content rounded-window-bottom -->
+          </div> <!-- suite-Default_suite-class-failed -->
+          <div class="suite-Default_suite-class-skipped">
+            <div class="main-panel-header rounded-window-top">
+              <img src="skipped.png"/>
               <span class="class-name">com.distrimind.ood.tests.HSQLDBTestDatabase</span>
             </div> <!-- main-panel-header rounded-window-top -->
             <div class="main-panel-content rounded-window-bottom">
@@ -453,6 +537,27 @@
                   <a name="addForeignKeyAndTestUniqueKeys">
                   </a> <!-- addForeignKeyAndTestUniqueKeys -->
                   <span class="method-name">addForeignKeyAndTestUniqueKeys</span>
+                  <div class="stack-trace">java.lang.Throwable: Method TestDatabase.addForeignKeyAndTestUniqueKeys()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+
+</div> <!-- stack-trace -->
                 </div> <!-- method-content -->
               </div> <!-- method -->
               <div class="method">
@@ -460,6 +565,27 @@
                   <a name="addSecondRecord">
                   </a> <!-- addSecondRecord -->
                   <span class="method-name">addSecondRecord</span>
+                  <div class="stack-trace">java.lang.Throwable: Method TestDatabase.addSecondRecord()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+
+</div> <!-- stack-trace -->
                 </div> <!-- method-content -->
               </div> <!-- method -->
               <div class="method">
@@ -467,6 +593,27 @@
                   <a name="alterRecord">
                   </a> <!-- alterRecord -->
                   <span class="method-name">alterRecord</span>
+                  <div class="stack-trace">java.lang.Throwable: Method TestDatabase.alterRecord()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+
+</div> <!-- stack-trace -->
                 </div> <!-- method-content -->
               </div> <!-- method -->
               <div class="method">
@@ -474,27 +621,27 @@
                   <a name="alterRecordWithCascade">
                   </a> <!-- alterRecordWithCascade -->
                   <span class="method-name">alterRecordWithCascade</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="checkUnloadedDatabase">
-                  </a> <!-- checkUnloadedDatabase -->
-                  <span class="method-name">checkUnloadedDatabase</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="firstAdd">
-                  </a> <!-- firstAdd -->
-                  <span class="method-name">firstAdd</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="firstLoad">
-                  </a> <!-- firstLoad -->
-                  <span class="method-name">firstLoad</span>
+                  <div class="stack-trace">java.lang.Throwable: Method TestDatabase.alterRecordWithCascade()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+
+</div> <!-- stack-trace -->
                 </div> <!-- method-content -->
               </div> <!-- method -->
               <div class="method">
@@ -502,6 +649,27 @@
                   <a name="firstReload">
                   </a> <!-- firstReload -->
                   <span class="method-name">firstReload</span>
+                  <div class="stack-trace">java.lang.Throwable: Method TestDatabase.firstReload()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+
+</div> <!-- stack-trace -->
                 </div> <!-- method-content -->
               </div> <!-- method -->
               <div class="method">
@@ -509,6 +677,27 @@
                   <a name="firstTestSize">
                   </a> <!-- firstTestSize -->
                   <span class="method-name">firstTestSize</span>
+                  <div class="stack-trace">java.lang.Throwable: Method TestDatabase.firstTestSize()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+
+</div> <!-- stack-trace -->
                 </div> <!-- method-content -->
               </div> <!-- method -->
               <div class="method">
@@ -516,6 +705,27 @@
                   <a name="getRecord">
                   </a> <!-- getRecord -->
                   <span class="method-name">getRecord</span>
+                  <div class="stack-trace">java.lang.Throwable: Method TestDatabase.getRecord()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+
+</div> <!-- stack-trace -->
                 </div> <!-- method-content -->
               </div> <!-- method -->
               <div class="method">
@@ -523,13 +733,27 @@
                   <a name="getRecordFilter">
                   </a> <!-- getRecordFilter -->
                   <span class="method-name">getRecordFilter</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="isLoadedIntoMemory">
-                  </a> <!-- isLoadedIntoMemory -->
-                  <span class="method-name">isLoadedIntoMemory</span>
+                  <div class="stack-trace">java.lang.Throwable: Method TestDatabase.getRecordFilter()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+
+</div> <!-- stack-trace -->
                 </div> <!-- method-content -->
               </div> <!-- method -->
               <div class="method">
@@ -537,6 +761,27 @@
                   <a name="multipleTests">
                   </a> <!-- multipleTests -->
                   <span class="method-name">multipleTests</span>
+                  <div class="stack-trace">java.lang.Throwable: Method TestDatabase.multipleTests()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+
+</div> <!-- stack-trace -->
                 </div> <!-- method-content -->
               </div> <!-- method -->
               <div class="method">
@@ -544,6 +789,27 @@
                   <a name="prepareMultipleTest">
                   </a> <!-- prepareMultipleTest -->
                   <span class="method-name">prepareMultipleTest</span>
+                  <div class="stack-trace">java.lang.Throwable: Method TestDatabase.prepareMultipleTest()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+
+</div> <!-- stack-trace -->
                 </div> <!-- method-content -->
               </div> <!-- method -->
               <div class="method">
@@ -551,6 +817,27 @@
                   <a name="removeForeignKeyRecords">
                   </a> <!-- removeForeignKeyRecords -->
                   <span class="method-name">removeForeignKeyRecords</span>
+                  <div class="stack-trace">java.lang.Throwable: Method TestDatabase.removeForeignKeyRecords()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+
+</div> <!-- stack-trace -->
                 </div> <!-- method-content -->
               </div> <!-- method -->
               <div class="method">
@@ -558,6 +845,27 @@
                   <a name="removePointedRecords">
                   </a> <!-- removePointedRecords -->
                   <span class="method-name">removePointedRecords</span>
+                  <div class="stack-trace">java.lang.Throwable: Method TestDatabase.removePointedRecords()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+
+</div> <!-- stack-trace -->
                 </div> <!-- method-content -->
               </div> <!-- method -->
               <div class="method">
@@ -565,6 +873,27 @@
                   <a name="removeRecord">
                   </a> <!-- removeRecord -->
                   <span class="method-name">removeRecord</span>
+                  <div class="stack-trace">java.lang.Throwable: Method TestDatabase.removeRecord()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+
+</div> <!-- stack-trace -->
                 </div> <!-- method-content -->
               </div> <!-- method -->
               <div class="method">
@@ -572,6 +901,27 @@
                   <a name="removeRecords">
                   </a> <!-- removeRecords -->
                   <span class="method-name">removeRecords</span>
+                  <div class="stack-trace">java.lang.Throwable: Method TestDatabase.removeRecords()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+
+</div> <!-- stack-trace -->
                 </div> <!-- method-content -->
               </div> <!-- method -->
               <div class="method">
@@ -579,6 +929,27 @@
                   <a name="removeWithCascade">
                   </a> <!-- removeWithCascade -->
                   <span class="method-name">removeWithCascade</span>
+                  <div class="stack-trace">java.lang.Throwable: Method TestDatabase.removeWithCascade()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+
+</div> <!-- stack-trace -->
                 </div> <!-- method-content -->
               </div> <!-- method -->
               <div class="method">
@@ -586,6 +957,27 @@
                   <a name="secondTestSize">
                   </a> <!-- secondTestSize -->
                   <span class="method-name">secondTestSize</span>
+                  <div class="stack-trace">java.lang.Throwable: Method TestDatabase.secondTestSize()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+
+</div> <!-- stack-trace -->
                 </div> <!-- method-content -->
               </div> <!-- method -->
               <div class="method">
@@ -593,6 +985,27 @@
                   <a name="setAutoRandomFields">
                   </a> <!-- setAutoRandomFields -->
                   <span class="method-name">setAutoRandomFields</span>
+                  <div class="stack-trace">java.lang.Throwable: Method TestDatabase.setAutoRandomFields()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+
+</div> <!-- stack-trace -->
                 </div> <!-- method-content -->
               </div> <!-- method -->
               <div class="method">
@@ -600,6 +1013,27 @@
                   <a name="testArrayRecordParameters">
                   </a> <!-- testArrayRecordParameters -->
                   <span class="method-name">testArrayRecordParameters</span>
+                  <div class="stack-trace">java.lang.Throwable: Method TestDatabase.testArrayRecordParameters()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+
+</div> <!-- stack-trace -->
                 </div> <!-- method-content -->
               </div> <!-- method -->
               <div class="method">
@@ -607,6 +1041,27 @@
                   <a name="testBackup">
                   </a> <!-- testBackup -->
                   <span class="method-name">testBackup</span>
+                  <div class="stack-trace">java.lang.Throwable: Method TestDatabase.testBackup()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+
+</div> <!-- stack-trace -->
                 </div> <!-- method-content -->
               </div> <!-- method -->
               <div class="method">
@@ -614,6 +1069,27 @@
                   <a name="testCheckPoint">
                   </a> <!-- testCheckPoint -->
                   <span class="method-name">testCheckPoint</span>
+                  <div class="stack-trace">java.lang.Throwable: Method TestDatabase.testCheckPoint()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+
+</div> <!-- stack-trace -->
                 </div> <!-- method-content -->
               </div> <!-- method -->
               <div class="method">
@@ -621,6 +1097,27 @@
                   <a name="testDatabaseRemove">
                   </a> <!-- testDatabaseRemove -->
                   <span class="method-name">testDatabaseRemove</span>
+                  <div class="stack-trace">java.lang.Throwable: Method TestDatabase.testDatabaseRemove()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+
+</div> <!-- stack-trace -->
                 </div> <!-- method-content -->
               </div> <!-- method -->
               <div class="method">
@@ -628,6 +1125,27 @@
                   <a name="testFilters">
                   </a> <!-- testFilters -->
                   <span class="method-name">testFilters</span>
+                  <div class="stack-trace">java.lang.Throwable: Method TestDatabase.testFilters()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+
+</div> <!-- stack-trace -->
                 </div> <!-- method-content -->
               </div> <!-- method -->
               <div class="method">
@@ -635,6 +1153,27 @@
                   <a name="testFirstAdd">
                   </a> <!-- testFirstAdd -->
                   <span class="method-name">testFirstAdd</span>
+                  <div class="stack-trace">java.lang.Throwable: Method TestDatabase.testFirstAdd()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+
+</div> <!-- stack-trace -->
                 </div> <!-- method-content -->
               </div> <!-- method -->
               <div class="method">
@@ -642,6 +1181,27 @@
                   <a name="testIsPointed">
                   </a> <!-- testIsPointed -->
                   <span class="method-name">testIsPointed</span>
+                  <div class="stack-trace">java.lang.Throwable: Method TestDatabase.testIsPointed()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+
+</div> <!-- stack-trace -->
                 </div> <!-- method-content -->
               </div> <!-- method -->
               <div class="method">
@@ -649,6 +1209,27 @@
                   <a name="testRemoveFilters">
                   </a> <!-- testRemoveFilters -->
                   <span class="method-name">testRemoveFilters</span>
+                  <div class="stack-trace">java.lang.Throwable: Method TestDatabase.testRemoveFilters()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+
+</div> <!-- stack-trace -->
                 </div> <!-- method-content -->
               </div> <!-- method -->
               <div class="method">
@@ -656,77 +1237,42 @@
                   <a name="testThreadSafe">
                   </a> <!-- testThreadSafe -->
                   <span class="method-name">testThreadSafe</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="testThreadSafe">
-                  </a> <!-- testThreadSafe -->
-                  <span class="method-name">testThreadSafe</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="testThreadSafe">
-                  </a> <!-- testThreadSafe -->
-                  <span class="method-name">testThreadSafe</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="testThreadSafe">
-                  </a> <!-- testThreadSafe -->
-                  <span class="method-name">testThreadSafe</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="testThreadSafe">
-                  </a> <!-- testThreadSafe -->
-                  <span class="method-name">testThreadSafe</span>
+                  <div class="stack-trace">java.lang.Throwable: Method TestDatabase.testThreadSafe()[pri:0, instance:com.distrimind.ood.tests.HSQLDBTestDatabase@5edc2a37] depends on not successfully finished methods
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1068)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:129)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at org.testng.TestRunner.privateRun(TestRunner.java:756)
+	at org.testng.TestRunner.run(TestRunner.java:610)
+	at org.testng.SuiteRunner.runTest(SuiteRunner.java:387)
+	at org.testng.SuiteRunner.runSequentially(SuiteRunner.java:382)
+	at org.testng.SuiteRunner.privateRun(SuiteRunner.java:340)
+	at org.testng.SuiteRunner.run(SuiteRunner.java:289)
+	at org.testng.SuiteRunnerWorker.runSuite(SuiteRunnerWorker.java:52)
+	at org.testng.SuiteRunnerWorker.run(SuiteRunnerWorker.java:86)
+	at org.testng.TestNG.runSuitesSequentially(TestNG.java:1293)
+	at org.testng.TestNG.runSuitesLocally(TestNG.java:1218)
+	at org.testng.TestNG.runSuites(TestNG.java:1133)
+	at org.testng.TestNG.run(TestNG.java:1104)
+	at org.testng.remote.AbstractRemoteTestNG.run(AbstractRemoteTestNG.java:132)
+	at org.testng.remote.RemoteTestNG.initAndRun(RemoteTestNG.java:236)
+	at org.testng.remote.RemoteTestNG.main(RemoteTestNG.java:81)
+
+</div> <!-- stack-trace -->
                 </div> <!-- method-content -->
               </div> <!-- method -->
             </div> <!-- main-panel-content rounded-window-bottom -->
-          </div> <!-- suite-TestAll-class-passed -->
-          <div class="suite-TestAll-class-passed">
+          </div> <!-- suite-Default_suite-class-skipped -->
+          <div class="suite-Default_suite-class-passed">
             <div class="main-panel-header rounded-window-top">
               <img src="passed.png"/>
-              <span class="class-name">com.distrimind.ood.tests.DerbyTestDatabase</span>
+              <span class="class-name">com.distrimind.ood.tests.HSQLDBTestDatabase</span>
             </div> <!-- main-panel-header rounded-window-top -->
             <div class="main-panel-content rounded-window-bottom">
-              <div class="method">
-                <div class="method-content">
-                  <a name="addForeignKeyAndTestUniqueKeys">
-                  </a> <!-- addForeignKeyAndTestUniqueKeys -->
-                  <span class="method-name">addForeignKeyAndTestUniqueKeys</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="addSecondRecord">
-                  </a> <!-- addSecondRecord -->
-                  <span class="method-name">addSecondRecord</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="alterRecord">
-                  </a> <!-- alterRecord -->
-                  <span class="method-name">alterRecord</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
               <div class="method">
                 <div class="method-content">
                   <a name="checkUnloadedDatabase">
                   </a> <!-- checkUnloadedDatabase -->
                   <span class="method-name">checkUnloadedDatabase</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="firstAdd">
-                  </a> <!-- firstAdd -->
-                  <span class="method-name">firstAdd</span>
                 </div> <!-- method-content -->
               </div> <!-- method -->
               <div class="method">
@@ -738,826 +1284,278 @@
               </div> <!-- method -->
               <div class="method">
                 <div class="method-content">
-                  <a name="firstReload">
-                  </a> <!-- firstReload -->
-                  <span class="method-name">firstReload</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="firstTestSize">
-                  </a> <!-- firstTestSize -->
-                  <span class="method-name">firstTestSize</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="getRecord">
-                  </a> <!-- getRecord -->
-                  <span class="method-name">getRecord</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="getRecordFilter">
-                  </a> <!-- getRecordFilter -->
-                  <span class="method-name">getRecordFilter</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
                   <a name="isLoadedIntoMemory">
                   </a> <!-- isLoadedIntoMemory -->
                   <span class="method-name">isLoadedIntoMemory</span>
                 </div> <!-- method-content -->
               </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="multipleTests">
-                  </a> <!-- multipleTests -->
-                  <span class="method-name">multipleTests</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="prepareMultipleTest">
-                  </a> <!-- prepareMultipleTest -->
-                  <span class="method-name">prepareMultipleTest</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="removeForeignKeyRecords">
-                  </a> <!-- removeForeignKeyRecords -->
-                  <span class="method-name">removeForeignKeyRecords</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="removePointedRecords">
-                  </a> <!-- removePointedRecords -->
-                  <span class="method-name">removePointedRecords</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="removeRecord">
-                  </a> <!-- removeRecord -->
-                  <span class="method-name">removeRecord</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="removeRecords">
-                  </a> <!-- removeRecords -->
-                  <span class="method-name">removeRecords</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="removeWithCascade">
-                  </a> <!-- removeWithCascade -->
-                  <span class="method-name">removeWithCascade</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="secondTestSize">
-                  </a> <!-- secondTestSize -->
-                  <span class="method-name">secondTestSize</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="setAutoRandomFields">
-                  </a> <!-- setAutoRandomFields -->
-                  <span class="method-name">setAutoRandomFields</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="testArrayRecordParameters">
-                  </a> <!-- testArrayRecordParameters -->
-                  <span class="method-name">testArrayRecordParameters</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="testBackup">
-                  </a> <!-- testBackup -->
-                  <span class="method-name">testBackup</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="testDatabaseRemove">
-                  </a> <!-- testDatabaseRemove -->
-                  <span class="method-name">testDatabaseRemove</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="testFilters">
-                  </a> <!-- testFilters -->
-                  <span class="method-name">testFilters</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="testFirstAdd">
-                  </a> <!-- testFirstAdd -->
-                  <span class="method-name">testFirstAdd</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="testIsPointed">
-                  </a> <!-- testIsPointed -->
-                  <span class="method-name">testIsPointed</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="testRemoveFilters">
-                  </a> <!-- testRemoveFilters -->
-                  <span class="method-name">testRemoveFilters</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="testThreadSafe">
-                  </a> <!-- testThreadSafe -->
-                  <span class="method-name">testThreadSafe</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="testThreadSafe">
-                  </a> <!-- testThreadSafe -->
-                  <span class="method-name">testThreadSafe</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="testThreadSafe">
-                  </a> <!-- testThreadSafe -->
-                  <span class="method-name">testThreadSafe</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="testThreadSafe">
-                  </a> <!-- testThreadSafe -->
-                  <span class="method-name">testThreadSafe</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
-              <div class="method">
-                <div class="method-content">
-                  <a name="testThreadSafe">
-                  </a> <!-- testThreadSafe -->
-                  <span class="method-name">testThreadSafe</span>
-                </div> <!-- method-content -->
-              </div> <!-- method -->
             </div> <!-- main-panel-content rounded-window-bottom -->
-          </div> <!-- suite-TestAll-class-passed -->
-        </div> <!-- panel TestAll -->
-        <div panel-name="test-xml-TestAll" class="panel">
+          </div> <!-- suite-Default_suite-class-passed -->
+        </div> <!-- panel Default_suite -->
+        <div panel-name="test-xml-Default_suite" class="panel">
           <div class="main-panel-header rounded-window-top">
+            <span class="header-content">/tmp/testng-eclipse--71090006/testng-customsuite.xml</span>
           </div> <!-- main-panel-header rounded-window-top -->
           <div class="main-panel-content rounded-window-bottom">
             <pre>
 &lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
 &lt;!DOCTYPE suite SYSTEM &quot;http://testng.org/testng-1.0.dtd&quot;&gt;
-&lt;suite verbose=&quot;5&quot; name=&quot;TestAll&quot;&gt;
-  &lt;test name=&quot;testDerby&quot;&gt;
-    &lt;classes&gt;
-      &lt;class name=&quot;com.distrimind.ood.tests.DerbyTestDatabase&quot;/&gt;
-    &lt;/classes&gt;
-  &lt;/test&gt; &lt;!-- testDerby --&gt;
-  &lt;test name=&quot;testHDQLDB&quot;&gt;
+&lt;suite guice-stage=&quot;DEVELOPMENT&quot; name=&quot;Default suite&quot;&gt;
+  &lt;test verbose=&quot;2&quot; name=&quot;Default test&quot;&gt;
     &lt;classes&gt;
       &lt;class name=&quot;com.distrimind.ood.tests.HSQLDBTestDatabase&quot;/&gt;
     &lt;/classes&gt;
-  &lt;/test&gt; &lt;!-- testHDQLDB --&gt;
-&lt;/suite&gt; &lt;!-- TestAll --&gt;
+  &lt;/test&gt; &lt;!-- Default test --&gt;
+&lt;/suite&gt; &lt;!-- Default suite --&gt;
             </pre>
           </div> <!-- main-panel-content rounded-window-bottom -->
         </div> <!-- panel -->
-        <div panel-name="testlist-TestAll" class="panel">
+        <div panel-name="testlist-Default_suite" class="panel">
           <div class="main-panel-header rounded-window-top">
-            <span class="header-content">Tests for TestAll</span>
+            <span class="header-content">Tests for Default suite</span>
           </div> <!-- main-panel-header rounded-window-top -->
           <div class="main-panel-content rounded-window-bottom">
             <ul>
               <li>
-                <span class="test-name">testDerby (1 class)</span>
-              </li>
-              <li>
-                <span class="test-name">testHDQLDB (1 class)</span>
+                <span class="test-name">Default test (1 class)</span>
               </li>
             </ul>
           </div> <!-- main-panel-content rounded-window-bottom -->
         </div> <!-- panel -->
-        <div panel-name="group-TestAll" class="panel">
+        <div panel-name="group-Default_suite" class="panel">
           <div class="main-panel-header rounded-window-top">
-            <span class="header-content">Groups for TestAll</span>
+            <span class="header-content">Groups for Default suite</span>
           </div> <!-- main-panel-header rounded-window-top -->
           <div class="main-panel-content rounded-window-bottom">
           </div> <!-- main-panel-content rounded-window-bottom -->
         </div> <!-- panel -->
-        <div panel-name="times-TestAll" class="panel">
+        <div panel-name="times-Default_suite" class="panel">
           <div class="main-panel-header rounded-window-top">
-            <span class="header-content">Times for TestAll</span>
+            <span class="header-content">Times for Default suite</span>
           </div> <!-- main-panel-header rounded-window-top -->
           <div class="main-panel-content rounded-window-bottom">
             <div class="times-div">
               <script type="text/javascript">
-suiteTableInitFunctions.push('tableData_TestAll');
-function tableData_TestAll() {
+suiteTableInitFunctions.push('tableData_Default_suite');
+function tableData_Default_suite() {
 var data = new google.visualization.DataTable();
 data.addColumn('number', 'Number');
 data.addColumn('string', 'Method');
 data.addColumn('string', 'Class');
 data.addColumn('number', 'Time (ms)');
-data.addRows(66);
+data.addRows(34);
 data.setCell(0, 0, 0)
-data.setCell(0, 1, 'testThreadSafe')
+data.setCell(0, 1, 'checkUnloadedDatabase')
 data.setCell(0, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(0, 3, 536185);
+data.setCell(0, 3, 1028);
 data.setCell(1, 0, 1)
-data.setCell(1, 1, 'testThreadSafe')
+data.setCell(1, 1, 'firstLoad')
 data.setCell(1, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(1, 3, 534450);
+data.setCell(1, 3, 638);
 data.setCell(2, 0, 2)
-data.setCell(2, 1, 'testThreadSafe')
+data.setCell(2, 1, 'testCommandTranslatorInterpreter')
 data.setCell(2, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(2, 3, 533280);
+data.setCell(2, 3, 312);
 data.setCell(3, 0, 3)
-data.setCell(3, 1, 'testThreadSafe')
+data.setCell(3, 1, 'testCommandTranslatorInterpreter')
 data.setCell(3, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(3, 3, 532216);
+data.setCell(3, 3, 167);
 data.setCell(4, 0, 4)
-data.setCell(4, 1, 'testThreadSafe')
+data.setCell(4, 1, 'testCommandTranslatorInterpreter')
 data.setCell(4, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(4, 3, 532152);
+data.setCell(4, 3, 94);
 data.setCell(5, 0, 5)
-data.setCell(5, 1, 'testThreadSafe')
-data.setCell(5, 2, 'com.distrimind.ood.tests.DerbyTestDatabase')
-data.setCell(5, 3, 303813);
+data.setCell(5, 1, 'firstAdd')
+data.setCell(5, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
+data.setCell(5, 3, 48);
 data.setCell(6, 0, 6)
-data.setCell(6, 1, 'testThreadSafe')
-data.setCell(6, 2, 'com.distrimind.ood.tests.DerbyTestDatabase')
-data.setCell(6, 3, 302571);
+data.setCell(6, 1, 'testCommandTranslatorInterpreter')
+data.setCell(6, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
+data.setCell(6, 3, 42);
 data.setCell(7, 0, 7)
-data.setCell(7, 1, 'testThreadSafe')
-data.setCell(7, 2, 'com.distrimind.ood.tests.DerbyTestDatabase')
-data.setCell(7, 3, 301152);
+data.setCell(7, 1, 'isLoadedIntoMemory')
+data.setCell(7, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
+data.setCell(7, 3, 5);
 data.setCell(8, 0, 8)
-data.setCell(8, 1, 'testThreadSafe')
-data.setCell(8, 2, 'com.distrimind.ood.tests.DerbyTestDatabase')
-data.setCell(8, 3, 300883);
+data.setCell(8, 1, 'alterRecord')
+data.setCell(8, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
+data.setCell(8, 3, 0);
 data.setCell(9, 0, 9)
-data.setCell(9, 1, 'testThreadSafe')
-data.setCell(9, 2, 'com.distrimind.ood.tests.DerbyTestDatabase')
-data.setCell(9, 3, 294613);
+data.setCell(9, 1, 'setAutoRandomFields')
+data.setCell(9, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
+data.setCell(9, 3, 0);
 data.setCell(10, 0, 10)
-data.setCell(10, 1, 'checkUnloadedDatabase')
-data.setCell(10, 2, 'com.distrimind.ood.tests.DerbyTestDatabase')
-data.setCell(10, 3, 98840);
+data.setCell(10, 1, 'testFilters')
+data.setCell(10, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
+data.setCell(10, 3, 0);
 data.setCell(11, 0, 11)
-data.setCell(11, 1, 'multipleTests')
+data.setCell(11, 1, 'alterRecordWithCascade')
 data.setCell(11, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(11, 3, 17696);
+data.setCell(11, 3, 0);
 data.setCell(12, 0, 12)
-data.setCell(12, 1, 'multipleTests')
-data.setCell(12, 2, 'com.distrimind.ood.tests.DerbyTestDatabase')
-data.setCell(12, 3, 9407);
+data.setCell(12, 1, 'removeRecords')
+data.setCell(12, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
+data.setCell(12, 3, 0);
 data.setCell(13, 0, 13)
-data.setCell(13, 1, 'testBackup')
+data.setCell(13, 1, 'testFirstAdd')
 data.setCell(13, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(13, 3, 8076);
+data.setCell(13, 3, 0);
 data.setCell(14, 0, 14)
-data.setCell(14, 1, 'removeRecords')
+data.setCell(14, 1, 'prepareMultipleTest')
 data.setCell(14, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(14, 3, 3749);
+data.setCell(14, 3, 0);
 data.setCell(15, 0, 15)
-data.setCell(15, 1, 'removeRecords')
-data.setCell(15, 2, 'com.distrimind.ood.tests.DerbyTestDatabase')
-data.setCell(15, 3, 1933);
+data.setCell(15, 1, 'addSecondRecord')
+data.setCell(15, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
+data.setCell(15, 3, 0);
 data.setCell(16, 0, 16)
-data.setCell(16, 1, 'firstReload')
-data.setCell(16, 2, 'com.distrimind.ood.tests.DerbyTestDatabase')
-data.setCell(16, 3, 1396);
+data.setCell(16, 1, 'testIsPointed')
+data.setCell(16, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
+data.setCell(16, 3, 0);
 data.setCell(17, 0, 17)
-data.setCell(17, 1, 'setAutoRandomFields')
+data.setCell(17, 1, 'secondTestSize')
 data.setCell(17, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(17, 3, 993);
+data.setCell(17, 3, 0);
 data.setCell(18, 0, 18)
-data.setCell(18, 1, 'removeWithCascade')
+data.setCell(18, 1, 'firstTestSize')
 data.setCell(18, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(18, 3, 865);
+data.setCell(18, 3, 0);
 data.setCell(19, 0, 19)
-data.setCell(19, 1, 'firstLoad')
-data.setCell(19, 2, 'com.distrimind.ood.tests.DerbyTestDatabase')
-data.setCell(19, 3, 756);
+data.setCell(19, 1, 'getRecordFilter')
+data.setCell(19, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
+data.setCell(19, 3, 0);
 data.setCell(20, 0, 20)
-data.setCell(20, 1, 'testCheckPoint')
+data.setCell(20, 1, 'testBackup')
 data.setCell(20, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(20, 3, 750);
+data.setCell(20, 3, 0);
 data.setCell(21, 0, 21)
-data.setCell(21, 1, 'testBackup')
-data.setCell(21, 2, 'com.distrimind.ood.tests.DerbyTestDatabase')
-data.setCell(21, 3, 736);
+data.setCell(21, 1, 'multipleTests')
+data.setCell(21, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
+data.setCell(21, 3, 0);
 data.setCell(22, 0, 22)
 data.setCell(22, 1, 'firstReload')
 data.setCell(22, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(22, 3, 535);
+data.setCell(22, 3, 0);
 data.setCell(23, 0, 23)
-data.setCell(23, 1, 'prepareMultipleTest')
+data.setCell(23, 1, 'testThreadSafe')
 data.setCell(23, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(23, 3, 526);
+data.setCell(23, 3, 0);
 data.setCell(24, 0, 24)
-data.setCell(24, 1, 'setAutoRandomFields')
-data.setCell(24, 2, 'com.distrimind.ood.tests.DerbyTestDatabase')
-data.setCell(24, 3, 431);
+data.setCell(24, 1, 'testDatabaseRemove')
+data.setCell(24, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
+data.setCell(24, 3, 0);
 data.setCell(25, 0, 25)
-data.setCell(25, 1, 'removeWithCascade')
-data.setCell(25, 2, 'com.distrimind.ood.tests.DerbyTestDatabase')
-data.setCell(25, 3, 414);
+data.setCell(25, 1, 'removeRecord')
+data.setCell(25, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
+data.setCell(25, 3, 0);
 data.setCell(26, 0, 26)
-data.setCell(26, 1, 'checkUnloadedDatabase')
+data.setCell(26, 1, 'addForeignKeyAndTestUniqueKeys')
 data.setCell(26, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(26, 3, 326);
+data.setCell(26, 3, 0);
 data.setCell(27, 0, 27)
-data.setCell(27, 1, 'testDatabaseRemove')
-data.setCell(27, 2, 'com.distrimind.ood.tests.DerbyTestDatabase')
-data.setCell(27, 3, 159);
+data.setCell(27, 1, 'testArrayRecordParameters')
+data.setCell(27, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
+data.setCell(27, 3, 0);
 data.setCell(28, 0, 28)
-data.setCell(28, 1, 'prepareMultipleTest')
-data.setCell(28, 2, 'com.distrimind.ood.tests.DerbyTestDatabase')
-data.setCell(28, 3, 159);
+data.setCell(28, 1, 'testRemoveFilters')
+data.setCell(28, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
+data.setCell(28, 3, 0);
 data.setCell(29, 0, 29)
-data.setCell(29, 1, 'firstLoad')
+data.setCell(29, 1, 'removeWithCascade')
 data.setCell(29, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(29, 3, 154);
+data.setCell(29, 3, 0);
 data.setCell(30, 0, 30)
-data.setCell(30, 1, 'getRecordFilter')
-data.setCell(30, 2, 'com.distrimind.ood.tests.DerbyTestDatabase')
-data.setCell(30, 3, 137);
+data.setCell(30, 1, 'getRecord')
+data.setCell(30, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
+data.setCell(30, 3, 0);
 data.setCell(31, 0, 31)
-data.setCell(31, 1, 'alterRecordWithCascade')
+data.setCell(31, 1, 'removePointedRecords')
 data.setCell(31, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(31, 3, 132);
+data.setCell(31, 3, 0);
 data.setCell(32, 0, 32)
-data.setCell(32, 1, 'addForeignKeyAndTestUniqueKeys')
+data.setCell(32, 1, 'testCheckPoint')
 data.setCell(32, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(32, 3, 125);
+data.setCell(32, 3, 0);
 data.setCell(33, 0, 33)
-data.setCell(33, 1, 'addForeignKeyAndTestUniqueKeys')
-data.setCell(33, 2, 'com.distrimind.ood.tests.DerbyTestDatabase')
-data.setCell(33, 3, 123);
-data.setCell(34, 0, 34)
-data.setCell(34, 1, 'firstAdd')
-data.setCell(34, 2, 'com.distrimind.ood.tests.DerbyTestDatabase')
-data.setCell(34, 3, 111);
-data.setCell(35, 0, 35)
-data.setCell(35, 1, 'alterRecord')
-data.setCell(35, 2, 'com.distrimind.ood.tests.DerbyTestDatabase')
-data.setCell(35, 3, 62);
-data.setCell(36, 0, 36)
-data.setCell(36, 1, 'firstAdd')
-data.setCell(36, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(36, 3, 60);
-data.setCell(37, 0, 37)
-data.setCell(37, 1, 'addSecondRecord')
-data.setCell(37, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(37, 3, 59);
-data.setCell(38, 0, 38)
-data.setCell(38, 1, 'removeRecord')
-data.setCell(38, 2, 'com.distrimind.ood.tests.DerbyTestDatabase')
-data.setCell(38, 3, 55);
-data.setCell(39, 0, 39)
-data.setCell(39, 1, 'alterRecord')
-data.setCell(39, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(39, 3, 55);
-data.setCell(40, 0, 40)
-data.setCell(40, 1, 'getRecordFilter')
-data.setCell(40, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(40, 3, 53);
-data.setCell(41, 0, 41)
-data.setCell(41, 1, 'removeForeignKeyRecords')
-data.setCell(41, 2, 'com.distrimind.ood.tests.DerbyTestDatabase')
-data.setCell(41, 3, 51);
-data.setCell(42, 0, 42)
-data.setCell(42, 1, 'testArrayRecordParameters')
-data.setCell(42, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(42, 3, 47);
-data.setCell(43, 0, 43)
-data.setCell(43, 1, 'testFilters')
-data.setCell(43, 2, 'com.distrimind.ood.tests.DerbyTestDatabase')
-data.setCell(43, 3, 35);
-data.setCell(44, 0, 44)
-data.setCell(44, 1, 'removePointedRecords')
-data.setCell(44, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(44, 3, 34);
-data.setCell(45, 0, 45)
-data.setCell(45, 1, 'addSecondRecord')
-data.setCell(45, 2, 'com.distrimind.ood.tests.DerbyTestDatabase')
-data.setCell(45, 3, 33);
-data.setCell(46, 0, 46)
-data.setCell(46, 1, 'testDatabaseRemove')
-data.setCell(46, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(46, 3, 33);
-data.setCell(47, 0, 47)
-data.setCell(47, 1, 'getRecord')
-data.setCell(47, 2, 'com.distrimind.ood.tests.DerbyTestDatabase')
-data.setCell(47, 3, 31);
-data.setCell(48, 0, 48)
-data.setCell(48, 1, 'removeForeignKeyRecords')
-data.setCell(48, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(48, 3, 28);
-data.setCell(49, 0, 49)
-data.setCell(49, 1, 'testArrayRecordParameters')
-data.setCell(49, 2, 'com.distrimind.ood.tests.DerbyTestDatabase')
-data.setCell(49, 3, 26);
-data.setCell(50, 0, 50)
-data.setCell(50, 1, 'testRemoveFilters')
-data.setCell(50, 2, 'com.distrimind.ood.tests.DerbyTestDatabase')
-data.setCell(50, 3, 25);
-data.setCell(51, 0, 51)
-data.setCell(51, 1, 'removePointedRecords')
-data.setCell(51, 2, 'com.distrimind.ood.tests.DerbyTestDatabase')
-data.setCell(51, 3, 22);
-data.setCell(52, 0, 52)
-data.setCell(52, 1, 'getRecord')
-data.setCell(52, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(52, 3, 19);
-data.setCell(53, 0, 53)
-data.setCell(53, 1, 'removeRecord')
-data.setCell(53, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(53, 3, 11);
-data.setCell(54, 0, 54)
-data.setCell(54, 1, 'secondTestSize')
-data.setCell(54, 2, 'com.distrimind.ood.tests.DerbyTestDatabase')
-data.setCell(54, 3, 10);
-data.setCell(55, 0, 55)
-data.setCell(55, 1, 'testIsPointed')
-data.setCell(55, 2, 'com.distrimind.ood.tests.DerbyTestDatabase')
-data.setCell(55, 3, 8);
-data.setCell(56, 0, 56)
-data.setCell(56, 1, 'testIsPointed')
-data.setCell(56, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(56, 3, 8);
-data.setCell(57, 0, 57)
-data.setCell(57, 1, 'secondTestSize')
-data.setCell(57, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(57, 3, 5);
-data.setCell(58, 0, 58)
-data.setCell(58, 1, 'firstTestSize')
-data.setCell(58, 2, 'com.distrimind.ood.tests.DerbyTestDatabase')
-data.setCell(58, 3, 4);
-data.setCell(59, 0, 59)
-data.setCell(59, 1, 'testFilters')
-data.setCell(59, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(59, 3, 4);
-data.setCell(60, 0, 60)
-data.setCell(60, 1, 'testFirstAdd')
-data.setCell(60, 2, 'com.distrimind.ood.tests.DerbyTestDatabase')
-data.setCell(60, 3, 3);
-data.setCell(61, 0, 61)
-data.setCell(61, 1, 'testRemoveFilters')
-data.setCell(61, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(61, 3, 3);
-data.setCell(62, 0, 62)
-data.setCell(62, 1, 'testFirstAdd')
-data.setCell(62, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(62, 3, 3);
-data.setCell(63, 0, 63)
-data.setCell(63, 1, 'firstTestSize')
-data.setCell(63, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(63, 3, 1);
-data.setCell(64, 0, 64)
-data.setCell(64, 1, 'isLoadedIntoMemory')
-data.setCell(64, 2, 'com.distrimind.ood.tests.DerbyTestDatabase')
-data.setCell(64, 3, 0);
-data.setCell(65, 0, 65)
-data.setCell(65, 1, 'isLoadedIntoMemory')
-data.setCell(65, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
-data.setCell(65, 3, 0);
-window.suiteTableData['TestAll']= { tableData: data, tableDiv: 'times-div-TestAll'}
+data.setCell(33, 1, 'removeForeignKeyRecords')
+data.setCell(33, 2, 'com.distrimind.ood.tests.HSQLDBTestDatabase')
+data.setCell(33, 3, 0);
+window.suiteTableData['Default_suite']= { tableData: data, tableDiv: 'times-div-Default_suite'}
 return data;
 }
               </script>
-              <span class="suite-total-time">Total running time: 1 hours</span>
-              <div id="times-div-TestAll">
-              </div> <!-- times-div-TestAll -->
+              <span class="suite-total-time">Total running time: 2 seconds</span>
+              <div id="times-div-Default_suite">
+              </div> <!-- times-div-Default_suite -->
             </div> <!-- times-div -->
           </div> <!-- main-panel-content rounded-window-bottom -->
         </div> <!-- panel -->
-        <div panel-name="reporter-TestAll" class="panel">
+        <div panel-name="reporter-Default_suite" class="panel">
           <div class="main-panel-header rounded-window-top">
-            <span class="header-content">Reporter output for TestAll</span>
+            <span class="header-content">Reporter output for Default suite</span>
           </div> <!-- main-panel-header rounded-window-top -->
           <div class="main-panel-content rounded-window-bottom">
           </div> <!-- main-panel-content rounded-window-bottom -->
         </div> <!-- panel -->
-        <div panel-name="ignored-methods-TestAll" class="panel">
+        <div panel-name="ignored-methods-Default_suite" class="panel">
           <div class="main-panel-header rounded-window-top">
-            <span class="header-content">2 ignored methods</span>
+            <span class="header-content">0 ignored methods</span>
           </div> <!-- main-panel-header rounded-window-top -->
           <div class="main-panel-content rounded-window-bottom">
-            <div class="ignored-class-div">
-              <span class="ignored-class-name">com.distrimind.ood.tests.DerbyTestDatabase</span>
-              <div class="ignored-methods-div">
-                <span class="ignored-method-name">testCheckPoint</span>
-                <br/>
-                <span class="ignored-method-name">alterRecordWithCascade</span>
-                <br/>
-              </div> <!-- ignored-methods-div -->
-            </div> <!-- ignored-class-div -->
           </div> <!-- main-panel-content rounded-window-bottom -->
         </div> <!-- panel -->
-        <div panel-name="chronological-TestAll" class="panel">
+        <div panel-name="chronological-Default_suite" class="panel">
           <div class="main-panel-header rounded-window-top">
             <span class="header-content">Methods in chronological order</span>
           </div> <!-- main-panel-header rounded-window-top -->
           <div class="main-panel-content rounded-window-bottom">
             <div class="chronological-class">
-              <div class="chronological-class-name">com.distrimind.ood.tests.DerbyTestDatabase</div> <!-- chronological-class-name -->
+              <div class="chronological-class-name">com.distrimind.ood.tests.HSQLDBTestDatabase</div> <!-- chronological-class-name -->
               <div class="test-method">
                 <span class="method-name">checkUnloadedDatabase</span>
                 <span class="method-start">0 ms</span>
               </div> <!-- test-method -->
               <div class="test-method">
                 <span class="method-name">firstLoad</span>
-                <span class="method-start">98841 ms</span>
+                <span class="method-start">1040 ms</span>
               </div> <!-- test-method -->
               <div class="test-method">
+                <img src="failed.png">
+                </img>
                 <span class="method-name">firstAdd</span>
-                <span class="method-start">99601 ms</span>
+                <span class="method-start">1685 ms</span>
               </div> <!-- test-method -->
               <div class="test-method">
                 <span class="method-name">isLoadedIntoMemory</span>
-                <span class="method-start">99712 ms</span>
+                <span class="method-start">1739 ms</span>
               </div> <!-- test-method -->
               <div class="test-method">
-                <span class="method-name">firstTestSize</span>
-                <span class="method-start">99713 ms</span>
+                <img src="failed.png">
+                </img>
+                <span class="method-name">testCommandTranslatorInterpreter(Database Table COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1, FloatNumber_value=%FloatNumber_value AND do...)</span>
+                <span class="method-start">1810 ms</span>
               </div> <!-- test-method -->
               <div class="test-method">
-                <span class="method-name">firstReload</span>
-                <span class="method-start">99717 ms</span>
+                <img src="failed.png">
+                </img>
+                <span class="method-name">testCommandTranslatorInterpreter(Database Table COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1, FloatNumber_value<>%FloatNumber_value AND d...)</span>
+                <span class="method-start">1981 ms</span>
               </div> <!-- test-method -->
               <div class="test-method">
-                <span class="method-name">secondTestSize</span>
-                <span class="method-start">101113 ms</span>
+                <img src="failed.png">
+                </img>
+                <span class="method-name">testCommandTranslatorInterpreter(Database Table COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1, FloatNumber_value=%FloatNumber_value OR dou...)</span>
+                <span class="method-start">2298 ms</span>
               </div> <!-- test-method -->
               <div class="test-method">
-                <span class="method-name">testFirstAdd</span>
-                <span class="method-start">101123 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">alterRecord</span>
-                <span class="method-start">101126 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">addSecondRecord</span>
-                <span class="method-start">101189 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">getRecord</span>
-                <span class="method-start">101224 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">getRecordFilter</span>
-                <span class="method-start">101256 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">removeRecord</span>
-                <span class="method-start">101393 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">testArrayRecordParameters</span>
-                <span class="method-start">101448 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">removeRecords</span>
-                <span class="method-start">101474 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">testFilters</span>
-                <span class="method-start">103408 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">testRemoveFilters</span>
-                <span class="method-start">103443 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">addForeignKeyAndTestUniqueKeys</span>
-                <span class="method-start">103468 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">removePointedRecords</span>
-                <span class="method-start">103592 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">removeForeignKeyRecords</span>
-                <span class="method-start">103615 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">testIsPointed</span>
-                <span class="method-start">103666 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">removeWithCascade</span>
-                <span class="method-start">103674 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">setAutoRandomFields</span>
-                <span class="method-start">104089 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">prepareMultipleTest</span>
-                <span class="method-start">104520 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">multipleTests</span>
-                <span class="method-start">104679 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">testThreadSafe</span>
-                <span class="method-start">114089 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">testThreadSafe</span>
-                <span class="method-start">114093 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">testThreadSafe</span>
-                <span class="method-start">114097 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">testThreadSafe</span>
-                <span class="method-start">114098 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">testThreadSafe</span>
-                <span class="method-start">114099 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">testBackup</span>
-                <span class="method-start">417903 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">testDatabaseRemove</span>
-                <span class="method-start">418639 ms</span>
+                <img src="failed.png">
+                </img>
+                <span class="method-name">testCommandTranslatorInterpreter(Database Table COM_DISTRIMIND_OOD_TESTS_DATABASE_TABLE1, FloatNumber_value<>%FloatNumber_value OR do...)</span>
+                <span class="method-start">2345 ms</span>
               </div> <!-- test-method -->
               <div class="configuration-class after">
                 <span class="method-name">unloadDatabase</span>
-                <span class="method-start">418799 ms</span>
-              </div> <!-- configuration-class after -->
-            </div> <!-- chronological-class -->
-            <div class="chronological-class">
-              <div class="chronological-class-name">com.distrimind.ood.tests.HSQLDBTestDatabase</div> <!-- chronological-class-name -->
-              <div class="test-method">
-                <span class="method-name">checkUnloadedDatabase</span>
-                <span class="method-start">419035 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">firstLoad</span>
-                <span class="method-start">419361 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">firstAdd</span>
-                <span class="method-start">419516 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">isLoadedIntoMemory</span>
-                <span class="method-start">419577 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">firstTestSize</span>
-                <span class="method-start">419577 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">firstReload</span>
-                <span class="method-start">419578 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">secondTestSize</span>
-                <span class="method-start">420113 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">testFirstAdd</span>
-                <span class="method-start">420118 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">alterRecord</span>
-                <span class="method-start">420121 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">addSecondRecord</span>
-                <span class="method-start">420176 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">getRecord</span>
-                <span class="method-start">420239 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">getRecordFilter</span>
-                <span class="method-start">420258 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">removeRecord</span>
-                <span class="method-start">420312 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">testArrayRecordParameters</span>
-                <span class="method-start">420324 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">removeRecords</span>
-                <span class="method-start">420371 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">testFilters</span>
-                <span class="method-start">424121 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">testRemoveFilters</span>
-                <span class="method-start">424125 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">addForeignKeyAndTestUniqueKeys</span>
-                <span class="method-start">424128 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">alterRecordWithCascade</span>
-                <span class="method-start">424259 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">removePointedRecords</span>
-                <span class="method-start">424391 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">removeForeignKeyRecords</span>
-                <span class="method-start">424428 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">testIsPointed</span>
-                <span class="method-start">424457 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">removeWithCascade</span>
-                <span class="method-start">424466 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">setAutoRandomFields</span>
-                <span class="method-start">425332 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">prepareMultipleTest</span>
-                <span class="method-start">426330 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">multipleTests</span>
-                <span class="method-start">426860 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">testThreadSafe</span>
-                <span class="method-start">444568 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">testThreadSafe</span>
-                <span class="method-start">444573 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">testThreadSafe</span>
-                <span class="method-start">444575 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">testThreadSafe</span>
-                <span class="method-start">444576 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">testThreadSafe</span>
-                <span class="method-start">444579 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">testCheckPoint</span>
-                <span class="method-start">980762 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">testBackup</span>
-                <span class="method-start">981513 ms</span>
-              </div> <!-- test-method -->
-              <div class="test-method">
-                <span class="method-name">testDatabaseRemove</span>
-                <span class="method-start">989589 ms</span>
-              </div> <!-- test-method -->
-              <div class="configuration-class after">
-                <span class="method-name">unloadDatabase</span>
-                <span class="method-start">989623 ms</span>
+                <span class="method-start">2567 ms</span>
               </div> <!-- configuration-class after -->
           </div> <!-- main-panel-content rounded-window-bottom -->
         </div> <!-- panel -->

@@ -37,8 +37,12 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database.fieldaccessors;
 
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Field;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.TimeZone;
 
 import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.Table;
@@ -62,4 +66,5 @@ public class CalendarFieldAccessor extends SerializableFieldAccessor
 	    throw new FieldDatabaseException("The field "+_field.getName()+" of the class "+_field.getDeclaringClass().getName()+" of type "+_field.getType()+" must be a Calendar type."); 
     }
 
+   
 }
