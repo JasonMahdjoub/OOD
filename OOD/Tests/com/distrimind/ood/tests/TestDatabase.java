@@ -37,18 +37,15 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.tests;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -3193,7 +3190,7 @@ public abstract class TestDatabase
     
     
     @DataProvider(name = "interpreterCommandsProvider")
-    public Object[][] interpreterCommandsProvider() throws IOException, NoSuchAlgorithmException, NoSuchProviderException, DatabaseException
+    public Object[][] interpreterCommandsProvider() throws IOException, NoSuchAlgorithmException, NoSuchProviderException
     {
 	HashMap<String, Object> parametersTable1Equallable=new HashMap<>();
 	

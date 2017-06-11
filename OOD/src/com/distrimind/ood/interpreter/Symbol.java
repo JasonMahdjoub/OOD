@@ -93,7 +93,7 @@ public class Symbol implements QueryPart
 		return new RuleInstance(Rule.OPCOMP, this);
 	    case IDENTIFIER:case NUMBER:case PARAMETER:case STRING:
 		return new RuleInstance(Rule.TERME, this);
-	    case OPEN_PARENTHESIS:case CLOSE_PARENTHESIS:case COMMA:
+	    case OPEN_PARENTHESIS:case CLOSE_PARENTHESIS:
 		return null;
 		
 	}
@@ -103,7 +103,7 @@ public class Symbol implements QueryPart
     @Override
     public String getBackusNaurNotation()
     {
-	if (type==SymbolType.OPEN_PARENTHESIS || type==SymbolType.CLOSE_PARENTHESIS || type==SymbolType.COMMA)
+	if (type==SymbolType.OPEN_PARENTHESIS || type==SymbolType.CLOSE_PARENTHESIS)
 	    return type.getContent();
 	else
 	    return "<"+getType().name()+">";

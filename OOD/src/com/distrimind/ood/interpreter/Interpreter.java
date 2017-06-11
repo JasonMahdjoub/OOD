@@ -80,10 +80,57 @@ public class Interpreter
     
     private static String preProcess(String command)
     {
-	for (SymbolType st : SymbolType.values())
-	    if (st.isOperator())
-		command=command.replace(st.getContent(), " "+st.getContent()+" ");
-	return command;
+	command=command.replaceAll(" NOT LIKE", " NOT_LIKE");
+	
+	StringBuffer sb=new StringBuffer("");
+	
+	int index=0;
+	while (index<command.length())
+	{
+	    
+	    String bestMatch=null;
+	    for (SymbolType s : SymbolType.values())
+	    {
+		if (!s.isOperator())
+		    continue;
+		
+		
+		for (String symbol : s.getMatches())
+		{
+		    boolean ok=true;
+		
+		    for (int i=0;i<symbol.length();i++)
+		    {
+			if (command.charAt(index+i)!=symbol.charAt(i))
+			{
+			    ok=false;
+			    break;
+			}
+		    }
+		    if (ok)
+		    {
+			if (bestMatch==null || bestMatch.length()<symbol.length())
+			{
+			    bestMatch=symbol;
+			}
+		    
+		    }
+		}
+	    }
+	    if (bestMatch!=null)
+	    {
+		sb.append(" ");
+		sb.append(bestMatch);
+		sb.append(" ");
+		index+=bestMatch.length();
+	    }
+	    else
+	    {
+		sb.append(command.charAt(index));
+		index++;
+	    }
+	}
+	return sb.toString();
     }
     private static ArrayList<Symbol> lexicalAnalyse(String command) throws UnrecognizedSymbolException
     {
@@ -126,10 +173,8 @@ public class Interpreter
     {
 	while (parts.size()>1)
 	{
-	    
 	    parts=getNewQueryParts(command, parts);
 	}
-	
 	
 	
 	if (parts.isEmpty())

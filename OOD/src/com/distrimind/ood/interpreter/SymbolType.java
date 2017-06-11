@@ -45,37 +45,43 @@ import java.util.regex.Pattern;
  */
 public enum SymbolType
 {
-    ADDOPERATOR(true,"^\\+$", "+"),
-    SUBOPERATOR(true,"^\\-$", "-"),
-    MULOPETATOR(true,"^\\*$", "*"),
-    DIVOPERATOR(true,"^/$", "/"),
-    LOWEROPERATOR(true,"^<$", "<"),
-    EQUALOPERATOR(true,"^(=){1,2}$", "="),
-    NOTEQUALOPERATOR(true,"^(!=|<>)$", "<>"),
-    GREATEROPERATOR(true,"^>$", ">"),
-    LOWEROREQUALOPERATOR(true,"^<=$", "<="),
-    GREATEROREQUALOPERATOR(true,"^>=$", ">="),
-    OPEN_PARENTHESIS(true,"^\\($", "("),
-    CLOSE_PARENTHESIS(true,"^\\)$", ")"),
-    ANDCONDITION(false,"^[Aa][Nn][Dd]$", "AND"),
-    ORCONDITION(false,"^[Oo][Rr]$", "OR"),
-    IDENTIFIER(false,"^[a-zA-Z][a-zA-Z0-9\\._\\-]*+$", null),
-    NUMBER(false,"^\\-?(([0-9]+(\\.[0-9]+)(E(\\-|\\+)?[0-9]+)?)|([0-9]*\\.[0-9]+(E(\\-|\\+)?[0-9]+)?))$", null),
-    STRING(false,"^(\"|\\')[\\p{Alnum}\\p{Blank}\\!\\#\\$\\%\\&\\(\\)\\*\\+\\,\\-\\.\\/:;\\<\\=\\>\\?\\@\\[\\\\\\]\\^_\\`\\{\\|\\}\\~]+(\"|\\')$", null),
-    PARAMETER(false,"(\\%|\\:)[a-zA-Z\\-_][0-9a-zA-Z\\-_]+$", null),
-    LIKE(false,"^LIKE$", " LIKE "),
-    NOT_LIKE(false,"^NOT_LIKE$", " NOT LIKE "),
-    COMMA(false, "\\,", ",");
+    ADDOPERATOR(true,"^\\+$",new String[]{"+"}, "+"),
+    SUBOPERATOR(true,"^\\-$",new String[]{"-"}, "-"),
+    MULOPETATOR(true,"^\\*$",new String[]{"*"}, "*"),
+    DIVOPERATOR(true,"^/$",new String[]{"/"}, "/"),
+    LOWEROPERATOR(true,"^<$",new String[]{"<"}, "<"),
+    EQUALOPERATOR(true,"^(=){1,2}$",new String[]{"=", "=="}, "="),
+    NOTEQUALOPERATOR(true,"^(!=|<>)$",new String[]{"!=", "<>"}, "<>"),
+    GREATEROPERATOR(true,"^>$", new String[]{">"}, ">"),
+    LOWEROREQUALOPERATOR(true,"^<=$", new String[]{"<="}, "<="),
+    GREATEROREQUALOPERATOR(true,"^>=$", new String[]{">="}, ">="),
+    OPEN_PARENTHESIS(true,"^\\($", new String[]{"("}, "("),
+    CLOSE_PARENTHESIS(true,"^\\)$", new String[]{")"}, ")"),
+    ANDCONDITION(false,"^[Aa][Nn][Dd]$", null, "AND"),
+    ORCONDITION(false,"^[Oo][Rr]$", null, "OR"),
+    IDENTIFIER(false,"^[a-zA-Z][a-zA-Z0-9\\._\\-]*+$",null, null),
+    NUMBER(false,"^\\-?(([0-9]+(\\.[0-9]+)(E(\\-|\\+)?[0-9]+)?)|([0-9]*\\.[0-9]+(E(\\-|\\+)?[0-9]+)?))$", null, null),
+    STRING(false,"^(\"|\\')[\\p{Alnum}\\p{Blank}\\!\\#\\$\\%\\&\\(\\)\\*\\+\\,\\-\\.\\/:;\\<\\=\\>\\?\\@\\[\\\\\\]\\^_\\`\\{\\|\\}\\~]+(\"|\\')$", null, null),
+    PARAMETER(false,"(\\%|\\:)[a-zA-Z\\-_][0-9a-zA-Z\\-_]+$", null, null),
+    LIKE(false,"^LIKE$", null, " LIKE "),
+    NOT_LIKE(false,"^NOT_LIKE$", null, " NOT LIKE ");
     
     private final Pattern pattern;
     private final String content;
+    private final String matches[];
     private final boolean isOperator;
     
-    private SymbolType(boolean isOperator, String regex, String content)
+    private SymbolType(boolean isOperator, String regex, String matches[], String content)
     {
 	this.isOperator=isOperator;
 	this.pattern=Pattern.compile(regex);
 	this.content=content;
+	this.matches=matches;
+    }
+    
+    public String[] getMatches()
+    {
+	return matches;
     }
     
     public String getContent()
