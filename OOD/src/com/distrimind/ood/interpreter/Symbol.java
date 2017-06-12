@@ -89,7 +89,7 @@ public class Symbol implements QueryPart
 		return new RuleInstance(Rule.OPCONDITION, this);
 	    case DIVOPERATOR:case MULOPETATOR:
 		return new RuleInstance(Rule.OPMUL, this);
-	    case EQUALOPERATOR:case NOTEQUALOPERATOR:case GREATEROPERATOR:case GREATEROREQUALOPERATOR:case LOWEROPERATOR:case LOWEROREQUALOPERATOR:case LIKE:case NOT_LIKE:
+	    case EQUALOPERATOR:case NOTEQUALOPERATOR:case GREATEROPERATOR:case GREATEROREQUALOPERATOR:case LOWEROPERATOR:case LOWEROREQUALOPERATOR:case LIKE:case NOTLIKE:
 		return new RuleInstance(Rule.OPCOMP, this);
 	    case IDENTIFIER:case NUMBER:case PARAMETER:case STRING:
 		return new RuleInstance(Rule.TERME, this);

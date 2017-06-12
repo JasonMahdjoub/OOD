@@ -45,39 +45,44 @@ import java.util.regex.Pattern;
  */
 public enum SymbolType
 {
-    ADDOPERATOR(true,"^\\+$",new String[]{"+"}, "+"),
-    SUBOPERATOR(true,"^\\-$",new String[]{"-"}, "-"),
-    MULOPETATOR(true,"^\\*$",new String[]{"*"}, "*"),
-    DIVOPERATOR(true,"^/$",new String[]{"/"}, "/"),
-    LOWEROPERATOR(true,"^<$",new String[]{"<"}, "<"),
-    EQUALOPERATOR(true,"^(=){1,2}$",new String[]{"=", "=="}, "="),
-    NOTEQUALOPERATOR(true,"^(!=|<>)$",new String[]{"!=", "<>"}, "<>"),
-    GREATEROPERATOR(true,"^>$", new String[]{">"}, ">"),
-    LOWEROREQUALOPERATOR(true,"^<=$", new String[]{"<="}, "<="),
-    GREATEROREQUALOPERATOR(true,"^>=$", new String[]{">="}, ">="),
-    OPEN_PARENTHESIS(true,"^\\($", new String[]{"("}, "("),
-    CLOSE_PARENTHESIS(true,"^\\)$", new String[]{")"}, ")"),
-    ANDCONDITION(false,"^[Aa][Nn][Dd]$", null, "AND"),
-    ORCONDITION(false,"^[Oo][Rr]$", null, "OR"),
-    IDENTIFIER(false,"^[a-zA-Z][a-zA-Z0-9\\._\\-]*+$",null, null),
-    NUMBER(false,"^\\-?(([0-9]+(\\.[0-9]+)(E(\\-|\\+)?[0-9]+)?)|([0-9]*\\.[0-9]+(E(\\-|\\+)?[0-9]+)?))$", null, null),
-    STRING(false,"^(\"|\\')[\\p{Alnum}\\p{Blank}\\!\\#\\$\\%\\&\\(\\)\\*\\+\\,\\-\\.\\/:;\\<\\=\\>\\?\\@\\[\\\\\\]\\^_\\`\\{\\|\\}\\~]+(\"|\\')$", null, null),
-    PARAMETER(false,"(\\%|\\:)[a-zA-Z\\-_][0-9a-zA-Z\\-_]+$", null, null),
-    LIKE(false,"^LIKE$", null, " LIKE "),
-    NOT_LIKE(false,"^NOT_LIKE$", null, " NOT LIKE ");
+    ADDOPERATOR(true,false,false,"^\\+$",new String[]{"+"}, "+"),
+    SUBOPERATOR(true,false,false,"^\\-$",new String[]{"-"}, "-"),
+    MULOPETATOR(true,false,false,"^\\*$",new String[]{"*"}, "*"),
+    DIVOPERATOR(true,false,false,"^/$",new String[]{"/"}, "/"),
+    LOWEROPERATOR(true,false,false,"^<$",new String[]{"<"}, "<"),
+    EQUALOPERATOR(true,false, false,"^(=){1,2}$",new String[]{"=", "=="}, "="),
+    NOTEQUALOPERATOR(true,false,false,"^(!=|<>)$",new String[]{"!=", "<>"}, "<>"),
+    GREATEROPERATOR(true,false,false,"^>$", new String[]{">"}, ">"),
+    LOWEROREQUALOPERATOR(true,false,false,"^<=$", new String[]{"<="}, "<="),
+    GREATEROREQUALOPERATOR(true,false,false,"^>=$", new String[]{">="}, ">="),
+    OPEN_PARENTHESIS(true,false,false,"^\\($", new String[]{"("}, "("),
+    CLOSE_PARENTHESIS(true,false,false,"^\\)$", new String[]{")"}, ")"),
+    ANDCONDITION(false,true,true,"^[Aa][Nn][Dd]$", null, "AND"),
+    ORCONDITION(false,true,true,"^[Oo][Rr]$", null, "OR"),
+    IDENTIFIER(false,false,false, "^[a-zA-Z][a-zA-Z0-9\\._\\-]*+$",null, null),
+    NUMBER(false,false,false,"^\\-?(([0-9]+(\\.[0-9]+)(E(\\-|\\+)?[0-9]+)?)|([0-9]*\\.[0-9]+(E(\\-|\\+)?[0-9]+)?))$", null, null),
+    STRING(false,false, false, "^(\"|\\')[\\p{Alnum}\\p{Blank}\\!\\#\\$\\%\\&\\(\\)\\*\\+\\,\\-\\.\\/:;\\<\\=\\>\\?\\@\\[\\\\\\]\\^_\\`\\{\\|\\}\\~]+(\"|\\')$", null, null),
+    PARAMETER(false,false, false, "(\\%|\\:)[a-zA-Z\\-_][0-9a-zA-Z\\-_]+$", null, null),
+    LIKE(true,false, true, "^(L|l)(I|i)(K|k)(E|e)$", new String[]{" LIKE "}, " LIKE "),
+    NOTLIKE(true,false, true, "^(N|n)(O|o)(T|t)_(L|l)(I|i)(K|k)(E|e)$", new String[]{" NOT LIKE ", " NOT_LIKE "}, " NOT LIKE ");
     
     private final Pattern pattern;
     private final String content;
     private final String matches[];
     private final boolean isOperator;
+    private final boolean isCondition;
+    private final boolean mustHaveSpaces;
     
-    private SymbolType(boolean isOperator, String regex, String matches[], String content)
+    private SymbolType(boolean isOperator, boolean isCondition, boolean mustHaveSpaces, String regex, String matches[], String content)
     {
 	this.isOperator=isOperator;
+	this.isCondition=isCondition;
+	this.mustHaveSpaces=mustHaveSpaces;
 	this.pattern=Pattern.compile(regex);
 	this.content=content;
 	this.matches=matches;
     }
+    
     
     public String[] getMatches()
     {
@@ -99,17 +104,39 @@ public enum SymbolType
 	return isOperator;
     }
     
+    public boolean isCondition()
+    {
+	return isCondition;
+    }
+    
+    public boolean mustHaveSpaces()
+    {
+	return mustHaveSpaces;
+    }
+    
+    
     public static Symbol getSymbol(String symbol)
     {
+	SymbolType best=null;
 	for (SymbolType st : SymbolType.values())
 	{
 	    if (st.match(symbol))
 	    {
-		if (st==PARAMETER)
-		    return new Symbol(st, symbol.substring(1));
-		else
-		    return new Symbol(st, symbol);
+		best=st;
+		if (st.isOperator() || st.isCondition())
+		{
+		    break;
+		}
+		
 	    }
+	}
+	if (best!=null)
+	{
+	    if (best==PARAMETER)
+		return new Symbol(best, symbol.substring(1));
+	    else
+		return new Symbol(best, symbol);
+	    
 	}
 	return null;
     }

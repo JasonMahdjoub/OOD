@@ -3231,7 +3231,7 @@ public abstract class TestDatabase
 	parametersTable1Equallable.put("CalendarValue", calendar);
 	
 	SymbolType []ops_cond=new SymbolType[]{SymbolType.ANDCONDITION, SymbolType.ORCONDITION};
-	SymbolType []ops_comp=new SymbolType[]{SymbolType.EQUALOPERATOR, SymbolType.NOTEQUALOPERATOR};
+	SymbolType []ops_comp=new SymbolType[]{SymbolType.EQUALOPERATOR, SymbolType.NOTEQUALOPERATOR, SymbolType.LIKE, SymbolType.NOTLIKE, SymbolType.GREATEROPERATOR, SymbolType.GREATEROREQUALOPERATOR, SymbolType.LOWEROPERATOR, SymbolType.LOWEROREQUALOPERATOR};
 	for (SymbolType op_cond : ops_cond)
 	{
 	    for (SymbolType op_comp : ops_comp)
@@ -3243,6 +3243,16 @@ public abstract class TestDatabase
 		int expectedParamterIndex=1;
 		for (Map.Entry<String, Object> m : parametersTable1Equallable.entrySet())
 		{
+		    if (op_comp==SymbolType.LIKE || op_comp==SymbolType.NOTLIKE)
+		    {
+			if (!(m.getValue() instanceof String))
+			    continue;
+		    }
+		    if (op_comp==SymbolType.GREATEROPERATOR || op_comp==SymbolType.GREATEROREQUALOPERATOR || op_comp==SymbolType.LOWEROPERATOR || op_comp==SymbolType.LOWEROREQUALOPERATOR)
+		    {
+			if (!(m.getValue() instanceof Comparable) || m.getValue().getClass()==Boolean.class)
+			    continue;
+		    }
 		    if (command.length()>0)
 		    {
 			command.append(" ");
@@ -3254,14 +3264,18 @@ public abstract class TestDatabase
 			expectedCommand.append(" ");
 		    }
 		    command.append(m.getKey());
-		    command.append(op_comp.getContent());
+		    if (op_comp==SymbolType.NOTLIKE)
+			command.append(" not like ");
+		    else
+			command.append(op_comp.getContent());
 		    command.append("%");
 		    command.append(m.getKey());
 		    
 		    
 		    ArrayList<Object> sqlInstance=getExpectedParameter(table1.getFieldAccessor(m.getKey()).getFieldClassType(), m.getValue());
 		    ArrayList<String> sqlVariablesName=getExpectedParametersName(m.getKey(), m.getValue().getClass());
-		    expectedCommand.append("(");
+		    if (op_comp==SymbolType.EQUALOPERATOR || op_comp==SymbolType.NOTEQUALOPERATOR)
+			expectedCommand.append("(");
 		    for (int i=0;i<sqlInstance.size();i++)
 		    {
 			if (i>0)
@@ -3273,11 +3287,17 @@ public abstract class TestDatabase
 			expectedCommand.append("?");
 			expectedParameters.put(new Integer(expectedParamterIndex++), sqlInstance.get(i));
 		    }
-		    expectedCommand.append(")");
+		    if (op_comp==SymbolType.EQUALOPERATOR || op_comp==SymbolType.NOTEQUALOPERATOR)
+			expectedCommand.append(")");
 		}
 		res.add(new Object[]{table1, command.toString(), parametersTable1Equallable, expectedCommand.toString(), expectedParameters});
 	    }
 	}
+	
+
+	
+	
+	
 	Object [][]resO=new Object[res.size()][];
 	for (int i=0;i<res.size();i++)
 	{
@@ -3312,7 +3332,8 @@ public abstract class TestDatabase
 	Assert.assertEquals(sqlCommand, expectedSqlCommand.toUpperCase());
 	for (Map.Entry<Integer, Object> e : sqlParameters.entrySet())
 	{
-	    Assert.assertEquals(e.getValue(), expectedSqlParameters.get(e.getKey()));
+	    
+	    Assert.assertEquals(e.getValue(), expectedSqlParameters.get(e.getKey()), "Class type source "+e.getValue().getClass()+", class type expected "+expectedSqlParameters.get(e.getKey()).getClass());
 	}
     }
     

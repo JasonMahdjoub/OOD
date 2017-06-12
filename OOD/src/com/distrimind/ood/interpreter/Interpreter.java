@@ -80,7 +80,7 @@ public class Interpreter
     
     private static String preProcess(String command)
     {
-	command=command.replaceAll(" NOT LIKE", " NOT_LIKE");
+	command=command.replaceAll("\\p{Blank}(N|n)(O|o)(T|t) (L|l)(I|i)(K|k)(E|e)\\p{Blank}", " NOT_LIKE ");
 	
 	StringBuffer sb=new StringBuffer("");
 	
@@ -89,6 +89,7 @@ public class Interpreter
 	{
 	    
 	    String bestMatch=null;
+	    SymbolType bestSymbol=null;
 	    for (SymbolType s : SymbolType.values())
 	    {
 		if (!s.isOperator())
@@ -101,7 +102,7 @@ public class Interpreter
 		
 		    for (int i=0;i<symbol.length();i++)
 		    {
-			if (command.charAt(index+i)!=symbol.charAt(i))
+			if (Character.toUpperCase(command.charAt(index+i))!=Character.toUpperCase(symbol.charAt(i)))
 			{
 			    ok=false;
 			    break;
@@ -112,6 +113,7 @@ public class Interpreter
 			if (bestMatch==null || bestMatch.length()<symbol.length())
 			{
 			    bestMatch=symbol;
+			    bestSymbol=s;
 			}
 		    
 		    }
@@ -119,9 +121,12 @@ public class Interpreter
 	    }
 	    if (bestMatch!=null)
 	    {
-		sb.append(" ");
+		boolean space=bestSymbol!=SymbolType.LIKE && bestSymbol!=SymbolType.NOTLIKE;
+		if (space)
+		    sb.append(" ");
 		sb.append(bestMatch);
-		sb.append(" ");
+		if (space)
+		    sb.append(" ");
 		index+=bestMatch.length();
 	    }
 	    else
@@ -171,11 +176,10 @@ public class Interpreter
     }
     private static RuleInstance getQuery(String command, ArrayList<QueryPart> parts) throws DatabaseSyntaxException
     {
-	while (parts.size()>1)
+	while ((parts.size()>1 || !(parts.get(0) instanceof RuleInstance) || ((RuleInstance)parts.get(0)).getRule()!=Rule.QUERY) && !parts.isEmpty())
 	{
 	    parts=getNewQueryParts(command, parts);
 	}
-	
 	
 	if (parts.isEmpty())
 	    throw new QueryInterpretationImpossible(command);
@@ -185,7 +189,9 @@ public class Interpreter
 	    throw new QueryInterpretationImpossible(command);
 	RuleInstance res=(RuleInstance)ri;
 	if (res.getRule()!=Rule.QUERY)
+	{
 	    throw new QueryInterpretationImpossible(command);
+	}
 	return res;
     }
     private static ArrayList<QueryPart> getNewQueryParts(String command, ArrayList<QueryPart> parts) throws DatabaseSyntaxException
@@ -217,6 +223,7 @@ public class Interpreter
 	else
 	{
 	    throw new QueryInterpretationImpossible(command);
+	    
 	}
     }
     private static RuleInstance getQuery(String command, ArrayList<QueryPart> parts, int index, AtomicInteger newIndex ) 

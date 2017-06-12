@@ -539,7 +539,7 @@ public class RuleInstance implements QueryPart
 			{
 			    return like(table, record, ri1.getStringable(table, parameters, record), ri3.getStringable(table, parameters, record));
 			}
-			else if (comp.getType()==SymbolType.NOT_LIKE)
+			else if (comp.getType()==SymbolType.NOTLIKE)
 			{
 			    return !like(table, record, ri1.getStringable(table, parameters, record), ri3.getStringable(table, parameters, record));
 			}
@@ -627,7 +627,7 @@ public class RuleInstance implements QueryPart
 			RuleInstance ri3=(RuleInstance)parts.get(2);
 			Symbol comp=(Symbol)ri2.parts.get(0);
 			
-			if (comp.getType()==SymbolType.EQUALOPERATOR || comp.getType()==SymbolType.NOTEQUALOPERATOR || comp.getType()==SymbolType.LIKE || comp.getType()==SymbolType.NOT_LIKE)
+			if (comp.getType()==SymbolType.EQUALOPERATOR || comp.getType()==SymbolType.NOTEQUALOPERATOR || comp.getType()==SymbolType.LIKE || comp.getType()==SymbolType.NOTLIKE)
 			{
 			    if (!ri1.isEqualable(table, parameters, ri3))
 			    {
@@ -702,19 +702,23 @@ public class RuleInstance implements QueryPart
 				int fieldsNumber=0;
 				
 				SqlField sfs[]=fa1.getDeclaredSqlFields();
-				if (s2.getType()==SymbolType.STRING || s2.getType()==SymbolType.NUMBER || comp.getType()==SymbolType.LIKE || comp.getType()==SymbolType.NOT_LIKE)
+				if (s2.getType()==SymbolType.STRING || s2.getType()==SymbolType.NUMBER)
 				{
-				    if (sfs.length!=1 || ((comp.getType()==SymbolType.LIKE || comp.getType()==SymbolType.NOT_LIKE) && s2.getType()!=SymbolType.STRING))
+				    if (sfs.length!=1 || ((comp.getType()==SymbolType.LIKE || comp.getType()==SymbolType.NOTLIKE) && s2.getType()!=SymbolType.STRING))
 					throw new DatabaseSyntaxException("Cannot compare "+fa1.getFieldName()+" with "+s2.getType().name()+" using operator "+comp.getType().name());
 				    StringBuffer res=new StringBuffer("");
 				    res.append(sfs[0].field);
-				    res.append(comp.getContent());
+				    res.append(comp.getType().getContent());
 				    res.append(parameter2.toString());
 				    return res;
 				}
 				else
 				{
-				    StringBuffer res=new StringBuffer("(");
+				    StringBuffer res=new StringBuffer("");
+				    if ((comp.getType()==SymbolType.LIKE || comp.getType()==SymbolType.NOTLIKE) && (parameter2==null || !(parameter2 instanceof CharSequence)))
+					throw new DatabaseSyntaxException("Cannot compare "+fa1.getFieldName()+" with "+s2.getType().name()+" using operator "+comp.getType().name());
+				    if (comp.getType()==SymbolType.EQUALOPERATOR || comp.getType()==SymbolType.NOTEQUALOPERATOR)
+					res.append("(");
 				    SqlFieldInstance sfis[]=null;
 				    try
 				    {
@@ -739,7 +743,7 @@ public class RuleInstance implements QueryPart
 					if (fieldsNumber>1)
 					    res.append(" AND ");
 					res.append(sf.field);
-					res.append(comp.getContent());
+					res.append(comp.getType().getContent());
 					if (fa2==null)
 					{
 					    boolean found=false;
@@ -767,7 +771,8 @@ public class RuleInstance implements QueryPart
 					    res.append(sfs2[fieldsNumber-1].field);
 					}
 				    }
-				    res.append(")");
+				    if (comp.getType()==SymbolType.EQUALOPERATOR || comp.getType()==SymbolType.NOTEQUALOPERATOR)
+					res.append(")");
 				    return res;
 				}
 			    }
@@ -786,7 +791,7 @@ public class RuleInstance implements QueryPart
 			res.append(sb);
 			if (ri1.needParenthesis())
 			    res.append(")");
-			res.append(comp.getContent());
+			res.append(comp.getType().getContent());
 			sb=ri3.translateToSqlQuery(table, parameters, outputParameters, currentParameterID);
 			if (ri3.needParenthesis())
 			    res.append("(");
@@ -827,7 +832,7 @@ public class RuleInstance implements QueryPart
 			sb.append(")");
 		    Symbol comp=(Symbol)((RuleInstance)parts.get(1)).parts.get(0);
 		    sb.append(" ");
-		    sb.append(comp.getSymbol());
+		    sb.append(comp.getType().getContent());
 		    sb.append(" ");
 		    if (ri3.needParenthesis())
 			sb.append("(");
@@ -862,7 +867,29 @@ public class RuleInstance implements QueryPart
 			if (parameter1==null)
 			    throw new DatabaseSyntaxException("Cannot find parameter "+s.getSymbol());
 			int id=currentParameterID.getAndIncrement();
-			outputParameters.put(new Integer(id), parameter1);
+			SqlFieldInstance sfis[]=null;
+			try
+			{
+			    T record=table.getDefaultRecordConstructor().newInstance();
+			    for (FieldAccessor fa : table.getFieldAccessors())
+			    {
+				if (fa.getFieldClassType().isAssignableFrom(parameter1.getClass()))
+				{
+				    fa.setValue(record, parameter1);
+				    sfis=fa.getSqlFieldsInstances(record);
+				    break;
+				}
+			    }
+			}
+			catch(Exception e)
+			{
+			    throw new DatabaseSyntaxException("Database exception", e);
+			}
+			if (sfis==null)
+			    throw new DatabaseSyntaxException("Database exception");
+			if (sfis.length!=1)
+			    throw new DatabaseSyntaxException("Sql field must be equal to 1 and not "+sfis.length);
+			outputParameters.put(new Integer(id), sfis[0].instance);
 			return new StringBuffer("?");
 		    }
 		    else
