@@ -825,20 +825,20 @@ public class RuleInstance implements QueryPart
 		    }
 		    
 		    StringBuffer sb=new StringBuffer();
-		    if (ri1.needParenthesis())
-			sb.append("(");
+		    /*if (ri1.needParenthesis())
+			sb.append("(");*/
 		    sb.append(ri1.translateToSqlQuery(table, parameters, outputParameters, currentParameterID));
-		    if (ri1.needParenthesis())
-			sb.append(")");
+		    /*if (ri1.needParenthesis())
+			sb.append(")");*/
 		    Symbol comp=(Symbol)((RuleInstance)parts.get(1)).parts.get(0);
 		    sb.append(" ");
 		    sb.append(comp.getType().getContent());
 		    sb.append(" ");
-		    if (ri3.needParenthesis())
-			sb.append("(");
+		    /*if (ri3.needParenthesis())
+			sb.append("(");*/
 		    sb.append(ri3.translateToSqlQuery(table, parameters, outputParameters, currentParameterID));
-		    if (ri3.needParenthesis())
-			sb.append(")");
+		    /*if (ri3.needParenthesis())
+			sb.append(")");*/
 		    return sb;
 		}
 		else

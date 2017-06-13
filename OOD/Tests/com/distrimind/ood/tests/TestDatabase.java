@@ -3263,11 +3263,15 @@ public abstract class TestDatabase
 			expectedCommand.append(op_cond.getContent());
 			expectedCommand.append(" ");
 		    }
+		    boolean parenthesis=Math.random()<0.5;
+		    if (parenthesis)
+		    {
+			command.append("(");
+			expectedCommand.append("(");
+		    }
 		    command.append(m.getKey());
-		    if (op_comp==SymbolType.NOTLIKE)
-			command.append(" not like ");
-		    else
-			command.append(op_comp.getContent());
+		    command.append(op_comp.getMatches()[(int)(Math.random()*op_comp.getMatches().length)]);
+		    
 		    command.append("%");
 		    command.append(m.getKey());
 		    
@@ -3289,8 +3293,14 @@ public abstract class TestDatabase
 		    }
 		    if (op_comp==SymbolType.EQUALOPERATOR || op_comp==SymbolType.NOTEQUALOPERATOR)
 			expectedCommand.append(")");
+		    if (parenthesis)
+		    {
+			command.append(")");
+			expectedCommand.append(")");
+		    }
+			
 		}
-		res.add(new Object[]{table1, command.toString(), parametersTable1Equallable, expectedCommand.toString(), expectedParameters});
+		res.add(new Object[]{table1, command.toString(), parametersTable1Equallable, expectedCommand.toString().toUpperCase(), expectedParameters});
 	    }
 	}
 	
@@ -3329,7 +3339,7 @@ public abstract class TestDatabase
 
 	HashMap<Integer, Object> sqlParameters=new HashMap<>();
 	String sqlCommand=Interpreter.getRuleInstance(command).translateToSqlQuery(table, parameters, sqlParameters).toString();
-	Assert.assertEquals(sqlCommand, expectedSqlCommand.toUpperCase());
+	Assert.assertEquals(sqlCommand, expectedSqlCommand);
 	for (Map.Entry<Integer, Object> e : sqlParameters.entrySet())
 	{
 	    
