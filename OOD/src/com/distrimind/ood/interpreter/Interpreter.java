@@ -149,7 +149,7 @@ public class Interpreter
 		continue;
 	    Symbol symbol=SymbolType.getSymbol(st);
 	    if (symbol==null)
-		throw new UnrecognizedSymbolException(s);
+		throw new UnrecognizedSymbolException(st);
 
 	    symbols.add(symbol);
 	    
@@ -176,11 +176,13 @@ public class Interpreter
     }
     private static RuleInstance getQuery(String command, ArrayList<QueryPart> parts) throws DatabaseSyntaxException
     {
-	while ((parts.size()>1 || !(parts.get(0) instanceof RuleInstance) || ((RuleInstance)parts.get(0)).getRule()!=Rule.QUERY) && !parts.isEmpty())
+	if (parts.size()==0)
+	    throw new QueryInterpretationImpossible(command);
+	
+	while (parts.size()>1 || (!parts.isEmpty() && (!(parts.get(0) instanceof RuleInstance) || ((RuleInstance)parts.get(0)).getRule()!=Rule.QUERY)))
 	{
 	    parts=getNewQueryParts(command, parts);
 	}
-	
 	if (parts.isEmpty())
 	    throw new QueryInterpretationImpossible(command);
 	

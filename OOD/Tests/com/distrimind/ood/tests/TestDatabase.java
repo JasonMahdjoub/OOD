@@ -3187,7 +3187,91 @@ public abstract class TestDatabase
 	return res;
     }
     
+    private void subInterpreterCommandProvider(SymbolType op_cond, SymbolType op_comp, String cs, HashMap<String, Object> parametersTable1Equallable, StringBuffer command, StringBuffer expectedCommand, String fieldName, Object value, HashMap<Integer, Object> expectedParameters, boolean useParameter, AtomicInteger expectedParamterIndex, AtomicInteger openedParenthesis) throws IOException
+    {
+	if (op_comp==SymbolType.LIKE || op_comp==SymbolType.NOTLIKE)
+	{
+	    if (!(value instanceof String))
+		return;
+	}
+	else if (op_comp==SymbolType.GREATEROPERATOR || op_comp==SymbolType.GREATEROREQUALOPERATOR || op_comp==SymbolType.LOWEROPERATOR || op_comp==SymbolType.LOWEROREQUALOPERATOR)
+	{
+	    if (!(value instanceof Number) || value.getClass()==Boolean.class)
+		return;
+	}
+	else if (!useParameter)
+	{
+	    if (!(value instanceof String))
+		return;
+	}
+	if (command.length()>0)
+	{
+	    command.append(" ");
+	    command.append(op_cond.getContent());
+	    command.append(" ");
+	
+	    expectedCommand.append(" ");
+	    expectedCommand.append(op_cond.getContent());
+	    expectedCommand.append(" ");
+	}
+    	if (Math.random()<0.5)
+    	{
+    	    command.append("(");
+    	    expectedCommand.append("(");
+    	    openedParenthesis.incrementAndGet();
+    	}
+    	command.append(fieldName);
+    	command.append(cs);
     
+    
+
+    	
+    	ArrayList<String> sqlVariablesName=getExpectedParametersName(fieldName, value.getClass());
+    	if (useParameter)
+    	{
+    	    command.append("%");
+    	    command.append(fieldName);
+    	    ArrayList<Object> sqlInstance=getExpectedParameter(table1.getFieldAccessor(fieldName).getFieldClassType(), value);
+    	    if (op_comp==SymbolType.EQUALOPERATOR || op_comp==SymbolType.NOTEQUALOPERATOR)
+    		expectedCommand.append("(");
+    	    for (int i=0;i<sqlInstance.size();i++)
+    	    {
+    		if (i>0)
+    		    expectedCommand.append(" AND ");
+    		expectedCommand.append(Table.getName(Table1.class));
+    		expectedCommand.append(".");
+    		expectedCommand.append(sqlVariablesName.get(i).toUpperCase());
+    		expectedCommand.append(op_comp.getContent());
+    		expectedCommand.append("?");
+    		expectedParameters.put(new Integer(expectedParamterIndex.getAndIncrement()), sqlInstance.get(i));
+    	    }
+    	    if (op_comp==SymbolType.EQUALOPERATOR || op_comp==SymbolType.NOTEQUALOPERATOR)
+    		expectedCommand.append(")");
+    	}
+    	else
+    	{
+    	    if (value instanceof CharSequence)
+    		command.append("\"");
+    	    command.append(value.toString());
+    	    if (value instanceof CharSequence)
+    		command.append("\"");
+    	    expectedCommand.append(Table.getName(Table1.class));
+    	    expectedCommand.append(".");
+    	    expectedCommand.append(sqlVariablesName.get(0).toUpperCase());
+    	    expectedCommand.append(op_comp.getContent());
+    	    if (value instanceof CharSequence)
+    		expectedCommand.append("\"");
+    	    expectedCommand.append(value.toString());
+    	    if (value instanceof CharSequence)
+    		expectedCommand.append("\"");
+    	}
+    	if (openedParenthesis.get()>0 && Math.random()<0.5)
+    	{
+    	    command.append(")");
+    	    expectedCommand.append(")");
+    	    openedParenthesis.decrementAndGet();
+	}
+    }    
     
     @DataProvider(name = "interpreterCommandsProvider")
     public Object[][] interpreterCommandsProvider() throws IOException, NoSuchAlgorithmException, NoSuchProviderException
@@ -3232,75 +3316,39 @@ public abstract class TestDatabase
 	
 	SymbolType []ops_cond=new SymbolType[]{SymbolType.ANDCONDITION, SymbolType.ORCONDITION};
 	SymbolType []ops_comp=new SymbolType[]{SymbolType.EQUALOPERATOR, SymbolType.NOTEQUALOPERATOR, SymbolType.LIKE, SymbolType.NOTLIKE, SymbolType.GREATEROPERATOR, SymbolType.GREATEROREQUALOPERATOR, SymbolType.LOWEROPERATOR, SymbolType.LOWEROREQUALOPERATOR};
+	
 	for (SymbolType op_cond : ops_cond)
 	{
 	    for (SymbolType op_comp : ops_comp)
 	    {
-		StringBuffer command=new StringBuffer();
-		StringBuffer expectedCommand=new StringBuffer();
-	    
-		HashMap<Integer, Object> expectedParameters=new HashMap<>();
-		int expectedParamterIndex=1;
-		for (Map.Entry<String, Object> m : parametersTable1Equallable.entrySet())
+		for (String cs : op_comp.getMatches())
 		{
-		    if (op_comp==SymbolType.LIKE || op_comp==SymbolType.NOTLIKE)
+		    for (boolean useParameter : new boolean[]{false, true})
 		    {
-			if (!(m.getValue() instanceof String))
-			    continue;
+
+			StringBuffer command=new StringBuffer();
+			StringBuffer expectedCommand=new StringBuffer();
+	    
+			HashMap<Integer, Object> expectedParameters=new HashMap<>();
+			AtomicInteger expectedParamterIndex=new AtomicInteger(1);
+			AtomicInteger openedParenthesis=new AtomicInteger(0);
+			for (Map.Entry<String, Object> m : parametersTable1Equallable.entrySet())
+			{
+			    subInterpreterCommandProvider(op_cond, op_comp, cs, parametersTable1Equallable, command, expectedCommand, m.getKey(), m.getValue(), expectedParameters, useParameter, expectedParamterIndex, openedParenthesis);
+			    
+			}
+			while (openedParenthesis.get()>0)
+			{
+			    command.append(")");
+			    expectedCommand.append(")");
+			    openedParenthesis.decrementAndGet();
+			}
+			if (command.length()>0)
+			{
+			    res.add(new Object[]{table1, command.toString(), parametersTable1Equallable, expectedCommand.toString(), expectedParameters});
+			}
 		    }
-		    if (op_comp==SymbolType.GREATEROPERATOR || op_comp==SymbolType.GREATEROREQUALOPERATOR || op_comp==SymbolType.LOWEROPERATOR || op_comp==SymbolType.LOWEROREQUALOPERATOR)
-		    {
-			if (!(m.getValue() instanceof Comparable) || m.getValue().getClass()==Boolean.class)
-			    continue;
-		    }
-		    if (command.length()>0)
-		    {
-			command.append(" ");
-			command.append(op_cond.getContent());
-			command.append(" ");
-			
-			expectedCommand.append(" ");
-			expectedCommand.append(op_cond.getContent());
-			expectedCommand.append(" ");
-		    }
-		    boolean parenthesis=Math.random()<0.5;
-		    if (parenthesis)
-		    {
-			command.append("(");
-			expectedCommand.append("(");
-		    }
-		    command.append(m.getKey());
-		    command.append(op_comp.getMatches()[(int)(Math.random()*op_comp.getMatches().length)]);
-		    
-		    command.append("%");
-		    command.append(m.getKey());
-		    
-		    
-		    ArrayList<Object> sqlInstance=getExpectedParameter(table1.getFieldAccessor(m.getKey()).getFieldClassType(), m.getValue());
-		    ArrayList<String> sqlVariablesName=getExpectedParametersName(m.getKey(), m.getValue().getClass());
-		    if (op_comp==SymbolType.EQUALOPERATOR || op_comp==SymbolType.NOTEQUALOPERATOR)
-			expectedCommand.append("(");
-		    for (int i=0;i<sqlInstance.size();i++)
-		    {
-			if (i>0)
-			    expectedCommand.append(" AND ");
-			expectedCommand.append(Table.getName(Table1.class));
-			expectedCommand.append(".");
-			expectedCommand.append(sqlVariablesName.get(i));
-			expectedCommand.append(op_comp.getContent());
-			expectedCommand.append("?");
-			expectedParameters.put(new Integer(expectedParamterIndex++), sqlInstance.get(i));
-		    }
-		    if (op_comp==SymbolType.EQUALOPERATOR || op_comp==SymbolType.NOTEQUALOPERATOR)
-			expectedCommand.append(")");
-		    if (parenthesis)
-		    {
-			command.append(")");
-			expectedCommand.append(")");
-		    }
-			
 		}
-		res.add(new Object[]{table1, command.toString(), parametersTable1Equallable, expectedCommand.toString().toUpperCase(), expectedParameters});
 	    }
 	}
 	
@@ -3336,14 +3384,17 @@ public abstract class TestDatabase
     @Test(dependsOnMethods={"firstLoad"}, dataProvider = "interpreterCommandsProvider") 
     public void testCommandTranslatorInterpreter(Table<?> table, String command, Map<String, Object> parameters, String expectedSqlCommand, Map<Integer, Object> expectedSqlParameters) throws DatabaseException
     {
-
 	HashMap<Integer, Object> sqlParameters=new HashMap<>();
+	
 	String sqlCommand=Interpreter.getRuleInstance(command).translateToSqlQuery(table, parameters, sqlParameters).toString();
 	Assert.assertEquals(sqlCommand, expectedSqlCommand);
 	for (Map.Entry<Integer, Object> e : sqlParameters.entrySet())
 	{
-	    
-	    Assert.assertEquals(e.getValue(), expectedSqlParameters.get(e.getKey()), "Class type source "+e.getValue().getClass()+", class type expected "+expectedSqlParameters.get(e.getKey()).getClass());
+	    if (e.getValue()==null)
+		throw new NullPointerException();
+	    if (e.getKey()==null)
+		throw new NullPointerException();
+	    Assert.assertEquals(e.getValue(), expectedSqlParameters.get(e.getKey()), "Class type source "+e.getValue().getClass());
 	}
     }
     

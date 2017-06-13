@@ -118,22 +118,11 @@ public class RuleInstance implements QueryPart
 	{
 	    case COMPARE:
 		return false;
-	    case EXPRESSION:case FACTEUR:
-		if (parts.size()==1)
-		{
-		    return parts.get(0).isMultiType(table, parameters);
-		}
-		else
-		{
-		    return false;
-		}
-	    case OPADD:
-		return false;
+	    case EXPRESSION:
+		return parts.get(0).isMultiType(table, parameters);
 	    case OPCOMP:
 		return false;
 	    case OPCONDITION:
-		return false;
-	    case OPMUL:
 		return false;
 	    case QUERY:
 		return false;
@@ -174,23 +163,11 @@ public class RuleInstance implements QueryPart
 	    case COMPARE:
 		return "boolean";
 	    case EXPRESSION:
-		if (parts.size()==1)
-		    return parts.get(0).getValueType(table, parameters);
-		else
-		    return "comparable";
-	    case FACTEUR:
-		if (parts.size()==1)
-		    return parts.get(0).getValueType(table, parameters);
-		else
-		    return "comparable";
-	    case OPADD:
-		return "comparable";
+		return parts.get(0).getValueType(table, parameters);
 	    case OPCOMP:
 		return "boolean";
 	    case OPCONDITION:
 		return "boolean";
-	    case OPMUL:
-		return "comparable";
 	    case QUERY:
 		return "boolean";
 	    case TERME:
@@ -223,44 +200,9 @@ public class RuleInstance implements QueryPart
 	{
 	    case COMPARE:case QUERY:
 		throw new IllegalAccessError();
-	    case EXPRESSION:case FACTEUR:
-		if (parts.size()==1)
-		{
-		    return ((RuleInstance)parts.get(0)).getComparable(table, parameters, record);
-		}
-		else if (parts.size()==3)
-		{
-		    RuleInstance ri1=(RuleInstance)parts.get(0);
-		    RuleInstance ri3=(RuleInstance)parts.get(2);
-		    BigDecimal v1=ri1.getNumber(table, parameters, record);
-		    BigDecimal v2=ri3.getNumber(table, parameters, record);
-		    
-		    Symbol comp=(Symbol)((RuleInstance)parts.get(1)).parts.get(0);
-		    
-		    if (comp.getType()==SymbolType.ADDOPERATOR)
-		    {
-			return v1.add(v2);
-		    }
-		    else if (comp.getType()==SymbolType.SUBOPERATOR)
-		    {
-			return v1.subtract(v2);
-		    }
-		    else if (comp.getType()==SymbolType.MULOPETATOR)
-		    {
-			return v1.multiply(v2);
-		    }
-		    else if (comp.getType()==SymbolType.DIVOPERATOR)
-		    {
-			return v1.divide(v2);
-		    }
-		    else
-			throw new IllegalAccessError();
-		}
-		else
-		    throw new IllegalAccessError();
-		
-		
-	    case OPCOMP:case OPADD:case OPCONDITION:case OPMUL:
+	    case EXPRESSION:
+		return ((RuleInstance)parts.get(0)).getComparable(table, parameters, record);
+	    case OPCOMP:case OPCONDITION:
 		throw new IllegalAccessError();
 	    case TERME:
 		if (parts.size()==1)
@@ -303,9 +245,9 @@ public class RuleInstance implements QueryPart
     {
 	switch(rule)
 	{
-	    case EXPRESSION:case FACTEUR:
+	    case EXPRESSION:
 		return getNumber(table, parameters, record);
-	    case OPCOMP:case OPADD:case OPCONDITION:case OPMUL:case COMPARE:case QUERY:
+	    case OPCOMP:case OPCONDITION:case COMPARE:case QUERY:
 		throw new IllegalAccessError();
 	    case TERME:
 		if (parts.size()==1)
@@ -345,10 +287,10 @@ public class RuleInstance implements QueryPart
 	{
 	    case COMPARE:case QUERY:
 		throw new IllegalAccessError();
-	    case EXPRESSION:case FACTEUR:
+	    case EXPRESSION:
 		throw new DatabaseSyntaxException("Cannot convert an expression or a factor to a string");
 				
-	    case OPCOMP:case OPADD:case OPCONDITION:case OPMUL:
+	    case OPCOMP:case OPCONDITION:
 		throw new IllegalAccessError();
 	    case TERME:
 		if (parts.size()==1)
@@ -582,7 +524,7 @@ public class RuleInstance implements QueryPart
 		    
 		    boolean vri1=ri1.isConcernedBy(table, parameters, record);
 		    boolean vri2=ri3.isConcernedBy(table, parameters, record);
-		    if (comp.getType()==SymbolType.ADDOPERATOR)
+		    if (comp.getType()==SymbolType.ANDCONDITION)
 			return vri1 && vri2;
 		    else if (comp.getType()==SymbolType.ORCONDITION)
 			return vri1 || vri2;
@@ -591,7 +533,7 @@ public class RuleInstance implements QueryPart
 		}
 		else
 		    throw new IllegalAccessError();
-	    case TERME:case FACTEUR:case EXPRESSION:case OPCOMP:case OPADD:case OPCONDITION:case OPMUL:
+	    case TERME:case EXPRESSION:case OPCOMP:case OPCONDITION:
 		throw new IllegalAccessError();
 	}
 	throw new IllegalAccessError();
@@ -604,6 +546,7 @@ public class RuleInstance implements QueryPart
     {
 	return translateToSqlQuery(table, parameters, outputParameters, new AtomicInteger(firstParameterIndex));
     }
+  
     <T extends DatabaseRecord> StringBuffer translateToSqlQuery(Table<T> table, Map<String, Object> parameters, Map<Integer, Object> outputParameters, AtomicInteger currentParameterID) throws DatabaseSyntaxException
     {
 	switch(rule)
@@ -635,8 +578,8 @@ public class RuleInstance implements QueryPart
 			    }
 			    //if (ri1.isMultiType(table, parameters))
 			    {
-				Symbol s1=((Symbol)(((RuleInstance)((RuleInstance)ri1.parts.get(0)).parts.get(0)).parts.get(0)));
-				Symbol s2=((Symbol)(((RuleInstance)((RuleInstance)ri3.parts.get(0)).parts.get(0)).parts.get(0)));
+				Symbol s1=((Symbol)(((RuleInstance)ri1.parts.get(0)).parts.get(0)));
+				Symbol s2=((Symbol)(((RuleInstance)ri3.parts.get(0)).parts.get(0)));
 				
 				if (s1.getType()!=SymbolType.IDENTIFIER && s2.getType()!=SymbolType.IDENTIFIER)
 				    throw new DatabaseSyntaxException("Cannot do comparison between two paramters");
@@ -804,7 +747,7 @@ public class RuleInstance implements QueryPart
 		else
 		    throw new IllegalAccessError();
 		
-	    case EXPRESSION:case FACTEUR:case QUERY:
+	    case EXPRESSION:case QUERY:
 		if (parts.size()==1)
 		{
 		    return ((RuleInstance)parts.get(0)).translateToSqlQuery(table, parameters, outputParameters, currentParameterID);
@@ -844,7 +787,7 @@ public class RuleInstance implements QueryPart
 		else
 		    throw new IllegalAccessError();
 		
-	    case OPCOMP:case OPADD:case OPCONDITION:case OPMUL:
+	    case OPCOMP:case OPCONDITION:
 		throw new IllegalAccessError();
 	    case TERME:
 		if (parts.size()==1)

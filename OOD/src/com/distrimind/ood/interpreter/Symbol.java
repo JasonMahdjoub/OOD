@@ -83,12 +83,8 @@ public class Symbol implements QueryPart
     {
 	switch(type)
 	{
-	    case ADDOPERATOR:case SUBOPERATOR:
-		return new RuleInstance(Rule.OPADD, this);
 	    case ANDCONDITION:case ORCONDITION:
 		return new RuleInstance(Rule.OPCONDITION, this);
-	    case DIVOPERATOR:case MULOPETATOR:
-		return new RuleInstance(Rule.OPMUL, this);
 	    case EQUALOPERATOR:case NOTEQUALOPERATOR:case GREATEROPERATOR:case GREATEROREQUALOPERATOR:case LOWEROPERATOR:case LOWEROREQUALOPERATOR:case LIKE:case NOTLIKE:
 		return new RuleInstance(Rule.OPCOMP, this);
 	    case IDENTIFIER:case NUMBER:case PARAMETER:case STRING:
@@ -153,12 +149,14 @@ public class Symbol implements QueryPart
 	    FieldAccessor fa=table.getFieldAccessor(getSymbol());
 	    if (fa==null)
 		throw new DatabaseSyntaxException("Cannot find field "+getSymbol()+" into table "+table.getName());
-	    else if (fa.isComparable())
-		return "comparable";
 	    else if (fa.getFieldClassType()==Boolean.class)
 		return "boolean";
 	    else if (AbstractDecentralizedID.class.isAssignableFrom(fa.getFieldClassType()))
 		return "decentralizedID";
+	    else if (CharSequence.class.isAssignableFrom(fa.getFieldClassType()))
+		return SymbolType.STRING.name();
+	    else if (fa.isComparable())
+		return "comparable";
 	    else
 		return fa.getFieldClassType().getName();
 	}
@@ -171,12 +169,14 @@ public class Symbol implements QueryPart
 	    
 	    if (fa==null)
 		throw new DatabaseSyntaxException("No field accessor corresponds to parameter "+getSymbol()+" and type "+p.getClass().getName());
-	    else if (fa.isComparable())
-		return "comparable";
 	    else if (fa.getFieldClassType()==Boolean.class)
 		return "boolean";
 	    else if (AbstractDecentralizedID.class.isAssignableFrom(fa.getFieldClassType()))
 		return "decentralizedID";
+	    else if (CharSequence.class.isAssignableFrom(fa.getFieldClassType()))
+		return SymbolType.STRING.name();
+	    else if (fa.isComparable())
+		return "comparable";
 	    else
 		return fa.getFieldClassType().getName();
 	}

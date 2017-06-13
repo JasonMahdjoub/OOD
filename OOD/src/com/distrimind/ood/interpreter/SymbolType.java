@@ -45,10 +45,10 @@ import java.util.regex.Pattern;
  */
 public enum SymbolType
 {
-    ADDOPERATOR(true,false,false,"^\\+$",new String[]{"+"}, "+"),
+    /*ADDOPERATOR(true,false,false,"^\\+$",new String[]{"+"}, "+"),
     SUBOPERATOR(true,false,false,"^\\-$",new String[]{"-"}, "-"),
     MULOPETATOR(true,false,false,"^\\*$",new String[]{"*"}, "*"),
-    DIVOPERATOR(true,false,false,"^/$",new String[]{"/"}, "/"),
+    DIVOPERATOR(true,false,false,"^/$",new String[]{"/"}, "/"),*/
     LOWEROPERATOR(true,false,false,"^<$",new String[]{"<"}, "<"),
     EQUALOPERATOR(true,false, false,"^(=){1,2}$",new String[]{"=", "=="}, "="),
     NOTEQUALOPERATOR(true,false,false,"^(!=|<>)$",new String[]{"!=", "<>"}, "<>"),
@@ -60,7 +60,7 @@ public enum SymbolType
     ANDCONDITION(false,true,true,"^[Aa][Nn][Dd]$", null, "AND"),
     ORCONDITION(false,true,true,"^[Oo][Rr]$", null, "OR"),
     IDENTIFIER(false,false,false, "^[a-zA-Z][a-zA-Z0-9\\._\\-]*+$",null, null),
-    NUMBER(false,false,false,"^\\-?(([0-9]+(\\.[0-9]+)(E(\\-|\\+)?[0-9]+)?)|([0-9]*\\.[0-9]+(E(\\-|\\+)?[0-9]+)?))$", null, null),
+    NUMBER(false,false,false,"^(\\+|\\-)?(([0-9]+(\\.[0-9]+)?(E(\\-|\\+)?[0-9]+)?)|([0-9]*\\.[0-9]+(E(\\-|\\+)?[0-9]+)?))$", null, null),
     STRING(false,false, false, "^(\"|\\')[\\p{Alnum}\\p{Blank}\\!\\#\\$\\%\\&\\(\\)\\*\\+\\,\\-\\.\\/:;\\<\\=\\>\\?\\@\\[\\\\\\]\\^_\\`\\{\\|\\}\\~]+(\"|\\')$", null, null),
     PARAMETER(false,false, false, "(\\%|\\:)[a-zA-Z\\-_][0-9a-zA-Z\\-_]+$", null, null),
     LIKE(true,false, true, "^(L|l)(I|i)(K|k)(E|e)$", new String[]{" LIKE "}, " LIKE "),

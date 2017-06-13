@@ -47,10 +47,7 @@ public enum Rule
 {
     
     TERME("^(<"+SymbolType.IDENTIFIER.name()+ ">|<"+SymbolType.NUMBER.name()+">|<"+SymbolType.STRING.name()+">|<"+SymbolType.PARAMETER.name()+">|\\(<EXPRESSION>\\))$"),
-    OPMUL("^(<"+SymbolType.MULOPETATOR.name()+ ">|<"+SymbolType.DIVOPERATOR.name()+">)$"),
-    OPADD("^(<"+SymbolType.ADDOPERATOR.name()+ ">|<"+SymbolType.SUBOPERATOR.name()+">)$"),
-    FACTEUR("^(<"+TERME.name()+ ">|<"+TERME.name()+ "><"+OPMUL.name()+ "><FACTEUR>)$"),
-   EXPRESSION("^(<"+FACTEUR.name()+">|<"+FACTEUR.name()+"><"+OPADD.name()+ "><EXPRESSION>)$"),
+    EXPRESSION("^<"+TERME.name()+">$"),
     OPCOMP("^(<"+SymbolType.EQUALOPERATOR.name()+">|<"+SymbolType.NOTEQUALOPERATOR.name()+ ">|<"+SymbolType.LOWEROPERATOR.name()+ ">|<"+SymbolType.LOWEROREQUALOPERATOR.name()+ ">|<"+SymbolType.GREATEROPERATOR.name()+">|<"+SymbolType.GREATEROREQUALOPERATOR.name()+">|<"+SymbolType.LIKE.name()+">|<"+SymbolType.NOTLIKE.name()+">)$"),
     COMPARE("^(<"+EXPRESSION.name()+"><"+OPCOMP.name()+"><"+EXPRESSION.name()+">|\\(<QUERY>\\))$"),
     OPCONDITION("^(<"+SymbolType.ANDCONDITION.name()+">|<"+SymbolType.ORCONDITION.name()+">)$"),
