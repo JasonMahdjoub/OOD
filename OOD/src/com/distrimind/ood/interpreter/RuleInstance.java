@@ -46,6 +46,7 @@ import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.SqlField;
 import com.distrimind.ood.database.SqlFieldInstance;
 import com.distrimind.ood.database.Table;
+import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseSyntaxException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.StringFieldAccessor;
@@ -186,7 +187,7 @@ public class RuleInstance implements QueryPart
     {
 	return (parts.size()==1 && parts.get(0).needParenthesis()) || (parts.size()==3 && (parts.get(0) instanceof Symbol) && ((Symbol)parts.get(0)).getType()==SymbolType.OPEN_PARENTHESIS && (parts.get(2) instanceof Symbol) && ((Symbol)parts.get(2)).getType()==SymbolType.CLOSE_PARENTHESIS);
     }
-    public <T extends DatabaseRecord> BigDecimal getNumber(Table<T> table, Map<String, Object> parameters, T record) throws DatabaseSyntaxException
+    public <T extends DatabaseRecord> BigDecimal getNumber(Table<T> table, Map<String, Object> parameters, T record) throws DatabaseException
     {
 	Object o=getComparable(table, parameters, record);
 	if (o instanceof BigDecimal)
@@ -194,7 +195,7 @@ public class RuleInstance implements QueryPart
 	else
 	    throw new DatabaseSyntaxException(o+" of type "+o.getClass()+" is not a number !");
     }
-    public <T extends DatabaseRecord> Object getComparable(Table<T> table, Map<String, Object> parameters, T record) throws DatabaseSyntaxException
+    public <T extends DatabaseRecord> Object getComparable(Table<T> table, Map<String, Object> parameters, T record) throws DatabaseException
     {
 	switch(rule)
 	{
@@ -215,7 +216,7 @@ public class RuleInstance implements QueryPart
 			if (fa==null)
 			    throw new DatabaseSyntaxException("Cannot find field "+fieldName+" into table "+table.getName());
 			if (fa.isComparable())
-			    return fa;
+			    return fa.getValue(record);
 			else
 			    throw new DatabaseSyntaxException("The "+fieldName+" into table "+table.getName()+" is not comparable !");
 		    }
@@ -226,8 +227,10 @@ public class RuleInstance implements QueryPart
 			    throw new DatabaseSyntaxException("Cannot find parameter "+s.getSymbol());
 			return parameter1;
 		    }
-		    else
+		    else if (s.getType()==SymbolType.NUMBER)
 			return new BigDecimal(s.getSymbol());
+		    else
+			throw new DatabaseSyntaxException("Cannot get comparable with type "+s.getType());
 		}
 		else if (parts.size()==3)
 		{
@@ -241,12 +244,12 @@ public class RuleInstance implements QueryPart
 	throw new IllegalAccessError();
     }
     
-    public <T extends DatabaseRecord> Object getEquallable(Table<T> table, Map<String, Object> parameters, T record) throws DatabaseSyntaxException
+    public <T extends DatabaseRecord> Object getEquallable(Table<T> table, Map<String, Object> parameters, T record) throws DatabaseException
     {
 	switch(rule)
 	{
 	    case EXPRESSION:
-		return getNumber(table, parameters, record);
+		return ((RuleInstance)parts.get(0)).getEquallable(table, parameters, record);
 	    case OPCOMP:case OPCONDITION:case COMPARE:case QUERY:
 		throw new IllegalAccessError();
 	    case TERME:
@@ -268,12 +271,14 @@ public class RuleInstance implements QueryPart
 			    throw new DatabaseSyntaxException("Cannot find parameter "+s.getSymbol());
 			return parameter1;
 		    }
+		    else if (s.getType()==SymbolType.STRING)
+			return s.getContent();
 		    else
 			return new BigDecimal(s.getSymbol());
 		}
 		else if (parts.size()==3)
 		{
-		    return ((RuleInstance)parts.get(1)).getNumber(table, parameters, record);
+		    return ((RuleInstance)parts.get(1)).getEquallable(table, parameters, record);
 		}
 		else
 		    throw new IllegalAccessError();
@@ -288,7 +293,7 @@ public class RuleInstance implements QueryPart
 	    case COMPARE:case QUERY:
 		throw new IllegalAccessError();
 	    case EXPRESSION:
-		throw new DatabaseSyntaxException("Cannot convert an expression or a factor to a string");
+		return ((RuleInstance)parts.get(0)).getStringable(table, parameters, record);
 				
 	    case OPCOMP:case OPCONDITION:
 		throw new IllegalAccessError();
@@ -344,7 +349,7 @@ public class RuleInstance implements QueryPart
 	{
 	    if ((!FieldAccessor.class.isAssignableFrom(o1.getClass()) && FieldAccessor.class.isAssignableFrom(o2.getClass()))
 		    ||
-		    (!BigDecimal.class.isAssignableFrom(o1.getClass()) && BigDecimal.class.isAssignableFrom(o2.getClass())))
+		    (!BigDecimal.class.isAssignableFrom(o1.getClass()) && BigDecimal.class.isAssignableFrom(o2.getClass()) && !FieldAccessor.class.isAssignableFrom(o1.getClass())))
 	    {
 		Object o=o1;
 		o1=o2;
@@ -365,13 +370,10 @@ public class RuleInstance implements QueryPart
 	    }
 	    else if (Number.class.isAssignableFrom(o1.getClass()))
 	    {
-		for (Method m : o1.getClass().getDeclaredMethods())
-		{
-		    if (m.equals("compareTo") && m.getParameterTypes().length==1)
-		    {
-			return ((Integer)m.invoke(o1, o2)).intValue();
-		    }
-		}
+		if (BigDecimal.class.isAssignableFrom(o2.getClass()))
+		    return ((BigDecimal)o2).compareTo(new BigDecimal(o1.toString()));
+		else 
+		    return new BigDecimal(o2.toString()).compareTo(new BigDecimal(o1.toString()));
 	    }
 	}
 	catch(Exception e)
@@ -387,7 +389,7 @@ public class RuleInstance implements QueryPart
 	{
 	    if ((!FieldAccessor.class.isAssignableFrom(o1.getClass()) && FieldAccessor.class.isAssignableFrom(o2.getClass()))
 		    ||
-		    (!BigDecimal.class.isAssignableFrom(o1.getClass()) && BigDecimal.class.isAssignableFrom(o2.getClass())))
+		    (!BigDecimal.class.isAssignableFrom(o1.getClass()) && BigDecimal.class.isAssignableFrom(o2.getClass()) && !FieldAccessor.class.isAssignableFrom(o1.getClass())))
 	    {
 		Object o=o1;
 		o1=o2;
@@ -395,18 +397,42 @@ public class RuleInstance implements QueryPart
 	    }
 	    if (BigDecimal.class.isAssignableFrom(o1.getClass()))
 	    {
+		
 		if (BigDecimal.class.isAssignableFrom(o2.getClass()))
 		    return ((BigDecimal)o1).equals(o2);
 		else if (Number.class.isAssignableFrom(o2.getClass()))
 		{
 		    return ((BigDecimal)o1).equals(new BigDecimal(o2.toString()));
 		}
-		else
+		else 
+		{
 		    return false;
+		}
 	    }
 	    else if (FieldAccessor.class.isAssignableFrom(o1.getClass()))
 	    {
-		return ((FieldAccessor)o1).equals(record, o2);
+		FieldAccessor fa=((FieldAccessor)o1);
+		if (CharSequence.class.isAssignableFrom(fa.getFieldClassType()))
+		{
+		    if (o2 instanceof String)
+		    {
+			String s=(String)o2;
+			if (s.startsWith("\"") && s.endsWith("\""))
+			    o2=s.substring(1, s.length()-1);
+		    }
+		    return fa.equals(record, o2);
+		}
+		else if (fa.isComparable() && o2 instanceof BigDecimal)
+		{
+		    Object v=fa.getValue(record);
+		    if (v==null)
+			return o2==null;
+		    else 
+			return o2.equals(new BigDecimal(v.toString()));
+		}
+		else
+		    return fa.equals(record, o2);
+		
 	    }
 	    else
 		return o1.equals(o2);
@@ -433,14 +459,22 @@ public class RuleInstance implements QueryPart
 		{
 		    String s1=(String)((StringFieldAccessor)o1).getValue(record);
 		    String s2=(String)o2;
+		    
+		    if (s2.startsWith("\"") && s2.endsWith("\""))
+			o2=s2=s2.substring(1, s2.length()-1);
+
 		    Pattern p=SymbolType.convertLikeStringToPattern(s2);
 		    return p.matcher(s1).matches();
 		}
 		else
+		{
 		    return false;
+		}
 	    }
 	    else
+	    {
 		return false;
+	    }
 
 	}
 	catch(Exception e)
@@ -451,7 +485,7 @@ public class RuleInstance implements QueryPart
 	    
     }
     
-    public <T extends DatabaseRecord> boolean isConcernedBy(Table<T> table, Map<String, Object> parameters, T record) throws DatabaseSyntaxException
+    public <T extends DatabaseRecord> boolean isConcernedBy(Table<T> table, Map<String, Object> parameters, T record) throws DatabaseException
     {
 	switch(rule)
 	{
@@ -502,7 +536,7 @@ public class RuleInstance implements QueryPart
 			    }
 			    else if (comp.getType()==SymbolType.GREATEROREQUALOPERATOR)
 			    {
-				return c>0;
+				return c>=0;
 			    }
 			    else
 				throw new IllegalAccessError();

@@ -143,6 +143,11 @@ public enum SymbolType
     
     public static Pattern convertLikeStringToPattern(String likeContent)
     {
+	return Pattern.compile(convertLikeStringToRegex(likeContent));
+    }
+    
+    public static String convertLikeStringToRegex(String likeContent)
+    {
 	if (likeContent==null)
 	    throw new NullPointerException("likeContent");
 	String regex=null;
@@ -161,6 +166,6 @@ public enum SymbolType
 	    
 	regex=regex.replace("_", ".");
 	    
-	return Pattern.compile(regex);
+	return regex;
     }
 }

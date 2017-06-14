@@ -53,6 +53,7 @@ import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.testng.Assert;
@@ -75,6 +76,7 @@ import com.distrimind.ood.database.exceptions.FieldDatabaseException;
 import com.distrimind.ood.database.exceptions.RecordNotFoundDatabaseException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.interpreter.Interpreter;
+import com.distrimind.ood.interpreter.RuleInstance;
 import com.distrimind.ood.interpreter.SymbolType;
 import com.distrimind.ood.tests.database.SubField;
 import com.distrimind.ood.tests.database.SubSubField;
@@ -3187,7 +3189,7 @@ public abstract class TestDatabase
 	return res;
     }
     
-    private void subInterpreterCommandProvider(SymbolType op_cond, SymbolType op_comp, String cs, HashMap<String, Object> parametersTable1Equallable, StringBuffer command, StringBuffer expectedCommand, String fieldName, Object value, HashMap<Integer, Object> expectedParameters, boolean useParameter, AtomicInteger expectedParamterIndex, AtomicInteger openedParenthesis) throws IOException
+    private <T extends Record> void subInterpreterCommandProvider(SymbolType op_cond, SymbolType op_comp, String cs, HashMap<String, Object> parametersTable1Equallable, StringBuffer command, StringBuffer expectedCommand, String fieldName, Object value, HashMap<Integer, Object> expectedParameters, boolean useParameter, AtomicInteger expectedParamterIndex, AtomicInteger openedParenthesis, Table<T> table, T record, AtomicBoolean whereResult) throws IOException, DatabaseException
     {
 	if (op_comp==SymbolType.LIKE || op_comp==SymbolType.NOTLIKE)
 	{
@@ -3204,8 +3206,10 @@ public abstract class TestDatabase
 	    if (!(value instanceof String))
 		return;
 	}
+	boolean startCommand=true;
 	if (command.length()>0)
 	{
+	    startCommand=false;
 	    command.append(" ");
 	    command.append(op_cond.getContent());
 	    command.append(" ");
@@ -3223,15 +3227,41 @@ public abstract class TestDatabase
     	command.append(fieldName);
     	command.append(cs);
     
-    
+    	boolean test=false;
 
     	
     	ArrayList<String> sqlVariablesName=getExpectedParametersName(fieldName, value.getClass());
+    	FieldAccessor fa=table.getFieldAccessor(fieldName);
     	if (useParameter)
     	{
     	    command.append("%");
     	    command.append(fieldName);
-    	    ArrayList<Object> sqlInstance=getExpectedParameter(table1.getFieldAccessor(fieldName).getFieldClassType(), value);
+    	    
+    	    if (op_comp==SymbolType.EQUALOPERATOR)
+    		test=fa.equals(record, value);
+    	    else if (op_comp==SymbolType.NOTEQUALOPERATOR)
+    		test=!fa.equals(record, value);
+    	    else if (op_comp==SymbolType.LIKE)
+    		test=fa.equals(record, value);
+    	    else if (op_comp==SymbolType.NOTLIKE)
+    		test=!fa.equals(record, value);
+    	    else
+    	    {
+    		Table1.Record r2=new Table1.Record();
+    		fa.setValue(r2, value);
+    		int comp=fa.compare(record, r2);
+    		if (op_comp==SymbolType.GREATEROPERATOR)
+    		    test=comp>0;
+    		else if (op_comp==SymbolType.GREATEROREQUALOPERATOR)
+    		    test=comp>=0;
+        	else if (op_comp==SymbolType.LOWEROPERATOR)
+        	    test=comp<0;
+        	else if (op_comp==SymbolType.LOWEROREQUALOPERATOR)
+        	    test=comp<=0;
+    	    }
+    		
+    		
+    	    ArrayList<Object> sqlInstance=getExpectedParameter(fa.getFieldClassType(), value);
     	    if (op_comp==SymbolType.EQUALOPERATOR || op_comp==SymbolType.NOTEQUALOPERATOR)
     		expectedCommand.append("(");
     	    for (int i=0;i<sqlInstance.size();i++)
@@ -3250,6 +3280,30 @@ public abstract class TestDatabase
     	}
     	else
     	{
+    	    if (op_comp==SymbolType.EQUALOPERATOR)
+    		test=fa.getValue(record).toString().equals(value.toString());
+    	    else if (op_comp==SymbolType.NOTEQUALOPERATOR)
+    		test=!fa.getValue(record).toString().equals(value.toString());
+    	    else if (op_comp==SymbolType.LIKE)
+    		test=fa.getValue(record).toString().equals(value.toString());
+    	    else if (op_comp==SymbolType.NOTLIKE)
+    		test=!fa.getValue(record).toString().equals(value.toString());
+    	    else
+    	    {
+    		BigDecimal v=new BigDecimal(fa.getValue(record).toString());
+    		
+    		int comp=v.compareTo(new BigDecimal(value.toString()));
+    		if (op_comp==SymbolType.GREATEROPERATOR)
+    		    test=comp>0;
+    		else if (op_comp==SymbolType.GREATEROREQUALOPERATOR)
+    		    test=comp>=0;
+        	else if (op_comp==SymbolType.LOWEROPERATOR)
+        	    test=comp<0;
+        	else if (op_comp==SymbolType.LOWEROREQUALOPERATOR)
+        	    test=comp<=0;
+    	    }
+    	
+    	    
     	    if (value instanceof CharSequence)
     		command.append("\"");
     	    command.append(value.toString());
@@ -3271,10 +3325,17 @@ public abstract class TestDatabase
     	    expectedCommand.append(")");
     	    openedParenthesis.decrementAndGet();
 	}
+    	if (startCommand)
+    	    whereResult.set(test);
+    	else if (op_cond==SymbolType.ANDCONDITION)
+    	    whereResult.set(whereResult.get() && test);
+    	else if (op_cond==SymbolType.ORCONDITION)
+    	    whereResult.set(whereResult.get() || test);
+    	
     }    
     
     @DataProvider(name = "interpreterCommandsProvider")
-    public Object[][] interpreterCommandsProvider() throws IOException, NoSuchAlgorithmException, NoSuchProviderException
+    public Object[][] interpreterCommandsProvider() throws IOException, NoSuchAlgorithmException, NoSuchProviderException, DatabaseException
     {
 	HashMap<String, Object> parametersTable1Equallable=new HashMap<>();
 	
@@ -3314,6 +3375,35 @@ public abstract class TestDatabase
 	parametersTable1Equallable.put("DateValue", date);
 	parametersTable1Equallable.put("CalendarValue", calendar);
 	
+	Table1.Record record=new Table1.Record();
+	record.BigDecimal_value=(BigDecimal)parametersTable1Equallable.get("BigDecimal_value");
+	record.BigInteger_value=(BigInteger)parametersTable1Equallable.get("BigInteger_value");
+	record.boolean_value=((Boolean)parametersTable1Equallable.get("boolean_value")).booleanValue();
+	record.BooleanNumber_value=(Boolean)parametersTable1Equallable.get("BooleanNumber_value");
+	record.byte_array_value=(byte[])parametersTable1Equallable.get("byte_array_value");
+	record.byte_value=((Byte)parametersTable1Equallable.get("byte_value")).byteValue();
+	record.ByteNumber_value=(Byte)parametersTable1Equallable.get("ByteNumber_value");
+	record.CalendarValue=(Calendar)parametersTable1Equallable.get("CalendarValue");
+	record.char_value=((Character)parametersTable1Equallable.get("char_value")).charValue();
+	record.CharacterNumber_value=(Character)parametersTable1Equallable.get("CharacterNumber_value");
+	record.DateValue=(Date)parametersTable1Equallable.get("DateValue");
+	record.double_value=((Double)parametersTable1Equallable.get("double_value")).doubleValue();
+	record.DoubleNumber_value=(Double)parametersTable1Equallable.get("DoubleNumber_value");
+	record.float_value=((Float)parametersTable1Equallable.get("float_value")).floatValue();
+	record.FloatNumber_value=(Float)parametersTable1Equallable.get("FloatNumber_value");
+	record.int_value=((Integer)parametersTable1Equallable.get("int_value")).intValue();
+	record.IntegerNumber_value=(Integer)parametersTable1Equallable.get("IntegerNumber_value");
+	record.long_value=((Long)parametersTable1Equallable.get("long_value")).longValue();
+	record.LongNumber_value=((Long)parametersTable1Equallable.get("LongNumber_value"));
+	record.pk5=(AbstractDecentralizedID)parametersTable1Equallable.get("pk5");
+	record.pk6=(DecentralizedIDGenerator)parametersTable1Equallable.get("pk6");
+	record.pk7=(RenforcedDecentralizedIDGenerator)parametersTable1Equallable.get("pk7");
+	record.secretKey=(SymmetricSecretKey)parametersTable1Equallable.get("secretKey");
+	record.typeSecretKey=(SymmetricEncryptionType)parametersTable1Equallable.get("typeSecretKey");
+	record.short_value=((Short)parametersTable1Equallable.get("short_value")).shortValue();
+	record.ShortNumber_value=(Short)parametersTable1Equallable.get("ShortNumber_value");
+	record.string_value=(String)parametersTable1Equallable.get("string_value");
+	
 	SymbolType []ops_cond=new SymbolType[]{SymbolType.ANDCONDITION, SymbolType.ORCONDITION};
 	SymbolType []ops_comp=new SymbolType[]{SymbolType.EQUALOPERATOR, SymbolType.NOTEQUALOPERATOR, SymbolType.LIKE, SymbolType.NOTLIKE, SymbolType.GREATEROPERATOR, SymbolType.GREATEROREQUALOPERATOR, SymbolType.LOWEROPERATOR, SymbolType.LOWEROREQUALOPERATOR};
 	
@@ -3332,9 +3422,10 @@ public abstract class TestDatabase
 			HashMap<Integer, Object> expectedParameters=new HashMap<>();
 			AtomicInteger expectedParamterIndex=new AtomicInteger(1);
 			AtomicInteger openedParenthesis=new AtomicInteger(0);
+			AtomicBoolean expectedTestResult=new AtomicBoolean();
 			for (Map.Entry<String, Object> m : parametersTable1Equallable.entrySet())
 			{
-			    subInterpreterCommandProvider(op_cond, op_comp, cs, parametersTable1Equallable, command, expectedCommand, m.getKey(), m.getValue(), expectedParameters, useParameter, expectedParamterIndex, openedParenthesis);
+			    subInterpreterCommandProvider(op_cond, op_comp, cs, parametersTable1Equallable, command, expectedCommand, m.getKey(), m.getValue(), expectedParameters, useParameter, expectedParamterIndex, openedParenthesis, table1, record, expectedTestResult);
 			    
 			}
 			while (openedParenthesis.get()>0)
@@ -3345,7 +3436,7 @@ public abstract class TestDatabase
 			}
 			if (command.length()>0)
 			{
-			    res.add(new Object[]{table1, command.toString(), parametersTable1Equallable, expectedCommand.toString(), expectedParameters});
+			    res.add(new Object[]{table1, command.toString(), parametersTable1Equallable, expectedCommand.toString(), expectedParameters, table1, record, new Boolean(expectedTestResult.get())});
 			}
 		    }
 		}
@@ -3364,14 +3455,6 @@ public abstract class TestDatabase
 	return resO;
     }
     
-    
-    
-    //@DataProvider(name = "interpreterCommandsVerifProvider", parallel = true)
-    public Object[][] interpreterCommandsVerifProvider()
-    {
-	//TODO complete
-	return null;
-    }
 
     //@Test(dependsOnMethods={"setAutoRandomFields"}, dataProvider = "interpreterCommandsProvider") 
     public <T extends DatabaseRecord> void testIsConcernedInterpreterFunction(Table<T> table, T record, String command, Map<String, Object> parameters, boolean expectedBoolean) throws DatabaseException
@@ -3382,11 +3465,11 @@ public abstract class TestDatabase
     
     
     @Test(dependsOnMethods={"firstLoad"}, dataProvider = "interpreterCommandsProvider") 
-    public void testCommandTranslatorInterpreter(Table<?> table, String command, Map<String, Object> parameters, String expectedSqlCommand, Map<Integer, Object> expectedSqlParameters) throws DatabaseException
+    public void testCommandTranslatorInterpreter(Table<?> table, String command, Map<String, Object> parameters, String expectedSqlCommand, Map<Integer, Object> expectedSqlParameters, Table1 table1, Table1.Record record, boolean expectedTestResult) throws DatabaseException
     {
 	HashMap<Integer, Object> sqlParameters=new HashMap<>();
-	
-	String sqlCommand=Interpreter.getRuleInstance(command).translateToSqlQuery(table, parameters, sqlParameters).toString();
+	RuleInstance rule=Interpreter.getRuleInstance(command);
+	String sqlCommand=rule.translateToSqlQuery(table, parameters, sqlParameters).toString();
 	Assert.assertEquals(sqlCommand, expectedSqlCommand);
 	for (Map.Entry<Integer, Object> e : sqlParameters.entrySet())
 	{
@@ -3396,6 +3479,7 @@ public abstract class TestDatabase
 		throw new NullPointerException();
 	    Assert.assertEquals(e.getValue(), expectedSqlParameters.get(e.getKey()), "Class type source "+e.getValue().getClass());
 	}
+	Assert.assertEquals(rule.isConcernedBy(table1, parameters, record), expectedTestResult);
     }
     
     
