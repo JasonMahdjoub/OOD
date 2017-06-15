@@ -224,15 +224,32 @@ public abstract class TestDecentralizedDatabase
     {
 	unloadDatabase();
 	db1=new Database(getDatabaseWrapperInstance1());
-	loadDatabase(db1);
 	db2=new Database(getDatabaseWrapperInstance2());
-	loadDatabase(db2);
 	db3=new Database(getDatabaseWrapperInstance3());
-	loadDatabase(db3);
 	listDatabase.add(db1);
 	listDatabase.add(db2);
 	listDatabase.add(db3);
+	for (Database db : listDatabase)
+	{
+	    loadDatabase(db);
+	    initDatabase(db);
+	}
     }
+    
+    private void initDatabase(Database db) throws DatabaseException
+    {
+	db.getDbwrapper().getSynchronizer().addHookForLocalDatabaseHost(db.getHostID(), TableAlone.class.getPackage());
+	for (Database otherdb : listDatabase)
+	{
+	    if (otherdb!=db)
+	    {
+		db.getDbwrapper().getSynchronizer().addHookForDistantHost(otherdb.getHostID(), TableAlone.class.getPackage());
+	    }
+	}
+    }
+    
+    
+    
     
     public void unloadDatabase1()
     {
@@ -391,7 +408,56 @@ public abstract class TestDecentralizedDatabase
 	}
     }
     
+    private void connect(Database db) throws DatabaseException, ClassNotFoundException, IOException
+    {
+	if (!db.isConnected())
+	{
+	    db.getDbwrapper().getSynchronizer().initLocalHostID(db.getHostID());
+	    for (Database otherdb : listDatabase)
+	    {
+		if (otherdb!=db && otherdb.isConnected())
+		{
+		    db.getDbwrapper().getSynchronizer().initHook(otherdb.getHostID(), otherdb.getDbwrapper().getSynchronizer().getLastValidatedSynchronization(db.getHostID()));
+		    otherdb.getDbwrapper().getSynchronizer().initHook(db.getHostID(), db.getDbwrapper().getSynchronizer().getLastValidatedSynchronization(otherdb.getHostID()));
+		}
+	    }
+	    db.setConnected(true);
+	    
+	    exchangeMessages();
+	    
+	    
+	}
+    }
     
+    private void connectAllDatabase() throws ClassNotFoundException, DatabaseException, IOException
+    {
+	for (Database db : listDatabase)
+	{
+	    connect(db);
+	}
+    }
+    
+    private void disconnect(Database db) throws DatabaseException, ClassNotFoundException, IOException
+    {
+	if (db.isConnected())
+	{
+	    db.setConnected(false);
+	    db.getDbwrapper().getSynchronizer().deconnectHook(db.getHostID());
+	    for (Database dbother : listDatabase)
+	    {
+		if (dbother!=db && dbother.isConnected())
+		    dbother.getDbwrapper().getSynchronizer().deconnectHook(db.getHostID());
+	    }
+	    exchangeMessages();
+	}
+    }
+    private void disconnectAllDatabase() throws ClassNotFoundException, DatabaseException, IOException
+    {
+	for (Database db : listDatabase)
+	{
+	    disconnect(db);
+	}
+    }
     
 }
 

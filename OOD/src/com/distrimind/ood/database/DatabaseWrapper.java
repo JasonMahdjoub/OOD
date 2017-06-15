@@ -405,12 +405,25 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	    getHooksTransactionsTable().removeHooks(hostID, databasePackages);
 	}
 	
+	public long getLastValidatedSynchronization(AbstractDecentralizedID hostID) throws DatabaseException
+	{
+	    synchronized(this)
+	    {
+		DatabaseHooksTable.Record r=initializedHooks.get(hostID);
+		if (r==null)
+		    throw DatabaseException.getDatabaseException(new IllegalArgumentException("The host ID "+hostID+" has not been initialized !"));
+
+		return r.getLastValidatedDistantTransaction();
+	    }
+	}
+	
 	public void validateLastSynchronization(AbstractDecentralizedID hostID, long lastTransferedTransactionID) throws DatabaseException
 	{
 	    if (hostID==null)
 		throw new NullPointerException("hostID");
 	    if (!isInitialized())
 		throw new DatabaseException("The Synchronizer must be initialized (initLocalHostID function) !");
+	    
 	    synchronized(this)
 	    {
 		DatabaseHooksTable.Record r=initializedHooks.get(hostID);
@@ -479,13 +492,34 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	    
 	    synchronized(this)
 	    {
-		if (initializedHooks.remove(hostID)==null)
+		DatabaseHooksTable.Record hook=initializedHooks.remove(hostID);
+		if (hook==null)
 		    throw DatabaseException.getDatabaseException(new IllegalAccessException("hostID "+hostID+" has not be initialized !"));
+		if (hook.concernsLocalDatabaseHost())
+		{
+		    initializedHooks.clear();
+		    this.events.clear();
+		}
+		else
+		{
+		    for (Iterator<DatabaseEvent> it=events.iterator();it.hasNext();)
+		    {
+			DatabaseEvent de=it.next();
+			if (de instanceof DatabaseEventToSend)
+			{
+			    DatabaseEventToSend des=(DatabaseEventToSend)de;
+			    if (des.getHostDestination().equals(hostID))
+				it.remove();
+			}
+		    }
+		}
 	    }
 	    
 	}
 	
-	public void initHook(final AbstractDecentralizedID hostID, final long lastValidatedTransacionID, DatabaseTransactionsIdentifiersToSynchronize lastTransactionFieldsBetweenDistantHosts) throws DatabaseException
+	
+	
+	public void initHook(final AbstractDecentralizedID hostID, final long lastValidatedTransacionID) throws DatabaseException
 	{
 	    if (hostID==null)
 		throw new NullPointerException("hostID");
@@ -531,8 +565,6 @@ public abstract class DatabaseWrapper implements AutoCloseable
 		}
 		initializedHooks.put(hostID, r);
 		validateLastSynchronization(hostID, lastValidatedTransacionID);
-		received(lastTransactionFieldsBetweenDistantHosts);
-		
 	    }
 	}
 	public void received(DatabaseTransactionsIdentifiersToSynchronize d) throws DatabaseException

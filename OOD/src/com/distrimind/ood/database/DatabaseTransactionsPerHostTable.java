@@ -50,6 +50,7 @@ import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.distrimind.ood.database.DatabaseWrapper.DatabaseNotifier;
 import com.distrimind.ood.database.annotations.ForeignKey;
@@ -282,7 +283,7 @@ class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsPerHost
 	else if (hooks.size()>1)
 	    throw new IllegalAccessError();
 	
-	final DatabaseHooksTable.Record fromHook=hooks.get(0);
+	final AtomicReference<DatabaseHooksTable.Record> fromHook=new AtomicReference<>(hooks.get(0));
 	try(ObjectInputStream ois=new ObjectInputStream(inputStream))
 	{
 	    byte next=ois.readByte();
@@ -355,7 +356,7 @@ class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsPerHost
 			    {
 				drOld=t.getRecord(mapKeys);
 			    }
-			    HashSet<DatabaseTransactionEventsTable.Record> r=detectCollisionAndRemoveObsoleteEvents(fromHook.getHostID(), tableName, spks);
+			    HashSet<DatabaseTransactionEventsTable.Record> r=detectCollisionAndRemoveObsoleteEvents(fromHook.get().getHostID(), tableName, spks);
 			    if (r==null)
 			    {
 				validatedTransaction=false;
@@ -363,7 +364,7 @@ class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsPerHost
 				{
 				    if (indirectTransactionRead)
 				    {
-					notifier.indirectCollisionDetected(directPeerID, type, t, mapKeys, drNew, drOld, fromHook.getHostID());
+					notifier.indirectCollisionDetected(directPeerID, type, t, mapKeys, drNew, drOld, fromHook.get().getHostID());
 				    }
 				    else
 					notifier.directCollisionDetected(directPeerID, type, t, mapKeys, drNew, drOld);
@@ -422,7 +423,7 @@ class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsPerHost
 				    {
 					removeObsoleteEvents(toRemove);
 					oos.flush();
-					DatabaseDistantTransactionEvent.Record ddte=new DatabaseDistantTransactionEvent.Record(dte.getID(), getIDTable().getLastTransactionID(), fromHook, baos.toByteArray());
+					DatabaseDistantTransactionEvent.Record ddte=new DatabaseDistantTransactionEvent.Record(dte.getID(), getIDTable().getLastTransactionID(), fromHook.get(), baos.toByteArray());
 					if (getDatabaseHooksTable().isConcernedByIndirectTransaction(ddte))
 					{
 					    getDatabaseDistantTransactionEvent().addRecord(ddte);
@@ -445,6 +446,9 @@ class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsPerHost
 						    break;
 					    }
 					}
+					fromHook.set(getDatabaseHooksTable().getRecord("id", new Integer(fromHook.get().getID())));
+					fromHook.get().setLastValidatedDistantTransaction(dte.getID());
+					getDatabaseHooksTable().updateRecord(fromHook.get());
 					
 					return null;
 				    }

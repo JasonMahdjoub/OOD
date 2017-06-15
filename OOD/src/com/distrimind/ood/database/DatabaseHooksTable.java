@@ -84,6 +84,9 @@ class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 	@Field
 	private long lastValidatedTransaction=-1;
 	
+	@Field
+	private long lastValidatedDistantTransaction=-1;
+	
 	@Override
 	public boolean equals(Object o)
 	{
@@ -108,12 +111,24 @@ class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 	{
 	    return lastValidatedTransaction;
 	}
-
+	
 	void setLastValidatedTransaction(long _lastValidatedTransaction)
 	{
 	    lastValidatedTransaction = _lastValidatedTransaction;
 	}
 
+	long getLastValidatedDistantTransaction()
+	{
+	    return lastValidatedDistantTransaction;
+	}
+
+	void setLastValidatedDistantTransaction(long _lastValidatedDistantTransaction) throws DatabaseException
+	{
+	    if (this.lastValidatedDistantTransaction>_lastValidatedDistantTransaction)
+		throw DatabaseException.getDatabaseException(new IllegalArgumentException("The host "+this.getHostID()+" can't valid a transaction (N°"+_lastValidatedDistantTransaction+") lower than the last validated transaction : "+this.lastValidatedDistantTransaction));
+	    this.lastValidatedDistantTransaction=_lastValidatedDistantTransaction;
+	}
+	
 	int getID()
 	{
 	    return id;
