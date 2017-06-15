@@ -71,7 +71,7 @@ public class DateFieldAccessor extends FieldAccessor
 	if (!Date.class.isAssignableFrom(_field.getType()))
 	    throw new FieldDatabaseException("The field "+_field.getName()+" of the class "+_field.getDeclaringClass().getName()+" of type "+_field.getType()+" must be a Date type.");
 	sql_fields=new SqlField[1];
-	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), "TIMESTAMP", null, null);
+	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), "TIMESTAMP", null, null, isNotNull());
     }
     private static Class<?>[] getCompatibleClasses(Field field)
     {

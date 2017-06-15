@@ -81,10 +81,10 @@ import com.distrimind.util.ReadWriteLock;
 /**
  * This class represent a SqlJet database.
  * @author Jason Mahdjoub
- * @version 1.4
+ * @version 1.5
  * @since OOD 1.4
  */
-public abstract class DatabaseWrapper
+public abstract class DatabaseWrapper implements AutoCloseable
 {
     
     
@@ -544,7 +544,7 @@ public abstract class DatabaseWrapper
 	}
 	public void received(BigDatabaseEventToSend data, InputStream inputStream) throws DatabaseException
 	{
-	    data.inportFromInputStream(inputStream);
+	    data.inportFromInputStream(DatabaseWrapper.this, inputStream);
 	}
 	public void received(DatabaseEventToSend data) throws DatabaseException
 	{
@@ -635,7 +635,7 @@ public abstract class DatabaseWrapper
 	
     }
     
-    public class DatabaseEventsToSynchronize extends DatabaseEvent implements BigDatabaseEventToSend
+    public static class DatabaseEventsToSynchronize extends DatabaseEvent implements BigDatabaseEventToSend
     {
 	/**
 	 * 
@@ -669,25 +669,29 @@ public abstract class DatabaseWrapper
 	    return hostIDSource;
 	}
 	@Override
-	public void inportFromInputStream(final InputStream inputStream) throws DatabaseException
+	public void inportFromInputStream(DatabaseWrapper wrapper, final InputStream inputStream) throws DatabaseException
 	{
-	    getDatabaseTransactionsPerHostTable().alterDatabase(getHostSource(), inputStream);
+	    if (wrapper==null)
+		throw new NullPointerException("wrapper");
+	    wrapper.getDatabaseTransactionsPerHostTable().alterDatabase(getHostSource(), inputStream);
 	}
 	@Override
-	public boolean exportToOutputStream(final OutputStream outputStream) throws DatabaseException
+	public boolean exportToOutputStream(final DatabaseWrapper wrapper, final OutputStream outputStream) throws DatabaseException
 	{
+	    if (wrapper==null)
+		throw new NullPointerException("wrapper");
 	    if (maxEventsRecords==0)
 		return false;
-	    return ((Boolean)runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
+	    return ((Boolean)wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
 
 		@Override
 		public Boolean run() throws Exception
 		{
-		    int number=getDatabaseTransactionsPerHostTable().exportTransactions(outputStream, hookID, maxEventsRecords);
+		    int number=wrapper.getDatabaseTransactionsPerHostTable().exportTransactions(outputStream, hookID, maxEventsRecords);
 		    if (number==0)
 		    {
-			hook.setLastValidatedTransaction(getTransactionIDTable().getLastTransactionID());
-			getHooksTransactionsTable().updateRecord(hook);
+			hook.setLastValidatedTransaction(wrapper.getTransactionIDTable().getLastTransactionID());
+			wrapper.getHooksTransactionsTable().updateRecord(hook);
 		    }
 		    return new Boolean(number>0);
 		}
@@ -829,6 +833,7 @@ public abstract class DatabaseWrapper
     {
 	return closed;
     }
+    @Override
     public final void close() 
     {
 	if (!closed)

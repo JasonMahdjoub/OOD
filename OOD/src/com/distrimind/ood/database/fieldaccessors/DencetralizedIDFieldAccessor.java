@@ -69,8 +69,8 @@ public class DencetralizedIDFieldAccessor extends FieldAccessor
     {
 	super(_sql_connection, _field,parentFieldName, compatibleClasses, table_class);
 	sql_fields=new SqlField[2];
-	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName()+"_ts", DatabaseWrapperAccessor.getLongType(sql_connection), null, null);
-	sql_fields[1]=new SqlField(table_name+"."+this.getFieldName()+"_widseq", DatabaseWrapperAccessor.getLongType(sql_connection), null, null);
+	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName()+"_ts", DatabaseWrapperAccessor.getLongType(sql_connection), null, null, isNotNull());
+	sql_fields[1]=new SqlField(table_name+"."+this.getFieldName()+"_widseq", DatabaseWrapperAccessor.getLongType(sql_connection), null, null, isNotNull());
     }
     
     private static final Class<?> compatibleClasses[];

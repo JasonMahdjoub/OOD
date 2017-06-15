@@ -76,7 +76,10 @@ public class SqlField
 	 */
 	public final String short_pointed_field;
 	
-	
+	/**
+	 * Tells if this field is not null
+	 */
+	public final boolean not_null;
 	
 	public int sql_position=-1;
 	/**
@@ -85,8 +88,9 @@ public class SqlField
 	 * @param _type the type of the Sql field.
 	 * @param _pointed_field The name of the pointed Sql field, if this field is a foreign key
 	 * @param _pointed_table The name of the pointed Sql table, if this field is a foreign key
+	 * @param _not_null tells if the field is not null
 	 */
-	public SqlField(String _field, String _type, String _pointed_table, String _pointed_field)
+	public SqlField(String _field, String _type, String _pointed_table, String _pointed_field, boolean _not_null)
 	{
 	    field=_field.toUpperCase();
 	    type=_type.toUpperCase();
@@ -125,5 +129,6 @@ public class SqlField
 	    }
 	    else
 		short_pointed_field=null;
+	    this.not_null=_not_null;
 	}
 }

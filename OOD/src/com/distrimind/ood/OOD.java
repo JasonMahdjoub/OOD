@@ -61,7 +61,7 @@ public class OOD
 	c1.set(2013, 3, 1);
 	Calendar c2=Calendar.getInstance();
 	c2.set(2017, 5, 1);
-	VERSION=new Version("Object Oriented Database", "OOD", 2, 0, 0, Version.Type.Beta, 3, c1.getTime(), c2.getTime());
+	VERSION=new Version("Object Oriented Database", "OOD", 2, 0, 0, Version.Type.Beta, 4, c1.getTime(), c2.getTime());
 	try
 	{
 	    InputStream is=OOD.class.getResourceAsStream("build.txt");
@@ -72,8 +72,15 @@ public class OOD
 	    VERSION.addDeveloper(new PersonDeveloper("mahdjoub", "jason", c.getTime()));
 	
 	    c=Calendar.getInstance();
+	    c.set(2017, 5, 14);
+	    Description d=new Description(2,0,0,Version.Type.Beta, 4, c.getTime());
+	    d.addItem("Debugging SQL interpreter.");
+	    d.addItem("Adding not null possibility for each sub field.");
+	    VERSION.addDescription(d);
+
+	    c=Calendar.getInstance();
 	    c.set(2017, 5, 1);
-	    Description d=new Description(2,0,0,Version.Type.Beta, 3, c.getTime());
+	    d=new Description(2,0,0,Version.Type.Beta, 3, c.getTime());
 	    d.addItem("Adding database factory.");
 	    d.addItem("Correcting a bug in database connections/deconnections.");
 	    d.addItem("Updating Utils to 2.8.0.");

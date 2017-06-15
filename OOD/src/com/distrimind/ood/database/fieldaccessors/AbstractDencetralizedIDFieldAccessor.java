@@ -78,7 +78,7 @@ public class AbstractDencetralizedIDFieldAccessor extends FieldAccessor
     {
 	super(_sql_connection, _field,parentFieldName, compatibleClasses, table_class);
 	sql_fields=new SqlField[1];
-	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), DatabaseWrapperAccessor.isVarBinarySupported(sql_connection)?"VARBINARY(70)":DatabaseWrapperAccessor.getBigIntegerType(sql_connection), null, null);
+	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), DatabaseWrapperAccessor.isVarBinarySupported(sql_connection)?"VARBINARY(70)":DatabaseWrapperAccessor.getBigIntegerType(sql_connection), null, null, isNotNull());
 	isVarBinary=DatabaseWrapperAccessor.isVarBinarySupported(sql_connection);
     }
     

@@ -71,7 +71,7 @@ public class StringFieldAccessor extends FieldAccessor
     {
 	super(_sql_connection, _field, parentFieldName, compatible_classes, table_class);
 	sql_fields=new SqlField[1];
-	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), limit==0?"VARCHAR("+DatabaseWrapperAccessor.getVarCharLimit(sql_connection)+")":(limit<DatabaseWrapperAccessor.getVarCharLimit(sql_connection)?"VARCHAR("+limit+")":"CLOB("+limit+")"), null, null);
+	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), limit==0?"VARCHAR("+DatabaseWrapperAccessor.getVarCharLimit(sql_connection)+")":(limit<DatabaseWrapperAccessor.getVarCharLimit(sql_connection)?"VARCHAR("+limit+")":"CLOB("+limit+")"), null, null, isNotNull());
     }
 
     @Override

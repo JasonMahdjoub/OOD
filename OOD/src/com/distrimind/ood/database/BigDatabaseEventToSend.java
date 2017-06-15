@@ -50,7 +50,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 public interface BigDatabaseEventToSend extends DatabaseEventToSend
 {
     
-    public void inportFromInputStream(final InputStream inputStream) throws DatabaseException;
-    public boolean exportToOutputStream(final OutputStream outputStream) throws DatabaseException;
+    public void inportFromInputStream(DatabaseWrapper wrapper, final InputStream inputStream) throws DatabaseException;
+    public boolean exportToOutputStream(DatabaseWrapper wrapper, final OutputStream outputStream) throws DatabaseException;
     
 }

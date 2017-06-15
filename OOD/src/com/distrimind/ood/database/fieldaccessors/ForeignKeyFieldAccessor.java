@@ -121,7 +121,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
 		}
 		for (SqlField sf : fa.getDeclaredSqlFields())
 		{
-		    sql_fields.add(new SqlField(table_name+"."+this.getFieldName()+"__"+pointed_table.getName()+"_"+sf.short_field, sf.type, pointed_table.getName(), sf.field));
+		    sql_fields.add(new SqlField(table_name+"."+this.getFieldName()+"__"+pointed_table.getName()+"_"+sf.short_field, sf.type, pointed_table.getName(), sf.field, isNotNull()));
 		    
 		}
 	    }
@@ -259,7 +259,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
 		SqlFieldInstance linked_sql_field_instances[]=fa.getSqlFieldsInstances((Object)val);
 		for (SqlFieldInstance sfi : linked_sql_field_instances)
 		{
-		    res[i++]=new SqlFieldInstance(table_name+"."+this.getFieldName()+"__"+pointed_table.getName()+"_"+sfi.short_field, sfi.type, linked_table_name, sfi.field, sfi.instance);
+		    res[i++]=new SqlFieldInstance(table_name+"."+this.getFieldName()+"__"+pointed_table.getName()+"_"+sfi.short_field, sfi.type, linked_table_name, sfi.field, sfi.not_null, sfi.instance);
 		}
 	    }
 	}

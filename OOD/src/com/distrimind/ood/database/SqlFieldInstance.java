@@ -42,7 +42,7 @@ package com.distrimind.ood.database;
 /**
  * This class represent a field description with its instance into the SqlJet database. The user should not use this class.
  * @author Jason Mahdjoub
- * @version 1.0
+ * @version 1.1
  */
 
 public class SqlFieldInstance extends SqlField
@@ -58,11 +58,12 @@ public class SqlFieldInstance extends SqlField
      * @param _type the type of the SqlJet field.
      * @param _pointed_field The name of the pointed Sql field, if this field is a foreign key
      * @param _pointed_table The name of the pointed SqlJet table, if this field is a foreign key
+     * @param _not_null tells if the field is not null
      * @param _instance The field instance
      */
-    public SqlFieldInstance(String _field, String _type, String _pointed_table, String _pointed_field, Object _instance)
+    public SqlFieldInstance(String _field, String _type, String _pointed_table, String _pointed_field, boolean _not_null, Object _instance)
     {
-	super(_field, _type, _pointed_table, _pointed_field);
+	super(_field, _type, _pointed_table, _pointed_field, _not_null);
 	instance=_instance;
     }
     /**
@@ -72,7 +73,7 @@ public class SqlFieldInstance extends SqlField
      */
     public SqlFieldInstance(SqlField _sql_field, Object _instance)
     {
-	super(_sql_field.field, _sql_field.type, _sql_field.pointed_table, _sql_field.pointed_field);
+	super(_sql_field.field, _sql_field.type, _sql_field.pointed_table, _sql_field.pointed_field, _sql_field.not_null);
 	instance=_instance;
     }
 
