@@ -48,15 +48,23 @@ import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 import com.distrimind.ood.database.BigDatabaseEventToSend;
 import com.distrimind.ood.database.DatabaseConfiguration;
 import com.distrimind.ood.database.DatabaseCreationCallable;
 import com.distrimind.ood.database.DatabaseEvent;
 import com.distrimind.ood.database.DatabaseEventToSend;
+import com.distrimind.ood.database.DatabaseEventType;
+import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.tests.decentralizeddatabase.TableAlone;
+import com.distrimind.ood.tests.decentralizeddatabase.TablePointed;
+import com.distrimind.ood.tests.decentralizeddatabase.TablePointing;
+import com.distrimind.ood.tests.decentralizeddatabase.UndecentralizableTableA1;
+import com.distrimind.ood.tests.decentralizeddatabase.UndecentralizableTableB1;
 import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.DecentralizedIDGenerator;
 
@@ -128,14 +136,49 @@ public abstract class TestDecentralizedDatabase
 	private final AbstractDecentralizedID hostID;
 	private final ArrayList<DatabaseEvent> localEvents;
 	private final LinkedList<DistantDatabaseEvent> eventsReceivedStack;
-	
-	Database(DatabaseWrapper dbwrapper)
+	private TableAlone tableAlone;
+	private TablePointed tablePointed;
+	private TablePointing tablePointing;
+	private UndecentralizableTableA1 undecentralizableTableA1;
+	private UndecentralizableTableB1 undecentralizableTableB1;
+
+	Database(DatabaseWrapper dbwrapper) throws DatabaseException
 	{
 	    this.dbwrapper=dbwrapper;
 	    connected=false;
 	    hostID=new DecentralizedIDGenerator();
 	    localEvents=new ArrayList<>();
 	    eventsReceivedStack=new LinkedList<>();
+	    tableAlone=(TableAlone)dbwrapper.getTableInstance(TableAlone.class);
+	    tablePointed=(TablePointed)dbwrapper.getTableInstance(TablePointed.class);
+	    tablePointing=(TablePointing)dbwrapper.getTableInstance(TablePointing.class);
+	    undecentralizableTableA1=(UndecentralizableTableA1)dbwrapper.getTableInstance(UndecentralizableTableA1.class);
+	    undecentralizableTableB1=(UndecentralizableTableB1)dbwrapper.getTableInstance(UndecentralizableTableB1.class);
+	}
+
+	public TableAlone getTableAlone()
+	{
+	    return tableAlone;
+	}
+
+	public TablePointed getTablePointed()
+	{
+	    return tablePointed;
+	}
+
+	public TablePointing getTablePointing()
+	{
+	    return tablePointing;
+	}
+
+	public UndecentralizableTableA1 getUndecentralizableTableA1()
+	{
+	    return undecentralizableTableA1;
+	}
+
+	public UndecentralizableTableB1 getUndecentralizableTableB1()
+	{
+	    return undecentralizableTableB1;
 	}
 
 	public boolean isConnected()
@@ -232,21 +275,10 @@ public abstract class TestDecentralizedDatabase
 	for (Database db : listDatabase)
 	{
 	    loadDatabase(db);
-	    initDatabase(db);
+	    //initDatabase(db);
 	}
     }
-    
-    private void initDatabase(Database db) throws DatabaseException
-    {
-	db.getDbwrapper().getSynchronizer().addHookForLocalDatabaseHost(db.getHostID(), TableAlone.class.getPackage());
-	for (Database otherdb : listDatabase)
-	{
-	    if (otherdb!=db)
-	    {
-		db.getDbwrapper().getSynchronizer().addHookForDistantHost(otherdb.getHostID(), TableAlone.class.getPackage());
-	    }
-	}
-    }
+
     
     
     
@@ -408,7 +440,7 @@ public abstract class TestDecentralizedDatabase
 	}
     }
     
-    private void connect(Database db) throws DatabaseException, ClassNotFoundException, IOException
+    private void connect(Database db, Database ... listDatabase) throws DatabaseException, ClassNotFoundException, IOException
     {
 	if (!db.isConnected())
 	{
@@ -429,15 +461,21 @@ public abstract class TestDecentralizedDatabase
 	}
     }
     
+    private void connectSelectedDatabase(Database ...listDatabase) throws ClassNotFoundException, DatabaseException, IOException
+    {
+	for (Database db : listDatabase)
+	    connect(db, listDatabase);
+    }
+    
     private void connectAllDatabase() throws ClassNotFoundException, DatabaseException, IOException
     {
 	for (Database db : listDatabase)
 	{
-	    connect(db);
+	    connect(db, (Database[])listDatabase.toArray());
 	}
     }
     
-    private void disconnect(Database db) throws DatabaseException, ClassNotFoundException, IOException
+    private void disconnect(Database db, Database ...listDatabase) throws DatabaseException, ClassNotFoundException, IOException
     {
 	if (db.isConnected())
 	{
@@ -451,13 +489,251 @@ public abstract class TestDecentralizedDatabase
 	    exchangeMessages();
 	}
     }
+    private void disconnectSelectedDatabase(Database ...listDatabase) throws ClassNotFoundException, DatabaseException, IOException
+    {
+	for (Database db : listDatabase)
+	    disconnect(db, listDatabase);
+    }
     private void disconnectAllDatabase() throws ClassNotFoundException, DatabaseException, IOException
     {
 	for (Database db : listDatabase)
 	{
-	    disconnect(db);
+	    disconnect(db, (Database[])listDatabase.toArray());
 	}
     }
+    
+    private void addTableAloneRecord(Database db) throws DatabaseException
+    {
+	TableAlone.Record ralone=new TableAlone.Record();
+	ralone.value="";
+	for (int i=0;i<10;i++)
+	{
+	    ralone.value+='a'+(Math.random()*52);
+	}
+	db.getTableAlone().addRecord(ralone);
+	
+    }
+    private void adUndecentralizableTableA1Record(Database db) throws DatabaseException
+    {
+	UndecentralizableTableA1.Record record=new UndecentralizableTableA1.Record();
+	record.value="";
+	for (int i=0;i<10;i++)
+	{
+	    record.value+='a'+(Math.random()*52);
+	}
+	db.getUndecentralizableTableA1().addRecord(record);
+    }
+    
+    private void adUndecentralizableTableB1Record(Database db) throws DatabaseException
+    {
+	UndecentralizableTableB1.Record record=new UndecentralizableTableB1.Record();
+	record.value="";
+	for (int i=0;i<10;i++)
+	{
+	    record.value+='a'+(Math.random()*52);
+	}
+	db.getUndecentralizableTableB1().addRecord(record);
+    }
+    private void addTablePointedAndPointingRecords(Database db) throws DatabaseException
+    {
+	TablePointed.Record rpointed=new TablePointed.Record();
+	rpointed.value="";
+	for (int i=0;i<10;i++)
+	{
+	    rpointed.value+='a'+(Math.random()*52);
+	}
+	db.getTablePointed().addRecord(rpointed);
+
+	TablePointing.Record rpointing1=new TablePointing.Record();
+	rpointing1.table2=null;
+	db.getTablePointing().addRecord(rpointing1);
+	TablePointing.Record rpointing2=new TablePointing.Record();
+	rpointing1.table2=rpointed;
+	db.getTablePointing().addRecord(rpointing2);
+    }
+    private void addElements(Database db) throws DatabaseException
+    {
+	addTableAloneRecord(db);
+	addTablePointedAndPointingRecords(db);
+	adUndecentralizableTableA1Record(db);
+	adUndecentralizableTableB1Record(db);
+    }
+    
+    private void addElements() throws DatabaseException
+    {
+	for (Database db : listDatabase)
+	    addElements(db);
+    }
+    
+    @Test
+    public void testAddFirstElements() throws DatabaseException
+    {
+	addElements();
+    }
+    
+    
+    @Test(dependsOnMethods={"testAddFirstElements"})
+    public void testInit() throws DatabaseException
+    {
+	for (Database db : listDatabase)
+	{
+	    db.getDbwrapper().getSynchronizer().addHookForLocalDatabaseHost(db.getHostID(), TablePointed.class.getPackage());
+	    Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized());
+	    for (Database other : listDatabase)
+	    {
+		if (other!=db)
+		    db.getDbwrapper().getSynchronizer().addHookForDistantHost(other.getHostID(), TablePointed.class.getPackage());
+	    }
+	}
+	
+	    
+    }
+    
+    @Test(dependsOnMethods={"testInit"})
+    public void testAllConnect() throws ClassNotFoundException, DatabaseException, IOException
+    {
+	
+	connectAllDatabase();
+	for (Database db : listDatabase)
+	{
+	    for (Database other : listDatabase)
+	    {
+		Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized(other.getHostID()));
+	    }
+	}
+    }
+    
+    
+    @Test(dependsOnMethods={"testAllConnect"})
+    public void testInitDatabaseNetwork() throws DatabaseException
+    {
+	for (Database db : listDatabase)
+	{
+	    db.getDbwrapper().getSynchronizer().addHookForLocalDatabaseHost(db.getHostID(), TablePointed.class.getPackage());
+	}
+    }
+    
+    @Test(dependsOnMethods={"testInitDatabaseNetwork"})
+    public void testAddSynchroBetweenDatabase() throws DatabaseException, ClassNotFoundException, IOException
+    {
+	for (Database db : listDatabase)
+	{
+	    for (Database otherdb : listDatabase)
+	    {
+		if (otherdb!=db)
+		{
+		    db.getDbwrapper().getSynchronizer().addHookForDistantHost(otherdb.getHostID(),TablePointed.class.getPackage());
+		    otherdb.getDbwrapper().getSynchronizer().addHookForDistantHost(db.getHostID(),TablePointed.class.getPackage());
+		}
+	    }
+	}
+	exchangeMessages();
+    }
+    
+    @Test(dependsOnMethods={"testAddSynchroBetweenDatabase"})
+    public void testOldElementsAddedBeforeAddingSynchroSynchronized()
+    {
+	
+    }
+    
+    @DataProvider(name = "provideDataForSynchroBetweenTwoPeers", parallel = false)
+    public Object[][] provideDataForSynchroBetweenTwoPeers()
+    {
+	return null;//TODO complete
+    }
+    
+    @Test(dataProvider = "provideDataForSynchroBetweenTwoPeers", dependsOnMethods={"testOldElementsAddedBeforeAddingSynchroSynchronized"})
+    public void testSynchroBetweenTwoPeers(boolean normalTransaction, boolean generateConflict, boolean peersInitiallyConnected, DatabaseEventType det, DatabaseRecord oldRecord, DatabaseRecord newRecord, boolean expectedSynchronized)
+    {
+	
+    }
+
+    @DataProvider(name = "provideDataSynchroBetweenThreePeers", parallel = false)
+    public Object[][] provideDataSynchroBetweenThreePeers()
+    {
+	return null;//TODO complete
+    }
+    
+    @Test(dataProvider = "provideDataSynchroBetweenThreePeers", dependsOnMethods={"testSynchroBetweenTwoPeers"})
+    public void testSynchroBetweenThreePeers(boolean normalTransaction, boolean generateConflict, boolean peersInitiallyConnected, DatabaseEventType det, DatabaseRecord oldRecord, DatabaseRecord newRecord, boolean expectedSynchronized)
+    {
+	
+    }
+    
+    
+    @DataProvider(name = "provideDataForIndirectSynchro", parallel = false)
+    public Object[][] provideDataForIndirectSynchro()
+    {
+	return null;//TODO complete
+    }
+    
+    @Test(dataProvider = "provideDataForIndirectSynchro", dependsOnMethods={"testSynchroBetweenThreePeers"})
+    public void testIndirectSynchro(boolean normalTransaction, boolean generateConflict, boolean peersInitiallyConnected, DatabaseEventType det, DatabaseRecord oldRecord, DatabaseRecord newRecord, boolean expectedSynchronized)
+    {
+	
+    }
+    @DataProvider(name = "provideDataForIndirectSynchroWithIndirectConnection", parallel = false)
+    public Object[][] provideDataForIndirectSynchroWithIndirectConnection()
+    {
+	return null;//TODO complete
+    }
+    
+    @Test(dataProvider = "provideDataForIndirectSynchroWithIndirectConnection", dependsOnMethods={"testIndirectSynchro"})
+    public void testIndirectSynchroWithIndirectConnection(boolean normalTransaction, boolean generateConflict, boolean peersInitiallyConnected, DatabaseEventType det, DatabaseRecord oldRecord, DatabaseRecord newRecord, boolean expectedSynchronized)
+    {
+	
+    }
+    
+    
+    @DataProvider(name = "provideDataForTransactionBetweenTwoPeers", parallel = true)
+    public Object[][] provideDataForTransactionBetweenTwoPeers()
+    {
+	return null;//TODO complete
+    }
+    
+    @Test(dataProvider = "provideDataForSynchroBetweenTwoPeers", dependsOnMethods={"testIndirectSynchroWithIndirectConnection"})
+    public void testTransactionBetweenTwoPeers(boolean normalTransaction, boolean generateOneConflict, boolean peersInitiallyConnected, int transactionNumber)
+    {
+	
+    }
+    
+    @DataProvider(name = "provideDataForSynchroBetweenTwoPeers", parallel = true)
+    public Object[][] provideDataForTransactionBetweenThreePeers()
+    {
+	return null;//TODO complete
+    }
+
+    @Test(dataProvider = "provideDataForTransactionBetweenThreePeers", dependsOnMethods={"testIndirectSynchroWithIndirectConnection"})
+    public void testTransactionBetweenThreePeers(boolean normalTransaction, boolean generateOneConflict, boolean peersInitiallyConnected, int transactionNumber)
+    {
+	
+    }
+    
+    @DataProvider(name = "provideDataForTransactionSynchros", parallel = true)
+    public Object[][] provideDataForTransactionSynchros()
+    {
+	return null;//TODO complete
+    }
+    
+    @Test(dataProvider = "provideDataForTransactionSynchros", dependsOnMethods={"testIndirectSynchroWithIndirectConnection"})
+    public void testTransactionSynchros(boolean normalTransaction, boolean generateOneConflict, boolean peersInitiallyConnected, int transactionNumber)
+    {
+	
+    }
+    
+    @DataProvider(name = "provideDataForTransactionSynchrosWithIndirectConnection", parallel = true)
+    public Object[][] provideDataForTransactionSynchrosWithIndirectConnection()
+    {
+	return null;//TODO complete
+    }
+
+    @Test(dataProvider = "provideDataForTransactionSynchrosWithIndirectConnection", dependsOnMethods={"testIndirectSynchroWithIndirectConnection"})
+    public void testTransactionSynchrosWithIndirectConnection(boolean normalTransaction, boolean generateOneConflict, boolean peersInitiallyConnected, int transactionNumber)
+    {
+	
+    }
+    
+    
     
 }
 

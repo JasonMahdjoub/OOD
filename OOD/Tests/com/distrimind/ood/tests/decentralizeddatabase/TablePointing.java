@@ -62,6 +62,6 @@ public class TablePointing extends Table<TablePointing.Record>
 	public AbstractDecentralizedID id;
 	
 	@Field
-	public TablePointing.Record table2;
+	public TablePointed.Record table2;
     }
 }

@@ -1,26 +1,26 @@
 ----------------------------------------------------------------
-Sat Jun 03 20:33:03 CEST 2017:
-Booting Derby version The Apache Software Foundation - Apache Derby - 10.11.1.1 - (1616546): instance a816c00e-015c-6f3b-6a1a-0000134dcb68 
-on database directory /home/jason/git_projects/OOD/OOD/databasetestDerby with class loader sun.misc.Launcher$AppClassLoader@677327b6 
-Loaded from file:/home/jason/git_projects/OOD/OOD/exports/OOD-Tests-2.0.0-Beta3_withDependencies.jar
+Wed Jun 14 10:15:14 GMT+01:00 2017:
+Amorçage de Derby version The Apache Software Foundation - Apache Derby - 10.11.1.1 - (1616546) : instance a816c00e-015c-a5e2-a873-000006adca00 
+dans le répertoire de base de données /home/jason/git_projects/OOD/OOD/databasetestDerby avec le chargeur de classe sun.misc.Launcher$AppClassLoader@31eeeaed
+Chargé de file:/home/jason/projets/db-derby/lib/derby.jar
 java.vendor=Oracle Corporation
-java.runtime.version=1.8.0_131-8u131-b11-0ubuntu1.16.04.2-b11
+java.runtime.version=1.7.0_95-b00
 user.dir=/home/jason/git_projects/OOD/OOD
 os.name=Linux
 os.arch=amd64
-os.version=4.4.0-78-generic
+os.version=4.4.0-79-generic
 derby.system.home=null
-Database Class Loader started - derby.database.classpath=''
+Chargeur de classe de la base de données démarré - derby.database.classpath = ''
 ----------------------------------------------------------------
-Sat Jun 03 20:34:43 CEST 2017:
-Booting Derby version The Apache Software Foundation - Apache Derby - 10.11.1.1 - (1616546): instance 3d644262-015c-6f3b-6a1a-0000134dcb68 
-on database directory /home/jason/git_projects/OOD/OOD/databasetestDerbyb with class loader sun.misc.Launcher$AppClassLoader@677327b6 
-Loaded from file:/home/jason/git_projects/OOD/OOD/exports/OOD-Tests-2.0.0-Beta3_withDependencies.jar
+Wed Jun 14 10:15:23 GMT+01:00 2017:
+Amorçage de Derby version The Apache Software Foundation - Apache Derby - 10.11.1.1 - (1616546) : instance 3d644262-015c-a5e2-a873-000006adca00 
+dans le répertoire de base de données /home/jason/git_projects/OOD/OOD/databasetestDerbyb avec le chargeur de classe sun.misc.Launcher$AppClassLoader@31eeeaed
+Chargé de file:/home/jason/projets/db-derby/lib/derby.jar
 java.vendor=Oracle Corporation
-java.runtime.version=1.8.0_131-8u131-b11-0ubuntu1.16.04.2-b11
+java.runtime.version=1.7.0_95-b00
 user.dir=/home/jason/git_projects/OOD/OOD
 os.name=Linux
 os.arch=amd64
-os.version=4.4.0-78-generic
+os.version=4.4.0-79-generic
 derby.system.home=null
-Database Class Loader started - derby.database.classpath=''
+Chargeur de classe de la base de données démarré - derby.database.classpath = ''

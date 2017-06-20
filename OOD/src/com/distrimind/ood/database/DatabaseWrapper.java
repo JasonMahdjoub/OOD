@@ -318,6 +318,11 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	{
 	    return getHooksTransactionsTable().getLocalDatabaseHost()!=null;
 	}
+	
+	public boolean isInitialized(AbstractDecentralizedID hostID)
+	{
+	    return initializedHooks.get(hostID)!=null;
+	}
 	private void notifyNewEvent()
 	{
 	    boolean notify=false;
