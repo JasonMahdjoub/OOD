@@ -115,18 +115,26 @@ public abstract class DatabaseWrapper implements AutoCloseable
     private final HashSet<Package> transactionPackages=new HashSet<>();
     private byte transactionTypes=0;
     private final DatabaseSynchronizer synchronizer=new DatabaseSynchronizer();
-    protected int maxEventsRecords=1000;
+    protected volatile int maxEventsToSynchronizeAtTheSameTime=1000;
     protected Database actualDatabaseLoading=null;
     
     
-    public int getMaxEventsRecords()
+    /**
+     * Gets the max number of events sent to a distant peer at the same time
+     * @return the max number of events sent to a distant peer at the same time
+     */
+    public int getMaxEventsToSynchronizeAtTheSameTime()
     {
-        return maxEventsRecords;
+        return maxEventsToSynchronizeAtTheSameTime;
     }
 
-    public void setMaxEventsRecords(int _maxEventsRecords)
+    /**
+     * Set the max number of events sent to a distant peer at the same time
+     * @param maxEventsToSynchronizeAtTheSameTime the max number of events
+     */
+    public void setMaxEventsToSynchronizeAtTheTime(int maxEventsToSynchronizeAtTheSameTime)
     {
-        maxEventsRecords = _maxEventsRecords;
+        this.maxEventsToSynchronizeAtTheSameTime = maxEventsToSynchronizeAtTheSameTime;
     }
 
 
@@ -166,12 +174,22 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	
     }
     
-    public void setMaxTransactionsEventsKeepedIntoMemory(int v)
+    /**
+     * Set the maximum number of events keeped into memory during the current transaction.
+     * If this maximum is reached, the transaction is stored into the disk
+     * @param v the maximum number of events keeped into memory 
+     */
+    public void setMaxTransactionEventsKeepedIntoMemory(int v)
     {
 	this.maxTransactionsEventsKeepedIntoMemory=v;
     }
     
-    public int getMaxTransactionsEventsKeepedIntoMemory()
+    /**
+     * Gets the maximum number of events keeped into memory during the current transaction.
+     * If this maximum is reached, the transaction is stored into the disk
+     * @return  the maximum number of events keeped into memory during the current transaction.
+     */
+    public int getMaxTransactionEventsKeepedIntoMemory()
     {
 	return this.maxTransactionsEventsKeepedIntoMemory;
     }
@@ -439,7 +457,7 @@ public abstract class DatabaseWrapper implements AutoCloseable
 		getDatabaseTransactionsPerHostTable().validateTransactions(r, lastTransferedTransactionID);
 		long lastID=getTransactionIDTable().getLastTransactionID();
 		if (lastID>r.getLastValidatedTransaction())
-		    addNewDatabaseEvent(new DatabaseEventsToSynchronize(getHooksTransactionsTable().getLocalDatabaseHost().getHostID(), r, lastID, maxEventsRecords));
+		    addNewDatabaseEvent(new DatabaseEventsToSynchronize(getHooksTransactionsTable().getLocalDatabaseHost().getHostID(), r, lastID, maxEventsToSynchronizeAtTheSameTime));
 		
 		Map<AbstractDecentralizedID, Long> lastIds=getHooksTransactionsTable().getLastValidatedDistantTransactions();
 		
@@ -590,14 +608,12 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	}
     }
     
-    public static abstract class DatabaseNotifier
+    public static interface DatabaseNotifier
     {
-	public abstract void newDatabaseEventDetected(DatabaseWrapper wrapper);
-	public abstract void newRecordToAddFailed(Table<?> concernedTable, DatabaseRecord concernedRecord, DatabaseException e);
-	public abstract void recordToRemoveNotFound(Table<?> concernedTable, Map<String, Object> primary_keys);
-	public abstract void recordToRemoveFailed(Table<?> concernedTable, Map<String, Object> primary_keys, DatabaseException e);
-	public abstract void recordToUpdateNotFound(Table<?> concernedTable, Map<String, Object> primary_keys);
-	public abstract void recordToUpdateFailed(Table<?> concernedTable, Map<String, Object> primary_keys, DatabaseException e);
+	public void newDatabaseEventDetected(DatabaseWrapper wrapper);
+	
+	public void recordToRemoveNotFound(Table<?> concernedTable, Map<String, Object> primary_keys);
+	public void recordToUpdateNotFound(Table<?> concernedTable, Map<String, Object> primary_keys);
 	
 	/**
 	 * This function is called when a direct collision is detected during the synchronization process, when receiving data from a distant peer.
@@ -611,7 +627,7 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	 * @return true if the new event can replace the actual value and false if the actual value must replace the distant value.
 	 * @throws DatabaseException if a problem occurs
 	 */
-	public abstract boolean directCollisionDetected(AbstractDecentralizedID distantPeerID, DatabaseEventType type, Table<?> concernedTable, HashMap<String, Object> keys, DatabaseRecord newValues, DatabaseRecord actualValues) throws DatabaseException;
+	public boolean directCollisionDetected(AbstractDecentralizedID distantPeerID, DatabaseEventType type, Table<?> concernedTable, HashMap<String, Object> keys, DatabaseRecord newValues, DatabaseRecord actualValues) throws DatabaseException;
 	
 	/**
 	 * This function is called when an indirect collision is detected during the synchronization process, when receiving data from a distant peer.
@@ -627,7 +643,7 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	 * @return true if the new event can replace the actual value and false if the actual value must replace the distant value.
 	 * @throws DatabaseException if a problem occurs
 	 */
-	public abstract boolean indirectCollisionDetected(AbstractDecentralizedID distantPeerID, DatabaseEventType type, Table<?> concernedTable, HashMap<String, Object> keys, DatabaseRecord oldRecord, DatabaseRecord actualValues, AbstractDecentralizedID distantPeerInCollisionWithDataToSynchronize) throws DatabaseException;
+	public boolean indirectCollisionDetected(AbstractDecentralizedID distantPeerID, DatabaseEventType type, Table<?> concernedTable, HashMap<String, Object> keys, DatabaseRecord newValues, DatabaseRecord actualValues, AbstractDecentralizedID distantPeerInCollisionWithDataToSynchronize) throws DatabaseException;
 	
     }
     public static class DatabaseTransactionsIdentifiersToSynchronize extends DatabaseEvent implements DatabaseEventToSend
@@ -2178,6 +2194,25 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	    {
 		actualDatabaseLoading=null;
 	    }
+	}
+    }
+    
+    /**
+     * Gets the database configuration corresponding to the given package
+     * @param _package the package that's identify the database
+     * @return the database configuration corresponding to the given package
+     */
+    public DatabaseConfiguration getDatabaseConfiguration(Package _package)
+    {
+	if (_package==null)
+	    throw new NullPointerException();
+	try(ReadWriteLock.Lock lock=locker.getAutoCloseableWriteLock())
+	{
+	    Database db=sql_database.get(_package);
+	    if (db==null)
+		return null;
+	    else
+		return db.getConfiguration();
 	}
     }
     

@@ -61,6 +61,6 @@ public class UndecentralizableTableB1 extends Table<UndecentralizableTableB1.Rec
 	public AbstractDecentralizedID id;
 	
 	@Field
-	public String value;
+	public UndecentralizableTableA1.Record pointing;
     }
 }

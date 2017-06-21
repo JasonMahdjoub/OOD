@@ -42,7 +42,11 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -59,6 +63,9 @@ import com.distrimind.ood.database.DatabaseEventToSend;
 import com.distrimind.ood.database.DatabaseEventType;
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
+import com.distrimind.ood.database.SynchronizedTransaction;
+import com.distrimind.ood.database.Table;
+import com.distrimind.ood.database.TransactionIsolation;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.tests.decentralizeddatabase.TableAlone;
 import com.distrimind.ood.tests.decentralizeddatabase.TablePointed;
@@ -67,6 +74,7 @@ import com.distrimind.ood.tests.decentralizeddatabase.UndecentralizableTableA1;
 import com.distrimind.ood.tests.decentralizeddatabase.UndecentralizableTableB1;
 import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.DecentralizedIDGenerator;
+import com.distrimind.util.properties.DefaultXMLObjectParser.test;
 
 /**
  * 
@@ -129,31 +137,43 @@ public abstract class TestDecentralizedDatabase
 	}
     }
     
-    public class Database implements AutoCloseable
+    public class Database implements AutoCloseable, DatabaseWrapper.DatabaseNotifier
     {
 	private final DatabaseWrapper dbwrapper;
 	private boolean connected;
 	private final AbstractDecentralizedID hostID;
 	private final ArrayList<DatabaseEvent> localEvents;
-	private final LinkedList<DistantDatabaseEvent> eventsReceivedStack;
+	private final List<DistantDatabaseEvent> eventsReceivedStack;
 	private TableAlone tableAlone;
 	private TablePointed tablePointed;
 	private TablePointing tablePointing;
 	private UndecentralizableTableA1 undecentralizableTableA1;
 	private UndecentralizableTableB1 undecentralizableTableB1;
-
+	private boolean newDatabaseEventDetected=false;
+	private boolean replaceWhenDirectCollisionDetected=false;
+	private boolean replaceWhenIndirectCollisionDetected=false;
+	private DirectCollisionDetected directCollisionDetected=null;
+	private IndirectCollisionDetected indirectCollisionDetected=null;
+	private TablePointed.Record recordPointed=null;
+	private TablePointing.Record recordPointingNull=null, recordPointingNotNull=null;
+	private TableAlone.Record recordAlone=null;
+	private final List<Map<String, Object>> recordsToRemoveNotFound, recordsToUpdateNotFound;
+	
+	
 	Database(DatabaseWrapper dbwrapper) throws DatabaseException
 	{
 	    this.dbwrapper=dbwrapper;
 	    connected=false;
 	    hostID=new DecentralizedIDGenerator();
 	    localEvents=new ArrayList<>();
-	    eventsReceivedStack=new LinkedList<>();
+	    eventsReceivedStack=Collections.synchronizedList(new LinkedList<DistantDatabaseEvent>());
 	    tableAlone=(TableAlone)dbwrapper.getTableInstance(TableAlone.class);
 	    tablePointed=(TablePointed)dbwrapper.getTableInstance(TablePointed.class);
 	    tablePointing=(TablePointing)dbwrapper.getTableInstance(TablePointing.class);
 	    undecentralizableTableA1=(UndecentralizableTableA1)dbwrapper.getTableInstance(UndecentralizableTableA1.class);
 	    undecentralizableTableB1=(UndecentralizableTableB1)dbwrapper.getTableInstance(UndecentralizableTableB1.class);
+	    recordsToRemoveNotFound=Collections.synchronizedList(new ArrayList<Map<String, Object>>());
+	    recordsToUpdateNotFound=Collections.synchronizedList(new ArrayList<Map<String, Object>>());
 	}
 
 	public TableAlone getTableAlone()
@@ -214,16 +234,178 @@ public abstract class TestDecentralizedDatabase
 	{
 	    localEvents.clear();
 	    this.eventsReceivedStack.clear();
+	    newDatabaseEventDetected=false;
+	    indirectCollisionDetected=null;
+	    directCollisionDetected=null;
 	}
 	
-	public LinkedList<DistantDatabaseEvent> getReceivedDatabaseEvents()
+	public boolean isNewDatabaseEventDetected()
+	{
+	    return newDatabaseEventDetected;
+	}
+	
+	public List<DistantDatabaseEvent> getReceivedDatabaseEvents()
 	{
 	    return this.eventsReceivedStack;
+	}
+
+	@Override
+	public void newDatabaseEventDetected(DatabaseWrapper _wrapper)
+	{
+	    System.out.println("New database event detected ");
+	    newDatabaseEventDetected=true;
+	}
+
+
+
+	@Override
+	public boolean directCollisionDetected(AbstractDecentralizedID _distantPeerID, DatabaseEventType _type, Table<?> _concernedTable, HashMap<String, Object> _keys, DatabaseRecord _newValues, DatabaseRecord _actualValues) 
+	{
+	    directCollisionDetected=new DirectCollisionDetected(_distantPeerID, _type, _concernedTable, _keys, _newValues, _actualValues);
+	    return replaceWhenDirectCollisionDetected;
+	}
+
+	@Override
+	public boolean indirectCollisionDetected(AbstractDecentralizedID _distantPeerID, DatabaseEventType _type, Table<?> _concernedTable, HashMap<String, Object> _keys, DatabaseRecord _newValues, DatabaseRecord _actualValues, AbstractDecentralizedID _distantPeerInCollisionWithDataToSynchronize) 
+	{
+	    indirectCollisionDetected=new IndirectCollisionDetected(_distantPeerID, _type, _concernedTable, _keys, _newValues, _actualValues, _distantPeerInCollisionWithDataToSynchronize);
+	    return replaceWhenIndirectCollisionDetected;
+	}
+	
+	
+	public boolean isReplaceWhenDirectCollisionDetected()
+	{
+	    return replaceWhenDirectCollisionDetected;
+	}
+
+	public void setReplaceWhenDirectCollisionDetected(boolean _replaceWhenDirectCollisionDetected)
+	{
+	    replaceWhenDirectCollisionDetected = _replaceWhenDirectCollisionDetected;
+	}
+
+	public boolean isReplaceWhenIndirectCollisionDetected()
+	{
+	    return replaceWhenIndirectCollisionDetected;
+	}
+
+	public void setReplaceWhenIndirectCollisionDetected(boolean _replaceWhenIndirectCollisionDetected)
+	{
+	    replaceWhenIndirectCollisionDetected = _replaceWhenIndirectCollisionDetected;
+	}
+
+	public DirectCollisionDetected getDirectCollisionDetected()
+	{
+	    return directCollisionDetected;
+	}
+
+	public IndirectCollisionDetected getIndirectCollisionDetected()
+	{
+	    return indirectCollisionDetected;
+	}
+
+	public TablePointed.Record getRecordPointed()
+	{
+	    return recordPointed;
+	}
+
+	public void setRecordPointed(TablePointed.Record _recordPointed)
+	{
+	    recordPointed = _recordPointed;
+	}
+
+	public TablePointing.Record getRecordPointingNull()
+	{
+	    return recordPointingNull;
+	}
+	public TablePointing.Record getRecordPointingNotNull()
+	{
+	    return recordPointingNotNull;
+	}
+
+	public void setRecordPointingNull(TablePointing.Record _recordPointing)
+	{
+	    recordPointingNull = _recordPointing;
+	}
+	public void setRecordPointingNotNull(TablePointing.Record _recordPointing)
+	{
+	    recordPointingNotNull = _recordPointing;
+	}
+
+	public TableAlone.Record getRecordAlone()
+	{
+	    return recordAlone;
+	}
+
+	public void setRecordAlone(TableAlone.Record _recordAlone)
+	{
+	    recordAlone = _recordAlone;
+	}
+
+	@Override
+	public void recordToRemoveNotFound(Table<?> _concernedTable, Map<String, Object> _primary_keys)
+	{
+	    recordsToRemoveNotFound.add(_primary_keys);
+	}
+
+	@Override
+	public void recordToUpdateNotFound(Table<?> _concernedTable, Map<String, Object> _primary_keys)
+	{
+	    recordsToUpdateNotFound.add(_primary_keys);
+	}
+
+	public List<Map<String, Object>> getRecordsToRemoveNotFound()
+	{
+	    return recordsToRemoveNotFound;
+	}
+
+	public List<Map<String, Object>> getRecordsToUpdateNotFound()
+	{
+	    return recordsToUpdateNotFound;
+	}
+	
+    }
+    public static class DirectCollisionDetected
+    {
+	final AbstractDecentralizedID distantPeerID;
+	final DatabaseEventType type;
+	final Table<?> concernedTable;
+	final HashMap<String, Object> keys;
+	final DatabaseRecord newValues;
+	final DatabaseRecord actualValues;
+	public DirectCollisionDetected(AbstractDecentralizedID _distantPeerID, DatabaseEventType _type, Table<?> _concernedTable, HashMap<String, Object> _keys, DatabaseRecord _newValues, DatabaseRecord _actualValues)
+	{
+	    super();
+	    distantPeerID = _distantPeerID;
+	    type = _type;
+	    concernedTable = _concernedTable;
+	    keys = _keys;
+	    newValues = _newValues;
+	    actualValues = _actualValues;
 	}
 	
     }
     
-    
+    public static class IndirectCollisionDetected
+    {
+	final AbstractDecentralizedID distantPeerID;
+	final DatabaseEventType type;
+	final Table<?> concernedTable;
+	final HashMap<String, Object> keys;
+	final DatabaseRecord newValues;
+	final DatabaseRecord actualValues;
+	final AbstractDecentralizedID distantPeerInCollisionWithDataToSynchronize;
+	public IndirectCollisionDetected(AbstractDecentralizedID _distantPeerID, DatabaseEventType _type, Table<?> _concernedTable, HashMap<String, Object> _keys, DatabaseRecord _newValues, DatabaseRecord _actualValues, AbstractDecentralizedID _distantPeerInCollisionWithDataToSynchronize)
+	{
+	    super();
+	    distantPeerID = _distantPeerID;
+	    type = _type;
+	    concernedTable = _concernedTable;
+	    keys = _keys;
+	    newValues = _newValues;
+	    actualValues = _actualValues;
+	    distantPeerInCollisionWithDataToSynchronize = _distantPeerInCollisionWithDataToSynchronize;
+	}
+    }
     
     private volatile Database db1=null, db2=null, db3=null;
     private final ArrayList<Database> listDatabase=new ArrayList<>(3);
@@ -367,7 +549,10 @@ public abstract class TestDecentralizedDatabase
     {
 	for (Database db : listDatabase)
 	{
-	    db.clearPendingEvents();
+	    synchronized(db)
+	    {
+		db.clearPendingEvents();
+	    }
 	}
     }
     private void sendDistantDatabaseEvent(DistantDatabaseEvent event)
@@ -388,7 +573,7 @@ public abstract class TestDecentralizedDatabase
 	while (!db.getReceivedDatabaseEvents().isEmpty())
 	{
 	    changed=true;
-	    DistantDatabaseEvent dde=db.getReceivedDatabaseEvents().removeFirst();
+	    DistantDatabaseEvent dde=db.getReceivedDatabaseEvents().remove(0);
 	    DatabaseEventToSend event=dde.getDatabaseEventToSend();
 	    if (event instanceof BigDatabaseEventToSend)
 	    {
@@ -404,7 +589,10 @@ public abstract class TestDecentralizedDatabase
 	boolean changed=false;
 	for (Database db : listDatabase)
 	{
-	    changed|=checkMessages(db);
+	    synchronized(db)
+	    {
+		changed|=checkMessages(db);
+	    }
 	}
 	return changed;
     }
@@ -416,23 +604,26 @@ public abstract class TestDecentralizedDatabase
 	    loop=false;
 	    for (Database db : listDatabase)
 	    {
-		DatabaseEvent e=db.getDbwrapper().getSynchronizer().nextEvent();
-		if (e!=null)
+		synchronized(db)
 		{
-		    loop=true;
-		    if (e instanceof DatabaseEventToSend)
+		    DatabaseEvent e=db.getDbwrapper().getSynchronizer().nextEvent();
+		    if (e!=null)
 		    {
-			DatabaseEventToSend es=(DatabaseEventToSend)e;
-			if (db.isConnected())
+			loop=true;
+			if (e instanceof DatabaseEventToSend)
 			{
-			    sendDistantDatabaseEvent(new DistantDatabaseEvent(db.getDbwrapper(), es));
+			    DatabaseEventToSend es=(DatabaseEventToSend)e;
+			    if (db.isConnected())
+			    {
+				sendDistantDatabaseEvent(new DistantDatabaseEvent(db.getDbwrapper(), es));
+			    }
+			    else
+				Assert.fail();//TODO really ?
 			}
 			else
-			    Assert.fail();//TODO really ?
-		    }
-		    else
-		    {
-			db.getLocalEvents().add(e);
+			{
+			    db.getLocalEvents().add(e);
+			}
 		    }
 		}
 	    }
@@ -442,23 +633,27 @@ public abstract class TestDecentralizedDatabase
     
     private void connect(Database db, Database ... listDatabase) throws DatabaseException, ClassNotFoundException, IOException
     {
-	if (!db.isConnected())
+	boolean exchange=false;
+	synchronized(db)
 	{
-	    db.getDbwrapper().getSynchronizer().initLocalHostID(db.getHostID());
-	    for (Database otherdb : listDatabase)
+	    if (!db.isConnected())
 	    {
-		if (otherdb!=db && otherdb.isConnected())
+		db.getDbwrapper().getSynchronizer().initLocalHostID(db.getHostID());
+		for (Database otherdb : listDatabase)
 		{
-		    db.getDbwrapper().getSynchronizer().initHook(otherdb.getHostID(), otherdb.getDbwrapper().getSynchronizer().getLastValidatedSynchronization(db.getHostID()));
-		    otherdb.getDbwrapper().getSynchronizer().initHook(db.getHostID(), db.getDbwrapper().getSynchronizer().getLastValidatedSynchronization(otherdb.getHostID()));
+		    if (otherdb!=db && otherdb.isConnected())
+		    {
+			db.getDbwrapper().getSynchronizer().initHook(otherdb.getHostID(), otherdb.getDbwrapper().getSynchronizer().getLastValidatedSynchronization(db.getHostID()));
+			otherdb.getDbwrapper().getSynchronizer().initHook(db.getHostID(), db.getDbwrapper().getSynchronizer().getLastValidatedSynchronization(otherdb.getHostID()));
+		    }
 		}
+		db.setConnected(true);
+		exchange=true;
+		
 	    }
-	    db.setConnected(true);
-	    
-	    exchangeMessages();
-	    
-	    
 	}
+	if (exchange)
+	    exchangeMessages();
     }
     
     private void connectSelectedDatabase(Database ...listDatabase) throws ClassNotFoundException, DatabaseException, IOException
@@ -477,16 +672,19 @@ public abstract class TestDecentralizedDatabase
     
     private void disconnect(Database db, Database ...listDatabase) throws DatabaseException, ClassNotFoundException, IOException
     {
-	if (db.isConnected())
+	synchronized(db)
 	{
-	    db.setConnected(false);
-	    db.getDbwrapper().getSynchronizer().deconnectHook(db.getHostID());
-	    for (Database dbother : listDatabase)
+	    if (db.isConnected())
 	    {
-		if (dbother!=db && dbother.isConnected())
-		    dbother.getDbwrapper().getSynchronizer().deconnectHook(db.getHostID());
+		db.setConnected(false);
+		db.getDbwrapper().getSynchronizer().deconnectHook(db.getHostID());
+		for (Database dbother : listDatabase)
+		{
+		    if (dbother!=db && dbother.isConnected())
+			dbother.getDbwrapper().getSynchronizer().deconnectHook(db.getHostID());
+		}
+		exchangeMessages();
 	    }
-	    exchangeMessages();
 	}
     }
     private void disconnectSelectedDatabase(Database ...listDatabase) throws ClassNotFoundException, DatabaseException, IOException
@@ -502,7 +700,7 @@ public abstract class TestDecentralizedDatabase
 	}
     }
     
-    private void addTableAloneRecord(Database db) throws DatabaseException
+    private void addTableAloneRecord(Database db, boolean first) throws DatabaseException
     {
 	TableAlone.Record ralone=new TableAlone.Record();
 	ralone.value="";
@@ -511,30 +709,35 @@ public abstract class TestDecentralizedDatabase
 	    ralone.value+='a'+(Math.random()*52);
 	}
 	db.getTableAlone().addRecord(ralone);
-	
+	if (first)
+	    db.setRecordAlone(ralone);
     }
-    private void adUndecentralizableTableA1Record(Database db) throws DatabaseException
+    private void addUndecentralizableTableA1Record(Database db) throws DatabaseException
     {
 	UndecentralizableTableA1.Record record=new UndecentralizableTableA1.Record();
-	record.value="";
+	record.value=db.getHostID().toString();
 	for (int i=0;i<10;i++)
 	{
 	    record.value+='a'+(Math.random()*52);
 	}
 	db.getUndecentralizableTableA1().addRecord(record);
+	
     }
     
-    private void adUndecentralizableTableB1Record(Database db) throws DatabaseException
+    private void addUndecentralizableTableB1Record(Database db) throws DatabaseException
     {
-	UndecentralizableTableB1.Record record=new UndecentralizableTableB1.Record();
-	record.value="";
+	UndecentralizableTableA1.Record record=new UndecentralizableTableA1.Record();
+	record.value=db.getHostID().toString();
 	for (int i=0;i<10;i++)
 	{
 	    record.value+='a'+(Math.random()*52);
 	}
-	db.getUndecentralizableTableB1().addRecord(record);
+	db.getUndecentralizableTableA1().addRecord(record);
+	UndecentralizableTableB1.Record record2=new UndecentralizableTableB1.Record();
+	record2.pointing=record;
+	db.getUndecentralizableTableB1().addRecord(record2);
     }
-    private void addTablePointedAndPointingRecords(Database db) throws DatabaseException
+    private void addTablePointedAndPointingRecords(Database db, boolean first) throws DatabaseException
     {
 	TablePointed.Record rpointed=new TablePointed.Record();
 	rpointed.value="";
@@ -550,13 +753,18 @@ public abstract class TestDecentralizedDatabase
 	TablePointing.Record rpointing2=new TablePointing.Record();
 	rpointing1.table2=rpointed;
 	db.getTablePointing().addRecord(rpointing2);
+	if (first)
+	{
+	    db.setRecordPointingNull(rpointing1);
+	    db.setRecordPointingNotNull(rpointing1);
+	}
     }
     private void addElements(Database db) throws DatabaseException
     {
-	addTableAloneRecord(db);
-	addTablePointedAndPointingRecords(db);
-	adUndecentralizableTableA1Record(db);
-	adUndecentralizableTableB1Record(db);
+	addTableAloneRecord(db, true);
+	addTablePointedAndPointingRecords(db, true);
+	addUndecentralizableTableA1Record(db);
+	addUndecentralizableTableB1Record(db);
     }
     
     private void addElements() throws DatabaseException
@@ -577,8 +785,12 @@ public abstract class TestDecentralizedDatabase
     {
 	for (Database db : listDatabase)
 	{
+	    db.getDbwrapper().getSynchronizer().setNotifier(db);
+	    db.getDbwrapper().setMaxEventsToSynchronizeAtTheTime(5);
+	    db.getDbwrapper().setMaxTransactionEventsKeepedIntoMemory(3);
 	    db.getDbwrapper().getSynchronizer().addHookForLocalDatabaseHost(db.getHostID(), TablePointed.class.getPackage());
 	    Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized());
+	    
 	    for (Database other : listDatabase)
 	    {
 		if (other!=db)
@@ -594,6 +806,7 @@ public abstract class TestDecentralizedDatabase
     {
 	
 	connectAllDatabase();
+	exchangeMessages();
 	for (Database db : listDatabase)
 	{
 	    for (Database other : listDatabase)
@@ -604,16 +817,17 @@ public abstract class TestDecentralizedDatabase
     }
     
     
-    @Test(dependsOnMethods={"testAllConnect"})
+    /*@Test(dependsOnMethods={"testAllConnect"})
     public void testInitDatabaseNetwork() throws DatabaseException
     {
 	for (Database db : listDatabase)
 	{
+	    
 	    db.getDbwrapper().getSynchronizer().addHookForLocalDatabaseHost(db.getHostID(), TablePointed.class.getPackage());
 	}
-    }
+    }*/
     
-    @Test(dependsOnMethods={"testInitDatabaseNetwork"})
+    /*@Test(dependsOnMethods={"testInit"})
     public void testAddSynchroBetweenDatabase() throws DatabaseException, ClassNotFoundException, IOException
     {
 	for (Database db : listDatabase)
@@ -628,12 +842,89 @@ public abstract class TestDecentralizedDatabase
 	    }
 	}
 	exchangeMessages();
-    }
+    }*/
     
-    @Test(dependsOnMethods={"testAddSynchroBetweenDatabase"})
-    public void testOldElementsAddedBeforeAddingSynchroSynchronized()
+    private void testSynchronisation(Database db) throws DatabaseException
     {
 	
+	for (TableAlone.Record r : db.getTableAlone().getRecords())
+	{
+	    for (Database other : listDatabase)
+	    {
+		if (other!=db)
+		{
+		    TableAlone.Record otherR=other.getTableAlone().getRecord("id", r.id);
+		    Assert.assertNotNull(otherR);
+		    Assert.assertEquals(otherR.value, r.value);
+		}
+	    }
+	}
+	for (TablePointed.Record r : db.getTablePointed().getRecords())
+	{
+	    for (Database other : listDatabase)
+	    {
+		if (other!=db)
+		{
+		    TablePointed.Record otherR=other.getTablePointed().getRecord("id", r.id);
+		    Assert.assertNotNull(otherR);
+		    Assert.assertEquals(otherR.value, r.value);
+		}
+	    }
+	}
+	for (TablePointing.Record r : db.getTablePointing().getRecords())
+	{
+	    for (Database other : listDatabase)
+	    {
+		if (other!=db)
+		{
+		    TablePointing.Record otherR=other.getTablePointing().getRecord("id", r.id);
+		    Assert.assertNotNull(otherR);
+		    Assert.assertEquals(otherR.table2.value, r.table2.value);
+		}
+	    }
+	}
+	for (UndecentralizableTableA1.Record r : db.getUndecentralizableTableA1().getRecords())
+	{
+	    for (Database other : listDatabase)
+	    {
+		if (other!=db)
+		{
+		    UndecentralizableTableA1.Record otherR=other.getUndecentralizableTableA1().getRecord("id", new Integer(r.id));
+		    if (otherR!=null)
+		    {
+			Assert.assertNotEquals(otherR.value, r.value);
+		    }
+		}
+	    }
+	}
+	for (UndecentralizableTableB1.Record r : db.getUndecentralizableTableB1().getRecords())
+	{
+	    for (Database other : listDatabase)
+	    {
+		if (other!=db)
+		{
+		    UndecentralizableTableB1.Record otherR=other.getUndecentralizableTableB1().getRecord("id", r.id);
+		    if (otherR!=null)
+		    {
+			Assert.assertNotEquals(otherR.pointing.value, r.pointing.value);
+		    }
+		}
+	    }
+	}
+    }
+    
+    private void testSynchronisation() throws DatabaseException
+    {
+	for(Database db : listDatabase)
+	    testSynchronisation(db);
+    }
+    
+    @Test(dependsOnMethods={"testInit"})
+    public void testOldElementsAddedBeforeAddingSynchroSynchronized() throws DatabaseException, ClassNotFoundException, IOException
+    {
+	exchangeMessages();
+	testSynchronisation();
+	disconnectAllDatabase();
     }
     
     @DataProvider(name = "provideDataForSynchroBetweenTwoPeers", parallel = false)
@@ -642,22 +933,296 @@ public abstract class TestDecentralizedDatabase
 	return null;//TODO complete
     }
     
-    @Test(dataProvider = "provideDataForSynchroBetweenTwoPeers", dependsOnMethods={"testOldElementsAddedBeforeAddingSynchroSynchronized"})
-    public void testSynchroBetweenTwoPeers(boolean normalTransaction, boolean generateConflict, boolean peersInitiallyConnected, DatabaseEventType det, DatabaseRecord oldRecord, DatabaseRecord newRecord, boolean expectedSynchronized)
+    private void proceedEvent(final Table<DatabaseRecord> table, final DatabaseEventType det, final DatabaseRecord oldRecord, final DatabaseRecord newRecord, final boolean exceptionDuringTransaction) throws DatabaseException
     {
+	table.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
+
+	    @Override
+	    public Void run() throws Exception
+	    {
+		switch(det)
+		{
+		    case ADD:
+			table.addRecord(newRecord);
+			break;
+		    case REMOVE:
+			table.removeRecord(oldRecord);
+			break;
+		    case REMOVE_WITH_CASCADE:
+			table.removeRecordWithCascade(oldRecord);
+			break;
+		    case UPDATE:
+			table.updateRecord(oldRecord);
+			break;
+		}
+		if (exceptionDuringTransaction)
+		    throw new Exception();
+		return null;
+	    }
+
+	    @Override
+	    public TransactionIsolation getTransactionIsolation()
+	    {
+		return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+	    }
+
+	    @Override
+	    public boolean doesWriteData()
+	    {
+		return true;
+	    }
+	});
+    }
+    private void testEventSynchronized(Table<DatabaseRecord> table, DatabaseEventType det, DatabaseRecord oldRecord, DatabaseRecord newRecord, boolean synchronizedOk) throws DatabaseException
+    {
+	switch(det)
+	{
+	    case ADD:case UPDATE:
+	    {
+		DatabaseRecord dr=table.getRecord(newRecord);
+		Assert.assertEquals(table.equalsAllFields(dr, newRecord), synchronizedOk);
+		break;
+	    }
+	    case REMOVE:case REMOVE_WITH_CASCADE:
+	    {
+		DatabaseRecord dr=table.getRecord(oldRecord);
+		if (synchronizedOk)
+		    Assert.assertNull(dr);
+		break;
+	    }
+	}
+    }
+    
+    private void testDirectCollision(Database db, Table<DatabaseRecord> table, DatabaseEventType det, DatabaseRecord oldRecord, DatabaseRecord newRecord, DirectCollisionDetected collision) throws DatabaseException
+    {
+	Assert.assertNotNull(collision);
+	Assert.assertEquals(collision.type, det);
+	Assert.assertEquals(collision.concernedTable, table);
+	Assert.assertEquals(collision.distantPeerID, db.getHostID());
+	switch(det)
+	{
+	    case ADD:
+		Assert.assertNotNull(collision.actualValues);
+		Assert.assertNull(oldRecord);
+		Assert.assertTrue(table.equals(newRecord, collision.actualValues));
+		Assert.assertTrue(table.equalsAllFields(newRecord, collision.newValues));
+		break;
+	    case REMOVE:
+		
+		Assert.assertNotNull(oldRecord);
+		Assert.assertNull(newRecord);
+		Assert.assertNull(collision.newValues);
+		if (collision.actualValues!=null)
+		{
+		    Assert.assertTrue(table.equals(oldRecord, collision.actualValues));
+		}
+		break;
+	    case REMOVE_WITH_CASCADE:
+		Assert.assertNotNull(oldRecord);
+		Assert.assertNull(newRecord);
+		Assert.assertNull(collision.newValues);
+		Assert.assertNull(collision.actualValues);
+		break;
+	    case UPDATE:
+		Assert.assertNotNull(oldRecord);
+		Assert.assertNotNull(newRecord);
+		Assert.assertNotNull(collision.newValues);
+		Assert.assertNull(collision.actualValues);
+		break;
+	    
+	}
+    }
+    private void testIndirectCollision(Database db, Table<DatabaseRecord> table, DatabaseEventType det, DatabaseRecord oldRecord, DatabaseRecord newRecord, IndirectCollisionDetected collision) throws DatabaseException
+    {
+	Assert.assertNotNull(collision);
+	Assert.assertEquals(collision.type, det);
+	Assert.assertEquals(collision.concernedTable, table);
+	Assert.assertEquals(collision.distantPeerInCollisionWithDataToSynchronize, db.getHostID());
 	
+	switch(det)
+	{
+	    case ADD:
+		Assert.assertNotNull(collision.actualValues);
+		Assert.assertNull(oldRecord);
+		Assert.assertTrue(table.equals(newRecord, collision.actualValues));
+		Assert.assertTrue(table.equalsAllFields(newRecord, collision.newValues));
+		break;
+	    case REMOVE:
+		
+		Assert.assertNotNull(oldRecord);
+		Assert.assertNull(newRecord);
+		Assert.assertNull(collision.newValues);
+		if (collision.actualValues!=null)
+		{
+		    Assert.assertTrue(table.equals(oldRecord, collision.actualValues));
+		}
+		break;
+	    case REMOVE_WITH_CASCADE:
+		Assert.assertNotNull(oldRecord);
+		Assert.assertNull(newRecord);
+		Assert.assertNull(collision.newValues);
+		Assert.assertNull(collision.actualValues);
+		break;
+	    case UPDATE:
+		Assert.assertNotNull(oldRecord);
+		Assert.assertNotNull(newRecord);
+		Assert.assertNotNull(collision.newValues);
+		Assert.assertNull(collision.actualValues);
+		break;
+	    
+	}
+    }
+    
+    private void testSynchroBetweenPeers(int peersNumber, Class<? extends Table<?>> tableClass, boolean exceptionDuringTransaction, boolean generateDirectConflict, boolean replaceOldValueDuringConflict, boolean peersInitiallyConnected, DatabaseEventType det, DatabaseRecord oldRecord, DatabaseRecord newRecord) throws ClassNotFoundException, DatabaseException, IOException
+    {
+	if (peersNumber<2 || peersNumber>listDatabase.size())
+	    throw new IllegalArgumentException();
+	ArrayList<Database> l=new ArrayList<>(listDatabase.size());
+	for (int i=0;i<peersNumber;i++)
+	    l.add(listDatabase.get(i));
+	Database[] concernedDatabase=(Database[])l.toArray();
+	
+	    if (exceptionDuringTransaction)
+	    {
+		    if (peersInitiallyConnected)
+			connectSelectedDatabase(concernedDatabase);
+		
+		    Database db=concernedDatabase[0];
+		    @SuppressWarnings("unchecked")
+		    Table<DatabaseRecord> table=(Table<DatabaseRecord>)db.getDbwrapper().getTableInstance(tableClass);
+		    try
+		    {
+			proceedEvent(table, det, oldRecord, newRecord, true);
+			Assert.fail();
+		    }
+		    catch(Exception e)
+		    {
+			
+		    }
+
+		    if (!peersInitiallyConnected)
+			connectSelectedDatabase(concernedDatabase);
+		   
+		    exchangeMessages();
+
+		    for (int i=1;i<peersNumber;i++)
+		    {
+			 db=concernedDatabase[i];
+			 @SuppressWarnings("unchecked")
+			 Table<DatabaseRecord> tableother=(Table<DatabaseRecord>)db.getDbwrapper().getTableInstance(tableClass);
+			 Assert.assertFalse(db.isNewDatabaseEventDetected());
+			 testEventSynchronized(tableother, det, oldRecord, newRecord, false);
+		    }
+			
+		    
+		    disconnectSelectedDatabase(concernedDatabase);
+	    }
+	    else
+	    {
+	    
+		if (generateDirectConflict) 
+		{
+		    //TODO reconsider conflict when a third party is concerned
+		    //TODO reconsider conflict when two sides make different choices of conflict resolution 
+		    for (Database db : concernedDatabase)
+		    {
+			db.setReplaceWhenDirectCollisionDetected(replaceOldValueDuringConflict);
+			@SuppressWarnings("unchecked")
+			Table<DatabaseRecord> table=(Table<DatabaseRecord>)db.getDbwrapper().getTableInstance(tableClass);
+			proceedEvent(table, det, oldRecord, newRecord, false);
+		    }
+		    connectSelectedDatabase(concernedDatabase);
+		    exchangeMessages();
+		    for (Database db : concernedDatabase)
+		    {
+			@SuppressWarnings("unchecked")
+			Table<DatabaseRecord> table=(Table<DatabaseRecord>)db.getDbwrapper().getTableInstance(tableClass);
+			DirectCollisionDetected dcollision=db.getDirectCollisionDetected();
+			Assert.assertNull(db.getIndirectCollisionDetected());
+			testDirectCollision(db, table, det, oldRecord, newRecord, dcollision);
+			if (replaceOldValueDuringConflict)
+			    Assert.assertTrue(db.isNewDatabaseEventDetected());
+			else
+			    Assert.assertFalse(db.isNewDatabaseEventDetected());
+		    }
+		    
+		
+		}
+		else
+		{
+		    if (peersInitiallyConnected)
+			connectSelectedDatabase(concernedDatabase);
+		
+		    Database db=concernedDatabase[0];
+		    @SuppressWarnings("unchecked")
+		    Table<DatabaseRecord> table=(Table<DatabaseRecord>)db.getDbwrapper().getTableInstance(tableClass);
+		    proceedEvent(table, det, oldRecord, newRecord, false);
+
+		    if (!peersInitiallyConnected)
+			connectSelectedDatabase(concernedDatabase);
+		   
+		    exchangeMessages();
+
+		    for (int i=1;i<peersNumber;i++)
+		    {
+			 db=concernedDatabase[i];
+			 @SuppressWarnings("unchecked")
+			 Table<DatabaseRecord> tableother=(Table<DatabaseRecord>)db.getDbwrapper().getTableInstance(tableClass);
+			 Assert.assertNull(db.getDirectCollisionDetected());
+			 Assert.assertNull(db.getIndirectCollisionDetected());
+			 Assert.assertTrue(db.isNewDatabaseEventDetected());
+			 testEventSynchronized(tableother, det, oldRecord, newRecord, true);
+			 
+		    }
+		
+		}
+
+		for (int i=peersNumber;i<listDatabase.size();i++)
+		{
+		    Database db=listDatabase.get(i);
+		    @SuppressWarnings("unchecked")
+		    Table<DatabaseRecord> table=(Table<DatabaseRecord>)db.getDbwrapper().getTableInstance(tableClass);
+		    testEventSynchronized(table, det, oldRecord, newRecord, false);
+		}
+	    
+		connectAllDatabase();
+		exchangeMessages();
+	    
+		for (int i=2;i<listDatabase.size();i++)
+		{
+		    Database db=listDatabase.get(i);
+		    @SuppressWarnings("unchecked")
+		    Table<DatabaseRecord> table=(Table<DatabaseRecord>)db.getDbwrapper().getTableInstance(tableClass);
+		    
+		    Assert.assertNull(db.getDirectCollisionDetected());
+		    Assert.assertNull(db.getIndirectCollisionDetected());
+		    Assert.assertTrue(db.isNewDatabaseEventDetected());
+		    testEventSynchronized(table, det, oldRecord, newRecord, true);
+		}
+		
+		
+		disconnectAllDatabase();
+	    }
+	
+    }
+    
+    
+    @Test(dataProvider = "provideDataForSynchroBetweenTwoPeers", dependsOnMethods={"testOldElementsAddedBeforeAddingSynchroSynchronized"})
+    public void testSynchroBetweenTwoPeers(Class<? extends Table<?>> tableClass, boolean exceptionDuringTransaction, boolean generateDirectConflict, boolean replaceOldValueDuringConflict, boolean peersInitiallyConnected, DatabaseEventType det, DatabaseRecord oldRecord, DatabaseRecord newRecord) throws ClassNotFoundException, DatabaseException, IOException
+    {
+	testSynchroBetweenPeers(2, tableClass, exceptionDuringTransaction, generateDirectConflict, replaceOldValueDuringConflict, peersInitiallyConnected, det, oldRecord, newRecord);
     }
 
     @DataProvider(name = "provideDataSynchroBetweenThreePeers", parallel = false)
     public Object[][] provideDataSynchroBetweenThreePeers()
     {
-	return null;//TODO complete
+	return provideDataForSynchroBetweenTwoPeers();
     }
     
     @Test(dataProvider = "provideDataSynchroBetweenThreePeers", dependsOnMethods={"testSynchroBetweenTwoPeers"})
-    public void testSynchroBetweenThreePeers(boolean normalTransaction, boolean generateConflict, boolean peersInitiallyConnected, DatabaseEventType det, DatabaseRecord oldRecord, DatabaseRecord newRecord, boolean expectedSynchronized)
+    public void testSynchroBetweenThreePeers(Class<? extends Table<?>> tableClass, boolean exceptionDuringTransaction, boolean generateDirectConflict, boolean replaceOldValueDuringConflict, boolean peersInitiallyConnected, DatabaseEventType det, DatabaseRecord oldRecord, DatabaseRecord newRecord) throws ClassNotFoundException, DatabaseException, IOException
     {
-	
+	testSynchroBetweenPeers(3, tableClass, exceptionDuringTransaction, generateDirectConflict, replaceOldValueDuringConflict, peersInitiallyConnected, det, oldRecord, newRecord);
     }
     
     
@@ -733,7 +1298,19 @@ public abstract class TestDecentralizedDatabase
 	
     }
     
+    @Test(dependsOnMethods={"testTransactionSynchrosWithIndirectConnection", "testTransactionSynchros", "testTransactionBetweenThreePeers", "testTransactionBetweenTwoPeers"})
+    public void addNewPeer()
+    {
+	
+    }
     
+    //TODO redo all tests
+    
+    @Test
+    public void removeNewPeer()
+    {
+	
+    }
     
 }
 

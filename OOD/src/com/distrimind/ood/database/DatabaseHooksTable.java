@@ -156,15 +156,15 @@ class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 	
 	
 
-	protected void setDatabasePackageNames(Package ...packages)
+	protected Package[] setDatabasePackageNames(Package ...packages)
 	{
 	    if (packages==null || packages.length==0)
 	    {
 		databasePackageNames=null;
-		return;
+		return new Package[0];
 	    }
 	    StringBuffer sb=new StringBuffer();
-	    
+	    ArrayList<Package> packagesList=new ArrayList<>();
 	    for (int i=0;i<packages.length;i++)
 	    {
 		Package p=packages[i];
@@ -182,9 +182,11 @@ class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 		    if (sb.length()!=0)
 			sb.append("\\|");
 		    sb.append(p.toString());
+		    packagesList.add(p);
 		}
 	    }
 	    databasePackageNames=sb.toString();
+	    return (Package[])packagesList.toArray();
 	}
 	
 	protected void addDatabasePackageName(Package p)
@@ -200,15 +202,19 @@ class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 		databasePackageNames+="\\|"+p.getName();
 	    }
 	}
-	protected void addDatabasePackageNames(Package ...ps)
+	protected Package[] addDatabasePackageNames(Package ...ps)
 	{
 	    if (ps==null || ps.length==0)
-		return ;
+		return new Package[0];
 	    if (databasePackageNames==null || databasePackageNames.length()==0)
-		setDatabasePackageNames(ps);
+	    {
+		return setDatabasePackageNames(ps);
+		
+	    }
 	    else
 	    {
 		String[] packages=getDatabasePackageNames();
+		ArrayList<Package> packagesList=new ArrayList<>();
 		for (int i=0;i<ps.length;i++)
 		{
 		    Package p=ps[i];
@@ -237,7 +243,9 @@ class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 			continue;
 			
 		    databasePackageNames+="\\|"+p.getName();
+		    packagesList.add(p);
 		}
+		return (Package[])packagesList.toArray();
 	    }
 	}
 	
@@ -250,7 +258,7 @@ class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 	
 	boolean isConcernedDatabaseByPackage(Package p)
 	{
-	    return (databasePackageNames==null || databasePackageNames.length()==0) || (databasePackageNames!=null && (databasePackageNames.endsWith(p.toString()) || databasePackageNames.contains(p.toString()+"|")));
+	    return databasePackageNames!=null && (databasePackageNames.equals(p.toString()) || databasePackageNames.endsWith("|"+p.toString()) || databasePackageNames.startsWith(p.toString()+"|") || databasePackageNames.contains("|"+p.toString()+"|"));
 	}
 	
 	protected boolean removePackageDatabase(Package ..._packages )
@@ -466,17 +474,21 @@ class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 		{
 		    r=new DatabaseHooksTable.Record();
 		    r.setHostID(hostID);
-		    r.setDatabasePackageNames(packages);
+		    Package newAddedPackages[]=r.setDatabasePackageNames(packages);
 		    r.setConcernsDatabaseHost(concernsDatabaseHost);
 		    r.setLastValidatedTransaction(getGlobalLastValidatedTransactionID());
-		    return addRecord(r);
+		    r=addRecord(r);
+		    
+		    getDatabaseTransactionEventsTable().addTransactionToSynchronizeTables(newAddedPackages, r);
+		    return r;
 		}
 		else
 		{
 		    r=l.get(0);
-		    r.addDatabasePackageNames(packages);
-		    
+		    Package newAddedPackages[]=r.addDatabasePackageNames(packages);
 		    updateRecord(r);
+		    
+		    getDatabaseTransactionEventsTable().addTransactionToSynchronizeTables(newAddedPackages, r);
 		    
 		    return r;
 		}

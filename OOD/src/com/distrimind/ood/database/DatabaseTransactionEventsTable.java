@@ -174,6 +174,42 @@ class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEventsTabl
 	return tr;
 	
     }
+    protected void addTransactionToSynchronizeTables(final Package databasePackages[], DatabaseHooksTable.Record hook) throws DatabaseException
+    {
+	for (Package databasePackage : databasePackages)
+	    addTransactionToSynchronizeTables(databasePackage, hook);
+    }
+    protected DatabaseTransactionEventsTable.Record addTransactionToSynchronizeTables(final Package databasePackage, DatabaseHooksTable.Record hook) throws DatabaseException
+    {
+	DatabaseTransactionEventsTable.Record tr=new DatabaseTransactionEventsTable.Record();
+	tr.id=getTransactionIDTable().getAndIncrementTransactionID();
+	tr.concernedDatabasePackage=databasePackage.getName();
+	
+	final DatabaseTransactionEventsTable.Record transaction=addRecord(tr);
+	
+	
+	for (Class<? extends Table<?>> c : getDatabaseWrapper().getDatabaseConfiguration(databasePackage).getTableClasses())
+	{
+	    @SuppressWarnings("unchecked")
+	    final Table<DatabaseRecord> table=(Table<DatabaseRecord>) getDatabaseWrapper().getTableInstance(c);
+	    table.getRecords(new Filter<DatabaseRecord>() {
+
+		@Override
+		public boolean nextRecord(DatabaseRecord _record) throws DatabaseException
+		{
+		    DatabaseEventsTable.Record event=new DatabaseEventsTable.Record(transaction, new TableEvent<DatabaseRecord>(-1, DatabaseEventType.ADD, null, _record), getDatabaseWrapper(), false);
+		    getDatabaseEventsTable().addRecord(event);
+		    return false;
+		}
+	    });
+	}
+	DatabaseTransactionsPerHostTable.Record trhost=new DatabaseTransactionsPerHostTable.Record();
+	trhost.set(transaction, hook);
+	getDatabaseTransactionsPerHostTable().addRecord(trhost);
+	
+	return transaction;
+	
+    }
     protected DatabaseTransactionEventsTable.Record addTransaction(final Package databasePackage, final Iterator<DatabaseEventsTable.Record> eventsIt, byte eventsType) throws DatabaseException
     {
 	DatabaseTransactionEventsTable.Record tr=new DatabaseTransactionEventsTable.Record();
@@ -184,7 +220,7 @@ class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEventsTabl
 	while (eventsIt.hasNext())
 	{
 	    DatabaseEventsTable.Record r=eventsIt.next();
-	    if (r.getConcernedTable().startsWith(databasePackage.getName()))
+	    if (r.getConcernedTable().startsWith(databasePackage.getName()) && !r.getConcernedTable().substring(databasePackage.getName().length()).contains("."))
 	    {
 		r.setTransaction(tr);
 		getDatabaseEventsTable().addRecord(r);
