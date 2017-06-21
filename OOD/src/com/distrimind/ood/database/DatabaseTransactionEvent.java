@@ -50,7 +50,7 @@ public class DatabaseTransactionEvent extends DatabaseEvent
 {
     private long id;
     private final Collection<TableEvent<?>> events;
-    
+    private boolean force=false;
     
     DatabaseTransactionEvent()
     {
@@ -102,7 +102,13 @@ public class DatabaseTransactionEvent extends DatabaseEvent
     
     boolean addEvent(TableEvent<?> event)
     {
+	force|=event.isForce();
 	return this.events.add(event);
+    }
+    
+    boolean isForce()
+    {
+	return force;
     }
     
     byte getTypesByte()

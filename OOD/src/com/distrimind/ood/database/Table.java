@@ -172,7 +172,7 @@ public abstract class Table<T extends DatabaseRecord>
 	    return res;
 	}
 	
-	public Table<?> getPointedTable() throws DatabaseException
+	public Table<?> getPoitingTable() throws DatabaseException
 	{
 	    if (t==null)
 		t=sql_connection.getTableInstance(class_table);
@@ -181,7 +181,7 @@ public abstract class Table<T extends DatabaseRecord>
 	
 	public HashMap<String, Object>[] getHashMapsSqlFields(HashMap<String, Object> _primary_keys) throws DatabaseException
 	{
-		Table<?> t=getPointedTable();
+		Table<?> t=getPoitingTable();
 
 		
 		@SuppressWarnings("unchecked")
@@ -212,6 +212,12 @@ public abstract class Table<T extends DatabaseRecord>
 		}
 		return res;
 	}
+	
+	public Class<? extends Table<?>> getPointingTableClass()
+	{
+	    return class_table;	    
+	}
+		
     }
     
     final ArrayList<NeighboringTable> list_tables_pointing_to_this_table=new ArrayList<NeighboringTable>();
@@ -221,6 +227,16 @@ public abstract class Table<T extends DatabaseRecord>
     private volatile boolean is_synchronized_with_sql_database=false;
     private volatile long last_refresh=System.currentTimeMillis();
     private final long refreshInterval;
+    
+    public List<Class<? extends Table<?>>> getTablesClassesPointingToThisTable()
+    {
+	ArrayList<Class<? extends Table<?>>> res=new ArrayList<>(list_tables_pointing_to_this_table.size());
+	for (NeighboringTable n : list_tables_pointing_to_this_table)
+	{
+	    res.add(n.getPointingTableClass());
+	}
+	return res;
+    }
     
     boolean isSynchronizedWithSqlDatabase()
     {
@@ -443,9 +459,9 @@ public abstract class Table<T extends DatabaseRecord>
 		return;
 	    for (NeighboringTable t : this.list_tables_pointing_to_this_table)
 	    {
-		if (t.getPointedTable().sql_connection!=null)
+		if (t.getPoitingTable().sql_connection!=null)
 		{
-		    t.getPointedTable().removeTableFromDatabaseStep2();
+		    t.getPoitingTable().removeTableFromDatabaseStep2();
 		}
 	    }
 	    Statement st=null;
@@ -981,7 +997,7 @@ public abstract class Table<T extends DatabaseRecord>
 	checkedTables.add(this);
 	for (NeighboringTable nt : list_tables_pointing_to_this_table)
 	{
-	    Table<?> t=nt.getPointedTable();
+	    Table<?> t=nt.getPoitingTable();
 	    if (!checkedTables.contains(t))
 	    {
 		if (!t.isGloballyDecentralizable(checkedTables))
@@ -4435,7 +4451,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    boolean toremove=true;
 		    for (NeighboringTable nt : list_tables_pointing_to_this_table)
 		    {
-			if (nt.getPointedTable().hasRecordsWithOneOfFields(nt.getHashMapFields(r), false))
+			if (nt.getPoitingTable().hasRecordsWithOneOfFields(nt.getHashMapFields(r), false))
 			{
 			    toremove=false;
 			    break;
@@ -4503,7 +4519,7 @@ public abstract class Table<T extends DatabaseRecord>
 	    
 		    __removeRecords(records_to_remove);
 		    for (T r : records_to_remove)
-			getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, r, null));
+			getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, r, null, false));
 		}
 		return records_to_remove.size();
 	}
@@ -4534,7 +4550,7 @@ public abstract class Table<T extends DatabaseRecord>
 				
 				NeighboringTable nt=list_tables_pointing_to_this_table.get(i);
 				
-				if (nt.getPointedTable().hasRecordsWithOneOfSqlForeignKeyWithCascade(nt.getHashMapsSqlFields(getSqlPrimaryKeys(_instance))))
+				if (nt.getPoitingTable().hasRecordsWithOneOfSqlForeignKeyWithCascade(nt.getHashMapsSqlFields(getSqlPrimaryKeys(_instance))))
 				{
 				    toremove=false;
 				    break;
@@ -4546,7 +4562,7 @@ public abstract class Table<T extends DatabaseRecord>
 			    _cursor.deleteRow();
 			    ++deleted_records_number;
 			    _instance.__createdIntoDatabase=false;
-			    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, _instance, null));
+			    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, _instance, null, false));
 			}
 			return !_filter.isTableParsingStoped();
 		    }
@@ -4583,7 +4599,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    boolean toremove=true;
 		    for (NeighboringTable nt : list_tables_pointing_to_this_table)
 		    {
-			if (nt.getPointedTable().hasRecordsWithOneOfFields(nt.getHashMapFields(r), false))
+			if (nt.getPoitingTable().hasRecordsWithOneOfFields(nt.getHashMapFields(r), false))
 			{
 			    toremove=false;
 			    break;
@@ -4650,7 +4666,7 @@ public abstract class Table<T extends DatabaseRecord>
 	    
 		    __removeRecords(records_to_remove);
 		    for (T r : records_to_remove)
-			getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, r, null));
+			getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, r, null, false));
 		}
 		return records_to_remove.size();
 	}
@@ -4681,7 +4697,7 @@ public abstract class Table<T extends DatabaseRecord>
 				
 				NeighboringTable nt=list_tables_pointing_to_this_table.get(i);
 				
-				if (nt.getPointedTable().hasRecordsWithOneOfSqlForeignKeyWithCascade(nt.getHashMapsSqlFields(getSqlPrimaryKeys(_instance))))
+				if (nt.getPoitingTable().hasRecordsWithOneOfSqlForeignKeyWithCascade(nt.getHashMapsSqlFields(getSqlPrimaryKeys(_instance))))
 				{
 				    toremove=false;
 				    break;
@@ -4693,7 +4709,7 @@ public abstract class Table<T extends DatabaseRecord>
 			    _cursor.deleteRow();
 			    ++deleted_records_number;
 			    _instance.__createdIntoDatabase=false;
-			    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, _instance, null));
+			    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, _instance, null, false));
 			}
 			return !_filter.isTableParsingStoped();
 		    }
@@ -5120,7 +5136,7 @@ public abstract class Table<T extends DatabaseRecord>
 		__removeRecords(records_to_remove);
 		updateMemoryForRemovingRecordsWithCascade(records_to_remove);
 		for (T r : records_to_remove)
-		    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, r, null));
+		    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, r, null, false));
 	    }
 	    return records_to_remove.size();
 	}
@@ -5147,7 +5163,7 @@ public abstract class Table<T extends DatabaseRecord>
 			    ++deleted_records_number;
 			    _instance.__createdIntoDatabase=false;
 			    updateMemoryForRemovingRecordWithCascade(_instance);
-			    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, _instance, null));
+			    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, _instance, null, false));
 			}
 			return !_filter.isTableParsingStoped();
 		    }
@@ -5168,7 +5184,7 @@ public abstract class Table<T extends DatabaseRecord>
 	    {
 		for (NeighboringTable nt : list_tables_pointing_to_this_table)
 		{
-		    Table<?> t=nt.getPointedTable();
+		    Table<?> t=nt.getPoitingTable();
 		    if (t.isLoadedInMemory() && t.isSynchronizedWithSqlDatabase())
 		    {
 			t.memoryToRefresh();
@@ -5189,12 +5205,13 @@ public abstract class Table<T extends DatabaseRecord>
      * @throws DatabaseException if a Sql exception occurs or if the given record has already been deleted.
      * @throws NullPointerException if parameters are null pointers.
      * @throws ConstraintsNotRespectedDatabaseException if the given record is pointed by another record through a foreign key into another table of the database.
+     * @throws RecordNotFoundDatabaseException if the given record was not found
      */
     public final void removeRecord(final T _record) throws DatabaseException
     {
-	removeUntypedRecord((DatabaseRecord)_record);
+	removeUntypedRecord((DatabaseRecord)_record, true, false);
     }
-    final void removeUntypedRecord(final DatabaseRecord record) throws DatabaseException
+    final void removeUntypedRecord(final DatabaseRecord record, final boolean synchronizeIfNecessary, final boolean forceSynchro) throws DatabaseException
     {
 	if (record==null)
 	    throw new NullPointerException("The parameter _record is a null pointer !");
@@ -5207,9 +5224,9 @@ public abstract class Table<T extends DatabaseRecord>
 	
 		for (NeighboringTable nt : list_tables_pointing_to_this_table)
 		{
-		    if (nt.getPointedTable().hasRecordsWithOneOfFields(nt.getHashMapFields(_record), false))
+		    if (nt.getPoitingTable().hasRecordsWithOneOfFields(nt.getHashMapFields(_record), false))
 		    {
-			throw new ConstraintsNotRespectedDatabaseException("The given record is pointed by another record through a foreign key into the table "+nt.getPointedTable().getName()+". Impossible to remove it into the table "+this.getName());
+			throw new ConstraintsNotRespectedDatabaseException("The given record is pointed by another record through a foreign key into the table "+nt.getPoitingTable().getName()+". Impossible to remove it into the table "+this.getName());
 		    }
 		}
 	
@@ -5240,6 +5257,8 @@ public abstract class Table<T extends DatabaseRecord>
 				throw new RecordNotFoundDatabaseException("the given record was not into the table "+Table.this.getName()+". It has been probably already removed.");
 			    else if (nb>1)
 				throw new DatabaseIntegrityException("Unexpected exception");
+			    if (synchronizeIfNecessary)
+				getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, _record, null, forceSynchro));
 			}
 			catch(Exception e)
 			{
@@ -5259,7 +5278,7 @@ public abstract class Table<T extends DatabaseRecord>
 		if (Table.this.isLoadedInMemory() && isSynchronizedWithSqlDatabase())
 		    Table.this.__removeRecord(_record);
 		_record.__createdIntoDatabase=false;
-		getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, _record, null));
+		
 	    }
 	    catch(Exception e)
 	    {
@@ -5278,9 +5297,9 @@ public abstract class Table<T extends DatabaseRecord>
      */
     public final void removeRecordWithCascade(final T _record) throws DatabaseException
     {
-	removeUntypedRecordWithCascade(_record);
+	removeUntypedRecordWithCascade(_record, true, false);
     }
-    final void removeUntypedRecordWithCascade(final DatabaseRecord record) throws DatabaseException
+    final void removeUntypedRecordWithCascade(final DatabaseRecord record, final boolean synchronizeIfNecessary, final boolean forceSynchro) throws DatabaseException
     {
 	if (record==null)
 	    throw new NullPointerException("The parameter _record is a null pointer !");
@@ -5321,6 +5340,8 @@ public abstract class Table<T extends DatabaseRecord>
 				throw new RecordNotFoundDatabaseException("the given record was not into the table "+Table.this.getName()+". It has been probably already removed.");
 			    else if (nb>1)
 				throw new DatabaseIntegrityException("Unexpected exception");
+			    if (synchronizeIfNecessary)
+				getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, _record, null, forceSynchro));
 			}
 			catch(Exception e)
 			{
@@ -5344,7 +5365,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    __removeRecord(_record);
 		_record.__createdIntoDatabase=false;
 		updateMemoryForRemovingRecordWithCascade(_record);
-		getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, _record, null));
+		
 	    }
 	    catch(Exception e)
 	    {
@@ -5357,7 +5378,7 @@ public abstract class Table<T extends DatabaseRecord>
     {
 	for (NeighboringTable nt : list_tables_pointing_to_this_table)
 	{
-	    Table<?> t=nt.getPointedTable();
+	    Table<?> t=nt.getPoitingTable();
 	    if (t.isLoadedInMemory() && t.isSynchronizedWithSqlDatabase())
 	    {
 		ArrayList<DatabaseRecord> removed_records=new ArrayList<DatabaseRecord>();
@@ -5383,7 +5404,7 @@ public abstract class Table<T extends DatabaseRecord>
     {
 	for (NeighboringTable nt : list_tables_pointing_to_this_table)
 	{
-	    Table<?> t=nt.getPointedTable();
+	    Table<?> t=nt.getPoitingTable();
 	    if (t.isLoadedInMemory() && t.isSynchronizedWithSqlDatabase())
 	    {
 		ArrayList<DatabaseRecord> removed_records=new ArrayList<DatabaseRecord>();
@@ -5416,7 +5437,7 @@ public abstract class Table<T extends DatabaseRecord>
     {
 	for (NeighboringTable nt : list_tables_pointing_to_this_table)
 	{
-	    Table<?> t=nt.getPointedTable();
+	    Table<?> t=nt.getPoitingTable();
 	    if (t.isLoadedInMemory() && t.isSynchronizedWithSqlDatabase())
 	    {
 		ArrayList<DatabaseRecord> removed_records=new ArrayList<DatabaseRecord>();
@@ -5461,7 +5482,7 @@ public abstract class Table<T extends DatabaseRecord>
 	    boolean res=false;
 	    for (NeighboringTable nt : list_tables_pointing_to_this_table)
 	    {
-		Table<?> t = nt.getPointedTable();
+		Table<?> t = nt.getPoitingTable();
 		if (t.hasRecordsWithOneOfFields(nt.getHashMapFields(_record)))
 		{
 		    res=true;
@@ -5493,7 +5514,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    boolean toadd=true;
 		    for (NeighboringTable nt : list_tables_pointing_to_this_table)
 		    {
-			Table<?> t = nt.getPointedTable();
+			Table<?> t = nt.getPoitingTable();
 			if (t.hasRecordsWithOneOfFields(nt.getHashMapFields(r), false))
 			{
 			    toadd=false;
@@ -5562,7 +5583,7 @@ public abstract class Table<T extends DatabaseRecord>
 	    {
 		for (NeighboringTable nt : list_tables_pointing_to_this_table)
 		{
-		    Table<?> t = nt.getPointedTable();
+		    Table<?> t = nt.getPoitingTable();
 		    for (T record : _records)
 			if (t.hasRecordsWithOneOfFields(nt.getHashMapFields(record), false))
 			    throw new ConstraintsNotRespectedDatabaseException("One of the given record is pointed by another record through a foreign key into the table "+t.getName()+". Impossible to remove this record into the table "+getName());
@@ -5616,7 +5637,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    __removeRecords(_records);
 		}
 		for (T r : _records)
-		    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, r, null));
+		    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, r, null, false));
 	
 	    }
 	    catch(Exception e)
@@ -5709,7 +5730,7 @@ public abstract class Table<T extends DatabaseRecord>
 	    }
 	    updateMemoryForRemovingRecordsWithCascade(_records);
 	    for (T r : _records)
-		getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, r, null));
+		getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, r, null, false));
 	}
     }
     
@@ -6057,6 +6078,8 @@ public abstract class Table<T extends DatabaseRecord>
 	return addRecord(transformToMapField(_fields));
     }
     
+    
+    
     /**
      * Add a record into the database with a map of fields corresponding to this record. 
      * The string type in the Map corresponds to the name of the field, and the Object type field corresponds the value of the field.   
@@ -6097,7 +6120,12 @@ public abstract class Table<T extends DatabaseRecord>
      * @throws FieldDatabaseException if one of the given fields does not exists into the database, or if fields are lacking.
      * @throws RecordNotFoundDatabaseException if one of the field is a foreign key and point to a record of another table which does not exist. 
      */
+    @SuppressWarnings("unchecked")
     public final T addRecord(T record) throws DatabaseException
+    {
+	return (T)addUntypedRecord(record, false, true, false);
+    }
+    final DatabaseRecord addUntypedRecord(DatabaseRecord record, boolean includeAutoGeneratedKeys, boolean synchronizeIfNecessary, boolean forceSynchro) throws DatabaseException
     {
 	if (record==null)
 	    throw new NullPointerException("The parameter record is a null pointer !");
@@ -6106,8 +6134,8 @@ public abstract class Table<T extends DatabaseRecord>
 	
 	try (Lock lock=new WriteLock(this))
 	{
-	    Map<String, Object> map=getMap(record, true, false);
-	    T res=addRecord(map, false, record);
+	    Map<String, Object> map=getMap(record, true, includeAutoGeneratedKeys);
+	    T res=addRecord(map, false, record, synchronizeIfNecessary, forceSynchro);
 	    res.__createdIntoDatabase=true;
 	    return res;
 	}
@@ -6116,7 +6144,8 @@ public abstract class Table<T extends DatabaseRecord>
 	    throw DatabaseException.getDatabaseException(e);
 	}
     }
-    final T addDatabaseRecord(DatabaseRecord record) throws DatabaseException
+    
+    /*final T addDatabaseRecord(DatabaseRecord record) throws DatabaseException
     {
 	if (record==null)
 	    throw new NullPointerException("The parameter record is a null pointer !");
@@ -6135,7 +6164,7 @@ public abstract class Table<T extends DatabaseRecord>
 	    throw DatabaseException.getDatabaseException(e);
 	}
 	
-    }    
+    }    */
     Map<String, Object> getMap(DatabaseRecord record, boolean includePrimaryKeys, boolean includeAutoGeneratedKeys) throws DatabaseException
     {
 	    Map<String, Object> map=new HashMap<>();
@@ -6160,10 +6189,10 @@ public abstract class Table<T extends DatabaseRecord>
     
     private final T addRecord(final Map<String, Object> _fields, boolean already_in_transaction) throws DatabaseException
     {
-	return addRecord(_fields, already_in_transaction, null);
+	return addRecord(_fields, already_in_transaction, null, true, false);
     }
     @SuppressWarnings("unchecked")
-    private final T addRecord(final Map<String, Object> _fields, final boolean already_in_transaction, final DatabaseRecord originalRecord) throws DatabaseException
+    private final T addRecord(final Map<String, Object> _fields, final boolean already_in_transaction, final DatabaseRecord originalRecord, final boolean synchronizeIfNecessary, final boolean forceSynchro) throws DatabaseException
     {
 
 	return (T)sql_connection.runTransaction(new Transaction() {
@@ -6471,7 +6500,8 @@ public abstract class Table<T extends DatabaseRecord>
 	    
 		    if (isLoadedInMemory() && isSynchronizedWithSqlDatabase())
 			__AddRecord(instance);
-		    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.ADD, null, instance));
+		    if (synchronizeIfNecessary)
+			getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.ADD, null, instance, forceSynchro));
 		    return instance;
 
 		}
@@ -6558,14 +6588,14 @@ public abstract class Table<T extends DatabaseRecord>
      */
     public final void updateRecord(final T _record) throws DatabaseException
     {
-	updateUntypedRecord(_record);
+	updateUntypedRecord(_record, true, false);
     }
-    final void updateUntypedRecord(final DatabaseRecord record) throws DatabaseException
+    final void updateUntypedRecord(final DatabaseRecord record, boolean synchronizeIfNecessary, boolean forceSynchro) throws DatabaseException
     {
 	@SuppressWarnings("unchecked")
 	T _record=(T)record;
 	Map<String, Object> map=getMap(_record, false, false);
-	updateRecord(_record, map);
+	updateRecord(_record, map, synchronizeIfNecessary, forceSynchro);
     }
     
     
@@ -6609,7 +6639,7 @@ public abstract class Table<T extends DatabaseRecord>
      * @throws RecordNotFoundDatabaseException if the given record is not included into the database, or if one of the field is a foreign key and point to a record of another table which does not exist. 
      */
 
-    public final void updateRecord(final T _record, final Map<String, Object> _fields) throws DatabaseException
+    public final void updateRecord(final T _record, final Map<String, Object> _fields, final boolean synchronizeIfNecessary, final boolean forceSynchro) throws DatabaseException
     {
 	if (_record==null)
 	    throw new NullPointerException("The parameter _record is a null pointer !");
@@ -6825,13 +6855,16 @@ public abstract class Table<T extends DatabaseRecord>
 		}
 		
 		sql_connection.runTransaction(new TransactionTmp(fields));
-		if (pkChanged)
+		if (synchronizeIfNecessary)
 		{
-		    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, oldRecord, null));
-		    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.ADD, null, _record));
+		    if (pkChanged)
+		    {
+			getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, oldRecord, null, forceSynchro));
+			getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.ADD, null, _record, forceSynchro));
+		    }
+		    else
+			getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.UPDATE, oldRecord, _record, forceSynchro));
 		}
-		else
-		    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.UPDATE, oldRecord, _record));
 		
 	    }
 	    catch(Exception e)
@@ -6995,7 +7028,7 @@ public abstract class Table<T extends DatabaseRecord>
 				boolean canberemoved=true;
 				for (NeighboringTable nt : list_tables_pointing_to_this_table)
 				{
-				    if (nt.getPointedTable().hasRecordsWithOneOfFields(nt.getHashMapFields(r), false))
+				    if (nt.getPoitingTable().hasRecordsWithOneOfFields(nt.getHashMapFields(r), false))
 				    {
 					canberemoved=false;
 					break;
@@ -7125,11 +7158,11 @@ public abstract class Table<T extends DatabaseRecord>
 					    }
 					    if (pkChanged)
 					    {
-						getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, oldRecord, null));
-						getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.ADD, null, r));
+						getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, oldRecord, null, false));
+						getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.ADD, null, r, false));
 					    }
 					    else
-						getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.UPDATE, oldRecord, r));
+						getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.UPDATE, oldRecord, r, false));
 					    return null;
 					}
 					catch(Exception e)
@@ -7202,7 +7235,7 @@ public abstract class Table<T extends DatabaseRecord>
 			    __removeRecords(records_to_delete);
 			    
 			    for (T r : records_to_delete)
-				getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, r, null));
+				getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, r, null, false));
 		    }
 		    if (records_to_delete_with_cascade.size()>0)
 		    {
@@ -7258,7 +7291,7 @@ public abstract class Table<T extends DatabaseRecord>
 			__removeRecords(records_to_delete_with_cascade);
 			updateMemoryForRemovingRecordsWithCascade(records_to_delete_with_cascade);
 			for (T r : records_to_delete_with_cascade)
-			    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, r, null));
+			    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, r, null, false));
 			
 		    }
 		    
@@ -7300,7 +7333,7 @@ public abstract class Table<T extends DatabaseRecord>
 						
 					    NeighboringTable nt=list_tables_pointing_to_this_table.get(i);
 						
-					    if (nt.getPointedTable().hasRecordsWithOneOfSqlForeignKeyWithCascade(nt.getHashMapsSqlFields(getSqlPrimaryKeys(_instance))))
+					    if (nt.getPoitingTable().hasRecordsWithOneOfSqlForeignKeyWithCascade(nt.getHashMapsSqlFields(getSqlPrimaryKeys(_instance))))
 					    {
 						canberemoved=false;
 						break;
@@ -7310,14 +7343,14 @@ public abstract class Table<T extends DatabaseRecord>
 				    if (canberemoved)
 				    {
 					_result_set.deleteRow();
-					getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, oldRecord, null));
+					getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, oldRecord, null, false));
 				    }
 				}
 				else if(_filter.hasToBeRemovedWithCascade())
 				{
 				    _result_set.deleteRow();
 				    updateMemoryForRemovingRecordWithCascade(_instance);
-				    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, oldRecord, null));
+				    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, oldRecord, null, false));
 				}
 				else
 				{
@@ -7360,7 +7393,7 @@ public abstract class Table<T extends DatabaseRecord>
 					    }
 					}
 					_result_set.updateRow();
-					getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.UPDATE, oldRecord, _instance));
+					getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.UPDATE, oldRecord, _instance, false));
 				    }
 				}
 				return true;
@@ -7696,7 +7729,7 @@ public abstract class Table<T extends DatabaseRecord>
 			throw new ConcurentTransactionDatabaseException("Attempting to write, through several nested queries, on the table "+current_table.getName()+".");
 		    for (NeighboringTable nt : current_table.list_tables_pointing_to_this_table)
 		    {
-			Table<?> t=nt.getPointedTable();
+			Table<?> t=nt.getPoitingTable();
 			if (!_comes_from_tables.contains(t))
 			{
 			    new WriteLock(t, _comes_from_tables, _from_comes_original_table);
@@ -7762,7 +7795,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    _comes_from_tables.add(current_table);
 		    for (NeighboringTable nt : current_table.list_tables_pointing_to_this_table)
 		    {
-			Table<?> t=nt.getPointedTable();
+			Table<?> t=nt.getPoitingTable();
 			if (!_comes_from_tables.contains(t))
 			{
 			    t.current_locks.get(Thread.currentThread()).close(_comes_from_tables);
@@ -8153,6 +8186,30 @@ public abstract class Table<T extends DatabaseRecord>
     }
     
 
+    byte[] serializePrimaryKeys(Map<String, Object> mapKeys) throws DatabaseException
+    {
+	
+	try(ByteArrayOutputStream baos=new ByteArrayOutputStream())
+	{
+	    T record=default_constructor_field.newInstance();
+	    try(ObjectOutputStream oos = new ObjectOutputStream(baos))
+	    {
+		for (FieldAccessor fa : primary_keys_fields)
+		{
+		    Object o=mapKeys.get(fa.getFieldName());
+		    if (o==null)
+			throw new IllegalAccessError();
+		    fa.setValue(record, o);
+		    fa.serialize(oos, record);
+		}
+	    }
+	    return baos.toByteArray();
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+    }
     byte[] serializePrimaryKeys(T record) throws DatabaseException
     {
 	try(ByteArrayOutputStream baos=new ByteArrayOutputStream())

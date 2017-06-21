@@ -111,6 +111,7 @@ public abstract class DatabaseWrapper implements AutoCloseable
     private InputStream transactionInputStream=null;
     private ObjectInputStream transactionObjectInputStream=null;
     int currentTransactionsEventNummber=0;
+    private boolean currentTransactionToForce=false;
     int currentTransactionsEventReadNummber=0;
     private final HashSet<Package> transactionPackages=new HashSet<>();
     private byte transactionTypes=0;
@@ -177,10 +178,13 @@ public abstract class DatabaseWrapper implements AutoCloseable
     /**
      * Set the maximum number of events keeped into memory during the current transaction.
      * If this maximum is reached, the transaction is stored into the disk
-     * @param v the maximum number of events keeped into memory 
+     * @param v the maximum number of events keeped into memory  (minimum=1)
+     * @throws IllegalArgumentException if <code>v<1</code>
      */
     public void setMaxTransactionEventsKeepedIntoMemory(int v)
     {
+	if (v<1)
+	    throw new IllegalArgumentException("v must be greater or equal than 1");
 	this.maxTransactionsEventsKeepedIntoMemory=v;
     }
     
@@ -415,12 +419,12 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	
 	public void addHookForLocalDatabaseHost(AbstractDecentralizedID hostID, Package ...databasePackages) throws DatabaseException
 	{
-	    getHooksTransactionsTable().addHooks(hostID, true, databasePackages);
+	    getHooksTransactionsTable().addHooks(hostID, true, false, databasePackages);
 	}
 	
-	public void addHookForDistantHost(AbstractDecentralizedID hostID, Package ...databasePackages) throws DatabaseException
+	public void addHookForDistantHost(AbstractDecentralizedID hostID, boolean replaceDistantConflitualRecords, Package ...databasePackages) throws DatabaseException
 	{
-	    getHooksTransactionsTable().addHooks(hostID, false, databasePackages);
+	    getHooksTransactionsTable().addHooks(hostID, false, replaceDistantConflitualRecords, databasePackages);
 	}
 	
 	public void removeHook(AbstractDecentralizedID hostID, Package ...databasePackages) throws DatabaseException
@@ -1252,7 +1256,7 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	    {
 		for (Package p : transactionPackages)
 		{
-		    getTransactionsTable().addTransactionIfNecessary(p, getEventsStoredInFileIterator(), transactionTypes);
+		    getTransactionsTable().addTransactionIfNecessary(p, getEventsStoredInFileIterator(), transactionTypes, currentTransactionToForce);
 		}
 	    }
 	}
@@ -1276,6 +1280,7 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	transactionPackages.clear();
 	currentTransactionsEventNummber=0;
 	transactionTypes=0;
+	currentTransactionToForce=false;
     }
     
     private boolean areTransactionsStoredIntoTemporaryFile()
@@ -1363,6 +1368,7 @@ public abstract class DatabaseWrapper implements AutoCloseable
     {
 	try
 	{
+	    currentTransactionToForce|=de.isForce();
 	    Table<T> table=de.getTable(this);
 	    transactionPackages.add(table.getClass().getPackage());
 	    ObjectOutputStream oos=getTransactionsOutputStream();
@@ -1371,7 +1377,11 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	    oos.writeChars(tableName);
 	    oos.writeByte(de.getType().getByte());
 	    byte pk[];
-	    if (de.getOldDatabaseRecord()!=null)
+	    if (de.getMapKeys()!=null)
+	    {
+		pk=table.serializePrimaryKeys(de.getMapKeys());
+	    }
+	    else if (de.getOldDatabaseRecord()!=null)
 	    {
 		pk=table.serializePrimaryKeys(de.getOldDatabaseRecord());
 	    }
@@ -1473,7 +1483,7 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	}
     }
     
-    <T extends DatabaseRecord> boolean addEvent(Table<T> table, TableEvent<T> de) throws DatabaseException
+    boolean addEvent(Table<?> table, TableEvent<?> de) throws DatabaseException
     {
 	if (table==null)
 	    throw new NullPointerException("table");
@@ -1563,6 +1573,7 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	ConnectionWrapper cw=isNewTransactionAndStartIt();
 	if (cw.newTransaction)
 	{
+	    currentTransactionToForce=false;
 	    String savePointName=null;
 	    Savepoint savePoint=null;
 	    try

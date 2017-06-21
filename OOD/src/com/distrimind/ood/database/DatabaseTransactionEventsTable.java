@@ -37,7 +37,10 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database;
 
 
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.distrimind.ood.database.annotations.Field;
@@ -67,6 +70,11 @@ class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEventsTabl
 	@NotNull
 	@Field
 	protected String concernedDatabasePackage;
+	
+	@Field
+	private boolean force=false;
+	
+	
 	
 	long getID()
 	{
@@ -101,6 +109,16 @@ class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEventsTabl
 	public int hashCode()
 	{
 	    return (int)id;
+	}
+
+	public boolean isForce()
+	{
+	    return force;
+	}
+
+	public void setForce(boolean _force)
+	{
+	    force = _force;
 	}
 	
     }
@@ -163,6 +181,7 @@ class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEventsTabl
 	DatabaseTransactionEventsTable.Record tr=new DatabaseTransactionEventsTable.Record();
 	tr.id=getTransactionIDTable().getAndIncrementTransactionID();
 	tr.concernedDatabasePackage=databasePackage.getName();
+	tr.setForce(dte.isForce());
 	tr=addRecord(tr);
 	
 	for (TableEvent<?> de : dte.getEvents())
@@ -174,47 +193,85 @@ class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEventsTabl
 	return tr;
 	
     }
-    protected void addTransactionToSynchronizeTables(final Package databasePackages[], DatabaseHooksTable.Record hook) throws DatabaseException
+    protected void addTransactionToSynchronizeTables(final Package databasePackages[], DatabaseHooksTable.Record hook, boolean force) throws DatabaseException
     {
 	for (Package databasePackage : databasePackages)
-	    addTransactionToSynchronizeTables(databasePackage, hook);
+	    addTransactionToSynchronizeTables(databasePackage, hook, force);
     }
-    protected DatabaseTransactionEventsTable.Record addTransactionToSynchronizeTables(final Package databasePackage, DatabaseHooksTable.Record hook) throws DatabaseException
+    
+    private void addEventsForTablesToSynchronize(final AtomicReference<DatabaseTransactionEventsTable.Record> transaction, final Package databasePackage, final DatabaseHooksTable.Record hook, Class<? extends Table<?>> tableClass, Set<Class<? extends Table<?>>> tablesDone, final AtomicLong currentEventPos, final long maxEvents, final boolean force) throws DatabaseException
     {
-	DatabaseTransactionEventsTable.Record tr=new DatabaseTransactionEventsTable.Record();
-	tr.id=getTransactionIDTable().getAndIncrementTransactionID();
-	tr.concernedDatabasePackage=databasePackage.getName();
+	if (tablesDone.contains(tableClass))
+	    return;
+	    
+	tablesDone.add(tableClass);
 	
-	final DatabaseTransactionEventsTable.Record transaction=addRecord(tr);
-	
-	
-	for (Class<? extends Table<?>> c : getDatabaseWrapper().getDatabaseConfiguration(databasePackage).getTableClasses())
+	@SuppressWarnings("unchecked")
+	final Table<DatabaseRecord> table=(Table<DatabaseRecord>) getDatabaseWrapper().getTableInstance(tableClass);
+	for (Class<? extends Table<?>> c : table.getTablesClassesPointingToThisTable())
 	{
-	    @SuppressWarnings("unchecked")
-	    final Table<DatabaseRecord> table=(Table<DatabaseRecord>) getDatabaseWrapper().getTableInstance(c);
-	    table.getRecords(new Filter<DatabaseRecord>() {
-
-		@Override
-		public boolean nextRecord(DatabaseRecord _record) throws DatabaseException
-		{
-		    DatabaseEventsTable.Record event=new DatabaseEventsTable.Record(transaction, new TableEvent<DatabaseRecord>(-1, DatabaseEventType.ADD, null, _record), getDatabaseWrapper(), false);
-		    getDatabaseEventsTable().addRecord(event);
-		    return false;
-		}
-	    });
+	    addEventsForTablesToSynchronize(transaction, databasePackage, hook, c, tablesDone, currentEventPos, maxEvents, force);
 	}
-	DatabaseTransactionsPerHostTable.Record trhost=new DatabaseTransactionsPerHostTable.Record();
-	trhost.set(transaction, hook);
-	getDatabaseTransactionsPerHostTable().addRecord(trhost);
-	
-	return transaction;
-	
+	table.getRecords(new Filter<DatabaseRecord>() {
+
+	    @Override
+	    public boolean nextRecord(DatabaseRecord _record) throws DatabaseException
+	    {
+		DatabaseEventsTable.Record event=new DatabaseEventsTable.Record(transaction.get(), new TableEvent<DatabaseRecord>(-1, DatabaseEventType.ADD, null, _record, force), getDatabaseWrapper(), false);
+		getDatabaseEventsTable().addRecord(event);
+		if (currentEventPos.get()>maxEvents)
+		    throw new IllegalAccessError();
+		if (currentEventPos.get()==maxEvents)
+		{
+		    DatabaseTransactionsPerHostTable.Record trhost=new DatabaseTransactionsPerHostTable.Record();
+		    trhost.set(transaction.get(), hook);
+		    getDatabaseTransactionsPerHostTable().addRecord(trhost);
+
+		    DatabaseTransactionEventsTable.Record tr=new DatabaseTransactionEventsTable.Record();
+		    tr.id=getTransactionIDTable().getAndIncrementTransactionID();
+		    tr.concernedDatabasePackage=databasePackage.getName();
+		    tr.setForce(true);
+		    
+		    transaction.set(addRecord(tr));
+		    currentEventPos.set(0);
+		}
+		return false;
+	    }
+	});
     }
-    protected DatabaseTransactionEventsTable.Record addTransaction(final Package databasePackage, final Iterator<DatabaseEventsTable.Record> eventsIt, byte eventsType) throws DatabaseException
+    
+    protected void addTransactionToSynchronizeTables(final Package databasePackage, DatabaseHooksTable.Record hook, boolean force) throws DatabaseException
     {
 	DatabaseTransactionEventsTable.Record tr=new DatabaseTransactionEventsTable.Record();
 	tr.id=getTransactionIDTable().getAndIncrementTransactionID();
 	tr.concernedDatabasePackage=databasePackage.getName();
+	tr.setForce(force);
+	AtomicReference<DatabaseTransactionEventsTable.Record> transaction=new AtomicReference<>(addRecord(tr));
+	AtomicLong currentEventPos=new AtomicLong(0);
+	Set<Class<? extends Table<?>>> tables=getDatabaseWrapper().getDatabaseConfiguration(databasePackage).getTableClasses();
+	Set<Class<? extends Table<?>>> tablesDone=new HashSet<>();
+	
+	for (Class<? extends Table<?>> c : tables)
+	{
+	    addEventsForTablesToSynchronize(transaction, databasePackage, hook, c, tablesDone,currentEventPos, getDatabaseWrapper().getMaxTransactionEventsKeepedIntoMemory(), force);
+	}
+	if (currentEventPos.get()>0)
+	{
+	    DatabaseTransactionsPerHostTable.Record trhost=new DatabaseTransactionsPerHostTable.Record();
+	    trhost.set(transaction.get(), hook);
+	    getDatabaseTransactionsPerHostTable().addRecord(trhost);
+	}
+	else
+	    removeRecord(transaction.get());
+	
+	
+    }
+    protected DatabaseTransactionEventsTable.Record addTransaction(final Package databasePackage, final Iterator<DatabaseEventsTable.Record> eventsIt, byte eventsType, boolean force) throws DatabaseException
+    {
+	DatabaseTransactionEventsTable.Record tr=new DatabaseTransactionEventsTable.Record();
+	tr.id=getTransactionIDTable().getAndIncrementTransactionID();
+	tr.concernedDatabasePackage=databasePackage.getName();
+	tr.setForce(force);
 	tr=addRecord(tr);
 	
 	while (eventsIt.hasNext())
@@ -277,7 +334,7 @@ class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEventsTabl
     }
     
     
-    DatabaseTransactionEventsTable.Record addTransactionIfNecessary(final Package databasePackage, final Iterator<DatabaseEventsTable.Record> eventsIterator, final byte eventsType) throws DatabaseException
+    DatabaseTransactionEventsTable.Record addTransactionIfNecessary(final Package databasePackage, final Iterator<DatabaseEventsTable.Record> eventsIterator, final byte eventsType, final boolean force) throws DatabaseException
     {
 	return (DatabaseTransactionEventsTable.Record)getDatabaseWrapper().runTransaction(new Transaction() {
 
@@ -295,7 +352,7 @@ class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEventsTabl
 			{
 			    if (res.get()==null)
 			    {
-				res.set(addTransaction(databasePackage, eventsIterator, eventsType));
+				res.set(addTransaction(databasePackage, eventsIterator, eventsType, force));
 			    }
 			    DatabaseTransactionsPerHostTable.Record trhost=new DatabaseTransactionsPerHostTable.Record();
 			    trhost.set(res.get(), _record);

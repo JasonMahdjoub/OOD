@@ -794,7 +794,7 @@ public abstract class TestDecentralizedDatabase
 	    for (Database other : listDatabase)
 	    {
 		if (other!=db)
-		    db.getDbwrapper().getSynchronizer().addHookForDistantHost(other.getHostID(), TablePointed.class.getPackage());
+		    db.getDbwrapper().getSynchronizer().addHookForDistantHost(other.getHostID(), false, TablePointed.class.getPackage());
 	    }
 	}
 	

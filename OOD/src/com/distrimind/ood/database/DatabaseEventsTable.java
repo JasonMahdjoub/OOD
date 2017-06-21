@@ -87,7 +87,11 @@ class DatabaseEventsTable extends Table<DatabaseEventsTable.Record>
 	    type=_de.getType().getByte();
 	    Table<T> table=_de.getTable(wrapper);
 	    concernedTable=table.getClass().getName();
-	    if (_de.getOldDatabaseRecord()!=null)
+	    if (_de.getMapKeys()!=null)
+	    {
+		concernedSerializedPrimaryKey=table.serializePrimaryKeys(_de.getMapKeys());
+	    }
+	    else if (_de.getOldDatabaseRecord()!=null)
 		concernedSerializedPrimaryKey=table.serializePrimaryKeys(_de.getOldDatabaseRecord());
 	    else
 		concernedSerializedPrimaryKey=table.serializePrimaryKeys(_de.getNewDatabaseRecord());

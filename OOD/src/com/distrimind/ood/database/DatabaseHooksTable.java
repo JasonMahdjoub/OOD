@@ -453,7 +453,7 @@ class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
     
     
     
-    DatabaseHooksTable.Record addHooks(final AbstractDecentralizedID hostID, final boolean concernsDatabaseHost, final Package ...packages) throws DatabaseException
+    DatabaseHooksTable.Record addHooks(final AbstractDecentralizedID hostID, final boolean concernsDatabaseHost, final boolean replaceDistantConflitualRecords, final Package ...packages) throws DatabaseException
     {
 	
 	if (hostID==null)
@@ -479,7 +479,7 @@ class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 		    r.setLastValidatedTransaction(getGlobalLastValidatedTransactionID());
 		    r=addRecord(r);
 		    
-		    getDatabaseTransactionEventsTable().addTransactionToSynchronizeTables(newAddedPackages, r);
+		    getDatabaseTransactionEventsTable().addTransactionToSynchronizeTables(newAddedPackages, r, replaceDistantConflitualRecords);
 		    return r;
 		}
 		else
@@ -488,7 +488,7 @@ class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 		    Package newAddedPackages[]=r.addDatabasePackageNames(packages);
 		    updateRecord(r);
 		    
-		    getDatabaseTransactionEventsTable().addTransactionToSynchronizeTables(newAddedPackages, r);
+		    getDatabaseTransactionEventsTable().addTransactionToSynchronizeTables(newAddedPackages, r, replaceDistantConflitualRecords);
 		    
 		    return r;
 		}
@@ -498,7 +498,7 @@ class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 	    @Override
 	    public TransactionIsolation getTransactionIsolation()
 	    {
-		return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
+		return TransactionIsolation.TRANSACTION_SERIALIZABLE;
 	    }
 
 	    @Override

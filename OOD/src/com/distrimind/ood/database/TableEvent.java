@@ -36,6 +36,8 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
+import java.util.HashMap;
+
 import com.distrimind.ood.database.exceptions.DatabaseException;
 
 /**
@@ -51,8 +53,12 @@ public class TableEvent<T extends DatabaseRecord> extends DatabaseEvent
     
     private final T oldDatabaseRecord;
     private final T newDatabaseRecord;
+    private final boolean force;
+    private HashMap<String, Object> mapKeys=null;
+    private boolean oldAlreadyPresent=false;
     
-    TableEvent(int id, DatabaseEventType type, T oldDatabaseRecord, T newDatabaseRecord)
+    
+    TableEvent(int id, DatabaseEventType type, T oldDatabaseRecord, T newDatabaseRecord, boolean force)
     {
 	if (type==null)
 	    throw new NullPointerException("type");
@@ -64,6 +70,28 @@ public class TableEvent<T extends DatabaseRecord> extends DatabaseEvent
 	this.type=type;
 	this.oldDatabaseRecord=oldDatabaseRecord;
 	this.newDatabaseRecord=newDatabaseRecord;
+	this.force=force;
+    }
+    TableEvent(int id, DatabaseEventType type, T oldDatabaseRecord, T newDatabaseRecord, boolean force, HashMap<String, Object> mapKeys, boolean oldAlreadyPresent)
+    {
+	this(id, type, oldDatabaseRecord, newDatabaseRecord, force);
+	this.mapKeys=mapKeys;
+	this.oldAlreadyPresent=oldAlreadyPresent;
+    }
+    
+    boolean isOldAlreadyPresent()
+    {
+	return oldAlreadyPresent;
+    }
+    
+    HashMap<String, Object> getMapKeys()
+    {
+	return mapKeys;
+    }
+    
+    boolean isForce()
+    {
+	return force;
     }
     
     public int getID()
