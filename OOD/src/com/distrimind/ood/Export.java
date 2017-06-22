@@ -42,7 +42,7 @@ import java.util.ArrayList;
 
 import javax.lang.model.SourceVersion;
 
-import com.distrimind.ood.tests.TestDatabase;
+import com.distrimind.ood.database.TestDatabase;
 import com.distrimind.util.EmptyClass;
 import com.distrimind.util.Utils;
 import com.distrimind.util.export.BinaryDependency;

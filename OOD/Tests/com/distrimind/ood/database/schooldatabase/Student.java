@@ -1,16 +1,17 @@
-package com.distrimind.ood.tests.schooldatabase;
-
-import java.math.BigInteger;
+package com.distrimind.ood.database.schooldatabase;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.annotations.Field;
+import com.distrimind.ood.database.annotations.NotNull;
 import com.distrimind.ood.database.annotations.RandomPrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 
-public final class Group extends Table<Group.Record>
+public final class Student extends Table<Student.Record>
 {
-    protected Group() throws DatabaseException
+
+    
+    protected Student() throws DatabaseException
     {
 	super();
     }
@@ -21,8 +22,8 @@ public final class Group extends Table<Group.Record>
 	{
 	    super();
 	}
-	
-	@RandomPrimaryKey BigInteger id_group;
-	@Field String name;
+	@RandomPrimaryKey long id_student;
+	@Field @NotNull String name;
+	@Field Long DateOfBirth;
     }
 }

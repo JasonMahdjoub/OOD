@@ -1,4 +1,4 @@
-package com.distrimind.ood.tests.database;
+package com.distrimind.ood.database.database;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.Table;

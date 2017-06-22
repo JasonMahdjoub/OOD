@@ -34,7 +34,7 @@ same conditions as regards security.
 The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
-package com.distrimind.ood.tests;
+package com.distrimind.ood.database;
 
 import java.io.File;
 import java.util.HashMap;
@@ -46,11 +46,11 @@ import org.testng.annotations.Test;
 import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.EmbeddedDerbyWrapper;
 import com.distrimind.ood.database.Filter;
+import com.distrimind.ood.database.database.Table1;
+import com.distrimind.ood.database.database.Table3;
+import com.distrimind.ood.database.database.Table1.Record;
 import com.distrimind.ood.database.exceptions.ConstraintsNotRespectedDatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.ood.tests.database.Table1;
-import com.distrimind.ood.tests.database.Table3;
-import com.distrimind.ood.tests.database.Table1.Record;
 import com.distrimind.util.FileTools;
 
 import gnu.vm.jgnu.security.NoSuchAlgorithmException;

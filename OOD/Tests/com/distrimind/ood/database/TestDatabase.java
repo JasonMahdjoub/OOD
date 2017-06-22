@@ -35,7 +35,7 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-package com.distrimind.ood.tests;
+package com.distrimind.ood.database;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -69,26 +69,26 @@ import com.distrimind.ood.database.GroupedResults;
 import com.distrimind.ood.database.EmbeddedHSQLDBWrapper;
 import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.Table;
+import com.distrimind.ood.database.database.SubField;
+import com.distrimind.ood.database.database.SubSubField;
+import com.distrimind.ood.database.database.Table1;
+import com.distrimind.ood.database.database.Table2;
+import com.distrimind.ood.database.database.Table3;
+import com.distrimind.ood.database.database.Table4;
+import com.distrimind.ood.database.database.Table5;
+import com.distrimind.ood.database.database.Table6;
+import com.distrimind.ood.database.database.Table7;
+import com.distrimind.ood.database.database.Table1.Record;
 import com.distrimind.ood.database.exceptions.ConcurentTransactionDatabaseException;
 import com.distrimind.ood.database.exceptions.ConstraintsNotRespectedDatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
 import com.distrimind.ood.database.exceptions.RecordNotFoundDatabaseException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
+import com.distrimind.ood.database.schooldatabase.Lecture;
 import com.distrimind.ood.interpreter.Interpreter;
 import com.distrimind.ood.interpreter.RuleInstance;
 import com.distrimind.ood.interpreter.SymbolType;
-import com.distrimind.ood.tests.database.SubField;
-import com.distrimind.ood.tests.database.SubSubField;
-import com.distrimind.ood.tests.database.Table1;
-import com.distrimind.ood.tests.database.Table2;
-import com.distrimind.ood.tests.database.Table3;
-import com.distrimind.ood.tests.database.Table4;
-import com.distrimind.ood.tests.database.Table5;
-import com.distrimind.ood.tests.database.Table6;
-import com.distrimind.ood.tests.database.Table7;
-import com.distrimind.ood.tests.database.Table1.Record;
-import com.distrimind.ood.tests.schooldatabase.Lecture;
 import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.DecentralizedIDGenerator;
 import com.distrimind.util.RenforcedDecentralizedIDGenerator;
@@ -1387,7 +1387,7 @@ public abstract class TestDatabase
 	table3.removeRecords(new Filter<Table3.Record>() {
 
 	    @Override
-	    public boolean nextRecord(com.distrimind.ood.tests.database.Table3.Record _record) 
+	    public boolean nextRecord(com.distrimind.ood.database.database.Table3.Record _record) 
 	    {
 		return false;
 	    }
@@ -1407,7 +1407,7 @@ public abstract class TestDatabase
 	table3.removeRecords(new Filter<Table3.Record>() {
 
 	    @Override
-	    public boolean nextRecord(com.distrimind.ood.tests.database.Table3.Record _record) 
+	    public boolean nextRecord(com.distrimind.ood.database.database.Table3.Record _record) 
 	    {
 		return true;
 	    }
@@ -2439,7 +2439,7 @@ public abstract class TestDatabase
 	table1.removeRecords(new Filter<Table1.Record>() {
 
 	    @Override
-	    public boolean nextRecord(com.distrimind.ood.tests.database.Table1.Record _record)
+	    public boolean nextRecord(com.distrimind.ood.database.database.Table1.Record _record)
 	    {
 		return true;
 	    }
@@ -2447,7 +2447,7 @@ public abstract class TestDatabase
 	table3.removeRecords(new Filter<Table3.Record>() {
 
 	    @Override
-	    public boolean nextRecord(com.distrimind.ood.tests.database.Table3.Record _record)
+	    public boolean nextRecord(com.distrimind.ood.database.database.Table3.Record _record)
 	    {
 		return true;
 	    }
@@ -2455,7 +2455,7 @@ public abstract class TestDatabase
 	table2.removeRecords(new Filter<Table2.Record>() {
 
 	    @Override
-	    public boolean nextRecord(com.distrimind.ood.tests.database.Table2.Record _record)
+	    public boolean nextRecord(com.distrimind.ood.database.database.Table2.Record _record)
 	    {
 		return true;
 	    }
@@ -2463,7 +2463,7 @@ public abstract class TestDatabase
 	table4.removeRecords(new Filter<Table4.Record>() {
 
 	    @Override
-	    public boolean nextRecord(com.distrimind.ood.tests.database.Table4.Record _record)
+	    public boolean nextRecord(com.distrimind.ood.database.database.Table4.Record _record)
 	    {
 		return true;
 	    }
@@ -2471,7 +2471,7 @@ public abstract class TestDatabase
 	table5.removeRecords(new Filter<Table5.Record>() {
 
 	    @Override
-	    public boolean nextRecord(com.distrimind.ood.tests.database.Table5.Record _record)
+	    public boolean nextRecord(com.distrimind.ood.database.database.Table5.Record _record)
 	    {
 		return true;
 	    }
@@ -2490,7 +2490,7 @@ public abstract class TestDatabase
 	table6.removeRecords(new Filter<Table6.Record>() {
 
 	    @Override
-	    public boolean nextRecord(com.distrimind.ood.tests.database.Table6.Record _record)
+	    public boolean nextRecord(com.distrimind.ood.database.database.Table6.Record _record)
 	    {
 		return true;
 	    }
@@ -2581,7 +2581,7 @@ public abstract class TestDatabase
 	table2.removeRecordsWithCascade(new Filter<Table2.Record>() {
 
 	    @Override
-	    public boolean nextRecord(com.distrimind.ood.tests.database.Table2.Record _record)
+	    public boolean nextRecord(com.distrimind.ood.database.database.Table2.Record _record)
 	    {
 		return true;
 	    }
@@ -2589,7 +2589,7 @@ public abstract class TestDatabase
 	table5.removeRecordsWithCascade(new Filter<Table5.Record>() {
 
 	    @Override
-	    public boolean nextRecord(com.distrimind.ood.tests.database.Table5.Record _record)
+	    public boolean nextRecord(com.distrimind.ood.database.database.Table5.Record _record)
 	    {
 		return true;
 	    }

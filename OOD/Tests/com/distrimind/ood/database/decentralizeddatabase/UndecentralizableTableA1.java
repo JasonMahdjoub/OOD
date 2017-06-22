@@ -33,14 +33,13 @@ same conditions as regards security.
 The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
-package com.distrimind.ood.tests.decentralizeddatabase;
+package com.distrimind.ood.database.decentralizeddatabase;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.annotations.AutoPrimaryKey;
 import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.util.AbstractDecentralizedID;
 
 /**
  * 
@@ -49,9 +48,9 @@ import com.distrimind.util.AbstractDecentralizedID;
  * @since OOD 2.0
  */
 
-public class TablePointing extends Table<TablePointing.Record>
+public class UndecentralizableTableA1 extends Table<UndecentralizableTableA1.Record>
 {
-    protected TablePointing() throws DatabaseException
+    protected UndecentralizableTableA1() throws DatabaseException
     {
 	super();
     }
@@ -59,9 +58,9 @@ public class TablePointing extends Table<TablePointing.Record>
     public static class Record extends DatabaseRecord
     {
 	@AutoPrimaryKey
-	public AbstractDecentralizedID id;
+	public int id;
 	
 	@Field
-	public TablePointed.Record table2;
+	public String value;
     }
 }

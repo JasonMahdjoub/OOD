@@ -1,4 +1,4 @@
-package com.distrimind.ood.tests.schooldatabase;
+package com.distrimind.ood.database.schooldatabase;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.Table;
@@ -6,10 +6,10 @@ import com.distrimind.ood.database.annotations.ForeignKey;
 import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 
-public final class StudentGroup extends Table<StudentGroup.Record>
+public final class TeacherLecture extends Table<TeacherLecture.Record>
 {
 
-    protected StudentGroup() throws DatabaseException
+    protected TeacherLecture() throws DatabaseException
     {
 	super();
     }
@@ -20,8 +20,9 @@ public final class StudentGroup extends Table<StudentGroup.Record>
 	{
 	    super();
 	}
-	
-	@PrimaryKey @ForeignKey Student.Record student;
-	@PrimaryKey @ForeignKey Group.Record group;
+	@PrimaryKey @ForeignKey Teacher.Record teacher;
+	@PrimaryKey @ForeignKey Lecture.Record lecture;
     }
+    
+    
 }

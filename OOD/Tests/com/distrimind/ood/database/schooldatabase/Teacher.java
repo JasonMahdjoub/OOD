@@ -1,4 +1,4 @@
-package com.distrimind.ood.tests.schooldatabase;
+package com.distrimind.ood.database.schooldatabase;
 
 import java.util.ArrayList;
 

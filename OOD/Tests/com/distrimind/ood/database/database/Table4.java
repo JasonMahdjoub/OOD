@@ -1,18 +1,16 @@
-package com.distrimind.ood.tests.database;
+package com.distrimind.ood.database.database;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.annotations.ForeignKey;
-import com.distrimind.ood.database.annotations.LoadToMemory;
 import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.annotations.Unique;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 
-@LoadToMemory(refreshInterval=100)
-public final class Table5 extends Table<Table5.Record>
+public final class Table4 extends Table<Table4.Record>
 {
-    protected Table5() throws DatabaseException
+    protected Table4() throws DatabaseException
     {
 	super();
     }
@@ -25,7 +23,6 @@ public final class Table5 extends Table<Table5.Record>
 	}
 	public @PrimaryKey @ForeignKey Table3.Record fr1_pk1;
 	public @Unique @Field int int_value;
-	
     }
     
     

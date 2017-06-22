@@ -1,4 +1,4 @@
-package com.distrimind.ood.tests.database;
+package com.distrimind.ood.database.database;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
