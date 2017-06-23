@@ -614,8 +614,8 @@ public abstract class Table<T extends DatabaseRecord>
 					}
 					//boolean is_null=rq.result_set.getString("IS_NULLABLE").equals("YES");
 					boolean is_null=rq.tableColumnsResultSet.isNullable();
-					if (is_null==founded_fa.isNotNull())
-					    throw new DatabaseVersionException(Table.this, "The column "+col+" is expected to be "+(founded_fa.isNotNull()?"not null":"nullable"));
+					if (is_null==founded_sf.not_null)
+					    throw new DatabaseVersionException(Table.this, "The column "+col+" is expected to be "+(founded_sf.not_null?"not null":"nullable"));
 					boolean is_autoincrement=rq.result_set.getString("IS_AUTOINCREMENT").equals("YES");
 					if (is_autoincrement!=founded_fa.isAutoPrimaryKey())
 					    throw new DatabaseVersionException(Table.this, "The column "+col+" is "+(is_autoincrement?"":"not ")+"autoincremented into the Sql database where it is "+(is_autoincrement?"not ":"")+" into the OOD database.");
@@ -6043,7 +6043,7 @@ public abstract class Table<T extends DatabaseRecord>
 	if (_fields==null)
 	    throw new NullPointerException("_fields");
 	if (_fields.length==0 || _fields.length%2!=0)
-	    throw new DatabaseException("Bad field tab format !");
+	    throw new DatabaseException("Bad field tab format ! fields tab length = "+_fields.length);
 	for (int i=0;i<_fields.length;i+=2)
 	{
 	    if (_fields[i]==null || !(_fields[i] instanceof String))
@@ -6638,8 +6638,11 @@ public abstract class Table<T extends DatabaseRecord>
      * @throws FieldDatabaseException if one of the given fields does not exists into the database, or if one of the given fields are auto or random primary keys.
      * @throws RecordNotFoundDatabaseException if the given record is not included into the database, or if one of the field is a foreign key and point to a record of another table which does not exist. 
      */
-
-    public final void updateRecord(final T _record, final Map<String, Object> _fields, final boolean synchronizeIfNecessary, final boolean forceSynchro) throws DatabaseException
+    public final void updateRecord(final T _record, final Map<String, Object> _fields) throws DatabaseException
+    {
+	updateRecord(_record, _fields, true, false);
+    }
+    final void updateRecord(final T _record, final Map<String, Object> _fields, final boolean synchronizeIfNecessary, final boolean forceSynchro) throws DatabaseException
     {
 	if (_record==null)
 	    throw new NullPointerException("The parameter _record is a null pointer !");

@@ -100,6 +100,19 @@ public class ComposedFieldAccessor extends FieldAccessor
 	
 	
     }
+    @Override
+    public boolean isNotNull()
+    {
+	if (not_null)
+	    return true;
+	
+	for (SqlField sf : getDeclaredSqlFields())
+	    if (sf.not_null)
+		return true;
+	return false;
+    }
+
+
 
     public ArrayList<FieldAccessor> getFieldAccessors()
     {

@@ -130,13 +130,13 @@ class Export
 	
 	licenses=new License[1];
 	licenses[0]=OOD.LICENSE;
-	String regex_exlude=Dependency.mixRegexes(Dependency.getRegexMatchClass(Export.class),Dependency.getRegexMatchPackage(TestDatabase.class.getPackage()));
+	
 	JavaProjectSource javaProjectSource=new JavaProjectSource(root_dir, src_dir, root_package, licenses, 
 		"com/distrimind/ood/build.txt", 
 		null, "OOD is an Object Oriented Data which aims to manage database only with Java language without using SQL querries", 
 		OOD.VERSION,SourceVersion.RELEASE_7,
 		dependencies,additional_files,new File("/usr/lib/jvm/java-7-openjdk-amd64"),
-		regex_exlude, null);
+		Dependency.getRegexMatchClass(Export.class), null);
 	javaProjectSource.setVerbose(false);
 	
 	
@@ -171,6 +171,7 @@ class Export
 		dependencies, null, new TestSuite(new TestNGFile(EmptyClass.class.getPackage(), "AllTestsNG.xml"), new TestNGFile(TestDatabase.class.getPackage(), "AllTestsNG.xml")));
 	
 	javaProjectSource.setGitHUBLink(new URL("https://github.com/JazZ51/OOD.git"));
+	
 	
 	exports.setProject(javaProjectSource);
 	exports.setExportDirectory(new File(root_dir, "exports"));

@@ -412,10 +412,10 @@ public abstract class TestDecentralizedDatabase
     private final ArrayList<Database> listDatabase=new ArrayList<>(3);
     
     
-    public abstract DatabaseWrapper getDatabaseWrapperInstance1();
-    public abstract DatabaseWrapper getDatabaseWrapperInstance2();
-    public abstract DatabaseWrapper getDatabaseWrapperInstance3();
-    public abstract DatabaseWrapper getDatabaseWrapperInstance4();
+    public abstract DatabaseWrapper getDatabaseWrapperInstance1() throws IllegalArgumentException, DatabaseException;
+    public abstract DatabaseWrapper getDatabaseWrapperInstance2() throws IllegalArgumentException, DatabaseException;
+    public abstract DatabaseWrapper getDatabaseWrapperInstance3() throws IllegalArgumentException, DatabaseException;
+    public abstract DatabaseWrapper getDatabaseWrapperInstance4() throws IllegalArgumentException, DatabaseException;
     public abstract void removeDatabaseFiles1();
     public abstract void removeDatabaseFiles2();
     public abstract void removeDatabaseFiles3();
