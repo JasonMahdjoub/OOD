@@ -1711,10 +1711,24 @@ public abstract class TestDecentralizedDatabase
     }
     
     
+ 
+    
+    
     @DataProvider(name = "provideDataForTransactionBetweenTwoPeers", parallel = false)
     public Object[][] provideDataForTransactionBetweenTwoPeers()
     {
-	return null;//TODO complete
+	int numberTransactions=40;
+	ArrayList<Object[]> res=new ArrayList<>();
+	for (boolean peersInitiallyConnected : new boolean[]{true, false})
+	{
+	    for (int i=0;i<numberTransactions;i++)
+	    {
+		res.add(new Object[]{new Boolean(peersInitiallyConnected), proviveTableEvents((int)(5+Math.random()*10))});
+
+	    }
+	}
+	
+	return (Object[][])res.toArray();
     }
     
     @Test(dataProvider = "provideDataForSynchroBetweenTwoPeers", dependsOnMethods={"testIndirectSynchroWithIndirectConnection"})
@@ -1852,9 +1866,71 @@ public abstract class TestDecentralizedDatabase
 	disconnectAllDatabase();
     }
     
-    //TODO redo all tests
     
-    @Test
+
+    
+	@Test(dataProvider = "provideDataForSynchroBetweenTwoPeers", dependsOnMethods={"addNewPeer"})
+	public void testSynchroBetweenTwoPeers2(boolean exceptionDuringTransaction, boolean generateDirectConflict, boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event) throws ClassNotFoundException, DatabaseException, IOException
+	{
+    		testSynchroBetweenTwoPeers(exceptionDuringTransaction, generateDirectConflict, peersInitiallyConnected, event);
+	}
+
+
+	@Test(dataProvider = "provideDataSynchroBetweenThreePeers", dependsOnMethods={"testSynchroBetweenTwoPeers2"})
+	public void testSynchroBetweenThreePeers2(boolean exceptionDuringTransaction, boolean generateDirectConflict, boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event) throws ClassNotFoundException, DatabaseException, IOException
+	{
+	    testSynchroBetweenThreePeers(exceptionDuringTransaction, generateDirectConflict, peersInitiallyConnected, event);
+	}
+
+
+	@Test(dataProvider = "provideDataForIndirectSynchro", dependsOnMethods={"testSynchroBetweenThreePeers2"})
+	public void testIndirectSynchro2(boolean exceptionDuringTransaction, boolean generateDirectConflict, boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event) throws DatabaseException, ClassNotFoundException, IOException
+	{
+	    testIndirectSynchro(exceptionDuringTransaction, generateDirectConflict, peersInitiallyConnected, event);
+	}
+
+	@Test(dataProvider = "provideDataForIndirectSynchroWithIndirectConnection", dependsOnMethods={"testIndirectSynchro2"})
+	public void testIndirectSynchroWithIndirectConnection2(boolean exceptionDuringTransaction, boolean generateDirectConflict, boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event) throws ClassNotFoundException, DatabaseException, IOException
+	{
+	    testIndirectSynchroWithIndirectConnection(exceptionDuringTransaction, generateDirectConflict, peersInitiallyConnected, event);
+	}
+
+	@Test(dataProvider = "provideDataForSynchroBetweenTwoPeers", dependsOnMethods={"testIndirectSynchroWithIndirectConnection2"})
+	public void testTransactionBetweenTwoPeers2(boolean peersInitiallyConnected, List<TableEvent<DatabaseRecord>> levents) throws ClassNotFoundException, DatabaseException, IOException
+	{
+	    testTransactionBetweenTwoPeers(peersInitiallyConnected, levents);
+	}
+
+
+	@Test(dataProvider = "provideDataForTransactionBetweenThreePeers", dependsOnMethods={"testTransactionBetweenTwoPeers2"})
+	public void testTransactionBetweenThreePeers2(boolean peersInitiallyConnected, List<TableEvent<DatabaseRecord>> levents) throws ClassNotFoundException, DatabaseException, IOException
+	{
+	    testTransactionBetweenThreePeers(peersInitiallyConnected, levents);
+	}
+
+	@Test(dataProvider = "provideDataForTransactionSynchros", dependsOnMethods={"testTransactionBetweenThreePeers2"}, invocationCount=100)
+	public void testTransactionSynchros2(boolean peersInitiallyConnected, List<TableEvent<DatabaseRecord>> levents) throws ClassNotFoundException, DatabaseException, IOException
+	{
+	    testTransactionSynchros(peersInitiallyConnected, levents);
+	}
+
+
+	@Test(dataProvider = "provideDataForTransactionSynchrosWithIndirectConnection", dependsOnMethods={"testTransactionSynchros2"})
+	public void testTransactionSynchrosWithIndirectConnection2(boolean peersInitiallyConnected, List<TableEvent<DatabaseRecord>> levents) throws ClassNotFoundException, DatabaseException, IOException
+	{
+	    testTransactionSynchrosWithIndirectConnection(peersInitiallyConnected, levents);
+	}
+
+	@Test(dataProvider = "provideDataForTransactionSynchrosWithIndirectConnectionThreaded", dependsOnMethods={"testTransactionSynchrosWithIndirectConnection2"})
+	public void testTransactionSynchrosWithIndirectConnectionThreaded2(boolean peersInitiallyConnected, List<TableEvent<DatabaseRecord>> levents) throws ClassNotFoundException, DatabaseException, IOException
+	{
+	    testTransactionSynchrosWithIndirectConnectionThreaded(peersInitiallyConnected, levents);
+	}
+    
+    
+    
+    
+    @Test(dependsOnMethods={"testTransactionSynchrosWithIndirectConnectionThreaded2"})
     public void removeNewPeer() throws DatabaseException, ClassNotFoundException, IOException
     {
 	
@@ -1875,6 +1951,65 @@ public abstract class TestDecentralizedDatabase
 	disconnectAllDatabase();
 	
     }
+
+    
+	@Test(dataProvider = "provideDataForSynchroBetweenTwoPeers", dependsOnMethods={"removeNewPeer"})
+	public void testSynchroBetweenTwoPeers3(boolean exceptionDuringTransaction, boolean generateDirectConflict, boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event) throws ClassNotFoundException, DatabaseException, IOException
+	{
+		testSynchroBetweenTwoPeers(exceptionDuringTransaction, generateDirectConflict, peersInitiallyConnected, event);
+	}
+
+
+	@Test(dataProvider = "provideDataSynchroBetweenThreePeers", dependsOnMethods={"testSynchroBetweenTwoPeers3"})
+	public void testSynchroBetweenThreePeers3(boolean exceptionDuringTransaction, boolean generateDirectConflict, boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event) throws ClassNotFoundException, DatabaseException, IOException
+	{
+	    testSynchroBetweenThreePeers(exceptionDuringTransaction, generateDirectConflict, peersInitiallyConnected, event);
+	}
+
+
+	@Test(dataProvider = "provideDataForIndirectSynchro", dependsOnMethods={"testSynchroBetweenThreePeers3"})
+	public void testIndirectSynchro3(boolean exceptionDuringTransaction, boolean generateDirectConflict, boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event) throws DatabaseException, ClassNotFoundException, IOException
+	{
+	    testIndirectSynchro(exceptionDuringTransaction, generateDirectConflict, peersInitiallyConnected, event);
+	}
+
+	@Test(dataProvider = "provideDataForIndirectSynchroWithIndirectConnection", dependsOnMethods={"testIndirectSynchro3"})
+	public void testIndirectSynchroWithIndirectConnection3(boolean exceptionDuringTransaction, boolean generateDirectConflict, boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event) throws ClassNotFoundException, DatabaseException, IOException
+	{
+	    testIndirectSynchroWithIndirectConnection(exceptionDuringTransaction, generateDirectConflict, peersInitiallyConnected, event);
+	}
+
+	@Test(dataProvider = "provideDataForSynchroBetweenTwoPeers", dependsOnMethods={"testIndirectSynchroWithIndirectConnection2"})
+	public void testTransactionBetweenTwoPeers3(boolean peersInitiallyConnected, List<TableEvent<DatabaseRecord>> levents) throws ClassNotFoundException, DatabaseException, IOException
+	{
+	    testTransactionBetweenTwoPeers(peersInitiallyConnected, levents);
+	}
+
+
+	@Test(dataProvider = "provideDataForTransactionBetweenThreePeers", dependsOnMethods={"testTransactionBetweenTwoPeers3"})
+	public void testTransactionBetweenThreePeers3(boolean peersInitiallyConnected, List<TableEvent<DatabaseRecord>> levents) throws ClassNotFoundException, DatabaseException, IOException
+	{
+	    testTransactionBetweenThreePeers(peersInitiallyConnected, levents);
+	}
+
+	@Test(dataProvider = "provideDataForTransactionSynchros", dependsOnMethods={"testTransactionBetweenThreePeers3"}, invocationCount=100)
+	public void testTransactionSynchros3(boolean peersInitiallyConnected, List<TableEvent<DatabaseRecord>> levents) throws ClassNotFoundException, DatabaseException, IOException
+	{
+	    testTransactionSynchros(peersInitiallyConnected, levents);
+	}
+
+
+	@Test(dataProvider = "provideDataForTransactionSynchrosWithIndirectConnection", dependsOnMethods={"testTransactionSynchros3"})
+	public void testTransactionSynchrosWithIndirectConnection3(boolean peersInitiallyConnected, List<TableEvent<DatabaseRecord>> levents) throws ClassNotFoundException, DatabaseException, IOException
+	{
+	    testTransactionSynchrosWithIndirectConnection(peersInitiallyConnected, levents);
+	}
+
+	@Test(dataProvider = "provideDataForTransactionSynchrosWithIndirectConnectionThreaded", dependsOnMethods={"testTransactionSynchrosWithIndirectConnection3"})
+	public void testTransactionSynchrosWithIndirectConnectionThreaded3(boolean peersInitiallyConnected, List<TableEvent<DatabaseRecord>> levents) throws ClassNotFoundException, DatabaseException, IOException
+	{
+	    testTransactionSynchrosWithIndirectConnectionThreaded(peersInitiallyConnected, levents);
+	}
     
 }
 
