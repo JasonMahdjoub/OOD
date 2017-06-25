@@ -38,6 +38,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database.fieldaccessors;
 
+import java.io.ByteArrayInputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 /**
@@ -52,9 +53,12 @@ import java.math.BigInteger;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
+import java.sql.Blob;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -106,6 +110,7 @@ import com.distrimind.util.RenforcedDecentralizedIDGenerator;
     protected final boolean hasToCreateIndex;
     protected final boolean descendantIndex;
     private final Class<?> compatible_classes[];
+    private final String indexName;
     
     @SuppressWarnings("unchecked")
     protected FieldAccessor(DatabaseWrapper _sql_connection, Field _field, String parentFieldName, Class<?> compatible_classes[], Class<? extends Table<?>> table_class) throws DatabaseException
@@ -188,6 +193,7 @@ import com.distrimind.util.RenforcedDecentralizedIDGenerator;
 	    hasToCreateIndex=false;
 	    descendantIndex=true;
 	}
+	this.indexName=(this.table_name+"_"+this.getField().getName()).replace(".", "_").toUpperCase();
     }
     
     public boolean hasToCreateIndex()
@@ -202,7 +208,7 @@ import com.distrimind.util.RenforcedDecentralizedIDGenerator;
     
     public String getIndexName()
     {
-	return (this.getField().getDeclaringClass().getName()+"."+this.getField().getName()).replace(".", "_").toUpperCase();
+	return indexName;
     }
     
     
@@ -779,6 +785,60 @@ import com.distrimind.util.RenforcedDecentralizedIDGenerator;
 		return false;
 	return true;
     }
+	public static void setValue(DatabaseWrapper sql_connection, PreparedStatement st, int index, Object p) throws SQLException
+	{
+	    if (p instanceof byte[] || (p instanceof Number && p.getClass()!=BigInteger.class && p.getClass()!=BigDecimal.class))
+	    {
+		
+		switch(st.getMetaData().getColumnType(index))
+		{
+		    case Types.TINYINT:
+			st.setByte(index, ((Byte)p).byteValue());
+			break;
+		    case Types.INTEGER:
+			st.setInt(index, ((Integer)p).intValue());
+			break;
+		    case Types.BIGINT:
+			if (p instanceof Integer)
+			    st.setInt(index, ((Integer)p).intValue());
+			else
+			    st.setLong(index, ((Long)p).longValue());
+			break;
+		    case Types.VARBINARY:
+			st.setBytes(index, (byte[])p);
+			break;
+		    case Types.BLOB:
+		    {
+			    Blob blob=DatabaseWrapperAccessor.getBlob(sql_connection, (byte[])p);
+			    if (blob==null && p!=null)
+				st.setBinaryStream(index, new ByteArrayInputStream((byte[])p));
+			    else 
+			    {
+				st.setBlob(index, blob);
+			    }
+		    }
+			break;
+		    case Types.CHAR:
+			st.setString(index, p.toString());
+		    break;
+		    case Types.SMALLINT:
+			st.setShort(index, ((Short)p).shortValue());
+			break;
+		    case Types.BOOLEAN:
+			st.setBoolean(index, ((Boolean)p).booleanValue());
+			break;
+		    case Types.FLOAT:
+			st.setFloat(index, ((Float)p).floatValue());
+			break;
+		    case Types.DOUBLE:
+			st.setDouble(index, ((Double)p).doubleValue());
+			break;
+		    
+		}
+	    }
+	    st.setObject(index, p);
+	}
+    
     
     protected static class SqlFieldTranslation
     {
@@ -876,7 +936,6 @@ import com.distrimind.util.RenforcedDecentralizedIDGenerator;
 
 	    return fields;
 	}
-	
 	
 	
 }

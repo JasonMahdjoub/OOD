@@ -33,36 +33,75 @@ same conditions as regards security.
 The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
-package com.distrimind.ood.database.decentralizeddatabase;
+package com.distrimind.ood.database;
 
-import com.distrimind.ood.database.DatabaseRecord;
-import com.distrimind.ood.database.Table;
-import com.distrimind.ood.database.annotations.AutoPrimaryKey;
-import com.distrimind.ood.database.annotations.Field;
-import com.distrimind.ood.database.annotations.ForeignKey;
-import com.distrimind.ood.database.annotations.RandomPrimaryKey;
+import java.io.File;
+
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.util.AbstractDecentralizedID;
 
 /**
  * 
  * @author Jason Mahdjoub
- * @version 1.0
- * @since OOD 2.0
+ * @version 2.0
+ * @since OOD 1.0
  */
-public final class UndecentralizableTableB1 extends Table<UndecentralizableTableB1.Record>
+public class DerbyTestDecentralizedDatabase extends TestDecentralizedDatabase
 {
-    protected UndecentralizableTableB1() throws DatabaseException
+    private final File data_directory1=new File("databasetestDerby1");
+    private final File data_directory2=new File("databasetestDerby2");
+    private final File data_directory3=new File("databasetestDerby3");
+    private final File data_directory4=new File("databasetestDerby4");
+    
+    
+    @Override
+    public DatabaseWrapper getDatabaseWrapperInstance1() throws IllegalArgumentException, DatabaseException
     {
-	super();
+	return new EmbeddedDerbyWrapper(data_directory1);
     }
 
-    public static class Record extends DatabaseRecord
+    @Override
+    public DatabaseWrapper getDatabaseWrapperInstance2() throws IllegalArgumentException, DatabaseException
     {
-	@RandomPrimaryKey
-	public AbstractDecentralizedID id;
 	
-	@ForeignKey
-	public UndecentralizableTableA1.Record pointing;
+	return new EmbeddedDerbyWrapper(data_directory2);
     }
+
+    @Override
+    public DatabaseWrapper getDatabaseWrapperInstance3() throws IllegalArgumentException, DatabaseException
+    {
+	return new EmbeddedDerbyWrapper(data_directory3);
+    }
+
+    @Override
+    public DatabaseWrapper getDatabaseWrapperInstance4() throws IllegalArgumentException, DatabaseException
+    {
+	return new EmbeddedDerbyWrapper(data_directory4);
+    }
+
+    @Override
+    public void removeDatabaseFiles1()
+    {
+	EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directory1);
+	
+    }
+
+    @Override
+    public void removeDatabaseFiles2()
+    {
+	EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directory2);
+	
+    }
+
+    @Override
+    public void removeDatabaseFiles3()
+    {
+	EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directory3);	
+    }
+
+    @Override
+    public void removeDatabaseFiles4()
+    {
+	EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directory4);	
+    }
+
 }

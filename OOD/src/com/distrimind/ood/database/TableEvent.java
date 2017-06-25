@@ -117,8 +117,12 @@ public class TableEvent<T extends DatabaseRecord> extends DatabaseEvent
     
     public Table<T> getTable(DatabaseWrapper wrapper) throws DatabaseException
     {
+	if (wrapper==null)
+	    throw new NullPointerException();
+	if (oldDatabaseRecord==null && newDatabaseRecord==null)
+	    throw new NullPointerException();
 	@SuppressWarnings("unchecked")
-	Table<T> tableInstance = (Table<T>) wrapper.getTableInstance(Table.getTableClass(oldDatabaseRecord.getClass()));
+	Table<T> tableInstance = (Table<T>) wrapper.getTableInstance(Table.getTableClass(oldDatabaseRecord==null?newDatabaseRecord.getClass():oldDatabaseRecord.getClass()));
 	return tableInstance;
     }
 }

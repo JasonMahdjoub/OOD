@@ -33,16 +33,11 @@ same conditions as regards security.
 The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
-package com.distrimind.ood.database.decentralizeddatabase;
+package com.distrimind.ood.database;
 
-import com.distrimind.ood.database.DatabaseRecord;
-import com.distrimind.ood.database.Table;
-import com.distrimind.ood.database.annotations.AutoPrimaryKey;
-import com.distrimind.ood.database.annotations.Field;
-import com.distrimind.ood.database.annotations.ForeignKey;
-import com.distrimind.ood.database.annotations.RandomPrimaryKey;
+import java.io.File;
+
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.util.AbstractDecentralizedID;
 
 /**
  * 
@@ -50,19 +45,60 @@ import com.distrimind.util.AbstractDecentralizedID;
  * @version 1.0
  * @since OOD 2.0
  */
-public final class UndecentralizableTableB1 extends Table<UndecentralizableTableB1.Record>
+public class HSQLDBTestDencentralizedDatabase extends TestDecentralizedDatabase
 {
-    protected UndecentralizableTableB1() throws DatabaseException
+    final String database_file_name1="decentralizedDatabase1";
+    final String database_file_name2="decentralizedDatabase2";
+    final String database_file_name3="decentralizedDatabase3";
+    final String database_file_name4="decentralizedDatabase4";
+    
+    @Override
+    public DatabaseWrapper getDatabaseWrapperInstance1() throws IllegalArgumentException, DatabaseException
     {
-	super();
+	return new EmbeddedHSQLDBWrapper(new File(database_file_name1));
     }
 
-    public static class Record extends DatabaseRecord
+    @Override
+    public DatabaseWrapper getDatabaseWrapperInstance2() throws IllegalArgumentException, DatabaseException
     {
-	@RandomPrimaryKey
-	public AbstractDecentralizedID id;
-	
-	@ForeignKey
-	public UndecentralizableTableA1.Record pointing;
+	return new EmbeddedHSQLDBWrapper(new File(database_file_name2));
     }
+
+    @Override
+    public DatabaseWrapper getDatabaseWrapperInstance3() throws IllegalArgumentException, DatabaseException
+    {
+	return new EmbeddedHSQLDBWrapper(new File(database_file_name3));
+    }
+
+    @Override
+    public DatabaseWrapper getDatabaseWrapperInstance4() throws IllegalArgumentException, DatabaseException
+    {
+	return new EmbeddedHSQLDBWrapper(new File(database_file_name4));
+    }
+
+    @Override
+    public void removeDatabaseFiles1()
+    {
+	EmbeddedHSQLDBWrapper.deleteDatabaseFiles(new File(database_file_name1+".data"));
+	
+    }
+
+    @Override
+    public void removeDatabaseFiles2()
+    {
+	EmbeddedHSQLDBWrapper.deleteDatabaseFiles(new File(database_file_name2+".data"));
+    }
+
+    @Override
+    public void removeDatabaseFiles3()
+    {
+	EmbeddedHSQLDBWrapper.deleteDatabaseFiles(new File(database_file_name3+".data"));
+    }
+
+    @Override
+    public void removeDatabaseFiles4()
+    {
+	EmbeddedHSQLDBWrapper.deleteDatabaseFiles(new File(database_file_name4+".data"));
+    }
+
 }

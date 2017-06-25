@@ -48,7 +48,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  * @since OOD 2.0
  */
 
-public class UndecentralizableTableA1 extends Table<UndecentralizableTableA1.Record>
+public final class UndecentralizableTableA1 extends Table<UndecentralizableTableA1.Record>
 {
     protected UndecentralizableTableA1() throws DatabaseException
     {

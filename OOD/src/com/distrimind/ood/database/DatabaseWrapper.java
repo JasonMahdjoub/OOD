@@ -64,6 +64,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -438,7 +439,15 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	    {
 		DatabaseHooksTable.Record r=initializedHooks.get(hostID);
 		if (r==null)
-		    throw DatabaseException.getDatabaseException(new IllegalArgumentException("The host ID "+hostID+" has not been initialized !"));
+		{
+		    List<DatabaseHooksTable.Record> l=getHooksTransactionsTable().getRecordsWithAllFields(new Object[]{"hostID", hostID});
+		    if (l.size()==1)
+			r=l.iterator().next();
+		    else if (l.size()>1)
+			throw new IllegalAccessError();
+		    if (r==null)
+			throw DatabaseException.getDatabaseException(new IllegalArgumentException("The host ID "+hostID+" has not been initialized !"));
+		}
 
 		return r.getLastValidatedDistantTransaction();
 	    }
@@ -563,7 +572,12 @@ public abstract class DatabaseWrapper implements AutoCloseable
 		@Override
 		public DatabaseHooksTable.Record run() throws Exception
 		{
-		    DatabaseHooksTable.Record r=getHooksTransactionsTable().getRecord(new Object[]{"hostID", hostID});
+		    List<DatabaseHooksTable.Record> l=getHooksTransactionsTable().getRecordsWithAllFields(new Object[]{"hostID", hostID});
+		    DatabaseHooksTable.Record r=null;
+		    if (l.size()==1)
+			r=l.iterator().next();
+		    else if (l.size()>1)
+			throw new IllegalAccessError();
 		    if (r==null)
 			throw new NullPointerException("Unknow host "+hostID);
 		    if (r.getLastValidatedTransaction()>lastValidatedTransacionID)
@@ -1861,12 +1875,20 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	    Database db=this.sql_database.get(_class_table.getPackage());
 	    if (db==null)
 	    {
-		try(ReadWriteLock.Lock lock=locker.getAutoCloseableWriteLock())
+		if (_class_table.getPackage().equals(this.getClass().getPackage()) && (actualDatabaseLoading==null || !actualDatabaseLoading.getConfiguration().getPackage().equals(_class_table.getPackage())))
 		{
-		    if (actualDatabaseLoading!=null && actualDatabaseLoading.getConfiguration().getPackage().equals(_class_table.getPackage()))
-			db=actualDatabaseLoading;
-		    else
-			throw new DatabaseException("The given database was not loaded : "+_class_table.getPackage());
+		    loadDatabase(new DatabaseConfiguration(_class_table.getPackage()), true);
+		    db=this.sql_database.get(_class_table.getPackage());		    
+		}
+		else
+		{
+		    try(ReadWriteLock.Lock lock=locker.getAutoCloseableWriteLock())
+		    {
+			if (actualDatabaseLoading!=null && actualDatabaseLoading.getConfiguration().getPackage().equals(_class_table.getPackage()))
+			    db=actualDatabaseLoading;
+			else
+			    throw new DatabaseException("The given database was not loaded : "+_class_table.getPackage());
+		    }
 		}
 	    }
 	    Table<?> founded_table=db.tables_instances.get(_class_table);

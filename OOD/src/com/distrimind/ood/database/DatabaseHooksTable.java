@@ -57,13 +57,13 @@ import com.distrimind.util.AbstractDecentralizedID;
  * @since OOD 2.0
  */
 @LoadToMemory
-class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
+final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 {
     private volatile DatabaseTransactionEventsTable databaseTransactionEventsTable=null;
     private volatile DatabaseTransactionsPerHostTable databaseTransactionsPerHostTable=null;
     private volatile DatabaseDistantTransactionEvent databaseDistantTransactionEvent=null;
     protected volatile HashSet<String> supportedDatabasePackages=null;
-    private volatile AtomicReference<DatabaseHooksTable.Record> localHost=null;
+    protected volatile AtomicReference<DatabaseHooksTable.Record> localHost=null;
     protected final HashMap<HostPair, Long> lastTransactionFieldsBetweenDistantHosts=new HashMap<>();
     
     static class Record extends DatabaseRecord
@@ -186,7 +186,10 @@ class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 		}
 	    }
 	    databasePackageNames=sb.toString();
-	    return (Package[])packagesList.toArray();
+	    Package [] res=new Package[packagesList.size()];
+	    for (int i=0;i<res.length;i++)
+		res[i]=packagesList.get(i);
+	    return res;
 	}
 	
 	protected void addDatabasePackageName(Package p)
@@ -478,6 +481,8 @@ class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 		    r.setConcernsDatabaseHost(concernsDatabaseHost);
 		    r.setLastValidatedTransaction(getGlobalLastValidatedTransactionID());
 		    r=addRecord(r);
+		    localHost=null;
+			
 		    
 		    getDatabaseTransactionEventsTable().addTransactionToSynchronizeTables(newAddedPackages, r, replaceDistantConflitualRecords);
 		    return r;
@@ -487,7 +492,7 @@ class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 		    r=l.get(0);
 		    Package newAddedPackages[]=r.addDatabasePackageNames(packages);
 		    updateRecord(r);
-		    
+		    localHost=null;
 		    getDatabaseTransactionEventsTable().addTransactionToSynchronizeTables(newAddedPackages, r, replaceDistantConflitualRecords);
 		    
 		    return r;

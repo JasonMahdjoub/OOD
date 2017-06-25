@@ -725,7 +725,7 @@ public class RuleInstance implements QueryPart
 					    boolean found=false;
 					    for (SqlFieldInstance sfi : sfis)
 					    {
-						if (sfi.field==sf.field)
+						if (sfi.field.equals(sf.field))
 						{
 						    int id=currentParameterID.getAndIncrement();
 						    res.append("?");
@@ -735,7 +735,7 @@ public class RuleInstance implements QueryPart
 						}
 					    }
 					    if (!found)
-						throw new DatabaseSyntaxException("Field not found. Unexpected error !");
+						throw new DatabaseSyntaxException("Field "+sf.field+" not found. Unexpected error !");
 					    
 					}
 					else
@@ -847,15 +847,22 @@ public class RuleInstance implements QueryPart
 			try
 			{
 			    T record=table.getDefaultRecordConstructor().newInstance();
-			    for (FieldAccessor fa : table.getFieldAccessors())
-			    {
-				if (fa.getFieldClassType().isAssignableFrom(parameter1.getClass()))
-				{
-				    fa.setValue(record, parameter1);
-				    sfis=fa.getSqlFieldsInstances(record);
-				    break;
-				}
-			    }
+			    FieldAccessor fa=Symbol.setFieldAccessor(table, parameter1, record);
+			    if (fa==null)
+				throw new DatabaseSyntaxException("Cannot find parameter type "+parameter1.getClass().getName()+" of "+s.getSymbol()+" into table "+table.getClass().getName());
+			    
+			    /*FieldAccessor fa=Symbol.getFieldAccessor(table, parameter1);
+			    if (fa==null)
+				throw new DatabaseSyntaxException("Cannot find parameter type "+parameter1.getClass().getName()+" of "+s.getSymbol()+" into table "+table.getClass().getName());
+			    System.out.println(fa.getFieldName());
+			    System.out.println(parameter1.getClass().getName());
+			    System.out.println(record.getClass().getName());
+			    fa.setValue(record, parameter1);*/
+			    sfis=fa.getSqlFieldsInstances(record);
+			}
+			catch( DatabaseSyntaxException de)
+			{
+			    throw de;
 			}
 			catch(Exception e)
 			{

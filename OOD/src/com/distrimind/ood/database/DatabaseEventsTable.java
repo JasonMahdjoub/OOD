@@ -48,7 +48,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  * @version 1.0
  * @since OOD 2.0
  */
-class DatabaseEventsTable extends Table<DatabaseEventsTable.Record>
+final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record>
 {
 
     static class Record extends DatabaseRecord
@@ -68,7 +68,7 @@ class DatabaseEventsTable extends Table<DatabaseEventsTable.Record>
 	@NotNull
 	@Field
 	private byte[] concernedSerializedPrimaryKey;
-	@NotNull
+	
 	@Field(limit=Integer.MAX_VALUE)
 	private byte[] concernedSerializedOldNonPK;
 	Record()

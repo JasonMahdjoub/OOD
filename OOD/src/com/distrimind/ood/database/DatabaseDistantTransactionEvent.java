@@ -58,7 +58,7 @@ import com.distrimind.util.AbstractDecentralizedID;
  * @version 1.0
  * @since OOD 2.0
  */
-public class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransactionEvent.Record>
+final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransactionEvent.Record>
 {
     public static final int TRANSACTION_MAX_SIZE_BYTES=536870912;
     private volatile IDTable transactionIDTable=null;

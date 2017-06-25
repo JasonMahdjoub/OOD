@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
+import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.annotations.LoadToMemory;
 import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
@@ -47,13 +48,15 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  * @since OOD 2.0
  */
 @LoadToMemory
-class IDTable extends Table<IDTable.Record>
+final class IDTable extends Table<IDTable.Record>
 {
 
     static class Record extends DatabaseRecord
     {
 	@PrimaryKey
 	private int id;
+	
+	@Field
 	protected long transactionID;
     }
     protected IDTable() throws DatabaseException

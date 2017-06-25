@@ -54,7 +54,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  * @version 1.0
  * @since OOD 2.0
  */
-class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEventsTable.Record>
+final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEventsTable.Record>
 {
     private volatile IDTable transactionIDTable=null;
     private volatile DatabaseTransactionsPerHostTable databaseTransactionsPerHostTable=null;
@@ -221,7 +221,7 @@ class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEventsTabl
 		getDatabaseEventsTable().addRecord(event);
 		if (currentEventPos.get()>maxEvents)
 		    throw new IllegalAccessError();
-		if (currentEventPos.get()==maxEvents)
+		if (currentEventPos.incrementAndGet()==maxEvents)
 		{
 		    DatabaseTransactionsPerHostTable.Record trhost=new DatabaseTransactionsPerHostTable.Record();
 		    trhost.set(transaction.get(), hook);

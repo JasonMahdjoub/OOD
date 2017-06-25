@@ -35,12 +35,15 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.interpreter;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.Table;
+import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseSyntaxException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
+import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.util.AbstractDecentralizedID;
 
 /**
@@ -168,7 +171,7 @@ public class Symbol implements QueryPart
 	    FieldAccessor fa=getFieldAccessor(table, p);
 	    
 	    if (fa==null)
-		throw new DatabaseSyntaxException("No field accessor corresponds to parameter "+getSymbol()+" and type "+p.getClass().getName());
+		throw new DatabaseSyntaxException("No field accessor corresponds to parameter "+getSymbol()+" and type "+p.getClass().getName()+" with table "+table.getClass().getName());
 	    else if (fa.getFieldClassType()==Boolean.class)
 		return "boolean";
 	    else if (AbstractDecentralizedID.class.isAssignableFrom(fa.getFieldClassType()))
@@ -186,20 +189,106 @@ public class Symbol implements QueryPart
 	    return getType().name();
 	    
     }
-    private <T extends DatabaseRecord> FieldAccessor getFieldAccessor(Table<T> table, Object o)
+    
+    
+    public static <T extends DatabaseRecord> FieldAccessor getFieldAccessor(Table<T> table, Object o)
     {
 	if (o==null)
 	    return null;
 	for (FieldAccessor fa : table.getFieldAccessors())
 	{
-	    Class<?> c=fa.getField().getType();
+	    Class<?> c=fa.getFieldClassType();
+	    
 	    if (c.isAssignableFrom(o.getClass()))
 		    return fa;
+	    else if (c.isPrimitive())
+	    {
+		if (c==boolean.class)
+		{
+		    if (o.getClass()==Boolean.class)
+			return fa;
+		}
+		else if (c==float.class)
+		{
+		    if (o.getClass()==Float.class)
+			return fa;
+		}
+		else if (c==short.class)
+		{
+		    if (o.getClass()==Short.class)
+			return fa;
+		}
+		else if (c==int.class)
+		{
+		    if (o.getClass()==Integer.class)
+			return fa;
+		}
+		else if (c==long.class)
+		{
+		    if (o.getClass()==Long.class)
+			return fa;
+		}
+		else if (c==char.class)
+		{
+		    if (o.getClass()==Character.class)
+			return fa;
+		}
+		else if (c==byte.class)
+		{
+		    if (o.getClass()==Byte.class)
+			return fa;
+		}
+		else if (c==double.class)
+		{
+		    if (o.getClass()==Double.class)
+			return fa;
+		}
+	    }
+
+	}
+	for (FieldAccessor fa : table.getFieldAccessors())
+	{
+	    if (fa instanceof ForeignKeyFieldAccessor)
+	    {
+		FieldAccessor res=getFieldAccessor(((ForeignKeyFieldAccessor)fa).getPointedTable(), o);
+		if (res!=null)
+		    return res;
+	    }
 
 	}
 	return null;
     }
     
+    public static <T extends DatabaseRecord> FieldAccessor setFieldAccessor(Table<T> table, Object o, T record) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, DatabaseException
+    {
+	if (o==null)
+	    throw new IllegalAccessError();
+	for (FieldAccessor fa : table.getFieldAccessors())
+	{
+	    Class<?> c=fa.getFieldClassType();
+	    
+	    if (c.isAssignableFrom(o.getClass()))
+	    {
+		fa.setValue(record, o);
+		return fa;
+	    }
+	    
+	}
+	for (FieldAccessor fa : table.getFieldAccessors())
+	{
+	    if (fa instanceof ForeignKeyFieldAccessor)
+	    {
+		Table<DatabaseRecord> otherTable=(Table<DatabaseRecord>)((ForeignKeyFieldAccessor)fa).getPointedTable();
+		
+		DatabaseRecord r=otherTable.getDefaultRecordConstructor().newInstance();
+		setFieldAccessor(otherTable, o, r);
+		fa.setValue(record, r);
+		return fa;
+	    }
+
+	}
+	return null;
+    }
     public boolean needParenthesis()
     {
 	return false;

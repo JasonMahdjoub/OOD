@@ -168,6 +168,7 @@ public abstract class TestDecentralizedDatabase
 	    hostID=new DecentralizedIDGenerator();
 	    localEvents=new ArrayList<>();
 	    eventsReceivedStack=Collections.synchronizedList(new LinkedList<DistantDatabaseEvent>());
+	    dbwrapper.loadDatabase(new DatabaseConfiguration(TableAlone.class.getPackage()), true);
 	    tableAlone=(TableAlone)dbwrapper.getTableInstance(TableAlone.class);
 	    tablePointed=(TablePointed)dbwrapper.getTableInstance(TablePointed.class);
 	    tablePointing=(TablePointing)dbwrapper.getTableInstance(TablePointing.class);
@@ -457,11 +458,6 @@ public abstract class TestDecentralizedDatabase
 	listDatabase.add(db1);
 	listDatabase.add(db2);
 	listDatabase.add(db3);
-	for (Database db : listDatabase)
-	{
-	    loadDatabase(db);
-	    //initDatabase(db);
-	}
     }
 
     
@@ -475,13 +471,13 @@ public abstract class TestDecentralizedDatabase
 	    try
 	    {
 		db1.close();
-		removeDatabaseFiles1();
 	    }
 	    finally
 	    {
 		db1=null;
 	    }
 	}
+	removeDatabaseFiles1();
     }
     public void unloadDatabase2()
     {
@@ -490,13 +486,13 @@ public abstract class TestDecentralizedDatabase
 	    try
 	    {
 		db2.close();
-		removeDatabaseFiles2();
 	    }
 	    finally
 	    {
 		db2=null;
 	    }
 	}
+	removeDatabaseFiles2();
     }
     public void unloadDatabase3()
     {
@@ -505,13 +501,13 @@ public abstract class TestDecentralizedDatabase
 	    try
 	    {
 		db3.close();
-		removeDatabaseFiles3();
 	    }
 	    finally
 	    {
 		db3=null;
 	    }
 	}
+	removeDatabaseFiles3();	
     }
     public void unloadDatabase4()
     {
@@ -521,13 +517,13 @@ public abstract class TestDecentralizedDatabase
 	    {
 		db4.close();
 		listDatabase.remove(db4);
-		removeDatabaseFiles4();
 	    }
 	    finally
 	    {
 		db4=null;
 	    }
 	}
+	removeDatabaseFiles4();
     }
     
     @AfterClass
@@ -690,9 +686,12 @@ public abstract class TestDecentralizedDatabase
     
     private void connectAllDatabase() throws ClassNotFoundException, DatabaseException, IOException
     {
+	Database dbs[]=new Database[listDatabase.size()];
+	for (int i=0;i<dbs.length;i++)
+	    dbs[i]=listDatabase.get(i);
 	for (Database db : listDatabase)
 	{
-	    connect(db, (Database[])listDatabase.toArray());
+	    connect(db, dbs);
 	}
     }
     
@@ -970,7 +969,7 @@ public abstract class TestDecentralizedDatabase
 	    testSynchronisation(db);
     }
     
-    @Test(dependsOnMethods={"testInit"})
+    @Test(dependsOnMethods={"testAllConnect"})
     public void testOldElementsAddedBeforeAddingSynchroSynchronized() throws DatabaseException, ClassNotFoundException, IOException
     {
 	exchangeMessages();

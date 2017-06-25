@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
+import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -85,7 +86,7 @@ public class DatabaseConfiguration
 	this.oldDatabaseTables=oldVersionOfDatabaseTables;
 	for (Class<?> c : _classes)
 	{
-	    if (c!=null && Table.class.isAssignableFrom(c) && c.getPackage().equals(_package))
+	    if (c!=null && Table.class.isAssignableFrom(c) && c.getPackage().equals(_package) && !Modifier.isAbstract(c.getModifiers()))
 		classes.add((Class<? extends Table<?>>)c);
 	}
     }

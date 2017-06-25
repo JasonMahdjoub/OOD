@@ -65,7 +65,7 @@ import com.distrimind.util.AbstractDecentralizedID;
  * @version 1.0
  * @since OOD 2.0
  */
-class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsPerHostTable.Record>
+final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsPerHostTable.Record>
 {
     
     

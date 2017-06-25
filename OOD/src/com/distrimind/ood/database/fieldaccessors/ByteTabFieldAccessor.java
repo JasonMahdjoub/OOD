@@ -276,11 +276,18 @@ public class ByteTabFieldAccessor extends FieldAccessor
 		_prepared_statement.setBytes(_field_start, (byte[])o);
 	    else
 	    {
-		Blob blob=DatabaseWrapperAccessor.getBlob(sql_connection, (byte[])o);
-		if (blob==null && o!=null)
-		    _prepared_statement.setBinaryStream(_field_start, new ByteArrayInputStream((byte[])o));
+		if (o==null)
+		    _prepared_statement.setObject(_field_start, null);
 		else
-		    _prepared_statement.setBlob(_field_start, blob);
+		{
+		    Blob blob=DatabaseWrapperAccessor.getBlob(sql_connection, (byte[])o);
+		    if (blob==null && o!=null)
+			_prepared_statement.setBinaryStream(_field_start, new ByteArrayInputStream((byte[])o));
+		    else 
+		    {
+			_prepared_statement.setBlob(_field_start, blob);
+		    }
+		}
 	    }
 	}
 	catch(Exception e)
@@ -301,11 +308,16 @@ public class ByteTabFieldAccessor extends FieldAccessor
 	    else
 	    {
 		byte[] b=(byte[])field.get(_class_instance);
-		Blob blob=DatabaseWrapperAccessor.getBlob(sql_connection, b);
-		if (blob==null && b!=null)
-		    _result_set.updateBinaryStream(sql_fields[0].short_field, new ByteArrayInputStream(b));
+		if (b==null)
+		    _result_set.updateObject(sql_fields[0].short_field, null);
 		else
-		    _result_set.updateBlob(sql_fields[0].short_field, blob);
+		{
+		    Blob blob=DatabaseWrapperAccessor.getBlob(sql_connection, b);
+		    if (blob==null && b!=null)
+			_result_set.updateBinaryStream(sql_fields[0].short_field, new ByteArrayInputStream(b));
+		    else
+			_result_set.updateBlob(sql_fields[0].short_field, blob);
+		}
 	    }
 	}
 	catch(Exception e)
@@ -325,11 +337,16 @@ public class ByteTabFieldAccessor extends FieldAccessor
 	    else
 	    {
 		byte[] b=(byte[])field.get(_class_instance);
-		Blob blob=DatabaseWrapperAccessor.getBlob(sql_connection, b);
-		if (blob==null && b!=null)
-		    _result_set.updateBinaryStream(_sft.translateField(sql_fields[0]), new ByteArrayInputStream(b));
+		if (b==null)
+		    _result_set.updateObject(_sft.translateField(sql_fields[0]), null);
 		else
-		    _result_set.updateBlob(_sft.translateField(sql_fields[0]), blob);
+		{
+		    Blob blob=DatabaseWrapperAccessor.getBlob(sql_connection, b);
+		    if (blob==null && b!=null)
+			_result_set.updateBinaryStream(_sft.translateField(sql_fields[0]), new ByteArrayInputStream(b));
+		    else
+			_result_set.updateBlob(_sft.translateField(sql_fields[0]), blob);
+		}
 	    }
 	}
 	catch(Exception e)

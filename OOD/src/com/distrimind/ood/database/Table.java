@@ -90,6 +90,7 @@ import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.ood.interpreter.Interpreter;
 import com.distrimind.ood.interpreter.RuleInstance;
+import com.distrimind.ood.interpreter.Symbol;
 import com.distrimind.util.ReadWriteLock;
 
 
@@ -804,7 +805,6 @@ public abstract class Table<T extends DatabaseRecord>
 				indexCreationQuerry.append(sf.short_field+(fa.isDescendentIndex()?" DESC":""));
 			    }
 			    indexCreationQuerry.append(")");
-			    
 			    sql_connection.runTransaction(new Transaction() {
 				    
 				@Override
@@ -1296,7 +1296,7 @@ public abstract class Table<T extends DatabaseRecord>
 	return orderBySqlFields.toString();
     }
     
-    SqlQuerry getSqlGeneralSelect(String condition, final Map<Integer, Object> parameters, boolean _ascendant, String..._fields)
+    SqlQuerry getSqlGeneralSelect(final String condition, final Map<Integer, Object> parameters, boolean _ascendant, String..._fields)
     {
 	if (condition==null || condition.trim().equals(""))
 	    return new SqlQuerry("SELECT "+getSqlSelectStep1Fields()+" FROM "+this.getName()+getOrderByPart(_ascendant, _fields).toString());
@@ -1308,11 +1308,14 @@ public abstract class Table<T extends DatabaseRecord>
 		if (parameters!=null)
 		{
 		    int index=1;
-		    Object p=parameters.get(new Integer(index++));
+		    System.out.println(condition);
+		    Object p=parameters.get(new Integer(index));
 		    while (p!=null)
 		    {
-			st.setObject(index, p);
-			p=parameters.get(new Integer(index++));
+			System.out.println(index);
+			FieldAccessor.setValue(getDatabaseWrapper(), st, index, p);
+//			st.setObject(index, p);
+			p=parameters.get(new Integer(++index));
 		    }
 			    
 		}
@@ -1861,11 +1864,28 @@ public abstract class Table<T extends DatabaseRecord>
      */
     public final FieldAccessor getFieldAccessor(String fieldName)
     {
+	System.out.println(this.getClass().getName()+"."+fieldName);
+	int index=0;
+	while (index<fieldName.length())
+	{
+	    if (fieldName.charAt(index)=='.')
+		break;
+	    ++index;
+	}
+	String prefix=fieldName.substring(0, index);
+	
 	for (FieldAccessor f : fields)
 	{
-	    if (f.getFieldName().equals(fieldName))
+	    if (f.getFieldName().equals(prefix))
 	    {
-		return f;
+		if (index==fieldName.length())
+		    return f;
+		else if (f instanceof ForeignKeyFieldAccessor)
+		{
+		    
+		    ForeignKeyFieldAccessor fkfa=(ForeignKeyFieldAccessor)f;
+		    return fkfa.getPointedTable().getFieldAccessor(fieldName.substring(index+1));
+		}
 	    }
     	}
 	return null;
@@ -1987,17 +2007,16 @@ public abstract class Table<T extends DatabaseRecord>
 	    if (!Modifier.isStatic(res.getModifiers()))
 		throw new DatabaseException("The class "+res.getName()+" must be a static member class.");
 	    boolean ok=true;
-	    Constructor<?> constructors[]=res.getDeclaredConstructors();
-	    if (constructors.length!=1)
-		ok=false;
-	    else
+	    try
 	    {
-		Constructor<?> constructor=constructors[0];
-		if (constructor.getParameterTypes().length!=0)
-		    ok=false;
+		res.getDeclaredConstructor();
+	    }
+	    catch(NoSuchMethodException e)
+	    {
+		ok=false;
 	    }
 	    if (!ok)
-		throw new DatabaseException("The class "+res.getName()+" must have only one constructor and without any parameter (default constructor).");
+		throw new DatabaseException("The class "+res.getName()+" must have a default constructor without any parameter.");
 	}
 	return res;
     }
@@ -6221,7 +6240,7 @@ public abstract class Table<T extends DatabaseRecord>
 			if (obj==null)
 			{
 			    if (fa.isNotNull())
-				throw new FieldDatabaseException("The field "+fa.getFieldName()+" is not present into the given fields.");
+				throw new FieldDatabaseException("The field "+fa.getFieldName()+" can't be null.");
 			}
 			else
 			    number++;

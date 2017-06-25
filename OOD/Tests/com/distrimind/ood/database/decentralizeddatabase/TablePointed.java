@@ -39,6 +39,7 @@ import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.annotations.AutoPrimaryKey;
 import com.distrimind.ood.database.annotations.Field;
+import com.distrimind.ood.database.annotations.RandomPrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.AbstractDecentralizedID;
 
@@ -49,7 +50,7 @@ import com.distrimind.util.AbstractDecentralizedID;
  * @since OOD 2.0
  */
 
-public class TablePointed extends Table<TablePointed.Record>
+public final class TablePointed extends Table<TablePointed.Record>
 {
     protected TablePointed() throws DatabaseException
     {
@@ -58,7 +59,7 @@ public class TablePointed extends Table<TablePointed.Record>
 
     public static class Record extends DatabaseRecord
     {
-	@AutoPrimaryKey
+	@RandomPrimaryKey
 	public AbstractDecentralizedID id;
 	
 	@Field
