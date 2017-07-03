@@ -218,7 +218,7 @@ public class FloatNumberFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    Object val=_result_set.getObject(sql_fields[0].short_field);
+	    Object val=_result_set.getObject(getColmunIndex(_result_set, sql_fields[0].field));
 	    if (val==null && isNotNull())
 		throw new DatabaseIntegrityException("Unexpected exception");
 	    if (val instanceof Double)

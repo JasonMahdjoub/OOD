@@ -47,6 +47,7 @@ import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.annotations.NotNull;
 import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 
 /**
  * 
@@ -199,18 +200,23 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 	    addTransactionToSynchronizeTables(databasePackage, hook, force);
     }
     
+    @SuppressWarnings("unchecked")
     private void addEventsForTablesToSynchronize(final AtomicReference<DatabaseTransactionEventsTable.Record> transaction, final Package databasePackage, final DatabaseHooksTable.Record hook, Class<? extends Table<?>> tableClass, Set<Class<? extends Table<?>>> tablesDone, final AtomicLong currentEventPos, final long maxEvents, final boolean force) throws DatabaseException
     {
 	if (tablesDone.contains(tableClass))
 	    return;
 	    
+	
+	
+	final Table<DatabaseRecord> table=(Table<DatabaseRecord>) getDatabaseWrapper().getTableInstance(tableClass);
+	if (!table.supportSynchronizationWithOtherPeers())
+	    return;
+
 	tablesDone.add(tableClass);
 	
-	@SuppressWarnings("unchecked")
-	final Table<DatabaseRecord> table=(Table<DatabaseRecord>) getDatabaseWrapper().getTableInstance(tableClass);
-	for (Class<? extends Table<?>> c : table.getTablesClassesPointingToThisTable())
+	for (ForeignKeyFieldAccessor fa : table.getForeignKeysFieldAccessors())
 	{
-	    addEventsForTablesToSynchronize(transaction, databasePackage, hook, c, tablesDone, currentEventPos, maxEvents, force);
+	    addEventsForTablesToSynchronize(transaction, databasePackage, hook, (Class<? extends Table<?>>)(fa.getPointedTable().getClass()), tablesDone, currentEventPos, maxEvents, force);
 	}
 	table.getRecords(new Filter<DatabaseRecord>() {
 
@@ -230,7 +236,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 		    DatabaseTransactionEventsTable.Record tr=new DatabaseTransactionEventsTable.Record();
 		    tr.id=getTransactionIDTable().getAndIncrementTransactionID();
 		    tr.concernedDatabasePackage=databasePackage.getName();
-		    tr.setForce(true);
+		    tr.setForce(force);
 		    
 		    transaction.set(addRecord(tr));
 		    currentEventPos.set(0);
@@ -253,6 +259,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 	
 	for (Class<? extends Table<?>> c : tables)
 	{
+	    
 	    addEventsForTablesToSynchronize(transaction, databasePackage, hook, c, tablesDone,currentEventPos, getDatabaseWrapper().getMaxTransactionEventsKeepedIntoMemory(), force);
 	}
 	if (currentEventPos.get()>0)

@@ -49,6 +49,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
@@ -89,6 +90,7 @@ import com.distrimind.ood.database.schooldatabase.Lecture;
 import com.distrimind.ood.interpreter.Interpreter;
 import com.distrimind.ood.interpreter.RuleInstance;
 import com.distrimind.ood.interpreter.SymbolType;
+import com.distrimind.ood.interpreter.RuleInstance.TableJunction;
 import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.DecentralizedIDGenerator;
 import com.distrimind.util.RenforcedDecentralizedIDGenerator;
@@ -374,7 +376,7 @@ public abstract class TestDatabase
 	    map.put("char_value", new Character('x'));
 	    map.put("boolean_value", new Boolean(true));
 	    map.put("short_value", new Short((short)3));
-	    map.put("long_value", new Long(3));
+	    map.put("long_value", new Long(300000004556256l));
 	    map.put("float_value", new Float(3.3f));
 	    map.put("double_value", new Double(3.3));
 	    map.put("string_value", new String("test string"));
@@ -383,7 +385,7 @@ public abstract class TestDatabase
 	    map.put("CharacterNumber_value", new Character('x'));
 	    map.put("BooleanNumber_value", new Boolean(true));
 	    map.put("ShortNumber_value", new Short((short)3));
-	    map.put("LongNumber_value", new Long((long)3));
+	    map.put("LongNumber_value", new Long(300000004556256l));
 	    map.put("FloatNumber_value", new Float(3.3f));
 	    map.put("DoubleNumber_value", new Double(3.3));
 	    map.put("BigInteger_value", new BigInteger("5"));
@@ -477,7 +479,7 @@ public abstract class TestDatabase
 	    Assert.assertTrue(r.char_value=='x');
 	    Assert.assertTrue(r.boolean_value);
 	    Assert.assertTrue(r.short_value==(short)3);
-	    Assert.assertTrue(r.long_value==(long)3);
+	    Assert.assertTrue(r.long_value==300000004556256l);
 	    Assert.assertTrue(r.float_value==3.3f);
 	    Assert.assertTrue(r.double_value==3.3);
 	    Assert.assertTrue(r.string_value.equals("test string"));
@@ -486,7 +488,7 @@ public abstract class TestDatabase
 	    Assert.assertTrue(r.CharacterNumber_value.charValue()=='x');
 	    Assert.assertTrue(r.BooleanNumber_value.booleanValue());
 	    Assert.assertTrue(r.ShortNumber_value.shortValue()==(short)3);
-	    Assert.assertTrue(r.LongNumber_value.longValue()==(long)3);
+	    Assert.assertTrue(r.LongNumber_value.longValue()==300000004556256l);
 	    Assert.assertTrue(r.FloatNumber_value.floatValue()==3.3f);
 	    Assert.assertTrue(r.DoubleNumber_value.doubleValue()==3.3);
 	    Assert.assertTrue(r.BigInteger_value.equals(new BigInteger("5")));
@@ -508,7 +510,7 @@ public abstract class TestDatabase
 	    Assert.assertTrue(r2.char_value=='x');
 	    Assert.assertTrue(r2.boolean_value);
 	    Assert.assertTrue(r2.short_value==(short)3);
-	    Assert.assertTrue(r2.long_value==(long)3);
+	    Assert.assertTrue(r2.long_value==300000004556256l);
 	    Assert.assertTrue(r2.float_value==3.3f);
 	    Assert.assertTrue(r2.double_value==3.3);
 	    Assert.assertTrue(r2.string_value.equals("test string"));
@@ -517,7 +519,7 @@ public abstract class TestDatabase
 	    Assert.assertTrue(r2.CharacterNumber_value.charValue()=='x');
 	    Assert.assertTrue(r2.BooleanNumber_value.booleanValue());
 	    Assert.assertTrue(r2.ShortNumber_value.shortValue()==(short)3);
-	    Assert.assertTrue(r2.LongNumber_value.longValue()==(long)3);
+	    Assert.assertTrue(r2.LongNumber_value.longValue()==300000004556256l);
 	    Assert.assertTrue(r2.FloatNumber_value.floatValue()==3.3f);
 	    Assert.assertTrue(r2.DoubleNumber_value.doubleValue()==3.3);
 	    Assert.assertTrue(r2.BigInteger_value.equals(new BigInteger("5")));
@@ -625,7 +627,7 @@ public abstract class TestDatabase
 	    Assert.assertTrue(r1.char_value=='y');
 	    Assert.assertTrue(r1.boolean_value);
 	    Assert.assertTrue(r1.short_value==(short)3);
-	    Assert.assertTrue(r1.long_value==(long)3);
+	    Assert.assertTrue(r1.long_value==300000004556256l);
 	    Assert.assertTrue(r1.float_value==3.3f);
 	    Assert.assertTrue(r1.double_value==3.3);
 	    Assert.assertTrue(r1.string_value.equals("test string"));
@@ -634,7 +636,7 @@ public abstract class TestDatabase
 	    Assert.assertTrue(r1.CharacterNumber_value.charValue()=='x');
 	    Assert.assertTrue(r1.BooleanNumber_value.booleanValue());
 	    Assert.assertTrue(r1.ShortNumber_value.shortValue()==(short)3);
-	    Assert.assertTrue(r1.LongNumber_value.longValue()==(long)3);
+	    Assert.assertTrue(r1.LongNumber_value.longValue()==300000004556256l);
 	    Assert.assertTrue(r1.FloatNumber_value.floatValue()==3.3f);
 	    Assert.assertTrue(r1.DoubleNumber_value.doubleValue()==6.6);
 	    Assert.assertTrue(r1.BigInteger_value.equals(new BigInteger("5")));
@@ -656,7 +658,7 @@ public abstract class TestDatabase
 	    Assert.assertTrue(r2.char_value=='y');
 	    Assert.assertTrue(r2.boolean_value);
 	    Assert.assertTrue(r2.short_value==(short)3);
-	    Assert.assertTrue(r2.long_value==(long)3);
+	    Assert.assertTrue(r2.long_value==300000004556256l);
 	    Assert.assertTrue(r2.float_value==3.3f);
 	    Assert.assertTrue(r2.double_value==3.3);
 	    Assert.assertTrue(r2.string_value.equals("test string"));
@@ -665,7 +667,7 @@ public abstract class TestDatabase
 	    Assert.assertTrue(r2.CharacterNumber_value.charValue()=='x');
 	    Assert.assertTrue(r2.BooleanNumber_value.booleanValue());
 	    Assert.assertTrue(r2.ShortNumber_value.shortValue()==(short)3);
-	    Assert.assertTrue(r2.LongNumber_value.longValue()==(long)3);
+	    Assert.assertTrue(r2.LongNumber_value.longValue()==300000004556256l);
 	    Assert.assertTrue(r2.FloatNumber_value.floatValue()==3.3f);
 	    Assert.assertTrue(r2.DoubleNumber_value.doubleValue()==6.6);
 	    Assert.assertTrue(r2.BigInteger_value.equals(new BigInteger("5")));
@@ -689,7 +691,7 @@ public abstract class TestDatabase
 	    Assert.assertTrue(r1.char_value=='y');
 	    Assert.assertTrue(r1.boolean_value);
 	    Assert.assertTrue(r1.short_value==(short)3);
-	    Assert.assertTrue(r1.long_value==(long)3);
+	    Assert.assertTrue(r1.long_value==300000004556256l);
 	    Assert.assertTrue(r1.float_value==3.3f);
 	    Assert.assertTrue(r1.double_value==3.3);
 	    Assert.assertTrue(r1.string_value.equals("test string"));
@@ -698,7 +700,7 @@ public abstract class TestDatabase
 	    Assert.assertTrue(r1.CharacterNumber_value.charValue()=='x');
 	    Assert.assertTrue(r1.BooleanNumber_value.booleanValue());
 	    Assert.assertTrue(r1.ShortNumber_value.shortValue()==(short)3);
-	    Assert.assertTrue(r1.LongNumber_value.longValue()==(long)3);
+	    Assert.assertTrue(r1.LongNumber_value.longValue()==300000004556256l);
 	    Assert.assertTrue(r1.FloatNumber_value.floatValue()==3.3f);
 	    Assert.assertTrue(r1.DoubleNumber_value.doubleValue()==6.6);
 	    Assert.assertTrue(r1.BigInteger_value.equals(new BigInteger("5")));
@@ -719,7 +721,7 @@ public abstract class TestDatabase
 	    Assert.assertTrue(r2.char_value=='y');
 	    Assert.assertTrue(r2.boolean_value);
 	    Assert.assertTrue(r2.short_value==(short)3);
-	    Assert.assertTrue(r2.long_value==(long)3);
+	    Assert.assertTrue(r2.long_value==300000004556256l);
 	    Assert.assertTrue(r2.float_value==3.3f);
 	    Assert.assertTrue(r2.double_value==3.3);
 	    Assert.assertTrue(r2.string_value.equals("test string"));
@@ -728,7 +730,7 @@ public abstract class TestDatabase
 	    Assert.assertTrue(r2.CharacterNumber_value.charValue()=='x');
 	    Assert.assertTrue(r2.BooleanNumber_value.booleanValue());
 	    Assert.assertTrue(r2.ShortNumber_value.shortValue()==(short)3);
-	    Assert.assertTrue(r2.LongNumber_value.longValue()==(long)3);
+	    Assert.assertTrue(r2.LongNumber_value.longValue()==300000004556256l);
 	    Assert.assertTrue(r2.FloatNumber_value.floatValue()==3.3f);
 	    Assert.assertTrue(r2.DoubleNumber_value.doubleValue()==6.6);
 	    Assert.assertTrue(r2.BigInteger_value.equals(new BigInteger("5")));
@@ -1614,23 +1616,24 @@ public abstract class TestDatabase
 	try
 	{
 	    table2.addRecord(map2);
-	    Assert.assertTrue(false);
+	    Assert.fail();
 	}
 	catch(DatabaseException e)
 	{
 	    Assert.assertTrue(true);
 	}
-	table2.addRecord(map1);
-	table4.addRecord(map2);
-	table5.addRecord(map2);
+	Assert.assertEquals(table2.addRecord(map1).int_value, 0);
+	Assert.assertEquals(table4.addRecord(map2).int_value, 0);
+	Assert.assertEquals(table5.addRecord(map2).int_value, 0);
 	
 	Table1.Record r1fr2=table2.getRecords().get(0).fr1_pk1;
 	Table3.Record r2fr4=table4.getRecords().get(0).fr1_pk1;
 	Table3.Record r2fr5=table5.getRecords().get(0).fr1_pk1;
-	
-	Assert.assertTrue(table2.getRecords().get(0).int_value==0);
-	Assert.assertTrue(table4.getRecords().get(0).int_value==0);
-	Assert.assertTrue(table5.getRecords().get(0).int_value==0);
+
+
+	Assert.assertEquals(table2.getRecords().get(0).int_value, 0);
+	Assert.assertEquals(table4.getRecords().get(0).int_value, 0);
+	Assert.assertEquals(table5.getRecords().get(0).int_value, 0);
 	
 	Assert.assertTrue(r1.pk1==r1fr2.pk1);
 	Assert.assertTrue(r1.pk2==r1fr2.pk2);
@@ -3469,7 +3472,7 @@ public abstract class TestDatabase
     {
 	HashMap<Integer, Object> sqlParameters=new HashMap<>();
 	RuleInstance rule=Interpreter.getRuleInstance(command);
-	String sqlCommand=rule.translateToSqlQuery(table, parameters, sqlParameters).toString();
+	String sqlCommand=rule.translateToSqlQuery(table, parameters, sqlParameters, new HashSet<TableJunction>()).toString();
 	Assert.assertEquals(sqlCommand, expectedSqlCommand);
 	for (Map.Entry<Integer, Object> e : sqlParameters.entrySet())
 	{

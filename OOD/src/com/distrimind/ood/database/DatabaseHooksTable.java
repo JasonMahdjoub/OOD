@@ -483,8 +483,8 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 		    r=addRecord(r);
 		    localHost=null;
 			
-		    
-		    getDatabaseTransactionEventsTable().addTransactionToSynchronizeTables(newAddedPackages, r, replaceDistantConflitualRecords);
+		    if (!concernsDatabaseHost)
+			getDatabaseTransactionEventsTable().addTransactionToSynchronizeTables(newAddedPackages, r, replaceDistantConflitualRecords);
 		    return r;
 		}
 		else
@@ -493,7 +493,8 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 		    Package newAddedPackages[]=r.addDatabasePackageNames(packages);
 		    updateRecord(r);
 		    localHost=null;
-		    getDatabaseTransactionEventsTable().addTransactionToSynchronizeTables(newAddedPackages, r, replaceDistantConflitualRecords);
+		    if (!concernsDatabaseHost)
+			getDatabaseTransactionEventsTable().addTransactionToSynchronizeTables(newAddedPackages, r, replaceDistantConflitualRecords);
 		    
 		    return r;
 		}

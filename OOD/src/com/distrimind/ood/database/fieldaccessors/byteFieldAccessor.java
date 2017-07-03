@@ -204,7 +204,7 @@ public class byteFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    field.setByte(_class_instance, _result_set.getByte(sql_fields[0].short_field));
+	    field.setByte(_class_instance, _result_set.getByte(getColmunIndex(_result_set, sql_fields[0].field)));
 	}
 	catch(Exception e)
 	{

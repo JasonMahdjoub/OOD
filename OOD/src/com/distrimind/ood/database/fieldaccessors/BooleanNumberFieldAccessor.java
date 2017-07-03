@@ -49,6 +49,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import com.distrimind.ood.database.DatabaseRecord;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.SqlField;
 import com.distrimind.ood.database.SqlFieldInstance;
 import com.distrimind.ood.database.Table;
@@ -65,9 +66,9 @@ public class BooleanNumberFieldAccessor extends FieldAccessor
 {
     protected final SqlField sql_fields[];
     
-    protected BooleanNumberFieldAccessor(Class<? extends Table<?>> table_class, Field _field, String parentFieldName) throws DatabaseException
+    protected BooleanNumberFieldAccessor(Class<? extends Table<?>> table_class, DatabaseWrapper _sql_connection, Field _field, String parentFieldName) throws DatabaseException
     {
-	super(null, _field, parentFieldName, compatible_classes, table_class);
+	super(_sql_connection, _field, parentFieldName, compatible_classes, table_class);
 	sql_fields=new SqlField[1];
 	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), "BOOLEAN", null, null, isNotNull());
     }
@@ -189,7 +190,7 @@ public class BooleanNumberFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    field.set(_class_instance, _result_set.getObject(sql_fields[0].short_field));
+	    field.set(_class_instance, _result_set.getObject(getColmunIndex(_result_set, sql_fields[0].field)));
 	}
 	catch(Exception e)
 	{

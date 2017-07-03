@@ -58,9 +58,19 @@ public final class UndecentralizableTableA1 extends Table<UndecentralizableTable
     public static class Record extends DatabaseRecord
     {
 	@AutoPrimaryKey
-	public int id;
+	public int id=-1;
 	
 	@Field
 	public String value;
+	
+	@Override
+	public Record clone()
+	{
+	    Record r=new Record();
+	    r.id=this.id;
+	    r.value=this.value;
+	    return r;
+	}
+	
     }
 }

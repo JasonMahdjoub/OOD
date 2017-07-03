@@ -37,7 +37,9 @@ package com.distrimind.ood.interpreter;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
@@ -48,6 +50,7 @@ import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseSyntaxException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
+import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.StringFieldAccessor;
 
 /**
@@ -211,11 +214,12 @@ public class RuleInstance implements QueryPart
 		    if (s.getType()==SymbolType.IDENTIFIER)
 		    {
 			String fieldName=s.getSymbol();
-			FieldAccessor fa=table.getFieldAccessor(fieldName);
+			HashSet<TableJunction> tablesJunction=new HashSet<>();
+			FieldAccessor fa=table.getFieldAccessor(fieldName, tablesJunction);
 			if (fa==null)
 			    throw new DatabaseSyntaxException("Cannot find field "+fieldName+" into table "+table.getName());
 			if (fa.isComparable())
-			    return fa.getValue(record);
+			    return fa.getValue(getDatabaseRecord(fa, tablesJunction, record));
 			else
 			    throw new DatabaseSyntaxException("The "+fieldName+" into table "+table.getName()+" is not comparable !");
 		    }
@@ -258,9 +262,11 @@ public class RuleInstance implements QueryPart
 		    if (s.getType()==SymbolType.IDENTIFIER)
 		    {
 			String fieldName=s.getSymbol();
+			
 			FieldAccessor fa=table.getFieldAccessor(fieldName);
 			if (fa==null)
 			    throw new DatabaseSyntaxException("Cannot find field "+fieldName+" into table "+table.getName());
+			
 			return fa;
 		    }
 		    else if (s.getType()==SymbolType.PARAMETER)
@@ -355,9 +361,9 @@ public class RuleInstance implements QueryPart
 		o2=o;
 	    }
 	    if (FieldAccessor.class.isAssignableFrom(o1.getClass()))
-		o1=((FieldAccessor)o1).getValue(record);
+		o1=((FieldAccessor)o1).getValue(getRecordInstance(table, record, (FieldAccessor)o1));
 	    if (FieldAccessor.class.isAssignableFrom(o2.getClass()))
-		o2=((FieldAccessor)o2).getValue(record);
+		o2=((FieldAccessor)o2).getValue(getRecordInstance(table, record, (FieldAccessor)o2));
 	    if (BigDecimal.class.isAssignableFrom(o1.getClass()))
 	    {
 		if (BigDecimal.class.isAssignableFrom(o2.getClass()))
@@ -411,6 +417,9 @@ public class RuleInstance implements QueryPart
 	    else if (FieldAccessor.class.isAssignableFrom(o1.getClass()))
 	    {
 		FieldAccessor fa=((FieldAccessor)o1);
+		DatabaseRecord dr=getRecordInstance(table, record, fa);
+		if (dr==null)
+		    return o2==null;
 		if (CharSequence.class.isAssignableFrom(fa.getFieldClassType()))
 		{
 		    if (o2 instanceof String)
@@ -419,18 +428,18 @@ public class RuleInstance implements QueryPart
 			if (s.startsWith("\"") && s.endsWith("\""))
 			    o2=s.substring(1, s.length()-1);
 		    }
-		    return fa.equals(record, o2);
+		    return fa.equals(dr, o2);
 		}
 		else if (fa.isComparable() && o2 instanceof BigDecimal)
 		{
-		    Object v=fa.getValue(record);
+		    Object v=fa.getValue(dr);
 		    if (v==null)
 			return o2==null;
 		    else 
 			return o2.equals(new BigDecimal(v.toString()));
 		}
 		else
-		    return fa.equals(record, o2);
+		    return fa.equals(dr, o2);
 		
 	    }
 	    else
@@ -441,9 +450,27 @@ public class RuleInstance implements QueryPart
 	{
 	    throw new DatabaseSyntaxException("Unexpected exception ! ", e);
 	}
-	
-	    
     }
+    
+    private DatabaseRecord getRecordInstance(Table<?> table, DatabaseRecord record, FieldAccessor fa) throws DatabaseException
+    {
+	if (fa.getTableClass()==table.getClass() || record==null)
+	    return record;
+	else
+	{
+	    for (ForeignKeyFieldAccessor fkfa : table.getForeignKeysFieldAccessors())
+	    {
+		DatabaseRecord dr=(DatabaseRecord)fkfa.getValue(record);
+		
+		dr=getRecordInstance(fkfa.getPointedTable(), dr, fa);
+		if (dr!=null)
+		    return dr;
+	    }
+	    return null;
+	}
+	
+    }
+    
     public <T extends DatabaseRecord> boolean like(Table<T> table, T record, Object o1, Object o2) throws DatabaseSyntaxException
     {
 	try
@@ -456,7 +483,7 @@ public class RuleInstance implements QueryPart
 	    {
 		if (String.class.isAssignableFrom(o2.getClass()))
 		{
-		    String s1=(String)((StringFieldAccessor)o1).getValue(record);
+		    String s1=(String)((StringFieldAccessor)o1).getValue(getRecordInstance(table, record, (StringFieldAccessor)o1));
 		    String s2=(String)o2;
 		    
 		    if (s2.startsWith("\"") && s2.endsWith("\""))
@@ -483,6 +510,74 @@ public class RuleInstance implements QueryPart
 	
 	    
     }
+    
+    public <T extends DatabaseRecord> boolean isIndependantFromOtherTables(Table<T> table) throws DatabaseException
+    {
+	switch(rule)
+	{
+	    case COMPARE:
+		if (parts.size()==3)
+		{
+		    RuleInstance ri2=(RuleInstance)parts.get(1);
+		    if (ri2.getRule().equals(Rule.QUERY))
+		    {
+			return ri2.isIndependantFromOtherTables(table);
+		    }
+		    else
+		    {
+			RuleInstance ri1=(RuleInstance)parts.get(0);
+			RuleInstance ri3=(RuleInstance)parts.get(2);
+			
+			return ri1.isIndependantFromOtherTables(table) && ri3.isIndependantFromOtherTables(table); 
+		    }
+		}
+		else
+		    throw new IllegalAccessError();
+	    case QUERY:
+		if (parts.size()==1)
+		{
+		    return ((RuleInstance)parts.get(0)).isIndependantFromOtherTables(table);
+		}
+		else if (parts.size()==3)
+		{
+		    RuleInstance ri1=(RuleInstance)parts.get(0);
+		    RuleInstance ri3=(RuleInstance)parts.get(2);
+		    
+		    return ri1.isIndependantFromOtherTables(table) && ri3.isIndependantFromOtherTables(table);
+		}
+		else
+		    throw new IllegalAccessError();
+	    case TERME:
+	    
+		if (parts.size()==1)
+		{
+		    Symbol s=(Symbol)parts.get(0);
+		    if (s.getType()==SymbolType.IDENTIFIER)
+		    {
+			String fieldName=s.getSymbol();
+			
+			FieldAccessor fa=table.getFieldAccessor(fieldName);
+			
+			return fa.getTableClass()==table.getClass();
+		    }
+		    else 
+			return true;
+		}
+		else if (parts.size()==3)
+		{
+		    return ((RuleInstance)parts.get(1)).isIndependantFromOtherTables(table);
+		}
+		else
+		    throw new IllegalAccessError();
+
+	    case EXPRESSION:
+		return ((RuleInstance)parts.get(0)).isIndependantFromOtherTables(table);
+	    case OPCOMP:case OPCONDITION:
+		throw new IllegalAccessError();
+	}
+	throw new IllegalAccessError();
+    }
+    
     
     public <T extends DatabaseRecord> boolean isConcernedBy(Table<T> table, Map<String, Object> parameters, T record) throws DatabaseException
     {
@@ -571,16 +666,66 @@ public class RuleInstance implements QueryPart
 	}
 	throw new IllegalAccessError();
     }
-    public <T extends DatabaseRecord> StringBuffer translateToSqlQuery(Table<T> table, Map<String, Object> parameters, Map<Integer, Object> outputParameters) throws DatabaseSyntaxException
+    public <T extends DatabaseRecord> StringBuffer translateToSqlQuery(Table<T> table, Map<String, Object> parameters, Map<Integer, Object> outputParameters, Set<TableJunction> tablesJunction) throws DatabaseSyntaxException
     {
-	return translateToSqlQuery(table, parameters, outputParameters, 1);
+	return translateToSqlQuery(table, parameters, outputParameters, 1, tablesJunction);
     }
-    public <T extends DatabaseRecord> StringBuffer translateToSqlQuery(Table<T> table, Map<String, Object> parameters, Map<Integer, Object> outputParameters, int firstParameterIndex) throws DatabaseSyntaxException
+    public <T extends DatabaseRecord> StringBuffer translateToSqlQuery(Table<T> table, Map<String, Object> parameters, Map<Integer, Object> outputParameters, int firstParameterIndex, Set<TableJunction> tablesJunction) throws DatabaseSyntaxException
     {
-	return translateToSqlQuery(table, parameters, outputParameters, new AtomicInteger(firstParameterIndex));
+	return translateToSqlQuery(table, parameters, outputParameters, new AtomicInteger(firstParameterIndex), tablesJunction);
     }
   
-    <T extends DatabaseRecord> StringBuffer translateToSqlQuery(Table<T> table, Map<String, Object> parameters, Map<Integer, Object> outputParameters, AtomicInteger currentParameterID) throws DatabaseSyntaxException
+    
+    public static class TableJunction
+    {
+	private final Table<?> tablePointing, tablePointed;
+	private final ForeignKeyFieldAccessor fieldAccessor;
+	
+	public TableJunction(Table<?> _tablePointing, Table<?> _tablePointed, ForeignKeyFieldAccessor fieldAccessor)
+	{
+	    super();
+	    tablePointing = _tablePointing;
+	    tablePointed = _tablePointed;
+	    this.fieldAccessor=fieldAccessor;
+	}
+
+	public Table<?> getTablePointing()
+	{
+	    return tablePointing;
+	}
+
+	public Table<?> getTablePointed()
+	{
+	    return tablePointed;
+	}
+	
+	public ForeignKeyFieldAccessor getFieldAccessor()
+	{
+	    return fieldAccessor;
+	}
+	
+	@Override
+	public boolean equals(Object o)
+	{
+	    if (o==null)
+		return false;
+	    if (o instanceof TableJunction)
+	    {
+		TableJunction tj=(TableJunction)o;
+		return tablePointing.equals(tj.tablePointing) && tablePointed.equals(tj.tablePointed); 
+	    }
+	    return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+	    return tablePointing.hashCode()+tablePointed.hashCode();
+	}
+    }
+    
+    
+    <T extends DatabaseRecord> StringBuffer translateToSqlQuery(Table<T> table, Map<String, Object> parameters, Map<Integer, Object> outputParameters, AtomicInteger currentParameterID, Set<TableJunction> tablesJunction) throws DatabaseSyntaxException
     {
 	switch(rule)
 	{
@@ -590,7 +735,7 @@ public class RuleInstance implements QueryPart
 		    RuleInstance ri2=(RuleInstance)parts.get(1);
 		    if (ri2.getRule().equals(Rule.QUERY))
 		    {
-			StringBuffer tmp=ri2.translateToSqlQuery(table, parameters, outputParameters, currentParameterID);
+			StringBuffer tmp=ri2.translateToSqlQuery(table, parameters, outputParameters, currentParameterID, tablesJunction);
 			StringBuffer sb=new StringBuffer(tmp.length()+2);
 			sb.append("(");
 			sb.append(tmp);
@@ -622,7 +767,7 @@ public class RuleInstance implements QueryPart
 				if (s1.getType()==SymbolType.IDENTIFIER)
 				{
 				    String fieldName=s1.getSymbol();
-				    fa1=table.getFieldAccessor(fieldName);
+				    fa1=table.getFieldAccessor(fieldName, tablesJunction);
 				    if (fa1==null)
 					throw new DatabaseSyntaxException("Cannot find field "+fieldName+" into table "+table.getName());
 				}
@@ -644,7 +789,7 @@ public class RuleInstance implements QueryPart
 				if (s2.getType()==SymbolType.IDENTIFIER)
 				{
 				    String fieldName=s2.getSymbol();
-				    fa2=table.getFieldAccessor(fieldName);
+				    fa2=table.getFieldAccessor(fieldName, tablesJunction);
 				    if (fa2==null)
 					throw new DatabaseSyntaxException("Cannot find field "+fieldName+" into table "+table.getName());
 				}
@@ -700,7 +845,8 @@ public class RuleInstance implements QueryPart
 				    {
 					if (fa2==null)
 					{
-					    T record=table.getDefaultRecordConstructor().newInstance();
+					    Table<?> t=table.getDatabaseWrapper().getTableInstance(fa1.getTableClass());
+					    DatabaseRecord record=t.getDefaultRecordConstructor().newInstance();
 					    fa1.setValue(record, parameter2);
 					    sfis=fa1.getSqlFieldsInstances(record);
 					}
@@ -761,14 +907,14 @@ public class RuleInstance implements QueryPart
 			    }
 			}
 			StringBuffer res=new StringBuffer();
-			StringBuffer sb=ri1.translateToSqlQuery(table, parameters, outputParameters, currentParameterID);
+			StringBuffer sb=ri1.translateToSqlQuery(table, parameters, outputParameters, currentParameterID, tablesJunction);
 			if (ri1.needParenthesis())
 			    res.append("(");
 			res.append(sb);
 			if (ri1.needParenthesis())
 			    res.append(")");
 			res.append(comp.getType().getContent());
-			sb=ri3.translateToSqlQuery(table, parameters, outputParameters, currentParameterID);
+			sb=ri3.translateToSqlQuery(table, parameters, outputParameters, currentParameterID, tablesJunction);
 			if (ri3.needParenthesis())
 			    res.append("(");
 			res.append(sb);
@@ -783,7 +929,7 @@ public class RuleInstance implements QueryPart
 	    case EXPRESSION:case QUERY:
 		if (parts.size()==1)
 		{
-		    return ((RuleInstance)parts.get(0)).translateToSqlQuery(table, parameters, outputParameters, currentParameterID);
+		    return ((RuleInstance)parts.get(0)).translateToSqlQuery(table, parameters, outputParameters, currentParameterID, tablesJunction);
 		}
 		else if (parts.size()==3)
 		{
@@ -803,7 +949,7 @@ public class RuleInstance implements QueryPart
 		    StringBuffer sb=new StringBuffer();
 		    /*if (ri1.needParenthesis())
 			sb.append("(");*/
-		    sb.append(ri1.translateToSqlQuery(table, parameters, outputParameters, currentParameterID));
+		    sb.append(ri1.translateToSqlQuery(table, parameters, outputParameters, currentParameterID, tablesJunction));
 		    /*if (ri1.needParenthesis())
 			sb.append(")");*/
 		    Symbol comp=(Symbol)((RuleInstance)parts.get(1)).parts.get(0);
@@ -812,7 +958,7 @@ public class RuleInstance implements QueryPart
 		    sb.append(" ");
 		    /*if (ri3.needParenthesis())
 			sb.append("(");*/
-		    sb.append(ri3.translateToSqlQuery(table, parameters, outputParameters, currentParameterID));
+		    sb.append(ri3.translateToSqlQuery(table, parameters, outputParameters, currentParameterID, tablesJunction));
 		    /*if (ri3.needParenthesis())
 			sb.append(")");*/
 		    return sb;
@@ -829,7 +975,7 @@ public class RuleInstance implements QueryPart
 		    if (s.getType()==SymbolType.IDENTIFIER)
 		    {
 			String fieldName=s.getSymbol();
-			FieldAccessor fa=table.getFieldAccessor(fieldName);
+			FieldAccessor fa=table.getFieldAccessor(fieldName, tablesJunction);
 			if (fa==null)
 			    throw new DatabaseSyntaxException("Cannot find field "+fieldName+" into table "+table.getName());
 			SqlField sfs[]=fa.getDeclaredSqlFields();
@@ -842,7 +988,6 @@ public class RuleInstance implements QueryPart
 			Object parameter1=parameters.get(s.getSymbol());
 			if (parameter1==null)
 			    throw new DatabaseSyntaxException("Cannot find parameter "+s.getSymbol());
-			int id=currentParameterID.getAndIncrement();
 			SqlFieldInstance sfis[]=null;
 			try
 			{
@@ -851,14 +996,7 @@ public class RuleInstance implements QueryPart
 			    if (fa==null)
 				throw new DatabaseSyntaxException("Cannot find parameter type "+parameter1.getClass().getName()+" of "+s.getSymbol()+" into table "+table.getClass().getName());
 			    
-			    /*FieldAccessor fa=Symbol.getFieldAccessor(table, parameter1);
-			    if (fa==null)
-				throw new DatabaseSyntaxException("Cannot find parameter type "+parameter1.getClass().getName()+" of "+s.getSymbol()+" into table "+table.getClass().getName());
-			    System.out.println(fa.getFieldName());
-			    System.out.println(parameter1.getClass().getName());
-			    System.out.println(record.getClass().getName());
-			    fa.setValue(record, parameter1);*/
-			    sfis=fa.getSqlFieldsInstances(record);
+			    sfis=fa.getSqlFieldsInstances(getRecordInstance(table, record, fa));
 			}
 			catch( DatabaseSyntaxException de)
 			{
@@ -868,6 +1006,7 @@ public class RuleInstance implements QueryPart
 			{
 			    throw new DatabaseSyntaxException("Database exception", e);
 			}
+			int id=currentParameterID.getAndIncrement();
 			if (sfis==null)
 			    throw new DatabaseSyntaxException("Database exception");
 			if (sfis.length!=1)
@@ -883,7 +1022,7 @@ public class RuleInstance implements QueryPart
 		{
 		    StringBuffer sb=new StringBuffer();
 		    sb.append("(");
-		    sb.append(((RuleInstance)parts.get(1)).translateToSqlQuery(table, parameters, outputParameters, currentParameterID));
+		    sb.append(((RuleInstance)parts.get(1)).translateToSqlQuery(table, parameters, outputParameters, currentParameterID, tablesJunction));
 		    sb.append(")");
 		}
 		else
@@ -894,4 +1033,30 @@ public class RuleInstance implements QueryPart
 	throw new IllegalAccessError();
     }
     
+    private DatabaseRecord getDatabaseRecord(FieldAccessor fa, Set<TableJunction> tablesJunction, DatabaseRecord record) throws DatabaseException
+    {
+	if (record==null)
+	    return null;
+	Class<? extends Table<?>> tableclass=Table.getTableClass(record.getClass());
+	
+	if (tableclass!=fa.getTableClass())
+	{
+	    
+	    for (TableJunction tj : tablesJunction)
+	    {
+		if (tj.getTablePointing().getClass()==tableclass)
+		{
+		    Object o=tj.getFieldAccessor().getValue(record);
+		    if (o==null)
+			return null;
+		    else
+			return getDatabaseRecord(fa, tablesJunction, (DatabaseRecord)o);
+		}
+	    }
+	    throw new IllegalAccessError(fa.getTableClass()+";"+record.getClass());
+	}
+	return record;
+    }
+    
+  
 }

@@ -48,6 +48,7 @@ import java.util.Date;
 import java.util.HashMap;
 
 import com.distrimind.ood.database.DatabaseRecord;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.SqlField;
 import com.distrimind.ood.database.SqlFieldInstance;
 import com.distrimind.ood.database.Table;
@@ -65,9 +66,9 @@ public class DateFieldAccessor extends FieldAccessor
 {
     private final SqlField sql_fields[];
     
-    protected DateFieldAccessor(Class<? extends Table<?>> table_class, Field _field, String parentFieldName) throws DatabaseException
+    protected DateFieldAccessor(Class<? extends Table<?>> table_class, DatabaseWrapper _sql_connection, Field _field, String parentFieldName) throws DatabaseException
     {
-	super(null, _field, parentFieldName, getCompatibleClasses(_field), table_class);
+	super(_sql_connection, _field, parentFieldName, getCompatibleClasses(_field), table_class);
 	if (!Date.class.isAssignableFrom(_field.getType()))
 	    throw new FieldDatabaseException("The field "+_field.getName()+" of the class "+_field.getDeclaringClass().getName()+" of type "+_field.getType()+" must be a Date type.");
 	sql_fields=new SqlField[1];
@@ -110,7 +111,7 @@ public class DateFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    Timestamp res=_result_set.getTimestamp(sql_fields[0].short_field);
+	    Timestamp res=_result_set.getTimestamp(getColmunIndex(_result_set, sql_fields[0].field));
 	    if (res==null && isNotNull())
 		throw new DatabaseIntegrityException("Unexpected exception.");
 	    field.set(_class_instance, new Date(res.getTime()));

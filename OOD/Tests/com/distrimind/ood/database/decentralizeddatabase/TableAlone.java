@@ -37,9 +37,8 @@ package com.distrimind.ood.database.decentralizeddatabase;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.Table;
-import com.distrimind.ood.database.annotations.AutoPrimaryKey;
 import com.distrimind.ood.database.annotations.Field;
-import com.distrimind.ood.database.annotations.RandomPrimaryKey;
+import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.AbstractDecentralizedID;
 
@@ -56,12 +55,26 @@ public final class TableAlone extends Table<TableAlone.Record>
 	super();
     }
 
-    public static class Record extends DatabaseRecord
+    public static class Record extends DatabaseRecord implements Cloneable
     {
-	@RandomPrimaryKey
+	@PrimaryKey
 	public AbstractDecentralizedID id;
 	
 	@Field
 	public String value;
+	
+	public String toString()
+	{
+	    return "TableAlone["+(id==null?null:id.toString())+", "+value+"]";
+	}
+	
+	@Override
+	public Record clone()
+	{
+	    Record r=new Record();
+	    r.id=this.id;
+	    r.value=this.value;
+	    return r;
+	}
     }
 }

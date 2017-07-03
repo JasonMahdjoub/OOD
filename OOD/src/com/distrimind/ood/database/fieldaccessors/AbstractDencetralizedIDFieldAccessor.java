@@ -271,11 +271,11 @@ public class AbstractDencetralizedIDFieldAccessor extends FieldAccessor
 	    byte[] res=null;
 	    if (isVarBinary)
 	    {
-		res=_result_set.getBytes(sql_fields[0].short_field);
+		res=_result_set.getBytes(getColmunIndex(_result_set, sql_fields[0].field));
 	    }
 	    else
 	    {
-		res=getBytes(_result_set.getBigDecimal(sql_fields[0].short_field));
+		res=getBytes(_result_set.getBigDecimal(getColmunIndex(_result_set, sql_fields[0].field)));
 	    }
 	    if (res==null && isNotNull())
 		throw new DatabaseIntegrityException("Unexpected exception.");

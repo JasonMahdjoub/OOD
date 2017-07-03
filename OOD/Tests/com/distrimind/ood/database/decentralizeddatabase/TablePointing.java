@@ -37,10 +37,8 @@ package com.distrimind.ood.database.decentralizeddatabase;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.Table;
-import com.distrimind.ood.database.annotations.AutoPrimaryKey;
-import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.annotations.ForeignKey;
-import com.distrimind.ood.database.annotations.RandomPrimaryKey;
+import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.AbstractDecentralizedID;
 
@@ -60,10 +58,26 @@ public final class TablePointing extends Table<TablePointing.Record>
 
     public static class Record extends DatabaseRecord
     {
-	@RandomPrimaryKey
+	@PrimaryKey
 	public AbstractDecentralizedID id;
 	
 	@ForeignKey
 	public TablePointed.Record table2;
+	
+	@Override
+	public String toString()
+	{
+	    return "TablePointing["+id+", "+table2+"]";
+	}
+	
+	@Override
+	public Record clone()
+	{
+	    Record r=new Record();
+	    r.id=this.id;
+	    r.table2=this.table2.clone();
+	    return r;
+	}
+	
     }
 }

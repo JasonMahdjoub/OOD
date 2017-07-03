@@ -66,6 +66,7 @@ class DatabaseWrapperAccessor
     private static final Method m_get_serializable_type;
     private static final Method m_get_short_type;
     private static final Method m_get_var_char_limit;
+    private static final Method m_support_full_sql_field_name;
     private static final Constructor<DecentralizedIDGenerator> m_decentralized_id_constructor;
     private static final Constructor<RenforcedDecentralizedIDGenerator> m_renforced_decentralized_id_constructor;
     
@@ -211,6 +212,22 @@ class DatabaseWrapperAccessor
 	}
 	return -1;
     }
+    static boolean supportFullSqlFieldName(DatabaseWrapper wrapper)
+    {
+	if (wrapper==null)
+	    throw new NullPointerException();
+	try
+	{
+	   return ((Boolean)invoke(m_support_full_sql_field_name, wrapper)).booleanValue();
+	}
+	catch(InvocationTargetException e)
+	{
+	    System.err.println("Unexpected error :");
+	    e.printStackTrace();
+	    System.exit(-1);
+	}
+	return false;
+    }
 
     static boolean isVarBinarySupported(DatabaseWrapper wrapper)
     {
@@ -284,6 +301,7 @@ class DatabaseWrapperAccessor
 	m_get_serializable_type=getMethod(DatabaseWrapper.class, "getSerializableType");
 	m_get_short_type=getMethod(DatabaseWrapper.class, "getShortType");
 	m_get_var_char_limit=getMethod(DatabaseWrapper.class, "getVarCharLimit");
+	m_support_full_sql_field_name=getMethod(DatabaseWrapper.class, "supportFullSqlFieldName");
 	m_decentralized_id_constructor=getConstructor(DecentralizedIDGenerator.class, long.class, long.class);
 	m_renforced_decentralized_id_constructor=getConstructor(RenforcedDecentralizedIDGenerator.class, long.class, long.class);
     }

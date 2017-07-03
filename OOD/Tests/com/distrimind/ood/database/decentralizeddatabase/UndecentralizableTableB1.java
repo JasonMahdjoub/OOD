@@ -37,8 +37,6 @@ package com.distrimind.ood.database.decentralizeddatabase;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.Table;
-import com.distrimind.ood.database.annotations.AutoPrimaryKey;
-import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.annotations.ForeignKey;
 import com.distrimind.ood.database.annotations.RandomPrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
@@ -64,5 +62,15 @@ public final class UndecentralizableTableB1 extends Table<UndecentralizableTable
 	
 	@ForeignKey
 	public UndecentralizableTableA1.Record pointing;
+	
+	@Override
+	public Record clone()
+	{
+	    Record r=new Record();
+	    r.id=this.id;
+	    r.pointing=this.pointing.clone();
+	    return r;
+	}
+	
     }
 }

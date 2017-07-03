@@ -39,7 +39,6 @@ package com.distrimind.ood.database;
 import java.io.EOFException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -264,11 +263,11 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
     }
     
     
-    int exportTransactions(final OutputStream outputStream, final DatabaseHooksTable.Record hook, final int maxEventsRecords, final long fromTransactionID, final AtomicLong nearNextLocalID) throws DatabaseException
+    int exportTransactions(final ObjectOutputStream oos, final DatabaseHooksTable.Record hook, final int maxEventsRecords, final long fromTransactionID, final AtomicLong nearNextLocalID) throws DatabaseException
     {
-    	nearNextLocalID.set(fromTransactionID);
+    	nearNextLocalID.set(Long.MAX_VALUE);
     	final AtomicInteger number=new AtomicInteger(0);
-    	try(final ObjectOutputStream oos=new ObjectOutputStream(outputStream))
+    	try
     	{
     	    getRecords(new Filter<DatabaseDistantTransactionEvent.Record>() {
 	    
@@ -279,7 +278,7 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
     		    {
     			if (_record.getLocalID()>fromTransactionID)
     			{
-    			    if (nearNextLocalID.get()<_record.getLocalID())
+    			    if (_record.getLocalID()<nearNextLocalID.get())
     				nearNextLocalID.set(_record.getLocalID());
     			}
     			else if (_record.getLocalID()==fromTransactionID)

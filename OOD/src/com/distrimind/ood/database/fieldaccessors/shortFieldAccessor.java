@@ -210,7 +210,7 @@ public class shortFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    field.setShort(_class_instance, _result_set.getShort(sql_fields[0].short_field));
+	    field.setShort(_class_instance, _result_set.getShort(getColmunIndex(_result_set, sql_fields[0].field)));
 	}
 	catch(Exception e)
 	{

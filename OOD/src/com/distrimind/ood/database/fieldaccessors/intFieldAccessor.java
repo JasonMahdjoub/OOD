@@ -203,12 +203,16 @@ public class intFieldAccessor extends FieldAccessor
 	    throw new DatabaseException("", e);
 	}
     }
+    
+    
     @Override
     public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records) throws DatabaseException
     {
 	try
 	{
-	    field.setInt(_class_instance, _result_set.getInt(sql_fields[0].short_field));
+	    
+	    
+	    field.setInt(_class_instance, _result_set.getInt(getColmunIndex(_result_set, sql_fields[0].field)));
 	}
 	catch(Exception e)
 	{

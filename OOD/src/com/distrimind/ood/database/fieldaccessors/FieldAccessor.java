@@ -56,6 +56,7 @@ import java.security.PrivilegedExceptionAction;
 import java.sql.Blob;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.sql.Types;
@@ -111,6 +112,7 @@ import com.distrimind.util.RenforcedDecentralizedIDGenerator;
     protected final boolean descendantIndex;
     private final Class<?> compatible_classes[];
     private final String indexName;
+    private final Class<? extends Table<?>> table_class;
     
     @SuppressWarnings("unchecked")
     protected FieldAccessor(DatabaseWrapper _sql_connection, Field _field, String parentFieldName, Class<?> compatible_classes[], Class<? extends Table<?>> table_class) throws DatabaseException
@@ -122,6 +124,7 @@ import com.distrimind.util.RenforcedDecentralizedIDGenerator;
 	field=_field;
 	this.parentFieldName=parentFieldName;
 	this.fieldName=((this.parentFieldName==null || this.parentFieldName.isEmpty())?"":(this.parentFieldName+"_"))+field.getName();
+	this.table_class=table_class;
 	table_name=table_class==null?(DatabaseRecord.class.isAssignableFrom(field.getDeclaringClass())?(Table.getName(Table.getTableClass((Class<? extends DatabaseRecord>)field.getDeclaringClass()))):null):Table.getName(table_class);
 	auto_primary_key=_field.isAnnotationPresent(AutoPrimaryKey.class);
 	random_primary_key=field.isAnnotationPresent(RandomPrimaryKey.class);
@@ -195,6 +198,11 @@ import com.distrimind.util.RenforcedDecentralizedIDGenerator;
 	}
 	this.indexName=(this.table_name+"_"+this.getField().getName()).replace(".", "_").toUpperCase();
     }
+    public Class<? extends Table<?>> getTableClass()
+    {
+	return table_class;
+    }
+
     
     public boolean hasToCreateIndex()
     {
@@ -384,13 +392,13 @@ import com.distrimind.util.RenforcedDecentralizedIDGenerator;
 		    {
 			ByteTabObjectConverter converter=null;
 			if (type.equals(boolean.class))
-			    res.add(new booleanFieldAccessor(_table_class, f, parentFieldName));
+			    res.add(new booleanFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 			else if (type.equals(byte.class))
 			    res.add(new byteFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 			else if (type.equals(short.class))
 			    res.add(new shortFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 			else if (type.equals(char.class))
-			    res.add(new charFieldAccessor(_table_class, f, parentFieldName));
+			    res.add(new charFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 			else if (type.equals(int.class))
 			    res.add(new intFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 			else if (type.equals(long.class))
@@ -404,13 +412,13 @@ import com.distrimind.util.RenforcedDecentralizedIDGenerator;
 			else if (type.equals(class_array_byte))
 			    res.add(new ByteTabFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 			else if (type.equals(Boolean.class))
-			    res.add(new BooleanNumberFieldAccessor(_table_class, f, parentFieldName));
+			    res.add(new BooleanNumberFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 			else if (type.equals(Byte.class))
 			    res.add(new ByteNumberFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 			else if (type.equals(Short.class))
 			    res.add(new ShortNumberFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 			else if (type.equals(Character.class))
-			    res.add(new CharacterNumberFieldAccessor(_table_class, f, parentFieldName));
+			    res.add(new CharacterNumberFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 			else if (type.equals(Integer.class))
 			    res.add(new IntegerNumberFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 			else if (type.equals(Long.class))
@@ -426,7 +434,7 @@ import com.distrimind.util.RenforcedDecentralizedIDGenerator;
 			else if (Calendar.class.isAssignableFrom(type))
 			    res.add(new CalendarFieldAccessor(_table_class, _sql_connection, f,parentFieldName));
 			else if (Date.class.isAssignableFrom(type))
-			    res.add(new DateFieldAccessor(_table_class, f, parentFieldName));
+			    res.add(new DateFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 			else if ((converter=_sql_connection.getByteTabObjectConverter(type))!=null)
 			    res.add(new ByteTabConvertibleFieldAccessor(_table_class, _sql_connection, f, parentFieldName, converter));
 			else if (type.equals(DecentralizedIDGenerator.class))
@@ -776,6 +784,32 @@ import com.distrimind.util.RenforcedDecentralizedIDGenerator;
 	else 
 	    throw new DatabaseException("Unexpected exception.");
     }
+    
+    protected int getColmunIndex(ResultSet _result_set, String fieldName) throws SQLException
+    {
+	if (DatabaseWrapperAccessor.supportFullSqlFieldName(sql_connection))
+	    return _result_set.findColumn(fieldName);
+	else
+	{
+	    ResultSetMetaData rsmd=_result_set.getMetaData();
+	    for (int i=1;i<=rsmd.getColumnCount();i++)
+	    {
+		String tableName=rsmd.getTableName(i);
+		String colName=rsmd.getColumnName(i);
+		StringBuffer sb=new StringBuffer(tableName.length()+colName.length()+1);
+		sb.append(tableName);
+		sb.append(".");
+		sb.append(colName);
+		
+	    
+		if (sb.toString().equals(fieldName))
+		    return i;
+	    }
+	    throw new SQLException("colmun "+fieldName+" not found !");
+	}
+	
+    }
+    
     private static boolean tabEquals(byte[] tab1, byte[] tab2)
     {
 	if (tab1.length!=tab2.length)
@@ -790,13 +824,16 @@ import com.distrimind.util.RenforcedDecentralizedIDGenerator;
 	    if (p instanceof byte[] || (p instanceof Number && p.getClass()!=BigInteger.class && p.getClass()!=BigDecimal.class))
 	    {
 		
-		switch(st.getMetaData().getColumnType(index))
+		switch(st.getParameterMetaData().getParameterType(index))
 		{
 		    case Types.TINYINT:
 			st.setByte(index, ((Byte)p).byteValue());
 			break;
 		    case Types.INTEGER:
-			st.setInt(index, ((Integer)p).intValue());
+			/*if (p instanceof Long)
+			    st.setLong(index, ((Long)p).longValue());
+			else*/
+			    st.setInt(index, ((Integer)p).intValue());
 			break;
 		    case Types.BIGINT:
 			if (p instanceof Integer)

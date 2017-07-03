@@ -68,6 +68,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.distrimind.ood.database.DatabaseHooksTable.Record;
 import com.distrimind.ood.database.Table.ColumnsReadQuerry;
 import com.distrimind.ood.database.Table.DefaultConstructorAccessPrivilegedAction;
 import com.distrimind.ood.database.exceptions.DatabaseException;
@@ -326,13 +327,62 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	
     }
     
+    static class ConnectedPeers
+    {
+	private final DatabaseHooksTable.Record hook;
+	private boolean transferInProgress=false;
+	
+	
+	
+	ConnectedPeers(Record _hook)
+	{
+	    super();
+	    hook = _hook;
+	}
+	public boolean isTransferInProgress()
+	{
+	    return transferInProgress;
+	}
+	public void setTransferInProgress(boolean _transferInProgress)
+	{
+	    transferInProgress = _transferInProgress;
+	}
+	public DatabaseHooksTable.Record getHook()
+	{
+	    return hook;
+	}
+	
+	@Override
+	public boolean equals(Object o)
+	{
+	    if (o==null)
+		return false;
+	    if (o instanceof ConnectedPeers)
+	    {
+		return ((ConnectedPeers) o).hook.equals(this.hook);
+	    }
+	    else if (o instanceof DatabaseHooksTable.Record)
+	    {
+		return this.hook.equals(o);
+	    }
+	    return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+	    return hook.hashCode();
+	}
+	
+	
+    }
     
     public class DatabaseSynchronizer
     {
 	private DatabaseNotifier notifier=null;
 	private boolean canNotify=true;
 	private LinkedList<DatabaseEvent> events=new LinkedList<>();
-	private HashMap<AbstractDecentralizedID, DatabaseHooksTable.Record> initializedHooks=new HashMap<>();
+	private HashMap<AbstractDecentralizedID, ConnectedPeers> initializedHooks=new HashMap<>();
 	DatabaseSynchronizer()
 	{
 	}
@@ -416,6 +466,14 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	    {
 		addHookForLocalDatabaseHost(localHostID);
 	    }
+	    synchronized(this)
+	    {
+		if (initializedHooks.containsValue(local))
+		{
+		    throw DatabaseException.getDatabaseException(new IllegalAccessException("Local hostID "+localHostID+" already initialized !"));
+		}
+		initializedHooks.put(localHostID, new ConnectedPeers(local));
+	    }
 	}
 	
 	public void addHookForLocalDatabaseHost(AbstractDecentralizedID hostID, Package ...databasePackages) throws DatabaseException
@@ -437,8 +495,9 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	{
 	    synchronized(this)
 	    {
-		DatabaseHooksTable.Record r=initializedHooks.get(hostID);
-		if (r==null)
+		ConnectedPeers peer=initializedHooks.get(hostID);
+		DatabaseHooksTable.Record r=null;
+		if (peer==null)
 		{
 		    List<DatabaseHooksTable.Record> l=getHooksTransactionsTable().getRecordsWithAllFields(new Object[]{"hostID", hostID});
 		    if (l.size()==1)
@@ -448,12 +507,34 @@ public abstract class DatabaseWrapper implements AutoCloseable
 		    if (r==null)
 			throw DatabaseException.getDatabaseException(new IllegalArgumentException("The host ID "+hostID+" has not been initialized !"));
 		}
+		else
+		    r=peer.getHook();
 
 		return r.getLastValidatedDistantTransaction();
 	    }
 	}
 	
-	public void validateLastSynchronization(AbstractDecentralizedID hostID, long lastTransferedTransactionID) throws DatabaseException
+	void notifyNewTransactionsIfNecessary() throws DatabaseException
+	{
+	    synchronized(this)
+	    {
+		long lastID=getTransactionIDTable().getLastTransactionID();
+
+		for (ConnectedPeers cp : initializedHooks.values())
+		{
+		    if (!cp.getHook().concernsLocalDatabaseHost() && !cp.isTransferInProgress())
+		    {
+			if (lastID>cp.getHook().getLastValidatedTransaction())
+			{
+			    cp.setTransferInProgress(true);
+			    addNewDatabaseEvent(new DatabaseEventsToSynchronize(getHooksTransactionsTable().getLocalDatabaseHost().getHostID(), cp.getHook(), lastID, maxEventsToSynchronizeAtTheSameTime));
+			}
+		    }
+		}
+	    }
+	}
+	
+	void validateLastSynchronization(AbstractDecentralizedID hostID, long lastTransferedTransactionID) throws DatabaseException
 	{
 	    if (hostID==null)
 		throw new NullPointerException("hostID");
@@ -462,15 +543,24 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	    
 	    synchronized(this)
 	    {
-		DatabaseHooksTable.Record r=initializedHooks.get(hostID);
+		ConnectedPeers peer=initializedHooks.get(hostID);
+		DatabaseHooksTable.Record r=null;
+		if (peer!=null)
+		    r=peer.getHook();
+		
 		if (r==null)
 		    throw DatabaseException.getDatabaseException(new IllegalArgumentException("The host ID "+hostID+" has not been initialized !"));
 		if (r.getLastValidatedTransaction()>lastTransferedTransactionID)
-		    throw new DatabaseException("The given transfer ID limit "+lastTransferedTransactionID+" is lower than the stored transfer ID limit "+r.getLastValidatedTransaction());	
+		    throw new DatabaseException("The given transfer ID limit "+lastTransferedTransactionID+" is lower than the stored transfer ID limit "+r.getLastValidatedTransaction());
+		peer.setTransferInProgress(false);
 		getDatabaseTransactionsPerHostTable().validateTransactions(r, lastTransferedTransactionID);
 		long lastID=getTransactionIDTable().getLastTransactionID();
+		
 		if (lastID>r.getLastValidatedTransaction())
+		{
+		    peer.setTransferInProgress(true);
 		    addNewDatabaseEvent(new DatabaseEventsToSynchronize(getHooksTransactionsTable().getLocalDatabaseHost().getHostID(), r, lastID, maxEventsToSynchronizeAtTheSameTime));
+		}
 		
 		Map<AbstractDecentralizedID, Long> lastIds=getHooksTransactionsTable().getLastValidatedDistantTransactions();
 		
@@ -528,7 +618,10 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	    
 	    synchronized(this)
 	    {
-		DatabaseHooksTable.Record hook=initializedHooks.remove(hostID);
+		ConnectedPeers peer=initializedHooks.remove(hostID);
+		DatabaseHooksTable.Record hook=null;
+		if (peer!=null)
+		    hook=peer.getHook();
 		if (hook==null)
 		    throw DatabaseException.getDatabaseException(new IllegalAccessException("hostID "+hostID+" has not be initialized !"));
 		if (hook.concernsLocalDatabaseHost())
@@ -604,7 +697,7 @@ public abstract class DatabaseWrapper implements AutoCloseable
 		{
 		    throw DatabaseException.getDatabaseException(new IllegalAccessException("hostID "+hostID+" already initialized !"));
 		}
-		initializedHooks.put(hostID, r);
+		initializedHooks.put(hostID, new ConnectedPeers(r));
 		validateLastSynchronization(hostID, lastValidatedTransacionID);
 	    }
 	}
@@ -615,6 +708,7 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	    
 	    getHooksTransactionsTable().validateDistantTransactions(d.getHostSource(), d.getLastDistantTransactionIdentifiers(), true);
 	}
+	
 	public void received(BigDatabaseEventToSend data, InputStream inputStream) throws DatabaseException
 	{
 	    data.inportFromInputStream(DatabaseWrapper.this, inputStream);
@@ -623,6 +717,13 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	{
 	    if (data instanceof DatabaseTransactionsIdentifiersToSynchronize)
 		received((DatabaseTransactionsIdentifiersToSynchronize)data);
+	    else if (data instanceof TransactionConfirmationEvents)
+	    {
+		if (isInitialized(data.getHostDestination()))
+		    validateLastSynchronization(data.getHostSource(), ((TransactionConfirmationEvents) data).getLastValidatedTransaction());
+		else
+		    initHook(data.getHostSource(), ((TransactionConfirmationEvents) data).getLastValidatedTransaction());
+	    }
 	}
     }
     
@@ -706,6 +807,46 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	
     }
     
+    public static class TransactionConfirmationEvents extends DatabaseEvent implements DatabaseEventToSend
+    {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 2920925585457063201L;
+	
+	
+	protected final AbstractDecentralizedID hostIDSource, hostIDDestination;
+	protected final long lastValidatedTransaction;
+	
+	
+	
+        TransactionConfirmationEvents(AbstractDecentralizedID _hostIDSource, AbstractDecentralizedID _hostIDDestination, long _lastValidatedTransaction)
+	{
+	    super();
+	    hostIDSource = _hostIDSource;
+	    hostIDDestination = _hostIDDestination;
+	    lastValidatedTransaction = _lastValidatedTransaction;
+	}
+
+	@Override
+        public AbstractDecentralizedID getHostDestination() 
+        {
+            return hostIDDestination;
+        }
+
+        @Override
+        public AbstractDecentralizedID getHostSource() 
+        {
+            return hostIDSource;
+        }
+        
+        public long getLastValidatedTransaction()
+        {
+            return lastValidatedTransaction;
+        }
+
+    }
+    
     public static class DatabaseEventsToSynchronize extends DatabaseEvent implements BigDatabaseEventToSend
     {
 	/**
@@ -759,24 +900,24 @@ public abstract class DatabaseWrapper implements AutoCloseable
 		public Boolean run() throws Exception
 		{
 		    int number=wrapper.getDatabaseTransactionsPerHostTable().exportTransactions(outputStream, hookID, maxEventsRecords);
-		    if (number==0)
+		    /*if (number==0)
 		    {
 			hook.setLastValidatedTransaction(wrapper.getTransactionIDTable().getLastTransactionID());
 			wrapper.getHooksTransactionsTable().updateRecord(hook);
-		    }
+		    }*/
 		    return new Boolean(number>0);
 		}
 
 		@Override
 		public TransactionIsolation getTransactionIsolation()
 		{
-		    return TransactionIsolation.TRANSACTION_READ_COMMITTED;
+		    return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
 		}
 
 		@Override
 		public boolean doesWriteData()
 		{
-		    return false;
+		    return true;
 		}
 	    })).booleanValue();
 	    
@@ -1264,10 +1405,12 @@ public abstract class DatabaseWrapper implements AutoCloseable
 
     private void clearTransactions(boolean commit) throws DatabaseException
     {
+	boolean transactionOK=false;
 	if (currentTransactionsEventNummber>maxTransactionsEventsKeepedIntoMemory)
 	{
 	    if (commit)
 	    {
+		transactionOK=true;
 		for (Package p : transactionPackages)
 		{
 		    getTransactionsTable().addTransactionIfNecessary(p, getEventsStoredInFileIterator(), transactionTypes, currentTransactionToForce);
@@ -1282,7 +1425,10 @@ public abstract class DatabaseWrapper implements AutoCloseable
 		if (commit)
 		{
 		    if (d.hasTransaction())
+		    {
+			transactionOK=true;
 			getTransactionsTable().addTransactionIfNecessary(e.getValue().getConfiguration(), d.getCurrentTransaction(), transactionTypes);
+		    }
 		}
 		d.clearTransaction();
 	    }
@@ -1295,6 +1441,10 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	currentTransactionsEventNummber=0;
 	transactionTypes=0;
 	currentTransactionToForce=false;
+	if (transactionOK)
+	{
+	    getSynchronizer().notifyNewTransactionsIfNecessary();
+	}
     }
     
     private boolean areTransactionsStoredIntoTemporaryFile()
@@ -1428,6 +1578,8 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	ensureTransactionInputStreamClosed();
 	return new Iterator<DatabaseEventsTable.Record>() {
 
+	    private int order=0;
+	    
 	    @Override
 	    public boolean hasNext()
 	    {
@@ -1439,7 +1591,7 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	    {
 		try
 		{
-		    return getNextDatabaseEventRecord();
+		    return getNextDatabaseEventRecord(order++);
 		}
 		catch(Exception e)
 		{
@@ -1457,7 +1609,7 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	};	
     }
     
-    DatabaseEventsTable.Record getNextDatabaseEventRecord() throws DatabaseException
+    DatabaseEventsTable.Record getNextDatabaseEventRecord(int order) throws DatabaseException
     {
 	try
 	{
@@ -1467,6 +1619,7 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	    for (int i=0;i<size;i++)
 		chars[i]=ois.readChar();
 	    DatabaseEventsTable.Record r=new DatabaseEventsTable.Record();
+	    r.setPosition(order);
 	    r.setConcernedTable(String.copyValueOf(chars));
 	    
 	    r.setType(ois.readByte());
@@ -2341,4 +2494,7 @@ public abstract class DatabaseWrapper implements AutoCloseable
     public abstract void backup(File path) throws DatabaseException;
     
     protected abstract boolean isThreadSafe();
+    
+    protected abstract boolean supportFullSqlFieldName();
+    
 }

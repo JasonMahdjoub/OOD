@@ -207,7 +207,7 @@ public class floatFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    field.setFloat(_class_instance, _result_set.getFloat(sql_fields[0].short_field));
+	    field.setFloat(_class_instance, _result_set.getFloat(getColmunIndex(_result_set, sql_fields[0].field)));
 	}
 	catch(Exception e)
 	{

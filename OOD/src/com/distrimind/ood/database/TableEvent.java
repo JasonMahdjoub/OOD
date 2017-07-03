@@ -79,6 +79,12 @@ public class TableEvent<T extends DatabaseRecord> extends DatabaseEvent
 	this.oldAlreadyPresent=oldAlreadyPresent;
     }
     
+    @Override
+    public String toString()
+    {
+	return "TableEvent["+type+", force="+force+", old="+oldDatabaseRecord+", new="+newDatabaseRecord+"]";
+    }
+    
     boolean isOldAlreadyPresent()
     {
 	return oldAlreadyPresent;

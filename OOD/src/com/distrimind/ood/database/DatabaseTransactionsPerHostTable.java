@@ -193,7 +193,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 		{
 		    hook.setLastValidatedTransaction(lastID);
 		    getDatabaseHooksTable().updateRecord(hook);
-		    removeRecords("transaction.id<%lastID", "lastID", new Long(lastID));
+		    removeRecords("transaction.id<=%lastID", "lastID", new Long(lastID));
 		    
 		    getDatabaseTransactionEventsTable().removeTransactionsFromLastID();
 		    
@@ -277,14 +277,18 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 	    throw new NullPointerException("directPeerID");
 	if (directPeerID!=comingFrom && !indirectTransactionRead)
 	    throw new IllegalAccessError();
+	if (comingFrom.equals(getDatabaseHooksTable().getLocalDatabaseHost()))
+	    throw new IllegalArgumentException("The given distant host ID cannot be equals to the local host ID : "+comingFrom);
 	
-	ArrayList<DatabaseHooksTable.Record> hooks=getDatabaseHooksTable().getRecords("hostID", comingFrom);
+	ArrayList<DatabaseHooksTable.Record> hooks=getDatabaseHooksTable().getRecordsWithAllFields("hostID", comingFrom);
 	if (hooks.isEmpty())
 	    throw new SerializationDatabaseException("The give host id is not valid : "+comingFrom);
 	else if (hooks.size()>1)
 	    throw new IllegalAccessError();
 	
 	final AtomicReference<DatabaseHooksTable.Record> fromHook=new AtomicReference<>(hooks.get(0));
+	final AtomicLong lastValidatedTransaction=new AtomicLong(-1);
+	
 	try(ObjectInputStream ois=new ObjectInputStream(inputStream))
 	{
 	    byte next=ois.readByte();
@@ -303,6 +307,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 		    {
 			oos.writeByte(EXPORT_DIRECT_TRANSACTION);
 			final DatabaseTransactionEventsTable.Record dte=getDatabaseTransactionEventsTable().unserialize(ois, true, false);
+			
 			next=ois.readByte();
 			final DatabaseTransactionEvent localDTE=new DatabaseTransactionEvent();
 			boolean transactionNotEmpty=false;
@@ -359,11 +364,13 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 				drOld=t.getRecord(mapKeys);
 			    }
 			    boolean eventForce=false;
+			    
 			    if (validatedTransaction)
 			    {
 				HashSet<DatabaseTransactionEventsTable.Record> r=detectCollisionAndRemoveObsoleteEvents(fromHook.get().getHostID(), tableName, spks, dte.isForce());
 				if (r==null)
 				{
+				    System.out.println("collision detected !");
 				    if (!type.hasOldValue())
 					drOld=t.getRecord(mapKeys);
 				    if (notifier!=null)
@@ -435,6 +442,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 			    if (validatedTransaction)
 			    {
 				final boolean transactionToResendFinal=dte.isForce()?false:transactionToResend;
+				    
 				getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
 
 				    @Override
@@ -459,7 +467,9 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 							    getDatabaseWrapper().addEvent(te.getTable(getDatabaseWrapper()), new TableEvent<DatabaseRecord>(te.getID(), te.getType(), te.getOldDatabaseRecord(), te.getNewDatabaseRecord(), true));
 						    }
 						    else
+						    {
 							te.getTable(getDatabaseWrapper()).addUntypedRecord(te.getNewDatabaseRecord(), true, transactionToResendFinal, transactionToResendFinal);
+						    }
 						    break;
 						case REMOVE:
 						    if (te.getOldDatabaseRecord()==null)
@@ -496,7 +506,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 					fromHook.set(getDatabaseHooksTable().getRecord("id", new Integer(fromHook.get().getID())));
 					fromHook.get().setLastValidatedDistantTransaction(dte.getID());
 					getDatabaseHooksTable().updateRecord(fromHook.get());
-					    
+					lastValidatedTransaction.set(dte.getID());
 					return null;
 				    }
 
@@ -533,6 +543,12 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 	{
 	    throw DatabaseException.getDatabaseException(e);
 	}
+	finally
+	{
+	    if (lastValidatedTransaction.get()!=-1)
+		getDatabaseWrapper().getSynchronizer().addNewDatabaseEvent(new DatabaseWrapper.TransactionConfirmationEvents(getDatabaseHooksTable().getLocalDatabaseHost().getHostID(), comingFrom, lastValidatedTransaction.get()));
+	    
+	}
 	
 	
     }
@@ -553,12 +569,12 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
     	if (hook==null)
     	    return 0;
 	long currentTransactionID=hook.getLastValidatedTransaction();
-    	number.set(getDatabaseDistantTransactionEvent().exportTransactions(outputStream, hook, maxEventsRecords, currentTransactionID, nearNextLocalID));
-	if (number.get()>=maxEventsRecords)
-	    return number.get();
-    	
+
 	try(ObjectOutputStream oos=new ObjectOutputStream(outputStream))
 	    {
+	    	number.set(getDatabaseDistantTransactionEvent().exportTransactions(oos, hook, maxEventsRecords, currentTransactionID, nearNextLocalID));
+		if (number.get()>=maxEventsRecords)
+		    return number.get();
 	    	do
 	    	{
 	    	    Collection<DatabaseTransactionsPerHostTable.Record> records=getOrderedRecords(new Filter<DatabaseTransactionsPerHostTable.Record>() {
@@ -569,19 +585,19 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 	    		    if (number.incrementAndGet()>=maxEventsRecords)
 	    		    {
 	    			this.stopTableParsing();
-	    			return false;
+	    			return true;
 	    		    }
 	    		    return true;
 	    		}
-	    	    }, "transaction.id<=%nearNextLocalID", new Object[]{"nearNextLocalID", new Long(nearNextLocalID.get())}, true, "transaction.id");
+	    	    }, "transaction.id<%nearNextLocalID AND transaction.id>%previousNearTransactionID AND hook=%hook", new Object[]{"nearNextLocalID", new Long(nearNextLocalID.get()), "previousNearTransactionID", new Long(currentTransactionID), "hook", hook}, true, "transaction.id");
 	    	    currentTransactionID=nearNextLocalID.get();
-	    	    
+	    	
 	    	    
 	    	    for (Record r : records)
 	    	    {
 	    		oos.writeByte(EXPORT_DIRECT_TRANSACTION);
 	    		getDatabaseTransactionEventsTable().serialize(r.getTransaction(), oos, true, false);
-	    		getDatabaseEventsTable().getRecords(new Filter<DatabaseEventsTable.Record>(){
+	    		getDatabaseEventsTable().getOrderedRecords(new Filter<DatabaseEventsTable.Record>(){
 
 			    @Override
 			    public boolean nextRecord(com.distrimind.ood.database.DatabaseEventsTable.Record _record) throws DatabaseException
@@ -604,7 +620,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 					    throw new DatabaseException("Unexpected exception !");
 					t.serialize(cr, oos, false, true);
 				    }
-				
+
 				    return false;
 				}
 				catch(Exception e)
@@ -613,11 +629,11 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 				}
 			    }
 	    		    
-	    		}, "transaction=%transaction", "transaction", r.getTransaction());
+	    		}, "transaction=%transaction", new Object[]{"transaction", r.getTransaction()}, true, "position");
 	    		
 	    	    }
-	    	    if (number.get()<maxEventsRecords)
-	    		number.set(number.get()+getDatabaseDistantTransactionEvent().exportTransactions(outputStream, hook, maxEventsRecords-number.get(), currentTransactionID, nearNextLocalID));
+	    	    if (number.get()<maxEventsRecords && currentTransactionID!=Long.MAX_VALUE)
+	    		number.set(number.get()+getDatabaseDistantTransactionEvent().exportTransactions(oos, hook, maxEventsRecords-number.get(), currentTransactionID, nearNextLocalID));
 	    	}
 	    	while(number.get()<maxEventsRecords && nearNextLocalID.get()!=currentTransactionID);
 		    

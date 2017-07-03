@@ -133,7 +133,7 @@ public class SerializableFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    Blob b=_result_set.getBlob(sql_fields[0].short_field);
+	    Blob b=_result_set.getBlob(getColmunIndex(_result_set, sql_fields[0].field));
 	    try(ByteArrayInputStream bais=new ByteArrayInputStream(b.getBytes(1, (int)b.length())))
 	    {
 		try(ObjectInputStream ois=new ObjectInputStream(bais))

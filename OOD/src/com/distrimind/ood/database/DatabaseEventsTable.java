@@ -61,6 +61,9 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record>
 	DatabaseTransactionEventsTable.Record transaction;
 	
 	@Field
+	private int position;
+	
+	@Field
 	private byte type;
 	@NotNull
 	@Field(limit=400)
@@ -145,7 +148,14 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record>
 	    return id;
 	}
 	
-	
+	int getPosition()
+	{
+	    return position;
+	}
+	void setPosition(int order)
+	{
+	    this.position=order;
+	}
 	
     }
 

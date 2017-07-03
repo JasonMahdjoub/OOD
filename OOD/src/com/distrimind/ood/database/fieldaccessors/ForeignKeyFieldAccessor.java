@@ -40,10 +40,12 @@ package com.distrimind.ood.database.fieldaccessors;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -53,12 +55,13 @@ import com.distrimind.ood.database.SqlField;
 import com.distrimind.ood.database.SqlFieldInstance;
 import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
 
 /**
  * 
  * @author Jason Mahdjoub
- * @version 1.2
+ * @version 1.3
  * @since OOD 1.0
  */
 public class ForeignKeyFieldAccessor extends FieldAccessor
@@ -70,12 +73,15 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
     //private final Class<?>[] compatible_classes;
     
     private static Method get_record_method;
+    private static Method get_new_record_instance_method;
     static
     {
 	try
 	{
 	    get_record_method=Table.class.getDeclaredMethod("getRecordFromPointingRecord", (new SqlFieldInstance[1]).getClass(), (new ArrayList<DatabaseRecord>()).getClass());
 	    get_record_method.setAccessible(true);
+	    get_new_record_instance_method=Table.class.getDeclaredMethod("getNewRecordInstance", Constructor.class);
+	    get_new_record_instance_method.setAccessible(true);
 	}
 	catch (SecurityException e)
 	{
@@ -284,20 +290,78 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
     {
 	throw new DatabaseException("Unexpected exception");
     }
+    
+    private int jonctionEnabled(ResultSet _result_set)
+    {
+	try
+	{
+	    for (FieldAccessor fa : getPointedTable().getFieldAccessors())
+	    {
+		if (!fa.isPrimaryKey())
+		{
+		    if (fa.isForeignKey())
+		    {
+			int res=((ForeignKeyFieldAccessor)fa).jonctionEnabled(_result_set);
+			if (res!=2)
+			    return res;
+		    }
+		    fa.getColmunIndex(_result_set, fa.getDeclaredSqlFields()[0].field);
+		    return 1;
+		}
+	    }
+	    return 2;
+	}
+	catch(SQLException e)
+	{
+	    return 0;
+	}
+    }
+    
     @Override
     public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records) throws DatabaseException
     {
 	try
 	{
-	    ArrayList<DatabaseRecord> list=_pointing_records==null?new ArrayList<DatabaseRecord>():_pointing_records;
-	    list.add((DatabaseRecord)_class_instance);
-	    SqlField sfs[]=getDeclaredSqlFields();
-	    SqlFieldInstance sfis[]=new SqlFieldInstance[sfs.length];
-	    for (int i=0;i<sfs.length;i++)
+	    
+	    Table<?> t=getPointedTable();
+	    
+	    
+	    if (t.isLoadedInMemory() || jonctionEnabled(_result_set)==0)
 	    {
-		sfis[i]=new SqlFieldInstance(sfs[i], _result_set.getObject(sfs[i].short_field));
+		ArrayList<DatabaseRecord> list=_pointing_records==null?new ArrayList<DatabaseRecord>():_pointing_records;
+		list.add((DatabaseRecord)_class_instance);
+		SqlField sfs[]=getDeclaredSqlFields();
+		
+		SqlFieldInstance sfis[]=new SqlFieldInstance[sfs.length];
+		for (int i=0;i<sfs.length;i++)
+		{
+		    sfis[i]=new SqlFieldInstance(sfs[i], _result_set.getObject(sfs[i].short_field));
+		}
+		field.set(_class_instance, get_record_method.invoke(getPointedTable(), sfis, list));
 	    }
-	    field.set(_class_instance, get_record_method.invoke(getPointedTable(), sfis, list));
+	    else
+	    {
+		DatabaseRecord dr=(DatabaseRecord)get_new_record_instance_method.invoke(t, t.getDefaultRecordConstructor());
+		
+		for (FieldAccessor fa : t.getFieldAccessors())
+		{
+		    try
+		    {
+			fa.setValue(dr, _result_set);
+		    }
+		    catch(DatabaseIntegrityException e)
+		    {
+			if (fa.isPrimaryKey())
+			{
+			    dr=null;
+			    break;
+			}
+			else
+			    throw e;
+		    }
+		}
+		field.set(_class_instance, dr);
+	    }
 	}
 	catch(Exception e)
 	{

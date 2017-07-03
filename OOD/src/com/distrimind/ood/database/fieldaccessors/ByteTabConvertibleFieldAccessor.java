@@ -222,13 +222,13 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor
 	    byte[] res=null;
 	    if (isVarBinary)
 	    {
-		res=_result_set.getBytes(sql_fields[0].short_field);
+		res=_result_set.getBytes(getColmunIndex(_result_set, sql_fields[0].field));
 		if (res==null && isNotNull())
 		    throw new DatabaseIntegrityException("Unexpected exception.");
 	    }
 	    else
 	    {
-		Blob b=_result_set.getBlob(sql_fields[0].short_field);
+		Blob b=_result_set.getBlob(getColmunIndex(_result_set, sql_fields[0].field));
 		res=b==null?null:b.getBytes(1, (int)b.length());
 		if (res==null && isNotNull())
 		    throw new DatabaseIntegrityException("Unexpected exception.");

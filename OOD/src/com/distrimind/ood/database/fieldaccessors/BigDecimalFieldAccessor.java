@@ -229,7 +229,7 @@ public class BigDecimalFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    String s=_result_set.getString(sql_fields[0].short_field);
+	    String s=_result_set.getString(getColmunIndex(_result_set, sql_fields[0].field));
 	    BigDecimal res=s==null?null:new BigDecimal(s);
 	    if (res==null && isNotNull())
 		throw new DatabaseIntegrityException("Unexpected exception.");

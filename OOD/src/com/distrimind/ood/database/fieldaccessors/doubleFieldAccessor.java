@@ -204,7 +204,7 @@ public class doubleFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    field.setDouble(_class_instance, _result_set.getDouble(sql_fields[0].short_field));
+	    field.setDouble(_class_instance, _result_set.getDouble(getColmunIndex(_result_set, sql_fields[0].field)));
 	}
 	catch(Exception e)
 	{

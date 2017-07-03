@@ -202,7 +202,7 @@ public class longFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    field.setLong(_class_instance, _result_set.getLong(sql_fields[0].short_field));
+	    field.setLong(_class_instance, _result_set.getLong(getColmunIndex(_result_set, sql_fields[0].field)));
 	}
 	catch(Exception e)
 	{

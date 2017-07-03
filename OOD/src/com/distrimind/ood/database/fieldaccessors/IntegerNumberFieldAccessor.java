@@ -215,7 +215,7 @@ public class IntegerNumberFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    Object res=_result_set.getObject(sql_fields[0].short_field);
+	    Object res=_result_set.getObject(getColmunIndex(_result_set, sql_fields[0].field));
 	    if (res==null && isNotNull())
 		throw new DatabaseIntegrityException("Unexpected exception");
 	    field.set(_class_instance, res);

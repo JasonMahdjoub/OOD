@@ -265,9 +265,7 @@ public class Symbol implements QueryPart
 	    throw new IllegalAccessError();
 	for (FieldAccessor fa : table.getFieldAccessors())
 	{
-	    Class<?> c=fa.getFieldClassType();
-	    
-	    if (c.isAssignableFrom(o.getClass()))
+	    if (fa.isAssignableTo(o.getClass()))
 	    {
 		fa.setValue(record, o);
 		return fa;
@@ -278,12 +276,13 @@ public class Symbol implements QueryPart
 	{
 	    if (fa instanceof ForeignKeyFieldAccessor)
 	    {
+		@SuppressWarnings("unchecked")
 		Table<DatabaseRecord> otherTable=(Table<DatabaseRecord>)((ForeignKeyFieldAccessor)fa).getPointedTable();
 		
 		DatabaseRecord r=otherTable.getDefaultRecordConstructor().newInstance();
-		setFieldAccessor(otherTable, o, r);
+		FieldAccessor res=setFieldAccessor(otherTable, o, r);
 		fa.setValue(record, r);
-		return fa;
+		return res;
 	    }
 
 	}

@@ -201,8 +201,8 @@ public class RenforcedDencetralizedIDFieldAccessor extends FieldAccessor
     {
 	try
 	{
-	    long ts=_result_set.getLong(sql_fields[0].short_field);
-	    long wsseq=_result_set.getLong(sql_fields[1].short_field);
+	    long ts=_result_set.getLong(getColmunIndex(_result_set, sql_fields[0].field));
+	    long wsseq=_result_set.getLong(getColmunIndex(_result_set, sql_fields[1].field));
 	    
 	    field.set(_class_instance, DatabaseWrapperAccessor.getRenforcedDecentralizedIDGeneratorInstance(ts, wsseq));
 	}

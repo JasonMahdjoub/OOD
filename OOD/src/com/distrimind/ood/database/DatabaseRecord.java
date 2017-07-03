@@ -60,7 +60,7 @@ package com.distrimind.ood.database;
  */
 public abstract class DatabaseRecord
 {
-    boolean __createdIntoDatabase=false;
+    transient boolean __createdIntoDatabase=false;
     
     public DatabaseRecord()
     {

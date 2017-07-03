@@ -337,7 +337,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
 				    throw new DatabaseVersionException(table, "The column "+sf.field+" has a size equals to "+col_size+" (expected "+sf.type+")");
 			    }
 			    boolean is_null=rq.result_set.getString("IS_NULLABLE").equals("YES");
-			    if (is_null==fa.isNotNull())
+			    if (is_null==sf.not_null)
 				throw new DatabaseVersionException(table, "The field "+fa.getFieldName()+" is expected to be "+(fa.isNotNull()?"not null":"nullable"));
 			    boolean is_autoincrement=rq.result_set.getString("IS_AUTOINCREMENT").equals("YES");
 			    if (is_autoincrement!=fa.isAutoPrimaryKey())
@@ -688,6 +688,12 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
     {
 	//_openedConnection.releaseSavepoint(savepoint);
 	
+    }
+
+    @Override
+    protected boolean supportFullSqlFieldName()
+    {
+	return false;
     }
     
 }
