@@ -134,14 +134,22 @@ public class SerializableFieldAccessor extends FieldAccessor
 	try
 	{
 	    Blob b=_result_set.getBlob(getColmunIndex(_result_set, sql_fields[0].field));
-	    try(ByteArrayInputStream bais=new ByteArrayInputStream(b.getBytes(1, (int)b.length())))
+	    if (b==null && isNotNull())
+		throw new DatabaseIntegrityException("Unexpected exception.");
+
+	    if (b==null)
+		field.set(_class_instance, null);
+	    else
 	    {
-		try(ObjectInputStream ois=new ObjectInputStream(bais))
+		try(ByteArrayInputStream bais=new ByteArrayInputStream(b.getBytes(1, (int)b.length())))
 		{
-		    Object res=unserialize(ois);
-		    if (res==null && isNotNull())
-			throw new DatabaseIntegrityException("Unexpected exception.");
-		    field.set(_class_instance, res);
+		    try(ObjectInputStream ois=new ObjectInputStream(bais))
+		    {
+			Object res=unserialize(ois);
+			if (res==null && isNotNull())
+			    throw new DatabaseIntegrityException("Unexpected exception.");
+			field.set(_class_instance, res);
+		    }
 		}
 	    }
 	}

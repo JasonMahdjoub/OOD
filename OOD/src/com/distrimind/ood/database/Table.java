@@ -138,6 +138,7 @@ public abstract class Table<T extends DatabaseRecord>
     private final String table_name;
     private boolean supportSynchronizationWithOtherPeers=false;
     private DatabaseConfiguration tables=null;
+    private boolean containsLoopBetweenTables=false;
     public static final int maxTableNameSizeBytes=8192;
     public static final int maxPrimaryKeysSizeBytes=65536;
     
@@ -496,6 +497,7 @@ public abstract class Table<T extends DatabaseRecord>
     {
 	if (tables==null)
 	    throw new NullPointerException("tables");
+	
 	for (ForeignKeyFieldAccessor fa : foreign_keys_fields)
 	{
 	    fa.initialize();
@@ -513,6 +515,7 @@ public abstract class Table<T extends DatabaseRecord>
     
     boolean initializeStep2(final boolean createDatabaseIfNecessaryAndCheckIt) throws DatabaseException
     {
+	containsLoopBetweenTables=containsLoop(new HashSet<Class<? extends Table<?>>>());
 	/*
 	 * Load table in Sql database
 	 */
@@ -1226,9 +1229,15 @@ public abstract class Table<T extends DatabaseRecord>
 	getSqlSelectStep1Fields(includeAllJunctions, tablesJunction, sb);
 	return sb.toString();
     }
-    
     private void getSqlSelectStep1Fields(boolean includeAllJunctions, Set<TableJunction> tablesJunction, StringBuffer sb)
     {
+	if (containsLoopBetweenTables)
+	{
+	    includeAllJunctions=false;
+	    if (tablesJunction!=null)
+		tablesJunction=null;
+	}
+	
 	for (FieldAccessor fa : fields)
 	{
 	    for (SqlField sf : fa.getDeclaredSqlFields())
@@ -1311,9 +1320,30 @@ public abstract class Table<T extends DatabaseRecord>
 		
     }
     
-    private StringBuffer getFromPart(ForeignKeyFieldAccessor fa, boolean includeAllJunctions, Set<TableJunction> tablesJunction)
+    @SuppressWarnings("unchecked")
+    private boolean containsLoop(Set<Class<? extends Table<?>>> tablesParsed)
     {
 	
+	if (!tablesParsed.add((Class<? extends Table<?>>)this.getClass()))
+	    return true;
+	for (ForeignKeyFieldAccessor fa2 : getForeignKeysFieldAccessors())
+	{
+	    Table<?> t=fa2.getPointedTable();
+	    if (t.containsLoop(tablesParsed))
+		return true;
+	}
+	return false;
+
+    }
+
+    private StringBuffer getFromPart(ForeignKeyFieldAccessor fa, boolean includeAllJunctions, Set<TableJunction> tablesJunction)
+    {
+	if (containsLoopBetweenTables)
+	{
+	    includeAllJunctions=false;
+	    if (tablesJunction!=null)
+		tablesJunction=null;
+	}
 	
 	StringBuffer sb=new StringBuffer();
 	if (!includeAllJunctions && !containsPointedTable(tablesJunction, fa.getPointedTable()))
