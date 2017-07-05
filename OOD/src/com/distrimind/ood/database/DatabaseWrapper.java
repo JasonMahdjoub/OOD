@@ -1925,6 +1925,15 @@ public abstract class DatabaseWrapper implements AutoCloseable
     @SuppressWarnings("unchecked")
     public <O> O runSynchronizedTransaction(final SynchronizedTransaction<O> _transaction) throws DatabaseException
     {
+	try
+	{
+	    if (!isThreadSafe())//TODO try to lock database tables and bench
+	    {
+		if (_transaction.doesWriteData())
+		    locker.lockWrite();
+		else
+		    locker.lockRead();
+	    }
 	    return (O)this.runTransaction(new Transaction() {
 	    
 		@Override
@@ -1936,7 +1945,10 @@ public abstract class DatabaseWrapper implements AutoCloseable
 			    locker.lockWrite();
 			else
 			    locker.lockRead();*/
-			return (Object)_transaction.run();
+			
+			
+			    return (Object)_transaction.run();
+			
 		    }
 		    catch(Exception e)
 		    {
@@ -1961,6 +1973,17 @@ public abstract class DatabaseWrapper implements AutoCloseable
 		    return _transaction.doesWriteData();
 		}
 	    });
+	}
+	finally
+	{
+	    if (!isThreadSafe())
+	    {
+		if (_transaction.doesWriteData())
+		    locker.unlockWrite();
+		else
+		    locker.unlockRead();
+	    }
+	}
     }
     
     
