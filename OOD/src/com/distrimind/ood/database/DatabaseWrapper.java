@@ -473,6 +473,7 @@ public abstract class DatabaseWrapper implements AutoCloseable
 		    throw DatabaseException.getDatabaseException(new IllegalAccessException("Local hostID "+localHostID+" already initialized !"));
 		}
 		initializedHooks.put(localHostID, new ConnectedPeers(local));
+		canNotify=true;
 	    }
 	}
 	
@@ -552,8 +553,11 @@ public abstract class DatabaseWrapper implements AutoCloseable
 		    throw DatabaseException.getDatabaseException(new IllegalArgumentException("The host ID "+hostID+" has not been initialized !"));
 		if (r.getLastValidatedTransaction()>lastTransferedTransactionID)
 		    throw new DatabaseException("The given transfer ID limit "+lastTransferedTransactionID+" is lower than the stored transfer ID limit "+r.getLastValidatedTransaction());
-		peer.setTransferInProgress(false);
+		if (r.concernsLocalDatabaseHost())
+		    throw new DatabaseException("The given host ID correspond to the local database host !");
+		
 		getDatabaseTransactionsPerHostTable().validateTransactions(r, lastTransferedTransactionID);
+		peer.setTransferInProgress(false);
 		long lastID=getTransactionIDTable().getLastTransactionID();
 		
 		if (lastID>r.getLastValidatedTransaction())
@@ -673,8 +677,6 @@ public abstract class DatabaseWrapper implements AutoCloseable
 			throw new IllegalAccessError();
 		    if (r==null)
 			throw new NullPointerException("Unknow host "+hostID);
-		    if (r.getLastValidatedTransaction()>lastValidatedTransacionID)
-			throw DatabaseException.getDatabaseException(new IllegalArgumentException("The host "+hostID+" have a validated trnasaction ID greater than the given transaciton ID : "+lastValidatedTransacionID));
 		    
 		    return r;
 		}
@@ -698,7 +700,8 @@ public abstract class DatabaseWrapper implements AutoCloseable
 		    throw DatabaseException.getDatabaseException(new IllegalAccessException("hostID "+hostID+" already initialized !"));
 		}
 		initializedHooks.put(hostID, new ConnectedPeers(r));
-		validateLastSynchronization(hostID, lastValidatedTransacionID);
+		
+		validateLastSynchronization(hostID, Math.max(r.getLastValidatedTransaction(), lastValidatedTransacionID));
 	    }
 	}
 	public void received(DatabaseTransactionsIdentifiersToSynchronize d) throws DatabaseException
@@ -1754,12 +1757,14 @@ public abstract class DatabaseWrapper implements AutoCloseable
 		    savePoint=savePoint(cw.connection, savePointName);
 		}
 		res=_transaction.run(this);
+		if (_transaction.doesWriteData())
+		    clearTransactions(true);
 		commit(cw.connection);
 		if (_transaction.doesWriteData())
 		{
 		    if (savePoint!=null)
 			releasePoint(cw.connection, savePointName, savePoint);
-		    clearTransactions(true);
+		    
 		}
 		
 		endTransaction(cw.connection);
@@ -1768,6 +1773,8 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	    {
 		try
 		{
+		    if (_transaction.doesWriteData())
+			clearTransactions(false);
 		    rollback(cw.connection);
 		    if (_transaction.doesWriteData())
 		    {
@@ -1775,7 +1782,7 @@ public abstract class DatabaseWrapper implements AutoCloseable
 			{
 			    releasePoint(cw.connection, savePointName, savePoint);
 			}
-			clearTransactions(false);
+			
 		    }
 		}
 		catch(SQLException se)
@@ -1788,6 +1795,8 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	    {
 		try
 		{
+		    if (_transaction.doesWriteData())
+			clearTransactions(false);
 		    rollback(cw.connection);
 		    if (_transaction.doesWriteData())
 		    {
@@ -1795,14 +1804,14 @@ public abstract class DatabaseWrapper implements AutoCloseable
 			{
 			    releasePoint(cw.connection, savePointName, savePoint);
 			}
-			clearTransactions(false);
+			
 		    }
 		}
 		catch(SQLException se)
 		{
 		    throw new DatabaseIntegrityException("Impossible to rollback the database changments", se);
 		}
-		clearTransactions(false);
+		//clearTransactions(false);
 		throw DatabaseException.getDatabaseException(e);
 	    }
 	    finally

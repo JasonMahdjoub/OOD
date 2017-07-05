@@ -376,9 +376,9 @@ public class RuleInstance implements QueryPart
 	    else if (Number.class.isAssignableFrom(o1.getClass()))
 	    {
 		if (BigDecimal.class.isAssignableFrom(o2.getClass()))
-		    return ((BigDecimal)o2).compareTo(new BigDecimal(o1.toString()));
+		    return new BigDecimal(o1.toString()).compareTo((BigDecimal)o2);
 		else 
-		    return new BigDecimal(o2.toString()).compareTo(new BigDecimal(o1.toString()));
+		    return new BigDecimal(o1.toString()).compareTo(new BigDecimal(o2.toString()));
 	    }
 	}
 	catch(Exception e)

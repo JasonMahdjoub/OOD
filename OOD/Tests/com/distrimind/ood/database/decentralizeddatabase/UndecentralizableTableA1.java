@@ -72,5 +72,15 @@ public final class UndecentralizableTableA1 extends Table<UndecentralizableTable
 	    return r;
 	}
 	
+	@Override
+	public boolean equals(Object o)
+	{
+	    if (o==null)
+		return false;
+	    if (o instanceof UndecentralizableTableA1.Record)
+		return ((UndecentralizableTableA1.Record) o).id==id;
+	    return false;
+	}
+	
     }
 }

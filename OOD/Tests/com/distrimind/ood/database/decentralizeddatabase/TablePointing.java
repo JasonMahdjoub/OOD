@@ -78,6 +78,16 @@ public final class TablePointing extends Table<TablePointing.Record>
 	    r.table2=this.table2.clone();
 	    return r;
 	}
+	@Override
+	public boolean equals(Object o)
+	{
+	    if (o==null)
+		return false;
+	    if (o instanceof TablePointing.Record)
+		return ((TablePointing.Record) o).id.equals(id);
+	    return false;
+	}
+	
 	
     }
 }

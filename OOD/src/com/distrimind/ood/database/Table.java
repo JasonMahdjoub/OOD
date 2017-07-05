@@ -4673,7 +4673,7 @@ public abstract class Table<T extends DatabaseRecord>
 		{
 		    try
 		    {
-			boolean toremove=rule.isConcernedBy(Table.this, parameters, _instance) ;
+			boolean toremove=rule==null || rule.isConcernedBy(Table.this, parameters, _instance) ;
 			if (toremove && list_tables_pointing_to_this_table.size()>0)
 			{
 			    for (int i=0;i<list_tables_pointing_to_this_table.size();i++)

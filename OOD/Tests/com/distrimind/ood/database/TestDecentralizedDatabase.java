@@ -260,7 +260,6 @@ public abstract class TestDecentralizedDatabase
 	@Override
 	public void newDatabaseEventDetected(DatabaseWrapper _wrapper)
 	{
-	    System.out.println("New database event detected ");
 	    newDatabaseEventDetected=true;
 	}
 
@@ -589,7 +588,10 @@ public abstract class TestDecentralizedDatabase
 	{
 	    if (db.getHostID().equals(event.getHostDestination()))
 	    {
-		db.getReceivedDatabaseEvents().add(event);
+		if (db.isConnected())
+		    db.getReceivedDatabaseEvents().add(event);
+		else
+		    Assert.fail();
 		break;
 	    }
 	}
@@ -608,13 +610,11 @@ public abstract class TestDecentralizedDatabase
 	    {
 		try(InputStream is=dde.getInputStream())
 		{
-		    System.out.println("Received message big data to "+dde.getHostDestination());
 		    db.getDbwrapper().getSynchronizer().received((BigDatabaseEventToSend)event, is);
 		}
 	    }
 	    else
 	    {
-		System.out.println("Received message data to "+dde.getHostDestination());
 		db.getDbwrapper().getSynchronizer().received(event);
 	    }
 	}
@@ -640,6 +640,7 @@ public abstract class TestDecentralizedDatabase
 	    loop=false;
 	    for (Database db : listDatabase)
 	    {
+		
 		synchronized(db)
 		{
 		    DatabaseEvent e=db.getDbwrapper().getSynchronizer().nextEvent();
@@ -649,7 +650,6 @@ public abstract class TestDecentralizedDatabase
 			loop=true;
 			if (e instanceof DatabaseEventToSend)
 			{
-			    
 			    DatabaseEventToSend es=(DatabaseEventToSend)e;
 			    
 			    Assert.assertEquals(es.getHostSource(), db.getHostID());
@@ -668,8 +668,26 @@ public abstract class TestDecentralizedDatabase
 		    }
 		}
 	    }
-	    loop=checkMessages();
+	    loop|=checkMessages();
 	}
+    }
+    private void checkAllDatabaseInternalDataUsedForSynchro() throws DatabaseException
+    {
+	for (Database db : listDatabase)
+	    checkDatabaseInternalDataUsedForSynchro(db);
+    }
+    
+    private void checkDatabaseInternalDataUsedForSynchro(Database db) throws DatabaseException
+    {
+	synchronized(db)
+	{
+	    Assert.assertEquals(db.getDbwrapper().getDatabaseTransactionsPerHostTable().getRecords().size(), 0);
+		
+	    Assert.assertEquals(db.getDbwrapper().getTransactionsTable().getRecords().size(), 0);
+	    Assert.assertEquals(db.getDbwrapper().getDatabaseEventsTable().getRecords().size(), 0);
+	    Assert.assertEquals(db.getDbwrapper().getHooksTransactionsTable().getRecords().size(), listDatabase.size());
+	}
+
     }
     
     private void connectLocal(Database db) throws DatabaseException
@@ -732,7 +750,7 @@ public abstract class TestDecentralizedDatabase
 	exchangeMessages();
     }
     
-    private void disconnect(Database db, Database ...listDatabase) throws DatabaseException, ClassNotFoundException, IOException
+    private void disconnect(Database db, Database ...listDatabase) throws DatabaseException
     {
 	synchronized(db)
 	{
@@ -745,24 +763,21 @@ public abstract class TestDecentralizedDatabase
 		    if (dbother!=db && dbother.isConnected())
 			dbother.getDbwrapper().getSynchronizer().deconnectHook(db.getHostID());
 		}
-		exchangeMessages();
+		Assert.assertFalse(db.isConnected());
 	    }
 	}
     }
-    private void disconnectSelectedDatabase(Database ...listDatabase) throws ClassNotFoundException, DatabaseException, IOException
+    private void disconnectSelectedDatabase(Database ...listDatabase) throws DatabaseException
     {
 	for (Database db : listDatabase)
 	    disconnect(db, listDatabase);
     }
-    private void disconnectAllDatabase() throws ClassNotFoundException, DatabaseException, IOException
+    private void disconnectAllDatabase() throws DatabaseException
     {
 	Database dbs[]=new Database[listDatabase.size()];
 	for (int i=0;i<dbs.length;i++)
 	    dbs[i]=listDatabase.get(i);
-	for (Database db : listDatabase)
-	{
-	    disconnect(db, dbs);
-	}
+	disconnectSelectedDatabase(dbs);
     }
     
     private TableAlone.Record generatesTableAloneRecord()
@@ -789,7 +804,7 @@ public abstract class TestDecentralizedDatabase
 	record.value=db.getHostID().toString();
 	for (int i=0;i<10;i++)
 	{
-	    record.value+='a'+(Math.random()*52);
+	    record.value+='a'+((int)(Math.random()*52));
 	}
 	db.getUndecentralizableTableA1().addRecord(record);
 	
@@ -801,7 +816,7 @@ public abstract class TestDecentralizedDatabase
 	record.value=db.getHostID().toString();
 	for (int i=0;i<10;i++)
 	{
-	    record.value+='a'+(Math.random()*52);
+	    record.value+='a'+((int)(Math.random()*52));
 	}
 	record=db.getUndecentralizableTableA1().addRecord(record);
 	UndecentralizableTableB1.Record record2=new UndecentralizableTableB1.Record();
@@ -814,7 +829,7 @@ public abstract class TestDecentralizedDatabase
 	String res="";
 	for (int i=0;i<10;i++)
 	{
-	    res+='a'+(Math.random()*52);
+	    res+='a'+((int)(Math.random()*52));
 	}
 	return res;
     }
@@ -1030,6 +1045,8 @@ public abstract class TestDecentralizedDatabase
 	exchangeMessages();
 	testSynchronisation();
 	disconnectAllDatabase();
+	checkAllDatabaseInternalDataUsedForSynchro();
+
     }
     
     
@@ -1076,8 +1093,9 @@ public abstract class TestDecentralizedDatabase
 		{
 		    if (livingRecords.isEmpty())
 			continue;
-		    DatabaseRecord record=livingRecords.get((int) Math.random()*livingRecords.size());
+		    DatabaseRecord record=livingRecords.get((int) (Math.random()*livingRecords.size()));
 		    te=new TableEvent<DatabaseRecord>(-1, DatabaseEventType.REMOVE, record, null, false);
+		    Assert.assertEquals(livingRecords.remove(record), true);
 		    pointedRecord.remove(record);
 		}
 		break;
@@ -1085,8 +1103,9 @@ public abstract class TestDecentralizedDatabase
 		{
 		    if (livingRecords.isEmpty())
 			continue;
-		    DatabaseRecord record=livingRecords.get((int) Math.random()*livingRecords.size());
+		    DatabaseRecord record=livingRecords.get((int) (Math.random()*livingRecords.size()));
 		    te=new TableEvent<DatabaseRecord>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, record, null, false);
+		    Assert.assertEquals(livingRecords.remove(record), true);
 		    pointedRecord.remove(record);
 		}
 		break;
@@ -1114,7 +1133,7 @@ public abstract class TestDecentralizedDatabase
 			r.id=((TablePointing.Record)record).id;
 			if (pointedRecord.isEmpty())
 			    continue;
-			r.table2=pointedRecord.get((int)Math.random()*pointedRecord.size());
+			r.table2=pointedRecord.get((int)(Math.random()*pointedRecord.size()));
 			recordNew=r;
 		    }
 		    te=new TableEvent<DatabaseRecord>(-1, DatabaseEventType.UPDATE, record, recordNew, false);
@@ -1191,7 +1210,6 @@ public abstract class TestDecentralizedDatabase
     
     protected void proceedEvent(final Table<DatabaseRecord> table, final TableEvent<DatabaseRecord> event, boolean exceptionDuringTransaction, boolean manualKeys) throws Exception
     {
-	System.out.println(event);
 		switch(event.getType())
 		{
 		    
@@ -1232,28 +1250,25 @@ public abstract class TestDecentralizedDatabase
     private void testEventSynchronized(Database db, TableEvent<DatabaseRecord> event, boolean synchronizedOk) throws DatabaseException
     {
 	
-	switch(event.getType())
+	if (event.getType()==DatabaseEventType.ADD || event.getType()==DatabaseEventType.UPDATE)
 	{
-	    case ADD:case UPDATE:
-	    {
 		Table<DatabaseRecord> table=event.getTable(db.getDbwrapper());
 		
 		
 		DatabaseRecord dr=table.getRecord(getMapPrimaryKeys(table, event.getNewDatabaseRecord()));
 		if (synchronizedOk)
-		    Assert.assertNotNull(dr);
-		Assert.assertEquals(table.equalsAllFields(dr, event.getNewDatabaseRecord()), synchronizedOk);
-		break;
-	    }
-	    case REMOVE:case REMOVE_WITH_CASCADE:
-	    {
+		    Assert.assertNotNull(dr, event.getType().name());
+		Assert.assertEquals(table.equalsAllFields(dr, event.getNewDatabaseRecord()), synchronizedOk, "Concerned event : "+event);
+	}
+	else if (event.getType()==DatabaseEventType.REMOVE || event.getType()==DatabaseEventType.REMOVE_WITH_CASCADE)
+	{
 		Table<DatabaseRecord> table=event.getTable(db.getDbwrapper());
 		DatabaseRecord dr=table.getRecord(getMapPrimaryKeys(table, event.getOldDatabaseRecord()));
 		if (synchronizedOk)
 		    Assert.assertNull(dr);
-		break;
-	    }
 	}
+	else
+	    throw new IllegalAccessError();
     }
     
     private void testDirectCollision(Database db, TableEvent<DatabaseRecord> event, DirectCollisionDetected collision) throws DatabaseException
@@ -1261,8 +1276,8 @@ public abstract class TestDecentralizedDatabase
 	Table<DatabaseRecord> table=event.getTable(db.getDbwrapper());
 	Assert.assertNotNull(collision);
 	Assert.assertEquals(collision.type, event.getType());
-	Assert.assertEquals(collision.concernedTable, table);
-	Assert.assertEquals(collision.distantPeerID, db.getHostID());
+	Assert.assertEquals(collision.concernedTable.getName(), table.getName());
+	Assert.assertNotEquals(collision.distantPeerID, db.getHostID());
 	switch(event.getType())
 	{
 	    case ADD:
@@ -1291,7 +1306,7 @@ public abstract class TestDecentralizedDatabase
 		Assert.assertNotNull(event.getOldDatabaseRecord());
 		Assert.assertNotNull(event.getNewDatabaseRecord());
 		Assert.assertNotNull(collision.newValues);
-		Assert.assertNull(collision.actualValues);
+		//Assert.assertNull(collision.actualValues);
 		break;
 	    
 	}
@@ -1385,6 +1400,8 @@ public abstract class TestDecentralizedDatabase
     
     private void testSynchroBetweenPeers(int peersNumber, boolean exceptionDuringTransaction, boolean generateDirectConflict, boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event) throws ClassNotFoundException, DatabaseException, IOException
     {
+	synchronized(TestDecentralizedDatabase.class)
+	{
 	if (peersNumber<2 || peersNumber>listDatabase.size())
 	    throw new IllegalArgumentException();
 	List<TableEvent<DatabaseRecord>> levents=Arrays.asList(event);
@@ -1436,10 +1453,9 @@ public abstract class TestDecentralizedDatabase
 	    }
 	    else
 	    {
-	    
+		
 		if (generateDirectConflict) 
 		{
-		    System.out.println("generate conflict");
 		    int i=0;
 		    for (Database db : concernedDatabase)
 		    {
@@ -1459,14 +1475,14 @@ public abstract class TestDecentralizedDatabase
 			
 			DirectCollisionDetected dcollision=db.getDirectCollisionDetected();
 			Assert.assertNull(db.getIndirectCollisionDetected());
-			if (dcollision==null)
-			    System.exit(0);
+
 			Assert.assertNotNull(dcollision, "i="+(i));
 			testDirectCollision(db, event, dcollision);
 			Assert.assertTrue(db.getRecordsToRemoveNotFound().isEmpty());
 			Assert.assertTrue(db.getRecordsToUpdateNotFound().isEmpty());
 			++i;
 		    }
+		    
 		    
 		    
 		}
@@ -1494,42 +1510,45 @@ public abstract class TestDecentralizedDatabase
 			 db=concernedDatabase[i];
 			 Assert.assertNull(db.getDirectCollisionDetected());
 			 Assert.assertNull(db.getIndirectCollisionDetected());
+			 Assert.assertTrue(db.getRecordsToRemoveNotFound().isEmpty());
+			 Assert.assertTrue(db.getRecordsToUpdateNotFound().isEmpty());
 			 //System.exit(0);
 			 Assert.assertTrue(db.isNewDatabaseEventDetected());
 			 testEventSynchronized(db, event, true);
-			 Assert.assertTrue(db.getRecordsToRemoveNotFound().isEmpty());
-			 Assert.assertTrue(db.getRecordsToUpdateNotFound().isEmpty());
 			 
 		    }
+		    
 		
 		}
-
+		disconnectSelectedDatabase(concernedDatabase);
 		for (int i=peersNumber;i<listDatabase.size();i++)
 		{
 		    Database db=listDatabase.get(i);
 		    testEventSynchronized(db, event, false);
 		}
-	    
+		
+		
 		connectAllDatabase();
 		exchangeMessages();
-	    
-		for (int i=2;i<listDatabase.size();i++)
+		
+		for (int i=peersNumber;i<listDatabase.size();i++)
 		{
 		    Database db=listDatabase.get(i);
 		    
 		    Assert.assertNull(db.getDirectCollisionDetected());
 		    Assert.assertNull(db.getIndirectCollisionDetected());
-		    Assert.assertTrue(db.isNewDatabaseEventDetected());
-		    testEventSynchronized(db, event, true);
 		    Assert.assertTrue(db.getRecordsToRemoveNotFound().isEmpty());
 		    Assert.assertTrue(db.getRecordsToUpdateNotFound().isEmpty());
+		    Assert.assertTrue(db.isNewDatabaseEventDetected());
+		    testEventSynchronized(db, event, true);
 		    
 		}
 		
-		
 		disconnectAllDatabase();
 	    }
-	
+	    testSynchronisation();
+	    checkAllDatabaseInternalDataUsedForSynchro();
+	}
     }
     
     private void testTransactionBetweenPeers(int peersNumber, boolean peersInitiallyConnected, List<TableEvent<DatabaseRecord>> levents, boolean threadTest) throws ClassNotFoundException, DatabaseException, IOException
@@ -1597,6 +1616,7 @@ public abstract class TestDecentralizedDatabase
 		
 		
 	disconnectAllDatabase();
+	checkAllDatabaseInternalDataUsedForSynchro();
 	    
     }
     
@@ -1604,6 +1624,12 @@ public abstract class TestDecentralizedDatabase
     public void testSynchroBetweenTwoPeers(boolean exceptionDuringTransaction, boolean generateDirectConflict, boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event) throws ClassNotFoundException, DatabaseException, IOException
     {
 	testSynchroBetweenPeers(2, exceptionDuringTransaction, generateDirectConflict, peersInitiallyConnected, event);
+    }
+
+    @Test(dependsOnMethods={"testSynchroBetweenTwoPeers"})
+    public void testSynchroAfterTestsBetweenTwoPeers() throws DatabaseException
+    {
+	testSynchronisation();
     }
 
     @DataProvider(name = "provideDataSynchroBetweenThreePeers", parallel = false)
@@ -1618,6 +1644,13 @@ public abstract class TestDecentralizedDatabase
 	testSynchroBetweenPeers(3, exceptionDuringTransaction, generateDirectConflict, peersInitiallyConnected, event);
     }
     
+    @Test(dependsOnMethods={"testSynchroBetweenThreePeers"})
+    public void testSynchroAfterTestsBetweenThreePeers() throws DatabaseException
+    {
+	testSynchronisation();
+    }
+    
+    
     
     @DataProvider(name = "provideDataForIndirectSynchro", parallel = false)
     public Object[][] provideDataForIndirectSynchro()
@@ -1625,7 +1658,7 @@ public abstract class TestDecentralizedDatabase
 	return provideDataForSynchroBetweenTwoPeers();
     }
     
-    @Test(dataProvider = "provideDataForIndirectSynchro", dependsOnMethods={"testSynchroBetweenThreePeers"})
+    @Test(dataProvider = "provideDataForIndirectSynchro", dependsOnMethods={"testSynchroAfterTestsBetweenThreePeers"})
     public void testIndirectSynchro(boolean exceptionDuringTransaction, boolean generateDirectConflict, boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event) throws DatabaseException, ClassNotFoundException, IOException
     {
 	List<TableEvent<DatabaseRecord>> levents=Arrays.asList(event);
@@ -1753,13 +1786,20 @@ public abstract class TestDecentralizedDatabase
     
 	
     }
+    
+    @Test(dependsOnMethods={"testIndirectSynchro"})
+    public void testSynchroAfterIndirectTestsBetweenPeers() throws DatabaseException
+    {
+	testSynchronisation();
+    }
+    
     @DataProvider(name = "provideDataForIndirectSynchroWithIndirectConnection", parallel = false)
     public Object[][] provideDataForIndirectSynchroWithIndirectConnection()
     {
 	return provideDataForSynchroBetweenTwoPeers();
     }
     
-    @Test(dataProvider = "provideDataForIndirectSynchroWithIndirectConnection", dependsOnMethods={"testIndirectSynchro"})
+    @Test(dataProvider = "testSynchroAfterIndirectTestsBetweenPeers", dependsOnMethods={"testIndirectSynchro"})
     public void testIndirectSynchroWithIndirectConnection(boolean exceptionDuringTransaction, boolean generateDirectConflict, boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event) throws ClassNotFoundException, DatabaseException, IOException
     {
 	List<TableEvent<DatabaseRecord>> levents=Arrays.asList(event); 
@@ -1854,6 +1894,11 @@ public abstract class TestDecentralizedDatabase
 	
     }
     
+    @Test(dependsOnMethods={"testIndirectSynchroWithIndirectConnection"})
+    public void testSynchroAfterPostIndirectTestsBetweenPeers() throws DatabaseException
+    {
+	testSynchronisation();
+    }
     
  
     
@@ -1867,7 +1912,7 @@ public abstract class TestDecentralizedDatabase
 	{
 	    for (int i=0;i<numberTransactions;i++)
 	    {
-		res.add(new Object[]{new Boolean(peersInitiallyConnected), proviveTableEvents((int)(5+Math.random()*10))});
+		res.add(new Object[]{new Boolean(peersInitiallyConnected), proviveTableEvents((int)(5.0+Math.random()*10.0))});
 
 	    }
 	}
@@ -1875,7 +1920,7 @@ public abstract class TestDecentralizedDatabase
 	return (Object[][])res.toArray();
     }
     
-    @Test(dataProvider = "provideDataForTransactionBetweenTwoPeers", dependsOnMethods={"testIndirectSynchroWithIndirectConnection"})
+    @Test(dataProvider = "testSynchroAfterPostIndirectTestsBetweenPeers", dependsOnMethods={"testIndirectSynchroWithIndirectConnection"})
     public void testTransactionBetweenTwoPeers(boolean peersInitiallyConnected, List<TableEvent<DatabaseRecord>> levents) throws ClassNotFoundException, DatabaseException, IOException
     {
 	testTransactionBetweenPeers(2, peersInitiallyConnected, levents, false);
@@ -1979,7 +2024,13 @@ public abstract class TestDecentralizedDatabase
 	testTransactionSynchrosWithIndirectConnection(peersInitiallyConnected, levents, false);
     }
     
-    @Test(dependsOnMethods={"testTransactionSynchrosWithIndirectConnection", "testTransactionSynchros", "testTransactionBetweenThreePeers", "testTransactionBetweenTwoPeers", "testTransactionSynchrosWithIndirectConnectionThreaded"})
+    @Test(dependsOnMethods={"testTransactionSynchrosWithIndirectConnectionThreaded"})
+    public void testSynchroTransactionTests() throws DatabaseException
+    {
+	testSynchronisation();
+    }
+    
+    @Test(dependsOnMethods={"testTransactionSynchrosWithIndirectConnection", "testTransactionSynchros", "testTransactionBetweenThreePeers", "testTransactionBetweenTwoPeers", "testTransactionSynchrosWithIndirectConnectionThreaded", "testSynchroTransactionTests"})
     public void addNewPeer() throws DatabaseException, ClassNotFoundException, IOException
     {
 	connectAllDatabase();
@@ -2072,9 +2123,14 @@ public abstract class TestDecentralizedDatabase
 	}
     
     
+	    @Test(dependsOnMethods={"testTransactionSynchrosWithIndirectConnectionThreaded2"})
+	    public void testSynchroTransactionTests2() throws DatabaseException
+	    {
+		testSynchronisation();
+	    }
     
     
-    @Test(dependsOnMethods={"testTransactionSynchrosWithIndirectConnectionThreaded2"})
+    @Test(dependsOnMethods={"testSynchroTransactionTests2"})
     public void removeNewPeer() throws DatabaseException, ClassNotFoundException, IOException
     {
 	
@@ -2155,5 +2211,11 @@ public abstract class TestDecentralizedDatabase
 	    testTransactionSynchrosWithIndirectConnectionThreaded(peersInitiallyConnected, levents);
 	}
     
+	    @Test(dependsOnMethods={"testTransactionSynchrosWithIndirectConnectionThreaded3"})
+	    public void testSynchroTransactionTests3() throws DatabaseException
+	    {
+		testSynchronisation();
+	    }
+	
 }
 

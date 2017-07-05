@@ -111,7 +111,11 @@ final class IDTable extends Table<IDTable.Record>
     
     long getLastTransactionID() throws DatabaseException
     {
-	return getLastID(TRANSACTIONID);
+	long id=getLastID(TRANSACTIONID);
+	if (id==-1)
+	    return -1;
+	else
+	    return id-1;
     }
     long getLastValidatedTransactionID() throws DatabaseException
     {
@@ -128,7 +132,7 @@ final class IDTable extends Table<IDTable.Record>
 	}
 	else
 	{
-	    return r.transactionID-1;
+	    return r.transactionID;
 	}
     }
     private static final int TRANSACTIONID=1;

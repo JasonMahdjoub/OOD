@@ -173,7 +173,9 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 	{
 	    getIDTable().setLastValidatedTransactionIDI(globalLast);
 	    removeTransactionUntilID(globalLast);
-	}		    
+	}
+	
+	    
 	
     }
     
@@ -322,7 +324,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 			return false;
 		    }
 		});
-		return res;
+		return res.get();
 	    }
 
 	    @Override
@@ -355,7 +357,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 		    @Override
 		    public boolean nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException
 		    {
-			if (_record.isConcernedDatabaseByPackage(databasePackage))
+			if (_record.isConcernedDatabaseByPackage(databasePackage) && !_record.concernsLocalDatabaseHost())
 			{
 			    if (res.get()==null)
 			    {
@@ -427,8 +429,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
     
     void removeTransactionUntilID(long lastTransactionID) throws DatabaseException
     {
-	removeRecords("id<%lastID", "lastID", new Long(lastTransactionID));
-	
+	removeRecordsWithCascade("id<=%lastID", "lastID", new Long(lastTransactionID));
     }
     
     

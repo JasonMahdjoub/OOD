@@ -77,7 +77,16 @@ public final class TablePointed extends Table<TablePointed.Record>
 	    r.value=this.value;
 	    return r;
 	}
-	
+	@Override
+	public boolean equals(Object o)
+	{
+	    if (o==null)
+		return false;
+	    if (o instanceof TablePointed.Record)
+		return ((TablePointed.Record) o).id.equals(id);
+	    return false;
+	}
+
 	
     }
 }

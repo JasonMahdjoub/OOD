@@ -194,6 +194,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 	
 	protected void addDatabasePackageName(Package p)
 	{
+	    
 	    if (databasePackageNames==null || databasePackageNames.length()==0)
 		databasePackageNames=p.getName();
 	    else
@@ -482,7 +483,8 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 		    r.setLastValidatedTransaction(getGlobalLastValidatedTransactionID());
 		    r=addRecord(r);
 		    localHost=null;
-			
+		    supportedDatabasePackages=null;
+		    
 		    if (!concernsDatabaseHost)
 			getDatabaseTransactionEventsTable().addTransactionToSynchronizeTables(newAddedPackages, r, replaceDistantConflitualRecords);
 		    return r;
@@ -493,6 +495,8 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 		    Package newAddedPackages[]=r.addDatabasePackageNames(packages);
 		    updateRecord(r);
 		    localHost=null;
+		    supportedDatabasePackages=null;
+		    
 		    if (!concernsDatabaseHost)
 			getDatabaseTransactionEventsTable().addTransactionToSynchronizeTables(newAddedPackages, r, replaceDistantConflitualRecords);
 		    
@@ -631,19 +635,24 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
     
     public long getGlobalLastValidatedTransactionID() throws DatabaseException
     {
-	final AtomicLong min=new AtomicLong(-1);
+	final AtomicLong min=new AtomicLong(Long.MAX_VALUE);
 	
 	getRecords(new Filter<DatabaseHooksTable.Record>() {
 	    
 	    @Override
 	    public boolean nextRecord(DatabaseHooksTable.Record _record) 
 	    {
-		if (min.get()>_record.getLastValidatedTransaction())
-		    min.set(_record.getLastValidatedTransaction());
+		if (!_record.concernsLocalDatabaseHost())
+		{
+		    if (min.get()>_record.getLastValidatedTransaction())
+			min.set(_record.getLastValidatedTransaction());
+		}
 		return false;
 	    }
 	});
-	return min.get()==-1?-1:min.get()-1;
+	if (min.get()==Long.MAX_VALUE)
+	    min.set(-1);
+	return min.get();
     }
     
     /*Filter<DatabaseHooksTable.Record> getHooksFilter(DatabaseEventType dte, DatabaseEventType ..._databaseEventTypes)

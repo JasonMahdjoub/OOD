@@ -54,8 +54,9 @@ public class TableEvent<T extends DatabaseRecord> extends DatabaseEvent
     private final T oldDatabaseRecord;
     private final T newDatabaseRecord;
     private final boolean force;
-    private HashMap<String, Object> mapKeys=null;
-    private boolean oldAlreadyPresent=false;
+    private transient HashMap<String, Object> mapKeys=null;
+    private transient boolean oldAlreadyPresent=false;
+    private transient Table<T> table;
     
     
     TableEvent(int id, DatabaseEventType type, T oldDatabaseRecord, T newDatabaseRecord, boolean force)
@@ -72,11 +73,22 @@ public class TableEvent<T extends DatabaseRecord> extends DatabaseEvent
 	this.newDatabaseRecord=newDatabaseRecord;
 	this.force=force;
     }
-    TableEvent(int id, DatabaseEventType type, T oldDatabaseRecord, T newDatabaseRecord, boolean force, HashMap<String, Object> mapKeys, boolean oldAlreadyPresent)
+    TableEvent(int id, DatabaseEventType type, T oldDatabaseRecord, T newDatabaseRecord, boolean force, HashMap<String, Object> mapKeys, boolean oldAlreadyPresent, Table<T> table)
     {
-	this(id, type, oldDatabaseRecord, newDatabaseRecord, force);
+	if (type==null)
+	    throw new NullPointerException("type");
+	if (oldDatabaseRecord==null && type!=DatabaseEventType.ADD && (mapKeys==null || mapKeys.isEmpty()))
+	    throw new NullPointerException("oldDatabaseRecord");
+	if (newDatabaseRecord==null && type!=DatabaseEventType.REMOVE && type!=DatabaseEventType.REMOVE_WITH_CASCADE)
+	    throw new NullPointerException("bewDatabaseRecord");
+	this.id=id;
+	this.type=type;
+	this.oldDatabaseRecord=oldDatabaseRecord;
+	this.newDatabaseRecord=newDatabaseRecord;
+	this.force=force;
 	this.mapKeys=mapKeys;
 	this.oldAlreadyPresent=oldAlreadyPresent;
+	this.table=table;
     }
     
     @Override
@@ -121,15 +133,23 @@ public class TableEvent<T extends DatabaseRecord> extends DatabaseEvent
 	return newDatabaseRecord;
     }
     
+    @SuppressWarnings("unchecked")
     public Table<T> getTable(DatabaseWrapper wrapper) throws DatabaseException
     {
 	if (wrapper==null)
 	    throw new NullPointerException();
-	if (oldDatabaseRecord==null && newDatabaseRecord==null)
-	    throw new NullPointerException();
-	@SuppressWarnings("unchecked")
-	Table<T> tableInstance = (Table<T>) wrapper.getTableInstance(Table.getTableClass(oldDatabaseRecord==null?newDatabaseRecord.getClass():oldDatabaseRecord.getClass()));
-	return tableInstance;
+	if (table==null)
+	{
+	    if (oldDatabaseRecord==null && newDatabaseRecord==null)
+		throw new NullPointerException();
+	    table = (Table<T>) wrapper.getTableInstance(Table.getTableClass(oldDatabaseRecord==null?newDatabaseRecord.getClass():oldDatabaseRecord.getClass()));
+	}
+	else if (table.getDatabaseWrapper()!=wrapper)
+	{
+	    return (Table<T>) wrapper.getTableInstance(table.getClass());
+	    
+	}
+	return table;
     }
 }
 

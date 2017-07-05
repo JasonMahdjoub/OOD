@@ -76,5 +76,15 @@ public final class TableAlone extends Table<TableAlone.Record>
 	    r.value=this.value;
 	    return r;
 	}
+	
+	@Override
+	public boolean equals(Object o)
+	{
+	    if (o==null)
+		return false;
+	    if (o instanceof TableAlone.Record)
+		return ((TableAlone.Record) o).id.equals(id);
+	    return false;
+	}
     }
 }
