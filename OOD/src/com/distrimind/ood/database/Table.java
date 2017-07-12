@@ -91,6 +91,7 @@ import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.ood.interpreter.Interpreter;
 import com.distrimind.ood.interpreter.RuleInstance;
 import com.distrimind.ood.interpreter.RuleInstance.TableJunction;
+import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.ReadWriteLock;
 
 
@@ -439,13 +440,13 @@ public abstract class Table<T extends DatabaseRecord>
     {
 	try
 	{
-	    Statement st=sql_connection.getConnectionAssociatedWithCurrentThread().createStatement();
+	    Statement st=sql_connection.getConnectionAssociatedWithCurrentThread().getConnection().createStatement();
 	    st.executeUpdate("DROP TRIGGER "+Table.this.getName()+"_ROW_COUNT_TRIGGER_DELETE__"+sql_connection.getSqlComma());
 	    st.close();
-	    st=sql_connection.getConnectionAssociatedWithCurrentThread().createStatement();
+	    st=sql_connection.getConnectionAssociatedWithCurrentThread().getConnection().createStatement();
 	    st.executeUpdate("DROP TRIGGER "+Table.this.getName()+"_ROW_COUNT_TRIGGER_INSERT__"+sql_connection.getSqlComma());
 	    st.close();
-	    st=sql_connection.getConnectionAssociatedWithCurrentThread().createStatement();
+	    st=sql_connection.getConnectionAssociatedWithCurrentThread().getConnection().createStatement();
 	    st.executeUpdate("DELETE FROM "+DatabaseWrapper.ROW_COUNT_TABLES+" WHERE TABLE_NAME='"+Table.this.getName()+"'"+sql_connection.getSqlComma());
 	    st.close();
 	}
@@ -471,7 +472,7 @@ public abstract class Table<T extends DatabaseRecord>
 	    {
 		final StringBuffer SqlQuerry=new StringBuffer("DROP TABLE "+this.getName()+" "+sql_connection.getDropTableIfExistsKeyWord()+" "+sql_connection.getDropTableCascadeKeyWord());
 		
-		st=sql_connection.getConnectionAssociatedWithCurrentThread().createStatement();
+		st=sql_connection.getConnectionAssociatedWithCurrentThread().getConnection().createStatement();
 		st.executeUpdate(SqlQuerry.toString());
 		sql_connection=null;
 	    }
@@ -714,7 +715,7 @@ public abstract class Table<T extends DatabaseRecord>
 			    Statement st=null;
 			    try
 			    {
-				st=sql_connection.getConnectionAssociatedWithCurrentThread().createStatement();
+				st=sql_connection.getConnectionAssociatedWithCurrentThread().getConnection().createStatement();
 				
 				st.executeUpdate(SqlQuerry.toString());
 				
@@ -756,15 +757,15 @@ public abstract class Table<T extends DatabaseRecord>
 			    Statement st=null;
 			    try
 			    {
-				st=sql_connection.getConnectionAssociatedWithCurrentThread().createStatement();
+				st=sql_connection.getConnectionAssociatedWithCurrentThread().getConnection().createStatement();
 				st.executeUpdate("INSERT INTO "+DatabaseWrapper.ROW_COUNT_TABLES+" VALUES('"+Table.this.getName()+"', 0)"+sql_connection.getSqlComma());
 				st.close();
-				st=sql_connection.getConnectionAssociatedWithCurrentThread().createStatement();
+				st=sql_connection.getConnectionAssociatedWithCurrentThread().getConnection().createStatement();
 				st.executeUpdate("CREATE TRIGGER "+Table.this.getName()+"_ROW_COUNT_TRIGGER_INSERT__ AFTER INSERT ON "+Table.this.getName()+"\n" +
 						"FOR EACH ROW \n" +
 						"UPDATE "+DatabaseWrapper.ROW_COUNT_TABLES+" SET ROW_COUNT=ROW_COUNT+1 WHERE TABLE_NAME='"+Table.this.getName()+"'\n"+sql_connection.getSqlComma());
 				st.close();
-				st=sql_connection.getConnectionAssociatedWithCurrentThread().createStatement();
+				st=sql_connection.getConnectionAssociatedWithCurrentThread().getConnection().createStatement();
 				st.executeUpdate("CREATE TRIGGER "+Table.this.getName()+"_ROW_COUNT_TRIGGER_DELETE__ AFTER DELETE ON "+Table.this.getName()+"\n" +
 						"FOR EACH ROW \n" +
 						"UPDATE "+DatabaseWrapper.ROW_COUNT_TABLES+" SET ROW_COUNT=ROW_COUNT-1 WHERE TABLE_NAME='"+Table.this.getName()+"'\n"+sql_connection.getSqlComma());
@@ -827,7 +828,7 @@ public abstract class Table<T extends DatabaseRecord>
 				    Statement st=null;
 				    try
 				    {
-					st=sql_connection.getConnectionAssociatedWithCurrentThread().createStatement();
+					st=sql_connection.getConnectionAssociatedWithCurrentThread().getConnection().createStatement();
 					
 					st.executeUpdate(indexCreationQuerry.toString());
 					
@@ -958,7 +959,7 @@ public abstract class Table<T extends DatabaseRecord>
 		            Statement st=null;
 		            try
 		            {
-		    		st=_sql_connection.getConnectionAssociatedWithCurrentThread().createStatement();
+		    		st=_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection().createStatement();
 		    		st.executeUpdate(SqlQuerry.toString());
 		    		
 		    		return null;
@@ -1182,7 +1183,7 @@ public abstract class Table<T extends DatabaseRecord>
 		@Override
 	        public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 	        {
-		    try(ReadQuerry rq=new ReadQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread(), sqlquerry))
+		    try(ReadQuerry rq=new ReadQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), sqlquerry))
 		    {
 			if (rq.result_set.next())
 			{
@@ -1795,7 +1796,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    @Override
 		    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 		    {
-			try(ReadQuerry rq=new ReadQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread(), new SqlQuerry("SELECT ROW_COUNT FROM "+DatabaseWrapper.ROW_COUNT_TABLES+" WHERE TABLE_NAME='"+Table.this.getName()+"'")))
+			try(ReadQuerry rq=new ReadQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), new SqlQuerry("SELECT ROW_COUNT FROM "+DatabaseWrapper.ROW_COUNT_TABLES+" WHERE TABLE_NAME='"+Table.this.getName()+"'")))
 			{
 			    if (rq.result_set.next())
 			    {
@@ -1892,7 +1893,7 @@ public abstract class Table<T extends DatabaseRecord>
 			    @Override
 			    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 			    {
-				try(ReadQuerry rq=new ReadQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread(), getSqlGeneralCount(sqlQuery, sqlParameters, tablesJunction)))
+				try(ReadQuerry rq=new ReadQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), getSqlGeneralCount(sqlQuery, sqlParameters, tablesJunction)))
 				{
 				    if (rq.result_set.next())
 				    {
@@ -2717,7 +2718,7 @@ public abstract class Table<T extends DatabaseRecord>
 		lock=new ReadLock(Table.this);
 		default_constructor_field=_default_constructor_field;
 		fields_accessor=_fields_accessor;
-		readQuerry=new ReadQuerry(sql_connection.getConnectionAssociatedWithCurrentThread(), getSqlGeneralSelect(true));
+		readQuerry=new ReadQuerry(sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), getSqlGeneralSelect(true));
 	    }
 	    catch(SQLException e)
 	    {
@@ -4616,7 +4617,7 @@ public abstract class Table<T extends DatabaseRecord>
 				
 				
 				int nb=0;
-				try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread(), sb.toString()))
+				try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), sb.toString()))
 				{
 				    int index=1;
 				    for (T r : records_to_remove)
@@ -4646,7 +4647,7 @@ public abstract class Table<T extends DatabaseRecord>
 	    
 		    __removeRecords(records_to_remove);
 		    for (T r : records_to_remove)
-			getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, r, null, false));
+			getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, r, null, null));
 		}
 		return records_to_remove.size();
 	}
@@ -4693,7 +4694,7 @@ public abstract class Table<T extends DatabaseRecord>
 			    _cursor.deleteRow();
 			    ++deleted_records_number;
 			    _instance.__createdIntoDatabase=false;
-			    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, _instance, null, false));
+			    getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, _instance, null, null));
 			}
 			return !_filter.isTableParsingStoped();
 		    }
@@ -4773,7 +4774,7 @@ public abstract class Table<T extends DatabaseRecord>
 				
 				
 				int nb=0;
-				try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread(), sb.toString()))
+				try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), sb.toString()))
 				{
 				    int index=1;
 				    for (T r : records_to_remove)
@@ -4795,15 +4796,16 @@ public abstract class Table<T extends DatabaseRecord>
 				
 				if (nb!=records_to_remove.size())
 				    throw new DatabaseException("Unexpected exception.");
+				for (T r : records_to_remove)
+				    getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, r, null, null));
+				
 				return null;
 			    }
 			};
 		    if (records_to_remove.size()>0)
-		    sql_connection.runTransaction(transaction);
+			sql_connection.runTransaction(transaction);
 	    
 		    __removeRecords(records_to_remove);
-		    for (T r : records_to_remove)
-			getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, r, null, false));
 		}
 		return records_to_remove.size();
 	}
@@ -4847,7 +4849,7 @@ public abstract class Table<T extends DatabaseRecord>
 			    _cursor.deleteRow();
 			    ++deleted_records_number;
 			    _instance.__createdIntoDatabase=false;
-			    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, _instance, null, false));
+			    getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, _instance, null, null));
 			}
 			return !_filter.isTableParsingStoped();
 		    }
@@ -5231,7 +5233,7 @@ public abstract class Table<T extends DatabaseRecord>
 	        @Override
 	        public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 	        {
-		    try(ReadQuerry prq = new ReadQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread(), sqlquerry))
+		    try(ReadQuerry prq = new ReadQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), sqlquerry))
 		    {
 			if (prq.result_set.next())
 			{
@@ -5287,7 +5289,7 @@ public abstract class Table<T extends DatabaseRecord>
 				StringBuffer sb=new StringBuffer("DELETE FROM "+Table.this.getName()+" WHERE "+getSqlPrimaryKeyCondition(records_to_remove.size()));
 
 				int nb=0;
-				try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread(), sb.toString()))
+				try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), sb.toString()))
 				{
 				    int index=1;
 				    for (T r : records_to_remove)
@@ -5310,6 +5312,10 @@ public abstract class Table<T extends DatabaseRecord>
 				{
 				    throw new DatabaseException("Unexpected exception.");
 				}
+				
+				for (T r : records_to_remove)
+				    getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, r, null, null));
+				
 				return null;
 			    }
 		    	    @Override
@@ -5324,8 +5330,6 @@ public abstract class Table<T extends DatabaseRecord>
 		
 		__removeRecords(records_to_remove);
 		updateMemoryForRemovingRecordsWithCascade(records_to_remove);
-		for (T r : records_to_remove)
-		    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, r, null, false));
 	    }
 	    return records_to_remove.size();
 	}
@@ -5357,7 +5361,7 @@ public abstract class Table<T extends DatabaseRecord>
 			    ++deleted_records_number;
 			    _instance.__createdIntoDatabase=false;
 			    updateMemoryForRemovingRecordWithCascade(_instance);
-			    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, _instance, null, false));
+			    getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, _instance, null, null));
 			}
 			return !_filter.isTableParsingStoped();
 		    }
@@ -5413,9 +5417,9 @@ public abstract class Table<T extends DatabaseRecord>
      */
     public final void removeRecord(final T _record) throws DatabaseException
     {
-	removeUntypedRecord((DatabaseRecord)_record, true, false);
+	removeUntypedRecord((DatabaseRecord)_record, true, null);
     }
-    final void removeUntypedRecord(final DatabaseRecord record, final boolean synchronizeIfNecessary, final boolean forceSynchro) throws DatabaseException
+    final void removeUntypedRecord(final DatabaseRecord record, final boolean synchronizeIfNecessary, final Set<AbstractDecentralizedID> hostsDestinations) throws DatabaseException
     {
 	if (record==null)
 	    throw new NullPointerException("The parameter _record is a null pointer !");
@@ -5448,7 +5452,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    {
 			StringBuffer querry=new StringBuffer("DELETE FROM "+Table.this.getName()+" WHERE "+getSqlPrimaryKeyCondition(1));
 		
-			try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread(), querry.toString()))
+			try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), querry.toString()))
 			{
 			    int index=1;
 			    for (FieldAccessor fa : primary_keys_fields)
@@ -5462,7 +5466,7 @@ public abstract class Table<T extends DatabaseRecord>
 			    else if (nb>1)
 				throw new DatabaseIntegrityException("Unexpected exception");
 			    if (synchronizeIfNecessary)
-				getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, _record, null, forceSynchro));
+				getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, _record, null, hostsDestinations));
 			}
 			catch(Exception e)
 			{
@@ -5501,9 +5505,9 @@ public abstract class Table<T extends DatabaseRecord>
      */
     public final void removeRecordWithCascade(final T _record) throws DatabaseException
     {
-	removeUntypedRecordWithCascade(_record, true, false);
+	removeUntypedRecordWithCascade(_record, true, null);
     }
-    final void removeUntypedRecordWithCascade(final DatabaseRecord record, final boolean synchronizeIfNecessary, final boolean forceSynchro) throws DatabaseException
+    final void removeUntypedRecordWithCascade(final DatabaseRecord record, final boolean synchronizeIfNecessary, final Set<AbstractDecentralizedID> hostsDestinations) throws DatabaseException
     {
 	if (record==null)
 	    throw new NullPointerException("The parameter _record is a null pointer !");
@@ -5531,7 +5535,7 @@ public abstract class Table<T extends DatabaseRecord>
 			StringBuffer querry=new StringBuffer("DELETE FROM "+Table.this.getName()+" WHERE "+getSqlPrimaryKeyCondition(1));
 		
 		
-			try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread(), querry.toString()))
+			try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), querry.toString()))
 			{
 			    int index=1;
 			    for (FieldAccessor fa : primary_keys_fields)
@@ -5545,7 +5549,7 @@ public abstract class Table<T extends DatabaseRecord>
 			    else if (nb>1)
 				throw new DatabaseIntegrityException("Unexpected exception");
 			    if (synchronizeIfNecessary)
-				getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, _record, null, forceSynchro));
+				getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, _record, null, hostsDestinations));
 			}
 			catch(Exception e)
 			{
@@ -5807,7 +5811,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    @Override
 		    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 		    {
-			try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread(), "DELETE FROM "+Table.this.getName()+" WHERE "+getSqlPrimaryKeyCondition(_records.size())))
+			try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), "DELETE FROM "+Table.this.getName()+" WHERE "+getSqlPrimaryKeyCondition(_records.size())))
 			{
 			    int index=1;
 			    for (T r : _records)
@@ -5827,6 +5831,8 @@ public abstract class Table<T extends DatabaseRecord>
 			{
 			    throw DatabaseException.getDatabaseException(e);
 			}
+			for (T r : _records)
+			    getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, r, null, null));
 			
 			return null;
 		    }
@@ -5842,8 +5848,6 @@ public abstract class Table<T extends DatabaseRecord>
 		{
 		    __removeRecords(_records);
 		}
-		for (T r : _records)
-		    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, r, null, false));
 	
 	    }
 	    catch(Exception e)
@@ -5898,7 +5902,7 @@ public abstract class Table<T extends DatabaseRecord>
 		{
 		    StringBuffer sb=new StringBuffer("DELETE FROM "+Table.this.getName()+" WHERE "+getSqlPrimaryKeyCondition(_records.size()));
 		    
-		    try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread(), sb.toString()))
+		    try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), sb.toString()))
 		    {
 			int index=1;
 			for (T r : _records)
@@ -5913,6 +5917,8 @@ public abstract class Table<T extends DatabaseRecord>
 			int nb=puq.statement.executeUpdate();
 			if (nb!=_records.size())
 			    throw new RecordNotFoundDatabaseException("There is "+(_records.size()-nb)+" (about "+_records.size()+") records which have not been found into the database. This may occur if the concerned record has already been deleted. No records have been deleted.");
+			for (T r : _records)
+			    getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, r, null, null));
 			
 		    }
 		    catch(Exception e)
@@ -5937,8 +5943,6 @@ public abstract class Table<T extends DatabaseRecord>
 		__removeRecords(_records);
 	    }
 	    updateMemoryForRemovingRecordsWithCascade(_records);
-	    for (T r : _records)
-		getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, r, null, false));
 	}
     }
     
@@ -6019,7 +6023,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    @Override
 		    public Object run(DatabaseWrapper sql_connection) throws DatabaseException
 		    {
-			try(AbstractReadQuerry rq=(updatable?new UpdatableReadQuerry(sql_connection.getConnectionAssociatedWithCurrentThread(), querry):new ReadQuerry(sql_connection.getConnectionAssociatedWithCurrentThread(), querry)))
+			try(AbstractReadQuerry rq=(updatable?new UpdatableReadQuerry(sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), querry):new ReadQuerry(sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), querry)))
 			{
 			    //int rowcount=getRowCount();
 			    int rowcount=0;
@@ -6114,7 +6118,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    @Override
 		    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 		    {
-			try(AbstractReadQuerry rq=(updatable?new UpdatableReadQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread(), querry):new ReadQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread(), querry)))
+			try(AbstractReadQuerry rq=(updatable?new UpdatableReadQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), querry):new ReadQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), querry)))
 			{
 			    //int rowcount=getRowCount();
 			    _runnable.init();
@@ -6215,7 +6219,7 @@ public abstract class Table<T extends DatabaseRecord>
 			    @Override
 			    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
 			    {
-				try(ReadQuerry rq=new ReadQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread(), sqlquerry))
+				try(ReadQuerry rq=new ReadQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), sqlquerry))
 				{
 				    if (rq.result_set.next())
 					return new Boolean(true);
@@ -6333,9 +6337,9 @@ public abstract class Table<T extends DatabaseRecord>
     @SuppressWarnings("unchecked")
     public final T addRecord(T record) throws DatabaseException
     {
-	return (T)addUntypedRecord(record, false, true, false);
+	return (T)addUntypedRecord(record, false, true, null);
     }
-    final DatabaseRecord addUntypedRecord(DatabaseRecord record, boolean includeAutoGeneratedKeys, boolean synchronizeIfNecessary, boolean forceSynchro) throws DatabaseException
+    final DatabaseRecord addUntypedRecord(DatabaseRecord record, boolean includeAutoGeneratedKeys, boolean synchronizeIfNecessary, Set<AbstractDecentralizedID> hostsDestination) throws DatabaseException
     {
 	if (record==null)
 	    throw new NullPointerException("The parameter record is a null pointer !");
@@ -6345,7 +6349,7 @@ public abstract class Table<T extends DatabaseRecord>
 	try (Lock lock=new WriteLock(this))
 	{
 	    Map<String, Object> map=getMap(record, true, includeAutoGeneratedKeys);
-	    T res=addRecord(map, false, record, synchronizeIfNecessary, forceSynchro);
+	    T res=addRecord(map, false, record, synchronizeIfNecessary, hostsDestination);
 	    res.__createdIntoDatabase=true;
 	    return res;
 	}
@@ -6399,10 +6403,10 @@ public abstract class Table<T extends DatabaseRecord>
     
     private final T addRecord(final Map<String, Object> _fields, boolean already_in_transaction) throws DatabaseException
     {
-	return addRecord(_fields, already_in_transaction, null, true, false);
+	return addRecord(_fields, already_in_transaction, null, true, null);
     }
     @SuppressWarnings("unchecked")
-    private final T addRecord(final Map<String, Object> _fields, final boolean already_in_transaction, final DatabaseRecord originalRecord, final boolean synchronizeIfNecessary, final boolean forceSynchro) throws DatabaseException
+    private final T addRecord(final Map<String, Object> _fields, final boolean already_in_transaction, final DatabaseRecord originalRecord, final boolean synchronizeIfNecessary, final Set<AbstractDecentralizedID> hostsDestinations) throws DatabaseException
     {
 
 	return (T)sql_connection.runTransaction(new Transaction() {
@@ -6646,7 +6650,7 @@ public abstract class Table<T extends DatabaseRecord>
 				}
 				querry.append(")"+sql_connection.getSqlComma());
 				
-				try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_db.getConnectionAssociatedWithCurrentThread(), querry.toString()))
+				try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_db.getConnectionAssociatedWithCurrentThread().getConnection(), querry.toString()))
 				{
 				    int index=1;
 				    for(FieldAccessor fa : fields)
@@ -6675,7 +6679,7 @@ public abstract class Table<T extends DatabaseRecord>
 				
 				if (auto_primary_keys_fields.size()>0 && !ct.include_auto_pk)
 				{
-				    try(ReadQuerry rq=new ReadQuerry(_db.getConnectionAssociatedWithCurrentThread(), new SqlQuerry(sql_connection.getSqlQuerryToGetLastGeneratedID())))
+				    try(ReadQuerry rq=new ReadQuerry(_db.getConnectionAssociatedWithCurrentThread().getConnection(), new SqlQuerry(sql_connection.getSqlQuerryToGetLastGeneratedID())))
 				    {
 					rq.result_set.next();
 					Long autovalue=new Long(rq.result_set.getLong(1));
@@ -6711,7 +6715,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    if (isLoadedInMemory() && isSynchronizedWithSqlDatabase())
 			__AddRecord(instance);
 		    if (synchronizeIfNecessary)
-			getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.ADD, null, instance, forceSynchro));
+			getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.ADD, null, instance, hostsDestinations));
 		    return instance;
 
 		}
@@ -6798,14 +6802,14 @@ public abstract class Table<T extends DatabaseRecord>
      */
     public final void updateRecord(final T _record) throws DatabaseException
     {
-	updateUntypedRecord(_record, true, false);
+	updateUntypedRecord(_record, true, null);
     }
-    final void updateUntypedRecord(final DatabaseRecord record, boolean synchronizeIfNecessary, boolean forceSynchro) throws DatabaseException
+    final void updateUntypedRecord(final DatabaseRecord record, boolean synchronizeIfNecessary, Set<AbstractDecentralizedID> resentTo) throws DatabaseException
     {
 	@SuppressWarnings("unchecked")
 	T _record=(T)record;
 	Map<String, Object> map=getMap(_record, false, false);
-	updateRecord(_record, map, synchronizeIfNecessary, forceSynchro);
+	updateRecord(_record, map, synchronizeIfNecessary, resentTo);
     }
     
     
@@ -6850,9 +6854,9 @@ public abstract class Table<T extends DatabaseRecord>
      */
     public final void updateRecord(final T _record, final Map<String, Object> _fields) throws DatabaseException
     {
-	updateRecord(_record, _fields, true, false);
+	updateRecord(_record, _fields, true, null);
     }
-    final void updateRecord(final T _record, final Map<String, Object> _fields, final boolean synchronizeIfNecessary, final boolean forceSynchro) throws DatabaseException
+    final void updateRecord(final T _record, final Map<String, Object> _fields, final boolean synchronizeIfNecessary, final Set<AbstractDecentralizedID> resentTo) throws DatabaseException
     {
 	if (_record==null)
 	    throw new NullPointerException("The parameter _record is a null pointer !");
@@ -7021,7 +7025,7 @@ public abstract class Table<T extends DatabaseRecord>
 				}
 			    }
 			
-			    try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread(), querry.toString()))
+			    try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), querry.toString()))
 			    {
 				int index=1;
 				for (FieldAccessor fa : fields_accessor)
@@ -7072,11 +7076,11 @@ public abstract class Table<T extends DatabaseRecord>
 		{
 		    if (pkChanged)
 		    {
-			getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, oldRecord, null, forceSynchro));
-			getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.ADD, null, _record, forceSynchro));
+			getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, oldRecord, null, resentTo));
+			getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.ADD, null, _record, resentTo));
 		    }
 		    else
-			getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.UPDATE, oldRecord, _record, forceSynchro));
+			getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.UPDATE, oldRecord, _record, resentTo));
 		}
 		
 	    }
@@ -7336,7 +7340,7 @@ public abstract class Table<T extends DatabaseRecord>
 						}
 					    }
 					
-					    try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread(), querry.toString()))
+					    try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), querry.toString()))
 					    {
 						int index=1;
 						for (FieldAccessor fa : fields)
@@ -7371,11 +7375,11 @@ public abstract class Table<T extends DatabaseRecord>
 					    }
 					    if (pkChanged)
 					    {
-						getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, oldRecord, null, false));
-						getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.ADD, null, r, false));
+						getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, oldRecord, null, null));
+						getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.ADD, null, r, null));
 					    }
 					    else
-						getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.UPDATE, oldRecord, r, false));
+						getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.UPDATE, oldRecord, r, null));
 					    return null;
 					}
 					catch(Exception e)
@@ -7412,7 +7416,7 @@ public abstract class Table<T extends DatabaseRecord>
 					StringBuffer sb=new StringBuffer("DELETE FROM "+Table.this.getName()+" WHERE "+getSqlPrimaryKeyCondition(records_to_delete.size()));
 					
 					int nb=0;
-					try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread(), sb.toString()))
+					try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), sb.toString()))
 					{
 					    int index=1;
 					    for (T r : records_to_delete)
@@ -7448,7 +7452,7 @@ public abstract class Table<T extends DatabaseRecord>
 			    __removeRecords(records_to_delete);
 			    
 			    for (T r : records_to_delete)
-				getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, r, null, false));
+				getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, r, null, null));
 		    }
 		    if (records_to_delete_with_cascade.size()>0)
 		    {
@@ -7467,7 +7471,7 @@ public abstract class Table<T extends DatabaseRecord>
 				StringBuffer sb=new StringBuffer("DELETE FROM "+Table.this.getName()+" WHERE "+getSqlPrimaryKeyCondition(records_to_delete_with_cascade.size()));
 
 				int nb=0;
-				try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread(), sb.toString()))
+				try(PreparedUpdateQuerry puq=new PreparedUpdateQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), sb.toString()))
 				{
 				    int index=1;
 				    for (T r : records_to_delete_with_cascade)
@@ -7504,7 +7508,7 @@ public abstract class Table<T extends DatabaseRecord>
 			__removeRecords(records_to_delete_with_cascade);
 			updateMemoryForRemovingRecordsWithCascade(records_to_delete_with_cascade);
 			for (T r : records_to_delete_with_cascade)
-			    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, r, null, false));
+			    getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, r, null, null));
 			
 		    }
 		    
@@ -7560,14 +7564,14 @@ public abstract class Table<T extends DatabaseRecord>
 					if (canberemoved)
 					{
 					    _result_set.deleteRow();
-					    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, oldRecord, null, false));
+					    getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE, oldRecord, null, null));
 					}
 				    }
 				    else if(_filter.hasToBeRemovedWithCascade())
 				    {
 					_result_set.deleteRow();
 					updateMemoryForRemovingRecordWithCascade(_instance);
-					getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, oldRecord, null, false));
+					getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, oldRecord, null, null));
 				    }
 				    else
 				    {
@@ -7610,7 +7614,7 @@ public abstract class Table<T extends DatabaseRecord>
 						}
 					    }
 					    _result_set.updateRow();
-					    getDatabaseWrapper().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.UPDATE, oldRecord, _instance, false));
+					    getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this, new TableEvent<>(-1, DatabaseEventType.UPDATE, oldRecord, _instance, null));
 					}
 				    }
 				}

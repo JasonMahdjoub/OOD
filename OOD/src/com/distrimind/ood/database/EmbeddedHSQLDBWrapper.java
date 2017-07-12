@@ -258,7 +258,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
     @Override
     protected boolean doesTableExists(String table_name) throws Exception
     {
-	try (ReadQuerry rq=new ReadQuerry(getConnectionAssociatedWithCurrentThread(), new Table.SqlQuerry("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"+table_name+"'")))
+	try (ReadQuerry rq=new ReadQuerry(getConnectionAssociatedWithCurrentThread().getConnection(), new Table.SqlQuerry("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"+table_name+"'")))
 	{
 	    if (rq.result_set.next())
 		return true;
@@ -270,14 +270,14 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
     @Override
     protected ColumnsReadQuerry getColumnMetaData(String tableName) throws Exception
     {
-	Connection sql_connection=getConnectionAssociatedWithCurrentThread();
+	Connection sql_connection=getConnectionAssociatedWithCurrentThread().getConnection();
 	return new CReadQuerry(sql_connection, new Table.SqlQuerry("SELECT COLUMN_NAME, TYPE_NAME, COLUMN_SIZE, IS_NULLABLE, IS_AUTOINCREMENT FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"+tableName+"';"));
     }
     
     @Override
     protected void checkConstraints(Table<?> table) throws DatabaseException
     {
-	Connection sql_connection=getConnectionAssociatedWithCurrentThread();
+	Connection sql_connection=getConnectionAssociatedWithCurrentThread().getConnection();
 	try(ReadQuerry rq=new ReadQuerry(sql_connection, new Table.SqlQuerry("select CONSTRAINT_NAME, CONSTRAINT_TYPE from INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_NAME='"+table.getName()+"';")))
 	{
 	    while (rq.result_set.next())
@@ -642,7 +642,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
 		    Statement st=null;
 		    try
 		    {
-			st=getConnectionAssociatedWithCurrentThread().createStatement();
+			st=getConnectionAssociatedWithCurrentThread().getConnection().createStatement();
 			st.execute("CHECKPOINT"+(_defrag?" DEFRAG":""));
 		    }
 		    catch(SQLException e)
@@ -752,7 +752,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
 			    locker.lockWrite();
 			else
 			    locker.lockRead();
-			Connection sql_connection=getConnectionAssociatedWithCurrentThread();
+			Connection sql_connection=getConnectionAssociatedWithCurrentThread().getConnection();
 			PreparedStatement preparedStatement = sql_connection.prepareStatement(querry);
 			try
 			{
@@ -890,7 +890,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
     }
 
     @Override
-    protected void startTransaction(Connection _openedConnection, TransactionIsolation transactionIsolation, boolean write) throws SQLException
+    protected void startTransaction(Session _openedConnection, TransactionIsolation transactionIsolation, boolean write) throws SQLException
     {
 	String isoLevel=null;
 	switch(transactionIsolation)
@@ -915,7 +915,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
 	    
 	}
 	
-	try(Statement s=_openedConnection.createStatement())
+	try(Statement s=_openedConnection.getConnection().createStatement())
 	{
 	    s.executeQuery("START TRANSACTION"+(isoLevel!=null?(" ISOLATION LEVEL "+isoLevel+", "):"")+(write?"READ WRITE":"READ ONLY")+getSqlComma());
 	}

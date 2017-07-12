@@ -98,9 +98,10 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record>
 		concernedSerializedPrimaryKey=table.serializePrimaryKeys(_de.getOldDatabaseRecord());
 	    else
 		concernedSerializedPrimaryKey=table.serializePrimaryKeys(_de.getNewDatabaseRecord());
+	    if (concernedSerializedPrimaryKey==null)
+		throw new NullPointerException();
 	    if (_de.getOldDatabaseRecord()!=null && includeOldNonPKFields)
 		concernedSerializedOldNonPK=table.serializeFieldsNonPK(_de.getOldDatabaseRecord());
-	    
 	}
 	
 	DatabaseTransactionEventsTable.Record getTransaction()

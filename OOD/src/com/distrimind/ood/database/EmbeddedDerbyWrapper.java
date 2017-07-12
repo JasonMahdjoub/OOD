@@ -200,7 +200,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
     @Override
     protected boolean doesTableExists(String tableName) throws Exception
     {
-	Connection sql_connection=getConnectionAssociatedWithCurrentThread();
+	Connection sql_connection=getConnectionAssociatedWithCurrentThread().getConnection();
 	DatabaseMetaData dbmd = sql_connection.getMetaData();
 	ResultSet rs = dbmd.getTables(null, null, null, null);
 	while (rs.next())
@@ -214,7 +214,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
     @Override
     protected ColumnsReadQuerry getColumnMetaData(String tableName) throws Exception
     {
-	Connection sql_connection=getConnectionAssociatedWithCurrentThread();
+	Connection sql_connection=getConnectionAssociatedWithCurrentThread().getConnection();
 	return new CReadQuerry(sql_connection, sql_connection.getMetaData()
 		.getColumns(null, null, tableName, null));
     }
@@ -222,7 +222,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
     @Override
     protected void checkConstraints(Table<?> table) throws DatabaseException
     {
-	Connection sql_connection=getConnectionAssociatedWithCurrentThread();
+	Connection sql_connection=getConnectionAssociatedWithCurrentThread().getConnection();
 	try(ReadQuerry rq=new ReadQuerry(sql_connection, sql_connection.getMetaData().getPrimaryKeys(null, null, table.getName())))
 	{
 	    while (rq.result_set.next())
@@ -603,7 +603,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
 		    try
 		    {
 			locker.lockRead();
-			Connection sql_connection=getConnectionAssociatedWithCurrentThread();
+			Connection sql_connection=getConnectionAssociatedWithCurrentThread().getConnection();
 			PreparedStatement preparedStatement = sql_connection.prepareStatement(querry);
 			try
 			{
@@ -649,7 +649,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
     @Override
     protected void commit(Connection openedConnection) throws SQLException, DatabaseException
     {
-	getConnectionAssociatedWithCurrentThread().commit();
+	getConnectionAssociatedWithCurrentThread().getConnection().commit();
     }
 
     @Override

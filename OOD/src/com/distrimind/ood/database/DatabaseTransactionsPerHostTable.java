@@ -234,7 +234,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
     }   
     
     
-    protected boolean detectCollisionAndRemoveObsoleteEvents(final AbstractDecentralizedID comingFrom, final String concernedTable, final byte[] keys, final boolean force, final Set<DatabaseTransactionEventsTable.Record> toRemove) throws DatabaseException
+    protected boolean detectCollisionAndRemoveObsoleteEvents(final AbstractDecentralizedID comingFrom, final String concernedTable, final byte[] keys, final boolean force, final Set<DatabaseTransactionEventsTable.Record> toRemove, final Set<AbstractDecentralizedID> resendTo) throws DatabaseException
     {
 	
 	final AtomicBoolean collisionDetected=new AtomicBoolean(false);
@@ -249,10 +249,15 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 		    for (DatabaseTransactionsPerHostTable.Record rph : DatabaseTransactionsPerHostTable.this.getRecordsWithAllFields(new Object[]{"transaction", _record.getTransaction()}))
 		    {
 			toRemove.add(rph.getTransaction());
-			if (!force && rph.getHook().getHostID().equals(comingFrom))
+			if (!force)
 			{
-			    collisionDetected.set(true);
+			    if (rph.getHook().getHostID().equals(comingFrom))
+				collisionDetected.set(true);
+			    else if (!rph.getHook().concernsLocalDatabaseHost())
+				resendTo.add(rph.getHook().getHostID());
 			}
+			
+			    
 			/*else
 			    toRemove.add(rph.getTransaction());*/
 			    
@@ -269,6 +274,34 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 	}
 	return null;*/
     }
+    
+    /*protected void replaceDataFromDistantPeer(final AbstractDecentralizedID comingFrom, final DatabaseTransactionEvent transaction, final String concernedDatabasePackage, HashSet<DatabaseTransactionEventsTable.Record> toRemove) throws DatabaseException
+    {
+	removeObsoleteEvents(toRemove);
+	if (transaction.getEvents().isEmpty())
+	    return;
+	
+	
+	
+	final AtomicReference<DatabaseTransactionEventsTable.Record> tr=new AtomicReference<>();
+	getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
+
+	    @Override
+	    public boolean nextRecord(com.distrimind.ood.database.DatabaseHooksTable.Record _record) throws DatabaseException
+	    {
+		if (!_record.concernsLocalDatabaseHost() && !_record.getHostID().equals(comingFrom))
+		{
+		    if (tr.get()==null)
+			tr.set(getDatabaseTransactionEventsTable().addTransaction(concernedDatabasePackage, transaction));
+		    DatabaseTransactionsPerHostTable.Record trh=new DatabaseTransactionsPerHostTable.Record();
+		    trh.set(tr.get(), _record);
+		    addRecord(trh);
+		}
+		return false;
+	    }
+	    
+	});
+    }*/
     
     void removeObsoleteEvents(final HashSet<DatabaseTransactionEventsTable.Record> toRemove) throws DatabaseException
     {
@@ -291,7 +324,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 	    throw new NullPointerException("directPeerID");
 	if (directPeerID!=comingFrom && !indirectTransactionRead)
 	    throw new IllegalAccessError();
-	if (comingFrom.equals(getDatabaseHooksTable().getLocalDatabaseHost()))
+	if (comingFrom.equals(getDatabaseHooksTable().getLocalDatabaseHost().getHostID()))
 	    throw new IllegalArgumentException("The given distant host ID cannot be equals to the local host ID : "+comingFrom);
 	
 	ArrayList<DatabaseHooksTable.Record> hooks=getDatabaseHooksTable().getRecordsWithAllFields("hostID", comingFrom);
@@ -333,7 +366,9 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 				boolean transactionNotEmpty=false;
 				boolean validatedTransaction=true;
 				final HashSet<DatabaseTransactionEventsTable.Record> toRemove=new HashSet<>();
-				boolean transactionToResend=false;
+				final Set<AbstractDecentralizedID> hostsDestination=new HashSet<>();
+				
+				//boolean transactionToResend=false;
 
 				while (next.get()==EXPORT_DIRECT_TRANSACTION_EVENT)
 				{
@@ -388,7 +423,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
         			    if (validatedTransaction)
         			    {
         				HashSet<DatabaseTransactionEventsTable.Record> r=new HashSet<>();
-        				boolean collision=detectCollisionAndRemoveObsoleteEvents(fromHook.get().getHostID(), tableName, spks, dte.isForce(), r);
+        				boolean collision=detectCollisionAndRemoveObsoleteEvents(fromHook.get().getHostID(), tableName, spks, dte.isForce(), r, hostsDestination);
         				if (collision)
         				{
         				    if (!type.hasOldValue())
@@ -397,10 +432,10 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
         				    {
         					if (indirectTransactionRead)
         					{
-        					    transactionToResend=(validatedTransaction&=(eventForce=notifier.indirectCollisionDetected(directPeerID, type, t, mapKeys, drNew, drOld, fromHook.get().getHostID())));
+        					    validatedTransaction&=(eventForce=notifier.indirectCollisionDetected(directPeerID, type, t, mapKeys, drNew, drOld, fromHook.get().getHostID()));
         					}
         					else
-        					    transactionToResend=(validatedTransaction&=(eventForce=notifier.directCollisionDetected(directPeerID, type, t, mapKeys, drNew, drOld)));
+        					    validatedTransaction&=(eventForce=notifier.directCollisionDetected(directPeerID, type, t, mapKeys, drNew, drOld));
         				    }
         				    else
         					validatedTransaction=false;
@@ -416,9 +451,9 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
         				    case ADD:
         				    {
         					if (drOld!=null)
-        					    localDTE.addEvent(new TableEvent<>(-1, type, drOld, drNew, false, null, true, t));
+        					    localDTE.addEvent(new TableEvent<>(-1, type, drOld, drNew, null, null, true, t));
         					else
-        					    localDTE.addEvent(new TableEvent<>(-1, type, drOld, drNew, false));
+        					    localDTE.addEvent(new TableEvent<>(-1, type, drOld, drNew, null));
         				    }
         				    break;
         				    case REMOVE:case REMOVE_WITH_CASCADE:
@@ -432,11 +467,11 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
         						validatedTransaction=false;
         					    }
         					    else
-        						localDTE.addEvent(new TableEvent<>(-1, type, drOld, drNew, false, mapKeys, false, t));
+        						localDTE.addEvent(new TableEvent<>(-1, type, drOld, drNew, null, mapKeys, false, t));
         					}
         					else
         					{
-        					    localDTE.addEvent(new TableEvent<>(-1, type, drOld, drNew, false));
+        					    localDTE.addEvent(new TableEvent<>(-1, type, drOld, drNew, null));
         					}
         				    
         				    }
@@ -450,7 +485,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
         					}
         					else
         					{
-        					    localDTE.addEvent(new TableEvent<>(-1, type, drOld, drNew, false));
+        					    localDTE.addEvent(new TableEvent<>(-1, type, drOld, drNew, null));
         					}
         					break;
         				}
@@ -461,9 +496,11 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 				{
 			    	    if (validatedTransaction)
 			    	    {
-					final boolean transactionToResendFinal=dte.isForce()?false:transactionToResend;
+			    		removeObsoleteEvents(toRemove);
+			    		//replaceDataFromDistantPeer(comingFrom, localDTE, dte.concernedDatabasePackage, toRemove);
+					final boolean transactionToResendFinal=dte.isForce()?false:(hostsDestination!=null && !hostsDestination.isEmpty());
 				    
-					removeObsoleteEvents(toRemove);
+					
 					oos.flush();
 					DatabaseDistantTransactionEvent.Record ddte=new DatabaseDistantTransactionEvent.Record(dte.getID(), getIDTable().getLastTransactionID(), fromHook.get(), baos.toByteArray());
 					if (getDatabaseHooksTable().isConcernedByIndirectTransaction(ddte))
@@ -478,44 +515,44 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 						case ADD:
 						    if (te.isOldAlreadyPresent())
 						    {
-							te.getTable(getDatabaseWrapper()).updateUntypedRecord(te.getNewDatabaseRecord(), false, false);
+							te.getTable(getDatabaseWrapper()).updateUntypedRecord(te.getNewDatabaseRecord(), false, null);
 							if (transactionToResendFinal)
-							    getDatabaseWrapper().addEvent(te.getTable(getDatabaseWrapper()), new TableEvent<DatabaseRecord>(te.getID(), te.getType(), te.getOldDatabaseRecord(), te.getNewDatabaseRecord(), true));
+							    getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(te.getTable(getDatabaseWrapper()), new TableEvent<DatabaseRecord>(te.getID(), te.getType(), te.getOldDatabaseRecord(), te.getNewDatabaseRecord(), hostsDestination));
 						    }
 						    else
 						    {
-							te.getTable(getDatabaseWrapper()).addUntypedRecord(te.getNewDatabaseRecord(), true, transactionToResendFinal, transactionToResendFinal);
+							te.getTable(getDatabaseWrapper()).addUntypedRecord(te.getNewDatabaseRecord(), true, transactionToResendFinal, hostsDestination);
 						    }
 						    break;
 						case REMOVE:
 						    if (te.getOldDatabaseRecord()==null)
 						    {
 							if (transactionToResendFinal)
-							    getDatabaseWrapper().addEvent(te.getTable(getDatabaseWrapper()), new TableEvent<DatabaseRecord>(te.getID(), te.getType(), null, te.getNewDatabaseRecord(), true, te.getMapKeys(), false, te.getTable(getDatabaseWrapper())));
+							    getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(te.getTable(getDatabaseWrapper()), new TableEvent<DatabaseRecord>(te.getID(), te.getType(), null, te.getNewDatabaseRecord(), hostsDestination, te.getMapKeys(), false, te.getTable(getDatabaseWrapper())));
 						    }
 						    else
-							te.getTable(getDatabaseWrapper()).removeUntypedRecord(te.getOldDatabaseRecord(), transactionToResendFinal, transactionToResendFinal);
+							te.getTable(getDatabaseWrapper()).removeUntypedRecord(te.getOldDatabaseRecord(), transactionToResendFinal, hostsDestination);
 						    break;
 						case REMOVE_WITH_CASCADE:
 						    if (te.getOldDatabaseRecord()==null)
 						    {
 							if (transactionToResendFinal)
-							    getDatabaseWrapper().addEvent(te.getTable(getDatabaseWrapper()), new TableEvent<DatabaseRecord>(te.getID(), te.getType(), null, te.getNewDatabaseRecord(), true, te.getMapKeys(), false, te.getTable(getDatabaseWrapper())));
+							    getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(te.getTable(getDatabaseWrapper()), new TableEvent<DatabaseRecord>(te.getID(), te.getType(), null, te.getNewDatabaseRecord(), hostsDestination, te.getMapKeys(), false, te.getTable(getDatabaseWrapper())));
 						    }
 						    else
 						    {
-							te.getTable(getDatabaseWrapper()).removeUntypedRecordWithCascade(te.getOldDatabaseRecord(), transactionToResendFinal, transactionToResendFinal);
+							te.getTable(getDatabaseWrapper()).removeUntypedRecordWithCascade(te.getOldDatabaseRecord(), transactionToResendFinal, hostsDestination);
 						    }
 						    break;
 						case UPDATE:
 						    if (te.getOldDatabaseRecord()==null)
 						    {
-							te.getTable(getDatabaseWrapper()).addUntypedRecord(te.getNewDatabaseRecord(), true, false, false);
+							te.getTable(getDatabaseWrapper()).addUntypedRecord(te.getNewDatabaseRecord(), true, false, null);
 							if (transactionToResendFinal)
-							    getDatabaseWrapper().addEvent(te.getTable(getDatabaseWrapper()), new TableEvent<DatabaseRecord>(te.getID(), te.getType(), te.getNewDatabaseRecord(), te.getNewDatabaseRecord(), true));
+							    getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(te.getTable(getDatabaseWrapper()), new TableEvent<DatabaseRecord>(te.getID(), te.getType(), te.getNewDatabaseRecord(), te.getNewDatabaseRecord(), hostsDestination));
 						    }
 						    else
-							te.getTable(getDatabaseWrapper()).updateUntypedRecord(te.getNewDatabaseRecord(), transactionToResendFinal, transactionToResendFinal);
+							te.getTable(getDatabaseWrapper()).updateUntypedRecord(te.getNewDatabaseRecord(), transactionToResendFinal, hostsDestination);
 						    break;
 					    }
 					}

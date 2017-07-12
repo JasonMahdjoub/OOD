@@ -410,6 +410,9 @@ public abstract class TestDatabase
 	    
 	    Assert.assertTrue(r1.pk2==1);
 	    Assert.assertTrue(r2.pk2==1);
+		Assert.assertEquals(table1.getRecordsNumber(), 1);
+		Assert.assertEquals(table3.getRecordsNumber(), 1);
+
     }
     @Test(dependsOnMethods={"firstAdd"}) public void firstTestSize() throws DatabaseException
     {
@@ -461,12 +464,12 @@ public abstract class TestDatabase
     }
     @Test(dependsOnMethods={"firstReload"}) public void secondTestSize() throws DatabaseException
     {
-	Assert.assertTrue(table1.getRecordsNumber()==1);
-	Assert.assertTrue(table3.getRecordsNumber()==1);
+	Assert.assertEquals(table1.getRecordsNumber(), 1);
+	Assert.assertEquals(table3.getRecordsNumber(), 1);
 	
     }
     
-    @Test(dependsOnMethods={"firstReload"}) public void testFirstAdd() throws DatabaseException
+    @Test(dependsOnMethods={"secondTestSize"}) public void testFirstAdd() throws DatabaseException
     {
 	    byte[] tab=new byte[3];
 	    tab[0]=0;

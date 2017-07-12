@@ -1084,7 +1084,7 @@ public abstract class TestDecentralizedDatabase
 				record=generatesTablePointingRecord(pointedRecord.get((int)(Math.random()*pointedRecord.size())));
 			    break;
 		    }
-		    te=new TableEvent<DatabaseRecord>(-1, DatabaseEventType.ADD, null, record, false);
+		    te=new TableEvent<DatabaseRecord>(-1, DatabaseEventType.ADD, null, record, null);
 		    livingRecords.add(record);
 		    
 		}
@@ -1094,7 +1094,7 @@ public abstract class TestDecentralizedDatabase
 		    if (livingRecords.isEmpty())
 			continue;
 		    DatabaseRecord record=livingRecords.get((int) (Math.random()*livingRecords.size()));
-		    te=new TableEvent<DatabaseRecord>(-1, DatabaseEventType.REMOVE, record, null, false);
+		    te=new TableEvent<DatabaseRecord>(-1, DatabaseEventType.REMOVE, record, null, null);
 		    Assert.assertEquals(livingRecords.remove(record), true);
 		    pointedRecord.remove(record);
 		}
@@ -1104,7 +1104,7 @@ public abstract class TestDecentralizedDatabase
 		    if (livingRecords.isEmpty())
 			continue;
 		    DatabaseRecord record=livingRecords.get((int) (Math.random()*livingRecords.size()));
-		    te=new TableEvent<DatabaseRecord>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, record, null, false);
+		    te=new TableEvent<DatabaseRecord>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, record, null, null);
 		    Assert.assertEquals(livingRecords.remove(record), true);
 		    pointedRecord.remove(record);
 		}
@@ -1136,7 +1136,7 @@ public abstract class TestDecentralizedDatabase
 			r.table2=pointedRecord.get((int)(Math.random()*pointedRecord.size()));
 			recordNew=r;
 		    }
-		    te=new TableEvent<DatabaseRecord>(-1, DatabaseEventType.UPDATE, record, recordNew, false);
+		    te=new TableEvent<DatabaseRecord>(-1, DatabaseEventType.UPDATE, record, recordNew, null);
 		}
 		break;
 		     
@@ -1388,7 +1388,7 @@ public abstract class TestDecentralizedDatabase
     }
     private TableEvent<DatabaseRecord> clone(TableEvent<DatabaseRecord> event)
     {
-	return new TableEvent<DatabaseRecord>(event.getID(), event.getType(), clone(event.getOldDatabaseRecord()), clone(event.getNewDatabaseRecord()), event.isForce());
+	return new TableEvent<DatabaseRecord>(event.getID(), event.getType(), clone(event.getOldDatabaseRecord()), clone(event.getNewDatabaseRecord()), event.getHostsDestination());
     }
     private List<TableEvent<DatabaseRecord>> clone(List<TableEvent<DatabaseRecord>> events)
     {

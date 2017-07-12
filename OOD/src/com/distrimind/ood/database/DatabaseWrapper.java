@@ -66,7 +66,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.distrimind.ood.database.DatabaseHooksTable.Record;
 import com.distrimind.ood.database.Table.ColumnsReadQuerry;
@@ -92,33 +93,24 @@ public abstract class DatabaseWrapper implements AutoCloseable
     
     //protected Connection sql_connection;
     private volatile boolean closed=false;
-    private final String database_name;
+    protected final String database_name;
     private static final HashMap<String, ReadWriteLock> lockers=new HashMap<String, ReadWriteLock>();
     private static final HashMap<String, Integer> number_of_shared_lockers=new HashMap<String, Integer>();
     final static String ROW_COUNT_TABLES="ROW_COUNT_TABLES__";
     //private final HashMap<Class<? extends Table<?>>, Table<?>> tables_instances=new HashMap<>();
     private final ArrayList<ByteTabObjectConverter> converters;
     
-    private volatile HashMap<Package, Database> sql_database=new HashMap<Package, Database>();
+    volatile HashMap<Package, Database> sql_database=new HashMap<Package, Database>();
     //private final DatabaseMetaData dmd;
     private volatile DatabaseTransactionEventsTable transactionTable=null;
     private volatile DatabaseHooksTable databaseHooksTable=null;
     private volatile DatabaseTransactionsPerHostTable databaseTransactionsPerHostTable=null;
     private volatile DatabaseEventsTable databaseEventsTable=null;
     private volatile IDTable transactionIDTable=null;
-    private final File transactionsFile;
-    private volatile int maxTransactionsEventsKeepedIntoMemory=100; 
-    private OutputStream transactionOutputStream=null;
-    private ObjectOutputStream transactionObjectOutputStream=null;
-    private InputStream transactionInputStream=null;
-    private ObjectInputStream transactionObjectInputStream=null;
-    int currentTransactionsEventNummber=0;
-    private boolean currentTransactionToForce=false;
-    int currentTransactionsEventReadNummber=0;
-    private final HashSet<Package> transactionPackages=new HashSet<>();
-    private byte transactionTypes=0;
+    
     private final DatabaseSynchronizer synchronizer=new DatabaseSynchronizer();
     protected volatile int maxEventsToSynchronizeAtTheSameTime=1000;
+    volatile int maxTransactionsEventsKeepedIntoMemory=100;
     protected Database actualDatabaseLoading=null;
     
     
@@ -145,7 +137,7 @@ public abstract class DatabaseWrapper implements AutoCloseable
     private static class Database
     {
 	final HashMap<Class<? extends Table<?>>, Table<?>> tables_instances=new HashMap<Class<? extends Table<?>>, Table<?>>();
-	private DatabaseTransactionEvent currentTransaction=null;
+	
 	private final DatabaseConfiguration configuration;
 	public Database(DatabaseConfiguration configuration)
 	{
@@ -154,22 +146,7 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	    this.configuration=configuration;
 	}
 	
-	DatabaseTransactionEvent getCurrentTransaction()
-	{
-	    if (currentTransaction==null)
-		currentTransaction=new DatabaseTransactionEvent();
-	    return currentTransaction;
-	}
 	
-	void clearTransaction()
-	{
-	    currentTransaction=null;
-	}
-
-	boolean hasTransaction()
-	{
-	    return currentTransaction!=null;
-	}
 	DatabaseConfiguration getConfiguration()
 	{
 	    return configuration;
@@ -243,7 +220,7 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	locker=getLocker();
 	converters=new ArrayList<>();
 	converters.add(new DefaultByteTabObjectConverter());
-	this.transactionsFile=new File(database_name+".tmp.transactions");
+	
 	
     }
     
@@ -256,8 +233,8 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	        {
 	            try
 	            {
-	        	Connection sql_connection=getConnectionAssociatedWithCurrentThread();
-	        	return new Boolean(sql_connection.isReadOnly());
+	        	Session sql_connection=getConnectionAssociatedWithCurrentThread();
+	        	return new Boolean(sql_connection.getConnection().isReadOnly());
 	            }
 	            catch(SQLException e)
 	            {
@@ -290,8 +267,8 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	        {
 	            try
 	            {
-	        	Connection sql_connection=getConnectionAssociatedWithCurrentThread();
-	        	return new Integer(sql_connection.getNetworkTimeout());
+	        	Session sql_connection=getConnectionAssociatedWithCurrentThread();
+	        	return new Integer(sql_connection.getConnection().getNetworkTimeout());
 	            }
 	            catch(SQLException e)
 	            {
@@ -457,6 +434,7 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	    }
 	}
 	
+	@SuppressWarnings("unlikely-arg-type")
 	public void initLocalHostID(AbstractDecentralizedID localHostID) throws DatabaseException
 	{
 	    DatabaseHooksTable.Record local=getHooksTransactionsTable().getLocalDatabaseHost();
@@ -652,6 +630,7 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	
 	
 	
+	@SuppressWarnings("unlikely-arg-type")
 	public void initHook(final AbstractDecentralizedID hostID, final long lastValidatedTransacionID) throws DatabaseException
 	{
 	    if (hostID==null)
@@ -1013,10 +992,11 @@ public abstract class DatabaseWrapper implements AutoCloseable
      * @return The Sql connection.
      * @throws SQLException 
      */
-    Connection getOpenedSqlConnection(Connection sql_connection) throws DatabaseException
+    Connection getOpenedSqlConnection(Session transaction) throws DatabaseException
     {
 	try
 	{
+	    Connection sql_connection=transaction==null?null:transaction.getConnection();
 	    if (sql_connection==null || sql_connection.isClosed() || !sql_connection.isValid(5))
 	    {
 		//this.locker.lockWrite();
@@ -1062,15 +1042,15 @@ public abstract class DatabaseWrapper implements AutoCloseable
 		    synchronized(this.threadPerConnectionInProgress)
 		    {
 			closed=true;
-			for (Iterator<Entry<Thread, Connection>> it= threadPerConnection.entrySet().iterator();it.hasNext();)
+			for (Iterator<Session> it= threadPerConnection.iterator();it.hasNext();)
 			{
-			    Entry<Thread, Connection> c=it.next();
+			    Session s=it.next();
 			    /*if (threadPerConnectionInProgress.containsKey(c.getKey()))
 				continue;*/
 			    try
 			    {
-				if (!c.getValue().isClosed())
-				    closeConnection(c.getValue(), true);
+				if (!s.getConnection().isClosed())
+				    closeConnection(s.getConnection(), true);
 			    }
 			    catch(SQLException e)
 			    {
@@ -1164,17 +1144,474 @@ public abstract class DatabaseWrapper implements AutoCloseable
     }
     
     final ReadWriteLock locker;
+    static final AtomicLong transactionFileIDCounter=new AtomicLong(0);
+    class Session
+    {
+	private Connection connection;
+	private final Thread thread;
+	private final long threadID;
+	private final File transactionsFile;
+	
+	
+	private OutputStream transactionOutputStream=null;
+	private ObjectOutputStream transactionObjectOutputStream=null;
+	private InputStream transactionInputStream=null;
+	private ObjectInputStream transactionObjectInputStream=null;
+	protected int currentTransactionsEventNummber=0;
+	protected int currentTransactionsEventReadNummber=0;
+	private final HashSet<Package> transactionPackages=new HashSet<>();
+	private Set<AbstractDecentralizedID> hostsDestination=null;
+	private byte transactionTypes=0;
+	private final Map<Package, DatabaseTransactionEvent> currentTransactionsPerDatabase=new HashMap<>();
+	
+	
+	Session(Connection connection, Thread thread)
+	{
+	    
+	    this.connection=connection;
+	    this.thread=thread;
+	    this.threadID=thread.getId();
+	    this.transactionsFile=new File(database_name+".tmp.transaction"+Long.toHexString(transactionFileIDCounter.incrementAndGet()));
+	}
+	DatabaseTransactionEvent getCurrentTransaction(Package p)
+	{
+	    if (p==null)
+		throw new NullPointerException();
+	    DatabaseTransactionEvent currentTransaction=currentTransactionsPerDatabase.get(p);
+	    
+	    if (currentTransaction==null)
+		currentTransactionsPerDatabase.put(p, currentTransaction=new DatabaseTransactionEvent());
+	    return currentTransaction;
+	}
+	boolean hasTransaction(Package p)
+	{
+	    return currentTransactionsPerDatabase.containsKey(p);
+	}
+	
+	void setConnection(Connection c)
+	{
+	    connection=c;
+	}
+	
+	Connection getConnection()
+	{
+	    return connection;
+	}
+	
+	boolean isConcernedBy(Thread t)
+	{
+	    return threadID==t.getId();
+	}
+	
+	public Thread getThread()
+	{
+	    return thread;
+	}
+	
+	    void ensureTransactionOutputStreamClosed() throws DatabaseException
+	    {
+		if (this.transactionObjectOutputStream!=null)
+		{
+		    try
+		    {
+			transactionObjectOutputStream.close();
+		    }
+		    catch(Exception e)
+		    {
+			throw DatabaseException.getDatabaseException(e);
+		    }
+		    finally
+		    {
+			try
+			{
+			    transactionOutputStream.close();
+			}
+			catch(Exception e)
+			{
+			    throw DatabaseException.getDatabaseException(e);
+			}
+			finally
+			{
+			    transactionObjectOutputStream=null;
+			    transactionOutputStream=null;
+			}
+		    }
+		}
+	    }
+	    
+	    void ensureTransactionInputStreamClosed() throws DatabaseException
+	    {
+		if (this.transactionObjectInputStream!=null)
+		{
+		    try
+		    {
+			transactionObjectInputStream.close();
+		    }
+		    catch(Exception e)
+		    {
+			throw DatabaseException.getDatabaseException(e);
+		    }
+		    finally
+		    {
+			try
+			{
+			    transactionInputStream.close();
+			}
+			catch(Exception e)
+			{
+			    throw DatabaseException.getDatabaseException(e);
+			}
+			finally
+			{
+			    transactionObjectInputStream=null;
+			    transactionInputStream=null;
+			}
+		    }
+		}
+	    }
+	    
+	    private boolean areTransactionsStoredIntoTemporaryFile()
+	    {
+		return transactionObjectOutputStream!=null;
+	    }
+	    
+	    private ObjectOutputStream getTransactionsOutputStream() throws DatabaseException
+	    {
+		if (transactionObjectOutputStream==null)
+		{
+		    try
+		    {
+			transactionOutputStream=new FileOutputStream(transactionsFile);
+		    }
+		    catch(Exception e)
+		    {
+			throw DatabaseException.getDatabaseException(e);
+		    }
+		    try
+		    {
+			transactionObjectOutputStream=new ObjectOutputStream(transactionOutputStream);
+		    }
+		    catch(Exception e)
+		    {
+			try
+			{
+			    transactionOutputStream.close();
+			}
+			catch(Exception e2)
+			{
+			    e2.printStackTrace();
+			}
+			finally
+			{
+			    transactionOutputStream=null;
+			}
+			throw DatabaseException.getDatabaseException(e);
+		    }
+		}
+		return transactionObjectOutputStream;
+	    }
+	    
+	    private ObjectInputStream getTransactionsInputStream() throws DatabaseException
+	    {
+		ensureTransactionOutputStreamClosed();
+		if (transactionObjectInputStream==null)
+		{
+		    currentTransactionsEventReadNummber=0;
+		    try
+		    {
+			transactionInputStream=new FileInputStream(transactionsFile);
+		    }
+		    catch(Exception e)
+		    {
+			throw DatabaseException.getDatabaseException(e);
+		    }
+		    try
+		    {
+			transactionObjectInputStream=new ObjectInputStream(transactionInputStream);
+			
+		    }
+		    catch(Exception e)
+		    {
+			try
+			{
+			    transactionInputStream.close();
+			}
+			catch(Exception e2)
+			{
+			    e2.printStackTrace();
+			}
+			finally
+			{
+			    transactionInputStream=null;
+			}
+			throw DatabaseException.getDatabaseException(e);
+		    }
+		}
+		return transactionObjectInputStream;
+	    }
+	    
+	    
+	    private <T extends DatabaseRecord> boolean storeEvent(TableEvent<T> de) throws DatabaseException
+	    {
+		try
+		{
+		    
+		    Table<T> table=de.getTable(DatabaseWrapper.this);
+		    transactionPackages.add(table.getClass().getPackage());
+		    ObjectOutputStream oos=getTransactionsOutputStream();
+		    String tableName=table.getClass().getName();
+		    oos.writeInt(tableName.length());
+		    oos.writeChars(tableName);
+		    oos.writeByte(de.getType().getByte());
+		    byte pk[];
+		    if (de.getMapKeys()!=null)
+		    {
+			pk=table.serializePrimaryKeys(de.getMapKeys());
+		    }
+		    else if (de.getOldDatabaseRecord()!=null)
+		    {
+			pk=table.serializePrimaryKeys(de.getOldDatabaseRecord());
+		    }
+		    else
+		    {
+			pk=table.serializePrimaryKeys(de.getNewDatabaseRecord());
+		    }
+		    oos.writeInt(pk.length);
+		    oos.write(pk);
+		    /*if (de.getOldDatabaseRecord()==null)
+			oos.writeInt(-1);
+		    else
+		    {
+			byte tab[]=table.serializeFieldsNonPK(de.getOldDatabaseRecord());
+			oos.writeInt(tab.length);
+			oos.write(tab);
+		    }*/
+		    return true;
+		}
+		catch(Exception e)
+		{
+		    throw DatabaseException.getDatabaseException(e);
+		}
+	    }
+	    
+	    
+	    
+	    private Iterator<DatabaseEventsTable.Record> getEventsStoredInFileIterator() throws DatabaseException
+	    {
+		ensureTransactionInputStreamClosed();
+		return new Iterator<DatabaseEventsTable.Record>() {
+
+		    private int order=0;
+		    
+		    @Override
+		    public boolean hasNext()
+		    {
+			return currentTransactionsEventReadNummber<currentTransactionsEventNummber;
+		    }
+
+		    @Override
+		    public DatabaseEventsTable.Record next()
+		    {
+			try
+			{
+			    return getNextDatabaseEventRecord(order++);
+			}
+			catch(Exception e)
+			{
+			    e.printStackTrace();
+			    return null;
+			}
+		    }
+
+		    @Override
+		    public void remove()
+		    {
+			throw new IllegalAccessError();
+			
+		    }
+		};	
+	    }
+	    
+	    DatabaseEventsTable.Record getNextDatabaseEventRecord(int order) throws DatabaseException
+	    {
+		try
+		{
+		    ObjectInputStream ois=getTransactionsInputStream();
+		    int size=ois.readInt();
+		    char chars[]=new char[size];
+		    for (int i=0;i<size;i++)
+			chars[i]=ois.readChar();
+		    DatabaseEventsTable.Record r=new DatabaseEventsTable.Record();
+		    r.setPosition(order);
+		    r.setConcernedTable(String.copyValueOf(chars));
+		    
+		    r.setType(ois.readByte());
+		    
+		    size=ois.readInt();
+		    byte pk[]=new byte[size];
+		    if (ois.read(pk)!=size)
+			throw new DatabaseException("Unexpected exception !");
+		    
+		    r.setConcernedSerializedPrimaryKey(pk);
+		    /*size=ois.readInt();
+		    if (size!=-1)
+		    {
+			byte old[]=new byte[size];
+			if (ois.read(old)!=size)
+			    throw new DatabaseException("Unexpected exception !");
+			r.setConcernedSerializedOldNonPK(old);
+		    }
+		    else
+			r.setConcernedSerializedOldNonPK(null);*/
+		    this.currentTransactionsEventReadNummber++;
+		    return r;
+		    
+		}
+		catch(Exception e)
+		{
+		    throw DatabaseException.getDatabaseException(e);
+		}
+	    }
+	    
+	    boolean addEvent(Table<?> table, TableEvent<?> de) throws DatabaseException
+	    {
+		if (table==null)
+		    throw new NullPointerException("table");
+		if (de==null)
+		    throw new NullPointerException("de");
+		if (!table.supportSynchronizationWithOtherPeers())
+		    return false;
+		Package p=table.getClass().getPackage();
+		if (p.equals(DatabaseWrapper.class.getPackage()))
+		    return false;
+		if (!getHooksTransactionsTable().supportPackage(p))
+		    return false;
+		Database d=sql_database.get(p);
+		
+		if (d!=null)
+		{
+		    Set<AbstractDecentralizedID> hd=de.getHostsDestination();
+		    if (hd!=null)
+		    {
+			if (hostsDestination==null)
+			    hostsDestination=new HashSet<>();
+			hostsDestination.addAll(hd);
+		    }
+		    if (currentTransactionsEventNummber<DatabaseWrapper.this.maxTransactionsEventsKeepedIntoMemory)
+		    {
+			if (getCurrentTransaction(p).addEvent(de))
+			{
+			    transactionTypes|=de.getType().getByte();
+			    currentTransactionsEventNummber++;
+			    return true;
+			}
+			else
+			    return false;
+		    }
+		    else
+		    {
+			if (!areTransactionsStoredIntoTemporaryFile())
+			{
+			    for (Database d2 : sql_database.values())
+			    {
+				if (hasTransaction(d2.getConfiguration().getPackage()))
+				{
+				    for (TableEvent<?> de2 : getCurrentTransaction(d2.getConfiguration().getPackage()).getEvents())
+					storeEvent(de2);
+				}
+			    }
+			}
+			if (storeEvent(de))
+			{
+			    transactionTypes|=de.getType().getByte();
+			    currentTransactionsEventNummber++;
+			    return true;
+			}
+			else
+			    return false;
+		    }
+		}
+		else
+		    return false;
+	    }
+	    void clearTransactions(boolean commit) throws DatabaseException
+	    {
+		boolean transactionOK=false;
+		if (currentTransactionsEventNummber>maxTransactionsEventsKeepedIntoMemory)
+		{
+		    if (commit)
+		    {
+			transactionOK=true;
+			for (Package p : transactionPackages)
+			{
+			    getTransactionsTable().addTransactionIfNecessary(p, getEventsStoredInFileIterator(), transactionTypes, hostsDestination);
+			}
+		    }
+		}
+		else
+		{
+		    for (Map.Entry<Package, DatabaseTransactionEvent> e : currentTransactionsPerDatabase.entrySet())
+		    {
+			DatabaseTransactionEvent dte=e.getValue();
+			if (commit)
+			{
+			    transactionOK=true;
+			    getTransactionsTable().addTransactionIfNecessary(sql_database.get(e.getKey()).getConfiguration(), dte, transactionTypes, hostsDestination);
+			}
+			
+		    }
+		}
+		ensureTransactionOutputStreamClosed();
+		ensureTransactionInputStreamClosed();
+		if (this.transactionsFile.exists())
+		    this.transactionsFile.delete();
+		transactionPackages.clear();
+		currentTransactionsEventNummber=0;
+		transactionTypes=0;
+		hostsDestination=null;
+		currentTransactionsPerDatabase.clear();
+		if (transactionOK)
+		{
+		    getSynchronizer().notifyNewTransactionsIfNecessary();
+		}
+	    }
+
+
+
+	
+    }
     //private final AtomicBoolean transaction_already_running=new AtomicBoolean(false);
-    private final Map<Thread, Connection> threadPerConnectionInProgress=new HashMap<>();
-    private final Map<Thread, Connection> threadPerConnection=new HashMap<>();
+    private final List<Session> threadPerConnectionInProgress=new ArrayList<>();
+    private final List<Session> threadPerConnection=new ArrayList<>();
     
+    private static Session getSession(List<Session> sessions, Thread t)
+    {
+	for (Session s : sessions)
+	    if (s.isConcernedBy(t))
+		return s;
+	return null;
+    }
+    private static Session removeSession(List<Session> sessions, Thread t)
+    {
+	for (Iterator<Session> it=sessions.iterator();it.hasNext();)
+	{
+	    Session s=it.next();
+	
+	    if (s.isConcernedBy(t))
+	    {
+		it.remove();
+		return s; 
+	    }
+	}
+	return null;
+    }
     
     private static class ConnectionWrapper
     {
-	final Connection connection;
+	final Session connection;
 	final boolean newTransaction;
 	
-	ConnectionWrapper(Connection connection, boolean newTransaction)
+	ConnectionWrapper(Session connection, boolean newTransaction)
 	{
 	    this.connection=connection;
 	    this.newTransaction=newTransaction;
@@ -1186,13 +1623,17 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	Thread t=Thread.currentThread();
 	synchronized(threadPerConnectionInProgress)
 	{
-	    Connection c=threadPerConnectionInProgress.get(t);
+	    Session c=getSession(threadPerConnectionInProgress, t);
 	    
 	    if (c==null)
 	    {
-		c=getOpenedSqlConnection(threadPerConnection.get(t));
-		threadPerConnection.put(t, c);
-		threadPerConnectionInProgress.put(t, c);
+		c=getSession(threadPerConnection, t);
+		if (c==null)
+		{
+		    c=new Session(getOpenedSqlConnection(null), t);
+		    threadPerConnection.add(c);
+		}
+		threadPerConnectionInProgress.add(c);
 
 		return new ConnectionWrapper(c, true); 
 	    }
@@ -1201,16 +1642,18 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	}
     }
     
-    protected Connection getConnectionAssociatedWithCurrentThread() throws DatabaseException
+    protected Session getConnectionAssociatedWithCurrentThread() throws DatabaseException
     {
 	synchronized(threadPerConnectionInProgress)
 	{
-	    Connection c=threadPerConnectionInProgress.get(Thread.currentThread());
+	    Session c=getSession(threadPerConnectionInProgress, Thread.currentThread());
 	    
 	    Connection c2=getOpenedSqlConnection(c);
-	    if (c!=c2)
-		threadPerConnectionInProgress.put(Thread.currentThread(), c2);
-	    return c2;
+	    if (c.getConnection()!=c2)
+	    {
+		c.setConnection(c2);
+	    }
+	    return c;
 	}
     }
     
@@ -1220,23 +1663,23 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	{
 	    try
 	    {
-		Connection c=threadPerConnectionInProgress.remove(Thread.currentThread());
+		Session c=removeSession(threadPerConnectionInProgress, Thread.currentThread());
 		if (c==null)
 		    throw new IllegalAccessError();
 		if (closed)
 		{
-		    if (!c.isClosed())
-			closeConnection(c, true);
+		    if (!c.getConnection().isClosed())
+			closeConnection(c.getConnection(), true);
 		}
 	    
-		for (Iterator<Entry<Thread, Connection>> it=threadPerConnection.entrySet().iterator();it.hasNext();)
+		for (Iterator<Session> it=threadPerConnection.iterator();it.hasNext();)
 		{
-		    Entry<Thread, Connection> e=it.next();
+		    Session s=it.next();
 		    
-		    if (!e.getKey().isAlive())
+		    if (!s.getThread().isAlive())
 		    {
-			if (!e.getValue().isClosed() && !e.getValue().isClosed())
-			    closeConnection(e.getValue(), false);
+			if (!s.getConnection().isClosed() && !s.getConnection().isClosed())
+			    closeConnection(s.getConnection(), false);
 
 			it.remove();
 		    }
@@ -1252,7 +1695,7 @@ public abstract class DatabaseWrapper implements AutoCloseable
     
     //private volatile boolean transaction_already_running=false;
     
-    private boolean setTransactionIsolation(Connection sql_connection, TransactionIsolation transactionIsolation, boolean write) throws SQLException, DatabaseException
+    private boolean setTransactionIsolation(Session sql_connection, TransactionIsolation transactionIsolation, boolean write) throws SQLException, DatabaseException
     {
 	//Connection sql_connection=getOpenedSqlConnection();
 	
@@ -1272,7 +1715,7 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	
 	if (supportTransactions())
 	{
-	    DatabaseMetaData dmd=getConnectionAssociatedWithCurrentThread().getMetaData();
+	    DatabaseMetaData dmd=getConnectionAssociatedWithCurrentThread().getConnection().getMetaData();
 	    if (dmd.supportsTransactionIsolationLevel(transactionIsolation.getCode()))
 	    {
 		return transactionIsolation;
@@ -1312,7 +1755,7 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	    {
 		try
 		{
-		    return new Boolean(getConnectionAssociatedWithCurrentThread().getMetaData().supportsTransactions());
+		    return new Boolean(getConnectionAssociatedWithCurrentThread().getConnection().getMetaData().supportsTransactions());
 		}
 		catch(SQLException e)
 		{
@@ -1334,379 +1777,18 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	})).booleanValue();
     }
     
-    protected void startTransaction(Connection _openedConnection, TransactionIsolation transactionIsolation, boolean write) throws SQLException
+    protected void startTransaction(Session _openedConnection, TransactionIsolation transactionIsolation, boolean write) throws SQLException
     {
-	_openedConnection.setTransactionIsolation(transactionIsolation.getCode());
+	_openedConnection.getConnection().setTransactionIsolation(transactionIsolation.getCode());
     }
     
-    protected void endTransaction(Connection _openedConnection)
+    protected void endTransaction(Session _openedConnection)
     {
 	
     }
     
-    private void ensureTransactionOutputStreamClosed() throws DatabaseException
-    {
-	if (this.transactionObjectOutputStream!=null)
-	{
-	    try
-	    {
-		transactionObjectOutputStream.close();
-	    }
-	    catch(Exception e)
-	    {
-		throw DatabaseException.getDatabaseException(e);
-	    }
-	    finally
-	    {
-		try
-		{
-		    transactionOutputStream.close();
-		}
-		catch(Exception e)
-		{
-		    throw DatabaseException.getDatabaseException(e);
-		}
-		finally
-		{
-		    transactionObjectOutputStream=null;
-		    transactionOutputStream=null;
-		}
-	    }
-	}
-    }
-    
-    private void ensureTransactionInputStreamClosed() throws DatabaseException
-    {
-	if (this.transactionObjectInputStream!=null)
-	{
-	    try
-	    {
-		transactionObjectInputStream.close();
-	    }
-	    catch(Exception e)
-	    {
-		throw DatabaseException.getDatabaseException(e);
-	    }
-	    finally
-	    {
-		try
-		{
-		    transactionInputStream.close();
-		}
-		catch(Exception e)
-		{
-		    throw DatabaseException.getDatabaseException(e);
-		}
-		finally
-		{
-		    transactionObjectInputStream=null;
-		    transactionInputStream=null;
-		}
-	    }
-	}
-    }
 
-    private void clearTransactions(boolean commit) throws DatabaseException
-    {
-	boolean transactionOK=false;
-	if (currentTransactionsEventNummber>maxTransactionsEventsKeepedIntoMemory)
-	{
-	    if (commit)
-	    {
-		transactionOK=true;
-		for (Package p : transactionPackages)
-		{
-		    getTransactionsTable().addTransactionIfNecessary(p, getEventsStoredInFileIterator(), transactionTypes, currentTransactionToForce);
-		}
-	    }
-	}
-	else
-	{
-	    for (Map.Entry<Package, Database> e : this.sql_database.entrySet())
-	    {
-		Database d=e.getValue();
-		if (commit)
-		{
-		    if (d.hasTransaction())
-		    {
-			transactionOK=true;
-			getTransactionsTable().addTransactionIfNecessary(e.getValue().getConfiguration(), d.getCurrentTransaction(), transactionTypes);
-		    }
-		}
-		d.clearTransaction();
-	    }
-	}
-	ensureTransactionOutputStreamClosed();
-	ensureTransactionInputStreamClosed();
-	if (this.transactionsFile.exists())
-	    this.transactionsFile.delete();
-	transactionPackages.clear();
-	currentTransactionsEventNummber=0;
-	transactionTypes=0;
-	currentTransactionToForce=false;
-	if (transactionOK)
-	{
-	    getSynchronizer().notifyNewTransactionsIfNecessary();
-	}
-    }
     
-    private boolean areTransactionsStoredIntoTemporaryFile()
-    {
-	return transactionObjectOutputStream!=null;
-    }
-    
-    private ObjectOutputStream getTransactionsOutputStream() throws DatabaseException
-    {
-	if (transactionObjectOutputStream==null)
-	{
-	    try
-	    {
-		transactionOutputStream=new FileOutputStream(transactionsFile);
-	    }
-	    catch(Exception e)
-	    {
-		throw DatabaseException.getDatabaseException(e);
-	    }
-	    try
-	    {
-		transactionObjectOutputStream=new ObjectOutputStream(transactionOutputStream);
-	    }
-	    catch(Exception e)
-	    {
-		try
-		{
-		    transactionOutputStream.close();
-		}
-		catch(Exception e2)
-		{
-		    e2.printStackTrace();
-		}
-		finally
-		{
-		    transactionOutputStream=null;
-		}
-		throw DatabaseException.getDatabaseException(e);
-	    }
-	}
-	return transactionObjectOutputStream;
-    }
-    
-    private ObjectInputStream getTransactionsInputStream() throws DatabaseException
-    {
-	ensureTransactionOutputStreamClosed();
-	if (transactionObjectInputStream==null)
-	{
-	    currentTransactionsEventReadNummber=0;
-	    try
-	    {
-		transactionInputStream=new FileInputStream(transactionsFile);
-	    }
-	    catch(Exception e)
-	    {
-		throw DatabaseException.getDatabaseException(e);
-	    }
-	    try
-	    {
-		transactionObjectInputStream=new ObjectInputStream(transactionInputStream);
-		
-	    }
-	    catch(Exception e)
-	    {
-		try
-		{
-		    transactionInputStream.close();
-		}
-		catch(Exception e2)
-		{
-		    e2.printStackTrace();
-		}
-		finally
-		{
-		    transactionInputStream=null;
-		}
-		throw DatabaseException.getDatabaseException(e);
-	    }
-	}
-	return transactionObjectInputStream;
-    }
-    
-    
-    private <T extends DatabaseRecord> boolean storeEvent(TableEvent<T> de) throws DatabaseException
-    {
-	try
-	{
-	    currentTransactionToForce|=de.isForce();
-	    Table<T> table=de.getTable(this);
-	    transactionPackages.add(table.getClass().getPackage());
-	    ObjectOutputStream oos=getTransactionsOutputStream();
-	    String tableName=table.getClass().getName();
-	    oos.writeInt(tableName.length());
-	    oos.writeChars(tableName);
-	    oos.writeByte(de.getType().getByte());
-	    byte pk[];
-	    if (de.getMapKeys()!=null)
-	    {
-		pk=table.serializePrimaryKeys(de.getMapKeys());
-	    }
-	    else if (de.getOldDatabaseRecord()!=null)
-	    {
-		pk=table.serializePrimaryKeys(de.getOldDatabaseRecord());
-	    }
-	    else
-	    {
-		pk=table.serializePrimaryKeys(de.getNewDatabaseRecord());
-	    }
-	    oos.writeInt(pk.length);
-	    oos.write(pk);
-	    /*if (de.getOldDatabaseRecord()==null)
-		oos.writeInt(-1);
-	    else
-	    {
-		byte tab[]=table.serializeFieldsNonPK(de.getOldDatabaseRecord());
-		oos.writeInt(tab.length);
-		oos.write(tab);
-	    }*/
-	    return true;
-	}
-	catch(Exception e)
-	{
-	    throw DatabaseException.getDatabaseException(e);
-	}
-    }
-    
-    
-    
-    private Iterator<DatabaseEventsTable.Record> getEventsStoredInFileIterator() throws DatabaseException
-    {
-	ensureTransactionInputStreamClosed();
-	return new Iterator<DatabaseEventsTable.Record>() {
-
-	    private int order=0;
-	    
-	    @Override
-	    public boolean hasNext()
-	    {
-		return currentTransactionsEventReadNummber<currentTransactionsEventNummber;
-	    }
-
-	    @Override
-	    public DatabaseEventsTable.Record next()
-	    {
-		try
-		{
-		    return getNextDatabaseEventRecord(order++);
-		}
-		catch(Exception e)
-		{
-		    e.printStackTrace();
-		    return null;
-		}
-	    }
-
-	    @Override
-	    public void remove()
-	    {
-		throw new IllegalAccessError();
-		
-	    }
-	};	
-    }
-    
-    DatabaseEventsTable.Record getNextDatabaseEventRecord(int order) throws DatabaseException
-    {
-	try
-	{
-	    ObjectInputStream ois=getTransactionsInputStream();
-	    int size=ois.readInt();
-	    char chars[]=new char[size];
-	    for (int i=0;i<size;i++)
-		chars[i]=ois.readChar();
-	    DatabaseEventsTable.Record r=new DatabaseEventsTable.Record();
-	    r.setPosition(order);
-	    r.setConcernedTable(String.copyValueOf(chars));
-	    
-	    r.setType(ois.readByte());
-	    
-	    size=ois.readInt();
-	    byte pk[]=new byte[size];
-	    if (ois.read(pk)!=size)
-		throw new DatabaseException("Unexpected exception !");
-	    
-	    r.setConcernedSerializedPrimaryKey(pk);
-	    /*size=ois.readInt();
-	    if (size!=-1)
-	    {
-		byte old[]=new byte[size];
-		if (ois.read(old)!=size)
-		    throw new DatabaseException("Unexpected exception !");
-		r.setConcernedSerializedOldNonPK(old);
-	    }
-	    else
-		r.setConcernedSerializedOldNonPK(null);*/
-	    this.currentTransactionsEventReadNummber++;
-	    return r;
-	    
-	}
-	catch(Exception e)
-	{
-	    throw DatabaseException.getDatabaseException(e);
-	}
-    }
-    
-    boolean addEvent(Table<?> table, TableEvent<?> de) throws DatabaseException
-    {
-	if (table==null)
-	    throw new NullPointerException("table");
-	if (de==null)
-	    throw new NullPointerException("de");
-	if (!table.supportSynchronizationWithOtherPeers())
-	    return false;
-	Package p=table.getClass().getPackage();
-	if (p.equals(DatabaseWrapper.class.getPackage()))
-	    return false;
-	if (!getHooksTransactionsTable().supportPackage(p))
-	    return false;
-	Database d=sql_database.get(p);
-	if (d!=null)
-	{
-	    if (currentTransactionsEventNummber<this.maxTransactionsEventsKeepedIntoMemory)
-	    {
-		if (d.getCurrentTransaction().addEvent(de))
-		{
-		    transactionTypes|=de.getType().getByte();
-		    currentTransactionsEventNummber++;
-		    return true;
-		}
-		else
-		    return false;
-	    }
-	    else
-	    {
-		if (!areTransactionsStoredIntoTemporaryFile())
-		{
-		    for (Database d2 : sql_database.values())
-		    {
-			if (d2.hasTransaction())
-			{
-			    for (TableEvent<?> de2 : d2.getCurrentTransaction().getEvents())
-				storeEvent(de2);
-			    d2.clearTransaction();
-			}
-		    }
-		}
-		if (storeEvent(de))
-		{
-		    transactionTypes|=de.getType().getByte();
-		    currentTransactionsEventNummber++;
-		    return true;
-		}
-		else
-		    return false;
-	    }
-	}
-	else
-	    return false;
-    }
 
     protected abstract void rollback(Connection openedConnection) throws SQLException;
     
@@ -1743,7 +1825,7 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	ConnectionWrapper cw=isNewTransactionAndStartIt();
 	if (cw.newTransaction)
 	{
-	    currentTransactionToForce=false;
+	    
 	    String savePointName=null;
 	    Savepoint savePoint=null;
 	    try
@@ -1751,19 +1833,19 @@ public abstract class DatabaseWrapper implements AutoCloseable
 		
 		setTransactionIsolation(cw.connection, _transaction.getTransactionIsolation(), _transaction.doesWriteData());
 		
-		if (_transaction.doesWriteData() && supportSavePoint(cw.connection))
+		if (_transaction.doesWriteData() && supportSavePoint(cw.connection.getConnection()))
 		{
 		    savePointName=generateSavePointName();
-		    savePoint=savePoint(cw.connection, savePointName);
+		    savePoint=savePoint(cw.connection.getConnection(), savePointName);
 		}
 		res=_transaction.run(this);
 		if (_transaction.doesWriteData())
-		    clearTransactions(true);
-		commit(cw.connection);
+		    cw.connection.clearTransactions(true);
+		commit(cw.connection.getConnection());
 		if (_transaction.doesWriteData())
 		{
 		    if (savePoint!=null)
-			releasePoint(cw.connection, savePointName, savePoint);
+			releasePoint(cw.connection.getConnection(), savePointName, savePoint);
 		    
 		}
 		
@@ -1774,13 +1856,13 @@ public abstract class DatabaseWrapper implements AutoCloseable
 		try
 		{
 		    if (_transaction.doesWriteData())
-			clearTransactions(false);
-		    rollback(cw.connection);
+			cw.connection.clearTransactions(false);
+		    rollback(cw.connection.getConnection());
 		    if (_transaction.doesWriteData())
 		    {
 			if (savePoint!=null || savePointName!=null)
 			{
-			    releasePoint(cw.connection, savePointName, savePoint);
+			    releasePoint(cw.connection.getConnection(), savePointName, savePoint);
 			}
 			
 		    }
@@ -1796,13 +1878,13 @@ public abstract class DatabaseWrapper implements AutoCloseable
 		try
 		{
 		    if (_transaction.doesWriteData())
-			clearTransactions(false);
-		    rollback(cw.connection);
+			cw.connection.clearTransactions(false);
+		    rollback(cw.connection.getConnection());
 		    if (_transaction.doesWriteData())
 		    {
 			if (savePoint!=null || savePointName!=null)
 			{
-			    releasePoint(cw.connection, savePointName, savePoint);
+			    releasePoint(cw.connection.getConnection(), savePointName, savePoint);
 			}
 			
 		    }
@@ -1837,15 +1919,15 @@ public abstract class DatabaseWrapper implements AutoCloseable
 
 	    try
 	    {
-		if (_transaction.doesWriteData() && supportSavePoint(cw.connection))
+		if (_transaction.doesWriteData() && supportSavePoint(cw.connection.getConnection()))
 		{
 		    savePointName=generateSavePointName();
-		    savePoint=savePoint(cw.connection, savePointName);
+		    savePoint=savePoint(cw.connection.getConnection(), savePointName);
 		}
 
 		res=_transaction.run(this);
 		if (savePoint!=null)
-		    releasePoint(cw.connection, savePointName, savePoint);
+		    releasePoint(cw.connection.getConnection(), savePointName, savePoint);
 		
 	    }
 	    catch(DatabaseException e)
@@ -1854,8 +1936,8 @@ public abstract class DatabaseWrapper implements AutoCloseable
 		{
 		    if (_transaction.doesWriteData() && savePoint!=null)
 		    {
-			rollback(cw.connection, savePointName, savePoint);
-			releasePoint(cw.connection, savePointName, savePoint);
+			rollback(cw.connection.getConnection(), savePointName, savePoint);
+			releasePoint(cw.connection.getConnection(), savePointName, savePoint);
 		    }
 		}
 		catch(SQLException se)
@@ -2206,7 +2288,6 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	    
 	    runTransaction(new Transaction() {
 		    
-		@SuppressWarnings("synthetic-access")
 		@Override
 		public Void run(DatabaseWrapper sql_connection) throws DatabaseException
 		{
@@ -2311,7 +2392,7 @@ public abstract class DatabaseWrapper implements AutoCloseable
 			boolean allNotFound=true;
 			if (!doesTableExists(ROW_COUNT_TABLES))
 			{
-			    Statement st=getConnectionAssociatedWithCurrentThread().createStatement();
+			    Statement st=getConnectionAssociatedWithCurrentThread().getConnection().createStatement();
 			    st.executeUpdate("CREATE TABLE "+ROW_COUNT_TABLES+" (TABLE_NAME VARCHAR(512), ROW_COUNT INTEGER)"+getSqlComma());
 			    st.close();
 			}

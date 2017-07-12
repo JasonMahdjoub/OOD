@@ -48,6 +48,7 @@ import com.distrimind.ood.database.annotations.NotNull;
 import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
+import com.distrimind.util.AbstractDecentralizedID;
 
 /**
  * 
@@ -117,9 +118,10 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 	    return force;
 	}
 
-	public void setForce(boolean _force)
+	
+	public void setForce(boolean force)
 	{
-	    force = _force;
+	    this.force=false;
 	}
 	
     }
@@ -179,20 +181,29 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 	
     }
     
-    protected DatabaseTransactionEventsTable.Record addTransaction(final Package databasePackage, final DatabaseTransactionEvent dte, byte eventsType) throws DatabaseException
+    protected DatabaseTransactionEventsTable.Record addTransaction(final Package databasePackage, final DatabaseTransactionEvent dte) throws DatabaseException
     {
+	return this.addTransaction(databasePackage.getName(), dte);
+    }
+    protected DatabaseTransactionEventsTable.Record addTransaction(final String databasePackage, final DatabaseTransactionEvent dte) throws DatabaseException
+    {
+	if (databasePackage==null)
+	    throw new NullPointerException();
 	DatabaseTransactionEventsTable.Record tr=new DatabaseTransactionEventsTable.Record();
 	tr.id=getTransactionIDTable().getAndIncrementTransactionID();
-	tr.concernedDatabasePackage=databasePackage.getName();
+	tr.concernedDatabasePackage=databasePackage;
 	tr.setForce(dte.isForce());
 	tr=addRecord(tr);
+	int index=0;
 	
 	for (TableEvent<?> de : dte.getEvents())
 	{
-	    
 	    DatabaseEventsTable.Record r=new DatabaseEventsTable.Record(tr, de, getDatabaseWrapper(), false);
+	    
+	    r.setPosition(index++);
 	    getDatabaseEventsTable().addRecord(r);
 	}
+	
 	return tr;
 	
     }
@@ -225,7 +236,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 	    @Override
 	    public boolean nextRecord(DatabaseRecord _record) throws DatabaseException
 	    {
-		DatabaseEventsTable.Record event=new DatabaseEventsTable.Record(transaction.get(), new TableEvent<DatabaseRecord>(-1, DatabaseEventType.ADD, null, _record, force), getDatabaseWrapper(), false);
+		DatabaseEventsTable.Record event=new DatabaseEventsTable.Record(transaction.get(), new TableEvent<DatabaseRecord>(-1, DatabaseEventType.ADD, null, _record, null), getDatabaseWrapper(), false);
 		getDatabaseEventsTable().addRecord(event);
 		if (currentEventPos.get()>maxEvents)
 		    throw new IllegalAccessError();
@@ -248,12 +259,12 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 	});
     }
     
-    protected void addTransactionToSynchronizeTables(final Package databasePackage, DatabaseHooksTable.Record hook, boolean force) throws DatabaseException
+    protected void addTransactionToSynchronizeTables(final Package databasePackage, DatabaseHooksTable.Record hook, final boolean force) throws DatabaseException
     {
 	DatabaseTransactionEventsTable.Record tr=new DatabaseTransactionEventsTable.Record();
 	tr.id=getTransactionIDTable().getAndIncrementTransactionID();
 	tr.concernedDatabasePackage=databasePackage.getName();
-	tr.setForce(force);
+	tr.setForce(false);
 	AtomicReference<DatabaseTransactionEventsTable.Record> transaction=new AtomicReference<>(addRecord(tr));
 	AtomicLong currentEventPos=new AtomicLong(0);
 	Set<Class<? extends Table<?>>> tables=getDatabaseWrapper().getDatabaseConfiguration(databasePackage).getTableClasses();
@@ -275,12 +286,12 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 	
 	
     }
-    protected DatabaseTransactionEventsTable.Record addTransaction(final Package databasePackage, final Iterator<DatabaseEventsTable.Record> eventsIt, byte eventsType, boolean force) throws DatabaseException
+    protected DatabaseTransactionEventsTable.Record addTransaction(final Package databasePackage, final Iterator<DatabaseEventsTable.Record> eventsIt, byte eventsType, Set<AbstractDecentralizedID> hostsDestinations) throws DatabaseException
     {
 	DatabaseTransactionEventsTable.Record tr=new DatabaseTransactionEventsTable.Record();
 	tr.id=getTransactionIDTable().getAndIncrementTransactionID();
 	tr.concernedDatabasePackage=databasePackage.getName();
-	tr.setForce(force);
+	tr.setForce(hostsDestinations!=null && !hostsDestinations.isEmpty());
 	tr=addRecord(tr);
 	
 	while (eventsIt.hasNext())
@@ -296,7 +307,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 	
     }
     
-    DatabaseTransactionEventsTable.Record addTransactionIfNecessary(final DatabaseConfiguration configuration, final DatabaseTransactionEvent transaction, final byte eventsType) throws DatabaseException
+    DatabaseTransactionEventsTable.Record addTransactionIfNecessary(final DatabaseConfiguration configuration, final DatabaseTransactionEvent transaction, final byte eventsType, final Set<AbstractDecentralizedID> hostsDestinations) throws DatabaseException
     {
 	return (DatabaseTransactionEventsTable.Record)getDatabaseWrapper().runTransaction(new Transaction() {
 
@@ -311,11 +322,12 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 		    @Override
 		    public boolean nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException
 		    {
-			if (_record.isConcernedDatabaseByPackage(configuration.getPackage()))
+			if (_record.isConcernedDatabaseByPackage(configuration.getPackage()) && (hostsDestinations==null || hostsDestinations.isEmpty() || hostsDestinations.contains(_record.getHostID())))
 			{
+			    
 			    if (res.get()==null)
 			    {
-				res.set(addTransaction(configuration.getPackage(), transaction, eventsType));
+				res.set(addTransaction(configuration.getPackage(), transaction));
 			    }
 			    DatabaseTransactionsPerHostTable.Record trhost=new DatabaseTransactionsPerHostTable.Record();
 			    trhost.set(res.get(), _record);
@@ -343,7 +355,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
     }
     
     
-    DatabaseTransactionEventsTable.Record addTransactionIfNecessary(final Package databasePackage, final Iterator<DatabaseEventsTable.Record> eventsIterator, final byte eventsType, final boolean force) throws DatabaseException
+    DatabaseTransactionEventsTable.Record addTransactionIfNecessary(final Package databasePackage, final Iterator<DatabaseEventsTable.Record> eventsIterator, final byte eventsType, final Set<AbstractDecentralizedID> hostsDestinations) throws DatabaseException
     {
 	return (DatabaseTransactionEventsTable.Record)getDatabaseWrapper().runTransaction(new Transaction() {
 
@@ -357,11 +369,11 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 		    @Override
 		    public boolean nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException
 		    {
-			if (_record.isConcernedDatabaseByPackage(databasePackage) && !_record.concernsLocalDatabaseHost())
+			if (_record.isConcernedDatabaseByPackage(databasePackage) && !_record.concernsLocalDatabaseHost() && (hostsDestinations==null || hostsDestinations.isEmpty() || hostsDestinations.contains(_record.getHostID())))
 			{
 			    if (res.get()==null)
 			    {
-				res.set(addTransaction(databasePackage, eventsIterator, eventsType, force));
+				res.set(addTransaction(databasePackage, eventsIterator, eventsType, hostsDestinations));
 			    }
 			    DatabaseTransactionsPerHostTable.Record trhost=new DatabaseTransactionsPerHostTable.Record();
 			    trhost.set(res.get(), _record);

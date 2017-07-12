@@ -37,8 +37,10 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database;
 
 import java.util.HashMap;
+import java.util.Set;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.AbstractDecentralizedID;
 
 /**
  * 
@@ -54,12 +56,13 @@ public class TableEvent<T extends DatabaseRecord> extends DatabaseEvent
     private final T oldDatabaseRecord;
     private final T newDatabaseRecord;
     private final boolean force;
+    private transient final Set<AbstractDecentralizedID> hostsDestination;
     private transient HashMap<String, Object> mapKeys=null;
     private transient boolean oldAlreadyPresent=false;
     private transient Table<T> table;
     
     
-    TableEvent(int id, DatabaseEventType type, T oldDatabaseRecord, T newDatabaseRecord, boolean force)
+    TableEvent(int id, DatabaseEventType type, T oldDatabaseRecord, T newDatabaseRecord, Set<AbstractDecentralizedID> resentTo)
     {
 	if (type==null)
 	    throw new NullPointerException("type");
@@ -71,9 +74,10 @@ public class TableEvent<T extends DatabaseRecord> extends DatabaseEvent
 	this.type=type;
 	this.oldDatabaseRecord=oldDatabaseRecord;
 	this.newDatabaseRecord=newDatabaseRecord;
-	this.force=force;
+	this.force=resentTo!=null && !resentTo.isEmpty();
+	this.hostsDestination=force?resentTo:null;
     }
-    TableEvent(int id, DatabaseEventType type, T oldDatabaseRecord, T newDatabaseRecord, boolean force, HashMap<String, Object> mapKeys, boolean oldAlreadyPresent, Table<T> table)
+    TableEvent(int id, DatabaseEventType type, T oldDatabaseRecord, T newDatabaseRecord, Set<AbstractDecentralizedID> resentTo, HashMap<String, Object> mapKeys, boolean oldAlreadyPresent, Table<T> table)
     {
 	if (type==null)
 	    throw new NullPointerException("type");
@@ -85,10 +89,15 @@ public class TableEvent<T extends DatabaseRecord> extends DatabaseEvent
 	this.type=type;
 	this.oldDatabaseRecord=oldDatabaseRecord;
 	this.newDatabaseRecord=newDatabaseRecord;
-	this.force=force;
-	this.mapKeys=mapKeys;
+	this.force=resentTo!=null && !resentTo.isEmpty();
+	this.hostsDestination=force?resentTo:null;
 	this.oldAlreadyPresent=oldAlreadyPresent;
 	this.table=table;
+    }
+    
+    Set<AbstractDecentralizedID> getHostsDestination()
+    {
+	return hostsDestination;
     }
     
     @Override
