@@ -1460,9 +1460,9 @@ public abstract class TestDecentralizedDatabase
 		    for (Database db : concernedDatabase)
 		    {
 			if (i++==0)
-			    db.setReplaceWhenDirectCollisionDetected(true);
-			else
 			    db.setReplaceWhenDirectCollisionDetected(false);
+			else
+			    db.setReplaceWhenDirectCollisionDetected(true);
 			proceedEvent(db, false, clone(levents), true);
 			
 		    }

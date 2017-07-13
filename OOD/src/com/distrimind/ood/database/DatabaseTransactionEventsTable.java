@@ -121,7 +121,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 	
 	public void setForce(boolean force)
 	{
-	    this.force=false;
+	    this.force=force;
 	}
 	
     }

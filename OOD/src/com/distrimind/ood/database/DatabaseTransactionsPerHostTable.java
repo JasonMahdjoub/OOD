@@ -234,7 +234,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
     }   
     
     
-    protected boolean detectCollisionAndRemoveObsoleteEvents(final AbstractDecentralizedID comingFrom, final String concernedTable, final byte[] keys, final boolean force, final Set<DatabaseTransactionEventsTable.Record> toRemove, final Set<AbstractDecentralizedID> resendTo) throws DatabaseException
+    protected boolean detectCollisionAndGetObsoleteEventsToRemove(final AbstractDecentralizedID comingFrom, final String concernedTable, final byte[] keys, final boolean force, final Set<DatabaseTransactionEventsTable.Record> toRemove, final Set<AbstractDecentralizedID> resendTo) throws DatabaseException
     {
 	
 	final AtomicBoolean collisionDetected=new AtomicBoolean(false);
@@ -365,8 +365,8 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 				final DatabaseTransactionEvent localDTE=new DatabaseTransactionEvent();
 				boolean transactionNotEmpty=false;
 				boolean validatedTransaction=true;
-				final HashSet<DatabaseTransactionEventsTable.Record> toRemove=new HashSet<>();
-				final Set<AbstractDecentralizedID> hostsDestination=new HashSet<>();
+				HashSet<DatabaseTransactionEventsTable.Record> toRemove=new HashSet<>();
+				Set<AbstractDecentralizedID> hostsDestination=new HashSet<>();
 				
 				//boolean transactionToResend=false;
 
@@ -414,7 +414,8 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 					t.unserializePrimaryKeys(drNew, spks);
 					t.serialize(drNew, oos, false, true);
 				    }
-        			    if (type.hasOldValue() || dte.isForce()) 
+
+				    if (type.hasOldValue() || dte.isForce()) 
         			    {
         				drOld=t.getRecord(mapKeys);
         			    }
@@ -423,7 +424,8 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
         			    if (validatedTransaction)
         			    {
         				HashSet<DatabaseTransactionEventsTable.Record> r=new HashSet<>();
-        				boolean collision=detectCollisionAndRemoveObsoleteEvents(fromHook.get().getHostID(), tableName, spks, dte.isForce(), r, hostsDestination);
+        				Set<AbstractDecentralizedID> hd=new HashSet<>();
+        				boolean collision=detectCollisionAndGetObsoleteEventsToRemove(fromHook.get().getHostID(), tableName, spks, dte.isForce(), r, hd);
         				if (collision)
         				{
         				    if (!type.hasOldValue())
@@ -439,9 +441,14 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
         				    }
         				    else
         					validatedTransaction=false;
+        				    
         				}
+        				    
         				if (validatedTransaction)
+        				{
         				    toRemove.addAll(r);
+        				    hostsDestination.addAll(hd);
+        				}
         			    }
         			    
         			    if (validatedTransaction)
@@ -528,7 +535,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 						    if (te.getOldDatabaseRecord()==null)
 						    {
 							if (transactionToResendFinal)
-							    getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(te.getTable(getDatabaseWrapper()), new TableEvent<DatabaseRecord>(te.getID(), te.getType(), null, te.getNewDatabaseRecord(), hostsDestination, te.getMapKeys(), false, te.getTable(getDatabaseWrapper())));
+							    getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(te.getTable(getDatabaseWrapper()), new TableEvent<DatabaseRecord>(te.getID(), te.getType(), te.getOldDatabaseRecord(), te.getNewDatabaseRecord(), hostsDestination, te.getMapKeys(), false, te.getTable(getDatabaseWrapper())));
 						    }
 						    else
 							te.getTable(getDatabaseWrapper()).removeUntypedRecord(te.getOldDatabaseRecord(), transactionToResendFinal, hostsDestination);
@@ -537,7 +544,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 						    if (te.getOldDatabaseRecord()==null)
 						    {
 							if (transactionToResendFinal)
-							    getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(te.getTable(getDatabaseWrapper()), new TableEvent<DatabaseRecord>(te.getID(), te.getType(), null, te.getNewDatabaseRecord(), hostsDestination, te.getMapKeys(), false, te.getTable(getDatabaseWrapper())));
+							    getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(te.getTable(getDatabaseWrapper()), new TableEvent<DatabaseRecord>(te.getID(), te.getType(), te.getOldDatabaseRecord(), te.getNewDatabaseRecord(), hostsDestination, te.getMapKeys(), false, te.getTable(getDatabaseWrapper())));
 						    }
 						    else
 						    {
