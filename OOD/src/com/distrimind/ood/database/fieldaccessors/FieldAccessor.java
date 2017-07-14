@@ -39,13 +39,8 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database.fieldaccessors;
 
 import java.io.ByteArrayInputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-/**
- * @author Jason Mahdjoub
- * @version 1.3
- * @since OOD 1.0
- */
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -311,9 +306,9 @@ import com.distrimind.util.RenforcedDecentralizedIDGenerator;
     
     public abstract int compare(Object r1, Object _r2) throws DatabaseException;
     
-    public abstract void serialize(ObjectOutputStream oos, Object classInstance) throws DatabaseException;
-    public abstract void unserialize(ObjectInputStream ois, HashMap<String, Object> map) throws DatabaseException;
-    public abstract Object unserialize(ObjectInputStream ois, Object classInstance) throws DatabaseException;
+    public abstract void serialize(DataOutputStream oos, Object classInstance) throws DatabaseException;
+    public abstract void unserialize(DataInputStream ois, HashMap<String, Object> map) throws DatabaseException;
+    public abstract Object unserialize(DataInputStream ois, Object classInstance) throws DatabaseException;
     
     
     

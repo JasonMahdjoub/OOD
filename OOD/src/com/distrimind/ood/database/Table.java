@@ -40,9 +40,9 @@ package com.distrimind.ood.database;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.EOFException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -8300,14 +8300,13 @@ public abstract class Table<T extends DatabaseRecord>
 	}
     }
     
-    void serialize(DatabaseRecord record, ObjectOutputStream oos, boolean includePK, boolean includeFK) throws DatabaseException
+    void serialize(DatabaseRecord record, DataOutputStream oos, boolean includePK, boolean includeFK) throws DatabaseException
     {
 
 	try
 	{
 	    for (FieldAccessor fa : fields)
 	    {
-		
 		if ((includePK || !fa.isPrimaryKey()) && (includeFK || !fa.isForeignKey()))
 		    fa.serialize(oos, record);
 	    }
@@ -8318,7 +8317,7 @@ public abstract class Table<T extends DatabaseRecord>
 	}
     }
     
-    T unserialize(ObjectInputStream ois, boolean includePK, boolean includeFK) throws DatabaseException
+    T unserialize(DataInputStream ois, boolean includePK, boolean includeFK) throws DatabaseException
     {
 	try
 	{
@@ -8347,7 +8346,7 @@ public abstract class Table<T extends DatabaseRecord>
     {
 	try(ByteArrayInputStream bais=new ByteArrayInputStream(tab))
 	{
-	    try(ObjectInputStream ois=new ObjectInputStream(bais))
+	    try(DataInputStream ois=new DataInputStream(bais))
 	    {
 		for (FieldAccessor fa : primary_keys_fields)
 		{
@@ -8370,7 +8369,7 @@ public abstract class Table<T extends DatabaseRecord>
     {
 	try(ByteArrayInputStream bais=new ByteArrayInputStream(tab))
 	{
-	    try(ObjectInputStream ois=new ObjectInputStream(bais))
+	    try(DataInputStream ois=new DataInputStream(bais))
 	    {
 		for (FieldAccessor fa : primary_keys_fields)
 		{
@@ -8394,7 +8393,7 @@ public abstract class Table<T extends DatabaseRecord>
     {
 	try(ByteArrayInputStream bais=new ByteArrayInputStream(tab))
 	{
-	    try(ObjectInputStream ois=new ObjectInputStream(bais))
+	    try(DataInputStream ois=new DataInputStream(bais))
 	    {
 		for (FieldAccessor fa : fields)
 		{
@@ -8422,7 +8421,7 @@ public abstract class Table<T extends DatabaseRecord>
 	try(ByteArrayOutputStream baos=new ByteArrayOutputStream())
 	{
 	    T record=default_constructor_field.newInstance();
-	    try(ObjectOutputStream oos = new ObjectOutputStream(baos))
+	    try(DataOutputStream oos = new DataOutputStream(baos))
 	    {
 		for (FieldAccessor fa : primary_keys_fields)
 		{
@@ -8444,7 +8443,7 @@ public abstract class Table<T extends DatabaseRecord>
     {
 	try(ByteArrayOutputStream baos=new ByteArrayOutputStream())
 	{
-	    try(ObjectOutputStream oos = new ObjectOutputStream(baos))
+	    try(DataOutputStream oos = new DataOutputStream(baos))
 	    {
 		for (FieldAccessor fa : primary_keys_fields)
 		{
@@ -8463,7 +8462,7 @@ public abstract class Table<T extends DatabaseRecord>
     {
 	try(ByteArrayOutputStream baos=new ByteArrayOutputStream())
 	{
-	    try(ObjectOutputStream oos = new ObjectOutputStream(baos))
+	    try(DataOutputStream oos = new DataOutputStream(baos))
 	    {
 		for (FieldAccessor fa : fields)
 		{

@@ -101,6 +101,8 @@ public abstract class TestDecentralizedDatabase
 		    oos.writeObject(eventToSend);
 		}
 	    
+		baos.flush();
+		
 		this.eventToSend=baos.toByteArray();
 	    }
 	    if (eventToSend instanceof BigDatabaseEventToSend)
@@ -109,6 +111,7 @@ public abstract class TestDecentralizedDatabase
 		try(ByteArrayOutputStream baos=new ByteArrayOutputStream())
 		{
 		    b.exportToOutputStream(wrapper, baos);
+		    baos.flush();
 		    this.joindedData=baos.toByteArray();
 		}
 	    }
@@ -686,6 +689,7 @@ public abstract class TestDecentralizedDatabase
 	    Assert.assertEquals(db.getDbwrapper().getTransactionsTable().getRecords().size(), 0);
 	    Assert.assertEquals(db.getDbwrapper().getDatabaseEventsTable().getRecords().size(), 0);
 	    Assert.assertEquals(db.getDbwrapper().getHooksTransactionsTable().getRecords().size(), listDatabase.size());
+	    Assert.assertEquals(db.getDbwrapper().getDatabaseEventsTable().getRecords().size(), 0);
 	}
 
     }
@@ -1157,7 +1161,7 @@ public abstract class TestDecentralizedDatabase
 	int numberEvents=40;
 	Object[][] res=new Object[numberEvents*2*2*2][];
 	int index=0;
-	for (boolean exceptionDuringTransaction : new boolean[]{true, false})
+	for (boolean exceptionDuringTransaction : new boolean[]{false, true})
 	{
 	    for (boolean generateDirectConflict : new boolean[]{true, false})
 	    {
@@ -1668,12 +1672,12 @@ public abstract class TestDecentralizedDatabase
 	if (generateDirectConflict) 
 	{
 	    int i=0;
-	    for (Database db : indirectDatabase)
+	    for (Database db : indirectDatabase)//TODO test with opposite direction 
 	    {
 		if (i++==0)
-		    db.setReplaceWhenDirectCollisionDetected(true);
-		else
 		    db.setReplaceWhenDirectCollisionDetected(false);
+		else
+		    db.setReplaceWhenDirectCollisionDetected(true);
 		
 		proceedEvent(db, false, levents);
 	    }

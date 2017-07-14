@@ -93,6 +93,7 @@ public class TableEvent<T extends DatabaseRecord> extends DatabaseEvent
 	this.hostsDestination=force?resentTo:null;
 	this.oldAlreadyPresent=oldAlreadyPresent;
 	this.table=table;
+	this.mapKeys=mapKeys;
     }
     
     Set<AbstractDecentralizedID> getHostsDestination()

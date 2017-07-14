@@ -548,11 +548,11 @@ public abstract class DatabaseWrapper implements AutoCloseable
 		
 		for (AbstractDecentralizedID host : lastIds.keySet())
 		{
-		    if (!host.equals(hostID))
+		    if (!host.equals(hostID) && isInitialized(host))
 		    {
 			Map<AbstractDecentralizedID, Long> map=new HashMap<AbstractDecentralizedID, Long>();
 			map.putAll(lastIds);
-			map.remove(hostID);
+			//map.remove(hostID);
 			map.remove(host);
 			if (map.size()>0)
 			{

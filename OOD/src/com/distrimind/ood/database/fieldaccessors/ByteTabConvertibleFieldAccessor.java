@@ -37,8 +37,8 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database.fieldaccessors;
 
 import java.io.ByteArrayInputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.lang.reflect.Field;
 import java.sql.Blob;
 import java.sql.PreparedStatement;
@@ -379,7 +379,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor
     }
 
     @Override
-    public void serialize(ObjectOutputStream _oos, Object _class_instance) throws DatabaseException
+    public void serialize(DataOutputStream _oos, Object _class_instance) throws DatabaseException
     {
 	try
 	{
@@ -405,7 +405,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor
 
 
     @Override
-    public void unserialize(ObjectInputStream _ois, HashMap<String, Object> _map) throws DatabaseException
+    public void unserialize(DataInputStream _ois, HashMap<String, Object> _map) throws DatabaseException
     {
 	try
 	{
@@ -430,7 +430,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor
 	}
     }
     @Override
-    public Object unserialize(ObjectInputStream _ois, Object _classInstance) throws DatabaseException
+    public Object unserialize(DataInputStream _ois, Object _classInstance) throws DatabaseException
     {
 	try
 	{

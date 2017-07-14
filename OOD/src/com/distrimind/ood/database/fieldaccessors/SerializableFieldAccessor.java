@@ -40,6 +40,8 @@ package com.distrimind.ood.database.fieldaccessors;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
@@ -169,7 +171,7 @@ public class SerializableFieldAccessor extends FieldAccessor
 	    {
 		try(ByteArrayOutputStream baos=new ByteArrayOutputStream())
 		{
-		    try(ObjectOutputStream os=new ObjectOutputStream(baos))
+		    try(DataOutputStream os=new DataOutputStream(baos))
 		    {
 			serialize(os, _class_instance);
 			//os.writeObject(field.get(_class_instance));
@@ -200,7 +202,7 @@ public class SerializableFieldAccessor extends FieldAccessor
 	    {
 		try(ByteArrayOutputStream baos=new ByteArrayOutputStream())
 		{
-		    try(ObjectOutputStream os=new ObjectOutputStream(baos))
+		    try(DataOutputStream os=new DataOutputStream(baos))
 		    {
 			serialize(os, _class_instance);
 			//os.writeObject(field.get(_class_instance));
@@ -299,7 +301,7 @@ public class SerializableFieldAccessor extends FieldAccessor
 	    {
 		try(ByteArrayOutputStream baos=new ByteArrayOutputStream())
 		{
-		    try(ObjectOutputStream os=new ObjectOutputStream(baos))
+		    try(DataOutputStream os=new DataOutputStream(baos))
 		    {
 			serializeObject(os, o);
 			//os.writeObject(o);
@@ -334,7 +336,7 @@ public class SerializableFieldAccessor extends FieldAccessor
 	{
 	    try(ByteArrayOutputStream baos=new ByteArrayOutputStream())
 	    {
-		try(ObjectOutputStream os=new ObjectOutputStream(baos))
+		try(DataOutputStream os=new DataOutputStream(baos))
 		{
 		    this.serialize(os, _instance);
 		}
@@ -400,7 +402,7 @@ public class SerializableFieldAccessor extends FieldAccessor
     }
     
     @Override
-    public void serialize(ObjectOutputStream _oos, Object _class_instance) throws DatabaseException
+    public void serialize(DataOutputStream _oos, Object _class_instance) throws DatabaseException
     {
 	try
 	{
@@ -412,11 +414,11 @@ public class SerializableFieldAccessor extends FieldAccessor
 	}
     }
 
-    public void serializeObject(ObjectOutputStream _oos, Object object) throws DatabaseException
+    public void serializeObject(DataOutputStream dos, Object object) throws DatabaseException
     {
-	try
+	try(ObjectOutputStream oos=new ObjectOutputStream(dos))
 	{
-	    _oos.writeObject(object);
+	    oos.writeObject(object);
 	}
 	catch(Exception e)
 	{
@@ -425,11 +427,11 @@ public class SerializableFieldAccessor extends FieldAccessor
     }
 
     @Override
-    public void unserialize(ObjectInputStream _ois, HashMap<String, Object> _map) throws DatabaseException
+    public void unserialize(DataInputStream dis, HashMap<String, Object> _map) throws DatabaseException
     {
-	try
+	try(ObjectInputStream ois=new ObjectInputStream(dis))
 	{
-	    Object o=_ois.readObject();
+	    Object o=ois.readObject();
 	    if (o!=null && !field.getType().isAssignableFrom(o.getClass()))
 		throw new DatabaseException("Incompatible class : "+o.getClass()+" (expected="+field.getType()+")");
 	    if (o==null && isNotNull())
@@ -443,15 +445,23 @@ public class SerializableFieldAccessor extends FieldAccessor
     }
     
     @Override
-    public Object unserialize(ObjectInputStream _ois, Object _classInstance) throws DatabaseException
+    public Object unserialize(DataInputStream dis, Object _classInstance) throws DatabaseException
     {
-	Object o=unserialize(_ois);
-	if (o!=null && !field.getType().isAssignableFrom(o.getClass()))
-	    throw new DatabaseException("Incompatible class : "+o.getClass()+" (expected="+field.getType()+")");
-	if (o==null && isNotNull())
-	    throw new DatabaseException("The field should not be null");
-	setValue(_classInstance, o);
-	return o;
+	try(ObjectInputStream ois=new ObjectInputStream(dis))
+	{
+	    Object o=unserialize(ois);
+	    if (o!=null && !field.getType().isAssignableFrom(o.getClass()))
+		throw new DatabaseException("Incompatible class : "+o.getClass()+" (expected="+field.getType()+")");
+	    if (o==null && isNotNull())
+		throw new DatabaseException("The field should not be null");
+	    setValue(_classInstance, o);
+	    return o;
+	}
+	catch(Exception e)
+	{
+	    throw DatabaseException.getDatabaseException(e);
+	}
+	
     }    
     
     

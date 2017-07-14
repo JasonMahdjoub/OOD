@@ -37,6 +37,8 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database.fieldaccessors;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.reflect.Field;
@@ -320,11 +322,11 @@ public class BigIntegerFieldAccessor extends FieldAccessor
     }
 
     @Override
-    public void serialize(ObjectOutputStream _oos, Object _class_instance) throws DatabaseException
+    public void serialize(DataOutputStream dos, Object _class_instance) throws DatabaseException
     {
-	try
+	try(ObjectOutputStream oos=new ObjectOutputStream(dos))
 	{
-	    _oos.writeObject(getValue(_class_instance));
+	    oos.writeObject(getValue(_class_instance));
 	}
 	catch(Exception e)
 	{
@@ -335,11 +337,11 @@ public class BigIntegerFieldAccessor extends FieldAccessor
 
 
     @Override
-    public void unserialize(ObjectInputStream _ois, HashMap<String, Object> _map) throws DatabaseException
+    public void unserialize(DataInputStream dis, HashMap<String, Object> _map) throws DatabaseException
     {
-	try
+	try(ObjectInputStream ois=new ObjectInputStream(dis))
 	{
-	    BigInteger o = (BigInteger)_ois.readObject();
+	    BigInteger o = (BigInteger)ois.readObject();
 	    if (o==null && isNotNull())
 		throw new DatabaseException("field should not be null");
 	    _map.put(getFieldName(), o);
@@ -352,11 +354,11 @@ public class BigIntegerFieldAccessor extends FieldAccessor
     }
 
     @Override
-    public Object unserialize(ObjectInputStream _ois, Object _classInstance) throws DatabaseException
+    public Object unserialize(DataInputStream dis, Object _classInstance) throws DatabaseException
     {
-	try
+	try(ObjectInputStream ois=new ObjectInputStream(dis))
 	{
-	    BigInteger o = (BigInteger)_ois.readObject();
+	    BigInteger o = (BigInteger)ois.readObject();
 	    if (o==null && isNotNull())
 		throw new DatabaseException("field should not be null");
 	    setValue(_classInstance, o);

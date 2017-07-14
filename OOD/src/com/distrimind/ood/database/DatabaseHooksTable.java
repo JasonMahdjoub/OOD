@@ -362,9 +362,12 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
     {
 	for (Map.Entry<HostPair, Long> e : this.lastTransactionFieldsBetweenDistantHosts.entrySet())
 	{
-	    if (e.getKey().getHostServer().equals(indirectTransaction.getHook().getHostID()) && (getLocalDatabaseHost().getHostID()==null || !e.getKey().getHostToSynchronize().equals(getLocalDatabaseHost().getHostID())) && e.getValue().longValue()<indirectTransaction.getId())
+	    if (e.getKey().getHostServer().equals(indirectTransaction.getHook().getHostID()) 
+		    && (getLocalDatabaseHost().getHostID()==null || !e.getKey().getHostToSynchronize().equals(getLocalDatabaseHost().getHostID())) 
+		    && e.getValue().longValue()<indirectTransaction.getId())
 	    {
-		return true;
+		return indirectTransaction.addNewHostIDAndTellsIfNewPeersCanBeConcerned(this, getLocalDatabaseHost().getHostID()); 
+			//&& !getDatabaseDistantTransactionEvent().hasRecordsWithAllFields("id", new Long(indirectTransaction.getId()), "hook", indirectTransaction.getHook());//TODO check if possible to remove this test
 	    }
 	}
 	return false;

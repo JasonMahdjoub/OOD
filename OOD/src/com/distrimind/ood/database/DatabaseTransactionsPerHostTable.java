@@ -38,10 +38,10 @@ package com.distrimind.ood.database;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -310,10 +310,10 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
     
     void alterDatabase(final AbstractDecentralizedID comingFrom, final InputStream inputStream) throws DatabaseException
     {
-	alterDatabase(comingFrom, comingFrom, inputStream, getDatabaseWrapper().getSynchronizer().getNotifier(), false);
+	alterDatabase(comingFrom, comingFrom, inputStream, getDatabaseWrapper().getSynchronizer().getNotifier(), null);
     }
     
-    private void alterDatabase(final AbstractDecentralizedID directPeerID, final AbstractDecentralizedID comingFrom, final InputStream inputStream, final DatabaseNotifier notifier, final boolean indirectTransactionRead) throws DatabaseException
+    private void alterDatabase(final AbstractDecentralizedID directPeerID, final AbstractDecentralizedID comingFrom, final InputStream inputStream, final DatabaseNotifier notifier, final DatabaseDistantTransactionEvent.Record indirectTransactionEvent) throws DatabaseException
     {
 	
 	if (comingFrom==null)
@@ -322,7 +322,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 	    throw new NullPointerException("inputStream");
 	if (directPeerID==null)
 	    throw new NullPointerException("directPeerID");
-	if (directPeerID!=comingFrom && !indirectTransactionRead)
+	if (directPeerID!=comingFrom && indirectTransactionEvent==null)
 	    throw new IllegalAccessError();
 	if (comingFrom.equals(getDatabaseHooksTable().getLocalDatabaseHost().getHostID()))
 	    throw new IllegalArgumentException("The given distant host ID cannot be equals to the local host ID : "+comingFrom);
@@ -336,24 +336,28 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 	final AtomicReference<DatabaseHooksTable.Record> fromHook=new AtomicReference<>(hooks.get(0));
 	final AtomicLong lastValidatedTransaction=new AtomicLong(-1);
 	
-	try(ObjectInputStream ois=new ObjectInputStream(inputStream))
+	try(DataInputStream ois=new DataInputStream(inputStream))
 	{
 	    final AtomicInteger next=new AtomicInteger(ois.readByte());
 	    while(next.get()!=EXPORT_FINISHED)
 	    {
 		if (next.get()==EXPORT_INDIRECT_TRANSACTION)
 		{
-		    if (indirectTransactionRead)
+		    if (indirectTransactionEvent!=null)
 			throw new SerializationDatabaseException("Unexpected exception !");
-		    DatabaseDistantTransactionEvent.Record indirectTransactionEvent=getDatabaseDistantTransactionEvent().unserializeDistantTransactionEvent(ois);
-		    alterDatabase(directPeerID, indirectTransactionEvent.getHook().getHostID(), new ByteArrayInputStream(indirectTransactionEvent.getTransaction()), notifier, true);
+		    DatabaseDistantTransactionEvent.Record ite=getDatabaseDistantTransactionEvent().unserializeDistantTransactionEvent(ois);
+		    alterDatabase(directPeerID, ite.getHook().getHostID(), new ByteArrayInputStream(ite.getTransaction()), notifier, ite);
+		    next.set(ois.readByte());
 		}
 		else if (next.get()==EXPORT_DIRECT_TRANSACTION)
 		{
-		    try(ByteArrayOutputStream baos=new ByteArrayOutputStream(); ObjectOutputStream oos=new ObjectOutputStream(baos))//TODO store transaction into disk if too big
+		    try(ByteArrayOutputStream baos=new ByteArrayOutputStream(); DataOutputStream oos=new DataOutputStream(baos))//TODO store transaction into disk if too big
 		    {
-			oos.writeByte(EXPORT_DIRECT_TRANSACTION);
+			if (indirectTransactionEvent==null)
+			    oos.writeByte(EXPORT_DIRECT_TRANSACTION);
 			final DatabaseTransactionEventsTable.Record dte=getDatabaseTransactionEventsTable().unserialize(ois, true, false);
+			if (indirectTransactionEvent==null)
+			    getDatabaseTransactionEventsTable().serialize(dte, oos, true, false);
 			
 			next.set(ois.readByte());
 			getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
@@ -373,18 +377,25 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 				while (next.get()==EXPORT_DIRECT_TRANSACTION_EVENT)
 				{
 				    transactionNotEmpty=true;
-				    oos.writeByte(next.get());
+				    if (indirectTransactionEvent==null)
+					oos.writeByte(next.get());
 				    byte typeb=ois.readByte();
-				    oos.writeByte(typeb);
+				    if (indirectTransactionEvent==null)
+					oos.writeByte(typeb);
 				    int size=ois.readInt();
-				    oos.writeInt(size);
+				    if (indirectTransactionEvent==null)
+					oos.writeInt(size);
 				    if (size>Table.maxTableNameSizeBytes)
 					throw new SerializationDatabaseException("Table name too big");
 				    char[] chrs=new char[size];
 				    for (int i=0;i<size;i++)
 					chrs[i]=ois.readChar();
 				    String tableName=String.valueOf(chrs);
-				    oos.writeChars(tableName);
+				    if (indirectTransactionEvent==null)
+				    {
+					for (int i=0;i<size;i++)
+					    oos.writeChar(chrs[i]);
+				    }
 				    Table<DatabaseRecord> t=null;
 				    try
 				    {
@@ -395,13 +406,15 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 					throw new SerializationDatabaseException("", e);
 				    }
 				    size=ois.readInt();
-				    oos.writeInt(size);
+				    if (indirectTransactionEvent==null)
+					oos.writeInt(size);
 				    if (size>Table.maxPrimaryKeysSizeBytes)
 					throw new SerializationDatabaseException("Table name too big");
 				    byte spks[]=new byte[size];
 				    if (ois.read(spks)!=size)
 					throw new SerializationDatabaseException("Impossible to read the expected bytes number : "+size);
-				    oos.write(spks);
+				    if (indirectTransactionEvent==null)
+					oos.write(spks);
 				    DatabaseEventType type=DatabaseEventType.getEnum(typeb);
 				    if (type==null)
 					throw new SerializationDatabaseException("Impossible to decode database event type : "+typeb);
@@ -412,7 +425,8 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 				    {
 					drNew=t.unserialize(ois, false, true);
 					t.unserializePrimaryKeys(drNew, spks);
-					t.serialize(drNew, oos, false, true);
+					if (indirectTransactionEvent==null)
+					    t.serialize(drNew, oos, false, true);
 				    }
 
 				    if (type.hasOldValue() || dte.isForce()) 
@@ -420,7 +434,8 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
         				drOld=t.getRecord(mapKeys);
         			    }
         			    boolean eventForce=false;
-        			    
+        			    if (dte.getID()<=fromHook.get().getLastValidatedDistantTransaction())
+        				validatedTransaction=false;
         			    if (validatedTransaction)
         			    {
         				HashSet<DatabaseTransactionEventsTable.Record> r=new HashSet<>();
@@ -432,7 +447,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
         					drOld=t.getRecord(mapKeys);
         				    if (notifier!=null)
         				    {
-        					if (indirectTransactionRead)
+        					if (indirectTransactionEvent!=null)
         					{
         					    validatedTransaction&=(eventForce=notifier.indirectCollisionDetected(directPeerID, type, t, mapKeys, drNew, drOld, fromHook.get().getHostID()));
         					}
@@ -498,6 +513,8 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
         				}
         			    }
         			    next.set(ois.readByte());
+        			    /*if (indirectTransactionEvent==null)
+        				oos.writeByte(next.get());*/
         			}
 				if (transactionNotEmpty)
 				{
@@ -507,9 +524,19 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 			    		//replaceDataFromDistantPeer(comingFrom, localDTE, dte.concernedDatabasePackage, toRemove);
 					final boolean transactionToResendFinal=dte.isForce()?false:(hostsDestination!=null && !hostsDestination.isEmpty());
 				    
-					
-					oos.flush();
-					DatabaseDistantTransactionEvent.Record ddte=new DatabaseDistantTransactionEvent.Record(dte.getID(), getIDTable().getLastTransactionID(), fromHook.get(), baos.toByteArray());
+					if (indirectTransactionEvent==null)
+					{
+					    oos.writeByte(EXPORT_FINISHED);
+					    oos.flush();
+					}
+					DatabaseDistantTransactionEvent.Record ddte=null;
+					if (indirectTransactionEvent==null)
+					    ddte=new DatabaseDistantTransactionEvent.Record(dte.getID(), getIDTable().getLastTransactionID(), fromHook.get(), baos.toByteArray(), false, null);
+					else
+					{
+					    ddte=indirectTransactionEvent;
+					    ddte.setLocalID(getIDTable().getLastTransactionID());
+					}
 					if (getDatabaseHooksTable().isConcernedByIndirectTransaction(ddte))
 					{
 					    getDatabaseDistantTransactionEvent().addRecord(ddte);
@@ -595,7 +622,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 		}
 		else
 		{
-		    throw new SerializationDatabaseException("Unexpected code : "+next);
+		    throw new SerializationDatabaseException("Unexpected code : "+next.get());
 		}
 	    }
 	}
@@ -636,7 +663,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
     	    return 0;
 	long currentTransactionID=hook.getLastValidatedTransaction();
 
-	try(ObjectOutputStream oos=new ObjectOutputStream(outputStream))
+	try(DataOutputStream oos=new DataOutputStream(outputStream))
 	    {
 	    	number.set(getDatabaseDistantTransactionEvent().exportTransactions(oos, hook, maxEventsRecords, currentTransactionID, nearNextLocalID));
 		if (number.get()>=maxEventsRecords)
