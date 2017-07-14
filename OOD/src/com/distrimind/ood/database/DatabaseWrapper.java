@@ -106,6 +106,7 @@ public abstract class DatabaseWrapper implements AutoCloseable
     private volatile DatabaseHooksTable databaseHooksTable=null;
     private volatile DatabaseTransactionsPerHostTable databaseTransactionsPerHostTable=null;
     private volatile DatabaseEventsTable databaseEventsTable=null;
+    private volatile DatabaseDistantTransactionEvent databaseDistantTransactionEvent=null; 
     private volatile IDTable transactionIDTable=null;
     
     private final DatabaseSynchronizer synchronizer=new DatabaseSynchronizer();
@@ -548,7 +549,7 @@ public abstract class DatabaseWrapper implements AutoCloseable
 		
 		for (AbstractDecentralizedID host : lastIds.keySet())
 		{
-		    if (!host.equals(hostID) && isInitialized(host))
+		    if (isInitialized(host))
 		    {
 			Map<AbstractDecentralizedID, Long> map=new HashMap<AbstractDecentralizedID, Long>();
 			map.putAll(lastIds);
@@ -961,6 +962,12 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	if (databaseEventsTable==null)
 	    databaseEventsTable=(DatabaseEventsTable)getTableInstance(DatabaseEventsTable.class);
 	return databaseEventsTable;
+    }
+    DatabaseDistantTransactionEvent getDatabaseDistantTransactionEvent() throws DatabaseException
+    {
+	if (databaseDistantTransactionEvent==null)
+	    databaseDistantTransactionEvent=(DatabaseDistantTransactionEvent)getTableInstance(DatabaseDistantTransactionEvent.class);
+	return databaseDistantTransactionEvent;
     }
 
     IDTable getTransactionIDTable() throws DatabaseException

@@ -689,7 +689,7 @@ public abstract class TestDecentralizedDatabase
 	    Assert.assertEquals(db.getDbwrapper().getTransactionsTable().getRecords().size(), 0);
 	    Assert.assertEquals(db.getDbwrapper().getDatabaseEventsTable().getRecords().size(), 0);
 	    Assert.assertEquals(db.getDbwrapper().getHooksTransactionsTable().getRecords().size(), listDatabase.size());
-	    Assert.assertEquals(db.getDbwrapper().getDatabaseEventsTable().getRecords().size(), 0);
+	    Assert.assertEquals(db.getDbwrapper().getDatabaseDistantTransactionEvent().getRecords().size(), 0);
 	}
 
     }

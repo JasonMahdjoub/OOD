@@ -336,7 +336,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 	    if (o instanceof HostPair)
 	    {
 		HostPair hp=((HostPair)o);
-		return (hp.hostServer==hostServer && hp.hostToSynchronize==hostToSynchronize);
+		return (hp.hostServer.equals(hostServer) && hp.hostToSynchronize.equals(hostToSynchronize));
 	    }
 	    return false;
 	}
@@ -366,8 +366,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 		    && (getLocalDatabaseHost().getHostID()==null || !e.getKey().getHostToSynchronize().equals(getLocalDatabaseHost().getHostID())) 
 		    && e.getValue().longValue()<indirectTransaction.getId())
 	    {
-		return indirectTransaction.addNewHostIDAndTellsIfNewPeersCanBeConcerned(this, getLocalDatabaseHost().getHostID()); 
-			//&& !getDatabaseDistantTransactionEvent().hasRecordsWithAllFields("id", new Long(indirectTransaction.getId()), "hook", indirectTransaction.getHook());//TODO check if possible to remove this test
+		return true; 
 	    }
 	}
 	return false;
@@ -378,7 +377,9 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 	synchronized(getDatabaseWrapper().getSynchronizer())
 	{
 	    for (Map.Entry<AbstractDecentralizedID, Long> e : lastTransactionFieldsBetweenDistantHosts.entrySet())
+	    {
 		this.lastTransactionFieldsBetweenDistantHosts.put(new HostPair(host, e.getKey()), e.getValue());
+	    }
 	    if (cleanNow)
 	    {
 		getDatabaseDistantTransactionEvent().cleanDistantTransactions();

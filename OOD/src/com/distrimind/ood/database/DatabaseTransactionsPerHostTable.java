@@ -516,6 +516,13 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
         			    /*if (indirectTransactionEvent==null)
         				oos.writeByte(next.get());*/
         			}
+				if (dte.getID()>fromHook.get().getLastValidatedDistantTransaction())
+				{
+				    if (lastValidatedTransaction.get()>dte.getID())
+					throw new DatabaseException("Transactions must be ordered !");
+				    lastValidatedTransaction.set(dte.getID());
+				}
+				
 				if (transactionNotEmpty)
 				{
 			    	    if (validatedTransaction)
@@ -537,7 +544,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 					    ddte=indirectTransactionEvent;
 					    ddte.setLocalID(getIDTable().getLastTransactionID());
 					}
-					if (getDatabaseHooksTable().isConcernedByIndirectTransaction(ddte))
+					if (getDatabaseHooksTable().isConcernedByIndirectTransaction(ddte) && ddte.addNewHostIDAndTellsIfNewPeersCanBeConcerned(getDatabaseHooksTable(), getDatabaseHooksTable().getLocalDatabaseHost().getHostID()))
 					{
 					    getDatabaseDistantTransactionEvent().addRecord(ddte);
 					}
@@ -599,9 +606,6 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 				}
 				else
 				    throw new SerializationDatabaseException("The transaction should not be empty");
-				if (lastValidatedTransaction.get()>dte.getID())
-				    throw new DatabaseException("Transactions must be ordered !");
-				lastValidatedTransaction.set(dte.getID());
 				return null;
 			    }
 
@@ -666,71 +670,76 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 	try(DataOutputStream oos=new DataOutputStream(outputStream))
 	    {
 	    	number.set(getDatabaseDistantTransactionEvent().exportTransactions(oos, hook, maxEventsRecords, currentTransactionID, nearNextLocalID));
-		if (number.get()>=maxEventsRecords)
-		    return number.get();
-	    	do
+	    	try
 	    	{
-	    	    Collection<DatabaseTransactionsPerHostTable.Record> records=getOrderedRecords(new Filter<DatabaseTransactionsPerHostTable.Record>() {
+	    	    if (number.get()>=maxEventsRecords)
+	    		return number.get();
+	    	    do
+	    	    {
+	    		Collection<DatabaseTransactionsPerHostTable.Record> records=getOrderedRecords(new Filter<DatabaseTransactionsPerHostTable.Record>() {
 		    
-	    		@Override
-	    		public boolean nextRecord(Record _record) 
-	    		{
-	    		    if (number.incrementAndGet()>=maxEventsRecords)
+	    		    @Override
+	    		    public boolean nextRecord(Record _record) 
 	    		    {
-	    			this.stopTableParsing();
+	    			if (number.incrementAndGet()>=maxEventsRecords)
+	    			{
+	    			    this.stopTableParsing();
+	    			    return true;
+	    			}
 	    			return true;
 	    		    }
-	    		    return true;
-	    		}
-	    	    }, "transaction.id<%nearNextLocalID AND transaction.id>%previousNearTransactionID AND hook=%hook", new Object[]{"nearNextLocalID", new Long(nearNextLocalID.get()), "previousNearTransactionID", new Long(currentTransactionID), "hook", hook}, true, "transaction.id");
-	    	    currentTransactionID=nearNextLocalID.get();
+	    		}, "transaction.id<%nearNextLocalID AND transaction.id>%previousNearTransactionID AND hook=%hook", new Object[]{"nearNextLocalID", new Long(nearNextLocalID.get()), "previousNearTransactionID", new Long(currentTransactionID), "hook", hook}, true, "transaction.id");
+	    		currentTransactionID=nearNextLocalID.get();
 	    	
 	    	    
-	    	    for (Record r : records)
-	    	    {
-	    		oos.writeByte(EXPORT_DIRECT_TRANSACTION);
-	    		getDatabaseTransactionEventsTable().serialize(r.getTransaction(), oos, true, false);
-	    		getDatabaseEventsTable().getOrderedRecords(new Filter<DatabaseEventsTable.Record>(){
+	    		for (Record r : records)
+	    		{
+	    		    oos.writeByte(EXPORT_DIRECT_TRANSACTION);
+	    		    getDatabaseTransactionEventsTable().serialize(r.getTransaction(), oos, true, false);
+	    		    getDatabaseEventsTable().getOrderedRecords(new Filter<DatabaseEventsTable.Record>(){
 
-			    @Override
-			    public boolean nextRecord(com.distrimind.ood.database.DatabaseEventsTable.Record _record) throws DatabaseException
-			    {
-				try
-				{
-				    oos.writeByte(EXPORT_DIRECT_TRANSACTION_EVENT);
-				    oos.writeByte(_record.getType());
-				    oos.writeInt(_record.getConcernedTable().length());
-				    oos.writeChars(_record.getConcernedTable());
-				    oos.writeInt(_record.getConcernedSerializedPrimaryKey().length);
-				    oos.write(_record.getConcernedSerializedPrimaryKey());
-				    if (DatabaseEventType.getEnum(_record.getType()).needsNewValue())
-				    {
-					Table<?> t=getDatabaseWrapper().getTableInstance(_record.getConcernedTable());
-					HashMap<String, Object> pks=new HashMap<>();
-					t.unserializePrimaryKeys(pks, _record.getConcernedSerializedPrimaryKey());
-					DatabaseRecord cr=t.getRecord(pks);
-					if (cr==null)
-					    throw new DatabaseException("Unexpected exception !");
-					t.serialize(cr, oos, false, true);
-				    }
+	    			@Override
+	    			public boolean nextRecord(com.distrimind.ood.database.DatabaseEventsTable.Record _record) throws DatabaseException
+	    			{
+	    			    try
+	    			    {
+	    				oos.writeByte(EXPORT_DIRECT_TRANSACTION_EVENT);
+	    				oos.writeByte(_record.getType());
+	    				oos.writeInt(_record.getConcernedTable().length());
+	    				oos.writeChars(_record.getConcernedTable());
+	    				oos.writeInt(_record.getConcernedSerializedPrimaryKey().length);
+	    				oos.write(_record.getConcernedSerializedPrimaryKey());
+	    				if (DatabaseEventType.getEnum(_record.getType()).needsNewValue())
+	    				{
+	    				    Table<?> t=getDatabaseWrapper().getTableInstance(_record.getConcernedTable());
+	    				    HashMap<String, Object> pks=new HashMap<>();
+	    				    t.unserializePrimaryKeys(pks, _record.getConcernedSerializedPrimaryKey());
+	    				    DatabaseRecord cr=t.getRecord(pks);
+	    				    if (cr==null)
+	    					throw new DatabaseException("Unexpected exception !");
+	    				    t.serialize(cr, oos, false, true);
+	    				}
 
-				    return false;
-				}
-				catch(Exception e)
-				{
-				    throw DatabaseException.getDatabaseException(e);
-				}
-			    }
-	    		    
-	    		}, "transaction=%transaction", new Object[]{"transaction", r.getTransaction()}, true, "position");
+	    				return false;
+	    			    }
+	    			    catch(Exception e)
+	    			    {
+	    				throw DatabaseException.getDatabaseException(e);
+	    			    }
+	    			}
+	    			
+	    		    }, "transaction=%transaction", new Object[]{"transaction", r.getTransaction()}, true, "position");
 	    		
+	    		}
+	    		if (number.get()<maxEventsRecords && currentTransactionID!=Long.MAX_VALUE)
+	    		    number.set(number.get()+getDatabaseDistantTransactionEvent().exportTransactions(oos, hook, maxEventsRecords-number.get(), currentTransactionID, nearNextLocalID));
 	    	    }
-	    	    if (number.get()<maxEventsRecords && currentTransactionID!=Long.MAX_VALUE)
-	    		number.set(number.get()+getDatabaseDistantTransactionEvent().exportTransactions(oos, hook, maxEventsRecords-number.get(), currentTransactionID, nearNextLocalID));
+	    	    while(number.get()<maxEventsRecords && nearNextLocalID.get()!=currentTransactionID);
 	    	}
-	    	while(number.get()<maxEventsRecords && nearNextLocalID.get()!=currentTransactionID);
-
-		oos.writeByte(EXPORT_FINISHED);
+	    	finally
+	    	{
+	    	    oos.writeByte(EXPORT_FINISHED);
+	    	}
 	    }
 	    catch(Exception e)
 	    {
