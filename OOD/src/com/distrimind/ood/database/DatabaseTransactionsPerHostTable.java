@@ -53,6 +53,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.distrimind.ood.database.DatabaseDistantTransactionEvent.Record;
 import com.distrimind.ood.database.DatabaseWrapper.DatabaseNotifier;
 import com.distrimind.ood.database.annotations.ForeignKey;
 import com.distrimind.ood.database.annotations.PrimaryKey;
@@ -266,6 +267,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 		return false;
 	    }
 	}, "concernedTable==%concernedTable AND concernedSerializedPrimaryKey==%concernedSerializedPrimaryKey", "concernedTable", concernedTable, "concernedSerializedPrimaryKey", keys);
+	
 	return collisionDetected.get();
 	    /*if (toRemove.size()>0)
 	{
@@ -316,6 +318,11 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
     private void alterDatabase(final AbstractDecentralizedID directPeerID, final AbstractDecentralizedID comingFrom, final InputStream inputStream, final DatabaseNotifier notifier, final DatabaseDistantTransactionEvent.Record indirectTransactionEvent) throws DatabaseException
     {
 	
+    }
+    
+    private void alterDatabase(final AbstractDecentralizedID directPeerID, final AbstractDecentralizedID comingFrom, final InputStream inputStream, final DatabaseNotifier notifier, final DatabaseDistantTransactionEvent.Record indirectTransactionEvent) throws DatabaseException
+    {
+	
 	if (comingFrom==null)
 	    throw new NullPointerException("comingFrom");
 	if (inputStream==null)
@@ -345,9 +352,11 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 		{
 		    if (indirectTransactionEvent!=null)
 			throw new SerializationDatabaseException("Unexpected exception !");
-		    DatabaseDistantTransactionEvent.Record ite=getDatabaseDistantTransactionEvent().unserializeDistantTransactionEvent(ois);
-		    alterDatabase(directPeerID, ite.getHook().getHostID(), new ByteArrayInputStream(ite.getTransaction()), notifier, ite);
+		    ArrayList<DatabaseDistantEventsTable.Record> events=new ArrayList();
+		    DatabaseDistantTransactionEvent.Record ite=getDatabaseDistantTransactionEvent().unserializeDistantTransactionEvent(ois, events);
 		    next.set(ois.readByte());
+		    alterDatabase(directPeerID, ite.getHook().getHostID(), new ByteArrayInputStream(ite.getTransaction()), notifier, ite);
+		    
 		}
 		else if (next.get()==EXPORT_DIRECT_TRANSACTION)
 		{
@@ -529,6 +538,14 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 			    	    if (validatedTransaction)
 			    	    {
 			    		removeObsoleteEvents(toRemove);
+			    		
+			    		if (indirectTransactionEvent!=null)
+			    		{
+			    		    hostsDestination=indirectTransactionEvent.getConcernedHosts(hostsDestination);
+			    		}
+			    		if (hostsDestination.isEmpty())
+			    		    hostsDestination=null;
+			    		
 			    		//replaceDataFromDistantPeer(comingFrom, localDTE, dte.concernedDatabasePackage, toRemove);
 					final boolean transactionToResendFinal=dte.isForce()?false:(hostsDestination!=null && !hostsDestination.isEmpty());
 				    
@@ -753,8 +770,10 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 	
     }
     
-    static final byte EXPORT_FINISHED=0;
-    static final byte EXPORT_DIRECT_TRANSACTION=1;
-    static final byte EXPORT_INDIRECT_TRANSACTION=2;
+    static final byte EXPORT_FINISHED=1;
+    static final byte EXPORT_DIRECT_TRANSACTION=2;
     static final byte EXPORT_DIRECT_TRANSACTION_EVENT=4;
+    static final byte EXPORT_INDIRECT_TRANSACTION=8;
+    static final byte EXPORT_INDIRECT_TRANSACTION_EVENT=16;
+    static final byte EXPORT_INDIRECT_TRANSACTION_FINISHED=EXPORT_INDIRECT_TRANSACTION|EXPORT_FINISHED;
 }

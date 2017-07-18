@@ -537,13 +537,7 @@ public abstract class DatabaseWrapper implements AutoCloseable
 		
 		getDatabaseTransactionsPerHostTable().validateTransactions(r, lastTransferedTransactionID);
 		peer.setTransferInProgress(false);
-		long lastID=getTransactionIDTable().getLastTransactionID();
-		
-		if (lastID>r.getLastValidatedTransaction())
-		{
-		    peer.setTransferInProgress(true);
-		    addNewDatabaseEvent(new DatabaseEventsToSynchronize(getHooksTransactionsTable().getLocalDatabaseHost().getHostID(), r, lastID, maxEventsToSynchronizeAtTheSameTime));
-		}
+		synchronizedDataIfNecessary(peer);
 		
 		Map<AbstractDecentralizedID, Long> lastIds=getHooksTransactionsTable().getLastValidatedDistantTransactions();
 		
@@ -563,6 +557,17 @@ public abstract class DatabaseWrapper implements AutoCloseable
 		}
 		
 	    }
+	}
+	
+	private long synchronizedDataIfNecessary(ConnectedPeers peer) throws DatabaseException
+	{
+	    long lastID=getTransactionIDTable().getLastTransactionID();
+	    if (lastID>peer.getHook().getLastValidatedTransaction())
+	    {
+		peer.setTransferInProgress(true);
+		addNewDatabaseEvent(new DatabaseEventsToSynchronize(getHooksTransactionsTable().getLocalDatabaseHost().getHostID(), peer.getHook(), lastID, maxEventsToSynchronizeAtTheSameTime));
+	    }
+	    return lastID;
 	}
 	
 	void addNewDatabaseEvent(DatabaseEvent e)

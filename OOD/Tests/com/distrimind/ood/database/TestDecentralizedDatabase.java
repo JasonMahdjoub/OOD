@@ -1662,7 +1662,8 @@ public abstract class TestDecentralizedDatabase
 	return provideDataForSynchroBetweenTwoPeers();
     }
     
-    @Test(dataProvider = "provideDataForIndirectSynchro", dependsOnMethods={"testSynchroAfterTestsBetweenThreePeers"})
+    //@Test(dataProvider = "provideDataForIndirectSynchro", dependsOnMethods={"testSynchroAfterTestsBetweenThreePeers"})
+    @Test(dataProvider = "provideDataForIndirectSynchro", dependsOnMethods={"testOldElementsAddedBeforeAddingSynchroSynchronized"})
     public void testIndirectSynchro(boolean exceptionDuringTransaction, boolean generateDirectConflict, boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event) throws DatabaseException, ClassNotFoundException, IOException
     {
 	List<TableEvent<DatabaseRecord>> levents=Arrays.asList(event);

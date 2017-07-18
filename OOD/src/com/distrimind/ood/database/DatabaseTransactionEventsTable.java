@@ -322,7 +322,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 		    @Override
 		    public boolean nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException
 		    {
-			if (_record.isConcernedDatabaseByPackage(configuration.getPackage()) && (hostsDestinations==null || hostsDestinations.isEmpty() || hostsDestinations.contains(_record.getHostID())))
+			if (_record.isConcernedDatabaseByPackage(configuration.getPackage()) && !_record.concernsLocalDatabaseHost() && (hostsDestinations==null || hostsDestinations.isEmpty() || hostsDestinations.contains(_record.getHostID())))
 			{
 			    
 			    if (res.get()==null)
