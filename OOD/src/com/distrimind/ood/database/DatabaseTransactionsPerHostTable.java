@@ -380,7 +380,6 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 				boolean validatedTransaction=true;
 				HashSet<DatabaseTransactionEventsTable.Record> toRemove=new HashSet<>();
 				Set<AbstractDecentralizedID> hostsDestination=new HashSet<>();
-				//fromHook.set(getDatabaseHooksTable().getRecord("id", new Integer(fromHook.get().getID())));
 				
 				//boolean transactionToResend=false;
 
@@ -615,11 +614,9 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 						    break;
 					    }
 					}
-					
+					fromHook.set(getDatabaseHooksTable().getRecord("id", new Integer(fromHook.get().getID())));
 					fromHook.get().setLastValidatedDistantTransaction(dte.getID());
-					HashMap<String, Object> hm=new HashMap<>();
-					hm.put("lastValidatedDistantTransaction", new Long(dte.getID()));
-					getDatabaseHooksTable().updateRecord(fromHook.get(), hm);
+					getDatabaseHooksTable().updateRecord(fromHook.get());
 					getDatabaseWrapper().getSynchronizer().addNewDatabaseEvent(localDTE);
 					
 				    }
