@@ -39,6 +39,7 @@ package com.distrimind.ood.database;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -364,7 +365,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 	{
 	    if (e.getKey().getHostServer().equals(indirectTransaction.getHook().getHostID()) 
 		    && (getLocalDatabaseHost().getHostID()==null || !e.getKey().getHostToSynchronize().equals(getLocalDatabaseHost().getHostID())) 
-		    && e.getValue().longValue()<indirectTransaction.getId())
+		    && e.getValue().longValue()<indirectTransaction.getID())
 	    {
 		return true; 
 	    }
@@ -374,7 +375,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
     
     void validateDistantTransactions(AbstractDecentralizedID host, final Map<AbstractDecentralizedID, Long> lastTransactionFieldsBetweenDistantHosts, boolean cleanNow) throws DatabaseException
     {
-	synchronized(getDatabaseWrapper().getSynchronizer())
+	synchronized(this)
 	{
 	    for (Map.Entry<AbstractDecentralizedID, Long> e : lastTransactionFieldsBetweenDistantHosts.entrySet())
 	    {
@@ -386,6 +387,19 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 	    }
 	}
     }
+    
+    Record getHook(AbstractDecentralizedID host) throws DatabaseException
+    {
+	if (host==null)
+	    throw new NullPointerException("host");
+	List<Record> l=getRecordsWithAllFields("hostID", host);
+	if (l.size()==0)
+	    throw new DatabaseException("Unkown host "+host);
+	if (l.size()>1)
+	    throw new IllegalAccessError();
+	return l.iterator().next();
+    }
+    
     
     Long getDistantValidatedTransactionID(AbstractDecentralizedID hostSource, AbstractDecentralizedID hostDestination)
     {

@@ -570,6 +570,8 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	    return lastID;
 	}
 	
+	
+	
 	void addNewDatabaseEvent(DatabaseEvent e)
 	{
 	    if (e==null)
@@ -713,6 +715,8 @@ public abstract class DatabaseWrapper implements AutoCloseable
 		    initHook(data.getHostSource(), ((TransactionConfirmationEvents) data).getLastValidatedTransaction());
 	    }
 	}
+	
+	
     }
     
     public static interface DatabaseNotifier

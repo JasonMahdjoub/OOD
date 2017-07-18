@@ -1464,9 +1464,15 @@ public abstract class TestDecentralizedDatabase
 		    for (Database db : concernedDatabase)
 		    {
 			if (i++==0)
+			{
 			    db.setReplaceWhenDirectCollisionDetected(false);
+			    db.setReplaceWhenIndirectCollisionDetected(false);
+			}
 			else
+			{
 			    db.setReplaceWhenDirectCollisionDetected(true);
+			    db.setReplaceWhenIndirectCollisionDetected(true);
+			}
 			proceedEvent(db, false, clone(levents), true);
 			
 		    }
@@ -1478,7 +1484,9 @@ public abstract class TestDecentralizedDatabase
 			Assert.assertTrue(db.isNewDatabaseEventDetected());
 			
 			DirectCollisionDetected dcollision=db.getDirectCollisionDetected();
-			Assert.assertNull(db.getIndirectCollisionDetected());
+			/*IndirectCollisionDetected idcollision=db.getIndirectCollisionDetected();
+			if (idcollision!=null)
+			    testIndirectCollision(db, event, idcollision);*/
 
 			Assert.assertNotNull(dcollision, "i="+(i));
 			testDirectCollision(db, event, dcollision);
@@ -1540,7 +1548,7 @@ public abstract class TestDecentralizedDatabase
 		    Database db=listDatabase.get(i);
 		    
 		    Assert.assertNull(db.getDirectCollisionDetected());
-		    Assert.assertNull(db.getIndirectCollisionDetected());
+		    //Assert.assertNull(db.getIndirectCollisionDetected());
 		    Assert.assertTrue(db.getRecordsToRemoveNotFound().isEmpty());
 		    Assert.assertTrue(db.getRecordsToUpdateNotFound().isEmpty());
 		    Assert.assertTrue(db.isNewDatabaseEventDetected());
@@ -1662,8 +1670,8 @@ public abstract class TestDecentralizedDatabase
 	return provideDataForSynchroBetweenTwoPeers();
     }
     
-    //@Test(dataProvider = "provideDataForIndirectSynchro", dependsOnMethods={"testSynchroAfterTestsBetweenThreePeers"})
-    @Test(dataProvider = "provideDataForIndirectSynchro", dependsOnMethods={"testOldElementsAddedBeforeAddingSynchroSynchronized"})
+    @Test(dataProvider = "provideDataForIndirectSynchro", dependsOnMethods={"testSynchroAfterTestsBetweenThreePeers"})
+    //@Test(dataProvider = "provideDataForIndirectSynchro", dependsOnMethods={"testOldElementsAddedBeforeAddingSynchroSynchronized"})
     public void testIndirectSynchro(boolean exceptionDuringTransaction, boolean generateDirectConflict, boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event) throws DatabaseException, ClassNotFoundException, IOException
     {
 	List<TableEvent<DatabaseRecord>> levents=Arrays.asList(event);
@@ -1676,12 +1684,17 @@ public abstract class TestDecentralizedDatabase
 	    for (Database db : indirectDatabase)//TODO test with opposite direction 
 	    {
 		if (i++==0)
+		{
 		    db.setReplaceWhenDirectCollisionDetected(false);
+		}
 		else
+		{
 		    db.setReplaceWhenDirectCollisionDetected(true);
+		}
 		
 		proceedEvent(db, false, levents);
 	    }
+	    listDatabase.get(1).setReplaceWhenDirectCollisionDetected(false);
 	    connectSelectedDatabase(segmentA);
 	    exchangeMessages();
 	    
@@ -1693,10 +1706,19 @@ public abstract class TestDecentralizedDatabase
 	    testEventSynchronized(db, event, true);
 	    Assert.assertTrue(db.getRecordsToRemoveNotFound().isEmpty());
 	    Assert.assertTrue(db.getRecordsToUpdateNotFound().isEmpty());
+	    db.setNewDatabaseEventDetected(false);
 	    
 	    disconnectSelectedDatabase(segmentA);
 	    connectSelectedDatabase(segmentB);
 	    exchangeMessages();
+	    
+	    DirectCollisionDetected dcollision=db.getDirectCollisionDetected();
+	    Assert.assertNull(db.getIndirectCollisionDetected());
+	    testDirectCollision(db, event, dcollision);
+	    testEventSynchronized(db, event, true);
+	    Assert.assertTrue(db.getRecordsToRemoveNotFound().isEmpty());
+	    Assert.assertTrue(db.getRecordsToUpdateNotFound().isEmpty());
+	    
 	    
 	    db=listDatabase.get(2);
 	    
@@ -1746,7 +1768,7 @@ public abstract class TestDecentralizedDatabase
 	    Assert.assertTrue(db.getRecordsToRemoveNotFound().isEmpty());
 	    Assert.assertTrue(db.getRecordsToUpdateNotFound().isEmpty());
 	    
-	    connectSelectedDatabase(segmentB);
+	    disconnectSelectedDatabase(segmentB);
 	}
 	else
 	{

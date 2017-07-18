@@ -64,24 +64,61 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
     private volatile DatabaseHooksTable databaseHooksTable=null;
     private volatile IDTable idTable=null;
     
-    static class Record extends DatabaseRecord
+    static abstract class AbsractRecord  extends DatabaseRecord
     {
 	@PrimaryKey
 	protected long id;
+	
+	@Field
+	private boolean force=false;
+
+	void setID(long id)
+	{
+	    this.id=id;
+	}
+	long getID()
+	{
+	    return id;
+	}
+	
+	public boolean isForce()
+	{
+	    return force;
+	}
+
+	
+	public void setForce(boolean force)
+	{
+	    this.force=force;
+	}
+	
+	@Override
+	public boolean equals(Object record)
+	{
+	    if (record==null)
+		return false;
+	    else if (record instanceof AbsractRecord)
+		return id==((AbsractRecord)record).id;
+	    return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+	    return (int)id;
+	}
+
+	
+    }
+    
+    static class Record extends AbsractRecord
+    {
 	
 	@NotNull
 	@Field
 	protected String concernedDatabasePackage;
 	
-	@Field
-	private boolean force=false;
 	
-	
-	
-	long getID()
-	{
-	    return id;
-	}
 	
 	boolean isConcernedBy(Package p)
 	{
@@ -97,32 +134,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 	    return false;
 	}
 	
-	@Override
-	public boolean equals(Object record)
-	{
-	    if (record==null)
-		return false;
-	    else if (record instanceof Record)
-		return id==((Record)record).id;
-	    return false;
-	}
 	
-	@Override
-	public int hashCode()
-	{
-	    return (int)id;
-	}
-
-	public boolean isForce()
-	{
-	    return force;
-	}
-
-	
-	public void setForce(boolean force)
-	{
-	    this.force=force;
-	}
 	
     }
     
@@ -444,5 +456,5 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 	removeRecordsWithCascade("id<=%lastID", "lastID", new Long(lastTransactionID));
     }
     
-    
+
 }

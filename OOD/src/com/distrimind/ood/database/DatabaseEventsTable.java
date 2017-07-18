@@ -36,11 +36,18 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.util.HashMap;
+import java.util.NoSuchElementException;
+
 import com.distrimind.ood.database.annotations.AutoPrimaryKey;
 import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.annotations.ForeignKey;
 import com.distrimind.ood.database.annotations.NotNull;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.exceptions.SerializationDatabaseException;
 
 /**
  * 
@@ -50,15 +57,89 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  */
 final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record>
 {
+    static final int EVENT_MAX_SIZE_BYTES=33554432;
+    
+    static class Record extends AbstractRecord
+    {
+	@NotNull
+	@ForeignKey
+	DatabaseTransactionEventsTable.Record transaction;
+	
+	Record()
+	{
+	    
+	}
+	<T extends DatabaseRecord> Record(DatabaseTransactionEventsTable.Record transaction, TableEvent<T> _de, DatabaseWrapper wrapper, boolean includeOldNonPKFields) throws DatabaseException
+	{
+	    super(_de, wrapper, includeOldNonPKFields);
+	    if (transaction==null)
+		throw new NullPointerException("transaction");
+	    this.transaction=transaction;
+	}
+	DatabaseTransactionEventsTable.Record getTransaction()
+	{
+	    return transaction;
+	}
+	void setTransaction(DatabaseTransactionEventsTable.Record _transaction)
+	{
+	    transaction = _transaction;
+	}
+	
+	void export(DataOutputStream oos, DatabaseWrapper wrapper) throws DatabaseException
+	{
+		    try
+		    {
+			oos.writeByte(DatabaseTransactionsPerHostTable.EXPORT_DIRECT_TRANSACTION_EVENT);
+			oos.writeByte(getType());
+			oos.writeInt(getConcernedTable().length());
+			oos.writeChars(getConcernedTable());
+			oos.writeInt(getConcernedSerializedPrimaryKey().length);
+			oos.write(getConcernedSerializedPrimaryKey());
+			if (DatabaseEventType.getEnum(getType()).needsNewValue())
+			{
+			    Table<?> t=wrapper.getTableInstance(getConcernedTable());
+			    HashMap<String, Object> pks=new HashMap<>();
+			    t.unserializePrimaryKeys(pks, getConcernedSerializedPrimaryKey());
+			    DatabaseRecord cr=t.getRecord(pks);
+			    if (cr==null)
+				throw new DatabaseException("Unexpected exception !");
+			    try(ByteArrayOutputStream bais=new ByteArrayOutputStream())
+			    {
+				try(DataOutputStream dos=new DataOutputStream(bais))
+				{
+				    t.serialize(cr, dos, false, true);
+				}
+				byte[] nonpk=bais.toByteArray();
+				oos.writeInt(nonpk.length);
+				oos.write(nonpk);
+			    }
+			}
 
-    static class Record extends DatabaseRecord
+			
+		    }
+		    catch(Exception e)
+		    {
+			throw DatabaseException.getDatabaseException(e);
+		    }
+	    
+	}
+	
+
+    }
+    
+    public interface DatabaseEventsIterator
+    {
+	public AbstractRecord next() throws DatabaseException;
+	public boolean hasNext() throws DatabaseException;
+    }
+	    
+    
+    
+    abstract static class AbstractRecord extends DatabaseRecord
     {
 	@NotNull
 	@AutoPrimaryKey
 	private int id;
-	@NotNull
-	@ForeignKey
-	DatabaseTransactionEventsTable.Record transaction;
 	
 	@Field
 	private int position;
@@ -74,19 +155,28 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record>
 	
 	@Field(limit=Integer.MAX_VALUE)
 	private byte[] concernedSerializedOldNonPK;
-	Record()
+	AbstractRecord()
 	{
 	    
 	}
-	<T extends DatabaseRecord> Record(DatabaseTransactionEventsTable.Record transaction, TableEvent<T> _de, DatabaseWrapper wrapper, boolean includeOldNonPKFields) throws DatabaseException
+	
+	<T extends DatabaseRecord> AbstractRecord(AbstractRecord record) 
 	{
-	    if (transaction==null)
-		throw new NullPointerException("transaction");
+	    this.id=record.id;
+	    this.position=record.position;
+	    this.type=record.type;
+	    this.concernedTable=record.concernedTable;
+	    this.concernedSerializedPrimaryKey=record.concernedSerializedPrimaryKey;
+	    this.concernedSerializedOldNonPK=record.concernedSerializedOldNonPK;
+	}
+	
+	<T extends DatabaseRecord> AbstractRecord(TableEvent<T> _de, DatabaseWrapper wrapper, boolean includeOldNonPKFields) throws DatabaseException
+	{
 	    if (_de==null)
 		throw new NullPointerException("_de");
 	    if (wrapper==null)
 		throw new NullPointerException("wrapper");
-	    this.transaction=transaction;
+	    
 	    type=_de.getType().getByte();
 	    Table<T> table=_de.getTable(wrapper);
 	    concernedTable=table.getClass().getName();
@@ -104,14 +194,6 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record>
 		concernedSerializedOldNonPK=table.serializeFieldsNonPK(_de.getOldDatabaseRecord());
 	}
 	
-	DatabaseTransactionEventsTable.Record getTransaction()
-	{
-	    return transaction;
-	}
-	void setTransaction(DatabaseTransactionEventsTable.Record _transaction)
-	{
-	    transaction = _transaction;
-	}
 	byte getType()
 	{
 	    return type;
@@ -157,6 +239,79 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record>
 	{
 	    this.position=order;
 	}
+    }
+    
+    DatabaseEventsIterator eventsTableIterator(final DataInputStream ois)
+    {
+	return new DatabaseEventsIterator() {
+	    
+	    private byte next=0;
+	    private int position=0;
+	    
+	    @Override
+	    public AbstractRecord next() throws DatabaseException
+	    {
+		try
+		{
+		    if (next!=DatabaseTransactionsPerHostTable.EXPORT_DIRECT_TRANSACTION_EVENT)
+			throw new NoSuchElementException();
+		    DatabaseEventsTable.Record event=new DatabaseEventsTable.Record();  
+		    event.setPosition(position++);
+		    event.setType(ois.readByte());
+		    
+		    int size=ois.readInt();
+		    if (size>Table.maxTableNameSizeBytes)
+			throw new SerializationDatabaseException("Table name too big");
+		    char[] chrs=new char[size];
+		    for (int i=0;i<size;i++)
+			chrs[i]=ois.readChar();
+		    event.setConcernedTable(String.valueOf(chrs));
+		    size=ois.readInt();
+		    if (size>Table.maxPrimaryKeysSizeBytes)
+			throw new SerializationDatabaseException("Table name too big");
+		    byte spks[]=new byte[size];
+		    if (ois.read(spks)!=size)
+			throw new SerializationDatabaseException("Impossible to read the expected bytes number : "+size);
+		    event.setConcernedSerializedPrimaryKey(spks);
+		    DatabaseEventType type=DatabaseEventType.getEnum(event.getType());
+		    if (type==null)
+			throw new SerializationDatabaseException("Impossible to decode database event type : "+event.getType());
+
+		    if (type.needsNewValue())
+		    {
+    		    	size=ois.readInt();
+    		    	if (size>EVENT_MAX_SIZE_BYTES)
+    		    	    throw new SerializationDatabaseException("Transaction  event is too big : "+size);
+    		    	byte[] nonpk=new byte[size];
+    		    	if (ois.read(nonpk)!=size)
+    		    	    throw new SerializationDatabaseException("Impossible to read the expected bytes number : "+size);
+    		    
+    		    	event.setConcernedSerializedOldNonPK(nonpk);
+		    }
+
+		    next=0;
+		    return event;
+		}
+		catch(Exception e)
+		{
+		    throw DatabaseException.getDatabaseException(e);
+		}
+	    }
+	    
+	    @Override
+	    public boolean hasNext() throws DatabaseException
+	    {
+		try
+		{
+		    next=ois.readByte();
+		    return next==DatabaseTransactionsPerHostTable.EXPORT_DIRECT_TRANSACTION_EVENT;
+		}
+		catch(Exception e)
+		{
+		    throw DatabaseException.getDatabaseException(e);
+		}
+	    }
+	};
 	
     }
 
