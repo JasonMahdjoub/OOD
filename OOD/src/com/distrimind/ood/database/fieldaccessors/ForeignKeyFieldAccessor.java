@@ -487,8 +487,10 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
 	    if (dr!=null)
 	    {
 		_oos.writeBoolean(true);
-		for (FieldAccessor fa : pointed_table.getFieldAccessors())
+		for (FieldAccessor fa : pointed_table.getPrimaryKeysFieldAccessors())
+		{
 		    fa.serialize(_oos, dr);
+		}
 	    }
 	    else 
 		_oos.writeBoolean(false);
@@ -510,8 +512,11 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
 	    if (isNotNull)
 	    {
 		DatabaseRecord dr=pointed_table.getDefaultRecordConstructor().newInstance();
-		for (FieldAccessor fa : pointed_table.getFieldAccessors())
+		for (FieldAccessor fa : pointed_table.getPrimaryKeysFieldAccessors())
+		{
 		    fa.unserialize(_ois, dr);
+		}
+		
 		_map.put(getFieldName(), dr);
 	    }
 	    else if (isNotNull())
@@ -534,8 +539,10 @@ public class ForeignKeyFieldAccessor extends FieldAccessor
 	    if (isNotNull)
 	    {
 		DatabaseRecord dr=pointed_table.getDefaultRecordConstructor().newInstance();
-		for (FieldAccessor fa : pointed_table.getFieldAccessors())
+		for (FieldAccessor fa : pointed_table.getPrimaryKeysFieldAccessors())
+		{
 		    fa.unserialize(_ois, dr);
+		}
 		setValue(_classInstance, dr);
 		return dr;
 	    }

@@ -278,7 +278,7 @@ public class AbstractDencetralizedIDFieldAccessor extends FieldAccessor
 		res=getBytes(_result_set.getBigDecimal(getColmunIndex(_result_set, sql_fields[0].field)));
 	    }
 	    if (res==null && isNotNull())
-		throw new DatabaseIntegrityException("Unexpected exception.");
+		throw new DatabaseIntegrityException("Unexpected exception. Null value was found into a not null field "+this.getFieldName()+" into table "+this.getTableClass().getName());
 	    field.set(_class_instance, res==null?null:AbstractDecentralizedID.instanceOf(res));
 	}
 	catch(Exception e)
@@ -487,7 +487,7 @@ public class AbstractDencetralizedIDFieldAccessor extends FieldAccessor
 		throw new DatabaseException("field should not be null");
 	    else
 	    {
-		setValue(_classInstance, null);
+		setValue(_classInstance, (Object)null);
 		return null;
 	    }
 	}

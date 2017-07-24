@@ -37,8 +37,10 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database;
 
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -47,8 +49,10 @@ import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.annotations.NotNull;
 import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.exceptions.SerializationDatabaseException;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.util.AbstractDecentralizedID;
+import com.distrimind.util.Bits;
 
 /**
  * 
@@ -64,14 +68,22 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
     private volatile DatabaseHooksTable databaseHooksTable=null;
     private volatile IDTable idTable=null;
     
-    static abstract class AbsractRecord  extends DatabaseRecord
+    static abstract class AbstractRecord  extends DatabaseRecord
     {
 	@PrimaryKey
 	protected long id;
 	
 	@Field
 	private boolean force=false;
-
+	
+	AbstractRecord()
+	{
+	    
+	}
+	AbstractRecord(long id)
+	{
+	    this.id=id;
+	}
 	void setID(long id)
 	{
 	    this.id=id;
@@ -97,8 +109,8 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 	{
 	    if (record==null)
 		return false;
-	    else if (record instanceof AbsractRecord)
-		return id==((AbsractRecord)record).id;
+	    else if (record instanceof AbstractRecord)
+		return id==((AbstractRecord)record).id;
 	    return false;
 	}
 	
@@ -109,16 +121,59 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 	}
 
 	
+	
+	
     }
     
-    static class Record extends AbsractRecord
+    static class Record extends AbstractRecord
     {
 	
 	@NotNull
 	@Field
 	protected String concernedDatabasePackage;
 	
+	@Field
+	private byte[] concernedHosts;
 	
+
+	Record()
+	{
+	    
+	}
+	
+	Record(long id, String concernedDatabasePackage)
+	{
+	    super(id);
+	    this.concernedDatabasePackage=concernedDatabasePackage;
+	}
+	Record(long id, String concernedDatabasePackage, Set<AbstractDecentralizedID> concernedHosts)
+	{
+	    this(id, concernedDatabasePackage);
+	    concernedHosts=null;
+	    setConcernedHosts(concernedHosts);
+	}
+	
+	boolean isTemporaryTransaction()
+	{
+	    return id<-1;
+	}
+
+	@Override
+	public boolean equals(Object o)
+	{
+	    if (o instanceof Record)
+	    {
+		return ((Record) o).getID()==this.getID();
+	    }
+	    else
+		return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+	    return (int)getID();
+	}
 	
 	boolean isConcernedBy(Package p)
 	{
@@ -134,7 +189,64 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 	    return false;
 	}
 	
+	void setConcernedHosts(Collection<AbstractDecentralizedID> peers)
+	{
+	    if (peers==null || peers.isEmpty())
+	    {
+		concernedHosts=null;
+		setForce(false);
+		return;
+	    }
+	    else
+		setForce(true);
+	    byte[][] bytes=new byte[peers.size()][];
+	    int i=0;
+	    int size=2+peers.size()*2;
+	    for (AbstractDecentralizedID id : peers)
+	    {
+		bytes[i]=id.getBytes();
+		size+=bytes[i++].length+2;
+	    }
+	    
+	    concernedHosts=new byte[size];
+	    i=2;
+	    Bits.putShort(concernedHosts, 0, (short)peers.size());
+	    for (byte[] b : bytes)
+	    {
+		Bits.putShort(concernedHosts, i, (short)b.length);
+		i+=2;
+		System.arraycopy(b, 0, concernedHosts, i, b.length);
+		i+=b.length;
+	    }
+	}
 	
+	List<AbstractDecentralizedID> getConcernedHosts() throws SerializationDatabaseException
+	{
+	    if (concernedHosts==null)
+		return new ArrayList<>(0);
+	    short nbPeers=Bits.getShort(concernedHosts, 0);
+	    ArrayList<AbstractDecentralizedID> res=new ArrayList<>(nbPeers);
+	    int off=2;
+	    for (int i=0;i<nbPeers;i++)
+	    {
+		short size=Bits.getShort(concernedHosts, 2);
+		if (size>1024)
+		    throw new SerializationDatabaseException("Invalid data (hook id size est greater to 1024)");
+		
+		off+=2;
+		res.add(AbstractDecentralizedID.instanceOf(concernedHosts, off, size));
+		off+=size;
+	    }
+	    return res;
+	}
+	
+	boolean isConcernedBy(AbstractDecentralizedID newHostID) throws SerializationDatabaseException
+	{
+	    if (concernedHosts==null)
+		return true;
+	    List<AbstractDecentralizedID> l=getConcernedHosts();
+	    return !l.contains(newHostID);
+	}
 	
     }
     
@@ -193,32 +305,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 	
     }
     
-    protected DatabaseTransactionEventsTable.Record addTransaction(final Package databasePackage, final DatabaseTransactionEvent dte) throws DatabaseException
-    {
-	return this.addTransaction(databasePackage.getName(), dte);
-    }
-    protected DatabaseTransactionEventsTable.Record addTransaction(final String databasePackage, final DatabaseTransactionEvent dte) throws DatabaseException
-    {
-	if (databasePackage==null)
-	    throw new NullPointerException();
-	DatabaseTransactionEventsTable.Record tr=new DatabaseTransactionEventsTable.Record();
-	tr.id=getTransactionIDTable().getAndIncrementTransactionID();
-	tr.concernedDatabasePackage=databasePackage;
-	tr.setForce(dte.isForce());
-	tr=addRecord(tr);
-	int index=0;
-	
-	for (TableEvent<?> de : dte.getEvents())
-	{
-	    DatabaseEventsTable.Record r=new DatabaseEventsTable.Record(tr, de, getDatabaseWrapper(), false);
-	    
-	    r.setPosition(index++);
-	    getDatabaseEventsTable().addRecord(r);
-	}
-	
-	return tr;
-	
-    }
+   
     protected void addTransactionToSynchronizeTables(final Package databasePackages[], DatabaseHooksTable.Record hook, boolean force) throws DatabaseException
     {
 	for (Package databasePackage : databasePackages)
@@ -248,7 +335,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 	    @Override
 	    public boolean nextRecord(DatabaseRecord _record) throws DatabaseException
 	    {
-		DatabaseEventsTable.Record event=new DatabaseEventsTable.Record(transaction.get(), new TableEvent<DatabaseRecord>(-1, DatabaseEventType.ADD, null, _record, null), getDatabaseWrapper(), false);
+		DatabaseEventsTable.Record event=new DatabaseEventsTable.Record(transaction.get(), new TableEvent<DatabaseRecord>(-1, DatabaseEventType.ADD, null, _record, null), getDatabaseWrapper());
 		getDatabaseEventsTable().addRecord(event);
 		if (currentEventPos.get()>maxEvents)
 		    throw new IllegalAccessError();
@@ -276,7 +363,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 	DatabaseTransactionEventsTable.Record tr=new DatabaseTransactionEventsTable.Record();
 	tr.id=getTransactionIDTable().getAndIncrementTransactionID();
 	tr.concernedDatabasePackage=databasePackage.getName();
-	tr.setForce(false);
+	tr.setForce(force);
 	AtomicReference<DatabaseTransactionEventsTable.Record> transaction=new AtomicReference<>(addRecord(tr));
 	AtomicLong currentEventPos=new AtomicLong(0);
 	Set<Class<? extends Table<?>>> tables=getDatabaseWrapper().getDatabaseConfiguration(databasePackage).getTableClasses();
@@ -298,119 +385,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 	
 	
     }
-    protected DatabaseTransactionEventsTable.Record addTransaction(final Package databasePackage, final Iterator<DatabaseEventsTable.Record> eventsIt, byte eventsType, Set<AbstractDecentralizedID> hostsDestinations) throws DatabaseException
-    {
-	DatabaseTransactionEventsTable.Record tr=new DatabaseTransactionEventsTable.Record();
-	tr.id=getTransactionIDTable().getAndIncrementTransactionID();
-	tr.concernedDatabasePackage=databasePackage.getName();
-	tr.setForce(hostsDestinations!=null && !hostsDestinations.isEmpty());
-	tr=addRecord(tr);
-	
-	while (eventsIt.hasNext())
-	{
-	    DatabaseEventsTable.Record r=eventsIt.next();
-	    if (r.getConcernedTable().startsWith(databasePackage.getName()) && !r.getConcernedTable().substring(databasePackage.getName().length()).contains("."))
-	    {
-		r.setTransaction(tr);
-		getDatabaseEventsTable().addRecord(r);
-	    }
-	}
-	return tr;
-	
-    }
-    
-    DatabaseTransactionEventsTable.Record addTransactionIfNecessary(final DatabaseConfiguration configuration, final DatabaseTransactionEvent transaction, final byte eventsType, final Set<AbstractDecentralizedID> hostsDestinations) throws DatabaseException
-    {
-	return (DatabaseTransactionEventsTable.Record)getDatabaseWrapper().runTransaction(new Transaction() {
-
-	    @Override
-	    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
-	    {
-		
-		final AtomicReference<DatabaseTransactionEventsTable.Record> res=new AtomicReference<>();
-
-		getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
-		    
-		    @Override
-		    public boolean nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException
-		    {
-			if (_record.isConcernedDatabaseByPackage(configuration.getPackage()) && !_record.concernsLocalDatabaseHost() && (hostsDestinations==null || hostsDestinations.isEmpty() || hostsDestinations.contains(_record.getHostID())))
-			{
-			    
-			    if (res.get()==null)
-			    {
-				res.set(addTransaction(configuration.getPackage(), transaction));
-			    }
-			    DatabaseTransactionsPerHostTable.Record trhost=new DatabaseTransactionsPerHostTable.Record();
-			    trhost.set(res.get(), _record);
-			    getDatabaseTransactionsPerHostTable().addRecord(trhost);
-			}
-			return false;
-		    }
-		});
-		return res.get();
-	    }
-
-	    @Override
-	    public TransactionIsolation getTransactionIsolation()
-	    {
-		return TransactionIsolation.TRANSACTION_SERIALIZABLE;
-	    }
-
-	    @Override
-	    public boolean doesWriteData()
-	    {
-		return true;
-	    }
-	    
-	});
-    }
-    
-    
-    DatabaseTransactionEventsTable.Record addTransactionIfNecessary(final Package databasePackage, final Iterator<DatabaseEventsTable.Record> eventsIterator, final byte eventsType, final Set<AbstractDecentralizedID> hostsDestinations) throws DatabaseException
-    {
-	return (DatabaseTransactionEventsTable.Record)getDatabaseWrapper().runTransaction(new Transaction() {
-
-	    @Override
-	    public Object run(DatabaseWrapper _sql_connection) throws DatabaseException
-	    {
-		final AtomicReference<DatabaseTransactionEventsTable.Record> res=new AtomicReference<>();
-		
-		getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
-		    
-		    @Override
-		    public boolean nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException
-		    {
-			if (_record.isConcernedDatabaseByPackage(databasePackage) && !_record.concernsLocalDatabaseHost() && (hostsDestinations==null || hostsDestinations.isEmpty() || hostsDestinations.contains(_record.getHostID())))
-			{
-			    if (res.get()==null)
-			    {
-				res.set(addTransaction(databasePackage, eventsIterator, eventsType, hostsDestinations));
-			    }
-			    DatabaseTransactionsPerHostTable.Record trhost=new DatabaseTransactionsPerHostTable.Record();
-			    trhost.set(res.get(), _record);
-			    getDatabaseTransactionsPerHostTable().addRecord(trhost);
-			}
-			return false;
-		    }
-		});
-		return res;
-	    }
-
-	    @Override
-	    public TransactionIsolation getTransactionIsolation()
-	    {
-		return TransactionIsolation.TRANSACTION_SERIALIZABLE;
-	    }
-
-	    @Override
-	    public boolean doesWriteData()
-	    {
-		return true;
-	    }
-	    
-	});
-    }
+   
     
     DatabaseTransactionsPerHostTable getDatabaseTransactionsPerHostTable() throws DatabaseException
     {
@@ -453,8 +428,37 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
     
     void removeTransactionUntilID(long lastTransactionID) throws DatabaseException
     {
-	removeRecordsWithCascade("id<=%lastID", "lastID", new Long(lastTransactionID));
+	removeRecordsWithCascade("id<=%lastID AND id>-1", "lastID", new Long(lastTransactionID));
     }
     
+    
+    
+    
+    void cleanTmpTransactions() throws DatabaseException
+    {
+	getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
+
+	    @Override
+	    public Void run() throws Exception
+	    {
+		removeRecordsWithCascade("id<-1");
+		return null;
+	    }
+
+	    @Override
+	    public TransactionIsolation getTransactionIsolation()
+	    {
+		return TransactionIsolation.TRANSACTION_READ_COMMITTED;
+	    }
+
+	    @Override
+	    public boolean doesWriteData()
+	    {
+		return true;
+	    }
+	});
+	
+	
+    }
 
 }

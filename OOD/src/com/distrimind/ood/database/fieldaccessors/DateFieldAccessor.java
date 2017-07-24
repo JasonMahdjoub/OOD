@@ -339,7 +339,7 @@ public class DateFieldAccessor extends FieldAccessor
 		throw new DatabaseException("field should not be null");
 	    else
 	    {
-		setValue(_classInstance, null);
+		setValue(_classInstance, (Object)null);
 		return null;
 	    }
 	    

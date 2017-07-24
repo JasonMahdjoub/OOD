@@ -243,7 +243,7 @@ public class longFieldAccessor extends FieldAccessor
 	setValue(_class_instance, _field_instance);
 	try
 	{
-	    _result_set.updateDouble(sql_fields[0].short_field, field.getLong(_class_instance));
+	    _result_set.updateLong(sql_fields[0].short_field, field.getLong(_class_instance));
 	}
 	catch(Exception e)
 	{

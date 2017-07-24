@@ -925,8 +925,12 @@ import com.distrimind.util.RenforcedDecentralizedIDGenerator;
 	    field_accessor=fa;
 	    for (SqlField sf : fa.getDeclaredSqlFields())
 	    {
-		sql_fields.put(sf.field, sf.short_field);
+		if (sf.pointed_field!=null)
+		    sql_fields.put(sf.pointed_field, sf.short_field);
+		else
+		    sql_fields.put(sf.field, sf.short_field);
 	    }
+	    
 	}
 	
 	public String translateField(SqlField sf)

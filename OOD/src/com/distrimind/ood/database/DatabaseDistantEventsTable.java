@@ -36,10 +36,8 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.util.HashMap;
 import java.util.NoSuchElementException;
 
 import com.distrimind.ood.database.DatabaseEventsTable.AbstractRecord;
@@ -105,23 +103,13 @@ final class DatabaseDistantEventsTable extends Table<DatabaseDistantEventsTable.
 			oos.write(getConcernedSerializedPrimaryKey());
 			if (DatabaseEventType.getEnum(getType()).needsNewValue())
 			{
-			    Table<?> t=wrapper.getTableInstance(getConcernedTable());
-			    HashMap<String, Object> pks=new HashMap<>();
-			    t.unserializePrimaryKeys(pks, getConcernedSerializedPrimaryKey());
-			    DatabaseRecord cr=t.getRecord(pks);
-			    if (cr==null)
-				throw new DatabaseException("Unexpected exception !");
-			    
-			    try(ByteArrayOutputStream bais=new ByteArrayOutputStream())
-			    {
-				try(DataOutputStream dos=new DataOutputStream(bais))
-				{
-				    t.serialize(cr, dos, false, true);
-				}
-				byte[] nonpk=bais.toByteArray();
-				oos.writeInt(nonpk.length);
-				oos.write(nonpk);
-			    }
+			    byte[] foreignKeys=getConcernedSerializedNewForeignKey();
+			    oos.writeInt(foreignKeys.length);
+			    oos.write(foreignKeys);
+
+			    byte[] nonkey=getConcernedSerializedNewNonKey();
+			    oos.writeInt(nonkey.length);
+			    oos.write(nonkey);
 			}
 			
 			
@@ -184,14 +172,24 @@ final class DatabaseDistantEventsTable extends Table<DatabaseDistantEventsTable.
         
         		if (type.needsNewValue())
         		{
-        		    size=ois.readInt();
-        		    if (size>EVENT_MAX_SIZE_BYTES)
-        			throw new SerializationDatabaseException("Transaction  event is too big : "+size);
-        		    byte[] nonpk=new byte[size];
-        		    if (ois.read(nonpk)!=size)
-        			throw new SerializationDatabaseException("Impossible to read the expected bytes number : "+size);
-        		    
-        		    event.setConcernedSerializedOldNonPK(nonpk);
+        		    	size=ois.readInt();
+            		    	if (size>Table.maxPrimaryKeysSizeBytes)
+            		    	    throw new SerializationDatabaseException("Transaction  event is too big : "+size);
+            		    	byte[] foreignKeys=new byte[size];
+            		    	if (ois.read(foreignKeys)!=size)
+            		    	    throw new SerializationDatabaseException("Impossible to read the expected bytes number : "+size);
+            		    
+            		    	event.setConcernedSerializedNewForeignKey(foreignKeys);
+
+            		    	size=ois.readInt();
+            		    	if (size>EVENT_MAX_SIZE_BYTES)
+            		    	    throw new SerializationDatabaseException("Transaction  event is too big : "+size);
+            		    	byte[] nonpk=new byte[size];
+            		    	if (ois.read(nonpk)!=size)
+            		    	    throw new SerializationDatabaseException("Impossible to read the expected bytes number : "+size);
+            		    
+            		    	event.setConcernedSerializedNewNonKey(nonpk);
+
         		}
         		next=0;
         		return event;

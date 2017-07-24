@@ -182,7 +182,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 		{
 		    if (sb.length()!=0)
 			sb.append("\\|");
-		    sb.append(p.toString());
+		    sb.append(p.getName());
 		    packagesList.add(p);
 		}
 	    }
@@ -261,9 +261,9 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 	    return databasePackageNames.split("\\|");
 	}
 	
-	boolean isConcernedDatabaseByPackage(Package p)
+	boolean isConcernedDatabaseByPackage(String packageName)
 	{
-	    return databasePackageNames!=null && (databasePackageNames.equals(p.toString()) || databasePackageNames.endsWith("|"+p.toString()) || databasePackageNames.startsWith(p.toString()+"|") || databasePackageNames.contains("|"+p.toString()+"|"));
+	    return databasePackageNames!=null && (databasePackageNames.equals(packageName) || databasePackageNames.endsWith("|"+packageName) || databasePackageNames.startsWith(packageName+"|") || databasePackageNames.contains("|"+packageName+"|"));
 	}
 	
 	protected boolean removePackageDatabase(Package ..._packages )
@@ -281,7 +281,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 		    boolean found=false;
 		    for (Package p : _packages)
 		    {
-			if (p.toString().equals(s))
+			if (p.getName().equals(s))
 			{
 			    found=true;
 			    break;
@@ -365,13 +365,15 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 	{
 	    if (e.getKey().getHostServer().equals(indirectTransaction.getHook().getHostID()) 
 		    && (getLocalDatabaseHost().getHostID()==null || !e.getKey().getHostToSynchronize().equals(getLocalDatabaseHost().getHostID())) 
-		    && e.getValue().longValue()<indirectTransaction.getID())
+		    && e.getValue().longValue()<indirectTransaction.getID()
+		    )
 	    {
 		return true; 
 	    }
 	}
 	return false;
     }
+
     
     void validateDistantTransactions(AbstractDecentralizedID host, final Map<AbstractDecentralizedID, Long> lastTransactionFieldsBetweenDistantHosts, boolean cleanNow) throws DatabaseException
     {
@@ -598,7 +600,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 	{
 	    hs=generateSupportedPackages();
 	}
-	return hs.contains(p.toString()) || (hs.size()==1 && hs.contains(Object.class.getPackage().toString()));
+	return hs.contains(p.getName()) || (hs.size()==1 && hs.contains(Object.class.getPackage().getName()));
     }
     
     private HashSet<String> generateSupportedPackages() throws DatabaseException
@@ -618,7 +620,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 			
 			String[] ps=_record.getDatabasePackageNames();
 			if (ps==null)
-			    databasePackages.add(Object.class.getPackage().toString());
+			    databasePackages.add(Object.class.getPackage().getName());
 			else
 			{
 			    for (String s : ps)
@@ -628,10 +630,10 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 			return false;
 		    }
 		});
-		if (databasePackages.contains(Object.class.getPackage().toString()))
+		if (databasePackages.contains(Object.class.getPackage().getName()))
 		{
 		    databasePackages.clear();
-		    databasePackages.add(Object.class.getPackage().toString());
+		    databasePackages.add(Object.class.getPackage().getName());
 		}
 		supportedDatabasePackages=databasePackages;
 		return databasePackages;

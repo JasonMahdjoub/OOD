@@ -36,10 +36,8 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.util.HashMap;
 import java.util.NoSuchElementException;
 
 import com.distrimind.ood.database.annotations.AutoPrimaryKey;
@@ -69,9 +67,9 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record>
 	{
 	    
 	}
-	<T extends DatabaseRecord> Record(DatabaseTransactionEventsTable.Record transaction, TableEvent<T> _de, DatabaseWrapper wrapper, boolean includeOldNonPKFields) throws DatabaseException
+	<T extends DatabaseRecord> Record(DatabaseTransactionEventsTable.Record transaction, TableEvent<T> _de, DatabaseWrapper wrapper) throws DatabaseException
 	{
-	    super(_de, wrapper, includeOldNonPKFields);
+	    super(_de, wrapper);
 	    if (transaction==null)
 		throw new NullPointerException("transaction");
 	    this.transaction=transaction;
@@ -97,22 +95,13 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record>
 			oos.write(getConcernedSerializedPrimaryKey());
 			if (DatabaseEventType.getEnum(getType()).needsNewValue())
 			{
-			    Table<?> t=wrapper.getTableInstance(getConcernedTable());
-			    HashMap<String, Object> pks=new HashMap<>();
-			    t.unserializePrimaryKeys(pks, getConcernedSerializedPrimaryKey());
-			    DatabaseRecord cr=t.getRecord(pks);
-			    if (cr==null)
-				throw new DatabaseException("Unexpected exception !");
-			    try(ByteArrayOutputStream bais=new ByteArrayOutputStream())
-			    {
-				try(DataOutputStream dos=new DataOutputStream(bais))
-				{
-				    t.serialize(cr, dos, false, true);
-				}
-				byte[] nonpk=bais.toByteArray();
-				oos.writeInt(nonpk.length);
-				oos.write(nonpk);
-			    }
+			    byte[] foreignKeys=getConcernedSerializedNewForeignKey();
+			    oos.writeInt(foreignKeys.length);
+			    oos.write(foreignKeys);
+
+			    byte[] nonkey=getConcernedSerializedNewNonKey();
+			    oos.writeInt(nonkey.length);
+			    oos.write(nonkey);
 			}
 
 			
@@ -149,12 +138,16 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record>
 	@NotNull
 	@Field(limit=400)
 	private String concernedTable;
+	
 	@NotNull
-	@Field
+	@Field(limit=Table.maxPrimaryKeysSizeBytes)
 	private byte[] concernedSerializedPrimaryKey;
+
+	@Field(limit=Table.maxPrimaryKeysSizeBytes)
+	private byte[] concernedSerializedNewForeignKey;
 	
 	@Field(limit=Integer.MAX_VALUE)
-	private byte[] concernedSerializedOldNonPK;
+	private byte[] concernedSerializedNewNonKey;
 	AbstractRecord()
 	{
 	    
@@ -167,10 +160,11 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record>
 	    this.type=record.type;
 	    this.concernedTable=record.concernedTable;
 	    this.concernedSerializedPrimaryKey=record.concernedSerializedPrimaryKey;
-	    this.concernedSerializedOldNonPK=record.concernedSerializedOldNonPK;
+	    this.concernedSerializedNewForeignKey=record.concernedSerializedNewForeignKey;
+	    this.concernedSerializedNewNonKey=record.concernedSerializedNewNonKey;
 	}
 	
-	<T extends DatabaseRecord> AbstractRecord(TableEvent<T> _de, DatabaseWrapper wrapper, boolean includeOldNonPKFields) throws DatabaseException
+	<T extends DatabaseRecord> AbstractRecord(TableEvent<T> _de, DatabaseWrapper wrapper) throws DatabaseException
 	{
 	    if (_de==null)
 		throw new NullPointerException("_de");
@@ -185,14 +179,28 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record>
 		concernedSerializedPrimaryKey=table.serializePrimaryKeys(_de.getMapKeys());
 	    }
 	    else if (_de.getOldDatabaseRecord()!=null)
+	    {
 		concernedSerializedPrimaryKey=table.serializePrimaryKeys(_de.getOldDatabaseRecord());
+	    }
 	    else
+	    {
 		concernedSerializedPrimaryKey=table.serializePrimaryKeys(_de.getNewDatabaseRecord());
+	    }
 	    if (concernedSerializedPrimaryKey==null)
 		throw new NullPointerException();
-	    if (_de.getOldDatabaseRecord()!=null && includeOldNonPKFields)
-		concernedSerializedOldNonPK=table.serializeFieldsNonPK(_de.getOldDatabaseRecord());
+	    
+	    if (_de.getType().needsNewValue())
+	    {
+		this.concernedSerializedNewForeignKey=table.serializeFields(_de.getNewDatabaseRecord(), false, true, false);
+		concernedSerializedNewNonKey=table.serializeFields(_de.getNewDatabaseRecord(), false, false, true);
+	    }
+	    else
+	    {
+		concernedSerializedNewForeignKey=null;
+		concernedSerializedNewNonKey=null;
+	    }
 	}
+	
 	
 	byte getType()
 	{
@@ -218,13 +226,13 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record>
 	{
 	    concernedSerializedPrimaryKey = _concernedSerializedPrimaryKey;
 	}
-	byte[] getConcernedSerializedOldNonPK()
+	byte[] getConcernedSerializedNewNonKey()
 	{
-	    return concernedSerializedOldNonPK;
+	    return concernedSerializedNewNonKey;
 	}
-	void setConcernedSerializedOldNonPK(byte[] _concernedSerializedOldNonPK)
+	void setConcernedSerializedNewNonKey(byte[] _concernedSerializedNewNonKey)
 	{
-	    concernedSerializedOldNonPK = _concernedSerializedOldNonPK;
+	    concernedSerializedNewNonKey = _concernedSerializedNewNonKey;
 	}
 	int getId()
 	{
@@ -239,6 +247,17 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record>
 	{
 	    this.position=order;
 	}
+
+	byte[] getConcernedSerializedNewForeignKey()
+	{
+	    return concernedSerializedNewForeignKey;
+	}
+
+	void setConcernedSerializedNewForeignKey(byte[] _concernedSerializedNewForeignKey)
+	{
+	    concernedSerializedNewForeignKey = _concernedSerializedNewForeignKey;
+	}
+	
     }
     
     DatabaseEventsIterator eventsTableIterator(final DataInputStream ois)
@@ -280,13 +299,22 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record>
 		    if (type.needsNewValue())
 		    {
     		    	size=ois.readInt();
+    		    	if (size>Table.maxPrimaryKeysSizeBytes)
+    		    	    throw new SerializationDatabaseException("Transaction  event is too big : "+size);
+    		    	byte[] foreignKeys=new byte[size];
+    		    	if (ois.read(foreignKeys)!=size)
+    		    	    throw new SerializationDatabaseException("Impossible to read the expected bytes number : "+size);
+    		    
+    		    	event.setConcernedSerializedNewForeignKey(foreignKeys);
+
+    		    	size=ois.readInt();
     		    	if (size>EVENT_MAX_SIZE_BYTES)
     		    	    throw new SerializationDatabaseException("Transaction  event is too big : "+size);
     		    	byte[] nonpk=new byte[size];
     		    	if (ois.read(nonpk)!=size)
     		    	    throw new SerializationDatabaseException("Impossible to read the expected bytes number : "+size);
     		    
-    		    	event.setConcernedSerializedOldNonPK(nonpk);
+    		    	event.setConcernedSerializedNewNonKey(nonpk);
 		    }
 
 		    next=0;

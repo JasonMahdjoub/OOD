@@ -8389,7 +8389,7 @@ public abstract class Table<T extends DatabaseRecord>
 	}
     }
     
-    void unserializeFieldsNonPK(DatabaseRecord record, byte tab[]) throws DatabaseException
+    void unserializeFields(DatabaseRecord record, byte tab[], boolean includePK, boolean includeFK, boolean includeNonKey) throws DatabaseException
     {
 	try(ByteArrayInputStream bais=new ByteArrayInputStream(tab))
 	{
@@ -8397,7 +8397,17 @@ public abstract class Table<T extends DatabaseRecord>
 	    {
 		for (FieldAccessor fa : fields)
 		{
-		    if (!fa.isPrimaryKey())
+		    if (fa.isPrimaryKey())
+		    {
+			if (includePK)
+			    fa.unserialize(ois, record);
+		    }
+		    else if (fa.isForeignKey())
+		    {
+			if (includeFK)
+			    fa.unserialize(ois, record);			
+		    }
+		    else if (includeNonKey)
 			fa.unserialize(ois, record);
 		}
 	    }
@@ -8458,7 +8468,7 @@ public abstract class Table<T extends DatabaseRecord>
 	}
     }
 
-    byte[] serializeFieldsNonPK(T record) throws DatabaseException
+    byte[] serializeFields(T record, boolean includePK, boolean includeForeignKeyField, boolean includeNonKeyField) throws DatabaseException
     {
 	try(ByteArrayOutputStream baos=new ByteArrayOutputStream())
 	{
@@ -8466,8 +8476,20 @@ public abstract class Table<T extends DatabaseRecord>
 	    {
 		for (FieldAccessor fa : fields)
 		{
-		    if (!fa.isPrimaryKey())
+		    if (fa.isPrimaryKey())
+		    {
+			if (includePK)
+			    fa.serialize(oos, record);
+		    }
+		    else if (fa.isForeignKey())
+		    {
+			if (includeForeignKeyField)
+			    fa.serialize(oos, record);
+		    }
+		    else if (includeNonKeyField)
+		    {
 			fa.serialize(oos, record);
+		    }
 		}
 	    }
 	    return baos.toByteArray();

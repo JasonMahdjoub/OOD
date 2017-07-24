@@ -115,6 +115,7 @@ public abstract class AlterRecordFilter<T extends Object>
     {
 	to_delete=false;
 	to_delete_with_cascade=false;
+	modificationFromRecordInstance=false;
 	modifications=null;
     }
     

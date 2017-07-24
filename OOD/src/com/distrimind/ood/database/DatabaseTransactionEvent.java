@@ -37,8 +37,6 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 
 /**
  * 
@@ -49,7 +47,7 @@ import java.util.Collection;
 public class DatabaseTransactionEvent extends DatabaseEvent
 {
     private long id;
-    private final Collection<TableEvent<?>> events;
+    private final ArrayList<TableEvent<?>> events;
     private boolean force=false;
     
     DatabaseTransactionEvent()
@@ -58,7 +56,7 @@ public class DatabaseTransactionEvent extends DatabaseEvent
 	events=new ArrayList<>();
     }
     
-    DatabaseTransactionEvent(long id, Collection<TableEvent<?>> events)
+    DatabaseTransactionEvent(long id, ArrayList<TableEvent<?>> events)
     {
 	this.id=id;
 	if (events==null)
@@ -81,11 +79,13 @@ public class DatabaseTransactionEvent extends DatabaseEvent
 	for (TableEvent<?> de : events)
 	    if (de==null)
 		throw new NullPointerException("events element");
-	this.events=Arrays.asList(events);
+	this.events=new ArrayList<>();
+	for (TableEvent<?> te : events)
+	    this.events.add(te);
 	
     }
     
-    public Collection<TableEvent<?>> getEvents()
+    public ArrayList<TableEvent<?>> getEvents()
     {
 	return events;
     }
