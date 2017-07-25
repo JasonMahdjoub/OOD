@@ -42,7 +42,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.distrimind.ood.database.annotations.Field;
@@ -313,7 +313,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
     }
     
     @SuppressWarnings("unchecked")
-    private void addEventsForTablesToSynchronize(final AtomicReference<DatabaseTransactionEventsTable.Record> transaction, final Package databasePackage, final DatabaseHooksTable.Record hook, Class<? extends Table<?>> tableClass, Set<Class<? extends Table<?>>> tablesDone, final AtomicLong currentEventPos, final long maxEvents, final boolean force) throws DatabaseException
+    private void addEventsForTablesToSynchronize(final AtomicReference<DatabaseTransactionEventsTable.Record> transaction, final Package databasePackage, final DatabaseHooksTable.Record hook, Class<? extends Table<?>> tableClass, Set<Class<? extends Table<?>>> tablesDone, final AtomicInteger currentEventPos, final long maxEvents, final boolean force) throws DatabaseException
     {
 	if (tablesDone.contains(tableClass))
 	    return;
@@ -336,11 +336,13 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 	    public boolean nextRecord(DatabaseRecord _record) throws DatabaseException
 	    {
 		DatabaseEventsTable.Record event=new DatabaseEventsTable.Record(transaction.get(), new TableEvent<DatabaseRecord>(-1, DatabaseEventType.ADD, null, _record, null), getDatabaseWrapper());
+		event.setPosition(currentEventPos.getAndIncrement());
 		getDatabaseEventsTable().addRecord(event);
 		if (currentEventPos.get()>maxEvents)
-		    throw new IllegalAccessError();
-		if (currentEventPos.incrementAndGet()==maxEvents)
+		    throw new IllegalAccessError(currentEventPos.get()+" ; "+maxEvents);
+		if (currentEventPos.get()==maxEvents)
 		{
+		    currentEventPos.set(0);
 		    DatabaseTransactionsPerHostTable.Record trhost=new DatabaseTransactionsPerHostTable.Record();
 		    trhost.set(transaction.get(), hook);
 		    getDatabaseTransactionsPerHostTable().addRecord(trhost);
@@ -351,7 +353,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 		    tr.setForce(force);
 		    
 		    transaction.set(addRecord(tr));
-		    currentEventPos.set(0);
+		    
 		}
 		return false;
 	    }
@@ -365,7 +367,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 	tr.concernedDatabasePackage=databasePackage.getName();
 	tr.setForce(force);
 	AtomicReference<DatabaseTransactionEventsTable.Record> transaction=new AtomicReference<>(addRecord(tr));
-	AtomicLong currentEventPos=new AtomicLong(0);
+	AtomicInteger currentEventPos=new AtomicInteger(0);
 	Set<Class<? extends Table<?>>> tables=getDatabaseWrapper().getDatabaseConfiguration(databasePackage).getTableClasses();
 	Set<Class<? extends Table<?>>> tablesDone=new HashSet<>();
 	

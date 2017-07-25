@@ -383,10 +383,10 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 	    {
 		this.lastTransactionFieldsBetweenDistantHosts.put(new HostPair(host, e.getKey()), e.getValue());
 	    }
-	    if (cleanNow)
-	    {
-		getDatabaseDistantTransactionEvent().cleanDistantTransactions();
-	    }
+	}
+	if (cleanNow)
+	{
+	    getDatabaseDistantTransactionEvent().cleanDistantTransactions();
 	}
     }
     
