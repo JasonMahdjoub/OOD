@@ -68,7 +68,10 @@ final class IDTable extends Table<IDTable.Record>
     {
 	return getAndIncrementID(TRANSACTIONID);
     }
-    
+    void decrementTransactionID() throws DatabaseException
+    {
+	decrementID(TRANSACTIONID);
+    }
     private long getAndIncrementID(int id) throws DatabaseException
     {
 	int hashCode=id;
@@ -83,6 +86,16 @@ final class IDTable extends Table<IDTable.Record>
 	    long res=r.transactionID++;
 	    this.updateRecord(r);
 	    return res;
+	}
+    }
+    
+    private void decrementID(int id) throws DatabaseException
+    {
+	Record r=getRecord(new Object[]{"id", new Integer(id)});
+	if (r!=null)
+	{
+	    --r.transactionID;
+	    this.updateRecord(r);
 	}
     }
     

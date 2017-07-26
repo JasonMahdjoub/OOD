@@ -93,6 +93,7 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record>
 			oos.writeChars(getConcernedTable());
 			oos.writeInt(getConcernedSerializedPrimaryKey().length);
 			oos.write(getConcernedSerializedPrimaryKey());
+			
 			if (DatabaseEventType.getEnum(getType()).needsNewValue())
 			{
 			    byte[] foreignKeys=getConcernedSerializedNewForeignKey();

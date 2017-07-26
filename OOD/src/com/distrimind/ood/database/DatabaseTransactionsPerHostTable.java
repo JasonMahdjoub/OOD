@@ -406,7 +406,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 		{
 		    distantTransaction=new DatabaseDistantTransactionEvent.Record(transaction.getID(), getIDTable().getLastTransactionID(), fromHook.get(), false, null, false);
 		    final List<AbstractDecentralizedID> concernedHosts=((DatabaseTransactionEventsTable.Record)transaction).getConcernedHosts();
-		    if (transaction.isForce())
+		    if (transaction.isForce() || concernedHosts.size()>0)
 		    {
 			final List<AbstractDecentralizedID> l=new ArrayList<>();
 			getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
@@ -416,7 +416,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 			    {
 				if( _record.concernsLocalDatabaseHost() 
 					|| _record.getHostID().equals(directPeer.getHostID())
-					|| !concernedHosts.contains(_record.getHostID()))
+					|| (concernedHosts.size()>0 && !concernedHosts.contains(_record.getHostID())))
 				    l.add(_record.getHostID());
 				return false;
 			    }
@@ -612,7 +612,9 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 				e.setTransaction(distantTransaction);
 				getDatabaseDistantEventsTable().addRecord(e);
 			    }
+			    getDatabaseHooksTable().actualizeLastTransactionID(new ArrayList<AbstractDecentralizedID>(0), distantTransaction.getLocalID(), distantTransaction.getLocalID()+1);
 			}
+			
 			ArrayList<TableEvent<?>> l=localDTE.getEvents();
 			for (int i=0;i<l.size();i++)
 			{
@@ -839,7 +841,6 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 	
 	
 	final AtomicInteger number=new AtomicInteger(0);
-	//TODO export first indirect data
 	
 	final AtomicLong nearNextLocalID=new AtomicLong();
     	final DatabaseHooksTable.Record hook=getDatabaseHooksTable().getRecord("id", new Integer(hookID));

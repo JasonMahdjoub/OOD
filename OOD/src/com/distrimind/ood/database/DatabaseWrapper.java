@@ -463,13 +463,57 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	
 	public void addHookForLocalDatabaseHost(AbstractDecentralizedID hostID, Package ...databasePackages) throws DatabaseException
 	{
-	    getHooksTransactionsTable().addHooks(hostID, true, false, databasePackages);
+	    ArrayList<String> packages=new ArrayList<>();
+	    for (Package p : databasePackages)
+	    {
+		packages.add(p.getName());
+	    }
+	    getHooksTransactionsTable().addHooks(hostID, true, false, new ArrayList<AbstractDecentralizedID>(), packages);
 	}
 	
-	public void addHookForDistantHost(AbstractDecentralizedID hostID, boolean replaceDistantConflitualRecords, Package ...databasePackages) throws DatabaseException
+	public HookAddRequest askForHookAddingAndSynchronizeDatabase(AbstractDecentralizedID hostID, boolean replaceDistantConflitualRecords, Package ... packages) throws DatabaseException
 	{
-	    getHooksTransactionsTable().addHooks(hostID, false, replaceDistantConflitualRecords, databasePackages);
+	    ArrayList<String> packagesString=new ArrayList<>();
+	    for (Package p : packages)
+		packagesString.add(p.getName());
+	    return askForHookAddingAndSynchronizeDatabase(hostID, true, replaceDistantConflitualRecords, packagesString);
 	}
+	private HookAddRequest askForHookAddingAndSynchronizeDatabase(AbstractDecentralizedID hostID, boolean mustReturnMessage, boolean replaceDistantConflitualRecords, ArrayList<String> packages) throws DatabaseException
+	{
+	    final ArrayList<AbstractDecentralizedID> hostAlreadySynchronized=new ArrayList<>();
+	    getHooksTransactionsTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
+	        
+	        @Override
+	        public boolean nextRecord(Record _record) 
+	        {
+	            if (!_record.concernsLocalDatabaseHost())
+	        	hostAlreadySynchronized.add(_record.getHostID());
+	            return false;
+	        }
+	    });
+	    
+	    return new HookAddRequest(getHooksTransactionsTable().getLocalDatabaseHost().getHostID(), hostID, packages, hostAlreadySynchronized, mustReturnMessage, replaceDistantConflitualRecords);
+	}
+	public HookAddRequest receivedHookAddRequest(HookAddRequest hookAddRequest) throws DatabaseException
+	{
+	    DatabaseHooksTable.Record localDatabaseHost=getHooksTransactionsTable().getLocalDatabaseHost();
+	    if (localDatabaseHost==null)
+		throw new DatabaseException("Function must be called before addHookForLocalDatabaseHost.");
+	    if (hookAddRequest==null || !hookAddRequest.getHostDestination().equals(localDatabaseHost.getHostID()))
+		return null;
+	    HookAddRequest res=null;
+	    if (hookAddRequest.mustReturnsMessage())
+	    {
+		res=askForHookAddingAndSynchronizeDatabase(hookAddRequest.getHostSource(), false, !hookAddRequest.isReplaceDistantConflictualData(), hookAddRequest.getPackagesToSynchronize());
+	    }
+	    getHooksTransactionsTable().addHooks(hookAddRequest.getHostSource(), false, !hookAddRequest.isReplaceDistantConflictualData(), hookAddRequest.getHostsAlreadySynchronized(), hookAddRequest.getPackagesToSynchronize());
+	    return res;
+		
+	}
+	/*private void addHookForDistantHost(AbstractDecentralizedID hostID, boolean replaceDistantConflitualRecords, List<Package> packagesAlreadySynchronizedOneTime, Package ...databasePackages) throws DatabaseException
+	{
+	    getHooksTransactionsTable().addHooks(hostID, false, replaceDistantConflitualRecords, packagesAlreadySynchronizedOneTime, databasePackages);
+	}*/
 	
 	public void removeHook(AbstractDecentralizedID hostID, Package ...databasePackages) throws DatabaseException
 	{
@@ -760,6 +804,10 @@ public abstract class DatabaseWrapper implements AutoCloseable
 		    validateLastSynchronization(data.getHostSource(), ((TransactionConfirmationEvents) data).getLastValidatedTransaction());
 		else
 		    initHook(data.getHostSource(), ((TransactionConfirmationEvents) data).getLastValidatedTransaction());
+	    }
+	    else if (data instanceof HookAddRequest)
+	    {
+		receivedHookAddRequest((HookAddRequest)data);
 	    }
 	}
 	
@@ -1723,34 +1771,46 @@ public abstract class DatabaseWrapper implements AutoCloseable
 				    if (t.eventsNumber>0)
 				    {
 					final AtomicReference<DatabaseTransactionEventsTable.Record> finalTR=new AtomicReference<>(null);
+					final ArrayList<AbstractDecentralizedID> excludedHooks=new ArrayList<>();
+					long previousLastTransactionID=getTransactionIDTable().getLastTransactionID();
+					final AtomicBoolean hasIgnoredHooks=new AtomicBoolean(false);
 					
 					getHooksTransactionsTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
 					    
 					    @Override
 					    public boolean nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException
 					    {
-						if (_record.isConcernedDatabaseByPackage(t.transaction.concernedDatabasePackage) && !_record.concernsLocalDatabaseHost() && (t.concernedHosts==null || t.concernedHosts.isEmpty() || t.concernedHosts.contains(_record.getHostID())))
+						if (!_record.concernsLocalDatabaseHost())
 						{
-
-						    if (finalTR.get()==null)
-						    {
-							finalTR.set(t.transaction=getDatabaseTransactionEventsTable().addRecord(new DatabaseTransactionEventsTable.Record(getTransactionIDTable().getAndIncrementTransactionID(), t.transaction.concernedDatabasePackage, t.concernedHosts)));
-							
-							for (DatabaseEventsTable.Record r : t.events)
-							{
-							    r.setTransaction(finalTR.get());
-							    getDatabaseEventsTable().addRecord(r);
-							}
-							
-						    }
-						    DatabaseTransactionsPerHostTable.Record trhost=new DatabaseTransactionsPerHostTable.Record();
-						    trhost.set(finalTR.get(), _record);
-						    getDatabaseTransactionsPerHostTable().addRecord(trhost);
-						    transactionOK.set(true);
+        						if (_record.isConcernedDatabaseByPackage(t.transaction.concernedDatabasePackage) && (t.concernedHosts==null || t.concernedHosts.isEmpty() || t.concernedHosts.contains(_record.getHostID())))
+        						{
+        						    excludedHooks.add(_record.getHostID());
+        						    if (finalTR.get()==null)
+        						    {
+        							finalTR.set(t.transaction=getDatabaseTransactionEventsTable().addRecord(new DatabaseTransactionEventsTable.Record(getTransactionIDTable().getAndIncrementTransactionID(), t.transaction.concernedDatabasePackage, t.concernedHosts)));
+        							
+        							for (DatabaseEventsTable.Record r : t.events)
+        							{
+        							    r.setTransaction(finalTR.get());
+        							    getDatabaseEventsTable().addRecord(r);
+        							}
+        							
+        						    }
+        						    DatabaseTransactionsPerHostTable.Record trhost=new DatabaseTransactionsPerHostTable.Record();
+        						    trhost.set(finalTR.get(), _record);
+        						    getDatabaseTransactionsPerHostTable().addRecord(trhost);
+        						    transactionOK.set(true);
+        						}
+        						else
+        						    hasIgnoredHooks.set(true);
 						}
 						return false;
 					    }
 					});
+					if (hasIgnoredHooks.get())
+					{
+					    getHooksTransactionsTable().actualizeLastTransactionID(excludedHooks, previousLastTransactionID);
+					}
 				    }
 				}
 				resetTmpTransaction();
@@ -1789,39 +1849,48 @@ public abstract class DatabaseWrapper implements AutoCloseable
 			    if (t.eventsNumber>0)
 			    {
 				final AtomicReference<DatabaseTransactionEventsTable.Record> finalTR=new AtomicReference<>(null);
-				
+				final ArrayList<AbstractDecentralizedID> excludedHooks=new ArrayList<>();
+				long previousLastTransactionID=getTransactionIDTable().getLastTransactionID();
+				final AtomicBoolean hasIgnoredHooks=new AtomicBoolean(false);
 				getHooksTransactionsTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
 				    
 				    @Override
 				    public boolean nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException
 				    {
-					if (_record.isConcernedDatabaseByPackage(t.transaction.concernedDatabasePackage) && !_record.concernsLocalDatabaseHost() && (t.concernedHosts==null || t.concernedHosts.isEmpty() || t.concernedHosts.contains(_record.getHostID())))
+					if (!_record.concernsLocalDatabaseHost())
 					{
-
-					    if (finalTR.get()==null)
-					    {
-						finalTR.set(getDatabaseTransactionEventsTable().addRecord(new DatabaseTransactionEventsTable.Record(getTransactionIDTable().getAndIncrementTransactionID(), t.transaction.concernedDatabasePackage, t.concernedHosts)));
-						final HashMap<String, Object> hm=new HashMap<>();
-						hm.put("transaction", finalTR.get());
-						getDatabaseEventsTable().updateRecords(new AlterRecordFilter<DatabaseEventsTable.Record>() {
-						    
-						    @Override
-						    public void nextRecord(DatabaseEventsTable.Record _record) 
-						    {
-							update(hm);
-						    }
-						}, "transaction=%transaction", "transaction", t.transaction);
-						
-						
-					    }
-					    DatabaseTransactionsPerHostTable.Record trhost=new DatabaseTransactionsPerHostTable.Record();
-					    trhost.set(finalTR.get(), _record);
-					    getDatabaseTransactionsPerHostTable().addRecord(trhost);
-					    transactionOK.set(true);
+        					if (_record.isConcernedDatabaseByPackage(t.transaction.concernedDatabasePackage) && (t.concernedHosts==null || t.concernedHosts.isEmpty() || t.concernedHosts.contains(_record.getHostID())))
+        					{
+        					    excludedHooks.add(_record.getHostID());
+        					    if (finalTR.get()==null)
+        					    {
+        						finalTR.set(getDatabaseTransactionEventsTable().addRecord(new DatabaseTransactionEventsTable.Record(getTransactionIDTable().getAndIncrementTransactionID(), t.transaction.concernedDatabasePackage, t.concernedHosts)));
+        						final HashMap<String, Object> hm=new HashMap<>();
+        						hm.put("transaction", finalTR.get());
+        						getDatabaseEventsTable().updateRecords(new AlterRecordFilter<DatabaseEventsTable.Record>() {
+        						    
+        						    @Override
+        						    public void nextRecord(DatabaseEventsTable.Record _record) 
+        						    {
+        							update(hm);
+        						    }
+        						}, "transaction=%transaction", "transaction", t.transaction);
+        						
+        						
+        					    }
+        					    DatabaseTransactionsPerHostTable.Record trhost=new DatabaseTransactionsPerHostTable.Record();
+        					    trhost.set(finalTR.get(), _record);
+        					    getDatabaseTransactionsPerHostTable().addRecord(trhost);
+        					    transactionOK.set(true);
+        					}
+        					else
+        					    hasIgnoredHooks.set(true);
 					}
 					return false;
 				    }
 				});
+				if (hasIgnoredHooks.get())
+				    getHooksTransactionsTable().actualizeLastTransactionID(excludedHooks, previousLastTransactionID);
 			    }
 			    getDatabaseTransactionEventsTable().removeRecordWithCascade(t.transaction);
 			}
@@ -2786,6 +2855,26 @@ public abstract class DatabaseWrapper implements AutoCloseable
 	}
     }
     
+    /**
+     * Gets the database configuration corresponding to the given package
+     * @param _package the package that's identify the database
+     * @return the database configuration corresponding to the given package
+     */
+    public DatabaseConfiguration getDatabaseConfiguration(String _package)
+    {
+	if (_package==null)
+	    throw new NullPointerException();
+	try(ReadWriteLock.Lock lock=locker.getAutoCloseableWriteLock())
+	{
+	    for (Map.Entry<Package, Database> e : sql_database.entrySet())
+	    {
+		if (e.getKey().getName().equals(_package))
+		    return e.getValue().getConfiguration();
+	    }
+	    return null;
+	}
+    }
+
     /**
      * Gets the database configuration corresponding to the given package
      * @param _package the package that's identify the database

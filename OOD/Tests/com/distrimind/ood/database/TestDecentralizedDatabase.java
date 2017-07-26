@@ -650,7 +650,9 @@ public abstract class TestDecentralizedDatabase
     private void checkAllDatabaseInternalDataUsedForSynchro() throws DatabaseException
     {
 	for (Database db : listDatabase)
+	{
 	    checkDatabaseInternalDataUsedForSynchro(db);
+	}
     }
     
     private void checkDatabaseInternalDataUsedForSynchro(Database db) throws DatabaseException
@@ -658,7 +660,18 @@ public abstract class TestDecentralizedDatabase
 	synchronized(db)
 	{
 	    Assert.assertEquals(db.getDbwrapper().getDatabaseTransactionsPerHostTable().getRecords().size(), 0);
-		
+
+	    /*if (db.getDbwrapper().getTransactionsTable().getRecords().size()>0)
+	    {
+		System.out.println("Last transaction ID : "+db.getDbwrapper().getTransactionIDTable().getLastTransactionID());
+		System.out.println("Last validated transaction ID : "+db.getDbwrapper().getTransactionIDTable().getLastValidatedTransactionID());
+		System.out.println("Last computed transaction ID : "+db.getDbwrapper().getHooksTransactionsTable().getGlobalLastValidatedTransactionID());
+		for (DatabaseTransactionEventsTable.Record r : db.getDbwrapper().getTransactionsTable().getRecords())
+		{
+		    System.out.println("\t"+r.getID());
+		}
+	    }*/
+	    
 	    Assert.assertEquals(db.getDbwrapper().getTransactionsTable().getRecords().size(), 0);
 	    Assert.assertEquals(db.getDbwrapper().getDatabaseEventsTable().getRecords().size(), 0);
 	    Assert.assertEquals(db.getDbwrapper().getHooksTransactionsTable().getRecords().size(), listDatabase.size());
@@ -882,10 +895,18 @@ public abstract class TestDecentralizedDatabase
 	    db.getDbwrapper().getSynchronizer().addHookForLocalDatabaseHost(db.getHostID(), TablePointed.class.getPackage());
 	    Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized());
 	    
+	}
+	
+	for (Database db : listDatabase)
+	{
 	    for (Database other : listDatabase)
 	    {
 		if (other!=db)
-		    db.getDbwrapper().getSynchronizer().addHookForDistantHost(other.getHostID(), false, TablePointed.class.getPackage());
+		{
+		    HookAddRequest har=db.getDbwrapper().getSynchronizer().askForHookAddingAndSynchronizeDatabase(other.getHostID(), false, TablePointed.class.getPackage());
+		    har=other.getDbwrapper().getSynchronizer().receivedHookAddRequest(har);
+		    db.getDbwrapper().getSynchronizer().receivedHookAddRequest(har);
+		}
 	    }
 	}
 	
@@ -2155,7 +2176,6 @@ public abstract class TestDecentralizedDatabase
 	connectAllDatabase();
 	testSynchronisation();
 	disconnectAllDatabase();
-	
 	db4=new Database(getDatabaseWrapperInstance4());
 	listDatabase.add(db4);
 	
@@ -2169,8 +2189,9 @@ public abstract class TestDecentralizedDatabase
 	 {
 	     if (other!=db4)
 	     {
-		 db4.getDbwrapper().getSynchronizer().addHookForDistantHost(other.getHostID(), false, TablePointed.class.getPackage());
-		 other.getDbwrapper().getSynchronizer().addHookForDistantHost(db4.getHostID(), true, TablePointed.class.getPackage());
+		 HookAddRequest har=db4.getDbwrapper().getSynchronizer().askForHookAddingAndSynchronizeDatabase(other.getHostID(), false, TablePointed.class.getPackage());
+		 har=other.getDbwrapper().getSynchronizer().receivedHookAddRequest(har);
+		 db4.getDbwrapper().getSynchronizer().receivedHookAddRequest(har);
 	     }
 	 }
 	
