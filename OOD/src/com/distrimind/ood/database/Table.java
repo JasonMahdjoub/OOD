@@ -1261,6 +1261,12 @@ public abstract class Table<T extends DatabaseRecord>
     {
 	return new SqlQuerry("SELECT "+getSqlSelectStep1Fields(loadJunctions, null)+" FROM "+getFromPart(loadJunctions, null));
     }
+    SqlQuerry getSqlGeneralSelect(boolean loadJunctions, boolean ascendant, String orderByFields[])
+    {
+	if (orderByFields!=null && orderByFields.length>0)
+	    loadJunctions=true;
+	return new SqlQuerry("SELECT "+getSqlSelectStep1Fields(loadJunctions, null)+" FROM "+getFromPart(loadJunctions, null)+getOrderByPart(ascendant, orderByFields));
+    }
     SqlQuerry getSqlGeneralSelect(boolean loadJunctions, String condition, final Map<Integer, Object> parameters)
     {
 	return getSqlGeneralSelect(loadJunctions, condition, parameters, true, new String[]{});
@@ -1371,28 +1377,19 @@ public abstract class Table<T extends DatabaseRecord>
 	return sb;
     }
     
-    String getOrderByPart(boolean _ascendant, String..._fields)
+    String getOrderByPart(boolean _ascendant, String..._fields) 
     {
 	if (_fields==null || _fields.length==0)
 	    return "";
 	StringBuffer orderBySqlFields=new StringBuffer();
 	for (String s : _fields)
 	{
-	    for (FieldAccessor fa : fields)
-	    {
-		if (fa.getFieldName().equals(s))
-		{
-		    if (fa.isComparable() && fa.getDeclaredSqlFields().length==1)
-		    {
-			if (orderBySqlFields.length()>0)
-			    orderBySqlFields.append(", ");
-			orderBySqlFields.append(fa.getDeclaredSqlFields()[0].field);
-			orderBySqlFields.append(_ascendant?" ASC":" DESC");
-		    }
-		    break;
-		}
-	    }
+	    if (orderBySqlFields.length()>0)
+		orderBySqlFields.append(", ");
+	    orderBySqlFields.append(getFieldToComparare(s));
+	    orderBySqlFields.append(_ascendant?" ASC":" DESC");
 	}
+	
 	if (orderBySqlFields.length()>0)
 	{
 	    orderBySqlFields.insert(0, " ORDER BY ");
@@ -1400,12 +1397,14 @@ public abstract class Table<T extends DatabaseRecord>
 	}
 	return orderBySqlFields.toString();
     }
-    SqlQuerry getSqlGeneralSelect(final boolean loadJunctions, final String condition, final Map<Integer, Object> parameters, boolean _ascendant, String..._fields)
+    SqlQuerry getSqlGeneralSelect(boolean loadJunctions, final String condition, final Map<Integer, Object> parameters, boolean _ascendant, String..._fields) 
     {
+	if (_fields.length>0)
+	    loadJunctions=true;
 	if (condition==null || condition.trim().equals(""))
-	    return new SqlQuerry("SELECT "+getSqlSelectStep1Fields(loadJunctions, null)+" FROM "+getFromPart(loadJunctions, null)+" "+getOrderByPart(_ascendant, _fields).toString());
+	    return new SqlQuerry("SELECT "+getSqlSelectStep1Fields(loadJunctions, null)+" FROM "+getFromPart(loadJunctions, null)+" "+getOrderByPart(_ascendant, _fields));
 	else
-	    return new SqlQuerry("SELECT "+getSqlSelectStep1Fields(loadJunctions, null)+" FROM "+getFromPart(loadJunctions, null)+" WHERE "+condition+getOrderByPart(_ascendant, _fields).toString()){
+	    return new SqlQuerry("SELECT "+getSqlSelectStep1Fields(loadJunctions, null)+" FROM "+getFromPart(loadJunctions, null)+" WHERE "+condition+getOrderByPart(_ascendant, _fields)){
 	    @Override
 	    void finishPrepareStatement(PreparedStatement st) throws SQLException
 	    {
@@ -2242,9 +2241,9 @@ public abstract class Table<T extends DatabaseRecord>
 	try (Lock l=new ReadLock(this))
 	{
 	    final RuleInstance rule=whereCondition==null?null:Interpreter.getRuleInstance(whereCondition);
-	    final SortedArray res=new SortedArray(rowpos, rowlength, _ascendant, _fields);
 	    if (isLoadedInMemory())
 	    {
+		final SortedArray res=new SortedArray(rowpos, rowlength, _ascendant, _fields);
 		for (T r : getRecords(-1,-1,false))
 		{
 		    if ((rule==null || rule.isConcernedBy(this, parameters, r)) && _filter.nextRecord(r))
@@ -2252,11 +2251,13 @@ public abstract class Table<T extends DatabaseRecord>
 		    if (_filter.isTableParsingStoped())
 			break;
 		}
+		return res.getRecords();
 	    }
 	    else
 	    {
 		HashMap<Integer, Object> sqlParameters=new HashMap<>();
 		String sqlQuery=rule==null?null:rule.translateToSqlQuery(this, parameters, sqlParameters, new HashSet<TableJunction>()).toString();
+		final ArrayList<T> res=new ArrayList<>();
 		getListRecordsFromSqlConnection(new Runnable() {
 		    
 		    @Override
@@ -2264,7 +2265,7 @@ public abstract class Table<T extends DatabaseRecord>
 		    {
 			if (_filter.nextRecord(_instance))
 			{
-			    res.addRecord(_instance);
+			    res.add(_instance);
 		    	}
 			return !_filter.isTableParsingStoped();
 		    }
@@ -2273,15 +2274,54 @@ public abstract class Table<T extends DatabaseRecord>
 		    public void init(int _field_count)
 		    {
 		    }
-		}, rule==null?getSqlGeneralSelect(true):getSqlGeneralSelect(true, sqlQuery, sqlParameters), TransactionIsolation.TRANSACTION_READ_COMMITTED, rowpos, rowlength);
+		}, rule==null?getSqlGeneralSelect(true, _ascendant, _fields):getSqlGeneralSelect(true, sqlQuery, sqlParameters, _ascendant, _fields), TransactionIsolation.TRANSACTION_READ_COMMITTED, rowpos, rowlength);
+		return res;
 	    }
-	    return res.getRecords();
+	    
 	}
 	catch(Exception e)
 	{
 	    throw DatabaseException.getDatabaseException(e);
 	}
     }
+    
+	public String getFieldToComparare(String field) 
+	{
+	    String strings[]=field.split("\\.");
+	    
+	    Table<?> current_table=Table.this;
+	    
+	    FieldAccessor founded_field=null;
+	    for (int i=0;i<strings.length;i++)
+	    {
+		if (current_table==null)
+		    throw new IllegalArgumentException("The field "+field+" does not exists.");
+		String f=strings[i];
+		
+		for (FieldAccessor fa : current_table.fields)
+		{
+		    if (fa.getFieldName().equals(f))
+		    {
+			founded_field=fa;
+			break;
+		    }
+		}
+		if (founded_field==null)
+		    throw new IllegalArgumentException("The field "+f+" does not exist into the class/table "+current_table.getClass().getName());
+		
+		if (founded_field.isForeignKey())
+		    current_table=((ForeignKeyFieldAccessor)founded_field).getPointedTable();
+		else
+		{
+		    current_table=null;
+		}
+	    }
+	    
+	    if (!founded_field.isComparable() || founded_field.getDeclaredSqlFields().length>1)
+		throw new IllegalArgumentException("The field "+field+" starting in the class/table "+Table.this.getClass().getName()+" is not a comparable field.");
+	    return founded_field.getDeclaredSqlFields()[0].field;
+	}
+    
 
     /**
      * Returns the given records ordered according the given fields, in an ascendant way or in a descendant way.
@@ -2441,15 +2481,15 @@ public abstract class Table<T extends DatabaseRecord>
 	
 	public FieldComparator getFieldComparator(String field) throws ConstraintsNotRespectedDatabaseException
 	{
-	    ArrayList<String> strings=splitPoint(field);
+	    String strings[]=field.split("\\.");
 	    ArrayList<FieldAccessor> fields=new ArrayList<FieldAccessor>();
 	    Table<?> current_table=Table.this;
 	    
-	    for (int i=0;i<strings.size();i++)
+	    for (int i=0;i<strings.length;i++)
 	    {
 		if (current_table==null)
 		    throw new ConstraintsNotRespectedDatabaseException("The field "+field+" does not exists.");
-		String f=strings.get(i);
+		String f=strings[i];
 		FieldAccessor founded_field=null;
 		for (FieldAccessor fa : current_table.fields)
 		{
@@ -2474,28 +2514,6 @@ public abstract class Table<T extends DatabaseRecord>
 		throw new ConstraintsNotRespectedDatabaseException("The field "+field+" starting in the class/table "+Table.this.getClass().getName()+" is not a comparable field.");
 	    return new FieldComparator(fields);
 	}
-	private ArrayList<String> splitPoint(String s)
-	{
-	    ArrayList<String> res=new ArrayList<String>(10);
-	    int last_index=0;
-	    for (int i=0;i<s.length();i++)
-	    {
-		if (s.charAt(i)=='.')
-		{
-		    if (i!=last_index)
-		    {
-			res.add(s.substring(last_index, i));
-		    }
-		    last_index=i+1;
-		}
-	    }
-	    if (s.length()!=last_index)
-	    {
-		res.add(s.substring(last_index));
-	    }
-	
-	    return res;
-	 }
 	
 	
     }

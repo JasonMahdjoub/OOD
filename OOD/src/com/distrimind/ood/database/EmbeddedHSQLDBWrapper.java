@@ -539,6 +539,11 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper
 	return true;
     }
     @Override
+    protected boolean isLongVarBinarySupported()
+    {
+	return true;
+    }
+    @Override
     protected String getByteType()
     {
 	return "TINYINT";

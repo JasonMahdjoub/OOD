@@ -60,8 +60,8 @@ public class OOD
 	Calendar c1=Calendar.getInstance();
 	c1.set(2013, 3, 1);
 	Calendar c2=Calendar.getInstance();
-	c2.set(2017, 6, 5);
-	VERSION=new Version("Object Oriented Database", "OOD", 2, 0, 0, Version.Type.Beta, 7, c1.getTime(), c2.getTime());
+	c2.set(2017, 6, 27);
+	VERSION=new Version("Object Oriented Database", "OOD", 2, 0, 0, Version.Type.Beta, 8, c1.getTime(), c2.getTime());
 	try
 	{
 	    InputStream is=OOD.class.getResourceAsStream("build.txt");
@@ -72,8 +72,14 @@ public class OOD
 	    VERSION.addDeveloper(new PersonDeveloper("mahdjoub", "jason", c.getTime()));
 	
 	    c=Calendar.getInstance();
+	    c.set(2017, 6, 27);
+	    Description d=new Description(2,0,0,Version.Type.Beta, 8, c.getTime());
+	    d.addItem("All decentralized database synchronization tests are OK with HSQLDB (but not with Derby DB).");
+	    VERSION.addDescription(d);
+
+	    c=Calendar.getInstance();
 	    c.set(2017, 6, 5);
-	    Description d=new Description(2,0,0,Version.Type.Beta, 7, c.getTime());
+	    d=new Description(2,0,0,Version.Type.Beta, 7, c.getTime());
 	    d.addItem("Tests synchro between two direct peers OK.");
 	    d.addItem("Correcting a problem of transaction lock.");
 	    VERSION.addDescription(d);

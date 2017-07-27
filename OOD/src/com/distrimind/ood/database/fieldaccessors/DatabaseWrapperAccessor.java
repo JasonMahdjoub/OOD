@@ -58,6 +58,7 @@ class DatabaseWrapperAccessor
     private static final Method m_get_big_integer_type;
     private static final Method m_get_byte_type;
     private static final Method m_is_var_binary_supported;
+    private static final Method m_is_long_var_binary_supported;
     private static final Method m_get_blob;
     private static final Method m_get_double_type;
     private static final Method m_get_float_type;
@@ -244,6 +245,20 @@ class DatabaseWrapperAccessor
 	return false;
     }
     
+    static boolean isLongVarBinarySupported(DatabaseWrapper wrapper)
+    {
+	try
+	{
+	   return ((Boolean)invoke(m_is_long_var_binary_supported, wrapper)).booleanValue();
+	}
+	catch(InvocationTargetException e)
+	{
+	    System.err.println("Unexpected error :");
+	    e.printStackTrace();
+	    System.exit(-1);
+	}
+	return false;
+    }
 
     static Blob getBlob(DatabaseWrapper wrapper, byte[] tab) throws SQLException
     {
@@ -293,6 +308,7 @@ class DatabaseWrapperAccessor
 	m_get_big_integer_type=getMethod(DatabaseWrapper.class, "getBigIntegerType");
 	m_get_byte_type=getMethod(DatabaseWrapper.class, "getByteType");
 	m_is_var_binary_supported=getMethod(DatabaseWrapper.class, "isVarBinarySupported");
+	m_is_long_var_binary_supported=getMethod(DatabaseWrapper.class, "isLongVarBinarySupported");
 	m_get_blob=getMethod(DatabaseWrapper.class, "getBlob", byte[].class);
 	m_get_double_type=getMethod(DatabaseWrapper.class, "getDoubleType");
 	m_get_float_type=getMethod(DatabaseWrapper.class, "getFloatType");

@@ -78,6 +78,7 @@ public class SerializableFieldAccessor extends FieldAccessor
 	if (!Serializable.class.isAssignableFrom(field.getType()))
 	    throw new FieldDatabaseException("The given field "+field.getName()+" of type "+field.getType().getName()+" must be a serializable field.");
 	sql_fields=new SqlField[1];
+	
 	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), DatabaseWrapperAccessor.getSerializableType(sql_connection), null, null, isNotNull());
 	
 	if (Comparable.class.isAssignableFrom(field.getType()))

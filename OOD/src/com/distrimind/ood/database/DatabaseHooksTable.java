@@ -49,6 +49,7 @@ import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.annotations.LoadToMemory;
 import com.distrimind.ood.database.annotations.Unique;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.exceptions.SerializationDatabaseException;
 import com.distrimind.util.AbstractDecentralizedID;
 
 /**
@@ -392,14 +393,12 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 	}
     }
     
-    void actualizeLastTransactionID(final List<AbstractDecentralizedID> excludedHooks, final long previousLastTransacionID) throws DatabaseException
+    void actualizeLastTransactionID(final List<AbstractDecentralizedID> excludedHooks) throws DatabaseException
     {
-	actualizeLastTransactionID(excludedHooks, previousLastTransacionID, getIDTable().getLastTransactionID());
+	actualizeLastTransactionID(excludedHooks, getIDTable().getLastTransactionID());
     }
-    void actualizeLastTransactionID(final List<AbstractDecentralizedID> excludedHooks, final long previousLastTransacionID, final long lastTransactionID) throws DatabaseException
+    void actualizeLastTransactionID(final List<AbstractDecentralizedID> excludedHooks, final long lastTransactionID) throws DatabaseException
     {
-	if (lastTransactionID>previousLastTransacionID)
-	    {
 	    
 	    	final ArrayList<DatabaseHooksTable.Record> toUpdate=new ArrayList<>();
 		getRecords(new Filter<DatabaseHooksTable.Record>(){
@@ -416,7 +415,8 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 				@Override
 				public boolean nextRecord(DatabaseTransactionsPerHostTable.Record _record) 
 				{
-				    if (_record.getTransaction().getID()<actualLastID.get())
+				    
+				    if (_record.getTransaction().getID()-1<actualLastID.get())
 					actualLastID.set(_record.getTransaction().getID()-1);
 				    if (actualLastID.get()==h.getLastValidatedTransaction())
 					this.stopTableParsing();
@@ -424,9 +424,32 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 				}
 				
 			    }, "hook=%hook", "hook", h);
+			    if (actualLastID.get()>h.getLastValidatedTransaction())
+			    {
+				getDatabaseDistantTransactionEvent().getRecords(new Filter<DatabaseDistantTransactionEvent.Record>() {
+
+				@Override
+				public boolean nextRecord(com.distrimind.ood.database.DatabaseDistantTransactionEvent.Record _record) throws SerializationDatabaseException 
+				{
+				    if (_record.isConcernedBy(h.getHostID()))
+				    {
+					if (_record.getLocalID()-1<actualLastID.get())
+					    actualLastID.set(_record.getLocalID()-1);
+					if (actualLastID.get()==h.getLastValidatedTransaction())
+					    this.stopTableParsing();
+				    }
+				    return false;
+				}
+				}, "localID<%maxLocalID AND localID>=%minLocalID and peersInformedFull=%peersInformedFull", "maxLocalID", new Long(actualLastID.get()-1), "minLocalID", new Long(h.getLastValidatedTransaction()+1), "peersInformedFull", new Boolean(false));
+			    }
+			    
+			    
 			    if (actualLastID.get()==Long.MAX_VALUE)
 				actualLastID.set(lastTransactionID);
-			    if (h.getLastValidatedTransaction()!=actualLastID.get())
+			    else if (actualLastID.get()<h.getLastValidatedTransaction())
+				throw new IllegalAccessError();
+			    
+			    if (h.getLastValidatedTransaction()<actualLastID.get())
 			    {
 				h.setLastValidatedTransaction(actualLastID.get());
 				toUpdate.add(h);
@@ -440,7 +463,6 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 		{
 		    updateRecord(h, "lastValidatedTransaction", new Long(h.getLastValidatedTransaction()));
 		}
-	    }	
     }
     
     Record getHook(AbstractDecentralizedID host) throws DatabaseException
@@ -627,7 +649,8 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record>
 		    if (r.removePackageDatabase(packages))
 		    {
 			removeRecordWithCascade(r);
-			getDatabaseTransactionEventsTable().removeUnusedTransactions();
+			getDatabaseTransactionEventsTable().removeTransactionsFromLastID();
+			//getDatabaseTransactionEventsTable().removeUnusedTransactions();
 			return null;
 		    }
 		    else

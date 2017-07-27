@@ -129,26 +129,32 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 	
     }
     
+    private static final int concernedHostsSizeLimit=10000;
+    
     static class Record extends AbstractRecord
     {
+	
+	
 	
 	@NotNull
 	@Field
 	protected String concernedDatabasePackage;
 	
-	@Field(limit=65536)
+	@Field(limit=concernedHostsSizeLimit)
 	private byte[] concernedHosts;
 	
 
 	Record()
 	{
-	    
+	    this.concernedDatabasePackage=null;
+	    this.concernedHosts=null;
 	}
 	
 	Record(long id, String concernedDatabasePackage)
 	{
 	    super(id);
 	    this.concernedDatabasePackage=concernedDatabasePackage;
+	    this.concernedHosts=null;
 	}
 	Record(long id, String concernedDatabasePackage, Set<AbstractDecentralizedID> concernedHosts)
 	{
@@ -203,6 +209,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 	    }
 	    else
 		setForce(true);
+	    
 	    byte[][] bytes=new byte[peers.size()][];
 	    int i=0;
 	    int size=2+peers.size()*2;
@@ -211,16 +218,22 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 		bytes[i]=id.getBytes();
 		size+=bytes[i++].length+2;
 	    }
-	    
-	    concernedHosts=new byte[size];
-	    i=2;
-	    Bits.putShort(concernedHosts, 0, (short)peers.size());
-	    for (byte[] b : bytes)
+	    if (size>concernedHostsSizeLimit)
 	    {
-		Bits.putShort(concernedHosts, i, (short)b.length);
-		i+=2;
-		System.arraycopy(b, 0, concernedHosts, i, b.length);
-		i+=b.length;
+		concernedHosts=null;
+	    }
+	    else
+	    {
+		concernedHosts=new byte[size];
+		i=2;
+		Bits.putShort(concernedHosts, 0, (short)peers.size());
+		for (byte[] b : bytes)
+		{
+		    Bits.putShort(concernedHosts, i, (short)b.length);
+		    i+=2;
+		    System.arraycopy(b, 0, concernedHosts, i, b.length);
+		    i+=b.length;
+		}
 	    }
 	}
 	
@@ -466,7 +479,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
     
     protected void addTransactionToSynchronizeTables(final String databasePackage, final DatabaseHooksTable.Record hook, final boolean force) throws DatabaseException
     {
-	    final long previousLastTransacionID=getIDTable().getLastTransactionID();
+	    //final long previousLastTransacionID=getIDTable().getLastTransactionID();
 	    DatabaseTransactionEventsTable.Record tr=new DatabaseTransactionEventsTable.Record();
 	    tr.id=getTransactionIDTable().getAndIncrementTransactionID();
 	    tr.concernedDatabasePackage=databasePackage;
@@ -491,9 +504,8 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 	    else
 	    {
 		removeRecord(transaction.get());
-		getIDTable().decrementTransactionID();
 	    }
-	    getDatabaseHooksTable().actualizeLastTransactionID(Arrays.asList(hook.getHostID()), previousLastTransacionID);
+	    getDatabaseHooksTable().actualizeLastTransactionID(new ArrayList<AbstractDecentralizedID>(0));
     }
    
     

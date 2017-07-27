@@ -10,6 +10,9 @@
 		<classes>
 		    <class name="com.distrimind.ood.database.HSQLDBTestDatabase" />
 		</classes>
+		<classes>
+		    <class name="com.distrimind.ood.database.HSQLDBTestDencentralizedDatabase" />
+		</classes>
 	</test>
 
 </suite>

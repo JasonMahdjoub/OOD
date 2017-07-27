@@ -72,9 +72,31 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor
     {
 	super(_sql_connection, _field,parentFieldName, getCompatibleClasses(_field), table_class);
 	sql_fields=new SqlField[1];
-	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), (limit==0)?(DatabaseWrapperAccessor.isVarBinarySupported(sql_connection)?"VARBINARY("+16777216+")":"BLOB"):((limit>16777216 || !DatabaseWrapperAccessor.isVarBinarySupported(sql_connection))?("BLOB("+limit+")"):("VARBINARY("+limit+")")), null, null, isNotNull());
+	
+	String type=null;
+	long l=limit;
+	if (l<=0)
+	    l=16777216l;
+	if (l<=4096)
+	{
+	    if (DatabaseWrapperAccessor.isVarBinarySupported(sql_connection))
+		type="VARBINARY("+l+")";
+	    else if (DatabaseWrapperAccessor.isLongVarBinarySupported(sql_connection))
+		type="LONGVARBINARY("+l+")";
+	    else
+		type="BLOB("+l+")";
+	}
+	else
+	{
+	    if (DatabaseWrapperAccessor.isLongVarBinarySupported(sql_connection))
+		type="LONGVARBINARY("+l+")";
+	    else
+		type="BLOB("+l+")";
+	}
+	sql_fields[0]=new SqlField(table_name+"."+this.getFieldName(), type, null, null, isNotNull());
+	
+	isVarBinary=type.startsWith("VARBINARY") || type.startsWith("LONGVARBINARY");
 	this.converter=converter;
-	isVarBinary=sql_fields[0].type.startsWith("VARBINARY");
     }
     private static Class<?>[] getCompatibleClasses(Field field)
     {

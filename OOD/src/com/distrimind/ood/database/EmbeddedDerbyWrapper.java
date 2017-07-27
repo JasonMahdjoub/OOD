@@ -489,6 +489,12 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper
     }
     
     @Override
+    protected boolean isLongVarBinarySupported()
+    {
+	return false;
+    }
+
+    @Override
     protected String getSqlNULL()
     {
 	return "";
