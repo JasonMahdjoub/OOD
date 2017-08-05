@@ -45,7 +45,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  * @version 1.0
  * @since OOD 2.0
  */
-public class HSQLDBTestDencentralizedDatabase extends TestDecentralizedDatabase {
+public class HSQLDBTestDecentralizedDatabase extends TestDecentralizedDatabase {
 	final String database_file_name1 = "decentralizedDatabase1";
 	final String database_file_name2 = "decentralizedDatabase2";
 	final String database_file_name3 = "decentralizedDatabase3";

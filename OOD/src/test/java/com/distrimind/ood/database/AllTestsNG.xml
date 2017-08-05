@@ -3,15 +3,14 @@
 	<test name="testDerby">
 		<classes>
 			<class name="com.distrimind.ood.database.DerbyTestDatabase" />
+		    <class name="com.distrimind.ood.database.DerbyTestDecentralizedDatabase" />
 		</classes>
 	</test>
 
 	<test name="testHDQLDB">  
 		<classes>
 		    <class name="com.distrimind.ood.database.HSQLDBTestDatabase" />
-		</classes>
-		<classes>
-		    <class name="com.distrimind.ood.database.HSQLDBTestDencentralizedDatabase" />
+		    <class name="com.distrimind.ood.database.HSQLDBTestDecentralizedDatabase" />
 		</classes>
 	</test>
 

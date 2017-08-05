@@ -58,7 +58,7 @@ public class OOD {
 		c1.set(2013, 3, 1);
 		Calendar c2 = Calendar.getInstance();
 		c2.set(2017, 7, 5);
-		VERSION = new Version("Object Oriented Database", "OOD", 2, 0, 0, Version.Type.Beta, 11, c1.getTime(),
+		VERSION = new Version("Object Oriented Database", "OOD", 2, 0, 0, Version.Type.Beta, 12, c1.getTime(),
 				c2.getTime());
 		try {
 			InputStream is = OOD.class.getResourceAsStream("build.txt");
@@ -71,7 +71,14 @@ public class OOD {
 
 			c = Calendar.getInstance();
 			c.set(2017, 7, 5);
-			Description d = new Description(2, 0, 0, Version.Type.Beta, 11, c.getTime());
+			Description d = new Description(2, 0, 0, Version.Type.Beta, 12, c.getTime());
+			d.addItem("Little byte tab primary keys are know possible for DerbyDB.");
+			d.addItem("All decentralized database synchronization tests are OK with DerbyDB.");
+			VERSION.addDescription(d);
+
+			c = Calendar.getInstance();
+			c.set(2017, 7, 5);
+			d = new Description(2, 0, 0, Version.Type.Beta, 11, c.getTime());
 			d.addItem("Convert project to gradle project.");
 			VERSION.addDescription(d);
 

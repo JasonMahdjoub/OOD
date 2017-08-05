@@ -37,6 +37,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -44,6 +45,8 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.sql.Blob;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -3144,7 +3147,7 @@ public abstract class TestDatabase {
 	@Test(dependsOnMethods = { "firstLoad" }, dataProvider = "interpreterCommandsProvider")
 	public void testCommandTranslatorInterpreter(Table<?> table, String command, Map<String, Object> parameters,
 			String expectedSqlCommand, Map<Integer, Object> expectedSqlParameters, Table1 table1, Table1.Record record,
-			boolean expectedTestResult) throws DatabaseException {
+			boolean expectedTestResult) throws DatabaseException, IOException, SQLException {
 		HashMap<Integer, Object> sqlParameters = new HashMap<>();
 		RuleInstance rule = Interpreter.getRuleInstance(command);
 		String sqlCommand = rule.translateToSqlQuery(table, parameters, sqlParameters, new HashSet<TableJunction>())
@@ -3155,10 +3158,39 @@ public abstract class TestDatabase {
 				throw new NullPointerException();
 			if (e.getKey() == null)
 				throw new NullPointerException();
-			Assert.assertEquals(e.getValue(), expectedSqlParameters.get(e.getKey()),
+			
+			assertEqualsParameters(e.getValue(), expectedSqlParameters.get(e.getKey()),
 					"Class type source " + e.getValue().getClass());
 		}
 		Assert.assertEquals(rule.isConcernedBy(table1, parameters, record), expectedTestResult);
+	}
+	
+	private void assertEqualsParameters(Object parameter, Object expectedParameter, String message) throws IOException, SQLException
+	{
+		if (expectedParameter.getClass()==byte[].class)
+		{
+			if (parameter instanceof ByteArrayInputStream)
+			{
+				ByteArrayInputStream bais=(ByteArrayInputStream)parameter;
+				try(ByteArrayOutputStream baos=new ByteArrayOutputStream())
+				{
+					int val=bais.read();
+					while (val!=-1)
+					{
+						baos.write(val);
+						val=bais.read();
+					}
+					parameter=baos.toByteArray();
+				}
+			}
+			else if (parameter instanceof Blob)
+			{
+				Blob blob=((Blob)parameter);
+				
+				parameter=blob.getBytes(0, (int)blob.length());
+			}
+		}
+		Assert.assertEquals(parameter, expectedParameter, message);
 	}
 
 	private static AtomicInteger next_unique = new AtomicInteger(0);

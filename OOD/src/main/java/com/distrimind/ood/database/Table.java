@@ -85,6 +85,7 @@ import com.distrimind.ood.database.exceptions.FieldDatabaseException;
 import com.distrimind.ood.database.exceptions.RecordNotFoundDatabaseException;
 import com.distrimind.ood.database.exceptions.SerializationDatabaseException;
 import com.distrimind.ood.database.fieldaccessors.AbstractDencetralizedIDFieldAccessor;
+import com.distrimind.ood.database.fieldaccessors.ByteTabFieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.ood.interpreter.Interpreter;
@@ -167,7 +168,7 @@ public abstract class Table<T extends DatabaseRecord> {
 	private DatabaseConfiguration tables = null;
 	private boolean containsLoopBetweenTables = false;
 	public static final int maxTableNameSizeBytes = 8192;
-	public static final int maxPrimaryKeysSizeBytes = 65536;
+	public static final int maxPrimaryKeysSizeBytes = ByteTabFieldAccessor.shortTabSizeLimit;
 
 	public Constructor<T> getDefaultRecordConstructor() {
 		return default_constructor_field;

@@ -39,7 +39,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -95,31 +94,11 @@ public class AbstractDencetralizedIDFieldAccessor extends FieldAccessor {
 	}
 
 	private static BigDecimal getBigDecimal(byte bytes[]) {
-		if (bytes == null)
-			return null;
-
-		BigInteger res = BigInteger.valueOf(1);
-		for (int i = 0; i < bytes.length; i++) {
-			res = res.shiftLeft(8).or(BigInteger.valueOf(bytes[i] & 0xFF));
-		}
-		return new BigDecimal(res);
+		return ByteTabFieldAccessor.getBigDecimalValue(bytes);
 	}
 
 	private static byte[] getBytes(BigDecimal v) {
-		if (v == null)
-			return null;
-		BigInteger val = v.toBigInteger();
-
-		ArrayList<Byte> res = new ArrayList<>();
-		do {
-			byte b = (byte) val.and(BigInteger.valueOf(0xFF)).intValue();
-			val = val.shiftRight(8);
-			res.add(new Byte(b));
-		} while (!val.equals(BigInteger.ZERO));
-		byte[] bytes = new byte[res.size() - 1];
-		for (int i = 0; i < bytes.length; i++)
-			bytes[i] = res.get(res.size() - i - 2).byteValue();
-		return bytes;
+		return ByteTabFieldAccessor.getByteTab(v);
 
 	}
 

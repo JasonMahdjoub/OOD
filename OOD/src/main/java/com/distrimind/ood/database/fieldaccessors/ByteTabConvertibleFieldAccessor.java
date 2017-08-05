@@ -66,6 +66,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 	protected final SqlField sql_fields[];
 	private final ByteTabObjectConverter converter;
 	private final boolean isVarBinary;
+	private final boolean isBigInteger;
 
 	protected ByteTabConvertibleFieldAccessor(Class<? extends Table<?>> table_class, DatabaseWrapper _sql_connection,
 			Field _field, String parentFieldName, ByteTabObjectConverter converter) throws DatabaseException {
@@ -75,14 +76,18 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 		String type = null;
 		long l = limit;
 		if (l <= 0)
-			l = 16777216l;
-		if (l <= 4096) {
+			l = ByteTabFieldAccessor.defaultByteTabSize;
+		boolean isBigInteger=false;
+		if (l <= ByteTabFieldAccessor.shortTabSizeLimit) {
 			if (DatabaseWrapperAccessor.isVarBinarySupported(sql_connection))
 				type = "VARBINARY(" + l + ")";
 			else if (DatabaseWrapperAccessor.isLongVarBinarySupported(sql_connection))
 				type = "LONGVARBINARY(" + l + ")";
 			else
-				type = "BLOB(" + l + ")";
+			{
+				isBigInteger=true;
+				type = DatabaseWrapperAccessor.getBigIntegerType(sql_connection);
+			}
 		} else {
 			if (DatabaseWrapperAccessor.isLongVarBinarySupported(sql_connection))
 				type = "LONGVARBINARY(" + l + ")";
@@ -92,6 +97,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 		sql_fields[0] = new SqlField(table_name + "." + this.getFieldName(), type, null, null, isNotNull());
 
 		isVarBinary = type.startsWith("VARBINARY") || type.startsWith("LONGVARBINARY");
+		this.isBigInteger=isBigInteger;
 		this.converter = converter;
 	}
 
@@ -149,6 +155,8 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 
 			if (isVarBinary) {
 				val2 = _result_set.getBytes(_sft.translateField(sql_fields[0]));
+			} else if (isBigInteger){
+				val2 = ByteTabFieldAccessor.getByteTab(_result_set.getBigDecimal(_sft.translateField(sql_fields[0])));
 			} else {
 				Blob b = _result_set.getBlob(_sft.translateField(sql_fields[0]));
 				val2 = b == null ? null : b.getBytes(1, (int) b.length());
@@ -187,7 +195,32 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 	@Override
 	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
 		SqlFieldInstance res[] = new SqlFieldInstance[1];
-		res[0] = new SqlFieldInstance(sql_fields[0], converter.getByte(getValue(_instance)));
+		try
+		{
+			if (isVarBinary)
+				res[0] = new SqlFieldInstance(sql_fields[0], getValue(_instance));
+			else if (isBigInteger)
+			{
+				res[0] = new SqlFieldInstance(sql_fields[0], ByteTabFieldAccessor.getBigDecimalValue((byte[])getValue(_instance)));
+			}
+			else {
+				byte[] b = (byte[]) field.get(_instance);
+				if (b == null)
+					res[0] = new SqlFieldInstance(sql_fields[0], null);
+				else {
+					Blob blob = DatabaseWrapperAccessor.getBlob(sql_connection, b);
+					if (blob == null && b != null)
+						res[0] = new SqlFieldInstance(sql_fields[0], new ByteArrayInputStream(b));
+					else
+						res[0] = new SqlFieldInstance(sql_fields[0], blob);
+				}
+			}
+		}
+		catch(Exception e)
+		{
+			throw DatabaseException.getDatabaseException(e);
+		}
+
 		return res;
 	}
 
@@ -213,6 +246,10 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 			byte[] res = null;
 			if (isVarBinary) {
 				res = _result_set.getBytes(getColmunIndex(_result_set, sql_fields[0].field));
+				if (res == null && isNotNull())
+					throw new DatabaseIntegrityException("Unexpected exception.");
+			} else if (isBigInteger) {
+				res = ByteTabFieldAccessor.getByteTab(_result_set.getBigDecimal(getColmunIndex(_result_set, sql_fields[0].field)));
 				if (res == null && isNotNull())
 					throw new DatabaseIntegrityException("Unexpected exception.");
 			} else {
@@ -273,6 +310,10 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 			}
 			if (isVarBinary)
 				_prepared_statement.setBytes(_field_start, b);
+			else if (isBigInteger)
+			{
+				_prepared_statement.setBigDecimal(_field_start, ByteTabFieldAccessor.getBigDecimalValue(b));
+			}
 			else {
 				if (b == null)
 					_prepared_statement.setObject(_field_start, null);
@@ -306,6 +347,10 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 			}
 			if (isVarBinary)
 				_result_set.updateBytes(sql_fields[0].short_field, b);
+			else if (isBigInteger)
+			{
+				_result_set.updateBigDecimal(sql_fields[0].short_field, ByteTabFieldAccessor.getBigDecimalValue(b));
+			}
 			else {
 				if (b == null)
 					_result_set.updateObject(sql_fields[0].short_field, null);
@@ -339,6 +384,10 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 			}
 			if (isVarBinary)
 				_result_set.updateBytes(_sft.translateField(sql_fields[0]), b);
+			else if (isBigInteger)
+			{
+				_result_set.updateBigDecimal(_sft.translateField(sql_fields[0]), ByteTabFieldAccessor.getBigDecimalValue(b));
+			}
 			else {
 				if (b == null)
 					_result_set.updateObject(_sft.translateField(sql_fields[0]), null);
