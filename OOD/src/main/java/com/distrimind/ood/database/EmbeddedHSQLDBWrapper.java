@@ -542,7 +542,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 
 	@Override
 	protected boolean isLongVarBinarySupported() {
-		return true;
+		return false;
 	}
 
 	@Override
