@@ -57,8 +57,8 @@ public class OOD {
 		Calendar c1 = Calendar.getInstance();
 		c1.set(2013, 3, 1);
 		Calendar c2 = Calendar.getInstance();
-		c2.set(2017, 7, 9);
-		VERSION = new Version("Object Oriented Database", "OOD", 2, 0, 0, Version.Type.Beta, 15, c1.getTime(),
+		c2.set(2017, 7, 10);
+		VERSION = new Version("Object Oriented Database", "OOD", 2, 0, 0, Version.Type.Beta, 16, c1.getTime(),
 				c2.getTime());
 		try {
 			InputStream is = OOD.class.getResourceAsStream("build.txt");
@@ -70,8 +70,14 @@ public class OOD {
 			VERSION.addDeveloper(new PersonDeveloper("mahdjoub", "jason", c.getTime()));
 
 			c = Calendar.getInstance();
+			c.set(2017, 7, 10);
+			Description d = new Description(2, 0, 0, Version.Type.Beta, 16, c.getTime());
+			d.addItem("Updating Utils to 2.12.0");
+			VERSION.addDescription(d);
+
+			c = Calendar.getInstance();
 			c.set(2017, 7, 9);
-			Description d = new Description(2, 0, 0, Version.Type.Beta, 15, c.getTime());
+			d = new Description(2, 0, 0, Version.Type.Beta, 15, c.getTime());
 			d.addItem("Making HSQLDB not supporting 'LongVarBinary' type.");
 			VERSION.addDescription(d);
 
