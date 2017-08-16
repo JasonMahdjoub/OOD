@@ -2511,7 +2511,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new DatabaseException("There is already a database associated to the given HSQLDBWrappe ");
 			try {
 				actualDatabaseLoading = new Database(configuration);
-
+				final AtomicBoolean allNotFound = new AtomicBoolean(true);
 				runTransaction(new Transaction() {
 
 					@Override
@@ -2524,7 +2524,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							 * "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"
 							 * +ROW_COUNT_TABLES+"'")) { if (rq.result_set.next()) table_found=true; }
 							 */
-							boolean allNotFound = true;
+
 							if (!doesTableExists(ROW_COUNT_TABLES)) {
 								Statement st = getConnectionAssociatedWithCurrentThread().getConnection()
 										.createStatement();
@@ -2544,35 +2544,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 								t.initializeStep1(configuration);
 							}
 							for (Table<?> t : list_tables) {
-								allNotFound = !t.initializeStep2(createDatabaseIfNecessaryAndCheckIt) && allNotFound;
+								allNotFound.set(
+										!t.initializeStep2(createDatabaseIfNecessaryAndCheckIt) && allNotFound.get());
 							}
 							for (Table<?> t : list_tables) {
 								t.initializeStep3();
-							}
-							if (allNotFound) {
-								try {
-									DatabaseConfiguration oldConfig = configuration
-											.getOldVersionOfDatabaseConfiguration();
-									DatabaseCreationCallable callable = configuration.getDatabaseCreationCallable();
-									boolean removeOldDatabase = false;
-									if (oldConfig != null && callable != null) {
-										try {
-											loadDatabase(oldConfig, false);
-											if (callable != null)
-												callable.transfertDatabaseFromOldVersion(configuration);
-											removeOldDatabase = callable.hasToRemoveOldDatabase();
-										} catch (DatabaseException e) {
-											oldConfig = null;
-										}
-									}
-									if (callable != null) {
-										callable.afterDatabaseCreation(configuration);
-										if (removeOldDatabase)
-											deleteDatabase(oldConfig);
-									}
-								} catch (Exception e) {
-									throw DatabaseException.getDatabaseException(e);
-								}
 							}
 
 							return null;
@@ -2603,6 +2579,30 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					}
 
 				});
+				if (allNotFound.get()) {
+					try {
+						DatabaseConfiguration oldConfig = configuration.getOldVersionOfDatabaseConfiguration();
+						DatabaseCreationCallable callable = configuration.getDatabaseCreationCallable();
+						boolean removeOldDatabase = false;
+						if (oldConfig != null && callable != null) {
+							try {
+								loadDatabase(oldConfig, false);
+								if (callable != null)
+									callable.transfertDatabaseFromOldVersion(configuration);
+								removeOldDatabase = callable.hasToRemoveOldDatabase();
+							} catch (DatabaseException e) {
+								oldConfig = null;
+							}
+						}
+						if (callable != null) {
+							callable.afterDatabaseCreation(configuration);
+							if (removeOldDatabase)
+								deleteDatabase(oldConfig);
+						}
+					} catch (Exception e) {
+						throw DatabaseException.getDatabaseException(e);
+					}
+				}
 				@SuppressWarnings("unchecked")
 				HashMap<Package, Database> sd = (HashMap<Package, Database>) sql_database.clone();
 				sd.put(configuration.getPackage(), actualDatabaseLoading);
