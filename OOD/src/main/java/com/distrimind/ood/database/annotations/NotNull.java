@@ -44,7 +44,7 @@ import java.lang.annotation.Target;
 
 /**
  * This annotation must be declared before a field contained into a class which
- * inherits the class {@link com.distrimind.ood.database.Object}. The use of
+ * inherits the class {@link com.distrimind.ood.database.DatabaseRecord}. The use of
  * this annotation means that the correspondent field cannot have a null value.
  * This annotation is not sufficient to declare a field and must be used with
  * one of the annotations {@link com.distrimind.ood.database.annotations.Field},

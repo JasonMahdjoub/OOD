@@ -45,7 +45,7 @@ import java.lang.annotation.Target;
 /**
  * This annotation must be declared before a DatabaseRecord field which is a
  * foreign key. The type of this field must inherit the class
- * {@link com.distrimind.ood.database.Object}.
+ * {@link com.distrimind.ood.database.DatabaseRecord}.
  *
  * @author Jason Mahdjoub
  * @version 1.0

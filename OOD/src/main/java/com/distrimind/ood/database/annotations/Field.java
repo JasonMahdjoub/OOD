@@ -55,7 +55,7 @@ import java.lang.annotation.Target;
  * 
  * @author Jason Mahdjoub
  * @version 1.2
- * @Since OOD 1.0
+ * @since OOD 1.0
  */
 @Target({ ElementType.FIELD, ElementType.TYPE })
 @Retention(RetentionPolicy.RUNTIME)
@@ -82,7 +82,7 @@ public @interface Field {
 	 * descending order and for queries that select the minimum or maximum value of
 	 * an indexed column.
 	 * 
-	 * @return
+	 * @return true if use descending order for the column to create the index
 	 */
 	boolean descendingIndex() default false;
 

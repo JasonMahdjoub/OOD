@@ -82,7 +82,7 @@ import com.distrimind.util.RenforcedDecentralizedIDGenerator;
  * 
  * @author Jason Mahdjoub
  * @version 2.0
- * @Since OOD 1.0
+ * @since OOD 1.0
  */
 public abstract class FieldAccessor {
 	protected final DatabaseWrapper sql_connection;
@@ -335,7 +335,6 @@ public abstract class FieldAccessor {
 		return false;
 	}
 
-	@SuppressWarnings("unused")
 	public Object autoGenerateValue(Random random) throws DatabaseException {
 		return null;
 	}

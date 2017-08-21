@@ -140,7 +140,7 @@ import com.distrimind.util.ReadWriteLock;
  * the default constructor of the class. This constructor must be protected.
  * Before getting any table instance, the user must associate the package
  * containing the class tables of the same database to a Sql database throw the
- * function {@link DatabaseWrapper#loadDatabase(Package)}.
+ * function {@link DatabaseWrapper#loadDatabase(DatabaseConfiguration, boolean)}.
  * 
  * This class is thread safe
  * 
@@ -2817,9 +2817,9 @@ public abstract class Table<T extends DatabaseRecord> {
 	 * @throws NullPointerException
 	 *             if parameters are null pointers.
 	 */
-	public final ArrayList<T> getRecords(final Filter<T> _filter, String whereCondition, Map<String, Object> paramters)
+	public final ArrayList<T> getRecords(final Filter<T> _filter, String whereCondition, Map<String, Object> parameters)
 			throws DatabaseException {
-		return getPaginedRecords(-1, -1, _filter, whereCondition, paramters);
+		return getPaginedRecords(-1, -1, _filter, whereCondition, parameters);
 	}
 
 	/**
@@ -2869,14 +2869,14 @@ public abstract class Table<T extends DatabaseRecord> {
 	 *             if parameters are null pointers.
 	 */
 	public final ArrayList<T> getPaginedRecords(int rowpos, int rowlength, final Filter<T> _filter,
-			String whereCondition, Map<String, Object> paramters) throws DatabaseException {
+			String whereCondition, Map<String, Object> parameters) throws DatabaseException {
 		if (_filter == null)
 			throw new NullPointerException("The parameter _filter is a null pointer !");
 		// synchronized(sql_connection)
 		{
 
 			try (Lock lock = new ReadLock(this)) {
-				return getRecords(rowpos, rowlength, _filter, whereCondition, paramters, false);
+				return getRecords(rowpos, rowlength, _filter, whereCondition, parameters, false);
 			} catch (Exception e) {
 				throw DatabaseException.getDatabaseException(e);
 			}
@@ -2914,9 +2914,9 @@ public abstract class Table<T extends DatabaseRecord> {
 	 * @throws NullPointerException
 	 *             if parameters are null pointers.
 	 */
-	public final ArrayList<T> getRecords(String whereCondition, Map<String, Object> paramters)
+	public final ArrayList<T> getRecords(String whereCondition, Map<String, Object> parameters)
 			throws DatabaseException {
-		return getPaginedRecords(-1, -1, whereCondition, paramters);
+		return getPaginedRecords(-1, -1, whereCondition, parameters);
 	}
 
 	/**
@@ -2959,7 +2959,7 @@ public abstract class Table<T extends DatabaseRecord> {
 	 *             if parameters are null pointers.
 	 */
 	public final ArrayList<T> getPaginedRecords(int rowpos, int rowlength, String whereCondition,
-			Map<String, Object> paramters) throws DatabaseException {
+			Map<String, Object> parameters) throws DatabaseException {
 		// synchronized(sql_connection)
 		{
 
@@ -2970,7 +2970,7 @@ public abstract class Table<T extends DatabaseRecord> {
 					public boolean nextRecord(T _record) {
 						return true;
 					}
-				}, whereCondition, paramters, false);
+				}, whereCondition, parameters, false);
 			} catch (Exception e) {
 				throw DatabaseException.getDatabaseException(e);
 			}
@@ -3430,14 +3430,13 @@ public abstract class Table<T extends DatabaseRecord> {
 	/**
 	 * Returns the records which correspond to the given fields. All given fields
 	 * must correspond exactly to the returned records.
-	 * 
-	 * @param _fields
-	 *            the fields that filter the result. Must be formated as follow :
-	 *            {"field1", value1,"field2", value2, etc.}
+	 *
+	 * @param ascendant true if the fields must be sorted with an ascendant way
 	 * @param orderByFields
 	 *            order by the given fields
 	 * @param _fields
-	 *            the fields that filter the result.
+	 *            the fields that filter the result. Must be formated as follow :
+	 *            {"field1", value1,"field2", value2, etc.}
 	 * @return the corresponding records.
 	 * @throws DatabaseException
 	 *             if a Sql exception occurs.
@@ -3514,9 +3513,9 @@ public abstract class Table<T extends DatabaseRecord> {
 	 * @throws FieldDatabaseException
 	 *             if the given fields do not correspond to the table fields.
 	 */
-	public final ArrayList<T> getPaginedRecordsWithAllFieldsOrdered(int rowcount, int rowlength, boolean ascendant,
+	public final ArrayList<T> getPaginedRecordsWithAllFieldsOrdered(int rowpos, int rowlength, boolean ascendant,
 			String[] orderByFields, Object... _fields) throws DatabaseException {
-		return getPaginedRecordsWithAllFieldsOrdered(rowcount, rowlength, ascendant, orderByFields,
+		return getPaginedRecordsWithAllFieldsOrdered(rowpos, rowlength, ascendant, orderByFields,
 				transformToMapField(_fields));
 	}
 
@@ -3542,14 +3541,14 @@ public abstract class Table<T extends DatabaseRecord> {
 	 * @throws FieldDatabaseException
 	 *             if the given fields do not correspond to the table fields.
 	 */
-	public final ArrayList<T> getPaginedRecordsWithAllFieldsOrdered(int rowcount, int rowlength, boolean ascendant,
+	public final ArrayList<T> getPaginedRecordsWithAllFieldsOrdered(int rowpos, int rowlength, boolean ascendant,
 			String[] orderByFields, final Map<String, Object> _fields) throws DatabaseException {
 		if (_fields == null)
 			throw new NullPointerException("The parameter _fields is a null pointer !");
 		// synchronized(sql_connection)
 		{
 			try (Lock lock = new ReadLock(this)) {
-				return getRecords(rowcount, rowlength,
+				return getRecords(rowpos, rowlength,
 						new SimpleAllFieldsFilter(ascendant, orderByFields, _fields, fields), false);
 			} catch (Exception e) {
 				throw DatabaseException.getDatabaseException(e);
@@ -3722,9 +3721,9 @@ public abstract class Table<T extends DatabaseRecord> {
 	 *             if the given fields do not correspond to the table fields.
 	 */
 	@SafeVarargs
-	public final ArrayList<T> getPaginedRecordsWithAllFieldsOrdered(int rowcount, int rowlength, boolean ascendant,
+	public final ArrayList<T> getPaginedRecordsWithAllFieldsOrdered(int rowpos, int rowlength, boolean ascendant,
 			String[] orderByFields, Object[]... _records) throws DatabaseException {
-		return getPaginedRecordsWithAllFieldsOrdered(rowcount, rowlength, ascendant, orderByFields,
+		return getPaginedRecordsWithAllFieldsOrdered(rowpos, rowlength, ascendant, orderByFields,
 				transformToMapField(_records));
 	}
 
@@ -3752,7 +3751,7 @@ public abstract class Table<T extends DatabaseRecord> {
 	 *             if the given fields do not correspond to the table fields.
 	 */
 	@SafeVarargs
-	public final ArrayList<T> getPaginedRecordsWithAllFieldsOrdered(int rowcount, int rowlength, boolean ascendant,
+	public final ArrayList<T> getPaginedRecordsWithAllFieldsOrdered(int rowpos, int rowlength, boolean ascendant,
 			String[] orderByFields, final Map<String, Object>... _records) throws DatabaseException {
 		if (_records == null)
 			throw new NullPointerException("The parameter _records is a null pointer !");
@@ -3761,7 +3760,7 @@ public abstract class Table<T extends DatabaseRecord> {
 		// synchronized(sql_connection)
 		{
 			try (Lock lock = new ReadLock(this)) {
-				return getRecords(rowcount, rowlength,
+				return getRecords(rowpos, rowlength,
 						new MultipleAllFieldsFilter(ascendant, orderByFields, fields, _records), false);
 			} catch (Exception e) {
 				throw DatabaseException.getDatabaseException(e);
@@ -4053,10 +4052,6 @@ public abstract class Table<T extends DatabaseRecord> {
 	 * Returns the records which correspond to one of the fields of one group of the
 	 * array of fields.
 	 * 
-	 * @param ascendant
-	 *            order by ascendant (true) or descendant (false)
-	 * @param orderByFields
-	 *            order by the given fields
 	 * @param _records
 	 *            the fields that filter the result. Must be formated as follow :
 	 *            {"field1", value1,"field2", value2, etc.}
@@ -4125,10 +4120,6 @@ public abstract class Table<T extends DatabaseRecord> {
 	 *            row position (first starts with 1)
 	 * @param rowlength
 	 *            page length (size of the returned result)
-	 * @param ascendant
-	 *            order by ascendant (true) or descendant (false)
-	 * @param orderByFields
-	 *            order by the given fields
 	 * @param _records
 	 *            the fields that filter the result. Must be formated as follow :
 	 *            {"field1", value1,"field2", value2, etc.}
@@ -4701,7 +4692,7 @@ public abstract class Table<T extends DatabaseRecord> {
 	 * pointed by other records through foreign keys of other tables. So they are
 	 * not proposed to the filter class.
 	 * 
-	 * @param whereCondition
+	 * @param whereCommand
 	 *            the SQL WHERE condition that filter the results
 	 * @param parameters
 	 *            the used parameters with the WHERE condition
@@ -4728,7 +4719,7 @@ public abstract class Table<T extends DatabaseRecord> {
 	 * 
 	 * @param _filter
 	 *            the filter
-	 * @param whereCondition
+	 * @param whereCommand
 	 *            the SQL WHERE condition that filter the results
 	 * @param parameters
 	 *            the used parameters with the WHERE condition
@@ -4751,7 +4742,7 @@ public abstract class Table<T extends DatabaseRecord> {
 	 * 
 	 * @param _filter
 	 *            the filter
-	 * @param whereCondition
+	 * @param whereCommand
 	 *            the SQL WHERE condition that filter the results
 	 * @param parameters
 	 *            the used parameters with the WHERE condition
@@ -4780,7 +4771,7 @@ public abstract class Table<T extends DatabaseRecord> {
 	 * are not pointed by other records through foreign keys of other tables. So
 	 * they are not proposed to the filter class.
 	 * 
-	 * @param whereCondition
+	 * @param whereCommand
 	 *            the SQL WHERE condition that filter the results
 	 * @param parameters
 	 *            the used parameters with the WHERE condition
@@ -4845,7 +4836,6 @@ public abstract class Table<T extends DatabaseRecord> {
 							return true;
 						}
 
-						@SuppressWarnings("synthetic-access")
 						@Override
 						public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 							StringBuffer sb = new StringBuffer(
@@ -4899,7 +4889,6 @@ public abstract class Table<T extends DatabaseRecord> {
 						deleted_records_number = 0;
 					}
 
-					@SuppressWarnings("synthetic-access")
 					@Override
 					public boolean setInstance(T _instance, ResultSet _cursor) throws DatabaseException {
 						try {
@@ -4984,7 +4973,6 @@ public abstract class Table<T extends DatabaseRecord> {
 							return true;
 						}
 
-						@SuppressWarnings("synthetic-access")
 						@Override
 						public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 							StringBuffer sb = new StringBuffer("DELETE FROM " + Table.this.getName() + " WHERE "
@@ -5033,7 +5021,6 @@ public abstract class Table<T extends DatabaseRecord> {
 						deleted_records_number = 0;
 					}
 
-					@SuppressWarnings("synthetic-access")
 					@Override
 					public boolean setInstance(T _instance, ResultSet _cursor) throws DatabaseException {
 						try {
@@ -5327,7 +5314,7 @@ public abstract class Table<T extends DatabaseRecord> {
 	 * 
 	 * @param _filter
 	 *            the filter
-	 * @param whereCondition
+	 * @param whereCommand
 	 *            the SQL WHERE condition that filter the results
 	 * @param parameters
 	 *            the used parameters with the WHERE condition
@@ -5350,7 +5337,7 @@ public abstract class Table<T extends DatabaseRecord> {
 	 * 
 	 * @param _filter
 	 *            the filter
-	 * @param whereCondition
+	 * @param whereCommand
 	 *            the SQL WHERE condition that filter the results
 	 * @param parameters
 	 *            the used parameters with the WHERE condition
@@ -5379,7 +5366,7 @@ public abstract class Table<T extends DatabaseRecord> {
 	 * tables which have Foreign keys which points to the deleted records are also
 	 * deleted.
 	 * 
-	 * @param whereCondition
+	 * @param whereCommand
 	 *            the SQL WHERE condition that filter the results
 	 * @param parameters
 	 *            the used parameters with the WHERE condition
@@ -5495,7 +5482,6 @@ public abstract class Table<T extends DatabaseRecord> {
 							return TransactionIsolation.TRANSACTION_SERIALIZABLE;
 						}
 
-						@SuppressWarnings("synthetic-access")
 						@Override
 						public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 							StringBuffer sb = new StringBuffer("DELETE FROM " + Table.this.getName() + " WHERE "
@@ -5557,7 +5543,6 @@ public abstract class Table<T extends DatabaseRecord> {
 						deleted_records_number = 0;
 					}
 
-					@SuppressWarnings("synthetic-access")
 					@Override
 					public boolean setInstance(T _instance, ResultSet _cursor) throws DatabaseException {
 						try {
@@ -5655,7 +5640,6 @@ public abstract class Table<T extends DatabaseRecord> {
 						return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
 					}
 
-					@SuppressWarnings("synthetic-access")
 					@Override
 					public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 						StringBuffer querry = new StringBuffer(
@@ -5737,7 +5721,6 @@ public abstract class Table<T extends DatabaseRecord> {
 						return TransactionIsolation.TRANSACTION_SERIALIZABLE;
 					}
 
-					@SuppressWarnings("synthetic-access")
 					@Override
 					public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 						StringBuffer querry = new StringBuffer(
@@ -5997,7 +5980,6 @@ public abstract class Table<T extends DatabaseRecord> {
 						return TransactionIsolation.TRANSACTION_SERIALIZABLE;
 					}
 
-					@SuppressWarnings("synthetic-access")
 					@Override
 					public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 						try (PreparedUpdateQuerry puq = new PreparedUpdateQuerry(
@@ -6087,7 +6069,6 @@ public abstract class Table<T extends DatabaseRecord> {
 					return TransactionIsolation.TRANSACTION_SERIALIZABLE;
 				}
 
-				@SuppressWarnings("synthetic-access")
 				@Override
 				public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 					StringBuffer sb = new StringBuffer("DELETE FROM " + Table.this.getName() + " WHERE "
@@ -6160,7 +6141,6 @@ public abstract class Table<T extends DatabaseRecord> {
 			return this.querry;
 		}
 
-		@SuppressWarnings("unused")
 		void finishPrepareStatement(PreparedStatement st) throws SQLException, DatabaseException {
 
 		}
@@ -7300,15 +7280,15 @@ public abstract class Table<T extends DatabaseRecord> {
 	 * 
 	 * The function parse all records present into this table. For each of them, it
 	 * calls the function
-	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(DatabaseRecord)}.
+	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(Object)}.
 	 * 
 	 * If the function
 	 * {@link com.distrimind.ood.database.AlterRecordFilter#update(Map)} is called
 	 * into the inherited function
-	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(DatabaseRecord)},
+	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(Object)},
 	 * then all fields present in the given map will be updated into the record,
 	 * after the end of the
-	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(DatabaseRecord)}
+	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(Object)}
 	 * function call. If the given map is a null reference, the correspondent record
 	 * will not be altered. Note that modification of primary keys and unique keys
 	 * are not permitted with this function. To do that, please use the function
@@ -7317,13 +7297,13 @@ public abstract class Table<T extends DatabaseRecord> {
 	 * If the function
 	 * {@link com.distrimind.ood.database.AlterRecordFilter#remove()} is called,
 	 * then the current record will be deleted after the end of the
-	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(DatabaseRecord)}
+	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(Object)}
 	 * function call, only if no record point to this record.
 	 * 
 	 * If the function
 	 * {@link com.distrimind.ood.database.AlterRecordFilter#removeWithCascade()} is
 	 * called, then the current record will be deleted after the end of the
-	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(DatabaseRecord)}
+	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(Object)}
 	 * function call. Records pointing to this record will also be deleted.
 	 * 
 	 * @param _filter
@@ -7355,15 +7335,15 @@ public abstract class Table<T extends DatabaseRecord> {
 	 * 
 	 * The function parse all records present into this table, that verify the given
 	 * WHERE condition. For each of them, it calls the function
-	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(DatabaseRecord)}.
+	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(Object)}.
 	 * 
 	 * If the function
 	 * {@link com.distrimind.ood.database.AlterRecordFilter#update(Map)} is called
 	 * into the inherited function
-	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(DatabaseRecord)},
+	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(Object)},
 	 * then all fields present in the given map will be updated into the record,
 	 * after the end of the
-	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(DatabaseRecord)}
+	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(Object)}
 	 * function call. If the given map is a null reference, the correspondent record
 	 * will not be altered. Note that modification of primary keys and unique keys
 	 * are not permitted with this function. To do that, please use the function
@@ -7372,18 +7352,18 @@ public abstract class Table<T extends DatabaseRecord> {
 	 * If the function
 	 * {@link com.distrimind.ood.database.AlterRecordFilter#remove()} is called,
 	 * then the current record will be deleted after the end of the
-	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(DatabaseRecord)}
+	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(Object)}
 	 * function call, only if no record point to this record.
 	 * 
 	 * If the function
 	 * {@link com.distrimind.ood.database.AlterRecordFilter#removeWithCascade()} is
 	 * called, then the current record will be deleted after the end of the
-	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(DatabaseRecord)}
+	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(Object)}
 	 * function call. Records pointing to this record will also be deleted.
 	 * 
 	 * @param _filter
 	 *            the filter enabling to alter the desired records.
-	 * @param whereCondition
+	 * @param whereCommand
 	 *            the SQL WHERE condition that filter the results
 	 * @param parameters
 	 *            the used parameters with the WHERE condition
@@ -7430,15 +7410,15 @@ public abstract class Table<T extends DatabaseRecord> {
 	 * 
 	 * The function parse all records present into this table, that verify the given
 	 * WHERE condition. For each of them, it calls the function
-	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(DatabaseRecord)}.
+	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(Object)}.
 	 * 
 	 * If the function
 	 * {@link com.distrimind.ood.database.AlterRecordFilter#update(Map)} is called
 	 * into the inherited function
-	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(DatabaseRecord)},
+	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(Object)},
 	 * then all fields present in the given map will be updated into the record,
 	 * after the end of the
-	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(DatabaseRecord)}
+	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(Object)}
 	 * function call. If the given map is a null reference, the correspondent record
 	 * will not be altered. Note that modification of primary keys and unique keys
 	 * are not permitted with this function. To do that, please use the function
@@ -7447,18 +7427,18 @@ public abstract class Table<T extends DatabaseRecord> {
 	 * If the function
 	 * {@link com.distrimind.ood.database.AlterRecordFilter#remove()} is called,
 	 * then the current record will be deleted after the end of the
-	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(DatabaseRecord)}
+	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(Object)}
 	 * function call, only if no record point to this record.
 	 * 
 	 * If the function
 	 * {@link com.distrimind.ood.database.AlterRecordFilter#removeWithCascade()} is
 	 * called, then the current record will be deleted after the end of the
-	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(DatabaseRecord)}
+	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(Object)}
 	 * function call. Records pointing to this record will also be deleted.
 	 * 
 	 * @param _filter
 	 *            the filter enabling to alter the desired records.
-	 * @param whereCondition
+	 * @param whereCommand
 	 *            the SQL WHERE condition that filter the results
 	 * @param parameters
 	 *            the used parameters with the WHERE condition
@@ -7691,7 +7671,6 @@ public abstract class Table<T extends DatabaseRecord> {
 										return TransactionIsolation.TRANSACTION_READ_COMMITTED;
 									}
 
-									@SuppressWarnings("synthetic-access")
 									@Override
 									public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 										StringBuffer sb = new StringBuffer("DELETE FROM " + Table.this.getName()
@@ -7741,7 +7720,6 @@ public abstract class Table<T extends DatabaseRecord> {
 										return TransactionIsolation.TRANSACTION_READ_COMMITTED;
 									}
 
-									@SuppressWarnings("synthetic-access")
 									@Override
 									public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 										StringBuffer sb = new StringBuffer("DELETE FROM " + Table.this.getName()
@@ -7777,6 +7755,7 @@ public abstract class Table<T extends DatabaseRecord> {
 
 								};
 
+								
 								sql_connection.runTransaction(transaction);
 
 								__removeRecords(records_to_delete_with_cascade);
@@ -7802,7 +7781,6 @@ public abstract class Table<T extends DatabaseRecord> {
 
 								}
 
-								@SuppressWarnings("synthetic-access")
 								@Override
 								public boolean setInstance(T _instance, ResultSet _result_set)
 										throws DatabaseException {

@@ -288,7 +288,6 @@ public abstract class TestDatabase {
 		unloadDatabase();
 	}
 
-	@SuppressWarnings("unused")
 	@AfterClass
 	public static void unloadDatabase() throws DatabaseException {
 		System.out.println("Unload database !");

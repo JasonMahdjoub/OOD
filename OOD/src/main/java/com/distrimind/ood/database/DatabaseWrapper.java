@@ -126,7 +126,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	/**
 	 * Set the max number of events sent to a distant peer at the same time
 	 * 
-	 * @param maxEventsToSynchronizeAtTheSameTime
+	 * @param maxTransactionsToSynchronizeAtTheSameTime
 	 *            the max number of events
 	 */
 	public void setMaxTransactionsToSynchronizeAtTheSameTime(int maxTransactionsToSynchronizeAtTheSameTime) {
@@ -199,14 +199,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	/**
 	 * Constructor
 	 * 
-	 * @param _sql_connection
-	 *            the sql_connection
 	 * @param _database_name
 	 *            the database name
 	 * @throws DatabaseException
 	 * 
 	 */
-	protected DatabaseWrapper(/* Connection _sql_connection, */String _database_name) throws DatabaseException {
+	protected DatabaseWrapper(String _database_name) throws DatabaseException {
 		if (_database_name == null)
 			throw new NullPointerException("_database_name");
 		/*
@@ -2491,8 +2489,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 *            exists, create it. Use
 	 *            {@link DatabaseConfiguration#getDatabaseCreationCallable()} if the
 	 *            database is created and if transfer from old database must done.
-	 * @return the result returned by onCreationDatabaseCallable or null if the
-	 *         database was already created
 	 * @throws DatabaseException
 	 *             if the given package is already associated to a database, or if
 	 *             the database cannot be created.
