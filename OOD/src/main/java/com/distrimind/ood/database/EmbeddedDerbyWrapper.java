@@ -529,7 +529,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 			@Override
 			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 				try {
-					locker.lockRead();
+					locker.readLock().lock();
 					Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
 					PreparedStatement preparedStatement = sql_connection.prepareStatement(querry);
 					try {
@@ -542,7 +542,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 				} catch (Exception e) {
 					throw new DatabaseException("", e);
 				} finally {
-					locker.unlockRead();
+					locker.readLock().unlock();
 				}
 			}
 
@@ -550,7 +550,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 			public boolean doesWriteData() {
 				return false;
 			}
-		});
+		}, true);
 	}
 
 	@Override
@@ -604,6 +604,18 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	@Override
 	protected boolean supportFullSqlFieldName() {
 		return false;
+	}
+
+	@Override
+	protected void startTransaction(Session _openedConnection, TransactionIsolation transactionIsolation, boolean write)
+			throws SQLException 	{
+		_openedConnection.getConnection().setTransactionIsolation(transactionIsolation.getCode());
+	}
+
+
+	@Override
+	protected boolean isSerializationException(SQLException e) throws DatabaseException {
+		return e.getSQLState().equals("40001");
 	}
 
 }

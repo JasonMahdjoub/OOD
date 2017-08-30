@@ -140,7 +140,7 @@ public class RuleInstance implements QueryPart {
 		if (valueType == null)
 			return false;
 		String otherValueType = otherPart.getValueType(table, parameters);
-		return valueType.equals(otherValueType);
+		return valueType.equals(otherValueType) || otherValueType.equals(SymbolType.NULL.name());
 	}
 
 	@Override
@@ -255,7 +255,7 @@ public class RuleInstance implements QueryPart {
 					if (parameter1 == null)
 						throw new DatabaseSyntaxException("Cannot find parameter " + s.getSymbol());
 					return parameter1;
-				} else if (s.getType() == SymbolType.STRING)
+				} else if (s.getType() == SymbolType.STRING || s.getType()==SymbolType.NULL)
 					return s.getContent();
 				else
 					return new BigDecimal(s.getSymbol());
@@ -301,7 +301,7 @@ public class RuleInstance implements QueryPart {
 						return ((CharSequence) parameter1).toString();
 					} else
 						throw new DatabaseSyntaxException("The parameter " + s.getSymbol() + " is not a string !");
-				} else if (s.getType() == SymbolType.STRING || s.getType() == SymbolType.NUMBER) {
+				} else if (s.getType() == SymbolType.STRING || s.getType() == SymbolType.NUMBER || s.getType()==SymbolType.NULL) {
 					return s.getContent().toString();
 				} else
 					throw new IllegalAccessError();
@@ -664,7 +664,7 @@ public class RuleInstance implements QueryPart {
 								parameter1 = parameters.get(s1.getSymbol());
 								if (parameter1 == null)
 									throw new DatabaseSyntaxException("Cannot find parameter " + s1.getSymbol());
-							} else if (s1.getType() == SymbolType.NUMBER || s1.getType() == SymbolType.STRING) {
+							} else if (s1.getType() == SymbolType.NUMBER || s1.getType() == SymbolType.STRING || s1.getType()==SymbolType.NULL) {
 								parameter1 = s1.getContent();
 								if (parameter1 == null)
 									throw new IllegalAccessError();
@@ -682,7 +682,7 @@ public class RuleInstance implements QueryPart {
 								if (parameter2 == null)
 									throw new DatabaseSyntaxException("Cannot find parameter " + s2.getSymbol());
 
-							} else if (s2.getType() == SymbolType.NUMBER || s2.getType() == SymbolType.STRING) {
+							} else if (s2.getType() == SymbolType.NUMBER || s2.getType() == SymbolType.STRING || s2.getType()==SymbolType.NULL) {
 								parameter2 = s2.getContent();
 								if (parameter2 == null)
 									throw new IllegalAccessError();
@@ -690,7 +690,7 @@ public class RuleInstance implements QueryPart {
 								throw new IllegalAccessError();
 
 							if ((s1.getType() == SymbolType.PARAMETER || s1.getType() == SymbolType.NUMBER
-									|| s1.getType() == SymbolType.STRING) && s2.getType() == SymbolType.IDENTIFIER) {
+									|| s1.getType() == SymbolType.STRING || s1.getType()==SymbolType.NULL) && s2.getType() == SymbolType.IDENTIFIER) {
 								fa1 = fa2;
 								fa2 = null;
 								parameter2 = parameter1;
@@ -702,7 +702,7 @@ public class RuleInstance implements QueryPart {
 							int fieldsNumber = 0;
 
 							SqlField sfs[] = fa1.getDeclaredSqlFields();
-							if (s2.getType() == SymbolType.STRING || s2.getType() == SymbolType.NUMBER) {
+							if (s2.getType() == SymbolType.STRING || s2.getType() == SymbolType.NUMBER || s2.getType()==SymbolType.NULL) {
 								if (sfs.length != 1
 										|| ((comp.getType() == SymbolType.LIKE || comp.getType() == SymbolType.NOTLIKE)
 												&& s2.getType() != SymbolType.STRING))

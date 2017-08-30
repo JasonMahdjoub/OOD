@@ -60,7 +60,6 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseVersionException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
-import com.distrimind.util.ReadWriteLock;
 
 /**
  * Sql connection wrapper for HSQLDB
@@ -641,7 +640,8 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 
 			@Override
 			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
-				try (ReadWriteLock.Lock lock = locker.getAutoCloseableWriteLock()) {
+				try  {
+					locker.writeLock().lock();
 					Statement st = null;
 					try {
 						st = getConnectionAssociatedWithCurrentThread().getConnection().createStatement();
@@ -657,6 +657,10 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 
 					}
 				}
+				finally
+				{
+					locker.writeLock().unlock();
+				}
 				return null;
 			}
 
@@ -669,7 +673,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 			public boolean doesWriteData() {
 				return true;
 			}
-		});
+		}, true);
 	}
 
 	@Override
@@ -771,9 +775,9 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 				try {
 					if (blockDatabase)
-						locker.lockWrite();
+						locker.writeLock().lock();
 					else
-						locker.lockRead();
+						locker.readLock().lock();
 					Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
 					PreparedStatement preparedStatement = sql_connection.prepareStatement(querry);
 					try {
@@ -786,9 +790,9 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 					throw new DatabaseException("", e);
 				} finally {
 					if (blockDatabase)
-						locker.unlockWrite();
+						locker.writeLock().unlock();
 					else
-						locker.unlockRead();
+						locker.readLock().unlock();
 				}
 			}
 
@@ -796,7 +800,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 			public boolean doesWriteData() {
 				return false;
 			}
-		});
+		}, true);
 
 	}
 
@@ -948,6 +952,11 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 	@Override
 	protected boolean supportFullSqlFieldName() {
 		return true;
+	}
+
+	@Override
+	protected boolean isSerializationException(SQLException e) throws DatabaseException {
+		return e.getSQLState().equals("40001");
 	}
 
 }

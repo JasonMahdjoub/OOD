@@ -170,7 +170,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 			public boolean doesWriteData() {
 				return true;
 			}
-		});
+		}, true);
 
 	}
 
@@ -256,6 +256,11 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 				public boolean doesWriteData() {
 					return true;
 				}
+				@Override
+				public void initOrReset() {
+					
+				}
+
 			}).longValue();
 
 		}

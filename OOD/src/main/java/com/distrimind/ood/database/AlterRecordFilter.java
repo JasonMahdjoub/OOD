@@ -59,6 +59,7 @@ public abstract class AlterRecordFilter<T extends Object> {
 
 	private Map<String, Object> modifications = null;
 	private boolean modificationFromRecordInstance = false;
+	private boolean isStoped = false;
 
 	/**
 	 * This function is called for every instance record present on the database.
@@ -152,4 +153,16 @@ public abstract class AlterRecordFilter<T extends Object> {
 	final boolean isModificatiedFromRecordInstance() {
 		return modificationFromRecordInstance;
 	}
+	
+	/**
+	 * Stop the parsing of the current table
+	 */
+	public void stopTableParsing() {
+		isStoped = true;
+	}
+
+	boolean isTableParsingStoped() {
+		return isStoped;
+	}
+
 }

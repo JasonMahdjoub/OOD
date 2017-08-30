@@ -4,3 +4,16 @@
 /databasetestDerby/
 /databasetestDerbyb/
 /build/
+/databasetestHSQLDB.data
+/databasetestHSQLDB.lck
+/databasetestHSQLDB.lobs
+/databasetestHSQLDB.log
+/databasetestHSQLDB.properties
+/databasetestHSQLDB.script
+/databasetestHSQLDBb.data
+/databasetestHSQLDBb.lck
+/databasetestHSQLDBb.log
+/databasetestHSQLDBb.properties
+/databasetestHSQLDBb.script
+/derby.log
+/test-output/

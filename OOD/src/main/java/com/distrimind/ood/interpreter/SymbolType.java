@@ -50,41 +50,20 @@ public enum SymbolType {
 	 * MULOPETATOR(true,false,false,"^\\*$",new String[]{"*"}, "*"),
 	 * DIVOPERATOR(true,false,false,"^/$",new String[]{"/"}, "/"),
 	 */
-	LOWEROPERATOR(true, false, false, "^<$", new String[] { "<" }, "<"), EQUALOPERATOR(true, false, false, "^(=){1,2}$",
-			new String[] { "=", "==" }, "="), NOTEQUALOPERATOR(true, false, false, "^(!=|<>)$",
-					new String[] { "!=", "<>" },
-					"<>"), GREATEROPERATOR(true, false, false, "^>$", new String[] { ">" }, ">"), LOWEROREQUALOPERATOR(
-							true, false, false, "^<=$", new String[] { "<=" }, "<="), GREATEROREQUALOPERATOR(true,
-									false, false, "^>=$", new String[] { ">=" }, ">="), OPEN_PARENTHESIS(true, false,
-											false, "^\\($", new String[] { "(" }, "("), CLOSE_PARENTHESIS(true, false,
-													false, "^\\)$", new String[] { ")" }, ")"), ANDCONDITION(false,
-															true, true, "^[Aa][Nn][Dd]$", null,
-															"AND"), ORCONDITION(false, true, true, "^[Oo][Rr]$", null,
-																	"OR"), IDENTIFIER(false, false, false,
-																			"^[a-zA-Z][a-zA-Z0-9\\._\\-]*+$", null,
-																			null), NUMBER(false, false, false,
-																					"^(\\+|\\-)?(([0-9]+(\\.[0-9]+)?(E(\\-|\\+)?[0-9]+)?)|([0-9]*\\.[0-9]+(E(\\-|\\+)?[0-9]+)?))$",
-																					null, null), STRING(false, false,
-																							false,
-																							"^(\"|\\')[\\p{Alnum}\\p{Blank}\\!\\#\\$\\%\\&\\(\\)\\*\\+\\,\\-\\.\\/:;\\<\\=\\>\\?\\@\\[\\\\\\]\\^_\\`\\{\\|\\}\\~]+(\"|\\')$",
-																							null, null), PARAMETER(
-																									false, false, false,
-																									"(\\%|\\:)[a-zA-Z\\-_][0-9a-zA-Z\\-_]+$",
-																									null,
-																									null), LIKE(true,
-																											false, true,
-																											"^(L|l)(I|i)(K|k)(E|e)$",
-																											new String[] {
-																													" LIKE " },
-																											" LIKE "), NOTLIKE(
-																													true,
-																													false,
-																													true,
-																													"^(N|n)(O|o)(T|t)_(L|l)(I|i)(K|k)(E|e)$",
-																													new String[] {
-																															" NOT LIKE ",
-																															" NOT_LIKE " },
-																													" NOT LIKE ");
+	LOWEROPERATOR(true, false, false, "^<$", new String[] { "<" }, "<"), 
+	EQUALOPERATOR(true, false, false, "^(=){1,2}$", new String[] { "=", "==" }, "="), 
+	NOTEQUALOPERATOR(true, false, false, "^(!=|<>)$", new String[] { "!=", "<>" },"<>"), 
+	GREATEROPERATOR(true, false, false, "^>$", new String[] { ">" }, ">"), 
+	LOWEROREQUALOPERATOR( true, false, false, "^<=$", new String[] { "<=" }, "<="), GREATEROREQUALOPERATOR(true,false, false, "^>=$", new String[] { ">=" }, ">="), 
+	OPEN_PARENTHESIS(true, false, false, "^\\($", new String[] { "(" }, "("), CLOSE_PARENTHESIS(true, false, false, "^\\)$", new String[] { ")" }, ")"), 
+	ANDCONDITION(false,true, true, "^[Aa][Nn][Dd]$", null, "AND"), 
+	ORCONDITION(false, true, true, "^[Oo][Rr]$", null, "OR"), 
+	IDENTIFIER(false, false, false, "^[a-zA-Z][a-zA-Z0-9\\._\\-]*+$", null, null), 
+	NUMBER(false, false, false, "^(\\+|\\-)?(([0-9]+(\\.[0-9]+)?(E(\\-|\\+)?[0-9]+)?)|([0-9]*\\.[0-9]+(E(\\-|\\+)?[0-9]+)?))$", null, null), 
+	STRING(false, false, false, "^(\"|\\')[\\p{Alnum}\\p{Blank}\\!\\#\\$\\%\\&\\(\\)\\*\\+\\,\\-\\.\\/:;\\<\\=\\>\\?\\@\\[\\\\\\]\\^_\\`\\{\\|\\}\\~]+(\"|\\')$", null, null),
+	NULL(false, false, false, "^[nN][uU][lL][lL]$", new String[] {"null","NULL"}, "NULL"),
+	PARAMETER( false, false, false, "(\\%|\\:)[a-zA-Z\\-_][0-9a-zA-Z\\-_]+$", null, null), LIKE(true, false, true, "^(L|l)(I|i)(K|k)(E|e)$", new String[] { " LIKE " }, " LIKE "), 
+	NOTLIKE(true, false,true,"^(N|n)(O|o)(T|t)_(L|l)(I|i)(K|k)(E|e)$",new String[] {" NOT LIKE "," NOT_LIKE " }," NOT LIKE ");
 
 	private final Pattern pattern;
 	private final String content;

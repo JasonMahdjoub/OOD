@@ -265,7 +265,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 			public boolean doesWriteData() {
 				return true;
 			}
-		});
+		}, true);
 
 	}
 
@@ -505,6 +505,11 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 			public boolean doesWriteData() {
 				return true;
 			}
+			@Override
+			public void initOrReset() {
+				
+			}
+			
 		});
 
 	}

@@ -45,4 +45,6 @@ public interface Transaction {
 	public TransactionIsolation getTransactionIsolation();
 
 	public boolean doesWriteData();
+	
+	public void initOrReset();
 }

@@ -45,8 +45,8 @@ import java.util.regex.Pattern;
  */
 public enum Rule {
 
-	TERME("^(<" + SymbolType.IDENTIFIER.name() + ">|<" + SymbolType.NUMBER.name() + ">|<" + SymbolType.STRING.name()
-			+ ">|<" + SymbolType.PARAMETER.name() + ">|\\(<EXPRESSION>\\))$"), EXPRESSION(
+	TERME("^(<" + SymbolType.IDENTIFIER.name() + ">|<" + SymbolType.NUMBER.name() + ">|<" + SymbolType.STRING.name() + ">|<" + SymbolType.NULL.name() + ">|<" + SymbolType.PARAMETER.name() + ">|\\(<EXPRESSION>\\))$"), 
+	EXPRESSION(
 					"^<" + TERME.name() + ">$"), OPCOMP("^(<" + SymbolType.EQUALOPERATOR.name() + ">|<"
 							+ SymbolType.NOTEQUALOPERATOR.name() + ">|<" + SymbolType.LOWEROPERATOR.name() + ">|<"
 							+ SymbolType.LOWEROREQUALOPERATOR.name() + ">|<" + SymbolType.GREATEROPERATOR.name() + ">|<"

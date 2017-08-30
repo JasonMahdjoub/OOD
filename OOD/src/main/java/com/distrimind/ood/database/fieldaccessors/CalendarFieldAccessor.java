@@ -37,6 +37,10 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database.fieldaccessors;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Field;
 import java.util.Calendar;
 
@@ -44,6 +48,7 @@ import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
+import com.distrimind.ood.database.exceptions.IncompatibleFieldDatabaseException;
 
 /**
  * 
@@ -52,11 +57,53 @@ import com.distrimind.ood.database.exceptions.FieldDatabaseException;
  * @since OOD 1.0
  * 
  */
-public class CalendarFieldAccessor extends SerializableFieldAccessor {
+public class CalendarFieldAccessor extends ByteTabConvertibleFieldAccessor {
 
 	protected CalendarFieldAccessor(Class<? extends Table<?>> table_class, DatabaseWrapper _sql_connection,
 			Field _field, String parentFieldName) throws DatabaseException {
-		super(table_class, _sql_connection, _field, parentFieldName);
+		super(table_class, _sql_connection, _field, parentFieldName, new ByteTabObjectConverter() {
+			
+			@Override
+			public boolean isCompatible(Class<?> object_type) {
+				return Calendar.class.isAssignableFrom(object_type);
+			}
+			
+			@Override
+			public Object getObject(Class<?> object_type, byte[] bytesTab) throws IncompatibleFieldDatabaseException {
+				try(ByteArrayInputStream bais=new ByteArrayInputStream(bytesTab); ObjectInputStream dis=new ObjectInputStream(bais))
+				{
+					Object o=dis.readObject();
+					if (o!=null && !(o instanceof Calendar))
+						throw new IncompatibleFieldDatabaseException("The class "+o.getClass()+" does is not a calendar !");
+					return o;
+				}
+				catch(Exception e)
+				{
+					throw new IncompatibleFieldDatabaseException("",e);
+				}
+				
+			}
+			
+			@Override
+			public int getDefaultSizeLimit(Class<?> object_type) throws IncompatibleFieldDatabaseException{
+				return 200;
+			}
+			
+			@Override
+			public byte[] getByte(Object o) throws IncompatibleFieldDatabaseException {
+				try(ByteArrayOutputStream baos=new ByteArrayOutputStream();ObjectOutputStream oos=new ObjectOutputStream(baos))
+				{
+					if (o!=null && !(o instanceof Calendar))
+						throw new IncompatibleFieldDatabaseException("The class "+o.getClass()+" does is not a calendar !");
+					oos.writeObject(o);
+					return baos.toByteArray();
+				}
+				catch(Exception e)
+				{
+					throw new IncompatibleFieldDatabaseException("",e);
+				}
+			}
+		});
 		if (!Calendar.class.isAssignableFrom(_field.getType()))
 			throw new FieldDatabaseException(
 					"The field " + _field.getName() + " of the class " + _field.getDeclaringClass().getName()

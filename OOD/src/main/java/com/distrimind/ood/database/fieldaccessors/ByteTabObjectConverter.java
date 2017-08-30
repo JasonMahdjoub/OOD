@@ -43,7 +43,7 @@ import com.distrimind.ood.database.exceptions.IncompatibleFieldDatabaseException
  * aims to get better performance than object serialization.
  * 
  * @author Jason Mahdjoub
- * @version 1.1
+ * @version 1.2
  * @since OOD 1.5
  */
 public abstract class ByteTabObjectConverter {
@@ -80,6 +80,12 @@ public abstract class ByteTabObjectConverter {
 	 *            the object type to test
 	 * @return true is the object type is managed by this class, false else.
 	 */
-	public abstract boolean isCompatible(Class<?> object_type);
+	public abstract boolean isCompatible(Class<?> object_type) ;
 
+	/**
+	 * Gets the default size limit in bytes
+	 * @return the default size limit in bytes
+	 */
+	public abstract int getDefaultSizeLimit(Class<?> object_type) throws IncompatibleFieldDatabaseException;
+	
 }

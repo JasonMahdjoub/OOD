@@ -68,6 +68,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.distrimind.ood.database.DatabaseHooksTable.Record;
 import com.distrimind.ood.database.Table.ColumnsReadQuerry;
@@ -78,13 +80,12 @@ import com.distrimind.ood.database.fieldaccessors.ByteTabObjectConverter;
 import com.distrimind.ood.database.fieldaccessors.DefaultByteTabObjectConverter;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.util.AbstractDecentralizedID;
-import com.distrimind.util.ReadWriteLock;
 
 /**
  * This class represent a SqlJet database.
  * 
  * @author Jason Mahdjoub
- * @version 1.5
+ * @version 1.6
  * @since OOD 1.4
  */
 public abstract class DatabaseWrapper implements AutoCloseable {
@@ -244,7 +245,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			public boolean doesWriteData() {
 				return false;
 			}
-		})).booleanValue();
+		}, true)).booleanValue();
 
 	}
 
@@ -271,7 +272,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			public boolean doesWriteData() {
 				return false;
 			}
-		})).intValue();
+		}, true)).intValue();
 
 	}
 
@@ -727,6 +728,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						public boolean doesWriteData() {
 							return true;
 						}
+
+						@Override
+						public void initOrReset() {
+							
+						}
 					});
 			synchronized (this) {
 				if (initializedHooks.containsValue(r)) {
@@ -1073,7 +1079,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			String f = database_name;
 			ReadWriteLock rwl = lockers.get(f);
 			if (rwl == null) {
-				rwl = new ReadWriteLock();
+				rwl = new ReentrantReadWriteLock(true);
 				lockers.put(f, rwl);
 				number_of_shared_lockers.put(f, new Integer(1));
 			} else
@@ -1203,7 +1209,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						}
 					}
 				} finally {
-					try (ReadWriteLock.Lock lock = locker.getAutoCloseableWriteLock()) {
+					try  {
+						locker.writeLock().lock();
 						DatabaseWrapper.lockers.remove(database_name);
 						int v = DatabaseWrapper.number_of_shared_lockers.get(database_name).intValue() - 1;
 						if (v == 0)
@@ -1214,7 +1221,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							throw new IllegalAccessError();
 						sql_database = new HashMap<>();
 					}
-
+					finally
+					{
+						locker.writeLock().unlock();
+					}
+					
 					System.gc();
 				}
 			}
@@ -2044,13 +2055,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			public boolean doesWriteData() {
 				return false;
 			}
-		})).booleanValue();
+		}, true)).booleanValue();
 	}
 
-	protected void startTransaction(Session _openedConnection, TransactionIsolation transactionIsolation, boolean write)
-			throws SQLException {
+	protected abstract void startTransaction(Session _openedConnection, TransactionIsolation transactionIsolation, boolean write)
+			throws SQLException;
+	/*{
 		_openedConnection.getConnection().setTransactionIsolation(transactionIsolation.getCode());
-	}
+	}*/
 
 	protected void endTransaction(Session _openedConnection) {
 
@@ -2082,102 +2094,131 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		 * DecentralizedIDGenerator().getBytes(), sb); return sb.toString();
 		 */
 	}
+	
+	protected abstract boolean isSerializationException(SQLException e) throws DatabaseException;
 
-	Object runTransaction(final Transaction _transaction) throws DatabaseException {
+	Object runTransaction(final Transaction _transaction, boolean defaultTransaction) throws DatabaseException {
 
 		Object res = null;
+		
+		
 		ConnectionWrapper cw = isNewTransactionAndStartIt();
+		final boolean writeData=_transaction.doesWriteData();
 		if (cw.newTransaction) {
-			if (!isThreadSafe())// TODO try to lock database tables and bench
+			try
 			{
-				if (_transaction.doesWriteData())
-					locker.lockWrite();
-				else
-					locker.lockRead();
-			}
-
-			String savePointName = null;
-			Savepoint savePoint = null;
-			try {
-
-				setTransactionIsolation(cw.connection, _transaction.getTransactionIsolation(),
-						_transaction.doesWriteData());
-
-				if (_transaction.doesWriteData() && supportSavePoint(cw.connection.getConnection())) {
-					savePointName = generateSavePointName();
-					savePoint = savePoint(cw.connection.getConnection(), savePointName);
+				if (!isThreadSafe())// TODO try to lock database tables and bench
+				{
+					if (writeData)
+						locker.writeLock().lock();
+					else
+						locker.readLock().lock();
 				}
-				res = _transaction.run(this);
-				if (_transaction.doesWriteData())
-					cw.connection.clearTransactions(true);
-				commit(cw.connection.getConnection());
-				if (_transaction.doesWriteData()) {
-					if (savePoint != null)
-						releasePoint(cw.connection.getConnection(), savePointName, savePoint);
-
-				}
-
-				endTransaction(cw.connection);
-			} catch (DatabaseException e) {
-				try {
-					if (_transaction.doesWriteData())
-						cw.connection.clearTransactions(false);
-					rollback(cw.connection.getConnection());
-					if (_transaction.doesWriteData()) {
-						if (savePoint != null || savePointName != null) {
-							releasePoint(cw.connection.getConnection(), savePointName, savePoint);
+				boolean retry=true;
+				while(retry)
+				{
+					retry=false;
+					String savePointName = null;
+					Savepoint savePoint = null;
+					try {
+		
+						setTransactionIsolation(cw.connection, _transaction.getTransactionIsolation(),writeData);
+		
+						if (writeData && supportSavePoint(cw.connection.getConnection())) {
+							savePointName = generateSavePointName();
+							savePoint = savePoint(cw.connection.getConnection(), savePointName);
 						}
-
-					}
-				} catch (SQLException se) {
-					throw new DatabaseIntegrityException("Impossible to rollback the database changments", se);
-				}
-				throw e;
-			} catch (SQLException e) {
-				try {
-					if (_transaction.doesWriteData())
-						cw.connection.clearTransactions(false);
-					rollback(cw.connection.getConnection());
-					if (_transaction.doesWriteData()) {
-						if (savePoint != null || savePointName != null) {
-							releasePoint(cw.connection.getConnection(), savePointName, savePoint);
+						_transaction.initOrReset();
+						res = _transaction.run(this);
+						if (writeData)
+							cw.connection.clearTransactions(true);
+						commit(cw.connection.getConnection());
+						if (writeData) {
+							if (savePoint != null)
+								releasePoint(cw.connection.getConnection(), savePointName, savePoint);
+		
 						}
-
+		
+						endTransaction(cw.connection);
+					} catch (DatabaseException e) {
+						try {
+							if (writeData)
+								cw.connection.clearTransactions(false);
+							rollback(cw.connection.getConnection());
+							if (writeData) {
+								if (savePoint != null || savePointName != null) {
+									releasePoint(cw.connection.getConnection(), savePointName, savePoint);
+								}
+							}
+						} catch (SQLException se) {
+							throw new DatabaseIntegrityException("Impossible to rollback the database changments", se);
+						}
+						Throwable t=e.getCause();
+						while (t!=null)
+						{
+							if ((t instanceof SQLException) && isSerializationException((SQLException)t))
+							{
+								retry=true;
+								break;
+							}
+							t=t.getCause();
+						}
+						if (!retry)
+							throw e;
+					} catch (SQLException e) {
+						
+						try {
+							if (writeData)
+								cw.connection.clearTransactions(false);
+							rollback(cw.connection.getConnection());
+							if (writeData) {
+								if (savePoint != null || savePointName != null) {
+									releasePoint(cw.connection.getConnection(), savePointName, savePoint);
+								}
+		
+							}
+						} catch (SQLException se) {
+							throw new DatabaseIntegrityException("Impossible to rollback the database changments", se);
+						}
+						retry=isSerializationException(e);
+						if (!retry)
+							throw DatabaseException.getDatabaseException(e);
+					} finally {
+						releaseTransaction();
 					}
-				} catch (SQLException se) {
-					throw new DatabaseIntegrityException("Impossible to rollback the database changments", se);
+					if (retry)
+					{
+						cw = isNewTransactionAndStartIt();
+						if (!cw.newTransaction)
+							throw new IllegalAccessError();
+					}
 				}
-				// clearTransactions(false);
-				throw DatabaseException.getDatabaseException(e);
 			} finally {
-				try {
-					releaseTransaction();
-				} finally {
-					if (!isThreadSafe()) {
-						if (_transaction.doesWriteData())
-							locker.unlockWrite();
-						else
-							locker.unlockRead();
-					}
+				if (!isThreadSafe()) {
+					if (writeData)
+						locker.writeLock().unlock();
+					else
+						locker.readLock().unlock();
 				}
 			}
+			
 		} else {
 			String savePointName = null;
 			Savepoint savePoint = null;
-			int previousPosition = getConnectionAssociatedWithCurrentThread().getActualPositionEvent();
+			int previousPosition = defaultTransaction?-1:getConnectionAssociatedWithCurrentThread().getActualPositionEvent();
 			try {
-				if (_transaction.doesWriteData() && supportSavePoint(cw.connection.getConnection())) {
+				if (writeData && !defaultTransaction && supportSavePoint(cw.connection.getConnection())) {
 					savePointName = generateSavePointName();
 					savePoint = savePoint(cw.connection.getConnection(), savePointName);
 				}
-
+				_transaction.initOrReset();
 				res = _transaction.run(this);
 				if (savePoint != null)
 					releasePoint(cw.connection.getConnection(), savePointName, savePoint);
 
 			} catch (DatabaseException e) {
 				try {
-					if (_transaction.doesWriteData() && savePoint != null) {
+					if (writeData && savePoint != null) {
 						rollback(cw.connection.getConnection(), savePointName, savePoint);
 						getConnectionAssociatedWithCurrentThread().cancelTmpTransactionEvents(previousPosition);
 						releasePoint(cw.connection.getConnection(), savePointName, savePoint);
@@ -2220,27 +2261,16 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 */
 	@SuppressWarnings("unchecked")
 	public <O> O runSynchronizedTransaction(final SynchronizedTransaction<O> _transaction) throws DatabaseException {
-		/*
-		 * try {
-		 */
 		return (O) this.runTransaction(new Transaction() {
 
 			@Override
 			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 				try {
-					/*
-					 * if (_transaction.doesWriteData()) locker.lockWrite(); else locker.lockRead();
-					 */
-
 					return (Object) _transaction.run();
 
 				} catch (Exception e) {
 					throw DatabaseException.getDatabaseException(e);
 				}
-				/*
-				 * finally { if (_transaction.doesWriteData()) locker.unlockWrite(); else
-				 * locker.unlockRead(); }
-				 */
 			}
 
 			@Override
@@ -2252,10 +2282,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			public boolean doesWriteData() {
 				return _transaction.doesWriteData();
 			}
-		});
-		/*
-		 * } finally { }
-		 */
+			
+			@Override
+			public void initOrReset()
+			{
+				_transaction.initOrReset();
+			}
+		}, false);
 	}
 
 	/**
@@ -2334,13 +2367,18 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					loadDatabase(new DatabaseConfiguration(_class_table.getPackage()), true);
 					db = this.sql_database.get(_class_table.getPackage());
 				} else {
-					try (ReadWriteLock.Lock lock = locker.getAutoCloseableWriteLock()) {
+					try {
+						locker.writeLock().lock();
 						if (actualDatabaseLoading != null && actualDatabaseLoading.getConfiguration().getPackage()
 								.equals(_class_table.getPackage()))
 							db = actualDatabaseLoading;
 						else
 							throw new DatabaseException(
 									"The given database was not loaded : " + _class_table.getPackage());
+					}
+					finally
+					{
+						locker.writeLock().unlock();
 					}
 				}
 			}
@@ -2422,7 +2460,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 *             if a problem occurs
 	 */
 	public final void deleteDatabase(final DatabaseConfiguration configuration) throws DatabaseException {
-		try (ReadWriteLock.Lock lock = locker.getAutoCloseableWriteLock()) {
+		try  {
+			locker.writeLock().lock();
 
 			runTransaction(new Transaction() {
 
@@ -2469,8 +2508,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				public TransactionIsolation getTransactionIsolation() {
 					return TransactionIsolation.TRANSACTION_SERIALIZABLE;
 				}
-			});
+			}, true);
 
+		}
+		finally
+		{
+			locker.writeLock().unlock();
 		}
 	}
 
@@ -2497,7 +2540,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 */
 	public final void loadDatabase(final DatabaseConfiguration configuration,
 			final boolean createDatabaseIfNecessaryAndCheckIt) throws DatabaseException {
-		try (ReadWriteLock.Lock lock = locker.getAutoCloseableWriteLock()) {
+		try  {
+			locker.writeLock().lock();
 			if (this.closed)
 				throw new DatabaseException("The given Database was closed : " + this);
 			if (configuration == null)
@@ -2574,7 +2618,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						return TransactionIsolation.TRANSACTION_SERIALIZABLE;
 					}
 
-				});
+				}, true);
 				if (allNotFound.get()) {
 					try {
 						DatabaseConfiguration oldConfig = configuration.getOldVersionOfDatabaseConfiguration();
@@ -2607,6 +2651,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				actualDatabaseLoading = null;
 			}
 		}
+		finally
+		{
+			locker.writeLock().unlock();
+		}
 	}
 
 	/**
@@ -2619,12 +2667,17 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	public DatabaseConfiguration getDatabaseConfiguration(String _package) {
 		if (_package == null)
 			throw new NullPointerException();
-		try (ReadWriteLock.Lock lock = locker.getAutoCloseableWriteLock()) {
+		try  {
+			locker.writeLock().lock();
 			for (Map.Entry<Package, Database> e : sql_database.entrySet()) {
 				if (e.getKey().getName().equals(_package))
 					return e.getValue().getConfiguration();
 			}
 			return null;
+		}
+		finally
+		{
+			locker.writeLock().unlock();
 		}
 	}
 
@@ -2638,12 +2691,17 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	public DatabaseConfiguration getDatabaseConfiguration(Package _package) {
 		if (_package == null)
 			throw new NullPointerException();
-		try (ReadWriteLock.Lock lock = locker.getAutoCloseableWriteLock()) {
+		try  {
+			locker.writeLock().lock();
 			Database db = sql_database.get(_package);
 			if (db == null)
 				return null;
 			else
 				return db.getConfiguration();
+		}
+		finally
+		{
+			locker.writeLock().unlock();
 		}
 	}
 
@@ -2726,9 +2784,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	Collection<Table<?>> getListTables(Package p) {
 		Database db = this.sql_database.get(p);
 		if (db == null) {
-			try (ReadWriteLock.Lock lock = locker.getAutoCloseableWriteLock()) {
+			try  {
+				locker.writeLock().lock();
 				if (actualDatabaseLoading != null && actualDatabaseLoading.getConfiguration().getPackage().equals(p))
 					db = actualDatabaseLoading;
+			}
+			finally
+			{
+				locker.writeLock().unlock();
 			}
 		}
 		return db.tables_instances.values();

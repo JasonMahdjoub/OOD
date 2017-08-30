@@ -55,4 +55,6 @@ public interface SynchronizedTransaction<O> {
 	public TransactionIsolation getTransactionIsolation();
 
 	public boolean doesWriteData();
+	
+	public void initOrReset();
 }

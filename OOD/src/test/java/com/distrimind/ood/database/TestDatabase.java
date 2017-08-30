@@ -3186,7 +3186,7 @@ public abstract class TestDatabase {
 			{
 				Blob blob=((Blob)parameter);
 				
-				parameter=blob.getBytes(0, (int)blob.length());
+				parameter=blob.getBytes(1, (int)blob.length());
 			}
 		}
 		Assert.assertEquals(parameter, expectedParameter, message);

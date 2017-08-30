@@ -111,7 +111,10 @@ public class DateFieldAccessor extends FieldAccessor {
 			Timestamp res = _result_set.getTimestamp(getColmunIndex(_result_set, sql_fields[0].field));
 			if (res == null && isNotNull())
 				throw new DatabaseIntegrityException("Unexpected exception.");
-			field.set(_class_instance, new Date(res.getTime()));
+			if (res==null)
+				field.set(_class_instance, null);
+			else
+				field.set(_class_instance, new Date(res.getTime()));
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -192,7 +195,10 @@ public class DateFieldAccessor extends FieldAccessor {
 	@Override
 	public void getValue(PreparedStatement _prepared_statement, int _field_start, Object o) throws DatabaseException {
 		try {
-			_prepared_statement.setTimestamp(_field_start, new Timestamp(((Date) o).getTime()));
+			if (o==null)
+				_prepared_statement.setTimestamp(_field_start, null);
+			else
+				_prepared_statement.setTimestamp(_field_start, new Timestamp(((Date) o).getTime()));
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -206,7 +212,8 @@ public class DateFieldAccessor extends FieldAccessor {
 	@Override
 	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
 		SqlFieldInstance res[] = new SqlFieldInstance[1];
-		res[0] = new SqlFieldInstance(sql_fields[0], new Timestamp(((Date) getValue(_instance)).getTime()));
+		Date date=(Date) getValue(_instance);
+		res[0] = new SqlFieldInstance(sql_fields[0], date==null?null:new Timestamp(date.getTime()));
 		return res;
 	}
 

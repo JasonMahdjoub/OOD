@@ -98,6 +98,7 @@ public class Symbol implements QueryPart {
 		case NUMBER:
 		case PARAMETER:
 		case STRING:
+		case NULL:
 			return new RuleInstance(Rule.TERME, this);
 		case OPEN_PARENTHESIS:
 		case CLOSE_PARENTHESIS:
@@ -146,7 +147,7 @@ public class Symbol implements QueryPart {
 		if (valueType == null)
 			return false;
 		String otherValueType = otherPart.getValueType(table, parameters);
-		return valueType.equals(otherValueType);
+		return valueType.equals(otherValueType) || otherValueType.equals(SymbolType.NULL.name());
 	}
 
 	@Override
@@ -170,7 +171,9 @@ public class Symbol implements QueryPart {
 		} else if (getType() == SymbolType.PARAMETER) {
 			Object p = parameters.get(getSymbol());
 			if (p == null)
+			{
 				throw new DatabaseSyntaxException("Impossible to find parameter " + getSymbol());
+			}
 			FieldAccessor fa = getFieldAccessor(table, p);
 
 			if (fa == null)
@@ -188,7 +191,7 @@ public class Symbol implements QueryPart {
 				return fa.getFieldClassType().getName();
 		} else if (getType() == SymbolType.NUMBER)
 			return "comparable";
-		else
+		else 
 			return getType().name();
 
 	}

@@ -142,4 +142,24 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 				|| Enum.class.isAssignableFrom(field_type);
 	}
 
+	@Override
+	public int getDefaultSizeLimit(Class<?> _object_type) throws IncompatibleFieldDatabaseException{
+		if (_object_type == Inet6Address.class || _object_type == Inet4Address.class)
+			return 128;
+		else if (ASymmetricKeyPair.class.isAssignableFrom(_object_type)) {
+			return 1200;
+		} else if (ASymmetricPublicKey.class.isAssignableFrom(_object_type)) {
+			return 8999;
+		} else if (ASymmetricPrivateKey.class.isAssignableFrom(_object_type)) {
+			return 500;
+		} else if (SymmetricSecretKey.class.isAssignableFrom(_object_type)) {
+			return 400;
+		} else if (Enum.class.isAssignableFrom(_object_type)) {
+			return 300;
+		}
+		throw new IncompatibleFieldDatabaseException("Incompatible type " + _object_type.getCanonicalName());
+	}
+
+	
+
 }
