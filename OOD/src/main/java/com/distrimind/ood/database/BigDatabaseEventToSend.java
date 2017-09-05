@@ -36,9 +36,6 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import java.io.InputStream;
-import java.io.OutputStream;
-
 import com.distrimind.ood.database.exceptions.DatabaseException;
 
 /**
@@ -49,9 +46,9 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  */
 public interface BigDatabaseEventToSend extends DatabaseEventToSend {
 
-	public void inportFromInputStream(DatabaseWrapper wrapper, final InputStream inputStream) throws DatabaseException;
+	public void inportFromInputStream(DatabaseWrapper wrapper, final InputStreamGetter inputStream) throws DatabaseException;
 
-	public boolean exportToOutputStream(DatabaseWrapper wrapper, final OutputStream outputStream)
+	public boolean exportToOutputStream(DatabaseWrapper wrapper, final OutputStreamGetter outputStreamGetter)
 			throws DatabaseException;
 
 }

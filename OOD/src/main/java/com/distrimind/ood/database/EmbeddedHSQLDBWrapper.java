@@ -38,6 +38,9 @@ package com.distrimind.ood.database;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -49,9 +52,9 @@ import java.sql.Statement;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
-import org.hsqldb.jdbc.JDBCBlob;
+/*import org.hsqldb.jdbc.JDBCBlob;
 import org.hsqldb.lib.tar.DbBackupMain;
-import org.hsqldb.lib.tar.TarMalformatException;
+import org.hsqldb.lib.tar.TarMalformatException;*/
 
 import com.distrimind.ood.database.Table.ColumnsReadQuerry;
 import com.distrimind.ood.database.Table.ReadQuerry;
@@ -70,18 +73,24 @@ import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
  */
 public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 	private static boolean hsql_loaded = false;
+	private static Constructor<? extends Blob> JDBCBlobConstructor=null;
+	private static Method DbBackupMain;
 	private final File file_name;
 	private final HSQLDBConcurrencyControl concurrencyControl;
 	private final int cache_rows;
 	private final int cache_size;
 	private final int result_max_memory_rows;
 	private final int cache_free_count;
+	
 
+	@SuppressWarnings("unchecked")
 	private static void ensureHSQLLoading() throws DatabaseLoadingException {
 		synchronized (EmbeddedHSQLDBWrapper.class) {
 			if (!hsql_loaded) {
 				try {
 					Class.forName("org.hsqldb.jdbc.JDBCDriver");
+					JDBCBlobConstructor=(Constructor<? extends Blob>)Class.forName("org.hsqldb.jdbc.JDBCBlob").getDeclaredConstructor((new byte[0]).getClass());
+					DbBackupMain=Class.forName("org.hsqldb.lib.tar.DbBackupMain").getDeclaredMethod("main", (new String[0]).getClass());
 					hsql_loaded = true;
 				} catch (Exception e) {
 					throw new DatabaseLoadingException("Impossible to load HSQLDB ", e);
@@ -599,10 +608,10 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 		return "BLOB";
 	}
 
-	@Override
+	/*@Override
 	protected String getSqlQuerryToGetLastGeneratedID() {
 		return "CALL IDENTITY()";
-	}
+	}*/
 
 	@Override
 	protected String getOnUpdateCascadeSqlQuerry() {
@@ -641,7 +650,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 			@Override
 			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 				try  {
-					locker.writeLock().lock();
+					lockWrite();
 					Statement st = null;
 					try {
 						st = getConnectionAssociatedWithCurrentThread().getConnection().createStatement();
@@ -659,7 +668,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 				}
 				finally
 				{
-					locker.writeLock().unlock();
+					unlockWrite();
 				}
 				return null;
 			}
@@ -673,12 +682,29 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 			public boolean doesWriteData() {
 				return true;
 			}
+
+			@Override
+			public void initOrReset() {
+				
+			}
 		}, true);
 	}
 
 	@Override
 	protected Blob getBlob(byte[] _bytes) throws SQLException {
-		return new JDBCBlob(_bytes);
+		try {
+			return JDBCBlobConstructor.newInstance(_bytes);
+		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException e) {
+			throw new SQLException(e);
+		}
+		catch(InvocationTargetException e)
+		{
+			Throwable t=e.getCause();
+			if (t instanceof SQLException)
+				throw (SQLException)t;
+			else
+				throw new SQLException(t);
+		}
 	}
 
 	/**
@@ -775,9 +801,9 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 				try {
 					if (blockDatabase)
-						locker.writeLock().lock();
+						lockWrite();
 					else
-						locker.readLock().lock();
+						lockRead();
 					Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
 					PreparedStatement preparedStatement = sql_connection.prepareStatement(querry);
 					try {
@@ -790,15 +816,20 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 					throw new DatabaseException("", e);
 				} finally {
 					if (blockDatabase)
-						locker.writeLock().unlock();
+						unlockWrite();
 					else
-						locker.readLock().unlock();
+						unlockRead();
 				}
 			}
 
 			@Override
 			public boolean doesWriteData() {
 				return false;
+			}
+
+			@Override
+			public void initOrReset() {
+				
 			}
 		}, true);
 
@@ -817,7 +848,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 	 * @throws TarMalformatException
 	 *             if a problem occurs
 	 */
-	public static void restore(File sourcePath, File databaseDirectory) throws IOException, TarMalformatException {
+	public static void restore(File sourcePath, File databaseDirectory) throws IOException {
 		if (sourcePath == null)
 			throw new NullPointerException("sourcePath");
 		if (databaseDirectory == null)
@@ -825,7 +856,19 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 		if (databaseDirectory.exists() && !databaseDirectory.isDirectory())
 			throw new IllegalArgumentException("databaseDirectory must be a directory !");
 		String args[] = { "--extract", sourcePath.getAbsolutePath(), databaseDirectory.getAbsolutePath() };
-		DbBackupMain.main(args);
+		try {
+			DbBackupMain.invoke(null, (Object)args);
+		} catch (IllegalAccessException | IllegalArgumentException e) {
+			throw new IOException(e);
+		}
+		catch( InvocationTargetException e)
+		{
+			Throwable t=e.getCause();
+			if (t instanceof IOException)
+				throw (IOException)t;
+			else
+				throw new IOException(t);
+		}
 	}
 
 	@Override

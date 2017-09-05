@@ -37,24 +37,32 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database;
 
+import com.distrimind.ood.database.exceptions.TransactionCanceledException;
+
 /**
  * This interface must be used to wrap a set of operations into the database.
  * 
- * During the call of the function {@link #run()}, no concurrent thread can
- * alter the database.
+ * During the call of the function {@link #run()}, concurrent thread can
+ * alter the database. If this actual transaction can be executed, 
+ * it will be re-executed until the transaction will pass.
  * 
  * @author Jason Mahdjoub
  * @since 1.0
- * @version 1.0
+ * @version 2.0
  * @param <O>
  *            The type of the returned object.
  */
-public interface SynchronizedTransaction<O> {
-	public O run() throws Exception;
+public abstract class SynchronizedTransaction<O> {
+	public abstract O run() throws Exception;
 
-	public TransactionIsolation getTransactionIsolation();
+	public abstract TransactionIsolation getTransactionIsolation();
 
-	public boolean doesWriteData();
+	public abstract boolean doesWriteData();
 	
-	public void initOrReset();
+	public abstract void initOrReset() throws Exception;
+	
+	public void cancelTransaction() throws TransactionCanceledException
+	{
+		throw new TransactionCanceledException();
+	}
 }

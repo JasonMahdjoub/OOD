@@ -334,13 +334,16 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 											+ sf.pointed_table);
 
 					}
-					if (fa.isUnique()) {
+					//TODO check unique columns
+					/*if (fa.isUnique()) {
 						boolean found = false;
 						try (ReadQuerry rq = new ReadQuerry(sql_connection,
 								sql_connection.getMetaData().getIndexInfo(null, null, table.getName(), false, false))) {
 							while (rq.result_set.next()) {
+								
 								String columnName = rq.result_set.getString("COLUMN_NAME");
 								if (columnName.equals(sf.short_field)) {
+									
 									if (!rq.result_set.getBoolean("NON_UNIQUE"))
 										found = true;
 									break;
@@ -350,7 +353,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 						if (!found)
 							throw new DatabaseVersionException(table, "The OOD field " + fa.getFieldName()
 									+ " is a unique key, but it not declared as unique into the Sql database.");
-					}
+					}*/
 				}
 			}
 		} catch (SQLException e) {
@@ -478,10 +481,10 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 		return "VARCHAR(16374)";
 	}
 
-	@Override
+	/*@Override
 	protected String getSqlQuerryToGetLastGeneratedID() {
 		return "values IDENTITY_VAL_LOCAL()";
-	}
+	}*/
 
 	@Override
 	protected String getOnUpdateCascadeSqlQuerry() {
@@ -529,7 +532,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 			@Override
 			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 				try {
-					locker.readLock().lock();
+					lockRead();
 					Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
 					PreparedStatement preparedStatement = sql_connection.prepareStatement(querry);
 					try {
@@ -542,13 +545,18 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 				} catch (Exception e) {
 					throw new DatabaseException("", e);
 				} finally {
-					locker.readLock().unlock();
+					unlockRead();
 				}
 			}
 
 			@Override
 			public boolean doesWriteData() {
 				return false;
+			}
+
+			@Override
+			public void initOrReset() {
+				
 			}
 		}, true);
 	}

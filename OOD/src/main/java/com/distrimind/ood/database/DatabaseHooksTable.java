@@ -461,6 +461,11 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 					public boolean doesWriteData() {
 						return false;
 					}
+
+					@Override
+					public void initOrReset() {
+						
+					}
 				});
 	}
 
@@ -523,6 +528,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							r.setLastValidatedDistantTransaction(-1);
 							r.setLastValidatedTransaction(-1);
 							r = addRecord(r);
+							
 							localHost = null;
 							supportedDatabasePackages = null;
 							if (!concernsDatabaseHost) {
@@ -560,6 +566,11 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 					public boolean doesWriteData() {
 						return true;
 					}
+
+					@Override
+					public void initOrReset() {
+						
+					}
 				});
 
 	}
@@ -585,7 +596,6 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							if (r.removePackageDatabase(packages)) {
 								removeRecordWithCascade(r);
 								getDatabaseTransactionEventsTable().removeTransactionsFromLastID();
-								// getDatabaseTransactionEventsTable().removeUnusedTransactions();
 								return null;
 							} else {
 								updateRecord(r);
@@ -607,9 +617,15 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 						return true;
 					}
 
+					@Override
+					public void initOrReset() {
+						
+					}
+
 				});
 	}
 
+	
 	boolean supportPackage(Package p) throws DatabaseException {
 		HashSet<String> hs = this.supportedDatabasePackages;
 		if (hs == null) {
@@ -658,10 +674,15 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			public boolean doesWriteData() {
 				return false;
 			}
+
+			@Override
+			public void initOrReset() {
+				
+			}
 		});
 	}
 
-	public long getGlobalLastValidatedTransactionID() throws DatabaseException {
+	long getGlobalLastValidatedTransactionID() throws DatabaseException {
 		final AtomicLong min = new AtomicLong(Long.MAX_VALUE);
 
 		getRecords(new Filter<DatabaseHooksTable.Record>() {

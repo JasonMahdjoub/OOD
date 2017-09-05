@@ -57,7 +57,7 @@ public abstract class ByteTabObjectConverter {
 	 * @throws IncompatibleFieldDatabaseException
 	 *             if the object is not compatible
 	 */
-	public abstract byte[] getByte(Object o) throws IncompatibleFieldDatabaseException;
+	public abstract byte[] getBytes(Object o) throws IncompatibleFieldDatabaseException;
 
 	/**
 	 * Convert the byte tab to an object instance

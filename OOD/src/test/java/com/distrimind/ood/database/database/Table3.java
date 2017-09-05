@@ -63,6 +63,8 @@ public final class Table3 extends Table<Table3.Record> {
 		public @NotNull SubField subField;
 		@Field
 		public @NotNull SubSubField subSubField;
+		@Field
+		public DecentralizedIDGenerator nullField=null;
 
 	}
 }

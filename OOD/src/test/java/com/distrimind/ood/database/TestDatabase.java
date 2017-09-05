@@ -88,6 +88,7 @@ import com.distrimind.ood.database.exceptions.ConstraintsNotRespectedDatabaseExc
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
 import com.distrimind.ood.database.exceptions.RecordNotFoundDatabaseException;
+import com.distrimind.ood.database.fieldaccessors.ByteTabFieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.schooldatabase.Lecture;
 import com.distrimind.ood.interpreter.Interpreter;
@@ -487,7 +488,46 @@ public abstract class TestDatabase {
 		Assert.assertTrue(r.typeSecretKey.equals(typeSecretKey));
 		assertEquals(r.subField, subField);
 		assertEquals(r.subSubField, subSubField);
+		for (int i = 0; i < 3; i++)
+			Assert.assertTrue(r.byte_array_value[i] == tab[i]);
 
+		Map<String, Object> pks=new HashMap<>();
+		pks.put("pk1", r.pk1);
+		pks.put("pk2", r.pk2);
+		pks.put("pk3", r.pk3);
+		pks.put("pk4", r.pk4);
+		pks.put("pk5", r.pk5);
+		pks.put("pk6", r.pk6);
+		pks.put("pk7", r.pk7);
+		r=table1.getRecord(pks);
+		Assert.assertNotNull(r);
+		Assert.assertTrue(r.pk1 == 0);
+		Assert.assertTrue(r.int_value == 3);
+		Assert.assertTrue(r.byte_value == (byte) 3);
+		Assert.assertTrue(r.char_value == 'x');
+		Assert.assertTrue(r.boolean_value);
+		Assert.assertTrue(r.short_value == (short) 3);
+		Assert.assertTrue(r.long_value == 300000004556256l);
+		Assert.assertTrue(r.float_value == 3.3f);
+		Assert.assertTrue(r.double_value == 3.3);
+		Assert.assertTrue(r.string_value.equals("test string"));
+		Assert.assertTrue(r.IntegerNumber_value.intValue() == 3);
+		Assert.assertTrue(r.ByteNumber_value.byteValue() == (byte) 3);
+		Assert.assertTrue(r.CharacterNumber_value.charValue() == 'x');
+		Assert.assertTrue(r.BooleanNumber_value.booleanValue());
+		Assert.assertTrue(r.ShortNumber_value.shortValue() == (short) 3);
+		Assert.assertTrue(r.LongNumber_value.longValue() == 300000004556256l);
+		Assert.assertTrue(r.FloatNumber_value.floatValue() == 3.3f);
+		Assert.assertTrue(r.DoubleNumber_value.doubleValue() == 3.3);
+		Assert.assertTrue(r.BigInteger_value.equals(new BigInteger("5")));
+		Assert.assertTrue(r.BigDecimal_value.equals(new BigDecimal("8.8")));
+		Assert.assertTrue(r.DateValue.equals(date));
+		Assert.assertTrue(r.CalendarValue.equals(calendar));
+		Assert.assertTrue(r.secretKey.equals(secretKey));
+		Assert.assertTrue(r.typeSecretKey.equals(typeSecretKey));
+		assertEquals(r.subField, subField);
+		assertEquals(r.subSubField, subSubField);
+		
 		for (int i = 0; i < 3; i++)
 			Assert.assertTrue(r.byte_array_value[i] == tab[i]);
 
@@ -521,6 +561,48 @@ public abstract class TestDatabase {
 
 		for (int i = 0; i < 3; i++)
 			Assert.assertTrue(r2.byte_array_value[i] == tab[i]);
+		
+		
+		pks=new HashMap<>();
+		pks.put("pk1", r2.pk1);
+		pks.put("pk2", r2.pk2);
+		pks.put("pk3", r2.pk3);
+		pks.put("pk4", r2.pk4);
+		pks.put("pk5", r2.pk5);
+		pks.put("pk6", r2.pk6);
+		pks.put("pk7", r2.pk7);
+		r2=table3.getRecord(pks);
+		Assert.assertNotNull(r2);
+		Assert.assertTrue(r2.pk1 == 0);
+		Assert.assertTrue(r2.int_value == 3);
+		Assert.assertTrue(r2.byte_value == (byte) 3);
+		Assert.assertTrue(r2.char_value == 'x');
+		Assert.assertTrue(r2.boolean_value);
+		Assert.assertTrue(r2.short_value == (short) 3);
+		Assert.assertTrue(r2.long_value == 300000004556256l);
+		Assert.assertTrue(r2.float_value == 3.3f);
+		Assert.assertTrue(r2.double_value == 3.3);
+		Assert.assertTrue(r2.string_value.equals("test string"));
+		Assert.assertTrue(r2.IntegerNumber_value.intValue() == 3);
+		Assert.assertTrue(r2.ByteNumber_value.byteValue() == (byte) 3);
+		Assert.assertTrue(r2.CharacterNumber_value.charValue() == 'x');
+		Assert.assertTrue(r2.BooleanNumber_value.booleanValue());
+		Assert.assertTrue(r2.ShortNumber_value.shortValue() == (short) 3);
+		Assert.assertTrue(r2.LongNumber_value.longValue() == 300000004556256l);
+		Assert.assertTrue(r2.FloatNumber_value.floatValue() == 3.3f);
+		Assert.assertTrue(r2.DoubleNumber_value.doubleValue() == 3.3);
+		Assert.assertTrue(r2.BigInteger_value.equals(new BigInteger("5")));
+		Assert.assertTrue(r2.BigDecimal_value.equals(new BigDecimal("8.8")));
+		Assert.assertTrue(r2.DateValue.equals(date));
+		Assert.assertTrue(r2.CalendarValue.equals(calendar));
+		Assert.assertTrue(r2.secretKey.equals(secretKey));
+		Assert.assertTrue(r2.typeSecretKey.equals(typeSecretKey));
+		assertEquals(r2.subField, subField);
+		assertEquals(r2.subSubField, subSubField);
+
+		for (int i = 0; i < 3; i++)
+			Assert.assertTrue(r2.byte_array_value[i] == tab[i]);
+		
 	}
 
 	@Test(dependsOnMethods = { "alterRecord" })
@@ -539,41 +621,83 @@ public abstract class TestDatabase {
 			Assert.assertTrue(true);
 		}
 
-		HashMap<String, Object> map = new HashMap<String, Object>();
-		map.put("pk1", new Integer(0));
-		map.put("int_value", new Integer(3));
-		map.put("byte_value", new Byte((byte) 3));
-		map.put("char_value", new Character('x'));
-		map.put("boolean_value", new Boolean(true));
-		map.put("short_value", new Short((short) 3));
-		map.put("long_value", new Long(3));
-		map.put("float_value", new Float(3.3f));
-		map.put("double_value", new Double(3.3));
-		map.put("string_value", new String("test string"));
-		map.put("IntegerNumber_value", new Integer(3));
-		map.put("ByteNumber_value", new Byte((byte) 3));
-		map.put("CharacterNumber_value", new Character('x'));
-		map.put("BooleanNumber_value", new Boolean(true));
-		map.put("ShortNumber_value", new Short((short) 3));
-		map.put("LongNumber_value", new Long((long) 3));
-		map.put("FloatNumber_value", new Float(3.3f));
-		map.put("DoubleNumber_value", new Double(3.3));
-		map.put("BigInteger_value", new BigInteger("5"));
-		map.put("BigDecimal_value", new BigDecimal("8.8"));
-		map.put("DateValue", date);
-		map.put("CalendarValue", calendar);
-		map.put("secretKey", secretKey);
-		map.put("typeSecretKey", typeSecretKey);
-		map.put("subField", subField);
-		map.put("subSubField", subSubField);
 
-		byte[] tab = new byte[3];
-		tab[0] = 0;
-		tab[1] = 1;
-		tab[2] = 2;
-		map.put("byte_array_value", tab);
-		table1.addRecord(map);
-		table3.addRecord(map);
+		table1.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
+
+			@Override
+			public Void run() throws Exception {
+				HashMap<String, Object> map = new HashMap<String, Object>();
+				map.put("pk1", new Integer(0));
+				map.put("int_value", new Integer(3));
+				map.put("byte_value", new Byte((byte) 3));
+				map.put("char_value", new Character('x'));
+				map.put("boolean_value", new Boolean(true));
+				map.put("short_value", new Short((short) 3));
+				map.put("long_value", new Long(3));
+				map.put("float_value", new Float(3.3f));
+				map.put("double_value", new Double(3.3));
+				map.put("string_value", new String("test string"));
+				map.put("IntegerNumber_value", new Integer(3));
+				map.put("ByteNumber_value", new Byte((byte) 3));
+				map.put("CharacterNumber_value", new Character('x'));
+				map.put("BooleanNumber_value", new Boolean(true));
+				map.put("ShortNumber_value", new Short((short) 3));
+				map.put("LongNumber_value", new Long((long) 3));
+				map.put("FloatNumber_value", new Float(3.3f));
+				map.put("DoubleNumber_value", new Double(3.3));
+				map.put("BigInteger_value", new BigInteger("5"));
+				map.put("BigDecimal_value", new BigDecimal("8.8"));
+				map.put("DateValue", date);
+				map.put("CalendarValue", calendar);
+				map.put("secretKey", secretKey);
+				map.put("typeSecretKey", typeSecretKey);
+				map.put("subField", subField);
+				map.put("subSubField", subSubField);
+				
+				byte[] tab = new byte[3];
+				tab[0] = 0;
+				tab[1] = 1;
+				tab[2] = 2;
+				
+				map.put("byte_array_value", tab);
+				Table1.Record r1=table1.addRecord(map);
+				Map<String, Object> pks=new HashMap<>();
+				pks.put("pk1", r1.pk1);
+				pks.put("pk2", r1.pk2);
+				pks.put("pk3", r1.pk3);
+				pks.put("pk4", r1.pk4);
+				pks.put("pk5", r1.pk5);
+				pks.put("pk6", r1.pk6);
+				pks.put("pk7", r1.pk7);
+				Assert.assertNotNull(table1.getRecord(pks));
+				Table3.Record r3=table3.addRecord(map);
+				pks=new HashMap<>();
+				pks.put("pk1", r3.pk1);
+				pks.put("pk2", r3.pk2);
+				pks.put("pk3", r3.pk3);
+				pks.put("pk4", r3.pk4);
+				pks.put("pk5", r3.pk5);
+				pks.put("pk6", r3.pk6);
+				pks.put("pk7", r3.pk7);
+				Assert.assertNotNull(table3.getRecord(pks));
+				return null;
+			}
+
+			@Override
+			public TransactionIsolation getTransactionIsolation() {
+				return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+			}
+
+			@Override
+			public boolean doesWriteData() {
+				return true;
+			}
+
+			@Override
+			public void initOrReset() throws Exception {
+				
+			}
+		});
 		table1.checkDataIntegrity();
 		table3.checkDataIntegrity();
 		table2.checkDataIntegrity();
@@ -1345,11 +1469,11 @@ public abstract class TestDatabase {
 
 			}
 		});
-		Assert.assertTrue(0 == table1.getRecordsNumber());
-		Assert.assertTrue(0 == table1.getRecords().size());
+		Assert.assertEquals(table1.getRecordsNumber(), 0);
+		Assert.assertEquals(table1.getRecords().size(), 0);
 
-		Assert.assertTrue(0 == table3.getRecordsNumber());
-		Assert.assertTrue(0 == table3.getRecords().size());
+		Assert.assertEquals(table3.getRecordsNumber(), 0);
+		Assert.assertEquals(table3.getRecords().size(), 0);
 		addSecondRecord();
 		addSecondRecord();
 		addSecondRecord();
@@ -2077,11 +2201,10 @@ public abstract class TestDatabase {
 				this.update(m);
 			}
 		});
-		ArrayList<Table1.Record> records1 = table1.getRecords();
-		for (Table1.Record r : records1)
+
+		for (Table1.Record r : table1.getRecords())
 			Assert.assertTrue(r.int_value == 15);
 
-		ArrayList<Table3.Record> records3 = table3.getRecords();
 		table3.updateRecords(new AlterRecordFilter<Table3.Record>() {
 
 			@Override
@@ -2093,7 +2216,7 @@ public abstract class TestDatabase {
 			}
 		});
 
-		for (Table3.Record r : records3)
+		for (Table3.Record r : table3.getRecords())
 			Assert.assertTrue(r.int_value == 15);
 
 		try {
@@ -2389,12 +2512,12 @@ public abstract class TestDatabase {
 				return true;
 			}
 		});
-		Assert.assertTrue(table2.getRecordsNumber() == 0);
-		Assert.assertTrue(table5.getRecordsNumber() == 0);
-		Assert.assertTrue(table6.getRecordsNumber() == 0);
-		Assert.assertTrue(table2.getRecords().size() == 0);
-		Assert.assertTrue(table5.getRecords().size() == 0);
-		Assert.assertTrue(table6.getRecords().size() == 0);
+		Assert.assertEquals(table2.getRecordsNumber(), 0);
+		Assert.assertEquals(table5.getRecordsNumber(), 0);
+		Assert.assertEquals(table6.getRecordsNumber(), 0);
+		Assert.assertEquals(table2.getRecords().size(), 0);
+		Assert.assertEquals(table5.getRecords().size(), 0);
+		Assert.assertEquals(table6.getRecords().size(), 0);
 
 		addRecords();
 		table1.removeRecordsWithCascade(new Filter<Table1.Record>() {
@@ -2411,34 +2534,34 @@ public abstract class TestDatabase {
 				return true;
 			}
 		});
-		Assert.assertTrue(table1.getRecordsNumber() == 0);
-		Assert.assertTrue(table3.getRecordsNumber() == 0);
-		Assert.assertTrue(table2.getRecordsNumber() == 0);
-		Assert.assertTrue(table4.getRecordsNumber() == 0);
-		Assert.assertTrue(table5.getRecordsNumber() == 0);
-		Assert.assertTrue(table6.getRecordsNumber() == 0);
-		Assert.assertTrue(table1.getRecords().size() == 0);
-		Assert.assertTrue(table2.getRecords().size() == 0);
-		Assert.assertTrue(table3.getRecords().size() == 0);
-		Assert.assertTrue(table4.getRecords().size() == 0);
-		Assert.assertTrue(table5.getRecords().size() == 0);
-		Assert.assertTrue(table6.getRecords().size() == 0);
+		Assert.assertEquals(table1.getRecordsNumber(), 0);
+		Assert.assertEquals(table3.getRecordsNumber(), 0);
+		Assert.assertEquals(table2.getRecordsNumber(), 0);
+		Assert.assertEquals(table4.getRecordsNumber(), 0);
+		Assert.assertEquals(table5.getRecordsNumber(), 0);
+		Assert.assertEquals(table6.getRecordsNumber(), 0);
+		Assert.assertEquals(table1.getRecords().size(), 0);
+		Assert.assertEquals(table2.getRecords().size(), 0);
+		Assert.assertEquals(table3.getRecords().size(), 0);
+		Assert.assertEquals(table4.getRecords().size(), 0);
+		Assert.assertEquals(table5.getRecords().size(), 0);
+		Assert.assertEquals(table6.getRecords().size(), 0);
 
 		addRecords();
 		table1.removeRecordWithCascade(table1.getRecords().get(0));
 		table3.removeRecordWithCascade(table3.getRecords().get(0));
-		Assert.assertTrue(table1.getRecordsNumber() == 1);
-		Assert.assertTrue(table3.getRecordsNumber() == 1);
-		Assert.assertTrue(table2.getRecordsNumber() == 0);
-		Assert.assertTrue(table4.getRecordsNumber() == 0);
-		Assert.assertTrue(table5.getRecordsNumber() == 0);
-		Assert.assertTrue(table6.getRecordsNumber() == 0);
-		Assert.assertTrue(table1.getRecords().size() == 1);
-		Assert.assertTrue(table2.getRecords().size() == 0);
-		Assert.assertTrue(table3.getRecords().size() == 1);
-		Assert.assertTrue(table4.getRecords().size() == 0);
-		Assert.assertTrue(table5.getRecords().size() == 0);
-		Assert.assertTrue(table6.getRecords().size() == 0);
+		Assert.assertEquals(table1.getRecordsNumber(), 1);
+		Assert.assertEquals(table2.getRecordsNumber(), 0);
+		Assert.assertEquals(table3.getRecordsNumber(), 1);
+		Assert.assertEquals(table4.getRecordsNumber(), 0);
+		Assert.assertEquals(table5.getRecordsNumber(), 0);
+		Assert.assertEquals(table6.getRecordsNumber(), 0);
+		Assert.assertEquals(table1.getRecords().size(), 1);
+		Assert.assertEquals(table2.getRecords().size(), 0);
+		Assert.assertEquals(table3.getRecords().size(), 1);
+		Assert.assertEquals(table4.getRecords().size(), 0);
+		Assert.assertEquals(table5.getRecords().size(), 0);
+		Assert.assertEquals(table6.getRecords().size(), 0);
 		table1.removeRecordsWithCascade(new Filter<Table1.Record>() {
 
 			@Override
@@ -2453,33 +2576,33 @@ public abstract class TestDatabase {
 				return true;
 			}
 		});
-		Assert.assertTrue(table1.getRecordsNumber() == 0);
-		Assert.assertTrue(table3.getRecordsNumber() == 0);
-		Assert.assertTrue(table2.getRecordsNumber() == 0);
-		Assert.assertTrue(table4.getRecordsNumber() == 0);
-		Assert.assertTrue(table5.getRecordsNumber() == 0);
-		Assert.assertTrue(table6.getRecordsNumber() == 0);
-		Assert.assertTrue(table1.getRecords().size() == 0);
-		Assert.assertTrue(table2.getRecords().size() == 0);
-		Assert.assertTrue(table3.getRecords().size() == 0);
-		Assert.assertTrue(table4.getRecords().size() == 0);
-		Assert.assertTrue(table5.getRecords().size() == 0);
-		Assert.assertTrue(table6.getRecords().size() == 0);
+		Assert.assertEquals(table1.getRecordsNumber(), 0);
+		Assert.assertEquals(table3.getRecordsNumber(), 0);
+		Assert.assertEquals(table2.getRecordsNumber(), 0);
+		Assert.assertEquals(table4.getRecordsNumber(), 0);
+		Assert.assertEquals(table5.getRecordsNumber(), 0);
+		Assert.assertEquals(table6.getRecordsNumber(), 0);
+		Assert.assertEquals(table1.getRecords().size(), 0);
+		Assert.assertEquals(table2.getRecords().size(), 0);
+		Assert.assertEquals(table3.getRecords().size(), 0);
+		Assert.assertEquals(table4.getRecords().size(), 0);
+		Assert.assertEquals(table5.getRecords().size(), 0);
+		Assert.assertEquals(table6.getRecords().size(), 0);
 		addRecords();
 		table1.removeRecordsWithCascade(table1.getRecords());
 		table3.removeRecordsWithCascade(table3.getRecords());
-		Assert.assertTrue(table1.getRecordsNumber() == 0);
-		Assert.assertTrue(table3.getRecordsNumber() == 0);
-		Assert.assertTrue(table2.getRecordsNumber() == 0);
-		Assert.assertTrue(table4.getRecordsNumber() == 0);
-		Assert.assertTrue(table5.getRecordsNumber() == 0);
-		Assert.assertTrue(table6.getRecordsNumber() == 0);
-		Assert.assertTrue(table1.getRecords().size() == 0);
-		Assert.assertTrue(table2.getRecords().size() == 0);
-		Assert.assertTrue(table3.getRecords().size() == 0);
-		Assert.assertTrue(table4.getRecords().size() == 0);
-		Assert.assertTrue(table5.getRecords().size() == 0);
-		Assert.assertTrue(table6.getRecords().size() == 0);
+		Assert.assertEquals(table1.getRecordsNumber(), 0);
+		Assert.assertEquals(table3.getRecordsNumber(), 0);
+		Assert.assertEquals(table2.getRecordsNumber(), 0);
+		Assert.assertEquals(table4.getRecordsNumber(), 0);
+		Assert.assertEquals(table5.getRecordsNumber(), 0);
+		Assert.assertEquals(table6.getRecordsNumber(), 0);
+		Assert.assertEquals(table1.getRecords().size(), 0);
+		Assert.assertEquals(table2.getRecords().size(), 0);
+		Assert.assertEquals(table3.getRecords().size(), 0);
+		Assert.assertEquals(table4.getRecords().size(), 0);
+		Assert.assertEquals(table5.getRecords().size(), 0);
+		Assert.assertEquals(table6.getRecords().size(), 0);
 
 		prepareMultipleTest();
 
@@ -2820,11 +2943,13 @@ public abstract class TestDatabase {
 
 	private ArrayList<Object> getExpectedParameter(Class<?> type, Object o) throws IOException {
 		ArrayList<Object> res = new ArrayList<>();
-		if (o == null) {
+		
+		if (o==null && type==DecentralizedIDGenerator.class)
+		{
 			res.add(null);
-			return res;
-		}
-		if (o.getClass() == DecentralizedIDGenerator.class) {
+			res.add(null);
+		}	
+		else if (o.getClass() == DecentralizedIDGenerator.class) {
 			DecentralizedIDGenerator id = (DecentralizedIDGenerator) o;
 			res.add(new Long(id.getTimeStamp()));
 			res.add(new Long(id.getWorkerIDAndSequence()));
@@ -2928,7 +3053,7 @@ public abstract class TestDatabase {
 
 		boolean test = false;
 
-		ArrayList<String> sqlVariablesName = getExpectedParametersName(fieldName, value.getClass());
+		ArrayList<String> sqlVariablesName = getExpectedParametersName(fieldName, value==null?DecentralizedIDGenerator.class:value.getClass());
 		FieldAccessor fa = table.getFieldAccessor(fieldName);
 		if (useParameter) {
 			command.append("%");
@@ -2966,16 +3091,23 @@ public abstract class TestDatabase {
 				expectedCommand.append(".");
 				expectedCommand.append(sqlVariablesName.get(i).toUpperCase());
 				expectedCommand.append(op_comp.getContent());
-				expectedCommand.append("?");
-				expectedParameters.put(new Integer(expectedParamterIndex.getAndIncrement()), sqlInstance.get(i));
+				if (value==null)
+				{
+					expectedCommand.append("NULL");
+				}
+				else
+				{
+					expectedCommand.append("?");
+					expectedParameters.put(new Integer(expectedParamterIndex.getAndIncrement()), value==null?null:sqlInstance.get(i));
+				}
 			}
 			if (op_comp == SymbolType.EQUALOPERATOR || op_comp == SymbolType.NOTEQUALOPERATOR)
 				expectedCommand.append(")");
 		} else {
 			if (op_comp == SymbolType.EQUALOPERATOR)
-				test = fa.getValue(record).toString().equals(value.toString());
+				test = value==null?fa.getValue(record)==null:fa.getValue(record).toString().equals(value.toString());
 			else if (op_comp == SymbolType.NOTEQUALOPERATOR)
-				test = !fa.getValue(record).toString().equals(value.toString());
+				test = value==null?fa.getValue(record)!=null:!fa.getValue(record).toString().equals(value.toString());
 			else if (op_comp == SymbolType.LIKE)
 				test = fa.getValue(record).toString().equals(value.toString());
 			else if (op_comp == SymbolType.NOTLIKE)
@@ -2996,7 +3128,7 @@ public abstract class TestDatabase {
 
 			if (value instanceof CharSequence)
 				command.append("\"");
-			command.append(value.toString());
+			command.append(value==null?"NULL":value.toString());
 			if (value instanceof CharSequence)
 				command.append("\"");
 			expectedCommand.append(Table.getName(Table1.class));
@@ -3005,7 +3137,7 @@ public abstract class TestDatabase {
 			expectedCommand.append(op_comp.getContent());
 			if (value instanceof CharSequence)
 				expectedCommand.append("\"");
-			expectedCommand.append(value.toString());
+			expectedCommand.append(value==null?"NULL":value.toString());
 			if (value instanceof CharSequence)
 				expectedCommand.append("\"");
 		}
@@ -3060,6 +3192,7 @@ public abstract class TestDatabase {
 		parametersTable1Equallable.put("BigDecimal_value", BigDecimal.valueOf(4));
 		parametersTable1Equallable.put("DateValue", date);
 		parametersTable1Equallable.put("CalendarValue", calendar);
+		parametersTable1Equallable.put("nullField", null);
 
 		Table1.Record record = new Table1.Record();
 		record.BigDecimal_value = (BigDecimal) parametersTable1Equallable.get("BigDecimal_value");
@@ -3089,6 +3222,7 @@ public abstract class TestDatabase {
 		record.short_value = ((Short) parametersTable1Equallable.get("short_value")).shortValue();
 		record.ShortNumber_value = (Short) parametersTable1Equallable.get("ShortNumber_value");
 		record.string_value = (String) parametersTable1Equallable.get("string_value");
+		record.nullField= (DecentralizedIDGenerator)parametersTable1Equallable.get("nullField");
 
 		SymbolType[] ops_cond = new SymbolType[] { SymbolType.ANDCONDITION, SymbolType.ORCONDITION };
 		SymbolType[] ops_comp = new SymbolType[] { SymbolType.EQUALOPERATOR, SymbolType.NOTEQUALOPERATOR,
@@ -3099,7 +3233,6 @@ public abstract class TestDatabase {
 			for (SymbolType op_comp : ops_comp) {
 				for (String cs : op_comp.getMatches()) {
 					for (boolean useParameter : new boolean[] { false, true }) {
-
 						StringBuffer command = new StringBuffer();
 						StringBuffer expectedCommand = new StringBuffer();
 
@@ -3108,7 +3241,8 @@ public abstract class TestDatabase {
 						AtomicInteger openedParenthesis = new AtomicInteger(0);
 						AtomicBoolean expectedTestResult = new AtomicBoolean();
 						for (Map.Entry<String, Object> m : parametersTable1Equallable.entrySet()) {
-							subInterpreterCommandProvider(op_cond, op_comp, cs, parametersTable1Equallable, command,
+							if (m.getValue()!=null || op_comp==SymbolType.EQUALOPERATOR || op_comp==SymbolType.NOTEQUALOPERATOR)
+								subInterpreterCommandProvider(op_cond, op_comp, cs, parametersTable1Equallable, command,
 									expectedCommand, m.getKey(), m.getValue(), expectedParameters, useParameter,
 									expectedParamterIndex, openedParenthesis, table1, record, expectedTestResult);
 
@@ -3158,14 +3292,24 @@ public abstract class TestDatabase {
 			if (e.getKey() == null)
 				throw new NullPointerException();
 			
-			assertEqualsParameters(e.getValue(), expectedSqlParameters.get(e.getKey()),
-					"Class type source " + e.getValue().getClass());
+			Object ep=expectedSqlParameters.get(e.getKey());
+			Object value=e.getValue();
+			if (ep instanceof byte[] && value instanceof BigDecimal)
+			{
+				value=ByteTabFieldAccessor.getByteTab((BigDecimal)value);
+			}
+			assertEqualsParameters(value, ep, "Class type source " + e.getValue().getClass()+", expected class "+ep.getClass());
 		}
 		Assert.assertEquals(rule.isConcernedBy(table1, parameters, record), expectedTestResult);
 	}
 	
 	private void assertEqualsParameters(Object parameter, Object expectedParameter, String message) throws IOException, SQLException
 	{
+		if (expectedParameter==null)
+		{
+			Assert.assertNull(parameter);
+			return;
+		}
 		if (expectedParameter.getClass()==byte[].class)
 		{
 			if (parameter instanceof ByteArrayInputStream)
@@ -4304,7 +4448,6 @@ public abstract class TestDatabase {
 					testInverseOrderedTable3(l.getResults());
 				}
 				table3.getOrderedRecords(true, "DateValue", "LongNumber_value");
-				table3.getOrderedRecords(true, "CalendarValue", "LongNumber_value");
 
 				r3 = table3.getOrderedRecords(true, "short_value", "LongNumber_value");
 				testOrderedTable3(r3);

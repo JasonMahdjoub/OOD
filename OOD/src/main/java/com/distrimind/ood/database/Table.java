@@ -63,10 +63,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -138,7 +138,8 @@ import com.distrimind.util.AbstractDecentralizedID;
  * the default constructor of the class. This constructor must be protected.
  * Before getting any table instance, the user must associate the package
  * containing the class tables of the same database to a Sql database throw the
- * function {@link DatabaseWrapper#loadDatabase(DatabaseConfiguration, boolean)}.
+ * function
+ * {@link DatabaseWrapper#loadDatabase(DatabaseConfiguration, boolean)}.
  * 
  * This class is thread safe
  * 
@@ -252,17 +253,48 @@ public abstract class Table<T extends DatabaseRecord> {
 	}
 
 	boolean isSynchronizedWithSqlDatabase() {
-		return (refreshInterval > 0 && last_refresh + refreshInterval > System.currentTimeMillis())
-				|| is_synchronized_with_sql_database;
+		return is_synchronized_with_sql_database && (refreshInterval <= 0 || last_refresh + refreshInterval > System.currentTimeMillis());
 	}
 
-	void memoryRefreshed() {
-		is_synchronized_with_sql_database = true;
-		last_refresh = System.currentTimeMillis();
+	void memoryRefreshed(ArrayList<T> res) {
+		
+		try
+		{
+			sql_connection.lockWrite();
+			records_instances.set(res);
+			is_synchronized_with_sql_database = true;
+			last_refresh = System.currentTimeMillis();
+		}
+		finally
+		{
+			sql_connection.unlockWrite();
+		}
+		
 	}
 
-	void memoryToRefresh() {
+	void setToRefreshNow() {
 		is_synchronized_with_sql_database = false;
+	}
+
+	void memoryToRefresh() throws DatabaseException {
+		getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addTableToRefresh(this);
+		setToRefreshNow();
+	}
+	void memoryToRefreshWithCascade() throws DatabaseException {
+		memoryToRefreshWithCascade(new HashSet<Table<?>>());
+	}
+
+	private void memoryToRefreshWithCascade(Set<Table<?>> tables) throws DatabaseException {
+		memoryToRefresh();
+		tables.add(this);
+		for (NeighboringTable nt : list_tables_pointing_to_this_table)
+		{
+			Table<?> t=nt.getPoitingTable();
+			if (!tables.contains(t))
+			{
+				t.memoryToRefreshWithCascade(tables);
+			}
+		}
 	}
 
 	volatile DatabaseWrapper sql_connection;
@@ -275,26 +307,27 @@ public abstract class Table<T extends DatabaseRecord> {
 	}
 
 	boolean hasToBeLocked() {
-		return false;
-		/*return !sql_connection.isThreadSafe()
-				|| (isPointedDirectlyOrIndirectlyByTablesLoadedIntoMemory() || is_loaded_in_memory);*/
+		return isPointedDirectlyOrIndirectlyByTablesLoadedIntoMemory() || is_loaded_in_memory;
+		
+		//return !sql_connection.isThreadSafe() || (isPointedDirectlyOrIndirectlyByTablesLoadedIntoMemory() || is_loaded_in_memory);
+		
 	}
 
 	void lockIfNecessary(boolean writeLock) {
 		if (hasToBeLocked()) {
 			if (writeLock)
-				sql_connection.locker.writeLock().lock();
+				sql_connection.lockWrite();
 			else
-				sql_connection.locker.readLock().lock();
+				sql_connection.lockRead();
 		}
 	}
 
 	void unlockIfNecessary(boolean writeLock) {
 		if (hasToBeLocked()) {
 			if (writeLock)
-				sql_connection.locker.writeLock().unlock();
+				sql_connection.unlockWrite();
 			else
-				sql_connection.locker.readLock().unlock();
+				sql_connection.unlockRead();
 		}
 	}
 
@@ -503,8 +536,8 @@ public abstract class Table<T extends DatabaseRecord> {
 		 * Load table in Sql database
 		 */
 		boolean table_found;
-		try  {
-			sql_connection.locker.writeLock().lock();
+		try {
+			sql_connection.lockWrite();
 			table_found = ((Boolean) sql_connection.runTransaction(new Transaction() {
 
 				@Override
@@ -525,6 +558,11 @@ public abstract class Table<T extends DatabaseRecord> {
 						throw DatabaseException.getDatabaseException(e);
 					}
 				}
+
+				@Override
+				public void initOrReset() {
+				}
+
 			}, true)).booleanValue();
 
 			if (table_found) {
@@ -614,6 +652,10 @@ public abstract class Table<T extends DatabaseRecord> {
 								throw DatabaseException.getDatabaseException(e);
 							}
 						}
+
+						@Override
+						public void initOrReset() {
+						}
 					}, true);
 			} else {
 				if (createDatabaseIfNecessaryAndCheckIt) {
@@ -695,6 +737,11 @@ public abstract class Table<T extends DatabaseRecord> {
 							}
 							return null;
 						}
+
+						@Override
+						public void initOrReset() {
+						}
+
 					}, true);
 					sql_connection.runTransaction(new Transaction() {
 						@Override
@@ -745,6 +792,11 @@ public abstract class Table<T extends DatabaseRecord> {
 							}
 							return null;
 						}
+
+						@Override
+						public void initOrReset() {
+						}
+
 					}, true);
 					for (FieldAccessor fa : fields) {
 						if (fa.hasToCreateIndex()) {
@@ -793,6 +845,11 @@ public abstract class Table<T extends DatabaseRecord> {
 									}
 									return null;
 								}
+
+								@Override
+								public void initOrReset() {
+								}
+
 							}, true);
 						}
 					}
@@ -800,10 +857,8 @@ public abstract class Table<T extends DatabaseRecord> {
 				} else
 					throw new DatabaseException("Table " + this.getName() + " doest not exists !");
 			}
-		}
-		finally
-		{
-			sql_connection.locker.writeLock().unlock();
+		} finally {
+			sql_connection.unlockWrite();
 		}
 		boolean this_class_found = false;
 		for (Class<? extends Table<?>> c : tables.getTableClasses()) {
@@ -846,8 +901,8 @@ public abstract class Table<T extends DatabaseRecord> {
 	}
 
 	void initializeStep3() throws DatabaseException {
-		try  {
-			sql_connection.locker.writeLock().lock();
+		try {
+			sql_connection.lockWrite();
 			isPointedByTableLoadedIntoMemory = isPointedByTableLoadedIntoMemoryInCascade(
 					list_tables_pointing_to_this_table, new ArrayList<Class<?>>());
 
@@ -909,6 +964,11 @@ public abstract class Table<T extends DatabaseRecord> {
 									}
 								}
 							}
+
+							@Override
+							public void initOrReset() {
+							}
+
 						}, true);
 
 					}
@@ -916,11 +976,9 @@ public abstract class Table<T extends DatabaseRecord> {
 
 			}
 			supportSynchronizationWithOtherPeers = isGloballyDecentralizable(new HashSet<Table<?>>());
-		}
-		finally
-		{
-			sql_connection.locker.writeLock().unlock();
-			
+		} finally {
+			sql_connection.unlockWrite();
+
 		}
 	}
 
@@ -1096,6 +1154,11 @@ public abstract class Table<T extends DatabaseRecord> {
 						throw DatabaseException.getDatabaseException(e);
 					}
 				}
+
+				@Override
+				public void initOrReset() {
+				}
+
 			}, true);
 		}
 
@@ -1665,6 +1728,11 @@ public abstract class Table<T extends DatabaseRecord> {
 					throw DatabaseException.getDatabaseException(e);
 				}
 			}
+
+			@Override
+			public void initOrReset() {
+			}
+
 		};
 		return ((Long) sql_connection.runTransaction(t, true)).longValue();
 	}
@@ -1749,6 +1817,11 @@ public abstract class Table<T extends DatabaseRecord> {
 						throw DatabaseException.getDatabaseException(e);
 					}
 				}
+
+				@Override
+				public void initOrReset() {
+				}
+
 			};
 			return ((Long) sql_connection.runTransaction(t, true)).longValue();
 		}
@@ -2542,23 +2615,33 @@ public abstract class Table<T extends DatabaseRecord> {
 		{
 			if (isLoadedInMemory()) {
 				if (!isSynchronizedWithSqlDatabase()) {
-					final ArrayList<T> res = new ArrayList<T>();
-					getListRecordsFromSqlConnection(new Runnable() {
-
-						@Override
-						public boolean setInstance(T _instance, ResultSet _cursor) {
-							res.add(_instance);
-							return true;
-						}
-
-						@Override
-						public void init(int _field_count) {
-							res.clear();
-							res.ensureCapacity((int) _field_count);
-						}
-					}, getSqlGeneralSelect(true), TransactionIsolation.TRANSACTION_READ_COMMITTED, -1, -1);
-					records_instances.set(res);
-					memoryRefreshed();
+					try
+					{
+						sql_connection.lockWrite();
+					
+						final ArrayList<T> res = new ArrayList<T>();
+						getListRecordsFromSqlConnection(new Runnable() {
+	
+							@Override
+							public boolean setInstance(T _instance, ResultSet _cursor) {
+								res.add(_instance);
+								return true;
+							}
+	
+							@Override
+							public void init(int _field_count) {
+								res.clear();
+								res.ensureCapacity((int) _field_count);
+							}
+						}, getSqlGeneralSelect(true), TransactionIsolation.TRANSACTION_READ_COMMITTED, -1, -1);
+						memoryRefreshed(res);
+					}
+					finally
+					{
+						sql_connection.unlockWrite();
+					}
+					
+					
 				}
 				if (rowpos > 0 && rowlength > 0) {
 					ArrayList<T> records = records_instances.get();
@@ -2591,7 +2674,6 @@ public abstract class Table<T extends DatabaseRecord> {
 			}
 		}
 	}
-
 
 	/**
 	 * Returns an iterator parsing records of this table. This iterator is
@@ -3322,7 +3404,8 @@ public abstract class Table<T extends DatabaseRecord> {
 	 * Returns the records which correspond to the given fields. All given fields
 	 * must correspond exactly to the returned records.
 	 *
-	 * @param ascendant true if the fields must be sorted with an ascendant way
+	 * @param ascendant
+	 *            true if the fields must be sorted with an ascendant way
 	 * @param orderByFields
 	 *            order by the given fields
 	 * @param _fields
@@ -4692,80 +4775,11 @@ public abstract class Table<T extends DatabaseRecord> {
 	private final int removeRecords(final Filter<T> _filter, String where, final Map<String, Object> parameters,
 			boolean is_already_in_transaction) throws DatabaseException {
 
-		// try(ReadWriteLock.Lock
-		// lock=sql_connection.locker.getAutoCloseableWriteLock())
-		{
-			final RuleInstance rule = Interpreter.getRuleInstance(where);
-			if (isLoadedInMemory()) {
-				final ArrayList<T> records_to_remove = new ArrayList<T>();
-
-				for (final T r : getRecords(-1, -1, is_already_in_transaction)) {
-					boolean toremove = true;
-					for (NeighboringTable nt : list_tables_pointing_to_this_table) {
-						if (nt.getPoitingTable().hasRecordsWithOneOfFields(nt.getHashMapFields(r), false)) {
-							toremove = false;
-							break;
-						}
-					}
-
-					if (toremove && rule.isConcernedBy(this, parameters, r) && _filter.nextRecord(r)) {
-						records_to_remove.add(r);
-					}
-					if (_filter.isTableParsingStoped())
-						break;
-				}
-				if (records_to_remove.size() > 0) {
-					Transaction transaction = new Transaction() {
-
-						@Override
-						public TransactionIsolation getTransactionIsolation() {
-							return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
-						}
-
-						@Override
-						public boolean doesWriteData() {
-							return true;
-						}
-
-						@Override
-						public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
-							StringBuffer sb = new StringBuffer(
-									"DELETE " + getName() + " FROM " + getFromPart(true, null) + " WHERE "
-											+ getSqlPrimaryKeyCondition(records_to_remove.size()));
-
-							int nb = 0;
-							try (PreparedUpdateQuerry puq = new PreparedUpdateQuerry(
-									_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(),
-									sb.toString())) {
-								int index = 1;
-								for (T r : records_to_remove) {
-									for (FieldAccessor fa : primary_keys_fields) {
-										fa.getValue(r, puq.statement, index);
-										index += fa.getDeclaredSqlFields().length;
-									}
-									r.__createdIntoDatabase = false;
-								}
-								nb = puq.statement.executeUpdate();
-							} catch (Exception e) {
-								throw DatabaseException.getDatabaseException(e);
-							}
-
-							if (nb != records_to_remove.size())
-								throw new DatabaseException("Unexpected exception.");
-							return null;
-						}
-					};
-					if (records_to_remove.size() > 0)
-						sql_connection.runTransaction(transaction, true);
-
-					__removeRecords(records_to_remove);
-					for (T r : records_to_remove)
-						getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
-								new TableEvent<>(-1, DatabaseEventType.REMOVE, r, null, null));
-				}
-				return records_to_remove.size();
-			} else {
-
+		final RuleInstance rule = Interpreter.getRuleInstance(where);
+		return (int)sql_connection.runTransaction(new Transaction() {
+			
+			@Override
+			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 				class RunnableTmp extends Runnable {
 					private final RuleInstance rule;
 
@@ -4813,96 +4827,48 @@ public abstract class Table<T extends DatabaseRecord> {
 				}
 				HashMap<Integer, Object> sqlParameters = new HashMap<>();
 				String sqlQuery = null;
-				if (rule != null && rule.isIndependantFromOtherTables(this)) {
-					sqlQuery = rule.translateToSqlQuery(this, parameters, sqlParameters, new HashSet<TableJunction>())
+				if (rule != null && rule.isIndependantFromOtherTables(Table.this)) {
+					sqlQuery = rule.translateToSqlQuery(Table.this, parameters, sqlParameters, new HashSet<TableJunction>())
 							.toString();
 				}
 
 				RunnableTmp runnable = new RunnableTmp(sqlQuery == null ? rule : null);
 				getListRecordsFromSqlConnection(runnable,
-						sqlQuery == null ? getSqlGeneralSelect(false)
-								: getSqlGeneralSelect(false, sqlQuery, sqlParameters),
+						sqlQuery == null ? getSqlGeneralSelect(false) : getSqlGeneralSelect(false, sqlQuery, sqlParameters),
 						TransactionIsolation.TRANSACTION_REPEATABLE_READ, -1, -1, true);
+				if (runnable.deleted_records_number>0 && isLoadedInMemory()) {
+					memoryToRefresh();
+				}
+
 				return runnable.deleted_records_number;
+
 			}
-		}
+			
+			@Override
+			public void initOrReset() throws DatabaseException {
+				
+			}
+			
+			@Override
+			public TransactionIsolation getTransactionIsolation() {
+				return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
+			}
+			
+			@Override
+			public boolean doesWriteData() {
+				return true;
+			}
+		}, true);
+
 	}
 
 	private final int removeRecords(final Filter<T> _filter, boolean is_already_in_transaction)
 			throws DatabaseException {
 
-		// try(ReadWriteLock.Lock
-		// lock=sql_connection.locker.getAutoCloseableWriteLock())
-		{
-			if (isLoadedInMemory()) {
-				final ArrayList<T> records_to_remove = new ArrayList<T>();
-
-				for (final T r : getRecords(-1, -1, is_already_in_transaction)) {
-					boolean toremove = true;
-					for (NeighboringTable nt : list_tables_pointing_to_this_table) {
-						if (nt.getPoitingTable().hasRecordsWithOneOfFields(nt.getHashMapFields(r), false)) {
-							toremove = false;
-							break;
-						}
-					}
-					if (toremove && _filter.nextRecord(r)) {
-						records_to_remove.add(r);
-					}
-					if (_filter.isTableParsingStoped())
-						break;
-				}
-				if (records_to_remove.size() > 0) {
-					Transaction transaction = new Transaction() {
-
-						@Override
-						public TransactionIsolation getTransactionIsolation() {
-							return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
-						}
-
-						@Override
-						public boolean doesWriteData() {
-							return true;
-						}
-
-						@Override
-						public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
-							StringBuffer sb = new StringBuffer("DELETE FROM " + Table.this.getName() + " WHERE "
-									+ getSqlPrimaryKeyCondition(records_to_remove.size()));
-
-							int nb = 0;
-							try (PreparedUpdateQuerry puq = new PreparedUpdateQuerry(
-									_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(),
-									sb.toString())) {
-								int index = 1;
-								for (T r : records_to_remove) {
-									for (FieldAccessor fa : primary_keys_fields) {
-										fa.getValue(r, puq.statement, index);
-										index += fa.getDeclaredSqlFields().length;
-									}
-									r.__createdIntoDatabase = false;
-								}
-								nb = puq.statement.executeUpdate();
-							} catch (Exception e) {
-								throw DatabaseException.getDatabaseException(e);
-							}
-
-							if (nb != records_to_remove.size())
-								throw new DatabaseException("Unexpected exception.");
-							for (T r : records_to_remove)
-								getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
-										new TableEvent<>(-1, DatabaseEventType.REMOVE, r, null, null));
-
-							return null;
-						}
-					};
-					if (records_to_remove.size() > 0)
-						sql_connection.runTransaction(transaction, true);
-
-					__removeRecords(records_to_remove);
-				}
-				return records_to_remove.size();
-			} else {
-
+		return (int)sql_connection.runTransaction(new Transaction() {
+			
+			@Override
+			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 				class RunnableTmp extends Runnable {
 
 					public int deleted_records_number;
@@ -4950,9 +4916,27 @@ public abstract class Table<T extends DatabaseRecord> {
 						(_filter instanceof Table.PersonnalFilter) ? ((PersonnalFilter) _filter).getSQLQuerry(false)
 								: getSqlGeneralSelect(false),
 						TransactionIsolation.TRANSACTION_SERIALIZABLE, -1, -1, true);
+				if (runnable.deleted_records_number>0 && isLoadedInMemory())
+					memoryToRefresh();
 				return runnable.deleted_records_number;
 			}
-		}
+			
+			@Override
+			public void initOrReset() throws DatabaseException {
+				
+			}
+			
+			@Override
+			public TransactionIsolation getTransactionIsolation() {
+				return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+			}
+			
+			@Override
+			public boolean doesWriteData() {
+				return true;
+			}
+		}, true);
+
 	}
 
 	void checkMemory() throws DatabaseException {
@@ -5022,53 +5006,61 @@ public abstract class Table<T extends DatabaseRecord> {
 	 */
 	public final void checkDataIntegrity() throws DatabaseException {
 
-		{
-			try (ReadLock l = new ReadLock(this)) {
-				sql_connection.runTransaction(new Transaction() {
+		
+		try (ReadLock l = new ReadLock(this)) {
+			
+			sql_connection.runTransaction(new Transaction() {
 
-					@Override
-					public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
-						checkMemory();
-						ArrayList<T> records = getRecords(-1, -1, false);
-						for (T r1 : records) {
-							for (T r2 : records) {
-								if (r1 != r2) {
-									boolean allequals = true;
-									for (FieldAccessor fa : primary_keys_fields) {
-										if (!fa.equals(r1, fa.getValue(r2))) {
-											allequals = false;
-											break;
-										}
+				@Override
+				public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
+					
+					checkMemory();
+					ArrayList<T> records = getRecords(-1, -1, false);
+					for (T r1 : records) {
+						for (T r2 : records) {
+							if (r1 != r2) {
+								boolean allequals = true;
+								for (FieldAccessor fa : primary_keys_fields) {
+									if (!fa.equals(r1, fa.getValue(r2))) {
+										allequals = false;
+										break;
 									}
-									if (allequals)
+								}
+								if (allequals)
+									throw new DatabaseIntegrityException("There is records into the table "
+											+ getName() + " which have the same primary keys.");
+								for (FieldAccessor fa : unique_fields_no_auto_random_primary_keys) {
+									if (fa.equals(r1, fa.getValue(r2)))
 										throw new DatabaseIntegrityException("There is records into the table "
-												+ getName() + " which have the same primary keys.");
-									for (FieldAccessor fa : unique_fields_no_auto_random_primary_keys) {
-										if (fa.equals(r1, fa.getValue(r2)))
-											throw new DatabaseIntegrityException("There is records into the table "
-													+ getName() + " which have the same unique key into the field "
-													+ fa.getFieldName());
-									}
+												+ getName() + " which have the same unique key into the field "
+												+ fa.getFieldName());
 								}
 							}
 						}
-						return null;
 					}
+					return null;
 
-					@Override
-					public TransactionIsolation getTransactionIsolation() {
-						return TransactionIsolation.TRANSACTION_SERIALIZABLE;
-					}
+				}
 
-					@Override
-					public boolean doesWriteData() {
-						return false;
-					}
-				}, true);
-			} catch (Exception e) {
-				throw DatabaseException.getDatabaseException(e);
-			}
+				@Override
+				public TransactionIsolation getTransactionIsolation() {
+					return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+				}
+
+				@Override
+				public boolean doesWriteData() {
+					return false;
+				}
+
+				@Override
+				public void initOrReset() {
+				}
+
+			}, true);
+		} catch (Exception e) {
+			throw DatabaseException.getDatabaseException(e);
 		}
+
 	}
 
 	/**
@@ -5342,6 +5334,11 @@ public abstract class Table<T extends DatabaseRecord> {
 
 					return new Boolean(false);
 				}
+
+				@Override
+				public void initOrReset() {
+				}
+
 			}, true)).booleanValue();
 
 		}
@@ -5353,147 +5350,89 @@ public abstract class Table<T extends DatabaseRecord> {
 			throw new NullPointerException("The parameter _filter is a null pointer !");
 
 		final RuleInstance rule = where == null ? null : Interpreter.getRuleInstance(where);
-		return (long)sql_connection.runTransaction(new Transaction() {
-			
+		return (long) sql_connection.runTransaction(new Transaction() {
+
 			@Override
 			public Long run(DatabaseWrapper _sql_connection) throws DatabaseException {
-				if (isLoadedInMemory()) {
-					final ArrayList<T> records_to_remove = new ArrayList<T>();
+				class RunnableTmp extends Runnable {
+					private final RuleInstance rule;
 
-					for (T r : getRecords(-1, -1, _is_already_sql_transaction)) {
-						if ((rule == null || rule.isConcernedBy(Table.this, parameters, r)) && _filter.nextRecord(r)) {
-							records_to_remove.add(r);
-						}
-						if (_filter.isTableParsingStoped())
-							break;
+					RunnableTmp(RuleInstance rule) {
+						this.rule = rule;
 					}
-					if (records_to_remove.size() > 0) {
-						Transaction transaction = new Transaction() {
-							@Override
-							public TransactionIsolation getTransactionIsolation() {
-								return TransactionIsolation.TRANSACTION_SERIALIZABLE;
-							}
 
-							@Override
-							public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
-								StringBuffer sb = new StringBuffer("DELETE FROM " + Table.this.getName() + " WHERE "
-										+ getSqlPrimaryKeyCondition(records_to_remove.size()));
+					public long deleted_records_number;
 
-								int nb = 0;
-								try (PreparedUpdateQuerry puq = new PreparedUpdateQuerry(
-										_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(),
-										sb.toString())) {
-									int index = 1;
-									for (T r : records_to_remove) {
-										for (FieldAccessor fa : primary_keys_fields) {
-											fa.getValue(r, puq.statement, index);
-											index += fa.getDeclaredSqlFields().length;
-										}
-										r.__createdIntoDatabase = false;
-									}
-									nb = puq.statement.executeUpdate();
-								} catch (Exception e) {
-									throw DatabaseException.getDatabaseException(e);
-								}
-
-								if (nb != records_to_remove.size()) {
-									throw new DatabaseException("Unexpected exception.");
-								}
-
-								for (T r : records_to_remove)
-									getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
-											new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, r, null, null));
-
-								return null;
-							}
-
-							@Override
-							public boolean doesWriteData() {
-								return true;
-							}
-
-						};
-
-						sql_connection.runTransaction(transaction, true);
-
-						__removeRecords(records_to_remove);
-						updateMemoryForRemovingRecordsWithCascade(records_to_remove);
+					@Override
+					public void init(int _field_count) {
+						deleted_records_number = 0;
 					}
-					return (long)records_to_remove.size();
-				} else {
-					class RunnableTmp extends Runnable {
-						private final RuleInstance rule;
 
-						RunnableTmp(RuleInstance rule) {
-							this.rule = rule;
-						}
-
-						public long deleted_records_number;
-
-						@Override
-						public void init(int _field_count) {
-							deleted_records_number = 0;
-						}
-
-						@Override
-						public boolean setInstance(T _instance, ResultSet _cursor) throws DatabaseException {
-							try {
-								if ((rule == null || rule.isConcernedBy(Table.this, parameters, _instance))
-										&& _filter.nextRecord(_instance)) {
-									_cursor.deleteRow();
-									++deleted_records_number;
-									_instance.__createdIntoDatabase = false;
-									updateMemoryForRemovingRecordWithCascade(_instance);
-									getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
-											new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, _instance, null,
-													null));
-								}
-								return !_filter.isTableParsingStoped();
-							} catch (Exception e) {
-								throw DatabaseException.getDatabaseException(e);
+					@Override
+					public boolean setInstance(T _instance, ResultSet _cursor) throws DatabaseException {
+						try {
+							if ((rule == null || rule.isConcernedBy(Table.this, parameters, _instance))
+									&& _filter.nextRecord(_instance)) {
+								_cursor.deleteRow();
+								++deleted_records_number;
+								_instance.__createdIntoDatabase = false;
+								//updateMemoryForRemovingRecordWithCascade(_instance);
+								getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
+										new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, _instance, null,
+												null));
 							}
-
+							return !_filter.isTableParsingStoped();
+						} catch (Exception e) {
+							throw DatabaseException.getDatabaseException(e);
 						}
 
 					}
 
-					HashMap<Integer, Object> sqlParameters = new HashMap<>();
-					String sqlQuery = null;
-					if (rule != null && rule.isIndependantFromOtherTables(Table.this)) {
-						sqlQuery = rule.translateToSqlQuery(Table.this, parameters, sqlParameters, new HashSet<TableJunction>())
-								.toString();
-					}
-
-					RunnableTmp runnable = new RunnableTmp(sqlQuery == null ? rule : null);
-					try {
-						getListRecordsFromSqlConnection(runnable,
-								(_filter instanceof Table.PersonnalFilter) ? ((PersonnalFilter) _filter).getSQLQuerry(false)
-										: (sqlQuery == null ? getSqlGeneralSelect(false)
-												: getSqlGeneralSelect(false, sqlQuery, sqlParameters)),
-								TransactionIsolation.TRANSACTION_SERIALIZABLE, -1, -1, true);
-					} catch (DatabaseException e) {
-						for (NeighboringTable nt : list_tables_pointing_to_this_table) {
-							Table<?> t = nt.getPoitingTable();
-							if (t.isLoadedInMemory() && t.isSynchronizedWithSqlDatabase()) {
-								t.memoryToRefresh();
-								t.records_instances.set(null);
-							}
-						}
-						throw e;
-					}
-
-					return runnable.deleted_records_number;
 				}
+
+				HashMap<Integer, Object> sqlParameters = new HashMap<>();
+				String sqlQuery = null;
+				if (rule != null && rule.isIndependantFromOtherTables(Table.this)) {
+					sqlQuery = rule
+							.translateToSqlQuery(Table.this, parameters, sqlParameters, new HashSet<TableJunction>())
+							.toString();
+				}
+
+				RunnableTmp runnable = new RunnableTmp(sqlQuery == null ? rule : null);
+				try {
+					getListRecordsFromSqlConnection(runnable,
+							(_filter instanceof Table.PersonnalFilter) ? ((PersonnalFilter) _filter).getSQLQuerry(false)
+									: (sqlQuery == null ? getSqlGeneralSelect(false)
+											: getSqlGeneralSelect(false, sqlQuery, sqlParameters)),
+							TransactionIsolation.TRANSACTION_SERIALIZABLE, -1, -1, true);
+					if (runnable.deleted_records_number>0 && isLoadedInMemory())
+						memoryToRefreshWithCascade();
+				} catch (DatabaseException e) {
+					for (NeighboringTable nt : list_tables_pointing_to_this_table) {
+						Table<?> t = nt.getPoitingTable();
+						if (t.isLoadedInMemory()) {
+							t.memoryToRefreshWithCascade();
+						}
+					}
+					throw e;
+				}
+
+				return runnable.deleted_records_number;
+
 			}
-			
+
 			@Override
 			public TransactionIsolation getTransactionIsolation() {
 				return TransactionIsolation.TRANSACTION_SERIALIZABLE;
 			}
-			
+
 			@Override
 			public boolean doesWriteData() {
 				return true;
+			}
+
+			@Override
+			public void initOrReset() {
 			}
 		}, true);
 	}
@@ -5524,70 +5463,71 @@ public abstract class Table<T extends DatabaseRecord> {
 			throw new NullPointerException("The parameter _record is a null pointer !");
 		@SuppressWarnings("unchecked")
 		final T _record = (T) record;
-		// synchronized(sql_connection)
-		{
-			try (Lock lock = new WriteLock(this)) {
+		try (Lock lock = new WriteLock(this)) {
 
-				for (NeighboringTable nt : list_tables_pointing_to_this_table) {
-					if (nt.getPoitingTable().hasRecordsWithOneOfFields(nt.getHashMapFields(_record), false)) {
-						throw new ConstraintsNotRespectedDatabaseException(
-								"The given record is pointed by another record through a foreign key into the table "
-										+ nt.getPoitingTable().getName() + ". Impossible to remove it into the table "
-										+ this.getName());
-					}
+			sql_connection.runTransaction(new Transaction() {
+				@Override
+				public TransactionIsolation getTransactionIsolation() {
+					return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
 				}
 
-				sql_connection.runTransaction(new Transaction() {
-					@Override
-					public TransactionIsolation getTransactionIsolation() {
-						return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
-					}
-
-					@Override
-					public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
-						StringBuffer querry = new StringBuffer(
-								"DELETE FROM " + Table.this.getName() + " WHERE " + getSqlPrimaryKeyCondition(1));
-
-						try (PreparedUpdateQuerry puq = new PreparedUpdateQuerry(
-								_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(),
-								querry.toString())) {
-							int index = 1;
-							for (FieldAccessor fa : primary_keys_fields) {
-								fa.getValue(_record, puq.statement, index);
-								index += fa.getDeclaredSqlFields().length;
-							}
-							int nb = puq.statement.executeUpdate();
-							if (nb == 0)
-								throw new RecordNotFoundDatabaseException("the given record was not into the table "
-										+ Table.this.getName() + ". It has been probably already removed.");
-							else if (nb > 1)
-								throw new DatabaseIntegrityException("Unexpected exception");
-							if (synchronizeIfNecessary)
-								getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
-										new TableEvent<>(-1, DatabaseEventType.REMOVE, _record, null,
-												hostsDestinations));
-						} catch (Exception e) {
-							throw DatabaseException.getDatabaseException(e);
+				@Override
+				public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
+					for (NeighboringTable nt : list_tables_pointing_to_this_table) {
+						if (nt.getPoitingTable().hasRecordsWithOneOfFields(nt.getHashMapFields(_record), false)) {
+							throw new ConstraintsNotRespectedDatabaseException(
+									"The given record is pointed by another record through a foreign key into the table "
+											+ nt.getPoitingTable().getName()
+											+ ". Impossible to remove it into the table " + getName());
 						}
+					}
+					StringBuffer querry = new StringBuffer(
+							"DELETE FROM " + Table.this.getName() + " WHERE " + getSqlPrimaryKeyCondition(1));
 
-						return null;
+					try (PreparedUpdateQuerry puq = new PreparedUpdateQuerry(
+							_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(),
+							querry.toString())) {
+						int index = 1;
+						for (FieldAccessor fa : primary_keys_fields) {
+							fa.getValue(_record, puq.statement, index);
+							index += fa.getDeclaredSqlFields().length;
+						}
+						int nb = puq.statement.executeUpdate();
+						if (nb == 0)
+							throw new RecordNotFoundDatabaseException("the given record was not into the table "
+									+ Table.this.getName() + ". It has been probably already removed.");
+						else if (nb > 1)
+							throw new DatabaseIntegrityException("Unexpected exception");
+						if (synchronizeIfNecessary)
+							getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
+									new TableEvent<>(-1, DatabaseEventType.REMOVE, _record, null, hostsDestinations));
+					} catch (Exception e) {
+						throw DatabaseException.getDatabaseException(e);
 					}
 
-					@Override
-					public boolean doesWriteData() {
-						return true;
-					}
+					if (Table.this.isLoadedInMemory())
+						memoryToRefresh();
+					_record.__createdIntoDatabase = false;
+					return null;
+				}
 
-				}, true);
+				@Override
+				public boolean doesWriteData() {
+					return true;
+				}
 
-				if (Table.this.isLoadedInMemory() && isSynchronizedWithSqlDatabase())
-					Table.this.__removeRecord(_record);
-				_record.__createdIntoDatabase = false;
+				@Override
+				public void initOrReset() {
 
-			} catch (Exception e) {
-				throw DatabaseException.getDatabaseException(e);
-			}
+				}
+
+			}, true);
+
+
+		} catch (Exception e) {
+			throw DatabaseException.getDatabaseException(e);
 		}
+
 	}
 
 	/**
@@ -5614,102 +5554,73 @@ public abstract class Table<T extends DatabaseRecord> {
 			throw new NullPointerException("The parameter _record is a null pointer !");
 		@SuppressWarnings("unchecked")
 		final T _record = (T) record;
-		// synchronized(sql_connection)
-		{
-			try (Lock lock = new WriteLock(this)) {
-			
-				class TransactionTmp implements Transaction {
-					@Override
-					public TransactionIsolation getTransactionIsolation() {
-						return TransactionIsolation.TRANSACTION_SERIALIZABLE;
-					}
+		try (Lock lock = new WriteLock(this)) {
 
-					@Override
-					public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
-						StringBuffer querry = new StringBuffer(
-								"DELETE FROM " + Table.this.getName() + " WHERE " + getSqlPrimaryKeyCondition(1));
+			class TransactionTmp implements Transaction {
+				@Override
+				public TransactionIsolation getTransactionIsolation() {
+					return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+				}
 
-						try (PreparedUpdateQuerry puq = new PreparedUpdateQuerry(
-								_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(),
-								querry.toString())) {
-							int index = 1;
-							for (FieldAccessor fa : primary_keys_fields) {
-								fa.getValue(_record, puq.statement, index);
-								index += fa.getDeclaredSqlFields().length;
-							}
-							int nb = puq.statement.executeUpdate();
-							if (nb == 0)
-								throw new RecordNotFoundDatabaseException("the given record was not into the table "
-										+ Table.this.getName() + ". It has been probably already removed.");
-							else if (nb > 1)
-								throw new DatabaseIntegrityException("Unexpected exception");
-							if (synchronizeIfNecessary)
-								getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
-										new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, _record, null,
-												hostsDestinations));
-						} catch (Exception e) {
-							throw DatabaseException.getDatabaseException(e);
+				@Override
+				public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
+					StringBuffer querry = new StringBuffer(
+							"DELETE FROM " + Table.this.getName() + " WHERE " + getSqlPrimaryKeyCondition(1));
+
+					try (PreparedUpdateQuerry puq = new PreparedUpdateQuerry(
+							_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(),
+							querry.toString())) {
+						int index = 1;
+						for (FieldAccessor fa : primary_keys_fields) {
+							fa.getValue(_record, puq.statement, index);
+							index += fa.getDeclaredSqlFields().length;
 						}
-
-						return null;
+						int nb = puq.statement.executeUpdate();
+						if (nb == 0)
+							throw new RecordNotFoundDatabaseException("the given record was not into the table "
+									+ Table.this.getName() + ". It has been probably already removed.");
+						else if (nb > 1)
+							throw new DatabaseIntegrityException("Unexpected exception");
+						if (synchronizeIfNecessary)
+							getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
+									new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, _record, null,
+											hostsDestinations));
+					} catch (Exception e) {
+						throw DatabaseException.getDatabaseException(e);
 					}
+					if (isLoadedInMemory())
+						memoryToRefreshWithCascade();
+					_record.__createdIntoDatabase = false;
 
-					@Override
-					public boolean doesWriteData() {
-						return true;
-					}
+					return null;
+				}
+
+				@Override
+				public boolean doesWriteData() {
+					return true;
+				}
+
+				@Override
+				public void initOrReset() {
 
 				}
-				sql_connection.runTransaction(new Transaction() {
-					
-					@Override
-					public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
-						TransactionTmp transaction = new TransactionTmp();
-						sql_connection.runTransaction(transaction, true);
-						if (isLoadedInMemory() && isSynchronizedWithSqlDatabase())
-							__removeRecord(_record);
-						_record.__createdIntoDatabase = false;
-						updateMemoryForRemovingRecordWithCascade(_record);
-						return null;
-					}
-					
-					@Override
-					public TransactionIsolation getTransactionIsolation() {
-						return TransactionIsolation.TRANSACTION_SERIALIZABLE;
-					}
-					
-					@Override
-					public boolean doesWriteData() {
-						return true;
-					}
-				}, true);
-				
 
-				
-
-			} catch (Exception e) {
-				throw DatabaseException.getDatabaseException(e);
 			}
+			TransactionTmp transaction = new TransactionTmp();
+			sql_connection.runTransaction(transaction, true);
+
+		} catch (Exception e) {
+			throw DatabaseException.getDatabaseException(e);
 		}
+
 	}
 
-	private void updateMemoryForRemovingRecordWithCascade(T _record) throws DatabaseException {
+	/*private void updateMemoryForRemovingRecordWithCascade(T _record) throws DatabaseException {
 		for (NeighboringTable nt : list_tables_pointing_to_this_table) {
 			Table<?> t = nt.getPoitingTable();
-			if (t.isLoadedInMemory() && t.isSynchronizedWithSqlDatabase()) {
-				ArrayList<DatabaseRecord> removed_records = new ArrayList<DatabaseRecord>();
-				Iterator<?> it = t.records_instances.get().iterator();
-				for (; it.hasNext();) {
-					DatabaseRecord dr = (DatabaseRecord) it.next();
-					for (ForeignKeyFieldAccessor fkfa : t.foreign_keys_fields) {
-						if (fkfa.equals(dr, _record)) {
-							removed_records.add(dr);
-							it.remove();
-							break;
-						}
-					}
-				}
-				t.updateMemoryForRemovingRecordsWithCascade2(removed_records);
+
+			if (t.isLoadedInMemory()) {
+				t.memoryToRefresh();
 			}
 		}
 	}
@@ -5717,57 +5628,11 @@ public abstract class Table<T extends DatabaseRecord> {
 	void updateMemoryForRemovingRecordsWithCascade(Collection<T> _records) throws DatabaseException {
 		for (NeighboringTable nt : list_tables_pointing_to_this_table) {
 			Table<?> t = nt.getPoitingTable();
-			if (t.isLoadedInMemory() && t.isSynchronizedWithSqlDatabase()) {
-				ArrayList<DatabaseRecord> removed_records = new ArrayList<DatabaseRecord>();
-				Iterator<?> it = t.records_instances.get().iterator();
-				for (; it.hasNext();) {
-					DatabaseRecord dr = (DatabaseRecord) it.next();
-					boolean removed = false;
-					for (ForeignKeyFieldAccessor fkfa : t.foreign_keys_fields) {
-						for (DatabaseRecord r : _records) {
-							if (fkfa.equals(dr, r)) {
-								removed_records.add(dr);
-								it.remove();
-								removed = true;
-								break;
-							}
-						}
-						if (removed)
-							break;
-					}
-				}
-				t.updateMemoryForRemovingRecordsWithCascade2(removed_records);
+			if (t.isLoadedInMemory()) {
+				memoryToRefresh();
 			}
 		}
-	}
-
-	private void updateMemoryForRemovingRecordsWithCascade2(Collection<DatabaseRecord> _records)
-			throws DatabaseException {
-		for (NeighboringTable nt : list_tables_pointing_to_this_table) {
-			Table<?> t = nt.getPoitingTable();
-			if (t.isLoadedInMemory() && t.isSynchronizedWithSqlDatabase()) {
-				ArrayList<DatabaseRecord> removed_records = new ArrayList<DatabaseRecord>();
-				Iterator<?> it = t.records_instances.get().iterator();
-				for (; it.hasNext();) {
-					DatabaseRecord dr = (DatabaseRecord) it.next();
-					boolean removed = false;
-					for (ForeignKeyFieldAccessor fkfa : t.foreign_keys_fields) {
-						for (DatabaseRecord r : _records) {
-							if (fkfa.equals(dr, r)) {
-								removed_records.add(dr);
-								it.remove();
-								removed = true;
-								break;
-							}
-						}
-						if (removed)
-							break;
-					}
-				}
-				t.updateMemoryForRemovingRecordsWithCascade2(removed_records);
-			}
-		}
-	}
+	}*/
 
 	/**
 	 * Returns true if the given record is pointed by another record through a
@@ -5882,70 +5747,72 @@ public abstract class Table<T extends DatabaseRecord> {
 			throw new NullPointerException("The parameter _records is a null pointer !");
 		if (_records.isEmpty())
 			return;
-		// synchronized(sql_connection)
-		{
-			try (Lock lock = new WriteLock(this)) {
-				for (NeighboringTable nt : list_tables_pointing_to_this_table) {
-					Table<?> t = nt.getPoitingTable();
-					for (T record : _records)
-						if (t.hasRecordsWithOneOfFields(nt.getHashMapFields(record), false))
-							throw new ConstraintsNotRespectedDatabaseException(
-									"One of the given record is pointed by another record through a foreign key into the table "
-											+ t.getName() + ". Impossible to remove this record into the table "
-											+ getName());
+		try (Lock lock = new WriteLock(this)) {
+
+			sql_connection.runTransaction(new Transaction() {
+
+				@Override
+				public TransactionIsolation getTransactionIsolation() {
+					return TransactionIsolation.TRANSACTION_SERIALIZABLE;
 				}
 
-				sql_connection.runTransaction(new Transaction() {
-
-					@Override
-					public TransactionIsolation getTransactionIsolation() {
-						return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+				@Override
+				public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
+					for (NeighboringTable nt : list_tables_pointing_to_this_table) {
+						Table<?> t = nt.getPoitingTable();
+						for (T record : _records)
+							if (t.hasRecordsWithOneOfFields(nt.getHashMapFields(record), false))
+								throw new ConstraintsNotRespectedDatabaseException(
+										"One of the given record is pointed by another record through a foreign key into the table "
+												+ t.getName() + ". Impossible to remove this record into the table "
+												+ getName());
 					}
-
-					@Override
-					public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
-						try (PreparedUpdateQuerry puq = new PreparedUpdateQuerry(
-								_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(),
-								"DELETE FROM " + Table.this.getName() + " WHERE "
-										+ getSqlPrimaryKeyCondition(_records.size()))) {
-							int index = 1;
-							for (T r : _records) {
-								for (FieldAccessor fa : primary_keys_fields) {
-									fa.getValue(r, puq.statement, index);
-									index += fa.getDeclaredSqlFields().length;
-								}
-								r.__createdIntoDatabase = false;
+					try (PreparedUpdateQuerry puq = new PreparedUpdateQuerry(
+							_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), "DELETE FROM "
+									+ Table.this.getName() + " WHERE " + getSqlPrimaryKeyCondition(_records.size()))) {
+						int index = 1;
+						for (T r : _records) {
+							for (FieldAccessor fa : primary_keys_fields) {
+								fa.getValue(r, puq.statement, index);
+								index += fa.getDeclaredSqlFields().length;
 							}
-							int number = puq.statement.executeUpdate();
-							if (number != _records.size())
-								throw new RecordNotFoundDatabaseException("There is " + (_records.size() - number)
-										+ " records which have not been found into the table " + Table.this.getName()
-										+ ". No modification have been done.");
-						} catch (Exception e) {
-							throw DatabaseException.getDatabaseException(e);
+							r.__createdIntoDatabase = false;
 						}
-						for (T r : _records)
-							getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
-									new TableEvent<>(-1, DatabaseEventType.REMOVE, r, null, null));
-
-						return null;
+						int number = puq.statement.executeUpdate();
+						if (number != _records.size())
+							throw new RecordNotFoundDatabaseException("There is " + (_records.size() - number)
+									+ " records which have not been found into the table " + Table.this.getName()
+									+ ". No modification have been done.");
+					} catch (Exception e) {
+						throw DatabaseException.getDatabaseException(e);
+					}
+					for (T r : _records)
+						getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
+								new TableEvent<>(-1, DatabaseEventType.REMOVE, r, null, null));
+					if (isLoadedInMemory()) {
+						memoryToRefresh();
 					}
 
-					@Override
-					public boolean doesWriteData() {
-						return true;
-					}
-
-				}, true);
-
-				if (isLoadedInMemory() && isSynchronizedWithSqlDatabase()) {
-					__removeRecords(_records);
+					return null;
 				}
 
-			} catch (Exception e) {
-				throw DatabaseException.getDatabaseException(e);
-			}
+				@Override
+				public boolean doesWriteData() {
+					return true;
+				}
+
+				@Override
+				public void initOrReset() {
+
+				}
+
+			}, true);
+
+
+		} catch (Exception e) {
+			throw DatabaseException.getDatabaseException(e);
 		}
+
 	}
 
 	/**
@@ -5980,62 +5847,67 @@ public abstract class Table<T extends DatabaseRecord> {
 			throw new NullPointerException("The parameter _records is a null pointer !");
 		if (_records.isEmpty())
 			return;
-		// synchronized(sql_connection)
-		{
-			class TransactionTmp implements Transaction {
-				public TransactionTmp() {
-				}
+		class TransactionTmp implements Transaction {
+			public TransactionTmp() {
+			}
 
-				@Override
-				public TransactionIsolation getTransactionIsolation() {
-					return TransactionIsolation.TRANSACTION_SERIALIZABLE;
-				}
+			@Override
+			public TransactionIsolation getTransactionIsolation() {
+				return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+			}
 
-				@Override
-				public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
-					StringBuffer sb = new StringBuffer("DELETE FROM " + Table.this.getName() + " WHERE "
-							+ getSqlPrimaryKeyCondition(_records.size()));
-
-					try (PreparedUpdateQuerry puq = new PreparedUpdateQuerry(
-							_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(),
-							sb.toString())) {
-						int index = 1;
-						for (T r : _records) {
-							for (FieldAccessor fa : primary_keys_fields) {
-								fa.getValue(r, puq.statement, index);
-								index += fa.getDeclaredSqlFields().length;
-							}
-							r.__createdIntoDatabase = false;
+			@Override
+			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
+				StringBuffer sb = new StringBuffer(
+						"DELETE FROM " + Table.this.getName() + " WHERE " + getSqlPrimaryKeyCondition(_records.size()));
+				boolean onDeleted=false;
+				try (PreparedUpdateQuerry puq = new PreparedUpdateQuerry(
+						_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), sb.toString())) {
+					int index = 1;
+					for (T r : _records) {
+						for (FieldAccessor fa : primary_keys_fields) {
+							fa.getValue(r, puq.statement, index);
+							index += fa.getDeclaredSqlFields().length;
 						}
-						int nb = puq.statement.executeUpdate();
-						if (nb != _records.size())
-							throw new RecordNotFoundDatabaseException("There is " + (_records.size() - nb) + " (about "
-									+ _records.size()
-									+ ") records which have not been found into the database. This may occur if the concerned record has already been deleted. No records have been deleted.");
-						for (T r : _records)
-							getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
-									new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, r, null, null));
-
-					} catch (Exception e) {
-						throw DatabaseException.getDatabaseException(e);
+						r.__createdIntoDatabase = false;
+					}
+					int nb = puq.statement.executeUpdate();
+					if (nb != _records.size())
+						throw new RecordNotFoundDatabaseException("There is " + (_records.size() - nb) + " (about "
+								+ _records.size()
+								+ ") records which have not been found into the database. This may occur if the concerned record has already been deleted. No records have been deleted.");
+					for (T r : _records)
+					{
+						onDeleted=true;
+						getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
+								new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, r, null, null));
 					}
 
-					return null;
+				} catch (Exception e) {
+					throw DatabaseException.getDatabaseException(e);
+				}
+				if (onDeleted && isLoadedInMemory()) {
+					memoryToRefreshWithCascade();
 				}
 
-				@Override
-				public boolean doesWriteData() {
-					return true;
-				}
+				return null;
+			}
+
+			@Override
+			public boolean doesWriteData() {
+				return true;
+			}
+
+			@Override
+			public void initOrReset() {
 
 			}
-			TransactionTmp transaction = new TransactionTmp();
-			sql_connection.runTransaction(transaction, true);
-			if (isLoadedInMemory() && isSynchronizedWithSqlDatabase()) {
-				__removeRecords(_records);
-			}
-			updateMemoryForRemovingRecordsWithCascade(_records);
+
 		}
+		TransactionTmp transaction = new TransactionTmp();
+		sql_connection.runTransaction(transaction, true);
+		//updateMemoryForRemovingRecordsWithCascade(_records);
+
 	}
 
 	abstract class Runnable {
@@ -6088,75 +5960,78 @@ public abstract class Table<T extends DatabaseRecord> {
 	final void getListRecordsFromSqlConnection(final Runnable _runnable, final SqlQuerry querry,
 			final TransactionIsolation transactionIsolation, final int startPosition, final int length,
 			final boolean updatable) throws DatabaseException {
-		// synchronized(sql_connection)
-		{
 
-			class TransactionTmp implements Transaction {
-				protected final Constructor<T> default_constructor_field;
-				protected final ArrayList<FieldAccessor> fields_accessor;
+		class TransactionTmp implements Transaction {
+			protected final Constructor<T> default_constructor_field;
+			protected final ArrayList<FieldAccessor> fields_accessor;
 
-				@Override
-				public TransactionIsolation getTransactionIsolation() {
-					return transactionIsolation;
-				}
+			@Override
+			public TransactionIsolation getTransactionIsolation() {
+				return transactionIsolation;
+			}
 
-				public TransactionTmp(Constructor<T> _default_constructor_field,
-						ArrayList<FieldAccessor> _fields_accessor) {
-					default_constructor_field = _default_constructor_field;
-					fields_accessor = _fields_accessor;
-
-				}
-
-				@Override
-				public Object run(DatabaseWrapper sql_connection) throws DatabaseException {
-					try (AbstractReadQuerry rq = (updatable
-							? new UpdatableReadQuerry(
-									sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), querry)
-							: new ReadQuerry(sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(),
-									querry))) {
-						// int rowcount=getRowCount();
-						int rowcount = 0;
-						_runnable.init();
-						if (startPosition > 0)
-							rq.result_set.absolute(startPosition - 1);
-						while (rq.result_set.next()) {
-							T field_instance = getNewRecordInstance(default_constructor_field);
-
-							for (FieldAccessor f : fields_accessor) {
-								f.setValue(field_instance, rq.result_set);
-							}
-							// rowcount--;
-							if (!_runnable.setInstance(field_instance, rq.result_set)) {
-								// rowcount=0;
-								break;
-							}
-							++rowcount;
-							if (startPosition > 0 && length > 0 && rowcount >= length)
-								break;
-						}
-						/*
-						 * if (rowcount!=0) throw new
-						 * DatabaseException("Unexpected exception "+rowcount);
-						 */
-						return null;
-					} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
-							| InvocationTargetException e) {
-						throw new DatabaseException("Impossible to instantiate a DatabaseRecord ", e);
-					} catch (Exception e) {
-						throw DatabaseException.getDatabaseException(e);
-					}
-				}
-
-				@Override
-				public boolean doesWriteData() {
-					return updatable;
-				}
+			public TransactionTmp(Constructor<T> _default_constructor_field,
+					ArrayList<FieldAccessor> _fields_accessor) {
+				default_constructor_field = _default_constructor_field;
+				fields_accessor = _fields_accessor;
 
 			}
 
-			Transaction transaction = new TransactionTmp(default_constructor_field, fields);
-			sql_connection.runTransaction(transaction, true);
+			@Override
+			public Object run(DatabaseWrapper sql_connection) throws DatabaseException {
+				try (AbstractReadQuerry rq = (updatable
+						? new UpdatableReadQuerry(
+								sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), querry)
+						: new ReadQuerry(sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(),
+								querry))) {
+					// int rowcount=getRowCount();
+					int rowcount = 0;
+					_runnable.init();
+					if (startPosition > 0)
+						rq.result_set.absolute(startPosition - 1);
+					while (rq.result_set.next()) {
+						T field_instance = getNewRecordInstance(default_constructor_field);
+
+						for (FieldAccessor f : fields_accessor) {
+							f.setValue(field_instance, rq.result_set);
+						}
+						// rowcount--;
+						if (!_runnable.setInstance(field_instance, rq.result_set)) {
+							// rowcount=0;
+							break;
+						}
+						++rowcount;
+						if (startPosition > 0 && length > 0 && rowcount >= length)
+							break;
+					}
+					/*
+					 * if (rowcount!=0) throw new
+					 * DatabaseException("Unexpected exception "+rowcount);
+					 */
+					return null;
+				} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
+						| InvocationTargetException e) {
+					throw new DatabaseException("Impossible to instantiate a DatabaseRecord ", e);
+				} catch (Exception e) {
+					throw DatabaseException.getDatabaseException(e);
+				}
+			}
+
+			@Override
+			public boolean doesWriteData() {
+				return updatable;
+			}
+
+			@Override
+			public void initOrReset() {
+
+			}
+
 		}
+
+		Transaction transaction = new TransactionTmp(default_constructor_field, fields);
+		sql_connection.runTransaction(transaction, true);
+
 	}
 
 	static abstract class Runnable2 {
@@ -6240,6 +6115,11 @@ public abstract class Table<T extends DatabaseRecord> {
 					return updatable;
 				}
 
+				@Override
+				public void initOrReset() {
+
+				}
+
 			}
 
 			Transaction transaction = new TransactionTmp();
@@ -6268,7 +6148,7 @@ public abstract class Table<T extends DatabaseRecord> {
 
 	@SuppressWarnings("unchecked")
 	final boolean contains(boolean is_already_in_transaction, final DatabaseRecord _record) throws DatabaseException {
-		return contains((T) _record, false);
+		return contains((T) _record, is_already_in_transaction);
 	}
 
 	private final boolean contains(final T _record, boolean is_already_in_transaction) throws DatabaseException {
@@ -6319,6 +6199,11 @@ public abstract class Table<T extends DatabaseRecord> {
 				@Override
 				public TransactionIsolation getTransactionIsolation() {
 					return TransactionIsolation.TRANSACTION_READ_COMMITTED;
+				}
+
+				@Override
+				public void initOrReset() {
+
 				}
 
 			};
@@ -6579,34 +6464,7 @@ public abstract class Table<T extends DatabaseRecord> {
 								TransactionIsolation.TRANSACTION_READ_COMMITTED, -1, -1);
 
 					final T instance = originalRecord == null ? getNewRecordInstance() : (T) originalRecord;
-					if (isLoadedInMemory()) {
-						for (FieldAccessor fa : fields) {
-							Object obj;
-							if (fa.isRandomPrimaryKey() && !ct.random_fields_to_check.contains(fa)) {
-								ArrayList<T> fields_instances = getRecords(-1, -1, false);
-								Object value;
-								boolean ok = false;
-								value = fa.autoGenerateValue(rand);
-								if (fa.needToCheckUniquenessOfAutoGeneratedValues()) {
-									do {
-										ok = false;
-										for (T f : fields_instances) {
-											if (fa.equals(f, value)) {
-												ok = true;
-												break;
-											}
-										}
-										if (ok)
-											value = fa.autoGenerateValue(rand);
-									} while (ok);
-								}
-								fa.setValue(instance, value);
-							} else if ((fa.isAutoPrimaryKey() && ct.include_auto_pk) || !fa.isAutoPrimaryKey()) {
-								obj = _fields.get(fa.getFieldName());
-								fa.setValue(instance, obj);
-							}
-						}
-					} else {
+				
 						for (final FieldAccessor fa : fields) {
 							if (fa.isRandomPrimaryKey() && !ct.random_fields_to_check.contains(fa)) {
 								Object value = fa.autoGenerateValue(rand);
@@ -6644,7 +6502,7 @@ public abstract class Table<T extends DatabaseRecord> {
 								fa.setValue(instance, _fields.get(fa.getFieldName()));
 							}
 						}
-					}
+					
 					class TransactionTmp implements Transaction {
 
 						protected final ArrayList<FieldAccessor> auto_primary_keys_fields;
@@ -6671,6 +6529,7 @@ public abstract class Table<T extends DatabaseRecord> {
 							try {
 								for (ForeignKeyFieldAccessor fa : foreign_keys_fields) {
 									Object val = fa.getValue(instance);
+
 									if (val != null && !fa.getPointedTable().contains(true, (DatabaseRecord) val))
 										throw new RecordNotFoundDatabaseException(
 												"The record, contained as foreign key into the field "
@@ -6708,10 +6567,10 @@ public abstract class Table<T extends DatabaseRecord> {
 									}
 								}
 								querry.append(")" + sql_connection.getSqlComma());
-
+								boolean generatedKeys=auto_primary_keys_fields.size()>0 && !ct.include_auto_pk;
 								try (PreparedUpdateQuerry puq = new PreparedUpdateQuerry(
 										_db.getConnectionAssociatedWithCurrentThread().getConnection(),
-										querry.toString())) {
+										querry.toString(), generatedKeys)) {
 									int index = 1;
 									for (FieldAccessor fa : fields) {
 										if ((fa.isAutoPrimaryKey() && _fields.containsKey(fa.getFieldName()))
@@ -6721,11 +6580,23 @@ public abstract class Table<T extends DatabaseRecord> {
 										}
 									}
 									puq.statement.executeUpdate();
-									/*
-									 * if (auto_primary_keys_fields.size()>0 && !ct.include_auto_pk) {
-									 * puq.statement.getGeneratedKeys().next(); autovalue=new
-									 * Long(puq.statement.getGeneratedKeys().getLong(1)); }
-									 */
+
+									if (generatedKeys)
+									{
+										ResultSet rsgk=puq.statement.getGeneratedKeys();
+										rsgk.next();
+										Long autovalue = new Long(rsgk.getLong(1));
+										FieldAccessor fa = auto_primary_keys_fields.get(0);
+										if (fa.isAssignableTo(byte.class))
+											fa.setValue(instance, new Byte((byte) autovalue.longValue()));
+										else if (fa.isAssignableTo(short.class))
+											fa.setValue(instance, new Short((short) autovalue.longValue()));
+										else if (fa.isAssignableTo(int.class))
+											fa.setValue(instance, new Integer((int) autovalue.longValue()));
+										else if (fa.isAssignableTo(long.class))
+											fa.setValue(instance, autovalue);
+									}
+									
 								} catch (SQLIntegrityConstraintViolationException e) {
 									throw new ConstraintsNotRespectedDatabaseException(
 											"Constraints was not respected when inserting a field into the table "
@@ -6736,7 +6607,7 @@ public abstract class Table<T extends DatabaseRecord> {
 									throw DatabaseException.getDatabaseException(e);
 								}
 
-								if (auto_primary_keys_fields.size() > 0 && !ct.include_auto_pk) {
+								/*if (auto_primary_keys_fields.size() > 0 && !ct.include_auto_pk) {
 									try (ReadQuerry rq = new ReadQuerry(
 											_db.getConnectionAssociatedWithCurrentThread().getConnection(),
 											new SqlQuerry(sql_connection.getSqlQuerryToGetLastGeneratedID()))) {
@@ -6754,7 +6625,7 @@ public abstract class Table<T extends DatabaseRecord> {
 									} catch (Exception e) {
 										throw DatabaseException.getDatabaseException(e);
 									}
-								}
+								}*/
 
 								return null;
 							} catch (Exception e) {
@@ -6762,15 +6633,21 @@ public abstract class Table<T extends DatabaseRecord> {
 							}
 						}
 
+						@Override
+						public void initOrReset() {
+
+						}
+
 					}
 
-					sql_connection.runTransaction(new TransactionTmp(auto_primary_keys_fields, foreign_keys_fields), true);
+					sql_connection.runTransaction(new TransactionTmp(auto_primary_keys_fields, foreign_keys_fields),
+							true);
 
-					if (isLoadedInMemory() && isSynchronizedWithSqlDatabase())
-						__AddRecord(instance);
 					if (synchronizeIfNecessary)
 						getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
 								new TableEvent<>(-1, DatabaseEventType.ADD, null, instance, hostsDestinations));
+					if (isLoadedInMemory())
+						memoryToRefresh();
 					return instance;
 
 				} catch (IllegalArgumentException e) {
@@ -6786,6 +6663,11 @@ public abstract class Table<T extends DatabaseRecord> {
 					throw new DatabaseException("Impossible to add a new field on the table/class " + getName() + ".",
 							e);
 				}
+			}
+
+			@Override
+			public void initOrReset() {
+
 			}
 
 		}, true);
@@ -7169,11 +7051,19 @@ public abstract class Table<T extends DatabaseRecord> {
 
 							}
 
+							@Override
+							public void initOrReset() {
+
+							}
+
 						}
 
 						sql_connection.runTransaction(new TransactionTmp(fields), true);
+						memoryToRefreshWithCascade();
 						if (synchronizeIfNecessary) {
+							
 							if (pkChanged) {
+								
 								getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
 										new TableEvent<>(-1, DatabaseEventType.REMOVE, oldRecord, null, resentTo));
 								getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
@@ -7187,6 +7077,11 @@ public abstract class Table<T extends DatabaseRecord> {
 						throw DatabaseException.getDatabaseException(e);
 					}
 					return null;
+				}
+
+				@Override
+				public void initOrReset() {
+
 				}
 
 			}, true);
@@ -7390,448 +7285,162 @@ public abstract class Table<T extends DatabaseRecord> {
 			final RuleInstance rule = (whereCommand != null && !whereCommand.trim().equals(""))
 					? Interpreter.getRuleInstance(whereCommand)
 					: null;
+			final AtomicBoolean oneUpdated=new AtomicBoolean(false); 
 			sql_connection.runTransaction(new Transaction() {
-
-				@Override
-				public TransactionIsolation getTransactionIsolation() {
-					return TransactionIsolation.TRANSACTION_SERIALIZABLE;
-				}
-
-				@Override
-				public boolean doesWriteData() {
-					return true;
-				}
-
+				
 				@Override
 				public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
-					try {
-						if (isLoadedInMemory()) {
-							final ArrayList<T> records_to_delete = new ArrayList<>();
-							final ArrayList<T> records_to_delete_with_cascade = new ArrayList<>();
-							for (final T r : getRecords(-1, -1, false)) {
-								_filter.reset();
-								final T oldRecord = copyRecord(r);
-								if ((rule != null && rule.isConcernedBy(Table.this, parameters, r)) || rule == null) {
-									_filter.nextRecord(r);
+					final AtomicBoolean updateWithCascade=new AtomicBoolean(false);
+					class RunnableTmp extends Runnable {
+						protected final ArrayList<FieldAccessor> fields_accessor;
+						private final RuleInstance rule;
 
+						public RunnableTmp(ArrayList<FieldAccessor> _fields_accessor, RuleInstance rule) {
+							fields_accessor = _fields_accessor;
+							this.rule = rule;
+						}
+
+						@Override
+						public void init(int _field_count) {
+
+						}
+
+						@Override
+						public boolean setInstance(T _instance, ResultSet _result_set) throws DatabaseException {
+							try {
+								if ((rule == null || rule.isConcernedBy(Table.this, parameters, _instance))) {
+									_filter.reset();
+									final T oldRecord = copyRecord(_instance);
+									_filter.nextRecord(_instance);
 									if (_filter.hasToBeRemoved()) {
 										boolean canberemoved = true;
-										for (NeighboringTable nt : list_tables_pointing_to_this_table) {
-											if (nt.getPoitingTable().hasRecordsWithOneOfFields(nt.getHashMapFields(r),
-													false)) {
-												canberemoved = false;
-												break;
+										if (list_tables_pointing_to_this_table.size() > 0) {
+											for (int i = 0; i < list_tables_pointing_to_this_table.size(); i++) {
+
+												NeighboringTable nt = list_tables_pointing_to_this_table.get(i);
+
+												if (nt.getPoitingTable().hasRecordsWithOneOfSqlForeignKeyWithCascade(
+														nt.getHashMapsSqlFields(getSqlPrimaryKeys(_instance)))) {
+													canberemoved = false;
+													break;
+												}
 											}
 										}
-										if (canberemoved)
-											records_to_delete.add(r);
+										if (canberemoved) {
+											_result_set.deleteRow();
+											oneUpdated.set(true);
+											getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
+													new TableEvent<>(-1, DatabaseEventType.REMOVE, oldRecord, null, null));
+										}
 									} else if (_filter.hasToBeRemovedWithCascade()) {
-										records_to_delete_with_cascade.add(r);
+										_result_set.deleteRow();
+										//updateMemoryForRemovingRecordWithCascade(_instance);
+										updateWithCascade.set(true);
+										oneUpdated.set(true);
+										getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
+												new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, oldRecord, null,
+														null));
 									} else {
 										Map<String, Object> m = _filter.getModifications();
 										if (m == null && _filter.isModificatiedFromRecordInstance())
-											m = getMap(r, false, false);
+											m = getMap(_instance, false, false);
 										final Map<String, Object> map = m;
-										boolean pkChangedTmp = false;
+
 										if (map != null && map.size() > 0) {
 											for (String s : map.keySet()) {
 												FieldAccessor founded_field = null;
-												for (FieldAccessor fa : fields) {
+												for (FieldAccessor fa : fields_accessor) {
 													if (fa.getFieldName().equals(s)) {
-														if (fa.isPrimaryKey() && fa.equals(r, map.get(s)))
-															pkChangedTmp = true;
-
 														founded_field = fa;
 														break;
 													}
 												}
 												if (founded_field == null)
-													throw new FieldDatabaseException(
-															"The given field " + s + " does not exists into the record "
-																	+ class_record.getName() + ". ");
+													throw new FieldDatabaseException("The given field " + s
+															+ " does not exists into the record " + class_record.getName());
 												if (founded_field.isPrimaryKey())
 													throw new FieldDatabaseException(
 															"Attempting to alter the primary key field "
 																	+ founded_field.getFieldName() + " into the table "
 																	+ getName()
-																	+ ". This operation is not permitted into this function."
-																	+ ". ");
+																	+ ". This operation is not permitted into this function.");
 												if (founded_field.isUnique())
-													throw new FieldDatabaseException(
-															"Attempting to alter the unique field "
-																	+ founded_field.getFieldName() + " into the table "
-																	+ getName()
-																	+ ". This operation is not permitted into this function."
-																	+ ". ");
+													throw new FieldDatabaseException("Attempting to alter the unique field "
+															+ founded_field.getFieldName() + " into the table " + getName()
+															+ ". This operation is not permitted into this function.");
 												if (founded_field.isForeignKey()) {
-													Object val = founded_field.getValue(r);
+													Object val = founded_field.getValue(_instance);
 													if (!((ForeignKeyFieldAccessor) founded_field).getPointedTable()
 															.contains(true, (DatabaseRecord) val))
 														throw new RecordNotFoundDatabaseException(
 																"The record, contained as foreign key into the given field "
-																		+ founded_field.getFieldName()
-																		+ " into the table " + Table.this.getName()
+																		+ founded_field.getFieldName() + " into the table "
+																		+ Table.this.getName()
 																		+ " does not exists into the table "
 																		+ ((ForeignKeyFieldAccessor) founded_field)
-																				.getPointedTable().getName()
-																		+ ". ");
+																				.getPointedTable().getName());
 												}
 											}
-											final boolean pkChanged = pkChangedTmp;
-											sql_connection.runTransaction(new Transaction() {
-
-												@Override
-												public TransactionIsolation getTransactionIsolation() {
-													return TransactionIsolation.TRANSACTION_READ_COMMITTED;
+											for (FieldAccessor fa : fields) {
+												if (map.containsKey(fa.getFieldName())) {
+													fa.updateValue(_instance, map.get(fa.getFieldName()), _result_set);
 												}
-
-												@Override
-												public Object run(DatabaseWrapper _sql_connection)
-														throws DatabaseException {
-													try {
-														StringBuffer querry = new StringBuffer(
-																"UPDATE " + Table.this.getName() + " SET ");
-														T instance = getNewRecordInstance();
-														boolean first = true;
-														for (FieldAccessor fa : fields) {
-															if (map.containsKey(fa.getFieldName())) {
-																fa.setValue(instance, map.get(fa.getFieldName()));
-
-																for (SqlField sf : fa.getDeclaredSqlFields()) {
-																	if (first)
-																		first = false;
-																	else
-																		querry.append(", ");
-																	querry.append(sf.short_field + " = ?");
-																}
-															}
-														}
-														querry.append(" WHERE ");
-														first = true;
-														for (FieldAccessor fa : primary_keys_fields) {
-															for (SqlField sf : fa.getDeclaredSqlFields()) {
-																if (first)
-																	first = false;
-																else
-																	querry.append(" AND ");
-																querry.append(sf.field + " = ?");
-															}
-														}
-
-														try (PreparedUpdateQuerry puq = new PreparedUpdateQuerry(
-																_sql_connection
-																		.getConnectionAssociatedWithCurrentThread()
-																		.getConnection(),
-																querry.toString())) {
-															int index = 1;
-															for (FieldAccessor fa : fields) {
-																if (map.containsKey(fa.getFieldName())) {
-																	fa.getValue(instance, puq.statement, index);
-																	index += fa.getDeclaredSqlFields().length;
-																}
-															}
-															for (FieldAccessor fa : primary_keys_fields) {
-																fa.getValue(r, puq.statement, index);
-																index += fa.getDeclaredSqlFields().length;
-															}
-															int nb = puq.statement.executeUpdate();
-															if (nb != 1)
-																throw new DatabaseIntegrityException(
-																		"More than one record have been found with the given primary keys. No record have been altered.");
-
-															for (FieldAccessor fa : fields) {
-																if (map.containsKey(fa.getFieldName())) {
-																	fa.setValue(r, map.get(fa.getFieldName()));
-																}
-															}
-
-														} catch (SQLIntegrityConstraintViolationException e) {
-															throw new ConstraintsNotRespectedDatabaseException(
-																	"Constraints was not respected. It possible that the given primary keys or the given unique keys does not respect constraints of unicity.",
-																	e);
-														}
-														if (pkChanged) {
-															getDatabaseWrapper()
-																	.getConnectionAssociatedWithCurrentThread()
-																	.addEvent(Table.this,
-																			new TableEvent<>(-1,
-																					DatabaseEventType.REMOVE, oldRecord,
-																					null, null));
-															getDatabaseWrapper()
-																	.getConnectionAssociatedWithCurrentThread()
-																	.addEvent(Table.this, new TableEvent<>(-1,
-																			DatabaseEventType.ADD, null, r, null));
-														} else
-															getDatabaseWrapper()
-																	.getConnectionAssociatedWithCurrentThread()
-																	.addEvent(Table.this,
-																			new TableEvent<>(-1,
-																					DatabaseEventType.UPDATE, oldRecord,
-																					r, null));
-														return null;
-													} catch (Exception e) {
-														throw DatabaseException.getDatabaseException(e);
-													}
-												}
-
-												@Override
-												public boolean doesWriteData() {
-													return true;
-												}
-
-											}, true);
+											}
+											_result_set.updateRow();
+											updateWithCascade.set(true);
+											oneUpdated.set(true);
+											getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
+													new TableEvent<>(-1, DatabaseEventType.UPDATE, oldRecord, _instance, null));
 										}
 									}
 								}
+								return true;
+							} catch (Exception e) {
+								throw DatabaseException.getDatabaseException(e);
 							}
-
-							if (records_to_delete.size() > 0) {
-								Transaction transaction = new Transaction() {
-
-									@Override
-									public TransactionIsolation getTransactionIsolation() {
-										return TransactionIsolation.TRANSACTION_READ_COMMITTED;
-									}
-
-									@Override
-									public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
-										StringBuffer sb = new StringBuffer("DELETE FROM " + Table.this.getName()
-												+ " WHERE " + getSqlPrimaryKeyCondition(records_to_delete.size()));
-
-										int nb = 0;
-										try (PreparedUpdateQuerry puq = new PreparedUpdateQuerry(_sql_connection
-												.getConnectionAssociatedWithCurrentThread().getConnection(),
-												sb.toString())) {
-											int index = 1;
-											for (T r : records_to_delete) {
-												for (FieldAccessor fa : primary_keys_fields) {
-													fa.getValue(r, puq.statement, index);
-													index += fa.getDeclaredSqlFields().length;
-												}
-											}
-											nb = puq.statement.executeUpdate();
-										} catch (Exception e) {
-											throw DatabaseException.getDatabaseException(e);
-										}
-
-										if (nb != records_to_delete.size())
-											throw new DatabaseException("Unexpected exception.");
-										return null;
-									}
-
-									@Override
-									public boolean doesWriteData() {
-										return true;
-									}
-
-								};
-
-								sql_connection.runTransaction(transaction, true);
-
-								__removeRecords(records_to_delete);
-
-								for (T r : records_to_delete)
-									getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
-											new TableEvent<>(-1, DatabaseEventType.REMOVE, r, null, null));
-							}
-							if (records_to_delete_with_cascade.size() > 0) {
-								Transaction transaction = new Transaction() {
-
-									@Override
-									public TransactionIsolation getTransactionIsolation() {
-										return TransactionIsolation.TRANSACTION_READ_COMMITTED;
-									}
-
-									@Override
-									public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
-										StringBuffer sb = new StringBuffer("DELETE FROM " + Table.this.getName()
-												+ " WHERE "
-												+ getSqlPrimaryKeyCondition(records_to_delete_with_cascade.size()));
-
-										int nb = 0;
-										try (PreparedUpdateQuerry puq = new PreparedUpdateQuerry(_sql_connection
-												.getConnectionAssociatedWithCurrentThread().getConnection(),
-												sb.toString())) {
-											int index = 1;
-											for (T r : records_to_delete_with_cascade) {
-												for (FieldAccessor fa : primary_keys_fields) {
-													fa.getValue(r, puq.statement, index);
-													index += fa.getDeclaredSqlFields().length;
-												}
-											}
-											nb = puq.statement.executeUpdate();
-										} catch (Exception e) {
-											throw DatabaseException.getDatabaseException(e);
-										}
-
-										if (nb != records_to_delete_with_cascade.size()) {
-											throw new DatabaseException("Unexpected exception.");
-										}
-										return null;
-									}
-
-									@Override
-									public boolean doesWriteData() {
-										return true;
-									}
-
-								};
-
-								
-								sql_connection.runTransaction(transaction, true);
-
-								__removeRecords(records_to_delete_with_cascade);
-								updateMemoryForRemovingRecordsWithCascade(records_to_delete_with_cascade);
-								for (T r : records_to_delete_with_cascade)
-									getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
-											new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, r, null, null));
-
-							}
-
-						} else {
-							class RunnableTmp extends Runnable {
-								protected final ArrayList<FieldAccessor> fields_accessor;
-								private final RuleInstance rule;
-
-								public RunnableTmp(ArrayList<FieldAccessor> _fields_accessor, RuleInstance rule) {
-									fields_accessor = _fields_accessor;
-									this.rule = rule;
-								}
-
-								@Override
-								public void init(int _field_count) {
-
-								}
-
-								@Override
-								public boolean setInstance(T _instance, ResultSet _result_set)
-										throws DatabaseException {
-									try {
-										if ((rule == null || rule.isConcernedBy(Table.this, parameters, _instance))) {
-											_filter.reset();
-											final T oldRecord = copyRecord(_instance);
-											_filter.nextRecord(_instance);
-											if (_filter.hasToBeRemoved()) {
-												boolean canberemoved = true;
-												if (list_tables_pointing_to_this_table.size() > 0) {
-													for (int i = 0; i < list_tables_pointing_to_this_table
-															.size(); i++) {
-
-														NeighboringTable nt = list_tables_pointing_to_this_table.get(i);
-
-														if (nt.getPoitingTable()
-																.hasRecordsWithOneOfSqlForeignKeyWithCascade(
-																		nt.getHashMapsSqlFields(
-																				getSqlPrimaryKeys(_instance)))) {
-															canberemoved = false;
-															break;
-														}
-													}
-												}
-												if (canberemoved) {
-													_result_set.deleteRow();
-													getDatabaseWrapper().getConnectionAssociatedWithCurrentThread()
-															.addEvent(Table.this, new TableEvent<>(-1,
-																	DatabaseEventType.REMOVE, oldRecord, null, null));
-												}
-											} else if (_filter.hasToBeRemovedWithCascade()) {
-												_result_set.deleteRow();
-												updateMemoryForRemovingRecordWithCascade(_instance);
-												getDatabaseWrapper().getConnectionAssociatedWithCurrentThread()
-														.addEvent(Table.this,
-																new TableEvent<>(-1,
-																		DatabaseEventType.REMOVE_WITH_CASCADE,
-																		oldRecord, null, null));
-											} else {
-												Map<String, Object> m = _filter.getModifications();
-												if (m == null && _filter.isModificatiedFromRecordInstance())
-													m = getMap(_instance, false, false);
-												final Map<String, Object> map = m;
-
-												if (map != null && map.size() > 0) {
-													for (String s : map.keySet()) {
-														FieldAccessor founded_field = null;
-														for (FieldAccessor fa : fields_accessor) {
-															if (fa.getFieldName().equals(s)) {
-																founded_field = fa;
-																break;
-															}
-														}
-														if (founded_field == null)
-															throw new FieldDatabaseException("The given field " + s
-																	+ " does not exists into the record "
-																	+ class_record.getName());
-														if (founded_field.isPrimaryKey())
-															throw new FieldDatabaseException(
-																	"Attempting to alter the primary key field "
-																			+ founded_field.getFieldName()
-																			+ " into the table " + getName()
-																			+ ". This operation is not permitted into this function.");
-														if (founded_field.isUnique())
-															throw new FieldDatabaseException(
-																	"Attempting to alter the unique field "
-																			+ founded_field.getFieldName()
-																			+ " into the table " + getName()
-																			+ ". This operation is not permitted into this function.");
-														if (founded_field.isForeignKey()) {
-															Object val = founded_field.getValue(_instance);
-															if (!((ForeignKeyFieldAccessor) founded_field)
-																	.getPointedTable()
-																	.contains(true, (DatabaseRecord) val))
-																throw new RecordNotFoundDatabaseException(
-																		"The record, contained as foreign key into the given field "
-																				+ founded_field.getFieldName()
-																				+ " into the table "
-																				+ Table.this.getName()
-																				+ " does not exists into the table "
-																				+ ((ForeignKeyFieldAccessor) founded_field)
-																						.getPointedTable().getName());
-														}
-													}
-													for (FieldAccessor fa : fields) {
-														if (map.containsKey(fa.getFieldName())) {
-															fa.updateValue(_instance, map.get(fa.getFieldName()),
-																	_result_set);
-														}
-													}
-													_result_set.updateRow();
-													getDatabaseWrapper().getConnectionAssociatedWithCurrentThread()
-															.addEvent(Table.this,
-																	new TableEvent<>(-1, DatabaseEventType.UPDATE,
-																			oldRecord, _instance, null));
-												}
-											}
-										}
-										return true;
-									} catch (Exception e) {
-										throw DatabaseException.getDatabaseException(e);
-									}
-								}
-							}
-							HashMap<Integer, Object> sqlParameters = new HashMap<>();
-							String sqlQuery = null;
-							if (rule != null && rule.isIndependantFromOtherTables(Table.this)) {
-								sqlQuery = rule.translateToSqlQuery(Table.this, parameters, sqlParameters,
-										new HashSet<TableJunction>()).toString();
-							}
-
-							RunnableTmp runnable = new RunnableTmp(fields, sqlQuery == null ? rule : null);
-							getListRecordsFromSqlConnection(runnable,
-									sqlQuery == null ? getSqlGeneralSelect(false)
-											: getSqlGeneralSelect(false, sqlQuery, sqlParameters),
-									TransactionIsolation.TRANSACTION_SERIALIZABLE, -1, -1, true);
-
 						}
-					} catch (Exception e) {
-						throw DatabaseException.getDatabaseException(e);
+					}
+					HashMap<Integer, Object> sqlParameters = new HashMap<>();
+					String sqlQuery = null;
+					if (rule != null && rule.isIndependantFromOtherTables(Table.this)) {
+						sqlQuery = rule.translateToSqlQuery(Table.this, parameters, sqlParameters, new HashSet<TableJunction>())
+								.toString();
+					}
+
+					RunnableTmp runnable = new RunnableTmp(fields, sqlQuery == null ? rule : null);
+					getListRecordsFromSqlConnection(runnable,
+							sqlQuery == null ? getSqlGeneralSelect(false) : getSqlGeneralSelect(false, sqlQuery, sqlParameters),
+							TransactionIsolation.TRANSACTION_SERIALIZABLE, -1, -1, true);
+					if (oneUpdated.get() && isLoadedInMemory())
+					{
+						if (updateWithCascade.get())
+							memoryToRefreshWithCascade();
+						else
+							memoryToRefresh();
 					}
 					return null;
 				}
-
+				
+				@Override
+				public void initOrReset() throws DatabaseException {
+					
+				}
+				
+				@Override
+				public TransactionIsolation getTransactionIsolation() {
+					return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
+				}
+				
+				@Override
+				public boolean doesWriteData() {
+					return true;
+				}
 			}, true);
+
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
+
 	}
 
 	/*
@@ -7967,56 +7576,6 @@ public abstract class Table<T extends DatabaseRecord> {
 		}
 	}
 
-	final void __AddRecord(T _record) {
-		@SuppressWarnings("unchecked")
-		ArrayList<T> res = (ArrayList<T>) records_instances.get().clone();
-		res.add(_record);
-		records_instances.set(res);
-	}
-	/*
-	 * private final void __AddRecords(Collection<T> _records) {
-	 * 
-	 * @SuppressWarnings("unchecked") ArrayList<T>
-	 * res=(ArrayList<T>)records_instances.get().clone(); res.addAll(_records);
-	 * records_instances.set(res); }
-	 */
-
-	private final void __removeRecord(T _record) throws DatabaseException {
-		@SuppressWarnings("unchecked")
-		ArrayList<T> res = (ArrayList<T>) records_instances.get().clone();
-		boolean removed = false;
-		for (Iterator<T> it = res.iterator(); it.hasNext();) {
-			T f2 = it.next();
-			if (_record == f2/* equals(_record, f2) */) {
-				it.remove();
-				removed = true;
-				break;
-			}
-		}
-		if (!removed)
-			throw new DatabaseIntegrityException("Unexpected exception");
-		records_instances.set(res);
-	}
-
-	final void __removeRecords(Collection<T> _records) throws DatabaseException {
-		@SuppressWarnings("unchecked")
-		ArrayList<T> res = (ArrayList<T>) records_instances.get().clone();
-		int number = _records.size();
-		for (T f : _records) {
-			for (Iterator<T> it = res.iterator(); it.hasNext();) {
-				T f2 = it.next();
-				if (f == f2/* equals(f, f2) */) {
-					it.remove();
-					--number;
-					break;
-				}
-			}
-		}
-		if (number != 0)
-			throw new DatabaseIntegrityException("Unexpected exception");
-		records_instances.set(res);
-	}
-
 	/**
 	 * Returns the Sql database which is associated to this table.
 	 * 
@@ -8042,59 +7601,49 @@ public abstract class Table<T extends DatabaseRecord> {
 	}
 
 	private final static HashMap<Long, HashMap<Table<?>, Lock>> actual_locks = new HashMap<>();
-	
-	static Lock getActualLock(Table<?> table)
-	{
-		if (table==null)
+
+	static Lock getActualLock(Table<?> table) {
+		if (table == null)
 			throw new NullPointerException();
-		Thread thread=Thread.currentThread();
-		synchronized(actual_locks)
-		{
-			HashMap<Table<?>, Lock> hm=actual_locks.get(thread.getId());
-			if (hm==null)
+		Thread thread = Thread.currentThread();
+		synchronized (actual_locks) {
+			HashMap<Table<?>, Lock> hm = actual_locks.get(thread.getId());
+			if (hm == null)
 				return null;
 			return hm.get(table);
 		}
 	}
-	
-	static void removeActualLock(Table<?> table, Lock previousLock)
-	{
-		if (table==null)
+
+	static void removeActualLock(Table<?> table, Lock previousLock) {
+		if (table == null)
 			throw new NullPointerException();
-		Thread thread=Thread.currentThread();
-		synchronized(actual_locks)
-		{
-			if (previousLock==null)
-			{
-				HashMap<Table<?>, Lock> hm=actual_locks.get(thread.getId());
+		Thread thread = Thread.currentThread();
+		synchronized (actual_locks) {
+			if (previousLock == null) {
+				HashMap<Table<?>, Lock> hm = actual_locks.get(thread.getId());
 				hm.remove(table);
-				if (hm.size()==0)
+				if (hm.size() == 0)
 					actual_locks.remove(thread.getId());
-			}
-			else
+			} else
 				actual_locks.get(thread.getId()).put(table, previousLock);
 		}
 	}
-	
-	static void putLock(Table<?> table, Lock lock)
-	{
-		if (table==null)
+
+	static void putLock(Table<?> table, Lock lock) {
+		if (table == null)
 			throw new NullPointerException();
-		if (lock==null)
+		if (lock == null)
 			throw new NullPointerException();
-		Thread thread=Thread.currentThread();
-		synchronized(actual_locks)
-		{
-			HashMap<Table<?>, Lock> hm=actual_locks.get(thread.getId());
-			if (hm==null)
-			{
-				hm=new HashMap<>();
+		Thread thread = Thread.currentThread();
+		synchronized (actual_locks) {
+			HashMap<Table<?>, Lock> hm = actual_locks.get(thread.getId());
+			if (hm == null) {
+				hm = new HashMap<>();
 				actual_locks.put(thread.getId(), hm);
 			}
 			hm.put(table, lock);
 		}
 	}
-	
 
 	private static abstract class Lock implements AutoCloseable {
 		protected Table<?> actual_table;
@@ -8154,7 +7703,7 @@ public abstract class Table<T extends DatabaseRecord> {
 		protected WriteLock(Table<?> _current_table, ArrayList<Table<?>> _comes_from_tables,
 				Table<?> _from_comes_original_table) throws DatabaseException {
 			super();
-			synchronized (actual_locks) {
+			/*synchronized (actual_locks) */{
 
 				try {
 					_current_table.lockIfNecessary(true);
@@ -8195,7 +7744,7 @@ public abstract class Table<T extends DatabaseRecord> {
 
 		@Override
 		protected boolean isValid() {
-			return getActualLock(actual_table)==null;
+			return getActualLock(actual_table) == null;
 		}
 
 		@Override
@@ -8205,9 +7754,9 @@ public abstract class Table<T extends DatabaseRecord> {
 
 		@Override
 		protected void close(ArrayList<Table<?>> _comes_from_tables) throws DatabaseException {
-			if (actual_table==null)
+			if (actual_table == null)
 				return;
-			synchronized (actual_locks) {
+			/*synchronized (actual_locks) */{
 				try {
 					// current_table.current_lock=null;
 					removeActualLock(actual_table, previous_lock);
@@ -8238,7 +7787,7 @@ public abstract class Table<T extends DatabaseRecord> {
 
 		protected ReadLock(Table<?> _current_table, ArrayList<Table<?>> _comes_from_tables) throws DatabaseException {
 			super();
-			synchronized (actual_locks) {
+			/*synchronized (actual_locks) */{
 
 				try {
 					_current_table.lockIfNecessary(false);
@@ -8287,9 +7836,9 @@ public abstract class Table<T extends DatabaseRecord> {
 
 		@Override
 		protected void close(ArrayList<Table<?>> _comes_from_tables) throws DatabaseException {
-			if (actual_table==null)
+			if (actual_table == null)
 				return;
-			synchronized (actual_locks) {
+			/*synchronized (actual_locks) */{
 				try {
 					removeActualLock(actual_table, previous_lock);
 					// current_table.current_lock=previous_lock;
@@ -8412,9 +7961,14 @@ public abstract class Table<T extends DatabaseRecord> {
 		public PreparedStatement statement;
 
 		public PreparedUpdateQuerry(Connection _sql_connection, String querry) throws SQLException {
+			this(_sql_connection, querry, false);
+		}
+		public PreparedUpdateQuerry(Connection _sql_connection, String querry, boolean returnGeneratedKeys) throws SQLException {
 			super(_sql_connection);
-
-			statement = sql_connection.prepareStatement(querry, ResultSet.TYPE_FORWARD_ONLY,
+			if (returnGeneratedKeys)
+				statement = sql_connection.prepareStatement(querry, Statement.RETURN_GENERATED_KEYS);
+			else
+				statement = sql_connection.prepareStatement(querry, ResultSet.TYPE_FORWARD_ONLY,
 					ResultSet.CONCUR_UPDATABLE);
 		}
 

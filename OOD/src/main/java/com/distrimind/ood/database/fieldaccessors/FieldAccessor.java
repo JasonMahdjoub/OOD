@@ -60,6 +60,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
@@ -446,8 +447,6 @@ public abstract class FieldAccessor {
 							res.add(new BigDecimalFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 						else if (type.equals(BigInteger.class))
 							res.add(new BigIntegerFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
-						else if (Calendar.class.isAssignableFrom(type))
-							res.add(new CalendarFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 						else if (Date.class.isAssignableFrom(type))
 							res.add(new DateFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 						else if ((converter = _sql_connection.getByteTabObjectConverter(type)) != null)
@@ -461,6 +460,9 @@ public abstract class FieldAccessor {
 									parentFieldName));
 						else if (AbstractDecentralizedID.class.isAssignableFrom(type))
 							res.add(new AbstractDencetralizedIDFieldAccessor(_table_class, _sql_connection, f,
+									parentFieldName));
+						else if (type.equals(UUID.class))
+							res.add(new UUIDFieldAccessor(_table_class, _sql_connection, f,
 									parentFieldName));
 						else if (isComposedField(type)) {
 							for (Class<?> cpf : parentFields)

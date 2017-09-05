@@ -34,79 +34,86 @@ same conditions as regards security.
 The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
-package com.distrimind.ood.database;
+package com.distrimind.ood.util;
 
-import java.util.ArrayList;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * 
+ * 
  * @author Jason Mahdjoub
  * @version 1.0
- * @since OOD 2.0
+ * @since OOD 2.0.0
  */
-public class DatabaseTransactionEvent extends DatabaseEvent {
-	private long id;
-	private final ArrayList<TableEvent<?>> events;
-	private boolean force = false;
-
-	DatabaseTransactionEvent() {
-		id = -1;
-		events = new ArrayList<>();
+public class CachedInputStream extends InputStream {
+	
+	private byte[] data;
+	private final File tmpFile;
+	private ByteArrayInputStream bais;
+	private FileInputStream fis;
+	
+	CachedInputStream(byte[] data) throws IOException
+	{
+		if (data==null)
+			throw new NullPointerException();
+		this.data=data;
+		this.tmpFile=null;
+		reset();
 	}
-
-	DatabaseTransactionEvent(long id, ArrayList<TableEvent<?>> events) {
-		this.id = id;
-		if (events == null)
-			throw new NullPointerException("events");
-		if (events.isEmpty())
-			throw new IllegalArgumentException("events can't be empty");
-		for (TableEvent<?> de : events)
-			if (de == null)
-				throw new NullPointerException("events element");
-		this.events = events;
-	}
-
-	DatabaseTransactionEvent(long id, TableEvent<?>... events) {
-		this.id = id;
-		if (events == null)
-			throw new NullPointerException("events");
-		if (events.length == 0)
-			throw new IllegalArgumentException("events can't be empty");
-		for (TableEvent<?> de : events)
-			if (de == null)
-				throw new NullPointerException("events element");
-		this.events = new ArrayList<>();
-		for (TableEvent<?> te : events)
-			this.events.add(te);
-
-	}
-
-	public ArrayList<TableEvent<?>> getEvents() {
-		return events;
-	}
-
-	public long getID() {
-		return id;
-	}
-
-	void setID(long id) {
-		this.id = id;
-	}
-
-	boolean addEvent(TableEvent<?> event) {
-		force |= event.isForce();
-		return this.events.add(event);
-	}
-
-	boolean isForce() {
-		return force;
-	}
-
-	byte getTypesByte() {
-		byte b = 0;
-		for (TableEvent<?> de : events)
-			b |= de.getType().getByte();
-		return b;
+	CachedInputStream(File tmpFile) throws IOException
+	{
+		if (tmpFile==null)
+			throw new NullPointerException();
+		if (!tmpFile.exists())
+			throw new IllegalArgumentException();
+		this.data=null;
+		this.tmpFile=tmpFile;
+		reset();
 	}
 	
+	@Override
+	public void reset() throws IOException
+	{
+		close();
+		if (data==null)
+		{
+			fis=new FileInputStream(tmpFile);
+		}
+		else
+		{
+			bais=new ByteArrayInputStream(data);
+		}
+	}
+	@Override
+	public int read() throws IOException {
+		if (fis!=null)
+			return fis.read();
+		else
+			return bais.read();
+	}
+	@Override
+	public void close() throws IOException {
+		if (data==null)
+		{
+			if (fis!=null)
+			{
+				fis.close();
+				tmpFile.deleteOnExit();
+				fis=null;
+			}
+		}
+		else
+		{
+			if (bais!=null)
+			{
+				bais.close();
+				bais=null;
+				data=null;
+			}
+		}
+	}
 }

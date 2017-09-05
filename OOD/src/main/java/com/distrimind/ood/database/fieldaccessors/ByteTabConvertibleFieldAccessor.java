@@ -74,7 +74,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 		sql_fields = new SqlField[1];
 
 		String type = null;
-		long l = limit;
+		long l = converter.getDefaultSizeLimit(field.getType());
 		if (l <= 0)
 			l = ByteTabFieldAccessor.defaultByteTabSize;
 		boolean isBigInteger=false;
@@ -147,9 +147,9 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
 			throws DatabaseException {
 		try {
-			byte[] val1 = null;
-			if (_field_instance instanceof byte[])
-				val1 = (byte[]) _field_instance;
+			Object obj1 = null;
+			if (_field_instance!=null && !field.getType().isAssignableFrom(_field_instance.getClass()))
+				obj1 = _field_instance;
 
 			byte[] val2 = null;
 
@@ -161,17 +161,12 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 				Blob b = _result_set.getBlob(_sft.translateField(sql_fields[0]));
 				val2 = b == null ? null : b.getBytes(1, (int) b.length());
 			}
-
-			if (val1 == null || val2 == null)
-				return val1 == val2;
-			else {
-				if (val1.length != val2.length)
-					return false;
-				for (int i = 0; i < val1.length; i++)
-					if (val1[i] != val2[i])
-						return false;
-				return true;
-			}
+			
+			Object obj2=val2==null?null:converter.getObject(field.getType(), val2);
+			if (obj1==null)
+				return obj1==obj2;
+			else
+				return obj1.equals(obj2);
 
 		} catch (SQLException e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -197,20 +192,28 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 		SqlFieldInstance res[] = new SqlFieldInstance[1];
 		try
 		{
+			Object o=getValue(_instance);
+			byte bytes[]=o==null?null:converter.getBytes(o);
+			if (bytes == null && o!=null)
+				throw new FieldDatabaseException(
+						"The given ByteTabObjectConverter should produce an byte tab and not a null reference. This concern the affectation of the field "
+								+ field.getName() + " into the class "
+								+ field.getDeclaringClass().getCanonicalName());
+			
 			if (isVarBinary)
-				res[0] = new SqlFieldInstance(sql_fields[0], getValue(_instance));
+				res[0] = new SqlFieldInstance(sql_fields[0], bytes);
 			else if (isBigInteger)
 			{
-				res[0] = new SqlFieldInstance(sql_fields[0], ByteTabFieldAccessor.getBigDecimalValue((byte[])getValue(_instance)));
+				res[0] = new SqlFieldInstance(sql_fields[0], ByteTabFieldAccessor.getBigDecimalValue(bytes));
 			}
 			else {
-				byte[] b = (byte[]) field.get(_instance);
-				if (b == null)
+
+				if (bytes == null)
 					res[0] = new SqlFieldInstance(sql_fields[0], null);
 				else {
-					Blob blob = DatabaseWrapperAccessor.getBlob(sql_connection, b);
-					if (blob == null && b != null)
-						res[0] = new SqlFieldInstance(sql_fields[0], new ByteArrayInputStream(b));
+					Blob blob = DatabaseWrapperAccessor.getBlob(sql_connection, bytes);
+					if (blob == null && bytes != null)
+						res[0] = new SqlFieldInstance(sql_fields[0], new ByteArrayInputStream(bytes));
 					else
 						res[0] = new SqlFieldInstance(sql_fields[0], blob);
 				}
@@ -301,7 +304,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 		try {
 			byte[] b = null;
 			if (o != null) {
-				b = converter.getByte(o);
+				b = converter.getBytes(o);
 				if (b == null)
 					throw new FieldDatabaseException(
 							"The given ByteTabObjectConverter should produce an byte tab and not a null reference. This concern the affectation of the field "
@@ -338,7 +341,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 			Object o = field.get(_class_instance);
 			byte[] b = null;
 			if (o != null) {
-				b = converter.getByte(o);
+				b = converter.getBytes(o);
 				if (b == null)
 					throw new FieldDatabaseException(
 							"The given ByteTabObjectConverter should produce an byte tab and not a null reference. This concern the affectation of the field "
@@ -375,7 +378,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 			Object o = field.get(_class_instance);
 			byte[] b = null;
 			if (o != null) {
-				b = converter.getByte(o);
+				b = converter.getBytes(o);
 				if (b == null)
 					throw new FieldDatabaseException(
 							"The given ByteTabObjectConverter should produce an byte tab and not a null reference. This concern the affectation of the field "
@@ -415,7 +418,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 			Object o = getValue(_class_instance);
 
 			if (o != null) {
-				byte[] b = converter.getByte(o);
+				byte[] b = converter.getBytes(o);
 				_oos.writeInt(b.length);
 				_oos.write(b);
 			} else {

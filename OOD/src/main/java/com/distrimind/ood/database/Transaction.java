@@ -46,5 +46,5 @@ public interface Transaction {
 
 	public boolean doesWriteData();
 	
-	public void initOrReset();
+	public void initOrReset() throws DatabaseException;
 }

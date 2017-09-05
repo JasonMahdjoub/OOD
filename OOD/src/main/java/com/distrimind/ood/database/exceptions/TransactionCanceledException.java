@@ -1,4 +1,3 @@
-
 /*
 Copyright or © or Copr. Jason Mahdjoub (01/04/2013)
 
@@ -34,79 +33,25 @@ same conditions as regards security.
 The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
-package com.distrimind.ood.database;
-
-import java.util.ArrayList;
+package com.distrimind.ood.database.exceptions;
 
 /**
  * 
- * @author Jason Mahdjoub
+ * @author jason
  * @version 1.0
- * @since OOD 2.0
+ * @since OOD 2.0.0
  */
-public class DatabaseTransactionEvent extends DatabaseEvent {
-	private long id;
-	private final ArrayList<TableEvent<?>> events;
-	private boolean force = false;
-
-	DatabaseTransactionEvent() {
-		id = -1;
-		events = new ArrayList<>();
+public class TransactionCanceledException extends DatabaseException {
+	public TransactionCanceledException() {
+		this("");
+	}
+	public TransactionCanceledException(String _message) {
+		super(_message);
 	}
 
-	DatabaseTransactionEvent(long id, ArrayList<TableEvent<?>> events) {
-		this.id = id;
-		if (events == null)
-			throw new NullPointerException("events");
-		if (events.isEmpty())
-			throw new IllegalArgumentException("events can't be empty");
-		for (TableEvent<?> de : events)
-			if (de == null)
-				throw new NullPointerException("events element");
-		this.events = events;
-	}
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -4588234790051724564L;
 
-	DatabaseTransactionEvent(long id, TableEvent<?>... events) {
-		this.id = id;
-		if (events == null)
-			throw new NullPointerException("events");
-		if (events.length == 0)
-			throw new IllegalArgumentException("events can't be empty");
-		for (TableEvent<?> de : events)
-			if (de == null)
-				throw new NullPointerException("events element");
-		this.events = new ArrayList<>();
-		for (TableEvent<?> te : events)
-			this.events.add(te);
-
-	}
-
-	public ArrayList<TableEvent<?>> getEvents() {
-		return events;
-	}
-
-	public long getID() {
-		return id;
-	}
-
-	void setID(long id) {
-		this.id = id;
-	}
-
-	boolean addEvent(TableEvent<?> event) {
-		force |= event.isForce();
-		return this.events.add(event);
-	}
-
-	boolean isForce() {
-		return force;
-	}
-
-	byte getTypesByte() {
-		byte b = 0;
-		for (TableEvent<?> de : events)
-			b |= de.getType().getByte();
-		return b;
-	}
-	
 }

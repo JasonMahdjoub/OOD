@@ -36,10 +36,15 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database.fieldaccessors;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Method;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
+import java.util.Calendar;
 import java.util.Map;
 
 import com.distrimind.ood.database.exceptions.IncompatibleFieldDatabaseException;
@@ -63,7 +68,7 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public byte[] getByte(Object _o) throws IncompatibleFieldDatabaseException {
+	public byte[] getBytes(Object _o) throws IncompatibleFieldDatabaseException {
 		if (_o == null)
 			return null;
 		if (_o.getClass() == Inet6Address.class || _o.getClass() == Inet4Address.class)
@@ -78,6 +83,20 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 			return ((SymmetricSecretKey) _o).encode();
 		else if (_o instanceof Enum<?>)
 			return ((Enum<?>) _o).toString().getBytes();
+		else if (_o instanceof Calendar)
+		{
+			try(ByteArrayOutputStream baos=new ByteArrayOutputStream();ObjectOutputStream oos=new ObjectOutputStream(baos))
+			{
+				if (_o!=null && !(_o instanceof Calendar))
+					throw new IncompatibleFieldDatabaseException("The class "+_o.getClass()+" does is not a calendar !");
+				oos.writeObject(_o);
+				return baos.toByteArray();
+			}
+			catch(Exception e)
+			{
+				throw new IncompatibleFieldDatabaseException("",e);
+			}
+		}
 
 		throw new IncompatibleFieldDatabaseException("Incompatible type " + _o.getClass().getCanonicalName());
 	}
@@ -111,6 +130,20 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 				throw new IllegalArgumentException(
 						"No enum constant " + _object_type.getCanonicalName() + "." + new String(_bytesTab));
 			}
+			else if (Calendar.class.isAssignableFrom(_object_type))
+			{
+				try(ByteArrayInputStream bais=new ByteArrayInputStream(_bytesTab); ObjectInputStream dis=new ObjectInputStream(bais))
+				{
+					Object o=dis.readObject();
+					if (o!=null && !(o instanceof Calendar))
+						throw new IncompatibleFieldDatabaseException("The class "+o.getClass()+" does is not a calendar !");
+					return o;
+				}
+				catch(Exception e)
+				{
+					throw new IncompatibleFieldDatabaseException("",e);
+				}
+			}
 		} catch (Exception e) {
 			throw new IncompatibleFieldDatabaseException("A problems occurs", e);
 		}
@@ -139,7 +172,7 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 		return field_type == Inet4Address.class || field_type == Inet6Address.class
 				|| field_type == ASymmetricKeyPair.class || field_type == ASymmetricPublicKey.class
 				|| field_type == ASymmetricPrivateKey.class || field_type == SymmetricSecretKey.class
-				|| Enum.class.isAssignableFrom(field_type);
+				|| Enum.class.isAssignableFrom(field_type) || Calendar.class.isAssignableFrom(field_type);
 	}
 
 	@Override
@@ -156,6 +189,10 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 			return 400;
 		} else if (Enum.class.isAssignableFrom(_object_type)) {
 			return 300;
+		}
+		else if (Calendar.class.isAssignableFrom(_object_type))
+		{
+			return 4000;
 		}
 		throw new IncompatibleFieldDatabaseException("Incompatible type " + _object_type.getCanonicalName());
 	}

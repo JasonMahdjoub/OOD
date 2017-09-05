@@ -172,7 +172,7 @@ public class Symbol implements QueryPart {
 			Object p = parameters.get(getSymbol());
 			if (p == null)
 			{
-				throw new DatabaseSyntaxException("Impossible to find parameter " + getSymbol());
+				return SymbolType.NULL.getContent();
 			}
 			FieldAccessor fa = getFieldAccessor(table, p);
 
