@@ -89,6 +89,10 @@ import com.distrimind.util.AbstractDecentralizedID;
  */
 public abstract class DatabaseWrapper implements AutoCloseable {
 
+	private static List<Class<?>> internalDatabaseClassesList = Arrays.<Class<?>>asList(DatabaseDistantTransactionEvent.class, DatabaseDistantEventsTable.class, 
+			DatabaseEventsTable.class, DatabaseHooksTable.class, DatabaseTransactionEventsTable.class, DatabaseTransactionsPerHostTable.class, IDTable.class);
+	
+	
 	// protected Connection sql_connection;
 	private volatile boolean closed = false;
 	protected final String database_name;
@@ -2698,7 +2702,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (db == null) {
 				if (_class_table.getPackage().equals(this.getClass().getPackage()) && (actualDatabaseLoading == null
 						|| !actualDatabaseLoading.getConfiguration().getPackage().equals(_class_table.getPackage()))) {
-					loadDatabase(new DatabaseConfiguration(_class_table.getPackage()), true);
+					loadDatabase(new DatabaseConfiguration(_class_table.getPackage(), internalDatabaseClassesList), true);
 					db = this.sql_database.get(_class_table.getPackage());
 				} else {
 					try {

@@ -57,8 +57,8 @@ public class OOD {
 		Calendar c1 = Calendar.getInstance();
 		c1.set(2013, 3, 1);
 		Calendar c2 = Calendar.getInstance();
-		c2.set(2017, 8, 5);
-		VERSION = new Version("Object Oriented Database", "OOD", 2, 0, 0, Version.Type.Beta, 28, c1.getTime(),
+		c2.set(2017, 8, 8);
+		VERSION = new Version("Object Oriented Database", "OOD", 2, 0, 0, Version.Type.Beta, 33, c1.getTime(),
 				c2.getTime());
 		try {
 			InputStream is = OOD.class.getResourceAsStream("build.txt");
@@ -70,8 +70,28 @@ public class OOD {
 			VERSION.addDeveloper(new PersonDeveloper("mahdjoub", "jason", c.getTime()));
 
 			c = Calendar.getInstance();
+			c.set(2017, 8, 8);
+			Description d = new Description(2, 0, 0, Version.Type.Beta, 33, c.getTime());
+			d.addItem("Correcting a problem with internal tables creation");
+			VERSION.addDescription(d);
+			
+			c = Calendar.getInstance();
+			c.set(2017, 8, 7);
+			d = new Description(2, 0, 0, Version.Type.Beta, 32, c.getTime());
+			d.addItem("Correcting a problem of loop into Symbol.getFieldAccessor(Table<T>, Object)");
+			VERSION.addDescription(d);
+
+			
+			c = Calendar.getInstance();
+			c.set(2017, 8, 7);
+			d = new Description(2, 0, 0, Version.Type.Beta, 30, c.getTime());
+			d.addItem("Changing table lock policy");
+			VERSION.addDescription(d);
+
+			
+			c = Calendar.getInstance();
 			c.set(2017, 8, 5);
-			Description d = new Description(2, 0, 0, Version.Type.Beta, 28, c.getTime());
+			d = new Description(2, 0, 0, Version.Type.Beta, 28, c.getTime());
 			d.addItem("Changing transaction policy");
 			d.addItem("Changing Calendar serialization method");
 			d.addItem("Changing table locking method");

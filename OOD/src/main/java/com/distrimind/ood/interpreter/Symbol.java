@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.interpreter;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.HashSet;
 import java.util.Map;
 
 import com.distrimind.ood.database.DatabaseRecord;
@@ -195,10 +196,15 @@ public class Symbol implements QueryPart {
 			return getType().name();
 
 	}
-
 	public static <T extends DatabaseRecord> FieldAccessor getFieldAccessor(Table<T> table, Object o) {
+		return getFieldAccessor(table, o, new HashSet<Table<?>>());
+	}
+	private static <T extends DatabaseRecord> FieldAccessor getFieldAccessor(Table<T> table, Object o, HashSet<Table<?>> tablesDone) {
 		if (o == null)
 			return null;
+		if (tablesDone.contains(table))
+			return null;
+		tablesDone.add(table);
 		for (FieldAccessor fa : table.getFieldAccessors()) {
 			Class<?> c = fa.getFieldClassType();
 
@@ -235,7 +241,7 @@ public class Symbol implements QueryPart {
 		}
 		for (FieldAccessor fa : table.getFieldAccessors()) {
 			if (fa instanceof ForeignKeyFieldAccessor) {
-				FieldAccessor res = getFieldAccessor(((ForeignKeyFieldAccessor) fa).getPointedTable(), o);
+				FieldAccessor res = getFieldAccessor(((ForeignKeyFieldAccessor) fa).getPointedTable(), o, tablesDone);
 				if (res != null)
 					return res;
 			}

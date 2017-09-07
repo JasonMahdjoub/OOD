@@ -7825,8 +7825,9 @@ public abstract class Table<T extends DatabaseRecord> {
 
 		@Override
 		protected boolean isValid() {
-			Lock cur = getActualLock(actual_table);
-			return cur == null || cur instanceof ReadLock;
+			return true;
+			/*Lock cur = getActualLock(actual_table);
+			return cur == null || cur instanceof ReadLock;*/
 		}
 
 		@Override
