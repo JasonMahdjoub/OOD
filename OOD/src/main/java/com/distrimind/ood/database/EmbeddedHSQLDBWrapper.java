@@ -68,7 +68,7 @@ import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
  * Sql connection wrapper for HSQLDB
  * 
  * @author Jason Mahdjoub
- * @version 1.4
+ * @version 1.5
  * @since OOD 1.0
  */
 public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
@@ -81,7 +81,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 	private final int cache_size;
 	private final int result_max_memory_rows;
 	private final int cache_free_count;
-	
+	private final boolean lockFile;
 
 	@SuppressWarnings("unchecked")
 	private static void ensureHSQLLoading() throws DatabaseLoadingException {
@@ -114,7 +114,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 	 *             If a Sql exception exception occurs.
 	 */
 	public EmbeddedHSQLDBWrapper(File _file_name) throws IllegalArgumentException, DatabaseException {
-		this(_file_name, HSQLDBConcurrencyControl.DEFAULT, 100, 10000, 0, 512);
+		this(_file_name, HSQLDBConcurrencyControl.DEFAULT, 100, 10000, 0, 512, true);
 	}
 
 	/**
@@ -153,7 +153,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 	 *             If a Sql exception exception occurs.
 	 */
 	public EmbeddedHSQLDBWrapper(File _file_name, HSQLDBConcurrencyControl concurrencyControl, int _cache_rows,
-			int _cache_size, int _result_max_memory_rows, int _cache_free_count)
+			int _cache_size, int _result_max_memory_rows, int _cache_free_count, boolean lockFile)
 			throws IllegalArgumentException, DatabaseException {
 		super(/*
 				 * getConnection(_file_name, concurrencyControl, _cache_rows, _cache_size,
@@ -165,10 +165,11 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 		this.cache_size = _cache_size;
 		this.result_max_memory_rows = _result_max_memory_rows;
 		this.cache_free_count = _cache_free_count;
+		this.lockFile=lockFile;
 	}
 
 	private static Connection getConnection(File _file_name, HSQLDBConcurrencyControl concurrencyControl,
-			int _cache_rows, int _cache_size, int _result_max_memory_rows, int _cache_free_count)
+			int _cache_rows, int _cache_size, int _result_max_memory_rows, int _cache_free_count, boolean lockFile)
 			throws DatabaseLoadingException {
 		if (_file_name == null)
 			throw new NullPointerException("The parameter _file_name is a null pointer !");
@@ -179,7 +180,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 			Connection c = DriverManager
 					.getConnection("jdbc:hsqldb:file:" + getHSQLDBDataFileName(_file_name) + ";hsqldb.cache_rows="
 							+ _cache_rows + ";hsqldb.cache_size=" + _cache_size + ";hsqldb.result_max_memory_rows="
-							+ _result_max_memory_rows + ";hsqldb.cache_free_count=" + _cache_free_count, "SA", "");
+							+ _result_max_memory_rows + ";hsqldb.cache_free_count=" + _cache_free_count+";hsqldb.lock_file="+lockFile, "SA", "");
 			databaseShutdown.set(false);
 
 			try (Statement s = c.createStatement()) {
@@ -874,7 +875,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 	@Override
 	protected Connection reopenConnectionImpl() throws DatabaseLoadingException {
 		return getConnection(file_name, concurrencyControl, cache_rows, cache_size, result_max_memory_rows,
-				cache_free_count);
+				cache_free_count, lockFile);
 	}
 
 	@Override

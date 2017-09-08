@@ -43,7 +43,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  * 
  * 
  * @author Jason Mahdjoub
- * @version 1.0
+ * @version 1.1
  * @since OOD 2.0.0
  */
 public class EmbeddedHSQLDBDatabaseFactory extends DatabaseFactory {
@@ -59,6 +59,7 @@ public class EmbeddedHSQLDBDatabaseFactory extends DatabaseFactory {
 	private int result_max_memory_rows;
 	private int cache_free_count;
 	private short constructorNb;
+	private boolean lockFile;
 
 	protected EmbeddedHSQLDBDatabaseFactory() {
 		constructorNb = 0;
@@ -94,7 +95,7 @@ public class EmbeddedHSQLDBDatabaseFactory extends DatabaseFactory {
 			return new EmbeddedHSQLDBWrapper(file_name);
 		else if (constructorNb == 2)
 			return new EmbeddedHSQLDBWrapper(file_name, concurrencyControl, cache_rows, cache_size,
-					result_max_memory_rows, cache_free_count);
+					result_max_memory_rows, cache_free_count, lockFile);
 		else
 			throw new DatabaseException("Invalid database factory configuration");
 	}
