@@ -145,7 +145,7 @@ public abstract class TestDatabase {
 	static {
 		AbstractSecureRandom rand = null;
 		try {
-			rand = SecureRandomType.DEFAULT.getInstance();
+			rand = SecureRandomType.DEFAULT.getSingleton(null);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -175,8 +175,8 @@ public abstract class TestDatabase {
 			res.IntegerNumber_value = new Integer(2214);
 			res.long_value = 254545;
 			res.LongNumber_value = new Long(1452);
-			res.secretKey = SymmetricEncryptionType.AES_128.getKeyGenerator(secureRandom).generateKey();
-			res.typeSecretKey = SymmetricEncryptionType.AES_128;
+			res.secretKey = SymmetricEncryptionType.AES.getKeyGenerator(secureRandom).generateKey();
+			res.typeSecretKey = SymmetricEncryptionType.AES;
 			res.subField = getSubSubField();
 			res.string_value = "not null";
 			res.ShortNumber_value = new Short((short) 12);
@@ -209,8 +209,8 @@ public abstract class TestDatabase {
 			res.IntegerNumber_value = new Integer(2214);
 			res.long_value = 254545;
 			res.LongNumber_value = new Long(1452);
-			res.secretKey = SymmetricEncryptionType.AES_128.getKeyGenerator(secureRandom).generateKey();
-			res.typeSecretKey = SymmetricEncryptionType.AES_128;
+			res.secretKey = SymmetricEncryptionType.AES.getKeyGenerator(secureRandom).generateKey();
+			res.typeSecretKey = SymmetricEncryptionType.AES;
 			res.string_value = "not null";
 			res.ShortNumber_value = new Short((short) 12);
 			return res;
@@ -278,8 +278,8 @@ public abstract class TestDatabase {
 
 	public TestDatabase()
 			throws DatabaseException, NoSuchAlgorithmException, gnu.vm.jgnu.security.NoSuchProviderException {
-		typeSecretKey = SymmetricEncryptionType.AES_128;
-		secretKey = typeSecretKey.getKeyGenerator(SecureRandomType.DEFAULT.getInstance()).generateKey();
+		typeSecretKey = SymmetricEncryptionType.AES;
+		secretKey = typeSecretKey.getKeyGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKey();
 		subField = getSubField();
 		subSubField = getSubSubField();
 	}
@@ -1844,7 +1844,7 @@ public abstract class TestDatabase {
 		} while (val == null);
 		map.put("pk3", val);
 		map.put("pk5", new SecuredDecentralizedID(new RenforcedDecentralizedIDGenerator(),
-				SecureRandomType.DEFAULT.getInstance()));
+				SecureRandomType.DEFAULT.getSingleton(null)));
 		map.put("pk6", new DecentralizedIDGenerator());
 		map.put("pk7", new RenforcedDecentralizedIDGenerator());
 		map.put("byte_value", new Byte((byte) 9));
@@ -3160,7 +3160,7 @@ public abstract class TestDatabase {
 			throws IOException, NoSuchAlgorithmException, NoSuchProviderException, DatabaseException {
 		HashMap<String, Object> parametersTable1Equallable = new HashMap<>();
 
-		AbstractSecureRandom rand = SecureRandomType.DEFAULT.getInstance();
+		AbstractSecureRandom rand = SecureRandomType.DEFAULT.getSingleton(null);
 		ArrayList<Object[]> res = new ArrayList<>();
 		parametersTable1Equallable.put("pk5", new SecuredDecentralizedID(new DecentralizedIDGenerator(), rand));
 		parametersTable1Equallable.put("pk6", new DecentralizedIDGenerator());

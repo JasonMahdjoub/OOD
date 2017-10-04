@@ -327,7 +327,7 @@ public class AbstractDencetralizedIDFieldAccessor extends FieldAccessor {
 				return new RenforcedDecentralizedIDGenerator();
 			} else if (field.getType() == SecuredDecentralizedID.class) {
 				return new SecuredDecentralizedID(new DecentralizedIDGenerator(),
-						SecureRandomType.DEFAULT.getInstance());
+						SecureRandomType.DEFAULT.getSingleton(null));
 			}
 			throw new DatabaseException("Unexpected exception !");
 		} catch (Exception e) {
