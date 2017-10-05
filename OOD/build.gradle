@@ -12,6 +12,8 @@ apply plugin: 'eclipse'
 apply plugin: 'maven-publish'
 
 
+compileJava.options.fork = true
+compileJava.options.forkOptions.executable = "${javac}"
 
 eclipse {
     classpath {
