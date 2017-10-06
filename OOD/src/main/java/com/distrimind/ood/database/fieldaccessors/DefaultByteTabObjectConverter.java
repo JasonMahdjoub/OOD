@@ -58,7 +58,7 @@ import com.distrimind.util.crypto.SymmetricSecretKey;
  * 
  * 
  * @author Jason Mahdjoub
- * @version 1.1
+ * @version 1.2
  * @since OOD 1.5
  * 
  */
@@ -180,11 +180,11 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 		if (_object_type == Inet6Address.class || _object_type == Inet4Address.class)
 			return 128;
 		else if (ASymmetricKeyPair.class.isAssignableFrom(_object_type)) {
-			return 1200;
+			return 10500;
 		} else if (ASymmetricPublicKey.class.isAssignableFrom(_object_type)) {
 			return 8999;
 		} else if (ASymmetricPrivateKey.class.isAssignableFrom(_object_type)) {
-			return 500;
+			return 1200;
 		} else if (SymmetricSecretKey.class.isAssignableFrom(_object_type)) {
 			return 400;
 		} else if (Enum.class.isAssignableFrom(_object_type)) {
