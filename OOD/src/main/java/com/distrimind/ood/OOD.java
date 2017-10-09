@@ -57,8 +57,8 @@ public class OOD {
 		Calendar c1 = Calendar.getInstance();
 		c1.set(2013, 3, 1);
 		Calendar c2 = Calendar.getInstance();
-		c2.set(2017, 9, 6);
-		VERSION = new Version("Object Oriented Database", "OOD", 2, 0, 0, Version.Type.Beta, 44, c1.getTime(),
+		c2.set(2017, 9, 9);
+		VERSION = new Version("Object Oriented Database", "OOD", 2, 0, 0, Version.Type.Beta, 48, c1.getTime(),
 				c2.getTime());
 		try {
 			InputStream is = OOD.class.getResourceAsStream("build.txt");
@@ -70,8 +70,14 @@ public class OOD {
 			VERSION.addDeveloper(new PersonDeveloper("mahdjoub", "jason", c.getTime()));
 
 			c = Calendar.getInstance();
+			c.set(2017, 9, 9);
+			Description d = new Description(2, 0, 0, Version.Type.Beta, 48, c.getTime());
+			d.addItem("Update Utils to 3.2.3");
+			VERSION.addDescription(d);
+
+			c = Calendar.getInstance();
 			c.set(2017, 9, 6);
-			Description d = new Description(2, 0, 0, Version.Type.Beta, 44, c.getTime());
+			d = new Description(2, 0, 0, Version.Type.Beta, 44, c.getTime());
 			d.addItem("Update Utils to 3.1.1");
 			d.addItem("Correcting a bug with key pair size limit");
 			VERSION.addDescription(d);
