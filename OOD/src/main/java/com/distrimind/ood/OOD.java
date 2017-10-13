@@ -58,7 +58,7 @@ public class OOD {
 		c1.set(2013, 3, 1);
 		Calendar c2 = Calendar.getInstance();
 		c2.set(2017, 9, 9);
-		VERSION = new Version("Object Oriented Database", "OOD", 2, 0, 0, Version.Type.Beta, 48, c1.getTime(),
+		VERSION = new Version("Object Oriented Database", "OOD", 2, 0, 0, Version.Type.Beta, 49, c1.getTime(),
 				c2.getTime());
 		try {
 			InputStream is = OOD.class.getResourceAsStream("build.txt");
@@ -70,9 +70,9 @@ public class OOD {
 			VERSION.addDeveloper(new PersonDeveloper("mahdjoub", "jason", c.getTime()));
 
 			c = Calendar.getInstance();
-			c.set(2017, 9, 9);
-			Description d = new Description(2, 0, 0, Version.Type.Beta, 48, c.getTime());
-			d.addItem("Update Utils to 3.2.3");
+			c.set(2017, 9, 13);
+			Description d = new Description(2, 0, 0, Version.Type.Beta, 49, c.getTime());
+			d.addItem("Update Utils to 3.2.4");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
