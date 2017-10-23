@@ -282,6 +282,7 @@ public abstract class TestDatabase {
 		secretKey = typeSecretKey.getKeyGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKey();
 		subField = getSubField();
 		subSubField = getSubSubField();
+		fileTest=new File("fileTest");
 	}
 
 	@Override
@@ -351,6 +352,7 @@ public abstract class TestDatabase {
 	final SymmetricSecretKey secretKey;
 	final SubField subField;
 	final SubSubField subSubField;
+	final File fileTest;
 
 	@Test(dependsOnMethods = { "firstLoad" })
 	public void firstAdd() throws DatabaseException {
@@ -383,6 +385,7 @@ public abstract class TestDatabase {
 		map.put("typeSecretKey", typeSecretKey);
 		map.put("subField", subField);
 		map.put("subSubField", subSubField);
+		map.put("file", fileTest);
 		byte[] tab = new byte[3];
 		tab[0] = 0;
 		tab[1] = 1;
@@ -486,6 +489,7 @@ public abstract class TestDatabase {
 		Assert.assertTrue(r.CalendarValue.equals(calendar));
 		Assert.assertTrue(r.secretKey.equals(secretKey));
 		Assert.assertTrue(r.typeSecretKey.equals(typeSecretKey));
+		Assert.assertTrue(r.file.equals(fileTest));
 		assertEquals(r.subField, subField);
 		assertEquals(r.subSubField, subSubField);
 		for (int i = 0; i < 3; i++)
@@ -525,6 +529,7 @@ public abstract class TestDatabase {
 		Assert.assertTrue(r.CalendarValue.equals(calendar));
 		Assert.assertTrue(r.secretKey.equals(secretKey));
 		Assert.assertTrue(r.typeSecretKey.equals(typeSecretKey));
+		Assert.assertTrue(r.file.equals(fileTest));
 		assertEquals(r.subField, subField);
 		assertEquals(r.subSubField, subSubField);
 		
@@ -556,6 +561,7 @@ public abstract class TestDatabase {
 		Assert.assertTrue(r2.CalendarValue.equals(calendar));
 		Assert.assertTrue(r2.secretKey.equals(secretKey));
 		Assert.assertTrue(r2.typeSecretKey.equals(typeSecretKey));
+		Assert.assertTrue(r2.file.equals(fileTest));
 		assertEquals(r2.subField, subField);
 		assertEquals(r2.subSubField, subSubField);
 
@@ -597,8 +603,10 @@ public abstract class TestDatabase {
 		Assert.assertTrue(r2.CalendarValue.equals(calendar));
 		Assert.assertTrue(r2.secretKey.equals(secretKey));
 		Assert.assertTrue(r2.typeSecretKey.equals(typeSecretKey));
+		Assert.assertTrue(r2.file.equals(fileTest));
 		assertEquals(r2.subField, subField);
 		assertEquals(r2.subSubField, subSubField);
+		
 
 		for (int i = 0; i < 3; i++)
 			Assert.assertTrue(r2.byte_array_value[i] == tab[i]);
@@ -653,6 +661,7 @@ public abstract class TestDatabase {
 				map.put("typeSecretKey", typeSecretKey);
 				map.put("subField", subField);
 				map.put("subSubField", subSubField);
+				map.put("file", fileTest);
 				
 				byte[] tab = new byte[3];
 				tab[0] = 0;
@@ -751,6 +760,7 @@ public abstract class TestDatabase {
 		Assert.assertTrue(r1.CalendarValue.equals(calendar));
 		Assert.assertTrue(r1.secretKey.equals(secretKey));
 		Assert.assertTrue(r1.typeSecretKey.equals(typeSecretKey));
+		Assert.assertTrue(r1.file.equals(fileTest));
 		assertEquals(r1.subField, subField);
 		assertEquals(r1.subSubField, subSubField);
 
@@ -781,6 +791,7 @@ public abstract class TestDatabase {
 		Assert.assertTrue(r2.CalendarValue.equals(calendar));
 		Assert.assertTrue(r2.secretKey.equals(secretKey));
 		Assert.assertTrue(r2.typeSecretKey.equals(typeSecretKey));
+		Assert.assertTrue(r2.file.equals(fileTest));
 		assertEquals(r2.subField, subField);
 		assertEquals(r2.subSubField, subSubField);
 
@@ -814,6 +825,7 @@ public abstract class TestDatabase {
 		Assert.assertTrue(r1.CalendarValue.equals(calendar));
 		Assert.assertTrue(r1.secretKey.equals(secretKey));
 		Assert.assertTrue(r1.typeSecretKey.equals(typeSecretKey));
+		Assert.assertTrue(r1.file.equals(fileTest));
 		assertEquals(r1.subField, subField);
 		assertEquals(r1.subSubField, subSubField);
 
@@ -844,6 +856,7 @@ public abstract class TestDatabase {
 		Assert.assertTrue(r2.CalendarValue.equals(calendar));
 		Assert.assertTrue(r2.secretKey.equals(secretKey));
 		Assert.assertTrue(r2.typeSecretKey.equals(typeSecretKey));
+		Assert.assertTrue(r2.file.equals(fileTest));
 		assertEquals(r2.subField, subField);
 		assertEquals(r2.subSubField, subSubField);
 
@@ -914,6 +927,7 @@ public abstract class TestDatabase {
 		Assert.assertTrue(r1a.CalendarValue.equals(calendar));
 		Assert.assertTrue(r1a.secretKey.equals(secretKey));
 		Assert.assertTrue(r1a.typeSecretKey.equals(typeSecretKey));
+		Assert.assertTrue(r1a.file.equals(fileTest));
 		assertEquals(r1a.subField, subField);
 		assertEquals(r1a.subSubField, subSubField);
 
@@ -950,6 +964,7 @@ public abstract class TestDatabase {
 		Assert.assertTrue(r2a.CalendarValue.equals(calendar));
 		Assert.assertTrue(r2a.secretKey.equals(secretKey));
 		Assert.assertTrue(r2a.typeSecretKey.equals(typeSecretKey));
+		Assert.assertTrue(r2a.file.equals(fileTest));
 		assertEquals(r2a.subField, subField);
 		assertEquals(r2a.subSubField, subSubField);
 
@@ -1121,6 +1136,7 @@ public abstract class TestDatabase {
 		Assert.assertTrue(r1a.CalendarValue.equals(r1b.CalendarValue));
 		Assert.assertTrue(r1a.secretKey.equals(secretKey));
 		Assert.assertTrue(r1a.typeSecretKey.equals(typeSecretKey));
+		Assert.assertTrue(r1a.file.equals(fileTest));
 		assertEquals(r1a.subField, subField);
 		assertEquals(r1a.subSubField, subSubField);
 
@@ -1157,6 +1173,7 @@ public abstract class TestDatabase {
 		Assert.assertTrue(r2a.CalendarValue.equals(r2b.CalendarValue));
 		Assert.assertTrue(r2a.secretKey.equals(secretKey));
 		Assert.assertTrue(r2a.typeSecretKey.equals(typeSecretKey));
+		Assert.assertTrue(r2a.file.equals(fileTest));
 		assertEquals(r2a.subField, subField);
 		assertEquals(r2a.subSubField, subSubField);
 
@@ -1203,9 +1220,9 @@ public abstract class TestDatabase {
 					return false;
 				}
 			});
-			Assert.assertTrue(false);
-		} catch (ConcurentTransactionDatabaseException e) {
 			Assert.assertTrue(true);
+		} catch (ConcurentTransactionDatabaseException e) {
+			Assert.fail();
 		}
 
 		try {
@@ -1217,9 +1234,9 @@ public abstract class TestDatabase {
 					return false;
 				}
 			});
-			Assert.assertTrue(false);
-		} catch (ConcurentTransactionDatabaseException e) {
 			Assert.assertTrue(true);
+		} catch (ConcurentTransactionDatabaseException e) {
+			Assert.fail();
 		}
 		try {
 			table2.removeRecordsWithCascade(new Filter<Table2.Record>() {
@@ -1329,7 +1346,7 @@ public abstract class TestDatabase {
 				new Long((long) 3), "FloatNumber_value", new Float(3.3f), "DoubleNumber_value", new Double(3.3),
 				"BigInteger_value", new BigInteger("5"), "BigDecimal_value", new BigDecimal("8.8"), "DateValue", date,
 				"CalendarValue", calendar, "secretKey", secretKey, "typeSecretKey", typeSecretKey, "byte_array_value",
-				tab, "subField", subField, "subSubField", subSubField };
+				tab, "subField", subField, "subSubField", subSubField, "file", fileTest };
 		Table1.Record r1 = table1.addRecord(parameters);
 		Table3.Record r2 = table3.addRecord(parameters);
 		Assert.assertTrue(r1.pk1 == 4356);
@@ -1676,6 +1693,7 @@ public abstract class TestDatabase {
 		Assert.assertTrue(r1.CalendarValue.equals(r1fr2.CalendarValue));
 		Assert.assertTrue(r1.secretKey.equals(r1fr2.secretKey));
 		Assert.assertTrue(r1.typeSecretKey.equals(r1fr2.typeSecretKey));
+		Assert.assertTrue(r1.file.equals(fileTest));
 		assertEquals(r1.subField, subField);
 		assertEquals(r1.subSubField, subSubField);
 
@@ -1709,6 +1727,7 @@ public abstract class TestDatabase {
 		Assert.assertTrue(r2.CalendarValue.equals(r2fr4.CalendarValue));
 		Assert.assertTrue(r2.secretKey.equals(r2fr4.secretKey));
 		Assert.assertTrue(r2.typeSecretKey.equals(r2fr4.typeSecretKey));
+		Assert.assertTrue(r2.file.equals(fileTest));
 		assertEquals(r2.subField, subField);
 		assertEquals(r2.subSubField, subSubField);
 
@@ -1742,6 +1761,7 @@ public abstract class TestDatabase {
 		Assert.assertTrue(r2.CalendarValue.equals(r2fr5.CalendarValue));
 		Assert.assertTrue(r2.secretKey.equals(r2fr5.secretKey));
 		Assert.assertTrue(r2.typeSecretKey.equals(r2fr5.typeSecretKey));
+		Assert.assertTrue(r2.file.equals(fileTest));
 		assertEquals(r2.subField, subField);
 		assertEquals(r2.subSubField, subSubField);
 
@@ -1932,6 +1952,7 @@ public abstract class TestDatabase {
 		Assert.assertTrue(r1.CalendarValue.equals(calendar));
 		Assert.assertTrue(r1.secretKey.equals(secretKey));
 		Assert.assertTrue(r1.typeSecretKey.equals(typeSecretKey));
+		Assert.assertTrue(r1.file.equals(fileTest));
 		assertEquals(r1.subField, subField);
 		assertEquals(r1.subSubField, subSubField);
 
@@ -1962,6 +1983,7 @@ public abstract class TestDatabase {
 		Assert.assertTrue(r2.CalendarValue.equals(calendar));
 		Assert.assertTrue(r2.secretKey.equals(secretKey));
 		Assert.assertTrue(r2.typeSecretKey.equals(typeSecretKey));
+		Assert.assertTrue(r2.file.equals(fileTest));
 		assertEquals(r2.subField, subField);
 		assertEquals(r2.subSubField, subSubField);
 
@@ -2004,6 +2026,7 @@ public abstract class TestDatabase {
 		Assert.assertTrue(r1.CalendarValue.equals(ra.CalendarValue));
 		Assert.assertTrue(r1.secretKey.equals(ra.secretKey));
 		Assert.assertTrue(r1.typeSecretKey.equals(ra.typeSecretKey));
+		Assert.assertTrue(r1.file.equals(ra.file));
 		assertEquals(r1.subField, subField);
 		assertEquals(r1.subSubField, subSubField);
 
@@ -2040,6 +2063,7 @@ public abstract class TestDatabase {
 		Assert.assertTrue(r1.CalendarValue.equals(rd.CalendarValue));
 		Assert.assertTrue(r1.secretKey.equals(rd.secretKey));
 		Assert.assertTrue(r1.typeSecretKey.equals(rd.typeSecretKey));
+		Assert.assertTrue(r2.file.equals(rd.file));
 		assertEquals(r1.subField, subField);
 		assertEquals(r1.subSubField, subSubField);
 
@@ -2076,6 +2100,7 @@ public abstract class TestDatabase {
 		Assert.assertTrue(r2.CalendarValue.equals(rb.CalendarValue));
 		Assert.assertTrue(r2.secretKey.equals(rb.secretKey));
 		Assert.assertTrue(r2.typeSecretKey.equals(rb.typeSecretKey));
+		Assert.assertTrue(r2.file.equals(rb.file));
 
 		for (int i = 0; i < 3; i++)
 			Assert.assertTrue(rb.byte_array_value[i] == tab[i]);
@@ -2110,6 +2135,7 @@ public abstract class TestDatabase {
 		Assert.assertTrue(r2.CalendarValue.equals(rc.CalendarValue));
 		Assert.assertTrue(r1.secretKey.equals(rc.secretKey));
 		Assert.assertTrue(r1.typeSecretKey.equals(rc.typeSecretKey));
+		Assert.assertTrue(r2.file.equals(rc.file));
 		for (int i = 0; i < 3; i++)
 			Assert.assertTrue(rc.byte_array_value[i] == tab[i]);
 
@@ -2143,6 +2169,7 @@ public abstract class TestDatabase {
 		Assert.assertTrue(r2.CalendarValue.equals(re.CalendarValue));
 		Assert.assertTrue(r2.secretKey.equals(re.secretKey));
 		Assert.assertTrue(r2.typeSecretKey.equals(re.typeSecretKey));
+		Assert.assertTrue(r2.file.equals(re.file));
 		for (int i = 0; i < 3; i++)
 			Assert.assertTrue(re.byte_array_value[i] == tab[i]);
 
@@ -2671,6 +2698,7 @@ public abstract class TestDatabase {
 		map.put("typeSecretKey", typeSecretKey);
 		map.put("subField", subField);
 		map.put("subSubField", subSubField);
+		map.put("file", fileTest);
 		table1.addRecord(map);
 		table3.addRecord(map);
 		Table1.Record r1 = table1.getRecords().get(0);
@@ -2705,6 +2733,7 @@ public abstract class TestDatabase {
 		Assert.assertTrue(map.get("CalendarValue").equals(r1.CalendarValue));
 		Assert.assertTrue(map.get("secretKey").equals(r1.secretKey));
 		Assert.assertTrue(map.get("typeSecretKey").equals(r1.typeSecretKey));
+		Assert.assertTrue(map.get("file").equals(r1.file));
 		assertEquals((SubField) map.get("subField"), r1.subField);
 		assertEquals((SubSubField) map.get("subSubField"), r1.subSubField);
 
@@ -2740,6 +2769,7 @@ public abstract class TestDatabase {
 		Assert.assertTrue(map.get("CalendarValue").equals(r3.CalendarValue));
 		Assert.assertTrue(map.get("secretKey").equals(r3.secretKey));
 		Assert.assertTrue(map.get("typeSecretKey").equals(r3.typeSecretKey));
+		Assert.assertTrue(map.get("file").equals(r3.file));
 		assertEquals((SubField) map.get("subField"), r3.subField);
 		assertEquals((SubSubField) map.get("subSubField"), r3.subSubField);
 
@@ -2883,6 +2913,7 @@ public abstract class TestDatabase {
 		Assert.assertTrue(map.get("DoubleNumber_value").equals(r1.DoubleNumber_value));
 		Assert.assertTrue(map.get("BigInteger_value").equals(r1.BigInteger_value));
 		Assert.assertTrue(map.get("BigDecimal_value").equals(r1.BigDecimal_value));
+		Assert.assertTrue(map.get("file").equals(r1.file));
 		assertEquals((SubField) map.get("subField"), r1.subField);
 		assertEquals((SubSubField) map.get("subSubField"), r1.subSubField);
 
@@ -2914,6 +2945,7 @@ public abstract class TestDatabase {
 		Assert.assertTrue(map.get("DoubleNumber_value").equals(r3.DoubleNumber_value));
 		Assert.assertTrue(map.get("BigInteger_value").equals(r3.BigInteger_value));
 		Assert.assertTrue(map.get("BigDecimal_value").equals(r3.BigDecimal_value));
+		Assert.assertTrue(map.get("file").equals(r3.file));
 		assertEquals((SubField) map.get("subField"), r3.subField);
 		assertEquals((SubSubField) map.get("subSubField"), r3.subSubField);
 
@@ -2985,7 +3017,12 @@ public abstract class TestDatabase {
 			res.add(o.toString());
 		} else if (o instanceof Date) {
 			res.add(new Timestamp(((Date) o).getTime()));
-		} else if (o instanceof Serializable) {
+		} 
+		else if (o instanceof File)
+		{
+			res.add(((File)o).getPath().getBytes("UTF-8"));
+		}
+		else if (o instanceof Serializable) {
 			if (DatabaseWrapperAccessor.getSerializableType(sql_db).equals("BLOB")) {
 				try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 					try (ObjectOutputStream os = new ObjectOutputStream(baos)) {
@@ -3183,6 +3220,7 @@ public abstract class TestDatabase {
 		parametersTable1Equallable.put("LongNumber_value", new Long(1));
 		parametersTable1Equallable.put("FloatNumber_value", new Float(1.0f));
 		parametersTable1Equallable.put("DoubleNumber_value", new Double(1.0));
+		
 
 		Calendar calendar = Calendar.getInstance(Locale.CANADA);
 		calendar.set(2045, 7, 29, 18, 32, 43);
@@ -3193,6 +3231,7 @@ public abstract class TestDatabase {
 		parametersTable1Equallable.put("DateValue", date);
 		parametersTable1Equallable.put("CalendarValue", calendar);
 		parametersTable1Equallable.put("nullField", null);
+		parametersTable1Equallable.put("file", fileTest);
 
 		Table1.Record record = new Table1.Record();
 		record.BigDecimal_value = (BigDecimal) parametersTable1Equallable.get("BigDecimal_value");
@@ -3223,6 +3262,7 @@ public abstract class TestDatabase {
 		record.ShortNumber_value = (Short) parametersTable1Equallable.get("ShortNumber_value");
 		record.string_value = (String) parametersTable1Equallable.get("string_value");
 		record.nullField= (DecentralizedIDGenerator)parametersTable1Equallable.get("nullField");
+		record.file=(File)parametersTable1Equallable.get("file");
 
 		SymbolType[] ops_cond = new SymbolType[] { SymbolType.ANDCONDITION, SymbolType.ORCONDITION };
 		SymbolType[] ops_comp = new SymbolType[] { SymbolType.EQUALOPERATOR, SymbolType.NOTEQUALOPERATOR,
@@ -3370,6 +3410,7 @@ public abstract class TestDatabase {
 		map.put("typeSecretKey", typeSecretKey);
 		map.put("subField", subField);
 		map.put("subSubField", subSubField);
+		map.put("file", fileTest);
 		byte[] tab = new byte[3];
 		tab[0] = 0;
 		tab[1] = 1;
@@ -3508,6 +3549,7 @@ public abstract class TestDatabase {
 				map.put("typeSecretKey", typeSecretKey);
 				map.put("subField", subField);
 				map.put("subSubField", subSubField);
+				map.put("file", fileTest);
 				byte[] tab = new byte[3];
 				tab[0] = 0;
 				tab[1] = 1;
@@ -3543,6 +3585,7 @@ public abstract class TestDatabase {
 					Assert.assertTrue(r1.BigDecimal_value.equals(map.get("BigDecimal_value")));
 					Assert.assertTrue(r1.secretKey.equals(map.get("secretKey")));
 					Assert.assertTrue(r1.typeSecretKey.equals(map.get("typeSecretKey")));
+					Assert.assertTrue(r1.file.equals(map.get("file")));
 					assertEquals((SubField) map.get("subField"), r1.subField);
 					assertEquals((SubSubField) map.get("subSubField"), r1.subSubField);
 
@@ -3571,6 +3614,7 @@ public abstract class TestDatabase {
 					Assert.assertTrue(r3.BigDecimal_value.equals(map.get("BigDecimal_value")));
 					Assert.assertTrue(r3.secretKey.equals(map.get("secretKey")));
 					Assert.assertTrue(r3.typeSecretKey.equals(map.get("typeSecretKey")));
+					Assert.assertTrue(r3.file.equals(map.get("file")));
 					assertEquals((SubField) map.get("subField"), r3.subField);
 					assertEquals((SubSubField) map.get("subSubField"), r3.subSubField);
 
@@ -4535,7 +4579,7 @@ public abstract class TestDatabase {
 						"FloatNumber_value", new Float(3.3f), "DoubleNumber_value", new Double(3.3), "BigInteger_value",
 						new BigInteger("5"), "BigDecimal_value", new BigDecimal("8.8"), "DateValue", date.clone(),
 						"CalendarValue", calendar.clone(), "secretKey", secretKey, "typeSecretKey", typeSecretKey,
-						"byte_array_value", tab.clone(), "subField", subField, "subSubField", subSubField };
+						"byte_array_value", tab.clone(), "subField", subField, "subSubField", subSubField, "file", fileTest };
 
 				try {
 					Table1.Record r1 = table1.addRecord(parameters);
@@ -4619,6 +4663,7 @@ public abstract class TestDatabase {
 				r1.typeSecretKey = typeSecretKey;
 				r1.subField = subField;
 				r1.subSubField = subSubField;
+				r1.file=fileTest;
 
 				byte[] tab = new byte[3];
 				tab[0] = 0;
@@ -4655,6 +4700,7 @@ public abstract class TestDatabase {
 				r3.byte_array_value = tab;
 				r3.subField = subField;
 				r3.subSubField = subSubField;
+				r3.file=fileTest;
 				try {
 					Table1.Record r1b = table1.addRecord(r1);
 					Table3.Record r3b = table3.addRecord(r3);

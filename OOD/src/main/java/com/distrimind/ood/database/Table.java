@@ -73,6 +73,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
 import com.distrimind.ood.database.DatabaseWrapper.TableColumnsResultSet;
+import com.distrimind.ood.database.annotations.ExcludeFromDecentralization;
 import com.distrimind.ood.database.annotations.ForeignKey;
 import com.distrimind.ood.database.annotations.LoadToMemory;
 import com.distrimind.ood.database.exceptions.ConcurentTransactionDatabaseException;
@@ -166,6 +167,7 @@ public abstract class Table<T extends DatabaseRecord> {
 	private boolean supportSynchronizationWithOtherPeers = false;
 	private DatabaseConfiguration tables = null;
 	private boolean containsLoopBetweenTables = false;
+	private final boolean nonDecentralizableAnnotation;
 	public static final int maxTableNameSizeBytes = 8192;
 	public static final int maxPrimaryKeysSizeBytes = ByteTabFieldAccessor.shortTabSizeLimit;
 
@@ -356,6 +358,7 @@ public abstract class Table<T extends DatabaseRecord> {
 		}
 
 		is_loaded_in_memory = this.getClass().isAnnotationPresent(LoadToMemory.class);
+		nonDecentralizableAnnotation=this.getClass().isAnnotationPresent(ExcludeFromDecentralization.class);
 		if (is_loaded_in_memory)
 			refreshInterval = this.getClass().getAnnotation(LoadToMemory.class).refreshInterval();
 		else
@@ -1006,7 +1009,7 @@ public abstract class Table<T extends DatabaseRecord> {
 	}
 
 	private boolean isLocallyDecentralizable() {
-		return hasDecentralizedPrimaryKey() && !hasNonDecentralizedIDUniqueKey();
+		return !nonDecentralizableAnnotation && hasDecentralizedPrimaryKey() && !hasNonDecentralizedIDUniqueKey();
 	}
 
 	private boolean hasDecentralizedPrimaryKey() {

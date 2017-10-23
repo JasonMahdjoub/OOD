@@ -1,5 +1,6 @@
 package com.distrimind.ood.database.database;
 
+import java.io.File;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Calendar;
@@ -59,6 +60,7 @@ public final class Table3 extends Table<Table3.Record> {
 		public @NotNull @Field Calendar CalendarValue;
 		public @NotNull @Field SymmetricSecretKey secretKey;
 		public @NotNull @Field SymmetricEncryptionType typeSecretKey;
+		public @NotNull @Field File file;
 		@Field
 		public @NotNull SubField subField;
 		@Field

@@ -38,8 +38,10 @@ package com.distrimind.ood.database.fieldaccessors;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
@@ -58,7 +60,7 @@ import com.distrimind.util.crypto.SymmetricSecretKey;
  * 
  * 
  * @author Jason Mahdjoub
- * @version 1.2
+ * @version 1.3
  * @since OOD 1.5
  * 
  */
@@ -83,6 +85,14 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 			return ((SymmetricSecretKey) _o).encode();
 		else if (_o instanceof Enum<?>)
 			return ((Enum<?>) _o).toString().getBytes();
+		else if (_o instanceof File)
+		{
+			try {
+				return ((File) _o).getPath().getBytes("UTF-8");
+			} catch (UnsupportedEncodingException e) {
+				throw new IncompatibleFieldDatabaseException("",e);
+			}
+		}
 		else if (_o instanceof Calendar)
 		{
 			try(ByteArrayOutputStream baos=new ByteArrayOutputStream();ObjectOutputStream oos=new ObjectOutputStream(baos))
@@ -130,6 +140,10 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 				throw new IllegalArgumentException(
 						"No enum constant " + _object_type.getCanonicalName() + "." + new String(_bytesTab));
 			}
+			else if (File.class.isAssignableFrom(_object_type))
+			{
+				return new File(new String(_bytesTab, "UTF-8"));
+			}
 			else if (Calendar.class.isAssignableFrom(_object_type))
 			{
 				try(ByteArrayInputStream bais=new ByteArrayInputStream(_bytesTab); ObjectInputStream dis=new ObjectInputStream(bais))
@@ -172,7 +186,8 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 		return field_type == Inet4Address.class || field_type == Inet6Address.class
 				|| field_type == ASymmetricKeyPair.class || field_type == ASymmetricPublicKey.class
 				|| field_type == ASymmetricPrivateKey.class || field_type == SymmetricSecretKey.class
-				|| Enum.class.isAssignableFrom(field_type) || Calendar.class.isAssignableFrom(field_type);
+				|| Enum.class.isAssignableFrom(field_type) || Calendar.class.isAssignableFrom(field_type)
+				|| File.class.isAssignableFrom(field_type);
 	}
 
 	@Override
@@ -189,6 +204,10 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 			return 400;
 		} else if (Enum.class.isAssignableFrom(_object_type)) {
 			return 300;
+		}
+		else if (File.class.isAssignableFrom(_object_type))
+		{
+			return 16384;
 		}
 		else if (Calendar.class.isAssignableFrom(_object_type))
 		{
