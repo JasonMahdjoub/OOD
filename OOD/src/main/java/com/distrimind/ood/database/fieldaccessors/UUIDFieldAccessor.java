@@ -43,7 +43,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Random;
 import java.util.UUID;
 
 import com.distrimind.ood.database.DatabaseRecord;
@@ -53,6 +52,7 @@ import com.distrimind.ood.database.SqlFieldInstance;
 import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
+import com.distrimind.util.crypto.AbstractSecureRandom;
 
 /**
  * 
@@ -283,9 +283,24 @@ public class UUIDFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public Object autoGenerateValue(Random _random) throws DatabaseException {
+	public Object autoGenerateValue(AbstractSecureRandom _random) throws DatabaseException {
 		try {
-			return UUID.randomUUID();
+			byte[] randomBytes = new byte[16];
+			_random.nextBytes(randomBytes);
+	        randomBytes[6]  &= 0x0f;  /* clear version        */
+	        randomBytes[6]  |= 0x40;  /* set to version 4     */
+	        randomBytes[8]  &= 0x3f;  /* clear variant        */
+	        randomBytes[8]  |= 0x80;  /* set to IETF variant  */
+	        
+	        long msb = 0;
+	        long lsb = 0;
+	        
+	        for (int i=0; i<8; i++)
+	            msb = (msb << 8) | (randomBytes[i] & 0xff);
+	        for (int i=8; i<16; i++)
+	            lsb = (lsb << 8) | (randomBytes[i] & 0xff);
+	        
+	        return new UUID(msb, lsb);
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}

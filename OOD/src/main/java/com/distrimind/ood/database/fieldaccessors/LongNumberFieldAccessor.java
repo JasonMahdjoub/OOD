@@ -46,7 +46,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Random;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
@@ -56,6 +55,7 @@ import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
+import com.distrimind.util.crypto.AbstractSecureRandom;
 
 /**
  * 
@@ -252,7 +252,7 @@ public class LongNumberFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public Object autoGenerateValue(Random _random) {
+	public Object autoGenerateValue(AbstractSecureRandom _random) {
 		return new Long(new BigInteger(getBitsNumber(), _random).longValue());
 	}
 

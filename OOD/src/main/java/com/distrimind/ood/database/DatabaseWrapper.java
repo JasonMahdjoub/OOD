@@ -79,6 +79,8 @@ import com.distrimind.ood.database.fieldaccessors.ByteTabObjectConverter;
 import com.distrimind.ood.database.fieldaccessors.DefaultByteTabObjectConverter;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.util.AbstractDecentralizedID;
+import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.crypto.SecureRandomType;
 
 /**
  * This class represent a SqlJet database.
@@ -119,6 +121,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	protected Database actualDatabaseLoading = null;
 	volatile int maxTransactionEventsKeepedIntoMemoryDuringImportInBytes=10000000;
 	private volatile boolean hasOnePeerSyncronized=false;
+	private volatile AbstractSecureRandom randomForKeys;
 
 	/**
 	 * Gets the max number of events sent to a distant peer at the same time
@@ -222,6 +225,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	protected DatabaseWrapper(String _database_name) throws DatabaseException {
 		if (_database_name == null)
 			throw new NullPointerException("_database_name");
+		try
+		{
+			this.randomForKeys=SecureRandomType.BC_FIPS_APPROVED_FOR_KEYS.getSingleton(null);
+		}
+		catch(Exception e)
+		{
+			throw DatabaseException.getDatabaseException(e);
+		}
 		/*
 		 * if (_sql_connection==null) throw new NullPointerException("_sql_connection");
 		 */
@@ -236,6 +247,18 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		synchronizer=new DatabaseSynchronizer();
 	}
 
+	public AbstractSecureRandom getSecureRandomForKeys()
+	{
+		return randomForKeys;
+	}
+	
+	public void setSecureRandomForKeys(AbstractSecureRandom randomForKeys)
+	{
+		if (randomForKeys==null)
+			throw new NullPointerException();
+		this.randomForKeys=randomForKeys;
+	}
+	
 	public boolean isReadOnly() throws DatabaseException {
 		return ((Boolean) runTransaction(new Transaction() {
 

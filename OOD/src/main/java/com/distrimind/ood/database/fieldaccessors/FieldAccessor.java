@@ -59,7 +59,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Random;
 import java.util.UUID;
 
 import com.distrimind.ood.database.DatabaseRecord;
@@ -78,6 +77,10 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.DecentralizedIDGenerator;
 import com.distrimind.util.RenforcedDecentralizedIDGenerator;
+import com.distrimind.util.crypto.ASymmetricPrivateKey;
+import com.distrimind.util.crypto.ASymmetricPublicKey;
+import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.crypto.SymmetricSecretKey;
 
 /**
  * 
@@ -336,11 +339,11 @@ public abstract class FieldAccessor {
 		return false;
 	}
 
-	public Object autoGenerateValue(Random random) throws DatabaseException {
+	public Object autoGenerateValue(AbstractSecureRandom random) throws DatabaseException {
 		return null;
 	}
 
-	public void autoGenerateValue(DatabaseRecord _class_instance, Random random) throws DatabaseException {
+	public void autoGenerateValue(DatabaseRecord _class_instance, AbstractSecureRandom random) throws DatabaseException {
 		try {
 			field.set(_class_instance, autoGenerateValue(random));
 		} catch (Exception e) {
@@ -464,6 +467,10 @@ public abstract class FieldAccessor {
 						else if (type.equals(UUID.class))
 							res.add(new UUIDFieldAccessor(_table_class, _sql_connection, f,
 									parentFieldName));
+						else if (type.equals(ASymmetricPublicKey.class) || type.equals(ASymmetricPrivateKey.class) || type.equals(SymmetricSecretKey.class))
+						{
+							res.add(new KeyFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
+						}
 						else if (isComposedField(type)) {
 							for (Class<?> cpf : parentFields)
 								if (cpf.isAssignableFrom(type))

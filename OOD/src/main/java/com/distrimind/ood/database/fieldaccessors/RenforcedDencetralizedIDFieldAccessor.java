@@ -43,7 +43,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Random;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
@@ -53,6 +52,7 @@ import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
 import com.distrimind.util.RenforcedDecentralizedIDGenerator;
+import com.distrimind.util.crypto.AbstractSecureRandom;
 
 /**
  * 
@@ -247,7 +247,7 @@ public class RenforcedDencetralizedIDFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public Object autoGenerateValue(Random _random) throws DatabaseException {
+	public Object autoGenerateValue(AbstractSecureRandom _random) throws DatabaseException {
 		try {
 			return new RenforcedDecentralizedIDGenerator();
 		} catch (Exception e) {
