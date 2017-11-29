@@ -57,8 +57,8 @@ public class OOD {
 		Calendar c1 = Calendar.getInstance();
 		c1.set(2013, 3, 1);
 		Calendar c2 = Calendar.getInstance();
-		c2.set(2017, 10, 10);
-		VERSION = new Version("Object Oriented Database", "OOD", 2, 0, 0, Version.Type.Beta, 55, c1.getTime(),
+		c2.set(2017, 10, 28);
+		VERSION = new Version("Object Oriented Database", "OOD", 2, 0, 0, Version.Type.Beta, 56, c1.getTime(),
 				c2.getTime());
 		try {
 			InputStream is = OOD.class.getResourceAsStream("build.txt");
@@ -70,9 +70,10 @@ public class OOD {
 			VERSION.addDeveloper(new PersonDeveloper("mahdjoub", "jason", c.getTime()));
 
 			c = Calendar.getInstance();
-			c.set(2017, 10, 10);
-			Description d = new Description(2, 0, 0, Version.Type.Beta, 55, c.getTime());
-			d.addItem("Updating utils to 3.6.0");
+			c.set(2017, 10, 28);
+			Description d = new Description(2, 0, 0, Version.Type.Beta, 56, c.getTime());
+			d.addItem("Updating utils to 3.7.0");
+			d.addItem("Managing deconnection database exception/reconnection");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();

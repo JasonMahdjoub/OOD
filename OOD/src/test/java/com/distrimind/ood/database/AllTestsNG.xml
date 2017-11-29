@@ -1,12 +1,12 @@
 <suite name="TestAll">
 
-	<test name="testDerby">
+<!-- 	<test name="testDerby">
 		<classes>
 			<class name="com.distrimind.ood.database.DerbyTestDatabase" />
 		    <class name="com.distrimind.ood.database.DerbyTestDecentralizedDatabase" />
 		</classes>
 	</test>
-
+ -->
 	<test name="testHDQLDB">  
 		<classes>
 		    <class name="com.distrimind.ood.database.HSQLDBTestDatabase" />

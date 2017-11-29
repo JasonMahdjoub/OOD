@@ -89,7 +89,8 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	 *             if parameters are null pointers.
 	 * @throws IllegalArgumentException
 	 *             If the given _directory is not a directory.
-	 * @throws DatabaseException
+	 * @throws DatabaseException if a problem occurs during the database opening
+	 * @throws IllegalArgumentException if arguments are incorrect
 	 */
 	public EmbeddedDerbyWrapper(File _directory) throws IllegalArgumentException, DatabaseException {
 		super(/* getConnection(_directory), */"Database from file : " + _directory.getAbsolutePath());
@@ -626,4 +627,10 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 		return e.getSQLState().equals("40001");
 	}
 
+	@Override
+	protected boolean isDeconnectionException(SQLException e) throws DatabaseException {
+		return e.getErrorCode()==402 || e.getErrorCode()==1002;
+	}
+
+	
 }

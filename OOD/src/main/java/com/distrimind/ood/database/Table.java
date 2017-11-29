@@ -1588,7 +1588,7 @@ public abstract class Table<T extends DatabaseRecord> {
 
 	/**
 	 * Returns the number of records corresponding to all given fields
-	 * 
+	 * @param _records the fields
 	 * @return the number of records corresponding to all given fields
 	 * @throws DatabaseException
 	 *             if a Sql exception occurs.
@@ -1604,7 +1604,7 @@ public abstract class Table<T extends DatabaseRecord> {
 
 	/**
 	 * Returns the number of records corresponding to all given fields
-	 * 
+	 * @param _records the fields
 	 * @return the number of records corresponding to all given fields
 	 * @throws DatabaseException
 	 *             if a Sql exception occurs.
@@ -1616,7 +1616,7 @@ public abstract class Table<T extends DatabaseRecord> {
 
 	/**
 	 * Returns the number of records corresponding to all given fields
-	 * 
+	 * @param _records the fields
 	 * @return the number of records corresponding to all given fields
 	 * @throws DatabaseException
 	 *             if a Sql exception occurs.
@@ -1631,7 +1631,7 @@ public abstract class Table<T extends DatabaseRecord> {
 
 	/**
 	 * Returns the number of records corresponding to all given fields
-	 * 
+	 * @param _records the fields
 	 * @return the number of records corresponding to all given fields
 	 * @throws DatabaseException
 	 *             if a Sql exception occurs.
@@ -1642,7 +1642,7 @@ public abstract class Table<T extends DatabaseRecord> {
 
 	/**
 	 * Returns the number of records corresponding one of the given fields
-	 * 
+	 * @param _records the fields
 	 * @return the number of records corresponding one of the given fields
 	 * @throws DatabaseException
 	 *             if a Sql exception occurs.
@@ -1658,7 +1658,7 @@ public abstract class Table<T extends DatabaseRecord> {
 
 	/**
 	 * Returns the number of records corresponding one of the given fields
-	 * 
+	 * @param _records the fields
 	 * @return the number of records corresponding one of the given fields
 	 * @throws DatabaseException
 	 *             if a Sql exception occurs.
@@ -1670,7 +1670,7 @@ public abstract class Table<T extends DatabaseRecord> {
 
 	/**
 	 * Returns the number of records corresponding one of the given fields
-	 * 
+	 * @param _records the fields
 	 * @return the number of records corresponding one of the given fields
 	 * @throws DatabaseException
 	 *             if a Sql exception occurs.
@@ -1685,7 +1685,7 @@ public abstract class Table<T extends DatabaseRecord> {
 
 	/**
 	 * Returns the number of records corresponding one of the given fields
-	 * 
+	 * @param _records the fields
 	 * @return the number of records corresponding one of the given fields
 	 * @throws DatabaseException
 	 *             if a Sql exception occurs.
@@ -1867,7 +1867,7 @@ public abstract class Table<T extends DatabaseRecord> {
 	 * @param fieldName
 	 *            the field name
 	 * @return the field corresponding to this table and the given field name
-	 * @throws DatabaseException
+	 * 
 	 * 
 	 */
 	public final FieldAccessor getFieldAccessor(String fieldName) {

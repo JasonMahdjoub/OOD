@@ -167,8 +167,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * 
 	 * @param v
 	 *            the maximum number of events keeped into memory (minimum=1)
-	 * @throws IllegalArgumentException
-	 *             if <code>v<1</code>
+	 * 
+	 * 
 	 */
 	public void setMaxTransactionEventsKeepedIntoMemory(int v) {
 		if (v < 1)
@@ -219,7 +219,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * 
 	 * @param _database_name
 	 *            the database name
-	 * @throws DatabaseException
+	 * @throws DatabaseException if a problem occurs
 	 * 
 	 */
 	protected DatabaseWrapper(String _database_name) throws DatabaseException {
@@ -2420,6 +2420,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	}
 	
 	protected abstract boolean isSerializationException(SQLException e) throws DatabaseException;
+	protected abstract boolean isDeconnectionException(SQLException e) throws DatabaseException;
 
 	private boolean needsToLock()
 	{
@@ -2488,7 +2489,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						Throwable t=e.getCause();
 						while (t!=null)
 						{
-							if ((t instanceof SQLException) && isSerializationException((SQLException)t))
+							if ((t instanceof SQLException) && (isSerializationException((SQLException)t) || isDeconnectionException((SQLException)t)))
 							{
 								retry=true;
 								break;
@@ -2525,7 +2526,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						} catch (SQLException se) {
 							throw new DatabaseIntegrityException("Impossible to rollback the database changments", se);
 						}
-						retry=isSerializationException(e);
+						retry=isSerializationException(e) || isDeconnectionException(e);
 						if (!retry)
 							throw DatabaseException.getDatabaseException(e);
 					} finally {
@@ -2599,7 +2600,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * @param _transaction
 	 *            the transaction to run
 	 * @return the result of the transaction
-	 * @throws Exception
+	 * @throws DatabaseException
 	 *             if an exception occurs during the transaction running
 	 * @param <O>
 	 *            a type

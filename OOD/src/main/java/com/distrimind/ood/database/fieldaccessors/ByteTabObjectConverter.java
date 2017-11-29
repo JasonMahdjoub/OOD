@@ -84,7 +84,9 @@ public abstract class ByteTabObjectConverter {
 
 	/**
 	 * Gets the default size limit in bytes
+	 * @param object_type the object type
 	 * @return the default size limit in bytes
+	 * @throws IncompatibleFieldDatabaseException if file cannot be opened
 	 */
 	public abstract int getDefaultSizeLimit(Class<?> object_type) throws IncompatibleFieldDatabaseException;
 	

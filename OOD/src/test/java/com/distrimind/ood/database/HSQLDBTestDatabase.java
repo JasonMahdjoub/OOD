@@ -108,7 +108,7 @@ public class HSQLDBTestDatabase extends TestDatabase {
 
 	@Override
 	public int getThreadTestsNumber() {
-		return 400;
+		return 200;
 	}
 
 	@Override

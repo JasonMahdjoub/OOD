@@ -124,6 +124,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 	 *            The file which contains the database. If this file does not
 	 *            exists, it will be automatically created with the correspondent
 	 *            database.
+	 * @param concurrencyControl the concurrency mode 
 	 * @param _cache_rows
 	 *            indicates the maximum number of rows of cached tables that are
 	 *            held in memory. The value can range between 100- 4 billion.
@@ -145,12 +146,14 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 	 *            rows are deleted, the smaller recovered spaces are lost and the
 	 *            largest ones are retained for later use. Normally there is no need
 	 *            to set this property.
+	 * @param lockFile true if the database's file must be locked to avoid concurrent access
 	 * @throws NullPointerException
 	 *             if parameters are null pointers.
 	 * @throws IllegalArgumentException
 	 *             If the given file is a directory.
 	 * @throws DatabaseLoadingException
 	 *             If a Sql exception exception occurs.
+	 * @throws DatabaseException if a problem occurs
 	 */
 	public EmbeddedHSQLDBWrapper(File _file_name, HSQLDBConcurrencyControl concurrencyControl, int _cache_rows,
 			int _cache_size, int _result_max_memory_rows, int _cache_free_count, boolean lockFile)
@@ -846,8 +849,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 	 *            the restored database directory
 	 * @throws IOException
 	 *             if a problem occurs
-	 * @throws TarMalformatException
-	 *             if a problem occurs
+	 * 
 	 */
 	public static void restore(File sourcePath, File databaseDirectory) throws IOException {
 		if (sourcePath == null)
@@ -1003,4 +1005,8 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 		return e.getSQLState().equals("40001");
 	}
 
+	@Override
+	protected boolean isDeconnectionException(SQLException e) throws DatabaseException {
+		return e.getErrorCode()==402 || e.getErrorCode()==1002;
+	}
 }
