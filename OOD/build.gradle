@@ -41,7 +41,7 @@ repositories {
 
 dependencies {
      testCompile 'org.testng:testng:+'
-     compile(group:'com.distrimind.util', name: 'Utils', version: '3.7.0')
+     compile(group:'com.distrimind.util', name: 'Utils', version: '3.7.1')
      testCompile(group:'org.hsqldb', name: 'hsqldb', version: '2.3.4')
      testCompile(group:'org.apache.derby', name: 'derby', version: '10.11.1.1')
 }
@@ -55,7 +55,7 @@ allprojects {
 
 sourceCompatibility = 1.7
 targetCompatibility=1.7
-version='2.0.0-Beta56'
+version='2.0.0-Beta57'
 
 task sourcesJar(type: Jar, dependsOn: classes) {
     classifier = 'sources'

@@ -70,9 +70,9 @@ public class OOD {
 			VERSION.addDeveloper(new PersonDeveloper("mahdjoub", "jason", c.getTime()));
 
 			c = Calendar.getInstance();
-			c.set(2017, 10, 28);
-			Description d = new Description(2, 0, 0, Version.Type.Beta, 56, c.getTime());
-			d.addItem("Updating utils to 3.7.0");
+			c.set(2017, 11, 13);
+			Description d = new Description(2, 0, 0, Version.Type.Beta, 57, c.getTime());
+			d.addItem("Updating utils to 3.7.1");
 			d.addItem("Managing deconnection database exception/reconnection");
 			VERSION.addDescription(d);
 
