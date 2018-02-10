@@ -42,12 +42,10 @@ import java.io.File;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.UnsupportedEncodingException;
-import java.lang.reflect.Method;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.util.Calendar;
-import java.util.Map;
 
 import com.distrimind.ood.database.exceptions.IncompatibleFieldDatabaseException;
 import com.distrimind.util.crypto.ASymmetricKeyPair;
@@ -60,7 +58,7 @@ import com.distrimind.util.crypto.SymmetricSecretKey;
  * 
  * 
  * @author Jason Mahdjoub
- * @version 1.3
+ * @version 1.4
  * @since OOD 1.5
  * 
  */
@@ -84,7 +82,9 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 		else if (_o instanceof SymmetricSecretKey)
 			return ((SymmetricSecretKey) _o).encode();
 		else if (_o instanceof Enum<?>)
-			return ((Enum<?>) _o).toString().getBytes();
+		{
+			return ((Enum<?>)_o).name().getBytes();
+		}
 		else if (_o instanceof File)
 		{
 			try {
@@ -131,14 +131,7 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 			} else if (SymmetricSecretKey.class.isAssignableFrom(_object_type)) {
 				return SymmetricSecretKey.decode(_bytesTab);
 			} else if (Enum.class.isAssignableFrom(_object_type)) {
-
-				@SuppressWarnings("unchecked")
-				Enum<?> result = ((Map<String, Enum<?>>) enumConstantDirectory.invoke(_object_type))
-						.get(new String(_bytesTab));
-				if (result != null)
-					return result;
-				throw new IllegalArgumentException(
-						"No enum constant " + _object_type.getCanonicalName() + "." + new String(_bytesTab));
+				return _object_type.getDeclaredMethod("valueOf", String.class).invoke(null, new String(_bytesTab));
 			}
 			else if (File.class.isAssignableFrom(_object_type))
 			{
@@ -165,18 +158,7 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 		throw new IncompatibleFieldDatabaseException("Incompatible type " + _object_type.getCanonicalName());
 	}
 
-	static final Method enumConstantDirectory;
-	static {
-		Method m = null;
-		try {
-			m = Class.class.getDeclaredMethod("enumConstantDirectory");
-			m.setAccessible(true);
-		} catch (Exception e) {
-			e.printStackTrace();
-			System.exit(-1);
-		}
-		enumConstantDirectory = m;
-	}
+
 
 	/**
 	 * {@inheritDoc}
