@@ -57,8 +57,8 @@ public class OOD {
 		Calendar c1 = Calendar.getInstance();
 		c1.set(2013, 3, 1);
 		Calendar c2 = Calendar.getInstance();
-		c2.set(2018, 1, 10);
-		VERSION = new Version("Object Oriented Database", "OOD", 2, 0, 0, Version.Type.Beta, 66, c1.getTime(),
+		c2.set(2018, 2, 10);
+		VERSION = new Version("Object Oriented Database", "OOD", 2, 0, 0, Version.Type.Beta, 67, c1.getTime(),
 				c2.getTime());
 		try {
 			InputStream is = OOD.class.getResourceAsStream("build.txt");
@@ -70,8 +70,14 @@ public class OOD {
 			VERSION.addDeveloper(new PersonDeveloper("mahdjoub", "jason", c.getTime()));
 
 			c = Calendar.getInstance();
+			c.set(2018, 2, 10);
+			Description d = new Description(2, 0, 0, Version.Type.Beta, 67, c.getTime());
+			d.addItem("Updating utils to 3.11.0");
+			VERSION.addDescription(d);
+
+			c = Calendar.getInstance();
 			c.set(2018, 1, 10);
-			Description d = new Description(2, 0, 0, Version.Type.Beta, 66, c.getTime());
+			d = new Description(2, 0, 0, Version.Type.Beta, 66, c.getTime());
 			d.addItem("Updating utils to 3.10.5");
 			d.addItem("Correcting a bug with the backup of enum variables");
 			VERSION.addDescription(d);

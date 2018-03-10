@@ -175,8 +175,8 @@ public abstract class TestDatabase {
 			res.IntegerNumber_value = new Integer(2214);
 			res.long_value = 254545;
 			res.LongNumber_value = new Long(1452);
-			res.secretKey = SymmetricEncryptionType.AES.getKeyGenerator(secureRandom).generateKey();
-			res.typeSecretKey = SymmetricEncryptionType.AES;
+			res.secretKey = SymmetricEncryptionType.AES_CBC_PKCS5Padding.getKeyGenerator(secureRandom).generateKey();
+			res.typeSecretKey = SymmetricEncryptionType.AES_CBC_PKCS5Padding;
 			res.subField = getSubSubField();
 			res.string_value = "not null";
 			res.ShortNumber_value = new Short((short) 12);
@@ -209,8 +209,8 @@ public abstract class TestDatabase {
 			res.IntegerNumber_value = new Integer(2214);
 			res.long_value = 254545;
 			res.LongNumber_value = new Long(1452);
-			res.secretKey = SymmetricEncryptionType.AES.getKeyGenerator(secureRandom).generateKey();
-			res.typeSecretKey = SymmetricEncryptionType.AES;
+			res.secretKey = SymmetricEncryptionType.AES_CBC_PKCS5Padding.getKeyGenerator(secureRandom).generateKey();
+			res.typeSecretKey = SymmetricEncryptionType.AES_CBC_PKCS5Padding;
 			res.string_value = "not null";
 			res.ShortNumber_value = new Short((short) 12);
 			return res;
@@ -278,7 +278,7 @@ public abstract class TestDatabase {
 
 	public TestDatabase()
 			throws DatabaseException, NoSuchAlgorithmException, gnu.vm.jgnu.security.NoSuchProviderException {
-		typeSecretKey = SymmetricEncryptionType.AES;
+		typeSecretKey = SymmetricEncryptionType.AES_CBC_PKCS5Padding;
 		secretKey = typeSecretKey.getKeyGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKey();
 		subField = getSubField();
 		subSubField = getSubSubField();
