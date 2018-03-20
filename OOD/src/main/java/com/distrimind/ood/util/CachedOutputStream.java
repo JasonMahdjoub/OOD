@@ -44,6 +44,7 @@ import java.io.OutputStream;
 
 import com.distrimind.util.RenforcedDecentralizedIDGenerator;
 
+
 /**
  * 
  * 
@@ -93,6 +94,28 @@ public class CachedOutputStream extends OutputStream{
 		else
 			fos.write(b);
 		++writedData;
+	}
+	
+	@Override
+	public void write(byte b[], int off, int len) throws IOException
+	{
+		if (writedData+len<cacheSize)
+		{
+			baos.write(b, off, len);
+		}
+		else if (writedData<cacheSize)
+		{
+			if (tmpFile==null)
+				tmpFile=getNewTmpFile();
+			fos=new FileOutputStream(tmpFile);
+			if (writedData>0)
+				fos.write(baos.toByteArray());
+			fos.write(b, off, len);
+			baos=null;
+		}
+		else
+			fos.write(b, off, len);
+		writedData+=len;
 	}
 	
 	public CachedInputStream getCachedInputStream() throws IOException

@@ -96,6 +96,13 @@ public class CachedInputStream extends InputStream {
 			return bais.read();
 	}
 	@Override
+	public int read(byte b[], int off, int len) throws IOException {
+		if (fis!=null)
+			return fis.read(b, off, len);
+		else
+			return bais.read(b, off, len);
+	}
+	@Override
 	public void close() throws IOException {
 		if (data==null)
 		{
