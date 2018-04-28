@@ -99,7 +99,7 @@ task generateVersionsFile(type:JavaExec, dependsOn: classes) {
 		}
 	}
 	
-   main = 'com.distrimind.util.Utils'
+   main = 'com.distrimind.ood.OOD'
    classpath = sourceSets.main.runtimeClasspath
 }
 

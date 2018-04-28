@@ -36,6 +36,11 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood;
 
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Calendar;
 
@@ -501,6 +506,16 @@ public class OOD {
 			VERSION.addDescription(d);
 		} catch (Exception e) {
 			e.printStackTrace();
+		}
+	}
+	
+	public static void main(String args[]) throws FileNotFoundException, IOException
+	{
+		String html=VERSION.getHTMLCode();
+		try(FileOutputStream fos=new FileOutputStream(new File("../versions.html"));DataOutputStream dos=new DataOutputStream(fos))
+		{
+			dos.writeChars(html);
+			dos.flush();
 		}
 	}
 
