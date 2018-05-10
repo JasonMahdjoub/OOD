@@ -53,25 +53,25 @@ repositories {
 
 dependencies {
      testCompile 'org.testng:testng:6.13.1'
-     compile(group:'com.distrimind.util', name: 'Utils', version: '3.14.5')
+     compile(group:'com.distrimind.util', name: 'Utils', version: '3.14.6')
      testCompile(group:'org.hsqldb', name: 'hsqldb', version: '2.3.4')
      testCompile(group:'org.apache.derby', name: 'derby', version: '10.11.1.1')
 }
-
+def javaVersion=7
+sourceCompatibility = javaVersion
+targetCompatibility= javaVersion
+version='2.0.0-Beta81'
 allprojects {
 	group='com.distrimind.ood'
-    repositories {
-        jcenter() 
-    }
+
     
     //compileJava.options.compilerArgs << "-Xlint"
+    compileJava.options.compilerArgs.addAll(['--release', javaVersion])
     if (project.hasProperty('javaHomeVersion') && javaHomeVersion.toFloat()>1.8)
     	javadoc.options.addStringOption("html5", "-quiet")
 }
 
-sourceCompatibility = 1.7
-targetCompatibility=1.7
-version='2.0.0-Beta80'
+
 
 task generateVersionsFile(type:JavaExec, dependsOn: classes) {
   def versionBuildFile = file('src/main/resources/com/distrimind/ood/build.txt')
