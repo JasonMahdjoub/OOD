@@ -36,7 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.util.properties.XMLProperties;
+import com.distrimind.util.properties.MultiFormatProperties;
 
 /**
  * 
@@ -45,7 +45,7 @@ import com.distrimind.util.properties.XMLProperties;
  * @version 1.0
  * @since OOD 2.0.0
  */
-public abstract class DatabaseFactory extends XMLProperties {
+public abstract class DatabaseFactory extends MultiFormatProperties {
 	/**
 	 * 
 	 */

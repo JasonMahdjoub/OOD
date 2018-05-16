@@ -1,6 +1,10 @@
 # OOD
 Object Oriented Database Using HSQLDB
 
+# Changes
+
+[See historical of changes](./versions.md)
+
 # How to use it ?
 ## With Gradle :
 

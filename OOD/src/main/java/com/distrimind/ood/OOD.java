@@ -36,10 +36,9 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood;
 
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Calendar;
@@ -62,8 +61,8 @@ public class OOD {
 		Calendar c1 = Calendar.getInstance();
 		c1.set(2013, 3, 1);
 		Calendar c2 = Calendar.getInstance();
-		c2.set(2018, 4, 10);
-		VERSION = new Version("Object Oriented Database", "OOD", 2, 0, 0, Version.Type.Beta, 81, c1.getTime(),
+		c2.set(2018, 4, 16);
+		VERSION = new Version("Object Oriented Database", "OOD", 2, 0, 0, Version.Type.Beta, 82, c1.getTime(),
 				c2.getTime());
 		try {
 			InputStream is = OOD.class.getResourceAsStream("build.txt");
@@ -76,9 +75,9 @@ public class OOD {
 
 			
 			c = Calendar.getInstance();
-			c.set(2018, 4, 10);
-			Description d = new Description(2, 0, 0, Version.Type.Beta, 81, c.getTime());
-			d.addItem("Updating utils to 3.14.6");
+			c.set(2018, 4, 16);
+			Description d = new Description(2, 0, 0, Version.Type.Beta, 82, c.getTime());
+			d.addItem("Updating utils to 3.15.0");
 			VERSION.addDescription(d);
 			
 			c = Calendar.getInstance();
@@ -511,11 +510,11 @@ public class OOD {
 	
 	public static void main(String args[]) throws FileNotFoundException, IOException
 	{
-		String html=VERSION.getHTMLCode();
-		try(FileOutputStream fos=new FileOutputStream(new File("../versions.html"));DataOutputStream dos=new DataOutputStream(fos))
+		String markdown=VERSION.getMarkdownCode();
+		try(FileWriter fw=new FileWriter(new File("../versions.md")))
 		{
-			dos.writeChars(html);
-			dos.flush();
+			fw.write(markdown);
+			fw.flush();
 		}
 	}
 
