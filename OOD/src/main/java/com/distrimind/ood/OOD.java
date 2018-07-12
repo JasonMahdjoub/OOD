@@ -37,7 +37,6 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -59,10 +58,10 @@ public class OOD {
 
 	static {
 		Calendar c1 = Calendar.getInstance();
-		c1.set(2013, 3, 1);
+		c1.set(2013, Calendar.APRIL, 1);
 		Calendar c2 = Calendar.getInstance();
-		c2.set(2018, 4, 16);
-		VERSION = new Version("Object Oriented Database", "OOD", 2, 0, 0, Version.Type.Beta, 82, c1.getTime(),
+		c2.set(2018, Calendar.JULY, 12);
+		VERSION = new Version("Object Oriented Database", "OOD", 2, 0, 0, Version.Type.Beta, 83, c1.getTime(),
 				c2.getTime());
 		try {
 			InputStream is = OOD.class.getResourceAsStream("build.txt");
@@ -70,18 +69,23 @@ public class OOD {
 				VERSION.loadBuildNumber(is);
 			VERSION.addCreator(new Person("mahdjoub", "jason"));
 			Calendar c = Calendar.getInstance();
-			c.set(2013, 3, 1);
+			c.set(2013, Calendar.APRIL, 1);
 			VERSION.addDeveloper(new PersonDeveloper("mahdjoub", "jason", c.getTime()));
 
-			
 			c = Calendar.getInstance();
-			c.set(2018, 4, 16);
-			Description d = new Description(2, 0, 0, Version.Type.Beta, 82, c.getTime());
+			c.set(2018, Calendar.JULY, 12);
+			Description d = new Description(2, 0, 0, Version.Type.Beta, 83, c.getTime());
+			d.addItem("Updating utils to 3.16.1");
+			VERSION.addDescription(d);
+
+			c = Calendar.getInstance();
+			c.set(2018, Calendar.MAY, 16);
+			d = new Description(2, 0, 0, Version.Type.Beta, 82, c.getTime());
 			d.addItem("Updating utils to 3.15.0");
 			VERSION.addDescription(d);
 			
 			c = Calendar.getInstance();
-			c.set(2018, 2, 30);
+			c.set(2018, Calendar.MARCH, 30);
 			d = new Description(2, 0, 0, Version.Type.Beta, 71, c.getTime());
 			d.addItem("Optimization of CachedInputStream");
 			d.addItem("Optimization of CachedOutoutStream");
@@ -89,34 +93,34 @@ public class OOD {
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2018, 1, 10);
+			c.set(2018, Calendar.FEBRUARY, 10);
 			d = new Description(2, 0, 0, Version.Type.Beta, 66, c.getTime());
 			d.addItem("Updating utils to 3.10.5");
 			d.addItem("Correcting a bug with the backup of enum variables");
 			VERSION.addDescription(d);
 			
 			c = Calendar.getInstance();
-			c.set(2018, 0, 31);
+			c.set(2018, Calendar.JANUARY, 31);
 			d = new Description(2, 0, 0, Version.Type.Beta, 59, c.getTime());
 			d.addItem("Updating utils to 3.9.0");
 			VERSION.addDescription(d);
 			
 			c = Calendar.getInstance();
-			c.set(2017, 11, 13);
+			c.set(2017, Calendar.DECEMBER, 13);
 			d = new Description(2, 0, 0, Version.Type.Beta, 57, c.getTime());
 			d.addItem("Updating utils to 3.7.1");
 			d.addItem("Managing deconnection database exception/reconnection");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2017, 9, 16);
+			c.set(2017, Calendar.OCTOBER, 16);
 			d = new Description(2, 0, 0, Version.Type.Beta, 50, c.getTime());
 			d.addItem("Adding secure random functions into database wrapper");
 			d.addItem("public/private/secret keys can now be primary keys");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2017, 9, 16);
+			c.set(2017, Calendar.OCTOBER, 16);
 			d = new Description(2, 0, 0, Version.Type.Beta, 50, c.getTime());
 			d.addItem("Manage File fields");
 			d.addItem("Add ExcludeFromDecentralization annotation !");
@@ -124,52 +128,52 @@ public class OOD {
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2017, 9, 13);
+			c.set(2017, Calendar.OCTOBER, 13);
 			d = new Description(2, 0, 0, Version.Type.Beta, 49, c.getTime());
 			d.addItem("Update Utils to 3.2.4");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2017, 9, 6);
+			c.set(2017, Calendar.OCTOBER, 6);
 			d = new Description(2, 0, 0, Version.Type.Beta, 44, c.getTime());
 			d.addItem("Update Utils to 3.1.1");
 			d.addItem("Correcting a bug with key pair size limit");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2017, 9, 4);
+			c.set(2017, Calendar.OCTOBER, 4);
 			d = new Description(2, 0, 0, Version.Type.Beta, 35, c.getTime());
 			d.addItem("Update Utils to 3.0.0");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2017, 8, 8);
+			c.set(2017, Calendar.SEPTEMBER, 8);
 			d = new Description(2, 0, 0, Version.Type.Beta, 34, c.getTime());
 			d.addItem("Adding lock HSQLDB file possibility");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2017, 8, 8);
+			c.set(2017, Calendar.SEPTEMBER, 8);
 			d = new Description(2, 0, 0, Version.Type.Beta, 33, c.getTime());
 			d.addItem("Correcting a problem with internal tables creation");
 			VERSION.addDescription(d);
 			
 			c = Calendar.getInstance();
-			c.set(2017, 8, 7);
+			c.set(2017, Calendar.SEPTEMBER, 7);
 			d = new Description(2, 0, 0, Version.Type.Beta, 32, c.getTime());
 			d.addItem("Correcting a problem of loop into Symbol.getFieldAccessor(Table<T>, Object)");
 			VERSION.addDescription(d);
 
 			
 			c = Calendar.getInstance();
-			c.set(2017, 8, 7);
+			c.set(2017, Calendar.SEPTEMBER, 7);
 			d = new Description(2, 0, 0, Version.Type.Beta, 30, c.getTime());
 			d.addItem("Changing table lock policy");
 			VERSION.addDescription(d);
 
 			
 			c = Calendar.getInstance();
-			c.set(2017, 8, 5);
+			c.set(2017, Calendar.SEPTEMBER, 5);
 			d = new Description(2, 0, 0, Version.Type.Beta, 28, c.getTime());
 			d.addItem("Changing transaction policy");
 			d.addItem("Changing Calendar serialization method");
@@ -183,20 +187,20 @@ public class OOD {
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2017, 7, 29);
+			c.set(2017, Calendar.AUGUST, 29);
 			d = new Description(2, 0, 0, Version.Type.Beta, 22, c.getTime());
 			d.addItem("Possibility to insert null values for parameters");
 			d.addItem("Changing locker");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2017, 7, 29);
+			c.set(2017, Calendar.AUGUST, 29);
 			d = new Description(2, 0, 0, Version.Type.Beta, 21, c.getTime());
 			d.addItem("Correcting DateFieldAccessor when using null values");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2017, 7, 21);
+			c.set(2017, Calendar.AUGUST, 21);
 			d = new Description(2, 0, 0, Version.Type.Beta, 20, c.getTime());
 			d.addItem("Updating Utils to 2.15.1");
 			d.addItem("Minimal corrections");
@@ -204,63 +208,63 @@ public class OOD {
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2017, 7, 15);
+			c.set(2017, Calendar.AUGUST, 15);
 			d = new Description(2, 0, 0, Version.Type.Beta, 19, c.getTime());
 			d.addItem("Optimizing database loading");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2017, 7, 15);
+			c.set(2017, Calendar.AUGUST, 15);
 			d = new Description(2, 0, 0, Version.Type.Beta, 18, c.getTime());
 			d.addItem("Updating OOD to 2.15.0");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2017, 7, 13);
+			c.set(2017, Calendar.AUGUST, 13);
 			d = new Description(2, 0, 0, Version.Type.Beta, 17, c.getTime());
 			d.addItem("Updating OOD to 2.14.0");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2017, 7, 10);
+			c.set(2017, Calendar.AUGUST, 10);
 			d = new Description(2, 0, 0, Version.Type.Beta, 16, c.getTime());
 			d.addItem("Updating Utils to 2.12.0");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2017, 7, 9);
+			c.set(2017, Calendar.AUGUST, 9);
 			d = new Description(2, 0, 0, Version.Type.Beta, 15, c.getTime());
 			d.addItem("Making HSQLDB not supporting 'LongVarBinary' type.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2017, 7, 5);
+			c.set(2017, Calendar.AUGUST, 5);
 			d = new Description(2, 0, 0, Version.Type.Beta, 14, c.getTime());
 			d.addItem("Little byte tab primary keys are know possible for DerbyDB.");
 			d.addItem("All decentralized database synchronization tests are OK with DerbyDB.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2017, 7, 5);
+			c.set(2017, Calendar.AUGUST, 5);
 			d = new Description(2, 0, 0, Version.Type.Beta, 11, c.getTime());
 			d.addItem("Convert project to gradle project.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2017, 6, 27);
+			c.set(2017, Calendar.JULY, 27);
 			d = new Description(2, 0, 0, Version.Type.Beta, 8, c.getTime());
 			d.addItem("All decentralized database synchronization tests are OK with HSQLDB (but not with Derby DB).");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2017, 6, 5);
+			c.set(2017, Calendar.JULY, 5);
 			d = new Description(2, 0, 0, Version.Type.Beta, 7, c.getTime());
 			d.addItem("Tests synchro between two direct peers OK.");
 			d.addItem("Correcting a problem of transaction lock.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2017, 6, 2);
+			c.set(2017, Calendar.JULY, 2);
 			d = new Description(2, 0, 0, Version.Type.Beta, 6, c.getTime());
 			d.addItem("Adding not null possibility for each sub field.");
 			d.addItem("Begin debug decentralized database.");
@@ -268,20 +272,20 @@ public class OOD {
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2017, 5, 23);
+			c.set(2017, Calendar.JUNE, 23);
 			d = new Description(2, 0, 0, Version.Type.Beta, 5, c.getTime());
 			d.addItem("Adding not null possibility for each sub field.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2017, 5, 14);
+			c.set(2017, Calendar.JUNE, 14);
 			d = new Description(2, 0, 0, Version.Type.Beta, 4, c.getTime());
 			d.addItem("Debugging SQL interpreter.");
 			d.addItem("Adding not null possibility for each sub field.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2017, 5, 1);
+			c.set(2017, Calendar.JUNE, 1);
 			d = new Description(2, 0, 0, Version.Type.Beta, 3, c.getTime());
 			d.addItem("Adding database factory.");
 			d.addItem("Correcting a bug in database connections/deconnections.");
@@ -289,7 +293,7 @@ public class OOD {
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2017, 4, 26);
+			c.set(2017, Calendar.MAY, 26);
 			d = new Description(2, 0, 0, Version.Type.Beta, 2, c.getTime());
 			d.addItem("Debuging transaction's use.");
 			d.addItem("Adding pagined queries.");
@@ -299,7 +303,7 @@ public class OOD {
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2017, 4, 24);
+			c.set(2017, Calendar.MAY, 24);
 			d = new Description(2, 0, 0, Version.Type.Beta, 1, c.getTime());
 			d.addItem("Adding database synchronisation possibility between different peers (unstable).");
 			d.addItem("Cleaning DatabaseWrapper functions.");
@@ -320,37 +324,37 @@ public class OOD {
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2017, 2, 7);
+			c.set(2017, Calendar.MARCH, 7);
 			d = new Description(1, 9, 7, Version.Type.Stable, 0, c.getTime());
 			d.addItem("Updating Utils to 2.5.0.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2017, 2, 4);
+			c.set(2017, Calendar.MARCH, 4);
 			d = new Description(1, 9, 6, Version.Type.Stable, 0, c.getTime());
 			d.addItem("Updating Utils to 2.4.0.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2017, 1, 7);
+			c.set(2017, Calendar.FEBRUARY, 7);
 			d = new Description(1, 9, 5, Version.Type.Stable, 0, c.getTime());
 			d.addItem("Updating Utils to 2.3.0.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2017, 0, 5);
+			c.set(2017, Calendar.JANUARY, 5);
 			d = new Description(1, 9, 4, Version.Type.Stable, 0, c.getTime());
 			d.addItem("Updating Utils to 2.2.0.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2016, 11, 31);
+			c.set(2016, Calendar.DECEMBER, 31);
 			d = new Description(1, 9, 3, Version.Type.Stable, 0, c.getTime());
 			d.addItem("Updating Utils to 2.1.0.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2016, 11, 26);
+			c.set(2016, Calendar.DECEMBER, 26);
 			d = new Description(1, 9, 2, Version.Type.Stable, 0, c.getTime());
 			d.addItem("Correcting a problem of data integrity check.");
 			d.addItem("Updating Derby DB to 10.13.1.1.");
@@ -358,25 +362,25 @@ public class OOD {
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2016, 11, 24);
+			c.set(2016, Calendar.DECEMBER, 24);
 			d = new Description(1, 9, 1, Version.Type.Stable, 0, c.getTime());
 			d.addItem("Updating Utils to version 2.0.1.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2016, 11, 19);
+			c.set(2016, Calendar.DECEMBER, 19);
 			d = new Description(1, 9, 0, Version.Type.Stable, 0, c.getTime());
 			d.addItem("Updating Utils to version 2.0.0.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2016, 11, 6);
+			c.set(2016, Calendar.DECEMBER, 6);
 			d = new Description(1, 8, 1, Version.Type.Stable, 0, c.getTime());
 			d.addItem("Updating Utils to version 1.9.0.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2016, 10, 30);
+			c.set(2016, Calendar.NOVEMBER, 30);
 			d = new Description(1, 8, 0, Version.Type.Stable, 0, c.getTime());
 			d.addItem("Using ACID transactions instead of semaphores.");
 			d.addItem("Adding HSQLDBConcurrencyControl class.");
@@ -385,13 +389,13 @@ public class OOD {
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2016, 9, 13);
+			c.set(2016, Calendar.OCTOBER, 13);
 			d = new Description(1, 7, 1, Version.Type.Stable, 0, c.getTime());
 			d.addItem("Updating Utils to 1.8.0.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2016, 8, 19);
+			c.set(2016, Calendar.SEPTEMBER, 19);
 			d = new Description(1, 7, 0, Version.Type.Stable, 0, c.getTime());
 			d.addItem("Correcting bug into FieldAccessor (null pointer exception).");
 			d.addItem("Adding enum support.");
@@ -399,19 +403,19 @@ public class OOD {
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2016, 7, 29);
+			c.set(2016, Calendar.AUGUST, 29);
 			d = new Description(1, 6, 4, Version.Type.Stable, 0, c.getTime());
 			d.addItem("Updating Utils to 1.7.2.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2016, 7, 23);
+			c.set(2016, Calendar.AUGUST, 23);
 			d = new Description(1, 6, 3, Version.Type.Stable, 0, c.getTime());
 			d.addItem("Updating Utils to 1.7.1.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2016, 6, 4);
+			c.set(2016, Calendar.JULY, 4);
 			d = new Description(1, 6, 2, Version.Type.Stable, 0, c.getTime());
 			d.addItem("Updating Utils to 1.7.");
 			d.addItem("Updating to Common-Net 3.5.");
@@ -419,7 +423,7 @@ public class OOD {
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2016, 5, 10);
+			c.set(2016, Calendar.JUNE, 10);
 			d = new Description(1, 6, 1, Version.Type.Stable, 0, c.getTime());
 			d.addItem("Correction a bug into the constructor of ByteTabConvertibleFieldAccessor.");
 			d.addItem("Adding version tests.");
@@ -427,7 +431,7 @@ public class OOD {
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2016, 2, 11);
+			c.set(2016, Calendar.MARCH, 11);
 			d = new Description(1, 6, 0, Version.Type.Stable, 0, c.getTime());
 			d.addItem("Updating with Utils 1.6.");
 			d.addItem("Adding database backup tools.");
@@ -436,7 +440,7 @@ public class OOD {
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2016, 2, 4);
+			c.set(2016, Calendar.MARCH, 4);
 			d = new Description(1, 5, 2, Version.Type.Stable, 0, c.getTime());
 			d.addItem("Updating with Utils 1.5");
 			d.addItem("Adding encryption keys encoding/decoding.");
@@ -444,14 +448,14 @@ public class OOD {
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2016, 2, 1);
+			c.set(2016, Calendar.MARCH, 1);
 			d = new Description(1, 5, 1, Version.Type.Stable, 0, c.getTime());
 			d.addItem("Updating with Utils 1.4.");
 			d.addItem("Adding AllTestsNG.xml file.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2016, 1, 15);
+			c.set(2016, Calendar.FEBRUARY, 15);
 			d = new Description(1, 5, 0, Version.Type.Stable, 0, c.getTime());
 			d.addItem("Adding iterator functionality in class Table.");
 			d.addItem("Adding ByteTabObjectConverter class.");
@@ -465,14 +469,14 @@ public class OOD {
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2016, 1, 14);
+			c.set(2016, Calendar.FEBRUARY, 14);
 			d = new Description(1, 4, 1, Version.Type.Stable, 0, c.getTime());
 			d.addItem("Adding some close statements corrections.");
 			d.addItem("Adding some multi-thread optimisations.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2016, 1, 8);
+			c.set(2016, Calendar.FEBRUARY, 8);
 			d = new Description(1, 4, 0, Version.Type.Stable, 0, c.getTime());
 			d.addItem(
 					"One databse is associated to one package. Now, its is possible to load several database/packages into the same file.");
@@ -480,26 +484,26 @@ public class OOD {
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2016, 1, 5);
+			c.set(2016, Calendar.FEBRUARY, 5);
 			d = new Description(1, 3, 0, Version.Type.Stable, 0, c.getTime());
 			d.addItem("Adding dependency with Utils and updating OOD consequently.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2016, 1, 1);
+			c.set(2016, Calendar.FEBRUARY, 1);
 			d = new Description(1, 2, 0, Version.Type.Stable, 0, c.getTime());
 			d.addItem("Correcting some bugs into the documentation.");
 			d.addItem("Upgrading to HSQLDB 2.3.3 and Commons-Net 3.4.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2013, 10, 18);
+			c.set(2013, Calendar.NOVEMBER, 18);
 			d = new Description(1, 1, 0, Version.Type.Stable, 0, c.getTime());
 			d.addItem("Improving function Table.alterRecords(...) and class AlterRecordFilter (see documentation).");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
-			c.set(2013, 3, 24);
+			c.set(2013, Calendar.APRIL, 24);
 			d = new Description(1, 0, 0, Version.Type.Stable, 0, c.getTime());
 			d.addItem("Releasing Oriented Object Database as a stable version.");
 			VERSION.addDescription(d);
@@ -508,7 +512,7 @@ public class OOD {
 		}
 	}
 	
-	public static void main(String args[]) throws FileNotFoundException, IOException
+	public static void main(String args[]) throws IOException
 	{
 		String markdown=VERSION.getMarkdownCode();
 		try(FileWriter fw=new FileWriter(new File("../versions.md")))
