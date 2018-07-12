@@ -83,13 +83,13 @@ public class BooleanNumberFieldAccessor extends FieldAccessor {
 			}
 			if (_field_instance instanceof Boolean)
 				field.set(_class_instance, _field_instance);
-			else
+			else {
+				assert _field_instance != null;
 				throw new FieldDatabaseException("The given _field_instance parameter, destinated to the field "
 						+ field.getName() + " of the class " + field.getDeclaringClass().getName()
 						+ ", should be a Boolean and not a " + _field_instance.getClass().getName());
-		} catch (IllegalArgumentException e) {
-			throw DatabaseException.getDatabaseException(e);
-		} catch (IllegalAccessException e) {
+			}
+		} catch (IllegalArgumentException | IllegalAccessException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
@@ -228,7 +228,7 @@ public class BooleanNumberFieldAccessor extends FieldAccessor {
 				_oos.writeBoolean(false);
 			} else {
 				_oos.writeBoolean(true);
-				_oos.writeBoolean(b.booleanValue());
+				_oos.writeBoolean(b);
 			}
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -240,7 +240,7 @@ public class BooleanNumberFieldAccessor extends FieldAccessor {
 		try {
 			boolean isNotNull = _ois.readBoolean();
 			if (isNotNull) {
-				_map.put(getFieldName(), new Boolean(_ois.readBoolean()));
+				_map.put(getFieldName(), _ois.readBoolean());
 			} else if (isNotNull())
 				throw new DatabaseException("field should not be null");
 			else {
@@ -257,7 +257,7 @@ public class BooleanNumberFieldAccessor extends FieldAccessor {
 		try {
 			boolean isNotNull = _ois.readBoolean();
 			if (isNotNull) {
-				Boolean b = new Boolean(_ois.readBoolean());
+				Boolean b = _ois.readBoolean();
 				setValue(_classInstance, b);
 				return b;
 			} else if (isNotNull())

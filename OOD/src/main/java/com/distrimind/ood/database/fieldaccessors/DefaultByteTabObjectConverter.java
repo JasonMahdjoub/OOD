@@ -97,8 +97,6 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 		{
 			try(ByteArrayOutputStream baos=new ByteArrayOutputStream();ObjectOutputStream oos=new ObjectOutputStream(baos))
 			{
-				if (_o!=null && !(_o instanceof Calendar))
-					throw new IncompatibleFieldDatabaseException("The class "+_o.getClass()+" does is not a calendar !");
 				oos.writeObject(_o);
 				return baos.toByteArray();
 			}

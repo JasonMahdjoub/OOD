@@ -89,6 +89,7 @@ import com.distrimind.util.crypto.SecureRandomType;
  * @version 1.6
  * @since OOD 1.4
  */
+@SuppressWarnings("ThrowFromFinallyBlock")
 public abstract class DatabaseWrapper implements AutoCloseable {
 
 	private static List<Class<?>> internalDatabaseClassesList = Arrays.<Class<?>>asList(DatabaseDistantTransactionEvent.class, DatabaseDistantEventsTable.class, 
@@ -98,14 +99,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	// protected Connection sql_connection;
 	private volatile boolean closed = false;
 	protected final String database_name;
-	private static final HashMap<String, Lock> lockers = new HashMap<String, Lock>();
-	private static final HashMap<String, Integer> number_of_shared_lockers = new HashMap<String, Integer>();
+	private static final HashMap<String, Lock> lockers = new HashMap<>();
+	private static final HashMap<String, Integer> number_of_shared_lockers = new HashMap<>();
 	final static String ROW_COUNT_TABLES = "ROW_COUNT_TABLES__";
 	// private final HashMap<Class<? extends Table<?>>, Table<?>>
 	// tables_instances=new HashMap<>();
 	private final ArrayList<ByteTabObjectConverter> converters;
 
-	volatile HashMap<Package, Database> sql_database = new HashMap<Package, Database>();
+	volatile HashMap<Package, Database> sql_database = new HashMap<>();
 	// private final DatabaseMetaData dmd;
 	private volatile DatabaseTransactionEventsTable transactionTable = null;
 	private volatile DatabaseHooksTable databaseHooksTable = null;
@@ -122,8 +123,15 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	volatile int maxTransactionEventsKeepedIntoMemoryDuringImportInBytes=10000000;
 	private volatile boolean hasOnePeerSyncronized=false;
 	private volatile AbstractSecureRandom randomForKeys;
+	private final boolean alwaysDeconectAfterOnTransaction;
 
-	/**
+
+
+    public boolean isAlwaysDeconectAfterOnTransaction() {
+        return alwaysDeconectAfterOnTransaction;
+    }
+
+    /**
 	 * Gets the max number of events sent to a distant peer at the same time
 	 * 
 	 * @return the max number of events sent to a distant peer at the same time
@@ -144,7 +152,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	// private final boolean isWindows;
 	private static class Database {
-		final HashMap<Class<? extends Table<?>>, Table<?>> tables_instances = new HashMap<Class<? extends Table<?>>, Table<?>>();
+		final HashMap<Class<? extends Table<?>>, Table<?>> tables_instances = new HashMap<>();
 
 		private final DatabaseConfiguration configuration;
 
@@ -219,12 +227,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * 
 	 * @param _database_name
 	 *            the database name
+     * @param alwaysDeconectAfterOnTransaction true if the database must always be connected and detected during one transaction
 	 * @throws DatabaseException if a problem occurs
 	 * 
 	 */
-	protected DatabaseWrapper(String _database_name) throws DatabaseException {
+	protected DatabaseWrapper(String _database_name, boolean alwaysDeconectAfterOnTransaction) throws DatabaseException {
 		if (_database_name == null)
 			throw new NullPointerException("_database_name");
+		this.alwaysDeconectAfterOnTransaction=alwaysDeconectAfterOnTransaction;
 		try
 		{
 			this.randomForKeys=SecureRandomType.BC_FIPS_APPROVED_FOR_KEYS.getSingleton(null);
@@ -260,66 +270,66 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	}
 	
 	public boolean isReadOnly() throws DatabaseException {
-		return ((Boolean) runTransaction(new Transaction() {
+		return (Boolean) runTransaction(new Transaction() {
 
-			@Override
-			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
-				try {
-					Session sql_connection = getConnectionAssociatedWithCurrentThread();
-					return new Boolean(sql_connection.getConnection().isReadOnly());
-				} catch (SQLException e) {
-					throw DatabaseException.getDatabaseException(e);
-				}
+            @Override
+            public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
+                try {
+                    Session sql_connection = getConnectionAssociatedWithCurrentThread();
+                    return sql_connection.getConnection().isReadOnly();
+                } catch (SQLException e) {
+                    throw DatabaseException.getDatabaseException(e);
+                }
 
-			}
+            }
 
-			@Override
-			public TransactionIsolation getTransactionIsolation() {
-				return TransactionIsolation.TRANSACTION_READ_UNCOMMITTED;
-			}
+            @Override
+            public TransactionIsolation getTransactionIsolation() {
+                return TransactionIsolation.TRANSACTION_READ_UNCOMMITTED;
+            }
 
-			@Override
-			public boolean doesWriteData() {
-				return false;
-			}
+            @Override
+            public boolean doesWriteData() {
+                return false;
+            }
 
-			@Override
-			public void initOrReset() {
-				
-			}
-		}, true)).booleanValue();
+            @Override
+            public void initOrReset() {
+
+            }
+        }, true);
 
 	}
 
 	public int getNetworkTimeout() throws DatabaseException {
-		return ((Integer) runTransaction(new Transaction() {
+		return (Integer) runTransaction(new Transaction() {
 
-			@Override
-			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
-				try {
-					Session sql_connection = getConnectionAssociatedWithCurrentThread();
-					return new Integer(sql_connection.getConnection().getNetworkTimeout());
-				} catch (SQLException e) {
-					throw DatabaseException.getDatabaseException(e);
-				}
+            @Override
+            public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
+                try {
+                    Session sql_connection = getConnectionAssociatedWithCurrentThread();
+                    return sql_connection.getConnection().getNetworkTimeout();
+                } catch (SQLException e) {
+                    throw DatabaseException.getDatabaseException(e);
+                }
 
-			}
+            }
 
-			@Override
-			public TransactionIsolation getTransactionIsolation() {
-				return TransactionIsolation.TRANSACTION_READ_UNCOMMITTED;
-			}
+            @Override
+            public TransactionIsolation getTransactionIsolation() {
+                return TransactionIsolation.TRANSACTION_READ_UNCOMMITTED;
+            }
 
-			@Override
-			public boolean doesWriteData() {
-				return false;
-			}
+            @Override
+            public boolean doesWriteData() {
+                return false;
+            }
 
-			@Override
-			public void initOrReset() {
-				
-			}
-		}, true)).intValue();
+            @Override
+            public void initOrReset() {
+
+            }
+        }, true);
 
 	}
 
@@ -452,7 +462,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				for (; de != null; de = nextEvent()) {
 					newEventCondition.await();
 				}
-				return de;
+				return null;
 			}
 			finally
 			{
@@ -487,7 +497,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			
 			try {
 				lockWrite();
-				if (initializedHooks.containsValue(local)) {
+                assert local != null;
+                if (initializedHooks.containsKey(local.getHostID())) {
 					throw DatabaseException.getDatabaseException(
 							new IllegalAccessException("Local hostID " + localHostID + " already initialized !"));
 				}
@@ -541,7 +552,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 				
 				@Override
-				public void initOrReset() throws DatabaseException {
+				public void initOrReset() {
 					
 					hostAlreadySynchronized.clear();
 				}
@@ -593,9 +604,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			isReliedToDistantHook();
 		}
 		
-		protected boolean isReliedToDistantHook() throws DatabaseException
+		@SuppressWarnings("UnusedReturnValue")
+        protected boolean isReliedToDistantHook() throws DatabaseException
 		{
-			return hasOnePeerSyncronized=getHooksTransactionsTable().hasRecordsWithAllFields("concernsDatabaseHost", new Boolean(false));
+			return hasOnePeerSyncronized=getHooksTransactionsTable().hasRecordsWithAllFields("concernsDatabaseHost", Boolean.FALSE);
 		}
 		
 
@@ -607,7 +619,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			 */
 			DatabaseHooksTable.Record r = null;
 			List<DatabaseHooksTable.Record> l = getHooksTransactionsTable()
-					.getRecordsWithAllFields(new Object[] { "hostID", hostID });
+					.getRecordsWithAllFields("hostID", hostID);
 			if (l.size() == 1)
 				r = l.iterator().next();
 			else if (l.size() > 1)
@@ -660,7 +672,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new NullPointerException("hostID");
 			if (!isInitialized())
 				throw new DatabaseException("The Synchronizer must be initialized (initLocalHostID function) !");
-			ConnectedPeers peer = null;
+			ConnectedPeers peer;
 			
 			try {
 				lockWrite();
@@ -729,8 +741,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				lockWrite();
 				for (AbstractDecentralizedID host : lastIds.keySet()) {
 					if (isInitialized(host)) {
-						Map<AbstractDecentralizedID, Long> map = new HashMap<AbstractDecentralizedID, Long>();
-						map.putAll(lastIds);
+                        Map<AbstractDecentralizedID, Long> map = new HashMap<>(lastIds);
 						// map.remove(hostID);
 						map.remove(host);
 						if (map.size() > 0) {
@@ -747,7 +758,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			
 		}
 
-		private long synchronizedDataIfNecessary() throws DatabaseException {
+		@SuppressWarnings("UnusedReturnValue")
+        private long synchronizedDataIfNecessary() throws DatabaseException {
 			final long lastID = getTransactionIDTable().getLastTransactionID();
 			
 			try {
@@ -780,7 +792,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			return lastID;
 		}
 
-		private long synchronizedDataIfNecessary(ConnectedPeers peer) throws DatabaseException {
+		@SuppressWarnings("UnusedReturnValue")
+        private long synchronizedDataIfNecessary(ConnectedPeers peer) throws DatabaseException {
 			if (peer.isTransferInProgress())
 				return -1;
 			long lastID = getTransactionIDTable().getLastTransactionID();
@@ -895,7 +908,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						@Override
 						public DatabaseHooksTable.Record run() throws Exception {
 							List<DatabaseHooksTable.Record> l = getHooksTransactionsTable()
-									.getRecordsWithAllFields(new Object[] { "hostID", hostID });
+									.getRecordsWithAllFields("hostID", hostID);
 							DatabaseHooksTable.Record r = null;
 							if (l.size() == 1)
 								r = l.iterator().next();
@@ -925,7 +938,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			
 			try {
 				lockWrite();
-				if (initializedHooks.containsValue(r)) {
+				if (initializedHooks.containsKey(r.getHostID())) {
 					throw DatabaseException.getDatabaseException(
 							new IllegalAccessException("hostID " + hostID + " already initialized !"));
 				}
@@ -962,7 +975,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			
 			try {
 				lockWrite();
-				ConnectedPeers cp = null;
+				ConnectedPeers cp;
 				cp = initializedHooks.get(idCorrection.getHostSource());
 				if (cp == null)
 					throw new DatabaseException("The host " + idCorrection.getHostSource() + " is not connected !");
@@ -981,7 +994,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						throw new DatabaseException("Impossbile to find hook " + idCorrection.getHostSource());
 
 					getHooksTransactionsTable().updateRecord(hook, "lastValidatedDistantTransaction",
-							new Long(idCorrection.getLastValidatedTransaction()));
+                            idCorrection.getLastValidatedTransaction());
 					return null;
 				}
 
@@ -1021,23 +1034,23 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	}
 
-	public static enum SynchonizationAnomalyType {
+	public enum SynchronizationAnomalyType {
 		RECORD_TO_REMOVE_NOT_FOUND, RECORD_TO_REMOVE_HAS_DEPENDENCIES, RECORD_TO_UPDATE_NOT_FOUND, RECORD_TO_UPDATE_HAS_INCOMPATIBLE_PRIMARY_KEYS, RECORD_TO_UPDATE_HAS_DEPENDENCIES_NOT_FOUND, RECORD_TO_ADD_ALREADY_PRESENT, RECORD_TO_ADD_HAS_INCOMPATIBLE_PRIMARY_KEYS, RECORD_TO_ADD_HAS_DEPENDENCIES_NOT_FOUND,
 	}
 
-	public static interface DatabaseNotifier {
-		public void newDatabaseEventDetected(DatabaseWrapper wrapper);
+	public interface DatabaseNotifier {
+		void newDatabaseEventDetected(DatabaseWrapper wrapper);
 
 		/**
 		 * This function is call if an anomaly occurs the synchronization process.
 		 * Anomalies can be produced when :
 		 * <ul>
 		 * <li>the record to remove was not found :
-		 * {@link SynchonizationAnomalyType#RECORD_TO_REMOVE_NOT_FOUND}</li>
+		 * {@link SynchronizationAnomalyType#RECORD_TO_REMOVE_NOT_FOUND}</li>
 		 * <li>the record to update was not found :
-		 * {@link SynchonizationAnomalyType#RECORD_TO_UPDATE_NOT_FOUND}</li>
+		 * {@link SynchronizationAnomalyType#RECORD_TO_UPDATE_NOT_FOUND}</li>
 		 * <li>the record to add already exists :
-		 * {@link SynchonizationAnomalyType#RECORD_TO_ADD_ALREADY_PRESENT}</li>
+		 * {@link SynchronizationAnomalyType#RECORD_TO_ADD_ALREADY_PRESENT}</li>
 		 * </ul>
 		 * Anomalies differs with collision (see
 		 * {@link #collisionDetected(AbstractDecentralizedID, AbstractDecentralizedID, DatabaseEventType, Table, HashMap, DatabaseRecord, DatabaseRecord)}).
@@ -1060,9 +1073,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		 * @param record
 		 *            the transmitted record
 		 */
-		public void anomalyDetected(AbstractDecentralizedID distantPeerID, AbstractDecentralizedID intermediatePeerID,
-				SynchonizationAnomalyType type, Table<?> concernedTable, Map<String, Object> primary_keys,
-				DatabaseRecord record);
+		void anomalyDetected(AbstractDecentralizedID distantPeerID, AbstractDecentralizedID intermediatePeerID,
+                                    SynchronizationAnomalyType type, Table<?> concernedTable, Map<String, Object> primary_keys,
+                                    DatabaseRecord record);
 
 		/**
 		 * This function is called when a direct collision is detected during the
@@ -1089,9 +1102,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		 * @throws DatabaseException
 		 *             if a problem occurs
 		 */
-		public boolean collisionDetected(AbstractDecentralizedID distantPeerID,
-				AbstractDecentralizedID intermediatePeerID, DatabaseEventType type, Table<?> concernedTable,
-				HashMap<String, Object> keys, DatabaseRecord newValues, DatabaseRecord actualValues)
+        boolean collisionDetected(AbstractDecentralizedID distantPeerID,
+                                  AbstractDecentralizedID intermediatePeerID, DatabaseEventType type, Table<?> concernedTable,
+                                  HashMap<String, Object> keys, DatabaseRecord newValues, DatabaseRecord actualValues)
 				throws DatabaseException;
 
 	}
@@ -1253,30 +1266,30 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new NullPointerException("wrapper");
 			if (maxEventsRecords == 0)
 				return false;
-			return ((Boolean) wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
+			return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
 
-				@Override
-				public Boolean run() throws Exception {
-					int number = wrapper.getDatabaseTransactionsPerHostTable().exportTransactions(outputStreamGetter.initOrResetOutputStream(), hookID,
-							maxEventsRecords);
-					return new Boolean(number > 0);
-				}
+                @Override
+                public Boolean run() throws Exception {
+                    int number = wrapper.getDatabaseTransactionsPerHostTable().exportTransactions(outputStreamGetter.initOrResetOutputStream(), hookID,
+                            maxEventsRecords);
+                    return number > 0;
+                }
 
-				@Override
-				public TransactionIsolation getTransactionIsolation() {
-					return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
-				}
+                @Override
+                public TransactionIsolation getTransactionIsolation() {
+                    return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
+                }
 
-				@Override
-				public boolean doesWriteData() {
-					return true;
-				}
+                @Override
+                public boolean doesWriteData() {
+                    return true;
+                }
 
-				@Override
-				public void initOrReset() {
-					
-				}
-			})).booleanValue();
+                @Override
+                public void initOrReset() {
+
+                }
+            });
 
 		}
 
@@ -1297,9 +1310,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (rwl == null) {
 				rwl = new ReentrantLock();
 				lockers.put(f, rwl);
-				number_of_shared_lockers.put(f, new Integer(1));
+				number_of_shared_lockers.put(f, 1);
 			} else
-				number_of_shared_lockers.put(f, new Integer(number_of_shared_lockers.get(f).intValue() + 1));
+				number_of_shared_lockers.put(f, number_of_shared_lockers.get(f) + 1);
 
 			return rwl;
 		}
@@ -1364,11 +1377,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	}
 
-	/**
-	 * 
-	 * @return The Sql connection.
-	 * @throws SQLException
-	 */
 	Connection getOpenedSqlConnection(Session transaction) throws DatabaseException {
 		try {
 			Connection sql_connection = transaction == null ? null : transaction.getConnection();
@@ -1435,11 +1443,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					synchronized(DatabaseWrapper.class)
 					{
 						DatabaseWrapper.lockers.remove(database_name);
-						int v = DatabaseWrapper.number_of_shared_lockers.get(database_name).intValue() - 1;
+						int v = DatabaseWrapper.number_of_shared_lockers.get(database_name) - 1;
 						if (v == 0)
 							DatabaseWrapper.number_of_shared_lockers.remove(database_name);
 						else if (v > 0)
-							DatabaseWrapper.number_of_shared_lockers.put(database_name, new Integer(v));
+							DatabaseWrapper.number_of_shared_lockers.put(database_name, v);
 						else
 							throw new IllegalAccessError();
 						sql_database = new HashMap<>();
@@ -1463,11 +1471,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 	}
 
-	@Override
+	@SuppressWarnings("deprecation")
+    @Override
 	public void finalize() {
 		try {
 			close();
-		} catch (Exception e) {
+		} catch (Exception ignored) {
 
 		}
 	}
@@ -1558,7 +1567,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			return thread;
 		}
 
-		boolean addEvent(Table<?> table, TableEvent<?> de) throws DatabaseException {
+		@SuppressWarnings("UnusedReturnValue")
+        boolean addEvent(Table<?> table, TableEvent<?> de) throws DatabaseException {
 			if (table == null)
 				throw new NullPointerException("table");
 			if (de == null)
@@ -1605,14 +1615,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		protected final AtomicLong idCounterForTmpTransactions = new AtomicLong(-1);
 
 		protected final Map<Package, TransactionPerDatabase> temporaryTransactions = new HashMap<>();
-		protected volatile int actualTransactionEventsNumber = 0;
+		protected final AtomicInteger actualTransactionEventsNumber = new AtomicInteger(0);
 		protected volatile boolean eventsStoredIntoMemory = true;
-		protected volatile int actualPosition = 0;
+		protected final AtomicInteger actualPosition = new AtomicInteger(0);
 		protected boolean transactionToSynchronize=false;
 
 		private void checkIfEventsMustBeStoredIntoDisk() throws DatabaseException {
 
-			if (eventsStoredIntoMemory && actualTransactionEventsNumber >= getMaxTransactionEventsKeepedIntoMemory()) {
+			if (eventsStoredIntoMemory && actualTransactionEventsNumber.get() >= getMaxTransactionEventsKeepedIntoMemory()) {
 				runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
 
 					@Override
@@ -1666,7 +1676,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			return res;
 		}
 
-		void addNewTemporaryEvent(final Table<?> table, final TableEvent<?> event) throws DatabaseException {
+		@SuppressWarnings("ConstantConditions")
+        void addNewTemporaryEvent(final Table<?> table, final TableEvent<?> event) throws DatabaseException {
 			final TransactionPerDatabase transaction = getAndCreateIfNecessaryTemporaryTransaction(
 					table.getDatabaseConfiguration().getPackage());
 			final AtomicInteger nb = new AtomicInteger(0);
@@ -1688,8 +1699,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 								if (event.getType() == DatabaseEventType.UPDATE
 										&& _record.getType() == DatabaseEventType.ADD.getByte()) {
 									eventr = new DatabaseEventsTable.Record(transaction.transaction,
-											new TableEvent<DatabaseRecord>(event.getID(), DatabaseEventType.ADD, null,
-													event.getNewDatabaseRecord(), event.getHostsDestination()),
+                                            new TableEvent<>(event.getID(), DatabaseEventType.ADD, null,
+                                                    event.getNewDatabaseRecord(), event.getHostsDestination()),
 											DatabaseWrapper.this);
 								} else if ((event.getType() == DatabaseEventType.REMOVE
 										|| event.getType() == DatabaseEventType.REMOVE_WITH_CASCADE)
@@ -1741,7 +1752,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							Set<AbstractDecentralizedID> hosts = event.getHostsDestination();
 							if (hosts != null)
 								transaction.concernedHosts.addAll(hosts);
-							eventr.setPosition(actualPosition++);
+							eventr.setPosition(actualPosition.getAndIncrement());
 							transaction.events.add(eventr);
 							nb.incrementAndGet();
 						}
@@ -1771,10 +1782,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 											if (event.getType() == DatabaseEventType.UPDATE
 													&& _record.getType() == DatabaseEventType.ADD.getByte()) {
 												eventr.set(new DatabaseEventsTable.Record(transaction.transaction,
-														new TableEvent<DatabaseRecord>(event.getID(),
-																DatabaseEventType.ADD, null,
-																event.getNewDatabaseRecord(),
-																event.getHostsDestination()),
+                                                        new TableEvent<>(event.getID(),
+                                                                DatabaseEventType.ADD, null,
+                                                                event.getNewDatabaseRecord(),
+                                                                event.getHostsDestination()),
 														DatabaseWrapper.this));
 											} else if ((event.getType() == DatabaseEventType.REMOVE
 													|| event.getType() == DatabaseEventType.REMOVE_WITH_CASCADE)
@@ -1791,7 +1802,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 							if (event.getType() == DatabaseEventType.REMOVE_WITH_CASCADE) {
 								final List<Table<?>> tables = new ArrayList<>();
-								StringBuffer sb = new StringBuffer();
+								StringBuilder sb = new StringBuilder();
 								int index = 0;
 								Map<String, Object> parameters = new HashMap<>();
 								for (Class<? extends Table<?>> c : table.getTablesClassesPointingToThisTable()) {
@@ -1802,7 +1813,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 									else
 										sb.append(" AND (");
 									String varName = "var" + (index++);
-									sb.append("concernedTable=%" + varName + "");
+									sb.append("concernedTable=%").append(varName);
 									parameters.put(varName, t.getClass().getName());
 								}
 								if (sb.length() > 0)
@@ -1857,7 +1868,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 								Set<AbstractDecentralizedID> hosts = event.getHostsDestination();
 								if (hosts != null)
 									transaction.concernedHosts.addAll(hosts);
-								eventr.get().setPosition(actualPosition++);
+                            eventr.get().setPosition(actualPosition.getAndIncrement());
 								getDatabaseEventsTable().addRecord(eventr.get());
 								nb.incrementAndGet();
 							}
@@ -1882,11 +1893,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 			} finally {
 				transaction.eventsNumber += nb.get();
-				actualTransactionEventsNumber += nb.get();
+				actualTransactionEventsNumber.addAndGet(nb.get());
 			}
 		}
 
-		void cancelTmpTransaction() throws DatabaseException {
+		void cancelTmpTransaction() {
 			resetTmpTransaction(false);
 			/*if (eventsStoredIntoMemory) {
 				resetTmpTransaction();
@@ -1930,11 +1941,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		int getActualPositionEvent() {
-			return actualPosition;
+			return actualPosition.get();
 		}
 
 		void cancelTmpTransactionEvents(final int position) throws DatabaseException {
-			if (position == actualPosition)
+			if (position == actualPosition.get())
 				return;
 			if (eventsStoredIntoMemory) {
 				for (TransactionPerDatabase t : temporaryTransactions.values()) {
@@ -1946,7 +1957,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							++nb;
 						}
 					}
-					actualTransactionEventsNumber -= nb;
+					actualTransactionEventsNumber.addAndGet(nb);
 					t.eventsNumber -= nb;
 				}
 
@@ -1959,8 +1970,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						for (TransactionPerDatabase t : temporaryTransactions.values()) {
 							int nb = (int) getDatabaseEventsTable().removeRecords(
 									"transaction=%transaction AND position>=%pos", "transaction", t.transaction, "pos",
-									new Integer(position));
-							actualTransactionEventsNumber -= nb;
+                                    position);
+							actualTransactionEventsNumber.addAndGet(nb);
 							t.eventsNumber -= nb;
 						}
 						return null;
@@ -1980,8 +1991,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					public void initOrReset() {
 						if (alreadyDone)
 							throw new IllegalAccessError();
-						else
-							alreadyDone=false;
 
 					}
 				});
@@ -1992,7 +2001,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		void resetTmpTransaction(boolean transactionToSynchronize) {
 			temporaryTransactions.clear();
-			actualTransactionEventsNumber = 0;
+			actualTransactionEventsNumber.set(0);
 			eventsStoredIntoMemory = true;
 			this.transactionToSynchronize=transactionToSynchronize;
 		}
@@ -2003,176 +2012,174 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (eventsStoredIntoMemory) {
 				
 				return runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
-					boolean alreadyDone=false;
-					@Override
-					public Boolean run() throws Exception {
-						final AtomicBoolean transactionOK = new AtomicBoolean(false);
-						
-						for (final TransactionPerDatabase t : temporaryTransactions.values()) {
+                    boolean alreadyDone = false;
 
-							if (t.eventsNumber > 0) {
-								final AtomicReference<DatabaseTransactionEventsTable.Record> finalTR = new AtomicReference<>(
-										null);
-								/*
-								 * final ArrayList<AbstractDecentralizedID> excludedHooks=new ArrayList<>();
-								 * long
-								 * previousLastTransactionID=getTransactionIDTable().getLastTransactionID();
-								 * final AtomicBoolean hasIgnoredHooks=new AtomicBoolean(false);
-								 */
+                    @Override
+                    public Boolean run() throws Exception {
+                        final AtomicBoolean transactionOK = new AtomicBoolean(false);
 
-								getHooksTransactionsTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
+                        for (final TransactionPerDatabase t : temporaryTransactions.values()) {
 
-									@Override
-									public boolean nextRecord(DatabaseHooksTable.Record _record)
-											throws DatabaseException {
-										if (!_record.concernsLocalDatabaseHost()) {
-											if (_record.isConcernedDatabaseByPackage(
-													t.transaction.concernedDatabasePackage)
-													&& (t.concernedHosts == null || t.concernedHosts.isEmpty()
-															|| t.concernedHosts.contains(_record.getHostID()))) {
+                            if (t.eventsNumber > 0) {
+                                final AtomicReference<DatabaseTransactionEventsTable.Record> finalTR = new AtomicReference<>(
+                                        null);
+                                /*
+                                 * final ArrayList<AbstractDecentralizedID> excludedHooks=new ArrayList<>();
+                                 * long
+                                 * previousLastTransactionID=getTransactionIDTable().getLastTransactionID();
+                                 * final AtomicBoolean hasIgnoredHooks=new AtomicBoolean(false);
+                                 */
 
-												if (finalTR.get() == null) {
-													finalTR.set(t.transaction = getDatabaseTransactionEventsTable()
-															.addRecord(new DatabaseTransactionEventsTable.Record(
-																	getTransactionIDTable()
-																			.getAndIncrementTransactionID(),
-																	t.transaction.concernedDatabasePackage,
-																	t.concernedHosts)));
+                                getHooksTransactionsTable().getRecords(new Filter<Record>() {
 
-													for (DatabaseEventsTable.Record r : t.events) {
-														r.setTransaction(finalTR.get());
-														getDatabaseEventsTable().addRecord(r);
-													}
+                                    @Override
+                                    public boolean nextRecord(Record _record)
+                                            throws DatabaseException {
+                                        if (!_record.concernsLocalDatabaseHost()) {
+                                            if (_record.isConcernedDatabaseByPackage(
+                                                    t.transaction.concernedDatabasePackage)
+                                                    && (t.concernedHosts == null || t.concernedHosts.isEmpty()
+                                                    || t.concernedHosts.contains(_record.getHostID()))) {
 
-												}
-												DatabaseTransactionsPerHostTable.Record trhost = new DatabaseTransactionsPerHostTable.Record();
-												trhost.set(finalTR.get(), _record);
-												getDatabaseTransactionsPerHostTable().addRecord(trhost);
-												transactionOK.set(true);
-											}
-										}
-										return false;
-									}
-								});
-							}
-						}
-						resetTmpTransaction(true);
-						return new Boolean(transactionOK.get());
-					}
+                                                if (finalTR.get() == null) {
+                                                    finalTR.set(t.transaction = getDatabaseTransactionEventsTable()
+                                                            .addRecord(new DatabaseTransactionEventsTable.Record(
+                                                                    getTransactionIDTable()
+                                                                            .getAndIncrementTransactionID(),
+                                                                    t.transaction.concernedDatabasePackage,
+                                                                    t.concernedHosts)));
 
-					@Override
-					public TransactionIsolation getTransactionIsolation() {
-						return TransactionIsolation.TRANSACTION_READ_UNCOMMITTED;
-					}
+                                                    for (DatabaseEventsTable.Record r : t.events) {
+                                                        r.setTransaction(finalTR.get());
+                                                        getDatabaseEventsTable().addRecord(r);
+                                                    }
 
-					@Override
-					public boolean doesWriteData() {
-						return true;
-					}
+                                                }
+                                                DatabaseTransactionsPerHostTable.Record trhost = new DatabaseTransactionsPerHostTable.Record();
+                                                trhost.set(finalTR.get(), _record);
+                                                getDatabaseTransactionsPerHostTable().addRecord(trhost);
+                                                transactionOK.set(true);
+                                            }
+                                        }
+                                        return false;
+                                    }
+                                });
+                            }
+                        }
+                        resetTmpTransaction(true);
+                        return transactionOK.get();
+                    }
 
-					@Override
-					public void initOrReset() {
-						if (alreadyDone)
-							throw new IllegalAccessError();
-						else
-							alreadyDone=false;
-					}
+                    @Override
+                    public TransactionIsolation getTransactionIsolation() {
+                        return TransactionIsolation.TRANSACTION_READ_UNCOMMITTED;
+                    }
 
-				}).booleanValue();
+                    @Override
+                    public boolean doesWriteData() {
+                        return true;
+                    }
+
+                    @Override
+                    public void initOrReset() {
+                        if (alreadyDone)
+                            throw new IllegalAccessError();
+                    }
+
+                });
 
 			} else {
 
 				return runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
-					boolean alreadyDone=false;
-					@Override
-					public Boolean run() throws Exception {
-						final AtomicBoolean transactionOK = new AtomicBoolean(false);
-						for (final TransactionPerDatabase t : temporaryTransactions.values()) {
+                    boolean alreadyDone = false;
 
-							if (t.eventsNumber > 0) {
-								final AtomicReference<DatabaseTransactionEventsTable.Record> finalTR = new AtomicReference<>(
-										null);
-								/*
-								 * final ArrayList<AbstractDecentralizedID> excludedHooks=new ArrayList<>();
-								 * long
-								 * previousLastTransactionID=getTransactionIDTable().getLastTransactionID();
-								 * final AtomicBoolean hasIgnoredHooks=new AtomicBoolean(false);
-								 */
-								getHooksTransactionsTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
+                    @Override
+                    public Boolean run() throws Exception {
+                        final AtomicBoolean transactionOK = new AtomicBoolean(false);
+                        for (final TransactionPerDatabase t : temporaryTransactions.values()) {
 
-									@Override
-									public boolean nextRecord(DatabaseHooksTable.Record _record)
-											throws DatabaseException {
-										if (!_record.concernsLocalDatabaseHost()) {
-											if (_record.isConcernedDatabaseByPackage(
-													t.transaction.concernedDatabasePackage)
-													&& (t.concernedHosts == null || t.concernedHosts.isEmpty()
-															|| t.concernedHosts.contains(_record.getHostID()))) {
-												// excludedHooks.add(_record.getHostID());
-												if (finalTR.get() == null) {
-													finalTR.set(getDatabaseTransactionEventsTable()
-															.addRecord(new DatabaseTransactionEventsTable.Record(
-																	getTransactionIDTable()
-																			.getAndIncrementTransactionID(),
-																	t.transaction.concernedDatabasePackage,
-																	t.concernedHosts)));
-													final HashMap<String, Object> hm = new HashMap<>();
-													hm.put("transaction", finalTR.get());
-													getDatabaseEventsTable().updateRecords(
-															new AlterRecordFilter<DatabaseEventsTable.Record>() {
+                            if (t.eventsNumber > 0) {
+                                final AtomicReference<DatabaseTransactionEventsTable.Record> finalTR = new AtomicReference<>(
+                                        null);
+                                /*
+                                 * final ArrayList<AbstractDecentralizedID> excludedHooks=new ArrayList<>();
+                                 * long
+                                 * previousLastTransactionID=getTransactionIDTable().getLastTransactionID();
+                                 * final AtomicBoolean hasIgnoredHooks=new AtomicBoolean(false);
+                                 */
+                                getHooksTransactionsTable().getRecords(new Filter<Record>() {
 
-																@Override
-																public void nextRecord(
-																		DatabaseEventsTable.Record _record) {
-																	update(hm);
-																}
-															}, "transaction=%transaction", "transaction",
-															t.transaction);
+                                    @Override
+                                    public boolean nextRecord(Record _record)
+                                            throws DatabaseException {
+                                        if (!_record.concernsLocalDatabaseHost()) {
+                                            if (_record.isConcernedDatabaseByPackage(
+                                                    t.transaction.concernedDatabasePackage)
+                                                    && (t.concernedHosts == null || t.concernedHosts.isEmpty()
+                                                    || t.concernedHosts.contains(_record.getHostID()))) {
+                                                // excludedHooks.add(_record.getHostID());
+                                                if (finalTR.get() == null) {
+                                                    finalTR.set(getDatabaseTransactionEventsTable()
+                                                            .addRecord(new DatabaseTransactionEventsTable.Record(
+                                                                    getTransactionIDTable()
+                                                                            .getAndIncrementTransactionID(),
+                                                                    t.transaction.concernedDatabasePackage,
+                                                                    t.concernedHosts)));
+                                                    final HashMap<String, Object> hm = new HashMap<>();
+                                                    hm.put("transaction", finalTR.get());
+                                                    getDatabaseEventsTable().updateRecords(
+                                                            new AlterRecordFilter<DatabaseEventsTable.Record>() {
 
-												}
-												DatabaseTransactionsPerHostTable.Record trhost = new DatabaseTransactionsPerHostTable.Record();
-												trhost.set(finalTR.get(), _record);
-												getDatabaseTransactionsPerHostTable().addRecord(trhost);
-												transactionOK.set(true);
-											}
-											/*
-											 * else hasIgnoredHooks.set(true);
-											 */
-										}
-										return false;
-									}
-								});
-								/*
-								 * if (hasIgnoredHooks.get())
-								 * getHooksTransactionsTable().actualizeLastTransactionID(excludedHooks,
-								 * previousLastTransactionID);
-								 */
-							}
-							getDatabaseTransactionEventsTable().removeRecordWithCascade(t.transaction);
-						}
-						resetTmpTransaction(true);
-						return new Boolean(transactionOK.get());
-					}
+                                                                @Override
+                                                                public void nextRecord(
+                                                                        DatabaseEventsTable.Record _record) {
+                                                                    update(hm);
+                                                                }
+                                                            }, "transaction=%transaction", "transaction",
+                                                            t.transaction);
 
-					@Override
-					public TransactionIsolation getTransactionIsolation() {
-						return TransactionIsolation.TRANSACTION_READ_COMMITTED;
-					}
+                                                }
+                                                DatabaseTransactionsPerHostTable.Record trhost = new DatabaseTransactionsPerHostTable.Record();
+                                                trhost.set(finalTR.get(), _record);
+                                                getDatabaseTransactionsPerHostTable().addRecord(trhost);
+                                                transactionOK.set(true);
+                                            }
+                                            /*
+                                             * else hasIgnoredHooks.set(true);
+                                             */
+                                        }
+                                        return false;
+                                    }
+                                });
+                                /*
+                                 * if (hasIgnoredHooks.get())
+                                 * getHooksTransactionsTable().actualizeLastTransactionID(excludedHooks,
+                                 * previousLastTransactionID);
+                                 */
+                            }
+                            getDatabaseTransactionEventsTable().removeRecordWithCascade(t.transaction);
+                        }
+                        resetTmpTransaction(true);
+                        return transactionOK.get();
+                    }
 
-					@Override
-					public boolean doesWriteData() {
-						return true;
-					}
+                    @Override
+                    public TransactionIsolation getTransactionIsolation() {
+                        return TransactionIsolation.TRANSACTION_READ_COMMITTED;
+                    }
 
-					@Override
-					public void initOrReset() {
-						if (alreadyDone)
-							throw new IllegalAccessError();
-						else
-							alreadyDone=false;
-						
-					}
-				}).booleanValue();
+                    @Override
+                    public boolean doesWriteData() {
+                        return true;
+                    }
+
+                    @Override
+                    public void initOrReset() {
+                        if (alreadyDone)
+                            throw new IllegalAccessError();
+
+                    }
+                });
 
 			}
 
@@ -2262,7 +2269,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			Session c = getSession(threadPerConnectionInProgress, Thread.currentThread());
 
 			Connection c2 = getOpenedSqlConnection(c);
-			if (c.getConnection() != c2) {
+            assert c != null;
+            if (c.getConnection() != c2) {
 				c.setConnection(c2);
 			}
 			return c;
@@ -2282,7 +2290,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				Session c = removeSession(threadPerConnectionInProgress, Thread.currentThread());
 				if (c == null)
 					throw new IllegalAccessError();
-				if (closed) {
+				if (closed || alwaysDeconectAfterOnTransaction) {
 					if (!c.getConnection().isClosed())
 						closeConnection(c.getConnection(), true);
 				}
@@ -2292,7 +2300,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 					if (!s.getThread().isAlive()) {
 						if (!s.getConnection().isClosed() && !s.getConnection().isClosed())
-							closeConnection(s.getConnection(), false);
+							closeConnection(s.getConnection(), alwaysDeconectAfterOnTransaction);
 
 						it.remove();
 					}
@@ -2310,8 +2318,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	// private volatile boolean transaction_already_running=false;
 
-	private boolean setTransactionIsolation(Session sql_connection, TransactionIsolation transactionIsolation,
-			boolean write) throws SQLException, DatabaseException {
+	@SuppressWarnings("UnusedReturnValue")
+    private boolean setTransactionIsolation(Session sql_connection, TransactionIsolation transactionIsolation,
+                                            boolean write) throws SQLException, DatabaseException {
 		// Connection sql_connection=getOpenedSqlConnection();
 
 		transactionIsolation = getValidTransactionIsolation(transactionIsolation);
@@ -2353,33 +2362,33 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	}
 
 	public boolean supportTransactions() throws DatabaseException {
-		return ((Boolean) runTransaction(new Transaction() {
+		return (Boolean) runTransaction(new Transaction() {
 
-			@Override
-			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
-				try {
-					return new Boolean(getConnectionAssociatedWithCurrentThread().getConnection().getMetaData()
-							.supportsTransactions());
-				} catch (SQLException e) {
-					throw DatabaseException.getDatabaseException(e);
-				}
-			}
+            @Override
+            public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
+                try {
+                    return getConnectionAssociatedWithCurrentThread().getConnection().getMetaData()
+                            .supportsTransactions();
+                } catch (SQLException e) {
+                    throw DatabaseException.getDatabaseException(e);
+                }
+            }
 
-			@Override
-			public TransactionIsolation getTransactionIsolation() {
-				return TransactionIsolation.TRANSACTION_READ_UNCOMMITTED;
-			}
+            @Override
+            public TransactionIsolation getTransactionIsolation() {
+                return TransactionIsolation.TRANSACTION_READ_UNCOMMITTED;
+            }
 
-			@Override
-			public boolean doesWriteData() {
-				return false;
-			}
+            @Override
+            public boolean doesWriteData() {
+                return false;
+            }
 
-			@Override
-			public void initOrReset() {
-				
-			}
-		}, true)).booleanValue();
+            @Override
+            public void initOrReset() {
+
+            }
+        }, true);
 	}
 
 	protected abstract void startTransaction(Session _openedConnection, TransactionIsolation transactionIsolation, boolean write)
@@ -2408,10 +2417,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	protected abstract void releasePoint(Connection openedConnection, String _savePointName, Savepoint savepoint)
 			throws SQLException;
 
-	private volatile long savePoint = 0;
+	private final AtomicLong savePoint = new AtomicLong(0);
 
 	protected String generateSavePointName() {
-		return "Savepoint" + (++savePoint);
+		return "Savepoint" + (savePoint.incrementAndGet());
 		/*
 		 * HexadecimalEncodingAlgorithm h=new HexadecimalEncodingAlgorithm();
 		 * StringBuffer sb=new StringBuffer("S"); h.convertToCharacters(new
@@ -2420,7 +2429,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	}
 	
 	protected abstract boolean isSerializationException(SQLException e) throws DatabaseException;
-	protected abstract boolean isDeconnectionException(SQLException e) throws DatabaseException;
+	protected abstract boolean isDeconectionException(SQLException e) throws DatabaseException;
 
 	private boolean needsToLock()
 	{
@@ -2489,7 +2498,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						Throwable t=e.getCause();
 						while (t!=null)
 						{
-							if ((t instanceof SQLException) && (isSerializationException((SQLException)t) || isDeconnectionException((SQLException)t)))
+							if ((t instanceof SQLException) && (isSerializationException((SQLException)t) || isDeconectionException((SQLException)t)))
 							{
 								retry=true;
 								break;
@@ -2526,7 +2535,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						} catch (SQLException se) {
 							throw new DatabaseIntegrityException("Impossible to rollback the database changments", se);
 						}
-						retry=isSerializationException(e) || isDeconnectionException(e);
+						retry=isSerializationException(e) || isDeconectionException(e);
 						if (!retry)
 							throw DatabaseException.getDatabaseException(e);
 					} finally {
@@ -2546,6 +2555,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					else
 						unlockRead();
 				}
+
 			}
 			
 		} else {
@@ -2612,7 +2622,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			@Override
 			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 				try {
-					return (Object) _transaction.run();
+					return _transaction.run();
 
 				} catch (Exception e) {
 					throw DatabaseException.getDatabaseException(e);
@@ -2715,7 +2725,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * @param <TT>
 	 *            The table type
 	 */
-	public final <TT extends Table<?>> Table<? extends Object> getTableInstance(Class<TT> _class_table)
+	public final <TT extends Table<?>> Table<?> getTableInstance(Class<TT> _class_table)
 			throws DatabaseException {
 
 		try {
@@ -3005,8 +3015,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						if (oldConfig != null && callable != null) {
 							try {
 								loadDatabase(oldConfig, false);
-								if (callable != null)
-									callable.transfertDatabaseFromOldVersion(configuration);
+                                callable.transfertDatabaseFromOldVersion(configuration);
 								removeOldDatabase = callable.hasToRemoveOldDatabase();
 							} catch (DatabaseException e) {
 								oldConfig = null;
@@ -3087,12 +3096,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	<TT extends Table<?>> TT newInstance(Class<TT> _class_table) throws InstantiationException, IllegalAccessException,
 			IllegalArgumentException, InvocationTargetException, DatabaseException, PrivilegedActionException {
-		DefaultConstructorAccessPrivilegedAction<TT> class_privelege = new DefaultConstructorAccessPrivilegedAction<TT>(
-				_class_table);
+		DefaultConstructorAccessPrivilegedAction<TT> class_privelege = new DefaultConstructorAccessPrivilegedAction<>(
+                _class_table);
 
-		Constructor<TT> const_table = (Constructor<TT>) AccessController.doPrivileged(class_privelege);
+		Constructor<TT> const_table = AccessController.doPrivileged(class_privelege);
 
-		TT t = (TT) const_table.newInstance();
+
+		TT t = const_table.newInstance();
 		t.initializeStep0(this);
 		return t;
 	}
@@ -3174,7 +3184,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				unlockWrite();
 			}
 		}
-		return db.tables_instances.values();
+        assert db != null;
+        return db.tables_instances.values();
 	}
 
 	protected abstract String getOnUpdateCascadeSqlQuerry();

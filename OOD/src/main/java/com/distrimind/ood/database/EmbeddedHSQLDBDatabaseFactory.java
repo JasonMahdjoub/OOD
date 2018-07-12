@@ -60,21 +60,26 @@ public class EmbeddedHSQLDBDatabaseFactory extends DatabaseFactory {
 	private int cache_free_count;
 	private short constructorNb;
 	private boolean lockFile;
+	private boolean alwaysDeconectAfterOnTransaction;
 
 	protected EmbeddedHSQLDBDatabaseFactory() {
 		constructorNb = 0;
 	}
-
 	public EmbeddedHSQLDBDatabaseFactory(File _file_name) {
+		this(_file_name, false);
+	}
+
+	public EmbeddedHSQLDBDatabaseFactory(File _file_name, boolean alwaysDeconectAfterOnTransaction) {
 		if (_file_name == null)
 			throw new NullPointerException("The parameter _file_name is a null pointer !");
 		if (_file_name.isDirectory())
 			throw new IllegalArgumentException("The given file name is a directory !");
 		file_name = _file_name;
 		constructorNb = 1;
+		this.alwaysDeconectAfterOnTransaction=alwaysDeconectAfterOnTransaction;
 	}
 
-	public EmbeddedHSQLDBDatabaseFactory(File _file_name, HSQLDBConcurrencyControl concurrencyControl, int _cache_rows,
+	public EmbeddedHSQLDBDatabaseFactory(File _file_name, boolean alwaysDeconectAfterOnTransaction, HSQLDBConcurrencyControl concurrencyControl, int _cache_rows,
 			int _cache_size, int _result_max_memory_rows, int _cache_free_count) {
 		if (_file_name == null)
 			throw new NullPointerException("The parameter _file_name is a null pointer !");
@@ -87,6 +92,7 @@ public class EmbeddedHSQLDBDatabaseFactory extends DatabaseFactory {
 		result_max_memory_rows = _result_max_memory_rows;
 		cache_free_count = _cache_free_count;
 		constructorNb = 2;
+		this.alwaysDeconectAfterOnTransaction=alwaysDeconectAfterOnTransaction;
 	}
 
 	@Override
@@ -94,7 +100,7 @@ public class EmbeddedHSQLDBDatabaseFactory extends DatabaseFactory {
 		if (constructorNb == 1)
 			return new EmbeddedHSQLDBWrapper(file_name);
 		else if (constructorNb == 2)
-			return new EmbeddedHSQLDBWrapper(file_name, concurrencyControl, cache_rows, cache_size,
+			return new EmbeddedHSQLDBWrapper(file_name, alwaysDeconectAfterOnTransaction, concurrencyControl, cache_rows, cache_size,
 					result_max_memory_rows, cache_free_count, lockFile);
 		else
 			throw new DatabaseException("Invalid database factory configuration");

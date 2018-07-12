@@ -46,6 +46,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
@@ -71,7 +72,7 @@ public class LongNumberFieldAccessor extends FieldAccessor {
 		super(_sql_connection, _field, parentFieldName, compatible_classes, table_class);
 		sql_fields = new SqlField[1];
 		sql_fields[0] = new SqlField(table_name + "." + this.getFieldName(),
-				DatabaseWrapperAccessor.getLongType(sql_connection), null, null, isNotNull());
+				Objects.requireNonNull(DatabaseWrapperAccessor.getLongType(sql_connection)), null, null, isNotNull());
 	}
 
 	@Override
@@ -88,9 +89,7 @@ public class LongNumberFieldAccessor extends FieldAccessor {
 					+ ", should be an Long and not a " + _field_instance.getClass().getName());
 		try {
 			field.set(_class_instance, _field_instance);
-		} catch (IllegalArgumentException e) {
-			throw new DatabaseException("Unexpected exception.", e);
-		} catch (IllegalAccessException e) {
+		} catch (IllegalArgumentException | IllegalAccessException e) {
 			throw new DatabaseException("Unexpected exception.", e);
 		}
 	}
@@ -121,6 +120,7 @@ public class LongNumberFieldAccessor extends FieldAccessor {
 				val1 = (Long) _field_instance;
 			Long val2 = (Long) _result_set.getObject(_sft.translateField(sql_fields[0]));
 
+			//noinspection NumberEquality
 			return (val1 == null || val2 == null) ? val1 == val2 : val1.equals(val2);
 		} catch (SQLException e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -172,14 +172,9 @@ public class LongNumberFieldAccessor extends FieldAccessor {
 			else if (obj1 == obj2)
 				return 0;
 
-			long val1 = ((Long) obj1).longValue();
-			long val2 = ((Long) obj2).longValue();
-			if (val1 < val2)
-				return -1;
-			else if (val1 == val2)
-				return 0;
-			else
-				return 1;
+			long val1 = (Long) obj1;
+			long val2 = (Long) obj2;
+			return Long.compare(val1, val2);
 		} catch (Exception e) {
 			throw new DatabaseException("", e);
 		}
@@ -253,7 +248,7 @@ public class LongNumberFieldAccessor extends FieldAccessor {
 
 	@Override
 	public Object autoGenerateValue(AbstractSecureRandom _random) {
-		return new Long(new BigInteger(getBitsNumber(), _random).longValue());
+		return new BigInteger(getBitsNumber(), _random).longValue();
 	}
 
 	@Override
@@ -279,7 +274,7 @@ public class LongNumberFieldAccessor extends FieldAccessor {
 				_oos.writeBoolean(false);
 			} else {
 				_oos.writeBoolean(true);
-				_oos.writeLong(v.longValue());
+				_oos.writeLong(v);
 			}
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -291,7 +286,7 @@ public class LongNumberFieldAccessor extends FieldAccessor {
 		try {
 			boolean isNotNull = _ois.readBoolean();
 			if (isNotNull) {
-				_map.put(getFieldName(), new Long(_ois.readLong()));
+				_map.put(getFieldName(), _ois.readLong());
 			} else if (isNotNull())
 				throw new DatabaseException("field should not be null");
 			else {
@@ -307,7 +302,7 @@ public class LongNumberFieldAccessor extends FieldAccessor {
 		try {
 			boolean isNotNull = _ois.readBoolean();
 			if (isNotNull) {
-				Long l = new Long(_ois.readLong());
+				Long l = _ois.readLong();
 				setValue(_classInstance, l);
 				return l;
 			} else if (isNotNull())

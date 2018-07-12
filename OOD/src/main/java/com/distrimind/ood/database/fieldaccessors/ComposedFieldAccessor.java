@@ -43,6 +43,7 @@ import java.lang.reflect.Modifier;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
@@ -80,10 +81,7 @@ public class ComposedFieldAccessor extends FieldAccessor {
 			ArrayList<SqlField> sfs = new ArrayList<>();
 
 			for (FieldAccessor fa : fieldsAccessor) {
-				for (SqlField sf : fa.getDeclaredSqlFields()) {
-					sfs.add(sf);
-
-				}
+				Collections.addAll(sfs, fa.getDeclaredSqlFields());
 			}
 			sqlFields = new SqlField[sfs.size()];
 			sfs.toArray(sqlFields);
@@ -127,9 +125,7 @@ public class ComposedFieldAccessor extends FieldAccessor {
 						+ field.getName() + " of the class " + field.getDeclaringClass().getName()
 						+ ", should be an instance of " + field.getType().getCanonicalName() + " and not a "
 						+ _field_instance.getClass().getName());
-		} catch (IllegalArgumentException e) {
-			throw new DatabaseException("Unexpected exception.", e);
-		} catch (IllegalAccessException e) {
+		} catch (IllegalArgumentException | IllegalAccessException e) {
 			throw new DatabaseException("Unexpected exception.", e);
 		}
 
@@ -139,7 +135,7 @@ public class ComposedFieldAccessor extends FieldAccessor {
 	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
-			Object instance = (Object) defaultConstructor.newInstance();
+			Object instance = defaultConstructor.newInstance();
 
 			for (FieldAccessor fa : fieldsAccessor) {
 				fa.setValue(instance, _result_set, _pointing_records);

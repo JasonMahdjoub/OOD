@@ -34,9 +34,7 @@ import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -58,7 +56,6 @@ import com.distrimind.util.Bits;
  */
 final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransactionEvent.Record> {
 
-	private volatile IDTable transactionIDTable = null;
 	private volatile DatabaseDistantEventsTable databaseDistantEventsTable = null;
 
 	protected DatabaseDistantTransactionEvent() throws DatabaseException {
@@ -124,9 +121,9 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 			return hook;
 		}
 
-		public void setHook(DatabaseHooksTable.Record _hook) {
+		/*public void setHook(DatabaseHooksTable.Record _hook) {
 			hook = _hook;
-		}
+		}*/
 
 		/*
 		 * public byte[] getTransaction() { return transaction; }
@@ -232,7 +229,7 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 			return !l.contains(newHostID);
 		}
 
-		Set<AbstractDecentralizedID> getConcernedHosts(Collection<AbstractDecentralizedID> hosts)
+		/*Set<AbstractDecentralizedID> getConcernedHosts(Collection<AbstractDecentralizedID> hosts)
 				throws SerializationDatabaseException {
 			HashSet<AbstractDecentralizedID> res = new HashSet<>();
 			if (peersInformedFull)
@@ -243,7 +240,7 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 					res.add(id);
 			}
 			return res;
-		}
+		}*/
 
 	}
 
@@ -288,9 +285,7 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 
 			@Override
 			public boolean nextRecord(Record _record) throws DatabaseException {
-				if (!getDatabaseHooksTable().isConcernedByIndirectTransaction(_record))
-					return true;
-				return false;
+				return !getDatabaseHooksTable().isConcernedByIndirectTransaction(_record);
 			}
 
 		});
@@ -305,7 +300,7 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 			byte b[] = new byte[size];
 			if (ois.read(b) != size)
 				throw new SerializationDatabaseException("Impossible to read the expected bytes number : " + size);
-			AbstractDecentralizedID hookID = null;
+			AbstractDecentralizedID hookID;
 			try {
 				hookID = AbstractDecentralizedID.instanceOf(b);
 			} catch (Exception e) {
@@ -349,11 +344,11 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 		}
 	}
 
-	IDTable getTransactionIDTable() throws DatabaseException {
+	/*IDTable getTransactionIDTable() throws DatabaseException {
 		if (transactionIDTable == null)
 			transactionIDTable = (IDTable) getDatabaseWrapper().getTableInstance(IDTable.class);
 		return transactionIDTable;
-	}
+	}*/
 
 	DatabaseDistantEventsTable getDatabaseDistantEventsTable() throws DatabaseException {
 		if (databaseDistantEventsTable == null)
@@ -362,7 +357,7 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 		return databaseDistantEventsTable;
 	}
 
-	boolean hasTransactionToSend(final DatabaseHooksTable.Record hook, final long lastID) throws DatabaseException {
+	/*boolean hasTransactionToSend(final DatabaseHooksTable.Record hook, final long lastID) throws DatabaseException {
 		final AtomicBoolean found = new AtomicBoolean(false);
 		getRecords(new Filter<Record>() {
 
@@ -377,7 +372,7 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 
 		}, "localID>=%lastID AND hook!=%hostOrigin", "lastID", new Long(lastID), "hostOrigin", hook);
 		return found.get();
-	}
+	}*/
 
 	int exportTransactions(final DataOutputStream oos, final DatabaseHooksTable.Record hook, final int maxEventsRecords,
 			final long fromTransactionID, final AtomicLong nearNextLocalID) throws DatabaseException {
@@ -419,7 +414,7 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 											public boolean nextRecord(
 													com.distrimind.ood.database.DatabaseDistantEventsTable.Record _record)
 													throws DatabaseException {
-												_record.export(oos, getDatabaseWrapper());
+												_record.export(oos);
 												number.incrementAndGet();
 												return false;
 											}
@@ -437,7 +432,7 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 					}
 				}
 			}, "hook!=%hook AND localID>=%currentLocalID",
-					new Object[] { "hook", hook, "currentLocalID", new Long(fromTransactionID) }, true, "id");
+					new Object[] { "hook", hook, "currentLocalID", fromTransactionID}, true, "id");
 			return number.get();
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);

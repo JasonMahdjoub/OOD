@@ -37,7 +37,6 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database;
 
 import java.util.ArrayList;
-import java.util.Collection;
 
 /**
  * 
@@ -53,7 +52,7 @@ public enum DatabaseEventType {
 	private boolean hasNewValue;
 	private boolean hasOldValue;
 
-	private DatabaseEventType(byte type, boolean hasNewValue, boolean hasOldValue) {
+	DatabaseEventType(byte type, boolean hasNewValue, boolean hasOldValue) {
 		this.type = type;
 		this.hasNewValue = hasNewValue;
 		this.hasOldValue = hasOldValue;
@@ -86,7 +85,7 @@ public enum DatabaseEventType {
 		return list;
 	}
 
-	static byte getByte(DatabaseEventType dte, DatabaseEventType... _databaseEventTypes) {
+	/*static byte getByte(DatabaseEventType dte, DatabaseEventType... _databaseEventTypes) {
 		byte res = dte.getByte();
 		for (DatabaseEventType d : _databaseEventTypes)
 			res |= d.getByte();
@@ -98,5 +97,5 @@ public enum DatabaseEventType {
 		for (DatabaseEventType d : eventsType)
 			res |= d.getByte();
 		return res;
-	}
+	}*/
 }

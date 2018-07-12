@@ -52,22 +52,25 @@ public class EmbeddedDerbyDatabaseFactory extends DatabaseFactory {
 	 */
 	private static final long serialVersionUID = 5754965997489003893L;
 	private File directory;
-
+	private boolean alwaysDeconectAfterOnTransaction;
 	protected EmbeddedDerbyDatabaseFactory() {
 
 	}
-
 	public EmbeddedDerbyDatabaseFactory(File directory) {
+		this(directory, false);
+	}
+	public EmbeddedDerbyDatabaseFactory(File directory, boolean alwaysDeconectAfterOnTransaction) {
 		if (directory == null)
 			throw new NullPointerException("The parameter _file_name is a null pointer !");
 		if (directory.exists() && !directory.isDirectory())
 			throw new IllegalArgumentException("The given file name must be directory !");
 		this.directory = directory;
+		this.alwaysDeconectAfterOnTransaction=alwaysDeconectAfterOnTransaction;
 	}
 
 	@Override
 	protected DatabaseWrapper newWrapperInstance() throws DatabaseException {
-		return new EmbeddedDerbyWrapper(directory);
+		return new EmbeddedDerbyWrapper(directory, alwaysDeconectAfterOnTransaction);
 	}
 
 }

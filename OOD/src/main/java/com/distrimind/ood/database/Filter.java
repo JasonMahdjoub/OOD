@@ -51,7 +51,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  * @param <T>
  *            the record type which correspond to its database class.
  */
-public abstract class Filter<T extends Object> {
+public abstract class Filter<T> {
 	private boolean isStoped = false;
 
 	/**

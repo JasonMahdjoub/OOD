@@ -45,6 +45,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
@@ -69,7 +70,7 @@ public class DoubleNumberFieldAccessor extends FieldAccessor {
 		super(_sql_connection, _field, parentFieldName, compatible_classes, table_class);
 		sql_fields = new SqlField[1];
 		sql_fields[0] = new SqlField(table_name + "." + this.getFieldName(),
-				DatabaseWrapperAccessor.getDoubleType(sql_connection), null, null, isNotNull());
+				Objects.requireNonNull(DatabaseWrapperAccessor.getDoubleType(sql_connection)), null, null, isNotNull());
 
 	}
 
@@ -90,9 +91,7 @@ public class DoubleNumberFieldAccessor extends FieldAccessor {
 				throw new FieldDatabaseException("The given _field_instance parameter, destinated to the field "
 						+ field.getName() + " of the class " + field.getDeclaringClass().getName()
 						+ ", should be a Double and not a " + _field_instance.getClass().getName());
-		} catch (IllegalArgumentException e) {
-			throw DatabaseException.getDatabaseException(e);
-		} catch (IllegalAccessException e) {
+		} catch (IllegalArgumentException | IllegalAccessException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
 
@@ -117,6 +116,7 @@ public class DoubleNumberFieldAccessor extends FieldAccessor {
 		}
 	}
 
+	@SuppressWarnings("NumberEquality")
 	@Override
 	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
 			throws DatabaseException {
@@ -177,14 +177,9 @@ public class DoubleNumberFieldAccessor extends FieldAccessor {
 			else if (obj1 == obj2)
 				return 0;
 
-			double val1 = ((Double) obj1).doubleValue();
-			double val2 = ((Double) obj2).doubleValue();
-			if (val1 < val2)
-				return -1;
-			else if (val1 == val2)
-				return 0;
-			else
-				return 1;
+			double val1 = (Double) obj1;
+			double val2 = (Double) obj2;
+			return Double.compare(val1, val2);
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -260,7 +255,7 @@ public class DoubleNumberFieldAccessor extends FieldAccessor {
 				_oos.writeBoolean(false);
 			} else {
 				_oos.writeBoolean(true);
-				_oos.writeDouble(v.doubleValue());
+				_oos.writeDouble(v);
 			}
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -272,7 +267,7 @@ public class DoubleNumberFieldAccessor extends FieldAccessor {
 		try {
 			boolean isNotNull = _ois.readBoolean();
 			if (isNotNull) {
-				_map.put(getFieldName(), new Double(_ois.readDouble()));
+				_map.put(getFieldName(), _ois.readDouble());
 			} else if (isNotNull())
 				throw new DatabaseException("field should not be null");
 			else {
@@ -288,7 +283,7 @@ public class DoubleNumberFieldAccessor extends FieldAccessor {
 		try {
 			boolean isNotNull = _ois.readBoolean();
 			if (isNotNull) {
-				Double d = new Double(_ois.readDouble());
+				Double d = _ois.readDouble();
 				setValue(_classInstance, d);
 				return d;
 			} else if (isNotNull())

@@ -45,6 +45,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
@@ -69,7 +70,7 @@ public class FloatNumberFieldAccessor extends FieldAccessor {
 		super(_sql_connection, _field, parentFieldName, compatible_classes, table_class);
 		sql_fields = new SqlField[1];
 		sql_fields[0] = new SqlField(table_name + "." + this.getFieldName(),
-				DatabaseWrapperAccessor.getFloatType(sql_connection), null, null, isNotNull());
+				Objects.requireNonNull(DatabaseWrapperAccessor.getFloatType(sql_connection)), null, null, isNotNull());
 
 	}
 
@@ -90,9 +91,7 @@ public class FloatNumberFieldAccessor extends FieldAccessor {
 				throw new FieldDatabaseException("The given _field_instance parameter, destinated to the field "
 						+ field.getName() + " of the class " + field.getDeclaringClass().getName()
 						+ ", should be a Float and not a " + _field_instance.getClass().getName());
-		} catch (IllegalArgumentException e) {
-			throw new DatabaseException("Unexpected exception.", e);
-		} catch (IllegalAccessException e) {
+		} catch (IllegalArgumentException | IllegalAccessException e) {
 			throw new DatabaseException("Unexpected exception.", e);
 		}
 	}
@@ -124,6 +123,7 @@ public class FloatNumberFieldAccessor extends FieldAccessor {
 				val1 = (Float) _field_instance;
 			Float val2 = (Float) _result_set.getObject(_sft.translateField(sql_fields[0]));
 
+			//noinspection NumberEquality
 			return (val1 == null || val2 == null) ? val1 == val2 : val1.equals(val2);
 		} catch (SQLException e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -175,14 +175,9 @@ public class FloatNumberFieldAccessor extends FieldAccessor {
 			else if (obj1 == obj2)
 				return 0;
 
-			float val1 = ((Float) obj1).floatValue();
-			float val2 = ((Float) obj2).floatValue();
-			if (val1 < val2)
-				return -1;
-			else if (val1 == val2)
-				return 0;
-			else
-				return 1;
+			float val1 = (Float) obj1;
+			float val2 = (Float) obj2;
+			return Float.compare(val1, val2);
 		} catch (Exception e) {
 			throw new DatabaseException("", e);
 		}
@@ -196,9 +191,9 @@ public class FloatNumberFieldAccessor extends FieldAccessor {
 			if (val == null && isNotNull())
 				throw new DatabaseIntegrityException("Unexpected exception");
 			if (val instanceof Double)
-				field.set(_class_instance, new Float(((Double) val).floatValue()));
+				field.set(_class_instance, ((Double) val).floatValue());
 			else
-				field.set(_class_instance, (Float) val);
+				field.set(_class_instance, val);
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -222,7 +217,7 @@ public class FloatNumberFieldAccessor extends FieldAccessor {
 			Float val = (Float) o;
 			Double res = null;
 			if (val != null)
-				res = new Double(val.floatValue());
+				res = (double) val;
 			_prepared_statement.setObject(_field_start, res);
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -264,7 +259,7 @@ public class FloatNumberFieldAccessor extends FieldAccessor {
 				_oos.writeBoolean(false);
 			} else {
 				_oos.writeBoolean(true);
-				_oos.writeFloat(v.floatValue());
+				_oos.writeFloat(v);
 			}
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -276,7 +271,7 @@ public class FloatNumberFieldAccessor extends FieldAccessor {
 		try {
 			boolean isNotNull = _ois.readBoolean();
 			if (isNotNull) {
-				_map.put(getFieldName(), new Float(_ois.readFloat()));
+				_map.put(getFieldName(), _ois.readFloat());
 			} else if (isNotNull())
 				throw new DatabaseException("field should not be null");
 			else {
@@ -292,7 +287,7 @@ public class FloatNumberFieldAccessor extends FieldAccessor {
 		try {
 			boolean isNotNull = _ois.readBoolean();
 			if (isNotNull) {
-				Float f = new Float(_ois.readFloat());
+				Float f = _ois.readFloat();
 				setValue(_classInstance, f);
 				return f;
 			} else if (isNotNull())

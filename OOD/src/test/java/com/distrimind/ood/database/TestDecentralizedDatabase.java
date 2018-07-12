@@ -59,19 +59,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import com.distrimind.ood.database.BigDatabaseEventToSend;
-import com.distrimind.ood.database.DatabaseConfiguration;
-import com.distrimind.ood.database.DatabaseCreationCallable;
-import com.distrimind.ood.database.DatabaseEvent;
-import com.distrimind.ood.database.DatabaseEventToSend;
-import com.distrimind.ood.database.DatabaseEventType;
-import com.distrimind.ood.database.DatabaseRecord;
-import com.distrimind.ood.database.DatabaseWrapper;
-import com.distrimind.ood.database.DatabaseWrapper.SynchonizationAnomalyType;
-import com.distrimind.ood.database.SynchronizedTransaction;
-import com.distrimind.ood.database.Table;
-import com.distrimind.ood.database.TableEvent;
-import com.distrimind.ood.database.TransactionIsolation;
+import com.distrimind.ood.database.DatabaseWrapper.SynchronizationAnomalyType;
 import com.distrimind.ood.database.decentralizeddatabase.TableAlone;
 import com.distrimind.ood.database.decentralizeddatabase.TablePointed;
 import com.distrimind.ood.database.decentralizeddatabase.TablePointing;
@@ -88,6 +76,7 @@ import com.distrimind.util.DecentralizedIDGenerator;
  * @version 1.0
  * @since OOD 2.0
  */
+@SuppressWarnings("deprecation")
 public abstract class TestDecentralizedDatabase {
 	public static class DistantDatabaseEvent {
 		private final byte[] eventToSend;
@@ -320,8 +309,8 @@ public abstract class TestDecentralizedDatabase {
 
 		@Override
 		public void anomalyDetected(AbstractDecentralizedID distantPeerID, AbstractDecentralizedID intermediatePeerID,
-				SynchonizationAnomalyType _type, Table<?> _concernedTable, Map<String, Object> _primary_keys,
-				DatabaseRecord _record) {
+                                    SynchronizationAnomalyType _type, Table<?> _concernedTable, Map<String, Object> _primary_keys,
+                                    DatabaseRecord _record) {
 			anomalies.add(new Anomaly(distantPeerID, intermediatePeerID, _type, _concernedTable, _primary_keys, _record));
 		}
 
@@ -334,9 +323,9 @@ public abstract class TestDecentralizedDatabase {
 		final Table<?> table;
 		final Map<String, Object> keys;
 		final DatabaseRecord record;
-		final SynchonizationAnomalyType type;
+		final SynchronizationAnomalyType type;
 
-		public Anomaly(AbstractDecentralizedID _distantPeerID, AbstractDecentralizedID _intermediatePeerID,SynchonizationAnomalyType type,
+		public Anomaly(AbstractDecentralizedID _distantPeerID, AbstractDecentralizedID _intermediatePeerID,SynchronizationAnomalyType type,
 				Table<?> _table, Map<String, Object> _keys, DatabaseRecord _record) {
 			super();
 			distantPeerID = _distantPeerID;
@@ -402,17 +391,16 @@ public abstract class TestDecentralizedDatabase {
 				.loadDatabase(new DatabaseConfiguration(TableAlone.class.getPackage(), new DatabaseCreationCallable() {
 
 					@Override
-					public void transfertDatabaseFromOldVersion(DatabaseConfiguration _newDatabaseTables)
-							throws Exception {
+					public void transfertDatabaseFromOldVersion(DatabaseConfiguration _newDatabaseTables) {
 					}
 
 					@Override
-					public boolean hasToRemoveOldDatabase() throws Exception {
+					public boolean hasToRemoveOldDatabase() {
 						return false;
 					}
 
 					@Override
-					public void afterDatabaseCreation(DatabaseConfiguration _newDatabaseTables) throws Exception {
+					public void afterDatabaseCreation(DatabaseConfiguration _newDatabaseTables) {
 
 					}
 				}, null), true);
@@ -700,7 +688,8 @@ public abstract class TestDecentralizedDatabase {
 
 	}
 
-	private void addTableAloneRecord(Database db, boolean first) throws DatabaseException {
+	@SuppressWarnings("SameParameterValue")
+    private void addTableAloneRecord(Database db, boolean first) throws DatabaseException {
 		TableAlone.Record ralone = generatesTableAloneRecord();
 
 		db.getTableAlone().addRecord(((Table<TableAlone.Record>) db.getTableAlone()).getMap(ralone, true, true));
@@ -727,7 +716,7 @@ public abstract class TestDecentralizedDatabase {
 		record = db.getUndecentralizableTableA1().addRecord(record);
 		UndecentralizableTableB1.Record record2 = new UndecentralizableTableB1.Record();
 		record2.pointing = record;
-		record2 = db.getUndecentralizableTableB1().addRecord(record2);
+		db.getUndecentralizableTableB1().addRecord(record2);
 	}
 
 	private String generateString() {
@@ -752,7 +741,8 @@ public abstract class TestDecentralizedDatabase {
 		return rpointing1;
 	}
 
-	private void addTablePointedAndPointingRecords(Database db, boolean first) throws DatabaseException {
+	@SuppressWarnings("SameParameterValue")
+    private void addTablePointedAndPointingRecords(Database db, boolean first) throws DatabaseException {
 		TablePointed.Record rpointed = new TablePointed.Record();
 		rpointed.id = new DecentralizedIDGenerator();
 		rpointed.value = generateString();
@@ -884,7 +874,7 @@ public abstract class TestDecentralizedDatabase {
 			for (Database other : listDatabase) {
 				if (other != db) {
 					UndecentralizableTableA1.Record otherR = other.getUndecentralizableTableA1().getRecord("id",
-							new Integer(r.id));
+                            r.id);
 					if (otherR != null) {
 						Assert.assertNotEquals(otherR.value, r.value);
 					}
@@ -958,8 +948,8 @@ public abstract class TestDecentralizedDatabase {
 				if (livingRecords.isEmpty())
 					continue;
 				DatabaseRecord record = livingRecords.get((int) (Math.random() * livingRecords.size()));
-				te = new TableEvent<DatabaseRecord>(-1, DatabaseEventType.REMOVE, record, null, null);
-				Assert.assertEquals(livingRecords.remove(record), true);
+				te = new TableEvent<>(-1, DatabaseEventType.REMOVE, record, null, null);
+                Assert.assertTrue(livingRecords.remove(record));
 				pointedRecord.remove(record);
 			}
 				break;
@@ -967,8 +957,8 @@ public abstract class TestDecentralizedDatabase {
 				if (livingRecords.isEmpty())
 					continue;
 				DatabaseRecord record = livingRecords.get((int) (Math.random() * livingRecords.size()));
-				te = new TableEvent<DatabaseRecord>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, record, null, null);
-				Assert.assertEquals(livingRecords.remove(record), true);
+				te = new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, record, null, null);
+                Assert.assertTrue(livingRecords.remove(record));
 				pointedRecord.remove(record);
 			}
 				break;
@@ -993,7 +983,7 @@ public abstract class TestDecentralizedDatabase {
 					r.table2 = pointedRecord.get((int) (Math.random() * pointedRecord.size()));
 					recordNew = r;
 				}
-				te = new TableEvent<DatabaseRecord>(-1, DatabaseEventType.UPDATE, record, recordNew, null);
+				te = new TableEvent<>(-1, DatabaseEventType.UPDATE, record, recordNew, null);
 			}
 				break;
 
@@ -1090,79 +1080,78 @@ public abstract class TestDecentralizedDatabase {
 	private void testEventSynchronized(Database db, List<TableEvent<DatabaseRecord>> levents, boolean synchronizedOk)
 			throws DatabaseException {
 		ArrayList<TableEvent<DatabaseRecord>> l = new ArrayList<>(levents.size());
-		for (int i = 0; i < levents.size(); i++) {
-			TableEvent<DatabaseRecord> te = levents.get(i);
-			switch (te.getType()) {
-			case ADD:
-			case UPDATE:
-			case REMOVE: {
+        for (TableEvent<DatabaseRecord> te : levents) {
+            switch (te.getType()) {
+                case ADD:
+                case UPDATE:
+                case REMOVE: {
 
-				for (Iterator<TableEvent<DatabaseRecord>> it = l.iterator(); it.hasNext();) {
-					TableEvent<DatabaseRecord> te2 = it.next();
-					DatabaseRecord dr1 = te.getOldDatabaseRecord() == null ? te.getNewDatabaseRecord()
-							: te.getOldDatabaseRecord();
-					DatabaseRecord dr2 = te2.getOldDatabaseRecord() == null ? te2.getNewDatabaseRecord()
-							: te2.getOldDatabaseRecord();
-					if (dr1 == null)
-						throw new IllegalAccessError();
-					if (dr2 == null)
-						throw new IllegalAccessError();
-					Table<DatabaseRecord> table = te2.getTable(db.getDbwrapper());
-					if (te.getTable(db.getDbwrapper()).getClass().getName().equals(table.getClass().getName())
-							&& table.equals(dr1, dr2)) {
-						it.remove();
-						break;
-					}
-				}
-				break;
-			}
-			case REMOVE_WITH_CASCADE: {
+                    for (Iterator<TableEvent<DatabaseRecord>> it = l.iterator(); it.hasNext(); ) {
+                        TableEvent<DatabaseRecord> te2 = it.next();
+                        DatabaseRecord dr1 = te.getOldDatabaseRecord() == null ? te.getNewDatabaseRecord()
+                                : te.getOldDatabaseRecord();
+                        DatabaseRecord dr2 = te2.getOldDatabaseRecord() == null ? te2.getNewDatabaseRecord()
+                                : te2.getOldDatabaseRecord();
+                        if (dr1 == null)
+                            throw new IllegalAccessError();
+                        if (dr2 == null)
+                            throw new IllegalAccessError();
+                        Table<DatabaseRecord> table = te2.getTable(db.getDbwrapper());
+                        if (te.getTable(db.getDbwrapper()).getClass().getName().equals(table.getClass().getName())
+                                && table.equals(dr1, dr2)) {
+                            it.remove();
+                            break;
+                        }
+                    }
+                    break;
+                }
+                case REMOVE_WITH_CASCADE: {
 
-				Table<DatabaseRecord> tablePointed = null;
-				TablePointed.Record recordRemoved = null;
-				for (Iterator<TableEvent<DatabaseRecord>> it = l.iterator(); it.hasNext();) {
-					TableEvent<DatabaseRecord> te2 = it.next();
-					Table<DatabaseRecord> table = te2.getTable(db.getDbwrapper());
-					DatabaseRecord dr1 = te.getOldDatabaseRecord() == null ? te.getNewDatabaseRecord()
-							: te.getOldDatabaseRecord();
-					DatabaseRecord dr2 = te2.getOldDatabaseRecord() == null ? te2.getNewDatabaseRecord()
-							: te2.getOldDatabaseRecord();
-					if (dr1 == null)
-						throw new IllegalAccessError();
-					if (dr2 == null)
-						throw new IllegalAccessError();
+                    Table<DatabaseRecord> tablePointed = null;
+                    TablePointed.Record recordRemoved = null;
+                    for (Iterator<TableEvent<DatabaseRecord>> it = l.iterator(); it.hasNext(); ) {
+                        TableEvent<DatabaseRecord> te2 = it.next();
+                        Table<DatabaseRecord> table = te2.getTable(db.getDbwrapper());
+                        DatabaseRecord dr1 = te.getOldDatabaseRecord() == null ? te.getNewDatabaseRecord()
+                                : te.getOldDatabaseRecord();
+                        DatabaseRecord dr2 = te2.getOldDatabaseRecord() == null ? te2.getNewDatabaseRecord()
+                                : te2.getOldDatabaseRecord();
+                        if (dr1 == null)
+                            throw new IllegalAccessError();
+                        if (dr2 == null)
+                            throw new IllegalAccessError();
 
-					if (te.getTable(db.getDbwrapper()).getClass().getName().equals(table.getClass().getName())
-							&& table.equals(dr1, dr2)) {
+                        if (te.getTable(db.getDbwrapper()).getClass().getName().equals(table.getClass().getName())
+                                && table.equals(dr1, dr2)) {
 
-						it.remove();
-						if (table.getClass().getName().equals(TablePointed.class.getName())) {
-							recordRemoved = (TablePointed.Record) te2.getNewDatabaseRecord();
-							tablePointed = table;
-						}
-						break;
-					}
+                            it.remove();
+                            if (table.getClass().getName().equals(TablePointed.class.getName())) {
+                                recordRemoved = (TablePointed.Record) te2.getNewDatabaseRecord();
+                                tablePointed = table;
+                            }
+                            break;
+                        }
 
-				}
-				if (recordRemoved != null) {
-					for (Iterator<TableEvent<DatabaseRecord>> it = l.iterator(); it.hasNext();) {
-						TableEvent<DatabaseRecord> te2 = it.next();
-						Table<DatabaseRecord> table = te2.getTable(db.getDbwrapper());
-						if (table.getClass().getName().equals(TablePointing.class.getName())) {
-							TablePointing.Record tp = te2.getOldDatabaseRecord() == null
-									? (TablePointing.Record) te2.getNewDatabaseRecord()
-									: (TablePointing.Record) te2.getOldDatabaseRecord();
-							if (tp.table2 != null && tablePointed.equals(tp.table2, recordRemoved))
-								it.remove();
-						}
-					}
+                    }
+                    if (recordRemoved != null) {
+                        for (Iterator<TableEvent<DatabaseRecord>> it = l.iterator(); it.hasNext(); ) {
+                            TableEvent<DatabaseRecord> te2 = it.next();
+                            Table<DatabaseRecord> table = te2.getTable(db.getDbwrapper());
+                            if (table.getClass().getName().equals(TablePointing.class.getName())) {
+                                TablePointing.Record tp = te2.getOldDatabaseRecord() == null
+                                        ? (TablePointing.Record) te2.getNewDatabaseRecord()
+                                        : (TablePointing.Record) te2.getOldDatabaseRecord();
+                                if (tp.table2 != null && tablePointed.equals(tp.table2, recordRemoved))
+                                    it.remove();
+                            }
+                        }
 
-				}
-				break;
-			}
-			}
-			l.add(te);
-		}
+                    }
+                    break;
+                }
+            }
+            l.add(te);
+        }
 		for (TableEvent<DatabaseRecord> te : l)
 			testEventSynchronized(db, te, synchronizedOk);
 	}

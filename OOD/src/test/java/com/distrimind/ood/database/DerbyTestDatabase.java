@@ -36,25 +36,20 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import java.io.File;
-import java.util.HashMap;
-
+import com.distrimind.ood.database.database.Table1;
+import com.distrimind.ood.database.database.Table1.Record;
+import com.distrimind.ood.database.database.Table3;
+import com.distrimind.ood.database.exceptions.ConstraintsNotRespectedDatabaseException;
+import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.FileTools;
+import gnu.vm.jgnu.security.NoSuchAlgorithmException;
+import gnu.vm.jgnu.security.NoSuchProviderException;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
-import com.distrimind.ood.database.DatabaseWrapper;
-import com.distrimind.ood.database.EmbeddedDerbyWrapper;
-import com.distrimind.ood.database.Filter;
-import com.distrimind.ood.database.database.Table1;
-import com.distrimind.ood.database.database.Table3;
-import com.distrimind.ood.database.database.Table1.Record;
-import com.distrimind.ood.database.exceptions.ConstraintsNotRespectedDatabaseException;
-import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.util.FileTools;
-
-import gnu.vm.jgnu.security.NoSuchAlgorithmException;
-import gnu.vm.jgnu.security.NoSuchProviderException;
+import java.io.File;
+import java.util.HashMap;
 
 /**
  * 
@@ -127,7 +122,7 @@ public class DerbyTestDatabase extends TestDatabase {
 
 		HashMap<String, Object> map = new HashMap<>();
 		map.put("fr1_pk1", table1.getRecords().get(1));
-		map.put("int_value", new Integer(1));
+		map.put("int_value", 1);
 		table2.addRecord(map);
 		/*
 		 * map=new HashMap<>(); map.put("fr1_pk1", table3.getRecords().get(1));
@@ -163,29 +158,29 @@ public class DerbyTestDatabase extends TestDatabase {
 
 		try {
 			table1.removeRecords(table1.getRecords());
-			Assert.assertTrue(false);
+			Assert.fail();
 		} catch (ConstraintsNotRespectedDatabaseException e) {
 			Assert.assertTrue(true);
 		}
 		try {
 			table3.removeRecords(table3.getRecords());
-			Assert.assertTrue(false);
+			Assert.fail();
 		} catch (ConstraintsNotRespectedDatabaseException e) {
 			Assert.assertTrue(true);
 		}
-		Assert.assertTrue(table1.getRecordsNumber() == 2);
-		Assert.assertTrue(table3.getRecordsNumber() == 1);
-		Assert.assertTrue(table1.getRecords().size() == 2);
-		Assert.assertTrue(table3.getRecords().size() == 1);
+		Assert.assertEquals(2, table1.getRecordsNumber());
+		Assert.assertEquals(1, table3.getRecordsNumber());
+		Assert.assertEquals(2, table1.getRecords().size());
+		Assert.assertEquals(1, table3.getRecords().size());
 		try {
 			table1.removeRecord(table1.getRecords().get(0));
-			Assert.assertTrue(false);
+			Assert.fail();
 		} catch (ConstraintsNotRespectedDatabaseException e) {
 			Assert.assertTrue(true);
 		}
 		try {
 			table3.removeRecord(table3.getRecords().get(0));
-			Assert.assertTrue(false);
+			Assert.fail();
 		} catch (ConstraintsNotRespectedDatabaseException e) {
 			Assert.assertTrue(true);
 		}
@@ -247,29 +242,26 @@ public class DerbyTestDatabase extends TestDatabase {
 	}
 
 	@Override
-	@Test(threadPoolSize = 1, invocationCount = 1, dependsOnMethods = { "testThreadSafe" }, enabled = true)
+	@Test(threadPoolSize = 1, dependsOnMethods = { "testThreadSafe" })
 	public void testCheckPoint() {
 
 	}
 
 	@Override
-	@Test(threadPoolSize = 1, invocationCount = 1, dependsOnMethods = { "testCheckPoint" })
+	@Test(threadPoolSize = 1, dependsOnMethods = { "testCheckPoint" })
 	public void testBackup() throws DatabaseException {
 		super.testBackup();
 	}
 
 	@Override
-	@Test(threadPoolSize = 1, invocationCount = 1, dependsOnMethods = { "testBackup" })
+	@Test(threadPoolSize = 1, dependsOnMethods = { "testBackup" })
 	public void testDatabaseRemove() throws DatabaseException {
 		super.testDatabaseRemove();
 	}
 
 	@Override
 	public boolean isTestEnabled(int _testNumber) {
-		if (_testNumber == 12 || _testNumber == 13)
-			return false;
-		else
-			return true;
+		return _testNumber != 12 && _testNumber != 13;
 	}
 
 	@Override

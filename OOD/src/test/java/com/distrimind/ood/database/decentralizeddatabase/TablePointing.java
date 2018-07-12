@@ -66,6 +66,7 @@ public final class TablePointing extends Table<TablePointing.Record> {
 			return "TablePointing[" + id + ", " + table2 + "]";
 		}
 
+		@SuppressWarnings("MethodDoesntCallSuperMethod")
 		@Override
 		public Record clone() {
 			Record r = new Record();

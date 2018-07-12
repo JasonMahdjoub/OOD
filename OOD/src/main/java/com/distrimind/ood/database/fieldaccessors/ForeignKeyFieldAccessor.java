@@ -114,7 +114,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 			linked_primary_keys = pointed_table.getPrimaryKeysFieldAccessors();
 			linked_table_name = pointed_table.getName();
 
-			ArrayList<SqlField> sql_fields = new ArrayList<SqlField>();
+			ArrayList<SqlField> sql_fields = new ArrayList<>();
 			for (FieldAccessor fa : linked_primary_keys) {
 				if (fa.isForeignKey()) {
 					((ForeignKeyFieldAccessor) fa).initialize();
@@ -154,9 +154,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 						+ field.getName() + " of the class " + field.getDeclaringClass().getName()
 						+ ", is the same reference than the correspondant table (autoreference).");
 			field.set(_class_instance, _field_instance);
-		} catch (IllegalArgumentException e) {
-			throw new DatabaseException("Unexpected exception.", e);
-		} catch (IllegalAccessException e) {
+		} catch (IllegalArgumentException | IllegalAccessException e) {
 			throw new DatabaseException("Unexpected exception.", e);
 		}
 	}
@@ -169,8 +167,9 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 
 			if (_field_instance == null && isNotNull())
 				return false;
-			Object val1 = (Object) field.get(_class_instance);
-			Object val2 = (Object) _field_instance;
+			Object val1 = field.get(_class_instance);
+			Object val2;
+			val2 = _field_instance;
 			if (val1 == val2)
 				return true;
 			if (val1 == null || val2 == null)
@@ -193,10 +192,8 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 		if (_field_instance != null && !(_field_instance.getClass().equals(field.getType())))
 			return false;
 
-		Object val1 = (Object) _field_instance;
-
 		for (FieldAccessor fa : linked_primary_keys) {
-			if (!fa.equals(val1, _result_set, new SqlFieldTranslation(fa, _sft)))
+			if (!fa.equals(_field_instance, _result_set, new SqlFieldTranslation(fa, _sft)))
 				return false;
 		}
 		return true;
@@ -233,7 +230,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 		} else {
 			int i = 0;
 			for (FieldAccessor fa : linked_primary_keys) {
-				SqlFieldInstance linked_sql_field_instances[] = fa.getSqlFieldsInstances((Object) val);
+				SqlFieldInstance linked_sql_field_instances[] = fa.getSqlFieldsInstances(val);
 				for (SqlFieldInstance sfi : linked_sql_field_instances) {
 					res[i++] = new SqlFieldInstance(
 							table_name + "." + this.getFieldName() + "__" + pointed_table.getName() + "_"
@@ -338,7 +335,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 
 			for (FieldAccessor fa : linked_primary_keys) {
 				if (dr == null) {
-					for (int i = 0; i < this.sql_fields.length; i++) {
+					for (SqlField ignored : this.sql_fields) {
 						_prepared_statement.setObject(_field_start++, null);
 					}
 				} else {

@@ -46,6 +46,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
@@ -72,7 +73,7 @@ public class IntegerNumberFieldAccessor extends FieldAccessor {
 		super(_sql_connection, _field, parentFieldName, compatible_classes, table_class);
 		sql_fields = new SqlField[1];
 		sql_fields[0] = new SqlField(table_name + "." + this.getFieldName(),
-				DatabaseWrapperAccessor.getIntType(sql_connection), null, null, isNotNull());
+				Objects.requireNonNull(DatabaseWrapperAccessor.getIntType(sql_connection)), null, null, isNotNull());
 	}
 
 	@Override
@@ -88,13 +89,13 @@ public class IntegerNumberFieldAccessor extends FieldAccessor {
 				field.set(_class_instance, null);
 			if (_field_instance instanceof Integer)
 				field.set(_class_instance, _field_instance);
-			else
+			else {
+				assert _field_instance != null;
 				throw new FieldDatabaseException("The given _field_instance parameter, destinated to the field "
 						+ field.getName() + " of the class " + field.getDeclaringClass().getName()
 						+ ", should be an Integer and not a " + _field_instance.getClass().getName());
-		} catch (IllegalArgumentException e) {
-			throw new DatabaseException("Unexpected exception.", e);
-		} catch (IllegalAccessException e) {
+			}
+		} catch (IllegalArgumentException | IllegalAccessException e) {
 			throw new DatabaseException("Unexpected exception.", e);
 		}
 	}
@@ -116,6 +117,7 @@ public class IntegerNumberFieldAccessor extends FieldAccessor {
 		}
 	}
 
+	@SuppressWarnings("NumberEquality")
 	@Override
 	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
 			throws DatabaseException {
@@ -176,14 +178,9 @@ public class IntegerNumberFieldAccessor extends FieldAccessor {
 			else if (obj1 == obj2)
 				return 0;
 
-			int val1 = ((Integer) obj1).intValue();
-			int val2 = ((Integer) obj2).intValue();
-			if (val1 < val2)
-				return -1;
-			else if (val1 == val2)
-				return 0;
-			else
-				return 1;
+			int val1 = (Integer) obj1;
+			int val2 = (Integer) obj2;
+			return Integer.compare(val1, val2);
 		} catch (Exception e) {
 			throw new DatabaseException("", e);
 		}
@@ -258,7 +255,7 @@ public class IntegerNumberFieldAccessor extends FieldAccessor {
 
 	@Override
 	public Object autoGenerateValue(AbstractSecureRandom _random) {
-		return new Integer(new BigInteger(getBitsNumber(), _random).intValue());
+		return new BigInteger(getBitsNumber(), _random).intValue();
 	}
 
 	@Override
@@ -284,7 +281,7 @@ public class IntegerNumberFieldAccessor extends FieldAccessor {
 				_oos.writeBoolean(false);
 			} else {
 				_oos.writeBoolean(true);
-				_oos.writeInt(v.intValue());
+				_oos.writeInt(v);
 			}
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -296,7 +293,7 @@ public class IntegerNumberFieldAccessor extends FieldAccessor {
 		try {
 			boolean isNotNull = _ois.readBoolean();
 			if (isNotNull) {
-				_map.put(getFieldName(), new Integer(_ois.readInt()));
+				_map.put(getFieldName(), _ois.readInt());
 			} else if (isNotNull())
 				throw new DatabaseException("field should not be null");
 			else {
@@ -312,7 +309,7 @@ public class IntegerNumberFieldAccessor extends FieldAccessor {
 		try {
 			boolean isNotNull = _ois.readBoolean();
 			if (isNotNull) {
-				Integer i = new Integer(_ois.readInt());
+				Integer i = _ois.readInt();
 				setValue(_classInstance, i);
 				return i;
 			} else if (isNotNull())

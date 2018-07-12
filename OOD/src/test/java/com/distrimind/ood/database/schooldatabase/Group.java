@@ -13,6 +13,7 @@ public final class Group extends Table<Group.Record> {
 		super();
 	}
 
+	@SuppressWarnings("unused")
 	public static class Record extends DatabaseRecord {
 		protected Record() {
 			super();

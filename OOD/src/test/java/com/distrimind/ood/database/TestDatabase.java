@@ -37,64 +37,16 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.sql.Blob;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.testng.Assert;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
-import com.distrimind.ood.database.AlterRecordFilter;
-import com.distrimind.ood.database.DatabaseConfiguration;
-import com.distrimind.ood.database.DatabaseRecord;
-import com.distrimind.ood.database.Filter;
-import com.distrimind.ood.database.GroupedResults;
-import com.distrimind.ood.database.EmbeddedHSQLDBWrapper;
-import com.distrimind.ood.database.DatabaseWrapper;
-import com.distrimind.ood.database.Table;
-import com.distrimind.ood.database.database.SubField;
-import com.distrimind.ood.database.database.SubSubField;
-import com.distrimind.ood.database.database.Table1;
-import com.distrimind.ood.database.database.Table2;
-import com.distrimind.ood.database.database.Table3;
-import com.distrimind.ood.database.database.Table4;
-import com.distrimind.ood.database.database.Table5;
-import com.distrimind.ood.database.database.Table6;
-import com.distrimind.ood.database.database.Table7;
+import com.distrimind.ood.database.database.*;
 import com.distrimind.ood.database.database.Table1.Record;
-import com.distrimind.ood.database.exceptions.ConcurentTransactionDatabaseException;
-import com.distrimind.ood.database.exceptions.ConstraintsNotRespectedDatabaseException;
-import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.ood.database.exceptions.FieldDatabaseException;
-import com.distrimind.ood.database.exceptions.RecordNotFoundDatabaseException;
+import com.distrimind.ood.database.exceptions.*;
 import com.distrimind.ood.database.fieldaccessors.ByteTabFieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.schooldatabase.Lecture;
 import com.distrimind.ood.interpreter.Interpreter;
 import com.distrimind.ood.interpreter.RuleInstance;
-import com.distrimind.ood.interpreter.SymbolType;
 import com.distrimind.ood.interpreter.RuleInstance.TableJunction;
+import com.distrimind.ood.interpreter.SymbolType;
 import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.DecentralizedIDGenerator;
 import com.distrimind.util.RenforcedDecentralizedIDGenerator;
@@ -103,9 +55,27 @@ import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.SecureRandomType;
 import com.distrimind.util.crypto.SymmetricEncryptionType;
 import com.distrimind.util.crypto.SymmetricSecretKey;
-
 import gnu.vm.jgnu.security.NoSuchAlgorithmException;
 import gnu.vm.jgnu.security.NoSuchProviderException;
+import org.testng.Assert;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
+
+import java.io.*;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.sql.Blob;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.testng.Assert.*;
+import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 /**
  * 
@@ -113,6 +83,7 @@ import gnu.vm.jgnu.security.NoSuchProviderException;
  * @version 2.0
  * @since OOD 1.0
  */
+@SuppressWarnings("deprecation")
 public abstract class TestDatabase {
 	public abstract int getMultiTestsNumber();
 
@@ -159,27 +130,27 @@ public abstract class TestDatabase {
 			res.BigDecimal_value = new BigDecimal(3.0);
 			res.BigInteger_value = new BigInteger("54");
 			res.boolean_value = false;
-			res.BooleanNumber_value = new Boolean(true);
+			res.BooleanNumber_value = Boolean.TRUE;
 			res.byte_array_value = new byte[] { 1, 2, 3, 4, 5 };
 			res.byte_value = 25;
-			res.ByteNumber_value = new Byte((byte) 98);
+			res.ByteNumber_value = (byte) 98;
 			res.CalendarValue = Calendar.getInstance();
 			res.char_value = 'f';
-			res.CharacterNumber_value = new Character('c');
+			res.CharacterNumber_value = 'c';
 			res.DateValue = new Date();
 			res.double_value = 0.245;
-			res.DoubleNumber_value = new Double(0.4);
+			res.DoubleNumber_value = 0.4;
 			res.float_value = 0.478f;
-			res.FloatNumber_value = new Float(0.86f);
+			res.FloatNumber_value = 0.86f;
 			res.int_value = 5244;
-			res.IntegerNumber_value = new Integer(2214);
+			res.IntegerNumber_value = 2214;
 			res.long_value = 254545;
-			res.LongNumber_value = new Long(1452);
+			res.LongNumber_value = 1452L;
 			res.secretKey = SymmetricEncryptionType.AES_CBC_PKCS5Padding.getKeyGenerator(secureRandom).generateKey();
 			res.typeSecretKey = SymmetricEncryptionType.AES_CBC_PKCS5Padding;
 			res.subField = getSubSubField();
 			res.string_value = "not null";
-			res.ShortNumber_value = new Short((short) 12);
+			res.ShortNumber_value = (short) 12;
 			return res;
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -193,26 +164,26 @@ public abstract class TestDatabase {
 			res.BigDecimal_value = new BigDecimal(3.0);
 			res.BigInteger_value = new BigInteger("54");
 			res.boolean_value = false;
-			res.BooleanNumber_value = new Boolean(true);
+			res.BooleanNumber_value = Boolean.TRUE;
 			res.byte_array_value = new byte[] { 1, 2, 3, 4, 5 };
 			res.byte_value = 25;
-			res.ByteNumber_value = new Byte((byte) 98);
+			res.ByteNumber_value = (byte) 98;
 			res.CalendarValue = Calendar.getInstance();
 			res.char_value = 'f';
-			res.CharacterNumber_value = new Character('c');
+			res.CharacterNumber_value = 'c';
 			res.DateValue = new Date();
 			res.double_value = 0.245;
-			res.DoubleNumber_value = new Double(0.4);
+			res.DoubleNumber_value = 0.4;
 			res.float_value = 0.478f;
-			res.FloatNumber_value = new Float(0.86f);
+			res.FloatNumber_value = 0.86f;
 			res.int_value = 5244;
-			res.IntegerNumber_value = new Integer(2214);
+			res.IntegerNumber_value = 2214;
 			res.long_value = 254545;
-			res.LongNumber_value = new Long(1452);
+			res.LongNumber_value = 1452L;
 			res.secretKey = SymmetricEncryptionType.AES_CBC_PKCS5Padding.getKeyGenerator(secureRandom).generateKey();
 			res.typeSecretKey = SymmetricEncryptionType.AES_CBC_PKCS5Padding;
 			res.string_value = "not null";
-			res.ShortNumber_value = new Short((short) 12);
+			res.ShortNumber_value = (short) 12;
 			return res;
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -223,8 +194,8 @@ public abstract class TestDatabase {
 		Assert.assertEquals(actual.boolean_value, expected.boolean_value);
 		Assert.assertEquals(actual.byte_value, expected.byte_value);
 		Assert.assertEquals(actual.char_value, expected.char_value);
-		Assert.assertEquals(new Double(actual.double_value), new Double(expected.double_value));
-		Assert.assertEquals(new Float(actual.float_value), new Float(expected.float_value));
+		Assert.assertEquals(actual.double_value, expected.double_value);
+		Assert.assertEquals(actual.float_value, expected.float_value);
 		Assert.assertEquals(actual.int_value, expected.int_value);
 		Assert.assertEquals(actual.long_value, expected.long_value);
 		Assert.assertEquals(actual.short_value, expected.short_value);
@@ -252,8 +223,8 @@ public abstract class TestDatabase {
 		Assert.assertEquals(actual.boolean_value, expected.boolean_value);
 		Assert.assertEquals(actual.byte_value, expected.byte_value);
 		Assert.assertEquals(actual.char_value, expected.char_value);
-		Assert.assertEquals(new Double(actual.double_value), new Double(expected.double_value));
-		Assert.assertEquals(new Float(actual.float_value), new Float(expected.float_value));
+		Assert.assertEquals(actual.double_value, expected.double_value);
+		Assert.assertEquals(actual.float_value, expected.float_value);
 		Assert.assertEquals(actual.int_value, expected.int_value);
 		Assert.assertEquals(actual.long_value, expected.long_value);
 		Assert.assertEquals(actual.short_value, expected.short_value);
@@ -286,12 +257,12 @@ public abstract class TestDatabase {
 	}
 
 	@Override
-	public void finalize() throws DatabaseException {
+	public void finalize() {
 		unloadDatabase();
 	}
 
 	@AfterClass
-	public static void unloadDatabase() throws DatabaseException {
+	public static void unloadDatabase() {
 		System.out.println("Unload database !");
 		if (sql_db != null) {
 			sql_db.close();
@@ -318,8 +289,8 @@ public abstract class TestDatabase {
 		sql_db = getDatabaseWrapperInstanceA();
 		try {
 			sql_db.loadDatabase(dbConfig1, false);
-			Assert.fail();
-		} catch (DatabaseException e) {
+			fail();
+		} catch (DatabaseException ignored) {
 
 		}
 	}
@@ -339,11 +310,11 @@ public abstract class TestDatabase {
 
 	@Test(dependsOnMethods = { "firstLoad" })
 	public void isLoadedIntoMemory() {
-		Assert.assertTrue(!table1.isLoadedInMemory());
-		Assert.assertTrue(!table2.isLoadedInMemory());
-		Assert.assertTrue(table3.isLoadedInMemory());
-		Assert.assertTrue(!table4.isLoadedInMemory());
-		Assert.assertTrue(table5.isLoadedInMemory());
+		assertTrue(!table1.isLoadedInMemory());
+		assertTrue(!table2.isLoadedInMemory());
+		assertTrue(table3.isLoadedInMemory());
+		assertTrue(!table4.isLoadedInMemory());
+		assertTrue(table5.isLoadedInMemory());
 	}
 
 	Date date = Calendar.getInstance().getTime();
@@ -356,31 +327,29 @@ public abstract class TestDatabase {
 
 	@Test(dependsOnMethods = { "firstLoad" })
 	public void firstAdd() throws DatabaseException {
-		HashMap<String, Object> map = new HashMap<String, Object>();
-		map.put("pk1", new Integer(0));
-		map.put("int_value", new Integer(3));
-		map.put("byte_value", new Byte((byte) 3));
-		map.put("char_value", new Character('x'));
-		map.put("boolean_value", new Boolean(true));
-		map.put("short_value", new Short((short) 3));
-		map.put("long_value", new Long(300000004556256l));
-		map.put("float_value", new Float(3.3f));
-		map.put("double_value", new Double(3.3));
-		map.put("string_value", new String("test string"));
-		map.put("IntegerNumber_value", new Integer(3));
-		map.put("ByteNumber_value", new Byte((byte) 3));
-		map.put("CharacterNumber_value", new Character('x'));
-		map.put("BooleanNumber_value", new Boolean(true));
-		map.put("ShortNumber_value", new Short((short) 3));
-		map.put("LongNumber_value", new Long(300000004556256l));
-		map.put("FloatNumber_value", new Float(3.3f));
-		map.put("DoubleNumber_value", new Double(3.3));
+		HashMap<String, Object> map = new HashMap<>();
+		map.put("pk1", 0);
+		map.put("int_value", 3);
+		map.put("byte_value", (byte) 3);
+		map.put("char_value", 'x');
+		map.put("boolean_value", Boolean.TRUE);
+		map.put("short_value", (short) 3);
+		map.put("long_value", 300000004556256L);
+		map.put("float_value", 3.3f);
+		map.put("double_value", 3.3);
+		map.put("string_value", "test string");
+		map.put("IntegerNumber_value", 3);
+		map.put("ByteNumber_value", (byte) 3);
+		map.put("CharacterNumber_value", 'x');
+		map.put("BooleanNumber_value", Boolean.TRUE);
+		map.put("ShortNumber_value", (short) 3);
+		map.put("LongNumber_value", 300000004556256L);
+		map.put("FloatNumber_value", 3.3f);
+		map.put("DoubleNumber_value", 3.3);
 		map.put("BigInteger_value", new BigInteger("5"));
 		map.put("BigDecimal_value", new BigDecimal("8.8"));
 		map.put("DateValue", date);
 		map.put("CalendarValue", calendar);
-		map.put("secretKey", secretKey);
-		map.put("typeSecretKey", typeSecretKey);
 		map.put("secretKey", secretKey);
 		map.put("typeSecretKey", typeSecretKey);
 		map.put("subField", subField);
@@ -393,11 +362,11 @@ public abstract class TestDatabase {
 		map.put("byte_array_value", tab);
 		Table1.Record r1 = table1.addRecord(map);
 		Table3.Record r2 = table3.addRecord(map);
-		Assert.assertTrue(r1.pk1 == 0);
-		Assert.assertTrue(r2.pk1 == 0);
+        Assert.assertEquals(0, r1.pk1);
+        Assert.assertEquals(0, r2.pk1);
 
-		Assert.assertTrue(r1.pk2 == 1);
-		Assert.assertTrue(r2.pk2 == 1);
+        Assert.assertEquals(1, r1.pk2);
+        Assert.assertEquals(1, r2.pk2);
 		Assert.assertEquals(table1.getRecordsNumber(), 1);
 		Assert.assertEquals(table3.getRecordsNumber(), 1);
 
@@ -405,8 +374,8 @@ public abstract class TestDatabase {
 
 	@Test(dependsOnMethods = { "firstAdd" })
 	public void firstTestSize() throws DatabaseException {
-		Assert.assertTrue(table1.getRecordsNumber() == 1);
-		Assert.assertTrue(table3.getRecordsNumber() == 1);
+        Assert.assertEquals(1, table1.getRecordsNumber());
+        Assert.assertEquals(1, table3.getRecordsNumber());
 	}
 
 	@Test(dependsOnMethods = { "firstTestSize" })
@@ -432,22 +401,22 @@ public abstract class TestDatabase {
 		table5b = (Table5) sql_dbb.getTableInstance(Table5.class);
 		table6b = (Table6) sql_dbb.getTableInstance(Table6.class);
 
-		Assert.assertTrue(sql_db.equals(sql_db));
-		Assert.assertFalse(sql_db.equals(sql_dbb));
+        Assert.assertEquals(sql_db, sql_db);
+        assertNotEquals(sql_db, sql_dbb);
 
-		Assert.assertFalse(table1.getDatabaseWrapper().equals(table1b.getDatabaseWrapper()));
-		Assert.assertFalse(table2.getDatabaseWrapper().equals(table2b.getDatabaseWrapper()));
-		Assert.assertFalse(table3.getDatabaseWrapper().equals(table3b.getDatabaseWrapper()));
-		Assert.assertFalse(table4.getDatabaseWrapper().equals(table4b.getDatabaseWrapper()));
-		Assert.assertFalse(table5.getDatabaseWrapper().equals(table5b.getDatabaseWrapper()));
-		Assert.assertFalse(table6.getDatabaseWrapper().equals(table6b.getDatabaseWrapper()));
+        assertNotEquals(table1.getDatabaseWrapper(), table1b.getDatabaseWrapper());
+        assertNotEquals(table2.getDatabaseWrapper(), table2b.getDatabaseWrapper());
+        assertNotEquals(table3.getDatabaseWrapper(), table3b.getDatabaseWrapper());
+        assertNotEquals(table4.getDatabaseWrapper(), table4b.getDatabaseWrapper());
+        assertNotEquals(table5.getDatabaseWrapper(), table5b.getDatabaseWrapper());
+        assertNotEquals(table6.getDatabaseWrapper(), table6b.getDatabaseWrapper());
 
-		Assert.assertFalse(table1.equals(table1b));
-		Assert.assertFalse(table2.equals(table2b));
-		Assert.assertFalse(table3.equals(table3b));
-		Assert.assertFalse(table4.equals(table4b));
-		Assert.assertFalse(table5.equals(table5b));
-		Assert.assertFalse(table6.equals(table6b));
+        assertNotEquals(table1, table1b);
+        assertNotEquals(table2, table2b);
+        assertNotEquals(table3, table3b);
+        assertNotEquals(table4, table4b);
+        assertNotEquals(table5, table5b);
+        assertNotEquals(table6, table6b);
 
 	}
 
@@ -465,35 +434,35 @@ public abstract class TestDatabase {
 		tab[1] = 1;
 		tab[2] = 2;
 		Table1.Record r = table1.getRecords().get(0);
-		Assert.assertTrue(r.pk1 == 0);
-		Assert.assertTrue(r.int_value == 3);
-		Assert.assertTrue(r.byte_value == (byte) 3);
-		Assert.assertTrue(r.char_value == 'x');
-		Assert.assertTrue(r.boolean_value);
-		Assert.assertTrue(r.short_value == (short) 3);
-		Assert.assertTrue(r.long_value == 300000004556256l);
-		Assert.assertTrue(r.float_value == 3.3f);
-		Assert.assertTrue(r.double_value == 3.3);
-		Assert.assertTrue(r.string_value.equals("test string"));
-		Assert.assertTrue(r.IntegerNumber_value.intValue() == 3);
-		Assert.assertTrue(r.ByteNumber_value.byteValue() == (byte) 3);
-		Assert.assertTrue(r.CharacterNumber_value.charValue() == 'x');
-		Assert.assertTrue(r.BooleanNumber_value.booleanValue());
-		Assert.assertTrue(r.ShortNumber_value.shortValue() == (short) 3);
-		Assert.assertTrue(r.LongNumber_value.longValue() == 300000004556256l);
-		Assert.assertTrue(r.FloatNumber_value.floatValue() == 3.3f);
-		Assert.assertTrue(r.DoubleNumber_value.doubleValue() == 3.3);
-		Assert.assertTrue(r.BigInteger_value.equals(new BigInteger("5")));
-		Assert.assertTrue(r.BigDecimal_value.equals(new BigDecimal("8.8")));
-		Assert.assertTrue(r.DateValue.equals(date));
-		Assert.assertTrue(r.CalendarValue.equals(calendar));
-		Assert.assertTrue(r.secretKey.equals(secretKey));
-		Assert.assertTrue(r.typeSecretKey.equals(typeSecretKey));
-		Assert.assertTrue(r.file.equals(fileTest));
+        Assert.assertEquals(0, r.pk1);
+        Assert.assertEquals(3, r.int_value);
+        Assert.assertEquals(r.byte_value, (byte) 3);
+        Assert.assertEquals('x', r.char_value);
+		assertTrue(r.boolean_value);
+        Assert.assertEquals(r.short_value, (short) 3);
+        Assert.assertEquals(300000004556256L, r.long_value);
+        Assert.assertEquals(3.3f, r.float_value, 0.0);
+        Assert.assertEquals(3.3, r.double_value, 0.0);
+        Assert.assertEquals("test string", r.string_value);
+        Assert.assertEquals(3, r.IntegerNumber_value.intValue());
+        Assert.assertEquals(r.ByteNumber_value.byteValue(), (byte) 3);
+        Assert.assertEquals('x', r.CharacterNumber_value.charValue());
+		assertTrue(r.BooleanNumber_value);
+        Assert.assertEquals(r.ShortNumber_value.shortValue(), (short) 3);
+        Assert.assertEquals(300000004556256L, (long) r.LongNumber_value);
+        Assert.assertEquals(3.3f, r.FloatNumber_value, 0.0);
+        Assert.assertEquals(3.3, r.DoubleNumber_value, 0.0);
+        Assert.assertEquals(r.BigInteger_value, new BigInteger("5"));
+        Assert.assertEquals(r.BigDecimal_value, new BigDecimal("8.8"));
+        Assert.assertEquals(r.DateValue, date);
+        Assert.assertEquals(r.CalendarValue, calendar);
+        Assert.assertEquals(r.secretKey, secretKey);
+        Assert.assertEquals(r.typeSecretKey, typeSecretKey);
+        Assert.assertEquals(r.file, fileTest);
 		assertEquals(r.subField, subField);
 		assertEquals(r.subSubField, subSubField);
 		for (int i = 0; i < 3; i++)
-			Assert.assertTrue(r.byte_array_value[i] == tab[i]);
+            Assert.assertEquals(r.byte_array_value[i], tab[i]);
 
 		Map<String, Object> pks=new HashMap<>();
 		pks.put("pk1", r.pk1);
@@ -504,69 +473,69 @@ public abstract class TestDatabase {
 		pks.put("pk6", r.pk6);
 		pks.put("pk7", r.pk7);
 		r=table1.getRecord(pks);
-		Assert.assertNotNull(r);
-		Assert.assertTrue(r.pk1 == 0);
-		Assert.assertTrue(r.int_value == 3);
-		Assert.assertTrue(r.byte_value == (byte) 3);
-		Assert.assertTrue(r.char_value == 'x');
-		Assert.assertTrue(r.boolean_value);
-		Assert.assertTrue(r.short_value == (short) 3);
-		Assert.assertTrue(r.long_value == 300000004556256l);
-		Assert.assertTrue(r.float_value == 3.3f);
-		Assert.assertTrue(r.double_value == 3.3);
-		Assert.assertTrue(r.string_value.equals("test string"));
-		Assert.assertTrue(r.IntegerNumber_value.intValue() == 3);
-		Assert.assertTrue(r.ByteNumber_value.byteValue() == (byte) 3);
-		Assert.assertTrue(r.CharacterNumber_value.charValue() == 'x');
-		Assert.assertTrue(r.BooleanNumber_value.booleanValue());
-		Assert.assertTrue(r.ShortNumber_value.shortValue() == (short) 3);
-		Assert.assertTrue(r.LongNumber_value.longValue() == 300000004556256l);
-		Assert.assertTrue(r.FloatNumber_value.floatValue() == 3.3f);
-		Assert.assertTrue(r.DoubleNumber_value.doubleValue() == 3.3);
-		Assert.assertTrue(r.BigInteger_value.equals(new BigInteger("5")));
-		Assert.assertTrue(r.BigDecimal_value.equals(new BigDecimal("8.8")));
-		Assert.assertTrue(r.DateValue.equals(date));
-		Assert.assertTrue(r.CalendarValue.equals(calendar));
-		Assert.assertTrue(r.secretKey.equals(secretKey));
-		Assert.assertTrue(r.typeSecretKey.equals(typeSecretKey));
-		Assert.assertTrue(r.file.equals(fileTest));
+		assertNotNull(r);
+        Assert.assertEquals(0, r.pk1);
+        Assert.assertEquals(3, r.int_value);
+        Assert.assertEquals(r.byte_value, (byte) 3);
+        Assert.assertEquals('x', r.char_value);
+		assertTrue(r.boolean_value);
+        Assert.assertEquals(r.short_value, (short) 3);
+        Assert.assertEquals(300000004556256L, r.long_value);
+        Assert.assertEquals(3.3f, r.float_value, 0.0);
+        Assert.assertEquals(3.3, r.double_value, 0.0);
+        Assert.assertEquals("test string", r.string_value);
+        Assert.assertEquals(3, r.IntegerNumber_value.intValue());
+        Assert.assertEquals(r.ByteNumber_value.byteValue(), (byte) 3);
+        Assert.assertEquals('x', r.CharacterNumber_value.charValue());
+		assertTrue(r.BooleanNumber_value);
+        Assert.assertEquals(r.ShortNumber_value.shortValue(), (short) 3);
+        Assert.assertEquals(300000004556256L, r.LongNumber_value.longValue());
+        Assert.assertEquals(3.3f, r.FloatNumber_value, 0.0);
+        Assert.assertEquals(3.3, r.DoubleNumber_value, 0.0);
+        Assert.assertEquals(r.BigInteger_value, new BigInteger("5"));
+        Assert.assertEquals(r.BigDecimal_value, new BigDecimal("8.8"));
+        Assert.assertEquals(r.DateValue, date);
+        Assert.assertEquals(r.CalendarValue, calendar);
+        Assert.assertEquals(r.secretKey, secretKey);
+        Assert.assertEquals(r.typeSecretKey, typeSecretKey);
+        Assert.assertEquals(r.file, fileTest);
 		assertEquals(r.subField, subField);
 		assertEquals(r.subSubField, subSubField);
 		
 		for (int i = 0; i < 3; i++)
-			Assert.assertTrue(r.byte_array_value[i] == tab[i]);
+            Assert.assertEquals(r.byte_array_value[i], tab[i]);
 
 		Table3.Record r2 = table3.getRecords().get(0);
-		Assert.assertTrue(r2.pk1 == 0);
-		Assert.assertTrue(r2.int_value == 3);
-		Assert.assertTrue(r2.byte_value == (byte) 3);
-		Assert.assertTrue(r2.char_value == 'x');
-		Assert.assertTrue(r2.boolean_value);
-		Assert.assertTrue(r2.short_value == (short) 3);
-		Assert.assertTrue(r2.long_value == 300000004556256l);
-		Assert.assertTrue(r2.float_value == 3.3f);
-		Assert.assertTrue(r2.double_value == 3.3);
-		Assert.assertTrue(r2.string_value.equals("test string"));
-		Assert.assertTrue(r2.IntegerNumber_value.intValue() == 3);
-		Assert.assertTrue(r2.ByteNumber_value.byteValue() == (byte) 3);
-		Assert.assertTrue(r2.CharacterNumber_value.charValue() == 'x');
-		Assert.assertTrue(r2.BooleanNumber_value.booleanValue());
-		Assert.assertTrue(r2.ShortNumber_value.shortValue() == (short) 3);
-		Assert.assertTrue(r2.LongNumber_value.longValue() == 300000004556256l);
-		Assert.assertTrue(r2.FloatNumber_value.floatValue() == 3.3f);
-		Assert.assertTrue(r2.DoubleNumber_value.doubleValue() == 3.3);
-		Assert.assertTrue(r2.BigInteger_value.equals(new BigInteger("5")));
-		Assert.assertTrue(r2.BigDecimal_value.equals(new BigDecimal("8.8")));
-		Assert.assertTrue(r2.DateValue.equals(date));
-		Assert.assertTrue(r2.CalendarValue.equals(calendar));
-		Assert.assertTrue(r2.secretKey.equals(secretKey));
-		Assert.assertTrue(r2.typeSecretKey.equals(typeSecretKey));
-		Assert.assertTrue(r2.file.equals(fileTest));
+        Assert.assertEquals(0, r2.pk1);
+        Assert.assertEquals(3, r2.int_value);
+        Assert.assertEquals(r2.byte_value, (byte) 3);
+        Assert.assertEquals('x', r2.char_value);
+		assertTrue(r2.boolean_value);
+        Assert.assertEquals(r2.short_value, (short) 3);
+        Assert.assertEquals(300000004556256L, r2.long_value);
+        Assert.assertEquals(3.3f, r2.float_value, 0.0);
+        Assert.assertEquals(3.3, r2.double_value, 0.0);
+        Assert.assertEquals("test string", r2.string_value);
+        Assert.assertEquals(3, r2.IntegerNumber_value.intValue());
+        Assert.assertEquals(r2.ByteNumber_value.byteValue(), (byte) 3);
+        Assert.assertEquals('x', r2.CharacterNumber_value.charValue());
+		assertTrue(r2.BooleanNumber_value);
+        Assert.assertEquals(r2.ShortNumber_value.shortValue(), (short) 3);
+        Assert.assertEquals(300000004556256L, r2.LongNumber_value.longValue());
+        Assert.assertEquals(3.3f, r2.FloatNumber_value, 0.0);
+        Assert.assertEquals(3.3, r2.DoubleNumber_value, 0.0);
+        Assert.assertEquals(r2.BigInteger_value, new BigInteger("5"));
+        Assert.assertEquals(r2.BigDecimal_value, new BigDecimal("8.8"));
+        Assert.assertEquals(r2.DateValue, date);
+        Assert.assertEquals(r2.CalendarValue, calendar);
+        Assert.assertEquals(r2.secretKey, secretKey);
+        Assert.assertEquals(r2.typeSecretKey, typeSecretKey);
+        Assert.assertEquals(r2.file, fileTest);
 		assertEquals(r2.subField, subField);
 		assertEquals(r2.subSubField, subSubField);
 
 		for (int i = 0; i < 3; i++)
-			Assert.assertTrue(r2.byte_array_value[i] == tab[i]);
+            Assert.assertEquals(r2.byte_array_value[i], tab[i]);
 		
 		
 		pks=new HashMap<>();
@@ -578,55 +547,54 @@ public abstract class TestDatabase {
 		pks.put("pk6", r2.pk6);
 		pks.put("pk7", r2.pk7);
 		r2=table3.getRecord(pks);
-		Assert.assertNotNull(r2);
-		Assert.assertTrue(r2.pk1 == 0);
-		Assert.assertTrue(r2.int_value == 3);
-		Assert.assertTrue(r2.byte_value == (byte) 3);
-		Assert.assertTrue(r2.char_value == 'x');
-		Assert.assertTrue(r2.boolean_value);
-		Assert.assertTrue(r2.short_value == (short) 3);
-		Assert.assertTrue(r2.long_value == 300000004556256l);
-		Assert.assertTrue(r2.float_value == 3.3f);
-		Assert.assertTrue(r2.double_value == 3.3);
-		Assert.assertTrue(r2.string_value.equals("test string"));
-		Assert.assertTrue(r2.IntegerNumber_value.intValue() == 3);
-		Assert.assertTrue(r2.ByteNumber_value.byteValue() == (byte) 3);
-		Assert.assertTrue(r2.CharacterNumber_value.charValue() == 'x');
-		Assert.assertTrue(r2.BooleanNumber_value.booleanValue());
-		Assert.assertTrue(r2.ShortNumber_value.shortValue() == (short) 3);
-		Assert.assertTrue(r2.LongNumber_value.longValue() == 300000004556256l);
-		Assert.assertTrue(r2.FloatNumber_value.floatValue() == 3.3f);
-		Assert.assertTrue(r2.DoubleNumber_value.doubleValue() == 3.3);
-		Assert.assertTrue(r2.BigInteger_value.equals(new BigInteger("5")));
-		Assert.assertTrue(r2.BigDecimal_value.equals(new BigDecimal("8.8")));
-		Assert.assertTrue(r2.DateValue.equals(date));
-		Assert.assertTrue(r2.CalendarValue.equals(calendar));
-		Assert.assertTrue(r2.secretKey.equals(secretKey));
-		Assert.assertTrue(r2.typeSecretKey.equals(typeSecretKey));
-		Assert.assertTrue(r2.file.equals(fileTest));
+		assertNotNull(r2);
+        Assert.assertEquals(0, r2.pk1);
+        Assert.assertEquals(3, r2.int_value);
+        Assert.assertEquals(r2.byte_value, (byte) 3);
+        Assert.assertEquals('x', r2.char_value);
+		assertTrue(r2.boolean_value);
+        Assert.assertEquals(r2.short_value, (short) 3);
+        Assert.assertEquals(300000004556256L, r2.long_value);
+        Assert.assertEquals(3.3f, r2.float_value, 0.0);
+        Assert.assertEquals(3.3, r2.double_value, 0.0);
+        Assert.assertEquals("test string", r2.string_value);
+        Assert.assertEquals(3, r2.IntegerNumber_value.intValue());
+        Assert.assertEquals(r2.ByteNumber_value.byteValue(), (byte) 3);
+        Assert.assertEquals('x', r2.CharacterNumber_value.charValue());
+		assertTrue(r2.BooleanNumber_value);
+        Assert.assertEquals((short) r2.ShortNumber_value, (short) 3);
+        Assert.assertEquals(300000004556256L, (long) r2.LongNumber_value);
+        Assert.assertEquals(3.3f, r2.FloatNumber_value, 0.0);
+        Assert.assertEquals(3.3, r2.DoubleNumber_value, 0.0);
+        Assert.assertEquals(r2.BigInteger_value, new BigInteger("5"));
+        Assert.assertEquals(r2.BigDecimal_value, new BigDecimal("8.8"));
+        Assert.assertEquals(r2.DateValue, date);
+        Assert.assertEquals(r2.CalendarValue, calendar);
+        Assert.assertEquals(r2.secretKey, secretKey);
+        Assert.assertEquals(r2.typeSecretKey, typeSecretKey);
+        Assert.assertEquals(r2.file, fileTest);
 		assertEquals(r2.subField, subField);
 		assertEquals(r2.subSubField, subSubField);
 		
 
 		for (int i = 0; i < 3; i++)
-			Assert.assertTrue(r2.byte_array_value[i] == tab[i]);
+            Assert.assertEquals(r2.byte_array_value[i], tab[i]);
 		
 	}
 
 	@Test(dependsOnMethods = { "alterRecord" })
 	public void addSecondRecord() throws DatabaseException {
 		try {
-			Map<String, Object> m = null;
-			table1.addRecord(m);
-			Assert.assertTrue(false);
+			table1.addRecord((Map<String, Object>) null);
+            fail();
 		} catch (NullPointerException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 		try {
 			table1.addRecord(new HashMap<String, Object>());
-			Assert.assertTrue(false);
+            fail();
 		} catch (DatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 
 
@@ -634,25 +602,25 @@ public abstract class TestDatabase {
 
 			@Override
 			public Void run() throws Exception {
-				HashMap<String, Object> map = new HashMap<String, Object>();
-				map.put("pk1", new Integer(0));
-				map.put("int_value", new Integer(3));
-				map.put("byte_value", new Byte((byte) 3));
-				map.put("char_value", new Character('x'));
-				map.put("boolean_value", new Boolean(true));
-				map.put("short_value", new Short((short) 3));
-				map.put("long_value", new Long(3));
-				map.put("float_value", new Float(3.3f));
-				map.put("double_value", new Double(3.3));
-				map.put("string_value", new String("test string"));
-				map.put("IntegerNumber_value", new Integer(3));
-				map.put("ByteNumber_value", new Byte((byte) 3));
-				map.put("CharacterNumber_value", new Character('x'));
-				map.put("BooleanNumber_value", new Boolean(true));
-				map.put("ShortNumber_value", new Short((short) 3));
-				map.put("LongNumber_value", new Long((long) 3));
-				map.put("FloatNumber_value", new Float(3.3f));
-				map.put("DoubleNumber_value", new Double(3.3));
+				HashMap<String, Object> map = new HashMap<>();
+				map.put("pk1", 0);
+				map.put("int_value", 3);
+				map.put("byte_value", (byte) 3);
+				map.put("char_value", 'x');
+				map.put("boolean_value", Boolean.TRUE);
+				map.put("short_value", (short) 3);
+				map.put("long_value", 3L);
+				map.put("float_value", 3.3f);
+				map.put("double_value", 3.3);
+				map.put("string_value", "test string");
+				map.put("IntegerNumber_value", 3);
+				map.put("ByteNumber_value", (byte) 3);
+				map.put("CharacterNumber_value", 'x');
+				map.put("BooleanNumber_value", Boolean.TRUE);
+				map.put("ShortNumber_value", (short) 3);
+				map.put("LongNumber_value", (long) 3);
+				map.put("FloatNumber_value", 3.3f);
+				map.put("DoubleNumber_value", 3.3);
 				map.put("BigInteger_value", new BigInteger("5"));
 				map.put("BigDecimal_value", new BigDecimal("8.8"));
 				map.put("DateValue", date);
@@ -678,7 +646,7 @@ public abstract class TestDatabase {
 				pks.put("pk5", r1.pk5);
 				pks.put("pk6", r1.pk6);
 				pks.put("pk7", r1.pk7);
-				Assert.assertNotNull(table1.getRecord(pks));
+				assertNotNull(table1.getRecord(pks));
 				Table3.Record r3=table3.addRecord(map);
 				pks=new HashMap<>();
 				pks.put("pk1", r3.pk1);
@@ -688,7 +656,7 @@ public abstract class TestDatabase {
 				pks.put("pk5", r3.pk5);
 				pks.put("pk6", r3.pk6);
 				pks.put("pk7", r3.pk7);
-				Assert.assertNotNull(table3.getRecord(pks));
+				assertNotNull(table3.getRecord(pks));
 				return null;
 			}
 
@@ -703,7 +671,7 @@ public abstract class TestDatabase {
 			}
 
 			@Override
-			public void initOrReset() throws Exception {
+			public void initOrReset() {
 				
 			}
 		});
@@ -718,11 +686,11 @@ public abstract class TestDatabase {
 
 	@Test(dependsOnMethods = { "testFirstAdd" })
 	public void alterRecord() throws DatabaseException {
-		HashMap<String, Object> map = new HashMap<String, Object>();
-		map.put("pk1", new Integer(1));
-		map.put("byte_value", new Byte((byte) 6));
-		map.put("char_value", new Character('y'));
-		map.put("DoubleNumber_value", new Double(6.6));
+		HashMap<String, Object> map = new HashMap<>();
+		map.put("pk1", 1);
+		map.put("byte_value", (byte) 6);
+		map.put("char_value", 'y');
+		map.put("DoubleNumber_value", 6.6);
 		map.put("subField", getSubField());
 		map.put("subSubField", getSubSubField());
 		byte[] tab = new byte[3];
@@ -736,132 +704,132 @@ public abstract class TestDatabase {
 		Table3.Record r2 = table3.getRecords().get(0);
 		table3.updateRecord(r2, map);
 
-		Assert.assertTrue(r1.pk1 == 1);
-		Assert.assertTrue(r1.int_value == 3);
-		Assert.assertTrue(r1.byte_value == (byte) 6);
-		Assert.assertTrue(r1.char_value == 'y');
-		Assert.assertTrue(r1.boolean_value);
-		Assert.assertTrue(r1.short_value == (short) 3);
-		Assert.assertTrue(r1.long_value == 300000004556256l);
-		Assert.assertTrue(r1.float_value == 3.3f);
-		Assert.assertTrue(r1.double_value == 3.3);
-		Assert.assertTrue(r1.string_value.equals("test string"));
-		Assert.assertTrue(r1.IntegerNumber_value.intValue() == 3);
-		Assert.assertTrue(r1.ByteNumber_value.byteValue() == (byte) 3);
-		Assert.assertTrue(r1.CharacterNumber_value.charValue() == 'x');
-		Assert.assertTrue(r1.BooleanNumber_value.booleanValue());
-		Assert.assertTrue(r1.ShortNumber_value.shortValue() == (short) 3);
-		Assert.assertTrue(r1.LongNumber_value.longValue() == 300000004556256l);
-		Assert.assertTrue(r1.FloatNumber_value.floatValue() == 3.3f);
-		Assert.assertTrue(r1.DoubleNumber_value.doubleValue() == 6.6);
-		Assert.assertTrue(r1.BigInteger_value.equals(new BigInteger("5")));
-		Assert.assertTrue(r1.BigDecimal_value.equals(new BigDecimal("8.8")));
-		Assert.assertTrue(r1.DateValue.equals(date));
-		Assert.assertTrue(r1.CalendarValue.equals(calendar));
-		Assert.assertTrue(r1.secretKey.equals(secretKey));
-		Assert.assertTrue(r1.typeSecretKey.equals(typeSecretKey));
-		Assert.assertTrue(r1.file.equals(fileTest));
+        Assert.assertEquals(1, r1.pk1);
+        Assert.assertEquals(3, r1.int_value);
+        Assert.assertEquals(r1.byte_value, (byte) 6);
+        Assert.assertEquals('y', r1.char_value);
+		assertTrue(r1.boolean_value);
+        Assert.assertEquals(r1.short_value, (short) 3);
+        Assert.assertEquals(300000004556256L, r1.long_value);
+        Assert.assertEquals(3.3f, r1.float_value, 0.0);
+        Assert.assertEquals(3.3, r1.double_value, 0.0);
+        Assert.assertEquals("test string", r1.string_value);
+        Assert.assertEquals(3, r1.IntegerNumber_value.intValue());
+        Assert.assertEquals(r1.ByteNumber_value.byteValue(), (byte) 3);
+        Assert.assertEquals('x', r1.CharacterNumber_value.charValue());
+		assertTrue(r1.BooleanNumber_value);
+        Assert.assertEquals(r1.ShortNumber_value.shortValue(), (short) 3);
+        Assert.assertEquals(300000004556256L, r1.LongNumber_value.longValue());
+        Assert.assertEquals(3.3f, r1.FloatNumber_value, 0.0);
+        Assert.assertEquals(6.6, r1.DoubleNumber_value, 0.0);
+        Assert.assertEquals(r1.BigInteger_value, new BigInteger("5"));
+        Assert.assertEquals(r1.BigDecimal_value, new BigDecimal("8.8"));
+        Assert.assertEquals(r1.DateValue, date);
+        Assert.assertEquals(r1.CalendarValue, calendar);
+        Assert.assertEquals(r1.secretKey, secretKey);
+        Assert.assertEquals(r1.typeSecretKey, typeSecretKey);
+        Assert.assertEquals(r1.file, fileTest);
 		assertEquals(r1.subField, subField);
 		assertEquals(r1.subSubField, subSubField);
 
 		for (int i = 0; i < 3; i++)
-			Assert.assertTrue(r1.byte_array_value[i] == tab[i]);
+            Assert.assertEquals(r1.byte_array_value[i], tab[i]);
 
-		Assert.assertTrue(r2.pk1 == 1);
-		Assert.assertTrue(r2.int_value == 3);
-		Assert.assertTrue(r2.byte_value == (byte) 6);
-		Assert.assertTrue(r2.char_value == 'y');
-		Assert.assertTrue(r2.boolean_value);
-		Assert.assertTrue(r2.short_value == (short) 3);
-		Assert.assertTrue(r2.long_value == 300000004556256l);
-		Assert.assertTrue(r2.float_value == 3.3f);
-		Assert.assertTrue(r2.double_value == 3.3);
-		Assert.assertTrue(r2.string_value.equals("test string"));
-		Assert.assertTrue(r2.IntegerNumber_value.intValue() == 3);
-		Assert.assertTrue(r2.ByteNumber_value.byteValue() == (byte) 3);
-		Assert.assertTrue(r2.CharacterNumber_value.charValue() == 'x');
-		Assert.assertTrue(r2.BooleanNumber_value.booleanValue());
-		Assert.assertTrue(r2.ShortNumber_value.shortValue() == (short) 3);
-		Assert.assertTrue(r2.LongNumber_value.longValue() == 300000004556256l);
-		Assert.assertTrue(r2.FloatNumber_value.floatValue() == 3.3f);
-		Assert.assertTrue(r2.DoubleNumber_value.doubleValue() == 6.6);
-		Assert.assertTrue(r2.BigInteger_value.equals(new BigInteger("5")));
-		Assert.assertTrue(r2.BigDecimal_value.equals(new BigDecimal("8.8")));
-		Assert.assertTrue(r2.DateValue.equals(date));
-		Assert.assertTrue(r2.CalendarValue.equals(calendar));
-		Assert.assertTrue(r2.secretKey.equals(secretKey));
-		Assert.assertTrue(r2.typeSecretKey.equals(typeSecretKey));
-		Assert.assertTrue(r2.file.equals(fileTest));
+        Assert.assertEquals(1, r2.pk1);
+        Assert.assertEquals(3, r2.int_value);
+        Assert.assertEquals(r2.byte_value, (byte) 6);
+        Assert.assertEquals('y', r2.char_value);
+		assertTrue(r2.boolean_value);
+        Assert.assertEquals(r2.short_value, (short) 3);
+        Assert.assertEquals(300000004556256L, r2.long_value);
+        Assert.assertEquals(3.3f, r2.float_value, 0.0);
+        Assert.assertEquals(3.3, r2.double_value, 0.0);
+        Assert.assertEquals("test string", r2.string_value);
+        Assert.assertEquals(3, r2.IntegerNumber_value.intValue());
+        Assert.assertEquals(r2.ByteNumber_value.byteValue(), (byte) 3);
+        Assert.assertEquals('x', r2.CharacterNumber_value.charValue());
+		assertTrue(r2.BooleanNumber_value);
+        Assert.assertEquals((short) r2.ShortNumber_value, (short) 3);
+        Assert.assertEquals(300000004556256L, (long) r2.LongNumber_value);
+        Assert.assertEquals(3.3f, r2.FloatNumber_value, 0.0);
+        Assert.assertEquals(6.6, r2.DoubleNumber_value, 0.0);
+        Assert.assertEquals(r2.BigInteger_value, new BigInteger("5"));
+        Assert.assertEquals(r2.BigDecimal_value, new BigDecimal("8.8"));
+        Assert.assertEquals(r2.DateValue, date);
+        Assert.assertEquals(r2.CalendarValue, calendar);
+        Assert.assertEquals(r2.secretKey, secretKey);
+        Assert.assertEquals(r2.typeSecretKey, typeSecretKey);
+        Assert.assertEquals(r2.file, fileTest);
 		assertEquals(r2.subField, subField);
 		assertEquals(r2.subSubField, subSubField);
 
 		for (int i = 0; i < 3; i++)
-			Assert.assertTrue(r2.byte_array_value[i] == tab[i]);
+            Assert.assertEquals(r2.byte_array_value[i], tab[i]);
 
 		r1 = table1.getRecords().get(0);
 		r2 = table3.getRecords().get(0);
 
-		Assert.assertTrue(r1.pk1 == 1);
-		Assert.assertTrue(r1.int_value == 3);
-		Assert.assertTrue(r1.byte_value == (byte) 6);
-		Assert.assertTrue(r1.char_value == 'y');
-		Assert.assertTrue(r1.boolean_value);
-		Assert.assertTrue(r1.short_value == (short) 3);
-		Assert.assertTrue(r1.long_value == 300000004556256l);
-		Assert.assertTrue(r1.float_value == 3.3f);
-		Assert.assertTrue(r1.double_value == 3.3);
-		Assert.assertTrue(r1.string_value.equals("test string"));
-		Assert.assertTrue(r1.IntegerNumber_value.intValue() == 3);
-		Assert.assertTrue(r1.ByteNumber_value.byteValue() == (byte) 3);
-		Assert.assertTrue(r1.CharacterNumber_value.charValue() == 'x');
-		Assert.assertTrue(r1.BooleanNumber_value.booleanValue());
-		Assert.assertTrue(r1.ShortNumber_value.shortValue() == (short) 3);
-		Assert.assertTrue(r1.LongNumber_value.longValue() == 300000004556256l);
-		Assert.assertTrue(r1.FloatNumber_value.floatValue() == 3.3f);
-		Assert.assertTrue(r1.DoubleNumber_value.doubleValue() == 6.6);
-		Assert.assertTrue(r1.BigInteger_value.equals(new BigInteger("5")));
-		Assert.assertTrue(r1.BigDecimal_value.equals(new BigDecimal("8.8")));
-		Assert.assertTrue(r1.DateValue.equals(date));
-		Assert.assertTrue(r1.CalendarValue.equals(calendar));
-		Assert.assertTrue(r1.secretKey.equals(secretKey));
-		Assert.assertTrue(r1.typeSecretKey.equals(typeSecretKey));
-		Assert.assertTrue(r1.file.equals(fileTest));
+        Assert.assertEquals(1, r1.pk1);
+        Assert.assertEquals(3, r1.int_value);
+        Assert.assertEquals(r1.byte_value, (byte) 6);
+        Assert.assertEquals('y', r1.char_value);
+		assertTrue(r1.boolean_value);
+        Assert.assertEquals(r1.short_value, (short) 3);
+        Assert.assertEquals(300000004556256L, r1.long_value);
+        Assert.assertEquals(3.3f, r1.float_value, 0.0);
+        Assert.assertEquals(3.3, r1.double_value, 0.0);
+        Assert.assertEquals("test string", r1.string_value);
+        Assert.assertEquals(3, r1.IntegerNumber_value.intValue());
+        Assert.assertEquals(r1.ByteNumber_value.byteValue(), (byte) 3);
+        Assert.assertEquals('x', r1.CharacterNumber_value.charValue());
+		assertTrue(r1.BooleanNumber_value);
+        Assert.assertEquals((short) r1.ShortNumber_value, (short) 3);
+        Assert.assertEquals(300000004556256L, (long) r1.LongNumber_value);
+        Assert.assertEquals(3.3f, r1.FloatNumber_value, 0.0);
+        Assert.assertEquals(6.6, r1.DoubleNumber_value, 0.0);
+        Assert.assertEquals(r1.BigInteger_value, new BigInteger("5"));
+        Assert.assertEquals(r1.BigDecimal_value, new BigDecimal("8.8"));
+        Assert.assertEquals(r1.DateValue, date);
+        Assert.assertEquals(r1.CalendarValue, calendar);
+        Assert.assertEquals(r1.secretKey, secretKey);
+        Assert.assertEquals(r1.typeSecretKey, typeSecretKey);
+        Assert.assertEquals(r1.file, fileTest);
 		assertEquals(r1.subField, subField);
 		assertEquals(r1.subSubField, subSubField);
 
 		for (int i = 0; i < 3; i++)
-			Assert.assertTrue(r1.byte_array_value[i] == tab[i]);
+            Assert.assertEquals(r1.byte_array_value[i], tab[i]);
 
-		Assert.assertTrue(r2.pk1 == 1);
-		Assert.assertTrue(r2.int_value == 3);
-		Assert.assertTrue(r2.byte_value == (byte) 6);
-		Assert.assertTrue(r2.char_value == 'y');
-		Assert.assertTrue(r2.boolean_value);
-		Assert.assertTrue(r2.short_value == (short) 3);
-		Assert.assertTrue(r2.long_value == 300000004556256l);
-		Assert.assertTrue(r2.float_value == 3.3f);
-		Assert.assertTrue(r2.double_value == 3.3);
-		Assert.assertTrue(r2.string_value.equals("test string"));
-		Assert.assertTrue(r2.IntegerNumber_value.intValue() == 3);
-		Assert.assertTrue(r2.ByteNumber_value.byteValue() == (byte) 3);
-		Assert.assertTrue(r2.CharacterNumber_value.charValue() == 'x');
-		Assert.assertTrue(r2.BooleanNumber_value.booleanValue());
-		Assert.assertTrue(r2.ShortNumber_value.shortValue() == (short) 3);
-		Assert.assertTrue(r2.LongNumber_value.longValue() == 300000004556256l);
-		Assert.assertTrue(r2.FloatNumber_value.floatValue() == 3.3f);
-		Assert.assertTrue(r2.DoubleNumber_value.doubleValue() == 6.6);
-		Assert.assertTrue(r2.BigInteger_value.equals(new BigInteger("5")));
-		Assert.assertTrue(r2.BigDecimal_value.equals(new BigDecimal("8.8")));
-		Assert.assertTrue(r2.DateValue.equals(date));
-		Assert.assertTrue(r2.CalendarValue.equals(calendar));
-		Assert.assertTrue(r2.secretKey.equals(secretKey));
-		Assert.assertTrue(r2.typeSecretKey.equals(typeSecretKey));
-		Assert.assertTrue(r2.file.equals(fileTest));
+        Assert.assertEquals(1, r2.pk1);
+        Assert.assertEquals(3, r2.int_value);
+        Assert.assertEquals(r2.byte_value, (byte) 6);
+        Assert.assertEquals('y', r2.char_value);
+		assertTrue(r2.boolean_value);
+        Assert.assertEquals(r2.short_value, (short) 3);
+        Assert.assertEquals(300000004556256L, r2.long_value);
+        Assert.assertEquals(3.3f, r2.float_value, 0.0);
+        Assert.assertEquals(3.3, r2.double_value, 0.0);
+        Assert.assertEquals("test string", r2.string_value);
+        Assert.assertEquals(3, r2.IntegerNumber_value.intValue());
+        Assert.assertEquals(r2.ByteNumber_value.byteValue(), (byte) 3);
+        Assert.assertEquals('x', r2.CharacterNumber_value.charValue());
+		assertTrue(r2.BooleanNumber_value);
+        Assert.assertEquals((short) r2.ShortNumber_value, (short) 3);
+        Assert.assertEquals(300000004556256L, (long) r2.LongNumber_value);
+        Assert.assertEquals(3.3f, r2.FloatNumber_value, 0.0);
+        Assert.assertEquals(6.6, r2.DoubleNumber_value, 0.0);
+        Assert.assertEquals(r2.BigInteger_value, new BigInteger("5"));
+        Assert.assertEquals(r2.BigDecimal_value, new BigDecimal("8.8"));
+        Assert.assertEquals(r2.DateValue, date);
+        Assert.assertEquals(r2.CalendarValue, calendar);
+        Assert.assertEquals(r2.secretKey, secretKey);
+        Assert.assertEquals(r2.typeSecretKey, typeSecretKey);
+        Assert.assertEquals(r2.file, fileTest);
 		assertEquals(r2.subField, subField);
 		assertEquals(r2.subSubField, subSubField);
 
 		for (int i = 0; i < 3; i++)
-			Assert.assertTrue(r2.byte_array_value[i] == tab[i]);
+            Assert.assertEquals(r2.byte_array_value[i], tab[i]);
 		table1.checkDataIntegrity();
 		table3.checkDataIntegrity();
 		table2.checkDataIntegrity();
@@ -876,20 +844,20 @@ public abstract class TestDatabase {
 		Table1.Record r1a = table1.getRecords().get(0);
 		Table3.Record r2a = table3.getRecords().get(0);
 
-		HashMap<String, Object> keys1 = new HashMap<String, Object>();
-		keys1.put("pk1", new Integer(r1a.pk1));
-		keys1.put("pk2", new Long(r1a.pk2));
+		HashMap<String, Object> keys1 = new HashMap<>();
+		keys1.put("pk1", r1a.pk1);
+		keys1.put("pk2", r1a.pk2);
 		keys1.put("pk3", r1a.pk3);
-		keys1.put("pk4", new Long(r1a.pk4));
+		keys1.put("pk4", r1a.pk4);
 		keys1.put("pk5", r1a.pk5);
 		keys1.put("pk6", r1a.pk6);
 		keys1.put("pk7", r1a.pk7);
 
-		HashMap<String, Object> keys2 = new HashMap<String, Object>();
-		keys2.put("pk1", new Integer(r2a.pk1));
-		keys2.put("pk2", new Long(r2a.pk2));
+		HashMap<String, Object> keys2 = new HashMap<>();
+		keys2.put("pk1", r2a.pk1);
+		keys2.put("pk2", r2a.pk2);
 		keys2.put("pk3", r2a.pk3);
-		keys2.put("pk4", new Long(r2a.pk4));
+		keys2.put("pk4", r2a.pk4);
 		keys2.put("pk5", r2a.pk5);
 		keys2.put("pk6", r2a.pk6);
 		keys2.put("pk7", r2a.pk7);
@@ -897,79 +865,79 @@ public abstract class TestDatabase {
 		Table1.Record r1b = table1.getRecord(keys1);
 		Table3.Record r2b = table3.getRecord(keys2);
 
-		Assert.assertTrue(r1a.pk1 == r1b.pk1);
-		Assert.assertTrue(r1a.pk2 == r1b.pk2);
-		Assert.assertTrue(r1a.pk3.equals(r1b.pk3));
-		Assert.assertTrue(r1a.pk4 == r1b.pk4);
-		Assert.assertTrue(r1a.pk5.equals(r1b.pk5));
-		Assert.assertTrue(r1a.pk6.equals(r1b.pk6));
-		Assert.assertTrue(r1a.pk7.equals(r1b.pk7));
-		Assert.assertTrue(r1a.int_value == r1b.int_value);
-		Assert.assertTrue(r1a.byte_value == r1b.byte_value);
-		Assert.assertTrue(r1a.char_value == r1b.char_value);
-		Assert.assertTrue(r1a.boolean_value == r1b.boolean_value);
-		Assert.assertTrue(r1a.short_value == r1b.short_value);
-		Assert.assertTrue(r1a.long_value == r1b.long_value);
-		Assert.assertTrue(r1a.float_value == r1b.float_value);
-		Assert.assertTrue(r1a.double_value == r1b.double_value);
-		Assert.assertTrue(r1a.string_value.equals(r1b.string_value));
-		Assert.assertTrue(r1a.IntegerNumber_value.equals(r1b.IntegerNumber_value));
-		Assert.assertTrue(r1a.ByteNumber_value.equals(r1b.ByteNumber_value));
-		Assert.assertTrue(r1a.CharacterNumber_value.equals(r1b.CharacterNumber_value));
-		Assert.assertTrue(r1a.BooleanNumber_value.equals(r1b.BooleanNumber_value));
-		Assert.assertTrue(r1a.ShortNumber_value.equals(r1b.ShortNumber_value));
-		Assert.assertTrue(r1a.LongNumber_value.equals(r1b.LongNumber_value));
-		Assert.assertTrue(r1a.FloatNumber_value.equals(r1b.FloatNumber_value));
-		Assert.assertTrue(r1a.DoubleNumber_value.equals(r1b.DoubleNumber_value));
-		Assert.assertTrue(r1a.BigInteger_value.equals(new BigInteger("5")));
-		Assert.assertTrue(r1a.BigDecimal_value.equals(new BigDecimal("8.8")));
-		Assert.assertTrue(r1a.DateValue.equals(date));
-		Assert.assertTrue(r1a.CalendarValue.equals(calendar));
-		Assert.assertTrue(r1a.secretKey.equals(secretKey));
-		Assert.assertTrue(r1a.typeSecretKey.equals(typeSecretKey));
-		Assert.assertTrue(r1a.file.equals(fileTest));
+        Assert.assertEquals(r1a.pk1, r1b.pk1);
+        Assert.assertEquals(r1a.pk2, r1b.pk2);
+        Assert.assertEquals(r1a.pk3, r1b.pk3);
+        Assert.assertEquals(r1a.pk4, r1b.pk4);
+        Assert.assertEquals(r1a.pk5, r1b.pk5);
+		assertTrue(r1a.pk6.equals(r1b.pk6));
+		assertTrue(r1a.pk7.equals(r1b.pk7));
+        Assert.assertEquals(r1a.int_value, r1b.int_value);
+        Assert.assertEquals(r1a.byte_value, r1b.byte_value);
+        Assert.assertEquals(r1a.char_value, r1b.char_value);
+        Assert.assertEquals(r1a.boolean_value, r1b.boolean_value);
+        Assert.assertEquals(r1a.short_value, r1b.short_value);
+        Assert.assertEquals(r1a.long_value, r1b.long_value);
+        Assert.assertEquals(r1a.float_value, r1b.float_value, 0.0);
+        Assert.assertEquals(r1a.double_value, r1b.double_value, 0.0);
+        Assert.assertEquals(r1a.string_value, r1b.string_value);
+        Assert.assertEquals(r1a.IntegerNumber_value, r1b.IntegerNumber_value);
+        Assert.assertEquals(r1a.ByteNumber_value, r1b.ByteNumber_value);
+        Assert.assertEquals(r1a.CharacterNumber_value, r1b.CharacterNumber_value);
+        Assert.assertEquals(r1a.BooleanNumber_value, r1b.BooleanNumber_value);
+        Assert.assertEquals(r1a.ShortNumber_value, r1b.ShortNumber_value);
+        Assert.assertEquals(r1a.LongNumber_value, r1b.LongNumber_value);
+        Assert.assertEquals(r1a.FloatNumber_value, r1b.FloatNumber_value);
+        Assert.assertEquals(r1a.DoubleNumber_value, r1b.DoubleNumber_value);
+        Assert.assertEquals(r1a.BigInteger_value, new BigInteger("5"));
+        Assert.assertEquals(r1a.BigDecimal_value, new BigDecimal("8.8"));
+        Assert.assertEquals(r1a.DateValue, date);
+        Assert.assertEquals(r1a.CalendarValue, calendar);
+        Assert.assertEquals(r1a.secretKey, secretKey);
+        Assert.assertEquals(r1a.typeSecretKey, typeSecretKey);
+        Assert.assertEquals(r1a.file, fileTest);
 		assertEquals(r1a.subField, subField);
 		assertEquals(r1a.subSubField, subSubField);
 
 		for (int i = 0; i < 3; i++)
-			Assert.assertTrue(r1a.byte_array_value[i] == r1b.byte_array_value[i]);
+            Assert.assertEquals(r1a.byte_array_value[i], r1b.byte_array_value[i]);
 
-		Assert.assertTrue(r2a.pk1 == r2b.pk1);
-		Assert.assertTrue(r2a.pk2 == r2b.pk2);
-		Assert.assertTrue(r2a.pk3.equals(r2b.pk3));
-		Assert.assertTrue(r2a.pk4 == r2b.pk4);
-		Assert.assertTrue(r2a.pk5.equals(r2b.pk5));
-		Assert.assertTrue(r2a.pk6.equals(r2b.pk6));
-		Assert.assertTrue(r2a.pk7.equals(r2b.pk7));
-		Assert.assertTrue(r2a.int_value == r2b.int_value);
-		Assert.assertTrue(r2a.byte_value == r2b.byte_value);
-		Assert.assertTrue(r2a.char_value == r2b.char_value);
-		Assert.assertTrue(r2a.boolean_value == r2b.boolean_value);
-		Assert.assertTrue(r2a.short_value == r2b.short_value);
-		Assert.assertTrue(r2a.long_value == r2b.long_value);
-		Assert.assertTrue(r2a.float_value == r2b.float_value);
-		Assert.assertTrue(r2a.double_value == r2b.double_value);
-		Assert.assertTrue(r2a.string_value.equals(r2b.string_value));
-		Assert.assertTrue(r2a.IntegerNumber_value.equals(r2b.IntegerNumber_value));
-		Assert.assertTrue(r2a.ByteNumber_value.equals(r2b.ByteNumber_value));
-		Assert.assertTrue(r2a.CharacterNumber_value.equals(r2b.CharacterNumber_value));
-		Assert.assertTrue(r2a.BooleanNumber_value.equals(r2b.BooleanNumber_value));
-		Assert.assertTrue(r2a.ShortNumber_value.equals(r2b.ShortNumber_value));
-		Assert.assertTrue(r2a.LongNumber_value.equals(r2b.LongNumber_value));
-		Assert.assertTrue(r2a.FloatNumber_value.equals(r2b.FloatNumber_value));
-		Assert.assertTrue(r2a.DoubleNumber_value.equals(r2b.DoubleNumber_value));
-		Assert.assertTrue(r2a.BigInteger_value.equals(new BigInteger("5")));
-		Assert.assertTrue(r2a.BigDecimal_value.equals(new BigDecimal("8.8")));
-		Assert.assertTrue(r2a.DateValue.equals(date));
-		Assert.assertTrue(r2a.CalendarValue.equals(calendar));
-		Assert.assertTrue(r2a.secretKey.equals(secretKey));
-		Assert.assertTrue(r2a.typeSecretKey.equals(typeSecretKey));
-		Assert.assertTrue(r2a.file.equals(fileTest));
+        Assert.assertEquals(r2a.pk1, r2b.pk1);
+        Assert.assertEquals(r2a.pk2, r2b.pk2);
+        Assert.assertEquals(r2a.pk3, r2b.pk3);
+        Assert.assertEquals(r2a.pk4, r2b.pk4);
+        Assert.assertEquals(r2a.pk5, r2b.pk5);
+		assertTrue(r2a.pk6.equals(r2b.pk6));
+		assertTrue(r2a.pk7.equals(r2b.pk7));
+        Assert.assertEquals(r2a.int_value, r2b.int_value);
+        Assert.assertEquals(r2a.byte_value, r2b.byte_value);
+        Assert.assertEquals(r2a.char_value, r2b.char_value);
+        Assert.assertEquals(r2a.boolean_value, r2b.boolean_value);
+        Assert.assertEquals(r2a.short_value, r2b.short_value);
+        Assert.assertEquals(r2a.long_value, r2b.long_value);
+        Assert.assertEquals(r2a.float_value, r2b.float_value, 0.0);
+        Assert.assertEquals(r2a.double_value, r2b.double_value, 0.0);
+        Assert.assertEquals(r2a.string_value, r2b.string_value);
+        Assert.assertEquals(r2a.IntegerNumber_value, r2b.IntegerNumber_value);
+        Assert.assertEquals(r2a.ByteNumber_value, r2b.ByteNumber_value);
+        Assert.assertEquals(r2a.CharacterNumber_value, r2b.CharacterNumber_value);
+        Assert.assertEquals(r2a.BooleanNumber_value, r2b.BooleanNumber_value);
+        Assert.assertEquals(r2a.ShortNumber_value, r2b.ShortNumber_value);
+        Assert.assertEquals(r2a.LongNumber_value, r2b.LongNumber_value);
+        Assert.assertEquals(r2a.FloatNumber_value, r2b.FloatNumber_value);
+        Assert.assertEquals(r2a.DoubleNumber_value, r2b.DoubleNumber_value);
+        Assert.assertEquals(r2a.BigInteger_value, new BigInteger("5"));
+        Assert.assertEquals(r2a.BigDecimal_value, new BigDecimal("8.8"));
+        Assert.assertEquals(r2a.DateValue, date);
+        Assert.assertEquals(r2a.CalendarValue, calendar);
+        Assert.assertEquals(r2a.secretKey, secretKey);
+        Assert.assertEquals(r2a.typeSecretKey, typeSecretKey);
+        Assert.assertEquals(r2a.file, fileTest);
 		assertEquals(r2a.subField, subField);
 		assertEquals(r2a.subSubField, subSubField);
 
 		for (int i = 0; i < 3; i++)
-			Assert.assertTrue(r2a.byte_array_value[i] == r2b.byte_array_value[i]);
+            Assert.assertEquals(r2a.byte_array_value[i], r2b.byte_array_value[i]);
 		table1.checkDataIntegrity();
 		table3.checkDataIntegrity();
 		table2.checkDataIntegrity();
@@ -1086,103 +1054,99 @@ public abstract class TestDatabase {
 
 			@Override
 			public boolean nextRecord(Record _record) {
-				if (_record.pk1 == r1a.pk1 && _record.pk2 == r1a.pk2 && _record.pk4 == r1a.pk4)
-					return true;
-				return false;
-			}
+                return _record.pk1 == r1a.pk1 && _record.pk2 == r1a.pk2 && _record.pk4 == r1a.pk4;
+            }
 		});
-		Assert.assertTrue(col1.size() == 1);
+        Assert.assertEquals(1, col1.size());
 		Table1.Record r1b = col1.get(0);
 
 		ArrayList<Table3.Record> col2 = table3.getRecords(new Filter<Table3.Record>() {
 
 			@Override
 			public boolean nextRecord(Table3.Record _record) {
-				if (_record.pk1 == r2a.pk1 && _record.pk2 == r2a.pk2 && _record.pk4 == r2a.pk4)
-					return true;
-				return false;
-			}
+                return _record.pk1 == r2a.pk1 && _record.pk2 == r2a.pk2 && _record.pk4 == r2a.pk4;
+            }
 		});
-		Assert.assertTrue(col2.size() == 1);
+        Assert.assertEquals(1, col2.size());
 		Table3.Record r2b = col2.get(0);
 
-		Assert.assertTrue(r1a.pk1 == r1b.pk1);
-		Assert.assertTrue(r1a.pk2 == r1b.pk2);
-		Assert.assertTrue(r1a.pk3.equals(r1b.pk3));
-		Assert.assertTrue(r1a.pk4 == r1b.pk4);
-		Assert.assertTrue(r1a.pk5.equals(r1b.pk5));
-		Assert.assertTrue(r1a.pk6.equals(r1b.pk6));
-		Assert.assertTrue(r1a.pk7.equals(r1b.pk7));
-		Assert.assertTrue(r1a.int_value == r1b.int_value);
-		Assert.assertTrue(r1a.byte_value == r1b.byte_value);
-		Assert.assertTrue(r1a.char_value == r1b.char_value);
-		Assert.assertTrue(r1a.boolean_value == r1b.boolean_value);
-		Assert.assertTrue(r1a.short_value == r1b.short_value);
-		Assert.assertTrue(r1a.long_value == r1b.long_value);
-		Assert.assertTrue(r1a.float_value == r1b.float_value);
-		Assert.assertTrue(r1a.double_value == r1b.double_value);
-		Assert.assertTrue(r1a.string_value.equals(r1b.string_value));
-		Assert.assertTrue(r1a.IntegerNumber_value.equals(r1b.IntegerNumber_value));
-		Assert.assertTrue(r1a.ByteNumber_value.equals(r1b.ByteNumber_value));
-		Assert.assertTrue(r1a.CharacterNumber_value.equals(r1b.CharacterNumber_value));
-		Assert.assertTrue(r1a.BooleanNumber_value.equals(r1b.BooleanNumber_value));
-		Assert.assertTrue(r1a.ShortNumber_value.equals(r1b.ShortNumber_value));
-		Assert.assertTrue(r1a.LongNumber_value.equals(r1b.LongNumber_value));
-		Assert.assertTrue(r1a.FloatNumber_value.equals(r1b.FloatNumber_value));
-		Assert.assertTrue(r1a.DoubleNumber_value.equals(r1b.DoubleNumber_value));
-		Assert.assertTrue(r1a.BigInteger_value.equals(r1b.BigInteger_value));
-		Assert.assertTrue(r1a.BigDecimal_value.equals(r1b.BigDecimal_value));
-		Assert.assertTrue(r1a.DateValue.equals(r1b.DateValue));
-		Assert.assertTrue(r1a.CalendarValue.equals(r1b.CalendarValue));
-		Assert.assertTrue(r1a.secretKey.equals(secretKey));
-		Assert.assertTrue(r1a.typeSecretKey.equals(typeSecretKey));
-		Assert.assertTrue(r1a.file.equals(fileTest));
+        Assert.assertEquals(r1a.pk1, r1b.pk1);
+        Assert.assertEquals(r1a.pk2, r1b.pk2);
+        Assert.assertEquals(r1a.pk3, r1b.pk3);
+        Assert.assertEquals(r1a.pk4, r1b.pk4);
+        Assert.assertEquals(r1a.pk5, r1b.pk5);
+		assertTrue(r1a.pk6.equals(r1b.pk6));
+		assertTrue(r1a.pk7.equals(r1b.pk7));
+        Assert.assertEquals(r1a.int_value, r1b.int_value);
+        Assert.assertEquals(r1a.byte_value, r1b.byte_value);
+        Assert.assertEquals(r1a.char_value, r1b.char_value);
+        Assert.assertEquals(r1a.boolean_value, r1b.boolean_value);
+        Assert.assertEquals(r1a.short_value, r1b.short_value);
+        Assert.assertEquals(r1a.long_value, r1b.long_value);
+        Assert.assertEquals(r1a.float_value, r1b.float_value, 0.0);
+        Assert.assertEquals(r1a.double_value, r1b.double_value, 0.0);
+        Assert.assertEquals(r1a.string_value, r1b.string_value);
+        Assert.assertEquals(r1a.IntegerNumber_value, r1b.IntegerNumber_value);
+        Assert.assertEquals(r1a.ByteNumber_value, r1b.ByteNumber_value);
+        Assert.assertEquals(r1a.CharacterNumber_value, r1b.CharacterNumber_value);
+        Assert.assertEquals(r1a.BooleanNumber_value, r1b.BooleanNumber_value);
+        Assert.assertEquals(r1a.ShortNumber_value, r1b.ShortNumber_value);
+        Assert.assertEquals(r1a.LongNumber_value, r1b.LongNumber_value);
+        Assert.assertEquals(r1a.FloatNumber_value, r1b.FloatNumber_value);
+        Assert.assertEquals(r1a.DoubleNumber_value, r1b.DoubleNumber_value);
+        Assert.assertEquals(r1a.BigInteger_value, r1b.BigInteger_value);
+        Assert.assertEquals(r1a.BigDecimal_value, r1b.BigDecimal_value);
+        Assert.assertEquals(r1a.DateValue, r1b.DateValue);
+        Assert.assertEquals(r1a.CalendarValue, r1b.CalendarValue);
+        Assert.assertEquals(r1a.secretKey, secretKey);
+        Assert.assertEquals(r1a.typeSecretKey, typeSecretKey);
+        Assert.assertEquals(r1a.file, fileTest);
 		assertEquals(r1a.subField, subField);
 		assertEquals(r1a.subSubField, subSubField);
 
 		for (int i = 0; i < 3; i++)
-			Assert.assertTrue(r1a.byte_array_value[i] == r1b.byte_array_value[i]);
+            Assert.assertEquals(r1a.byte_array_value[i], r1b.byte_array_value[i]);
 
-		Assert.assertTrue(r2a.pk1 == r2b.pk1);
-		Assert.assertTrue(r2a.pk2 == r2b.pk2);
-		Assert.assertTrue(r2a.pk3.equals(r2b.pk3));
-		Assert.assertTrue(r2a.pk4 == r2b.pk4);
-		Assert.assertTrue(r2a.pk5.equals(r2b.pk5));
-		Assert.assertTrue(r2a.pk6.equals(r2b.pk6));
-		Assert.assertTrue(r2a.pk7.equals(r2b.pk7));
-		Assert.assertTrue(r2a.int_value == r2b.int_value);
-		Assert.assertTrue(r2a.byte_value == r2b.byte_value);
-		Assert.assertTrue(r2a.char_value == r2b.char_value);
-		Assert.assertTrue(r2a.boolean_value == r2b.boolean_value);
-		Assert.assertTrue(r2a.short_value == r2b.short_value);
-		Assert.assertTrue(r2a.long_value == r2b.long_value);
-		Assert.assertTrue(r2a.float_value == r2b.float_value);
-		Assert.assertTrue(r2a.double_value == r2b.double_value);
-		Assert.assertTrue(r2a.string_value.equals(r2b.string_value));
-		Assert.assertTrue(r2a.IntegerNumber_value.equals(r2b.IntegerNumber_value));
-		Assert.assertTrue(r2a.ByteNumber_value.equals(r2b.ByteNumber_value));
-		Assert.assertTrue(r2a.CharacterNumber_value.equals(r2b.CharacterNumber_value));
-		Assert.assertTrue(r2a.BooleanNumber_value.equals(r2b.BooleanNumber_value));
-		Assert.assertTrue(r2a.ShortNumber_value.equals(r2b.ShortNumber_value));
-		Assert.assertTrue(r2a.LongNumber_value.equals(r2b.LongNumber_value));
-		Assert.assertTrue(r2a.FloatNumber_value.equals(r2b.FloatNumber_value));
-		Assert.assertTrue(r2a.DoubleNumber_value.equals(r2b.DoubleNumber_value));
-		Assert.assertTrue(r2a.BigInteger_value.equals(r2b.BigInteger_value));
-		Assert.assertTrue(r2a.BigDecimal_value.equals(r2b.BigDecimal_value));
-		Assert.assertTrue(r2a.DateValue.equals(r2b.DateValue));
-		Assert.assertTrue(r2a.CalendarValue.equals(r2b.CalendarValue));
-		Assert.assertTrue(r2a.secretKey.equals(secretKey));
-		Assert.assertTrue(r2a.typeSecretKey.equals(typeSecretKey));
-		Assert.assertTrue(r2a.file.equals(fileTest));
+        Assert.assertEquals(r2a.pk1, r2b.pk1);
+        Assert.assertEquals(r2a.pk2, r2b.pk2);
+        Assert.assertEquals(r2a.pk3, r2b.pk3);
+        Assert.assertEquals(r2a.pk4, r2b.pk4);
+        Assert.assertEquals(r2a.pk5, r2b.pk5);
+		assertTrue(r2a.pk6.equals(r2b.pk6));
+		assertTrue(r2a.pk7.equals(r2b.pk7));
+        Assert.assertEquals(r2a.int_value, r2b.int_value);
+        Assert.assertEquals(r2a.byte_value, r2b.byte_value);
+        Assert.assertEquals(r2a.char_value, r2b.char_value);
+        Assert.assertEquals(r2a.boolean_value, r2b.boolean_value);
+        Assert.assertEquals(r2a.short_value, r2b.short_value);
+        Assert.assertEquals(r2a.long_value, r2b.long_value);
+        Assert.assertEquals(r2a.float_value, r2b.float_value, 0.0);
+        Assert.assertEquals(r2a.double_value, r2b.double_value, 0.0);
+        Assert.assertEquals(r2a.string_value, r2b.string_value);
+        Assert.assertEquals(r2a.IntegerNumber_value, r2b.IntegerNumber_value);
+        Assert.assertEquals(r2a.ByteNumber_value, r2b.ByteNumber_value);
+        Assert.assertEquals(r2a.CharacterNumber_value, r2b.CharacterNumber_value);
+        Assert.assertEquals(r2a.BooleanNumber_value, r2b.BooleanNumber_value);
+        Assert.assertEquals(r2a.ShortNumber_value, r2b.ShortNumber_value);
+        Assert.assertEquals(r2a.LongNumber_value, r2b.LongNumber_value);
+        Assert.assertEquals(r2a.FloatNumber_value, r2b.FloatNumber_value);
+        Assert.assertEquals(r2a.DoubleNumber_value, r2b.DoubleNumber_value);
+        Assert.assertEquals(r2a.BigInteger_value, r2b.BigInteger_value);
+        Assert.assertEquals(r2a.BigDecimal_value, r2b.BigDecimal_value);
+        Assert.assertEquals(r2a.DateValue, r2b.DateValue);
+        Assert.assertEquals(r2a.CalendarValue, r2b.CalendarValue);
+        Assert.assertEquals(r2a.secretKey, secretKey);
+        Assert.assertEquals(r2a.typeSecretKey, typeSecretKey);
+        Assert.assertEquals(r2a.file, fileTest);
 		assertEquals(r2a.subField, subField);
 		assertEquals(r2a.subSubField, subSubField);
 
 		for (int i = 0; i < 3; i++)
-			Assert.assertTrue(r2a.byte_array_value[i] == r2b.byte_array_value[i]);
+            Assert.assertEquals(r2a.byte_array_value[i], r2b.byte_array_value[i]);
 
 		HashMap<String, Object> map = new HashMap<>();
 		map.put("fr1_pk1", table1.getRecords().get(0));
-		map.put("int_value", new Integer(0));
+		map.put("int_value", 0);
 		table2.addRecord(map);
 
 		table1.getRecords(new Filter<Table1.Record>() {
@@ -1220,9 +1184,9 @@ public abstract class TestDatabase {
 					return false;
 				}
 			});
-			Assert.assertTrue(true);
+			assertTrue(true);
 		} catch (ConcurentTransactionDatabaseException e) {
-			Assert.fail();
+			fail();
 		}
 
 		try {
@@ -1234,9 +1198,9 @@ public abstract class TestDatabase {
 					return false;
 				}
 			});
-			Assert.assertTrue(true);
+			assertTrue(true);
 		} catch (ConcurentTransactionDatabaseException e) {
-			Assert.fail();
+			fail();
 		}
 		try {
 			table2.removeRecordsWithCascade(new Filter<Table2.Record>() {
@@ -1248,7 +1212,7 @@ public abstract class TestDatabase {
 				}
 			});
 		} catch (ConcurentTransactionDatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 
 		try {
@@ -1265,9 +1229,9 @@ public abstract class TestDatabase {
 					return false;
 				}
 			});
-			Assert.assertTrue(false);
+            fail();
 		} catch (ConcurentTransactionDatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 
 		table1.getRecords(new Filter<Table1.Record>() {
@@ -1298,9 +1262,9 @@ public abstract class TestDatabase {
 					return false;
 				}
 			});
-			Assert.assertTrue(false);
+            fail();
 		} catch (ConcurentTransactionDatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 		table2.removeRecords(table2.getRecords());
 		table1.checkDataIntegrity();
@@ -1318,10 +1282,10 @@ public abstract class TestDatabase {
 		Table3.Record r2 = table3.getRecords().get(0);
 		table1.removeRecord(r1);
 		table3.removeRecord(r2);
-		Assert.assertTrue(table1.getRecordsNumber() == 1);
-		Assert.assertTrue(table3.getRecordsNumber() == 1);
-		Assert.assertTrue(table1.getRecords().size() == 1);
-		Assert.assertTrue(table3.getRecords().size() == 1);
+        Assert.assertEquals(1, table1.getRecordsNumber());
+        Assert.assertEquals(1, table3.getRecordsNumber());
+        Assert.assertEquals(1, table1.getRecords().size());
+        Assert.assertEquals(1, table3.getRecords().size());
 		table1.checkDataIntegrity();
 		table3.checkDataIntegrity();
 		table2.checkDataIntegrity();
@@ -1337,48 +1301,48 @@ public abstract class TestDatabase {
 		tab[0] = 0;
 		tab[1] = 1;
 		tab[2] = 2;
-		Object[] parameters = { "pk1", new Integer(4356), "int_value", new Integer(3), "byte_value", new Byte((byte) 3),
-				"char_value", new Character('x'), "boolean_value", new Boolean(true), "short_value",
-				new Short((short) 3), "long_value", new Long(3), "float_value", new Float(3.3f), "double_value",
-				new Double(3.3), "string_value", new String("test string"), "IntegerNumber_value", new Integer(3),
-				"ByteNumber_value", new Byte((byte) 3), "CharacterNumber_value", new Character('x'),
-				"BooleanNumber_value", new Boolean(true), "ShortNumber_value", new Short((short) 3), "LongNumber_value",
-				new Long((long) 3), "FloatNumber_value", new Float(3.3f), "DoubleNumber_value", new Double(3.3),
+		Object[] parameters = { "pk1", 4356, "int_value", 3, "byte_value", (byte) 3,
+				"char_value", 'x', "boolean_value", Boolean.TRUE, "short_value",
+                (short) 3, "long_value", 3L, "float_value", 3.3f, "double_value",
+                3.3, "string_value", "test string", "IntegerNumber_value", 3,
+				"ByteNumber_value", (byte) 3, "CharacterNumber_value", 'x',
+				"BooleanNumber_value", Boolean.TRUE, "ShortNumber_value", (short) 3, "LongNumber_value",
+                (long) 3, "FloatNumber_value", 3.3f, "DoubleNumber_value", 3.3,
 				"BigInteger_value", new BigInteger("5"), "BigDecimal_value", new BigDecimal("8.8"), "DateValue", date,
 				"CalendarValue", calendar, "secretKey", secretKey, "typeSecretKey", typeSecretKey, "byte_array_value",
 				tab, "subField", subField, "subSubField", subSubField, "file", fileTest };
 		Table1.Record r1 = table1.addRecord(parameters);
 		Table3.Record r2 = table3.addRecord(parameters);
-		Assert.assertTrue(r1.pk1 == 4356);
-		Assert.assertTrue(r2.pk1 == 4356);
+        Assert.assertEquals(4356, r1.pk1);
+        Assert.assertEquals(4356, r2.pk1);
 		table1.removeRecord(r1);
 		table3.removeRecord(r2);
 
 		Object[] p2 = { "rert" };
-		Object[] p3 = { new Integer(125), "rert" };
+		Object[] p3 = {125, "rert" };
 		try {
 			table1.addRecord(p2);
-			Assert.assertTrue(false);
+            fail();
 		} catch (Exception e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 		try {
 			table1.addRecord(p3);
-			Assert.assertTrue(false);
+            fail();
 		} catch (Exception e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 		try {
 			table3.addRecord(p2);
-			Assert.assertTrue(false);
+            fail();
 		} catch (Exception e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 		try {
 			table3.addRecord(p3);
-			Assert.assertTrue(false);
+            fail();
 		} catch (Exception e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 	}
 
@@ -1401,10 +1365,10 @@ public abstract class TestDatabase {
 		ArrayList<Table3.Record> r2 = table3.getRecords();
 		table1.removeRecords(r1);
 		table3.removeRecords(r2);
-		Assert.assertTrue(table1.getRecords().size() == 0);
-		Assert.assertTrue(table1.getRecordsNumber() == 0);
-		Assert.assertTrue(table3.getRecords().size() == 0);
-		Assert.assertTrue(table3.getRecordsNumber() == 0);
+        Assert.assertEquals(0, table1.getRecords().size());
+        Assert.assertEquals(0, table1.getRecordsNumber());
+        Assert.assertEquals(0, table3.getRecords().size());
+        Assert.assertEquals(0, table3.getRecordsNumber());
 		addSecondRecord();
 		addSecondRecord();
 		addSecondRecord();
@@ -1434,10 +1398,10 @@ public abstract class TestDatabase {
 				return false;
 			}
 		});
-		Assert.assertTrue(size1 == table1.getRecordsNumber());
-		Assert.assertTrue(size1 == table1.getRecords().size());
-		Assert.assertTrue(size2 == table3.getRecordsNumber());
-		Assert.assertTrue(size2 == table3.getRecords().size());
+        Assert.assertEquals(size1, table1.getRecordsNumber());
+        Assert.assertEquals(size1, table1.getRecords().size());
+        Assert.assertEquals(size2, table3.getRecordsNumber());
+        Assert.assertEquals(size2, table3.getRecords().size());
 		table1.removeRecords(new Filter<Table1.Record>() {
 
 			@Override
@@ -1452,11 +1416,11 @@ public abstract class TestDatabase {
 				return true;
 			}
 		});
-		Assert.assertTrue(0 == table1.getRecordsNumber());
-		Assert.assertTrue(0 == table1.getRecords().size());
+        Assert.assertEquals(0, table1.getRecordsNumber());
+        Assert.assertEquals(0, table1.getRecords().size());
 
-		Assert.assertTrue(0 == table3.getRecordsNumber());
-		Assert.assertTrue(0 == table3.getRecords().size());
+        Assert.assertEquals(0, table3.getRecordsNumber());
+        Assert.assertEquals(0, table3.getRecords().size());
 		addSecondRecord();
 		addSecondRecord();
 		addSecondRecord();
@@ -1518,11 +1482,11 @@ public abstract class TestDatabase {
 				this.removeWithCascade();
 			}
 		});
-		Assert.assertTrue(0 == table1.getRecordsNumber());
-		Assert.assertTrue(0 == table1.getRecords().size());
+        Assert.assertEquals(0, table1.getRecordsNumber());
+        Assert.assertEquals(0, table1.getRecords().size());
 
-		Assert.assertTrue(0 == table3.getRecordsNumber());
-		Assert.assertTrue(0 == table3.getRecords().size());
+        Assert.assertEquals(0, table3.getRecordsNumber());
+        Assert.assertEquals(0, table3.getRecords().size());
 
 		table1.checkDataIntegrity();
 		table3.checkDataIntegrity();
@@ -1535,57 +1499,57 @@ public abstract class TestDatabase {
 
 	@Test(dependsOnMethods = { "removeRecords" })
 	public void testFilters() throws DatabaseException {
-		HashMap<String, Object> map = new HashMap<String, Object>();
-		map.put("val1", new Integer(1));
-		map.put("val2", new Integer(2));
-		map.put("val3", new Integer(3));
+		HashMap<String, Object> map = new HashMap<>();
+		map.put("val1", 1);
+		map.put("val2", 2);
+		map.put("val3", 3);
 		table7.addRecord(map);
-		HashMap<String, Object> map2 = new HashMap<String, Object>();
-		map2.put("val1", new Integer(0));
-		map2.put("val2", new Integer(2));
-		map2.put("val3", new Integer(3));
+		HashMap<String, Object> map2 = new HashMap<>();
+		map2.put("val1", 0);
+		map2.put("val2", 2);
+		map2.put("val3", 3);
 		table7.addRecord(map2);
-		HashMap<String, Object> map3 = new HashMap<String, Object>();
-		map3.put("val1", new Integer(0));
-		map3.put("val2", new Integer(2));
-		map3.put("val3", new Integer(4));
+		HashMap<String, Object> map3 = new HashMap<>();
+		map3.put("val1", 0);
+		map3.put("val2", 2);
+		map3.put("val3", 4);
 		table7.addRecord(map3);
 
-		HashMap<String, Object> mg0 = new HashMap<String, Object>();
-		mg0.put("val2", new Integer(2));
-		mg0.put("val3", new Integer(4));
-		HashMap<String, Object> mg1 = new HashMap<String, Object>();
-		mg1.put("val2", new Integer(2));
-		mg1.put("val3", new Integer(3));
-		Assert.assertTrue(table7.hasRecordsWithAllFields(mg1));
-		Assert.assertTrue(table7.hasRecordsWithOneOfFields(mg1));
+		HashMap<String, Object> mg0 = new HashMap<>();
+		mg0.put("val2", 2);
+		mg0.put("val3", 4);
+		HashMap<String, Object> mg1 = new HashMap<>();
+		mg1.put("val2", 2);
+		mg1.put("val3", 3);
+		assertTrue(table7.hasRecordsWithAllFields(mg1));
+		assertTrue(table7.hasRecordsWithOneOfFields(mg1));
 		ArrayList<Table7.Record> res = table7.getRecordsWithAllFields(mg1);
-		Assert.assertTrue(res.size() == 2);
-		Assert.assertTrue(res.get(0).val1 == 1);
-		Assert.assertTrue(res.get(0).val2 == 2);
-		Assert.assertTrue(res.get(0).val3 == 3);
-		Assert.assertTrue(res.get(1).val1 == 0);
-		Assert.assertTrue(res.get(1).val2 == 2);
-		Assert.assertTrue(res.get(1).val3 == 3);
+        Assert.assertEquals(2, res.size());
+        Assert.assertEquals(1, res.get(0).val1);
+        Assert.assertEquals(2, res.get(0).val2);
+        Assert.assertEquals(3, res.get(0).val3);
+        Assert.assertEquals(0, res.get(1).val1);
+        Assert.assertEquals(2, res.get(1).val2);
+        Assert.assertEquals(3, res.get(1).val3);
 		res = table7.getRecordsWithOneOfFields(mg1);
-		Assert.assertTrue(res.size() == 3);
-		HashMap<String, Object> mg2 = new HashMap<String, Object>();
-		mg2.put("val1", new Integer(1));
-		mg2.put("val3", new Integer(4));
+        Assert.assertEquals(3, res.size());
+		HashMap<String, Object> mg2 = new HashMap<>();
+		mg2.put("val1", 1);
+		mg2.put("val3", 4);
 		res = table7.getRecordsWithOneOfFields(mg2);
-		Assert.assertTrue(table7.hasRecordsWithOneOfFields(mg2));
-		Assert.assertTrue(res.size() == 2);
-		Assert.assertTrue(res.get(0).val1 == 1);
-		Assert.assertTrue(res.get(0).val2 == 2);
-		Assert.assertTrue(res.get(0).val3 == 3);
-		Assert.assertTrue(res.get(1).val1 == 0);
-		Assert.assertTrue(res.get(1).val2 == 2);
-		Assert.assertTrue(res.get(1).val3 == 4);
+		assertTrue(table7.hasRecordsWithOneOfFields(mg2));
+        Assert.assertEquals(2, res.size());
+        Assert.assertEquals(1, res.get(0).val1);
+        Assert.assertEquals(2, res.get(0).val2);
+        Assert.assertEquals(3, res.get(0).val3);
+        Assert.assertEquals(0, res.get(1).val1);
+        Assert.assertEquals(2, res.get(1).val2);
+        Assert.assertEquals(4, res.get(1).val3);
 
-		Assert.assertTrue(table7.hasRecordsWithAllFields(mg1, mg0));
-		Assert.assertTrue(table7.hasRecordsWithOneOfFields(mg1, mg0));
-		Assert.assertTrue(table7.getRecordsWithAllFields(mg1, mg0).size() == 3);
-		Assert.assertTrue(table7.getRecordsWithOneOfFields(mg1, mg0).size() == 3);
+		assertTrue(table7.hasRecordsWithAllFields(mg1, mg0));
+		assertTrue(table7.hasRecordsWithOneOfFields(mg1, mg0));
+        Assert.assertEquals(3, table7.getRecordsWithAllFields(mg1, mg0).size());
+        Assert.assertEquals(3, table7.getRecordsWithOneOfFields(mg1, mg0).size());
 		table1.checkDataIntegrity();
 		table3.checkDataIntegrity();
 		table2.checkDataIntegrity();
@@ -1597,26 +1561,26 @@ public abstract class TestDatabase {
 
 	@Test(dependsOnMethods = { "testFilters" })
 	public void testRemoveFilters() throws DatabaseException {
-		HashMap<String, Object> mg0 = new HashMap<String, Object>();
-		mg0.put("val2", new Integer(9));
-		mg0.put("val3", new Integer(9));
-		HashMap<String, Object> mg1 = new HashMap<String, Object>();
-		mg1.put("val2", new Integer(2));
-		mg1.put("val3", new Integer(3));
-		HashMap<String, Object> mg2 = new HashMap<String, Object>();
-		mg2.put("val1", new Integer(2));
-		mg2.put("val3", new Integer(4));
+		HashMap<String, Object> mg0 = new HashMap<>();
+		mg0.put("val2", 9);
+		mg0.put("val3", 9);
+		HashMap<String, Object> mg1 = new HashMap<>();
+		mg1.put("val2", 2);
+		mg1.put("val3", 3);
+		HashMap<String, Object> mg2 = new HashMap<>();
+		mg2.put("val1", 2);
+		mg2.put("val3", 4);
 
-		Assert.assertTrue(table7.removeRecordsWithAllFields(mg0) == 0);
-		Assert.assertTrue(table7.getRecordsNumber() == 3);
-		Assert.assertTrue(table7.removeRecordsWithOneOfFields(mg0) == 0);
-		Assert.assertTrue(table7.getRecordsNumber() == 3);
-		Assert.assertTrue(table7.removeRecordsWithAllFields(mg2) == 0);
-		Assert.assertTrue(table7.getRecordsNumber() == 3);
-		Assert.assertTrue(table7.removeRecordsWithOneOfFields(mg2) == 1);
-		Assert.assertTrue(table7.getRecordsNumber() == 2);
-		Assert.assertTrue(table7.removeRecordsWithAllFields(mg1) == 2);
-		Assert.assertTrue(table7.getRecordsNumber() == 0);
+        Assert.assertEquals(0, table7.removeRecordsWithAllFields(mg0));
+        Assert.assertEquals(3, table7.getRecordsNumber());
+        Assert.assertEquals(0, table7.removeRecordsWithOneOfFields(mg0));
+        Assert.assertEquals(3, table7.getRecordsNumber());
+        Assert.assertEquals(0, table7.removeRecordsWithAllFields(mg2));
+        Assert.assertEquals(3, table7.getRecordsNumber());
+        Assert.assertEquals(1, table7.removeRecordsWithOneOfFields(mg2));
+        Assert.assertEquals(2, table7.getRecordsNumber());
+        Assert.assertEquals(2, table7.removeRecordsWithAllFields(mg1));
+        Assert.assertEquals(0, table7.getRecordsNumber());
 		table1.checkDataIntegrity();
 		table3.checkDataIntegrity();
 		table2.checkDataIntegrity();
@@ -1634,22 +1598,22 @@ public abstract class TestDatabase {
 		Table3.Record r2 = table3.getRecords().get(0);
 		Table1.Record r1b = table1.getRecords().get(1);
 		Table3.Record r2b = table3.getRecords().get(1);
-		Assert.assertTrue(table1.getRecordsNumber() == 2);
-		Assert.assertTrue(table3.getRecordsNumber() == 2);
-		Assert.assertTrue(table1.getRecords().size() == 2);
-		Assert.assertTrue(table3.getRecords().size() == 2);
+        Assert.assertEquals(2, table1.getRecordsNumber());
+        Assert.assertEquals(2, table3.getRecordsNumber());
+        Assert.assertEquals(2, table1.getRecords().size());
+        Assert.assertEquals(2, table3.getRecords().size());
 
-		HashMap<String, Object> map1 = new HashMap<String, Object>();
+		HashMap<String, Object> map1 = new HashMap<>();
 		map1.put("fr1_pk1", r1);
-		map1.put("int_value", new Integer(0));
-		HashMap<String, Object> map2 = new HashMap<String, Object>();
+		map1.put("int_value", 0);
+		HashMap<String, Object> map2 = new HashMap<>();
 		map2.put("fr1_pk1", r2);
-		map2.put("int_value", new Integer(0));
+		map2.put("int_value", 0);
 		try {
 			table2.addRecord(map2);
-			Assert.fail();
+			fail();
 		} catch (DatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 		Assert.assertEquals(table2.addRecord(map1).int_value, 0);
 		Assert.assertEquals(table4.addRecord(map2).int_value, 0);
@@ -1663,176 +1627,176 @@ public abstract class TestDatabase {
 		Assert.assertEquals(table4.getRecords().get(0).int_value, 0);
 		Assert.assertEquals(table5.getRecords().get(0).int_value, 0);
 
-		Assert.assertTrue(r1.pk1 == r1fr2.pk1);
-		Assert.assertTrue(r1.pk2 == r1fr2.pk2);
-		Assert.assertTrue(r1.pk3.equals(r1fr2.pk3));
-		Assert.assertTrue(r1.pk4 == r1fr2.pk4);
-		Assert.assertTrue(r1.pk5.equals(r1fr2.pk5));
-		Assert.assertTrue(r1.pk6.equals(r1fr2.pk6));
-		Assert.assertTrue(r1.pk7.equals(r1fr2.pk7));
-		Assert.assertTrue(r1.int_value == r1fr2.int_value);
-		Assert.assertTrue(r1.byte_value == r1fr2.byte_value);
-		Assert.assertTrue(r1.char_value == r1fr2.char_value);
-		Assert.assertTrue(r1.boolean_value == r1fr2.boolean_value);
-		Assert.assertTrue(r1.short_value == r1fr2.short_value);
-		Assert.assertTrue(r1.long_value == r1fr2.long_value);
-		Assert.assertTrue(r1.float_value == r1fr2.float_value);
-		Assert.assertTrue(r1.double_value == r1fr2.double_value);
-		Assert.assertTrue(r1.string_value.equals(r1fr2.string_value));
-		Assert.assertTrue(r1.IntegerNumber_value.equals(r1fr2.IntegerNumber_value));
-		Assert.assertTrue(r1.ByteNumber_value.equals(r1fr2.ByteNumber_value));
-		Assert.assertTrue(r1.CharacterNumber_value.equals(r1fr2.CharacterNumber_value));
-		Assert.assertTrue(r1.BooleanNumber_value.equals(r1fr2.BooleanNumber_value));
-		Assert.assertTrue(r1.ShortNumber_value.equals(r1fr2.ShortNumber_value));
-		Assert.assertTrue(r1.LongNumber_value.equals(r1fr2.LongNumber_value));
-		Assert.assertTrue(r1.FloatNumber_value.equals(r1fr2.FloatNumber_value));
-		Assert.assertTrue(r1.DoubleNumber_value.equals(r1fr2.DoubleNumber_value));
-		Assert.assertTrue(r1.BigInteger_value.equals(r1fr2.BigInteger_value));
-		Assert.assertTrue(r1.BigDecimal_value.equals(r1fr2.BigDecimal_value));
-		Assert.assertTrue(r1.DateValue.equals(r1fr2.DateValue));
-		Assert.assertTrue(r1.CalendarValue.equals(r1fr2.CalendarValue));
-		Assert.assertTrue(r1.secretKey.equals(r1fr2.secretKey));
-		Assert.assertTrue(r1.typeSecretKey.equals(r1fr2.typeSecretKey));
-		Assert.assertTrue(r1.file.equals(fileTest));
+        Assert.assertEquals(r1.pk1, r1fr2.pk1);
+        Assert.assertEquals(r1.pk2, r1fr2.pk2);
+        Assert.assertEquals(r1.pk3, r1fr2.pk3);
+        Assert.assertEquals(r1.pk4, r1fr2.pk4);
+        Assert.assertEquals(r1.pk5, r1fr2.pk5);
+		assertTrue(r1.pk6.equals(r1fr2.pk6));
+		assertTrue(r1.pk7.equals(r1fr2.pk7));
+        Assert.assertEquals(r1.int_value, r1fr2.int_value);
+        Assert.assertEquals(r1.byte_value, r1fr2.byte_value);
+        Assert.assertEquals(r1.char_value, r1fr2.char_value);
+        Assert.assertEquals(r1.boolean_value, r1fr2.boolean_value);
+        Assert.assertEquals(r1.short_value, r1fr2.short_value);
+        Assert.assertEquals(r1.long_value, r1fr2.long_value);
+        Assert.assertEquals(r1.float_value, r1fr2.float_value, 0.0);
+        Assert.assertEquals(r1.double_value, r1fr2.double_value, 0.0);
+        Assert.assertEquals(r1.string_value, r1fr2.string_value);
+        Assert.assertEquals(r1.IntegerNumber_value, r1fr2.IntegerNumber_value);
+        Assert.assertEquals(r1.ByteNumber_value, r1fr2.ByteNumber_value);
+        Assert.assertEquals(r1.CharacterNumber_value, r1fr2.CharacterNumber_value);
+        Assert.assertEquals(r1.BooleanNumber_value, r1fr2.BooleanNumber_value);
+        Assert.assertEquals(r1.ShortNumber_value, r1fr2.ShortNumber_value);
+        Assert.assertEquals(r1.LongNumber_value, r1fr2.LongNumber_value);
+        Assert.assertEquals(r1.FloatNumber_value, r1fr2.FloatNumber_value);
+        Assert.assertEquals(r1.DoubleNumber_value, r1fr2.DoubleNumber_value);
+        Assert.assertEquals(r1.BigInteger_value, r1fr2.BigInteger_value);
+        Assert.assertEquals(r1.BigDecimal_value, r1fr2.BigDecimal_value);
+        Assert.assertEquals(r1.DateValue, r1fr2.DateValue);
+        Assert.assertEquals(r1.CalendarValue, r1fr2.CalendarValue);
+        Assert.assertEquals(r1.secretKey, r1fr2.secretKey);
+        Assert.assertEquals(r1.typeSecretKey, r1fr2.typeSecretKey);
+        Assert.assertEquals(r1.file, fileTest);
 		assertEquals(r1.subField, subField);
 		assertEquals(r1.subSubField, subSubField);
 
-		Assert.assertTrue(r2.pk1 == r2fr4.pk1);
-		Assert.assertTrue(r2.pk2 == r2fr4.pk2);
-		Assert.assertTrue(r2.pk3.equals(r2fr4.pk3));
-		Assert.assertTrue(r2.pk4 == r2fr4.pk4);
-		Assert.assertTrue(r2.pk5.equals(r2fr4.pk5));
-		Assert.assertTrue(r2.pk6.equals(r2fr4.pk6));
-		Assert.assertTrue(r2.pk7.equals(r2fr4.pk7));
-		Assert.assertTrue(r2.int_value == r2fr4.int_value);
-		Assert.assertTrue(r2.byte_value == r2fr4.byte_value);
-		Assert.assertTrue(r2.char_value == r2fr4.char_value);
-		Assert.assertTrue(r2.boolean_value == r2fr4.boolean_value);
-		Assert.assertTrue(r2.short_value == r2fr4.short_value);
-		Assert.assertTrue(r2.long_value == r2fr4.long_value);
-		Assert.assertTrue(r2.float_value == r2fr4.float_value);
-		Assert.assertTrue(r2.double_value == r2fr4.double_value);
-		Assert.assertTrue(r2.string_value.equals(r2fr4.string_value));
-		Assert.assertTrue(r2.IntegerNumber_value.equals(r2fr4.IntegerNumber_value));
-		Assert.assertTrue(r2.ByteNumber_value.equals(r2fr4.ByteNumber_value));
-		Assert.assertTrue(r2.CharacterNumber_value.equals(r2fr4.CharacterNumber_value));
-		Assert.assertTrue(r2.BooleanNumber_value.equals(r2fr4.BooleanNumber_value));
-		Assert.assertTrue(r2.ShortNumber_value.equals(r2fr4.ShortNumber_value));
-		Assert.assertTrue(r2.LongNumber_value.equals(r2fr4.LongNumber_value));
-		Assert.assertTrue(r2.FloatNumber_value.equals(r2fr4.FloatNumber_value));
-		Assert.assertTrue(r2.DoubleNumber_value.equals(r2fr4.DoubleNumber_value));
-		Assert.assertTrue(r2.BigInteger_value.equals(r2fr4.BigInteger_value));
-		Assert.assertTrue(r2.BigDecimal_value.equals(r2fr4.BigDecimal_value));
-		Assert.assertTrue(r2.DateValue.equals(r2fr4.DateValue));
-		Assert.assertTrue(r2.CalendarValue.equals(r2fr4.CalendarValue));
-		Assert.assertTrue(r2.secretKey.equals(r2fr4.secretKey));
-		Assert.assertTrue(r2.typeSecretKey.equals(r2fr4.typeSecretKey));
-		Assert.assertTrue(r2.file.equals(fileTest));
+        Assert.assertEquals(r2.pk1, r2fr4.pk1);
+        Assert.assertEquals(r2.pk2, r2fr4.pk2);
+        Assert.assertEquals(r2.pk3, r2fr4.pk3);
+        Assert.assertEquals(r2.pk4, r2fr4.pk4);
+        Assert.assertEquals(r2.pk5, r2fr4.pk5);
+		assertTrue(r2.pk6.equals(r2fr4.pk6));
+		assertTrue(r2.pk7.equals(r2fr4.pk7));
+        Assert.assertEquals(r2.int_value, r2fr4.int_value);
+        Assert.assertEquals(r2.byte_value, r2fr4.byte_value);
+        Assert.assertEquals(r2.char_value, r2fr4.char_value);
+        Assert.assertEquals(r2.boolean_value, r2fr4.boolean_value);
+        Assert.assertEquals(r2.short_value, r2fr4.short_value);
+        Assert.assertEquals(r2.long_value, r2fr4.long_value);
+        Assert.assertEquals(r2.float_value, r2fr4.float_value, 0.0);
+        Assert.assertEquals(r2.double_value, r2fr4.double_value, 0.0);
+        Assert.assertEquals(r2.string_value, r2fr4.string_value);
+        Assert.assertEquals(r2.IntegerNumber_value, r2fr4.IntegerNumber_value);
+        Assert.assertEquals(r2.ByteNumber_value, r2fr4.ByteNumber_value);
+        Assert.assertEquals(r2.CharacterNumber_value, r2fr4.CharacterNumber_value);
+        Assert.assertEquals(r2.BooleanNumber_value, r2fr4.BooleanNumber_value);
+        Assert.assertEquals(r2.ShortNumber_value, r2fr4.ShortNumber_value);
+        Assert.assertEquals(r2.LongNumber_value, r2fr4.LongNumber_value);
+        Assert.assertEquals(r2.FloatNumber_value, r2fr4.FloatNumber_value);
+        Assert.assertEquals(r2.DoubleNumber_value, r2fr4.DoubleNumber_value);
+        Assert.assertEquals(r2.BigInteger_value, r2fr4.BigInteger_value);
+        Assert.assertEquals(r2.BigDecimal_value, r2fr4.BigDecimal_value);
+        Assert.assertEquals(r2.DateValue, r2fr4.DateValue);
+        Assert.assertEquals(r2.CalendarValue, r2fr4.CalendarValue);
+        Assert.assertEquals(r2.secretKey, r2fr4.secretKey);
+        Assert.assertEquals(r2.typeSecretKey, r2fr4.typeSecretKey);
+        Assert.assertEquals(r2.file, fileTest);
 		assertEquals(r2.subField, subField);
 		assertEquals(r2.subSubField, subSubField);
 
-		Assert.assertTrue(r2.pk1 == r2fr5.pk1);
-		Assert.assertTrue(r2.pk2 == r2fr5.pk2);
-		Assert.assertTrue(r2.pk3.equals(r2fr5.pk3));
-		Assert.assertTrue(r2.pk4 == r2fr5.pk4);
-		Assert.assertTrue(r2.pk5.equals(r2fr5.pk5));
-		Assert.assertTrue(r2.pk6.equals(r2fr5.pk6));
-		Assert.assertTrue(r2.pk7.equals(r2fr5.pk7));
-		Assert.assertTrue(r2.int_value == r2fr5.int_value);
-		Assert.assertTrue(r2.byte_value == r2fr5.byte_value);
-		Assert.assertTrue(r2.char_value == r2fr5.char_value);
-		Assert.assertTrue(r2.boolean_value == r2fr5.boolean_value);
-		Assert.assertTrue(r2.short_value == r2fr5.short_value);
-		Assert.assertTrue(r2.long_value == r2fr5.long_value);
-		Assert.assertTrue(r2.float_value == r2fr5.float_value);
-		Assert.assertTrue(r2.double_value == r2fr5.double_value);
-		Assert.assertTrue(r2.string_value.equals(r2fr5.string_value));
-		Assert.assertTrue(r2.IntegerNumber_value.equals(r2fr5.IntegerNumber_value));
-		Assert.assertTrue(r2.ByteNumber_value.equals(r2fr5.ByteNumber_value));
-		Assert.assertTrue(r2.CharacterNumber_value.equals(r2fr5.CharacterNumber_value));
-		Assert.assertTrue(r2.BooleanNumber_value.equals(r2fr5.BooleanNumber_value));
-		Assert.assertTrue(r2.ShortNumber_value.equals(r2fr5.ShortNumber_value));
-		Assert.assertTrue(r2.LongNumber_value.equals(r2fr5.LongNumber_value));
-		Assert.assertTrue(r2.FloatNumber_value.equals(r2fr5.FloatNumber_value));
-		Assert.assertTrue(r2.DoubleNumber_value.equals(r2fr5.DoubleNumber_value));
-		Assert.assertTrue(r2.BigInteger_value.equals(r2fr5.BigInteger_value));
-		Assert.assertTrue(r2.BigDecimal_value.equals(r2fr5.BigDecimal_value));
-		Assert.assertTrue(r2.DateValue.equals(r2fr5.DateValue));
-		Assert.assertTrue(r2.CalendarValue.equals(r2fr5.CalendarValue));
-		Assert.assertTrue(r2.secretKey.equals(r2fr5.secretKey));
-		Assert.assertTrue(r2.typeSecretKey.equals(r2fr5.typeSecretKey));
-		Assert.assertTrue(r2.file.equals(fileTest));
+        Assert.assertEquals(r2.pk1, r2fr5.pk1);
+        Assert.assertEquals(r2.pk2, r2fr5.pk2);
+        Assert.assertEquals(r2.pk3, r2fr5.pk3);
+        Assert.assertEquals(r2.pk4, r2fr5.pk4);
+        Assert.assertEquals(r2.pk5, r2fr5.pk5);
+		assertTrue(r2.pk6.equals(r2fr5.pk6));
+		assertTrue(r2.pk7.equals(r2fr5.pk7));
+        Assert.assertEquals(r2.int_value, r2fr5.int_value);
+        Assert.assertEquals(r2.byte_value, r2fr5.byte_value);
+        Assert.assertEquals(r2.char_value, r2fr5.char_value);
+        Assert.assertEquals(r2.boolean_value, r2fr5.boolean_value);
+        Assert.assertEquals(r2.short_value, r2fr5.short_value);
+        Assert.assertEquals(r2.long_value, r2fr5.long_value);
+        Assert.assertEquals(r2.float_value, r2fr5.float_value, 0.0);
+        Assert.assertEquals(r2.double_value, r2fr5.double_value, 0.0);
+        Assert.assertEquals(r2.string_value, r2fr5.string_value);
+        Assert.assertEquals(r2.IntegerNumber_value, r2fr5.IntegerNumber_value);
+        Assert.assertEquals(r2.ByteNumber_value, r2fr5.ByteNumber_value);
+        Assert.assertEquals(r2.CharacterNumber_value, r2fr5.CharacterNumber_value);
+        Assert.assertEquals(r2.BooleanNumber_value, r2fr5.BooleanNumber_value);
+        Assert.assertEquals(r2.ShortNumber_value, r2fr5.ShortNumber_value);
+        Assert.assertEquals(r2.LongNumber_value, r2fr5.LongNumber_value);
+        Assert.assertEquals(r2.FloatNumber_value, r2fr5.FloatNumber_value);
+        Assert.assertEquals(r2.DoubleNumber_value, r2fr5.DoubleNumber_value);
+        Assert.assertEquals(r2.BigInteger_value, r2fr5.BigInteger_value);
+        Assert.assertEquals(r2.BigDecimal_value, r2fr5.BigDecimal_value);
+        Assert.assertEquals(r2.DateValue, r2fr5.DateValue);
+        Assert.assertEquals(r2.CalendarValue, r2fr5.CalendarValue);
+        Assert.assertEquals(r2.secretKey, r2fr5.secretKey);
+        Assert.assertEquals(r2.typeSecretKey, r2fr5.typeSecretKey);
+        Assert.assertEquals(r2.file, fileTest);
 		assertEquals(r2.subField, subField);
 		assertEquals(r2.subSubField, subSubField);
 
-		HashMap<String, Object> map1b = new HashMap<String, Object>();
+		HashMap<String, Object> map1b = new HashMap<>();
 		map1b.put("fr1_pk1", r1);
-		map1b.put("int_value", new Integer(1));
-		HashMap<String, Object> map2b = new HashMap<String, Object>();
+		map1b.put("int_value", 1);
+		HashMap<String, Object> map2b = new HashMap<>();
 		map2b.put("fr1_pk1", r2);
-		map2b.put("int_value", new Integer(1));
+		map2b.put("int_value", 1);
 		try {
 			table2.addRecord(map1b);
-			Assert.assertTrue(false);
+            fail();
 		} catch (DatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 		try {
 			table4.addRecord(map2b);
-			Assert.assertTrue(false);
+            fail();
 		} catch (DatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 		try {
 			table5.addRecord(map2b);
-			Assert.assertTrue(false);
+            fail();
 		} catch (DatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
-		HashMap<String, Object> map1c = new HashMap<String, Object>();
+		HashMap<String, Object> map1c = new HashMap<>();
 		map1c.put("fr1_pk1", r1b);
-		map1c.put("int_value", new Integer(0));
-		HashMap<String, Object> map2c = new HashMap<String, Object>();
+		map1c.put("int_value", 0);
+		HashMap<String, Object> map2c = new HashMap<>();
 		map2c.put("fr1_pk1", r2b);
-		map2c.put("int_value", new Integer(0));
+		map2c.put("int_value", 0);
 		try {
 			table2.addRecord(map1c);
-			Assert.assertTrue(false);
+            fail();
 		} catch (DatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 		try {
 			table4.addRecord(map2c);
-			Assert.assertTrue(false);
+            fail();
 		} catch (DatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 		try {
 			table5.addRecord(map2c);
-			Assert.assertTrue(false);
+            fail();
 		} catch (DatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 
-		Assert.assertTrue(table2.getRecordsNumber() == 1);
-		Assert.assertTrue(table4.getRecordsNumber() == 1);
-		Assert.assertTrue(table5.getRecordsNumber() == 1);
-		HashMap<String, Object> map6 = new HashMap<String, Object>();
+        Assert.assertEquals(1, table2.getRecordsNumber());
+        Assert.assertEquals(1, table4.getRecordsNumber());
+        Assert.assertEquals(1, table5.getRecordsNumber());
+		HashMap<String, Object> map6 = new HashMap<>();
 		map6.put("fk1_pk1", table2.getRecords().get(0));
 		map6.put("fk2", table5.getRecords().get(0));
 		Table6.Record r6 = table6.addRecord(map6);
-		Assert.assertTrue(equals(r6.fk1_pk1, table2.getRecords().get(0)));
-		Assert.assertTrue(equals(r6.fk2, table5.getRecords().get(0)));
-		Assert.assertTrue(table6.getRecordsNumber() == 1);
+		assertTrue(equals(r6.fk1_pk1, table2.getRecords().get(0)));
+		assertTrue(equals(r6.fk2, table5.getRecords().get(0)));
+        Assert.assertEquals(1, table6.getRecordsNumber());
 		r6 = table6.getRecords().get(0);
-		Assert.assertTrue(equals(r6.fk1_pk1, table2.getRecords().get(0)));
-		Assert.assertTrue(equals(r6.fk2, table5.getRecords().get(0)));
+		assertTrue(equals(r6.fk1_pk1, table2.getRecords().get(0)));
+		assertTrue(equals(r6.fk2, table5.getRecords().get(0)));
 
 		try {
 			table6.addRecord(map6);
-			Assert.assertTrue(false);
+            fail();
 		} catch (DatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 		table1.checkDataIntegrity();
 		table3.checkDataIntegrity();
@@ -1845,10 +1809,10 @@ public abstract class TestDatabase {
 
 	@Test(dependsOnMethods = { "addForeignKeyAndTestUniqueKeys" })
 	public void alterRecordWithCascade() throws DatabaseException, NoSuchAlgorithmException, NoSuchProviderException {
-		HashMap<String, Object> map = new HashMap<String, Object>();
-		map.put("pk1", new Integer(10));
-		map.put("pk2", new Long(1526345));
-		BigInteger val = null;
+		HashMap<String, Object> map = new HashMap<>();
+		map.put("pk1", 10);
+		map.put("pk2", 1526345L);
+		BigInteger val;
 		do {
 			val = BigInteger.valueOf(random.nextLong());
 			if (val.longValue() < 0)
@@ -1867,9 +1831,9 @@ public abstract class TestDatabase {
 				SecureRandomType.DEFAULT.getSingleton(null)));
 		map.put("pk6", new DecentralizedIDGenerator());
 		map.put("pk7", new RenforcedDecentralizedIDGenerator());
-		map.put("byte_value", new Byte((byte) 9));
-		map.put("char_value", new Character('s'));
-		map.put("DoubleNumber_value", new Double(7.7));
+		map.put("byte_value", (byte) 9);
+		map.put("char_value", 's');
+		map.put("DoubleNumber_value", 7.7);
 		map.put("subField", subField);
 		map.put("subSubField", subSubField);
 		byte[] tab = new byte[3];
@@ -1896,99 +1860,99 @@ public abstract class TestDatabase {
 		map.put("pk3", table1.getRecords().get(1).pk3);
 		try {
 			table1.updateRecord(r1a, map);
-			Assert.assertTrue(false);
+            fail();
 		} catch (ConstraintsNotRespectedDatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 		map.remove("pk3");
 		map.put("pk3", table3.getRecords().get(1).pk3);
 		try {
 			table3.updateRecord(r2a, map);
-			Assert.assertTrue(false);
+            fail();
 		} catch (ConstraintsNotRespectedDatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 
 		r1a = table1.getRecords().get(0);
 		r2a = table3.getRecords().get(0);
 
 		map.remove("pk3");
-		map.put("pk2", new Long(table1.getRecords().get(1).pk2));
+		map.put("pk2", table1.getRecords().get(1).pk2);
 		try {
 			table1.updateRecord(r1a, map);
-			Assert.assertTrue(false);
+            fail();
 		} catch (ConstraintsNotRespectedDatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
-		map.put("pk2", new Long(table3.getRecords().get(1).pk2));
+		map.put("pk2", table3.getRecords().get(1).pk2);
 		try {
 			table3.updateRecord(r2a, map);
-			Assert.assertTrue(false);
+            fail();
 		} catch (ConstraintsNotRespectedDatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 
-		Assert.assertTrue(r1.pk1 == 10);
-		Assert.assertTrue(r1.int_value == 3);
-		Assert.assertTrue(r1.byte_value == (byte) 9);
-		Assert.assertTrue(r1.char_value == 's');
-		Assert.assertTrue(r1.boolean_value);
-		Assert.assertTrue(r1.short_value == (short) 3);
-		Assert.assertTrue(r1.long_value == (long) 3);
-		Assert.assertTrue(r1.float_value == 3.3f);
-		Assert.assertTrue(r1.double_value == 3.3);
-		Assert.assertTrue(r1.string_value.equals("test string"));
-		Assert.assertTrue(r1.IntegerNumber_value.intValue() == 3);
-		Assert.assertTrue(r1.ByteNumber_value.byteValue() == (byte) 3);
-		Assert.assertTrue(r1.CharacterNumber_value.charValue() == 'x');
-		Assert.assertTrue(r1.BooleanNumber_value.booleanValue());
-		Assert.assertTrue(r1.ShortNumber_value.shortValue() == (short) 3);
-		Assert.assertTrue(r1.LongNumber_value.longValue() == (long) 3);
-		Assert.assertTrue(r1.FloatNumber_value.floatValue() == 3.3f);
-		Assert.assertTrue(r1.DoubleNumber_value.doubleValue() == 7.7);
-		Assert.assertTrue(r1.BigInteger_value.equals(new BigInteger("5")));
-		Assert.assertTrue(r1.BigDecimal_value.equals(new BigDecimal("8.8")));
-		Assert.assertTrue(r1.DateValue.equals(date));
-		Assert.assertTrue(r1.CalendarValue.equals(calendar));
-		Assert.assertTrue(r1.secretKey.equals(secretKey));
-		Assert.assertTrue(r1.typeSecretKey.equals(typeSecretKey));
-		Assert.assertTrue(r1.file.equals(fileTest));
+        Assert.assertEquals(10, r1.pk1);
+        Assert.assertEquals(3, r1.int_value);
+        Assert.assertEquals(r1.byte_value, (byte) 9);
+        Assert.assertEquals('s', r1.char_value);
+		assertTrue(r1.boolean_value);
+        Assert.assertEquals(r1.short_value, (short) 3);
+        Assert.assertEquals(r1.long_value, (long) 3);
+        Assert.assertEquals(3.3f, r1.float_value, 0.0);
+        Assert.assertEquals(3.3, r1.double_value, 0.0);
+        Assert.assertEquals("test string", r1.string_value);
+        Assert.assertEquals(3, r1.IntegerNumber_value.intValue());
+        Assert.assertEquals(r1.ByteNumber_value.byteValue(), (byte) 3);
+        Assert.assertEquals('x', r1.CharacterNumber_value.charValue());
+		assertTrue(r1.BooleanNumber_value);
+        Assert.assertEquals(r1.ShortNumber_value.shortValue(), (short) 3);
+        Assert.assertEquals(r1.LongNumber_value.longValue(), (long) 3);
+        Assert.assertEquals(3.3f, r1.FloatNumber_value, 0.0);
+        Assert.assertEquals(7.7, r1.DoubleNumber_value, 0.0);
+        Assert.assertEquals(r1.BigInteger_value, new BigInteger("5"));
+        Assert.assertEquals(r1.BigDecimal_value, new BigDecimal("8.8"));
+        Assert.assertEquals(r1.DateValue, date);
+        Assert.assertEquals(r1.CalendarValue, calendar);
+        Assert.assertEquals(r1.secretKey, secretKey);
+        Assert.assertEquals(r1.typeSecretKey, typeSecretKey);
+        Assert.assertEquals(r1.file, fileTest);
 		assertEquals(r1.subField, subField);
 		assertEquals(r1.subSubField, subSubField);
 
 		for (int i = 0; i < 3; i++)
-			Assert.assertTrue(r1.byte_array_value[i] == tab[i]);
+            Assert.assertEquals(r1.byte_array_value[i], tab[i]);
 
-		Assert.assertTrue(r2.pk1 == 10);
-		Assert.assertTrue(r2.int_value == 3);
-		Assert.assertTrue(r2.byte_value == (byte) 9);
-		Assert.assertTrue(r2.char_value == 's');
-		Assert.assertTrue(r2.boolean_value);
-		Assert.assertTrue(r2.short_value == (short) 3);
-		Assert.assertTrue(r2.long_value == (long) 3);
-		Assert.assertTrue(r2.float_value == 3.3f);
-		Assert.assertTrue(r2.double_value == 3.3);
-		Assert.assertTrue(r2.string_value.equals("test string"));
-		Assert.assertTrue(r2.IntegerNumber_value.intValue() == 3);
-		Assert.assertTrue(r2.ByteNumber_value.byteValue() == (byte) 3);
-		Assert.assertTrue(r2.CharacterNumber_value.charValue() == 'x');
-		Assert.assertTrue(r2.BooleanNumber_value.booleanValue());
-		Assert.assertTrue(r2.ShortNumber_value.shortValue() == (short) 3);
-		Assert.assertTrue(r2.LongNumber_value.longValue() == (long) 3);
-		Assert.assertTrue(r2.FloatNumber_value.floatValue() == 3.3f);
-		Assert.assertTrue(r2.DoubleNumber_value.doubleValue() == 7.7);
-		Assert.assertTrue(r2.BigInteger_value.equals(new BigInteger("5")));
-		Assert.assertTrue(r2.BigDecimal_value.equals(new BigDecimal("8.8")));
-		Assert.assertTrue(r2.DateValue.equals(date));
-		Assert.assertTrue(r2.CalendarValue.equals(calendar));
-		Assert.assertTrue(r2.secretKey.equals(secretKey));
-		Assert.assertTrue(r2.typeSecretKey.equals(typeSecretKey));
-		Assert.assertTrue(r2.file.equals(fileTest));
+        Assert.assertEquals(10, r2.pk1);
+        Assert.assertEquals(3, r2.int_value);
+        Assert.assertEquals(r2.byte_value, (byte) 9);
+        Assert.assertEquals('s', r2.char_value);
+		assertTrue(r2.boolean_value);
+        Assert.assertEquals(r2.short_value, (short) 3);
+        Assert.assertEquals(r2.long_value, (long) 3);
+        Assert.assertEquals(3.3f, r2.float_value, 0.0);
+        Assert.assertEquals(3.3, r2.double_value, 0.0);
+        Assert.assertEquals("test string", r2.string_value);
+        Assert.assertEquals(3, r2.IntegerNumber_value.intValue());
+        Assert.assertEquals(r2.ByteNumber_value.byteValue(), (byte) 3);
+        Assert.assertEquals('x', r2.CharacterNumber_value.charValue());
+		assertTrue(r2.BooleanNumber_value);
+        Assert.assertEquals(r2.ShortNumber_value.shortValue(), (short) 3);
+        Assert.assertEquals(r2.LongNumber_value.longValue(), (long) 3);
+        Assert.assertEquals(3.3f, r2.FloatNumber_value, 0.0);
+        Assert.assertEquals(7.7, r2.DoubleNumber_value, 0.0);
+        Assert.assertEquals(r2.BigInteger_value, new BigInteger("5"));
+        Assert.assertEquals(r2.BigDecimal_value, new BigDecimal("8.8"));
+        Assert.assertEquals(r2.DateValue, date);
+        Assert.assertEquals(r2.CalendarValue, calendar);
+        Assert.assertEquals(r2.secretKey, secretKey);
+        Assert.assertEquals(r2.typeSecretKey, typeSecretKey);
+        Assert.assertEquals(r2.file, fileTest);
 		assertEquals(r2.subField, subField);
 		assertEquals(r2.subSubField, subSubField);
 
 		for (int i = 0; i < 3; i++)
-			Assert.assertTrue(r2.byte_array_value[i] == tab[i]);
+            Assert.assertEquals(r2.byte_array_value[i], tab[i]);
 
 		Table1.Record ra = table2.getRecords().get(0).fr1_pk1;
 		Table3.Record rb = table4.getRecords().get(0).fr1_pk1;
@@ -1996,217 +1960,218 @@ public abstract class TestDatabase {
 		Table1.Record rd = table6.getRecords().get(0).fk1_pk1.fr1_pk1;
 		Table3.Record re = table6.getRecords().get(0).fk2.fr1_pk1;
 
-		Assert.assertTrue(r1.pk1 == ra.pk1);
-		Assert.assertTrue(r1.pk2 == ra.pk2);
-		Assert.assertTrue(r1.pk3.equals(ra.pk3));
-		Assert.assertTrue(r1.pk4 == ra.pk4);
-		Assert.assertTrue(r1.pk5.equals(ra.pk5));
-		Assert.assertTrue(r1.pk6.equals(ra.pk6));
-		Assert.assertTrue(r1.pk7.equals(ra.pk7));
-		Assert.assertTrue(r1.int_value == ra.int_value);
-		Assert.assertTrue(r1.byte_value == ra.byte_value);
-		Assert.assertTrue(r1.char_value == ra.char_value);
-		Assert.assertTrue(r1.boolean_value == ra.boolean_value);
-		Assert.assertTrue(r1.short_value == ra.short_value);
-		Assert.assertTrue(r1.long_value == ra.long_value);
-		Assert.assertTrue(r1.float_value == ra.float_value);
-		Assert.assertTrue(r1.double_value == ra.double_value);
-		Assert.assertTrue(r1.string_value.equals(ra.string_value));
-		Assert.assertTrue(r1.IntegerNumber_value.equals(ra.IntegerNumber_value));
-		Assert.assertTrue(r1.ByteNumber_value.equals(ra.ByteNumber_value));
-		Assert.assertTrue(r1.CharacterNumber_value.equals(ra.CharacterNumber_value));
-		Assert.assertTrue(r1.BooleanNumber_value.equals(ra.BooleanNumber_value));
-		Assert.assertTrue(r1.ShortNumber_value.equals(ra.ShortNumber_value));
-		Assert.assertTrue(r1.LongNumber_value.equals(ra.LongNumber_value));
-		Assert.assertTrue(r1.FloatNumber_value.equals(ra.FloatNumber_value));
-		Assert.assertTrue(r1.DoubleNumber_value.equals(ra.DoubleNumber_value));
-		Assert.assertTrue(r1.BigInteger_value.equals(ra.BigInteger_value));
-		Assert.assertTrue(r1.BigDecimal_value.equals(ra.BigDecimal_value));
-		Assert.assertTrue(r1.DateValue.equals(ra.DateValue));
-		Assert.assertTrue(r1.CalendarValue.equals(ra.CalendarValue));
-		Assert.assertTrue(r1.secretKey.equals(ra.secretKey));
-		Assert.assertTrue(r1.typeSecretKey.equals(ra.typeSecretKey));
-		Assert.assertTrue(r1.file.equals(ra.file));
+        Assert.assertEquals(r1.pk1, ra.pk1);
+        Assert.assertEquals(r1.pk2, ra.pk2);
+        Assert.assertEquals(r1.pk3, ra.pk3);
+        Assert.assertEquals(r1.pk4, ra.pk4);
+        Assert.assertEquals(r1.pk5, ra.pk5);
+		assertTrue(r1.pk6.equals(ra.pk6));
+		assertTrue(r1.pk7.equals(ra.pk7));
+        Assert.assertEquals(r1.int_value, ra.int_value);
+        Assert.assertEquals(r1.byte_value, ra.byte_value);
+        Assert.assertEquals(r1.char_value, ra.char_value);
+        Assert.assertEquals(r1.boolean_value, ra.boolean_value);
+        Assert.assertEquals(r1.short_value, ra.short_value);
+        Assert.assertEquals(r1.long_value, ra.long_value);
+        Assert.assertEquals(r1.float_value, ra.float_value, 0.0);
+        Assert.assertEquals(r1.double_value, ra.double_value, 0.0);
+        Assert.assertEquals(r1.string_value, ra.string_value);
+        Assert.assertEquals(r1.IntegerNumber_value, ra.IntegerNumber_value);
+        Assert.assertEquals(r1.ByteNumber_value, ra.ByteNumber_value);
+        Assert.assertEquals(r1.CharacterNumber_value, ra.CharacterNumber_value);
+        Assert.assertEquals(r1.BooleanNumber_value, ra.BooleanNumber_value);
+        Assert.assertEquals(r1.ShortNumber_value, ra.ShortNumber_value);
+        Assert.assertEquals(r1.LongNumber_value, ra.LongNumber_value);
+        Assert.assertEquals(r1.FloatNumber_value, ra.FloatNumber_value);
+        Assert.assertEquals(r1.DoubleNumber_value, ra.DoubleNumber_value);
+        Assert.assertEquals(r1.BigInteger_value, ra.BigInteger_value);
+        Assert.assertEquals(r1.BigDecimal_value, ra.BigDecimal_value);
+        Assert.assertEquals(r1.DateValue, ra.DateValue);
+        Assert.assertEquals(r1.CalendarValue, ra.CalendarValue);
+        Assert.assertEquals(r1.secretKey, ra.secretKey);
+        Assert.assertEquals(r1.typeSecretKey, ra.typeSecretKey);
+        Assert.assertEquals(r1.file, ra.file);
 		assertEquals(r1.subField, subField);
 		assertEquals(r1.subSubField, subSubField);
 
 		for (int i = 0; i < 3; i++)
-			Assert.assertTrue(ra.byte_array_value[i] == tab[i]);
+            Assert.assertEquals(ra.byte_array_value[i], tab[i]);
 
-		Assert.assertTrue(r1.pk1 == rd.pk1);
-		Assert.assertTrue(r1.pk2 == rd.pk2);
-		Assert.assertTrue(r1.pk3.equals(rd.pk3));
-		Assert.assertTrue(r1.pk4 == rd.pk4);
-		Assert.assertTrue(r1.pk5.equals(rd.pk5));
-		Assert.assertTrue(r1.pk6.equals(rd.pk6));
-		Assert.assertTrue(r1.pk7.equals(rd.pk7));
-		Assert.assertTrue(r1.int_value == rd.int_value);
-		Assert.assertTrue(r1.byte_value == rd.byte_value);
-		Assert.assertTrue(r1.char_value == rd.char_value);
-		Assert.assertTrue(r1.boolean_value == rd.boolean_value);
-		Assert.assertTrue(r1.short_value == rd.short_value);
-		Assert.assertTrue(r1.long_value == rd.long_value);
-		Assert.assertTrue(r1.float_value == rd.float_value);
-		Assert.assertTrue(r1.double_value == rd.double_value);
-		Assert.assertTrue(r1.string_value.equals(rd.string_value));
-		Assert.assertTrue(r1.IntegerNumber_value.equals(rd.IntegerNumber_value));
-		Assert.assertTrue(r1.ByteNumber_value.equals(rd.ByteNumber_value));
-		Assert.assertTrue(r1.CharacterNumber_value.equals(rd.CharacterNumber_value));
-		Assert.assertTrue(r1.BooleanNumber_value.equals(rd.BooleanNumber_value));
-		Assert.assertTrue(r1.ShortNumber_value.equals(rd.ShortNumber_value));
-		Assert.assertTrue(r1.LongNumber_value.equals(rd.LongNumber_value));
-		Assert.assertTrue(r1.FloatNumber_value.equals(rd.FloatNumber_value));
-		Assert.assertTrue(r1.DoubleNumber_value.equals(rd.DoubleNumber_value));
-		Assert.assertTrue(r1.BigInteger_value.equals(rd.BigInteger_value));
-		Assert.assertTrue(r1.BigDecimal_value.equals(rd.BigDecimal_value));
-		Assert.assertTrue(r1.DateValue.equals(rd.DateValue));
-		Assert.assertTrue(r1.CalendarValue.equals(rd.CalendarValue));
-		Assert.assertTrue(r1.secretKey.equals(rd.secretKey));
-		Assert.assertTrue(r1.typeSecretKey.equals(rd.typeSecretKey));
-		Assert.assertTrue(r2.file.equals(rd.file));
+        Assert.assertEquals(r1.pk1, rd.pk1);
+        Assert.assertEquals(r1.pk2, rd.pk2);
+        Assert.assertEquals(r1.pk3, rd.pk3);
+        Assert.assertEquals(r1.pk4, rd.pk4);
+        Assert.assertEquals(r1.pk5, rd.pk5);
+		assertTrue(r1.pk6.equals(rd.pk6));
+		assertTrue(r1.pk7.equals(rd.pk7));
+        Assert.assertEquals(r1.int_value, rd.int_value);
+        Assert.assertEquals(r1.byte_value, rd.byte_value);
+        Assert.assertEquals(r1.char_value, rd.char_value);
+        Assert.assertEquals(r1.boolean_value, rd.boolean_value);
+        Assert.assertEquals(r1.short_value, rd.short_value);
+        Assert.assertEquals(r1.long_value, rd.long_value);
+        Assert.assertEquals(r1.float_value, rd.float_value, 0.0);
+        Assert.assertEquals(r1.double_value, rd.double_value, 0.0);
+        Assert.assertEquals(r1.string_value, rd.string_value);
+        Assert.assertEquals(r1.IntegerNumber_value, rd.IntegerNumber_value);
+        Assert.assertEquals(r1.ByteNumber_value, rd.ByteNumber_value);
+        Assert.assertEquals(r1.CharacterNumber_value, rd.CharacterNumber_value);
+        Assert.assertEquals(r1.BooleanNumber_value, rd.BooleanNumber_value);
+        Assert.assertEquals(r1.ShortNumber_value, rd.ShortNumber_value);
+        Assert.assertEquals(r1.LongNumber_value, rd.LongNumber_value);
+        Assert.assertEquals(r1.FloatNumber_value, rd.FloatNumber_value);
+        Assert.assertEquals(r1.DoubleNumber_value, rd.DoubleNumber_value);
+        Assert.assertEquals(r1.BigInteger_value, rd.BigInteger_value);
+        Assert.assertEquals(r1.BigDecimal_value, rd.BigDecimal_value);
+        Assert.assertEquals(r1.DateValue, rd.DateValue);
+        Assert.assertEquals(r1.CalendarValue, rd.CalendarValue);
+        Assert.assertEquals(r1.secretKey, rd.secretKey);
+        Assert.assertEquals(r1.typeSecretKey, rd.typeSecretKey);
+        Assert.assertEquals(r2.file, rd.file);
 		assertEquals(r1.subField, subField);
 		assertEquals(r1.subSubField, subSubField);
 
 		for (int i = 0; i < 3; i++)
-			Assert.assertTrue(rd.byte_array_value[i] == tab[i]);
+            Assert.assertEquals(rd.byte_array_value[i], tab[i]);
 
-		Assert.assertTrue(r2.pk1 == rb.pk1);
-		Assert.assertTrue(r2.pk2 == rb.pk2);
-		Assert.assertTrue(r2.pk3.equals(rb.pk3));
-		Assert.assertTrue(r2.pk4 == rb.pk4);
-		Assert.assertTrue(r2.pk5.equals(rb.pk5));
-		Assert.assertTrue(r2.pk6.equals(rb.pk6));
-		Assert.assertTrue(r2.pk7.equals(rb.pk7));
-		Assert.assertTrue(r2.int_value == rb.int_value);
-		Assert.assertTrue(r2.byte_value == rb.byte_value);
-		Assert.assertTrue(r2.char_value == rb.char_value);
-		Assert.assertTrue(r2.boolean_value == rb.boolean_value);
-		Assert.assertTrue(r2.short_value == rb.short_value);
-		Assert.assertTrue(r2.long_value == rb.long_value);
-		Assert.assertTrue(r2.float_value == rb.float_value);
-		Assert.assertTrue(r2.double_value == rb.double_value);
-		Assert.assertTrue(r2.string_value.equals(rb.string_value));
-		Assert.assertTrue(r2.IntegerNumber_value.equals(rb.IntegerNumber_value));
-		Assert.assertTrue(r2.ByteNumber_value.equals(rb.ByteNumber_value));
-		Assert.assertTrue(r2.CharacterNumber_value.equals(rb.CharacterNumber_value));
-		Assert.assertTrue(r2.BooleanNumber_value.equals(rb.BooleanNumber_value));
-		Assert.assertTrue(r2.ShortNumber_value.equals(rb.ShortNumber_value));
-		Assert.assertTrue(r2.LongNumber_value.equals(rb.LongNumber_value));
-		Assert.assertTrue(r2.FloatNumber_value.equals(rb.FloatNumber_value));
-		Assert.assertTrue(r2.DoubleNumber_value.equals(rb.DoubleNumber_value));
-		Assert.assertTrue(r2.BigInteger_value.equals(rb.BigInteger_value));
-		Assert.assertTrue(r2.BigDecimal_value.equals(rb.BigDecimal_value));
-		Assert.assertTrue(r2.DateValue.equals(rb.DateValue));
-		Assert.assertTrue(r2.CalendarValue.equals(rb.CalendarValue));
-		Assert.assertTrue(r2.secretKey.equals(rb.secretKey));
-		Assert.assertTrue(r2.typeSecretKey.equals(rb.typeSecretKey));
-		Assert.assertTrue(r2.file.equals(rb.file));
+        Assert.assertEquals(r2.pk1, rb.pk1);
+        Assert.assertEquals(r2.pk2, rb.pk2);
+        Assert.assertEquals(r2.pk3, rb.pk3);
+        Assert.assertEquals(r2.pk4, rb.pk4);
+        Assert.assertEquals(r2.pk5, rb.pk5);
+		assertTrue(r2.pk6.equals(rb.pk6));
+		assertTrue(r2.pk7.equals(rb.pk7));
+        Assert.assertEquals(r2.int_value, rb.int_value);
+        Assert.assertEquals(r2.byte_value, rb.byte_value);
+        Assert.assertEquals(r2.char_value, rb.char_value);
+        Assert.assertEquals(r2.boolean_value, rb.boolean_value);
+        Assert.assertEquals(r2.short_value, rb.short_value);
+        Assert.assertEquals(r2.long_value, rb.long_value);
+        Assert.assertEquals(r2.float_value, rb.float_value, 0.0);
+        Assert.assertEquals(r2.double_value, rb.double_value, 0.0);
+        Assert.assertEquals(r2.string_value, rb.string_value);
+        Assert.assertEquals(r2.IntegerNumber_value, rb.IntegerNumber_value);
+        Assert.assertEquals(r2.ByteNumber_value, rb.ByteNumber_value);
+        Assert.assertEquals(r2.CharacterNumber_value, rb.CharacterNumber_value);
+        Assert.assertEquals(r2.BooleanNumber_value, rb.BooleanNumber_value);
+        Assert.assertEquals(r2.ShortNumber_value, rb.ShortNumber_value);
+        Assert.assertEquals(r2.LongNumber_value, rb.LongNumber_value);
+        Assert.assertEquals(r2.FloatNumber_value, rb.FloatNumber_value);
+        Assert.assertEquals(r2.DoubleNumber_value, rb.DoubleNumber_value);
+        Assert.assertEquals(r2.BigInteger_value, rb.BigInteger_value);
+        Assert.assertEquals(r2.BigDecimal_value, rb.BigDecimal_value);
+        Assert.assertEquals(r2.DateValue, rb.DateValue);
+        Assert.assertEquals(r2.CalendarValue, rb.CalendarValue);
+        Assert.assertEquals(r2.secretKey, rb.secretKey);
+        Assert.assertEquals(r2.typeSecretKey, rb.typeSecretKey);
+        Assert.assertEquals(r2.file, rb.file);
 
 		for (int i = 0; i < 3; i++)
-			Assert.assertTrue(rb.byte_array_value[i] == tab[i]);
+            Assert.assertEquals(rb.byte_array_value[i], tab[i]);
 
-		Assert.assertTrue(r2.pk1 == rc.pk1);
-		Assert.assertTrue(r2.pk2 == rc.pk2);
-		Assert.assertTrue(r2.pk3.equals(rc.pk3));
-		Assert.assertTrue(r2.pk4 == rc.pk4);
-		Assert.assertTrue(r2.pk5.equals(rc.pk5));
-		Assert.assertTrue(r2.pk6.equals(rc.pk6));
-		Assert.assertTrue(r2.pk7.equals(rc.pk7));
-		Assert.assertTrue(r2.int_value == rc.int_value);
-		Assert.assertTrue(r2.byte_value == rc.byte_value);
-		Assert.assertTrue(r2.char_value == rc.char_value);
-		Assert.assertTrue(r2.boolean_value == rc.boolean_value);
-		Assert.assertTrue(r2.short_value == rc.short_value);
-		Assert.assertTrue(r2.long_value == rc.long_value);
-		Assert.assertTrue(r2.float_value == rc.float_value);
-		Assert.assertTrue(r2.double_value == rc.double_value);
-		Assert.assertTrue(r2.string_value.equals(rc.string_value));
-		Assert.assertTrue(r2.IntegerNumber_value.equals(rc.IntegerNumber_value));
-		Assert.assertTrue(r2.ByteNumber_value.equals(rc.ByteNumber_value));
-		Assert.assertTrue(r2.CharacterNumber_value.equals(rc.CharacterNumber_value));
-		Assert.assertTrue(r2.BooleanNumber_value.equals(rc.BooleanNumber_value));
-		Assert.assertTrue(r2.ShortNumber_value.equals(rc.ShortNumber_value));
-		Assert.assertTrue(r2.LongNumber_value.equals(rc.LongNumber_value));
-		Assert.assertTrue(r2.FloatNumber_value.equals(rc.FloatNumber_value));
-		Assert.assertTrue(r2.DoubleNumber_value.equals(rc.DoubleNumber_value));
-		Assert.assertTrue(r2.BigInteger_value.equals(rc.BigInteger_value));
-		Assert.assertTrue(r2.BigDecimal_value.equals(rc.BigDecimal_value));
-		Assert.assertTrue(r2.DateValue.equals(rc.DateValue));
-		Assert.assertTrue(r2.CalendarValue.equals(rc.CalendarValue));
-		Assert.assertTrue(r1.secretKey.equals(rc.secretKey));
-		Assert.assertTrue(r1.typeSecretKey.equals(rc.typeSecretKey));
-		Assert.assertTrue(r2.file.equals(rc.file));
+        Assert.assertEquals(r2.pk1, rc.pk1);
+        Assert.assertEquals(r2.pk2, rc.pk2);
+        Assert.assertEquals(r2.pk3, rc.pk3);
+        Assert.assertEquals(r2.pk4, rc.pk4);
+        Assert.assertEquals(r2.pk5, rc.pk5);
+		assertTrue(r2.pk6.equals(rc.pk6));
+		assertTrue(r2.pk7.equals(rc.pk7));
+        Assert.assertEquals(r2.int_value, rc.int_value);
+        Assert.assertEquals(r2.byte_value, rc.byte_value);
+        Assert.assertEquals(r2.char_value, rc.char_value);
+        Assert.assertEquals(r2.boolean_value, rc.boolean_value);
+        Assert.assertEquals(r2.short_value, rc.short_value);
+        Assert.assertEquals(r2.long_value, rc.long_value);
+        Assert.assertEquals(r2.float_value, rc.float_value, 0.0);
+        Assert.assertEquals(r2.double_value, rc.double_value, 0.0);
+        Assert.assertEquals(r2.string_value, rc.string_value);
+        Assert.assertEquals(r2.IntegerNumber_value, rc.IntegerNumber_value);
+        Assert.assertEquals(r2.ByteNumber_value, rc.ByteNumber_value);
+        Assert.assertEquals(r2.CharacterNumber_value, rc.CharacterNumber_value);
+        Assert.assertEquals(r2.BooleanNumber_value, rc.BooleanNumber_value);
+        Assert.assertEquals(r2.ShortNumber_value, rc.ShortNumber_value);
+        Assert.assertEquals(r2.LongNumber_value, rc.LongNumber_value);
+        Assert.assertEquals(r2.FloatNumber_value, rc.FloatNumber_value);
+        Assert.assertEquals(r2.DoubleNumber_value, rc.DoubleNumber_value);
+        Assert.assertEquals(r2.BigInteger_value, rc.BigInteger_value);
+        Assert.assertEquals(r2.BigDecimal_value, rc.BigDecimal_value);
+        Assert.assertEquals(r2.DateValue, rc.DateValue);
+        Assert.assertEquals(r2.CalendarValue, rc.CalendarValue);
+        Assert.assertEquals(r1.secretKey, rc.secretKey);
+        Assert.assertEquals(r1.typeSecretKey, rc.typeSecretKey);
+        Assert.assertEquals(r2.file, rc.file);
 		for (int i = 0; i < 3; i++)
-			Assert.assertTrue(rc.byte_array_value[i] == tab[i]);
+            Assert.assertEquals(rc.byte_array_value[i], tab[i]);
 
-		Assert.assertTrue(r2.pk1 == re.pk1);
-		Assert.assertTrue(r2.pk2 == re.pk2);
-		Assert.assertTrue(r2.pk3.equals(re.pk3));
-		Assert.assertTrue(r2.pk4 == re.pk4);
-		Assert.assertTrue(r2.pk5.equals(re.pk5));
-		Assert.assertTrue(r2.pk6.equals(re.pk6));
-		Assert.assertTrue(r2.pk7.equals(re.pk7));
-		Assert.assertTrue(r2.int_value == re.int_value);
-		Assert.assertTrue(r2.byte_value == re.byte_value);
-		Assert.assertTrue(r2.char_value == re.char_value);
-		Assert.assertTrue(r2.boolean_value == re.boolean_value);
-		Assert.assertTrue(r2.short_value == re.short_value);
-		Assert.assertTrue(r2.long_value == re.long_value);
-		Assert.assertTrue(r2.float_value == re.float_value);
-		Assert.assertTrue(r2.double_value == re.double_value);
-		Assert.assertTrue(r2.string_value.equals(re.string_value));
-		Assert.assertTrue(r2.IntegerNumber_value.equals(re.IntegerNumber_value));
-		Assert.assertTrue(r2.ByteNumber_value.equals(re.ByteNumber_value));
-		Assert.assertTrue(r2.CharacterNumber_value.equals(re.CharacterNumber_value));
-		Assert.assertTrue(r2.BooleanNumber_value.equals(re.BooleanNumber_value));
-		Assert.assertTrue(r2.ShortNumber_value.equals(re.ShortNumber_value));
-		Assert.assertTrue(r2.LongNumber_value.equals(re.LongNumber_value));
-		Assert.assertTrue(r2.FloatNumber_value.equals(re.FloatNumber_value));
-		Assert.assertTrue(r2.DoubleNumber_value.equals(re.DoubleNumber_value));
-		Assert.assertTrue(r2.BigInteger_value.equals(re.BigInteger_value));
-		Assert.assertTrue(r2.BigDecimal_value.equals(re.BigDecimal_value));
-		Assert.assertTrue(r2.DateValue.equals(re.DateValue));
-		Assert.assertTrue(r2.CalendarValue.equals(re.CalendarValue));
-		Assert.assertTrue(r2.secretKey.equals(re.secretKey));
-		Assert.assertTrue(r2.typeSecretKey.equals(re.typeSecretKey));
-		Assert.assertTrue(r2.file.equals(re.file));
+        Assert.assertEquals(r2.pk1, re.pk1);
+        Assert.assertEquals(r2.pk2, re.pk2);
+        Assert.assertEquals(r2.pk3, re.pk3);
+        Assert.assertEquals(r2.pk4, re.pk4);
+        Assert.assertEquals(r2.pk5, re.pk5);
+		assertTrue(r2.pk6.equals(re.pk6));
+		assertTrue(r2.pk7.equals(re.pk7));
+        Assert.assertEquals(r2.int_value, re.int_value);
+        Assert.assertEquals(r2.byte_value, re.byte_value);
+        Assert.assertEquals(r2.char_value, re.char_value);
+        Assert.assertEquals(r2.boolean_value, re.boolean_value);
+        Assert.assertEquals(r2.short_value, re.short_value);
+        Assert.assertEquals(r2.long_value, re.long_value);
+        Assert.assertEquals(r2.float_value, re.float_value, 0.0);
+        Assert.assertEquals(r2.double_value, re.double_value, 0.0);
+        Assert.assertEquals(r2.string_value, re.string_value);
+        Assert.assertEquals(r2.IntegerNumber_value, re.IntegerNumber_value);
+        Assert.assertEquals(r2.ByteNumber_value, re.ByteNumber_value);
+        Assert.assertEquals(r2.CharacterNumber_value, re.CharacterNumber_value);
+        Assert.assertEquals(r2.BooleanNumber_value, re.BooleanNumber_value);
+        Assert.assertEquals(r2.ShortNumber_value, re.ShortNumber_value);
+        Assert.assertEquals(r2.LongNumber_value, re.LongNumber_value);
+        Assert.assertEquals(r2.FloatNumber_value, re.FloatNumber_value);
+        Assert.assertEquals(r2.DoubleNumber_value, re.DoubleNumber_value);
+        Assert.assertEquals(r2.BigInteger_value, re.BigInteger_value);
+        Assert.assertEquals(r2.BigDecimal_value, re.BigDecimal_value);
+        Assert.assertEquals(r2.DateValue, re.DateValue);
+        Assert.assertEquals(r2.CalendarValue, re.CalendarValue);
+        Assert.assertEquals(r2.secretKey, re.secretKey);
+        Assert.assertEquals(r2.typeSecretKey, re.typeSecretKey);
+        Assert.assertEquals(r2.file, re.file);
 		for (int i = 0; i < 3; i++)
-			Assert.assertTrue(re.byte_array_value[i] == tab[i]);
+            Assert.assertEquals(re.byte_array_value[i], tab[i]);
 
 		Table2.Record t2 = table2.getRecords().get(0);
-		HashMap<String, Object> t2map = new HashMap<String, Object>();
+		HashMap<String, Object> t2map = new HashMap<>();
 		t2map.put("fr1_pk1", table1.getRecords().get(1));
 		table2.updateRecord(t2, t2map);
 
 		Table2.Record t2bis = table6.getRecords().get(0).fk1_pk1;
 		Table1.Record t1 = table1.getRecords().get(1);
 
-		Assert.assertTrue(t2.fr1_pk1.pk1 == t2bis.fr1_pk1.pk1);
-		Assert.assertTrue(t2.fr1_pk1.pk2 == t2bis.fr1_pk1.pk2);
-		Assert.assertTrue(t2.fr1_pk1.pk4 == t2bis.fr1_pk1.pk4);
+        Assert.assertEquals(t2.fr1_pk1.pk1, t2bis.fr1_pk1.pk1);
+        Assert.assertEquals(t2.fr1_pk1.pk2, t2bis.fr1_pk1.pk2);
+        Assert.assertEquals(t2.fr1_pk1.pk4, t2bis.fr1_pk1.pk4);
 
-		Assert.assertTrue(t1.pk1 == t2bis.fr1_pk1.pk1);
-		Assert.assertTrue(t1.pk2 == t2bis.fr1_pk1.pk2);
-		Assert.assertTrue(t1.pk4 == t2bis.fr1_pk1.pk4);
+        Assert.assertEquals(t1.pk1, t2bis.fr1_pk1.pk1);
+        Assert.assertEquals(t1.pk2, t2bis.fr1_pk1.pk2);
+        Assert.assertEquals(t1.pk4, t2bis.fr1_pk1.pk4);
 
-		HashMap<String, Object> t2map2 = new HashMap<String, Object>();
-		t2map2.put("int_value", new Integer(t2.int_value));
+		HashMap<String, Object> t2map2;
+        t2map2 = new HashMap<>();
+        t2map2.put("int_value", t2.int_value);
 
 		table2.updateRecord(t2, t2map2);
 		t2map2.put("fr1_pk1", table1.getRecords().get(1));
 
 		try {
 			table2.addRecord(t2map2);
-			Assert.assertTrue(false);
+            fail();
 		} catch (ConstraintsNotRespectedDatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
-		t2map.put("int_value", new Integer(t2.int_value + 1));
+		t2map.put("int_value", t2.int_value + 1);
 		try {
 			table2.addRecord(t2map);
-			Assert.assertTrue(false);
+            fail();
 		} catch (ConstraintsNotRespectedDatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 		t2map.remove("fr1_pk1");
 		t2map.put("fr1_pk1", table1.getRecords().get(0));
@@ -2214,79 +2179,79 @@ public abstract class TestDatabase {
 		t2map.remove("fr1_pk1");
 		try {
 			table2.updateRecord(t2, t2map);
-			Assert.assertTrue(false);
+            fail();
 		} catch (ConstraintsNotRespectedDatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 
 		table1.updateRecords(new AlterRecordFilter<Table1.Record>() {
 
 			@Override
 			public void nextRecord(Record _record) {
-				HashMap<String, Object> m = new HashMap<String, Object>();
-				m.put("int_value", new Integer(15));
+				HashMap<String, Object> m = new HashMap<>();
+				m.put("int_value", 15);
 				this.update(m);
 			}
 		});
 
 		for (Table1.Record r : table1.getRecords())
-			Assert.assertTrue(r.int_value == 15);
+            Assert.assertEquals(15, r.int_value);
 
 		table3.updateRecords(new AlterRecordFilter<Table3.Record>() {
 
 			@Override
 			public void nextRecord(Table3.Record _record) {
-				HashMap<String, Object> m = new HashMap<String, Object>();
-				m.put("int_value", new Integer(15));
+				HashMap<String, Object> m = new HashMap<>();
+				m.put("int_value", 15);
 
 				this.update(m);
 			}
 		});
 
 		for (Table3.Record r : table3.getRecords())
-			Assert.assertTrue(r.int_value == 15);
+            Assert.assertEquals(15, r.int_value);
 
 		try {
 			table1.updateRecords(new AlterRecordFilter<Table1.Record>() {
 
 				@Override
 				public void nextRecord(Record _record) {
-					HashMap<String, Object> m = new HashMap<String, Object>();
-					m.put("pk1", new Integer(15));
+					HashMap<String, Object> m = new HashMap<>();
+					m.put("pk1", 15);
 					this.update(m);
 				}
 			});
-			Assert.assertTrue(false);
+            fail();
 		} catch (FieldDatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 		try {
 			table3.updateRecords(new AlterRecordFilter<Table3.Record>() {
 
 				@Override
 				public void nextRecord(Table3.Record _record) {
-					HashMap<String, Object> m = new HashMap<String, Object>();
-					m.put("pk1", new Integer(15));
+					HashMap<String, Object> m = new HashMap<>();
+					m.put("pk1", 15);
 					this.update(m);
 				}
 			});
-			Assert.assertTrue(false);
+            fail();
 		} catch (FieldDatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 		try {
 			table2.updateRecords(new AlterRecordFilter<Table2.Record>() {
 
 				@Override
 				public void nextRecord(Table2.Record _record) {
-					HashMap<String, Object> m = new HashMap<String, Object>();
-					m.put("int_value", new Integer(15));
+					HashMap<String, Object> m = new HashMap<>();
+					m.put("int_value", 15);
 					this.update(m);
 				}
 			});
-			Assert.assertTrue(false);
+            fail();
 		} catch (FieldDatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 
 		table1.checkDataIntegrity();
@@ -2298,7 +2263,7 @@ public abstract class TestDatabase {
 
 	}
 
-	private final boolean equals(DatabaseRecord _instance1, DatabaseRecord _instance2) throws DatabaseException {
+	private boolean equals(DatabaseRecord _instance1, DatabaseRecord _instance2) throws DatabaseException {
 		if (_instance1 == null || _instance2 == null)
 			return _instance1 == _instance2;
 		if (_instance1 == _instance2)
@@ -2315,17 +2280,17 @@ public abstract class TestDatabase {
 
 	@Test(dependsOnMethods = { "alterRecordWithCascade" })
 	public void removePointedRecords() throws DatabaseException {
-		Assert.assertTrue(table1.getRecordsNumber() == 2);
-		Assert.assertTrue(table3.getRecordsNumber() == 2);
-		Assert.assertTrue(table2.getRecordsNumber() == 2);
-		Assert.assertTrue(table4.getRecordsNumber() == 1);
-		Assert.assertTrue(table5.getRecordsNumber() == 1);
-		Assert.assertTrue(table1.getRecords().size() == 2);
-		Assert.assertTrue(table2.getRecords().size() == 2);
-		Assert.assertTrue(table3.getRecords().size() == 2);
-		Assert.assertTrue(table4.getRecords().size() == 1);
-		Assert.assertTrue(table5.getRecords().size() == 1);
-		Assert.assertTrue(table6.getRecords().size() == 1);
+        Assert.assertEquals(2, table1.getRecordsNumber());
+        Assert.assertEquals(2, table3.getRecordsNumber());
+        Assert.assertEquals(2, table2.getRecordsNumber());
+        Assert.assertEquals(1, table4.getRecordsNumber());
+        Assert.assertEquals(1, table5.getRecordsNumber());
+        Assert.assertEquals(2, table1.getRecords().size());
+        Assert.assertEquals(2, table2.getRecords().size());
+        Assert.assertEquals(2, table3.getRecords().size());
+        Assert.assertEquals(1, table4.getRecords().size());
+        Assert.assertEquals(1, table5.getRecords().size());
+        Assert.assertEquals(1, table6.getRecords().size());
 
 		table1.removeRecords(new Filter<Table1.Record>() {
 
@@ -2342,44 +2307,44 @@ public abstract class TestDatabase {
 			}
 		});
 
-		Assert.assertTrue(table1.getRecordsNumber() == 2);
-		Assert.assertTrue(table3.getRecordsNumber() == 1);
-		Assert.assertTrue(table2.getRecordsNumber() == 2);
-		Assert.assertTrue(table4.getRecordsNumber() == 1);
-		Assert.assertTrue(table5.getRecordsNumber() == 1);
-		Assert.assertTrue(table1.getRecords().size() == 2);
-		Assert.assertTrue(table2.getRecords().size() == 2);
-		Assert.assertTrue(table3.getRecords().size() == 1);
-		Assert.assertTrue(table4.getRecords().size() == 1);
-		Assert.assertTrue(table5.getRecords().size() == 1);
+        Assert.assertEquals(2, table1.getRecordsNumber());
+        Assert.assertEquals(1, table3.getRecordsNumber());
+        Assert.assertEquals(2, table2.getRecordsNumber());
+        Assert.assertEquals(1, table4.getRecordsNumber());
+        Assert.assertEquals(1, table5.getRecordsNumber());
+        Assert.assertEquals(2, table1.getRecords().size());
+        Assert.assertEquals(2, table2.getRecords().size());
+        Assert.assertEquals(1, table3.getRecords().size());
+        Assert.assertEquals(1, table4.getRecords().size());
+        Assert.assertEquals(1, table5.getRecords().size());
 
 		try {
 			table1.removeRecords(table1.getRecords());
-			Assert.assertTrue(false);
+            fail();
 		} catch (ConstraintsNotRespectedDatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 		try {
 			table3.removeRecords(table3.getRecords());
-			Assert.assertTrue(false);
+            fail();
 		} catch (ConstraintsNotRespectedDatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
-		Assert.assertTrue(table1.getRecordsNumber() == 2);
-		Assert.assertTrue(table3.getRecordsNumber() == 1);
-		Assert.assertTrue(table1.getRecords().size() == 2);
-		Assert.assertTrue(table3.getRecords().size() == 1);
+        Assert.assertEquals(2, table1.getRecordsNumber());
+        Assert.assertEquals(1, table3.getRecordsNumber());
+        Assert.assertEquals(2, table1.getRecords().size());
+        Assert.assertEquals(1, table3.getRecords().size());
 		try {
 			table1.removeRecord(table1.getRecords().get(0));
-			Assert.assertTrue(false);
+            fail();
 		} catch (ConstraintsNotRespectedDatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 		try {
 			table3.removeRecord(table3.getRecords().get(0));
-			Assert.assertTrue(false);
+            fail();
 		} catch (ConstraintsNotRespectedDatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 		table1.checkDataIntegrity();
 		table3.checkDataIntegrity();
@@ -2427,16 +2392,16 @@ public abstract class TestDatabase {
 				return true;
 			}
 		});
-		Assert.assertTrue(table1.getRecordsNumber() == 2);
-		Assert.assertTrue(table3.getRecordsNumber() == 1);
-		Assert.assertTrue(table2.getRecordsNumber() == 1);
-		Assert.assertTrue(table4.getRecordsNumber() == 0);
-		Assert.assertTrue(table5.getRecordsNumber() == 1);
-		Assert.assertTrue(table1.getRecords().size() == 2);
-		Assert.assertTrue(table3.getRecords().size() == 1);
-		Assert.assertTrue(table2.getRecords().size() == 1);
-		Assert.assertTrue(table4.getRecords().size() == 0);
-		Assert.assertTrue(table5.getRecords().size() == 1);
+        Assert.assertEquals(2, table1.getRecordsNumber());
+        Assert.assertEquals(1, table3.getRecordsNumber());
+        Assert.assertEquals(1, table2.getRecordsNumber());
+        Assert.assertEquals(0, table4.getRecordsNumber());
+        Assert.assertEquals(1, table5.getRecordsNumber());
+        Assert.assertEquals(2, table1.getRecords().size());
+        Assert.assertEquals(1, table3.getRecords().size());
+        Assert.assertEquals(1, table2.getRecords().size());
+        Assert.assertEquals(0, table4.getRecords().size());
+        Assert.assertEquals(1, table5.getRecords().size());
 
 		table6.removeRecords(new Filter<Table6.Record>() {
 
@@ -2445,8 +2410,8 @@ public abstract class TestDatabase {
 				return true;
 			}
 		});
-		Assert.assertTrue(table6.getRecordsNumber() == 0);
-		HashMap<String, Object> map6 = new HashMap<String, Object>();
+        Assert.assertEquals(0, table6.getRecordsNumber());
+		HashMap<String, Object> map6 = new HashMap<>();
 		map6.put("fk1_pk1", table2.getRecords().get(0));
 		map6.put("fk2", table5.getRecords().get(0));
 		table6.addRecord(map6);
@@ -2465,17 +2430,17 @@ public abstract class TestDatabase {
 		addSecondRecord();
 		Table1.Record r1 = table1.getRecords().get(0);
 		Table3.Record r2 = table3.getRecords().get(0);
-		HashMap<String, Object> map1 = new HashMap<String, Object>();
+		HashMap<String, Object> map1 = new HashMap<>();
 		map1.put("fr1_pk1", r1);
-		map1.put("int_value", new Integer(0));
-		HashMap<String, Object> map2 = new HashMap<String, Object>();
+		map1.put("int_value", 0);
+		HashMap<String, Object> map2 = new HashMap<>();
 		map2.put("fr1_pk1", r2);
-		map2.put("int_value", new Integer(0));
+		map2.put("int_value", 0);
 		Table2.Record r22 = table2.addRecord(map1);
 		table4.addRecord(map2);
 		Table5.Record r55 = table5.addRecord(map2);
 
-		HashMap<String, Object> map6 = new HashMap<String, Object>();
+		HashMap<String, Object> map6 = new HashMap<>();
 		map6.put("fk1_pk1", r22);
 		map6.put("fk2", r55);
 		table6.addRecord(map6);
@@ -2512,8 +2477,8 @@ public abstract class TestDatabase {
 				break;
 			}
 		}
-		Assert.assertTrue(table1.isRecordPointedByForeignKeys(r1) == b1);
-		Assert.assertTrue(table3.isRecordPointedByForeignKeys(r3) == b3);
+        Assert.assertEquals(table1.isRecordPointedByForeignKeys(r1), b1);
+        Assert.assertEquals(table3.isRecordPointedByForeignKeys(r3), b3);
 		table1.checkDataIntegrity();
 		table3.checkDataIntegrity();
 		table2.checkDataIntegrity();
@@ -2647,11 +2612,11 @@ public abstract class TestDatabase {
 				this.removeWithCascade();
 			}
 		});
-		Assert.assertTrue(0 == table1.getRecordsNumber());
-		Assert.assertTrue(0 == table1.getRecords().size());
+		Assert.assertEquals(0, table1.getRecordsNumber());
+		Assert.assertEquals(0, table1.getRecords().size());
 
-		Assert.assertTrue(0 == table3.getRecordsNumber());
-		Assert.assertTrue(0 == table3.getRecords().size());
+		Assert.assertEquals(0, table3.getRecordsNumber());
+		Assert.assertEquals(0, table3.getRecords().size());
 
 		table1.checkDataIntegrity();
 		table3.checkDataIntegrity();
@@ -2664,32 +2629,32 @@ public abstract class TestDatabase {
 	@SuppressWarnings("unchecked")
 	@Test(dependsOnMethods = { "removeWithCascade" })
 	public void setAutoRandomFields() throws DatabaseException {
-		HashMap<String, Object> map = new HashMap<String, Object>();
-		map.put("pk1", new Integer(0));
-		map.put("pk2", new Long(1));
+		HashMap<String, Object> map = new HashMap<>();
+		map.put("pk1", 0);
+		map.put("pk2", 1L);
 		map.put("pk3", new BigInteger("0"));
-		map.put("pk4", new Long(0));
+		map.put("pk4", 0L);
 		map.put("pk5", new DecentralizedIDGenerator());
 		map.put("pk6", new DecentralizedIDGenerator());
 		map.put("pk7", new RenforcedDecentralizedIDGenerator());
 
-		map.put("int_value", new Integer(3));
-		map.put("byte_value", new Byte((byte) 3));
-		map.put("char_value", new Character('x'));
-		map.put("boolean_value", new Boolean(false));
-		map.put("short_value", new Short((short) 3));
-		map.put("long_value", new Long(3));
-		map.put("float_value", new Float(3.3f));
-		map.put("double_value", new Double(3.3));
-		map.put("string_value", new String("test string"));
-		map.put("IntegerNumber_value", new Integer(3));
-		map.put("ByteNumber_value", new Byte((byte) 3));
-		map.put("CharacterNumber_value", new Character('x'));
-		map.put("BooleanNumber_value", new Boolean(false));
-		map.put("ShortNumber_value", new Short((short) 3));
-		map.put("LongNumber_value", new Long((long) 3));
-		map.put("FloatNumber_value", new Float(3.3f));
-		map.put("DoubleNumber_value", new Double(3.3));
+		map.put("int_value", 3);
+		map.put("byte_value", (byte) 3);
+		map.put("char_value", 'x');
+		map.put("boolean_value", Boolean.FALSE);
+		map.put("short_value", (short) 3);
+		map.put("long_value", 3L);
+		map.put("float_value", 3.3f);
+		map.put("double_value", 3.3);
+		map.put("string_value", "test string");
+		map.put("IntegerNumber_value", 3);
+		map.put("ByteNumber_value", (byte) 3);
+		map.put("CharacterNumber_value", 'x');
+		map.put("BooleanNumber_value", Boolean.FALSE);
+		map.put("ShortNumber_value", (short) 3);
+		map.put("LongNumber_value", (long) 3);
+		map.put("FloatNumber_value", 3.3f);
+		map.put("DoubleNumber_value", 3.3);
 		map.put("BigInteger_value", new BigInteger("5"));
 		map.put("BigDecimal_value", new BigDecimal("8.8"));
 		map.put("DateValue", date);
@@ -2703,170 +2668,170 @@ public abstract class TestDatabase {
 		table3.addRecord(map);
 		Table1.Record r1 = table1.getRecords().get(0);
 
-		Assert.assertTrue(map.get("pk1").equals(new Integer(r1.pk1)));
-		Assert.assertTrue(map.get("pk2").equals(new Long(r1.pk2)));
-		Assert.assertTrue(map.get("pk3").equals(r1.pk3));
-		Assert.assertTrue(map.get("pk4").equals(new Long(r1.pk4)));
-		Assert.assertTrue(map.get("pk5").equals(r1.pk5));
-		Assert.assertTrue(map.get("pk6").equals(r1.pk6));
-		Assert.assertTrue(map.get("pk7").equals(r1.pk7));
-		Assert.assertTrue(map.get("int_value").equals(new Integer(r1.int_value)));
-		Assert.assertTrue(map.get("byte_value").equals(new Byte(r1.byte_value)));
-		Assert.assertTrue(map.get("char_value").equals(new Character(r1.char_value)));
-		Assert.assertTrue(map.get("boolean_value").equals(new Boolean(r1.boolean_value)));
-		Assert.assertTrue(map.get("short_value").equals(new Short(r1.short_value)));
-		Assert.assertTrue(map.get("long_value").equals(new Long(r1.long_value)));
-		Assert.assertTrue(map.get("float_value").equals(new Float(r1.float_value)));
-		Assert.assertTrue(map.get("double_value").equals(new Double(r1.double_value)));
-		Assert.assertTrue(map.get("string_value").equals(r1.string_value));
-		Assert.assertTrue(map.get("IntegerNumber_value").equals(r1.IntegerNumber_value));
-		Assert.assertTrue(map.get("ByteNumber_value").equals(r1.ByteNumber_value));
-		Assert.assertTrue(map.get("CharacterNumber_value").equals(r1.CharacterNumber_value));
-		Assert.assertTrue(map.get("BooleanNumber_value").equals(r1.BooleanNumber_value));
-		Assert.assertTrue(map.get("ShortNumber_value").equals(r1.ShortNumber_value));
-		Assert.assertTrue(map.get("LongNumber_value").equals(r1.LongNumber_value));
-		Assert.assertTrue(map.get("FloatNumber_value").equals(r1.FloatNumber_value));
-		Assert.assertTrue(map.get("DoubleNumber_value").equals(r1.DoubleNumber_value));
-		Assert.assertTrue(map.get("BigInteger_value").equals(r1.BigInteger_value));
-		Assert.assertTrue(map.get("BigDecimal_value").equals(r1.BigDecimal_value));
-		Assert.assertTrue(map.get("DateValue").equals(r1.DateValue));
-		Assert.assertTrue(map.get("CalendarValue").equals(r1.CalendarValue));
-		Assert.assertTrue(map.get("secretKey").equals(r1.secretKey));
-		Assert.assertTrue(map.get("typeSecretKey").equals(r1.typeSecretKey));
-		Assert.assertTrue(map.get("file").equals(r1.file));
+		assertTrue(map.get("pk1").equals(r1.pk1));
+		assertTrue(map.get("pk2").equals(r1.pk2));
+		assertTrue(map.get("pk3").equals(r1.pk3));
+		assertTrue(map.get("pk4").equals(r1.pk4));
+		assertTrue(map.get("pk5").equals(r1.pk5));
+		assertTrue(map.get("pk6").equals(r1.pk6));
+		assertTrue(map.get("pk7").equals(r1.pk7));
+		assertTrue(map.get("int_value").equals(r1.int_value));
+		assertTrue(map.get("byte_value").equals(r1.byte_value));
+		assertTrue(map.get("char_value").equals(r1.char_value));
+		assertTrue(map.get("boolean_value").equals(r1.boolean_value));
+		assertTrue(map.get("short_value").equals(r1.short_value));
+		assertTrue(map.get("long_value").equals(r1.long_value));
+        Assert.assertEquals(map.get("float_value"), r1.float_value);
+        Assert.assertEquals(map.get("double_value"), r1.double_value);
+        Assert.assertEquals(map.get("string_value"), r1.string_value);
+        Assert.assertEquals(map.get("IntegerNumber_value"), r1.IntegerNumber_value);
+        Assert.assertEquals(map.get("ByteNumber_value"), r1.ByteNumber_value);
+        Assert.assertEquals(map.get("CharacterNumber_value"), r1.CharacterNumber_value);
+        Assert.assertEquals(map.get("BooleanNumber_value"), r1.BooleanNumber_value);
+        Assert.assertEquals(map.get("ShortNumber_value"), r1.ShortNumber_value);
+        Assert.assertEquals(map.get("LongNumber_value"), r1.LongNumber_value);
+        Assert.assertEquals(map.get("FloatNumber_value"), r1.FloatNumber_value);
+        Assert.assertEquals(map.get("DoubleNumber_value"), r1.DoubleNumber_value);
+        Assert.assertEquals(map.get("BigInteger_value"), r1.BigInteger_value);
+        Assert.assertEquals(map.get("BigDecimal_value"), r1.BigDecimal_value);
+        Assert.assertEquals(map.get("DateValue"), r1.DateValue);
+        Assert.assertEquals(map.get("CalendarValue"), r1.CalendarValue);
+        Assert.assertEquals(map.get("secretKey"), r1.secretKey);
+        Assert.assertEquals(map.get("typeSecretKey"), r1.typeSecretKey);
+        Assert.assertEquals(map.get("file"), r1.file);
 		assertEquals((SubField) map.get("subField"), r1.subField);
 		assertEquals((SubSubField) map.get("subSubField"), r1.subSubField);
 
 		Table3.Record r3 = table3.getRecords().get(0);
 
-		Assert.assertTrue(map.get("pk1").equals(new Integer(r3.pk1)));
-		Assert.assertTrue(map.get("pk2").equals(new Long(r3.pk2)));
-		Assert.assertTrue(map.get("pk3").equals(r3.pk3));
-		Assert.assertTrue(map.get("pk4").equals(new Long(r3.pk4)));
-		Assert.assertTrue(map.get("pk5").equals(r3.pk5));
-		Assert.assertTrue(map.get("pk6").equals(r3.pk6));
-		Assert.assertTrue(map.get("pk7").equals(r3.pk7));
-		Assert.assertTrue(map.get("int_value").equals(new Integer(r3.int_value)));
-		Assert.assertTrue(map.get("byte_value").equals(new Byte(r3.byte_value)));
-		Assert.assertTrue(map.get("char_value").equals(new Character(r3.char_value)));
-		Assert.assertTrue(map.get("boolean_value").equals(new Boolean(r3.boolean_value)));
-		Assert.assertTrue(map.get("short_value").equals(new Short(r3.short_value)));
-		Assert.assertTrue(map.get("long_value").equals(new Long(r3.long_value)));
-		Assert.assertTrue(map.get("float_value").equals(new Float(r3.float_value)));
-		Assert.assertTrue(map.get("double_value").equals(new Double(r3.double_value)));
-		Assert.assertTrue(map.get("string_value").equals(r3.string_value));
-		Assert.assertTrue(map.get("IntegerNumber_value").equals(r3.IntegerNumber_value));
-		Assert.assertTrue(map.get("ByteNumber_value").equals(r3.ByteNumber_value));
-		Assert.assertTrue(map.get("CharacterNumber_value").equals(r3.CharacterNumber_value));
-		Assert.assertTrue(map.get("BooleanNumber_value").equals(r3.BooleanNumber_value));
-		Assert.assertTrue(map.get("ShortNumber_value").equals(r3.ShortNumber_value));
-		Assert.assertTrue(map.get("LongNumber_value").equals(r3.LongNumber_value));
-		Assert.assertTrue(map.get("FloatNumber_value").equals(r3.FloatNumber_value));
-		Assert.assertTrue(map.get("DoubleNumber_value").equals(r3.DoubleNumber_value));
-		Assert.assertTrue(map.get("BigInteger_value").equals(r3.BigInteger_value));
-		Assert.assertTrue(map.get("BigDecimal_value").equals(r3.BigDecimal_value));
-		Assert.assertTrue(map.get("DateValue").equals(r3.DateValue));
-		Assert.assertTrue(map.get("CalendarValue").equals(r3.CalendarValue));
-		Assert.assertTrue(map.get("secretKey").equals(r3.secretKey));
-		Assert.assertTrue(map.get("typeSecretKey").equals(r3.typeSecretKey));
-		Assert.assertTrue(map.get("file").equals(r3.file));
+		assertTrue(map.get("pk1").equals(r3.pk1));
+		assertTrue(map.get("pk2").equals(r3.pk2));
+		assertTrue(map.get("pk3").equals(r3.pk3));
+		assertTrue(map.get("pk4").equals(r3.pk4));
+		assertTrue(map.get("pk5").equals(r3.pk5));
+		assertTrue(map.get("pk6").equals(r3.pk6));
+		assertTrue(map.get("pk7").equals(r3.pk7));
+		assertTrue(map.get("int_value").equals(r3.int_value));
+		assertTrue(map.get("byte_value").equals(r3.byte_value));
+		assertTrue(map.get("char_value").equals(r3.char_value));
+		assertTrue(map.get("boolean_value").equals(r3.boolean_value));
+		assertTrue(map.get("short_value").equals(r3.short_value));
+		assertTrue(map.get("long_value").equals(r3.long_value));
+        Assert.assertEquals(map.get("float_value"), r3.float_value);
+        Assert.assertEquals(map.get("double_value"), r3.double_value);
+        Assert.assertEquals(map.get("string_value"), r3.string_value);
+        Assert.assertEquals(map.get("IntegerNumber_value"), r3.IntegerNumber_value);
+        Assert.assertEquals(map.get("ByteNumber_value"), r3.ByteNumber_value);
+        Assert.assertEquals(map.get("CharacterNumber_value"), r3.CharacterNumber_value);
+        Assert.assertEquals(map.get("BooleanNumber_value"), r3.BooleanNumber_value);
+        Assert.assertEquals(map.get("ShortNumber_value"), r3.ShortNumber_value);
+        Assert.assertEquals(map.get("LongNumber_value"), r3.LongNumber_value);
+        Assert.assertEquals(map.get("FloatNumber_value"), r3.FloatNumber_value);
+        Assert.assertEquals(map.get("DoubleNumber_value"), r3.DoubleNumber_value);
+        Assert.assertEquals(map.get("BigInteger_value"), r3.BigInteger_value);
+        Assert.assertEquals(map.get("BigDecimal_value"), r3.BigDecimal_value);
+        Assert.assertEquals(map.get("DateValue"), r3.DateValue);
+        Assert.assertEquals(map.get("CalendarValue"), r3.CalendarValue);
+        Assert.assertEquals(map.get("secretKey"), r3.secretKey);
+        Assert.assertEquals(map.get("typeSecretKey"), r3.typeSecretKey);
+        Assert.assertEquals(map.get("file"), r3.file);
 		assertEquals((SubField) map.get("subField"), r3.subField);
 		assertEquals((SubSubField) map.get("subSubField"), r3.subSubField);
 
 		try {
 			table1.addRecord(map);
-			Assert.assertTrue(false);
+            fail();
 		} catch (ConstraintsNotRespectedDatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 		try {
 			table3.addRecord(map);
-			Assert.assertTrue(false);
+            fail();
 		} catch (ConstraintsNotRespectedDatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
-		map.put("pk4", new Long(1));
+		map.put("pk4", 1L);
 		map.put("pk5", new DecentralizedIDGenerator());
 		map.put("pk6", new DecentralizedIDGenerator());
 		map.put("pk7", new RenforcedDecentralizedIDGenerator());
 		try {
 			table1.addRecord(map);
-			Assert.assertTrue(false);
+            fail();
 		} catch (ConstraintsNotRespectedDatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 		try {
 			table3.addRecord(map);
-			Assert.assertTrue(false);
+            fail();
 		} catch (ConstraintsNotRespectedDatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 
 		map.put("pk3", new BigInteger("1"));
 		table1.addRecord(map);
 		table3.addRecord(map);
-		map.put("pk2", new Long(2));
+		map.put("pk2", 2L);
 		try {
 			table1.addRecord(map);
-			Assert.assertTrue(false);
+            fail();
 		} catch (ConstraintsNotRespectedDatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 		try {
 			table3.addRecord(map);
-			Assert.assertTrue(false);
+            fail();
 		} catch (ConstraintsNotRespectedDatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
-		map.put("pk2", new Long("2"));
+		map.put("pk2", Long.valueOf("2"));
 		map.put("pk3", new BigInteger("2"));
 		Map<String, Object> maps[] = new Map[2];
 		maps[0] = map;
 		maps[1] = map;
 		try {
 			table1.addRecords(maps);
-			Assert.assertTrue(false);
+            fail();
 		} catch (ConstraintsNotRespectedDatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 		try {
 			table3.addRecords(maps);
-			Assert.assertTrue(false);
+            fail();
 		} catch (ConstraintsNotRespectedDatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 		maps[1] = (HashMap<String, Object>) map.clone();
 		maps[1].remove("pk2");
 		try {
 			table1.addRecords(maps);
-			Assert.assertTrue(false);
+            fail();
 		} catch (ConstraintsNotRespectedDatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 		try {
 			table3.addRecords(maps);
-			Assert.assertTrue(false);
+            fail();
 		} catch (ConstraintsNotRespectedDatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 
 		maps[1].remove("pk3");
 
 		try {
 			table1.addRecords(maps);
-			Assert.assertTrue(false);
+            fail();
 		} catch (ConstraintsNotRespectedDatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 		try {
 			table3.addRecords(maps);
-			Assert.assertTrue(false);
+            fail();
 		} catch (ConstraintsNotRespectedDatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 
-		Assert.assertTrue(table1.getRecordsNumber() == 2);
-		Assert.assertTrue(table3.getRecordsNumber() == 2);
+		Assert.assertEquals(2, table1.getRecordsNumber());
+		Assert.assertEquals(2, table3.getRecordsNumber());
 		table1.checkDataIntegrity();
 		table3.checkDataIntegrity();
 		table2.checkDataIntegrity();
@@ -2883,69 +2848,69 @@ public abstract class TestDatabase {
 
 		table1.addRecords(maps);
 		table3.addRecords(maps);
-		Assert.assertTrue(table1.getRecordsNumber() == 2);
-		Assert.assertTrue(table3.getRecordsNumber() == 2);
+		Assert.assertEquals(2, table1.getRecordsNumber());
+		Assert.assertEquals(2, table3.getRecordsNumber());
 		r1 = table1.getRecords().get(0);
 
-		Assert.assertTrue(map.get("pk1").equals(new Integer(r1.pk1)));
-		Assert.assertTrue(map.get("pk2").equals(new Long(r1.pk2)));
-		Assert.assertTrue(map.get("pk3").equals(r1.pk3));
-		Assert.assertTrue(map.get("pk4").equals(new Long(r1.pk4)));
-		Assert.assertTrue(map.get("pk5").equals(r1.pk5));
-		Assert.assertTrue(map.get("pk6").equals(r1.pk6));
-		Assert.assertTrue(map.get("pk7").equals(r1.pk7));
-		Assert.assertTrue(map.get("int_value").equals(new Integer(r1.int_value)));
-		Assert.assertTrue(map.get("byte_value").equals(new Byte(r1.byte_value)));
-		Assert.assertTrue(map.get("char_value").equals(new Character(r1.char_value)));
-		Assert.assertTrue(map.get("boolean_value").equals(new Boolean(r1.boolean_value)));
-		Assert.assertTrue(map.get("short_value").equals(new Short(r1.short_value)));
-		Assert.assertTrue(map.get("long_value").equals(new Long(r1.long_value)));
-		Assert.assertTrue(map.get("float_value").equals(new Float(r1.float_value)));
-		Assert.assertTrue(map.get("double_value").equals(new Double(r1.double_value)));
-		Assert.assertTrue(map.get("string_value").equals(r1.string_value));
-		Assert.assertTrue(map.get("IntegerNumber_value").equals(r1.IntegerNumber_value));
-		Assert.assertTrue(map.get("ByteNumber_value").equals(r1.ByteNumber_value));
-		Assert.assertTrue(map.get("CharacterNumber_value").equals(r1.CharacterNumber_value));
-		Assert.assertTrue(map.get("BooleanNumber_value").equals(r1.BooleanNumber_value));
-		Assert.assertTrue(map.get("ShortNumber_value").equals(r1.ShortNumber_value));
-		Assert.assertTrue(map.get("LongNumber_value").equals(r1.LongNumber_value));
-		Assert.assertTrue(map.get("FloatNumber_value").equals(r1.FloatNumber_value));
-		Assert.assertTrue(map.get("DoubleNumber_value").equals(r1.DoubleNumber_value));
-		Assert.assertTrue(map.get("BigInteger_value").equals(r1.BigInteger_value));
-		Assert.assertTrue(map.get("BigDecimal_value").equals(r1.BigDecimal_value));
-		Assert.assertTrue(map.get("file").equals(r1.file));
+		Assert.assertEquals(map.get("pk1"), r1.pk1);
+		Assert.assertEquals(map.get("pk2"), r1.pk2);
+		Assert.assertEquals(map.get("pk3"), r1.pk3);
+		Assert.assertEquals(map.get("pk4"), r1.pk4);
+		Assert.assertEquals(map.get("pk5"), r1.pk5);
+		Assert.assertEquals(map.get("pk6"), r1.pk6);
+		Assert.assertEquals(map.get("pk7"), r1.pk7);
+		Assert.assertEquals(map.get("int_value"), r1.int_value);
+		Assert.assertEquals(map.get("byte_value"), r1.byte_value);
+		Assert.assertEquals(map.get("char_value"), r1.char_value);
+		Assert.assertEquals(map.get("boolean_value"), r1.boolean_value);
+		Assert.assertEquals(map.get("short_value"), r1.short_value);
+		Assert.assertEquals(map.get("long_value"), r1.long_value);
+		Assert.assertEquals(map.get("float_value"), r1.float_value);
+		Assert.assertEquals(map.get("double_value"), r1.double_value);
+		Assert.assertEquals(map.get("string_value"), r1.string_value);
+		Assert.assertEquals(map.get("IntegerNumber_value"), r1.IntegerNumber_value);
+		Assert.assertEquals(map.get("ByteNumber_value"), r1.ByteNumber_value);
+		Assert.assertEquals(map.get("CharacterNumber_value"), r1.CharacterNumber_value);
+		Assert.assertEquals(map.get("BooleanNumber_value"), r1.BooleanNumber_value);
+		Assert.assertEquals(map.get("ShortNumber_value"), r1.ShortNumber_value);
+		Assert.assertEquals(map.get("LongNumber_value"), r1.LongNumber_value);
+		Assert.assertEquals(map.get("FloatNumber_value"), r1.FloatNumber_value);
+		Assert.assertEquals(map.get("DoubleNumber_value"), r1.DoubleNumber_value);
+		Assert.assertEquals(map.get("BigInteger_value"), r1.BigInteger_value);
+		Assert.assertEquals(map.get("BigDecimal_value"), r1.BigDecimal_value);
+		Assert.assertEquals(map.get("file"), r1.file);
 		assertEquals((SubField) map.get("subField"), r1.subField);
 		assertEquals((SubSubField) map.get("subSubField"), r1.subSubField);
 
 		r3 = table3.getRecords().get(0);
 
-		Assert.assertTrue(map.get("pk1").equals(new Integer(r3.pk1)));
-		Assert.assertTrue(map.get("pk2").equals(new Long(r3.pk2)));
-		Assert.assertTrue(map.get("pk3").equals(r3.pk3));
-		Assert.assertTrue(map.get("pk4").equals(new Long(r3.pk4)));
-		Assert.assertTrue(map.get("pk5").equals(r3.pk5));
-		Assert.assertTrue(map.get("pk6").equals(r3.pk6));
-		Assert.assertTrue(map.get("pk7").equals(r3.pk7));
-		Assert.assertTrue(map.get("int_value").equals(new Integer(r3.int_value)));
-		Assert.assertTrue(map.get("byte_value").equals(new Byte(r3.byte_value)));
-		Assert.assertTrue(map.get("char_value").equals(new Character(r3.char_value)));
-		Assert.assertTrue(map.get("boolean_value").equals(new Boolean(r3.boolean_value)));
-		Assert.assertTrue(map.get("short_value").equals(new Short(r3.short_value)));
-		Assert.assertTrue(map.get("long_value").equals(new Long(r3.long_value)));
-		Assert.assertTrue(map.get("float_value").equals(new Float(r3.float_value)));
-		Assert.assertTrue(map.get("double_value").equals(new Double(r3.double_value)));
-		Assert.assertTrue(map.get("string_value").equals(r3.string_value));
-		Assert.assertTrue(map.get("IntegerNumber_value").equals(r3.IntegerNumber_value));
-		Assert.assertTrue(map.get("ByteNumber_value").equals(r3.ByteNumber_value));
-		Assert.assertTrue(map.get("CharacterNumber_value").equals(r3.CharacterNumber_value));
-		Assert.assertTrue(map.get("BooleanNumber_value").equals(r3.BooleanNumber_value));
-		Assert.assertTrue(map.get("ShortNumber_value").equals(r3.ShortNumber_value));
-		Assert.assertTrue(map.get("LongNumber_value").equals(r3.LongNumber_value));
-		Assert.assertTrue(map.get("FloatNumber_value").equals(r3.FloatNumber_value));
-		Assert.assertTrue(map.get("DoubleNumber_value").equals(r3.DoubleNumber_value));
-		Assert.assertTrue(map.get("BigInteger_value").equals(r3.BigInteger_value));
-		Assert.assertTrue(map.get("BigDecimal_value").equals(r3.BigDecimal_value));
-		Assert.assertTrue(map.get("file").equals(r3.file));
+		assertTrue(map.get("pk1").equals(r3.pk1));
+		assertTrue(map.get("pk2").equals(r3.pk2));
+		assertTrue(map.get("pk3").equals(r3.pk3));
+		assertTrue(map.get("pk4").equals(r3.pk4));
+		assertTrue(map.get("pk5").equals(r3.pk5));
+		assertTrue(map.get("pk6").equals(r3.pk6));
+		assertTrue(map.get("pk7").equals(r3.pk7));
+		assertTrue(map.get("int_value").equals(r3.int_value));
+		assertTrue(map.get("byte_value").equals(r3.byte_value));
+		assertTrue(map.get("char_value").equals(r3.char_value));
+		assertTrue(map.get("boolean_value").equals(r3.boolean_value));
+		assertTrue(map.get("short_value").equals(r3.short_value));
+		assertTrue(map.get("long_value").equals(r3.long_value));
+		assertTrue(map.get("float_value").equals(r3.float_value));
+		assertTrue(map.get("double_value").equals(r3.double_value));
+		assertTrue(map.get("string_value").equals(r3.string_value));
+		assertTrue(map.get("IntegerNumber_value").equals(r3.IntegerNumber_value));
+		assertTrue(map.get("ByteNumber_value").equals(r3.ByteNumber_value));
+		assertTrue(map.get("CharacterNumber_value").equals(r3.CharacterNumber_value));
+		assertTrue(map.get("BooleanNumber_value").equals(r3.BooleanNumber_value));
+		assertTrue(map.get("ShortNumber_value").equals(r3.ShortNumber_value));
+		assertTrue(map.get("LongNumber_value").equals(r3.LongNumber_value));
+		assertTrue(map.get("FloatNumber_value").equals(r3.FloatNumber_value));
+		assertTrue(map.get("DoubleNumber_value").equals(r3.DoubleNumber_value));
+		assertTrue(map.get("BigInteger_value").equals(r3.BigInteger_value));
+		assertTrue(map.get("BigDecimal_value").equals(r3.BigDecimal_value));
+		assertTrue(map.get("file").equals(r3.file));
 		assertEquals((SubField) map.get("subField"), r3.subField);
 		assertEquals((SubSubField) map.get("subSubField"), r3.subSubField);
 
@@ -2954,15 +2919,15 @@ public abstract class TestDatabase {
 
 		try {
 			table1.addRecords(maps2);
-			Assert.assertTrue(false);
+			fail();
 		} catch (ConstraintsNotRespectedDatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 		try {
 			table3.addRecords(maps2);
-			Assert.assertTrue(false);
+			assertTrue(false);
 		} catch (ConstraintsNotRespectedDatabaseException e) {
-			Assert.assertTrue(true);
+			assertTrue(true);
 		}
 		table1.checkDataIntegrity();
 		table3.checkDataIntegrity();
@@ -2981,58 +2946,61 @@ public abstract class TestDatabase {
 			res.add(null);
 			res.add(null);
 		}	
-		else if (o.getClass() == DecentralizedIDGenerator.class) {
-			DecentralizedIDGenerator id = (DecentralizedIDGenerator) o;
-			res.add(new Long(id.getTimeStamp()));
-			res.add(new Long(id.getWorkerIDAndSequence()));
-		} else if (o.getClass() == RenforcedDecentralizedIDGenerator.class) {
-			RenforcedDecentralizedIDGenerator id = (RenforcedDecentralizedIDGenerator) o;
-			res.add(new Long(id.getTimeStamp()));
-			res.add(new Long(id.getWorkerIDAndSequence()));
-		} else if (DecentralizedIDGenerator.class.isAssignableFrom(type)) {
-			DecentralizedIDGenerator d = (DecentralizedIDGenerator) o;
-			res.add(new Long(d.getTimeStamp()));
-			res.add(new Long(d.getWorkerIDAndSequence()));
-		} else if (AbstractDecentralizedID.class.isAssignableFrom(type)) {
-			AbstractDecentralizedID id = (AbstractDecentralizedID) o;
-			if (DatabaseWrapperAccessor.isVarBinarySupported(sql_db))
-				res.add(id.getBytes());
-			else {
-				byte[] bytes = id.getBytes();
-				BigInteger r = BigInteger.valueOf(1);
-				for (int i = 0; i < bytes.length; i++) {
-					r = r.shiftLeft(8).or(BigInteger.valueOf(bytes[i] & 0xFF));
-				}
-				res.add(new BigDecimal(r));
-			}
-		} else if (o.getClass() == int.class || o.getClass() == byte.class || o.getClass() == char.class
-				|| o.getClass() == boolean.class || o.getClass() == short.class || o.getClass() == long.class
-				|| o.getClass() == float.class || o.getClass() == double.class || o.getClass() == Integer.class
-				|| o.getClass() == Byte.class || o.getClass() == Character.class || o.getClass() == Boolean.class
-				|| o.getClass() == Short.class || o.getClass() == Long.class || o.getClass() == Float.class
-				|| o.getClass() == Double.class || o.getClass() == byte[].class || o.getClass() == String.class) {
-			res.add(o);
+		else {
+            assert o != null;
+            if (o.getClass() == DecentralizedIDGenerator.class) {
+                DecentralizedIDGenerator id = (DecentralizedIDGenerator) o;
+                res.add(id.getTimeStamp());
+                res.add(id.getWorkerIDAndSequence());
+            } else if (o.getClass() == RenforcedDecentralizedIDGenerator.class) {
+                RenforcedDecentralizedIDGenerator id = (RenforcedDecentralizedIDGenerator) o;
+                res.add(id.getTimeStamp());
+                res.add(id.getWorkerIDAndSequence());
+            } else if (DecentralizedIDGenerator.class.isAssignableFrom(type)) {
+                DecentralizedIDGenerator d = (DecentralizedIDGenerator) o;
+                res.add(d.getTimeStamp());
+                res.add(d.getWorkerIDAndSequence());
+            } else if (AbstractDecentralizedID.class.isAssignableFrom(type)) {
+                AbstractDecentralizedID id = (AbstractDecentralizedID) o;
+                if (DatabaseWrapperAccessor.isVarBinarySupported(sql_db))
+                    res.add(id.getBytes());
+                else {
+                    byte[] bytes = id.getBytes();
+                    BigInteger r = BigInteger.valueOf(1);
+                    for (byte aByte : bytes) {
+                        r = r.shiftLeft(8).or(BigInteger.valueOf(aByte & 0xFF));
+                    }
+                    res.add(new BigDecimal(r));
+                }
+            } else if (o.getClass() == int.class || o.getClass() == byte.class || o.getClass() == char.class
+                    || o.getClass() == boolean.class || o.getClass() == short.class || o.getClass() == long.class
+                    || o.getClass() == float.class || o.getClass() == double.class || o.getClass() == Integer.class
+                    || o.getClass() == Byte.class || o.getClass() == Character.class || o.getClass() == Boolean.class
+                    || o.getClass() == Short.class || o.getClass() == Long.class || o.getClass() == Float.class
+                    || o.getClass() == Double.class || o.getClass() == byte[].class || o.getClass() == String.class) {
+                res.add(o);
 
-		} else if (o.getClass() == BigInteger.class || o.getClass() == BigDecimal.class) {
-			res.add(o.toString());
-		} else if (o instanceof Date) {
-			res.add(new Timestamp(((Date) o).getTime()));
-		} 
-		else if (o instanceof File)
-		{
-			res.add(((File)o).getPath().getBytes("UTF-8"));
-		}
-		else if (o instanceof Serializable) {
-			if (DatabaseWrapperAccessor.getSerializableType(sql_db).equals("BLOB")) {
-				try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-					try (ObjectOutputStream os = new ObjectOutputStream(baos)) {
-						os.writeObject(o);
-						res.add(baos.toByteArray());
-					}
-				}
-			} else
-				res.add(o);
-		}
+            } else if (o.getClass() == BigInteger.class || o.getClass() == BigDecimal.class) {
+                res.add(o.toString());
+            } else if (o instanceof Date) {
+                res.add(new Timestamp(((Date) o).getTime()));
+            }
+            else if (o instanceof File)
+            {
+                res.add(((File)o).getPath().getBytes("UTF-8"));
+            }
+            else if (o instanceof Serializable) {
+                if (Objects.equals(DatabaseWrapperAccessor.getSerializableType(sql_db), "BLOB")) {
+                    try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                        try (ObjectOutputStream os = new ObjectOutputStream(baos)) {
+                            os.writeObject(o);
+                            res.add(baos.toByteArray());
+                        }
+                    }
+                } else
+                    res.add(o);
+            }
+        }
 		return res;
 	}
 
@@ -3053,11 +3021,12 @@ public abstract class TestDatabase {
 		return res;
 	}
 
+	@SuppressWarnings("unused")
 	private <T extends Record> void subInterpreterCommandProvider(SymbolType op_cond, SymbolType op_comp, String cs,
-			HashMap<String, Object> parametersTable1Equallable, StringBuffer command, StringBuffer expectedCommand,
-			String fieldName, Object value, HashMap<Integer, Object> expectedParameters, boolean useParameter,
-			AtomicInteger expectedParamterIndex, AtomicInteger openedParenthesis, Table<T> table, T record,
-			AtomicBoolean whereResult) throws IOException, DatabaseException {
+																  HashMap<String, Object> parametersTable1Equallable, StringBuffer command, StringBuffer expectedCommand,
+																  String fieldName, Object value, HashMap<Integer, Object> expectedParameters, boolean useParameter,
+																  AtomicInteger expectedParamterIndex, AtomicInteger openedParenthesis, Table<T> table, T record,
+																  AtomicBoolean whereResult) throws IOException, DatabaseException {
 		if (op_comp == SymbolType.LIKE || op_comp == SymbolType.NOTLIKE) {
 			if (!(value instanceof String))
 				return;
@@ -3135,16 +3104,16 @@ public abstract class TestDatabase {
 				else
 				{
 					expectedCommand.append("?");
-					expectedParameters.put(new Integer(expectedParamterIndex.getAndIncrement()), value==null?null:sqlInstance.get(i));
+					expectedParameters.put(expectedParamterIndex.getAndIncrement(), sqlInstance.get(i));
 				}
 			}
 			if (op_comp == SymbolType.EQUALOPERATOR || op_comp == SymbolType.NOTEQUALOPERATOR)
 				expectedCommand.append(")");
 		} else {
 			if (op_comp == SymbolType.EQUALOPERATOR)
-				test = value==null?fa.getValue(record)==null:fa.getValue(record).toString().equals(value.toString());
+				test = fa.getValue(record).toString().equals(value.toString());
 			else if (op_comp == SymbolType.NOTEQUALOPERATOR)
-				test = value==null?fa.getValue(record)!=null:!fa.getValue(record).toString().equals(value.toString());
+				test = !fa.getValue(record).toString().equals(value.toString());
 			else if (op_comp == SymbolType.LIKE)
 				test = fa.getValue(record).toString().equals(value.toString());
 			else if (op_comp == SymbolType.NOTLIKE)
@@ -3165,7 +3134,7 @@ public abstract class TestDatabase {
 
 			if (value instanceof CharSequence)
 				command.append("\"");
-			command.append(value==null?"NULL":value.toString());
+			command.append(value.toString());
 			if (value instanceof CharSequence)
 				command.append("\"");
 			expectedCommand.append(Table.getName(Table1.class));
@@ -3174,7 +3143,7 @@ public abstract class TestDatabase {
 			expectedCommand.append(op_comp.getContent());
 			if (value instanceof CharSequence)
 				expectedCommand.append("\"");
-			expectedCommand.append(value==null?"NULL":value.toString());
+			expectedCommand.append(value.toString());
 			if (value instanceof CharSequence)
 				expectedCommand.append("\"");
 		}
@@ -3202,24 +3171,24 @@ public abstract class TestDatabase {
 		parametersTable1Equallable.put("pk5", new SecuredDecentralizedID(new DecentralizedIDGenerator(), rand));
 		parametersTable1Equallable.put("pk6", new DecentralizedIDGenerator());
 		parametersTable1Equallable.put("pk7", new RenforcedDecentralizedIDGenerator());
-		parametersTable1Equallable.put("int_value", new Integer(1));
-		parametersTable1Equallable.put("byte_value", new Byte((byte) 1));
-		parametersTable1Equallable.put("char_value", new Character('a'));
-		parametersTable1Equallable.put("boolean_value", new Boolean(true));
-		parametersTable1Equallable.put("short_value", new Short((short) 1));
-		parametersTable1Equallable.put("long_value", new Long(1));
-		parametersTable1Equallable.put("float_value", new Float(1.0f));
-		parametersTable1Equallable.put("double_value", new Double(1.0));
+		parametersTable1Equallable.put("int_value", 1);
+		parametersTable1Equallable.put("byte_value", (byte) 1);
+		parametersTable1Equallable.put("char_value", 'a');
+		parametersTable1Equallable.put("boolean_value", Boolean.TRUE);
+		parametersTable1Equallable.put("short_value", (short) 1);
+		parametersTable1Equallable.put("long_value", 1L);
+		parametersTable1Equallable.put("float_value", 1.0f);
+		parametersTable1Equallable.put("double_value", 1.0);
 		parametersTable1Equallable.put("string_value", "string");
 
-		parametersTable1Equallable.put("IntegerNumber_value", new Integer(1));
-		parametersTable1Equallable.put("ByteNumber_value", new Byte((byte) 1));
-		parametersTable1Equallable.put("CharacterNumber_value", new Character('a'));
-		parametersTable1Equallable.put("BooleanNumber_value", new Boolean(true));
-		parametersTable1Equallable.put("ShortNumber_value", new Short((short) 1));
-		parametersTable1Equallable.put("LongNumber_value", new Long(1));
-		parametersTable1Equallable.put("FloatNumber_value", new Float(1.0f));
-		parametersTable1Equallable.put("DoubleNumber_value", new Double(1.0));
+		parametersTable1Equallable.put("IntegerNumber_value", 1);
+		parametersTable1Equallable.put("ByteNumber_value", (byte) 1);
+		parametersTable1Equallable.put("CharacterNumber_value", 'a');
+		parametersTable1Equallable.put("BooleanNumber_value", Boolean.TRUE);
+		parametersTable1Equallable.put("ShortNumber_value", (short) 1);
+		parametersTable1Equallable.put("LongNumber_value", 1L);
+		parametersTable1Equallable.put("FloatNumber_value", 1.0f);
+		parametersTable1Equallable.put("DoubleNumber_value", 1.0);
 		
 
 		Calendar calendar = Calendar.getInstance(Locale.CANADA);
@@ -3236,29 +3205,29 @@ public abstract class TestDatabase {
 		Table1.Record record = new Table1.Record();
 		record.BigDecimal_value = (BigDecimal) parametersTable1Equallable.get("BigDecimal_value");
 		record.BigInteger_value = (BigInteger) parametersTable1Equallable.get("BigInteger_value");
-		record.boolean_value = ((Boolean) parametersTable1Equallable.get("boolean_value")).booleanValue();
+		record.boolean_value = (Boolean) parametersTable1Equallable.get("boolean_value");
 		record.BooleanNumber_value = (Boolean) parametersTable1Equallable.get("BooleanNumber_value");
 		record.byte_array_value = (byte[]) parametersTable1Equallable.get("byte_array_value");
-		record.byte_value = ((Byte) parametersTable1Equallable.get("byte_value")).byteValue();
+		record.byte_value = (Byte) parametersTable1Equallable.get("byte_value");
 		record.ByteNumber_value = (Byte) parametersTable1Equallable.get("ByteNumber_value");
 		record.CalendarValue = (Calendar) parametersTable1Equallable.get("CalendarValue");
-		record.char_value = ((Character) parametersTable1Equallable.get("char_value")).charValue();
+		record.char_value = (Character) parametersTable1Equallable.get("char_value");
 		record.CharacterNumber_value = (Character) parametersTable1Equallable.get("CharacterNumber_value");
 		record.DateValue = (Date) parametersTable1Equallable.get("DateValue");
-		record.double_value = ((Double) parametersTable1Equallable.get("double_value")).doubleValue();
+		record.double_value = (Double) parametersTable1Equallable.get("double_value");
 		record.DoubleNumber_value = (Double) parametersTable1Equallable.get("DoubleNumber_value");
-		record.float_value = ((Float) parametersTable1Equallable.get("float_value")).floatValue();
+		record.float_value = (Float) parametersTable1Equallable.get("float_value");
 		record.FloatNumber_value = (Float) parametersTable1Equallable.get("FloatNumber_value");
-		record.int_value = ((Integer) parametersTable1Equallable.get("int_value")).intValue();
+		record.int_value = (Integer) parametersTable1Equallable.get("int_value");
 		record.IntegerNumber_value = (Integer) parametersTable1Equallable.get("IntegerNumber_value");
-		record.long_value = ((Long) parametersTable1Equallable.get("long_value")).longValue();
+		record.long_value = (Long) parametersTable1Equallable.get("long_value");
 		record.LongNumber_value = ((Long) parametersTable1Equallable.get("LongNumber_value"));
 		record.pk5 = (AbstractDecentralizedID) parametersTable1Equallable.get("pk5");
 		record.pk6 = (DecentralizedIDGenerator) parametersTable1Equallable.get("pk6");
 		record.pk7 = (RenforcedDecentralizedIDGenerator) parametersTable1Equallable.get("pk7");
 		record.secretKey = (SymmetricSecretKey) parametersTable1Equallable.get("secretKey");
 		record.typeSecretKey = (SymmetricEncryptionType) parametersTable1Equallable.get("typeSecretKey");
-		record.short_value = ((Short) parametersTable1Equallable.get("short_value")).shortValue();
+		record.short_value = (Short) parametersTable1Equallable.get("short_value");
 		record.ShortNumber_value = (Short) parametersTable1Equallable.get("ShortNumber_value");
 		record.string_value = (String) parametersTable1Equallable.get("string_value");
 		record.nullField= (DecentralizedIDGenerator)parametersTable1Equallable.get("nullField");
@@ -3295,7 +3264,7 @@ public abstract class TestDatabase {
 						if (command.length() > 0) {
 							res.add(new Object[] { table1, command.toString(), parametersTable1Equallable,
 									expectedCommand.toString(), expectedParameters, table1, record,
-									new Boolean(expectedTestResult.get()) });
+                                    expectedTestResult.get()});
 						}
 					}
 				}
@@ -3347,7 +3316,7 @@ public abstract class TestDatabase {
 	{
 		if (expectedParameter==null)
 		{
-			Assert.assertNull(parameter);
+			assertNull(parameter);
 			return;
 		}
 		if (expectedParameter.getClass()==byte[].class)
@@ -3376,32 +3345,32 @@ public abstract class TestDatabase {
 		Assert.assertEquals(parameter, expectedParameter, message);
 	}
 
-	private static AtomicInteger next_unique = new AtomicInteger(0);
+	private static final AtomicInteger next_unique = new AtomicInteger(0);
 	private static AtomicInteger number_thread_test = new AtomicInteger(0);
 
 	@Test(dependsOnMethods = { "setAutoRandomFields" })
 	public void prepareMultipleTest() throws DatabaseException {
 
-		HashMap<String, Object> map = new HashMap<String, Object>();
+		HashMap<String, Object> map = new HashMap<>();
 
-		map.put("pk1", new Integer(random.nextInt()));
-		map.put("int_value", new Integer(3));
-		map.put("byte_value", new Byte((byte) 3));
-		map.put("char_value", new Character('x'));
-		map.put("boolean_value", new Boolean(true));
-		map.put("short_value", new Short((short) random.nextInt()));
-		map.put("long_value", new Long(3));
-		map.put("float_value", new Float(3.3f));
-		map.put("double_value", new Double(3.3));
-		map.put("string_value", new String("test string"));
-		map.put("IntegerNumber_value", new Integer(3));
-		map.put("ByteNumber_value", new Byte((byte) 3));
-		map.put("CharacterNumber_value", new Character('x'));
-		map.put("BooleanNumber_value", new Boolean(true));
-		map.put("ShortNumber_value", new Short((short) 3));
-		map.put("LongNumber_value", new Long(random.nextLong()));
-		map.put("FloatNumber_value", new Float(3.3f));
-		map.put("DoubleNumber_value", new Double(3.3));
+		map.put("pk1", random.nextInt());
+		map.put("int_value", 3);
+		map.put("byte_value", (byte) 3);
+		map.put("char_value", 'x');
+		map.put("boolean_value", Boolean.TRUE);
+		map.put("short_value", (short) random.nextInt());
+		map.put("long_value", 3L);
+		map.put("float_value", 3.3f);
+		map.put("double_value", 3.3);
+		map.put("string_value", "test string");
+		map.put("IntegerNumber_value", 3);
+		map.put("ByteNumber_value", (byte) 3);
+		map.put("CharacterNumber_value", 'x');
+		map.put("BooleanNumber_value", Boolean.TRUE);
+		map.put("ShortNumber_value", (short) 3);
+		map.put("LongNumber_value", random.nextLong());
+		map.put("FloatNumber_value", 3.3f);
+		map.put("DoubleNumber_value", 3.3);
 		map.put("BigInteger_value", new BigInteger("6"));
 		map.put("BigDecimal_value", new BigDecimal("9.9"));
 		map.put("DateValue", Calendar.getInstance().getTime());
@@ -3428,9 +3397,9 @@ public abstract class TestDatabase {
 		for (int i = 0; i < 8; i++) {
 			try {
 				ArrayList<Table1.Record> records = table1.getRecords();
-				HashMap<String, Object> map2 = new HashMap<String, Object>();
+				HashMap<String, Object> map2 = new HashMap<>();
 				map2.put("fr1_pk1", records.get(random.nextInt(records.size())));
-				map2.put("int_value", new Integer(random.nextInt()));
+				map2.put("int_value", random.nextInt());
 				table2.addRecord(map2);
 			} catch (ConstraintsNotRespectedDatabaseException e) {
 			} catch (RecordNotFoundDatabaseException e) {
@@ -3441,9 +3410,9 @@ public abstract class TestDatabase {
 		for (int i = 0; i < 8; i++) {
 			try {
 				ArrayList<Table3.Record> records = table3.getRecords();
-				HashMap<String, Object> map2 = new HashMap<String, Object>();
+				HashMap<String, Object> map2 = new HashMap<>();
 				map2.put("fr1_pk1", records.get(random.nextInt(records.size())));
-				map2.put("int_value", new Integer(random.nextInt()));
+				map2.put("int_value", random.nextInt());
 
 				table4.addRecord(map2);
 				table5.addRecord(map2);
@@ -3458,7 +3427,7 @@ public abstract class TestDatabase {
 			try {
 				ArrayList<Table2.Record> records2 = table2.getRecords();
 				ArrayList<Table5.Record> records5 = table5.getRecords();
-				HashMap<String, Object> map2 = new HashMap<String, Object>();
+				HashMap<String, Object> map2 = new HashMap<>();
 				map2.put("fk1_pk1", records2.get(random.nextInt(records2.size())));
 				map2.put("fk2", records5.get(random.nextInt(records5.size())));
 				table6.addRecord(map2);
@@ -3522,25 +3491,25 @@ public abstract class TestDatabase {
 			}
 				break;
 			case 1: {
-				HashMap<String, Object> map = new HashMap<String, Object>();
-				map.put("pk1", new Integer(random.nextInt()));
-				map.put("int_value", new Integer(3));
-				map.put("byte_value", new Byte((byte) 3));
-				map.put("char_value", new Character('x'));
-				map.put("boolean_value", new Boolean(true));
-				map.put("short_value", new Short((short) random.nextInt()));
-				map.put("long_value", new Long(3));
-				map.put("float_value", new Float(3.3f));
-				map.put("double_value", new Double(3.3));
-				map.put("string_value", new String("test string"));
-				map.put("IntegerNumber_value", new Integer(3));
-				map.put("ByteNumber_value", new Byte((byte) 3));
-				map.put("CharacterNumber_value", new Character('x'));
-				map.put("BooleanNumber_value", new Boolean(true));
-				map.put("ShortNumber_value", new Short((short) 3));
-				map.put("LongNumber_value", new Long(random.nextLong()));
-				map.put("FloatNumber_value", new Float(3.3f));
-				map.put("DoubleNumber_value", new Double(3.3));
+				HashMap<String, Object> map = new HashMap<>();
+				map.put("pk1", random.nextInt());
+				map.put("int_value", 3);
+				map.put("byte_value", (byte) 3);
+				map.put("char_value", 'x');
+				map.put("boolean_value", Boolean.TRUE);
+				map.put("short_value", (short) random.nextInt());
+				map.put("long_value", 3L);
+				map.put("float_value", 3.3f);
+				map.put("double_value", 3.3);
+				map.put("string_value", "test string");
+				map.put("IntegerNumber_value", 3);
+				map.put("ByteNumber_value", (byte) 3);
+				map.put("CharacterNumber_value", 'x');
+				map.put("BooleanNumber_value", Boolean.TRUE);
+				map.put("ShortNumber_value", (short) 3);
+				map.put("LongNumber_value", random.nextLong());
+				map.put("FloatNumber_value", 3.3f);
+				map.put("DoubleNumber_value", 3.3);
 				map.put("BigInteger_value", new BigInteger("6"));
 				map.put("BigDecimal_value", new BigDecimal("1.10"));
 				map.put("DateValue", Calendar.getInstance().getTime());
@@ -3559,67 +3528,67 @@ public abstract class TestDatabase {
 					Table1.Record r1 = table1.addRecord(map);
 					Table3.Record r3 = table3.addRecord(map);
 					if (no_thread) {
-						Assert.assertTrue(table1.contains(r1));
-						Assert.assertTrue(table3.contains(r3));
+						assertTrue(table1.contains(r1));
+						assertTrue(table3.contains(r3));
 					}
 
-					Assert.assertTrue(r1.pk1 == ((Integer) map.get("pk1")).intValue());
-					Assert.assertTrue(r1.int_value == ((Integer) map.get("int_value")).intValue());
-					Assert.assertTrue(r1.byte_value == ((Byte) map.get("byte_value")).byteValue());
-					Assert.assertTrue(r1.char_value == ((Character) map.get("char_value")).charValue());
-					Assert.assertTrue(r1.boolean_value == ((Boolean) map.get("boolean_value")).booleanValue());
-					Assert.assertTrue(r1.short_value == ((Short) map.get("short_value")).shortValue());
-					Assert.assertTrue(r1.long_value == ((Long) map.get("long_value")).longValue());
-					Assert.assertTrue(r1.float_value == ((Float) map.get("float_value")).floatValue());
-					Assert.assertTrue(r1.double_value == ((Double) map.get("double_value")).doubleValue());
-					Assert.assertTrue(r1.string_value.equals(map.get("string_value")));
-					Assert.assertTrue(r1.IntegerNumber_value.equals(map.get("IntegerNumber_value")));
-					Assert.assertTrue(r1.ByteNumber_value.equals(map.get("ByteNumber_value")));
-					Assert.assertTrue(r1.CharacterNumber_value.equals(map.get("CharacterNumber_value")));
-					Assert.assertTrue(r1.BooleanNumber_value.equals(map.get("BooleanNumber_value")));
-					Assert.assertTrue(r1.ShortNumber_value.equals(map.get("ShortNumber_value")));
-					Assert.assertTrue(r1.LongNumber_value.equals(map.get("LongNumber_value")));
-					Assert.assertTrue(r1.FloatNumber_value.equals(map.get("FloatNumber_value")));
-					Assert.assertTrue(r1.DoubleNumber_value.equals(map.get("DoubleNumber_value")));
-					Assert.assertTrue(r1.BigInteger_value.equals(map.get("BigInteger_value")));
-					Assert.assertTrue(r1.BigDecimal_value.equals(map.get("BigDecimal_value")));
-					Assert.assertTrue(r1.secretKey.equals(map.get("secretKey")));
-					Assert.assertTrue(r1.typeSecretKey.equals(map.get("typeSecretKey")));
-					Assert.assertTrue(r1.file.equals(map.get("file")));
+                    Assert.assertEquals(r1.pk1, (int) (Integer) map.get("pk1"));
+                    Assert.assertEquals(r1.int_value, (int) (Integer) map.get("int_value"));
+                    Assert.assertEquals(r1.byte_value, (byte) (Byte) map.get("byte_value"));
+                    Assert.assertEquals(r1.char_value, (char) (Character) map.get("char_value"));
+                    Assert.assertEquals(r1.boolean_value, (boolean) (Boolean) map.get("boolean_value"));
+                    Assert.assertEquals(r1.short_value, (short) (Short) map.get("short_value"));
+                    Assert.assertEquals(r1.long_value, (long) (Long) map.get("long_value"));
+                    Assert.assertEquals(r1.float_value, (Float) map.get("float_value"), 0.0);
+                    Assert.assertEquals(r1.double_value, (Double) map.get("double_value"), 0.0);
+                    Assert.assertEquals(r1.string_value, map.get("string_value"));
+                    Assert.assertEquals(r1.IntegerNumber_value, map.get("IntegerNumber_value"));
+                    Assert.assertEquals(r1.ByteNumber_value, map.get("ByteNumber_value"));
+                    Assert.assertEquals(r1.CharacterNumber_value, map.get("CharacterNumber_value"));
+                    Assert.assertEquals(r1.BooleanNumber_value, map.get("BooleanNumber_value"));
+                    Assert.assertEquals(r1.ShortNumber_value, map.get("ShortNumber_value"));
+					assertTrue(r1.LongNumber_value.equals(map.get("LongNumber_value")));
+					assertTrue(r1.FloatNumber_value.equals(map.get("FloatNumber_value")));
+					assertTrue(r1.DoubleNumber_value.equals(map.get("DoubleNumber_value")));
+					assertTrue(r1.BigInteger_value.equals(map.get("BigInteger_value")));
+					assertTrue(r1.BigDecimal_value.equals(map.get("BigDecimal_value")));
+					assertTrue(r1.secretKey.equals(map.get("secretKey")));
+					assertTrue(r1.typeSecretKey.equals(map.get("typeSecretKey")));
+					assertTrue(r1.file.equals(map.get("file")));
 					assertEquals((SubField) map.get("subField"), r1.subField);
 					assertEquals((SubSubField) map.get("subSubField"), r1.subSubField);
 
 					for (int i = 0; i < 3; i++)
-						Assert.assertTrue(r1.byte_array_value[i] == ((byte[]) map.get("byte_array_value"))[i]);
+						assertTrue(r1.byte_array_value[i] == ((byte[]) map.get("byte_array_value"))[i]);
 
-					Assert.assertTrue(r3.pk1 == ((Integer) map.get("pk1")).intValue());
-					Assert.assertTrue(r3.int_value == ((Integer) map.get("int_value")).intValue());
-					Assert.assertTrue(r3.byte_value == ((Byte) map.get("byte_value")).byteValue());
-					Assert.assertTrue(r3.char_value == ((Character) map.get("char_value")).charValue());
-					Assert.assertTrue(r3.boolean_value == ((Boolean) map.get("boolean_value")).booleanValue());
-					Assert.assertTrue(r3.short_value == ((Short) map.get("short_value")).shortValue());
-					Assert.assertTrue(r3.long_value == ((Long) map.get("long_value")).longValue());
-					Assert.assertTrue(r3.float_value == ((Float) map.get("float_value")).floatValue());
-					Assert.assertTrue(r3.double_value == ((Double) map.get("double_value")).doubleValue());
-					Assert.assertTrue(r3.string_value.equals(map.get("string_value")));
-					Assert.assertTrue(r3.IntegerNumber_value.equals(map.get("IntegerNumber_value")));
-					Assert.assertTrue(r3.ByteNumber_value.equals(map.get("ByteNumber_value")));
-					Assert.assertTrue(r3.CharacterNumber_value.equals(map.get("CharacterNumber_value")));
-					Assert.assertTrue(r3.BooleanNumber_value.equals(map.get("BooleanNumber_value")));
-					Assert.assertTrue(r3.ShortNumber_value.equals(map.get("ShortNumber_value")));
-					Assert.assertTrue(r3.LongNumber_value.equals(map.get("LongNumber_value")));
-					Assert.assertTrue(r3.FloatNumber_value.equals(map.get("FloatNumber_value")));
-					Assert.assertTrue(r3.DoubleNumber_value.equals(map.get("DoubleNumber_value")));
-					Assert.assertTrue(r3.BigInteger_value.equals(map.get("BigInteger_value")));
-					Assert.assertTrue(r3.BigDecimal_value.equals(map.get("BigDecimal_value")));
-					Assert.assertTrue(r3.secretKey.equals(map.get("secretKey")));
-					Assert.assertTrue(r3.typeSecretKey.equals(map.get("typeSecretKey")));
-					Assert.assertTrue(r3.file.equals(map.get("file")));
+                    Assert.assertEquals(r3.pk1, (int) (Integer) map.get("pk1"));
+                    Assert.assertEquals(r3.int_value, (int) (Integer) map.get("int_value"));
+                    Assert.assertEquals(r3.byte_value, (byte) (Byte) map.get("byte_value"));
+                    Assert.assertEquals(r3.char_value, (char) (Character) map.get("char_value"));
+                    Assert.assertEquals(r3.boolean_value, (boolean) (Boolean) map.get("boolean_value"));
+                    Assert.assertEquals(r3.short_value, (short) (Short) map.get("short_value"));
+                    Assert.assertEquals(r3.long_value, (long) (Long) map.get("long_value"));
+                    Assert.assertEquals(r3.float_value, (Float) map.get("float_value"), 0.0);
+                    Assert.assertEquals(r3.double_value, (Double) map.get("double_value"), 0.0);
+                    Assert.assertEquals(r3.string_value, map.get("string_value"));
+                    Assert.assertEquals(r3.IntegerNumber_value, map.get("IntegerNumber_value"));
+                    Assert.assertEquals(r3.ByteNumber_value, map.get("ByteNumber_value"));
+                    Assert.assertEquals(r3.CharacterNumber_value, map.get("CharacterNumber_value"));
+                    Assert.assertEquals(r3.BooleanNumber_value, map.get("BooleanNumber_value"));
+                    Assert.assertEquals(r3.ShortNumber_value, map.get("ShortNumber_value"));
+                    Assert.assertEquals(r3.LongNumber_value, map.get("LongNumber_value"));
+                    Assert.assertEquals(r3.FloatNumber_value, map.get("FloatNumber_value"));
+                    Assert.assertEquals(r3.DoubleNumber_value, map.get("DoubleNumber_value"));
+                    Assert.assertEquals(r3.BigInteger_value, map.get("BigInteger_value"));
+                    Assert.assertEquals(r3.BigDecimal_value, map.get("BigDecimal_value"));
+                    Assert.assertEquals(r3.secretKey, map.get("secretKey"));
+                    Assert.assertEquals(r3.typeSecretKey, map.get("typeSecretKey"));
+                    Assert.assertEquals(r3.file, map.get("file"));
 					assertEquals((SubField) map.get("subField"), r3.subField);
 					assertEquals((SubSubField) map.get("subSubField"), r3.subSubField);
 
 					for (int i = 0; i < 3; i++)
-						Assert.assertTrue(r3.byte_array_value[i] == ((byte[]) map.get("byte_array_value"))[i]);
+                        Assert.assertEquals(r3.byte_array_value[i], ((byte[]) map.get("byte_array_value"))[i]);
 				} catch (ConstraintsNotRespectedDatabaseException e) {
 					if (no_thread) {
 						throw e;
@@ -3637,7 +3606,7 @@ public abstract class TestDatabase {
 				if (records.size() > 0) {
 					HashMap<String, Object> map = new HashMap<String, Object>();
 					map.put("fr1_pk1", records.get(random.nextInt(records.size())));
-					map.put("int_value", new Integer(next));
+					map.put("int_value", next);
 					try {
 						ArrayList<Table2.Record> records2 = table2.getRecords();
 						boolean found = false;
@@ -3650,19 +3619,16 @@ public abstract class TestDatabase {
 						if (!found) {
 							Table2.Record r2 = table2.addRecord(map);
 							if (no_thread) {
-								Assert.assertTrue(table1.equals(r2.fr1_pk1, (Table1.Record) map.get("fr1_pk1")));
-								Assert.assertTrue(r2.int_value == ((Integer) map.get("int_value")).intValue());
+								assertTrue(table1.equals(r2.fr1_pk1, (Table1.Record) map.get("fr1_pk1")));
+                                Assert.assertEquals(r2.int_value, (int) (Integer) map.get("int_value"));
 							}
 						}
-					} catch (RecordNotFoundDatabaseException e) {
-						if (no_thread)
-							throw e;
-					} catch (ConstraintsNotRespectedDatabaseException e) {
+					} catch (RecordNotFoundDatabaseException | ConstraintsNotRespectedDatabaseException e) {
 						if (no_thread)
 							throw e;
 					}
 
-				}
+                }
 			}
 				break;
 			case 3: {
@@ -3674,9 +3640,9 @@ public abstract class TestDatabase {
 				ArrayList<Table3.Record> records = table3.getRecords();
 				if (records.size() > 0) {
 					Table3.Record rec1 = records.get(random.nextInt(records.size()));
-					HashMap<String, Object> map = new HashMap<String, Object>();
+					HashMap<String, Object> map = new HashMap<>();
 					map.put("fr1_pk1", rec1);
-					map.put("int_value", new Integer(next));
+					map.put("int_value", next);
 					try {
 						ArrayList<Table4.Record> records4 = table4.getRecords();
 						boolean found = false;
@@ -3689,18 +3655,15 @@ public abstract class TestDatabase {
 						if (!found) {
 							Table4.Record r4 = table4.addRecord(map);
 							if (no_thread) {
-								Assert.assertTrue(table3.equals(r4.fr1_pk1, (Table3.Record) map.get("fr1_pk1")));
-								Assert.assertTrue(r4.int_value == ((Integer) map.get("int_value")).intValue());
+								assertTrue(table3.equals(r4.fr1_pk1, (Table3.Record) map.get("fr1_pk1")));
+                                Assert.assertEquals(r4.int_value, (int) (Integer) map.get("int_value"));
 							}
 						}
-					} catch (RecordNotFoundDatabaseException e) {
-						if (no_thread)
-							throw e;
-					} catch (ConstraintsNotRespectedDatabaseException e) {
+					} catch (RecordNotFoundDatabaseException | ConstraintsNotRespectedDatabaseException e) {
 						if (no_thread)
 							throw e;
 					}
-				}
+                }
 			}
 				break;
 			case 4: {
@@ -3712,9 +3675,9 @@ public abstract class TestDatabase {
 				ArrayList<Table3.Record> records = table3.getRecords();
 				if (records.size() > 0) {
 					Table3.Record rec1 = records.get(random.nextInt(records.size()));
-					HashMap<String, Object> map = new HashMap<String, Object>();
+					HashMap<String, Object> map = new HashMap<>();
 					map.put("fr1_pk1", rec1);
-					map.put("int_value", new Integer(next));
+					map.put("int_value", next);
 					try {
 						ArrayList<Table5.Record> records5 = table5.getRecords();
 						boolean found = false;
@@ -3727,23 +3690,20 @@ public abstract class TestDatabase {
 						if (!found) {
 							Table5.Record r5 = table5.addRecord(map);
 							if (no_thread) {
-								Assert.assertTrue(table3.equals(r5.fr1_pk1, (Table3.Record) map.get("fr1_pk1")));
-								Assert.assertTrue(r5.int_value == ((Integer) map.get("int_value")).intValue());
+								assertTrue(table3.equals(r5.fr1_pk1, (Table3.Record) map.get("fr1_pk1")));
+                                Assert.assertEquals(r5.int_value, (int) (Integer) map.get("int_value"));
 							}
 						}
-					} catch (RecordNotFoundDatabaseException e) {
-						if (no_thread)
-							throw e;
-					} catch (ConstraintsNotRespectedDatabaseException e) {
+					} catch (RecordNotFoundDatabaseException | ConstraintsNotRespectedDatabaseException e) {
 						if (no_thread)
 							throw e;
 					}
 
-				}
+                }
 			}
 				break;
 			case 5: {
-				final ArrayList<Table1.Record> removed_records = new ArrayList<Table1.Record>();
+				final ArrayList<Table1.Record> removed_records = new ArrayList<>();
 				table1.removeRecords(new Filter<Table1.Record>() {
 
 					@Override
@@ -3756,9 +3716,9 @@ public abstract class TestDatabase {
 				});
 				if (no_thread) {
 					for (Table1.Record r1 : removed_records) {
-						Assert.assertFalse(table1.contains(r1));
+						assertFalse(table1.contains(r1));
 						for (Table2.Record r2 : table2.getRecords()) {
-							Assert.assertFalse(table1.equals(r2.fr1_pk1, r1));
+							assertFalse(table1.equals(r2.fr1_pk1, r1));
 						}
 					}
 				} else
@@ -3767,7 +3727,7 @@ public abstract class TestDatabase {
 			}
 				break;
 			case 6: {
-				final ArrayList<Table3.Record> removed_records = new ArrayList<Table3.Record>();
+				final ArrayList<Table3.Record> removed_records = new ArrayList<>();
 				table3.removeRecords(new Filter<Table3.Record>() {
 
 					@Override
@@ -3780,12 +3740,12 @@ public abstract class TestDatabase {
 				});
 				if (no_thread) {
 					for (Table3.Record r3 : removed_records) {
-						Assert.assertFalse(table3.contains(r3));
+						assertFalse(table3.contains(r3));
 						for (Table4.Record r4 : table4.getRecords()) {
-							Assert.assertFalse(table3.equals(r4.fr1_pk1, r3));
+							assertFalse(table3.equals(r4.fr1_pk1, r3));
 						}
 						for (Table5.Record r5 : table5.getRecords()) {
-							Assert.assertFalse(table3.equals(r5.fr1_pk1, r3));
+							assertFalse(table3.equals(r5.fr1_pk1, r3));
 						}
 					}
 				} else {
@@ -3797,7 +3757,7 @@ public abstract class TestDatabase {
 				break;
 			case 7: {
 
-				final ArrayList<Table4.Record> removed_records = new ArrayList<Table4.Record>();
+				final ArrayList<Table4.Record> removed_records = new ArrayList<>();
 				table4.removeRecords(new Filter<Table4.Record>() {
 
 					@Override
@@ -3811,13 +3771,13 @@ public abstract class TestDatabase {
 				});
 				if (no_thread) {
 					for (Table4.Record r4 : removed_records) {
-						Assert.assertFalse(table4.contains(r4));
+						assertFalse(table4.contains(r4));
 					}
 				}
 			}
 				break;
 			case 8: {
-				final ArrayList<Table2.Record> removed_records = new ArrayList<Table2.Record>();
+				final ArrayList<Table2.Record> removed_records = new ArrayList<>();
 				table2.removeRecords(new Filter<Table2.Record>() {
 
 					@Override
@@ -3831,9 +3791,9 @@ public abstract class TestDatabase {
 				});
 				if (no_thread) {
 					for (Table2.Record r2 : removed_records) {
-						Assert.assertFalse(table2.contains(r2));
+						assertFalse(table2.contains(r2));
 						for (Table6.Record r6 : table6.getRecords()) {
-							Assert.assertFalse(table2.equals(r6.fk1_pk1, r2));
+							assertFalse(table2.equals(r6.fk1_pk1, r2));
 						}
 					}
 				}
@@ -3841,7 +3801,7 @@ public abstract class TestDatabase {
 			}
 				break;
 			case 9: {
-				final ArrayList<Table5.Record> removed_records = new ArrayList<Table5.Record>();
+				final ArrayList<Table5.Record> removed_records = new ArrayList<>();
 				table5.removeRecords(new Filter<Table5.Record>() {
 
 					@Override
@@ -3855,9 +3815,9 @@ public abstract class TestDatabase {
 				});
 				if (no_thread) {
 					for (Table5.Record r5 : removed_records) {
-						Assert.assertFalse(table5.contains(r5));
+						assertFalse(table5.contains(r5));
 						for (Table6.Record r6 : table6.getRecords()) {
-							Assert.assertFalse(table5.equals(r6.fk2, r5));
+							assertFalse(table5.equals(r6.fk2, r5));
 						}
 					}
 				}
@@ -3865,7 +3825,7 @@ public abstract class TestDatabase {
 			}
 				break;
 			case 10: {
-				final ArrayList<Table1.Record> removed_records = new ArrayList<Table1.Record>();
+				final ArrayList<Table1.Record> removed_records = new ArrayList<>();
 				table1.removeRecordsWithCascade(new Filter<Table1.Record>() {
 
 					@Override
@@ -3879,9 +3839,9 @@ public abstract class TestDatabase {
 				});
 				if (no_thread) {
 					for (Table1.Record r1 : removed_records) {
-						Assert.assertFalse(table1.contains(r1));
+						assertFalse(table1.contains(r1));
 						for (Table2.Record r2 : table2.getRecords()) {
-							Assert.assertFalse(table1.equals(r2.fr1_pk1, r1));
+							assertFalse(table1.equals(r2.fr1_pk1, r1));
 						}
 					}
 				} else {
@@ -3892,7 +3852,7 @@ public abstract class TestDatabase {
 				break;
 			case 11: {
 				table6.getRecords();
-				final ArrayList<Table3.Record> removed_records = new ArrayList<Table3.Record>();
+				final ArrayList<Table3.Record> removed_records = new ArrayList<>();
 				table3.removeRecordsWithCascade(new Filter<Table3.Record>() {
 
 					@Override
@@ -3906,12 +3866,12 @@ public abstract class TestDatabase {
 				});
 				if (no_thread) {
 					for (Table3.Record r3 : removed_records) {
-						Assert.assertFalse(table3.contains(r3));
+						assertFalse(table3.contains(r3));
 						for (Table4.Record r4 : table4.getRecords()) {
-							Assert.assertFalse(table3.equals(r4.fr1_pk1, r3));
+							assertFalse(table3.equals(r4.fr1_pk1, r3));
 						}
 						for (Table5.Record r5 : table5.getRecords()) {
-							Assert.assertFalse(table3.equals(r5.fr1_pk1, r3));
+							assertFalse(table3.equals(r5.fr1_pk1, r3));
 
 						}
 					}
@@ -3926,25 +3886,22 @@ public abstract class TestDatabase {
 				ArrayList<Table1.Record> records = table1.getRecords();
 				if (records.size() > 0) {
 					Table1.Record rec1 = records.get(random.nextInt(records.size()));
-					HashMap<String, Object> map = new HashMap<String, Object>();
-					map.put("pk1", new Integer(random.nextInt()));
-					map.put("byte_value", new Byte((byte) 9));
-					map.put("char_value", new Character('s'));
-					map.put("DoubleNumber_value", new Double(7.7));
+					HashMap<String, Object> map = new HashMap<>();
+					map.put("pk1", random.nextInt());
+					map.put("byte_value", (byte) 9);
+					map.put("char_value", 's');
+					map.put("DoubleNumber_value", 7.7);
 					try {
 						table1.updateRecord(rec1, map);
-						Assert.assertTrue(rec1.pk1 == ((Integer) map.get("pk1")).intValue());
-						Assert.assertTrue(rec1.byte_value == ((Byte) map.get("byte_value")).byteValue());
-						Assert.assertTrue(rec1.char_value == ((Character) map.get("char_value")).charValue());
-						Assert.assertTrue(rec1.DoubleNumber_value.equals(map.get("DoubleNumber_value")));
-					} catch (RecordNotFoundDatabaseException e) {
-						if (no_thread)
-							throw e;
-					} catch (ConstraintsNotRespectedDatabaseException e) {
+                        Assert.assertEquals(rec1.pk1, (int) (Integer) map.get("pk1"));
+                        Assert.assertEquals(rec1.byte_value, (byte) (Byte) map.get("byte_value"));
+                        Assert.assertEquals(rec1.char_value, (char) (Character) map.get("char_value"));
+                        Assert.assertEquals(rec1.DoubleNumber_value, map.get("DoubleNumber_value"));
+					} catch (RecordNotFoundDatabaseException | ConstraintsNotRespectedDatabaseException e) {
 						if (no_thread)
 							throw e;
 					}
-					table2.getRecords();
+                    table2.getRecords();
 					table6.getRecords();
 				}
 			}
@@ -3954,24 +3911,21 @@ public abstract class TestDatabase {
 				if (records.size() > 0) {
 					Table3.Record rec1 = records.get(random.nextInt(records.size()));
 					HashMap<String, Object> map = new HashMap<String, Object>();
-					map.put("pk1", new Integer(random.nextInt()));
-					map.put("byte_value", new Byte((byte) 9));
-					map.put("char_value", new Character('s'));
-					map.put("DoubleNumber_value", new Double(7.7));
+					map.put("pk1", random.nextInt());
+					map.put("byte_value", (byte) 9);
+					map.put("char_value", 's');
+					map.put("DoubleNumber_value", 7.7);
 					try {
 						table3.updateRecord(rec1, map);
-						Assert.assertTrue(rec1.pk1 == ((Integer) map.get("pk1")).intValue());
-						Assert.assertTrue(rec1.byte_value == ((Byte) map.get("byte_value")).byteValue());
-						Assert.assertTrue(rec1.char_value == ((Character) map.get("char_value")).charValue());
-						Assert.assertTrue(rec1.DoubleNumber_value.equals(map.get("DoubleNumber_value")));
-					} catch (RecordNotFoundDatabaseException e) {
-						if (no_thread)
-							throw e;
-					} catch (ConstraintsNotRespectedDatabaseException e) {
+                        Assert.assertEquals(((Integer) map.get("pk1")).intValue(), rec1.pk1);
+                        Assert.assertEquals(((Byte) map.get("byte_value")).byteValue(), rec1.byte_value);
+                        Assert.assertEquals(rec1.char_value, (char) (Character) map.get("char_value"));
+                        Assert.assertEquals(rec1.DoubleNumber_value, map.get("DoubleNumber_value"));
+					} catch (RecordNotFoundDatabaseException | ConstraintsNotRespectedDatabaseException e) {
 						if (no_thread)
 							throw e;
 					}
-					table4.getRecords();
+                    table4.getRecords();
 					table5.getRecords();
 					table6.getRecords();
 				}
@@ -3979,22 +3933,22 @@ public abstract class TestDatabase {
 				break;
 			case 14: {
 				long l = table1.getRecordsNumber();
-				Assert.assertTrue(table1.removeRecordsWithCascade(new Filter<Table1.Record>() {
+                Assert.assertEquals(0, table1.removeRecordsWithCascade(new Filter<Record>() {
 
-					@Override
-					public boolean nextRecord(Record _record) {
-						return false;
-					}
-				}) == 0);
+                    @Override
+                    public boolean nextRecord(Record _record) {
+                        return false;
+                    }
+                }));
 				if (no_thread)
-					Assert.assertTrue(l == table1.getRecordsNumber());
+					assertTrue(l == table1.getRecordsNumber());
 				table2.getRecords();
 				table6.getRecords();
 			}
 				break;
 			case 15: {
 				long l = table3.getRecordsNumber();
-				Assert.assertTrue(table3.removeRecordsWithCascade(new Filter<Table3.Record>() {
+				assertTrue(table3.removeRecordsWithCascade(new Filter<Table3.Record>() {
 
 					@Override
 					public boolean nextRecord(Table3.Record _record) {
@@ -4002,7 +3956,7 @@ public abstract class TestDatabase {
 					}
 				}) == 0);
 				if (no_thread)
-					Assert.assertTrue(l == table3.getRecordsNumber());
+					assertTrue(l == table3.getRecordsNumber());
 				table4.getRecords();
 				table5.getRecords();
 				table6.getRecords();
@@ -4015,9 +3969,9 @@ public abstract class TestDatabase {
 					try {
 						table1.removeRecordWithCascade(rec);
 						if (no_thread) {
-							Assert.assertFalse(table1.contains(rec));
+							assertFalse(table1.contains(rec));
 							for (Table2.Record r2 : table2.getRecords()) {
-								Assert.assertFalse(table1.equals(r2.fr1_pk1, rec));
+								assertFalse(table1.equals(r2.fr1_pk1, rec));
 							}
 						} else
 							table2.getRecords();
@@ -4037,12 +3991,12 @@ public abstract class TestDatabase {
 					try {
 						table3.removeRecordWithCascade(rec);
 						if (no_thread) {
-							Assert.assertFalse(table3.contains(rec));
+							assertFalse(table3.contains(rec));
 							for (Table4.Record r4 : table4.getRecords()) {
-								Assert.assertFalse(table3.equals(r4.fr1_pk1, rec));
+								assertFalse(table3.equals(r4.fr1_pk1, rec));
 							}
 							for (Table5.Record r5 : table5.getRecords()) {
-								Assert.assertFalse(table3.equals(r5.fr1_pk1, rec));
+								assertFalse(table3.equals(r5.fr1_pk1, rec));
 							}
 						} else {
 							table4.getRecords();
@@ -4064,7 +4018,7 @@ public abstract class TestDatabase {
 					try {
 						table4.removeRecordWithCascade(rec);
 						if (no_thread)
-							Assert.assertFalse(table4.contains(rec));
+							assertFalse(table4.contains(rec));
 					} catch (RecordNotFoundDatabaseException e) {
 						if (no_thread)
 							throw e;
@@ -4079,7 +4033,7 @@ public abstract class TestDatabase {
 					try {
 						table4.removeRecord(rec);
 						if (no_thread)
-							Assert.assertFalse(table4.contains(rec));
+							assertFalse(table4.contains(rec));
 					} catch (RecordNotFoundDatabaseException e) {
 						if (no_thread)
 							throw e;
@@ -4094,9 +4048,9 @@ public abstract class TestDatabase {
 					try {
 						table2.removeRecordWithCascade(rec);
 						if (no_thread) {
-							Assert.assertFalse(table2.contains(rec));
+							assertFalse(table2.contains(rec));
 							for (Table6.Record r6 : table6.getRecords()) {
-								Assert.assertFalse(table2.equals(r6.fk1_pk1, rec));
+								assertFalse(table2.equals(r6.fk1_pk1, rec));
 							}
 						} else
 							table6.getRecords();
@@ -4112,7 +4066,7 @@ public abstract class TestDatabase {
 
 					@Override
 					public void nextRecord(Record _record) {
-						HashMap<String, Object> m = new HashMap<String, Object>();
+						HashMap<String, Object> m = new HashMap<>();
 						m.put("int_value", new Integer(18));
 						this.update(m);
 					}
@@ -4120,22 +4074,22 @@ public abstract class TestDatabase {
 				if (no_thread) {
 					ArrayList<Table1.Record> records1 = table1.getRecords();
 					for (Table1.Record r1 : records1)
-						Assert.assertTrue(r1.int_value == 18);
+                        Assert.assertEquals(18, r1.int_value);
 				}
 
 				table3.updateRecords(new AlterRecordFilter<Table3.Record>() {
 
 					@Override
 					public void nextRecord(Table3.Record _record) {
-						HashMap<String, Object> m = new HashMap<String, Object>();
-						m.put("int_value", new Integer(18));
+						HashMap<String, Object> m = new HashMap<>();
+						m.put("int_value", 18);
 						this.update(m);
 					}
 				});
 				if (no_thread) {
 					ArrayList<Table3.Record> records3 = table3.getRecords();
 					for (Table3.Record r3 : records3)
-						Assert.assertTrue(r3.int_value == 18);
+                        Assert.assertEquals(18, r3.int_value);
 				}
 
 			}
@@ -4157,9 +4111,9 @@ public abstract class TestDatabase {
 							table1.removeRecordsWithCascade(recs);
 							if (no_thread) {
 								for (Table1.Record rec : recs) {
-									Assert.assertFalse(table1.contains(rec));
+									assertFalse(table1.contains(rec));
 									for (Table2.Record r2 : table2.getRecords()) {
-										Assert.assertFalse(table1.equals(r2.fr1_pk1, rec));
+										assertFalse(table1.equals(r2.fr1_pk1, rec));
 									}
 								}
 							} else
@@ -4191,12 +4145,12 @@ public abstract class TestDatabase {
 							table3.removeRecordsWithCascade(recs);
 							if (no_thread) {
 								for (Table3.Record rec : recs) {
-									Assert.assertFalse(table3.contains(rec));
+									assertFalse(table3.contains(rec));
 									for (Table4.Record r4 : table4.getRecords()) {
-										Assert.assertFalse(table3.equals(r4.fr1_pk1, rec));
+										assertFalse(table3.equals(r4.fr1_pk1, rec));
 									}
 									for (Table5.Record r5 : table5.getRecords()) {
-										Assert.assertFalse(table3.equals(r5.fr1_pk1, rec));
+										assertFalse(table3.equals(r5.fr1_pk1, rec));
 									}
 								}
 							} else {
@@ -4234,24 +4188,21 @@ public abstract class TestDatabase {
 							table1.removeRecords(recs);
 							if (no_thread) {
 								for (Table1.Record rec : recs) {
-									Assert.assertFalse(table1.contains(rec));
+									assertFalse(table1.contains(rec));
 									for (Table2.Record r2 : table2.getRecords()) {
-										Assert.assertFalse(table1.equals(r2.fr1_pk1, rec));
+										assertFalse(table1.equals(r2.fr1_pk1, rec));
 									}
 								}
 							} else
 								table2.getRecords();
 							table6.getRecords();
 						}
-					} catch (RecordNotFoundDatabaseException e) {
+					} catch (RecordNotFoundDatabaseException | ConstraintsNotRespectedDatabaseException e) {
 						if (no_thread) {
 							throw e;
 						}
-					} catch (ConstraintsNotRespectedDatabaseException e) {
-						if (no_thread)
-							throw e;
 					}
-				}
+                }
 			}
 				break;
 			case 25: {
@@ -4276,12 +4227,12 @@ public abstract class TestDatabase {
 							table3.removeRecords(recs);
 							if (no_thread) {
 								for (Table3.Record rec : recs) {
-									Assert.assertFalse(table3.contains(rec));
+									assertFalse(table3.contains(rec));
 									for (Table4.Record r4 : table4.getRecords()) {
-										Assert.assertFalse(table3.equals(r4.fr1_pk1, rec));
+										assertFalse(table3.equals(r4.fr1_pk1, rec));
 									}
 									for (Table5.Record r5 : table5.getRecords()) {
-										Assert.assertFalse(table3.equals(r5.fr1_pk1, rec));
+										assertFalse(table3.equals(r5.fr1_pk1, rec));
 									}
 								}
 							} else {
@@ -4290,19 +4241,16 @@ public abstract class TestDatabase {
 							}
 							table6.getRecords();
 						}
-					} catch (RecordNotFoundDatabaseException e) {
+					} catch (RecordNotFoundDatabaseException | ConstraintsNotRespectedDatabaseException e) {
 						if (no_thread) {
 							throw e;
 						}
-					} catch (ConstraintsNotRespectedDatabaseException e) {
-						if (no_thread)
-							throw e;
 					}
-				}
+                }
 			}
 				break;
 			case 26: {
-				Assert.assertFalse(table1.hasRecords(new Filter<Table1.Record>() {
+				assertFalse(table1.hasRecords(new Filter<Table1.Record>() {
 
 					@Override
 					public boolean nextRecord(Table1.Record _record) {
@@ -4311,7 +4259,7 @@ public abstract class TestDatabase {
 				}));
 				if (no_thread) {
 					if (table1.getRecordsNumber() > 0) {
-						Assert.assertTrue(table1.hasRecords(new Filter<Table1.Record>() {
+						assertTrue(table1.hasRecords(new Filter<Table1.Record>() {
 
 							@Override
 							public boolean nextRecord(Table1.Record _record) {
@@ -4320,7 +4268,7 @@ public abstract class TestDatabase {
 						}));
 					}
 				}
-				Assert.assertFalse(table2.hasRecords(new Filter<Table2.Record>() {
+				assertFalse(table2.hasRecords(new Filter<Table2.Record>() {
 
 					@Override
 					public boolean nextRecord(Table2.Record _record) {
@@ -4330,7 +4278,7 @@ public abstract class TestDatabase {
 				if (no_thread) {
 					if (table2.getRecordsNumber() > 0) {
 
-						Assert.assertTrue(table2.hasRecords(new Filter<Table2.Record>() {
+						assertTrue(table2.hasRecords(new Filter<Table2.Record>() {
 
 							@Override
 							public boolean nextRecord(Table2.Record _record) {
@@ -4339,7 +4287,7 @@ public abstract class TestDatabase {
 						}));
 					}
 				}
-				Assert.assertFalse(table3.hasRecords(new Filter<Table3.Record>() {
+				assertFalse(table3.hasRecords(new Filter<Table3.Record>() {
 
 					@Override
 					public boolean nextRecord(Table3.Record _record) {
@@ -4349,7 +4297,7 @@ public abstract class TestDatabase {
 				if (no_thread) {
 					if (table3.getRecordsNumber() > 0) {
 
-						Assert.assertTrue(table3.hasRecords(new Filter<Table3.Record>() {
+						assertTrue(table3.hasRecords(new Filter<Table3.Record>() {
 
 							@Override
 							public boolean nextRecord(Table3.Record _record) {
@@ -4358,7 +4306,7 @@ public abstract class TestDatabase {
 						}));
 					}
 				}
-				Assert.assertFalse(table4.hasRecords(new Filter<Table4.Record>() {
+				assertFalse(table4.hasRecords(new Filter<Table4.Record>() {
 
 					@Override
 					public boolean nextRecord(Table4.Record _record) {
@@ -4368,7 +4316,7 @@ public abstract class TestDatabase {
 				if (no_thread) {
 					if (table4.getRecordsNumber() > 0) {
 
-						Assert.assertTrue(table4.hasRecords(new Filter<Table4.Record>() {
+						assertTrue(table4.hasRecords(new Filter<Table4.Record>() {
 
 							@Override
 							public boolean nextRecord(Table4.Record _record) {
@@ -4377,7 +4325,7 @@ public abstract class TestDatabase {
 						}));
 					}
 				}
-				Assert.assertFalse(table5.hasRecords(new Filter<Table5.Record>() {
+				assertFalse(table5.hasRecords(new Filter<Table5.Record>() {
 
 					@Override
 					public boolean nextRecord(Table5.Record _record) {
@@ -4387,7 +4335,7 @@ public abstract class TestDatabase {
 				if (no_thread) {
 					if (table6.getRecordsNumber() > 0) {
 
-						Assert.assertTrue(table5.hasRecords(new Filter<Table5.Record>() {
+						assertTrue(table5.hasRecords(new Filter<Table5.Record>() {
 
 							@Override
 							public boolean nextRecord(Table5.Record _record) {
@@ -4396,7 +4344,7 @@ public abstract class TestDatabase {
 						}));
 					}
 				}
-				Assert.assertFalse(table6.hasRecords(new Filter<Table6.Record>() {
+				assertFalse(table6.hasRecords(new Filter<Table6.Record>() {
 
 					@Override
 					public boolean nextRecord(Table6.Record _record) {
@@ -4406,7 +4354,7 @@ public abstract class TestDatabase {
 				if (no_thread) {
 					if (table6.getRecordsNumber() > 0) {
 
-						Assert.assertTrue(table6.hasRecords(new Filter<Table6.Record>() {
+						assertTrue(table6.hasRecords(new Filter<Table6.Record>() {
 
 							@Override
 							public boolean nextRecord(Table6.Record _record) {
@@ -4441,7 +4389,7 @@ public abstract class TestDatabase {
 				if (no_thread) {
 					ArrayList<Table1.Record> r1b = table1.getOrderedRecords(table1.getRecords(), true, "short_value",
 							"LongNumber_value");
-					Assert.assertTrue(r1.size() == r1b.size());
+                    Assert.assertEquals(r1.size(), r1b.size());
 
 					for (int i = 0; i < r1.size(); i++) {
 						Assert.assertEquals(r1.get(i).short_value, r1b.get(i).short_value);
@@ -4457,7 +4405,7 @@ public abstract class TestDatabase {
 				if (no_thread) {
 					ArrayList<Table1.Record> r1b = table1.getOrderedRecords(table1.getRecords(), false, "short_value",
 							"LongNumber_value");
-					Assert.assertTrue(r1.size() == r1b.size());
+					assertTrue(r1.size() == r1b.size());
 
 					for (int i = 0; i < r1.size(); i++) {
 						Assert.assertEquals(r1.get(i).short_value, r1b.get(i).short_value);
@@ -4498,10 +4446,10 @@ public abstract class TestDatabase {
 				if (no_thread) {
 					ArrayList<Table3.Record> r3b = table3.getOrderedRecords(table3.getRecords(), true, "short_value",
 							"LongNumber_value");
-					Assert.assertTrue(r3.size() == r3b.size());
+					assertTrue(r3.size() == r3b.size());
 
 					for (int i = 0; i < r3.size(); i++) {
-						Assert.assertTrue(table3.equalsAllFields(r3.get(i), r3b.get(i)));
+						assertTrue(table3.equalsAllFields(r3.get(i), r3b.get(i)));
 					}
 				}
 				r3 = table3.getOrderedRecords(false, "short_value", "LongNumber_value");
@@ -4509,10 +4457,10 @@ public abstract class TestDatabase {
 				if (no_thread) {
 					ArrayList<Table3.Record> r3b = table3.getOrderedRecords(table3.getRecords(), false, "short_value",
 							"LongNumber_value");
-					Assert.assertTrue(r3.size() == r3b.size());
+                    Assert.assertEquals(r3.size(), r3b.size());
 
 					for (int i = 0; i < r3.size(); i++) {
-						Assert.assertTrue(table3.equalsAllFields(r3.get(i), r3b.get(i)));
+						assertTrue(table3.equalsAllFields(r3.get(i), r3b.get(i)));
 					}
 				}
 			}
@@ -4569,14 +4517,14 @@ public abstract class TestDatabase {
 				tab[0] = 0;
 				tab[1] = 1;
 				tab[2] = 2;
-				Object[] parameters = { "pk1", new Integer(random.nextInt()), "int_value", new Integer(3), "byte_value",
-						new Byte((byte) 3), "char_value", new Character('x'), "boolean_value", new Boolean(true),
-						"short_value", new Short((short) 3), "long_value", new Long(3), "float_value", new Float(3.3f),
-						"double_value", new Double(3.3), "string_value", new String("test string"),
-						"IntegerNumber_value", new Integer(3), "ByteNumber_value", new Byte((byte) 3),
-						"CharacterNumber_value", new Character('x'), "BooleanNumber_value", new Boolean(true),
-						"ShortNumber_value", new Short((short) 3), "LongNumber_value", new Long((long) 3),
-						"FloatNumber_value", new Float(3.3f), "DoubleNumber_value", new Double(3.3), "BigInteger_value",
+				Object[] parameters = { "pk1", random.nextInt(), "int_value", 3, "byte_value",
+                        (byte) 3, "char_value", 'x', "boolean_value", Boolean.TRUE,
+						"short_value", (short) 3, "long_value", 3L, "float_value", 3.3f,
+						"double_value", 3.3, "string_value", "test string",
+						"IntegerNumber_value", 3, "ByteNumber_value", (byte) 3,
+						"CharacterNumber_value", 'x', "BooleanNumber_value", Boolean.TRUE,
+						"ShortNumber_value", (short) 3, "LongNumber_value", (long) 3,
+						"FloatNumber_value", 3.3f, "DoubleNumber_value", 3.3, "BigInteger_value",
 						new BigInteger("5"), "BigDecimal_value", new BigDecimal("8.8"), "DateValue", date.clone(),
 						"CalendarValue", calendar.clone(), "secretKey", secretKey, "typeSecretKey", typeSecretKey,
 						"byte_array_value", tab.clone(), "subField", subField, "subSubField", subSubField, "file", fileTest };
@@ -4585,8 +4533,8 @@ public abstract class TestDatabase {
 					Table1.Record r1 = table1.addRecord(parameters);
 					Table3.Record r3 = table3.addRecord(parameters);
 					if (no_thread) {
-						Assert.assertTrue(table1.contains(r1));
-						Assert.assertTrue(table3.contains(r3));
+						assertTrue(table1.contains(r1));
+						assertTrue(table3.contains(r3));
 					}
 				} catch (ConstraintsNotRespectedDatabaseException e) {
 					if (no_thread) {
@@ -4599,7 +4547,7 @@ public abstract class TestDatabase {
 					Table3.Record r2 = table3.addRecord(parameters);
 					table1.removeRecord(r1);
 					table3.removeRecord(r2);
-				} catch (ConstraintsNotRespectedDatabaseException e) {
+				} catch (ConstraintsNotRespectedDatabaseException ignored) {
 
 				} catch (RecordNotFoundDatabaseException e) {
 					if (no_thread)
@@ -4607,30 +4555,30 @@ public abstract class TestDatabase {
 				}
 
 				Object[] p2 = { "rert" };
-				Object[] p3 = { new Integer(125), "rert" };
+				Object[] p3 = {125, "rert" };
 				try {
 					table1.addRecord(p2);
-					Assert.assertTrue(false);
+                    fail();
 				} catch (Exception e) {
-					Assert.assertTrue(true);
+					assertTrue(true);
 				}
 				try {
 					table1.addRecord(p3);
-					Assert.assertTrue(false);
+                    fail();
 				} catch (Exception e) {
-					Assert.assertTrue(true);
+					assertTrue(true);
 				}
 				try {
 					table3.addRecord(p2);
-					Assert.assertTrue(false);
+                    fail();
 				} catch (Exception e) {
-					Assert.assertTrue(true);
+					assertTrue(true);
 				}
 				try {
 					table3.addRecord(p3);
-					Assert.assertTrue(false);
+                    fail();
 				} catch (Exception e) {
-					Assert.assertTrue(true);
+					assertTrue(true);
 				}
 			}
 				break;
@@ -4647,14 +4595,14 @@ public abstract class TestDatabase {
 				r1.float_value = 3.3f;
 				r1.double_value = 3.3;
 				r1.string_value = "test string";
-				r1.IntegerNumber_value = new Integer(3);
-				r1.ByteNumber_value = new Byte((byte) 3);
-				r1.CharacterNumber_value = new Character('x');
-				r1.BooleanNumber_value = new Boolean(true);
-				r1.ShortNumber_value = new Short((short) 3);
-				r1.LongNumber_value = new Long(random.nextLong());
-				r1.FloatNumber_value = new Float(3.3f);
-				r1.DoubleNumber_value = new Double(3.3);
+				r1.IntegerNumber_value = 3;
+				r1.ByteNumber_value = (byte) 3;
+				r1.CharacterNumber_value = 'x';
+				r1.BooleanNumber_value = Boolean.TRUE;
+				r1.ShortNumber_value = (short) 3;
+				r1.LongNumber_value = random.nextLong();
+				r1.FloatNumber_value = 3.3f;
+				r1.DoubleNumber_value = 3.3;
 				r1.BigInteger_value = new BigInteger("6");
 				r1.BigDecimal_value = new BigDecimal("1.10");
 				r1.DateValue = Calendar.getInstance().getTime();
@@ -4683,14 +4631,14 @@ public abstract class TestDatabase {
 				r3.float_value = 3.3f;
 				r3.double_value = 3.3;
 				r3.string_value = "test string";
-				r3.IntegerNumber_value = new Integer(3);
-				r3.ByteNumber_value = new Byte((byte) 3);
-				r3.CharacterNumber_value = new Character('x');
-				r3.BooleanNumber_value = new Boolean(true);
-				r3.ShortNumber_value = new Short((short) 3);
-				r3.LongNumber_value = new Long(random.nextLong());
-				r3.FloatNumber_value = new Float(3.3f);
-				r3.DoubleNumber_value = new Double(3.3);
+				r3.IntegerNumber_value = 3;
+				r3.ByteNumber_value = (byte) 3;
+				r3.CharacterNumber_value = 'x';
+				r3.BooleanNumber_value = Boolean.TRUE;
+				r3.ShortNumber_value = (short) 3;
+				r3.LongNumber_value = random.nextLong();
+				r3.FloatNumber_value = 3.3f;
+				r3.DoubleNumber_value = 3.3;
 				r3.BigInteger_value = new BigInteger("6");
 				r3.BigDecimal_value = new BigDecimal("1.10");
 				r3.DateValue = Calendar.getInstance().getTime();
@@ -4705,11 +4653,11 @@ public abstract class TestDatabase {
 					Table1.Record r1b = table1.addRecord(r1);
 					Table3.Record r3b = table3.addRecord(r3);
 					if (no_thread) {
-						Assert.assertTrue(table1.contains(r1));
-						Assert.assertTrue(table3.contains(r3));
+						assertTrue(table1.contains(r1));
+						assertTrue(table3.contains(r3));
 					}
-					Assert.assertTrue(r1 == r1b);
-					Assert.assertTrue(r3 == r3b);
+                    assertSame(r1, r1b);
+                    assertSame(r3, r3b);
 				} catch (ConstraintsNotRespectedDatabaseException e) {
 					if (no_thread) {
 						throw e;
@@ -4723,22 +4671,22 @@ public abstract class TestDatabase {
 					if (records1.size() > 0) {
 
 						Table1.Record r1 = records1.get(0);
-						r1.long_value = 123456789l;
+						r1.long_value = 123456789L;
 						table1.updateRecord(r1);
 						if (no_thread) {
 							Table1.Record r1b = table1.getRecords().get(0);
-							Assert.assertTrue(r1b.long_value == r1.long_value);
+                            Assert.assertEquals(r1b.long_value, r1.long_value);
 						}
 					}
 					ArrayList<Table3.Record> records3 = table3.getRecords();
 					if (records3.size() > 0) {
 
 						Table3.Record r3 = records3.get(0);
-						r3.long_value = 123456789l;
+						r3.long_value = 123456789L;
 						table3.updateRecord(r3);
 						if (no_thread) {
 							Table3.Record r3b = table3.getRecords().get(0);
-							Assert.assertTrue(r3b.long_value == r3.long_value);
+                            Assert.assertEquals(r3b.long_value, r3.long_value);
 						}
 					}
 				} catch (RecordNotFoundDatabaseException e) {
@@ -4781,17 +4729,17 @@ public abstract class TestDatabase {
 				subMultipleTests();
 		} catch (Exception e) {
 			e.printStackTrace();
-			Assert.fail("testThreadSafe", e);
+			fail("testThreadSafe", e);
 		}
 	}
 
-	@Test(threadPoolSize = 1, invocationCount = 1, dependsOnMethods = { "testThreadSafe" })
+	@Test(threadPoolSize = 1, dependsOnMethods = { "testThreadSafe" })
 	public void testCheckPoint() throws DatabaseException {
 		((EmbeddedHSQLDBWrapper) table1.getDatabaseWrapper()).checkPoint(false);
 		((EmbeddedHSQLDBWrapper) table1.getDatabaseWrapper()).checkPoint(true);
 	}
 
-	@Test(threadPoolSize = 1, invocationCount = 1, dependsOnMethods = { "testCheckPoint" })
+	@Test(threadPoolSize = 1, dependsOnMethods = { "testCheckPoint" })
 	public void testBackup() throws DatabaseException {
 		table1.getDatabaseWrapper().backup(getDatabaseBackupFileName());
 		table1.checkDataIntegrity();
@@ -4803,61 +4751,57 @@ public abstract class TestDatabase {
 		table7.checkDataIntegrity();
 	}
 
-	@Test(threadPoolSize = 1, invocationCount = 1, dependsOnMethods = { "testBackup" })
+	@Test(threadPoolSize = 1, dependsOnMethods = { "testBackup" })
 	public void testDatabaseRemove() throws DatabaseException {
 		sql_db.deleteDatabase(dbConfig1);
 		try {
 			sql_db.loadDatabase(dbConfig1, false);
-			Assert.fail();
+			fail();
 		} catch (Exception e) {
 
 		}
 	}
 
-	@Test(threadPoolSize = 0, invocationCount = 0, timeOut = 0)
+	@Test(invocationCount = 0, timeOut = 0)
 	private void testOrderedTable1(ArrayList<Table1.Record> res) {
 		if (res.size() > 1) {
 			for (int i = 1; i < res.size(); i++) {
-				Assert.assertTrue(res.get(i - 1).short_value <= res.get(i).short_value);
-				Assert.assertTrue(res.get(i - 1).short_value != res.get(i).short_value
-						|| (res.get(i - 1).short_value == res.get(i).short_value) && res.get(i - 1).LongNumber_value
-								.longValue() <= res.get(i).LongNumber_value.longValue());
+				assertTrue(res.get(i - 1).short_value <= res.get(i).short_value);
+				assertTrue(res.get(i - 1).short_value != res.get(i).short_value
+						|| (res.get(i - 1).short_value == res.get(i).short_value) && res.get(i - 1).LongNumber_value <= res.get(i).LongNumber_value);
 			}
 		}
 	}
 
-	@Test(threadPoolSize = 0, invocationCount = 0, timeOut = 0)
+	@Test(invocationCount = 0, timeOut = 0)
 	private void testInverseOrderedTable1(ArrayList<Table1.Record> res) {
 		if (res.size() > 1) {
 			for (int i = 1; i < res.size(); i++) {
-				Assert.assertTrue(res.get(i - 1).short_value >= res.get(i).short_value);
-				Assert.assertTrue(res.get(i - 1).short_value != res.get(i).short_value
-						|| (res.get(i - 1).short_value == res.get(i).short_value) && res.get(i - 1).LongNumber_value
-								.longValue() >= res.get(i).LongNumber_value.longValue());
+				assertTrue(res.get(i - 1).short_value >= res.get(i).short_value);
+				assertTrue(res.get(i - 1).short_value != res.get(i).short_value
+						|| (res.get(i - 1).short_value == res.get(i).short_value) && res.get(i - 1).LongNumber_value >= res.get(i).LongNumber_value);
 			}
 		}
 	}
 
-	@Test(threadPoolSize = 0, invocationCount = 0, timeOut = 0)
+	@Test(invocationCount = 0, timeOut = 0)
 	private void testOrderedTable3(ArrayList<Table3.Record> res) {
 		if (res.size() > 1) {
 			for (int i = 1; i < res.size(); i++) {
-				Assert.assertTrue(res.get(i - 1).short_value <= res.get(i).short_value);
-				Assert.assertTrue(res.get(i - 1).short_value != res.get(i).short_value
-						|| (res.get(i - 1).short_value == res.get(i).short_value) && res.get(i - 1).LongNumber_value
-								.longValue() <= res.get(i).LongNumber_value.longValue());
+				assertTrue(res.get(i - 1).short_value <= res.get(i).short_value);
+				assertTrue(res.get(i - 1).short_value != res.get(i).short_value
+						|| (res.get(i - 1).short_value == res.get(i).short_value) && res.get(i - 1).LongNumber_value <= res.get(i).LongNumber_value);
 			}
 		}
 	}
 
-	@Test(threadPoolSize = 0, invocationCount = 0, timeOut = 0)
+	@Test(invocationCount = 0, timeOut = 0)
 	private void testInverseOrderedTable3(ArrayList<Table3.Record> res) {
 		if (res.size() > 1) {
 			for (int i = 1; i < res.size(); i++) {
-				Assert.assertTrue(res.get(i - 1).short_value >= res.get(i).short_value);
-				Assert.assertTrue(res.get(i - 1).short_value != res.get(i).short_value
-						|| (res.get(i - 1).short_value == res.get(i).short_value) && res.get(i - 1).LongNumber_value
-								.longValue() >= res.get(i).LongNumber_value.longValue());
+				assertTrue(res.get(i - 1).short_value >= res.get(i).short_value);
+				assertTrue(res.get(i - 1).short_value != res.get(i).short_value
+						|| (res.get(i - 1).short_value == res.get(i).short_value) && res.get(i - 1).LongNumber_value >= res.get(i).LongNumber_value);
 			}
 		}
 	}

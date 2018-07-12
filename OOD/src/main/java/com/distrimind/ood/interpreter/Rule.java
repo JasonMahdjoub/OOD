@@ -38,36 +38,35 @@ package com.distrimind.ood.interpreter;
 import java.util.regex.Pattern;
 
 /**
- * 
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 2.0
  */
 public enum Rule {
 
-	TERME("^(<" + SymbolType.IDENTIFIER.name() + ">|<" + SymbolType.NUMBER.name() + ">|<" + SymbolType.STRING.name() + ">|<" + SymbolType.NULL.name() + ">|<" + SymbolType.PARAMETER.name() + ">|\\(<EXPRESSION>\\))$"), 
-	EXPRESSION(
-					"^<" + TERME.name() + ">$"), OPCOMP("^(<" + SymbolType.EQUALOPERATOR.name() + ">|<"
-							+ SymbolType.NOTEQUALOPERATOR.name() + ">|<" + SymbolType.LOWEROPERATOR.name() + ">|<"
-							+ SymbolType.LOWEROREQUALOPERATOR.name() + ">|<" + SymbolType.GREATEROPERATOR.name() + ">|<"
-							+ SymbolType.GREATEROREQUALOPERATOR.name() + ">|<" + SymbolType.LIKE.name() + ">|<"
-							+ SymbolType.NOTLIKE.name() + ">)$"), COMPARE(
-									"^(<" + EXPRESSION.name() + "><" + OPCOMP.name() + "><" + EXPRESSION.name()
-											+ ">|\\(<QUERY>\\))$"), OPCONDITION(
-													"^(<" + SymbolType.ANDCONDITION.name() + ">|<"
-															+ SymbolType.ORCONDITION.name() + ">)$"), QUERY(
-																	"^(<" + COMPARE.name() + ">|<QUERY><"
-																			+ OPCONDITION.name() + "><QUERY>)$");
+    TERME("^(<" + SymbolType.IDENTIFIER.name() + ">|<" + SymbolType.NUMBER.name() + ">|<" + SymbolType.STRING.name() + ">|<" + SymbolType.NULL.name() + ">|<" + SymbolType.PARAMETER.name() + ">|\\(<EXPRESSION>\\))$"),
+    EXPRESSION(
+            "^<" + TERME.name() + ">$"), OPCOMP("^(<" + SymbolType.EQUALOPERATOR.name() + ">|<"
+            + SymbolType.NOTEQUALOPERATOR.name() + ">|<" + SymbolType.LOWEROPERATOR.name() + ">|<"
+            + SymbolType.LOWEROREQUALOPERATOR.name() + ">|<" + SymbolType.GREATEROPERATOR.name() + ">|<"
+            + SymbolType.GREATEROREQUALOPERATOR.name() + ">|<" + SymbolType.LIKE.name() + ">|<"
+            + SymbolType.NOTLIKE.name() + ">)$"), COMPARE(
+            "^(<" + EXPRESSION.name() + "><" + OPCOMP.name() + "><" + EXPRESSION.name()
+                    + ">|\\(<QUERY>\\))$"), OPCONDITION(
+            "^(<" + SymbolType.ANDCONDITION.name() + ">|<"
+                    + SymbolType.ORCONDITION.name() + ">)$"), QUERY(
+            "^(<" + COMPARE.name() + ">|<QUERY><"
+                    + OPCONDITION.name() + "><QUERY>)$");
 
-	private final Pattern pattern;
+    private final Pattern pattern;
 
-	private Rule(String regex) {
-		if (regex == null)
-			throw new NullPointerException("regex");
-		this.pattern = Pattern.compile(regex);
-	}
+    Rule(String regex) {
+        if (regex == null)
+            throw new NullPointerException("regex");
+        this.pattern = Pattern.compile(regex);
+    }
 
-	public boolean match(String backusNaurRule) {
-		return pattern.matcher(backusNaurRule).matches();
-	}
+    public boolean match(String backusNaurRule) {
+        return pattern.matcher(backusNaurRule).matches();
+    }
 }

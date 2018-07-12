@@ -40,11 +40,11 @@ package com.distrimind.ood.database;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 
 public interface Transaction {
-	public Object run(DatabaseWrapper _sql_connection) throws DatabaseException;
+	Object run(DatabaseWrapper _sql_connection) throws DatabaseException;
 
-	public TransactionIsolation getTransactionIsolation();
+	TransactionIsolation getTransactionIsolation();
 
-	public boolean doesWriteData();
+	boolean doesWriteData();
 	
-	public void initOrReset() throws DatabaseException;
+	void initOrReset() throws DatabaseException;
 }

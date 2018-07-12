@@ -97,9 +97,7 @@ public class DateFieldAccessor extends FieldAccessor {
 					+ field.getType().getName() + " and not a " + _field_instance.getClass().getName());
 		try {
 			field.set(_class_instance, _field_instance);
-		} catch (IllegalArgumentException e) {
-			throw new DatabaseException("Unexpected exception.", e);
-		} catch (IllegalAccessException e) {
+		} catch (IllegalArgumentException | IllegalAccessException e) {
 			throw new DatabaseException("Unexpected exception.", e);
 		}
 	}

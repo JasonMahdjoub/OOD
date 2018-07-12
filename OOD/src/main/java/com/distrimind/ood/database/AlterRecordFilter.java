@@ -161,7 +161,7 @@ public abstract class AlterRecordFilter<T extends Object> {
 		isStoped = true;
 	}
 
-	boolean isTableParsingStoped() {
+	public boolean isTableParsingStoped() {
 		return isStoped;
 	}
 

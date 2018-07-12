@@ -46,6 +46,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
@@ -70,7 +71,7 @@ public class shortFieldAccessor extends FieldAccessor {
 		super(_sql_connection, _field, parentFieldName, compatible_classes, table_class);
 		sql_fields = new SqlField[1];
 		sql_fields[0] = new SqlField(table_name + "." + this.getFieldName(),
-				DatabaseWrapperAccessor.getShortType(sql_connection), null, null, isNotNull());
+				Objects.requireNonNull(DatabaseWrapperAccessor.getShortType(sql_connection)), null, null, isNotNull());
 
 	}
 
@@ -84,16 +85,14 @@ public class shortFieldAccessor extends FieldAccessor {
 		}
 		try {
 			if (_field_instance instanceof Short)
-				field.setShort(_class_instance, ((Short) _field_instance).shortValue());
+				field.setShort(_class_instance, (Short) _field_instance);
 			else if (_field_instance instanceof Long)
 				field.setShort(_class_instance, ((Long) _field_instance).shortValue());
 			else
 				throw new FieldDatabaseException("The given _field_instance parameter, destinated to the field "
 						+ field.getName() + " of the class " + field.getDeclaringClass().getName()
 						+ ", should be a Short and not a " + _field_instance.getClass().getName());
-		} catch (IllegalArgumentException e) {
-			throw new DatabaseException("Unexpected exception.", e);
-		} catch (IllegalAccessException e) {
+		} catch (IllegalArgumentException | IllegalAccessException e) {
 			throw new DatabaseException("Unexpected exception.", e);
 		}
 	}
@@ -104,7 +103,7 @@ public class shortFieldAccessor extends FieldAccessor {
 			return false;
 		try {
 			if (_field_instance instanceof Short)
-				return field.getShort(_class_instance) == ((Short) _field_instance).shortValue();
+				return field.getShort(_class_instance) == (Short) _field_instance;
 			else if (_field_instance instanceof Long)
 				return field.getShort(_class_instance) == ((Long) _field_instance).shortValue();
 			return false;
@@ -128,7 +127,7 @@ public class shortFieldAccessor extends FieldAccessor {
 
 			short val2 = _result_set.getShort(_sft.translateField(sql_fields[0]));
 
-			return val1.shortValue() == val2;
+			return val1 == val2;
 		} catch (SQLException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -139,7 +138,7 @@ public class shortFieldAccessor extends FieldAccessor {
 	@Override
 	public Object getValue(Object _class_instance) throws DatabaseException {
 		try {
-			return new Short(field.getShort(_class_instance));
+			return field.getShort(_class_instance);
 		} catch (Exception e) {
 			throw new DatabaseException("", e);
 		}
@@ -172,12 +171,7 @@ public class shortFieldAccessor extends FieldAccessor {
 		try {
 			short val1 = field.getShort(_r1);
 			short val2 = field.getShort(_r2);
-			if (val1 < val2)
-				return -1;
-			else if (val1 == val2)
-				return 0;
-			else
-				return 1;
+			return Short.compare(val1, val2);
 		} catch (Exception e) {
 			throw new DatabaseException("", e);
 		}
@@ -207,7 +201,7 @@ public class shortFieldAccessor extends FieldAccessor {
 	@Override
 	public void getValue(PreparedStatement _prepared_statement, int _field_start, Object o) throws DatabaseException {
 		try {
-			_prepared_statement.setShort(_field_start, ((Short) o).shortValue());
+			_prepared_statement.setShort(_field_start, (Short) o);
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -247,7 +241,7 @@ public class shortFieldAccessor extends FieldAccessor {
 
 	@Override
 	public Object autoGenerateValue(AbstractSecureRandom _random) {
-		return new Short(new BigInteger(getBitsNumber(), _random).shortValue());
+		return new BigInteger(getBitsNumber(), _random).shortValue();
 	}
 
 	@Override
@@ -278,7 +272,7 @@ public class shortFieldAccessor extends FieldAccessor {
 	@Override
 	public void unserialize(DataInputStream _ois, HashMap<String, Object> _map) throws DatabaseException {
 		try {
-			_map.put(getFieldName(), new Short(_ois.readShort()));
+			_map.put(getFieldName(), _ois.readShort());
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -289,7 +283,7 @@ public class shortFieldAccessor extends FieldAccessor {
 		try {
 			short v = _ois.readShort();
 			field.setShort(_classInstance, v);
-			return new Short(v);
+			return v;
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}

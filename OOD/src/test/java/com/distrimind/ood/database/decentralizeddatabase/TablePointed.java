@@ -66,6 +66,7 @@ public final class TablePointed extends Table<TablePointed.Record> {
 			return "TablePointed[" + id + ", " + value + "]";
 		}
 
+		@SuppressWarnings("MethodDoesntCallSuperMethod")
 		@Override
 		public Record clone() {
 			Record r = new Record();

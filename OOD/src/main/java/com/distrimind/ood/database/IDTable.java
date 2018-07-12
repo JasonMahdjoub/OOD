@@ -47,12 +47,14 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  * @version 1.0
  * @since OOD 2.0
  */
+@SuppressWarnings("UnusedReturnValue")
 @LoadToMemory
 final class IDTable extends Table<IDTable.Record> {
 
 	static class Record extends DatabaseRecord {
+		@SuppressWarnings("unused")
 		@PrimaryKey
-		private int id;
+		private int id=-1;
 
 		@Field
 		protected long transactionID;
@@ -66,15 +68,15 @@ final class IDTable extends Table<IDTable.Record> {
 		return getAndIncrementID(TRANSACTIONID);
 	}
 
-	void decrementTransactionID() throws DatabaseException {
+	/*void decrementTransactionID() throws DatabaseException {
 		decrementID(TRANSACTIONID);
-	}
+	}*/
 
+	@SuppressWarnings("SameParameterValue")
 	private long getAndIncrementID(int id) throws DatabaseException {
-		int hashCode = id;
-		Record r = getRecord(new Object[] { "id", new Integer(hashCode) });
+		Record r = getRecord("id", id);
 		if (r == null) {
-			addRecord(new Object[] { "id", new Integer(hashCode), "transactionID", new Long(1) });
+			addRecord("id", id, "transactionID", 1L);
 			return 0;
 		} else {
 			long res = r.transactionID++;
@@ -83,23 +85,23 @@ final class IDTable extends Table<IDTable.Record> {
 		}
 	}
 
-	private void decrementID(int id) throws DatabaseException {
-		Record r = getRecord(new Object[] { "id", new Integer(id) });
+	/*private void decrementID(int id) throws DatabaseException {
+		Record r = getRecord("id", id);
 		if (r != null) {
 			--r.transactionID;
 			this.updateRecord(r);
 		}
-	}
+	}*/
 
 	long setLastValidatedTransactionIDI(long transactionID) throws DatabaseException {
 		return setID(GLOBAL_VALIDATED_TRANSACTIONID, transactionID);
 	}
 
+	@SuppressWarnings("SameParameterValue")
 	private long setID(int id, long transactionID) throws DatabaseException {
-		int hashCode = id;
-		Record r = getRecord(new Object[] { "id", new Integer(hashCode) });
+		Record r = getRecord("id", id);
 		if (r == null) {
-			addRecord(new Object[] { "id", new Integer(hashCode), "transactionID", new Long(transactionID) });
+			addRecord("id", id, "transactionID", transactionID);
 			return -1;
 		} else {
 			long prev = r.transactionID;
@@ -122,8 +124,7 @@ final class IDTable extends Table<IDTable.Record> {
 	}
 
 	private long getLastID(int id) throws DatabaseException {
-		int hashCode = id;
-		Record r = getRecord(new Object[] { "id", new Integer(hashCode) });
+		Record r = getRecord("id", id);
 
 		if (r == null) {
 			return -1;

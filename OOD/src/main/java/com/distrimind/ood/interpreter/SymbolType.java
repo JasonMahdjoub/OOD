@@ -72,7 +72,7 @@ public enum SymbolType {
 	private final boolean isCondition;
 	private final boolean mustHaveSpaces;
 
-	private SymbolType(boolean isOperator, boolean isCondition, boolean mustHaveSpaces, String regex, String matches[],
+	SymbolType(boolean isOperator, boolean isCondition, boolean mustHaveSpaces, String regex, String matches[],
 			String content) {
 		this.isOperator = isOperator;
 		this.isCondition = isCondition;
@@ -134,7 +134,7 @@ public enum SymbolType {
 	public static String convertLikeStringToRegex(String likeContent) {
 		if (likeContent == null)
 			throw new NullPointerException("likeContent");
-		String regex = null;
+		String regex;
 		if (likeContent.startsWith("\"") && likeContent.endsWith("\""))
 			regex = likeContent.substring(1, likeContent.length() - 1);
 		else

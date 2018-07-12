@@ -48,18 +48,18 @@ import com.distrimind.ood.database.exceptions.DatabaseSyntaxException;
  * @since OOD 2.0
  */
 public interface QueryPart {
-	public Object getContent();
+	Object getContent();
 
-	public String getBackusNaurNotation();
+	String getBackusNaurNotation();
 
-	public <T extends DatabaseRecord> boolean isEqualable(Table<T> table, Map<String, Object> parameters,
+	<T extends DatabaseRecord> boolean isEqualable(Table<T> table, Map<String, Object> parameters,
 			QueryPart otherPart) throws DatabaseSyntaxException;
 
-	public <T extends DatabaseRecord> String getValueType(Table<T> table, Map<String, Object> parameters)
+	<T extends DatabaseRecord> String getValueType(Table<T> table, Map<String, Object> parameters)
 			throws DatabaseSyntaxException;
 
-	public <T extends DatabaseRecord> boolean isMultiType(Table<T> table, Map<String, Object> parameters)
+	<T extends DatabaseRecord> boolean isMultiType(Table<T> table, Map<String, Object> parameters)
 			throws DatabaseSyntaxException;
 
-	public boolean needParenthesis();
+	boolean needParenthesis();
 }

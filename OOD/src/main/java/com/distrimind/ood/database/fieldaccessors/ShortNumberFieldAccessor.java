@@ -47,6 +47,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
@@ -72,7 +73,7 @@ public class ShortNumberFieldAccessor extends FieldAccessor {
 		super(_sql_connection, _field, parentFieldName, compatible_classes, table_class);
 		sql_fields = new SqlField[1];
 		sql_fields[0] = new SqlField(table_name + "." + this.getFieldName(),
-				DatabaseWrapperAccessor.getShortType(sql_connection), null, null, isNotNull());
+				Objects.requireNonNull(DatabaseWrapperAccessor.getShortType(sql_connection)), null, null, isNotNull());
 
 	}
 
@@ -90,14 +91,14 @@ public class ShortNumberFieldAccessor extends FieldAccessor {
 			if (_field_instance instanceof Short)
 				field.set(_class_instance, _field_instance);
 			else if (_field_instance instanceof Long)
-				field.set(_class_instance, new Short(((Long) _field_instance).shortValue()));
-			else
+				field.set(_class_instance, ((Long) _field_instance).shortValue());
+			else {
+				assert _field_instance != null;
 				throw new FieldDatabaseException("The given _field_instance parameter, destinated to the field "
 						+ field.getName() + " of the class " + field.getDeclaringClass().getName()
 						+ ", should be a Short and not a " + _field_instance.getClass().getName());
-		} catch (IllegalArgumentException e) {
-			throw new DatabaseException("Unexpected exception.", e);
-		} catch (IllegalAccessException e) {
+			}
+		} catch (IllegalArgumentException | IllegalAccessException e) {
 			throw new DatabaseException("Unexpected exception.", e);
 		}
 	}
@@ -114,7 +115,7 @@ public class ShortNumberFieldAccessor extends FieldAccessor {
 			if (_field_instance instanceof Short)
 				return _field_instance.equals(field.get(_class_instance));
 			else if (_field_instance instanceof Long)
-				return new Short(((Long) _field_instance).shortValue()).equals(field.get(_class_instance));
+				return Short.valueOf(((Long) _field_instance).shortValue()).equals(field.get(_class_instance));
 			return false;
 		} catch (Exception e) {
 			throw new DatabaseException("", e);
@@ -130,6 +131,7 @@ public class ShortNumberFieldAccessor extends FieldAccessor {
 				val1 = (Short) _field_instance;
 			Short val2 = (Short) _result_set.getObject(_sft.translateField(sql_fields[0]));
 
+			//noinspection NumberEquality
 			return (val1 == null || val2 == null) ? val1 == val2 : val1.equals(val2);
 		} catch (SQLException e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -181,14 +183,9 @@ public class ShortNumberFieldAccessor extends FieldAccessor {
 			else if (obj1 == obj2)
 				return 0;
 
-			short val1 = ((Short) obj1).shortValue();
-			short val2 = ((Short) obj2).shortValue();
-			if (val1 < val2)
-				return -1;
-			else if (val1 == val2)
-				return 0;
-			else
-				return 1;
+			short val1 = (Short) obj1;
+			short val2 = (Short) obj2;
+			return Short.compare(val1, val2);
 		} catch (Exception e) {
 			throw new DatabaseException("", e);
 		}
@@ -201,7 +198,7 @@ public class ShortNumberFieldAccessor extends FieldAccessor {
 			Integer val = ((Integer) _result_set.getObject(getColmunIndex(_result_set, sql_fields[0].field)));
 			if (val == null && isNotNull())
 				throw new DatabaseIntegrityException("Unexpected exception");
-			field.set(_class_instance, val == null ? null : new Short(val.shortValue()));
+			field.set(_class_instance, val == null ? null : val.shortValue());
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -262,7 +259,7 @@ public class ShortNumberFieldAccessor extends FieldAccessor {
 
 	@Override
 	public Object autoGenerateValue(AbstractSecureRandom _random) {
-		return new Short(new BigInteger(getBitsNumber(), _random).shortValue());
+		return new BigInteger(getBitsNumber(), _random).shortValue();
 	}
 
 	@Override
@@ -288,7 +285,7 @@ public class ShortNumberFieldAccessor extends FieldAccessor {
 				_oos.writeBoolean(false);
 			} else {
 				_oos.writeBoolean(true);
-				_oos.writeShort(v.shortValue());
+				_oos.writeShort(v);
 			}
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -300,7 +297,7 @@ public class ShortNumberFieldAccessor extends FieldAccessor {
 		try {
 			boolean isNotNull = _ois.readBoolean();
 			if (isNotNull) {
-				_map.put(getFieldName(), new Short(_ois.readShort()));
+				_map.put(getFieldName(), _ois.readShort());
 			} else if (isNotNull())
 				throw new DatabaseException("field should not be null");
 			else {
@@ -316,7 +313,7 @@ public class ShortNumberFieldAccessor extends FieldAccessor {
 		try {
 			boolean isNotNull = _ois.readBoolean();
 			if (isNotNull) {
-				Short s = new Short(_ois.readShort());
+				Short s = _ois.readShort();
 				setValue(_classInstance, s);
 				return s;
 			} else if (isNotNull())

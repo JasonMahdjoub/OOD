@@ -54,7 +54,7 @@ public class DatabaseTransactionEvent extends DatabaseEvent {
 		events = new ArrayList<>();
 	}
 
-	DatabaseTransactionEvent(long id, ArrayList<TableEvent<?>> events) {
+	/*DatabaseTransactionEvent(long id, ArrayList<TableEvent<?>> events) {
 		this.id = id;
 		if (events == null)
 			throw new NullPointerException("events");
@@ -79,7 +79,7 @@ public class DatabaseTransactionEvent extends DatabaseEvent {
 		for (TableEvent<?> te : events)
 			this.events.add(te);
 
-	}
+	}*/
 
 	public ArrayList<TableEvent<?>> getEvents() {
 		return events;
@@ -89,16 +89,16 @@ public class DatabaseTransactionEvent extends DatabaseEvent {
 		return id;
 	}
 
-	void setID(long id) {
+	/*void setID(long id) {
 		this.id = id;
-	}
+	}*/
 
 	boolean addEvent(TableEvent<?> event) {
 		force |= event.isForce();
 		return this.events.add(event);
 	}
 
-	boolean isForce() {
+	/*boolean isForce() {
 		return force;
 	}
 
@@ -107,6 +107,6 @@ public class DatabaseTransactionEvent extends DatabaseEvent {
 		for (TableEvent<?> de : events)
 			b |= de.getType().getByte();
 		return b;
-	}
+	}*/
 	
 }

@@ -44,6 +44,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
@@ -78,8 +79,8 @@ public class AbstractDencetralizedIDFieldAccessor extends FieldAccessor {
 		super(_sql_connection, _field, parentFieldName, compatibleClasses, table_class);
 		sql_fields = new SqlField[1];
 		sql_fields[0] = new SqlField(table_name + "." + this.getFieldName(),
-				DatabaseWrapperAccessor.isVarBinarySupported(sql_connection) ? "VARBINARY(65)"
-						: DatabaseWrapperAccessor.getBigIntegerType(sql_connection),
+				Objects.requireNonNull(DatabaseWrapperAccessor.isVarBinarySupported(sql_connection) ? "VARBINARY(65)"
+						: DatabaseWrapperAccessor.getBigIntegerType(sql_connection)),
 				null, null, isNotNull());
 		isVarBinary = DatabaseWrapperAccessor.isVarBinarySupported(sql_connection);
 	}
@@ -118,9 +119,7 @@ public class AbstractDencetralizedIDFieldAccessor extends FieldAccessor {
 					+ field.getType().getName() + " and not a " + _field_instance.getClass().getName());
 		try {
 			field.set(_class_instance, _field_instance);
-		} catch (IllegalArgumentException e) {
-			throw new DatabaseException("Unexpected exception.", e);
-		} catch (IllegalAccessException e) {
+		} catch (IllegalArgumentException | IllegalAccessException e) {
 			throw new DatabaseException("Unexpected exception.", e);
 		}
 	}
@@ -149,7 +148,7 @@ public class AbstractDencetralizedIDFieldAccessor extends FieldAccessor {
 			else if (_field_instance instanceof AbstractDecentralizedID)
 				val1 = ((AbstractDecentralizedID) _field_instance).getBytes();
 
-			byte[] val2 = null;
+			byte[] val2;
 
 			if (isVarBinary) {
 				val2 = _result_set.getBytes(_sft.translateField(sql_fields[0]));
@@ -217,7 +216,7 @@ public class AbstractDencetralizedIDFieldAccessor extends FieldAccessor {
 	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
-			byte[] res = null;
+			byte[] res;
 			if (isVarBinary) {
 				res = _result_set.getBytes(getColmunIndex(_result_set, sql_fields[0].field));
 			} else {

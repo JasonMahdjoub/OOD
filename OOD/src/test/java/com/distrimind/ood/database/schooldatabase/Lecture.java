@@ -14,6 +14,7 @@ public final class Lecture extends Table<Lecture.Record> {
 		super();
 	}
 
+	@SuppressWarnings("unused")
 	public static class Record extends DatabaseRecord {
 		protected Record() {
 			super();

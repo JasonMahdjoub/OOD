@@ -45,6 +45,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
@@ -69,7 +70,7 @@ public class doubleFieldAccessor extends FieldAccessor {
 		super(_sql_connection, _field, parentFieldName, compatible_classes, table_class);
 		sql_fields = new SqlField[1];
 		sql_fields[0] = new SqlField(table_name + "." + this.getFieldName(),
-				DatabaseWrapperAccessor.getDoubleType(sql_connection), null, null, isNotNull());
+				Objects.requireNonNull(DatabaseWrapperAccessor.getDoubleType(sql_connection)), null, null, isNotNull());
 
 	}
 
@@ -83,14 +84,12 @@ public class doubleFieldAccessor extends FieldAccessor {
 		}
 		try {
 			if (_field_instance instanceof Double)
-				field.setDouble(_class_instance, ((Double) _field_instance).doubleValue());
+				field.setDouble(_class_instance, (Double) _field_instance);
 			else
 				throw new FieldDatabaseException("The given _field_instance parameter, destinated to the field "
 						+ field.getName() + " of the class " + field.getDeclaringClass().getName()
 						+ ", should be a Double and not a " + _field_instance.getClass().getName());
-		} catch (IllegalArgumentException e) {
-			throw DatabaseException.getDatabaseException(e);
-		} catch (IllegalAccessException e) {
+		} catch (IllegalArgumentException | IllegalAccessException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
 
@@ -98,10 +97,10 @@ public class doubleFieldAccessor extends FieldAccessor {
 
 	@Override
 	public boolean equals(Object _class_instance, Object _field_instance) throws DatabaseException {
-		if (_field_instance == null || !(_field_instance instanceof Double))
+		if (!(_field_instance instanceof Double))
 			return false;
 		try {
-			return field.getDouble(_class_instance) == ((Double) _field_instance).doubleValue();
+			return field.getDouble(_class_instance) == (Double) _field_instance;
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -120,7 +119,7 @@ public class doubleFieldAccessor extends FieldAccessor {
 				return false;
 			double val2 = _result_set.getDouble(_sft.translateField(sql_fields[0]));
 
-			return val1.doubleValue() == val2;
+			return val1 == val2;
 		} catch (SQLException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -131,7 +130,7 @@ public class doubleFieldAccessor extends FieldAccessor {
 	@Override
 	public Object getValue(Object _class_instance) throws DatabaseException {
 		try {
-			return new Double(field.getDouble(_class_instance));
+			return field.getDouble(_class_instance);
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -164,12 +163,7 @@ public class doubleFieldAccessor extends FieldAccessor {
 		try {
 			double val1 = field.getDouble(_r1);
 			double val2 = field.getDouble(_r2);
-			if (val1 < val2)
-				return -1;
-			else if (val1 == val2)
-				return 0;
-			else
-				return 1;
+			return Double.compare(val1, val2);
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -199,7 +193,7 @@ public class doubleFieldAccessor extends FieldAccessor {
 	@Override
 	public void getValue(PreparedStatement _prepared_statement, int _field_start, Object o) throws DatabaseException {
 		try {
-			_prepared_statement.setDouble(_field_start, ((Double) o).doubleValue());
+			_prepared_statement.setDouble(_field_start, (Double) o);
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -245,7 +239,7 @@ public class doubleFieldAccessor extends FieldAccessor {
 	@Override
 	public void unserialize(DataInputStream _ois, HashMap<String, Object> _map) throws DatabaseException {
 		try {
-			_map.put(getFieldName(), new Double(_ois.readDouble()));
+			_map.put(getFieldName(), _ois.readDouble());
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -257,7 +251,7 @@ public class doubleFieldAccessor extends FieldAccessor {
 		try {
 			double v = _ois.readDouble();
 			field.setDouble(_classInstance, v);
-			return new Double(v);
+			return v;
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}

@@ -70,10 +70,9 @@ public final class GroupedResults<T extends DatabaseRecord> {
 			ArrayList<String> strings = splitPoint(field_name);
 			Table<?> current_table = GroupedResults.this.table;
 
-			for (int i = 0; i < strings.size(); i++) {
+			for (String f : strings) {
 				if (current_table == null)
 					throw new ConstraintsNotRespectedDatabaseException("The field " + field_name + " does not exists.");
-				String f = strings.get(i);
 				FieldAccessor founded_field = null;
 				for (FieldAccessor fa : current_table.getFieldAccessors()) {
 					if (fa.getFieldName().equals(f)) {
@@ -99,7 +98,7 @@ public final class GroupedResults<T extends DatabaseRecord> {
 		}
 
 		private ArrayList<String> splitPoint(String s) {
-			ArrayList<String> res = new ArrayList<String>(10);
+			ArrayList<String> res = new ArrayList<>(10);
 			int last_index = 0;
 			for (int i = 0; i < s.length(); i++) {
 				if (s.charAt(i) == '.') {
@@ -120,12 +119,12 @@ public final class GroupedResults<T extends DatabaseRecord> {
 			Object r1 = o1;
 			for (int i = 0; i < fields.size() - 1; i++) {
 				if (r1 == null)
-					return r1 == o2;
+					return null == o2;
 				ForeignKeyFieldAccessor f = (ForeignKeyFieldAccessor) fields.get(i);
-				r1 = (Object) f.getValue(r1);
+				r1 = f.getValue(r1);
 			}
 			if (r1 == null)
-				return r1 == o2;
+				return null == o2;
 			FieldAccessor fa = fields.get(fields.size() - 1);
 			return fa.equals(r1, o2);
 		}
@@ -136,7 +135,7 @@ public final class GroupedResults<T extends DatabaseRecord> {
 				if (r == null)
 					return null;
 				ForeignKeyFieldAccessor f = (ForeignKeyFieldAccessor) fields.get(i);
-				r = (Object) f.getValue(r);
+				r = f.getValue(r);
 			}
 			if (r == null)
 				return null;
@@ -146,15 +145,14 @@ public final class GroupedResults<T extends DatabaseRecord> {
 
 	}
 
-	private Class<T> class_record;
 	protected final Table<T> table;
-	protected final ArrayList<Field> group_definition = new ArrayList<Field>();
-	private final ArrayList<Group> groups = new ArrayList<Group>();
+	protected final ArrayList<Field> group_definition = new ArrayList<>();
+	private final ArrayList<Group> groups = new ArrayList<>();
 
 	@SuppressWarnings("unchecked")
 	private GroupedResults(DatabaseWrapper _sql_conncection, Collection<T> _records, Class<T> _class_record,
 			String... _fields) throws DatabaseException {
-		class_record = null;
+		Class<T> class_record;
 
 		class_record = _class_record;
 
@@ -163,8 +161,8 @@ public final class GroupedResults<T extends DatabaseRecord> {
 		if (_fields.length == 0)
 			throw new ConstraintsNotRespectedDatabaseException("It must have at mean one field to use.");
 
-		for (int i = 0; i < _fields.length; i++) {
-			group_definition.add(new Field(_fields[i]));
+		for (String _field : _fields) {
+			group_definition.add(new Field(_field));
 		}
 
 		if (_records != null)
@@ -228,7 +226,7 @@ public final class GroupedResults<T extends DatabaseRecord> {
 		protected Group(HashMap<String, Object> _group) {
 			group = _group;
 			hash_code = group.hashCode();
-			results = new ArrayList<T>();
+			results = new ArrayList<>();
 		}
 
 		protected Group(T _record) throws DatabaseException {
@@ -238,7 +236,7 @@ public final class GroupedResults<T extends DatabaseRecord> {
 			}
 
 			hash_code = group.hashCode();
-			results = new ArrayList<T>();
+			results = new ArrayList<>();
 			results.add(_record);
 		}
 

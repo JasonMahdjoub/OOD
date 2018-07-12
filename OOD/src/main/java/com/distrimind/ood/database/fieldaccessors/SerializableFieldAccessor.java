@@ -52,6 +52,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
@@ -81,7 +82,7 @@ public class SerializableFieldAccessor extends FieldAccessor {
 		sql_fields = new SqlField[1];
 
 		sql_fields[0] = new SqlField(table_name + "." + this.getFieldName(),
-				DatabaseWrapperAccessor.getSerializableType(sql_connection), null, null, isNotNull());
+				Objects.requireNonNull(DatabaseWrapperAccessor.getSerializableType(sql_connection)), null, null, isNotNull());
 
 		if (Comparable.class.isAssignableFrom(field.getType())) {
 			try {
@@ -119,9 +120,7 @@ public class SerializableFieldAccessor extends FieldAccessor {
 					+ field.getType().getName() + " and not a " + _field_instance.getClass().getName());
 		try {
 			field.set(_class_instance, _field_instance);
-		} catch (IllegalArgumentException e) {
-			throw new DatabaseException("Unexpected exception.", e);
-		} catch (IllegalAccessException e) {
+		} catch (IllegalArgumentException | IllegalAccessException e) {
 			throw new DatabaseException("Unexpected exception.", e);
 		}
 	}
@@ -156,7 +155,7 @@ public class SerializableFieldAccessor extends FieldAccessor {
 			throws DatabaseException {
 		setValue(_class_instance, _field_instance);
 		try {
-			if (DatabaseWrapperAccessor.getSerializableType(sql_connection).equals("BLOB")) {
+			if (Objects.equals(DatabaseWrapperAccessor.getSerializableType(sql_connection), "BLOB")) {
 				try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 					try (DataOutputStream os = new DataOutputStream(baos)) {
 						serialize(os, _class_instance);
@@ -179,7 +178,7 @@ public class SerializableFieldAccessor extends FieldAccessor {
 	protected void updateResultSetValue(Object _class_instance, ResultSet _result_set, SqlFieldTranslation _sft)
 			throws DatabaseException {
 		try {
-			if (DatabaseWrapperAccessor.getSerializableType(sql_connection).equals("BLOB")) {
+			if (Objects.equals(DatabaseWrapperAccessor.getSerializableType(sql_connection), "BLOB")) {
 				try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 					try (DataOutputStream os = new DataOutputStream(baos)) {
 						serialize(os, _class_instance);
@@ -254,7 +253,7 @@ public class SerializableFieldAccessor extends FieldAccessor {
 	@Override
 	public void getValue(PreparedStatement _prepared_statement, int _field_start, Object o) throws DatabaseException {
 		try {
-			if (DatabaseWrapperAccessor.getSerializableType(sql_connection).equals("BLOB")) {
+			if (Objects.equals(DatabaseWrapperAccessor.getSerializableType(sql_connection), "BLOB")) {
 				try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 					try (DataOutputStream os = new DataOutputStream(baos)) {
 						serializeObject(os, o);
@@ -280,7 +279,7 @@ public class SerializableFieldAccessor extends FieldAccessor {
 	@Override
 	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
 		SqlFieldInstance res[] = new SqlFieldInstance[1];
-		if (DatabaseWrapperAccessor.getSerializableType(sql_connection).equals("BLOB")) {
+		if (Objects.equals(DatabaseWrapperAccessor.getSerializableType(sql_connection), "BLOB")) {
 			try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 				try (DataOutputStream os = new DataOutputStream(baos)) {
 					this.serialize(os, _instance);
@@ -324,7 +323,7 @@ public class SerializableFieldAccessor extends FieldAccessor {
 				else if (obj1 == obj2)
 					return 0;
 
-				return ((Integer) compareTo_method.invoke(obj1, obj2)).intValue();
+				return (Integer) compareTo_method.invoke(obj1, obj2);
 			} catch (Exception e) {
 				throw new DatabaseException("", e);
 			}

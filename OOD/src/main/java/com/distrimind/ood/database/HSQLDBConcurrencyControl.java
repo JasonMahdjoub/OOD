@@ -92,7 +92,7 @@ public enum HSQLDBConcurrencyControl {
 
 	private final String code;
 
-	private HSQLDBConcurrencyControl(String code) {
+	HSQLDBConcurrencyControl(String code) {
 		this.code = code;
 	}
 

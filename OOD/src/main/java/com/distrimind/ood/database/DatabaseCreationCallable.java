@@ -55,7 +55,7 @@ public interface DatabaseCreationCallable {
 	 * @throws Exception
 	 *             if a problem occurs
 	 */
-	public abstract void transfertDatabaseFromOldVersion(DatabaseConfiguration newDatabaseTables) throws Exception;
+	void transfertDatabaseFromOldVersion(DatabaseConfiguration newDatabaseTables) throws Exception;
 
 	/**
 	 * This function is called after the database was created and after the eventual
@@ -67,7 +67,7 @@ public interface DatabaseCreationCallable {
 	 * @throws Exception
 	 *             if a problem occurs
 	 */
-	public abstract void afterDatabaseCreation(DatabaseConfiguration newDatabaseTables) throws Exception;
+	void afterDatabaseCreation(DatabaseConfiguration newDatabaseTables) throws Exception;
 
 	/**
 	 * Tels if the old database must be removed after having created the new
@@ -78,6 +78,6 @@ public interface DatabaseCreationCallable {
 	 * @throws Exception
 	 *             if a problem occurs
 	 */
-	public abstract boolean hasToRemoveOldDatabase() throws Exception;
+	boolean hasToRemoveOldDatabase() throws Exception;
 
 }

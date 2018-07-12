@@ -43,6 +43,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.UUID;
 
 import com.distrimind.ood.database.DatabaseRecord;
@@ -69,9 +70,9 @@ public class UUIDFieldAccessor extends FieldAccessor {
 		super(_sql_connection, _field, parentFieldName, compatibleClasses, table_class);
 		sql_fields = new SqlField[2];
 		sql_fields[0] = new SqlField(table_name + "." + this.getFieldName() + "_ts",
-				DatabaseWrapperAccessor.getLongType(sql_connection), null, null, isNotNull());
+				Objects.requireNonNull(DatabaseWrapperAccessor.getLongType(sql_connection)), null, null, isNotNull());
 		sql_fields[1] = new SqlField(table_name + "." + this.getFieldName() + "_widseq",
-				DatabaseWrapperAccessor.getLongType(sql_connection), null, null, isNotNull());
+				Objects.requireNonNull(DatabaseWrapperAccessor.getLongType(sql_connection)), null, null, isNotNull());
 	}
 
 	private static final Class<?> compatibleClasses[];
@@ -95,9 +96,7 @@ public class UUIDFieldAccessor extends FieldAccessor {
 					+ ", should be an Long and not a " + _field_instance.getClass().getName());
 		try {
 			field.set(_class_instance, _field_instance);
-		} catch (IllegalArgumentException e) {
-			throw new DatabaseException("Unexpected exception.", e);
-		} catch (IllegalAccessException e) {
+		} catch (IllegalArgumentException | IllegalAccessException e) {
 			throw new DatabaseException("Unexpected exception.", e);
 		}
 	}
@@ -158,8 +157,8 @@ public class UUIDFieldAccessor extends FieldAccessor {
 		}
 		else
 		{
-			res[0] = new SqlFieldInstance(sql_fields[0], new Long(did.getLeastSignificantBits()));
-			res[1] = new SqlFieldInstance(sql_fields[1], new Long(did.getMostSignificantBits()));
+			res[0] = new SqlFieldInstance(sql_fields[0], did.getLeastSignificantBits());
+			res[1] = new SqlFieldInstance(sql_fields[1], did.getMostSignificantBits());
 		}
 		return res;
 	}
@@ -217,8 +216,8 @@ public class UUIDFieldAccessor extends FieldAccessor {
 			}
 			else
 			{
-				_prepared_statement.setObject(_field_start, new Long(did.getLeastSignificantBits()));
-				_prepared_statement.setObject(++_field_start, new Long(did.getMostSignificantBits()));
+				_prepared_statement.setObject(_field_start, did.getLeastSignificantBits());
+				_prepared_statement.setObject(++_field_start, did.getMostSignificantBits());
 			}
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -239,8 +238,8 @@ public class UUIDFieldAccessor extends FieldAccessor {
 			}
 			else
 			{
-				_result_set.updateObject(sql_fields[0].short_field, new Long(did.getLeastSignificantBits()));
-				_result_set.updateObject(sql_fields[1].short_field, new Long(did.getMostSignificantBits()));
+				_result_set.updateObject(sql_fields[0].short_field, did.getLeastSignificantBits());
+				_result_set.updateObject(sql_fields[1].short_field, did.getMostSignificantBits());
 			}
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -259,8 +258,8 @@ public class UUIDFieldAccessor extends FieldAccessor {
 			}
 			else
 			{
-				_result_set.updateObject(_sft.translateField(sql_fields[0]), new Long(did.getLeastSignificantBits()));
-				_result_set.updateObject(_sft.translateField(sql_fields[1]), new Long(did.getMostSignificantBits()));
+				_result_set.updateObject(_sft.translateField(sql_fields[0]), did.getLeastSignificantBits());
+				_result_set.updateObject(_sft.translateField(sql_fields[1]), did.getMostSignificantBits());
 			}
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);

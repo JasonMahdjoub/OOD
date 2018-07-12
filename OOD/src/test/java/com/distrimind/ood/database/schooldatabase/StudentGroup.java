@@ -11,7 +11,7 @@ public final class StudentGroup extends Table<StudentGroup.Record> {
 	protected StudentGroup() throws DatabaseException {
 		super();
 	}
-
+	@SuppressWarnings("unused")
 	public static class Record extends DatabaseRecord {
 		protected Record() {
 			super();

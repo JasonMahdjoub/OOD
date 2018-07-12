@@ -45,6 +45,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
@@ -68,7 +69,7 @@ public class byteFieldAccessor extends FieldAccessor {
 		super(_sql_connection, _field, parentFieldName, compatible_classes, table_class);
 		sql_fields = new SqlField[1];
 		sql_fields[0] = new SqlField(table_name + "." + this.getFieldName(),
-				DatabaseWrapperAccessor.getByteType(sql_connection), null, null, isNotNull());
+				Objects.requireNonNull(DatabaseWrapperAccessor.getByteType(sql_connection)), null, null, isNotNull());
 	}
 
 	@Override
@@ -87,9 +88,7 @@ public class byteFieldAccessor extends FieldAccessor {
 							+ field.getName() + " of the class " + field.getDeclaringClass().getName()
 							+ ", should be a Byte and not a " + _field_instance.getClass().getName());
 			}
-		} catch (IllegalArgumentException e) {
-			throw DatabaseException.getDatabaseException(e);
-		} catch (IllegalAccessException e) {
+		} catch (IllegalArgumentException | IllegalAccessException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
@@ -121,7 +120,7 @@ public class byteFieldAccessor extends FieldAccessor {
 				return false;
 			byte val2 = _result_set.getByte(_sft.translateField(sql_fields[0]));
 
-			return val1.byteValue() == val2;
+			return val1 == val2;
 		} catch (SQLException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -132,7 +131,7 @@ public class byteFieldAccessor extends FieldAccessor {
 	@Override
 	public Object getValue(Object _class_instance) throws DatabaseException {
 		try {
-			return new Byte(field.getByte(_class_instance));
+			return field.getByte(_class_instance);
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -201,7 +200,7 @@ public class byteFieldAccessor extends FieldAccessor {
 	public void getValue(PreparedStatement _prepared_statement, int _field_start, Object _field_content)
 			throws DatabaseException {
 		try {
-			_prepared_statement.setByte(_field_start, ((Byte) _field_content).byteValue());
+			_prepared_statement.setByte(_field_start, (Byte) _field_content);
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -246,7 +245,7 @@ public class byteFieldAccessor extends FieldAccessor {
 	@Override
 	public void unserialize(DataInputStream _ois, HashMap<String, Object> _map) throws DatabaseException {
 		try {
-			_map.put(getFieldName(), new Byte(_ois.readByte()));
+			_map.put(getFieldName(), _ois.readByte());
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -258,7 +257,7 @@ public class byteFieldAccessor extends FieldAccessor {
 		try {
 			byte v = _ois.readByte();
 			field.setByte(_classInstance, v);
-			return new Byte(v);
+			return v;
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}

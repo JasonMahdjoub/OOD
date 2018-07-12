@@ -36,14 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -141,13 +134,13 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 
 		Record(long id, String concernedDatabasePackage, Set<AbstractDecentralizedID> concernedHosts) {
 			this(id, concernedDatabasePackage);
-			concernedHosts = null;
+
 			setConcernedHosts(concernedHosts);
 		}
 
-		boolean isTemporaryTransaction() {
+		/*boolean isTemporaryTransaction() {
 			return id < -1;
-		}
+		}*/
 
 		@Override
 		public boolean equals(Object o) {
@@ -250,7 +243,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 							public boolean nextRecord(
 									com.distrimind.ood.database.DatabaseTransactionEventsTable.Record _record)
 									throws DatabaseException {
-								return !t.hasRecordsWithAllFields(new Object[] { "transaction", _record });
+								return !t.hasRecordsWithAllFields("transaction", _record);
 							}
 						});
 				return null;
@@ -327,7 +320,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 				lastTransactionID.set(-1);
 
 			if (lastTransactionID.get() < getIDTable().getLastTransactionID()) {
-				StringBuffer sb = new StringBuffer();
+				StringBuilder sb = new StringBuilder();
 				int index = 0;
 				Map<String, Object> parameters = new HashMap<>();
 				for (String p : packageSynchroOneTime) {
@@ -336,11 +329,11 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 					else
 						sb.append(" AND (");
 					String var = "var" + (index++);
-					sb.append("concernedDatabasePackage=%" + var);
+					sb.append("concernedDatabasePackage=%").append(var);
 					parameters.put(var, p);
 				}
 				sb.append(")");
-				parameters.put("lastID", new Long(lastTransactionID.get()));
+				parameters.put("lastID", lastTransactionID.get());
 
 				updateRecords(new AlterRecordFilter<DatabaseTransactionEventsTable.Record>() {
 
@@ -397,7 +390,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 			@Override
 			public boolean nextRecord(DatabaseRecord _record) throws DatabaseException {
 				DatabaseEventsTable.Record event = new DatabaseEventsTable.Record(transaction.get(),
-						new TableEvent<DatabaseRecord>(-1, DatabaseEventType.ADD, null, _record, null),
+						new TableEvent<>(-1, DatabaseEventType.ADD, null, _record, null),
 						getDatabaseWrapper());
 				event.setPosition(currentEventPos.getAndIncrement());
 				getDatabaseEventsTable().addRecord(event);
@@ -412,7 +405,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 					DatabaseTransactionEventsTable.Record tr = new DatabaseTransactionEventsTable.Record();
 					tr.id = getTransactionIDTable().getAndIncrementTransactionID();
 					tr.concernedDatabasePackage = databasePackage;
-					tr.setConcernedHosts(Arrays.asList(hook.getHostID()));
+					tr.setConcernedHosts(Collections.singletonList(hook.getHostID()));
 					tr.setForce(force);
 					transaction.set(addRecord(tr));
 					currentEventPos.set(0);
@@ -429,7 +422,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 		DatabaseTransactionEventsTable.Record tr = new DatabaseTransactionEventsTable.Record();
 		tr.id = getTransactionIDTable().getAndIncrementTransactionID();
 		tr.concernedDatabasePackage = databasePackage;
-		tr.setConcernedHosts(Arrays.asList(hook.getHostID()));
+		tr.setConcernedHosts(Collections.singletonList(hook.getHostID()));
 		tr.setForce(force);
 
 		AtomicReference<DatabaseTransactionEventsTable.Record> transaction = new AtomicReference<>(addRecord(tr));
@@ -489,7 +482,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 	}
 
 	void removeTransactionUntilID(long lastTransactionID) throws DatabaseException {
-		removeRecordsWithCascade("id<=%lastID AND id>-1", "lastID", new Long(lastTransactionID));
+		removeRecordsWithCascade("id<=%lastID AND id>-1", "lastID", lastTransactionID);
 	}
 
 	void cleanTmpTransactions() throws DatabaseException {

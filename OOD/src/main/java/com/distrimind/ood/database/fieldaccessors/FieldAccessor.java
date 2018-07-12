@@ -146,9 +146,7 @@ public abstract class FieldAccessor {
 					"The field " + field.getName() + " of the DatabaseRecord " + field.getDeclaringClass().getName()
 							+ " is declared as a random primary key. However this type cannot be randomly generated.");
 		unique = field.isAnnotationPresent(Unique.class) && !auto_primary_key && !random_primary_key;
-		not_null = field.isAnnotationPresent(NotNull.class) || primary_key || isAlwaysNotNull()
-				|| (getClass() != ByteTabConvertibleFieldAccessor.class && isAssignableTo(BigInteger.class)
-						&& random_primary_key);
+		not_null = field.isAnnotationPresent(NotNull.class) || primary_key || isAlwaysNotNull();
 		if (foreign_key && not_null && field.getType().equals(field.getDeclaringClass()))
 			throw new DatabaseException(
 					"The field " + field.getName() + " of the class " + field.getDeclaringClass().getName()
@@ -227,6 +225,7 @@ public abstract class FieldAccessor {
 		return field.getType();
 	}
 
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	public boolean isTypeCompatible(Class<?> _cls) {
 		for (Class<?> c : getCompatibleClasses())
 			if (c.equals(_cls))
@@ -371,7 +370,7 @@ public abstract class FieldAccessor {
 			Class<? extends Table<?>> _table_class, Class<?> database_record_class, String parentFieldName,
 			List<Class<?>> parentFields) throws DatabaseException {
 
-		ArrayList<FieldAccessor> res = new ArrayList<FieldAccessor>();
+		ArrayList<FieldAccessor> res = new ArrayList<>();
 		try {
 			FieldAccessPrivilegedAction fapa = new FieldAccessPrivilegedAction(database_record_class);
 
@@ -406,9 +405,9 @@ public abstract class FieldAccessor {
 									+ " is not loaded into memory whereas the table " + _table_class.getSimpleName()
 									+ " is ! It is a problem since the table " + _table_class.getSimpleName()
 									+ " has a foreign key which points to " + t.getSimpleName());
-						res.add(new ForeignKeyFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
+						res.add(new ForeignKeyFieldAccessor(_table_class, _sql_connection, f, null));
 					} else {
-						ByteTabObjectConverter converter = null;
+						ByteTabObjectConverter converter;
 						if (type.equals(boolean.class))
 							res.add(new booleanFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 						else if (type.equals(byte.class))
@@ -477,8 +476,7 @@ public abstract class FieldAccessor {
 									throw new DatabaseException("The class/table " + _table_class.getSimpleName()
 											+ " has a problem of circularity with its fields.");
 
-							ArrayList<Class<?>> pf = new ArrayList<>();
-							pf.addAll(parentFields);
+							ArrayList<Class<?>> pf = new ArrayList<>(parentFields);
 							pf.add(type);
 
 							res.add(new ComposedFieldAccessor(_sql_connection, _table_class, f, parentFieldName, pf));
@@ -526,7 +524,7 @@ public abstract class FieldAccessor {
 
 	private static boolean checkCircularityWithNotNullForeignKeys(Class<?> _original_class)
 			throws PrivilegedActionException {
-		ArrayList<Class<?>> list_classes = new ArrayList<Class<?>>();
+		ArrayList<Class<?>> list_classes = new ArrayList<>();
 
 		FieldAccessPrivilegedAction fapa = new FieldAccessPrivilegedAction(_original_class);
 		ArrayList<Field> fields = AccessController.doPrivileged(fapa);
@@ -545,8 +543,9 @@ public abstract class FieldAccessor {
 		return true;
 	}
 
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	private static boolean checkCircularityWithNotNullForeignKeys(Class<?> _original_class,
-			List<Class<?>> _list_classes, Class<?> _new_class) throws PrivilegedActionException {
+																  List<Class<?>> _list_classes, Class<?> _new_class) throws PrivilegedActionException {
 		if (_original_class.equals(_new_class))
 			return false;
 		if (_list_classes.contains(_new_class))
@@ -573,7 +572,7 @@ public abstract class FieldAccessor {
 
 	private static boolean checkCircularityWithPrimaryForeignKeys(Class<?> _original_class)
 			throws PrivilegedActionException {
-		ArrayList<Class<?>> list_classes = new ArrayList<Class<?>>();
+		ArrayList<Class<?>> list_classes = new ArrayList<>();
 
 		FieldAccessPrivilegedAction fapa = new FieldAccessPrivilegedAction(_original_class);
 		ArrayList<Field> fields = AccessController.doPrivileged(fapa);
@@ -590,8 +589,9 @@ public abstract class FieldAccessor {
 		return true;
 	}
 
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	private static boolean checkCircularityWithPrimaryForeignKeys(Class<?> _original_class,
-			List<Class<?>> _list_classes, Class<?> _new_class) throws PrivilegedActionException {
+																  List<Class<?>> _list_classes, Class<?> _new_class) throws PrivilegedActionException {
 		if (_original_class.equals(_new_class))
 			return false;
 		if (_list_classes.contains(_new_class))
@@ -616,7 +616,8 @@ public abstract class FieldAccessor {
 
 	private static Class<?> class_array_byte = (new byte[0]).getClass();
 
-	public final static boolean equalsBetween(Object val1, Object val2) throws DatabaseException {
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
+	public static boolean equalsBetween(Object val1, Object val2) throws DatabaseException {
 		if (val1 == val2)
 			return true;
 		if (val1 == null)
@@ -641,57 +642,57 @@ public abstract class FieldAccessor {
 			if (val2.getClass().equals(Boolean.class)) {
 				return val1.equals(val2);
 			} else if (val2.getClass().equals(Long.class)) {
-				return val1.equals(new Boolean(((Long) val2).longValue() != 0));
+				return val1.equals((Long) val2 != 0);
 			} else
 				throw new DatabaseException("Unexpected exception.");
 		} else if (val1.getClass().equals(Byte.class)) {
 			if (val2.getClass().equals(Byte.class))
 				return val1.equals(val2);
 			else if (val2.getClass().equals(Long.class))
-				return val1.equals(new Byte(((Long) val2).byteValue()));
+				return val1.equals(((Long) val2).byteValue());
 			else
 				throw new DatabaseException("Unexpected exception.");
 		} else if (val1.getClass().equals(Short.class)) {
 			if (val2.getClass().equals(Short.class))
 				return val1.equals(val2);
-			else if (val2.getClass().equals(Long.class))
-				return val1.equals(new Short(((Long) val2).shortValue()));
-			else
+			else if (val2.getClass().equals(Long.class)) {
+				return val1.equals(((Long) val2).shortValue());
+			} else
 				throw new DatabaseException("Unexpected exception.");
 		} else if (val1.getClass().equals(Character.class)) {
 			if (val2.getClass().equals(Character.class))
 				return val1.equals(val2);
-			else if (val2.getClass().equals(Long.class))
-				return val1.equals(new Character((char) ((Long) val2).longValue()));
-			else
+			else if (val2.getClass().equals(Long.class)) {
+				return val1.equals((char) ((Long) val2).longValue());
+			} else
 				throw new DatabaseException("Unexpected exception.");
 		} else if (val1.getClass().equals(Integer.class)) {
 			if (val2.getClass().equals(Integer.class))
 				return val1.equals(val2);
-			else if (val2.getClass().equals(Long.class))
-				return val1.equals(new Integer(((Long) val2).intValue()));
-			else
+			else if (val2.getClass().equals(Long.class)) {
+				return val1.equals(((Long) val2).intValue());
+			} else
 				throw new DatabaseException("Unexpected exception.");
 		} else if (val1.getClass().equals(Long.class)) {
 			if (val2.getClass().equals(Long.class))
 				return val1.equals(val2);
 			else if (val2.getClass().equals(Boolean.class))
-				return val2.equals(new Boolean(((Long) val1).longValue() != 0));
+				return val2.equals((Long) val1 != 0);
 			else if (val2.getClass().equals(Integer.class)) {
-				return val1.equals(new Long(((Integer) val2).longValue()));
+				return val1.equals(((Integer) val2).longValue());
 			} else if (val2.getClass().equals(Byte.class))
-				return val1.equals(new Long(((Byte) val2).byteValue()));
+				return val1.equals((long) (Byte) val2);
 			else if (val2.getClass().equals(Short.class))
-				return val1.equals(new Long(((Short) val2).shortValue()));
+				return val1.equals((long) (Short) val2);
 			else if (val2.getClass().equals(Character.class))
-				return val1.equals(new Long(((Character) val2).charValue()));
+				return val1.equals((long) (Character) val2);
 			else
 				throw new DatabaseException("Unexpected exception.");
 		} else if (val1.getClass().equals(Float.class)) {
 			if (val2.getClass().equals(Float.class))
 				return val1.equals(val2);
 			else if (val2.getClass().equals(Double.class))
-				return val1.equals(new Float(((Double) val2).floatValue()));
+				return val1.equals(((Double) val2).floatValue());
 			else
 				throw new DatabaseException("Unexpected exception.");
 
@@ -699,14 +700,14 @@ public abstract class FieldAccessor {
 			if (val2.getClass().equals(Double.class))
 				return val1.equals(val2);
 			else if (val2.getClass().equals(Float.class)) {
-				return ((Double) val1).floatValue() == ((Float) val2).floatValue();
+				return ((Double) val1).floatValue() == (Float) val2;
 			} else
 				throw new DatabaseException("Unexpected exception.");
 		} else if (val1.getClass().equals(BigDecimal.class)) {
 			if (val2.getClass().equals(String.class))
 				return val1.equals(new BigDecimal((String) val2));
 			else if (val2.getClass().equals(BigDecimal.class))
-				return val1.equals((BigDecimal) val2);
+				return val1.equals(val2);
 			else if (val2.getClass().equals(BigInteger.class))
 				return val1.equals(new BigDecimal((BigInteger) val2));
 			else
@@ -715,7 +716,7 @@ public abstract class FieldAccessor {
 			if (val2.getClass().equals(String.class))
 				return val1.equals(new BigInteger((String) val2));
 			else if (val2.getClass().equals(BigInteger.class))
-				return val1.equals((BigInteger) val2);
+				return val1.equals(val2);
 			else if (val2.getClass().equals(BigDecimal.class))
 				return val2.equals(new BigDecimal((BigInteger) val1));
 			else
@@ -756,7 +757,7 @@ public abstract class FieldAccessor {
 			for (int i = 1; i <= rsmd.getColumnCount(); i++) {
 				String tableName = rsmd.getTableName(i);
 				String colName = rsmd.getColumnName(i);
-				StringBuffer sb = new StringBuffer(tableName.length() + colName.length() + 1);
+				StringBuilder sb = new StringBuilder(tableName.length() + colName.length() + 1);
 				sb.append(tableName);
 				sb.append(".");
 				sb.append(colName);
@@ -778,6 +779,7 @@ public abstract class FieldAccessor {
 		return true;
 	}
 
+	@SuppressWarnings("ConstantConditions")
 	public static void setValue(DatabaseWrapper sql_connection, PreparedStatement st, int index, Object p)
 			throws SQLException {
 		if (p instanceof byte[]
@@ -785,19 +787,19 @@ public abstract class FieldAccessor {
 
 			switch (st.getParameterMetaData().getParameterType(index)) {
 			case Types.TINYINT:
-				st.setByte(index, ((Byte) p).byteValue());
+				st.setByte(index, (Byte) p);
 				break;
 			case Types.INTEGER:
 				/*
 				 * if (p instanceof Long) st.setLong(index, ((Long)p).longValue()); else
 				 */
-				st.setInt(index, ((Integer) p).intValue());
+				st.setInt(index, (Integer) p);
 				break;
 			case Types.BIGINT:
 				if (p instanceof Integer)
-					st.setInt(index, ((Integer) p).intValue());
+					st.setInt(index, (Integer) p);
 				else
-					st.setLong(index, ((Long) p).longValue());
+					st.setLong(index, (Long) p);
 				break;
 			case Types.VARBINARY:
 				st.setBytes(index, (byte[]) p);
@@ -815,16 +817,16 @@ public abstract class FieldAccessor {
 				st.setString(index, p.toString());
 				break;
 			case Types.SMALLINT:
-				st.setShort(index, ((Short) p).shortValue());
+				st.setShort(index, (Short) p);
 				break;
 			case Types.BOOLEAN:
-				st.setBoolean(index, ((Boolean) p).booleanValue());
+				st.setBoolean(index, (Boolean) p);
 				break;
 			case Types.FLOAT:
-				st.setFloat(index, ((Float) p).floatValue());
+				st.setFloat(index, (Float) p);
 				break;
 			case Types.DOUBLE:
-				st.setDouble(index, ((Double) p).doubleValue());
+				st.setDouble(index, (Double) p);
 				break;
 
 			}
@@ -896,7 +898,7 @@ public abstract class FieldAccessor {
 		}
 
 		@Override
-		public ArrayList<Field> run() throws Exception {
+		public ArrayList<Field> run() {
 			ArrayList<Field> fields = new ArrayList<>();
 			Class<?> sup = m_cls.getSuperclass();
 			if (sup != Object.class && sup != DatabaseRecord.class) {

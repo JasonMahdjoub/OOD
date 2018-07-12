@@ -76,6 +76,8 @@ public class OOD {
 			c.set(2018, Calendar.JULY, 12);
 			Description d = new Description(2, 0, 0, Version.Type.Beta, 83, c.getTime());
 			d.addItem("Updating utils to 3.16.1");
+            d.addItem("Clean code");
+            d.addItem("Add autodeconnection option with database wrappers");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();

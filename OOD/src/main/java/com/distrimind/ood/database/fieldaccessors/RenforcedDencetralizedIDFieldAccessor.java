@@ -43,6 +43,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
@@ -69,9 +70,9 @@ public class RenforcedDencetralizedIDFieldAccessor extends FieldAccessor {
 		super(_sql_connection, _field, parentFieldName, compatibleClasses, table_class);
 		sql_fields = new SqlField[2];
 		sql_fields[0] = new SqlField(table_name + "." + this.getFieldName() + "_ts",
-				DatabaseWrapperAccessor.getLongType(sql_connection), null, null, isNotNull());
+				Objects.requireNonNull(DatabaseWrapperAccessor.getLongType(sql_connection)), null, null, isNotNull());
 		sql_fields[1] = new SqlField(table_name + "." + this.getFieldName() + "_widseq",
-				DatabaseWrapperAccessor.getLongType(sql_connection), null, null, isNotNull());
+				Objects.requireNonNull(DatabaseWrapperAccessor.getLongType(sql_connection)), null, null, isNotNull());
 	}
 
 	private static final Class<?> compatibleClasses[];
@@ -95,9 +96,7 @@ public class RenforcedDencetralizedIDFieldAccessor extends FieldAccessor {
 					+ ", should be an Long and not a " + _field_instance.getClass().getName());
 		try {
 			field.set(_class_instance, _field_instance);
-		} catch (IllegalArgumentException e) {
-			throw new DatabaseException("Unexpected exception.", e);
-		} catch (IllegalAccessException e) {
+		} catch (IllegalArgumentException | IllegalAccessException e) {
 			throw new DatabaseException("Unexpected exception.", e);
 		}
 	}
@@ -150,8 +149,8 @@ public class RenforcedDencetralizedIDFieldAccessor extends FieldAccessor {
 	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
 		SqlFieldInstance res[] = new SqlFieldInstance[2];
 		RenforcedDecentralizedIDGenerator did = (RenforcedDecentralizedIDGenerator) getValue(_instance);
-		res[0] = new SqlFieldInstance(sql_fields[0], new Long(did.getTimeStamp()));
-		res[1] = new SqlFieldInstance(sql_fields[1], new Long(did.getWorkerIDAndSequence()));
+		res[0] = new SqlFieldInstance(sql_fields[0], did.getTimeStamp());
+		res[1] = new SqlFieldInstance(sql_fields[1], did.getWorkerIDAndSequence());
 		return res;
 	}
 
@@ -198,8 +197,8 @@ public class RenforcedDencetralizedIDFieldAccessor extends FieldAccessor {
 	public void getValue(PreparedStatement _prepared_statement, int _field_start, Object o) throws DatabaseException {
 		try {
 			RenforcedDecentralizedIDGenerator did = (RenforcedDecentralizedIDGenerator) o;
-			_prepared_statement.setObject(_field_start, new Long(did.getTimeStamp()));
-			_prepared_statement.setObject(++_field_start, new Long(did.getWorkerIDAndSequence()));
+			_prepared_statement.setObject(_field_start, did.getTimeStamp());
+			_prepared_statement.setObject(++_field_start, did.getWorkerIDAndSequence());
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -212,8 +211,8 @@ public class RenforcedDencetralizedIDFieldAccessor extends FieldAccessor {
 		setValue(_class_instance, _field_instance);
 		try {
 			RenforcedDecentralizedIDGenerator did = (RenforcedDecentralizedIDGenerator) field.get(_class_instance);
-			_result_set.updateObject(sql_fields[0].short_field, new Long(did.getTimeStamp()));
-			_result_set.updateObject(sql_fields[1].short_field, new Long(did.getWorkerIDAndSequence()));
+			_result_set.updateObject(sql_fields[0].short_field, did.getTimeStamp());
+			_result_set.updateObject(sql_fields[1].short_field, did.getWorkerIDAndSequence());
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -224,8 +223,8 @@ public class RenforcedDencetralizedIDFieldAccessor extends FieldAccessor {
 			throws DatabaseException {
 		try {
 			RenforcedDecentralizedIDGenerator did = (RenforcedDecentralizedIDGenerator) field.get(_class_instance);
-			_result_set.updateObject(_sft.translateField(sql_fields[0]), new Long(did.getTimeStamp()));
-			_result_set.updateObject(_sft.translateField(sql_fields[1]), new Long(did.getWorkerIDAndSequence()));
+			_result_set.updateObject(_sft.translateField(sql_fields[0]), did.getTimeStamp());
+			_result_set.updateObject(_sft.translateField(sql_fields[1]), did.getWorkerIDAndSequence());
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}

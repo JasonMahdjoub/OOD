@@ -60,6 +60,7 @@ public final class UndecentralizableTableA1 extends Table<UndecentralizableTable
 		@Field
 		public String value;
 
+		@SuppressWarnings("MethodDoesntCallSuperMethod")
 		@Override
 		public Record clone() {
 			Record r = new Record();

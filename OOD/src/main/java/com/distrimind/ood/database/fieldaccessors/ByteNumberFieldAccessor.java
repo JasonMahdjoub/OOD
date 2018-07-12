@@ -45,6 +45,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
@@ -69,7 +70,7 @@ public class ByteNumberFieldAccessor extends FieldAccessor {
 		super(_sql_connection, _field, parentFieldName, compatible_classes, table_class);
 		sql_fields = new SqlField[1];
 		sql_fields[0] = new SqlField(table_name + "." + this.getFieldName(),
-				DatabaseWrapperAccessor.getByteType(sql_connection), null, null, isNotNull());
+				Objects.requireNonNull(DatabaseWrapperAccessor.getByteType(sql_connection)), null, null, isNotNull());
 	}
 
 	@Override
@@ -90,9 +91,7 @@ public class ByteNumberFieldAccessor extends FieldAccessor {
 							+ field.getName() + " of the class " + field.getDeclaringClass().getName()
 							+ ", should be a Byte and not a " + _field_instance.getClass().getName());
 			}
-		} catch (IllegalArgumentException e) {
-			throw DatabaseException.getDatabaseException(e);
-		} catch (IllegalAccessException e) {
+		} catch (IllegalArgumentException | IllegalAccessException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
@@ -123,6 +122,7 @@ public class ByteNumberFieldAccessor extends FieldAccessor {
 				val1 = (Byte) _field_instance;
 			Byte val2 = (Byte) _result_set.getObject(_sft.translateField(sql_fields[0]));
 
+			//noinspection NumberEquality
 			return (val1 == null || val2 == null) ? val1 == val2 : val1.equals(val2);
 		} catch (SQLException e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -174,14 +174,9 @@ public class ByteNumberFieldAccessor extends FieldAccessor {
 			else if (obj1 == obj2)
 				return 0;
 
-			byte val1 = ((Byte) obj1).byteValue();
-			byte val2 = ((Byte) obj2).byteValue();
-			if (val1 < val2)
-				return -1;
-			else if (val1 == val2)
-				return 0;
-			else
-				return 1;
+			byte val1 = (Byte) obj1;
+			byte val2 = (Byte) obj2;
+			return Byte.compare(val1, val2);
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -194,7 +189,7 @@ public class ByteNumberFieldAccessor extends FieldAccessor {
 			Integer val = ((Integer) _result_set.getObject(getColmunIndex(_result_set, sql_fields[0].field)));
 			if (val == null && isNotNull())
 				throw new DatabaseIntegrityException("Unexpected exception");
-			field.set(_class_instance, val == null ? null : new Byte(val.byteValue()));
+			field.set(_class_instance, val == null ? null : val.byteValue());
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -258,7 +253,7 @@ public class ByteNumberFieldAccessor extends FieldAccessor {
 				_oos.writeBoolean(false);
 			} else {
 				_oos.writeBoolean(true);
-				_oos.writeByte(b.byteValue());
+				_oos.writeByte(b);
 			}
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -270,7 +265,7 @@ public class ByteNumberFieldAccessor extends FieldAccessor {
 		try {
 			boolean isNotNull = _ois.readBoolean();
 			if (isNotNull) {
-				_map.put(getFieldName(), new Byte(_ois.readByte()));
+				_map.put(getFieldName(), _ois.readByte());
 			} else if (isNotNull())
 				throw new DatabaseException("field should not be null");
 			else {
@@ -286,7 +281,7 @@ public class ByteNumberFieldAccessor extends FieldAccessor {
 		try {
 			boolean isNotNull = _ois.readBoolean();
 			if (isNotNull) {
-				Byte b = new Byte(_ois.readByte());
+				Byte b = _ois.readByte();
 				setValue(_classInstance, b);
 				return b;
 			} else if (isNotNull())

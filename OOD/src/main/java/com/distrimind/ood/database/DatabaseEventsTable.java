@@ -40,6 +40,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 import com.distrimind.ood.database.annotations.AutoPrimaryKey;
 import com.distrimind.ood.database.annotations.Field;
@@ -84,7 +85,7 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 			transaction = _transaction;
 		}
 
-		void export(DataOutputStream oos, DatabaseWrapper wrapper) throws DatabaseException {
+		void export(DataOutputStream oos) throws DatabaseException {
 			try {
 				oos.writeByte(DatabaseTransactionsPerHostTable.EXPORT_DIRECT_TRANSACTION_EVENT);
 				oos.writeByte(getType());
@@ -93,7 +94,7 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 				oos.writeInt(getConcernedSerializedPrimaryKey().length);
 				oos.write(getConcernedSerializedPrimaryKey());
 
-				if (DatabaseEventType.getEnum(getType()).needsNewValue()) {
+				if (Objects.requireNonNull(DatabaseEventType.getEnum(getType())).needsNewValue()) {
 					byte[] foreignKeys = getConcernedSerializedNewForeignKey();
 					oos.writeInt(foreignKeys.length);
 					oos.write(foreignKeys);
@@ -211,7 +212,7 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 
 		}
 
-		<T extends DatabaseRecord> AbstractRecord(AbstractRecord record) {
+		AbstractRecord(AbstractRecord record) {
 			this.id = record.id;
 			this.position = record.position;
 			this.type = record.type;

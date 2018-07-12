@@ -39,6 +39,7 @@ package com.distrimind.ood.database;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 import com.distrimind.ood.database.DatabaseEventsTable.AbstractRecord;
 import com.distrimind.ood.database.DatabaseEventsTable.DatabaseEventsIterator;
@@ -69,7 +70,7 @@ final class DatabaseDistantEventsTable extends Table<DatabaseDistantEventsTable.
 
 		}
 
-		<T extends DatabaseRecord> Record(DatabaseEventsTable.AbstractRecord record,
+		Record(DatabaseEventsTable.AbstractRecord record,
 				DatabaseDistantTransactionEvent.Record transaction) {
 			super(record);
 			if (transaction == null)
@@ -85,7 +86,7 @@ final class DatabaseDistantEventsTable extends Table<DatabaseDistantEventsTable.
 			transaction = _transaction;
 		}
 
-		void export(DataOutputStream oos, DatabaseWrapper wrapper) throws DatabaseException {
+		void export(DataOutputStream oos) throws DatabaseException {
 			try {
 				oos.writeByte(DatabaseTransactionsPerHostTable.EXPORT_INDIRECT_TRANSACTION_EVENT);
 				oos.writeByte(getType());
@@ -93,7 +94,7 @@ final class DatabaseDistantEventsTable extends Table<DatabaseDistantEventsTable.
 				oos.writeChars(getConcernedTable());
 				oos.writeInt(getConcernedSerializedPrimaryKey().length);
 				oos.write(getConcernedSerializedPrimaryKey());
-				if (DatabaseEventType.getEnum(getType()).needsNewValue()) {
+				if (Objects.requireNonNull(DatabaseEventType.getEnum(getType())).needsNewValue()) {
 					byte[] foreignKeys = getConcernedSerializedNewForeignKey();
 					oos.writeInt(foreignKeys.length);
 					oos.write(foreignKeys);
@@ -170,6 +171,7 @@ final class DatabaseDistantEventsTable extends Table<DatabaseDistantEventsTable.
 					event.setConcernedSerializedPrimaryKey(spks);
 					DatabaseEventType type = DatabaseEventType.getEnum(event.getType());
 
+					assert type != null;
 					if (type.needsNewValue()) {
 						size = getDataInputStream().readInt();
 						if (size > Table.maxPrimaryKeysSizeBytes)

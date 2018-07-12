@@ -73,7 +73,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 		super(_sql_connection, _field, parentFieldName, getCompatibleClasses(_field), table_class);
 		sql_fields = new SqlField[1];
 
-		String type = null;
+		String type;
 		long l = converter.getDefaultSizeLimit(field.getType());
 		if (l <= 0)
 			l = ByteTabFieldAccessor.defaultByteTabSize;
@@ -94,6 +94,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 			else
 				type = "BLOB(" + l + ")";
 		}
+		assert type != null;
 		sql_fields[0] = new SqlField(table_name + "." + this.getFieldName(), type, null, null, isNotNull());
 
 		isVarBinary = type.startsWith("VARBINARY") || type.startsWith("LONGVARBINARY");
@@ -122,9 +123,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 					+ field.getType().getName() + " and not a " + _field_instance.getClass().getName());
 		try {
 			field.set(_class_instance, _field_instance);
-		} catch (IllegalArgumentException e) {
-			throw new DatabaseException("Unexpected exception.", e);
-		} catch (IllegalAccessException e) {
+		} catch (IllegalArgumentException | IllegalAccessException e) {
 			throw new DatabaseException("Unexpected exception.", e);
 		}
 	}
@@ -151,7 +150,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 			if (_field_instance!=null && !field.getType().isAssignableFrom(_field_instance.getClass()))
 				obj1 = _field_instance;
 
-			byte[] val2 = null;
+			byte[] val2;
 
 			if (isVarBinary) {
 				val2 = _result_set.getBytes(_sft.translateField(sql_fields[0]));
@@ -164,6 +163,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 			
 			Object obj2=val2==null?null:converter.getObject(field.getType(), val2);
 			if (obj1==null)
+				//noinspection ConstantConditions
 				return obj1==obj2;
 			else
 				return obj1.equals(obj2);
@@ -212,7 +212,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 					res[0] = new SqlFieldInstance(sql_fields[0], null);
 				else {
 					Blob blob = DatabaseWrapperAccessor.getBlob(sql_connection, bytes);
-					if (blob == null && bytes != null)
+					if (blob == null)
 						res[0] = new SqlFieldInstance(sql_fields[0], new ByteArrayInputStream(bytes));
 					else
 						res[0] = new SqlFieldInstance(sql_fields[0], blob);
@@ -246,7 +246,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
-			byte[] res = null;
+			byte[] res;
 			if (isVarBinary) {
 				res = _result_set.getBytes(getColmunIndex(_result_set, sql_fields[0].field));
 				if (res == null && isNotNull())
@@ -265,7 +265,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 			if (res == null)
 				field.set(_class_instance, null);
 			else {
-				Object o = converter.getObject(field.getType(), (byte[]) res);
+				Object o = converter.getObject(field.getType(), res);
 				if (o == null)
 					throw new FieldDatabaseException(
 							"The given ByteTabObjectConverter should produce an object of type "
@@ -322,7 +322,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 					_prepared_statement.setObject(_field_start, null);
 				else {
 					Blob blob = DatabaseWrapperAccessor.getBlob(sql_connection, b);
-					if (blob == null && b != null)
+					if (blob == null)
 						_prepared_statement.setBinaryStream(_field_start, new ByteArrayInputStream(b));
 					else
 						_prepared_statement.setBlob(_field_start, blob);
@@ -359,7 +359,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 					_result_set.updateObject(sql_fields[0].short_field, null);
 				else {
 					Blob blob = DatabaseWrapperAccessor.getBlob(sql_connection, b);
-					if (blob == null && b != null)
+					if (blob == null)
 						_result_set.updateBinaryStream(sql_fields[0].short_field, new ByteArrayInputStream(b));
 					else
 						_result_set.updateBlob(sql_fields[0].short_field, blob);
@@ -396,7 +396,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 					_result_set.updateObject(_sft.translateField(sql_fields[0]), null);
 				else {
 					Blob blob = DatabaseWrapperAccessor.getBlob(sql_connection, b);
-					if (blob == null && b != null)
+					if (blob == null)
 						_result_set.updateBinaryStream(_sft.translateField(sql_fields[0]), new ByteArrayInputStream(b));
 					else
 						_result_set.updateBlob(_sft.translateField(sql_fields[0]), blob);

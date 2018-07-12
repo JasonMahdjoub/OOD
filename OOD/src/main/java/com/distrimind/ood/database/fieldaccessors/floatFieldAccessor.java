@@ -45,6 +45,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
@@ -69,7 +70,7 @@ public class floatFieldAccessor extends FieldAccessor {
 		super(_sql_connection, _field, parentFieldName, compatible_classes, table_class);
 		sql_fields = new SqlField[1];
 		sql_fields[0] = new SqlField(table_name + "." + this.getFieldName(),
-				DatabaseWrapperAccessor.getFloatType(sql_connection), null, null, isNotNull());
+				Objects.requireNonNull(DatabaseWrapperAccessor.getFloatType(sql_connection)), null, null, isNotNull());
 	}
 
 	@Override
@@ -82,14 +83,12 @@ public class floatFieldAccessor extends FieldAccessor {
 		}
 		try {
 			if (_field_instance instanceof Float)
-				field.setFloat(_class_instance, ((Float) _field_instance).floatValue());
+				field.setFloat(_class_instance, (Float) _field_instance);
 			else
 				throw new FieldDatabaseException("The given _field_instance parameter, destinated to the field "
 						+ field.getName() + " of the class " + field.getDeclaringClass().getName()
 						+ ", should be a Float and not a " + _field_instance.getClass().getName());
-		} catch (IllegalArgumentException e) {
-			throw new DatabaseException("Unexpected exception.", e);
-		} catch (IllegalAccessException e) {
+		} catch (IllegalArgumentException | IllegalAccessException e) {
 			throw new DatabaseException("Unexpected exception.", e);
 		}
 	}
@@ -100,7 +99,7 @@ public class floatFieldAccessor extends FieldAccessor {
 			return false;
 		try {
 			if (_field_instance instanceof Float)
-				return field.getFloat(_class_instance) == ((Float) _field_instance).floatValue();
+				return field.getFloat(_class_instance) == (Float) _field_instance;
 			return false;
 
 		} catch (Exception e) {
@@ -121,7 +120,7 @@ public class floatFieldAccessor extends FieldAccessor {
 				return false;
 			float val2 = _result_set.getFloat(_sft.translateField(sql_fields[0]));
 
-			return val1.floatValue() == val2;
+			return val1 == val2;
 		} catch (SQLException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -132,7 +131,7 @@ public class floatFieldAccessor extends FieldAccessor {
 	@Override
 	public Object getValue(Object _class_instance) throws DatabaseException {
 		try {
-			return new Float(field.getFloat(_class_instance));
+			return field.getFloat(_class_instance);
 		} catch (Exception e) {
 			throw new DatabaseException("", e);
 		}
@@ -165,12 +164,7 @@ public class floatFieldAccessor extends FieldAccessor {
 		try {
 			float val1 = field.getFloat(_r1);
 			float val2 = field.getFloat(_r2);
-			if (val1 < val2)
-				return -1;
-			else if (val1 == val2)
-				return 0;
-			else
-				return 1;
+			return Float.compare(val1, val2);
 		} catch (Exception e) {
 			throw new DatabaseException("", e);
 		}
@@ -201,7 +195,7 @@ public class floatFieldAccessor extends FieldAccessor {
 	@Override
 	public void getValue(PreparedStatement _prepared_statement, int _field_start, Object o) throws DatabaseException {
 		try {
-			_prepared_statement.setFloat(_field_start, ((Float) o).floatValue());
+			_prepared_statement.setFloat(_field_start, (Float) o);
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -247,7 +241,7 @@ public class floatFieldAccessor extends FieldAccessor {
 	@Override
 	public void unserialize(DataInputStream _ois, HashMap<String, Object> _map) throws DatabaseException {
 		try {
-			_map.put(getFieldName(), new Float(_ois.readFloat()));
+			_map.put(getFieldName(), _ois.readFloat());
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -259,7 +253,7 @@ public class floatFieldAccessor extends FieldAccessor {
 		try {
 			float v = _ois.readFloat();
 			field.setFloat(_classInstance, v);
-			return new Float(v);
+			return v;
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}

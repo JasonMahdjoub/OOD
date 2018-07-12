@@ -46,6 +46,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
@@ -70,7 +71,7 @@ public class longFieldAccessor extends FieldAccessor {
 		super(_sql_connection, _field, parentFieldName, compatible_classes, table_class);
 		sql_fields = new SqlField[1];
 		sql_fields[0] = new SqlField(table_name + "." + this.getFieldName(),
-				DatabaseWrapperAccessor.getLongType(sql_connection), null, null, isNotNull());
+				Objects.requireNonNull(DatabaseWrapperAccessor.getLongType(sql_connection)), null, null, isNotNull());
 
 	}
 
@@ -87,20 +88,18 @@ public class longFieldAccessor extends FieldAccessor {
 					+ field.getName() + " of the class " + field.getDeclaringClass().getName()
 					+ ", should be an Long and not a " + _field_instance.getClass().getName());
 		try {
-			field.setLong(_class_instance, ((Long) _field_instance).longValue());
-		} catch (IllegalArgumentException e) {
-			throw new DatabaseException("Unexpected exception.", e);
-		} catch (IllegalAccessException e) {
+			field.setLong(_class_instance, (Long) _field_instance);
+		} catch (IllegalArgumentException | IllegalAccessException e) {
 			throw new DatabaseException("Unexpected exception.", e);
 		}
 	}
 
 	@Override
 	public boolean equals(Object _class_instance, Object _field_instance) throws DatabaseException {
-		if (_field_instance == null || !(_field_instance instanceof Long))
+		if (!(_field_instance instanceof Long))
 			return false;
 		try {
-			return field.getLong(_class_instance) == ((Long) _field_instance).longValue();
+			return field.getLong(_class_instance) == (Long) _field_instance;
 		} catch (Exception e) {
 			throw new DatabaseException("", e);
 		}
@@ -121,7 +120,7 @@ public class longFieldAccessor extends FieldAccessor {
 
 			long val2 = _result_set.getLong(_sft.translateField(sql_fields[0]));
 
-			return val1.longValue() == val2;
+			return val1 == val2;
 		} catch (SQLException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -132,7 +131,7 @@ public class longFieldAccessor extends FieldAccessor {
 	@Override
 	public Object getValue(Object _class_instance) throws DatabaseException {
 		try {
-			return new Long(field.getLong(_class_instance));
+			return field.getLong(_class_instance);
 		} catch (Exception e) {
 			throw new DatabaseException("", e);
 		}
@@ -165,12 +164,7 @@ public class longFieldAccessor extends FieldAccessor {
 		try {
 			long val1 = field.getLong(_r1);
 			long val2 = field.getLong(_r2);
-			if (val1 < val2)
-				return -1;
-			else if (val1 == val2)
-				return 0;
-			else
-				return 1;
+			return Long.compare(val1, val2);
 		} catch (Exception e) {
 			throw new DatabaseException("", e);
 		}
@@ -201,7 +195,7 @@ public class longFieldAccessor extends FieldAccessor {
 	@Override
 	public void getValue(PreparedStatement _prepared_statement, int _field_start, Object o) throws DatabaseException {
 		try {
-			_prepared_statement.setLong(_field_start, ((Long) o).longValue());
+			_prepared_statement.setLong(_field_start, (Long) o);
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -241,7 +235,7 @@ public class longFieldAccessor extends FieldAccessor {
 
 	@Override
 	public Object autoGenerateValue(AbstractSecureRandom _random) {
-		return new Long(new BigInteger(getBitsNumber(), _random).longValue());
+		return new BigInteger(getBitsNumber(), _random).longValue();
 	}
 
 	@Override
@@ -272,7 +266,7 @@ public class longFieldAccessor extends FieldAccessor {
 	@Override
 	public void unserialize(DataInputStream _ois, HashMap<String, Object> _map) throws DatabaseException {
 		try {
-			_map.put(getFieldName(), new Long(_ois.readLong()));
+			_map.put(getFieldName(), _ois.readLong());
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -284,7 +278,7 @@ public class longFieldAccessor extends FieldAccessor {
 		try {
 			long v = _ois.readLong();
 			field.setLong(_classInstance, v);
-			return new Long(v);
+			return v;
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}

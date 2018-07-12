@@ -85,14 +85,14 @@ public class CharacterNumberFieldAccessor extends FieldAccessor {
 				field.set(_class_instance, null);
 			if (_field_instance instanceof Character)
 				field.set(_class_instance, _field_instance);
-			else
+			else {
+				assert _field_instance != null;
 				throw new FieldDatabaseException("The given _field_instance parameter, destinated to the field "
 						+ field.getName() + " of the class " + field.getDeclaringClass().getName()
 						+ ", should be a Character and not a " + _field_instance.getClass().getName());
+			}
 
-		} catch (IllegalArgumentException e) {
-			throw DatabaseException.getDatabaseException(e);
-		} catch (IllegalAccessException e) {
+		} catch (IllegalArgumentException | IllegalAccessException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
@@ -124,7 +124,7 @@ public class CharacterNumberFieldAccessor extends FieldAccessor {
 			if (_field_instance instanceof Character)
 				val1 = (Character) _field_instance;
 			String tmp = (String) _result_set.getObject(_sft.translateField(sql_fields[0]));
-			Character val2 = tmp == null ? null : new Character(tmp.charAt(0));
+			Character val2 = tmp == null ? null : tmp.charAt(0);
 
 			return (val1 == null || val2 == null) ? val1 == val2 : val1.equals(val2);
 		} catch (SQLException e) {
@@ -151,7 +151,7 @@ public class CharacterNumberFieldAccessor extends FieldAccessor {
 	@Override
 	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
 		SqlFieldInstance res[] = new SqlFieldInstance[1];
-		res[0] = new SqlFieldInstance(sql_fields[0], (Character) getValue(_instance));
+		res[0] = new SqlFieldInstance(sql_fields[0], getValue(_instance));
 		return res;
 	}
 
@@ -177,14 +177,9 @@ public class CharacterNumberFieldAccessor extends FieldAccessor {
 			else if (obj1 == obj2)
 				return 0;
 
-			char val1 = ((Character) obj1).charValue();
-			char val2 = ((Character) obj2).charValue();
-			if (val1 < val2)
-				return -1;
-			else if (val1 == val2)
-				return 0;
-			else
-				return 1;
+			char val1 = (Character) obj1;
+			char val2 = (Character) obj2;
+			return Character.compare(val1, val2);
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -197,7 +192,7 @@ public class CharacterNumberFieldAccessor extends FieldAccessor {
 			String s = _result_set.getString(getColmunIndex(_result_set, sql_fields[0].field));
 			Character c = null;
 			if (s != null)
-				c = new Character(s.charAt(0));
+				c = s.charAt(0);
 			if (c == null && isNotNull())
 				throw new DatabaseIntegrityException("Unexpected exception.");
 			field.set(_class_instance, c);
@@ -265,7 +260,7 @@ public class CharacterNumberFieldAccessor extends FieldAccessor {
 				_oos.writeBoolean(false);
 			} else {
 				_oos.writeBoolean(true);
-				_oos.writeChar(v.charValue());
+				_oos.writeChar(v);
 			}
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -277,7 +272,7 @@ public class CharacterNumberFieldAccessor extends FieldAccessor {
 		try {
 			boolean isNotNull = _ois.readBoolean();
 			if (isNotNull) {
-				_map.put(getFieldName(), new Character(_ois.readChar()));
+				_map.put(getFieldName(), _ois.readChar());
 			} else if (isNotNull())
 				throw new DatabaseException("field should not be null");
 			else {
@@ -293,7 +288,7 @@ public class CharacterNumberFieldAccessor extends FieldAccessor {
 		try {
 			boolean isNotNull = _ois.readBoolean();
 			if (isNotNull) {
-				Character c = new Character(_ois.readChar());
+				Character c = _ois.readChar();
 				setValue(_classInstance, c);
 				return c;
 			} else if (isNotNull())

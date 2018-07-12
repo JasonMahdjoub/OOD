@@ -91,9 +91,7 @@ public class StringFieldAccessor extends FieldAccessor {
 					+ ", should be a String and not a " + _field_instance.getClass().getName());
 		try {
 			field.set(_class_instance, _field_instance);
-		} catch (IllegalArgumentException e) {
-			throw new DatabaseException("Unexpected exception.", e);
-		} catch (IllegalAccessException e) {
+		} catch (IllegalArgumentException | IllegalAccessException e) {
 			throw new DatabaseException("Unexpected exception.", e);
 		}
 	}
@@ -105,7 +103,7 @@ public class StringFieldAccessor extends FieldAccessor {
 				return false;
 			Object val = field.get(_class_instance);
 			if (val == null)
-				return _field_instance == null;
+				return false;
 			return val.equals(_field_instance);
 		} catch (Exception e) {
 			throw new DatabaseException("", e);
@@ -121,6 +119,7 @@ public class StringFieldAccessor extends FieldAccessor {
 				val1 = (String) _field_instance;
 			String val2 = (String) _result_set.getObject(_sft.translateField(sql_fields[0]));
 
+			assert val1 != null;
 			return val1.equals(val2);
 		} catch (SQLException e) {
 			throw DatabaseException.getDatabaseException(e);

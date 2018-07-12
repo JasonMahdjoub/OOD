@@ -85,7 +85,7 @@ public enum TransactionIsolation {
 
 	private final int code;
 
-	private TransactionIsolation(int code) {
+	TransactionIsolation(int code) {
 		this.code = code;
 	}
 
@@ -93,6 +93,7 @@ public enum TransactionIsolation {
 		return code;
 	}
 
+	@SuppressWarnings("ConstantConditions")
 	public TransactionIsolation getNext() {
 		int num = ordinal() + 1;
 		TransactionIsolation[] res = TransactionIsolation.values();

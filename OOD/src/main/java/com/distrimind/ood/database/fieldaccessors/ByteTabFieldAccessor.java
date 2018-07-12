@@ -72,14 +72,14 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 	private final boolean isVarBinary;
 	private final boolean isBigInteger;
 
-	public static final long defaultByteTabSize=16777216l;
+	public static final long defaultByteTabSize= 16777216L;
 	public static final int shortTabSizeLimit=32768;
 	
 	protected ByteTabFieldAccessor(Class<? extends Table<?>> table_class, DatabaseWrapper _sql_connection, Field _field,
 			String parentFieldName) throws DatabaseException {
 		super(_sql_connection, _field, parentFieldName, compatible_classes, table_class);
 		sql_fields = new SqlField[1];
-		String type = null;
+		String type;
 		long l = limit;
 		if (l <= 0)
 			l = defaultByteTabSize;
@@ -100,6 +100,7 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 			else
 				type = "BLOB(" + l + ")";
 		}
+		assert type != null;
 		sql_fields[0] = new SqlField(table_name + "." + this.getFieldName(), type, null, null, isNotNull());
 
 		isVarBinary = type.startsWith("VARBINARY") || type.startsWith("LONGVARBINARY");
@@ -151,9 +152,7 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 				throw new FieldDatabaseException("The given _field_instance parameter, destinated to the field "
 						+ field.getName() + " of the class " + field.getDeclaringClass().getName()
 						+ ", should be an array of Byte and not a " + _field_instance.getClass().getName());
-		} catch (IllegalArgumentException e) {
-			throw DatabaseException.getDatabaseException(e);
-		} catch (IllegalAccessException e) {
+		} catch (IllegalArgumentException | IllegalAccessException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
@@ -194,7 +193,7 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 			if (_field_instance instanceof byte[])
 				val1 = (byte[]) _field_instance;
 
-			byte[] val2 = null;
+			byte[] val2;
 
 			if (isVarBinary) {
 				val2 = _result_set.getBytes(_sft.translateField(sql_fields[0]));
@@ -256,7 +255,7 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 					res[0] = new SqlFieldInstance(sql_fields[0], null);
 				else {
 					Blob blob = DatabaseWrapperAccessor.getBlob(sql_connection, b);
-					if (blob == null && b != null)
+					if (blob == null)
 						res[0] = new SqlFieldInstance(sql_fields[0], new ByteArrayInputStream(b));
 					else
 						res[0] = new SqlFieldInstance(sql_fields[0], blob);
@@ -336,7 +335,7 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 					_prepared_statement.setObject(_field_start, null);
 				else {
 					Blob blob = DatabaseWrapperAccessor.getBlob(sql_connection, (byte[]) o);
-					if (blob == null && o != null)
+					if (blob == null)
 						_prepared_statement.setBinaryStream(_field_start, new ByteArrayInputStream((byte[]) o));
 					else {
 						_prepared_statement.setBlob(_field_start, blob);
@@ -365,7 +364,7 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 					_result_set.updateObject(sql_fields[0].short_field, null);
 				else {
 					Blob blob = DatabaseWrapperAccessor.getBlob(sql_connection, b);
-					if (blob == null && b != null)
+					if (blob == null)
 						_result_set.updateBinaryStream(sql_fields[0].short_field, new ByteArrayInputStream(b));
 					else
 						_result_set.updateBlob(sql_fields[0].short_field, blob);
@@ -393,7 +392,7 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 					_result_set.updateObject(_sft.translateField(sql_fields[0]), null);
 				else {
 					Blob blob = DatabaseWrapperAccessor.getBlob(sql_connection, b);
-					if (blob == null && b != null)
+					if (blob == null)
 						_result_set.updateBinaryStream(_sft.translateField(sql_fields[0]), new ByteArrayInputStream(b));
 					else
 						_result_set.updateBlob(_sft.translateField(sql_fields[0]), blob);

@@ -11,7 +11,7 @@ public final class TeacherLecture extends Table<TeacherLecture.Record> {
 	protected TeacherLecture() throws DatabaseException {
 		super();
 	}
-
+	@SuppressWarnings("unused")
 	public static class Record extends DatabaseRecord {
 		protected Record() {
 			super();

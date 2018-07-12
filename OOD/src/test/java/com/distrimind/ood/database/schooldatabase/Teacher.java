@@ -15,7 +15,7 @@ public final class Teacher extends Table<Teacher.Record> {
 	protected Teacher() throws DatabaseException {
 		super();
 	}
-
+	@SuppressWarnings("unused")
 	public static class Record extends DatabaseRecord {
 		protected Record() {
 			super();
@@ -38,9 +38,7 @@ public final class Teacher extends Table<Teacher.Record> {
 
 			@Override
 			public boolean nextRecord(TeacherLecture.Record _record) throws DatabaseException {
-				if (Teacher.this.equals(_record.teacher, _teacher))
-					return true;
-				return false;
+				return Teacher.this.equals(_record.teacher, _teacher);
 			}
 		});
 		ArrayList<Lecture.Record> res = new ArrayList<>(tls.size());

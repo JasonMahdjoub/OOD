@@ -80,14 +80,12 @@ public class booleanFieldAccessor extends FieldAccessor {
 		}
 		try {
 			if (_field_instance instanceof Boolean)
-				field.setBoolean(_class_instance, ((Boolean) _field_instance).booleanValue());
+				field.setBoolean(_class_instance, (Boolean) _field_instance);
 			else
 				throw new FieldDatabaseException("The given _field_instance parameter, destinated to the field "
 						+ field.getName() + " of the class " + field.getDeclaringClass().getName()
 						+ ", should be a Boolean and not a " + _field_instance.getClass().getName());
-		} catch (IllegalArgumentException e) {
-			throw DatabaseException.getDatabaseException(e);
-		} catch (IllegalAccessException e) {
+		} catch (IllegalArgumentException | IllegalAccessException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
@@ -98,9 +96,9 @@ public class booleanFieldAccessor extends FieldAccessor {
 			if (_field_instance == null)
 				return false;
 			else if (_field_instance instanceof Boolean)
-				return field.getBoolean(_class_instance) == ((Boolean) _field_instance).booleanValue();
+				return field.getBoolean(_class_instance) == (Boolean) _field_instance;
 			else if (_field_instance instanceof Long)
-				return field.getBoolean(_class_instance) == (((Long) _field_instance).longValue() != 0);
+				return field.getBoolean(_class_instance) == ((Long) _field_instance != 0);
 			else
 				return false;
 		} catch (Exception e) {
@@ -121,7 +119,7 @@ public class booleanFieldAccessor extends FieldAccessor {
 				return false;
 			boolean val2 = _result_set.getBoolean(_sft.translateField(sql_fields[0]));
 
-			return val1.booleanValue() == val2;
+			return val1 == val2;
 		} catch (SQLException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -132,7 +130,7 @@ public class booleanFieldAccessor extends FieldAccessor {
 	@Override
 	public Object getValue(Object _class_instance) throws DatabaseException {
 		try {
-			return new Boolean(field.getBoolean(_class_instance));
+			return field.getBoolean(_class_instance);
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -190,7 +188,7 @@ public class booleanFieldAccessor extends FieldAccessor {
 	public void getValue(PreparedStatement _prepared_statement, int _field_start, Object _field_content)
 			throws DatabaseException {
 		try {
-			_prepared_statement.setBoolean(_field_start, ((Boolean) _field_content).booleanValue());
+			_prepared_statement.setBoolean(_field_start, (Boolean) _field_content);
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -236,7 +234,7 @@ public class booleanFieldAccessor extends FieldAccessor {
 	@Override
 	public void unserialize(DataInputStream _ois, HashMap<String, Object> _map) throws DatabaseException {
 		try {
-			_map.put(getFieldName(), new Boolean(_ois.readBoolean()));
+			_map.put(getFieldName(), _ois.readBoolean());
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -248,7 +246,7 @@ public class booleanFieldAccessor extends FieldAccessor {
 		try {
 			boolean v = _ois.readBoolean();
 			field.setBoolean(_classInstance, v);
-			return new Boolean(v);
+			return v;
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}

@@ -64,6 +64,7 @@ public final class TableAlone extends Table<TableAlone.Record> {
 			return "TableAlone[" + (id == null ? null : id.toString()) + ", " + value + "]";
 		}
 
+		@SuppressWarnings("MethodDoesntCallSuperMethod")
 		@Override
 		public Record clone() {
 			Record r = new Record();

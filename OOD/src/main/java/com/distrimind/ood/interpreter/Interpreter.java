@@ -67,8 +67,7 @@ public class Interpreter {
 		if (whereCommand == null)
 			throw new NullPointerException("whereCommand");
 		ArrayList<QueryPart> qp = getRules(lexicalAnalyse(whereCommand));
-		RuleInstance query = getQuery(whereCommand, qp);
-		return query;
+		return getQuery(whereCommand, qp);
 	}
 	/*
 	 * public static <T extends DatabaseRecord> boolean isConcernedBy(String
@@ -80,9 +79,9 @@ public class Interpreter {
 	 */
 
 	private static String preProcess(String command) {
-		command = command.replaceAll("\\p{Blank}(N|n)(O|o)(T|t) (L|l)(I|i)(K|k)(E|e)\\p{Blank}", " NOT_LIKE ");
+		command = command.replaceAll("\\p{Blank}([Nn])([Oo])([Tt]) ([Ll])([Ii])([Kk])([Ee])\\p{Blank}", " NOT_LIKE ");
 
-		StringBuffer sb = new StringBuffer("");
+		StringBuilder sb = new StringBuilder();
 
 		int index = 0;
 		while (index < command.length()) {
@@ -191,7 +190,7 @@ public class Interpreter {
 		ArrayList<QueryPart> res = new ArrayList<>(parts.size());
 		boolean changed = false;
 		while (index.get() < parts.size()) {
-			RuleInstance ri = getQuery(command, parts, index.get(), index);
+			RuleInstance ri = getQuery(parts, index.get(), index);
 
 			if (ri == null) {
 				res.add(parts.get(index.getAndIncrement()));
@@ -208,12 +207,12 @@ public class Interpreter {
 		}
 	}
 
-	private static RuleInstance getQuery(String command, ArrayList<QueryPart> parts, int index,
-			AtomicInteger newIndex) {
+	private static RuleInstance getQuery(ArrayList<QueryPart> parts, int index,
+										 AtomicInteger newIndex) {
 
 		Rule choosenValidRule = null;
 
-		StringBuffer currentRule = new StringBuffer("");
+		StringBuilder currentRule = new StringBuilder();
 		int len = 0;
 
 		for (int i = index; i < parts.size(); i++) {
@@ -242,8 +241,7 @@ public class Interpreter {
 		}
 
 		newIndex.set(index + len);
-		RuleInstance ri = new RuleInstance(choosenValidRule, parts, index, len);
-		return ri;
+		return new RuleInstance(choosenValidRule, parts, index, len);
 	}
 
 }

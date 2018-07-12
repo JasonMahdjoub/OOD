@@ -12,7 +12,7 @@ public final class Student extends Table<Student.Record> {
 	protected Student() throws DatabaseException {
 		super();
 	}
-
+	@SuppressWarnings("unused")
 	public static class Record extends DatabaseRecord {
 		protected Record() {
 			super();

@@ -81,7 +81,7 @@ public class charFieldAccessor extends FieldAccessor {
 		}
 		try {
 			if (_field_instance instanceof Character)
-				field.setChar(_class_instance, ((Character) _field_instance).charValue());
+				field.setChar(_class_instance, (Character) _field_instance);
 			else
 				throw new FieldDatabaseException("The given _field_instance parameter, destinated to the field "
 						+ field.getName() + " of the class " + field.getDeclaringClass().getName()
@@ -100,7 +100,7 @@ public class charFieldAccessor extends FieldAccessor {
 		try {
 			char val = field.getChar(_class_instance);
 			if (_field_instance instanceof Character)
-				return val == ((Character) _field_instance).charValue();
+				return val == (Character) _field_instance;
 			return false;
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -120,7 +120,7 @@ public class charFieldAccessor extends FieldAccessor {
 				return false;
 			char val2 = _result_set.getString(_sft.translateField(sql_fields[0])).charAt(0);
 
-			return val1.charValue() == val2;
+			return val1 == val2;
 		} catch (SQLException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -131,7 +131,7 @@ public class charFieldAccessor extends FieldAccessor {
 	@Override
 	public Object getValue(Object _class_instance) throws DatabaseException {
 		try {
-			return new Character(field.getChar(_class_instance));
+			return field.getChar(_class_instance);
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -145,7 +145,7 @@ public class charFieldAccessor extends FieldAccessor {
 	@Override
 	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
 		SqlFieldInstance res[] = new SqlFieldInstance[1];
-		res[0] = new SqlFieldInstance(sql_fields[0], (Character) getValue(_instance));
+		res[0] = new SqlFieldInstance(sql_fields[0], getValue(_instance));
 		return res;
 	}
 
@@ -164,12 +164,7 @@ public class charFieldAccessor extends FieldAccessor {
 		try {
 			char val1 = field.getChar(_r1);
 			char val2 = field.getChar(_r2);
-			if (val1 < val2)
-				return -1;
-			else if (val1 == val2)
-				return 0;
-			else
-				return 1;
+			return Character.compare(val1, val2);
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -182,10 +177,10 @@ public class charFieldAccessor extends FieldAccessor {
 			String s = _result_set.getString(getColmunIndex(_result_set, sql_fields[0].field));
 			Character c = null;
 			if (s != null)
-				c = new Character(s.charAt(0));
+				c = s.charAt(0);
 			if (c == null && isNotNull())
 				throw new DatabaseIntegrityException("Unexpected exception.");
-			field.setChar(_class_instance, c.charValue());
+			field.setChar(_class_instance, c);
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -253,7 +248,7 @@ public class charFieldAccessor extends FieldAccessor {
 	@Override
 	public void unserialize(DataInputStream _ois, HashMap<String, Object> _map) throws DatabaseException {
 		try {
-			_map.put(getFieldName(), new Character(_ois.readChar()));
+			_map.put(getFieldName(), _ois.readChar());
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -265,7 +260,7 @@ public class charFieldAccessor extends FieldAccessor {
 		try {
 			char v = _ois.readChar();
 			field.setChar(_classInstance, v);
-			return new Character(v);
+			return v;
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}

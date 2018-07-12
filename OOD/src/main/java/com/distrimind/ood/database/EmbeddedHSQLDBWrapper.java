@@ -114,7 +114,26 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 	 *             If a Sql exception exception occurs.
 	 */
 	public EmbeddedHSQLDBWrapper(File _file_name) throws IllegalArgumentException, DatabaseException {
-		this(_file_name, HSQLDBConcurrencyControl.DEFAULT, 100, 10000, 0, 512, true);
+		this(_file_name, false);
+	}
+
+	/**
+	 * Constructor
+	 *
+	 * @param _file_name
+	 *            The file which contains the database. If this file does not
+	 *            exists, it will be automatically created with the correspondent
+	 *            database.
+	 * @param alwaysDeconectAfterOnTransaction true if the database must always be connected and detected during one transaction
+	 * @throws NullPointerException
+	 *             if parameters are null pointers.
+	 * @throws IllegalArgumentException
+	 *             If the given file is a directory.
+	 * @throws DatabaseLoadingException
+	 *             If a Sql exception exception occurs.
+	 */
+	public EmbeddedHSQLDBWrapper(File _file_name, boolean alwaysDeconectAfterOnTransaction) throws IllegalArgumentException, DatabaseException {
+		this(_file_name, alwaysDeconectAfterOnTransaction, HSQLDBConcurrencyControl.DEFAULT, 100, 10000, 0, 512, true);
 	}
 
 	/**
@@ -124,6 +143,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 	 *            The file which contains the database. If this file does not
 	 *            exists, it will be automatically created with the correspondent
 	 *            database.
+     * @param alwaysDeconectAfterOnTransaction true if the database must always be connected and detected during one transaction
 	 * @param concurrencyControl the concurrency mode 
 	 * @param _cache_rows
 	 *            indicates the maximum number of rows of cached tables that are
@@ -155,13 +175,13 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 	 *             If a Sql exception exception occurs.
 	 * @throws DatabaseException if a problem occurs
 	 */
-	public EmbeddedHSQLDBWrapper(File _file_name, HSQLDBConcurrencyControl concurrencyControl, int _cache_rows,
+	public EmbeddedHSQLDBWrapper(File _file_name, boolean alwaysDeconectAfterOnTransaction, HSQLDBConcurrencyControl concurrencyControl, int _cache_rows,
 			int _cache_size, int _result_max_memory_rows, int _cache_free_count, boolean lockFile)
 			throws IllegalArgumentException, DatabaseException {
 		super(/*
 				 * getConnection(_file_name, concurrencyControl, _cache_rows, _cache_size,
 				 * _result_max_memory_rows, _cache_free_count),
-				 */"Database from file : " + getHSQLDBDataFileName(_file_name) + ".data");
+				 */"Database from file : " + getHSQLDBDataFileName(_file_name) + ".data", alwaysDeconectAfterOnTransaction);
 		this.file_name = _file_name;
 		this.concurrencyControl = concurrencyControl;
 		this.cache_rows = _cache_rows;
@@ -226,7 +246,8 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 	 *            the .data database file, or the base file name (the file without
 	 *            the .data extension).
 	 */
-	public static void deleteDatabaseFiles(File _file_name) {
+	@SuppressWarnings("ResultOfMethodCallIgnored")
+    public static void deleteDatabaseFiles(File _file_name) {
 		String file_base = getHSQLDBDataFileName(_file_name);
 		File f = new File(file_base + ".data");
 		if (f.exists())
@@ -651,7 +672,8 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 
 		runTransaction(new Transaction() {
 
-			@Override
+			@SuppressWarnings("ThrowFromFinallyBlock")
+            @Override
 			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 				try  {
 					lockWrite();
@@ -663,7 +685,8 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 						throw DatabaseException.getDatabaseException(e);
 					} finally {
 						try {
-							st.close();
+                            assert st != null;
+                            st.close();
 						} catch (SQLException e) {
 							throw DatabaseException.getDatabaseException(e);
 						}
@@ -697,7 +720,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 	@Override
 	protected Blob getBlob(byte[] _bytes) throws SQLException {
 		try {
-			return JDBCBlobConstructor.newInstance(_bytes);
+			return JDBCBlobConstructor.newInstance((Object) _bytes);
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException e) {
 			throw new SQLException(e);
 		}
@@ -809,12 +832,9 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 					else
 						lockRead();
 					Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
-					PreparedStatement preparedStatement = sql_connection.prepareStatement(querry);
-					try {
-						preparedStatement.execute();
-					} finally {
-						preparedStatement.close();
-					}
+                    try (PreparedStatement preparedStatement = sql_connection.prepareStatement(querry)) {
+                        preparedStatement.execute();
+                    }
 					return null;
 				} catch (Exception e) {
 					throw new DatabaseException("", e);
@@ -949,7 +969,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 	@Override
 	protected void startTransaction(Session _openedConnection, TransactionIsolation transactionIsolation, boolean write)
 			throws SQLException {
-		String isoLevel = null;
+		String isoLevel;
 		switch (transactionIsolation) {
 		case TRANSACTION_NONE:
 			isoLevel = null;
@@ -1001,12 +1021,12 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 	}
 
 	@Override
-	protected boolean isSerializationException(SQLException e) throws DatabaseException {
+	protected boolean isSerializationException(SQLException e) {
 		return e.getSQLState().equals("40001");
 	}
 
 	@Override
-	protected boolean isDeconnectionException(SQLException e) throws DatabaseException {
+	protected boolean isDeconectionException(SQLException e) {
 		return e.getErrorCode()==402 || e.getErrorCode()==1002;
 	}
 }

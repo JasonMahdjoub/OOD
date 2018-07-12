@@ -44,6 +44,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
@@ -69,20 +70,19 @@ import com.distrimind.util.crypto.SymmetricSecretKey;
 public class KeyFieldAccessor extends FieldAccessor {
 	protected final SqlField sql_fields[];
 	private final boolean isVarBinary;
-	private final Class<?> compatibleClasses[];
-	
+
 	protected KeyFieldAccessor(Class<? extends Table<?>> table_class,
 			DatabaseWrapper _sql_connection, Field _field, String parentFieldName) throws DatabaseException {
 		super(_sql_connection, _field, parentFieldName, new Class<?>[] {_field.getType()}, table_class);
 		sql_fields = new SqlField[1];
-		this.compatibleClasses=new Class<?>[] {_field.getType()};
+		Class<?>[] compatibleClasses = new Class<?>[]{_field.getType()};
 		
-		long limit=compatibleClasses[0]==ASymmetricPublicKey.class?1060:(compatibleClasses[0]==ASymmetricPrivateKey.class?140:55);
+		long limit= compatibleClasses[0]==ASymmetricPublicKey.class?1060:(compatibleClasses[0]==ASymmetricPrivateKey.class?140:55);
 		if (getLimit()>0)
 			limit=getLimit();
 		sql_fields[0] = new SqlField(table_name + "." + this.getFieldName(),
-				DatabaseWrapperAccessor.isVarBinarySupported(sql_connection) ? "VARBINARY("+limit+")"
-						: DatabaseWrapperAccessor.getBigIntegerType(sql_connection),
+				Objects.requireNonNull(DatabaseWrapperAccessor.isVarBinarySupported(sql_connection) ? "VARBINARY(" + limit + ")"
+						: DatabaseWrapperAccessor.getBigIntegerType(sql_connection)),
 				null, null, isNotNull());
 		isVarBinary = DatabaseWrapperAccessor.isVarBinarySupported(sql_connection);
 	}
@@ -112,9 +112,7 @@ public class KeyFieldAccessor extends FieldAccessor {
 					+ field.getType().getName() + " and not a " + _field_instance.getClass().getName());
 		try {
 			field.set(_class_instance, _field_instance);
-		} catch (IllegalArgumentException e) {
-			throw new DatabaseException("Unexpected exception.", e);
-		} catch (IllegalAccessException e) {
+		} catch (IllegalArgumentException | IllegalAccessException e) {
 			throw new DatabaseException("Unexpected exception.", e);
 		}
 	}
@@ -164,13 +162,13 @@ public class KeyFieldAccessor extends FieldAccessor {
 	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
 			throws DatabaseException {
 		try {
-			byte[] val1 = null;
+			byte[] val1;
 			if (_field_instance instanceof byte[])
 				val1 = (byte[]) _field_instance;
 			else 
 				val1 = encode(_field_instance);
 
-			byte[] val2 = null;
+			byte[] val2;
 
 			if (isVarBinary) {
 				val2 = _result_set.getBytes(_sft.translateField(sql_fields[0]));
@@ -238,7 +236,7 @@ public class KeyFieldAccessor extends FieldAccessor {
 	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
-			byte[] res = null;
+			byte[] res;
 			if (isVarBinary) {
 				res = _result_set.getBytes(getColmunIndex(_result_set, sql_fields[0].field));
 			} else {
@@ -338,7 +336,7 @@ public class KeyFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public Object autoGenerateValue(AbstractSecureRandom _random) throws DatabaseException {
+	public Object autoGenerateValue(AbstractSecureRandom _random) {
 		throw new IllegalAccessError();
 	}
 

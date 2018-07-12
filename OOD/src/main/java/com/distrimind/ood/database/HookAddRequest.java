@@ -93,6 +93,7 @@ public class HookAddRequest extends DatabaseEvent implements DatabaseEventToSend
 		return mustReturnMessage;
 	}
 
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	public boolean isReplaceDistantConflictualData() {
 		return replaceDistantConflictualData;
 	}

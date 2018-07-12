@@ -67,11 +67,12 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	// private final String dbURL;
 	private final File fileDirectory;
 
-	private static void ensureDerbyLoading() throws DatabaseLoadingException {
+
+    private static void ensureDerbyLoading() throws DatabaseLoadingException {
 		synchronized (EmbeddedDerbyWrapper.class) {
 			if (!derby_loaded) {
 				try {
-					Class.forName("org.apache.derby.jdbc.EmbeddedDriver").newInstance();
+					Class.forName("org.apache.derby.jdbc.EmbeddedDriver").getDeclaredConstructor().newInstance();
 					derby_loaded = true;
 				} catch (Exception e) {
 					throw new DatabaseLoadingException("Impossible to load Derby ", e);
@@ -93,7 +94,24 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	 * @throws IllegalArgumentException if arguments are incorrect
 	 */
 	public EmbeddedDerbyWrapper(File _directory) throws IllegalArgumentException, DatabaseException {
-		super(/* getConnection(_directory), */"Database from file : " + _directory.getAbsolutePath());
+		this(_directory, false);
+	}
+
+	/**
+	 * Constructor
+	 *
+	 * @param _directory
+	 *            the database directory
+	 * @param alwaysDeconectAfterOnTransaction true if the database must always be connected and detected during one transaction
+	 * @throws NullPointerException
+	 *             if parameters are null pointers.
+	 * @throws IllegalArgumentException
+	 *             If the given _directory is not a directory.
+	 * @throws DatabaseException if a problem occurs during the database opening
+	 * @throws IllegalArgumentException if arguments are incorrect
+	 */
+	public EmbeddedDerbyWrapper(File _directory, boolean alwaysDeconectAfterOnTransaction) throws IllegalArgumentException, DatabaseException {
+		super(/* getConnection(_directory), */"Database from file : " + _directory.getAbsolutePath(), alwaysDeconectAfterOnTransaction);
 		// dbURL = getDBUrl(_directory);
 		fileDirectory = _directory;
 	}
@@ -535,13 +553,10 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 				try {
 					lockRead();
 					Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
-					PreparedStatement preparedStatement = sql_connection.prepareStatement(querry);
-					try {
-						preparedStatement.setString(1, f);
-						preparedStatement.execute();
-					} finally {
-						preparedStatement.close();
-					}
+                    try (PreparedStatement preparedStatement = sql_connection.prepareStatement(querry)) {
+                        preparedStatement.setString(1, f);
+                        preparedStatement.execute();
+                    }
 					return null;
 				} catch (Exception e) {
 					throw new DatabaseException("", e);
@@ -615,7 +630,8 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 		return false;
 	}
 
-	@Override
+	@SuppressWarnings("MagicConstant")
+    @Override
 	protected void startTransaction(Session _openedConnection, TransactionIsolation transactionIsolation, boolean write)
 			throws SQLException 	{
 		_openedConnection.getConnection().setTransactionIsolation(transactionIsolation.getCode());
@@ -623,12 +639,12 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 
 
 	@Override
-	protected boolean isSerializationException(SQLException e) throws DatabaseException {
+	protected boolean isSerializationException(SQLException e) {
 		return e.getSQLState().equals("40001");
 	}
 
 	@Override
-	protected boolean isDeconnectionException(SQLException e) throws DatabaseException {
+	protected boolean isDeconectionException(SQLException e) {
 		return e.getErrorCode()==402 || e.getErrorCode()==1002;
 	}
 

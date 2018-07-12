@@ -46,6 +46,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
@@ -71,7 +72,7 @@ public class intFieldAccessor extends FieldAccessor {
 		super(_sql_connection, _field, parentFieldName, compatible_classes, table_class);
 		sql_fields = new SqlField[1];
 		sql_fields[0] = new SqlField(table_name + "." + this.getFieldName(),
-				DatabaseWrapperAccessor.getIntType(sql_connection), null, null, isNotNull());
+				Objects.requireNonNull(DatabaseWrapperAccessor.getIntType(sql_connection)), null, null, isNotNull());
 
 	}
 
@@ -85,14 +86,12 @@ public class intFieldAccessor extends FieldAccessor {
 		}
 		try {
 			if (_field_instance instanceof Integer)
-				field.setInt(_class_instance, ((Integer) _field_instance).intValue());
+				field.setInt(_class_instance, (Integer) _field_instance);
 			else
 				throw new FieldDatabaseException("The given _field_instance parameter, destinated to the field "
 						+ field.getName() + " of the class " + field.getDeclaringClass().getName()
 						+ ", should be an Integer and not a " + _field_instance.getClass().getName());
-		} catch (IllegalArgumentException e) {
-			throw new DatabaseException("Unexpected exception.", e);
-		} catch (IllegalAccessException e) {
+		} catch (IllegalArgumentException | IllegalAccessException e) {
 			throw new DatabaseException("Unexpected exception.", e);
 		}
 	}
@@ -103,7 +102,7 @@ public class intFieldAccessor extends FieldAccessor {
 			return false;
 		try {
 			if (_field_instance instanceof Integer)
-				return field.getInt(_class_instance) == ((Integer) _field_instance).intValue();
+				return field.getInt(_class_instance) == (Integer) _field_instance;
 			return false;
 		} catch (Exception e) {
 			throw new DatabaseException("", e);
@@ -125,7 +124,7 @@ public class intFieldAccessor extends FieldAccessor {
 
 			int val2 = _result_set.getInt(_sft.translateField(sql_fields[0]));
 
-			return val1.intValue() == val2;
+			return val1 == val2;
 		} catch (SQLException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -136,7 +135,7 @@ public class intFieldAccessor extends FieldAccessor {
 	@Override
 	public Object getValue(Object _class_instance) throws DatabaseException {
 		try {
-			return new Integer(field.getInt(_class_instance));
+			return field.getInt(_class_instance);
 		} catch (Exception e) {
 			throw new DatabaseException("", e);
 		}
@@ -169,12 +168,7 @@ public class intFieldAccessor extends FieldAccessor {
 		try {
 			int val1 = field.getInt(_r1);
 			int val2 = field.getInt(_r2);
-			if (val1 < val2)
-				return -1;
-			else if (val1 == val2)
-				return 0;
-			else
-				return 1;
+			return Integer.compare(val1, val2);
 		} catch (Exception e) {
 			throw new DatabaseException("", e);
 		}
@@ -205,7 +199,7 @@ public class intFieldAccessor extends FieldAccessor {
 	@Override
 	public void getValue(PreparedStatement _prepared_statement, int _field_start, Object o) throws DatabaseException {
 		try {
-			_prepared_statement.setInt(_field_start, ((Integer) o).intValue());
+			_prepared_statement.setInt(_field_start, (Integer) o);
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -245,7 +239,7 @@ public class intFieldAccessor extends FieldAccessor {
 
 	@Override
 	public Object autoGenerateValue(AbstractSecureRandom _random) {
-		return new Integer(new BigInteger(getBitsNumber(), _random).intValue());
+		return new BigInteger(getBitsNumber(), _random).intValue();
 	}
 
 	@Override
@@ -276,7 +270,7 @@ public class intFieldAccessor extends FieldAccessor {
 	@Override
 	public void unserialize(DataInputStream _ois, HashMap<String, Object> _map) throws DatabaseException {
 		try {
-			_map.put(getFieldName(), new Integer(_ois.readInt()));
+			_map.put(getFieldName(), _ois.readInt());
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -288,7 +282,7 @@ public class intFieldAccessor extends FieldAccessor {
 		try {
 			int v = _ois.readInt();
 			field.setInt(_classInstance, v);
-			return new Integer(v);
+			return v;
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}

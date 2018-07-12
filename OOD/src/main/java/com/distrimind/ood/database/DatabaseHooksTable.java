@@ -36,11 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -58,6 +54,7 @@ import com.distrimind.util.AbstractDecentralizedID;
  * @version 1.0
  * @since OOD 2.0
  */
+@SuppressWarnings({"SameParameterValue", "UnusedReturnValue"})
 @LoadToMemory
 final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 	private volatile DatabaseTransactionEventsTable databaseTransactionEventsTable = null;
@@ -70,7 +67,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 	static class Record extends DatabaseRecord {
 		@AutoPrimaryKey
-		private int id;
+		private int id=-1;
 
 		@Unique
 		@Field
@@ -117,6 +114,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			return lastValidatedDistantTransaction;
 		}
 
+		@SuppressWarnings("SameParameterValue")
 		void setLastValidatedDistantTransaction(long _lastValidatedDistantTransaction) throws DatabaseException {
 			if (this.lastValidatedDistantTransaction > _lastValidatedDistantTransaction)
 				throw DatabaseException.getDatabaseException(new IllegalArgumentException("The host " + this.getHostID()
@@ -150,7 +148,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 				databasePackageNames = null;
 				return new ArrayList<>(0);
 			}
-			StringBuffer sb = new StringBuffer();
+			StringBuilder sb = new StringBuilder();
 			ArrayList<String> packagesList = new ArrayList<>();
 			for (int i = 0; i < packages.size(); i++) {
 				String p = packages.get(i);
@@ -172,7 +170,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			return packagesList;
 		}
 
-		protected void addDatabasePackageName(Package p) {
+		/*protected void addDatabasePackageName(Package p) {
 			addDatabasePackageName(p.getName());
 		}
 
@@ -187,7 +185,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 						return;
 				databasePackageNames += "\\|" + p;
 			}
-		}
+		}*/
 
 		protected List<String> addDatabasePackageNames(List<String> ps) {
 			if (ps == null || ps.size() == 0)
@@ -259,7 +257,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 					if (!found)
 						ps2.add(s);
 				}
-				StringBuffer sb = new StringBuffer();
+				StringBuilder sb = new StringBuilder();
 				for (String s : ps2) {
 					if (sb.length() != 0)
 						sb.append("|");
@@ -325,7 +323,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			if (e.getKey().getHostServer().equals(indirectTransaction.getHook().getHostID())
 					&& (getLocalDatabaseHost().getHostID() == null
 							|| !e.getKey().getHostToSynchronize().equals(getLocalDatabaseHost().getHostID()))
-					&& e.getValue().longValue() < indirectTransaction.getID()) {
+					&& e.getValue() < indirectTransaction.getID()) {
 				return true;
 			}
 		}
@@ -391,9 +389,9 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 										return false;
 									}
 								}, "localID<%maxLocalID AND localID>=%minLocalID and peersInformedFull=%peersInformedFull",
-										"maxLocalID", new Long(actualLastID.get() - 1), "minLocalID",
-										new Long(h.getLastValidatedTransaction() + 1), "peersInformedFull",
-										new Boolean(false));
+										"maxLocalID", actualLastID.get() - 1, "minLocalID",
+										h.getLastValidatedTransaction() + 1, "peersInformedFull",
+										Boolean.FALSE);
 					}
 
 					if (actualLastID.get() == Long.MAX_VALUE)
@@ -411,7 +409,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			}
 		});
 		for (DatabaseHooksTable.Record h : toUpdate) {
-			updateRecord(h, "lastValidatedTransaction", new Long(h.getLastValidatedTransaction()));
+			updateRecord(h, "lastValidatedTransaction", h.getLastValidatedTransaction());
 		}
 	}
 
@@ -426,10 +424,10 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		return l.iterator().next();
 	}
 
-	Long getDistantValidatedTransactionID(AbstractDecentralizedID hostSource, AbstractDecentralizedID hostDestination) {
+	/*Long getDistantValidatedTransactionID(AbstractDecentralizedID hostSource, AbstractDecentralizedID hostDestination) {
 
 		return this.lastTransactionFieldsBetweenDistantHosts.get(new HostPair(hostSource, hostDestination));
-	}
+	}*/
 
 	Map<AbstractDecentralizedID, Long> getLastValidatedDistantTransactions() throws DatabaseException {
 		return getDatabaseWrapper()
@@ -444,7 +442,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							@Override
 							public boolean nextRecord(Record _record) {
 								if (!_record.concernsLocalDatabaseHost())
-									res.put(_record.getHostID(), new Long(_record.getLastValidatedTransaction()));
+									res.put(_record.getHostID(), _record.getLastValidatedTransaction());
 								return false;
 							}
 						});
@@ -500,9 +498,10 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		return databaseDistantTransactionEvent;
 	}
 
+	@SuppressWarnings("UnusedReturnValue")
 	DatabaseHooksTable.Record addHooks(final AbstractDecentralizedID hostID, final boolean concernsDatabaseHost,
-			final boolean replaceDistantConflitualRecords,
-			final ArrayList<AbstractDecentralizedID> hostAlreadySynchronized, final ArrayList<String> packages)
+									   final boolean replaceDistantConflitualRecords,
+									   final ArrayList<AbstractDecentralizedID> hostAlreadySynchronized, final ArrayList<String> packages)
 			throws DatabaseException {
 
 		if (hostID == null)
@@ -516,8 +515,8 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 						if (concernsDatabaseHost && getLocalDatabaseHost() != null)
 							throw new DatabaseException("Local database host already set !");
 						ArrayList<DatabaseHooksTable.Record> l = getRecordsWithAllFields(
-								new Object[] { "hostID", hostID });
-						DatabaseHooksTable.Record r = null;
+								"hostID", hostID);
+						DatabaseHooksTable.Record r;
 						if (l.size() > 1)
 							throw new DatabaseException("Duplicate host id into the database unexpected !");
 						if (l.size() == 0) {
@@ -585,8 +584,8 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 					@Override
 					public Record run() throws Exception {
 						ArrayList<DatabaseHooksTable.Record> l = getRecordsWithAllFields(
-								new Object[] { "hostID", hostID });
-						DatabaseHooksTable.Record r = null;
+								"hostID", hostID);
+						DatabaseHooksTable.Record r;
 						if (l.size() > 1)
 							throw new DatabaseException("Duplicate host id into the database unexpected !");
 						if (l.size() == 0) {
@@ -650,8 +649,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 						if (ps == null)
 							databasePackages.add(Object.class.getPackage().getName());
 						else {
-							for (String s : ps)
-								databasePackages.add(s);
+							databasePackages.addAll(Arrays.asList(ps));
 						}
 
 						return false;
@@ -715,7 +713,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 	DatabaseHooksTable.Record getLocalDatabaseHost() throws DatabaseException {
 		if (localHost == null) {
-			final AtomicReference<DatabaseHooksTable.Record> res = new AtomicReference<DatabaseHooksTable.Record>(null);
+			final AtomicReference<DatabaseHooksTable.Record> res = new AtomicReference<>(null);
 			getRecords(new Filter<DatabaseHooksTable.Record>() {
 
 				@Override

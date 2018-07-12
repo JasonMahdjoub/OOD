@@ -60,6 +60,7 @@ public final class UndecentralizableTableB1 extends Table<UndecentralizableTable
 		@ForeignKey
 		public UndecentralizableTableA1.Record pointing;
 
+		@SuppressWarnings("MethodDoesntCallSuperMethod")
 		@Override
 		public Record clone() {
 			Record r = new Record();
