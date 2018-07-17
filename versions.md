@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-2.0.0 Beta 83 (Build: 295) (from 01/04/2013 to 12/07/2018)
+2.0.0 Beta 84 (Build: 304) (from 01/04/2013 to 17/07/2018)
 
 # Creator(s):
 Jason MAHDJOUB
@@ -9,6 +9,11 @@ Jason MAHDJOUB
 Jason MAHDJOUB (Entred in the team at 01/04/2013)
 
 # Modifications:
+
+
+### 2.0.0 Beta 84 (17/07/2018)
+* Updating utils to 3.17.0
+* Do not loop infinitely if deconnection exception is generated infinitely
 
 
 ### 2.0.0 Beta 83 (12/07/2018)
