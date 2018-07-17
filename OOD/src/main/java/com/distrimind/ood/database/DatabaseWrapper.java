@@ -2455,6 +2455,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						lockRead();
 				}
 				boolean retry=true;
+				boolean deconnexionException=false;
 				while(retry)
 				{
 					retry=false;
@@ -2498,9 +2499,19 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						Throwable t=e.getCause();
 						while (t!=null)
 						{
-							if ((t instanceof SQLException) && (isSerializationException((SQLException)t) || isDeconectionException((SQLException)t)))
+							if (t instanceof SQLException)
 							{
-								retry=true;
+                                if (isSerializationException((SQLException)t)) {
+                                    retry = true;
+                                }
+								else if (isDeconectionException((SQLException)t))
+								{
+									if (!deconnexionException) {
+										retry = true;
+										deconnexionException = true;
+									}
+								}
+
 								break;
 							}
 							t=t.getCause();
