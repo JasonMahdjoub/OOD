@@ -13,7 +13,7 @@ apply plugin: 'maven-publish'
 apply plugin: 'idea'
 
 
-def Properties props = new Properties()
+Properties props = new Properties()
 def propFile = file('gradle.properties')
 def artifactory_Url="https://artifactory.distri-mind.fr/artifactory"
 def user=""
@@ -55,20 +55,20 @@ repositories {
 
 dependencies {
      testCompile 'org.testng:testng:6.13.1'
-     compile(group:'com.distrimind.util', name: 'Utils', version: '3.16.1')
+     compile(group:'com.distrimind.util', name: 'Utils', version: '3.17.0')
      testCompile(group:'org.hsqldb', name: 'hsqldb', version: '2.3.4')
      testCompile(group:'org.apache.derby', name: 'derby', version: '10.11.1.1')
 }
 def javaVersion=7
 sourceCompatibility = javaVersion
 targetCompatibility= javaVersion
-version='2.0.0-Beta83'
+version='2.0.0-Beta84'
 allprojects {
 	group='com.distrimind.ood'
 
     
     //compileJava.options.compilerArgs << "-Xlint"
-    compileJava.options.compilerArgs.addAll(['--release', javaVersion])
+    compileJava.options.compilerArgs.addAll(['--release', javaVersion] as Collection<? extends String>)
     if (project.hasProperty('javaHomeVersion') && javaHomeVersion.toFloat()>1.8)
     	javadoc.options.addStringOption("html5", "-quiet")
 }
