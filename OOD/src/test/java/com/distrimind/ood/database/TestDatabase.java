@@ -74,8 +74,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.testng.Assert.*;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
 
 /**
  * 
@@ -258,11 +256,15 @@ public abstract class TestDatabase {
 
 	@Override
 	public void finalize() {
-		unloadDatabase();
+		try {
+			unloadDatabase();
+		} catch (DatabaseException e) {
+			e.printStackTrace();
+		}
 	}
 
 	@AfterClass
-	public static void unloadDatabase() {
+	public static void unloadDatabase() throws DatabaseException {
 		System.out.println("Unload database !");
 		if (sql_db != null) {
 			sql_db.close();
@@ -3604,7 +3606,7 @@ public abstract class TestDatabase {
 				}
 				ArrayList<Table1.Record> records = table1.getRecords();
 				if (records.size() > 0) {
-					HashMap<String, Object> map = new HashMap<String, Object>();
+					HashMap<String, Object> map = new HashMap<>();
 					map.put("fr1_pk1", records.get(random.nextInt(records.size())));
 					map.put("int_value", next);
 					try {
@@ -3910,7 +3912,7 @@ public abstract class TestDatabase {
 				ArrayList<Table3.Record> records = table3.getRecords();
 				if (records.size() > 0) {
 					Table3.Record rec1 = records.get(random.nextInt(records.size()));
-					HashMap<String, Object> map = new HashMap<String, Object>();
+					HashMap<String, Object> map = new HashMap<>();
 					map.put("pk1", random.nextInt());
 					map.put("byte_value", (byte) 9);
 					map.put("char_value", 's');
@@ -4067,7 +4069,7 @@ public abstract class TestDatabase {
 					@Override
 					public void nextRecord(Record _record) {
 						HashMap<String, Object> m = new HashMap<>();
-						m.put("int_value", new Integer(18));
+						m.put("int_value", 18);
 						this.update(m);
 					}
 				});

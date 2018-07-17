@@ -53,7 +53,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  * @param <T>
  *            the record type which correspond to its database class.
  */
-public abstract class AlterRecordFilter<T extends Object> {
+public abstract class AlterRecordFilter<T> {
 	private boolean to_delete = false;
 	private boolean to_delete_with_cascade = false;
 

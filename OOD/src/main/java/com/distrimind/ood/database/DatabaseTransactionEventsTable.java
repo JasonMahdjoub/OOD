@@ -120,6 +120,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 
 		@Field(limit = concernedHostsSizeLimit)
 		private byte[] concernedHosts;
+		//private AbstractDecentralizedID newHostID;
 
 		Record() {
 			this.concernedDatabasePackage = null;
@@ -217,6 +218,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 		}
 
 		boolean isConcernedBy(AbstractDecentralizedID newHostID) throws SerializationDatabaseException {
+			//this.newHostID = newHostID;
 			if (concernedHosts == null)
 				return true;
 			List<AbstractDecentralizedID> l = getConcernedHosts();

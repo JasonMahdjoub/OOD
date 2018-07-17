@@ -48,7 +48,7 @@ import com.distrimind.util.AbstractDecentralizedID;
  * @since OOD 2.0
  */
 public interface DatabaseEventToSend extends Serializable {
-	public AbstractDecentralizedID getHostDestination() throws DatabaseException;
+	AbstractDecentralizedID getHostDestination() throws DatabaseException;
 
-	public AbstractDecentralizedID getHostSource() throws DatabaseException;
+	AbstractDecentralizedID getHostSource() throws DatabaseException;
 }

@@ -99,7 +99,7 @@ public class byteFieldAccessor extends FieldAccessor {
 			if (_field_instance == null)
 				return false;
 			else if (_field_instance instanceof Byte)
-				return field.getByte(_class_instance) == ((Byte) _field_instance).byteValue();
+				return field.getByte(_class_instance) == (Byte) _field_instance;
 			else
 				return false;
 		} catch (Exception e) {
@@ -164,12 +164,7 @@ public class byteFieldAccessor extends FieldAccessor {
 		try {
 			byte val1 = field.getByte(_r1);
 			byte val2 = field.getByte(_r2);
-			if (val1 < val2)
-				return -1;
-			else if (val1 == val2)
-				return 0;
-			else
-				return 1;
+			return Byte.compare(val1, val2);
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}

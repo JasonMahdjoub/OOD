@@ -170,7 +170,7 @@ class DatabaseWrapperAccessor {
 
 	static int getVarCharLimit(DatabaseWrapper wrapper) {
 		try {
-			return ((Integer) invoke(m_get_var_char_limit, wrapper)).intValue();
+			return (Integer) invoke(m_get_var_char_limit, wrapper);
 		} catch (InvocationTargetException e) {
 			System.err.println("Unexpected error :");
 			e.printStackTrace();
@@ -181,7 +181,7 @@ class DatabaseWrapperAccessor {
 
 	static boolean isVarBinarySupported(DatabaseWrapper wrapper) {
 		try {
-			return ((Boolean) invoke(m_is_var_binary_supported, wrapper)).booleanValue();
+			return (Boolean) invoke(m_is_var_binary_supported, wrapper);
 		} catch (InvocationTargetException e) {
 			System.err.println("Unexpected error :");
 			e.printStackTrace();
@@ -192,7 +192,7 @@ class DatabaseWrapperAccessor {
 
 	static Blob getBlob(DatabaseWrapper wrapper, byte[] tab) throws SQLException {
 		try {
-			return (Blob) invoke(m_get_blob, wrapper, tab);
+			return (Blob) invoke(m_get_blob, wrapper, (Object) tab);
 		} catch (InvocationTargetException e) {
 			throw (SQLException) e.getCause();
 		}
@@ -200,7 +200,7 @@ class DatabaseWrapperAccessor {
 
 	static DecentralizedIDGenerator getDecentralizedIDGeneratorInstance(long timestamp, long work_id_sequence) {
 		try {
-			return m_decentralized_id_constructor.newInstance(new Long(timestamp), new Long(work_id_sequence));
+			return m_decentralized_id_constructor.newInstance(timestamp, work_id_sequence);
 		} catch (InvocationTargetException | InstantiationException | IllegalAccessException
 				| IllegalArgumentException e) {
 			System.err.println("Unexpected error :");
@@ -213,8 +213,8 @@ class DatabaseWrapperAccessor {
 	static RenforcedDecentralizedIDGenerator getRenforcedDecentralizedIDGeneratorInstance(long timestamp,
 			long work_id_sequence) {
 		try {
-			return m_renforced_decentralized_id_constructor.newInstance(new Long(timestamp),
-					new Long(work_id_sequence));
+			return m_renforced_decentralized_id_constructor.newInstance(timestamp,
+                    work_id_sequence);
 		} catch (InvocationTargetException | InstantiationException | IllegalAccessException
 				| IllegalArgumentException e) {
 			System.err.println("Unexpected error :");

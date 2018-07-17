@@ -60,8 +60,8 @@ public class OOD {
 		Calendar c1 = Calendar.getInstance();
 		c1.set(2013, Calendar.APRIL, 1);
 		Calendar c2 = Calendar.getInstance();
-		c2.set(2018, Calendar.JULY, 12);
-		VERSION = new Version("Object Oriented Database", "OOD", 2, 0, 0, Version.Type.Beta, 83, c1.getTime(),
+		c2.set(2018, Calendar.JULY, 17);
+		VERSION = new Version("Object Oriented Database", "OOD", 2, 0, 0, Version.Type.Beta, 84, c1.getTime(),
 				c2.getTime());
 		try {
 			InputStream is = OOD.class.getResourceAsStream("build.txt");
@@ -73,8 +73,15 @@ public class OOD {
 			VERSION.addDeveloper(new PersonDeveloper("mahdjoub", "jason", c.getTime()));
 
 			c = Calendar.getInstance();
+			c.set(2018, Calendar.JULY, 17);
+			Description d = new Description(2, 0, 0, Version.Type.Beta, 84, c.getTime());
+			d.addItem("Updating utils to 3.17.0");
+            d.addItem("Do not loop infinitely if deconnection exception is generated infinitely");
+			VERSION.addDescription(d);
+
+			c = Calendar.getInstance();
 			c.set(2018, Calendar.JULY, 12);
-			Description d = new Description(2, 0, 0, Version.Type.Beta, 83, c.getTime());
+			d = new Description(2, 0, 0, Version.Type.Beta, 83, c.getTime());
 			d.addItem("Updating utils to 3.16.1");
             d.addItem("Clean code");
             d.addItem("Add autodeconnection option with database wrappers");

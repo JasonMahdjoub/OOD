@@ -720,11 +720,11 @@ public abstract class TestDecentralizedDatabase {
 	}
 
 	private String generateString() {
-		String res = "";
+		StringBuilder res = new StringBuilder();
 		for (int i = 0; i < 10; i++) {
-			res += 'a' + ((int) (Math.random() * 52));
+			res.append('a' + ((int) (Math.random() * 52)));
 		}
-		return res;
+		return res.toString();
 	}
 
 	private TablePointed.Record generatesTablePointedRecord() {
@@ -939,7 +939,7 @@ public abstract class TestDecentralizedDatabase {
 								pointedRecord.get((int) (Math.random() * pointedRecord.size())));
 					break;
 				}
-				te = new TableEvent<DatabaseRecord>(-1, DatabaseEventType.ADD, null, record, null);
+				te = new TableEvent<>(-1, DatabaseEventType.ADD, null, record, null);
 				livingRecords.add(record);
 
 			}
@@ -997,7 +997,7 @@ public abstract class TestDecentralizedDatabase {
 		return res;
 	}
 
-	@DataProvider(name = "provideDataForSynchroBetweenTwoPeers", parallel = false)
+	@DataProvider(name = "provideDataForSynchroBetweenTwoPeers")
 	public Object[][] provideDataForSynchroBetweenTwoPeers() {
 		int numberEvents = 40;
 		Object[][] res = new Object[numberEvents * 2 * 2 * 2][];
@@ -1007,8 +1007,8 @@ public abstract class TestDecentralizedDatabase {
 			for (boolean generateDirectConflict : gdc) {
 				for (boolean peersInitiallyConnected : new boolean[] { true, false }) {
 					for (TableEvent<DatabaseRecord> te : proviveTableEvents(numberEvents)) {
-						res[index++] = new Object[] { new Boolean(exceptionDuringTransaction),
-								new Boolean(generateDirectConflict), new Boolean(peersInitiallyConnected), te };
+						res[index++] = new Object[] {exceptionDuringTransaction,
+								generateDirectConflict, peersInitiallyConnected, te };
 					}
 				}
 			}
@@ -1249,7 +1249,7 @@ public abstract class TestDecentralizedDatabase {
 	}
 
 	private TableEvent<DatabaseRecord> clone(TableEvent<DatabaseRecord> event) {
-		return new TableEvent<DatabaseRecord>(event.getID(), event.getType(), clone(event.getOldDatabaseRecord()),
+		return new TableEvent<>(event.getID(), event.getType(), clone(event.getOldDatabaseRecord()),
 				clone(event.getNewDatabaseRecord()), event.getHostsDestination());
 	}
 
@@ -1265,7 +1265,7 @@ public abstract class TestDecentralizedDatabase {
 			throws Exception {
 		if (peersNumber < 2 || peersNumber > listDatabase.size())
 			throw new IllegalArgumentException();
-		List<TableEvent<DatabaseRecord>> levents = Arrays.asList(event);
+		List<TableEvent<DatabaseRecord>> levents = Collections.singletonList(event);
 		ArrayList<Database> l = new ArrayList<>(peersNumber);
 		for (int i = 0; i < peersNumber; i++)
 			l.add(listDatabase.get(i));
@@ -1438,8 +1438,7 @@ public abstract class TestDecentralizedDatabase {
 
 				Assert.assertNull(db.getDetectedCollision());
 				Assert.assertTrue(db.isNewDatabaseEventDetected());
-				if (!threadTest)
-					testEventSynchronized(db, levents, true);
+				testEventSynchronized(db, levents, true);
 				Assert.assertTrue(db.getAnomalies().isEmpty());
 
 			}
@@ -1465,7 +1464,7 @@ public abstract class TestDecentralizedDatabase {
 		testSynchronisation();
 	}
 
-	@DataProvider(name = "provideDataSynchroBetweenThreePeers", parallel = false)
+	@DataProvider(name = "provideDataSynchroBetweenThreePeers")
 	public Object[][] provideDataSynchroBetweenThreePeers() {
 		return provideDataForSynchroBetweenTwoPeers();
 	}
@@ -1482,7 +1481,7 @@ public abstract class TestDecentralizedDatabase {
 		testSynchronisation();
 	}
 
-	@DataProvider(name = "provideDataForIndirectSynchro", parallel = false)
+	@DataProvider(name = "provideDataForIndirectSynchro")
 	public Object[][] provideDataForIndirectSynchro() {
 		int numberEvents = 40;
 		Object[][] res = new Object[numberEvents * 2 * 2 * 2][];
@@ -1491,8 +1490,8 @@ public abstract class TestDecentralizedDatabase {
 			boolean ict[] = generateDirectConflict ? new boolean[] { true } : new boolean[] { false };
 			for (boolean peersInitiallyConnected : ict) {
 				for (TableEvent<DatabaseRecord> te : proviveTableEvents(numberEvents)) {
-					res[index++] = new Object[] { new Boolean(generateDirectConflict),
-							new Boolean(peersInitiallyConnected), te };
+					res[index++] = new Object[] {generateDirectConflict,
+							peersInitiallyConnected, te };
 				}
 			}
 		}
@@ -1504,7 +1503,7 @@ public abstract class TestDecentralizedDatabase {
 			"testSynchroAfterTestsBetweenThreePeers" })
 	public void testIndirectSynchro(boolean generateDirectConflict, boolean peersInitiallyConnected,
 			TableEvent<DatabaseRecord> event) throws Exception {
-		List<TableEvent<DatabaseRecord>> levents = Arrays.asList(event);
+		List<TableEvent<DatabaseRecord>> levents = Collections.singletonList(event);
 		final Database[] indirectDatabase = new Database[] { listDatabase.get(0), listDatabase.get(2) };
 		final Database[] segmentA = new Database[] { listDatabase.get(0), listDatabase.get(1) };
 		final Database[] segmentB = new Database[] { listDatabase.get(1), listDatabase.get(2) };
@@ -1659,7 +1658,7 @@ public abstract class TestDecentralizedDatabase {
 		testSynchronisation();
 	}
 
-	@DataProvider(name = "provideDataForIndirectSynchroWithIndirectConnection", parallel = false)
+	@DataProvider(name = "provideDataForIndirectSynchroWithIndirectConnection")
 	public Object[][] provideDataForIndirectSynchroWithIndirectConnection() {
 		return provideDataForIndirectSynchro();
 	}
@@ -1671,7 +1670,7 @@ public abstract class TestDecentralizedDatabase {
 	public void testIndirectSynchroWithIndirectConnection(boolean generateDirectConflict,
 			boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event)
 			throws Exception {
-		List<TableEvent<DatabaseRecord>> levents = Arrays.asList(event);
+		List<TableEvent<DatabaseRecord>> levents = Collections.singletonList(event);
 		final Database[] indirectDatabase = new Database[] { listDatabase.get(0), listDatabase.get(2) };
 		final Database[] segmentA = new Database[] { listDatabase.get(0), listDatabase.get(1) };
 		final Database[] segmentB = new Database[] { listDatabase.get(1), listDatabase.get(2) };
@@ -1757,14 +1756,14 @@ public abstract class TestDecentralizedDatabase {
 		testSynchronisation();
 	}
 
-	@DataProvider(name = "provideDataForTransactionBetweenTwoPeers", parallel = false)
+	@DataProvider(name = "provideDataForTransactionBetweenTwoPeers")
 	public Object[][] provideDataForTransactionBetweenTwoPeers() {
 		int numberTransactions = 40;
 		Object res[][] = new Object[2 * numberTransactions][];
 		int index = 0;
 		for (boolean peersInitiallyConnected : new boolean[] { true, false }) {
 			for (int i = 0; i < numberTransactions; i++) {
-				res[index++] = new Object[] { new Boolean(peersInitiallyConnected),
+				res[index++] = new Object[] {peersInitiallyConnected,
 						proviveTableEvents((int) (5.0 + Math.random() * 10.0)) };
 
 			}
@@ -1780,7 +1779,7 @@ public abstract class TestDecentralizedDatabase {
 		testTransactionBetweenPeers(2, peersInitiallyConnected, levents, false);
 	}
 
-	@DataProvider(name = "provideDataForTransactionBetweenThreePeers", parallel = false)
+	@DataProvider(name = "provideDataForTransactionBetweenThreePeers")
 	public Object[][] provideDataForTransactionBetweenThreePeers() {
 		return provideDataForTransactionBetweenTwoPeers();
 	}
@@ -1792,7 +1791,7 @@ public abstract class TestDecentralizedDatabase {
 		testTransactionBetweenPeers(3, peersInitiallyConnected, levents, false);
 	}
 
-	@DataProvider(name = "provideDataForTransactionSynchros", parallel = false)
+	@DataProvider(name = "provideDataForTransactionSynchros")
 	public Object[][] provideDataForTransactionSynchros() {
 		return provideDataForTransactionBetweenTwoPeers();
 	}
@@ -1830,7 +1829,7 @@ public abstract class TestDecentralizedDatabase {
 		checkAllDatabaseInternalDataUsedForSynchro();
 	}
 
-	@DataProvider(name = "provideDataForTransactionSynchrosWithIndirectConnection", parallel = false)
+	@DataProvider(name = "provideDataForTransactionSynchrosWithIndirectConnection")
 	public Object[][] provideDataForTransactionSynchrosWithIndirectConnection() {
 		return provideDataForTransactionBetweenTwoPeers();
 	}

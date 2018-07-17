@@ -187,6 +187,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			}
 		}*/
 
+		@SuppressWarnings("StringConcatenationInLoop")
 		protected List<String> addDatabasePackageNames(List<String> ps) {
 			if (ps == null || ps.size() == 0)
 				return new ArrayList<>(0);
