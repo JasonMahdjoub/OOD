@@ -15,13 +15,13 @@ Adapt into your build.gradle file, the next code :
 		...
 		maven {
 	       		url "https://artifactory.distri-mind.fr/artifactory/gradle-release"
-	   	} 
+	   	}
 		...
 	}
 	...
 	dependencies {
 		...
-		compile(group:'com.distrimind.ood', name: 'OOD', version: '2.0.0-Beta84')
+		compile(group:'com.distrimind.ood', name: 'OOD', version: '2.0.0-Beta85')
 		//choose one of these optional drivers
 			//optional and under JDK8 or newer
 			compile(group:'org.hsqldb', name: 'hsqldb', version: '2.4.0')
@@ -36,6 +36,7 @@ Adapt into your build.gradle file, the next code :
 	}
 	...
 
+
 To know what last version has been uploaded, please refer to versions availables into [this repository](https://artifactory.distri-mind.fr/artifactory/DistriMind-Public/com/distrimind/ood/OOD/)
 ## With Maven :
 Adapt into your pom.xml file, the next code :
@@ -47,13 +48,13 @@ Adapt into your pom.xml file, the next code :
 			<dependency>
 				<groupId>com.distrimind.ood</groupId>
 				<artifactId>OOD</artifactId>
-				<version>2.0.0-Beta84</version>
+				<version>2.0.0-Beta85</version>
 			</dependency>
 			<!-- choose one of these optional drivers -->
 				<dependency>
 					<groupId>org.hsqldb</groupId>
 					<artifactId>hsqldb</artifactId>
-	
+
 					<!-- under JDK 8 or newer -->
 					<version>2.4.0</version>
 
@@ -63,7 +64,7 @@ Adapt into your pom.xml file, the next code :
 				<dependency>
 					<groupId>org.apache.derby</groupId>
 					<artifactId>derby</artifactId>
-	
+
 					<!-- under JDK 8 or newer -->
 					<version>10.13.1.1</version>
 
