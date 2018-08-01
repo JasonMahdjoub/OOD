@@ -60,8 +60,8 @@ public class OOD {
 		Calendar c1 = Calendar.getInstance();
 		c1.set(2013, Calendar.APRIL, 1);
 		Calendar c2 = Calendar.getInstance();
-		c2.set(2018, Calendar.JULY, 27);
-		VERSION = new Version("Object Oriented Database", "OOD", 2, 0, 0, Version.Type.Beta, 85, c1.getTime(),
+		c2.set(2018, Calendar.AUGUST, 1);
+		VERSION = new Version("Object Oriented Database", "OOD", (short)2, (short)0, (short)0, Version.Type.Beta, (short)86, c1.getTime(),
 				c2.getTime());
 		try {
 			InputStream is = OOD.class.getResourceAsStream("build.txt");
@@ -73,21 +73,27 @@ public class OOD {
 			VERSION.addDeveloper(new PersonDeveloper("mahdjoub", "jason", c.getTime()));
 
 			c = Calendar.getInstance();
+			c.set(2018, Calendar.AUGUST, 1);
+			Description d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)86, c.getTime());
+			d.addItem("Updating utils to 3.19.0");
+			VERSION.addDescription(d);
+
+			c = Calendar.getInstance();
 			c.set(2018, Calendar.JULY, 27);
-			Description d = new Description(2, 0, 0, Version.Type.Beta, 85, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)85, c.getTime());
 			d.addItem("Updating utils to 3.18.0");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2018, Calendar.JULY, 17);
-			d = new Description(2, 0, 0, Version.Type.Beta, 84, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)84, c.getTime());
 			d.addItem("Updating utils to 3.17.0");
             d.addItem("Do not loop infinitely if deconnection exception is generated infinitely");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2018, Calendar.JULY, 12);
-			d = new Description(2, 0, 0, Version.Type.Beta, 83, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)83, c.getTime());
 			d.addItem("Updating utils to 3.16.1");
             d.addItem("Clean code");
             d.addItem("Add autodeconnection option with database wrappers");
@@ -95,13 +101,13 @@ public class OOD {
 
 			c = Calendar.getInstance();
 			c.set(2018, Calendar.MAY, 16);
-			d = new Description(2, 0, 0, Version.Type.Beta, 82, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)82, c.getTime());
 			d.addItem("Updating utils to 3.15.0");
 			VERSION.addDescription(d);
 			
 			c = Calendar.getInstance();
 			c.set(2018, Calendar.MARCH, 30);
-			d = new Description(2, 0, 0, Version.Type.Beta, 71, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)71, c.getTime());
 			d.addItem("Optimization of CachedInputStream");
 			d.addItem("Optimization of CachedOutoutStream");
 			d.addItem("Updating utils to 3.13.1");
@@ -109,34 +115,34 @@ public class OOD {
 
 			c = Calendar.getInstance();
 			c.set(2018, Calendar.FEBRUARY, 10);
-			d = new Description(2, 0, 0, Version.Type.Beta, 66, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)66, c.getTime());
 			d.addItem("Updating utils to 3.10.5");
 			d.addItem("Correcting a bug with the backup of enum variables");
 			VERSION.addDescription(d);
 			
 			c = Calendar.getInstance();
 			c.set(2018, Calendar.JANUARY, 31);
-			d = new Description(2, 0, 0, Version.Type.Beta, 59, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)59, c.getTime());
 			d.addItem("Updating utils to 3.9.0");
 			VERSION.addDescription(d);
 			
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.DECEMBER, 13);
-			d = new Description(2, 0, 0, Version.Type.Beta, 57, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)57, c.getTime());
 			d.addItem("Updating utils to 3.7.1");
 			d.addItem("Managing deconnection database exception/reconnection");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.OCTOBER, 16);
-			d = new Description(2, 0, 0, Version.Type.Beta, 50, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)50, c.getTime());
 			d.addItem("Adding secure random functions into database wrapper");
 			d.addItem("public/private/secret keys can now be primary keys");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.OCTOBER, 16);
-			d = new Description(2, 0, 0, Version.Type.Beta, 50, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)50, c.getTime());
 			d.addItem("Manage File fields");
 			d.addItem("Add ExcludeFromDecentralization annotation !");
 			d.addItem("Updating Utils to 3.3.0");
@@ -144,52 +150,52 @@ public class OOD {
 
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.OCTOBER, 13);
-			d = new Description(2, 0, 0, Version.Type.Beta, 49, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)49, c.getTime());
 			d.addItem("Update Utils to 3.2.4");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.OCTOBER, 6);
-			d = new Description(2, 0, 0, Version.Type.Beta, 44, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)44, c.getTime());
 			d.addItem("Update Utils to 3.1.1");
 			d.addItem("Correcting a bug with key pair size limit");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.OCTOBER, 4);
-			d = new Description(2, 0, 0, Version.Type.Beta, 35, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)35, c.getTime());
 			d.addItem("Update Utils to 3.0.0");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.SEPTEMBER, 8);
-			d = new Description(2, 0, 0, Version.Type.Beta, 34, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)34, c.getTime());
 			d.addItem("Adding lock HSQLDB file possibility");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.SEPTEMBER, 8);
-			d = new Description(2, 0, 0, Version.Type.Beta, 33, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)33, c.getTime());
 			d.addItem("Correcting a problem with internal tables creation");
 			VERSION.addDescription(d);
 			
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.SEPTEMBER, 7);
-			d = new Description(2, 0, 0, Version.Type.Beta, 32, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)32, c.getTime());
 			d.addItem("Correcting a problem of loop into Symbol.getFieldAccessor(Table<T>, Object)");
 			VERSION.addDescription(d);
 
 			
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.SEPTEMBER, 7);
-			d = new Description(2, 0, 0, Version.Type.Beta, 30, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)30, c.getTime());
 			d.addItem("Changing table lock policy");
 			VERSION.addDescription(d);
 
 			
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.SEPTEMBER, 5);
-			d = new Description(2, 0, 0, Version.Type.Beta, 28, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)28, c.getTime());
 			d.addItem("Changing transaction policy");
 			d.addItem("Changing Calendar serialization method");
 			d.addItem("Changing table locking method");
@@ -203,20 +209,20 @@ public class OOD {
 
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.AUGUST, 29);
-			d = new Description(2, 0, 0, Version.Type.Beta, 22, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)22, c.getTime());
 			d.addItem("Possibility to insert null values for parameters");
 			d.addItem("Changing locker");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.AUGUST, 29);
-			d = new Description(2, 0, 0, Version.Type.Beta, 21, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)21, c.getTime());
 			d.addItem("Correcting DateFieldAccessor when using null values");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.AUGUST, 21);
-			d = new Description(2, 0, 0, Version.Type.Beta, 20, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)20, c.getTime());
 			d.addItem("Updating Utils to 2.15.1");
 			d.addItem("Minimal corrections");
 			d.addItem("Corrections into the documentation");
@@ -224,63 +230,63 @@ public class OOD {
 
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.AUGUST, 15);
-			d = new Description(2, 0, 0, Version.Type.Beta, 19, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)19, c.getTime());
 			d.addItem("Optimizing database loading");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.AUGUST, 15);
-			d = new Description(2, 0, 0, Version.Type.Beta, 18, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)18, c.getTime());
 			d.addItem("Updating OOD to 2.15.0");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.AUGUST, 13);
-			d = new Description(2, 0, 0, Version.Type.Beta, 17, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)17, c.getTime());
 			d.addItem("Updating OOD to 2.14.0");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.AUGUST, 10);
-			d = new Description(2, 0, 0, Version.Type.Beta, 16, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)16, c.getTime());
 			d.addItem("Updating Utils to 2.12.0");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.AUGUST, 9);
-			d = new Description(2, 0, 0, Version.Type.Beta, 15, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)15, c.getTime());
 			d.addItem("Making HSQLDB not supporting 'LongVarBinary' type.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.AUGUST, 5);
-			d = new Description(2, 0, 0, Version.Type.Beta, 14, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)14, c.getTime());
 			d.addItem("Little byte tab primary keys are know possible for DerbyDB.");
 			d.addItem("All decentralized database synchronization tests are OK with DerbyDB.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.AUGUST, 5);
-			d = new Description(2, 0, 0, Version.Type.Beta, 11, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)11, c.getTime());
 			d.addItem("Convert project to gradle project.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.JULY, 27);
-			d = new Description(2, 0, 0, Version.Type.Beta, 8, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)8, c.getTime());
 			d.addItem("All decentralized database synchronization tests are OK with HSQLDB (but not with Derby DB).");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.JULY, 5);
-			d = new Description(2, 0, 0, Version.Type.Beta, 7, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)7, c.getTime());
 			d.addItem("Tests synchro between two direct peers OK.");
 			d.addItem("Correcting a problem of transaction lock.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.JULY, 2);
-			d = new Description(2, 0, 0, Version.Type.Beta, 6, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)6, c.getTime());
 			d.addItem("Adding not null possibility for each sub field.");
 			d.addItem("Begin debug decentralized database.");
 			d.addItem("Optimizing tables junction.");
@@ -288,20 +294,20 @@ public class OOD {
 
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.JUNE, 23);
-			d = new Description(2, 0, 0, Version.Type.Beta, 5, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)5, c.getTime());
 			d.addItem("Adding not null possibility for each sub field.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.JUNE, 14);
-			d = new Description(2, 0, 0, Version.Type.Beta, 4, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)4, c.getTime());
 			d.addItem("Debugging SQL interpreter.");
 			d.addItem("Adding not null possibility for each sub field.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.JUNE, 1);
-			d = new Description(2, 0, 0, Version.Type.Beta, 3, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)3, c.getTime());
 			d.addItem("Adding database factory.");
 			d.addItem("Correcting a bug in database connections/deconnections.");
 			d.addItem("Updating Utils to 2.8.0.");
@@ -309,7 +315,7 @@ public class OOD {
 
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.MAY, 26);
-			d = new Description(2, 0, 0, Version.Type.Beta, 2, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)2, c.getTime());
 			d.addItem("Debuging transaction's use.");
 			d.addItem("Adding pagined queries.");
 			d.addItem("Adding ordered queries.");
@@ -319,7 +325,7 @@ public class OOD {
 
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.MAY, 24);
-			d = new Description(2, 0, 0, Version.Type.Beta, 1, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)1, c.getTime());
 			d.addItem("Adding database synchronisation possibility between different peers (unstable).");
 			d.addItem("Cleaning DatabaseWrapper functions.");
 			d.addItem(
@@ -340,37 +346,37 @@ public class OOD {
 
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.MARCH, 7);
-			d = new Description(1, 9, 7, Version.Type.Stable, 0, c.getTime());
+			d = new Description((short)1, (short)9, (short)7, Version.Type.Stable, (short)0, c.getTime());
 			d.addItem("Updating Utils to 2.5.0.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.MARCH, 4);
-			d = new Description(1, 9, 6, Version.Type.Stable, 0, c.getTime());
+			d = new Description((short)1, (short)9, (short)6, Version.Type.Stable, (short)0, c.getTime());
 			d.addItem("Updating Utils to 2.4.0.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.FEBRUARY, 7);
-			d = new Description(1, 9, 5, Version.Type.Stable, 0, c.getTime());
+			d = new Description((short)1, (short)9, (short)5, Version.Type.Stable, (short)0, c.getTime());
 			d.addItem("Updating Utils to 2.3.0.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.JANUARY, 5);
-			d = new Description(1, 9, 4, Version.Type.Stable, 0, c.getTime());
+			d = new Description((short)1, (short)9, (short)4, Version.Type.Stable, (short)0, c.getTime());
 			d.addItem("Updating Utils to 2.2.0.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2016, Calendar.DECEMBER, 31);
-			d = new Description(1, 9, 3, Version.Type.Stable, 0, c.getTime());
+			d = new Description((short)1, (short)9, (short)3, Version.Type.Stable, (short)0, c.getTime());
 			d.addItem("Updating Utils to 2.1.0.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2016, Calendar.DECEMBER, 26);
-			d = new Description(1, 9, 2, Version.Type.Stable, 0, c.getTime());
+			d = new Description((short)1, (short)9, (short)2, Version.Type.Stable, (short)0, c.getTime());
 			d.addItem("Correcting a problem of data integrity check.");
 			d.addItem("Updating Derby DB to 10.13.1.1.");
 			d.addItem("Solving a problem of multithread execution into windows (SQLNonTransientConnectionException).");
@@ -378,25 +384,25 @@ public class OOD {
 
 			c = Calendar.getInstance();
 			c.set(2016, Calendar.DECEMBER, 24);
-			d = new Description(1, 9, 1, Version.Type.Stable, 0, c.getTime());
+			d = new Description((short)1, (short)9, (short)1, Version.Type.Stable, (short)0, c.getTime());
 			d.addItem("Updating Utils to version 2.0.1.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2016, Calendar.DECEMBER, 19);
-			d = new Description(1, 9, 0, Version.Type.Stable, 0, c.getTime());
+			d = new Description((short)1, (short)9, (short)0, Version.Type.Stable, (short)0, c.getTime());
 			d.addItem("Updating Utils to version 2.0.0.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2016, Calendar.DECEMBER, 6);
-			d = new Description(1, 8, 1, Version.Type.Stable, 0, c.getTime());
+			d = new Description((short)1, (short)8, (short)1, Version.Type.Stable, (short)0, c.getTime());
 			d.addItem("Updating Utils to version 1.9.0.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2016, Calendar.NOVEMBER, 30);
-			d = new Description(1, 8, 0, Version.Type.Stable, 0, c.getTime());
+			d = new Description((short)1, (short)8, (short)0, Version.Type.Stable, (short)0, c.getTime());
 			d.addItem("Using ACID transactions instead of semaphores.");
 			d.addItem("Adding HSQLDBConcurrencyControl class.");
 			d.addItem("Adding memory refresh interval (see LoadToMemory annotation).");
@@ -405,13 +411,13 @@ public class OOD {
 
 			c = Calendar.getInstance();
 			c.set(2016, Calendar.OCTOBER, 13);
-			d = new Description(1, 7, 1, Version.Type.Stable, 0, c.getTime());
+			d = new Description((short)1, (short)7, (short)1, Version.Type.Stable, (short)0, c.getTime());
 			d.addItem("Updating Utils to 1.8.0.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2016, Calendar.SEPTEMBER, 19);
-			d = new Description(1, 7, 0, Version.Type.Stable, 0, c.getTime());
+			d = new Description((short)1, (short)7, (short)0, Version.Type.Stable, (short)0, c.getTime());
 			d.addItem("Correcting bug into FieldAccessor (null pointer exception).");
 			d.addItem("Adding enum support.");
 			d.addItem("Adding Decentralized ID support.");
@@ -419,19 +425,19 @@ public class OOD {
 
 			c = Calendar.getInstance();
 			c.set(2016, Calendar.AUGUST, 29);
-			d = new Description(1, 6, 4, Version.Type.Stable, 0, c.getTime());
+			d = new Description((short)1, (short)6, (short)4, Version.Type.Stable, (short)0, c.getTime());
 			d.addItem("Updating Utils to 1.7.2.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2016, Calendar.AUGUST, 23);
-			d = new Description(1, 6, 3, Version.Type.Stable, 0, c.getTime());
+			d = new Description((short)1, (short)6, (short)3, Version.Type.Stable, (short)0, c.getTime());
 			d.addItem("Updating Utils to 1.7.1.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2016, Calendar.JULY, 4);
-			d = new Description(1, 6, 2, Version.Type.Stable, 0, c.getTime());
+			d = new Description((short)1, (short)6, (short)2, Version.Type.Stable, (short)0, c.getTime());
 			d.addItem("Updating Utils to 1.7.");
 			d.addItem("Updating to Common-Net 3.5.");
 			d.addItem("Updating to HSDQLDB 3.3.4.");
@@ -439,7 +445,7 @@ public class OOD {
 
 			c = Calendar.getInstance();
 			c.set(2016, Calendar.JUNE, 10);
-			d = new Description(1, 6, 1, Version.Type.Stable, 0, c.getTime());
+			d = new Description((short)1, (short)6, (short)1, Version.Type.Stable, (short)0, c.getTime());
 			d.addItem("Correction a bug into the constructor of ByteTabConvertibleFieldAccessor.");
 			d.addItem("Adding version tests.");
 			d.addItem("Changing license to CECILL-C.");
@@ -447,7 +453,7 @@ public class OOD {
 
 			c = Calendar.getInstance();
 			c.set(2016, Calendar.MARCH, 11);
-			d = new Description(1, 6, 0, Version.Type.Stable, 0, c.getTime());
+			d = new Description((short)1, (short)6, (short)0, Version.Type.Stable, (short)0, c.getTime());
 			d.addItem("Updating with Utils 1.6.");
 			d.addItem("Adding database backup tools.");
 			d.addItem("renaming alterRecord functions to updateRecord.");
@@ -456,7 +462,7 @@ public class OOD {
 
 			c = Calendar.getInstance();
 			c.set(2016, Calendar.MARCH, 4);
-			d = new Description(1, 5, 2, Version.Type.Stable, 0, c.getTime());
+			d = new Description((short)1, (short)5, (short)2, Version.Type.Stable, (short)0, c.getTime());
 			d.addItem("Updating with Utils 1.5");
 			d.addItem("Adding encryption keys encoding/decoding.");
 			d.addItem("Correcting bugs with ByteTabConvertibleFieldAccessor class.");
@@ -464,14 +470,14 @@ public class OOD {
 
 			c = Calendar.getInstance();
 			c.set(2016, Calendar.MARCH, 1);
-			d = new Description(1, 5, 1, Version.Type.Stable, 0, c.getTime());
+			d = new Description((short)1, (short)5, (short)1, Version.Type.Stable, (short)0, c.getTime());
 			d.addItem("Updating with Utils 1.4.");
 			d.addItem("Adding AllTestsNG.xml file.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2016, Calendar.FEBRUARY, 15);
-			d = new Description(1, 5, 0, Version.Type.Stable, 0, c.getTime());
+			d = new Description((short)1, (short)5, (short)0, Version.Type.Stable, (short)0, c.getTime());
 			d.addItem("Adding iterator functionality in class Table.");
 			d.addItem("Adding ByteTabObjectConverter class.");
 			d.addItem("Adding DefaultByteTabObjectConverter class.");
@@ -485,14 +491,14 @@ public class OOD {
 
 			c = Calendar.getInstance();
 			c.set(2016, Calendar.FEBRUARY, 14);
-			d = new Description(1, 4, 1, Version.Type.Stable, 0, c.getTime());
+			d = new Description((short)1, (short)4, (short)1, Version.Type.Stable, (short)0, c.getTime());
 			d.addItem("Adding some close statements corrections.");
 			d.addItem("Adding some multi-thread optimisations.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2016, Calendar.FEBRUARY, 8);
-			d = new Description(1, 4, 0, Version.Type.Stable, 0, c.getTime());
+			d = new Description((short)1, (short)4, (short)0, Version.Type.Stable, (short)0, c.getTime());
 			d.addItem(
 					"One databse is associated to one package. Now, its is possible to load several database/packages into the same file.");
 			d.addItem("OOD works now with HSQLDB or Apache Derby.");
@@ -500,26 +506,26 @@ public class OOD {
 
 			c = Calendar.getInstance();
 			c.set(2016, Calendar.FEBRUARY, 5);
-			d = new Description(1, 3, 0, Version.Type.Stable, 0, c.getTime());
+			d = new Description((short)1, (short)3, (short)0, Version.Type.Stable, (short)0, c.getTime());
 			d.addItem("Adding dependency with Utils and updating OOD consequently.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2016, Calendar.FEBRUARY, 1);
-			d = new Description(1, 2, 0, Version.Type.Stable, 0, c.getTime());
+			d = new Description((short)1, (short)2, (short)0, Version.Type.Stable, (short)0, c.getTime());
 			d.addItem("Correcting some bugs into the documentation.");
 			d.addItem("Upgrading to HSQLDB 2.3.3 and Commons-Net 3.4.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2013, Calendar.NOVEMBER, 18);
-			d = new Description(1, 1, 0, Version.Type.Stable, 0, c.getTime());
+			d = new Description((short)1, (short)1, (short)0, Version.Type.Stable, (short)0, c.getTime());
 			d.addItem("Improving function Table.alterRecords(...) and class AlterRecordFilter (see documentation).");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2013, Calendar.APRIL, 24);
-			d = new Description(1, 0, 0, Version.Type.Stable, 0, c.getTime());
+			d = new Description((short)1, (short)0, (short)0, Version.Type.Stable, (short)0, c.getTime());
 			d.addItem("Releasing Oriented Object Database as a stable version.");
 			VERSION.addDescription(d);
 		} catch (Exception e) {

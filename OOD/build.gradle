@@ -55,14 +55,14 @@ repositories {
 
 dependencies {
      testCompile 'org.testng:testng:6.13.1'
-     compile(group:'com.distrimind.util', name: 'Utils', version: '3.18.0')
+     compile(group:'com.distrimind.util', name: 'Utils', version: '3.19.0')
      testCompile(group:'org.hsqldb', name: 'hsqldb', version: '2.3.4')
      testCompile(group:'org.apache.derby', name: 'derby', version: '10.11.1.1')
 }
 def javaVersion=7
 sourceCompatibility = javaVersion
 targetCompatibility= javaVersion
-version='2.0.0-Beta85'
+version='2.0.0-Beta86'
 allprojects {
 	group='com.distrimind.ood'
 
