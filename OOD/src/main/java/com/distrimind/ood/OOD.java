@@ -533,6 +533,7 @@ public class OOD {
 		}
 	}
 	
+	@SuppressWarnings("ResultOfMethodCallIgnored")
 	public static void main(String args[]) throws IOException
 	{
 		String markdown=VERSION.getMarkdownCode();
@@ -540,6 +541,15 @@ public class OOD {
 		{
 			fw.write(markdown);
 			fw.flush();
+		}
+		String lastVersion=VERSION.getFileHeadVersion();
+		File f=new File("../lastVersion.md");
+		if (f.exists())
+			f.delete();
+		try(FileWriter fr=new FileWriter(f))
+		{
+			fr.write(lastVersion);
+			fr.flush();
 		}
 	}
 
