@@ -55,7 +55,7 @@ repositories {
 
 dependencies {
      testCompile 'org.testng:testng:6.13.1'
-     compile(group:'com.distrimind.util', name: 'Utils', version: '3.19.0')
+     compile(group:'com.distrimind.util', name: 'Utils', version: '3.21.0-Stable')
      testCompile(group:'org.hsqldb', name: 'hsqldb', version: '2.3.4')
      testCompile(group:'org.apache.derby', name: 'derby', version: '10.11.1.1')
 }
