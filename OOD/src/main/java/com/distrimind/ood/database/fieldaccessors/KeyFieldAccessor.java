@@ -326,6 +326,12 @@ public class KeyFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
+	public boolean isDecentralizablePrimaryKey()
+	{
+		return true;
+	}
+
+	@Override
 	public boolean canAutoGenerateValues() {
 		return false;
 	}

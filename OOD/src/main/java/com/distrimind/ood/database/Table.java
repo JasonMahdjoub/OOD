@@ -75,10 +75,7 @@ import com.distrimind.ood.database.exceptions.DatabaseVersionException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
 import com.distrimind.ood.database.exceptions.RecordNotFoundDatabaseException;
 import com.distrimind.ood.database.exceptions.SerializationDatabaseException;
-import com.distrimind.ood.database.fieldaccessors.AbstractDencetralizedIDFieldAccessor;
-import com.distrimind.ood.database.fieldaccessors.ByteTabFieldAccessor;
-import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
-import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
+import com.distrimind.ood.database.fieldaccessors.*;
 import com.distrimind.ood.interpreter.Interpreter;
 import com.distrimind.ood.interpreter.RuleInstance;
 import com.distrimind.ood.interpreter.RuleInstance.TableJunction;
@@ -999,13 +996,15 @@ public abstract class Table<T extends DatabaseRecord> {
 		return true;
 	}
 
-	private boolean isLocallyDecentralizable() {
+	boolean isLocallyDecentralizable() {
 		return !nonDecentralizableAnnotation && hasDecentralizedPrimaryKey() && !hasNonDecentralizedIDUniqueKey();
 	}
 
+
+
 	private boolean hasDecentralizedPrimaryKey() {
 		for (FieldAccessor fa : primary_keys_fields) {
-			if (fa instanceof AbstractDencetralizedIDFieldAccessor)
+			if (fa.isDecentralizablePrimaryKey())
 				return true;
 		}
 		return false;
@@ -1013,7 +1012,7 @@ public abstract class Table<T extends DatabaseRecord> {
 
 	private boolean hasNonDecentralizedIDUniqueKey() {
 		for (FieldAccessor fa : fields) {
-			if (!(fa instanceof AbstractDencetralizedIDFieldAccessor) && fa.isUnique())
+			if (!fa.isDecentralizablePrimaryKey() && fa.isUnique())
 				return true;
 		}
 		return false;

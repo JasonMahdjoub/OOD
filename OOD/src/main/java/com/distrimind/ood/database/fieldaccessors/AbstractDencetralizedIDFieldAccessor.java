@@ -103,6 +103,11 @@ public class AbstractDencetralizedIDFieldAccessor extends FieldAccessor {
 		return ByteTabFieldAccessor.getByteTab(v);
 
 	}
+	@Override
+	public boolean isDecentralizablePrimaryKey()
+	{
+		return true;
+	}
 
 	@Override
 	public void setValue(Object _class_instance, Object _field_instance) throws DatabaseException {

@@ -41,6 +41,7 @@ import com.distrimind.ood.database.annotations.ForeignKey;
 import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.AbstractDecentralizedID;
+import com.distrimind.util.crypto.ASymmetricPublicKey;
 
 /**
  * 
@@ -56,7 +57,7 @@ public final class TablePointing extends Table<TablePointing.Record> {
 
 	public static class Record extends DatabaseRecord {
 		@PrimaryKey
-		public AbstractDecentralizedID id;
+		public ASymmetricPublicKey id;
 
 		@ForeignKey
 		public TablePointed.Record table2;

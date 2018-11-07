@@ -205,6 +205,12 @@ public abstract class FieldAccessor {
 		this.indexName = (this.table_name + "_" + this.getField().getName()).replace(".", "_").toUpperCase();
 	}
 
+
+	public boolean isDecentralizablePrimaryKey()
+	{
+		return false;
+	}
+
 	public Class<? extends Table<?>> getTableClass() {
 		return table_class;
 	}
@@ -426,6 +432,10 @@ public abstract class FieldAccessor {
 							res.add(new doubleFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 						else if (type.equals(String.class))
 							res.add(new StringFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
+						else if (type.equals(ASymmetricPublicKey.class) || type.equals(ASymmetricPrivateKey.class) || type.equals(SymmetricSecretKey.class))
+						{
+							res.add(new KeyFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
+						}
 						else if (type.equals(class_array_byte))
 							res.add(new ByteTabFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 						else if (type.equals(Boolean.class))
@@ -466,10 +476,7 @@ public abstract class FieldAccessor {
 						else if (type.equals(UUID.class))
 							res.add(new UUIDFieldAccessor(_table_class, _sql_connection, f,
 									parentFieldName));
-						else if (type.equals(ASymmetricPublicKey.class) || type.equals(ASymmetricPrivateKey.class) || type.equals(SymmetricSecretKey.class))
-						{
-							res.add(new KeyFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
-						}
+
 						else if (isComposedField(type)) {
 							for (Class<?> cpf : parentFields)
 								if (cpf.isAssignableFrom(type))

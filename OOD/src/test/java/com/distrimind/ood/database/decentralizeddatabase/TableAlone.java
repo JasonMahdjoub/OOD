@@ -41,6 +41,7 @@ import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.AbstractDecentralizedID;
+import com.distrimind.util.crypto.ASymmetricPublicKey;
 
 /**
  * 
@@ -57,11 +58,14 @@ public final class TableAlone extends Table<TableAlone.Record> {
 		@PrimaryKey
 		public AbstractDecentralizedID id;
 
+		@PrimaryKey
+		public ASymmetricPublicKey id2;
+
 		@Field
 		public String value;
 
 		public String toString() {
-			return "TableAlone[" + (id == null ? null : id.toString()) + ", " + value + "]";
+			return "TableAlone[" + (id == null ? null : id.toString()) + ", id2="+id2.toString()+", " + value + "]";
 		}
 
 		@SuppressWarnings("MethodDoesntCallSuperMethod")
@@ -69,6 +73,7 @@ public final class TableAlone extends Table<TableAlone.Record> {
 		public Record clone() {
 			Record r = new Record();
 			r.id = this.id;
+			r.id2 = this.id2;
 			r.value = this.value;
 			return r;
 		}
@@ -78,7 +83,7 @@ public final class TableAlone extends Table<TableAlone.Record> {
 			if (o == null)
 				return false;
 			if (o instanceof TableAlone.Record)
-				return ((TableAlone.Record) o).id.equals(id);
+				return ((TableAlone.Record) o).id.equals(id) && ((TableAlone.Record) o).id2.equals(id2);
 			return false;
 		}
 	}

@@ -35,40 +35,20 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.testng.Assert;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import com.distrimind.ood.database.DatabaseWrapper.SynchronizationAnomalyType;
-import com.distrimind.ood.database.decentralizeddatabase.TableAlone;
-import com.distrimind.ood.database.decentralizeddatabase.TablePointed;
-import com.distrimind.ood.database.decentralizeddatabase.TablePointing;
-import com.distrimind.ood.database.decentralizeddatabase.UndecentralizableTableA1;
-import com.distrimind.ood.database.decentralizeddatabase.UndecentralizableTableB1;
+import com.distrimind.ood.database.decentralizeddatabase.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.DecentralizedIDGenerator;
+import com.distrimind.util.crypto.ASymmetricAuthentifiedSignatureType;
+import com.distrimind.util.crypto.SecureRandomType;
+import org.testng.Assert;
+import org.testng.annotations.*;
+
+import java.io.*;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 
@@ -416,6 +396,11 @@ public abstract class TestDecentralizedDatabase {
 		listDatabase.add(db1);
 		listDatabase.add(db2);
 		listDatabase.add(db3);
+        Assert.assertTrue(db1.getDbwrapper().getTableInstance(TableAlone.class).isLocallyDecentralizable());
+        Assert.assertTrue(db1.getDbwrapper().getTableInstance(TablePointed.class).isLocallyDecentralizable());
+        Assert.assertTrue(db1.getDbwrapper().getTableInstance(TablePointing.class).isLocallyDecentralizable());
+        Assert.assertFalse(db1.getDbwrapper().getTableInstance(UndecentralizableTableA1.class).isLocallyDecentralizable());
+        //Assert.assertFalse(db1.getDbwrapper().getTableInstance(UndecentralizableTableB1.class).isLocallyDecentralizable());
 	}
 
 	public void unloadDatabase1() {
@@ -680,9 +665,16 @@ public abstract class TestDecentralizedDatabase {
 		disconnectSelectedDatabase(dbs);
 	}
 
-	private TableAlone.Record generatesTableAloneRecord() {
+	private TableAlone.Record generatesTableAloneRecord() throws DatabaseException {
 		TableAlone.Record ralone = new TableAlone.Record();
 		ralone.id = new DecentralizedIDGenerator();
+		try {
+			ralone.id2 = ASymmetricAuthentifiedSignatureType.BC_SHA512withECDSA_CURVE_25519.getKeyPairGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKeyPair().getASymmetricPublicKey();
+		}
+		catch(Exception e)
+		{
+			throw DatabaseException.getDatabaseException(e);
+		}
 		ralone.value = generateString();
 		return ralone;
 
@@ -699,20 +691,23 @@ public abstract class TestDecentralizedDatabase {
 
 	private void addUndecentralizableTableA1Record(Database db) throws DatabaseException {
 		UndecentralizableTableA1.Record record = new UndecentralizableTableA1.Record();
-		record.value = db.getHostID().toString();
+		StringBuilder sb=new StringBuilder(db.getHostID().toString());
 		for (int i = 0; i < 10; i++) {
-			record.value += 'a' + ((int) (Math.random() * 52));
+			sb.append('a' + ((int) (Math.random() * 52)));
 		}
+		record.value=sb.toString();
 		db.getUndecentralizableTableA1().addRecord(record);
 
 	}
 
 	private void addUndecentralizableTableB1Record(Database db) throws DatabaseException {
 		UndecentralizableTableA1.Record record = new UndecentralizableTableA1.Record();
-		record.value = db.getHostID().toString();
+		StringBuilder sb=new StringBuilder(db.getHostID().toString());
+
 		for (int i = 0; i < 10; i++) {
-			record.value += 'a' + ((int) (Math.random() * 52));
+			sb.append( 'a' + ((int) (Math.random() * 52)));
 		}
+		record.value=sb.toString();
 		record = db.getUndecentralizableTableA1().addRecord(record);
 		UndecentralizableTableB1.Record record2 = new UndecentralizableTableB1.Record();
 		record2.pointing = record;
@@ -734,9 +729,15 @@ public abstract class TestDecentralizedDatabase {
 		return rpointed;
 	}
 
-	private TablePointing.Record generatesTablePointingRecord(TablePointed.Record rpointed) {
+	private TablePointing.Record generatesTablePointingRecord(TablePointed.Record rpointed) throws DatabaseException {
 		TablePointing.Record rpointing1 = new TablePointing.Record();
-		rpointing1.id = new DecentralizedIDGenerator();
+		try {
+			rpointing1.id = ASymmetricAuthentifiedSignatureType.BC_SHA512withECDSA_CURVE_25519.getKeyPairGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKeyPair().getASymmetricPublicKey();
+		}
+		catch(Exception e)
+		{
+			throw DatabaseException.getDatabaseException(e);
+		}
 		rpointing1.table2 = Math.random() < 0.5 ? null : rpointed;
 		return rpointing1;
 	}
@@ -750,11 +751,24 @@ public abstract class TestDecentralizedDatabase {
 		rpointed = db.getTablePointed().addRecord(rpointed);
 
 		TablePointing.Record rpointing1 = new TablePointing.Record();
-		rpointing1.id = new DecentralizedIDGenerator();
+		try {
+			rpointing1.id = ASymmetricAuthentifiedSignatureType.BC_SHA512withECDSA_CURVE_25519.getKeyPairGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKeyPair().getASymmetricPublicKey();
+		}
+		catch(Exception e)
+		{
+			throw DatabaseException.getDatabaseException(e);
+		}
+
 		rpointing1.table2 = null;
 		rpointing1 = db.getTablePointing().addRecord(rpointing1);
 		TablePointing.Record rpointing2 = new TablePointing.Record();
-		rpointing2.id = new DecentralizedIDGenerator();
+		try {
+			rpointing2.id = ASymmetricAuthentifiedSignatureType.BC_SHA512withECDSA_CURVE_25519.getKeyPairGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKeyPair().getASymmetricPublicKey();
+		}
+		catch(Exception e)
+		{
+			throw DatabaseException.getDatabaseException(e);
+		}
 		rpointing2.table2 = rpointed;
 		rpointing2 = db.getTablePointing().addRecord(rpointing2);
 		if (first) {
@@ -774,6 +788,7 @@ public abstract class TestDecentralizedDatabase {
 		for (Database db : listDatabase)
 			addElements(db);
 	}
+
 
 	@Test
 	public void testAddFirstElements() throws DatabaseException {
@@ -843,7 +858,7 @@ public abstract class TestDecentralizedDatabase {
 
 			for (Database other : listDatabase) {
 				if (other != db) {
-					TableAlone.Record otherR = other.getTableAlone().getRecord("id", r.id);
+					TableAlone.Record otherR = other.getTableAlone().getRecord("id", r.id, "id2", r.id2);
 					Assert.assertNotNull(otherR);
 					Assert.assertEquals(otherR.value, r.value);
 				}
@@ -911,7 +926,7 @@ public abstract class TestDecentralizedDatabase {
 
 	}
 
-	private ArrayList<TableEvent<DatabaseRecord>> proviveTableEvents(int number) {
+	private ArrayList<TableEvent<DatabaseRecord>> proviveTableEvents(int number) throws DatabaseException {
 		ArrayList<TableEvent<DatabaseRecord>> res = new ArrayList<>();
 		ArrayList<TablePointed.Record> pointedRecord = new ArrayList<>();
 		ArrayList<DatabaseRecord> livingRecords = new ArrayList<>();
@@ -950,7 +965,9 @@ public abstract class TestDecentralizedDatabase {
 				DatabaseRecord record = livingRecords.get((int) (Math.random() * livingRecords.size()));
 				te = new TableEvent<>(-1, DatabaseEventType.REMOVE, record, null, null);
                 Assert.assertTrue(livingRecords.remove(record));
-				pointedRecord.remove(record);
+
+                //noinspection SuspiciousMethodCalls
+                pointedRecord.remove(record);
 			}
 				break;
 			case 2: {
@@ -959,6 +976,7 @@ public abstract class TestDecentralizedDatabase {
 				DatabaseRecord record = livingRecords.get((int) (Math.random() * livingRecords.size()));
 				te = new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, record, null, null);
                 Assert.assertTrue(livingRecords.remove(record));
+                //noinspection SuspiciousMethodCalls
 				pointedRecord.remove(record);
 			}
 				break;
@@ -970,6 +988,7 @@ public abstract class TestDecentralizedDatabase {
 				if (record instanceof TableAlone.Record) {
 					TableAlone.Record r = generatesTableAloneRecord();
 					r.id = ((TableAlone.Record) record).id;
+					r.id2=((TableAlone.Record)record).id2;
 					recordNew = r;
 				} else if (record instanceof TablePointed.Record) {
 					TablePointed.Record r = generatesTablePointedRecord();
@@ -998,7 +1017,7 @@ public abstract class TestDecentralizedDatabase {
 	}
 
 	@DataProvider(name = "provideDataForSynchroBetweenTwoPeers")
-	public Object[][] provideDataForSynchroBetweenTwoPeers() {
+	public Object[][] provideDataForSynchroBetweenTwoPeers() throws DatabaseException {
 		int numberEvents = 40;
 		Object[][] res = new Object[numberEvents * 2 * 2 * 2][];
 		int index = 0;
@@ -1047,7 +1066,7 @@ public abstract class TestDecentralizedDatabase {
 			}
 
 			@Override
-			public void initOrReset() throws Exception {
+			public void initOrReset() {
 				
 			}
 		});
@@ -1287,7 +1306,7 @@ public abstract class TestDecentralizedDatabase {
 			try {
 				proceedEvent(db, true, levents);
 				Assert.fail();
-			} catch (Exception e) {
+			} catch (Exception ignored) {
 
 			}
 
@@ -1465,7 +1484,7 @@ public abstract class TestDecentralizedDatabase {
 	}
 
 	@DataProvider(name = "provideDataSynchroBetweenThreePeers")
-	public Object[][] provideDataSynchroBetweenThreePeers() {
+	public Object[][] provideDataSynchroBetweenThreePeers() throws DatabaseException {
 		return provideDataForSynchroBetweenTwoPeers();
 	}
 
@@ -1482,7 +1501,7 @@ public abstract class TestDecentralizedDatabase {
 	}
 
 	@DataProvider(name = "provideDataForIndirectSynchro")
-	public Object[][] provideDataForIndirectSynchro() {
+	public Object[][] provideDataForIndirectSynchro() throws DatabaseException {
 		int numberEvents = 40;
 		Object[][] res = new Object[numberEvents * 2 * 2 * 2][];
 		int index = 0;
@@ -1659,7 +1678,7 @@ public abstract class TestDecentralizedDatabase {
 	}
 
 	@DataProvider(name = "provideDataForIndirectSynchroWithIndirectConnection")
-	public Object[][] provideDataForIndirectSynchroWithIndirectConnection() {
+	public Object[][] provideDataForIndirectSynchroWithIndirectConnection() throws DatabaseException {
 		return provideDataForIndirectSynchro();
 	}
 
@@ -1757,7 +1776,7 @@ public abstract class TestDecentralizedDatabase {
 	}
 
 	@DataProvider(name = "provideDataForTransactionBetweenTwoPeers")
-	public Object[][] provideDataForTransactionBetweenTwoPeers() {
+	public Object[][] provideDataForTransactionBetweenTwoPeers() throws DatabaseException {
 		int numberTransactions = 40;
 		Object res[][] = new Object[2 * numberTransactions][];
 		int index = 0;
@@ -1780,7 +1799,7 @@ public abstract class TestDecentralizedDatabase {
 	}
 
 	@DataProvider(name = "provideDataForTransactionBetweenThreePeers")
-	public Object[][] provideDataForTransactionBetweenThreePeers() {
+	public Object[][] provideDataForTransactionBetweenThreePeers() throws DatabaseException {
 		return provideDataForTransactionBetweenTwoPeers();
 	}
 
@@ -1792,7 +1811,7 @@ public abstract class TestDecentralizedDatabase {
 	}
 
 	@DataProvider(name = "provideDataForTransactionSynchros")
-	public Object[][] provideDataForTransactionSynchros() {
+	public Object[][] provideDataForTransactionSynchros() throws DatabaseException {
 		return provideDataForTransactionBetweenTwoPeers();
 	}
 
@@ -1830,17 +1849,17 @@ public abstract class TestDecentralizedDatabase {
 	}
 
 	@DataProvider(name = "provideDataForTransactionSynchrosWithIndirectConnection")
-	public Object[][] provideDataForTransactionSynchrosWithIndirectConnection() {
+	public Object[][] provideDataForTransactionSynchrosWithIndirectConnection() throws DatabaseException {
 		return provideDataForTransactionBetweenTwoPeers();
 	}
 
 	@DataProvider(name = "provideDataForTransactionSynchrosWithIndirectConnectionThreaded", parallel = true)
-	public Object[][] provideDataForTransactionSynchrosWithIndirectConnectionThreaded() {
+	public Object[][] provideDataForTransactionSynchrosWithIndirectConnectionThreaded() throws DatabaseException {
 		int numberTransactions = 40;
 		Object res[][] = new Object[numberTransactions][];
 		int index = 0;
 		for (int i = 0; i < numberTransactions; i++) {
-			res[index++] = new Object[] { (Object) proviveTableEvents((int) (5.0 + Math.random() * 10.0)) };
+			res[index++] = new Object[] { proviveTableEvents((int) (5.0 + Math.random() * 10.0)) };
 
 		}
 
