@@ -189,6 +189,7 @@ public abstract class Table<T extends DatabaseRecord> {
 			return res;
 		}
 
+
 		public Table<?> getPoitingTable() throws DatabaseException {
 			if (t == null)
 				t = sql_connection.getTableInstance(class_table);
@@ -521,6 +522,7 @@ public abstract class Table<T extends DatabaseRecord> {
     public void setDatabaseCollisionsNotifier(DatabaseCollisionsNotifier<T, Table<T>> databaseCollisionsNotifier) {
         this.databaseCollisionsNotifier = databaseCollisionsNotifier;
     }
+    @SuppressWarnings("unchecked")
     boolean collisionDetected(AbstractDecentralizedID distantPeerID,
                               AbstractDecentralizedID intermediatePeerID, DatabaseEventType type,
                               HashMap<String, Object> keys, DatabaseRecord newValues, DatabaseRecord actualValues)
@@ -539,6 +541,7 @@ public abstract class Table<T extends DatabaseRecord> {
     public void setDatabaseAnomaliesNotifier(DatabaseAnomaliesNotifier<T, Table<T>> databaseAnomaliesNotifier) {
         this.databaseAnomaliesNotifier = databaseAnomaliesNotifier;
     }
+    @SuppressWarnings("unchecked")
     void anomalyDetected(AbstractDecentralizedID distantPeerID, AbstractDecentralizedID intermediatePeerID,
                          DatabaseWrapper.SynchronizationAnomalyType type, Map<String, Object> primary_keys,
                          DatabaseRecord record)
