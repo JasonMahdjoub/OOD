@@ -1038,76 +1038,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		RECORD_TO_REMOVE_NOT_FOUND, RECORD_TO_REMOVE_HAS_DEPENDENCIES, RECORD_TO_UPDATE_NOT_FOUND, RECORD_TO_UPDATE_HAS_INCOMPATIBLE_PRIMARY_KEYS, RECORD_TO_UPDATE_HAS_DEPENDENCIES_NOT_FOUND, RECORD_TO_ADD_ALREADY_PRESENT, RECORD_TO_ADD_HAS_INCOMPATIBLE_PRIMARY_KEYS, RECORD_TO_ADD_HAS_DEPENDENCIES_NOT_FOUND,
 	}
 
-	public interface DatabaseNotifier {
-		void newDatabaseEventDetected(DatabaseWrapper wrapper);
 
-		/**
-		 * This function is call if an anomaly occurs the synchronization process.
-		 * Anomalies can be produced when :
-		 * <ul>
-		 * <li>the record to remove was not found :
-		 * {@link SynchronizationAnomalyType#RECORD_TO_REMOVE_NOT_FOUND}</li>
-		 * <li>the record to update was not found :
-		 * {@link SynchronizationAnomalyType#RECORD_TO_UPDATE_NOT_FOUND}</li>
-		 * <li>the record to add already exists :
-		 * {@link SynchronizationAnomalyType#RECORD_TO_ADD_ALREADY_PRESENT}</li>
-		 * </ul>
-		 * Anomalies differs with collision (see
-		 * {@link #collisionDetected(AbstractDecentralizedID, AbstractDecentralizedID, DatabaseEventType, Table, HashMap, DatabaseRecord, DatabaseRecord)}).
-		 * They should not occur and represents a synchronization failure. Whereas
-		 * collisions are produced when users make modifications on the same data into
-		 * several peers. These kind of conflict are considered as normal by the system.
-		 * 
-		 * @param distantPeerID
-		 *            the concerned distant peer, that produced the data modification.
-		 * @param intermediatePeerID
-		 *            nearest intermediate peer that transfered the data (can be null).
-		 *            This intermediate peer is not those who have generated conflict
-		 *            modifications.
-		 * @param type
-		 *            anomaly type
-		 * @param concernedTable
-		 *            the concerned table
-		 * @param primary_keys
-		 *            the concerned field keys
-		 * @param record
-		 *            the transmitted record
-		 */
-		void anomalyDetected(AbstractDecentralizedID distantPeerID, AbstractDecentralizedID intermediatePeerID,
-                                    SynchronizationAnomalyType type, Table<?> concernedTable, Map<String, Object> primary_keys,
-                                    DatabaseRecord record);
 
-		/**
-		 * This function is called when a direct collision is detected during the
-		 * synchronization process, when receiving data from a distant peer.
-		 * 
-		 * @param distantPeerID
-		 *            the concerned distant peer, that produced the data modification.
-		 * @param intermediatePeerID
-		 *            nearest intermediate peer that transfered the data (can be null).
-		 *            This intermediate peer is not those who have generated conflict
-		 *            modifications.
-		 * @param type
-		 *            the database event type
-		 * @param concernedTable
-		 *            the concerned table
-		 * @param keys
-		 *            the concerned field keys
-		 * @param newValues
-		 *            the new received values
-		 * @param actualValues
-		 *            the actual field values
-		 * @return true if the new event can replace the actual value and false if the
-		 *         actual value must replace the distant value.
-		 * @throws DatabaseException
-		 *             if a problem occurs
-		 */
-        boolean collisionDetected(AbstractDecentralizedID distantPeerID,
-                                  AbstractDecentralizedID intermediatePeerID, DatabaseEventType type, Table<?> concernedTable,
-                                  HashMap<String, Object> keys, DatabaseRecord newValues, DatabaseRecord actualValues)
-				throws DatabaseException;
 
-	}
+
+
+
+
 
 	public static class DatabaseTransactionsIdentifiersToSynchronize extends DatabaseEvent
 			implements DatabaseEventToSend {
@@ -2436,7 +2373,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		return !isThreadSafe() || hasOnePeerSyncronized; 
 	}
 	
-	Object runTransaction(final Transaction _transaction, boolean defaultTransaction) throws DatabaseException {
+	@SuppressWarnings("ConstantConditions")
+    Object runTransaction(final Transaction _transaction, boolean defaultTransaction) throws DatabaseException {
 
 		Object res = null;
 		

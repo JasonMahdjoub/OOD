@@ -157,6 +157,8 @@ public abstract class Table<T extends DatabaseRecord> {
 	private DatabaseConfiguration tables = null;
 	private boolean containsLoopBetweenTables = false;
 	private final boolean nonDecentralizableAnnotation;
+	private volatile DatabaseCollisionsNotifier<T, Table<T>> databaseCollisionsNotifier;
+	private volatile DatabaseAnomaliesNotifier<T, Table<T>> databaseAnomaliesNotifier;
 	public static final int maxTableNameSizeBytes = 8192;
 	public static final int maxPrimaryKeysSizeBytes = ByteTabFieldAccessor.shortTabSizeLimit;
 
@@ -398,7 +400,8 @@ public abstract class Table<T extends DatabaseRecord> {
 
 	}
 
-	void initializeStep0(DatabaseWrapper wrapper) throws DatabaseException {
+	@SuppressWarnings("ConstantConditions")
+    void initializeStep0(DatabaseWrapper wrapper) throws DatabaseException {
 		sql_connection = wrapper;
 		if (sql_connection == null)
 			throw new DatabaseException(
@@ -511,7 +514,43 @@ public abstract class Table<T extends DatabaseRecord> {
 		this.tables = tables;
 	}
 
-	public DatabaseConfiguration getDatabaseConfiguration() {
+    public DatabaseCollisionsNotifier<T, Table<T>> getDatabaseCollisionsNotifier() {
+        return databaseCollisionsNotifier;
+    }
+
+    public void setDatabaseCollisionsNotifier(DatabaseCollisionsNotifier<T, Table<T>> databaseCollisionsNotifier) {
+        this.databaseCollisionsNotifier = databaseCollisionsNotifier;
+    }
+    boolean collisionDetected(AbstractDecentralizedID distantPeerID,
+                              AbstractDecentralizedID intermediatePeerID, DatabaseEventType type,
+                              HashMap<String, Object> keys, DatabaseRecord newValues, DatabaseRecord actualValues)
+            throws DatabaseException
+    {
+        DatabaseCollisionsNotifier<T, Table<T>> databaseCollisionsNotifier=getDatabaseCollisionsNotifier();
+        if (databaseCollisionsNotifier!=null)
+            //noinspection unchecked
+            return databaseCollisionsNotifier.collisionDetected(distantPeerID, intermediatePeerID, type, this, keys, (T)newValues, (T)actualValues);
+        return false;
+    }
+    public DatabaseAnomaliesNotifier<T, Table<T>> getDatabaseAnomaliesNotifier() {
+        return databaseAnomaliesNotifier;
+    }
+
+    public void setDatabaseAnomaliesNotifier(DatabaseAnomaliesNotifier<T, Table<T>> databaseAnomaliesNotifier) {
+        this.databaseAnomaliesNotifier = databaseAnomaliesNotifier;
+    }
+    void anomalyDetected(AbstractDecentralizedID distantPeerID, AbstractDecentralizedID intermediatePeerID,
+                         DatabaseWrapper.SynchronizationAnomalyType type, Map<String, Object> primary_keys,
+                         DatabaseRecord record)
+    {
+        DatabaseAnomaliesNotifier<T, Table<T>> databaseAnomaliesNotifier=getDatabaseAnomaliesNotifier();
+        if (databaseAnomaliesNotifier!=null)
+            //noinspection unchecked
+            databaseAnomaliesNotifier.anomalyDetected(distantPeerID, intermediatePeerID, type, this, primary_keys, (T)record);
+    }
+
+
+    public DatabaseConfiguration getDatabaseConfiguration() {
 		return tables;
 	}
 

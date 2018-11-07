@@ -119,7 +119,7 @@ public abstract class TestDecentralizedDatabase {
 		}
 	}
 
-	public class Database implements AutoCloseable, DatabaseWrapper.DatabaseNotifier {
+	public class Database implements AutoCloseable, DatabaseNotifier {
 		private final DatabaseWrapper dbwrapper;
 		private volatile boolean connected;
 		private final AbstractDecentralizedID hostID;
@@ -154,6 +154,43 @@ public abstract class TestDecentralizedDatabase {
 			undecentralizableTableB1 = (UndecentralizableTableB1) dbwrapper
 					.getTableInstance(UndecentralizableTableB1.class);
 			anomalies = Collections.synchronizedList(new ArrayList<Anomaly>());
+
+			tableAlone.setDatabaseAnomaliesNotifier(new DatabaseAnomaliesNotifier<TableAlone.Record, Table<TableAlone.Record>>() {
+                @Override
+                public void anomalyDetected(AbstractDecentralizedID distantPeerID, AbstractDecentralizedID intermediatePeerID, SynchronizationAnomalyType type, Table<TableAlone.Record> concernedTable, Map<String, Object> primary_keys, TableAlone.Record record) {
+                    Database.this.anomalyDetected( distantPeerID, intermediatePeerID, type, concernedTable, primary_keys, record);
+                }
+            });
+			tableAlone.setDatabaseCollisionsNotifier(new DatabaseCollisionsNotifier<TableAlone.Record, Table<TableAlone.Record>>() {
+                @Override
+                public boolean collisionDetected(AbstractDecentralizedID distantPeerID, AbstractDecentralizedID intermediatePeerID, DatabaseEventType type, Table<TableAlone.Record> concernedTable, HashMap<String, Object> keys, TableAlone.Record newValues, TableAlone.Record actualValues) {
+                    return Database.this.collisionDetected(distantPeerID, intermediatePeerID, type, concernedTable, keys, newValues, actualValues);
+                }
+            });
+            tablePointed.setDatabaseAnomaliesNotifier(new DatabaseAnomaliesNotifier<TablePointed.Record, Table<TablePointed.Record>>() {
+                @Override
+                public void anomalyDetected(AbstractDecentralizedID distantPeerID, AbstractDecentralizedID intermediatePeerID, SynchronizationAnomalyType type, Table<TablePointed.Record> concernedTable, Map<String, Object> primary_keys, TablePointed.Record record) {
+                    Database.this.anomalyDetected( distantPeerID, intermediatePeerID, type, concernedTable, primary_keys, record);
+                }
+            });
+            tablePointed.setDatabaseCollisionsNotifier(new DatabaseCollisionsNotifier<TablePointed.Record, Table<TablePointed.Record>>() {
+                @Override
+                public boolean collisionDetected(AbstractDecentralizedID distantPeerID, AbstractDecentralizedID intermediatePeerID, DatabaseEventType type, Table<TablePointed.Record> concernedTable, HashMap<String, Object> keys, TablePointed.Record newValues, TablePointed.Record actualValues) {
+                    return Database.this.collisionDetected(distantPeerID, intermediatePeerID, type, concernedTable, keys, newValues, actualValues);
+                }
+            });
+            tablePointing.setDatabaseAnomaliesNotifier(new DatabaseAnomaliesNotifier<TablePointing.Record, Table<TablePointing.Record>>() {
+                @Override
+                public void anomalyDetected(AbstractDecentralizedID distantPeerID, AbstractDecentralizedID intermediatePeerID, SynchronizationAnomalyType type, Table<TablePointing.Record> concernedTable, Map<String, Object> primary_keys, TablePointing.Record record) {
+                    Database.this.anomalyDetected( distantPeerID, intermediatePeerID, type, concernedTable, primary_keys, record);
+                }
+            });
+            tablePointing.setDatabaseCollisionsNotifier(new DatabaseCollisionsNotifier<TablePointing.Record, Table<TablePointing.Record>>() {
+                @Override
+                public boolean collisionDetected(AbstractDecentralizedID distantPeerID, AbstractDecentralizedID intermediatePeerID, DatabaseEventType type, Table<TablePointing.Record> concernedTable, HashMap<String, Object> keys, TablePointing.Record newValues, TablePointing.Record actualValues) {
+                    return Database.this.collisionDetected(distantPeerID, intermediatePeerID, type, concernedTable, keys, newValues, actualValues);
+                }
+            });
 		}
 
 		public TableAlone getTableAlone() {
@@ -228,8 +265,8 @@ public abstract class TestDecentralizedDatabase {
 			newDatabaseEventDetected = true;
 		}
 
-		@Override
-		public boolean collisionDetected(AbstractDecentralizedID _distantPeerID,
+
+		private boolean collisionDetected(AbstractDecentralizedID _distantPeerID,
 				AbstractDecentralizedID _intermediatePeer, DatabaseEventType _type, Table<?> _concernedTable,
 				HashMap<String, Object> _keys, DatabaseRecord _newValues, DatabaseRecord _actualValues) {
 			synchronized (TestDecentralizedDatabase.class) {
@@ -287,8 +324,8 @@ public abstract class TestDecentralizedDatabase {
 			return anomalies;
 		}
 
-		@Override
-		public void anomalyDetected(AbstractDecentralizedID distantPeerID, AbstractDecentralizedID intermediatePeerID,
+
+		private void anomalyDetected(AbstractDecentralizedID distantPeerID, AbstractDecentralizedID intermediatePeerID,
                                     SynchronizationAnomalyType _type, Table<?> _concernedTable, Map<String, Object> _primary_keys,
                                     DatabaseRecord _record) {
 			anomalies.add(new Anomaly(distantPeerID, intermediatePeerID, _type, _concernedTable, _primary_keys, _record));
