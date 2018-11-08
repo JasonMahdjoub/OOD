@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-2.0.0 Beta 88 (Build: 347) (from 01/04/2013 to 07/11/2018)
+2.0.0 Beta 89 (Build: 351) (from 01/04/2013 to 07/11/2018)
 
 # Creator(s):
 Jason MAHDJOUB
@@ -11,8 +11,8 @@ Jason MAHDJOUB (Entred in the team at 01/04/2013)
 # Modifications:
 
 
-### 2.0.0 Beta 88 (07/11/2018)
-* Updating utils to 3.21.0
+### 2.0.0 Beta 89 (07/11/2018)
+* Updating utils to 3.21.1
 * Manage Keys used for encryption as decentralizable keys
 * Add DatabaseAnomaliesNotifier interface
 * Add DatabaseCollisionsNotifier interface

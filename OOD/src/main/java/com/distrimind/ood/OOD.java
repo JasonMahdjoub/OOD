@@ -61,7 +61,7 @@ public class OOD {
 		c1.set(2013, Calendar.APRIL, 1);
 		Calendar c2 = Calendar.getInstance();
 		c2.set(2018, Calendar.NOVEMBER, 7);
-		VERSION = new Version("Object Oriented Database", "OOD", (short)2, (short)0, (short)0, Version.Type.Beta, (short)88, c1.getTime(),
+		VERSION = new Version("Object Oriented Database", "OOD", (short)2, (short)0, (short)0, Version.Type.Beta, (short)89, c1.getTime(),
 				c2.getTime());
 		try {
 			InputStream is = OOD.class.getResourceAsStream("build.txt");
@@ -74,8 +74,8 @@ public class OOD {
 
 			c = Calendar.getInstance();
 			c.set(2018, Calendar.NOVEMBER, 7);
-			Description d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)88, c.getTime());
-			d.addItem("Updating utils to 3.21.0");
+			Description d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)89, c.getTime());
+			d.addItem("Updating utils to 3.21.1");
 			d.addItem("Manage Keys used for encryption as decentralizable keys");
 			d.addItem("Add DatabaseAnomaliesNotifier interface");
 			d.addItem("Add DatabaseCollisionsNotifier interface");

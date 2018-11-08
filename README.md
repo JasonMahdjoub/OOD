@@ -21,7 +21,7 @@ Adapt into your build.gradle file, the next code :
 	...
 	dependencies {
 		...
-		compile(group:'com.distrimind.ood', name: 'OOD', version: '2.0.0-Beta88')
+		compile(group:'com.distrimind.ood', name: 'OOD', version: '2.0.0-Beta89')
 		//choose one of these optional drivers
 			//optional and under JDK8 or newer
 			compile(group:'org.hsqldb', name: 'hsqldb', version: '2.4.1')
@@ -48,7 +48,7 @@ Adapt into your pom.xml file, the next code :
 			<dependency>
 				<groupId>com.distrimind.ood</groupId>
 				<artifactId>OOD</artifactId>
-				<version>2.0.0-Beta88</version>
+				<version>2.0.0-Beta89</version>
 			</dependency>
 			<!-- choose one of these optional drivers -->
 				<dependency>
