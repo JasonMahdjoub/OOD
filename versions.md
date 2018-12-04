@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-2.0.0 Beta 92 (Build: 364) (from 01/04/2013 to 04/12/2018)
+2.0.0 Beta 92 (Build: 368) (from 01/04/2013 to 04/12/2018)
 
 # Creator(s):
 Jason MAHDJOUB
