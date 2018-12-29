@@ -81,6 +81,8 @@ import com.distrimind.ood.interpreter.RuleInstance;
 import com.distrimind.ood.interpreter.RuleInstance.TableJunction;
 import com.distrimind.util.AbstractDecentralizedID;
 
+import javax.xml.transform.Result;
+
 /**
  * This abstract class represent a generic Sql Table wrapper, which enables the
  * user to do every Sql operation without any SQL query. To create a table into
@@ -140,6 +142,7 @@ import com.distrimind.util.AbstractDecentralizedID;
  */
 @SuppressWarnings({"ThrowFromFinallyBlock", "BooleanMethodIsAlwaysInverted"})
 public abstract class Table<T extends DatabaseRecord> {
+	public static final String TABLE_NAME_PREFIX="T";
 	final Class<T> class_record;
 	final Constructor<T> default_constructor_field;
 	final ArrayList<FieldAccessor> auto_random_primary_keys_fields = new ArrayList<>();
@@ -152,7 +155,8 @@ public abstract class Table<T extends DatabaseRecord> {
 	private final ArrayList<FieldAccessor> fields_without_primary_and_foreign_keys = new ArrayList<>();
 	private AtomicReference<ArrayList<T>> records_instances = new AtomicReference<>(new ArrayList<T>());
 	private final boolean is_loaded_in_memory;
-	private final String table_name;
+	private String table_name;
+	private int table_id=-1;
 	private boolean supportSynchronizationWithOtherPeers = false;
 	private DatabaseConfiguration tables = null;
 	private boolean containsLoopBetweenTables = false;
@@ -201,7 +205,7 @@ public abstract class Table<T extends DatabaseRecord> {
 			Table<?> t = getPoitingTable();
 
 			@SuppressWarnings("unchecked")
-			HashMap<String, Object> res[] = new HashMap[concerned_fields.size()];
+			HashMap<String, Object>[] res = new HashMap[concerned_fields.size()];
 			int index = 0;
 			for (ForeignKeyFieldAccessor fkfa : t.foreign_keys_fields) {
 				if (fkfa.isAssignableTo(class_record)) {
@@ -340,7 +344,7 @@ public abstract class Table<T extends DatabaseRecord> {
 	 */
 	@SuppressWarnings("rawtypes")
 	protected Table() throws DatabaseException {
-		table_name = getName(this.getClass());
+		table_name = null;//getName(this.getClass());
 
 		is_loaded_in_memory = this.getClass().isAnnotationPresent(LoadToMemory.class);
 		nonDecentralizableAnnotation=this.getClass().isAnnotationPresent(ExcludeFromDecentralization.class);
@@ -354,7 +358,7 @@ public abstract class Table<T extends DatabaseRecord> {
 		}
 
 		boolean constructor_ok = true;
-		Constructor<?> constructors[] = this.getClass().getDeclaredConstructors();
+		Constructor<?>[] constructors = this.getClass().getDeclaredConstructors();
 		if (constructors.length != 1)
 			constructor_ok = false;
 		else {
@@ -388,7 +392,7 @@ public abstract class Table<T extends DatabaseRecord> {
 						Constructor<GroupedResults> res;
 						try {
 							res = GroupedResults.class.getDeclaredConstructor(
-									DatabaseWrapper.class, Collection.class, Class.class, (new String[1]).getClass());
+									DatabaseWrapper.class, Collection.class, Class.class, String[].class);
 							res.setAccessible(true);
 							return res;
 						} catch (NoSuchMethodException | SecurityException e) {
@@ -401,13 +405,14 @@ public abstract class Table<T extends DatabaseRecord> {
 
 	}
 
-	@SuppressWarnings("ConstantConditions")
+
     void initializeStep0(DatabaseWrapper wrapper) throws DatabaseException {
 		sql_connection = wrapper;
 		if (sql_connection == null)
 			throw new DatabaseException(
 					"No database was given to instanciate the class/table " + this.getClass().getName()
 							+ ". Please use the function associatePackageToSqlJetDatabase before !");
+
 
 		@SuppressWarnings("unchecked")
 		Class<? extends Table<?>> table_class = (Class<? extends Table<?>>) this.getClass();
@@ -450,9 +455,15 @@ public abstract class Table<T extends DatabaseRecord> {
 		if (primary_keys_fields.size() == 0)
 			throw new DatabaseException("There is no primary key declared into the Record " + class_record.getName());
 
+		table_name=TABLE_NAME_PREFIX+(table_id=wrapper.getTableName(this));
 		if (this.getName().equals(DatabaseWrapper.ROW_COUNT_TABLES))
 			throw new DatabaseException(
 					"This table cannot have the name " + DatabaseWrapper.ROW_COUNT_TABLES + " (case ignored)");
+	}
+
+	private int getTableID()
+	{
+		return table_id;
 	}
 
 	void removeTableFromDatabaseStep1() throws DatabaseException {
@@ -466,8 +477,8 @@ public abstract class Table<T extends DatabaseRecord> {
 					+ sql_connection.getSqlComma());
 			st.close();
 			st = sql_connection.getConnectionAssociatedWithCurrentThread().getConnection().createStatement();
-			st.executeUpdate("DELETE FROM " + DatabaseWrapper.ROW_COUNT_TABLES + " WHERE TABLE_NAME='"
-					+ Table.this.getName() + "'" + sql_connection.getSqlComma());
+			st.executeUpdate("DELETE FROM " + DatabaseWrapper.ROW_COUNT_TABLES + " WHERE TABLE_ID="
+					+ Table.this.getTableID()  + sql_connection.getSqlComma());
 			st.close();
 		} catch (SQLException e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -790,17 +801,16 @@ public abstract class Table<T extends DatabaseRecord> {
 						public Object run(DatabaseWrapper sql_connection) throws DatabaseException {
 							Statement st = null;
 							try {
+
+
+
 								st = sql_connection.getConnectionAssociatedWithCurrentThread().getConnection()
 										.createStatement();
-								st.executeUpdate("INSERT INTO " + DatabaseWrapper.ROW_COUNT_TABLES + " VALUES('"
-										+ Table.this.getName() + "', 0)" + sql_connection.getSqlComma());
-								st.close();
-								st = sql_connection.getConnectionAssociatedWithCurrentThread().getConnection()
-										.createStatement();
+
 								st.executeUpdate("CREATE TRIGGER " + Table.this.getName()
 										+ "_ROW_COUNT_TRIGGER_INSERT__ AFTER INSERT ON " + Table.this.getName() + "\n"
 										+ "FOR EACH ROW \n" + "UPDATE " + DatabaseWrapper.ROW_COUNT_TABLES
-										+ " SET ROW_COUNT=ROW_COUNT+1 WHERE TABLE_NAME='" + Table.this.getName() + "'\n"
+										+ " SET ROW_COUNT=ROW_COUNT+1 WHERE TABLE_ID=" + getTableID() + "\n"
 										+ sql_connection.getSqlComma());
 								st.close();
 								st = sql_connection.getConnectionAssociatedWithCurrentThread().getConnection()
@@ -808,7 +818,7 @@ public abstract class Table<T extends DatabaseRecord> {
 								st.executeUpdate("CREATE TRIGGER " + Table.this.getName()
 										+ "_ROW_COUNT_TRIGGER_DELETE__ AFTER DELETE ON " + Table.this.getName() + "\n"
 										+ "FOR EACH ROW \n" + "UPDATE " + DatabaseWrapper.ROW_COUNT_TABLES
-										+ " SET ROW_COUNT=ROW_COUNT-1 WHERE TABLE_NAME='" + Table.this.getName() + "'\n"
+										+ " SET ROW_COUNT=ROW_COUNT-1 WHERE TABLE_ID=" + getTableID() + "\n"
 										+ sql_connection.getSqlComma());
 								st.close();
 								st = null;
@@ -1250,7 +1260,7 @@ public abstract class Table<T extends DatabaseRecord> {
 	}
 
 	@SuppressWarnings("SameParameterValue")
-	SqlQuerry getSqlGeneralSelect(boolean loadJunctions, boolean ascendant, String orderByFields[]) {
+	SqlQuerry getSqlGeneralSelect(boolean loadJunctions, boolean ascendant, String[] orderByFields) {
 		if (orderByFields != null && orderByFields.length > 0)
 			loadJunctions = true;
 		return new SqlQuerry("SELECT " + getSqlSelectStep1Fields(loadJunctions) + " FROM "
@@ -1425,10 +1435,10 @@ public abstract class Table<T extends DatabaseRecord> {
 	}
 
 	private class SqlGeneralSelectQuerryWithMultipleFieldMatch extends SqlQuerry {
-		private final Map<String, Object> records[];
+		private final Map<String, Object>[] records;
 
-		SqlGeneralSelectQuerryWithMultipleFieldMatch(boolean loadJunctions, Map<String, Object> records[], String AndOr,
-				boolean asendant, String[] orderByFields) {
+		SqlGeneralSelectQuerryWithMultipleFieldMatch(boolean loadJunctions, Map<String, Object>[] records, String AndOr,
+													 boolean asendant, String[] orderByFields) {
 			super(getSqlGeneralSelectWithMultipleFieldMatch(loadJunctions, records, AndOr, asendant, orderByFields));
 			this.records = records;
 		}
@@ -1481,8 +1491,8 @@ public abstract class Table<T extends DatabaseRecord> {
 		return sb.toString();
 	}
 
-	String getSqlGeneralSelectWithMultipleFieldMatch(boolean loadJunctions, Map<String, Object> records[], String AndOr,
-			boolean asendant, String[] orderByFields) {
+	String getSqlGeneralSelectWithMultipleFieldMatch(boolean loadJunctions, Map<String, Object>[] records, String AndOr,
+													 boolean asendant, String[] orderByFields) {
 		StringBuilder sb = new StringBuilder(getSqlGeneralSelect(loadJunctions).getQuerry());
 
 		boolean firstOR = true;
@@ -1755,7 +1765,7 @@ public abstract class Table<T extends DatabaseRecord> {
 				try (ReadQuerry rq = new ReadQuerry(
 						_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(),
 						new SqlQuerry("SELECT ROW_COUNT FROM " + DatabaseWrapper.ROW_COUNT_TABLES
-								+ " WHERE TABLE_NAME='" + Table.this.getName() + "'"))) {
+								+ " WHERE TABLE_ID=" + Table.this.getTableID() + ""))) {
 					if (rq.result_set.next()) {
 						return rq.result_set.getLong(1);
 					} else
@@ -2090,7 +2100,7 @@ public abstract class Table<T extends DatabaseRecord> {
 		return table_name;
 	}
 
-	/**
+	/*
 	 * Format the a class name by replacing '.' chars by '_' chars. Use also upper
 	 * case.
 	 * 
@@ -2098,9 +2108,9 @@ public abstract class Table<T extends DatabaseRecord> {
 	 *            a class
 	 * @return the new class name format
 	 */
-	public static String getName(Class<?> c) {
+	/*public static String getName(Class<?> c) {
 		return c.getCanonicalName().replace(".", "_").toUpperCase();
-	}
+	}*/
 
 	@Override
 	public String toString() {
@@ -2304,7 +2314,7 @@ public abstract class Table<T extends DatabaseRecord> {
 	}
 
 	public String getFieldToComparare(String field) {
-		String strings[] = field.split("\\.");
+		String[] strings = field.split("\\.");
 
 		Table<?> current_table = Table.this;
 
@@ -2521,7 +2531,7 @@ public abstract class Table<T extends DatabaseRecord> {
 		}
 
 		public FieldComparator getFieldComparator(String field) throws ConstraintsNotRespectedDatabaseException {
-			String strings[] = field.split("\\.");
+			String[] strings = field.split("\\.");
 			ArrayList<FieldAccessor> fields = new ArrayList<>();
 			Table<?> current_table = Table.this;
 
@@ -3170,7 +3180,7 @@ public abstract class Table<T extends DatabaseRecord> {
 	}
 
 	private abstract class MultipleFieldFilter extends PersonnalFilter {
-		protected final Map<String, Object> given_fields[];
+		protected final Map<String, Object>[] given_fields;
 		protected final ArrayList<FieldAccessor> fields_accessor;
 
 		@SafeVarargs

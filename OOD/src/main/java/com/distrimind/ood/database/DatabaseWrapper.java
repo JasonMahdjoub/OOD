@@ -37,39 +37,6 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.security.AccessController;
-import java.security.PrivilegedActionException;
-import java.sql.Blob;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Savepoint;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-
 import com.distrimind.ood.database.DatabaseHooksTable.Record;
 import com.distrimind.ood.database.Table.ColumnsReadQuerry;
 import com.distrimind.ood.database.Table.DefaultConstructorAccessPrivilegedAction;
@@ -81,6 +48,24 @@ import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.SecureRandomType;
+
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.security.AccessController;
+import java.security.PrivilegedActionException;
+import java.sql.*;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * This class represent a SqlJet database.
@@ -149,6 +134,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	public void setMaxTransactionsToSynchronizeAtTheSameTime(int maxTransactionsToSynchronizeAtTheSameTime) {
 		this.maxTransactionsToSynchronizeAtTheSameTime = maxTransactionsToSynchronizeAtTheSameTime;
 	}
+
+
 
 	// private final boolean isWindows;
 	private static class Database {
@@ -441,7 +428,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 		}
 
-		DatabaseNotifier getNotifier() {
+		/*DatabaseNotifier getNotifier() {
 			
 			try {
 				lockWrite();
@@ -452,7 +439,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				unlockWrite();
 			}
 			
-		}
+		}*/
 
 		public DatabaseEvent waitNextEvent() throws InterruptedException {
 
@@ -1613,7 +1600,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			return res;
 		}
 
-		@SuppressWarnings("ConstantConditions")
+
         void addNewTemporaryEvent(final Table<?> table, final TableEvent<?> event) throws DatabaseException {
 			final TransactionPerDatabase transaction = getAndCreateIfNecessaryTemporaryTransaction(
 					table.getDatabaseConfiguration().getPackage());
@@ -2373,7 +2360,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		return !isThreadSafe() || hasOnePeerSyncronized; 
 	}
 	
-	@SuppressWarnings("ConstantConditions")
+
     Object runTransaction(final Transaction _transaction, boolean defaultTransaction) throws DatabaseException {
 
 		Object res = null;
@@ -2847,6 +2834,58 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			unlockWrite();
 		}
 	}
+	public int getTableName(Table<?> tTable) throws DatabaseException {
+		return getTableName(tTable.getClass());
+	}
+
+	String getLongTableName(Class<?> tTableClass)
+	{
+		return tTableClass.getCanonicalName().replace(".", "_").toUpperCase();
+	}
+	public int getTableName(Class<?> tTableClass) throws DatabaseException {
+		String longTableName=getLongTableName(tTableClass);
+
+		try {
+			PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
+					.prepareStatement("SELECT TABLE_ID FROM " + ROW_COUNT_TABLES+" WHERE TABLE_NAME='" + longTableName + "'\n"
+					+ getSqlComma());
+			ResultSet rs = pst.executeQuery();
+			Integer res=null;
+			if (rs.next())
+				res=rs.getInt(1);
+			rs.close();
+			pst.close();
+			if (res!=null)
+				return res;
+
+			Statement st = getConnectionAssociatedWithCurrentThread().getConnection()
+					.createStatement();
+			st.executeUpdate("INSERT INTO " + DatabaseWrapper.ROW_COUNT_TABLES + "(TABLE_NAME, ROW_COUNT) VALUES('"
+					+ longTableName + "', 0)" + getSqlComma());
+
+			st.close();
+
+			pst = getConnectionAssociatedWithCurrentThread().getConnection()
+					.prepareStatement("SELECT TABLE_ID FROM " + ROW_COUNT_TABLES+" WHERE TABLE_NAME='" + longTableName + "'\n"
+							+ getSqlComma());
+
+			rs = pst.executeQuery();
+			rs.next();
+			res=rs.getInt(1);
+
+			rs.close();
+			pst.close();
+
+
+
+
+			return res;
+
+		} catch (SQLException e) {
+			throw DatabaseException.getDatabaseException(e);
+		}
+
+	}
 
 	/**
 	 * Associate a Sql database with a given database configuration. Every
@@ -2900,7 +2939,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 								Statement st = getConnectionAssociatedWithCurrentThread().getConnection()
 										.createStatement();
 								st.executeUpdate("CREATE TABLE " + ROW_COUNT_TABLES
-										+ " (TABLE_NAME VARCHAR(512), ROW_COUNT INTEGER)" + getSqlComma());
+										+ " (TABLE_NAME VARCHAR(512), ROW_COUNT INTEGER, TABLE_ID INTEGER GENERATED BY DEFAULT AS IDENTITY(START WITH 1) "
+										//+", CONSTRAINT TABLE_NAME_PK PRIMARY KEY(TABLE_NAME)"
+										+", CONSTRAINT TABLE_ID_PK PRIMARY KEY(TABLE_ID))"
+										+ getSqlComma());
 								st.close();
 							}
 

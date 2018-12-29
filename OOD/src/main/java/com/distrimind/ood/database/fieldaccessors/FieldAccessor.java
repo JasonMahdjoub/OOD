@@ -105,13 +105,13 @@ public abstract class FieldAccessor {
 	protected final int bits_number;
 	protected final boolean hasToCreateIndex;
 	protected final boolean descendantIndex;
-	private final Class<?> compatible_classes[];
+	private final Class<?>[] compatible_classes;
 	private final String indexName;
 	private final Class<? extends Table<?>> table_class;
 
 	@SuppressWarnings("unchecked")
 	protected FieldAccessor(DatabaseWrapper _sql_connection, Field _field, String parentFieldName,
-			Class<?> compatible_classes[], Class<? extends Table<?>> table_class) throws DatabaseException {
+							Class<?>[] compatible_classes, Class<? extends Table<?>> table_class) throws DatabaseException {
 		if (compatible_classes == null)
 			throw new NullPointerException("compatible_classes");
 		this.compatible_classes = compatible_classes;
@@ -122,8 +122,8 @@ public abstract class FieldAccessor {
 				: (this.parentFieldName + "_")) + field.getName();
 		this.table_class = table_class;
 		table_name = table_class == null ? (DatabaseRecord.class.isAssignableFrom(field.getDeclaringClass())
-				? (Table.getName(Table.getTableClass((Class<? extends DatabaseRecord>) field.getDeclaringClass())))
-				: null) : Table.getName(table_class);
+				? (Table.TABLE_NAME_PREFIX+_sql_connection.getTableName(Table.getTableClass((Class<? extends DatabaseRecord>) field.getDeclaringClass())))
+				: null) : Table.TABLE_NAME_PREFIX+_sql_connection.getTableName(table_class);
 		auto_primary_key = _field.isAnnotationPresent(AutoPrimaryKey.class);
 		random_primary_key = field.isAnnotationPresent(RandomPrimaryKey.class);
 		if (auto_primary_key && random_primary_key)
@@ -621,7 +621,7 @@ public abstract class FieldAccessor {
 		return true;
 	}
 
-	private static Class<?> class_array_byte = (new byte[0]).getClass();
+	private static Class<?> class_array_byte = byte[].class;
 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	public static boolean equalsBetween(Object val1, Object val2) throws DatabaseException {
@@ -845,7 +845,7 @@ public abstract class FieldAccessor {
 		private HashMap<String, String> sql_fields = new HashMap<>();
 		private final FieldAccessor field_accessor;
 
-		public SqlFieldTranslation(FieldAccessor fa, SqlField _sql_field[]) {
+		public SqlFieldTranslation(FieldAccessor fa, SqlField[] _sql_field) {
 			field_accessor = fa;
 			for (SqlField sf : fa.getDeclaredSqlFields()) {
 				if (sf.pointed_field != null)
@@ -913,7 +913,7 @@ public abstract class FieldAccessor {
 				fields.addAll(fapa.run());
 			}
 
-			Field fs[] = m_cls.getDeclaredFields();
+			Field[] fs = m_cls.getDeclaredFields();
 			for (java.lang.reflect.Field f : fs) {
 				f.setAccessible(true);
 				fields.add(f);

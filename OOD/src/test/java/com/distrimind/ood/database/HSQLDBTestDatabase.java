@@ -80,7 +80,7 @@ public class HSQLDBTestDatabase extends TestDatabase {
 	}
 
 	@AfterClass
-	public static void unloadDatabase() throws DatabaseException {
+	public static void unloadDatabase()  {
 		TestDatabase.unloadDatabase();
 		EmbeddedHSQLDBWrapper.deleteDatabaseFiles(new File(database_file_name + ".data"));
 		EmbeddedHSQLDBWrapper.deleteDatabaseFiles(new File(database_file_nameb + ".data"));

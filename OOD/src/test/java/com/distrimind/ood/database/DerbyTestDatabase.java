@@ -36,12 +36,20 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import com.distrimind.ood.database.database.Table1;
+import com.distrimind.ood.database.database.*;
 import com.distrimind.ood.database.database.Table1.Record;
-import com.distrimind.ood.database.database.Table3;
+import com.distrimind.ood.database.exceptions.ConcurentTransactionDatabaseException;
 import com.distrimind.ood.database.exceptions.ConstraintsNotRespectedDatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.exceptions.FieldDatabaseException;
+import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
+import com.distrimind.util.DecentralizedIDGenerator;
 import com.distrimind.util.FileTools;
+import com.distrimind.util.RenforcedDecentralizedIDGenerator;
+import com.distrimind.util.SecuredDecentralizedID;
+import com.distrimind.util.crypto.SecureRandomType;
+import com.distrimind.util.crypto.SymmetricEncryptionType;
+import com.distrimind.util.crypto.SymmetricSecretKey;
 import gnu.vm.jgnu.security.NoSuchAlgorithmException;
 import gnu.vm.jgnu.security.NoSuchProviderException;
 import org.testng.Assert;
@@ -49,7 +57,12 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
 import java.io.File;
-import java.util.HashMap;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.*;
+
+import static org.testng.Assert.*;
+import static org.testng.Assert.assertTrue;
 
 /**
  * 
@@ -57,6 +70,7 @@ import java.util.HashMap;
  * @version 2.0
  * @since OOD 1.0
  */
+
 public class DerbyTestDatabase extends TestDatabase {
 	public DerbyTestDatabase() throws DatabaseException, NoSuchAlgorithmException, NoSuchProviderException {
 		super();
@@ -88,7 +102,7 @@ public class DerbyTestDatabase extends TestDatabase {
 	}
 
 	@AfterClass
-	public static void unloadDatabase() throws DatabaseException {
+	public static void unloadDatabase()  {
 		TestDatabase.unloadDatabase();
 		EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directory);
 		EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directoryb);
@@ -99,6 +113,113 @@ public class DerbyTestDatabase extends TestDatabase {
 	public File getDatabaseBackupFileName() {
 		return database_backup_directory;
 	}
+
+	@Test
+	public void checkUnloadedDatabase() throws IllegalArgumentException, DatabaseException {
+		super.checkUnloadedDatabase();
+	}
+
+	@Test(dependsOnMethods = { "checkUnloadedDatabase" })
+	public void firstLoad() throws IllegalArgumentException, DatabaseException {
+
+		super.firstLoad();
+	}
+
+	@Test(dependsOnMethods = { "firstLoad" })
+	public void isLoadedIntoMemory() {
+		super.isLoadedIntoMemory();
+	}
+
+
+	@Test(dependsOnMethods = { "firstLoad" })
+	public void firstAdd() throws DatabaseException {
+		super.firstAdd();
+
+	}
+
+	@Test(dependsOnMethods = { "firstAdd" })
+	public void firstTestSize() throws DatabaseException {
+		super.firstTestSize();
+	}
+
+	@Test(dependsOnMethods = { "firstTestSize" })
+	public void firstReload() throws DatabaseException {
+		super.firstReload();
+
+	}
+
+	@Test(dependsOnMethods = { "firstReload" })
+	public void secondTestSize() throws DatabaseException {
+		super.secondTestSize();
+
+	}
+
+	@Test(dependsOnMethods = { "secondTestSize" })
+	public void testFirstAdd() throws DatabaseException {
+		super.testFirstAdd();
+	}
+
+	@Test(dependsOnMethods = { "alterRecord" })
+	public void addSecondRecord() throws DatabaseException {
+		super.addSecondRecord();
+	}
+
+	@Test(dependsOnMethods = { "testFirstAdd" })
+	public void alterRecord() throws DatabaseException {
+		super.alterRecord();
+
+	}
+
+	@Test(dependsOnMethods = { "addSecondRecord" })
+	public void getRecord() throws DatabaseException {
+		super.getRecord();
+
+	}
+
+
+
+	@Test(dependsOnMethods = { "addSecondRecord" })
+	public void getRecordFilter() throws DatabaseException {
+		super.getRecordFilter();
+
+	}
+
+	@Test(dependsOnMethods = { "getRecordFilter", "getRecord", "alterRecord" })
+	public void removeRecord() throws DatabaseException {
+		super.removeRecord();
+	}
+
+	@Test(dependsOnMethods = { "removeRecord" })
+	public void testArrayRecordParameters() throws DatabaseException {
+		super.testArrayRecordParameters();
+	}
+
+	@Test(dependsOnMethods = { "testArrayRecordParameters" })
+	public void removeRecords() throws DatabaseException {
+		super.removeRecords();
+
+	}
+
+	@Test(dependsOnMethods = { "removeRecords" })
+	public void testFilters() throws DatabaseException {
+		super.testFilters();
+
+	}
+
+	@Test(dependsOnMethods = { "testFilters" })
+	public void testRemoveFilters() throws DatabaseException {
+		super.testRemoveFilters();
+
+	}
+
+	@Test(dependsOnMethods = { "testRemoveFilters" })
+	public void addForeignKeyAndTestUniqueKeys() throws DatabaseException {
+		super.addForeignKeyAndTestUniqueKeys();
+
+	}
+
+
+
 
 	@Override
 	@Test(dependsOnMethods = { "addForeignKeyAndTestUniqueKeys" }, enabled = false)

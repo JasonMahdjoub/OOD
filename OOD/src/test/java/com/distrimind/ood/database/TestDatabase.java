@@ -82,6 +82,7 @@ import static org.testng.Assert.*;
  * @since OOD 1.0
  */
 @SuppressWarnings("deprecation")
+
 public abstract class TestDatabase {
 	public abstract int getMultiTestsNumber();
 
@@ -256,15 +257,13 @@ public abstract class TestDatabase {
 
 	@Override
 	public void finalize() {
-		try {
-			unloadDatabase();
-		} catch (DatabaseException e) {
-			e.printStackTrace();
-		}
+
+		unloadDatabase();
+
 	}
 
 	@AfterClass
-	public static void unloadDatabase() throws DatabaseException {
+	public static void unloadDatabase()  {
 		System.out.println("Unload database !");
 		if (sql_db != null) {
 			sql_db.close();
@@ -3095,7 +3094,7 @@ public abstract class TestDatabase {
 			for (int i = 0; i < sqlInstance.size(); i++) {
 				if (i > 0)
 					expectedCommand.append(" AND ");
-				expectedCommand.append(Table.getName(Table1.class));
+				expectedCommand.append("%Table1Name%");
 				expectedCommand.append(".");
 				expectedCommand.append(sqlVariablesName.get(i).toUpperCase());
 				expectedCommand.append(op_comp.getContent());
@@ -3139,7 +3138,7 @@ public abstract class TestDatabase {
 			command.append(value.toString());
 			if (value instanceof CharSequence)
 				command.append("\"");
-			expectedCommand.append(Table.getName(Table1.class));
+			expectedCommand.append("%Table1Name%");
 			expectedCommand.append(".");
 			expectedCommand.append(sqlVariablesName.get(0).toUpperCase());
 			expectedCommand.append(op_comp.getContent());
@@ -3292,6 +3291,8 @@ public abstract class TestDatabase {
 	public void testCommandTranslatorInterpreter(Table<?> table, String command, Map<String, Object> parameters,
 			String expectedSqlCommand, Map<Integer, Object> expectedSqlParameters, Table1 table1, Table1.Record record,
 			boolean expectedTestResult) throws DatabaseException, IOException, SQLException {
+		if (expectedSqlCommand!=null)
+			expectedSqlCommand=expectedSqlCommand.replace("%Table1Name%", table1.getName());
 		HashMap<Integer, Object> sqlParameters = new HashMap<>();
 		RuleInstance rule = Interpreter.getRuleInstance(command);
 		String sqlCommand = rule.translateToSqlQuery(table, parameters, sqlParameters, new HashSet<TableJunction>())
