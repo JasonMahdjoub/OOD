@@ -40,6 +40,7 @@ package com.distrimind.ood.database;
 import com.distrimind.ood.database.DatabaseHooksTable.Record;
 import com.distrimind.ood.database.Table.ColumnsReadQuerry;
 import com.distrimind.ood.database.Table.DefaultConstructorAccessPrivilegedAction;
+import com.distrimind.ood.database.annotations.TableName;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
 import com.distrimind.ood.database.fieldaccessors.ByteTabObjectConverter;
@@ -2834,15 +2835,32 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			unlockWrite();
 		}
 	}
-	public int getTableName(Table<?> tTable) throws DatabaseException {
-		return getTableName(tTable.getClass());
+
+
+	public String getTableName(Class<?> tTableClass) throws DatabaseException {
+		return getTableName(tTableClass, getTableID(tTableClass));
+	}
+
+	String getTableName(Class<?> tTableClass, int tableID) throws DatabaseException {
+		TableName tn=tTableClass.getAnnotation(TableName.class);
+		if (tn==null)
+			return Table.TABLE_NAME_PREFIX+tableID;
+		else {
+			if (tn.sqlTableName()==null || tn.sqlTableName().trim().isEmpty())
+				throw new DatabaseException("The class "+this.getClass()+" does not have a valid SQL table name");
+			return tn.sqlTableName().toUpperCase();
+		}
+	}
+
+	public int getTableID(Table<?> tTable) throws DatabaseException {
+		return getTableID(tTable.getClass());
 	}
 
 	String getLongTableName(Class<?> tTableClass)
 	{
 		return tTableClass.getCanonicalName().replace(".", "_").toUpperCase();
 	}
-	public int getTableName(Class<?> tTableClass) throws DatabaseException {
+	public int getTableID(Class<?> tTableClass) throws DatabaseException {
 		String longTableName=getLongTableName(tTableClass);
 
 		try {

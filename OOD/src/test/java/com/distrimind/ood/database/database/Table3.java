@@ -8,19 +8,14 @@ import java.util.Date;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.Table;
-import com.distrimind.ood.database.annotations.AutoPrimaryKey;
-import com.distrimind.ood.database.annotations.Field;
-import com.distrimind.ood.database.annotations.LoadToMemory;
-import com.distrimind.ood.database.annotations.NotNull;
-import com.distrimind.ood.database.annotations.PrimaryKey;
-import com.distrimind.ood.database.annotations.RandomPrimaryKey;
+import com.distrimind.ood.database.annotations.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.DecentralizedIDGenerator;
 import com.distrimind.util.RenforcedDecentralizedIDGenerator;
 import com.distrimind.util.crypto.SymmetricEncryptionType;
 import com.distrimind.util.crypto.SymmetricSecretKey;
-
+@TableName(sqlTableName = "Table3Personalized")
 @LoadToMemory
 public final class Table3 extends Table<Table3.Record> {
 	protected Table3() throws DatabaseException {

@@ -81,7 +81,7 @@ public class SerializableFieldAccessor extends FieldAccessor {
 					+ field.getType().getName() + " must be a serializable field.");
 		sql_fields = new SqlField[1];
 
-		sql_fields[0] = new SqlField(table_name + "." + this.getFieldName(),
+		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(),
 				Objects.requireNonNull(DatabaseWrapperAccessor.getSerializableType(sql_connection)), null, null, isNotNull());
 
 		if (Comparable.class.isAssignableFrom(field.getType())) {

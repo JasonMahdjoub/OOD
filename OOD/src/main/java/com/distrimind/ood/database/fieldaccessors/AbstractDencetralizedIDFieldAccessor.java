@@ -78,7 +78,7 @@ public class AbstractDencetralizedIDFieldAccessor extends FieldAccessor {
 			DatabaseWrapper _sql_connection, Field _field, String parentFieldName) throws DatabaseException {
 		super(_sql_connection, _field, parentFieldName, compatibleClasses, table_class);
 		sql_fields = new SqlField[1];
-		sql_fields[0] = new SqlField(table_name + "." + this.getFieldName(),
+		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(),
 				Objects.requireNonNull(DatabaseWrapperAccessor.isVarBinarySupported(sql_connection) ? "VARBINARY(65)"
 						: DatabaseWrapperAccessor.getBigIntegerType(sql_connection)),
 				null, null, isNotNull());
@@ -229,7 +229,7 @@ public class AbstractDencetralizedIDFieldAccessor extends FieldAccessor {
 			}
 			if (res == null && isNotNull())
 				throw new DatabaseIntegrityException("Unexpected exception. Null value was found into a not null field "
-						+ this.getFieldName() + " into table " + this.getTableClass().getName());
+						+ this.getSqlFieldName() + " into table " + this.getTableClass().getName());
 			field.set(_class_instance, res == null ? null : AbstractDecentralizedID.instanceOf(res));
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);

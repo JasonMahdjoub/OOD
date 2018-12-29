@@ -455,7 +455,9 @@ public abstract class Table<T extends DatabaseRecord> {
 		if (primary_keys_fields.size() == 0)
 			throw new DatabaseException("There is no primary key declared into the Record " + class_record.getName());
 
-		table_name=TABLE_NAME_PREFIX+(table_id=wrapper.getTableName(this));
+		table_id=wrapper.getTableID(this);
+		table_name=wrapper.getTableName(this.getClass(), table_id);
+
 		if (this.getName().equals(DatabaseWrapper.ROW_COUNT_TABLES))
 			throw new DatabaseException(
 					"This table cannot have the name " + DatabaseWrapper.ROW_COUNT_TABLES + " (case ignored)");

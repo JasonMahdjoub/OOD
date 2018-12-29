@@ -69,9 +69,9 @@ public class RenforcedDencetralizedIDFieldAccessor extends FieldAccessor {
 			DatabaseWrapper _sql_connection, Field _field, String parentFieldName) throws DatabaseException {
 		super(_sql_connection, _field, parentFieldName, compatibleClasses, table_class);
 		sql_fields = new SqlField[2];
-		sql_fields[0] = new SqlField(table_name + "." + this.getFieldName() + "_ts",
+		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName() + "_ts",
 				Objects.requireNonNull(DatabaseWrapperAccessor.getLongType(sql_connection)), null, null, isNotNull());
-		sql_fields[1] = new SqlField(table_name + "." + this.getFieldName() + "_widseq",
+		sql_fields[1] = new SqlField(table_name + "." + this.getSqlFieldName() + "_widseq",
 				Objects.requireNonNull(DatabaseWrapperAccessor.getLongType(sql_connection)), null, null, isNotNull());
 	}
 

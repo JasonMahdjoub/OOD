@@ -86,4 +86,12 @@ public @interface Field {
 	 */
 	boolean descendingIndex() default false;
 
+
+	/**
+	 * Define the SQL field name.
+	 * By default, the SQL field takes the name of the class field name.
+	 * @return the SQL field name.
+	 */
+	String sqlFieldName() default "";
+
 }

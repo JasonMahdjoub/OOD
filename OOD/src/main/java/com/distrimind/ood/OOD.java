@@ -76,6 +76,8 @@ public class OOD {
 			c.set(2018, Calendar.DECEMBER, 29);
 			Description d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)94, c.getTime());
 			d.addItem("Use shortest table's name");
+			d.addItem("Add possibility to personalize SQL table name (see annotation TableName)");
+			d.addItem("Add possibility to personalize SQL field name (see annotation Field)");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();

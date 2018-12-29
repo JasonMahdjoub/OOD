@@ -101,7 +101,7 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 				type = "BLOB(" + l + ")";
 		}
 		assert type != null;
-		sql_fields[0] = new SqlField(table_name + "." + this.getFieldName(), type, null, null, isNotNull());
+		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(), type, null, null, isNotNull());
 
 		isVarBinary = type.startsWith("VARBINARY") || type.startsWith("LONGVARBINARY");
 		this.isBigInteger=isBigInteger;

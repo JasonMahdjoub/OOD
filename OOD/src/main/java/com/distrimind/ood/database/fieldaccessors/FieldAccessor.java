@@ -92,7 +92,7 @@ public abstract class FieldAccessor {
 	protected final DatabaseWrapper sql_connection;
 	protected final Field field;
 	protected final String parentFieldName;
-	protected final String fieldName;
+	protected final String fieldName, sqlFieldName;
 	protected final String table_name;
 	protected final boolean auto_primary_key;
 	protected final boolean random_primary_key;
@@ -118,12 +118,21 @@ public abstract class FieldAccessor {
 		sql_connection = _sql_connection;
 		field = _field;
 		this.parentFieldName = parentFieldName;
+		com.distrimind.ood.database.annotations.Field af=field.getAnnotation(com.distrimind.ood.database.annotations.Field.class);
+		String fName;
+		if (af==null || af.sqlFieldName()==null || af.sqlFieldName().trim().isEmpty())
+			fName=field.getName();
+		else
+			fName=af.sqlFieldName();
+
 		this.fieldName = ((this.parentFieldName == null || this.parentFieldName.isEmpty()) ? ""
 				: (this.parentFieldName + "_")) + field.getName();
+		this.sqlFieldName = ((this.parentFieldName == null || this.parentFieldName.isEmpty()) ? ""
+				: (this.parentFieldName + "_")) + fName.toUpperCase();
 		this.table_class = table_class;
 		table_name = table_class == null ? (DatabaseRecord.class.isAssignableFrom(field.getDeclaringClass())
-				? (Table.TABLE_NAME_PREFIX+_sql_connection.getTableName(Table.getTableClass((Class<? extends DatabaseRecord>) field.getDeclaringClass())))
-				: null) : Table.TABLE_NAME_PREFIX+_sql_connection.getTableName(table_class);
+				? (_sql_connection.getTableName(Table.getTableClass((Class<? extends DatabaseRecord>) field.getDeclaringClass())))
+				: null) : _sql_connection.getTableName(table_class);
 		auto_primary_key = _field.isAnnotationPresent(AutoPrimaryKey.class);
 		random_primary_key = field.isAnnotationPresent(RandomPrimaryKey.class);
 		if (auto_primary_key && random_primary_key)
@@ -205,6 +214,10 @@ public abstract class FieldAccessor {
 		this.indexName = (this.table_name + "_" + this.getField().getName()).replace(".", "_").toUpperCase();
 	}
 
+	public String getSqlFieldName()
+	{
+		return sqlFieldName;
+	}
 
 	public boolean isDecentralizablePrimaryKey()
 	{

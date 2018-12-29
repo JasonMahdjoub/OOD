@@ -15,7 +15,8 @@ public final class Table2 extends Table<Table2.Record> {
 
 	public static class Record extends DatabaseRecord {
 		public @PrimaryKey @ForeignKey Table1.Record fr1_pk1;
-		public @Unique @Field int int_value;
+
+		public @Unique @Field(sqlFieldName = "int_value_personalized") int int_value;
 
 		protected Record() {
 

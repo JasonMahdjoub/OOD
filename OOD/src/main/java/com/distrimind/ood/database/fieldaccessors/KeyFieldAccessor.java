@@ -80,7 +80,7 @@ public class KeyFieldAccessor extends FieldAccessor {
 		long limit= compatibleClasses[0]==ASymmetricPublicKey.class?1060:(compatibleClasses[0]==ASymmetricPrivateKey.class?140:55);
 		if (getLimit()>0)
 			limit=getLimit();
-		sql_fields[0] = new SqlField(table_name + "." + this.getFieldName(),
+		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(),
 				Objects.requireNonNull(DatabaseWrapperAccessor.isVarBinarySupported(sql_connection) ? "VARBINARY(" + limit + ")"
 						: DatabaseWrapperAccessor.getBigIntegerType(sql_connection)),
 				null, null, isNotNull());
@@ -244,7 +244,7 @@ public class KeyFieldAccessor extends FieldAccessor {
 			}
 			if (res == null && isNotNull())
 				throw new DatabaseIntegrityException("Unexpected exception. Null value was found into a not null field "
-						+ this.getFieldName() + " into table " + this.getTableClass().getName());
+						+ this.getSqlFieldName() + " into table " + this.getTableClass().getName());
 			field.set(_class_instance, res == null ? null : decode(res));
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);

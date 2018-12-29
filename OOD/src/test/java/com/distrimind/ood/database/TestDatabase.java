@@ -37,6 +37,8 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database;
 
+import com.distrimind.ood.database.annotations.Field;
+import com.distrimind.ood.database.annotations.TableName;
 import com.distrimind.ood.database.database.*;
 import com.distrimind.ood.database.database.Table1.Record;
 import com.distrimind.ood.database.exceptions.*;
@@ -307,6 +309,17 @@ public abstract class TestDatabase {
 		table5 = (Table5) sql_db.getTableInstance(Table5.class);
 		table6 = (Table6) sql_db.getTableInstance(Table6.class);
 		table7 = (Table7) sql_db.getTableInstance(Table7.class);
+		Assert.assertEquals(table3.getName(), Table3.class.getAnnotation(TableName.class).sqlTableName().toUpperCase());
+		boolean found=false;
+		for (FieldAccessor fa : table2.getFieldAccessors()) {
+
+			if (fa.getField().getName().equals("int_value")) {
+				Assert.assertEquals(fa.getSqlFieldName(), fa.getField().getAnnotation(Field.class).sqlFieldName().toUpperCase());
+				found=true;
+				break;
+			}
+		}
+		Assert.assertTrue(found);
 	}
 
 	@Test(dependsOnMethods = { "firstLoad" })

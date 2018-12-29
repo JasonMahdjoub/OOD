@@ -70,7 +70,7 @@ public class shortFieldAccessor extends FieldAccessor {
 			String parentFieldName) throws DatabaseException {
 		super(_sql_connection, _field, parentFieldName, compatible_classes, table_class);
 		sql_fields = new SqlField[1];
-		sql_fields[0] = new SqlField(table_name + "." + this.getFieldName(),
+		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(),
 				Objects.requireNonNull(DatabaseWrapperAccessor.getShortType(sql_connection)), null, null, isNotNull());
 
 	}
