@@ -7,6 +7,12 @@
 		</classes>
 	</test>
  -->
+	<test name="testH2">
+		<classes>
+			<class name="com.distrimind.ood.database.H2TestDatabase" />
+			<class name="com.distrimind.ood.database.H2TestDecentralizedDatabase" />
+		</classes>
+	</test>
 	<test name="testHDQLDB">  
 		<classes>
 		    <class name="com.distrimind.ood.database.HSQLDBTestDatabase" />

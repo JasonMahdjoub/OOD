@@ -58,6 +58,7 @@ dependencies {
      compile(group:'com.distrimind.util', name: 'Utils', version: '3.24.0-Stable')
      testCompile(group:'org.hsqldb', name: 'hsqldb', version: '2.3.4')
      testCompile(group:'org.apache.derby', name: 'derby', version: '10.11.1.1')
+     testCompile(groug:'com.h2database', name:'h2', version:'1.4.196')
 }
 def javaVersion=7
 sourceCompatibility = javaVersion
