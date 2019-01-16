@@ -2354,7 +2354,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	}
 	
 	protected abstract boolean isSerializationException(SQLException e) throws DatabaseException;
-	protected abstract boolean isDeconectionException(SQLException e) throws DatabaseException;
+	protected abstract boolean isDisconnetionException(SQLException e) throws DatabaseException;
 
 	private boolean needsToLock()
 	{
@@ -2430,7 +2430,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
                                 if (isSerializationException((SQLException)t)) {
                                     retry = true;
                                 }
-								else if (isDeconectionException((SQLException)t))
+								else if (isDisconnetionException((SQLException)t))
 								{
 									if (!deconnexionException) {
 										retry = true;
@@ -2472,7 +2472,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						} catch (SQLException se) {
 							throw new DatabaseIntegrityException("Impossible to rollback the database changments", se);
 						}
-						retry=isSerializationException(e) || isDeconectionException(e);
+						retry=isSerializationException(e) || isDisconnetionException(e);
 						if (!retry)
 							throw DatabaseException.getDatabaseException(e);
 					} finally {

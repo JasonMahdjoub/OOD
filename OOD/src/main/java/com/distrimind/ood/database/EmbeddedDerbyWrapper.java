@@ -644,7 +644,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	}
 
 	@Override
-	protected boolean isDeconectionException(SQLException e) {
+	protected boolean isDisconnetionException(SQLException e) {
 		return e.getErrorCode()==402 || e.getErrorCode()==1002;
 	}
 

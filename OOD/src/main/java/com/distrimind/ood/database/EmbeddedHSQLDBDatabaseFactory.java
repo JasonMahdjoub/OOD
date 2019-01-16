@@ -80,7 +80,7 @@ public class EmbeddedHSQLDBDatabaseFactory extends DatabaseFactory {
 	}
 
 	public EmbeddedHSQLDBDatabaseFactory(File _file_name, boolean alwaysDeconectAfterOnTransaction, HSQLDBConcurrencyControl concurrencyControl, int _cache_rows,
-			int _cache_size, int _result_max_memory_rows, int _cache_free_count) {
+			int _cache_size, int _result_max_memory_rows, int _cache_free_count, boolean lockFile) {
 		if (_file_name == null)
 			throw new NullPointerException("The parameter _file_name is a null pointer !");
 		if (_file_name.isDirectory())
@@ -93,17 +93,18 @@ public class EmbeddedHSQLDBDatabaseFactory extends DatabaseFactory {
 		cache_free_count = _cache_free_count;
 		constructorNb = 2;
 		this.alwaysDeconectAfterOnTransaction=alwaysDeconectAfterOnTransaction;
+		this.lockFile=lockFile;
 	}
 
 	@Override
 	protected DatabaseWrapper newWrapperInstance() throws DatabaseException {
 		if (constructorNb == 1)
-			return new EmbeddedHSQLDBWrapper(file_name);
+			return new EmbeddedHSQLDBWrapper(file_name, alwaysDeconectAfterOnTransaction);
 		else if (constructorNb == 2)
 			return new EmbeddedHSQLDBWrapper(file_name, alwaysDeconectAfterOnTransaction, concurrencyControl, cache_rows, cache_size,
 					result_max_memory_rows, cache_free_count, lockFile);
 		else
-			throw new DatabaseException("Invalid database factory configuration");
+			throw new InternalError("Invalid database factory configuration");
 	}
 
 }
