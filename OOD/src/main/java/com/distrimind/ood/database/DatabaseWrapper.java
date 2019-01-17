@@ -87,7 +87,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	protected final String database_name;
 	private static final HashMap<String, Lock> lockers = new HashMap<>();
 	private static final HashMap<String, Integer> number_of_shared_lockers = new HashMap<>();
-	final static String ROW_COUNT_TABLES = "ROW_COUNT_TABLES__";
+	final static String ROW_PROPERTIES_OF_TABLES = "ROW_PROPERTIES_OF_TABLES__";
 	// private final HashMap<Class<? extends Table<?>>, Table<?>>
 	// tables_instances=new HashMap<>();
 	private final ArrayList<ByteTabObjectConverter> converters;
@@ -1651,7 +1651,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 								for (Table<?> t : tables) {
 									if (t.getClass().getName().equals(_record.getConcernedTable())) {
 										DatabaseRecord dr = t.getDefaultRecordConstructor().newInstance();
-										t.unserializeFields(dr, _record.getConcernedSerializedNewForeignKey(), false,
+										t.deserializeFields(dr, _record.getConcernedSerializedNewForeignKey(), false,
 												true, false);
 										for (ForeignKeyFieldAccessor fa : t.getForeignKeysFieldAccessors()) {
 											if (fa.getPointedTable().getClass().equals(table.getClass())) {
@@ -1757,7 +1757,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 																.equals(_record.getConcernedTable())) {
 															DatabaseRecord dr = t.getDefaultRecordConstructor()
 																	.newInstance();
-															t.unserializeFields(dr,
+															t.deserializeFields(dr,
 																	_record.getConcernedSerializedNewForeignKey(),
 																	false, true, false);
 															for (ForeignKeyFieldAccessor fa : t
@@ -2194,7 +2194,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			Session c = getSession(threadPerConnectionInProgress, Thread.currentThread());
 
 			Connection c2 = getOpenedSqlConnection(c);
-            assert c != null;
+            if (c==null)
+            	throw new DatabaseException("Invalid connection", new NullPointerException());
             if (c.getConnection() != c2) {
 				c.setConnection(c2);
 			}
@@ -2204,7 +2205,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		{
 			unlockWrite();
 		}
-		
+
 	}
 
 	void releaseTransaction() throws DatabaseException {
@@ -2539,6 +2540,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		 */
 	}
 
+	protected abstract boolean isDuplicateKeyException(SQLException e);
 	/**
 	 * Run a transaction by locking this database with the current thread. During
 	 * this transaction execution, no transaction will be able to be run thanks to
@@ -2747,11 +2749,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * DatabaseException { try { boolean table_found=false; try (ReadQuerry rq=new
 	 * ReadQuerry(sql_connection.getSqlConnection(),
 	 * "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"
-	 * +ROW_COUNT_TABLES+"'")) { if (rq.result_set.next()) table_found=true; } if
+	 * +ROW_PROPERTIES_OF_TABLES+"'")) { if (rq.result_set.next()) table_found=true; } if
 	 * (!table_found) { Statement
 	 * st=sql_connection.getSqlConnection().createStatement();
 	 * st.executeUpdate("CREATE TABLE "
-	 * +ROW_COUNT_TABLES+" (TABLE_NAME VARCHAR(512), ROW_COUNT INTEGER)");
+	 * +ROW_PROPERTIES_OF_TABLES+" (TABLE_NAME VARCHAR(512), ROW_COUNT INTEGER)");
 	 * st.close(); }
 	 * 
 	 * 
@@ -2844,9 +2846,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	String getTableName(Class<?> tTableClass, int tableID) throws DatabaseException {
 		TableName tn=tTableClass.getAnnotation(TableName.class);
 		if (tn==null)
-			return Table.TABLE_NAME_PREFIX+tableID;
+			return Table.TABLE_NAME_PREFIX+tableID+"__";
 		else {
-			if (tn.sqlTableName()==null || tn.sqlTableName().trim().isEmpty())
+			if (tn.sqlTableName().trim().isEmpty())
 				throw new DatabaseException("The class "+this.getClass()+" does not have a valid SQL table name");
 			return tn.sqlTableName().toUpperCase();
 		}
@@ -2865,7 +2867,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		try {
 			PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
-					.prepareStatement("SELECT TABLE_ID FROM " + ROW_COUNT_TABLES+" WHERE TABLE_NAME='" + longTableName + "'\n"
+					.prepareStatement("SELECT TABLE_ID FROM " + ROW_PROPERTIES_OF_TABLES +" WHERE TABLE_NAME='" + longTableName + "'\n"
 					+ getSqlComma());
 			ResultSet rs = pst.executeQuery();
 			Integer res=null;
@@ -2878,13 +2880,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 			Statement st = getConnectionAssociatedWithCurrentThread().getConnection()
 					.createStatement();
-			st.executeUpdate("INSERT INTO " + DatabaseWrapper.ROW_COUNT_TABLES + "(TABLE_NAME, ROW_COUNT) VALUES('"
-					+ longTableName + "', 0)" + getSqlComma());
+			st.executeUpdate("INSERT INTO " + DatabaseWrapper.ROW_PROPERTIES_OF_TABLES + "(TABLE_NAME) VALUES('"
+					+ longTableName + "')" + getSqlComma());
 
 			st.close();
 
 			pst = getConnectionAssociatedWithCurrentThread().getConnection()
-					.prepareStatement("SELECT TABLE_ID FROM " + ROW_COUNT_TABLES+" WHERE TABLE_NAME='" + longTableName + "'\n"
+					.prepareStatement("SELECT TABLE_ID FROM " + ROW_PROPERTIES_OF_TABLES +" WHERE TABLE_NAME='" + longTableName + "'\n"
 							+ getSqlComma());
 
 			rs = pst.executeQuery();
@@ -2904,6 +2906,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 	}
+
+	public abstract String getAutoIncrementPart(long startWith);
 
 	/**
 	 * Associate a Sql database with a given database configuration. Every
@@ -2950,14 +2954,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							 * boolean table_found=false; try (ReadQuerry rq=new
 							 * ReadQuerry(sql_connection.getSqlConnection(),
 							 * "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"
-							 * +ROW_COUNT_TABLES+"'")) { if (rq.result_set.next()) table_found=true; }
+							 * +ROW_PROPERTIES_OF_TABLES+"'")) { if (rq.result_set.next()) table_found=true; }
 							 */
 
-							if (!doesTableExists(ROW_COUNT_TABLES)) {
+							if (!doesTableExists(ROW_PROPERTIES_OF_TABLES)) {
 								Statement st = getConnectionAssociatedWithCurrentThread().getConnection()
 										.createStatement();
-								st.executeUpdate("CREATE TABLE " + ROW_COUNT_TABLES
-										+ " (TABLE_NAME VARCHAR(512), ROW_COUNT INTEGER, TABLE_ID INTEGER GENERATED BY DEFAULT AS IDENTITY(START WITH 1) "
+								st.executeUpdate("CREATE TABLE " + ROW_PROPERTIES_OF_TABLES
+										+ " (TABLE_NAME VARCHAR(512), TABLE_ID INTEGER GENERATED BY DEFAULT AS IDENTITY(START WITH 1) "
 										//+", CONSTRAINT TABLE_NAME_PK PRIMARY KEY(TABLE_NAME)"
 										+", CONSTRAINT TABLE_ID_PK PRIMARY KEY(TABLE_ID))"
 										+ getSqlComma());
@@ -2984,7 +2988,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 							return null;
 
-						} catch (ClassNotFoundException e) {
+						} /*catch (ClassNotFoundException e) {
 							throw new DatabaseException(
 									"Impossible to access to t)he list of classes contained into the package "
 											+ configuration.getPackage().getName(),
@@ -2994,7 +2998,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 									"Impossible to access to the list of classes contained into the package "
 											+ configuration.getPackage().getName(),
 									e);
-						} catch (Exception e) {
+						}*/ catch (Exception e) {
 							throw DatabaseException.getDatabaseException(e);
 						}
 					}
@@ -3118,7 +3122,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	protected abstract boolean doesTableExists(String tableName) throws Exception;
 
-	protected abstract ColumnsReadQuerry getColumnMetaData(String tableName) throws Exception;
+	protected final ColumnsReadQuerry getColumnMetaData(String tableName) throws Exception
+	{
+		return getColumnMetaData(tableName, null);
+	}
+
+
+	protected abstract ColumnsReadQuerry getColumnMetaData(String tableName, String columnName) throws Exception;
 
 	protected abstract void checkConstraints(Table<?> table) throws DatabaseException;
 
@@ -3142,6 +3152,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		public abstract boolean isNullable() throws SQLException;
 
 		public abstract boolean isAutoIncrement() throws SQLException;
+
+		public abstract int getOrdinalPosition() throws SQLException;
 	}
 
 	protected abstract String getSqlComma();

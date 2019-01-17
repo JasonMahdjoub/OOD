@@ -704,6 +704,7 @@ public abstract class TestDatabase {
 		map.put("pk1", 1);
 		map.put("byte_value", (byte) 6);
 		map.put("char_value", 'y');
+		map.put("long_value", 300055004556256L);
 		map.put("DoubleNumber_value", 6.6);
 		map.put("subField", getSubField());
 		map.put("subSubField", getSubSubField());
@@ -724,7 +725,7 @@ public abstract class TestDatabase {
         Assert.assertEquals('y', r1.char_value);
 		assertTrue(r1.boolean_value);
         Assert.assertEquals(r1.short_value, (short) 3);
-        Assert.assertEquals(300000004556256L, r1.long_value);
+        Assert.assertEquals(300055004556256L, r1.long_value);
         Assert.assertEquals(3.3f, r1.float_value, 0.0);
         Assert.assertEquals(3.3, r1.double_value, 0.0);
         Assert.assertEquals("test string", r1.string_value);
@@ -755,7 +756,7 @@ public abstract class TestDatabase {
         Assert.assertEquals('y', r2.char_value);
 		assertTrue(r2.boolean_value);
         Assert.assertEquals(r2.short_value, (short) 3);
-        Assert.assertEquals(300000004556256L, r2.long_value);
+        Assert.assertEquals(300055004556256L, r2.long_value);
         Assert.assertEquals(3.3f, r2.float_value, 0.0);
         Assert.assertEquals(3.3, r2.double_value, 0.0);
         Assert.assertEquals("test string", r2.string_value);
@@ -789,7 +790,7 @@ public abstract class TestDatabase {
         Assert.assertEquals('y', r1.char_value);
 		assertTrue(r1.boolean_value);
         Assert.assertEquals(r1.short_value, (short) 3);
-        Assert.assertEquals(300000004556256L, r1.long_value);
+        Assert.assertEquals(300055004556256L, r1.long_value);
         Assert.assertEquals(3.3f, r1.float_value, 0.0);
         Assert.assertEquals(3.3, r1.double_value, 0.0);
         Assert.assertEquals("test string", r1.string_value);
@@ -820,7 +821,7 @@ public abstract class TestDatabase {
         Assert.assertEquals('y', r2.char_value);
 		assertTrue(r2.boolean_value);
         Assert.assertEquals(r2.short_value, (short) 3);
-        Assert.assertEquals(300000004556256L, r2.long_value);
+        Assert.assertEquals(300055004556256L, r2.long_value);
         Assert.assertEquals(3.3f, r2.float_value, 0.0);
         Assert.assertEquals(3.3, r2.double_value, 0.0);
         Assert.assertEquals("test string", r2.string_value);
@@ -3276,8 +3277,8 @@ public abstract class TestDatabase {
 							openedParenthesis.decrementAndGet();
 						}
 						if (command.length() > 0) {
-							res.add(new Object[] { table1, command.toString(), parametersTable1Equallable,
-									expectedCommand.toString(), expectedParameters, table1, record,
+							res.add(new Object[] { Table1.class, command.toString(), parametersTable1Equallable,
+									expectedCommand.toString(), expectedParameters, record,
                                     expectedTestResult.get()});
 						}
 					}
@@ -3300,10 +3301,12 @@ public abstract class TestDatabase {
 		Assert.assertEquals(bool, expectedBoolean);
 	}
 
-	@Test(dependsOnMethods = { "firstLoad" }, dataProvider = "interpreterCommandsProvider")
-	public void testCommandTranslatorInterpreter(Table<?> table, String command, Map<String, Object> parameters,
-			String expectedSqlCommand, Map<Integer, Object> expectedSqlParameters, Table1 table1, Table1.Record record,
+	@Test(dependsOnMethods = { "firstReload" }, dataProvider = "interpreterCommandsProvider")
+	public void testCommandTranslatorInterpreter(Class<? extends Table<?>> tableClass, String command, Map<String, Object> parameters,
+			String expectedSqlCommand, Map<Integer, Object> expectedSqlParameters, Table1.Record record,
 			boolean expectedTestResult) throws DatabaseException, IOException, SQLException {
+		Table<?> table=sql_db.getTableInstance(tableClass);
+		Table1 table1=(Table1)sql_db.getTableInstance(Table1.class);
 		if (expectedSqlCommand!=null)
 			expectedSqlCommand=expectedSqlCommand.replace("%Table1Name%", table1.getName());
 		HashMap<Integer, Object> sqlParameters = new HashMap<>();
@@ -3375,7 +3378,7 @@ public abstract class TestDatabase {
 		map.put("char_value", 'x');
 		map.put("boolean_value", Boolean.TRUE);
 		map.put("short_value", (short) random.nextInt());
-		map.put("long_value", 3L);
+		map.put("long_value", 3000L);
 		map.put("float_value", 3.3f);
 		map.put("double_value", 3.3);
 		map.put("string_value", "test string");
@@ -3441,12 +3444,18 @@ public abstract class TestDatabase {
 		}
 		for (int i = 0; i < 6; i++) {
 			try {
-				ArrayList<Table2.Record> records2 = table2.getRecords();
-				ArrayList<Table5.Record> records5 = table5.getRecords();
-				HashMap<String, Object> map2 = new HashMap<>();
-				map2.put("fk1_pk1", records2.get(random.nextInt(records2.size())));
-				map2.put("fk2", records5.get(random.nextInt(records5.size())));
-				table6.addRecord(map2);
+				synchronized(this) {
+					ArrayList<Table2.Record> records2 = table2.getRecords();
+					ArrayList<Table5.Record> records5 = table5.getRecords();
+					HashMap<String, Object> map2 = new HashMap<>();
+
+					if (records2.size()>0 && records5.size()>0) {
+						map2.put("fk1_pk1", records2.get(random.nextInt(records2.size())));
+						map2.put("fk2", records5.get(random.nextInt(records5.size())));
+						table6.addRecord(map2);
+					}
+				}
+
 			} catch (ConstraintsNotRespectedDatabaseException e) {
 			} catch (RecordNotFoundDatabaseException e) {
 				if (no_thread)
@@ -4690,7 +4699,7 @@ public abstract class TestDatabase {
 						r1.long_value = 123456789L;
 						table1.updateRecord(r1);
 						if (no_thread) {
-							Table1.Record r1b = table1.getRecords().get(0);
+							Table1.Record r1b = table1.getRecord("pk1", r1.pk1, "pk2", r1.pk2, "pk3", r1.pk3, "pk4", r1.pk4, "pk5", r1.pk5, "pk6", r1.pk6, "pk7", r1.pk7);
                             Assert.assertEquals(r1b.long_value, r1.long_value);
 						}
 					}
@@ -4701,7 +4710,7 @@ public abstract class TestDatabase {
 						r3.long_value = 123456789L;
 						table3.updateRecord(r3);
 						if (no_thread) {
-							Table3.Record r3b = table3.getRecords().get(0);
+							Table3.Record r3b = table3.getRecord("pk1", r3.pk1, "pk2", r3.pk2, "pk3", r3.pk3, "pk4", r3.pk4, "pk5", r3.pk5, "pk6", r3.pk6, "pk7", r3.pk7);
                             Assert.assertEquals(r3b.long_value, r3.long_value);
 						}
 					}
@@ -4751,8 +4760,10 @@ public abstract class TestDatabase {
 
 	@Test(threadPoolSize = 1, dependsOnMethods = { "testThreadSafe" })
 	public void testCheckPoint() throws DatabaseException {
-		((EmbeddedHSQLDBWrapper) table1.getDatabaseWrapper()).checkPoint(false);
-		((EmbeddedHSQLDBWrapper) table1.getDatabaseWrapper()).checkPoint(true);
+		if (table1.getDatabaseWrapper() instanceof EmbeddedHSQLDBWrapper) {
+			((EmbeddedHSQLDBWrapper) table1.getDatabaseWrapper()).checkPoint(false);
+			((EmbeddedHSQLDBWrapper) table1.getDatabaseWrapper()).checkPoint(true);
+		}
 	}
 
 	@Test(threadPoolSize = 1, dependsOnMethods = { "testCheckPoint" })

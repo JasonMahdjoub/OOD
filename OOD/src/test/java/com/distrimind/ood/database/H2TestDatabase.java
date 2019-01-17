@@ -53,7 +53,7 @@ import java.io.File;
 public class H2TestDatabase extends TestDatabase {
 	private static String database_file_name = "databasetestH2";
 	private static String database_file_nameb = "databasetestH2";
-	private static File database_backup_file = new File("databasebackupH2.tar");
+	private static File database_backup_file = new File("databasebackupH2.zip");
 
 	public H2TestDatabase() throws DatabaseException, NoSuchAlgorithmException, NoSuchProviderException {
 		super();

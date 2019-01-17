@@ -195,9 +195,12 @@ public class ShortNumberFieldAccessor extends FieldAccessor {
 	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
-			Integer val = ((Integer) _result_set.getObject(getColmunIndex(_result_set, sql_fields[0].field)));
-			if (val == null && isNotNull())
-				throw new DatabaseIntegrityException("Unexpected exception");
+			Object o=_result_set.getObject(getColmunIndex(_result_set, sql_fields[0].field));
+			Integer val;
+			if (o instanceof Short)
+				val= Integer.valueOf((Short)o );
+			else
+				val= ((Integer)o );
 			field.set(_class_instance, val == null ? null : val.shortValue());
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);

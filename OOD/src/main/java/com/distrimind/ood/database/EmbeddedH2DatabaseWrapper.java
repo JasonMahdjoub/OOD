@@ -39,7 +39,6 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 
 import java.io.File;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -147,7 +146,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 			connection.close();
 		} else {
 			try (Statement s = connection.createStatement()) {
-				s.executeQuery("SHUTDOWN" + getSqlComma());
+				s.execute("SHUTDOWN" + getSqlComma());
 			} finally {
 				connection.close();
 			}
@@ -162,20 +161,46 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	}
 
 	@Override
-	protected Blob getBlob(byte[] bytes) throws SQLException {
+	protected boolean isDuplicateKeyException(SQLException e)
+	{
+		return e.getErrorCode()==23505;
+	}
+
+
+	@Override
+	protected Blob getBlob(final byte[] bytes) throws SQLException {
 		try {
-			return H2BlobConstructor.newInstance(getConnectionAssociatedWithCurrentThread().getConnection(), H2ValueMethod.invoke(null, (Object) bytes), -1);
-		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | DatabaseException e) {
+			return (Blob)runTransaction(new Transaction() {
+				@Override
+				public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
+					try {
+						return H2BlobConstructor.newInstance(getConnectionAssociatedWithCurrentThread().getConnection(), H2ValueMethod.invoke(null, (Object) bytes), -1);
+					} catch (Exception e) {
+						throw DatabaseException.getDatabaseException(e);
+					}
+				}
+
+				@Override
+				public TransactionIsolation getTransactionIsolation() {
+					return TransactionIsolation.TRANSACTION_READ_UNCOMMITTED;
+				}
+
+				@Override
+				public boolean doesWriteData() {
+					return false;
+				}
+
+				@Override
+				public void initOrReset() {
+
+				}
+			}, false);
+		}
+		catch(DatabaseException e)
+		{
 			throw new SQLException(e);
 		}
-		catch(InvocationTargetException e)
-		{
-			Throwable t=e.getCause();
-			if (t instanceof SQLException)
-				throw (SQLException)t;
-			else
-				throw new SQLException(t);
-		}
+
 	}
 
 	/**
@@ -200,7 +225,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 		if (!f.toLowerCase().endsWith(".zip"))
 			f+=".zip";
 
-		final String querry = "BACKUP TO '" + f;
+		final String querry = "BACKUP TO '" + f+"'";
 		this.runTransaction(new Transaction() {
 
 			@Override
@@ -252,7 +277,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 				isoLevel = "0";
 				break;
 			case TRANSACTION_REPEATABLE_READ:
-				isoLevel = "1 READ";
+				isoLevel = "1";
 				break;
 			case TRANSACTION_SERIALIZABLE:
 				isoLevel = "1";
@@ -263,8 +288,96 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 		}
 
 		try (Statement s = _openedConnection.getConnection().createStatement()) {
-			s.executeQuery("SET LOCK_MODE " + isoLevel + getSqlComma());
+			s.execute("SET LOCK_MODE " + isoLevel + getSqlComma());
 		}
+
+	}
+
+	@Override
+	protected boolean doesTableExists(String table_name) throws Exception {
+
+		try(ResultSet res = getConnectionAssociatedWithCurrentThread().getConnection().getMetaData().getTables(null, null, table_name, null)) {
+			return res.next();
+		}
+
+	}
+
+
+	@Override
+	protected Table.ColumnsReadQuerry getColumnMetaData(String tableName, String columnName) throws Exception {
+		Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
+		return new CReadQuerry(sql_connection, new Table.SqlQuerry(
+				"SELECT COLUMN_NAME, TYPE_NAME, CHARACTER_MAXIMUM_LENGTH, IS_NULLABLE, COLUMN_DEFAULT, ORDINAL_POSITION FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='"
+						+ tableName + (columnName==null?"":"' AND COLUMN_NAME='"+columnName)+ "';"));
+	}
+
+	@Override
+	public String getConstraintsTableName() {
+		return "INFORMATION_SCHEMA.CONSTRAINTS";
+	}
+
+	public String getAutoIncrementPart(long startWith)
+	{
+		return "AUTO_INCREMENT("+startWith+")";
+	}
+
+
+	@Override
+	public String getCrossReferencesTableName()
+	{
+		return "INFORMATION_SCHEMA.CROSS_REFERENCES";
+	}
+
+	static class CReadQuerry extends Table.ColumnsReadQuerry {
+
+		public CReadQuerry(Connection _sql_connection, Table.SqlQuerry _querry) throws SQLException, DatabaseException {
+			super(_sql_connection, _querry);
+			setTableColumnsResultSet(new TCResultSet(this.result_set));
+		}
+
+
+	}
+	static class TCResultSet extends TableColumnsResultSet {
+
+		TCResultSet(ResultSet _rs) {
+			super(_rs);
+		}
+
+		@Override
+		public String getColumnName() throws SQLException {
+			return resultSet.getString("COLUMN_NAME");
+		}
+
+		@Override
+		public String getTypeName() throws SQLException {
+			return resultSet.getString("TYPE_NAME");
+		}
+
+		@Override
+		public int getColumnSize() throws SQLException {
+			return resultSet.getInt("CHARACTER_MAXIMUM_LENGTH");
+		}
+
+		@Override
+		public boolean isNullable() throws SQLException {
+			return resultSet.getString("IS_NULLABLE").equals("YES");
+		}
+
+		@Override
+		public boolean isAutoIncrement() throws SQLException {
+			String cd=resultSet.getString("COLUMN_DEFAULT");
+			if (cd==null)
+				return false;
+			return cd.contains("SYSTEM_SEQUENCE");
+		}
+
+		@Override
+		public int getOrdinalPosition() throws SQLException
+		{
+
+			return resultSet.getInt("ORDINAL_POSITION");
+		}
+
 
 	}
 
@@ -279,7 +392,14 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 		File f = new File(file_base + ".data");
 		if (f.exists())
 			f.delete();
-		f = new File(file_base + ".log");
+		f = new File(file_base + ".trace.db");
+		if (f.exists())
+			f.delete();
+		f = new File(file_base + ".mv.db");
+		if (f.exists())
+			f.delete();
+
+		/*f = new File(file_base + ".log");
 		if (f.exists())
 			f.delete();
 		f = new File(file_base + ".properties");
@@ -293,7 +413,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 			f.delete();
 		f = new File(file_base + ".lobs");
 		if (f.exists())
-			f.delete();
+			f.delete();*/
 	}
 
 

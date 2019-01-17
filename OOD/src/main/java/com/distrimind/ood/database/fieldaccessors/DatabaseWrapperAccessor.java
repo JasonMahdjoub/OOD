@@ -221,6 +221,7 @@ class DatabaseWrapperAccessor {
 		try {
 			return (Blob) invoke(m_get_blob, wrapper, (Object) tab);
 		} catch (InvocationTargetException e) {
+			e.printStackTrace();
 			throw (SQLException) e.getCause();
 		}
 	}

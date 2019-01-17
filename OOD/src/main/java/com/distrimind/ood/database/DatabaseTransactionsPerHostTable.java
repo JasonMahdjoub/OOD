@@ -439,12 +439,12 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 											"Impossible to decode database event type : " + event.getType());
 								DatabaseRecord drNew = null, drOld = null;
 								HashMap<String, Object> mapKeys = new HashMap<>();
-								t.unserializePrimaryKeys(mapKeys, event.getConcernedSerializedPrimaryKey());
+								t.deserializePrimaryKeys(mapKeys, event.getConcernedSerializedPrimaryKey());
 								if (type.needsNewValue()) {
 									drNew = t.getDefaultRecordConstructor().newInstance();
-									t.unserializePrimaryKeys(drNew, event.getConcernedSerializedPrimaryKey());
-									t.unserializeFields(drNew, event.getConcernedSerializedNewForeignKey(), false, true, false);
-									t.unserializeFields(drNew, event.getConcernedSerializedNewNonKey(), false, false, true);
+									t.deserializePrimaryKeys(drNew, event.getConcernedSerializedPrimaryKey());
+									t.deserializeFields(drNew, event.getConcernedSerializedNewForeignKey(), false, true, false);
+									t.deserializeFields(drNew, event.getConcernedSerializedNewNonKey(), false, false, true);
 								}
 	
 								if (type.hasOldValue() || transaction.isForce()) {
@@ -651,12 +651,12 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 									"Impossible to decode database event type : " + event.getType());
 						DatabaseRecord drNew = null, drOld;
 						HashMap<String, Object> mapKeys = new HashMap<>();
-						t.unserializePrimaryKeys(mapKeys, event.getConcernedSerializedPrimaryKey());
+						t.deserializePrimaryKeys(mapKeys, event.getConcernedSerializedPrimaryKey());
 						if (type.needsNewValue()) {
 							drNew = t.getDefaultRecordConstructor().newInstance();
-							t.unserializePrimaryKeys(drNew, event.getConcernedSerializedPrimaryKey());
-							t.unserializeFields(drNew, event.getConcernedSerializedNewForeignKey(), false, true, false);
-							t.unserializeFields(drNew, event.getConcernedSerializedNewNonKey(), false, false, true);
+							t.deserializePrimaryKeys(drNew, event.getConcernedSerializedPrimaryKey());
+							t.deserializeFields(drNew, event.getConcernedSerializedNewForeignKey(), false, true, false);
+							t.deserializeFields(drNew, event.getConcernedSerializedNewNonKey(), false, false, true);
 						}
 	
 						drOld = t.getRecord(mapKeys);

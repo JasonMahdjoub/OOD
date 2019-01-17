@@ -37,11 +37,20 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.EOFException;
+import com.distrimind.ood.database.DatabaseWrapper.TableColumnsResultSet;
+import com.distrimind.ood.database.annotations.ExcludeFromDecentralization;
+import com.distrimind.ood.database.annotations.ForeignKey;
+import com.distrimind.ood.database.annotations.LoadToMemory;
+import com.distrimind.ood.database.exceptions.*;
+import com.distrimind.ood.database.fieldaccessors.ByteTabFieldAccessor;
+import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
+import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
+import com.distrimind.ood.interpreter.Interpreter;
+import com.distrimind.ood.interpreter.RuleInstance;
+import com.distrimind.ood.interpreter.RuleInstance.TableJunction;
+import com.distrimind.util.AbstractDecentralizedID;
+
+import java.io.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -50,38 +59,13 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.SQLIntegrityConstraintViolationException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
-
-import com.distrimind.ood.database.DatabaseWrapper.TableColumnsResultSet;
-import com.distrimind.ood.database.annotations.ExcludeFromDecentralization;
-import com.distrimind.ood.database.annotations.ForeignKey;
-import com.distrimind.ood.database.annotations.LoadToMemory;
-import com.distrimind.ood.database.exceptions.ConcurentTransactionDatabaseException;
-import com.distrimind.ood.database.exceptions.ConstraintsNotRespectedDatabaseException;
-import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
-import com.distrimind.ood.database.exceptions.DatabaseVersionException;
-import com.distrimind.ood.database.exceptions.FieldDatabaseException;
-import com.distrimind.ood.database.exceptions.RecordNotFoundDatabaseException;
-import com.distrimind.ood.database.exceptions.SerializationDatabaseException;
-import com.distrimind.ood.database.fieldaccessors.*;
-import com.distrimind.ood.interpreter.Interpreter;
-import com.distrimind.ood.interpreter.RuleInstance;
-import com.distrimind.ood.interpreter.RuleInstance.TableJunction;
-import com.distrimind.util.AbstractDecentralizedID;
-
-import javax.xml.transform.Result;
 
 /**
  * This abstract class represent a generic Sql Table wrapper, which enables the
@@ -458,9 +442,9 @@ public abstract class Table<T extends DatabaseRecord> {
 		table_id=wrapper.getTableID(this);
 		table_name=wrapper.getTableName(this.getClass(), table_id);
 
-		if (this.getName().equals(DatabaseWrapper.ROW_COUNT_TABLES))
+		if (this.getName().equals(DatabaseWrapper.ROW_PROPERTIES_OF_TABLES))
 			throw new DatabaseException(
-					"This table cannot have the name " + DatabaseWrapper.ROW_COUNT_TABLES + " (case ignored)");
+					"This table cannot have the name " + DatabaseWrapper.ROW_PROPERTIES_OF_TABLES + " (case ignored)");
 	}
 
 	private int getTableID()
@@ -470,16 +454,16 @@ public abstract class Table<T extends DatabaseRecord> {
 
 	void removeTableFromDatabaseStep1() throws DatabaseException {
 		try {
-			Statement st = sql_connection.getConnectionAssociatedWithCurrentThread().getConnection().createStatement();
+			/*Statement st = sql_connection.getConnectionAssociatedWithCurrentThread().getConnection().createStatement();
 			st.executeUpdate("DROP TRIGGER " + Table.this.getName() + "_ROW_COUNT_TRIGGER_DELETE__"
 					+ sql_connection.getSqlComma());
 			st.close();
 			st = sql_connection.getConnectionAssociatedWithCurrentThread().getConnection().createStatement();
 			st.executeUpdate("DROP TRIGGER " + Table.this.getName() + "_ROW_COUNT_TRIGGER_INSERT__"
 					+ sql_connection.getSqlComma());
-			st.close();
-			st = sql_connection.getConnectionAssociatedWithCurrentThread().getConnection().createStatement();
-			st.executeUpdate("DELETE FROM " + DatabaseWrapper.ROW_COUNT_TABLES + " WHERE TABLE_ID="
+			st.close();*/
+			Statement st = sql_connection.getConnectionAssociatedWithCurrentThread().getConnection().createStatement();
+			st.executeUpdate("DELETE FROM " + DatabaseWrapper.ROW_PROPERTIES_OF_TABLES + " WHERE TABLE_ID="
 					+ Table.this.getTableID()  + sql_connection.getSqlComma());
 			st.close();
 		} catch (SQLException e) {
@@ -678,8 +662,7 @@ public abstract class Table<T extends DatabaseRecord> {
 											throw new DatabaseVersionException(Table.this,
 													"The column " + col + " is expected to be "
 															+ (founded_sf.not_null ? "not null" : "nullable"));
-										boolean is_autoincrement = rq.result_set.getString("IS_AUTOINCREMENT")
-												.equals("YES");
+										boolean is_autoincrement = rq.tableColumnsResultSet.isAutoIncrement();
 										if (is_autoincrement != founded_fa.isAutoPrimaryKey())
 											throw new DatabaseVersionException(Table.this,
 													"The column " + col + " is " + (is_autoincrement ? "" : "not ")
@@ -788,7 +771,7 @@ public abstract class Table<T extends DatabaseRecord> {
 						}
 
 					}, true);
-					sql_connection.runTransaction(new Transaction() {
+					/*sql_connection.runTransaction(new Transaction() {
 						@Override
 						public TransactionIsolation getTransactionIsolation() {
 							return TransactionIsolation.TRANSACTION_SERIALIZABLE;
@@ -811,7 +794,7 @@ public abstract class Table<T extends DatabaseRecord> {
 
 								st.executeUpdate("CREATE TRIGGER " + Table.this.getName()
 										+ "_ROW_COUNT_TRIGGER_INSERT__ AFTER INSERT ON " + Table.this.getName() + "\n"
-										+ "FOR EACH ROW \n" + "UPDATE " + DatabaseWrapper.ROW_COUNT_TABLES
+										+ "FOR EACH ROW \n" + "UPDATE " + DatabaseWrapper.ROW_PROPERTIES_OF_TABLES
 										+ " SET ROW_COUNT=ROW_COUNT+1 WHERE TABLE_ID=" + getTableID() + "\n"
 										+ sql_connection.getSqlComma());
 								st.close();
@@ -819,7 +802,7 @@ public abstract class Table<T extends DatabaseRecord> {
 										.createStatement();
 								st.executeUpdate("CREATE TRIGGER " + Table.this.getName()
 										+ "_ROW_COUNT_TRIGGER_DELETE__ AFTER DELETE ON " + Table.this.getName() + "\n"
-										+ "FOR EACH ROW \n" + "UPDATE " + DatabaseWrapper.ROW_COUNT_TABLES
+										+ "FOR EACH ROW \n" + "UPDATE " + DatabaseWrapper.ROW_PROPERTIES_OF_TABLES
 										+ " SET ROW_COUNT=ROW_COUNT-1 WHERE TABLE_ID=" + getTableID() + "\n"
 										+ sql_connection.getSqlComma());
 								st.close();
@@ -841,7 +824,7 @@ public abstract class Table<T extends DatabaseRecord> {
 						public void initOrReset() {
 						}
 
-					}, true);
+					}, true);*/
 					for (FieldAccessor fa : fields) {
 						if (fa.hasToCreateIndex()) {
 							final StringBuilder indexCreationQuerry = new StringBuilder("CREATE INDEX ");
@@ -1604,6 +1587,7 @@ public abstract class Table<T extends DatabaseRecord> {
 				whereCondition == null ? new HashMap<String, Object>() : convertToMap(parameters));
 	}
 
+
 	/**
 	 * Returns the number of records corresponding to the given parameters
 	 * 
@@ -1750,7 +1734,8 @@ public abstract class Table<T extends DatabaseRecord> {
 	}
 
 	private long getRowCount() throws DatabaseException {
-		Transaction t = new Transaction() {
+		return getRowCount(null, null, false);
+		/*Transaction t = new Transaction() {
 
 			@Override
 			public TransactionIsolation getTransactionIsolation() {
@@ -1766,7 +1751,7 @@ public abstract class Table<T extends DatabaseRecord> {
 			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 				try (ReadQuerry rq = new ReadQuerry(
 						_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(),
-						new SqlQuerry("SELECT ROW_COUNT FROM " + DatabaseWrapper.ROW_COUNT_TABLES
+						new SqlQuerry("SELECT ROW_COUNT FROM " + DatabaseWrapper.ROW_PROPERTIES_OF_TABLES
 								+ " WHERE TABLE_ID=" + Table.this.getTableID() + ""))) {
 					if (rq.result_set.next()) {
 						return rq.result_set.getLong(1);
@@ -1782,7 +1767,7 @@ public abstract class Table<T extends DatabaseRecord> {
 			}
 
 		};
-		return (Long) sql_connection.runTransaction(t, true);
+		return (Long) sql_connection.runTransaction(t, true);*/
 	}
 
 	@SuppressWarnings("SameParameterValue")
@@ -1827,12 +1812,12 @@ public abstract class Table<T extends DatabaseRecord> {
 	@SuppressWarnings("SameParameterValue")
     private long getRowCount(String where, Map<String, Object> parameters, boolean is_already_sql_transaction)
 			throws DatabaseException {
-		final RuleInstance rule = Interpreter.getRuleInstance(where);
+		final RuleInstance rule = (where==null || where.trim().length()==0)?null:Interpreter.getRuleInstance(where);
 		if (isLoadedInMemory()) {
 			ArrayList<T> records = getRecords(-1, -1, is_already_sql_transaction);
 			long rowcount = 0;
 			for (T r : records) {
-				if (rule.isConcernedBy(this, parameters, r)) {
+				if (rule==null || rule.isConcernedBy(this, parameters, r)) {
 					++rowcount;
 				}
 			}
@@ -1840,7 +1825,7 @@ public abstract class Table<T extends DatabaseRecord> {
 		} else {
 			final HashMap<Integer, Object> sqlParameters = new HashMap<>();
 			final Set<TableJunction> tablesJunction = new HashSet<>();
-			final String sqlQuery = rule.translateToSqlQuery(this, parameters, sqlParameters, tablesJunction)
+			final String sqlQuery = rule==null?null:rule.translateToSqlQuery(this, parameters, sqlParameters, tablesJunction)
 					.toString();
 			Transaction t = new Transaction() {
 
@@ -2000,8 +1985,10 @@ public abstract class Table<T extends DatabaseRecord> {
 					res.append(", ");
 
 				res.append(sf.short_field).append(" ").append(sf.type);
-				if (field.isAutoPrimaryKey())
-					res.append(" GENERATED BY DEFAULT AS IDENTITY(START WITH ").append(field.getStartValue()).append(")");
+				if (field.isAutoPrimaryKey()) {
+					res.append(" ");
+					res.append(getDatabaseWrapper().getAutoIncrementPart(field.getStartValue()));
+				}
 				res .append(sf.not_null ? sqlNotNull : sqlNull);
 			}
 			return res.toString();
@@ -6653,12 +6640,16 @@ public abstract class Table<T extends DatabaseRecord> {
 											fa.setValue(instance, autovalue);
 									}
 									
-								} catch (SQLIntegrityConstraintViolationException e) {
-									throw new ConstraintsNotRespectedDatabaseException(
+								}
+								catch (SQLException e) {
+									if (sql_connection.isDuplicateKeyException(e))
+										throw new ConstraintsNotRespectedDatabaseException(
 											"Constraints was not respected when inserting a field into the table "
 													+ Table.this.getName()
 													+ ". It is possible that the group of primary keys was not unique, or that a unique field was already present into the database.",
 											e);
+									else
+										throw DatabaseException.getDatabaseException(e);
 								} catch (Exception e) {
 									throw DatabaseException.getDatabaseException(e);
 								}
@@ -7086,10 +7077,13 @@ public abstract class Table<T extends DatabaseRecord> {
 											}
 										}
 
-									} catch (SQLIntegrityConstraintViolationException e) {
-										throw new ConstraintsNotRespectedDatabaseException(
+									} catch (SQLException e) {
+										if (sql_connection.isDuplicateKeyException(e))
+											throw new ConstraintsNotRespectedDatabaseException(
 												"Constraints was not respected. It possible that the given primary keys or the given unique keys does not respect constraints of unicity.",
 												e);
+										else
+											throw DatabaseException.getDatabaseException(e);
 									}
 									return null;
 								} catch (Exception e) {
@@ -8061,7 +8055,7 @@ public abstract class Table<T extends DatabaseRecord> {
 		}
 	}
 
-	void unserializePrimaryKeys(DatabaseRecord record, byte tab[]) throws DatabaseException {
+	void deserializePrimaryKeys(DatabaseRecord record, byte[] tab) throws DatabaseException {
 		try (ByteArrayInputStream bais = new ByteArrayInputStream(tab)) {
 			try (DataInputStream ois = new DataInputStream(bais)) {
 				for (FieldAccessor fa : primary_keys_fields) {
@@ -8077,7 +8071,7 @@ public abstract class Table<T extends DatabaseRecord> {
 		}
 	}
 
-	void unserializePrimaryKeys(HashMap<String, Object> map, byte tab[]) throws DatabaseException {
+	void deserializePrimaryKeys(HashMap<String, Object> map, byte[] tab) throws DatabaseException {
 		try (ByteArrayInputStream bais = new ByteArrayInputStream(tab)) {
 			try (DataInputStream ois = new DataInputStream(bais)) {
 				for (FieldAccessor fa : primary_keys_fields) {
@@ -8094,8 +8088,8 @@ public abstract class Table<T extends DatabaseRecord> {
 	}
 
 	@SuppressWarnings("SameParameterValue")
-    void unserializeFields(DatabaseRecord record, byte tab[], boolean includePK, boolean includeFK,
-                           boolean includeNonKey) throws DatabaseException {
+    void deserializeFields(DatabaseRecord record, byte[] tab, boolean includePK, boolean includeFK,
+						   boolean includeNonKey) throws DatabaseException {
 		try (ByteArrayInputStream bais = new ByteArrayInputStream(tab)) {
 			try (DataInputStream ois = new DataInputStream(bais)) {
 				for (FieldAccessor fa : fields) {
