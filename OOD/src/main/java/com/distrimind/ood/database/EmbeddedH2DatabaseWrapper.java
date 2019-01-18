@@ -441,25 +441,6 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 							throw new DatabaseVersionException(table,
 									"The field " + fa.getFieldName() + " was not found into the database.");
 					}
-					if (fa.isPrimaryKey() && !(this instanceof EmbeddedH2DatabaseWrapper)) {
-
-						try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
-								"select COLUMN_LIST from "+getConstraintsTableName()+" WHERE TABLE_NAME='"
-										+ table.getName() + "' AND CONSTRAINT_TYPE='PRIMARY KEY' AND CONSTRAINT_NAME='"+table.getSqlPrimaryKeyName()+"';"))) {
-							if (!rq.result_set.next())
-								throw new DatabaseVersionException(table, "The field " + fa.getFieldName()
-										+ " is not declared as a primary key into the Sql database.");
-						}
-						/*try (ReadQuerry rq = new ReadQuerry(sql_connection,
-								new Table.SqlQuerry(
-										"select * from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
-												+ table.getName() + "' AND COLUMN_NAME='" + sf.short_field
-												+ "' AND CONSTRAINT_NAME='" + table.getSqlPrimaryKeyName() + "';"))) {
-							if (!rq.result_set.next())
-								throw new DatabaseVersionException(table, "The field " + fa.getFieldName()
-										+ " is not declared as a primary key into the Sql database.");
-						}*/
-					}
 					if (fa.isForeignKey()) {
 						try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
 								"select PKTABLE_NAME, FKTABLE_NAME, PKCOLUMN_NAME, FKCOLUMN_NAME from "+ getCrossReferencesTableName()+" WHERE FKTABLE_NAME='"

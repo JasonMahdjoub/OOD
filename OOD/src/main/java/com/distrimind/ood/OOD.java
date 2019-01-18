@@ -60,8 +60,8 @@ public class OOD {
 		Calendar c1 = Calendar.getInstance();
 		c1.set(2013, Calendar.APRIL, 1);
 		Calendar c2 = Calendar.getInstance();
-		c2.set(2018, Calendar.DECEMBER, 29);
-		VERSION = new Version("Object Oriented Database", "OOD", (short)2, (short)0, (short)0, Version.Type.Beta, (short)94, c1.getTime(),
+		c2.set(2018, Calendar.JANUARY, 15);
+		VERSION = new Version("Object Oriented Database", "OOD", (short)2, (short)0, (short)0, Version.Type.Beta, (short)95, c1.getTime(),
 				c2.getTime());
 		try {
 			InputStream is = OOD.class.getResourceAsStream("build.txt");
@@ -73,8 +73,14 @@ public class OOD {
 			VERSION.addDeveloper(new PersonDeveloper("mahdjoub", "jason", c.getTime()));
 
 			c = Calendar.getInstance();
-			c.set(2018, Calendar.DECEMBER, 29);
-			Description d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)94, c.getTime());
+			c.set(2018, Calendar.JANUARY, 18);
+			Description d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)95, c.getTime());
+			d.addItem("Add H2 database driver");
+			VERSION.addDescription(d);
+
+			c = Calendar.getInstance();
+			c.set(2018, Calendar.JANUARY, 15);
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)94, c.getTime());
 			d.addItem("Use shortest table's name");
 			d.addItem("Add possibility to personalize SQL table name (see annotation TableName)");
 			d.addItem("Add possibility to personalize SQL field name (see annotation Field)");

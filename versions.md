@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-2.0.0 Beta 94 (Build: 392) (from 01/04/2013 to 29/12/2018)
+2.0.0 Beta 95 (Build: 401) (from 01/04/2013 to 15/01/2018)
 
 # Creator(s):
 Jason MAHDJOUB
@@ -11,7 +11,11 @@ Jason MAHDJOUB (Entred in the team at 01/04/2013)
 # Modifications:
 
 
-### 2.0.0 Beta 94 (29/12/2018)
+### 2.0.0 Beta 95 (18/01/2018)
+* Add H2 database driver
+
+
+### 2.0.0 Beta 94 (15/01/2018)
 * Use shortest table's name
 * Add possibility to personalize SQL table name (see annotation TableName)
 * Add possibility to personalize SQL field name (see annotation Field)
