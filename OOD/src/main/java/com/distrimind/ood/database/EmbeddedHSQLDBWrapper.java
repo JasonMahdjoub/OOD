@@ -36,6 +36,14 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
+import com.distrimind.ood.database.Table.ColumnsReadQuerry;
+import com.distrimind.ood.database.Table.ReadQuerry;
+import com.distrimind.ood.database.Table.SqlQuerry;
+import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.exceptions.DatabaseVersionException;
+import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
+import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -49,14 +57,6 @@ import java.util.regex.Pattern;
 import org.hsqldb.lib.tar.DbBackupMain;
 import org.hsqldb.lib.tar.TarMalformatException;*/
 
-import com.distrimind.ood.database.Table.ColumnsReadQuerry;
-import com.distrimind.ood.database.Table.ReadQuerry;
-import com.distrimind.ood.database.Table.SqlQuerry;
-import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.ood.database.exceptions.DatabaseVersionException;
-import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
-import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
-
 /**
  * Sql connection wrapper for HSQLDB
  * 
@@ -64,7 +64,7 @@ import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
  * @version 1.5
  * @since OOD 1.0
  */
-public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
+public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 	/**
 	 * Constructor
 	 *
@@ -169,6 +169,16 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 			return s;
 	}
 
+	@Override
+	public String getConstraintsTableName() {
+		return "INFORMATION_SCHEMA.TABLE_CONSTRAINTS";
+	}
+
+	@Override
+	public String getCrossReferencesTableName() {
+		return "INFORMATION_SCHEMA.SYSTEM_CROSSREFERENCE";
+	}
+
 	/**
 	 * Delete all the files associated to the .data database file.
 	 *
@@ -231,10 +241,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 
 	}
 
-	@Override
-	protected String getCachedKeyword() {
-		return "CACHED";
-	}
+
 
 	@Override
 	protected boolean doesTableExists(String table_name) throws Exception {
@@ -357,14 +364,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 			Pattern col_size_matcher = Pattern.compile("([0-9]+)");
 			for (FieldAccessor fa : table.getFieldAccessors()) {
 				for (SqlField sf : fa.getDeclaredSqlFields()) {
-					/*
-					 * System.out.println("SF : "+sf.short_field);
-					 * System.out.println("SF : "+table.getName()); try(ReadQuerry rq=new
-					 * ReadQuerry(sql_connection,
-					 * "SELECT TYPE_NAME, COLUMN_SIZE, IS_NULLABLE, ORDINAL_POSITION, IS_AUTOINCREMENT FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS"
-					 * +getSqlComma())) { while (rq.result_set.next()) {
-					 * System.out.println("\t"+rq.result_set.getString("TABLE_NAME")); } }
-					 */
+
 					try (ReadQuerry rq = new ReadQuerry(sql_connection, new Table.SqlQuerry(
 							"SELECT TYPE_NAME, COLUMN_SIZE, IS_NULLABLE, ORDINAL_POSITION, IS_AUTOINCREMENT FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"
 									+ table.getName() + "' AND COLUMN_NAME='" + sf.short_field + "'"
@@ -505,105 +505,7 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 
 
 	}
-	@Override
-	protected String getSqlComma() {
-		return ";";
-	}
 
-	@Override
-	protected int getVarCharLimit() {
-		return 16777216;
-	}
-
-	@Override
-	protected boolean isVarBinarySupported() {
-		return true;
-	}
-
-	@Override
-	protected boolean isLongVarBinarySupported() {
-		return false;
-	}
-
-	@Override
-	protected String getByteType() {
-		return "TINYINT";
-	}
-
-	@Override
-	protected String getIntType() {
-		return "INTEGER";
-	}
-
-	@Override
-	protected String getFloatType() {
-		return "DOUBLE";
-	}
-
-	@Override
-	protected String getDoubleType() {
-		return "DOUBLE";
-	}
-
-	@Override
-	protected String getLongType() {
-		return "BIGINT";
-	}
-
-	@Override
-	protected String getShortType() {
-		return "SMALLINT";
-	}
-
-	@Override
-	protected String getBigDecimalType() {
-		return "VARCHAR(16374)";
-	}
-
-	@Override
-	protected String getBigIntegerType() {
-		return "VARCHAR(16374)";
-	}
-
-	@Override
-	protected String getSqlNULL() {
-		return "NULL";
-	}
-
-	@Override
-	protected String getSqlNotNULL() {
-		return "NOT NULL";
-	}
-
-	@Override
-	protected String getSerializableType() {
-		return "BLOB";
-	}
-
-
-	/*@Override
-	protected String getSqlQuerryToGetLastGeneratedID() {
-		return "CALL IDENTITY()";
-	}*/
-	@Override
-	protected String getOnUpdateCascadeSqlQuerry() {
-		return "ON UPDATE CASCADE";
-	}
-
-	@Override
-	protected String getOnDeleteCascadeSqlQuerry() {
-		return "ON DELETE CASCADE";
-	}
-
-	@Override
-	protected String getDropTableIfExistsKeyWord() {
-		return "IF EXISTS";
-	}
-
-	@Override
-	protected String getDropTableCascadeKeyWord() {
-		return "CASCADE";
-	}
 
 	/**
 	 * Closes the database files, rewrites the script file, deletes the log file and
@@ -847,71 +749,6 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 				cache_free_count, lockFile);
 	}
 
-	@Override
-	protected void rollback(Connection openedConnection) throws SQLException {
-		try (Statement s = openedConnection.createStatement()) {
-			s.executeQuery("ROLLBACK" + getSqlComma());
-		}
-		/*
-		 * try(Statement s=openedConnection.createStatement()) {
-		 * s.executeQuery("COMMIT"+getSqlComma()); }
-		 */
-
-	}
-
-	@Override
-	protected void commit(Connection openedConnection) throws SQLException {
-		try (Statement s = openedConnection.createStatement()) {
-			s.executeQuery("COMMIT" + getSqlComma());
-		}
-	}
-
-	@Override
-	protected boolean supportSavePoint(Connection openedConnection) {
-		return true;
-	}
-
-	@Override
-	protected void rollback(Connection openedConnection, String _savePointName, Savepoint savepoint)
-			throws SQLException {
-		try (Statement s = openedConnection.createStatement()) {
-			s.executeQuery("ROLLBACK TO SAVEPOINT " + _savePointName + getSqlComma());
-		}
-		/*
-		 * try(Statement s=openedConnection.createStatement()) {
-		 * s.executeQuery("COMMIT"+getSqlComma()); }
-		 */
-
-	}
-
-	@Override
-	protected void disableAutoCommit(Connection openedConnection) throws SQLException {
-		try (Statement s = openedConnection.createStatement()) {
-			s.executeQuery("SET AUTOCOMMIT FALSE" + getSqlComma());
-		}
-		try (Statement s = openedConnection.createStatement()) {
-			s.executeQuery("COMMIT" + getSqlComma());
-		}
-
-	}
-
-	@Override
-	protected Savepoint savePoint(Connection _openedConnection, String _savePoint) throws SQLException {
-		try (Statement s = _openedConnection.createStatement()) {
-			s.executeQuery("SAVEPOINT " + _savePoint + getSqlComma());
-		}
-		/*
-		 * try(Statement s=_openedConnection.createStatement()) {
-		 * s.executeQuery("COMMIT"+getSqlComma()); }
-		 */
-
-		return null;
-	}
-
-	@Override
-	protected boolean isThreadSafe() {
-		return false;
-	}
 
 	@Override
 	protected void startTransaction(Session _openedConnection, TransactionIsolation transactionIsolation, boolean write)
@@ -1007,29 +844,6 @@ public class EmbeddedHSQLDBWrapper extends DatabaseWrapper {
 	 */
 	public EmbeddedHSQLDBWrapper(File _file_name, boolean alwaysDeconectAfterOnTransaction) throws IllegalArgumentException, DatabaseException {
 		this(_file_name, alwaysDeconectAfterOnTransaction, HSQLDBConcurrencyControl.DEFAULT, 100, 10000, 0, 512, true);
-	}
-
-	@Override
-	protected void releasePoint(Connection _openedConnection, String _savePointName, Savepoint savepoint) {
-		/*
-		 * try(Statement s=_openedConnection.createStatement()) {
-		 * s.executeQuery("RELEASE SAVEPOINT "+_savePointName+getSqlComma()); }
-		 */
-		/*
-		 * try(Statement s=_openedConnection.createStatement()) {
-		 * s.executeQuery("COMMIT"+getSqlComma()); }
-		 */
-
-	}
-
-	@Override
-	protected boolean supportFullSqlFieldName() {
-		return true;
-	}
-
-	@Override
-	protected boolean isSerializationException(SQLException e) {
-		return e.getSQLState().equals("40001");
 	}
 
 	@Override

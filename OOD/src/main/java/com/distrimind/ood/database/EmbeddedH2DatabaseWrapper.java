@@ -36,12 +36,16 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.exceptions.DatabaseVersionException;
+import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
+import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 
 import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.sql.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 
 /**
  * @author Jason Mahdjoub
@@ -263,7 +267,258 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 		}, true);
 
 	}
+	@Override
+	protected void checkConstraints(Table<?> table) throws DatabaseException {
+		/*try(ResultSet res = getConnectionAssociatedWithCurrentThread().getConnection().getMetaData().getTables(null, null, null, null)) {
+			while (res.next()) {
+				System.out.println(res.getString("TABLE_NAME"));
+			}
+			try (Statement s = getConnectionAssociatedWithCurrentThread().getConnection().createStatement()) {
+				System.out.println("here");
+				ResultSet rs=s.executeQuery("SELECT * FROM "+ROW_PROPERTIES_OF_TABLES);
+				if (rs.next())
+				{
+					for (int i=1;i<=rs.getMetaData().getColumnCount();i++)
+						System.out.print(rs.getMetaData().getColumnName(i)+" \t; ");
+					System.out.println();
+					do {
+						for (int i=1;i<=rs.getMetaData().getColumnCount();i++)
+							System.out.print(rs.getString(i)+" \t; ");
+						System.out.println();
+					} while(rs.next());
+				}
+			}
+			//System.exit(0);
+		}
+		catch(SQLException e)
+		{
+			throw DatabaseException.getDatabaseException(e);
+		}*/
+		Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
+		try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
+				"select CONSTRAINT_NAME, CONSTRAINT_TYPE, COLUMN_LIST from "+getConstraintsTableName()+" WHERE TABLE_NAME='"
+						+ table.getName() + "';"))) {
+			boolean foundPK=false;
+			while (rq.result_set.next()) {
+				String constraint_name = rq.result_set.getString("CONSTRAINT_NAME");
+				String constraint_type = rq.result_set.getString("CONSTRAINT_TYPE");
 
+				switch (constraint_type) {
+					case "PRIMARY KEY": {
+						if (constraint_name.equals(table.getSqlPrimaryKeyName()))
+							foundPK=true;
+							/*throw new DatabaseVersionException(table, "There a grouped primary key named " + constraint_name
+									+ " which should be named " + table.getSqlPrimaryKeyName());*/
+					}
+					break;
+					case "FOREIGN KEY": {
+
+					}
+					break;
+					case "UNIQUE": {
+						boolean found=false;
+						String col=rq.result_set.getString("COLUMN_LIST");
+						for (FieldAccessor fa : table.getFieldAccessors()) {
+							for (SqlField sf : fa.getDeclaredSqlFields()) {
+								if (sf.short_field.toUpperCase().equals(col.toUpperCase()) && fa.isUnique()) {
+									found = true;
+									break;
+								}
+							}
+							if (found)
+								break;
+						}
+						if (!found)
+							throw new DatabaseVersionException(table, "There is a unique sql field " + col
+									+ " which does not exists into the OOD database into table "+table.getName());
+						/*try (Table.ReadQuerry rq2 = new Table.ReadQuerry(sql_connection,
+								new Table.SqlQuerry(
+										"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
+												+ table.getName() + "' AND CONSTRAINT_NAME='" + constraint_name + "';"))) {
+							if (rq2.result_set.next()) {
+								String col = (table.getName() + "." + rq2.result_set.getString("COLUMN_NAME"))
+										.toUpperCase();
+								boolean found = false;
+								for (FieldAccessor fa : table.getFieldAccessors()) {
+									for (SqlField sf : fa.getDeclaredSqlFields()) {
+										if (sf.field.equals(col) && fa.isUnique()) {
+											found = true;
+											break;
+										}
+									}
+									if (found)
+										break;
+								}
+								if (!found)
+									throw new DatabaseVersionException(table, "There is a unique sql field " + col
+											+ " which does not exists into the OOD database.");
+							}
+						}*/
+
+					}
+					break;
+					case "CHECK":
+						break;
+					case "REFERENTIAL":
+						break;
+					default:
+						throw new DatabaseVersionException(table, "Unknow constraint " + constraint_type);
+				}
+			}
+			if (!foundPK)
+				throw new DatabaseVersionException(table, "Impossible to found PK SQL constraint : " + table.getSqlPrimaryKeyName());
+
+		} catch (SQLException e) {
+			throw new DatabaseException("Impossible to check constraints of the table " + table.getName(), e);
+		} catch (Exception e) {
+			throw DatabaseException.getDatabaseException(e);
+		}
+		try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
+				"select PKTABLE_NAME, PKCOLUMN_NAME, FKCOLUMN_NAME from "+getCrossReferencesTableName()+" WHERE FKTABLE_NAME='"
+						+ table.getName() + "';"))) {
+			while (rq.result_set.next()) {
+				String pointed_table = rq.result_set.getString("PKTABLE_NAME");
+				String pointed_col = pointed_table + "." + rq.result_set.getString("PKCOLUMN_NAME");
+				String fk = table.getName() + "." + rq.result_set.getString("FKCOLUMN_NAME");
+				boolean found = false;
+				for (ForeignKeyFieldAccessor fa : table.getForeignKeysFieldAccessors()) {
+					for (SqlField sf : fa.getDeclaredSqlFields()) {
+						if (sf.field.equals(fk) && sf.pointed_field.equals(pointed_col)
+								&& sf.pointed_table.equals(pointed_table)) {
+							found = true;
+							break;
+						}
+					}
+					if (found)
+						break;
+				}
+				if (!found)
+					throw new DatabaseVersionException(table,
+							"There is foreign keys defined into the Sql database which have not been found in the OOD database.");
+			}
+		} catch (SQLException e) {
+			throw new DatabaseException("Impossible to check constraints of the table " + table.getName(), e);
+		} catch (Exception e) {
+			throw DatabaseException.getDatabaseException(e);
+		}
+		try {
+			Pattern col_size_matcher = Pattern.compile("([0-9]+)");
+			for (FieldAccessor fa : table.getFieldAccessors()) {
+				for (SqlField sf : fa.getDeclaredSqlFields()) {
+					/*
+					 * System.out.println("SF : "+sf.short_field);
+					 * System.out.println("SF : "+table.getName()); try(ReadQuerry rq=new
+					 * ReadQuerry(sql_connection,
+					 * "SELECT TYPE_NAME, COLUMN_SIZE, IS_NULLABLE, ORDINAL_POSITION, IS_AUTOINCREMENT FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS"
+					 * +getSqlComma())) { while (rq.result_set.next()) {
+					 * System.out.println("\t"+rq.result_set.getString("TABLE_NAME")); } }
+					 */
+					try (Table.ColumnsReadQuerry rq = getColumnMetaData(table.getName(), sf.short_field)) {
+						if (rq.result_set.next()) {
+							String type = rq.tableColumnsResultSet.getTypeName().toUpperCase();
+							if (!sf.type.toUpperCase().startsWith(type))
+								throw new DatabaseVersionException(table, "The type of the field " + sf.field
+										+ " should  be " + sf.type + " and not " + type);
+							if (col_size_matcher.matcher(sf.type).matches()) {
+								int col_size = rq.tableColumnsResultSet.getColumnSize();
+								Pattern pattern2 = Pattern.compile("(" + col_size + ")");
+								if (!pattern2.matcher(sf.type).matches())
+									throw new DatabaseVersionException(table, "The column " + sf.field
+											+ " has a size equals to " + col_size + " (expected " + sf.type + ")");
+							}
+							boolean is_null = rq.tableColumnsResultSet.isNullable();
+							if (is_null == sf.not_null)
+								throw new DatabaseVersionException(table, "The field " + fa.getFieldName()
+										+ " is expected to be " + (fa.isNotNull() ? "not null" : "nullable"));
+							boolean is_autoincrement = rq.tableColumnsResultSet.isAutoIncrement();
+							if (is_autoincrement != fa.isAutoPrimaryKey())
+								throw new DatabaseVersionException(table,
+										"The field " + fa.getFieldName() + " is " + (is_autoincrement ? "" : "not ")
+												+ "autoincremented into the Sql database where it is "
+												+ (is_autoincrement ? "not " : "") + " into the OOD database.");
+							sf.sql_position = rq.tableColumnsResultSet.getOrdinalPosition();
+						} else
+							throw new DatabaseVersionException(table,
+									"The field " + fa.getFieldName() + " was not found into the database.");
+					}
+					if (fa.isPrimaryKey() && !(this instanceof EmbeddedH2DatabaseWrapper)) {
+
+						try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
+								"select COLUMN_LIST from "+getConstraintsTableName()+" WHERE TABLE_NAME='"
+										+ table.getName() + "' AND CONSTRAINT_TYPE='PRIMARY KEY' AND CONSTRAINT_NAME='"+table.getSqlPrimaryKeyName()+"';"))) {
+							if (!rq.result_set.next())
+								throw new DatabaseVersionException(table, "The field " + fa.getFieldName()
+										+ " is not declared as a primary key into the Sql database.");
+						}
+						/*try (ReadQuerry rq = new ReadQuerry(sql_connection,
+								new Table.SqlQuerry(
+										"select * from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
+												+ table.getName() + "' AND COLUMN_NAME='" + sf.short_field
+												+ "' AND CONSTRAINT_NAME='" + table.getSqlPrimaryKeyName() + "';"))) {
+							if (!rq.result_set.next())
+								throw new DatabaseVersionException(table, "The field " + fa.getFieldName()
+										+ " is not declared as a primary key into the Sql database.");
+						}*/
+					}
+					if (fa.isForeignKey()) {
+						try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
+								"select PKTABLE_NAME, FKTABLE_NAME, PKCOLUMN_NAME, FKCOLUMN_NAME from "+ getCrossReferencesTableName()+" WHERE FKTABLE_NAME='"
+										+ table.getName() + "' AND PKTABLE_NAME='" + sf.pointed_table
+										+ "' AND PKCOLUMN_NAME='" + sf.short_pointed_field + "' AND FKCOLUMN_NAME='"
+										+ sf.short_field + "'"))) {
+							if (!rq.result_set.next())
+								throw new DatabaseVersionException(table,
+										"The field " + fa.getFieldName() + " is a foreign key. One of its Sql fields "
+												+ sf.field + " is not a foreign key pointing to the table "
+												+ sf.pointed_table);
+						}
+					}
+					if (fa.isUnique()) {
+						for(SqlField sf2 : fa.getDeclaredSqlFields())
+							try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
+									"select COLUMN_LIST from "+getConstraintsTableName()+" WHERE TABLE_NAME='"
+											+ table.getName() + "' AND CONSTRAINT_TYPE='UNIQUE' AND COLUMN_LIST='"+sf2.short_field+"';"))) {
+								if (!rq.result_set.next())
+									throw new DatabaseVersionException(table, "The OOD field " + fa.getFieldName()
+											+ " is a unique key, but it not declared as unique into the Sql database.");
+							}
+
+
+						/*boolean found = false;
+						try (ReadQuerry rq = new ReadQuerry(sql_connection, new Table.SqlQuerry(
+								"select CONSTRAINT_NAME, CONSTRAINT_TYPE from "+getConstraintsTableName()+" WHERE TABLE_NAME='"
+										+ table.getName() + "';"))) {
+							while (rq.result_set.next()) {
+								if (rq.result_set.getString("CONSTRAINT_TYPE").equals("UNIQUE")) {
+									String constraint_name = rq.result_set.getString("CONSTRAINT_NAME");
+									try (ReadQuerry rq2 = new ReadQuerry(sql_connection, new Table.SqlQuerry(
+											"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
+													+ table.getName() + "' AND CONSTRAINT_NAME='" + constraint_name
+													+ "';"))) {
+										if (rq2.result_set.next()) {
+											String col = table.getName() + "."
+													+ rq2.result_set.getString("COLUMN_NAME");
+											if (col.equals(sf.field)) {
+												found = true;
+												break;
+											}
+										}
+									}
+								}
+							}
+						}
+						if (!found)
+							throw new DatabaseVersionException(table, "The OOD field " + fa.getFieldName()
+									+ " is a unique key, but it not declared as unique into the Sql database.");*/
+					}
+				}
+			}
+		} catch (SQLException e) {
+			throw new DatabaseException("Impossible to check constraints of the table " + table.getName(), e);
+		} catch (Exception e) {
+			throw DatabaseException.getDatabaseException(e);
+		}
+	}
 	@Override
 	protected void startTransaction(Session _openedConnection, TransactionIsolation transactionIsolation, boolean write)
 			throws SQLException {
