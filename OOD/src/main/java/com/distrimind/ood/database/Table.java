@@ -5503,6 +5503,83 @@ public abstract class Table<T extends DatabaseRecord> {
 		removeUntypedRecord(_record, true, null);
 	}
 
+	/**
+	 * Remove the given record from the database.
+	 *
+	 * @param keys the primary keys values
+	 * @return true if the record has been found and removed
+	 * @throws DatabaseException
+	 *             if a Sql problem have occured.
+	 * @throws FieldDatabaseException
+	 * 	               if all primary keys have not been given, or if fields which are
+	 * 	               not primary keys were given.
+	 * @throws NullPointerException
+	 */
+	public final boolean removeRecord(final Map<String, Object> keys) throws DatabaseException {
+		checkFields(keys);
+		long res=removeRecordsWithAllFields(keys);
+		if (res>1)
+			throw new DatabaseIntegrityException("Only one record should be removed and not "+res);
+
+		return res==1;
+	}
+
+	/**
+	 * Remove the given record from the database.
+	 *
+	 * @param keys the primary keys values. Must be formated as follow : {"field1",value1,"field2", value2, etc.}
+	 * @return true if the record has been found and removed
+	 * @throws DatabaseException
+	 *             if a Sql problem have occured.
+	 * @throws FieldDatabaseException
+	 * 	               if all primary keys have not been given, or if fields which are
+	 * 	               not primary keys were given.
+	 * @throws NullPointerException
+	 * 	               if parameters are null pointers.
+	 */
+	public final boolean removeRecord(Object... keys) throws DatabaseException {
+		return removeRecord(transformToMapField(keys));
+	}
+
+	/**
+	 * Remove the given record from the database, with cascade.
+	 *
+	 * @param keys the primary keys values
+	 * @return true if the record has been found and removed
+	 * @throws DatabaseException
+	 *             if a Sql problem have occured.
+	 * @throws FieldDatabaseException
+	 * 	               if all primary keys have not been given, or if fields which are
+	 * 	               not primary keys were given.
+	 * @throws NullPointerException
+	 */
+	public final boolean removeRecordWithCascade(final Map<String, Object> keys) throws DatabaseException {
+		checkFields(keys);
+		long res=removeRecordsWithAllFieldsWithCascade(keys);
+		if (res>1)
+			throw new DatabaseIntegrityException("Only one record should be removed and not "+res);
+
+		return res==1;
+	}
+
+	/**
+	 * Remove the given record from the database, with cascade.
+	 *
+	 * @param keys the primary keys values. Must be formated as follow : {"field1",value1,"field2", value2, etc.}
+	 * @return true if the record has been found and removed
+	 * @throws DatabaseException
+	 *             if a Sql problem have occured.
+	 * @throws FieldDatabaseException
+	 * 	               if all primary keys have not been given, or if fields which are
+	 * 	               not primary keys were given.
+	 * @throws NullPointerException
+	 * 	               if parameters are null pointers.
+	 */
+	public final boolean removeRecordWithCascade(Object... keys) throws DatabaseException {
+		return removeRecordWithCascade(transformToMapField(keys));
+	}
+
+
 	@SuppressWarnings("SameParameterValue")
     final void removeUntypedRecord(final DatabaseRecord record, final boolean synchronizeIfNecessary,
                                    final Set<AbstractDecentralizedID> hostsDestinations) throws DatabaseException {
@@ -7537,24 +7614,28 @@ public abstract class Table<T extends DatabaseRecord> {
 		}
 	}
 
+	private void checkFields(Map<String, Object> keys) throws FieldDatabaseException {
+		if (keys == null)
+			throw new NullPointerException("The parameter keys is a null pointer !");
+
+		if (keys.size() != primary_keys_fields.size())
+			throw new FieldDatabaseException("The number of given primary keys (" + keys.size()
+					+ ") is not equal to the expected number of primary keys (" + primary_keys_fields.size()
+					+ ").");
+
+		for (FieldAccessor f : primary_keys_fields) {
+			Object obj = keys.get(f.getFieldName());
+			if (obj == null)
+				throw new FieldDatabaseException(
+						"The key " + f.getFieldName() + " is not present into the given keys.");
+		}
+	}
+
 	@SuppressWarnings("SameParameterValue")
     private T getRecord(final Map<String, Object> keys, boolean is_already_in_transaction)
 			throws DatabaseException {
 		if (!is_already_in_transaction) {
-			if (keys == null)
-				throw new NullPointerException("The parameter keys is a null pointer !");
-
-			if (keys.size() != primary_keys_fields.size())
-				throw new FieldDatabaseException("The number of given primary keys (" + keys.size()
-						+ ") is not equal to the expected number of primary keys (" + primary_keys_fields.size()
-						+ ").");
-
-			for (FieldAccessor f : primary_keys_fields) {
-				Object obj = keys.get(f.getFieldName());
-				if (obj == null)
-					throw new FieldDatabaseException(
-							"The key " + f.getFieldName() + " is not present into the given keys.");
-			}
+			checkFields(keys);
 		}
 		try {
 			if (isLoadedInMemory()) {

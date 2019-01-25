@@ -1503,6 +1503,40 @@ public abstract class TestDatabase {
         Assert.assertEquals(0, table3.getRecordsNumber());
         Assert.assertEquals(0, table3.getRecords().size());
 
+		addSecondRecord();
+		r1 = table1.getRecords();
+		r2 = table3.getRecords();
+		Table1.Record rec1=r1.get(0);
+		Table3.Record rec2=r2.get(0);
+		Assert.assertTrue(table1.removeRecord("pk1", rec1.pk1,"pk2", rec1.pk2,"pk3", rec1.pk3,"pk4", rec1.pk4,"pk5", rec1.pk5,"pk6", rec1.pk6,"pk7", rec1.pk7));
+		Assert.assertTrue(table3.removeRecord("pk1", rec2.pk1,"pk2", rec2.pk2,"pk3", rec2.pk3,"pk4", rec2.pk4,"pk5", rec2.pk5,"pk6", rec2.pk6,"pk7", rec2.pk7));
+		Assert.assertFalse(table1.removeRecord("pk1", rec1.pk1,"pk2", rec1.pk2,"pk3", rec1.pk3,"pk4", rec1.pk4,"pk5", rec1.pk5,"pk6", rec1.pk6,"pk7", rec1.pk7));
+		Assert.assertFalse(table3.removeRecord("pk1", rec2.pk1,"pk2", rec2.pk2,"pk3", rec2.pk3,"pk4", rec2.pk4,"pk5", rec2.pk5,"pk6", rec2.pk6,"pk7", rec2.pk7));
+		Assert.assertEquals(0, table1.getRecords().size());
+		Assert.assertEquals(0, table1.getRecordsNumber());
+		Assert.assertEquals(0, table3.getRecords().size());
+		Assert.assertEquals(0, table3.getRecordsNumber());
+		try
+		{
+			Assert.assertTrue(table1.removeRecord("pk1", rec1.pk1,"pk2", rec1.pk2,"pk3", rec1.pk3,"pk4", rec1.pk4,"pk5", rec1.pk5,"pk6", rec1.pk6));
+			Assert.fail();
+		}
+		catch (FieldDatabaseException e)
+		{
+
+		}
+		try
+		{
+			Assert.assertTrue(table3.removeRecord("pk1", rec1.pk1,"pk2", rec1.pk2,"pk3", rec1.pk3,"pk4", rec1.pk4,"pk5", rec1.pk5,"pk6", rec1.pk6));
+			Assert.fail();
+		}
+		catch (FieldDatabaseException e)
+		{
+
+		}
+
+
+
 		table1.checkDataIntegrity();
 		table3.checkDataIntegrity();
 		table2.checkDataIntegrity();
@@ -2527,6 +2561,35 @@ public abstract class TestDatabase {
 		Assert.assertEquals(table6.getRecords().size(), 0);
 
 		addRecords();
+		long oldSize1=table1.getRecordsNumber();
+		long oldSize2=table3.getRecordsNumber();
+		Table1.Record rec1=table1.getRecords().get(0);
+		Table3.Record rec2=table3.getRecords().get(0);
+		Assert.assertTrue(table1.removeRecordWithCascade("pk1", rec1.pk1,"pk2", rec1.pk2,"pk3", rec1.pk3,"pk4", rec1.pk4,"pk5", rec1.pk5,"pk6", rec1.pk6,"pk7", rec1.pk7));
+		Assert.assertTrue(table3.removeRecordWithCascade("pk1", rec2.pk1,"pk2", rec2.pk2,"pk3", rec2.pk3,"pk4", rec2.pk4,"pk5", rec2.pk5,"pk6", rec2.pk6,"pk7", rec2.pk7));
+		Assert.assertFalse(table1.removeRecordWithCascade("pk1", rec1.pk1,"pk2", rec1.pk2,"pk3", rec1.pk3,"pk4", rec1.pk4,"pk5", rec1.pk5,"pk6", rec1.pk6,"pk7", rec1.pk7));
+		Assert.assertFalse(table3.removeRecordWithCascade("pk1", rec2.pk1,"pk2", rec2.pk2,"pk3", rec2.pk3,"pk4", rec2.pk4,"pk5", rec2.pk5,"pk6", rec2.pk6,"pk7", rec2.pk7));
+		Assert.assertEquals(table1.getRecordsNumber(), oldSize1-1);
+		Assert.assertEquals(table3.getRecordsNumber(), oldSize2-1);
+		try
+		{
+			Assert.assertTrue(table1.removeRecordWithCascade("pk1", rec1.pk1,"pk2", rec1.pk2,"pk3", rec1.pk3,"pk4", rec1.pk4,"pk5", rec1.pk5,"pk6", rec1.pk6));
+			Assert.fail();
+		}
+		catch (FieldDatabaseException e)
+		{
+
+		}
+		try
+		{
+			Assert.assertTrue(table3.removeRecordWithCascade("pk1", rec1.pk1,"pk2", rec1.pk2,"pk3", rec1.pk3,"pk4", rec1.pk4,"pk5", rec1.pk5,"pk6", rec1.pk6));
+			Assert.fail();
+		}
+		catch (FieldDatabaseException e)
+		{
+
+		}
+		addRecords();
 		table1.removeRecordsWithCascade(new Filter<Table1.Record>() {
 
 			@Override
@@ -2611,6 +2674,9 @@ public abstract class TestDatabase {
 		Assert.assertEquals(table5.getRecords().size(), 0);
 		Assert.assertEquals(table6.getRecords().size(), 0);
 
+
+
+
 		prepareMultipleTest();
 
 		table1.updateRecords(new AlterRecordFilter<Table1.Record>() {
@@ -2632,6 +2698,9 @@ public abstract class TestDatabase {
 
 		Assert.assertEquals(0, table3.getRecordsNumber());
 		Assert.assertEquals(0, table3.getRecords().size());
+
+
+
 
 		table1.checkDataIntegrity();
 		table3.checkDataIntegrity();

@@ -60,8 +60,8 @@ public class OOD {
 		Calendar c1 = Calendar.getInstance();
 		c1.set(2013, Calendar.APRIL, 1);
 		Calendar c2 = Calendar.getInstance();
-		c2.set(2018, Calendar.JANUARY, 15);
-		VERSION = new Version("Object Oriented Database", "OOD", (short)2, (short)0, (short)0, Version.Type.Beta, (short)95, c1.getTime(),
+		c2.set(2018, Calendar.JANUARY, 25);
+		VERSION = new Version("Object Oriented Database", "OOD", (short)2, (short)0, (short)0, Version.Type.Beta, (short)96, c1.getTime(),
 				c2.getTime());
 		try {
 			InputStream is = OOD.class.getResourceAsStream("build.txt");
@@ -73,8 +73,17 @@ public class OOD {
 			VERSION.addDeveloper(new PersonDeveloper("mahdjoub", "jason", c.getTime()));
 
 			c = Calendar.getInstance();
+			c.set(2018, Calendar.JANUARY, 25);
+			Description d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)96, c.getTime());
+			d.addItem("Add function Table.removeRecord(Map keys)");
+			d.addItem("Add function Table.removeRecord(Object...keys)");
+			d.addItem("Add function Table.removeRecordWithCascade(Map keys)");
+			d.addItem("Add function Table.removeRecordWithCascade(Object...keys)");
+			VERSION.addDescription(d);
+
+			c = Calendar.getInstance();
 			c.set(2018, Calendar.JANUARY, 18);
-			Description d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)95, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)95, c.getTime());
 			d.addItem("Add H2 database driver");
 			VERSION.addDescription(d);
 
