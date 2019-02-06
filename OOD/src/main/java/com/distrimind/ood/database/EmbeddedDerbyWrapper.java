@@ -104,7 +104,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	 * @throws IllegalArgumentException if arguments are incorrect
 	 */
 	public EmbeddedDerbyWrapper(File _directory, boolean alwaysDeconectAfterOnTransaction) throws IllegalArgumentException, DatabaseException {
-		super(/* getConnection(_directory), */"Database from file : " + _directory.getAbsolutePath(), alwaysDeconectAfterOnTransaction);
+		super(/* getConnection(_directory), */"Database from file : " + _directory.getAbsolutePath(), _directory, alwaysDeconectAfterOnTransaction);
 		// dbURL = getDBUrl(_directory);
 		fileDirectory = _directory;
 	}
@@ -162,6 +162,23 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	protected String getCachedKeyword() {
 		return "";
 	}
+
+	@Override
+	protected String getNotCachedKeyword() {
+		return "";
+	}
+
+	@Override
+	public boolean supportCache() {
+		return false;
+	}
+
+	@Override
+	public boolean supportNoCacheParam()
+	{
+		return true;
+	}
+
 
 	/**
 	 * Delete all the files associated to the database directory.

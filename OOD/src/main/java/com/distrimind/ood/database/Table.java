@@ -253,6 +253,26 @@ public abstract class Table<T extends DatabaseRecord> {
 		
 	}
 
+	/**
+	 * Tells is this table is cached into memory.
+	 *
+	 * To support cache, the table,
+	 * cannot be load into memory (see {@link com.distrimind.ood.database.annotations.LoadToMemory}),
+	 * must not contains a secret field like an encryption key,
+	 * and must not contains a field whose cache is disabled (see {@link com.distrimind.ood.database.annotations.Field#disableCache()})
+	 *
+	 * @return true if this table is cached
+	 */
+	public boolean isCached()
+	{
+		if (isLoadedInMemory())
+			return false;
+		for (FieldAccessor fa : this.fields)
+			if (fa.isCacheDisabled())
+				return false;
+		return sql_connection.supportCache();
+	}
+
 	void setToRefreshNow() {
 		is_synchronized_with_sql_database = false;
 	}
@@ -684,9 +704,16 @@ public abstract class Table<T extends DatabaseRecord> {
 					}, true);
 			} else {
 				if (createDatabaseIfNecessaryAndCheckIt) {
-
+					String cachedKeyWord="";
+					if (sql_connection.supportCache())
+					{
+						if (isCached())
+							cachedKeyWord=sql_connection.getCachedKeyword();
+						else
+							cachedKeyWord=sql_connection.getNotCachedKeyword();
+					}
 					final StringBuffer sqlQuerry = new StringBuffer(
-							"CREATE " + sql_connection.getCachedKeyword() + " TABLE " + this.getName() + "(");
+							"CREATE " + cachedKeyWord + " TABLE " + this.getName() + "(");
 
 					boolean first = true;
 					for (FieldAccessor f : fields) {

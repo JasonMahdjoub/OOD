@@ -35,14 +35,13 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import com.distrimind.ood.database.Table.ReadQuerry;
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.ood.database.exceptions.DatabaseVersionException;
-import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
-import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 
-import java.sql.*;
-import java.util.regex.Pattern;
+import java.io.File;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Savepoint;
+import java.sql.Statement;
 
 
 /**
@@ -55,9 +54,9 @@ public abstract class CommonHSQLH2DatabaseWrapper extends DatabaseWrapper{
 
 
 
-	protected CommonHSQLH2DatabaseWrapper(String databaseName, boolean alwaysDeconectAfterOnTransaction)
+	protected CommonHSQLH2DatabaseWrapper(String databaseName, File databaseFile, boolean alwaysDeconectAfterOnTransaction)
 			throws DatabaseException {
-		super(databaseName, alwaysDeconectAfterOnTransaction);
+		super(databaseName, databaseFile, alwaysDeconectAfterOnTransaction);
 	}
 
 
@@ -83,6 +82,15 @@ public abstract class CommonHSQLH2DatabaseWrapper extends DatabaseWrapper{
 		return "CACHED";
 	}
 
+	@Override
+	protected String getNotCachedKeyword() {
+		return "";
+	}
+
+	@Override
+	public boolean supportCache() {
+		return true;
+	}
 
 	public abstract String getConstraintsTableName();
 

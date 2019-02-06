@@ -51,8 +51,8 @@ import java.io.File;
  * @since OOD 1.0
  */
 public class H2TestDatabase extends TestDatabase {
-	private static String database_file_name = "databasetestH2";
-	private static String database_file_nameb = "databasetestH2";
+	private static String database_file_name = "databasetestAH2";
+	private static String database_file_nameb = "databasetestBH2";
 	private static File database_backup_file = new File("databasebackupH2.zip");
 
 	public H2TestDatabase() throws DatabaseException, NoSuchAlgorithmException, NoSuchProviderException {
@@ -109,7 +109,7 @@ public class H2TestDatabase extends TestDatabase {
 
 	@Override
 	public boolean isMultiConcurrentDatabase() {
-		return false;
+		return true;
 	}
 
 }

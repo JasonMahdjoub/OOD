@@ -126,7 +126,7 @@ public class DerbyTestDatabase extends TestDatabase {
 	}
 
 	@Test(dependsOnMethods = { "firstLoad" })
-	public void isLoadedIntoMemory() {
+	public void isLoadedIntoMemory() throws DatabaseException {
 		super.isLoadedIntoMemory();
 	}
 
@@ -397,7 +397,7 @@ public class DerbyTestDatabase extends TestDatabase {
 
 	@Override
 	public boolean isMultiConcurrentDatabase() {
-		return false;
+		return true;
 	}
 
 }

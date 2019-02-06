@@ -109,7 +109,7 @@ public class HSQLDBTestDatabase extends TestDatabase {
 
 	@Override
 	public boolean isMultiConcurrentDatabase() {
-		return false;
+		return true;
 	}
 
 }

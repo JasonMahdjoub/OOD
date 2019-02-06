@@ -108,7 +108,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 		super(/*
 				 * getConnection(_file_name, concurrencyControl, _cache_rows, _cache_size,
 				 * _result_max_memory_rows, _cache_free_count),
-				 */"Database from file : " + getHSQLDBDataFileName(_file_name) + ".data", alwaysDeconectAfterOnTransaction);
+				 */"Database from file : " + getHSQLDBDataFileName(_file_name) + ".data", _file_name, alwaysDeconectAfterOnTransaction);
 
 		this.file_name = _file_name;
 		this.concurrencyControl = concurrencyControl;
@@ -207,6 +207,12 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 		f = new File(file_base + ".lobs");
 		if (f.exists())
 			f.delete();
+	}
+
+	@Override
+	public boolean supportNoCacheParam()
+	{
+		return false;
 	}
 
 	/*
@@ -748,6 +754,8 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 		return getConnection(file_name, concurrencyControl, cache_rows, cache_size, result_max_memory_rows,
 				cache_free_count, lockFile);
 	}
+
+
 
 
 	@Override

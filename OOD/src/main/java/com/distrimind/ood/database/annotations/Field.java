@@ -94,4 +94,10 @@ public @interface Field {
 	 */
 	String sqlFieldName() default "";
 
+	/**
+	 * Tels if the field can be cached or not.
+	 * In most time, it's the all table containing this field that is not cached.
+	 * @return true if the cache for the concerned field must be disabled
+	 */
+	boolean disableCache() default false;
 }

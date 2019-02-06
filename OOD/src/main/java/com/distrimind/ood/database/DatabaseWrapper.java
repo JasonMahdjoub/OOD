@@ -49,6 +49,9 @@ import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.SecureRandomType;
+import com.distrimind.util.harddrive.Disk;
+import com.distrimind.util.harddrive.HardDriveDetect;
+import com.distrimind.util.harddrive.Partition;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -85,6 +88,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	// protected Connection sql_connection;
 	private volatile boolean closed = false;
 	protected final String database_name;
+	protected final String database_identifier;
 	private static final HashMap<String, Lock> lockers = new HashMap<>();
 	private static final HashMap<String, Integer> number_of_shared_lockers = new HashMap<>();
 	final static String ROW_PROPERTIES_OF_TABLES = "ROW_PROPERTIES_OF_TABLES__";
@@ -215,11 +219,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * 
 	 * @param _database_name
 	 *            the database name
+	 * @param databaseFile the database file or directory. Can be null for distant database.
      * @param alwaysDeconectAfterOnTransaction true if the database must always be connected and detected during one transaction
 	 * @throws DatabaseException if a problem occurs
 	 * 
 	 */
-	protected DatabaseWrapper(String _database_name, boolean alwaysDeconectAfterOnTransaction) throws DatabaseException {
+	protected DatabaseWrapper(String _database_name, File databaseFile, boolean alwaysDeconectAfterOnTransaction) throws DatabaseException {
 		if (_database_name == null)
 			throw new NullPointerException("_database_name");
 		this.alwaysDeconectAfterOnTransaction=alwaysDeconectAfterOnTransaction;
@@ -234,7 +239,24 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		/*
 		 * if (_sql_connection==null) throw new NullPointerException("_sql_connection");
 		 */
+
 		database_name = _database_name;
+
+		Disk disk=null;
+		if (databaseFile!=null)
+		{
+			try {
+				Partition p=HardDriveDetect.getInstance().getConcernedPartition(databaseFile);
+				disk=p.getDisk();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
+		if (disk!=null)
+			database_identifier = disk.toString();
+		else
+			database_identifier = _database_name;
 		// sql_connection=_sql_connection;
 
 		// isWindows=OSValidator.isWindows();
@@ -1230,9 +1252,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	private Lock getLocker() {
 		synchronized (DatabaseWrapper.class) {
-			String f = database_name;
+			String f = database_identifier;
+
 			Lock rwl = lockers.get(f);
 			if (rwl == null) {
+
 				rwl = new ReentrantLock();
 				lockers.put(f, rwl);
 				number_of_shared_lockers.put(f, 1);
@@ -1325,6 +1349,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	}
 
 	protected abstract String getCachedKeyword();
+	protected abstract String getNotCachedKeyword();
+
+	public abstract boolean supportCache();
+
+	public abstract boolean supportNoCacheParam();
 
 	protected abstract void closeConnection(Connection c, boolean deepClosing) throws SQLException;
 
@@ -1367,12 +1396,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				} finally {
 					synchronized(DatabaseWrapper.class)
 					{
-						DatabaseWrapper.lockers.remove(database_name);
-						int v = DatabaseWrapper.number_of_shared_lockers.get(database_name) - 1;
+						DatabaseWrapper.lockers.remove(database_identifier);
+						int v = DatabaseWrapper.number_of_shared_lockers.get(database_identifier) - 1;
 						if (v == 0)
-							DatabaseWrapper.number_of_shared_lockers.remove(database_name);
+							DatabaseWrapper.number_of_shared_lockers.remove(database_identifier);
 						else if (v > 0)
-							DatabaseWrapper.number_of_shared_lockers.put(database_name, v);
+							DatabaseWrapper.number_of_shared_lockers.put(database_identifier, v);
 						else
 							throw new IllegalAccessError();
 						sql_database = new HashMap<>();
@@ -1447,7 +1476,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	{
 		locker.unlock();
 	}
-	
+
+
+
 
 	class Session {
 		private Connection connection;
@@ -2454,7 +2485,28 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 								}
 							}
 						} catch (SQLException se) {
-							throw new DatabaseIntegrityException("Impossible to rollback the database changments", se);
+
+							if (!retry) {
+								t = se.getCause();
+
+								while (t != null) {
+									if (t instanceof SQLException) {
+										if (isSerializationException((SQLException) t)) {
+											retry = true;
+										} else if (isDisconnetionException((SQLException) t)) {
+											if (!deconnexionException) {
+												retry = true;
+												deconnexionException = true;
+											}
+										}
+
+										break;
+									}
+									t = t.getCause();
+								}
+								if (!retry)
+									throw new DatabaseIntegrityException("Impossible to rollback the database changments", se);
+							}
 						}
 						if (!retry)
 							throw e;

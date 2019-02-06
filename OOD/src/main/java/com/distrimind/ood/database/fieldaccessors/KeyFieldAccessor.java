@@ -68,7 +68,7 @@ import com.distrimind.util.crypto.SymmetricSecretKey;
  * 
  */
 public class KeyFieldAccessor extends FieldAccessor {
-	protected final SqlField sql_fields[];
+	protected final SqlField[] sql_fields;
 	private final boolean isVarBinary;
 
 	protected KeyFieldAccessor(Class<? extends Table<?>> table_class,
@@ -88,7 +88,7 @@ public class KeyFieldAccessor extends FieldAccessor {
 	}
 
 	
-	private static BigDecimal getBigDecimal(byte bytes[]) {
+	private static BigDecimal getBigDecimal(byte[] bytes) {
 		return ByteTabFieldAccessor.getBigDecimalValue(bytes);
 	}
 
@@ -96,6 +96,7 @@ public class KeyFieldAccessor extends FieldAccessor {
 		return ByteTabFieldAccessor.getByteTab(v);
 
 	}
+
 
 	@Override
 	public void setValue(Object _class_instance, Object _field_instance) throws DatabaseException {
@@ -150,11 +151,11 @@ public class KeyFieldAccessor extends FieldAccessor {
 		if (tab==null)
 			return null;
 		else if (getFieldClassType()==ASymmetricPublicKey.class)
-			return ASymmetricPublicKey.decode(tab);
+			return ASymmetricPublicKey.decode(tab, sql_connection.supportNoCacheParam());
 		else if (getFieldClassType()==ASymmetricPrivateKey.class)
-			return ASymmetricPrivateKey.decode(tab);
+			return ASymmetricPrivateKey.decode(tab, sql_connection.supportNoCacheParam());
 		else if (getFieldClassType()==SymmetricSecretKey.class)
-			return SymmetricSecretKey.decode(tab);
+			return SymmetricSecretKey.decode(tab, sql_connection.supportNoCacheParam());
 		else
 			throw new IllegalAccessError();
 	}
@@ -208,7 +209,7 @@ public class KeyFieldAccessor extends FieldAccessor {
 
 	@Override
 	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
-		SqlFieldInstance res[] = new SqlFieldInstance[1];
+		SqlFieldInstance[] res = new SqlFieldInstance[1];
 		if (isVarBinary)
 			res[0] = new SqlFieldInstance(sql_fields[0], encode(getValue(_instance)));
 		else

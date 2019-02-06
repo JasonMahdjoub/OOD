@@ -77,10 +77,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.DecentralizedIDGenerator;
 import com.distrimind.util.RenforcedDecentralizedIDGenerator;
-import com.distrimind.util.crypto.ASymmetricPrivateKey;
-import com.distrimind.util.crypto.ASymmetricPublicKey;
-import com.distrimind.util.crypto.AbstractSecureRandom;
-import com.distrimind.util.crypto.SymmetricSecretKey;
+import com.distrimind.util.crypto.*;
 
 /**
  * 
@@ -108,6 +105,7 @@ public abstract class FieldAccessor {
 	private final Class<?>[] compatible_classes;
 	private final String indexName;
 	private final Class<? extends Table<?>> table_class;
+	private final boolean cacheDisabled;
 
 	@SuppressWarnings("unchecked")
 	protected FieldAccessor(DatabaseWrapper _sql_connection, Field _field, String parentFieldName,
@@ -120,7 +118,7 @@ public abstract class FieldAccessor {
 		this.parentFieldName = parentFieldName;
 		com.distrimind.ood.database.annotations.Field af=field.getAnnotation(com.distrimind.ood.database.annotations.Field.class);
 		String fName;
-		if (af==null || af.sqlFieldName()==null || af.sqlFieldName().trim().isEmpty())
+		if (af == null || af.sqlFieldName().trim().isEmpty())
 			fName=field.getName();
 		else
 			fName=af.sqlFieldName();
@@ -212,6 +210,19 @@ public abstract class FieldAccessor {
 			descendantIndex = true;
 		}
 		this.indexName = (this.table_name + "_" + this.getField().getName()).replace(".", "_").toUpperCase();
+		this.cacheDisabled=isCacheAlwaysDisabled()
+				|| (field.getAnnotation(com.distrimind.ood.database.annotations.Field.class)!=null
+				&& field.getAnnotation(com.distrimind.ood.database.annotations.Field.class).disableCache());
+	}
+
+	public final boolean isCacheDisabled()
+	{
+		return cacheDisabled;
+	}
+
+	public boolean isCacheAlwaysDisabled()
+	{
+		return !ASymmetricPublicKey.class.isAssignableFrom(field.getType()) && (Key.class.isAssignableFrom(field.getType()) || ASymmetricKeyPair.class.isAssignableFrom(field.getType()));
 	}
 
 	public String getSqlFieldName()

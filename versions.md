@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-2.0.0 Beta 95 (Build: 401) (from 01/04/2013 to 15/01/2018)
+2.0.0 Beta 97 (Build: 413) (from 01/04/2013 to 05/02/2018)
 
 # Creator(s):
 Jason MAHDJOUB
@@ -9,6 +9,20 @@ Jason MAHDJOUB
 Jason MAHDJOUB (Entred in the team at 01/04/2013)
 
 # Modifications:
+
+
+### 2.0.0 Beta 97 (05/02/2018)
+* Security fix : disable cache for tables that use secret ou private keys
+* Security improvement : add Field.disableCache property
+* Add function Table.isCached()
+
+
+### 2.0.0 Beta 96 (25/01/2018)
+* Add function Table.removeRecord(Map keys)
+* Add function Table.removeRecord(Object...keys)
+* Add function Table.removeRecordWithCascade(Map keys)
+* Add function Table.removeRecordWithCascade(Object...keys)
+* Do not generate conflicts if events are the same
 
 
 ### 2.0.0 Beta 95 (18/01/2018)

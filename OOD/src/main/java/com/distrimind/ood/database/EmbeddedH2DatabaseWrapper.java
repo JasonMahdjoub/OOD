@@ -91,7 +91,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	 * @throws DatabaseException if a problem occurs
 	 */
 	public EmbeddedH2DatabaseWrapper(File _file_name, boolean alwaysDeconectAfterOnTransaction) throws DatabaseException {
-		super("Database from file : " + getH2DataFileName(_file_name) + ".data", alwaysDeconectAfterOnTransaction);
+		super("Database from file : " + getH2DataFileName(_file_name) + ".data", _file_name, alwaysDeconectAfterOnTransaction);
 		this.file_name = _file_name;
 	}
 
@@ -143,6 +143,12 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 			return s;
 	}
 	private final static AtomicBoolean databaseShutdown = new AtomicBoolean(false);
+
+	@Override
+	public boolean supportNoCacheParam()
+	{
+		return true;
+	}
 
 	@Override
 	protected void closeConnection(Connection connection, boolean deepClose) throws SQLException {
@@ -257,7 +263,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 
 			@Override
 			public boolean doesWriteData() {
-				return false;
+				return true;
 			}
 
 			@Override
@@ -620,6 +626,20 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	@Override
 	protected boolean isDisconnetionException(SQLException e) {
 		return e.getErrorCode()==90067;
+		/*if (e.getErrorCode()==90067)
+			return true;
+		if (e==null)
+			return false;
+		Throwable cause=e;
+		while ((cause=cause.getCause())!=null)
+		{
+			if (cause instanceof ClosedByInterruptException)
+				return true;
+			if (cause instanceof ClosedChannelException)
+				return true;
+
+		}
+		return false;*/
 	}
 
 	@SuppressWarnings("ResultOfMethodCallIgnored")

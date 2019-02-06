@@ -60,8 +60,8 @@ public class OOD {
 		Calendar c1 = Calendar.getInstance();
 		c1.set(2013, Calendar.APRIL, 1);
 		Calendar c2 = Calendar.getInstance();
-		c2.set(2018, Calendar.JANUARY, 25);
-		VERSION = new Version("Object Oriented Database", "OOD", (short)2, (short)0, (short)0, Version.Type.Beta, (short)96, c1.getTime(),
+		c2.set(2018, Calendar.FEBRUARY, 5);
+		VERSION = new Version("Object Oriented Database", "OOD", (short)2, (short)0, (short)0, Version.Type.Beta, (short)97, c1.getTime(),
 				c2.getTime());
 		try {
 			InputStream is = OOD.class.getResourceAsStream("build.txt");
@@ -73,12 +73,21 @@ public class OOD {
 			VERSION.addDeveloper(new PersonDeveloper("mahdjoub", "jason", c.getTime()));
 
 			c = Calendar.getInstance();
+			c.set(2018, Calendar.FEBRUARY, 5);
+			Description d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)97, c.getTime());
+			d.addItem("Security fix : disable cache for tables that use secret ou private keys");
+			d.addItem("Security improvement : add Field.disableCache property");
+			d.addItem("Add function Table.isCached()");
+			VERSION.addDescription(d);
+
+			c = Calendar.getInstance();
 			c.set(2018, Calendar.JANUARY, 25);
-			Description d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)96, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)96, c.getTime());
 			d.addItem("Add function Table.removeRecord(Map keys)");
 			d.addItem("Add function Table.removeRecord(Object...keys)");
 			d.addItem("Add function Table.removeRecordWithCascade(Map keys)");
 			d.addItem("Add function Table.removeRecordWithCascade(Object...keys)");
+			d.addItem("Do not generate conflicts if events are the same");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();

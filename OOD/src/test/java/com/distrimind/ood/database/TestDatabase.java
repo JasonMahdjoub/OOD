@@ -323,12 +323,19 @@ public abstract class TestDatabase {
 	}
 
 	@Test(dependsOnMethods = { "firstLoad" })
-	public void isLoadedIntoMemory() {
-		assertTrue(!table1.isLoadedInMemory());
-		assertTrue(!table2.isLoadedInMemory());
+	public void isLoadedIntoMemory() throws DatabaseException {
+		assertFalse(table1.isLoadedInMemory());
+		assertFalse(table2.isLoadedInMemory());
 		assertTrue(table3.isLoadedInMemory());
-		assertTrue(!table4.isLoadedInMemory());
+		assertFalse(table4.isLoadedInMemory());
 		assertTrue(table5.isLoadedInMemory());
+
+		assertFalse(table1.isCached());
+		assertTrue(table2.isCached() || !getDatabaseWrapperInstanceA().supportCache());
+		assertFalse(table3.isCached());
+		assertTrue(table4.isCached() || !getDatabaseWrapperInstanceA().supportCache());
+		assertFalse(table5.isCached());
+
 	}
 
 	Date date = Calendar.getInstance().getTime();
@@ -3553,7 +3560,7 @@ public abstract class TestDatabase {
 		Table4 table4;
 		Table5 table5;
 		Table6 table6;
-		if (!isMultiConcurrentDatabase() || random.nextInt(2) == 0) {
+		if (!isMultiConcurrentDatabase() || random.nextInt(5) != 0) {
 			table1 = TestDatabase.table1;
 			table2 = TestDatabase.table2;
 			table3 = TestDatabase.table3;
