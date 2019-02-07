@@ -1606,6 +1606,31 @@ public abstract class TestDatabase {
 		assertTrue(table7.hasRecordsWithOneOfFields(mg1, mg0));
         Assert.assertEquals(3, table7.getRecordsWithAllFields(mg1, mg0).size());
         Assert.assertEquals(3, table7.getRecordsWithOneOfFields(mg1, mg0).size());
+
+
+        addSecondRecord();
+		Table1.Record rec1a=table1.getRecords().get(0);
+		rec1a.string_value="string_for_subfield1";
+		table1.updateRecord(rec1a);
+		List<Table1.Record> l1=table1.getRecordsWithAllFields("subField.string_value", rec1a.subField.string_value);
+		Assert.assertEquals(l1.size(), 1);
+		Table1.Record rec1b=l1.get(0);
+		Assert.assertTrue(table1.equals(rec1a, rec1b));
+		table1.removeRecordsWithAllFields("subField.string_value", rec1a.subField.string_value);
+		Assert.assertEquals(table1.getRecords().size(), 0);
+
+		Table3.Record rec3a=table3.getRecords().get(0);
+		rec3a.string_value="string_for_subfield3";
+		table3.updateRecord(rec3a);
+		List<Table3.Record> l3=table3.getRecordsWithAllFields("subField.string_value", rec3a.subField.string_value);
+		Assert.assertEquals(l3.size(), 1);
+		Table3.Record rec3b=l3.get(0);
+		Assert.assertTrue(table3.equals(rec3a, rec3b));
+		table3.removeRecordsWithAllFields("subField.string_value", rec3a.subField.string_value);
+		Assert.assertEquals(table3.getRecords().size(), 0);
+
+
+
 		table1.checkDataIntegrity();
 		table3.checkDataIntegrity();
 		table2.checkDataIntegrity();
