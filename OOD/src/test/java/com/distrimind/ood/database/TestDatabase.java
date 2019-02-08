@@ -67,6 +67,7 @@ import org.testng.annotations.Test;
 import java.io.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.sql.Blob;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -3000,33 +3001,33 @@ public abstract class TestDatabase {
 
 		r3 = table3.getRecords().get(0);
 
-		assertTrue(map.get("pk1").equals(r3.pk1));
-		assertTrue(map.get("pk2").equals(r3.pk2));
-		assertTrue(map.get("pk3").equals(r3.pk3));
-		assertTrue(map.get("pk4").equals(r3.pk4));
-		assertTrue(map.get("pk5").equals(r3.pk5));
-		assertTrue(map.get("pk6").equals(r3.pk6));
-		assertTrue(map.get("pk7").equals(r3.pk7));
-		assertTrue(map.get("int_value").equals(r3.int_value));
-		assertTrue(map.get("byte_value").equals(r3.byte_value));
-		assertTrue(map.get("char_value").equals(r3.char_value));
-		assertTrue(map.get("boolean_value").equals(r3.boolean_value));
-		assertTrue(map.get("short_value").equals(r3.short_value));
-		assertTrue(map.get("long_value").equals(r3.long_value));
-		assertTrue(map.get("float_value").equals(r3.float_value));
-		assertTrue(map.get("double_value").equals(r3.double_value));
-		assertTrue(map.get("string_value").equals(r3.string_value));
-		assertTrue(map.get("IntegerNumber_value").equals(r3.IntegerNumber_value));
-		assertTrue(map.get("ByteNumber_value").equals(r3.ByteNumber_value));
-		assertTrue(map.get("CharacterNumber_value").equals(r3.CharacterNumber_value));
-		assertTrue(map.get("BooleanNumber_value").equals(r3.BooleanNumber_value));
-		assertTrue(map.get("ShortNumber_value").equals(r3.ShortNumber_value));
-		assertTrue(map.get("LongNumber_value").equals(r3.LongNumber_value));
-		assertTrue(map.get("FloatNumber_value").equals(r3.FloatNumber_value));
-		assertTrue(map.get("DoubleNumber_value").equals(r3.DoubleNumber_value));
-		assertTrue(map.get("BigInteger_value").equals(r3.BigInteger_value));
-		assertTrue(map.get("BigDecimal_value").equals(r3.BigDecimal_value));
-		assertTrue(map.get("file").equals(r3.file));
+		Assert.assertEquals(r3.pk1, map.get("pk1"));
+		Assert.assertEquals(r3.pk2, map.get("pk2"));
+		Assert.assertEquals(r3.pk3, map.get("pk3"));
+		Assert.assertEquals(r3.pk4, map.get("pk4"));
+		Assert.assertEquals(r3.pk5, map.get("pk5"));
+		Assert.assertEquals(r3.pk6, map.get("pk6"));
+		Assert.assertEquals(r3.pk7, map.get("pk7"));
+		Assert.assertEquals(r3.int_value, map.get("int_value"));
+		Assert.assertEquals(r3.byte_value, map.get("byte_value"));
+		Assert.assertEquals(r3.char_value, map.get("char_value"));
+		Assert.assertEquals(r3.boolean_value, map.get("boolean_value"));
+		Assert.assertEquals(r3.short_value, map.get("short_value"));
+		Assert.assertEquals(r3.long_value, map.get("long_value"));
+		Assert.assertEquals(r3.float_value, map.get("float_value"));
+		Assert.assertEquals(r3.double_value, map.get("double_value"));
+		Assert.assertEquals(r3.string_value, map.get("string_value"));
+		Assert.assertEquals(r3.IntegerNumber_value, map.get("IntegerNumber_value"));
+		Assert.assertEquals(r3.ByteNumber_value, map.get("ByteNumber_value"));
+		Assert.assertEquals(r3.CharacterNumber_value, map.get("CharacterNumber_value"));
+		Assert.assertEquals(r3.BooleanNumber_value, map.get("BooleanNumber_value"));
+		Assert.assertEquals(r3.ShortNumber_value, map.get("ShortNumber_value"));
+		Assert.assertEquals(r3.LongNumber_value, map.get("LongNumber_value"));
+		Assert.assertEquals(r3.FloatNumber_value, map.get("FloatNumber_value"));
+		Assert.assertEquals(r3.DoubleNumber_value, map.get("DoubleNumber_value"));
+		Assert.assertEquals(r3.BigInteger_value, map.get("BigInteger_value"));
+		Assert.assertEquals(r3.BigDecimal_value, map.get("BigDecimal_value"));
+		Assert.assertEquals(r3.file, map.get("file"));
 		assertEquals((SubField) map.get("subField"), r3.subField);
 		assertEquals((SubSubField) map.get("subSubField"), r3.subSubField);
 
@@ -3103,7 +3104,7 @@ public abstract class TestDatabase {
             }
             else if (o instanceof File)
             {
-                res.add(((File)o).getPath().getBytes("UTF-8"));
+                res.add(((File)o).getPath().getBytes(StandardCharsets.UTF_8));
             }
             else if (o instanceof Serializable) {
                 if (Objects.equals(DatabaseWrapperAccessor.getSerializableType(sql_db), "BLOB")) {
@@ -3226,8 +3227,10 @@ public abstract class TestDatabase {
 			if (op_comp == SymbolType.EQUALOPERATOR || op_comp == SymbolType.NOTEQUALOPERATOR)
 				expectedCommand.append(")");
 		} else {
-			if (op_comp == SymbolType.EQUALOPERATOR)
+			if (op_comp == SymbolType.EQUALOPERATOR) {
+				assert fa!=null;
 				test = fa.getValue(record).toString().equals(value.toString());
+			}
 			else if (op_comp == SymbolType.NOTEQUALOPERATOR)
 				test = !fa.getValue(record).toString().equals(value.toString());
 			else if (op_comp == SymbolType.LIKE)
@@ -3317,6 +3320,8 @@ public abstract class TestDatabase {
 		parametersTable1Equallable.put("CalendarValue", calendar);
 		parametersTable1Equallable.put("nullField", null);
 		parametersTable1Equallable.put("file", fileTest);
+		parametersTable1Equallable.put("subField.string_value", "string_for_sql_interpreter");
+
 
 		Table1.Record record = new Table1.Record();
 		record.BigDecimal_value = (BigDecimal) parametersTable1Equallable.get("BigDecimal_value");
@@ -3348,6 +3353,8 @@ public abstract class TestDatabase {
 		record.string_value = (String) parametersTable1Equallable.get("string_value");
 		record.nullField= (DecentralizedIDGenerator)parametersTable1Equallable.get("nullField");
 		record.file=(File)parametersTable1Equallable.get("file");
+		record.subField=new SubField();
+		record.subField.string_value=(String)parametersTable1Equallable.get("subField.string_value");
 
 		SymbolType[] ops_cond = new SymbolType[] { SymbolType.ANDCONDITION, SymbolType.ORCONDITION };
 		SymbolType[] ops_comp = new SymbolType[] { SymbolType.EQUALOPERATOR, SymbolType.NOTEQUALOPERATOR,
