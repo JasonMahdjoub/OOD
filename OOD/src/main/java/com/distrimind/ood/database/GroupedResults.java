@@ -37,14 +37,13 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-
 import com.distrimind.ood.database.exceptions.ConstraintsNotRespectedDatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
-import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 
 /**
  * This class enables to group results according given table fields. It is
@@ -63,11 +62,15 @@ import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 public final class GroupedResults<T extends DatabaseRecord> {
 	private class Field {
 		private final String field_name;
-		private final ArrayList<FieldAccessor> fields = new ArrayList<>();
+		private final FieldAccessor field ;
 
 		public Field(String _field_name) throws ConstraintsNotRespectedDatabaseException {
 			field_name = _field_name;
-			ArrayList<String> strings = splitPoint(field_name);
+			this.field=GroupedResults.this.table.getFieldAccessor(_field_name);
+			if (this.field==null)
+				throw new ConstraintsNotRespectedDatabaseException("The field " + field_name + " does not exists.");
+
+			/*ArrayList<String> strings = splitPoint(field_name);
 			Table<?> current_table = GroupedResults.this.table;
 
 			for (String f : strings) {
@@ -90,14 +93,14 @@ public final class GroupedResults<T extends DatabaseRecord> {
 					current_table = ((ForeignKeyFieldAccessor) founded_field).getPointedTable();
 				else
 					current_table = null;
-			}
+			}*/
 		}
 
 		public String getName() {
 			return field_name;
 		}
 
-		private ArrayList<String> splitPoint(String s) {
+		/*private ArrayList<String> splitPoint(String s) {
 			ArrayList<String> res = new ArrayList<>(10);
 			int last_index = 0;
 			for (int i = 0; i < s.length(); i++) {
@@ -113,10 +116,11 @@ public final class GroupedResults<T extends DatabaseRecord> {
 			}
 
 			return res;
-		}
+		}*/
 
 		public boolean equals(T o1, Object o2) throws DatabaseException {
-			Object r1 = o1;
+			Object record=GroupedResults.this.table.getFieldAccessorAndValue(o1, field_name).getValue();
+			/*Object r1 = o1;
 			for (int i = 0; i < fields.size() - 1; i++) {
 				if (r1 == null)
 					return null == o2;
@@ -125,12 +129,14 @@ public final class GroupedResults<T extends DatabaseRecord> {
 			}
 			if (r1 == null)
 				return null == o2;
-			FieldAccessor fa = fields.get(fields.size() - 1);
-			return fa.equals(r1, o2);
+			FieldAccessor fa = fields.get(fields.size() - 1);*/
+			return this.field.equals(record, o2);
 		}
 
 		public Object getValue(T o) throws DatabaseException {
-			Object r = o;
+			Object record=GroupedResults.this.table.getFieldAccessorAndValue(o, field_name).getValue();
+			return this.field.getValue(record);
+			/*Object r = o;
 			for (int i = 0; i < fields.size() - 1; i++) {
 				if (r == null)
 					return null;
@@ -140,7 +146,7 @@ public final class GroupedResults<T extends DatabaseRecord> {
 			if (r == null)
 				return null;
 			FieldAccessor fa = fields.get(fields.size() - 1);
-			return fa.getValue(r);
+			return fa.getValue(r);*/
 		}
 
 	}

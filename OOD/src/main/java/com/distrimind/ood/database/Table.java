@@ -2417,7 +2417,8 @@ public abstract class Table<T extends DatabaseRecord> {
 	}
 
 	public String getFieldToComparare(String field) {
-		String[] strings = field.split("\\.");
+
+		/*String[] strings = field.split("\\.");
 
 		Table<?> current_table = Table.this;
 
@@ -2443,7 +2444,10 @@ public abstract class Table<T extends DatabaseRecord> {
             }
         }
 
-        assert founded_field != null;
+        assert founded_field != null;*/
+		FieldAccessor founded_field=getFieldAccessor(field);
+		if (founded_field==null)
+			throw new IllegalArgumentException("The field " + field + " does not exists.");
         if (!founded_field.isComparable() || founded_field.getDeclaredSqlFields().length > 1)
 			throw new IllegalArgumentException("The field " + field + " starting in the class/table "
 					+ Table.this.getClass().getName() + " is not a comparable field.");
@@ -2576,14 +2580,16 @@ public abstract class Table<T extends DatabaseRecord> {
 	}
 
 	private final class FieldComparator {
-		private final ArrayList<FieldAccessor> fields;
-
-		public FieldComparator(ArrayList<FieldAccessor> _fields) {
-			fields = _fields;
+		//private final ArrayList<FieldAccessor> fields;
+		private final FieldAccessor field;
+		public FieldComparator(FieldAccessor _field) {
+			field = _field;
 		}
 
 		public int compare(T _o1, T _o2) throws DatabaseException {
-			DatabaseRecord dr1 = _o1, dr2 = _o2;
+			Object v1=Table.this.getFieldAccessorAndValue(_o1, field.getFieldName()).getValue();
+			Object v2=Table.this.getFieldAccessorAndValue(_o2, field.getFieldName()).getValue();
+			/*DatabaseRecord dr1 = _o1, dr2 = _o2;
 			for (int i = 0; i < fields.size() - 1; i++) {
 				if (dr1 == null && dr2 != null)
 					return -1;
@@ -2595,7 +2601,8 @@ public abstract class Table<T extends DatabaseRecord> {
 				dr1 = (DatabaseRecord) f.getValue(dr1);
 				dr2 = (DatabaseRecord) f.getValue(dr2);
 			}
-			return fields.get(fields.size() - 1).compare(dr1, dr2);
+			return fields.get(fields.size() - 1).compare(dr1, dr2);*/
+			return field.compare(v1, v2);
 		}
 	}
 
@@ -2634,7 +2641,7 @@ public abstract class Table<T extends DatabaseRecord> {
 		}
 
 		public FieldComparator getFieldComparator(String field) throws ConstraintsNotRespectedDatabaseException {
-			String[] strings = field.split("\\.");
+			/*String[] strings = field.split("\\.");
 			ArrayList<FieldAccessor> fields = new ArrayList<>();
 			Table<?> current_table = Table.this;
 
@@ -2659,12 +2666,15 @@ public abstract class Table<T extends DatabaseRecord> {
                 else
                     current_table = null;
 
-            }
-			if (!fields.get(fields.size() - 1).isComparable())
+            }*/
+            FieldAccessor fa=Table.this.getFieldAccessor(field);
+            if (fa==null)
+				throw new ConstraintsNotRespectedDatabaseException("The field " + field + " does not exists.");
+			if (!fa.isComparable())
 				throw new ConstraintsNotRespectedDatabaseException(
 						"The field " + field + " starting in the class/table " + Table.this.getClass().getName()
 								+ " is not a comparable field.");
-			return new FieldComparator(fields);
+			return new FieldComparator(fa);
 		}
 
 	}

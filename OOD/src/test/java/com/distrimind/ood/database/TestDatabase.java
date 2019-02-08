@@ -4542,7 +4542,7 @@ public abstract class TestDatabase {
 					public boolean nextRecord(Table1.Record _record) {
 						return random.nextInt(2) == 0;
 					}
-				}, true, "short_value", "LongNumber_value");
+				}, true, "subField.short_value", "LongNumber_value");
 				testOrderedTable1(r1);
 				r1 = table1.getOrderedRecords(new Filter<Table1.Record>() {
 
@@ -4550,18 +4550,18 @@ public abstract class TestDatabase {
 					public boolean nextRecord(Table1.Record _record) {
 						return random.nextInt(2) == 0;
 					}
-				}, false, "short_value", "LongNumber_value");
+				}, false, "subField.short_value", "LongNumber_value");
 				testInverseOrderedTable1(r1);
 
-				r1 = table1.getOrderedRecords(true, "short_value", "LongNumber_value");
+				r1 = table1.getOrderedRecords(true, "subField.short_value", "LongNumber_value");
 				testOrderedTable1(r1);
 				if (no_thread) {
-					ArrayList<Table1.Record> r1b = table1.getOrderedRecords(table1.getRecords(), true, "short_value",
+					ArrayList<Table1.Record> r1b = table1.getOrderedRecords(table1.getRecords(), true, "subField.short_value",
 							"LongNumber_value");
                     Assert.assertEquals(r1.size(), r1b.size());
 
 					for (int i = 0; i < r1.size(); i++) {
-						Assert.assertEquals(r1.get(i).short_value, r1b.get(i).short_value);
+						Assert.assertEquals(r1.get(i).subField.short_value, r1b.get(i).subField.short_value);
 						Assert.assertEquals(r1.get(i).LongNumber_value, r1b.get(i).LongNumber_value);
 						// Assert.assertTrue(table1.equalsAllFields(r1.get(i), r1b.get(i)),
 						// "r1_short_value="+r1.get(i).short_value+";
@@ -4569,15 +4569,15 @@ public abstract class TestDatabase {
 						// r1bLongNumber_value="+r1b.get(i).LongNumber_value);
 					}
 				}
-				r1 = table1.getOrderedRecords(false, "short_value", "LongNumber_value");
+				r1 = table1.getOrderedRecords(false, "subField.short_value", "LongNumber_value");
 				testInverseOrderedTable1(r1);
 				if (no_thread) {
-					ArrayList<Table1.Record> r1b = table1.getOrderedRecords(table1.getRecords(), false, "short_value",
+					ArrayList<Table1.Record> r1b = table1.getOrderedRecords(table1.getRecords(), false, "subField.short_value",
 							"LongNumber_value");
 					assertTrue(r1.size() == r1b.size());
 
 					for (int i = 0; i < r1.size(); i++) {
-						Assert.assertEquals(r1.get(i).short_value, r1b.get(i).short_value);
+						Assert.assertEquals(r1.get(i).subField.short_value, r1b.get(i).subField.short_value);
 						Assert.assertEquals(r1.get(i).LongNumber_value, r1b.get(i).LongNumber_value);
 						// Assert.assertTrue(table1.equalsAllFields(r1.get(i), r1b.get(i)));
 					}
@@ -4589,7 +4589,7 @@ public abstract class TestDatabase {
 					public boolean nextRecord(Table3.Record _record) {
 						return random.nextInt(2) == 0;
 					}
-				}, true, "short_value", "LongNumber_value");
+				}, true, "subField.short_value", "LongNumber_value");
 				testOrderedTable3(r3);
 				GroupedResults<Table3.Record> grouped_results = table3.getGroupedResults(r3, "FloatNumber_value");
 				for (GroupedResults<Table3.Record>.Group l : grouped_results.getGroupedResults()) {
@@ -4602,18 +4602,22 @@ public abstract class TestDatabase {
 					public boolean nextRecord(Table3.Record _record) {
 						return random.nextInt(2) == 0;
 					}
-				}, false, "short_value", "LongNumber_value");
+				}, false, "subField.short_value", "LongNumber_value");
 				testInverseOrderedTable3(r3);
 				grouped_results = table3.getGroupedResults(r3, "FloatNumber_value", "BigInteger_value");
 				for (GroupedResults<Table3.Record>.Group l : grouped_results.getGroupedResults()) {
 					testInverseOrderedTable3(l.getResults());
 				}
+				grouped_results = table3.getGroupedResults(r3, "subField.string_value");
+				for (GroupedResults<Table3.Record>.Group l : grouped_results.getGroupedResults()) {
+					testInverseOrderedTable3(l.getResults());
+				}
 				table3.getOrderedRecords(true, "DateValue", "LongNumber_value");
 
-				r3 = table3.getOrderedRecords(true, "short_value", "LongNumber_value");
+				r3 = table3.getOrderedRecords(true, "subField.short_value", "LongNumber_value");
 				testOrderedTable3(r3);
 				if (no_thread) {
-					ArrayList<Table3.Record> r3b = table3.getOrderedRecords(table3.getRecords(), true, "short_value",
+					ArrayList<Table3.Record> r3b = table3.getOrderedRecords(table3.getRecords(), true, "subField.short_value",
 							"LongNumber_value");
 					assertTrue(r3.size() == r3b.size());
 
@@ -4621,10 +4625,10 @@ public abstract class TestDatabase {
 						assertTrue(table3.equalsAllFields(r3.get(i), r3b.get(i)));
 					}
 				}
-				r3 = table3.getOrderedRecords(false, "short_value", "LongNumber_value");
+				r3 = table3.getOrderedRecords(false, "subField.short_value", "LongNumber_value");
 				testInverseOrderedTable3(r3);
 				if (no_thread) {
-					ArrayList<Table3.Record> r3b = table3.getOrderedRecords(table3.getRecords(), false, "short_value",
+					ArrayList<Table3.Record> r3b = table3.getOrderedRecords(table3.getRecords(), false, "subField.short_value",
 							"LongNumber_value");
                     Assert.assertEquals(r3.size(), r3b.size());
 
@@ -4937,9 +4941,9 @@ public abstract class TestDatabase {
 	private void testOrderedTable1(ArrayList<Table1.Record> res) {
 		if (res.size() > 1) {
 			for (int i = 1; i < res.size(); i++) {
-				assertTrue(res.get(i - 1).short_value <= res.get(i).short_value);
-				assertTrue(res.get(i - 1).short_value != res.get(i).short_value
-						|| (res.get(i - 1).short_value == res.get(i).short_value) && res.get(i - 1).LongNumber_value <= res.get(i).LongNumber_value);
+				assertTrue(res.get(i - 1).subField.short_value <= res.get(i).subField.short_value);
+				assertTrue(res.get(i - 1).subField.short_value != res.get(i).subField.short_value
+						|| (res.get(i - 1).subField.short_value == res.get(i).subField.short_value) && res.get(i - 1).LongNumber_value <= res.get(i).LongNumber_value);
 			}
 		}
 	}
@@ -4948,9 +4952,9 @@ public abstract class TestDatabase {
 	private void testInverseOrderedTable1(ArrayList<Table1.Record> res) {
 		if (res.size() > 1) {
 			for (int i = 1; i < res.size(); i++) {
-				assertTrue(res.get(i - 1).short_value >= res.get(i).short_value);
-				assertTrue(res.get(i - 1).short_value != res.get(i).short_value
-						|| (res.get(i - 1).short_value == res.get(i).short_value) && res.get(i - 1).LongNumber_value >= res.get(i).LongNumber_value);
+				assertTrue(res.get(i - 1).subField.short_value >= res.get(i).subField.short_value);
+				assertTrue(res.get(i - 1).subField.short_value != res.get(i).subField.short_value
+						|| (res.get(i - 1).subField.short_value == res.get(i).subField.short_value) && res.get(i - 1).LongNumber_value >= res.get(i).LongNumber_value);
 			}
 		}
 	}
@@ -4959,9 +4963,9 @@ public abstract class TestDatabase {
 	private void testOrderedTable3(ArrayList<Table3.Record> res) {
 		if (res.size() > 1) {
 			for (int i = 1; i < res.size(); i++) {
-				assertTrue(res.get(i - 1).short_value <= res.get(i).short_value);
-				assertTrue(res.get(i - 1).short_value != res.get(i).short_value
-						|| (res.get(i - 1).short_value == res.get(i).short_value) && res.get(i - 1).LongNumber_value <= res.get(i).LongNumber_value);
+				assertTrue(res.get(i - 1).subField.short_value <= res.get(i).subField.short_value);
+				assertTrue(res.get(i - 1).subField.short_value != res.get(i).subField.short_value
+						|| (res.get(i - 1).subField.short_value == res.get(i).subField.short_value) && res.get(i - 1).LongNumber_value <= res.get(i).LongNumber_value);
 			}
 		}
 	}
@@ -4970,9 +4974,9 @@ public abstract class TestDatabase {
 	private void testInverseOrderedTable3(ArrayList<Table3.Record> res) {
 		if (res.size() > 1) {
 			for (int i = 1; i < res.size(); i++) {
-				assertTrue(res.get(i - 1).short_value >= res.get(i).short_value);
-				assertTrue(res.get(i - 1).short_value != res.get(i).short_value
-						|| (res.get(i - 1).short_value == res.get(i).short_value) && res.get(i - 1).LongNumber_value >= res.get(i).LongNumber_value);
+				assertTrue(res.get(i - 1).subField.short_value >= res.get(i).subField.short_value);
+				assertTrue(res.get(i - 1).subField.short_value != res.get(i).subField.short_value
+						|| (res.get(i - 1).subField.short_value == res.get(i).subField.short_value) && res.get(i - 1).LongNumber_value >= res.get(i).LongNumber_value);
 			}
 		}
 	}
