@@ -1429,18 +1429,20 @@ public abstract class Table<T extends DatabaseRecord> {
 
 	private class SqlGeneralSelectQuerryWithFieldMatch extends SqlQuerry {
 		private final Map<String, Object> fields;
+		private List<FieldAccessor> fieldAccessors;
 
-		SqlGeneralSelectQuerryWithFieldMatch(boolean loadJunctions, Map<String, Object> fields, String AndOr,
+		SqlGeneralSelectQuerryWithFieldMatch(List<FieldAccessor> fieldAccessors, boolean loadJunctions, Map<String, Object> fields, String AndOr,
 				boolean ascendant, String[] orderByFields) {
-			super(getSqlGeneralSelectWithFieldMatch(loadJunctions, fields, AndOr, ascendant, orderByFields));
+			super(getSqlGeneralSelectWithFieldMatch(fieldAccessors,loadJunctions, fields, AndOr, ascendant, orderByFields));
 			this.fields = fields;
+			this.fieldAccessors=fieldAccessors;
 		}
 
 		@Override
 		public void finishPrepareStatement(PreparedStatement st) throws DatabaseException {
 			int index = 1;
 			for (String key : fields.keySet()) {
-				for (FieldAccessor fa : getFieldAccessors()) {
+				for (FieldAccessor fa : fieldAccessors) {
 					if (fa.getFieldName().equals(key)) {
 						fa.getValue(st, index, fields.get(key));
 						index += fa.getDeclaredSqlFields().length;
@@ -1476,13 +1478,13 @@ public abstract class Table<T extends DatabaseRecord> {
 		}
 	}
 
-	String getSqlGeneralSelectWithFieldMatch(boolean loadJunctions, Map<String, Object> fields, String AndOr,
+	String getSqlGeneralSelectWithFieldMatch(List<FieldAccessor> fieldAccessors, boolean loadJunctions, Map<String, Object> fields, String AndOr,
 			boolean ascendant, String[] orderByFields) {
 		StringBuilder sb = new StringBuilder(getSqlGeneralSelect(loadJunctions).getQuerry());
 		boolean first = true;
 		sb.append(" WHERE");
 		for (String key : fields.keySet()) {
-			for (FieldAccessor fa : getFieldAccessors()) {
+			for (FieldAccessor fa : fieldAccessors) {
 				if (fa.getFieldName().equals(key)) {
 					if (first) {
 						first = false;
@@ -3350,7 +3352,7 @@ public abstract class Table<T extends DatabaseRecord> {
 				boolean ok = false;
 				for (FieldAccessor fa : fields_accessor) {
 					if (fa.getFieldName().equals(s)) {
-						if (fa.equals(_instance, given_fields.get(s))) {
+						if (fa.equals(fa.getFieldName().contains(".")?Table.this.getFieldAccessorAndValue(_instance, fa.getFieldName()).getValue():_instance, given_fields.get(s))) {
 							ok = true;
 						}
 						break;
@@ -3367,7 +3369,7 @@ public abstract class Table<T extends DatabaseRecord> {
 
 		@Override
 		public SqlQuerry getSQLQuerry(boolean loadJunctions) {
-			return new SqlGeneralSelectQuerryWithFieldMatch(loadJunctions, this.given_fields, "AND", ascendant,
+			return new SqlGeneralSelectQuerryWithFieldMatch(fields_accessor, loadJunctions, this.given_fields, "AND", ascendant,
 					orderByFields);
 		}
 
@@ -3428,8 +3430,9 @@ public abstract class Table<T extends DatabaseRecord> {
 			boolean toadd = false;
 			for (String s : given_fields.keySet()) {
 				for (FieldAccessor fa : fields_accessor) {
-					if (fa.getFieldName().equals(s)) {
-						if (fa.equals(_instance, given_fields.get(s))) {
+					if (fa.getFieldName().equals(s))
+					{
+						if (fa.equals(fa.getFieldName().contains(".")?Table.this.getFieldAccessorAndValue(_instance, fa.getFieldName()).getValue():_instance, given_fields.get(s))) {
 							toadd = true;
 						}
 						break;
@@ -3445,7 +3448,7 @@ public abstract class Table<T extends DatabaseRecord> {
 
 		@Override
 		public SqlQuerry getSQLQuerry(boolean loadJunctions) {
-			return new SqlGeneralSelectQuerryWithFieldMatch(loadJunctions, this.given_fields, "OR", ascendant,
+			return new SqlGeneralSelectQuerryWithFieldMatch(fields_accessor, loadJunctions, this.given_fields, "OR", ascendant,
 					orderByFields);
 		}
 
@@ -7810,7 +7813,7 @@ public abstract class Table<T extends DatabaseRecord> {
 					}
 					RunnableTmp runnable = new RunnableTmp(primary_keys_fields);
 					getListRecordsFromSqlConnection(runnable,
-							new SqlGeneralSelectQuerryWithFieldMatch(true, keys, "AND", true, null),
+							new SqlGeneralSelectQuerryWithFieldMatch(getFieldAccessors(),true, keys, "AND", true, null),
 							TransactionIsolation.TRANSACTION_READ_COMMITTED, -1, -1);
 					return runnable.instance;
 				}
