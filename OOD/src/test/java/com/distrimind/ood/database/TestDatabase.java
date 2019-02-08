@@ -1617,6 +1617,10 @@ public abstract class TestDatabase {
 		Assert.assertEquals(l1.size(), 1);
 		Table1.Record rec1b=l1.get(0);
 		Assert.assertTrue(table1.equals(rec1a, rec1b));
+		l1=table1.getRecordsWithOneOfFields("subField.string_value", rec1a.subField.string_value);
+		Assert.assertEquals(l1.size(), 1);
+		rec1b=l1.get(0);
+		Assert.assertTrue(table1.equals(rec1a, rec1b));
 		table1.removeRecordsWithAllFields("subField.string_value", rec1a.subField.string_value);
 		Assert.assertEquals(table1.getRecords().size(), 0);
 
@@ -1627,7 +1631,26 @@ public abstract class TestDatabase {
 		Assert.assertEquals(l3.size(), 1);
 		Table3.Record rec3b=l3.get(0);
 		Assert.assertTrue(table3.equals(rec3a, rec3b));
+		l3=table3.getRecordsWithOneOfFields("subField.string_value", rec3a.subField.string_value);
+		Assert.assertEquals(l3.size(), 1);
+		rec3b=l3.get(0);
+		Assert.assertTrue(table3.equals(rec3a, rec3b));
 		table3.removeRecordsWithAllFields("subField.string_value", rec3a.subField.string_value);
+		Assert.assertEquals(table3.getRecords().size(), 0);
+
+
+		addSecondRecord();
+
+		rec1a=table1.getRecords().get(0);
+		rec1a.string_value="string_for_subfield1";
+		table1.updateRecord(rec1a);
+		table1.removeRecordsWithOneOfFields("subField.string_value", rec1a.subField.string_value);
+		Assert.assertEquals(table1.getRecords().size(), 0);
+
+		rec3a=table3.getRecords().get(0);
+		rec3a.string_value="string_for_subfield3";
+		table3.updateRecord(rec3a);
+		table3.removeRecordsWithOneOfFields("subField.string_value", rec3a.subField.string_value);
 		Assert.assertEquals(table3.getRecords().size(), 0);
 
 
@@ -3178,22 +3201,23 @@ public abstract class TestDatabase {
 
 		ArrayList<String> sqlVariablesName = getExpectedParametersName(fieldName, value==null?DecentralizedIDGenerator.class:value.getClass());
 		FieldAccessor fa = table.getFieldAccessor(fieldName);
+		Object nearestObjectInstance=table.getNearestClassInstance(record, fieldName);
 		if (useParameter) {
 			command.append("%");
 			command.append(fieldName);
 
 			if (op_comp == SymbolType.EQUALOPERATOR)
-				test = fa.equals(record, value);
+				test = fa.equals(nearestObjectInstance, value);
 			else if (op_comp == SymbolType.NOTEQUALOPERATOR)
-				test = !fa.equals(record, value);
+				test = !fa.equals(nearestObjectInstance, value);
 			else if (op_comp == SymbolType.LIKE)
-				test = fa.equals(record, value);
+				test = fa.equals(nearestObjectInstance, value);
 			else if (op_comp == SymbolType.NOTLIKE)
-				test = !fa.equals(record, value);
+				test = !fa.equals(nearestObjectInstance, value);
 			else {
 				Table1.Record r2 = new Table1.Record();
 				fa.setValue(r2, value);
-				int comp = fa.compare(record, r2);
+				int comp = fa.compare(nearestObjectInstance, r2);
 				if (op_comp == SymbolType.GREATEROPERATOR)
 					test = comp > 0;
 				else if (op_comp == SymbolType.GREATEROREQUALOPERATOR)
@@ -3229,16 +3253,16 @@ public abstract class TestDatabase {
 		} else {
 			if (op_comp == SymbolType.EQUALOPERATOR) {
 				assert fa!=null;
-				test = fa.getValue(record).toString().equals(value.toString());
+				test = fa.getValue(nearestObjectInstance).toString().equals(value.toString());
 			}
 			else if (op_comp == SymbolType.NOTEQUALOPERATOR)
-				test = !fa.getValue(record).toString().equals(value.toString());
+				test = !fa.getValue(nearestObjectInstance).toString().equals(value.toString());
 			else if (op_comp == SymbolType.LIKE)
-				test = fa.getValue(record).toString().equals(value.toString());
+				test = fa.getValue(nearestObjectInstance).toString().equals(value.toString());
 			else if (op_comp == SymbolType.NOTLIKE)
-				test = !fa.getValue(record).toString().equals(value.toString());
+				test = !fa.getValue(nearestObjectInstance).toString().equals(value.toString());
 			else {
-				BigDecimal v = new BigDecimal(fa.getValue(record).toString());
+				BigDecimal v = new BigDecimal(fa.getValue(nearestObjectInstance).toString());
 
 				int comp = v.compareTo(new BigDecimal(value.toString()));
 				if (op_comp == SymbolType.GREATEROPERATOR)
