@@ -1630,8 +1630,7 @@ public abstract class Table<T extends DatabaseRecord> {
 	 * @param parameters
 	 *            the used parameters with the WHERE condition
 	 * @return the number of records corresponding to the given parameters
-	 * @throws DatabaseException
-	 *             if a Sql exception occurs.
+	 * @throws DatabaseException if a Sql exception occurs.
 	 */
 	public final long getRecordsNumber(String whereCondition, Map<String, Object> parameters) throws DatabaseException {
 		try (Lock ignored = new ReadLock(this)) {
@@ -1760,8 +1759,7 @@ public abstract class Table<T extends DatabaseRecord> {
 	 * Returns the number of records corresponding one of the given fields
 	 * @param _records the fields
 	 * @return the number of records corresponding one of the given fields
-	 * @throws DatabaseException
-	 *             if a Sql exception occurs.
+	 * @throws DatabaseException if a Sql exception occurs.
 	 */
 	public final long getRecordsNumberWithOneOfFields(final Object... _records) throws DatabaseException {
 		return getRecordsNumberWithOneOfFields(convertToMap(_records));

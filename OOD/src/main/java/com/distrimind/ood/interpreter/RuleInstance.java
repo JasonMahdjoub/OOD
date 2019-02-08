@@ -35,11 +35,6 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.interpreter;
 
-import java.math.BigDecimal;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Pattern;
-
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.SqlField;
 import com.distrimind.ood.database.SqlFieldInstance;
@@ -49,6 +44,16 @@ import com.distrimind.ood.database.exceptions.DatabaseSyntaxException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.StringFieldAccessor;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Modifier;
+import java.math.BigDecimal;
+import java.security.AccessController;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 
 /**
  * 
@@ -326,9 +331,9 @@ public class RuleInstance implements QueryPart {
 				o2 = o;
 			}
 			if (Table.FieldAccessorValue.class.isAssignableFrom(o1.getClass()))
-				o1 = ((Table.FieldAccessorValue) o1).getFieldAccessor().getValue(getRecordInstance(table, record, (FieldAccessor) o1));
+				o1 = ((Table.FieldAccessorValue) o1).getFieldAccessor().getValue(getRecordInstance(table, record, ((Table.FieldAccessorValue) o1).getFieldAccessor()));
 			if (Table.FieldAccessorValue.class.isAssignableFrom(o2.getClass()))
-				o2 = ((Table.FieldAccessorValue) o2).getFieldAccessor().getValue(getRecordInstance(table, record, (FieldAccessor) o2));
+				o2 = ((Table.FieldAccessorValue) o2).getFieldAccessor().getValue(getRecordInstance(table, record, ((Table.FieldAccessorValue) o2).getFieldAccessor()));
 			if (o1==null)
 			{
 				if (null ==o2)
@@ -387,7 +392,7 @@ public class RuleInstance implements QueryPart {
 					return false;
 				}
 			} else if (Table.FieldAccessorValue.class.isAssignableFrom(o1.getClass())) {
-				@SuppressWarnings("ConstantConditions") Table.FieldAccessorValue fav = ((Table.FieldAccessorValue) o1);
+				Table.FieldAccessorValue fav = ((Table.FieldAccessorValue) o1);
 				//DatabaseRecord dr = getRecordInstance(table, record, fa);
 
 				if (fav.getValue() == null)
@@ -726,7 +731,7 @@ public class RuleInstance implements QueryPart {
 							int fieldsNumber = 0;
 
 							assert fa1 != null;
-							SqlField sfs[] = fa1.getDeclaredSqlFields();
+							SqlField[] sfs = fa1.getDeclaredSqlFields();
 							if (s2.getType() == SymbolType.STRING || s2.getType() == SymbolType.NUMBER) {
 								if (sfs.length != 1
 										|| ((comp.getType() == SymbolType.LIKE || comp.getType() == SymbolType.NOTLIKE)
@@ -748,21 +753,26 @@ public class RuleInstance implements QueryPart {
 								if (comp.getType() == SymbolType.EQUALOPERATOR
 										|| comp.getType() == SymbolType.NOTEQUALOPERATOR)
 									res.append("(");
-								SqlFieldInstance sfis[] = null;
+								SqlFieldInstance[] sfis = null;
 								try {
 									if (fa2 == null) {
 										/*Table<?> t = table.getDatabaseWrapper().getTableInstance(fa1.getTableClass());
 										DatabaseRecord record = t.getDefaultRecordConstructor().newInstance();
 										Object value=t.getFieldAccessorAndValue(record, fa1.getFieldName()).getValue();*/
-
-										Object value=fa1.getField().getDeclaringClass().getDeclaredConstructor().newInstance();
+										Class<?> c=fa1.getField().getDeclaringClass();
+										Constructor<?> cons;
+										if (Modifier.isAbstract(c.getModifiers()))
+											cons=table.getDefaultRecordConstructor();
+										else
+											cons=getConstructor(c);
+										Object value=cons.newInstance();
 										fa1.setValue(value, parameter2);
 										sfis = fa1.getSqlFieldsInstances(value);
 									}
 								} catch (Exception e) {
-									throw new DatabaseSyntaxException("Database exception", e);
+									throw new DatabaseSyntaxException("Database exception with "+fa1.getField().getDeclaringClass(), e);
 								}
-								SqlField sfs2[] = null;
+								SqlField[] sfs2 = null;
 								if (fa2 != null)
 									sfs2 = fa2.getDeclaredSqlFields();
 
@@ -897,7 +907,7 @@ public class RuleInstance implements QueryPart {
 					if (fa == null)
 						throw new DatabaseSyntaxException(
 								"Cannot find field " + fieldName + " into table " + table.getName());
-					SqlField sfs[] = fa.getDeclaredSqlFields();
+					SqlField[] sfs = fa.getDeclaredSqlFields();
 					if (sfs.length > 1)
 						throw new IllegalAccessError();
 					return new StringBuilder(sfs[0].field);
@@ -905,7 +915,7 @@ public class RuleInstance implements QueryPart {
 					Object parameter1 = parameters.get(s.getSymbol());
 					if (parameter1 == null)
 						throw new DatabaseSyntaxException("Cannot find parameter " + s.getSymbol());
-					SqlFieldInstance sfis[];
+					SqlFieldInstance[] sfis;
 					try {
 						T record = table.getDefaultRecordConstructor().newInstance();
 						FieldAccessor fa = Symbol.setFieldAccessor(table, parameter1, record);
@@ -944,7 +954,31 @@ public class RuleInstance implements QueryPart {
 		throw new IllegalAccessError();
 	}
 
-	private Object getDatabaseRecord(FieldAccessor fa, Set<TableJunction> tablesJunction, DatabaseRecord record)
+	private final Map<Class<?>, Constructor> cachedConstructors=new HashMap<>();
+
+	private Constructor getConstructor(final Class<?> declaringClass) throws PrivilegedActionException {
+		synchronized (cachedConstructors)
+		{
+			Constructor<?> c=cachedConstructors.get(declaringClass);
+			if (c==null)
+			{
+				c=AccessController.doPrivileged(new PrivilegedExceptionAction<Constructor>() {
+					@Override
+					public Constructor run() throws Exception {
+						Constructor<?> c=declaringClass.getDeclaredConstructor();
+						c.setAccessible(true);
+						return c;
+
+					}
+				});
+				cachedConstructors.put(declaringClass, c);
+			}
+			return c;
+		}
+
+	}
+
+	/*private Object getDatabaseRecord(FieldAccessor fa, Set<TableJunction> tablesJunction, DatabaseRecord record)
 			throws DatabaseException {
 		if (record == null)
 			return null;
@@ -964,6 +998,6 @@ public class RuleInstance implements QueryPart {
 			throw new IllegalAccessError(fa.getTableClass() + ";" + record.getClass());
 		}
 		return record;
-	}
+	}*/
 
 }
