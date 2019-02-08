@@ -2986,6 +2986,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			final boolean createDatabaseIfNecessaryAndCheckIt) throws DatabaseException {
 		try  {
 			lockWrite();
+			final AtomicBoolean allNotFound = new AtomicBoolean(true);
 			if (this.closed)
 				throw new DatabaseException("The given Database was closed : " + this);
 			if (configuration == null)
@@ -2995,7 +2996,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new DatabaseException("There is already a database associated to the given HSQLDBWrappe ");
 			try {
 				
-				final AtomicBoolean allNotFound = new AtomicBoolean(true);
+
 				runTransaction(new Transaction() {
 
 					@Override
@@ -3101,7 +3102,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				sql_database = sd;
 			} finally {
 				actualDatabaseLoading = null;
-				if (!configuration.getPackage().equals(this.getClass().getPackage()))
+				if (!allNotFound.get() && !configuration.getPackage().equals(this.getClass().getPackage()))
 					getSynchronizer().isReliedToDistantHook();
 			}
 		}
