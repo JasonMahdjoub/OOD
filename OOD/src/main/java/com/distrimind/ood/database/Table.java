@@ -43,6 +43,7 @@ import com.distrimind.ood.database.annotations.ForeignKey;
 import com.distrimind.ood.database.annotations.LoadToMemory;
 import com.distrimind.ood.database.exceptions.*;
 import com.distrimind.ood.database.fieldaccessors.ByteTabFieldAccessor;
+import com.distrimind.ood.database.fieldaccessors.ComposedFieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.ood.interpreter.Interpreter;
@@ -152,6 +153,10 @@ public abstract class Table<T extends DatabaseRecord> {
 
 	public Constructor<T> getDefaultRecordConstructor() {
 		return default_constructor_field;
+	}
+
+	public Class<T> getClassRecord() {
+		return class_record;
 	}
 
 	private static class NeighboringTable {
@@ -1943,27 +1948,107 @@ public abstract class Table<T extends DatabaseRecord> {
 	public final FieldAccessor getFieldAccessor(String fieldName) {
 		return getFieldAccessor(fieldName, new HashSet<RuleInstance.TableJunction>());
 	}
+	public static class FieldAccessorValue
+	{
+		private final FieldAccessor fieldAccessor;
+		private final Object value;
 
-	public final FieldAccessor getFieldAccessor(String fieldName, Set<RuleInstance.TableJunction> tablesJunction) {
-		int index = 0;
-		while (index < fieldName.length()) {
-			if (fieldName.charAt(index) == '.')
-				break;
-			++index;
+		public FieldAccessorValue(FieldAccessor fieldAccessor, Object value) {
+			this.fieldAccessor = fieldAccessor;
+			this.value = value;
 		}
-		String prefix = fieldName.substring(0, index);
 
-		for (FieldAccessor f : fields) {
-			if (f.getFieldName().equals(prefix)) {
-				if (index == fieldName.length())
-					return f;
-				else if (f instanceof ForeignKeyFieldAccessor) {
+		public FieldAccessor getFieldAccessor() {
+			return fieldAccessor;
+		}
 
-					ForeignKeyFieldAccessor fkfa = (ForeignKeyFieldAccessor) f;
-					tablesJunction.add(new RuleInstance.TableJunction(this, fkfa.getPointedTable(), fkfa));
-					return fkfa.getPointedTable().getFieldAccessor(fieldName.substring(index + 1), tablesJunction);
+		public Object getValue() {
+			return value;
+		}
+	}
+	public FieldAccessorValue getFieldAccessorAndValue(Object record, String fieldName) throws DatabaseException {
+		return getFieldAccessorAndValue(record, fieldName, new HashSet<RuleInstance.TableJunction>());
+	}
+
+
+	public FieldAccessorValue getFieldAccessorAndValue(Object record, String fieldName, Set<RuleInstance.TableJunction> tablesJunction) throws DatabaseException {
+		int indexEnd = 0;
+		int indexStart=0;
+		StringBuilder prevPrefix= new StringBuilder();
+		List<FieldAccessor> fields=this.fields;
+		while(fields!=null) {
+			while (indexEnd < fieldName.length()) {
+				if (fieldName.charAt(indexEnd) == '.')
+					break;
+				++indexEnd;
+			}
+			if (indexStart>=indexEnd)
+				return null;
+			String prefix = prevPrefix+fieldName.substring(indexStart, indexEnd);
+
+			for (FieldAccessor f : fields) {
+				if (f.getFieldName().equals(prefix)) {
+					if (indexEnd == fieldName.length()) {
+						return new FieldAccessorValue(f, record);
+					}
+					else if (f instanceof ForeignKeyFieldAccessor) {
+
+						ForeignKeyFieldAccessor fkfa = (ForeignKeyFieldAccessor) f;
+						tablesJunction.add(new RuleInstance.TableJunction(this, fkfa.getPointedTable(), fkfa));
+						return fkfa.getPointedTable().getFieldAccessorAndValue(f.getValue(record), fieldName.substring(indexEnd + 1), tablesJunction);
+					} else if (f instanceof ComposedFieldAccessor) {
+						ComposedFieldAccessor composedFieldAccessor = (ComposedFieldAccessor) f;
+
+						fields=composedFieldAccessor.getFieldAccessors();
+						indexStart=indexEnd+=1;
+						prevPrefix.append(prefix).append(".");
+						record=f.getValue(record);
+						break;
+					}
 				}
 			}
+			if (indexStart!=indexEnd)
+				fields=null;
+		}
+		return null;
+	}
+
+	public final FieldAccessor getFieldAccessor(String fieldName, Set<RuleInstance.TableJunction> tablesJunction) {
+		int indexEnd = 0;
+		int indexStart=0;
+		StringBuilder prevPrefix= new StringBuilder();
+		List<FieldAccessor> fields=this.fields;
+		while(fields!=null) {
+			while (indexEnd < fieldName.length()) {
+				if (fieldName.charAt(indexEnd) == '.')
+					break;
+				++indexEnd;
+			}
+			if (indexStart>=indexEnd)
+				return null;
+			String prefix = prevPrefix+fieldName.substring(indexStart, indexEnd);
+
+			for (FieldAccessor f : fields) {
+				if (f.getFieldName().equals(prefix)) {
+					if (indexEnd == fieldName.length())
+						return f;
+					else if (f instanceof ForeignKeyFieldAccessor) {
+
+						ForeignKeyFieldAccessor fkfa = (ForeignKeyFieldAccessor) f;
+						tablesJunction.add(new RuleInstance.TableJunction(this, fkfa.getPointedTable(), fkfa));
+						return fkfa.getPointedTable().getFieldAccessor(fieldName.substring(indexEnd + 1), tablesJunction);
+					} else if (f instanceof ComposedFieldAccessor) {
+						ComposedFieldAccessor composedFieldAccessor = (ComposedFieldAccessor) f;
+
+						fields=composedFieldAccessor.getFieldAccessors();
+						indexStart=indexEnd+=1;
+						prevPrefix.append(prefix).append(".");
+						break;
+					}
+				}
+			}
+			if (indexStart!=indexEnd)
+				fields=null;
 		}
 		return null;
 	}

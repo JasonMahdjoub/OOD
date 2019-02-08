@@ -3200,11 +3200,13 @@ public abstract class TestDatabase {
 		boolean test = false;
 
 		ArrayList<String> sqlVariablesName = getExpectedParametersName(fieldName, value==null?DecentralizedIDGenerator.class:value.getClass());
-		FieldAccessor fa = table.getFieldAccessor(fieldName);
-		Object nearestObjectInstance=table.getNearestClassInstance(record, fieldName);
+
+		Table.FieldAccessorValue fieldAccessorAndValue =table.getFieldAccessorAndValue(record, fieldName);
+		FieldAccessor fa=fieldAccessorAndValue.getFieldAccessor();
+		Object nearestObjectInstance=fieldAccessorAndValue.getValue();
 		if (useParameter) {
 			command.append("%");
-			command.append(fieldName);
+			command.append(fieldName.replace(".", "_"));
 
 			if (op_comp == SymbolType.EQUALOPERATOR)
 				test = fa.equals(nearestObjectInstance, value);
@@ -3236,7 +3238,7 @@ public abstract class TestDatabase {
 					expectedCommand.append(" AND ");
 				expectedCommand.append("%Table1Name%");
 				expectedCommand.append(".");
-				expectedCommand.append(sqlVariablesName.get(i).toUpperCase());
+				expectedCommand.append(sqlVariablesName.get(i).replace(".", "_").toUpperCase());
 				expectedCommand.append(op_comp.getContent());
 				if (value==null)
 				{
@@ -3282,7 +3284,7 @@ public abstract class TestDatabase {
 				command.append("\"");
 			expectedCommand.append("%Table1Name%");
 			expectedCommand.append(".");
-			expectedCommand.append(sqlVariablesName.get(0).toUpperCase());
+			expectedCommand.append(sqlVariablesName.get(0).replace(".", "_").toUpperCase());
 			expectedCommand.append(op_comp.getContent());
 			if (value instanceof CharSequence)
 				expectedCommand.append("\"");
@@ -3396,20 +3398,23 @@ public abstract class TestDatabase {
 						AtomicInteger expectedParamterIndex = new AtomicInteger(1);
 						AtomicInteger openedParenthesis = new AtomicInteger(0);
 						AtomicBoolean expectedTestResult = new AtomicBoolean();
+						HashMap<String, Object> parametersTable1Equallable2 = new HashMap<>();
 						for (Map.Entry<String, Object> m : parametersTable1Equallable.entrySet()) {
 							if (m.getValue()!=null || op_comp==SymbolType.EQUALOPERATOR || op_comp==SymbolType.NOTEQUALOPERATOR)
 								subInterpreterCommandProvider(op_cond, op_comp, cs, parametersTable1Equallable, command,
 									expectedCommand, m.getKey(), m.getValue(), expectedParameters, useParameter,
 									expectedParamterIndex, openedParenthesis, table1, record, expectedTestResult);
-
+							parametersTable1Equallable2.put(m.getKey().replace(".", "_"), m.getValue());
 						}
+
+
 						while (openedParenthesis.get() > 0) {
 							command.append(")");
 							expectedCommand.append(")");
 							openedParenthesis.decrementAndGet();
 						}
 						if (command.length() > 0) {
-							res.add(new Object[] { Table1.class, command.toString(), parametersTable1Equallable,
+							res.add(new Object[] { Table1.class, command.toString(), parametersTable1Equallable2,
 									expectedCommand.toString(), expectedParameters, record,
                                     expectedTestResult.get()});
 						}
@@ -3460,7 +3465,7 @@ public abstract class TestDatabase {
 			}
 			assertEqualsParameters(value, ep, "Class type source " + e.getValue().getClass()+", expected class "+ep.getClass());
 		}
-		Assert.assertEquals(rule.isConcernedBy(table1, parameters, record), expectedTestResult);
+		Assert.assertEquals(rule.isConcernedBy(table1, parameters, record), expectedTestResult, command);
 	}
 	
 	private void assertEqualsParameters(Object parameter, Object expectedParameter, String message) throws IOException, SQLException

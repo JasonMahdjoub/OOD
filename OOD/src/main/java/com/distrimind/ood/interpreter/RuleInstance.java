@@ -197,12 +197,12 @@ public class RuleInstance implements QueryPart {
 				if (s.getType() == SymbolType.IDENTIFIER) {
 					String fieldName = s.getSymbol();
 					HashSet<TableJunction> tablesJunction = new HashSet<>();
-					FieldAccessor fa = table.getFieldAccessor(fieldName, tablesJunction);
-					if (fa == null)
+					Table.FieldAccessorValue fav = table.getFieldAccessorAndValue(record, fieldName, tablesJunction);
+					if (fav == null || fav.getFieldAccessor()==null)
 						throw new DatabaseSyntaxException(
 								"Cannot find field " + fieldName + " into table " + table.getName());
-					if (fa.isComparable())
-						return fa.getValue(getDatabaseRecord(fa, tablesJunction, record));
+					if (fav.getFieldAccessor().isComparable())
+						return fav.getFieldAccessor().getValue(getDatabaseRecord(fav.getFieldAccessor(), tablesJunction, record));
 					else
 						throw new DatabaseSyntaxException(
 								"The " + fieldName + " into table " + table.getName() + " is not comparable !");
@@ -239,13 +239,12 @@ public class RuleInstance implements QueryPart {
 				Symbol s = (Symbol) parts.get(0);
 				if (s.getType() == SymbolType.IDENTIFIER) {
 					String fieldName = s.getSymbol();
-
-					FieldAccessor fa = table.getFieldAccessor(fieldName);
-					if (fa == null)
+					Table.FieldAccessorValue fav = table.getFieldAccessorAndValue(record, fieldName);
+					if (fav == null || fav.getFieldAccessor()==null)
 						throw new DatabaseSyntaxException(
 								"Cannot find field " + fieldName + " into table " + table.getName());
 
-					return fa;
+					return fav;
 				} else if (s.getType() == SymbolType.PARAMETER) {
 					return parameters.get(s.getSymbol());
 				} else if (s.getType() == SymbolType.STRING)
@@ -279,12 +278,17 @@ public class RuleInstance implements QueryPart {
 				Symbol s = (Symbol) parts.get(0);
 				if (s.getType() == SymbolType.IDENTIFIER) {
 					String fieldName = s.getSymbol();
-					FieldAccessor fa = table.getFieldAccessor(fieldName);
-					if (fa == null)
+					Table.FieldAccessorValue fav ;
+					try {
+						fav = table.getFieldAccessorAndValue(record, fieldName);
+					} catch (DatabaseException e) {
+						throw new DatabaseSyntaxException("", e);
+					}
+					if (fav == null || fav.getFieldAccessor()==null)
 						throw new DatabaseSyntaxException(
 								"Cannot find field " + fieldName + " into table " + table.getName());
-					if (StringFieldAccessor.class.isAssignableFrom(fa.getClass()))
-						return fa;
+					if (StringFieldAccessor.class.isAssignableFrom(fav.getFieldAccessor().getClass()))
+						return fav;
 					else
 						throw new DatabaseSyntaxException(
 								"The field " + fieldName + " into table " + table.getName() + " is not a string !");
@@ -312,19 +316,19 @@ public class RuleInstance implements QueryPart {
 	public <T extends DatabaseRecord> int compareTo(Table<T> table, T record, Object o1, Object o2)
 			throws DatabaseSyntaxException {
 		try {
-			if ((!FieldAccessor.class.isAssignableFrom(o1.getClass())
-					&& FieldAccessor.class.isAssignableFrom(o2.getClass()))
+			if ((!Table.FieldAccessorValue.class.isAssignableFrom(o1.getClass())
+					&& Table.FieldAccessorValue.class.isAssignableFrom(o2.getClass()))
 					|| (!BigDecimal.class.isAssignableFrom(o1.getClass())
 							&& BigDecimal.class.isAssignableFrom(o2.getClass())
-							&& !FieldAccessor.class.isAssignableFrom(o1.getClass()))) {
+							&& !Table.FieldAccessorValue.class.isAssignableFrom(o1.getClass()))) {
 				Object o = o1;
 				o1 = o2;
 				o2 = o;
 			}
-			if (FieldAccessor.class.isAssignableFrom(o1.getClass()))
-				o1 = ((FieldAccessor) o1).getValue(getRecordInstance(table, record, (FieldAccessor) o1));
-			if (FieldAccessor.class.isAssignableFrom(o2.getClass()))
-				o2 = ((FieldAccessor) o2).getValue(getRecordInstance(table, record, (FieldAccessor) o2));
+			if (Table.FieldAccessorValue.class.isAssignableFrom(o1.getClass()))
+				o1 = ((Table.FieldAccessorValue) o1).getFieldAccessor().getValue(getRecordInstance(table, record, (FieldAccessor) o1));
+			if (Table.FieldAccessorValue.class.isAssignableFrom(o2.getClass()))
+				o2 = ((Table.FieldAccessorValue) o2).getFieldAccessor().getValue(getRecordInstance(table, record, (FieldAccessor) o2));
 			if (o1==null)
 			{
 				if (null ==o2)
@@ -363,11 +367,11 @@ public class RuleInstance implements QueryPart {
 			else if ((o1 instanceof String) && (o2 instanceof String) && o1.equals(SymbolType.NULL.getContent()) && o2.equals(SymbolType.NULL.getContent()))
 				return true;
 			
-			if (o2!=null && ((!FieldAccessor.class.isAssignableFrom(o1.getClass())
-					&& FieldAccessor.class.isAssignableFrom(o2.getClass()))
+			if (o2!=null && ((!Table.FieldAccessorValue.class.isAssignableFrom(o1.getClass())
+					&& Table.FieldAccessorValue.class.isAssignableFrom(o2.getClass()))
 					|| (!BigDecimal.class.isAssignableFrom(o1.getClass())
 							&& BigDecimal.class.isAssignableFrom(o2.getClass())
-							&& !FieldAccessor.class.isAssignableFrom(o1.getClass())))) {
+							&& !Table.FieldAccessorValue.class.isAssignableFrom(o1.getClass())))) {
 				Object o = o1;
 				o1 = o2;
 				o2 = o;
@@ -382,26 +386,27 @@ public class RuleInstance implements QueryPart {
 				} else {
 					return false;
 				}
-			} else if (FieldAccessor.class.isAssignableFrom(o1.getClass())) {
-				@SuppressWarnings("ConstantConditions") FieldAccessor fa = ((FieldAccessor) o1);
-				DatabaseRecord dr = getRecordInstance(table, record, fa);
-				if (dr == null)
+			} else if (Table.FieldAccessorValue.class.isAssignableFrom(o1.getClass())) {
+				@SuppressWarnings("ConstantConditions") Table.FieldAccessorValue fav = ((Table.FieldAccessorValue) o1);
+				//DatabaseRecord dr = getRecordInstance(table, record, fa);
+
+				if (fav.getValue() == null)
 					return o2 == null;
-				if (CharSequence.class.isAssignableFrom(fa.getFieldClassType())) {
+				if (CharSequence.class.isAssignableFrom(fav.getFieldAccessor().getFieldClassType())) {
 					if (o2 instanceof String) {
 						String s = (String) o2;
 						if (s.startsWith("\"") && s.endsWith("\""))
 							o2 = s.substring(1, s.length() - 1);
 					}
-					return fa.equals(dr, o2);
-				} else if (fa.isComparable() && o2 instanceof BigDecimal) {
-					Object v = fa.getValue(dr);
+					return fav.getFieldAccessor().equals(fav.getValue(), o2);
+				} else if (fav.getFieldAccessor().isComparable() && o2 instanceof BigDecimal) {
+					Object v = fav.getFieldAccessor().getValue(fav.getValue());
 					if (v == null)
 						return false;
 					else
 						return o2.equals(new BigDecimal(v.toString()));
 				} else {
-					return fa.equals(dr, o2);
+					return fav.getFieldAccessor().equals(fav.getValue(), o2);
 				}
 
 			} else {
@@ -413,20 +418,21 @@ public class RuleInstance implements QueryPart {
 		}
 	}
 
-	private DatabaseRecord getRecordInstance(Table<?> table, DatabaseRecord record, FieldAccessor fa)
+	private Object getRecordInstance(Table<?> table, DatabaseRecord record, FieldAccessor fa)
 			throws DatabaseException {
 		return getRecordInstance(table, record, fa, new HashSet<Table<?>>());
 	}
-	private DatabaseRecord getRecordInstance(Table<?> table, DatabaseRecord record, FieldAccessor fa, HashSet<Table<?>> tablesDone)
+	private Object getRecordInstance(Table<?> table, Object record, FieldAccessor fa, HashSet<Table<?>> tablesDone)
 			throws DatabaseException {
 		if (fa.getTableClass() == table.getClass() || record == null)
-			return record;
+			return table.getFieldAccessorAndValue(record, fa.getFieldName()).getValue();
+			//return record;
 		else {
 			if (tablesDone.contains(table))
 				return null;
 			tablesDone.add(table);
 			for (ForeignKeyFieldAccessor fkfa : table.getForeignKeysFieldAccessors()) {
-				DatabaseRecord dr = (DatabaseRecord) fkfa.getValue(record);
+				Object dr = fkfa.getValue(record);
 
 				dr = getRecordInstance(fkfa.getPointedTable(), dr, fa, tablesDone);
 				if (dr != null)
@@ -443,10 +449,10 @@ public class RuleInstance implements QueryPart {
 			if (String.class.isAssignableFrom(o1.getClass())) {
 				throw new DatabaseSyntaxException(
 						"When using like operator, the first field must be a table identifier");
-			} else if (StringFieldAccessor.class.isAssignableFrom(o1.getClass())) {
+			} else if (Table.FieldAccessorValue.class.isAssignableFrom(o1.getClass()) && StringFieldAccessor.class.isAssignableFrom(((Table.FieldAccessorValue)o1).getFieldAccessor().getClass())) {
 				if (String.class.isAssignableFrom(o2.getClass())) {
-					String s1 = (String) ((StringFieldAccessor) o1)
-							.getValue(getRecordInstance(table, record, (StringFieldAccessor) o1));
+					String s1 = (String) (((Table.FieldAccessorValue)o1).getFieldAccessor())
+							.getValue(getRecordInstance(table, record, ((Table.FieldAccessorValue)o1).getFieldAccessor()));
 					String s2 = (String) o2;
 
 					if (s2.startsWith("\"") && s2.endsWith("\""))
@@ -745,10 +751,13 @@ public class RuleInstance implements QueryPart {
 								SqlFieldInstance sfis[] = null;
 								try {
 									if (fa2 == null) {
-										Table<?> t = table.getDatabaseWrapper().getTableInstance(fa1.getTableClass());
+										/*Table<?> t = table.getDatabaseWrapper().getTableInstance(fa1.getTableClass());
 										DatabaseRecord record = t.getDefaultRecordConstructor().newInstance();
-										fa1.setValue(record, parameter2);
-										sfis = fa1.getSqlFieldsInstances(record);
+										Object value=t.getFieldAccessorAndValue(record, fa1.getFieldName()).getValue();*/
+
+										Object value=fa1.getField().getDeclaringClass().getDeclaredConstructor().newInstance();
+										fa1.setValue(value, parameter2);
+										sfis = fa1.getSqlFieldsInstances(value);
 									}
 								} catch (Exception e) {
 									throw new DatabaseSyntaxException("Database exception", e);

@@ -124,9 +124,9 @@ public abstract class FieldAccessor {
 			fName=af.sqlFieldName();
 
 		this.fieldName = ((this.parentFieldName == null || this.parentFieldName.isEmpty()) ? ""
-				: (this.parentFieldName + "_")) + field.getName();
+				: (this.parentFieldName + ".")) + field.getName();
 		this.sqlFieldName = ((this.parentFieldName == null || this.parentFieldName.isEmpty()) ? ""
-				: (this.parentFieldName + "_")) + fName.toUpperCase();
+				: (this.parentFieldName.replace(".", "_") + "_")) + fName.toUpperCase();
 		this.table_class = table_class;
 		table_name = table_class == null ? (DatabaseRecord.class.isAssignableFrom(field.getDeclaringClass())
 				? (_sql_connection.getTableName(Table.getTableClass((Class<? extends DatabaseRecord>) field.getDeclaringClass())))
@@ -395,6 +395,8 @@ public abstract class FieldAccessor {
 	public Field getField() {
 		return field;
 	}
+
+
 
 	public static ArrayList<FieldAccessor> getFields(DatabaseWrapper _sql_connection,
 			Class<? extends Table<?>> _table_class, Class<?> database_record_class, String parentFieldName,
