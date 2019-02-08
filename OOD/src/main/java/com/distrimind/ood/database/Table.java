@@ -3262,22 +3262,33 @@ public abstract class Table<T extends DatabaseRecord> {
 		public SimpleFieldFilter(boolean ascendant, String[] orderByFields, Map<String, Object> _fields,
 				final ArrayList<FieldAccessor> _fields_accessor) throws DatabaseException {
 			super(ascendant, orderByFields);
-			fields_accessor = _fields_accessor;
+			fields_accessor = new ArrayList<>(_fields.size());
 			for (String s : _fields.keySet()) {
-				boolean found = false;
-				for (FieldAccessor fa : fields_accessor) {
-					if (fa.getFieldName().equals(s)) {
-						found = true;
-						break;
-					}
-				}
-				if (!found)
+				FieldAccessor fa=getConcernedBy(_fields_accessor, s);
+				if (fa==null)
 					throw new FieldDatabaseException("The given field " + s + " is not contained into the table "
 							+ Table.this.getClass().getName());
+				fields_accessor.add(fa);
 			}
 			given_fields = _fields;
 		}
+		private FieldAccessor getConcernedBy(List<FieldAccessor> fieldAccessors, String fieldName)
+		{
+			for (FieldAccessor fa : fieldAccessors) {
 
+
+				if (fa.getFieldName().equals(fieldName)) {
+					return fa;
+				}
+				else if (fa instanceof ComposedFieldAccessor)
+				{
+					FieldAccessor res=getConcernedBy(((ComposedFieldAccessor) fa).getFieldAccessors(), fieldName);
+					if (res!=null)
+						return res;
+				}
+			}
+			return null;
+		}
 	}
 
 	private abstract class MultipleFieldFilter extends PersonnalFilter {

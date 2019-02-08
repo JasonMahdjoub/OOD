@@ -3218,8 +3218,13 @@ public abstract class TestDatabase {
 				test = !fa.equals(nearestObjectInstance, value);
 			else {
 				Table1.Record r2 = new Table1.Record();
-				fa.setValue(r2, value);
-				int comp = fa.compare(nearestObjectInstance, r2);
+				r2.subField=new SubField();
+				Object record2=table1.getFieldAccessorAndValue(r2, fa.getFieldName()).getValue();
+				if (record2==null)
+					throw new NullPointerException(fa.getFieldName());
+
+				fa.setValue(record2, value);
+				int comp = fa.compare(nearestObjectInstance, record2);
 				if (op_comp == SymbolType.GREATEROPERATOR)
 					test = comp > 0;
 				else if (op_comp == SymbolType.GREATEROREQUALOPERATOR)
@@ -3347,6 +3352,7 @@ public abstract class TestDatabase {
 		parametersTable1Equallable.put("nullField", null);
 		parametersTable1Equallable.put("file", fileTest);
 		parametersTable1Equallable.put("subField.string_value", "string_for_sql_interpreter");
+		parametersTable1Equallable.put("subField.int_value", 15);
 
 
 		Table1.Record record = new Table1.Record();
@@ -3381,6 +3387,7 @@ public abstract class TestDatabase {
 		record.file=(File)parametersTable1Equallable.get("file");
 		record.subField=new SubField();
 		record.subField.string_value=(String)parametersTable1Equallable.get("subField.string_value");
+		record.subField.int_value=(Integer)parametersTable1Equallable.get("subField.int_value");
 
 		SymbolType[] ops_cond = new SymbolType[] { SymbolType.ANDCONDITION, SymbolType.ORCONDITION };
 		SymbolType[] ops_comp = new SymbolType[] { SymbolType.EQUALOPERATOR, SymbolType.NOTEQUALOPERATOR,

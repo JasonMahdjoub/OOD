@@ -202,7 +202,7 @@ public class RuleInstance implements QueryPart {
 						throw new DatabaseSyntaxException(
 								"Cannot find field " + fieldName + " into table " + table.getName());
 					if (fav.getFieldAccessor().isComparable())
-						return fav.getFieldAccessor().getValue(getDatabaseRecord(fav.getFieldAccessor(), tablesJunction, record));
+						return fav.getFieldAccessor().getValue(fav.getValue()/*getDatabaseRecord(fav.getFieldAccessor(), tablesJunction, record)*/);
 					else
 						throw new DatabaseSyntaxException(
 								"The " + fieldName + " into table " + table.getName() + " is not comparable !");
@@ -944,7 +944,7 @@ public class RuleInstance implements QueryPart {
 		throw new IllegalAccessError();
 	}
 
-	private DatabaseRecord getDatabaseRecord(FieldAccessor fa, Set<TableJunction> tablesJunction, DatabaseRecord record)
+	private Object getDatabaseRecord(FieldAccessor fa, Set<TableJunction> tablesJunction, DatabaseRecord record)
 			throws DatabaseException {
 		if (record == null)
 			return null;
