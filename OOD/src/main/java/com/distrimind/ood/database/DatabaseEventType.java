@@ -45,8 +45,10 @@ import java.util.ArrayList;
  * @since OOD 2.0
  */
 public enum DatabaseEventType {
-	UPDATE((byte) 1, true, true), ADD((byte) 2, true, false), REMOVE((byte) 4, false,
-			true), REMOVE_WITH_CASCADE((byte) 8, false, true);
+	UPDATE((byte) 1, true, true),
+	ADD((byte) 2, true, false),
+	REMOVE((byte) 4, false, true),
+	REMOVE_WITH_CASCADE((byte) 8, false, true);
 
 	private byte type;
 	private boolean hasNewValue;

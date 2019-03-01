@@ -556,6 +556,17 @@ public abstract class Table<T extends DatabaseRecord> {
             return databaseCollisionsNotifier.collisionDetected(distantPeerID, intermediatePeerID, type, this, keys, (T)newValues, (T)actualValues);
         return false;
     }
+
+    boolean areDuplicatedEventsNotConsideredAsCollisions()
+	{
+		DatabaseCollisionsNotifier<T, Table<T>> databaseCollisionsNotifier=getDatabaseCollisionsNotifier();
+		if (databaseCollisionsNotifier!=null)
+			//noinspection unchecked
+			return databaseCollisionsNotifier.areDuplicatedEventsNotConsideredAsCollisions();
+		return true;
+
+	}
+
     public DatabaseAnomaliesNotifier<T, Table<T>> getDatabaseAnomaliesNotifier() {
         return databaseAnomaliesNotifier;
     }

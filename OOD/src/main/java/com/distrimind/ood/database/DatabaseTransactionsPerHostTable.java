@@ -475,9 +475,9 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 									if (collision || indirectCollisionWith != null) {
 										if (!type.hasOldValue())
 											drOld = t.getRecord(mapKeys);
-										/*if (drNew!=null && drOld!=null && t.equalsAllFields(drNew, drOld))
+										if (t.areDuplicatedEventsNotConsideredAsCollisions() && (drOld==drNew || (drNew!=null && t.equalsAllFields(drNew, drOld))))
 											validatedTransaction=false;
-										else*/
+										else
                                         	validatedTransaction = (eventForce = t.collisionDetected(
                                                 fromHook.get().getHostID(), indirectTransaction ? directPeer.getHostID() : null,
                                                 type, mapKeys, drNew, drOld));

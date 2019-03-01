@@ -77,4 +77,13 @@ public interface DatabaseCollisionsNotifier<DR extends DatabaseRecord, T extends
                               AbstractDecentralizedID intermediatePeerID, DatabaseEventType type, T concernedTable,
                               HashMap<String, Object> keys, DR newValues, DR actualValues)
             throws DatabaseException;
+
+    /**
+     * When a collision occurs, tells if it must be ignored when the two concerned events are the same and produce the same effect
+     * True value is recommended.
+     * @return true if collision must be ignored when the two concerned events are the same and produce the same effect
+     */
+    boolean areDuplicatedEventsNotConsideredAsCollisions();
+
+
 }

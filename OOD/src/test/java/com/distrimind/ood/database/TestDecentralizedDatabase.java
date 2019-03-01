@@ -166,7 +166,12 @@ public abstract class TestDecentralizedDatabase {
                 public boolean collisionDetected(AbstractDecentralizedID distantPeerID, AbstractDecentralizedID intermediatePeerID, DatabaseEventType type, Table<TableAlone.Record> concernedTable, HashMap<String, Object> keys, TableAlone.Record newValues, TableAlone.Record actualValues) {
                     return Database.this.collisionDetected(distantPeerID, intermediatePeerID, type, concernedTable, keys, newValues, actualValues);
                 }
-            });
+
+				@Override
+				public boolean areDuplicatedEventsNotConsideredAsCollisions() {
+					return false;
+				}
+			});
             tablePointed.setDatabaseAnomaliesNotifier(new DatabaseAnomaliesNotifier<TablePointed.Record, Table<TablePointed.Record>>() {
                 @Override
                 public void anomalyDetected(AbstractDecentralizedID distantPeerID, AbstractDecentralizedID intermediatePeerID, SynchronizationAnomalyType type, Table<TablePointed.Record> concernedTable, Map<String, Object> primary_keys, TablePointed.Record record) {
@@ -178,6 +183,11 @@ public abstract class TestDecentralizedDatabase {
                 public boolean collisionDetected(AbstractDecentralizedID distantPeerID, AbstractDecentralizedID intermediatePeerID, DatabaseEventType type, Table<TablePointed.Record> concernedTable, HashMap<String, Object> keys, TablePointed.Record newValues, TablePointed.Record actualValues) {
                     return Database.this.collisionDetected(distantPeerID, intermediatePeerID, type, concernedTable, keys, newValues, actualValues);
                 }
+				@Override
+				public boolean areDuplicatedEventsNotConsideredAsCollisions() {
+					return false;
+				}
+
             });
             tablePointing.setDatabaseAnomaliesNotifier(new DatabaseAnomaliesNotifier<TablePointing.Record, Table<TablePointing.Record>>() {
                 @Override
@@ -189,7 +199,13 @@ public abstract class TestDecentralizedDatabase {
                 @Override
                 public boolean collisionDetected(AbstractDecentralizedID distantPeerID, AbstractDecentralizedID intermediatePeerID, DatabaseEventType type, Table<TablePointing.Record> concernedTable, HashMap<String, Object> keys, TablePointing.Record newValues, TablePointing.Record actualValues) {
                     return Database.this.collisionDetected(distantPeerID, intermediatePeerID, type, concernedTable, keys, newValues, actualValues);
+
                 }
+				@Override
+				public boolean areDuplicatedEventsNotConsideredAsCollisions() {
+					return false;
+				}
+
             });
 		}
 
