@@ -36,11 +36,26 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database;
 
+import com.distrimind.ood.database.exceptions.DatabaseException;
+
 /**
  * @author Jason Mahdjoub
  * @version 1.0
  * @since MaDKitLanEdition 2.0.0
  */
 public interface DatabaseNotifier {
-    void newDatabaseEventDetected(DatabaseWrapper wrapper);
+    void newDatabaseEventDetected(DatabaseWrapper wrapper) throws DatabaseException;
+
+    /**
+     * This function is called before a transaction of synchronization with another peer begin
+     * @throws DatabaseException if a problem occurs
+     */
+    void startNewSynchronizationTransaction() throws DatabaseException;
+    /**
+     * This function is called after a transaction of synchronization with another peer has finished
+     * It is possible to apply post synchronization actions here
+     * @throws DatabaseException if a problem occurs
+     */
+    void endSynchronizationTransaction() throws DatabaseException;
+
 }

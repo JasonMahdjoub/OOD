@@ -404,6 +404,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		DatabaseSynchronizer() {
 		}
 
+		public DatabaseNotifier getNotifier() {
+			return notifier;
+		}
+
 		public boolean isInitialized() throws DatabaseException {
 			return getHooksTransactionsTable().getLocalDatabaseHost() != null;
 		}
@@ -412,7 +416,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			return initializedHooks.get(hostID) != null;
 		}
 
-		private void notifyNewEvent() {
+		private void notifyNewEvent() throws DatabaseException {
 			boolean notify = false;
 			
 			try {
@@ -826,7 +830,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			return lastID;
 		}
 
-		void addNewDatabaseEvent(DatabaseEvent e) {
+		void addNewDatabaseEvent(DatabaseEvent e) throws DatabaseException {
 			if (e == null)
 				throw new NullPointerException("e");
 

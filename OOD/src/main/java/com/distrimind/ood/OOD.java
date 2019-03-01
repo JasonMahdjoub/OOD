@@ -75,7 +75,9 @@ public class OOD {
 			c = Calendar.getInstance();
 			c.set(2019, Calendar.MARCH, 1);
 			Description d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)100, c.getTime());
-			d.addItem("");
+			d.addItem("Add function DatabaseCollisionsNotifier.areDuplicatedEventsNotConsideredAsCollisions()");
+			d.addItem("Add function DatabaseCollisionsNotifier.startNewSynchronizationTransaction()");
+			d.addItem("Add function DatabaseCollisionsNotifier.endSynchronizationTransaction()");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();

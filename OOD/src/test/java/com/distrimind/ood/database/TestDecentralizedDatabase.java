@@ -281,6 +281,16 @@ public abstract class TestDecentralizedDatabase {
 			newDatabaseEventDetected = true;
 		}
 
+		@Override
+		public void startNewSynchronizationTransaction() {
+
+		}
+
+		@Override
+		public void endSynchronizationTransaction() {
+
+		}
+
 
 		private boolean collisionDetected(AbstractDecentralizedID _distantPeerID,
 				AbstractDecentralizedID _intermediatePeer, DatabaseEventType _type, Table<?> _concernedTable,
@@ -680,7 +690,7 @@ public abstract class TestDecentralizedDatabase {
 	}
 
 	private void connectAllDatabase() throws Exception {
-		Database dbs[] = new Database[listDatabase.size()];
+		Database[] dbs = new Database[listDatabase.size()];
 		for (int i = 0; i < dbs.length; i++)
 			dbs[i] = listDatabase.get(i);
 		for (Database db : listDatabase) {
@@ -712,7 +722,7 @@ public abstract class TestDecentralizedDatabase {
 	}
 
 	private void disconnectAllDatabase() throws DatabaseException {
-		Database dbs[] = new Database[listDatabase.size()];
+		Database[] dbs = new Database[listDatabase.size()];
 		for (int i = 0; i < dbs.length; i++)
 			dbs[i] = listDatabase.get(i);
 		disconnectSelectedDatabase(dbs);
@@ -1559,7 +1569,7 @@ public abstract class TestDecentralizedDatabase {
 		Object[][] res = new Object[numberEvents * 2 * 2 * 2][];
 		int index = 0;
 		for (boolean generateDirectConflict : new boolean[] { true, false }) {
-			boolean ict[] = generateDirectConflict ? new boolean[] { true } : new boolean[] { false };
+			boolean[] ict = generateDirectConflict ? new boolean[]{true} : new boolean[]{false};
 			for (boolean peersInitiallyConnected : ict) {
 				for (TableEvent<DatabaseRecord> te : proviveTableEvents(numberEvents)) {
 					res[index++] = new Object[] {generateDirectConflict,
@@ -1831,7 +1841,7 @@ public abstract class TestDecentralizedDatabase {
 	@DataProvider(name = "provideDataForTransactionBetweenTwoPeers")
 	public Object[][] provideDataForTransactionBetweenTwoPeers() throws DatabaseException {
 		int numberTransactions = 40;
-		Object res[][] = new Object[2 * numberTransactions][];
+		Object[][] res = new Object[2 * numberTransactions][];
 		int index = 0;
 		for (boolean peersInitiallyConnected : new boolean[] { true, false }) {
 			for (int i = 0; i < numberTransactions; i++) {
@@ -1909,7 +1919,7 @@ public abstract class TestDecentralizedDatabase {
 	@DataProvider(name = "provideDataForTransactionSynchrosWithIndirectConnectionThreaded", parallel = true)
 	public Object[][] provideDataForTransactionSynchrosWithIndirectConnectionThreaded() throws DatabaseException {
 		int numberTransactions = 40;
-		Object res[][] = new Object[numberTransactions][];
+		Object[][] res = new Object[numberTransactions][];
 		int index = 0;
 		for (int i = 0; i < numberTransactions; i++) {
 			res[index++] = new Object[] { proviveTableEvents((int) (5.0 + Math.random() * 10.0)) };
