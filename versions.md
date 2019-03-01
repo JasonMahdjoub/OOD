@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-2.0.0 Beta 99 (Build: 422) (from 01/04/2013 to 08/02/2018)
+2.0.0 Beta 100 (Build: 424) (from 01/04/2013 to 01/03/2019)
 
 # Creator(s):
 Jason MAHDJOUB
@@ -11,21 +11,27 @@ Jason MAHDJOUB (Entred in the team at 01/04/2013)
 # Modifications:
 
 
-### 2.0.0 Beta 99 (08/02/2018)
+### 2.0.0 Beta 100 (01/03/2019)
+* Add function DatabaseCollisionsNotifier.areDuplicatedEventsNotConsideredAsCollisions()
+* Add function DatabaseCollisionsNotifier.startNewSynchronizationTransaction()
+* Add function DatabaseCollisionsNotifier.endSynchronizationTransaction()
+
+
+### 2.0.0 Beta 99 (08/02/2019)
 * Better support of sub fields into queries
 
 
-### 2.0.0 Beta 98 (06/02/2018)
+### 2.0.0 Beta 98 (06/02/2019)
 * Update Utils to 3.25.1
 
 
-### 2.0.0 Beta 97 (05/02/2018)
+### 2.0.0 Beta 97 (05/02/2019)
 * Security fix : disable cache for tables that use secret ou private keys
 * Security improvement : add Field.disableCache property
 * Add function Table.isCached()
 
 
-### 2.0.0 Beta 96 (25/01/2018)
+### 2.0.0 Beta 96 (25/01/2019)
 * Add function Table.removeRecord(Map keys)
 * Add function Table.removeRecord(Object...keys)
 * Add function Table.removeRecordWithCascade(Map keys)
@@ -33,11 +39,11 @@ Jason MAHDJOUB (Entred in the team at 01/04/2013)
 * Do not generate conflicts if events are the same
 
 
-### 2.0.0 Beta 95 (18/01/2018)
+### 2.0.0 Beta 95 (18/01/2019)
 * Add H2 database driver
 
 
-### 2.0.0 Beta 94 (15/01/2018)
+### 2.0.0 Beta 94 (15/01/2019)
 * Use shortest table's name
 * Add possibility to personalize SQL table name (see annotation TableName)
 * Add possibility to personalize SQL field name (see annotation Field)
