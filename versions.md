@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-2.0.0 Beta 100 (Build: 424) (from 01/04/2013 to 01/03/2019)
+2.0.0 Beta 101 (Build: 427) (from 01/04/2013 to 13/03/2019)
 
 # Creator(s):
 Jason MAHDJOUB
@@ -9,6 +9,10 @@ Jason MAHDJOUB
 Jason MAHDJOUB (Entred in the team at 01/04/2013)
 
 # Modifications:
+
+
+### 2.0.0 Beta 101 (13/03/2019)
+* Update Utils to 3.25.2
 
 
 ### 2.0.0 Beta 100 (01/03/2019)

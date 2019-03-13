@@ -60,8 +60,8 @@ public class OOD {
 		Calendar c1 = Calendar.getInstance();
 		c1.set(2013, Calendar.APRIL, 1);
 		Calendar c2 = Calendar.getInstance();
-		c2.set(2019, Calendar.MARCH, 1);
-		VERSION = new Version("Object Oriented Database", "OOD", (short)2, (short)0, (short)0, Version.Type.Beta, (short)100, c1.getTime(),
+		c2.set(2019, Calendar.MARCH, 13);
+		VERSION = new Version("Object Oriented Database", "OOD", (short)2, (short)0, (short)0, Version.Type.Beta, (short)101, c1.getTime(),
 				c2.getTime());
 		try {
 			InputStream is = OOD.class.getResourceAsStream("build.txt");
@@ -73,8 +73,14 @@ public class OOD {
 			VERSION.addDeveloper(new PersonDeveloper("mahdjoub", "jason", c.getTime()));
 
 			c = Calendar.getInstance();
+			c.set(2019, Calendar.MARCH, 13);
+			Description d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)101, c.getTime());
+			d.addItem("Update Utils to 3.25.2");
+			VERSION.addDescription(d);
+
+			c = Calendar.getInstance();
 			c.set(2019, Calendar.MARCH, 1);
-			Description d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)100, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)100, c.getTime());
 			d.addItem("Add function DatabaseCollisionsNotifier.areDuplicatedEventsNotConsideredAsCollisions()");
 			d.addItem("Add function DatabaseCollisionsNotifier.startNewSynchronizationTransaction()");
 			d.addItem("Add function DatabaseCollisionsNotifier.endSynchronizationTransaction()");
@@ -603,7 +609,7 @@ public class OOD {
 	}
 	
 	@SuppressWarnings("ResultOfMethodCallIgnored")
-	public static void main(String args[]) throws IOException
+	public static void main(String[] args) throws IOException
 	{
 		String markdown=VERSION.getMarkdownCode();
 		try(FileWriter fw=new FileWriter(new File("../versions.md")))
