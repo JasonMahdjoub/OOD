@@ -5658,7 +5658,7 @@ public abstract class Table<T extends DatabaseRecord> {
 	 * @throws FieldDatabaseException
 	 * 	               if all primary keys have not been given, or if fields which are
 	 * 	               not primary keys were given.
-	 * @throws NullPointerException
+	 * @throws NullPointerException if some of keys are null
 	 */
 	public final boolean removeRecord(final Map<String, Object> keys) throws DatabaseException {
 		checkFields(keys);
@@ -5696,7 +5696,7 @@ public abstract class Table<T extends DatabaseRecord> {
 	 * @throws FieldDatabaseException
 	 * 	               if all primary keys have not been given, or if fields which are
 	 * 	               not primary keys were given.
-	 * @throws NullPointerException
+	 * @throws NullPointerException if some of keys are null
 	 */
 	public final boolean removeRecordWithCascade(final Map<String, Object> keys) throws DatabaseException {
 		checkFields(keys);

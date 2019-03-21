@@ -832,6 +832,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 	 *             if parameters are null pointers.
 	 * @throws IllegalArgumentException
 	 *             If the given file is a directory.
+	 * @throws DatabaseException if secured random was not found
 	 */
 	public EmbeddedHSQLDBWrapper(File _file_name) throws IllegalArgumentException, DatabaseException {
 		this(_file_name, false);
@@ -849,6 +850,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 	 *             if parameters are null pointers.
 	 * @throws IllegalArgumentException
 	 *             If the given file is a directory.
+	 * @throws DatabaseException if secured random was not found
 	 */
 	public EmbeddedHSQLDBWrapper(File _file_name, boolean alwaysDeconectAfterOnTransaction) throws IllegalArgumentException, DatabaseException {
 		this(_file_name, alwaysDeconectAfterOnTransaction, HSQLDBConcurrencyControl.DEFAULT, 100, 10000, 0, 512, true);
