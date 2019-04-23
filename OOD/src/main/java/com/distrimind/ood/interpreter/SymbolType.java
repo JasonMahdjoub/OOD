@@ -62,7 +62,7 @@ public enum SymbolType {
 	NUMBER(false, false, false, "^(\\+|\\-)?(([0-9]+(\\.[0-9]+)?(E(\\-|\\+)?[0-9]+)?)|([0-9]*\\.[0-9]+(E(\\-|\\+)?[0-9]+)?))$", null, null), 
 	STRING(false, false, false, "^(\"|\\')[\\p{Alnum}\\p{Blank}\\!\\#\\$\\%\\&\\(\\)\\*\\+\\,\\-\\.\\/:;\\<\\=\\>\\?\\@\\[\\\\\\]\\^_\\`\\{\\|\\}\\~]+(\"|\\')$", null, null),
 	NULL(false, false, false, "^[nN][uU][lL][lL]$", new String[] {"null","NULL"}, "NULL"),
-	PARAMETER( false, false, false, "(\\%|\\:)[a-zA-Z\\-_][0-9a-zA-Z\\-_]+$", null, null), LIKE(true, false, true, "^(L|l)(I|i)(K|k)(E|e)$", new String[] { " LIKE " }, " LIKE "), 
+	PARAMETER( false, false, false, "(\\%|\\:)[a-zA-Z\\-_][0-9a-zA-Z\\-_]*$", null, null), LIKE(true, false, true, "^(L|l)(I|i)(K|k)(E|e)$", new String[] { " LIKE " }, " LIKE "),
 	NOTLIKE(true, false,true,"^(N|n)(O|o)(T|t)_(L|l)(I|i)(K|k)(E|e)$",new String[] {" NOT LIKE "," NOT_LIKE " }," NOT LIKE ");
 
 	private final Pattern pattern;

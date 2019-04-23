@@ -1309,13 +1309,25 @@ public abstract class Table<T extends DatabaseRecord> {
 				void finishPrepareStatement(PreparedStatement st) throws SQLException {
 					if (parameters != null) {
 						int index = 1;
+
+						Object p = parameters.get(index);
+						while (p != null) {
+
+							FieldAccessor.setValue(getDatabaseWrapper(), st, index, p);
+							// st.setObject(index, p);
+							p = parameters.get(++index);
+						}
+
+					}
+					/*if (parameters != null) {
+						int index = 1;
 						Object p = parameters.get(index++);
 						while (p != null) {
 							st.setObject(index, p);
 							p = parameters.get(index++);
 						}
 
-					}
+					}*/
 				}
 			};
 

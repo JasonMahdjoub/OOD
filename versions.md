@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-2.0.0 Beta 105 (Build: 451) (from 01/04/2013 to 19/04/2019)
+2.0.0 Beta 106 (Build: 453) (from 01/04/2013 to 23/04/2019)
 
 # Creator(s):
 Jason MAHDJOUB
@@ -11,8 +11,9 @@ Jason MAHDJOUB (Entred in the team at 01/04/2013)
 # Modifications:
 
 
-### 2.0.0 Beta 105 (19/04/2019)
+### 2.0.0 Beta 106 (23/04/2019)
 * Update Utils to 3.25.6 Stable
+* Fix problem with getRecordsNumber function using where condition
 
 
 ### 2.0.0 Beta 104 (21/03/2019)
