@@ -74,9 +74,9 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 		if (_o.getClass() == Inet6Address.class || _o.getClass() == Inet4Address.class)
 			return ((InetAddress) _o).getAddress();
 		else if (_o instanceof ASymmetricKeyPair)
-			return ((ASymmetricKeyPair) _o).encode();
+			return ((ASymmetricKeyPair) _o).encode(true);
 		else if (_o instanceof ASymmetricPublicKey)
-			return ((ASymmetricPublicKey) _o).encode();
+			return ((ASymmetricPublicKey) _o).encode(true);
 		else if (_o instanceof ASymmetricPrivateKey)
 			return ((ASymmetricPrivateKey) _o).encode();
 		else if (_o instanceof SymmetricSecretKey)

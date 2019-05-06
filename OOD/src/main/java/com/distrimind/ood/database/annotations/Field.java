@@ -100,4 +100,10 @@ public @interface Field {
 	 * @return true if the cache for the concerned field must be disabled
 	 */
 	boolean disableCache() default false;
+
+	/**
+	 *
+	 * @return true if the key expiration UTC must be included into the field. Concerns only {@link com.distrimind.util.crypto.ASymmetricPublicKey} and {@link com.distrimind.util.crypto.ASymmetricKeyPair}.
+	 */
+	boolean includeKeyExpiration() default true;
 }

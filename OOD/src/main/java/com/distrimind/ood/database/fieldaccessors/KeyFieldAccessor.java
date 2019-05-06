@@ -70,6 +70,7 @@ import com.distrimind.util.crypto.SymmetricSecretKey;
 public class KeyFieldAccessor extends FieldAccessor {
 	protected final SqlField[] sql_fields;
 	private final boolean isVarBinary;
+	private final boolean encodeExpirationUTC;
 
 	protected KeyFieldAccessor(Class<? extends Table<?>> table_class,
 			DatabaseWrapper _sql_connection, Field _field, String parentFieldName) throws DatabaseException {
@@ -85,6 +86,10 @@ public class KeyFieldAccessor extends FieldAccessor {
 						: DatabaseWrapperAccessor.getBigIntegerType(sql_connection)),
 				null, null, isNotNull());
 		isVarBinary = DatabaseWrapperAccessor.isVarBinarySupported(sql_connection);
+		if (_field.isAnnotationPresent(com.distrimind.ood.database.annotations.Field.class))
+			encodeExpirationUTC=_field.getAnnotation(com.distrimind.ood.database.annotations.Field.class).includeKeyExpiration();
+		else
+			encodeExpirationUTC=true;
 	}
 
 	
@@ -137,7 +142,7 @@ public class KeyFieldAccessor extends FieldAccessor {
 		if (instance==null)
 			return null;
 		else if (getFieldClassType()==ASymmetricPublicKey.class)
-			return ((ASymmetricPublicKey) instance).encode();
+			return ((ASymmetricPublicKey) instance).encode(encodeExpirationUTC);
 		else if (getFieldClassType()==ASymmetricPrivateKey.class)
 			return ((ASymmetricPrivateKey) instance).encode();
 		else if (getFieldClassType()==SymmetricSecretKey.class)

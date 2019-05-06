@@ -189,7 +189,10 @@ public abstract class FieldAccessor {
 		} else if (primary_key) {
 			start_value = -1;
 			bits_number = -1;
-			limit = _field.getAnnotation(PrimaryKey.class).limit();
+			if (field.isAnnotationPresent(com.distrimind.ood.database.annotations.Field.class))
+				limit = _field.getAnnotation(com.distrimind.ood.database.annotations.Field.class).limit();
+			else
+				limit=0;
 		} else if (foreign_key) {
 			start_value = -1;
 			bits_number = -1;

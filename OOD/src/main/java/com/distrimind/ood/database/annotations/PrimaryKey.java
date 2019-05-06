@@ -56,9 +56,5 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface PrimaryKey {
 
-	/**
-	 * @return The value limit in elements. This parameter concerns only the String
-	 *         type, the native byte array type, and the Object array type.
-	 */
-	long limit() default 0;
+
 }
