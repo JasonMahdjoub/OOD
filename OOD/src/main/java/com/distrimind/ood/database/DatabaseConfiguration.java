@@ -57,7 +57,6 @@ public class DatabaseConfiguration {
 	private final Set<Class<? extends Table<?>>> classes;
 	private final Package dbPackage;
 	private DatabaseConfiguration oldDatabaseTables;
-
 	private DatabaseCreationCallable databaseCreationCallable;
 
 	public DatabaseConfiguration(Package _package) {
