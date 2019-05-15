@@ -58,23 +58,32 @@ public class DatabaseConfiguration {
 	private final Package dbPackage;
 	private DatabaseConfiguration oldDatabaseTables;
 	private DatabaseCreationCallable databaseCreationCallable;
+	private BackupConfiguration backupConfiguration;
 
 	public DatabaseConfiguration(Package _package) {
 		this(_package, ListClasses.getClasses(_package), null, null);
 	}
-
 	public DatabaseConfiguration(Package _package, DatabaseCreationCallable callable,
-			DatabaseConfiguration oldVersionOfDatabaseTables) {
-		this(_package, ListClasses.getClasses(_package), callable, oldVersionOfDatabaseTables);
+								 DatabaseConfiguration oldVersionOfDatabaseTables)
+	{
+		this(_package, callable, oldVersionOfDatabaseTables, null);
+	}
+	public DatabaseConfiguration(Package _package, DatabaseCreationCallable callable,
+			DatabaseConfiguration oldVersionOfDatabaseTables, BackupConfiguration backupConfiguration) {
+		this(_package, ListClasses.getClasses(_package), callable, oldVersionOfDatabaseTables, backupConfiguration);
 	}
 
 	public DatabaseConfiguration(Package _package, Collection<Class<?>> _classes) {
 		this(_package, _classes, null, null);
 	}
-
+	public DatabaseConfiguration(Package _package, Collection<Class<?>> _classes, DatabaseCreationCallable callable,
+								 DatabaseConfiguration oldVersionOfDatabaseTables)
+	{
+		this(_package, _classes, callable, oldVersionOfDatabaseTables, null);
+	}
 	@SuppressWarnings("unchecked")
 	public DatabaseConfiguration(Package _package, Collection<Class<?>> _classes, DatabaseCreationCallable callable,
-			DatabaseConfiguration oldVersionOfDatabaseTables) {
+			DatabaseConfiguration oldVersionOfDatabaseTables, BackupConfiguration backupConfiguration) {
 		if (_classes == null)
 			throw new NullPointerException("_classes");
 		if (_package == null)
@@ -90,6 +99,11 @@ public class DatabaseConfiguration {
 					&& !Modifier.isAbstract(c.getModifiers()))
 				classes.add((Class<? extends Table<?>>) c);
 		}
+		this.backupConfiguration=backupConfiguration;
+	}
+
+	public BackupConfiguration getBackupConfiguration() {
+		return backupConfiguration;
 	}
 
 	public Set<Class<? extends Table<?>>> getTableClasses() {
