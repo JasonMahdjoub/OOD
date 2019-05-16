@@ -78,8 +78,12 @@ public class BackupMetaData {
 		this.computeDatabaseReference=new File(this.backupDirectory, "computeDatabaseNewReference.query");
 		if (this.computeDatabaseReference.exists() && this.computeDatabaseReference.isDirectory())
 			throw new IllegalArgumentException();
-		if (this.backupConfiguration.getProgressMonitor()==null)
-			this.backupConfiguration.setProgressMonitorParameters(new ProgressMonitorParameters(String.format(DatabaseMessages.BACKUP_DATABASE.toString(), databaseConfiguration.getPackage().toString()), null, 0, 100));
+		if (this.backupConfiguration.getProgressMonitor()==null) {
+			ProgressMonitorParameters p=new ProgressMonitorParameters(String.format(DatabaseMessages.BACKUP_DATABASE.toString(), databaseConfiguration.getPackage().toString()), null, 0, 100);
+			p.setMillisToDecideToPopup(1000);
+			p.setMillisToPopup(1000);
+			this.backupConfiguration.setProgressMonitorParameters(p);
+		}
 		scanFiles();
 
 	}
