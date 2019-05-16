@@ -35,6 +35,13 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+import com.distrimind.ood.i18n.DatabaseMessages;
+import com.distrimind.util.progress_monitors.NullProgressMonitorFactory;
+import com.distrimind.util.progress_monitors.ProgressMonitorFactory;
+import com.distrimind.util.progress_monitors.ProgressMonitorParameters;
+
+import javax.swing.*;
+
 /**
  * @author Jason Mahdjoub
  * @version 1.0
@@ -42,13 +49,13 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 public class BackupConfiguration {
 	/**
-	 * A backup will be done at every event
+	 * A complete backup will be done with this regular interval. If will be understood as a backup reference.
 	 */
-	private long historicalDurationInMs;
+	private long backupReferenceDurationInMs;
 	/**
-	 * A backup will be done every double of this value
+	 * A backup reference will be removed with this duration is reached
 	 */
-	private long partialHistoricalDurationInMs;
+	private long maxBackupDurationInMs;
 
 	/**
 	 * Max backup file size in bytes.
@@ -62,19 +69,25 @@ public class BackupConfiguration {
 	 */
 	private long maxBackupFileAgeInMs;
 
-	public BackupConfiguration(long historicalDurationInMs, long partialHistoricalDurationInMs, int maxBackupFileSizeInBytes, long maxBackupFileAgeInMs) {
-		this.historicalDurationInMs = historicalDurationInMs;
-		this.partialHistoricalDurationInMs = partialHistoricalDurationInMs;
+	/**
+	 * The progress monitor's parameter
+	 */
+	private ProgressMonitorParameters progressMonitorParameters;
+
+	public BackupConfiguration(long backupReferenceDurationInMs, long maxBackupDurationInMs, int maxBackupFileSizeInBytes, long maxBackupFileAgeInMs, ProgressMonitorParameters progressMonitorParameters) {
+		this.backupReferenceDurationInMs = backupReferenceDurationInMs;
+		this.maxBackupDurationInMs = maxBackupDurationInMs;
 		this.maxBackupFileSizeInBytes = maxBackupFileSizeInBytes;
 		this.maxBackupFileAgeInMs=maxBackupFileAgeInMs;
+		this.progressMonitorParameters=progressMonitorParameters;
 	}
 
-	public long getHistoricalDurationInMs() {
-		return historicalDurationInMs;
+	public long getBackupReferenceDurationInMs() {
+		return backupReferenceDurationInMs;
 	}
 
-	public long getPartialHistoricalDurationInMs() {
-		return partialHistoricalDurationInMs;
+	public long getMaxBackupDurationInMs() {
+		return maxBackupDurationInMs;
 	}
 
 	public int getMaxBackupFileSizeInBytes() {
@@ -83,5 +96,19 @@ public class BackupConfiguration {
 
 	public long getMaxBackupFileAgeInMs() {
 		return maxBackupFileAgeInMs;
+	}
+
+	public ProgressMonitor getProgressMonitor()
+	{
+		ProgressMonitorFactory progressMonitorFactory;
+		if (progressMonitorParameters==null)
+			progressMonitorFactory=new NullProgressMonitorFactory();
+		else
+			progressMonitorFactory=ProgressMonitorFactory.getDefaultProgressMonitorFactory();
+		return progressMonitorFactory.getProgressMonitor(progressMonitorParameters);
+	}
+
+	public void setProgressMonitorParameters(ProgressMonitorParameters progressMonitorParameters) {
+		this.progressMonitorParameters = progressMonitorParameters;
 	}
 }

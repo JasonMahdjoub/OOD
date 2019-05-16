@@ -36,13 +36,13 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.i18n.DatabaseMessages;
 import com.distrimind.util.FileTools;
 import com.distrimind.util.io.RandomFileOutputStream;
 import com.distrimind.util.io.RandomOutputStream;
+import com.distrimind.util.progress_monitors.ProgressMonitorParameters;
 
-import javax.swing.*;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -55,13 +55,16 @@ import java.util.regex.Pattern;
  * @since MaDKitLanEdition 2.0.0
  */
 public class BackupMetaData {
+	private ArrayList<Long> fileReferenceTimeStamps;
 	private ArrayList<Long> fileTimeStamps;
 	private final File backupDirectory;
 	private final BackupConfiguration backupConfiguration;
-	private static final Pattern filePattern=Pattern.compile("^backup-ood-([1-9][0-9])*\\.data$");
+	private static final Pattern fileReferencePattern = Pattern.compile("^backup-ood-([1-9][0-9])*\\.dreference$");
+	private static final Pattern fileIncrementPattern = Pattern.compile("^backup-ood-([1-9][0-9])*\\.dincrement");
+
 	private final File computeDatabaseReference;
 
-	BackupMetaData(File backupDirectory, BackupConfiguration backupConfiguration)
+	BackupMetaData(File backupDirectory, DatabaseConfiguration databaseConfiguration, BackupConfiguration backupConfiguration)
 	{
 		if (backupDirectory==null)
 			throw new NullPointerException();
@@ -75,6 +78,8 @@ public class BackupMetaData {
 		this.computeDatabaseReference=new File(this.backupDirectory, "computeDatabaseNewReference.query");
 		if (this.computeDatabaseReference.exists() && this.computeDatabaseReference.isDirectory())
 			throw new IllegalArgumentException();
+		if (this.backupConfiguration.getProgressMonitor()==null)
+			this.backupConfiguration.setProgressMonitorParameters(new ProgressMonitorParameters(String.format(DatabaseMessages.BACKUP_DATABASE.toString(), databaseConfiguration.getPackage().toString()), null, 0, 100));
 		scanFiles();
 
 	}
@@ -86,6 +91,7 @@ public class BackupMetaData {
 	private void scanFiles()
 	{
 		fileTimeStamps=new ArrayList<>();
+		fileReferenceTimeStamps=new ArrayList<>();
 		File []files=this.backupDirectory.listFiles();
 		if (files==null)
 			return;
@@ -93,7 +99,7 @@ public class BackupMetaData {
 		{
 			if (f.isDirectory())
 				continue;
-			Matcher m=filePattern.matcher(f.getName());
+			Matcher m=fileIncrementPattern.matcher(f.getName());
 			if (m.matches())
 			{
 				try {
@@ -106,17 +112,36 @@ public class BackupMetaData {
 				}
 
 			}
+			else
+			{
+				m=fileReferencePattern.matcher(f.getName());
+				if (m.matches())
+				{
+					try {
+						long timeStamp = Long.parseLong(m.group(1));
+						fileTimeStamps.add(timeStamp);
+						fileReferenceTimeStamps.add(timeStamp);
+					}
+					catch(NumberFormatException e)
+					{
+						e.printStackTrace();
+					}
+
+				}
+			}
+
 		}
 		Collections.sort(fileTimeStamps);
+		Collections.sort(fileReferenceTimeStamps);
 	}
 
 	public File getBackupDirectory() {
 		return backupDirectory;
 	}
 
-	private File getFile(long timeStamp)
+	private File getFile(long timeStamp, boolean backupReference)
 	{
-		return new File(backupDirectory, "backup-ood-"+timeStamp+".data");
+		return new File(backupDirectory, "backup-ood-"+timeStamp+(backupReference?".dreference":".dincrement"));
 	}
 
 	private boolean isPartFull(long timeStamp, File file)
@@ -126,10 +151,11 @@ public class BackupMetaData {
 		return timeStamp < System.currentTimeMillis() - backupConfiguration.getMaxBackupFileAgeInMs();
 	}
 
-	private File initNewFile(long dateUTC) throws DatabaseException {
-		File file=getFile(dateUTC);
+	private File initNewFileForBackupIncrement(long dateUTC) throws DatabaseException {
+		File file=getFile(dateUTC, false);
 		try {
-			file.createNewFile();
+			if (!file.createNewFile())
+				throw new DatabaseException("Impossible to create file : "+file);
 			//TODO complete position of last remove with cascade for every table
 
 			return file;
@@ -143,12 +169,12 @@ public class BackupMetaData {
 		if (fileTimeStamps.size()>0)
 		{
 			Long timeStamp=fileTimeStamps.get(fileTimeStamps.size()-1);
-			File file=getFile(timeStamp);
+			File file=getFile(timeStamp, false);
 			if (!isPartFull(timeStamp, file))
 				return file;
 		}
 
-		return initNewFile(System.currentTimeMillis());
+		return initNewFileForBackupIncrement(System.currentTimeMillis());
 
 	}
 
@@ -158,15 +184,60 @@ public class BackupMetaData {
 		return fileTimeStamps.size()>0 && !computeDatabaseReference.exists();
 	}
 
-	public boolean createIfNecessaryNewBackupReference(ProgressMonitor progressMonitor)
+	public long createBackupReference(File backupReferenceLocation) throws DatabaseException
 	{
-		if (!isReady())
+		//TODO complete creation of a new backup reference
+	}
+
+	public int cleanOldBackups() throws DatabaseException
+	{
+		//TODO clean old backups
+	}
+
+	public void activateBackupReferenceCreation() throws DatabaseException {
+		try {
+			if (!computeDatabaseReference.createNewFile())
+				throw new DatabaseException("Impossible to create file "+computeDatabaseReference);
+		} catch (IOException e) {
+			throw DatabaseException.getDatabaseException(e);
+		}
+	}
+
+	public boolean doesCreateNewBackupReference()
+	{
+		return !isReady();
+	}
+
+	private int deleteDatabaseFilesFromReferenceToLastFile(long fileReference)
+	{
+		//TODO complete
+	}
+	private int deleteDatabaseFilesFromReferenceToFirstFile(long fileReference)
+	{
+		//TODO complete
+	}
+
+	public boolean createIfNecessaryNewBackupReference() throws DatabaseException {
+		if (doesCreateNewBackupReference())
 		{
-			//TODO complete creation of a new backup reference
+			long reference = createBackupReference(backupDirectory);
+			try {
+
+				cleanOldBackups();
+				if (!computeDatabaseReference.delete())
+					throw new DatabaseException("Impossible to delete file "+computeDatabaseReference);
+			}
+			catch(DatabaseException e)
+			{
+				deleteDatabaseFilesFromReferenceToLastFile(reference);
+				throw e;
+			}
+
+			return true;
+
 		}
 		else
 		{
-			progressMonitor.setProgress(progressMonitor.getMaximum());
 			return false;
 		}
 	}
@@ -182,11 +253,7 @@ public class BackupMetaData {
 			throw DatabaseException.getDatabaseException(e);
 		}
 		finally {
-			try {
-				computeDatabaseReference.createNewFile();
-			} catch (IOException e) {
-				throw DatabaseException.getDatabaseException(e);
-			}
+			activateBackupReferenceCreation();
 		}
 
 
