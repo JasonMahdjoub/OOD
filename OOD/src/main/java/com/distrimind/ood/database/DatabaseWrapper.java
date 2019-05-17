@@ -47,6 +47,7 @@ import com.distrimind.ood.database.fieldaccessors.ByteTabObjectConverter;
 import com.distrimind.ood.database.fieldaccessors.DefaultByteTabObjectConverter;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.util.AbstractDecentralizedID;
+import com.distrimind.util.FileTools;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.SecureRandomType;
 import com.distrimind.util.harddrive.Disk;
@@ -88,6 +89,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	// protected Connection sql_connection;
 	private volatile boolean closed = false;
 	protected final String database_name;
+	protected final File databaseDirectory;
 	protected final String database_identifier;
 	private static final HashMap<String, Lock> lockers = new HashMap<>();
 	private static final HashMap<String, Integer> number_of_shared_lockers = new HashMap<>();
@@ -145,13 +147,20 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	// private final boolean isWindows;
 	private static class Database {
 		final HashMap<Class<? extends Table<?>>, Table<?>> tables_instances = new HashMap<>();
+		final BackupMetaData backupMetaData;
 
 		private final DatabaseConfiguration configuration;
 
-		public Database(DatabaseConfiguration configuration) {
+		public Database(File databaseDirectory, DatabaseConfiguration configuration) {
 			if (configuration == null)
 				throw new NullPointerException("configuration");
 			this.configuration = configuration;
+			if (configuration.getBackupConfiguration()!=null)
+			{
+				this.backupMetaData=new BackupMetaData(new File(databaseDirectory, "backup"), configuration);
+			}
+			else
+				this.backupMetaData=null;
 		}
 
 		DatabaseConfiguration getConfiguration() {
@@ -219,14 +228,18 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * 
 	 * @param _database_name
 	 *            the database name
-	 * @param databaseFile the database file or directory. Can be null for distant database.
+	 * @param databaseDirectory the database file or directory. Can be null for distant database.
      * @param alwaysDeconectAfterOnTransaction true if the database must always be connected and detected during one transaction
 	 * @throws DatabaseException if a problem occurs
 	 * 
 	 */
-	protected DatabaseWrapper(String _database_name, File databaseFile, boolean alwaysDeconectAfterOnTransaction) throws DatabaseException {
+	protected DatabaseWrapper(String _database_name, File databaseDirectory, boolean alwaysDeconectAfterOnTransaction) throws DatabaseException {
 		if (_database_name == null)
 			throw new NullPointerException("_database_name");
+		if (databaseDirectory==null)
+			throw new NullPointerException();
+		if (databaseDirectory.exists() && !databaseDirectory.isDirectory())
+			throw new IllegalArgumentException();
 		this.alwaysDeconectAfterOnTransaction=alwaysDeconectAfterOnTransaction;
 		try
 		{
@@ -234,23 +247,20 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 		catch(Exception e)
 		{
-			throw DatabaseException.getDatabaseException(e);
+			throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 		}
 		/*
 		 * if (_sql_connection==null) throw new NullPointerException("_sql_connection");
 		 */
 
 		database_name = _database_name;
-
+		this.databaseDirectory=databaseDirectory;
 		Disk disk=null;
-		if (databaseFile!=null)
-		{
-			try {
-				Partition p=HardDriveDetect.getInstance().getConcernedPartition(databaseFile);
-				disk=p.getDisk();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+		try {
+			Partition p=HardDriveDetect.getInstance().getConcernedPartition(databaseDirectory);
+			disk=p.getDisk();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 
 		if (disk!=null)
@@ -265,6 +275,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		converters = new ArrayList<>();
 		converters.add(new DefaultByteTabObjectConverter());
 		synchronizer=new DatabaseSynchronizer();
+	}
+
+	public File getDatabaseDirectory() {
+		return databaseDirectory;
 	}
 
 	public AbstractSecureRandom getSecureRandomForKeys()
@@ -3072,7 +3086,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 					@Override
 					public void initOrReset() {
-						actualDatabaseLoading = new Database(configuration);
+						actualDatabaseLoading = new Database(getDatabaseDirectory(), configuration);
 						allNotFound.set(true);
 					}
 
@@ -3290,4 +3304,25 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	protected abstract boolean supportFullSqlFieldName();
 
+	/**
+	 * Delete all the files associated to the database directory.
+	 *
+	 * @param _directory
+	 *            the database directory
+	 */
+	public static void deleteDatabaseFiles(File _directory) {
+		if (_directory.exists() && _directory.isDirectory()) {
+			FileTools.deleteDirectory(_directory);
+		}
+	}
+
+
+	/**
+	 * Delete all the files associated to this database
+	 *
+	 */
+	public void deleteDatabaseFiles() {
+		close();
+		deleteDatabaseFiles(getDatabaseDirectory());
+	}
 }

@@ -64,17 +64,17 @@ public class BackupMetaData {
 
 	private final File computeDatabaseReference;
 
-	BackupMetaData(File backupDirectory, DatabaseConfiguration databaseConfiguration, BackupConfiguration backupConfiguration)
+	BackupMetaData(File backupDirectory, DatabaseConfiguration databaseConfiguration)
 	{
 		if (backupDirectory==null)
 			throw new NullPointerException();
 		if (backupDirectory.exists() && backupDirectory.isFile())
 			throw new IllegalArgumentException();
-		if (backupConfiguration==null)
+		if (databaseConfiguration==null)
 			throw new NullPointerException();
 		FileTools.checkFolderRecursive(backupDirectory);
 		this.backupDirectory=backupDirectory;
-		this.backupConfiguration=backupConfiguration;
+		this.backupConfiguration=databaseConfiguration.getBackupConfiguration();
 		this.computeDatabaseReference=new File(this.backupDirectory, "computeDatabaseNewReference.query");
 		if (this.computeDatabaseReference.exists() && this.computeDatabaseReference.isDirectory())
 			throw new IllegalArgumentException();
@@ -219,6 +219,16 @@ public class BackupMetaData {
 	private int deleteDatabaseFilesFromReferenceToFirstFile(long fileReference)
 	{
 		//TODO complete
+	}
+
+	public long getMinDateUTC()
+	{
+
+	}
+
+	public long getMaxDateUTC()
+	{
+
 	}
 
 	public boolean createIfNecessaryNewBackupReference() throws DatabaseException {

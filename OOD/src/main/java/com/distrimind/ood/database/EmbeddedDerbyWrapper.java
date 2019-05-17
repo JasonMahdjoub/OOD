@@ -38,6 +38,7 @@ package com.distrimind.ood.database;
 
 import java.io.File;
 import java.sql.*;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 import com.distrimind.ood.database.Table.ColumnsReadQuerry;
@@ -58,7 +59,7 @@ import com.distrimind.util.FileTools;
 public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	private static boolean derby_loaded = false;
 	// private final String dbURL;
-	private final File fileDirectory;
+
 
 
     private static void ensureDerbyLoading() throws DatabaseLoadingException {
@@ -106,7 +107,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	public EmbeddedDerbyWrapper(File _directory, boolean alwaysDeconectAfterOnTransaction) throws IllegalArgumentException, DatabaseException {
 		super(/* getConnection(_directory), */"Database from file : " + _directory.getAbsolutePath(), _directory, alwaysDeconectAfterOnTransaction);
 		// dbURL = getDBUrl(_directory);
-		fileDirectory = _directory;
+
 	}
 
 	@Override
@@ -180,17 +181,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	}
 
 
-	/**
-	 * Delete all the files associated to the database directory.
-	 * 
-	 * @param _directory
-	 *            the database directory
-	 */
-	public static void deleteDatabaseFiles(File _directory) {
-		if (_directory.exists() && _directory.isDirectory()) {
-			FileTools.deleteDirectory(_directory);
-		}
-	}
+
 
 	@Override
 	protected boolean doesTableExists(String tableName) throws Exception {
@@ -253,7 +244,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 		} catch (SQLException e) {
 			throw new DatabaseException("Impossible to check constraints of the table " + table.getName(), e);
 		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
+			throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 		}
 		for (Table<?> t : getListTables(table.getClass().getPackage())) {
 			try (ReadQuerry rq = new ReadQuerry(sql_connection,
@@ -287,7 +278,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 			} catch (SQLException e) {
 				throw new DatabaseException("Impossible to check constraints of the table " + table.getName(), e);
 			} catch (Exception e) {
-				throw DatabaseException.getDatabaseException(e);
+				throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 			}
 		}
 		try {
@@ -606,7 +597,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 
 	@Override
 	protected Connection reopenConnectionImpl() throws DatabaseLoadingException {
-		return getConnection(fileDirectory);
+		return getConnection(getDatabaseDirectory());
 	}
 
 	@Override

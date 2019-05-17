@@ -55,7 +55,7 @@ import java.util.regex.Pattern;
 public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 
 	private static boolean hsql_loaded = false;
-	private final File file_name;
+
 	private static Constructor<? extends Blob> H2BlobConstructor=null;
 	private static Method H2ValueMethod=null;
 
@@ -79,8 +79,8 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	/**
 	 * Constructor
 	 *
-	 * @param _file_name
-	 *            The file which contains the database. If this file does not
+	 * @param _directory_name
+	 *            The directory which contains the database. If this directory does not
 	 *            exists, it will be automatically created with the correspondent
 	 *            database.
 	 * @param alwaysDeconectAfterOnTransaction true if the database must always be connected and detected during one transaction
@@ -90,11 +90,14 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	 *             If the given file is a directory.
 	 * @throws DatabaseException if a problem occurs
 	 */
-	public EmbeddedH2DatabaseWrapper(File _file_name, boolean alwaysDeconectAfterOnTransaction) throws DatabaseException {
-		super("Database from file : " + getH2DataFileName(_file_name) + ".data", _file_name, alwaysDeconectAfterOnTransaction);
-		this.file_name = _file_name;
+	public EmbeddedH2DatabaseWrapper(File _directory_name, boolean alwaysDeconectAfterOnTransaction) throws DatabaseException {
+		super("Database from file : " + getH2DataFileName(getDatabaseFileName(_directory_name)), _directory_name, alwaysDeconectAfterOnTransaction);
 	}
 
+	private static File getDatabaseFileName(File directoryName)
+	{
+		return new File(directoryName, "data.db");
+	}
 
 
 	private static void ensureH2Loading() throws DatabaseLoadingException {
@@ -166,7 +169,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 
 	@Override
 	protected Connection reopenConnectionImpl() throws DatabaseLoadingException {
-		return getConnection(file_name);
+		return getConnection(getDatabaseFileName(super.getDatabaseDirectory()));
 
 	}
 
@@ -642,35 +645,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 		return false;*/
 	}
 
-	@SuppressWarnings("ResultOfMethodCallIgnored")
-	public static void deleteDatabaseFiles(File _file_name) {
-		String file_base = getH2DataFileName(_file_name);
-		File f = new File(file_base + ".data");
-		if (f.exists())
-			f.delete();
-		f = new File(file_base + ".trace.db");
-		if (f.exists())
-			f.delete();
-		f = new File(file_base + ".mv.db");
-		if (f.exists())
-			f.delete();
 
-		/*f = new File(file_base + ".log");
-		if (f.exists())
-			f.delete();
-		f = new File(file_base + ".properties");
-		if (f.exists())
-			f.delete();
-		f = new File(file_base + ".script");
-		if (f.exists())
-			f.delete();
-		f = new File(file_base + ".tmp");
-		if (f.exists())
-			f.delete();
-		f = new File(file_base + ".lobs");
-		if (f.exists())
-			f.delete();*/
-	}
 
 
 }

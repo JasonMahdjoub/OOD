@@ -68,8 +68,8 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 	/**
 	 * Constructor
 	 *
-	 * @param _file_name
-	 *            The file which contains the database. If this file does not
+	 * @param databaseDirectory
+	 *            The directory which contains the database. If this directory does not
 	 *            exists, it will be automatically created with the correspondent
 	 *            database.
      * @param alwaysDeconectAfterOnTransaction true if the database must always be connected and detected during one transaction
@@ -102,21 +102,25 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 	 *             If the given file is a directory.
 	 * @throws DatabaseException if a problem occurs
 	 */
-	public EmbeddedHSQLDBWrapper(File _file_name, boolean alwaysDeconectAfterOnTransaction, HSQLDBConcurrencyControl concurrencyControl, int _cache_rows,
+	public EmbeddedHSQLDBWrapper(File databaseDirectory, boolean alwaysDeconectAfterOnTransaction, HSQLDBConcurrencyControl concurrencyControl, int _cache_rows,
 			int _cache_size, int _result_max_memory_rows, int _cache_free_count, boolean lockFile)
 			throws IllegalArgumentException, DatabaseException {
 		super(/*
 				 * getConnection(_file_name, concurrencyControl, _cache_rows, _cache_size,
 				 * _result_max_memory_rows, _cache_free_count),
-				 */"Database from file : " + getHSQLDBDataFileName(_file_name) + ".data", _file_name, alwaysDeconectAfterOnTransaction);
+				 */"Database from file : " + getHSQLDBDataFileName(getDatabaseFileName(databaseDirectory)) + ".data", databaseDirectory, alwaysDeconectAfterOnTransaction);
 
-		this.file_name = _file_name;
 		this.concurrencyControl = concurrencyControl;
 		this.cache_rows = _cache_rows;
 		this.cache_size = _cache_size;
 		this.result_max_memory_rows = _result_max_memory_rows;
 		this.cache_free_count = _cache_free_count;
 		this.lockFile=lockFile;
+	}
+
+	private static File getDatabaseFileName(File directoryName)
+	{
+		return new File(directoryName, "data.db");
 	}
 
 	private static Connection getConnection(File _file_name, HSQLDBConcurrencyControl concurrencyControl,
@@ -177,36 +181,6 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 	@Override
 	public String getCrossReferencesTableName() {
 		return "INFORMATION_SCHEMA.SYSTEM_CROSSREFERENCE";
-	}
-
-	/**
-	 * Delete all the files associated to the .data database file.
-	 *
-	 * @param _file_name
-	 *            the .data database file, or the base file name (the file without
-	 *            the .data extension).
-	 */
-	@SuppressWarnings("ResultOfMethodCallIgnored")
-    public static void deleteDatabaseFiles(File _file_name) {
-		String file_base = getHSQLDBDataFileName(_file_name);
-		File f = new File(file_base + ".data");
-		if (f.exists())
-			f.delete();
-		f = new File(file_base + ".log");
-		if (f.exists())
-			f.delete();
-		f = new File(file_base + ".properties");
-		if (f.exists())
-			f.delete();
-		f = new File(file_base + ".script");
-		if (f.exists())
-			f.delete();
-		f = new File(file_base + ".tmp");
-		if (f.exists())
-			f.delete();
-		f = new File(file_base + ".lobs");
-		if (f.exists())
-			f.delete();
 	}
 
 	@Override
@@ -751,7 +725,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 
 	@Override
 	protected Connection reopenConnectionImpl() throws DatabaseLoadingException {
-		return getConnection(file_name, concurrencyControl, cache_rows, cache_size, result_max_memory_rows,
+		return getConnection(getDatabaseFileName(getDatabaseDirectory()), concurrencyControl, cache_rows, cache_size, result_max_memory_rows,
 				cache_free_count, lockFile);
 	}
 
@@ -797,7 +771,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 	private static boolean hsql_loaded = false;
 	private static Constructor<? extends Blob> JDBCBlobConstructor=null;
 	private static Method DbBackupMain;
-	private final File file_name;
+
 	private final HSQLDBConcurrencyControl concurrencyControl;
 	private final int cache_rows;
 	private final int cache_size;
