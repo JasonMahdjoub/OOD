@@ -2992,7 +2992,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 *            If set to false, and if the database does not exists, generate a
 	 *            DatabaseException. If set to true, and if the database does not
 	 *            exists, create it. Use
-	 *            {@link DatabaseConfiguration#getDatabaseCreationCallable()} if the
+	 *            {@link DatabaseConfiguration#getDatabaseLifeCycles()} if the
 	 *            database is created and if transfer from old database must done.
 	 * @throws DatabaseException
 	 *             if the given package is already associated to a database, or if
@@ -3094,7 +3094,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				if (allNotFound.get()) {
 					try {
 						DatabaseConfiguration oldConfig = configuration.getOldVersionOfDatabaseConfiguration();
-						DatabaseCreationCallable callable = configuration.getDatabaseCreationCallable();
+						DatabaseLifeCycles callable = configuration.getDatabaseLifeCycles();
 						boolean removeOldDatabase = false;
 						if (oldConfig != null && callable != null) {
 							try {

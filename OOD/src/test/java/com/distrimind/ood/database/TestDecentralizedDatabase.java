@@ -431,7 +431,7 @@ public abstract class TestDecentralizedDatabase {
 
 	public void loadDatabase(Database db) throws DatabaseException {
 		db.getDbwrapper()
-				.loadDatabase(new DatabaseConfiguration(TableAlone.class.getPackage(), new DatabaseCreationCallable() {
+				.loadDatabase(new DatabaseConfiguration(TableAlone.class.getPackage(), new DatabaseLifeCycles() {
 
 					@Override
 					public void transferDatabaseFromOldVersion(DatabaseConfiguration _newDatabaseTables) {

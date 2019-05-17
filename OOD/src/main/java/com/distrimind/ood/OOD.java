@@ -439,7 +439,7 @@ public class OOD {
 			d.addItem("Updating to Utils 2.7.1.");
 			d.addItem("Downgrading to Derby 10.11.1.1 (JDK 7 Compatible).");
 			d.addItem("Adding DatabaseConfiguration class.");
-			d.addItem("Adding DatabaseCreationCallable class.");
+			d.addItem("Adding DatabaseLifeCycles class.");
 			d.addItem(
 					"Changing the database loading policy : enabling transfer data from old database to new database.");
 			d.addItem("Minimizing code duplication of tests.");

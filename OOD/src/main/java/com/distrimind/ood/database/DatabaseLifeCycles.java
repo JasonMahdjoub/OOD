@@ -45,33 +45,36 @@ import javax.swing.*;
  * @version 2.0.0
  * @since OOD 2.0
  */
-public interface DatabaseCreationCallable {
+public interface DatabaseLifeCycles {
 
 	/**
 	 * This function is called when the database was created and need to transfer
 	 * data from old database. If old database does not exists, this function will
 	 * not be called.
-	 * 
+	 *
+	 * @param wrapper the database wrapper
 	 * @param oldDatabaseConfiguration
 	 *            the old database configuration
 	 * @param newDatabaseConfiguration
 	 *            the new database configuration
+	 *
 	 * @throws Exception
 	 *             if a problem occurs
 	 */
-	void transferDatabaseFromOldVersion(DatabaseConfiguration oldDatabaseConfiguration, DatabaseConfiguration newDatabaseConfiguration) throws Exception;
+	void transferDatabaseFromOldVersion(DatabaseWrapper wrapper, DatabaseConfiguration oldDatabaseConfiguration, DatabaseConfiguration newDatabaseConfiguration) throws Exception;
 
 	/**
 	 * This function is called after the database was created and after the eventual
 	 * call of the function
-	 * {@link #transferDatabaseFromOldVersion(DatabaseConfiguration, DatabaseConfiguration)}
+	 * {@link #transferDatabaseFromOldVersion(DatabaseWrapper, DatabaseConfiguration, DatabaseConfiguration)}
 	 * 
+	 * @param wrapper the database wrapper
 	 * @param newDatabaseConfiguration
 	 *            the new database configuration
 	 * @throws Exception
 	 *             if a problem occurs
 	 */
-	void afterDatabaseCreation(DatabaseConfiguration newDatabaseConfiguration) throws Exception;
+	void afterDatabaseCreation(DatabaseWrapper wrapper, DatabaseConfiguration newDatabaseConfiguration) throws Exception;
 
 	/**
 	 * Tells if the old database must be removed after having created the new
