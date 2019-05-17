@@ -35,8 +35,6 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.ood.i18n.DatabaseMessages;
-import com.distrimind.util.progress_monitors.NullProgressMonitorFactory;
 import com.distrimind.util.progress_monitors.ProgressMonitorFactory;
 import com.distrimind.util.progress_monitors.ProgressMonitorParameters;
 
@@ -49,22 +47,22 @@ import javax.swing.*;
  */
 public class BackupConfiguration {
 	/**
-	 * A complete backup will be done with this regular interval. If will be understood as a backup reference.
+	 * A complete nativeBackup will be done with this regular interval. If will be understood as a nativeBackup reference.
 	 */
 	private long backupReferenceDurationInMs;
 	/**
-	 * A backup reference will be removed with this duration is reached
+	 * A nativeBackup reference will be removed with this duration is reached
 	 */
 	private long maxBackupDurationInMs;
 
 	/**
-	 * Max backup file size in bytes.
+	 * Max nativeBackup file size in bytes.
 	 * When this size is reached, then a new file is created
 	 */
 	private int maxBackupFileSizeInBytes;
 
 	/**
-	 * Max backup file age in milliseconds.
+	 * Max nativeBackup file age in milliseconds.
 	 * When this age is reached, then a new file is created
 	 */
 	private long maxBackupFileAgeInMs;
@@ -79,7 +77,7 @@ public class BackupConfiguration {
 		this.maxBackupDurationInMs = maxBackupDurationInMs;
 		this.maxBackupFileSizeInBytes = maxBackupFileSizeInBytes;
 		this.maxBackupFileAgeInMs=maxBackupFileAgeInMs;
-		this.progressMonitorParameters=progressMonitorParameters;
+		this.progressMonitorParameters = progressMonitorParameters;
 	}
 
 	public long getBackupReferenceDurationInMs() {
@@ -101,8 +99,8 @@ public class BackupConfiguration {
 	public ProgressMonitor getProgressMonitor()
 	{
 		ProgressMonitorFactory progressMonitorFactory;
-		if (progressMonitorParameters==null)
-			progressMonitorFactory=new NullProgressMonitorFactory();
+		if (progressMonitorParameters ==null)
+			return null;
 		else
 			progressMonitorFactory=ProgressMonitorFactory.getDefaultProgressMonitorFactory();
 		return progressMonitorFactory.getProgressMonitor(progressMonitorParameters);

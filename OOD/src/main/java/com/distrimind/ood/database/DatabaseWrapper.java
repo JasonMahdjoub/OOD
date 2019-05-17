@@ -147,20 +147,20 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	// private final boolean isWindows;
 	private static class Database {
 		final HashMap<Class<? extends Table<?>>, Table<?>> tables_instances = new HashMap<>();
-		final BackupMetaData backupMetaData;
+		final BackupManager backupManager;
 
 		private final DatabaseConfiguration configuration;
 
-		public Database(File databaseDirectory, DatabaseConfiguration configuration) {
+		public Database(DatabaseWrapper wrapper, File databaseDirectory, DatabaseConfiguration configuration) throws DatabaseException {
 			if (configuration == null)
 				throw new NullPointerException("configuration");
 			this.configuration = configuration;
 			if (configuration.getBackupConfiguration()!=null)
 			{
-				this.backupMetaData=new BackupMetaData(new File(databaseDirectory, "backup"), configuration);
+				this.backupManager =new BackupManager(wrapper, new File(databaseDirectory, "nativeBackup"), configuration);
 			}
 			else
-				this.backupMetaData=null;
+				this.backupManager =null;
 		}
 
 		DatabaseConfiguration getConfiguration() {
@@ -3085,8 +3085,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					}
 
 					@Override
-					public void initOrReset() {
-						actualDatabaseLoading = new Database(getDatabaseDirectory(), configuration);
+					public void initOrReset() throws DatabaseException {
+						actualDatabaseLoading = new Database(DatabaseWrapper.this, getDatabaseDirectory(), configuration);
 						allNotFound.set(true);
 					}
 
@@ -3099,7 +3099,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						if (oldConfig != null && callable != null) {
 							try {
 								loadDatabase(oldConfig, false);
-                                callable.transfertDatabaseFromOldVersion(configuration);
+                                callable.transferDatabaseFromOldVersion(configuration);
 								removeOldDatabase = callable.hasToRemoveOldDatabase();
 							} catch (DatabaseException e) {
 								oldConfig = null;
@@ -3291,14 +3291,65 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	protected abstract Blob getBlob(byte[] bytes) throws SQLException;
 
 	/**
-	 * Backup the database into the given path.
+	 * Backup the database into the given path using the native database backup system
 	 * 
 	 * @param path
 	 *            the path where to save the database.
 	 * @throws DatabaseException
 	 *             if a problem occurs
 	 */
-	public abstract void backup(File path) throws DatabaseException;
+	public abstract void nativeBackup(File path) throws DatabaseException;
+
+
+	/**
+	 * Returns the OOD (and non native) backup manager.
+	 *
+	 * Backups into this manager are done in real time.
+	 *
+	 * Backups and restores into this backup manager can be done manually.
+	 *
+	 * Enables to make incremental database backups, and database restore.
+	 * @param _package the concerned database
+	 * @return the backup manager or null if no backup manager was configured.
+	 * @see DatabaseConfiguration
+	 */
+	public BackupManager getBackupManager(Package _package)
+	{
+		Database d=this.sql_database.get(_package);
+		if (d==null)
+			return null;
+		else
+			return d.backupManager;
+	}
+
+	/**
+	 * Returns the OOD (and non native) backup manager.
+	 *
+	 * Backups into this manager are NOT done in real time.
+	 *
+	 * Backups and restores into this backup manager can be done manually.
+	 *
+	 * Enables to make incremental database backups, and database restore.
+	 * @param _package the concerned database
+	 * @return the backup manager or null if no backup manager was configured.
+	 * @see DatabaseConfiguration
+	 */
+	public BackupManager getExternalBackupManager(File backupDirectory, Package _package) throws DatabaseException {
+
+		try {
+			if (getDatabaseDirectory().getCanonicalPath().startsWith(backupDirectory.getCanonicalPath()))
+				throw new IllegalArgumentException("External backup managers cannot be located into the directory of the database !");
+			Database d = this.sql_database.get(_package);
+			if (d == null)
+				return null;
+			else
+				return new BackupManager(this, backupDirectory, d.configuration);
+		}
+		catch(IOException e)
+		{
+			throw DatabaseException.getDatabaseException(e);
+		}
+	}
 
 	protected abstract boolean isThreadSafe();
 

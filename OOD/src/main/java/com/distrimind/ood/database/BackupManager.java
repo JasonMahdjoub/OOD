@@ -46,6 +46,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -54,7 +55,7 @@ import java.util.regex.Pattern;
  * @version 1.0
  * @since MaDKitLanEdition 2.0.0
  */
-public class BackupMetaData {
+public class BackupManager {
 	private ArrayList<Long> fileReferenceTimeStamps;
 	private ArrayList<Long> fileTimeStamps;
 	private final File backupDirectory;
@@ -63,15 +64,18 @@ public class BackupMetaData {
 	private static final Pattern fileIncrementPattern = Pattern.compile("^backup-ood-([1-9][0-9])*\\.dincrement");
 
 	private final File computeDatabaseReference;
+	private DatabaseWrapper databaseWrapper;
 
-	BackupMetaData(File backupDirectory, DatabaseConfiguration databaseConfiguration)
-	{
+	BackupManager(DatabaseWrapper databaseWrapper, File backupDirectory, DatabaseConfiguration databaseConfiguration) throws DatabaseException {
 		if (backupDirectory==null)
 			throw new NullPointerException();
 		if (backupDirectory.exists() && backupDirectory.isFile())
 			throw new IllegalArgumentException();
 		if (databaseConfiguration==null)
 			throw new NullPointerException();
+		if (databaseWrapper==null)
+			throw new NullPointerException();
+		this.databaseWrapper=databaseWrapper;
 		FileTools.checkFolderRecursive(backupDirectory);
 		this.backupDirectory=backupDirectory;
 		this.backupConfiguration=databaseConfiguration.getBackupConfiguration();
@@ -85,7 +89,7 @@ public class BackupMetaData {
 			this.backupConfiguration.setProgressMonitorParameters(p);
 		}
 		scanFiles();
-
+		createIfNecessaryNewBackupReference();
 	}
 
 	public BackupConfiguration getBackupConfiguration() {
@@ -145,7 +149,7 @@ public class BackupMetaData {
 
 	private File getFile(long timeStamp, boolean backupReference)
 	{
-		return new File(backupDirectory, "backup-ood-"+timeStamp+(backupReference?".dreference":".dincrement"));
+		return new File(backupDirectory, "nativeBackup-ood-"+timeStamp+(backupReference?".dreference":".dincrement"));
 	}
 
 	private boolean isPartFull(long timeStamp, File file)
@@ -190,7 +194,7 @@ public class BackupMetaData {
 
 	public long createBackupReference(File backupReferenceLocation) throws DatabaseException
 	{
-		//TODO complete creation of a new backup reference
+		//TODO complete creation of a new nativeBackup reference
 	}
 
 	public int cleanOldBackups() throws DatabaseException
@@ -202,12 +206,13 @@ public class BackupMetaData {
 		try {
 			if (!computeDatabaseReference.createNewFile())
 				throw new DatabaseException("Impossible to create file "+computeDatabaseReference);
+			createIfNecessaryNewBackupReference();
 		} catch (IOException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
 
-	public boolean doesCreateNewBackupReference()
+	boolean doesCreateNewBackupReference()
 	{
 		return !isReady();
 	}
@@ -231,7 +236,17 @@ public class BackupMetaData {
 
 	}
 
-	public boolean createIfNecessaryNewBackupReference() throws DatabaseException {
+	public void restoreDatabaseToDate(Date date)
+	{
+		//TODO complete
+	}
+
+	public void restoreRecordToDate(Date date, DatabaseRecord record)
+	{
+
+	}
+
+	boolean createIfNecessaryNewBackupReference() throws DatabaseException {
 		if (doesCreateNewBackupReference())
 		{
 			long reference = createBackupReference(backupDirectory);
@@ -256,7 +271,8 @@ public class BackupMetaData {
 		}
 	}
 
-	public void runTransaction(Transaction transaction) throws DatabaseException {
+	void runTransaction(Transaction transaction) throws DatabaseException {
+		createIfNecessaryNewBackupReference();
 		if (!isReady())
 			return;
 		File file=getFileForBackupIncrement();
@@ -264,16 +280,13 @@ public class BackupMetaData {
 		{
 			transaction.run(rfos);
 		} catch (IOException e) {
+			activateBackupReferenceCreation();
 			throw DatabaseException.getDatabaseException(e);
 		}
-		finally {
-			activateBackupReferenceCreation();
-		}
-
 
 	}
 
-	public interface Transaction
+	interface Transaction
 	{
 		void run(RandomOutputStream lastBackupStream) throws DatabaseException;
 	}

@@ -212,7 +212,7 @@ public class OOD {
 			c.set(2018, Calendar.FEBRUARY, 10);
 			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)66, c.getTime());
 			d.addItem("Updating utils to 3.10.5");
-			d.addItem("Correcting a bug with the backup of enum variables");
+			d.addItem("Correcting a bug with the nativeBackup of enum variables");
 			VERSION.addDescription(d);
 			
 			c = Calendar.getInstance();
@@ -550,7 +550,7 @@ public class OOD {
 			c.set(2016, Calendar.MARCH, 11);
 			d = new Description((short)1, (short)6, (short)0, Version.Type.Stable, (short)0, c.getTime());
 			d.addItem("Updating with Utils 1.6.");
-			d.addItem("Adding database backup tools.");
+			d.addItem("Adding database nativeBackup tools.");
 			d.addItem("renaming alterRecord functions to updateRecord.");
 			d.addItem("Adding functions Table.addRecord(record), Table.updateRecord(record).");
 			VERSION.addDescription(d);

@@ -564,7 +564,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 	}
 
 	/**
-	 * Backup the database into the given directory. During this backup, the
+	 * Backup the database into the given directory. During this nativeBackup, the
 	 * database will not be available.
 	 *
 	 * @param file
@@ -573,7 +573,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 	 *             if a problem occurs
 	 */
 	@Override
-	public void backup(File file) throws DatabaseException {
+	public void nativeBackup(File file) throws DatabaseException {
 		this.backup(file, true, false, false);
 	}
 
@@ -583,13 +583,13 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 	 * @param file
 	 *            the file name where to save the database.
 	 * @param blockDatabase
-	 *            if set to true, database can't be used during the backup. Hot
-	 *            backup is performed if NOT BLOCKING is specified. In this mode,
-	 *            the database can be used during backup. This mode should only be
-	 *            used with very large databases. A hot backup set is less compact
-	 *            and takes longer to restore and use than a normal backup set
+	 *            if set to true, database can't be used during the nativeBackup. Hot
+	 *            nativeBackup is performed if NOT BLOCKING is specified. In this mode,
+	 *            the database can be used during nativeBackup. This mode should only be
+	 *            used with very large databases. A hot nativeBackup set is less compact
+	 *            and takes longer to restore and use than a normal nativeBackup set
 	 *            produced with the BLOCKING option. You can perform a CHECKPOINT
-	 *            just before a hot backup in order to reduce the size of the backup
+	 *            just before a hot nativeBackup in order to reduce the size of the nativeBackup
 	 *            set.
 	 * @throws DatabaseException
 	 *             if a problem occurs
@@ -605,13 +605,13 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 	 *            the path where to save the database. If <code>saveAsFiles</code>
 	 *            is set to false, it must be a directory, else it must be a file.
 	 * @param blockDatabase
-	 *            if set to true, database can't be used during the backup. Hot
-	 *            backup is performed if NOT BLOCKING is specified. In this mode,
-	 *            the database can be used during backup. This mode should only be
-	 *            used with very large databases. A hot backup set is less compact
-	 *            and takes longer to restore and use than a normal backup set
+	 *            if set to true, database can't be used during the nativeBackup. Hot
+	 *            nativeBackup is performed if NOT BLOCKING is specified. In this mode,
+	 *            the database can be used during nativeBackup. This mode should only be
+	 *            used with very large databases. A hot nativeBackup set is less compact
+	 *            and takes longer to restore and use than a normal nativeBackup set
 	 *            produced with the BLOCKING option. You can perform a CHECKPOINT
-	 *            just before a hot backup in order to reduce the size of the backup
+	 *            just before a hot nativeBackup in order to reduce the size of the nativeBackup
 	 *            set.
 	 * @param saveAsFiles
 	 *            if set to true, the database files are copied to a directory

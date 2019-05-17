@@ -45,7 +45,8 @@ import java.util.ResourceBundle;
  */
 public enum DatabaseMessages {
 	CONVERT_DATABASE,
-	BACKUP_DATABASE;
+	BACKUP_DATABASE,
+	INIT_DATABASE;
 
 	final static ResourceBundle messages = ResourceBundle.getBundle("com/distrimind/ood"+File.separator + DatabaseMessages.class.getSimpleName());
 

@@ -547,7 +547,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	 *             if a problem occurs
 	 */
 	@Override
-	public void backup(File directory) throws DatabaseException {
+	public void nativeBackup(File directory) throws DatabaseException {
 		if (directory == null)
 			throw new NullPointerException("file");
 

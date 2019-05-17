@@ -434,7 +434,7 @@ public abstract class TestDecentralizedDatabase {
 				.loadDatabase(new DatabaseConfiguration(TableAlone.class.getPackage(), new DatabaseCreationCallable() {
 
 					@Override
-					public void transfertDatabaseFromOldVersion(DatabaseConfiguration _newDatabaseTables) {
+					public void transferDatabaseFromOldVersion(DatabaseConfiguration _newDatabaseTables) {
 					}
 
 					@Override

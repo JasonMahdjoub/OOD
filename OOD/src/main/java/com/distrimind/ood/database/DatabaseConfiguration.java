@@ -41,7 +41,12 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.distrimind.ood.i18n.DatabaseMessages;
 import com.distrimind.util.ListClasses;
+import com.distrimind.util.progress_monitors.ProgressMonitorFactory;
+import com.distrimind.util.progress_monitors.ProgressMonitorParameters;
+
+import javax.swing.*;
 
 /**
  * Describe a database configuration. A database is defined by its package, and
@@ -54,40 +59,108 @@ import com.distrimind.util.ListClasses;
  * @see DatabaseCreationCallable
  */
 public class DatabaseConfiguration {
+	private int version;
 	private final Set<Class<? extends Table<?>>> classes;
 	private final Package dbPackage;
 	private DatabaseConfiguration oldDatabaseTables;
 	private DatabaseCreationCallable databaseCreationCallable;
 	private BackupConfiguration backupConfiguration;
+	/**
+	 * The progress monitor's parameter for database upgrade
+	 */
+	private ProgressMonitorParameters progressMonitorParametersForDatabaseUpgrade;
 
-	public DatabaseConfiguration(Package _package) {
-		this(_package, ListClasses.getClasses(_package), null, null);
+	/**
+	 * The progress monitor's parameter for database initialisation
+	 */
+	private ProgressMonitorParameters progressMonitorParametersForDatabaseInitialisation;
+
+	public DatabaseConfiguration(int version, Package _package) {
+		this(version, _package, ListClasses.getClasses(_package), null, null);
 	}
-	public DatabaseConfiguration(Package _package, DatabaseCreationCallable callable,
+	public DatabaseConfiguration(int version, Package _package, DatabaseCreationCallable callable,
 								 DatabaseConfiguration oldVersionOfDatabaseTables)
 	{
-		this(_package, callable, oldVersionOfDatabaseTables, null);
+		this(version, _package, callable, oldVersionOfDatabaseTables, null);
 	}
-	public DatabaseConfiguration(Package _package, DatabaseCreationCallable callable,
+	public DatabaseConfiguration(int version, Package _package, DatabaseCreationCallable callable,
 			DatabaseConfiguration oldVersionOfDatabaseTables, BackupConfiguration backupConfiguration) {
-		this(_package, ListClasses.getClasses(_package), callable, oldVersionOfDatabaseTables, backupConfiguration);
+		this(version, _package, ListClasses.getClasses(_package), callable, oldVersionOfDatabaseTables, backupConfiguration);
 	}
 
-	public DatabaseConfiguration(Package _package, Collection<Class<?>> _classes) {
-		this(_package, _classes, null, null);
+	public DatabaseConfiguration(int version, Package _package, Collection<Class<?>> _classes) {
+		this(version, _package, _classes, null, null);
 	}
-	public DatabaseConfiguration(Package _package, Collection<Class<?>> _classes, DatabaseCreationCallable callable,
+	public DatabaseConfiguration(int version, Package _package, Collection<Class<?>> _classes, DatabaseCreationCallable callable,
 								 DatabaseConfiguration oldVersionOfDatabaseTables)
 	{
-		this(_package, _classes, callable, oldVersionOfDatabaseTables, null);
+		this(version, _package, _classes, callable, oldVersionOfDatabaseTables, null);
 	}
+
+	public int getVersion() {
+		return version;
+	}
+
+	/**
+	 * @return The progress monitor's parameter for database upgrade
+	 */
+	public ProgressMonitorParameters getProgressMonitorParametersForDatabaseUpgrade() {
+		return progressMonitorParametersForDatabaseUpgrade;
+	}
+
+	/**
+	 * Set the progress monitor's parameter for database upgrade
+	 */
+	public void setProgressMonitorParametersForDatabaseUpgrade(ProgressMonitorParameters progressMonitorParametersForDatabaseUpgrade) {
+		this.progressMonitorParametersForDatabaseUpgrade = progressMonitorParametersForDatabaseUpgrade;
+	}
+
+	public ProgressMonitor getProgressMonitorForDatabaseUpgrade()
+	{
+		if (this.progressMonitorParametersForDatabaseUpgrade==null)
+		{
+			progressMonitorParametersForDatabaseUpgrade=new ProgressMonitorParameters(String.format(DatabaseMessages.CONVERT_DATABASE.toString(), getPackage().toString()), null, 0, 100);
+			progressMonitorParametersForDatabaseUpgrade.setMillisToDecideToPopup(1000);
+			progressMonitorParametersForDatabaseUpgrade.setMillisToPopup(1000);
+		}
+		return ProgressMonitorFactory.getDefaultProgressMonitorFactory().getProgressMonitor(progressMonitorParametersForDatabaseUpgrade);
+	}
+
+	/**
+	 * @return The progress monitor's parameter for database initialisation
+	 */
+	public ProgressMonitorParameters getProgressMonitorParametersForDatabaseInitialisation() {
+		return progressMonitorParametersForDatabaseInitialisation;
+	}
+
+	/**
+	 * Set the progress monitor's parameter for database initialisation
+	 */
+	public void setProgressMonitorParametersForDatabaseInitialisation(ProgressMonitorParameters progressMonitorParametersForDatabaseInitialisation) {
+		this.progressMonitorParametersForDatabaseInitialisation = progressMonitorParametersForDatabaseInitialisation;
+	}
+
+	public ProgressMonitor getProgressMonitorForDatabaseInitialisation()
+	{
+		if (this.progressMonitorParametersForDatabaseInitialisation==null)
+		{
+			progressMonitorParametersForDatabaseInitialisation=new ProgressMonitorParameters(String.format(DatabaseMessages.INIT_DATABASE.toString(), getPackage().toString()), null, 0, 100);
+			progressMonitorParametersForDatabaseInitialisation.setMillisToDecideToPopup(1000);
+			progressMonitorParametersForDatabaseInitialisation.setMillisToPopup(1000);
+		}
+		return ProgressMonitorFactory.getDefaultProgressMonitorFactory().getProgressMonitor(progressMonitorParametersForDatabaseInitialisation);
+	}
+
 	@SuppressWarnings("unchecked")
-	public DatabaseConfiguration(Package _package, Collection<Class<?>> _classes, DatabaseCreationCallable callable,
+	public DatabaseConfiguration(int version, Package _package, Collection<Class<?>> _classes, DatabaseCreationCallable callable,
 			DatabaseConfiguration oldVersionOfDatabaseTables, BackupConfiguration backupConfiguration) {
 		if (_classes == null)
 			throw new NullPointerException("_classes");
 		if (_package == null)
 			throw new NullPointerException("_package");
+		if (version<0)
+			throw new IllegalArgumentException();
+		this.version=version;
 		classes = new HashSet<>();
 		dbPackage = _package;
 		if (oldVersionOfDatabaseTables != null && oldVersionOfDatabaseTables.getPackage().equals(_package))

@@ -225,7 +225,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	 * @throws DatabaseException
 	 *             if a problem occurs
 	 */
-	public void backup(File path)
+	public void nativeBackup(File path)
 			throws DatabaseException {
 		if (path == null)
 			throw new NullPointerException("file");

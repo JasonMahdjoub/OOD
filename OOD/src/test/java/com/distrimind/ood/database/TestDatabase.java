@@ -4919,7 +4919,7 @@ public abstract class TestDatabase {
 
 	@Test(threadPoolSize = 1, dependsOnMethods = { "testCheckPoint" })
 	public void testBackup() throws DatabaseException {
-		table1.getDatabaseWrapper().backup(getDatabaseBackupFileName());
+		table1.getDatabaseWrapper().nativeBackup(getDatabaseBackupFileName());
 		table1.checkDataIntegrity();
 		table2.checkDataIntegrity();
 		table3.checkDataIntegrity();

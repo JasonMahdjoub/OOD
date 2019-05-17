@@ -36,6 +36,8 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
+import javax.swing.*;
+
 /**
  * Interface whose functions are called after the database's creation
  * 
@@ -50,27 +52,29 @@ public interface DatabaseCreationCallable {
 	 * data from old database. If old database does not exists, this function will
 	 * not be called.
 	 * 
-	 * @param newDatabaseTables
-	 *            the new database table
+	 * @param oldDatabaseConfiguration
+	 *            the old database configuration
+	 * @param newDatabaseConfiguration
+	 *            the new database configuration
 	 * @throws Exception
 	 *             if a problem occurs
 	 */
-	void transfertDatabaseFromOldVersion(DatabaseConfiguration newDatabaseTables) throws Exception;
+	void transferDatabaseFromOldVersion(DatabaseConfiguration oldDatabaseConfiguration, DatabaseConfiguration newDatabaseConfiguration) throws Exception;
 
 	/**
 	 * This function is called after the database was created and after the eventual
 	 * call of the function
-	 * {@link #transfertDatabaseFromOldVersion(DatabaseConfiguration)}
+	 * {@link #transferDatabaseFromOldVersion(DatabaseConfiguration, DatabaseConfiguration)}
 	 * 
-	 * @param newDatabaseTables
-	 *            the new database table
+	 * @param newDatabaseConfiguration
+	 *            the new database configuration
 	 * @throws Exception
 	 *             if a problem occurs
 	 */
-	void afterDatabaseCreation(DatabaseConfiguration newDatabaseTables) throws Exception;
+	void afterDatabaseCreation(DatabaseConfiguration newDatabaseConfiguration) throws Exception;
 
 	/**
-	 * Tels if the old database must be removed after having created the new
+	 * Tells if the old database must be removed after having created the new
 	 * database
 	 * 
 	 * @return true if the old database must be removed after having created the new
