@@ -55,7 +55,7 @@ import java.util.regex.Pattern;
  * @version 1.0
  * @since MaDKitLanEdition 2.0.0
  */
-public class BackupManager {
+public class BackupRestoreManager {
 	private ArrayList<Long> fileReferenceTimeStamps;
 	private ArrayList<Long> fileTimeStamps;
 	private final File backupDirectory;
@@ -66,7 +66,7 @@ public class BackupManager {
 	private final File computeDatabaseReference;
 	private DatabaseWrapper databaseWrapper;
 
-	BackupManager(DatabaseWrapper databaseWrapper, File backupDirectory, DatabaseConfiguration databaseConfiguration) throws DatabaseException {
+	BackupRestoreManager(DatabaseWrapper databaseWrapper, File backupDirectory, DatabaseConfiguration databaseConfiguration) throws DatabaseException {
 		if (backupDirectory==null)
 			throw new NullPointerException();
 		if (backupDirectory.exists() && backupDirectory.isFile())

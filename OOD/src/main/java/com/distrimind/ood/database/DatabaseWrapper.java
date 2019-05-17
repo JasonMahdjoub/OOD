@@ -147,7 +147,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	// private final boolean isWindows;
 	private static class Database {
 		final HashMap<Class<? extends Table<?>>, Table<?>> tables_instances = new HashMap<>();
-		final BackupManager backupManager;
+		final BackupRestoreManager backupRestoreManager;
 
 		private final DatabaseConfiguration configuration;
 
@@ -157,10 +157,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			this.configuration = configuration;
 			if (configuration.getBackupConfiguration()!=null)
 			{
-				this.backupManager =new BackupManager(wrapper, new File(databaseDirectory, "nativeBackup"), configuration);
+				this.backupRestoreManager =new BackupRestoreManager(wrapper, new File(databaseDirectory, "nativeBackup"), configuration);
 			}
 			else
-				this.backupManager =null;
+				this.backupRestoreManager =null;
 		}
 
 		DatabaseConfiguration getConfiguration() {
@@ -3313,13 +3313,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * @return the backup manager or null if no backup manager was configured.
 	 * @see DatabaseConfiguration
 	 */
-	public BackupManager getBackupManager(Package _package)
+	public BackupRestoreManager getBackupManager(Package _package)
 	{
 		Database d=this.sql_database.get(_package);
 		if (d==null)
 			return null;
 		else
-			return d.backupManager;
+			return d.backupRestoreManager;
 	}
 
 	/**
@@ -3334,7 +3334,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * @return the backup manager or null if no backup manager was configured.
 	 * @see DatabaseConfiguration
 	 */
-	public BackupManager getExternalBackupManager(File backupDirectory, Package _package) throws DatabaseException {
+	public BackupRestoreManager getExternalBackupManager(File backupDirectory, Package _package) throws DatabaseException {
 
 		try {
 			if (getDatabaseDirectory().getCanonicalPath().startsWith(backupDirectory.getCanonicalPath()))
@@ -3343,7 +3343,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (d == null)
 				return null;
 			else
-				return new BackupManager(this, backupDirectory, d.configuration);
+				return new BackupRestoreManager(this, backupDirectory, d.configuration);
 		}
 		catch(IOException e)
 		{

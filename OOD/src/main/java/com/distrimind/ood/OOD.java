@@ -60,8 +60,8 @@ public class OOD {
 		Calendar c1 = Calendar.getInstance();
 		c1.set(2013, Calendar.APRIL, 1);
 		Calendar c2 = Calendar.getInstance();
-		c2.set(2019, Calendar.MAY, 6);
-		VERSION = new Version("Object Oriented Database", "OOD", (short)2, (short)0, (short)0, Version.Type.Beta, (short)107, c1.getTime(),
+		c2.set(2019, Calendar.MAY, 17);
+		VERSION = new Version("Object Oriented Database", "OOD", (short)2, (short)0, (short)0, Version.Type.Stable, (short)1, c1.getTime(),
 				c2.getTime());
 		try {
 			InputStream is = OOD.class.getResourceAsStream("build.txt");
@@ -73,8 +73,16 @@ public class OOD {
 			VERSION.addDeveloper(new PersonDeveloper("mahdjoub", "jason", c.getTime()));
 
 			c = Calendar.getInstance();
+			c.set(2019, Calendar.MAY, 17);
+			Description d = new Description((short)2, (short)0, (short)0, Version.Type.Stable, (short)1, c.getTime());
+			d.addItem("Update Utils to 3.29.0 Stable");
+			d.addItem("Add backup/restore manager, with historical management");
+			d.addItem("Better manage database versions");
+			VERSION.addDescription(d);
+
+			c = Calendar.getInstance();
 			c.set(2019, Calendar.MAY, 6);
-			Description d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)107, c.getTime());
+			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)107, c.getTime());
 			d.addItem("Update Utils to 3.26.0 Stable");
 			d.addItem("Add Field.includeKeyExpiration()");
 			VERSION.addDescription(d);
