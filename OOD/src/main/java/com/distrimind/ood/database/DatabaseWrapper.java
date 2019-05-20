@@ -2662,12 +2662,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 		}, false);
 	}
-
 	/**
 	 * According a class name, returns the instance of a table which inherits the
 	 * class <code>Table&lsaquo;T extends DatabaseRecord&rsaquo;</code>. The
 	 * returned table is always the same instance.
-	 * 
+	 *
 	 * @param _table_name
 	 *            the full class name (with its package)
 	 * @return the corresponding table.
@@ -2678,6 +2677,24 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 *             if parameters are null pointers.
 	 */
 	public final Table<?> getTableInstance(String _table_name) throws DatabaseException {
+		return getTableInstance(_table_name, -1);
+	}
+	/**
+	 * According a class name, returns the instance of a table which inherits the
+	 * class <code>Table&lsaquo;T extends DatabaseRecord&rsaquo;</code>. The
+	 * returned table is always the same instance.
+	 * 
+	 * @param _table_name
+	 *            the full class name (with its package)
+	 * @param databaseVersion the database version (if negative, takes the last version)
+	 * @return the corresponding table.
+	 * @throws DatabaseException
+	 *             if the class have not be found or if problems occur during the
+	 *             instantiation.
+	 * @throws NullPointerException
+	 *             if parameters are null pointers.
+	 */
+	public final Table<?> getTableInstance(String _table_name, int databaseVersion) throws DatabaseException {
 		
 		try {
 			lockWrite();
@@ -2689,7 +2706,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				if (Table.class.isAssignableFrom(c)) {
 					@SuppressWarnings("unchecked")
 					Class<? extends Table<?>> class_table = (Class<? extends Table<?>>) c;
-					return getTableInstance(class_table);
+					return getTableInstance(class_table, databaseVersion);
 				} else
 					throw new DatabaseException(
 							"The class " + _table_name + " does not extends " + Table.class.getName());
@@ -2723,12 +2740,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * the instance of a table which inherits the class
 	 * <code>Table&lsaquo;T extends DatabaseRecord&rsaquo;</code>. The returned
 	 * table is always the same instance.
-	 * 
+	 *
 	 * @param _class_table
 	 *            the class type
 	 * @return the corresponding table.
 	 * @throws DatabaseException
-	 *             if problems occur during the instantiation.
+	 *             if the class have not be found or if problems occur during the
+	 * 	 *             instantiation.
 	 * @throws NullPointerException
 	 *             if parameters are null pointers.
 	 * @param <TT>
@@ -2736,17 +2754,60 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 */
 	public final <TT extends Table<?>> Table<?> getTableInstance(Class<TT> _class_table)
 			throws DatabaseException {
+		return getTableInstance(_class_table, -1);
+	}
+
+
+	private Database getDatabase(Package p, int version )
+	{
+		//TODO complete
+	}
+
+	public int getCurrentDatabaseVersion(Package p)
+	{
+		//TODO complete
+	}
+
+	public boolean isVersionManaged(Package p, int databaseVersion)
+	{
+		//TODO complete
+	}
+
+	/**
+	 * According a Class&lsaquo;? extends Table&lsaquo;?&rsaquo;&rsaquo;, returns
+	 * the instance of a table which inherits the class
+	 * <code>Table&lsaquo;T extends DatabaseRecord&rsaquo;</code>. The returned
+	 * table is always the same instance.
+	 * 
+	 * @param _class_table
+	 *            the class type
+	 * @param databaseVersion the database version (if negative, takes the last version)
+	 * @return the corresponding table.
+	 * @throws DatabaseException
+	 *             if the class have not be found or if problems occur during the
+	 * 	 *             instantiation.
+	 * @throws NullPointerException
+	 *             if parameters are null pointers.
+	 * @param <TT>
+	 *            The table type
+	 */
+	public final <TT extends Table<?>> Table<?> getTableInstance(Class<TT> _class_table, int databaseVersion)
+			throws DatabaseException {
 
 		try {
 			lockWrite();
 			if (_class_table == null)
 				throw new NullPointerException("The parameter _class_table is a null pointer !");
-			Database db = this.sql_database.get(_class_table.getPackage());
+			//Database db = this.sql_database.get(_class_table.getPackage());
+			int curVer=getCurrentDatabaseVersion(_class_table.getPackage());
+			if (databaseVersion<0)
+				databaseVersion=curVer;
+			Database db=getDatabase(_class_table.getPackage(), databaseVersion);
 			if (db == null) {
 				if (_class_table.getPackage().equals(this.getClass().getPackage()) && (actualDatabaseLoading == null
-						|| !actualDatabaseLoading.getConfiguration().getPackage().equals(_class_table.getPackage()))) {
-					loadDatabase(new DatabaseConfiguration(_class_table.getPackage(), internalDatabaseClassesList), true);
-					db = this.sql_database.get(_class_table.getPackage());
+						|| (!actualDatabaseLoading.getConfiguration().getPackage().equals(_class_table.getPackage()) || actualDatabaseLoading.getConfiguration().getVersion()!=databaseVersion))) {
+					loadDatabase(new DatabaseConfiguration(databaseVersion, _class_table.getPackage(), internalDatabaseClassesList), true);
+					db = getDatabase(_class_table.getPackage(), databaseVersion);
 				} else {
 					try {
 						lockWrite();
@@ -3099,14 +3160,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						if (oldConfig != null && callable != null) {
 							try {
 								loadDatabase(oldConfig, false);
-                                callable.transferDatabaseFromOldVersion(configuration);
+                                callable.transferDatabaseFromOldVersion(this, oldConfig, configuration);
 								removeOldDatabase = callable.hasToRemoveOldDatabase();
 							} catch (DatabaseException e) {
 								oldConfig = null;
 							}
 						}
 						if (callable != null) {
-							callable.afterDatabaseCreation(configuration);
+							callable.afterDatabaseCreation(this, configuration);
 							if (removeOldDatabase)
 								deleteDatabase(oldConfig);
 						}
