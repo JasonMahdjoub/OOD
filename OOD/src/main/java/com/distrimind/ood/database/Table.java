@@ -150,6 +150,7 @@ public abstract class Table<T extends DatabaseRecord> {
 	private volatile DatabaseAnomaliesNotifier<T, Table<T>> databaseAnomaliesNotifier;
 	public static final int maxTableNameSizeBytes = 8192;
 	public static final int maxPrimaryKeysSizeBytes = ByteTabFieldAccessor.shortTabSizeLimit;
+	private int databaseVersion=-1;
 
 	public Constructor<T> getDefaultRecordConstructor() {
 		return default_constructor_field;
@@ -415,12 +416,15 @@ public abstract class Table<T extends DatabaseRecord> {
 	}
 
 
-    void initializeStep0(DatabaseWrapper wrapper) throws DatabaseException {
+    void initializeStep0(DatabaseWrapper wrapper, int databaseVersion) throws DatabaseException {
 		sql_connection = wrapper;
+		this.databaseVersion=databaseVersion;
 		if (sql_connection == null)
 			throw new DatabaseException(
 					"No database was given to instanciate the class/table " + this.getClass().getName()
 							+ ". Please use the function associatePackageToSqlJetDatabase before !");
+		if (databaseVersion<0)
+			throw new IllegalArgumentException();
 
 
 		@SuppressWarnings("unchecked")
@@ -470,6 +474,10 @@ public abstract class Table<T extends DatabaseRecord> {
 		if (this.getName().equals(DatabaseWrapper.ROW_PROPERTIES_OF_TABLES))
 			throw new DatabaseException(
 					"This table cannot have the name " + DatabaseWrapper.ROW_PROPERTIES_OF_TABLES + " (case ignored)");
+	}
+
+	public int getDatabaseVersion() {
+		return databaseVersion;
 	}
 
 	private int getTableID()

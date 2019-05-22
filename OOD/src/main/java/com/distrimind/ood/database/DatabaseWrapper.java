@@ -2838,6 +2838,40 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	}
 
+	public final <R extends DatabaseRecord, TT extends Table<R>> Class<Table<R>> getTableClassFromRecord(R record) throws DatabaseException {
+		if (record==null)
+			throw new NullPointerException();
+		Class<?> c=record.getClass();
+		String name=c.getName();
+		int i=name.lastIndexOf("$");
+		if (i>0) {
+			name = name.substring(0, i);
+			try {
+				c=Class.forName(name);
+				if (Table.class.isAssignableFrom(c))
+				{
+					//noinspection unchecked
+					return (Class<Table<R>>)c;
+				}
+
+			} catch (ClassNotFoundException | ClassCastException e) {
+				throw DatabaseException.getDatabaseException(e);
+			}
+
+		}
+		throw new DatabaseException("Class not found !");
+	}
+
+	public final <R extends DatabaseRecord, TT extends Table<R>> Table<?> getTableInstanceFromRecord(R record) throws DatabaseException {
+		return getTableInstanceFromRecord(record, -1);
+	}
+	public final <R extends DatabaseRecord, TT extends Table<R>> Table<?> getTableInstanceFromRecord(R record, int databaseVersion) throws DatabaseException {
+		Class<Table<R>> c=getTableClassFromRecord(record);
+		if (databaseVersion<0)
+			databaseVersion=getCurrentDatabaseVersion(c.getPackage());
+		return getTableInstance(c, databaseVersion);
+	}
+
 	/*
 	 * @SuppressWarnings("unchecked") public final <TT extends Table<?>> Table<?
 	 * extends DatabaseRecord> getTableInstance(Class<TT> _class_table) throws
@@ -2969,9 +3003,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 	}
 
-
-	public String getTableName(Class<?> tTableClass) throws DatabaseException {
-		return getTableName(tTableClass, getTableID(tTableClass));
+	public String getInternalTableName(Class<?> tTableClass) throws DatabaseException {
+		return getInternalTableName(tTableClass, getCurrentDatabaseVersion(tTableClass.getPackage()));
+	}
+	public String getInternalTableName(Class<?> tTableClass, int databaseVersion) throws DatabaseException {
+		return getTableName(tTableClass, getTableID(tTableClass, databaseVersion));
 	}
 
 	String getTableName(Class<?> tTableClass, int tableID) throws DatabaseException {
@@ -2984,9 +3020,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			return tn.sqlTableName().toUpperCase();
 		}
 	}
-
 	public int getTableID(Table<?> tTable) throws DatabaseException {
-		return getTableID(tTable.getClass());
+		return getTableID(tTable.getClass(), tTable.getDatabaseVersion());
 	}
 
 	String getLongTableName(Class<?> tTableClass)
@@ -2994,6 +3029,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		return tTableClass.getCanonicalName().replace(".", "_").toUpperCase();
 	}
 	public int getTableID(Class<?> tTableClass) throws DatabaseException {
+		return getTableID(tTableClass, getCurrentDatabaseVersion(tTableClass.getPackage()));
+	}
+	public int getTableID(Class<?> tTableClass, int databaseVersion) throws DatabaseException {
 		String longTableName=getLongTableName(tTableClass);
 
 		try {
@@ -3102,7 +3140,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 							ArrayList<Table<?>> list_tables = new ArrayList<>(configuration.getTableClasses().size());
 							for (Class<? extends Table<?>> class_to_load : configuration.getTableClasses()) {
-								Table<?> t = newInstance(class_to_load);
+								Table<?> t = newInstance(class_to_load, configuration.getVersion());
 								list_tables.add(t);
 								actualDatabaseLoading.tables_instances.put(class_to_load, t);
 							}
@@ -3239,7 +3277,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 	}
 
-	<TT extends Table<?>> TT newInstance(Class<TT> _class_table) throws InstantiationException, IllegalAccessException,
+	<TT extends Table<?>> TT newInstance(Class<TT> _class_table, int databaseVersion) throws InstantiationException, IllegalAccessException,
 			IllegalArgumentException, InvocationTargetException, DatabaseException, PrivilegedActionException {
 		DefaultConstructorAccessPrivilegedAction<TT> class_privelege = new DefaultConstructorAccessPrivilegedAction<>(
                 _class_table);
@@ -3248,7 +3286,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 
 		TT t = const_table.newInstance();
-		t.initializeStep0(this);
+		t.initializeStep0(this, databaseVersion);
 		return t;
 	}
 
@@ -3437,4 +3475,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		close();
 		deleteDatabaseFiles(getDatabaseDirectory());
 	}
+
+
 }
