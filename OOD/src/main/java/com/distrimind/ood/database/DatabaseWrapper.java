@@ -2752,7 +2752,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * @param <TT>
 	 *            The table type
 	 */
-	public final <TT extends Table<?>> Table<?> getTableInstance(Class<TT> _class_table)
+	public final <TT extends Table<?>> TT getTableInstance(Class<TT> _class_table)
 			throws DatabaseException {
 		return getTableInstance(_class_table, -1);
 	}
@@ -2791,7 +2791,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * @param <TT>
 	 *            The table type
 	 */
-	public final <TT extends Table<?>> Table<?> getTableInstance(Class<TT> _class_table, int databaseVersion)
+	public final <TT extends Table<?>> TT getTableInstance(Class<TT> _class_table, int databaseVersion)
 			throws DatabaseException {
 
 		try {
@@ -2838,7 +2838,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	}
 
-	public final <R extends DatabaseRecord, TT extends Table<R>> Class<Table<R>> getTableClassFromRecord(R record) throws DatabaseException {
+	public final <R extends DatabaseRecord> Class<Table<R>> getTableClassFromRecord(R record) throws DatabaseException {
 		if (record==null)
 			throw new NullPointerException();
 		Class<?> c=record.getClass();
@@ -2862,10 +2862,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		throw new DatabaseException("Class not found !");
 	}
 
-	public final <R extends DatabaseRecord, TT extends Table<R>> Table<?> getTableInstanceFromRecord(R record) throws DatabaseException {
+	public final <R extends DatabaseRecord> Table<R> getTableInstanceFromRecord(R record) throws DatabaseException {
 		return getTableInstanceFromRecord(record, -1);
 	}
-	public final <R extends DatabaseRecord, TT extends Table<R>> Table<?> getTableInstanceFromRecord(R record, int databaseVersion) throws DatabaseException {
+	public final <R extends DatabaseRecord> Table<R> getTableInstanceFromRecord(R record, int databaseVersion) throws DatabaseException {
 		Class<Table<R>> c=getTableClassFromRecord(record);
 		if (databaseVersion<0)
 			databaseVersion=getCurrentDatabaseVersion(c.getPackage());

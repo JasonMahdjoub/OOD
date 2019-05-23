@@ -44,6 +44,7 @@ import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.sql.*;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
@@ -189,7 +190,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 					try {
 						return H2BlobConstructor.newInstance(getConnectionAssociatedWithCurrentThread().getConnection(), H2ValueMethod.invoke(null, (Object) bytes), -1);
 					} catch (Exception e) {
-						throw DatabaseException.getDatabaseException(e);
+						throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 					}
 				}
 
@@ -366,9 +367,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 
 					}
 					break;
-					case "CHECK":
-						break;
-					case "REFERENTIAL":
+					case "CHECK":case "REFERENTIAL":
 						break;
 					default:
 						throw new DatabaseVersionException(table, "Unknow constraint " + constraint_type);
@@ -506,7 +505,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 		} catch (SQLException e) {
 			throw new DatabaseException("Impossible to check constraints of the table " + table.getName(), e);
 		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
+			throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 		}
 	}
 	@Override
@@ -521,10 +520,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 			case TRANSACTION_READ_UNCOMMITTED:
 				isoLevel = "0";
 				break;
-			case TRANSACTION_REPEATABLE_READ:
-				isoLevel = "1";
-				break;
-			case TRANSACTION_SERIALIZABLE:
+			case TRANSACTION_REPEATABLE_READ:case TRANSACTION_SERIALIZABLE:
 				isoLevel = "1";
 				break;
 			default:

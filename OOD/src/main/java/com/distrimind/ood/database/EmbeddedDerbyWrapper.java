@@ -36,18 +36,17 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import java.io.File;
-import java.sql.*;
-import java.util.Objects;
-import java.util.regex.Pattern;
-
 import com.distrimind.ood.database.Table.ColumnsReadQuerry;
 import com.distrimind.ood.database.Table.ReadQuerry;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseVersionException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
-import com.distrimind.util.FileTools;
+
+import java.io.File;
+import java.sql.*;
+import java.util.Objects;
+import java.util.regex.Pattern;
 
 /**
  * Sql connection wrapper for Derby DB
