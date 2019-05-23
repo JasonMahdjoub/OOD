@@ -63,8 +63,8 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	/**
 	 * Constructor
 	 *
-	 * @param _file_name
-	 *            The file which contains the database. If this file does not
+	 * @param _directory_name
+	 *            The directory which contains the database. If this directory does not
 	 *            exists, it will be automatically created with the correspondent
 	 *            database.
 	 *
@@ -74,7 +74,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	 *             If the given file is a directory.
 	 * @throws DatabaseException if a problem occurs
 	 */
-	public EmbeddedH2DatabaseWrapper(File _file_name) throws DatabaseException {
+	public EmbeddedH2DatabaseWrapper(File _directory_name) throws DatabaseException {
 		this(_file_name, false);
 	}
 	/**

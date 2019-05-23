@@ -195,6 +195,20 @@ public class BackupRestoreManager {
 	public long createBackupReference(File backupReferenceLocation) throws DatabaseException
 	{
 		//TODO complete creation of a new nativeBackup reference
+		long reference = ...
+		try {
+
+			cleanOldBackups();
+			if (!computeDatabaseReference.delete())
+				throw new DatabaseException("Impossible to delete file "+computeDatabaseReference);
+		}
+		catch(DatabaseException e)
+		{
+			deleteDatabaseFilesFromReferenceToLastFile(reference);
+			throw e;
+		}
+		return reference;
+
 	}
 
 	public int cleanOldBackups() throws DatabaseException
@@ -249,18 +263,7 @@ public class BackupRestoreManager {
 	boolean createIfNecessaryNewBackupReference() throws DatabaseException {
 		if (doesCreateNewBackupReference())
 		{
-			long reference = createBackupReference(backupDirectory);
-			try {
-
-				cleanOldBackups();
-				if (!computeDatabaseReference.delete())
-					throw new DatabaseException("Impossible to delete file "+computeDatabaseReference);
-			}
-			catch(DatabaseException e)
-			{
-				deleteDatabaseFilesFromReferenceToLastFile(reference);
-				throw e;
-			}
+			createBackupReference(backupDirectory);
 
 			return true;
 

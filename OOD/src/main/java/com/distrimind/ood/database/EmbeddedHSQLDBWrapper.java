@@ -50,6 +50,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.*;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
@@ -511,13 +512,13 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 						st = getConnectionAssociatedWithCurrentThread().getConnection().createStatement();
 						st.execute("CHECKPOINT" + (_defrag ? " DEFRAG" : ""));
 					} catch (SQLException e) {
-						throw DatabaseException.getDatabaseException(e);
+						throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 					} finally {
 						try {
                             assert st != null;
                             st.close();
 						} catch (SQLException e) {
-							throw DatabaseException.getDatabaseException(e);
+							throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 						}
 
 					}
@@ -798,8 +799,8 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 	/**
 	 * Constructor
 	 *
-	 * @param _file_name
-	 *            The file which contains the database. If this file does not
+	 * @param databaseDirectory
+	 *            The directory which contains the database. If this directory does not
 	 *            exists, it will be automatically created with the correspondent
 	 *            database.
 	 * @throws NullPointerException
@@ -808,15 +809,15 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 	 *             If the given file is a directory.
 	 * @throws DatabaseException if secured random was not found
 	 */
-	public EmbeddedHSQLDBWrapper(File _file_name) throws IllegalArgumentException, DatabaseException {
-		this(_file_name, false);
+	public EmbeddedHSQLDBWrapper(File databaseDirectory) throws IllegalArgumentException, DatabaseException {
+		this(databaseDirectory, false);
 	}
 
 	/**
 	 * Constructor
 	 *
-	 * @param _file_name
-	 *            The file which contains the database. If this file does not
+	 * @param databaseDirectory
+	 *            The directory which contains the database. If this directory does not
 	 *            exists, it will be automatically created with the correspondent
 	 *            database.
 	 * @param alwaysDeconectAfterOnTransaction true if the database must always be connected and detected during one transaction
@@ -826,8 +827,8 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 	 *             If the given file is a directory.
 	 * @throws DatabaseException if secured random was not found
 	 */
-	public EmbeddedHSQLDBWrapper(File _file_name, boolean alwaysDeconectAfterOnTransaction) throws IllegalArgumentException, DatabaseException {
-		this(_file_name, alwaysDeconectAfterOnTransaction, HSQLDBConcurrencyControl.DEFAULT, 100, 10000, 0, 512, true);
+	public EmbeddedHSQLDBWrapper(File databaseDirectory, boolean alwaysDeconectAfterOnTransaction) throws IllegalArgumentException, DatabaseException {
+		this(databaseDirectory, alwaysDeconectAfterOnTransaction, HSQLDBConcurrencyControl.DEFAULT, 100, 10000, 0, 512, true);
 	}
 
 	@Override

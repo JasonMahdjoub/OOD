@@ -157,7 +157,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			this.configuration = configuration;
 			if (configuration.getBackupConfiguration()!=null)
 			{
-				this.backupRestoreManager =new BackupRestoreManager(wrapper, new File(databaseDirectory, "nativeBackup"), configuration);
+				this.backupRestoreManager =new BackupRestoreManager(wrapper, new File(new File(databaseDirectory, "nativeBackups"),wrapper.getLongPackageName(configuration.getPackage())), configuration);
 			}
 			else
 				this.backupRestoreManager =null;
@@ -3024,9 +3024,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		return getTableID(tTable.getClass(), tTable.getDatabaseVersion());
 	}
 
-	String getLongTableName(Class<?> tTableClass, int databaseVersion)
+	static String getLongTableName(Class<?> tTableClass, int databaseVersion)
 	{
 		return ("V"+databaseVersion+"__"+tTableClass.getCanonicalName().replace(".", "_")).toUpperCase();
+	}
+	static String getLongPackageName(Package p)
+	{
+		return p.getName().replace(".", "_").toLowerCase();
 	}
 	public int getTableID(Class<?> tTableClass) throws DatabaseException {
 		return getTableID(tTableClass, getCurrentDatabaseVersion(tTableClass.getPackage()));
@@ -3412,7 +3416,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * @return the backup manager or null if no backup manager was configured.
 	 * @see DatabaseConfiguration
 	 */
-	public BackupRestoreManager getBackupManager(Package _package)
+	public BackupRestoreManager getBackupRestoreManager(Package _package)
 	{
 		Database d=this.sql_database.get(_package);
 		if (d==null)
@@ -3433,7 +3437,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * @return the backup manager or null if no backup manager was configured.
 	 * @see DatabaseConfiguration
 	 */
-	public BackupRestoreManager getExternalBackupManager(File backupDirectory, Package _package) throws DatabaseException {
+	public BackupRestoreManager getExternalBackupRestoreManager(File backupDirectory, Package _package) throws DatabaseException {
 
 		try {
 			if (getDatabaseDirectory().getCanonicalPath().startsWith(backupDirectory.getCanonicalPath()))
@@ -3442,11 +3446,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (d == null)
 				return null;
 			else
-				return new BackupRestoreManager(this, backupDirectory, d.configuration);
+				return new BackupRestoreManager(this, new File(backupDirectory, getLongPackageName(_package)), d.configuration);
 		}
 		catch(IOException e)
 		{
-			throw DatabaseException.getDatabaseException(e);
+			throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 		}
 	}
 
