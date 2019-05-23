@@ -124,6 +124,7 @@ public class TestDatabaseBackupRestore {
 		loadData(wrapperForReferenceDatabase, wrapper);
 		BackupRestoreManager externalBRM=wrapper.getExternalBackupRestoreManager(externalBackupDirectory, Table1.class.getPackage());
 		Assert.assertNotNull(externalBRM);
+		externalBRM.createBackupReference();
 		Thread.sleep(100);
 		long dateRestoration=System.currentTimeMillis();
 		Thread.sleep(200);

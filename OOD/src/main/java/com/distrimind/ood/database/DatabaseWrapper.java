@@ -157,7 +157,22 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			this.configuration = configuration;
 			if (configuration.getBackupConfiguration()!=null)
 			{
-				this.backupRestoreManager =new BackupRestoreManager(wrapper, new File(new File(databaseDirectory, "nativeBackups"),wrapper.getLongPackageName(configuration.getPackage())), configuration);
+				this.backupRestoreManager =new BackupRestoreManager(wrapper, new File(new File(databaseDirectory, "nativeBackups"),DatabaseWrapper.getLongPackageName(configuration.getPackage())), configuration, false);
+				while((configuration=configuration.getOldVersionOfDatabaseConfiguration())!=null)
+				{
+					if (this.configuration.getPackage().equals(configuration.getPackage()))
+						continue;
+
+					File f=new File(new File(databaseDirectory, "nativeBackups"),DatabaseWrapper.getLongPackageName(configuration.getPackage()));
+					if (!f.exists())
+						continue;
+					BackupRestoreManager m=new BackupRestoreManager(wrapper, f, configuration, true);
+					m.cleanOldBackups();
+					if (m.isEmpty())
+					{
+						FileTools.deleteDirectory(f);
+					}
+				}
 			}
 			else
 				this.backupRestoreManager =null;
@@ -3446,7 +3461,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (d == null)
 				return null;
 			else
-				return new BackupRestoreManager(this, new File(backupDirectory, getLongPackageName(_package)), d.configuration);
+				return new BackupRestoreManager(this, new File(backupDirectory, getLongPackageName(_package)), d.configuration, true);
 		}
 		catch(IOException e)
 		{

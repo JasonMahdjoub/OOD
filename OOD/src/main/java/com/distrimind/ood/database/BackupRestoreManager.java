@@ -65,8 +65,9 @@ public class BackupRestoreManager {
 
 	private final File computeDatabaseReference;
 	private DatabaseWrapper databaseWrapper;
+	private final boolean passive;
 
-	BackupRestoreManager(DatabaseWrapper databaseWrapper, File backupDirectory, DatabaseConfiguration databaseConfiguration) throws DatabaseException {
+	BackupRestoreManager(DatabaseWrapper databaseWrapper, File backupDirectory, DatabaseConfiguration databaseConfiguration, boolean passive) throws DatabaseException {
 		if (backupDirectory==null)
 			throw new NullPointerException();
 		if (backupDirectory.exists() && backupDirectory.isFile())
@@ -75,6 +76,7 @@ public class BackupRestoreManager {
 			throw new NullPointerException();
 		if (databaseWrapper==null)
 			throw new NullPointerException();
+		this.passive=passive;
 		this.databaseWrapper=databaseWrapper;
 		FileTools.checkFolderRecursive(backupDirectory);
 		this.backupDirectory=backupDirectory;
@@ -192,7 +194,7 @@ public class BackupRestoreManager {
 		return fileTimeStamps.size()>0 && !computeDatabaseReference.exists();
 	}
 
-	public long createBackupReference(File backupReferenceLocation) throws DatabaseException
+	public long createBackupReference() throws DatabaseException
 	{
 		//TODO complete creation of a new nativeBackup reference
 		long reference = ...
@@ -228,7 +230,7 @@ public class BackupRestoreManager {
 
 	boolean doesCreateNewBackupReference()
 	{
-		return !isReady();
+		return !passive && !isReady();
 	}
 
 	private int deleteDatabaseFilesFromReferenceToLastFile(long fileReference)
@@ -263,7 +265,7 @@ public class BackupRestoreManager {
 	boolean createIfNecessaryNewBackupReference() throws DatabaseException {
 		if (doesCreateNewBackupReference())
 		{
-			createBackupReference(backupDirectory);
+			createBackupReference();
 
 			return true;
 
@@ -287,6 +289,10 @@ public class BackupRestoreManager {
 			throw DatabaseException.getDatabaseException(e);
 		}
 
+	}
+
+	public boolean isEmpty() {
+		return this.fileReferenceTimeStamps.size()==0;
 	}
 
 	interface Transaction
