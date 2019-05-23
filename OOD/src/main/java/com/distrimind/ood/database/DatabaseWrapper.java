@@ -3024,15 +3024,15 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		return getTableID(tTable.getClass(), tTable.getDatabaseVersion());
 	}
 
-	String getLongTableName(Class<?> tTableClass)
+	String getLongTableName(Class<?> tTableClass, int databaseVersion)
 	{
-		return tTableClass.getCanonicalName().replace(".", "_").toUpperCase();
+		return ("V"+databaseVersion+"__"+tTableClass.getCanonicalName().replace(".", "_")).toUpperCase();
 	}
 	public int getTableID(Class<?> tTableClass) throws DatabaseException {
 		return getTableID(tTableClass, getCurrentDatabaseVersion(tTableClass.getPackage()));
 	}
 	public int getTableID(Class<?> tTableClass, int databaseVersion) throws DatabaseException {
-		String longTableName=getLongTableName(tTableClass);
+		String longTableName=getLongTableName(tTableClass, databaseVersion);
 
 		try {
 			PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()

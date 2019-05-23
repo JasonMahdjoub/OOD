@@ -569,7 +569,6 @@ public abstract class Table<T extends DatabaseRecord> {
 	{
 		DatabaseCollisionsNotifier<T, Table<T>> databaseCollisionsNotifier=getDatabaseCollisionsNotifier();
 		if (databaseCollisionsNotifier!=null)
-			//noinspection unchecked
 			return databaseCollisionsNotifier.areDuplicatedEventsNotConsideredAsCollisions();
 		return true;
 
