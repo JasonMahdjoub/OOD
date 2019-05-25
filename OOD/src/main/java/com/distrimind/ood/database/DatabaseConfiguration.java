@@ -59,7 +59,7 @@ import javax.swing.*;
  * @see DatabaseLifeCycles
  */
 public class DatabaseConfiguration {
-	private int version;
+
 	private final Set<Class<? extends Table<?>>> classes;
 	private final Package dbPackage;
 	private DatabaseConfiguration oldDatabaseTables;
@@ -75,31 +75,28 @@ public class DatabaseConfiguration {
 	 */
 	private ProgressMonitorParameters progressMonitorParametersForDatabaseInitialisation;
 
-	public DatabaseConfiguration(int version, Package _package) {
-		this(version, _package, ListClasses.getClasses(_package), null, null);
+	public DatabaseConfiguration(Package _package) {
+		this(_package, ListClasses.getClasses(_package), null, null);
 	}
-	public DatabaseConfiguration(int version, Package _package, DatabaseLifeCycles callable,
+	public DatabaseConfiguration(Package _package, DatabaseLifeCycles callable,
 								 DatabaseConfiguration oldVersionOfDatabaseTables)
 	{
-		this(version, _package, callable, oldVersionOfDatabaseTables, null);
+		this(_package, callable, oldVersionOfDatabaseTables, null);
 	}
-	public DatabaseConfiguration(int version, Package _package, DatabaseLifeCycles callable,
+	public DatabaseConfiguration(Package _package, DatabaseLifeCycles callable,
 			DatabaseConfiguration oldVersionOfDatabaseTables, BackupConfiguration backupConfiguration) {
-		this(version, _package, ListClasses.getClasses(_package), callable, oldVersionOfDatabaseTables, backupConfiguration);
+		this(_package, ListClasses.getClasses(_package), callable, oldVersionOfDatabaseTables, backupConfiguration);
 	}
 
-	public DatabaseConfiguration(int version, Package _package, Collection<Class<?>> _classes) {
-		this(version, _package, _classes, null, null);
+	public DatabaseConfiguration(Package _package, Collection<Class<?>> _classes) {
+		this(_package, _classes, null, null);
 	}
-	public DatabaseConfiguration(int version, Package _package, Collection<Class<?>> _classes, DatabaseLifeCycles callable,
+	public DatabaseConfiguration(Package _package, Collection<Class<?>> _classes, DatabaseLifeCycles callable,
 								 DatabaseConfiguration oldVersionOfDatabaseTables)
 	{
-		this(version, _package, _classes, callable, oldVersionOfDatabaseTables, null);
+		this(_package, _classes, callable, oldVersionOfDatabaseTables, null);
 	}
 
-	public int getVersion() {
-		return version;
-	}
 
 	/**
 	 * @return The progress monitor's parameter for database upgrade
@@ -152,15 +149,13 @@ public class DatabaseConfiguration {
 	}
 
 	@SuppressWarnings("unchecked")
-	public DatabaseConfiguration(int version, Package _package, Collection<Class<?>> _classes, DatabaseLifeCycles callable,
+	public DatabaseConfiguration(Package _package, Collection<Class<?>> _classes, DatabaseLifeCycles callable,
 			DatabaseConfiguration oldVersionOfDatabaseTables, BackupConfiguration backupConfiguration) {
 		if (_classes == null)
 			throw new NullPointerException("_classes");
 		if (_package == null)
 			throw new NullPointerException("_package");
-		if (version<0)
-			throw new IllegalArgumentException();
-		this.version=version;
+
 		classes = new HashSet<>();
 		dbPackage = _package;
 		if (oldVersionOfDatabaseTables != null && oldVersionOfDatabaseTables.getPackage().equals(_package))

@@ -119,6 +119,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 
 
+
     public boolean isAlwaysDeconectAfterOnTransaction() {
         return alwaysDeconectAfterOnTransaction;
     }
@@ -142,12 +143,16 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		this.maxTransactionsToSynchronizeAtTheSameTime = maxTransactionsToSynchronizeAtTheSameTime;
 	}
 
+	private static class DatabasePerVersion
+	{
+		final HashMap<Class<? extends Table<?>>, Table<?>> tables_instances = new HashMap<>();
 
+	}
 
 	// private final boolean isWindows;
 	private static class Database {
-		final HashMap<Class<? extends Table<?>>, Table<?>> tables_instances = new HashMap<>();
-		final BackupRestoreManager backupRestoreManager;
+		final HashMap<Integer, DatabasePerVersion> tables_per_versions = new HashMap<>();
+		BackupRestoreManager backupRestoreManager=null;
 
 		private final DatabaseConfiguration configuration;
 
@@ -155,8 +160,18 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (configuration == null)
 				throw new NullPointerException("configuration");
 			this.configuration = configuration;
+		}
+
+		DatabaseConfiguration getConfiguration() {
+			return configuration;
+		}
+
+		void initBackupRestoreManager(DatabaseWrapper wrapper, File databaseDirectory, DatabaseConfiguration configuration) throws DatabaseException {
+			if (this.backupRestoreManager!=null)
+				return;
 			if (configuration.getBackupConfiguration()!=null)
 			{
+
 				this.backupRestoreManager =new BackupRestoreManager(wrapper, new File(new File(databaseDirectory, "nativeBackups"),DatabaseWrapper.getLongPackageName(configuration.getPackage())), configuration, false);
 				while((configuration=configuration.getOldVersionOfDatabaseConfiguration())!=null)
 				{
@@ -174,14 +189,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					}
 				}
 			}
-			else
-				this.backupRestoreManager =null;
 		}
-
-		DatabaseConfiguration getConfiguration() {
-			return configuration;
-		}
-
 	}
 
 	/**
@@ -2709,7 +2717,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * @throws NullPointerException
 	 *             if parameters are null pointers.
 	 */
-	public final Table<?> getTableInstance(String _table_name, int databaseVersion) throws DatabaseException {
+	final Table<?> getTableInstance(String _table_name, int databaseVersion) throws DatabaseException {
 		
 		try {
 			lockWrite();
@@ -2773,10 +2781,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	}
 
 
-	private Database getDatabase(Package p, int version )
-	{
-		//TODO complete
-	}
 
 	public int getCurrentDatabaseVersion(Package p)
 	{
@@ -2806,7 +2810,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * @param <TT>
 	 *            The table type
 	 */
-	public final <TT extends Table<?>> TT getTableInstance(Class<TT> _class_table, int databaseVersion)
+	final <TT extends Table<?>> TT getTableInstance(Class<TT> _class_table, int databaseVersion)
 			throws DatabaseException {
 
 		try {
@@ -2814,21 +2818,25 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (_class_table == null)
 				throw new NullPointerException("The parameter _class_table is a null pointer !");
 			//Database db = this.sql_database.get(_class_table.getPackage());
-			int curVer=getCurrentDatabaseVersion(_class_table.getPackage());
 			if (databaseVersion<0)
-				databaseVersion=curVer;
-			Database db=getDatabase(_class_table.getPackage(), databaseVersion);
-			if (db == null) {
+				databaseVersion=getCurrentDatabaseVersion(_class_table.getPackage());
+			Database db=sql_database.get(_class_table.getPackage());
+			DatabasePerVersion dpv=db==null?null:db.tables_per_versions.get(databaseVersion);
+
+			if (dpv == null) {
 				if (_class_table.getPackage().equals(this.getClass().getPackage()) && (actualDatabaseLoading == null
-						|| (!actualDatabaseLoading.getConfiguration().getPackage().equals(_class_table.getPackage()) || actualDatabaseLoading.getConfiguration().getVersion()!=databaseVersion))) {
-					loadDatabase(new DatabaseConfiguration(databaseVersion, _class_table.getPackage(), internalDatabaseClassesList), true);
-					db = getDatabase(_class_table.getPackage(), databaseVersion);
+						|| !actualDatabaseLoading.getConfiguration().getPackage().equals(_class_table.getPackage()) )) {
+					loadDatabase(new DatabaseConfiguration(_class_table.getPackage(), internalDatabaseClassesList), true, databaseVersion);
+					db=sql_database.get(_class_table.getPackage());
+					dpv=db.tables_per_versions.get(databaseVersion);
 				} else {
 					try {
 						lockWrite();
 						if (actualDatabaseLoading != null && actualDatabaseLoading.getConfiguration().getPackage()
-								.equals(_class_table.getPackage()))
+								.equals(_class_table.getPackage()) && actualDatabaseLoading.tables_per_versions.containsKey(databaseVersion)) {
 							db = actualDatabaseLoading;
+							dpv = db.tables_per_versions.get(databaseVersion);
+						}
 						else
 							throw new DatabaseException(
 									"The given database was not loaded : " + _class_table.getPackage());
@@ -2839,9 +2847,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					}
 				}
 			}
-			Table<?> founded_table = db.tables_instances.get(_class_table);
+			Table<?> founded_table = dpv.tables_instances.get(_class_table);
 			if (founded_table != null)
-				return founded_table;
+				//noinspection unchecked
+				return (TT)founded_table;
 			else
 				throw new DatabaseException("Impossible to find the instance of the table " + _class_table.getName()
 						+ ". It is possible that no SqlConnection was associated to the corresponding table.");
@@ -2878,74 +2887,17 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	}
 
 	public final <R extends DatabaseRecord> Table<R> getTableInstanceFromRecord(R record) throws DatabaseException {
-		return getTableInstanceFromRecord(record, -1);
+		Class<Table<R>> c=getTableClassFromRecord(record);
+		return getTableInstance(c, getCurrentDatabaseVersion(c.getPackage()));
 	}
-	public final <R extends DatabaseRecord> Table<R> getTableInstanceFromRecord(R record, int databaseVersion) throws DatabaseException {
+	/*final <R extends DatabaseRecord> Table<R> getTableInstanceFromRecord(R record, int databaseVersion) throws DatabaseException {
 		Class<Table<R>> c=getTableClassFromRecord(record);
 		if (databaseVersion<0)
 			databaseVersion=getCurrentDatabaseVersion(c.getPackage());
 		return getTableInstance(c, databaseVersion);
-	}
+	}*/
 
-	/*
-	 * @SuppressWarnings("unchecked") public final <TT extends Table<?>> Table<?
-	 * extends DatabaseRecord> getTableInstance(Class<TT> _class_table) throws
-	 * DatabaseException { try(ReadWriteLock.Lock
-	 * lock=locker.getAutoCloseableWriteLock()) { if (this.closed) throw new
-	 * DatabaseException("The given Database was closed : "+this); if
-	 * (_class_table==null) throw new
-	 * NullPointerException("The parameter _class_table is a null pointer !");
-	 * 
-	 * if (this.tables_instances.containsKey(_class_table)) return
-	 * (TT)this.tables_instances.get(_class_table); else { checkRowCountTable();
-	 * return loadTable(_class_table); } } }
-	 * 
-	 * @SuppressWarnings("unchecked") private <TT extends Table<?>> TT
-	 * loadTable(Class<TT> _class_table) throws DatabaseException { try {
-	 * ArrayList<Table<?>> list_tables=new ArrayList<>(); LinkedList<Class<? extends
-	 * Table<?>>> list_classes_to_instanciate=new LinkedList<>();
-	 * 
-	 * TT res=newInstance(_class_table); this.tables_instances.put(_class_table,
-	 * res); list_tables.add(res); list_classes_to_instanciate.push(_class_table);
-	 * 
-	 * while (list_classes_to_instanciate.size()>0) { Class<? extends Table<?>>
-	 * c=list_classes_to_instanciate.poll(); Table<?> t=tables_instances.get(c); if
-	 * (t==null) { t=newInstance(c); list_tables.add(t);
-	 * this.tables_instances.put(c, t); } for (ForeignKeyFieldAccessor fkfa :
-	 * t.getForeignKeysFieldAccessors()) list_classes_to_instanciate.add((Class<?
-	 * extends Table<?>>)fkfa.getFieldClassType()); } for (Table<?> t : list_tables)
-	 * { t.initializeStep1(); } for (Table<?> t : list_tables) {
-	 * t.initializeStep2(); } for (Table<?> t : list_tables) { t.initializeStep3();
-	 * } return res; } catch (InstantiationException | IllegalAccessException |
-	 * IllegalArgumentException | InvocationTargetException |
-	 * PrivilegedActionException e) { throw new
-	 * DatabaseException("Impossible to access to a class ! ", e); } catch(Exception
-	 * e) { throw DatabaseException.getDatabaseException(e); } }
-	 * 
-	 * private void checkRowCountTable() throws DatabaseException {
-	 * runTransaction(new Transaction() {
-	 * 
-	 * @Override public Boolean run(DatabaseWrapper sql_connection) throws
-	 * DatabaseException { try { boolean table_found=false; try (ReadQuerry rq=new
-	 * ReadQuerry(sql_connection.getSqlConnection(),
-	 * "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"
-	 * +ROW_PROPERTIES_OF_TABLES+"'")) { if (rq.result_set.next()) table_found=true; } if
-	 * (!table_found) { Statement
-	 * st=sql_connection.getSqlConnection().createStatement();
-	 * st.executeUpdate("CREATE TABLE "
-	 * +ROW_PROPERTIES_OF_TABLES+" (TABLE_NAME VARCHAR(512), ROW_COUNT INTEGER)");
-	 * st.close(); }
-	 * 
-	 * 
-	 * return null; } catch(Exception e) { throw
-	 * DatabaseException.getDatabaseException(e); } }
-	 * 
-	 * @Override public boolean doesWriteData() { return true; }
-	 * 
-	 * });
-	 * 
-	 * }
-	 */
+
 
 	/**
 	 * Remove a database
@@ -2956,6 +2908,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 *             if a problem occurs
 	 */
 	public final void deleteDatabase(final DatabaseConfiguration configuration) throws DatabaseException {
+		deleteDatabase(configuration, getCurrentDatabaseVersion(configuration.getPackage()));
+	}
+	final void deleteDatabase(final DatabaseConfiguration configuration, final int databaseVersion) throws DatabaseException {
 		try  {
 			lockWrite();
 
@@ -2965,7 +2920,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				public Void run(DatabaseWrapper sql_connection) throws DatabaseException {
 					try {
 						if (!sql_database.containsKey(configuration.getPackage()))
-							loadDatabase(configuration, false);
+							loadDatabase(configuration, false, databaseVersion);
 
 					} catch (DatabaseException e) {
 						return null;
@@ -2977,7 +2932,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 					ArrayList<Table<?>> list_tables = new ArrayList<>(configuration.getTableClasses().size());
 					for (Class<? extends Table<?>> c : configuration.getTableClasses()) {
-						Table<?> t = getTableInstance(c);
+						Table<?> t = getTableInstance(c, databaseVersion);
 						list_tables.add(t);
 					}
 					for (Table<?> t : list_tables) {
@@ -2989,7 +2944,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 					@SuppressWarnings("unchecked")
 					HashMap<Package, Database> sd = (HashMap<Package, Database>) sql_database.clone();
-					sd.remove(configuration.getPackage());
+					db=sd.get(configuration.getPackage());
+					db.tables_per_versions.remove(databaseVersion);
+					if (db.tables_per_versions.size()==0)
+						sd.remove(configuration.getPackage());
 					sql_database = sd;
 
 					return null;
@@ -3050,7 +3008,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	public int getTableID(Class<?> tTableClass) throws DatabaseException {
 		return getTableID(tTableClass, getCurrentDatabaseVersion(tTableClass.getPackage()));
 	}
-	public int getTableID(Class<?> tTableClass, int databaseVersion) throws DatabaseException {
+	int getTableID(Class<?> tTableClass, int databaseVersion) throws DatabaseException {
 		String longTableName=getLongTableName(tTableClass, databaseVersion);
 
 		try {
@@ -3090,7 +3048,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			return res;
 
 		} catch (SQLException e) {
-			throw DatabaseException.getDatabaseException(e);
+			throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 		}
 
 	}
@@ -3119,10 +3077,15 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 *             if the given parameters are null.
 	 */
 	public final void loadDatabase(final DatabaseConfiguration configuration,
-			final boolean createDatabaseIfNecessaryAndCheckIt) throws DatabaseException {
+								   final boolean createDatabaseIfNecessaryAndCheckIt) throws DatabaseException {
+		loadDatabase(configuration, createDatabaseIfNecessaryAndCheckIt, getCurrentDatabaseVersion(configuration.getPackage()));
+	}
+	final void loadDatabase(final DatabaseConfiguration configuration,
+			final boolean createDatabaseIfNecessaryAndCheckIt, int databaseVersion) throws DatabaseException {
 		try  {
 			lockWrite();
-			final AtomicBoolean allNotFound = new AtomicBoolean(true);
+			boolean allNotFound=true;
+			//final AtomicBoolean allNotFound = new AtomicBoolean(true);
 			if (this.closed)
 				throw new DatabaseException("The given Database was closed : " + this);
 			if (configuration == null)
@@ -3131,53 +3094,111 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (sql_database.containsKey(configuration.getPackage()))
 				throw new DatabaseException("There is already a database associated to the given HSQLDBWrappe ");
 			try {
-				
 
-				runTransaction(new Transaction() {
 
-					@Override
-					public Void run(DatabaseWrapper sql_connection) throws DatabaseException {
-						try {
+				allNotFound=loadDatabaseTables(configuration, createDatabaseIfNecessaryAndCheckIt, databaseVersion);
 
-							/*
-							 * boolean table_found=false; try (ReadQuerry rq=new
-							 * ReadQuerry(sql_connection.getSqlConnection(),
-							 * "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"
-							 * +ROW_PROPERTIES_OF_TABLES+"'")) { if (rq.result_set.next()) table_found=true; }
-							 */
-
-							if (!doesTableExists(ROW_PROPERTIES_OF_TABLES)) {
-								Statement st = getConnectionAssociatedWithCurrentThread().getConnection()
-										.createStatement();
-								st.executeUpdate("CREATE TABLE " + ROW_PROPERTIES_OF_TABLES
-										+ " (TABLE_NAME VARCHAR(512), TABLE_ID INTEGER GENERATED BY DEFAULT AS IDENTITY(START WITH 1) "
-										//+", CONSTRAINT TABLE_NAME_PK PRIMARY KEY(TABLE_NAME)"
-										+", CONSTRAINT TABLE_ID_PK PRIMARY KEY(TABLE_ID))"
-										+ getSqlComma());
-								st.close();
+				if (allNotFound) {
+					try {
+						int currentVersion=getCurrentDatabaseVersion(configuration.getPackage());
+						if (currentVersion==databaseVersion) {
+							DatabaseConfiguration oldConfig = configuration.getOldVersionOfDatabaseConfiguration();
+							DatabaseLifeCycles callable = configuration.getDatabaseLifeCycles();
+							boolean removeOldDatabase = false;
+							if (oldConfig != null && callable != null) {
+								try {
+									loadDatabase(oldConfig, false);
+									callable.transferDatabaseFromOldVersion(this, oldConfig, configuration);
+									removeOldDatabase = callable.hasToRemoveOldDatabase();
+								} catch (DatabaseException e) {
+									oldConfig = null;
+								}
 							}
-
-							ArrayList<Table<?>> list_tables = new ArrayList<>(configuration.getTableClasses().size());
-							for (Class<? extends Table<?>> class_to_load : configuration.getTableClasses()) {
-								Table<?> t = newInstance(class_to_load, configuration.getVersion());
-								list_tables.add(t);
-								actualDatabaseLoading.tables_instances.put(class_to_load, t);
+							if (callable != null) {
+								callable.afterDatabaseCreation(this, configuration);
+								if (removeOldDatabase)
+									deleteDatabase(oldConfig, databaseVersion);
 							}
+							actualDatabaseLoading.initBackupRestoreManager(this, getDatabaseDirectory(), configuration);
+						}
+					} catch (Exception e) {
+						throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
+					}
+				}
 
-							for (Table<?> t : list_tables) {
-								t.initializeStep1(configuration);
-							}
-							for (Table<?> t : list_tables) {
-								allNotFound.set(
-										!t.initializeStep2(createDatabaseIfNecessaryAndCheckIt) && allNotFound.get());
-							}
-							for (Table<?> t : list_tables) {
-								t.initializeStep3();
-							}
+				@SuppressWarnings("unchecked")
+				HashMap<Package, Database> sd = (HashMap<Package, Database>) sql_database.clone();
+				Database db=sd.get(configuration.getPackage());
+				if (db==null) {
+					sd.put(configuration.getPackage(), actualDatabaseLoading);
+				}
+				else
+					db.tables_per_versions.put(databaseVersion, actualDatabaseLoading.tables_per_versions.get(databaseVersion));
+				sql_database = sd;
+			} finally {
+				actualDatabaseLoading = null;
+				if (!allNotFound && !configuration.getPackage().equals(this.getClass().getPackage()))
+					getSynchronizer().isReliedToDistantHook();
+			}
+		}
+		finally
+		{
+			unlockWrite();
+		}
+	}
 
-							return null;
+	/*
+	 * result found into actualDatabaseLoading
+	 */
+	final boolean loadDatabaseTables(final DatabaseConfiguration configuration, final boolean createDatabaseIfNecessaryAndCheckIt, final int version) throws DatabaseException {
 
-						} /*catch (ClassNotFoundException e) {
+		return (boolean)runTransaction(new Transaction() {
+
+			@Override
+			public Boolean run(DatabaseWrapper sql_connection) throws DatabaseException {
+				try {
+					boolean allNotFound=true;
+					/*
+					 * boolean table_found=false; try (ReadQuerry rq=new
+					 * ReadQuerry(sql_connection.getSqlConnection(),
+					 * "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"
+					 * +ROW_PROPERTIES_OF_TABLES+"'")) { if (rq.result_set.next()) table_found=true; }
+					 */
+
+					if (!doesTableExists(ROW_PROPERTIES_OF_TABLES)) {
+						Statement st = getConnectionAssociatedWithCurrentThread().getConnection()
+								.createStatement();
+						st.executeUpdate("CREATE TABLE " + ROW_PROPERTIES_OF_TABLES
+								+ " (TABLE_NAME VARCHAR(512), TABLE_ID INTEGER GENERATED BY DEFAULT AS IDENTITY(START WITH 1) "
+								//+", CONSTRAINT TABLE_NAME_PK PRIMARY KEY(TABLE_NAME)"
+								+", CONSTRAINT TABLE_ID_PK PRIMARY KEY(TABLE_ID))"
+								+ getSqlComma());
+						st.close();
+					}
+
+					ArrayList<Table<?>> list_tables = new ArrayList<>(configuration.getTableClasses().size());
+					DatabasePerVersion dpv=new DatabasePerVersion();
+					actualDatabaseLoading.tables_per_versions.put(version, dpv);
+					for (Class<? extends Table<?>> class_to_load : configuration.getTableClasses()) {
+						Table<?> t = newInstance(class_to_load, version);
+						list_tables.add(t);
+						dpv.tables_instances.put(class_to_load, t);
+					}
+
+					for (Table<?> t : list_tables) {
+						t.initializeStep1(configuration);
+					}
+					for (Table<?> t : list_tables) {
+						allNotFound=
+								!t.initializeStep2(createDatabaseIfNecessaryAndCheckIt) && allNotFound;
+					}
+					for (Table<?> t : list_tables) {
+						t.initializeStep3();
+					}
+
+					return allNotFound;
+
+				} /*catch (ClassNotFoundException e) {
 							throw new DatabaseException(
 									"Impossible to access to t)he list of classes contained into the package "
 											+ configuration.getPackage().getName(),
@@ -3188,64 +3209,26 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 											+ configuration.getPackage().getName(),
 									e);
 						}*/ catch (Exception e) {
-							throw DatabaseException.getDatabaseException(e);
-						}
-					}
-
-					@Override
-					public boolean doesWriteData() {
-						return true;
-					}
-
-					@Override
-					public TransactionIsolation getTransactionIsolation() {
-						return TransactionIsolation.TRANSACTION_SERIALIZABLE;
-					}
-
-					@Override
-					public void initOrReset() throws DatabaseException {
-						actualDatabaseLoading = new Database(DatabaseWrapper.this, getDatabaseDirectory(), configuration);
-						allNotFound.set(true);
-					}
-
-				}, true);
-				if (allNotFound.get()) {
-					try {
-						DatabaseConfiguration oldConfig = configuration.getOldVersionOfDatabaseConfiguration();
-						DatabaseLifeCycles callable = configuration.getDatabaseLifeCycles();
-						boolean removeOldDatabase = false;
-						if (oldConfig != null && callable != null) {
-							try {
-								loadDatabase(oldConfig, false);
-                                callable.transferDatabaseFromOldVersion(this, oldConfig, configuration);
-								removeOldDatabase = callable.hasToRemoveOldDatabase();
-							} catch (DatabaseException e) {
-								oldConfig = null;
-							}
-						}
-						if (callable != null) {
-							callable.afterDatabaseCreation(this, configuration);
-							if (removeOldDatabase)
-								deleteDatabase(oldConfig);
-						}
-					} catch (Exception e) {
-						throw DatabaseException.getDatabaseException(e);
-					}
+					throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 				}
-				@SuppressWarnings("unchecked")
-				HashMap<Package, Database> sd = (HashMap<Package, Database>) sql_database.clone();
-				sd.put(configuration.getPackage(), actualDatabaseLoading);
-				sql_database = sd;
-			} finally {
-				actualDatabaseLoading = null;
-				if (!allNotFound.get() && !configuration.getPackage().equals(this.getClass().getPackage()))
-					getSynchronizer().isReliedToDistantHook();
 			}
-		}
-		finally
-		{
-			unlockWrite();
-		}
+
+			@Override
+			public boolean doesWriteData() {
+				return true;
+			}
+
+			@Override
+			public TransactionIsolation getTransactionIsolation() {
+				return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+			}
+
+			@Override
+			public void initOrReset() throws DatabaseException {
+				actualDatabaseLoading = new Database(DatabaseWrapper.this, getDatabaseDirectory(), configuration);
+			}
+
+		}, true);
 	}
 
 	/**
@@ -3381,7 +3364,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	protected abstract String getDropTableCascadeKeyWord();
 
-	Collection<Table<?>> getListTables(Package p) {
+	Collection<Table<?>> getListTables(Package p, int databaseVersion) {
 		Database db = this.sql_database.get(p);
 		if (db == null) {
 			try  {
@@ -3395,7 +3378,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 		}
         assert db != null;
-        return db.tables_instances.values();
+        return db.tables_per_versions.get(databaseVersion).tables_instances.values();
 	}
 
 	protected abstract String getOnUpdateCascadeSqlQuerry();
