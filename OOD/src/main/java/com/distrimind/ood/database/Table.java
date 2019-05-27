@@ -476,7 +476,7 @@ public abstract class Table<T extends DatabaseRecord> {
 					"This table cannot have the name " + DatabaseWrapper.ROW_PROPERTIES_OF_TABLES + " (case ignored)");
 	}
 
-	public int getDatabaseVersion() {
+	int getDatabaseVersion() {
 		return databaseVersion;
 	}
 
