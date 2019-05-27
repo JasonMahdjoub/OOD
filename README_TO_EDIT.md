@@ -23,7 +23,7 @@ Adapt into your build.gradle file, the next code :
 		...
 		compile(group:'com.distrimind.ood', name: 'OOD', version: '//PROJECT_VERSION//')
 		//choose this driver for H2 database
-			compile(group:'com.h2database', name: 'h2', version: '1.4.196')
+			compile(group:'com.h2database', name: 'h2', version: '1.4.199')
 		//choose one of these optional drivers for HSQLDB
 			//optional and under JDK8 or newer
 			compile(group:'org.hsqldb', name: 'hsqldb', version: '2.4.1')
@@ -56,17 +56,17 @@ Adapt into your pom.xml file, the next code :
 				<dependency>
 					<groupId>com.h2database</groupId>
 					<artifactId>h2</artifactId>
-
-					<version>1.4.196</version>
+	
+					<version>1.4.199</version>
 				</dependency>
 			<!-- choose one of these optional drivers for HSQLDB-->
 				<dependency>
 					<groupId>org.hsqldb</groupId>
 					<artifactId>hsqldb</artifactId>
-
+	
 					<!-- under JDK 8 or newer -->
 					<version>2.4.1</version>
-
+	
 					<!-- under JDK 7 or newer -->
 					<version>2.3.4</version>
 				</dependency>
@@ -74,10 +74,10 @@ Adapt into your pom.xml file, the next code :
 				<dependency>
 					<groupId>org.apache.derby</groupId>
 					<artifactId>derby</artifactId>
-
+	
 					<!-- under JDK 8 or newer -->
 					<version>10.13.1.1</version>
-
+	
 					<!-- under JDK 7 or newer -->
 					<version>10.11.1.1</version>
 				</dependency>
