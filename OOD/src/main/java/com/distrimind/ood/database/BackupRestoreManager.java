@@ -35,6 +35,7 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+import com.distrimind.ood.database.exceptions.ConstraintsNotRespectedDatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.i18n.DatabaseMessages;
 import com.distrimind.util.FileTools;
@@ -44,9 +45,11 @@ import com.distrimind.util.progress_monitors.ProgressMonitorParameters;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.ref.Reference;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -252,12 +255,36 @@ public class BackupRestoreManager {
 
 	}
 
-	public void restoreDatabaseToDate(Date date)
+	public void restoreDatabaseToDateUTC(long dateUTC)
 	{
 		//TODO complete
 	}
 
-	public void restoreRecordToDate(Date date, DatabaseRecord record)
+	/**
+	 * Restore the given record to the given date
+	 *
+	 * @param dateUTC the reference date to use for the restoration
+	 * @param record the record to restore (only primary keys are used)
+	 * @param restoreWithCascade if true, all foreign key pointing to this record, or pointed by this record will be restored. If this boolean is set to false, this record will not be restored if it is in relation with other records that have been altered.
+	 * @return the reference of record that have been restored. This reference can contain a null pointer if the new version is a null record. Returns null if the restored has not been applied. It can occurs of the record have foreign keys (pointing to or pointed by) that does not exists or that changed, and that are not enabled to be restored (restoreWithCascade=false).
+	 */
+	public <R extends DatabaseRecord> Reference<R> restoreRecordToDateUTC(long dateUTC, R record, boolean restoreWithCascade) throws DatabaseException {
+		Table<R> table=databaseWrapper.getTableInstanceFromRecord(record);
+		return restoreRecordToDateUTC(dateUTC,table, Table.getFields(table.getPrimaryKeysFieldAccessors(), record), restoreWithCascade);
+	}
+
+	/**
+	 * Restore the given record to the given date
+	 *
+	 * @param dateUTC the reference date to use for the restoration
+	 * @param table the concerned table
+	 * @param primaryKeys the primary keys of the record to restore
+	 * @param restoreWithCascade if true, all foreign key pointing to this record, or pointed by this record will be restored. If this boolean is set to false, this record will not be restored if it is in relation with other records that have been altered.
+	 * @param <R> the record type
+	 * @param <T> the table type
+	 * @return the reference of record that have been restored. This reference can contain a null pointer if the new version is a null record. Returns null if the restored has not been applied. It can occurs of the record have foreign keys (pointing to or pointed by) that does not exists or that changed, and that are not enabled to be restored (restoreWithCascade=false).
+	 */
+	public <R extends DatabaseRecord, T extends Table<R>> Reference<R> restoreRecordToDateUTC(long dateUTC, T table, Map<String, Object> primaryKeys, boolean restoreWithCascade)
 	{
 
 	}
@@ -298,6 +325,16 @@ public class BackupRestoreManager {
 	interface Transaction
 	{
 		void run(RandomOutputStream lastBackupStream) throws DatabaseException;
+	}
+
+	int getPartFilesCount()
+	{
+		return fileTimeStamps.size();
+	}
+
+	int getReferenceFileCount()
+	{
+		return fileReferenceTimeStamps.size();
 	}
 
 }

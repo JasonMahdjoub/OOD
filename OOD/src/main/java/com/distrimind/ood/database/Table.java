@@ -239,6 +239,15 @@ public abstract class Table<T extends DatabaseRecord> {
 		return res;
 	}
 
+	public static Map<String, Object> getFields(List<FieldAccessor> fieldAccessors, DatabaseRecord record) throws DatabaseException {
+		HashMap<String, Object> primaryKeys=new HashMap<>();
+		for (FieldAccessor fa : fieldAccessors)
+		{
+			primaryKeys.put(fa.getField().getName(), fa.getValue(record));
+		}
+		return primaryKeys;
+	}
+
 	boolean isSynchronizedWithSqlDatabase() {
 		return is_synchronized_with_sql_database && (refreshInterval <= 0 || last_refresh + refreshInterval > System.currentTimeMillis());
 	}

@@ -35,14 +35,22 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.ood.database.database.Table1;
+import com.distrimind.ood.database.database.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.crypto.SecureRandomType;
+import com.distrimind.util.crypto.SymmetricEncryptionType;
+import com.distrimind.util.crypto.SymmetricSecretKey;
+import gnu.vm.jgnu.security.NoSuchAlgorithmException;
+import gnu.vm.jgnu.security.NoSuchProviderException;
 import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 import java.io.File;
-import java.util.Date;
+import java.lang.ref.Reference;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author Jason Mahdjoub
@@ -52,9 +60,30 @@ import java.util.Date;
 public class TestDatabaseBackupRestore {
 
 
-	final DatabaseWrapper wrapperForReferenceDatabase;
-	final File databaseDirectory=new File("backupDatabaseToTest");
-	final File externalBackupDirectory=new File("externalBackupDatabaseToTest");
+	private DatabaseWrapper wrapperForReferenceDatabase;
+	private final File referenceDatabaseDirectory=new File("referenceDatabaseToTest");
+	private final File databaseDirectory=new File("backupDatabaseToTest");
+	private final File externalBackupDirectory=new File("externalBackupDatabaseToTest");
+	private Table1.Record recordWithoutForeignKeyA, recordPointedByOtherA, recordWithoutForeignKeyAToRemove, recordPointedByOtherAToRemove;
+	private Table2.Record recordPointingToOtherA, recordPointingToOtherAToRemove;
+	private Table3.Record recordWithoutForeignKeyB, recordPointedByOtherB, recordWithoutForeignKeyBToRemove, recordPointedByOtherBToRemove;
+	private Table4.Record recordPointingToOtherB, recordPointingToOtherBToRemove;
+	private final Date date = Calendar.getInstance().getTime();
+	private final Calendar calendar = Calendar.getInstance();
+	private final SymmetricEncryptionType typeSecretKey;
+	private final SymmetricSecretKey secretKey;
+	private final SubField subField;
+	private final SubSubField subSubField;
+	private final File fileTest;
+	private DatabaseWrapper wrapper;
+
+	public TestDatabaseBackupRestore() throws DatabaseException, NoSuchProviderException, NoSuchAlgorithmException {
+		typeSecretKey = SymmetricEncryptionType.AES_CBC_PKCS5Padding;
+		secretKey = typeSecretKey.getKeyGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKey();
+		subField = TestDatabase.getSubField();
+		subSubField = TestDatabase.getSubSubField();
+		fileTest=new File("fileTest");
+	}
 
 	@Test
 	public void testBackupConfParams()
@@ -79,155 +108,670 @@ public class TestDatabaseBackupRestore {
 
 	}
 
-	@Test(dependsOnMethods = "testBackupConfParams")
-	public void testNewFilePartIncrement()
-	{
-		//TODO test also backup limits
+
+	private void loadData(DatabaseWrapper sourceWrapper, DatabaseWrapper destinationWrapper) throws DatabaseException {
+		List<Table1.Record> lTable1=sourceWrapper.getTableInstance(Table1.class).getRecords();
+		List<Table2.Record> lTable2=sourceWrapper.getTableInstance(Table2.class).getRecords();
+		List<Table3.Record> lTable3=sourceWrapper.getTableInstance(Table3.class).getRecords();
+		List<Table4.Record> lTable4=sourceWrapper.getTableInstance(Table4.class).getRecords();
+
+		Table1 table1=destinationWrapper.getTableInstance(Table1.class);
+		for (Table1.Record r : lTable1)
+		{
+			Map<String, Object> m=Table.getFields(table1.getFieldAccessors(), r);
+			table1.addRecord(m);
+		}
+		Table3 table3=destinationWrapper.getTableInstance(Table3.class);
+		for (Table3.Record r : lTable3)
+		{
+			Map<String, Object> m=Table.getFields(table3.getFieldAccessors(), r);
+			table3.addRecord(m);
+		}
+		Table2 table2=destinationWrapper.getTableInstance(Table2.class);
+		for (Table2.Record r : lTable2)
+		{
+			Map<String, Object> m=Table.getFields(table2.getFieldAccessors(), r);
+			table2.addRecord(m);
+		}
+		Table4 table4=destinationWrapper.getTableInstance(Table4.class);
+		for (Table4.Record r : lTable4)
+		{
+			Map<String, Object> m=Table.getFields(table4.getFieldAccessors(), r);
+			table4.addRecord(m);
+		}
+		assertEquals(sourceWrapper, destinationWrapper, true);
+
 	}
 
-	@Test(dependsOnMethods = "testNewFilePartIncrement")
-	public void testNewFileReferenceAdd()
-	{
-		//TODO test also backup limits
+	private void assertEquals(DatabaseWrapper sourceWrapper, DatabaseWrapper destinationWrapper, boolean bidirectional) throws DatabaseException {
+		List<Table1.Record> lTable1=sourceWrapper.getTableInstance(Table1.class).getRecords();
+		List<Table2.Record> lTable2=sourceWrapper.getTableInstance(Table2.class).getRecords();
+		List<Table3.Record> lTable3=sourceWrapper.getTableInstance(Table3.class).getRecords();
+		List<Table4.Record> lTable4=sourceWrapper.getTableInstance(Table4.class).getRecords();
+
+		List<Table1.Record> lTable1D=destinationWrapper.getTableInstance(Table1.class).getRecords();
+		List<Table2.Record> lTable2D=destinationWrapper.getTableInstance(Table2.class).getRecords();
+		List<Table3.Record> lTable3D=destinationWrapper.getTableInstance(Table3.class).getRecords();
+		List<Table4.Record> lTable4D=destinationWrapper.getTableInstance(Table4.class).getRecords();
+
+		if (bidirectional) {
+			Assert.assertEquals(lTable1.size(), lTable1D.size());
+			Assert.assertEquals(lTable2.size(), lTable2D.size());
+			Assert.assertEquals(lTable3.size(), lTable3D.size());
+			Assert.assertEquals(lTable4.size(), lTable4D.size());
+		}
+		Table1 table1=destinationWrapper.getTableInstance(Table1.class);
+		Table2 table2=destinationWrapper.getTableInstance(Table2.class);
+		Table3 table3=destinationWrapper.getTableInstance(Table3.class);
+		Table4 table4=destinationWrapper.getTableInstance(Table4.class);
+
+		for (Table1.Record r : lTable1)
+		{
+			boolean found=false;
+			for (Table1.Record r2 : lTable1D)
+			{
+				if (table1.equalsAllFields(r, r2))
+				{
+					found=true;
+					break;
+				}
+			}
+			Assert.assertTrue(found);
+		}
+
+		for (Table2.Record r : lTable2)
+		{
+			boolean found=false;
+			for (Table2.Record r2 : lTable2D)
+			{
+				if (table2.equalsAllFields(r, r2))
+				{
+					found=true;
+					break;
+				}
+			}
+			Assert.assertTrue(found);
+		}
+
+		for (Table3.Record r : lTable3)
+		{
+			boolean found=false;
+			for (Table3.Record r2 : lTable3D)
+			{
+				if (table3.equalsAllFields(r, r2))
+				{
+					found=true;
+					break;
+				}
+			}
+			Assert.assertTrue(found);
+		}
+
+		for (Table4.Record r : lTable4)
+		{
+			boolean found=false;
+			for (Table4.Record r2 : lTable4D)
+			{
+				if (table4.equalsAllFields(r, r2))
+				{
+					found=true;
+					break;
+				}
+			}
+			Assert.assertTrue(found);
+		}
+
+	}
+	private void addAndRemoveData(DatabaseWrapper wrapper, int nb) throws DatabaseException {
+		Table1 table1=wrapper.getTableInstance(Table1.class);
+		Table2 table2=wrapper.getTableInstance(Table2.class);
+		Table3 table3=wrapper.getTableInstance(Table3.class);
+		Table4 table4=wrapper.getTableInstance(Table4.class);
+
+		for (int i=0;i<nb;i++)
+		{
+			boolean remove=Math.random()<0.1;
+			if (remove)
+			{
+				table1.removeRecordsWithCascade(new Filter<Table1.Record>() {
+					@Override
+					public boolean nextRecord(Table1.Record _record)  {
+						stopTableParsing();
+						return true;
+					}
+				});
+				table2.removeRecords(new Filter<Table2.Record>() {
+					@Override
+					public boolean nextRecord(Table2.Record _record)  {
+						stopTableParsing();
+						return true;
+					}
+				});
+				table3.removeRecordsWithCascade(new Filter<Table3.Record>() {
+					@Override
+					public boolean nextRecord(Table3.Record _record)  {
+						stopTableParsing();
+						return true;
+					}
+				});
+				table4.removeRecords(new Filter<Table4.Record>() {
+					@Override
+					public boolean nextRecord(Table4.Record _record)  {
+						stopTableParsing();
+						return true;
+					}
+				});
+			}
+			else
+			{
+				table1.addRecord(getTable1_3Map());
+				Table1.Record addedA2=table1.addRecord(getTable1_3Map());
+				table2.addRecord("fr1_pk1", addedA2, "int_value", 5);
+				table3.addRecord(getTable1_3Map());
+				Table3.Record addedB2=table3.addRecord(getTable1_3Map());
+				table4.addRecord("fr1_pk1", addedB2, "int_value", 7);
+
+			}
+		}
 	}
 
-	private void loadData(DatabaseWrapper sourceWrapper, DatabaseWrapper destinationWrapper)
-	{
-		//TODO complete
+	@BeforeClass
+	public void loadReferenceDatabase() throws DatabaseException {
+		wrapperForReferenceDatabase=loadWrapper( referenceDatabaseDirectory, false);
+		addAndRemoveData(wrapperForReferenceDatabase, 100);
+		Table1 table1=wrapper.getTableInstance(Table1.class);
+		Table2 table2=wrapper.getTableInstance(Table2.class);
+		Table3 table3=wrapper.getTableInstance(Table3.class);
+		Table4 table4=wrapper.getTableInstance(Table4.class);
+
+		List<Table1.Record> lTable1=table1.getRecords();
+		List<Table2.Record> lTable2=table2.getRecords();
+		List<Table3.Record> lTable3=table3.getRecords();
+		List<Table4.Record> lTable4=table4.getRecords();
+
+		recordWithoutForeignKeyA=null;
+		recordWithoutForeignKeyAToRemove=null;
+		recordPointedByOtherA=null;
+		recordPointedByOtherAToRemove=null;
+		for (Table1.Record r : lTable1)
+		{
+			if (!table1.isRecordPointedByForeignKeys(r)) {
+				if (recordWithoutForeignKeyA ==null)
+					recordWithoutForeignKeyA = r;
+				else
+				{
+					recordWithoutForeignKeyAToRemove=r;
+				}
+			}
+			else
+			{
+				if (recordPointedByOtherA==null)
+					recordPointedByOtherA=r;
+				else
+					recordPointedByOtherAToRemove=r;
+			}
+			if (recordWithoutForeignKeyA!=null && recordWithoutForeignKeyAToRemove!=null
+					&& recordPointedByOtherA!=null && recordPointedByOtherAToRemove!=null)
+				break;
+		}
+
+
+		recordPointingToOtherA=lTable2.get(50);
+		recordPointingToOtherAToRemove=lTable2.get(55);
+
+
+		recordWithoutForeignKeyB=null;
+		recordWithoutForeignKeyBToRemove=null;
+		recordPointedByOtherB=null;
+		recordPointedByOtherBToRemove=null;
+		for (Table3.Record r : lTable3)
+		{
+			if (!table3.isRecordPointedByForeignKeys(r)) {
+				if (recordWithoutForeignKeyB ==null)
+					recordWithoutForeignKeyB = r;
+				else
+				{
+					recordWithoutForeignKeyBToRemove=r;
+				}
+			}
+			else
+			{
+				if (recordPointedByOtherB==null)
+					recordPointedByOtherB=r;
+				else
+					recordPointedByOtherBToRemove=r;
+			}
+			if (recordWithoutForeignKeyB!=null && recordWithoutForeignKeyBToRemove!=null
+					&& recordPointedByOtherB!=null && recordPointedByOtherBToRemove!=null)
+				break;
+
+		}
+
+		recordPointingToOtherB=lTable4.get(50);
+		recordPointingToOtherBToRemove=lTable4.get(55);
+
 	}
 
-	private void assertEquals(DatabaseWrapper sourceWrapper, DatabaseWrapper destinationWrapper)
+	@AfterClass
+	public void unloadReferenceDatabase()
 	{
-		//TODO complete
+		try {
+			recordWithoutForeignKeyA=null;
+			recordPointedByOtherA=null;
+			recordWithoutForeignKeyAToRemove=null;
+			recordPointedByOtherAToRemove=null;
+
+			recordPointingToOtherA=null;
+			recordPointingToOtherAToRemove=null;
+
+			recordWithoutForeignKeyB=null;
+			recordPointedByOtherB=null;
+			recordWithoutForeignKeyBToRemove=null;
+			recordPointedByOtherBToRemove=null;
+
+			recordPointingToOtherB=null;
+			recordPointingToOtherBToRemove=null;
+			wrapperForReferenceDatabase.deleteDatabaseFiles();
+		}
+		finally {
+			wrapperForReferenceDatabase = null;
+
+		}
 	}
-	private void addData(DatabaseWrapper wrapper, int nb)
+	@AfterTest
+	public void unloadDatabase()
 	{
-		//TODO complete
-		//test also database version
+		try {
+			wrapper.deleteDatabaseFiles();
+		}
+		finally {
+			wrapper = null;
+		}
 	}
 
-	private void copyDataFromOldVersionToOldVersion(DatabaseWrapper wrapper, int oldVersion, int newVersion)
-	{
-		//TODO complete
-	}
 
-	@Test(dataProvider = "DataProvExtBackupRestore", dependsOnMethods = "testNewFileReferenceAdd")
-	public void testExternalBackupAndRestore(boolean useInternalBackup, boolean restoreToEmptyDatabase, boolean changeVersionDuringRestoration) throws DatabaseException, InterruptedException {
+	private DatabaseWrapper loadWrapper(File databaseDirectory, boolean useInternalBackup) throws DatabaseException {
 		DatabaseWrapper wrapper=new EmbeddedH2DatabaseWrapper(databaseDirectory);
 		BackupConfiguration backupConf=null;
 		if (useInternalBackup)
-			backupConf=new BackupConfiguration(5000L, 10000L, 1000000, 1000L, null);
-		DatabaseConfiguration conf=new DatabaseConfiguration(1, Table1.class.getPackage(), null, null, backupConf);
+			backupConf=new BackupConfiguration(1000L, 10000L, 1000000, 200L, null);
+		DatabaseConfiguration conf=new DatabaseConfiguration( Table1.class.getPackage(), null, null, backupConf);
 
 		wrapper.loadDatabase(conf, true);
-		long dataLoadStart=System.currentTimeMillis();
+		return wrapper;
+	}
+
+
+	private void loadDatabase(boolean useSeveralRestorationPoint, boolean useInternalBackup, AtomicLong dateRestoration, AtomicLong dataLoadStart, boolean useExternalBackup, boolean addAdditionData, boolean alterRecords) throws DatabaseException, InterruptedException {
+		wrapper=loadWrapper(databaseDirectory, useInternalBackup);
+		dataLoadStart.set(System.currentTimeMillis());
 		loadData(wrapperForReferenceDatabase, wrapper);
-		BackupRestoreManager externalBRM=wrapper.getExternalBackupRestoreManager(externalBackupDirectory, Table1.class.getPackage());
-		Assert.assertNotNull(externalBRM);
-		externalBRM.createBackupReference();
+		if (useExternalBackup) {
+			long t=System.currentTimeMillis();
+			BackupRestoreManager externalBRM = wrapper.getExternalBackupRestoreManager(externalBackupDirectory, Table1.class.getPackage());
+			Assert.assertNotNull(externalBRM);
+			Assert.assertTrue(externalBRM.isEmpty());
+			externalBRM.createBackupReference();
+			Assert.assertEquals(externalBRM.getBackupDirectory(), externalBackupDirectory);
+
+			Assert.assertTrue(t<externalBRM.getMinDateUTC());
+			Assert.assertTrue(System.currentTimeMillis()>externalBRM.getMinDateUTC());
+			Assert.assertTrue(externalBRM.getMinDateUTC()<externalBRM.getMaxDateUTC());
+			Assert.assertTrue(System.currentTimeMillis()>externalBRM.getMaxDateUTC());
+		}
 		Thread.sleep(100);
-		long dateRestoration=System.currentTimeMillis();
+		dateRestoration.set(System.currentTimeMillis());
 		Thread.sleep(200);
 
-
-		addData(wrapper, 3);
-		if (changeVersionDuringRestoration)
-		{
-			wrapper.close();
-			DatabaseConfiguration conf2=new DatabaseConfiguration(2, Table1.class.getPackage(), new DatabaseLifeCycles() {
-				@Override
-				public void transferDatabaseFromOldVersion(DatabaseWrapper wrapper, DatabaseConfiguration oldDatabaseConfiguration, DatabaseConfiguration newDatabaseConfiguration) throws Exception {
-					copyDataFromOldVersionToOldVersion(wrapper, oldDatabaseConfiguration.getVersion(), newDatabaseConfiguration.getVersion());
+		if (addAdditionData) {
+			int nbPartFiles=0;
+			int nbReferenceFiles=0;
+			BackupRestoreManager internalBRM=wrapper.getBackupRestoreManager(Table1.class.getPackage());
+			if (internalBRM!=null) {
+				nbPartFiles = internalBRM.getPartFilesCount();
+				nbReferenceFiles = internalBRM.getReferenceFileCount();
+			}
+			addAndRemoveData(wrapper, 3);
+			Thread.sleep(200);
+			addAndRemoveData(wrapper, 3);
+			if (internalBRM!=null) {
+				Assert.assertTrue(nbPartFiles<internalBRM.getPartFilesCount());
+				nbPartFiles = internalBRM.getPartFilesCount();
+			}
+			Thread.sleep(200);
+			if (useSeveralRestorationPoint) {
+				Thread.sleep(1000L);
+				addAndRemoveData(wrapper, 10);
+				Thread.sleep(1000L);
+				addAndRemoveData(wrapper, 10);
+				Thread.sleep(1000L);
+				addAndRemoveData(wrapper, 10);
+				if (internalBRM!=null) {
+					Assert.assertTrue(nbPartFiles<internalBRM.getPartFilesCount());
+					Assert.assertTrue(nbReferenceFiles<internalBRM.getReferenceFileCount());
 				}
+			}
 
-				@Override
-				public void afterDatabaseCreation(DatabaseWrapper wrapper, DatabaseConfiguration newDatabaseConfiguration) throws Exception {
-
-				}
-
-				@Override
-				public boolean hasToRemoveOldDatabase() throws Exception {
-					return true;
-				}
-			}, conf, backupConf);
-			wrapper=new EmbeddedH2DatabaseWrapper(databaseDirectory);
-			wrapper.loadDatabase(conf2, true);
-			addData(wrapper, 4);
 		}
+		if (alterRecords)
+			alterRecords(wrapper);
+		if (alterRecords || addAdditionData) {
+			BackupRestoreManager internalBRM = wrapper.getBackupRestoreManager(Table1.class.getPackage());
+			Assert.assertEquals(internalBRM != null, useInternalBackup);
+
+			if (internalBRM != null) {
+				Assert.assertTrue(internalBRM.getMinDateUTC() > dataLoadStart.get());
+				Assert.assertTrue(internalBRM.getMinDateUTC() < internalBRM.getMaxDateUTC());
+				Assert.assertTrue(internalBRM.getMaxDateUTC() < System.currentTimeMillis());
+				dataLoadStart.set(System.currentTimeMillis());
+			}
+		}
+	}
+
+
+
+	private void testExternalBackupAndRestore(boolean useSeveralRestorationPoint, boolean useInternalBackup, boolean restoreToEmptyDatabase, boolean useExternalBRM) throws DatabaseException, InterruptedException {
+		assert useExternalBRM || useInternalBackup;
+		assert useExternalBRM || !restoreToEmptyDatabase;
+
+		AtomicLong dataLoadStart=new AtomicLong();
+		AtomicLong dateRestoration=new AtomicLong();
+		loadDatabase(useSeveralRestorationPoint, useInternalBackup, dateRestoration, dataLoadStart, useExternalBRM, true, true);
+
 		BackupRestoreManager internalBRM=wrapper.getBackupRestoreManager(Table1.class.getPackage());
-		Assert.assertEquals(internalBRM!=null, useInternalBackup);
 
+		BackupRestoreManager usedBRM;
+		if (useExternalBRM)
+			usedBRM=wrapper.getExternalBackupRestoreManager(externalBackupDirectory, Table1.class.getPackage());
+		else
+			usedBRM=internalBRM;
+		Assert.assertTrue(usedBRM.getMinDateUTC()>dataLoadStart.get());
+		Assert.assertTrue(usedBRM.getMinDateUTC()<usedBRM.getMaxDateUTC());
+		Assert.assertTrue(usedBRM.getMaxDateUTC()<dateRestoration.get());
+		if (restoreToEmptyDatabase)
+		{
+			unloadDatabase();
+			wrapper=loadWrapper(databaseDirectory, useInternalBackup);
+		}
+
+
+		Assert.assertNotNull(usedBRM);
+		usedBRM.restoreDatabaseToDateUTC(dateRestoration.get());
+		assertEquals(wrapperForReferenceDatabase,wrapper, true);
+		Assert.assertTrue(usedBRM.getMinDateUTC()>dataLoadStart.get());
+		Assert.assertTrue(usedBRM.getMinDateUTC()<usedBRM.getMaxDateUTC());
+		Assert.assertTrue(usedBRM.getMaxDateUTC()<dateRestoration.get());
 		if (internalBRM!=null)
 		{
-			Assert.assertTrue(internalBRM.getMinDateUTC()>dataLoadStart);
+			Assert.assertTrue(internalBRM.getMinDateUTC()>dataLoadStart.get());
 			Assert.assertTrue(internalBRM.getMinDateUTC()<internalBRM.getMaxDateUTC());
 			Assert.assertTrue(internalBRM.getMaxDateUTC()<System.currentTimeMillis());
-			dataLoadStart=System.currentTimeMillis();
 		}
-		externalBRM=wrapper.getExternalBackupRestoreManager(externalBackupDirectory, Table1.class.getPackage());
-		Assert.assertTrue(externalBRM.getMinDateUTC()>dataLoadStart);
-		Assert.assertTrue(externalBRM.getMinDateUTC()<externalBRM.getMaxDateUTC());
-		Assert.assertTrue(externalBRM.getMaxDateUTC()<dateRestoration);
 
-		Assert.assertNotNull(externalBRM);
-		externalBRM.restoreDatabaseToDate(new Date(dateRestoration));
-		assertEquals(wrapperForReferenceDatabase,wrapper );
-		Assert.assertTrue(externalBRM.getMinDateUTC()>dataLoadStart);
-		Assert.assertTrue(externalBRM.getMinDateUTC()<externalBRM.getMaxDateUTC());
-		Assert.assertTrue(externalBRM.getMaxDateUTC()<dateRestoration);
-		if (internalBRM!=null)
+	}
+
+	@Test(dataProvider = "DataProvExtBackupRestore")
+	public void testExternalBackupAndRestore(boolean useSeveralRestorationPoint, boolean useInternalBackup, boolean restoreToEmptyDatabase) throws DatabaseException, InterruptedException {
+		testExternalBackupAndRestore(useSeveralRestorationPoint, useInternalBackup, restoreToEmptyDatabase, true);
+	}
+
+	private <R extends DatabaseRecord> void testRecordRestoration(DatabaseWrapper wrapper, BackupRestoreManager externalBRM, long dateUTC, R referenceRecord, boolean withCascade, boolean expectedToBeRestored, boolean currentDeleted, boolean oldDeleted) throws DatabaseException {
+
+		Table<R> table=wrapper.getTableInstanceFromRecord(referenceRecord);
+		Map<String, Object> primaryKeys=Table.getFields(table.getPrimaryKeysFieldAccessors(), referenceRecord);
+		if (currentDeleted)
+			Assert.assertNull(table.getRecord(primaryKeys));
+		else
+			Assert.assertNotNull(table.getRecord(primaryKeys));
+
+		Reference<R> restoredRecord=externalBRM.restoreRecordToDateUTC(dateUTC, table, primaryKeys, withCascade);
+		if (expectedToBeRestored)
 		{
-			Assert.assertTrue(internalBRM.getMinDateUTC()>dataLoadStart);
-			Assert.assertTrue(internalBRM.getMinDateUTC()<internalBRM.getMaxDateUTC());
-			Assert.assertTrue(internalBRM.getMaxDateUTC()<System.currentTimeMillis());
+			Assert.assertNotNull(restoredRecord);
+			if (oldDeleted)
+			{
+				Assert.assertNull(restoredRecord.get());
+			}
+			else
+			{
+				Assert.assertNotNull(restoredRecord.get());
+				Assert.assertTrue(table.equalsAllFields(restoredRecord.get(), referenceRecord));
+				R dr=table.getRecord(primaryKeys);
+				Assert.assertTrue(table.equalsAllFields(dr, referenceRecord));
+			}
 		}
+		else
+			Assert.assertNull(restoredRecord);
+
+
+	}
+
+	private Map<String, Object> getTable1_3Map()
+	{
+		HashMap<String, Object> map = new HashMap<>();
+		map.put("pk1", Math.random()*1000);
+		map.put("int_value", (int)(Math.random()*1000));
+		map.put("byte_value", (byte) (Math.random()*100));
+		map.put("char_value", 'x');
+		map.put("boolean_value", Math.random()<0.5);
+		map.put("short_value", (short) (Math.random()*1000));
+		map.put("long_value", (long)(Math.random()*1000));
+		map.put("float_value", (float)(Math.random()*1000));
+		map.put("double_value", Math.random()*1000);
+		map.put("string_value", "test string");
+		map.put("IntegerNumber_value", (int) (Math.random() * 1000));
+		map.put("ByteNumber_value", (byte)(Math.random()*1000));
+		map.put("CharacterNumber_value", 'x');
+		map.put("BooleanNumber_value", Math.random()<0.5);
+		map.put("ShortNumber_value", (short)(Math.random()*1000));
+		map.put("LongNumber_value", (long)(Math.random()*1000));
+		map.put("FloatNumber_value", (float)(Math.random()*1000));
+		map.put("DoubleNumber_value", Math.random()*1000);
+		map.put("BigInteger_value", new BigInteger("5"));
+		map.put("BigDecimal_value", new BigDecimal("8.8"));
+		map.put("DateValue", date);
+		map.put("CalendarValue", calendar);
+		map.put("secretKey", secretKey);
+		map.put("typeSecretKey", typeSecretKey);
+		map.put("subField", subField);
+		map.put("subSubField", subSubField);
+		map.put("file", fileTest);
+		return map;
+	}
+
+	private void alterRecords(DatabaseWrapper wrapper) throws DatabaseException {
+		Table1 table1=wrapper.getTableInstance(Table1.class);
+		Map<String, Object> pks;
+
+		pks=Table.getFields(table1.getPrimaryKeysFieldAccessors(), recordWithoutForeignKeyA);
+		Table1.Record recordWithoutForeignKeyA=table1.getRecord(pks);
+		recordWithoutForeignKeyA.boolean_value=!recordWithoutForeignKeyA.boolean_value;
+		table1.updateRecord(recordWithoutForeignKeyA);
+
+		pks=Table.getFields(table1.getPrimaryKeysFieldAccessors(), recordPointedByOtherA);
+		Table1.Record recordPointedByOtherA=table1.getRecord(pks);
+		recordPointedByOtherA.boolean_value=!recordWithoutForeignKeyA.boolean_value;
+		table1.updateRecord(recordWithoutForeignKeyA);
+
+		table1.removeRecord(recordWithoutForeignKeyAToRemove);
+		table1.removeRecordWithCascade(recordPointedByOtherAToRemove);
+
+		Table2 table2=wrapper.getTableInstance(Table2.class);
+
+		pks=Table.getFields(table2.getPrimaryKeysFieldAccessors(), recordPointingToOtherA);
+		Table2.Record recordPointingToOtherA=table2.getRecord(pks);
+		recordPointingToOtherA.int_value=-recordPointingToOtherA.int_value;
+		table2.updateRecord(recordPointingToOtherA);
+
+		pks=Table.getFields(table2.getPrimaryKeysFieldAccessors(), recordPointingToOtherAToRemove);
+		Table2.Record recordPointingToOtherAToRemove=table2.getRecord(pks);
+		Map<String, Object> map = getTable1_3Map();
+		recordPointingToOtherAToRemove.fr1_pk1=table1.addRecord(map);
+		table2.updateRecord(recordPointingToOtherAToRemove);
+
+		Table3 table3=wrapper.getTableInstance(Table3.class);
+
+		pks=Table.getFields(table3.getPrimaryKeysFieldAccessors(), recordWithoutForeignKeyB);
+		Table3.Record recordWithoutForeignKeyB=table3.getRecord(pks);
+		recordWithoutForeignKeyB.boolean_value=!recordWithoutForeignKeyB.boolean_value;
+		table3.updateRecord(recordWithoutForeignKeyB);
+
+		pks=Table.getFields(table3.getPrimaryKeysFieldAccessors(), recordPointedByOtherB);
+		Table3.Record recordPointedByOtherB=table3.getRecord(pks);
+		recordPointedByOtherB.boolean_value=!recordPointedByOtherB.boolean_value;
+		table3.updateRecord(recordPointedByOtherB);
+
+		table3.removeRecord(recordWithoutForeignKeyBToRemove);
+		table3.removeRecordWithCascade(recordPointedByOtherBToRemove);
+
+		Table4 table4=wrapper.getTableInstance(Table4.class);
+
+		pks=Table.getFields(table4.getPrimaryKeysFieldAccessors(), recordPointingToOtherB);
+		Table4.Record recordPointingToOtherB=table4.getRecord(pks);
+		recordPointingToOtherB.int_value=-recordPointingToOtherB.int_value;
+		table4.updateRecord(recordPointingToOtherB);
+
+		pks=Table.getFields(table4.getPrimaryKeysFieldAccessors(), recordPointingToOtherBToRemove);
+		Table4.Record recordPointingToOtherBToRemove=table4.getRecord(pks);
+		recordPointingToOtherBToRemove.fr1_pk1=table3.addRecord(map);
+		table4.updateRecord(recordPointingToOtherBToRemove);
 
 	}
 
 	@Test(dataProvider = "DataProvExtIndBackupRestore", dependsOnMethods = "testExternalBackupAndRestore")
-	public void testIndividualExternalBackupAndRestoreWithForeignKey(boolean useInternalBackup, boolean changeVersionDuringRestoration, boolean useSeveralRestorationPoint)
-	{
-
-	}
-
-	@Test(dataProvider = "DataProvExtIndBackupRestore", dependsOnMethods = "testIndividualExternalBackupAndRestoreWithForeignKey")
-	public void testIndividualExternalBackupAndRestoreWithoutForeignKey(boolean useInternalBackup, boolean changeVersionDuringRestoration, boolean useSeveralRestorationPoint)
-	{
-
+	public void testIndividualExternalBackupAndRestore(boolean useInternalBackup, boolean useSeveralRestorationPoint, boolean addAdditionalData) throws DatabaseException, InterruptedException {
+		testIndividualBackupAndRestore(useInternalBackup, useSeveralRestorationPoint, addAdditionalData, true);
 	}
 
 
-	@Test(dataProvider = "DataProvIntBackupRestore")
-	public void testInternalBackupAndRestore(boolean changeVersionDuringRestoration, boolean useSeveralRestorationPoint)
-	{
+	public void testIndividualBackupAndRestore(boolean useInternalBackup, boolean useSeveralRestorationPoint, boolean addAdditionalData, boolean useExternalManager) throws DatabaseException, InterruptedException {
+		assert useExternalManager || useInternalBackup;
+		AtomicLong dataLoadStart=new AtomicLong();
+		AtomicLong dateRestoration=new AtomicLong();
+		loadDatabase(useSeveralRestorationPoint, useInternalBackup, dateRestoration, dataLoadStart, true, addAdditionalData, true);
+
+		BackupRestoreManager internalBRM=wrapper.getBackupRestoreManager(Table1.class.getPackage());
+
+		BackupRestoreManager usedBRM;
+		if (useExternalManager)
+			usedBRM=wrapper.getExternalBackupRestoreManager(externalBackupDirectory, Table1.class.getPackage());
+		else
+			usedBRM=internalBRM;
+		Assert.assertTrue(usedBRM.getMinDateUTC()>dataLoadStart.get());
+		Assert.assertTrue(usedBRM.getMinDateUTC()<usedBRM.getMaxDateUTC());
+		Assert.assertTrue(usedBRM.getMaxDateUTC()<dateRestoration.get());
+
+		Assert.assertNotNull(usedBRM);
+
+		alterRecords(wrapper);
+		Table1.Record addedA=wrapper.getTableInstance(Table1.class).addRecord(getTable1_3Map());
+		Table1.Record addedA2=wrapper.getTableInstance(Table1.class).addRecord(getTable1_3Map());
+		Table2.Record addedA3=wrapper.getTableInstance(Table2.class).addRecord("fr1_pk1", addedA2, "int_value", 5);
+		Table3.Record addedB=wrapper.getTableInstance(Table3.class).addRecord(getTable1_3Map());
+		Table3.Record addedB2=wrapper.getTableInstance(Table3.class).addRecord(getTable1_3Map());
+		Table4.Record addedB3=wrapper.getTableInstance(Table4.class).addRecord("fr1_pk1", addedB2, "int_value", 7);
+
+		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), recordWithoutForeignKeyA, true, true, false, false);
+		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), recordPointedByOtherA, true, true, false, false);
+		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), recordWithoutForeignKeyAToRemove, true, true, true, false);
+		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), recordPointedByOtherAToRemove, true, true, true, false);
+		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), recordPointingToOtherA, true, true, false, false);
+		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), recordPointingToOtherAToRemove, true, true, true, false);
+		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), addedA, true, true, false, true);
+		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), addedA2, true, true, false, true);
+		Assert.assertNull(wrapper.getTableInstance(Table2.class).getRecord(Table.getFields(wrapper.getTableInstance(Table2.class).getPrimaryKeysFieldAccessors(), addedA3)));
+
+		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), recordWithoutForeignKeyB, true, true, false, false);
+		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), recordPointedByOtherB, true, true, false, false);
+		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), recordWithoutForeignKeyBToRemove, true, true, true, false);
+		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), recordPointedByOtherBToRemove, true, true, true, false);
+		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), recordPointingToOtherB, true, true, false, false);
+		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), recordPointingToOtherBToRemove, true, true, true, false);
+		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), addedB, true, true, false, true);
+		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), addedB2, true, true, false, true);
+		Assert.assertNull(wrapper.getTableInstance(Table4.class).getRecord(Table.getFields(wrapper.getTableInstance(Table4.class).getPrimaryKeysFieldAccessors(), addedB3)));
+
+		Assert.assertTrue(usedBRM.getMinDateUTC()>dataLoadStart.get());
+		Assert.assertTrue(usedBRM.getMinDateUTC()<usedBRM.getMaxDateUTC());
+		Assert.assertTrue(usedBRM.getMaxDateUTC()<dateRestoration.get());
+		if (internalBRM!=null)
+		{
+			Assert.assertTrue(internalBRM.getMinDateUTC()>dataLoadStart.get());
+			Assert.assertTrue(internalBRM.getMinDateUTC()<internalBRM.getMaxDateUTC());
+			Assert.assertTrue(internalBRM.getMaxDateUTC()<System.currentTimeMillis());
+		}
+
+		assertEquals(wrapperForReferenceDatabase,wrapper, !addAdditionalData);
+
+		alterRecords(wrapper);
+		addedA=wrapper.getTableInstance(Table1.class).addRecord(getTable1_3Map());
+		addedA2=wrapper.getTableInstance(Table1.class).addRecord(getTable1_3Map());
+		addedA3=wrapper.getTableInstance(Table2.class).addRecord("fr1_pk1", addedA2, "int_value", 5);
+		addedB=wrapper.getTableInstance(Table3.class).addRecord(getTable1_3Map());
+		addedB2=wrapper.getTableInstance(Table3.class).addRecord(getTable1_3Map());
+		addedB3=wrapper.getTableInstance(Table4.class).addRecord("fr1_pk1", addedB2, "int_value", 7);
+
+		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), recordWithoutForeignKeyA, false, true, false, false);
+		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), recordPointedByOtherA, false, false, false, false);
+		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), recordWithoutForeignKeyAToRemove, false, true, true, false);
+		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), recordPointedByOtherAToRemove, false, false, true, false);
+		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), recordPointingToOtherA, false, true, false, false);
+		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), recordPointingToOtherAToRemove, false, false, true, false);
+		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), addedA, false, true, false, true);
+		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), addedA2, false, false, false, true);
+		Assert.assertNotNull(wrapper.getTableInstance(Table2.class).getRecord(Table.getFields(wrapper.getTableInstance(Table2.class).getPrimaryKeysFieldAccessors(), addedA3)));
+
+		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), recordWithoutForeignKeyB, false, true, false, false);
+		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), recordPointedByOtherB, false, false, false, false);
+		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), recordWithoutForeignKeyBToRemove, false, true, true, false);
+		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), recordPointedByOtherBToRemove, false, false, true, false);
+		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), recordPointingToOtherB, false, true, false, false);
+		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), recordPointingToOtherBToRemove, false, false, true, false);
+		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), addedB, false, true, false, true);
+		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), addedB2, false, false, false, true);
+		Assert.assertNotNull(wrapper.getTableInstance(Table4.class).getRecord(Table.getFields(wrapper.getTableInstance(Table4.class).getPrimaryKeysFieldAccessors(), addedB3)));
+
+		Assert.assertTrue(usedBRM.getMinDateUTC()>dataLoadStart.get());
+		Assert.assertTrue(usedBRM.getMinDateUTC()<usedBRM.getMaxDateUTC());
+		Assert.assertTrue(usedBRM.getMaxDateUTC()<dateRestoration.get());
+		if (internalBRM!=null)
+		{
+			Assert.assertTrue(internalBRM.getMinDateUTC()>dataLoadStart.get());
+			Assert.assertTrue(internalBRM.getMinDateUTC()<internalBRM.getMaxDateUTC());
+			Assert.assertTrue(internalBRM.getMaxDateUTC()<System.currentTimeMillis());
+		}
 
 	}
 
-	@Test(dataProvider = "DataProvIntBackupRestore")
-	public void testIndividualInternalBackupAndRestoreWithForeignKey(boolean changeVersionDuringRestoration, boolean useSeveralRestorationPoint)
-	{
-
+	@Test(dataProvider = "DataProvIntBackupRestore", dependsOnMethods = "testIndividualExternalBackupAndRestore")
+	public void testInternalBackupAndRestore(boolean useSeveralRestorationPoint) throws DatabaseException, InterruptedException {
+		testExternalBackupAndRestore(useSeveralRestorationPoint, true, false, false);
 	}
 
-	@Test(dataProvider = "DataProvIntBackupRestore")
-	public void testIndividualInternalBackupAndRestoreWithoutForeignKey(boolean changeVersionDuringRestoration, boolean useSeveralRestorationPoint)
-	{
-
+	@Test(dataProvider = "DataProvIntBackupRestore", dependsOnMethods = "testInternalBackupAndRestore")
+	public void testIndividualInternalBackupAndRestore(boolean useSeveralRestorationPoint, boolean addAdditionalData) throws DatabaseException, InterruptedException {
+		testIndividualBackupAndRestore(true, useSeveralRestorationPoint, addAdditionalData, false);
 	}
 
 
+	@Test(dependsOnMethods = "testIndividualInternalBackupAndRestore")
+	public void testBackupCleaning()
+	{
+		//TODO test also backup limits
+	}
 
-	@DataProvider(name="DataProvExtBackupRestore", parallel = true)
+
+	@DataProvider(name="DataProvExtBackupRestore")
 	public Object[][] provideDataForExternalBackupRestore()
 	{
 
 	}
-	@DataProvider(name="DataProvExtIndBackupRestore", parallel = true)
+	@DataProvider(name="DataProvExtIndBackupRestore")
 	public Object[][] provideDataForExternalIndividualBackupRestore()
 	{
 
 	}
-	@DataProvider(name="DataProvIntBackupRestore", parallel = true)
+	@DataProvider(name="DataProvIntBackupRestore")
 	public Object[][] provideDataForInternalBackupRestore()
 	{
 
