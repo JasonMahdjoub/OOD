@@ -153,13 +153,31 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	private static class Database {
 		final HashMap<Integer, DatabasePerVersion> tables_per_versions = new HashMap<>();
 		BackupRestoreManager backupRestoreManager=null;
+		private int currentVersion=-1;
 
 		private final DatabaseConfiguration configuration;
 
-		public Database(DatabaseWrapper wrapper, File databaseDirectory, DatabaseConfiguration configuration) throws DatabaseException {
+		public Database(DatabaseConfiguration configuration) {
 			if (configuration == null)
 				throw new NullPointerException("configuration");
 			this.configuration = configuration;
+		}
+
+		int getCurrentVersion()
+		{
+			if (currentVersion==-1)
+			{
+				currentVersion=0;
+				for (Integer i : tables_per_versions.keySet())
+					if (i>currentVersion)
+						currentVersion=i;
+			}
+			return currentVersion;
+		}
+
+		void updateCurrentVersion()
+		{
+			currentVersion=-1;
 		}
 
 		DatabaseConfiguration getConfiguration() {
@@ -325,7 +343,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
                     Session sql_connection = getConnectionAssociatedWithCurrentThread();
                     return sql_connection.getConnection().isReadOnly();
                 } catch (SQLException e) {
-                    throw DatabaseException.getDatabaseException(e);
+                    throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
                 }
 
             }
@@ -2782,15 +2800,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 
 
-	public int getCurrentDatabaseVersion(Package p)
-	{
-		//TODO complete
-	}
 
-	public boolean isVersionManaged(Package p, int databaseVersion)
-	{
-		//TODO complete
-	}
 
 	/**
 	 * According a Class&lsaquo;? extends Table&lsaquo;?&rsaquo;&rsaquo;, returns
@@ -2946,6 +2956,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					HashMap<Package, Database> sd = (HashMap<Package, Database>) sql_database.clone();
 					db=sd.get(configuration.getPackage());
 					db.tables_per_versions.remove(databaseVersion);
+					db.updateCurrentVersion();
 					if (db.tables_per_versions.size()==0)
 						sd.remove(configuration.getPackage());
 					sql_database = sd;
@@ -2997,24 +3008,56 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		return getTableID(tTable.getClass(), tTable.getDatabaseVersion());
 	}
 
-	static String getLongTableName(Class<?> tTableClass, int databaseVersion)
+	static String getLongTableName(Class<?> tTableClass)
 	{
-		return ("V"+databaseVersion+"__"+tTableClass.getCanonicalName().replace(".", "_")).toUpperCase();
+		return (tTableClass.getCanonicalName().replace(".", "_")).toUpperCase();
 	}
 	static String getLongPackageName(Package p)
 	{
 		return p.getName().replace(".", "_").toLowerCase();
 	}
+	int getCurrentDatabaseVersion(Package p) throws DatabaseException {
+		Database db=sql_database.get(p);
+		if (db==null)
+		{
+			try {
+				PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
+						.prepareStatement("SELECT MAX(TABLE_VERSION) FROM " + ROW_PROPERTIES_OF_TABLES + " WHERE PACKAGE_NAME='" + getLongPackageName(p) + "'\n"
+								+ getSqlComma());
+				ResultSet rs = pst.executeQuery();
+				return rs.getInt(1);
+			}
+			catch (SQLException e) {
+				throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
+			}
+		}
+		else
+			return db.getCurrentVersion();
+	}
+
+	boolean doesVersionExists(Package p, int databaseVersion) throws DatabaseException {
+		try {
+			PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
+					.prepareStatement("SELECT count(TABLE_VERSION) FROM " + ROW_PROPERTIES_OF_TABLES + " WHERE PACKAGE_NAME='" + getLongPackageName(p) + "' AND TABLE_VERSION="+databaseVersion+getSqlComma());
+			ResultSet rs = pst.executeQuery();
+			return rs.getInt(1)>0;
+		}
+		catch (SQLException e) {
+			throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
+		}
+	}
+
+
+
 	public int getTableID(Class<?> tTableClass) throws DatabaseException {
 		return getTableID(tTableClass, getCurrentDatabaseVersion(tTableClass.getPackage()));
 	}
 	int getTableID(Class<?> tTableClass, int databaseVersion) throws DatabaseException {
-		String longTableName=getLongTableName(tTableClass, databaseVersion);
+		String longTableName=getLongTableName(tTableClass);
 
 		try {
 			PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
-					.prepareStatement("SELECT TABLE_ID FROM " + ROW_PROPERTIES_OF_TABLES +" WHERE TABLE_NAME='" + longTableName + "'\n"
-					+ getSqlComma());
+					.prepareStatement("SELECT TABLE_ID FROM " + ROW_PROPERTIES_OF_TABLES +" WHERE TABLE_NAME='" + longTableName + "' AND TABLE_VERSION="+databaseVersion+getSqlComma());
 			ResultSet rs = pst.executeQuery();
 			Integer res=null;
 			if (rs.next())
@@ -3027,13 +3070,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			Statement st = getConnectionAssociatedWithCurrentThread().getConnection()
 					.createStatement();
 			st.executeUpdate("INSERT INTO " + DatabaseWrapper.ROW_PROPERTIES_OF_TABLES + "(TABLE_NAME) VALUES('"
-					+ longTableName + "')" + getSqlComma());
+					+ longTableName +"', '"+databaseVersion+"', '"+getLongPackageName(tTableClass.getPackage())+ "')" + getSqlComma());
 
 			st.close();
 
 			pst = getConnectionAssociatedWithCurrentThread().getConnection()
-					.prepareStatement("SELECT TABLE_ID FROM " + ROW_PROPERTIES_OF_TABLES +" WHERE TABLE_NAME='" + longTableName + "'\n"
-							+ getSqlComma());
+					.prepareStatement("SELECT TABLE_ID FROM " + ROW_PROPERTIES_OF_TABLES +" WHERE TABLE_NAME='" + longTableName + "' AND TABLE_VERSION="+databaseVersion+getSqlComma());
 
 			rs = pst.executeQuery();
 			rs.next();
@@ -3132,8 +3174,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				if (db==null) {
 					sd.put(configuration.getPackage(), actualDatabaseLoading);
 				}
-				else
+				else {
 					db.tables_per_versions.put(databaseVersion, actualDatabaseLoading.tables_per_versions.get(databaseVersion));
+					db.updateCurrentVersion();
+				}
 				sql_database = sd;
 			} finally {
 				actualDatabaseLoading = null;
@@ -3169,9 +3213,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						Statement st = getConnectionAssociatedWithCurrentThread().getConnection()
 								.createStatement();
 						st.executeUpdate("CREATE TABLE " + ROW_PROPERTIES_OF_TABLES
-								+ " (TABLE_NAME VARCHAR(512), TABLE_ID INTEGER GENERATED BY DEFAULT AS IDENTITY(START WITH 1) "
+								+ " (TABLE_NAME VARCHAR(512), TABLE_VERSION INTEGER, PACKAGE_NAME VARCHAR(512), TABLE_ID INTEGER GENERATED BY DEFAULT AS IDENTITY(START WITH 1) "
 								//+", CONSTRAINT TABLE_NAME_PK PRIMARY KEY(TABLE_NAME)"
-								+", CONSTRAINT TABLE_ID_PK PRIMARY KEY(TABLE_ID))"
+								+", CONSTRAINT TABLE_ID_PK PRIMARY KEY(TABLE_ID, TABLE_VERSION))"
 								+ getSqlComma());
 						st.close();
 					}
@@ -3179,6 +3223,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					ArrayList<Table<?>> list_tables = new ArrayList<>(configuration.getTableClasses().size());
 					DatabasePerVersion dpv=new DatabasePerVersion();
 					actualDatabaseLoading.tables_per_versions.put(version, dpv);
+					actualDatabaseLoading.updateCurrentVersion();
 					for (Class<? extends Table<?>> class_to_load : configuration.getTableClasses()) {
 						Table<?> t = newInstance(class_to_load, version);
 						list_tables.add(t);
@@ -3224,8 +3269,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 
 			@Override
-			public void initOrReset() throws DatabaseException {
-				actualDatabaseLoading = new Database(DatabaseWrapper.this, getDatabaseDirectory(), configuration);
+			public void initOrReset() {
+				actualDatabaseLoading = new Database(configuration);
 			}
 
 		}, true);

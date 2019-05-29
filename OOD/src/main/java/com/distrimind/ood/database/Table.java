@@ -2933,6 +2933,11 @@ public abstract class Table<T extends DatabaseRecord> {
 	 */
 	public final ArrayList<T> getPaginedRecords(int rowpos, int rowlength, final Filter<T> _filter)
 			throws DatabaseException {
+		//noinspection unchecked
+		return (ArrayList<T>)getPaginedRecordsWithUnkonwType(rowpos, rowlength, _filter);
+	}
+	final ArrayList<?> getPaginedRecordsWithUnkonwType(int rowpos, int rowlength, final Filter<?> _filter)
+			throws DatabaseException {
 		if (_filter == null)
 			throw new NullPointerException("The parameter _filter is a null pointer !");
 		// synchronized(sql_connection)
@@ -2941,7 +2946,7 @@ public abstract class Table<T extends DatabaseRecord> {
 			try (Lock ignored = new ReadLock(this)) {
 				return getRecords(rowpos, rowlength, _filter, false);
 			} catch (Exception e) {
-				throw DatabaseException.getDatabaseException(e);
+				throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 			}
 		}
 	}
@@ -3188,7 +3193,7 @@ public abstract class Table<T extends DatabaseRecord> {
 	}
 
     @SuppressWarnings("SameParameterValue")
-    private ArrayList<T> getRecords(final int rowPos, final int rowLength, final Filter<T> _filter,
+    private ArrayList<T> getRecords(final int rowPos, final int rowLength, final Filter<DatabaseRecord> _filter,
                                     boolean is_already_sql_transaction) throws DatabaseException {
 		final ArrayList<T> res = new ArrayList<>();
 
@@ -3196,8 +3201,8 @@ public abstract class Table<T extends DatabaseRecord> {
 			ArrayList<T> records = getRecords(-1, -1, is_already_sql_transaction);
 			int pos = 0;
 			for (T r : records) {
-				if (_filter.nextRecord(r)
-						&& ((rowPos < 1 || rowLength < 1) || ((++pos) >= rowPos && (rowPos - pos) < rowLength)))
+				if (((rowPos < 1 || rowLength < 1) || ((++pos) >= rowPos && (rowPos - pos) < rowLength))
+						&& _filter.nextRecord(r))
 					res.add(r);
 
 				if (_filter.isTableParsingStoped()
@@ -3211,8 +3216,8 @@ public abstract class Table<T extends DatabaseRecord> {
 
 				@Override
 				public boolean setInstance(T r, ResultSet _cursor) throws DatabaseException {
-					if ((persoFilter || _filter.nextRecord(r)) && ((rowPos < 1 || rowLength < 1)
-							|| (pos.incrementAndGet() >= rowPos && (rowPos - pos.get()) < rowLength)))
+					if (((rowPos < 1 || rowLength < 1)
+							|| (pos.incrementAndGet() >= rowPos && (rowPos - pos.get()) < rowLength)) && (persoFilter || _filter.nextRecord(r)))
 						res.add(r);
 					return !_filter.isTableParsingStoped()
 							|| !(rowPos > 0 && rowLength > 0 && (rowPos - pos.get()) >= (rowLength - 1));
@@ -4430,6 +4435,7 @@ public abstract class Table<T extends DatabaseRecord> {
 	 * @throws FieldDatabaseException
 	 *             if the given fields do not correspond to the table fields.
 	 */
+	@SuppressWarnings("UnusedReturnValue")
 	public final long removeRecordsWithAllFields(Object... _fields) throws DatabaseException {
 		return removeRecordsWithAllFields(transformToMapField(_fields));
 	}
@@ -4532,6 +4538,7 @@ public abstract class Table<T extends DatabaseRecord> {
 	 * @throws FieldDatabaseException
 	 *             if the given fields do not correspond to the table fields.
 	 */
+	@SuppressWarnings("UnusedReturnValue")
 	public final long removeRecordsWithOneOfFields(Object... _fields) throws DatabaseException {
 		return removeRecordsWithOneOfFields(transformToMapField(_fields));
 	}
