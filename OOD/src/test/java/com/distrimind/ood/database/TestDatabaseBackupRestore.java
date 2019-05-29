@@ -402,6 +402,7 @@ public class TestDatabaseBackupRestore {
 	}
 
 
+	@SuppressWarnings("SameParameterValue")
 	private void loadDatabase(boolean useSeveralRestorationPoint, boolean useInternalBackup, AtomicLong dateRestoration, AtomicLong dataLoadStart, boolean useExternalBackup, boolean addAdditionData, boolean alterRecords) throws DatabaseException, InterruptedException {
 		wrapper=loadWrapper(databaseDirectory, useInternalBackup);
 		dataLoadStart.set(System.currentTimeMillis());
@@ -748,32 +749,104 @@ public class TestDatabaseBackupRestore {
 		testExternalBackupAndRestore(useSeveralRestorationPoint, true, false, false);
 	}
 
-	@Test(dataProvider = "DataProvIntBackupRestore", dependsOnMethods = "testInternalBackupAndRestore")
+	@Test(dataProvider = "DataProvIntIndBackupRestore", dependsOnMethods = "testInternalBackupAndRestore")
 	public void testIndividualInternalBackupAndRestore(boolean useSeveralRestorationPoint, boolean addAdditionalData) throws DatabaseException, InterruptedException {
 		testIndividualBackupAndRestore(true, useSeveralRestorationPoint, addAdditionalData, false);
 	}
 
 
 	@Test(dependsOnMethods = "testIndividualInternalBackupAndRestore")
-	public void testBackupCleaning()
-	{
-		//TODO test also backup limits
+	public void testBackupCleaning() throws DatabaseException, InterruptedException {
+		DatabaseWrapper wrapper=new EmbeddedH2DatabaseWrapper(databaseDirectory);
+		BackupConfiguration backupConf=new BackupConfiguration(200L, 1000L, 1000000, 100L, null);
+		DatabaseConfiguration conf=new DatabaseConfiguration( Table1.class.getPackage(), null, null, backupConf);
+
+		wrapper.loadDatabase(conf, true);
+		BackupRestoreManager manager=wrapper.getBackupRestoreManager(Table1.class.getPackage());
+		long start=System.currentTimeMillis();
+		addAndRemoveData(wrapper, 100);
+		Assert.assertTrue(start<=manager.getMinDateUTC());
+		Assert.assertTrue(manager.getMinDateUTC()<=manager.getMaxDateUTC());
+		start=manager.getMinDateUTC();
+		Thread.sleep(200);
+		addAndRemoveData(wrapper, 100);
+		Thread.sleep(1000);
+		manager.cleanOldBackups();
+		Assert.assertTrue(start<manager.getMinDateUTC());
+		Assert.assertTrue(manager.getMinDateUTC()<=manager.getMaxDateUTC());
 	}
 
 
 	@DataProvider(name="DataProvExtBackupRestore")
 	public Object[][] provideDataForExternalBackupRestore()
 	{
+		ArrayList<Object[]> l=new ArrayList<>();
 
+		for (boolean useSeveralRestorationPoint : new boolean[]{true, false})
+		{
+			for (boolean useInternalBackup : new boolean[]{true, false})
+			{
+				for (boolean restoreToEmptyDatabase : new boolean[]{true, false})
+				{
+					l.add(new Object[]{useSeveralRestorationPoint, useInternalBackup, restoreToEmptyDatabase});
+				}
+
+			}
+
+		}
+		Object[][] res=new Object[l.size()][];
+		int i=0;
+		for (Object[] o : l)
+			res[i++]=o;
+		return res;
 	}
 	@DataProvider(name="DataProvExtIndBackupRestore")
 	public Object[][] provideDataForExternalIndividualBackupRestore()
 	{
+		ArrayList<Object[]> l=new ArrayList<>();
+
+		for (boolean useInternalBackup : new boolean[]{true, false})
+		{
+			for (boolean useSeveralRestorationPoint : new boolean[]{true, false})
+			{
+				for (boolean addAdditionalData : new boolean[]{true, false})
+				{
+					l.add(new Object[]{useInternalBackup, useSeveralRestorationPoint, addAdditionalData});
+				}
+
+			}
+
+		}
+		Object[][] res=new Object[l.size()][];
+		int i=0;
+		for (Object[] o : l)
+			res[i++]=o;
+		return res;
 
 	}
 	@DataProvider(name="DataProvIntBackupRestore")
 	public Object[][] provideDataForInternalBackupRestore()
 	{
+		return new Object[][]{{true}, {false}};
+	}
 
+	@DataProvider(name="DataProvIntIndBackupRestore")
+	public Object[][] provideDataForInternalIndividualBackupRestore()
+	{
+		ArrayList<Object[]> l=new ArrayList<>();
+
+		for (boolean useSeveralRestorationPoint : new boolean[]{true, false})
+		{
+			for (boolean addAdditionalData : new boolean[]{true, false})
+			{
+				l.add(new Object[]{useSeveralRestorationPoint, addAdditionalData});
+			}
+
+		}
+		Object[][] res=new Object[l.size()][];
+		int i=0;
+		for (Object[] o : l)
+			res[i++]=o;
+		return res;
 	}
 }
