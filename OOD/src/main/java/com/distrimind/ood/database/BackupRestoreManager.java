@@ -39,12 +39,14 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.i18n.DatabaseMessages;
 import com.distrimind.ood.util.OutputStreamCounter;
 import com.distrimind.util.FileTools;
+import com.distrimind.util.io.RandomFileInputStream;
 import com.distrimind.util.io.RandomFileOutputStream;
 import com.distrimind.util.io.RandomOutputStream;
 import com.distrimind.util.progress_monitors.ProgressMonitorParameters;
 
 import java.io.*;
 import java.lang.ref.Reference;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
@@ -56,6 +58,12 @@ import java.util.regex.Pattern;
  * @since MaDKitLanEdition 2.0.0
  */
 public class BackupRestoreManager {
+
+	private final int LAST_BACKUP_UTC_POSITION=0;
+	private final int LAST_REMOVE_WITH_CASCADE_POSITION=LAST_BACKUP_UTC_POSITION+8;
+	private final int LIST_CLASSES_POSITION=LAST_REMOVE_WITH_CASCADE_POSITION+8;
+
+
 	private ArrayList<Long> fileReferenceTimeStamps;
 	private ArrayList<Long> fileTimeStamps;
 	private final File backupDirectory;
@@ -240,10 +248,18 @@ public class BackupRestoreManager {
 		try {
 			if (classes.size()>Short.MAX_VALUE)
 				throw new DatabaseException("Too much tables");
+			int dataPosition=6+classes.size()*2;
+			List<byte[]> l=new ArrayList<>(classes.size());
+			for (Class<? extends Table<?>> aClass : classes) {
+				byte[] tab=aClass.getName().getBytes(StandardCharsets.UTF_8);
+				l.add(tab);
+				dataPosition+=tab.length;
+			}
+			out.writeInt(dataPosition);
 			out.writeShort(classes.size());
-			for (int i = 0; i < classes.size(); i++) {
-				String s = classes.get(i).getName();
-				out.writeUTF(s);
+			for (byte[] t : l) {
+				out.writeShort(t.length);
+				out.write(t);
 			}
 		}
 		catch(IOException e)
@@ -253,19 +269,39 @@ public class BackupRestoreManager {
 	}
 
 	private void saveReferenceBackupHeader(DataOutputStream out) throws DatabaseException {
+
 		//TODO complete
 		saveTablesHeader(out);
 	}
 
 	private File currentFileReference=null;
 	private List<Class<? extends Table<?>>> currentClassesList=null;
-	private List<Class<? extends Table<?>>> extractClassesList(File file)
-	{
+
+	private List<Class<? extends Table<?>>> extractClassesList(File file) throws DatabaseException {
 		if (currentClassesList==null || currentFileReference!=file)
 		{
-			currentClassesList=new ArrayList<>();
 
-			//TODO complete
+			try(RandomFileInputStream rfis=new RandomFileInputStream(file)) {
+				//TODO complete
+				rfis.skip(LIST_CLASSES_POSITION+4);
+				int s=rfis.readShort();
+				if (s<0)
+					throw new IOException();
+
+				currentClassesList=new ArrayList<>(s);
+				byte[] tab=new byte[Short.MAX_VALUE];
+				for (int i=0;i<s;i++)
+				{
+					int l=rfis.readShort();
+					rfis.readFully(tab, 0, l);
+					String className=new String(tab, 0, l, StandardCharsets.UTF_8);
+					@SuppressWarnings("unchecked")
+					Class<? extends Table<?>> c=(Class<? extends Table<?>>)Class.forName(className);
+					currentClassesList.add(c);
+				}
+			} catch (IOException | ClassCastException e) {
+				throw DatabaseException.getDatabaseException(e);
+			}
 			currentFileReference=file;
 		}
 		return currentClassesList;
