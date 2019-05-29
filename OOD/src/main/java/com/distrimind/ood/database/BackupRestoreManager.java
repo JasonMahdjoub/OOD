@@ -59,9 +59,9 @@ import java.util.regex.Pattern;
  */
 public class BackupRestoreManager {
 
-	private final int LAST_BACKUP_UTC_POSITION=0;
-	private final int LAST_REMOVE_WITH_CASCADE_POSITION=LAST_BACKUP_UTC_POSITION+8;
-	private final int LIST_CLASSES_POSITION=LAST_REMOVE_WITH_CASCADE_POSITION+8;
+	private final static int LAST_BACKUP_UTC_POSITION=0;
+	private final static int LAST_REMOVE_WITH_CASCADE_POSITION=LAST_BACKUP_UTC_POSITION+8;
+	private final static int LIST_CLASSES_POSITION=LAST_REMOVE_WITH_CASCADE_POSITION+8;
 
 
 	private ArrayList<Long> fileReferenceTimeStamps;
@@ -188,7 +188,7 @@ public class BackupRestoreManager {
 
 			return file;
 		} catch (IOException e) {
-			throw DatabaseException.getDatabaseException(e);
+			throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 		}
 
 	}
@@ -244,7 +244,7 @@ public class BackupRestoreManager {
 		//TODO complete
 	}
 
-	private void saveTablesHeader(DataOutputStream out) throws DatabaseException {
+	private void saveTablesHeader(RandomOutputStream out) throws DatabaseException {
 		try {
 			if (classes.size()>Short.MAX_VALUE)
 				throw new DatabaseException("Too much tables");
@@ -268,22 +268,34 @@ public class BackupRestoreManager {
 		}
 	}
 
-	private void saveReferenceBackupHeader(DataOutputStream out) throws DatabaseException {
+	private void saveReferenceBackupHeader(RandomOutputStream out, long backupUTC) throws DatabaseException {
 
-		//TODO complete
+		try {
+			out.writeLong(backupUTC);
+			out.writeLong(-1);
+		}
+		catch(IOException e)
+		{
+			throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
+		}
+
+
 		saveTablesHeader(out);
 	}
 
 	private File currentFileReference=null;
 	private List<Class<? extends Table<?>>> currentClassesList=null;
+	private int currentDataPos=-1;
 
 	private List<Class<? extends Table<?>>> extractClassesList(File file) throws DatabaseException {
 		if (currentClassesList==null || currentFileReference!=file)
 		{
 
 			try(RandomFileInputStream rfis=new RandomFileInputStream(file)) {
-				//TODO complete
-				rfis.skip(LIST_CLASSES_POSITION+4);
+
+				//noinspection ResultOfMethodCallIgnored
+				rfis.skip(LIST_CLASSES_POSITION);
+				currentDataPos=rfis.readInt();
 				int s=rfis.readShort();
 				if (s<0)
 					throw new IOException();
@@ -299,8 +311,8 @@ public class BackupRestoreManager {
 					Class<? extends Table<?>> c=(Class<? extends Table<?>>)Class.forName(className);
 					currentClassesList.add(c);
 				}
-			} catch (IOException | ClassCastException e) {
-				throw DatabaseException.getDatabaseException(e);
+			} catch (IOException | ClassCastException | ClassNotFoundException e) {
+				throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 			}
 			currentFileReference=file;
 		}
@@ -345,42 +357,48 @@ public class BackupRestoreManager {
 			File file = initNewFileForBackupReference(backupTime);
 			try
 			{
-				final AtomicReference<OutputStreamCounter> rout=new AtomicReference<>(new OutputStreamCounter(new BufferedOutputStream(new FileOutputStream(file))));
+				final AtomicReference<RandomFileOutputStream> rout=new AtomicReference<>(new RandomFileOutputStream(file, RandomFileOutputStream.AccessMode.READ_AND_WRITE));
 				try {
 
-
-					saveReferenceBackupHeader(rout.get());
+					saveReferenceBackupHeader(rout.get(), backupTime);
+					int nextTransactionReference=(int)rout.get().currentPosition();
+					rout.get().seek(nextTransactionReference+4);
+					rout.get().writeLong(backupTime);
 
 					for (Class<? extends Table<?>> c : classes) {
 						final Table<?> table = databaseWrapper.getTableInstance(c);
 						table.getPaginedRecordsWithUnkonwType(-1, -1, new Filter<DatabaseRecord>() {
-							OutputStreamCounter out=rout.get();
+							RandomFileOutputStream out=rout.get();
 							@Override
 							public boolean nextRecord(DatabaseRecord _record) throws DatabaseException {
 								backupRecord(out, table, _record, DatabaseEventType.ADD);
-								if (out.getWriteBytes()>=backupConfiguration.getMaxBackupFileSizeInBytes())
-								{
-									try {
+								try {
+									if (out.currentPosition()>=backupConfiguration.getMaxBackupFileSizeInBytes())
+									{
 										out.flush();
 										out.close();
 
 										File file=initNewFileForBackupIncrement(System.currentTimeMillis());
-										rout.set(out=new OutputStreamCounter(new BufferedOutputStream(new FileOutputStream(file))));
-									} catch (IOException e) {
-										throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
+										rout.set(out=new RandomFileOutputStream(file));
+
 									}
+								} catch (IOException e) {
+									throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 								}
+
 								return false;
 							}
 						});
 					}
-
-					scanFiles();
+					int nextTransaction=(int)rout.get().currentPosition();
+					rout.get().seek(nextTransactionReference);
+					rout.get().writeInt(nextTransaction);
 				}
 				finally {
 					rout.get().flush();
 					rout.get().close();
 				}
+				scanFiles();
 			} catch (IOException e) {
 				throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 			}
