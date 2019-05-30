@@ -40,6 +40,7 @@ import com.distrimind.ood.i18n.DatabaseMessages;
 import com.distrimind.util.FileTools;
 import com.distrimind.util.io.RandomFileInputStream;
 import com.distrimind.util.io.RandomFileOutputStream;
+import com.distrimind.util.io.RandomInputStream;
 import com.distrimind.util.io.RandomOutputStream;
 import com.distrimind.util.progress_monitors.ProgressMonitorParameters;
 
@@ -377,7 +378,9 @@ public class BackupRestoreManager {
 		try {
 			int nextTransactionReference = (int) out.currentPosition();
 			out.writeInt(-1);
+			out.writeBoolean(false);
 			out.writeLong(backupTime);
+
 			return nextTransactionReference;
 		}
 		catch(IOException e)
@@ -385,11 +388,13 @@ public class BackupRestoreManager {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
-	private void saveTransactionQueue(RandomOutputStream out, int nextTransactionReference) throws DatabaseException {
+	private void saveTransactionQueue(RandomOutputStream out, int nextTransactionReference, boolean containsRemoveWithCascade) throws DatabaseException {
 		try {
 			int nextTransaction=(int)out.currentPosition();
 			out.seek(nextTransactionReference);
 			out.writeInt(nextTransaction);
+			if (containsRemoveWithCascade)
+				out.writeBoolean(true);
 		}
 		catch(IOException e)
 		{
@@ -431,7 +436,7 @@ public class BackupRestoreManager {
 								try {
 									if (out.currentPosition()>=backupConfiguration.getMaxBackupFileSizeInBytes())
 									{
-										saveTransactionQueue(rout.get(), nextTransactionReference.get());
+										saveTransactionQueue(rout.get(), nextTransactionReference.get(), false);
 										out.flush();
 										out.close();
 
@@ -449,7 +454,7 @@ public class BackupRestoreManager {
 							}
 						});
 					}
-					saveTransactionQueue(rout.get(), nextTransactionReference.get());
+					saveTransactionQueue(rout.get(), nextTransactionReference.get(), false);
 				}
 				finally {
 					rout.get().flush();
@@ -529,11 +534,10 @@ public class BackupRestoreManager {
 		return !passive && !isReady();
 	}
 
-	private void deleteDatabaseFilesFromReferenceToLastFile(long fileReference)
-	{
+	private void deleteDatabaseFilesFromReferenceToLastFile(long transactionReference) throws DatabaseException {
 		for (Iterator<Long> it = fileReferenceTimeStamps.iterator(); it.hasNext(); ) {
 			Long l = it.next();
-			if (l >= fileReference) {
+			if (l >= transactionReference) {
 				File f = getFile(l, true);
 				//noinspection ResultOfMethodCallIgnored
 				f.delete();
@@ -542,14 +546,60 @@ public class BackupRestoreManager {
 		}
 		for (Iterator<Long> it = fileTimeStamps.iterator(); it.hasNext(); ) {
 			Long l = it.next();
-			if (l >= fileReference) {
+			if (l >= transactionReference) {
 				File f = getFile(l, false);
 				//noinspection ResultOfMethodCallIgnored
 				f.delete();
 				it.remove();
 			}
 		}
-		//TODO concatenate last file
+		if (fileTimeStamps.size()>0)
+		{
+			long l=fileTimeStamps.get(fileTimeStamps.size()-1);
+			boolean isReference=fileReferenceTimeStamps.contains(l);
+			File file=getFile(l, isReference);
+			try(RandomFileOutputStream out=new RandomFileOutputStream(file))
+			{
+				RandomInputStream ris=out.getRandomInputStream();
+				if (isReference)
+				{
+					long prevDate=ris.readLong();
+					int posLastRemoveWithCascade=-1;
+					if (ris.skip(LIST_CLASSES_POSITION-8)!=LIST_CLASSES_POSITION-8)
+						throw new DatabaseException("Invalid file", new IOException());
+					int dataPosition=ris.readInt();
+					ris.seek(dataPosition);
+
+					while(ris.currentPosition()<ris.length())
+					{
+						int currentPos=(int)ris.currentPosition();
+						int nextTrPos=ris.readInt();
+						boolean removeWithCascade=ris.readBoolean();
+						long date=ris.readLong();
+
+						if (date>=transactionReference)
+						{
+							long newLength=ris.currentPosition()-6;
+							ris.close();
+							out.setLength(newLength);
+							out.seek(0);
+							out.writeLong(prevDate);
+							out.writeInt(posLastRemoveWithCascade);
+							break;
+						}
+						else {
+							if (removeWithCascade)
+								posLastRemoveWithCascade=currentPos;
+							prevDate=date;
+							ris.seek(nextTrPos);
+						}
+					}
+				}
+
+			} catch (IOException e) {
+				throw DatabaseException.getDatabaseException(e);
+			}
+		}
 	}
 	private void deleteDatabaseFilesFromReferenceToFirstFile(long fileReference)
 	{
