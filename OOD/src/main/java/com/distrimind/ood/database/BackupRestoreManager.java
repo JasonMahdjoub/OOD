@@ -37,7 +37,6 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.i18n.DatabaseMessages;
-import com.distrimind.ood.util.OutputStreamCounter;
 import com.distrimind.util.FileTools;
 import com.distrimind.util.io.RandomFileInputStream;
 import com.distrimind.util.io.RandomFileOutputStream;
@@ -418,10 +417,39 @@ public class BackupRestoreManager {
 
 	}
 
-	public int cleanOldBackups() throws DatabaseException
+	/**
+	 * Clean old backups
+	 *
+	 */
+	public void cleanOldBackups()
 	{
 		synchronized (this) {
-			//TODO clean old backups
+			long limitUTC=System.currentTimeMillis()-backupConfiguration.getMaxBackupDurationInMs();
+			long concretLimitUTC=Long.MIN_VALUE;
+			global:for (int i=fileReferenceTimeStamps.size()-2;i>=0;i--)
+			{
+				Long l=fileReferenceTimeStamps.get(i);
+				if (l<limitUTC) {
+					int istart=fileTimeStamps.indexOf(l)+1;
+					int iend=fileTimeStamps.indexOf(fileReferenceTimeStamps.get(i+1));
+					if (iend<0)
+						throw new IllegalAccessError();
+					long limit=l;
+					for (int j=istart;j<iend;j++) {
+						limit=fileTimeStamps.get(j);
+						if ( limit>= limitUTC) {
+							continue global;
+						}
+
+					}
+
+					concretLimitUTC = limit;
+					break;
+				}
+			}
+			if (concretLimitUTC!=Long.MIN_VALUE) {
+				deleteDatabaseFilesFromReferenceToFirstFile(concretLimitUTC);
+			}
 		}
 	}
 
@@ -432,7 +460,7 @@ public class BackupRestoreManager {
 					throw new DatabaseException("Impossible to create file " + computeDatabaseReference);
 				createIfNecessaryNewBackupReference();
 			} catch (IOException e) {
-				throw DatabaseException.getDatabaseException(e);
+				throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 			}
 		}
 	}
@@ -442,26 +470,60 @@ public class BackupRestoreManager {
 		return !passive && !isReady();
 	}
 
-	private int deleteDatabaseFilesFromReferenceToLastFile(long fileReference)
+	private void deleteDatabaseFilesFromReferenceToLastFile(long fileReference)
 	{
-		//TODO complete
+		for (Iterator<Long> it = fileReferenceTimeStamps.iterator(); it.hasNext(); ) {
+			Long l = it.next();
+			if (l >= fileReference) {
+				File f = getFile(l, true);
+				//noinspection ResultOfMethodCallIgnored
+				f.delete();
+				it.remove();
+			}
+		}
+		for (Iterator<Long> it = fileTimeStamps.iterator(); it.hasNext(); ) {
+			Long l = it.next();
+			if (l >= fileReference) {
+				File f = getFile(l, false);
+				//noinspection ResultOfMethodCallIgnored
+				f.delete();
+				it.remove();
+			}
+		}
 	}
-	private int deleteDatabaseFilesFromReferenceToFirstFile(long fileReference)
+	private void deleteDatabaseFilesFromReferenceToFirstFile(long fileReference)
 	{
-		//TODO complete
+		for (Iterator<Long> it = fileReferenceTimeStamps.iterator(); it.hasNext(); ) {
+			Long l = it.next();
+			if (l <= fileReference) {
+				File f = getFile(l, true);
+				//noinspection ResultOfMethodCallIgnored
+				f.delete();
+				it.remove();
+			}
+		}
+		for (Iterator<Long> it = fileTimeStamps.iterator(); it.hasNext(); ) {
+			Long l = it.next();
+			if (l <= fileReference) {
+				File f = getFile(l, false);
+				//noinspection ResultOfMethodCallIgnored
+				f.delete();
+				it.remove();
+			}
+		}
 	}
 
 	public long getMinDateUTC()
 	{
 		synchronized (this) {
-
+			return fileTimeStamps.size()>0?fileTimeStamps.get(0):Long.MIN_VALUE;
 		}
 	}
 
 	public long getMaxDateUTC()
 	{
 		synchronized (this) {
-
+			return fileTimeStamps.size()>0?fileTimeStamps.get(fileTimeStamps.size()-1):Long.MAX_VALUE;
 		}
 	}
 
@@ -499,22 +561,17 @@ public class BackupRestoreManager {
 	public <R extends DatabaseRecord, T extends Table<R>> Reference<R> restoreRecordToDateUTC(long dateUTC, T table, Map<String, Object> primaryKeys, boolean restoreWithCascade)
 	{
 		synchronized (this) {
-
+			//TODO complete
 		}
 	}
 
-	boolean createIfNecessaryNewBackupReference() throws DatabaseException {
+	void createIfNecessaryNewBackupReference() throws DatabaseException {
 		if (doesCreateNewBackupReference())
 		{
 			createBackupReference();
 
-			return true;
+		}
 
-		}
-		else
-		{
-			return false;
-		}
 	}
 
 	void runTransaction(Transaction transaction) throws DatabaseException {
@@ -527,7 +584,7 @@ public class BackupRestoreManager {
 				transaction.run(rfos);
 			} catch (IOException e) {
 				activateBackupReferenceCreation();
-				throw DatabaseException.getDatabaseException(e);
+				throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 			}
 		}
 	}
