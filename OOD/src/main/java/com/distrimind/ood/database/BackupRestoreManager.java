@@ -729,10 +729,19 @@ public class BackupRestoreManager {
 		int transactionsNumber=0;
 		RandomFileOutputStream out;
 		private boolean closed=false;
+		private long transactionUTC;
+		private int nextTransactionReference;
+		private boolean containsRemoveWithCascade=false;
 
-		Transaction(long lastTransactionUTC, RandomFileOutputStream out) {
+		Transaction(long lastTransactionUTC, RandomFileOutputStream out) throws DatabaseException {
 			this.lastTransactionUTC = lastTransactionUTC;
 			this.out=out;
+			transactionUTC=System.currentTimeMillis();
+			if (transactionUTC==lastTransactionUTC)
+				++transactionUTC;
+			if (transactionUTC<lastTransactionUTC)
+				throw new InternalError();
+			nextTransactionReference=saveTransactionHeader(out, transactionUTC);
 		}
 
 		final void cancelTransaction() throws DatabaseException
@@ -754,7 +763,7 @@ public class BackupRestoreManager {
 		{
 			if (closed)
 				return;
-
+			saveTransactionQueue(out,nextTransactionReference, containsRemoveWithCascade );
 			closed=true;
 			try {
 				out.close();
@@ -767,6 +776,7 @@ public class BackupRestoreManager {
 			if (closed)
 				return;
 			try {
+				++transactionsNumber;
 				//TODO complete
 			} catch (IOException e) {
 				cancelTransaction();
