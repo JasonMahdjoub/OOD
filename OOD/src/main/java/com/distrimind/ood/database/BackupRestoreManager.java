@@ -200,7 +200,7 @@ public class BackupRestoreManager {
 
 			return file;
 		} catch (IOException e) {
-			throw DatabaseException.getDatabaseException(e);
+			throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 		}
 
 	}
@@ -229,7 +229,10 @@ public class BackupRestoreManager {
 
 	}
 
-
+	/**
+	 * Tells if the manager is ready for backup new database events
+	 * @return true if the manager is ready for backup new database events
+	 */
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	public boolean isReady()
 	{
@@ -285,6 +288,7 @@ public class BackupRestoreManager {
 	private File currentFileReference=null;
 	private List<Class<? extends Table<?>>> currentClassesList=null;
 	private int currentDataPos=-1;
+	private long lastBackupEventUTC=-1;
 
 	private List<Class<? extends Table<?>>> extractClassesList(File file) throws DatabaseException {
 		if (currentClassesList==null || currentFileReference!=file)
@@ -292,8 +296,10 @@ public class BackupRestoreManager {
 
 			try(RandomFileInputStream rfis=new RandomFileInputStream(file)) {
 
+
+				lastBackupEventUTC=rfis.readLong();
 				//noinspection ResultOfMethodCallIgnored
-				rfis.skip(LIST_CLASSES_POSITION);
+				rfis.skip(LIST_CLASSES_POSITION-8);
 				currentDataPos=rfis.readInt();
 				int s=rfis.readShort();
 				if (s<0)
@@ -318,7 +324,21 @@ public class BackupRestoreManager {
 		return currentClassesList;
 	}
 
-	private boolean checkTablesHeader() throws DatabaseException {
+	private long extractLastBackupEventUTC(File file) throws DatabaseException {
+		if (file==currentFileReference)
+			return lastBackupEventUTC;
+		else
+		{
+			try(RandomFileInputStream rfis=new RandomFileInputStream(file)) {
+				return rfis.readLong();
+			} catch (IOException e) {
+				throw DatabaseException.getDatabaseException(e);
+			}
+		}
+	}
+
+
+		private boolean checkTablesHeader() throws DatabaseException {
 		File file=getFileForBackupReference();
 		boolean ok=true;
 		if (file!=null && file.exists())
@@ -353,9 +373,13 @@ public class BackupRestoreManager {
 		synchronized (this) {
 
 			long backupTime = System.currentTimeMillis();
-			File file = initNewFileForBackupReference(backupTime);
+
 			try
 			{
+				if (!computeDatabaseReference.exists())
+					if (!computeDatabaseReference.createNewFile())
+						throw new DatabaseException("Impossible to create file " + computeDatabaseReference);
+				File file = initNewFileForBackupReference(backupTime);
 				final AtomicReference<RandomFileOutputStream> rout=new AtomicReference<>(new RandomFileOutputStream(file, RandomFileOutputStream.AccessMode.READ_AND_WRITE));
 				try {
 
@@ -399,7 +423,7 @@ public class BackupRestoreManager {
 				}
 				scanFiles();
 			} catch (IOException e) {
-				throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
+				throw DatabaseException.getDatabaseException(e);
 			}
 
 
@@ -453,7 +477,8 @@ public class BackupRestoreManager {
 		}
 	}
 
-	public void activateBackupReferenceCreation() throws DatabaseException {
+
+	private void activateBackupReferenceCreation() throws DatabaseException {
 		synchronized (this) {
 			try {
 				if (!computeDatabaseReference.createNewFile())
@@ -513,21 +538,38 @@ public class BackupRestoreManager {
 		}
 	}
 
-	public long getMinDateUTC()
+	/**
+	 * Gets the older backup event UTC time
+	 * @return the older backup event UTC time
+	 */
+	public long getMinDateUTCInMs()
 	{
 		synchronized (this) {
 			return fileTimeStamps.size()>0?fileTimeStamps.get(0):Long.MIN_VALUE;
 		}
 	}
 
-	public long getMaxDateUTC()
-	{
+	/**
+	 * Gets the younger backup event UTC time
+	 * @return the younger backup event UTC time
+	 */
+	public long getMaxDateUTCInMS() throws DatabaseException {
 		synchronized (this) {
-			return fileTimeStamps.size()>0?fileTimeStamps.get(fileTimeStamps.size()-1):Long.MAX_VALUE;
+			if (fileTimeStamps.size()>0 && fileReferenceTimeStamps.size()>0)
+			{
+				long ts=fileTimeStamps.get(fileTimeStamps.size()-1);
+				return extractLastBackupEventUTC(getFile(ts, fileReferenceTimeStamps.get(fileReferenceTimeStamps.size()-1)==ts));
+			}
+			return Long.MAX_VALUE;
 		}
 	}
 
-	public void restoreDatabaseToDateUTC(long dateUTC)
+	/**
+	 * Restore the database to the nearest given date UTC
+	 * @param dateUTCInMs the UTC time in milliseconds
+	 * @return true if the given time corresponds to an available backup. False is chosen if the given time is too old to find a corresponding historical into the backups. In this previous case, it is the nearest backup that is chosen.
+	 */
+	public boolean restoreDatabaseToDateUTC(long dateUTCInMs)
 	{
 		synchronized (this) {
 			//TODO complete
@@ -589,6 +631,10 @@ public class BackupRestoreManager {
 		}
 	}
 
+	/**
+	 *
+	 * @return true if no backup was done
+	 */
 	public boolean isEmpty() {
 		synchronized (this) {
 			return this.fileReferenceTimeStamps.size() == 0;

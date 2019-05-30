@@ -415,10 +415,10 @@ public class TestDatabaseBackupRestore {
 			externalBRM.createBackupReference();
 			Assert.assertEquals(externalBRM.getBackupDirectory(), externalBackupDirectory);
 
-			Assert.assertTrue(t<externalBRM.getMinDateUTC());
-			Assert.assertTrue(System.currentTimeMillis()>externalBRM.getMinDateUTC());
-			Assert.assertTrue(externalBRM.getMinDateUTC()<externalBRM.getMaxDateUTC());
-			Assert.assertTrue(System.currentTimeMillis()>externalBRM.getMaxDateUTC());
+			Assert.assertTrue(t<externalBRM.getMinDateUTCInMs());
+			Assert.assertTrue(System.currentTimeMillis()>externalBRM.getMinDateUTCInMs());
+			Assert.assertTrue(externalBRM.getMinDateUTCInMs()<externalBRM.getMaxDateUTCInMS());
+			Assert.assertTrue(System.currentTimeMillis()>externalBRM.getMaxDateUTCInMS());
 		}
 		Thread.sleep(100);
 		dateRestoration.set(System.currentTimeMillis());
@@ -461,9 +461,9 @@ public class TestDatabaseBackupRestore {
 			Assert.assertEquals(internalBRM != null, useInternalBackup);
 
 			if (internalBRM != null) {
-				Assert.assertTrue(internalBRM.getMinDateUTC() > dataLoadStart.get());
-				Assert.assertTrue(internalBRM.getMinDateUTC() < internalBRM.getMaxDateUTC());
-				Assert.assertTrue(internalBRM.getMaxDateUTC() < System.currentTimeMillis());
+				Assert.assertTrue(internalBRM.getMinDateUTCInMs() > dataLoadStart.get());
+				Assert.assertTrue(internalBRM.getMinDateUTCInMs() < internalBRM.getMaxDateUTCInMS());
+				Assert.assertTrue(internalBRM.getMaxDateUTCInMS() < System.currentTimeMillis());
 				dataLoadStart.set(System.currentTimeMillis());
 			}
 		}
@@ -486,9 +486,9 @@ public class TestDatabaseBackupRestore {
 			usedBRM=wrapper.getExternalBackupRestoreManager(externalBackupDirectory, Table1.class.getPackage());
 		else
 			usedBRM=internalBRM;
-		Assert.assertTrue(usedBRM.getMinDateUTC()>dataLoadStart.get());
-		Assert.assertTrue(usedBRM.getMinDateUTC()<usedBRM.getMaxDateUTC());
-		Assert.assertTrue(usedBRM.getMaxDateUTC()<dateRestoration.get());
+		Assert.assertTrue(usedBRM.getMinDateUTCInMs()>dataLoadStart.get());
+		Assert.assertTrue(usedBRM.getMinDateUTCInMs()<usedBRM.getMaxDateUTCInMS());
+		Assert.assertTrue(usedBRM.getMaxDateUTCInMS()<dateRestoration.get());
 		if (restoreToEmptyDatabase)
 		{
 			unloadDatabase();
@@ -499,14 +499,14 @@ public class TestDatabaseBackupRestore {
 		Assert.assertNotNull(usedBRM);
 		usedBRM.restoreDatabaseToDateUTC(dateRestoration.get());
 		assertEquals(wrapperForReferenceDatabase,wrapper, true);
-		Assert.assertTrue(usedBRM.getMinDateUTC()>dataLoadStart.get());
-		Assert.assertTrue(usedBRM.getMinDateUTC()<usedBRM.getMaxDateUTC());
-		Assert.assertTrue(usedBRM.getMaxDateUTC()<dateRestoration.get());
+		Assert.assertTrue(usedBRM.getMinDateUTCInMs()>dataLoadStart.get());
+		Assert.assertTrue(usedBRM.getMinDateUTCInMs()<usedBRM.getMaxDateUTCInMS());
+		Assert.assertTrue(usedBRM.getMaxDateUTCInMS()<dateRestoration.get());
 		if (internalBRM!=null)
 		{
-			Assert.assertTrue(internalBRM.getMinDateUTC()>dataLoadStart.get());
-			Assert.assertTrue(internalBRM.getMinDateUTC()<internalBRM.getMaxDateUTC());
-			Assert.assertTrue(internalBRM.getMaxDateUTC()<System.currentTimeMillis());
+			Assert.assertTrue(internalBRM.getMinDateUTCInMs()>dataLoadStart.get());
+			Assert.assertTrue(internalBRM.getMinDateUTCInMs()<internalBRM.getMaxDateUTCInMS());
+			Assert.assertTrue(internalBRM.getMaxDateUTCInMS()<System.currentTimeMillis());
 		}
 
 	}
@@ -658,9 +658,9 @@ public class TestDatabaseBackupRestore {
 			usedBRM=wrapper.getExternalBackupRestoreManager(externalBackupDirectory, Table1.class.getPackage());
 		else
 			usedBRM=internalBRM;
-		Assert.assertTrue(usedBRM.getMinDateUTC()>dataLoadStart.get());
-		Assert.assertTrue(usedBRM.getMinDateUTC()<usedBRM.getMaxDateUTC());
-		Assert.assertTrue(usedBRM.getMaxDateUTC()<dateRestoration.get());
+		Assert.assertTrue(usedBRM.getMinDateUTCInMs()>dataLoadStart.get());
+		Assert.assertTrue(usedBRM.getMinDateUTCInMs()<usedBRM.getMaxDateUTCInMS());
+		Assert.assertTrue(usedBRM.getMaxDateUTCInMS()<dateRestoration.get());
 
 		Assert.assertNotNull(usedBRM);
 
@@ -692,14 +692,14 @@ public class TestDatabaseBackupRestore {
 		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), addedB2, true, true, false, true);
 		Assert.assertNull(wrapper.getTableInstance(Table4.class).getRecord(Table.getFields(wrapper.getTableInstance(Table4.class).getPrimaryKeysFieldAccessors(), addedB3)));
 
-		Assert.assertTrue(usedBRM.getMinDateUTC()>dataLoadStart.get());
-		Assert.assertTrue(usedBRM.getMinDateUTC()<usedBRM.getMaxDateUTC());
-		Assert.assertTrue(usedBRM.getMaxDateUTC()<dateRestoration.get());
+		Assert.assertTrue(usedBRM.getMinDateUTCInMs()>dataLoadStart.get());
+		Assert.assertTrue(usedBRM.getMinDateUTCInMs()<usedBRM.getMaxDateUTCInMS());
+		Assert.assertTrue(usedBRM.getMaxDateUTCInMS()<dateRestoration.get());
 		if (internalBRM!=null)
 		{
-			Assert.assertTrue(internalBRM.getMinDateUTC()>dataLoadStart.get());
-			Assert.assertTrue(internalBRM.getMinDateUTC()<internalBRM.getMaxDateUTC());
-			Assert.assertTrue(internalBRM.getMaxDateUTC()<System.currentTimeMillis());
+			Assert.assertTrue(internalBRM.getMinDateUTCInMs()>dataLoadStart.get());
+			Assert.assertTrue(internalBRM.getMinDateUTCInMs()<internalBRM.getMaxDateUTCInMS());
+			Assert.assertTrue(internalBRM.getMaxDateUTCInMS()<System.currentTimeMillis());
 		}
 
 		assertEquals(wrapperForReferenceDatabase,wrapper, !addAdditionalData);
@@ -732,14 +732,14 @@ public class TestDatabaseBackupRestore {
 		testRecordRestoration(wrapper, usedBRM, dateRestoration.get(), addedB2, false, false, false, true);
 		Assert.assertNotNull(wrapper.getTableInstance(Table4.class).getRecord(Table.getFields(wrapper.getTableInstance(Table4.class).getPrimaryKeysFieldAccessors(), addedB3)));
 
-		Assert.assertTrue(usedBRM.getMinDateUTC()>dataLoadStart.get());
-		Assert.assertTrue(usedBRM.getMinDateUTC()<usedBRM.getMaxDateUTC());
-		Assert.assertTrue(usedBRM.getMaxDateUTC()<dateRestoration.get());
+		Assert.assertTrue(usedBRM.getMinDateUTCInMs()>dataLoadStart.get());
+		Assert.assertTrue(usedBRM.getMinDateUTCInMs()<usedBRM.getMaxDateUTCInMS());
+		Assert.assertTrue(usedBRM.getMaxDateUTCInMS()<dateRestoration.get());
 		if (internalBRM!=null)
 		{
-			Assert.assertTrue(internalBRM.getMinDateUTC()>dataLoadStart.get());
-			Assert.assertTrue(internalBRM.getMinDateUTC()<internalBRM.getMaxDateUTC());
-			Assert.assertTrue(internalBRM.getMaxDateUTC()<System.currentTimeMillis());
+			Assert.assertTrue(internalBRM.getMinDateUTCInMs()>dataLoadStart.get());
+			Assert.assertTrue(internalBRM.getMinDateUTCInMs()<internalBRM.getMaxDateUTCInMS());
+			Assert.assertTrue(internalBRM.getMaxDateUTCInMS()<System.currentTimeMillis());
 		}
 
 	}
@@ -765,15 +765,15 @@ public class TestDatabaseBackupRestore {
 		BackupRestoreManager manager=wrapper.getBackupRestoreManager(Table1.class.getPackage());
 		long start=System.currentTimeMillis();
 		addAndRemoveData(wrapper, 100);
-		Assert.assertTrue(start<=manager.getMinDateUTC());
-		Assert.assertTrue(manager.getMinDateUTC()<=manager.getMaxDateUTC());
-		start=manager.getMinDateUTC();
+		Assert.assertTrue(start<=manager.getMinDateUTCInMs());
+		Assert.assertTrue(manager.getMinDateUTCInMs()<=manager.getMaxDateUTCInMS());
+		start=manager.getMinDateUTCInMs();
 		Thread.sleep(200);
 		addAndRemoveData(wrapper, 100);
 		Thread.sleep(1000);
 		manager.cleanOldBackups();
-		Assert.assertTrue(start<manager.getMinDateUTC());
-		Assert.assertTrue(manager.getMinDateUTC()<=manager.getMaxDateUTC());
+		Assert.assertTrue(start<manager.getMinDateUTCInMs());
+		Assert.assertTrue(manager.getMinDateUTCInMs()<=manager.getMaxDateUTCInMS());
 	}
 
 

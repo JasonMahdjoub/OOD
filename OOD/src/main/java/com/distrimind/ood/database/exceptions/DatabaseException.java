@@ -63,7 +63,7 @@ public class DatabaseException extends Exception {
 
 	public static DatabaseException getDatabaseException(Exception e) {
 		if (e == null)
-			return null;
+			return new DatabaseException("Given null exception", new NullPointerException());
 		if (DatabaseException.class.isAssignableFrom(e.getClass()))
 			return (DatabaseException) e;
 		Throwable res = e.getCause();
