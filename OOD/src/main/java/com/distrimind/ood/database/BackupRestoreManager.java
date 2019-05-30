@@ -77,6 +77,14 @@ public class BackupRestoreManager {
 	private DatabaseWrapper databaseWrapper;
 	private final boolean passive;
 
+	File getLastFile()
+	{
+		if (fileTimeStamps.size()==0)
+			return null;
+		long l=fileTimeStamps.get(fileTimeStamps.size()-1);
+		return getFile(l, fileReferenceTimeStamps.contains(l));
+	}
+
 	BackupRestoreManager(DatabaseWrapper databaseWrapper, File backupDirectory, DatabaseConfiguration databaseConfiguration, boolean passive) throws DatabaseException {
 		if (backupDirectory==null)
 			throw new NullPointerException();

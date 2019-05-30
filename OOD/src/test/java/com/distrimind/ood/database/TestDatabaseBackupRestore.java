@@ -849,4 +849,93 @@ public class TestDatabaseBackupRestore {
 			res[i++]=o;
 		return res;
 	}
+	@DataProvider(name="DataProvForTestTransactionCanceling")
+	public Object[][] provideDataForTestTransactionCanceling()
+	{
+		ArrayList<Object[]> l=new ArrayList<>();
+
+		for (boolean useSeveralRestorationPoint : new boolean[]{true, false})
+		{
+			for (boolean addAdditionalData : new boolean[]{true, false})
+			{
+				for (boolean alterRecords : new boolean[]{true, false}) {
+					l.add(new Object[]{useSeveralRestorationPoint, addAdditionalData, alterRecords});
+				}
+			}
+
+		}
+		Object[][] res=new Object[l.size()][];
+		int i=0;
+		for (Object[] o : l)
+			res[i++]=o;
+		return res;
+	}
+	@Test(dependsOnMethods = "testBackupCleaning", dataProvider = "DataProvForTestTransactionCanceling")
+	public void testTransactionCanceling(boolean useSeveralRestorationPoint, boolean addAdditionalData, boolean alterRecords) throws DatabaseException, InterruptedException {
+		AtomicLong dataLoadStart=new AtomicLong();
+		AtomicLong dateRestoration=new AtomicLong();
+
+		loadDatabase(useSeveralRestorationPoint, true, dateRestoration, dataLoadStart, false, addAdditionalData, alterRecords);
+		final Table1 table1=wrapper.getTableInstance(Table1.class);
+		final Table2 table2=wrapper.getTableInstance(Table2.class);
+		final Table3 table3=wrapper.getTableInstance(Table3.class);
+		final Table4 table4=wrapper.getTableInstance(Table4.class);
+		BackupRestoreManager manager=wrapper.getBackupRestoreManager(Table1.class.getPackage());
+		long minDate=manager.getMinDateUTCInMs();
+		long maxDate=manager.getMaxDateUTCInMS();
+		File lastFile=manager.getLastFile();
+		long lastFileSize=-1;
+		if (lastFile!=null)
+			lastFileSize=lastFile.getTotalSpace();
+		wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
+			@Override
+			public Void run() throws Exception {
+				for (int i=0;i<Math.random()*5;i++)
+					table1.addRecord(getTable1_3Map());
+				for (int i=0;i<Math.random()*5;i++)
+					table3.addRecord(getTable1_3Map());
+				for (int i=0;i<Math.random()*5;i++)
+				{
+					Table1.Record addedA2=table1.addRecord(getTable1_3Map());
+					table2.addRecord("fr1_pk1", addedA2, "int_value", 5);
+				}
+				for (int i=0;i<Math.random()*5;i++)
+				{
+					Table3.Record addedB2=table3.addRecord(getTable1_3Map());
+					table4.addRecord("fr1_pk1", addedB2, "int_value", 7);
+				}
+				cancelTransaction();
+
+
+
+				return null;
+			}
+
+			@Override
+			public TransactionIsolation getTransactionIsolation() {
+				return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+			}
+
+			@Override
+			public boolean doesWriteData() {
+				return true;
+			}
+
+			@Override
+			public void initOrReset() {
+
+			}
+		});
+		Assert.assertEquals(manager.getMinDateUTCInMs(), minDate);
+		Assert.assertEquals(manager.getMaxDateUTCInMS(), maxDate);
+		File lastFile2=manager.getLastFile();
+		if (lastFile2==null)
+			Assert.assertNull(lastFile);
+		else
+		{
+			Assert.assertNotNull(lastFile2);
+			Assert.assertEquals(lastFile2.getTotalSpace(), lastFileSize);
+		}
+
+	}
 }
