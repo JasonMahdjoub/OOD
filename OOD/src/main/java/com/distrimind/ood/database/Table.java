@@ -151,7 +151,7 @@ public abstract class Table<T extends DatabaseRecord> {
 	public static final int maxTableNameSizeBytes = 8192;
 	public static final int maxPrimaryKeysSizeBytes = ByteTabFieldAccessor.shortTabSizeLimit;
 	private int databaseVersion=-1;
-
+	private final boolean isPrimaryKeysAndForeignKeysSame;
 	public Constructor<T> getDefaultRecordConstructor() {
 		return default_constructor_field;
 	}
@@ -421,11 +421,29 @@ public abstract class Table<T extends DatabaseRecord> {
 						}
 					}
 				});
+		boolean ok=true;
+		if (primary_keys_fields.size()==foreign_keys_fields.size())
+		{
+			for (FieldAccessor fa : primary_keys_fields)
+			{
+				if (!(fa instanceof ForeignKeyFieldAccessor))
+				{
+					ok=false;
+					break;
+				}
+			}
+		}
+		else
+			ok=false;
+		isPrimaryKeysAndForeignKeysSame=ok;
 
 	}
 
+	public boolean isPrimaryKeysAndForeignKeysSame() {
+		return isPrimaryKeysAndForeignKeysSame;
+	}
 
-    void initializeStep0(DatabaseWrapper wrapper, int databaseVersion) throws DatabaseException {
+	void initializeStep0(DatabaseWrapper wrapper, int databaseVersion) throws DatabaseException {
 		sql_connection = wrapper;
 		this.databaseVersion=databaseVersion;
 		if (sql_connection == null)
@@ -830,7 +848,7 @@ public abstract class Table<T extends DatabaseRecord> {
 						}
 
 					}, true);
-					/*sql_connection.runTransaction(new Transaction() {
+					/*sql_connection.startTransaction(new Transaction() {
 						@Override
 						public TransactionIsolation getTransactionIsolation() {
 							return TransactionIsolation.TRANSACTION_SERIALIZABLE;
@@ -1838,7 +1856,7 @@ public abstract class Table<T extends DatabaseRecord> {
 			}
 
 		};
-		return (Long) sql_connection.runTransaction(t, true);*/
+		return (Long) sql_connection.startTransaction(t, true);*/
 	}
 
 	@SuppressWarnings("SameParameterValue")
@@ -2933,21 +2951,24 @@ public abstract class Table<T extends DatabaseRecord> {
 	 */
 	public final ArrayList<T> getPaginedRecords(int rowpos, int rowlength, final Filter<T> _filter)
 			throws DatabaseException {
-		//noinspection unchecked
-		return (ArrayList<T>)getPaginedRecordsWithUnkonwType(rowpos, rowlength, _filter);
+		if (_filter == null)
+			throw new NullPointerException("The parameter _filter is a null pointer !");
+		try (Lock ignored = new ReadLock(this)) {
+			return getRecords(rowpos, rowlength, _filter, false);
+		} catch (Exception e) {
+			throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
+		}
 	}
-	final ArrayList<?> getPaginedRecordsWithUnkonwType(int rowpos, int rowlength, final Filter<?> _filter)
+	@SuppressWarnings({"UnusedReturnValue", "SameParameterValue"})
+	final ArrayList<?> getPaginedRecordsWithUnknownType(int rowpos, int rowlength, final Filter<DatabaseRecord> _filter)
 			throws DatabaseException {
 		if (_filter == null)
 			throw new NullPointerException("The parameter _filter is a null pointer !");
-		// synchronized(sql_connection)
-		{
-
-			try (Lock ignored = new ReadLock(this)) {
-				return getRecords(rowpos, rowlength, _filter, false);
-			} catch (Exception e) {
-				throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
-			}
+		try (Lock ignored = new ReadLock(this)) {
+			//noinspection unchecked
+			return getRecords(rowpos, rowlength, (Filter<T>)_filter, false);
+		} catch (Exception e) {
+			throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 		}
 	}
 
@@ -3193,7 +3214,7 @@ public abstract class Table<T extends DatabaseRecord> {
 	}
 
     @SuppressWarnings("SameParameterValue")
-    private ArrayList<T> getRecords(final int rowPos, final int rowLength, final Filter<DatabaseRecord> _filter,
+    private ArrayList<T> getRecords(final int rowPos, final int rowLength, final Filter<T> _filter,
                                     boolean is_already_sql_transaction) throws DatabaseException {
 		final ArrayList<T> res = new ArrayList<>();
 
@@ -3212,6 +3233,7 @@ public abstract class Table<T extends DatabaseRecord> {
 		} else {
 			final boolean persoFilter = (_filter instanceof Table.PersonnalFilter);
 			final AtomicInteger pos = new AtomicInteger(0);
+
 			getListRecordsFromSqlConnection(new Runnable() {
 
 				@Override
@@ -8404,7 +8426,16 @@ public abstract class Table<T extends DatabaseRecord> {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
-
+	byte[] serializeFieldsWithUnknownType(DatabaseRecord record, boolean includePK, boolean includeForeignKeyField, boolean includeNonKeyField) throws DatabaseException {
+		try {
+			//noinspection unchecked
+			return serializeFields((T) record, includePK, includeForeignKeyField, includeNonKeyField);
+		}
+		catch(ClassCastException e)
+		{
+			throw DatabaseException.getDatabaseException(e);
+		}
+	}
 	@SuppressWarnings("SameParameterValue")
     byte[] serializeFields(T record, boolean includePK, boolean includeForeignKeyField, boolean includeNonKeyField)
 			throws DatabaseException {

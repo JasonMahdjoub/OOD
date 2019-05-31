@@ -261,9 +261,36 @@ public class BackupRestoreManager {
 		}
 	}
 
-	private void backupRecord(OutputStream out, Table<?> table, DatabaseRecord record, DatabaseEventType eventType)
-	{
-		//TODO complete
+	private boolean backupRecord(RandomOutputStream out, Table<?> table, DatabaseRecord record, DatabaseEventType eventType) throws DatabaseException {
+		try {
+			out.write(eventType.getByte());
+			byte[] pks=table.serializeFieldsWithUnknownType(record, true, false, false);
+			out.writeUnsignedShortInt(pks.length);
+			out.write(pks);
+			if (!table.isPrimaryKeysAndForeignKeysSame() && table.getForeignKeysFieldAccessors().size()>0) {
+
+				byte[] fks=table.serializeFieldsWithUnknownType(record, false, true, false);
+				out.writeUnsignedShortInt(fks.length);
+				out.write(fks);
+			}
+			else
+				out.writeUnsignedShortInt(-1);
+
+			byte[] nonkeys=table.serializeFieldsWithUnknownType(record, false,false, true);
+			if (nonkeys==null || nonkeys.length==0)
+			{
+				out.writeUnsignedShortInt(-1);
+			}
+			else
+			{
+				out.writeUnsignedShortInt(nonkeys.length);
+				out.write(nonkeys);
+			}
+
+			return eventType==DatabaseEventType.REMOVE_WITH_CASCADE;
+		} catch (DatabaseException | IOException e) {
+			throw DatabaseException.getDatabaseException(e);
+		}
 	}
 
 	private void saveTablesHeader(RandomOutputStream out) throws DatabaseException {
@@ -316,8 +343,6 @@ public class BackupRestoreManager {
 		{
 
 			try(RandomFileInputStream rfis=new RandomFileInputStream(file)) {
-
-
 				lastBackupEventUTC=rfis.readLong();
 				//noinspection ResultOfMethodCallIgnored
 				rfis.skip(LIST_CLASSES_POSITION-8);
@@ -436,7 +461,7 @@ public class BackupRestoreManager {
 
 					for (Class<? extends Table<?>> c : classes) {
 						final Table<?> table = databaseWrapper.getTableInstance(c);
-						table.getPaginedRecordsWithUnkonwType(-1, -1, new Filter<DatabaseRecord>() {
+						table.getPaginedRecordsWithUnknownType(-1, -1, new Filter<DatabaseRecord>() {
 							RandomFileOutputStream out=rout.get();
 							@Override
 							public boolean nextRecord(DatabaseRecord _record) throws DatabaseException {
@@ -709,7 +734,7 @@ public class BackupRestoreManager {
 
 	}
 
-	Transaction runTransaction() throws DatabaseException {
+	Transaction startTransaction() throws DatabaseException {
 		synchronized (this) {
 			createIfNecessaryNewBackupReference();
 			if (!isReady())
@@ -780,18 +805,13 @@ public class BackupRestoreManager {
 			}
 		}
 
-		final void backupRecord(OutputStream out, TableEvent<?> _de) throws DatabaseException {
+		final void backupRecord(RandomOutputStream out, TableEvent<?> _de) throws DatabaseException {
 			if (closed)
 				return;
-			try {
-				++transactionsNumber;
-				//TODO complete
-			} catch (IOException e) {
-				cancelTransaction();
-				activateBackupReferenceCreation(false);
-				throw DatabaseException.getDatabaseException(e);
-			}
+			++transactionsNumber;
 
+			if (BackupRestoreManager.this.backupRecord(out, _de.getTable(databaseWrapper), _de.getNewDatabaseRecord(), _de.getType()))
+				containsRemoveWithCascade=true;
 		}
 
 	}
