@@ -70,6 +70,7 @@ public class BackupRestoreManager {
 	private ArrayList<Long> fileTimeStamps;
 	private final File backupDirectory;
 	private final BackupConfiguration backupConfiguration;
+	private final DatabaseConfiguration databaseConfiguration;
 	private final List<Class<? extends Table<?>>> classes;
 	private static final Pattern fileReferencePattern = Pattern.compile("^backup-ood-([1-9][0-9])*\\.dreference$");
 	private static final Pattern fileIncrementPattern = Pattern.compile("^backup-ood-([1-9][0-9])*\\.dincrement");
@@ -77,6 +78,7 @@ public class BackupRestoreManager {
 	private final File computeDatabaseReference;
 	private DatabaseWrapper databaseWrapper;
 	private final boolean passive;
+	private final Package dbPackage;
 
 	File getLastFile()
 	{
@@ -96,7 +98,9 @@ public class BackupRestoreManager {
 		if (databaseWrapper==null)
 			throw new NullPointerException();
 		this.passive=passive;
+		this.databaseConfiguration=databaseConfiguration;
 		this.databaseWrapper=databaseWrapper;
+		this.dbPackage=databaseConfiguration.getPackage();
 		FileTools.checkFolderRecursive(backupDirectory);
 		this.backupDirectory=backupDirectory;
 		this.backupConfiguration=databaseConfiguration.getBackupConfiguration();
@@ -117,7 +121,7 @@ public class BackupRestoreManager {
 			this.backupConfiguration.setProgressMonitorParameters(p);
 		}
 		scanFiles();
-		if (checkTablesHeader())
+		if (checkTablesHeader(getFileForBackupReference()))
 			createIfNecessaryNewBackupReference();
 	}
 
@@ -215,10 +219,12 @@ public class BackupRestoreManager {
 
 	private RandomFileOutputStream getFileForBackupIncrementOrCreateIt(AtomicLong fileTimeStamp) throws DatabaseException {
 		File res=null;
+
 		if (fileTimeStamps.size()>0)
 		{
 			Long timeStamp=fileTimeStamps.get(fileTimeStamps.size()-1);
-			File file=getFile(timeStamp, fileReferenceTimeStamps.contains(timeStamp));
+			boolean reference=fileReferenceTimeStamps.contains(timeStamp);
+			File file=getFile(timeStamp, reference);
 			if (!isPartFull(timeStamp, file)) {
 				res = file;
 				fileTimeStamp.set(timeStamp);
@@ -226,15 +232,18 @@ public class BackupRestoreManager {
 		}
 		try {
 			if (res==null) {
-				fileTimeStamp.set(System.currentTimeMillis());
+				fileTimeStamp.set(Math.max(fileTimeStamps.size()>0?fileTimeStamps.get(fileTimeStamps.size()-1)+1:Long.MIN_VALUE, System.currentTimeMillis()));
 				res = initNewFileForBackupIncrement(fileTimeStamp.get());
 
 				RandomFileOutputStream out=new RandomFileOutputStream(res, RandomFileOutputStream.AccessMode.READ_AND_WRITE);
 				saveHeader(out, fileTimeStamp.get(), false);
 				return out;
 			}
-			else
-				return new RandomFileOutputStream(res, RandomFileOutputStream.AccessMode.READ_AND_WRITE);
+			else {
+				RandomFileOutputStream out=new RandomFileOutputStream(res, RandomFileOutputStream.AccessMode.READ_AND_WRITE);
+				positionateFileForNewEvent(out);
+				return out;
+			}
 		} catch (FileNotFoundException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -265,33 +274,60 @@ public class BackupRestoreManager {
 		}
 	}
 
-	private boolean backupRecord(RandomOutputStream out, Table<?> table, DatabaseRecord record, DatabaseEventType eventType) throws DatabaseException {
+	private boolean backupRecordEvent(RandomOutputStream out, Table<?> table, DatabaseRecord record, DatabaseEventType eventType) throws DatabaseException {
 		try {
 			out.write(eventType.getByte());
-			byte[] pks=table.serializeFieldsWithUnknownType(record, true, false, false);
-			out.writeUnsignedShortInt(pks.length);
-			out.write(pks);
-			if (!table.isPrimaryKeysAndForeignKeysSame() && table.getForeignKeysFieldAccessors().size()>0) {
-
-				byte[] fks=table.serializeFieldsWithUnknownType(record, false, true, false);
-				out.writeUnsignedShortInt(fks.length);
-				out.write(fks);
-			}
-			else
-				out.writeUnsignedShortInt(-1);
-
-			byte[] nonkeys=table.serializeFieldsWithUnknownType(record, false,false, true);
-			if (nonkeys==null || nonkeys.length==0)
+			@SuppressWarnings("SuspiciousMethodCalls")
+			int tableIndex=classes.indexOf(table.getClass());
+			if (tableIndex<0)
+				throw new IOException();
+			out.writeUnsignedShort(tableIndex);
+			switch(eventType)
 			{
-				out.writeUnsignedShortInt(-1);
-			}
-			else
-			{
-				out.writeUnsignedShortInt(nonkeys.length);
-				out.write(nonkeys);
+				case ADD:
+				{
+					byte[] pks=table.serializeFieldsWithUnknownType(record, true, false, false);
+					out.writeUnsignedShortInt(pks.length);
+					out.write(pks);
+					if (!table.isPrimaryKeysAndForeignKeysSame() && table.getForeignKeysFieldAccessors().size()>0) {
+
+						byte[] fks=table.serializeFieldsWithUnknownType(record, false, true, false);
+						out.writeUnsignedShortInt(fks.length);
+						out.write(fks);
+					}
+					else
+						out.writeUnsignedShortInt(-1);
+
+					byte[] nonkeys=table.serializeFieldsWithUnknownType(record, false,false, true);
+					if (nonkeys==null || nonkeys.length==0)
+					{
+						out.writeUnsignedShortInt(-1);
+					}
+					else
+					{
+						out.writeUnsignedShortInt(nonkeys.length);
+						out.write(nonkeys);
+					}
+					return false;
+				}
+				case REMOVE:
+				{
+
+				}
+					break;
+				case REMOVE_WITH_CASCADE:
+				{
+					return true;
+				}
+				case UPDATE:
+				{
+
+				}
+					break;
 			}
 
-			return eventType==DatabaseEventType.REMOVE_WITH_CASCADE;
+
+
 		} catch (DatabaseException | IOException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -335,6 +371,15 @@ public class BackupRestoreManager {
 		if (referenceFile)
 			saveTablesHeader(out);
 
+	}
+	private void positionateFileForNewEvent(RandomOutputStream out) throws DatabaseException {
+		try {
+			out.seek(out.length());
+		}
+		catch(IOException e)
+		{
+			throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
+		}
 	}
 
 	private File currentFileReference=null;
@@ -388,8 +433,8 @@ public class BackupRestoreManager {
 	}
 
 
-		private boolean checkTablesHeader() throws DatabaseException {
-		File file=getFileForBackupReference();
+		private boolean checkTablesHeader(File file) throws DatabaseException {
+
 		boolean ok=true;
 		if (file!=null && file.exists())
 		{
@@ -425,9 +470,11 @@ public class BackupRestoreManager {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
-	private void saveTransactionQueue(RandomOutputStream out, int nextTransactionReference, boolean containsRemoveWithCascade) throws DatabaseException {
+	private void saveTransactionQueue(RandomOutputStream out, int nextTransactionReference, boolean containsRemoveWithCascade, long transactionUTC) throws DatabaseException {
 		try {
 			int nextTransaction=(int)out.currentPosition();
+			out.seek(LAST_BACKUP_UTC_POSITION);
+			out.writeLong(transactionUTC);
 			out.seek(nextTransactionReference);
 			out.writeInt(nextTransaction);
 			if (containsRemoveWithCascade)
@@ -450,6 +497,8 @@ public class BackupRestoreManager {
 		synchronized (this) {
 
 			final long backupTime = System.currentTimeMillis();
+			final AtomicLong currentBackupTime = new AtomicLong(backupTime);
+
 
 			try
 			{
@@ -487,12 +536,12 @@ public class BackupRestoreManager {
 					}
 				}
 
-				File file = initNewFileForBackupReference(backupTime);
+				File file = initNewFileForBackupReference(currentBackupTime.get());
 				final AtomicReference<RandomFileOutputStream> rout=new AtomicReference<>(new RandomFileOutputStream(file, RandomFileOutputStream.AccessMode.READ_AND_WRITE));
 				try {
 
-					saveHeader(rout.get(), backupTime, true);
-					final AtomicInteger nextTransactionReference=new AtomicInteger(saveTransactionHeader(rout.get(), backupTime));
+					saveHeader(rout.get(), currentBackupTime.get(), true);
+					final AtomicInteger nextTransactionReference=new AtomicInteger(saveTransactionHeader(rout.get(), currentBackupTime.get()));
 
 					for (Class<? extends Table<?>> c : classes) {
 						final Table<?> table = databaseWrapper.getTableInstance(c);
@@ -500,18 +549,19 @@ public class BackupRestoreManager {
 							RandomFileOutputStream out=rout.get();
 							@Override
 							public boolean nextRecord(DatabaseRecord _record) throws DatabaseException {
-								backupRecord(out, table, _record, DatabaseEventType.ADD);
+								backupRecordEvent(out, table, _record, DatabaseEventType.ADD);
 								try {
 									if (out.currentPosition()>=backupConfiguration.getMaxBackupFileSizeInBytes())
 									{
-										saveTransactionQueue(rout.get(), nextTransactionReference.get(), false);
+										saveTransactionQueue(rout.get(), nextTransactionReference.get(), false, currentBackupTime.get());
 										out.flush();
 										out.close();
 
+										currentBackupTime.set(Math.max(currentBackupTime.get()+1, System.currentTimeMillis()));
 										File file=initNewFileForBackupIncrement(System.currentTimeMillis());
 										rout.set(out=new RandomFileOutputStream(file));
-										saveHeader(out, backupTime, false);
-										nextTransactionReference.set(saveTransactionHeader(rout.get(), backupTime));
+										saveHeader(out, currentBackupTime.get(), false);
+										nextTransactionReference.set(saveTransactionHeader(rout.get(), currentBackupTime.get()));
 
 									}
 								} catch (IOException e) {
@@ -522,7 +572,7 @@ public class BackupRestoreManager {
 							}
 						});
 					}
-					saveTransactionQueue(rout.get(), nextTransactionReference.get(), false);
+					saveTransactionQueue(rout.get(), nextTransactionReference.get(), false, currentBackupTime.get());
 				}
 				finally {
 					rout.get().flush();
@@ -542,6 +592,9 @@ public class BackupRestoreManager {
 			} catch (DatabaseException e) {
 				deleteDatabaseFilesFromReferenceToLastFile(backupTime);
 				throw e;
+			}
+			finally {
+				scanFiles();
 			}
 			return backupTime;
 		}
@@ -650,7 +703,7 @@ public class BackupRestoreManager {
 							long newLength=ris.currentPosition()-6;
 							ris.close();
 							out.setLength(newLength);
-							out.seek(0);
+							out.seek(LAST_BACKUP_UTC_POSITION);
 							out.writeLong(prevDate);
 							out.writeInt(posLastRemoveWithCascade);
 							break;
@@ -716,18 +769,185 @@ public class BackupRestoreManager {
 			return Long.MAX_VALUE;
 		}
 	}
-
+	private final byte[] recordBuffer=new byte[1<<24-1];
 	/**
 	 * Restore the database to the nearest given date UTC
 	 * @param dateUTCInMs the UTC time in milliseconds
 	 * @return true if the given time corresponds to an available backup. False is chosen if the given time is too old to find a corresponding historical into the backups. In this previous case, it is the nearest backup that is chosen.
 	 */
-	public boolean restoreDatabaseToDateUTC(long dateUTCInMs)
-	{
+	public boolean restoreDatabaseToDateUTC(long dateUTCInMs) throws DatabaseException {
 		synchronized (this) {
-			//TODO complete
+			int oldVersion=databaseWrapper.getCurrentDatabaseVersion(dbPackage);
+
+			int newVersion=oldVersion+1;
+			while(databaseWrapper.doesVersionExists(dbPackage, newVersion)) {
+				++newVersion;
+				if (newVersion < 0)
+					throw new DatabaseException("No more database version available");
+			}
+			long startFileReference=Long.MIN_VALUE;
+			for (int i=fileReferenceTimeStamps.size()-1;i>=0;i--)
+			{
+				if (fileReferenceTimeStamps.get(i)<=dateUTCInMs)
+				{
+					startFileReference=fileReferenceTimeStamps.get(i);
+					break;
+				}
+			}
+			if (startFileReference==Long.MIN_VALUE)
+			{
+				for (Class<? extends Table<?>> c : classes) {
+					databaseWrapper.getTableInstance(c, newVersion);
+				}
+				databaseWrapper.deleteDatabase(databaseConfiguration, oldVersion);
+				createBackupReference();
+			}
+			else {
+				try {
+					File currentFile=getFile(startFileReference, true);
+					LinkedList<Long> listIncrements=new LinkedList<>();
+					for (int i=0;i<fileTimeStamps.size();i++)
+					{
+						Long l=fileTimeStamps.get(i);
+						if (l>startFileReference)
+						{
+							if (fileReferenceTimeStamps.contains(l))
+								break;
+							listIncrements.add(l);
+						}
+					}
+
+					checkTablesHeader(currentFile);
+					List<Class<? extends Table<?>>> classes=extractClassesList(currentFile);
+					final ArrayList<Table<?>> tables=new ArrayList<>();
+					for (Class<? extends Table<?>> c : classes) {
+						Table<?> t = databaseWrapper.getTableInstance(c, newVersion);
+						tables.add(t);
+					}
+
+					boolean reference=true;
+					while (currentFile!=null)
+					{
+						try(RandomFileInputStream in=new RandomFileInputStream(currentFile))
+						{
+							positionForDataRead(in, reference);
+							reference=false;
+							while (in.available()>0) {
+
+								int nextTransaction=in.readInt();
+								if (in.skip(9)!=9)
+									throw new IOException();
+								final long dataTransactionStartPosition=in.currentPosition();
+								databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
+									@Override
+									public Void run() throws Exception {
+										byte eventTypeCode=in.readByte();
+										DatabaseEventType eventType=DatabaseEventType.getEnum(eventTypeCode);
+										if (eventType==null)
+											throw new IOException();
+
+										int tableIndex=in.readUnsignedShort();
+										if (tableIndex>=tables.size())
+											throw new IOException();
+										Table<?> table=tables.get(tableIndex);
+										switch(eventType)
+										{
+											case ADD:
+											{
+												int s=in.readUnsignedShortInt();
+												in.readFully(recordBuffer, 0, s);
+												DatabaseRecord dr=table.getNewRecordInstance();
+												table.deserializePrimaryKeys(dr, recordBuffer, 0, s);
+												s=in.readUnsignedShortInt();
+												if (s>0) {
+													in.readFully(recordBuffer, 0, s);
+													table.deserializeFields(dr, recordBuffer, 0, s, false, true, false);
+												}
+												s=in.readUnsignedShortInt();
+												if (s>0) {
+													in.readFully(recordBuffer, 0, s);
+													table.deserializeFields(dr, recordBuffer, 0, s, false, false, true);
+												}
+												table.addRecord(dr);
+											}
+												break;
+											case REMOVE:
+											{
+
+											}
+											break;
+											case REMOVE_WITH_CASCADE:
+											{
+
+											}
+											break;
+											case UPDATE:
+											{
+
+											}
+											break;
+
+										}
+
+										return null;
+									}
+
+									@Override
+									public TransactionIsolation getTransactionIsolation() {
+										return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+									}
+
+									@Override
+									public boolean doesWriteData() {
+										return true;
+									}
+
+									@Override
+									public void initOrReset() throws Exception {
+										in.seek(dataTransactionStartPosition);
+									}
+								});
+								if (nextTransaction<0)
+									break;
+
+							}
+
+						}
+
+						if (listIncrements.size()>0)
+							currentFile=getFile(listIncrements.removeFirst(), false);
+						else
+							currentFile=null;
+
+					}
+					databaseWrapper.validateNewDatabaseVersion(databaseConfiguration, oldVersion, newVersion);
+					createBackupReference();
+
+				} catch (Exception e) {
+					databaseWrapper.deleteDatabase(databaseConfiguration, newVersion);
+					throw DatabaseException.getDatabaseException(e);
+				}
+			}
+
 		}
 	}
+	private void positionForDataRead(RandomInputStream in, boolean reference) throws DatabaseException {
+		try {
+			if (reference) {
+				in.seek(LIST_CLASSES_POSITION);
+				int dataPosition = in.readInt();
+				in.seek(dataPosition);
+				reference = false;
+			} else {
+				in.seek(LIST_CLASSES_POSITION);
+			}
+		}
+		catch (Exception e) {
+			//TODO remove version
+			throw DatabaseException.getDatabaseException(e);
+		}
+	}
+
 
 	/**
 	 * Restore the given record to the given date
@@ -800,8 +1020,10 @@ public class BackupRestoreManager {
 		private long transactionUTC;
 		private int nextTransactionReference;
 		private boolean containsRemoveWithCascade=false;
+		private final long fileTimeStamp;
 
 		Transaction(long fileTimeStamp, long lastTransactionUTC, RandomFileOutputStream out) throws DatabaseException {
+			this.fileTimeStamp=fileTimeStamp;
 			this.lastTransactionUTC = lastTransactionUTC;
 			this.out=out;
 			transactionUTC=System.currentTimeMillis();
@@ -817,6 +1039,7 @@ public class BackupRestoreManager {
 			} catch (IOException e) {
 				throw DatabaseException.getDatabaseException(e);
 			}
+
 		}
 
 
@@ -841,7 +1064,12 @@ public class BackupRestoreManager {
 		{
 			if (closed)
 				return;
-			saveTransactionQueue(out,nextTransactionReference, containsRemoveWithCascade );
+			saveTransactionQueue(out,nextTransactionReference, containsRemoveWithCascade, transactionUTC);
+
+			if (!fileTimeStamps.contains(fileTimeStamp)) {
+				fileTimeStamps.add(fileTimeStamp);
+			}
+
 			try {
 				out.close();
 			} catch (IOException e) {
@@ -852,12 +1080,12 @@ public class BackupRestoreManager {
 			closed=true;
 		}
 
-		final void backupRecord(RandomOutputStream out, TableEvent<?> _de) throws DatabaseException {
+		final void backupRecordEvent(RandomOutputStream out, TableEvent<?> _de) throws DatabaseException {
 			if (closed)
 				return;
 			++transactionsNumber;
 
-			if (BackupRestoreManager.this.backupRecord(out, _de.getTable(databaseWrapper), _de.getNewDatabaseRecord(), _de.getType()))
+			if (BackupRestoreManager.this.backupRecordEvent(out, _de.getTable(databaseWrapper), _de.getNewDatabaseRecord(), _de.getType()))
 				containsRemoveWithCascade=true;
 		}
 

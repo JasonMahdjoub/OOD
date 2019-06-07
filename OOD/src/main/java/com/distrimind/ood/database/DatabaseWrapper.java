@@ -2920,6 +2920,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	public final void deleteDatabase(final DatabaseConfiguration configuration) throws DatabaseException {
 		deleteDatabase(configuration, getCurrentDatabaseVersion(configuration.getPackage()));
 	}
+	final void validateNewDatabaseVersion(final DatabaseConfiguration configuration, final int oldDatabasaseVersion, final int newDatabaseVersion) throws DatabaseException {
+		//TODO complete
+	}
 	final void deleteDatabase(final DatabaseConfiguration configuration, final int databaseVersion) throws DatabaseException {
 		try  {
 			lockWrite();

@@ -155,6 +155,8 @@ public class DatabaseConfiguration {
 			throw new NullPointerException("_classes");
 		if (_package == null)
 			throw new NullPointerException("_package");
+		if (_classes.size()>Short.MAX_VALUE*2+1)
+			throw new IllegalArgumentException("Tables number cannot be greater than "+(Short.MAX_VALUE*2+1)+". Here, "+_classes.size()+" tables given.");
 
 		classes = new HashSet<>();
 		dbPackage = _package;

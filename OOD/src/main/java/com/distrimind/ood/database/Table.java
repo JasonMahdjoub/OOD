@@ -8337,9 +8337,11 @@ public abstract class Table<T extends DatabaseRecord> {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
-
 	void deserializePrimaryKeys(DatabaseRecord record, byte[] tab) throws DatabaseException {
-		try (ByteArrayInputStream bais = new ByteArrayInputStream(tab)) {
+		deserializePrimaryKeys(record, tab, 0, tab.length);
+	}
+	void deserializePrimaryKeys(DatabaseRecord record, byte[] tab, int off, int len) throws DatabaseException {
+		try (ByteArrayInputStream bais = new ByteArrayInputStream(tab, 0, len)) {
 			try (DataInputStream ois = new DataInputStream(bais)) {
 				for (FieldAccessor fa : primary_keys_fields) {
 					fa.unserialize(ois, record);
@@ -8369,9 +8371,13 @@ public abstract class Table<T extends DatabaseRecord> {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
-
 	@SuppressWarnings("SameParameterValue")
-    void deserializeFields(DatabaseRecord record, byte[] tab, boolean includePK, boolean includeFK,
+	void deserializeFields(DatabaseRecord record, byte[] tab, boolean includePK, boolean includeFK,boolean includeNonKey) throws DatabaseException
+	{
+		deserializeFields(record, tab, 0, tab.length, includePK, includeFK, includeNonKey);
+	}
+
+    void deserializeFields(DatabaseRecord record, byte[] tab, int off, int len, boolean includePK, boolean includeFK,
 						   boolean includeNonKey) throws DatabaseException {
 		try (ByteArrayInputStream bais = new ByteArrayInputStream(tab)) {
 			try (DataInputStream ois = new DataInputStream(bais)) {
