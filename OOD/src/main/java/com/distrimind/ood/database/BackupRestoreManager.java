@@ -716,6 +716,9 @@ public class BackupRestoreManager {
 						}
 					}
 				}
+				if (!ris.isClosed())
+					ris.close();
+
 
 			} catch (IOException e) {
 				throw DatabaseException.getDatabaseException(e);
