@@ -920,7 +920,7 @@ public class BackupRestoreManager {
 							currentFile=null;
 
 					}
-					databaseWrapper.validateNewDatabaseVersion(databaseConfiguration, oldVersion, newVersion);
+					databaseWrapper.validateNewDatabaseVersionAndDeleteOldVersion(databaseConfiguration, oldVersion, newVersion);
 					createBackupReference();
 
 				} catch (Exception e) {
