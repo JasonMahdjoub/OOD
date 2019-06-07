@@ -782,7 +782,9 @@ public class BackupRestoreManager {
 			int newVersion=oldVersion+1;
 			while(databaseWrapper.doesVersionExists(dbPackage, newVersion)) {
 				++newVersion;
-				if (newVersion < 0)
+				if (newVersion<0)
+					newVersion=0;
+				if (newVersion==oldVersion)
 					throw new DatabaseException("No more database version available");
 			}
 			long startFileReference=Long.MIN_VALUE;
