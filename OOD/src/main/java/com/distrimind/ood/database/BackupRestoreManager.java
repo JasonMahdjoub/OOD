@@ -49,6 +49,7 @@ import java.lang.ref.Reference;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -212,21 +213,24 @@ public class BackupRestoreManager {
 		return initNewFile(dateUTC, true);
 	}
 
-	private RandomFileOutputStream getFileForBackupIncrementOrCreateIt() throws DatabaseException {
+	private RandomFileOutputStream getFileForBackupIncrementOrCreateIt(AtomicLong fileTimeStamp) throws DatabaseException {
 		File res=null;
 		if (fileTimeStamps.size()>0)
 		{
 			Long timeStamp=fileTimeStamps.get(fileTimeStamps.size()-1);
 			File file=getFile(timeStamp, fileReferenceTimeStamps.contains(timeStamp));
-			if (!isPartFull(timeStamp, file))
-				res=file;
+			if (!isPartFull(timeStamp, file)) {
+				res = file;
+				fileTimeStamp.set(timeStamp);
+			}
 		}
 		try {
 			if (res==null) {
-				res = initNewFileForBackupIncrement(System.currentTimeMillis());
+				fileTimeStamp.set(System.currentTimeMillis());
+				res = initNewFileForBackupIncrement(fileTimeStamp.get());
 
 				RandomFileOutputStream out=new RandomFileOutputStream(res, RandomFileOutputStream.AccessMode.READ_AND_WRITE);
-				saveHeader(out, System.currentTimeMillis(), false);
+				saveHeader(out, fileTimeStamp.get(), false);
 				return out;
 			}
 			else
@@ -449,9 +453,40 @@ public class BackupRestoreManager {
 
 			try
 			{
-				if (!computeDatabaseReference.exists())
+				if (!computeDatabaseReference.exists()) {
 					if (!computeDatabaseReference.createNewFile())
 						throw new DatabaseException("Impossible to create file " + computeDatabaseReference);
+				}
+				else if (computeDatabaseReference.length()>=16)
+				{
+					try(FileInputStream fis=new FileInputStream(currentFileReference);DataInputStream dis=new DataInputStream(fis))
+					{
+						long s=dis.readLong();
+						if (s>=0)
+						{
+							long fileRef=dis.readLong();
+							for (Long l : fileTimeStamps)
+							{
+								if (l==fileRef)
+								{
+									boolean reference=fileReferenceTimeStamps.contains(l);
+									try(RandomFileOutputStream rfos=new RandomFileOutputStream(getFile(l, reference)))
+									{
+										rfos.setLength(fileRef);
+									}
+								}
+								else if (fileRef<l)
+								{
+									boolean reference=fileReferenceTimeStamps.contains(l);
+									//noinspection ResultOfMethodCallIgnored
+									getFile(l, reference).delete();
+									fileReferenceTimeStamps.remove(l);
+								}
+							}
+						}
+					}
+				}
+
 				File file = initNewFileForBackupReference(backupTime);
 				final AtomicReference<RandomFileOutputStream> rout=new AtomicReference<>(new RandomFileOutputStream(file, RandomFileOutputStream.AccessMode.READ_AND_WRITE));
 				try {
@@ -740,9 +775,9 @@ public class BackupRestoreManager {
 			if (!isReady())
 				return null;
 			long last=getMaxDateUTCInMS();
-
-			RandomFileOutputStream rfos = getFileForBackupIncrementOrCreateIt();
-			return new Transaction(last, rfos);
+			AtomicLong fileTimeStamp=new AtomicLong();
+			RandomFileOutputStream rfos = getFileForBackupIncrementOrCreateIt(fileTimeStamp);
+			return new Transaction(fileTimeStamp.get(), last, rfos);
 		}
 	}
 
@@ -766,7 +801,7 @@ public class BackupRestoreManager {
 		private int nextTransactionReference;
 		private boolean containsRemoveWithCascade=false;
 
-		Transaction(long lastTransactionUTC, RandomFileOutputStream out) throws DatabaseException {
+		Transaction(long fileTimeStamp, long lastTransactionUTC, RandomFileOutputStream out) throws DatabaseException {
 			this.lastTransactionUTC = lastTransactionUTC;
 			this.out=out;
 			transactionUTC=System.currentTimeMillis();
@@ -775,20 +810,30 @@ public class BackupRestoreManager {
 			if (transactionUTC<lastTransactionUTC)
 				throw new InternalError();
 			nextTransactionReference=saveTransactionHeader(out, transactionUTC);
+			try(FileOutputStream fos=new FileOutputStream(computeDatabaseReference); DataOutputStream dos=new DataOutputStream(fos))
+			{
+				dos.writeLong(out.currentPosition());
+				dos.writeLong(fileTimeStamp);
+			} catch (IOException e) {
+				throw DatabaseException.getDatabaseException(e);
+			}
 		}
+
 
 		final void cancelTransaction() throws DatabaseException
 		{
 			if (closed)
 				return;
-			if (transactionsNumber>0)
-				deleteDatabaseFilesFromReferenceToLastFile(lastTransactionUTC+1);
-			closed=true;
 			try {
 				out.close();
 			} catch (IOException e) {
 				throw DatabaseException.getDatabaseException(e);
 			}
+			if (transactionsNumber>0)
+				deleteDatabaseFilesFromReferenceToLastFile(lastTransactionUTC+1);
+			if (!computeDatabaseReference.delete())
+				throw new DatabaseException("Impossible to delete file : "+computeDatabaseReference);
+			closed=true;
 
 		}
 
@@ -797,12 +842,14 @@ public class BackupRestoreManager {
 			if (closed)
 				return;
 			saveTransactionQueue(out,nextTransactionReference, containsRemoveWithCascade );
-			closed=true;
 			try {
 				out.close();
 			} catch (IOException e) {
 				throw DatabaseException.getDatabaseException(e);
 			}
+			if (!computeDatabaseReference.delete())
+				throw new DatabaseException("Impossible to delete file : "+computeDatabaseReference);
+			closed=true;
 		}
 
 		final void backupRecord(RandomOutputStream out, TableEvent<?> _de) throws DatabaseException {
