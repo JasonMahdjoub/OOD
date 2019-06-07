@@ -8379,7 +8379,7 @@ public abstract class Table<T extends DatabaseRecord> {
 
     void deserializeFields(DatabaseRecord record, byte[] tab, int off, int len, boolean includePK, boolean includeFK,
 						   boolean includeNonKey) throws DatabaseException {
-		try (ByteArrayInputStream bais = new ByteArrayInputStream(tab)) {
+		try (ByteArrayInputStream bais = new ByteArrayInputStream(tab, off, len)) {
 			try (DataInputStream ois = new DataInputStream(bais)) {
 				for (FieldAccessor fa : fields) {
 					if (fa.isPrimaryKey()) {
