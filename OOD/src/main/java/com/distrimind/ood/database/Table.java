@@ -160,6 +160,15 @@ public abstract class Table<T extends DatabaseRecord> {
 		return class_record;
 	}
 
+	void changeVersion(int newDatabaseVersion, int tableID) throws DatabaseException {
+		assert newDatabaseVersion>=0;
+		assert tableID>=0;
+		this.databaseVersion=newDatabaseVersion;
+		this.table_id=tableID;
+		table_name=getDatabaseWrapper().getTableName(this.getClass(), table_id);
+		this.memoryToRefresh();
+	}
+
 	private static class NeighboringTable {
 		public final DatabaseWrapper sql_connection;
 		public final Class<? extends Table<?>> class_table;

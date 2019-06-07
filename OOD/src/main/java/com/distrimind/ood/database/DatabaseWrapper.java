@@ -3041,15 +3041,25 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	}
 	final void validateNewDatabaseVersionAndDeleteOldVersion(final DatabaseConfiguration configuration, final int oldDatabasaseVersion, final int newDatabaseVersion) throws DatabaseException {
 		try {
+			lockWrite();
 			int r=getConnectionAssociatedWithCurrentThread().getConnection().createStatement()
 					.executeUpdate("UPDATE TABLE "+VERSIONS_OF_DATABASE+" SET CURRENT_DATABASE_VERSION='"+newDatabaseVersion
 							+"' WHERE PACKAGE_NAME='"+getLongPackageName(configuration.getPackage())+"'"+getSqlComma());
 			if (r!=1)
 				throw new DatabaseException("no record found");
-			if (oldDatabasaseVersion>=0)
+			if (oldDatabasaseVersion>=0) {
+				Database db=sql_database.get(configuration.getPackage());
+				for (Table<?> t : db.tables_per_versions.get(oldDatabasaseVersion).tables_instances.values())
+				{
+					t.changeVersion(newDatabaseVersion, getTableID(t.getClass(), newDatabaseVersion));
+				}
 				deleteDatabase(configuration, oldDatabasaseVersion);
+			}
 		} catch (SQLException e) {
 			throw DatabaseException.getDatabaseException(e);
+		}
+		finally {
+			unlockWrite();
 		}
 
 	}
