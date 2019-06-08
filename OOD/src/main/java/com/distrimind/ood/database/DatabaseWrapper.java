@@ -146,12 +146,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	private static class DatabasePerVersion
 	{
-		final HashMap<Class<? extends Table<?>>, Table<?>> tables_instances = new HashMap<>();
+		HashMap<Class<? extends Table<?>>, Table<?>> tables_instances = new HashMap<>();
 
 	}
 
 	// private final boolean isWindows;
-	private static class Database {
+	private class Database {
 		final HashMap<Integer, DatabasePerVersion> tables_per_versions = new HashMap<>();
 		BackupRestoreManager backupRestoreManager=null;
 		private int currentVersion=-1;
@@ -164,21 +164,15 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			this.configuration = configuration;
 		}
 
-		int getCurrentVersion()
-		{
+		int getCurrentVersion() throws DatabaseException {
 			if (currentVersion==-1)
-			{
-				currentVersion=0;
-				for (Integer i : tables_per_versions.keySet())
-					if (i>currentVersion)
-						currentVersion=i;
-			}
+				DatabaseWrapper.this.getCurrentDatabaseVersion(configuration.getPackage(), true);
 			return currentVersion;
 		}
 
 		void updateCurrentVersion()
 		{
-			currentVersion=-1;
+			this.currentVersion=-1;
 		}
 
 		DatabaseConfiguration getConfiguration() {
@@ -3018,7 +3012,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		return p.getName().replace(".", "_").toLowerCase();
 	}
 	int getCurrentDatabaseVersion(Package p) throws DatabaseException {
-		Database db=sql_database.get(p);
+		return getCurrentDatabaseVersion(p, false);
+	}
+	int getCurrentDatabaseVersion(Package p, boolean forceUpdate) throws DatabaseException {
+		Database db=null;
+		if (!forceUpdate)
+			db=sql_database.get(p);
 		if (db==null)
 		{
 			try {
@@ -3049,11 +3048,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new DatabaseException("no record found");
 			if (oldDatabasaseVersion>=0) {
 				Database db=sql_database.get(configuration.getPackage());
-				for (Table<?> t : db.tables_per_versions.get(oldDatabasaseVersion).tables_instances.values())
+				HashMap<Class<? extends Table<?>>, Table<?>> hm=new HashMap<>(db.tables_per_versions.get(oldDatabasaseVersion).tables_instances);
+				deleteDatabase(configuration, oldDatabasaseVersion);
+				for (Table<?> t : hm.values())
 				{
 					t.changeVersion(newDatabaseVersion, getTableID(t.getClass(), newDatabaseVersion));
 				}
-				deleteDatabase(configuration, oldDatabasaseVersion);
+				db.tables_per_versions.get(newDatabaseVersion).tables_instances=hm;
 			}
 		} catch (SQLException e) {
 			throw DatabaseException.getDatabaseException(e);
