@@ -166,7 +166,8 @@ public abstract class Table<T extends DatabaseRecord> {
 		this.databaseVersion=newDatabaseVersion;
 		this.table_id=tableID;
 		table_name=getDatabaseWrapper().getTableName(this.getClass(), table_id);
-		this.memoryToRefresh();
+		if (isLoadedInMemory())
+			this.memoryToRefresh();
 	}
 
 	private static class NeighboringTable {
