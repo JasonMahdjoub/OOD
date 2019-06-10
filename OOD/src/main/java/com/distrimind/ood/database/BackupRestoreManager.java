@@ -282,13 +282,13 @@ public class BackupRestoreManager {
 			if (tableIndex<0)
 				throw new IOException();
 			out.writeUnsignedShort(tableIndex);
+			byte[] pks=table.serializeFieldsWithUnknownType(record, true, false, false);
+			out.writeUnsignedShortInt(pks.length);
+			out.write(pks);
 			switch(eventType)
 			{
-				case ADD:
+				case ADD:case UPDATE:
 				{
-					byte[] pks=table.serializeFieldsWithUnknownType(record, true, false, false);
-					out.writeUnsignedShortInt(pks.length);
-					out.write(pks);
 					if (!table.isPrimaryKeysAndForeignKeysSame() && table.getForeignKeysFieldAccessors().size()>0) {
 
 						byte[] fks=table.serializeFieldsWithUnknownType(record, false, true, false);
@@ -312,18 +312,14 @@ public class BackupRestoreManager {
 				}
 				case REMOVE:
 				{
-
+					return false;
 				}
-					break;
 				case REMOVE_WITH_CASCADE:
 				{
 					return true;
 				}
-				case UPDATE:
-				{
-
-				}
-					break;
+				default:
+					throw new IllegalAccessError();
 			}
 
 
@@ -776,9 +772,10 @@ public class BackupRestoreManager {
 	/**
 	 * Restore the database to the nearest given date UTC
 	 * @param dateUTCInMs the UTC time in milliseconds
-	 * @return true if the given time corresponds to an available backup. False is chosen if the given time is too old to find a corresponding historical into the backups. In this previous case, it is the nearest backup that is chosen.
+	 * @param chooseNearestBackupIfNoBackupMatch if set to true, and when no backup was found at the given date/time, than choose the older backup
+	 * @return true if the given time corresponds to an available backup. False is chosen if the given time is too old to find a corresponding historical into the backups. In this previous case, and if the param <code>chooseNearestBackupIfNoBackupMatch</code>is set to true, than it is the nearest backup that is chosen. Else no restoration is done.
 	 */
-	public boolean restoreDatabaseToDateUTC(long dateUTCInMs) throws DatabaseException {
+	public boolean restoreDatabaseToDateUTC(long dateUTCInMs, boolean chooseNearestBackupIfNoBackupMatch) throws DatabaseException {
 		synchronized (this) {
 			int oldVersion=databaseWrapper.getCurrentDatabaseVersion(dbPackage);
 
@@ -799,156 +796,162 @@ public class BackupRestoreManager {
 					break;
 				}
 			}
+			boolean res=true;
 			if (startFileReference==Long.MIN_VALUE)
 			{
+				res=false;
+				if (chooseNearestBackupIfNoBackupMatch)
+					startFileReference=fileReferenceTimeStamps.get(0);
+				else
+					return false;
+			}
+
+			try {
+				File currentFile=getFile(startFileReference, true);
+				LinkedList<Long> listIncrements=new LinkedList<>();
+				//noinspection ForLoopReplaceableByForEach
+				for (int i=0;i<fileTimeStamps.size();i++)
+				{
+					Long l=fileTimeStamps.get(i);
+					if (l>startFileReference)
+					{
+						if (fileReferenceTimeStamps.contains(l))
+							break;
+						listIncrements.add(l);
+					}
+				}
+
+				checkTablesHeader(currentFile);
+				List<Class<? extends Table<?>>> classes=extractClassesList(currentFile);
+				final ArrayList<Table<?>> tables=new ArrayList<>();
 				for (Class<? extends Table<?>> c : classes) {
-					databaseWrapper.getTableInstance(c, newVersion);
+					Table<?> t = databaseWrapper.getTableInstance(c, newVersion);
+					tables.add(t);
 				}
-				databaseWrapper.deleteDatabase(databaseConfiguration, oldVersion);
-				createBackupReference();
-			}
-			else {
-				try {
-					File currentFile=getFile(startFileReference, true);
-					LinkedList<Long> listIncrements=new LinkedList<>();
-					for (int i=0;i<fileTimeStamps.size();i++)
+
+				boolean reference=true;
+				while (currentFile!=null)
+				{
+					try(RandomFileInputStream in=new RandomFileInputStream(currentFile))
 					{
-						Long l=fileTimeStamps.get(i);
-						if (l>startFileReference)
-						{
-							if (fileReferenceTimeStamps.contains(l))
-								break;
-							listIncrements.add(l);
-						}
-					}
+						positionForDataRead(in, reference);
+						reference=false;
+						while (in.available()>0) {
 
-					checkTablesHeader(currentFile);
-					List<Class<? extends Table<?>>> classes=extractClassesList(currentFile);
-					final ArrayList<Table<?>> tables=new ArrayList<>();
-					for (Class<? extends Table<?>> c : classes) {
-						Table<?> t = databaseWrapper.getTableInstance(c, newVersion);
-						tables.add(t);
-					}
+							int nextTransaction=in.readInt();
+							if (in.skip(9)!=9)
+								throw new IOException();
+							final long dataTransactionStartPosition=in.currentPosition();
+							databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
+								@Override
+								public Void run() throws Exception {
+									byte eventTypeCode=in.readByte();
+									DatabaseEventType eventType=DatabaseEventType.getEnum(eventTypeCode);
+									if (eventType==null)
+										throw new IOException();
 
-					boolean reference=true;
-					while (currentFile!=null)
-					{
-						try(RandomFileInputStream in=new RandomFileInputStream(currentFile))
-						{
-							positionForDataRead(in, reference);
-							reference=false;
-							while (in.available()>0) {
-
-								int nextTransaction=in.readInt();
-								if (in.skip(9)!=9)
-									throw new IOException();
-								final long dataTransactionStartPosition=in.currentPosition();
-								databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
-									@Override
-									public Void run() throws Exception {
-										byte eventTypeCode=in.readByte();
-										DatabaseEventType eventType=DatabaseEventType.getEnum(eventTypeCode);
-										if (eventType==null)
-											throw new IOException();
-
-										int tableIndex=in.readUnsignedShort();
-										if (tableIndex>=tables.size())
-											throw new IOException();
-										Table<?> table=tables.get(tableIndex);
-										switch(eventType)
+									int tableIndex=in.readUnsignedShort();
+									if (tableIndex>=tables.size())
+										throw new IOException();
+									Table<?> table=tables.get(tableIndex);
+									switch(eventType)
+									{
+										case ADD: case UPDATE:
 										{
-											case ADD:
-											{
-												int s=in.readUnsignedShortInt();
+											int s=in.readUnsignedShortInt();
+											in.readFully(recordBuffer, 0, s);
+											DatabaseRecord dr=table.getNewRecordInstance();
+											table.deserializePrimaryKeys(dr, recordBuffer, 0, s);
+											s=in.readUnsignedShortInt();
+											if (s>0) {
 												in.readFully(recordBuffer, 0, s);
-												DatabaseRecord dr=table.getNewRecordInstance();
-												table.deserializePrimaryKeys(dr, recordBuffer, 0, s);
-												s=in.readUnsignedShortInt();
-												if (s>0) {
-													in.readFully(recordBuffer, 0, s);
-													table.deserializeFields(dr, recordBuffer, 0, s, false, true, false);
-												}
-												s=in.readUnsignedShortInt();
-												if (s>0) {
-													in.readFully(recordBuffer, 0, s);
-													table.deserializeFields(dr, recordBuffer, 0, s, false, false, true);
-												}
+												table.deserializeFields(dr, recordBuffer, 0, s, false, true, false);
+											}
+											s=in.readUnsignedShortInt();
+											if (s>0) {
+												in.readFully(recordBuffer, 0, s);
+												table.deserializeFields(dr, recordBuffer, 0, s, false, false, true);
+											}
+											if (eventType==DatabaseEventType.ADD)
 												table.addRecord(dr);
-											}
-												break;
-											case REMOVE:
-											{
-
-											}
-											break;
-											case REMOVE_WITH_CASCADE:
-											{
-
-											}
-											break;
-											case UPDATE:
-											{
-
-											}
-											break;
-
+											else
+												table.updateUntypedRecord(dr, true, null);
 										}
+											break;
+										case REMOVE:
+										{
+											int s=in.readUnsignedShortInt();
+											in.readFully(recordBuffer, 0, s);
+											HashMap<String, Object> pks=new HashMap<>();
+											table.deserializePrimaryKeys(pks, recordBuffer, 0, s);
 
-										return null;
+											table.removeRecord(pks);
+										}
+										break;
+										case REMOVE_WITH_CASCADE:
+										{
+											int s=in.readUnsignedShortInt();
+											in.readFully(recordBuffer, 0, s);
+											HashMap<String, Object> pks=new HashMap<>();
+											table.deserializePrimaryKeys(pks, recordBuffer, 0, s);
+
+											table.removeRecordWithCascade(pks);
+										}
+										break;
+
+
 									}
 
-									@Override
-									public TransactionIsolation getTransactionIsolation() {
-										return TransactionIsolation.TRANSACTION_SERIALIZABLE;
-									}
+									return null;
+								}
 
-									@Override
-									public boolean doesWriteData() {
-										return true;
-									}
+								@Override
+								public TransactionIsolation getTransactionIsolation() {
+									return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+								}
 
-									@Override
-									public void initOrReset() throws Exception {
-										in.seek(dataTransactionStartPosition);
-									}
-								});
-								if (nextTransaction<0)
-									break;
+								@Override
+								public boolean doesWriteData() {
+									return true;
+								}
 
-							}
+								@Override
+								public void initOrReset() throws Exception {
+									in.seek(dataTransactionStartPosition);
+								}
+							});
+							if (nextTransaction<0)
+								break;
 
 						}
 
-						if (listIncrements.size()>0)
-							currentFile=getFile(listIncrements.removeFirst(), false);
-						else
-							currentFile=null;
-
 					}
-					databaseWrapper.validateNewDatabaseVersionAndDeleteOldVersion(databaseConfiguration, oldVersion, newVersion);
-					createBackupReference();
 
-				} catch (Exception e) {
-					databaseWrapper.deleteDatabase(databaseConfiguration, newVersion);
-					throw DatabaseException.getDatabaseException(e);
+					if (listIncrements.size()>0)
+						currentFile=getFile(listIncrements.removeFirst(), false);
+					else
+						currentFile=null;
+
 				}
-			}
+				databaseWrapper.validateNewDatabaseVersionAndDeleteOldVersion(databaseConfiguration, oldVersion, newVersion);
+				createBackupReference();
+				return res;
 
+			} catch (Exception e) {
+				databaseWrapper.deleteDatabase(databaseConfiguration, newVersion);
+				throw DatabaseException.getDatabaseException(e);
+			}
 		}
 	}
 	private void positionForDataRead(RandomInputStream in, boolean reference) throws DatabaseException {
 		try {
+			in.seek(LIST_CLASSES_POSITION);
 			if (reference) {
-				in.seek(LIST_CLASSES_POSITION);
 				int dataPosition = in.readInt();
 				in.seek(dataPosition);
-				reference = false;
-			} else {
-				in.seek(LIST_CLASSES_POSITION);
 			}
 		}
 		catch (Exception e) {
-			//TODO remove version
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}

@@ -8351,7 +8351,7 @@ public abstract class Table<T extends DatabaseRecord> {
 		deserializePrimaryKeys(record, tab, 0, tab.length);
 	}
 	void deserializePrimaryKeys(DatabaseRecord record, byte[] tab, int off, int len) throws DatabaseException {
-		try (ByteArrayInputStream bais = new ByteArrayInputStream(tab, 0, len)) {
+		try (ByteArrayInputStream bais = new ByteArrayInputStream(tab, off, len)) {
 			try (DataInputStream ois = new DataInputStream(bais)) {
 				for (FieldAccessor fa : primary_keys_fields) {
 					fa.unserialize(ois, record);
@@ -8365,9 +8365,11 @@ public abstract class Table<T extends DatabaseRecord> {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
-
 	void deserializePrimaryKeys(HashMap<String, Object> map, byte[] tab) throws DatabaseException {
-		try (ByteArrayInputStream bais = new ByteArrayInputStream(tab)) {
+		deserializePrimaryKeys(map, tab, 0, tab.length);
+	}
+	void deserializePrimaryKeys(HashMap<String, Object> map, byte[] tab, int off, int len) throws DatabaseException {
+		try (ByteArrayInputStream bais = new ByteArrayInputStream(tab, off, len)) {
 			try (DataInputStream ois = new DataInputStream(bais)) {
 				for (FieldAccessor fa : primary_keys_fields) {
 					fa.unserialize(ois, map);
