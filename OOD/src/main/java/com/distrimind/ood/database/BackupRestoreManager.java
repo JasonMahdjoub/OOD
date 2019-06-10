@@ -772,6 +772,15 @@ public class BackupRestoreManager {
 	/**
 	 * Restore the database to the nearest given date UTC
 	 * @param dateUTCInMs the UTC time in milliseconds
+	 *
+	 * @return true if the given time corresponds to an available backup. False is chosen if the given time is too old to find a corresponding historical into the backups. In this previous case, it is the nearest backup that is chosen.
+	 */
+	public boolean restoreDatabaseToDateUTC(long dateUTCInMs) throws DatabaseException {
+		return restoreDatabaseToDateUTC(dateUTCInMs, true);
+	}
+	/**
+	 * Restore the database to the nearest given date UTC
+	 * @param dateUTCInMs the UTC time in milliseconds
 	 * @param chooseNearestBackupIfNoBackupMatch if set to true, and when no backup was found at the given date/time, than choose the older backup
 	 * @return true if the given time corresponds to an available backup. False is chosen if the given time is too old to find a corresponding historical into the backups. In this previous case, and if the param <code>chooseNearestBackupIfNoBackupMatch</code>is set to true, than it is the nearest backup that is chosen. Else no restoration is done.
 	 */
