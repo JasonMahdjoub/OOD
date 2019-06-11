@@ -40,8 +40,6 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.crypto.SecureRandomType;
 import com.distrimind.util.crypto.SymmetricEncryptionType;
 import com.distrimind.util.crypto.SymmetricSecretKey;
-import gnu.vm.jgnu.security.NoSuchAlgorithmException;
-import gnu.vm.jgnu.security.NoSuchProviderException;
 import org.testng.Assert;
 import org.testng.annotations.*;
 
@@ -49,6 +47,8 @@ import java.io.File;
 import java.lang.ref.Reference;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -525,7 +525,7 @@ public class TestDatabaseBackupRestore {
 		else
 			Assert.assertNotNull(table.getRecord(primaryKeys));
 
-		Reference<R> restoredRecord=externalBRM.restoreRecordToDateUTC(dateUTC, table, primaryKeys, withCascade);
+		Reference<R> restoredRecord=externalBRM.restoreRecordToDateUTC(dateUTC, withCascade, table, primaryKeys);
 		if (expectedToBeRestored)
 		{
 			Assert.assertNotNull(restoredRecord);

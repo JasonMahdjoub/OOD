@@ -333,7 +333,7 @@ public class BackupRestoreManager {
 		try {
 			if (classes.size()>Short.MAX_VALUE)
 				throw new DatabaseException("Too much tables");
-			int dataPosition=6+classes.size()*2;
+			int dataPosition=10+classes.size()*2;
 			List<byte[]> l=new ArrayList<>(classes.size());
 			for (Class<? extends Table<?>> aClass : classes) {
 				byte[] tab=aClass.getName().getBytes(StandardCharsets.UTF_8);
@@ -346,6 +346,7 @@ public class BackupRestoreManager {
 				out.writeShort(t.length);
 				out.write(t);
 			}
+			out.writeInt(-1);
 		}
 		catch(IOException e)
 		{
@@ -358,14 +359,17 @@ public class BackupRestoreManager {
 		try {
 			out.writeLong(backupUTC);
 			out.writeLong(-1);
+
+			if (referenceFile)
+				saveTablesHeader(out);
+			else
+				out.writeInt(-1);
 		}
 		catch(IOException e)
 		{
 			throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 		}
 
-		if (referenceFile)
-			saveTablesHeader(out);
 
 	}
 	private void positionateFileForNewEvent(RandomOutputStream out) throws DatabaseException {
@@ -469,12 +473,12 @@ public class BackupRestoreManager {
 	private void saveTransactionQueue(RandomOutputStream out, int nextTransactionReference, boolean containsRemoveWithCascade, long transactionUTC) throws DatabaseException {
 		try {
 			int nextTransaction=(int)out.currentPosition();
+			out.writeInt(nextTransactionReference);
 			out.seek(LAST_BACKUP_UTC_POSITION);
 			out.writeLong(transactionUTC);
 			out.seek(nextTransactionReference);
 			out.writeInt(nextTransaction);
-			if (containsRemoveWithCascade)
-				out.writeBoolean(true);
+			out.writeBoolean(containsRemoveWithCascade);
 		}
 		catch(IOException e)
 		{
@@ -786,6 +790,8 @@ public class BackupRestoreManager {
 	 */
 	public boolean restoreDatabaseToDateUTC(long dateUTCInMs, boolean chooseNearestBackupIfNoBackupMatch) throws DatabaseException {
 		synchronized (this) {
+			if (fileReferenceTimeStamps.size()==0)
+				return false;
 			int oldVersion=databaseWrapper.getCurrentDatabaseVersion(dbPackage);
 
 			int newVersion=oldVersion+1;
@@ -809,8 +815,10 @@ public class BackupRestoreManager {
 			if (startFileReference==Long.MIN_VALUE)
 			{
 				res=false;
-				if (chooseNearestBackupIfNoBackupMatch)
-					startFileReference=fileReferenceTimeStamps.get(0);
+				if (chooseNearestBackupIfNoBackupMatch) {
+					startFileReference = fileReferenceTimeStamps.get(0);
+					dateUTCInMs=startFileReference;
+				}
 				else
 					return false;
 			}
@@ -830,8 +838,9 @@ public class BackupRestoreManager {
 					}
 				}
 
-				checkTablesHeader(currentFile);
-				List<Class<? extends Table<?>>> classes=extractClassesList(currentFile);
+				if (!checkTablesHeader(currentFile))
+					throw new DatabaseException("The database backup is incompatible with current database tables");
+
 				final ArrayList<Table<?>> tables=new ArrayList<>();
 				for (Class<? extends Table<?>> c : classes) {
 					Table<?> t = databaseWrapper.getTableInstance(c, newVersion);
@@ -848,8 +857,10 @@ public class BackupRestoreManager {
 						while (in.available()>0) {
 
 							int nextTransaction=in.readInt();
-							if (in.skip(9)!=9)
+							if (in.skip(1)!=1)
 								throw new IOException();
+							if (in.readLong()>dateUTCInMs)
+								break;
 							final long dataTransactionStartPosition=in.currentPosition();
 							databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
 								@Override
@@ -910,7 +921,6 @@ public class BackupRestoreManager {
 
 
 									}
-
 									return null;
 								}
 
@@ -931,6 +941,8 @@ public class BackupRestoreManager {
 							});
 							if (nextTransaction<0)
 								break;
+							if (in.skip(4)!=4)
+								throw new IOException();
 
 						}
 
@@ -965,7 +977,6 @@ public class BackupRestoreManager {
 		}
 	}
 
-
 	/**
 	 * Restore the given record to the given date
 	 *
@@ -975,25 +986,133 @@ public class BackupRestoreManager {
 	 * @return the reference of record that have been restored. This reference can contain a null pointer if the new version is a null record. Returns null if the restored has not been applied. It can occurs of the record have foreign keys (pointing to or pointed by) that does not exists or that changed, and that are not enabled to be restored (restoreWithCascade=false).
 	 */
 	public <R extends DatabaseRecord> Reference<R> restoreRecordToDateUTC(long dateUTC, R record, boolean restoreWithCascade) throws DatabaseException {
-		Table<R> table=databaseWrapper.getTableInstanceFromRecord(record);
-		return restoreRecordToDateUTC(dateUTC,table, Table.getFields(table.getPrimaryKeysFieldAccessors(), record), restoreWithCascade);
+		return restoreRecordToDateUTC(dateUTC,record, restoreWithCascade, true);
 	}
 
 	/**
 	 * Restore the given record to the given date
 	 *
 	 * @param dateUTC the reference date to use for the restoration
-	 * @param table the concerned table
-	 * @param primaryKeys the primary keys of the record to restore
+	 * @param record the record to restore (only primary keys are used)
 	 * @param restoreWithCascade if true, all foreign key pointing to this record, or pointed by this record will be restored. If this boolean is set to false, this record will not be restored if it is in relation with other records that have been altered.
+	 * @param chooseNearestBackupIfNoBackupMatch if set to true, and when no backup was found at the given date/time, than choose the older backup
+	 * @return the reference of record that have been restored. This reference can contain a null pointer if the new version is a null record. Returns null if the restored has not been applied. It can occurs of the record have foreign keys (pointing to or pointed by) that does not exists or that changed, and that are not enabled to be restored (restoreWithCascade=false). It can also occurs if no date correspond to the given date, and if chooseNearestBackupIfNoBackupMatch is equals to false.
+	 */
+	public <R extends DatabaseRecord> Reference<R> restoreRecordToDateUTC(long dateUTC, R record, boolean restoreWithCascade, boolean chooseNearestBackupIfNoBackupMatch) throws DatabaseException {
+		Table<R> table=databaseWrapper.getTableInstanceFromRecord(record);
+		return restoreRecordToDateUTC(dateUTC,restoreWithCascade, chooseNearestBackupIfNoBackupMatch, table, Table.getFields(table.getPrimaryKeysFieldAccessors(), record));
+	}
+	/**
+	 * Restore the given record to the given date
+	 *
+	 * @param dateUTC the reference date to use for the restoration
+	 * @param restoreWithCascade if true, all foreign key pointing to this record, or pointed by this record will be restored. If this boolean is set to false, this record will not be restored if it is in relation with other records that have been altered.
+	 * @param table the concerned table
+	 * @param primaryKeys the primary keys of the record to restore.
+	 *                Must be formatted as follow : {"field1", value1,"field2", value2, etc.}
 	 * @param <R> the record type
 	 * @param <T> the table type
 	 * @return the reference of record that have been restored. This reference can contain a null pointer if the new version is a null record. Returns null if the restored has not been applied. It can occurs of the record have foreign keys (pointing to or pointed by) that does not exists or that changed, and that are not enabled to be restored (restoreWithCascade=false).
 	 */
-	public <R extends DatabaseRecord, T extends Table<R>> Reference<R> restoreRecordToDateUTC(long dateUTC, T table, Map<String, Object> primaryKeys, boolean restoreWithCascade)
+	public <R extends DatabaseRecord, T extends Table<R>> Reference<R> restoreRecordToDateUTC(long dateUTC, boolean restoreWithCascade, T table, Object ... primaryKeys) throws DatabaseException {
+		return restoreRecordToDateUTC(dateUTC, restoreWithCascade, true, table, primaryKeys);
+	}
+	/**
+	 * Restore the given record to the given date
+	 *
+	 * @param dateUTC the reference date to use for the restoration
+	 * @param restoreWithCascade if true, all foreign key pointing to this record, or pointed by this record will be restored. If this boolean is set to false, this record will not be restored if it is in relation with other records that have been altered.
+	 * @param chooseNearestBackupIfNoBackupMatch if set to true, and when no backup was found at the given date/time, than choose the older backup
+	 * @param table the concerned table
+	 * @param primaryKeys the primary keys of the record to restore.
+	 *                Must be formatted as follow : {"field1", value1,"field2", value2, etc.}
+	 * @param <R> the record type
+	 * @param <T> the table type
+	 * @return the reference of record that have been restored. This reference can contain a null pointer if the new version is a null record. Returns null if the restored has not been applied. It can occurs of the record have foreign keys (pointing to or pointed by) that does not exists or that changed, and that are not enabled to be restored (restoreWithCascade=false). It can also occurs if no date correspond to the given date, and if chooseNearestBackupIfNoBackupMatch is equals to false.
+	 */
+	public <R extends DatabaseRecord, T extends Table<R>> Reference<R> restoreRecordToDateUTC(long dateUTC, boolean restoreWithCascade, boolean chooseNearestBackupIfNoBackupMatch, T table, Object ... primaryKeys) throws DatabaseException {
+		return restoreRecordToDateUTC(dateUTC, restoreWithCascade, chooseNearestBackupIfNoBackupMatch,  table, table.transformToMapField(primaryKeys));
+	}
+
+
+	/**
+	 * Restore the given record to the given date
+	 *
+	 * @param dateUTC the reference date to use for the restoration
+	 * @param restoreWithCascade if true, all foreign key pointing to this record, or pointed by this record will be restored. If this boolean is set to false, this record will not be restored if it is in relation with other records that have been altered.
+	 * @param table the concerned table
+	 * @param primaryKeys the primary keys of the record to restore
+	 * @param <R> the record type
+	 * @param <T> the table type
+	 * @return the reference of record that have been restored. This reference can contain a null pointer if the new version is a null record. Returns null if the restored has not been applied. It can occurs of the record have foreign keys (pointing to or pointed by) that does not exists or that changed, and that are not enabled to be restored (restoreWithCascade=false).
+	 */
+	public <R extends DatabaseRecord, T extends Table<R>> Reference<R> restoreRecordToDateUTC(long dateUTC, boolean restoreWithCascade, T table, Map<String, Object> primaryKeys)
 	{
+		return restoreRecordToDateUTC(dateUTC, restoreWithCascade, true, table, primaryKeys);
+	}
+	/**
+	 * Restore the given record to the given date
+	 *
+	 * @param dateUTC the reference date to use for the restoration
+	 * @param restoreWithCascade if true, all foreign key pointing to this record, or pointed by this record will be restored. If this boolean is set to false, this record will not be restored if it is in relation with other records that have been altered.
+	 * @param chooseNearestBackupIfNoBackupMatch if set to true, and when no backup was found at the given date/time, than choose the older backup
+	 * @param table the concerned table
+	 * @param primaryKeys the primary keys of the record to restore
+	 * @param <R> the record type
+	 * @param <T> the table type
+	 * @return the reference of record that have been restored. This reference can contain a null pointer if the new version is a null record. Returns null if the restored has not been applied. It can occurs of the record have foreign keys (pointing to or pointed by) that does not exists or that changed, and that are not enabled to be restored (restoreWithCascade=false). It can also occurs if no date correspond to the given date, and if chooseNearestBackupIfNoBackupMatch is equals to false.
+	 */
+	public <R extends DatabaseRecord, T extends Table<R>> Reference<R> restoreRecordToDateUTC(long dateUTC, boolean restoreWithCascade, boolean chooseNearestBackupIfNoBackupMatch, T table, Map<String, Object> primaryKeys) throws DatabaseException {
 		synchronized (this) {
-			//TODO complete
+			Long foundFile=null;
+			int filePosition=-1;
+			if (fileReferenceTimeStamps.size()==0)
+				return null;
+			for (Long l : fileTimeStamps)
+			{
+				if (l>dateUTC)
+					break;
+				else {
+					foundFile = l;
+					++filePosition;
+				}
+			}
+			if (foundFile==null)
+			{
+				if (!chooseNearestBackupIfNoBackupMatch)
+					return null;
+				foundFile=fileTimeStamps.get(0);
+				filePosition=0;
+				dateUTC=foundFile;
+			}
+			Long fileReference=null;
+			for (int i=filePosition; i>=0;i--)
+			{
+				long t=fileTimeStamps.get(i);
+				if (fileReferenceTimeStamps.contains(t)) {
+					fileReference = t;
+					break;
+				}
+			}
+			if (fileReference==null)
+				throw new IllegalStateException();
+			if (!checkTablesHeader(getFile(fileReference, true)))
+				throw new DatabaseException("The database backup is incompatible with current database tables");
+			try(RandomFileInputStream fis=new RandomFileInputStream(getFile(foundFile, foundFile.equals(fileReference))))
+			{
+				fis.seek(LAST_REMOVE_WITH_CASCADE_POSITION);
+				int pos=fis.readInt();
+				long lastRemoveWithCascadeUTC=Long.MIN_VALUE;
+				if (pos!=-1) {
+					fis.seek(pos+5);
+					lastRemoveWithCascadeUTC=fis.readLong();
+				}
+
+			} catch (IOException e) {
+				throw DatabaseException.getDatabaseException(e);
+			}
+
+
 		}
 	}
 
@@ -1083,11 +1202,15 @@ public class BackupRestoreManager {
 				return;
 			saveTransactionQueue(out,nextTransactionReference, containsRemoveWithCascade, transactionUTC);
 
-			if (!fileTimeStamps.contains(fileTimeStamp)) {
-				fileTimeStamps.add(fileTimeStamp);
-			}
-
 			try {
+				if (containsRemoveWithCascade) {
+					out.seek(LAST_REMOVE_WITH_CASCADE_POSITION);
+					out.writeInt(nextTransactionReference);
+				}
+
+				if (!fileTimeStamps.contains(fileTimeStamp)) {
+					fileTimeStamps.add(fileTimeStamp);
+				}
 				out.close();
 			} catch (IOException e) {
 				throw DatabaseException.getDatabaseException(e);
