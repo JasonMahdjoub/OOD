@@ -503,15 +503,7 @@ public class BackupRestoreManager {
 			int index=hashPK(primaryKey, off, len);
 			try {
 				if (cache[index]==-2) {
-					RandomInputStream ris;
-					if (out instanceof BufferedRandomOutputStream)
-					{
-						out.flush();
-						ris=(((BufferedRandomOutputStream) out).getRandomOutputStreamSource()).getRandomInputStream();
-					}
-					else
-						ris=out.getRandomInputStream();
-					refresh(ris, getStreamPosition(index));
+					refresh(out.getUnbufferedRandomInputStream(), getStreamPosition(index));
 				}
 				int res=cache[index];
 				if (res<-1)
