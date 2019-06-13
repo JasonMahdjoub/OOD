@@ -38,15 +38,18 @@ knowledge of the CeCILL-C license and that you accept its terms.
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.i18n.DatabaseMessages;
 import com.distrimind.util.FileTools;
-import com.distrimind.util.io.RandomFileInputStream;
-import com.distrimind.util.io.RandomFileOutputStream;
-import com.distrimind.util.io.RandomInputStream;
-import com.distrimind.util.io.RandomOutputStream;
+import com.distrimind.util.crypto.AbstractMessageDigest;
+import com.distrimind.util.crypto.MessageDigestType;
+import com.distrimind.util.io.*;
 import com.distrimind.util.progress_monitors.ProgressMonitorParameters;
 
+import javax.xml.crypto.Data;
 import java.io.*;
 import java.lang.ref.Reference;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -63,7 +66,8 @@ public class BackupRestoreManager {
 
 	private final static int LAST_BACKUP_UTC_POSITION=0;
 	private final static int LAST_REMOVE_WITH_CASCADE_POSITION=LAST_BACKUP_UTC_POSITION+8;
-	private final static int LIST_CLASSES_POSITION=LAST_REMOVE_WITH_CASCADE_POSITION+8;
+	private final static int RECORDS_INDEX_POSITION=LAST_REMOVE_WITH_CASCADE_POSITION+8;
+	//private final static int LIST_CLASSES_POSITION=LAST_REMOVE_WITH_CASCADE_POSITION+8;
 
 
 	private ArrayList<Long> fileReferenceTimeStamps;
@@ -369,7 +373,154 @@ public class BackupRestoreManager {
 		{
 			throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 		}
+	}
 
+	private static class RecordsIndex
+	{
+		private final byte bitsNumber;
+
+		private static final int MAX_SIZE=1<<18;
+		private final int[] cache;
+		private final AbstractMessageDigest messageDigest;
+		private final int bytesNumber;
+		private final int lastMask;
+		RecordsIndex(int maxSize) throws DatabaseException {
+			this(getNumBits(maxSize));
+
+		}
+		RecordsIndex(RandomInputStream in) throws DatabaseException {
+			this(readBitsNumber(in));
+		}
+
+		private static byte readBitsNumber(RandomInputStream in) throws DatabaseException {
+			try {
+				in.seek(RECORDS_INDEX_POSITION);
+				return in.readByte();
+			} catch (IOException e) {
+				throw DatabaseException.getDatabaseException(e);
+			}
+
+
+		}
+
+		private RecordsIndex(byte bitsNumber) throws DatabaseException {
+			try {
+				this.bitsNumber=bitsNumber;
+				if (this.bitsNumber<8)
+					throw new IOException();
+				int size=1<<this.bitsNumber;
+				if (size>MAX_SIZE)
+					throw new IOException();
+				this.cache=new int[size];
+				messageDigest= MessageDigestType.SHA2_256.getMessageDigestInstance();
+				bytesNumber=bitsNumber/8;
+				int shift=bitsNumber-(bytesNumber*8);
+				if (shift==0)
+					lastMask=0;
+				else
+					lastMask=(1<<shift)-1;
+			} catch (IOException | NoSuchAlgorithmException | NoSuchProviderException e) {
+				throw DatabaseException.getDatabaseException(e);
+			}
+
+		}
+
+
+		static byte getNumBits(int maxSize) throws DatabaseException {
+			if (MAX_SIZE<maxSize)
+				throw new DatabaseException("", new IllegalArgumentException());
+			if (maxSize<1024)
+				maxSize=1024;
+			return (byte)(Math.floor(Math.log10(maxSize)/Math.log10(2)));
+		}
+
+		void resetIndex(RandomOutputStream out) throws DatabaseException {
+			try {
+				out.seek(RECORDS_INDEX_POSITION);
+				out.writeByte(bitsNumber);
+				Arrays.fill(cache, -1);
+				for (int i=0;i<this.cache.length;i++) {
+					out.writeInt(-1);
+				}
+
+			} catch (IOException e) {
+				throw DatabaseException.getDatabaseException(e);
+			}
+		}
+
+		int hashPK(byte[] primaryKey, int off, int len)
+		{
+			messageDigest.reset();
+			messageDigest.update(primaryKey,off, len);
+			byte[] d=messageDigest.digest();
+			int res=d[0];
+			int shift=0;
+			for (int i=1;i<bytesNumber;i++)
+			{
+				res+=((int)d[i])<<(shift+=8);
+			}
+			if (lastMask!=0)
+			{
+				res+=((d[bytesNumber] & lastMask)<<(shift+8));
+			}
+			return res;
+		}
+
+		private int getStreamPosition(int i)
+		{
+			return RECORDS_INDEX_POSITION+1+i*4;
+		}
+
+		private void refresh(RandomInputStream in, int i) throws DatabaseException {
+			try {
+				in.seek(getStreamPosition(i));
+				cache[i]=in.readInt();
+				if (cache[i]<-1)
+					throw new IOException();
+				if (cache[i+1]<-1)
+					throw new IOException();
+			} catch (IOException e) {
+				throw DatabaseException.getDatabaseException(e);
+			}
+		}
+
+		void writeRecord(RandomOutputStream out, int position, byte[] primaryKey, int off, int len) throws DatabaseException {
+			try {
+				if (position<=0)
+					throw new IOException();
+				int index=hashPK(primaryKey, off, len);
+
+				cache[index]=position;
+				out.seek(getStreamPosition(index));
+				out.writeInt(position);
+
+			} catch (IOException e) {
+				throw DatabaseException.getDatabaseException(e);
+			}
+		}
+
+		int getNearestPosition(RandomOutputStream out, byte[] primaryKey, int off, int len) throws DatabaseException {
+			int index=hashPK(primaryKey, off, len);
+			try {
+				if (cache[index]==-2) {
+					RandomInputStream ris;
+					if (out instanceof BufferedRandomOutputStream)
+					{
+						out.flush();
+						ris=(((BufferedRandomOutputStream) out).getRandomOutputStreamSource()).getRandomInputStream();
+					}
+					else
+						ris=out.getRandomInputStream();
+					refresh(ris, getStreamPosition(index));
+				}
+				int res=cache[index];
+				if (res<-1)
+					throw new IOException();
+				return res;
+			} catch (DatabaseException | IOException e) {
+				throw DatabaseException.getDatabaseException(e);
+			}
+		}
 
 	}
 	private void positionateFileForNewEvent(RandomOutputStream out) throws DatabaseException {
