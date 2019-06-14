@@ -165,7 +165,7 @@ public abstract class Table<T extends DatabaseRecord> {
 		assert tableID>=0;
 		this.databaseVersion=newDatabaseVersion;
 		this.table_id=tableID;
-		table_name=getDatabaseWrapper().getTableName(this.getClass(), table_id);
+		table_name=getDatabaseWrapper().getInternalTableName(this.getClass(), table_id);
 		if (isLoadedInMemory())
 			this.memoryToRefresh();
 	}
@@ -506,7 +506,7 @@ public abstract class Table<T extends DatabaseRecord> {
 			throw new DatabaseException("There is no primary key declared into the Record " + class_record.getName());
 
 		table_id=wrapper.getTableID(this);
-		table_name=wrapper.getTableName(this.getClass(), table_id);
+		table_name=wrapper.getInternalTableName(this.getClass(), table_id);
 
 		if (this.getName().equals(DatabaseWrapper.ROW_PROPERTIES_OF_TABLES))
 			throw new DatabaseException(
@@ -8350,6 +8350,7 @@ public abstract class Table<T extends DatabaseRecord> {
 	void deserializePrimaryKeys(DatabaseRecord record, byte[] tab) throws DatabaseException {
 		deserializePrimaryKeys(record, tab, 0, tab.length);
 	}
+	@SuppressWarnings("SameParameterValue")
 	void deserializePrimaryKeys(DatabaseRecord record, byte[] tab, int off, int len) throws DatabaseException {
 		try (ByteArrayInputStream bais = new ByteArrayInputStream(tab, off, len)) {
 			try (DataInputStream ois = new DataInputStream(bais)) {
@@ -8368,6 +8369,7 @@ public abstract class Table<T extends DatabaseRecord> {
 	void deserializePrimaryKeys(HashMap<String, Object> map, byte[] tab) throws DatabaseException {
 		deserializePrimaryKeys(map, tab, 0, tab.length);
 	}
+	@SuppressWarnings("SameParameterValue")
 	void deserializePrimaryKeys(HashMap<String, Object> map, byte[] tab, int off, int len) throws DatabaseException {
 		try (ByteArrayInputStream bais = new ByteArrayInputStream(tab, off, len)) {
 			try (DataInputStream ois = new DataInputStream(bais)) {
@@ -8389,7 +8391,8 @@ public abstract class Table<T extends DatabaseRecord> {
 		deserializeFields(record, tab, 0, tab.length, includePK, includeFK, includeNonKey);
 	}
 
-    void deserializeFields(DatabaseRecord record, byte[] tab, int off, int len, boolean includePK, boolean includeFK,
+    @SuppressWarnings("SameParameterValue")
+	void deserializeFields(DatabaseRecord record, byte[] tab, int off, int len, boolean includePK, boolean includeFK,
 						   boolean includeNonKey) throws DatabaseException {
 		try (ByteArrayInputStream bais = new ByteArrayInputStream(tab, off, len)) {
 			try (DataInputStream ois = new DataInputStream(bais)) {

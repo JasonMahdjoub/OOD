@@ -59,6 +59,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 
 	private static Constructor<? extends Blob> H2BlobConstructor=null;
 	private static Method H2ValueMethod=null;
+	private static Object blobStateNewValue=null;
 
 	/**
 	 * Constructor
@@ -75,7 +76,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	 * @throws DatabaseException if a problem occurs
 	 */
 	public EmbeddedH2DatabaseWrapper(File _directory_name) throws DatabaseException {
-		this(_file_name, false);
+		this(_directory_name, false);
 	}
 	/**
 	 * Constructor
@@ -108,9 +109,18 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 					Class.forName("org.h2.Driver");
 
 					//noinspection SingleStatementInBlock,unchecked
-					H2BlobConstructor=(Constructor<? extends Blob>)Class.forName("org.h2.jdbc.JdbcBlob").getDeclaredConstructor(Class.forName("org.h2.jdbc.JdbcConnection"), Class.forName("org.h2.value.Value"), int.class);
+					H2BlobConstructor=(Constructor<? extends Blob>)Class.forName("org.h2.jdbc.JdbcBlob").getDeclaredConstructor(Class.forName("org.h2.jdbc.JdbcConnection"), Class.forName("org.h2.value.Value"), Class.forName("org.h2.jdbc.JdbcLob#State"), int.class);
 					H2ValueMethod=Class.forName("org.h2.value.ValueBytes").getDeclaredMethod("get", byte[].class);
 					//DbBackupMain=Class.forName("org.hsqldb.lib.tar.DbBackupMain").getDeclaredMethod("main", (new String[0]).getClass());
+					for (Object o : Class.forName("org.h2.jdbc.JdbcLob#State").getEnumConstants())
+					{
+						if (((Enum)o).name().equals("NEW"))
+						{
+							blobStateNewValue=o;
+							break;
+						}
+					}
+
 					hsql_loaded = true;
 				} catch (Exception e) {
 					throw new DatabaseLoadingException("Impossible to load H2 ", e);
@@ -188,7 +198,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 				@Override
 				public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 					try {
-						return H2BlobConstructor.newInstance(getConnectionAssociatedWithCurrentThread().getConnection(), H2ValueMethod.invoke(null, (Object) bytes), -1);
+						return H2BlobConstructor.newInstance(getConnectionAssociatedWithCurrentThread().getConnection(), H2ValueMethod.invoke(null, (Object) bytes), blobStateNewValue, -1);
 					} catch (Exception e) {
 						throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 					}

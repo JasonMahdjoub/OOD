@@ -245,7 +245,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 		} catch (Exception e) {
 			throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 		}
-		for (Table<?> t : getListTables(table.getClass().getPackage())) {
+		for (Table<?> t : getListTables(table.getClass().getPackage(), getCurrentDatabaseVersion(table.getClass().getPackage()))) {
 			try (ReadQuerry rq = new ReadQuerry(sql_connection,
 					sql_connection.getMetaData().getExportedKeys(null, null, t.getName()))) {
 				while (rq.result_set.next()) {
@@ -329,7 +329,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 					}
 					if (fa.isForeignKey()) {
 						boolean found = false;
-						for (Table<?> t : getListTables(table.getClass().getPackage())) {
+						for (Table<?> t : getListTables(table.getClass().getPackage(), getCurrentDatabaseVersion(table.getClass().getPackage()))) {
 							try (ReadQuerry rq = new ReadQuerry(sql_connection,
 									sql_connection.getMetaData().getExportedKeys(null, null, t.getName()))) {
 								while (rq.result_set.next()) {

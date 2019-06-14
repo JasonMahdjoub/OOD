@@ -129,8 +129,8 @@ public abstract class FieldAccessor {
 				: (this.parentFieldName.replace(".", "_") + "_")) + fName.toUpperCase();
 		this.table_class = table_class;
 		table_name = table_class == null ? (DatabaseRecord.class.isAssignableFrom(field.getDeclaringClass())
-				? (_sql_connection.getTableName(Table.getTableClass((Class<? extends DatabaseRecord>) field.getDeclaringClass())))
-				: null) : _sql_connection.getTableName(table_class);
+				? (_sql_connection.getInternalTableName(Table.getTableClass((Class<? extends DatabaseRecord>) field.getDeclaringClass())))
+				: null) : _sql_connection.getInternalTableName(table_class);
 		auto_primary_key = _field.isAnnotationPresent(AutoPrimaryKey.class);
 		random_primary_key = field.isAnnotationPresent(RandomPrimaryKey.class);
 		if (auto_primary_key && random_primary_key)

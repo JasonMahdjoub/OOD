@@ -41,7 +41,6 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.DecentralizedIDGenerator;
-import com.distrimind.util.crypto.ASymmetricAuthentifiedSignatureType;
 import com.distrimind.util.crypto.SecureRandomType;
 import org.testng.Assert;
 import org.testng.annotations.*;

@@ -2986,10 +2986,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		return getInternalTableName(tTableClass, getCurrentDatabaseVersion(tTableClass.getPackage()));
 	}
 	public String getInternalTableName(Class<?> tTableClass, int databaseVersion) throws DatabaseException {
-		return getTableName(tTableClass, getTableID(tTableClass, databaseVersion));
+		return getInternalTableNameFromTableID(tTableClass, getTableID(tTableClass, databaseVersion));
 	}
 
-	String getTableName(Class<?> tTableClass, int tableID) throws DatabaseException {
+	private String getInternalTableNameFromTableID(Class<?> tTableClass, int tableID) throws DatabaseException {
 		TableName tn=tTableClass.getAnnotation(TableName.class);
 		if (tn==null)
 			return Table.TABLE_NAME_PREFIX+tableID+"__";
@@ -2999,6 +2999,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			return tn.sqlTableName().toUpperCase();
 		}
 	}
+
 	public int getTableID(Table<?> tTable) throws DatabaseException {
 		return getTableID(tTable.getClass(), tTable.getDatabaseVersion());
 	}
