@@ -38,8 +38,6 @@ knowledge of the CeCILL-C license and that you accept its terms.
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.i18n.DatabaseMessages;
 import com.distrimind.util.FileTools;
-import com.distrimind.util.crypto.AbstractMessageDigest;
-import com.distrimind.util.crypto.MessageDigestType;
 import com.distrimind.util.io.RandomFileInputStream;
 import com.distrimind.util.io.RandomFileOutputStream;
 import com.distrimind.util.io.RandomInputStream;
@@ -47,10 +45,7 @@ import com.distrimind.util.io.RandomOutputStream;
 import com.distrimind.util.progress_monitors.ProgressMonitorParameters;
 
 import java.io.*;
-import java.lang.ref.Reference;
 import java.nio.charset.StandardCharsets;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -66,8 +61,8 @@ import java.util.regex.Pattern;
 public class BackupRestoreManager {
 
 	private final static int LAST_BACKUP_UTC_POSITION=0;
-	private final static int RECORDS_INDEX_POSITION=LAST_BACKUP_UTC_POSITION+8;
-	//private final static int LIST_CLASSES_POSITION=LAST_REMOVE_WITH_CASCADE_POSITION+8;
+	//private final static int RECORDS_INDEX_POSITION=LAST_BACKUP_UTC_POSITION+8;
+	private final static int LIST_CLASSES_POSITION=LAST_BACKUP_UTC_POSITION+8;
 
 
 	private ArrayList<Long> fileReferenceTimeStamps;
@@ -222,7 +217,7 @@ public class BackupRestoreManager {
 		return initNewFile(dateUTC, true);
 	}
 
-	private RandomFileOutputStream getFileForBackupIncrementOrCreateIt(AtomicLong fileTimeStamp, AtomicReference<RecordsIndex> recordsIndex) throws DatabaseException {
+	private RandomFileOutputStream getFileForBackupIncrementOrCreateIt(AtomicLong fileTimeStamp/*, AtomicReference<RecordsIndex> recordsIndex*/) throws DatabaseException {
 		File res=null;
 
 		if (fileTimeStamps.size()>0)
@@ -241,13 +236,13 @@ public class BackupRestoreManager {
 				res = initNewFileForBackupIncrement(fileTimeStamp.get());
 
 				RandomFileOutputStream out=new RandomFileOutputStream(res, RandomFileOutputStream.AccessMode.READ_AND_WRITE);
-				saveHeader(out, fileTimeStamp.get(), false, recordsIndex);
+				saveHeader(out, fileTimeStamp.get(), false/*, recordsIndex*/);
 				return out;
 			}
 			else {
 
 				RandomFileOutputStream out=new RandomFileOutputStream(res, RandomFileOutputStream.AccessMode.READ_AND_WRITE);
-				recordsIndex.set(new RecordsIndex(out.getUnbufferedRandomInputStream()));
+				//recordsIndex.set(new RecordsIndex(out.getUnbufferedRandomInputStream()));
 				positionateFileForNewEvent(out);
 				return out;
 			}
@@ -281,7 +276,7 @@ public class BackupRestoreManager {
 		}
 	}
 
-	private void backupRecordEvent(RandomOutputStream out, Table<?> table, DatabaseRecord record, DatabaseEventType eventType, RecordsIndex index) throws DatabaseException {
+	private void backupRecordEvent(RandomOutputStream out, Table<?> table, DatabaseRecord record, DatabaseEventType eventType/*, RecordsIndex index*/) throws DatabaseException {
 		try {
 			int start=(int)out.currentPosition();
 			out.write(eventType.getByte());
@@ -328,7 +323,7 @@ public class BackupRestoreManager {
 					throw new IllegalAccessError();
 			}
 			out.writeInt(start);
-			index.writeRecord(out, start, pks, 0, pks.length);
+			/*index.writeRecord(out, start, pks, 0, pks.length);*/
 
 
 		} catch (DatabaseException | IOException e) {
@@ -361,11 +356,11 @@ public class BackupRestoreManager {
 		}
 	}
 
-	private void saveHeader(RandomOutputStream out, long backupUTC, boolean referenceFile, AtomicReference<RecordsIndex> recordsIndex) throws DatabaseException {
+	private void saveHeader(RandomOutputStream out, long backupUTC, boolean referenceFile/*, AtomicReference<RecordsIndex> recordsIndex*/) throws DatabaseException {
 
 		try {
 			out.writeLong(backupUTC);
-			recordsIndex.set(new RecordsIndex(backupConfiguration.getMaxIndexSize(), out));
+			//recordsIndex.set(new RecordsIndex(backupConfiguration.getMaxIndexSize(), out));
 
 			if (referenceFile)
 				saveTablesHeader(out);
@@ -378,7 +373,7 @@ public class BackupRestoreManager {
 		}
 	}
 
-	private class RecordsIndex
+	/*private class RecordsIndex
 	{
 		private final byte bitsNumber;
 
@@ -462,9 +457,7 @@ public class BackupRestoreManager {
 				Arrays.fill(cache, -1);
 				Arrays.fill(toFlush, true);
 				globalFlush=true;
-				/*for (int i=0;i<this.cache.length;i++) {
-					out.writeInt(-1);
-				}*/
+
 
 			} catch (IOException e) {
 				throw DatabaseException.getDatabaseException(e);
@@ -710,7 +703,7 @@ public class BackupRestoreManager {
 			this.start = start;
 			this.end = end;
 		}
-	}
+	}*/
 
 	private void positionateFileForNewEvent(RandomOutputStream out) throws DatabaseException {
 		try {
@@ -735,7 +728,7 @@ public class BackupRestoreManager {
 			try(RandomFileInputStream rfis=new RandomFileInputStream(file)) {
 				lastBackupEventUTC=rfis.readLong();
 
-				rfis.seek(RecordsIndex.getListClassPosition(rfis)+4);
+				rfis.seek(LIST_CLASSES_POSITION/*RecordsIndex.getListClassPosition(rfis)*/+4);
 
 				int s=rfis.readShort();
 				if (s<0)
@@ -810,7 +803,7 @@ public class BackupRestoreManager {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
-	private void saveTransactionQueue(RandomOutputStream out, int nextTransactionReference, long transactionUTC, RecordsIndex index) throws DatabaseException {
+	private void saveTransactionQueue(RandomOutputStream out, int nextTransactionReference, long transactionUTC/*, RecordsIndex index*/) throws DatabaseException {
 		try {
 			int nextTransaction=(int)out.currentPosition();
 			out.writeInt(nextTransactionReference);
@@ -819,7 +812,7 @@ public class BackupRestoreManager {
 			out.seek(nextTransactionReference);
 			out.writeInt(nextTransaction);
 
-			index.flush(out);
+			//index.flush(out);
 		}
 		catch(IOException e)
 		{
@@ -889,8 +882,8 @@ public class BackupRestoreManager {
 				File file = initNewFileForBackupReference(currentBackupTime.get());
 				final AtomicReference<RandomFileOutputStream> rout=new AtomicReference<>(new RandomFileOutputStream(file, RandomFileOutputStream.AccessMode.READ_AND_WRITE));
 				try {
-					final AtomicReference<RecordsIndex> index=new AtomicReference<>(null);
-					saveHeader(rout.get(), currentBackupTime.get(), true, index);
+					//final AtomicReference<RecordsIndex> index=new AtomicReference<>(null);
+					saveHeader(rout.get(), currentBackupTime.get(), true/*, index*/);
 					final AtomicInteger nextTransactionReference=new AtomicInteger(saveTransactionHeader(rout.get(), currentBackupTime.get()));
 
 					for (Class<? extends Table<?>> c : classes) {
@@ -899,19 +892,19 @@ public class BackupRestoreManager {
 							RandomFileOutputStream out=rout.get();
 							@Override
 							public boolean nextRecord(DatabaseRecord _record) throws DatabaseException {
-								backupRecordEvent(out, table, _record, DatabaseEventType.ADD, index.get());
+								backupRecordEvent(out, table, _record, DatabaseEventType.ADD/*, index.get()*/);
 								try {
 									if (out.currentPosition()>=backupConfiguration.getMaxBackupFileSizeInBytes())
 									{
-										saveTransactionQueue(rout.get(), nextTransactionReference.get(), currentBackupTime.get(), index.get());
+										saveTransactionQueue(rout.get(), nextTransactionReference.get(), currentBackupTime.get()/*, index.get()*/);
 										out.flush();
 										out.close();
-										index.set(null);
+										//index.set(null);
 
 										currentBackupTime.set(Math.max(currentBackupTime.get()+1, System.currentTimeMillis()));
 										File file=initNewFileForBackupIncrement(System.currentTimeMillis());
 										rout.set(out=new RandomFileOutputStream(file));
-										saveHeader(out, currentBackupTime.get(), false, index);
+										saveHeader(out, currentBackupTime.get(), false/*, index*/);
 										nextTransactionReference.set(saveTransactionHeader(rout.get(), currentBackupTime.get()));
 
 									}
@@ -923,7 +916,7 @@ public class BackupRestoreManager {
 							}
 						});
 					}
-					saveTransactionQueue(rout.get(), nextTransactionReference.get(), currentBackupTime.get(), index.get());
+					saveTransactionQueue(rout.get(), nextTransactionReference.get(), currentBackupTime.get()/*, index.get()*/);
 				}
 				finally {
 					rout.get().flush();
@@ -1098,6 +1091,7 @@ public class BackupRestoreManager {
 	 *
 	 * @return true if the given time corresponds to an available backup. False is chosen if the given time is too old to find a corresponding historical into the backups. In this previous case, it is the nearest backup that is chosen.
 	 */
+	@SuppressWarnings("UnusedReturnValue")
 	public boolean restoreDatabaseToDateUTC(long dateUTCInMs) throws DatabaseException {
 		return restoreDatabaseToDateUTC(dateUTCInMs, true);
 	}
@@ -1174,16 +1168,17 @@ public class BackupRestoreManager {
 						positionForDataRead(in, reference);
 						reference=false;
 						while (in.available()>0) {
-
+							int startTransaction=(int)in.currentPosition();
 							int nextTransaction=in.readInt();
 							if (in.readLong()>dateUTCInMs)
 								break;
-							if (in.skip(4)!=4)
+							if (in.readInt()!=-1)
 								throw new IOException();
 							final long dataTransactionStartPosition=in.currentPosition();
 							databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
 								@Override
 								public Void run() throws Exception {
+									int startRecord=(int)in.currentPosition();
 									byte eventTypeCode=in.readByte();
 									DatabaseEventType eventType=DatabaseEventType.getEnum(eventTypeCode);
 									if (eventType==null)
@@ -1240,7 +1235,7 @@ public class BackupRestoreManager {
 
 
 									}
-									if (in.skip(4)!=4)
+									if (in.readInt()!=startRecord)
 										throw new IOException();
 
 									return null;
@@ -1263,7 +1258,7 @@ public class BackupRestoreManager {
 							});
 							if (nextTransaction<0)
 								break;
-							if (in.skip(4)!=4)
+							if (in.readInt()!=startTransaction)
 								throw new IOException();
 
 						}
@@ -1288,7 +1283,7 @@ public class BackupRestoreManager {
 	}
 	private void positionForDataRead(RandomInputStream in, boolean reference) throws DatabaseException {
 		try {
-			in.seek(RecordsIndex.getListClassPosition(in));
+			in.seek(LIST_CLASSES_POSITION/*RecordsIndex.getListClassPosition(in)*/);
 			if (reference) {
 				int dataPosition = in.readInt();
 				in.seek(dataPosition);
@@ -1299,7 +1294,7 @@ public class BackupRestoreManager {
 		}
 	}
 
-	/**
+	/*/**
 	 * Restore the given record to the given date
 	 *
 	 * @param dateUTC the reference date to use for the restoration
@@ -1307,11 +1302,11 @@ public class BackupRestoreManager {
 	 * @param restoreWithCascade if true, all foreign key pointing to this record, or pointed by this record will be restored. If this boolean is set to false, this record will not be restored if it is in relation with other records that have been altered.
 	 * @return the reference of record that have been restored. This reference can contain a null pointer if the new version is a null record. Returns null if the restored has not been applied. It can occurs of the record have foreign keys (pointing to or pointed by) that does not exists or that changed, and that are not enabled to be restored (restoreWithCascade=false).
 	 */
-	public <R extends DatabaseRecord> Reference<R> restoreRecordToDateUTC(long dateUTC, R record, boolean restoreWithCascade) throws DatabaseException {
+	/*public <R extends DatabaseRecord> Reference<R> restoreRecordToDateUTC(long dateUTC, R record, boolean restoreWithCascade) throws DatabaseException {
 		return restoreRecordToDateUTC(dateUTC,record, restoreWithCascade, true);
-	}
+	}*/
 
-	/**
+/*	/**
 	 * Restore the given record to the given date
 	 *
 	 * @param dateUTC the reference date to use for the restoration
@@ -1320,7 +1315,7 @@ public class BackupRestoreManager {
 	 * @param chooseNearestBackupIfNoBackupMatch if set to true, and when no backup was found at the given date/time, than choose the older backup
 	 * @return the reference of record that have been restored. This reference can contain a null pointer if the new version is a null record. Returns null if the restored has not been applied. It can occurs of the record have foreign keys (pointing to or pointed by) that does not exists or that changed, and that are not enabled to be restored (restoreWithCascade=false). It can also occurs if no date correspond to the given date, and if chooseNearestBackupIfNoBackupMatch is equals to false.
 	 */
-	public <R extends DatabaseRecord> Reference<R> restoreRecordToDateUTC(long dateUTC, R record, boolean restoreWithCascade, boolean chooseNearestBackupIfNoBackupMatch) throws DatabaseException {
+	/*public <R extends DatabaseRecord> Reference<R> restoreRecordToDateUTC(long dateUTC, R record, boolean restoreWithCascade, boolean chooseNearestBackupIfNoBackupMatch) throws DatabaseException {
 		Table<R> table=databaseWrapper.getTableInstanceFromRecord(record);
 		return restoreRecordToDateUTC(dateUTC,restoreWithCascade, chooseNearestBackupIfNoBackupMatch, table, Table.getFields(table.getPrimaryKeysFieldAccessors(), record));
 	}
@@ -1336,7 +1331,7 @@ public class BackupRestoreManager {
 	 * @param <T> the table type
 	 * @return the reference of record that have been restored. This reference can contain a null pointer if the new version is a null record. Returns null if the restored has not been applied. It can occurs of the record have foreign keys (pointing to or pointed by) that does not exists or that changed, and that are not enabled to be restored (restoreWithCascade=false).
 	 */
-	public <R extends DatabaseRecord, T extends Table<R>> Reference<R> restoreRecordToDateUTC(long dateUTC, boolean restoreWithCascade, T table, Object ... primaryKeys) throws DatabaseException {
+	/*public <R extends DatabaseRecord, T extends Table<R>> Reference<R> restoreRecordToDateUTC(long dateUTC, boolean restoreWithCascade, T table, Object ... primaryKeys) throws DatabaseException {
 		return restoreRecordToDateUTC(dateUTC, restoreWithCascade, true, table, primaryKeys);
 	}
 	/**
@@ -1352,7 +1347,7 @@ public class BackupRestoreManager {
 	 * @param <T> the table type
 	 * @return the reference of record that have been restored. This reference can contain a null pointer if the new version is a null record. Returns null if the restored has not been applied. It can occurs of the record have foreign keys (pointing to or pointed by) that does not exists or that changed, and that are not enabled to be restored (restoreWithCascade=false). It can also occurs if no date correspond to the given date, and if chooseNearestBackupIfNoBackupMatch is equals to false.
 	 */
-	public <R extends DatabaseRecord, T extends Table<R>> Reference<R> restoreRecordToDateUTC(long dateUTC, boolean restoreWithCascade, boolean chooseNearestBackupIfNoBackupMatch, T table, Object ... primaryKeys) throws DatabaseException {
+	/*public <R extends DatabaseRecord, T extends Table<R>> Reference<R> restoreRecordToDateUTC(long dateUTC, boolean restoreWithCascade, boolean chooseNearestBackupIfNoBackupMatch, T table, Object ... primaryKeys) throws DatabaseException {
 		return restoreRecordToDateUTC(dateUTC, restoreWithCascade, chooseNearestBackupIfNoBackupMatch,  table, table.transformToMapField(primaryKeys));
 	}
 
@@ -1368,7 +1363,7 @@ public class BackupRestoreManager {
 	 * @param <T> the table type
 	 * @return the reference of record that have been restored. This reference can contain a null pointer if the new version is a null record. Returns null if the restored has not been applied. It can occurs of the record have foreign keys (pointing to or pointed by) that does not exists or that changed, and that are not enabled to be restored (restoreWithCascade=false).
 	 */
-	public <R extends DatabaseRecord, T extends Table<R>> Reference<R> restoreRecordToDateUTC(long dateUTC, boolean restoreWithCascade, T table, Map<String, Object> primaryKeys)
+	/*public <R extends DatabaseRecord, T extends Table<R>> Reference<R> restoreRecordToDateUTC(long dateUTC, boolean restoreWithCascade, T table, Map<String, Object> primaryKeys)
 	{
 		return restoreRecordToDateUTC(dateUTC, restoreWithCascade, true, table, primaryKeys);
 	}
@@ -1384,7 +1379,7 @@ public class BackupRestoreManager {
 	 * @param <T> the table type
 	 * @return the reference of record that have been restored. This reference can contain a null pointer if the new version is a null record. Returns null if the restored has not been applied. It can occurs of the record have foreign keys (pointing to or pointed by) that does not exists or that changed, and that are not enabled to be restored (restoreWithCascade=false). It can also occurs if no date correspond to the given date, and if chooseNearestBackupIfNoBackupMatch is equals to false.
 	 */
-	public <R extends DatabaseRecord, T extends Table<R>> Reference<R> restoreRecordToDateUTC(long dateUTC, boolean restoreWithCascade, boolean chooseNearestBackupIfNoBackupMatch, T table, Map<String, Object> primaryKeys) throws DatabaseException {
+	/*public <R extends DatabaseRecord, T extends Table<R>> Reference<R> restoreRecordToDateUTC(long dateUTC, boolean restoreWithCascade, boolean chooseNearestBackupIfNoBackupMatch, T table, Map<String, Object> primaryKeys) throws DatabaseException {
 		synchronized (this) {
 			Long foundFile=null;
 			int filePosition=-1;
@@ -1429,7 +1424,7 @@ public class BackupRestoreManager {
 
 
 		}
-	}
+	}*/
 
 	void createIfNecessaryNewBackupReference() throws DatabaseException {
 		if (doesCreateNewBackupReference())
@@ -1457,9 +1452,9 @@ public class BackupRestoreManager {
 				return null;
 			long last=getMaxDateUTCInMS();
 			AtomicLong fileTimeStamp=new AtomicLong();
-			AtomicReference<RecordsIndex> index=new AtomicReference<>();
-			RandomFileOutputStream rfos = getFileForBackupIncrementOrCreateIt(fileTimeStamp, index);
-			return new Transaction(fileTimeStamp.get(), last, rfos, index.get(), oldLastFile, oldLength);
+			//AtomicReference<RecordsIndex> index=new AtomicReference<>();
+			RandomFileOutputStream rfos = getFileForBackupIncrementOrCreateIt(fileTimeStamp/*, index*/);
+			return new Transaction(fileTimeStamp.get(), last, rfos, /*index.get(), */oldLastFile, oldLength);
 		}
 	}
 
@@ -1482,13 +1477,13 @@ public class BackupRestoreManager {
 		private long transactionUTC;
 		private int nextTransactionReference;
 		private final long fileTimeStamp;
-		private final RecordsIndex index;
+		//private final RecordsIndex index;
 		private final int oldLength;
 		private final long oldLastFile;
 
 
-		Transaction(long fileTimeStamp, long lastTransactionUTC, RandomFileOutputStream out, RecordsIndex index, long oldLastFile, int oldLength) throws DatabaseException {
-			this.index=index;
+		Transaction(long fileTimeStamp, long lastTransactionUTC, RandomFileOutputStream out, /*RecordsIndex index, */long oldLastFile, int oldLength) throws DatabaseException {
+			//this.index=index;
 			this.fileTimeStamp=fileTimeStamp;
 			this.lastTransactionUTC = lastTransactionUTC;
 			this.out=out;
@@ -1532,7 +1527,7 @@ public class BackupRestoreManager {
 		{
 			if (closed)
 				return;
-			saveTransactionQueue(out,nextTransactionReference, transactionUTC, index);
+			saveTransactionQueue(out,nextTransactionReference, transactionUTC/*, index*/);
 
 			try {
 
@@ -1553,7 +1548,7 @@ public class BackupRestoreManager {
 				return;
 			++transactionsNumber;
 
-			BackupRestoreManager.this.backupRecordEvent(out, _de.getTable(databaseWrapper), _de.getNewDatabaseRecord(), _de.getType(), index)
+			BackupRestoreManager.this.backupRecordEvent(out, _de.getTable(databaseWrapper), _de.getNewDatabaseRecord(), _de.getType()/*, index*/);
 		}
 
 	}

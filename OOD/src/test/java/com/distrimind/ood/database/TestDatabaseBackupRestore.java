@@ -44,7 +44,6 @@ import org.testng.Assert;
 import org.testng.annotations.*;
 
 import java.io.File;
-import java.lang.ref.Reference;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
@@ -143,6 +142,7 @@ public class TestDatabaseBackupRestore {
 
 	}
 
+	@SuppressWarnings("SameParameterValue")
 	private void assertEquals(DatabaseWrapper sourceWrapper, DatabaseWrapper destinationWrapper, boolean bidirectional) throws DatabaseException {
 		List<Table1.Record> lTable1=sourceWrapper.getTableInstance(Table1.class).getRecords();
 		List<Table2.Record> lTable2=sourceWrapper.getTableInstance(Table2.class).getRecords();
@@ -516,7 +516,7 @@ public class TestDatabaseBackupRestore {
 		testExternalBackupAndRestore(useSeveralRestorationPoint, useInternalBackup, restoreToEmptyDatabase, true);
 	}
 
-	private <R extends DatabaseRecord> void testRecordRestoration(DatabaseWrapper wrapper, BackupRestoreManager externalBRM, long dateUTC, R referenceRecord, boolean withCascade, boolean expectedToBeRestored, boolean currentDeleted, boolean oldDeleted) throws DatabaseException {
+	/*private <R extends DatabaseRecord> void testRecordRestoration(DatabaseWrapper wrapper, BackupRestoreManager externalBRM, long dateUTC, R referenceRecord, boolean withCascade, boolean expectedToBeRestored, boolean currentDeleted, boolean oldDeleted) throws DatabaseException {
 
 		Table<R> table=wrapper.getTableInstanceFromRecord(referenceRecord);
 		Map<String, Object> primaryKeys=Table.getFields(table.getPrimaryKeysFieldAccessors(), referenceRecord);
@@ -545,7 +545,7 @@ public class TestDatabaseBackupRestore {
 			Assert.assertNull(restoredRecord);
 
 
-	}
+	}*/
 
 	private Map<String, Object> getTable1_3Map()
 	{
@@ -639,13 +639,13 @@ public class TestDatabaseBackupRestore {
 
 	}
 
-	@Test(dataProvider = "DataProvExtIndBackupRestore", dependsOnMethods = "testExternalBackupAndRestore")
+	/*@Test(dataProvider = "DataProvExtIndBackupRestore", dependsOnMethods = "testExternalBackupAndRestore")
 	public void testIndividualExternalBackupAndRestore(boolean useInternalBackup, boolean useSeveralRestorationPoint, boolean addAdditionalData) throws DatabaseException, InterruptedException {
 		testIndividualBackupAndRestore(useInternalBackup, useSeveralRestorationPoint, addAdditionalData, true);
-	}
+	}*/
 
 
-	public void testIndividualBackupAndRestore(boolean useInternalBackup, boolean useSeveralRestorationPoint, boolean addAdditionalData, boolean useExternalManager) throws DatabaseException, InterruptedException {
+	/*public void testIndividualBackupAndRestore(boolean useInternalBackup, boolean useSeveralRestorationPoint, boolean addAdditionalData, boolean useExternalManager) throws DatabaseException, InterruptedException {
 		assert useExternalManager || useInternalBackup;
 		AtomicLong dataLoadStart=new AtomicLong();
 		AtomicLong dateRestoration=new AtomicLong();
@@ -742,20 +742,20 @@ public class TestDatabaseBackupRestore {
 			Assert.assertTrue(internalBRM.getMaxDateUTCInMS()<System.currentTimeMillis());
 		}
 
-	}
+	}*/
 
-	@Test(dataProvider = "DataProvIntBackupRestore", dependsOnMethods = "testIndividualExternalBackupAndRestore")
+	@Test(dataProvider = "DataProvIntBackupRestore", dependsOnMethods = "testExternalBackupAndRestore")
 	public void testInternalBackupAndRestore(boolean useSeveralRestorationPoint) throws DatabaseException, InterruptedException {
 		testExternalBackupAndRestore(useSeveralRestorationPoint, true, false, false);
 	}
 
-	@Test(dataProvider = "DataProvIntIndBackupRestore", dependsOnMethods = "testInternalBackupAndRestore")
+	/*@Test(dataProvider = "DataProvIntIndBackupRestore", dependsOnMethods = "testInternalBackupAndRestore")
 	public void testIndividualInternalBackupAndRestore(boolean useSeveralRestorationPoint, boolean addAdditionalData) throws DatabaseException, InterruptedException {
 		testIndividualBackupAndRestore(true, useSeveralRestorationPoint, addAdditionalData, false);
-	}
+	}*/
 
 
-	@Test(dependsOnMethods = "testIndividualInternalBackupAndRestore")
+	@Test(dependsOnMethods = "testInternalBackupAndRestore")
 	public void testBackupCleaning() throws DatabaseException, InterruptedException {
 		DatabaseWrapper wrapper=new EmbeddedH2DatabaseWrapper(databaseDirectory);
 		BackupConfiguration backupConf=new BackupConfiguration(200L, 1000L, 1000000, 100L, null);

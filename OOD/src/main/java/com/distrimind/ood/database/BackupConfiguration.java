@@ -67,23 +67,23 @@ public class BackupConfiguration {
 	 */
 	private long maxBackupFileAgeInMs;
 
-	/**
+/*	/**
 	 * Max backup's index size in bytes
 	 */
-	private int maxIndexSize=16384;
+	//private int maxIndexSize=16384;
 
 	/**
 	 * The progress monitor's parameter
 	 */
 	private ProgressMonitorParameters progressMonitorParameters;
 
-	public BackupConfiguration(long backupReferenceDurationInMs, long maxBackupDurationInMs, int maxBackupFileSizeInBytes, long maxBackupFileAgeInMs, int maxIndexSize, ProgressMonitorParameters progressMonitorParameters) {
+	public BackupConfiguration(long backupReferenceDurationInMs, long maxBackupDurationInMs, int maxBackupFileSizeInBytes, long maxBackupFileAgeInMs/*, int maxIndexSize*/, ProgressMonitorParameters progressMonitorParameters) {
 		this.backupReferenceDurationInMs = backupReferenceDurationInMs;
 		this.maxBackupDurationInMs = maxBackupDurationInMs;
 		this.maxBackupFileSizeInBytes = maxBackupFileSizeInBytes;
 		this.maxBackupFileAgeInMs=maxBackupFileAgeInMs;
 		this.progressMonitorParameters = progressMonitorParameters;
-		this.maxIndexSize=maxIndexSize;
+		//this.maxIndexSize=maxIndexSize;
 	}
 
 	public long getBackupReferenceDurationInMs() {
@@ -116,7 +116,7 @@ public class BackupConfiguration {
 		this.progressMonitorParameters = progressMonitorParameters;
 	}
 
-	public int getMaxIndexSize() {
+	/*public int getMaxIndexSize() {
 		return maxIndexSize;
-	}
+	}*/
 }
