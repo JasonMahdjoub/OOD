@@ -57,8 +57,6 @@ import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.SecureRandomType;
 import com.distrimind.util.crypto.SymmetricEncryptionType;
 import com.distrimind.util.crypto.SymmetricSecretKey;
-import gnu.vm.jgnu.security.NoSuchAlgorithmException;
-import gnu.vm.jgnu.security.NoSuchProviderException;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.DataProvider;
@@ -68,6 +66,8 @@ import java.io.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.sql.Blob;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -250,7 +250,7 @@ public abstract class TestDatabase {
 	}
 
 	public TestDatabase()
-			throws DatabaseException, NoSuchAlgorithmException, gnu.vm.jgnu.security.NoSuchProviderException {
+			throws DatabaseException, NoSuchAlgorithmException, NoSuchProviderException {
 		typeSecretKey = SymmetricEncryptionType.AES_CBC_PKCS5Padding;
 		secretKey = typeSecretKey.getKeyGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKey();
 		subField = getSubField();

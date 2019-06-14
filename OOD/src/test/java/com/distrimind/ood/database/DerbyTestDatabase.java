@@ -36,33 +36,20 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import com.distrimind.ood.database.database.*;
+import com.distrimind.ood.database.database.Table1;
 import com.distrimind.ood.database.database.Table1.Record;
-import com.distrimind.ood.database.exceptions.ConcurentTransactionDatabaseException;
+import com.distrimind.ood.database.database.Table3;
 import com.distrimind.ood.database.exceptions.ConstraintsNotRespectedDatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.ood.database.exceptions.FieldDatabaseException;
-import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
-import com.distrimind.util.DecentralizedIDGenerator;
 import com.distrimind.util.FileTools;
-import com.distrimind.util.RenforcedDecentralizedIDGenerator;
-import com.distrimind.util.SecuredDecentralizedID;
-import com.distrimind.util.crypto.SecureRandomType;
-import com.distrimind.util.crypto.SymmetricEncryptionType;
-import com.distrimind.util.crypto.SymmetricSecretKey;
-import gnu.vm.jgnu.security.NoSuchAlgorithmException;
-import gnu.vm.jgnu.security.NoSuchProviderException;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
 import java.io.File;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.*;
-
-import static org.testng.Assert.*;
-import static org.testng.Assert.assertTrue;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.util.HashMap;
 
 /**
  * 

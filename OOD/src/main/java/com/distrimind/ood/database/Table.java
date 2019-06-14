@@ -1120,7 +1120,7 @@ public abstract class Table<T extends DatabaseRecord> {
 		return true;
 	}
 
-	boolean isLocallyDecentralizable() {
+	public boolean isLocallyDecentralizable() {
 		return !nonDecentralizableAnnotation && hasDecentralizedPrimaryKey() && !hasNonDecentralizedIDUniqueKey();
 	}
 

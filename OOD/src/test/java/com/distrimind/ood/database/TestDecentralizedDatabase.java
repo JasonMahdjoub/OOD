@@ -41,6 +41,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.DecentralizedIDGenerator;
+import com.distrimind.util.crypto.ASymmetricAuthenticatedSignatureType;
 import com.distrimind.util.crypto.SecureRandomType;
 import org.testng.Assert;
 import org.testng.annotations.*;
@@ -432,18 +433,20 @@ public abstract class TestDecentralizedDatabase {
 		db.getDbwrapper()
 				.loadDatabase(new DatabaseConfiguration(TableAlone.class.getPackage(), new DatabaseLifeCycles() {
 
+
 					@Override
-					public void transferDatabaseFromOldVersion(DatabaseConfiguration _newDatabaseTables) {
+					public void transferDatabaseFromOldVersion(DatabaseWrapper wrapper, DatabaseConfiguration oldDatabaseConfiguration, DatabaseConfiguration newDatabaseConfiguration) throws Exception {
+
 					}
 
 					@Override
-					public boolean hasToRemoveOldDatabase() {
+					public void afterDatabaseCreation(DatabaseWrapper wrapper, DatabaseConfiguration newDatabaseConfiguration) throws Exception {
+
+					}
+
+					@Override
+					public boolean hasToRemoveOldDatabase() throws Exception {
 						return false;
-					}
-
-					@Override
-					public void afterDatabaseCreation(DatabaseConfiguration _newDatabaseTables) {
-
 					}
 				}, null), true);
 
@@ -731,7 +734,7 @@ public abstract class TestDecentralizedDatabase {
 		TableAlone.Record ralone = new TableAlone.Record();
 		ralone.id = new DecentralizedIDGenerator();
 		try {
-			ralone.id2 = ASymmetricAuthentifiedSignatureType.BC_SHA512withECDSA_CURVE_25519.getKeyPairGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKeyPair().getASymmetricPublicKey();
+			ralone.id2 = ASymmetricAuthenticatedSignatureType.BC_SHA512withECDSA_CURVE_25519.getKeyPairGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKeyPair().getASymmetricPublicKey();
 		}
 		catch(Exception e)
 		{
@@ -794,7 +797,7 @@ public abstract class TestDecentralizedDatabase {
 	private TablePointing.Record generatesTablePointingRecord(TablePointed.Record rpointed) throws DatabaseException {
 		TablePointing.Record rpointing1 = new TablePointing.Record();
 		try {
-			rpointing1.id = ASymmetricAuthentifiedSignatureType.BC_SHA512withECDSA_CURVE_25519.getKeyPairGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKeyPair().getASymmetricPublicKey();
+			rpointing1.id = ASymmetricAuthenticatedSignatureType.BC_SHA512withECDSA_CURVE_25519.getKeyPairGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKeyPair().getASymmetricPublicKey();
 		}
 		catch(Exception e)
 		{
@@ -814,7 +817,7 @@ public abstract class TestDecentralizedDatabase {
 
 		TablePointing.Record rpointing1 = new TablePointing.Record();
 		try {
-			rpointing1.id = ASymmetricAuthentifiedSignatureType.BC_SHA512withECDSA_CURVE_25519.getKeyPairGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKeyPair().getASymmetricPublicKey();
+			rpointing1.id = ASymmetricAuthenticatedSignatureType.BC_SHA512withECDSA_CURVE_25519.getKeyPairGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKeyPair().getASymmetricPublicKey();
 		}
 		catch(Exception e)
 		{
@@ -825,7 +828,7 @@ public abstract class TestDecentralizedDatabase {
 		rpointing1 = db.getTablePointing().addRecord(rpointing1);
 		TablePointing.Record rpointing2 = new TablePointing.Record();
 		try {
-			rpointing2.id = ASymmetricAuthentifiedSignatureType.BC_SHA512withECDSA_CURVE_25519.getKeyPairGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKeyPair().getASymmetricPublicKey();
+			rpointing2.id = ASymmetricAuthenticatedSignatureType.BC_SHA512withECDSA_CURVE_25519.getKeyPairGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKeyPair().getASymmetricPublicKey();
 		}
 		catch(Exception e)
 		{
