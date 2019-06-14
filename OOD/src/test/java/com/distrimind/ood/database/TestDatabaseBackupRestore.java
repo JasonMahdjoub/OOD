@@ -497,7 +497,14 @@ public class TestDatabaseBackupRestore {
 
 
 		Assert.assertNotNull(usedBRM);
+		int oldVersion=wrapper.getCurrentDatabaseVersion(Table1.class.getPackage());
 		usedBRM.restoreDatabaseToDateUTC(dateRestoration.get());
+		Assert.assertNotEquals(wrapper.getCurrentDatabaseVersion(Table1.class.getPackage()), oldVersion);
+		Assert.assertFalse(wrapper.doesVersionExists(Table1.class.getPackage(), oldVersion));
+		wrapper.close();
+		wrapper=loadWrapper(databaseDirectory, useInternalBackup);
+		Assert.assertNotEquals(wrapper.getCurrentDatabaseVersion(Table1.class.getPackage()), oldVersion);
+		Assert.assertFalse(wrapper.doesVersionExists(Table1.class.getPackage(), oldVersion));
 		assertEquals(wrapperForReferenceDatabase,wrapper, true);
 		Assert.assertTrue(usedBRM.getMinDateUTCInMs()>dataLoadStart.get());
 		Assert.assertTrue(usedBRM.getMinDateUTCInMs()<usedBRM.getMaxDateUTCInMS());
