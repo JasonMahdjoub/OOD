@@ -60,7 +60,7 @@ public class OOD {
 		Calendar c1 = Calendar.getInstance();
 		c1.set(2013, Calendar.APRIL, 1);
 		Calendar c2 = Calendar.getInstance();
-		c2.set(2019, Calendar.MAY, 17);
+		c2.set(2019, Calendar.JUNE, 14);
 		VERSION = new Version("Object Oriented Database", "OOD", (short)2, (short)0, (short)0, Version.Type.Stable, (short)1, c1.getTime(),
 				c2.getTime());
 		try {
@@ -73,9 +73,9 @@ public class OOD {
 			VERSION.addDeveloper(new PersonDeveloper("mahdjoub", "jason", c.getTime()));
 
 			c = Calendar.getInstance();
-			c.set(2019, Calendar.MAY, 17);
+			c.set(2019, Calendar.JUNE, 14);
 			Description d = new Description((short)2, (short)0, (short)0, Version.Type.Stable, (short)1, c.getTime());
-			d.addItem("Update Utils to 3.29.0 Stable");
+			d.addItem("Update Utils to 4.2.1 Stable");
 			d.addItem("Add backup/restore manager, with historical management");
 			d.addItem("Better manage database versions");
 			VERSION.addDescription(d);

@@ -19,5 +19,10 @@
 		    <class name="com.distrimind.ood.database.HSQLDBTestDecentralizedDatabase" />
 		</classes>
 	</test>
+	<test name="testBackupRestore">
+		<classes>
+			<class name="com.distrimind.ood.database.TestDatabaseBackupRestore" />
+		</classes>
+	</test>
 
 </suite>
