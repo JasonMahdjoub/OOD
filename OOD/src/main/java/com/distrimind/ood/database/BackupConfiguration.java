@@ -119,4 +119,24 @@ public class BackupConfiguration {
 	/*public int getMaxIndexSize() {
 		return maxIndexSize;
 	}*/
+
+	private static final int maxStreamBufferSizeForBackupRestoration=2097152;
+
+	int getMaxStreamBufferSizeForBackupRestoration()
+	{
+		return Math.min(maxStreamBufferSizeForBackupRestoration, getMaxBackupFileSizeInBytes());
+	}
+	int getMaxStreamBufferNumberForBackupRestoration()
+	{
+		return maxStreamBufferSizeForBackupRestoration>getMaxBackupFileSizeInBytes()?1:2;
+	}
+	int getMaxStreamBufferSizeForTransaction()
+	{
+		return 8192;
+	}
+	int getMaxStreamBufferNumberForTransaction()
+	{
+		return 3;
+	}
+
 }

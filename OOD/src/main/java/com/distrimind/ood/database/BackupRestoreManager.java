@@ -38,10 +38,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.i18n.DatabaseMessages;
 import com.distrimind.util.FileTools;
-import com.distrimind.util.io.RandomFileInputStream;
-import com.distrimind.util.io.RandomFileOutputStream;
-import com.distrimind.util.io.RandomInputStream;
-import com.distrimind.util.io.RandomOutputStream;
+import com.distrimind.util.io.*;
 import com.distrimind.util.progress_monitors.ProgressMonitorParameters;
 
 import java.io.*;
@@ -878,9 +875,11 @@ public class BackupRestoreManager {
 						}
 					}
 				}
+				final int maxBufferSize=backupConfiguration.getMaxStreamBufferSizeForBackupRestoration();
+				final int maxBuffersNumber=backupConfiguration.getMaxStreamBufferNumberForBackupRestoration();
 
 				File file = initNewFileForBackupReference(currentBackupTime.get());
-				final AtomicReference<RandomFileOutputStream> rout=new AtomicReference<>(new RandomFileOutputStream(file, RandomFileOutputStream.AccessMode.READ_AND_WRITE));
+				final AtomicReference<RandomOutputStream> rout=new AtomicReference<RandomOutputStream>(new BufferedRandomOutputStream(new RandomFileOutputStream(file, RandomFileOutputStream.AccessMode.READ_AND_WRITE), maxBufferSize, maxBuffersNumber));
 				try {
 					//final AtomicReference<RecordsIndex> index=new AtomicReference<>(null);
 					saveHeader(rout.get(), currentBackupTime.get(), true/*, index*/);
@@ -889,7 +888,7 @@ public class BackupRestoreManager {
 					for (Class<? extends Table<?>> c : classes) {
 						final Table<?> table = databaseWrapper.getTableInstance(c);
 						table.getPaginedRecordsWithUnknownType(-1, -1, new Filter<DatabaseRecord>() {
-							RandomFileOutputStream out=rout.get();
+							RandomOutputStream out=rout.get();
 							@Override
 							public boolean nextRecord(DatabaseRecord _record) throws DatabaseException {
 								backupRecordEvent(out, table, _record, DatabaseEventType.ADD/*, index.get()*/);
@@ -903,7 +902,7 @@ public class BackupRestoreManager {
 
 										currentBackupTime.set(Math.max(currentBackupTime.get()+1, System.currentTimeMillis()));
 										File file=initNewFileForBackupIncrement(System.currentTimeMillis());
-										rout.set(out=new RandomFileOutputStream(file));
+										rout.set(out=new BufferedRandomOutputStream(new RandomFileOutputStream(file), maxBufferSize, maxBuffersNumber));
 										saveHeader(out, currentBackupTime.get(), false/*, index*/);
 										nextTransactionReference.set(saveTransactionHeader(rout.get(), currentBackupTime.get()));
 
@@ -1159,11 +1158,13 @@ public class BackupRestoreManager {
 					Table<?> t = databaseWrapper.getTableInstance(c, newVersion);
 					tables.add(t);
 				}
+				final int maxBufferSize=backupConfiguration.getMaxStreamBufferSizeForBackupRestoration();
+				final int maxBuffersNumber=backupConfiguration.getMaxStreamBufferNumberForBackupRestoration();
 
 				boolean reference=true;
 				while (currentFile!=null)
 				{
-					try(RandomFileInputStream in=new RandomFileInputStream(currentFile))
+					try(RandomInputStream in=new BufferedRandomInputStream(new RandomFileInputStream(currentFile), maxBufferSize, maxBuffersNumber))
 					{
 						positionForDataRead(in, reference);
 						reference=false;
@@ -1453,7 +1454,10 @@ public class BackupRestoreManager {
 			long last=getMaxDateUTCInMS();
 			AtomicLong fileTimeStamp=new AtomicLong();
 			//AtomicReference<RecordsIndex> index=new AtomicReference<>();
-			RandomFileOutputStream rfos = getFileForBackupIncrementOrCreateIt(fileTimeStamp/*, index*/);
+			final int maxBufferSize=backupConfiguration.getMaxStreamBufferSizeForTransaction();
+			final int maxBuffersNumber=backupConfiguration.getMaxStreamBufferNumberForTransaction();
+
+			RandomOutputStream rfos = new BufferedRandomOutputStream(getFileForBackupIncrementOrCreateIt(fileTimeStamp/*, index*/), maxBufferSize, maxBuffersNumber);
 			return new Transaction(fileTimeStamp.get(), last, rfos, /*index.get(), */oldLastFile, oldLength);
 		}
 	}
@@ -1472,7 +1476,7 @@ public class BackupRestoreManager {
 	{
 		long lastTransactionUTC;
 		int transactionsNumber=0;
-		RandomFileOutputStream out;
+		RandomOutputStream out;
 		private boolean closed=false;
 		private long transactionUTC;
 		private int nextTransactionReference;
@@ -1482,7 +1486,7 @@ public class BackupRestoreManager {
 		private final long oldLastFile;
 
 
-		Transaction(long fileTimeStamp, long lastTransactionUTC, RandomFileOutputStream out, /*RecordsIndex index, */long oldLastFile, int oldLength) throws DatabaseException {
+		Transaction(long fileTimeStamp, long lastTransactionUTC, RandomOutputStream out, /*RecordsIndex index, */long oldLastFile, int oldLength) throws DatabaseException {
 			//this.index=index;
 			this.fileTimeStamp=fileTimeStamp;
 			this.lastTransactionUTC = lastTransactionUTC;
