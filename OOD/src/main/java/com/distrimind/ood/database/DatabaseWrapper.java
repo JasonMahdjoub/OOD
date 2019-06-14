@@ -3062,48 +3062,51 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		return getCurrentDatabaseVersion(p, false);
 	}
 	int getCurrentDatabaseVersion(final Package p, final boolean forceUpdate) throws DatabaseException {
-		return (int)runTransaction(new Transaction() {
-			@Override
-			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
-				Database db=null;
-				if (!forceUpdate)
-					db=sql_database.get(p);
-				if (db==null)
-				{
-					try {
+		lockRead();
+		try {
+			Database db = null;
+			if (!forceUpdate)
+				db = sql_database.get(p);
+			if (db == null) {
+				return (int) runTransaction(new Transaction() {
+					@Override
+					public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
+						try {
 
-						PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
-								.prepareStatement("SELECT CURRENT_DATABASE_VERSION FROM "+DatabaseWrapper.VERSIONS_OF_DATABASE+" WHERE PACKAGE_NAME='"
-										+getLongPackageName(p)+"'"+ getSqlComma());
-						ResultSet rs = pst.executeQuery();
-						if (rs.next())
-							return rs.getInt(1);
-						else
-							return 0;
+							PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
+									.prepareStatement("SELECT CURRENT_DATABASE_VERSION FROM " + DatabaseWrapper.VERSIONS_OF_DATABASE + " WHERE PACKAGE_NAME='"
+											+ getLongPackageName(p) + "'" + getSqlComma());
+							ResultSet rs = pst.executeQuery();
+							if (rs.next())
+								return rs.getInt(1);
+							else
+								return 0;
+						} catch (SQLException e) {
+							throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
+						}
 					}
-					catch (SQLException e) {
-						throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
+
+					@Override
+					public TransactionIsolation getTransactionIsolation() {
+						return TransactionIsolation.TRANSACTION_READ_COMMITTED;
 					}
-				}
-				else
-					return db.getCurrentVersion();
-			}
 
-			@Override
-			public TransactionIsolation getTransactionIsolation() {
-				return TransactionIsolation.TRANSACTION_READ_COMMITTED;
-			}
+					@Override
+					public boolean doesWriteData() {
+						return false;
+					}
 
-			@Override
-			public boolean doesWriteData() {
-				return false;
-			}
+					@Override
+					public void initOrReset() {
 
-			@Override
-			public void initOrReset() {
-
-			}
-		}, true);
+					}
+				}, true);
+			} else
+				return db.getCurrentVersion();
+		}
+		finally {
+			unlockRead();
+		}
 	}
 	final void validateNewDatabaseVersionAndDeleteOldVersion(final DatabaseConfiguration configuration, final int oldDatabasaseVersion, final int newDatabaseVersion) throws DatabaseException {
 		try {
