@@ -109,10 +109,10 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 					Class.forName("org.h2.Driver");
 
 					//noinspection SingleStatementInBlock,unchecked
-					H2BlobConstructor=(Constructor<? extends Blob>)Class.forName("org.h2.jdbc.JdbcBlob").getDeclaredConstructor(Class.forName("org.h2.jdbc.JdbcConnection"), Class.forName("org.h2.value.Value"), Class.forName("org.h2.jdbc.JdbcLob#State"), int.class);
+					H2BlobConstructor=(Constructor<? extends Blob>)Class.forName("org.h2.jdbc.JdbcBlob").getDeclaredConstructor(Class.forName("org.h2.jdbc.JdbcConnection"), Class.forName("org.h2.value.Value"), Class.forName("org.h2.jdbc.JdbcLob$State"), int.class);
 					H2ValueMethod=Class.forName("org.h2.value.ValueBytes").getDeclaredMethod("get", byte[].class);
 					//DbBackupMain=Class.forName("org.hsqldb.lib.tar.DbBackupMain").getDeclaredMethod("main", (new String[0]).getClass());
-					for (Object o : Class.forName("org.h2.jdbc.JdbcLob#State").getEnumConstants())
+					for (Object o : Class.forName("org.h2.jdbc.JdbcLob$State").getEnumConstants())
 					{
 						if (((Enum)o).name().equals("NEW"))
 						{
@@ -139,7 +139,8 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 			Connection c = DriverManager
 					.getConnection("jdbc:h2:file:" + getH2DataFileName(_file_name), "SA", "");
 			databaseShutdown.set(false);
-
+			if (c==null)
+				throw new DatabaseLoadingException("Impossible to create the database into the file " + _file_name);
 			return c;
 		} catch (Exception e) {
 			throw new DatabaseLoadingException("Impossible to create the database into the file " + _file_name, e);

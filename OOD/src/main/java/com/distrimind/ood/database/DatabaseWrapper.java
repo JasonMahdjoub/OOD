@@ -1392,6 +1392,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					closeConnection(sql_connection, false);
 				if (sql_connection == null || sql_connection.isClosed())
 					sql_connection = reopenConnection();
+
 				/*
 				 * } finally { this.locker.unlockWrite(); }
 				 */
@@ -3060,29 +3061,49 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	int getCurrentDatabaseVersion(Package p) throws DatabaseException {
 		return getCurrentDatabaseVersion(p, false);
 	}
-	int getCurrentDatabaseVersion(Package p, boolean forceUpdate) throws DatabaseException {
-		Database db=null;
-		if (!forceUpdate)
-			db=sql_database.get(p);
-		if (db==null)
-		{
-			try {
+	int getCurrentDatabaseVersion(final Package p, final boolean forceUpdate) throws DatabaseException {
+		return (int)runTransaction(new Transaction() {
+			@Override
+			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
+				Database db=null;
+				if (!forceUpdate)
+					db=sql_database.get(p);
+				if (db==null)
+				{
+					try {
 
-				PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
-						.prepareStatement("SELECT CURRENT_DATABASE_VERSION FROM "+DatabaseWrapper.VERSIONS_OF_DATABASE+" WHERE PACKAGE_NAME='"
-								+getLongPackageName(p)+"'"+ getSqlComma());
-				ResultSet rs = pst.executeQuery();
-				if (rs.next())
-					return rs.getInt(1);
+						PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
+								.prepareStatement("SELECT CURRENT_DATABASE_VERSION FROM "+DatabaseWrapper.VERSIONS_OF_DATABASE+" WHERE PACKAGE_NAME='"
+										+getLongPackageName(p)+"'"+ getSqlComma());
+						ResultSet rs = pst.executeQuery();
+						if (rs.next())
+							return rs.getInt(1);
+						else
+							return 0;
+					}
+					catch (SQLException e) {
+						throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
+					}
+				}
 				else
-					return 0;
+					return db.getCurrentVersion();
 			}
-			catch (SQLException e) {
-				throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
+
+			@Override
+			public TransactionIsolation getTransactionIsolation() {
+				return TransactionIsolation.TRANSACTION_READ_COMMITTED;
 			}
-		}
-		else
-			return db.getCurrentVersion();
+
+			@Override
+			public boolean doesWriteData() {
+				return false;
+			}
+
+			@Override
+			public void initOrReset() {
+
+			}
+		}, true);
 	}
 	final void validateNewDatabaseVersionAndDeleteOldVersion(final DatabaseConfiguration configuration, final int oldDatabasaseVersion, final int newDatabaseVersion) throws DatabaseException {
 		try {
@@ -3211,7 +3232,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 */
 	public final void loadDatabase(final DatabaseConfiguration configuration,
 								   final boolean createDatabaseIfNecessaryAndCheckIt) throws DatabaseException {
-		loadDatabase(configuration, createDatabaseIfNecessaryAndCheckIt, getCurrentDatabaseVersion(configuration.getPackage()));
+		loadDatabase(configuration, createDatabaseIfNecessaryAndCheckIt, -1);
 	}
 	final void loadDatabase(final DatabaseConfiguration configuration,
 			final boolean createDatabaseIfNecessaryAndCheckIt, int databaseVersion) throws DatabaseException {
@@ -3230,7 +3251,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 
 				allNotFound=loadDatabaseTables(configuration, createDatabaseIfNecessaryAndCheckIt, databaseVersion);
-
+				if (databaseVersion==-1)
+					databaseVersion=getCurrentDatabaseVersion(configuration.getPackage());
 				if (allNotFound) {
 					try {
 						int currentVersion=getCurrentDatabaseVersion(configuration.getPackage());
@@ -3282,10 +3304,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 	}
 
+
 	/*
 	 * result found into actualDatabaseLoading
 	 */
-	final boolean loadDatabaseTables(final DatabaseConfiguration configuration, final boolean createDatabaseIfNecessaryAndCheckIt, final int version) throws DatabaseException {
+	final boolean loadDatabaseTables(final DatabaseConfiguration configuration, final boolean createDatabaseIfNecessaryAndCheckIt, final int _version) throws DatabaseException {
 
 		return (boolean)runTransaction(new Transaction() {
 
@@ -3315,11 +3338,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						Statement st = getConnectionAssociatedWithCurrentThread().getConnection()
 								.createStatement();
 						st.executeUpdate("CREATE TABLE " + VERSIONS_OF_DATABASE
-								+ " PACKAGE_NAME VARCHAR(512), CURRENT_DATABASE_VERSION INTEGER "
+								+ "(PACKAGE_NAME VARCHAR(512), CURRENT_DATABASE_VERSION INTEGER "
 								+", CONSTRAINT VERSION_DB_ID_PK PRIMARY KEY(PACKAGE_NAME))"
 								+ getSqlComma());
 						st.close();
 					}
+					int version=_version;
+					if (version==-1)
+						version=getCurrentDatabaseVersion(configuration.getPackage());
 
 					ArrayList<Table<?>> list_tables = new ArrayList<>(configuration.getTableClasses().size());
 					DatabasePerVersion dpv=new DatabasePerVersion();
