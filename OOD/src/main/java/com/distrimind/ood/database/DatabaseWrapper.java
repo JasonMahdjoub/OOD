@@ -1539,6 +1539,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		private final Thread thread;
 		private final long threadID;
 		private final Set<Table<?>> memoryTablesToRefresh;
+		private final HashMap<Package, BackupRestoreManager.Transaction> backupManager=new HashMap<>();
 		// private boolean sessionLocked=false;
 
 		Session(Connection connection, Thread thread) {
@@ -1577,17 +1578,44 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			return thread;
 		}
 
+		private BackupRestoreManager.Transaction getBackupManagerAndStartTransactionIfNecessary(Package p) throws DatabaseException {
+			if (!backupManager.containsKey(p)) {
+				BackupRestoreManager brm = getBackupRestoreManager(p);
+
+				if (brm!=null)
+				{
+					BackupRestoreManager.Transaction res=brm.startTransaction();
+					backupManager.put(p, res);
+					return res;
+				}
+				else {
+					backupManager.put(p, null);
+					return null;
+				}
+			}
+			else
+				return backupManager.get(p);
+		}
+
 		@SuppressWarnings("UnusedReturnValue")
-        boolean addEvent(Table<?> table, TableEvent<?> de) throws DatabaseException {
+        boolean addEvent(Table<?> table, TableEvent<?> de, boolean applySynchro) throws DatabaseException {
 			if (table == null)
 				throw new NullPointerException("table");
 			if (de == null)
 				throw new NullPointerException("de");
-			if (!table.supportSynchronizationWithOtherPeers())
-				return false;
 			Package p = table.getClass().getPackage();
+
+			BackupRestoreManager.Transaction backupTransaction=getBackupManagerAndStartTransactionIfNecessary(p);
+			if (backupTransaction!=null)
+				backupTransaction.backupRecordEvent(table, de);
+			if (!applySynchro)
+				return false;
+
 			if (p.equals(DatabaseWrapper.class.getPackage()))
 				return false;
+			if (!table.supportSynchronizationWithOtherPeers())
+				return false;
+
 			if (!getHooksTransactionsTable().supportPackage(p))
 				return false;
 			if (!transactionToSynchronize)
@@ -1907,7 +1935,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 		}
 
-		void cancelTmpTransaction() {
+		void cancelTmpTransaction() throws DatabaseException {
 			resetTmpTransaction(false);
 			/*if (eventsStoredIntoMemory) {
 				resetTmpTransaction();
@@ -2009,7 +2037,18 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		}
 
-		void resetTmpTransaction(boolean transactionToSynchronize) {
+		private void cancelBackupTransaction() throws DatabaseException {
+			for (BackupRestoreManager.Transaction t : backupManager.values())
+			{
+				if (t!=null)
+					t.cancelTransaction();
+			}
+			backupManager.clear();
+
+		}
+
+		void resetTmpTransaction(boolean transactionToSynchronize) throws DatabaseException {
+			cancelBackupTransaction();
 			temporaryTransactions.clear();
 			actualTransactionEventsNumber.set(0);
 			eventsStoredIntoMemory = true;
@@ -2017,6 +2056,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		boolean validateTmpTransaction() throws DatabaseException {
+			for (BackupRestoreManager.Transaction t : backupManager.values())
+			{
+				if (t!=null)
+					t.validateTransaction();
+			}
+			backupManager.clear();
 			if (!transactionToSynchronize)
 				return false;
 			if (eventsStoredIntoMemory) {

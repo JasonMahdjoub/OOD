@@ -981,12 +981,14 @@ public class BackupRestoreManager {
 	}
 
 
+	@SuppressWarnings("SameParameterValue")
 	private void activateBackupReferenceCreation(boolean backupNow) throws DatabaseException {
 		synchronized (this) {
 			try {
 				if (!computeDatabaseReference.createNewFile())
 					throw new DatabaseException("Impossible to create file " + computeDatabaseReference);
-				createIfNecessaryNewBackupReference();
+				if (backupNow)
+					createIfNecessaryNewBackupReference();
 			} catch (IOException e) {
 				throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 			}
@@ -1547,12 +1549,12 @@ public class BackupRestoreManager {
 			closed=true;
 		}
 
-		final void backupRecordEvent(RandomOutputStream out, TableEvent<?> _de) throws DatabaseException {
+		final void backupRecordEvent(Table<?> table, TableEvent<?> _de) throws DatabaseException {
 			if (closed)
 				return;
 			++transactionsNumber;
 
-			BackupRestoreManager.this.backupRecordEvent(out, _de.getTable(databaseWrapper), _de.getNewDatabaseRecord(), _de.getType()/*, index*/);
+			BackupRestoreManager.this.backupRecordEvent(out, table, _de.getNewDatabaseRecord(), _de.getType()/*, index*/);
 		}
 
 	}
