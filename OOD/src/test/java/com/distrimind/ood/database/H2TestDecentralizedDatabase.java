@@ -73,23 +73,23 @@ public class H2TestDecentralizedDatabase extends TestDecentralizedDatabase {
 
 	@Override
 	public void removeDatabaseFiles1() {
-		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(new File(database_file_name1 + ".data"));
+		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(new File(database_file_name1 ));
 
 	}
 
 	@Override
 	public void removeDatabaseFiles2() {
-		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(new File(database_file_name2 + ".data"));
+		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(new File(database_file_name2 ));
 	}
 
 	@Override
 	public void removeDatabaseFiles3() {
-		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(new File(database_file_name3 + ".data"));
+		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(new File(database_file_name3 ));
 	}
 
 	@Override
 	public void removeDatabaseFiles4() {
-		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(new File(database_file_name4 + ".data"));
+		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(new File(database_file_name4 ));
 	}
 
 }

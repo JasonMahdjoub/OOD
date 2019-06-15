@@ -3035,7 +3035,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		return getInternalTableNameFromTableID(tTableClass, getTableID(tTableClass, databaseVersion));
 	}
 
-	private String getInternalTableNameFromTableID(Class<?> tTableClass, int tableID) throws DatabaseException {
+	String getInternalTableNameFromTableID(Class<?> tTableClass, int tableID) throws DatabaseException {
 		TableName tn=tTableClass.getAnnotation(TableName.class);
 		if (tn==null)
 			return Table.TABLE_NAME_PREFIX+tableID+"__";
@@ -3136,16 +3136,42 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	}
 
 
-	boolean doesVersionExists(Package p, int databaseVersion) throws DatabaseException {
-		try {
-			PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
-					.prepareStatement("SELECT count(TABLE_VERSION) FROM " + ROW_PROPERTIES_OF_TABLES + " WHERE PACKAGE_NAME='" + getLongPackageName(p) + "' AND TABLE_VERSION="+databaseVersion+getSqlComma());
-			ResultSet rs = pst.executeQuery();
-			return rs.getInt(1)>0;
-		}
-		catch (SQLException e) {
-			throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
-		}
+	boolean doesVersionExists(final Package p, final int databaseVersion) throws DatabaseException {
+
+			return (boolean)runTransaction(new Transaction() {
+				@Override
+				public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
+					try {
+						PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
+								.prepareStatement("SELECT count(TABLE_VERSION) FROM " + ROW_PROPERTIES_OF_TABLES + " WHERE PACKAGE_NAME='" + getLongPackageName(p) + "' AND TABLE_VERSION="+databaseVersion+getSqlComma());
+						ResultSet rs = pst.executeQuery();
+
+						if (rs.next())
+							return false;
+						return rs.getInt(1)>0;
+					}
+					catch (SQLException e) {
+						throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
+					}
+				}
+
+				@Override
+				public TransactionIsolation getTransactionIsolation() {
+					return TransactionIsolation.TRANSACTION_READ_COMMITTED;
+				}
+
+				@Override
+				public boolean doesWriteData() {
+					return false;
+				}
+
+				@Override
+				public void initOrReset() throws DatabaseException {
+
+				}
+			}, true);
+
+
 	}
 
 
@@ -3170,7 +3196,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 			Statement st = getConnectionAssociatedWithCurrentThread().getConnection()
 					.createStatement();
-			st.executeUpdate("INSERT INTO " + DatabaseWrapper.ROW_PROPERTIES_OF_TABLES + "(TABLE_NAME) VALUES('"
+			st.executeUpdate("INSERT INTO " + DatabaseWrapper.ROW_PROPERTIES_OF_TABLES + "(TABLE_NAME, TABLE_VERSION, PACKAGE_NAME) VALUES('"
 					+ longTableName +"', '"+databaseVersion+"', '"+getLongPackageName(tTableClass.getPackage())+ "')" + getSqlComma());
 
 			st.close();
@@ -3249,7 +3275,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new NullPointerException("tables is a null pointer.");
 
 			if (sql_database.containsKey(configuration.getPackage()))
-				throw new DatabaseException("There is already a database associated to the given HSQLDBWrappe ");
+				throw new DatabaseException("There is already a database associated to the given wrapper ");
 			try {
 
 

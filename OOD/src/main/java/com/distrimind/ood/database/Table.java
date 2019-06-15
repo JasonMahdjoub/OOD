@@ -168,7 +168,7 @@ public abstract class Table<T extends DatabaseRecord> {
 		assert tableID>=0;
 		this.databaseVersion=newDatabaseVersion;
 		this.table_id=tableID;
-		table_name=getDatabaseWrapper().getInternalTableName(this.getClass(), table_id);
+		table_name=getDatabaseWrapper().getInternalTableNameFromTableID(this.getClass(), table_id);
 		if (isLoadedInMemory())
 			this.memoryToRefresh();
 	}
@@ -459,6 +459,9 @@ public abstract class Table<T extends DatabaseRecord> {
 	void initializeStep0(DatabaseWrapper wrapper, int databaseVersion) throws DatabaseException {
 		sql_connection = wrapper;
 		this.databaseVersion=databaseVersion;
+		table_id=wrapper.getTableID(this);
+		table_name=wrapper.getInternalTableNameFromTableID(this.getClass(), table_id);
+
 		if (sql_connection == null)
 			throw new DatabaseException(
 					"No database was given to instanciate the class/table " + this.getClass().getName()
@@ -508,8 +511,6 @@ public abstract class Table<T extends DatabaseRecord> {
 		if (primary_keys_fields.size() == 0)
 			throw new DatabaseException("There is no primary key declared into the Record " + class_record.getName());
 
-		table_id=wrapper.getTableID(this);
-		table_name=wrapper.getInternalTableName(this.getClass(), table_id);
 
 		if (this.getName().equals(DatabaseWrapper.ROW_PROPERTIES_OF_TABLES))
 			throw new DatabaseException(

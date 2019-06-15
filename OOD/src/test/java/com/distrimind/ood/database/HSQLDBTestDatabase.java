@@ -71,19 +71,19 @@ public class HSQLDBTestDatabase extends TestDatabase {
 
 	@Override
 	public void deleteDatabaseFilesA() throws IllegalArgumentException {
-		EmbeddedHSQLDBWrapper.deleteDatabaseFiles(new File(database_file_name + ".data"));
+		EmbeddedHSQLDBWrapper.deleteDatabaseFiles(new File(database_file_name ));
 	}
 
 	@Override
 	public void deleteDatabaseFilesB() throws IllegalArgumentException {
-		EmbeddedHSQLDBWrapper.deleteDatabaseFiles(new File(database_file_nameb + ".data"));
+		EmbeddedHSQLDBWrapper.deleteDatabaseFiles(new File(database_file_nameb ));
 	}
 
 	@AfterClass
 	public static void unloadDatabase()  {
 		TestDatabase.unloadDatabase();
-		EmbeddedHSQLDBWrapper.deleteDatabaseFiles(new File(database_file_name + ".data"));
-		EmbeddedHSQLDBWrapper.deleteDatabaseFiles(new File(database_file_nameb + ".data"));
+		EmbeddedHSQLDBWrapper.deleteDatabaseFiles(new File(database_file_name ));
+		EmbeddedHSQLDBWrapper.deleteDatabaseFiles(new File(database_file_nameb));
 		FileTools.deleteDirectory(database_backup_file);
 	}
 
