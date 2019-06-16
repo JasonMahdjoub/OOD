@@ -2,6 +2,9 @@ OOD/decentralizedDatabase4.data
 OOD/decentralizedDatabase4.lobs
 OOD/decentralizedDatabase4.properties
 OOD/decentralizedDatabase4.script
+OOD/decentralizedDatabase*
+OOD/databasetest*
+OOD/databasebackup*
 
 .DS_Store
 ### JetBrains template
