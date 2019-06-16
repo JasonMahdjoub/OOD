@@ -3201,7 +3201,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			Statement st = getConnectionAssociatedWithCurrentThread().getConnection()
 					.createStatement();
 			st.executeUpdate("INSERT INTO " + DatabaseWrapper.ROW_PROPERTIES_OF_TABLES + "(TABLE_NAME, TABLE_VERSION, PACKAGE_NAME) VALUES('"
-					+ longTableName +"', '"+databaseVersion+"', '"+getLongPackageName(tTableClass.getPackage())+ "')" + getSqlComma());
+					+ longTableName +"', "+databaseVersion+", '"+getLongPackageName(tTableClass.getPackage())+ "')" + getSqlComma());
 
 			st.close();
 			if (!doesVersionExists(tTableClass.getPackage(), databaseVersion)) {
@@ -3213,7 +3213,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				rs.close();
 				if (insert) {
 					st.executeUpdate("INSERT INTO " + DatabaseWrapper.VERSIONS_OF_DATABASE + "(PACKAGE_NAME, CURRENT_DATABASE_VERSION) VALUES('"
-							+ getLongPackageName(tTableClass.getPackage()) + "', '" + databaseVersion + "')" + getSqlComma());
+							+ getLongPackageName(tTableClass.getPackage()) + "', " + databaseVersion + ")" + getSqlComma());
 
 					st.close();
 				}
