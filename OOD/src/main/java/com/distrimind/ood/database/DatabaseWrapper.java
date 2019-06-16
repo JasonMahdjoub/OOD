@@ -3067,7 +3067,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			Database db = null;
 			if (!forceUpdate)
 				db = sql_database.get(p);
-			if (db == null) {
+			if (db == null || db.getCurrentVersion()==-1) {
+				final Database fdb=db;
 				return (int) runTransaction(new Transaction() {
 					@Override
 					public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
@@ -3077,10 +3078,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 									.prepareStatement("SELECT CURRENT_DATABASE_VERSION FROM " + DatabaseWrapper.VERSIONS_OF_DATABASE + " WHERE PACKAGE_NAME='"
 											+ getLongPackageName(p) + "'" + getSqlComma());
 							ResultSet rs = pst.executeQuery();
+							int res=0;
 							if (rs.next())
-								return rs.getInt(1);
-							else
-								return 0;
+								res=rs.getInt(1);
+							if (fdb!=null)
+								fdb.currentVersion=res;
+							return res;
+
 						} catch (SQLException e) {
 							throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 						}
@@ -3318,7 +3322,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 				else {
 					db.tables_per_versions.put(databaseVersion, actualDatabaseLoading.tables_per_versions.get(databaseVersion));
-					db.updateCurrentVersion();
+					//db.updateCurrentVersion();
 				}
 				sql_database = sd;
 			} finally {
@@ -3379,7 +3383,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					ArrayList<Table<?>> list_tables = new ArrayList<>(configuration.getTableClasses().size());
 					DatabasePerVersion dpv=new DatabasePerVersion();
 					actualDatabaseLoading.tables_per_versions.put(version, dpv);
-					actualDatabaseLoading.updateCurrentVersion();
+					//actualDatabaseLoading.updateCurrentVersion();
 					for (Class<? extends Table<?>> class_to_load : configuration.getTableClasses()) {
 						Table<?> t = newInstance(class_to_load, version);
 						list_tables.add(t);

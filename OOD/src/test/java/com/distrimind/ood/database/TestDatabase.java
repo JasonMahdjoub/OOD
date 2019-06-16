@@ -295,7 +295,6 @@ public abstract class TestDatabase {
 			sql_db.loadDatabase(dbConfig1, false);
 			fail();
 		} catch (DatabaseException ignored) {
-			ignored.printStackTrace();
 		}
 	}
 
