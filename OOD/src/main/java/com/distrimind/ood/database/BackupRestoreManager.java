@@ -1067,7 +1067,7 @@ public class BackupRestoreManager {
 			if (fileTimeStamps.size()>0 && fileReferenceTimeStamps.size()>0)
 			{
 				long ts=fileTimeStamps.get(fileTimeStamps.size()-1);
-				return extractLastBackupEventUTC(getFile(ts, fileReferenceTimeStamps.get(fileReferenceTimeStamps.size()-1)==ts));
+				return extractLastBackupEventUTC(getFile(ts, fileReferenceTimeStamps.get(fileReferenceTimeStamps.size()-1).equals(ts)));
 			}
 			return Long.MAX_VALUE;
 		}
@@ -1486,7 +1486,7 @@ public class BackupRestoreManager {
 			if (transactionUTC==lastTransactionUTC)
 				++transactionUTC;
 			if (transactionUTC<lastTransactionUTC)
-				throw new InternalError();
+				throw new InternalError(transactionUTC+";"+lastTransactionUTC);
 			nextTransactionReference=saveTransactionHeader(out, transactionUTC);
 			try(FileOutputStream fos=new FileOutputStream(computeDatabaseReference); DataOutputStream dos=new DataOutputStream(fos))
 			{
