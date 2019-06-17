@@ -37,6 +37,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 import com.distrimind.ood.database.database.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.FileTools;
 import com.distrimind.util.crypto.SecureRandomType;
 import com.distrimind.util.crypto.SymmetricEncryptionType;
 import com.distrimind.util.crypto.SymmetricSecretKey;
@@ -60,9 +61,9 @@ public class TestDatabaseBackupRestore {
 
 
 	private DatabaseWrapper wrapperForReferenceDatabase;
-	private final File referenceDatabaseDirectory=new File("referenceDatabaseToTest");
-	private final File databaseDirectory=new File("backupDatabaseToTest");
-	private final File externalBackupDirectory=new File("externalBackupDatabaseToTest");
+	private final File referenceDatabaseDirectory=new File("./referenceDatabaseToTest");
+	private final File databaseDirectory=new File("./backupDatabaseToTest");
+	private final File externalBackupDirectory=new File("./externalBackupDatabaseToTest");
 	private Table1.Record recordWithoutForeignKeyA, recordPointedByOtherA, recordWithoutForeignKeyAToRemove, recordPointedByOtherAToRemove;
 	private Table2.Record recordPointingToOtherA, recordPointingToOtherAToRemove;
 	private Table3.Record recordWithoutForeignKeyB, recordPointedByOtherB, recordWithoutForeignKeyBToRemove, recordPointedByOtherBToRemove;
@@ -90,14 +91,6 @@ public class TestDatabaseBackupRestore {
 		new BackupConfiguration(5000L, 10000L, 1000000, 1000L, null);
 		try {
 			new BackupConfiguration(5000L, 1000L, 1000000, 1000L, null);
-			Assert.fail();
-		}
-		catch(IllegalArgumentException ignored)
-		{
-
-		}
-		try {
-			new BackupConfiguration(5000L, 10000L, 1000000, 1000L, null);
 			Assert.fail();
 		}
 		catch(IllegalArgumentException ignored)
@@ -222,6 +215,7 @@ public class TestDatabaseBackupRestore {
 		}
 
 	}
+	private static int uniqueField=1;
 	private void addAndRemoveData(DatabaseWrapper wrapper, int nb) throws DatabaseException {
 		Table1 table1=wrapper.getTableInstance(Table1.class);
 		Table2 table2=wrapper.getTableInstance(Table2.class);
@@ -266,10 +260,10 @@ public class TestDatabaseBackupRestore {
 			{
 				table1.addRecord(getTable1_3Map());
 				Table1.Record addedA2=table1.addRecord(getTable1_3Map());
-				table2.addRecord("fr1_pk1", addedA2, "int_value", 5);
+				table2.addRecord("fr1_pk1", addedA2, "int_value", uniqueField++);
 				table3.addRecord(getTable1_3Map());
 				Table3.Record addedB2=table3.addRecord(getTable1_3Map());
-				table4.addRecord("fr1_pk1", addedB2, "int_value", 7);
+				table4.addRecord("fr1_pk1", addedB2, "int_value", uniqueField++);
 
 			}
 		}
@@ -277,12 +271,15 @@ public class TestDatabaseBackupRestore {
 
 	@BeforeClass
 	public void loadReferenceDatabase() throws DatabaseException {
+		DatabaseWrapper.deleteDatabaseFiles(referenceDatabaseDirectory);
+		DatabaseWrapper.deleteDatabaseFiles(databaseDirectory);
+		FileTools.deleteDirectory(this.externalBackupDirectory);
 		wrapperForReferenceDatabase=loadWrapper( referenceDatabaseDirectory, false);
 		addAndRemoveData(wrapperForReferenceDatabase, 100);
-		Table1 table1=wrapper.getTableInstance(Table1.class);
-		Table2 table2=wrapper.getTableInstance(Table2.class);
-		Table3 table3=wrapper.getTableInstance(Table3.class);
-		Table4 table4=wrapper.getTableInstance(Table4.class);
+		Table1 table1=wrapperForReferenceDatabase.getTableInstance(Table1.class);
+		Table2 table2=wrapperForReferenceDatabase.getTableInstance(Table2.class);
+		Table3 table3=wrapperForReferenceDatabase.getTableInstance(Table3.class);
+		Table4 table4=wrapperForReferenceDatabase.getTableInstance(Table4.class);
 
 		List<Table1.Record> lTable1=table1.getRecords();
 		List<Table2.Record> lTable2=table2.getRecords();
@@ -383,6 +380,7 @@ public class TestDatabaseBackupRestore {
 	{
 		try {
 			wrapper.deleteDatabaseFiles();
+			FileTools.deleteDirectory(this.externalBackupDirectory);
 		}
 		finally {
 			wrapper = null;
@@ -413,9 +411,9 @@ public class TestDatabaseBackupRestore {
 			Assert.assertNotNull(externalBRM);
 			Assert.assertTrue(externalBRM.isEmpty());
 			externalBRM.createBackupReference();
-			Assert.assertEquals(externalBRM.getBackupDirectory(), externalBackupDirectory);
+			Assert.assertEquals(externalBRM.getBackupDirectory(), new File(externalBackupDirectory, DatabaseWrapper.getLongPackageName(Table1.class.getPackage())));
 
-			Assert.assertTrue(t<externalBRM.getMinDateUTCInMs());
+			Assert.assertTrue(t<externalBRM.getMinDateUTCInMs(), t+";"+externalBRM.getMinDateUTCInMs());
 			Assert.assertTrue(System.currentTimeMillis()>externalBRM.getMinDateUTCInMs());
 			Assert.assertTrue(externalBRM.getMinDateUTCInMs()<externalBRM.getMaxDateUTCInMS());
 			Assert.assertTrue(System.currentTimeMillis()>externalBRM.getMaxDateUTCInMS());
@@ -557,7 +555,7 @@ public class TestDatabaseBackupRestore {
 	private Map<String, Object> getTable1_3Map()
 	{
 		HashMap<String, Object> map = new HashMap<>();
-		map.put("pk1", Math.random()*1000);
+		map.put("pk1", (int)( Math.random()*1000));
 		map.put("int_value", (int)(Math.random()*1000));
 		map.put("byte_value", (byte) (Math.random()*100));
 		map.put("char_value", 'x');
@@ -904,12 +902,12 @@ public class TestDatabaseBackupRestore {
 				for (int i=0;i<Math.random()*5;i++)
 				{
 					Table1.Record addedA2=table1.addRecord(getTable1_3Map());
-					table2.addRecord("fr1_pk1", addedA2, "int_value", 5);
+					table2.addRecord("fr1_pk1", addedA2, "int_value", uniqueField++);
 				}
 				for (int i=0;i<Math.random()*5;i++)
 				{
 					Table3.Record addedB2=table3.addRecord(getTable1_3Map());
-					table4.addRecord("fr1_pk1", addedB2, "int_value", 7);
+					table4.addRecord("fr1_pk1", addedB2, "int_value", uniqueField++);
 				}
 				cancelTransaction();
 

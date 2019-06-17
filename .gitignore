@@ -5,6 +5,9 @@ OOD/decentralizedDatabase4.script
 OOD/decentralizedDatabase*
 OOD/databasetest*
 OOD/databasebackup*
+OOD/referenceDatabaseToTest*
+OOD/backupDatabaseToTest*
+OOD/externalBackupDatabaseToTest*
 
 .DS_Store
 ### JetBrains template

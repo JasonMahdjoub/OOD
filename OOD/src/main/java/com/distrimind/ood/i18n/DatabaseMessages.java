@@ -48,7 +48,11 @@ public enum DatabaseMessages {
 	BACKUP_DATABASE,
 	INIT_DATABASE;
 
-	final static ResourceBundle messages = ResourceBundle.getBundle("com/distrimind/ood"+File.separator + DatabaseMessages.class.getSimpleName());
+	final static ResourceBundle messages = ResourceBundle.getBundle("com"+File.separator+
+			"distrimind"+File.separator+
+			"ood"+File.separator+
+			"i18n"+File.separator +
+			DatabaseMessages.class.getSimpleName());
 
 	@Override
 	public String toString() {

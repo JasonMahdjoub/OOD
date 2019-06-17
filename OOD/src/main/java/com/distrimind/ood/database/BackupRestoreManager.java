@@ -98,6 +98,7 @@ public class BackupRestoreManager {
 		this.databaseConfiguration=databaseConfiguration;
 		this.databaseWrapper=databaseWrapper;
 		this.dbPackage=databaseConfiguration.getPackage();
+		System.out.println(backupDirectory);
 		FileTools.checkFolderRecursive(backupDirectory);
 		this.backupDirectory=backupDirectory;
 		this.backupConfiguration=databaseConfiguration.getBackupConfiguration();

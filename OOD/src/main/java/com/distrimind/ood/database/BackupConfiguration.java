@@ -77,7 +77,19 @@ public class BackupConfiguration {
 	 */
 	private ProgressMonitorParameters progressMonitorParameters;
 
-	public BackupConfiguration(long backupReferenceDurationInMs, long maxBackupDurationInMs, int maxBackupFileSizeInBytes, long maxBackupFileAgeInMs/*, int maxIndexSize*/, ProgressMonitorParameters progressMonitorParameters) {
+	public BackupConfiguration(long backupReferenceDurationInMs, long maxBackupDurationInMs,
+							   int maxBackupFileSizeInBytes, long maxBackupFileAgeInMs/*, int maxIndexSize*/,
+							   ProgressMonitorParameters progressMonitorParameters) {
+		if (backupReferenceDurationInMs<0)
+			throw new IllegalArgumentException();
+		if (maxBackupDurationInMs<0)
+			throw new IllegalArgumentException();
+		if (maxBackupFileSizeInBytes<0)
+			throw new IllegalArgumentException();
+		if (maxBackupFileAgeInMs<0)
+			throw new IllegalArgumentException();
+		if (backupReferenceDurationInMs>maxBackupDurationInMs)
+			throw new IllegalArgumentException();
 		this.backupReferenceDurationInMs = backupReferenceDurationInMs;
 		this.maxBackupDurationInMs = maxBackupDurationInMs;
 		this.maxBackupFileSizeInBytes = maxBackupFileSizeInBytes;
