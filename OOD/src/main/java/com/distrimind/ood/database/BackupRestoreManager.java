@@ -68,8 +68,8 @@ public class BackupRestoreManager {
 	private final BackupConfiguration backupConfiguration;
 	private final DatabaseConfiguration databaseConfiguration;
 	private final List<Class<? extends Table<?>>> classes;
-	private static final Pattern fileReferencePattern = Pattern.compile("^backup-ood-([1-9][0-9])*\\.dreference$");
-	private static final Pattern fileIncrementPattern = Pattern.compile("^backup-ood-([1-9][0-9])*\\.dincrement");
+	private static final Pattern fileReferencePattern = Pattern.compile("^backup-ood-([1-9][0-9]*)\\.dreference$");
+	private static final Pattern fileIncrementPattern = Pattern.compile("^backup-ood-([1-9][0-9]*)\\.dincrement");
 
 	private final File computeDatabaseReference;
 	private DatabaseWrapper databaseWrapper;
@@ -181,7 +181,7 @@ public class BackupRestoreManager {
 
 	private File getFile(long timeStamp, boolean backupReference)
 	{
-		return new File(backupDirectory, "nativeBackup-ood-"+timeStamp+(backupReference?".dreference":".dincrement"));
+		return new File(backupDirectory, "backup-ood-"+timeStamp+(backupReference?".dreference":".dincrement"));
 	}
 
 	private boolean isPartFull(long timeStamp, File file)
@@ -840,105 +840,91 @@ public class BackupRestoreManager {
 			final long backupTime = System.currentTimeMillis();
 			final AtomicLong currentBackupTime = new AtomicLong(backupTime);
 
-
-			try
-			{
-				if (!computeDatabaseReference.exists()) {
-					if (!computeDatabaseReference.createNewFile())
-						throw new DatabaseException("Impossible to create file " + computeDatabaseReference);
-				}
-				else if (computeDatabaseReference.length()>=16)
-				{
-					try(FileInputStream fis=new FileInputStream(currentFileReference);DataInputStream dis=new DataInputStream(fis))
-					{
-						long s=dis.readLong();
-						if (s>=0)
-						{
-							long fileRef=dis.readLong();
-							for (Long l : fileTimeStamps)
-							{
-								if (l==fileRef)
-								{
-									boolean reference=fileReferenceTimeStamps.contains(l);
-									try(RandomFileOutputStream rfos=new RandomFileOutputStream(getFile(l, reference)))
-									{
-										rfos.setLength(fileRef);
+			try {
+				try {
+					if (!computeDatabaseReference.exists()) {
+						if (!computeDatabaseReference.createNewFile())
+							throw new DatabaseException("Impossible to create file " + computeDatabaseReference);
+					} else if (computeDatabaseReference.length() >= 16) {
+						try (FileInputStream fis = new FileInputStream(currentFileReference); DataInputStream dis = new DataInputStream(fis)) {
+							long s = dis.readLong();
+							if (s >= 0) {
+								long fileRef = dis.readLong();
+								for (Long l : fileTimeStamps) {
+									if (l == fileRef) {
+										boolean reference = fileReferenceTimeStamps.contains(l);
+										try (RandomFileOutputStream rfos = new RandomFileOutputStream(getFile(l, reference))) {
+											rfos.setLength(fileRef);
+										}
+									} else if (fileRef < l) {
+										boolean reference = fileReferenceTimeStamps.contains(l);
+										//noinspection ResultOfMethodCallIgnored
+										getFile(l, reference).delete();
+										fileReferenceTimeStamps.remove(l);
 									}
-								}
-								else if (fileRef<l)
-								{
-									boolean reference=fileReferenceTimeStamps.contains(l);
-									//noinspection ResultOfMethodCallIgnored
-									getFile(l, reference).delete();
-									fileReferenceTimeStamps.remove(l);
 								}
 							}
 						}
 					}
-				}
-				final int maxBufferSize=backupConfiguration.getMaxStreamBufferSizeForBackupRestoration();
-				final int maxBuffersNumber=backupConfiguration.getMaxStreamBufferNumberForBackupRestoration();
+					final int maxBufferSize = backupConfiguration.getMaxStreamBufferSizeForBackupRestoration();
+					final int maxBuffersNumber = backupConfiguration.getMaxStreamBufferNumberForBackupRestoration();
 
-				File file = initNewFileForBackupReference(currentBackupTime.get());
-				final AtomicReference<RandomOutputStream> rout=new AtomicReference<RandomOutputStream>(new BufferedRandomOutputStream(new RandomFileOutputStream(file, RandomFileOutputStream.AccessMode.READ_AND_WRITE), maxBufferSize, maxBuffersNumber));
-				try {
-					//final AtomicReference<RecordsIndex> index=new AtomicReference<>(null);
-					saveHeader(rout.get(), currentBackupTime.get(), true/*, index*/);
-					final AtomicInteger nextTransactionReference=new AtomicInteger(saveTransactionHeader(rout.get(), currentBackupTime.get()));
+					File file = initNewFileForBackupReference(currentBackupTime.get());
+					final AtomicReference<RandomOutputStream> rout = new AtomicReference<RandomOutputStream>(new BufferedRandomOutputStream(new RandomFileOutputStream(file, RandomFileOutputStream.AccessMode.READ_AND_WRITE), maxBufferSize, maxBuffersNumber));
+					try {
+						//final AtomicReference<RecordsIndex> index=new AtomicReference<>(null);
+						saveHeader(rout.get(), currentBackupTime.get(), true/*, index*/);
+						final AtomicInteger nextTransactionReference = new AtomicInteger(saveTransactionHeader(rout.get(), currentBackupTime.get()));
 
-					for (Class<? extends Table<?>> c : classes) {
-						final Table<?> table = databaseWrapper.getTableInstance(c);
-						table.getPaginedRecordsWithUnknownType(-1, -1, new Filter<DatabaseRecord>() {
-							RandomOutputStream out=rout.get();
-							@Override
-							public boolean nextRecord(DatabaseRecord _record) throws DatabaseException {
-								backupRecordEvent(out, table, _record, DatabaseEventType.ADD/*, index.get()*/);
-								try {
-									if (out.currentPosition()>=backupConfiguration.getMaxBackupFileSizeInBytes())
-									{
-										saveTransactionQueue(rout.get(), nextTransactionReference.get(), currentBackupTime.get()/*, index.get()*/);
-										out.flush();
-										out.close();
-										//index.set(null);
+						for (Class<? extends Table<?>> c : classes) {
+							final Table<?> table = databaseWrapper.getTableInstance(c);
+							table.getPaginedRecordsWithUnknownType(-1, -1, new Filter<DatabaseRecord>() {
+								RandomOutputStream out = rout.get();
 
-										currentBackupTime.set(Math.max(currentBackupTime.get()+1, System.currentTimeMillis()));
-										File file=initNewFileForBackupIncrement(System.currentTimeMillis());
-										rout.set(out=new BufferedRandomOutputStream(new RandomFileOutputStream(file), maxBufferSize, maxBuffersNumber));
-										saveHeader(out, currentBackupTime.get(), false/*, index*/);
-										nextTransactionReference.set(saveTransactionHeader(rout.get(), currentBackupTime.get()));
+								@Override
+								public boolean nextRecord(DatabaseRecord _record) throws DatabaseException {
+									backupRecordEvent(out, table, _record, DatabaseEventType.ADD/*, index.get()*/);
+									try {
+										if (out.currentPosition() >= backupConfiguration.getMaxBackupFileSizeInBytes()) {
+											saveTransactionQueue(rout.get(), nextTransactionReference.get(), currentBackupTime.get()/*, index.get()*/);
+											out.flush();
+											out.close();
+											//index.set(null);
 
+											currentBackupTime.set(Math.max(currentBackupTime.get() + 1, System.currentTimeMillis()));
+											File file = initNewFileForBackupIncrement(System.currentTimeMillis());
+											rout.set(out = new BufferedRandomOutputStream(new RandomFileOutputStream(file), maxBufferSize, maxBuffersNumber));
+											saveHeader(out, currentBackupTime.get(), false/*, index*/);
+											nextTransactionReference.set(saveTransactionHeader(rout.get(), currentBackupTime.get()));
+
+										}
+									} catch (IOException e) {
+										throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 									}
-								} catch (IOException e) {
-									throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
+
+									return false;
 								}
-
-								return false;
-							}
-						});
+							});
+						}
+						saveTransactionQueue(rout.get(), nextTransactionReference.get(), currentBackupTime.get()/*, index.get()*/);
+					} finally {
+						rout.get().flush();
+						rout.get().close();
 					}
-					saveTransactionQueue(rout.get(), nextTransactionReference.get(), currentBackupTime.get()/*, index.get()*/);
+					//scanFiles();
+					cleanOldBackups();
+					if (!computeDatabaseReference.delete())
+						throw new DatabaseException("Impossible to delete file " + computeDatabaseReference);
+
+				} catch (IOException e) {
+					throw DatabaseException.getDatabaseException(e);
 				}
-				finally {
-					rout.get().flush();
-					rout.get().close();
-				}
-				//scanFiles();
-			} catch (IOException e) {
-				throw DatabaseException.getDatabaseException(e);
-			}
 
 
-			try {
-
-				cleanOldBackups();
-				if (!computeDatabaseReference.delete())
-					throw new DatabaseException("Impossible to delete file " + computeDatabaseReference);
 			} catch (DatabaseException e) {
 				deleteDatabaseFilesFromReferenceToLastFile(oldLastFile, oldLength);
-				throw e;
-			}
-			finally {
 				scanFiles();
+				throw e;
 			}
 			return backupTime;
 		}
