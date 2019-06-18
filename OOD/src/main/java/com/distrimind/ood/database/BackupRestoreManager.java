@@ -41,8 +41,10 @@ import com.distrimind.util.FileTools;
 import com.distrimind.util.io.*;
 import com.distrimind.util.progress_monitors.ProgressMonitorParameters;
 
+import javax.swing.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -75,6 +77,7 @@ public class BackupRestoreManager {
 	private DatabaseWrapper databaseWrapper;
 	private final boolean passive;
 	private final Package dbPackage;
+	private final boolean generateRestoreProgressBar;
 
 
 	File getLastFile()
@@ -112,15 +115,28 @@ public class BackupRestoreManager {
 		this.computeDatabaseReference=new File(this.backupDirectory, "computeDatabaseNewReference.query");
 		if (this.computeDatabaseReference.exists() && this.computeDatabaseReference.isDirectory())
 			throw new IllegalArgumentException();
-		if (this.backupConfiguration.getProgressMonitor()==null) {
+		if (this.backupConfiguration.backupProgressMonitorParameters==null) {
 			ProgressMonitorParameters p=new ProgressMonitorParameters(String.format(DatabaseMessages.BACKUP_DATABASE.toString(), databaseConfiguration.getPackage().toString()), null, 0, 100);
 			p.setMillisToDecideToPopup(1000);
 			p.setMillisToPopup(1000);
-			this.backupConfiguration.setProgressMonitorParameters(p);
+			this.backupConfiguration.setBackupProgressMonitorParameters(p);
 		}
+		generateRestoreProgressBar= this.backupConfiguration.restoreProgressMonitorParameters == null;
 		scanFiles();
 		if (checkTablesHeader(getFileForBackupReference()))
 			createIfNecessaryNewBackupReference();
+	}
+
+	private void generateProgressBarParameterForRestoration(long timeUTC)
+	{
+		if (generateRestoreProgressBar)
+		{
+			ProgressMonitorParameters p=new ProgressMonitorParameters(String.format(DatabaseMessages.RESTORE_DATABASE.toString(), new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS zzz").format(new Date(timeUTC)),databaseConfiguration.getPackage().toString()), null, 0, 100);
+			p.setMillisToDecideToPopup(1000);
+			p.setMillisToPopup(1000);
+			this.backupConfiguration.setRestoreProgressMonitorParameters(p);
+
+		}
 	}
 
 	public BackupConfiguration getBackupConfiguration() {
@@ -885,19 +901,36 @@ public class BackupRestoreManager {
 						//final AtomicReference<RecordsIndex> index=new AtomicReference<>(null);
 						saveHeader(rout.get(), currentBackupTime.get(), true/*, index*/);
 						final AtomicInteger nextTransactionReference = new AtomicInteger(saveTransactionHeader(rout.get(), currentBackupTime.get()));
-
+						final ProgressMonitor progressMonitor=backupConfiguration.getProgressMonitorForBackup();
+						long t=0;
+						if (progressMonitor!=null) {
+							for (Class<? extends Table<?>> c : classes) {
+								final Table<?> table = databaseWrapper.getTableInstance(c);
+								t += table.getRecordsNumber();
+							}
+							progressMonitor.setMinimum(0);
+							progressMonitor.setMaximum(1000);
+						}
+						final long totalRecords=t;
+						long numberOfSavedRecords=0;
 						for (Class<? extends Table<?>> c : classes) {
 							final Table<?> table = databaseWrapper.getTableInstance(c);
-							databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Object>() {
+							final long nbSavedRecords=numberOfSavedRecords;
+							numberOfSavedRecords=databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Long>() {
 								long originalPosition=rout.get().currentPosition();
+								long numberOfSavedRecords=nbSavedRecords;
 								@Override
-								public Object run() throws Exception {
+								public Long run() throws Exception {
 									table.getPaginedRecordsWithUnknownType(-1, -1, new Filter<DatabaseRecord>() {
 										RandomOutputStream out = rout.get();
 
 										@Override
 										public boolean nextRecord(DatabaseRecord _record) throws DatabaseException {
 											backupRecordEvent(out, table, null, _record, DatabaseEventType.ADD/*, index.get()*/);
+											if (progressMonitor!=null) {
+												++numberOfSavedRecords;
+												progressMonitor.setProgress((int) ((numberOfSavedRecords * 1000) / totalRecords));
+											}
 											try {
 												if (out.currentPosition() >= backupConfiguration.getMaxBackupFileSizeInBytes()) {
 													saveTransactionQueue(rout.get(), nextTransactionReference.get(), currentBackupTime.get()/*, index.get()*/);
@@ -918,7 +951,7 @@ public class BackupRestoreManager {
 											return false;
 										}
 									});
-									return null;
+									return numberOfSavedRecords;
 								}
 
 								@Override
@@ -1183,6 +1216,20 @@ public class BackupRestoreManager {
 				final int maxBuffersNumber=backupConfiguration.getMaxStreamBufferNumberForBackupRestoration();
 
 				boolean reference=true;
+				long s=0;
+				generateProgressBarParameterForRestoration(dateUTCInMs);
+				final ProgressMonitor progressMonitor=backupConfiguration.getProgressMonitorForRestore();
+				File f=null;
+				if (progressMonitor!=null) {
+					for (Long l : listIncrements) {
+						f=getFile(l, f==null);
+						s += f.length();
+					}
+					progressMonitor.setMinimum(0);
+					progressMonitor.setMaximum(1000);
+				}
+				final long totalSize=s;
+				long progressPosition=0;
 				fileloop:while (currentFile!=null)
 				{
 					try(RandomInputStream in=new BufferedRandomInputStream(new RandomFileInputStream(currentFile), maxBufferSize, maxBuffersNumber))
@@ -1197,9 +1244,11 @@ public class BackupRestoreManager {
 							if (in.readInt()!=-1)
 								throw new IOException();
 							final long dataTransactionStartPosition=in.currentPosition();
-							databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
+							final long pp=progressPosition;
+							progressPosition=databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Long>() {
+								long progressPosition=pp;
 								@Override
-								public Void run() throws Exception {
+								public Long run() throws Exception {
 									int startRecord=(int)in.currentPosition();
 									byte eventTypeCode=in.readByte();
 									DatabaseEventType eventType=DatabaseEventType.getEnum(eventTypeCode);
@@ -1259,8 +1308,11 @@ public class BackupRestoreManager {
 									}
 									if (in.readInt()!=startRecord)
 										throw new IOException();
-
-									return null;
+									if (progressMonitor!=null && totalSize!=0) {
+										progressPosition += in.currentPosition() - startRecord;
+										progressMonitor.setProgress((int)((progressPosition*1000)/totalSize));
+									}
+									return progressPosition;
 								}
 
 								@Override

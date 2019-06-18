@@ -46,6 +46,7 @@ import java.util.ResourceBundle;
 public enum DatabaseMessages {
 	CONVERT_DATABASE,
 	BACKUP_DATABASE,
+	RESTORE_DATABASE,
 	INIT_DATABASE;
 
 	final static ResourceBundle messages = ResourceBundle.getBundle("com"+File.separator+

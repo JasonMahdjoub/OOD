@@ -73,13 +73,18 @@ public class BackupConfiguration {
 	//private int maxIndexSize=16384;
 
 	/**
-	 * The progress monitor's parameter
+	 * The backup progress monitor's parameter
 	 */
-	private ProgressMonitorParameters progressMonitorParameters;
+	ProgressMonitorParameters backupProgressMonitorParameters;
+
+	/**
+	 * The restore progress monitor's parameter
+	 */
+	ProgressMonitorParameters restoreProgressMonitorParameters;
 
 	public BackupConfiguration(long backupReferenceDurationInMs, long maxBackupDurationInMs,
 							   int maxBackupFileSizeInBytes, long maxBackupFileAgeInMs/*, int maxIndexSize*/,
-							   ProgressMonitorParameters progressMonitorParameters) {
+							   ProgressMonitorParameters backupProgressMonitorParameters) {
 		if (backupReferenceDurationInMs<0)
 			throw new IllegalArgumentException();
 		if (maxBackupDurationInMs<0)
@@ -94,7 +99,7 @@ public class BackupConfiguration {
 		this.maxBackupDurationInMs = maxBackupDurationInMs;
 		this.maxBackupFileSizeInBytes = maxBackupFileSizeInBytes;
 		this.maxBackupFileAgeInMs=maxBackupFileAgeInMs;
-		this.progressMonitorParameters = progressMonitorParameters;
+		this.backupProgressMonitorParameters = backupProgressMonitorParameters;
 		//this.maxIndexSize=maxIndexSize;
 	}
 
@@ -114,18 +119,31 @@ public class BackupConfiguration {
 		return maxBackupFileAgeInMs;
 	}
 
-	public ProgressMonitor getProgressMonitor()
+	public ProgressMonitor getProgressMonitorForBackup()
 	{
 		ProgressMonitorFactory progressMonitorFactory;
-		if (progressMonitorParameters ==null)
+		if (backupProgressMonitorParameters ==null)
 			return null;
 		else
 			progressMonitorFactory=ProgressMonitorFactory.getDefaultProgressMonitorFactory();
-		return progressMonitorFactory.getProgressMonitor(progressMonitorParameters);
+		return progressMonitorFactory.getProgressMonitor(backupProgressMonitorParameters);
+	}
+	public ProgressMonitor getProgressMonitorForRestore()
+	{
+		ProgressMonitorFactory progressMonitorFactory;
+		if (restoreProgressMonitorParameters ==null)
+			return null;
+		else
+			progressMonitorFactory=ProgressMonitorFactory.getDefaultProgressMonitorFactory();
+		return progressMonitorFactory.getProgressMonitor(restoreProgressMonitorParameters);
 	}
 
-	public void setProgressMonitorParameters(ProgressMonitorParameters progressMonitorParameters) {
-		this.progressMonitorParameters = progressMonitorParameters;
+	public void setBackupProgressMonitorParameters(ProgressMonitorParameters backupProgressMonitorParameters) {
+		this.backupProgressMonitorParameters = backupProgressMonitorParameters;
+	}
+
+	public void setRestoreProgressMonitorParameters(ProgressMonitorParameters restoreProgressMonitorParameters) {
+		this.restoreProgressMonitorParameters = restoreProgressMonitorParameters;
 	}
 
 	/*public int getMaxIndexSize() {
