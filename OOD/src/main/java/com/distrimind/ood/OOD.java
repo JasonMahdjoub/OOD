@@ -75,7 +75,7 @@ public class OOD {
 			c = Calendar.getInstance();
 			c.set(2019, Calendar.JUNE, 14);
 			Description d = new Description((short)2, (short)0, (short)0, Version.Type.Stable, (short)1, c.getTime());
-			d.addItem("Update Utils to 4.2.1 Stable");
+			d.addItem("Update Utils to 4.2.2 Stable");
 			d.addItem("Add backup/restore manager, with historical management");
 			d.addItem("Better manage database versions");
 			VERSION.addDescription(d);
