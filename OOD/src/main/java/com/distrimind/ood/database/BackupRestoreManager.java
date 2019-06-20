@@ -826,6 +826,7 @@ public class BackupRestoreManager {
 	}
 	private void saveTransactionQueue(RandomOutputStream out, int nextTransactionReference, long transactionUTC/*, RecordsIndex index*/) throws DatabaseException {
 		try {
+			out.writeByte(-1);
 			int nextTransaction=(int)out.currentPosition();
 			//backup previous transaction reference
 			out.writeInt(nextTransactionReference);
@@ -1249,70 +1250,70 @@ public class BackupRestoreManager {
 								long progressPosition=pp;
 								@Override
 								public Long run() throws Exception {
-									int startRecord=(int)in.currentPosition();
-									byte eventTypeCode=in.readByte();
-									DatabaseEventType eventType=DatabaseEventType.getEnum(eventTypeCode);
-									if (eventType==null)
-										throw new IOException();
+									for(;;) {
+										int startRecord = (int) in.currentPosition();
+										byte eventTypeCode = in.readByte();
+										if (eventTypeCode == -1)
+											return progressPosition;
+										DatabaseEventType eventType = DatabaseEventType.getEnum(eventTypeCode);
+										if (eventType == null)
+											throw new IOException();
 
-									int tableIndex=in.readUnsignedShort();
-									if (tableIndex>=tables.size())
-										throw new IOException();
-									Table<?> table=tables.get(tableIndex);
-									switch(eventType)
-									{
-										case ADD: case UPDATE:
-										{
-											int s=in.readUnsignedShortInt();
-											in.readFully(recordBuffer, 0, s);
-											DatabaseRecord dr=table.getNewRecordInstance();
-											table.deserializePrimaryKeys(dr, recordBuffer, 0, s);
-											s=in.readUnsignedShortInt();
-											if (s>0) {
+										int tableIndex = in.readUnsignedShort();
+										if (tableIndex >= tables.size())
+											throw new IOException();
+										Table<?> table = tables.get(tableIndex);
+										switch (eventType) {
+											case ADD:
+											case UPDATE: {
+												int s = in.readUnsignedShortInt();
 												in.readFully(recordBuffer, 0, s);
-												table.deserializeFields(dr, recordBuffer, 0, s, false, true, false);
+												DatabaseRecord dr = table.getNewRecordInstance();
+												table.deserializePrimaryKeys(dr, recordBuffer, 0, s);
+												s = in.readUnsignedShortInt();
+												if (s > 0) {
+													in.readFully(recordBuffer, 0, s);
+													table.deserializeFields(dr, recordBuffer, 0, s, false, true, false);
+												}
+												s = in.readUnsignedShortInt();
+												if (s > 0) {
+													in.readFully(recordBuffer, 0, s);
+													table.deserializeFields(dr, recordBuffer, 0, s, false, false, true);
+												}
+												if (eventType == DatabaseEventType.ADD)
+													table.addRecord(dr);
+												else
+													table.updateUntypedRecord(dr, true, null);
 											}
-											s=in.readUnsignedShortInt();
-											if (s>0) {
-												in.readFully(recordBuffer, 0, s);
-												table.deserializeFields(dr, recordBuffer, 0, s, false, false, true);
-											}
-											if (eventType==DatabaseEventType.ADD)
-												table.addRecord(dr);
-											else
-												table.updateUntypedRecord(dr, true, null);
-										}
 											break;
-										case REMOVE:
-										{
-											int s=in.readUnsignedShortInt();
-											in.readFully(recordBuffer, 0, s);
-											HashMap<String, Object> pks=new HashMap<>();
-											table.deserializePrimaryKeys(pks, recordBuffer, 0, s);
+											case REMOVE: {
+												int s = in.readUnsignedShortInt();
+												in.readFully(recordBuffer, 0, s);
+												HashMap<String, Object> pks = new HashMap<>();
+												table.deserializePrimaryKeys(pks, recordBuffer, 0, s);
 
-											table.removeRecord(pks);
+												table.removeRecord(pks);
+											}
+											break;
+											case REMOVE_WITH_CASCADE: {
+												int s = in.readUnsignedShortInt();
+												in.readFully(recordBuffer, 0, s);
+												HashMap<String, Object> pks = new HashMap<>();
+												table.deserializePrimaryKeys(pks, recordBuffer, 0, s);
+
+												table.removeRecordWithCascade(pks);
+											}
+											break;
+
+
 										}
-										break;
-										case REMOVE_WITH_CASCADE:
-										{
-											int s=in.readUnsignedShortInt();
-											in.readFully(recordBuffer, 0, s);
-											HashMap<String, Object> pks=new HashMap<>();
-											table.deserializePrimaryKeys(pks, recordBuffer, 0, s);
-
-											table.removeRecordWithCascade(pks);
+										if (in.readInt() != startRecord)
+											throw new IOException();
+										if (progressMonitor != null && totalSize != 0) {
+											progressPosition += in.currentPosition() - startRecord;
+											progressMonitor.setProgress((int) ((progressPosition * 1000) / totalSize));
 										}
-										break;
-
-
 									}
-									if (in.readInt()!=startRecord)
-										throw new IOException();
-									if (progressMonitor!=null && totalSize!=0) {
-										progressPosition += in.currentPosition() - startRecord;
-										progressMonitor.setProgress((int)((progressPosition*1000)/totalSize));
-									}
-									return progressPosition;
 								}
 
 								@Override
