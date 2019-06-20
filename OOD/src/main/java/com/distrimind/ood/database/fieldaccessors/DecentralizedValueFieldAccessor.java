@@ -1,3 +1,4 @@
+package com.distrimind.ood.database.fieldaccessors;
 /*
 Copyright or © or Copr. Jason Mahdjoub (01/04/2013)
 
@@ -33,7 +34,13 @@ same conditions as regards security.
 The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
-package com.distrimind.ood.database.fieldaccessors;
+
+import com.distrimind.ood.database.*;
+import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
+import com.distrimind.ood.database.exceptions.FieldDatabaseException;
+import com.distrimind.util.*;
+import com.distrimind.util.crypto.*;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -46,41 +53,40 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
 
-import com.distrimind.ood.database.DatabaseRecord;
-import com.distrimind.ood.database.DatabaseWrapper;
-import com.distrimind.ood.database.SqlField;
-import com.distrimind.ood.database.SqlFieldInstance;
-import com.distrimind.ood.database.Table;
-import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
-import com.distrimind.ood.database.exceptions.FieldDatabaseException;
-import com.distrimind.util.crypto.ASymmetricPrivateKey;
-import com.distrimind.util.crypto.ASymmetricPublicKey;
-import com.distrimind.util.crypto.AbstractSecureRandom;
-import com.distrimind.util.crypto.SymmetricSecretKey;
-
-
 /**
- * 
  * @author Jason Mahdjoub
- * @version 1.1
- * @since OOD 1.7.0
- * 
+ * @version 1.0
+ * @since OOD 2.0.0
  */
-public class KeyFieldAccessor extends FieldAccessor {
+public class DecentralizedValueFieldAccessor extends FieldAccessor {
 	protected final SqlField[] sql_fields;
 	private final boolean isVarBinary;
 	private final boolean encodeExpirationUTC;
 
-	protected KeyFieldAccessor(Class<? extends Table<?>> table_class,
-			DatabaseWrapper _sql_connection, Field _field, String parentFieldName) throws DatabaseException {
+	protected DecentralizedValueFieldAccessor(Class<? extends Table<?>> table_class,
+											  DatabaseWrapper _sql_connection, Field _field, String parentFieldName) throws DatabaseException {
 		super(_sql_connection, _field, parentFieldName, new Class<?>[] {_field.getType()}, table_class);
 		sql_fields = new SqlField[1];
 		Class<?>[] compatibleClasses = new Class<?>[]{_field.getType()};
-		
-		long limit= compatibleClasses[0]==ASymmetricPublicKey.class?1060:(compatibleClasses[0]==ASymmetricPrivateKey.class?140:55);
+
+		long limit;
 		if (getLimit()>0)
 			limit=getLimit();
+		else
+		{
+			if (AbstractDecentralizedID.class.isAssignableFrom(compatibleClasses[0]))
+			{
+				if (compatibleClasses[0].equals(DecentralizedIDGenerator.class) || compatibleClasses[0].equals(RenforcedDecentralizedIDGenerator.class))
+				{
+					limit=17;
+				}
+				else
+					limit=33;
+			}
+			else
+				limit= compatibleClasses[0]== ASymmetricPublicKey.class?1060:(compatibleClasses[0]== ASymmetricPrivateKey.class?140:(compatibleClasses[0]== SymmetricSecretKey.class?55:1200));
+
+		}
 		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(),
 				Objects.requireNonNull(DatabaseWrapperAccessor.isVarBinarySupported(sql_connection) ? "VARBINARY(" + limit + ")"
 						: DatabaseWrapperAccessor.getBigIntegerType(sql_connection)),
@@ -92,7 +98,7 @@ public class KeyFieldAccessor extends FieldAccessor {
 			encodeExpirationUTC=true;
 	}
 
-	
+
 	private static BigDecimal getBigDecimal(byte[] bytes) {
 		return ByteTabFieldAccessor.getBigDecimalValue(bytes);
 	}
@@ -143,24 +149,20 @@ public class KeyFieldAccessor extends FieldAccessor {
 			return null;
 		else if (getFieldClassType()==ASymmetricPublicKey.class)
 			return ((ASymmetricPublicKey) instance).encode(encodeExpirationUTC);
-		else if (getFieldClassType()==ASymmetricPrivateKey.class)
-			return ((ASymmetricPrivateKey) instance).encode();
-		else if (getFieldClassType()==SymmetricSecretKey.class)
-			return ((SymmetricSecretKey) instance).encode();
+		else if (DecentralizedValue.class.isAssignableFrom(getFieldClassType()))
+			return ((DecentralizedValue) instance).encodeWithDefaultParameters();
 		else
 			throw new IllegalAccessError();
 	}
-	
+
 	public Object decode(byte[] tab)
 	{
 		if (tab==null)
 			return null;
 		else if (getFieldClassType()==ASymmetricPublicKey.class)
 			return ASymmetricPublicKey.decode(tab, sql_connection.supportNoCacheParam());
-		else if (getFieldClassType()==ASymmetricPrivateKey.class)
-			return ASymmetricPrivateKey.decode(tab, sql_connection.supportNoCacheParam());
-		else if (getFieldClassType()==SymmetricSecretKey.class)
-			return SymmetricSecretKey.decode(tab, sql_connection.supportNoCacheParam());
+		else if (DecentralizedValue.class.isAssignableFrom(getFieldClassType()))
+			return DecentralizedValue.decode(tab, sql_connection.supportNoCacheParam());
 		else
 			throw new IllegalAccessError();
 	}
@@ -171,7 +173,7 @@ public class KeyFieldAccessor extends FieldAccessor {
 			byte[] val1;
 			if (_field_instance instanceof byte[])
 				val1 = (byte[]) _field_instance;
-			else 
+			else
 				val1 = encode(_field_instance);
 
 			byte[] val2;

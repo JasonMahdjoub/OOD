@@ -181,7 +181,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 			int i = 0;
 			int size = 2 + peers.size() * 2;
 			for (AbstractDecentralizedID id : peers) {
-				bytes[i] = id.getBytes();
+				bytes[i] = id.encode();
 				size += bytes[i++].length + 2;
 			}
 			if (size > concernedHostsSizeLimit) {
@@ -211,7 +211,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 					throw new SerializationDatabaseException("Invalid data (hook id size est greater to 1024)");
 
 				off += 2;
-				res.add(AbstractDecentralizedID.instanceOf(concernedHosts, off, size));
+				res.add(AbstractDecentralizedID.decode(concernedHosts, off, size));
 				off += size;
 			}
 			return res;

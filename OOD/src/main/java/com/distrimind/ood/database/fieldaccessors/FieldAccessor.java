@@ -76,6 +76,7 @@ import com.distrimind.ood.database.annotations.Unique;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.DecentralizedIDGenerator;
+import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.RenforcedDecentralizedIDGenerator;
 import com.distrimind.util.crypto.*;
 
@@ -225,7 +226,7 @@ public abstract class FieldAccessor {
 
 	public boolean isCacheAlwaysDisabled()
 	{
-		return !ASymmetricPublicKey.class.isAssignableFrom(field.getType()) && (Key.class.isAssignableFrom(field.getType()) || ASymmetricKeyPair.class.isAssignableFrom(field.getType()));
+		return !ASymmetricPublicKey.class.isAssignableFrom(field.getType()) && DecentralizedValue.class.isAssignableFrom(field.getType());
 	}
 
 	public String getSqlFieldName()
@@ -461,10 +462,11 @@ public abstract class FieldAccessor {
 							res.add(new doubleFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 						else if (type.equals(String.class))
 							res.add(new StringFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
-						else if (type.equals(ASymmetricPublicKey.class) || type.equals(ASymmetricPrivateKey.class) || type.equals(SymmetricSecretKey.class))
+						/*else if (type.equals(ASymmetricPublicKey.class) || type.equals(ASymmetricPrivateKey.class) || type.equals(SymmetricSecretKey.class))
 						{
 							res.add(new KeyFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
-						}
+						}*/
+
 						else if (type.equals(class_array_byte))
 							res.add(new ByteTabFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 						else if (type.equals(Boolean.class))
@@ -505,7 +507,10 @@ public abstract class FieldAccessor {
 						else if (type.equals(UUID.class))
 							res.add(new UUIDFieldAccessor(_table_class, _sql_connection, f,
 									parentFieldName));
-
+						else if (DecentralizedValue.class.isAssignableFrom(type))
+						{
+							res.add(new DecentralizedValueFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
+						}
 						else if (isComposedField(type)) {
 							for (Class<?> cpf : parentFields)
 								if (cpf.isAssignableFrom(type))

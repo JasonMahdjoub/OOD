@@ -3105,9 +3105,9 @@ public abstract class TestDatabase {
             } else if (AbstractDecentralizedID.class.isAssignableFrom(type)) {
                 AbstractDecentralizedID id = (AbstractDecentralizedID) o;
                 if (DatabaseWrapperAccessor.isVarBinarySupported(sql_db))
-                    res.add(id.getBytes());
+                    res.add(id.encode());
                 else {
-                    byte[] bytes = id.getBytes();
+                    byte[] bytes = id.encode();
                     BigInteger r = BigInteger.valueOf(1);
                     for (byte aByte : bytes) {
                         r = r.shiftLeft(8).or(BigInteger.valueOf(aByte & 0xFF));

@@ -151,7 +151,7 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 			int i = 0;
 			int size = 2 + peers.size() * 2;
 			for (AbstractDecentralizedID id : peers) {
-				bytes[i] = id.getBytes();
+				bytes[i] = id.encode();
 				size += bytes[i++].length + 2;
 				if (size > 32768) {
 					peersInformedFull = true;
@@ -183,7 +183,7 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 					throw new SerializationDatabaseException("Invalid data (hook id size est greater to 1024)");
 
 				off += 2;
-				res.add(AbstractDecentralizedID.instanceOf(peersInformed, off, size));
+				res.add(AbstractDecentralizedID.decode(peersInformed, off, size));
 				off += size;
 			}
 			return res;
@@ -302,7 +302,7 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 				throw new SerializationDatabaseException("Impossible to read the expected bytes number : " + size);
 			AbstractDecentralizedID hookID;
 			try {
-				hookID = AbstractDecentralizedID.instanceOf(b);
+				hookID = AbstractDecentralizedID.decode(b);
 			} catch (Exception e) {
 				throw new SerializationDatabaseException("Impossible to get the hook identifier ! ", e);
 			}
@@ -390,7 +390,7 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 						} else if (_record.getLocalID() == fromTransactionID) {
 							if (_record.isConcernedBy(hook.getHostID())) {
 								oos.writeByte(DatabaseTransactionsPerHostTable.EXPORT_INDIRECT_TRANSACTION);
-								byte b[] = _record.getHook().getHostID().getBytes();
+								byte b[] = _record.getHook().getHostID().encode();
 								oos.writeShort((short) b.length);
 								oos.write(b);
 								oos.writeLong(_record.getID());
