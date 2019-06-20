@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-2.0.0 Beta 106 (Build: 453) (from 01/04/2013 to 23/04/2019)
+2.0.0 Stable (Build: 487) (from 01/04/2013 to 14/06/2019)
 
 # Creator(s):
 Jason MAHDJOUB
@@ -9,6 +9,17 @@ Jason MAHDJOUB
 Jason MAHDJOUB (Entred in the team at 01/04/2013)
 
 # Modifications:
+
+
+### 2.0.0 Stable (14/06/2019)
+* Update Utils to 4.2.2 Stable
+* Add backup/restore manager, with historical management
+* Better manage database versions
+
+
+### 2.0.0 Beta 107 (06/05/2019)
+* Update Utils to 3.26.0 Stable
+* Add Field.includeKeyExpiration()
 
 
 ### 2.0.0 Beta 106 (23/04/2019)
@@ -104,7 +115,7 @@ Jason MAHDJOUB (Entred in the team at 01/04/2013)
 
 ### 2.0.0 Beta 66 (10/02/2018)
 * Updating utils to 3.10.5
-* Correcting a bug with the backup of enum variables
+* Correcting a bug with the nativeBackup of enum variables
 
 
 ### 2.0.0 Beta 59 (31/01/2018)
@@ -260,7 +271,7 @@ Jason MAHDJOUB (Entred in the team at 01/04/2013)
 * Updating to Utils 2.7.1.
 * Downgrading to Derby 10.11.1.1 (JDK 7 Compatible).
 * Adding DatabaseConfiguration class.
-* Adding DatabaseCreationCallable class.
+* Adding DatabaseLifeCycles class.
 * Changing the database loading policy : enabling transfer data from old database to new database.
 * Minimizing code duplication of tests.
 * Adding remove database possibility.
@@ -344,7 +355,7 @@ Jason MAHDJOUB (Entred in the team at 01/04/2013)
 
 ### 1.6.0 Stable (11/03/2016)
 * Updating with Utils 1.6.
-* Adding database backup tools.
+* Adding database nativeBackup tools.
 * renaming alterRecord functions to updateRecord.
 * Adding functions Table.addRecord(record), Table.updateRecord(record).
 

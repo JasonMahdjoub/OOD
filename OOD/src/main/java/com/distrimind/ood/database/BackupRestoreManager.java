@@ -1050,7 +1050,7 @@ public class BackupRestoreManager {
 
 	boolean doesCreateNewBackupReference()
 	{
-		return !passive && !isReady();
+		return !passive && (!isReady() || fileReferenceTimeStamps.size()==0 || fileReferenceTimeStamps.get(fileReferenceTimeStamps.size()-1)+backupConfiguration.getBackupReferenceDurationInMs()<System.currentTimeMillis());
 	}
 
 	private void deleteDatabaseFilesFromReferenceToLastFile(long firstFileReference, int oldLength) throws DatabaseException {

@@ -21,19 +21,19 @@ Adapt into your build.gradle file, the next code :
 	...
 	dependencies {
 		...
-		compile(group:'com.distrimind.ood', name: 'OOD', version: '2.0.0-Beta106')
+		compile(group:'com.distrimind.ood', name: 'OOD', version: '2.0.0-Stable')
 		//choose this driver for H2 database
-			compile(group:'com.h2database', name: 'h2', version: '1.4.196')
+			compile(group:'com.h2database', name: 'h2', version: '1.4.199')
 		//choose one of these optional drivers for HSQLDB
 			//optional and under JDK8 or newer
-			compile(group:'org.hsqldb', name: 'hsqldb', version: '2.4.1')
+			compile(group:'org.hsqldb', name: 'hsqldb', version: '2.5.0')
 			//optional and under JDK7 or newer
 			compile(group:'org.hsqldb', name: 'hsqldb', version: '2.3.4')
 		//choose one of these optional drivers for DerbyDB
 			//optional and under JDK7 or newer
 			compile(group:'org.apache.derby', name: 'derby', version: '10.11.1.1')
 			//optional and under JDK8 or newer
-			compile(group:'org.apache.derby', name: 'derby', version: '10.13.1.1')
+			compile(group:'org.apache.derby', name: 'derby', version: '10.15.1.3')
 		...
 	}
 	...
@@ -50,23 +50,23 @@ Adapt into your pom.xml file, the next code :
 			<dependency>
 				<groupId>com.distrimind.ood</groupId>
 				<artifactId>OOD</artifactId>
-				<version>2.0.0-Beta106</version>
+				<version>2.0.0-Stable</version>
 			</dependency>
 			<!-- choose one of these optional drivers for H2 database-->
 				<dependency>
 					<groupId>com.h2database</groupId>
 					<artifactId>h2</artifactId>
-
-					<version>1.4.196</version>
+	
+					<version>1.4.199</version>
 				</dependency>
 			<!-- choose one of these optional drivers for HSQLDB-->
 				<dependency>
 					<groupId>org.hsqldb</groupId>
 					<artifactId>hsqldb</artifactId>
-
+	
 					<!-- under JDK 8 or newer -->
-					<version>2.4.1</version>
-
+					<version>2.5.0</version>
+	
 					<!-- under JDK 7 or newer -->
 					<version>2.3.4</version>
 				</dependency>
@@ -74,10 +74,10 @@ Adapt into your pom.xml file, the next code :
 				<dependency>
 					<groupId>org.apache.derby</groupId>
 					<artifactId>derby</artifactId>
-
+	
 					<!-- under JDK 8 or newer -->
-					<version>10.13.1.1</version>
-
+					<version>10.15.1.3</version>
+	
 					<!-- under JDK 7 or newer -->
 					<version>10.11.1.1</version>
 				</dependency>

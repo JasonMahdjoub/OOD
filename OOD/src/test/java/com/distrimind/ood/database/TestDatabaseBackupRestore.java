@@ -446,8 +446,8 @@ public class TestDatabaseBackupRestore {
 				Thread.sleep(1000L);
 				addAndRemoveData(wrapper, 10);
 				if (internalBRM!=null) {
-					Assert.assertTrue(nbPartFiles<internalBRM.getPartFilesCount());
-					Assert.assertTrue(nbReferenceFiles<internalBRM.getReferenceFileCount());
+					Assert.assertTrue(nbPartFiles<internalBRM.getPartFilesCount(), nbPartFiles+";"+internalBRM.getPartFilesCount());
+					Assert.assertTrue(nbReferenceFiles<internalBRM.getReferenceFileCount(), nbReferenceFiles+";"+internalBRM.getReferenceFileCount());
 				}
 			}
 
