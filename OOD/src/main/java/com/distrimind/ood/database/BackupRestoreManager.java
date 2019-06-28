@@ -1189,7 +1189,7 @@ public class BackupRestoreManager {
 				else
 					return false;
 			}
-
+			boolean newVersionLoaded=false;
 			try {
 				File currentFile=getFile(startFileReference, true);
 				LinkedList<Long> listIncrements=new LinkedList<>();
@@ -1207,7 +1207,8 @@ public class BackupRestoreManager {
 
 				if (!checkTablesHeader(currentFile))
 					throw new DatabaseException("The database backup is incompatible with current database tables");
-
+				databaseWrapper.loadDatabase(databaseConfiguration, true, newVersion);
+				newVersionLoaded=true;
 				final ArrayList<Table<?>> tables=new ArrayList<>();
 				for (Class<? extends Table<?>> c : classes) {
 					Table<?> t = databaseWrapper.getTableInstance(c, newVersion);
@@ -1347,11 +1348,12 @@ public class BackupRestoreManager {
 
 				}
 				databaseWrapper.validateNewDatabaseVersionAndDeleteOldVersion(databaseConfiguration, oldVersion, newVersion);
-				createBackupReference();
+				//createBackupReference();
 				return res;
 
 			} catch (Exception e) {
-				databaseWrapper.deleteDatabase(databaseConfiguration, newVersion);
+				if (newVersionLoaded)
+					databaseWrapper.deleteDatabase(databaseConfiguration, newVersion);
 				throw DatabaseException.getDatabaseException(e);
 			}
 		}

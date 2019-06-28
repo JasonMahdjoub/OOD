@@ -488,6 +488,11 @@ public class TestDatabaseBackupRestore {
 		//noinspection ConstantConditions
 		loadDatabase(useSeveralRestorationPoint, useInternalBackup, dateRestoration, dataLoadStart, useExternalBRM, addAdditionData, alterRecords);
 
+		if (restoreToEmptyDatabase)
+		{
+			wrapper.deleteDatabaseFiles();
+			wrapper=loadWrapper(databaseDirectory, useInternalBackup);
+		}
 		BackupRestoreManager internalBRM=wrapper.getBackupRestoreManager(Table1.class.getPackage());
 
 		BackupRestoreManager usedBRM;
@@ -508,17 +513,14 @@ public class TestDatabaseBackupRestore {
 			}
 		}
 		Assert.assertTrue(usedBRM.getMinDateUTCInMs() < usedBRM.getMaxDateUTCInMS());
-		if (restoreToEmptyDatabase)
-		{
-			unloadDatabase();
-			wrapper=loadWrapper(databaseDirectory, useInternalBackup);
-		}
+
 
 
 		Assert.assertNotNull(usedBRM);
 		int oldVersion=wrapper.getCurrentDatabaseVersion(Table1.class.getPackage());
+		Assert.assertFalse(wrapper.isClosed());
 		usedBRM.restoreDatabaseToDateUTC(dateRestoration.get());
-		Assert.assertNotEquals(wrapper.getCurrentDatabaseVersion(Table1.class.getPackage()), oldVersion);
+		Assert.assertNotEquals(wrapper.getCurrentDatabaseVersion(Table1.class.getPackage()), oldVersion, wrapper.getCurrentDatabaseVersion(Table1.class.getPackage())+";"+oldVersion);
 		Assert.assertFalse(wrapper.doesVersionExists(Table1.class.getPackage(), oldVersion));
 		wrapper.close();
 		wrapper=loadWrapper(databaseDirectory, useInternalBackup);

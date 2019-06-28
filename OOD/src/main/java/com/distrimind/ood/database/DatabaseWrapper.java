@@ -3115,6 +3115,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	final void validateNewDatabaseVersionAndDeleteOldVersion(final DatabaseConfiguration configuration, final int oldDatabasaseVersion, final int newDatabaseVersion) throws DatabaseException {
 		try {
 			lockWrite();
+			assert oldDatabasaseVersion!=newDatabaseVersion;
 			int r=getConnectionAssociatedWithCurrentThread().getConnection().createStatement()
 					.executeUpdate("UPDATE TABLE "+VERSIONS_OF_DATABASE+" SET CURRENT_DATABASE_VERSION='"+newDatabaseVersion
 							+"' WHERE PACKAGE_NAME='"+getLongPackageName(configuration.getPackage())+"'"+getSqlComma());
@@ -3278,8 +3279,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (configuration == null)
 				throw new NullPointerException("tables is a null pointer.");
 
-			if (sql_database.containsKey(configuration.getPackage()))
-				throw new DatabaseException("There is already a database associated to the given wrapper ");
+			if (sql_database.containsKey(configuration.getPackage())) {
+				if (sql_database.get(configuration.getPackage()).tables_per_versions.containsKey(databaseVersion))
+					throw new DatabaseException("There is already a database associated to the given wrapper ");
+			}
 			try {
 
 
