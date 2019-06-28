@@ -63,11 +63,11 @@ import com.distrimind.util.crypto.AbstractSecureRandom;
  * 
  */
 public class DencetralizedIDFieldAccessor extends FieldAccessor {
-	protected final SqlField sql_fields[];
+	protected final SqlField[] sql_fields;
 
-	protected DencetralizedIDFieldAccessor(Class<? extends Table<?>> table_class, DatabaseWrapper _sql_connection,
+	protected DencetralizedIDFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection,
 			Field _field, String parentFieldName) throws DatabaseException {
-		super(_sql_connection, _field, parentFieldName, compatibleClasses, table_class);
+		super(_sql_connection, _field, parentFieldName, compatibleClasses, table);
 		sql_fields = new SqlField[2];
 		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName() + "_ts",
 				Objects.requireNonNull(DatabaseWrapperAccessor.getLongType(sql_connection)), null, null, isNotNull());
@@ -75,7 +75,7 @@ public class DencetralizedIDFieldAccessor extends FieldAccessor {
 				Objects.requireNonNull(DatabaseWrapperAccessor.getLongType(sql_connection)), null, null, isNotNull());
 	}
 
-	private static final Class<?> compatibleClasses[];
+	private static final Class<?>[] compatibleClasses;
 	static {
 		compatibleClasses = new Class<?>[1];
 		compatibleClasses[0] = DecentralizedIDGenerator.class;
@@ -148,7 +148,7 @@ public class DencetralizedIDFieldAccessor extends FieldAccessor {
 
 	@Override
 	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
-		SqlFieldInstance res[] = new SqlFieldInstance[2];
+		SqlFieldInstance[] res = new SqlFieldInstance[2];
 		DecentralizedIDGenerator did = (DecentralizedIDGenerator) getValue(_instance);
 		if (did==null)
 		{
@@ -182,8 +182,8 @@ public class DencetralizedIDFieldAccessor extends FieldAccessor {
 	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
-			Long ts = (Long)_result_set.getObject(getColmunIndex(_result_set, sql_fields[0].field));
-			Long wsseq = (Long)_result_set.getObject(getColmunIndex(_result_set, sql_fields[1].field));
+			Long ts = _result_set==null?null:(Long)_result_set.getObject(getColmunIndex(_result_set, sql_fields[0].field));
+			Long wsseq = _result_set==null?null:(Long)_result_set.getObject(getColmunIndex(_result_set, sql_fields[1].field));
 
 			if (ts==null || wsseq==null)
 				field.set(_class_instance, null);

@@ -63,14 +63,14 @@ import com.distrimind.ood.database.exceptions.FieldDatabaseException;
  * @since OOD 1.5
  */
 public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
-	protected final SqlField sql_fields[];
+	protected final SqlField[] sql_fields;
 	private final ByteTabObjectConverter converter;
 	private final boolean isVarBinary;
 	private final boolean isBigInteger;
 
-	protected ByteTabConvertibleFieldAccessor(Class<? extends Table<?>> table_class, DatabaseWrapper _sql_connection,
+	protected ByteTabConvertibleFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection,
 			Field _field, String parentFieldName, ByteTabObjectConverter converter) throws DatabaseException {
-		super(_sql_connection, _field, parentFieldName, getCompatibleClasses(_field), table_class);
+		super(_sql_connection, _field, parentFieldName, getCompatibleClasses(_field), table);
 		sql_fields = new SqlField[1];
 
 		String type;
@@ -189,11 +189,11 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 
 	@Override
 	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
-		SqlFieldInstance res[] = new SqlFieldInstance[1];
+		SqlFieldInstance[] res = new SqlFieldInstance[1];
 		try
 		{
 			Object o=getValue(_instance);
-			byte bytes[]=o==null?null:converter.getBytes(o);
+			byte[] bytes = o == null ? null : converter.getBytes(o);
 			if (bytes == null && o!=null)
 				throw new FieldDatabaseException(
 						"The given ByteTabObjectConverter should produce an byte tab and not a null reference. This concern the affectation of the field "

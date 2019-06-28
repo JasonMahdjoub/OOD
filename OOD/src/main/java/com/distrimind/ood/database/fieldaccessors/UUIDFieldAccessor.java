@@ -63,11 +63,11 @@ import com.distrimind.util.crypto.AbstractSecureRandom;
  * 
  */
 public class UUIDFieldAccessor extends FieldAccessor {
-	protected final SqlField sql_fields[];
+	protected final SqlField[] sql_fields;
 
-	protected UUIDFieldAccessor(Class<? extends Table<?>> table_class, DatabaseWrapper _sql_connection,
+	protected UUIDFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection,
 			Field _field, String parentFieldName) throws DatabaseException {
-		super(_sql_connection, _field, parentFieldName, compatibleClasses, table_class);
+		super(_sql_connection, _field, parentFieldName, compatibleClasses, table);
 		sql_fields = new SqlField[2];
 		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName() + "_ts",
 				Objects.requireNonNull(DatabaseWrapperAccessor.getLongType(sql_connection)), null, null, isNotNull());
@@ -75,7 +75,7 @@ public class UUIDFieldAccessor extends FieldAccessor {
 				Objects.requireNonNull(DatabaseWrapperAccessor.getLongType(sql_connection)), null, null, isNotNull());
 	}
 
-	private static final Class<?> compatibleClasses[];
+	private static final Class<?>[] compatibleClasses;
 	static {
 		compatibleClasses = new Class<?>[1];
 		compatibleClasses[0] = UUID.class;
@@ -148,7 +148,7 @@ public class UUIDFieldAccessor extends FieldAccessor {
 
 	@Override
 	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
-		SqlFieldInstance res[] = new SqlFieldInstance[2];
+		SqlFieldInstance[] res = new SqlFieldInstance[2];
 		UUID did = (UUID) getValue(_instance);
 		if (did==null)
 		{

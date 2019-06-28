@@ -311,21 +311,22 @@ public class BackupRestoreManager {
 				case ADD:case UPDATE:
 				{
 					if (!table.isPrimaryKeysAndForeignKeysSame() && table.getForeignKeysFieldAccessors().size()>0) {
-
+						out.writeBoolean(true);
 						byte[] fks=table.serializeFieldsWithUnknownType(newRecord, false, true, false);
 						out.writeUnsignedShortInt(fks.length);
 						out.write(fks);
 					}
 					else
-						out.writeUnsignedShortInt(-1);
+						out.writeBoolean(false);
 
 					byte[] nonkeys=table.serializeFieldsWithUnknownType(newRecord, false,false, true);
 					if (nonkeys==null || nonkeys.length==0)
 					{
-						out.writeUnsignedShortInt(-1);
+						out.writeBoolean(false);
 					}
 					else
 					{
+						out.writeBoolean(true);
 						out.writeUnsignedShortInt(nonkeys.length);
 						out.write(nonkeys);
 					}
@@ -352,7 +353,7 @@ public class BackupRestoreManager {
 		try {
 			if (classes.size()>Short.MAX_VALUE)
 				throw new DatabaseException("Too much tables");
-			int dataPosition=10+classes.size()*2;
+			int dataPosition=(int)(10+classes.size()*2+out.currentPosition());
 			List<byte[]> l=new ArrayList<>(classes.size());
 			for (Class<? extends Table<?>> aClass : classes) {
 				byte[] tab=aClass.getName().getBytes(StandardCharsets.UTF_8);
@@ -366,6 +367,8 @@ public class BackupRestoreManager {
 				out.write(t);
 			}
 			out.writeInt(-1);
+			if (out.currentPosition()!=dataPosition)
+				throw new DatabaseException("Unexpected exception");
 		}
 		catch(IOException e)
 		{
@@ -1207,6 +1210,7 @@ public class BackupRestoreManager {
 
 				if (!checkTablesHeader(currentFile))
 					throw new DatabaseException("The database backup is incompatible with current database tables");
+
 				databaseWrapper.loadDatabase(databaseConfiguration, true, newVersion);
 				newVersionLoaded=true;
 				final ArrayList<Table<?>> tables=new ArrayList<>();
@@ -1264,44 +1268,40 @@ public class BackupRestoreManager {
 										if (tableIndex >= tables.size())
 											throw new IOException();
 										Table<?> table = tables.get(tableIndex);
+										int s = in.readUnsignedShortInt();
+										in.readFully(recordBuffer, 0, s);
 										switch (eventType) {
 											case ADD:
 											case UPDATE: {
-												int s = in.readUnsignedShortInt();
-												in.readFully(recordBuffer, 0, s);
-												DatabaseRecord dr = table.getNewRecordInstance();
+												DatabaseRecord dr = table.getNewRecordInstance(false);
 												table.deserializePrimaryKeys(dr, recordBuffer, 0, s);
-												s = in.readUnsignedShortInt();
-												if (s > 0) {
+
+												if (in.readBoolean()) {
+													s = in.readUnsignedShortInt();
 													in.readFully(recordBuffer, 0, s);
 													table.deserializeFields(dr, recordBuffer, 0, s, false, true, false);
 												}
-												s = in.readUnsignedShortInt();
-												if (s > 0) {
+
+												if (in.readBoolean()) {
+													s = in.readUnsignedShortInt();
 													in.readFully(recordBuffer, 0, s);
 													table.deserializeFields(dr, recordBuffer, 0, s, false, false, true);
 												}
 												if (eventType == DatabaseEventType.ADD)
-													table.addRecord(dr);
+													table.addUntypedRecord(dr, false, true, null);
 												else
 													table.updateUntypedRecord(dr, true, null);
 											}
 											break;
 											case REMOVE: {
-												int s = in.readUnsignedShortInt();
-												in.readFully(recordBuffer, 0, s);
 												HashMap<String, Object> pks = new HashMap<>();
 												table.deserializePrimaryKeys(pks, recordBuffer, 0, s);
-
 												table.removeRecord(pks);
 											}
 											break;
 											case REMOVE_WITH_CASCADE: {
-												int s = in.readUnsignedShortInt();
-												in.readFully(recordBuffer, 0, s);
 												HashMap<String, Object> pks = new HashMap<>();
 												table.deserializePrimaryKeys(pks, recordBuffer, 0, s);
-
 												table.removeRecordWithCascade(pks);
 											}
 											break;

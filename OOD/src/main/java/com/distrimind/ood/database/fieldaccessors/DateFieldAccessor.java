@@ -64,11 +64,11 @@ import com.distrimind.ood.database.exceptions.FieldDatabaseException;
  * 
  */
 public class DateFieldAccessor extends FieldAccessor {
-	private final SqlField sql_fields[];
+	private final SqlField[] sql_fields;
 
-	protected DateFieldAccessor(Class<? extends Table<?>> table_class, DatabaseWrapper _sql_connection, Field _field,
+	protected DateFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection, Field _field,
 			String parentFieldName) throws DatabaseException {
-		super(_sql_connection, _field, parentFieldName, getCompatibleClasses(_field), table_class);
+		super(_sql_connection, _field, parentFieldName, getCompatibleClasses(_field), table);
 		if (!Date.class.isAssignableFrom(_field.getType()))
 			throw new FieldDatabaseException("The field " + _field.getName() + " of the class "
 					+ _field.getDeclaringClass().getName() + " of type " + _field.getType() + " must be a Date type.");
@@ -209,7 +209,7 @@ public class DateFieldAccessor extends FieldAccessor {
 
 	@Override
 	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
-		SqlFieldInstance res[] = new SqlFieldInstance[1];
+		SqlFieldInstance[] res = new SqlFieldInstance[1];
 		Date date=(Date) getValue(_instance);
 		res[0] = new SqlFieldInstance(sql_fields[0], date==null?null:new Timestamp(date.getTime()));
 		return res;

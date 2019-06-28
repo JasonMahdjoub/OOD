@@ -68,16 +68,16 @@ import com.distrimind.util.crypto.AbstractSecureRandom;
  * @since OOD 1.0
  */
 public class ByteTabFieldAccessor extends FieldAccessor {
-	protected final SqlField sql_fields[];
+	protected final SqlField[] sql_fields;
 	private final boolean isVarBinary;
 	private final boolean isBigInteger;
 
 	public static final long defaultByteTabSize= 16777216L;
 	public static final int shortTabSizeLimit=32768;
 	
-	protected ByteTabFieldAccessor(Class<? extends Table<?>> table_class, DatabaseWrapper _sql_connection, Field _field,
+	protected ByteTabFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection, Field _field,
 			String parentFieldName) throws DatabaseException {
-		super(_sql_connection, _field, parentFieldName, compatible_classes, table_class);
+		super(_sql_connection, _field, parentFieldName, compatible_classes, table);
 		sql_fields = new SqlField[1];
 		String type;
 		long l = limit;
@@ -112,12 +112,12 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 			return null;
 		else 
 		{
-			byte tab[]=value.toBigInteger().toByteArray();
+			byte[] tab = value.toBigInteger().toByteArray();
 			if (tab.length<1)
 				return null;
 			if (tab.length==1)
 				return new byte[0];
-			byte res[]=new byte[tab.length-1];
+			byte[] res = new byte[tab.length - 1];
 			System.arraycopy(tab, 1, res, 0, res.length);
 			return res;
 		}
@@ -129,7 +129,7 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 			return null;
 		else
 		{
-			byte tab[]=new byte[value.length+1];
+			byte[] tab = new byte[value.length + 1];
 			tab[0]=1;
 			System.arraycopy(value, 0, tab, 1, value.length);
 			return new BigDecimal(new BigInteger(tab));
@@ -160,14 +160,14 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 	@Override
 	public boolean equals(Object _class_instance, Object _field_instance) throws DatabaseException {
 		try {
-			byte tab1[] = (byte[]) field.get(_class_instance);
+			byte[] tab1 = (byte[]) field.get(_class_instance);
 			if (_field_instance == null) {
 				if (isNotNull())
 					return false;
 				else
 					return tab1 == null;
 			}
-			byte tab2[];
+			byte[] tab2;
 			if (_field_instance.getClass().equals(this.getCompatibleClasses()[0]))
 				tab2 = (byte[]) _field_instance;
 			else
@@ -222,7 +222,7 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	private static final Class<?>[] compatible_classes = { (new byte[0]).getClass() };
+	private static final Class<?>[] compatible_classes = {byte[].class};
 
 	@Override
 	public Object getValue(Object _class_instance) throws DatabaseException {
@@ -240,7 +240,7 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 
 	@Override
 	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
-		SqlFieldInstance res[] = new SqlFieldInstance[1];
+		SqlFieldInstance[] res = new SqlFieldInstance[1];
 		try
 		{
 			if (isVarBinary)

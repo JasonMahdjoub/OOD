@@ -70,13 +70,13 @@ import com.distrimind.util.crypto.SecureRandomType;
  * @since OOD 1.7.0
  * 
  */
-public class AbstractDencetralizedIDFieldAccessor extends FieldAccessor {
+public class AbstractDecentralizedIDFieldAccessor extends FieldAccessor {
 	protected final SqlField[] sql_fields;
 	private final boolean isVarBinary;
 
-	protected AbstractDencetralizedIDFieldAccessor(Class<? extends Table<?>> table_class,
-			DatabaseWrapper _sql_connection, Field _field, String parentFieldName) throws DatabaseException {
-		super(_sql_connection, _field, parentFieldName, compatibleClasses, table_class);
+	protected AbstractDecentralizedIDFieldAccessor(Table<?> table,
+												   DatabaseWrapper _sql_connection, Field _field, String parentFieldName) throws DatabaseException {
+		super(_sql_connection, _field, parentFieldName, compatibleClasses, table);
 		sql_fields = new SqlField[1];
 		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(),
 				Objects.requireNonNull(DatabaseWrapperAccessor.isVarBinarySupported(sql_connection) ? "VARBINARY(65)"

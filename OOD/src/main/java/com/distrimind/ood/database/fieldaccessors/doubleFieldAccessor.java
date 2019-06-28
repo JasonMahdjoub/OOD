@@ -63,11 +63,11 @@ import com.distrimind.ood.database.exceptions.FieldDatabaseException;
  * 
  */
 public class doubleFieldAccessor extends FieldAccessor {
-	protected final SqlField sql_fields[];
+	protected final SqlField[] sql_fields;
 
-	protected doubleFieldAccessor(Class<? extends Table<?>> table_class, DatabaseWrapper _sql_connection, Field _field,
+	protected doubleFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection, Field _field,
 			String parentFieldName) throws DatabaseException {
-		super(_sql_connection, _field, parentFieldName, compatible_classes, table_class);
+		super(_sql_connection, _field, parentFieldName, compatible_classes, table);
 		sql_fields = new SqlField[1];
 		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(),
 				Objects.requireNonNull(DatabaseWrapperAccessor.getDoubleType(sql_connection)), null, null, isNotNull());
@@ -143,7 +143,7 @@ public class doubleFieldAccessor extends FieldAccessor {
 
 	@Override
 	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
-		SqlFieldInstance res[] = new SqlFieldInstance[1];
+		SqlFieldInstance[] res = new SqlFieldInstance[1];
 		res[0] = new SqlFieldInstance(sql_fields[0], getValue(_instance));
 		return res;
 	}

@@ -49,7 +49,7 @@ public class SqlField {
 	/**
 	 * the name of the Sql field appended with the name of the Sql Table.
 	 */
-	public final String field;
+	public String field;
 
 	/**
 	 * the type of the Sql field.
@@ -59,13 +59,13 @@ public class SqlField {
 	/**
 	 * The name of the pointed Sql table, if this field is a foreign key
 	 */
-	public final String pointed_table;
+	public String pointed_table;
 
 	/**
 	 * The name of the pointed Sql field appended with its Sql Table, if this field
 	 * is a foreign key
 	 */
-	public final String pointed_field;
+	public String pointed_field;
 
 	/**
 	 * the name of the Sql field not appended with the name of the Sql Table.

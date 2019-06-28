@@ -62,11 +62,11 @@ import com.distrimind.ood.database.exceptions.FieldDatabaseException;
  * @since OOD 1.0
  */
 public class byteFieldAccessor extends FieldAccessor {
-	protected final SqlField sql_fields[];
+	protected final SqlField[] sql_fields;
 
-	protected byteFieldAccessor(Class<? extends Table<?>> table_class, DatabaseWrapper _sql_connection, Field _field,
+	protected byteFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection, Field _field,
 			String parentFieldName) throws DatabaseException {
-		super(_sql_connection, _field, parentFieldName, compatible_classes, table_class);
+		super(_sql_connection, _field, parentFieldName, compatible_classes, table);
 		sql_fields = new SqlField[1];
 		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(),
 				Objects.requireNonNull(DatabaseWrapperAccessor.getByteType(sql_connection)), null, null, isNotNull());
@@ -144,7 +144,7 @@ public class byteFieldAccessor extends FieldAccessor {
 
 	@Override
 	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
-		SqlFieldInstance res[] = new SqlFieldInstance[1];
+		SqlFieldInstance[] res = new SqlFieldInstance[1];
 		res[0] = new SqlFieldInstance(sql_fields[0], getValue(_instance));
 		return res;
 	}

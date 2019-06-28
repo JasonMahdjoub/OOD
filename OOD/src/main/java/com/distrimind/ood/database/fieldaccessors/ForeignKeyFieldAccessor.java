@@ -64,7 +64,7 @@ import com.distrimind.ood.database.exceptions.FieldDatabaseException;
  * @since OOD 1.0
  */
 public class ForeignKeyFieldAccessor extends FieldAccessor {
-	protected SqlField sql_fields[] = null;
+	protected SqlField[] sql_fields = null;
 	protected ArrayList<FieldAccessor> linked_primary_keys = null;
 	protected String linked_table_name = null;
 	protected Table<? extends DatabaseRecord> pointed_table = null;
@@ -75,9 +75,9 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 	static {
 		try {
 			get_record_method = Table.class.getDeclaredMethod("getRecordFromPointingRecord",
-					(new SqlFieldInstance[1]).getClass(), (new ArrayList<DatabaseRecord>()).getClass());
+					SqlFieldInstance[].class, ArrayList.class);
 			get_record_method.setAccessible(true);
-			get_new_record_instance_method = Table.class.getDeclaredMethod("getNewRecordInstance", Constructor.class);
+			get_new_record_instance_method = Table.class.getDeclaredMethod("getNewRecordInstance", Constructor.class, boolean.class);
 			get_new_record_instance_method.setAccessible(true);
 		} catch (SecurityException e) {
 			System.err.println(
@@ -93,9 +93,9 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 
 	}
 
-	protected ForeignKeyFieldAccessor(Class<? extends Table<?>> table_class, DatabaseWrapper _sql_connection,
+	protected ForeignKeyFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection,
 			Field _field, String parentFieldName) throws DatabaseException {
-		super(_sql_connection, _field, parentFieldName, getCompatibleClasses(_field), table_class);
+		super(_sql_connection, _field, parentFieldName, getCompatibleClasses(_field), table);
 		if (!DatabaseRecord.class.isAssignableFrom(_field.getType()))
 			throw new DatabaseException("The field " + _field.getName() + " of the class "
 					+ _field.getDeclaringClass().getName() + " is not a DatabaseRecord.");
@@ -200,7 +200,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 	}
 
 	private static Class<?>[] getCompatibleClasses(Field field) {
-		Class<?> compatible_classes[] = new Class<?>[1];
+		Class<?>[] compatible_classes = new Class<?>[1];
 		compatible_classes[0] = field.getType();
 
 		return compatible_classes;
@@ -223,14 +223,14 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 	@Override
 	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
 		Object val = this.getValue(_instance);
-		SqlFieldInstance res[] = new SqlFieldInstance[sql_fields.length];
+		SqlFieldInstance[] res = new SqlFieldInstance[sql_fields.length];
 		if (val == null) {
 			for (int i = 0; i < sql_fields.length; i++)
 				res[i] = new SqlFieldInstance(sql_fields[i], null);
 		} else {
 			int i = 0;
 			for (FieldAccessor fa : linked_primary_keys) {
-				SqlFieldInstance linked_sql_field_instances[] = fa.getSqlFieldsInstances(val);
+				SqlFieldInstance[] linked_sql_field_instances = fa.getSqlFieldsInstances(val);
 				for (SqlFieldInstance sfi : linked_sql_field_instances) {
 					res[i++] = new SqlFieldInstance(
 							table_name + "." + this.getSqlFieldName() + "__" + pointed_table.getName() + "_"
@@ -288,16 +288,16 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 				ArrayList<DatabaseRecord> list = _pointing_records == null ? new ArrayList<DatabaseRecord>()
 						: _pointing_records;
 				list.add((DatabaseRecord) _class_instance);
-				SqlField sfs[] = getDeclaredSqlFields();
+				SqlField[] sfs = getDeclaredSqlFields();
 
-				SqlFieldInstance sfis[] = new SqlFieldInstance[sfs.length];
+				SqlFieldInstance[] sfis = new SqlFieldInstance[sfs.length];
 				for (int i = 0; i < sfs.length; i++) {
 					sfis[i] = new SqlFieldInstance(sfs[i], _result_set.getObject(sfs[i].short_field));
 				}
 				field.set(_class_instance, get_record_method.invoke(getPointedTable(), sfis, list));
 			} else {
 				DatabaseRecord dr = (DatabaseRecord) get_new_record_instance_method.invoke(t,
-						t.getDefaultRecordConstructor());
+						t.getDefaultRecordConstructor(), true);
 
 				for (FieldAccessor fa : t.getFieldAccessors()) {
 					try {

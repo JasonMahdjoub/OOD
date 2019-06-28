@@ -64,11 +64,11 @@ import com.distrimind.ood.database.exceptions.FieldDatabaseException;
 public class ComposedFieldAccessor extends FieldAccessor {
 	private final ArrayList<FieldAccessor> fieldsAccessor;
 	private final Constructor<?> defaultConstructor;
-	private final SqlField sqlFields[];
+	private final SqlField[] sqlFields;
 
-	protected ComposedFieldAccessor(DatabaseWrapper _sql_connection, Class<? extends Table<?>> _table_class,
+	protected ComposedFieldAccessor(DatabaseWrapper _sql_connection, Table<?> table,
 			Field _field, String parentFieldName, List<Class<?>> parentFields) throws DatabaseException {
-		super(_sql_connection, _field, parentFieldName, new Class<?>[] { _field.getType() }, _table_class);
+		super(_sql_connection, _field, parentFieldName, new Class<?>[] { _field.getType() }, table);
 		try {
 			defaultConstructor = _field.getType().getDeclaredConstructor();
 			if (!Modifier.isPublic(defaultConstructor.getModifiers())) {
@@ -76,7 +76,7 @@ public class ComposedFieldAccessor extends FieldAccessor {
 						+ " must have a public default constructor ");
 			}
 
-			fieldsAccessor = FieldAccessor.getFields(_sql_connection, _table_class, _field.getType(), getFieldName(),
+			fieldsAccessor = FieldAccessor.getFields(_sql_connection, table, _field.getType(), getFieldName(),
 					parentFields);
 			ArrayList<SqlField> sfs = new ArrayList<>();
 
@@ -256,10 +256,10 @@ public class ComposedFieldAccessor extends FieldAccessor {
 	@Override
 	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
 		try {
-			SqlFieldInstance res[] = new SqlFieldInstance[getDeclaredSqlFields().length];
+			SqlFieldInstance[] res = new SqlFieldInstance[getDeclaredSqlFields().length];
 			int index = 0;
 			for (FieldAccessor fa : fieldsAccessor) {
-				SqlFieldInstance r[] = fa.getSqlFieldsInstances(fa.field.get(_instance));
+				SqlFieldInstance[] r = fa.getSqlFieldsInstances(fa.field.get(_instance));
 				for (SqlFieldInstance sfi : r)
 					res[index++] = sfi;
 			}

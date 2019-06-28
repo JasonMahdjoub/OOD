@@ -63,9 +63,9 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 	private final boolean isVarBinary;
 	private final boolean encodeExpirationUTC;
 
-	protected DecentralizedValueFieldAccessor(Class<? extends Table<?>> table_class,
+	protected DecentralizedValueFieldAccessor(Table<?> table,
 											  DatabaseWrapper _sql_connection, Field _field, String parentFieldName) throws DatabaseException {
-		super(_sql_connection, _field, parentFieldName, new Class<?>[] {_field.getType()}, table_class);
+		super(_sql_connection, _field, parentFieldName, new Class<?>[] {_field.getType()}, table);
 		sql_fields = new SqlField[1];
 		Class<?>[] compatibleClasses = new Class<?>[]{_field.getType()};
 

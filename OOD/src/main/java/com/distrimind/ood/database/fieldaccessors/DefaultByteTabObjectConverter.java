@@ -36,22 +36,18 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database.fieldaccessors;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.UnsupportedEncodingException;
-import java.net.Inet4Address;
-import java.net.Inet6Address;
-import java.net.InetAddress;
-import java.util.Calendar;
-
 import com.distrimind.ood.database.exceptions.IncompatibleFieldDatabaseException;
 import com.distrimind.util.crypto.ASymmetricKeyPair;
 import com.distrimind.util.crypto.ASymmetricPrivateKey;
 import com.distrimind.util.crypto.ASymmetricPublicKey;
 import com.distrimind.util.crypto.SymmetricSecretKey;
+
+import java.io.*;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
+import java.util.Calendar;
 
 /**
  * 
@@ -87,11 +83,7 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 		}
 		else if (_o instanceof File)
 		{
-			try {
-				return ((File) _o).getPath().getBytes("UTF-8");
-			} catch (UnsupportedEncodingException e) {
-				throw new IncompatibleFieldDatabaseException("",e);
-			}
+			return ((File) _o).getPath().getBytes(StandardCharsets.UTF_8);
 		}
 		else if (_o instanceof Calendar)
 		{
@@ -133,7 +125,7 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 			}
 			else if (File.class.isAssignableFrom(_object_type))
 			{
-				return new File(new String(_bytesTab, "UTF-8"));
+				return new File(new String(_bytesTab, StandardCharsets.UTF_8));
 			}
 			else if (Calendar.class.isAssignableFrom(_object_type))
 			{

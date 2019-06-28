@@ -70,12 +70,12 @@ import com.distrimind.ood.database.exceptions.FieldDatabaseException;
  * @since OOD 1.0
  */
 public class SerializableFieldAccessor extends FieldAccessor {
-	protected final SqlField sql_fields[];
+	protected final SqlField[] sql_fields;
 	protected Method compareTo_method;
 
-	protected SerializableFieldAccessor(Class<? extends Table<?>> table_class, DatabaseWrapper _sql_connection,
+	protected SerializableFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection,
 			Field _field, String parentFieldName) throws DatabaseException {
-		super(_sql_connection, _field, parentFieldName, getCompatibleClasses(_field), table_class);
+		super(_sql_connection, _field, parentFieldName, getCompatibleClasses(_field), table);
 		if (!Serializable.class.isAssignableFrom(field.getType()))
 			throw new FieldDatabaseException("The given field " + field.getName() + " of type "
 					+ field.getType().getName() + " must be a serializable field.");
@@ -100,7 +100,7 @@ public class SerializableFieldAccessor extends FieldAccessor {
 	}
 
 	private static Class<?>[] getCompatibleClasses(Field field) {
-		Class<?> res[] = new Class<?>[1];
+		Class<?>[] res = new Class<?>[1];
 		res[0] = field.getType();
 		return res;
 	}
@@ -278,7 +278,7 @@ public class SerializableFieldAccessor extends FieldAccessor {
 
 	@Override
 	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
-		SqlFieldInstance res[] = new SqlFieldInstance[1];
+		SqlFieldInstance[] res = new SqlFieldInstance[1];
 		if (Objects.equals(DatabaseWrapperAccessor.getSerializableType(sql_connection), "BLOB")) {
 			try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 				try (DataOutputStream os = new DataOutputStream(baos)) {

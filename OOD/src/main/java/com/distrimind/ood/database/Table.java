@@ -163,12 +163,18 @@ public abstract class Table<T extends DatabaseRecord> {
 
 
 
+
 	void changeVersion(int newDatabaseVersion, int tableID) throws DatabaseException {
 		assert newDatabaseVersion>=0;
 		assert tableID>=0;
 		this.databaseVersion=newDatabaseVersion;
 		this.table_id=tableID;
+		String oldTableName=table_name;
 		table_name=getDatabaseWrapper().getInternalTableNameFromTableID(this.getClass(), table_id);
+		for (FieldAccessor fa : fields)
+		{
+			fa.changeInternalTableName(oldTableName, table_name);
+		}
 		if (isLoadedInMemory())
 			this.memoryToRefresh();
 	}
@@ -459,7 +465,7 @@ public abstract class Table<T extends DatabaseRecord> {
 	void initializeStep0(DatabaseWrapper wrapper, int databaseVersion) throws DatabaseException {
 		sql_connection = wrapper;
 		this.databaseVersion=databaseVersion;
-		table_id=wrapper.getTableID(this);
+		table_id=wrapper.getTableID(this, this.databaseVersion);
 		table_name=wrapper.getInternalTableNameFromTableID(this.getClass(), table_id);
 
 		if (sql_connection == null)
@@ -472,7 +478,7 @@ public abstract class Table<T extends DatabaseRecord> {
 
 		@SuppressWarnings("unchecked")
 		Class<? extends Table<?>> table_class = (Class<? extends Table<?>>) this.getClass();
-		fields = FieldAccessor.getFields(sql_connection, table_class);
+		fields = FieldAccessor.getFields(sql_connection, this);
 		if (fields.size() == 0)
 			throw new DatabaseException("No field has been declared in the class " + class_record.getName());
 		for (FieldAccessor f : fields) {
@@ -517,7 +523,7 @@ public abstract class Table<T extends DatabaseRecord> {
 					"This table cannot have the name " + DatabaseWrapper.ROW_PROPERTIES_OF_TABLES + " (case ignored)");
 	}
 
-	int getDatabaseVersion() {
+	public int getDatabaseVersion() {
 		return databaseVersion;
 	}
 
@@ -1265,7 +1271,7 @@ public abstract class Table<T extends DatabaseRecord> {
 					try (ReadQuerry rq = new ReadQuerry(
 							_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), sqlquerry)) {
 						if (rq.result_set.next()) {
-							T res = getNewRecordInstance();
+							T res = getNewRecordInstance(true);
 							for (FieldAccessor fa : fields) {
 								fa.setValue(res, rq.result_set, _previous_pointing_records);
 							}
@@ -1286,16 +1292,16 @@ public abstract class Table<T extends DatabaseRecord> {
 
 	}
 
-	T getNewRecordInstance(Constructor<T> constructor)
+	T getNewRecordInstance(Constructor<T> constructor, boolean createdIntoDatabase)
 			throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
 		T res = constructor.newInstance();
-		res.__createdIntoDatabase = true;
+		res.__createdIntoDatabase = createdIntoDatabase;
 		return res;
 	}
 
-	T getNewRecordInstance()
+	T getNewRecordInstance(boolean createdIntoDatabase)
 			throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-		return getNewRecordInstance(default_constructor_field);
+		return getNewRecordInstance(default_constructor_field, createdIntoDatabase);
 	}
 
 	private String getSqlSelectStep1Fields(boolean includeAllJunctions) {
@@ -6329,7 +6335,7 @@ public abstract class Table<T extends DatabaseRecord> {
 					if (startPosition > 0)
 						rq.result_set.absolute(startPosition - 1);
 					while (rq.result_set.next()) {
-						T field_instance = getNewRecordInstance(default_constructor_field);
+						T field_instance = getNewRecordInstance(default_constructor_field, true);
 
 						for (FieldAccessor f : fields_accessor) {
 							f.setValue(field_instance, rq.result_set);
@@ -6805,7 +6811,7 @@ public abstract class Table<T extends DatabaseRecord> {
 						getListRecordsFromSqlConnection(ct, getSqlGeneralSelect(true),
 								TransactionIsolation.TRANSACTION_READ_COMMITTED, -1, -1);
 
-					final T instance = originalRecord == null ? getNewRecordInstance() : (T) originalRecord;
+					final T instance = originalRecord == null ? getNewRecordInstance(true) : (T) originalRecord;
 				
 						for (final FieldAccessor fa : fields) {
 							if (fa.isRandomPrimaryKey() && !ct.random_fields_to_check.contains(fa)) {
@@ -7322,7 +7328,7 @@ public abstract class Table<T extends DatabaseRecord> {
 							public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 								try {
 									StringBuilder querry = new StringBuilder("UPDATE " + Table.this.getName() + " SET ");
-									T instance = getNewRecordInstance();
+									T instance = getNewRecordInstance(true);
 									boolean first = true;
 									for (FieldAccessor fa : fields_accessor) {
 										if (_fields.containsKey(fa.getFieldName())) {

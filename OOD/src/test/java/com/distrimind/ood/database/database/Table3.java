@@ -15,7 +15,7 @@ import com.distrimind.util.DecentralizedIDGenerator;
 import com.distrimind.util.RenforcedDecentralizedIDGenerator;
 import com.distrimind.util.crypto.SymmetricEncryptionType;
 import com.distrimind.util.crypto.SymmetricSecretKey;
-@TableName(sqlTableName = "Table3Personalized")
+//@TableName(sqlTableName = "Table3Personalized")
 @LoadToMemory
 public final class Table3 extends Table<Table3.Record> {
 	protected Table3() throws DatabaseException {

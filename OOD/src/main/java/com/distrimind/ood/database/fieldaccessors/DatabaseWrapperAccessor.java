@@ -52,7 +52,6 @@ import com.distrimind.util.RenforcedDecentralizedIDGenerator;
  * @version 1.0
  * @since OOD 2.0
  */
-@SuppressWarnings("ConstantConditions")
 class DatabaseWrapperAccessor {
 	private static final Method m_get_big_decimal_type;
 	private static final Method m_get_big_integer_type;

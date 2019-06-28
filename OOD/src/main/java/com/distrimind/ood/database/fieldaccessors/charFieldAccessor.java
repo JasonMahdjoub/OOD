@@ -64,9 +64,9 @@ import com.distrimind.ood.database.exceptions.FieldDatabaseException;
 public class charFieldAccessor extends FieldAccessor {
 	protected final SqlField sql_fields[];
 
-	protected charFieldAccessor(Class<? extends Table<?>> table_class, DatabaseWrapper _sql_connection, Field _field,
+	protected charFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection, Field _field,
 			String parentFieldName) throws DatabaseException {
-		super(_sql_connection, _field, parentFieldName, compatible_classes, table_class);
+		super(_sql_connection, _field, parentFieldName, compatible_classes, table);
 		sql_fields = new SqlField[1];
 		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(), "CHARACTER", null, null, isNotNull());
 	}
