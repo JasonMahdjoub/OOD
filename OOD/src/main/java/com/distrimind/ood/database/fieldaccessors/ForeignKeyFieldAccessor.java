@@ -41,7 +41,10 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -68,6 +71,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 	protected ArrayList<FieldAccessor> linked_primary_keys = null;
 	protected String linked_table_name = null;
 	protected Table<? extends DatabaseRecord> pointed_table = null;
+	private final int tableVersion;
 	// private final Class<?>[] compatible_classes;
 
 	private static Method get_record_method;
@@ -96,6 +100,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 	protected ForeignKeyFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection,
 			Field _field, String parentFieldName) throws DatabaseException {
 		super(_sql_connection, _field, parentFieldName, getCompatibleClasses(_field), table);
+		this.tableVersion=table.getDatabaseVersion();
 		if (!DatabaseRecord.class.isAssignableFrom(_field.getType()))
 			throw new DatabaseException("The field " + _field.getName() + " of the class "
 					+ _field.getDeclaringClass().getName() + " is not a DatabaseRecord.");
@@ -110,7 +115,25 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 		if (sql_fields == null) {
 			@SuppressWarnings("unchecked")
 			Class<? extends DatabaseRecord> c = (Class<? extends DatabaseRecord>) field.getType();
-			pointed_table = sql_connection.getTableInstance(Table.getTableClass(c));
+			try {
+				Method f=AccessController.doPrivileged(new PrivilegedAction<Method>() {
+					@Override
+					public Method run() {
+						Method f;
+						try {
+							f = DatabaseWrapper.class.getDeclaredMethod("getTableInstance", Class.class, int.class);
+						} catch (NoSuchMethodException e) {
+							e.printStackTrace();
+							return null;
+						}
+						f.setAccessible(true);
+						return f;
+					}
+				});
+				pointed_table = (Table<?>)f.invoke(sql_connection, Table.getTableClass(c), tableVersion);
+			} catch (IllegalAccessException | InvocationTargetException | NullPointerException e) {
+				throw DatabaseException.getDatabaseException(e);
+			}
 			linked_primary_keys = pointed_table.getPrimaryKeysFieldAccessors();
 			linked_table_name = pointed_table.getName();
 

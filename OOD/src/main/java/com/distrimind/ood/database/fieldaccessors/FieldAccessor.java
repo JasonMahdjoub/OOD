@@ -221,17 +221,14 @@ public abstract class FieldAccessor {
 
 	public void changeInternalTableName(String oldInternalTableName, String internalTableName)
 	{
-		boolean oldOK=oldInternalTableName.equals(table_name);
-		if (oldOK)
-			table_name=internalTableName;
+		table_name=table_name.replace(oldInternalTableName, internalTableName);
 		for (SqlField sf : getDeclaredSqlFields())
 		{
-			if (sf.pointed_table!=null && sf.pointed_table.equals(oldInternalTableName)) {
-				sf.pointed_table = internalTableName;
-				sf.pointed_field = internalTableName+"."+sf.pointed_field.substring(oldInternalTableName.length());
+			sf.field=sf.field.replace(oldInternalTableName, internalTableName);
+			if (sf.pointed_table!=null) {
+				sf.pointed_table = sf.pointed_table.replace(oldInternalTableName, internalTableName);
+				sf.pointed_field = sf.pointed_field.replace(oldInternalTableName, internalTableName);
 			}
-			if (oldOK)
-				sf.field=internalTableName+"."+sf.field.substring(oldInternalTableName.length());
 		}
 	}
 
