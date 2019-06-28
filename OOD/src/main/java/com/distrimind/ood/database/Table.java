@@ -164,13 +164,14 @@ public abstract class Table<T extends DatabaseRecord> {
 
 
 
-	void changeVersion(int newDatabaseVersion, int tableID) throws DatabaseException {
+	void changeVersion(int newDatabaseVersion, int tableID, DatabaseWrapper wrapper) throws DatabaseException {
 		assert newDatabaseVersion>=0;
 		assert tableID>=0;
+		this.sql_connection=wrapper;
 		this.databaseVersion=newDatabaseVersion;
 		this.table_id=tableID;
 		String oldTableName=table_name;
-		table_name=getDatabaseWrapper().getInternalTableNameFromTableID(this.getClass(), table_id);
+		table_name=sql_connection.getInternalTableNameFromTableID(this.getClass(), table_id);
 		for (FieldAccessor fa : fields)
 		{
 			fa.changeInternalTableName(oldTableName, table_name);

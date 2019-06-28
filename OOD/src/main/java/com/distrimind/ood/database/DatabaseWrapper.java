@@ -3118,8 +3118,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					try {
 						assert oldDatabasaseVersion != newDatabaseVersion;
 						int r = getConnectionAssociatedWithCurrentThread().getConnection().createStatement()
-								.executeUpdate("UPDATE TABLE " + VERSIONS_OF_DATABASE + " SET CURRENT_DATABASE_VERSION='" + newDatabaseVersion
-										+ "' WHERE PACKAGE_NAME='" + getLongPackageName(configuration.getPackage()) + "'" + getSqlComma());
+								.executeUpdate("UPDATE " + VERSIONS_OF_DATABASE + " SET CURRENT_DATABASE_VERSION=" + newDatabaseVersion
+										+ " WHERE PACKAGE_NAME='" + getLongPackageName(configuration.getPackage()) + "'" + getSqlComma());
 						if (r != 1)
 							throw new DatabaseException("no record found");
 						if (oldDatabasaseVersion >= 0) {
@@ -3127,7 +3127,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							HashMap<Class<? extends Table<?>>, Table<?>> hm = new HashMap<>(db.tables_per_versions.get(oldDatabasaseVersion).tables_instances);
 							deleteDatabase(configuration, oldDatabasaseVersion);
 							for (Table<?> t : hm.values()) {
-								t.changeVersion(newDatabaseVersion, getTableID(t.getClass(), newDatabaseVersion));
+								t.changeVersion(newDatabaseVersion, getTableID(t.getClass(), newDatabaseVersion), DatabaseWrapper.this);
 							}
 							db.tables_per_versions.get(newDatabaseVersion).tables_instances = hm;
 						}
