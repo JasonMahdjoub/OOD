@@ -123,6 +123,8 @@ public abstract class FieldAccessor {
 			fName=field.getName();
 		else
 			fName=af.sqlFieldName();
+		if (fName.endsWith("__"))
+			throw new DatabaseException("Field "+fName+" cannot ends with '__'");
 
 		this.fieldName = ((this.parentFieldName == null || this.parentFieldName.isEmpty()) ? ""
 				: (this.parentFieldName + ".")) + field.getName();
