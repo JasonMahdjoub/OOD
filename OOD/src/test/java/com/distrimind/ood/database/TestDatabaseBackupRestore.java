@@ -380,9 +380,10 @@ public class TestDatabaseBackupRestore {
 
 		}
 	}
-	@AfterTest
+	@AfterMethod
 	public void unloadDatabase()
 	{
+		System.out.println("Removing database reference");
 		try {
 			wrapper.deleteDatabaseFiles();
 			FileTools.deleteDirectory(this.externalBackupDirectory);
@@ -471,7 +472,7 @@ public class TestDatabaseBackupRestore {
 				Thread.sleep(1);
 				long utc=System.currentTimeMillis();
 				Assert.assertTrue(internalBRM.getMaxDateUTCInMS() < utc, internalBRM.getMaxDateUTCInMS()+";"+utc);
-				dataLoadStart.set(utc);
+				//dataLoadStart.set(utc);
 				Thread.sleep(1);
 			}
 		}
@@ -529,7 +530,7 @@ public class TestDatabaseBackupRestore {
 		Assert.assertNotEquals(wrapper.getCurrentDatabaseVersion(Table1.class.getPackage()), oldVersion);
 		Assert.assertFalse(wrapper.doesVersionExists(Table1.class.getPackage(), oldVersion));
 		assertEquals(wrapperForReferenceDatabase,wrapper, true);
-		Assert.assertTrue(usedBRM.getMinDateUTCInMs()>dataLoadStart.get());
+		Assert.assertTrue(usedBRM.getMinDateUTCInMs()>dataLoadStart.get(), usedBRM.getMinDateUTCInMs()+";"+dataLoadStart.get());
 		Assert.assertTrue(usedBRM.getMinDateUTCInMs()<usedBRM.getMaxDateUTCInMS());
 		Assert.assertTrue(usedBRM.getMaxDateUTCInMS()<dateRestoration.get());
 		if (internalBRM!=null)
