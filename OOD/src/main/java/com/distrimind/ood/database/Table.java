@@ -477,8 +477,8 @@ public abstract class Table<T extends DatabaseRecord> {
 			throw new IllegalArgumentException();
 
 
-		@SuppressWarnings("unchecked")
-		Class<? extends Table<?>> table_class = (Class<? extends Table<?>>) this.getClass();
+
+		//Class<? extends Table<?>> table_class = (Class<? extends Table<?>>) this.getClass();
 		fields = FieldAccessor.getFields(sql_connection, this);
 		if (fields.size() == 0)
 			throw new DatabaseException("No field has been declared in the class " + class_record.getName());
@@ -522,6 +522,9 @@ public abstract class Table<T extends DatabaseRecord> {
 		if (this.getName().equals(DatabaseWrapper.ROW_PROPERTIES_OF_TABLES))
 			throw new DatabaseException(
 					"This table cannot have the name " + DatabaseWrapper.ROW_PROPERTIES_OF_TABLES + " (case ignored)");
+		if (this.getName().equals(DatabaseWrapper.VERSIONS_OF_DATABASE))
+			throw new DatabaseException(
+					"This table cannot have the name " + DatabaseWrapper.VERSIONS_OF_DATABASE+ " (case ignored)");
 	}
 
 	public int getDatabaseVersion() {
