@@ -105,13 +105,8 @@ public class BackupRestoreManager {
 		FileTools.checkFolderRecursive(backupDirectory);
 		this.backupDirectory=backupDirectory;
 		this.backupConfiguration=databaseConfiguration.getBackupConfiguration();
-		classes=new ArrayList<>(databaseConfiguration.getTableClasses());
-		Collections.sort(classes, new Comparator<Class<? extends Table<?>>>() {
-			@Override
-			public int compare(Class<? extends Table<?>> o1, Class<? extends Table<?>> o2) {
-				return o1.getName().compareTo(o2.getName());
-			}
-		});
+		classes=databaseConfiguration.getSortedTableClasses(databaseWrapper);
+
 		this.computeDatabaseReference=new File(this.backupDirectory, "computeDatabaseNewReference.query");
 		if (this.computeDatabaseReference.exists() && this.computeDatabaseReference.isDirectory())
 			throw new IllegalArgumentException();
@@ -917,9 +912,7 @@ public class BackupRestoreManager {
 						}
 						final long totalRecords=t;
 						long numberOfSavedRecords=0;
-						List<Class<? extends Table<?>>> classes_done=new ArrayList<>();
 						for (Class<? extends Table<?>> c : classes) {
-							classes_done.add(c);
 							final Table<?> table = databaseWrapper.getTableInstance(c);
 							final long nbSavedRecords=numberOfSavedRecords;
 							numberOfSavedRecords=databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Long>() {

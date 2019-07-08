@@ -37,10 +37,9 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database;
 
 import java.lang.reflect.Modifier;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
+import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.i18n.DatabaseMessages;
 import com.distrimind.util.ListClasses;
 import com.distrimind.util.progress_monitors.ProgressMonitorFactory;
@@ -178,6 +177,23 @@ public class DatabaseConfiguration {
 
 	public Set<Class<? extends Table<?>>> getTableClasses() {
 		return classes;
+	}
+
+	public List<Class<? extends Table<?>>> getSortedTableClasses(DatabaseWrapper wrapper) throws DatabaseException {
+
+
+		ArrayList<Table<?>> tables=new ArrayList<>(this.classes.size());
+		for (Class<? extends Table<?>> c : this.classes)
+		{
+			tables.add(wrapper.getTableInstance(c));
+		}
+		Collections.sort(tables);
+		ArrayList<Class<? extends Table<?>>> classes=new ArrayList<>(this.classes.size());
+		for (Table<?> t : tables)
+			//noinspection unchecked
+			classes.add((Class<? extends Table<?>>)t.getClass());
+		return classes;
+
 	}
 
 	public Package getPackage() {

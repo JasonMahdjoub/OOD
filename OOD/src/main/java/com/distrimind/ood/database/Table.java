@@ -126,7 +126,7 @@ import java.util.regex.Pattern;
  *            the type of the record
  */
 @SuppressWarnings({"ThrowFromFinallyBlock", "BooleanMethodIsAlwaysInverted"})
-public abstract class Table<T extends DatabaseRecord> {
+public abstract class Table<T extends DatabaseRecord> implements Comparable<Table<?>> {
 	public static final String TABLE_NAME_PREFIX="T";
 	final Class<T> class_record;
 	final Constructor<T> default_constructor_field;
@@ -159,6 +159,41 @@ public abstract class Table<T extends DatabaseRecord> {
 
 	public Class<T> getClassRecord() {
 		return class_record;
+	}
+
+
+	@Override
+	public int compareTo(Table<?> other)
+	{
+		if (this.foreign_keys_fields.size()==0)
+		{
+			if (other.foreign_keys_fields.size()==0)
+				return this.getClass().getName().compareTo(other.getClass().getName());
+			else
+				return -1;
+		} else if (other.foreign_keys_fields.size()==0)
+			return 1;
+		else
+		{
+			if (isPointedDirectlyOrIndirectlyByOtherTable(other))
+				return -1;
+			else if (other.isPointedDirectlyOrIndirectlyByOtherTable(this))
+				return 1;
+			else
+				return this.getClass().getName().compareTo(other.getClass().getName());
+		}
+	}
+
+	public boolean isPointedDirectlyOrIndirectlyByOtherTable(Table<?> other)
+	{
+		for (ForeignKeyFieldAccessor fk : other.foreign_keys_fields)
+		{
+			if (fk.getPointedTable().equals(this))
+				return true;
+			else if (this.isPointedDirectlyOrIndirectlyByOtherTable(fk.getPointedTable()))
+				return true;
+		}
+		return false;
 	}
 
 
