@@ -239,7 +239,7 @@ public class floatFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void unserialize(DataInputStream _ois, Map<String, Object> _map) throws DatabaseException {
+	public void deserialize(DataInputStream _ois, Map<String, Object> _map) throws DatabaseException {
 		try {
 			_map.put(getFieldName(), _ois.readFloat());
 		} catch (Exception e) {
@@ -249,7 +249,7 @@ public class floatFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public Object unserialize(DataInputStream _ois, Object _classInstance) throws DatabaseException {
+	public Object deserialize(DataInputStream _ois, Object _classInstance) throws DatabaseException {
 		try {
 			float v = _ois.readFloat();
 			field.setFloat(_classInstance, v);

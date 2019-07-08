@@ -40,6 +40,7 @@ package com.distrimind.ood.database.fieldaccessors;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -450,49 +451,38 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	@Override
-	public void unserialize(DataInputStream _ois, Map<String, Object> _map) throws DatabaseException {
+	private byte[] deserialize(DataInputStream _ois) throws DatabaseException {
 		try {
 			int size = _ois.readInt();
 			if (size > -1) {
+				if (getLimit() > 0 && size > getLimit())
+					throw new IOException();
+
 				byte[] b = new byte[size];
 				int os = _ois.read(b);
 				if (os != size)
 					throw new DatabaseException(
 							"read bytes insuficiant (expected size=" + size + ", obtained size=" + os + ")");
-				_map.put(getFieldName(), b);
+				return b;
 			} else if (isNotNull())
 				throw new DatabaseException("field should not be null");
 			else
-				_map.put(getFieldName(), null);
+				return null;
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
 
 	@Override
-	public Object unserialize(DataInputStream _ois, Object _classInstance) throws DatabaseException {
-		try {
-			int size = _ois.readInt();
-			if (size > -1) {
-				byte[] b = new byte[size];
-				int os = _ois.read(b);
-				if (os != size)
-					throw new DatabaseException(
-							"read bytes insuficiant (expected size=" + size + ", obtained size=" + os + ")");
-				setValue(_classInstance, b);
-				return b;
+	public void deserialize(DataInputStream dis, Map<String, Object> _map) throws DatabaseException {
+		_map.put(getFieldName(), deserialize(dis));
+	}
 
-			} else if (isNotNull())
-				throw new DatabaseException("field should not be null");
-			else {
-				setValue(_classInstance, (Object) null);
-				return null;
-
-			}
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
+	@Override
+	public Object deserialize(DataInputStream dis, Object _classInstance) throws DatabaseException {
+		Object o=deserialize(dis);
+		setValue(_classInstance, o);
+		return o;
 	}
 
 }

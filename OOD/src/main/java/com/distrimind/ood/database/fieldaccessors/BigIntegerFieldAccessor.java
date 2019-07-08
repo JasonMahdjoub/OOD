@@ -39,6 +39,7 @@ package com.distrimind.ood.database.fieldaccessors;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -294,49 +295,39 @@ public class BigIntegerFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	@Override
-	public void unserialize(DataInputStream dis, Map<String, Object> _map) throws DatabaseException {
-
+	private BigInteger deserialize(DataInputStream dis) throws DatabaseException {
 		try  {
 			int s=dis.readInt();
 			BigInteger o=null;
 			if (s>=0)
 			{
-				byte[] tab=new byte[s];
-				dis.readFully(tab);
-				 o = new BigInteger(tab);
+				if (getLimit() > 0 && s > getLimit())
+					throw new IOException();
 
-			}
-			if (o == null && isNotNull())
-				throw new DatabaseException("field should not be null");
-			_map.put(getFieldName(), o);
-
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-
-	}
-
-	@Override
-	public Object unserialize(DataInputStream dis, Object _classInstance) throws DatabaseException {
-		try  {
-			int s=dis.readInt();
-			BigInteger o=null;
-			if (s>=0)
-			{
 				byte[] tab=new byte[s];
 				dis.readFully(tab);
 				o = new BigInteger(tab);
 
 			}
-
 			if (o == null && isNotNull())
 				throw new DatabaseException("field should not be null");
-			setValue(_classInstance, o);
 			return o;
+
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
+	}
+
+	@Override
+	public void deserialize(DataInputStream dis, Map<String, Object> _map) throws DatabaseException {
+		_map.put(getFieldName(), deserialize(dis));
+	}
+
+	@Override
+	public Object deserialize(DataInputStream dis, Object _classInstance) throws DatabaseException {
+		BigInteger o=deserialize(dis);
+		setValue(_classInstance, o);
+		return o;
 	}
 
 }

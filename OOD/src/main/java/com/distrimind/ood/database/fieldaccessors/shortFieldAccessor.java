@@ -270,7 +270,7 @@ public class shortFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void unserialize(DataInputStream _ois, Map<String, Object> _map) throws DatabaseException {
+	public void deserialize(DataInputStream _ois, Map<String, Object> _map) throws DatabaseException {
 		try {
 			_map.put(getFieldName(), _ois.readShort());
 		} catch (Exception e) {
@@ -279,7 +279,7 @@ public class shortFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public Object unserialize(DataInputStream _ois, Object _classInstance) throws DatabaseException {
+	public Object deserialize(DataInputStream _ois, Object _classInstance) throws DatabaseException {
 		try {
 			short v = _ois.readShort();
 			field.setShort(_classInstance, v);

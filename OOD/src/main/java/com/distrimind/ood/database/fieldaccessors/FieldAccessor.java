@@ -312,7 +312,7 @@ public abstract class FieldAccessor {
 		return fieldName;
 	}
 
-	public final long getLimit() {
+	public long getLimit() {
 		return limit;
 	}
 
@@ -374,9 +374,9 @@ public abstract class FieldAccessor {
 
 	public abstract void serialize(DataOutputStream oos, Object classInstance) throws DatabaseException;
 
-	public abstract void unserialize(DataInputStream ois, Map<String, Object> map) throws DatabaseException;
+	public abstract void deserialize(DataInputStream ois, Map<String, Object> map) throws DatabaseException;
 
-	public abstract Object unserialize(DataInputStream ois, Object classInstance) throws DatabaseException;
+	public abstract Object deserialize(DataInputStream ois, Object classInstance) throws DatabaseException;
 
 	public boolean canAutoGenerateValues() {
 		return false;

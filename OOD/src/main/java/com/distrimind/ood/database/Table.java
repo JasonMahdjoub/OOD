@@ -8392,7 +8392,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 			for (FieldAccessor fa : fields) {
 				if ((includePK || !fa.isPrimaryKey()) && (includeFK || !fa.isForeignKey()))
-					fa.unserialize(ois, res);
+					fa.deserialize(ois, res);
 			}
 			return res;
 		} catch (DatabaseException e) {
@@ -8411,7 +8411,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		try (ByteArrayInputStream bais = new ByteArrayInputStream(tab, off, len)) {
 			try (DataInputStream ois = new DataInputStream(bais)) {
 				for (FieldAccessor fa : primary_keys_fields) {
-					fa.unserialize(ois, record);
+					fa.deserialize(ois, record);
 				}
 			}
 		} catch (DatabaseException e) {
@@ -8430,7 +8430,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		try (ByteArrayInputStream bais = new ByteArrayInputStream(tab, off, len)) {
 			try (DataInputStream ois = new DataInputStream(bais)) {
 				for (FieldAccessor fa : primary_keys_fields) {
-					fa.unserialize(ois, map);
+					fa.deserialize(ois, map);
 				}
 			}
 		} catch (DatabaseException e) {
@@ -8455,12 +8455,12 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				for (FieldAccessor fa : fields) {
 					if (fa.isPrimaryKey()) {
 						if (includePK)
-							fa.unserialize(ois, record);
+							fa.deserialize(ois, record);
 					} else if (fa.isForeignKey()) {
 						if (includeFK)
-							fa.unserialize(ois, record);
+							fa.deserialize(ois, record);
 					} else if (includeNonKey)
-						fa.unserialize(ois, record);
+						fa.deserialize(ois, record);
 				}
 			}
 		} catch (DatabaseException e) {
@@ -8479,12 +8479,12 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				for (FieldAccessor fa : fields) {
 					if (fa.isPrimaryKey()) {
 						if (includePK)
-							fa.unserialize(ois, hm);
+							fa.deserialize(ois, hm);
 					} else if (fa.isForeignKey()) {
 						if (includeFK)
-							fa.unserialize(ois, hm);
+							fa.deserialize(ois, hm);
 					} else if (includeNonKey)
-						fa.unserialize(ois, hm);
+						fa.deserialize(ois, hm);
 				}
 			}
 		} catch (DatabaseException e) {

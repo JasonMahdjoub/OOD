@@ -370,7 +370,7 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void unserialize(DataInputStream _ois, Map<String, Object> _map) throws DatabaseException {
+	public void deserialize(DataInputStream _ois, Map<String, Object> _map) throws DatabaseException {
 		try {
 			int size = _ois.readInt();
 			if (size > -1) {
@@ -390,7 +390,7 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public Object unserialize(DataInputStream _ois, Object _classInstance) throws DatabaseException {
+	public Object deserialize(DataInputStream _ois, Object _classInstance) throws DatabaseException {
 		try {
 			int size = _ois.readInt();
 			if (size > -1) {

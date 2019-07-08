@@ -268,7 +268,7 @@ public class intFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void unserialize(DataInputStream _ois, Map<String, Object> _map) throws DatabaseException {
+	public void deserialize(DataInputStream _ois, Map<String, Object> _map) throws DatabaseException {
 		try {
 			_map.put(getFieldName(), _ois.readInt());
 		} catch (Exception e) {
@@ -278,7 +278,7 @@ public class intFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public Object unserialize(DataInputStream _ois, Object _classInstance) throws DatabaseException {
+	public Object deserialize(DataInputStream _ois, Object _classInstance) throws DatabaseException {
 		try {
 			int v = _ois.readInt();
 			field.setInt(_classInstance, v);

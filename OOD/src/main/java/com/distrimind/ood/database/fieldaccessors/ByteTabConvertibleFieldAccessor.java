@@ -39,7 +39,9 @@ package com.distrimind.ood.database.fieldaccessors;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Field;
+import java.math.BigInteger;
 import java.sql.Blob;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -67,6 +69,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 	private final ByteTabObjectConverter converter;
 	private final boolean isVarBinary;
 	private final boolean isBigInteger;
+	private final long limit;
 
 	protected ByteTabConvertibleFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection,
 			Field _field, String parentFieldName, ByteTabObjectConverter converter) throws DatabaseException {
@@ -100,7 +103,18 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 		isVarBinary = type.startsWith("VARBINARY") || type.startsWith("LONGVARBINARY");
 		this.isBigInteger=isBigInteger;
 		this.converter = converter;
+		this.limit=l;
 	}
+
+	@Override
+	public long getLimit() {
+		long l=super.getLimit();
+		if (l>0)
+			return Math.min(l, limit);
+		else
+			return limit;
+	}
+
 
 	private static Class<?>[] getCompatibleClasses(Field field) {
 		Class<?>[] res = new Class<?>[1];
@@ -429,49 +443,40 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	@Override
-	public void unserialize(DataInputStream _ois, Map<String, Object> _map) throws DatabaseException {
+	private Object deserialize(DataInputStream _ois) throws DatabaseException {
 		try {
 			int size = _ois.readInt();
 			if (size > -1) {
+				if (getLimit() > 0 && size > getLimit())
+					throw new IOException();
+
 				byte[] b = new byte[size];
 				int os = _ois.read(b);
 				if (os != size)
 					throw new DatabaseException(
 							"read bytes insuficiant (expected size=" + size + ", obtained size=" + os + ")");
 
-				_map.put(getFieldName(), converter.getObject(field.getType(), b));
+				return converter.getObject(field.getType(), b);
 			} else if (isNotNull())
 				throw new DatabaseException("field should not be null");
 			else
-				_map.put(getFieldName(), null);
+				return null;
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
+
 	}
 
 	@Override
-	public Object unserialize(DataInputStream _ois, Object _classInstance) throws DatabaseException {
-		try {
-			int size = _ois.readInt();
-			if (size > -1) {
-				byte[] b = new byte[size];
-				int os = _ois.read(b);
-				if (os != size)
-					throw new DatabaseException(
-							"read bytes insuficiant (expected size=" + size + ", obtained size=" + os + ")");
-				Object o = converter.getObject(field.getType(), b);
-				setValue(_classInstance, o);
-				return o;
-			} else if (isNotNull())
-				throw new DatabaseException("field should not be null");
-			else {
-				setValue(_classInstance, (Object) null);
-				return null;
-			}
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
+	public void deserialize(DataInputStream dis, Map<String, Object> _map) throws DatabaseException {
+		_map.put(getFieldName(), deserialize(dis));
+	}
+
+	@Override
+	public Object deserialize(DataInputStream dis, Object _classInstance) throws DatabaseException {
+		Object o=deserialize(dis);
+		setValue(_classInstance, o);
+		return o;
 	}
 
 }

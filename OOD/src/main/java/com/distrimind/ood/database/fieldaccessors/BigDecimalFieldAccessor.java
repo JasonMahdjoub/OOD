@@ -39,6 +39,7 @@ package com.distrimind.ood.database.fieldaccessors;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -270,6 +271,7 @@ public class BigDecimalFieldAccessor extends FieldAccessor {
 				dos.writeInt(-1);
 			else {
 				byte[] tab=bi.toByteArray();
+				assert tab.length>0;
 				dos.writeInt(tab.length);
 				dos.write(tab);
 				dos.writeInt(bd.scale());
@@ -280,50 +282,38 @@ public class BigDecimalFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	@Override
-	public void unserialize(DataInputStream dis, Map<String, Object> _map) throws DatabaseException {
-		try  {
-			int s=dis.readInt();
+	private BigDecimal deserialize(DataInputStream dis) throws DatabaseException {
+		try {
+			int s = dis.readInt();
 			BigDecimal o = null;
-			if (s>=0)
-			{
-				byte[] tab=new byte[s];
+			if (s >= 0) {
+				if (getLimit() > 0 && s > getLimit())
+					throw new IOException();
+				byte[] tab = new byte[s];
 				dis.readFully(tab);
 				BigInteger bi = new BigInteger(tab);
-				int scale=dis.readInt();
+				int scale = dis.readInt();
 				o = new BigDecimal(bi, scale);
 			}
 			if (o == null && isNotNull())
 				throw new DatabaseException("field should not be null");
-			_map.put(getFieldName(), o);
-
-		} catch (Exception e) {
+			return o;
+		}
+		catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
-
 	}
 
 	@Override
-	public Object unserialize(DataInputStream dis, Object _classInstance) throws DatabaseException {
-		try  {
-			int s=dis.readInt();
-			BigDecimal o = null;
-			if (s>=0)
-			{
-				byte[] tab=new byte[s];
-				dis.readFully(tab);
-				BigInteger bi = new BigInteger(tab);
-				int scale=dis.readInt();
-				o = new BigDecimal(bi, scale);
-			}
-			if (o == null && isNotNull())
-				throw new DatabaseException("field should not be null");
-			setValue(_classInstance, o);
-			return o;
+	public void deserialize(DataInputStream dis, Map<String, Object> _map) throws DatabaseException {
+		_map.put(getFieldName(), deserialize(dis));
+	}
 
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
+	@Override
+	public Object deserialize(DataInputStream dis, Object _classInstance) throws DatabaseException {
+		BigDecimal o=deserialize(dis);
+		setValue(_classInstance, o);
+		return o;
 	}
 
 }

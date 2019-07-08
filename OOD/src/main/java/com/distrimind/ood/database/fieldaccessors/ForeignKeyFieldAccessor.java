@@ -438,13 +438,13 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void unserialize(DataInputStream _ois, Map<String, Object> _map) throws DatabaseException {
+	public void deserialize(DataInputStream _ois, Map<String, Object> _map) throws DatabaseException {
 		try {
 			boolean isNotNull = _ois.readBoolean();
 			if (isNotNull) {
 				DatabaseRecord dr = pointed_table.getDefaultRecordConstructor().newInstance();
 				for (FieldAccessor fa : pointed_table.getPrimaryKeysFieldAccessors()) {
-					fa.unserialize(_ois, dr);
+					fa.deserialize(_ois, dr);
 				}
 
 				_map.put(getFieldName(), dr);
@@ -459,13 +459,13 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public Object unserialize(DataInputStream _ois, Object _classInstance) throws DatabaseException {
+	public Object deserialize(DataInputStream _ois, Object _classInstance) throws DatabaseException {
 		try {
 			boolean isNotNull = _ois.readBoolean();
 			if (isNotNull) {
 				DatabaseRecord dr = pointed_table.getDefaultRecordConstructor().newInstance();
 				for (FieldAccessor fa : pointed_table.getPrimaryKeysFieldAccessors()) {
-					fa.unserialize(_ois, dr);
+					fa.deserialize(_ois, dr);
 				}
 				setValue(_classInstance, dr);
 				return dr;

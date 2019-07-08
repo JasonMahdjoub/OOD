@@ -295,7 +295,7 @@ public class ShortNumberFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void unserialize(DataInputStream _ois, Map<String, Object> _map) throws DatabaseException {
+	public void deserialize(DataInputStream _ois, Map<String, Object> _map) throws DatabaseException {
 		try {
 			boolean isNotNull = _ois.readBoolean();
 			if (isNotNull) {
@@ -311,7 +311,7 @@ public class ShortNumberFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public Object unserialize(DataInputStream _ois, Object _classInstance) throws DatabaseException {
+	public Object deserialize(DataInputStream _ois, Object _classInstance) throws DatabaseException {
 		try {
 			boolean isNotNull = _ois.readBoolean();
 			if (isNotNull) {
