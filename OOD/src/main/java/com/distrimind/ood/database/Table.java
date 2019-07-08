@@ -151,7 +151,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	public static final int maxTableNameSizeBytes = 8192;
 	public static final int maxPrimaryKeysSizeBytes = ByteTabFieldAccessor.shortTabSizeLimit;
 	private int databaseVersion=-1;
-	private final boolean isPrimaryKeysAndForeignKeysSame;
+	private boolean isPrimaryKeysAndForeignKeysSame;
 	private boolean hasBackupMananager=false;
 	public Constructor<T> getDefaultRecordConstructor() {
 		return default_constructor_field;
@@ -476,21 +476,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						}
 					}
 				});
-		boolean ok=true;
-		if (primary_keys_fields.size()==foreign_keys_fields.size())
-		{
-			for (FieldAccessor fa : primary_keys_fields)
-			{
-				if (!(fa instanceof ForeignKeyFieldAccessor))
-				{
-					ok=false;
-					break;
-				}
-			}
-		}
-		else
-			ok=false;
-		isPrimaryKeysAndForeignKeysSame=ok;
+
 
 	}
 
@@ -553,6 +539,21 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		if (primary_keys_fields.size() == 0)
 			throw new DatabaseException("There is no primary key declared into the Record " + class_record.getName());
 
+		boolean ok=true;
+		if (primary_keys_fields.size()==foreign_keys_fields.size())
+		{
+			for (FieldAccessor fa : primary_keys_fields)
+			{
+				if (!(fa instanceof ForeignKeyFieldAccessor))
+				{
+					ok=false;
+					break;
+				}
+			}
+		}
+		else
+			ok=false;
+		isPrimaryKeysAndForeignKeysSame=ok;
 
 		if (this.getName().equals(DatabaseWrapper.ROW_PROPERTIES_OF_TABLES))
 			throw new DatabaseException(
@@ -560,6 +561,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		if (this.getName().equals(DatabaseWrapper.VERSIONS_OF_DATABASE))
 			throw new DatabaseException(
 					"This table cannot have the name " + DatabaseWrapper.VERSIONS_OF_DATABASE+ " (case ignored)");
+
 	}
 
 	public int getDatabaseVersion() {

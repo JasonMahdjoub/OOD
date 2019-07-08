@@ -545,6 +545,12 @@ public abstract class FieldAccessor {
 					"Impossible to access to fields of the class " + database_record_class.getName(), e);
 		}
 
+		Collections.sort(res, new Comparator<FieldAccessor>() {
+			@Override
+			public int compare(FieldAccessor f1, FieldAccessor f2) {
+				return f1.getFieldName().compareTo(f2.getFieldName());
+			}
+		});
 		return res;
 	}
 
