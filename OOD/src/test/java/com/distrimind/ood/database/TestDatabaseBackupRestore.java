@@ -163,13 +163,15 @@ public class TestDatabaseBackupRestore {
 			boolean found=false;
 			for (Table1.Record r2 : lTable1D)
 			{
-				if (table1.equalsAllFields(r, r2))
+				if (table1.equals(r, r2))
 				{
 					found=true;
+					Assert.assertTrue(table1.equalsAllFields(r, r2), ""+r);
 					break;
 				}
 			}
-			Assert.assertTrue(found);
+			Assert.assertTrue(found, ""+r);
+
 		}
 
 		for (Table2.Record r : lTable2)

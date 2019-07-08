@@ -1270,7 +1270,7 @@ public class BackupRestoreManager {
 											case ADD:
 											{
 												HashMap<String, Object> hm=new HashMap<>();
-												table.deserializePrimaryKeys(hm, recordBuffer, 0, s);
+												table.deserializeFields(hm, recordBuffer, 0, s, true, false, false);
 
 												if (in.readBoolean()) {
 													s = in.readUnsignedShortInt();
@@ -1285,9 +1285,10 @@ public class BackupRestoreManager {
 												}
 												table.addRecord(hm);
 											}
+											break;
 											case UPDATE: {
 												DatabaseRecord dr = table.getNewRecordInstance(false);
-												table.deserializePrimaryKeys(dr, recordBuffer, 0, s);
+												table.deserializeFields(dr, recordBuffer, 0, s, true, false, false);
 
 												if (in.readBoolean()) {
 													s = in.readUnsignedShortInt();

@@ -3,6 +3,7 @@ package com.distrimind.ood.database.database;
 import java.io.File;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -65,5 +66,45 @@ public final class Table1 extends Table<Table1.Record> {
 		@Field
 		public DecentralizedIDGenerator nullField=null;
 
+		@Override
+		public String toString() {
+			return "Record{" +
+					"pk1=" + pk1 +
+					", pk2=" + pk2 +
+					", pk3=" + pk3 +
+					", pk4=" + pk4 +
+					", pk5=" + pk5 +
+					", pk6=" + pk6 +
+					", pk7=" + pk7 +
+					", int_value=" + int_value +
+					", byte_value=" + byte_value +
+					", char_value=" + char_value +
+					", boolean_value=" + boolean_value +
+					", short_value=" + short_value +
+					", long_value=" + long_value +
+					", float_value=" + float_value +
+					", double_value=" + double_value +
+					", string_value='" + string_value + '\'' +
+					", IntegerNumber_value=" + IntegerNumber_value +
+					", ByteNumber_value=" + ByteNumber_value +
+					", CharacterNumber_value=" + CharacterNumber_value +
+					", BooleanNumber_value=" + BooleanNumber_value +
+					", ShortNumber_value=" + ShortNumber_value +
+					", LongNumber_value=" + LongNumber_value +
+					", FloatNumber_value=" + FloatNumber_value +
+					", DoubleNumber_value=" + DoubleNumber_value +
+					", byte_array_value=" + Arrays.toString(byte_array_value) +
+					", BigInteger_value=" + BigInteger_value +
+					", BigDecimal_value=" + BigDecimal_value +
+					", DateValue=" + DateValue +
+					", CalendarValue=" + CalendarValue +
+					", secretKey=" + secretKey +
+					", typeSecretKey=" + typeSecretKey +
+					", file=" + file +
+					", subField=" + subField +
+					", subSubField=" + subSubField +
+					", nullField=" + nullField +
+					'}';
+		}
 	}
 }

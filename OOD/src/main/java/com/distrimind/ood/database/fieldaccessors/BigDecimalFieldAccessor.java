@@ -272,6 +272,7 @@ public class BigDecimalFieldAccessor extends FieldAccessor {
 				byte[] tab=bi.toByteArray();
 				dos.writeInt(tab.length);
 				dos.write(tab);
+				dos.writeInt(bd.scale());
 			}
 
 		} catch (Exception e) {
@@ -289,7 +290,8 @@ public class BigDecimalFieldAccessor extends FieldAccessor {
 				byte[] tab=new byte[s];
 				dis.readFully(tab);
 				BigInteger bi = new BigInteger(tab);
-				o = new BigDecimal(bi, 0);
+				int scale=dis.readInt();
+				o = new BigDecimal(bi, scale);
 			}
 			if (o == null && isNotNull())
 				throw new DatabaseException("field should not be null");
@@ -311,7 +313,8 @@ public class BigDecimalFieldAccessor extends FieldAccessor {
 				byte[] tab=new byte[s];
 				dis.readFully(tab);
 				BigInteger bi = new BigInteger(tab);
-				o = new BigDecimal(bi, 0);
+				int scale=dis.readInt();
+				o = new BigDecimal(bi, scale);
 			}
 			if (o == null && isNotNull())
 				throw new DatabaseException("field should not be null");
