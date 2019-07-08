@@ -54,12 +54,7 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.sql.Types;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
@@ -379,7 +374,7 @@ public abstract class FieldAccessor {
 
 	public abstract void serialize(DataOutputStream oos, Object classInstance) throws DatabaseException;
 
-	public abstract void unserialize(DataInputStream ois, HashMap<String, Object> map) throws DatabaseException;
+	public abstract void unserialize(DataInputStream ois, Map<String, Object> map) throws DatabaseException;
 
 	public abstract Object unserialize(DataInputStream ois, Object classInstance) throws DatabaseException;
 

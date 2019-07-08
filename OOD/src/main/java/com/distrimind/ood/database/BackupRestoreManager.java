@@ -1268,6 +1268,23 @@ public class BackupRestoreManager {
 										in.readFully(recordBuffer, 0, s);
 										switch (eventType) {
 											case ADD:
+											{
+												HashMap<String, Object> hm=new HashMap<>();
+												table.deserializePrimaryKeys(hm, recordBuffer, 0, s);
+
+												if (in.readBoolean()) {
+													s = in.readUnsignedShortInt();
+													in.readFully(recordBuffer, 0, s);
+													table.deserializeFields(hm, recordBuffer, 0, s, false, true, false);
+												}
+
+												if (in.readBoolean()) {
+													s = in.readUnsignedShortInt();
+													in.readFully(recordBuffer, 0, s);
+													table.deserializeFields(hm, recordBuffer, 0, s, false, false, true);
+												}
+												table.addRecord(hm);
+											}
 											case UPDATE: {
 												DatabaseRecord dr = table.getNewRecordInstance(false);
 												table.deserializePrimaryKeys(dr, recordBuffer, 0, s);
@@ -1283,10 +1300,7 @@ public class BackupRestoreManager {
 													in.readFully(recordBuffer, 0, s);
 													table.deserializeFields(dr, recordBuffer, 0, s, false, false, true);
 												}
-												if (eventType == DatabaseEventType.ADD)
-													table.addUntypedRecord(dr, false, true, null);
-												else
-													table.updateUntypedRecord(dr, true, null);
+												table.updateUntypedRecord(dr, true, null);
 											}
 											break;
 											case REMOVE: {

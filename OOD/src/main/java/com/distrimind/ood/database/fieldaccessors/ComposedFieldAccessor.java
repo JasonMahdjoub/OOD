@@ -42,10 +42,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
@@ -308,7 +305,7 @@ public class ComposedFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void unserialize(DataInputStream _ois, HashMap<String, Object> _map) throws DatabaseException {
+	public void unserialize(DataInputStream _ois, Map<String, Object> _map) throws DatabaseException {
 		try {
 			boolean isNotNull = _ois.readBoolean();
 			if (isNotNull) {

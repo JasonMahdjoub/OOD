@@ -8470,6 +8470,30 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 	}
 
+	void deserializeFields(Map<String, Object> hm, byte[] tab, int off, int len, boolean includePK, boolean includeFK,
+						   boolean includeNonKey) throws DatabaseException {
+		try (ByteArrayInputStream bais = new ByteArrayInputStream(tab, off, len)) {
+			try (DataInputStream ois = new DataInputStream(bais)) {
+				for (FieldAccessor fa : fields) {
+					if (fa.isPrimaryKey()) {
+						if (includePK)
+							fa.unserialize(ois, hm);
+					} else if (fa.isForeignKey()) {
+						if (includeFK)
+							fa.unserialize(ois, hm);
+					} else if (includeNonKey)
+						fa.unserialize(ois, hm);
+				}
+			}
+		} catch (DatabaseException e) {
+			if (e.getCause() instanceof EOFException)
+				throw new SerializationDatabaseException("Unexpected EOF", e);
+			throw e;
+		} catch (Exception e) {
+			throw DatabaseException.getDatabaseException(e);
+		}
+	}
+
 	byte[] serializePrimaryKeys(Map<String, Object> mapKeys) throws DatabaseException {
 
 		try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {

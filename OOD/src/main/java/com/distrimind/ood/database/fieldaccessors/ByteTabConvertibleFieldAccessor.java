@@ -45,7 +45,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Map;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
@@ -430,7 +430,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void unserialize(DataInputStream _ois, HashMap<String, Object> _map) throws DatabaseException {
+	public void unserialize(DataInputStream _ois, Map<String, Object> _map) throws DatabaseException {
 		try {
 			int size = _ois.readInt();
 			if (size > -1) {

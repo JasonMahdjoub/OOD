@@ -51,7 +51,7 @@ import java.sql.Blob;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 import com.distrimind.ood.database.DatabaseRecord;
@@ -353,7 +353,7 @@ public class SerializableFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void unserialize(DataInputStream dis, HashMap<String, Object> _map) throws DatabaseException {
+	public void unserialize(DataInputStream dis, Map<String, Object> _map) throws DatabaseException {
 		try (ObjectInputStream ois = new ObjectInputStream(dis)) {
 			Object o = ois.readObject();
 			if (o != null && !field.getType().isAssignableFrom(o.getClass()))

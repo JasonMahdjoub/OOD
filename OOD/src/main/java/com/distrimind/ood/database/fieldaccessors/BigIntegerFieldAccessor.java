@@ -39,8 +39,6 @@ package com.distrimind.ood.database.fieldaccessors;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -48,7 +46,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 import com.distrimind.ood.database.DatabaseRecord;
@@ -279,20 +277,40 @@ public class BigIntegerFieldAccessor extends FieldAccessor {
 
 	@Override
 	public void serialize(DataOutputStream dos, Object _class_instance) throws DatabaseException {
-		try (ObjectOutputStream oos = new ObjectOutputStream(dos)) {
-			oos.writeObject(getValue(_class_instance));
+		BigInteger bi=(BigInteger)getValue(_class_instance);
+
+		try {
+			if (bi==null)
+				dos.writeInt(-1);
+			else {
+				byte[] tab=bi.toByteArray();
+				assert tab.length>0;
+				dos.writeInt(tab.length);
+				dos.write(tab);
+			}
+
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
 
 	@Override
-	public void unserialize(DataInputStream dis, HashMap<String, Object> _map) throws DatabaseException {
-		try (ObjectInputStream ois = new ObjectInputStream(dis)) {
-			BigInteger o = (BigInteger) ois.readObject();
+	public void unserialize(DataInputStream dis, Map<String, Object> _map) throws DatabaseException {
+
+		try  {
+			int s=dis.readInt();
+			BigInteger o=null;
+			if (s>=0)
+			{
+				byte[] tab=new byte[s];
+				dis.readFully(tab);
+				 o = new BigInteger(tab);
+
+			}
 			if (o == null && isNotNull())
 				throw new DatabaseException("field should not be null");
 			_map.put(getFieldName(), o);
+
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -301,8 +319,17 @@ public class BigIntegerFieldAccessor extends FieldAccessor {
 
 	@Override
 	public Object unserialize(DataInputStream dis, Object _classInstance) throws DatabaseException {
-		try (ObjectInputStream ois = new ObjectInputStream(dis)) {
-			BigInteger o = (BigInteger) ois.readObject();
+		try  {
+			int s=dis.readInt();
+			BigInteger o=null;
+			if (s>=0)
+			{
+				byte[] tab=new byte[s];
+				dis.readFully(tab);
+				o = new BigInteger(tab);
+
+			}
+
 			if (o == null && isNotNull())
 				throw new DatabaseException("field should not be null");
 			setValue(_classInstance, o);
