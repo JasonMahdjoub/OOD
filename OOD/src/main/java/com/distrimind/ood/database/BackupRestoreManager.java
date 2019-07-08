@@ -917,7 +917,9 @@ public class BackupRestoreManager {
 						}
 						final long totalRecords=t;
 						long numberOfSavedRecords=0;
+						List<Class<? extends Table<?>>> classes_done=new ArrayList<>();
 						for (Class<? extends Table<?>> c : classes) {
+							classes_done.add(c);
 							final Table<?> table = databaseWrapper.getTableInstance(c);
 							final long nbSavedRecords=numberOfSavedRecords;
 							numberOfSavedRecords=databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Long>() {
@@ -1245,7 +1247,8 @@ public class BackupRestoreManager {
 						while (in.available()>0) {
 							int startTransaction=(int)in.currentPosition();
 							int nextTransaction=in.readInt();
-							if (in.readLong()>dateUTCInMs)
+							long currentTransactionUTC=in.readLong();
+							if (currentTransactionUTC>dateUTCInMs)
 								break fileloop;
 							if (in.readInt()!=-1)
 								throw new IOException();
@@ -1360,11 +1363,14 @@ public class BackupRestoreManager {
 	}
 	private void positionForDataRead(RandomInputStream in, boolean reference) throws DatabaseException {
 		try {
-			in.seek(LIST_CLASSES_POSITION/*RecordsIndex.getListClassPosition(in)*/);
+
 			if (reference) {
+				in.seek(LIST_CLASSES_POSITION);
 				int dataPosition = in.readInt();
 				in.seek(dataPosition);
 			}
+			else
+				in.seek(LIST_CLASSES_POSITION+4);
 		}
 		catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);

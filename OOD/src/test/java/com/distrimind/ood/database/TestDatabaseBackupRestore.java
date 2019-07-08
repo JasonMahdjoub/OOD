@@ -148,10 +148,10 @@ public class TestDatabaseBackupRestore {
 		List<Table4.Record> lTable4D=destinationWrapper.getTableInstance(Table4.class).getRecords();
 
 		if (bidirectional) {
-			Assert.assertEquals(lTable1.size(), lTable1D.size());
-			Assert.assertEquals(lTable2.size(), lTable2D.size());
-			Assert.assertEquals(lTable3.size(), lTable3D.size());
-			Assert.assertEquals(lTable4.size(), lTable4D.size());
+			Assert.assertEquals(lTable1D.size(), lTable1.size());
+			Assert.assertEquals(lTable2D.size(), lTable2.size());
+			Assert.assertEquals(lTable3D.size(), lTable3.size());
+			Assert.assertEquals(lTable4D.size(), lTable4.size());
 		}
 		Table1 table1=destinationWrapper.getTableInstance(Table1.class);
 		Table2 table2=destinationWrapper.getTableInstance(Table2.class);
