@@ -85,7 +85,7 @@ public final class GroupedResults<T extends DatabaseRecord> {
 				}
 				if (founded_field == null)
 					throw new ConstraintsNotRespectedDatabaseException("The field " + f
-							+ " does not exist into the class/table " + current_table.getClass().getName());
+							+ " does not exist into the class/table " + current_table.getClass().getSqlTableName());
 
 				fields.add(founded_field);
 

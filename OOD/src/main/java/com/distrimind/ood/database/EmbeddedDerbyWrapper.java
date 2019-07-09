@@ -204,7 +204,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	protected void checkConstraints(Table<?> table) throws DatabaseException {
 		Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
 		try (ReadQuerry rq = new ReadQuerry(sql_connection,
-				sql_connection.getMetaData().getPrimaryKeys(null, null, table.getName()))) {
+				sql_connection.getMetaData().getPrimaryKeys(null, null, table.getSqlTableName()))) {
 			while (rq.result_set.next()) {
 				String pkName = rq.result_set.getString("PK_NAME");
 				if (pkName != null && !pkName.equals(table.getSqlPrimaryKeyName()))
@@ -213,7 +213,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 									+ " which should be named " + table.getSqlPrimaryKeyName());
 			}
 			try (ReadQuerry rq2 = new ReadQuerry(sql_connection,
-					sql_connection.getMetaData().getIndexInfo(null, null, table.getName(), false, false))) {
+					sql_connection.getMetaData().getIndexInfo(null, null, table.getSqlTableName(), false, false))) {
 				while (rq2.result_set.next()) {
 					String colName = rq2.result_set.getString("COLUMN_NAME");
 					if (colName != null) {
@@ -241,16 +241,16 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 			}
 
 		} catch (SQLException e) {
-			throw new DatabaseException("Impossible to check constraints of the table " + table.getName(), e);
+			throw new DatabaseException("Impossible to check constraints of the table " + table.getSqlTableName(), e);
 		} catch (Exception e) {
 			throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 		}
 		for (Table<?> t : getListTables(table.getClass().getPackage(), getCurrentDatabaseVersion(table.getClass().getPackage()))) {
 			try (ReadQuerry rq = new ReadQuerry(sql_connection,
-					sql_connection.getMetaData().getExportedKeys(null, null, t.getName()))) {
+					sql_connection.getMetaData().getExportedKeys(null, null, t.getSqlTableName()))) {
 				while (rq.result_set.next()) {
 					String fk_table_name = rq.result_set.getString("FKTABLE_NAME");
-					if (fk_table_name.equals(table.getName())) {
+					if (fk_table_name.equals(table.getSqlTableName())) {
 						String pointed_table = rq.result_set.getString("PKTABLE_NAME");
 						String pointed_col = pointed_table + "." + rq.result_set.getString("PKCOLUMN_NAME");
 						String fk = rq.result_set.getString("FKCOLUMN_NAME");
@@ -275,7 +275,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 					}
 				}
 			} catch (SQLException e) {
-				throw new DatabaseException("Impossible to check constraints of the table " + table.getName(), e);
+				throw new DatabaseException("Impossible to check constraints of the table " + table.getSqlTableName(), e);
 			} catch (Exception e) {
 				throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 			}
@@ -285,7 +285,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 			for (FieldAccessor fa : table.getFieldAccessors()) {
 				for (SqlField sf : fa.getDeclaredSqlFields()) {
 
-					try (Table.ColumnsReadQuerry rq = getColumnMetaData(table.getName(), sf.short_field)) {
+					try (Table.ColumnsReadQuerry rq = getColumnMetaData(table.getSqlTableName(), sf.short_field)) {
 						if (rq.result_set.next()) {
 							String type = rq.tableColumnsResultSet.getTypeName().toUpperCase();
 							if (!sf.type.toUpperCase().startsWith(type))
@@ -315,7 +315,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 					}
 					if (fa.isPrimaryKey()) {
 						try (ReadQuerry rq = new ReadQuerry(sql_connection,
-								sql_connection.getMetaData().getPrimaryKeys(null, null, table.getName()))) {
+								sql_connection.getMetaData().getPrimaryKeys(null, null, table.getSqlTableName()))) {
 							boolean found = false;
 							while (rq.result_set.next()) {
 								if (rq.result_set.getString("COLUMN_NAME").equals(sf.short_field)
@@ -331,10 +331,10 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 						boolean found = false;
 						for (Table<?> t : getListTables(table.getClass().getPackage(), getCurrentDatabaseVersion(table.getClass().getPackage()))) {
 							try (ReadQuerry rq = new ReadQuerry(sql_connection,
-									sql_connection.getMetaData().getExportedKeys(null, null, t.getName()))) {
+									sql_connection.getMetaData().getExportedKeys(null, null, t.getSqlTableName()))) {
 								while (rq.result_set.next()) {
 									String fk_table_name = rq.result_set.getString("FKTABLE_NAME");
-									if (fk_table_name.equals(table.getName())) {
+									if (fk_table_name.equals(table.getSqlTableName())) {
 										if (rq.result_set.getString("FKCOLUMN_NAME").equals(sf.short_field))
 											found = true;
 									}
@@ -356,7 +356,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 					/*if (fa.isUnique()) {
 						boolean found = false;
 						try (ReadQuerry rq = new ReadQuerry(sql_connection,
-								sql_connection.getMetaData().getIndexInfo(null, null, table.getName(), false, false))) {
+								sql_connection.getMetaData().getIndexInfo(null, null, table.getSqlTableName(), false, false))) {
 							while (rq.result_set.next()) {
 								
 								String columnName = rq.result_set.getString("COLUMN_NAME");
@@ -375,7 +375,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 				}
 			}
 		} catch (SQLException e) {
-			throw new DatabaseException("Impossible to check constraints of the table " + table.getName(), e);
+			throw new DatabaseException("Impossible to check constraints of the table " + table.getSqlTableName(), e);
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}

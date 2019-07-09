@@ -50,9 +50,9 @@ public enum DatabaseEventType {
 	REMOVE((byte) 4, false, true),
 	REMOVE_WITH_CASCADE((byte) 8, false, true);
 
-	private byte type;
-	private boolean hasNewValue;
-	private boolean hasOldValue;
+	private final byte type;
+	private final boolean hasNewValue;
+	private final boolean hasOldValue;
 
 	DatabaseEventType(byte type, boolean hasNewValue, boolean hasOldValue) {
 		this.type = type;

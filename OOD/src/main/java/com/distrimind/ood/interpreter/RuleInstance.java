@@ -205,12 +205,12 @@ public class RuleInstance implements QueryPart {
 					Table.FieldAccessorValue fav = table.getFieldAccessorAndValue(record, fieldName, tablesJunction);
 					if (fav == null || fav.getFieldAccessor()==null)
 						throw new DatabaseSyntaxException(
-								"Cannot find field " + fieldName + " into table " + table.getName());
+								"Cannot find field " + fieldName + " into table " + table.getClass().getSimpleName());
 					if (fav.getFieldAccessor().isComparable())
 						return fav.getFieldAccessor().getValue(fav.getValue()/*getDatabaseRecord(fav.getFieldAccessor(), tablesJunction, record)*/);
 					else
 						throw new DatabaseSyntaxException(
-								"The " + fieldName + " into table " + table.getName() + " is not comparable !");
+								"The " + fieldName + " into table " + table.getClass().getSimpleName() + " is not comparable !");
 				} else if (s.getType() == SymbolType.PARAMETER) {
 					Object parameter1 = parameters.get(s.getSymbol());
 					if (parameter1 == null)
@@ -247,7 +247,7 @@ public class RuleInstance implements QueryPart {
 					Table.FieldAccessorValue fav = table.getFieldAccessorAndValue(record, fieldName);
 					if (fav == null || fav.getFieldAccessor()==null)
 						throw new DatabaseSyntaxException(
-								"Cannot find field " + fieldName + " into table " + table.getName());
+								"Cannot find field " + fieldName + " into table " + table.getClass().getSimpleName());
 
 					return fav;
 				} else if (s.getType() == SymbolType.PARAMETER) {
@@ -291,12 +291,12 @@ public class RuleInstance implements QueryPart {
 					}
 					if (fav == null || fav.getFieldAccessor()==null)
 						throw new DatabaseSyntaxException(
-								"Cannot find field " + fieldName + " into table " + table.getName());
+								"Cannot find field " + fieldName + " into table " + table.getClass().getSimpleName());
 					if (StringFieldAccessor.class.isAssignableFrom(fav.getFieldAccessor().getClass()))
 						return fav;
 					else
 						throw new DatabaseSyntaxException(
-								"The field " + fieldName + " into table " + table.getName() + " is not a string !");
+								"The field " + fieldName + " into table " + table.getClass().getSimpleName() + " is not a string !");
 				} else if (s.getType() == SymbolType.PARAMETER) {
 					Object parameter1 = parameters.get(s.getSymbol());
 					if (parameter1 == null)
@@ -691,7 +691,7 @@ public class RuleInstance implements QueryPart {
 								fa1 = table.getFieldAccessor(fieldName, tablesJunction);
 								if (fa1 == null)
 									throw new DatabaseSyntaxException(
-											"Cannot find field " + fieldName + " into table " + table.getName());
+											"Cannot find field " + fieldName + " into table " + table.getClass().getSimpleName());
 							} else if (s1.getType() == SymbolType.PARAMETER) {
 								parameter1 = parameters.get(s1.getSymbol());
 								if (parameter1 == null)
@@ -708,7 +708,7 @@ public class RuleInstance implements QueryPart {
 								fa2 = table.getFieldAccessor(fieldName, tablesJunction);
 								if (fa2 == null)
 									throw new DatabaseSyntaxException(
-											"Cannot find field " + fieldName + " into table " + table.getName());
+											"Cannot find field " + fieldName + " into table " + table.getClass().getSimpleName());
 							} else if (s2.getType() == SymbolType.PARAMETER) {
 								parameter2 = parameters.get(s2.getSymbol());
 								/*if (parameter2 == null)
@@ -906,7 +906,7 @@ public class RuleInstance implements QueryPart {
 					FieldAccessor fa = table.getFieldAccessor(fieldName, tablesJunction);
 					if (fa == null)
 						throw new DatabaseSyntaxException(
-								"Cannot find field " + fieldName + " into table " + table.getName());
+								"Cannot find field " + fieldName + " into table " + table.getClass().getSimpleName());
 					SqlField[] sfs = fa.getDeclaredSqlFields();
 					if (sfs.length > 1)
 						throw new IllegalAccessError();

@@ -78,6 +78,7 @@ public class BackupRestoreManager {
 	private final boolean passive;
 	private final Package dbPackage;
 	private final boolean generateRestoreProgressBar;
+	private volatile long lastCurrentRestorationFileUsed=Long.MIN_VALUE;
 
 
 	File getLastFile()
@@ -201,6 +202,8 @@ public class BackupRestoreManager {
 
 	private boolean isPartFull(long timeStamp, File file)
 	{
+		if (timeStamp==lastCurrentRestorationFileUsed)
+			return true;
 		if (file.length()>=backupConfiguration.getMaxBackupFileSizeInBytes())
 			return true;
 		return timeStamp < System.currentTimeMillis() - backupConfiguration.getMaxBackupFileAgeInMs();
@@ -295,7 +298,8 @@ public class BackupRestoreManager {
 	private void backupRecordEvent(RandomOutputStream out, Table<?> table, DatabaseRecord oldRecord, DatabaseRecord newRecord, DatabaseEventType eventType/*, RecordsIndex index*/) throws DatabaseException {
 		try {
 			int start=(int)out.currentPosition();
-			out.write(eventType.getByte());
+			out.writeByte(eventType.getByte());
+
 			@SuppressWarnings("SuspiciousMethodCalls")
 			int tableIndex=classes.indexOf(table.getClass());
 			if (tableIndex<0)
@@ -326,7 +330,7 @@ public class BackupRestoreManager {
 					else
 					{
 						out.writeBoolean(true);
-						out.writeUnsignedShortInt(nonkeys.length);
+						out.writeInt(nonkeys.length);
 						out.write(nonkeys);
 					}
 
@@ -865,8 +869,16 @@ public class BackupRestoreManager {
 				File file=getFile(oldLastFile, fileReferenceTimeStamps.contains(oldLastFile));
 				oldLength=(int)file.length();
 			}
-
-			final long backupTime = System.currentTimeMillis();
+			long curTime=System.currentTimeMillis();
+			while (curTime==oldLastFile) {
+				try {
+					Thread.sleep(1);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				curTime=System.currentTimeMillis();
+			}
+			final long backupTime = curTime;
 			final AtomicLong currentBackupTime = new AtomicLong(backupTime);
 
 			try {
@@ -894,6 +906,7 @@ public class BackupRestoreManager {
 								}
 							}
 						}
+						scanFiles();
 					}
 					final int maxBufferSize = backupConfiguration.getMaxStreamBufferSizeForBackupRestoration();
 					final int maxBuffersNumber = backupConfiguration.getMaxStreamBufferNumberForBackupRestoration();
@@ -940,10 +953,19 @@ public class BackupRestoreManager {
 													out.close();
 													//index.set(null);
 
-													currentBackupTime.set(System.currentTimeMillis());
-													File file = initNewFileForBackupIncrement(System.currentTimeMillis());
+													long curTime=System.currentTimeMillis();
+													while (curTime==currentBackupTime.get()) {
+														try {
+															Thread.sleep(1);
+														} catch (InterruptedException e) {
+															e.printStackTrace();
+														}
+														curTime=System.currentTimeMillis();
+													}
+													currentBackupTime.set(curTime);
+													File file = initNewFileForBackupIncrement(curTime);
 													rout.set(out = new BufferedRandomOutputStream(new RandomFileOutputStream(file, RandomFileOutputStream.AccessMode.READ_AND_WRITE), maxBufferSize, maxBuffersNumber));
-													saveHeader(out, currentBackupTime.get(), false/*, index*/);
+													saveHeader(out, curTime, false/*, index*/);
 													nextTransactionReference.set(saveTransactionHeader(rout.get(), currentBackupTime.get()));
 													originalPosition=rout.get().currentPosition();
 												}
@@ -979,7 +1001,7 @@ public class BackupRestoreManager {
 						rout.get().flush();
 						rout.get().close();
 					}
-					//scanFiles();
+					scanFiles();
 					cleanOldBackups();
 					if (!computeDatabaseReference.delete())
 						throw new DatabaseException("Impossible to delete file " + computeDatabaseReference);
@@ -1092,6 +1114,7 @@ public class BackupRestoreManager {
 				throw DatabaseException.getDatabaseException(e);
 			}
 		}
+		scanFiles();
 	}
 	private void deleteDatabaseFilesFromReferenceToFirstFile(long fileReference)
 	{
@@ -1113,6 +1136,7 @@ public class BackupRestoreManager {
 				it.remove();
 			}
 		}
+		scanFiles();
 	}
 
 	/**
@@ -1158,85 +1182,109 @@ public class BackupRestoreManager {
 	 * @return true if the given time corresponds to an available backup. False is chosen if the given time is too old to find a corresponding historical into the backups. In this previous case, and if the param <code>chooseNearestBackupIfNoBackupMatch</code>is set to true, than it is the nearest backup that is chosen. Else no restoration is done.
 	 */
 	public boolean restoreDatabaseToDateUTC(long dateUTCInMs, boolean chooseNearestBackupIfNoBackupMatch) throws DatabaseException {
-		synchronized (this) {
-			if (fileReferenceTimeStamps.size()==0)
-				return false;
-			int oldVersion=databaseWrapper.getCurrentDatabaseVersion(dbPackage);
-
-			int newVersion=oldVersion+1;
-			while(databaseWrapper.doesVersionExists(dbPackage, newVersion)) {
-				++newVersion;
-				if (newVersion<0)
-					newVersion=0;
-				if (newVersion==oldVersion)
-					throw new DatabaseException("No more database version available");
-			}
-			long startFileReference=Long.MIN_VALUE;
-			for (int i=fileReferenceTimeStamps.size()-1;i>=0;i--)
-			{
-				if (fileReferenceTimeStamps.get(i)<=dateUTCInMs)
-				{
-					startFileReference=fileReferenceTimeStamps.get(i);
-					break;
-				}
-			}
-			boolean res=true;
-			if (startFileReference==Long.MIN_VALUE)
-			{
-				res=false;
-				if (chooseNearestBackupIfNoBackupMatch) {
-					startFileReference = fileReferenceTimeStamps.get(0);
-					dateUTCInMs=startFileReference;
-				}
-				else
-					return false;
-			}
+		try
+		{
+			databaseWrapper.lockWrite();
+			int oldVersion;
+			int newVersion;
+			File currentFile;
+			ProgressMonitor pg;
+			long s;
+			ArrayList<Table<?>> tbls;
+			boolean reference=true;
+			LinkedList<Long> listIncrements;
 			boolean newVersionLoaded=false;
-			try {
-				File currentFile=getFile(startFileReference, true);
-				LinkedList<Long> listIncrements=new LinkedList<>();
-				//noinspection ForLoopReplaceableByForEach
-				for (int i=0;i<fileTimeStamps.size();i++)
-				{
-					Long l=fileTimeStamps.get(i);
-					if (l>startFileReference)
-					{
-						if (fileReferenceTimeStamps.contains(l))
-							break;
-						listIncrements.add(l);
+			boolean res = true;
+
+			synchronized (this) {
+				if (fileReferenceTimeStamps.size() == 0)
+					return false;
+				oldVersion = databaseWrapper.getCurrentDatabaseVersion(dbPackage);
+
+				newVersion = oldVersion + 1;
+				while (databaseWrapper.doesVersionExists(dbPackage, newVersion)) {
+					++newVersion;
+					if (newVersion < 0)
+						newVersion = 0;
+					if (newVersion == oldVersion)
+						throw new DatabaseException("No more database version available");
+				}
+				long startFileReference = Long.MIN_VALUE;
+				for (int i = fileReferenceTimeStamps.size() - 1; i >= 0; i--) {
+					if (fileReferenceTimeStamps.get(i) <= dateUTCInMs) {
+						startFileReference = fileReferenceTimeStamps.get(i);
+						break;
 					}
 				}
 
-				if (!checkTablesHeader(currentFile))
-					throw new DatabaseException("The database backup is incompatible with current database tables");
-
-				databaseWrapper.loadDatabase(databaseConfiguration, true, newVersion);
-				newVersionLoaded=true;
-				final ArrayList<Table<?>> tables=new ArrayList<>();
-				for (Class<? extends Table<?>> c : classes) {
-					Table<?> t = databaseWrapper.getTableInstance(c, newVersion);
-					tables.add(t);
+				if (startFileReference == Long.MIN_VALUE) {
+					res = false;
+					if (chooseNearestBackupIfNoBackupMatch) {
+						startFileReference = fileReferenceTimeStamps.get(0);
+						dateUTCInMs = startFileReference;
+					} else
+						return false;
 				}
-				final int maxBufferSize=backupConfiguration.getMaxStreamBufferSizeForBackupRestoration();
-				final int maxBuffersNumber=backupConfiguration.getMaxStreamBufferNumberForBackupRestoration();
+				lastCurrentRestorationFileUsed = startFileReference;
+				try {
+					currentFile = getFile(startFileReference, true);
+					listIncrements = new LinkedList<>();
+					//noinspection ForLoopReplaceableByForEach
+					for (int i = 0; i < fileTimeStamps.size(); i++) {
+						Long l = fileTimeStamps.get(i);
+						if (l > startFileReference) {
+							if (fileReferenceTimeStamps.contains(l))
+								break;
+							lastCurrentRestorationFileUsed = l;
 
-				boolean reference=true;
-				long s=0;
-				generateProgressBarParameterForRestoration(dateUTCInMs);
-				final ProgressMonitor progressMonitor=backupConfiguration.getProgressMonitorForRestore();
-				File f=null;
-				if (progressMonitor!=null) {
-					for (Long l : listIncrements) {
-						f=getFile(l, f==null);
-						s += f.length();
+							listIncrements.add(l);
+						}
 					}
-					progressMonitor.setMinimum(0);
-					progressMonitor.setMaximum(1000);
+
+					if (!checkTablesHeader(currentFile))
+						throw new DatabaseException("The database backup is incompatible with current database tables");
+
+					databaseWrapper.loadDatabase(databaseConfiguration, true, newVersion);
+					newVersionLoaded = true;
+					tbls = new ArrayList<>();
+					for (Class<? extends Table<?>> c : classes) {
+						Table<?> t = databaseWrapper.getTableInstance(c, newVersion);
+						tbls.add(t);
+					}
+
+					s = 0;
+					generateProgressBarParameterForRestoration(dateUTCInMs);
+					pg = backupConfiguration.getProgressMonitorForRestore();
+					File f = null;
+					if (pg != null) {
+						for (Long l : listIncrements) {
+							f = getFile(l, f == null);
+							s += f.length();
+						}
+						pg.setMinimum(0);
+						pg.setMaximum(1000);
+					}
+
+
+				} catch (Exception e) {
+					lastCurrentRestorationFileUsed=Long.MIN_VALUE;
+					if (newVersionLoaded)
+						databaseWrapper.deleteDatabase(databaseConfiguration, newVersion);
+					throw DatabaseException.getDatabaseException(e);
 				}
-				final long totalSize=s;
-				long progressPosition=0;
+			}
+			final long totalSize = s;
+			long progressPosition = 0;
+			final ProgressMonitor progressMonitor=pg;
+			final ArrayList<Table<?>> tables=tbls;
+			final int maxBufferSize = backupConfiguration.getMaxStreamBufferSizeForBackupRestoration();
+			final int maxBuffersNumber = backupConfiguration.getMaxStreamBufferNumberForBackupRestoration();
+
+			try{
 				fileloop:while (currentFile!=null)
 				{
+					if (!currentFile.exists())
+						throw new DatabaseException("Backup file not found : "+currentFile);
 					try(RandomInputStream in=new BufferedRandomInputStream(new RandomFileInputStream(currentFile), maxBufferSize, maxBuffersNumber))
 					{
 						positionForDataRead(in, reference);
@@ -1269,10 +1317,13 @@ public class BackupRestoreManager {
 											throw new IOException();
 										Table<?> table = tables.get(tableIndex);
 										int s = in.readUnsignedShortInt();
+										if (s==0)
+											throw new IOException();
 										in.readFully(recordBuffer, 0, s);
 										switch (eventType) {
 											case ADD:
 											{
+												assert eventTypeCode==2;
 												HashMap<String, Object> hm=new HashMap<>();
 												table.deserializeFields(hm, recordBuffer, 0, s, true, false, false);
 
@@ -1283,9 +1334,14 @@ public class BackupRestoreManager {
 												}
 
 												if (in.readBoolean()) {
-													s = in.readUnsignedShortInt();
-													in.readFully(recordBuffer, 0, s);
-													table.deserializeFields(hm, recordBuffer, 0, s, false, false, true);
+													s = in.readInt();
+													if (s<0)
+														throw new IOException();
+													if (s>0) {
+														in.readFully(recordBuffer, 0, s);
+
+														table.deserializeFields(hm, recordBuffer, 0, s, false, false, true);
+													}
 												}
 												table.addRecord(hm);
 											}
@@ -1301,25 +1357,35 @@ public class BackupRestoreManager {
 												}
 
 												if (in.readBoolean()) {
-													s = in.readUnsignedShortInt();
-													in.readFully(recordBuffer, 0, s);
-													table.deserializeFields(dr, recordBuffer, 0, s, false, false, true);
+													s = in.readInt();
+													if (s<0)
+														throw new IOException();
+													if (s>0) {
+														in.readFully(recordBuffer, 0, s);
+
+														table.deserializeFields(dr, recordBuffer, 0, s, false, false, true);
+													}
 												}
 												table.updateUntypedRecord(dr, true, null);
 											}
 											break;
 											case REMOVE: {
 												HashMap<String, Object> pks = new HashMap<>();
-												table.deserializePrimaryKeys(pks, recordBuffer, 0, s);
-												table.removeRecord(pks);
+												table.deserializeFields(pks, recordBuffer, 0, s, true, false, false);
+												if (!table.removeRecord(pks))
+													throw new IOException();
 											}
 											break;
 											case REMOVE_WITH_CASCADE: {
 												HashMap<String, Object> pks = new HashMap<>();
-												table.deserializePrimaryKeys(pks, recordBuffer, 0, s);
-												table.removeRecordWithCascade(pks);
+												table.deserializeFields(pks, recordBuffer, 0, s, true, false, false);
+												if (!table.removeRecordWithCascade(pks))
+													throw new IOException();
+
 											}
 											break;
+											default:
+												throw new IllegalAccessError();
 
 
 										}
@@ -1362,15 +1428,23 @@ public class BackupRestoreManager {
 						currentFile=null;
 
 				}
+
+
 				databaseWrapper.validateNewDatabaseVersionAndDeleteOldVersion(databaseConfiguration, oldVersion, newVersion);
+
 				//createBackupReference();
 				return res;
 
 			} catch (Exception e) {
-				if (newVersionLoaded)
-					databaseWrapper.deleteDatabase(databaseConfiguration, newVersion);
+				databaseWrapper.deleteDatabase(databaseConfiguration, newVersion);
 				throw DatabaseException.getDatabaseException(e);
 			}
+			finally {
+				lastCurrentRestorationFileUsed=Long.MIN_VALUE;
+			}
+		}
+		finally {
+			databaseWrapper.unlockWrite();
 		}
 	}
 	private void positionForDataRead(RandomInputStream in, boolean reference) throws DatabaseException {

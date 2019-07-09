@@ -260,7 +260,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 		Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
 		try (ReadQuerry rq = new ReadQuerry(sql_connection, new Table.SqlQuerry(
 				"select CONSTRAINT_NAME, CONSTRAINT_TYPE from INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_NAME='"
-						+ table.getName() + "';"))) {
+						+ table.getSqlTableName() + "';"))) {
 			while (rq.result_set.next()) {
 				String constraint_name = rq.result_set.getString("CONSTRAINT_NAME");
 				String constraint_type = rq.result_set.getString("CONSTRAINT_TYPE");
@@ -279,9 +279,9 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 					try (ReadQuerry rq2 = new ReadQuerry(sql_connection,
 							new Table.SqlQuerry(
 									"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
-											+ table.getName() + "' AND CONSTRAINT_NAME='" + constraint_name + "';"))) {
+											+ table.getSqlTableName() + "' AND CONSTRAINT_NAME='" + constraint_name + "';"))) {
 						if (rq2.result_set.next()) {
-							String col = (table.getName() + "." + rq2.result_set.getString("COLUMN_NAME"))
+							String col = (table.getSqlTableName() + "." + rq2.result_set.getString("COLUMN_NAME"))
 									.toUpperCase();
 							boolean found = false;
 							for (FieldAccessor fa : table.getFieldAccessors()) {
@@ -309,17 +309,17 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 				}
 			}
 		} catch (SQLException e) {
-			throw new DatabaseException("Impossible to check constraints of the table " + table.getName(), e);
+			throw new DatabaseException("Impossible to check constraints of the table " + table.getClass().getSimpleName(), e);
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
 		try (ReadQuerry rq = new ReadQuerry(sql_connection, new Table.SqlQuerry(
 				"select PKTABLE_NAME, PKCOLUMN_NAME, FKCOLUMN_NAME from INFORMATION_SCHEMA.SYSTEM_CROSSREFERENCE WHERE FKTABLE_NAME='"
-						+ table.getName() + "';"))) {
+						+ table.getSqlTableName() + "';"))) {
 			while (rq.result_set.next()) {
 				String pointed_table = rq.result_set.getString("PKTABLE_NAME");
 				String pointed_col = pointed_table + "." + rq.result_set.getString("PKCOLUMN_NAME");
-				String fk = table.getName() + "." + rq.result_set.getString("FKCOLUMN_NAME");
+				String fk = table.getSqlTableName() + "." + rq.result_set.getString("FKCOLUMN_NAME");
 				boolean found = false;
 				for (ForeignKeyFieldAccessor fa : table.getForeignKeysFieldAccessors()) {
 					for (SqlField sf : fa.getDeclaredSqlFields()) {
@@ -337,7 +337,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 							"There is foreign keys defined into the Sql database which have not been found in the OOD database.");
 			}
 		} catch (SQLException e) {
-			throw new DatabaseException("Impossible to check constraints of the table " + table.getName(), e);
+			throw new DatabaseException("Impossible to check constraints of the table " + table.getClass().getSimpleName(), e);
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -348,7 +348,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 
 					try (ReadQuerry rq = new ReadQuerry(sql_connection, new Table.SqlQuerry(
 							"SELECT TYPE_NAME, COLUMN_SIZE, IS_NULLABLE, ORDINAL_POSITION, IS_AUTOINCREMENT FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"
-									+ table.getName() + "' AND COLUMN_NAME='" + sf.short_field + "'"
+									+ table.getSqlTableName() + "' AND COLUMN_NAME='" + sf.short_field + "'"
 									+ getSqlComma()))) {
 						if (rq.result_set.next()) {
 							String type = rq.result_set.getString("TYPE_NAME").toUpperCase();
@@ -381,7 +381,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 						try (ReadQuerry rq = new ReadQuerry(sql_connection,
 								new Table.SqlQuerry(
 										"select * from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
-												+ table.getName() + "' AND COLUMN_NAME='" + sf.short_field
+												+ table.getSqlTableName() + "' AND COLUMN_NAME='" + sf.short_field
 												+ "' AND CONSTRAINT_NAME='" + table.getSqlPrimaryKeyName() + "';"))) {
 							if (!rq.result_set.next())
 								throw new DatabaseVersionException(table, "The field " + fa.getFieldName()
@@ -391,7 +391,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 					if (fa.isForeignKey()) {
 						try (ReadQuerry rq = new ReadQuerry(sql_connection, new Table.SqlQuerry(
 								"select PKTABLE_NAME, FKTABLE_NAME, PKCOLUMN_NAME, FKCOLUMN_NAME from INFORMATION_SCHEMA.SYSTEM_CROSSREFERENCE WHERE FKTABLE_NAME='"
-										+ table.getName() + "' AND PKTABLE_NAME='" + sf.pointed_table
+										+ table.getSqlTableName() + "' AND PKTABLE_NAME='" + sf.pointed_table
 										+ "' AND PKCOLUMN_NAME='" + sf.short_pointed_field + "' AND FKCOLUMN_NAME='"
 										+ sf.short_field + "'"))) {
 							if (!rq.result_set.next())
@@ -405,16 +405,16 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 						boolean found = false;
 						try (ReadQuerry rq = new ReadQuerry(sql_connection, new Table.SqlQuerry(
 								"select CONSTRAINT_NAME, CONSTRAINT_TYPE from INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_NAME='"
-										+ table.getName() + "';"))) {
+										+ table.getSqlTableName() + "';"))) {
 							while (rq.result_set.next()) {
 								if (rq.result_set.getString("CONSTRAINT_TYPE").equals("UNIQUE")) {
 									String constraint_name = rq.result_set.getString("CONSTRAINT_NAME");
 									try (ReadQuerry rq2 = new ReadQuerry(sql_connection, new Table.SqlQuerry(
 											"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
-													+ table.getName() + "' AND CONSTRAINT_NAME='" + constraint_name
+													+ table.getSqlTableName() + "' AND CONSTRAINT_NAME='" + constraint_name
 													+ "';"))) {
 										if (rq2.result_set.next()) {
-											String col = table.getName() + "."
+											String col = table.getSqlTableName() + "."
 													+ rq2.result_set.getString("COLUMN_NAME");
 											if (col.equals(sf.field)) {
 												found = true;
@@ -432,7 +432,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 				}
 			}
 		} catch (SQLException e) {
-			throw new DatabaseException("Impossible to check constraints of the table " + table.getName(), e);
+			throw new DatabaseException("Impossible to check constraints of the table " + table.getClass().getSimpleName(), e);
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}

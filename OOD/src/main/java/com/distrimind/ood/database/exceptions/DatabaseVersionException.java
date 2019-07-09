@@ -49,8 +49,8 @@ import com.distrimind.ood.database.Table;
  */
 public class DatabaseVersionException extends DatabaseException {
 	public DatabaseVersionException(Table<?> _table, String _additional_message) {
-		super("The table " + _table.getName() + " exists into the database but does not corresponds to the class "
-				+ _table.getName() + " coded into this program. This is a problem of Version. " + _additional_message);
+		super("The table " + _table.getClass().getSimpleName() + " exists into the database but does not corresponds to the class "
+				+ _table.getClass().getSimpleName() + " coded into this program. This is a problem of Version. " + _additional_message);
 	}
 
 	/**

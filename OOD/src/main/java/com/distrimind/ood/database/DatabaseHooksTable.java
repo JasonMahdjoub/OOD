@@ -171,7 +171,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		}
 
 		/*protected void addDatabasePackageName(Package p) {
-			addDatabasePackageName(p.getName());
+			addDatabasePackageName(p.getSqlTableName());
 		}
 
 		protected void addDatabasePackageName(String p) {

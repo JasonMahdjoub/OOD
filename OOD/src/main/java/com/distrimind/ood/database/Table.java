@@ -403,7 +403,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	}
 
 	String getSqlPrimaryKeyName() {
-		return this.getName() + "__PK";
+		return this.getSqlTableName() + "__PK";
 	}
 
 	/**
@@ -418,7 +418,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 */
 	@SuppressWarnings("rawtypes")
 	protected Table() throws DatabaseException {
-		table_name = null;//getName(this.getClass());
+		table_name = null;//getSqlTableName(this.getClass());
 
 		is_loaded_in_memory = this.getClass().isAnnotationPresent(LoadToMemory.class);
 		nonDecentralizableAnnotation=this.getClass().isAnnotationPresent(ExcludeFromDecentralization.class);
@@ -555,10 +555,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			ok=false;
 		isPrimaryKeysAndForeignKeysSame=ok;
 
-		if (this.getName().equals(DatabaseWrapper.ROW_PROPERTIES_OF_TABLES))
+		if (this.getSqlTableName().equals(DatabaseWrapper.ROW_PROPERTIES_OF_TABLES))
 			throw new DatabaseException(
 					"This table cannot have the name " + DatabaseWrapper.ROW_PROPERTIES_OF_TABLES + " (case ignored)");
-		if (this.getName().equals(DatabaseWrapper.VERSIONS_OF_DATABASE))
+		if (this.getSqlTableName().equals(DatabaseWrapper.VERSIONS_OF_DATABASE))
 			throw new DatabaseException(
 					"This table cannot have the name " + DatabaseWrapper.VERSIONS_OF_DATABASE+ " (case ignored)");
 
@@ -568,7 +568,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		return databaseVersion;
 	}
 
-	private int getTableID()
+	public int getTableID()
 	{
 		return table_id;
 	}
@@ -576,11 +576,11 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	void removeTableFromDatabaseStep1() throws DatabaseException {
 		try {
 			/*Statement st = sql_connection.getConnectionAssociatedWithCurrentThread().getConnection().createStatement();
-			st.executeUpdate("DROP TRIGGER " + Table.this.getName() + "_ROW_COUNT_TRIGGER_DELETE__"
+			st.executeUpdate("DROP TRIGGER " + Table.this.getSqlTableName() + "_ROW_COUNT_TRIGGER_DELETE__"
 					+ sql_connection.getSqlComma());
 			st.close();
 			st = sql_connection.getConnectionAssociatedWithCurrentThread().getConnection().createStatement();
-			st.executeUpdate("DROP TRIGGER " + Table.this.getName() + "_ROW_COUNT_TRIGGER_INSERT__"
+			st.executeUpdate("DROP TRIGGER " + Table.this.getSqlTableName() + "_ROW_COUNT_TRIGGER_INSERT__"
 					+ sql_connection.getSqlComma());
 			st.close();*/
 			Statement st = sql_connection.getConnectionAssociatedWithCurrentThread().getConnection().createStatement();
@@ -605,7 +605,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		try {
 
             st = sql_connection.getConnectionAssociatedWithCurrentThread().getConnection().createStatement();
-            String sqlQuerry = "DROP TABLE " + this.getName() + " "
+            String sqlQuerry = "DROP TABLE " + this.getSqlTableName() + " "
                     + sql_connection.getDropTableIfExistsKeyWord() + " " + sql_connection.getDropTableCascadeKeyWord();
             st.executeUpdate(sqlQuerry);
 			sql_connection = null;
@@ -710,7 +710,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				@Override
 				public Boolean run(DatabaseWrapper sql_connection) throws DatabaseException {
 					try {
-                        return sql_connection.doesTableExists(Table.this.getName());
+                        return sql_connection.doesTableExists(Table.this.getSqlTableName());
 					} catch (Exception e) {
 						throw DatabaseException.getDatabaseException(e);
 					}
@@ -746,12 +746,12 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 								// try(ReadQuerry rq=new ReadQuerry(_sql_connection.getSqlConnection(), "SELECT
 								// COLUMN_NAME, TYPE_NAME, COLUMN_SIZE, IS_NULLABLE, IS_AUTOINCREMENT FROM
 								// INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE
-								// TABLE_NAME='"+Table.this.getName()+"';"))
-								try (ColumnsReadQuerry rq = sql_connection.getColumnMetaData(Table.this.getName())) {
+								// TABLE_NAME='"+Table.this.getSqlTableName()+"';"))
+								try (ColumnsReadQuerry rq = sql_connection.getColumnMetaData(Table.this.getSqlTableName())) {
 									// while (rq.result_set.next())
 									while (rq.tableColumnsResultSet.next()) {
-										// String col=Table.this.getName()+"."+rq.result_set.getString("COLUMN_NAME");
-										String col = Table.this.getName() + "."
+										// String col=Table.this.getSqlTableName()+"."+rq.result_set.getString("COLUMN_NAME");
+										String col = Table.this.getSqlTableName() + "."
 												+ rq.tableColumnsResultSet.getColumnName();
 										FieldAccessor founded_fa = null;
 										SqlField founded_sf = null;
@@ -769,7 +769,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 										if (founded_fa == null)
 											throw new DatabaseVersionException(Table.this,
-													"The table " + Table.this.getName() + " contains a column named "
+													"The table " + Table.this.getClass().getSimpleName() + " contains a column named "
 															+ col
 															+ " which does not correspond to any field of the class "
 															+ class_record.getName());
@@ -824,7 +824,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 							cachedKeyWord=sql_connection.getNotCachedKeyword();
 					}
 					final StringBuffer sqlQuerry = new StringBuffer(
-							"CREATE " + cachedKeyWord + " TABLE " + this.getName() + "(");
+							"CREATE " + cachedKeyWord + " TABLE " + this.getSqlTableName() + "(");
 
 					boolean first = true;
 					for (FieldAccessor f : fields) {
@@ -930,16 +930,16 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 								st = sql_connection.getConnectionAssociatedWithCurrentThread().getConnection()
 										.createStatement();
 
-								st.executeUpdate("CREATE TRIGGER " + Table.this.getName()
-										+ "_ROW_COUNT_TRIGGER_INSERT__ AFTER INSERT ON " + Table.this.getName() + "\n"
+								st.executeUpdate("CREATE TRIGGER " + Table.this.getSqlTableName()
+										+ "_ROW_COUNT_TRIGGER_INSERT__ AFTER INSERT ON " + Table.this.getSqlTableName() + "\n"
 										+ "FOR EACH ROW \n" + "UPDATE " + DatabaseWrapper.ROW_PROPERTIES_OF_TABLES
 										+ " SET ROW_COUNT=ROW_COUNT+1 WHERE TABLE_ID=" + getTableID() + "\n"
 										+ sql_connection.getSqlComma());
 								st.close();
 								st = sql_connection.getConnectionAssociatedWithCurrentThread().getConnection()
 										.createStatement();
-								st.executeUpdate("CREATE TRIGGER " + Table.this.getName()
-										+ "_ROW_COUNT_TRIGGER_DELETE__ AFTER DELETE ON " + Table.this.getName() + "\n"
+								st.executeUpdate("CREATE TRIGGER " + Table.this.getSqlTableName()
+										+ "_ROW_COUNT_TRIGGER_DELETE__ AFTER DELETE ON " + Table.this.getSqlTableName() + "\n"
 										+ "FOR EACH ROW \n" + "UPDATE " + DatabaseWrapper.ROW_PROPERTIES_OF_TABLES
 										+ " SET ROW_COUNT=ROW_COUNT-1 WHERE TABLE_ID=" + getTableID() + "\n"
 										+ sql_connection.getSqlComma());
@@ -968,7 +968,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 							final StringBuilder indexCreationQuerry = new StringBuilder("CREATE INDEX ");
 							indexCreationQuerry.append(fa.getIndexName());
 							indexCreationQuerry.append(" ON ");
-							indexCreationQuerry.append(getName()).append(" (");
+							indexCreationQuerry.append(getSqlTableName()).append(" (");
 							boolean first2 = true;
 							for (SqlField sf : fa.getDeclaredSqlFields()) {
 								if (first2)
@@ -1021,7 +1021,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					}
 
 				} else
-					throw new DatabaseException("Table " + this.getName() + " doest not exists !");
+					throw new DatabaseException("Table " + this.getClass().getSimpleName() + " doest not exists !");
 			}
 		} finally {
 			sql_connection.unlockWrite();
@@ -1078,7 +1078,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				if (foreign_keys_fields.size() > 0) {
 					for (ForeignKeyFieldAccessor f : foreign_keys_fields) {
 						final StringBuffer SqlQuerry = new StringBuffer(
-								"ALTER TABLE " + Table.this.getName() + " ADD FOREIGN KEY(");
+								"ALTER TABLE " + Table.this.getSqlTableName() + " ADD FOREIGN KEY(");
 						boolean first = true;
 						for (SqlField sf : f.getDeclaredSqlFields()) {
 							if (first)
@@ -1087,7 +1087,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 								SqlQuerry.append(", ");
 							SqlQuerry.append(sf.short_field);
 						}
-						SqlQuerry.append(") REFERENCES ").append(f.getPointedTable().getName()).append("(");
+						SqlQuerry.append(") REFERENCES ").append(f.getPointedTable().getSqlTableName()).append("(");
 						first = true;
 						for (SqlField sf : f.getDeclaredSqlFields()) {
 							if (first)
@@ -1434,7 +1434,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			includeAllJunctions = false;
 			tablesJunction = null;
 		}
-		StringBuilder sb = new StringBuilder(this.getName());
+		StringBuilder sb = new StringBuilder(this.getSqlTableName());
 		if (!includeAllJunctions && (tablesJunction == null || tablesJunction.size() == 0))
 			return sb.toString();
 
@@ -1481,7 +1481,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		if (!includeAllJunctions && !containsPointedTable(tablesJunction, fa.getPointedTable()))
 			return sb;
 		sb.append(" LEFT OUTER JOIN ");
-		sb.append(fa.getPointedTable().getName());
+		sb.append(fa.getPointedTable().getSqlTableName());
 		sb.append(" ON ");
 		boolean firstOn = true;
 		for (SqlField sf : fa.getDeclaredSqlFields()) {
@@ -2316,7 +2316,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * 
 	 * @return the simple name of this class table.
 	 */
-	public final String getName() {
+	public final String getSqlTableName() {
 		return table_name;
 	}
 
@@ -2328,13 +2328,13 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 *            a class
 	 * @return the new class name format
 	 */
-	/*public static String getName(Class<?> c) {
+	/*public static String getSqlTableName(Class<?> c) {
 		return c.getCanonicalName().replace(".", "_").toUpperCase();
 	}*/
 
 	@Override
 	public String toString() {
-		return "Database Table " + this.getName();
+		return "Database Table " + this.getClass().getSimpleName();
 	}
 
 	/**
@@ -2552,7 +2552,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
             }
             if (founded_field == null)
                 throw new IllegalArgumentException("The field " + f + " does not exist into the class/table "
-                        + current_table.getClass().getName());
+                        + current_table.getClass().getSqlTableName());
 
             if (founded_field.isForeignKey())
                 current_table = ((ForeignKeyFieldAccessor) founded_field).getPointedTable();
@@ -2774,7 +2774,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
                 }
                 if (founded_field == null)
                     throw new ConstraintsNotRespectedDatabaseException("The field " + f
-                            + " does not exist into the class/table " + current_table.getClass().getName());
+                            + " does not exist into the class/table " + current_table.getClass().getSqlTableName());
 
                 fields.add(founded_field);
 
@@ -5338,11 +5338,11 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 								}
 								if (allequals)
 									throw new DatabaseIntegrityException("There is records into the table "
-											+ getName() + " which have the same primary keys.");
+											+ getClass().getSimpleName() + " which have the same primary keys.");
 								for (FieldAccessor fa : unique_fields_no_auto_random_primary_keys) {
 									if (fa.equals(r1, fa.getValue(r2)))
 										throw new DatabaseIntegrityException("There is records into the table "
-												+ getName() + " which have the same unique key into the field "
+												+ getClass().getSimpleName() + " which have the same unique key into the field "
 												+ fa.getFieldName());
 								}
 							}
@@ -5584,7 +5584,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			throws DatabaseException {
 		// try(ReadWriteLock.Lock lock=sql_connection.locker.getAutoCloseableReadLock())
 		{
-			final StringBuilder querry = new StringBuilder("SELECT * FROM " + this.getName() + " WHERE ");
+			final StringBuilder querry = new StringBuilder("SELECT * FROM " + this.getSqlTableName() + " WHERE ");
 			boolean group_first = true;
 			boolean parenthesis = _foreign_keys.length > 1;
 
@@ -5867,14 +5867,14 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						if (nt.getPoitingTable().hasRecordsWithOneOfFields(nt.getHashMapFields(_record), false)) {
 							throw new ConstraintsNotRespectedDatabaseException(
 									"The given record is pointed by another record through a foreign key into the table "
-											+ nt.getPoitingTable().getName()
-											+ ". Impossible to remove it into the table " + getName());
+											+ nt.getPoitingTable().getClass().getSimpleName()
+											+ ". Impossible to remove it into the table " + getClass().getSimpleName());
 						}
 					}
 
                     try (PreparedUpdateQuerry puq = new PreparedUpdateQuerry(
 							_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(),
-                            "DELETE FROM " + Table.this.getName() + " WHERE " + getSqlPrimaryKeyCondition(1))) {
+                            "DELETE FROM " + Table.this.getSqlTableName() + " WHERE " + getSqlPrimaryKeyCondition(1))) {
 						int index = 1;
 						for (FieldAccessor fa : primary_keys_fields) {
 							fa.getValue(_record, puq.statement, index);
@@ -5883,7 +5883,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						int nb = puq.statement.executeUpdate();
 						if (nb == 0)
 							throw new RecordNotFoundDatabaseException("the given record was not into the table "
-									+ Table.this.getName() + ". It has been probably already removed.");
+									+ Table.this.getClass().getSimpleName() + ". It has been probably already removed.");
 						else if (nb > 1)
 							throw new DatabaseIntegrityException("Unexpected exception");
 						if (hasBackupMananager || synchronizeIfNecessary)
@@ -5956,7 +5956,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
                     try (PreparedUpdateQuerry puq = new PreparedUpdateQuerry(
 							_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(),
-                            "DELETE FROM " + Table.this.getName() + " WHERE " + getSqlPrimaryKeyCondition(1))) {
+                            "DELETE FROM " + Table.this.getSqlTableName() + " WHERE " + getSqlPrimaryKeyCondition(1))) {
 						int index = 1;
 						for (FieldAccessor fa : primary_keys_fields) {
 							fa.getValue(_record, puq.statement, index);
@@ -5965,7 +5965,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						int nb = puq.statement.executeUpdate();
 						if (nb == 0)
 							throw new RecordNotFoundDatabaseException("the given record was not into the table "
-									+ Table.this.getName() + ". It has been probably already removed.");
+									+ Table.this.getClass().getSimpleName() + ". It has been probably already removed.");
 						else if (nb > 1)
 							throw new DatabaseIntegrityException("Unexpected exception");
 						if (hasBackupMananager || synchronizeIfNecessary)
@@ -6151,12 +6151,12 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 							if (t.hasRecordsWithOneOfFields(nt.getHashMapFields(record), false))
 								throw new ConstraintsNotRespectedDatabaseException(
 										"One of the given record is pointed by another record through a foreign key into the table "
-												+ t.getName() + ". Impossible to remove this record into the table "
-												+ getName());
+												+ t.getClass().getSimpleName() + ". Impossible to remove this record into the table "
+												+ getClass().getSimpleName());
 					}
 					try (PreparedUpdateQuerry puq = new PreparedUpdateQuerry(
 							_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), "DELETE FROM "
-									+ Table.this.getName() + " WHERE " + getSqlPrimaryKeyCondition(_records.size()))) {
+									+ Table.this.getSqlTableName() + " WHERE " + getSqlPrimaryKeyCondition(_records.size()))) {
 						int index = 1;
 						for (T r : _records) {
 							for (FieldAccessor fa : primary_keys_fields) {
@@ -6168,7 +6168,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						int number = puq.statement.executeUpdate();
 						if (number != _records.size())
 							throw new RecordNotFoundDatabaseException("There is " + (_records.size() - number)
-									+ " records which have not been found into the table " + Table.this.getName()
+									+ " records which have not been found into the table " + Table.this.getClass().getSimpleName()
 									+ ". No modification have been done.");
 					} catch (Exception e) {
 						throw DatabaseException.getDatabaseException(e);
@@ -6248,7 +6248,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
                 boolean onDeleted=false;
 				try (PreparedUpdateQuerry puq = new PreparedUpdateQuerry(
-						_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), "DELETE FROM " + Table.this.getName() + " WHERE " + getSqlPrimaryKeyCondition(_records.size()))) {
+						_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), "DELETE FROM " + Table.this.getSqlTableName() + " WHERE " + getSqlPrimaryKeyCondition(_records.size()))) {
 					int index = 1;
 					for (T r : _records) {
 						for (FieldAccessor fa : primary_keys_fields) {
@@ -6552,7 +6552,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		} else {
 
 			final SqlQuerry sqlquerry = new SqlQuerry(
-					"SELECT * FROM " + Table.this.getName() + " WHERE " + getSqlPrimaryKeyCondition(1)) {
+					"SELECT * FROM " + Table.this.getSqlTableName() + " WHERE " + getSqlPrimaryKeyCondition(1)) {
 				@Override
 				void finishPrepareStatement(PreparedStatement st) throws DatabaseException {
 					int index = 1;
@@ -6839,7 +6839,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 							for (FieldAccessor fa : random_fields_to_check) {
 								if (fa.equals(_fields.get(fa.getFieldName()), _result_set))
 									throw new ConstraintsNotRespectedDatabaseException(
-											"the given record have the same unique auto/random primary key field "
+											"The given record into the table "+getClass().getSimpleName()+" have the same unique auto/random primary key field "
 													+ fa.getFieldName()
 													+ " of one of the records stored into the database. No record have been added.");
 							}
@@ -6922,12 +6922,12 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 									if (val != null && !fa.getPointedTable().contains(true, (DatabaseRecord) val))
 										throw new RecordNotFoundDatabaseException(
 												"The record, contained as foreign key into the field "
-														+ fa.getFieldName() + " into the table " + Table.this.getName()
+														+ fa.getFieldName() + " into the table " + Table.this.getClass().getSimpleName()
 														+ " does not exists into the table "
-														+ fa.getPointedTable().getName());
+														+ fa.getPointedTable().getClass().getSimpleName());
 								}
 
-								StringBuilder querry = new StringBuilder("INSERT INTO " + Table.this.getName() + "(");
+								StringBuilder querry = new StringBuilder("INSERT INTO " + Table.this.getSqlTableName() + "(");
 								boolean first = true;
 								for (FieldAccessor fa : fields) {
 									if (!fa.isAutoPrimaryKey() || _fields.containsKey(fa.getFieldName())) {
@@ -6988,7 +6988,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 									if (sql_connection.isDuplicateKeyException(e))
 										throw new ConstraintsNotRespectedDatabaseException(
 											"Constraints was not respected when inserting a field into the table "
-													+ Table.this.getName()
+													+ Table.this.getClass().getSimpleName()
 													+ ". It is possible that the group of primary keys was not unique, or that a unique field was already present into the database.",
 											e);
 									else
@@ -7041,7 +7041,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					return instance;
 
 				} catch (IllegalArgumentException | InstantiationException | InvocationTargetException | IllegalAccessException e) {
-					throw new DatabaseException("Impossible to add a new field on the table/class " + getName() + ".",
+					throw new DatabaseException("Impossible to add a new field on the table/class " + Table.this.getClass().getSimpleName() + ".",
 							e);
 				}
             }
@@ -7280,7 +7280,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 							boolean found = false;
 							for (FieldAccessor fa : fields) {
 								if (fa.getFieldName().equals(s)) {
-									if (fa.isPrimaryKey() && fa.equals(_record, _fields.get(s)))
+									if (fa.isPrimaryKey() && !fa.equals(_record, _fields.get(s)))
 										pkChanged = true;
 									if (fa.isForeignKey()) {
 										ForeignKeyFieldAccessor fkfa = (ForeignKeyFieldAccessor) fa;
@@ -7296,7 +7296,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 							}
 							if (!found)
 								throw new FieldDatabaseException(
-										"The given field " + s + " is not contained into the table " + getName());
+										"The given field " + s + " is not contained into the table " + getClass().getSimpleName());
 						}
 
 						class CheckTmp extends Runnable2 {
@@ -7368,7 +7368,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 							@Override
 							public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 								try {
-									StringBuilder querry = new StringBuilder("UPDATE " + Table.this.getName() + " SET ");
+									StringBuilder querry = new StringBuilder("UPDATE " + Table.this.getSqlTableName() + " SET ");
 									T instance = getNewRecordInstance(true);
 									boolean first = true;
 									for (FieldAccessor fa : fields_accessor) {
@@ -7741,16 +7741,16 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 												}
 												if (founded_field == null)
 													throw new FieldDatabaseException("The given field " + s
-															+ " does not exists into the record " + class_record.getName());
+															+ " does not exists into the record " + class_record.getClass().getSimpleName());
 												if (founded_field.isPrimaryKey())
 													throw new FieldDatabaseException(
 															"Attempting to alter the primary key field "
 																	+ founded_field.getFieldName() + " into the table "
-																	+ getName()
+																	+ getClass().getSimpleName()
 																	+ ". This operation is not permitted into this function.");
 												if (founded_field.isUnique())
 													throw new FieldDatabaseException("Attempting to alter the unique field "
-															+ founded_field.getFieldName() + " into the table " + getName()
+															+ founded_field.getFieldName() + " into the table " + getClass().getSimpleName()
 															+ ". This operation is not permitted into this function.");
 												if (founded_field.isForeignKey()) {
 													Object val = founded_field.getValue(_instance);
@@ -7759,10 +7759,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 														throw new RecordNotFoundDatabaseException(
 																"The record, contained as foreign key into the given field "
 																		+ founded_field.getFieldName() + " into the table "
-																		+ Table.this.getName()
+																		+ Table.this.getClass().getSimpleName()
 																		+ " does not exists into the table "
 																		+ ((ForeignKeyFieldAccessor) founded_field)
-																				.getPointedTable().getName());
+																				.getPointedTable().getClass().getSimpleName());
 												}
 											}
 											for (FieldAccessor fa : fields) {
@@ -8103,7 +8103,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					if (!isValid())
 						throw new ConcurentTransactionDatabaseException(
 								"Attempting to write, through several nested queries, on the table "
-										+ actual_table.getName() + ".");
+										+ actual_table.getClass().getSimpleName() + ".");
 					for (NeighboringTable nt : actual_table.list_tables_pointing_to_this_table) {
 						Table<?> t = nt.getPoitingTable();
 						if (!_comes_from_tables.contains(t)) {
@@ -8186,7 +8186,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					if (!isValid())
 						throw new ConcurentTransactionDatabaseException(
 								"Attempting to read and write, through several nested queries, on the table "
-										+ actual_table.getName() + ".");
+										+ actual_table.getClass().getSimpleName() + ".");
 					_comes_from_tables.add(actual_table);
 					/*
 					 * for (NeighboringTable nt : current_table.list_tables_pointing_to_this_table)

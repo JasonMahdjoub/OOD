@@ -1451,13 +1451,16 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					synchronized(DatabaseWrapper.class)
 					{
 						DatabaseWrapper.lockers.remove(database_identifier);
-						int v = DatabaseWrapper.number_of_shared_lockers.get(database_identifier) - 1;
-						if (v == 0)
-							DatabaseWrapper.number_of_shared_lockers.remove(database_identifier);
-						else if (v > 0)
-							DatabaseWrapper.number_of_shared_lockers.put(database_identifier, v);
-						else
-							throw new IllegalAccessError();
+						Integer i=DatabaseWrapper.number_of_shared_lockers.get(database_identifier);
+						if (i!=null) {
+							int v = i - 1;
+							if (v == 0)
+								DatabaseWrapper.number_of_shared_lockers.remove(database_identifier);
+							else if (v > 0)
+								DatabaseWrapper.number_of_shared_lockers.put(database_identifier, v);
+							else
+								throw new IllegalAccessError();
+						}
 						sql_database = new HashMap<>();
 					}
 					
@@ -2811,7 +2814,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		 * @SuppressWarnings("unchecked") Class<? extends Table<?>> class_table=(Class<?
 		 * extends Table<?>>)c; return getTableInstance(class_table); } else throw new
 		 * DatabaseException("The class "+_table_name+" does not extends "+Table.class.
-		 * getName()); } catch (ClassNotFoundException e) { throw new
+		 * getSqlTableName()); } catch (ClassNotFoundException e) { throw new
 		 * DatabaseException("Impossible to found the class/table "+_table_name); } }
 		 */
 	}
@@ -3438,12 +3441,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				} /*catch (ClassNotFoundException e) {
 							throw new DatabaseException(
 									"Impossible to access to t)he list of classes contained into the package "
-											+ configuration.getPackage().getName(),
+											+ configuration.getPackage().getSqlTableName(),
 									e);
 						} catch (IOException e) {
 							throw new DatabaseException(
 									"Impossible to access to the list of classes contained into the package "
-											+ configuration.getPackage().getName(),
+											+ configuration.getPackage().getSqlTableName(),
 									e);
 						}*/ catch (Exception e) {
 					throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));

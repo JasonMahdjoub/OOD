@@ -135,7 +135,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 				throw DatabaseException.getDatabaseException(e);
 			}
 			linked_primary_keys = pointed_table.getPrimaryKeysFieldAccessors();
-			linked_table_name = pointed_table.getName();
+			linked_table_name = pointed_table.getSqlTableName();
 
 			ArrayList<SqlField> sql_fields = new ArrayList<>();
 			for (FieldAccessor fa : linked_primary_keys) {
@@ -143,8 +143,8 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 					((ForeignKeyFieldAccessor) fa).initialize();
 				}
 				for (SqlField sf : fa.getDeclaredSqlFields()) {
-					sql_fields.add(new SqlField(table_name + "." + this.getSqlFieldName() + "__" + pointed_table.getName()
-							+ "_" + sf.short_field, sf.type, pointed_table.getName(), sf.field, isNotNull()));
+					sql_fields.add(new SqlField(table_name + "." + this.getSqlFieldName() + "__" + pointed_table.getSqlTableName()
+							+ "_" + sf.short_field, sf.type, pointed_table.getSqlTableName(), sf.field, isNotNull()));
 
 				}
 			}
@@ -256,7 +256,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 				SqlFieldInstance[] linked_sql_field_instances = fa.getSqlFieldsInstances(val);
 				for (SqlFieldInstance sfi : linked_sql_field_instances) {
 					res[i++] = new SqlFieldInstance(
-							table_name + "." + this.getSqlFieldName() + "__" + pointed_table.getName() + "_"
+							table_name + "." + this.getSqlFieldName() + "__" + pointed_table.getSqlTableName() + "_"
 									+ sfi.short_field,
 							sfi.type, linked_table_name, sfi.field, sfi.not_null, sfi.instance);
 				}

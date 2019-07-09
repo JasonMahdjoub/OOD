@@ -526,15 +526,57 @@ public class TestDatabaseBackupRestore {
 
 
 		Assert.assertNotNull(usedBRM);
+		int table1Version=wrapper.getTableInstance(Table1.class).getDatabaseVersion();
+		int table2Version=wrapper.getTableInstance(Table2.class).getDatabaseVersion();
+		int table3Version=wrapper.getTableInstance(Table3.class).getDatabaseVersion();
+		int table4Version=wrapper.getTableInstance(Table4.class).getDatabaseVersion();
+		int table5Version=wrapper.getTableInstance(Table5.class).getDatabaseVersion();
+		int table6Version=wrapper.getTableInstance(Table6.class).getDatabaseVersion();
+		int table7Version=wrapper.getTableInstance(Table7.class).getDatabaseVersion();
+		int table1ID=wrapper.getTableInstance(Table1.class).getTableID();
+		int table2ID=wrapper.getTableInstance(Table2.class).getTableID();
+		int table3ID=wrapper.getTableInstance(Table3.class).getTableID();
+		int table4ID=wrapper.getTableInstance(Table4.class).getTableID();
+		int table5ID=wrapper.getTableInstance(Table5.class).getTableID();
+		int table6ID=wrapper.getTableInstance(Table6.class).getTableID();
+		int table7ID=wrapper.getTableInstance(Table7.class).getTableID();
 		int oldVersion=wrapper.getCurrentDatabaseVersion(Table1.class.getPackage());
 		Assert.assertFalse(wrapper.isClosed());
 		usedBRM.restoreDatabaseToDateUTC(dateRestoration.get());
 		Assert.assertNotEquals(wrapper.getCurrentDatabaseVersion(Table1.class.getPackage()), oldVersion, wrapper.getCurrentDatabaseVersion(Table1.class.getPackage())+";"+oldVersion);
 		Assert.assertFalse(wrapper.doesVersionExists(Table1.class.getPackage(), oldVersion));
+		Assert.assertNotEquals(table1Version, wrapper.getTableInstance(Table1.class).getDatabaseVersion());
+		Assert.assertNotEquals(table2Version, wrapper.getTableInstance(Table2.class).getDatabaseVersion());
+		Assert.assertNotEquals(table3Version, wrapper.getTableInstance(Table3.class).getDatabaseVersion());
+		Assert.assertNotEquals(table4Version, wrapper.getTableInstance(Table4.class).getDatabaseVersion());
+		Assert.assertNotEquals(table5Version, wrapper.getTableInstance(Table5.class).getDatabaseVersion());
+		Assert.assertNotEquals(table6Version, wrapper.getTableInstance(Table6.class).getDatabaseVersion());
+		Assert.assertNotEquals(table7Version, wrapper.getTableInstance(Table7.class).getDatabaseVersion());
+		Assert.assertNotEquals(table1ID, wrapper.getTableInstance(Table1.class).getTableID());
+		Assert.assertNotEquals(table2ID, wrapper.getTableInstance(Table2.class).getTableID());
+		Assert.assertNotEquals(table3ID, wrapper.getTableInstance(Table3.class).getTableID());
+		Assert.assertNotEquals(table4ID, wrapper.getTableInstance(Table4.class).getTableID());
+		Assert.assertNotEquals(table5ID, wrapper.getTableInstance(Table5.class).getTableID());
+		Assert.assertNotEquals(table6ID, wrapper.getTableInstance(Table6.class).getTableID());
+		Assert.assertNotEquals(table7ID, wrapper.getTableInstance(Table7.class).getTableID());
 		wrapper.close();
 		wrapper=loadWrapper(databaseDirectory, useInternalBackup);
 		Assert.assertNotEquals(wrapper.getCurrentDatabaseVersion(Table1.class.getPackage()), oldVersion);
 		Assert.assertFalse(wrapper.doesVersionExists(Table1.class.getPackage(), oldVersion));
+		Assert.assertNotEquals(table1Version, wrapper.getTableInstance(Table1.class).getDatabaseVersion());
+		Assert.assertNotEquals(table2Version, wrapper.getTableInstance(Table2.class).getDatabaseVersion());
+		Assert.assertNotEquals(table3Version, wrapper.getTableInstance(Table3.class).getDatabaseVersion());
+		Assert.assertNotEquals(table4Version, wrapper.getTableInstance(Table4.class).getDatabaseVersion());
+		Assert.assertNotEquals(table5Version, wrapper.getTableInstance(Table5.class).getDatabaseVersion());
+		Assert.assertNotEquals(table6Version, wrapper.getTableInstance(Table6.class).getDatabaseVersion());
+		Assert.assertNotEquals(table7Version, wrapper.getTableInstance(Table7.class).getDatabaseVersion());
+		Assert.assertNotEquals(table1ID, wrapper.getTableInstance(Table1.class).getTableID());
+		Assert.assertNotEquals(table2ID, wrapper.getTableInstance(Table2.class).getTableID());
+		Assert.assertNotEquals(table3ID, wrapper.getTableInstance(Table3.class).getTableID());
+		Assert.assertNotEquals(table4ID, wrapper.getTableInstance(Table4.class).getTableID());
+		Assert.assertNotEquals(table5ID, wrapper.getTableInstance(Table5.class).getTableID());
+		Assert.assertNotEquals(table6ID, wrapper.getTableInstance(Table6.class).getTableID());
+		Assert.assertNotEquals(table7ID, wrapper.getTableInstance(Table7.class).getTableID());
 		assertEquals(wrapperForReferenceDatabase,wrapper, true);
 		Assert.assertTrue(usedBRM.getMinDateUTCInMs()>dataLoadStart.get(), usedBRM.getMinDateUTCInMs()+";"+dataLoadStart.get());
 		Assert.assertTrue(usedBRM.getMinDateUTCInMs()<usedBRM.getMaxDateUTCInMS());
@@ -784,7 +826,7 @@ public class TestDatabaseBackupRestore {
 
 	}*/
 
-	@Test(dataProvider = "DataProvIntBackupRestore", dependsOnMethods = "testExternalBackupAndRestore")
+	@Test(dataProvider = "DataProvIntBackupRestore"/*, dependsOnMethods = "testExternalBackupAndRestore"*/)
 	public void testInternalBackupAndRestore(boolean useSeveralRestorationPoint) throws DatabaseException, InterruptedException {
 		testExternalBackupAndRestore(useSeveralRestorationPoint, true, false, false);
 	}
@@ -867,7 +909,7 @@ public class TestDatabaseBackupRestore {
 	@DataProvider(name="DataProvIntBackupRestore")
 	public Object[][] provideDataForInternalBackupRestore()
 	{
-		return new Object[][]{{true}, {false}};
+		return new Object[][]{{false}, {true}};
 	}
 
 	@DataProvider(name="DataProvIntIndBackupRestore")

@@ -124,7 +124,7 @@ public class Symbol implements QueryPart {
 			FieldAccessor fa = table.getFieldAccessor(getSymbol());
 			if (fa == null)
 				throw new DatabaseSyntaxException(
-						"Cannot find field " + getSymbol() + " into table " + table.getName());
+						"Cannot find field " + getSymbol() + " into table " + table.getClass().getSimpleName());
 			return fa.getDeclaredSqlFields().length > 1;
 		} else if (getType() == SymbolType.PARAMETER) {
 			Object p = parameters.get(getSymbol());
@@ -158,7 +158,7 @@ public class Symbol implements QueryPart {
 			FieldAccessor fa = table.getFieldAccessor(getSymbol());
 			if (fa == null)
 				throw new DatabaseSyntaxException(
-						"Cannot find field " + getSymbol() + " into table " + table.getName());
+						"Cannot find field " + getSymbol() + " into table " + table.getClass().getSimpleName());
 			else if (fa.getFieldClassType() == Boolean.class)
 				return "boolean";
 			else if (AbstractDecentralizedID.class.isAssignableFrom(fa.getFieldClassType()))

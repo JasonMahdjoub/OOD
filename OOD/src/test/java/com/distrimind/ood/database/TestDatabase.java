@@ -308,7 +308,7 @@ public abstract class TestDatabase {
 		table5 = (Table5) sql_db.getTableInstance(Table5.class);
 		table6 = (Table6) sql_db.getTableInstance(Table6.class);
 		table7 = (Table7) sql_db.getTableInstance(Table7.class);
-		//Assert.assertEquals(table3.getName(), Table3.class.getAnnotation(TableName.class).sqlTableName().toUpperCase());
+		//Assert.assertEquals(table3.getSqlTableName(), Table3.class.getAnnotation(TableName.class).sqlTableName().toUpperCase());
 		boolean found=false;
 		for (FieldAccessor fa : table2.getFieldAccessors()) {
 
@@ -3453,7 +3453,7 @@ public abstract class TestDatabase {
 		Table<?> table=sql_db.getTableInstance(tableClass);
 		Table1 table1=(Table1)sql_db.getTableInstance(Table1.class);
 		if (expectedSqlCommand!=null)
-			expectedSqlCommand=expectedSqlCommand.replace("%Table1Name%", table1.getName());
+			expectedSqlCommand=expectedSqlCommand.replace("%Table1Name%", table1.getSqlTableName());
 		HashMap<Integer, Object> sqlParameters = new HashMap<>();
 		RuleInstance rule = Interpreter.getRuleInstance(command);
 		String sqlCommand = rule.translateToSqlQuery(table, parameters, sqlParameters, new HashSet<TableJunction>())

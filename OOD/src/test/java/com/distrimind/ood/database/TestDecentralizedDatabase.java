@@ -1275,7 +1275,7 @@ public abstract class TestDecentralizedDatabase {
 		Table<DatabaseRecord> table = event.getTable(db.getDbwrapper());
 		Assert.assertNotNull(collision);
 		Assert.assertEquals(collision.type, event.getType());
-		Assert.assertEquals(collision.concernedTable.getName(), table.getName());
+		Assert.assertEquals(collision.concernedTable.getSqlTableName(), table.getSqlTableName());
 		Assert.assertNotEquals(collision.distantPeerID, db.getHostID());
 		switch (event.getType()) {
 		case ADD:
