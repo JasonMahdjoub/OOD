@@ -1025,12 +1025,11 @@ public class BackupRestoreManager {
 	 * Clean old backups
 	 *
 	 */
-	public void cleanOldBackups()
-	{
+	public void cleanOldBackups() throws DatabaseException {
 		synchronized (this) {
 			long limitUTC=System.currentTimeMillis()-backupConfiguration.getMaxBackupDurationInMs();
 			long concretLimitUTC=Long.MIN_VALUE;
-			global:for (int i=fileReferenceTimeStamps.size()-2;i>=0;i--)
+			for (int i=fileReferenceTimeStamps.size()-2;i>=0;i--)
 			{
 				Long l=fileReferenceTimeStamps.get(i);
 				if (l<limitUTC) {
@@ -1038,13 +1037,12 @@ public class BackupRestoreManager {
 					int iend=fileTimeStamps.indexOf(fileReferenceTimeStamps.get(i+1));
 					if (iend<0)
 						throw new IllegalAccessError();
-					long limit=l;
-					for (int j=istart;j<iend;j++) {
-						limit=fileTimeStamps.get(j);
-						if ( limit>= limitUTC) {
-							continue global;
-						}
+					if (iend<istart)
+						throw new IllegalAccessError();
 
+					long limit=extractLastBackupEventUTC(getFile(fileTimeStamps.get(iend-1), istart==iend));
+					if ( limit>= limitUTC) {
+						continue;
 					}
 
 					concretLimitUTC = limit;
@@ -1118,25 +1116,29 @@ public class BackupRestoreManager {
 	}
 	private void deleteDatabaseFilesFromReferenceToFirstFile(long fileReference)
 	{
-		for (Iterator<Long> it = fileReferenceTimeStamps.iterator(); it.hasNext(); ) {
-			Long l = it.next();
-			if (l <= fileReference) {
-				File f = getFile(l, true);
-				//noinspection ResultOfMethodCallIgnored
-				f.delete();
-				it.remove();
-			}
-		}
+
 		for (Iterator<Long> it = fileTimeStamps.iterator(); it.hasNext(); ) {
 			Long l = it.next();
 			if (l <= fileReference) {
-				File f = getFile(l, false);
-				//noinspection ResultOfMethodCallIgnored
-				f.delete();
+				File f = getFile(l, fileReferenceTimeStamps.contains(l));
+
+				if (!f.delete()) {
+					System.err.println("Impossible to delete file : " + f);
+					if (f.exists())
+						System.err.println("The file already exists");
+					else
+						System.err.println("The file does not exists");
+				}
 				it.remove();
 			}
 		}
-		scanFiles();
+		for (Iterator<Long> it = fileReferenceTimeStamps.iterator(); it.hasNext(); ) {
+			Long l = it.next();
+			if (l <= fileReference) {
+				it.remove();
+			}
+		}
+		//scanFiles();
 	}
 
 	/**
