@@ -1039,13 +1039,13 @@ public class BackupRestoreManager {
 						throw new IllegalAccessError();
 					if (iend<istart)
 						throw new IllegalAccessError();
-
-					long limit=extractLastBackupEventUTC(getFile(fileTimeStamps.get(iend-1), istart==iend));
+					long lastFile=fileTimeStamps.get(iend-1);
+					long limit=extractLastBackupEventUTC(getFile(lastFile, istart==iend));
 					if ( limit>= limitUTC) {
 						continue;
 					}
 
-					concretLimitUTC = limit;
+					concretLimitUTC = lastFile;
 					break;
 				}
 			}
