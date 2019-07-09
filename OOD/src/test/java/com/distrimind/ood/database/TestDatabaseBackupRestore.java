@@ -385,7 +385,8 @@ public class TestDatabaseBackupRestore {
 	{
 		System.out.println("Removing database reference");
 		try {
-			wrapper.deleteDatabaseFiles();
+			if (wrapper!=null)
+				wrapper.deleteDatabaseFiles();
 			FileTools.deleteDirectory(this.externalBackupDirectory);
 		}
 		finally {
@@ -393,12 +394,16 @@ public class TestDatabaseBackupRestore {
 		}
 	}
 
+	private static BackupConfiguration getBackupConfiguration()
+	{
+		return new BackupConfiguration(1000L, 10000L, 1000000, 200L, null);
+	}
 
 	private DatabaseWrapper loadWrapper(File databaseDirectory, boolean useInternalBackup) throws DatabaseException {
 		DatabaseWrapper wrapper=new EmbeddedH2DatabaseWrapper(databaseDirectory);
 		BackupConfiguration backupConf=null;
 		if (useInternalBackup)
-			backupConf=new BackupConfiguration(1000L, 10000L, 1000000, 200L, null);
+			backupConf=getBackupConfiguration();
 		DatabaseConfiguration conf=new DatabaseConfiguration( Table1.class.getPackage(), null, null, backupConf);
 
 		wrapper.loadDatabase(conf, true);
@@ -414,7 +419,8 @@ public class TestDatabaseBackupRestore {
 		loadData(wrapperForReferenceDatabase, wrapper);
 		if (useExternalBackup) {
 			long t=System.currentTimeMillis();
-			BackupRestoreManager externalBRM = wrapper.getExternalBackupRestoreManager(externalBackupDirectory, Table1.class.getPackage());
+			Thread.sleep(1);
+			BackupRestoreManager externalBRM = wrapper.getExternalBackupRestoreManager(externalBackupDirectory, Table1.class.getPackage(), getBackupConfiguration());
 			Assert.assertNotNull(externalBRM);
 			Assert.assertTrue(externalBRM.isEmpty());
 			externalBRM.createBackupReference();
@@ -500,7 +506,7 @@ public class TestDatabaseBackupRestore {
 
 		BackupRestoreManager usedBRM;
 		if (useExternalBRM) {
-			usedBRM = wrapper.getExternalBackupRestoreManager(externalBackupDirectory, Table1.class.getPackage());
+			usedBRM = wrapper.getExternalBackupRestoreManager(externalBackupDirectory, Table1.class.getPackage(), getBackupConfiguration());
 			Assert.assertTrue(usedBRM.getMaxDateUTCInMS() < dateRestoration.get());
 
 		}

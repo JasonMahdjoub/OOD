@@ -87,8 +87,10 @@ public class BackupRestoreManager {
 		long l=fileTimeStamps.get(fileTimeStamps.size()-1);
 		return getFile(l, fileReferenceTimeStamps.contains(l));
 	}
-
 	BackupRestoreManager(DatabaseWrapper databaseWrapper, File backupDirectory, DatabaseConfiguration databaseConfiguration, boolean passive) throws DatabaseException {
+		this(databaseWrapper, backupDirectory, databaseConfiguration, databaseConfiguration.getBackupConfiguration(), passive);
+	}
+	BackupRestoreManager(DatabaseWrapper databaseWrapper, File backupDirectory, DatabaseConfiguration databaseConfiguration, BackupConfiguration backupConfiguration, boolean passive) throws DatabaseException {
 		if (backupDirectory==null)
 			throw new NullPointerException();
 		if (backupDirectory.exists() && backupDirectory.isFile())
@@ -97,6 +99,8 @@ public class BackupRestoreManager {
 			throw new NullPointerException();
 		if (databaseWrapper==null)
 			throw new NullPointerException();
+		if (backupConfiguration==null)
+			throw new NullPointerException();
 		this.passive=passive;
 		this.databaseConfiguration=databaseConfiguration;
 		this.databaseWrapper=databaseWrapper;
@@ -104,7 +108,7 @@ public class BackupRestoreManager {
 		System.out.println(backupDirectory);
 		FileTools.checkFolderRecursive(backupDirectory);
 		this.backupDirectory=backupDirectory;
-		this.backupConfiguration=databaseConfiguration.getBackupConfiguration();
+		this.backupConfiguration=backupConfiguration;
 		classes=databaseConfiguration.getSortedTableClasses(databaseWrapper);
 
 		this.computeDatabaseReference=new File(this.backupDirectory, "computeDatabaseNewReference.query");

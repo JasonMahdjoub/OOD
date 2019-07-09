@@ -3660,6 +3660,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			return d.backupRestoreManager;
 	}
 
+
 	/**
 	 * Returns the OOD (and non native) backup manager.
 	 *
@@ -3668,11 +3669,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * Backups and restores into this backup manager can be done manually.
 	 *
 	 * Enables to make incremental database backups, and database restore.
+	 * @param backupDirectory the backup directory
 	 * @param _package the concerned database
+	 * @param backupConfiguration the backup configuration
 	 * @return the backup manager or null if no backup manager was configured.
 	 * @see DatabaseConfiguration
 	 */
-	public BackupRestoreManager getExternalBackupRestoreManager(File backupDirectory, Package _package) throws DatabaseException {
+	public BackupRestoreManager getExternalBackupRestoreManager(File backupDirectory, Package _package, BackupConfiguration backupConfiguration) throws DatabaseException {
 
 		try {
 			if (getDatabaseDirectory().getCanonicalPath().startsWith(backupDirectory.getCanonicalPath()))
@@ -3681,7 +3684,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (d == null)
 				return null;
 			else
-				return new BackupRestoreManager(this, new File(backupDirectory, getLongPackageName(_package)), d.configuration, true);
+				return new BackupRestoreManager(this, new File(backupDirectory, getLongPackageName(_package)), d.configuration, backupConfiguration, true);
 		}
 		catch(IOException e)
 		{
