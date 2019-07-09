@@ -580,7 +580,10 @@ public class TestDatabaseBackupRestore {
 		assertEquals(wrapperForReferenceDatabase,wrapper, true);
 		Assert.assertTrue(usedBRM.getMinDateUTCInMs()>dataLoadStart.get(), usedBRM.getMinDateUTCInMs()+";"+dataLoadStart.get());
 		Assert.assertTrue(usedBRM.getMinDateUTCInMs()<usedBRM.getMaxDateUTCInMS());
-		Assert.assertTrue(usedBRM.getMaxDateUTCInMS()<dateRestoration.get());
+		if (useExternalBRM)
+			Assert.assertTrue(usedBRM.getMaxDateUTCInMS()<dateRestoration.get());
+		else
+			Assert.assertTrue(usedBRM.getMaxDateUTCInMS()>dateRestoration.get());
 		if (internalBRM!=null)
 		{
 			Assert.assertTrue(internalBRM.getMinDateUTCInMs()>dataLoadStart.get());
