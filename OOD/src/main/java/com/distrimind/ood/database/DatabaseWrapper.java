@@ -44,7 +44,6 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
 import com.distrimind.ood.database.fieldaccessors.ByteTabObjectConverter;
 import com.distrimind.ood.database.fieldaccessors.DefaultByteTabObjectConverter;
-import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.FileTools;
@@ -53,9 +52,8 @@ import com.distrimind.util.crypto.SecureRandomType;
 import com.distrimind.util.harddrive.Disk;
 import com.distrimind.util.harddrive.HardDriveDetect;
 import com.distrimind.util.harddrive.Partition;
+import com.distrimind.util.io.RandomByteArrayOutputStream;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -1773,11 +1771,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 												true, false);
 										for (ForeignKeyFieldAccessor fa : t.getForeignKeysFieldAccessors()) {
 											if (fa.getPointedTable().getClass().equals(table.getClass())) {
-												try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-														DataOutputStream dos = new DataOutputStream(baos)) {
-													fa.serialize(dos, dr);
-													dos.flush();
-													if (Arrays.equals(baos.toByteArray(),
+												try (RandomByteArrayOutputStream baos = new RandomByteArrayOutputStream()) {
+													fa.serialize(baos, dr);
+													baos.flush();
+													if (Arrays.equals(baos.getBytes(),
 															originalEvent.getConcernedSerializedPrimaryKey())) {
 														nb.decrementAndGet();
 														it.remove();
@@ -1882,12 +1879,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 																	.getForeignKeysFieldAccessors()) {
 																if (fa.getPointedTable().getClass()
 																		.equals(table.getClass())) {
-																	try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-																			DataOutputStream dos = new DataOutputStream(
-																					baos)) {
-																		fa.serialize(dos, dr);
-																		dos.flush();
-																		if (Arrays.equals(baos.toByteArray(),
+																	try (RandomByteArrayOutputStream baos = new RandomByteArrayOutputStream()) {
+																		fa.serialize(baos, dr);
+																		baos.flush();
+																		if (Arrays.equals(baos.getBytes(),
 																				originalEvent
 																						.getConcernedSerializedPrimaryKey())) {
 																			return true;
@@ -3036,10 +3031,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		return getInternalTableName(tTableClass, getCurrentDatabaseVersion(tTableClass.getPackage()));
 	}
 	public String getInternalTableName(Class<?> tTableClass, int databaseVersion) throws DatabaseException {
-		return getInternalTableNameFromTableID(tTableClass, getTableID(tTableClass, databaseVersion));
+		return getInternalTableNameFromTableID(getTableID(tTableClass, databaseVersion));
 	}
 
-	String getInternalTableNameFromTableID(Class<?> tTableClass, int tableID) {
+	String getInternalTableNameFromTableID(int tableID) {
 		return Table.TABLE_NAME_PREFIX+tableID+"__";
 	}
 
@@ -3159,7 +3154,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 
 				@Override
-				public void initOrReset() throws DatabaseException {
+				public void initOrReset() {
 
 				}
 			}, false);

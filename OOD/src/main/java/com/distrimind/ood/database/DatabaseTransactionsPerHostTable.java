@@ -29,36 +29,25 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-
 import com.distrimind.ood.database.DatabaseEventsTable.DatabaseEventsIterator;
 import com.distrimind.ood.database.DatabaseWrapper.SynchronizationAnomalyType;
 import com.distrimind.ood.database.annotations.ForeignKey;
 import com.distrimind.ood.database.annotations.PrimaryKey;
-import com.distrimind.ood.database.exceptions.ConstraintsNotRespectedDatabaseException;
-import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.ood.database.exceptions.FieldDatabaseException;
-import com.distrimind.ood.database.exceptions.RecordNotFoundDatabaseException;
-import com.distrimind.ood.database.exceptions.SerializationDatabaseException;
-import com.distrimind.ood.database.exceptions.TransactionCanceledException;
+import com.distrimind.ood.database.exceptions.*;
 import com.distrimind.ood.util.CachedInputStream;
 import com.distrimind.ood.util.CachedOutputStream;
 import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.Bits;
+import com.distrimind.util.io.RandomInputStream;
+import com.distrimind.util.io.RandomOutputStream;
+
+import java.io.EOFException;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 
@@ -360,7 +349,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 			getDatabaseDistantTransactionEvent().removeRecordsWithCascade(indirectTransactionToRemove);
 	}*/
 
-	void alterDatabase(final AbstractDecentralizedID comingFrom, final InputStream inputStream)
+	void alterDatabase(final AbstractDecentralizedID comingFrom, final RandomInputStream inputStream)
 			throws DatabaseException {
 		alterDatabase(comingFrom, comingFrom, inputStream);
 	}
@@ -835,11 +824,11 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 
 	private void alterDatabase(final AbstractDecentralizedID directPeerID, final AbstractDecentralizedID comingFrom,
-			final InputStream inputStream) throws DatabaseException {
+			final RandomInputStream ois) throws DatabaseException {
 
 		if (comingFrom == null)
 			throw new NullPointerException("comingFrom");
-		if (inputStream == null)
+		if (ois == null)
 			throw new NullPointerException("inputStream");
 		if (directPeerID == null)
 			throw new NullPointerException("directPeerID");
@@ -858,7 +847,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 		final AtomicLong lastValidatedTransaction = new AtomicLong(-1);
 		final HashSet<AbstractDecentralizedID> hooksToNotify = new HashSet<>();
 
-		try (DataInputStream ois = new DataInputStream(inputStream)) {
+		try  {
 			final AtomicInteger next = new AtomicInteger(ois.readByte());
 			while (next.get() != EXPORT_FINISHED) {
 				DatabaseEventsIterator it=null;
@@ -905,7 +894,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 	}
 
-	int exportTransactions(OutputStream outputStream, final int hookID, final int maxEventsRecords)
+	int exportTransactions(final RandomOutputStream oos, final int hookID, final int maxEventsRecords)
 			throws DatabaseException {
 
 		final AtomicInteger number = new AtomicInteger(0);
@@ -917,7 +906,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 			return 0;
 		long currentTransactionID = hook.getLastValidatedTransaction();
 
-		try (DataOutputStream oos = new DataOutputStream(outputStream)) {
+		try {
 			number.set(getDatabaseDistantTransactionEvent().exportTransactions(oos, hook, maxEventsRecords,
 					currentTransactionID, nearNextLocalID));
 			try {

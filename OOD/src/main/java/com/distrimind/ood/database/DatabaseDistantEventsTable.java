@@ -36,17 +36,17 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.util.NoSuchElementException;
-import java.util.Objects;
-
 import com.distrimind.ood.database.DatabaseEventsTable.AbstractRecord;
 import com.distrimind.ood.database.DatabaseEventsTable.DatabaseEventsIterator;
 import com.distrimind.ood.database.annotations.ForeignKey;
 import com.distrimind.ood.database.annotations.NotNull;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.SerializationDatabaseException;
+import com.distrimind.util.io.RandomInputStream;
+import com.distrimind.util.io.RandomOutputStream;
+
+import java.util.NoSuchElementException;
+import java.util.Objects;
 
 /**
  * 
@@ -86,7 +86,7 @@ final class DatabaseDistantEventsTable extends Table<DatabaseDistantEventsTable.
 			transaction = _transaction;
 		}
 
-		void export(DataOutputStream oos) throws DatabaseException {
+		void export(RandomOutputStream oos) throws DatabaseException {
 			try {
 				oos.writeByte(DatabaseTransactionsPerHostTable.EXPORT_INDIRECT_TRANSACTION_EVENT);
 				oos.writeByte(getType());
@@ -112,7 +112,7 @@ final class DatabaseDistantEventsTable extends Table<DatabaseDistantEventsTable.
 
 	}
 
-	DatabaseEventsIterator distantEventTableIterator(DataInputStream ois, int cacheSize) {
+	DatabaseEventsIterator distantEventTableIterator(RandomInputStream ois, int cacheSize) {
 		return new DatabaseEventsIterator(ois, cacheSize) {
 			private int index = 0;
 			private int next = 0;
@@ -161,7 +161,7 @@ final class DatabaseDistantEventsTable extends Table<DatabaseDistantEventsTable.
 						throw new SerializationDatabaseException("Table name too big");
 					if (getDataOutputStream()!=null)
 						getDataOutputStream().writeInt(size);
-					byte spks[] = new byte[size];
+					byte[] spks = new byte[size];
 					if (getDataInputStream().read(spks) != size)
 						throw new SerializationDatabaseException(
 								"Impossible to read the expected bytes number : " + size);

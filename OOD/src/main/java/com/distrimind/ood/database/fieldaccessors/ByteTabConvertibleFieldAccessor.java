@@ -37,11 +37,8 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database.fieldaccessors;
 
 import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.math.BigInteger;
 import java.sql.Blob;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -57,6 +54,8 @@ import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
+import com.distrimind.util.io.RandomInputStream;
+import com.distrimind.util.io.RandomOutputStream;
 
 /**
  * 
@@ -427,7 +426,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void serialize(DataOutputStream _oos, Object _class_instance) throws DatabaseException {
+	public void serialize(RandomOutputStream _oos, Object _class_instance) throws DatabaseException {
 		try {
 			Object o = getValue(_class_instance);
 
@@ -443,7 +442,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	private Object deserialize(DataInputStream _ois) throws DatabaseException {
+	private Object deserialize(RandomInputStream _ois) throws DatabaseException {
 		try {
 			int size = _ois.readInt();
 			if (size > -1) {
@@ -468,12 +467,12 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void deserialize(DataInputStream dis, Map<String, Object> _map) throws DatabaseException {
+	public void deserialize(RandomInputStream dis, Map<String, Object> _map) throws DatabaseException {
 		_map.put(getFieldName(), deserialize(dis));
 	}
 
 	@Override
-	public Object deserialize(DataInputStream dis, Object _classInstance) throws DatabaseException {
+	public Object deserialize(RandomInputStream dis, Object _classInstance) throws DatabaseException {
 		Object o=deserialize(dis);
 		setValue(_classInstance, o);
 		return o;

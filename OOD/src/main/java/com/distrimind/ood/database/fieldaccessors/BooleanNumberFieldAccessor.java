@@ -37,8 +37,6 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database.fieldaccessors;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -53,6 +51,8 @@ import com.distrimind.ood.database.SqlFieldInstance;
 import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
+import com.distrimind.util.io.RandomInputStream;
+import com.distrimind.util.io.RandomOutputStream;
 
 /**
  * 
@@ -221,7 +221,7 @@ public class BooleanNumberFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void serialize(DataOutputStream _oos, Object _class_instance) throws DatabaseException {
+	public void serialize(RandomOutputStream _oos, Object _class_instance) throws DatabaseException {
 		try {
 			Boolean b = (Boolean) getValue(_class_instance);
 			if (b == null) {
@@ -236,7 +236,7 @@ public class BooleanNumberFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void deserialize(DataInputStream _ois, Map<String, Object> _map) throws DatabaseException {
+	public void deserialize(RandomInputStream _ois, Map<String, Object> _map) throws DatabaseException {
 		try {
 			boolean isNotNull = _ois.readBoolean();
 			if (isNotNull) {
@@ -253,7 +253,7 @@ public class BooleanNumberFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public Object deserialize(DataInputStream _ois, Object _classInstance) throws DatabaseException {
+	public Object deserialize(RandomInputStream _ois, Object _classInstance) throws DatabaseException {
 		try {
 			boolean isNotNull = _ois.readBoolean();
 			if (isNotNull) {

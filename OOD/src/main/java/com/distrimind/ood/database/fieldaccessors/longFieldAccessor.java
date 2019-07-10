@@ -37,8 +37,6 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database.fieldaccessors;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.sql.PreparedStatement;
@@ -56,6 +54,8 @@ import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
 import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.io.RandomInputStream;
+import com.distrimind.util.io.RandomOutputStream;
 
 /**
  * 
@@ -254,7 +254,7 @@ public class longFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void serialize(DataOutputStream _oos, Object _class_instance) throws DatabaseException {
+	public void serialize(RandomOutputStream _oos, Object _class_instance) throws DatabaseException {
 		try {
 			_oos.writeLong(field.getLong(_class_instance));
 
@@ -264,7 +264,7 @@ public class longFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void deserialize(DataInputStream _ois, Map<String, Object> _map) throws DatabaseException {
+	public void deserialize(RandomInputStream _ois, Map<String, Object> _map) throws DatabaseException {
 		try {
 			_map.put(getFieldName(), _ois.readLong());
 		} catch (Exception e) {
@@ -274,7 +274,7 @@ public class longFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public Object deserialize(DataInputStream _ois, Object _classInstance) throws DatabaseException {
+	public Object deserialize(RandomInputStream _ois, Object _classInstance) throws DatabaseException {
 		try {
 			long v = _ois.readLong();
 			field.setLong(_classInstance, v);

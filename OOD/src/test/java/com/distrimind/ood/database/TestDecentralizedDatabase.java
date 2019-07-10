@@ -43,6 +43,10 @@ import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.DecentralizedIDGenerator;
 import com.distrimind.util.crypto.ASymmetricAuthenticatedSignatureType;
 import com.distrimind.util.crypto.SecureRandomType;
+import com.distrimind.util.io.RandomByteArrayInputStream;
+import com.distrimind.util.io.RandomByteArrayOutputStream;
+import com.distrimind.util.io.RandomInputStream;
+import com.distrimind.util.io.RandomOutputStream;
 import org.testng.Assert;
 import org.testng.annotations.*;
 
@@ -76,26 +80,26 @@ public abstract class TestDecentralizedDatabase {
 			}
 			if (eventToSend instanceof BigDatabaseEventToSend) {
 				BigDatabaseEventToSend b = (BigDatabaseEventToSend) eventToSend;
-				final AtomicReference<ByteArrayOutputStream> baos=new AtomicReference<>();
+				final AtomicReference<RandomByteArrayOutputStream> baos=new AtomicReference<>();
 				try (OutputStreamGetter osg=new OutputStreamGetter() {
 					
 					@Override
-					public OutputStream initOrResetOutputStream() throws IOException {
+					public RandomOutputStream initOrResetOutputStream() {
 						if (baos.get()!=null)
 							baos.get().close();
-						baos.set(new ByteArrayOutputStream());
+						baos.set(new RandomByteArrayOutputStream());
 						return baos.get();		
 					}
 
 					@Override
-					public void close() throws Exception {
+					public void close() {
 						if (baos.get()!=null)
 							baos.get().close();
 					}
 				}) {
 					b.exportToOutputStream(wrapper, osg);
 					baos.get().flush();
-					this.joindedData = baos.get().toByteArray();
+					this.joindedData = baos.get().getBytes();
 				}
 			} else
 				this.joindedData = null;
@@ -110,8 +114,8 @@ public abstract class TestDecentralizedDatabase {
 			}
 		}
 
-		public InputStream getInputStream() {
-			return new ByteArrayInputStream(joindedData);
+		public RandomInputStream getInputStream() {
+			return new RandomByteArrayInputStream(joindedData);
 		}
 
 		public AbstractDecentralizedID getHostDestination() {
@@ -435,17 +439,17 @@ public abstract class TestDecentralizedDatabase {
 
 
 					@Override
-					public void transferDatabaseFromOldVersion(DatabaseWrapper wrapper, DatabaseConfiguration oldDatabaseConfiguration, DatabaseConfiguration newDatabaseConfiguration) throws Exception {
+					public void transferDatabaseFromOldVersion(DatabaseWrapper wrapper, DatabaseConfiguration oldDatabaseConfiguration, DatabaseConfiguration newDatabaseConfiguration) {
 
 					}
 
 					@Override
-					public void afterDatabaseCreation(DatabaseWrapper wrapper, DatabaseConfiguration newDatabaseConfiguration) throws Exception {
+					public void afterDatabaseCreation(DatabaseWrapper wrapper, DatabaseConfiguration newDatabaseConfiguration) {
 
 					}
 
 					@Override
-					public boolean hasToRemoveOldDatabase() throws Exception {
+					public boolean hasToRemoveOldDatabase() {
 						return false;
 					}
 				}, null), true);
@@ -570,10 +574,10 @@ public abstract class TestDecentralizedDatabase {
 			if (event instanceof BigDatabaseEventToSend) {
 				try (InputStreamGetter is = new InputStreamGetter() {
 					
-					private InputStream actual=null;
+					private RandomInputStream actual=null;
 					
 					@Override
-					public InputStream initOrResetInputStream() throws IOException {
+					public RandomInputStream initOrResetInputStream() throws IOException {
 						if (actual!=null)
 							actual.close();
 						return actual=dde.getInputStream();

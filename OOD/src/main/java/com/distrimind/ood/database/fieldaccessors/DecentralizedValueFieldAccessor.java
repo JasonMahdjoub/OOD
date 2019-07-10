@@ -41,9 +41,9 @@ import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
 import com.distrimind.util.*;
 import com.distrimind.util.crypto.*;
+import com.distrimind.util.io.RandomInputStream;
+import com.distrimind.util.io.RandomOutputStream;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.sql.PreparedStatement;
@@ -357,7 +357,7 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void serialize(DataOutputStream _oos, Object _class_instance) throws DatabaseException {
+	public void serialize(RandomOutputStream _oos, Object _class_instance) throws DatabaseException {
 		try {
 			byte[] b = encode(getValue(_class_instance));
 			if (b != null) {
@@ -372,7 +372,7 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void deserialize(DataInputStream _ois, Map<String, Object> _map) throws DatabaseException {
+	public void deserialize(RandomInputStream _ois, Map<String, Object> _map) throws DatabaseException {
 		try {
 			int size = _ois.readInt();
 			if (size > -1) {
@@ -392,7 +392,7 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public Object deserialize(DataInputStream _ois, Object _classInstance) throws DatabaseException {
+	public Object deserialize(RandomInputStream _ois, Object _classInstance) throws DatabaseException {
 		try {
 			int size = _ois.readInt();
 			if (size > -1) {

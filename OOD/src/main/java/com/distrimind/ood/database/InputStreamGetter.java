@@ -36,6 +36,8 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
+import com.distrimind.util.io.RandomInputStream;
+
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -46,5 +48,5 @@ import java.io.InputStream;
  * @since OOD 2.0.0
  */
 public abstract class InputStreamGetter implements AutoCloseable{
-	public abstract InputStream initOrResetInputStream() throws IOException;
+	public abstract RandomInputStream initOrResetInputStream() throws IOException;
 }

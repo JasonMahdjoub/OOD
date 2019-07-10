@@ -37,13 +37,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database.fieldaccessors;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -62,6 +56,10 @@ import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
+import com.distrimind.util.io.RandomByteArrayInputStream;
+import com.distrimind.util.io.RandomByteArrayOutputStream;
+import com.distrimind.util.io.RandomInputStream;
+import com.distrimind.util.io.RandomOutputStream;
 
 /**
  * 
@@ -69,12 +67,12 @@ import com.distrimind.ood.database.exceptions.FieldDatabaseException;
  * @version 1.2
  * @since OOD 1.0
  */
-public class SerializableFieldAccessor extends FieldAccessor {
+public class SecureExternalizableFieldAccessor extends FieldAccessor {
 	protected final SqlField[] sql_fields;
 	protected Method compareTo_method;
 
-	protected SerializableFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection,
-			Field _field, String parentFieldName) throws DatabaseException {
+	protected SecureExternalizableFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection,
+												Field _field, String parentFieldName) throws DatabaseException {
 		super(_sql_connection, _field, parentFieldName, getCompatibleClasses(_field), table);
 		if (!Serializable.class.isAssignableFrom(field.getType()))
 			throw new FieldDatabaseException("The given field " + field.getName() + " of type "
@@ -136,13 +134,11 @@ public class SerializableFieldAccessor extends FieldAccessor {
 			if (b == null)
 				field.set(_class_instance, null);
 			else {
-				try (ByteArrayInputStream bais = new ByteArrayInputStream(b.getBytes(1, (int) b.length()))) {
-					try (ObjectInputStream ois = new ObjectInputStream(bais)) {
-						Object res = deserialize(ois);
-						if (res == null && isNotNull())
-							throw new DatabaseIntegrityException("Unexpected exception.");
-						field.set(_class_instance, res);
-					}
+				try (RandomByteArrayInputStream bais = new RandomByteArrayInputStream(b.getBytes(1, (int) b.length()))) {
+					Object res = deserialize(bais);
+					if (res == null && isNotNull())
+						throw new DatabaseIntegrityException("Unexpected exception.");
+					field.set(_class_instance, res);
 				}
 			}
 		} catch (Exception e) {
@@ -156,15 +152,14 @@ public class SerializableFieldAccessor extends FieldAccessor {
 		setValue(_class_instance, _field_instance);
 		try {
 			if (Objects.equals(DatabaseWrapperAccessor.getSerializableType(sql_connection), "BLOB")) {
-				try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-					try (DataOutputStream os = new DataOutputStream(baos)) {
-						serialize(os, _class_instance);
-						// os.writeObject(field.get(_class_instance));
+				try (RandomByteArrayOutputStream os = new RandomByteArrayOutputStream()) {
+					serialize(os, _class_instance);
+					// os.writeObject(field.get(_class_instance));
 
-						try (ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray())) {
-							_result_set.updateBlob(sql_fields[0].short_field, bais);
-						}
+					try (ByteArrayInputStream bais = new ByteArrayInputStream(os.getBytes())) {
+						_result_set.updateBlob(sql_fields[0].short_field, bais);
 					}
+
 				}
 			} else
 				_result_set.updateObject(sql_fields[0].short_field, field.get(_class_instance));
@@ -179,14 +174,12 @@ public class SerializableFieldAccessor extends FieldAccessor {
 			throws DatabaseException {
 		try {
 			if (Objects.equals(DatabaseWrapperAccessor.getSerializableType(sql_connection), "BLOB")) {
-				try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-					try (DataOutputStream os = new DataOutputStream(baos)) {
-						serialize(os, _class_instance);
-						// os.writeObject(field.get(_class_instance));
+				try (RandomByteArrayOutputStream os = new RandomByteArrayOutputStream()) {
+					serialize(os, _class_instance);
+					// os.writeObject(field.get(_class_instance));
 
-						try (ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray())) {
-							_result_set.updateBlob(_sft.translateField(sql_fields[0]), bais);
-						}
+					try (ByteArrayInputStream bais = new ByteArrayInputStream(os.getBytes())) {
+						_result_set.updateBlob(_sft.translateField(sql_fields[0]), bais);
 					}
 				}
 			} else
@@ -215,16 +208,14 @@ public class SerializableFieldAccessor extends FieldAccessor {
 			throws DatabaseException {
 		try {
 			Blob b = _result_set.getBlob(sql_fields[0].short_field);
-			try (ByteArrayInputStream bais = new ByteArrayInputStream(b.getBytes(1, (int) b.length()))) {
-				try (ObjectInputStream ois = new ObjectInputStream(bais)) {
+			try (RandomByteArrayInputStream bais = new RandomByteArrayInputStream(b.getBytes(1, (int) b.length()))) {
 
-					Object val1 = deserialize(ois);
-					if (val1 == null || _field_instance == null)
-						return _field_instance == val1;
-					if ((!(field.getType().isAssignableFrom(_field_instance.getClass()))))
-						return false;
-					return val1.equals(_field_instance);
-				}
+				Object val1 = deserialize(bais);
+				if (val1 == null || _field_instance == null)
+					return _field_instance == val1;
+				if ((!(field.getType().isAssignableFrom(_field_instance.getClass()))))
+					return false;
+				return val1.equals(_field_instance);
 			}
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -254,14 +245,12 @@ public class SerializableFieldAccessor extends FieldAccessor {
 	public void getValue(PreparedStatement _prepared_statement, int _field_start, Object o) throws DatabaseException {
 		try {
 			if (Objects.equals(DatabaseWrapperAccessor.getSerializableType(sql_connection), "BLOB")) {
-				try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-					try (DataOutputStream os = new DataOutputStream(baos)) {
-						serializeObject(os, o);
-						// os.writeObject(o);
+				try (RandomByteArrayOutputStream baos = new RandomByteArrayOutputStream()) {
+					serializeObject(baos, o);
+					// os.writeObject(o);
 
-						try (ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray())) {
-							_prepared_statement.setBlob(_field_start, bais);
-						}
+					try (ByteArrayInputStream bais = new ByteArrayInputStream(baos.getBytes())) {
+						_prepared_statement.setBlob(_field_start, bais);
 					}
 				}
 			} else
@@ -280,11 +269,9 @@ public class SerializableFieldAccessor extends FieldAccessor {
 	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
 		SqlFieldInstance[] res = new SqlFieldInstance[1];
 		if (Objects.equals(DatabaseWrapperAccessor.getSerializableType(sql_connection), "BLOB")) {
-			try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-				try (DataOutputStream os = new DataOutputStream(baos)) {
-					this.serialize(os, _instance);
-				}
-				res[0] = new SqlFieldInstance(sql_fields[0], baos.toByteArray());
+			try (RandomByteArrayOutputStream baos = new RandomByteArrayOutputStream()) {
+				this.serialize(baos, _instance);
+				res[0] = new SqlFieldInstance(sql_fields[0], baos.getBytes());
 
 			} catch (Exception e) {
 				throw DatabaseException.getDatabaseException(e);
@@ -336,7 +323,7 @@ public class SerializableFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void serialize(DataOutputStream _oos, Object _class_instance) throws DatabaseException {
+	public void serialize(RandomOutputStream _oos, Object _class_instance) throws DatabaseException {
 		try {
 			serializeObject(_oos, getValue(_class_instance));
 		} catch (Exception e) {
@@ -344,16 +331,27 @@ public class SerializableFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	public void serializeObject(DataOutputStream dos, Object object) throws DatabaseException {
-		try (ObjectOutputStream oos = new ObjectOutputStream(dos)) {
-			oos.writeObject(object);
+
+
+	public void serializeObject(RandomOutputStream dos, Object object) throws DatabaseException {
+		try {
+			long limit=getLimit();
+			if (limit==0 || limit>Integer.MAX_VALUE)
+				limit=Integer.MAX_VALUE;
+			if (object == null && isNotNull())
+				throw new DatabaseException("The field should not be null");
+
+			dos.writeObject(object, true, (int)limit);
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
-	private Object deserialize(DataInputStream dis) throws DatabaseException {
-		try (ObjectInputStream ois = new ObjectInputStream(dis)) {
-			Object o = deserialize(ois);
+	private Object deserialize(RandomInputStream ois) throws DatabaseException {
+		try  {
+			long limit=getLimit();
+			if (limit==0 || limit>Integer.MAX_VALUE)
+				limit=Integer.MAX_VALUE;
+			Object o=ois.readObject(true, (int)limit);
 			if (o != null && !field.getType().isAssignableFrom(o.getClass()))
 				throw new DatabaseException(
 						"Incompatible class : " + o.getClass() + " (expected=" + field.getType() + ")");
@@ -368,22 +366,16 @@ public class SerializableFieldAccessor extends FieldAccessor {
 
 
 	@Override
-	public void deserialize(DataInputStream dis, Map<String, Object> _map) throws DatabaseException {
+	public void deserialize(RandomInputStream dis, Map<String, Object> _map) throws DatabaseException {
 		_map.put(getFieldName(), deserialize(dis));
 	}
 
 	@Override
-	public Object deserialize(DataInputStream dis, Object _classInstance) throws DatabaseException {
+	public Object deserialize(RandomInputStream dis, Object _classInstance) throws DatabaseException {
 		Object o=deserialize(dis);
 		setValue(_classInstance, o);
 		return o;
 	}
 
-	public Object deserialize(ObjectInputStream _ois) throws DatabaseException {
-		try {
-			return _ois.readObject();
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}
+
 }

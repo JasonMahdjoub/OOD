@@ -37,8 +37,13 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database.fieldaccessors;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import com.distrimind.ood.database.*;
+import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
+import com.distrimind.ood.database.exceptions.FieldDatabaseException;
+import com.distrimind.util.io.RandomInputStream;
+import com.distrimind.util.io.RandomOutputStream;
+
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.sql.Clob;
@@ -47,15 +52,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Map;
-
-import com.distrimind.ood.database.DatabaseRecord;
-import com.distrimind.ood.database.DatabaseWrapper;
-import com.distrimind.ood.database.SqlField;
-import com.distrimind.ood.database.SqlFieldInstance;
-import com.distrimind.ood.database.Table;
-import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
-import com.distrimind.ood.database.exceptions.FieldDatabaseException;
 
 /**
  * 
@@ -252,7 +248,7 @@ public class StringFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void serialize(DataOutputStream _oos, Object _class_instance) throws DatabaseException {
+	public void serialize(RandomOutputStream _oos, Object _class_instance) throws DatabaseException {
 		try {
 			String s = (String) getValue(_class_instance);
 			if (s != null) {
@@ -265,7 +261,7 @@ public class StringFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	private String deserialize(DataInputStream _ois) throws DatabaseException {
+	private String deserialize(RandomInputStream _ois) throws DatabaseException {
 		try {
 			int size = _ois.readInt();
 			if (size > -1) {
@@ -288,12 +284,12 @@ public class StringFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void deserialize(DataInputStream dis, Map<String, Object> _map) throws DatabaseException {
+	public void deserialize(RandomInputStream dis, Map<String, Object> _map) throws DatabaseException {
 		_map.put(getFieldName(), deserialize(dis));
 	}
 
 	@Override
-	public Object deserialize(DataInputStream dis, Object _classInstance) throws DatabaseException {
+	public Object deserialize(RandomInputStream dis, Object _classInstance) throws DatabaseException {
 		Object o=deserialize(dis);
 		setValue(_classInstance, o);
 		return o;

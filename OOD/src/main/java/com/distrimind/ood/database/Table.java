@@ -50,6 +50,10 @@ import com.distrimind.ood.interpreter.Interpreter;
 import com.distrimind.ood.interpreter.RuleInstance;
 import com.distrimind.ood.interpreter.RuleInstance.TableJunction;
 import com.distrimind.util.AbstractDecentralizedID;
+import com.distrimind.util.io.RandomByteArrayInputStream;
+import com.distrimind.util.io.RandomByteArrayOutputStream;
+import com.distrimind.util.io.RandomInputStream;
+import com.distrimind.util.io.RandomOutputStream;
 
 import java.io.*;
 import java.lang.reflect.Constructor;
@@ -206,7 +210,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		this.databaseVersion=newDatabaseVersion;
 		this.table_id=tableID;
 		String oldTableName=table_name;
-		table_name=sql_connection.getInternalTableNameFromTableID(this.getClass(), table_id);
+		table_name=sql_connection.getInternalTableNameFromTableID(table_id);
 		for (FieldAccessor fa : fields)
 		{
 			fa.changeInternalTableName(oldTableName, table_name, newDatabaseVersion);
@@ -488,7 +492,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		sql_connection = wrapper;
 		this.databaseVersion=databaseVersion;
 		table_id=wrapper.getTableID(this, this.databaseVersion);
-		table_name=wrapper.getInternalTableNameFromTableID(this.getClass(), table_id);
+		table_name=wrapper.getInternalTableNameFromTableID(table_id);
 
 		if (sql_connection == null)
 			throw new DatabaseException(
@@ -6346,8 +6350,9 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * -1, updatable); }
 	 */
 
+	@SuppressWarnings("SameParameterValue")
 	private void getListRecordsFromSqlConnection(final Runnable _runnable, final SqlQuerry querry,
-			final TransactionIsolation transactionIsolation, int startPosition, int length) throws DatabaseException {
+												 final TransactionIsolation transactionIsolation, int startPosition, int length) throws DatabaseException {
 		getListRecordsFromSqlConnection(_runnable, querry, transactionIsolation, startPosition, length, false);
 	}
 
@@ -6428,7 +6433,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 	}
 
-	static abstract class Runnable2 {
+	/*static abstract class Runnable2 {
 		public Runnable2() {
 
 		}
@@ -6440,7 +6445,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 
 		public abstract boolean setInstance(ResultSet _cursor) throws DatabaseException;
-	}
+	}*/
 	/*
 	 * final void getListRecordsFromSqlConnection(final Runnable2 _runnable, final
 	 * SqlQuerry querry, TransactionIsolation transactionIsolation) throws
@@ -6453,13 +6458,13 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * -1, updatable); }
 	 */
 
-	@SuppressWarnings("SameParameterValue")
+	/*
     final void getListRecordsFromSqlConnection(final Runnable2 _runnable, final SqlQuerry querry,
                                                TransactionIsolation transactionIsolation, int rowOffset, int rowlength) throws DatabaseException {
 		getListRecordsFromSqlConnection(_runnable, querry, transactionIsolation, rowOffset, rowlength, false);
 	}
 
-	@SuppressWarnings("SameParameterValue")
+
     final void getListRecordsFromSqlConnection(final Runnable2 _runnable, final SqlQuerry querry,
                                                final TransactionIsolation transactionIsolation, final int rowoffset, final int rowlength,
                                                final boolean updatable) throws DatabaseException {
@@ -6496,10 +6501,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 							if (rowoffset > 0 && rowlength > 0 && rowcount >= rowlength)
 								break;
 						}
-						/*
-						 * if (rowcount!=0) throw new
-						 * DatabaseException("Unexpected exception "+rowcount);
-						 */
+
 						return null;
 					} catch (Exception e) {
 						throw DatabaseException.getDatabaseException(e);
@@ -6521,7 +6523,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			Transaction transaction = new TransactionTmp();
 			sql_connection.runTransaction(transaction, true);
 		}
-	}
+	}*/
 
 	/**
 	 * 
@@ -7718,7 +7720,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 												}
 												if (founded_field == null)
 													throw new FieldDatabaseException("The given field " + s
-															+ " does not exists into the record " + class_record.getClass().getSimpleName());
+															+ " does not exists into the record " + class_record.getSimpleName());
 												if (founded_field.isPrimaryKey())
 													throw new FieldDatabaseException(
 															"Attempting to alter the primary key field "
@@ -8361,7 +8363,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	}
 
 	@SuppressWarnings("SameParameterValue")
-    void serialize(DatabaseRecord record, DataOutputStream oos, boolean includePK, boolean includeFK)
+    void serialize(DatabaseRecord record, RandomOutputStream oos, boolean includePK, boolean includeFK)
 			throws DatabaseException {
 
 		try {
@@ -8375,7 +8377,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	}
 
 	@SuppressWarnings("SameParameterValue")
-    T unserialize(DataInputStream ois, boolean includePK, boolean includeFK) throws DatabaseException {
+    T unserialize(RandomInputStream ois, boolean includePK, boolean includeFK) throws DatabaseException {
 		try {
 			T res = default_constructor_field.newInstance();
 
@@ -8397,11 +8399,9 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	}
 	@SuppressWarnings("SameParameterValue")
 	void deserializePrimaryKeys(DatabaseRecord record, byte[] tab, int off, int len) throws DatabaseException {
-		try (ByteArrayInputStream bais = new ByteArrayInputStream(tab, off, len)) {
-			try (DataInputStream ois = new DataInputStream(bais)) {
-				for (FieldAccessor fa : primary_keys_fields) {
-					fa.deserialize(ois, record);
-				}
+		try (RandomByteArrayInputStream bais = new RandomByteArrayInputStream(Arrays.copyOfRange(tab, off, off+len))) {
+			for (FieldAccessor fa : primary_keys_fields) {
+				fa.deserialize(bais, record);
 			}
 		} catch (DatabaseException e) {
 			if (e.getCause() instanceof EOFException)
@@ -8416,11 +8416,9 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	}
 	@SuppressWarnings("SameParameterValue")
 	void deserializePrimaryKeys(HashMap<String, Object> map, byte[] tab, int off, int len) throws DatabaseException {
-		try (ByteArrayInputStream bais = new ByteArrayInputStream(tab, off, len)) {
-			try (DataInputStream ois = new DataInputStream(bais)) {
-				for (FieldAccessor fa : primary_keys_fields) {
-					fa.deserialize(ois, map);
-				}
+		try (RandomByteArrayInputStream bais = new RandomByteArrayInputStream(Arrays.copyOfRange(tab, off, off+len))) {
+			for (FieldAccessor fa : primary_keys_fields) {
+				fa.deserialize(bais, map);
 			}
 		} catch (DatabaseException e) {
 			if (e.getCause() instanceof EOFException)
@@ -8439,18 +8437,16 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
     @SuppressWarnings("SameParameterValue")
 	void deserializeFields(DatabaseRecord record, byte[] tab, int off, int len, boolean includePK, boolean includeFK,
 						   boolean includeNonKey) throws DatabaseException {
-		try (ByteArrayInputStream bais = new ByteArrayInputStream(tab, off, len)) {
-			try (DataInputStream ois = new DataInputStream(bais)) {
-				for (FieldAccessor fa : fields) {
-					if (fa.isPrimaryKey()) {
-						if (includePK)
-							fa.deserialize(ois, record);
-					} else if (fa.isForeignKey()) {
-						if (includeFK)
-							fa.deserialize(ois, record);
-					} else if (includeNonKey)
+		try (RandomByteArrayInputStream ois = new RandomByteArrayInputStream(Arrays.copyOfRange(tab, off, len))) {
+			for (FieldAccessor fa : fields) {
+				if (fa.isPrimaryKey()) {
+					if (includePK)
 						fa.deserialize(ois, record);
-				}
+				} else if (fa.isForeignKey()) {
+					if (includeFK)
+						fa.deserialize(ois, record);
+				} else if (includeNonKey)
+					fa.deserialize(ois, record);
 			}
 		} catch (DatabaseException e) {
 			if (e.getCause() instanceof EOFException)
@@ -8463,18 +8459,16 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 	void deserializeFields(Map<String, Object> hm, byte[] tab, int off, int len, boolean includePK, boolean includeFK,
 						   boolean includeNonKey) throws DatabaseException {
-		try (ByteArrayInputStream bais = new ByteArrayInputStream(tab, off, len)) {
-			try (DataInputStream ois = new DataInputStream(bais)) {
-				for (FieldAccessor fa : fields) {
-					if (fa.isPrimaryKey()) {
-						if (includePK)
-							fa.deserialize(ois, hm);
-					} else if (fa.isForeignKey()) {
-						if (includeFK)
-							fa.deserialize(ois, hm);
-					} else if (includeNonKey)
+		try (RandomByteArrayInputStream ois = new RandomByteArrayInputStream(Arrays.copyOfRange(tab, off, off+len))) {
+			for (FieldAccessor fa : fields) {
+				if (fa.isPrimaryKey()) {
+					if (includePK)
 						fa.deserialize(ois, hm);
-				}
+				} else if (fa.isForeignKey()) {
+					if (includeFK)
+						fa.deserialize(ois, hm);
+				} else if (includeNonKey)
+					fa.deserialize(ois, hm);
 			}
 		} catch (DatabaseException e) {
 			if (e.getCause() instanceof EOFException)
@@ -8487,31 +8481,27 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 	byte[] serializePrimaryKeys(Map<String, Object> mapKeys) throws DatabaseException {
 
-		try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+		try (RandomByteArrayOutputStream oos = new RandomByteArrayOutputStream()) {
 			T record = default_constructor_field.newInstance();
-			try (DataOutputStream oos = new DataOutputStream(baos)) {
-				for (FieldAccessor fa : primary_keys_fields) {
-					Object o = mapKeys.get(fa.getFieldName());
-					if (o == null)
-						throw new IllegalAccessError();
-					fa.setValue(record, o);
-					fa.serialize(oos, record);
-				}
+			for (FieldAccessor fa : primary_keys_fields) {
+				Object o = mapKeys.get(fa.getFieldName());
+				if (o == null)
+					throw new IllegalAccessError();
+				fa.setValue(record, o);
+				fa.serialize(oos, record);
 			}
-			return baos.toByteArray();
+			return oos.getBytes();
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
 
 	byte[] serializePrimaryKeys(T record) throws DatabaseException {
-		try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-			try (DataOutputStream oos = new DataOutputStream(baos)) {
-				for (FieldAccessor fa : primary_keys_fields) {
-					fa.serialize(oos, record);
-				}
+		try (RandomByteArrayOutputStream oos = new RandomByteArrayOutputStream()) {
+			for (FieldAccessor fa : primary_keys_fields) {
+				fa.serialize(oos, record);
 			}
-			return baos.toByteArray();
+			return oos.getBytes();
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -8529,21 +8519,19 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	@SuppressWarnings("SameParameterValue")
     byte[] serializeFields(T record, boolean includePK, boolean includeForeignKeyField, boolean includeNonKeyField)
 			throws DatabaseException {
-		try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-			try (DataOutputStream oos = new DataOutputStream(baos)) {
-				for (FieldAccessor fa : fields) {
-					if (fa.isPrimaryKey()) {
-						if (includePK)
-							fa.serialize(oos, record);
-					} else if (fa.isForeignKey()) {
-						if (includeForeignKeyField)
-							fa.serialize(oos, record);
-					} else if (includeNonKeyField) {
+		try (RandomByteArrayOutputStream oos = new RandomByteArrayOutputStream()) {
+			for (FieldAccessor fa : fields) {
+				if (fa.isPrimaryKey()) {
+					if (includePK)
 						fa.serialize(oos, record);
-					}
+				} else if (fa.isForeignKey()) {
+					if (includeForeignKeyField)
+						fa.serialize(oos, record);
+				} else if (includeNonKeyField) {
+					fa.serialize(oos, record);
 				}
 			}
-			return baos.toByteArray();
+			return oos.getBytes();
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}

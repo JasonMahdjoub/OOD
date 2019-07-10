@@ -36,12 +36,6 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.util.NoSuchElementException;
-import java.util.Objects;
-
 import com.distrimind.ood.database.annotations.AutoPrimaryKey;
 import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.annotations.ForeignKey;
@@ -50,6 +44,12 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.SerializationDatabaseException;
 import com.distrimind.ood.util.CachedInputStream;
 import com.distrimind.ood.util.CachedOutputStream;
+import com.distrimind.util.io.RandomInputStream;
+import com.distrimind.util.io.RandomOutputStream;
+
+import java.io.IOException;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 
 /**
  * 
@@ -85,7 +85,7 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 			transaction = _transaction;
 		}
 
-		void export(DataOutputStream oos) throws DatabaseException {
+		void export(RandomOutputStream oos) throws DatabaseException {
 			try {
 				oos.writeByte(DatabaseTransactionsPerHostTable.EXPORT_DIRECT_TRANSACTION_EVENT);
 				oos.writeByte(getType());
@@ -114,25 +114,25 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 
 	public static abstract class DatabaseEventsIterator {
 		
-		private DataInputStream dis;
+		private RandomInputStream dis;
 		private CachedInputStream cachedInputStream;
 		private CachedOutputStream cachedOutputStream;
-		private DataOutputStream dos;
+
 		private int nextEvent=-1;
 		
 		
-		protected DatabaseEventsIterator(DataInputStream dis, int cacheSize)
+		protected DatabaseEventsIterator(RandomInputStream dis, int cacheSize)
 		{
 			if (dis==null)
 				throw new NullPointerException();
 			this.dis=dis;
 			cachedOutputStream=new CachedOutputStream(cacheSize);
-			dos=new DataOutputStream(cachedOutputStream);
+
 		}
 		
-		protected DataOutputStream getDataOutputStream()
+		protected RandomOutputStream getDataOutputStream()
 		{
-			return dos;
+			return cachedOutputStream;
 		}
 		
 		public void reset() throws IOException
@@ -142,17 +142,16 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 				
 				while ((((byte)nextEvent) & DatabaseTransactionsPerHostTable.EXPORT_FINISHED)!=DatabaseTransactionsPerHostTable.EXPORT_FINISHED)
 				{
-					dos.writeByte(dis.read());
+					cachedOutputStream.writeByte(dis.read());
 				}
 				cachedInputStream=cachedOutputStream.getCachedInputStream();
-				dis=new DataInputStream(cachedInputStream);
+				dis=cachedInputStream;
 				cachedOutputStream=null;
-				dos=null;
 			}
 			else
 			{
 				cachedInputStream.reset();
-				dis=new DataInputStream(cachedInputStream);
+				dis=cachedInputStream;
 			}
 		}
 		
@@ -162,7 +161,7 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 			getDataOutputStream().writeByte(b);
 		}
 		
-		protected DataInputStream getDataInputStream()
+		protected RandomInputStream getDataInputStream()
 		{
 			return dis;
 		}
@@ -173,7 +172,6 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 				cachedInputStream.close();
 			cachedInputStream=null;
 			cachedOutputStream=null;
-			dos=null;
 			dis=null;
 		}
 		
@@ -305,7 +303,7 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 
 	}
 
-	DatabaseEventsIterator eventsTableIterator(DataInputStream ois, int cacheSize) {
+	DatabaseEventsIterator eventsTableIterator(RandomInputStream ois, int cacheSize) {
 		return new DatabaseEventsIterator(ois, cacheSize) {
 
 			private byte next = 0;
@@ -343,7 +341,7 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 						getDataOutputStream().writeInt(size);
 					if (size > Table.maxPrimaryKeysSizeBytes)
 						throw new SerializationDatabaseException("Table name too big");
-					byte spks[] = new byte[size];
+					byte[] spks = new byte[size];
 					if (getDataInputStream().read(spks) != size)
 						throw new SerializationDatabaseException(
 								"Impossible to read the expected bytes number : " + size);

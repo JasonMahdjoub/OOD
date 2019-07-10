@@ -38,8 +38,6 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database.fieldaccessors;
 
 import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -74,6 +72,9 @@ import com.distrimind.util.DecentralizedIDGenerator;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.RenforcedDecentralizedIDGenerator;
 import com.distrimind.util.crypto.*;
+import com.distrimind.util.io.RandomInputStream;
+import com.distrimind.util.io.RandomOutputStream;
+import com.distrimind.util.io.SecureExternalizable;
 
 /**
  * 
@@ -378,11 +379,11 @@ public abstract class FieldAccessor {
 
 	public abstract int compare(Object r1, Object _r2) throws DatabaseException;
 
-	public abstract void serialize(DataOutputStream oos, Object classInstance) throws DatabaseException;
+	public abstract void serialize(RandomOutputStream oos, Object classInstance) throws DatabaseException;
 
-	public abstract void deserialize(DataInputStream ois, Map<String, Object> map) throws DatabaseException;
+	public abstract void deserialize(RandomInputStream ois, Map<String, Object> map) throws DatabaseException;
 
-	public abstract Object deserialize(DataInputStream ois, Object classInstance) throws DatabaseException;
+	public abstract Object deserialize(RandomInputStream ois, Object classInstance) throws DatabaseException;
 
 	public boolean canAutoGenerateValues() {
 		return false;
@@ -537,8 +538,8 @@ public abstract class FieldAccessor {
 							pf.add(type);
 
 							res.add(new ComposedFieldAccessor(_sql_connection, _table, f, parentFieldName, pf));
-						} else if (Serializable.class.isAssignableFrom(type))
-							res.add(new SerializableFieldAccessor(_table, _sql_connection, f, parentFieldName));
+						} else if (SecureExternalizable.class.isAssignableFrom(type) || Serializable.class.isAssignableFrom(type))
+							res.add(new SecureExternalizableFieldAccessor(_table, _sql_connection, f, parentFieldName));
 						else
 							throw new DatabaseException(
 									"The field " + f.getName() + " of the class " + database_record_class.getName()

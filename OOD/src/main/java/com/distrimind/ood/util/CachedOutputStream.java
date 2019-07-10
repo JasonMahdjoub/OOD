@@ -36,27 +36,28 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.util;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-
 import com.distrimind.util.RenforcedDecentralizedIDGenerator;
+import com.distrimind.util.io.RandomByteArrayOutputStream;
+import com.distrimind.util.io.RandomFileOutputStream;
+import com.distrimind.util.io.RandomInputStream;
+import com.distrimind.util.io.RandomOutputStream;
+
+import java.io.File;
+import java.io.IOException;
 
 
 /**
  * 
  * 
  * @author Jason Mahdjoub
- * @version 1.0
+ * @version 2.0
  * @since OOD 2.0.0
  */
-public class CachedOutputStream extends OutputStream{
+public class CachedOutputStream extends RandomOutputStream {
 	private final int cacheSize;
 	private File tmpFile;
-	private ByteArrayOutputStream baos;
-	private FileOutputStream fos;
+	private RandomByteArrayOutputStream baos;
+	private RandomFileOutputStream fos;
 	private long writedData;
 	private boolean removeFile=true;
 	
@@ -66,7 +67,7 @@ public class CachedOutputStream extends OutputStream{
 			throw new IllegalArgumentException();
 		this.cacheSize=cacheSize;
 		this.tmpFile=null;
-		baos=new ByteArrayOutputStream(cacheSize);
+		baos=new RandomByteArrayOutputStream(cacheSize);
 		fos=null;
 		writedData=0;
 	}
@@ -86,8 +87,8 @@ public class CachedOutputStream extends OutputStream{
 		{
 			if (tmpFile==null)
 				tmpFile=getNewTmpFile();
-			fos=new FileOutputStream(tmpFile);
-			fos.write(baos.toByteArray());
+			fos=new RandomFileOutputStream(tmpFile);
+			fos.write(baos.getBytes());
 			fos.write(b);
 			baos=null;
 		}
@@ -97,7 +98,7 @@ public class CachedOutputStream extends OutputStream{
 	}
 	
 	@Override
-	public void write(byte b[], int off, int len) throws IOException
+	public void write(byte[] b, int off, int len) throws IOException
 	{
 		if (writedData+len<cacheSize)
 		{
@@ -107,9 +108,9 @@ public class CachedOutputStream extends OutputStream{
 		{
 			if (tmpFile==null)
 				tmpFile=getNewTmpFile();
-			fos=new FileOutputStream(tmpFile);
+			fos=new RandomFileOutputStream(tmpFile);
 			if (writedData>0)
-				fos.write(baos.toByteArray());
+				fos.write(baos.getBytes());
 			fos.write(b, off, len);
 			baos=null;
 		}
@@ -124,7 +125,7 @@ public class CachedOutputStream extends OutputStream{
 		{
 			removeFile=false;
 			if (writedData<=cacheSize)
-				return new CachedInputStream(baos.toByteArray());
+				return new CachedInputStream(baos.getBytes());
 			else
 				return new CachedInputStream(tmpFile);
 		}
@@ -152,5 +153,52 @@ public class CachedOutputStream extends OutputStream{
 				tmpFile.deleteOnExit();
 		}
 	}
-	
+
+	@Override
+	public long length() throws IOException {
+		if (baos==null)
+			return fos.length();
+		else
+			return baos.length();
+	}
+
+	@Override
+	public void setLength(long newLength) throws IOException {
+		if (baos==null)
+			fos.setLength(newLength);
+		else
+			baos.setLength(newLength);
+	}
+
+	@Override
+	public void seek(long _pos) throws IOException {
+		if (baos==null)
+			fos.seek(_pos);
+		else
+			baos.seek(_pos);
+	}
+
+	@Override
+	public long currentPosition() throws IOException {
+		if (baos==null)
+			return fos.currentPosition();
+		else
+			return baos.currentPosition();
+	}
+
+	@Override
+	public boolean isClosed() {
+		if (baos==null)
+			return fos.isClosed();
+		else
+			return baos.isClosed();
+	}
+
+	@Override
+	protected RandomInputStream getRandomInputStreamImpl() throws IOException {
+		if (baos==null)
+			return fos.getRandomInputStream();
+		else
+			return baos.getRandomInputStream();
+	}
 }

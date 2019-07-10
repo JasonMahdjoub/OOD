@@ -35,8 +35,6 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database.fieldaccessors;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.sql.PreparedStatement;
@@ -61,6 +59,8 @@ import com.distrimind.util.RenforcedDecentralizedIDGenerator;
 import com.distrimind.util.SecuredDecentralizedID;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.SecureRandomType;
+import com.distrimind.util.io.RandomInputStream;
+import com.distrimind.util.io.RandomOutputStream;
 
 
 /**
@@ -340,7 +340,7 @@ public class AbstractDecentralizedIDFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void serialize(DataOutputStream _oos, Object _class_instance) throws DatabaseException {
+	public void serialize(RandomOutputStream _oos, Object _class_instance) throws DatabaseException {
 		try {
 			AbstractDecentralizedID a = (AbstractDecentralizedID) getValue(_class_instance);
 			if (a != null) {
@@ -356,7 +356,7 @@ public class AbstractDecentralizedIDFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void deserialize(DataInputStream _ois, Map<String, Object> _map) throws DatabaseException {
+	public void deserialize(RandomInputStream _ois, Map<String, Object> _map) throws DatabaseException {
 		try {
 			int size = _ois.readInt();
 			if (size > -1) {
@@ -376,7 +376,7 @@ public class AbstractDecentralizedIDFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public Object deserialize(DataInputStream _ois, Object _classInstance) throws DatabaseException {
+	public Object deserialize(RandomInputStream _ois, Object _classInstance) throws DatabaseException {
 		try {
 			int size = _ois.readInt();
 			if (size > -1) {

@@ -29,16 +29,6 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.EOFException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-
 import com.distrimind.ood.database.DatabaseTransactionEventsTable.AbstractRecord;
 import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.annotations.ForeignKey;
@@ -47,6 +37,16 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.SerializationDatabaseException;
 import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.Bits;
+import com.distrimind.util.io.RandomInputStream;
+import com.distrimind.util.io.RandomOutputStream;
+
+import java.io.EOFException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 
@@ -291,13 +291,13 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 		});
 	}
 
-	DatabaseDistantTransactionEvent.Record unserializeDistantTransactionEvent(final DataInputStream ois)
+	DatabaseDistantTransactionEvent.Record unserializeDistantTransactionEvent(final RandomInputStream ois)
 			throws DatabaseException {
 		try {
 			int size = ois.readShort();
 			if (size > 1024)
 				throw new SerializationDatabaseException("Invalid data (hook id size est greater to 1024)");
-			byte b[] = new byte[size];
+			byte[] b = new byte[size];
 			if (ois.read(b) != size)
 				throw new SerializationDatabaseException("Impossible to read the expected bytes number : " + size);
 			AbstractDecentralizedID hookID;
@@ -374,8 +374,8 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 		return found.get();
 	}*/
 
-	int exportTransactions(final DataOutputStream oos, final DatabaseHooksTable.Record hook, final int maxEventsRecords,
-			final long fromTransactionID, final AtomicLong nearNextLocalID) throws DatabaseException {
+	int exportTransactions(final RandomOutputStream oos, final DatabaseHooksTable.Record hook, final int maxEventsRecords,
+						   final long fromTransactionID, final AtomicLong nearNextLocalID) throws DatabaseException {
 		nearNextLocalID.set(Long.MAX_VALUE);
 		final AtomicInteger number = new AtomicInteger(0);
 		try {
@@ -390,7 +390,7 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 						} else if (_record.getLocalID() == fromTransactionID) {
 							if (_record.isConcernedBy(hook.getHostID())) {
 								oos.writeByte(DatabaseTransactionsPerHostTable.EXPORT_INDIRECT_TRANSACTION);
-								byte b[] = _record.getHook().getHostID().encode();
+								byte[] b = _record.getHook().getHostID().encode();
 								oos.writeShort((short) b.length);
 								oos.write(b);
 								oos.writeLong(_record.getID());

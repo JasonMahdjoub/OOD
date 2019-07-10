@@ -37,8 +37,6 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database.fieldaccessors;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -58,6 +56,8 @@ import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
+import com.distrimind.util.io.RandomInputStream;
+import com.distrimind.util.io.RandomOutputStream;
 
 /**
  * 
@@ -262,7 +262,7 @@ public class BigDecimalFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void serialize(DataOutputStream dos, Object _class_instance) throws DatabaseException {
+	public void serialize(RandomOutputStream dos, Object _class_instance) throws DatabaseException {
 		BigDecimal bd=((BigDecimal)getValue(_class_instance));
 		BigInteger bi=(bd==null?null:bd.unscaledValue());
 
@@ -282,7 +282,7 @@ public class BigDecimalFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	private BigDecimal deserialize(DataInputStream dis) throws DatabaseException {
+	private BigDecimal deserialize(RandomInputStream dis) throws DatabaseException {
 		try {
 			int s = dis.readInt();
 			BigDecimal o = null;
@@ -305,12 +305,12 @@ public class BigDecimalFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void deserialize(DataInputStream dis, Map<String, Object> _map) throws DatabaseException {
+	public void deserialize(RandomInputStream dis, Map<String, Object> _map) throws DatabaseException {
 		_map.put(getFieldName(), deserialize(dis));
 	}
 
 	@Override
-	public Object deserialize(DataInputStream dis, Object _classInstance) throws DatabaseException {
+	public Object deserialize(RandomInputStream dis, Object _classInstance) throws DatabaseException {
 		BigDecimal o=deserialize(dis);
 		setValue(_classInstance, o);
 		return o;

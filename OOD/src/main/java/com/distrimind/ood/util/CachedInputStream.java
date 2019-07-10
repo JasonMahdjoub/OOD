@@ -36,25 +36,26 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.util;
 
-import java.io.ByteArrayInputStream;
+import com.distrimind.util.io.RandomByteArrayInputStream;
+import com.distrimind.util.io.RandomFileInputStream;
+import com.distrimind.util.io.RandomInputStream;
+
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 
 /**
  * 
  * 
  * @author Jason Mahdjoub
- * @version 1.0
+ * @version 2.0
  * @since OOD 2.0.0
  */
-public class CachedInputStream extends InputStream {
+public class CachedInputStream extends RandomInputStream {
 	
 	private byte[] data;
 	private final File tmpFile;
-	private ByteArrayInputStream bais;
-	private FileInputStream fis;
+	private RandomByteArrayInputStream bais;
+	private RandomFileInputStream fis;
 	
 	CachedInputStream(byte[] data) throws IOException
 	{
@@ -74,20 +75,76 @@ public class CachedInputStream extends InputStream {
 		this.tmpFile=tmpFile;
 		reset();
 	}
-	
+
+	@Override
+	public long length() throws IOException {
+		return data==null?fis.length():data.length;
+	}
+
+	@Override
+	public void seek(long _pos) throws IOException {
+		if (data==null)
+			fis.seek(_pos);
+		else
+			bais.seek(_pos);
+	}
+
+	@Override
+	public long currentPosition() throws IOException {
+		if (data==null)
+			return fis.currentPosition();
+		else
+			return bais.currentPosition();
+	}
+
 	@Override
 	public void reset() throws IOException
 	{
 		close();
 		if (data==null)
 		{
-			fis=new FileInputStream(tmpFile);
+			fis=new RandomFileInputStream(tmpFile);
 		}
 		else
 		{
-			bais=new ByteArrayInputStream(data);
+			bais=new RandomByteArrayInputStream(data);
 		}
 	}
+
+	@Override
+	public boolean isClosed() {
+		if (data==null)
+			return fis.isClosed();
+		else
+			return bais.isClosed();
+	}
+
+	@Override
+	public void readFully(byte[] tab, int off, int len) throws IOException {
+		if (data==null)
+			fis.readFully(tab, off, len );
+		else
+			bais.readFully(tab, off, len );
+
+	}
+
+	@Override
+	public int skipBytes(int n) throws IOException {
+		if (data==null)
+			return fis.skipBytes(n);
+		else
+			return bais.skipBytes(n);
+	}
+
+	@Deprecated
+	@Override
+	public String readLine() throws IOException {
+		if (data==null)
+			return fis.readLine();
+		else
+			return bais.readLine();
+	}
+
 	@Override
 	public int read() throws IOException {
 		if (fis!=null)
@@ -96,7 +153,7 @@ public class CachedInputStream extends InputStream {
 			return bais.read();
 	}
 	@Override
-	public int read(byte b[], int off, int len) throws IOException {
+	public int read(byte[] b, int off, int len) throws IOException {
 		if (fis!=null)
 			return fis.read(b, off, len);
 		else

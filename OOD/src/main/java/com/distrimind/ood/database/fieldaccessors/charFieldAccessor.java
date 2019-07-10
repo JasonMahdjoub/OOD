@@ -37,8 +37,6 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database.fieldaccessors;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -54,6 +52,8 @@ import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
+import com.distrimind.util.io.RandomInputStream;
+import com.distrimind.util.io.RandomOutputStream;
 
 /**
  * 
@@ -62,7 +62,7 @@ import com.distrimind.ood.database.exceptions.FieldDatabaseException;
  * @since OOD 1.0
  */
 public class charFieldAccessor extends FieldAccessor {
-	protected final SqlField sql_fields[];
+	protected final SqlField[] sql_fields;
 
 	protected charFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection, Field _field,
 			String parentFieldName) throws DatabaseException {
@@ -144,7 +144,7 @@ public class charFieldAccessor extends FieldAccessor {
 
 	@Override
 	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
-		SqlFieldInstance res[] = new SqlFieldInstance[1];
+		SqlFieldInstance[] res = new SqlFieldInstance[1];
 		res[0] = new SqlFieldInstance(sql_fields[0], getValue(_instance));
 		return res;
 	}
@@ -237,7 +237,7 @@ public class charFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void serialize(DataOutputStream _oos, Object _class_instance) throws DatabaseException {
+	public void serialize(RandomOutputStream _oos, Object _class_instance) throws DatabaseException {
 		try {
 			_oos.writeChar(field.getChar(_class_instance));
 
@@ -247,7 +247,7 @@ public class charFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void deserialize(DataInputStream _ois, Map<String, Object> _map) throws DatabaseException {
+	public void deserialize(RandomInputStream _ois, Map<String, Object> _map) throws DatabaseException {
 		try {
 			_map.put(getFieldName(), _ois.readChar());
 		} catch (Exception e) {
@@ -257,7 +257,7 @@ public class charFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public Object deserialize(DataInputStream _ois, Object _classInstance) throws DatabaseException {
+	public Object deserialize(RandomInputStream _ois, Object _classInstance) throws DatabaseException {
 		try {
 			char v = _ois.readChar();
 			field.setChar(_classInstance, v);
