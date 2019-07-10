@@ -392,6 +392,8 @@ public class TestDatabaseBackupRestore {
 		try {
 			if (wrapper!=null)
 				wrapper.deleteDatabaseFiles();
+			else
+				DatabaseWrapper.deleteDatabaseFiles(databaseDirectory);
 			FileTools.deleteDirectory(this.externalBackupDirectory);
 		}
 		finally {
@@ -850,7 +852,7 @@ public class TestDatabaseBackupRestore {
 
 	@Test(dependsOnMethods = "testInternalBackupAndRestore")
 	public void testBackupCleaning() throws DatabaseException, InterruptedException {
-		DatabaseWrapper wrapper=new EmbeddedH2DatabaseWrapper(databaseDirectory);
+		wrapper=new EmbeddedH2DatabaseWrapper(databaseDirectory);
 		BackupConfiguration backupConf=new BackupConfiguration(200L, 1000L, 1000000, 100L, null);
 		DatabaseConfiguration conf=new DatabaseConfiguration( Table1.class.getPackage(), null, null, backupConf);
 

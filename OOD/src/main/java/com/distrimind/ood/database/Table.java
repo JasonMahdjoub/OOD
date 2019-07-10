@@ -7426,9 +7426,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 							if (pkChanged) {
 
-								getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
+								DatabaseWrapper.Session session=getDatabaseWrapper().getConnectionAssociatedWithCurrentThread();
+								session.addEvent(Table.this,
 										new TableEvent<>(-1, DatabaseEventType.REMOVE, oldRecord, null, resentTo), synchronizeIfNecessary);
-								getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
+								session.addEvent(Table.this,
 										new TableEvent<>(-1, DatabaseEventType.ADD, null, _record, resentTo), synchronizeIfNecessary);
 							} else
 								getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,

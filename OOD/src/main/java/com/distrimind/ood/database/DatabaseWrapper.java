@@ -1735,9 +1735,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							DatabaseEventsTable.Record _record = it.next();
 							if (_record == null)
 								throw new NullPointerException();
-							if (Arrays.equals(_record.getConcernedSerializedPrimaryKey(),
+							if (_record.getConcernedTable().equals(originalEvent.getConcernedTable())
+							&& Arrays.equals(_record.getConcernedSerializedPrimaryKey(),
 									originalEvent.getConcernedSerializedPrimaryKey())
-									&& _record.getConcernedTable().equals(originalEvent.getConcernedTable())) {
+									) {
 								if (event.getType() == DatabaseEventType.UPDATE
 										&& _record.getType() == DatabaseEventType.ADD.getByte()) {
 									eventr = new DatabaseEventsTable.Record(transaction.transaction,
