@@ -851,6 +851,47 @@ public class BackupRestoreManager {
 		}
 
 	}
+
+	private void createEmptyBackupReference() throws DatabaseException {
+		synchronized (this) {
+			int oldLength = 0;
+			long oldLastFile;
+			if (fileTimeStamps.size() == 0)
+				oldLastFile = Long.MAX_VALUE;
+			else {
+				oldLastFile = fileTimeStamps.get(fileTimeStamps.size() - 1);
+				File f = getFile(oldLastFile, fileReferenceTimeStamps.contains(oldLastFile));
+				oldLength = (int) f.length();
+			}
+			try {
+				long backupTime = System.currentTimeMillis();
+				while (backupTime == oldLastFile) {
+					try {
+						Thread.sleep(1);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+					backupTime = System.currentTimeMillis();
+				}
+
+				int maxBufferSize = backupConfiguration.getMaxStreamBufferSizeForBackupRestoration();
+				int maxBuffersNumber = backupConfiguration.getMaxStreamBufferNumberForBackupRestoration();
+
+
+				File file = initNewFileForBackupReference(backupTime);
+				try (RandomOutputStream out = new BufferedRandomOutputStream(new RandomFileOutputStream(file, RandomFileOutputStream.AccessMode.READ_AND_WRITE), maxBufferSize, maxBuffersNumber)) {
+					saveHeader(out, backupTime, true/*, index*/);
+					/*int nextTransactionReference = saveTransactionHeader(out, backupTime);
+					saveTransactionQueue(out, nextTransactionReference, backupTime);*/
+				}
+
+			} catch (IOException e) {
+				deleteDatabaseFilesFromReferenceToLastFile(oldLastFile, oldLength);
+				throw DatabaseException.getDatabaseException(e);
+			}
+		}
+	}
+
 	/**
 	 * Create a backup reference
 	 * @return the time UTC of the backup reference
@@ -998,10 +1039,9 @@ public class BackupRestoreManager {
 						}
 						saveTransactionQueue(rout.get(), nextTransactionReference.get(), currentBackupTime.get()/*, index.get()*/);
 					} finally {
-						rout.get().flush();
 						rout.get().close();
 					}
-					scanFiles();
+					//scanFiles();
 					cleanOldBackups();
 					if (!computeDatabaseReference.delete())
 						throw new DatabaseException("Impossible to delete file " + computeDatabaseReference);
@@ -1027,6 +1067,8 @@ public class BackupRestoreManager {
 	 */
 	public void cleanOldBackups() throws DatabaseException {
 		synchronized (this) {
+			if (lastCurrentRestorationFileUsed!=Long.MIN_VALUE)
+				return;
 			long limitUTC=System.currentTimeMillis()-backupConfiguration.getMaxBackupDurationInMs();
 			long concretLimitUTC=Long.MIN_VALUE;
 			for (int i=fileReferenceTimeStamps.size()-2;i>=0;i--)
@@ -1198,6 +1240,7 @@ public class BackupRestoreManager {
 			boolean newVersionLoaded=false;
 			boolean res = true;
 
+
 			synchronized (this) {
 				if (fileReferenceTimeStamps.size() == 0)
 					return false;
@@ -1266,7 +1309,7 @@ public class BackupRestoreManager {
 						pg.setMinimum(0);
 						pg.setMaximum(1000);
 					}
-
+					createEmptyBackupReference();
 
 				} catch (Exception e) {
 					lastCurrentRestorationFileUsed=Long.MIN_VALUE;
@@ -1287,6 +1330,7 @@ public class BackupRestoreManager {
 				{
 					if (!currentFile.exists())
 						throw new DatabaseException("Backup file not found : "+currentFile);
+					long previousTransactionUTC=Long.MIN_VALUE;
 					try(RandomInputStream in=new BufferedRandomInputStream(new RandomFileInputStream(currentFile), maxBufferSize, maxBuffersNumber))
 					{
 						positionForDataRead(in, reference);
@@ -1295,6 +1339,9 @@ public class BackupRestoreManager {
 							int startTransaction=(int)in.currentPosition();
 							int nextTransaction=in.readInt();
 							long currentTransactionUTC=in.readLong();
+							if (currentTransactionUTC<previousTransactionUTC)
+								throw new IOException();
+							previousTransactionUTC=currentTransactionUTC;
 							if (currentTransactionUTC>dateUTCInMs)
 								break fileloop;
 							if (in.readInt()!=-1)
@@ -1649,7 +1696,7 @@ public class BackupRestoreManager {
 		private boolean closed=false;
 		private long transactionUTC;
 		private final int nextTransactionReference;
-		private final long fileTimeStamp;
+		//private final long fileTimeStamp;
 		//private final RecordsIndex index;
 		private final int oldLength;
 		private final long oldLastFile;
@@ -1657,7 +1704,7 @@ public class BackupRestoreManager {
 
 		Transaction(long fileTimeStamp, long lastTransactionUTC, RandomOutputStream out, /*RecordsIndex index, */long oldLastFile, int oldLength) throws DatabaseException {
 			//this.index=index;
-			this.fileTimeStamp=fileTimeStamp;
+			//this.fileTimeStamp=fileTimeStamp;
 			this.lastTransactionUTC = lastTransactionUTC;
 			this.out=out;
 			this.oldLastFile=oldLastFile;
@@ -1690,6 +1737,7 @@ public class BackupRestoreManager {
 				deleteDatabaseFilesFromReferenceToLastFile(oldLastFile, oldLength);
 			if (!computeDatabaseReference.delete())
 				throw new DatabaseException("Impossible to delete file : "+computeDatabaseReference);
+			scanFiles();
 			closed=true;
 
 		}
@@ -1702,9 +1750,9 @@ public class BackupRestoreManager {
 
 			try {
 
-				if (!fileTimeStamps.contains(fileTimeStamp)) {
+				/*if (!fileTimeStamps.contains(fileTimeStamp)) {
 					fileTimeStamps.add(fileTimeStamp);
-				}
+				}*/
 				out.close();
 			} catch (IOException e) {
 				throw DatabaseException.getDatabaseException(e);

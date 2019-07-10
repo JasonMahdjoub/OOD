@@ -6886,6 +6886,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 										getListRecordsFromSqlConnection(runnable, getSqlGeneralSelect(true),
 												TransactionIsolation.TRANSACTION_READ_COMMITTED, -1, -1);
+
 										ok = runnable.ok;
 										if (ok)
 											value = fa.autoGenerateValue(getDatabaseWrapper().getSecureRandomForKeys());
