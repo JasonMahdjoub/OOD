@@ -37,6 +37,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 import com.distrimind.ood.database.database.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.exceptions.TransactionCanceledException;
 import com.distrimind.util.FileTools;
 import com.distrimind.util.crypto.SecureRandomType;
 import com.distrimind.util.crypto.SymmetricEncryptionType;
@@ -955,7 +956,7 @@ public class TestDatabaseBackupRestore {
 			res[i++]=o;
 		return res;
 	}
-	@Test(dependsOnMethods = "testBackupCleaning", dataProvider = "DataProvForTestTransactionCanceling")
+	@Test(/*dependsOnMethods = "testBackupCleaning", */dataProvider = "DataProvForTestTransactionCanceling")
 	public void testTransactionCanceling(boolean useSeveralRestorationPoint, boolean addAdditionalData, boolean alterRecords) throws DatabaseException, InterruptedException {
 		AtomicLong dataLoadStart=new AtomicLong();
 		AtomicLong dateRestoration=new AtomicLong();
@@ -972,45 +973,50 @@ public class TestDatabaseBackupRestore {
 		long lastFileSize=-1;
 		if (lastFile!=null)
 			lastFileSize=lastFile.getTotalSpace();
-		wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
-			@Override
-			public Void run() throws Exception {
-				for (int i=0;i<Math.random()*5;i++)
-					table1.addRecord(getTable1_3Map());
-				for (int i=0;i<Math.random()*5;i++)
-					table3.addRecord(getTable1_3Map());
-				for (int i=0;i<Math.random()*5;i++)
-				{
-					Table1.Record addedA2=table1.addRecord(getTable1_3Map());
-					table2.addRecord("fr1_pk1", addedA2, "int_value", uniqueField++);
+
+		try {
+			wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
+				@Override
+				public Void run() throws Exception {
+					for (int i = 0; i < Math.random() * 5; i++)
+						table1.addRecord(getTable1_3Map());
+					for (int i = 0; i < Math.random() * 5; i++)
+						table3.addRecord(getTable1_3Map());
+					for (int i = 0; i < Math.random() * 5; i++) {
+						Table1.Record addedA2 = table1.addRecord(getTable1_3Map());
+						table2.addRecord("fr1_pk1", addedA2, "int_value", uniqueField++);
+					}
+					for (int i = 0; i < Math.random() * 5; i++) {
+						Table3.Record addedB2 = table3.addRecord(getTable1_3Map());
+						table4.addRecord("fr1_pk1", addedB2, "int_value", uniqueField++);
+					}
+					cancelTransaction();
+
+
+					return null;
 				}
-				for (int i=0;i<Math.random()*5;i++)
-				{
-					Table3.Record addedB2=table3.addRecord(getTable1_3Map());
-					table4.addRecord("fr1_pk1", addedB2, "int_value", uniqueField++);
+
+				@Override
+				public TransactionIsolation getTransactionIsolation() {
+					return TransactionIsolation.TRANSACTION_SERIALIZABLE;
 				}
-				cancelTransaction();
 
+				@Override
+				public boolean doesWriteData() {
+					return true;
+				}
 
+				@Override
+				public void initOrReset() {
 
-				return null;
-			}
+				}
+			});
+			Assert.fail();
+		}
+		catch(TransactionCanceledException ignored)
+		{
 
-			@Override
-			public TransactionIsolation getTransactionIsolation() {
-				return TransactionIsolation.TRANSACTION_SERIALIZABLE;
-			}
-
-			@Override
-			public boolean doesWriteData() {
-				return true;
-			}
-
-			@Override
-			public void initOrReset() {
-
-			}
-		});
+		}
 		Assert.assertEquals(manager.getMinDateUTCInMs(), minDate);
 		Assert.assertEquals(manager.getMaxDateUTCInMS(), maxDate);
 		File lastFile2=manager.getLastFile();
