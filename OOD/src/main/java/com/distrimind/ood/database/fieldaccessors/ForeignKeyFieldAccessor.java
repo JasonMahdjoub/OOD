@@ -71,7 +71,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 	protected ArrayList<FieldAccessor> linked_primary_keys = null;
 	protected String linked_table_name = null;
 	protected Table<? extends DatabaseRecord> pointed_table = null;
-	private final int tableVersion;
+	private int tableVersion;
 	// private final Class<?>[] compatible_classes;
 
 	private static Method get_record_method;
@@ -152,6 +152,14 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 			for (int i = 0; i < sql_fields.size(); i++)
 				this.sql_fields[i] = sql_fields.get(i);
 		}
+	}
+
+	@Override
+	public void changeInternalTableName(String oldInternalTableName, String internalTableName, int newTableVersion) throws DatabaseException {
+		super.changeInternalTableName(oldInternalTableName, internalTableName, newTableVersion);
+		this.linked_table_name=this.linked_table_name.replace(oldInternalTableName, internalTableName);
+		this.tableVersion=newTableVersion;
+		this.sql_fields=null;
 	}
 
 	public Table<? extends DatabaseRecord> getPointedTable() {

@@ -274,10 +274,11 @@ public class TestDatabaseBackupRestore {
 
 	@BeforeClass
 	public void loadReferenceDatabase() throws DatabaseException {
+		System.out.println("Loading database reference");
 		DatabaseWrapper.deleteDatabaseFiles(referenceDatabaseDirectory);
 		DatabaseWrapper.deleteDatabaseFiles(databaseDirectory);
 		FileTools.deleteDirectory(this.externalBackupDirectory);
-		wrapperForReferenceDatabase=loadWrapper( referenceDatabaseDirectory, false);
+		wrapperForReferenceDatabase=loadWrapper( referenceDatabaseDirectory, false, true);
 		addAndRemoveData(wrapperForReferenceDatabase, 100);
 		Table1 table1=wrapperForReferenceDatabase.getTableInstance(Table1.class);
 		Table2 table2=wrapperForReferenceDatabase.getTableInstance(Table2.class);
@@ -355,9 +356,11 @@ public class TestDatabaseBackupRestore {
 
 	}
 
+
 	@AfterClass
 	public void unloadReferenceDatabase()
 	{
+		System.out.println("Unload database reference");
 		try {
 			recordWithoutForeignKeyA=null;
 			recordPointedByOtherA=null;
@@ -381,10 +384,11 @@ public class TestDatabaseBackupRestore {
 
 		}
 	}
+
 	@AfterMethod
 	public void unloadDatabase()
 	{
-		System.out.println("Removing database reference");
+		System.out.println("Removing database");
 		try {
 			if (wrapper!=null)
 				wrapper.deleteDatabaseFiles();
@@ -400,7 +404,8 @@ public class TestDatabaseBackupRestore {
 		return new BackupConfiguration(1000L, 10000L, 1000000, 200L, null);
 	}
 
-	private DatabaseWrapper loadWrapper(File databaseDirectory, boolean useInternalBackup) throws DatabaseException {
+	private DatabaseWrapper loadWrapper(File databaseDirectory, boolean useInternalBackup, boolean checkDatabaseDirectoryNull) throws DatabaseException {
+		assert !checkDatabaseDirectoryNull || !databaseDirectory.exists();
 		DatabaseWrapper wrapper=new EmbeddedH2DatabaseWrapper(databaseDirectory);
 		BackupConfiguration backupConf=null;
 		if (useInternalBackup)
@@ -415,7 +420,7 @@ public class TestDatabaseBackupRestore {
 	@SuppressWarnings("SameParameterValue")
 	private void loadDatabase(boolean useSeveralRestorationPoint, boolean useInternalBackup, AtomicLong dateRestoration, AtomicLong dataLoadStart, boolean useExternalBackup, boolean addAdditionData, boolean alterRecords) throws DatabaseException, InterruptedException {
 		dataLoadStart.set(System.currentTimeMillis());
-		wrapper=loadWrapper(databaseDirectory, useInternalBackup);
+		wrapper=loadWrapper(databaseDirectory, useInternalBackup, true);
 
 		loadData(wrapperForReferenceDatabase, wrapper);
 		if (useExternalBackup) {
@@ -501,7 +506,7 @@ public class TestDatabaseBackupRestore {
 		if (restoreToEmptyDatabase)
 		{
 			wrapper.deleteDatabaseFiles();
-			wrapper=loadWrapper(databaseDirectory, useInternalBackup);
+			wrapper=loadWrapper(databaseDirectory, useInternalBackup, true);
 		}
 		BackupRestoreManager internalBRM=wrapper.getBackupRestoreManager(Table1.class.getPackage());
 
@@ -560,8 +565,10 @@ public class TestDatabaseBackupRestore {
 		Assert.assertNotEquals(table5ID, wrapper.getTableInstance(Table5.class).getTableID());
 		Assert.assertNotEquals(table6ID, wrapper.getTableInstance(Table6.class).getTableID());
 		Assert.assertNotEquals(table7ID, wrapper.getTableInstance(Table7.class).getTableID());
+		assertEquals(wrapperForReferenceDatabase,wrapper, true);
 		wrapper.close();
-		wrapper=loadWrapper(databaseDirectory, useInternalBackup);
+
+		wrapper=loadWrapper(databaseDirectory, useInternalBackup, false);
 		Assert.assertNotEquals(wrapper.getCurrentDatabaseVersion(Table1.class.getPackage()), oldVersion);
 		Assert.assertFalse(wrapper.doesVersionExists(Table1.class.getPackage(), oldVersion));
 		Assert.assertNotEquals(table1Version, wrapper.getTableInstance(Table1.class).getDatabaseVersion());
@@ -830,7 +837,7 @@ public class TestDatabaseBackupRestore {
 
 	}*/
 
-	@Test(dataProvider = "DataProvIntBackupRestore"/*, dependsOnMethods = "testExternalBackupAndRestore"*/)
+	@Test(dataProvider = "DataProvIntBackupRestore", dependsOnMethods = "testExternalBackupAndRestore")
 	public void testInternalBackupAndRestore(boolean useSeveralRestorationPoint) throws DatabaseException, InterruptedException {
 		testExternalBackupAndRestore(useSeveralRestorationPoint, true, false, false);
 	}

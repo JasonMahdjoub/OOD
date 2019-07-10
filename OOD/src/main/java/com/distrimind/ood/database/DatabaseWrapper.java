@@ -44,6 +44,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
 import com.distrimind.ood.database.fieldaccessors.ByteTabObjectConverter;
 import com.distrimind.ood.database.fieldaccessors.DefaultByteTabObjectConverter;
+import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.FileTools;
@@ -3131,6 +3132,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							deleteDatabase(configuration, oldDatabasaseVersion);
 							for (Table<?> t : hm.values()) {
 								t.changeVersion(newDatabaseVersion, getTableID(t.getClass(), newDatabaseVersion), DatabaseWrapper.this);
+							}
+							for (Table<?> t : hm.values()) {
+								for (ForeignKeyFieldAccessor fa : t.foreign_keys_fields)
+									fa.initialize();
 							}
 							db.tables_per_versions.get(newDatabaseVersion).tables_instances = hm;
 						}

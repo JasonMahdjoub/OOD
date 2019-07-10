@@ -76,7 +76,7 @@ public class SqlField {
 	 * The name of the pointed Sql field not appended with its Sql Table, if this
 	 * field is a foreign key
 	 */
-	public final String short_pointed_field;
+	public String short_pointed_field;
 
 	/**
 	 * Tells if this field is not null

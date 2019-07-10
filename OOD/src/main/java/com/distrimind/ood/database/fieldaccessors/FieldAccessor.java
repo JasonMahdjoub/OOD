@@ -216,19 +216,25 @@ public abstract class FieldAccessor {
 				&& field.getAnnotation(com.distrimind.ood.database.annotations.Field.class).disableCache());
 	}
 
-	public void changeInternalTableName(String oldInternalTableName, String internalTableName)
-	{
+	public void changeInternalTableName(String oldInternalTableName, String internalTableName, int newTableVersion) throws DatabaseException {
 		table_name=table_name.replace(oldInternalTableName, internalTableName);
 		for (SqlField sf : getDeclaredSqlFields())
 		{
 			sf.field=sf.field.replace(oldInternalTableName, internalTableName);
-			if (sf.pointed_table!=null) {
-				sf.pointed_table = sf.pointed_table.replace(oldInternalTableName, internalTableName);
-				sf.pointed_field = sf.pointed_field.replace(oldInternalTableName, internalTableName);
-			}
 		}
 	}
 
+	/*public void changeInternalPointedTableName(String oldInternalTableName, String internalTableName)
+	{
+		for (SqlField sf : getDeclaredSqlFields())
+		{
+			if (sf.pointed_table!=null) {
+				sf.pointed_table = sf.pointed_table.replace(oldInternalTableName, internalTableName);
+				sf.pointed_field = sf.pointed_field.replace(oldInternalTableName, internalTableName);
+				sf.short_pointed_field = sf.short_pointed_field.replace(oldInternalTableName, internalTableName);
+			}
+		}
+	}*/
 	public final boolean isCacheDisabled()
 	{
 		return cacheDisabled;

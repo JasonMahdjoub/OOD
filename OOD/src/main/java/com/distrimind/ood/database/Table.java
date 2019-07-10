@@ -209,7 +209,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		table_name=sql_connection.getInternalTableNameFromTableID(this.getClass(), table_id);
 		for (FieldAccessor fa : fields)
 		{
-			fa.changeInternalTableName(oldTableName, table_name);
+			fa.changeInternalTableName(oldTableName, table_name, newDatabaseVersion);
 		}
 		if (isLoadedInMemory())
 			this.memoryToRefresh();
