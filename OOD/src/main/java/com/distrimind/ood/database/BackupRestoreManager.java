@@ -1117,6 +1117,11 @@ public class BackupRestoreManager {
 		return !passive && (!isReady() || fileReferenceTimeStamps.size()==0 || fileReferenceTimeStamps.get(fileReferenceTimeStamps.size()-1)+backupConfiguration.getBackupReferenceDurationInMs()<System.currentTimeMillis());
 	}
 
+	boolean isExternalBackupManager()
+	{
+		return passive;
+	}
+
 	private void deleteDatabaseFilesFromReferenceToLastFile(long firstFileReference, int oldLength) throws DatabaseException {
 		if (firstFileReference==Long.MAX_VALUE)
 			return;
@@ -1309,7 +1314,8 @@ public class BackupRestoreManager {
 						pg.setMinimum(0);
 						pg.setMaximum(1000);
 					}
-					createEmptyBackupReference();
+					if (!isExternalBackupManager())
+						createEmptyBackupReference();
 
 				} catch (Exception e) {
 					lastCurrentRestorationFileUsed=Long.MIN_VALUE;

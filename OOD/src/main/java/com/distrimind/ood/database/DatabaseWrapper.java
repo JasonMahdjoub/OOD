@@ -193,7 +193,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					File f=new File(new File(databaseDirectory, "nativeBackups"),DatabaseWrapper.getLongPackageName(configuration.getPackage()));
 					if (!f.exists())
 						continue;
-					BackupRestoreManager m=new BackupRestoreManager(wrapper, f, configuration, true);
+					BackupRestoreManager m=new BackupRestoreManager(wrapper, f, configuration, false);
 					m.cleanOldBackups();
 					if (m.isEmpty())
 					{
