@@ -1314,7 +1314,12 @@ public class BackupRestoreManager {
 						pg.setMinimum(0);
 						pg.setMaximum(1000);
 					}
-					if (!isExternalBackupManager())
+					if (isExternalBackupManager()) {
+						BackupRestoreManager internalManager = databaseWrapper.getBackupRestoreManager(this.databaseConfiguration.getPackage());
+						if (internalManager != null)
+							internalManager.createEmptyBackupReference();
+					}
+					else
 						createEmptyBackupReference();
 
 				} catch (Exception e) {

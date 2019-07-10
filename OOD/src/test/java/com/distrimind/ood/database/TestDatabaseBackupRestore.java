@@ -956,7 +956,7 @@ public class TestDatabaseBackupRestore {
 			res[i++]=o;
 		return res;
 	}
-	@Test(/*dependsOnMethods = "testBackupCleaning", */dataProvider = "DataProvForTestTransactionCanceling")
+	@Test(dependsOnMethods = "testBackupCleaning", dataProvider = "DataProvForTestTransactionCanceling")
 	public void testTransactionCanceling(boolean useSeveralRestorationPoint, boolean addAdditionalData, boolean alterRecords) throws DatabaseException, InterruptedException {
 		AtomicLong dataLoadStart=new AtomicLong();
 		AtomicLong dateRestoration=new AtomicLong();

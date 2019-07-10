@@ -78,6 +78,7 @@ public class OOD {
 			d.addItem("Update Utils to 4.2.2 Stable");
 			d.addItem("Add backup/restore manager, with historical management");
 			d.addItem("Better manage database versions");
+			d.addItem("High optimizations of several queries");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();

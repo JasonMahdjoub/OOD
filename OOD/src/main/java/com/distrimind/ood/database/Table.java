@@ -5254,7 +5254,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 			if (isLoadedInMemory()) {
 				for (final T r : getRecords(-1, -1, false)) {
-					class RunnableTmp extends Runnable {
+					/*class RunnableTmp extends Runnable {
 						public boolean found = false;
 
 						@Override
@@ -5274,12 +5274,14 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					RunnableTmp runnable = new RunnableTmp();
 					getListRecordsFromSqlConnection(runnable, getSqlGeneralSelect(true),
 							TransactionIsolation.TRANSACTION_SERIALIZABLE, -1, -1);
-					if (!runnable.found)
+
+					if (!runnable.found)*/
+					if (!hasRecordsWithAllFields(getFields(primary_keys_fields, r)))
 						throw new DatabaseIntegrityException(
 								"All records present in the memory were not found into the database.");
 				}
 				final ArrayList<T> records = getRecords(-1, -1, false);
-				class RunnableTmp extends Runnable {
+				/*class RunnableTmp extends Runnable {
 
 					@Override
 					public void init(int _field_count) {
@@ -5297,7 +5299,13 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					}
 				}
 				getListRecordsFromSqlConnection(new RunnableTmp(), getSqlGeneralSelect(true),
-						TransactionIsolation.TRANSACTION_SERIALIZABLE, -1, -1);
+						TransactionIsolation.TRANSACTION_SERIALIZABLE, -1, -1);*/
+				for (T r : records) {
+					if (!hasRecordsWithAllFields(getFields(primary_keys_fields, r)))
+						throw new DatabaseIntegrityException(
+								"All records present into the database were not found into the memory.");
+				}
+
 			}
 		}
 	}
@@ -6805,95 +6813,51 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 							+ ") of given fields does not correspond to the expected minimum number (" + number
 							+ ") of fields (Null fields, AutoPrimaryKeys and RandomPrimaryKeys are excluded).");
 				try {
-					class CheckTmp  {
-						public boolean check_necessary = false;
-						public final Map<String, Object> random_fields_to_check = new HashMap<>();
-						public boolean include_auto_pk = false;
 
-						public CheckTmp(ArrayList<FieldAccessor> _auto_random_primary_keys_fields) {
+					Map<String, Object> random_fields_to_check = new HashMap<>();
+					boolean auto_pk = false;
 
-							for (FieldAccessor fa : _auto_random_primary_keys_fields) {
-								if (fa.isRandomPrimaryKey() && _fields.containsKey(fa.getFieldName())) {
-									if (_fields.get(fa.getFieldName()) == null)
-										_fields.remove(fa.getFieldName());
-									else {
-										random_fields_to_check.put(fa.getFieldName(), _fields.get(fa.getFieldName()));
-										check_necessary = true;
-									}
-								}
-								if (fa.isAutoPrimaryKey() && _fields.containsKey(fa.getFieldName())) {
-									if (_fields.get(fa.getFieldName()) == null)
-										_fields.remove(fa.getFieldName());
-									else
-										include_auto_pk = true;
-								}
+
+					for (FieldAccessor fa : auto_random_primary_keys_fields) {
+						if (fa.isRandomPrimaryKey() && _fields.containsKey(fa.getFieldName())) {
+							if (_fields.get(fa.getFieldName()) == null)
+								_fields.remove(fa.getFieldName());
+							else {
+								random_fields_to_check.put(fa.getFieldName(), _fields.get(fa.getFieldName()));
 							}
 						}
-
-						/*@Override
-						public void init(int _field_count) {
+						if (fa.isAutoPrimaryKey() && _fields.containsKey(fa.getFieldName())) {
+							if (_fields.get(fa.getFieldName()) == null)
+								_fields.remove(fa.getFieldName());
+							else
+								auto_pk = true;
 						}
-
-						@Override
-						public boolean setInstance(ResultSet _result_set) throws DatabaseException {
-							for (FieldAccessor fa : random_fields_to_check) {
-								if (fa.equals(_fields.get(fa.getFieldName()), _result_set))
-									throw new ConstraintsNotRespectedDatabaseException(
-											"The given record into the table "+Table.this.getClass().getSimpleName()+" have the same unique auto/random primary key field "
-													+ fa.getFieldName()
-													+ " of one of the records stored into the database. No record have been added.");
-							}
-							return true;
-						}*/
-
 					}
-					final CheckTmp ct = new CheckTmp(auto_random_primary_keys_fields);
-					if (ct.check_necessary) {
-						if (hasRecordsWithOneOfFields(ct.random_fields_to_check))
+
+					final boolean include_auto_pk = auto_pk;
+
+					if (random_fields_to_check.size()>0) {
+						if (hasRecordsWithOneOfFields(random_fields_to_check))
 							throw new ConstraintsNotRespectedDatabaseException(
 									"The given record into the table "+Table.this.getClass().getSimpleName()
 											+" have the same unique auto/random primary key field of one of the records stored into the database. No record have been added.");
-						/*getListRecordsFromSqlConnection(ct, getSqlGeneralSelect(true),
-								TransactionIsolation.TRANSACTION_READ_COMMITTED, -1, -1);*/
 					}
 
 					final T instance = originalRecord == null ? getNewRecordInstance(true) : (T) originalRecord;
 				
 						for (final FieldAccessor fa : fields) {
-							if (fa.isRandomPrimaryKey() && !ct.random_fields_to_check.containsKey(fa.getFieldName())) {
+							if (fa.isRandomPrimaryKey() && !random_fields_to_check.containsKey(fa.getFieldName())) {
 								Object value = fa.autoGenerateValue(getDatabaseWrapper().getSecureRandomForKeys());
 								boolean ok;
 								if (fa.needToCheckUniquenessOfAutoGeneratedValues()) {
 									do {
-										final Object val = value;
-
-										class RunnableTmp extends Runnable2 {
-											public boolean ok = false;
-
-											@Override
-											public void init(int _field_count) {
-											}
-
-											@Override
-											public boolean setInstance(ResultSet _result_set) throws DatabaseException {
-												boolean res = !fa.equals(val, _result_set);
-												if (!ok && !res)
-													ok = true;
-												return res;
-											}
-										}
-										RunnableTmp runnable = new RunnableTmp();
-
-										getListRecordsFromSqlConnection(runnable, getSqlGeneralSelect(true),
-												TransactionIsolation.TRANSACTION_READ_COMMITTED, -1, -1);
-
-										ok = runnable.ok;
+										ok = hasRecordsWithAllFields(fa.getFieldName(), value);
 										if (ok)
 											value = fa.autoGenerateValue(getDatabaseWrapper().getSecureRandomForKeys());
 									} while (ok);
 								}
 								fa.setValue(instance, value);
-							} else if (!fa.isAutoPrimaryKey() || ct.include_auto_pk) {
+							} else if (!fa.isAutoPrimaryKey() || include_auto_pk) {
 								fa.setValue(instance, _fields.get(fa.getFieldName()));
 							}
 						}
@@ -6960,7 +6924,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 									}
 								}
 								querry.append(")").append(sql_connection.getSqlComma());
-								boolean generatedKeys=auto_primary_keys_fields.size()>0 && !ct.include_auto_pk;
+								boolean generatedKeys=auto_primary_keys_fields.size()>0 && !include_auto_pk;
 								try (PreparedUpdateQuerry puq = new PreparedUpdateQuerry(
 										_db.getConnectionAssociatedWithCurrentThread().getConnection(),
 										querry.toString(), generatedKeys)) {
@@ -6994,7 +6958,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 									if (sql_connection.isDuplicateKeyException(e))
 										throw new ConstraintsNotRespectedDatabaseException(
 											"Constraints was not respected when inserting a field into the table "
-													+ Table.this.getClass().getSimpleName()
+													+ Table.this.getClass().getSimpleName() + " v"+Table.this.getDatabaseVersion()
 													+ ". It is possible that the group of primary keys was not unique, or that a unique field was already present into the database.",
 											e);
 									else
@@ -7305,10 +7269,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 										"The given field " + s + " is not contained into the table " + getClass().getSimpleName());
 						}
 
-						class CheckTmp extends Runnable2 {
+						class CheckTmp /*extends Runnable2*/ {
 							private final HashMap<String, Object> keys;
 							public boolean check_necessary = false;
-							public final ArrayList<Boolean> check_random = new ArrayList<>();
+							public final HashMap<String, Object> check_random = new HashMap<>();
 							private final ArrayList<FieldAccessor> random_primary_keys_fields;
 
 							public CheckTmp(ArrayList<FieldAccessor> _auto_random_primary_keys_fields)
@@ -7321,16 +7285,17 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
                                         if (!fa.equals(_record, field)) {
                                             keys.put(fa.getFieldName(), field);
                                             check_necessary = true;
-                                            check_random.add(Boolean.TRUE);
-                                        } else
-                                            check_random.add(Boolean.FALSE);
-                                    } else
-                                        check_random.add(Boolean.FALSE);
+                                            check_random.put(fa.getFieldName(), keys.get(fa.getFieldName()));
+                                            //check_random.add(Boolean.TRUE);
+                                        } /*else
+                                            check_random.add(Boolean.FALSE);*/
+                                    } /*else
+                                        check_random.add(Boolean.FALSE);*/
                                 }
 
 							}
 
-							@Override
+							/*@Override
 							public void init(int _field_count) {
 							}
 
@@ -7347,12 +7312,17 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 									}
 								}
 								return true;
-							}
+							}*/
 						}
 						CheckTmp ct = new CheckTmp(auto_random_primary_keys_fields);
-						if (ct.check_necessary)
-							getListRecordsFromSqlConnection(ct, getSqlGeneralSelect(true),
-									TransactionIsolation.TRANSACTION_REPEATABLE_READ, -1, -1);
+						if (ct.check_necessary) {
+
+							if (hasRecordsWithOneOfFields(ct.check_random))
+								throw new ConstraintsNotRespectedDatabaseException(
+										"the given record have the same auto/random primary key field of one of the records stored into the database. No record have been added.");
+							/*getListRecordsFromSqlConnection(ct, getSqlGeneralSelect(true),
+									TransactionIsolation.TRANSACTION_REPEATABLE_READ, -1, -1);*/
+						}
 
 						class TransactionTmp implements Transaction {
 							protected final ArrayList<FieldAccessor> fields_accessor;
@@ -7930,6 +7900,18 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			} else {
 				// synchronized(sql_connection)
 				{
+					/*Map<String, Object> map=new HashMap<>();
+					for (FieldAccessor f : primary_keys_fields) {
+						if (!keys.containsKey(f.getFieldName()))
+							throw new IllegalArgumentException("Primary key "+f.getFieldName()+" is lacking to access to a record into table "+Table.this.getClass().getSimpleName());
+						map.put(f.getFieldName(), keys.get(f.getFieldName()));
+					}
+					ArrayList<T> r=getRecordsWithAllFields(map);
+					assert r.size()<2;
+					if (r.size()==0)
+						return null;
+					else
+						return r.get(0);*/
 					class RunnableTmp extends Runnable {
 						public T instance = null;
 						protected ArrayList<FieldAccessor> primary_keys_fields;
