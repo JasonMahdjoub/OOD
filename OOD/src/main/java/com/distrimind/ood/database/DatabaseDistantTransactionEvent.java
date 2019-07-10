@@ -263,7 +263,7 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 
 	DatabaseHooksTable getDatabaseHooksTable() throws DatabaseException {
 		if (databaseHooksTable == null)
-			databaseHooksTable = (DatabaseHooksTable) getDatabaseWrapper().getTableInstance(DatabaseHooksTable.class);
+			databaseHooksTable = getDatabaseWrapper().getTableInstance(DatabaseHooksTable.class);
 		return databaseHooksTable;
 	}
 	/*

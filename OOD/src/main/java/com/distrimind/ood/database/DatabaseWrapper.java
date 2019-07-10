@@ -1321,46 +1321,46 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	DatabaseTransactionEventsTable getTransactionsTable() throws DatabaseException {
 		if (transactionTable == null)
-			transactionTable = (DatabaseTransactionEventsTable) getTableInstance(DatabaseTransactionEventsTable.class);
+			transactionTable = getTableInstance(DatabaseTransactionEventsTable.class);
 		return transactionTable;
 	}
 
 	DatabaseHooksTable getHooksTransactionsTable() throws DatabaseException {
 		if (databaseHooksTable == null)
-			databaseHooksTable = (DatabaseHooksTable) getTableInstance(DatabaseHooksTable.class);
+			databaseHooksTable = getTableInstance(DatabaseHooksTable.class);
 		return databaseHooksTable;
 	}
 
 	DatabaseTransactionsPerHostTable getDatabaseTransactionsPerHostTable() throws DatabaseException {
 		if (databaseTransactionsPerHostTable == null)
-			databaseTransactionsPerHostTable = (DatabaseTransactionsPerHostTable) getTableInstance(
+			databaseTransactionsPerHostTable = getTableInstance(
 					DatabaseTransactionsPerHostTable.class);
 		return databaseTransactionsPerHostTable;
 	}
 
 	DatabaseEventsTable getDatabaseEventsTable() throws DatabaseException {
 		if (databaseEventsTable == null)
-			databaseEventsTable = (DatabaseEventsTable) getTableInstance(DatabaseEventsTable.class);
+			databaseEventsTable = getTableInstance(DatabaseEventsTable.class);
 		return databaseEventsTable;
 	}
 
 	DatabaseDistantTransactionEvent getDatabaseDistantTransactionEvent() throws DatabaseException {
 		if (databaseDistantTransactionEvent == null)
-			databaseDistantTransactionEvent = (DatabaseDistantTransactionEvent) getTableInstance(
+			databaseDistantTransactionEvent = getTableInstance(
 					DatabaseDistantTransactionEvent.class);
 		return databaseDistantTransactionEvent;
 	}
 
 	DatabaseTransactionEventsTable getDatabaseTransactionEventsTable() throws DatabaseException {
 		if (databaseTransactionEventsTable == null)
-			databaseTransactionEventsTable = (DatabaseTransactionEventsTable) getTableInstance(
+			databaseTransactionEventsTable = getTableInstance(
 					DatabaseTransactionEventsTable.class);
 		return databaseTransactionEventsTable;
 	}
 
 	IDTable getTransactionIDTable() throws DatabaseException {
 		if (transactionIDTable == null)
-			transactionIDTable = (IDTable) getTableInstance(IDTable.class);
+			transactionIDTable = getTableInstance(IDTable.class);
 		return transactionIDTable;
 	}
 
@@ -1930,7 +1930,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					});
 				}
 			} finally {
-				transaction.eventsNumber += nb.get();
+				transaction.eventsNumber.addAndGet(nb.get());
 				actualTransactionEventsNumber.addAndGet(nb.get());
 			}
 		}
@@ -1996,7 +1996,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						}
 					}
 					actualTransactionEventsNumber.addAndGet(nb);
-					t.eventsNumber -= nb;
+					t.eventsNumber.addAndGet(-nb);
 				}
 
 			} else {
@@ -2010,7 +2010,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 									"transaction=%transaction AND position>=%pos", "transaction", t.transaction, "pos",
                                     position);
 							actualTransactionEventsNumber.addAndGet(nb);
-							t.eventsNumber -= nb;
+							t.eventsNumber.addAndGet(-nb);
 						}
 						return null;
 					}
@@ -2075,7 +2075,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
                         for (final TransactionPerDatabase t : temporaryTransactions.values()) {
 
-                            if (t.eventsNumber > 0) {
+                            if (t.eventsNumber.get() > 0) {
                                 final AtomicReference<DatabaseTransactionEventsTable.Record> finalTR = new AtomicReference<>(
                                         null);
                                 /*
@@ -2153,7 +2153,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
                         final AtomicBoolean transactionOK = new AtomicBoolean(false);
                         for (final TransactionPerDatabase t : temporaryTransactions.values()) {
 
-                            if (t.eventsNumber > 0) {
+                            if (t.eventsNumber.get() > 0) {
                                 final AtomicReference<DatabaseTransactionEventsTable.Record> finalTR = new AtomicReference<>(
                                         null);
                                 /*
@@ -2244,7 +2244,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	private static class TransactionPerDatabase {
 		DatabaseTransactionEventsTable.Record transaction;
-		volatile int eventsNumber;
+		AtomicInteger eventsNumber;
 		final Set<AbstractDecentralizedID> concernedHosts;
 		final ArrayList<DatabaseEventsTable.Record> events;
 
@@ -2252,7 +2252,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (transaction == null)
 				throw new NullPointerException();
 			this.transaction = transaction;
-			this.eventsNumber = 0;
+			this.eventsNumber = new AtomicInteger(0);
 			concernedHosts = new HashSet<>();
 			events = new ArrayList<>(maxEventsNumberKeepedIntoMemory);
 		}

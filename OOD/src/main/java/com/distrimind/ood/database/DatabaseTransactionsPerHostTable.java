@@ -70,41 +70,41 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 	DatabaseTransactionEventsTable getDatabaseTransactionEventsTable() throws DatabaseException {
 		if (databaseTransactionEventsTable == null)
-			databaseTransactionEventsTable = (DatabaseTransactionEventsTable) getDatabaseWrapper()
+			databaseTransactionEventsTable = getDatabaseWrapper()
 					.getTableInstance(DatabaseTransactionEventsTable.class);
 		return databaseTransactionEventsTable;
 	}
 
 	DatabaseEventsTable getDatabaseEventsTable() throws DatabaseException {
 		if (databaseEventsTable == null)
-			databaseEventsTable = (DatabaseEventsTable) getDatabaseWrapper()
+			databaseEventsTable = getDatabaseWrapper()
 					.getTableInstance(DatabaseEventsTable.class);
 		return databaseEventsTable;
 	}
 
 	DatabaseHooksTable getDatabaseHooksTable() throws DatabaseException {
 		if (databaseHooksTable == null)
-			databaseHooksTable = (DatabaseHooksTable) getDatabaseWrapper().getTableInstance(DatabaseHooksTable.class);
+			databaseHooksTable = getDatabaseWrapper().getTableInstance(DatabaseHooksTable.class);
 		return databaseHooksTable;
 	}
 
 	DatabaseDistantTransactionEvent getDatabaseDistantTransactionEvent() throws DatabaseException {
 		if (databaseDistantTransactionEventTable == null)
-			databaseDistantTransactionEventTable = (DatabaseDistantTransactionEvent) getDatabaseWrapper()
+			databaseDistantTransactionEventTable = getDatabaseWrapper()
 					.getTableInstance(DatabaseDistantTransactionEvent.class);
 		return databaseDistantTransactionEventTable;
 	}
 
 	DatabaseDistantEventsTable getDatabaseDistantEventsTable() throws DatabaseException {
 		if (databaseDistantEventsTable == null)
-			databaseDistantEventsTable = (DatabaseDistantEventsTable) getDatabaseWrapper()
+			databaseDistantEventsTable = getDatabaseWrapper()
 					.getTableInstance(DatabaseDistantEventsTable.class);
 		return databaseDistantEventsTable;
 	}
 
 	IDTable getIDTable() throws DatabaseException {
 		if (idTable == null)
-			idTable = (IDTable) getDatabaseWrapper().getTableInstance(IDTable.class);
+			idTable = getDatabaseWrapper().getTableInstance(IDTable.class);
 		return idTable;
 
 	}

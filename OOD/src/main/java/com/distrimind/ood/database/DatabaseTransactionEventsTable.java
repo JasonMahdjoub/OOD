@@ -449,7 +449,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 
 	DatabaseTransactionsPerHostTable getDatabaseTransactionsPerHostTable() throws DatabaseException {
 		if (databaseTransactionsPerHostTable == null)
-			databaseTransactionsPerHostTable = (DatabaseTransactionsPerHostTable) getDatabaseWrapper()
+			databaseTransactionsPerHostTable = getDatabaseWrapper()
 					.getTableInstance(DatabaseTransactionsPerHostTable.class);
 		return databaseTransactionsPerHostTable;
 
@@ -457,13 +457,13 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 
 	IDTable getTransactionIDTable() throws DatabaseException {
 		if (transactionIDTable == null)
-			transactionIDTable = (IDTable) getDatabaseWrapper().getTableInstance(IDTable.class);
+			transactionIDTable = getDatabaseWrapper().getTableInstance(IDTable.class);
 		return transactionIDTable;
 	}
 
 	DatabaseEventsTable getDatabaseEventsTable() throws DatabaseException {
 		if (databaseEventsTable == null)
-			databaseEventsTable = (DatabaseEventsTable) getDatabaseWrapper()
+			databaseEventsTable = getDatabaseWrapper()
 					.getTableInstance(DatabaseEventsTable.class);
 		return databaseEventsTable;
 
@@ -471,14 +471,14 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 
 	DatabaseHooksTable getDatabaseHooksTable() throws DatabaseException {
 		if (databaseHooksTable == null)
-			databaseHooksTable = (DatabaseHooksTable) getDatabaseWrapper().getTableInstance(DatabaseHooksTable.class);
+			databaseHooksTable = getDatabaseWrapper().getTableInstance(DatabaseHooksTable.class);
 		return databaseHooksTable;
 
 	}
 
 	IDTable getIDTable() throws DatabaseException {
 		if (idTable == null)
-			idTable = (IDTable) getDatabaseWrapper().getTableInstance(IDTable.class);
+			idTable = getDatabaseWrapper().getTableInstance(IDTable.class);
 		return idTable;
 
 	}
