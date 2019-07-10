@@ -502,9 +502,6 @@ public abstract class FieldAccessor {
 							res.add(new BigIntegerFieldAccessor(_table, _sql_connection, f, parentFieldName));
 						else if (Date.class.isAssignableFrom(type))
 							res.add(new DateFieldAccessor(_table, _sql_connection, f, parentFieldName));
-						else if ((converter = _sql_connection.getByteTabObjectConverter(type)) != null)
-							res.add(new ByteTabConvertibleFieldAccessor(_table, _sql_connection, f,
-									parentFieldName, converter));
 						else if (type.equals(DecentralizedIDGenerator.class))
 							res.add(new DencetralizedIDFieldAccessor(_table, _sql_connection, f,
 									parentFieldName));
@@ -521,6 +518,9 @@ public abstract class FieldAccessor {
 						{
 							res.add(new DecentralizedValueFieldAccessor(_table, _sql_connection, f, parentFieldName));
 						}
+						else if ((converter = _sql_connection.getByteTabObjectConverter(type)) != null)
+							res.add(new ByteTabConvertibleFieldAccessor(_table, _sql_connection, f,
+									parentFieldName, converter));
 						else if (isComposedField(type)) {
 							for (Class<?> cpf : parentFields)
 								if (cpf.isAssignableFrom(type))

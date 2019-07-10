@@ -92,6 +92,7 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 						: DatabaseWrapperAccessor.getBigIntegerType(sql_connection)),
 				null, null, isNotNull());
 		isVarBinary = DatabaseWrapperAccessor.isVarBinarySupported(sql_connection);
+
 		if (_field.isAnnotationPresent(com.distrimind.ood.database.annotations.Field.class))
 			encodeExpirationUTC=_field.getAnnotation(com.distrimind.ood.database.annotations.Field.class).includeKeyExpiration();
 		else
@@ -160,9 +161,10 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 		if (tab==null)
 			return null;
 		else if (getFieldClassType()==ASymmetricPublicKey.class)
-			return ASymmetricPublicKey.decode(tab, sql_connection.supportNoCacheParam());
-		else if (DecentralizedValue.class.isAssignableFrom(getFieldClassType()))
+			return ASymmetricPublicKey.decode(tab, false);
+		else if (DecentralizedValue.class.isAssignableFrom(getFieldClassType())) {
 			return DecentralizedValue.decode(tab, sql_connection.supportNoCacheParam());
+		}
 		else
 			throw new IllegalAccessError();
 	}
