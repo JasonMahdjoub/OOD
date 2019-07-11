@@ -66,8 +66,8 @@ public class EmbeddedH2DatabaseFactory extends DatabaseFactory {
 	public EmbeddedH2DatabaseFactory(File _file_name, boolean alwaysDeconectAfterOnTransaction) {
 		if (_file_name == null)
 			throw new NullPointerException("The parameter _file_name is a null pointer !");
-		if (_file_name.isDirectory())
-			throw new IllegalArgumentException("The given file name is a directory !");
+		if (_file_name.exists() && !_file_name.isDirectory())
+			throw new IllegalArgumentException("The given file name is not a directory !");
 		file_name = _file_name;
 		constructorNb = 1;
 		this.alwaysDeconectAfterOnTransaction=alwaysDeconectAfterOnTransaction;

@@ -72,8 +72,8 @@ public class EmbeddedHSQLDBDatabaseFactory extends DatabaseFactory {
 	public EmbeddedHSQLDBDatabaseFactory(File _file_name, boolean alwaysDeconectAfterOnTransaction) {
 		if (_file_name == null)
 			throw new NullPointerException("The parameter _file_name is a null pointer !");
-		if (_file_name.isDirectory())
-			throw new IllegalArgumentException("The given file name is a directory !");
+		if (_file_name.exists() && !_file_name.isDirectory())
+			throw new IllegalArgumentException("The given file name is not a directory !");
 		file_name = _file_name;
 		constructorNb = 1;
 		this.alwaysDeconectAfterOnTransaction=alwaysDeconectAfterOnTransaction;
@@ -83,8 +83,8 @@ public class EmbeddedHSQLDBDatabaseFactory extends DatabaseFactory {
 			int _cache_size, int _result_max_memory_rows, int _cache_free_count, boolean lockFile) {
 		if (_file_name == null)
 			throw new NullPointerException("The parameter _file_name is a null pointer !");
-		if (_file_name.isDirectory())
-			throw new IllegalArgumentException("The given file name is a directory !");
+		if (_file_name.exists() && !_file_name.isDirectory())
+			throw new IllegalArgumentException("The given file name is not a directory !");
 		file_name = _file_name;
 		this.concurrencyControl = concurrencyControl;
 		cache_rows = _cache_rows;
