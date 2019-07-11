@@ -84,7 +84,7 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 					limit=33;
 			}
 			else
-				limit= compatibleClasses[0]== ASymmetricPublicKey.class?1060:(compatibleClasses[0]== ASymmetricPrivateKey.class?140:(compatibleClasses[0]== SymmetricSecretKey.class?55:1200));
+				limit= compatibleClasses[0]== ASymmetricPublicKey.class?8999:(compatibleClasses[0]== ASymmetricPrivateKey.class?1200:(compatibleClasses[0]== SymmetricSecretKey.class?55:10500));
 
 		}
 		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(),
