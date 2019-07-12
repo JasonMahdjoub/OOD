@@ -40,7 +40,7 @@ import java.util.HashMap;
 import java.util.Set;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.util.AbstractDecentralizedID;
+import com.distrimind.util.DecentralizedValue;
 
 /**
  * 
@@ -55,13 +55,13 @@ public class TableEvent<T extends DatabaseRecord> extends DatabaseEvent {
 	private final T oldDatabaseRecord;
 	private final T newDatabaseRecord;
 	private final boolean force;
-	private transient final Set<AbstractDecentralizedID> hostsDestination;
+	private transient final Set<DecentralizedValue> hostsDestination;
 	private transient HashMap<String, Object> mapKeys = null;
 	private transient boolean oldAlreadyPresent = false;
 	private transient Table<T> table;
 
 	TableEvent(int id, DatabaseEventType type, T oldDatabaseRecord, T newDatabaseRecord,
-			Set<AbstractDecentralizedID> resentTo) {
+			Set<DecentralizedValue> resentTo) {
 		if (type == null)
 			throw new NullPointerException("type");
 		if (oldDatabaseRecord == null && type != DatabaseEventType.ADD)
@@ -78,7 +78,7 @@ public class TableEvent<T extends DatabaseRecord> extends DatabaseEvent {
 	}
 
 	TableEvent(int id, DatabaseEventType type, T oldDatabaseRecord, T newDatabaseRecord,
-			Set<AbstractDecentralizedID> resentTo, HashMap<String, Object> mapKeys, boolean oldAlreadyPresent,
+			Set<DecentralizedValue> resentTo, HashMap<String, Object> mapKeys, boolean oldAlreadyPresent,
 			Table<T> table) {
 		if (type == null)
 			throw new NullPointerException("type");
@@ -98,7 +98,7 @@ public class TableEvent<T extends DatabaseRecord> extends DatabaseEvent {
 		this.mapKeys = mapKeys;
 	}
 
-	Set<AbstractDecentralizedID> getHostsDestination() {
+	Set<DecentralizedValue> getHostsDestination() {
 		return hostsDestination;
 	}
 

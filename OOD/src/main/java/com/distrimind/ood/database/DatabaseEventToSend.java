@@ -40,6 +40,7 @@ import java.io.Serializable;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.AbstractDecentralizedID;
+import com.distrimind.util.DecentralizedValue;
 
 /**
  * 
@@ -48,7 +49,7 @@ import com.distrimind.util.AbstractDecentralizedID;
  * @since OOD 2.0
  */
 public interface DatabaseEventToSend extends Serializable {
-	AbstractDecentralizedID getHostDestination() throws DatabaseException;
+	DecentralizedValue getHostDestination() throws DatabaseException;
 
-	AbstractDecentralizedID getHostSource() throws DatabaseException;
+	DecentralizedValue getHostSource() throws DatabaseException;
 }

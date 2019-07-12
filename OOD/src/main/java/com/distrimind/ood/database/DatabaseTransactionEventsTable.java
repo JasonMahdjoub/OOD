@@ -47,8 +47,8 @@ import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.SerializationDatabaseException;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
-import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.Bits;
+import com.distrimind.util.DecentralizedValue;
 
 /**
  * 
@@ -133,7 +133,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 			this.concernedHosts = null;
 		}
 
-		Record(long id, String concernedDatabasePackage, Set<AbstractDecentralizedID> concernedHosts) {
+		Record(long id, String concernedDatabasePackage, Set<DecentralizedValue> concernedHosts) {
 			this(id, concernedDatabasePackage);
 
 			setConcernedHosts(concernedHosts);
@@ -169,7 +169,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 			return false;
 		}
 
-		void setConcernedHosts(Collection<AbstractDecentralizedID> peers) {
+		void setConcernedHosts(Collection<DecentralizedValue> peers) {
 			if (peers == null || peers.isEmpty()) {
 				concernedHosts = null;
 				setForce(false);
@@ -180,8 +180,8 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 			byte[][] bytes = new byte[peers.size()][];
 			int i = 0;
 			int size = 2 + peers.size() * 2;
-			for (AbstractDecentralizedID id : peers) {
-				bytes[i] = id.encode();
+			for (DecentralizedValue id : peers) {
+				bytes[i] = id.encodeWithDefaultParameters();
 				size += bytes[i++].length + 2;
 			}
 			if (size > concernedHostsSizeLimit) {
@@ -199,11 +199,11 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 			}
 		}
 
-		List<AbstractDecentralizedID> getConcernedHosts() throws SerializationDatabaseException {
+		List<DecentralizedValue> getConcernedHosts() throws SerializationDatabaseException {
 			if (concernedHosts == null)
 				return new ArrayList<>(0);
 			short nbPeers = Bits.getShort(concernedHosts, 0);
-			ArrayList<AbstractDecentralizedID> res = new ArrayList<>(nbPeers);
+			ArrayList<DecentralizedValue> res = new ArrayList<>(nbPeers);
 			int off = 2;
 			for (int i = 0; i < nbPeers; i++) {
 				short size = Bits.getShort(concernedHosts, 2);
@@ -211,17 +211,17 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 					throw new SerializationDatabaseException("Invalid data (hook id size est greater to 1024)");
 
 				off += 2;
-				res.add(AbstractDecentralizedID.decode(concernedHosts, off, size));
+				res.add(DecentralizedValue.decode(concernedHosts, off, size));
 				off += size;
 			}
 			return res;
 		}
 
-		boolean isConcernedBy(AbstractDecentralizedID newHostID) throws SerializationDatabaseException {
+		boolean isConcernedBy(DecentralizedValue newHostID) throws SerializationDatabaseException {
 			//this.newHostID = newHostID;
 			if (concernedHosts == null)
 				return true;
-			List<AbstractDecentralizedID> l = getConcernedHosts();
+			List<DecentralizedValue> l = getConcernedHosts();
 			return !l.contains(newHostID);
 		}
 
@@ -280,8 +280,8 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 	}
 
 	protected long addTransactionToSynchronizeTables(final List<String> databasePackages,
-			final ArrayList<AbstractDecentralizedID> hostAlreadySynchronized, final DatabaseHooksTable.Record hook,
-			boolean force) throws DatabaseException {
+													 final ArrayList<DecentralizedValue> hostAlreadySynchronized, final DatabaseHooksTable.Record hook,
+													 boolean force) throws DatabaseException {
 		final Set<String> packageSynchroOneTime = new HashSet<>();
 
 		getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
@@ -342,7 +342,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 					@Override
 					public void nextRecord(Record _record) throws DatabaseException {
 						if (!_record.isConcernedBy(hook.getHostID())) {
-							List<AbstractDecentralizedID> l = _record.getConcernedHosts();
+							List<DecentralizedValue> l = _record.getConcernedHosts();
 							l.add(hook.getHostID());
 							_record.setConcernedHosts(l);
 							update();
@@ -444,7 +444,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 		} else {
 			removeRecord(transaction.get());
 		}
-		getDatabaseHooksTable().actualizeLastTransactionID(new ArrayList<AbstractDecentralizedID>(0));
+		getDatabaseHooksTable().actualizeLastTransactionID(new ArrayList<DecentralizedValue>(0));
 	}
 
 	DatabaseTransactionsPerHostTable getDatabaseTransactionsPerHostTable() throws DatabaseException {

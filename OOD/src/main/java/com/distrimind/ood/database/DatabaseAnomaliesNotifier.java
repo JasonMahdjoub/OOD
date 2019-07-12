@@ -36,7 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database;
 
-import com.distrimind.util.AbstractDecentralizedID;
+import com.distrimind.util.DecentralizedValue;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -60,7 +60,7 @@ public interface DatabaseAnomaliesNotifier<DR extends DatabaseRecord, T extends 
      * {@link DatabaseWrapper.SynchronizationAnomalyType#RECORD_TO_ADD_ALREADY_PRESENT}</li>
      * </ul>
      * Anomalies differs with collision (see
-     * {@link DatabaseCollisionsNotifier#collisionDetected(AbstractDecentralizedID, AbstractDecentralizedID, DatabaseEventType, Table, HashMap, DatabaseRecord, DatabaseRecord)}).
+     * {@link DatabaseCollisionsNotifier#collisionDetected(DecentralizedValue, DecentralizedValue, DatabaseEventType, Table, HashMap, DatabaseRecord, DatabaseRecord)}).
      * They should not occur and represents a synchronization failure. Whereas
      * collisions are produced when users make modifications on the same data into
      * several peers. These kind of conflict are considered as normal by the system.
@@ -80,7 +80,7 @@ public interface DatabaseAnomaliesNotifier<DR extends DatabaseRecord, T extends 
      * @param record
      *            the transmitted record
      */
-    void anomalyDetected(AbstractDecentralizedID distantPeerID, AbstractDecentralizedID intermediatePeerID,
+    void anomalyDetected(DecentralizedValue distantPeerID, DecentralizedValue intermediatePeerID,
                          DatabaseWrapper.SynchronizationAnomalyType type, T concernedTable, Map<String, Object> primary_keys,
                          DR record);
 }

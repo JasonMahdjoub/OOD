@@ -46,7 +46,7 @@ import com.distrimind.ood.database.annotations.LoadToMemory;
 import com.distrimind.ood.database.annotations.Unique;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.SerializationDatabaseException;
-import com.distrimind.util.AbstractDecentralizedID;
+import com.distrimind.util.DecentralizedValue;
 
 /**
  * 
@@ -71,7 +71,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 		@Unique
 		@Field
-		private AbstractDecentralizedID hostID;
+		private DecentralizedValue hostID;
 
 		@Field
 		private String databasePackageNames;
@@ -127,11 +127,11 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			return id;
 		}
 
-		AbstractDecentralizedID getHostID() {
+		DecentralizedValue getHostID() {
 			return hostID;
 		}
 
-		protected void setHostID(AbstractDecentralizedID hostID) {
+		protected void setHostID(DecentralizedValue hostID) {
 			this.hostID = hostID;
 		}
 
@@ -277,10 +277,10 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 	}
 
 	static class HostPair {
-		private final AbstractDecentralizedID hostServer, hostToSynchronize;
+		private final DecentralizedValue hostServer, hostToSynchronize;
 		private final int hashCode;
 
-		HostPair(AbstractDecentralizedID hostServer, AbstractDecentralizedID hostToSynchronize) {
+		HostPair(DecentralizedValue hostServer, DecentralizedValue hostToSynchronize) {
 			if (hostServer == null)
 				throw new NullPointerException("hostServer");
 			if (hostToSynchronize == null)
@@ -308,11 +308,11 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			return hashCode;
 		}
 
-		AbstractDecentralizedID getHostServer() {
+		DecentralizedValue getHostServer() {
 			return hostServer;
 		}
 
-		AbstractDecentralizedID getHostToSynchronize() {
+		DecentralizedValue getHostToSynchronize() {
 			return hostToSynchronize;
 		}
 
@@ -331,11 +331,11 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		return false;
 	}
 
-	void validateDistantTransactions(AbstractDecentralizedID host,
-			final Map<AbstractDecentralizedID, Long> lastTransactionFieldsBetweenDistantHosts, boolean cleanNow)
+	void validateDistantTransactions(DecentralizedValue host,
+			final Map<DecentralizedValue, Long> lastTransactionFieldsBetweenDistantHosts, boolean cleanNow)
 			throws DatabaseException {
 		synchronized (this) {
-			for (Map.Entry<AbstractDecentralizedID, Long> e : lastTransactionFieldsBetweenDistantHosts.entrySet()) {
+			for (Map.Entry<DecentralizedValue, Long> e : lastTransactionFieldsBetweenDistantHosts.entrySet()) {
 				this.lastTransactionFieldsBetweenDistantHosts.put(new HostPair(host, e.getKey()), e.getValue());
 			}
 		}
@@ -344,11 +344,11 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		}
 	}
 
-	void actualizeLastTransactionID(final List<AbstractDecentralizedID> excludedHooks) throws DatabaseException {
+	void actualizeLastTransactionID(final List<DecentralizedValue> excludedHooks) throws DatabaseException {
 		actualizeLastTransactionID(excludedHooks, getIDTable().getLastTransactionID());
 	}
 
-	void actualizeLastTransactionID(final List<AbstractDecentralizedID> excludedHooks, final long lastTransactionID)
+	void actualizeLastTransactionID(final List<DecentralizedValue> excludedHooks, final long lastTransactionID)
 			throws DatabaseException {
 
 		final ArrayList<DatabaseHooksTable.Record> toUpdate = new ArrayList<>();
@@ -414,7 +414,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		}
 	}
 
-	Record getHook(AbstractDecentralizedID host) throws DatabaseException {
+	Record getHook(DecentralizedValue host) throws DatabaseException {
 		if (host == null)
 			throw new NullPointerException("host");
 		List<Record> l = getRecordsWithAllFields("hostID", host);
@@ -430,13 +430,13 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		return this.lastTransactionFieldsBetweenDistantHosts.get(new HostPair(hostSource, hostDestination));
 	}*/
 
-	Map<AbstractDecentralizedID, Long> getLastValidatedDistantTransactions() throws DatabaseException {
+	Map<DecentralizedValue, Long> getLastValidatedDistantTransactions() throws DatabaseException {
 		return getDatabaseWrapper()
-				.runSynchronizedTransaction(new SynchronizedTransaction<Map<AbstractDecentralizedID, Long>>() {
+				.runSynchronizedTransaction(new SynchronizedTransaction<Map<DecentralizedValue, Long>>() {
 
 					@Override
-					public Map<AbstractDecentralizedID, Long> run() throws Exception {
-						final Map<AbstractDecentralizedID, Long> res = new HashMap<>();
+					public Map<DecentralizedValue, Long> run() throws Exception {
+						final Map<DecentralizedValue, Long> res = new HashMap<>();
 
 						getRecords(new Filter<DatabaseHooksTable.Record>() {
 
@@ -474,35 +474,35 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 	IDTable getIDTable() throws DatabaseException {
 		if (idTable == null)
-			idTable = (IDTable) getDatabaseWrapper().getTableInstance(IDTable.class);
+			idTable = getDatabaseWrapper().getTableInstance(IDTable.class);
 		return idTable;
 	}
 
 	DatabaseTransactionEventsTable getDatabaseTransactionEventsTable() throws DatabaseException {
 		if (databaseTransactionEventsTable == null)
-			databaseTransactionEventsTable = (DatabaseTransactionEventsTable) getDatabaseWrapper()
+			databaseTransactionEventsTable = getDatabaseWrapper()
 					.getTableInstance(DatabaseTransactionEventsTable.class);
 		return databaseTransactionEventsTable;
 	}
 
 	DatabaseTransactionsPerHostTable getDatabaseTransactionsPerHostTable() throws DatabaseException {
 		if (databaseTransactionsPerHostTable == null)
-			databaseTransactionsPerHostTable = (DatabaseTransactionsPerHostTable) getDatabaseWrapper()
+			databaseTransactionsPerHostTable = getDatabaseWrapper()
 					.getTableInstance(DatabaseTransactionsPerHostTable.class);
 		return databaseTransactionsPerHostTable;
 	}
 
 	DatabaseDistantTransactionEvent getDatabaseDistantTransactionEvent() throws DatabaseException {
 		if (databaseDistantTransactionEvent == null)
-			databaseDistantTransactionEvent = (DatabaseDistantTransactionEvent) getDatabaseWrapper()
+			databaseDistantTransactionEvent = getDatabaseWrapper()
 					.getTableInstance(DatabaseDistantTransactionEvent.class);
 		return databaseDistantTransactionEvent;
 	}
 
 	@SuppressWarnings("UnusedReturnValue")
-	DatabaseHooksTable.Record addHooks(final AbstractDecentralizedID hostID, final boolean concernsDatabaseHost,
+	DatabaseHooksTable.Record addHooks(final DecentralizedValue hostID, final boolean concernsDatabaseHost,
 									   final boolean replaceDistantConflitualRecords,
-									   final ArrayList<AbstractDecentralizedID> hostAlreadySynchronized, final ArrayList<String> packages)
+									   final ArrayList<DecentralizedValue> hostAlreadySynchronized, final ArrayList<String> packages)
 			throws DatabaseException {
 
 		if (hostID == null)
@@ -575,7 +575,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 	}
 
-	DatabaseHooksTable.Record removeHooks(final AbstractDecentralizedID hostID, final Package... packages)
+	DatabaseHooksTable.Record removeHooks(final DecentralizedValue hostID, final Package... packages)
 			throws DatabaseException {
 		if (hostID == null)
 			throw new NullPointerException("hostID");

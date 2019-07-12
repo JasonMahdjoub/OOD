@@ -37,7 +37,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.util.AbstractDecentralizedID;
+import com.distrimind.util.DecentralizedValue;
 
 import java.util.HashMap;
 
@@ -73,8 +73,8 @@ public interface DatabaseCollisionsNotifier<DR extends DatabaseRecord, T extends
      * @throws DatabaseException
      *             if a problem occurs
      */
-    boolean collisionDetected(AbstractDecentralizedID distantPeerID,
-                              AbstractDecentralizedID intermediatePeerID, DatabaseEventType type, T concernedTable,
+    boolean collisionDetected(DecentralizedValue distantPeerID,
+                              DecentralizedValue intermediatePeerID, DatabaseEventType type, T concernedTable,
                               HashMap<String, Object> keys, DR newValues, DR actualValues)
             throws DatabaseException;
 

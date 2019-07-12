@@ -45,7 +45,7 @@ import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
 import com.distrimind.ood.database.fieldaccessors.ByteTabObjectConverter;
 import com.distrimind.ood.database.fieldaccessors.DefaultByteTabObjectConverter;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
-import com.distrimind.util.AbstractDecentralizedID;
+import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.FileTools;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.SecureRandomType;
@@ -420,7 +420,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			transferInProgress = _transferInProgress;
 		}
 
-		public AbstractDecentralizedID getHostID() {
+		public DecentralizedValue getHostID() {
 			return hook.getHostID();
 		}
 
@@ -447,7 +447,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		private DatabaseNotifier notifier = null;
 		private boolean canNotify = true;
 		private LinkedList<DatabaseEvent> events = new LinkedList<>();
-		protected HashMap<AbstractDecentralizedID, ConnectedPeers> initializedHooks = new HashMap<>();
+		protected HashMap<DecentralizedValue, ConnectedPeers> initializedHooks = new HashMap<>();
 		private Condition newEventCondition=locker.newCondition(); 
 		DatabaseSynchronizer() {
 		}
@@ -460,7 +460,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			return getHooksTransactionsTable().getLocalDatabaseHost() != null;
 		}
 
-		public boolean isInitialized(AbstractDecentralizedID hostID) {
+		public boolean isInitialized(DecentralizedValue hostID) {
 			return initializedHooks.get(hostID) != null;
 		}
 
@@ -548,7 +548,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		@SuppressWarnings("unlikely-arg-type")
-		public void initLocalHostID(AbstractDecentralizedID localHostID) throws DatabaseException {
+		public void initLocalHostID(DecentralizedValue localHostID) throws DatabaseException {
 			DatabaseHooksTable.Record local = getHooksTransactionsTable().getLocalDatabaseHost();
 			if (local != null && !local.getHostID().equals(localHostID))
 				throw new DatabaseException("The given local host id is different from the stored local host id !");
@@ -574,17 +574,17 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			
 		}
 
-		public void addHookForLocalDatabaseHost(AbstractDecentralizedID hostID, Package... databasePackages)
+		public void addHookForLocalDatabaseHost(DecentralizedValue hostID, Package... databasePackages)
 				throws DatabaseException {
 			ArrayList<String> packages = new ArrayList<>();
 			for (Package p : databasePackages) {
 				packages.add(p.getName());
 			}
-			getHooksTransactionsTable().addHooks(hostID, true, false, new ArrayList<AbstractDecentralizedID>(),
+			getHooksTransactionsTable().addHooks(hostID, true, false, new ArrayList<DecentralizedValue>(),
 					packages);
 		}
 
-		public HookAddRequest askForHookAddingAndSynchronizeDatabase(AbstractDecentralizedID hostID,
+		public HookAddRequest askForHookAddingAndSynchronizeDatabase(DecentralizedValue hostID,
 				boolean replaceDistantConflitualRecords, Package... packages) throws DatabaseException {
 			ArrayList<String> packagesString = new ArrayList<>();
 			for (Package p : packages)
@@ -593,10 +593,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					packagesString);
 		}
 
-		private HookAddRequest askForHookAddingAndSynchronizeDatabase(AbstractDecentralizedID hostID,
+		private HookAddRequest askForHookAddingAndSynchronizeDatabase(DecentralizedValue hostID,
 				boolean mustReturnMessage, boolean replaceDistantConflitualRecords, ArrayList<String> packages)
 				throws DatabaseException {
-			final ArrayList<AbstractDecentralizedID> hostAlreadySynchronized = new ArrayList<>();
+			final ArrayList<DecentralizedValue> hostAlreadySynchronized = new ArrayList<>();
 			runTransaction(new Transaction() {
 				
 				@Override
@@ -661,7 +661,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		 * databasePackages); }
 		 */
 
-		public void removeHook(AbstractDecentralizedID hostID, Package... databasePackages) throws DatabaseException {
+		public void removeHook(DecentralizedValue hostID, Package... databasePackages) throws DatabaseException {
 			getHooksTransactionsTable().removeHooks(hostID, databasePackages);
 			isReliedToDistantHook();
 		}
@@ -673,7 +673,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 		
 
-		public long getLastValidatedSynchronization(AbstractDecentralizedID hostID) throws DatabaseException {
+		public long getLastValidatedSynchronization(DecentralizedValue hostID) throws DatabaseException {
 			/*
 			 * ConnectedPeers peer=null; synchronized(this) {
 			 * peer=initializedHooks.get(hostID); } DatabaseHooksTable.Record r=null; if
@@ -728,7 +728,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			
 		}
 
-		void validateLastSynchronization(AbstractDecentralizedID hostID, long lastTransferedTransactionID)
+		void validateLastSynchronization(DecentralizedValue hostID, long lastTransferedTransactionID)
 				throws DatabaseException {
 			if (hostID == null)
 				throw new NullPointerException("hostID");
@@ -796,14 +796,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		private void synchronizeMetaData() throws DatabaseException {
-			Map<AbstractDecentralizedID, Long> lastIds = getHooksTransactionsTable()
+			Map<DecentralizedValue, Long> lastIds = getHooksTransactionsTable()
 					.getLastValidatedDistantTransactions();
 			
 			try {
 				lockWrite();
-				for (AbstractDecentralizedID host : lastIds.keySet()) {
+				for (DecentralizedValue host : lastIds.keySet()) {
 					if (isInitialized(host)) {
-                        Map<AbstractDecentralizedID, Long> map = new HashMap<>(lastIds);
+                        Map<DecentralizedValue, Long> map = new HashMap<>(lastIds);
 						// map.remove(hostID);
 						map.remove(host);
 						if (map.size() > 0) {
@@ -908,7 +908,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			
 		}
 
-		public void deconnectHook(final AbstractDecentralizedID hostID) throws DatabaseException {
+		public void deconnectHook(final DecentralizedValue hostID) throws DatabaseException {
 			if (hostID == null)
 				throw new NullPointerException("hostID");
 
@@ -945,7 +945,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		@SuppressWarnings("unlikely-arg-type")
-		public void initHook(final AbstractDecentralizedID hostID, final long lastValidatedTransacionID)
+		public void initHook(final DecentralizedValue hostID, final long lastValidatedTransacionID)
 				throws DatabaseException {
 			if (hostID == null)
 				throw new NullPointerException("hostID");
@@ -1115,32 +1115,32 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		 */
 		private static final long serialVersionUID = -925935481339233901L;
 
-		protected final AbstractDecentralizedID hostIDSource, hostIDDestination;
-		final Map<AbstractDecentralizedID, Long> lastTransactionFieldsBetweenDistantHosts;
+		protected final DecentralizedValue hostIDSource, hostIDDestination;
+		final Map<DecentralizedValue, Long> lastTransactionFieldsBetweenDistantHosts;
 
-		DatabaseTransactionsIdentifiersToSynchronize(AbstractDecentralizedID hostIDSource,
-				AbstractDecentralizedID hostIDDestination,
-				Map<AbstractDecentralizedID, Long> lastTransactionFieldsBetweenDistantHosts) {
+		DatabaseTransactionsIdentifiersToSynchronize(DecentralizedValue hostIDSource,
+													 DecentralizedValue hostIDDestination,
+				Map<DecentralizedValue, Long> lastTransactionFieldsBetweenDistantHosts) {
 			this.hostIDSource = hostIDSource;
 			this.hostIDDestination = hostIDDestination;
 			this.lastTransactionFieldsBetweenDistantHosts = lastTransactionFieldsBetweenDistantHosts;
 		}
 
 		@Override
-		public AbstractDecentralizedID getHostDestination() {
+		public DecentralizedValue getHostDestination() {
 			return hostIDDestination;
 		}
 
 		@Override
-		public AbstractDecentralizedID getHostSource() {
+		public DecentralizedValue getHostSource() {
 			return hostIDSource;
 		}
 
-		public Map<AbstractDecentralizedID, Long> getLastDistantTransactionIdentifiers() {
+		public Map<DecentralizedValue, Long> getLastDistantTransactionIdentifiers() {
 			return lastTransactionFieldsBetweenDistantHosts;
 		}
 
-		public AbstractDecentralizedID getConcernedHost() {
+		public DecentralizedValue getConcernedHost() {
 			return getHostDestination();
 		}
 
@@ -1152,10 +1152,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		 */
 		private static final long serialVersionUID = 2920925585457063201L;
 
-		protected final AbstractDecentralizedID hostIDSource, hostIDDestination;
+		protected final DecentralizedValue hostIDSource, hostIDDestination;
 		protected final long lastValidatedTransaction;
 
-		TransactionConfirmationEvents(AbstractDecentralizedID _hostIDSource, AbstractDecentralizedID _hostIDDestination,
+		TransactionConfirmationEvents(DecentralizedValue _hostIDSource, DecentralizedValue _hostIDDestination,
 				long _lastValidatedTransaction) {
 			super();
 			hostIDSource = _hostIDSource;
@@ -1164,12 +1164,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		@Override
-		public AbstractDecentralizedID getHostDestination() {
+		public DecentralizedValue getHostDestination() {
 			return hostIDDestination;
 		}
 
 		@Override
-		public AbstractDecentralizedID getHostSource() {
+		public DecentralizedValue getHostSource() {
 			return hostIDSource;
 		}
 
@@ -1184,10 +1184,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		 * 
 		 */
 		private static final long serialVersionUID = 240192427146753618L;
-		protected final AbstractDecentralizedID hostIDSource, hostIDDestination;
+		protected final DecentralizedValue hostIDSource, hostIDDestination;
 		protected final long lastValidatedTransaction;
 
-		LastIDCorrection(AbstractDecentralizedID _hostIDSource, AbstractDecentralizedID _hostIDDestination,
+		LastIDCorrection(DecentralizedValue _hostIDSource, DecentralizedValue _hostIDDestination,
 				long _lastValidatedTransaction) {
 			super();
 			hostIDSource = _hostIDSource;
@@ -1196,12 +1196,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		@Override
-		public AbstractDecentralizedID getHostDestination() {
+		public DecentralizedValue getHostDestination() {
 			return hostIDDestination;
 		}
 
 		@Override
-		public AbstractDecentralizedID getHostSource() {
+		public DecentralizedValue getHostSource() {
 			return hostIDSource;
 		}
 
@@ -1218,11 +1218,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		private static final long serialVersionUID = -7594047077302832978L;
 		protected final transient DatabaseHooksTable.Record hook;
 		protected final int hookID;
-		protected final AbstractDecentralizedID hostIDSource, hostIDDestination;
+		protected final DecentralizedValue hostIDSource, hostIDDestination;
 		private long lastTransactionIDIncluded;
 		final int maxEventsRecords;
 
-		DatabaseEventsToSynchronize(AbstractDecentralizedID hostIDSource, DatabaseHooksTable.Record hook,
+		DatabaseEventsToSynchronize(DecentralizedValue hostIDSource, DatabaseHooksTable.Record hook,
 				long lastTransactionIDIncluded, int maxEventsRecords) {
 			this.hook = hook;
 			this.hookID = hook.getID();
@@ -1233,12 +1233,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		@Override
-		public AbstractDecentralizedID getHostDestination() {
+		public DecentralizedValue getHostDestination() {
 			return hostIDDestination;
 		}
 
 		@Override
-		public AbstractDecentralizedID getHostSource() {
+		public DecentralizedValue getHostSource() {
 			return hostIDSource;
 		}
 
@@ -1786,10 +1786,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 									}
 								}
 							}
-
 						}
 						if (eventr != null) {
-							Set<AbstractDecentralizedID> hosts = event.getHostsDestination();
+							Set<DecentralizedValue> hosts = event.getHostsDestination();
 							if (hosts != null)
 								transaction.concernedHosts.addAll(hosts);
 							eventr.setPosition(actualPosition.getAndIncrement());
@@ -1903,7 +1902,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 										}, "transaction=%transaction" + sb.toString(), parameters));
 							}
 							if (eventr.get() != null) {
-								Set<AbstractDecentralizedID> hosts = event.getHostsDestination();
+								Set<DecentralizedValue> hosts = event.getHostsDestination();
 								if (hosts != null)
 									transaction.concernedHosts.addAll(hosts);
                             eventr.get().setPosition(actualPosition.getAndIncrement());
@@ -2245,7 +2244,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	private static class TransactionPerDatabase {
 		DatabaseTransactionEventsTable.Record transaction;
 		AtomicInteger eventsNumber;
-		final Set<AbstractDecentralizedID> concernedHosts;
+		final Set<DecentralizedValue> concernedHosts;
 		final ArrayList<DatabaseEventsTable.Record> events;
 
 		TransactionPerDatabase(DatabaseTransactionEventsTable.Record transaction, int maxEventsNumberKeepedIntoMemory) {

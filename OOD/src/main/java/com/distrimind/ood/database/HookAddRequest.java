@@ -39,6 +39,7 @@ package com.distrimind.ood.database;
 import java.util.ArrayList;
 
 import com.distrimind.util.AbstractDecentralizedID;
+import com.distrimind.util.DecentralizedValue;
 
 /**
  * 
@@ -52,15 +53,15 @@ public class HookAddRequest extends DatabaseEvent implements DatabaseEventToSend
 	 */
 	private static final long serialVersionUID = 3238906777698759525L;
 
-	private AbstractDecentralizedID hostSource;
-	private AbstractDecentralizedID hostDestination;
+	private DecentralizedValue hostSource;
+	private DecentralizedValue hostDestination;
 	private ArrayList<String> packagesToSynchronize;
-	private ArrayList<AbstractDecentralizedID> hostAlreadySynchronized;
+	private ArrayList<DecentralizedValue> hostAlreadySynchronized;
 	private boolean mustReturnMessage;
 	private boolean replaceDistantConflictualData;
 
-	HookAddRequest(AbstractDecentralizedID _hostSource, AbstractDecentralizedID _hostDestination,
-			ArrayList<String> packagesToSynchronize, ArrayList<AbstractDecentralizedID> hostAlreadySynchronized,
+	HookAddRequest(DecentralizedValue _hostSource, DecentralizedValue _hostDestination,
+			ArrayList<String> packagesToSynchronize, ArrayList<DecentralizedValue> hostAlreadySynchronized,
 			boolean mustReturnMessage, boolean replaceDistantConflictualData) {
 		super();
 		if (_hostSource == null)
@@ -76,16 +77,16 @@ public class HookAddRequest extends DatabaseEvent implements DatabaseEventToSend
 	}
 
 	@Override
-	public AbstractDecentralizedID getHostDestination() {
+	public DecentralizedValue getHostDestination() {
 		return hostDestination;
 	}
 
 	@Override
-	public AbstractDecentralizedID getHostSource() {
+	public DecentralizedValue getHostSource() {
 		return hostSource;
 	}
 
-	public ArrayList<AbstractDecentralizedID> getHostsAlreadySynchronized() {
+	public ArrayList<DecentralizedValue> getHostsAlreadySynchronized() {
 		return hostAlreadySynchronized;
 	}
 

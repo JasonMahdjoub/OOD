@@ -36,8 +36,8 @@ import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.*;
 import com.distrimind.ood.util.CachedInputStream;
 import com.distrimind.ood.util.CachedOutputStream;
-import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.Bits;
+import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.RandomInputStream;
 import com.distrimind.util.io.RandomOutputStream;
 
@@ -267,7 +267,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 	
 	
-	protected boolean detectCollisionAndGetObsoleteEventsToRemove(final AbstractDecentralizedID comingFrom,
+	protected boolean detectCollisionAndGetObsoleteEventsToRemove(final DecentralizedValue comingFrom,
 			final String concernedTable, final byte[] keys, final boolean force,
 			final Set<DatabaseTransactionEventsTable.Record> toRemove)
 			throws DatabaseException {
@@ -296,15 +296,15 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 		return collisionDetected.get();
 	}
 
-	protected AbstractDecentralizedID detectCollisionAndGetObsoleteDistantEventsToRemove(
-			final AbstractDecentralizedID comingFrom, final String concernedTable, final byte[] keys,
+	protected DecentralizedValue detectCollisionAndGetObsoleteDistantEventsToRemove(
+			final DecentralizedValue comingFrom, final String concernedTable, final byte[] keys,
 			final boolean force,
 			final Set<DatabaseDistantTransactionEvent.Record> recordsToRemove)
 			throws DatabaseException {
 		recordsToRemove.clear();
 		if (force)
 			return null;
-		final AtomicReference<AbstractDecentralizedID> collision = new AtomicReference<>(null);
+		final AtomicReference<DecentralizedValue> collision = new AtomicReference<>(null);
 		getDatabaseDistantEventsTable().getRecords(new Filter<DatabaseDistantEventsTable.Record>() {
 
 			@Override
@@ -349,7 +349,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 			getDatabaseDistantTransactionEvent().removeRecordsWithCascade(indirectTransactionToRemove);
 	}*/
 
-	void alterDatabase(final AbstractDecentralizedID comingFrom, final RandomInputStream inputStream)
+	void alterDatabase(final DecentralizedValue comingFrom, final RandomInputStream inputStream)
 			throws DatabaseException {
 		alterDatabase(comingFrom, comingFrom, inputStream);
 	}
@@ -357,7 +357,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 			final AtomicReference<DatabaseHooksTable.Record> fromHook,
 			final DatabaseTransactionEventsTable.AbstractRecord transaction,
 			final DatabaseEventsTable.DatabaseEventsIterator iterator, final AtomicLong lastValidatedTransaction,
-			final HashSet<AbstractDecentralizedID> hooksToNotify) throws DatabaseException {
+			final HashSet<DecentralizedValue> hooksToNotify) throws DatabaseException {
 			getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
 
 				@SuppressWarnings("unchecked")
@@ -381,10 +381,10 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 						} else {
 							distantTransaction = new DatabaseDistantTransactionEvent.Record(transaction.getID(),
 									getIDTable().getLastTransactionID(), fromHook.get(), false, null, false);
-							final List<AbstractDecentralizedID> concernedHosts = ((DatabaseTransactionEventsTable.Record) transaction)
+							final List<DecentralizedValue> concernedHosts = ((DatabaseTransactionEventsTable.Record) transaction)
 									.getConcernedHosts();
 							if (transaction.isForce() || concernedHosts.size() > 0) {
-								final List<AbstractDecentralizedID> l = new ArrayList<>();
+								final List<DecentralizedValue> l = new ArrayList<>();
 								getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
 
 									@Override
@@ -452,7 +452,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 														event.getConcernedTable(), event.getConcernedSerializedPrimaryKey(),
 														transaction.isForce(), r);
 												Set<DatabaseDistantTransactionEvent.Record> ir = new HashSet<>();
-												AbstractDecentralizedID indirectCollisionWith = null;
+												DecentralizedValue indirectCollisionWith = null;
 												if (!collision) {
 													indirectCollisionWith = detectCollisionAndGetObsoleteDistantEventsToRemove(
 															fromHook.get().getHostID(), event.getConcernedTable(),
@@ -823,7 +823,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 	}
 
 
-	private void alterDatabase(final AbstractDecentralizedID directPeerID, final AbstractDecentralizedID comingFrom,
+	private void alterDatabase(final DecentralizedValue directPeerID, final DecentralizedValue comingFrom,
 			final RandomInputStream ois) throws DatabaseException {
 
 		if (comingFrom == null)
@@ -845,7 +845,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 		final DatabaseHooksTable.Record directPeer = hooks.get(0);
 		final AtomicLong lastValidatedTransaction = new AtomicLong(-1);
-		final HashSet<AbstractDecentralizedID> hooksToNotify = new HashSet<>();
+		final HashSet<DecentralizedValue> hooksToNotify = new HashSet<>();
 
 		try  {
 			final AtomicInteger next = new AtomicInteger(ois.readByte());
@@ -886,7 +886,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 								getDatabaseHooksTable().getLocalDatabaseHost().getHostID(), comingFrom,
 								lastValidatedTransaction.get()));
 			}
-			for (AbstractDecentralizedID id : hooksToNotify) {
+			for (DecentralizedValue id : hooksToNotify) {
 				DatabaseHooksTable.Record h = getDatabaseHooksTable().getHook(id);
 				getDatabaseWrapper().getSynchronizer().sendLastValidatedIDIfConnected(h);
 			}

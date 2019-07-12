@@ -301,13 +301,13 @@ public abstract class TestDatabase {
 	public void firstLoad() throws IllegalArgumentException, DatabaseException {
 
 		sql_db.loadDatabase(dbConfig1, true);
-		table2 = (Table2) sql_db.getTableInstance(Table2.class);
-		table1 = (Table1) sql_db.getTableInstance(Table1.class);
-		table3 = (Table3) sql_db.getTableInstance(Table3.class);
-		table4 = (Table4) sql_db.getTableInstance(Table4.class);
-		table5 = (Table5) sql_db.getTableInstance(Table5.class);
-		table6 = (Table6) sql_db.getTableInstance(Table6.class);
-		table7 = (Table7) sql_db.getTableInstance(Table7.class);
+		table2 = sql_db.getTableInstance(Table2.class);
+		table1 = sql_db.getTableInstance(Table1.class);
+		table3 = sql_db.getTableInstance(Table3.class);
+		table4 = sql_db.getTableInstance(Table4.class);
+		table5 = sql_db.getTableInstance(Table5.class);
+		table6 = sql_db.getTableInstance(Table6.class);
+		table7 = sql_db.getTableInstance(Table7.class);
 		//Assert.assertEquals(table3.getSqlTableName(), Table3.class.getAnnotation(TableName.class).sqlTableName().toUpperCase());
 		boolean found=false;
 		for (FieldAccessor fa : table2.getFieldAccessors()) {

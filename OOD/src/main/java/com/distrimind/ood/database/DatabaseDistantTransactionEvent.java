@@ -35,8 +35,8 @@ import com.distrimind.ood.database.annotations.ForeignKey;
 import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.SerializationDatabaseException;
-import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.Bits;
+import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.RandomInputStream;
 import com.distrimind.util.io.RandomOutputStream;
 
@@ -146,12 +146,12 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 			localID = _localID;
 		}
 
-		void setPeersInformed(Collection<AbstractDecentralizedID> peers) {
+		void setPeersInformed(Collection<DecentralizedValue> peers) {
 			byte[][] bytes = new byte[peers.size()][];
 			int i = 0;
 			int size = 2 + peers.size() * 2;
-			for (AbstractDecentralizedID id : peers) {
-				bytes[i] = id.encode();
+			for (DecentralizedValue id : peers) {
+				bytes[i] = id.encodeWithDefaultParameters();
 				size += bytes[i++].length + 2;
 				if (size > 32768) {
 					peersInformedFull = true;
@@ -171,11 +171,11 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 			}
 		}
 
-		List<AbstractDecentralizedID> getPeersInformed() throws SerializationDatabaseException {
+		List<DecentralizedValue> getPeersInformed() throws SerializationDatabaseException {
 			if (peersInformed == null)
 				return new ArrayList<>(0);
 			short nbPeers = Bits.getShort(peersInformed, 0);
-			ArrayList<AbstractDecentralizedID> res = new ArrayList<>(nbPeers);
+			ArrayList<DecentralizedValue> res = new ArrayList<>(nbPeers);
 			int off = 2;
 			for (int i = 0; i < nbPeers; i++) {
 				short size = Bits.getShort(peersInformed, 2);
@@ -183,17 +183,17 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 					throw new SerializationDatabaseException("Invalid data (hook id size est greater to 1024)");
 
 				off += 2;
-				res.add(AbstractDecentralizedID.decode(peersInformed, off, size));
+				res.add(DecentralizedValue.decode(peersInformed, off, size));
 				off += size;
 			}
 			return res;
 		}
 
 		boolean addNewHostIDAndTellsIfNewPeersCanBeConcerned(DatabaseHooksTable hooks,
-				AbstractDecentralizedID newHostID) throws DatabaseException {
+															 DecentralizedValue newHostID) throws DatabaseException {
 			if (peersInformedFull)
 				return false;
-			final List<AbstractDecentralizedID> l = getPeersInformed();
+			final List<DecentralizedValue> l = getPeersInformed();
 			if (!newHostID.equals(hook.getHostID())) {
 
 				if (!l.contains(newHostID)) {
@@ -220,12 +220,12 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 			return res.get();
 		}
 
-		boolean isConcernedBy(AbstractDecentralizedID newHostID) throws SerializationDatabaseException {
+		boolean isConcernedBy(DecentralizedValue newHostID) throws SerializationDatabaseException {
 			if (peersInformedFull)
 				return false;
 			if (newHostID.equals(hook.getHostID()))
 				return false;
-			List<AbstractDecentralizedID> l = getPeersInformed();
+			List<DecentralizedValue> l = getPeersInformed();
 			return !l.contains(newHostID);
 		}
 
@@ -300,9 +300,9 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 			byte[] b = new byte[size];
 			if (ois.read(b) != size)
 				throw new SerializationDatabaseException("Impossible to read the expected bytes number : " + size);
-			AbstractDecentralizedID hookID;
+			DecentralizedValue hookID;
 			try {
-				hookID = AbstractDecentralizedID.decode(b);
+				hookID = DecentralizedValue.decode(b);
 			} catch (Exception e) {
 				throw new SerializationDatabaseException("Impossible to get the hook identifier ! ", e);
 			}
@@ -352,7 +352,7 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 
 	DatabaseDistantEventsTable getDatabaseDistantEventsTable() throws DatabaseException {
 		if (databaseDistantEventsTable == null)
-			databaseDistantEventsTable = (DatabaseDistantEventsTable) getDatabaseWrapper()
+			databaseDistantEventsTable = getDatabaseWrapper()
 					.getTableInstance(DatabaseDistantEventsTable.class);
 		return databaseDistantEventsTable;
 	}
@@ -390,7 +390,7 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 						} else if (_record.getLocalID() == fromTransactionID) {
 							if (_record.isConcernedBy(hook.getHostID())) {
 								oos.writeByte(DatabaseTransactionsPerHostTable.EXPORT_INDIRECT_TRANSACTION);
-								byte[] b = _record.getHook().getHostID().encode();
+								byte[] b = _record.getHook().getHostID().encodeWithDefaultParameters();
 								oos.writeShort((short) b.length);
 								oos.write(b);
 								oos.writeLong(_record.getID());
