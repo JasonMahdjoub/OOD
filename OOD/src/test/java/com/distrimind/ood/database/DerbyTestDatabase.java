@@ -147,6 +147,11 @@ public class DerbyTestDatabase extends TestDatabase {
 	}
 
 	@Test(dependsOnMethods = { "alterRecord" })
+	public void testCursor() throws DatabaseException {
+		super.testCursor();
+	}
+
+	@Test(dependsOnMethods = { "testCursor" })
 	public void addSecondRecord() throws DatabaseException {
 		super.addSecondRecord();
 	}

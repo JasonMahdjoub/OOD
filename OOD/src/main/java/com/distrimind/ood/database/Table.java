@@ -2641,6 +2641,53 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 *
 	 * This function does not returns ordered records.
 	 *
+	 * @return a cursor which point the results of the asked query
+	 */
+	public Cursor<T> getCursor()
+	{
+		return new Cursor<>(this, null, null, Cursor.DEFAULT_CACHE_SIZE, null );
+	}
+	/**
+	 * Cursors enable to parse query data randomly without loading data into memory.
+	 * Query data is however loaded into cache memory in order to get better performance.
+	 * Cursors can be used with graphical list with does need to screen all data in one time.
+	 *
+	 * This function does not returns ordered records.
+	 * @param cacheSize the data stored in cache during cursor parsing
+	 *
+	 * @return a cursor which point the results of the asked query
+	 */
+	public Cursor<T> getCursor(int cacheSize)
+	{
+		return new Cursor<>(this, null, null, cacheSize, null );
+	}
+
+	/**
+	 * Cursors enable to parse query data randomly without loading data into memory.
+	 * Query data is however loaded into cache memory in order to get better performance.
+	 * Cursors can be used with graphical list with does need to screen all data in one time.
+	 *
+	 * This function does not returns ordered records.
+	 *
+	 * @param whereCondition
+	 *            the sql equivalent where condition
+	 * @param parameters
+	 *            the sql parameters used for the where condition
+	 * @return a cursor which point the results of the asked query
+	 */
+
+	public Cursor<T> getCursor(String whereCondition, Map<String, Object> parameters)
+	{
+		return new Cursor<>(this, whereCondition, parameters, Cursor.DEFAULT_CACHE_SIZE, null );
+	}
+
+	/**
+	 * Cursors enable to parse query data randomly without loading data into memory.
+	 * Query data is however loaded into cache memory in order to get better performance.
+	 * Cursors can be used with graphical list with does need to screen all data in one time.
+	 *
+	 * This function does not returns ordered records.
+	 *
 	 * @param whereCondition
 	 *            the sql equivalent where condition
 	 * @param parameters
@@ -2652,6 +2699,83 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	public Cursor<T> getCursor(String whereCondition, Map<String, Object> parameters, int cacheSize)
 	{
 		return new Cursor<>(this, whereCondition, parameters, cacheSize, null );
+	}
+
+	/**
+	 * Cursors enable to parse query data randomly without loading data into memory.
+	 * Query data is however loaded into cache memory in order to get better performance.
+	 * Cursors can be used with graphical list with does need to screen all data in one time.
+	 *
+	 * This function returns ordered records.
+	 *
+	 * @param whereCondition
+	 *            the sql equivalent where condition
+	 * @param parameters
+	 *            the sql parameters used for the where condition
+	 * @param ascendant
+	 *            this parameter must be true if the records should be sorted from
+	 *            the lower value to the highest value, false else.
+	 * @param fields
+	 *            the first given field corresponds to the field by which the table
+	 *            is sorted. If two records are equals, then the second given field
+	 *            is used, etc. It must have at minimum one field. Only comparable
+	 *            fields are authorized. It is possible to sort fields according
+	 *            records pointed by foreign keys. In this case, to sort according
+	 *            the field A of the foreign key FK1, please enter "FK1.A".
+	 * @return a cursor which point the ordered results of the asked query
+	 */
+	public Cursor<T> getCursorWithOrderedResults(String whereCondition, Map<String, Object> parameters, boolean ascendant, String ... fields)
+	{
+		return new Cursor<>(this, whereCondition, parameters, Cursor.DEFAULT_CACHE_SIZE, ascendant, fields);
+	}
+
+	/**
+	 * Cursors enable to parse query data randomly without loading data into memory.
+	 * Query data is however loaded into cache memory in order to get better performance.
+	 * Cursors can be used with graphical list with does need to screen all data in one time.
+	 *
+	 * This function returns ordered records.
+	 *
+	 * @param ascendant
+	 *            this parameter must be true if the records should be sorted from
+	 *            the lower value to the highest value, false else.
+	 * @param fields
+	 *            the first given field corresponds to the field by which the table
+	 *            is sorted. If two records are equals, then the second given field
+	 *            is used, etc. It must have at minimum one field. Only comparable
+	 *            fields are authorized. It is possible to sort fields according
+	 *            records pointed by foreign keys. In this case, to sort according
+	 *            the field A of the foreign key FK1, please enter "FK1.A".
+	 * @return a cursor which point the ordered results of the asked query
+	 */
+	public Cursor<T> getCursorWithOrderedResults(boolean ascendant, String ... fields)
+	{
+		return new Cursor<>(this, null, null, Cursor.DEFAULT_CACHE_SIZE, ascendant, fields);
+	}
+
+	/**
+	 * Cursors enable to parse query data randomly without loading data into memory.
+	 * Query data is however loaded into cache memory in order to get better performance.
+	 * Cursors can be used with graphical list with does need to screen all data in one time.
+	 *
+	 * This function returns ordered records.
+	 *
+	 * @param cacheSize the data stored in cache during cursor parsing
+	 * @param ascendant
+	 *            this parameter must be true if the records should be sorted from
+	 *            the lower value to the highest value, false else.
+	 * @param fields
+	 *            the first given field corresponds to the field by which the table
+	 *            is sorted. If two records are equals, then the second given field
+	 *            is used, etc. It must have at minimum one field. Only comparable
+	 *            fields are authorized. It is possible to sort fields according
+	 *            records pointed by foreign keys. In this case, to sort according
+	 *            the field A of the foreign key FK1, please enter "FK1.A".
+	 * @return a cursor which point the ordered results of the asked query
+	 */
+	public Cursor<T> getCursorWithOrderedResults(int cacheSize, boolean ascendant, String ... fields)
+	{
+		return new Cursor<>(this, null, null, cacheSize, ascendant, fields);
 	}
 
 	/**

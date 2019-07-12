@@ -47,6 +47,7 @@ import java.util.Map;
  * @since Utils 2.0.0
  */
 public class Cursor<T extends DatabaseRecord> {
+	public static final int DEFAULT_CACHE_SIZE=64;
 	private Table<T> table;
 	private String whereClause;
 	private int cacheSize;
@@ -76,22 +77,31 @@ public class Cursor<T extends DatabaseRecord> {
 	public long getTotalRecordsNumber() throws DatabaseException {
 		if (recordsNumber==-1)
 		{
-			recordsNumber=table.getRecordsNumber(whereClause, parameters);
+			if (whereClause==null)
+				recordsNumber=table.getRecordsNumber();
+			else
+				recordsNumber=table.getRecordsNumber(whereClause, parameters);
 		}
 		return recordsNumber;
 	}
 	public void refreshData()
 	{
+		recordsNumber=-1;
 		this.position=-1;
 		this.records=null;
 	}
 
 	private void refreshData(int position) throws DatabaseException {
 		this.position=position-cacheSize/2;
-		if (ascendant==null)
-			records=table.getPaginedRecords(position, cacheSize, whereClause, parameters);
-		else
-			records=table.getPaginedOrderedRecords(position, cacheSize, whereClause, parameters, ascendant, fields);
+		if (ascendant==null) {
+			if (whereClause==null)
+				records = table.getPaginedRecords(position, cacheSize);
+			else
+				records = table.getPaginedRecords(position, cacheSize, whereClause, parameters);
+		}
+		else {
+			records = table.getPaginedOrderedRecords(position, cacheSize, whereClause, parameters, ascendant, fields);
+		}
 	}
 	public T getRecord(int position) throws DatabaseException {
 		if (this.position==-1 || position<this.position || position>this.position+cacheSize)

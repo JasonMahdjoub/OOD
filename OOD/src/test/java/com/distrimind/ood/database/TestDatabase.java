@@ -408,21 +408,21 @@ public abstract class TestDatabase {
 		sql_db.loadDatabase(dbConfig1, false);
 		sql_db.loadDatabase(dbConfig2, true);
 
-		table2 = (Table2) sql_db.getTableInstance(Table2.class);
-		table1 = (Table1) sql_db.getTableInstance(Table1.class);
-		table3 = (Table3) sql_db.getTableInstance(Table3.class);
-		table4 = (Table4) sql_db.getTableInstance(Table4.class);
-		table5 = (Table5) sql_db.getTableInstance(Table5.class);
-		table6 = (Table6) sql_db.getTableInstance(Table6.class);
-		table7 = (Table7) sql_db.getTableInstance(Table7.class);
+		table2 = sql_db.getTableInstance(Table2.class);
+		table1 = sql_db.getTableInstance(Table1.class);
+		table3 = sql_db.getTableInstance(Table3.class);
+		table4 = sql_db.getTableInstance(Table4.class);
+		table5 = sql_db.getTableInstance(Table5.class);
+		table6 = sql_db.getTableInstance(Table6.class);
+		table7 = sql_db.getTableInstance(Table7.class);
 		sql_dbb = getDatabaseWrapperInstanceB();
 		sql_dbb.loadDatabase(dbConfig1, true);
-		table2b = (Table2) sql_dbb.getTableInstance(Table2.class);
-		table1b = (Table1) sql_dbb.getTableInstance(Table1.class);
-		table3b = (Table3) sql_dbb.getTableInstance(Table3.class);
-		table4b = (Table4) sql_dbb.getTableInstance(Table4.class);
-		table5b = (Table5) sql_dbb.getTableInstance(Table5.class);
-		table6b = (Table6) sql_dbb.getTableInstance(Table6.class);
+		table2b = sql_dbb.getTableInstance(Table2.class);
+		table1b = sql_dbb.getTableInstance(Table1.class);
+		table3b = sql_dbb.getTableInstance(Table3.class);
+		table4b = sql_dbb.getTableInstance(Table4.class);
+		table5b = sql_dbb.getTableInstance(Table5.class);
+		table6b = sql_dbb.getTableInstance(Table6.class);
 
         Assert.assertEquals(sql_db, sql_db);
         assertNotEquals(sql_db, sql_dbb);
@@ -604,8 +604,44 @@ public abstract class TestDatabase {
             Assert.assertEquals(r2.byte_array_value[i], tab[i]);
 		
 	}
-
 	@Test(dependsOnMethods = { "alterRecord" })
+	public void testCursor() throws DatabaseException {
+		testCursor(table1);
+		testCursor(table2);
+		testCursor(table3);
+		testCursor(table4);
+		testCursor(table1, "int_value");
+		testCursor(table3, "int_value");
+	}
+
+	private static <T extends DatabaseRecord> void testCursor(Table<T> table, String ... fields) throws DatabaseException {
+		List<T> expected1=table.getRecords();
+		Cursor<T> c=fields.length>0?table.getCursorWithOrderedResults(true, fields):table.getCursor();
+
+		Assert.assertEquals(c.getTotalRecordsNumber(), expected1.size());
+
+
+
+		for(int i=0;;i++)
+		{
+
+			T r=c.getRecord(i);
+			if (r==null)
+				break;
+			boolean found=false;
+			for (T r2 : expected1)
+			{
+				if (table.equalsAllFields(r2, r))
+				{
+					found=true;
+					break;
+				}
+			}
+			Assert.assertTrue(found);
+		}
+	}
+
+	@Test(dependsOnMethods = { "testCursor" })
 	public void addSecondRecord() throws DatabaseException {
 		try {
 			table1.addRecord((Map<String, Object>) null);
