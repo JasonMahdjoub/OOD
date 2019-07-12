@@ -839,7 +839,7 @@ public class TestDatabaseBackupRestore {
 
 	}*/
 
-	@Test(dataProvider = "DataProvIntBackupRestore", dependsOnMethods = "testExternalBackupAndRestore")
+	@Test(dataProvider = "DataProvIntBackupRestore", dependsOnMethods = "testExternalBackupAndRestore", invocationCount = 4)
 	public void testInternalBackupAndRestore(boolean useSeveralRestorationPoint) throws DatabaseException, InterruptedException {
 		testExternalBackupAndRestore(useSeveralRestorationPoint, true, false, false);
 	}
