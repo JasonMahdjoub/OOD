@@ -36,10 +36,11 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
-import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.io.*;
 
 /**
  * 
@@ -48,10 +49,6 @@ import com.distrimind.util.DecentralizedValue;
  * @since OOD 2.0
  */
 public class HookAddRequest extends DatabaseEvent implements DatabaseEventToSend {
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 3238906777698759525L;
 
 	private DecentralizedValue hostSource;
 	private DecentralizedValue hostDestination;
@@ -59,6 +56,57 @@ public class HookAddRequest extends DatabaseEvent implements DatabaseEventToSend
 	private ArrayList<DecentralizedValue> hostAlreadySynchronized;
 	private boolean mustReturnMessage;
 	private boolean replaceDistantConflictualData;
+
+	@Override
+	public int getInternalSerializedSize() {
+		int res=10+SerializationTools.getInternalSize(hostSource, 0)
+				+SerializationTools.getInternalSize(hostDestination, 0);
+		for (String s : packagesToSynchronize)
+			res+=SerializationTools.getInternalSize(s, SerializationTools.MAX_CLASS_LENGTH);
+		for (DecentralizedValue dv : hostAlreadySynchronized)
+			res+=SerializationTools.getInternalSize(dv, 0);
+		return res;
+	}
+
+	@Override
+	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
+		out.writeObject(hostSource, false);
+		out.writeObject(hostDestination, false);
+		out.writeInt(packagesToSynchronize.size());
+		for (String p : packagesToSynchronize)
+			out.writeString(p, false, SerializationTools.MAX_CLASS_LENGTH);
+		out.writeInt(hostAlreadySynchronized.size());
+		for (DecentralizedValue dv : hostAlreadySynchronized)
+			out.writeObject(dv, false);
+		out.writeBoolean(mustReturnMessage);
+		out.writeBoolean(replaceDistantConflictualData);
+	}
+
+	@Override
+	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
+		hostSource=in.readObject(false, DecentralizedValue.class);
+		hostDestination=in.readObject(false, DecentralizedValue.class);
+		int s=in.readInt();
+		if (s<1 || s>DatabaseWrapper.MAX_PACKAGE_TO_SYNCHRONIZE)
+			throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN, ""+s);
+		packagesToSynchronize=new ArrayList<>(s);
+		for (int i=0;i<s;i++)
+			packagesToSynchronize.add(in.readString(false, SerializationTools.MAX_CLASS_LENGTH));
+		s=in.readInt();
+		if (s<1 || s>DatabaseWrapper.MAX_DISTANT_PEERS)
+			throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN, ""+s);
+		hostAlreadySynchronized=new ArrayList<>(s);
+		for (int i=0;i<s;i++)
+			hostAlreadySynchronized.add(in.readObject(false, DecentralizedValue.class));
+		mustReturnMessage=in.readBoolean();
+		replaceDistantConflictualData=in.readBoolean();
+	}
+
+	@SuppressWarnings("unused")
+	HookAddRequest()
+	{
+
+	}
 
 	HookAddRequest(DecentralizedValue _hostSource, DecentralizedValue _hostDestination,
 			ArrayList<String> packagesToSynchronize, ArrayList<DecentralizedValue> hostAlreadySynchronized,
@@ -102,4 +150,5 @@ public class HookAddRequest extends DatabaseEvent implements DatabaseEventToSend
 	public ArrayList<String> getPackagesToSynchronize() {
 		return packagesToSynchronize;
 	}
+
 }

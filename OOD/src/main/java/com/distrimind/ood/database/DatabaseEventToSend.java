@@ -36,11 +36,9 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import java.io.Serializable;
-
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.io.SecureExternalizable;
 
 /**
  * 
@@ -48,7 +46,7 @@ import com.distrimind.util.DecentralizedValue;
  * @version 1.0
  * @since OOD 2.0
  */
-public interface DatabaseEventToSend extends Serializable {
+public interface DatabaseEventToSend extends SecureExternalizable {
 	DecentralizedValue getHostDestination() throws DatabaseException;
 
 	DecentralizedValue getHostSource() throws DatabaseException;

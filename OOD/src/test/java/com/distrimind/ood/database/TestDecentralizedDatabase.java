@@ -70,14 +70,12 @@ public abstract class TestDecentralizedDatabase {
 
 		DistantDatabaseEvent(DatabaseWrapper wrapper, DatabaseEventToSend eventToSend)
 				throws Exception {
-			try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-				try (ObjectOutputStream oos = new ObjectOutputStream(baos)) {
-					oos.writeObject(eventToSend);
-				}
+			try (RandomByteArrayOutputStream baos = new RandomByteArrayOutputStream()) {
+				baos.writeObject(eventToSend, false);
 
 				baos.flush();
 
-				this.eventToSend = baos.toByteArray();
+				this.eventToSend = baos.getBytes();
 			}
 			if (eventToSend instanceof BigDatabaseEventToSend) {
 				BigDatabaseEventToSend b = (BigDatabaseEventToSend) eventToSend;
@@ -108,10 +106,8 @@ public abstract class TestDecentralizedDatabase {
 		}
 
 		public DatabaseEventToSend getDatabaseEventToSend() throws IOException, ClassNotFoundException {
-			try (ByteArrayInputStream bais = new ByteArrayInputStream(eventToSend)) {
-				try (ObjectInputStream ois = new ObjectInputStream(bais)) {
-					return (DatabaseEventToSend) ois.readObject();
-				}
+			try (RandomByteArrayInputStream bais = new RandomByteArrayInputStream(eventToSend)) {
+				return bais.readObject(false, DatabaseEventToSend.class);
 			}
 		}
 

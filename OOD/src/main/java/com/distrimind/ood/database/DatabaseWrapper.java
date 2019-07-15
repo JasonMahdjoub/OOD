@@ -52,7 +52,7 @@ import com.distrimind.util.crypto.SecureRandomType;
 import com.distrimind.util.harddrive.Disk;
 import com.distrimind.util.harddrive.HardDriveDetect;
 import com.distrimind.util.harddrive.Partition;
-import com.distrimind.util.io.RandomByteArrayOutputStream;
+import com.distrimind.util.io.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -115,6 +115,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	private volatile boolean hasOnePeerSyncronized=false;
 	private volatile AbstractSecureRandom randomForKeys;
 	private final boolean alwaysDeconectAfterOnTransaction;
+	private static final int MAX_TRANSACTIONS_TO_SYNCHRONIZE_AT_THE_SAME_TIME=1000000;
+	static final int MAX_DISTANT_PEERS=Short.MAX_VALUE;
+	static final int MAX_PACKAGE_TO_SYNCHRONIZE=Short.MAX_VALUE;
 
 
 
@@ -139,7 +142,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 *            the max number of events
 	 */
 	public void setMaxTransactionsToSynchronizeAtTheSameTime(int maxTransactionsToSynchronizeAtTheSameTime) {
-		this.maxTransactionsToSynchronizeAtTheSameTime = maxTransactionsToSynchronizeAtTheSameTime;
+		this.maxTransactionsToSynchronizeAtTheSameTime = Math.max(maxTransactionsToSynchronizeAtTheSameTime, MAX_TRANSACTIONS_TO_SYNCHRONIZE_AT_THE_SAME_TIME);
 	}
 
 	private static class DatabasePerVersion
@@ -596,6 +599,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		private HookAddRequest askForHookAddingAndSynchronizeDatabase(DecentralizedValue hostID,
 				boolean mustReturnMessage, boolean replaceDistantConflitualRecords, ArrayList<String> packages)
 				throws DatabaseException {
+			if (packages.size()>MAX_PACKAGE_TO_SYNCHRONIZE)
+				throw new DatabaseException("The number of packages to synchronize cannot be greater than "+MAX_PACKAGE_TO_SYNCHRONIZE);
 			final ArrayList<DecentralizedValue> hostAlreadySynchronized = new ArrayList<>();
 			runTransaction(new Transaction() {
 				
@@ -629,7 +634,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					return false;
 				}
 			}, true);
-
+			if (hostAlreadySynchronized.size()>=MAX_DISTANT_PEERS)
+				throw new DatabaseException("The maximum number of distant peers ("+MAX_DISTANT_PEERS+") is reached");
 			return new HookAddRequest(getHooksTransactionsTable().getLocalDatabaseHost().getHostID(), hostID, packages,
 					hostAlreadySynchronized, mustReturnMessage, replaceDistantConflitualRecords);
 		}
@@ -944,6 +950,42 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		}
 
+
+		public boolean isPairedWith(final DecentralizedValue hostID) throws DatabaseException {
+			DatabaseHooksTable.Record r = runSynchronizedTransaction(
+					new SynchronizedTransaction<DatabaseHooksTable.Record>() {
+
+						@Override
+						public DatabaseHooksTable.Record run() throws Exception {
+							List<DatabaseHooksTable.Record> l = getHooksTransactionsTable()
+									.getRecordsWithAllFields("hostID", hostID);
+							DatabaseHooksTable.Record r = null;
+							if (l.size() == 1)
+								r = l.iterator().next();
+							else if (l.size() > 1)
+								throw new IllegalAccessError();
+
+							return r;
+						}
+
+						@Override
+						public TransactionIsolation getTransactionIsolation() {
+							return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
+						}
+
+						@Override
+						public boolean doesWriteData() {
+							return true;
+						}
+
+						@Override
+						public void initOrReset() {
+
+						}
+					});
+			return r!=null;
+		}
+
 		@SuppressWarnings("unlikely-arg-type")
 		public void initHook(final DecentralizedValue hostID, final long lastValidatedTransacionID)
 				throws DatabaseException {
@@ -1110,13 +1152,51 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	public static class DatabaseTransactionsIdentifiersToSynchronize extends DatabaseEvent
 			implements DatabaseEventToSend {
-		/**
-		 * 
-		 */
-		private static final long serialVersionUID = -925935481339233901L;
 
-		protected final DecentralizedValue hostIDSource, hostIDDestination;
-		final Map<DecentralizedValue, Long> lastTransactionFieldsBetweenDistantHosts;
+		protected DecentralizedValue hostIDSource, hostIDDestination;
+		Map<DecentralizedValue, Long> lastTransactionFieldsBetweenDistantHosts;
+
+		@SuppressWarnings("unused")
+		DatabaseTransactionsIdentifiersToSynchronize()
+		{
+
+		}
+
+		@Override
+		public int getInternalSerializedSize() {
+			int res=4+lastTransactionFieldsBetweenDistantHosts.size()*8+SerializationTools.getInternalSize(hostIDDestination,0)+SerializationTools.getInternalSize(hostIDSource,0);
+			for (DecentralizedValue dv: lastTransactionFieldsBetweenDistantHosts.keySet())
+				res+=SerializationTools.getInternalSize(dv, 0);
+			return res;
+		}
+
+		@Override
+		public void writeExternal(SecuredObjectOutputStream out) throws IOException {
+			out.writeObject(hostIDSource, false);
+			out.writeObject(hostIDDestination, false);
+			out.writeInt(lastTransactionFieldsBetweenDistantHosts.size());
+			for (Map.Entry<DecentralizedValue, Long> e : lastTransactionFieldsBetweenDistantHosts.entrySet())
+			{
+				out.writeObject(e.getKey(), false);
+				out.writeLong(e.getValue());
+			}
+		}
+
+		@Override
+		public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
+			hostIDSource=in.readObject(false, DecentralizedValue.class);
+			hostIDDestination=in.readObject(false, DecentralizedValue.class);
+			int s=in.readInt();
+			if (s<0 || s>MAX_DISTANT_PEERS)
+				throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN, ""+s);
+			lastTransactionFieldsBetweenDistantHosts=new HashMap<>();
+			for (int i=0;i<s;i++)
+			{
+				DecentralizedValue dv=in.readObject(false, DecentralizedValue.class);
+				lastTransactionFieldsBetweenDistantHosts.put(dv, in.readLong());
+			}
+		}
+
 
 		DatabaseTransactionsIdentifiersToSynchronize(DecentralizedValue hostIDSource,
 													 DecentralizedValue hostIDDestination,
@@ -1144,17 +1224,37 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			return getHostDestination();
 		}
 
+
 	}
 
 	public static class TransactionConfirmationEvents extends DatabaseEvent implements DatabaseEventToSend {
-		/**
-		 * 
-		 */
-		private static final long serialVersionUID = 2920925585457063201L;
 
-		protected final DecentralizedValue hostIDSource, hostIDDestination;
-		protected final long lastValidatedTransaction;
+		protected DecentralizedValue hostIDSource, hostIDDestination;
+		protected long lastValidatedTransaction;
 
+		@Override
+		public int getInternalSerializedSize() {
+			return SerializationTools.getInternalSize(hostIDDestination,0)+SerializationTools.getInternalSize(hostIDSource,0);
+		}
+
+		@Override
+		public void writeExternal(SecuredObjectOutputStream out) throws IOException {
+			out.writeObject(hostIDSource, false);
+			out.writeObject(hostIDDestination, false);
+			out.writeLong(lastValidatedTransaction);
+		}
+
+		@Override
+		public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
+			hostIDSource=in.readObject(false, DecentralizedValue.class);
+			hostIDDestination=in.readObject(false, DecentralizedValue.class);
+			lastValidatedTransaction=in.readLong();
+		}
+		@SuppressWarnings("unused")
+		TransactionConfirmationEvents()
+		{
+
+		}
 		TransactionConfirmationEvents(DecentralizedValue _hostIDSource, DecentralizedValue _hostIDDestination,
 				long _lastValidatedTransaction) {
 			super();
@@ -1180,12 +1280,34 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	}
 
 	public static class LastIDCorrection extends DatabaseEvent implements DatabaseEventToSend {
-		/**
-		 * 
-		 */
-		private static final long serialVersionUID = 240192427146753618L;
-		protected final DecentralizedValue hostIDSource, hostIDDestination;
-		protected final long lastValidatedTransaction;
+
+		protected DecentralizedValue hostIDSource, hostIDDestination;
+		protected long lastValidatedTransaction;
+
+		@Override
+		public int getInternalSerializedSize() {
+			return SerializationTools.getInternalSize(hostIDDestination,0)+SerializationTools.getInternalSize(hostIDSource,0);
+		}
+
+		@Override
+		public void writeExternal(SecuredObjectOutputStream out) throws IOException {
+			out.writeObject(hostIDSource, false);
+			out.writeObject(hostIDDestination, false);
+			out.writeLong(lastValidatedTransaction);
+		}
+
+		@Override
+		public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
+			hostIDSource=in.readObject(false, DecentralizedValue.class);
+			hostIDDestination=in.readObject(false, DecentralizedValue.class);
+			lastValidatedTransaction=in.readLong();
+		}
+
+		@SuppressWarnings("unused")
+		LastIDCorrection()
+		{
+
+		}
 
 		LastIDCorrection(DecentralizedValue _hostIDSource, DecentralizedValue _hostIDDestination,
 				long _lastValidatedTransaction) {
@@ -1212,18 +1334,45 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	
 	public static class DatabaseEventsToSynchronize extends DatabaseEvent implements BigDatabaseEventToSend {
-		/**
-		 * 
-		 */
-		private static final long serialVersionUID = -7594047077302832978L;
-		protected final transient DatabaseHooksTable.Record hook;
-		protected final int hookID;
-		protected final DecentralizedValue hostIDSource, hostIDDestination;
+		protected transient DatabaseHooksTable.Record hook;
+		protected int hookID;
+		protected DecentralizedValue hostIDSource, hostIDDestination;
 		private long lastTransactionIDIncluded;
-		final int maxEventsRecords;
+		int maxEventsRecords;
+
+		@SuppressWarnings("unused")
+		DatabaseEventsToSynchronize() {
+
+		}
+
+		@Override
+		public int getInternalSerializedSize() {
+			return 16+SerializationTools.getInternalSize(hostIDSource, 0)+SerializationTools.getInternalSize(hostIDDestination, 0);
+		}
+
+		@Override
+		public void writeExternal(SecuredObjectOutputStream out) throws IOException {
+			out.writeInt(hookID);
+			out.writeObject(hostIDSource, false);
+			out.writeObject(hostIDDestination, false);
+			out.writeLong(lastTransactionIDIncluded);
+			out.writeInt(maxEventsRecords);
+		}
+
+		@Override
+		public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
+			hookID=in.readInt();
+			hostIDSource=in.readObject(false, DecentralizedValue.class);
+			hostIDDestination=in.readObject(false, DecentralizedValue.class);
+			lastTransactionIDIncluded=in.readLong();
+			maxEventsRecords=in.readInt();
+			if (maxEventsRecords<1 || maxEventsRecords>MAX_TRANSACTIONS_TO_SYNCHRONIZE_AT_THE_SAME_TIME)
+				throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN);
+		}
+
 
 		DatabaseEventsToSynchronize(DecentralizedValue hostIDSource, DatabaseHooksTable.Record hook,
-				long lastTransactionIDIncluded, int maxEventsRecords) {
+									long lastTransactionIDIncluded, int maxEventsRecords) {
 			this.hook = hook;
 			this.hookID = hook.getID();
 			this.hostIDDestination = hook.getHostID();
@@ -1299,6 +1448,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			} else
 				return false;
 		}
+
 
 	}
 
