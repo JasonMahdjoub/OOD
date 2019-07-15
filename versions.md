@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-2.0.0 Stable (Build: 554) (from 01/04/2013 to 14/06/2019)
+2.0.0 Stable (Build: 557) (from 01/04/2013 to 14/06/2019)
 
 # Creator(s):
 Jason MAHDJOUB
@@ -12,10 +12,10 @@ Jason MAHDJOUB (Entred in the team at 01/04/2013)
 
 
 ### 2.0.0 Stable (14/06/2019)
-* Update Utils to 4.2.2 Stable
+* Update Utils to 4.4.3 Stable
 * Add backup/restore manager, with historical management
 * Better manage database versions
-* High optimizations of several queries
+* Optimizations of several queries
 
 
 ### 2.0.0 Beta 107 (06/05/2019)

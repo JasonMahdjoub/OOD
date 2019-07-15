@@ -61,8 +61,8 @@ public class Cursor<T extends DatabaseRecord> {
 	Cursor(Table<T> table, String whereClause, Map<String, Object> parameters, int cacheSize, Boolean ascendant, String ... fields) {
 		if (table==null)
 			throw new NullPointerException();
-		if (cacheSize<8)
-			throw new IllegalArgumentException("The cache size must be greater than 8");
+		if (cacheSize<2)
+			throw new IllegalArgumentException("The cache size must be greater than 2");
 		this.table = table;
 		this.whereClause=whereClause;
 		this.cacheSize=cacheSize;

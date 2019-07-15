@@ -616,7 +616,7 @@ public abstract class TestDatabase {
 
 	private static <T extends DatabaseRecord> void testCursor(Table<T> table, String ... fields) throws DatabaseException {
 		List<T> expected1=table.getRecords();
-		Cursor<T> c=fields.length>0?table.getCursorWithOrderedResults(true, fields):table.getCursor();
+		Cursor<T> c=fields.length>0?table.getCursorWithOrderedResults(2, true, fields):table.getCursor(2);
 
 		Assert.assertEquals(c.getTotalRecordsNumber(), expected1.size());
 
