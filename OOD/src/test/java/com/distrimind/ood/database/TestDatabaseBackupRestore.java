@@ -976,6 +976,10 @@ public class TestDatabaseBackupRestore {
 		final Table3 table3=wrapper.getTableInstance(Table3.class);
 		final Table4 table4=wrapper.getTableInstance(Table4.class);
 		BackupRestoreManager manager=wrapper.getBackupRestoreManager(Table1.class.getPackage());
+		synchronized (manager)
+		{
+			manager.createIfNecessaryNewBackupReference();
+		}
 		long minDate=manager.getMinDateUTCInMs();
 		long maxDate=manager.getMaxDateUTCInMS();
 		File lastFile=manager.getLastFile();

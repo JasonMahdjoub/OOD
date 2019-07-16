@@ -1131,21 +1131,16 @@ public class BackupRestoreManager {
 	private void deleteDatabaseFilesFromReferenceToLastFile(long firstFileReference, int oldLength) throws DatabaseException {
 		if (firstFileReference==Long.MAX_VALUE)
 			return;
-		for (Iterator<Long> it = fileReferenceTimeStamps.iterator(); it.hasNext(); ) {
-			Long l = it.next();
-			if (l > firstFileReference || (l==firstFileReference && oldLength<=0)) {
-				File f = getFile(l, true);
-				//noinspection ResultOfMethodCallIgnored
-				f.delete();
-				it.remove();
-			}
-		}
 		for (Iterator<Long> it = fileTimeStamps.iterator(); it.hasNext(); ) {
 			Long l = it.next();
 			if (l > firstFileReference || (l==firstFileReference && oldLength<=0)) {
-				File f = getFile(l, false);
-				//noinspection ResultOfMethodCallIgnored
-				f.delete();
+				boolean reference=fileReferenceTimeStamps.contains(l);
+				File f = getFile(l, reference);
+
+				if (!f.delete())
+					throw new IllegalStateException();
+				if (reference)
+					fileReferenceTimeStamps.remove(l);
 				it.remove();
 			}
 		}
@@ -1165,7 +1160,7 @@ public class BackupRestoreManager {
 				throw DatabaseException.getDatabaseException(e);
 			}
 		}
-		scanFiles();
+		//scanFiles();
 	}
 	private void deleteDatabaseFilesFromReferenceToFirstFile(long fileReference)
 	{
@@ -1672,6 +1667,9 @@ public class BackupRestoreManager {
 
 	Transaction startTransaction() throws DatabaseException {
 		synchronized (this) {
+			createIfNecessaryNewBackupReference();
+			if (!isReady())
+				return null;
 			int oldLength=0;
 			long oldLastFile;
 			if (fileTimeStamps.size()==0)
@@ -1682,9 +1680,6 @@ public class BackupRestoreManager {
 				oldLength=(int)file.length();
 			}
 
-			createIfNecessaryNewBackupReference();
-			if (!isReady())
-				return null;
 			long last=getMaxDateUTCInMS();
 			AtomicLong fileTimeStamp=new AtomicLong();
 			//AtomicReference<RecordsIndex> index=new AtomicReference<>();
@@ -1750,11 +1745,11 @@ public class BackupRestoreManager {
 			} catch (IOException e) {
 				throw DatabaseException.getDatabaseException(e);
 			}
-			if (transactionsNumber>0)
-				deleteDatabaseFilesFromReferenceToLastFile(oldLastFile, oldLength);
+
+			deleteDatabaseFilesFromReferenceToLastFile(oldLastFile, oldLength);
 			if (!computeDatabaseReference.delete())
 				throw new DatabaseException("Impossible to delete file : "+computeDatabaseReference);
-			scanFiles();
+
 			closed=true;
 
 		}
