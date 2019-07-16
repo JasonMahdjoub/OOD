@@ -1550,6 +1550,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			};
 	}
 
+
 	private class SqlGeneralSelectQuerryWithFieldMatch extends SqlQuerry {
 		private final Map<String, Object> fields;
 		private List<FieldAccessor> fieldAccessors;
@@ -4730,6 +4731,14 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 	}
 
+	public final long removeAllRecordsWithCascade() throws DatabaseException {
+		try (Lock ignored = new WriteLock(this)) {
+			return removeRecordsWithCascade(null, null, false);
+		} catch (Exception e) {
+			throw DatabaseException.getDatabaseException(e);
+		}
+	}
+
 	/**
 	 * Remove records which correspond to one group of fields of the array of
 	 * fields. For one considered record, it must have one group of fields (record)
@@ -5256,6 +5265,63 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			}
 		}
 	}
+	private int removeRecordsWithCascade(String where, final Map<String, Object> parameters,
+							  boolean is_already_in_transaction) throws DatabaseException {
+
+		final RuleInstance rule = where==null?null:Interpreter.getRuleInstance(where);
+		if (rule != null && !rule.isIndependantFromOtherTables(Table.this)) {
+			return removeRecords(new Filter<T>() {
+				@Override
+				public boolean nextRecord(T _record) {
+					return true;
+				}
+			}, where, parameters, is_already_in_transaction);
+		}
+		return (int)sql_connection.runTransaction(new Transaction() {
+
+			@Override
+			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
+				HashMap<Integer, Object> sqlParameters = new HashMap<>();
+				String sqlQuery = "DELETE FROM "+getSqlTableName();
+				if (rule != null) {
+					sqlQuery+=" WHERE "+ rule.translateToSqlQuery(Table.this, parameters, sqlParameters, new HashSet<TableJunction>())
+							.toString();
+				}
+				sqlQuery+=sql_connection.getSqlComma();
+				try {
+					PreparedStatement statement= sql_connection.getConnectionAssociatedWithCurrentThread().getConnection().prepareStatement(sqlQuery, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE);
+					int res=statement.executeUpdate();
+
+					if (res>0 && isLoadedInMemory()) {
+						memoryToRefresh();
+					}
+
+					return res;
+
+				} catch (SQLException e) {
+					throw DatabaseException.getDatabaseException(e);
+				}
+
+
+			}
+
+			@Override
+			public void initOrReset() {
+
+			}
+
+			@Override
+			public TransactionIsolation getTransactionIsolation() {
+				return TransactionIsolation.TRANSACTION_READ_COMMITTED;
+			}
+
+			@Override
+			public boolean doesWriteData() {
+				return true;
+			}
+		}, true);
+
+	}
 
 	@SuppressWarnings({"SameParameterValue", "unused"})
     private int removeRecords(final Filter<T> _filter, String where, final Map<String, Object> parameters,
@@ -5685,6 +5751,9 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	public final long removeRecordsWithCascade(final Filter<T> _filter) throws DatabaseException {
 		return removeRecordsWithCascade(_filter, null, new HashMap<String, Object>());
 	}
+
+
+
 
 	/**
 	 * Remove records which correspond to the given filter and a given sql where
