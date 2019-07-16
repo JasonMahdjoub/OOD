@@ -80,7 +80,7 @@ public class BackupRestoreManager {
 	private final boolean generateRestoreProgressBar;
 	private volatile long lastCurrentRestorationFileUsed=Long.MIN_VALUE;
 	private volatile BackupFileListener backupFileListener=null;
-	private long currentBackupReferenceUTC=Long.MAX_VALUE;
+	//private volatile long currentBackupReferenceUTC=Long.MAX_VALUE;
 
 
 	File getLastFile()
@@ -210,13 +210,13 @@ public class BackupRestoreManager {
 
 			if (s > 0) {
 				long ts = fileTimeStamps.get(s - 1);
-				if (ts>=currentBackupReferenceUTC || !isPartFull(ts, getFile(ts, fileReferenceTimeStamps.contains(ts))))
+				if (/*ts>=currentBackupReferenceUTC || */!isPartFull(ts, getFile(ts, fileReferenceTimeStamps.contains(ts))))
 					--s;
 			}
 			for (int i = 0; i < s; i++) {
 				long ts = fileTimeStamps.get(i);
-				if (ts>=currentBackupReferenceUTC)
-					break;
+				/*if (ts>=currentBackupReferenceUTC)
+					break;*/
 				if (ts >= utc)
 					res.add(getFile(ts, fileReferenceTimeStamps.contains(ts)));
 
@@ -234,13 +234,13 @@ public class BackupRestoreManager {
 			if (s > 0) {
 				long ts = fileTimeStamps.get(s - 1);
 
-				if (ts>=currentBackupReferenceUTC || !isPartFull(ts, getFile(ts, fileReferenceTimeStamps.contains(ts))))
+				if (/*ts>=currentBackupReferenceUTC || */!isPartFull(ts, getFile(ts, fileReferenceTimeStamps.contains(ts))))
 					--s;
 			}
 			for (int i = 0; i < s; i++) {
 				long ts = fileTimeStamps.get(i);
-				if (ts>=currentBackupReferenceUTC)
-					break;
+				/*if (ts>=currentBackupReferenceUTC)
+					break;*/
 
 				res.add(getFile(ts, fileReferenceTimeStamps.contains(ts)));
 			}
@@ -989,9 +989,9 @@ public class BackupRestoreManager {
 					}
 					curTime = System.currentTimeMillis();
 				}
-				//final long backupTime = curTime;
-				currentBackupReferenceUTC=curTime;
-				final AtomicLong currentBackupTime = new AtomicLong(currentBackupReferenceUTC);
+				final long backupTime = curTime;
+				//currentBackupReferenceUTC=curTime;
+				final AtomicLong currentBackupTime = new AtomicLong(backupTime);
 
 				try {
 					try {
@@ -1141,14 +1141,14 @@ public class BackupRestoreManager {
 					throw e;
 				}
 
+				notify=true;
+				return backupTime;
 			}
-			notify=true;
-			return currentBackupReferenceUTC;
 		}
 		finally {
 			databaseWrapper.unlockRead();
 			lastBackupEventUTC=Long.MIN_VALUE;
-			currentBackupReferenceUTC=Long.MAX_VALUE;
+			//currentBackupReferenceUTC=Long.MAX_VALUE;
 			if (notify && backupFileListener!=null && globalNumberOfSavedRecords.get()>0)
 				backupFileListener.fileListChanged();
 
