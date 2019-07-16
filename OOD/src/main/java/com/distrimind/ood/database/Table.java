@@ -4731,6 +4731,11 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 	}
 
+	/**
+	 * Remove all records of this table. It records of other tables are pointing records of this table, there are also removed.
+	 * @return the number of removed records
+	 * @throws DatabaseException if a problem occurs
+	 */
 	public final long removeAllRecordsWithCascade() throws DatabaseException {
 		try (Lock ignored = new WriteLock(this)) {
 			return removeRecordsWithCascade(null, null, false);
@@ -4915,6 +4920,60 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		return removeRecordsWithAllFieldsWithCascade(transformToMapField(_fields));
 	}
 
+	private String getWhereCommand(Map<String, Object> _fields, boolean and)
+	{
+		if (_fields.size()==0)
+			throw new IllegalArgumentException("There is no fields");
+		StringBuilder sb=new StringBuilder();
+		boolean first=true;
+		String op=and?" AND ":" OR ";
+		for(String s : _fields.keySet())
+		{
+			if (first)
+				first=false;
+			else
+				sb.append(op);
+			sb.append(s);
+			sb.append("=:");
+			sb.append(s);
+		}
+		return sb.toString();
+	}
+	private String getWhereCommand(Map<String, Object> []records, boolean and, Map<String, Object> resultedFields)
+	{
+		if (records.length==0)
+			throw new IllegalArgumentException("There is no fields");
+		if (resultedFields==null)
+			throw new NullPointerException();
+		StringBuilder sb=new StringBuilder();
+		boolean globalFirst=true;
+		String op=and?" AND ":" OR ";
+		int index=0;
+		for (Map<String, Object> _fields : records) {
+			if (_fields.size()==0)
+				throw new IllegalArgumentException("There is no fields");
+			if (globalFirst)
+				globalFirst=false;
+			else
+				sb.append(" OR ");
+			sb.append("(");
+			boolean first=true;
+			for (String s : _fields.keySet()) {
+				if (first)
+					first = false;
+				else
+					sb.append(op);
+				sb.append(s);
+				String param="v"+index++;
+				sb.append("=:");
+				sb.append(param);
+				resultedFields.put(param, _fields.get(s));
+			}
+			sb.append(")");
+		}
+		return sb.toString();
+	}
+
 	/**
 	 * Remove records which correspond to the given fields. All given fields must
 	 * correspond exactly to the records. Records of other tables which have Foreign
@@ -4936,8 +4995,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		// synchronized(sql_connection)
 		{
 			try (Lock ignored = new WriteLock(this)) {
-				return removeRecordsWithCascade(new SimpleAllFieldsFilter(true, null, _fields, fields), null,
-						new HashMap<String, Object>(), false);
+
+				return removeRecordsWithCascade(getWhereCommand(_fields, true), _fields, false);
 			} catch (Exception e) {
 				throw DatabaseException.getDatabaseException(e);
 			}
@@ -4991,8 +5050,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		// synchronized(sql_connection)
 		{
 			try (Lock ignored = new WriteLock(this)) {
-				return removeRecordsWithCascade(new MultipleAllFieldsFilter(true, null, fields, _records), null,
-						new HashMap<String, Object>(), false);
+				HashMap<String, Object> parameters=new HashMap<>();
+				return removeRecordsWithCascade(getWhereCommand(_records, true, parameters), parameters, false);
 			} catch (Exception e) {
 				throw DatabaseException.getDatabaseException(e);
 			}
@@ -5050,8 +5109,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	@SuppressWarnings("SameParameterValue")
     private long removeRecordsWithOneOfFieldsWithCascade(Map<String, Object> _fields,
                                                          boolean _is_already_sql_transaction) throws DatabaseException {
-		return removeRecordsWithCascade(new SimpleOneOfFieldsFilter(true, null, _fields, fields), null,
-				new HashMap<String, Object>(), _is_already_sql_transaction);
+		return removeRecordsWithCascade(getWhereCommand(_fields, false), _fields, _is_already_sql_transaction);
 	}
 
 	/**
@@ -5115,8 +5173,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			throw new NullPointerException("The parameter _records is a null pointer !");
 		if (_records.length == 0)
 			throw new NullPointerException("The parameter _records is an empty array !");
-		return removeRecordsWithCascade(new MultipleOneOfFieldsFilter(true, null, fields, _records), null,
-				new HashMap<String, Object>(), is_already_in_transaction);
+		HashMap<String, Object> parameters=new HashMap<>();
+		return removeRecordsWithCascade(getWhereCommand(_records, false, parameters), parameters, is_already_in_transaction);
 	}
 
 	private HashMap<String, Object> getSqlPrimaryKeys(T _record) throws DatabaseException {
@@ -5909,7 +5967,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 	}
 
-	@SuppressWarnings("unused")
+	@SuppressWarnings({"unused", "SameParameterValue"})
     private long removeRecordsWithCascade(final Filter<T> _filter, String where,
                                           final Map<String, Object> parameters, final boolean _is_already_sql_transaction) throws DatabaseException {
 		if (_filter == null)
