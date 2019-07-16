@@ -839,7 +839,7 @@ public class TestDatabaseBackupRestore {
 
 	}*/
 
-	@Test(dataProvider = "DataProvIntBackupRestore", dependsOnMethods = "testExternalBackupAndRestore", invocationCount = 4)
+	@Test(dataProvider = "DataProvIntBackupRestore", dependsOnMethods = "testTransactionCanceling", invocationCount = 4)
 	public void testInternalBackupAndRestore(boolean useSeveralRestorationPoint) throws DatabaseException, InterruptedException {
 		testExternalBackupAndRestore(useSeveralRestorationPoint, true, false, false);
 	}
@@ -850,7 +850,7 @@ public class TestDatabaseBackupRestore {
 	}*/
 
 
-	@Test(dependsOnMethods = "testInternalBackupAndRestore")
+	@Test(dependsOnMethods = "testExternalBackupAndRestore")
 	public void testBackupCleaning() throws DatabaseException, InterruptedException {
 		wrapper=new EmbeddedH2DatabaseWrapper(databaseDirectory);
 		BackupConfiguration backupConf=new BackupConfiguration(200L, 1000L, 1000000, 100L, null);
@@ -965,7 +965,7 @@ public class TestDatabaseBackupRestore {
 			res[i++]=o;
 		return res;
 	}
-	@Test(dependsOnMethods = "testBackupCleaning", dataProvider = "DataProvForTestTransactionCanceling")
+	@Test(invocationCount = 10, dependsOnMethods = "testBackupCleaning", dataProvider = "DataProvForTestTransactionCanceling")
 	public void testTransactionCanceling(boolean useSeveralRestorationPoint, boolean addAdditionalData, boolean alterRecords) throws DatabaseException, InterruptedException {
 		AtomicLong dataLoadStart=new AtomicLong();
 		AtomicLong dateRestoration=new AtomicLong();
@@ -976,6 +976,7 @@ public class TestDatabaseBackupRestore {
 		final Table3 table3=wrapper.getTableInstance(Table3.class);
 		final Table4 table4=wrapper.getTableInstance(Table4.class);
 		BackupRestoreManager manager=wrapper.getBackupRestoreManager(Table1.class.getPackage());
+		//noinspection SynchronizationOnLocalVariableOrMethodParameter
 		synchronized (manager)
 		{
 			manager.createIfNecessaryNewBackupReference();

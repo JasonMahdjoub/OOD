@@ -709,10 +709,10 @@ public abstract class TestDecentralizedDatabase {
 		synchronized (TestDecentralizedDatabase.class) {
 			if (db.isConnected()) {
 				db.setConnected(false);
-				db.getDbwrapper().getSynchronizer().deconnectHook(db.getHostID());
+				db.getDbwrapper().getSynchronizer().disconnectHook(db.getHostID());
 				for (Database dbother : listDatabase) {
 					if (dbother != db && dbother.isConnected())
-						dbother.getDbwrapper().getSynchronizer().deconnectHook(db.getHostID());
+						dbother.getDbwrapper().getSynchronizer().disconnectHook(db.getHostID());
 				}
 				Assert.assertFalse(db.isConnected());
 			}

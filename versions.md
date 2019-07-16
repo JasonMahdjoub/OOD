@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-2.1.0 Stable (Build: 567) (from 01/04/2013 to 15/07/2019)
+2.2.0 Stable (Build: 572) (from 01/04/2013 to 16/07/2019)
 
 # Creator(s):
 Jason MAHDJOUB
@@ -11,11 +11,13 @@ Jason MAHDJOUB (Entred in the team at 01/04/2013)
 # Modifications:
 
 
-### 2.1.0 Stable (15/07/2019)
+### 2.2.0 Stable (16/07/2019)
 * Update Utils to 4.4.3 Stable
 * Add backup/restore manager, with historical management
 * Better manage database versions
 * Optimizations of several queries
+* Add function Table.removeAllRecordsWithCascade()
+* Use long values for queries limited by a number of rows
 
 
 ### 2.0.0 Beta 107 (06/05/2019)

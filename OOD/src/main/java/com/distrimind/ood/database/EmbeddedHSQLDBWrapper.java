@@ -835,4 +835,22 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 	protected boolean isDisconnetionException(SQLException e) {
 		return e.getErrorCode()==402 || e.getErrorCode()==1002;
 	}
+
+	@Override
+	protected String getLimitSqlPart(long startPosition, long rowLimit)
+	{
+		StringBuilder limit=new StringBuilder();
+		if (rowLimit>=0)
+		{
+			limit.append(" LIMIT ");
+			limit.append(rowLimit);
+			if (startPosition>0)
+			{
+				limit.append(" OFFSET ");
+				limit.append(startPosition);
+			}
+		}
+		return limit.toString();
+	}
+
 }

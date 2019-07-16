@@ -741,7 +741,14 @@ public class BackupRestoreManager {
 	private File currentFileReference=null;
 	private List<Class<? extends Table<?>>> currentClassesList=null;
 
-	private long lastBackupEventUTC=-1;
+	private long lastBackupEventUTC=Long.MIN_VALUE;
+
+	private void cleanCache()
+	{
+		currentFileReference=null;
+		currentClassesList=null;
+		lastBackupEventUTC=Long.MIN_VALUE;
+	}
 
 
 	private List<Class<? extends Table<?>>> extractClassesList(File file) throws DatabaseException {
@@ -971,30 +978,41 @@ public class BackupRestoreManager {
 								progressMonitor.setMaximum(1000);
 							}
 							final long totalRecords = t;
-							long numberOfSavedRecords = 0;
+
+							final AtomicLong globalNumberOfSavedRecords=new AtomicLong(0);
 							for (Class<? extends Table<?>> c : classes) {
 								final Table<?> table = databaseWrapper.getTableInstance(c);
-								final long nbSavedRecords = numberOfSavedRecords;
-								numberOfSavedRecords = databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Long>() {
+
+
+								globalNumberOfSavedRecords.set(databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Long>() {
 									long originalPosition = rout.get().currentPosition();
-									long numberOfSavedRecords = nbSavedRecords;
+									long numberOfSavedRecords=globalNumberOfSavedRecords.get();
+									long startPosition=0;
+
 
 									@Override
 									public Long run() throws Exception {
-										table.getPaginedRecordsWithUnknownType(-1, -1, new Filter<DatabaseRecord>() {
+
+										table.getPaginedRecordsWithUnknownType(startPosition==0?-1:startPosition, startPosition==0?-1:Long.MAX_VALUE, new Filter<DatabaseRecord>() {
 											RandomOutputStream out = rout.get();
+
 
 											@Override
 											public boolean nextRecord(DatabaseRecord _record) throws DatabaseException {
 												backupRecordEvent(out, table, null, _record, DatabaseEventType.ADD/*, index.get()*/);
-												if (progressMonitor != null) {
-													++numberOfSavedRecords;
-													progressMonitor.setProgress((int) ((numberOfSavedRecords * 1000) / totalRecords));
-												}
 												try {
+													originalPosition = out.currentPosition();
+													++startPosition;
+													if (progressMonitor != null) {
+
+														++numberOfSavedRecords;
+														progressMonitor.setProgress((int) ((numberOfSavedRecords * 1000) / totalRecords));
+													}
+
 													if (out.currentPosition() >= backupConfiguration.getMaxBackupFileSizeInBytes()) {
 														saveTransactionQueue(rout.get(), nextTransactionReference.get(), currentBackupTime.get()/*, index.get()*/);
 														out.close();
+
 														//index.set(null);
 
 														long curTime = System.currentTimeMillis();
@@ -1010,8 +1028,9 @@ public class BackupRestoreManager {
 														File file = initNewFileForBackupIncrement(curTime);
 														rout.set(out = new BufferedRandomOutputStream(new RandomFileOutputStream(file, RandomFileOutputStream.AccessMode.READ_AND_WRITE), maxBufferSize, maxBuffersNumber));
 														saveHeader(out, curTime, false/*, index*/);
-														nextTransactionReference.set(saveTransactionHeader(rout.get(), currentBackupTime.get()));
-														originalPosition = rout.get().currentPosition();
+														nextTransactionReference.set(saveTransactionHeader(out, currentBackupTime.get()));
+														originalPosition = out.currentPosition();
+
 													}
 												} catch (IOException e) {
 													throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
@@ -1037,7 +1056,7 @@ public class BackupRestoreManager {
 									public void initOrReset() throws Exception {
 										rout.get().setLength(originalPosition);
 									}
-								});
+								}));
 
 							}
 							saveTransactionQueue(rout.get(), nextTransactionReference.get(), currentBackupTime.get()/*, index.get()*/);
@@ -1160,6 +1179,7 @@ public class BackupRestoreManager {
 				throw DatabaseException.getDatabaseException(e);
 			}
 		}
+		cleanCache();
 		//scanFiles();
 	}
 	private void deleteDatabaseFilesFromReferenceToFirstFile(long fileReference)
@@ -1186,6 +1206,7 @@ public class BackupRestoreManager {
 				it.remove();
 			}
 		}
+		cleanCache();
 		//scanFiles();
 	}
 
@@ -1362,8 +1383,10 @@ public class BackupRestoreManager {
 							final long pp=progressPosition;
 							progressPosition=databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Long>() {
 								long progressPosition=pp;
+								int count=0;
 								@Override
 								public Long run() throws Exception {
+									++count;
 									for(;;) {
 										int startRecord = (int) in.currentPosition();
 										byte eventTypeCode = in.readByte();
@@ -1714,6 +1737,7 @@ public class BackupRestoreManager {
 		private final long oldLastFile;
 
 
+
 		Transaction(long fileTimeStamp, long lastTransactionUTC, RandomOutputStream out, /*RecordsIndex index, */long oldLastFile, int oldLength) throws DatabaseException {
 			//this.index=index;
 			//this.fileTimeStamp=fileTimeStamp;
@@ -1735,6 +1759,22 @@ public class BackupRestoreManager {
 
 		}
 
+		final long getBackupPosition() throws DatabaseException {
+			try {
+				return out.currentPosition();
+			} catch (IOException e) {
+				throw DatabaseException.getDatabaseException(e);
+			}
+		}
+
+		final void cancelTransaction(long backupPosition) throws DatabaseException
+		{
+			try {
+				out.setLength(backupPosition);
+			} catch (IOException e) {
+				throw DatabaseException.getDatabaseException(e);
+			}
+		}
 
 		final void cancelTransaction() throws DatabaseException
 		{
@@ -1793,5 +1833,6 @@ public class BackupRestoreManager {
 	{
 		return fileReferenceTimeStamps.size();
 	}
+
 
 }

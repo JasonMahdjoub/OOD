@@ -913,8 +913,21 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 			
 		}
+		public DecentralizedValue getLocalHostID() throws DatabaseException {
+			return getHooksTransactionsTable().getLocalDatabaseHost().getHostID();
+		}
 
-		public void deconnectHook(final DecentralizedValue hostID) throws DatabaseException {
+		public void resetSynchronizerAndRemoveAllHosts() throws DatabaseException {
+			disconnectAll();
+			getHooksTransactionsTable().removeAllRecordsWithCascade();
+			getDatabaseTransactionEventsTable().removeAllRecordsWithCascade();
+		}
+		public void disconnectAll() throws DatabaseException {
+
+			disconnectHook(getLocalHostID());
+		}
+
+		public void disconnectHook(final DecentralizedValue hostID) throws DatabaseException {
 			if (hostID == null)
 				throw new NullPointerException("hostID");
 
@@ -2131,9 +2144,33 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			return actualPosition.get();
 		}
 
-		void cancelTmpTransactionEvents(final int position) throws DatabaseException {
+
+
+		public Map<Package, Long> getBackupPositions() throws DatabaseException {
+			HashMap<Package, Long> hashMap=new HashMap<>();
+			for (Map.Entry<Package, BackupRestoreManager.Transaction> e : this.backupManager.entrySet())
+			{
+				if (e.getValue()!=null)
+					hashMap.put(e.getKey(), e.getValue().getBackupPosition());
+			}
+			return hashMap;
+		}
+
+		void cancelTmpTransactionEvents(final int position, Map<Package, Long> backupPositions) throws DatabaseException {
 			if (position == actualPosition.get())
 				return;
+			for (Iterator<Map.Entry<Package, BackupRestoreManager.Transaction>> it = this.backupManager.entrySet().iterator();it.hasNext();)
+			{
+				Map.Entry<Package, BackupRestoreManager.Transaction> e=it.next();
+				if (e.getValue()!=null) {
+					if (backupPositions.containsKey(e.getKey())) {
+						e.getValue().cancelTransaction(backupPositions.get(e.getKey()));
+					} else {
+						e.getValue().cancelTransaction();
+						it.remove();
+					}
+				}
+			}
 			if (eventsStoredIntoMemory) {
 				for (TransactionPerDatabase t : temporaryTransactions.values()) {
 					int nb = 0;
@@ -2675,7 +2712,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							savePointName = generateSavePointName();
 							savePoint = savePoint(cw.connection.getConnection(), savePointName);
 						}
-						cw.connection.resetTmpTransaction(needsLock);
+						cw.connection.resetTmpTransaction(true);
 						_transaction.initOrReset();
 						res = _transaction.run(this);
 						if (writeData)
@@ -2799,12 +2836,20 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		} else {
 			String savePointName = null;
 			Savepoint savePoint = null;
-			int previousPosition = defaultTransaction?-1:getConnectionAssociatedWithCurrentThread().getActualPositionEvent();
+			int previousPosition=-1;
+			Map<Package, Long> backupPositions=null;
+
 			try {
-				if (writeData && !defaultTransaction && supportSavePoint(cw.connection.getConnection())) {
+				if (writeData && !defaultTransaction && supportSavePoint(cw.connection.getConnection()))
+				{
+					Session s=getConnectionAssociatedWithCurrentThread();
+					previousPosition = s.getActualPositionEvent();
+					backupPositions=s.getBackupPositions();
+
 					savePointName = generateSavePointName();
 					savePoint = savePoint(cw.connection.getConnection(), savePointName);
 				}
+
 				_transaction.initOrReset();
 				res = _transaction.run(this);
 				if (savePoint != null)
@@ -2814,7 +2859,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				try {
 					if (writeData && savePoint != null) {
 						rollback(cw.connection.getConnection(), savePointName, savePoint);
-						getConnectionAssociatedWithCurrentThread().cancelTmpTransactionEvents(previousPosition);
+						getConnectionAssociatedWithCurrentThread().cancelTmpTransactionEvents(previousPosition, backupPositions);
 						releasePoint(cw.connection.getConnection(), savePointName, savePoint);
 					}
 				} catch (SQLException se) {
@@ -3871,5 +3916,22 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		deleteDatabaseFiles(getDatabaseDirectory());
 	}
 
+
+	protected String getLimitSqlPart(long startPosition, long rowLimit)
+	{
+		StringBuilder limit=new StringBuilder();
+		if (rowLimit>=0)
+		{
+			limit.append(" { LIMIT ");
+			limit.append(rowLimit);
+			if (startPosition>0)
+			{
+				limit.append(" OFFSET ");
+				limit.append(startPosition);
+			}
+			limit.append("}");
+		}
+		return limit.toString();
+	}
 
 }
