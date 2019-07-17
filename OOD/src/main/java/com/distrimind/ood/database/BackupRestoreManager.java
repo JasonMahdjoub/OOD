@@ -1429,6 +1429,7 @@ public class BackupRestoreManager {
 			final int maxBuffersNumber = backupConfiguration.getMaxStreamBufferNumberForBackupRestoration();
 
 			try{
+
 				fileloop:while (currentFile!=null)
 				{
 					if (!currentFile.exists())

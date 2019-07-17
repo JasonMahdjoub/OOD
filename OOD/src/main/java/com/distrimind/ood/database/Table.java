@@ -225,13 +225,15 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		public final ArrayList<Field> concerned_fields;
 		private Table<?> t = null;
 		private final Class<? extends DatabaseRecord> class_record;
+		private final int databaseVersion;
 
 		public NeighboringTable(DatabaseWrapper _sql_connection, Class<? extends DatabaseRecord> _class_record,
-				Class<? extends Table<?>> _class_table, ArrayList<Field> _concerned_fields) {
+				Class<? extends Table<?>> _class_table, ArrayList<Field> _concerned_fields, int databaseVersion) {
 			sql_connection = _sql_connection;
 			class_table = _class_table;
 			concerned_fields = _concerned_fields;
 			class_record = _class_record;
+			this.databaseVersion=databaseVersion;
 		}
 
 		public HashMap<String, Object> getHashMapFields(Object _instance) {
@@ -245,7 +247,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 		public Table<?> getPoitingTable() throws DatabaseException {
 			if (t == null)
-				t = sql_connection.getTableInstance(class_table);
+				t = sql_connection.getTableInstance(class_table, databaseVersion);
 			return t;
 		}
 
@@ -1044,7 +1046,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			}
 			if (concerned_fields.size() > 0) {
 				list_tables_pointing_to_this_table
-						.add(new NeighboringTable(sql_connection, class_record, c, concerned_fields));
+						.add(new NeighboringTable(sql_connection, class_record, c, concerned_fields, this.databaseVersion));
 			}
 
 		}
@@ -1063,7 +1065,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		for (NeighboringTable nt : list_tables_pointing_to_this_table) {
 			if (nt.class_table.isAnnotationPresent(LoadToMemory.class))
 				return true;
-			Table<?> t = sql_connection.getTableInstance(nt.class_table);
+			Table<?> t = sql_connection.getTableInstance(nt.class_table, databaseVersion);
 			if (t.isPointedByTableLoadedIntoMemoryInCascade(t.list_tables_pointing_to_this_table, tableAlreadyParsed))
 				return true;
 		}
@@ -4763,7 +4765,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * @throws DatabaseException if a problem occurs
 	 */
 	@SuppressWarnings("UnusedReturnValue")
-	public final long removeAllRecordsWithCascade() throws DatabaseException {
+	final long removeAllRecordsWithCascade() throws DatabaseException {
 		try (Lock ignored = new WriteLock(this)) {
 			return removeRecordsWithCascade(null, null, false);
 		} catch (Exception e) {
@@ -4947,7 +4949,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		return removeRecordsWithAllFieldsWithCascade(transformToMapField(_fields));
 	}
 
-	private String getWhereCommand(Map<String, Object> _fields, boolean and)
+	/*private String getWhereCommand(Map<String, Object> _fields, boolean and)
 	{
 		if (_fields.size()==0)
 			throw new IllegalArgumentException("There is no fields");
@@ -4999,7 +5001,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			sb.append(")");
 		}
 		return sb.toString();
-	}
+	}*/
 
 	/**
 	 * Remove records which correspond to the given fields. All given fields must
@@ -5023,7 +5025,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		{
 			try (Lock ignored = new WriteLock(this)) {
 
-				return removeRecordsWithCascade(getWhereCommand(_fields, true), _fields, false);
+				return removeRecordsWithCascade(new SimpleAllFieldsFilter(-1,-1,true, null, _fields, fields), null,new HashMap<String, Object>(), false);
 			} catch (Exception e) {
 				throw DatabaseException.getDatabaseException(e);
 			}
@@ -5077,8 +5079,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		// synchronized(sql_connection)
 		{
 			try (Lock ignored = new WriteLock(this)) {
-				HashMap<String, Object> parameters=new HashMap<>();
-				return removeRecordsWithCascade(getWhereCommand(_records, true, parameters), parameters, false);
+				return removeRecordsWithCascade(new MultipleAllFieldsFilter(-1,-1,true, null, fields, _records), null,
+						new HashMap<String, Object>(), false);
 			} catch (Exception e) {
 				throw DatabaseException.getDatabaseException(e);
 			}
@@ -5136,7 +5138,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	@SuppressWarnings("SameParameterValue")
     private long removeRecordsWithOneOfFieldsWithCascade(Map<String, Object> _fields,
                                                          boolean _is_already_sql_transaction) throws DatabaseException {
-		return removeRecordsWithCascade(getWhereCommand(_fields, false), _fields, _is_already_sql_transaction);
+		return removeRecordsWithCascade(new SimpleOneOfFieldsFilter(-1,-1,true, null, _fields, fields), null,
+				new HashMap<String, Object>(), _is_already_sql_transaction);
 	}
 
 	/**
@@ -5200,8 +5203,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			throw new NullPointerException("The parameter _records is a null pointer !");
 		if (_records.length == 0)
 			throw new NullPointerException("The parameter _records is an empty array !");
-		HashMap<String, Object> parameters=new HashMap<>();
-		return removeRecordsWithCascade(getWhereCommand(_records, false, parameters), parameters, is_already_in_transaction);
+		return removeRecordsWithCascade(new MultipleOneOfFieldsFilter(-1,-1,true, null, fields, _records), null,
+				new HashMap<String, Object>(), is_already_in_transaction);
 	}
 
 	private HashMap<String, Object> getSqlPrimaryKeys(T _record) throws DatabaseException {
@@ -5350,8 +5353,9 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			}
 		}
 	}
+	@SuppressWarnings("SameParameterValue")
 	private int removeRecordsWithCascade(String where, final Map<String, Object> parameters,
-							  boolean is_already_in_transaction) throws DatabaseException {
+										 boolean is_already_in_transaction) throws DatabaseException {
 
 		final RuleInstance rule = where==null?null:Interpreter.getRuleInstance(where);
 		if (rule != null && !rule.isIndependantFromOtherTables(Table.this)) {

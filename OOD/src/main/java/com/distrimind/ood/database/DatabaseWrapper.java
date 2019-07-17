@@ -3162,6 +3162,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 				@Override
 				public Void run(DatabaseWrapper sql_connection) throws DatabaseException {
+
 					try {
 						if (!sql_database.containsKey(configuration.getPackage()))
 							loadDatabase(configuration, false, databaseVersion);
@@ -3179,21 +3180,29 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						Table<?> t = getTableInstance(c, databaseVersion);
 						list_tables.add(t);
 					}
-					for (Table<?> t : list_tables) {
+					for (int i=list_tables.size()-1;i>=0;i--) {
+						Table<?> t = list_tables.get(i);
+
 						t.removeTableFromDatabaseStep1();
 					}
-					for (Table<?> t : list_tables) {
+					for (int i=list_tables.size()-1;i>=0;i--) {
+						Table<?> t = list_tables.get(i);
 						t.removeTableFromDatabaseStep2();
 					}
 
-					@SuppressWarnings("unchecked")
-					HashMap<Package, Database> sd = (HashMap<Package, Database>) sql_database.clone();
+
+
+
+
+					HashMap<Package, Database> sd = new HashMap<>(sql_database);
 					db=sd.get(configuration.getPackage());
 					db.tables_per_versions.remove(databaseVersion);
-					db.updateCurrentVersion();
 					if (db.tables_per_versions.size()==0)
 						sd.remove(configuration.getPackage());
+					else
+						db.updateCurrentVersion();
 					sql_database = sd;
+
 
 					return null;
 				}
