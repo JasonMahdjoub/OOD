@@ -1050,13 +1050,13 @@ public class BackupRestoreManager {
 									long originalPosition = rout.get().currentPosition();
 									long numberOfSavedRecords=globalNumberOfSavedRecords.get();
 									long startPosition=0;
-
+									RandomOutputStream out = rout.get();
 
 									@Override
 									public Long run() throws Exception {
 
 										table.getPaginedRecordsWithUnknownType(startPosition==0?-1:startPosition, startPosition==0?-1:Long.MAX_VALUE, new Filter<DatabaseRecord>() {
-											RandomOutputStream out = rout.get();
+
 
 
 											@Override
@@ -1453,10 +1453,8 @@ public class BackupRestoreManager {
 							final long pp=progressPosition;
 							progressPosition=databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Long>() {
 								long progressPosition=pp;
-								int count=0;
 								@Override
 								public Long run() throws Exception {
-									++count;
 									for(;;) {
 										int startRecord = (int) in.currentPosition();
 										byte eventTypeCode = in.readByte();

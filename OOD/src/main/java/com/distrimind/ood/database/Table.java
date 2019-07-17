@@ -5390,7 +5390,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					int res=statement.executeUpdate();
 
 					if (res>0 && isLoadedInMemory()) {
-						memoryToRefresh();
+						memoryToRefreshWithCascade();
 					}
 
 					return res;

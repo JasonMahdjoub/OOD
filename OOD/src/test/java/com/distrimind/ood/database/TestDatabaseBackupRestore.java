@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 import com.distrimind.ood.database.database.*;
+import com.distrimind.ood.database.exceptions.ConstraintsNotRespectedDatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.TransactionCanceledException;
 import com.distrimind.util.FileTools;
@@ -550,7 +551,21 @@ public class TestDatabaseBackupRestore {
 		int table7ID=wrapper.getTableInstance(Table7.class).getTableID();
 		int oldVersion=wrapper.getCurrentDatabaseVersion(Table1.class.getPackage());
 		Assert.assertFalse(wrapper.isClosed());
-		usedBRM.restoreDatabaseToDateUTC(dateRestoration.get());
+		try {
+			usedBRM.restoreDatabaseToDateUTC(dateRestoration.get());
+		}
+		catch(ConstraintsNotRespectedDatabaseException e)
+		{
+			e.printStackTrace();
+			try {
+				usedBRM.restoreDatabaseToDateUTC(dateRestoration.get());
+				Assert.fail();
+			}
+			catch(ConstraintsNotRespectedDatabaseException e2)
+			{
+				Assert.fail();
+			}
+		}
 		Assert.assertNotEquals(wrapper.getCurrentDatabaseVersion(Table1.class.getPackage()), oldVersion, wrapper.getCurrentDatabaseVersion(Table1.class.getPackage())+";"+oldVersion);
 		Assert.assertFalse(wrapper.doesVersionExists(Table1.class.getPackage(), oldVersion));
 		Assert.assertNotEquals(table1Version, wrapper.getTableInstance(Table1.class).getDatabaseVersion());
