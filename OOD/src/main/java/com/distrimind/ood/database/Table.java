@@ -472,7 +472,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						Constructor<GroupedResults> res;
 						try {
 							res = GroupedResults.class.getDeclaredConstructor(
-									DatabaseWrapper.class, Collection.class, Class.class, String[].class);
+									DatabaseWrapper.class, int.class, Collection.class, Class.class, String[].class);
 							res.setAccessible(true);
 							return res;
 						} catch (NoSuchMethodException | SecurityException e) {
@@ -3858,7 +3858,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	public final GroupedResults<T> getGroupedResults(Collection<T> _records, String... _fields)
 			throws DatabaseException {
 		try {
-			return (GroupedResults<T>) grouped_results_constructor.newInstance(sql_connection, _records, class_record,
+			return (GroupedResults<T>) grouped_results_constructor.newInstance(sql_connection, databaseVersion, _records, class_record,
 					_fields);
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);

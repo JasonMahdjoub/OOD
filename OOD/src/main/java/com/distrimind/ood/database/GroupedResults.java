@@ -156,13 +156,13 @@ public final class GroupedResults<T extends DatabaseRecord> {
 	private final ArrayList<Group> groups = new ArrayList<>();
 
 	@SuppressWarnings("unchecked")
-	private GroupedResults(DatabaseWrapper _sql_conncection, Collection<T> _records, Class<T> _class_record,
+	private GroupedResults(DatabaseWrapper _sql_conncection, int databaseVersion, Collection<T> _records, Class<T> _class_record,
 			String... _fields) throws DatabaseException {
 		Class<T> class_record;
 
 		class_record = _class_record;
 
-		table = (Table<T>) _sql_conncection.getTableInstance(Table.getTableClass(class_record));
+		table = (Table<T>) _sql_conncection.getTableInstance(Table.getTableClass(class_record), databaseVersion);
 
 		if (_fields.length == 0)
 			throw new ConstraintsNotRespectedDatabaseException("It must have at mean one field to use.");

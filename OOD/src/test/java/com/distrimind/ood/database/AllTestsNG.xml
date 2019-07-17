@@ -7,16 +7,10 @@
 		</classes>
 	</test>
  -->
-	<test name="testH2">
+	<test name="testCentralizedDatabase">
 		<classes>
 			<class name="com.distrimind.ood.database.H2TestDatabase" />
-			<class name="com.distrimind.ood.database.H2TestDecentralizedDatabase" />
-		</classes>
-	</test>
-	<test name="testHDQLDB">  
-		<classes>
-		    <class name="com.distrimind.ood.database.HSQLDBTestDatabase" />
-		    <class name="com.distrimind.ood.database.HSQLDBTestDecentralizedDatabase" />
+			<class name="com.distrimind.ood.database.HSQLDBTestDatabase" />
 		</classes>
 	</test>
 	<test name="testBackupRestore">
@@ -24,5 +18,13 @@
 			<class name="com.distrimind.ood.database.TestDatabaseBackupRestore" />
 		</classes>
 	</test>
+	<test name="testDencentralizedDatabase">
+		<classes>
+
+			<class name="com.distrimind.ood.database.H2TestDecentralizedDatabase" />
+		    <class name="com.distrimind.ood.database.HSQLDBTestDecentralizedDatabase" />
+		</classes>
+	</test>
+
 
 </suite>
