@@ -909,7 +909,7 @@ public class BackupRestoreManager {
 
 	}
 
-	private void createEmptyBackupReference() throws DatabaseException {
+	/*private void createEmptyBackupReference() throws DatabaseException {
 		boolean notify=false;
 		try {
 			synchronized (this) {
@@ -939,9 +939,7 @@ public class BackupRestoreManager {
 
 					File file = initNewFileForBackupReference(backupTime);
 					try (RandomOutputStream out = new BufferedRandomOutputStream(new RandomFileOutputStream(file, RandomFileOutputStream.AccessMode.READ_AND_WRITE), maxBufferSize, maxBuffersNumber)) {
-						saveHeader(out, backupTime, true/*, index*/);
-					/*int nextTransactionReference = saveTransactionHeader(out, backupTime);
-					saveTransactionQueue(out, nextTransactionReference, backupTime);*/
+						saveHeader(out, backupTime, true);
 					}
 				} catch (IOException e) {
 					deleteDatabaseFilesFromReferenceToLastFile(oldLastFile, oldLength);
@@ -956,7 +954,7 @@ public class BackupRestoreManager {
 				backupFileListener.fileListChanged();
 
 		}
-	}
+	}*/
 
 	/**
 	 * Create a backup reference
@@ -1211,10 +1209,10 @@ public class BackupRestoreManager {
 		return !passive && (!isReady() || fileReferenceTimeStamps.size()==0 || fileReferenceTimeStamps.get(fileReferenceTimeStamps.size()-1)+backupConfiguration.getBackupReferenceDurationInMs()<System.currentTimeMillis());
 	}
 
-	boolean isExternalBackupManager()
+	/*boolean isExternalBackupManager()
 	{
 		return passive;
-	}
+	}*/
 
 	private void deleteDatabaseFilesFromReferenceToLastFile(long firstFileReference, int oldLength) throws DatabaseException {
 		if (firstFileReference==Long.MAX_VALUE)
@@ -1331,7 +1329,7 @@ public class BackupRestoreManager {
 			File currentFile;
 			ProgressMonitor pg;
 			long s;
-			ArrayList<Table<?>> tbls;
+			ArrayList<Table<?>> tbls, tbls2;
 			boolean reference=true;
 			LinkedList<Long> listIncrements;
 			boolean newVersionLoaded=false;
@@ -1394,6 +1392,12 @@ public class BackupRestoreManager {
 						tbls.add(t);
 					}
 
+					tbls2 = new ArrayList<>();
+					for (Class<? extends Table<?>> c : classes) {
+						Table<?> t = databaseWrapper.getTableInstance(c, oldVersion);
+						tbls2.add(t);
+					}
+
 					s = 0;
 					generateProgressBarParameterForRestoration(dateUTCInMs);
 					pg = backupConfiguration.getProgressMonitorForRestore();
@@ -1406,13 +1410,29 @@ public class BackupRestoreManager {
 						pg.setMinimum(0);
 						pg.setMaximum(1000);
 					}
+
+					/*boolean initNewFile=false;
+
 					if (isExternalBackupManager()) {
 						BackupRestoreManager internalManager = databaseWrapper.getBackupRestoreManager(this.databaseConfiguration.getPackage());
 						if (internalManager != null)
-							internalManager.createEmptyBackupReference();
+							initNewFile=true;
 					}
 					else
-						createEmptyBackupReference();
+						initNewFile=true;
+					if (initNewFile) {
+						if (fileTimeStamps.size()>0)
+						{
+							long lastTS=this.fileTimeStamps.get(fileTimeStamps.size()-1);
+
+							if ((((listIncrements.size()>0 && listIncrements.get(listIncrements.size()-1).equals(lastTS))
+									||
+									(listIncrements.size()==0 && startFileReference==lastTS))
+								|| isPartFull(lastTS, getFile(lastTS, fileReferenceTimeStamps.contains(lastTS))))) {
+								incrementAfterFile=lastTS;
+							}
+						}
+					}*/
 
 				} catch (Exception e) {
 					lastCurrentRestorationFileUsed=Long.MIN_VALUE;
@@ -1425,11 +1445,12 @@ public class BackupRestoreManager {
 			long progressPosition = 0;
 			final ProgressMonitor progressMonitor=pg;
 			final ArrayList<Table<?>> tables=tbls;
+			final ArrayList<Table<?>> oldTables=tbls2;
 			final int maxBufferSize = backupConfiguration.getMaxStreamBufferSizeForBackupRestoration();
 			final int maxBuffersNumber = backupConfiguration.getMaxStreamBufferNumberForBackupRestoration();
 
 			try{
-
+				databaseWrapper.getSynchronizer().startExtendedTransaction();
 				fileloop:while (currentFile!=null)
 				{
 					if (!currentFile.exists())
@@ -1469,6 +1490,7 @@ public class BackupRestoreManager {
 										if (tableIndex >= tables.size())
 											throw new IOException();
 										Table<?> table = tables.get(tableIndex);
+										Table<?> oldTable = oldTables.get(tableIndex);
 										int s = in.readUnsignedShortInt();
 										if (s==0)
 											throw new IOException();
@@ -1496,7 +1518,13 @@ public class BackupRestoreManager {
 														table.deserializeFields(hm, recordBuffer, 0, s, false, false, true);
 													}
 												}
-												table.addRecord(hm);
+												DatabaseRecord drRecord=oldTable.getRecord(hm);
+												DatabaseRecord newRecord=table.addUntypedRecord(hm, drRecord==null, null);
+												if (drRecord!=null) {
+													databaseWrapper.getConnectionAssociatedWithCurrentThread().addEvent(table,
+														new TableEvent<>(-1, DatabaseEventType.UPDATE, drRecord, newRecord, null), true);
+												}
+
 											}
 											break;
 											case UPDATE: {
@@ -1520,6 +1548,7 @@ public class BackupRestoreManager {
 													}
 												}
 												table.updateUntypedRecord(dr, true, null);
+
 											}
 											break;
 											case REMOVE: {
@@ -1581,15 +1610,59 @@ public class BackupRestoreManager {
 						currentFile=null;
 
 				}
+				for (int i=tables.size()-1;i>=0;i--)
+				{
+					final Table<?> table=tables.get(i);
+					final Table<?> oldTable=oldTables.get(i);
+					databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
+						private long startPosition=0;
+						@Override
+						public Void run() throws Exception {
+							oldTable.getPaginedRecordsWithUnknownType(startPosition==0?-1:startPosition, startPosition==0?-1:Long.MAX_VALUE, new Filter<DatabaseRecord>() {
+								@Override
+								public boolean nextRecord(DatabaseRecord _record) throws DatabaseException {
+									++startPosition;
+
+									if (table.getRecord(Table.getFields(oldTable.getPrimaryKeysFieldAccessors(), _record))==null)
+									{
+										databaseWrapper.getConnectionAssociatedWithCurrentThread().addEvent(table,
+											new TableEvent<>(-1, DatabaseEventType.REMOVE, _record, null, null), true);
+									}
+									return false;
+								}
+							});
+
+							return null;
+						}
+
+						@Override
+						public TransactionIsolation getTransactionIsolation() {
+							return TransactionIsolation.TRANSACTION_READ_COMMITTED;
+						}
+
+						@Override
+						public boolean doesWriteData() {
+							return true;
+						}
+
+						@Override
+						public void initOrReset() {
+
+						}
+					});
+
+				}
 
 
 				databaseWrapper.validateNewDatabaseVersionAndDeleteOldVersion(databaseConfiguration, oldVersion, newVersion);
-
+				databaseWrapper.getSynchronizer().validateExtendedTransaction();
 				//createBackupReference();
 				notify=true;
+
 				return res;
 
 			} catch (Exception e) {
+				databaseWrapper.getSynchronizer().cancelExtendedTransaction();
 				databaseWrapper.deleteDatabase(databaseConfiguration, newVersion);
 				throw DatabaseException.getDatabaseException(e);
 			}

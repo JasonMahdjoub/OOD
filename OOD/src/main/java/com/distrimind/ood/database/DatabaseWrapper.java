@@ -451,7 +451,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		private boolean canNotify = true;
 		private LinkedList<DatabaseEvent> events = new LinkedList<>();
 		protected HashMap<DecentralizedValue, ConnectedPeers> initializedHooks = new HashMap<>();
-		private Condition newEventCondition=locker.newCondition(); 
+		private Condition newEventCondition=locker.newCondition();
+		private boolean extendedTransactionInProgress=false;
+		private long lastTransactionID=Long.MIN_VALUE;
 		DatabaseSynchronizer() {
 		}
 
@@ -459,12 +461,30 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			return notifier;
 		}
 
+		void startExtendedTransaction() throws DatabaseException {
+			extendedTransactionInProgress=true;
+			lastTransactionID=getTransactionIDTable().getLastTransactionID();
+		}
+
+		void validateExtendedTransaction()
+		{
+			lastTransactionID=Long.MIN_VALUE;
+			extendedTransactionInProgress=false;
+		}
+
+		void cancelExtendedTransaction() throws DatabaseException {
+			getDatabaseTransactionEventsTable().removeRecordsWithCascade("id>=%id", lastTransactionID);
+			getTransactionIDTable().setLastTransactionID(lastTransactionID);
+			lastTransactionID=Long.MIN_VALUE;
+			extendedTransactionInProgress=false;
+		}
+
 		public boolean isInitialized() throws DatabaseException {
-			return getHooksTransactionsTable().getLocalDatabaseHost() != null;
+			return !extendedTransactionInProgress && getHooksTransactionsTable().getLocalDatabaseHost() != null;
 		}
 
 		public boolean isInitialized(DecentralizedValue hostID) {
-			return initializedHooks.get(hostID) != null;
+			return !extendedTransactionInProgress && initializedHooks.get(hostID) != null;
 		}
 
 		private void notifyNewEvent() throws DatabaseException {

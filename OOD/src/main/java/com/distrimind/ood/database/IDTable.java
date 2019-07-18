@@ -119,6 +119,10 @@ final class IDTable extends Table<IDTable.Record> {
 			return id - 1;
 	}
 
+	void setLastTransactionID(long id) throws DatabaseException {
+		setID(TRANSACTIONID, id);
+	}
+
 	long getLastValidatedTransactionID() throws DatabaseException {
 		return getLastID(GLOBAL_VALIDATED_TRANSACTIONID);
 	}

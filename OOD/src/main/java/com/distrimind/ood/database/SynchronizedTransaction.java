@@ -53,6 +53,8 @@ import com.distrimind.ood.database.exceptions.TransactionCanceledException;
  *            The type of the returned object.
  */
 public abstract class SynchronizedTransaction<O> {
+
+
 	public abstract O run() throws Exception;
 
 	public abstract TransactionIsolation getTransactionIsolation();
