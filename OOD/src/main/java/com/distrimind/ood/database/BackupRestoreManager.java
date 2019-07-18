@@ -1501,6 +1501,7 @@ public class BackupRestoreManager {
 												assert eventTypeCode==2;
 												HashMap<String, Object> hm=new HashMap<>();
 												table.deserializeFields(hm, recordBuffer, 0, s, true, false, false);
+												DatabaseRecord drRecord=oldTable.getRecord(hm);
 
 												if (in.readBoolean()) {
 													s = in.readUnsignedShortInt();
@@ -1518,7 +1519,7 @@ public class BackupRestoreManager {
 														table.deserializeFields(hm, recordBuffer, 0, s, false, false, true);
 													}
 												}
-												DatabaseRecord drRecord=oldTable.getRecord(hm);
+
 												DatabaseRecord newRecord=table.addUntypedRecord(hm, drRecord==null, null);
 												if (drRecord!=null) {
 													databaseWrapper.getConnectionAssociatedWithCurrentThread().addEvent(table,

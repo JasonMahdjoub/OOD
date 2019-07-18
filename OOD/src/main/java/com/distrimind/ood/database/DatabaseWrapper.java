@@ -473,7 +473,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		void cancelExtendedTransaction() throws DatabaseException {
-			getDatabaseTransactionEventsTable().removeRecordsWithCascade("id>=%id", lastTransactionID);
+			getDatabaseTransactionEventsTable().removeRecordsWithCascade("id>=%id", "id", lastTransactionID);
 			getTransactionIDTable().setLastTransactionID(lastTransactionID);
 			lastTransactionID=Long.MIN_VALUE;
 			extendedTransactionInProgress=false;
