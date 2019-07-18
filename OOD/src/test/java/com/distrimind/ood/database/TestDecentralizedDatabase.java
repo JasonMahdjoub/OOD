@@ -2265,4 +2265,55 @@ public abstract class TestDecentralizedDatabase {
 		testSynchronisation();
 	}
 
+
+
+	public void testSynchroBetweenPeersAfterRestoration(int nbPeers, boolean peersInitiallyConnected,
+														   List<TableEvent<DatabaseRecord>> levents) throws Exception {
+		ArrayList<TableEvent<DatabaseRecord>> events1=new ArrayList<>();
+		for (int i=0;i<levents.size()/2;i++)
+			events1.add(levents.get(i));
+
+		ArrayList<TableEvent<DatabaseRecord>> events2=new ArrayList<>();
+		for (int i=levents.size()/2;i<levents.size();i++)
+			events2.add(levents.get(i));
+
+		Database db=listDatabase.get(0);
+		BackupRestoreManager manager=db.getDbwrapper().getExternalBackupRestoreManager(TestDatabaseBackupRestore.externalBackupDirectory, TablePointed.class.getPackage(), TestDatabaseBackupRestore.getBackupConfiguration());
+		if (nbPeers==2)
+			testTransactionBetweenTwoPeers(peersInitiallyConnected, events1);
+		else
+			testTransactionBetweenThreePeers(peersInitiallyConnected, events1);
+		disconnectAllDatabase();
+		manager.createBackupReference();
+		Thread.sleep(50);
+		long backupUTC=System.currentTimeMillis();
+		Thread.sleep(50);
+		if (nbPeers==2)
+			testTransactionBetweenTwoPeers(peersInitiallyConnected, events2);
+		else
+			testTransactionBetweenThreePeers(peersInitiallyConnected, events2);
+
+		manager.restoreDatabaseToDateUTC(backupUTC);
+
+
+		connectAllDatabase();
+		exchangeMessages();
+		disconnectAllDatabase();
+		checkAllDatabaseInternalDataUsedForSynchro();
+	}
+
+	@Test(dataProvider = "provideDataForTransactionBetweenTwoPeers", dependsOnMethods = {
+			"testSynchroTransactionTests3" })
+	public void testSynchroBetweenTwoPeersAfterRestoration(boolean peersInitiallyConnected,
+												List<TableEvent<DatabaseRecord>> levents) throws Exception {
+		testSynchroBetweenPeersAfterRestoration(2, peersInitiallyConnected, levents);
+	}
+
+	@Test(dataProvider = "provideDataForTransactionBetweenThreePeers", dependsOnMethods = {
+			"testSynchroBetweenTwoPeersAfterRestoration" })
+	public void testSynchroBetweenThreePeersAfterRestoration(boolean peersInitiallyConnected,
+												  List<TableEvent<DatabaseRecord>> levents) throws Exception {
+		testSynchroBetweenPeersAfterRestoration(3, peersInitiallyConnected, levents);
+	}
+
 }

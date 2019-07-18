@@ -65,7 +65,7 @@ public class TestDatabaseBackupRestore {
 	private DatabaseWrapper wrapperForReferenceDatabase;
 	private final File referenceDatabaseDirectory=new File("./referenceDatabaseToTest");
 	private final File databaseDirectory=new File("./backupDatabaseToTest");
-	private final File externalBackupDirectory=new File("./externalBackupDatabaseToTest");
+	public static final File externalBackupDirectory=new File("./externalBackupDatabaseToTest");
 	private Table1.Record recordWithoutForeignKeyA, recordPointedByOtherA, recordWithoutForeignKeyAToRemove, recordPointedByOtherAToRemove;
 	private Table2.Record recordPointingToOtherA, recordPointingToOtherAToRemove;
 	private Table3.Record recordWithoutForeignKeyB, recordPointedByOtherB, recordWithoutForeignKeyBToRemove, recordPointedByOtherBToRemove;
@@ -402,7 +402,7 @@ public class TestDatabaseBackupRestore {
 		}
 	}
 
-	private static BackupConfiguration getBackupConfiguration()
+	static BackupConfiguration getBackupConfiguration()
 	{
 		return new BackupConfiguration(1000L, 10000L, 1000000, 200L, null);
 	}
