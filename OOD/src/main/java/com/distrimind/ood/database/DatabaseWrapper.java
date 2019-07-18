@@ -466,10 +466,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			lastTransactionID=getTransactionIDTable().getLastTransactionID();
 		}
 
-		void validateExtendedTransaction()
-		{
+		void validateExtendedTransaction() throws DatabaseException {
 			lastTransactionID=Long.MIN_VALUE;
 			extendedTransactionInProgress=false;
+			notifyNewEvent();
 		}
 
 		void cancelExtendedTransaction() throws DatabaseException {
@@ -480,11 +480,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		public boolean isInitialized() throws DatabaseException {
-			return !extendedTransactionInProgress && getHooksTransactionsTable().getLocalDatabaseHost() != null;
+			return getHooksTransactionsTable().getLocalDatabaseHost() != null;
 		}
 
 		public boolean isInitialized(DecentralizedValue hostID) {
-			return !extendedTransactionInProgress && initializedHooks.get(hostID) != null;
+			return initializedHooks.get(hostID) != null;
 		}
 
 		private void notifyNewEvent() throws DatabaseException {
@@ -492,7 +492,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			
 			try {
 				lockWrite();
-				if (canNotify && notifier != null) {
+				if (!extendedTransactionInProgress && canNotify && notifier != null) {
 					notify = true;
 					canNotify = false;
 				}
@@ -511,6 +511,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			try
 			{
 				lockWrite();
+				if (this.extendedTransactionInProgress)
+					return null;
 				if (events.isEmpty())
 					return null;
 				else {
