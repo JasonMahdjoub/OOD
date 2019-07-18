@@ -1841,9 +1841,7 @@ public abstract class TestDecentralizedDatabase {
 		testSynchronisation();
 	}
 
-	@DataProvider(name = "provideDataForTransactionBetweenTwoPeers")
-	public Object[][] provideDataForTransactionBetweenTwoPeers() throws DatabaseException {
-		int numberTransactions = 40;
+	public Object[][] provideDataForTransactionBetweenTwoPeers(int numberTransactions) throws DatabaseException {
 		Object[][] res = new Object[2 * numberTransactions][];
 		int index = 0;
 		for (boolean peersInitiallyConnected : new boolean[] { true, false }) {
@@ -1857,6 +1855,15 @@ public abstract class TestDecentralizedDatabase {
 		return res;
 	}
 
+	@DataProvider(name = "provideDataForTransactionBetweenTwoPeers")
+	public Object[][] provideDataForTransactionBetweenTwoPeers() throws DatabaseException {
+		return provideDataForTransactionBetweenTwoPeers(40);
+	}
+	@DataProvider(name = "provideDataForTransactionBetweenTwoPeersForRestorationTests")
+	public Object[][] provideDataForTransactionBetweenTwoPeersForRestorationTests() throws DatabaseException {
+		return provideDataForTransactionBetweenTwoPeers(5);
+	}
+
 	@Test(dataProvider = "provideDataForTransactionBetweenTwoPeers", dependsOnMethods = {
 			"testSynchroAfterPostIndirectTestsBetweenPeers" })
 	public void testTransactionBetweenTwoPeers(boolean peersInitiallyConnected,
@@ -1867,6 +1874,10 @@ public abstract class TestDecentralizedDatabase {
 	@DataProvider(name = "provideDataForTransactionBetweenThreePeers")
 	public Object[][] provideDataForTransactionBetweenThreePeers() throws DatabaseException {
 		return provideDataForTransactionBetweenTwoPeers();
+	}
+	@DataProvider(name = "provideDataForTransactionBetweenThreePeersForRestorationTests")
+	public Object[][] provideDataForTransactionBetweenThreePeersForRestorationTests() throws DatabaseException {
+		return provideDataForTransactionBetweenTwoPeersForRestorationTests();
 	}
 
 	@Test(dataProvider = "provideDataForTransactionBetweenThreePeers", dependsOnMethods = {
@@ -2302,14 +2313,14 @@ public abstract class TestDecentralizedDatabase {
 		checkAllDatabaseInternalDataUsedForSynchro();
 	}
 
-	@Test(dataProvider = "provideDataForTransactionBetweenTwoPeers", dependsOnMethods = {
+	@Test(dataProvider = "provideDataForTransactionBetweenTwoPeersForRestorationTests", dependsOnMethods = {
 			"testSynchroTransactionTests3" })
 	public void testSynchroBetweenTwoPeersAfterRestoration(boolean peersInitiallyConnected,
 												List<TableEvent<DatabaseRecord>> levents) throws Exception {
 		testSynchroBetweenPeersAfterRestoration(2, peersInitiallyConnected, levents);
 	}
 
-	@Test(dataProvider = "provideDataForTransactionBetweenThreePeers", dependsOnMethods = {
+	@Test(dataProvider = "provideDataForTransactionBetweenThreePeersForRestorationTests", dependsOnMethods = {
 			"testSynchroBetweenTwoPeersAfterRestoration" })
 	public void testSynchroBetweenThreePeersAfterRestoration(boolean peersInitiallyConnected,
 												  List<TableEvent<DatabaseRecord>> levents) throws Exception {
