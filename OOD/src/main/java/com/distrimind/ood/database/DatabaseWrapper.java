@@ -599,6 +599,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			
 		}
 
+
+
 		public void addHookForLocalDatabaseHost(DecentralizedValue hostID, Package... databasePackages)
 				throws DatabaseException {
 			ArrayList<String> packages = new ArrayList<>();
@@ -1092,6 +1094,17 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				unlockWrite();
 			}
 			
+		}
+
+		public Collection<DecentralizedValue> getDistantHostsIDs() throws DatabaseException {
+			HashSet<DecentralizedValue> res=new HashSet<>();
+			for (DatabaseHooksTable.Record hook : getHooksTransactionsTable().getRecords())
+			{
+				if (hook.concernsLocalDatabaseHost())
+					continue;
+				res.add(hook.getHostID());
+			}
+			return res;
 		}
 
 		public void received(DatabaseTransactionsIdentifiersToSynchronize d) throws DatabaseException {

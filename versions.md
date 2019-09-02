@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-2.2.0 Stable (Build: 580) (from 01/04/2013 to 16/07/2019)
+2.2.1 Stable (Build: 589) (from 01/04/2013 to 02/09/2019)
 
 # Creator(s):
 Jason MAHDJOUB
@@ -9,6 +9,10 @@ Jason MAHDJOUB
 Jason MAHDJOUB (Entred in the team at 01/04/2013)
 
 # Modifications:
+
+
+### 2.2.1 Stable (02/09/2019)
+* Add function DatabaseWrapper.Synchronizer.getDistantHostsIds
 
 
 ### 2.2.0 Stable (16/07/2019)
