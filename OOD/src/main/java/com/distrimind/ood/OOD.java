@@ -61,7 +61,7 @@ public class OOD {
 		c1.set(2013, Calendar.APRIL, 1);
 		Calendar c2 = Calendar.getInstance();
 		c2.set(2019, Calendar.SEPTEMBER, 2);
-		VERSION = new Version("Object Oriented Database", "OOD", (short)2, (short)2, (short)1, Version.Type.Stable, (short)1, c1.getTime(),
+		VERSION = new Version("Object Oriented Database", "OOD", (short)2, (short)3, (short)0, Version.Type.Stable, (short)1, c1.getTime(),
 				c2.getTime());
 		try {
 			InputStream is = OOD.class.getResourceAsStream("build.txt");
@@ -73,8 +73,14 @@ public class OOD {
 			VERSION.addDeveloper(new PersonDeveloper("mahdjoub", "jason", c.getTime()));
 
 			c = Calendar.getInstance();
+			c.set(2019, Calendar.OCTOBER, 1);
+			Description d = new Description((short)2, (short)3, (short)0, Version.Type.Stable, (short)1, c.getTime());
+			d.addItem("Update Utils to 4.5.0 Stable");
+			VERSION.addDescription(d);
+
+			c = Calendar.getInstance();
 			c.set(2019, Calendar.SEPTEMBER, 2);
-			Description d = new Description((short)2, (short)2, (short)1, Version.Type.Stable, (short)1, c.getTime());
+			d = new Description((short)2, (short)2, (short)1, Version.Type.Stable, (short)1, c.getTime());
 			d.addItem("Add function DatabaseWrapper.Synchronizer.getDistantHostsIds");
 			VERSION.addDescription(d);
 

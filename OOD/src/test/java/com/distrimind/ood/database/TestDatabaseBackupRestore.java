@@ -563,6 +563,7 @@ public class TestDatabaseBackupRestore {
 			}
 			catch(ConstraintsNotRespectedDatabaseException e2)
 			{
+				e2.printStackTrace();
 				Assert.fail();
 			}
 		}

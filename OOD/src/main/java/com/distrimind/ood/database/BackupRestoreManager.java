@@ -35,7 +35,9 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+import com.distrimind.ood.database.exceptions.ConstraintsNotRespectedDatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.i18n.DatabaseMessages;
 import com.distrimind.util.FileTools;
 import com.distrimind.util.io.*;
@@ -1519,8 +1521,23 @@ public class BackupRestoreManager {
 														table.deserializeFields(hm, recordBuffer, 0, s, false, false, true);
 													}
 												}
-
-												DatabaseRecord newRecord=table.addUntypedRecord(hm, drRecord==null, null);
+												DatabaseRecord newRecord;
+												try {
+													newRecord = table.addUntypedRecord(hm, drRecord == null, null);
+												}
+												catch (ConstraintsNotRespectedDatabaseException ignored)
+												{
+													//TODO this exception occurs sometimes but should not. See why.
+													newRecord=table.getRecord(hm);
+													for (FieldAccessor fa : table.getFieldAccessors())
+													{
+														if (!fa.isPrimaryKey())
+														{
+															fa.setValue(newRecord, hm.get(fa.getFieldName()));
+														}
+													}
+													table.updateUntypedRecord(newRecord, drRecord==null, null);
+												}
 												if (drRecord!=null) {
 													databaseWrapper.getConnectionAssociatedWithCurrentThread().addEvent(table,
 														new TableEvent<>(-1, DatabaseEventType.UPDATE, drRecord, newRecord, null), true);
