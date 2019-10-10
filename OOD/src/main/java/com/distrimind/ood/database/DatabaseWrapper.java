@@ -938,7 +938,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			
 		}
 		public DecentralizedValue getLocalHostID() throws DatabaseException {
-			return getHooksTransactionsTable().getLocalDatabaseHost().getHostID();
+			DatabaseHooksTable.Record r=getHooksTransactionsTable().getLocalDatabaseHost();
+			if (r==null)
+				return null;
+			else
+				return r.getHostID();
 		}
 
 		public void resetSynchronizerAndRemoveAllHosts() throws DatabaseException {

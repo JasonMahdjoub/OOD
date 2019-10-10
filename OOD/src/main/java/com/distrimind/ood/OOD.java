@@ -76,6 +76,7 @@ public class OOD {
 			c.set(2019, Calendar.OCTOBER, 10);
 			Description d = new Description((short)2, (short)3, (short)1, Version.Type.Stable, (short)1, c.getTime());
 			d.addItem("Update Utils to 4.5.1 Stable");
+			d.addItem("Fix NullPointerException into DatabaseWrapper$DatabaseSynchronizer.getLocalHostID()");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
