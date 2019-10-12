@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-2.3.1 Stable (Build: 600) (from 01/04/2013 to 10/10/2019)
+2.3.2 Stable (Build: 603) (from 01/04/2013 to 10/10/2019)
 
 # Creator(s):
 Jason MAHDJOUB
@@ -11,8 +11,8 @@ Jason MAHDJOUB (Entred in the team at 01/04/2013)
 # Modifications:
 
 
-### 2.3.1 Stable (10/10/2019)
-* Update Utils to 4.5.1 Stable
+### 2.3.2 Stable (10/10/2019)
+* Update Utils to 4.5.2 Stable
 * Fix NullPointerException into DatabaseWrapper$DatabaseSynchronizer.getLocalHostID()
 
 
