@@ -75,7 +75,7 @@ public class OOD {
 			c = Calendar.getInstance();
 			c.set(2019, Calendar.OCTOBER, 16);
 			Description d = new Description((short)2, (short)3, (short)3, Version.Type.Stable, (short)1, c.getTime());
-			d.addItem("Update Utils to 4.5.2 Stable");
+			d.addItem("Update Utils to 4.5.3 Stable");
 			d.addItem("Fix NullPointerException into DatabaseWrapper$DatabaseSynchronizer.getLocalHostID()");
 			d.addItem("Fix HookAddRequest externalisation");
 			d.addItem("Fix issue when loading the same database two times");
