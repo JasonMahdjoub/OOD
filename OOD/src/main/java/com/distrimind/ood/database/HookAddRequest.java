@@ -93,7 +93,7 @@ public class HookAddRequest extends DatabaseEvent implements DatabaseEventToSend
 		for (int i=0;i<s;i++)
 			packagesToSynchronize.add(in.readString(false, SerializationTools.MAX_CLASS_LENGTH));
 		s=in.readInt();
-		if (s<1 || s>DatabaseWrapper.MAX_DISTANT_PEERS)
+		if (s<0 || s>DatabaseWrapper.MAX_DISTANT_PEERS)
 			throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN, ""+s);
 		hostAlreadySynchronized=new ArrayList<>(s);
 		for (int i=0;i<s;i++)

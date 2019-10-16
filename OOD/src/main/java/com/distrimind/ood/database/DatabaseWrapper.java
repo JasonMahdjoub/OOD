@@ -3547,10 +3547,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new DatabaseException("The given Database was closed : " + this);
 			if (configuration == null)
 				throw new NullPointerException("tables is a null pointer.");
-
-			if (sql_database.containsKey(configuration.getPackage())) {
-				if (sql_database.get(configuration.getPackage()).tables_per_versions.containsKey(databaseVersion))
-					throw new DatabaseException("There is already a database associated to the given wrapper ");
+			{
+				Database db = sql_database.get(configuration.getPackage());
+				if (db != null) {
+					if ((databaseVersion == -1 && db.tables_per_versions.containsKey(db.getCurrentVersion()))
+							|| (databaseVersion != -1 && db.tables_per_versions.containsKey(databaseVersion))) {
+						throw new DatabaseException("There is already a database associated to the given wrapper ");
+					}
+				}
 			}
 			try {
 
