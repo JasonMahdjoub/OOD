@@ -951,8 +951,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			getDatabaseTransactionEventsTable().removeAllRecordsWithCascade();
 		}
 		public void disconnectAll() throws DatabaseException {
-
-			disconnectHook(getLocalHostID());
+			DecentralizedValue hostID=getLocalHostID();
+			if (isInitialized(hostID))
+				disconnectHook(hostID);
 		}
 
 		public void disconnectHook(final DecentralizedValue hostID) throws DatabaseException {
@@ -968,7 +969,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					hook = getHooksTransactionsTable().getHook(peer.getHostID());
 				if (hook == null)
 					throw DatabaseException.getDatabaseException(
-							new IllegalAccessException("hostID " + hostID + " has not be initialized !"));
+							new IllegalAccessException("hostID " + hostID + " has not been initialized !"));
 				if (hook.concernsLocalDatabaseHost()) {
 					initializedHooks.clear();
 					this.events.clear();
