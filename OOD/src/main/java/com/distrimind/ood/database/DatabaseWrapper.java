@@ -1175,7 +1175,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (data instanceof DatabaseTransactionsIdentifiersToSynchronize)
 				received((DatabaseTransactionsIdentifiersToSynchronize) data);
 			else if (data instanceof TransactionConfirmationEvents) {
-				if (isInitialized(data.getHostDestination()))
+				if (isInitialized(data.getHostSource()))
 					validateLastSynchronization(data.getHostSource(),
 							((TransactionConfirmationEvents) data).getLastValidatedTransaction());
 				else
