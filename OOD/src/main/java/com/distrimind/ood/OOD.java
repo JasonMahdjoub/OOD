@@ -79,6 +79,8 @@ public class OOD {
 			d.addItem("Fix NullPointerException into DatabaseWrapper$DatabaseSynchronizer.getLocalHostID()");
 			d.addItem("Fix HookAddRequest externalisation");
 			d.addItem("Fix issue when loading the same database two times");
+			d.addItem("Better reset synchronization");
+			d.addItem("Better disconnect all hosts");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();

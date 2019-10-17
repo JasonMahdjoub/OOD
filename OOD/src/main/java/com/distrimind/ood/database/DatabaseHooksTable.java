@@ -732,4 +732,11 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		return localHost.get();
 	}
 
+	void resetAllHosts() throws DatabaseException {
+		removeAllRecordsWithCascade();
+		localHost=null;
+		supportedDatabasePackages=null;
+		lastTransactionFieldsBetweenDistantHosts.clear();
+	}
+
 }

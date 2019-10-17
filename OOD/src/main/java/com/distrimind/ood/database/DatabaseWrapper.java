@@ -947,8 +947,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		public void resetSynchronizerAndRemoveAllHosts() throws DatabaseException {
 			disconnectAll();
-			getHooksTransactionsTable().removeAllRecordsWithCascade();
-			getDatabaseTransactionEventsTable().removeAllRecordsWithCascade();
+			getHooksTransactionsTable().resetAllHosts();
+			getDatabaseTransactionEventsTable().resetAllTransactions();
 		}
 		public void disconnectAll() throws DatabaseException {
 			DecentralizedValue hostID=getLocalHostID();

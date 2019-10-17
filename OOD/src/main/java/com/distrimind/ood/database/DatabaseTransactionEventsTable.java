@@ -514,4 +514,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 
 	}
 
+	void resetAllTransactions() throws DatabaseException {
+		removeAllRecordsWithCascade();
+	}
 }
