@@ -593,6 +593,17 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							return null;
 						} else {
 							r = l.get(0);
+							if (localHost.get().getHostID().equals(hostID))
+								localHost=null;
+							supportedDatabasePackages = null;
+							for (Iterator<Map.Entry<HostPair, Long>> it=lastTransactionFieldsBetweenDistantHosts.entrySet().iterator();it.hasNext(); )
+							{
+								Map.Entry<HostPair, Long> e=it.next();
+								if (e.getKey().getHostServer().equals(hostID)
+										|| e.getKey().getHostToSynchronize().equals(hostID))
+									it.remove();
+							}
+
 							if (r.removePackageDatabase(packages)) {
 								removeRecordWithCascade(r);
 								getDatabaseTransactionEventsTable().removeTransactionsFromLastID();

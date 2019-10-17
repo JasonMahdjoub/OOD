@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-2.3.4 Stable (Build: 636) (from 01/04/2013 to 17/10/2019)
+2.3.4 Stable (Build: 640) (from 01/04/2013 to 17/10/2019)
 
 # Creator(s):
 Jason MAHDJOUB
@@ -16,6 +16,8 @@ Jason MAHDJOUB (Entred in the team at 01/04/2013)
 * Fix NullPointerException into DatabaseWrapper$DatabaseSynchronizer.getLocalHostID()
 * Fix HookAddRequest externalisation
 * Fix issue when loading the same database two times
+* Better reset synchronization
+* Better disconnect all hosts
 
 
 ### 2.2.1 Stable (02/09/2019)
