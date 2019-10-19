@@ -385,8 +385,8 @@ public abstract class TestDatabase {
         Assert.assertEquals(0, r1.pk1);
         Assert.assertEquals(0, r2.pk1);
 
-        Assert.assertEquals(1, r1.pk2);
-        Assert.assertEquals(1, r2.pk2);
+        Assert.assertEquals(r1.pk2, 1);
+        Assert.assertEquals(r2.pk2, 1);
 		Assert.assertEquals(table1.getRecordsNumber(), 1);
 		Assert.assertEquals(table3.getRecordsNumber(), 1);
 		Assert.assertEquals(table1.getRecordsNumber("int_value=%v", "v", 3), 1);

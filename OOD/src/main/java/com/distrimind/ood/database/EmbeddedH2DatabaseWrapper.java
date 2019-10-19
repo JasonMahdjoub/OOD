@@ -570,7 +570,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 
 	public String getAutoIncrementPart(long startWith)
 	{
-		return "AUTO_INCREMENT("+startWith+")";
+		return "AUTO_INCREMENT("+startWith+",1)";
 	}
 
 

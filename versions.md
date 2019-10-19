@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-2.3.4 Stable (Build: 640) (from 01/04/2013 to 17/10/2019)
+2.3.5 Stable (Build: 654) (from 01/04/2013 to 19/10/2019)
 
 # Creator(s):
 Jason MAHDJOUB
@@ -9,6 +9,10 @@ Jason MAHDJOUB
 Jason MAHDJOUB (Entred in the team at 01/04/2013)
 
 # Modifications:
+
+
+### 2.3.5 Stable (19/10/2019)
+* Update dependencies
 
 
 ### 2.3.4 Stable (17/10/2019)
