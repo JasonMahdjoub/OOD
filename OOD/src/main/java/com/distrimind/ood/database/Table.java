@@ -854,7 +854,6 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						}
 						sqlQuerry.append(")");
 					}
-
 					foreign_keys_to_create = true;
 
 					for (FieldAccessor f : fields) {
@@ -7290,7 +7289,15 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 										_db.getConnectionAssociatedWithCurrentThread().getConnection(),
 										querry.toString(), generatedKeys)) {
 									int index = 1;
+									int autoPKIndex=1;
+									boolean computeAutoPKIndex=getDatabaseWrapper().areGeneratedValueReturnedWithPrimaryKeys();
 									for (FieldAccessor fa : fields) {
+										if (computeAutoPKIndex && fa.isPrimaryKey()) {
+											if (fa.isAutoPrimaryKey())
+												computeAutoPKIndex=false;
+											else
+												++autoPKIndex;
+										}
 										if (!fa.isAutoPrimaryKey() || _fields.containsKey(fa.getFieldName())) {
 											fa.getValue(instance, puq.statement, index);
 											index += fa.getDeclaredSqlFields().length;
@@ -7302,7 +7309,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 									{
 										ResultSet rsgk=puq.statement.getGeneratedKeys();
 										rsgk.next();
-										Long autovalue = rsgk.getLong(1);
+										Long autovalue = rsgk.getLong(autoPKIndex);
+
 										FieldAccessor fa = auto_primary_keys_fields.get(0);
 										if (fa.isAssignableTo(byte.class))
 											fa.setValue(instance, (byte) autovalue.longValue());

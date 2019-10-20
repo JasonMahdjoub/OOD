@@ -653,6 +653,11 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	}
 
 
+	@Override
+	boolean areGeneratedValueReturnedWithPrimaryKeys()
+	{
+		return true;
+	}
 
 
 }

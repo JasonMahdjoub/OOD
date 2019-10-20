@@ -3987,4 +3987,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		return limit.toString();
 	}
 
+	boolean areGeneratedValueReturnedWithPrimaryKeys()
+	{
+		return false;
+	}
+
 }
