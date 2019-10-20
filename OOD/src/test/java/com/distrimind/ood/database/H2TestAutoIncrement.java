@@ -60,9 +60,9 @@ public class H2TestAutoIncrement {
 			c= DriverManager
 				.getConnection("jdbc:h2:file:" + databaseFile.getAbsolutePath(), "SA", "");
 			Statement s=c.createStatement();
-			s.executeUpdate("CREATE  TABLE T11__(FLOATNUMBER_VALUE DOUBLE NOT NULL, INTEGERNUMBER_VALUE INTEGER NOT NULL, LONGNUMBER_VALUE BIGINT NOT NULL, SHORTNUMBER_VALUE SMALLINT NOT NULL, LONG_VALUE BIGINT NOT NULL, PK1 INTEGER NOT NULL, PK2 BIGINT AUTO_INCREMENT(1,1) NOT NULL, CONSTRAINT T11____PK PRIMARY KEY(PK1, PK2));");
+			s.executeUpdate("CREATE  TABLE T11__(FLOATNUMBER_VALUE DOUBLE NOT NULL, PK1 INTEGER NOT NULL, PK2 BIGINT AUTO_INCREMENT(1,1) NOT NULL, CONSTRAINT T11____PK PRIMARY KEY(PK1, PK2));");
 			s.close();
-			PreparedStatement ps=c.prepareStatement("INSERT INTO T11__(FLOATNUMBER_VALUE, INTEGERNUMBER_VALUE, LONGNUMBER_VALUE, SHORTNUMBER_VALUE, LONG_VALUE, PK1) VALUES('20', '21', '22', '23', '24', '25');", Statement.RETURN_GENERATED_KEYS );
+			PreparedStatement ps=c.prepareStatement("INSERT INTO T11__(FLOATNUMBER_VALUE, PK1) VALUES('20', '21');", Statement.RETURN_GENERATED_KEYS );
 			Assert.assertEquals(ps.executeUpdate(), 1);
 			ResultSet r=ps.getGeneratedKeys();
 			Assert.assertTrue(r.next());
