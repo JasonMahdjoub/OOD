@@ -1157,7 +1157,7 @@ public class BackupRestoreManager {
 
 	/**
 	 * Clean old backups
-	 *
+	 * @throws DatabaseException if a problem occurs
 	 */
 	public void cleanOldBackups() throws DatabaseException {
 		synchronized (this) {
@@ -1293,6 +1293,7 @@ public class BackupRestoreManager {
 	/**
 	 * Gets the younger backup event UTC time
 	 * @return the younger backup event UTC time
+	 * @throws DatabaseException if a problem occurs
 	 */
 	public long getMaxDateUTCInMS() throws DatabaseException {
 		synchronized (this) {
@@ -1310,6 +1311,7 @@ public class BackupRestoreManager {
 	 * @param dateUTCInMs the UTC time in milliseconds
 	 *
 	 * @return true if the given time corresponds to an available backup. False is chosen if the given time is too old to find a corresponding historical into the backups. In this previous case, it is the nearest backup that is chosen.
+	 * @throws DatabaseException if a problem occurs
 	 */
 	@SuppressWarnings("UnusedReturnValue")
 	public boolean restoreDatabaseToDateUTC(long dateUTCInMs) throws DatabaseException {
@@ -1320,6 +1322,7 @@ public class BackupRestoreManager {
 	 * @param dateUTCInMs the UTC time in milliseconds
 	 * @param chooseNearestBackupIfNoBackupMatch if set to true, and when no backup was found at the given date/time, than choose the older backup
 	 * @return true if the given time corresponds to an available backup. False is chosen if the given time is too old to find a corresponding historical into the backups. In this previous case, and if the param <code>chooseNearestBackupIfNoBackupMatch</code>is set to true, than it is the nearest backup that is chosen. Else no restoration is done.
+	 * @throws DatabaseException if a problem occurs
 	 */
 	public boolean restoreDatabaseToDateUTC(long dateUTCInMs, boolean chooseNearestBackupIfNoBackupMatch) throws DatabaseException {
 		boolean notify=false;

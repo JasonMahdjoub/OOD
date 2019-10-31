@@ -106,6 +106,7 @@ public class DatabaseConfiguration {
 
 	/**
 	 * Set the progress monitor's parameter for database upgrade
+	 * @param progressMonitorParametersForDatabaseUpgrade the progress monitor parameter
 	 */
 	public void setProgressMonitorParametersForDatabaseUpgrade(ProgressMonitorParameters progressMonitorParametersForDatabaseUpgrade) {
 		this.progressMonitorParametersForDatabaseUpgrade = progressMonitorParametersForDatabaseUpgrade;
@@ -131,6 +132,7 @@ public class DatabaseConfiguration {
 
 	/**
 	 * Set the progress monitor's parameter for database initialisation
+	 * @param progressMonitorParametersForDatabaseInitialisation the progress monitor parameter
 	 */
 	public void setProgressMonitorParametersForDatabaseInitialisation(ProgressMonitorParameters progressMonitorParametersForDatabaseInitialisation) {
 		this.progressMonitorParametersForDatabaseInitialisation = progressMonitorParametersForDatabaseInitialisation;

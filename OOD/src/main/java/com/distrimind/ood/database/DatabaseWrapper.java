@@ -3925,6 +3925,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * @param backupConfiguration the backup configuration
 	 * @return the backup manager or null if no backup manager was configured.
 	 * @see DatabaseConfiguration
+	 * @throws DatabaseException if a problem occurs
 	 */
 	public BackupRestoreManager getExternalBackupRestoreManager(File backupDirectory, Package _package, BackupConfiguration backupConfiguration) throws DatabaseException {
 
