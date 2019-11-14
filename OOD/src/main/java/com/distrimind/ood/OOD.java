@@ -76,6 +76,7 @@ public class OOD {
 			c.set(2019, Calendar.NOVEMBER, 13);
 			Description d = new Description((short)2, (short)3, (short)8, Version.Type.Stable, (short)1, c.getTime());
 			d.addItem("Update Utils to 4.6.3 Stable");
+			d.addItem("Fix backup cache upgrade issue when canceling transaction");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();

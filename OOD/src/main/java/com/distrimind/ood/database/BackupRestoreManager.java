@@ -110,7 +110,6 @@ public class BackupRestoreManager {
 		this.databaseConfiguration=databaseConfiguration;
 		this.databaseWrapper=databaseWrapper;
 		this.dbPackage=databaseConfiguration.getPackage();
-		System.out.println(backupDirectory);
 		FileTools.checkFolderRecursive(backupDirectory);
 		this.backupDirectory=backupDirectory;
 		this.backupConfiguration=backupConfiguration;
@@ -352,7 +351,6 @@ public class BackupRestoreManager {
 			int start=(int)out.currentPosition();
 			out.writeByte(eventType.getByte());
 
-			@SuppressWarnings("SuspiciousMethodCalls")
 			int tableIndex=classes.indexOf(table.getClass());
 			if (tableIndex<0)
 				throw new IOException();
@@ -858,9 +856,9 @@ public class BackupRestoreManager {
 			ok= currentClassesList.size() == classes.size();
 			for (int i=0;ok && i<currentClassesList.size();i++)
 			{
-				if (!currentClassesList.get(i).equals(classes.get(i)))
-				{
-					ok=false;
+				if (!currentClassesList.get(i).equals(classes.get(i))) {
+					ok = false;
+					break;
 				}
 
 			}
@@ -1934,10 +1932,13 @@ public class BackupRestoreManager {
 			}
 		}
 
+
+
 		final void cancelTransaction(long backupPosition) throws DatabaseException
 		{
 			try {
 				out.setLength(backupPosition);
+				lastBackupEventUTC=Long.MAX_VALUE;
 			} catch (IOException e) {
 				throw DatabaseException.getDatabaseException(e);
 			}
@@ -1946,6 +1947,7 @@ public class BackupRestoreManager {
 		final void cancelTransaction() throws DatabaseException
 		{
 			synchronized (BackupRestoreManager.this) {
+
 				if (closed)
 					return;
 				try {
@@ -1955,6 +1957,7 @@ public class BackupRestoreManager {
 				}
 
 				deleteDatabaseFilesFromReferenceToLastFile(oldLastFile, oldLength);
+
 				if (!computeDatabaseReference.delete())
 					throw new DatabaseException("Impossible to delete file : " + computeDatabaseReference);
 
