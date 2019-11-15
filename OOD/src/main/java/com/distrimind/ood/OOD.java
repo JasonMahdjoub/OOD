@@ -61,7 +61,7 @@ public class OOD {
 		c1.set(2013, Calendar.APRIL, 1);
 		Calendar c2 = Calendar.getInstance();
 		c2.set(2019, Calendar.NOVEMBER, 13);
-		VERSION = new Version("Object Oriented Database", "OOD", (short)2, (short)3, (short)8, Version.Type.Stable, (short)1, c1.getTime(),
+		VERSION = new Version("Object Oriented Database", "OOD", (short)2, (short)3, (short)9, Version.Type.Stable, (short)1, c1.getTime(),
 				c2.getTime());
 		try {
 			InputStream is = OOD.class.getResourceAsStream("build.txt");
@@ -74,7 +74,14 @@ public class OOD {
 
 			c = Calendar.getInstance();
 			c.set(2019, Calendar.NOVEMBER, 13);
-			Description d = new Description((short)2, (short)3, (short)8, Version.Type.Stable, (short)1, c.getTime());
+			Description d = new Description((short)2, (short)3, (short)9, Version.Type.Stable, (short)1, c.getTime());
+			d.addItem("Update Utils to 4.6.4 Stable");
+			d.addItem("Compile with openjdk 13 (compatibility set to Java 7");
+			VERSION.addDescription(d);
+
+			c = Calendar.getInstance();
+			c.set(2019, Calendar.NOVEMBER, 13);
+			d = new Description((short)2, (short)3, (short)8, Version.Type.Stable, (short)1, c.getTime());
 			d.addItem("Update Utils to 4.6.3 Stable");
 			d.addItem("Fix backup cache upgrade issue when canceling transaction");
 			VERSION.addDescription(d);
