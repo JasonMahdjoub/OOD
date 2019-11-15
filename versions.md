@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-2.3.9 Stable (Build: 686) (from 01/04/2013 to 13/11/2019)
+2.3.9 Stable (Build: 698) (from 01/04/2013 to 15/11/2019)
 
 # Creator(s):
 Jason MAHDJOUB
@@ -11,7 +11,7 @@ Jason MAHDJOUB (Entred in the team at 01/04/2013)
 # Modifications:
 
 
-### 2.3.9 Stable (13/11/2019)
+### 2.3.9 Stable (15/11/2019)
 * Update Utils to 4.6.4 Stable
 * Compile with openjdk 13 (compatibility set to Java 7
 
