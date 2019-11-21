@@ -60,8 +60,8 @@ public class OOD {
 		Calendar c1 = Calendar.getInstance();
 		c1.set(2013, Calendar.APRIL, 1);
 		Calendar c2 = Calendar.getInstance();
-		c2.set(2019, Calendar.NOVEMBER, 15);
-		VERSION = new Version("Object Oriented Database", "OOD", (short)2, (short)3, (short)10, Version.Type.Stable, (short)1, c1.getTime(),
+		c2.set(2019, Calendar.NOVEMBER, 21);
+		VERSION = new Version("Object Oriented Database", "OOD", (short)2, (short)3, (short)11, Version.Type.Stable, (short)1, c1.getTime(),
 				c2.getTime());
 		try {
 			InputStream is = OOD.class.getResourceAsStream("build.txt");
@@ -73,8 +73,14 @@ public class OOD {
 			VERSION.addDeveloper(new PersonDeveloper("mahdjoub", "jason", c.getTime()));
 
 			c = Calendar.getInstance();
+			c.set(2019, Calendar.NOVEMBER, 21);
+			Description d = new Description((short)2, (short)3, (short)11, Version.Type.Stable, (short)1, c.getTime());
+			d.addItem("Update Utils to 4.6.6 Stable");
+			VERSION.addDescription(d);
+
+			c = Calendar.getInstance();
 			c.set(2019, Calendar.NOVEMBER, 15);
-			Description d = new Description((short)2, (short)3, (short)10, Version.Type.Stable, (short)1, c.getTime());
+			d = new Description((short)2, (short)3, (short)10, Version.Type.Stable, (short)1, c.getTime());
 			d.addItem("Update Utils to 4.6.5 Stable");
 			d.addItem("Compile with openjdk 13 (compatibility set to Java 7");
 			VERSION.addDescription(d);
