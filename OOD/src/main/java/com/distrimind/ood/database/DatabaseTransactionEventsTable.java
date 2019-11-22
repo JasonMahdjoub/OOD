@@ -181,7 +181,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 			int i = 0;
 			int size = 2 + peers.size() * 2;
 			for (DecentralizedValue id : peers) {
-				bytes[i] = id.encodeWithDefaultParameters();
+				bytes[i] = id.encode();
 				size += bytes[i++].length + 2;
 			}
 			if (size > concernedHostsSizeLimit) {

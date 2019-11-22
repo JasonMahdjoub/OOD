@@ -151,7 +151,7 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 		else if (getFieldClassType()==ASymmetricPublicKey.class)
 			return ((ASymmetricPublicKey) instance).encode(encodeExpirationUTC);
 		else if (DecentralizedValue.class.isAssignableFrom(getFieldClassType()))
-			return ((DecentralizedValue) instance).encodeWithDefaultParameters();
+			return ((DecentralizedValue) instance).encode();
 		else
 			throw new IllegalAccessError();
 	}

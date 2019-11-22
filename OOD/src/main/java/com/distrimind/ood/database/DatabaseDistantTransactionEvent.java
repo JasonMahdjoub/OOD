@@ -151,7 +151,7 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 			int i = 0;
 			int size = 2 + peers.size() * 2;
 			for (DecentralizedValue id : peers) {
-				bytes[i] = id.encodeWithDefaultParameters();
+				bytes[i] = id.encode();
 				size += bytes[i++].length + 2;
 				if (size > 32768) {
 					peersInformedFull = true;
@@ -390,7 +390,7 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 						} else if (_record.getLocalID() == fromTransactionID) {
 							if (_record.isConcernedBy(hook.getHostID())) {
 								oos.writeByte(DatabaseTransactionsPerHostTable.EXPORT_INDIRECT_TRANSACTION);
-								byte[] b = _record.getHook().getHostID().encodeWithDefaultParameters();
+								byte[] b = _record.getHook().getHostID().encode();
 								oos.writeShort((short) b.length);
 								oos.write(b);
 								oos.writeLong(_record.getID());
