@@ -45,7 +45,7 @@ import java.lang.annotation.Target;
 /**
  * This annotation must be declared before a DatabaseRecord field to mean that
  * the correspondent field is a primary key randomly generated. The type of this
- * field must be an 'int', a 'long', or a {@link java.math.BigInteger}. if the
+ * field must be an 'byte', a 'short', 'int', a 'long', or a {@link java.math.BigInteger}. if the
  * type is an int, the generated value will be a random positive 31 bits value.
  * if the type is a long, the generated value will be a random positive 63 bits
  * value. if the type is a BigInteger, the generated value will be a random
@@ -64,6 +64,6 @@ public @interface RandomPrimaryKey {
 	 * 
 	 * @return The number of bits in which the random value is generated.
 	 */
-	int byteNumber() default -1;
+	int bitsNumber() default -1;
 
 }
