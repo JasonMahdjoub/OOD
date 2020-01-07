@@ -60,7 +60,7 @@ public class OOD {
 		Calendar c1 = Calendar.getInstance();
 		c1.set(2013, Calendar.APRIL, 1);
 		Calendar c2 = Calendar.getInstance();
-		c2.set(2019, Calendar.DECEMBER, 16);
+		c2.set(2019, Calendar.JANUARY, 7);
 		VERSION = new Version("Object Oriented Database", "OOD", (short)2, (short)3, (short)14, Version.Type.Stable, (short)1, c1.getTime(),
 				c2.getTime());
 		try {
@@ -73,9 +73,15 @@ public class OOD {
 			VERSION.addDeveloper(new PersonDeveloper("mahdjoub", "jason", c.getTime()));
 
 			c = Calendar.getInstance();
-			c.set(2019, Calendar.DECEMBER, 16);
+			c.set(2019, Calendar.JANUARY, 7);
 			Description d = new Description((short)2, (short)3, (short)14, Version.Type.Stable, (short)1, c.getTime());
 			d.addItem("Rename RandomPrivateKey.byteNumber but do not change its behavior");
+			VERSION.addDescription(d);
+
+			c = Calendar.getInstance();
+			c.set(2019, Calendar.DECEMBER, 16);
+			d = new Description((short)2, (short)3, (short)13, Version.Type.Stable, (short)1, c.getTime());
+			d.addItem("Update Utils to 4.7.1 Stable");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
