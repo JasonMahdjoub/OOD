@@ -73,7 +73,7 @@ public class OOD {
 			VERSION.addDeveloper(new PersonDeveloper("mahdjoub", "jason", c.getTime()));
 
 			c = Calendar.getInstance();
-			c.set(2019, Calendar.JANUARY, 7);
+			c.set(2020, Calendar.JANUARY, 7);
 			Description d = new Description((short)2, (short)3, (short)14, Version.Type.Stable, (short)1, c.getTime());
 			d.addItem("Rename RandomPrivateKey.byteNumber but do not change its behavior");
 			VERSION.addDescription(d);
