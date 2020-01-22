@@ -21,7 +21,7 @@ Adapt into your build.gradle file, the next code :
 	...
 	dependencies {
 		...
-		compile(group:'com.distrimind.ood', name: 'OOD', version: '2.3.14-Stable')
+		compile(group:'com.distrimind.ood', name: 'OOD', version: '2.3.15-Stable')
 		//choose this driver for H2 database
 			compile(group:'com.h2database', name: 'h2', version: '1.4.200')
 		//choose one of these optional drivers for HSQLDB
@@ -50,7 +50,7 @@ Adapt into your pom.xml file, the next code :
 			<dependency>
 				<groupId>com.distrimind.ood</groupId>
 				<artifactId>OOD</artifactId>
-				<version>2.3.14-Stable</version>
+				<version>2.3.15-Stable</version>
 			</dependency>
 			<!-- choose one of these optional drivers for H2 database-->
 				<dependency>
