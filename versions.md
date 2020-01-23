@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-2.3.16 Stable (Build: 742) (from 01/04/2013 to 22/01/2019)
+2.3.18 Stable (Build: 756) (from 01/04/2013 to 23/01/2019)
 
 # Creator(s):
 Jason MAHDJOUB
@@ -11,7 +11,7 @@ Jason MAHDJOUB (Entred in the team at 01/04/2013)
 # Modifications:
 
 
-### 2.3.16 Stable (22/01/2020)
+### 2.3.18 Stable (23/01/2020)
 * Update Utils to 4.8.1
 
 
