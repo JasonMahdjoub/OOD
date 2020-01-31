@@ -54,9 +54,9 @@ public abstract class CommonHSQLH2DatabaseWrapper extends DatabaseWrapper{
 
 
 
-	protected CommonHSQLH2DatabaseWrapper(String databaseName, File databaseDirectory, boolean alwaysDeconectAfterOnTransaction)
+	protected CommonHSQLH2DatabaseWrapper(String databaseName, File databaseDirectory, boolean alwaysDisconnectAfterOnTransaction, boolean loadToMemory)
 			throws DatabaseException {
-		super(databaseName, databaseDirectory, alwaysDeconectAfterOnTransaction);
+		super(databaseName, databaseDirectory, alwaysDisconnectAfterOnTransaction, loadToMemory);
 	}
 
 

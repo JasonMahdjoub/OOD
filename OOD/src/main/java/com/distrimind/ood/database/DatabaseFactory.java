@@ -53,9 +53,12 @@ public abstract class DatabaseFactory extends MultiFormatProperties {
 
 	private volatile transient DatabaseWrapper wrapper;
 
+
 	protected DatabaseFactory() {
 		super(null);
 	}
+
+
 
 	public final DatabaseWrapper getDatabaseWrapperSingleton() throws DatabaseException {
 		if (wrapper == null) {
@@ -68,5 +71,6 @@ public abstract class DatabaseFactory extends MultiFormatProperties {
 	}
 
 	protected abstract DatabaseWrapper newWrapperInstance() throws DatabaseException;
+
 
 }

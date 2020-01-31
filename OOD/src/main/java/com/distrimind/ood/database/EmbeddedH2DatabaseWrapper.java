@@ -50,7 +50,7 @@ import java.util.regex.Pattern;
 
 /**
  * @author Jason Mahdjoub
- * @version 1.0
+ * @version 1.1
  * @since MaDKitLanEdition 2.0
  */
 public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
@@ -61,39 +61,14 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	private static Method H2ValueMethod=null;
 	private static Object blobStateNewValue=null;
 
-	/**
-	 * Constructor
-	 *
-	 * @param _directory_name
-	 *            The directory which contains the database. If this directory does not
-	 *            exists, it will be automatically created with the correspondent
-	 *            database.
-	 *
-	 * @throws NullPointerException
-	 *             if parameters are null pointers.
-	 * @throws IllegalArgumentException
-	 *             If the given file is a directory.
-	 * @throws DatabaseException if a problem occurs
-	 */
-	public EmbeddedH2DatabaseWrapper(File _directory_name) throws DatabaseException {
-		this(_directory_name, false);
+
+	EmbeddedH2DatabaseWrapper(boolean loadToMemory) throws DatabaseException {
+		super(null, null, false, true);
+		if (!loadToMemory)
+			throw new IllegalArgumentException();
 	}
-	/**
-	 * Constructor
-	 *
-	 * @param _directory_name
-	 *            The directory which contains the database. If this directory does not
-	 *            exists, it will be automatically created with the correspondent
-	 *            database.
-	 * @param alwaysDeconectAfterOnTransaction true if the database must always be connected and detected during one transaction
-	 * @throws NullPointerException
-	 *             if parameters are null pointers.
-	 * @throws IllegalArgumentException
-	 *             If the given file is a directory.
-	 * @throws DatabaseException if a problem occurs
-	 */
-	public EmbeddedH2DatabaseWrapper(File _directory_name, boolean alwaysDeconectAfterOnTransaction) throws DatabaseException {
-		super("Database from file : " + getH2DataFileName(getDatabaseFileName(_directory_name)), _directory_name, alwaysDeconectAfterOnTransaction);
+	EmbeddedH2DatabaseWrapper(File _directory_name, boolean alwaysDisconnectAfterOnTransaction) throws DatabaseException {
+		super("Database from file : " + getH2DataFileName(getDatabaseFileName(_directory_name)), _directory_name, alwaysDisconnectAfterOnTransaction, false);
 	}
 
 	private static File getDatabaseFileName(File directoryName)
@@ -114,7 +89,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 					//DbBackupMain=Class.forName("org.hsqldb.lib.tar.DbBackupMain").getDeclaredMethod("main", (new String[0]).getClass());
 					for (Object o : Class.forName("org.h2.jdbc.JdbcLob$State").getEnumConstants())
 					{
-						if (((Enum)o).name().equals("NEW"))
+						if (((Enum<?>)o).name().equals("NEW"))
 						{
 							blobStateNewValue=o;
 							break;
@@ -128,7 +103,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 			}
 		}
 	}
-	private static Connection getConnection(File _file_name)
+	private static Connection getConnection(File _file_name, boolean loadToMemory)
 			throws DatabaseLoadingException {
 		if (_file_name == null)
 			throw new NullPointerException("The parameter _file_name is a null pointer !");
@@ -136,7 +111,11 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 			throw new IllegalArgumentException("The given file name is a directory !");
 		ensureH2Loading();
 		try {
-			Connection c = DriverManager
+			Connection c;
+			if (loadToMemory)
+				c=DriverManager.getConnection("jdbc:h2:mem:test");
+			else
+				c = DriverManager
 					.getConnection("jdbc:h2:file:" + getH2DataFileName(_file_name), "SA", "");
 			databaseShutdown.set(false);
 			if (c==null)
@@ -181,7 +160,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 
 	@Override
 	protected Connection reopenConnectionImpl() throws DatabaseLoadingException {
-		return getConnection(getDatabaseFileName(super.getDatabaseDirectory()));
+		return getConnection(getDatabaseFileName(super.getDatabaseDirectory()), isLoadToMemory());
 
 	}
 
@@ -199,6 +178,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 				@Override
 				public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 					try {
+						//noinspection RedundantCast
 						return H2BlobConstructor.newInstance(getConnectionAssociatedWithCurrentThread().getConnection(), H2ValueMethod.invoke(null, (Object) bytes), blobStateNewValue, -1);
 					} catch (Exception e) {
 						throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));

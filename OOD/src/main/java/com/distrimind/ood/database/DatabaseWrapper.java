@@ -87,6 +87,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	// protected Connection sql_connection;
 	private volatile boolean closed = false;
 	protected final String database_name;
+	protected final boolean loadToMemory;
 	protected final File databaseDirectory;
 	protected final String database_identifier;
 	private static final HashMap<String, Lock> lockers = new HashMap<>();
@@ -266,44 +267,53 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * @param _database_name
 	 *            the database name
 	 * @param databaseDirectory the database file or directory. Can be null for distant database.
-     * @param alwaysDeconectAfterOnTransaction true if the database must always be connected and detected during one transaction
+     * @param alwaysDisconnectAfterOnTransaction true if the database must always be connected and detected during one transaction
 	 * @throws DatabaseException if a problem occurs
 	 * 
 	 */
-	protected DatabaseWrapper(String _database_name, File databaseDirectory, boolean alwaysDeconectAfterOnTransaction) throws DatabaseException {
-		if (_database_name == null)
-			throw new NullPointerException("_database_name");
-		if (databaseDirectory==null)
-			throw new NullPointerException();
-		if (databaseDirectory.exists() && !databaseDirectory.isDirectory())
-			throw new IllegalArgumentException();
-		this.alwaysDeconectAfterOnTransaction=alwaysDeconectAfterOnTransaction;
-		try
+	protected DatabaseWrapper(String _database_name, File databaseDirectory, boolean alwaysDisconnectAfterOnTransaction, boolean loadToMemory) throws DatabaseException {
+		if (loadToMemory)
 		{
-			this.randomForKeys=SecureRandomType.BC_FIPS_APPROVED_FOR_KEYS.getSingleton(null);
+			this.alwaysDeconectAfterOnTransaction=false;
+			this.database_name="Load_to_memory";
+			this.loadToMemory=true;
+			this.database_identifier=this.database_name;
+			this.databaseDirectory=null;
 		}
-		catch(Exception e)
-		{
-			throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
-		}
-		/*
-		 * if (_sql_connection==null) throw new NullPointerException("_sql_connection");
-		 */
+		else {
+			if (_database_name == null)
+				throw new NullPointerException("_database_name");
+			if (databaseDirectory==null)
+				throw new NullPointerException();
+			if (databaseDirectory.exists() && !databaseDirectory.isDirectory())
+				throw new IllegalArgumentException();
 
-		database_name = _database_name;
-		this.databaseDirectory=databaseDirectory;
-		Disk disk=null;
-		try {
-			Partition p=HardDriveDetect.getInstance().getConcernedPartition(databaseDirectory);
-			disk=p.getDisk();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+			this.loadToMemory=false;
+			this.alwaysDeconectAfterOnTransaction = alwaysDisconnectAfterOnTransaction;
+			try {
+				this.randomForKeys = SecureRandomType.BC_FIPS_APPROVED_FOR_KEYS.getSingleton(null);
+			} catch (Exception e) {
+				throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
+			}
+			/*
+			 * if (_sql_connection==null) throw new NullPointerException("_sql_connection");
+			 */
 
-		if (disk!=null)
-			database_identifier = disk.toString();
-		else
-			database_identifier = _database_name;
+			database_name = _database_name;
+			this.databaseDirectory = databaseDirectory;
+			Disk disk = null;
+			try {
+				Partition p = HardDriveDetect.getInstance().getConcernedPartition(databaseDirectory);
+				disk = p.getDisk();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+
+			if (disk != null)
+				database_identifier = disk.toString();
+			else
+				database_identifier = _database_name;
+		}
 		// sql_connection=_sql_connection;
 
 		// isWindows=OSValidator.isWindows();
@@ -312,6 +322,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		converters = new ArrayList<>();
 		converters.add(new DefaultByteTabObjectConverter());
 		synchronizer=new DatabaseSynchronizer();
+	}
+
+	public boolean isLoadToMemory()
+	{
+		return loadToMemory;
 	}
 
 	public File getDatabaseDirectory() {
