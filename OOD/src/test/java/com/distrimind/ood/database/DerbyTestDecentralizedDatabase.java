@@ -53,23 +53,23 @@ public class DerbyTestDecentralizedDatabase extends TestDecentralizedDatabase {
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstance1() throws IllegalArgumentException, DatabaseException {
-		return new EmbeddedDerbyWrapper(data_directory1);
+		return new InFileEmbeddedH2DatabaseFactory(data_directory1).newWrapperInstance();
 	}
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstance2() throws IllegalArgumentException, DatabaseException {
 
-		return new EmbeddedDerbyWrapper(data_directory2);
+		return new InFileEmbeddedH2DatabaseFactory(data_directory2).newWrapperInstance();
 	}
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstance3() throws IllegalArgumentException, DatabaseException {
-		return new EmbeddedDerbyWrapper(data_directory3);
+		return new InFileEmbeddedH2DatabaseFactory(data_directory3).newWrapperInstance();
 	}
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstance4() throws IllegalArgumentException, DatabaseException {
-		return new EmbeddedDerbyWrapper(data_directory4);
+		return new InFileEmbeddedH2DatabaseFactory(data_directory4).newWrapperInstance();
 	}
 
 	@Override

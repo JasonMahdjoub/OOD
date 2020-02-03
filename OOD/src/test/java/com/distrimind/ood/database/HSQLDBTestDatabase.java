@@ -61,12 +61,12 @@ public class HSQLDBTestDatabase extends TestDatabase {
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstanceA() throws IllegalArgumentException, DatabaseException {
-		return new EmbeddedHSQLDBWrapper(new File(database_file_name));
+		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name)).newWrapperInstance();
 	}
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstanceB() throws IllegalArgumentException, DatabaseException {
-		return new EmbeddedHSQLDBWrapper(new File(database_file_nameb));
+		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_nameb)).newWrapperInstance();
 	}
 
 	@Override

@@ -66,57 +66,32 @@ import org.hsqldb.lib.tar.TarMalformatException;*/
  * @since OOD 1.0
  */
 public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
-	/**
-	 * Constructor
-	 *
-	 * @param databaseDirectory
-	 *            The directory which contains the database. If this directory does not
-	 *            exists, it will be automatically created with the correspondent
-	 *            database.
-     * @param alwaysDeconectAfterOnTransaction true if the database must always be connected and detected during one transaction
-	 * @param concurrencyControl the concurrency mode
-	 * @param _cache_rows
-	 *            indicates the maximum number of rows of cached tables that are
-	 *            held in memory. The value can range between 100- 4 billion.
-	 *            Default value is 100. Table loaded into memory are not concerned.
-	 * @param _cache_size
-	 *            Indicates the total size (in kilobytes) of rows in the memory
-	 *            cache used with cached tables. The value can range between 100 KB
-	 *            - 4 GB. The default is 10,000, representing 10,000 kilobytes.
-	 * @param _result_max_memory_rows
-	 *            This property can be set to specify how many rows of each results
-	 *            or temporary table are stored in memory before the table is
-	 *            written to disk. The default is zero and means data is always
-	 *            stored in memory. If this setting is used, it should be set above
-	 *            1000.
-	 * @param _cache_free_count
-	 *            The default indicates 512 unused spaces are kept for later use.
-	 *            The value can range between 0 - 8096. When rows are deleted, the
-	 *            space is recovered and kept for reuse for new rows. If too many
-	 *            rows are deleted, the smaller recovered spaces are lost and the
-	 *            largest ones are retained for later use. Normally there is no need
-	 *            to set this property.
-	 * @param lockFile true if the database's file must be locked to avoid concurrent access
-	 * @throws NullPointerException
-	 *             if parameters are null pointers.
-	 * @throws IllegalArgumentException
-	 *             If the given file is a directory.
-	 * @throws DatabaseException if a problem occurs
-	 */
-	public EmbeddedHSQLDBWrapper(File databaseDirectory, boolean alwaysDeconectAfterOnTransaction, HSQLDBConcurrencyControl concurrencyControl, int _cache_rows,
+	EmbeddedHSQLDBWrapper(boolean loadToMemory, String databaseName, HSQLDBConcurrencyControl concurrencyControl) throws DatabaseException {
+		super(databaseName, null, false, true, true);
+		if (!loadToMemory)
+			throw new IllegalArgumentException();
+
+		this.concurrencyControl = concurrencyControl;
+		this.cache_rows = 0;
+		this.cache_size = 0;
+		this.result_max_memory_rows = 0;
+		this.cache_free_count = 0;
+
+	}
+	EmbeddedHSQLDBWrapper(File databaseDirectory, boolean alwaysDisconnectAfterOnTransaction, HSQLDBConcurrencyControl concurrencyControl, int _cache_rows,
 			int _cache_size, int _result_max_memory_rows, int _cache_free_count, boolean lockFile)
 			throws IllegalArgumentException, DatabaseException {
 		super(/*
 				 * getConnection(_file_name, concurrencyControl, _cache_rows, _cache_size,
 				 * _result_max_memory_rows, _cache_free_count),
-				 */"Database from file : " + getHSQLDBDataFileName(getDatabaseFileName(databaseDirectory)) + ".data", databaseDirectory, alwaysDeconectAfterOnTransaction);
+				 */"Database from file : " + getHSQLDBDataFileName(getDatabaseFileName(databaseDirectory)) + ".data", databaseDirectory, alwaysDisconnectAfterOnTransaction, false, lockFile);
 
 		this.concurrencyControl = concurrencyControl;
 		this.cache_rows = _cache_rows;
 		this.cache_size = _cache_size;
 		this.result_max_memory_rows = _result_max_memory_rows;
 		this.cache_free_count = _cache_free_count;
-		this.lockFile=lockFile;
+
 	}
 
 	private static File getDatabaseFileName(File directoryName)
@@ -124,8 +99,8 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 		return new File(directoryName, "data.db");
 	}
 
-	private static Connection getConnection(File _file_name, HSQLDBConcurrencyControl concurrencyControl,
-			int _cache_rows, int _cache_size, int _result_max_memory_rows, int _cache_free_count, boolean lockFile)
+	private static Connection getConnection(String databaseName, File _file_name, HSQLDBConcurrencyControl concurrencyControl,
+			int _cache_rows, int _cache_size, int _result_max_memory_rows, int _cache_free_count, boolean lockFile, boolean loadToMemory)
 			throws DatabaseLoadingException {
 		if (_file_name == null)
 			throw new NullPointerException("The parameter _file_name is a null pointer !");
@@ -133,7 +108,12 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 			throw new IllegalArgumentException("The given file name is a directory !");
 		ensureHSQLLoading();
 		try {
-			Connection c = DriverManager
+			Connection c;
+			if (loadToMemory)
+				c= DriverManager
+						.getConnection("jdbc:hsqldb:mem:" + (databaseName==null?"":databaseName), "SA", "");
+			else
+				c= DriverManager
 					.getConnection("jdbc:hsqldb:file:" + getHSQLDBDataFileName(_file_name) + ";hsqldb.cache_rows="
 							+ _cache_rows + ";hsqldb.cache_size=" + _cache_size + ";hsqldb.result_max_memory_rows="
 							+ _result_max_memory_rows + ";hsqldb.cache_free_count=" + _cache_free_count+";hsqldb.lock_file="+lockFile, "SA", "");
@@ -726,8 +706,8 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 
 	@Override
 	protected Connection reopenConnectionImpl() throws DatabaseLoadingException {
-		return getConnection(getDatabaseFileName(getDatabaseDirectory()), concurrencyControl, cache_rows, cache_size, result_max_memory_rows,
-				cache_free_count, lockFile);
+		return getConnection(database_name, getDatabaseFileName(getDatabaseDirectory()), concurrencyControl, cache_rows, cache_size, result_max_memory_rows,
+				cache_free_count, fileLock, loadToMemory);
 	}
 
 
@@ -778,7 +758,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 	private final int cache_size;
 	private final int result_max_memory_rows;
 	private final int cache_free_count;
-	private final boolean lockFile;
+
 
 	@SuppressWarnings("unchecked")
 	private static void ensureHSQLLoading() throws DatabaseLoadingException {
@@ -796,40 +776,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 		}
 	}
 
-	/**
-	 * Constructor
-	 *
-	 * @param databaseDirectory
-	 *            The directory which contains the database. If this directory does not
-	 *            exists, it will be automatically created with the correspondent
-	 *            database.
-	 * @throws NullPointerException
-	 *             if parameters are null pointers.
-	 * @throws IllegalArgumentException
-	 *             If the given file is a directory.
-	 * @throws DatabaseException if secured random was not found
-	 */
-	public EmbeddedHSQLDBWrapper(File databaseDirectory) throws IllegalArgumentException, DatabaseException {
-		this(databaseDirectory, false);
-	}
 
-	/**
-	 * Constructor
-	 *
-	 * @param databaseDirectory
-	 *            The directory which contains the database. If this directory does not
-	 *            exists, it will be automatically created with the correspondent
-	 *            database.
-	 * @param alwaysDeconectAfterOnTransaction true if the database must always be connected and detected during one transaction
-	 * @throws NullPointerException
-	 *             if parameters are null pointers.
-	 * @throws IllegalArgumentException
-	 *             If the given file is a directory.
-	 * @throws DatabaseException if secured random was not found
-	 */
-	public EmbeddedHSQLDBWrapper(File databaseDirectory, boolean alwaysDeconectAfterOnTransaction) throws IllegalArgumentException, DatabaseException {
-		this(databaseDirectory, alwaysDeconectAfterOnTransaction, HSQLDBConcurrencyControl.DEFAULT, 100, 10000, 0, 512, true);
-	}
 
 	@Override
 	protected boolean isDisconnetionException(SQLException e) {

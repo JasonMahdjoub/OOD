@@ -275,7 +275,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		if (loadToMemory)
 		{
 			this.alwaysDeconectAfterOnTransaction=false;
-			this.database_name="Load_to_memory";
+			this.database_name=_database_name;
 			this.loadToMemory=true;
 			this.database_identifier=this.database_name;
 			this.databaseDirectory=null;
@@ -324,7 +324,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		synchronizer=new DatabaseSynchronizer();
 	}
 
-	public boolean isLoadToMemory()
+	public boolean isLoadedToMemory()
 	{
 		return loadToMemory;
 	}

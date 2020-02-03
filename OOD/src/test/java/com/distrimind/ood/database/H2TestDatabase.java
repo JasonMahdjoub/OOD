@@ -61,12 +61,12 @@ public class H2TestDatabase extends TestDatabase {
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstanceA() throws IllegalArgumentException, DatabaseException {
-		return new EmbeddedH2DatabaseWrapper(new File(database_file_name));
+		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name)).newWrapperInstance();
 	}
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstanceB() throws IllegalArgumentException, DatabaseException {
-		return new EmbeddedH2DatabaseWrapper(new File(database_file_nameb));
+		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_nameb)).newWrapperInstance();
 	}
 
 	@Override

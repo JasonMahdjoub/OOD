@@ -60,15 +60,21 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	private static Constructor<? extends Blob> H2BlobConstructor=null;
 	private static Method H2ValueMethod=null;
 	private static Object blobStateNewValue=null;
+	protected int pageSizeBytes;
+	protected int cacheSizeBytes;
 
-
-	EmbeddedH2DatabaseWrapper(boolean loadToMemory) throws DatabaseException {
-		super(null, null, false, true);
+	EmbeddedH2DatabaseWrapper(boolean loadToMemory, String databaseName) throws DatabaseException {
+		super(databaseName, null, false, true, true);
 		if (!loadToMemory)
 			throw new IllegalArgumentException();
+		this.pageSizeBytes=0;
+		this.cacheSizeBytes=0;
 	}
-	EmbeddedH2DatabaseWrapper(File _directory_name, boolean alwaysDisconnectAfterOnTransaction) throws DatabaseException {
-		super("Database from file : " + getH2DataFileName(getDatabaseFileName(_directory_name)), _directory_name, alwaysDisconnectAfterOnTransaction, false);
+	EmbeddedH2DatabaseWrapper(File _directory_name, boolean alwaysDisconnectAfterOnTransaction, boolean fileLock, int pageSizeBytes
+			,int cacheSizeBytes) throws DatabaseException {
+		super("Database from file : " + getH2DataFileName(getDatabaseFileName(_directory_name)), _directory_name, alwaysDisconnectAfterOnTransaction, false, fileLock);
+		this.pageSizeBytes=pageSizeBytes;
+		this.cacheSizeBytes=cacheSizeBytes;
 	}
 
 	private static File getDatabaseFileName(File directoryName)
@@ -103,7 +109,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 			}
 		}
 	}
-	private static Connection getConnection(File _file_name, boolean loadToMemory)
+	private static Connection getConnection(String databaseName, File _file_name, boolean loadToMemory, boolean fileLock, int pageSize, int cacheSize)
 			throws DatabaseLoadingException {
 		if (_file_name == null)
 			throw new NullPointerException("The parameter _file_name is a null pointer !");
@@ -113,10 +119,10 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 		try {
 			Connection c;
 			if (loadToMemory)
-				c=DriverManager.getConnection("jdbc:h2:mem:test");
+				c=DriverManager.getConnection("jdbc:h2:mem:"+(databaseName==null?"":databaseName));
 			else
 				c = DriverManager
-					.getConnection("jdbc:h2:file:" + getH2DataFileName(_file_name), "SA", "");
+					.getConnection("jdbc:h2:file:" + getH2DataFileName(_file_name)+";PAGE_SIZE="+pageSize+";CACHE_SIZE="+(cacheSize/1024)+(fileLock?"":"FILE_LOCK:NO"), "SA", "");
 			databaseShutdown.set(false);
 			if (c==null)
 				throw new DatabaseLoadingException("Impossible to create the database into the file " + _file_name);
@@ -160,8 +166,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 
 	@Override
 	protected Connection reopenConnectionImpl() throws DatabaseLoadingException {
-		return getConnection(getDatabaseFileName(super.getDatabaseDirectory()), isLoadToMemory());
-
+		return getConnection(database_name, getDatabaseFileName(super.getDatabaseDirectory()), isLoadedToMemory(), fileLock, pageSizeBytes, cacheSizeBytes);
 	}
 
 	@Override

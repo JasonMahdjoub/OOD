@@ -278,7 +278,7 @@ public class TestDatabaseBackupRestore {
 		System.out.println("Loading database reference");
 		DatabaseWrapper.deleteDatabaseFiles(referenceDatabaseDirectory);
 		DatabaseWrapper.deleteDatabaseFiles(databaseDirectory);
-		FileTools.deleteDirectory(this.externalBackupDirectory);
+		FileTools.deleteDirectory(externalBackupDirectory);
 		wrapperForReferenceDatabase=loadWrapper( referenceDatabaseDirectory, false, true);
 		addAndRemoveData(wrapperForReferenceDatabase, 100);
 		Table1 table1=wrapperForReferenceDatabase.getTableInstance(Table1.class);
@@ -395,7 +395,7 @@ public class TestDatabaseBackupRestore {
 				wrapper.deleteDatabaseFiles();
 			else
 				DatabaseWrapper.deleteDatabaseFiles(databaseDirectory);
-			FileTools.deleteDirectory(this.externalBackupDirectory);
+			FileTools.deleteDirectory(externalBackupDirectory);
 		}
 		finally {
 			wrapper = null;
@@ -409,7 +409,7 @@ public class TestDatabaseBackupRestore {
 
 	private DatabaseWrapper loadWrapper(File databaseDirectory, boolean useInternalBackup, boolean checkDatabaseDirectoryNull) throws DatabaseException {
 		assert !checkDatabaseDirectoryNull || !databaseDirectory.exists();
-		DatabaseWrapper wrapper=new EmbeddedH2DatabaseWrapper(databaseDirectory);
+		DatabaseWrapper wrapper=new InFileEmbeddedH2DatabaseFactory(databaseDirectory).newWrapperInstance();
 		BackupConfiguration backupConf=null;
 		if (useInternalBackup)
 			backupConf=getBackupConfiguration();
@@ -868,7 +868,7 @@ public class TestDatabaseBackupRestore {
 
 	@Test(dependsOnMethods = "testExternalBackupAndRestore")
 	public void testBackupCleaning() throws DatabaseException, InterruptedException {
-		wrapper=new EmbeddedH2DatabaseWrapper(databaseDirectory);
+		wrapper=new InFileEmbeddedH2DatabaseFactory(databaseDirectory).newWrapperInstance();
 		BackupConfiguration backupConf=new BackupConfiguration(200L, 1000L, 1000000, 100L, null);
 		DatabaseConfiguration conf=new DatabaseConfiguration( Table1.class.getPackage(), null, null, backupConf);
 

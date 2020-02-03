@@ -74,37 +74,15 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 		}
 	}
 
-	/**
-	 * Constructor
-	 * 
-	 * @param _directory
-	 *            the database directory
-	 * @throws NullPointerException
-	 *             if parameters are null pointers.
-	 * @throws IllegalArgumentException
-	 *             If the given _directory is not a directory.
-	 * @throws DatabaseException if a problem occurs during the database opening
-	 * @throws IllegalArgumentException if arguments are incorrect
-	 */
-	public EmbeddedDerbyWrapper(File _directory) throws IllegalArgumentException, DatabaseException {
-		this(_directory, false);
+	EmbeddedDerbyWrapper(boolean loadToMemory, String databaseName) throws IllegalArgumentException, DatabaseException {
+		super(databaseName, null, false, true);
+		if (!loadToMemory)
+			throw new IllegalArgumentException();
+
 	}
 
-	/**
-	 * Constructor
-	 *
-	 * @param _directory
-	 *            the database directory
-	 * @param alwaysDeconectAfterOnTransaction true if the database must always be connected and detected during one transaction
-	 * @throws NullPointerException
-	 *             if parameters are null pointers.
-	 * @throws IllegalArgumentException
-	 *             If the given _directory is not a directory.
-	 * @throws DatabaseException if a problem occurs during the database opening
-	 * @throws IllegalArgumentException if arguments are incorrect
-	 */
-	public EmbeddedDerbyWrapper(File _directory, boolean alwaysDeconectAfterOnTransaction) throws IllegalArgumentException, DatabaseException {
-		super(/* getConnection(_directory), */"Database from file : " + _directory.getAbsolutePath(), _directory, alwaysDeconectAfterOnTransaction);
+	EmbeddedDerbyWrapper(File _directory, boolean alwaysDisconnectAfterOnTransaction) throws IllegalArgumentException, DatabaseException {
+		super(/* getConnection(_directory), */"Database from file : " + _directory.getAbsolutePath(), _directory, alwaysDisconnectAfterOnTransaction, false);
 		// dbURL = getDBUrl(_directory);
 
 	}
@@ -129,7 +107,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 		return "jdbc:derby:" + _directory.getAbsolutePath();
 	}
 
-	private static Connection getConnection(File _directory) throws DatabaseLoadingException {
+	private static Connection getConnection(String databaseName, File _directory, boolean loadToMemory) throws DatabaseLoadingException {
 		if (_directory == null)
 			throw new NullPointerException("The parameter _file_name is a null pointer !");
 		if (_directory.exists() && !_directory.isDirectory())
@@ -137,7 +115,11 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 		System.gc();
 		ensureDerbyLoading();
 		try {
-			Connection c = DriverManager.getConnection(getDBUrl(_directory) + ";create=true");
+			Connection c;
+			if (loadToMemory)
+				c = DriverManager.getConnection("jdbc:derby:memory:" +(databaseName==null?"":databaseName)+";create=true");
+			else
+				c = DriverManager.getConnection(getDBUrl(_directory) + ";create=true");
 
 			c.setAutoCommit(false);
 			return c;
@@ -596,7 +578,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 
 	@Override
 	protected Connection reopenConnectionImpl() throws DatabaseLoadingException {
-		return getConnection(getDatabaseDirectory());
+		return getConnection(database_name, getDatabaseDirectory(), isLoadedToMemory());
 	}
 
 	@Override

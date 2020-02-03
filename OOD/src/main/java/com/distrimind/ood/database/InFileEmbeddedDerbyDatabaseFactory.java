@@ -46,31 +46,70 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  * @version 1.0
  * @since OOD 2.0.0
  */
-public class EmbeddedDerbyDatabaseFactory extends DatabaseFactory {
+public class InFileEmbeddedDerbyDatabaseFactory extends DatabaseFactory {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 5754965997489003893L;
 	private File directory;
-	private boolean alwaysDeconectAfterOnTransaction;
-	protected EmbeddedDerbyDatabaseFactory() {
+	private boolean alwaysDisconnectAfterOnTransaction=false;
+	protected InFileEmbeddedDerbyDatabaseFactory() {
 
 	}
-	public EmbeddedDerbyDatabaseFactory(File directory) {
+	/**
+	 * Constructor
+	 *
+	 * @param directory
+	 *            the database directory
+	 * @throws NullPointerException
+	 *             if parameters are null pointers.
+	 * @throws IllegalArgumentException
+	 *             If the given _directory is not a directory.
+	 * @throws IllegalArgumentException if arguments are incorrect
+	 */
+	public InFileEmbeddedDerbyDatabaseFactory(File directory) {
 		this(directory, false);
 	}
-	public EmbeddedDerbyDatabaseFactory(File directory, boolean alwaysDeconectAfterOnTransaction) {
+	/**
+	 * Constructor
+	 *
+	 * @param directory
+	 *            the database directory
+	 * @param alwaysDisconnectAfterOnTransaction true if the database must always be connected and detected during one transaction
+	 * @throws NullPointerException
+	 *             if parameters are null pointers.
+	 * @throws IllegalArgumentException
+	 *             If the given _directory is not a directory.
+	 * @throws IllegalArgumentException if arguments are incorrect
+	 */
+	public InFileEmbeddedDerbyDatabaseFactory(File directory, boolean alwaysDisconnectAfterOnTransaction) {
+
+		setDirectory(directory);
+		this.alwaysDisconnectAfterOnTransaction = alwaysDisconnectAfterOnTransaction;
+	}
+
+	@Override
+	protected DatabaseWrapper newWrapperInstance() throws DatabaseException {
+		return new EmbeddedDerbyWrapper(directory, alwaysDisconnectAfterOnTransaction);
+	}
+
+	public File getDirectory() {
+		return directory;
+	}
+
+	public void setDirectory(File directory) {
 		if (directory == null)
 			throw new NullPointerException("The parameter _file_name is a null pointer !");
 		if (directory.exists() && !directory.isDirectory())
 			throw new IllegalArgumentException("The given file name must be directory !");
 		this.directory = directory;
-		this.alwaysDeconectAfterOnTransaction=alwaysDeconectAfterOnTransaction;
 	}
 
-	@Override
-	protected DatabaseWrapper newWrapperInstance() throws DatabaseException {
-		return new EmbeddedDerbyWrapper(directory, alwaysDeconectAfterOnTransaction);
+	public boolean isAlwaysDisconnectAfterOnTransaction() {
+		return alwaysDisconnectAfterOnTransaction;
 	}
 
+	public void setAlwaysDisconnectAfterOnTransaction(boolean alwaysDisconnectAfterOnTransaction) {
+		this.alwaysDisconnectAfterOnTransaction = alwaysDisconnectAfterOnTransaction;
+	}
 }

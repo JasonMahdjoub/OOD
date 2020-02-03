@@ -53,22 +53,22 @@ public class HSQLDBTestDecentralizedDatabase extends TestDecentralizedDatabase {
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstance1() throws IllegalArgumentException, DatabaseException {
-		return new EmbeddedHSQLDBWrapper(new File(database_file_name1));
+		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name1)).newWrapperInstance();
 	}
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstance2() throws IllegalArgumentException, DatabaseException {
-		return new EmbeddedHSQLDBWrapper(new File(database_file_name2));
+		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name2)).newWrapperInstance();
 	}
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstance3() throws IllegalArgumentException, DatabaseException {
-		return new EmbeddedHSQLDBWrapper(new File(database_file_name3));
+		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name3)).newWrapperInstance();
 	}
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstance4() throws IllegalArgumentException, DatabaseException {
-		return new EmbeddedHSQLDBWrapper(new File(database_file_name4));
+		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name4)).newWrapperInstance();
 	}
 
 	@Override

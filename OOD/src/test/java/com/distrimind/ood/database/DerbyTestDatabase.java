@@ -69,12 +69,12 @@ public class DerbyTestDatabase extends TestDatabase {
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstanceA() throws IllegalArgumentException, DatabaseException {
-		return new EmbeddedDerbyWrapper(data_directory);
+		return new InFileEmbeddedH2DatabaseFactory(data_directory).newWrapperInstance();
 	}
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstanceB() throws IllegalArgumentException, DatabaseException {
-		return new EmbeddedDerbyWrapper(data_directoryb);
+		return new InFileEmbeddedH2DatabaseFactory(data_directoryb).newWrapperInstance();
 	}
 
 	@Override

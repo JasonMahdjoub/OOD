@@ -53,7 +53,11 @@ public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory {
 	private static final long serialVersionUID = -5549181783426731120L;
 
 	private File directoryName;
-	protected boolean alwaysDisconnectAfterOnTransaction;
+	protected boolean alwaysDisconnectAfterOneTransaction;
+	private boolean fileLock;
+	private int pageSizeBytes=2048;
+	private int cacheSizeBytes=10000*1024;
+
 
 	protected InFileEmbeddedH2DatabaseFactory() {
 
@@ -81,29 +85,53 @@ public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory {
 	 *            The directory which contains the database. If this directory does not
 	 *            exists, it will be automatically created with the correspondent
 	 *            database.
-	 * @param alwaysDisconnectAfterOnTransaction true if the database must always be connected and detected during one transaction
+	 * @param alwaysDisconnectAfterOneTransaction true if the database must always be connected and detected during one transaction
 	 * @throws NullPointerException
 	 *             if parameters are null pointers.
 	 * @throws IllegalArgumentException
 	 *             If the given file is a directory.
 	 */
-	public InFileEmbeddedH2DatabaseFactory(File _directory_name, boolean alwaysDisconnectAfterOnTransaction) {
+	public InFileEmbeddedH2DatabaseFactory(File _directory_name, boolean alwaysDisconnectAfterOneTransaction) {
 		setDirectoryName(_directory_name);
-		this.alwaysDisconnectAfterOnTransaction = alwaysDisconnectAfterOnTransaction;
+		this.alwaysDisconnectAfterOneTransaction = alwaysDisconnectAfterOneTransaction;
 	}
 
+	/**
+	 * Constructor
+	 *
+	 * @param _directory_name
+	 *            The directory which contains the database. If this directory does not
+	 *            exists, it will be automatically created with the correspondent
+	 *            database.
+	 * @param alwaysDisconnectAfterOneTransaction true if the database must always be connected and detected during one transaction
+	 * @param fileLock true if the database file must be locked when opened
+	 * @param pageSizeBytes the page size of the database in bytes
+	 * @param cacheSizeBytes the cache size in bytes
+	 * @throws NullPointerException
+	 *             if parameters are null pointers.
+	 * @throws IllegalArgumentException
+	 *             If the given file is a directory.
+	 */
+	public InFileEmbeddedH2DatabaseFactory(File _directory_name, boolean alwaysDisconnectAfterOneTransaction, boolean fileLock, int pageSizeBytes
+			, int cacheSizeBytes) {
+		setDirectoryName(_directory_name);
+		this.alwaysDisconnectAfterOneTransaction = alwaysDisconnectAfterOneTransaction;
+		this.fileLock=fileLock;
+		this.pageSizeBytes=pageSizeBytes;
+		this.cacheSizeBytes=cacheSizeBytes;
+	}
 
 	@Override
 	protected DatabaseWrapper newWrapperInstance() throws DatabaseException {
-		return new EmbeddedH2DatabaseWrapper(directoryName, alwaysDisconnectAfterOnTransaction);
+		return new EmbeddedH2DatabaseWrapper(directoryName, alwaysDisconnectAfterOneTransaction, fileLock, pageSizeBytes, cacheSizeBytes);
 	}
 
-	public boolean isAlwaysDisconnectAfterOnTransaction() {
-		return alwaysDisconnectAfterOnTransaction;
+	public boolean isAlwaysDisconnectAfterOneTransaction() {
+		return alwaysDisconnectAfterOneTransaction;
 	}
 
-	public void setAlwaysDisconnectAfterOnTransaction(boolean alwaysDisconnectAfterOnTransaction) {
-		this.alwaysDisconnectAfterOnTransaction = alwaysDisconnectAfterOnTransaction;
+	public void setAlwaysDisconnectAfterOneTransaction(boolean alwaysDisconnectAfterOneTransaction) {
+		this.alwaysDisconnectAfterOneTransaction = alwaysDisconnectAfterOneTransaction;
 	}
 
 	public File getDirectoryName() {
@@ -116,6 +144,35 @@ public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory {
 		if (_file_name.exists() && !_file_name.isDirectory())
 			throw new IllegalArgumentException("The given file name is not a directory !");
 		directoryName = _file_name;
-
 	}
+
+	public static long getSerialVersionUID() {
+		return serialVersionUID;
+	}
+
+	public boolean isFileLock() {
+		return fileLock;
+	}
+
+	public void setFileLock(boolean fileLock) {
+		this.fileLock = fileLock;
+	}
+
+	public int getPageSizeBytes() {
+		return pageSizeBytes;
+	}
+
+	public void setPageSizeBytes(int pageSizeBytes) {
+		this.pageSizeBytes = pageSizeBytes;
+	}
+
+	public int getCacheSizeBytes() {
+		return cacheSizeBytes;
+	}
+
+	public void setCacheSizeBytes(int cacheSizeBytes) {
+		this.cacheSizeBytes = cacheSizeBytes;
+	}
+
+
 }

@@ -7,7 +7,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  * @version 1.0
  * @since Utils 2.4.0
  */
-public class InMemoryEmbeddedH2DatabaseFactory extends DatabaseFactory {
+public class InMemoryEmbeddedDerbyDatabaseFactory extends DatabaseFactory {
 	/**
 	 *
 	 */
@@ -15,17 +15,23 @@ public class InMemoryEmbeddedH2DatabaseFactory extends DatabaseFactory {
 
 	private String databaseName=null;
 
-	public InMemoryEmbeddedH2DatabaseFactory() {
+	public InMemoryEmbeddedDerbyDatabaseFactory() {
 
 	}
 
-	public InMemoryEmbeddedH2DatabaseFactory(String databaseName) {
+	public InMemoryEmbeddedDerbyDatabaseFactory(String databaseName) {
 		this.databaseName = databaseName;
+	}
+
+	public InMemoryEmbeddedDerbyDatabaseFactory(String databaseName, HSQLDBConcurrencyControl concurrencyControl) {
+		this.databaseName = databaseName;
+		if (concurrencyControl==null)
+			throw new NullPointerException();
 	}
 
 	@Override
 	protected DatabaseWrapper newWrapperInstance() throws DatabaseException {
-		return new EmbeddedH2DatabaseWrapper(true, databaseName);
+		return new EmbeddedDerbyWrapper(true, databaseName);
 	}
 
 	public static long getSerialVersionUID() {
@@ -39,5 +45,7 @@ public class InMemoryEmbeddedH2DatabaseFactory extends DatabaseFactory {
 	public void setDatabaseName(String databaseName) {
 		this.databaseName = databaseName;
 	}
+
+
 }
 

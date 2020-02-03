@@ -76,7 +76,7 @@ public class OOD {
 			c.set(2020, Calendar.JANUARY, 31);
 			Description d = new Description((short)2, (short)4, (short)0, Version.Type.Stable, (short)1, c.getTime());
 			d.addItem("Update database factories");
-			d.addItem("Database wrappers are now instantiable only throw factories");
+			d.addItem("Database wrappers are now instantiable only through factories");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();

@@ -52,11 +52,13 @@ import java.sql.Statement;
 
 public abstract class CommonHSQLH2DatabaseWrapper extends DatabaseWrapper{
 
+	protected boolean fileLock;
 
-
-	protected CommonHSQLH2DatabaseWrapper(String databaseName, File databaseDirectory, boolean alwaysDisconnectAfterOnTransaction, boolean loadToMemory)
+	protected CommonHSQLH2DatabaseWrapper(String databaseName, File databaseDirectory, boolean alwaysDisconnectAfterOnTransaction, boolean loadToMemory, boolean fileLock)
 			throws DatabaseException {
 		super(databaseName, databaseDirectory, alwaysDisconnectAfterOnTransaction, loadToMemory);
+		this.fileLock=true;
+
 	}
 
 
