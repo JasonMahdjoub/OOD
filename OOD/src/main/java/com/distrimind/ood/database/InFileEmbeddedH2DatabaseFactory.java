@@ -43,7 +43,7 @@ import java.io.File;
  * 
  * 
  * @author Jason Mahdjoub
- * @version 1.2
+ * @version 1.3
  * @since OOD 2.0.0
  */
 public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory {

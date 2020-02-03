@@ -111,18 +111,20 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	}
 	private static Connection getConnection(String databaseName, File _file_name, boolean loadToMemory, boolean fileLock, int pageSize, int cacheSize)
 			throws DatabaseLoadingException {
-		if (_file_name == null)
-			throw new NullPointerException("The parameter _file_name is a null pointer !");
-		if (_file_name.isDirectory())
-			throw new IllegalArgumentException("The given file name is a directory !");
 		ensureH2Loading();
 		try {
 			Connection c;
 			if (loadToMemory)
 				c=DriverManager.getConnection("jdbc:h2:mem:"+(databaseName==null?"":databaseName));
-			else
+			else {
+				if (_file_name == null)
+					throw new NullPointerException("The parameter _file_name is a null pointer !");
+				if (_file_name.isDirectory())
+					throw new IllegalArgumentException("The given file name is a directory !");
+
 				c = DriverManager
-					.getConnection("jdbc:h2:file:" + getH2DataFileName(_file_name)+";PAGE_SIZE="+pageSize+";CACHE_SIZE="+(cacheSize/1024)+(fileLock?"":"FILE_LOCK:NO"), "SA", "");
+						.getConnection("jdbc:h2:file:" + getH2DataFileName(_file_name) + ";PAGE_SIZE=" + pageSize + ";CACHE_SIZE=" + (cacheSize / 1024) + (fileLock ? "" : "FILE_LOCK:NO"), "SA", "");
+			}
 			databaseShutdown.set(false);
 			if (c==null)
 				throw new DatabaseLoadingException("Impossible to create the database into the file " + _file_name);

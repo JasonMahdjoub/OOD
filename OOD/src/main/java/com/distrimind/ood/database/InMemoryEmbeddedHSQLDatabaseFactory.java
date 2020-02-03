@@ -5,7 +5,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 /**
  * @author Jason Mahdjoub
  * @version 1.0
- * @since Utils 2.4.0
+ * @since OOD 2.4.0
  */
 public class InMemoryEmbeddedHSQLDatabaseFactory extends DatabaseFactory {
 	/**

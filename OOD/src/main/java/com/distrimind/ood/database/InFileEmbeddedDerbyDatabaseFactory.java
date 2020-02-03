@@ -43,7 +43,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  * 
  * 
  * @author Jason Mahdjoub
- * @version 1.0
+ * @version 1.2
  * @since OOD 2.0.0
  */
 public class InFileEmbeddedDerbyDatabaseFactory extends DatabaseFactory {

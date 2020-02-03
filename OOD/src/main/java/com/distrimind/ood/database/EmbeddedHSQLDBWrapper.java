@@ -102,21 +102,23 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 	private static Connection getConnection(String databaseName, File _file_name, HSQLDBConcurrencyControl concurrencyControl,
 			int _cache_rows, int _cache_size, int _result_max_memory_rows, int _cache_free_count, boolean lockFile, boolean loadToMemory)
 			throws DatabaseLoadingException {
-		if (_file_name == null)
-			throw new NullPointerException("The parameter _file_name is a null pointer !");
-		if (_file_name.isDirectory())
-			throw new IllegalArgumentException("The given file name is a directory !");
 		ensureHSQLLoading();
 		try {
 			Connection c;
 			if (loadToMemory)
 				c= DriverManager
 						.getConnection("jdbc:hsqldb:mem:" + (databaseName==null?"":databaseName), "SA", "");
-			else
-				c= DriverManager
-					.getConnection("jdbc:hsqldb:file:" + getHSQLDBDataFileName(_file_name) + ";hsqldb.cache_rows="
-							+ _cache_rows + ";hsqldb.cache_size=" + _cache_size + ";hsqldb.result_max_memory_rows="
-							+ _result_max_memory_rows + ";hsqldb.cache_free_count=" + _cache_free_count+";hsqldb.lock_file="+lockFile, "SA", "");
+			else {
+				if (_file_name == null)
+					throw new NullPointerException("The parameter _file_name is a null pointer !");
+				if (_file_name.isDirectory())
+					throw new IllegalArgumentException("The given file name is a directory !");
+
+				c = DriverManager
+						.getConnection("jdbc:hsqldb:file:" + getHSQLDBDataFileName(_file_name) + ";hsqldb.cache_rows="
+								+ _cache_rows + ";hsqldb.cache_size=" + _cache_size + ";hsqldb.result_max_memory_rows="
+								+ _result_max_memory_rows + ";hsqldb.cache_free_count=" + _cache_free_count + ";hsqldb.lock_file=" + lockFile, "SA", "");
+			}
 			databaseShutdown.set(false);
 
 			try (Statement s = c.createStatement()) {

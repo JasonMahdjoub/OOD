@@ -108,18 +108,21 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	}
 
 	private static Connection getConnection(String databaseName, File _directory, boolean loadToMemory) throws DatabaseLoadingException {
-		if (_directory == null)
-			throw new NullPointerException("The parameter _file_name is a null pointer !");
-		if (_directory.exists() && !_directory.isDirectory())
-			throw new IllegalArgumentException("The given file name must be directory !");
+
 		System.gc();
 		ensureDerbyLoading();
 		try {
 			Connection c;
 			if (loadToMemory)
 				c = DriverManager.getConnection("jdbc:derby:memory:" +(databaseName==null?"":databaseName)+";create=true");
-			else
+			else {
+				if (_directory == null)
+					throw new NullPointerException("The parameter _file_name is a null pointer !");
+				if (_directory.exists() && !_directory.isDirectory())
+					throw new IllegalArgumentException("The given file name must be directory !");
+
 				c = DriverManager.getConnection(getDBUrl(_directory) + ";create=true");
+			}
 
 			c.setAutoCommit(false);
 			return c;

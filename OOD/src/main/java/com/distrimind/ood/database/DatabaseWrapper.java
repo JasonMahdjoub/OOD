@@ -290,11 +290,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 			this.loadToMemory=false;
 			this.alwaysDeconectAfterOnTransaction = alwaysDisconnectAfterOnTransaction;
-			try {
-				this.randomForKeys = SecureRandomType.BC_FIPS_APPROVED_FOR_KEYS.getSingleton(null);
-			} catch (Exception e) {
-				throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
-			}
 			/*
 			 * if (_sql_connection==null) throw new NullPointerException("_sql_connection");
 			 */
@@ -313,6 +308,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				database_identifier = disk.toString();
 			else
 				database_identifier = _database_name;
+		}
+		try {
+			this.randomForKeys = SecureRandomType.BC_FIPS_APPROVED_FOR_KEYS.getSingleton(null);
+		} catch (Exception e) {
+			throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 		}
 		// sql_connection=_sql_connection;
 

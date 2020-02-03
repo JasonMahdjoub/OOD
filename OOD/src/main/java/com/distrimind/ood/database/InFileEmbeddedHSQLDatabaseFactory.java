@@ -43,7 +43,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  * 
  * 
  * @author Jason Mahdjoub
- * @version 1.1
+ * @version 1.2
  * @since OOD 2.0.0
  */
 public class InFileEmbeddedHSQLDatabaseFactory extends DatabaseFactory {
