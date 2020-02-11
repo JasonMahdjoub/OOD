@@ -7,7 +7,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  * @version 1.0
  * @since OOD 2.4.0
  */
-public class InMemoryEmbeddedH2DatabaseFactory extends DatabaseFactory {
+public class InMemoryEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH2DatabaseWrapper> {
 	/**
 	 *
 	 */
@@ -24,7 +24,7 @@ public class InMemoryEmbeddedH2DatabaseFactory extends DatabaseFactory {
 	}
 
 	@Override
-	protected DatabaseWrapper newWrapperInstance() throws DatabaseException {
+	protected EmbeddedH2DatabaseWrapper newWrapperInstance() throws DatabaseException {
 		return new EmbeddedH2DatabaseWrapper(true, databaseName);
 	}
 

@@ -46,7 +46,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  * @version 1.2
  * @since OOD 2.0.0
  */
-public class InFileEmbeddedHSQLDatabaseFactory extends DatabaseFactory {
+public class InFileEmbeddedHSQLDatabaseFactory extends DatabaseFactory<EmbeddedHSQLDBWrapper> {
 	/**
 	 * 
 	 */
@@ -151,7 +151,7 @@ public class InFileEmbeddedHSQLDatabaseFactory extends DatabaseFactory {
 	}
 
 	@Override
-	protected DatabaseWrapper newWrapperInstance() throws DatabaseException {
+	protected EmbeddedHSQLDBWrapper newWrapperInstance() throws DatabaseException {
 		return new EmbeddedHSQLDBWrapper(fileName, alwaysDisconnectAfterOneTransaction, concurrencyControl, cacheRows, cacheSizeBytes,
 					resultMaxMemoryRows, cacheFreeCount, lockFile);
 	}

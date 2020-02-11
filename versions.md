@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-2.3.21 Stable (Build: 770) (from 01/04/2013 to 24/01/2019)
+2.4.0 Stable (Build: 786) (from 01/04/2013 to 11/02/2019)
 
 # Creator(s):
 Jason MAHDJOUB
@@ -9,6 +9,12 @@ Jason MAHDJOUB
 Jason MAHDJOUB (Entred in the team at 01/04/2013)
 
 # Modifications:
+
+
+### 2.4.0 Stable (11/02/2020)
+* Update Utils to 4.9.0
+* Update database factories
+* Database wrappers are now instantiable only through factories
 
 
 ### 2.3.21 Stable (24/01/2020)

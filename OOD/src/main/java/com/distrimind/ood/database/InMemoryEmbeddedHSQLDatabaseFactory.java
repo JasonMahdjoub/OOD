@@ -7,7 +7,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  * @version 1.0
  * @since OOD 2.4.0
  */
-public class InMemoryEmbeddedHSQLDatabaseFactory extends DatabaseFactory {
+public class InMemoryEmbeddedHSQLDatabaseFactory extends DatabaseFactory<EmbeddedHSQLDBWrapper> {
 	/**
 	 *
 	 */
@@ -32,7 +32,7 @@ public class InMemoryEmbeddedHSQLDatabaseFactory extends DatabaseFactory {
 	}
 
 	@Override
-	protected DatabaseWrapper newWrapperInstance() throws DatabaseException {
+	protected EmbeddedHSQLDBWrapper newWrapperInstance() throws DatabaseException {
 		return new EmbeddedHSQLDBWrapper(true, databaseName, concurrencyControl);
 	}
 

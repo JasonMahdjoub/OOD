@@ -45,13 +45,13 @@ import com.distrimind.util.properties.MultiFormatProperties;
  * @version 1.0
  * @since OOD 2.0.0
  */
-public abstract class DatabaseFactory extends MultiFormatProperties {
+public abstract class DatabaseFactory<DW extends DatabaseWrapper> extends MultiFormatProperties {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 3751773842248044333L;
 
-	private volatile transient DatabaseWrapper wrapper;
+	private volatile transient DW wrapper;
 
 
 	protected DatabaseFactory() {
@@ -60,7 +60,7 @@ public abstract class DatabaseFactory extends MultiFormatProperties {
 
 
 
-	public final DatabaseWrapper getDatabaseWrapperSingleton() throws DatabaseException {
+	public final DW getDatabaseWrapperSingleton() throws DatabaseException {
 		if (wrapper == null) {
 			synchronized (this) {
 				if (wrapper == null)
@@ -70,7 +70,7 @@ public abstract class DatabaseFactory extends MultiFormatProperties {
 		return wrapper;
 	}
 
-	protected abstract DatabaseWrapper newWrapperInstance() throws DatabaseException;
+	protected abstract DW newWrapperInstance() throws DatabaseException;
 
 
 }

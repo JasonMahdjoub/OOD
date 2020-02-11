@@ -46,7 +46,7 @@ import java.io.File;
  * @version 1.3
  * @since OOD 2.0.0
  */
-public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory {
+public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH2DatabaseWrapper> {
 	/**
 	 *
 	 */
@@ -122,7 +122,7 @@ public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory {
 	}
 
 	@Override
-	protected DatabaseWrapper newWrapperInstance() throws DatabaseException {
+	protected EmbeddedH2DatabaseWrapper newWrapperInstance() throws DatabaseException {
 		return new EmbeddedH2DatabaseWrapper(directoryName, alwaysDisconnectAfterOneTransaction, fileLock, pageSizeBytes, cacheSizeBytes);
 	}
 
