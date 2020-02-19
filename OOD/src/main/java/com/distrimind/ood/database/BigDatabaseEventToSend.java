@@ -46,7 +46,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  */
 public interface BigDatabaseEventToSend extends DatabaseEventToSend {
 
-	void inportFromInputStream(DatabaseWrapper wrapper, final InputStreamGetter inputStream) throws DatabaseException;
+	void importFromInputStream(DatabaseWrapper wrapper, final InputStreamGetter inputStream) throws DatabaseException;
 
 	@SuppressWarnings("UnusedReturnValue")
 	boolean exportToOutputStream(DatabaseWrapper wrapper, final OutputStreamGetter outputStreamGetter)

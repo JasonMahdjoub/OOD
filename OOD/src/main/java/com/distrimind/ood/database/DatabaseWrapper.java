@@ -935,7 +935,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					DatabaseEventsToSynchronize dets = (DatabaseEventsToSynchronize) e;
 					for (DatabaseEvent detmp : events) {
 						if (detmp.getClass() == DatabaseEventsToSynchronize.class
-								&& dets.tryToFusion((DatabaseEventsToSynchronize) detmp)) {
+								&& dets.tryToMerge((DatabaseEventsToSynchronize) detmp)) {
 							add = false;
 							break;
 						}
@@ -1043,8 +1043,49 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			return r!=null;
 		}
 
+
+
+		public TransactionsInterval initDistantBackupCenter(final DecentralizedValue hostID, final long lastValidatedTransactionID)
+		{
+			//TODO complete
+			//TODO return the first needed transaction ID from the concerned distant hook
+		}
+
+		public void disconnectHookFromItsBackup(final DecentralizedValue hostID)
+		{
+			//TODO complete
+		}
+
+		public void disconnectAllHooksFromThereBackups()
+		{
+			//TODO complete
+		}
+
+		private void suspendHookSynchronizationWithItsBackupIfPossible(final DecentralizedValue hostID)
+		{
+			//TODO complete
+		}
+
+		private TransactionsInterval reactivateHookSynchronizationWithItsBackupIfPossible(final DecentralizedValue hostID)
+		{
+			//TODO complete
+		}
+
+		private TransactionsInterval setLastValidatedTransactionIDFromBackup(final DecentralizedValue hostID, final long lastValidatedTransactionID)
+		{
+			//TODO complete
+			//TODO return the first needed transaction ID from the concerned distant hook
+
+		}
+
+		private void synchronizeFromDistantHookBackup(final DecentralizedValue hostID, ArrayList<File> backupsToIncludeIntoDatabase, boolean removeFilesWhenSynchronizationDone)
+		{
+			//TODO first load meta data of files in order to sort them
+			//TODO complete
+		}
+
 		@SuppressWarnings("unlikely-arg-type")
-		public void initHook(final DecentralizedValue hostID, final long lastValidatedTransacionID)
+		public void initHook(final DecentralizedValue hostID, final long lastValidatedTransactionID)
 				throws DatabaseException {
 			if (hostID == null)
 				throw new NullPointerException("hostID");
@@ -1106,7 +1147,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				initializedHooks.put(hostID, new ConnectedPeers(r));
 				
 				validateLastSynchronization(hostID,
-						Math.max(r.getLastValidatedTransaction(), lastValidatedTransacionID));
+						Math.max(r.getLastValidatedTransaction(), lastValidatedTransactionID));
 				
 			}
 			finally
@@ -1136,7 +1177,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		public void received(BigDatabaseEventToSend data, InputStreamGetter inputStream) throws DatabaseException {
-			data.inportFromInputStream(DatabaseWrapper.this, inputStream);
+			data.importFromInputStream(DatabaseWrapper.this, inputStream);
 			synchronizedDataIfNecessary();
 		}
 
@@ -1211,7 +1252,67 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	}
 
 
+	public static class TransactionsInterval implements SecureExternalizable, Comparable<TransactionsInterval>
+	{
+		private long startIncludedTransactionID;
+		private long endIncludedTransactionID;
 
+		TransactionsInterval(long startIncludedTransactionID, long endIncludedTransactionID) {
+			if (endIncludedTransactionID<startIncludedTransactionID)
+				throw new IllegalArgumentException();
+			this.startIncludedTransactionID = startIncludedTransactionID;
+			this.endIncludedTransactionID = endIncludedTransactionID;
+		}
+
+		public void setStartIncludedTransactionID(long startIncludedTransactionID) {
+			this.startIncludedTransactionID = startIncludedTransactionID;
+		}
+
+		public void setEndIncludedTransactionID(long endIncludedTransactionID) {
+			this.endIncludedTransactionID = endIncludedTransactionID;
+		}
+
+		public long getStartIncludedTransactionID() {
+			return startIncludedTransactionID;
+		}
+
+		public long getEndIncludedTransactionID() {
+			return endIncludedTransactionID;
+		}
+
+		@Override
+		public int getInternalSerializedSize() {
+			return 16;
+		}
+
+		@Override
+		public void writeExternal(SecuredObjectOutputStream out) throws IOException {
+			out.writeLong(startIncludedTransactionID);
+			out.writeLong(endIncludedTransactionID);
+		}
+
+		@Override
+		public void readExternal(SecuredObjectInputStream in) throws IOException {
+			startIncludedTransactionID=in.readLong();
+			endIncludedTransactionID=in.readLong();
+			if (endIncludedTransactionID<startIncludedTransactionID)
+				throw new MessageExternalizationException(Integrity.FAIL);
+		}
+
+		@Override
+		public int compareTo(TransactionsInterval o) {
+			if (startIncludedTransactionID<o.startIncludedTransactionID)
+				return -1;
+			else if (startIncludedTransactionID>o.startIncludedTransactionID)
+				return 1;
+			else if (endIncludedTransactionID<o.endIncludedTransactionID)
+				return -1;
+			else if (endIncludedTransactionID>o.endIncludedTransactionID)
+				return 1;
+			else
+				return 0;
+		}
+	}
 
 
 
@@ -1400,16 +1501,154 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 	}
 
-	
-	public static class DatabaseEventsToSynchronize extends DatabaseEvent implements BigDatabaseEventToSend {
+	public static class DatabaseBackupToIncorporate extends AbstractDatabaseEventsToSynchronize implements Comparable<DatabaseBackupToIncorporate> {
+
+		private TransactionsInterval interval;
+
+		@SuppressWarnings("unused")
+		DatabaseBackupToIncorporate() {
+		}
+
+		DatabaseBackupToIncorporate(DecentralizedValue hostIDSource, Record hook, TransactionsInterval interval) {
+			super(hostIDSource, hook);
+			if (interval==null)
+				throw new NullPointerException();
+			this.interval=interval;
+		}
+
+		@Override
+		public int getInternalSerializedSize() {
+			return super.getInternalSerializedSize()+interval.getInternalSerializedSize();
+		}
+
+		@Override
+		public void writeExternal(SecuredObjectOutputStream out) throws IOException {
+			super.writeExternal(out);
+			out.writeLong(interval.getStartIncludedTransactionID());
+			out.writeLong(interval.getEndIncludedTransactionID());
+		}
+
+		@Override
+		public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
+			super.readExternal(in);
+			long s=in.readLong();
+			long e=in.readLong();
+			try {
+				interval=new TransactionsInterval(s, e);
+			}
+			catch (IllegalArgumentException | NullPointerException e2)
+			{
+				throw new MessageExternalizationException(Integrity.FAIL, e2);
+			}
+		}
+
+		@Override
+		public void importFromInputStream(DatabaseWrapper wrapper, InputStreamGetter inputStream) throws DatabaseException {
+
+		}
+
+		@Override
+		public boolean exportToOutputStream(DatabaseWrapper wrapper, OutputStreamGetter outputStreamGetter) throws DatabaseException {
+			return false;
+		}
+
+		@Override
+		public int compareTo(DatabaseBackupToIncorporate o) {
+			return interval.compareTo(o.interval);
+		}
+	}
+	public static class DatabaseEventsToSynchronize extends AbstractDatabaseEventsToSynchronize {
+		private long lastTransactionIDIncluded;
+		int maxEventsRecords;
+		@SuppressWarnings("unused")
+		DatabaseEventsToSynchronize() {
+		}
+
+		DatabaseEventsToSynchronize(DecentralizedValue hostIDSource, Record hook, long lastTransactionIDIncluded, int maxEventsRecords) {
+			super(hostIDSource, hook);
+			this.lastTransactionIDIncluded = lastTransactionIDIncluded;
+			this.maxEventsRecords = maxEventsRecords;
+		}
+		@Override
+		public void writeExternal(SecuredObjectOutputStream out) throws IOException {
+			super.writeExternal(out);
+			out.writeLong(lastTransactionIDIncluded);
+			out.writeInt(maxEventsRecords);
+		}
+		@Override
+		public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
+			super.readExternal(in);
+			lastTransactionIDIncluded=in.readLong();
+			maxEventsRecords=in.readInt();
+			if (maxEventsRecords<1 || maxEventsRecords>MAX_TRANSACTIONS_TO_SYNCHRONIZE_AT_THE_SAME_TIME)
+				throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN);
+		}
+		@Override
+		public void importFromInputStream(DatabaseWrapper wrapper, final InputStreamGetter inputStream)
+				throws DatabaseException {
+			if (wrapper == null)
+				throw new NullPointerException("wrapper");
+			try
+			{
+				wrapper.getDatabaseTransactionsPerHostTable().alterDatabase(getHostSource(), inputStream.initOrResetInputStream());
+			}
+			catch(Exception e)
+			{
+				throw DatabaseException.getDatabaseException(e);
+			}
+
+		}
+
+		@Override
+		public boolean exportToOutputStream(final DatabaseWrapper wrapper, final OutputStreamGetter outputStreamGetter)
+				throws DatabaseException {
+			if (wrapper == null)
+				throw new NullPointerException("wrapper");
+			if (maxEventsRecords == 0)
+				return false;
+			return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
+
+				@Override
+				public Boolean run() throws Exception {
+					int number = wrapper.getDatabaseTransactionsPerHostTable().exportTransactions(outputStreamGetter.initOrResetOutputStream(), hookID,
+							maxEventsRecords);
+					return number > 0;
+				}
+
+				@Override
+				public TransactionIsolation getTransactionIsolation() {
+					return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
+				}
+
+				@Override
+				public boolean doesWriteData() {
+					return true;
+				}
+
+				@Override
+				public void initOrReset() {
+
+				}
+			});
+
+		}
+
+		public boolean tryToMerge(DatabaseEventsToSynchronize dest) {
+			if (hookID == dest.hookID) {
+				lastTransactionIDIncluded = Math.max(lastTransactionIDIncluded, dest.lastTransactionIDIncluded);
+				return true;
+			} else
+				return false;
+		}
+	}
+	public static abstract class AbstractDatabaseEventsToSynchronize extends DatabaseEvent implements BigDatabaseEventToSend {
 		protected transient DatabaseHooksTable.Record hook;
 		protected int hookID;
 		protected DecentralizedValue hostIDSource, hostIDDestination;
-		private long lastTransactionIDIncluded;
-		int maxEventsRecords;
+
 
 		@SuppressWarnings("unused")
-		DatabaseEventsToSynchronize() {
+		AbstractDatabaseEventsToSynchronize() {
 
 		}
 
@@ -1423,8 +1662,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			out.writeInt(hookID);
 			out.writeObject(hostIDSource, false);
 			out.writeObject(hostIDDestination, false);
-			out.writeLong(lastTransactionIDIncluded);
-			out.writeInt(maxEventsRecords);
 		}
 
 		@Override
@@ -1432,21 +1669,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			hookID=in.readInt();
 			hostIDSource=in.readObject(false, DecentralizedValue.class);
 			hostIDDestination=in.readObject(false, DecentralizedValue.class);
-			lastTransactionIDIncluded=in.readLong();
-			maxEventsRecords=in.readInt();
-			if (maxEventsRecords<1 || maxEventsRecords>MAX_TRANSACTIONS_TO_SYNCHRONIZE_AT_THE_SAME_TIME)
-				throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN);
 		}
 
 
-		DatabaseEventsToSynchronize(DecentralizedValue hostIDSource, DatabaseHooksTable.Record hook,
-									long lastTransactionIDIncluded, int maxEventsRecords) {
+		AbstractDatabaseEventsToSynchronize(DecentralizedValue hostIDSource, DatabaseHooksTable.Record hook) {
 			this.hook = hook;
 			this.hookID = hook.getID();
 			this.hostIDDestination = hook.getHostID();
 			this.hostIDSource = hostIDSource;
-			this.lastTransactionIDIncluded = lastTransactionIDIncluded;
-			this.maxEventsRecords = maxEventsRecords;
 		}
 
 		@Override
@@ -1459,63 +1689,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			return hostIDSource;
 		}
 
-		@Override
-		public void inportFromInputStream(DatabaseWrapper wrapper, final InputStreamGetter inputStream)
-				throws DatabaseException {
-			if (wrapper == null)
-				throw new NullPointerException("wrapper");
-			try
-			{
-				wrapper.getDatabaseTransactionsPerHostTable().alterDatabase(getHostSource(), inputStream.initOrResetInputStream());
-			}
-			catch(Exception e)
-			{
-				throw DatabaseException.getDatabaseException(e);
-			}
-			
-		}
 
-		@Override
-		public boolean exportToOutputStream(final DatabaseWrapper wrapper, final OutputStreamGetter outputStreamGetter)
-				throws DatabaseException {
-			if (wrapper == null)
-				throw new NullPointerException("wrapper");
-			if (maxEventsRecords == 0)
-				return false;
-			return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
-
-                @Override
-                public Boolean run() throws Exception {
-                    int number = wrapper.getDatabaseTransactionsPerHostTable().exportTransactions(outputStreamGetter.initOrResetOutputStream(), hookID,
-                            maxEventsRecords);
-                    return number > 0;
-                }
-
-                @Override
-                public TransactionIsolation getTransactionIsolation() {
-                    return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
-                }
-
-                @Override
-                public boolean doesWriteData() {
-                    return true;
-                }
-
-                @Override
-                public void initOrReset() {
-
-                }
-            });
-
-		}
-
-		public boolean tryToFusion(DatabaseEventsToSynchronize dest) {
-			if (hookID == dest.hookID) {
-				lastTransactionIDIncluded = Math.max(lastTransactionIDIncluded, dest.lastTransactionIDIncluded);
-				return true;
-			} else
-				return false;
-		}
 
 
 	}
@@ -2297,188 +2471,196 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		boolean validateTmpTransaction() throws DatabaseException {
-			for (BackupRestoreManager.Transaction t : backupManager.values())
-			{
-				if (t!=null)
-					t.validateTransaction();
+			final HashMap<Package, Long> transactionsID=new HashMap<>();
+			try {
+				if (!transactionToSynchronize)
+					return false;
+				if (eventsStoredIntoMemory) {
+
+					return runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
+						boolean alreadyDone = false;
+
+						@Override
+						public Boolean run() throws Exception {
+							final AtomicBoolean transactionOK = new AtomicBoolean(false);
+
+							for (final Map.Entry<Package, TransactionPerDatabase> e : temporaryTransactions.entrySet()) {
+								final TransactionPerDatabase t = e.getValue();
+								if (t.eventsNumber.get() > 0) {
+									final AtomicReference<DatabaseTransactionEventsTable.Record> finalTR = new AtomicReference<>(
+											null);
+									/*
+									 * final ArrayList<AbstractDecentralizedID> excludedHooks=new ArrayList<>();
+									 * long
+									 * previousLastTransactionID=getTransactionIDTable().getLastTransactionID();
+									 * final AtomicBoolean hasIgnoredHooks=new AtomicBoolean(false);
+									 */
+
+									getHooksTransactionsTable().getRecords(new Filter<Record>() {
+
+										@Override
+										public boolean nextRecord(Record _record)
+												throws DatabaseException {
+											if (!_record.concernsLocalDatabaseHost()) {
+												if (_record.isConcernedDatabaseByPackage(
+														t.transaction.concernedDatabasePackage)
+														&& (t.concernedHosts == null || t.concernedHosts.isEmpty()
+														|| t.concernedHosts.contains(_record.getHostID()))) {
+
+													if (finalTR.get() == null) {
+														finalTR.set(t.transaction = getDatabaseTransactionEventsTable()
+																.addRecord(new DatabaseTransactionEventsTable.Record(
+																		getTransactionIDTable()
+																				.getAndIncrementTransactionID(),
+																		t.transaction.concernedDatabasePackage,
+																		t.concernedHosts)));
+														transactionsID.put(e.getKey(), t.transaction.id);
+														for (DatabaseEventsTable.Record r : t.events) {
+															r.setTransaction(finalTR.get());
+															getDatabaseEventsTable().addRecord(r);
+														}
+
+													}
+													DatabaseTransactionsPerHostTable.Record trhost = new DatabaseTransactionsPerHostTable.Record();
+													trhost.set(finalTR.get(), _record);
+													getDatabaseTransactionsPerHostTable().addRecord(trhost);
+													transactionOK.set(true);
+												}
+											}
+											return false;
+										}
+									});
+								}
+							}
+							resetTmpTransaction(true);
+							return transactionOK.get();
+						}
+
+						@Override
+						public TransactionIsolation getTransactionIsolation() {
+							return TransactionIsolation.TRANSACTION_READ_UNCOMMITTED;
+						}
+
+						@Override
+						public boolean doesWriteData() {
+							return true;
+						}
+
+						@Override
+						public void initOrReset() {
+							if (alreadyDone)
+								throw new IllegalAccessError();
+						}
+
+					});
+
+				} else {
+
+					return runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
+						boolean alreadyDone = false;
+
+						@Override
+						public Boolean run() throws Exception {
+							final AtomicBoolean transactionOK = new AtomicBoolean(false);
+							for ( final Map.Entry<Package, TransactionPerDatabase> e : temporaryTransactions.entrySet()) {
+								final TransactionPerDatabase t=e.getValue();
+								if (t.eventsNumber.get() > 0) {
+									final AtomicReference<DatabaseTransactionEventsTable.Record> finalTR = new AtomicReference<>(
+											null);
+									/*
+									 * final ArrayList<AbstractDecentralizedID> excludedHooks=new ArrayList<>();
+									 * long
+									 * previousLastTransactionID=getTransactionIDTable().getLastTransactionID();
+									 * final AtomicBoolean hasIgnoredHooks=new AtomicBoolean(false);
+									 */
+									getHooksTransactionsTable().getRecords(new Filter<Record>() {
+
+										@Override
+										public boolean nextRecord(Record _record)
+												throws DatabaseException {
+											if (!_record.concernsLocalDatabaseHost()) {
+												if (_record.isConcernedDatabaseByPackage(
+														t.transaction.concernedDatabasePackage)
+														&& (t.concernedHosts == null || t.concernedHosts.isEmpty()
+														|| t.concernedHosts.contains(_record.getHostID()))) {
+													// excludedHooks.add(_record.getHostID());
+													if (finalTR.get() == null) {
+														DatabaseTransactionEventsTable.Record te;
+														finalTR.set(te=getDatabaseTransactionEventsTable()
+																.addRecord(new DatabaseTransactionEventsTable.Record(
+																		getTransactionIDTable()
+																				.getAndIncrementTransactionID(),
+																		t.transaction.concernedDatabasePackage,
+																		t.concernedHosts)));
+														transactionsID.put(e.getKey(), te.id);
+														final HashMap<String, Object> hm = new HashMap<>();
+														hm.put("transaction", finalTR.get());
+														getDatabaseEventsTable().updateRecords(
+																new AlterRecordFilter<DatabaseEventsTable.Record>() {
+
+																	@Override
+																	public void nextRecord(
+																			DatabaseEventsTable.Record _record) {
+																		update(hm);
+																	}
+																}, "transaction=%transaction", "transaction",
+																t.transaction);
+
+													}
+													DatabaseTransactionsPerHostTable.Record trhost = new DatabaseTransactionsPerHostTable.Record();
+													trhost.set(finalTR.get(), _record);
+													getDatabaseTransactionsPerHostTable().addRecord(trhost);
+													transactionOK.set(true);
+												}
+												/*
+												 * else hasIgnoredHooks.set(true);
+												 */
+											}
+											return false;
+										}
+									});
+									/*
+									 * if (hasIgnoredHooks.get())
+									 * getHooksTransactionsTable().actualizeLastTransactionID(excludedHooks,
+									 * previousLastTransactionID);
+									 */
+								}
+								getDatabaseTransactionEventsTable().removeRecordWithCascade(t.transaction);
+							}
+							resetTmpTransaction(true);
+							return transactionOK.get();
+						}
+
+						@Override
+						public TransactionIsolation getTransactionIsolation() {
+							return TransactionIsolation.TRANSACTION_READ_COMMITTED;
+						}
+
+						@Override
+						public boolean doesWriteData() {
+							return true;
+						}
+
+						@Override
+						public void initOrReset() {
+							if (alreadyDone)
+								throw new IllegalAccessError();
+
+						}
+					});
+
+				}
 			}
-			backupManager.clear();
-			if (!transactionToSynchronize)
-				return false;
-			if (eventsStoredIntoMemory) {
-				
-				return runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
-                    boolean alreadyDone = false;
-
-                    @Override
-                    public Boolean run() throws Exception {
-                        final AtomicBoolean transactionOK = new AtomicBoolean(false);
-
-                        for (final TransactionPerDatabase t : temporaryTransactions.values()) {
-
-                            if (t.eventsNumber.get() > 0) {
-                                final AtomicReference<DatabaseTransactionEventsTable.Record> finalTR = new AtomicReference<>(
-                                        null);
-                                /*
-                                 * final ArrayList<AbstractDecentralizedID> excludedHooks=new ArrayList<>();
-                                 * long
-                                 * previousLastTransactionID=getTransactionIDTable().getLastTransactionID();
-                                 * final AtomicBoolean hasIgnoredHooks=new AtomicBoolean(false);
-                                 */
-
-                                getHooksTransactionsTable().getRecords(new Filter<Record>() {
-
-                                    @Override
-                                    public boolean nextRecord(Record _record)
-                                            throws DatabaseException {
-                                        if (!_record.concernsLocalDatabaseHost()) {
-                                            if (_record.isConcernedDatabaseByPackage(
-                                                    t.transaction.concernedDatabasePackage)
-                                                    && (t.concernedHosts == null || t.concernedHosts.isEmpty()
-                                                    || t.concernedHosts.contains(_record.getHostID()))) {
-
-                                                if (finalTR.get() == null) {
-                                                    finalTR.set(t.transaction = getDatabaseTransactionEventsTable()
-                                                            .addRecord(new DatabaseTransactionEventsTable.Record(
-                                                                    getTransactionIDTable()
-                                                                            .getAndIncrementTransactionID(),
-                                                                    t.transaction.concernedDatabasePackage,
-                                                                    t.concernedHosts)));
-
-                                                    for (DatabaseEventsTable.Record r : t.events) {
-                                                        r.setTransaction(finalTR.get());
-                                                        getDatabaseEventsTable().addRecord(r);
-                                                    }
-
-                                                }
-                                                DatabaseTransactionsPerHostTable.Record trhost = new DatabaseTransactionsPerHostTable.Record();
-                                                trhost.set(finalTR.get(), _record);
-                                                getDatabaseTransactionsPerHostTable().addRecord(trhost);
-                                                transactionOK.set(true);
-                                            }
-                                        }
-                                        return false;
-                                    }
-                                });
-                            }
-                        }
-                        resetTmpTransaction(true);
-                        return transactionOK.get();
-                    }
-
-                    @Override
-                    public TransactionIsolation getTransactionIsolation() {
-                        return TransactionIsolation.TRANSACTION_READ_UNCOMMITTED;
-                    }
-
-                    @Override
-                    public boolean doesWriteData() {
-                        return true;
-                    }
-
-                    @Override
-                    public void initOrReset() {
-                        if (alreadyDone)
-                            throw new IllegalAccessError();
-                    }
-
-                });
-
-			} else {
-
-				return runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
-                    boolean alreadyDone = false;
-
-                    @Override
-                    public Boolean run() throws Exception {
-                        final AtomicBoolean transactionOK = new AtomicBoolean(false);
-                        for (final TransactionPerDatabase t : temporaryTransactions.values()) {
-
-                            if (t.eventsNumber.get() > 0) {
-                                final AtomicReference<DatabaseTransactionEventsTable.Record> finalTR = new AtomicReference<>(
-                                        null);
-                                /*
-                                 * final ArrayList<AbstractDecentralizedID> excludedHooks=new ArrayList<>();
-                                 * long
-                                 * previousLastTransactionID=getTransactionIDTable().getLastTransactionID();
-                                 * final AtomicBoolean hasIgnoredHooks=new AtomicBoolean(false);
-                                 */
-                                getHooksTransactionsTable().getRecords(new Filter<Record>() {
-
-                                    @Override
-                                    public boolean nextRecord(Record _record)
-                                            throws DatabaseException {
-                                        if (!_record.concernsLocalDatabaseHost()) {
-                                            if (_record.isConcernedDatabaseByPackage(
-                                                    t.transaction.concernedDatabasePackage)
-                                                    && (t.concernedHosts == null || t.concernedHosts.isEmpty()
-                                                    || t.concernedHosts.contains(_record.getHostID()))) {
-                                                // excludedHooks.add(_record.getHostID());
-                                                if (finalTR.get() == null) {
-                                                    finalTR.set(getDatabaseTransactionEventsTable()
-                                                            .addRecord(new DatabaseTransactionEventsTable.Record(
-                                                                    getTransactionIDTable()
-                                                                            .getAndIncrementTransactionID(),
-                                                                    t.transaction.concernedDatabasePackage,
-                                                                    t.concernedHosts)));
-                                                    final HashMap<String, Object> hm = new HashMap<>();
-                                                    hm.put("transaction", finalTR.get());
-                                                    getDatabaseEventsTable().updateRecords(
-                                                            new AlterRecordFilter<DatabaseEventsTable.Record>() {
-
-                                                                @Override
-                                                                public void nextRecord(
-                                                                        DatabaseEventsTable.Record _record) {
-                                                                    update(hm);
-                                                                }
-                                                            }, "transaction=%transaction", "transaction",
-                                                            t.transaction);
-
-                                                }
-                                                DatabaseTransactionsPerHostTable.Record trhost = new DatabaseTransactionsPerHostTable.Record();
-                                                trhost.set(finalTR.get(), _record);
-                                                getDatabaseTransactionsPerHostTable().addRecord(trhost);
-                                                transactionOK.set(true);
-                                            }
-                                            /*
-                                             * else hasIgnoredHooks.set(true);
-                                             */
-                                        }
-                                        return false;
-                                    }
-                                });
-                                /*
-                                 * if (hasIgnoredHooks.get())
-                                 * getHooksTransactionsTable().actualizeLastTransactionID(excludedHooks,
-                                 * previousLastTransactionID);
-                                 */
-                            }
-                            getDatabaseTransactionEventsTable().removeRecordWithCascade(t.transaction);
-                        }
-                        resetTmpTransaction(true);
-                        return transactionOK.get();
-                    }
-
-                    @Override
-                    public TransactionIsolation getTransactionIsolation() {
-                        return TransactionIsolation.TRANSACTION_READ_COMMITTED;
-                    }
-
-                    @Override
-                    public boolean doesWriteData() {
-                        return true;
-                    }
-
-                    @Override
-                    public void initOrReset() {
-                        if (alreadyDone)
-                            throw new IllegalAccessError();
-
-                    }
-                });
+			finally {
+				for (Map.Entry<Package, BackupRestoreManager.Transaction> e: backupManager.entrySet())
+				{
+					BackupRestoreManager.Transaction t=e.getValue();
+					if (t!=null)
+						t.validateTransaction(transactionsID.get(e.getKey()));
+				}
+				backupManager.clear();
 
 			}
-
 		}
 
 	}
