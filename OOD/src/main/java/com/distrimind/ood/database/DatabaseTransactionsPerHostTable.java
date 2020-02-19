@@ -894,6 +894,207 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 	}
 
+	boolean alterDatabase(final String databasePackage, final DecentralizedValue comingFrom,
+						  final RandomInputStream ois) throws DatabaseException {
+
+		if (comingFrom == null)
+			throw new NullPointerException("comingFrom");
+		if (ois == null)
+			throw new NullPointerException("inputStream");
+		if (comingFrom.equals(getDatabaseHooksTable().getLocalDatabaseHost().getHostID()))
+			throw new IllegalArgumentException(
+					"The given distant host ID cannot be equals to the local host ID : " + comingFrom);
+
+
+
+
+		final AtomicLong lastValidatedTransaction = new AtomicLong(-1);
+		final HashSet<DecentralizedValue> hooksToNotify = new HashSet<>();
+
+		DecentralizedValue hostID=getDatabaseWrapper().getSynchronizer().getLocalHostID();
+		if (hostID==null)
+			throw new DatabaseException("No local host id defined for database synchronization");
+		if (comingFrom.equals(hostID))
+			throw new DatabaseException("The distant ID cannot be equal to the local host ID");
+		ArrayList<DatabaseHooksTable.Record> hooks = getDatabaseHooksTable().getRecordsWithAllFields("hostID",
+				comingFrom);
+		if (hooks.isEmpty())
+			throw new SerializationDatabaseException("The give host id is not valid : " + comingFrom);
+		else if (hooks.size() > 1)
+			throw new IllegalAccessError();
+		final DatabaseHooksTable.Record comingFromRecord = hooks.get(0);
+
+		long lastDistantTransactionID=getDatabaseWrapper().getSynchronizer().getLastValidatedSynchronization(comingFrom);
+
+
+		try  {
+			if (ois.skip(8)!=8)
+				throw new IOException();
+			if (!ois.readBoolean())
+				throw new IOException();
+			long startTransactionID=ois.readLong();
+			if (startTransactionID>lastDistantTransactionID)
+				return false;
+			long endTransactionID=ois.readLong();
+			if (endTransactionID<=lastDistantTransactionID)
+				return true;
+			if (ois.readBoolean())
+				return false;
+			if (ois.skip(4)!=4)
+				throw new IOException();
+			boolean findOneTransactionWithID=false;
+			while(ois.available()>0) {
+				int nextTransactionPosition = ois.readInt();
+				if (nextTransactionPosition==-1)
+					break;
+				long transactionID;
+				boolean withID;
+				if (!(withID=ois.readBoolean()) || (transactionID=ois.readLong())<=lastDistantTransactionID)
+				{
+					if (!withID && findOneTransactionWithID)
+						throw new DatabaseException("Synchronization was disabled during backup process");
+					findOneTransactionWithID|=withID;
+					ois.seek(nextTransactionPosition);
+					continue;
+				}
+				findOneTransactionWithID=true;
+				if (ois.skip(8)!=8)
+					throw new IOException();
+				final DatabaseTransactionEventsTable.Record dte=new DatabaseTransactionEventsTable.Record(transactionID, databasePackage);
+				List<Class<? extends Table<?>>> classes=getDatabaseWrapper().getDatabaseConfiguration(databasePackage).getSortedTableClasses(getDatabaseWrapper());
+				final ArrayList<Table<?>> tables=new ArrayList<>(classes.size());
+				for (Class<? extends Table<?>> c : classes) {
+					Table<?> t = getDatabaseWrapper().getTableInstance(c);
+					tables.add(t);
+				}
+				DatabaseEventsTable.DatabaseEventsIterator it=new DatabaseEventsTable.DatabaseEventsIterator(ois, getDatabaseWrapper().getMaxTransactionEventsKeepedIntoMemoryDuringImportInBytes()){
+					byte eventTypeByte;
+					int position=0;
+					private final byte[] recordBuffer=new byte[1<<24-1];
+					@Override
+					public DatabaseEventsTable.AbstractRecord next() throws DatabaseException {
+						try {
+							long startRecord=getDataInputStream().currentPosition();
+							DatabaseEventType eventType = DatabaseEventType.getEnum(eventTypeByte);
+							if (eventType == null)
+								throw new IOException();
+
+							int tableIndex = getDataInputStream().readUnsignedShort();
+							if (tableIndex >= tables.size())
+								throw new IOException();
+							Table<?> table = tables.get(tableIndex);
+
+							int s = getDataInputStream().readUnsignedShortInt();
+							if (s == 0)
+								throw new IOException();
+							getDataInputStream().readFully(recordBuffer, 0, s);
+							DatabaseEventsTable.Record event=new DatabaseEventsTable.Record();
+							event.setConcernedTable(table.getClass().getName());
+							event.setPosition(position++);
+							event.setConcernedSerializedPrimaryKey(recordBuffer);
+							event.setType(eventTypeByte);
+							event.setTransaction(dte);
+							switch (eventType) {
+								case ADD: {
+									assert eventTypeByte == 2;
+
+									if (getDataInputStream().readBoolean()) {
+										s = getDataInputStream().readUnsignedShortInt();
+										getDataInputStream().readFully(recordBuffer, 0, s);
+										event.setConcernedSerializedNewForeignKey(recordBuffer);
+									}
+
+									if (getDataInputStream().readBoolean()) {
+										s = getDataInputStream().readInt();
+										if (s < 0)
+											throw new IOException();
+										if (s > 0) {
+											getDataInputStream().readFully(recordBuffer, 0, s);
+
+											event.setConcernedSerializedNewForeignKey(recordBuffer);
+										}
+									}
+
+								}
+								break;
+								case UPDATE: {
+
+									if (getDataInputStream().readBoolean()) {
+										s = getDataInputStream().readUnsignedShortInt();
+										getDataInputStream().readFully(recordBuffer, 0, s);
+										event.setConcernedSerializedNewForeignKey(recordBuffer);
+									}
+
+									if (getDataInputStream().readBoolean()) {
+										s = getDataInputStream().readInt();
+										if (s < 0)
+											throw new IOException();
+										if (s > 0) {
+											getDataInputStream().readFully(recordBuffer, 0, s);
+											event.setConcernedSerializedNewForeignKey(recordBuffer);
+										}
+									}
+
+								}
+								break;
+								case REMOVE:
+								case REMOVE_WITH_CASCADE:
+									break;
+								default:
+									throw new IllegalAccessError();
+
+
+							}
+							if (getDataInputStream().readInt() != startRecord)
+								throw new IOException();
+							return event;
+						}
+						catch (IOException e)
+						{
+							throw DatabaseException.getDatabaseException(e);
+						}
+					}
+
+					@Override
+					public boolean hasNext() throws DatabaseException {
+						try {
+							return (eventTypeByte=getDataInputStream().readByte())!=-1;
+						} catch (IOException e) {
+							throw DatabaseException.getDatabaseException(e);
+						}
+					}
+				};
+				try {
+					alterDatabase(comingFromRecord, new AtomicReference<>(comingFromRecord),
+							dte, it, lastValidatedTransaction,
+							hooksToNotify);
+					ois.seek(nextTransactionPosition);
+				}
+				finally {
+					it.close();
+				}
+			}
+			return true;
+
+		} catch (EOFException e) {
+			throw new SerializationDatabaseException("Unexpected EOF", e);
+		} catch (Exception e) {
+			throw DatabaseException.getDatabaseException(e);
+		} finally {
+			if (lastValidatedTransaction.get() != -1) {
+				getDatabaseWrapper().getSynchronizer()
+						.addNewDatabaseEvent(new DatabaseWrapper.TransactionConfirmationEvents(
+								getDatabaseHooksTable().getLocalDatabaseHost().getHostID(), comingFrom,
+								lastValidatedTransaction.get()));
+			}
+			for (DecentralizedValue id : hooksToNotify) {
+				DatabaseHooksTable.Record h = getDatabaseHooksTable().getHook(id);
+				getDatabaseWrapper().getSynchronizer().sendLastValidatedIDIfConnected(h);
+			}
+		}
+
+	}
+
 	int exportTransactions(final RandomOutputStream oos, final int hookID, final int maxEventsRecords)
 			throws DatabaseException {
 

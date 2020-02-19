@@ -65,7 +65,7 @@ public class BackupRestoreManager {
 
 	private final static int LAST_BACKUP_UTC_POSITION=0;
 	//private final static int RECORDS_INDEX_POSITION=LAST_BACKUP_UTC_POSITION+8;
-	private final static int LIST_CLASSES_POSITION=LAST_BACKUP_UTC_POSITION+8;
+	private final static int LIST_CLASSES_POSITION=LAST_BACKUP_UTC_POSITION+25;
 
 
 	private ArrayList<Long> fileReferenceTimeStamps;
@@ -84,6 +84,7 @@ public class BackupRestoreManager {
 	private final boolean generateRestoreProgressBar;
 	private volatile long lastCurrentRestorationFileUsed=Long.MIN_VALUE;
 	private volatile BackupFileListener backupFileListener=null;
+
 	//private volatile long currentBackupReferenceUTC=Long.MAX_VALUE;
 
 
@@ -459,10 +460,14 @@ public class BackupRestoreManager {
 			}
 			//recordsIndex.set(new RecordsIndex(backupConfiguration.getMaxIndexSize(), out));
 
-			if (referenceFile)
+			if (referenceFile) {
+				out.writeBoolean(true);
 				saveTablesHeader(out);
-			else
+			}
+			else {
+				out.writeBoolean(false);
 				out.writeInt(-1);
+			}
 		}
 		catch(IOException e)
 		{
@@ -953,16 +958,17 @@ public class BackupRestoreManager {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
+
+
+
+
 	private void saveTransactionQueue(RandomOutputStream out, int nextTransactionReference, long transactionUTC, Long firstTransactionID, Long lastTransactionID/*, RecordsIndex index*/) throws DatabaseException {
 		try {
 			out.writeByte(-1);
 			int nextTransaction=(int)out.currentPosition();
 			//backup previous transaction reference
 			out.writeInt(nextTransactionReference);
-			if (lastTransactionID!=null) {
-				out.writeBoolean(true);
-				out.writeLong(lastTransactionID);
-			}
+
 
 			out.seek(LAST_BACKUP_UTC_POSITION);
 			//last transaction utc
@@ -978,6 +984,13 @@ public class BackupRestoreManager {
 			//next transaction of previous transaction
 			out.seek(nextTransactionReference);
 			out.writeInt(nextTransaction);
+			if (lastTransactionID!=null) {
+				out.writeBoolean(true);
+				out.writeLong(lastTransactionID);
+			}
+			else {
+				out.writeBoolean(false);
+			}
 
 			//index.flush(out);
 		}
@@ -1939,7 +1952,7 @@ public class BackupRestoreManager {
 
 	Transaction startTransaction() throws DatabaseException {
 		synchronized (this) {
-			createIfNecessaryNewBackupReference();
+
 			if (!isReady())
 				return null;
 			int oldLength = 0;
@@ -2080,6 +2093,7 @@ public class BackupRestoreManager {
 			}
 			if (backupFileListener!=null && fileTimeStamp!=oldLastFile)
 				backupFileListener.fileListChanged();
+			createIfNecessaryNewBackupReference();
 		}
 
 		final void backupRecordEvent(Table<?> table, TableEvent<?> _de) throws DatabaseException {

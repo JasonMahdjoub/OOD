@@ -1504,21 +1504,26 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	public static class DatabaseBackupToIncorporate extends AbstractDatabaseEventsToSynchronize implements Comparable<DatabaseBackupToIncorporate> {
 
 		private TransactionsInterval interval;
+		private String concernedPackage;
 
 		@SuppressWarnings("unused")
 		DatabaseBackupToIncorporate() {
 		}
 
-		DatabaseBackupToIncorporate(DecentralizedValue hostIDSource, Record hook, TransactionsInterval interval) {
+		DatabaseBackupToIncorporate(DecentralizedValue hostIDSource, Record hook, TransactionsInterval interval, Package concernedPackage) {
 			super(hostIDSource, hook);
 			if (interval==null)
 				throw new NullPointerException();
+			if (concernedPackage==null)
+				throw new NullPointerException();
+
 			this.interval=interval;
+			this.concernedPackage=concernedPackage.getName();
 		}
 
 		@Override
 		public int getInternalSerializedSize() {
-			return super.getInternalSerializedSize()+interval.getInternalSerializedSize();
+			return super.getInternalSerializedSize()+interval.getInternalSerializedSize()+SerializationTools.getInternalSize(concernedPackage, SerializationTools.MAX_CLASS_LENGTH);
 		}
 
 		@Override
@@ -1526,6 +1531,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			super.writeExternal(out);
 			out.writeLong(interval.getStartIncludedTransactionID());
 			out.writeLong(interval.getEndIncludedTransactionID());
+			out.writeString(concernedPackage, false, SerializationTools.MAX_CLASS_LENGTH);
 		}
 
 		@Override
@@ -1540,11 +1546,22 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			{
 				throw new MessageExternalizationException(Integrity.FAIL, e2);
 			}
+			concernedPackage=in.readString(false, SerializationTools.MAX_CLASS_LENGTH);
 		}
 
 		@Override
 		public void importFromInputStream(DatabaseWrapper wrapper, InputStreamGetter inputStream) throws DatabaseException {
-
+			if (wrapper == null)
+				throw new NullPointerException("wrapper");
+			try
+			{
+				if (hostIDDestination.equals(wrapper.getSynchronizer().getLocalHostID()))
+					wrapper.getDatabaseTransactionsPerHostTable().alterDatabase(concernedPackage, getHostSource(), inputStream.initOrResetInputStream());
+			}
+			catch(Exception e)
+			{
+				throw DatabaseException.getDatabaseException(e);
+			}
 		}
 
 		@Override
@@ -4066,6 +4083,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
         return db.tables_per_versions.get(databaseVersion).tables_instances.values();
 	}
 
+
 	protected abstract String getOnUpdateCascadeSqlQuerry();
 
 	protected abstract String getOnDeleteCascadeSqlQuerry();
@@ -4107,6 +4125,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		else
 			return d.backupRestoreManager;
 	}
+
 
 
 	/**
