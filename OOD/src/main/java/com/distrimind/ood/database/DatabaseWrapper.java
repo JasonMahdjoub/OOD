@@ -961,9 +961,40 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		public void resetSynchronizerAndRemoveAllHosts() throws DatabaseException {
+			resetSynchronizerAndGetAllHosts();
+		}
+		private Collection<DatabaseHooksTable.Record> resetSynchronizerAndGetAllHosts() throws DatabaseException {
+			if (getLocalHostID()==null)
+				return null;
 			disconnectAll();
-			getHooksTransactionsTable().resetAllHosts();
+			Collection<DatabaseHooksTable.Record> r=getHooksTransactionsTable().resetAllHosts();
 			getDatabaseTransactionEventsTable().resetAllTransactions();
+			return r;
+		}
+		private void restoreHosts(Collection<DatabaseHooksTable.Record> hosts, boolean replaceDistantConflictualRecords) throws DatabaseException {
+			if (hosts==null)
+				return ;
+			DatabaseHooksTable.Record local=null;
+			for (Iterator<DatabaseHooksTable.Record> it=hosts.iterator();it.hasNext();)
+			{
+				DatabaseHooksTable.Record r=it.next();
+				if (r.concernsLocalDatabaseHost()) {
+					if (local!=null)
+						throw new IllegalAccessError();
+					local = r;
+					it.remove();
+				}
+			}
+			if (local==null)
+				throw new IllegalAccessError();
+			getHooksTransactionsTable().addHooks(local.getHostID(), true, false, new ArrayList<DecentralizedValue>(),
+					Arrays.asList(local.getDatabasePackageNames()));
+
+			for (DatabaseHooksTable.Record r : hosts)
+				getHooksTransactionsTable().addHooks(r.getHostID(), false,
+						replaceDistantConflictualRecords, new ArrayList<DecentralizedValue>(), Arrays.asList(r.getDatabasePackageNames()));
+			isReliedToDistantHook();
+
 		}
 		public void disconnectAll() throws DatabaseException {
 			DecentralizedValue hostID=getLocalHostID();
@@ -986,9 +1017,15 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					throw DatabaseException.getDatabaseException(
 							new IllegalAccessException("hostID " + hostID + " has not been initialized !"));
 				if (hook.concernsLocalDatabaseHost()) {
+					ArrayList<DecentralizedValue> hs=new ArrayList<>(initializedHooks.keySet());
 					initializedHooks.clear();
 					this.events.clear();
+					if (notifier!=null) {
+						for (DecentralizedValue h : hs)
+							notifier.hostDisconnected(h);
+					}
 				} else {
+					notifier.hostDisconnected(hostID);
 					for (Iterator<DatabaseEvent> it = events.iterator(); it.hasNext();) {
 						DatabaseEvent de = it.next();
 						if (de instanceof DatabaseEventToSend) {
@@ -1144,11 +1181,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					throw DatabaseException.getDatabaseException(
 							new IllegalAccessException("hostID " + hostID + " already initialized !"));
 				}
+
 				initializedHooks.put(hostID, new ConnectedPeers(r));
 				
 				validateLastSynchronization(hostID,
 						Math.max(r.getLastValidatedTransaction(), lastValidatedTransactionID));
-				
+				if (notifier!=null && !r.concernsLocalDatabaseHost())
+					notifier.hostConnected(hostID);
 			}
 			finally
 			{
@@ -3779,16 +3818,21 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					databaseVersion=getCurrentDatabaseVersion(configuration.getPackage());
 				if (allNotFound) {
 					try {
+						DatabaseLifeCycles callable = configuration.getDatabaseLifeCycles();
+						Collection<DatabaseHooksTable.Record> hosts=getSynchronizer().resetSynchronizerAndGetAllHosts();
 						int currentVersion=getCurrentDatabaseVersion(configuration.getPackage());
 						if (currentVersion==databaseVersion) {
 							DatabaseConfiguration oldConfig = configuration.getOldVersionOfDatabaseConfiguration();
-							DatabaseLifeCycles callable = configuration.getDatabaseLifeCycles();
+
 							boolean removeOldDatabase = false;
 							if (oldConfig != null && callable != null) {
 								try {
+
 									loadDatabase(oldConfig, false);
 									callable.transferDatabaseFromOldVersion(this, oldConfig, configuration);
+
 									removeOldDatabase = callable.hasToRemoveOldDatabase();
+
 								} catch (DatabaseException e) {
 									oldConfig = null;
 								}
@@ -3798,8 +3842,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 								if (removeOldDatabase)
 									deleteDatabase(oldConfig, databaseVersion);
 							}
-							actualDatabaseLoading.initBackupRestoreManager(this, getDatabaseDirectory(), configuration);
+
 						}
+						getSynchronizer().restoreHosts(hosts, callable != null && callable.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized());
+						if (currentVersion==databaseVersion)
+							actualDatabaseLoading.initBackupRestoreManager(this, getDatabaseDirectory(), configuration);
+
 					} catch (Exception e) {
 						throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 					}

@@ -87,4 +87,12 @@ public interface DatabaseLifeCycles {
 	 */
 	boolean hasToRemoveOldDatabase() throws Exception;
 
+	/**
+	 * When a new version of the database is created, the synchronizer is reset.
+	 * Then, the new database version must be synchronized with the new distant database version.
+	 * During the synchronization process, if there are records that are conflictual between different peers,
+	 * this function tells if the distant record can be ignored
+	 * @return true if the distant conflictual record can be ignored
+	 */
+	boolean replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized();
 }

@@ -37,6 +37,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.DecentralizedValue;
 
 /**
  * @author Jason Mahdjoub
@@ -57,5 +58,17 @@ public interface DatabaseNotifier {
      * @throws DatabaseException if a problem occurs
      */
     void endSynchronizationTransaction() throws DatabaseException;
+
+    /**
+     * The given host was disconnected. Local host is not concerned.
+     * @param hostID the disconnected host
+     */
+    void hostDisconnected(DecentralizedValue hostID);
+
+    /**
+     * The given host was connected. Local host is not concerned.
+     * @param hostID the connected host
+     */
+    void hostConnected(DecentralizedValue hostID);
 
 }

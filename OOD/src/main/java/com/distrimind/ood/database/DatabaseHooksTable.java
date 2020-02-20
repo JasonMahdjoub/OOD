@@ -501,8 +501,8 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 	@SuppressWarnings("UnusedReturnValue")
 	DatabaseHooksTable.Record addHooks(final DecentralizedValue hostID, final boolean concernsDatabaseHost,
-									   final boolean replaceDistantConflitualRecords,
-									   final ArrayList<DecentralizedValue> hostAlreadySynchronized, final ArrayList<String> packages)
+									   final boolean replaceDistantConflictualRecords,
+									   final ArrayList<DecentralizedValue> hostAlreadySynchronized, final List<String> packages)
 			throws DatabaseException {
 
 		if (hostID == null)
@@ -534,7 +534,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							if (!concernsDatabaseHost) {
 								r.setLastValidatedTransaction(getDatabaseTransactionEventsTable()
 										.addTransactionToSynchronizeTables(newAddedPackages, hostAlreadySynchronized, r,
-												replaceDistantConflitualRecords));
+												replaceDistantConflictualRecords));
 								updateRecord(r);
 							}
 							return r;
@@ -548,7 +548,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							if (!concernsDatabaseHost) {
 								r.setLastValidatedTransaction(getDatabaseTransactionEventsTable()
 										.addTransactionToSynchronizeTables(newAddedPackages, hostAlreadySynchronized, r,
-												replaceDistantConflitualRecords));
+												replaceDistantConflictualRecords));
 								updateRecord(r);
 							}
 
@@ -743,11 +743,13 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		return localHost.get();
 	}
 
-	void resetAllHosts() throws DatabaseException {
+	Collection<DatabaseHooksTable.Record> resetAllHosts() throws DatabaseException {
+		Collection<DatabaseHooksTable.Record> res=getRecords();
 		removeAllRecordsWithCascade();
 		localHost=null;
 		supportedDatabasePackages=null;
 		lastTransactionFieldsBetweenDistantHosts.clear();
+		return res;
 	}
 
 }
