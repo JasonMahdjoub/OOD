@@ -39,7 +39,6 @@ import com.distrimind.ood.database.exceptions.ConstraintsNotRespectedDatabaseExc
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.i18n.DatabaseMessages;
-import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.FileTools;
 import com.distrimind.util.Reference;
 import com.distrimind.util.io.*;
@@ -310,7 +309,7 @@ public class BackupRestoreManager {
 
 				BufferedRandomOutputStream out=new BufferedRandomOutputStream(new RandomFileOutputStream(res, RandomFileOutputStream.AccessMode.READ_AND_WRITE), maxBufferSize, maxBuffersNumber);
 				firstTransactionID.set(null);
-				saveHeader(out, fileTimeStamp.get(), false, null/*, recordsIndex*/);
+				saveHeader(out, fileTimeStamp.get(), false/*, null, recordsIndex*/);
 				return out;
 			}
 			else {
@@ -439,17 +438,17 @@ public class BackupRestoreManager {
 		}
 	}
 
-	private void saveHeader(RandomOutputStream out, long backupUTC, boolean referenceFile, Long firstTransactionID/*, AtomicReference<RecordsIndex> recordsIndex*/) throws DatabaseException {
+	private void saveHeader(RandomOutputStream out, long backupUTC, boolean referenceFile/*, Long firstTransactionID, AtomicReference<RecordsIndex> recordsIndex*/) throws DatabaseException {
 
 		try {
 			out.writeLong(backupUTC);
 			//first transaction id
-			if (firstTransactionID==null) {
-				out.writeBoolean(false);
-				out.writeLong(0);
-				//last transaction id
-				out.writeLong(0);
-			}
+			//if (firstTransactionID==null) {
+			out.writeBoolean(false);
+			out.writeLong(0);
+			//last transaction id
+			out.writeLong(0);
+			/*}
 			else
 			{
 				out.writeBoolean(true);
@@ -457,7 +456,7 @@ public class BackupRestoreManager {
 				//last transaction id
 				out.writeLong(firstTransactionID);
 
-			}
+			}*/
 			//recordsIndex.set(new RecordsIndex(backupConfiguration.getMaxIndexSize(), out));
 
 			if (referenceFile) {
@@ -1112,14 +1111,14 @@ public class BackupRestoreManager {
 						}
 						final int maxBufferSize = backupConfiguration.getMaxStreamBufferSizeForBackupRestoration();
 						final int maxBuffersNumber = backupConfiguration.getMaxStreamBufferNumberForBackupRestoration();
-						DecentralizedValue localHostID=databaseWrapper.getSynchronizer().getLocalHostID();
-						final Long transactionID=localHostID!=null?databaseWrapper.getSynchronizer().getLastValidatedSynchronization(localHostID):null;
+						//DecentralizedValue localHostID=databaseWrapper.getSynchronizer().getLocalHostID();
+
 
 						File file = initNewFileForBackupReference(currentBackupTime.get());
 						final AtomicReference<RandomOutputStream> rout = new AtomicReference<RandomOutputStream>(new BufferedRandomOutputStream(new RandomFileOutputStream(file, RandomFileOutputStream.AccessMode.READ_AND_WRITE), maxBufferSize, maxBuffersNumber));
 						try {
 							//final AtomicReference<RecordsIndex> index=new AtomicReference<>(null);
-							saveHeader(rout.get(), currentBackupTime.get(), true, transactionID/*, index*/);
+							saveHeader(rout.get(), currentBackupTime.get(), true/*, null, index*/);
 
 							final AtomicInteger nextTransactionReference = new AtomicInteger(saveTransactionHeader(rout.get(), currentBackupTime.get()));
 							final ProgressMonitor progressMonitor = backupConfiguration.getProgressMonitorForBackup();
@@ -1165,7 +1164,7 @@ public class BackupRestoreManager {
 													}
 
 													if (out.currentPosition() >= backupConfiguration.getMaxBackupFileSizeInBytes()) {
-														saveTransactionQueue(rout.get(), nextTransactionReference.get(), currentBackupTime.get(), transactionID, transactionID/*, index.get()*/);
+														saveTransactionQueue(rout.get(), nextTransactionReference.get(), currentBackupTime.get(), null, null/*, index.get()*/);
 														out.close();
 
 														//index.set(null);
@@ -1182,7 +1181,7 @@ public class BackupRestoreManager {
 														currentBackupTime.set(curTime);
 														File file = initNewFileForBackupIncrement(curTime);
 														rout.set(out = new BufferedRandomOutputStream(new RandomFileOutputStream(file, RandomFileOutputStream.AccessMode.READ_AND_WRITE), maxBufferSize, maxBuffersNumber));
-														saveHeader(out, curTime, false, transactionID/*, index*/);
+														saveHeader(out, curTime, false/*, null, index*/);
 														nextTransactionReference.set(saveTransactionHeader(out, currentBackupTime.get()));
 														originalPosition = out.currentPosition();
 
@@ -1214,7 +1213,7 @@ public class BackupRestoreManager {
 								}));
 
 							}
-							saveTransactionQueue(rout.get(), nextTransactionReference.get(), currentBackupTime.get(), transactionID, transactionID/*, index.get()*/);
+							saveTransactionQueue(rout.get(), nextTransactionReference.get(), currentBackupTime.get(), null, null/*, index.get()*/);
 						} finally {
 							rout.get().close();
 						}

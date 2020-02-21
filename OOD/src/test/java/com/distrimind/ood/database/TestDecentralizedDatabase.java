@@ -120,7 +120,7 @@ public abstract class TestDecentralizedDatabase {
 		}
 	}
 
-	public class Database implements AutoCloseable, DatabaseNotifier {
+	public static class Database implements AutoCloseable, DatabaseNotifier {
 		private final DatabaseWrapper dbwrapper;
 		private volatile boolean connected;
 		private final AbstractDecentralizedID hostID;
@@ -292,6 +292,16 @@ public abstract class TestDecentralizedDatabase {
 
 		}
 
+		@Override
+		public void hostDisconnected(DecentralizedValue hostID) {
+
+		}
+
+		@Override
+		public void hostConnected(DecentralizedValue hostID) {
+
+		}
+
 
 		private boolean collisionDetected(DecentralizedValue _distantPeerID,
 										  DecentralizedValue _intermediatePeer, DatabaseEventType _type, Table<?> _concernedTable,
@@ -447,6 +457,11 @@ public abstract class TestDecentralizedDatabase {
 
 					@Override
 					public boolean hasToRemoveOldDatabase() {
+						return false;
+					}
+
+					@Override
+					public boolean replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized() {
 						return false;
 					}
 				}, null), true);
@@ -735,7 +750,7 @@ public abstract class TestDecentralizedDatabase {
 		TableAlone.Record ralone = new TableAlone.Record();
 		ralone.id = new DecentralizedIDGenerator();
 		try {
-			ralone.id2 = ASymmetricAuthenticatedSignatureType.BC_SHA512withECDSA_CURVE_25519.getKeyPairGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKeyPair().getASymmetricPublicKey();
+			ralone.id2 = ASymmetricAuthenticatedSignatureType.BC_FIPS_Ed25519.getKeyPairGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKeyPair().getASymmetricPublicKey();
 		}
 		catch(Exception e)
 		{
@@ -798,7 +813,7 @@ public abstract class TestDecentralizedDatabase {
 	private TablePointing.Record generatesTablePointingRecord(TablePointed.Record rpointed) throws DatabaseException {
 		TablePointing.Record rpointing1 = new TablePointing.Record();
 		try {
-			rpointing1.id = ASymmetricAuthenticatedSignatureType.BC_SHA512withECDSA_CURVE_25519.getKeyPairGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKeyPair().getASymmetricPublicKey();
+			rpointing1.id = ASymmetricAuthenticatedSignatureType.BC_FIPS_Ed25519.getKeyPairGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKeyPair().getASymmetricPublicKey();
 		}
 		catch(Exception e)
 		{
@@ -818,7 +833,7 @@ public abstract class TestDecentralizedDatabase {
 
 		TablePointing.Record rpointing1 = new TablePointing.Record();
 		try {
-			rpointing1.id = ASymmetricAuthenticatedSignatureType.BC_SHA512withECDSA_CURVE_25519.getKeyPairGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKeyPair().getASymmetricPublicKey();
+			rpointing1.id = ASymmetricAuthenticatedSignatureType.BC_FIPS_Ed25519.getKeyPairGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKeyPair().getASymmetricPublicKey();
 		}
 		catch(Exception e)
 		{
@@ -829,7 +844,7 @@ public abstract class TestDecentralizedDatabase {
 		rpointing1 = db.getTablePointing().addRecord(rpointing1);
 		TablePointing.Record rpointing2 = new TablePointing.Record();
 		try {
-			rpointing2.id = ASymmetricAuthenticatedSignatureType.BC_SHA512withECDSA_CURVE_25519.getKeyPairGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKeyPair().getASymmetricPublicKey();
+			rpointing2.id = ASymmetricAuthenticatedSignatureType.BC_FIPS_Ed25519.getKeyPairGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKeyPair().getASymmetricPublicKey();
 		}
 		catch(Exception e)
 		{
@@ -1792,8 +1807,6 @@ public abstract class TestDecentralizedDatabase {
 			testCollision(db, event, db.getDetectedCollision());
 			testEventSynchronized(db, event, true);
 			Assert.assertTrue(db.getAnomalies().isEmpty());
-			disconnectSelectedDatabase(segmentA);
-			disconnectSelectedDatabase(segmentB);
 			// TODO make possible this test here :
 			// checkAllDatabaseInternalDataUsedForSynchro();
 		} else {
@@ -1825,9 +1838,9 @@ public abstract class TestDecentralizedDatabase {
 			testEventSynchronized(db, event, true);
 			Assert.assertTrue(db.getAnomalies().isEmpty());
 
-			disconnectSelectedDatabase(segmentA);
-			disconnectSelectedDatabase(segmentB);
 		}
+		disconnectSelectedDatabase(segmentA);
+		disconnectSelectedDatabase(segmentB);
 
 		connectAllDatabase();
 		exchangeMessages();

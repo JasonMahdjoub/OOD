@@ -882,9 +882,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 		} finally {
 			if (lastValidatedTransaction.get() != -1) {
 				getDatabaseWrapper().getSynchronizer()
-						.addNewDatabaseEvent(new DatabaseWrapper.TransactionConfirmationEvents(
-								getDatabaseHooksTable().getLocalDatabaseHost().getHostID(), comingFrom,
-								lastValidatedTransaction.get()));
+						.addNewTransactionConfirmationEvents(comingFrom, lastValidatedTransaction.get());
 			}
 			for (DecentralizedValue id : hooksToNotify) {
 				DatabaseHooksTable.Record h = getDatabaseHooksTable().getHook(id);
@@ -894,8 +892,8 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 	}
 
-	boolean alterDatabase(final String databasePackage, final DecentralizedValue comingFrom,
-						  final RandomInputStream ois) throws DatabaseException {
+	DatabaseWrapper.TransactionsInterval alterDatabase(final String databasePackage, final DecentralizedValue comingFrom,
+													   final RandomInputStream ois) throws DatabaseException {
 
 		if (comingFrom == null)
 			throw new NullPointerException("comingFrom");
@@ -930,18 +928,20 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 		try  {
 			if (ois.skip(8)!=8)
 				throw new IOException();
+
 			if (!ois.readBoolean())
-				throw new IOException();
+				return null;
 			long startTransactionID=ois.readLong();
-			if (startTransactionID>lastDistantTransactionID)
-				return false;
 			long endTransactionID=ois.readLong();
-			if (endTransactionID<=lastDistantTransactionID)
-				return true;
-			if (ois.readBoolean())
-				return false;
-			if (ois.skip(4)!=4)
-				throw new IOException();
+			if (startTransactionID>lastDistantTransactionID || endTransactionID<=lastDistantTransactionID)
+				return new DatabaseWrapper.TransactionsInterval(startTransactionID, endTransactionID);
+
+			if (ois.readBoolean()) {
+				ois.seek(ois.readInt());
+			}
+			else
+				if (ois.skip(4)!=4)
+					throw new IOException();
 			boolean findOneTransactionWithID=false;
 			while(ois.available()>0) {
 				int nextTransactionPosition = ois.readInt();
@@ -1074,18 +1074,26 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 					it.close();
 				}
 			}
-			return true;
+			return null;
 
 		} catch (EOFException e) {
+			try {
+				ois.close();
+			} catch (IOException ex) {
+				ex.printStackTrace();
+			}
 			throw new SerializationDatabaseException("Unexpected EOF", e);
 		} catch (Exception e) {
+			try {
+				ois.close();
+			} catch (IOException ex) {
+				ex.printStackTrace();
+			}
 			throw DatabaseException.getDatabaseException(e);
 		} finally {
 			if (lastValidatedTransaction.get() != -1) {
 				getDatabaseWrapper().getSynchronizer()
-						.addNewDatabaseEvent(new DatabaseWrapper.TransactionConfirmationEvents(
-								getDatabaseHooksTable().getLocalDatabaseHost().getHostID(), comingFrom,
-								lastValidatedTransaction.get()));
+						.addNewTransactionConfirmationEvents(comingFrom, lastValidatedTransaction.get());
 			}
 			for (DecentralizedValue id : hooksToNotify) {
 				DatabaseHooksTable.Record h = getDatabaseHooksTable().getHook(id);
