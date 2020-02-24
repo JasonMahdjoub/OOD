@@ -73,7 +73,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * This class represent a SqlJet database.
  * 
  * @author Jason Mahdjoub
- * @version 1.6
+ * @version 2.0
  * @since OOD 1.4
  */
 @SuppressWarnings("ThrowFromFinallyBlock")

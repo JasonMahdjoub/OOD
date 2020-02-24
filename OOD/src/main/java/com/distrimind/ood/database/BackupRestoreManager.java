@@ -57,7 +57,7 @@ import java.util.regex.Pattern;
 
 /**
  * @author Jason Mahdjoub
- * @version 1.0
+ * @version 2.0
  * @since MaDKitLanEdition 2.0.0
  */
 public class BackupRestoreManager {
