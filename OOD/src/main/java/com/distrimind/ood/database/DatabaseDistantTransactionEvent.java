@@ -191,6 +191,8 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 
 		boolean addNewHostIDAndTellsIfNewPeersCanBeConcerned(DatabaseHooksTable hooks,
 															 DecentralizedValue newHostID) throws DatabaseException {
+			if (!hooks.getDatabaseWrapper().getSynchronizer().isSendIndirectTransactions())
+				return false;
 			if (peersInformedFull)
 				return false;
 			final List<DecentralizedValue> l = getPeersInformed();

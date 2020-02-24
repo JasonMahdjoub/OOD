@@ -490,6 +490,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		private long lastTransactionID=Long.MIN_VALUE;
 		private final TreeSet<DatabaseBackupToIncorporate> differedDatabaseBackupToIncorporate=new TreeSet<>();
 		private final HashMap<DatabaseBackupToIncorporate, InputStreamGetter> differedDatabaseBackupToIncorporateInputStreams=new HashMap<>();
+		private boolean sendIndirectTransactions;
+
+
 		DatabaseSynchronizer() {
 		}
 
@@ -500,6 +503,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		void startExtendedTransaction() throws DatabaseException {
 			extendedTransactionInProgress=true;
 			lastTransactionID=getTransactionIDTable().getLastTransactionID();
+		}
+
+		public boolean isSendIndirectTransactions() {
+			return sendIndirectTransactions;
 		}
 
 		void validateExtendedTransaction() throws DatabaseException {
@@ -609,7 +616,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		@SuppressWarnings("unlikely-arg-type")
-		public void initLocalHostID(DecentralizedValue localHostID) throws DatabaseException {
+		public void initLocalHostID(DecentralizedValue localHostID, boolean sendIndirectTransactions) throws DatabaseException {
 			DatabaseHooksTable.Record local = getHooksTransactionsTable().getLocalDatabaseHost();
 			if (local != null && !local.getHostID().equals(localHostID))
 				throw new DatabaseException("The given local host id is different from the stored local host id !");
@@ -621,6 +628,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			try {
 				lockWrite();
                 assert local != null;
+				this.sendIndirectTransactions=sendIndirectTransactions;
                 if (initializedHooks.containsKey(local.getHostID())) {
 					throw DatabaseException.getDatabaseException(
 							new IllegalAccessException("Local hostID " + localHostID + " already initialized !"));
