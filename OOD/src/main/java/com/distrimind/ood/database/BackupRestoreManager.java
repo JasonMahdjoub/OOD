@@ -82,7 +82,7 @@ public class BackupRestoreManager {
 	private final Package dbPackage;
 	private final boolean generateRestoreProgressBar;
 	private volatile long lastCurrentRestorationFileUsed=Long.MIN_VALUE;
-	private volatile BackupFileListener backupFileListener=null;
+	private final BackupFileListener backupFileListener;
 
 	//private volatile long currentBackupReferenceUTC=Long.MAX_VALUE;
 
@@ -94,10 +94,10 @@ public class BackupRestoreManager {
 		long l=fileTimeStamps.get(fileTimeStamps.size()-1);
 		return getFile(l, fileReferenceTimeStamps.contains(l));
 	}
-	BackupRestoreManager(DatabaseWrapper databaseWrapper, File backupDirectory, DatabaseConfiguration databaseConfiguration, boolean passive) throws DatabaseException {
-		this(databaseWrapper, backupDirectory, databaseConfiguration, databaseConfiguration.getBackupConfiguration(), passive);
+	BackupRestoreManager(DatabaseWrapper databaseWrapper, File backupDirectory, BackupFileListener backupFileListener, DatabaseConfiguration databaseConfiguration, boolean passive) throws DatabaseException {
+		this(databaseWrapper, backupDirectory, backupFileListener, databaseConfiguration, databaseConfiguration.getBackupConfiguration(), passive);
 	}
-	BackupRestoreManager(DatabaseWrapper databaseWrapper, File backupDirectory, DatabaseConfiguration databaseConfiguration, BackupConfiguration backupConfiguration, boolean passive) throws DatabaseException {
+	BackupRestoreManager(DatabaseWrapper databaseWrapper, File backupDirectory, BackupFileListener backupFileListener, DatabaseConfiguration databaseConfiguration, BackupConfiguration backupConfiguration, boolean passive) throws DatabaseException {
 		if (backupDirectory==null)
 			throw new NullPointerException();
 		if (backupDirectory.exists() && backupDirectory.isFile())
@@ -108,6 +108,7 @@ public class BackupRestoreManager {
 			throw new NullPointerException();
 		if (backupConfiguration==null)
 			throw new NullPointerException();
+		this.backupFileListener=backupFileListener;
 		this.passive=passive;
 		this.databaseConfiguration=databaseConfiguration;
 		this.databaseWrapper=databaseWrapper;
@@ -204,7 +205,27 @@ public class BackupRestoreManager {
 	{
 		return new File(backupDirectory, "backup-ood-"+timeStamp+(backupReference?".dreference":".dincrement"));
 	}
+	public File getNearestFilesFromGivenTimeNotIncluded(long utc)
+	{
+		ArrayList<File> res = new ArrayList<>(fileTimeStamps.size());
+		int s = fileTimeStamps.size();
 
+		if (s > 0) {
+			long ts = fileTimeStamps.get(s - 1);
+			if (/*ts>=currentBackupReferenceUTC || */!isPartFull(ts, getFile(ts, fileReferenceTimeStamps.contains(ts))))
+				--s;
+		}
+		for (int i = 0; i < s; i++) {
+			long ts = fileTimeStamps.get(i);
+				/*if (ts>=currentBackupReferenceUTC)
+					break;*/
+			if (ts > utc) {
+				return getFile(ts, fileReferenceTimeStamps.contains(ts));
+			}
+
+		}
+		return null;
+	}
 	public List<File> getFinalFilesFromGivenTime(long utc)
 	{
 		synchronized (this) {
@@ -2121,11 +2142,4 @@ public class BackupRestoreManager {
 		void fileListChanged();
 	}
 
-	public BackupFileListener getBackupFileListener() {
-		return backupFileListener;
-	}
-
-	public void setBackupFileListener(BackupFileListener backupFileListener) {
-		this.backupFileListener = backupFileListener;
-	}
 }
