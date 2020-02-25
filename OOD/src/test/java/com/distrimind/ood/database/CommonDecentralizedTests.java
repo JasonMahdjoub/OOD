@@ -41,6 +41,7 @@ import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.DecentralizedIDGenerator;
 import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.FileTools;
 import com.distrimind.util.crypto.ASymmetricAuthenticatedSignatureType;
 import com.distrimind.util.crypto.SecureRandomType;
 import com.distrimind.util.io.RandomByteArrayInputStream;
@@ -50,6 +51,7 @@ import com.distrimind.util.io.RandomOutputStream;
 import org.testng.Assert;
 import org.testng.annotations.*;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -60,6 +62,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * @since OOD 2.5.0
  */
 public abstract class CommonDecentralizedTests {
+
 	public static class DistantDatabaseEvent {
 		private final byte[] eventToSend;
 		private final byte[] joinedData;
@@ -114,6 +117,171 @@ public abstract class CommonDecentralizedTests {
 
 		public DecentralizedValue getHostDestination() {
 			return hostDest;
+		}
+	}
+	static File centralDatabaseBackupDirectory=new File("centralDatabaseBackup");
+	public class CentralDatabaseBackup
+	{
+
+		private final Map<DecentralizedValue, Map<DecentralizedValue, Long>> lastValidatedTransactionsID=new HashMap<>();
+		private final Map<String, Map<DecentralizedValue, Long>> lastBackupsTimeStamps=new HashMap<>();
+		private final Map<String, Map<DecentralizedValue, ArrayList<DatabaseWrapper.TransactionsInterval>>> lastBackupsInterval=new HashMap<>();
+
+		public File getFile(DecentralizedValue host, String packageString, File file)
+		{
+			return new File(centralDatabaseBackupDirectory, host.toString()+File.separator+packageString.replace('.', File.separatorChar)+File.separator+file.getName());
+		}
+
+
+		public void receiveMessage(DatabaseWrapper.DatabaseBackupToIncorporate message) throws IOException, DatabaseException {
+			FileTools.copy(message.getSourceFile(), getFile(message.getHostSource(),message.getConcernedPackage(), message.getSourceFile()) );
+			Map<DecentralizedValue, Long> map=lastBackupsTimeStamps.get(message.getConcernedPackage());
+			if (map==null)
+				lastBackupsTimeStamps.put(message.getConcernedPackage(), map=new HashMap<>());
+			map.put(message.getHostSource(), message.getBackupTimeStamp());
+			Map<DecentralizedValue, ArrayList<DatabaseWrapper.TransactionsInterval>> map2=lastBackupsInterval.get(message.getConcernedPackage());
+			if (map2==null)
+				lastBackupsInterval.put(message.getConcernedPackage(), map2=new HashMap<>());
+			ArrayList<DatabaseWrapper.TransactionsInterval> l=map2.get(message.getHostSource());
+			if (l==null)
+				map2.put(message.getHostSource(), l=new ArrayList<>());
+			l.add(message.getInterval());
+
+			for (Database d : listDatabase)
+			{
+				if (!d.isConnected())
+					continue;
+				if (d.hostID.equals(message.getHostSource()))
+				{
+					d.getDbwrapper().getSynchronizer().received(new DatabaseWrapper.TransactionInUTCConfirmationEventsWithCentralDatabaseBackupEvent(message.getHostSource(), message.getBackupTimeStamp(), message.getConcernedPackage()));
+				}
+				else
+				{
+					d.getDbwrapper().getSynchronizer().received(new DatabaseWrapper.TransactionInIDConfirmationEventsWithCentralDatabaseBackupEvent(message.getHostSource(), d.hostID, getLastValidatedTransactionID(message.hostIDSource)));
+				}
+			}
+		}
+
+		public Long getLastValidatedTransactionID(DecentralizedValue hostID)
+		{
+			Long res=null;
+			for (Map.Entry<String, Map<DecentralizedValue, ArrayList<DatabaseWrapper.TransactionsInterval>>> e : lastBackupsInterval.entrySet())
+			{
+				ArrayList<DatabaseWrapper.TransactionsInterval> l=e.getValue().get(hostID);
+				if (l!=null)
+				{
+					for (int i=l.size()-1;i>=0;i--)
+					{
+						DatabaseWrapper.TransactionsInterval ti=l.get(i);
+						if (ti!=null)
+						{
+							if (res==null)
+								res=ti.getEndIncludedTransactionID();
+							else
+								res=Math.max(res, ti.getEndIncludedTransactionID());
+						}
+					}
+				}
+			}
+			return res;
+
+		}
+		public void connect(Database d) throws DatabaseException {
+			Map<String, Long> map=new HashMap<>();
+			for (Map.Entry<String, Map<DecentralizedValue, Long>> e : lastBackupsTimeStamps.entrySet())
+			{
+				for (Map.Entry<DecentralizedValue, Long> e2 : e.getValue().entrySet())
+				{
+					if (e2.getKey().equals(d.hostID))
+					{
+						map.put(e.getKey(), e2.getValue());
+					}
+				}
+			}
+			d.getDbwrapper().getSynchronizer().initDistantBackupCenterForThisHostWithStringPackages(map);
+			for (Database d2 : listDatabase)
+			{
+				if (d2!=d && d2.isConnected())
+				{
+					d.getDbwrapper().getSynchronizer().initDistantBackupCenter(d2.hostID, lastValidatedTransactionsID.get(d.hostID).get(d2.hostID));
+					d2.getDbwrapper().getSynchronizer().initDistantBackupCenter(d.hostID, lastValidatedTransactionsID.get(d2.hostID).get(d.hostID));
+				}
+			}
+		}
+
+		public void disconnect(Database d) throws DatabaseException {
+			d.getDbwrapper().getSynchronizer().disconnectAllHooksFromThereBackups();
+			for (Database d2 : listDatabase) {
+				if (d2 != d && d2.isConnected()) {
+					d2.getDbwrapper().getSynchronizer().disconnectHookFromItsBackup(d.hostID);
+				}
+			}
+		}
+
+
+
+		public void receiveMessage(DatabaseWrapper.DatabaseTransactionsIdentifiersToSynchronizeWithCentralDatabaseBackup message) throws DatabaseException {
+			lastValidatedTransactionsID.put(message.getHostSource(), message.getLastDistantTransactionIdentifiers());
+			for (Map.Entry<DecentralizedValue, Long> e : message.getLastDistantTransactionIdentifiers().entrySet())
+			{
+				for (Database d : listDatabase) {
+					if (d.hostID.equals(e.getKey())) {
+						if (d.isConnected()) {
+							Map<DecentralizedValue, Long> map=new HashMap<>(message.getLastDistantTransactionIdentifiers());
+							map.remove(d.hostID);
+							DatabaseWrapper.DatabaseTransactionsIdentifiersToSynchronizeWithCentralDatabaseBackup m=new DatabaseWrapper.DatabaseTransactionsIdentifiersToSynchronizeWithCentralDatabaseBackup(message.getHostSource(), map);
+							d.getDbwrapper().getSynchronizer().received(m);
+						}
+						break;
+					}
+				}
+			}
+		}
+		public void receiveMessage(DatabaseWrapper.LastIDCorrectionForCentralDatabaseBackup message) throws DatabaseException {
+			Map<DecentralizedValue, Long> m=lastValidatedTransactionsID.get(message.getHostSource());
+			if (m==null)
+				lastValidatedTransactionsID.put(message.getHostSource(), m=new HashMap<>());
+			m.put(message.getHostDestination(), message.getLastValidatedTransaction());
+			for (Database d : listDatabase) {
+				if (d.hostID.equals(message.getHostDestination())) {
+					if (d.isConnected()) {
+						d.getDbwrapper().getSynchronizer().received(message);
+					}
+					break;
+				}
+			}
+		}
+		public void receiveMessage(DatabaseWrapper.TransactionInIDConfirmationEventsWithCentralDatabaseBackupEvent message) throws DatabaseException {
+			Map<DecentralizedValue, Long> m=lastValidatedTransactionsID.get(message.getHostSource());
+			if (m==null)
+				lastValidatedTransactionsID.put(message.getHostSource(), m=new HashMap<>());
+			m.put(message.getHostDestination(), message.getLastValidatedTransaction());
+			for (Database d : listDatabase) {
+				if (d.hostID.equals(message.getHostDestination())) {
+					if (d.isConnected()) {
+						d.getDbwrapper().getSynchronizer().received(message);
+					}
+					break;
+				}
+			}
+		}
+		public void receiveMessage(CentralDatabaseBackupEvent message) throws IOException, DatabaseException {
+			if (message instanceof DatabaseWrapper.DatabaseBackupToIncorporate)
+			{
+				receiveMessage((DatabaseWrapper.DatabaseBackupToIncorporate)message);
+			}
+			else if (message instanceof DatabaseWrapper.DatabaseTransactionsIdentifiersToSynchronizeWithCentralDatabaseBackup)
+			{
+				receiveMessage((DatabaseWrapper.DatabaseTransactionsIdentifiersToSynchronizeWithCentralDatabaseBackup)message);
+			}
+			else if (message instanceof DatabaseWrapper.LastIDCorrectionForCentralDatabaseBackup)
+			{
+				receiveMessage((DatabaseWrapper.LastIDCorrectionForCentralDatabaseBackup)message);
+			}
+			else if (message instanceof DatabaseWrapper.TransactionInIDConfirmationEventsWithCentralDatabaseBackupEvent)
+			{
+				receiveMessage((DatabaseWrapper.TransactionInIDConfirmationEventsWithCentralDatabaseBackupEvent)message);
+			}
 		}
 	}
 
@@ -583,6 +751,7 @@ public abstract class CommonDecentralizedTests {
 			final CommonDecentralizedTests.DistantDatabaseEvent dde = db.getReceivedDatabaseEvents().remove(0);
 
 			DatabaseEventToSend event = dde.getDatabaseEventToSend();
+
 			if (event instanceof BigDatabaseEventToSend) {
 				try (InputStreamGetter is = new InputStreamGetter() {
 
@@ -673,7 +842,7 @@ public abstract class CommonDecentralizedTests {
 	protected void connectLocal(CommonDecentralizedTests.Database db) throws DatabaseException {
 		synchronized (CommonDecentralizedTests.class) {
 			if (!db.isConnected()) {
-				db.getDbwrapper().getSynchronizer().initLocalHostID(db.getHostID());
+				db.getDbwrapper().getSynchronizer().initLocalHostID(db.getHostID(), true);
 				db.setConnected(true);
 			}
 		}

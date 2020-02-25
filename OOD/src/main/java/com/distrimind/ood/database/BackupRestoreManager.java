@@ -205,7 +205,17 @@ public class BackupRestoreManager {
 	{
 		return new File(backupDirectory, "backup-ood-"+timeStamp+(backupReference?".dreference":".dincrement"));
 	}
-	public File getNearestFilesFromGivenTimeNotIncluded(long utc)
+	File getFile(long timeStamp)
+	{
+		return getFile(timeStamp, fileReferenceTimeStamps.contains(timeStamp));
+	}
+
+	boolean isReference(long timeStamp)
+	{
+		return fileReferenceTimeStamps.contains(timeStamp);
+	}
+
+	public long getNearestFileUTCFromGivenTimeNotIncluded(long utc)
 	{
 		ArrayList<File> res = new ArrayList<>(fileTimeStamps.size());
 		int s = fileTimeStamps.size();
@@ -220,11 +230,11 @@ public class BackupRestoreManager {
 				/*if (ts>=currentBackupReferenceUTC)
 					break;*/
 			if (ts > utc) {
-				return getFile(ts, fileReferenceTimeStamps.contains(ts));
+				return ts;
 			}
 
 		}
-		return null;
+		return Long.MIN_VALUE;
 	}
 	public List<File> getFinalFilesFromGivenTime(long utc)
 	{
