@@ -1203,15 +1203,48 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		}
 
+		public boolean isInitializedWithCentralBackup(){
+			lockRead();
+			try {
+				return centralBackupInitialized;
+			}
+			finally {
+				unlockRead();
+			}
+		}
+
+		public boolean isInitializedWithCentralBackup(DecentralizedValue hostID)
+		{
+			lockRead();
+			try {
+				return centralBackupInitialized && (initializedHooksWithCentralBackup.containsKey(hostID) || suspendedHooksWithCentralBackup.containsKey(hostID));
+			}
+			finally {
+				unlockRead();
+			}
+		}
+
 		public void initDistantBackupCenterForThisHostWithStringPackages(Map<String, Long> lastValidatedTransactionsUTC) throws DatabaseException {
-			centralBackupInitialized=true;
-			for (Map.Entry<String, Long> e : lastValidatedTransactionsUTC.entrySet())
-				validateLastSynchronizationWithCentralDatabaseBackup(e.getKey(), e.getValue());
+			lockWrite();
+			try {
+				centralBackupInitialized = true;
+				for (Map.Entry<String, Long> e : lastValidatedTransactionsUTC.entrySet())
+					validateLastSynchronizationWithCentralDatabaseBackup(e.getKey(), e.getValue());
+			}
+			finally {
+				unlockWrite();
+			}
 		}
 		public void initDistantBackupCenterForThisHost(Map<Package, Long> lastValidatedTransactionsUTC) throws DatabaseException {
-			centralBackupInitialized=true;
-			for (Map.Entry<Package, Long> e : lastValidatedTransactionsUTC.entrySet())
-				validateLastSynchronizationWithCentralDatabaseBackup(e.getKey(), e.getValue());
+			lockWrite();
+			try {
+				centralBackupInitialized = true;
+				for (Map.Entry<Package, Long> e : lastValidatedTransactionsUTC.entrySet())
+					validateLastSynchronizationWithCentralDatabaseBackup(e.getKey(), e.getValue());
+			}
+			finally {
+				unlockWrite();
+			}
 		}
 
 

@@ -201,10 +201,10 @@ public abstract class CommonDecentralizedTests {
 			d.getDbwrapper().getSynchronizer().initDistantBackupCenterForThisHostWithStringPackages(map);
 			for (Database d2 : listDatabase)
 			{
-				if (d2!=d && d2.isConnected())
+				if (d2!=d)
 				{
-					d.getDbwrapper().getSynchronizer().initDistantBackupCenter(d2.hostID, lastValidatedTransactionsID.get(d.hostID).get(d2.hostID));
-					d2.getDbwrapper().getSynchronizer().initDistantBackupCenter(d.hostID, lastValidatedTransactionsID.get(d2.hostID).get(d.hostID));
+					if (!d.dbwrapper.getSynchronizer().isInitializedWithCentralBackup(d2.hostID))
+						d.getDbwrapper().getSynchronizer().initDistantBackupCenter(d2.hostID, lastValidatedTransactionsID.get(d.hostID).get(d2.hostID));
 				}
 			}
 		}
@@ -590,6 +590,7 @@ public abstract class CommonDecentralizedTests {
 
 	protected volatile CommonDecentralizedTests.Database db1 = null, db2 = null, db3 = null, db4 = null;
 	protected final ArrayList<CommonDecentralizedTests.Database> listDatabase = new ArrayList<>(3);
+	protected final CentralDatabaseBackup centralDatabaseBackup=new CentralDatabaseBackup();
 
 	public abstract DatabaseWrapper getDatabaseWrapperInstance1() throws IllegalArgumentException, DatabaseException;
 
@@ -889,10 +890,30 @@ public abstract class CommonDecentralizedTests {
 		exchangeMessages();
 	}
 
+	protected void connectCentralDatabaseBackupWithConnectedDatabase() throws DatabaseException {
+		for (Database d : listDatabase)
+		{
+			if (d.isConnected())
+			{
+				centralDatabaseBackup.connect(d);
+			}
+		}
+	}
+
+	protected void disconnectCentralDatabaseBakcup() throws DatabaseException {
+		for (Database d : listDatabase)
+		{
+			if (d.dbwrapper.getSynchronizer().isInitializedWithCentralBackup())
+				d.dbwrapper.getSynchronizer().disconnectAllHooksFromThereBackups();
+		}
+	}
+
 	protected void disconnect(CommonDecentralizedTests.Database db, CommonDecentralizedTests.Database... listDatabase) throws DatabaseException {
 		synchronized (CommonDecentralizedTests.class) {
 			if (db.isConnected()) {
 				db.setConnected(false);
+				if (db.dbwrapper.getSynchronizer().isInitializedWithCentralBackup())
+					db.dbwrapper.getSynchronizer().disconnectAllHooksFromThereBackups();
 				db.getDbwrapper().getSynchronizer().disconnectHook(db.getHostID());
 				for (CommonDecentralizedTests.Database dbother : listDatabase) {
 					if (dbother != db && dbother.isConnected())
