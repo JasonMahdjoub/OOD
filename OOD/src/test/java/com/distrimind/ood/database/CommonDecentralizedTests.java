@@ -153,11 +153,11 @@ public abstract class CommonDecentralizedTests {
 					continue;
 				if (d.hostID.equals(message.getHostSource()))
 				{
-					d.getDbwrapper().getSynchronizer().received(new DatabaseWrapper.TransactionInUTCConfirmationEventsWithCentralDatabaseBackupEvent(message.getHostSource(), message.getBackupTimeStamp(), message.getConcernedPackage()));
+					d.getReceivedCentralDatabaseBackupEvents().add(new DatabaseWrapper.TransactionInUTCConfirmationEventsWithCentralDatabaseBackupEvent(message.getHostSource(), message.getBackupTimeStamp(), message.getConcernedPackage()));
 				}
 				else
 				{
-					d.getDbwrapper().getSynchronizer().received(new DatabaseWrapper.TransactionInIDConfirmationEventsWithCentralDatabaseBackupEvent(message.getHostSource(), d.hostID, getLastValidatedTransactionID(message.hostIDSource)));
+					d.getReceivedCentralDatabaseBackupEvents().add(new DatabaseWrapper.TransactionInIDConfirmationEventsWithCentralDatabaseBackupEvent(message.getHostSource(), d.hostID, getLastValidatedTransactionID(message.hostIDSource)));
 				}
 			}
 		}
@@ -230,7 +230,7 @@ public abstract class CommonDecentralizedTests {
 							Map<DecentralizedValue, Long> map=new HashMap<>(message.getLastDistantTransactionIdentifiers());
 							map.remove(d.hostID);
 							DatabaseWrapper.DatabaseTransactionsIdentifiersToSynchronizeWithCentralDatabaseBackup m=new DatabaseWrapper.DatabaseTransactionsIdentifiersToSynchronizeWithCentralDatabaseBackup(message.getHostSource(), map);
-							d.getDbwrapper().getSynchronizer().received(m);
+							d.getReceivedCentralDatabaseBackupEvents().add(m);
 						}
 						break;
 					}
@@ -245,7 +245,7 @@ public abstract class CommonDecentralizedTests {
 			for (Database d : listDatabase) {
 				if (d.hostID.equals(message.getHostDestination())) {
 					if (d.isConnected()) {
-						d.getDbwrapper().getSynchronizer().received(message);
+						d.getReceivedCentralDatabaseBackupEvents().add(message);
 					}
 					break;
 				}
@@ -259,7 +259,7 @@ public abstract class CommonDecentralizedTests {
 			for (Database d : listDatabase) {
 				if (d.hostID.equals(message.getHostDestination())) {
 					if (d.isConnected()) {
-						d.getDbwrapper().getSynchronizer().received(message);
+						d.getReceivedCentralDatabaseBackupEvents().add(message);
 					}
 					break;
 				}
@@ -304,6 +304,7 @@ public abstract class CommonDecentralizedTests {
 		private TablePointing.Record recordPointingNull = null, recordPointingNotNull = null;
 		private TableAlone.Record recordAlone = null;
 		private final List<CommonDecentralizedTests.Anomaly> anomalies;
+		private final List<CentralDatabaseBackupEvent> centralDatabaseBackupEvents=new ArrayList<>();
 
 		Database(DatabaseWrapper dbwrapper) throws DatabaseException {
 			this.dbwrapper = dbwrapper;
@@ -442,6 +443,10 @@ public abstract class CommonDecentralizedTests {
 			return this.eventsReceivedStack;
 		}
 
+		public List<CentralDatabaseBackupEvent> getReceivedCentralDatabaseBackupEvents() {
+			return this.centralDatabaseBackupEvents;
+		}
+
 		@Override
 		public void newDatabaseEventDetected(DatabaseWrapper _wrapper) {
 			newDatabaseEventDetected = true;
@@ -533,6 +538,7 @@ public abstract class CommonDecentralizedTests {
 			anomalies.add(new CommonDecentralizedTests.Anomaly(distantPeerID, intermediatePeerID, _type, _concernedTable, _primary_keys, _record));
 		}
 
+
 	}
 
 	public static class Anomaly {
@@ -608,6 +614,14 @@ public abstract class CommonDecentralizedTests {
 
 	public abstract void removeDatabaseFiles4();
 
+	public BackupConfiguration getBackupConfiguration()
+	{
+		return null;
+	}
+	public boolean canInitCentralBackup()
+	{
+		return false;
+	}
 	public void loadDatabase(CommonDecentralizedTests.Database db) throws DatabaseException {
 		db.getDbwrapper()
 				.loadDatabase(new DatabaseConfiguration(TableAlone.class.getPackage(), new DatabaseLifeCycles() {
@@ -632,7 +646,7 @@ public abstract class CommonDecentralizedTests {
 					public boolean replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized() {
 						return false;
 					}
-				}, null), true);
+				}, null, getBackupConfiguration()), true);
 
 	}
 
@@ -733,6 +747,13 @@ public abstract class CommonDecentralizedTests {
 		}
 	}
 
+	protected void sendCentralDatabaseBackupEvent(CommonDecentralizedTests.Database db, CentralDatabaseBackupEvent event) {
+		if (db.isConnected() && db.dbwrapper.getSynchronizer().isInitializedWithCentralBackup())
+			db.getReceivedCentralDatabaseBackupEvents().add(event);
+		else
+			Assert.fail();
+	}
+
 	protected void sendDistantDatabaseEvent(CommonDecentralizedTests.DistantDatabaseEvent event) {
 		for (CommonDecentralizedTests.Database db : listDatabase) {
 			if (db.getHostID().equals(event.getHostDestination())) {
@@ -778,7 +799,18 @@ public abstract class CommonDecentralizedTests {
 				db.getDbwrapper().getSynchronizer().received(event);
 			}
 		}
+		while (!db.getReceivedCentralDatabaseBackupEvents().isEmpty())
+		{
+			changed=true;
+			db.dbwrapper.getSynchronizer().received(db.getReceivedCentralDatabaseBackupEvents().remove(0));
+		}
 		return changed;
+	}
+
+	protected void checkForNewDatabaseBackupBlocks() throws DatabaseException {
+		for (Database d : listDatabase)
+			if (d.isConnected() && d.dbwrapper.getSynchronizer().isInitializedWithCentralBackup())
+				d.dbwrapper.getSynchronizer().checkForNewCentralBackupDatabaseEvent();
 	}
 
 	protected boolean checkMessages() throws Exception {
@@ -802,7 +834,11 @@ public abstract class CommonDecentralizedTests {
 					if (e != null) {
 
 						loop = true;
-						if (e instanceof DatabaseEventToSend) {
+						if (e instanceof CentralDatabaseBackupEvent)
+						{
+							centralDatabaseBackup.receiveMessage((CentralDatabaseBackupEvent)e);
+						}
+						else if (e instanceof DatabaseEventToSend) {
 							DatabaseEventToSend es = (DatabaseEventToSend) e;
 
 							Assert.assertEquals(es.getHostSource(), db.getHostID());
@@ -844,6 +880,8 @@ public abstract class CommonDecentralizedTests {
 		synchronized (CommonDecentralizedTests.class) {
 			if (!db.isConnected()) {
 				db.getDbwrapper().getSynchronizer().initLocalHostID(db.getHostID(), true);
+				if (canInitCentralBackup())
+					centralDatabaseBackup.connect(db);
 				db.setConnected(true);
 			}
 		}
@@ -1104,6 +1142,43 @@ public abstract class CommonDecentralizedTests {
 		}
 	}
 
+	@Test(dependsOnMethods = {"testAllConnect"})
+	public void testOldElementsAddedBeforeAddingSynchroSynchronized()
+			throws Exception {
+		exchangeMessages();
+		testSynchronisation();
+		disconnectAllDatabase();
+		checkAllDatabaseInternalDataUsedForSynchro();
+	}
+
+	@Test(dataProvider = "provideDataForSynchroBetweenTwoPeers", dependsOnMethods = {
+			"testOldElementsAddedBeforeAddingSynchroSynchronized" })
+	// @Test(dataProvider = "provideDataForSynchroBetweenTwoPeers",
+	// dependsOnMethods={"testSynchroBetweenThreePeers2"})
+	public void testSynchroBetweenTwoPeers(boolean exceptionDuringTransaction, boolean generateDirectConflict,
+										   boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event)
+			throws Exception {
+		testSynchroBetweenPeers(2, exceptionDuringTransaction, generateDirectConflict, peersInitiallyConnected, event);
+	}
+
+	@Test(dependsOnMethods = { "testSynchroBetweenTwoPeers" })
+	public void testSynchroAfterTestsBetweenTwoPeers() throws DatabaseException {
+		testSynchronisation();
+	}
+
+
+
+	@Test(dataProvider = "provideDataSynchroBetweenThreePeers", dependsOnMethods = { "testSynchroBetweenTwoPeers" })
+	public void testSynchroBetweenThreePeers(boolean exceptionDuringTransaction, boolean generateDirectConflict,
+											 boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event)
+			throws Exception {
+		testSynchroBetweenPeers(3, exceptionDuringTransaction, generateDirectConflict, peersInitiallyConnected, event);
+	}
+
+	@Test(dependsOnMethods = { "testSynchroBetweenThreePeers" })
+	public void testSynchroAfterTestsBetweenThreePeers() throws DatabaseException {
+		testSynchronisation();
+	}
 	/*
 	 * @Test(dependsOnMethods={"testAllConnect"}) public void
 	 * testInitDatabaseNetwork() throws DatabaseException { for (Database db :

@@ -55,45 +55,10 @@ import java.util.List;
 public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests{
 
 
-	@Test(dependsOnMethods = { "testAllConnect" })
-	public void testOldElementsAddedBeforeAddingSynchroSynchronized()
-			throws Exception {
-		exchangeMessages();
-		testSynchronisation();
-		disconnectAllDatabase();
-		checkAllDatabaseInternalDataUsedForSynchro();
-
-	}
-
-
-	@Test(dataProvider = "provideDataForSynchroBetweenTwoPeers", dependsOnMethods = {
-			"testOldElementsAddedBeforeAddingSynchroSynchronized" })
-	// @Test(dataProvider = "provideDataForSynchroBetweenTwoPeers",
-	// dependsOnMethods={"testSynchroBetweenThreePeers2"})
-	public void testSynchroBetweenTwoPeers(boolean exceptionDuringTransaction, boolean generateDirectConflict,
-			boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event)
-			throws Exception {
-		testSynchroBetweenPeers(2, exceptionDuringTransaction, generateDirectConflict, peersInitiallyConnected, event);
-	}
-
-	@Test(dependsOnMethods = { "testSynchroBetweenTwoPeers" })
-	public void testSynchroAfterTestsBetweenTwoPeers() throws DatabaseException {
-		testSynchronisation();
-	}
 
 
 
-	@Test(dataProvider = "provideDataSynchroBetweenThreePeers", dependsOnMethods = { "testSynchroBetweenTwoPeers" })
-	public void testSynchroBetweenThreePeers(boolean exceptionDuringTransaction, boolean generateDirectConflict,
-			boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event)
-			throws Exception {
-		testSynchroBetweenPeers(3, exceptionDuringTransaction, generateDirectConflict, peersInitiallyConnected, event);
-	}
 
-	@Test(dependsOnMethods = { "testSynchroBetweenThreePeers" })
-	public void testSynchroAfterTestsBetweenThreePeers() throws DatabaseException {
-		testSynchronisation();
-	}
 
 	@DataProvider(name = "provideDataForIndirectSynchro")
 	public Object[][] provideDataForIndirectSynchro() throws DatabaseException {
