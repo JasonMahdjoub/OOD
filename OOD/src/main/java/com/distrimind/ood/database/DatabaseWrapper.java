@@ -4368,7 +4368,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				if (allNotFound) {
 					try {
 						DatabaseLifeCycles callable = configuration.getDatabaseLifeCycles();
+						Database db=actualDatabaseLoading;
 						Collection<DatabaseHooksTable.Record> hosts=getSynchronizer().resetSynchronizerAndGetAllHosts();
+						actualDatabaseLoading=db;
 						int currentVersion=getCurrentDatabaseVersion(configuration.getPackage());
 						if (currentVersion==databaseVersion) {
 							DatabaseConfiguration oldConfig = configuration.getOldVersionOfDatabaseConfiguration();
@@ -4376,8 +4378,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							boolean removeOldDatabase = false;
 							if (oldConfig != null && callable != null) {
 								try {
-
+									db=actualDatabaseLoading;
 									loadDatabase(oldConfig, false);
+									actualDatabaseLoading=db;
 									callable.transferDatabaseFromOldVersion(this, oldConfig, configuration);
 
 									removeOldDatabase = callable.hasToRemoveOldDatabase();
