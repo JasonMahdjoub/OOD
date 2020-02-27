@@ -1190,8 +1190,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			try {
 				if (centralBackupInitialized) {
 					for (Map.Entry<Package, Database> e : sql_database.entrySet()) {
-						if (e.getValue().backupRestoreManager != null)
+						if (e.getValue().backupRestoreManager != null) {
 							validateLastSynchronizationWithCentralDatabaseBackup(e.getKey(), e.getValue(), e.getValue().lastValidatedTransactionUTCForCentralBackup);
+						}
 					}
 				}
 

@@ -173,9 +173,27 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 		checkAllDatabaseInternalDataUsedForSynchro();
 
 	}
+	@Test(dependsOnMethods = {"testSynchroAfterTestsBetweenThreePeers" })
+	public void connectCentralDatabaseBackup()
+			throws Exception {
+		connectCentralDatabaseBackupWithConnectedDatabase();
+		for (Database d : listDatabase)
+		{
+			Assert.assertTrue(d.getDbwrapper().getSynchronizer().isInitializedWithCentralBackup());
+			for (Database d2 : listDatabase)
+			{
+				if (d2!=d)
+				{
+					Assert.assertTrue(d.getDbwrapper().getSynchronizer().isInitializedWithCentralBackup(d2.getHostID()));
+				}
+			}
+
+		}
+
+	}
 
 	@Test(dataProvider = "provideDataForSynchroBetweenTwoPeers", dependsOnMethods = {
-			"testSynchroAfterTestsBetweenThreePeers" })
+			"connectCentralDatabaseBackup" })
 	// @Test(dataProvider = "provideDataForSynchroBetweenTwoPeers",
 	// dependsOnMethods={"testSynchroBetweenThreePeers2"})
 	public void testSynchroBetweenTwoPeersWithCentralBackup(boolean exceptionDuringTransaction, boolean generateDirectConflict,
@@ -199,5 +217,24 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 	@Test(dependsOnMethods = { "testSynchroBetweenThreePeersWithCentralBackup" })
 	public void testSynchroAfterTestsBetweenThreePeersWithCentralBackup() throws DatabaseException {
 		testSynchronisation();
+	}
+
+	@Test(dependsOnMethods = {"testSynchroAfterTestsBetweenThreePeersWithCentralBackup" })
+	public void disconnectCentralDatabaseBackup()
+			throws Exception {
+		disconnectCentralDatabaseBakcup();
+		for (Database d : listDatabase)
+		{
+			Assert.assertFalse(d.getDbwrapper().getSynchronizer().isInitializedWithCentralBackup());
+			for (Database d2 : listDatabase)
+			{
+				if (d2!=d)
+				{
+					Assert.assertFalse(d.getDbwrapper().getSynchronizer().isInitialized(d2.getHostID()));
+				}
+			}
+
+		}
+
 	}
 }

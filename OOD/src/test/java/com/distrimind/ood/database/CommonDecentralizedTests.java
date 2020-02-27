@@ -199,7 +199,27 @@ public abstract class CommonDecentralizedTests {
 				}
 			}
 			d.getDbwrapper().getSynchronizer().initDistantBackupCenterForThisHostWithStringPackages(map);
+			for (Database d2 : listDatabase)
+			{
+				if (d2!=d)
+				{
+					if (!d2.dbwrapper.getSynchronizer().isInitializedWithCentralBackup(d.getHostID())) {
+						Map<DecentralizedValue, Long> m=lastValidatedTransactionsID.get(d.getHostID());
+						if (m!=null) {
+							d2.getDbwrapper().getSynchronizer().initDistantBackupCenter(d.getHostID(),
+									m.get(d2.getHostID()));
+						}
 
+					}
+					if (!d.dbwrapper.getSynchronizer().isInitializedWithCentralBackup(d2.getHostID())) {
+						Map<DecentralizedValue, Long> m=lastValidatedTransactionsID.get(d2.getHostID());
+						if (m!=null) {
+							d.getDbwrapper().getSynchronizer().initDistantBackupCenter(d2.getHostID(), m.get(d.getHostID()));
+						}
+
+					}
+				}
+			}
 		}
 
 
@@ -813,8 +833,10 @@ public abstract class CommonDecentralizedTests {
 
 	protected void checkForNewDatabaseBackupBlocks() throws DatabaseException {
 		for (Database d : listDatabase)
-			if (d.isConnected() && d.dbwrapper.getSynchronizer().isInitializedWithCentralBackup())
+			if (d.dbwrapper.getSynchronizer().isInitializedWithCentralBackup())
 				d.dbwrapper.getSynchronizer().checkForNewCentralBackupDatabaseEvent();
+			else
+				System.out.println("not initialized");
 	}
 
 	protected boolean checkMessages() throws Exception {
@@ -940,10 +962,7 @@ public abstract class CommonDecentralizedTests {
 	protected void connectCentralDatabaseBackupWithConnectedDatabase() throws DatabaseException {
 		for (Database d : listDatabase)
 		{
-			if (d.isConnected())
-			{
-				centralDatabaseBackup.connect(d);
-			}
+			centralDatabaseBackup.connect(d);
 		}
 	}
 
