@@ -413,7 +413,7 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 	public void testTransactionSynchrosWithIndirectConnection(boolean peersInitiallyConnected,
 			List<TableEvent<DatabaseRecord>> levents) throws Exception {
 		synchronized (TestDecentralizedDatabase.class) {
-			testTransactionSynchrosWithIndirectConnection(peersInitiallyConnected, levents, false);
+			testTransactionsSynchrosWithIndirectConnection(peersInitiallyConnected, levents, false);
 		}
 	}
 
@@ -432,7 +432,7 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 			"preTestTransactionSynchrosWithIndirectConnectionThreaded" })
 	public void testTransactionSynchrosWithIndirectConnectionThreaded(List<TableEvent<DatabaseRecord>> levents)
 			throws Exception {
-		testTransactionSynchrosWithIndirectConnection(true, levents, true);
+		testTransactionsSynchrosWithIndirectConnection(true, levents, true);
 	}
 
 	@Test(dependsOnMethods = { "testTransactionSynchrosWithIndirectConnectionThreaded" })

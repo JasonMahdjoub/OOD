@@ -35,26 +35,12 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import com.distrimind.ood.database.DatabaseWrapper.SynchronizationAnomalyType;
-import com.distrimind.ood.database.decentralizeddatabase.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
-import com.distrimind.util.AbstractDecentralizedID;
-import com.distrimind.util.DecentralizedIDGenerator;
-import com.distrimind.util.DecentralizedValue;
-import com.distrimind.util.crypto.ASymmetricAuthenticatedSignatureType;
-import com.distrimind.util.crypto.SecureRandomType;
-import com.distrimind.util.io.RandomByteArrayInputStream;
-import com.distrimind.util.io.RandomByteArrayOutputStream;
-import com.distrimind.util.io.RandomInputStream;
-import com.distrimind.util.io.RandomOutputStream;
 import org.testng.Assert;
 import org.testng.annotations.*;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 
@@ -62,67 +48,23 @@ import java.util.concurrent.atomic.AtomicReference;
  * @version 1.0
  * @since OOD 2.5
  */
-public class TestCentralBackupWithDecentralizedDatabase extends CommonDecentralizedTests {
+public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonDecentralizedTests {
 
-	final String database_file_name1 = "decentralizedDatabaseWithBackup1";
-	final String database_file_name2 = "decentralizedDatabaseWithBackup2";
-	final String database_file_name3 = "decentralizedDatabaseWithBackup3";
-	final String database_file_name4 = "decentralizedDatabaseWithBackup4";
-	final BackupConfiguration backupConfiguration=new BackupConfiguration(10000, 20000, 1000000, 1000, null);
+
 
 	@Override
-	public DatabaseWrapper getDatabaseWrapperInstance1() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name1)).newWrapperInstance();
-	}
-
-	@Override
-	public DatabaseWrapper getDatabaseWrapperInstance2() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name2)).newWrapperInstance();
-	}
-
-	@Override
-	public DatabaseWrapper getDatabaseWrapperInstance3() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name3)).newWrapperInstance();
-	}
-
-	@Override
-	public DatabaseWrapper getDatabaseWrapperInstance4() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name4)).newWrapperInstance();
-	}
-
-	@Override
-	public void removeDatabaseFiles1() {
-		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(new File(database_file_name1));
-
-	}
-
-	@Override
-	public void removeDatabaseFiles2() {
-		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(new File(database_file_name2));
-	}
-
-	@Override
-	public void removeDatabaseFiles3() {
-		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(new File(database_file_name3));
-	}
-
-	@Override
-	public void removeDatabaseFiles4() {
-		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(new File(database_file_name4));
-	}
-
-	@Override
-	public BackupConfiguration getBackupConfiguration() {
-		return backupConfiguration;
-	}
-
 	public boolean canInitCentralBackup()
 	{
 		return true;
 	}
+	@Override
+	protected boolean sendIndirectTransactions()
+	{
+		return false;
+	}
 
-	protected void testSynchroBetweenPeersWithCentralBackup(int peersNumber, boolean exceptionDuringTransaction,
-										   boolean generateDirectConflict, TableEvent<DatabaseRecord> event)
+	protected void testSynchroBetweenPeersWithCentralBackupImpl(int peersNumber, boolean exceptionDuringTransaction,
+																boolean generateDirectConflict, TableEvent<DatabaseRecord> event)
 			throws Exception {
 		if (peersNumber < 2 || peersNumber > listDatabase.size())
 			throw new IllegalArgumentException();
@@ -233,13 +175,13 @@ public class TestCentralBackupWithDecentralizedDatabase extends CommonDecentrali
 	}
 
 	@Test(dataProvider = "provideDataForSynchroBetweenTwoPeers", dependsOnMethods = {
-			"testSynchroBetweenTwoPeers" })
+			"testSynchroAfterTestsBetweenThreePeers" })
 	// @Test(dataProvider = "provideDataForSynchroBetweenTwoPeers",
 	// dependsOnMethods={"testSynchroBetweenThreePeers2"})
 	public void testSynchroBetweenTwoPeersWithCentralBackup(boolean exceptionDuringTransaction, boolean generateDirectConflict,
 										   boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event)
 			throws Exception {
-		testSynchroBetweenPeersWithCentralBackup(2, exceptionDuringTransaction, peersInitiallyConnected, event);
+		testSynchroBetweenPeersWithCentralBackupImpl(2, exceptionDuringTransaction, peersInitiallyConnected, event);
 	}
 
 	@Test(dependsOnMethods = { "testSynchroBetweenTwoPeersWithCentralBackup" })
@@ -251,7 +193,7 @@ public class TestCentralBackupWithDecentralizedDatabase extends CommonDecentrali
 	public void testSynchroBetweenThreePeersWithCentralBackup(boolean exceptionDuringTransaction, boolean generateDirectConflict,
 											 boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event)
 			throws Exception {
-		testSynchroBetweenPeersWithCentralBackup(3, exceptionDuringTransaction, generateDirectConflict, event);
+		testSynchroBetweenPeersWithCentralBackupImpl(3, exceptionDuringTransaction, generateDirectConflict, event);
 	}
 
 	@Test(dependsOnMethods = { "testSynchroBetweenThreePeersWithCentralBackup" })

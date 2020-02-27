@@ -199,15 +199,9 @@ public abstract class CommonDecentralizedTests {
 				}
 			}
 			d.getDbwrapper().getSynchronizer().initDistantBackupCenterForThisHostWithStringPackages(map);
-			for (Database d2 : listDatabase)
-			{
-				if (d2!=d)
-				{
-					if (!d.dbwrapper.getSynchronizer().isInitializedWithCentralBackup(d2.hostID))
-						d.getDbwrapper().getSynchronizer().initDistantBackupCenter(d2.hostID, lastValidatedTransactionsID.get(d.hostID).get(d2.hostID));
-				}
-			}
+
 		}
+
 
 		public void disconnect(Database d) throws DatabaseException {
 			d.getDbwrapper().getSynchronizer().disconnectAllHooksFromThereBackups();
@@ -233,6 +227,16 @@ public abstract class CommonDecentralizedTests {
 							d.getReceivedCentralDatabaseBackupEvents().add(m);
 						}
 						break;
+					}
+				}
+			}
+			for (Database d2 : listDatabase)
+			{
+				if (!d2.hostID.equals(message.getHostSource()))
+				{
+					if (!d2.dbwrapper.getSynchronizer().isInitializedWithCentralBackup(message.getHostSource())) {
+						d2.getDbwrapper().getSynchronizer().initDistantBackupCenter(message.getHostSource(),
+								lastValidatedTransactionsID.get(message.getHostSource()).get(d2.hostID));
 					}
 				}
 			}
@@ -876,10 +880,15 @@ public abstract class CommonDecentralizedTests {
 
 	}
 
+	protected boolean sendIndirectTransactions()
+	{
+		return true;
+	}
+
 	protected void connectLocal(CommonDecentralizedTests.Database db) throws DatabaseException {
 		synchronized (CommonDecentralizedTests.class) {
 			if (!db.isConnected()) {
-				db.getDbwrapper().getSynchronizer().initLocalHostID(db.getHostID(), true);
+				db.getDbwrapper().getSynchronizer().initLocalHostID(db.getHostID(), sendIndirectTransactions());
 				if (canInitCentralBackup())
 					centralDatabaseBackup.connect(db);
 				db.setConnected(true);
@@ -1153,12 +1162,10 @@ public abstract class CommonDecentralizedTests {
 
 	@Test(dataProvider = "provideDataForSynchroBetweenTwoPeers", dependsOnMethods = {
 			"testOldElementsAddedBeforeAddingSynchroSynchronized" })
-	// @Test(dataProvider = "provideDataForSynchroBetweenTwoPeers",
-	// dependsOnMethods={"testSynchroBetweenThreePeers2"})
 	public void testSynchroBetweenTwoPeers(boolean exceptionDuringTransaction, boolean generateDirectConflict,
 										   boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event)
 			throws Exception {
-		testSynchroBetweenPeers(2, exceptionDuringTransaction, generateDirectConflict, peersInitiallyConnected, event);
+		testSynchroBetweenPeersImpl(2, exceptionDuringTransaction, generateDirectConflict, peersInitiallyConnected, event);
 	}
 
 	@Test(dependsOnMethods = { "testSynchroBetweenTwoPeers" })
@@ -1172,7 +1179,7 @@ public abstract class CommonDecentralizedTests {
 	public void testSynchroBetweenThreePeers(boolean exceptionDuringTransaction, boolean generateDirectConflict,
 											 boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event)
 			throws Exception {
-		testSynchroBetweenPeers(3, exceptionDuringTransaction, generateDirectConflict, peersInitiallyConnected, event);
+		testSynchroBetweenPeersImpl(3, exceptionDuringTransaction, generateDirectConflict, peersInitiallyConnected, event);
 	}
 
 	@Test(dependsOnMethods = { "testSynchroBetweenThreePeers" })
@@ -1617,8 +1624,8 @@ public abstract class CommonDecentralizedTests {
 		return res;
 	}
 
-	protected void testSynchroBetweenPeers(int peersNumber, boolean exceptionDuringTransaction,
-										 boolean generateDirectConflict, boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event)
+	protected void testSynchroBetweenPeersImpl(int peersNumber, boolean exceptionDuringTransaction,
+											   boolean generateDirectConflict, boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event)
 			throws Exception {
 		if (peersNumber < 2 || peersNumber > listDatabase.size())
 			throw new IllegalArgumentException();
@@ -1868,8 +1875,8 @@ public abstract class CommonDecentralizedTests {
 
 	}
 
-	protected void testTransactionSynchrosWithIndirectConnection(boolean peersInitiallyConnected,
-															   List<TableEvent<DatabaseRecord>> levents, boolean multiThread)
+	protected void testTransactionsSynchrosWithIndirectConnection(boolean peersInitiallyConnected,
+																  List<TableEvent<DatabaseRecord>> levents, boolean multiThread)
 			throws Exception {
 		final CommonDecentralizedTests.Database[] segmentA = new CommonDecentralizedTests.Database[] { listDatabase.get(0), listDatabase.get(1) };
 		final CommonDecentralizedTests.Database[] segmentB = new CommonDecentralizedTests.Database[] { listDatabase.get(1), listDatabase.get(2) };
