@@ -1690,7 +1690,7 @@ public abstract class CommonDecentralizedTests {
 					CommonDecentralizedTests.DetectedCollision dcollision = db.getDetectedCollision();
 					Assert.assertNotNull(dcollision, "i=" + (i));
 					testCollision(db, event, dcollision);
-					Assert.assertTrue(db.getAnomalies().isEmpty(), db.getAnomalies().toString());
+					Assert.assertTrue(db.getAnomalies().isEmpty() || !sendIndirectTransactions(), db.getAnomalies().toString());
 
 					++i;
 				}

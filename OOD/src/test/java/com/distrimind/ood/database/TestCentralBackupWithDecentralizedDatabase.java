@@ -113,8 +113,8 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 				checkForNewDatabaseBackupBlocks();
 				exchangeMessages();
 				i = 0;
-				for (CommonDecentralizedTests.Database db : concernedDatabase) {
-					Assert.assertTrue(db.isNewDatabaseEventDetected());
+				/*for (CommonDecentralizedTests.Database db : concernedDatabase) {
+					Assert.assertFalse(db.isNewDatabaseEventDetected());
 
 					CommonDecentralizedTests.DetectedCollision dcollision = db.getDetectedCollision();
 					Assert.assertNotNull(dcollision, "i=" + (i));
@@ -122,7 +122,7 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 					Assert.assertTrue(db.getAnomalies().isEmpty(), db.getAnomalies().toString());
 
 					++i;
-				}
+				}*/
 
 			} else {
 
@@ -162,7 +162,7 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 				// DetectedCollision collision=db.getDetectedCollision();
 				// Assert.assertNotNull(collision, "Database N°"+i);
 				Assert.assertTrue(db.getAnomalies().isEmpty());
-				Assert.assertTrue(db.isNewDatabaseEventDetected());
+				Assert.assertFalse(db.isNewDatabaseEventDetected());
 				testEventSynchronized(db, event, true);
 
 			}
