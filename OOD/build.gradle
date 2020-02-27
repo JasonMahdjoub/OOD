@@ -137,9 +137,11 @@ allprojects {
 }
 
 idea {
-    project {
-        jdkName = javaVersion
-        languageLevel = javaVersion
+    if (System.env.XPC_SERVICE_NAME.contains('intellij')) {
+        project {
+            jdkName = javaVersion
+            languageLevel = javaVersion
+        }
     }
 }
 
