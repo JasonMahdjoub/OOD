@@ -80,7 +80,7 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 		sql_fields = new SqlField[1];
 
 		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(),
-				Objects.requireNonNull(DatabaseWrapperAccessor.getSerializableType(sql_connection)), null, null, isNotNull());
+				Objects.requireNonNull(DatabaseWrapperAccessor.getSerializableType(sql_connection, getLimit())), null, null, isNotNull());
 
 		if (Comparable.class.isAssignableFrom(field.getType())) {
 			try {
@@ -151,7 +151,7 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 			throws DatabaseException {
 		setValue(_class_instance, _field_instance);
 		try {
-			if (Objects.equals(DatabaseWrapperAccessor.getSerializableType(sql_connection), "BLOB")) {
+			if (Objects.equals(DatabaseWrapperAccessor.getSerializableType(sql_connection, getLimit()), "BLOB")) {
 				try (RandomByteArrayOutputStream os = new RandomByteArrayOutputStream()) {
 					serialize(os, _class_instance);
 					// os.writeObject(field.get(_class_instance));
@@ -173,7 +173,7 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 	protected void updateResultSetValue(Object _class_instance, ResultSet _result_set, SqlFieldTranslation _sft)
 			throws DatabaseException {
 		try {
-			if (Objects.equals(DatabaseWrapperAccessor.getSerializableType(sql_connection), "BLOB")) {
+			if (Objects.equals(DatabaseWrapperAccessor.getSerializableType(sql_connection, getLimit()), "BLOB")) {
 				try (RandomByteArrayOutputStream os = new RandomByteArrayOutputStream()) {
 					serialize(os, _class_instance);
 					// os.writeObject(field.get(_class_instance));
@@ -244,7 +244,7 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 	@Override
 	public void getValue(PreparedStatement _prepared_statement, int _field_start, Object o) throws DatabaseException {
 		try {
-			if (Objects.equals(DatabaseWrapperAccessor.getSerializableType(sql_connection), "BLOB")) {
+			if (Objects.equals(DatabaseWrapperAccessor.getSerializableType(sql_connection, getLimit()), "BLOB")) {
 				try (RandomByteArrayOutputStream baos = new RandomByteArrayOutputStream()) {
 					serializeObject(baos, o);
 					// os.writeObject(o);
@@ -268,7 +268,7 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 	@Override
 	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
 		SqlFieldInstance[] res = new SqlFieldInstance[1];
-		if (Objects.equals(DatabaseWrapperAccessor.getSerializableType(sql_connection), "BLOB")) {
+		if (Objects.equals(DatabaseWrapperAccessor.getSerializableType(sql_connection, getLimit()), "BLOB")) {
 			try (RandomByteArrayOutputStream baos = new RandomByteArrayOutputStream()) {
 				this.serialize(baos, _instance);
 				res[0] = new SqlFieldInstance(sql_fields[0], baos.getBytes());

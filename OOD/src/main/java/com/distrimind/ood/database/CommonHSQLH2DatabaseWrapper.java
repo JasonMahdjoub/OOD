@@ -177,7 +177,7 @@ public abstract class CommonHSQLH2DatabaseWrapper extends DatabaseWrapper{
 	}
 
 	@Override
-	protected String getSerializableType() {
+	protected String getSerializableType(long limit) {
 		return "BLOB";
 	}
 

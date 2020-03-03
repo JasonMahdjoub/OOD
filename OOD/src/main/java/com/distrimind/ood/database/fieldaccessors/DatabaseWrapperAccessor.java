@@ -148,9 +148,9 @@ class DatabaseWrapperAccessor {
 		return null;
 	}
 
-	static String getSerializableType(DatabaseWrapper wrapper) {
+	static String getSerializableType(DatabaseWrapper wrapper, long limit) {
 		try {
-			return (String) invoke(m_get_serializable_type, wrapper);
+			return (String) invoke(m_get_serializable_type, wrapper, limit);
 		} catch (InvocationTargetException e) {
 			System.err.println("Unexpected error :");
 			e.printStackTrace();
@@ -262,7 +262,7 @@ class DatabaseWrapperAccessor {
 		m_get_float_type = getMethod(DatabaseWrapper.class, "getFloatType");
 		m_get_int_type = getMethod(DatabaseWrapper.class, "getIntType");
 		m_get_long_type = getMethod(DatabaseWrapper.class, "getLongType");
-		m_get_serializable_type = getMethod(DatabaseWrapper.class, "getSerializableType");
+		m_get_serializable_type = getMethod(DatabaseWrapper.class, "getSerializableType", long.class);
 		m_get_short_type = getMethod(DatabaseWrapper.class, "getShortType");
 		m_get_var_char_limit = getMethod(DatabaseWrapper.class, "getVarCharLimit");
 		m_support_full_sql_field_name = getMethod(DatabaseWrapper.class, "supportFullSqlFieldName");

@@ -543,8 +543,14 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 	}
 
 	@Override
-	protected String getSerializableType() {
-		return "MEDIUMBLOB";
+	protected String getSerializableType(long limit) {
+		if (limit<=255)
+			return "TINYBLOB";
+		else if (limit<=65535)
+			return "BLOB";
+		else if (limit<=16777215)
+			return "MEDIUMBLOB";
+		return "LONGBLOB";
 	}
 
 	@Override

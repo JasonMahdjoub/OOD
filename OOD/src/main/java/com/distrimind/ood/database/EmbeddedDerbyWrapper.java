@@ -468,7 +468,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	}
 
 	@Override
-	protected String getSerializableType() {
+	protected String getSerializableType(long limit) {
 		return "BLOB";
 	}
 
