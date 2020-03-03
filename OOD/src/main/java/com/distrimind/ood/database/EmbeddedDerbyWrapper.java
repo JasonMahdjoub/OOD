@@ -508,12 +508,12 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	}*/
 
 	@Override
-	protected String getOnUpdateCascadeSqlQuerry() {
+	protected String getOnUpdateCascadeSqlQuery() {
 		return "";
 	}
 
 	@Override
-	protected String getOnDeleteCascadeSqlQuerry() {
+	protected String getOnDeleteCascadeSqlQuery() {
 		return "ON DELETE CASCADE";
 	}
 
@@ -646,7 +646,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	}
 
 	@Override
-	protected boolean isDisconnetionException(SQLException e) {
+	protected boolean isDisconnectionException(SQLException e) {
 		return e.getErrorCode()==402 || e.getErrorCode()==1002;
 	}
 

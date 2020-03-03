@@ -187,12 +187,12 @@ public abstract class CommonHSQLH2DatabaseWrapper extends DatabaseWrapper{
 		return "CALL IDENTITY()";
 	}*/
 	@Override
-	protected String getOnUpdateCascadeSqlQuerry() {
+	protected String getOnUpdateCascadeSqlQuery() {
 		return "ON UPDATE CASCADE";
 	}
 
 	@Override
-	protected String getOnDeleteCascadeSqlQuerry() {
+	protected String getOnDeleteCascadeSqlQuery() {
 		return "ON DELETE CASCADE";
 	}
 

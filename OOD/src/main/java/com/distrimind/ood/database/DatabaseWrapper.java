@@ -3514,7 +3514,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	}
 	
 	protected abstract boolean isSerializationException(SQLException e) throws DatabaseException;
-	protected abstract boolean isDisconnetionException(SQLException e) throws DatabaseException;
+	protected abstract boolean isDisconnectionException(SQLException e) throws DatabaseException;
 
 	private boolean needsToLock()
 	{
@@ -3590,7 +3590,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
                                 if (isSerializationException((SQLException)t)) {
                                     retry = true;
                                 }
-								else if (isDisconnetionException((SQLException)t))
+								else if (isDisconnectionException((SQLException)t))
 								{
 									if (!deconnexionException) {
 										retry = true;
@@ -3621,7 +3621,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 									if (t instanceof SQLException) {
 										if (isSerializationException((SQLException) t)) {
 											retry = true;
-										} else if (isDisconnetionException((SQLException) t)) {
+										} else if (isDisconnectionException((SQLException) t)) {
 											if (!deconnexionException) {
 												retry = true;
 												deconnexionException = true;
@@ -3653,7 +3653,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						} catch (SQLException se) {
 							throw new DatabaseIntegrityException("Impossible to rollback the database changments", se);
 						}
-						retry=isSerializationException(e) || isDisconnetionException(e);
+						retry=isSerializationException(e) || isDisconnectionException(e);
 						if (!retry)
 							throw DatabaseException.getDatabaseException(e);
 					} finally {
@@ -4685,12 +4685,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	}
 
 
-	protected abstract String getOnUpdateCascadeSqlQuerry();
+	protected abstract String getOnUpdateCascadeSqlQuery();
 
-	protected abstract String getOnDeleteCascadeSqlQuerry();
+	protected abstract String getOnDeleteCascadeSqlQuery();
 
 	protected boolean supportUpdateCascade() {
-		return !getOnUpdateCascadeSqlQuerry().equals("");
+		return !getOnUpdateCascadeSqlQuery().equals("");
 	}
 
 	protected abstract Blob getBlob(byte[] bytes) throws SQLException;

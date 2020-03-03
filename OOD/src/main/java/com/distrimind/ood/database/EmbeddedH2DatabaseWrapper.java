@@ -305,7 +305,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 		Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
 		try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
 				"select CONSTRAINT_NAME, CONSTRAINT_TYPE, COLUMN_LIST from "+getConstraintsTableName()+" WHERE TABLE_NAME='"
-						+ table.getSqlTableName() + "';"))) {
+						+ table.getSqlTableName() + "' AND CONSTRAINT_SCHEMA='"+database_name+"';"))) {
 			boolean foundPK=false;
 			while (rq.result_set.next()) {
 				String constraint_name = rq.result_set.getString("CONSTRAINT_NAME");
@@ -621,7 +621,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	}
 
 	@Override
-	protected boolean isDisconnetionException(SQLException e) {
+	protected boolean isDisconnectionException(SQLException e) {
 		return e.getErrorCode()==90067;
 		/*if (e.getErrorCode()==90067)
 			return true;

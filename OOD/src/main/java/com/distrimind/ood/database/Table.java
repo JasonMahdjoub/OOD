@@ -1102,7 +1102,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 							SqlQuerry.append(sf.short_pointed_field);
 						}
 						// SqlQuerry.append(") ON UPDATE CASCADE ON DELETE CASCADE");
-						SqlQuerry.append(") ").append(sql_connection.getOnDeleteCascadeSqlQuerry()).append(" ").append(sql_connection.getOnUpdateCascadeSqlQuerry());
+						SqlQuerry.append(") ").append(sql_connection.getOnDeleteCascadeSqlQuery()).append(" ").append(sql_connection.getOnUpdateCascadeSqlQuery());
 						sql_connection.runTransaction(new Transaction() {
 
 							@Override
