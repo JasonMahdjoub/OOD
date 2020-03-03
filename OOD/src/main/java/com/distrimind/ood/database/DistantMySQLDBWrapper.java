@@ -8,7 +8,6 @@ import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.charset.Charset;
 import java.sql.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
@@ -28,7 +27,7 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 									int connectTimeInMillis,
 									int socketTimeOutMillis,
 									boolean useCompression,
-									Charset characterEncoding,
+									String characterEncoding,
 									SSLMode sslMode,
 									boolean paranoid,
 									File serverRSAPublicKeyFile,
@@ -98,7 +97,7 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 								 int connectTimeInMillis,
 								 int socketTimeOutMillis,
 								 boolean useCompression,
-								 Charset characterEncoding,
+								 String characterEncoding,
 								 SSLMode sslMode,
 								 boolean paranoid,
 								 File serverRSAPublicKeyFile,
@@ -108,7 +107,7 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 	{
 
 		return "jdbc:mysql://"+urlLocation+":"+port+"/"+_database_name+"?"+"connectTimeout="+connectTimeInMillis+"&socketTimeout="+socketTimeOutMillis+
-						"&useCompression="+useCompression+"&characterEncoding="+characterEncoding.name()+
+						"&useCompression="+useCompression+"&characterEncoding="+characterEncoding+
 						"&sslMode="+sslMode.name()+
 						"&paranoid="+paranoid+
 				(serverRSAPublicKeyFile!=null?"&serverRSAPublicKeyFile="+serverRSAPublicKeyFile.toURI().toString():"")+
