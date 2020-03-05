@@ -74,6 +74,10 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 		}
 	}
 
+	@Override
+	public boolean supportMultipleAutoPrimaryKeys() {
+		return true;
+	}
 	EmbeddedDerbyWrapper(boolean loadToMemory, String databaseName) throws IllegalArgumentException, DatabaseException {
 		super(databaseName, null, false, true);
 		if (!loadToMemory)
@@ -493,13 +497,19 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	}
 
 	@Override
-	protected String getBigDecimalType() {
-		return "VARCHAR(16374)";
+	protected String getBigDecimalType(long limit) {
+		if (limit<=0)
+			return "VARCHAR(1024)";
+		else
+			return "VARCHAR("+limit+")";
 	}
 
 	@Override
-	protected String getBigIntegerType() {
-		return "VARCHAR(16374)";
+	protected String getBigIntegerType(long limit) {
+		if (limit<=0)
+			return "VARCHAR(1024) CHARACTER SET latin1";
+		else
+			return "VARCHAR("+limit+") CHARACTER SET latin1";
 	}
 
 	/*@Override

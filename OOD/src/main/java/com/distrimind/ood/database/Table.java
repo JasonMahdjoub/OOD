@@ -50,6 +50,7 @@ import com.distrimind.ood.interpreter.Interpreter;
 import com.distrimind.ood.interpreter.RuleInstance;
 import com.distrimind.ood.interpreter.RuleInstance.TableJunction;
 import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.Reference;
 import com.distrimind.util.io.RandomByteArrayInputStream;
 import com.distrimind.util.io.RandomByteArrayOutputStream;
 import com.distrimind.util.io.RandomInputStream;
@@ -527,6 +528,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				unique_fields_no_auto_random_primary_keys.add(f);
 			}
 		}
+
 		for (FieldAccessor f : fields) {
 			for (FieldAccessor f2 : fields) {
 				if (f != f2) {
@@ -833,12 +835,13 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 							"CREATE " + cachedKeyWord + " TABLE " + this.getSqlTableName() + "(");
 
 					boolean first = true;
+					Reference<Long> autoIncrementStart=new Reference<>();
 					for (FieldAccessor f : fields) {
 						if (first)
 							first = false;
 						else
 							sqlQuerry.append(", ");
-						sqlQuerry.append(getSqlFieldDeclaration(f));
+						sqlQuerry.append(getSqlFieldDeclaration(f, autoIncrementStart));
 					}
 					if (primary_keys_fields.size() > 0) {
 						sqlQuerry.append(", CONSTRAINT ").append(getSqlPrimaryKeyName()).append(" PRIMARY KEY(");
@@ -871,7 +874,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						}
 					}
 
-					sqlQuerry.append(")").append(sql_connection.getSqlComma());
+					sqlQuerry.append(")").append(getDatabaseWrapper().getPostCreateTable(autoIncrementStart.get())).append(sql_connection.getSqlComma());
 
 					sql_connection.runTransaction(new Transaction() {
 
@@ -891,7 +894,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 							try {
 								st = sql_connection.getConnectionAssociatedWithCurrentThread().getConnection()
 										.createStatement();
-
+								System.out.println(Table.this+": "+sqlQuerry);
 								st.executeUpdate(sqlQuerry.toString());
 
 							} catch (SQLException e) {
@@ -2213,7 +2216,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		return primary_keys_fields;
 	}
 
-	private String getSqlFieldDeclaration(FieldAccessor field) {
+	private String getSqlFieldDeclaration(FieldAccessor field, Reference<Long> autoIncrementStart) {
 		final String sqlNull = " " + sql_connection.getSqlNULL();
 		final String sqlNotNull = " " + sql_connection.getSqlNotNULL();
 
@@ -2243,6 +2246,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				res.append(sf.short_field).append(" ").append(sf.type);
 				if (field.isAutoPrimaryKey()) {
 					res.append(" ");
+					autoIncrementStart.set(field.getStartValue());
 					res.append(getDatabaseWrapper().getAutoIncrementPart(field.getStartValue()));
 				}
 				res .append(sf.not_null ? sqlNotNull : sqlNull);
@@ -8671,6 +8675,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 
 		public void setTableColumnsResultSet(TableColumnsResultSet tableColumnsResultSet) {
+			if (tableColumnsResultSet==null)
+				throw new NullPointerException();
 			this.tableColumnsResultSet = tableColumnsResultSet;
 		}
 	}

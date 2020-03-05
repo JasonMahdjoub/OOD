@@ -60,6 +60,10 @@ public abstract class CommonHSQLH2DatabaseWrapper extends DatabaseWrapper{
 		this.fileLock=true;
 
 	}
+	@Override
+	public boolean supportMultipleAutoPrimaryKeys() {
+		return true;
+	}
 
 
 	/*
@@ -157,13 +161,19 @@ public abstract class CommonHSQLH2DatabaseWrapper extends DatabaseWrapper{
 	}
 
 	@Override
-	protected String getBigDecimalType() {
-		return "VARCHAR(16374)";
+	protected String getBigDecimalType(long limit) {
+		if (limit<=0)
+			return "VARCHAR(1024)";
+		else
+			return "VARCHAR("+limit+")";
 	}
 
 	@Override
-	protected String getBigIntegerType() {
-		return "VARCHAR(16374)";
+	protected String getBigIntegerType(long limit) {
+		if (limit<=0)
+			return "VARCHAR(1024) CHARACTER SET latin1";
+		else
+			return "VARCHAR("+limit+") CHARACTER SET latin1";
 	}
 
 	@Override

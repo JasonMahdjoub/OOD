@@ -21,6 +21,8 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 	private final String user;
 	private final String password;
 	private final String url;
+	private final String charset;
+	private final int maxCharSize;
 
 
 	protected DistantMySQLDBWrapper(String urlLocation, int port, String _database_name, String user, String password,
@@ -38,26 +40,18 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 		url=getURL(urlLocation, port, _database_name, connectTimeInMillis, socketTimeOutMillis,useCompression, characterEncoding, sslMode, paranoid, serverRSAPublicKeyFile, autoReconnect, prefetchNumberRows, noCache);
 		this.user=user;
 		this.password=password;
+		this.charset=characterEncoding;
+		this.maxCharSize=getMaxCharSize(this.charset);
 	}
 	protected DistantMySQLDBWrapper(String urlLocation, int port, String _database_name, String user, String password, String mysqlParams) throws DatabaseException {
 		super(_database_name, new File(getURL(urlLocation, port, _database_name, mysqlParams)), false, false);
 		url=getURL(urlLocation, port, _database_name, mysqlParams);
 		this.user=user;
 		this.password=password;
+		this.charset=null;
+		this.maxCharSize=4;
 	}
-	private static boolean driverLoaded=false;
-	private void ensureJDBCDriverLoaded() throws DatabaseLoadingException {
-		synchronized (DistantMySQLDBWrapper.class) {
-			if (!driverLoaded) {
-				try {
-					Class.forName("com.mysql.jdbc.Driver");
-					driverLoaded=true;
-				} catch (ClassNotFoundException e) {
-					throw new DatabaseLoadingException("",e);
-				}
-			}
-		}
-	}
+
 
 	/**
 	 * By default, network connections are SSL encrypted; this property permits secure connections to be turned off, or a different levels of security to be chosen.
@@ -118,9 +112,9 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 
 	@Override
 	protected Connection reopenConnectionImpl() throws DatabaseLoadingException {
-		ensureJDBCDriverLoaded();
-		try (Connection conn = DriverManager.getConnection(url, user, password)) {
 
+		try  {
+			Connection conn = DriverManager.getConnection(url, user, password);
 			if (conn==null)
 				throw new DatabaseLoadingException("Failed to make connection!");
 
@@ -161,7 +155,31 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 
 	@Override
 	protected void startTransaction(Session _openedConnection, TransactionIsolation transactionIsolation, boolean write) throws SQLException {
-		String isoLevel;
+		int isoLevel;
+		switch (transactionIsolation) {
+			case TRANSACTION_NONE:
+				isoLevel = Connection.TRANSACTION_NONE;
+				break;
+			case TRANSACTION_READ_COMMITTED:
+				isoLevel = Connection.TRANSACTION_READ_COMMITTED;
+				break;
+			case TRANSACTION_READ_UNCOMMITTED:
+				isoLevel = Connection.TRANSACTION_READ_UNCOMMITTED;
+				break;
+			case TRANSACTION_REPEATABLE_READ:
+				isoLevel = Connection.TRANSACTION_REPEATABLE_READ;
+				break;
+			case TRANSACTION_SERIALIZABLE:
+				isoLevel = Connection.TRANSACTION_SERIALIZABLE;
+				break;
+			default:
+				throw new IllegalAccessError();
+
+		}
+		_openedConnection.getConnection().setReadOnly(!write);
+		_openedConnection.getConnection().setTransactionIsolation(isoLevel);
+
+		/*String isoLevel;
 		switch (transactionIsolation) {
 			case TRANSACTION_NONE:
 				isoLevel = null;
@@ -182,11 +200,10 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 				throw new IllegalAccessError();
 
 		}
-
 		try (Statement s = _openedConnection.getConnection().createStatement()) {
 			s.executeQuery("START TRANSACTION" + (isoLevel != null ? (" ISOLATION LEVEL " + isoLevel + ", ") : "")
 					+ (write ? "READ WRITE" : "READ ONLY") + getSqlComma());
-		}
+		}*/
 
 	}
 
@@ -212,14 +229,7 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 
 	@Override
 	protected void disableAutoCommit(Connection openedConnection) throws SQLException {
-
-		try (Statement s = openedConnection.createStatement()) {
-			s.executeQuery("SET autocommit=0;");
-		}
-
-		try (Statement s = openedConnection.createStatement()) {
-			s.executeQuery("COMMIT;");
-		}
+		openedConnection.setAutoCommit(false);
 	}
 
 	@Override
@@ -249,7 +259,16 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 
 	@Override
 	public String getAutoIncrementPart(long startWith) {
-		return "AUTO_INCREMENT="+startWith;
+		return "AUTO_INCREMENT";
+	}
+
+	@Override
+	protected String getPostCreateTable(Long autoIncrementStart) {
+		String cs=charset==null?"":" CHARSET="+charset;
+		if (autoIncrementStart==null)
+			return " ENGINE=InnoDB DEFAULT"+cs;
+		else
+			return " ENGINE=InnoDB AUTO_INCREMENT="+autoIncrementStart+" DEFAULT"+cs;
 	}
 
 	@Override
@@ -267,7 +286,7 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 
 		public CReadQuerry(Connection _sql_connection, ResultSet resultSet) {
 			super(_sql_connection, resultSet);
-			setTableColumnsResultSet(new TCResultSet(this.result_set));
+			setTableColumnsResultSet(new TCResultSet(resultSet));
 		}
 	}
 
@@ -506,9 +525,33 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 		return ";";
 	}
 
+	private static int getMaxCharSize(String charset)
+	{
+		switch (charset)
+		{
+			case "dec8": case "cp850": case "hp8": case"koi8r": case "latin1": case "latin2": case "swe7": case "ascii":
+			case "hebrew": case "tis620": case "koi8u": case "greek": case "cp1250": case "latin5": case "armscii8":
+			case "cp866": case "keybcs2":case "macce":case "macroman":case "cp852":case "latin7": case "cp1251":case "cp1256":
+			case "cp1257":case "binary":case "geostd8":
+				return 1;
+			case "big5":case "sjis":case "euckr": case "gb2312": case "gbk": case "ucs2":case "cp932":
+				return 2;
+			case "ujis": case "utf8":case "eucjpms":
+				return 3;
+			case "utf8mb4":case "utf16":case "utf16le": case "utf32":case "gb18030":
+				return 4;
+		}
+		return 4;
+	}
+
+	@Override
+	public boolean supportMultipleAutoPrimaryKeys() {
+		return false;
+	}
+
 	@Override
 	protected int getVarCharLimit() {
-		return 65535;
+		return 65535/maxCharSize;
 	}
 
 	@Override
@@ -518,7 +561,7 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 
 	@Override
 	protected boolean isLongVarBinarySupported() {
-		return true;
+		return false;
 	}
 
 	@Override
@@ -528,7 +571,7 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 
 	@Override
 	protected String getSqlNotNULL() {
-		return "NOT NULLL";
+		return "NOT NULL";
 	}
 
 	@Override
@@ -573,13 +616,16 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 	}
 
 	@Override
-	protected String getBigDecimalType() {
+	protected String getBigDecimalType(long limit) {
 		return "DECIMAL";
 	}
 
 	@Override
-	protected String getBigIntegerType() {
-		return "VARCHAR(16374)";
+	protected String getBigIntegerType(long limit) {
+		if (limit<=0)
+			return "VARCHAR(1024) CHARACTER SET latin1";
+		else
+			return "VARCHAR("+limit+") CHARACTER SET latin1";
 	}
 
 	@Override

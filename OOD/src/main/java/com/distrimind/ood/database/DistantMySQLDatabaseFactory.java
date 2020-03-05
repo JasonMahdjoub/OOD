@@ -420,8 +420,22 @@ public class DistantMySQLDatabaseFactory extends DatabaseFactory<DistantMySQLDBW
 
 	@Override
 	protected DistantMySQLDBWrapper newWrapperInstance() throws DatabaseException {
+		Charset cs=getCharacterEncoding();
+		String css=null;
+		if (cs.name().contains("-")) {
+			for (String s : cs.aliases()) {
+				if (!s.contains("-")) {
+					css = s;
+					break;
+				}
+			}
+			if (css==null)
+				css=cs.name();
+		}
+		else
+			css=cs.name();
 		if (mysqlParams==null)
-			return new DistantMySQLDBWrapper(urlLocation, port, databaseName, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, characterEncoding, sslMode, paranoid, serverRSAPublicKeyFile, autoReconnect, prefetchNumberRows, noCache);
+			return new DistantMySQLDBWrapper(urlLocation, port, databaseName, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, css, sslMode, paranoid, serverRSAPublicKeyFile, autoReconnect, prefetchNumberRows, noCache);
 		else
 			return new DistantMySQLDBWrapper(urlLocation, port, databaseName, user, password, mysqlParams);
 	}
