@@ -71,8 +71,8 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 	private final long limit;
 
 	protected ByteTabConvertibleFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection,
-			Field _field, String parentFieldName, ByteTabObjectConverter converter) throws DatabaseException {
-		super(_sql_connection, _field, parentFieldName, getCompatibleClasses(_field), table);
+			Field _field, String parentFieldName, ByteTabObjectConverter converter, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
+		super(_sql_connection, _field, parentFieldName, getCompatibleClasses(_field), table, severalPrimaryKeysPresentIntoTable);
 		sql_fields = new SqlField[1];
 
 		String type;
@@ -88,7 +88,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 			else
 			{
 				isBigInteger=true;
-				type = DatabaseWrapperAccessor.getBigIntegerType(sql_connection);
+				type = DatabaseWrapperAccessor.getBigIntegerType(sql_connection, l);
 			}
 		} else {
 			if (DatabaseWrapperAccessor.isLongVarBinarySupported(sql_connection))

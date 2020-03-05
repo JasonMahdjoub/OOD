@@ -98,8 +98,8 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 	}
 
 	protected ForeignKeyFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection,
-			Field _field, String parentFieldName) throws DatabaseException {
-		super(_sql_connection, _field, parentFieldName, getCompatibleClasses(_field), table);
+			Field _field, String parentFieldName, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
+		super(_sql_connection, _field, parentFieldName, getCompatibleClasses(_field), table, severalPrimaryKeysPresentIntoTable);
 		this.tableVersion=table.getDatabaseVersion();
 		if (!DatabaseRecord.class.isAssignableFrom(_field.getType()))
 			throw new DatabaseException("The field " + _field.getName() + " of the class "

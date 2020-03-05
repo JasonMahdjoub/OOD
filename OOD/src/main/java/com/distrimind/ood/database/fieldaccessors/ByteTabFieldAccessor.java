@@ -72,8 +72,8 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 	public static final int shortTabSizeLimit=32768;
 	
 	protected ByteTabFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection, Field _field,
-			String parentFieldName) throws DatabaseException {
-		super(_sql_connection, _field, parentFieldName, compatible_classes, table);
+			String parentFieldName, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
+		super(_sql_connection, _field, parentFieldName, compatible_classes, table, severalPrimaryKeysPresentIntoTable);
 		sql_fields = new SqlField[1];
 		String type;
 		long l = limit;
@@ -88,7 +88,7 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 			else
 			{
 				isBigInteger=true;
-				type = DatabaseWrapperAccessor.getBigIntegerType(sql_connection);
+				type = DatabaseWrapperAccessor.getBigIntegerType(sql_connection, l);
 			}
 		} else {
 			if (DatabaseWrapperAccessor.isLongVarBinarySupported(sql_connection))

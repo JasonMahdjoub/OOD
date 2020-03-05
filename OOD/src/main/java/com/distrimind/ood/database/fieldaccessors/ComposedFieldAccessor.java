@@ -64,8 +64,8 @@ public class ComposedFieldAccessor extends FieldAccessor {
 	private final SqlField[] sqlFields;
 
 	protected ComposedFieldAccessor(DatabaseWrapper _sql_connection, Table<?> table,
-			Field _field, String parentFieldName, List<Class<?>> parentFields) throws DatabaseException {
-		super(_sql_connection, _field, parentFieldName, new Class<?>[] { _field.getType() }, table);
+			Field _field, String parentFieldName, List<Class<?>> parentFields, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
+		super(_sql_connection, _field, parentFieldName, new Class<?>[] { _field.getType() }, table, severalPrimaryKeysPresentIntoTable);
 		try {
 			defaultConstructor = _field.getType().getDeclaredConstructor();
 			if (!Modifier.isPublic(defaultConstructor.getModifiers())) {

@@ -72,8 +72,8 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 	protected Method compareTo_method;
 
 	protected SecureExternalizableFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection,
-												Field _field, String parentFieldName) throws DatabaseException {
-		super(_sql_connection, _field, parentFieldName, getCompatibleClasses(_field), table);
+												Field _field, String parentFieldName, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
+		super(_sql_connection, _field, parentFieldName, getCompatibleClasses(_field), table, severalPrimaryKeysPresentIntoTable);
 		if (!Serializable.class.isAssignableFrom(field.getType()))
 			throw new FieldDatabaseException("The given field " + field.getName() + " of type "
 					+ field.getType().getName() + " must be a serializable field.");

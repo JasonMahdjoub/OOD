@@ -64,8 +64,8 @@ public class booleanFieldAccessor extends FieldAccessor {
 	protected final SqlField[] sql_fields;
 
 	protected booleanFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection, Field _field,
-			String parentFieldName) throws DatabaseException {
-		super(_sql_connection, _field, parentFieldName, compatible_classes, table);
+			String parentFieldName, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
+		super(_sql_connection, _field, parentFieldName, compatible_classes, table, severalPrimaryKeysPresentIntoTable);
 		sql_fields = new SqlField[1];
 		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(), "BOOLEAN", null, null, isNotNull());
 	}

@@ -70,9 +70,9 @@ class DatabaseWrapperAccessor {
 	private static final Constructor<DecentralizedIDGenerator> m_decentralized_id_constructor;
 	private static final Constructor<RenforcedDecentralizedIDGenerator> m_renforced_decentralized_id_constructor;
 
-	static String getBigDecimalType(DatabaseWrapper wrapper) {
+	static String getBigDecimalType(DatabaseWrapper wrapper, long limit) {
 		try {
-			return (String) invoke(m_get_big_decimal_type, wrapper);
+			return (String) invoke(m_get_big_decimal_type, wrapper, limit);
 		} catch (InvocationTargetException e) {
 			System.err.println("Unexpected error :");
 			e.printStackTrace();
@@ -82,9 +82,9 @@ class DatabaseWrapperAccessor {
 
 	}
 
-	static String getBigIntegerType(DatabaseWrapper wrapper) {
+	static String getBigIntegerType(DatabaseWrapper wrapper, long limit) {
 		try {
-			return (String) invoke(m_get_big_integer_type, wrapper);
+			return (String) invoke(m_get_big_integer_type, wrapper, limit);
 		} catch (InvocationTargetException e) {
 			System.err.println("Unexpected error :");
 			e.printStackTrace();
@@ -252,8 +252,8 @@ class DatabaseWrapperAccessor {
 	}
 
 	static {
-		m_get_big_decimal_type = getMethod(DatabaseWrapper.class, "getBigDecimalType");
-		m_get_big_integer_type = getMethod(DatabaseWrapper.class, "getBigIntegerType");
+		m_get_big_decimal_type = getMethod(DatabaseWrapper.class, "getBigDecimalType", long.class);
+		m_get_big_integer_type = getMethod(DatabaseWrapper.class, "getBigIntegerType", long.class);
 		m_get_byte_type = getMethod(DatabaseWrapper.class, "getByteType");
 		m_is_var_binary_supported = getMethod(DatabaseWrapper.class, "isVarBinarySupported");
 		m_is_long_var_binary_supported = getMethod(DatabaseWrapper.class, "isLongVarBinarySupported");

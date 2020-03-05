@@ -66,8 +66,8 @@ public class DoubleNumberFieldAccessor extends FieldAccessor {
 	protected final SqlField[] sql_fields;
 
 	protected DoubleNumberFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection,
-			Field _field, String parentFieldName) throws DatabaseException {
-		super(_sql_connection, _field, parentFieldName, compatible_classes, table);
+			Field _field, String parentFieldName, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
+		super(_sql_connection, _field, parentFieldName, compatible_classes, table, severalPrimaryKeysPresentIntoTable);
 		sql_fields = new SqlField[1];
 		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(),
 				Objects.requireNonNull(DatabaseWrapperAccessor.getDoubleType(sql_connection)), null, null, isNotNull());

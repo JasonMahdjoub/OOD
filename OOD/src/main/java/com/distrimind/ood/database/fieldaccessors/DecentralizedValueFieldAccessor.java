@@ -64,8 +64,8 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 	private final boolean encodeExpirationUTC;
 
 	protected DecentralizedValueFieldAccessor(Table<?> table,
-											  DatabaseWrapper _sql_connection, Field _field, String parentFieldName) throws DatabaseException {
-		super(_sql_connection, _field, parentFieldName, new Class<?>[] {_field.getType()}, table);
+											  DatabaseWrapper _sql_connection, Field _field, String parentFieldName, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
+		super(_sql_connection, _field, parentFieldName, new Class<?>[] {_field.getType()}, table, severalPrimaryKeysPresentIntoTable);
 		sql_fields = new SqlField[1];
 		Class<?>[] compatibleClasses = new Class<?>[]{_field.getType()};
 
@@ -89,7 +89,7 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 		}
 		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(),
 				Objects.requireNonNull(DatabaseWrapperAccessor.isVarBinarySupported(sql_connection) ? "VARBINARY(" + limit + ")"
-						: DatabaseWrapperAccessor.getBigIntegerType(sql_connection)),
+						: DatabaseWrapperAccessor.getBigIntegerType(sql_connection, limit)),
 				null, null, isNotNull());
 		isVarBinary = DatabaseWrapperAccessor.isVarBinarySupported(sql_connection);
 

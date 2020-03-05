@@ -67,8 +67,8 @@ public class DateFieldAccessor extends FieldAccessor {
 	private final SqlField[] sql_fields;
 
 	protected DateFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection, Field _field,
-			String parentFieldName) throws DatabaseException {
-		super(_sql_connection, _field, parentFieldName, getCompatibleClasses(_field), table);
+			String parentFieldName, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
+		super(_sql_connection, _field, parentFieldName, getCompatibleClasses(_field), table, severalPrimaryKeysPresentIntoTable);
 		if (!Date.class.isAssignableFrom(_field.getType()))
 			throw new FieldDatabaseException("The field " + _field.getName() + " of the class "
 					+ _field.getDeclaringClass().getName() + " of type " + _field.getType() + " must be a Date type.");
