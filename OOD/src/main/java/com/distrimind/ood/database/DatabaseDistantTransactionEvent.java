@@ -114,7 +114,7 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 			this.peersInformedFull = peersInformedFull;
 			if (!peersInformedFull)
 				this.peersInformed = peersInformed;
-			this.setForce(force);
+			this.setForced(force);
 		}
 
 		public DatabaseHooksTable.Record getHook() {
@@ -397,7 +397,7 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 								oos.write(b);
 								oos.writeLong(_record.getID());
 								oos.writeLong(_record.getLocalID());
-								oos.writeBoolean(_record.isForce());
+								oos.writeBoolean(_record.isForced());
 								oos.writeBoolean(_record.peersInformedFull);
 								if (!_record.peersInformedFull) {
 									byte[] t = _record.peersInformed;

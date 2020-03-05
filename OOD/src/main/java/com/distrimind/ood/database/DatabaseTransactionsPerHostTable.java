@@ -383,7 +383,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 									getIDTable().getLastTransactionID(), fromHook.get(), false, null, false);
 							final List<DecentralizedValue> concernedHosts = ((DatabaseTransactionEventsTable.Record) transaction)
 									.getConcernedHosts();
-							if (transaction.isForce() || concernedHosts.size() > 0) {
+							if (transaction.isForced() || concernedHosts.size() > 0) {
 								final List<DecentralizedValue> l = new ArrayList<>();
 								getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
 
@@ -435,7 +435,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 												t.deserializeFields(drNew, event.getConcernedSerializedNewNonKey(), false, false, true);
 											}
 
-											if (type.hasOldValue() || transaction.isForce()) {
+											if (type.hasOldValue() || transaction.isForced()) {
 												drOld = t.getRecord(mapKeys);
 											}
 
@@ -450,13 +450,13 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 												boolean collision = detectCollisionAndGetObsoleteEventsToRemove(fromHook.get().getHostID(),
 														event.getConcernedTable(), event.getConcernedSerializedPrimaryKey(),
-														transaction.isForce(), r);
+														transaction.isForced(), r);
 												Set<DatabaseDistantTransactionEvent.Record> ir = new HashSet<>();
 												DecentralizedValue indirectCollisionWith = null;
 												if (!collision) {
 													indirectCollisionWith = detectCollisionAndGetObsoleteDistantEventsToRemove(
 															fromHook.get().getHostID(), event.getConcernedTable(),
-															event.getConcernedSerializedPrimaryKey(), transaction.isForce(), ir);
+															event.getConcernedSerializedPrimaryKey(), transaction.isForced(), ir);
 												}
 
 
@@ -492,7 +492,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 													case REMOVE:
 													case REMOVE_WITH_CASCADE: {
 														if (drOld == null) {
-															if (!transaction.isForce() && !eventForce) {
+															if (!transaction.isForced() && !eventForce) {
 
 																t.anomalyDetected(fromHook.get().getHostID(),
 																		indirectTransaction ? directPeer.getHostID() : null,
@@ -505,7 +505,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 													}
 													break;
 													case UPDATE:
-														if (drOld == null && !eventForce && !transaction.isForce()) {
+														if (drOld == null && !eventForce && !transaction.isForced()) {
 
 															t.anomalyDetected(fromHook.get().getHostID(),
 																	indirectTransaction ? directPeer.getHostID() : null,

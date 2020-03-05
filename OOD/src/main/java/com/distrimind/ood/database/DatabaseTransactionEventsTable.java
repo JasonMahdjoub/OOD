@@ -68,7 +68,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 		protected long id;
 
 		@Field
-		private boolean force = false;
+		private boolean forced = false;
 
 		AbstractRecord() {
 
@@ -86,12 +86,12 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 			return id;
 		}
 
-		public boolean isForce() {
-			return force;
+		public boolean isForced() {
+			return forced;
 		}
 
-		public void setForce(boolean force) {
-			this.force = force;
+		public void setForced(boolean forced) {
+			this.forced = forced;
 		}
 
 		@Override
@@ -172,10 +172,10 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 		void setConcernedHosts(Collection<DecentralizedValue> peers) {
 			if (peers == null || peers.isEmpty()) {
 				concernedHosts = null;
-				setForce(false);
+				setForced(false);
 				return;
 			} else
-				setForce(true);
+				setForced(true);
 
 			byte[][] bytes = new byte[peers.size()][];
 			int i = 0;
@@ -408,7 +408,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 					tr.id = getTransactionIDTable().getAndIncrementTransactionID();
 					tr.concernedDatabasePackage = databasePackage;
 					tr.setConcernedHosts(Collections.singletonList(hook.getHostID()));
-					tr.setForce(force);
+					tr.setForced(force);
 					transaction.set(addRecord(tr));
 					currentEventPos.set(0);
 
@@ -425,7 +425,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 		tr.id = getTransactionIDTable().getAndIncrementTransactionID();
 		tr.concernedDatabasePackage = databasePackage;
 		tr.setConcernedHosts(Collections.singletonList(hook.getHostID()));
-		tr.setForce(force);
+		tr.setForced(force);
 
 		AtomicReference<DatabaseTransactionEventsTable.Record> transaction = new AtomicReference<>(addRecord(tr));
 		AtomicInteger currentEventPos = new AtomicInteger(0);

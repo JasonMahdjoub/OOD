@@ -54,7 +54,7 @@ public class TableEvent<T extends DatabaseRecord> extends DatabaseEvent {
 
 	private final T oldDatabaseRecord;
 	private final T newDatabaseRecord;
-	private final boolean force;
+	private final boolean forced;
 	private transient final Set<DecentralizedValue> hostsDestination;
 	private transient HashMap<String, Object> mapKeys = null;
 	private transient boolean oldAlreadyPresent = false;
@@ -73,8 +73,8 @@ public class TableEvent<T extends DatabaseRecord> extends DatabaseEvent {
 		this.type = type;
 		this.oldDatabaseRecord = oldDatabaseRecord;
 		this.newDatabaseRecord = newDatabaseRecord;
-		this.force = resentTo != null && !resentTo.isEmpty();
-		this.hostsDestination = force ? resentTo : null;
+		this.forced = resentTo != null && !resentTo.isEmpty();
+		this.hostsDestination = forced ? resentTo : null;
 	}
 
 	TableEvent(int id, DatabaseEventType type, T oldDatabaseRecord, T newDatabaseRecord,
@@ -91,8 +91,8 @@ public class TableEvent<T extends DatabaseRecord> extends DatabaseEvent {
 		this.type = type;
 		this.oldDatabaseRecord = oldDatabaseRecord;
 		this.newDatabaseRecord = newDatabaseRecord;
-		this.force = resentTo != null && !resentTo.isEmpty();
-		this.hostsDestination = force ? resentTo : null;
+		this.forced = resentTo != null && !resentTo.isEmpty();
+		this.hostsDestination = forced ? resentTo : null;
 		this.oldAlreadyPresent = oldAlreadyPresent;
 		this.table = table;
 		this.mapKeys = mapKeys;
@@ -104,7 +104,7 @@ public class TableEvent<T extends DatabaseRecord> extends DatabaseEvent {
 
 	@Override
 	public String toString() {
-		return "TableEvent[" + type + ", force=" + force + ", old=" + oldDatabaseRecord + ", new=" + newDatabaseRecord
+		return "TableEvent[" + type + ", forced=" + forced + ", old=" + oldDatabaseRecord + ", new=" + newDatabaseRecord
 				+ "]";
 	}
 
@@ -116,8 +116,8 @@ public class TableEvent<T extends DatabaseRecord> extends DatabaseEvent {
 		return mapKeys;
 	}
 
-	boolean isForce() {
-		return force;
+	boolean isForced() {
+		return forced;
 	}
 
 	public int getID() {

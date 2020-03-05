@@ -94,7 +94,7 @@ public class DatabaseTransactionEvent extends DatabaseEvent {
 	}*/
 
 	boolean addEvent(TableEvent<?> event) {
-		force |= event.isForce();
+		force |= event.isForced();
 		return this.events.add(event);
 	}
 
