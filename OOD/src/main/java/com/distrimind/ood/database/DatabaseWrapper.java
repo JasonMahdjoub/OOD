@@ -4670,7 +4670,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	protected abstract String getDropTableCascadeKeyWord();
 
-	public abstract boolean supportMultipleAutoPrimaryKeys();
+	protected abstract boolean supportMultipleAutoPrimaryKeys();
 
 	Collection<Table<?>> getListTables(Package p, int databaseVersion) {
 		Database db = this.sql_database.get(p);

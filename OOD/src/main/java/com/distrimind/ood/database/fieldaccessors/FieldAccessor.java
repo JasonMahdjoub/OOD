@@ -130,7 +130,8 @@ public abstract class FieldAccessor {
 		table_name = table_class == null ? (DatabaseRecord.class.isAssignableFrom(field.getDeclaringClass())
 				? (_sql_connection.getInternalTableName(Table.getTableClass((Class<? extends DatabaseRecord>) field.getDeclaringClass()), table==null?-1:table.getDatabaseVersion()))
 				: null) : _sql_connection.getInternalTableName(table_class, table.getDatabaseVersion());
-		if (severalPrimaryKeysPresentIntoTable && !table.getDatabaseWrapper().supportMultipleAutoPrimaryKeys())
+		assert table != null;
+		if (severalPrimaryKeysPresentIntoTable && !DatabaseWrapperAccessor.supportMultipleAutoPrimaryKeys(table.getDatabaseWrapper()))
 		{
 			auto_primary_key = false;
 			random_primary_key = _field.isAnnotationPresent(AutoPrimaryKey.class) || field.isAnnotationPresent(RandomPrimaryKey.class);

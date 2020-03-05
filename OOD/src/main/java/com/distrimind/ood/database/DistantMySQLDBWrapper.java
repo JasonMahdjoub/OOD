@@ -545,7 +545,7 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 	}
 
 	@Override
-	public boolean supportMultipleAutoPrimaryKeys() {
+	protected boolean supportMultipleAutoPrimaryKeys() {
 		return false;
 	}
 

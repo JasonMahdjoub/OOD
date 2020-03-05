@@ -75,7 +75,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	}
 
 	@Override
-	public boolean supportMultipleAutoPrimaryKeys() {
+	protected boolean supportMultipleAutoPrimaryKeys() {
 		return true;
 	}
 	EmbeddedDerbyWrapper(boolean loadToMemory, String databaseName) throws IllegalArgumentException, DatabaseException {

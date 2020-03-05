@@ -61,7 +61,7 @@ public abstract class CommonHSQLH2DatabaseWrapper extends DatabaseWrapper{
 
 	}
 	@Override
-	public boolean supportMultipleAutoPrimaryKeys() {
+	protected boolean supportMultipleAutoPrimaryKeys() {
 		return true;
 	}
 
