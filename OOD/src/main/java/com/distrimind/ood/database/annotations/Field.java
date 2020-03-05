@@ -111,5 +111,5 @@ public @interface Field {
 	 *
 	 * @return true if the field must use blob type, even if the size limit is lower than the database threshold
 	 */
-	boolean useBlob() default false;
+	boolean forceUsingBlobOrClob() default false;
 }

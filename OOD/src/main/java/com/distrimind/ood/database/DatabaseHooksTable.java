@@ -73,7 +73,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		@Field
 		private DecentralizedValue hostID;
 
-		@Field(limit=Short.MAX_VALUE, useBlob = true)
+		@Field(limit=Short.MAX_VALUE, forceUsingBlobOrClob = true)
 		private String databasePackageNames;
 
 		@Field

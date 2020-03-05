@@ -132,7 +132,7 @@ public abstract class FieldAccessor {
 				? (_sql_connection.getInternalTableName(Table.getTableClass((Class<? extends DatabaseRecord>) field.getDeclaringClass()), table==null?-1:table.getDatabaseVersion()))
 				: null) : _sql_connection.getInternalTableName(table_class, table.getDatabaseVersion());
 		assert table != null;
-		useBlob= _field.isAnnotationPresent(com.distrimind.ood.database.annotations.Field.class) && _field.getAnnotation(com.distrimind.ood.database.annotations.Field.class).useBlob();
+		useBlob= _field.isAnnotationPresent(com.distrimind.ood.database.annotations.Field.class) && _field.getAnnotation(com.distrimind.ood.database.annotations.Field.class).forceUsingBlobOrClob();
 		if (severalPrimaryKeysPresentIntoTable && !DatabaseWrapperAccessor.supportMultipleAutoPrimaryKeys(table.getDatabaseWrapper()))
 		{
 			auto_primary_key = false;

@@ -74,7 +74,7 @@ public class StringFieldAccessor extends FieldAccessor {
 		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(),
 				l < DatabaseWrapperAccessor.getVarCharLimit(sql_connection)
 						? "VARCHAR(" + l + ")"
-						: "CLOB(" + l + ")",
+						:DatabaseWrapperAccessor.getTextType(sql_connection, l),
 				null, null, isNotNull());
 	}
 
