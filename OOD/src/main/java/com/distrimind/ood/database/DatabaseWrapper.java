@@ -2832,7 +2832,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 											return true;
 										}
 
-									}, "transaction=%transaction AND concernedSerializedPrimKey=%pks AND concernedTable=%concernedTable",
+									}, "transaction=%transaction AND concernedSerializedPrimaryKey=%pks AND concernedTable=%concernedTable",
 											"transaction", transaction.transaction, "pks",
 											eventr.get().getConcernedSerializedPrimaryKey(), "concernedTable",
 											eventr.get().getConcernedTable()));
