@@ -103,6 +103,7 @@ public abstract class FieldAccessor {
 	private final String indexName;
 	private final Class<? extends Table<?>> table_class;
 	private final boolean cacheDisabled;
+	protected final boolean useBlob;
 
 	@SuppressWarnings("unchecked")
 	protected FieldAccessor(DatabaseWrapper _sql_connection, Field _field, String parentFieldName,
@@ -131,6 +132,7 @@ public abstract class FieldAccessor {
 				? (_sql_connection.getInternalTableName(Table.getTableClass((Class<? extends DatabaseRecord>) field.getDeclaringClass()), table==null?-1:table.getDatabaseVersion()))
 				: null) : _sql_connection.getInternalTableName(table_class, table.getDatabaseVersion());
 		assert table != null;
+		useBlob= _field.isAnnotationPresent(com.distrimind.ood.database.annotations.Field.class) && _field.getAnnotation(com.distrimind.ood.database.annotations.Field.class).useBlob();
 		if (severalPrimaryKeysPresentIntoTable && !DatabaseWrapperAccessor.supportMultipleAutoPrimaryKeys(table.getDatabaseWrapper()))
 		{
 			auto_primary_key = false;

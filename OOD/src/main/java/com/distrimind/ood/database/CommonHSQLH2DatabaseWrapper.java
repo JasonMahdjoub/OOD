@@ -191,6 +191,12 @@ public abstract class CommonHSQLH2DatabaseWrapper extends DatabaseWrapper{
 		return "BLOB("+limit+")";
 	}
 
+	@Override
+	protected String getTextType(long limit)
+	{
+		return "CLOB(" + limit + ")";
+	}
+
 
 	/*@Override
 	protected String getSqlQuerryToGetLastGeneratedID() {

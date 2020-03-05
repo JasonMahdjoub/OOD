@@ -72,9 +72,9 @@ public class StringFieldAccessor extends FieldAccessor {
 		if (l<=0)
 			l=defaultStringLengthLimit;
 		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(),
-				limit < DatabaseWrapperAccessor.getVarCharLimit(sql_connection)
+				l < DatabaseWrapperAccessor.getVarCharLimit(sql_connection)
 						? "VARCHAR(" + l + ")"
-						: "CLOB(" + limit + ")",
+						: "CLOB(" + l + ")",
 				null, null, isNotNull());
 	}
 

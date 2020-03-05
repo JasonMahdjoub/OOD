@@ -596,6 +596,18 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 	}
 
 	@Override
+	protected String getTextType(long limit)
+	{
+		if (limit<=255)
+			return "TINYTEXT";
+		else if (limit<=65535)
+			return "TEXT";
+		else if (limit<=16777215)
+			return "MEDIUMTEXT";
+		return "LONGTEXT";
+	}
+
+	@Override
 	protected String getFloatType() {
 		return "FLOAT";
 	}

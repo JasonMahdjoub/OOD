@@ -80,7 +80,11 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 		if (l <= 0)
 			l = ByteTabFieldAccessor.defaultByteTabSize;
 		boolean isBigInteger=false;
-		if (l <= ByteTabFieldAccessor.shortTabSizeLimit) {
+		if (useBlob)
+		{
+			type=DatabaseWrapperAccessor.getBlobType(sql_connection, l);
+		}
+		else if (l <= ByteTabFieldAccessor.shortTabSizeLimit) {
 			if (DatabaseWrapperAccessor.isVarBinarySupported(sql_connection))
 				type = "VARBINARY(" + l + ")";
 			else if (DatabaseWrapperAccessor.isLongVarBinarySupported(sql_connection))

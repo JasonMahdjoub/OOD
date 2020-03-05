@@ -118,7 +118,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 		@Field
 		protected String concernedDatabasePackage;
 
-		@Field(limit = concernedHostsSizeLimit)
+		@Field(limit = concernedHostsSizeLimit, useBlob = true)
 		private byte[] concernedHosts;
 		//private AbstractDecentralizedID newHostID;
 

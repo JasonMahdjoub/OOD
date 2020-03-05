@@ -477,6 +477,11 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	}
 
 	@Override
+	protected String getTextType(long limit)
+	{
+		return "CLOB(" + limit + ")";
+	}
+	@Override
 	protected String getFloatType() {
 		return "REAL";
 	}

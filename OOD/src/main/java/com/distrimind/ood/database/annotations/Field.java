@@ -106,4 +106,10 @@ public @interface Field {
 	 * @return true if the key expiration UTC must be included into the field. Concerns only {@link com.distrimind.util.crypto.ASymmetricPublicKey} and {@link com.distrimind.util.crypto.ASymmetricKeyPair}.
 	 */
 	boolean includeKeyExpiration() default true;
+
+	/**
+	 *
+	 * @return true if the field must use blob type, even if the size limit is lower than the database threshold
+	 */
+	boolean useBlob() default false;
 }
