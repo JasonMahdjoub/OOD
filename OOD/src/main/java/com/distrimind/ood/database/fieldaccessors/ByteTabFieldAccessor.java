@@ -68,7 +68,7 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 	private final boolean isVarBinary;
 	private final boolean isBigInteger;
 
-	public static final long defaultByteTabSize= 16777216L;
+	public static final long defaultByteTabSize= 512L;
 	public static final int shortTabSizeLimit=32768;
 	
 	protected ByteTabFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection, Field _field,
@@ -94,7 +94,8 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 			if (DatabaseWrapperAccessor.isLongVarBinarySupported(sql_connection))
 				type = "LONGVARBINARY(" + l + ")";
 			else
-				type = "BLOB(" + l + ")";
+				type=DatabaseWrapperAccessor.getBlobType(sql_connection, l);
+
 		}
 		assert type != null;
 		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(), type, null, null, isNotNull());

@@ -4650,7 +4650,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	protected abstract String getIntType();
 
-	protected abstract String getSerializableType(long limit);
+	protected abstract String getBlobType(long limit);
 
 	protected abstract String getFloatType();
 

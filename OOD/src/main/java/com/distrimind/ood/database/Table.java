@@ -756,6 +756,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 								// INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE
 								// TABLE_NAME='"+Table.this.getSqlTableName()+"';"))
 								try (ColumnsReadQuerry rq = sql_connection.getColumnMetaData(Table.this.getSqlTableName())) {
+									if (rq==null)
+										throw new DatabaseException("SQL table meta data not found !");
 									// while (rq.result_set.next())
 									while (rq.tableColumnsResultSet.next()) {
 										// String col=Table.this.getSqlTableName()+"."+rq.result_set.getString("COLUMN_NAME");

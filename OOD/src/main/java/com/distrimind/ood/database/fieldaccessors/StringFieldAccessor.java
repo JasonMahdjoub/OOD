@@ -62,14 +62,19 @@ import java.util.Map;
 public class StringFieldAccessor extends FieldAccessor {
 	protected final SqlField[] sql_fields;
 
+	public static final long defaultStringLengthLimit=ByteTabFieldAccessor.defaultByteTabSize;
+
 	protected StringFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection, Field _field,
 			String parentFieldName, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
 		super(_sql_connection, _field, parentFieldName, compatible_classes, table, severalPrimaryKeysPresentIntoTable);
 		sql_fields = new SqlField[1];
+		long l=limit;
+		if (l<=0)
+			l=defaultStringLengthLimit;
 		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(),
-				limit <= 0 ? "VARCHAR(" + DatabaseWrapperAccessor.getVarCharLimit(sql_connection) + ")"
-						: (limit < DatabaseWrapperAccessor.getVarCharLimit(sql_connection) ? "VARCHAR(" + limit + ")"
-								: "CLOB(" + limit + ")"),
+				limit < DatabaseWrapperAccessor.getVarCharLimit(sql_connection)
+						? "VARCHAR(" + l + ")"
+						: "CLOB(" + limit + ")",
 				null, null, isNotNull());
 	}
 

@@ -94,7 +94,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 			if (DatabaseWrapperAccessor.isLongVarBinarySupported(sql_connection))
 				type = "LONGVARBINARY(" + l + ")";
 			else
-				type = "BLOB(" + l + ")";
+				type=DatabaseWrapperAccessor.getBlobType(sql_connection, l);
 		}
 		assert type != null;
 		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(), type, null, null, isNotNull());

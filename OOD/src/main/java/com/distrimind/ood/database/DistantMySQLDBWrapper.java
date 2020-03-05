@@ -585,7 +585,7 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 	}
 
 	@Override
-	protected String getSerializableType(long limit) {
+	protected String getBlobType(long limit) {
 		if (limit<=255)
 			return "TINYBLOB";
 		else if (limit<=65535)
