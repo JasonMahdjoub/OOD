@@ -761,8 +761,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 									// while (rq.result_set.next())
 									while (rq.tableColumnsResultSet.next()) {
 										// String col=Table.this.getSqlTableName()+"."+rq.result_set.getString("COLUMN_NAME");
-										String col = Table.this.getSqlTableName() + "."
-												+ rq.tableColumnsResultSet.getColumnName();
+										String col = Table.this.getSqlTableName() + ".`"
+												+ rq.tableColumnsResultSet.getColumnName()+"`";
 										FieldAccessor founded_fa = null;
 										SqlField founded_sf = null;
 										for (FieldAccessor fa : fields) {

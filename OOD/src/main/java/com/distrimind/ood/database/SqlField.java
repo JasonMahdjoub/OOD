@@ -112,10 +112,14 @@ public class SqlField {
 				break;
 			}
 		}
-		if (index != -1)
-			short_field = field.substring(index);
-		else
-			short_field = field;
+		if (index != -1) {
+			short_field = "`" + field.substring(index) + "`";
+			field=field.substring(0, index )+"`"+field.substring(index)+"`";
+		}
+		else {
+			short_field = "`" + field + "`";
+			field=short_field;
+		}
 
 		if (pointed_field != null) {
 			index = -1;
@@ -125,12 +129,14 @@ public class SqlField {
 					break;
 				}
 			}
-			if (index != -1)
+			if (index != -1) {
 				short_pointed_field = pointed_field.substring(index);
+			}
 			else
 				short_pointed_field = pointed_field;
 		} else
 			short_pointed_field = null;
+
 		this.not_null = _not_null;
 	}
 }
