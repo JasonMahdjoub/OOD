@@ -69,6 +69,7 @@ class DatabaseWrapperAccessor {
 	private static final Method m_get_var_char_limit;
 	private static final Method m_support_full_sql_field_name;
 	private static final Method m_support_multiple_auto_primary_keys;
+	private static final Method m_get_max_key_size;
 	private static final Constructor<DecentralizedIDGenerator> m_decentralized_id_constructor;
 	private static final Constructor<RenforcedDecentralizedIDGenerator> m_renforced_decentralized_id_constructor;
 
@@ -181,6 +182,16 @@ class DatabaseWrapperAccessor {
 		}
 		return null;
 	}
+	static int getMaxKeySize(DatabaseWrapper wrapper) {
+		try {
+			return (int) invoke(m_get_max_key_size, wrapper);
+		} catch (InvocationTargetException e) {
+			System.err.println("Unexpected error :");
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		return -1;
+	}
 
 	static int getVarCharLimit(DatabaseWrapper wrapper) {
 		try {
@@ -290,6 +301,7 @@ class DatabaseWrapperAccessor {
 		m_get_text_type = getMethod(DatabaseWrapper.class, "getTextType", long.class);
 		m_get_short_type = getMethod(DatabaseWrapper.class, "getShortType");
 		m_get_var_char_limit = getMethod(DatabaseWrapper.class, "getVarCharLimit");
+		m_get_max_key_size = getMethod(DatabaseWrapper.class, "getMaxKeySize");
 		m_support_full_sql_field_name = getMethod(DatabaseWrapper.class, "supportFullSqlFieldName");
 		m_support_multiple_auto_primary_keys = getMethod(DatabaseWrapper.class, "supportMultipleAutoPrimaryKeys");
 		m_decentralized_id_constructor = getConstructor(DecentralizedIDGenerator.class, long.class, long.class);

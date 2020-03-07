@@ -3139,7 +3139,7 @@ public abstract class TestDatabase {
                 res.add(d.getWorkerIDAndSequence());
             } else if (AbstractDecentralizedID.class.isAssignableFrom(type)) {
                 AbstractDecentralizedID id = (AbstractDecentralizedID) o;
-                if (DatabaseWrapperAccessor.isVarBinarySupported(sql_db))
+                if (sql_db.isVarBinarySupported())
                     res.add(id.encode());
                 else {
                     byte[] bytes = id.encode();
@@ -3167,7 +3167,7 @@ public abstract class TestDatabase {
                 res.add(((File)o).getPath().getBytes(StandardCharsets.UTF_8));
             }
             else if (o instanceof Serializable) {
-                if (Objects.equals(DatabaseWrapperAccessor.getSerializableType(sql_db), "BLOB")) {
+                if (Objects.equals(sql_db.getBlobType(70000), "BLOB")) {
                     try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
                         try (ObjectOutputStream os = new ObjectOutputStream(baos)) {
                             os.writeObject(o);

@@ -608,6 +608,12 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 	}
 
 	@Override
+	protected int getMaxKeySize()
+	{
+		return 3072;
+	}
+
+	@Override
 	protected String getFloatType() {
 		return "FLOAT";
 	}

@@ -2531,6 +2531,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		locker.unlock();
 	}
 
+	protected int getMaxKeySize()
+	{
+		return Table.maxPrimaryKeysSizeBytes;
+	}
 
 
 

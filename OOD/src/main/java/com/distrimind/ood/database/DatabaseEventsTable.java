@@ -197,10 +197,10 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 		private String concernedTable;
 
 		@NotNull
-		@Field(limit = Table.maxPrimaryKeysSizeBytes, forceUsingBlobOrClob = true)
+		@Field(limit = Table.maxPrimaryKeysSizeBytes, index = true)
 		private byte[] concernedSerializedPrimaryKey;
 
-		@Field(limit = Table.maxPrimaryKeysSizeBytes, forceUsingBlobOrClob = true)
+		@Field(limit = Table.maxPrimaryKeysSizeBytes)
 		private byte[] concernedSerializedNewForeignKey;
 
 		@Field(limit = Integer.MAX_VALUE, forceUsingBlobOrClob = true)
