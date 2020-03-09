@@ -74,7 +74,7 @@ public class BigDecimalFieldAccessor extends FieldAccessor {
 		sql_fields = new SqlField[1];
 		long l=getLimit();
 		if (l<=0)
-			l=1024;
+			l=128;
 
 		sql_fields[0] = new SqlField(this.table_name + "." + this.getSqlFieldName(),
 				Objects.requireNonNull(DatabaseWrapperAccessor.getBigDecimalType(sql_connection, l)), null, null, isNotNull());

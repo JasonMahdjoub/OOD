@@ -641,7 +641,10 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 
 	@Override
 	protected String getBigDecimalType(long limit) {
-		return "DECIMAL";
+		if (limit<=0)
+			return "VARCHAR(1024) CHARACTER SET latin1";
+		else
+			return "VARCHAR("+limit+") CHARACTER SET latin1";
 	}
 
 	@Override

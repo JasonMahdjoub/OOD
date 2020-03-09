@@ -163,9 +163,9 @@ public abstract class CommonHSQLH2DatabaseWrapper extends DatabaseWrapper{
 	@Override
 	protected String getBigDecimalType(long limit) {
 		if (limit<=0)
-			return "VARCHAR(1024)";
+			return "VARCHAR(1024) CHARACTER SET latin1";
 		else
-			return "VARCHAR("+limit+")";
+			return "VARCHAR("+limit+") CHARACTER SET latin1";
 	}
 
 	@Override
