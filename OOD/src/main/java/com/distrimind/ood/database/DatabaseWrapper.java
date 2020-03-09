@@ -4670,6 +4670,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	protected abstract String getBigIntegerType(long limit);
 
+	protected abstract String getDateTimeType();
 	//protected abstract String getSqlQuerryToGetLastGeneratedID();
 
 	protected abstract String getDropTableIfExistsKeyWord();

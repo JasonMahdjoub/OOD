@@ -177,6 +177,12 @@ public abstract class CommonHSQLH2DatabaseWrapper extends DatabaseWrapper{
 	}
 
 	@Override
+	protected String getDateTimeType()
+	{
+		return "TIMESTAMP";
+	}
+
+	@Override
 	protected String getSqlNULL() {
 		return "NULL";
 	}

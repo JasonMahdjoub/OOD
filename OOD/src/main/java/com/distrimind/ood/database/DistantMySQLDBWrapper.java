@@ -654,6 +654,12 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 		else
 			return "VARCHAR("+limit+") CHARACTER SET latin1";
 	}
+	@Override
+	protected String getDateTimeType()
+	{
+		return "DATETIME(3)";
+	}
+
 
 	@Override
 	protected String getDropTableIfExistsKeyWord() {

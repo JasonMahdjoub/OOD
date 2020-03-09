@@ -517,6 +517,12 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 			return "VARCHAR("+limit+") CHARACTER SET latin1";
 	}
 
+	@Override
+	protected String getDateTimeType()
+	{
+		return "TIMESTAMP";
+	}
+
 	/*@Override
 	protected String getSqlQuerryToGetLastGeneratedID() {
 		return "values IDENTITY_VAL_LOCAL()";

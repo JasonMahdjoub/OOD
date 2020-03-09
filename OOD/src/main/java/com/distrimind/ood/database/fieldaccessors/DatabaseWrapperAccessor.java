@@ -66,6 +66,7 @@ class DatabaseWrapperAccessor {
 	private static final Method m_get_blob_type;
 	private static final Method m_get_text_type;
 	private static final Method m_get_short_type;
+	private static final Method m_get_date_time_type;
 	private static final Method m_get_var_char_limit;
 	private static final Method m_support_full_sql_field_name;
 	private static final Method m_support_multiple_auto_primary_keys;
@@ -88,6 +89,17 @@ class DatabaseWrapperAccessor {
 	static String getBigIntegerType(DatabaseWrapper wrapper, long limit) {
 		try {
 			return (String) invoke(m_get_big_integer_type, wrapper, limit);
+		} catch (InvocationTargetException e) {
+			System.err.println("Unexpected error :");
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		return null;
+	}
+
+	static String getDateTimeType(DatabaseWrapper wrapper) {
+		try {
+			return (String) invoke(m_get_date_time_type, wrapper);
 		} catch (InvocationTargetException e) {
 			System.err.println("Unexpected error :");
 			e.printStackTrace();
@@ -302,6 +314,7 @@ class DatabaseWrapperAccessor {
 		m_get_short_type = getMethod(DatabaseWrapper.class, "getShortType");
 		m_get_var_char_limit = getMethod(DatabaseWrapper.class, "getVarCharLimit");
 		m_get_max_key_size = getMethod(DatabaseWrapper.class, "getMaxKeySize");
+		m_get_date_time_type = getMethod(DatabaseWrapper.class, "getDateTimeType");
 		m_support_full_sql_field_name = getMethod(DatabaseWrapper.class, "supportFullSqlFieldName");
 		m_support_multiple_auto_primary_keys = getMethod(DatabaseWrapper.class, "supportMultipleAutoPrimaryKeys");
 		m_decentralized_id_constructor = getConstructor(DecentralizedIDGenerator.class, long.class, long.class);
