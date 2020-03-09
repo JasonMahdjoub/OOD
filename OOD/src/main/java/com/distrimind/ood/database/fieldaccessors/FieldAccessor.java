@@ -885,15 +885,29 @@ public abstract class FieldAccessor {
 			throws SQLException {
 		if (p instanceof byte[]
 				|| (p instanceof Number && p.getClass() != BigInteger.class && p.getClass() != BigDecimal.class)) {
-
-			switch (st.getParameterMetaData().getParameterType(index)) {
+			if (p instanceof Byte)
+				st.setByte(index, (Byte) p);
+			else if (p instanceof Integer)
+				st.setInt(index, (Integer) p);
+			else if (p instanceof Long)
+				st.setLong(index, (Long) p);
+			else if (p instanceof byte[])
+				st.setBytes(index, (byte[]) p);
+			else if (p instanceof CharSequence)
+				st.setString(index, p.toString());
+			else if (p instanceof Short)
+				st.setShort(index, (Short) p);
+			else if (p instanceof Boolean)
+				st.setBoolean(index, (Boolean)p);
+			else if (p instanceof Float)
+				st.setFloat(index, (Float)p);
+			else if (p instanceof Double)
+				st.setDouble(index, (Double)p);
+			/*switch (st.getParameterMetaData().getParameterType(index)) {
 			case Types.TINYINT:
 				st.setByte(index, (Byte) p);
 				break;
 			case Types.INTEGER:
-				/*
-				 * if (p instanceof Long) st.setLong(index, ((Long)p).longValue()); else
-				 */
 				st.setInt(index, (Integer) p);
 				break;
 			case Types.BIGINT:
@@ -930,7 +944,7 @@ public abstract class FieldAccessor {
 				st.setDouble(index, (Double) p);
 				break;
 
-			}
+			}*/
 		}
 		st.setObject(index, p);
 	}
