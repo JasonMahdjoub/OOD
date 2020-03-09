@@ -37,7 +37,6 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database.fieldaccessors;
 
-import java.io.ByteArrayInputStream;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -45,13 +44,11 @@ import java.math.BigInteger;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
-import java.sql.Blob;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.sql.Types;
 import java.util.*;
 
 import com.distrimind.ood.database.DatabaseRecord;
@@ -79,7 +76,7 @@ import com.distrimind.util.io.SecureExternalizable;
 /**
  * 
  * @author Jason Mahdjoub
- * @version 2.0
+ * @version 3.0
  * @since OOD 1.0
  */
 public abstract class FieldAccessor {
@@ -104,6 +101,7 @@ public abstract class FieldAccessor {
 	private final Class<? extends Table<?>> table_class;
 	private final boolean cacheDisabled;
 	protected final boolean useBlob;
+	private final boolean manual_auto_primary_key;
 
 	private static final Class<?> databaseEventsRecordTableClass;
 
@@ -147,15 +145,10 @@ public abstract class FieldAccessor {
 				: null) : _sql_connection.getInternalTableName(table_class, table.getDatabaseVersion());
 		assert table != null;
 		useBlob= _field.isAnnotationPresent(com.distrimind.ood.database.annotations.Field.class) && _field.getAnnotation(com.distrimind.ood.database.annotations.Field.class).forceUsingBlobOrClob();
-		if (severalPrimaryKeysPresentIntoTable && !DatabaseWrapperAccessor.supportMultipleAutoPrimaryKeys(table.getDatabaseWrapper()))
-		{
-			auto_primary_key = false;
-			random_primary_key = _field.isAnnotationPresent(AutoPrimaryKey.class) || field.isAnnotationPresent(RandomPrimaryKey.class);
-		}
-		else {
-			auto_primary_key = _field.isAnnotationPresent(AutoPrimaryKey.class);
-			random_primary_key = field.isAnnotationPresent(RandomPrimaryKey.class);
-		}
+		auto_primary_key = _field.isAnnotationPresent(AutoPrimaryKey.class);
+		random_primary_key = field.isAnnotationPresent(RandomPrimaryKey.class);
+
+		manual_auto_primary_key = auto_primary_key && severalPrimaryKeysPresentIntoTable && !DatabaseWrapperAccessor.supportMultipleAutoPrimaryKeys(table.getDatabaseWrapper());
 		if (auto_primary_key && random_primary_key)
 			throw new DatabaseException(
 					"The field " + field.getName() + " of the DatabaseRecord " + field.getDeclaringClass().getName()
@@ -242,6 +235,10 @@ public abstract class FieldAccessor {
 		this.cacheDisabled=isCacheAlwaysDisabled()
 				|| (field.getAnnotation(com.distrimind.ood.database.annotations.Field.class)!=null
 				&& field.getAnnotation(com.distrimind.ood.database.annotations.Field.class).disableCache());
+	}
+
+	public boolean isManualAutoPrimaryKey() {
+		return manual_auto_primary_key;
 	}
 
 	public void changeInternalTableName(String oldInternalTableName, String internalTableName, int newTableVersion) throws DatabaseException {

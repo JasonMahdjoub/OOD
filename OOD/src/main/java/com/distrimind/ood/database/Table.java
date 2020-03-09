@@ -42,7 +42,6 @@ import com.distrimind.ood.database.annotations.ExcludeFromDecentralization;
 import com.distrimind.ood.database.annotations.ForeignKey;
 import com.distrimind.ood.database.annotations.LoadToMemory;
 import com.distrimind.ood.database.exceptions.*;
-import com.distrimind.ood.database.fieldaccessors.ByteTabFieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ComposedFieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
@@ -125,7 +124,7 @@ import java.util.regex.Pattern;
  * This class is thread safe
  * 
  * @author Jason Mahdjoub
- * @version 2.2
+ * @version 2.3
  * @since OOD 1.0
  * @param <T>
  *            the type of the record
@@ -1832,6 +1831,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 */
 
 	public final long getRecordsNumberWithAllFields(final Object[]... _records) throws DatabaseException {
+		//noinspection RedundantCast
 		return getRecordsNumberWithAllFields(convertToMap((Object[]) _records));
 	}
 
@@ -2246,7 +2246,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					res.append(", ");
 
 				res.append(sf.short_field).append(" ").append(sf.type);
-				if (field.isAutoPrimaryKey()) {
+				if (field.isAutoPrimaryKey() && !field.isManualAutoPrimaryKey()) {
 					res.append(" ");
 					autoIncrementStart.set(field.getStartValue());
 					res.append(getDatabaseWrapper().getAutoIncrementPart(field.getStartValue()));
@@ -7163,8 +7163,9 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 			@Override
 			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
+
 				int number = 0;
-				for (FieldAccessor fa : fields) {
+				for (FieldAccessor fa : Table.this.fields) {
 					if (!fa.isAutoPrimaryKey() && !fa.isRandomPrimaryKey()) {
 						Object obj = _fields.get(fa.getFieldName());
 						if (obj == null) {
@@ -7175,9 +7176,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					}
 				}
 				if (number > _fields.size())
-					throw new FieldDatabaseException("The number (" + _fields.size()
+					throw new FieldDatabaseException("The number (" + fields.size()
 							+ ") of given fields does not correspond to the expected minimum number (" + number
 							+ ") of fields (Null fields, AutoPrimaryKeys and RandomPrimaryKeys are excluded).");
+				final Map<String, Object> fields=new HashMap<>(_fields);
 				try {
 
 					Map<String, Object> random_fields_to_check = new HashMap<>();
@@ -7185,18 +7187,25 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 
 					for (FieldAccessor fa : auto_random_primary_keys_fields) {
-						if (fa.isRandomPrimaryKey() && _fields.containsKey(fa.getFieldName())) {
-							if (_fields.get(fa.getFieldName()) == null)
-								_fields.remove(fa.getFieldName());
+						if (fa.isRandomPrimaryKey() && fields.containsKey(fa.getFieldName())) {
+							if (fields.get(fa.getFieldName()) == null)
+								fields.remove(fa.getFieldName());
 							else {
-								random_fields_to_check.put(fa.getFieldName(), _fields.get(fa.getFieldName()));
+								random_fields_to_check.put(fa.getFieldName(), fields.get(fa.getFieldName()));
 							}
 						}
-						if (fa.isAutoPrimaryKey() && _fields.containsKey(fa.getFieldName())) {
-							if (_fields.get(fa.getFieldName()) == null)
-								_fields.remove(fa.getFieldName());
-							else
-								auto_pk = true;
+						if (fa.isAutoPrimaryKey()) {
+							if (fields.containsKey(fa.getFieldName())) {
+								if (fields.get(fa.getFieldName()) == null)
+									fields.remove(fa.getFieldName());
+								else
+									auto_pk = true;
+							}
+							else if (fa.isManualAutoPrimaryKey())
+							{
+								fields.put(fa.getFieldName(), sql_connection.getNextAutoIncrement(Table.this, fa));
+								auto_pk=true;
+							}
 						}
 					}
 
@@ -7211,7 +7220,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 					final T instance = originalRecord == null ? getNewRecordInstance(true) : (T) originalRecord;
 				
-						for (final FieldAccessor fa : fields) {
+						for (final FieldAccessor fa : Table.this.fields) {
 							if (fa.isRandomPrimaryKey() && !random_fields_to_check.containsKey(fa.getFieldName())) {
 								Object value = fa.autoGenerateValue(getDatabaseWrapper().getSecureRandomForKeys());
 								boolean ok;
@@ -7224,7 +7233,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 								}
 								fa.setValue(instance, value);
 							} else if (!fa.isAutoPrimaryKey() || include_auto_pk) {
-								fa.setValue(instance, _fields.get(fa.getFieldName()));
+								fa.setValue(instance, fields.get(fa.getFieldName()));
 							}
 						}
 					
@@ -7265,8 +7274,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 								StringBuilder querry = new StringBuilder("INSERT INTO " + Table.this.getSqlTableName() + "(");
 								boolean first = true;
-								for (FieldAccessor fa : fields) {
-									if (!fa.isAutoPrimaryKey() || _fields.containsKey(fa.getFieldName())) {
+								for (FieldAccessor fa : Table.this.fields) {
+									if (!fa.isAutoPrimaryKey() || fields.containsKey(fa.getFieldName())) {
 										for (SqlField sf : fa.getDeclaredSqlFields()) {
 											if (first)
 												first = false;
@@ -7278,8 +7287,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 								}
 								querry.append(") VALUES(");
 								first = true;
-								for (FieldAccessor fa : fields) {
-									if (!fa.isAutoPrimaryKey() || _fields.containsKey(fa.getFieldName())) {
+								for (FieldAccessor fa : Table.this.fields) {
+									if (!fa.isAutoPrimaryKey() || fields.containsKey(fa.getFieldName())) {
 										for (int i = 0; i < fa.getDeclaredSqlFields().length; i++) {
 											if (first)
 												first = false;
@@ -7297,14 +7306,14 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 									int index = 1;
 									int autoPKIndex=1;
 									boolean computeAutoPKIndex=getDatabaseWrapper().areGeneratedValueReturnedWithPrimaryKeys();
-									for (FieldAccessor fa : fields) {
+									for (FieldAccessor fa : Table.this.fields) {
 										if (computeAutoPKIndex && fa.isPrimaryKey()) {
 											if (fa.isAutoPrimaryKey())
 												computeAutoPKIndex=false;
 											else
 												++autoPKIndex;
 										}
-										if (!fa.isAutoPrimaryKey() || _fields.containsKey(fa.getFieldName())) {
+										if (!fa.isAutoPrimaryKey() || fields.containsKey(fa.getFieldName())) {
 											fa.getValue(instance, puq.statement, index);
 											index += fa.getDeclaredSqlFields().length;
 										}

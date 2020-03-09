@@ -44,6 +44,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
 import com.distrimind.ood.database.fieldaccessors.ByteTabObjectConverter;
 import com.distrimind.ood.database.fieldaccessors.DefaultByteTabObjectConverter;
+import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.FileTools;
@@ -93,6 +94,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	private static final HashMap<String, Integer> number_of_shared_lockers = new HashMap<>();
 	final static String ROW_PROPERTIES_OF_TABLES = "ROW_PROPERTIES_OF_TABLES__";
 	final static String VERSIONS_OF_DATABASE= "VERSIONS_OF_DATABASE__";
+	final static String AUTOINCREMENT_TABLE= "AUTOINCREMENT_TABLE__";
 	// private final HashMap<Class<? extends Table<?>>, Table<?>>
 	// tables_instances=new HashMap<>();
 	private final ArrayList<ByteTabObjectConverter> converters;
@@ -3524,7 +3526,66 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	{
 		return !isThreadSafe() || hasOnePeerSyncronized; 
 	}
-	
+
+	protected boolean mustGenerateAutoIncrementManually()
+	{
+		return false;
+	}
+
+	private void checkAutoIncrementTable() throws DatabaseException {
+		try {
+			if (mustGenerateAutoIncrementManually() && !doesTableExists(DatabaseWrapper.AUTOINCREMENT_TABLE)) {
+				try (PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
+						.prepareStatement("CREATE TABLE `" + DatabaseWrapper.AUTOINCREMENT_TABLE +
+								"` (TABLE_ID INT NOT NULL, TABLE_VERSION INT NOT NULL, AI BIGINT NOT NULL, CONSTRAINT TABLE_ID_PK PRIMARY KEY(TABLE_ID, TABLE_VERSION))"
+								+ getPostCreateTable(null) + getSqlComma())) {
+					pst.executeUpdate();
+				}
+			}
+		}
+		catch (Exception e) {
+			throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
+		}
+
+	}
+
+	protected long getNextAutoIncrement(Table<?> table, FieldAccessor fa) throws DatabaseException {
+		try {
+			boolean insert=false;
+			long res;
+			try(PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
+					.prepareStatement("SELECT AI FROM `" + DatabaseWrapper.AUTOINCREMENT_TABLE + "` WHERE TABLE_ID='"
+							+ table.getTableID() + "' AND TABLE_VERSION='"+table.getDatabaseVersion()+"'"+ getSqlComma())) {
+				ResultSet rs = pst.executeQuery();
+
+				if (rs.next()) {
+					res = rs.getLong(1);
+				} else {
+					insert=true;
+					res = fa.getStartValue();
+				}
+			}
+			if (insert) {
+				try (PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
+						.prepareStatement("INSERT INTO `" + DatabaseWrapper.AUTOINCREMENT_TABLE + "`(TABLE_ID, TABLE_VERSION, AI) VALUES('"
+								+ table.getTableID()+"', '" +table.getDatabaseVersion()+"', '"+ (res + 1) + "')" + getSqlComma())) {
+					pst.executeUpdate();
+				}
+			}
+			else
+			{
+				try (PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
+						.prepareStatement("UPDATE `" + DatabaseWrapper.AUTOINCREMENT_TABLE + "` SET AI='"+(res+1)+"' WHERE TABLE_ID='"
+								+ table.getTableID() + "' AND TABLE_VERSION='"+table.getDatabaseVersion()+"'" + getSqlComma())) {
+					pst.executeUpdate();
+				}
+			}
+			return res;
+
+		} catch (SQLException e) {
+			throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
+		}
+	}
 
     Object runTransaction(final Transaction _transaction, boolean defaultTransaction) throws DatabaseException {
 
@@ -4454,7 +4515,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					 * "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"
 					 * +ROW_PROPERTIES_OF_TABLES+"'")) { if (rq.result_set.next()) table_found=true; }
 					 */
-
+					checkAutoIncrementTable();
 					if (!doesTableExists(ROW_PROPERTIES_OF_TABLES)) {
 						Statement st = getConnectionAssociatedWithCurrentThread().getConnection()
 								.createStatement();

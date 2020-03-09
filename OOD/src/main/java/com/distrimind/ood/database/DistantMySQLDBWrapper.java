@@ -258,6 +258,11 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 	}
 
 	@Override
+	protected boolean mustGenerateAutoIncrementManually() {
+		return true;
+	}
+
+	@Override
 	public String getAutoIncrementPart(long startWith) {
 		return "AUTO_INCREMENT";
 	}
