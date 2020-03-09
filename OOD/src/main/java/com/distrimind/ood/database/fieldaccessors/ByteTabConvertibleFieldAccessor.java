@@ -265,15 +265,15 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 		try {
 			byte[] res;
 			if (isVarBinary) {
-				res = _result_set.getBytes(getColmunIndex(_result_set, sql_fields[0].field));
+				res = _result_set.getBytes(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
 				if (res == null && isNotNull())
 					throw new DatabaseIntegrityException("Unexpected exception.");
 			} else if (isBigInteger) {
-				res = ByteTabFieldAccessor.getByteTab(_result_set.getBigDecimal(getColmunIndex(_result_set, sql_fields[0].field)));
+				res = ByteTabFieldAccessor.getByteTab(_result_set.getBigDecimal(getColmunIndex(_result_set, sql_fields[0].field_without_quote)));
 				if (res == null && isNotNull())
 					throw new DatabaseIntegrityException("Unexpected exception.");
 			} else {
-				Blob b = _result_set.getBlob(getColmunIndex(_result_set, sql_fields[0].field));
+				Blob b = _result_set.getBlob(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
 				res = b == null ? null : b.getBytes(1, (int) b.length());
 				if (res == null && isNotNull())
 					throw new DatabaseIntegrityException("Unexpected exception.");
@@ -366,20 +366,20 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 									+ field.getDeclaringClass().getCanonicalName());
 			}
 			if (isVarBinary)
-				_result_set.updateBytes(sql_fields[0].short_field, b);
+				_result_set.updateBytes(sql_fields[0].short_field_without_quote, b);
 			else if (isBigInteger)
 			{
-				_result_set.updateBigDecimal(sql_fields[0].short_field, ByteTabFieldAccessor.getBigDecimalValue(b));
+				_result_set.updateBigDecimal(sql_fields[0].short_field_without_quote, ByteTabFieldAccessor.getBigDecimalValue(b));
 			}
 			else {
 				if (b == null)
-					_result_set.updateObject(sql_fields[0].short_field, null);
+					_result_set.updateObject(sql_fields[0].short_field_without_quote, null);
 				else {
 					Blob blob = DatabaseWrapperAccessor.getBlob(sql_connection, b);
 					if (blob == null)
-						_result_set.updateBinaryStream(sql_fields[0].short_field, new ByteArrayInputStream(b));
+						_result_set.updateBinaryStream(sql_fields[0].short_field_without_quote, new ByteArrayInputStream(b));
 					else
-						_result_set.updateBlob(sql_fields[0].short_field, blob);
+						_result_set.updateBlob(sql_fields[0].short_field_without_quote, blob);
 				}
 			}
 		} catch (Exception e) {

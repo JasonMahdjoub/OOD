@@ -182,8 +182,8 @@ public class DencetralizedIDFieldAccessor extends FieldAccessor {
 	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
-			Long ts = _result_set==null?null:(Long)_result_set.getObject(getColmunIndex(_result_set, sql_fields[0].field));
-			Long wsseq = _result_set==null?null:(Long)_result_set.getObject(getColmunIndex(_result_set, sql_fields[1].field));
+			Long ts = _result_set==null?null:(Long)_result_set.getObject(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
+			Long wsseq = _result_set==null?null:(Long)_result_set.getObject(getColmunIndex(_result_set, sql_fields[1].field_without_quote));
 
 			if (ts==null || wsseq==null)
 				field.set(_class_instance, null);
@@ -233,13 +233,13 @@ public class DencetralizedIDFieldAccessor extends FieldAccessor {
 			DecentralizedIDGenerator did = (DecentralizedIDGenerator) field.get(_class_instance);
 			if (did==null)
 			{
-				_result_set.updateObject(sql_fields[0].short_field, null);
-				_result_set.updateObject(sql_fields[1].short_field, null);
+				_result_set.updateObject(sql_fields[0].short_field_without_quote, null);
+				_result_set.updateObject(sql_fields[1].short_field_without_quote, null);
 			}
 			else
 			{
-				_result_set.updateObject(sql_fields[0].short_field, did.getTimeStamp());
-				_result_set.updateObject(sql_fields[1].short_field, did.getWorkerIDAndSequence());
+				_result_set.updateObject(sql_fields[0].short_field_without_quote, did.getTimeStamp());
+				_result_set.updateObject(sql_fields[1].short_field_without_quote, did.getWorkerIDAndSequence());
 			}
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);

@@ -129,7 +129,7 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
-			Blob b = _result_set.getBlob(getColmunIndex(_result_set, sql_fields[0].field));
+			Blob b = _result_set.getBlob(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
 			if (b == null && isNotNull())
 				throw new DatabaseIntegrityException("Unexpected exception.");
 
@@ -159,12 +159,12 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 					// os.writeObject(field.get(_class_instance));
 
 					try (ByteArrayInputStream bais = new ByteArrayInputStream(os.getBytes())) {
-						_result_set.updateBlob(sql_fields[0].short_field, bais);
+						_result_set.updateBlob(sql_fields[0].short_field_without_quote, bais);
 					}
 
 				}
 			} else
-				_result_set.updateObject(sql_fields[0].short_field, field.get(_class_instance));
+				_result_set.updateObject(sql_fields[0].short_field_without_quote, field.get(_class_instance));
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -209,7 +209,7 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
 			throws DatabaseException {
 		try {
-			Blob b = _result_set.getBlob(sql_fields[0].short_field);
+			Blob b = _result_set.getBlob(sql_fields[0].short_field_without_quote);
 			try (RandomByteArrayInputStream bais = new RandomByteArrayInputStream(b.getBytes(1, (int) b.length()))) {
 
 				Object val1 = deserialize(bais);

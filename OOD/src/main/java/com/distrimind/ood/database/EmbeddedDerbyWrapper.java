@@ -209,7 +209,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 						boolean found = false;
 						for (FieldAccessor fa : table.getFieldAccessors()) {
 							for (SqlField sf : fa.getDeclaredSqlFields()) {
-								if (sf.short_field.equals(colName)) {
+								if (sf.short_field_without_quote.equals(colName)) {
 									if (fa.isUnique() == rq2.result_set.getBoolean("NON_UNIQUE")
 											&& fa.isPrimaryKey() == rq2.result_set.getBoolean("NON_UNIQUE")) {
 										throw new DatabaseVersionException(table, "The field " + colName
@@ -248,7 +248,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 
 							for (SqlField sf : fa.getDeclaredSqlFields()) {
 
-								if (sf.short_field.equals(fk) && sf.pointed_field.equals(pointed_col)
+								if (sf.short_field_without_quote.equals(fk) && sf.pointed_field.equals(pointed_col)
 										&& sf.pointed_table.equals(pointed_table)) {
 
 									found = true;
@@ -274,7 +274,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 			for (FieldAccessor fa : table.getFieldAccessors()) {
 				for (SqlField sf : fa.getDeclaredSqlFields()) {
 
-					try (Table.ColumnsReadQuerry rq = getColumnMetaData(table.getSqlTableName(), sf.short_field)) {
+					try (Table.ColumnsReadQuerry rq = getColumnMetaData(table.getSqlTableName(), sf.short_field_without_quote)) {
 						if (rq.result_set.next()) {
 							String type = rq.tableColumnsResultSet.getTypeName().toUpperCase();
 							if (!sf.type.toUpperCase().startsWith(type))
@@ -307,7 +307,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 								sql_connection.getMetaData().getPrimaryKeys(null, null, table.getSqlTableName()))) {
 							boolean found = false;
 							while (rq.result_set.next()) {
-								if (rq.result_set.getString("COLUMN_NAME").equals(sf.short_field)
+								if (rq.result_set.getString("COLUMN_NAME").equals(sf.short_field_without_quote)
 										&& rq.result_set.getString("PK_NAME").equals(table.getSqlPrimaryKeyName()))
 									found = true;
 							}
@@ -324,7 +324,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 								while (rq.result_set.next()) {
 									String fk_table_name = rq.result_set.getString("FKTABLE_NAME");
 									if (fk_table_name.equals(table.getSqlTableName())) {
-										if (rq.result_set.getString("FKCOLUMN_NAME").equals(sf.short_field))
+										if (rq.result_set.getString("FKCOLUMN_NAME").equals(sf.short_field_without_quote))
 											found = true;
 									}
 									if (found)

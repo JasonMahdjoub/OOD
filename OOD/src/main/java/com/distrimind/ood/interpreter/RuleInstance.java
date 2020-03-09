@@ -785,7 +785,7 @@ public class RuleInstance implements QueryPart {
 									if (fa2 == null) {
 										boolean found = false;
 										for (SqlFieldInstance sfi : sfis) {
-											if (sfi.field.equals(sf.field)) {
+											if (sfi.field_without_quote.equals(sf.field_without_quote)) {
 												
 												if (parameter2==null)
 												{
@@ -803,7 +803,7 @@ public class RuleInstance implements QueryPart {
 										}
 										if (!found)
 											throw new DatabaseSyntaxException(
-													"Field " + sf.field + " not found. Unexpected error !");
+													"Field " + sf.field_without_quote + " not found. Unexpected error !");
 
 									} else {
 										if (fa2.getFieldName().equals(fa1.getFieldName()))

@@ -144,7 +144,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 				}
 				for (SqlField sf : fa.getDeclaredSqlFields()) {
 					sql_fields.add(new SqlField(table_name + "." + this.getSqlFieldName() + "__" + pointed_table.getSqlTableName()
-							+ "_" + sf.short_field.substring(1, sf.short_field.length()-1), sf.type, pointed_table.getSqlTableName(), sf.field, isNotNull()));
+							+ "_" + sf.short_field_without_quote, sf.type, pointed_table.getSqlTableName(), sf.field, isNotNull()));
 
 				}
 			}
@@ -265,7 +265,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 				for (SqlFieldInstance sfi : linked_sql_field_instances) {
 					res[i++] = new SqlFieldInstance(
 							table_name + "." + this.getSqlFieldName() + "__" + pointed_table.getSqlTableName() + "_"
-									+ sfi.short_field,
+									+ sfi.short_field_without_quote,
 							sfi.type, linked_table_name, sfi.field, sfi.not_null, sfi.instance);
 				}
 			}
@@ -298,7 +298,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 						if (res != 2)
 							return res;
 					}
-					fa.getColmunIndex(_result_set, fa.getDeclaredSqlFields()[0].field);
+					fa.getColmunIndex(_result_set, fa.getDeclaredSqlFields()[0].field_without_quote);
 					return 1;
 				}
 			}
@@ -323,7 +323,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 
 				SqlFieldInstance[] sfis = new SqlFieldInstance[sfs.length];
 				for (int i = 0; i < sfs.length; i++) {
-					sfis[i] = new SqlFieldInstance(sfs[i], _result_set.getObject(sfs[i].short_field));
+					sfis[i] = new SqlFieldInstance(sfs[i], _result_set.getObject(sfs[i].short_field_without_quote));
 				}
 				field.set(_class_instance, get_record_method.invoke(getPointedTable(), sfis, list));
 			} else {
@@ -390,7 +390,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 
 				if (dr == null) {
 					for (SqlField sf : sql_fields) {
-						_result_set.updateObject(sf.short_field, null);
+						_result_set.updateObject(sf.short_field_without_quote, null);
 					}
 				} else {
 					fa.updateResultSetValue(dr, _result_set, new SqlFieldTranslation(this));

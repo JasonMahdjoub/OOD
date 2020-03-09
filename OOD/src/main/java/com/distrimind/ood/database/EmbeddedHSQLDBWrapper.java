@@ -330,7 +330,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 
 					try (ReadQuerry rq = new ReadQuerry(sql_connection, new Table.SqlQuerry(
 							"SELECT TYPE_NAME, COLUMN_SIZE, IS_NULLABLE, ORDINAL_POSITION, IS_AUTOINCREMENT FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"
-									+ table.getSqlTableName() + "' AND COLUMN_NAME='" + sf.short_field + "'"
+									+ table.getSqlTableName() + "' AND COLUMN_NAME='" + sf.short_field_without_quote + "'"
 									+ getSqlComma()))) {
 						if (rq.result_set.next()) {
 							String type = rq.result_set.getString("TYPE_NAME").toUpperCase();
@@ -363,7 +363,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 						try (ReadQuerry rq = new ReadQuerry(sql_connection,
 								new Table.SqlQuerry(
 										"select * from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
-												+ table.getSqlTableName() + "' AND COLUMN_NAME='" + sf.short_field
+												+ table.getSqlTableName() + "' AND COLUMN_NAME='" + sf.short_field_without_quote
 												+ "' AND CONSTRAINT_NAME='" + table.getSqlPrimaryKeyName() + "' AND CONSTRAINT_SCHEMA='"+database_name+"';"))) {
 							if (!rq.result_set.next())
 								throw new DatabaseVersionException(table, "The field " + fa.getFieldName()
@@ -375,7 +375,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 								"select PKTABLE_NAME, FKTABLE_NAME, PKCOLUMN_NAME, FKCOLUMN_NAME from INFORMATION_SCHEMA.SYSTEM_CROSSREFERENCE WHERE FKTABLE_NAME='"
 										+ table.getSqlTableName() + "' AND PKTABLE_NAME='" + sf.pointed_table
 										+ "' AND PKCOLUMN_NAME='" + sf.short_pointed_field + "' AND FKCOLUMN_NAME='"
-										+ sf.short_field + "'"))) {
+										+ sf.short_field_without_quote + "'"))) {
 							if (!rq.result_set.next())
 								throw new DatabaseVersionException(table,
 										"The field " + fa.getFieldName() + " is a foreign key. One of its Sql fields "

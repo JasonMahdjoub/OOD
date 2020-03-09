@@ -196,7 +196,7 @@ public class BigIntegerFieldAccessor extends FieldAccessor {
 	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
-			String s = _result_set.getString(getColmunIndex(_result_set, sql_fields[0].field));
+			String s = _result_set.getString(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
 			BigInteger res = (s == null) ? null : new BigInteger(s);
 			if (res == null && isNotNull())
 				throw new DatabaseIntegrityException("Unexpected exception.");
@@ -232,7 +232,7 @@ public class BigIntegerFieldAccessor extends FieldAccessor {
 		setValue(_class_instance, _field_instance);
 		try {
 			Object o = field.get(_class_instance);
-			_result_set.updateString(sql_fields[0].short_field, o == null ? null : o.toString());
+			_result_set.updateString(sql_fields[0].short_field_without_quote, o == null ? null : o.toString());
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}

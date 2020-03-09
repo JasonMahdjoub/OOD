@@ -179,8 +179,8 @@ public class UUIDFieldAccessor extends FieldAccessor {
 	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
-			Long ts = (Long)_result_set.getObject(getColmunIndex(_result_set, sql_fields[0].field));
-			Long wsseq = (Long)_result_set.getObject(getColmunIndex(_result_set, sql_fields[1].field));
+			Long ts = (Long)_result_set.getObject(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
+			Long wsseq = (Long)_result_set.getObject(getColmunIndex(_result_set, sql_fields[1].field_without_quote));
 
 			if (ts==null || wsseq==null)
 				field.set(_class_instance, null);
@@ -230,13 +230,13 @@ public class UUIDFieldAccessor extends FieldAccessor {
 			UUID did = (UUID) field.get(_class_instance);
 			if (did==null)
 			{
-				_result_set.updateObject(sql_fields[0].short_field, null);
-				_result_set.updateObject(sql_fields[1].short_field, null);
+				_result_set.updateObject(sql_fields[0].short_field_without_quote, null);
+				_result_set.updateObject(sql_fields[1].short_field_without_quote, null);
 			}
 			else
 			{
-				_result_set.updateObject(sql_fields[0].short_field, did.getLeastSignificantBits());
-				_result_set.updateObject(sql_fields[1].short_field, did.getMostSignificantBits());
+				_result_set.updateObject(sql_fields[0].short_field_without_quote, did.getLeastSignificantBits());
+				_result_set.updateObject(sql_fields[1].short_field_without_quote, did.getMostSignificantBits());
 			}
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);

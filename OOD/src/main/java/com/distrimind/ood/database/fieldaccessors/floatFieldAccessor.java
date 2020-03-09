@@ -174,7 +174,7 @@ public class floatFieldAccessor extends FieldAccessor {
 	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
-			field.setFloat(_class_instance, _result_set.getFloat(getColmunIndex(_result_set, sql_fields[0].field)));
+			field.setFloat(_class_instance, _result_set.getFloat(getColmunIndex(_result_set, sql_fields[0].field_without_quote)));
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -206,7 +206,7 @@ public class floatFieldAccessor extends FieldAccessor {
 			throws DatabaseException {
 		setValue(_class_instance, _field_instance);
 		try {
-			_result_set.updateFloat(sql_fields[0].short_field, field.getFloat(_class_instance));
+			_result_set.updateFloat(sql_fields[0].short_field_without_quote, field.getFloat(_class_instance));
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}

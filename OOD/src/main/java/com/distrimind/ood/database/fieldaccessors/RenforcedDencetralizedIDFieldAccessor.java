@@ -173,8 +173,8 @@ public class RenforcedDencetralizedIDFieldAccessor extends FieldAccessor {
 	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
-			long ts = _result_set.getLong(getColmunIndex(_result_set, sql_fields[0].field));
-			long wsseq = _result_set.getLong(getColmunIndex(_result_set, sql_fields[1].field));
+			long ts = _result_set.getLong(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
+			long wsseq = _result_set.getLong(getColmunIndex(_result_set, sql_fields[1].field_without_quote));
 
 			field.set(_class_instance, DatabaseWrapperAccessor.getRenforcedDecentralizedIDGeneratorInstance(ts, wsseq));
 		} catch (Exception e) {
@@ -211,8 +211,8 @@ public class RenforcedDencetralizedIDFieldAccessor extends FieldAccessor {
 		setValue(_class_instance, _field_instance);
 		try {
 			RenforcedDecentralizedIDGenerator did = (RenforcedDecentralizedIDGenerator) field.get(_class_instance);
-			_result_set.updateObject(sql_fields[0].short_field, did.getTimeStamp());
-			_result_set.updateObject(sql_fields[1].short_field, did.getWorkerIDAndSequence());
+			_result_set.updateObject(sql_fields[0].short_field_without_quote, did.getTimeStamp());
+			_result_set.updateObject(sql_fields[1].short_field_without_quote, did.getWorkerIDAndSequence());
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}

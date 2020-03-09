@@ -83,7 +83,7 @@ public class SqlFieldInstance extends SqlField {
 	 *            The field instance.
 	 */
 	public SqlFieldInstance(SqlField _sql_field, Object _instance) {
-		super(_sql_field.field, _sql_field.type, _sql_field.pointed_table, _sql_field.pointed_field,
+		super(_sql_field.field_without_quote, _sql_field.type, _sql_field.pointed_table, _sql_field.pointed_field,
 				_sql_field.not_null);
 		instance = _instance;
 	}

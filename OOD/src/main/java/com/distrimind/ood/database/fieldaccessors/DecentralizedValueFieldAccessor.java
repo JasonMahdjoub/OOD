@@ -248,9 +248,9 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 		try {
 			byte[] res;
 			if (isVarBinary) {
-				res = _result_set.getBytes(getColmunIndex(_result_set, sql_fields[0].field));
+				res = _result_set.getBytes(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
 			} else {
-				res = getBytes(_result_set.getBigDecimal(getColmunIndex(_result_set, sql_fields[0].field)));
+				res = getBytes(_result_set.getBigDecimal(getColmunIndex(_result_set, sql_fields[0].field_without_quote)));
 			}
 			if (res == null && isNotNull())
 				throw new DatabaseIntegrityException("Unexpected exception. Null value was found into a not null field "
@@ -301,9 +301,9 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 				b = encode(o);
 			}
 			if (isVarBinary)
-				_result_set.updateBytes(sql_fields[0].short_field, b);
+				_result_set.updateBytes(sql_fields[0].short_field_without_quote, b);
 			else {
-				_result_set.updateBigDecimal(sql_fields[0].short_field, getBigDecimal(b));
+				_result_set.updateBigDecimal(sql_fields[0].short_field_without_quote, getBigDecimal(b));
 			}
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -323,7 +323,7 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 			if (isVarBinary)
 				_result_set.updateBytes(_sft.translateField(sql_fields[0]), b);
 			else {
-				_result_set.updateBigDecimal(sql_fields[0].short_field, getBigDecimal(b));
+				_result_set.updateBigDecimal(sql_fields[0].short_field_without_quote, getBigDecimal(b));
 			}
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);

@@ -419,7 +419,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 					 * +getSqlComma())) { while (rq.result_set.next()) {
 					 * System.out.println("\t"+rq.result_set.getString("TABLE_NAME")); } }
 					 */
-					try (Table.ColumnsReadQuerry rq = getColumnMetaData(table.getSqlTableName(), sf.short_field)) {
+					try (Table.ColumnsReadQuerry rq = getColumnMetaData(table.getSqlTableName(), sf.short_field_without_quote)) {
 						if (rq.result_set.next()) {
 							String type = rq.tableColumnsResultSet.getTypeName().toUpperCase();
 							if (!sf.type.toUpperCase().startsWith(type))
@@ -452,7 +452,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 								"select PKTABLE_NAME, FKTABLE_NAME, PKCOLUMN_NAME, FKCOLUMN_NAME from "+ getCrossReferencesTableName()+" WHERE FKTABLE_NAME='"
 										+ table.getSqlTableName() + "' AND PKTABLE_NAME='" + sf.pointed_table
 										+ "' AND PKCOLUMN_NAME='" + sf.short_pointed_field + "' AND FKCOLUMN_NAME='"
-										+ sf.short_field + "'"))) {
+										+ sf.short_field_without_quote + "'"))) {
 							if (!rq.result_set.next())
 								throw new DatabaseVersionException(table,
 										"The field " + fa.getFieldName() + " is a foreign key. One of its Sql fields "
@@ -464,7 +464,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 						for(SqlField sf2 : fa.getDeclaredSqlFields())
 							try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
 									"select COLUMN_LIST from "+getConstraintsTableName()+" WHERE TABLE_NAME='"
-											+ table.getSqlTableName() + "' AND CONSTRAINT_TYPE='UNIQUE' AND COLUMN_LIST='"+sf2.short_field+"';"))) {
+											+ table.getSqlTableName() + "' AND CONSTRAINT_TYPE='UNIQUE' AND COLUMN_LIST='"+sf2.short_field_without_quote+"';"))) {
 								if (!rq.result_set.next())
 									throw new DatabaseVersionException(table, "The OOD field " + fa.getFieldName()
 											+ " is a unique key, but it not declared as unique into the Sql database.");
