@@ -523,6 +523,23 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 		return "TIMESTAMP";
 	}
 
+	@Override
+	protected String getLimitSqlPart(long startPosition, long rowLimit)
+	{
+		StringBuilder limit=new StringBuilder();
+		if (rowLimit>=0)
+		{
+			limit.append(" { LIMIT ");
+			limit.append(rowLimit);
+			if (startPosition>0)
+			{
+				limit.append(" OFFSET ");
+				limit.append(startPosition);
+			}
+			limit.append("}");
+		}
+		return limit.toString();
+	}
 	/*@Override
 	protected String getSqlQuerryToGetLastGeneratedID() {
 		return "values IDENTITY_VAL_LOCAL()";

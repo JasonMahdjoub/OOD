@@ -571,6 +571,23 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 	}
 
 	@Override
+	protected String getLimitSqlPart(long startPosition, long rowLimit)
+	{
+		StringBuilder limit=new StringBuilder();
+		if (rowLimit>=0)
+		{
+			limit.append(" LIMIT ");
+			limit.append(rowLimit);
+			if (startPosition>0)
+			{
+				limit.append(" OFFSET ");
+				limit.append(startPosition);
+			}
+		}
+		return limit.toString();
+	}
+
+	@Override
 	protected String getSqlNULL() {
 		return "NULL";
 	}

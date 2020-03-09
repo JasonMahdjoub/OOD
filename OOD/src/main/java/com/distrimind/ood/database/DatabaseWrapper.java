@@ -4800,22 +4800,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	}
 
 
-	protected String getLimitSqlPart(long startPosition, long rowLimit)
-	{
-		StringBuilder limit=new StringBuilder();
-		if (rowLimit>=0)
-		{
-			limit.append(" { LIMIT ");
-			limit.append(rowLimit);
-			if (startPosition>0)
-			{
-				limit.append(" OFFSET ");
-				limit.append(startPosition);
-			}
-			limit.append("}");
-		}
-		return limit.toString();
-	}
+	protected abstract String getLimitSqlPart(long startPosition, long rowLimit);
 
 	boolean areGeneratedValueReturnedWithPrimaryKeys()
 	{

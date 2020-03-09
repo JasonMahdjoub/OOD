@@ -540,7 +540,23 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 		}
 
 	}
-
+	@Override
+	protected String getLimitSqlPart(long startPosition, long rowLimit)
+	{
+		StringBuilder limit=new StringBuilder();
+		if (rowLimit>=0)
+		{
+			limit.append(" { LIMIT ");
+			limit.append(rowLimit);
+			if (startPosition>0)
+			{
+				limit.append(" OFFSET ");
+				limit.append(startPosition);
+			}
+			limit.append("}");
+		}
+		return limit.toString();
+	}
 
 	@Override
 	protected Table.ColumnsReadQuerry getColumnMetaData(String tableName, String columnName) throws Exception {
