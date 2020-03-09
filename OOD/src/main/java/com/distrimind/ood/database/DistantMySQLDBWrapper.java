@@ -273,12 +273,13 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 
 	@Override
 	protected boolean doesTableExists(String tableName) throws Exception {
-		try(ResultSet rs=getConnectionAssociatedWithCurrentThread().getConnection().getMetaData().getTables(null, null, "%", null)) {
-			while (rs.next()) {
-				if (rs.getString(3).equals(tableName))
+		try(ResultSet rs=getConnectionAssociatedWithCurrentThread().getConnection().getMetaData().getTables(database_name, null, tableName, null)) {
+			return rs.next();
+			/*while (rs.next()) {
+				if (rs.getString(3).equals(tableName) && rs.getString().equals(database_name))
 					return true;
 			}
-			return false;
+			return false;*/
 		}
 	}
 
@@ -333,7 +334,7 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 	protected Table.ColumnsReadQuerry getColumnMetaData(String tableName, String columnName) throws Exception {
 		Connection c;
 		//System.out.println(tableName);
-		ResultSet rs=(c=getConnectionAssociatedWithCurrentThread().getConnection()).getMetaData().getColumns(null, null, tableName, columnName);
+		ResultSet rs=(c=getConnectionAssociatedWithCurrentThread().getConnection()).getMetaData().getColumns(database_name, null, tableName, columnName);
 		return new CReadQuerry(c, rs);
 			/*while (rs.next()) {
 				System.out.println(rs.getString(3)+" "+rs.getString(4));

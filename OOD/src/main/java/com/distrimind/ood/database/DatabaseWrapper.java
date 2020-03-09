@@ -4121,7 +4121,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						try {
 
 							PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
-									.prepareStatement("SELECT CURRENT_DATABASE_VERSION FROM " + DatabaseWrapper.VERSIONS_OF_DATABASE + " WHERE PACKAGE_NAME='"
+									.prepareStatement("SELECT CURRENT_DATABASE_VERSION FROM `" + DatabaseWrapper.VERSIONS_OF_DATABASE + "` WHERE PACKAGE_NAME='"
 											+ getLongPackageName(p) + "'" + getSqlComma());
 							ResultSet rs = pst.executeQuery();
 							int res=0;

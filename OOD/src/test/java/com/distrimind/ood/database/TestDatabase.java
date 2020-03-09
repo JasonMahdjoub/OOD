@@ -3169,7 +3169,8 @@ public abstract class TestDatabase {
                 res.add(((File)o).getPath().getBytes(StandardCharsets.UTF_8));
             }
             else if (o instanceof Serializable) {
-                if (Objects.equals(sql_db.getBlobType(70000), "BLOB")) {
+				String s=sql_db.getBlobType(70000);
+                if (s!=null && s.contains("BLOB")) {
                     try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
                         try (ObjectOutputStream os = new ObjectOutputStream(baos)) {
                             os.writeObject(o);
@@ -3281,8 +3282,9 @@ public abstract class TestDatabase {
 				if (i > 0)
 					expectedCommand.append(" AND ");
 				expectedCommand.append("%Table1Name%");
-				expectedCommand.append(".");
+				expectedCommand.append(".`");
 				expectedCommand.append(sqlVariablesName.get(i).replace(".", "_").toUpperCase());
+				expectedCommand.append("`");
 				expectedCommand.append(op_comp.getContent());
 				if (value==null)
 				{
@@ -3327,8 +3329,9 @@ public abstract class TestDatabase {
 			if (value instanceof CharSequence)
 				command.append("\"");
 			expectedCommand.append("%Table1Name%");
-			expectedCommand.append(".");
+			expectedCommand.append(".`");
 			expectedCommand.append(sqlVariablesName.get(0).replace(".", "_").toUpperCase());
+			expectedCommand.append("`");
 			expectedCommand.append(op_comp.getContent());
 			if (value instanceof CharSequence)
 				expectedCommand.append("\"");
