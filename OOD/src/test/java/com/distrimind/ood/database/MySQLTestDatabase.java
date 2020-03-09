@@ -37,10 +37,11 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.util.FileTools;
+import com.distrimind.util.Utils;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 
-import java.io.File;
+import java.io.*;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 
@@ -53,11 +54,163 @@ import java.security.NoSuchProviderException;
 public class MySQLTestDatabase extends TestDatabase {
 	private static DistantMySQLDatabaseFactory factoryA= new DistantMySQLDatabaseFactory("127.0.0.1", 3306, "databasetestAMySQL", "usertest", "passwordtest");
 	private static DistantMySQLDatabaseFactory factoryB= new DistantMySQLDatabaseFactory("127.0.0.1", 3306, "databasetestBMySQL", "usertest", "passwordtest");
+	private static final String dockerName="mysqlOOD";
 
 	public MySQLTestDatabase() throws DatabaseException, NoSuchAlgorithmException, NoSuchProviderException {
 		super();
 	}
+	@BeforeClass
+	public void createMySQLDocker() throws InterruptedException {
+		stopMySQLDocker();
+		rmMySQLDocker();
+		runMySQLDocker();
+		Thread.sleep(20000);
+		createMySQLDB();
+	}
 
+	@AfterClass
+	public void deleteMySQLDocker()
+	{
+		stopMySQLDocker();
+		rmMySQLDocker();
+	}
+	private void createMySQLDB()
+	{
+
+		String rootPw=getRootMySQLPassword();
+		System.out.println("Create MySQL Database");
+		File tmpScript=new File("tmpScriptDockerForOOD.bash");
+
+		Process p=null;
+		try {
+			try(FileWriter fos=new FileWriter(tmpScript))
+			{
+				fos.write("docker exec "+dockerName+" mysql --connect-expired-password --user=\"root\" --password=\""+rootPw+"\" -Bse \"ALTER USER 'root'@'localhost' IDENTIFIED BY 'rootpassword'; CREATE USER 'usertest' IDENTIFIED by 'passwordtest';CREATE DATABASE databasetestAMySQL;CREATE DATABASE databasetestBMySQL;GRANT ALL PRIVILEGES ON databasetestAMySQL.* TO 'usertest';GRANT ALL PRIVILEGES ON databasetestBMySQL.* TO 'usertest';FLUSH PRIVILEGES;\"\n");
+			}
+			ProcessBuilder pb=new ProcessBuilder("bash", tmpScript.toString());
+			p = pb.start();
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		finally {
+
+			assert p != null;
+			flushOutput(p);
+			Utils.flushAndDestroyProcess(p);
+			if (tmpScript.exists())
+				//noinspection ResultOfMethodCallIgnored
+				tmpScript.delete();
+		}
+	}
+
+	private void flushOutput(Process p) {
+		try {
+			try(BufferedReader br=new BufferedReader(new InputStreamReader(p.getInputStream()));BufferedReader brerr=new BufferedReader(new InputStreamReader(p.getErrorStream())))
+			{
+				boolean c;
+				do {
+					c=false;
+					String line=br.readLine();
+					if (line!=null) {
+						System.out.println(line);
+						c = true;
+					}
+					line=brerr.readLine();
+					if (line!=null) {
+						System.err.println(line);
+						c = true;
+					}
+				} while (c);
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private String getRootMySQLPassword()
+	{
+		System.out.println("Get root password");
+		Process p=null;
+		File tmpScript=new File("tmpScriptDockerForOOD.bash");
+		try {
+			try(FileWriter fos=new FileWriter(tmpScript))
+			{
+				fos.write("docker logs "+dockerName+" 2>&1 | grep GENERATED | awk '{print $NF}'\n");
+			}
+			ProcessBuilder pb = new ProcessBuilder("bash", tmpScript.toString());
+			p = pb.start();
+			InputStreamReader isr = new InputStreamReader(p.getInputStream());
+			BufferedReader br = new BufferedReader(isr);
+			return br.readLine();
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		finally {
+			assert p != null;
+			flushOutput(p);
+			Utils.flushAndDestroyProcess(p);
+			if (tmpScript.exists())
+				//noinspection ResultOfMethodCallIgnored
+				tmpScript.delete();
+		}
+		return null;
+	}
+
+	private void runMySQLDocker()
+	{
+		System.out.println("RUN Mysql docker");
+		Process p=null;
+		try {
+			p = Runtime.getRuntime().exec("docker run -p 3306:3306 --name="+dockerName+" -e MYSQL_ROOT_HOST=% -d mysql/mysql-server:latest");
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		finally {
+			assert p != null;
+			flushOutput(p);
+			Utils.flushAndDestroyProcess(p);
+		}
+	}
+	private void stopMySQLDocker()
+	{
+		System.out.println("STOP Mysql docker");
+		Process p=null;
+		try {
+			p = Runtime.getRuntime().exec("docker stop "+dockerName);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		finally {
+			assert p != null;
+			flushOutput(p);
+			Utils.flushAndDestroyProcess(p);
+		}
+	}
+	private void rmMySQLDocker()
+	{
+		System.out.println("RM Mysql docker");
+		Process p=null;
+		try {
+			p = Runtime.getRuntime().exec("docker rm "+dockerName);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		finally {
+			assert p != null;
+			flushOutput(p);
+			Utils.flushAndDestroyProcess(p);
+		}
+	}
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstanceA() throws IllegalArgumentException, DatabaseException {
 		return factoryA.newWrapperInstance();
