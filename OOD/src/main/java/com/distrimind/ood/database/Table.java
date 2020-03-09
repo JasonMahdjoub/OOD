@@ -154,7 +154,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	private volatile DatabaseCollisionsNotifier<T, Table<T>> databaseCollisionsNotifier;
 	private volatile DatabaseAnomaliesNotifier<T, Table<T>> databaseAnomaliesNotifier;
 	public static final int maxTableNameSizeBytes = 8192;
-	public static final int maxPrimaryKeysSizeBytes = ByteTabFieldAccessor.shortTabSizeLimit;
+	public static final int maxPrimaryKeysSizeBytes = 3072;
 	private int databaseVersion=-1;
 	private boolean isPrimaryKeysAndForeignKeysSame;
 	private boolean hasBackupMananager=false;
@@ -785,7 +785,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 															+ class_record.getName());
 										// String type=rq.result_set.getString("TYPE_NAME").toUpperCase();
 										String type = rq.tableColumnsResultSet.getTypeName().toUpperCase();
-										if (!founded_sf.type.toUpperCase().startsWith(type))
+
+										if (!founded_sf.type.toUpperCase().startsWith(type) && !(type.equals("BIT") && founded_sf.type.equals("BOOLEAN")))
 											throw new DatabaseVersionException(Table.this, "The type of the column "
 													+ col + " should  be " + founded_sf.type + " and not " + type);
 										if (col_size_matcher.matcher(founded_sf.type).matches()) {

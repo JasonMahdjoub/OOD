@@ -318,7 +318,7 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 
 		@Override
 		public boolean isAutoIncrement() throws SQLException {
-			return resultSet.getInt(23)==1;
+			return !resultSet.getString(23).equals("NO");
 		}
 
 		@Override
@@ -332,14 +332,17 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 	@Override
 	protected Table.ColumnsReadQuerry getColumnMetaData(String tableName, String columnName) throws Exception {
 		Connection c;
-		try(ResultSet rs=(c=getConnectionAssociatedWithCurrentThread().getConnection()).getMetaData().getColumns(null, null, tableName, columnName)) {
-			while (rs.next()) {
+		//System.out.println(tableName);
+		ResultSet rs=(c=getConnectionAssociatedWithCurrentThread().getConnection()).getMetaData().getColumns(null, null, tableName, columnName);
+		return new CReadQuerry(c, rs);
+			/*while (rs.next()) {
+				System.out.println(rs.getString(3)+" "+rs.getString(4));
 				if (rs.getString(3).equals(tableName) && rs.getString(4).equals(columnName)) {
 					return new CReadQuerry(c, rs);
 				}
 			}
-			return null;
-		}
+			return null;*/
+//		}
 	}
 
 	@Override
@@ -353,9 +356,9 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 				String constraint_type = rq.result_set.getString("CONSTRAINT_TYPE");
 				switch (constraint_type) {
 					case "PRIMARY KEY": {
-						if (!constraint_name.equals(table.getSqlPrimaryKeyName()))
+						if (!constraint_name.equals("PRIMARY"))
 							throw new DatabaseVersionException(table, "There a grouped primary key named " + constraint_name
-									+ " which should be named " + table.getSqlPrimaryKeyName());
+									+ " which should be named PRIMARY");
 					}
 					break;
 					case "FOREIGN KEY": {
@@ -373,7 +376,7 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 								boolean found = false;
 								for (FieldAccessor fa : table.getFieldAccessors()) {
 									for (SqlField sf : fa.getDeclaredSqlFields()) {
-										if (sf.field.equals(col) && fa.isUnique()) {
+										if (sf.field_without_quote.equals(col) && fa.isUnique()) {
 											found = true;
 											break;
 										}
@@ -401,17 +404,19 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 			throw DatabaseException.getDatabaseException(e);
 		}
 		try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
-				"select REFERENCED_TABLE_NAME as PKTABLE_NAME, REFERENCED_COLUMN_NAME as PKCOLUMN_NAME, COLUMN_NAME as FKCOLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
+				"select REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME, COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
 						+ table.getSqlTableName() + "' AND CONSTRAINT_SCHEMA='"+database_name+"';"))) {
 			while (rq.result_set.next()) {
-				String pointed_table = rq.result_set.getString("PKTABLE_NAME");
-				String pointed_col = pointed_table + "." + rq.result_set.getString("PKCOLUMN_NAME");
-				String fk = table.getSqlTableName() + "." + rq.result_set.getString("FKCOLUMN_NAME");
+				String pointed_table = rq.result_set.getString("REFERENCED_TABLE_NAME");
+				String pointed_col = pointed_table + "." + rq.result_set.getString("REFERENCED_COLUMN_NAME");
+				String fk = table.getSqlTableName() + "." + rq.result_set.getString("COLUMN_NAME");
+				if (pointed_table==null)
+					continue;
 				boolean found = false;
 				for (ForeignKeyFieldAccessor fa : table.getForeignKeysFieldAccessors()) {
 					for (SqlField sf : fa.getDeclaredSqlFields()) {
-						if (sf.field.equals(fk) && sf.pointed_field.equals(pointed_col)
-								&& sf.pointed_table.equals(pointed_table)) {
+						if (sf.field_without_quote.equals(fk) && sf.pointed_field_without_quote.equals(pointed_col)
+								&& sf.pointed_table_without_quote.equals(pointed_table)) {
 							found = true;
 							break;
 						}
@@ -421,7 +426,7 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 				}
 				if (!found)
 					throw new DatabaseVersionException(table,
-							"There is foreign keys defined into the Sql database which have not been found in the OOD database.");
+							"There is foreign keys defined into the Sql database which have not been found in the OOD database : table="+pointed_table+" col="+pointed_col);
 			}
 		} catch (SQLException e) {
 			throw new DatabaseException("Impossible to check constraints of the table " + table.getClass().getSimpleName(), e);
@@ -432,12 +437,12 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 			Pattern col_size_matcher = Pattern.compile("([0-9]+)");
 			for (FieldAccessor fa : table.getFieldAccessors()) {
 				for (SqlField sf : fa.getDeclaredSqlFields()) {
-					Table.ColumnsReadQuerry cols=getColumnMetaData(table.getSqlTableName(), sf.short_field);
-					if (cols==null)
+					Table.ColumnsReadQuerry cols=getColumnMetaData(table.getSqlTableName(), sf.short_field_without_quote);
+					if (cols==null || !cols.tableColumnsResultSet.next())
 						throw new DatabaseVersionException(table,
 								"The field " + fa.getFieldName() + " was not found into the database.");
 					String type = cols.tableColumnsResultSet.getTypeName().toUpperCase();
-					if (!sf.type.toUpperCase().startsWith(type))
+					if (!sf.type.toUpperCase().startsWith(type) && !(type.equals("BIT") && sf.type.equals("BOOLEAN")))
 						throw new DatabaseVersionException(table, "The type of the field " + sf.field
 								+ " should  be " + sf.type + " and not " + type);
 					if (col_size_matcher.matcher(sf.type).matches()) {
@@ -463,8 +468,8 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 						try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection,
 								new Table.SqlQuerry(
 										"select * from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
-												+ table.getSqlTableName() + "' AND COLUMN_NAME='" + sf.short_field
-												+ "' AND CONSTRAINT_NAME='" + table.getSqlPrimaryKeyName() + "' AND CONSTRAINT_SCHEMA='"+database_name+"';"))) {
+												+ table.getSqlTableName() + "' AND COLUMN_NAME='" + sf.short_field_without_quote
+												+ "' AND CONSTRAINT_NAME='PRIMARY' AND CONSTRAINT_SCHEMA='"+database_name+"';"))) {
 							if (!rq.result_set.next())
 								throw new DatabaseVersionException(table, "The field " + fa.getFieldName()
 										+ " is not declared as a primary key into the Sql database.");
@@ -474,8 +479,8 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 						try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
 								"select REFERENCED_TABLE_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
 										+ table.getSqlTableName() + "' AND REFERENCED_TABLE_NAME='" + sf.pointed_table
-										+ "' AND REFERENCED_COLUMN_NAME='" + sf.short_pointed_field + "' AND COLUMN_NAME='"
-										+ sf.short_field + "'"))) {
+										+ "' AND REFERENCED_COLUMN_NAME='" + sf.short_pointed_field_without_quote + "' AND COLUMN_NAME='"
+										+ sf.short_field_without_quote + "'"))) {
 							if (!rq.result_set.next())
 								throw new DatabaseVersionException(table,
 										"The field " + fa.getFieldName() + " is a foreign key. One of its Sql fields "
@@ -498,7 +503,7 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 										if (rq2.result_set.next()) {
 											String col = table.getSqlTableName() + "."
 													+ rq2.result_set.getString("COLUMN_NAME");
-											if (col.equals(sf.field)) {
+											if (col.equals(sf.field_without_quote)) {
 												found = true;
 												break;
 											}

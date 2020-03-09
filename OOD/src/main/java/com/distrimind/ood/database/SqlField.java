@@ -52,6 +52,12 @@ public class SqlField {
 	public String field;
 
 	/**
+	 * the name of the Sql field without quote appended with the name of the Sql Table.
+	 */
+	public final String field_without_quote;
+
+
+	/**
 	 * the type of the Sql field.
 	 */
 	public final String type;
@@ -59,13 +65,24 @@ public class SqlField {
 	/**
 	 * The name of the pointed Sql table, if this field is a foreign key
 	 */
-	public String pointed_table;
+	public final String pointed_table;
 
 	/**
 	 * The name of the pointed Sql field appended with its Sql Table, if this field
 	 * is a foreign key
 	 */
-	public String pointed_field;
+	public final String pointed_field;
+
+	/**
+	 * The name of the pointed Sql table, if this field is a foreign key
+	 */
+	public final String pointed_table_without_quote;
+
+	/**
+	 * The name of the pointed Sql field appended with its Sql Table, if this field
+	 * is a foreign key
+	 */
+	public final String pointed_field_without_quote;
 
 	/**
 	 * the name of the Sql field not appended with the name of the Sql Table.
@@ -73,10 +90,22 @@ public class SqlField {
 	public final String short_field;
 
 	/**
+	 * the name of the Sql field without quote not appended with the name of the Sql Table.
+	 */
+	public final String short_field_without_quote;
+
+	/**
 	 * The name of the pointed Sql field not appended with its Sql Table, if this
 	 * field is a foreign key
 	 */
 	public String short_pointed_field;
+
+	/**
+	 * The name of the pointed Sql field without quote not appended with its Sql Table, if this
+	 * field is a foreign key
+	 */
+	public final String short_pointed_field_without_quote;
+
 
 	/**
 	 * Tells if this field is not null
@@ -100,24 +129,26 @@ public class SqlField {
 	 *            tells if the field is not null
 	 */
 	public SqlField(String _field, String _type, String _pointed_table, String _pointed_field, boolean _not_null) {
-		field = _field.toUpperCase();
+		field_without_quote = _field.toUpperCase();
 		type = _type.toUpperCase();
 		pointed_table = _pointed_table == null ? null : _pointed_table.toUpperCase();
 		pointed_field = _pointed_field == null ? null : _pointed_field.toUpperCase();
 
 		int index = -1;
-		for (int i = 0; i < field.length(); i++) {
-			if (field.charAt(i) == '.') {
+		for (int i = 0; i < field_without_quote.length(); i++) {
+			if (field_without_quote.charAt(i) == '.') {
 				index = i + 1;
 				break;
 			}
 		}
 		if (index != -1) {
-			short_field = "`" + field.substring(index) + "`";
-			field=field.substring(0, index )+"`"+field.substring(index)+"`";
+			short_field_without_quote = field_without_quote.substring(index);
+			short_field = "`" + short_field_without_quote + "`";
+			field=field_without_quote.substring(0, index )+"`"+field_without_quote.substring(index)+"`";
 		}
 		else {
-			short_field = "`" + field + "`";
+			short_field_without_quote = field_without_quote;
+			short_field = "`" + field_without_quote + "`";
 			field=short_field;
 		}
 
@@ -136,7 +167,17 @@ public class SqlField {
 				short_pointed_field = pointed_field;
 		} else
 			short_pointed_field = null;
-
+		if (pointed_table!=null && pointed_field!=null)
+		{
+			pointed_table_without_quote=pointed_table.replace("`", "");
+			pointed_field_without_quote=pointed_field.replace("`", "");
+			short_pointed_field_without_quote=short_pointed_field.replace("`", "");
+		}
+		else {
+			pointed_table_without_quote = null;
+			pointed_field_without_quote = null;
+			short_pointed_field_without_quote=null;
+		}
 		this.not_null = _not_null;
 	}
 }
