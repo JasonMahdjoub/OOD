@@ -254,7 +254,7 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 
 	@Override
 	protected boolean isDuplicateKeyException(SQLException e) {
-		return e.getErrorCode()==1022;
+		return e.getErrorCode()==1062;
 	}
 
 	@Override
