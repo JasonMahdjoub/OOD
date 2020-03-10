@@ -39,31 +39,30 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 
 import java.io.File;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
- * @since Utils 2.5.0
+ * @since OOD 2.5.0
  */
-public class DistantMySQLDatabaseFactory extends CommonMySQLDatabaseFactory<DistantMySQLDBWrapper>{
-	public DistantMySQLDatabaseFactory(String urlLocation, int port, String databaseName, String user, String password) {
+public class DistantMariaDatabaseFactory extends CommonMySQLDatabaseFactory<DistantMariaDBWrapper> {
+	public DistantMariaDatabaseFactory(String urlLocation, int port, String databaseName, String user, String password) {
 		super(urlLocation, port, databaseName, user, password);
 	}
 
-	public DistantMySQLDatabaseFactory(String urlLocation, int port, String databaseName, String user, String password, int connectTimeInMillis, int socketTimeOutMillis, boolean useCompression, Charset characterEncoding, CommonMySQLWrapper.SSLMode sslMode, boolean paranoid, File serverRSAPublicKeyFile, boolean autoReconnect, int prefetchNumberRows, boolean noCache) {
+	public DistantMariaDatabaseFactory(String urlLocation, int port, String databaseName, String user, String password, int connectTimeInMillis, int socketTimeOutMillis, boolean useCompression, Charset characterEncoding, CommonMySQLWrapper.SSLMode sslMode, boolean paranoid, File serverRSAPublicKeyFile, boolean autoReconnect, int prefetchNumberRows, boolean noCache) {
 		super(urlLocation, port, databaseName, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, characterEncoding, sslMode, paranoid, serverRSAPublicKeyFile, autoReconnect, prefetchNumberRows, noCache);
 	}
 
-	public DistantMySQLDatabaseFactory(String urlLocation, int port, String databaseName, String user, String password, String mysqlParams) {
+	public DistantMariaDatabaseFactory(String urlLocation, int port, String databaseName, String user, String password, String mysqlParams) {
 		super(urlLocation, port, databaseName, user, password, mysqlParams);
 	}
 
-	public DistantMySQLDatabaseFactory() {
+	public DistantMariaDatabaseFactory() {
 	}
 
 	@Override
-	protected DistantMySQLDBWrapper newWrapperInstance() throws DatabaseException {
+	protected DistantMariaDBWrapper newWrapperInstance() throws DatabaseException {
 		Charset cs=getCharacterEncoding();
 		String css=null;
 		if (cs.name().contains("-")) {
@@ -79,8 +78,8 @@ public class DistantMySQLDatabaseFactory extends CommonMySQLDatabaseFactory<Dist
 		else
 			css=cs.name();
 		if (mysqlParams==null)
-			return new DistantMySQLDBWrapper(urlLocation, port, databaseName, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, css, sslMode, paranoid, serverRSAPublicKeyFile, autoReconnect, prefetchNumberRows, noCache);
+			return new DistantMariaDBWrapper(urlLocation, port, databaseName, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, css, sslMode, paranoid, serverRSAPublicKeyFile, autoReconnect, prefetchNumberRows, noCache);
 		else
-			return new DistantMySQLDBWrapper(urlLocation, port, databaseName, user, password, mysqlParams);
+			return new DistantMariaDBWrapper(urlLocation, port, databaseName, user, password, mysqlParams);
 	}
 }
