@@ -612,9 +612,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		try {
 
             st = sql_connection.getConnectionAssociatedWithCurrentThread().getConnection().createStatement();
-            String sqlQuerry = "DROP TABLE " + this.getSqlTableName() + " "
-                    + sql_connection.getDropTableIfExistsKeyWord() + " " + sql_connection.getDropTableCascadeKeyWord();
-            st.executeUpdate(sqlQuerry);
+            String sqlQuery = sql_connection.getDropTableCascadeQuery(this);
+            st.executeUpdate(sqlQuery);
 			sql_connection = null;
 		} catch (SQLException e) {
 			throw DatabaseException.getDatabaseException(e);

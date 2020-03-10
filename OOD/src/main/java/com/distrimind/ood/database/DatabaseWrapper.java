@@ -3520,6 +3520,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	}
 	
 	protected abstract boolean isSerializationException(SQLException e) throws DatabaseException;
+	protected abstract boolean isTransactionDeadLockException(SQLException e) throws DatabaseException;
 	protected abstract boolean isDisconnectionException(SQLException e) throws DatabaseException;
 
 	private boolean needsToLock()
@@ -3652,16 +3653,22 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						{
 							if (t instanceof SQLException)
 							{
-                                if (isSerializationException((SQLException)t)) {
+								SQLException sqlE=(SQLException)t;
+								if (isTransactionDeadLockException(sqlE))
+								{
+									retry=true;
+								}
+                                else if (isSerializationException(sqlE)) {
                                     retry = true;
                                 }
-								else if (isDisconnectionException((SQLException)t))
+								else if (isDisconnectionException(sqlE))
 								{
 									if (!deconnexionException) {
 										retry = true;
 										deconnexionException = true;
 									}
 								}
+
 
 								break;
 							}
@@ -3684,9 +3691,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 								while (t != null) {
 									if (t instanceof SQLException) {
-										if (isSerializationException((SQLException) t)) {
+										SQLException sqlE=(SQLException)t;
+										if (isTransactionDeadLockException(sqlE))
+										{
+											retry=true;
+										}
+										else if (isSerializationException(sqlE)) {
 											retry = true;
-										} else if (isDisconnectionException((SQLException) t)) {
+										} else if (isDisconnectionException(sqlE)) {
 											if (!deconnexionException) {
 												retry = true;
 												deconnexionException = true;
@@ -4734,9 +4746,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	protected abstract String getDateTimeType();
 	//protected abstract String getSqlQuerryToGetLastGeneratedID();
 
-	protected abstract String getDropTableIfExistsKeyWord();
 
-	protected abstract String getDropTableCascadeKeyWord();
+	protected abstract String getDropTableCascadeQuery(Table<?> table);
 
 	protected abstract boolean supportMultipleAutoPrimaryKeys();
 

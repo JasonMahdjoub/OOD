@@ -97,15 +97,6 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 
 	}
 
-	@Override
-	protected String getDropTableIfExistsKeyWord() {
-		return "";
-	}
-
-	@Override
-	protected String getDropTableCascadeKeyWord() {
-		return "";
-	}
 
 	private static String getDBUrl(File _directory) {
 		return "jdbc:derby:" + _directory.getAbsolutePath();
@@ -688,5 +679,16 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 		return e.getErrorCode()==402 || e.getErrorCode()==1002;
 	}
 
-	
+	@Override
+	protected boolean isTransactionDeadLockException(SQLException e)
+	{
+		return false;
+	}
+	@Override
+	protected String getDropTableCascadeQuery(Table<?> table)
+	{
+		return "DROP TABLE " + table.getSqlTableName() +
+				" IF EXISTS CASCADE";
+	}
+
 }

@@ -218,15 +218,6 @@ public abstract class CommonHSQLH2DatabaseWrapper extends DatabaseWrapper{
 		return "ON DELETE CASCADE";
 	}
 
-	@Override
-	protected String getDropTableIfExistsKeyWord() {
-		return "IF EXISTS";
-	}
-
-	@Override
-	protected String getDropTableCascadeKeyWord() {
-		return "CASCADE";
-	}
 
 
 
@@ -329,5 +320,16 @@ public abstract class CommonHSQLH2DatabaseWrapper extends DatabaseWrapper{
 		return e.getSQLState().equals("40001");
 	}
 
+	@Override
+	protected boolean isTransactionDeadLockException(SQLException e)
+	{
+		return false;
+	}
+	@Override
+	protected String getDropTableCascadeQuery(Table<?> table)
+	{
+		return "DROP TABLE " + table.getSqlTableName() +
+				" IF EXISTS CASCADE";
+	}
 }
 

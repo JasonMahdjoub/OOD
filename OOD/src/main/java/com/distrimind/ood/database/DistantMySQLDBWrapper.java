@@ -248,6 +248,18 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 	}
 
 	@Override
+	protected boolean isTransactionDeadLockException(SQLException e) throws DatabaseException
+	{
+		if (e.getClass().getName().equals("com.mysql.cj.jdbc.exceptions.MySQLTransactionRollbackException"))
+		{
+			System.err.println("error code : "+e.getErrorCode());
+			return true;
+		}
+		else
+			return false;
+	}
+
+	@Override
 	protected boolean isDisconnectionException(SQLException e)  {
 		return e.getErrorCode()==1152;
 	}
@@ -683,14 +695,12 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 	}
 
 
-	@Override
-	protected String getDropTableIfExistsKeyWord() {
-		return "IF EXISTS";
-	}
 
 	@Override
-	protected String getDropTableCascadeKeyWord() {
-		return "CASCADE";
+	protected String getDropTableCascadeQuery(Table<?> table)
+	{
+		return "DROP TABLE IF EXISTS " + table.getSqlTableName()
+				+ " CASCADE";
 	}
 
 	@Override
