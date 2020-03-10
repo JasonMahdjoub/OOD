@@ -250,13 +250,7 @@ public class DistantMySQLDBWrapper extends DatabaseWrapper{
 	@Override
 	protected boolean isTransactionDeadLockException(SQLException e) throws DatabaseException
 	{
-		if (e.getClass().getName().equals("com.mysql.cj.jdbc.exceptions.MySQLTransactionRollbackException"))
-		{
-			System.err.println("error code : "+e.getErrorCode());
-			return true;
-		}
-		else
-			return false;
+		return e.getErrorCode() == 1213;
 	}
 
 	@Override
