@@ -45,11 +45,63 @@ import java.io.File;
  * @since OOD 2.5.0
  */
 public class DistantMariaDBWrapper extends CommonMySQLWrapper{
-	protected DistantMariaDBWrapper(String urlLocation, int port, String _database_name, String user, String password, int connectTimeInMillis, int socketTimeOutMillis, boolean useCompression, String characterEncoding, SSLMode sslMode, boolean paranoid, File serverRSAPublicKeyFile, boolean autoReconnect, int prefetchNumberRows, boolean noCache) throws DatabaseException {
-		super(urlLocation, port, _database_name, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, characterEncoding, sslMode, paranoid, serverRSAPublicKeyFile, autoReconnect, prefetchNumberRows, noCache);
+	protected DistantMariaDBWrapper(String urlLocation, int port, String _database_name, String user, String password,
+									int connectTimeInMillis,
+									int socketTimeOutMillis,
+									boolean useCompression,
+									String characterEncoding,
+									boolean useSSL,
+									boolean trustServerCertificate,
+									String enabledSslProtocolSuites,
+									String enabledSslCipherSuites,
+									File serverSslCert,
+									boolean autoReconnect,
+									String additionalParams) throws DatabaseException {
+		super(urlLocation, port, _database_name, user, password,
+				getURL(urlLocation, port, _database_name, connectTimeInMillis, socketTimeOutMillis, useCompression, characterEncoding, useSSL, trustServerCertificate, enabledSslProtocolSuites, enabledSslCipherSuites, serverSslCert, autoReconnect, additionalParams), characterEncoding);
+		if (additionalParams==null)
+			throw new NullPointerException();
 	}
 
-	protected DistantMariaDBWrapper(String urlLocation, int port, String _database_name, String user, String password, String mysqlParams) throws DatabaseException {
-		super(urlLocation, port, _database_name, user, password, mysqlParams);
+	protected DistantMariaDBWrapper(String urlLocation, int port, String _database_name, String user, String password,
+									int connectTimeInMillis,
+									int socketTimeOutMillis,
+									boolean useCompression,
+									String characterEncoding,
+									boolean useSSL,
+									boolean trustServerCertificate,
+									String enabledSslProtocolSuites,
+									String enabledSslCipherSuites,
+									File serverSslCert,
+									boolean autoReconnect) throws DatabaseException {
+		super(urlLocation, port, _database_name, user, password,
+				getURL(urlLocation, port, _database_name, connectTimeInMillis, socketTimeOutMillis, useCompression, characterEncoding, useSSL, trustServerCertificate, enabledSslProtocolSuites, enabledSslCipherSuites, serverSslCert, autoReconnect, null), characterEncoding);
+	}
+
+	private static String getURL(String urlLocation, int port,
+								 String _database_name,
+								 int connectTimeInMillis,
+								 int socketTimeOutMillis,
+								 boolean useCompression,
+								 String characterEncoding,
+								 boolean useSSL,
+								 boolean trustServerCertificate,
+								 String enabledSslProtocolSuites,
+								 String enabledSslCipherSuites,
+								 File serverSslCert,
+								 boolean autoReconnect,
+								 String additionalParams
+								 )
+	{
+
+		return "jdbc:mariadb://"+urlLocation+":"+port+"/"+_database_name+"?"+"connectTimeout="+connectTimeInMillis+"&socketTimeout="+socketTimeOutMillis+
+				"&useCompression="+useCompression+"&passwordCharacterEncoding="+characterEncoding+
+				"&useSSL="+useSSL+
+				"&trustServerCertificate="+trustServerCertificate+
+				"&enabledSslProtocolSuites="+enabledSslProtocolSuites+
+				"&enabledSslCipherSuites="+enabledSslCipherSuites+
+				(serverSslCert!=null?"&serverSslCert="+serverSslCert.toURI().toString():"")+
+				"&autoReconnect="+autoReconnect+
+				(additionalParams==null?"":additionalParams);
 	}
 }

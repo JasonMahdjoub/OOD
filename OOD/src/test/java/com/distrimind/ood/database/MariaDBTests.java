@@ -50,8 +50,8 @@ import java.security.NoSuchProviderException;
  * @since OOD 2.5.0
  */
 public class MariaDBTests extends TestDatabase{
-	private static DistantMariaDatabaseFactory factoryA= new DistantMariaDatabaseFactory("127.0.0.1", 3307, "databasetestAMySQL", "usertest", "passwordtest");
-	private static DistantMariaDatabaseFactory factoryB= new DistantMariaDatabaseFactory("127.0.0.1", 3307, "databasetestBMySQL", "usertest", "passwordtest");
+	private static DistantMariaDBFactory factoryA= new DistantMariaDBFactory("127.0.0.1", 3307, "databasetestAMySQL", "usertest", "passwordtest");
+	private static DistantMariaDBFactory factoryB= new DistantMariaDBFactory("127.0.0.1", 3307, "databasetestBMySQL", "usertest", "passwordtest");
 	private static final String dockerName="mariadbOOD";
 	private static final String rootPw="rootpw";
 

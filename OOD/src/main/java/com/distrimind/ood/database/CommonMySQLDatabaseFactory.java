@@ -35,7 +35,6 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
@@ -54,13 +53,10 @@ public abstract class CommonMySQLDatabaseFactory<T extends DatabaseWrapper> exte
 	protected int socketTimeOutMillis=0;
 	protected boolean useCompression=false;
 	protected String characterEncoding= StandardCharsets.UTF_8.name();
-	protected DistantMySQLDBWrapper.SSLMode sslMode=DistantMySQLDBWrapper.SSLMode.REQUIRED;
-	protected boolean paranoid=false;
-	protected File serverRSAPublicKeyFile=null;
+
 	protected boolean autoReconnect=false;
-	protected int prefetchNumberRows=0;
-	protected boolean noCache=true;
-	protected String mysqlParams=null;
+
+	protected String additionalParams =null;
 
 	/**
 	 *
@@ -84,49 +80,22 @@ public abstract class CommonMySQLDatabaseFactory<T extends DatabaseWrapper> exte
 		this.databaseName = databaseName;
 		this.user = user;
 		this.password = password;
-		this.mysqlParams=null;
+		this.additionalParams =null;
 	}
-	/**
-	 *
-	 * @param urlLocation the url location
-	 * @param port the port to connect
-	 * @param databaseName the database name
-	 * @param user the user
-	 * @param password the password
-	 * @param connectTimeInMillis Timeout for socket connect (in milliseconds), with 0 being no timeout. Defaults to '0'.
-	 * @param socketTimeOutMillis Timeout (in milliseconds) on network socket operations (0, the default means no timeout).
-	 * @param useCompression Use zlib compression when communicating with the server (true/false)? Defaults to 'false'.
-	 * @param characterEncoding The character encoding to use for sending and retrieving TEXT, MEDIUMTEXT and LONGTEXT values instead of the configured connection characterEncoding
-	 * @param sslMode  the ssl mode
-	 * @param paranoid Take measures to prevent exposure sensitive information in error messages and clear data structures holding sensitive data when possible? (defaults to 'false')
-	 * @param serverRSAPublicKeyFile File path to the server RSA public key file for sha256_password authentication. If not specified, the public key will be retrieved from the server.
-	 * @param autoReconnect Should the driver try to re-establish stale and/or dead connections? If enabled the driver will throw an exception for a queries issued on a stale or dead connection, which belong to the current transaction, but will attempt reconnect before the next query issued on the connection in a new transaction. The use of this feature is not recommended, because it has side effects related to session state and data consistency when applications don't handle SQLExceptions properly, and is only designed to be used when you are unable to configure your application to handle SQLExceptions resulting from dead and stale connections properly. Alternatively, as a last option, investigate setting the MySQL server variable "wait_timeout" to a high value, rather than the default of 8 hours.
-	 * @param prefetchNumberRows When set to a non-zero value N, causes all queries in the connection to return N rows at a time rather than the entire result set. Useful for queries against very large tables where it is not practical to retrieve the whole result set at once. You can scroll through the result set, N records at a time.
-	 *
-	 * This option works only with forward-only cursors. It does not work when the option parameter MULTI_STATEMENTS is set. It can be used in combination with the option parameter NO_CACHE. Its behavior in ADO applications is undefined: the prefetching might or might not occur. Added in 5.1.11.
-	 * @param noCache Do not cache the results locally in the driver, instead read from server (mysql_use_result()). This works only for forward-only cursors. This option is very important in dealing with large tables when you do not want the driver to cache the entire result set.
-	 */
+
 	public CommonMySQLDatabaseFactory(String urlLocation, int port, String databaseName, String user,
 									  String password, int connectTimeInMillis, int socketTimeOutMillis,
 									  boolean useCompression, Charset characterEncoding,
-									  DistantMySQLDBWrapper.SSLMode sslMode, boolean paranoid,
-									  File serverRSAPublicKeyFile, boolean autoReconnect, int prefetchNumberRows, boolean noCache) {
+									   boolean autoReconnect) {
 		this(urlLocation, port, databaseName, user, password);
-		if (sslMode==null)
-			throw new NullPointerException();
 		if (characterEncoding==null)
 			throw new NullPointerException();
 		this.connectTimeInMillis = connectTimeInMillis;
 		this.socketTimeOutMillis = socketTimeOutMillis;
 		this.useCompression = useCompression;
 		this.characterEncoding = characterEncoding.name();
-		this.sslMode = sslMode;
-		this.paranoid = paranoid;
-		this.serverRSAPublicKeyFile = serverRSAPublicKeyFile;
 		this.autoReconnect = autoReconnect;
-		this.prefetchNumberRows = prefetchNumberRows;
-		this.noCache = noCache;
-		this.mysqlParams=null;
+		this.additionalParams =null;
 	}
 
 	/**
@@ -136,12 +105,12 @@ public abstract class CommonMySQLDatabaseFactory<T extends DatabaseWrapper> exte
 	 * @param databaseName the database name
 	 * @param user the user
 	 * @param password the password
-	 * @param mysqlParams the personalized sql params for JDBC connection
+	 * @param additionalParams the personalized sql params for JDBC connection
 	 */
-	public CommonMySQLDatabaseFactory(String urlLocation, int port, String databaseName, String user, String password, String mysqlParams) {
-		if (mysqlParams==null)
+	public CommonMySQLDatabaseFactory(String urlLocation, int port, String databaseName, String user, String password, String additionalParams) {
+		if (additionalParams ==null)
 			throw new NullPointerException();
-		this.mysqlParams = mysqlParams;
+		this.additionalParams = additionalParams;
 	}
 
 	public CommonMySQLDatabaseFactory() {
@@ -299,56 +268,6 @@ public abstract class CommonMySQLDatabaseFactory<T extends DatabaseWrapper> exte
 		this.characterEncoding = characterEncoding.name();
 	}
 
-	/**
-	 *
-	 * @return the ssl mode
-	 */
-	public DistantMySQLDBWrapper.SSLMode getSslMode() {
-		return sslMode;
-	}
-
-	/**
-	 *
-	 * @param sslMode the ssl mode
-	 */
-	public void setSslMode(DistantMySQLDBWrapper.SSLMode sslMode) {
-		if (sslMode==null)
-			throw new NullPointerException();
-		this.sslMode = sslMode;
-	}
-
-	/**
-	 *
-	 * @return true if take measures to prevent exposure sensitive information in error messages and clear data structures holding sensitive data when possible? (defaults to 'false')
-	 */
-	public boolean isParanoid() {
-		return paranoid;
-	}
-
-	/**
-	 *
-	 * @param paranoid Take measures to prevent exposure sensitive information in error messages and clear data structures holding sensitive data when possible? (defaults to 'false')
-	 */
-	public void setParanoid(boolean paranoid) {
-		this.paranoid = paranoid;
-	}
-
-	/**
-	 *
-	 * @return File path to the server RSA public key file for sha256_password authentication. If not specified, the public key will be retrieved from the server.
-	 */
-	public File getServerRSAPublicKeyFile() {
-		return serverRSAPublicKeyFile;
-	}
-
-	/**
-	 *
-	 * @param serverRSAPublicKeyFile File path to the server RSA public key file for sha256_password authentication. If not specified, the public key will be retrieved from the server.
-	 */
-	public void setServerRSAPublicKeyFile(File serverRSAPublicKeyFile) {
-
-		this.serverRSAPublicKeyFile = serverRSAPublicKeyFile;
-	}
 
 	/**
 	 *
@@ -366,54 +285,22 @@ public abstract class CommonMySQLDatabaseFactory<T extends DatabaseWrapper> exte
 		this.autoReconnect = autoReconnect;
 	}
 
-	/**
-	 *
-	 * @return prefetch
-	 */
-	public int getPrefetchNumberRows() {
-		return prefetchNumberRows;
-	}
 
-	/**
-	 *
-	 * @param prefetchNumberRows When set to a non-zero value N, causes all queries in the connection to return N rows at a time rather than the entire result set. Useful for queries against very large tables where it is not practical to retrieve the whole result set at once. You can scroll through the result set, N records at a time.
-	 * 	 *
-	 * 	 * This option works only with forward-only cursors. It does not work when the option parameter MULTI_STATEMENTS is set. It can be used in combination with the option parameter NO_CACHE. Its behavior in ADO applications is undefined: the prefetching might or might not occur. Added in 5.1.11.
-	 */
-	public void setPrefetchNumberRows(int prefetchNumberRows) {
-		this.prefetchNumberRows = prefetchNumberRows;
-	}
-
-	/**
-	 *
-	 * @return true if do not cache the results locally in the driver.
-	 */
-	public boolean isNoCache() {
-		return noCache;
-	}
-
-	/**
-	 *
-	 * @param noCache Do not cache the results locally in the driver, instead read from server (mysql_use_result()). This works only for forward-only cursors. This option is very important in dealing with large tables when you do not want the driver to cache the entire result set.
-	 */
-	public void setNoCache(boolean noCache) {
-		this.noCache = noCache;
-	}
 
 	/**
 	 *
 	 * @return the personalized sql params for JDBC connection
 	 */
-	public String getMysqlParams() {
-		return mysqlParams;
+	public String getAdditionalParams() {
+		return additionalParams;
 	}
 
 	/**
 	 *
-	 * @param mysqlParams the personalized sql params for JDBC connection
+	 * @param additionalParams the personalized sql params for JDBC connection
 	 */
-	public void setMysqlParams(String mysqlParams) {
-		this.mysqlParams = mysqlParams;
+	public void setAdditionalParams(String additionalParams) {
+		this.additionalParams = additionalParams;
 	}
 
 

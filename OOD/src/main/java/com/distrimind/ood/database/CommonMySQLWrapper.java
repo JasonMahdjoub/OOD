@@ -60,27 +60,30 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 	private final int maxCharSize;
 
 
-	protected CommonMySQLWrapper(String urlLocation, int port, String _database_name, String user, String password,
-									int connectTimeInMillis,
-									int socketTimeOutMillis,
-									boolean useCompression,
-									String characterEncoding,
-									DistantMySQLDBWrapper.SSLMode sslMode,
-									boolean paranoid,
-									File serverRSAPublicKeyFile,
-									boolean autoReconnect,
-									int prefetchNumberRows,
-									boolean noCache) throws DatabaseException {
-		super(_database_name, new File(getURL(urlLocation, port, _database_name, connectTimeInMillis, socketTimeOutMillis,useCompression, characterEncoding, sslMode, paranoid, serverRSAPublicKeyFile, autoReconnect, prefetchNumberRows, noCache)), false, false);
-		url=getURL(urlLocation, port, _database_name, connectTimeInMillis, socketTimeOutMillis,useCompression, characterEncoding, sslMode, paranoid, serverRSAPublicKeyFile, autoReconnect, prefetchNumberRows, noCache);
+	protected CommonMySQLWrapper(String urlLocation,
+								 int port,
+								 String _database_name,
+								 String user,
+								 String password,
+								 String url,
+  								 String characterEncoding
+								) throws DatabaseException {
+		super(_database_name, new File(url), false, false);
+		this.url=url;
 		this.user=user;
 		this.password=password;
 		this.charset=characterEncoding;
 		this.maxCharSize=getMaxCharSize(this.charset);
 	}
-	protected CommonMySQLWrapper(String urlLocation, int port, String _database_name, String user, String password, String mysqlParams) throws DatabaseException {
-		super(_database_name, new File(getURL(urlLocation, port, _database_name, mysqlParams)), false, false);
-		url=getURL(urlLocation, port, _database_name, mysqlParams);
+	protected CommonMySQLWrapper(String urlLocation,
+								 int port,
+								 String _database_name,
+								 String user,
+								 String password,
+								 String url
+	) throws DatabaseException {
+		super(_database_name, new File(url), false, false);
+		this.url=url;
 		this.user=user;
 		this.password=password;
 		this.charset=null;
@@ -88,62 +91,8 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 	}
 
 
-	/**
-	 * By default, network connections are SSL encrypted; this property permits secure connections to be turned off, or a different levels of security to be chosen.
-	 */
-	public enum SSLMode
-	{
-		/**
-		 * Establish unencrypted connections
-		 */
-		DISABLED,
-		/**
-		 *  Establish encrypted connections if the server enabled them, otherwise fall back to unencrypted connections
-		 */
-		PREFERRED,
-		/**
-		 * Establish secure connections if the server enabled them, fail otherwise (default)
-		 */
-		REQUIRED,
-		/**
-		 * Like "REQUIRED" but additionally verify the server TLS certificate against the configured Certificate Authority (CA) certificates
-		 */
-		VERIFY_CA,
-		/**
-		 *  Like "VERIFY_CA", but additionally verify that the server certificate matches the host to which the connection is attempted
-		 */
-		VERIFY_IDENTITY
-	}
-	private static String getURL(String urlLocation, int port,
-								 String _database_name,
-								 String params)
-	{
 
-		return "jdbc:mysql://"+urlLocation+":"+port+"/"+_database_name+"?"+params;
-	}
-	private static String getURL(String urlLocation, int port,
-								 String _database_name,
-								 int connectTimeInMillis,
-								 int socketTimeOutMillis,
-								 boolean useCompression,
-								 String characterEncoding,
-								 DistantMySQLDBWrapper.SSLMode sslMode,
-								 boolean paranoid,
-								 File serverRSAPublicKeyFile,
-								 boolean autoReconnect,
-								 int prefetchNumberRows,
-								 boolean noCache)
-	{
 
-		return "jdbc:mysql://"+urlLocation+":"+port+"/"+_database_name+"?"+"connectTimeout="+connectTimeInMillis+"&socketTimeout="+socketTimeOutMillis+
-				"&useCompression="+useCompression+"&characterEncoding="+characterEncoding+
-				"&sslMode="+sslMode.name()+
-				"&paranoid="+paranoid+
-				(serverRSAPublicKeyFile!=null?"&serverRSAPublicKeyFile="+serverRSAPublicKeyFile.toURI().toString():"")+
-				"&autoReconnect="+autoReconnect
-				+"&prefetch="+prefetchNumberRows
-				+"&NO_CACHE="+(noCache?"1":"0");
-	}
 
 	@Override
 	protected Connection reopenConnectionImpl() throws DatabaseLoadingException {
