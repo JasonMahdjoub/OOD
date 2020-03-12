@@ -53,11 +53,11 @@ import java.util.regex.Pattern;
  * @since OOD 2.5.0
  */
 public abstract class CommonMySQLWrapper extends DatabaseWrapper{
-	private final String user;
-	private final String password;
-	private final String url;
-	private final String charset;
-	private final int maxCharSize;
+	protected final String user;
+	protected final String password;
+	protected final String url;
+	protected final String charset;
+	protected final int maxCharSize;
 
 
 	protected CommonMySQLWrapper(String urlLocation,
@@ -94,20 +94,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 
 
 
-	@Override
-	protected Connection reopenConnectionImpl() throws DatabaseLoadingException {
 
-		try  {
-			Connection conn = DriverManager.getConnection(url, user, password);
-			if (conn==null)
-				throw new DatabaseLoadingException("Failed to make connection!");
-
-			return conn;
-
-		} catch (Exception e) {
-			throw new DatabaseLoadingException("Failed to make connection!", e);
-		}
-	}
 
 	@Override
 	protected String getCachedKeyword() {
@@ -208,7 +195,10 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 
 	@Override
 	protected void rollback(Connection openedConnection, String savePointName, Savepoint savePoint) throws SQLException {
-		openedConnection.rollback(savePoint);
+		try(PreparedStatement ps=openedConnection.prepareStatement("ROLLBACK TO SAVEPOINT "+savePointName+getSqlComma()))
+		{
+			ps.executeUpdate();
+		}
 	}
 
 	@Override
@@ -223,7 +213,11 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 
 	@Override
 	protected void releasePoint(Connection openedConnection, String _savePointName, Savepoint savepoint) throws SQLException {
-		openedConnection.releaseSavepoint(savepoint);
+		try(PreparedStatement ps=openedConnection.prepareStatement("RELEASE SAVEPOINT "+_savePointName+getSqlComma()))
+		{
+			ps.executeUpdate();
+		}
+
 	}
 
 	@Override

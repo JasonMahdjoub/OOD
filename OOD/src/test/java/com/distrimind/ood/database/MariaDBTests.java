@@ -50,10 +50,12 @@ import java.security.NoSuchProviderException;
  * @since OOD 2.5.0
  */
 public class MariaDBTests extends TestDatabase{
-	private static DistantMariaDBFactory factoryA= new DistantMariaDBFactory("127.0.0.1", 3307, "databasetestAMySQL", "usertest", "passwordtest");
-	private static DistantMariaDBFactory factoryB= new DistantMariaDBFactory("127.0.0.1", 3307, "databasetestBMySQL", "usertest", "passwordtest");
-	private static final String dockerName="mariadbOOD";
 	private static final String rootPw="rootpw";
+	private static DistantMariaDBFactory factoryA= new DistantMariaDBFactory("127.0.0.1", 3307, "databasetestAMariaDB", "usertest", "passwordtest");
+	private static DistantMariaDBFactory factoryB= new DistantMariaDBFactory("127.0.0.1", 3307, "databasetestBMariaDB", "usertest", "passwordtest");
+	private static final String dockerName="mariadbOOD";
+
+	String volumeID;
 
 	public MariaDBTests() throws DatabaseException, NoSuchAlgorithmException, NoSuchProviderException {
 		super();
@@ -63,7 +65,7 @@ public class MariaDBTests extends TestDatabase{
 		stopMariaDBDocker();
 		rmMariaDBDocker();
 		runMariaDBDocker();
-		Thread.sleep(10000);
+		Thread.sleep(30000);
 		createMariaDB();
 	}
 
@@ -72,6 +74,7 @@ public class MariaDBTests extends TestDatabase{
 	{
 		stopMariaDBDocker();
 		rmMariaDBDocker();
+		rmMariaDBVolume();
 	}
 	private void createMariaDB()
 	{
@@ -84,10 +87,12 @@ public class MariaDBTests extends TestDatabase{
 		try {
 			try(FileWriter fos=new FileWriter(tmpScript))
 			{
-				fos.write("docker exec "+dockerName+" mysql --connect-expired-password --user=\"root\" --password=\""+rootPw+"\" -Bse \"ALTER USER 'root'@'localhost' IDENTIFIED BY 'rootpassword'; CREATE USER 'usertest' IDENTIFIED by 'passwordtest';CREATE DATABASE databasetestAMySQL;CREATE DATABASE databasetestBMySQL;GRANT ALL PRIVILEGES ON databasetestAMySQL.* TO 'usertest';GRANT ALL PRIVILEGES ON databasetestBMySQL.* TO 'usertest';FLUSH PRIVILEGES;\"\n");
+				fos.write("docker exec "+dockerName+" mysql --user=\"root\" --password="+rootPw+" -e \"CREATE USER 'usertest' IDENTIFIED by 'passwordtest';CREATE DATABASE databasetestAMariaDB;CREATE DATABASE databasetestBMariaDB;GRANT ALL PRIVILEGES ON databasetestAMariaDB.* TO 'usertest';GRANT ALL PRIVILEGES ON databasetestBMariaDB.* TO 'usertest';FLUSH PRIVILEGES;\"\n");
 			}
 			ProcessBuilder pb=new ProcessBuilder("bash", tmpScript.toString());
 			p = pb.start();
+			BufferedReader br=new BufferedReader(new InputStreamReader(p.getInputStream()));
+			volumeID=br.readLine();
 		}
 		catch(Exception e)
 		{
@@ -135,7 +140,7 @@ public class MariaDBTests extends TestDatabase{
 		System.out.println("RUN MariaDB docker");
 		Process p=null;
 		try {
-			p = Runtime.getRuntime().exec("docker run -p 3307:3306 --name="+dockerName+" -e MYSQL_ROOT_HOST=% -e MYSQL_ROOT_PASSWORD=\""+rootPw+"\" -d mariadb:latest");
+			p = Runtime.getRuntime().exec("docker run -p 3307:3306 --name "+dockerName+" -e MYSQL_ROOT_PASSWORD="+rootPw+" -d mariadb:latest");
 		}
 		catch(Exception e)
 		{
@@ -170,6 +175,23 @@ public class MariaDBTests extends TestDatabase{
 		Process p=null;
 		try {
 			p = Runtime.getRuntime().exec("docker rm "+dockerName);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		finally {
+			assert p != null;
+			flushOutput(p);
+			Utils.flushAndDestroyProcess(p);
+		}
+	}
+	private void rmMariaDBVolume()
+	{
+		System.out.println("RM MariaDB volume");
+		Process p=null;
+		try {
+			p = Runtime.getRuntime().exec("docker volume rm "+volumeID);
 		}
 		catch(Exception e)
 		{

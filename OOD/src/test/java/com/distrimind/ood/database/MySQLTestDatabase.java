@@ -55,6 +55,7 @@ public class MySQLTestDatabase extends TestDatabase {
 	private static DistantMySQLDatabaseFactory factoryA= new DistantMySQLDatabaseFactory("127.0.0.1", 3306, "databasetestAMySQL", "usertest", "passwordtest");
 	private static DistantMySQLDatabaseFactory factoryB= new DistantMySQLDatabaseFactory("127.0.0.1", 3306, "databasetestBMySQL", "usertest", "passwordtest");
 	private static final String dockerName="mysqlOOD";
+	private String volumeID;
 
 	public MySQLTestDatabase() throws DatabaseException, NoSuchAlgorithmException, NoSuchProviderException {
 		super();
@@ -73,6 +74,7 @@ public class MySQLTestDatabase extends TestDatabase {
 	{
 		stopMySQLDocker();
 		rmMySQLDocker();
+		rmMySQLVolume();
 	}
 	private void createMySQLDB()
 	{
@@ -89,6 +91,7 @@ public class MySQLTestDatabase extends TestDatabase {
 			}
 			ProcessBuilder pb=new ProcessBuilder("bash", tmpScript.toString());
 			p = pb.start();
+
 		}
 		catch(Exception e)
 		{
@@ -166,6 +169,8 @@ public class MySQLTestDatabase extends TestDatabase {
 		Process p=null;
 		try {
 			p = Runtime.getRuntime().exec("docker run -p 3306:3306 --name="+dockerName+" -e MYSQL_ROOT_HOST=% -d mysql/mysql-server:latest");
+			BufferedReader br=new BufferedReader(new InputStreamReader(p.getInputStream()));
+			volumeID=br.readLine();
 		}
 		catch(Exception e)
 		{
@@ -200,6 +205,23 @@ public class MySQLTestDatabase extends TestDatabase {
 		Process p=null;
 		try {
 			p = Runtime.getRuntime().exec("docker rm "+dockerName);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		finally {
+			assert p != null;
+			flushOutput(p);
+			Utils.flushAndDestroyProcess(p);
+		}
+	}
+	private void rmMySQLVolume()
+	{
+		System.out.println("RM Mysql volume");
+		Process p=null;
+		try {
+			p = Runtime.getRuntime().exec("docker volume rm "+volumeID);
 		}
 		catch(Exception e)
 		{

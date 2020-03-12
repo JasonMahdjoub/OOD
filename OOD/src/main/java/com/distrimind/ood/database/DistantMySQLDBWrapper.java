@@ -3,6 +3,8 @@ package com.distrimind.ood.database;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 
 import java.io.File;
+import java.sql.Connection;
+import java.sql.DriverManager;
 
 /**
  * @author Jason Mahdjoub
@@ -47,5 +49,19 @@ public class DistantMySQLDBWrapper extends CommonMySQLWrapper{
 				+"&NO_CACHE="+(noCache?"1":"0")
 				+"&disableMariaDbDriver"
 				+(additionalParams==null?"":additionalParams);
+	}
+	@Override
+	protected Connection reopenConnectionImpl() throws DatabaseLoadingException {
+
+		try  {
+			Connection conn = DriverManager.getConnection(url, user, password);
+			if (conn==null)
+				throw new DatabaseLoadingException("Failed to make connection!");
+
+			return conn;
+
+		} catch (Exception e) {
+			throw new DatabaseLoadingException("Failed to make connection!", e);
+		}
 	}
 }
