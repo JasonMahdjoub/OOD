@@ -543,7 +543,7 @@ public abstract class FieldAccessor {
 						else if (Date.class.isAssignableFrom(type))
 							res.add(new DateFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (type.equals(DecentralizedIDGenerator.class))
-							res.add(new DencetralizedIDFieldAccessor(_table, _sql_connection, f,
+							res.add(new DecentralizedIDFieldAccessor(_table, _sql_connection, f,
 									parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (type.equals(RenforcedDecentralizedIDGenerator.class))
 							res.add(new RenforcedDencetralizedIDFieldAccessor(_table, _sql_connection, f,

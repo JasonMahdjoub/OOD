@@ -188,10 +188,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 		openedConnection.commit();
 	}
 
-	@Override
-	protected boolean supportSavePoint(Connection openedConnection)  {
-		return true;
-	}
+
 
 
 
@@ -223,10 +220,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 		return e.getErrorCode()==1062;
 	}
 
-	@Override
-	protected boolean mustGenerateAutoIncrementManually() {
-		return true;
-	}
+
 
 	@Override
 	public String getAutoIncrementPart(long startWith) {
@@ -630,17 +624,17 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 	@Override
 	protected String getBigDecimalType(long limit) {
 		if (limit<=0)
-			return "VARCHAR(1024) CHARACTER SET latin1";
+			return "VARBINARY(1024)";
 		else
-			return "VARCHAR("+limit+") CHARACTER SET latin1";
+			return "VARBINARY("+limit+")";
 	}
 
 	@Override
 	protected String getBigIntegerType(long limit) {
 		if (limit<=0)
-			return "VARCHAR(1024) CHARACTER SET latin1";
+			return "VARBINARY(1024)";
 		else
-			return "VARCHAR("+limit+") CHARACTER SET latin1";
+			return "VARBINARY("+limit+")";
 	}
 	@Override
 	protected String getDateTimeType()

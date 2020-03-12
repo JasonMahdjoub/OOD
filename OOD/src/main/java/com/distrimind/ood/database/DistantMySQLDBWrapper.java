@@ -79,4 +79,10 @@ public class DistantMySQLDBWrapper extends CommonMySQLWrapper{
 	protected void rollback(Connection openedConnection, String savePointName, Savepoint savePoint) throws SQLException {
 		openedConnection.rollback(savePoint);
 	}
+	@Override
+	protected boolean supportSavePoint(Connection openedConnection)  {
+		return true;
+	}
+
+
 }

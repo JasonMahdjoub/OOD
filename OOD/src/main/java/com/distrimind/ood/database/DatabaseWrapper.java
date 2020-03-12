@@ -3528,14 +3528,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		return !isThreadSafe() || hasOnePeerSyncronized; 
 	}
 
-	protected boolean mustGenerateAutoIncrementManually()
-	{
-		return false;
-	}
-
 	private void checkAutoIncrementTable() throws DatabaseException {
 		try {
-			if (mustGenerateAutoIncrementManually() && !doesTableExists(DatabaseWrapper.AUTOINCREMENT_TABLE)) {
+			if (!supportMultipleAutoPrimaryKeys() && !doesTableExists(DatabaseWrapper.AUTOINCREMENT_TABLE)) {
 				try (PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
 						.prepareStatement("CREATE TABLE `" + DatabaseWrapper.AUTOINCREMENT_TABLE +
 								"` (TABLE_ID INT NOT NULL, TABLE_VERSION INT NOT NULL, AI BIGINT NOT NULL, CONSTRAINT TABLE_ID_PK PRIMARY KEY(TABLE_ID, TABLE_VERSION))"

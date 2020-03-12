@@ -510,8 +510,9 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		if (fields.size() == 0)
 			throw new DatabaseException("No field has been declared in the class " + class_record.getName());
 		for (FieldAccessor f : fields) {
-			if (f.isPrimaryKey())
+			if (f.isPrimaryKey()) {
 				primary_keys_fields.add(f);
+			}
 			if (f.isAutoPrimaryKey() || f.isRandomPrimaryKey())
 				auto_random_primary_keys_fields.add(f);
 			if (f.isAutoPrimaryKey())

@@ -124,11 +124,24 @@ public class DistantMariaDBWrapper extends CommonMySQLWrapper{
 	}
 
 	@Override
+	protected boolean supportSavePoint(Connection openedConnection)  {
+		return false;
+	}
+
+	@Override
 	protected void rollback(Connection openedConnection, String savePointName, Savepoint savePoint) throws SQLException {
 		try(Statement st=openedConnection.createStatement())
 		{
-			st.execute("ROLLBACK TO SAVEPOINT "+savePointName+getSqlComma());
+			st.execute("ROLLBACK TO "+savePointName+getSqlComma());
 		}
+	}
+
+	@Override
+	protected String getBigIntegerType(long limit) {
+		if (limit<=0)
+			return "VARBINARY(1024)";
+		else
+			return "VARBINARY("+limit+")";
 	}
 
 	@Override
@@ -148,4 +161,6 @@ public class DistantMariaDBWrapper extends CommonMySQLWrapper{
 		}
 
 	}
+
+
 }

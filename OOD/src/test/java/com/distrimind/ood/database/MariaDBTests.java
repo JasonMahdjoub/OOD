@@ -55,8 +55,6 @@ public class MariaDBTests extends TestDatabase{
 	private static DistantMariaDBFactory factoryB= new DistantMariaDBFactory("127.0.0.1", 3307, "databasetestBMariaDB", "usertest", "passwordtest");
 	private static final String dockerName="mariadbOOD";
 
-	static String volumeID;
-
 	public MariaDBTests() throws DatabaseException, NoSuchAlgorithmException, NoSuchProviderException {
 		super();
 	}
@@ -74,7 +72,6 @@ public class MariaDBTests extends TestDatabase{
 	{
 		stopMariaDBDocker();
 		rmMariaDBDocker();
-		rmMariaDBVolume();
 	}
 	private void createMariaDB()
 	{
@@ -91,8 +88,7 @@ public class MariaDBTests extends TestDatabase{
 			}
 			ProcessBuilder pb=new ProcessBuilder("bash", tmpScript.toString());
 			p = pb.start();
-			BufferedReader br=new BufferedReader(new InputStreamReader(p.getInputStream()));
-			volumeID=br.readLine();
+
 		}
 		catch(Exception e)
 		{
@@ -174,7 +170,7 @@ public class MariaDBTests extends TestDatabase{
 		System.out.println("RM MariaDB docker");
 		Process p=null;
 		try {
-			p = Runtime.getRuntime().exec("docker rm "+dockerName);
+			p = Runtime.getRuntime().exec("docker rm -v "+dockerName);
 		}
 		catch(Exception e)
 		{
@@ -186,23 +182,7 @@ public class MariaDBTests extends TestDatabase{
 			Utils.flushAndDestroyProcess(p);
 		}
 	}
-	private void rmMariaDBVolume()
-	{
-		System.out.println("RM MariaDB volume "+volumeID);
-		Process p=null;
-		try {
-			p = Runtime.getRuntime().exec("docker volume rm "+volumeID);
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace();
-		}
-		finally {
-			assert p != null;
-			flushOutput(p);
-			Utils.flushAndDestroyProcess(p);
-		}
-	}
+
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstanceA() throws IllegalArgumentException, DatabaseException {
 		return factoryA.newWrapperInstance();

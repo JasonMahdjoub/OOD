@@ -62,11 +62,11 @@ import com.distrimind.util.io.RandomOutputStream;
  * @since OOD 1.7.0
  * 
  */
-public class DencetralizedIDFieldAccessor extends FieldAccessor {
+public class DecentralizedIDFieldAccessor extends FieldAccessor {
 	protected final SqlField[] sql_fields;
 
-	protected DencetralizedIDFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection,
-			Field _field, String parentFieldName, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
+	protected DecentralizedIDFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection,
+										   Field _field, String parentFieldName, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
 		super(_sql_connection, _field, parentFieldName, compatibleClasses, table, severalPrimaryKeysPresentIntoTable);
 		sql_fields = new SqlField[2];
 		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName() + "_ts",

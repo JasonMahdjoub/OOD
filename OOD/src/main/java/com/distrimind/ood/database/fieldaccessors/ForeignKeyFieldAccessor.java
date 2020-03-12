@@ -145,7 +145,6 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 				for (SqlField sf : fa.getDeclaredSqlFields()) {
 					sql_fields.add(new SqlField(table_name + "." + this.getSqlFieldName() + "__" + pointed_table.getSqlTableName()
 							+ "_" + sf.short_field_without_quote, sf.type, pointed_table.getSqlTableName(), sf.field, isNotNull()));
-
 				}
 			}
 			this.sql_fields = new SqlField[sql_fields.size()];
