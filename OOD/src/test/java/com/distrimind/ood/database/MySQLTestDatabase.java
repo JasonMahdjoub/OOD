@@ -55,7 +55,7 @@ public class MySQLTestDatabase extends TestDatabase {
 	private static DistantMySQLDatabaseFactory factoryA= new DistantMySQLDatabaseFactory("127.0.0.1", 3306, "databasetestAMySQL", "usertest", "passwordtest");
 	private static DistantMySQLDatabaseFactory factoryB= new DistantMySQLDatabaseFactory("127.0.0.1", 3306, "databasetestBMySQL", "usertest", "passwordtest");
 	private static final String dockerName="mysqlOOD";
-	private String volumeID;
+	private static String volumeID;
 
 	public MySQLTestDatabase() throws DatabaseException, NoSuchAlgorithmException, NoSuchProviderException {
 		super();
@@ -218,7 +218,7 @@ public class MySQLTestDatabase extends TestDatabase {
 	}
 	private void rmMySQLVolume()
 	{
-		System.out.println("RM Mysql volume");
+		System.out.println("RM Mysql volume "+volumeID);
 		Process p=null;
 		try {
 			p = Runtime.getRuntime().exec("docker volume rm "+volumeID);

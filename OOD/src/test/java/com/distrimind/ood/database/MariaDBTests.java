@@ -55,7 +55,7 @@ public class MariaDBTests extends TestDatabase{
 	private static DistantMariaDBFactory factoryB= new DistantMariaDBFactory("127.0.0.1", 3307, "databasetestBMariaDB", "usertest", "passwordtest");
 	private static final String dockerName="mariadbOOD";
 
-	String volumeID;
+	static String volumeID;
 
 	public MariaDBTests() throws DatabaseException, NoSuchAlgorithmException, NoSuchProviderException {
 		super();
@@ -188,7 +188,7 @@ public class MariaDBTests extends TestDatabase{
 	}
 	private void rmMariaDBVolume()
 	{
-		System.out.println("RM MariaDB volume");
+		System.out.println("RM MariaDB volume "+volumeID);
 		Process p=null;
 		try {
 			p = Runtime.getRuntime().exec("docker volume rm "+volumeID);
