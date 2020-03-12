@@ -193,32 +193,14 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 		return true;
 	}
 
-	@Override
-	protected void rollback(Connection openedConnection, String savePointName, Savepoint savePoint) throws SQLException {
-		try(PreparedStatement ps=openedConnection.prepareStatement("ROLLBACK TO SAVEPOINT "+savePointName+getSqlComma()))
-		{
-			ps.executeUpdate();
-		}
-	}
+
 
 	@Override
 	protected void disableAutoCommit(Connection openedConnection) throws SQLException {
 		openedConnection.setAutoCommit(false);
 	}
 
-	@Override
-	protected Savepoint savePoint(Connection openedConnection, String savePoint) throws SQLException {
-		return openedConnection.setSavepoint(savePoint);
-	}
 
-	@Override
-	protected void releasePoint(Connection openedConnection, String _savePointName, Savepoint savepoint) throws SQLException {
-		try(PreparedStatement ps=openedConnection.prepareStatement("RELEASE SAVEPOINT "+_savePointName+getSqlComma()))
-		{
-			ps.executeUpdate();
-		}
-
-	}
 
 	@Override
 	protected boolean isSerializationException(SQLException e)  {

@@ -38,6 +38,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 import com.distrimind.ood.database.exceptions.DatabaseException;
 
 import java.io.File;
+import java.sql.*;
 
 /**
  * @author Jason Mahdjoub
@@ -58,7 +59,7 @@ public class DistantMariaDBWrapper extends CommonMySQLWrapper{
 									boolean autoReconnect,
 									String additionalParams) throws DatabaseException {
 		super(urlLocation, port, _database_name, user, password,
-				getURL(urlLocation, port, _database_name, connectTimeInMillis, socketTimeOutMillis, useCompression, characterEncoding, useSSL, trustServerCertificate, enabledSslProtocolSuites, enabledSslCipherSuites, serverSslCert, autoReconnect, additionalParams), characterEncoding);
+				getURL(user, password, urlLocation, port, _database_name, connectTimeInMillis, socketTimeOutMillis, useCompression, characterEncoding, useSSL, trustServerCertificate, enabledSslProtocolSuites, enabledSslCipherSuites, serverSslCert, autoReconnect, additionalParams), characterEncoding);
 		if (additionalParams==null)
 			throw new NullPointerException();
 	}
@@ -75,10 +76,13 @@ public class DistantMariaDBWrapper extends CommonMySQLWrapper{
 									File serverSslCert,
 									boolean autoReconnect) throws DatabaseException {
 		super(urlLocation, port, _database_name, user, password,
-				getURL(urlLocation, port, _database_name, connectTimeInMillis, socketTimeOutMillis, useCompression, characterEncoding, useSSL, trustServerCertificate, enabledSslProtocolSuites, enabledSslCipherSuites, serverSslCert, autoReconnect, null), characterEncoding);
+				getURL(user, password, urlLocation, port, _database_name, connectTimeInMillis, socketTimeOutMillis, useCompression, characterEncoding, useSSL, trustServerCertificate, enabledSslProtocolSuites, enabledSslCipherSuites, serverSslCert, autoReconnect, null), characterEncoding);
 	}
 
-	private static String getURL(String urlLocation, int port,
+	private static String getURL(String user,
+								 String password,
+								 String urlLocation,
+								 int port,
 								 String _database_name,
 								 int connectTimeInMillis,
 								 int socketTimeOutMillis,
@@ -94,7 +98,7 @@ public class DistantMariaDBWrapper extends CommonMySQLWrapper{
 								 )
 	{
 
-		return "jdbc:mariadb://"+urlLocation+":"+port+"/"+_database_name+"?"+"connectTimeout="+connectTimeInMillis+"&socketTimeout="+socketTimeOutMillis+
+		return "jdbc:mariadb://"+urlLocation+":"+port+"/"+_database_name+"?"+"user="+user+"&password="+password+"&connectTimeout="+connectTimeInMillis+"&socketTimeout="+socketTimeOutMillis+
 				"&useCompression="+useCompression+"&passwordCharacterEncoding="+characterEncoding+
 				"&useSSL="+useSSL+
 				"&trustServerCertificate="+trustServerCertificate+
@@ -103,5 +107,45 @@ public class DistantMariaDBWrapper extends CommonMySQLWrapper{
 				(serverSslCert!=null?"&serverSslCert="+serverSslCert.toURI().toString():"")+
 				"&autoReconnect="+autoReconnect+
 				(additionalParams==null?"":additionalParams);
+	}
+	@Override
+	protected Connection reopenConnectionImpl() throws DatabaseLoadingException {
+
+		try  {
+			Connection conn = DriverManager.getConnection(url);
+			if (conn==null)
+				throw new DatabaseLoadingException("Failed to make connection!");
+
+			return conn;
+
+		} catch (Exception e) {
+			throw new DatabaseLoadingException("Failed to make connection!", e);
+		}
+	}
+
+	@Override
+	protected void rollback(Connection openedConnection, String savePointName, Savepoint savePoint) throws SQLException {
+		try(Statement st=openedConnection.createStatement())
+		{
+			st.execute("ROLLBACK TO SAVEPOINT "+savePointName+getSqlComma());
+		}
+	}
+
+	@Override
+	protected Savepoint savePoint(Connection openedConnection, String savePoint) throws SQLException {
+		try(Statement st=openedConnection.createStatement())
+		{
+			st.execute("SAVEPOINT "+savePoint+getSqlComma());
+		}
+		return null;
+	}
+
+	@Override
+	protected void releasePoint(Connection openedConnection, String _savePointName, Savepoint savepoint) throws SQLException {
+		try(Statement st=openedConnection.createStatement())
+		{
+			st.execute("RELEASE SAVEPOINT "+_savePointName+getSqlComma());
+		}
+
 	}
 }

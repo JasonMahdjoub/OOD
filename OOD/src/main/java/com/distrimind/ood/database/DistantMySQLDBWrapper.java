@@ -5,6 +5,8 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Savepoint;
 
 /**
  * @author Jason Mahdjoub
@@ -63,5 +65,18 @@ public class DistantMySQLDBWrapper extends CommonMySQLWrapper{
 		} catch (Exception e) {
 			throw new DatabaseLoadingException("Failed to make connection!", e);
 		}
+	}
+	@Override
+	protected Savepoint savePoint(Connection openedConnection, String savePoint) throws SQLException {
+		return openedConnection.setSavepoint(savePoint);
+	}
+
+	@Override
+	protected void releasePoint(Connection openedConnection, String _savePointName, Savepoint savepoint) throws SQLException {
+		openedConnection.releaseSavepoint(savepoint);
+	}
+	@Override
+	protected void rollback(Connection openedConnection, String savePointName, Savepoint savePoint) throws SQLException {
+		openedConnection.rollback(savePoint);
 	}
 }
