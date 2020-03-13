@@ -45,7 +45,7 @@ import java.sql.*;
  * @version 1.0
  * @since OOD 2.5.0
  */
-public class DistantMariaDBWrapper extends CommonMySQLWrapper{
+class DistantMariaDBWrapper extends CommonMySQLWrapper{
 	protected DistantMariaDBWrapper(String urlLocation, int port, String _database_name, String user, String password,
 									int connectTimeInMillis,
 									int socketTimeOutMillis,
@@ -134,14 +134,6 @@ public class DistantMariaDBWrapper extends CommonMySQLWrapper{
 		{
 			st.execute("ROLLBACK TO "+savePointName+getSqlComma());
 		}
-	}
-
-	@Override
-	protected String getBigIntegerType(long limit) {
-		if (limit<=0)
-			return "VARBINARY(1024)";
-		else
-			return "VARBINARY("+limit+")";
 	}
 
 	@Override

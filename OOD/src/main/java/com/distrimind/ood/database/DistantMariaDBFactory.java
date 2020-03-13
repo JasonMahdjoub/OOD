@@ -45,7 +45,7 @@ import java.nio.charset.Charset;
  * @version 1.0
  * @since OOD 2.5.0
  */
-public class DistantMariaDBFactory extends CommonMySQLDatabaseFactory<DistantMariaDBWrapper> {
+class DistantMariaDBFactory extends CommonMySQLDatabaseFactory<DistantMariaDBWrapper> {
 	private boolean useSSL=false;
 	private boolean trustServerCertificate=false;
 	private String enabledSslProtocolSuites="TLSv1.2,TLSv1.3";

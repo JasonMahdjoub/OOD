@@ -629,6 +629,11 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 			return "VARBINARY("+limit+")";
 	}
 
+	protected boolean useGetBigDecimalInResultSet()
+	{
+		return false;
+	}
+
 	@Override
 	protected String getBigIntegerType(long limit) {
 		if (limit<=0)

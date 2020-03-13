@@ -495,17 +495,23 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	@Override
 	protected String getBigDecimalType(long limit) {
 		if (limit<=0)
-			return "VARCHAR(1024) CHARACTER SET latin1";
+			return "VARBINARY(1024)";
 		else
-			return "VARCHAR("+limit+") CHARACTER SET latin1";
+			return "VARBINARY("+limit+")";
 	}
 
 	@Override
 	protected String getBigIntegerType(long limit) {
 		if (limit<=0)
-			return "VARCHAR(1024) CHARACTER SET latin1";
+			return "VARBINARY(1024)";
 		else
-			return "VARCHAR("+limit+") CHARACTER SET latin1";
+			return "VARBINARY("+limit+")";
+	}
+
+
+	protected boolean useGetBigDecimalInResultSet()
+	{
+		return false;
 	}
 
 	@Override

@@ -41,6 +41,7 @@ import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.database.*;
 import com.distrimind.ood.database.database.Table1.Record;
 import com.distrimind.ood.database.exceptions.*;
+import com.distrimind.ood.database.fieldaccessors.BigDecimalFieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ByteTabFieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.schooldatabase.Lecture;
@@ -3116,7 +3117,7 @@ public abstract class TestDatabase {
 
 	}
 
-	private ArrayList<Object> getExpectedParameter(Class<?> type, Object o) throws IOException {
+	private ArrayList<Object> getExpectedParameter(Class<?> type, Object o) throws IOException, DatabaseException {
 		ArrayList<Object> res = new ArrayList<>();
 		
 		if (o==null && type==DecentralizedIDGenerator.class)
@@ -3158,9 +3159,11 @@ public abstract class TestDatabase {
                     || o.getClass() == Double.class || o.getClass() == byte[].class || o.getClass() == String.class) {
                 res.add(o);
 
-            } else if (o.getClass() == BigInteger.class || o.getClass() == BigDecimal.class) {
-                res.add(o.toString());
-            } else if (o instanceof Date) {
+            } else if (o.getClass() == BigInteger.class) {
+                res.add(getDatabaseWrapperInstanceA().useGetBigDecimalInResultSet()?new BigDecimal((BigInteger)o):((BigInteger) o).toByteArray());
+            } else if (o.getClass() == BigDecimal.class) {
+				res.add(getDatabaseWrapperInstanceA().useGetBigDecimalInResultSet()?o: BigDecimalFieldAccessor.bigDecimalToBytes((BigDecimal)o));
+			} else if (o instanceof Date) {
                 res.add(new Timestamp(((Date) o).getTime()));
             }
             else if (o instanceof File)
