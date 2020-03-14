@@ -3531,11 +3531,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	private void checkAutoIncrementTable() throws DatabaseException {
 		try {
 			if (!supportMultipleAutoPrimaryKeys() && !doesTableExists(DatabaseWrapper.AUTOINCREMENT_TABLE)) {
-				try (PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
-						.prepareStatement("CREATE TABLE `" + DatabaseWrapper.AUTOINCREMENT_TABLE +
-								"` (TABLE_ID INT NOT NULL, TABLE_VERSION INT NOT NULL, AI BIGINT NOT NULL, CONSTRAINT TABLE_ID_PK PRIMARY KEY(TABLE_ID, TABLE_VERSION))"
-								+ getPostCreateTable(null) + getSqlComma())) {
-					pst.executeUpdate();
+				try (Statement pst = getConnectionAssociatedWithCurrentThread().getConnection()
+						.createStatement()) {
+					pst.execute("CREATE TABLE `" + DatabaseWrapper.AUTOINCREMENT_TABLE +
+							"` (TABLE_ID INT NOT NULL, TABLE_VERSION INT NOT NULL, AI BIGINT NOT NULL, CONSTRAINT TABLE_ID_PK PRIMARY KEY(TABLE_ID, TABLE_VERSION))"
+							+ getPostCreateTable(null) + getSqlComma());
 				}
 			}
 		}

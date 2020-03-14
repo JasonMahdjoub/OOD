@@ -23,7 +23,7 @@ public class DistantMySQLDBWrapper extends CommonMySQLWrapper{
 	}
 
 	protected DistantMySQLDBWrapper(String urlLocation, int port, String _database_name, String user, String password, int connectTimeInMillis, int socketTimeOutMillis, boolean useCompression, String characterEncoding, DistantMySQLDatabaseFactory.SSLMode sslMode, boolean paranoid, File serverRSAPublicKeyFile, boolean autoReconnect, int prefetchNumberRows, boolean noCache) throws DatabaseException {
-		super(urlLocation, port, _database_name, user, password, getURL(urlLocation, port, _database_name, connectTimeInMillis, socketTimeOutMillis, useCompression, characterEncoding, sslMode, paranoid, serverRSAPublicKeyFile, autoReconnect, prefetchNumberRows, noCache, null));
+		super(urlLocation, port, _database_name, user, password, getURL(urlLocation, port, _database_name, connectTimeInMillis, socketTimeOutMillis, useCompression, characterEncoding, sslMode, paranoid, serverRSAPublicKeyFile, autoReconnect, prefetchNumberRows, noCache, null), characterEncoding);
 	}
 
 	private static String getURL(String urlLocation, int port,

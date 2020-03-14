@@ -37,29 +37,24 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database.fieldaccessors;
 
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.Objects;
-
-import com.distrimind.ood.database.DatabaseRecord;
-import com.distrimind.ood.database.DatabaseWrapper;
-import com.distrimind.ood.database.SqlField;
-import com.distrimind.ood.database.SqlFieldInstance;
-import com.distrimind.ood.database.Table;
+import com.distrimind.ood.database.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.io.RandomInputStream;
 import com.distrimind.util.io.RandomOutputStream;
+
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * 
@@ -77,7 +72,7 @@ public class BigIntegerFieldAccessor extends FieldAccessor {
 		sql_fields = new SqlField[1];
 		long l=getLimit();
 		if (l<=0)
-			l=128;
+			l=32;
 		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(),
 				Objects.requireNonNull(DatabaseWrapperAccessor.getBigIntegerType(sql_connection, l)), null, null, isNotNull());
 		useGetBigDecimal=DatabaseWrapperAccessor.useGetBigDecimalInResultSet(sql_connection);

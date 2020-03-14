@@ -8087,8 +8087,9 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 														null), true);
 									} else {
 										Map<String, Object> m = _filter.getModifications();
-										if (m == null && _filter.isModificatiedFromRecordInstance())
+										if (m == null && _filter.isModificatiedFromRecordInstance()) {
 											m = getMap(_instance, false, false);
+										}
 										final Map<String, Object> map = m;
 
 										if (map != null && map.size() > 0) {
@@ -8131,6 +8132,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 													fa.updateValue(_instance, map.get(fa.getFieldName()), _result_set);
 												}
 											}
+
 											_result_set.updateRow();
 											updateWithCascade.set(true);
 											oneUpdated.set(true);

@@ -229,11 +229,11 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 
 	@Override
 	protected String getPostCreateTable(Long autoIncrementStart) {
-		String cs=charset==null?"":" CHARSET="+charset;
+		String cs=charset==null?"":" DEFAULT CHARSET="+charset;
 		if (autoIncrementStart==null)
-			return " ENGINE=InnoDB DEFAULT"+cs;
+			return " ENGINE=InnoDB"+cs;
 		else
-			return " ENGINE=InnoDB AUTO_INCREMENT="+autoIncrementStart+" DEFAULT"+cs;
+			return " ENGINE=InnoDB AUTO_INCREMENT="+autoIncrementStart+cs;
 	}
 
 	@Override

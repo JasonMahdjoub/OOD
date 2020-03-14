@@ -880,8 +880,8 @@ public abstract class FieldAccessor {
 	@SuppressWarnings("ConstantConditions")
 	public static void setValue(DatabaseWrapper sql_connection, PreparedStatement st, int index, Object p)
 			throws SQLException {
-		if (p instanceof byte[]
-				|| (p instanceof Number && p.getClass() != BigInteger.class && p.getClass() != BigDecimal.class)) {
+		if (p instanceof byte[] || p instanceof Number) {
+
 			if (p instanceof Byte)
 				st.setByte(index, (Byte) p);
 			else if (p instanceof Integer)
@@ -900,6 +900,18 @@ public abstract class FieldAccessor {
 				st.setFloat(index, (Float)p);
 			else if (p instanceof Double)
 				st.setDouble(index, (Double)p);
+			else if (p instanceof BigDecimal) {
+				if (DatabaseWrapperAccessor.useGetBigDecimalInResultSet(sql_connection))
+					st.setBigDecimal(index, (BigDecimal)p);
+				else
+					st.setBytes(index, BigDecimalFieldAccessor.bigDecimalToBytes((BigDecimal)p));
+			}
+			else if (p instanceof BigInteger) {
+				if (DatabaseWrapperAccessor.useGetBigDecimalInResultSet(sql_connection))
+					st.setBigDecimal(index, new BigDecimal((BigInteger)p));
+				else
+					st.setBytes(index, ((BigInteger)p).toByteArray());
+			}
 			/*switch (st.getParameterMetaData().getParameterType(index)) {
 			case Types.TINYINT:
 				st.setByte(index, (Byte) p);
@@ -943,7 +955,8 @@ public abstract class FieldAccessor {
 
 			}*/
 		}
-		st.setObject(index, p);
+		else
+			st.setObject(index, p);
 	}
 
 	protected static class SqlFieldTranslation {
