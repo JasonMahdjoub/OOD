@@ -41,6 +41,7 @@ import com.distrimind.ood.database.SqlFieldInstance;
 import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseSyntaxException;
+import com.distrimind.ood.database.fieldaccessors.BigDecimalFieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.StringFieldAccessor;
@@ -48,6 +49,7 @@ import com.distrimind.ood.database.fieldaccessors.StringFieldAccessor;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
@@ -306,7 +308,19 @@ public class RuleInstance implements QueryPart {
 					} else
 						throw new DatabaseSyntaxException("The parameter " + s.getSymbol() + " is not a string !");
 				} else if (s.getType() == SymbolType.STRING || s.getType() == SymbolType.NUMBER || s.getType()==SymbolType.NULL) {
-					return s.getContent().toString();
+
+					if (s.getContent() instanceof BigDecimal)
+					{
+						String t=DatabaseWrapperAccessor.getBigDecimalType(table.getDatabaseWrapper(), 64);
+						return t.contains("CHAR")?s.getContent().toString():t.contains("BINARY")? BigDecimalFieldAccessor.bigDecimalToBytes((BigDecimal)s.getContent()):s.getContent();
+					}
+					else if (s.getContent() instanceof BigInteger)
+					{
+						String t=DatabaseWrapperAccessor.getBigIntegerType(table.getDatabaseWrapper(), 64);
+						return t.contains("CHAR")?s.getContent().toString():t.contains("BINARY")? ((BigInteger)s.getContent()).toByteArray():new BigDecimal(((BigInteger)s.getContent()));
+					}
+					else
+						return s.getContent().toString();
 				} else
 					throw new IllegalAccessError();
 			} else if (parts.size() == 3) {
@@ -742,7 +756,22 @@ public class RuleInstance implements QueryPart {
 								res.append(sfs[0].field);
 								res.append(comp.getType().getContent());
 								assert parameter2 != null;
-								res.append(parameter2.toString());
+								if (parameter2 instanceof BigDecimal)
+								{
+									int id = currentParameterID.getAndIncrement();
+									res.append("?");
+									String t=DatabaseWrapperAccessor.getBigDecimalType(table.getDatabaseWrapper(), 64);
+									outputParameters.put(id, t.contains("CHAR")?parameter2.toString():t.contains("BINARY")? BigDecimalFieldAccessor.bigDecimalToBytes((BigDecimal)parameter2):parameter2);
+								}
+								else if (parameter2 instanceof BigInteger)
+								{
+									int id = currentParameterID.getAndIncrement();
+									res.append("?");
+									String t=DatabaseWrapperAccessor.getBigIntegerType(table.getDatabaseWrapper(), 64);
+									outputParameters.put(id, t.contains("CHAR")?parameter2.toString():t.contains("BINARY")? ((BigInteger)parameter2).toByteArray():new BigDecimal(((BigInteger)parameter2)));
+								}
+								else
+									res.append(parameter2.toString());
 								return res;
 							} else {
 								StringBuilder res = new StringBuilder();
@@ -954,17 +983,17 @@ public class RuleInstance implements QueryPart {
 		throw new IllegalAccessError();
 	}
 
-	private final Map<Class<?>, Constructor> cachedConstructors=new HashMap<>();
+	private final Map<Class<?>, Constructor<?>> cachedConstructors=new HashMap<>();
 
-	private Constructor getConstructor(final Class<?> declaringClass) throws PrivilegedActionException {
+	private Constructor<?> getConstructor(final Class<?> declaringClass) throws PrivilegedActionException {
 		synchronized (cachedConstructors)
 		{
 			Constructor<?> c=cachedConstructors.get(declaringClass);
 			if (c==null)
 			{
-				c=AccessController.doPrivileged(new PrivilegedExceptionAction<Constructor>() {
+				c=AccessController.doPrivileged(new PrivilegedExceptionAction<Constructor<?>>() {
 					@Override
-					public Constructor run() throws Exception {
+					public Constructor<?> run() throws Exception {
 						Constructor<?> c=declaringClass.getDeclaredConstructor();
 						c.setAccessible(true);
 						return c;

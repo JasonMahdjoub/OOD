@@ -203,7 +203,7 @@ public class BigDecimalFieldAccessor extends FieldAccessor {
 	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
 		SqlFieldInstance[] res = new SqlFieldInstance[1];
 		BigDecimal v=(BigDecimal)getValue(_instance);
-		res[0] = new SqlFieldInstance(sql_fields[0], useGetBigDecimal?v:bigDecimalToBytes(v));
+		res[0] = new SqlFieldInstance(sql_fields[0], useGetBigDecimal?v:useString?v.toString():bigDecimalToBytes(v));
 		return res;
 	}
 
