@@ -305,7 +305,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 		Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
 		try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
 				"select CONSTRAINT_NAME, CONSTRAINT_TYPE, COLUMN_LIST from "+getConstraintsTableName()+" WHERE TABLE_NAME='"
-						+ table.getSqlTableName() + "' AND CONSTRAINT_SCHEMA='"+database_name+"';"))) {
+						+ table.getSqlTableName()+"';"))) {
 			boolean foundPK=false;
 			while (rq.result_set.next()) {
 				String constraint_name = rq.result_set.getString("CONSTRAINT_NAME");
@@ -328,7 +328,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 						String col=rq.result_set.getString("COLUMN_LIST");
 						for (FieldAccessor fa : table.getFieldAccessors()) {
 							for (SqlField sf : fa.getDeclaredSqlFields()) {
-								if (sf.short_field.toUpperCase().equals(col.toUpperCase()) && fa.isUnique()) {
+								if (sf.short_field_without_quote.toUpperCase().equals(col.toUpperCase()) && fa.isUnique()) {
 									found = true;
 									break;
 								}
@@ -389,7 +389,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 				boolean found = false;
 				for (ForeignKeyFieldAccessor fa : table.getForeignKeysFieldAccessors()) {
 					for (SqlField sf : fa.getDeclaredSqlFields()) {
-						if (sf.field.equals(fk) && sf.pointed_field.equals(pointed_col)
+						if (sf.field_without_quote.equals(fk) && sf.pointed_field_without_quote.equals(pointed_col)
 								&& sf.pointed_table.equals(pointed_table)) {
 							found = true;
 							break;
@@ -451,7 +451,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 						try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
 								"select PKTABLE_NAME, FKTABLE_NAME, PKCOLUMN_NAME, FKCOLUMN_NAME from "+ getCrossReferencesTableName()+" WHERE FKTABLE_NAME='"
 										+ table.getSqlTableName() + "' AND PKTABLE_NAME='" + sf.pointed_table
-										+ "' AND PKCOLUMN_NAME='" + sf.short_pointed_field + "' AND FKCOLUMN_NAME='"
+										+ "' AND PKCOLUMN_NAME='" + sf.short_pointed_field_without_quote + "' AND FKCOLUMN_NAME='"
 										+ sf.short_field_without_quote + "'"))) {
 							if (!rq.result_set.next())
 								throw new DatabaseVersionException(table,
