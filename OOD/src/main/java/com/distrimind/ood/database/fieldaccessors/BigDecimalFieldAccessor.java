@@ -87,16 +87,16 @@ public class BigDecimalFieldAccessor extends FieldAccessor {
 	{
 		byte[] tab=bigDecimal.unscaledValue().toByteArray();
 		byte[] res=new byte[tab.length+4];
-		System.arraycopy(tab, 0, res,0, tab.length);
-		Bits.putInt(res, tab.length, bigDecimal.scale());
+		System.arraycopy(tab, 0, res,4, tab.length);
+		Bits.putInt(res, 0, bigDecimal.scale());
 		return res;
 	}
 
 	public static BigDecimal bigDecimalFromBytes(byte[] tab)
 	{
 		byte[] t=new byte[tab.length-4];
-		System.arraycopy(tab, 0, t, 0, t.length);
-		return new BigDecimal(new BigInteger(t), Bits.getInt(tab, tab.length-4));
+		System.arraycopy(tab, 4, t, 0, t.length);
+		return new BigDecimal(new BigInteger(t), Bits.getInt(tab, 0));
 	}
 
 	@Override
