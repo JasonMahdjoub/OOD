@@ -69,18 +69,22 @@ import com.distrimind.util.io.RandomOutputStream;
 public class BigDecimalFieldAccessor extends FieldAccessor {
 	protected final SqlField[] sql_fields;
 	protected final boolean useGetBigDecimal;
+	protected final boolean useString;
 
 	protected BigDecimalFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection,
 			Field _field, String parentFieldName, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
 		super(_sql_connection, _field, parentFieldName, compatible_classes, table, severalPrimaryKeysPresentIntoTable);
 		sql_fields = new SqlField[1];
+		String type=DatabaseWrapperAccessor.getBigIntegerType(sql_connection, 128);
+		useString=type.contains("CHAR");
+		useGetBigDecimal=!useString && !type.contains("BINARY");
 		long l=getLimit();
 		if (l<=0)
-			l=36;
+			l=useString?128:36;
+		type=DatabaseWrapperAccessor.getBigIntegerType(sql_connection, l);
 
 		sql_fields[0] = new SqlField(this.table_name + "." + this.getSqlFieldName(),
-				Objects.requireNonNull(DatabaseWrapperAccessor.getBigDecimalType(sql_connection, l)), null, null, isNotNull());
-		useGetBigDecimal=DatabaseWrapperAccessor.useGetBigDecimalInResultSet(sql_connection);
+				Objects.requireNonNull(type), null, null, isNotNull());
 	}
 
 	public static byte[] bigDecimalToBytes(BigDecimal bigDecimal)
@@ -164,6 +168,11 @@ public class BigDecimalFieldAccessor extends FieldAccessor {
 			BigDecimal val2;
 			if (useGetBigDecimal)
 				val2=_result_set.getBigDecimal(_sft.translateField(sql_fields[0]));
+			else if (useString)
+			{
+				String s = _result_set.getString(_sft.translateField(sql_fields[0]));
+				val2=s == null ? null : new BigDecimal(s);
+			}
 			else {
 				byte[] s = _result_set.getBytes(_sft.translateField(sql_fields[0]));
 			 	val2=s == null ? null : bigDecimalFromBytes(s);
@@ -232,6 +241,11 @@ public class BigDecimalFieldAccessor extends FieldAccessor {
 			BigDecimal res;
 			if (useGetBigDecimal)
 				res  = _result_set.getBigDecimal(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
+			else if (useString)
+			{
+				String s = _result_set.getString(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
+				res = s == null ? null : new BigDecimal(s);
+			}
 			else {
 				byte[] s = _result_set.getBytes(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
 				res = s == null ? null : bigDecimalFromBytes(s);
@@ -261,6 +275,10 @@ public class BigDecimalFieldAccessor extends FieldAccessor {
 			BigDecimal bd = (BigDecimal) _field_content;
 			if (useGetBigDecimal)
 				_prepared_statement.setBigDecimal(_field_start, bd);
+			else if (useString)
+			{
+				_prepared_statement.setString(_field_start, bd == null ? null : bd.toString());
+			}
 			else
 				_prepared_statement.setBytes(_field_start, bd == null ? null : bigDecimalToBytes(bd));
 		} catch (Exception e) {
@@ -276,6 +294,8 @@ public class BigDecimalFieldAccessor extends FieldAccessor {
 			BigDecimal bd = (BigDecimal) field.get(_class_instance);
 			if (useGetBigDecimal)
 				_result_set.updateBigDecimal(sql_fields[0].short_field_without_quote, bd);
+			else if (useString)
+				_result_set.updateString(sql_fields[0].short_field_without_quote, bd == null ? null : bd.toString());
 			else
 				_result_set.updateBytes(sql_fields[0].short_field_without_quote, bd == null ? null : bigDecimalToBytes(bd));
 		} catch (Exception e) {
@@ -291,6 +311,8 @@ public class BigDecimalFieldAccessor extends FieldAccessor {
 			BigDecimal bd = (BigDecimal) field.get(_class_instance);
 			if (useGetBigDecimal)
 				_result_set.updateBigDecimal(_sft.translateField(sql_fields[0]), bd);
+			else if (useString)
+				_result_set.updateString(_sft.translateField(sql_fields[0]), bd == null ? null : bd.toString());
 			else
 				_result_set.updateBytes(_sft.translateField(sql_fields[0]), bd == null ? null : bigDecimalToBytes(bd));
 		} catch (Exception e) {

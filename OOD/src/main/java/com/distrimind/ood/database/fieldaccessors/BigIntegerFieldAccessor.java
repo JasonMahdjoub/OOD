@@ -65,17 +65,22 @@ import java.util.Objects;
 public class BigIntegerFieldAccessor extends FieldAccessor {
 	protected final SqlField[] sql_fields;
 	protected final boolean useGetBigDecimal;
+	protected final boolean useString;
 
 	protected BigIntegerFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection,
 			Field _field, String parentFieldName, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
 		super(_sql_connection, _field, parentFieldName, compatible_classes, table, severalPrimaryKeysPresentIntoTable);
 		sql_fields = new SqlField[1];
+		String type=DatabaseWrapperAccessor.getBigIntegerType(sql_connection, 128);
+		useString=type.contains("CHAR");
+		useGetBigDecimal=!useString && !type.contains("BINARY");
 		long l=getLimit();
 		if (l<=0)
-			l=32;
+			l=useString?128:32;
+		type=DatabaseWrapperAccessor.getBigIntegerType(sql_connection, l);
 		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(),
-				Objects.requireNonNull(DatabaseWrapperAccessor.getBigIntegerType(sql_connection, l)), null, null, isNotNull());
-		useGetBigDecimal=DatabaseWrapperAccessor.useGetBigDecimalInResultSet(sql_connection);
+				Objects.requireNonNull(type), null, null, isNotNull());
+
 	}
 
 	@Override
@@ -134,6 +139,11 @@ public class BigIntegerFieldAccessor extends FieldAccessor {
 				BigDecimal tmp = _result_set.getBigDecimal(_sft.translateField(sql_fields[0]));
 				val2= tmp == null ? null : tmp.toBigInteger();
 			}
+			else if (useString)
+			{
+				String s = _result_set.getString(_sft.translateField(sql_fields[0]));
+				val2=s==null?null:new BigInteger(s);
+			}
 			else {
 				byte[] s = _result_set.getBytes(_sft.translateField(sql_fields[0]));
 				val2=s==null?null:new BigInteger(s);
@@ -166,7 +176,7 @@ public class BigIntegerFieldAccessor extends FieldAccessor {
 	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
 		SqlFieldInstance[] res = new SqlFieldInstance[1];
 		BigInteger o=(BigInteger)getValue(_instance);
-		res[0] = new SqlFieldInstance(sql_fields[0], useGetBigDecimal?new BigDecimal(o):o.toByteArray());
+		res[0] = new SqlFieldInstance(sql_fields[0], useGetBigDecimal?new BigDecimal(o):(useString?o.toString():o.toByteArray()));
 		return res;
 	}
 
@@ -207,6 +217,11 @@ public class BigIntegerFieldAccessor extends FieldAccessor {
 			{
 				res=_result_set.getBigDecimal(getColmunIndex(_result_set, sql_fields[0].field_without_quote)).toBigInteger();
 			}
+			else if (useString)
+			{
+				String s = _result_set.getString(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
+				res = (s == null) ? null : new BigInteger(s);
+			}
 			else {
 				byte[] s = _result_set.getBytes(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
 				res = (s == null) ? null : new BigInteger(s);
@@ -235,6 +250,8 @@ public class BigIntegerFieldAccessor extends FieldAccessor {
 		try {
 			if (useGetBigDecimal)
 				_prepared_statement.setBigDecimal(_field_start, o == null ? null : new BigDecimal((BigInteger)o));
+			else if (useString)
+				_prepared_statement.setString(_field_start, o == null ? null : o.toString());
 			else
 				_prepared_statement.setBytes(_field_start, o == null ? null : ((BigInteger)o).toByteArray());
 		} catch (Exception e) {
@@ -250,6 +267,8 @@ public class BigIntegerFieldAccessor extends FieldAccessor {
 			Object o = field.get(_class_instance);
 			if (useGetBigDecimal)
 				_result_set.updateBigDecimal(sql_fields[0].short_field_without_quote, o == null ? null : new BigDecimal((BigInteger)o));
+			else if (useString)
+				_result_set.updateString(sql_fields[0].short_field_without_quote, o == null ? null : o.toString());
 			else
 				_result_set.updateBytes(sql_fields[0].short_field_without_quote, o == null ? null : ((BigInteger)o).toByteArray());
 		} catch (Exception e) {
@@ -265,6 +284,8 @@ public class BigIntegerFieldAccessor extends FieldAccessor {
 			Object o = field.get(_class_instance);
 			if (useGetBigDecimal)
 				_result_set.updateBigDecimal(_sft.translateField(sql_fields[0]), o == null ? null : new BigDecimal((BigInteger)o));
+			else if (useString)
+				_result_set.updateString(_sft.translateField(sql_fields[0]), o == null ? null : o.toString());
 			else
 				_result_set.updateBytes(_sft.translateField(sql_fields[0]), o == null ? null : ((BigInteger)o).toByteArray());
 		} catch (Exception e) {

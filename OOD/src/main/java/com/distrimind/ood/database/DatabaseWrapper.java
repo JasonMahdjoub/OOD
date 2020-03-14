@@ -4738,7 +4738,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	protected abstract String getBigIntegerType(long limit);
 
-	protected abstract boolean useGetBigDecimalInResultSet();
 
 	protected abstract String getDateTimeType();
 	//protected abstract String getSqlQuerryToGetLastGeneratedID();

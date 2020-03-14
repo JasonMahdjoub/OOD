@@ -55,7 +55,6 @@ import com.distrimind.util.RenforcedDecentralizedIDGenerator;
 class DatabaseWrapperAccessor {
 	private static final Method m_get_big_decimal_type;
 	private static final Method m_get_big_integer_type;
-	private static final Method m_use_get_big_decimal_in_result_set;
 	private static final Method m_get_byte_type;
 	private static final Method m_is_var_binary_supported;
 	private static final Method m_is_long_var_binary_supported;
@@ -98,16 +97,6 @@ class DatabaseWrapperAccessor {
 		return null;
 	}
 
-	static boolean useGetBigDecimalInResultSet(DatabaseWrapper wrapper) {
-		try {
-			return (boolean) invoke(m_use_get_big_decimal_in_result_set, wrapper);
-		} catch (InvocationTargetException e) {
-			System.err.println("Unexpected error :");
-			e.printStackTrace();
-			System.exit(-1);
-		}
-		return false;
-	}
 	static String getDateTimeType(DatabaseWrapper wrapper) {
 		try {
 			return (String) invoke(m_get_date_time_type, wrapper);
@@ -312,7 +301,6 @@ class DatabaseWrapperAccessor {
 	static {
 		m_get_big_decimal_type = getMethod(DatabaseWrapper.class, "getBigDecimalType", long.class);
 		m_get_big_integer_type = getMethod(DatabaseWrapper.class, "getBigIntegerType", long.class);
-		m_use_get_big_decimal_in_result_set = getMethod(DatabaseWrapper.class, "useGetBigDecimalInResultSet");
 		m_get_byte_type = getMethod(DatabaseWrapper.class, "getByteType");
 		m_is_var_binary_supported = getMethod(DatabaseWrapper.class, "isVarBinarySupported");
 		m_is_long_var_binary_supported = getMethod(DatabaseWrapper.class, "isLongVarBinarySupported");

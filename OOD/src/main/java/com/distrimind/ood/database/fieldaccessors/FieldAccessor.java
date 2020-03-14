@@ -901,16 +901,22 @@ public abstract class FieldAccessor {
 			else if (p instanceof Double)
 				st.setDouble(index, (Double)p);
 			else if (p instanceof BigDecimal) {
-				if (DatabaseWrapperAccessor.useGetBigDecimalInResultSet(sql_connection))
-					st.setBigDecimal(index, (BigDecimal)p);
-				else
+				String t=DatabaseWrapperAccessor.getBigDecimalType(sql_connection, 128);
+				if (t.contains("BINARY"))
 					st.setBytes(index, BigDecimalFieldAccessor.bigDecimalToBytes((BigDecimal)p));
+				else if (t.contains("CHAR"))
+					st.setString(index, p.toString());
+				else
+					st.setBigDecimal(index, (BigDecimal)p);
 			}
 			else if (p instanceof BigInteger) {
-				if (DatabaseWrapperAccessor.useGetBigDecimalInResultSet(sql_connection))
-					st.setBigDecimal(index, new BigDecimal((BigInteger)p));
-				else
+				String t=DatabaseWrapperAccessor.getBigIntegerType(sql_connection, 128);
+				if (t.contains("BINARY"))
 					st.setBytes(index, ((BigInteger)p).toByteArray());
+				else if (t.contains("CHAR"))
+					st.setString(index, p.toString());
+				else
+					st.setBigDecimal(index, new BigDecimal((BigInteger)p));
 			}
 			/*switch (st.getParameterMetaData().getParameterType(index)) {
 			case Types.TINYINT:
