@@ -36,6 +36,11 @@ public class InMemoryEmbeddedHSQLDatabaseFactory extends DatabaseFactory<Embedde
 		return new EmbeddedHSQLDBWrapper(true, databaseName, concurrencyControl);
 	}
 
+	@Override
+	public void deleteDatabase()  {
+		throw new UnsupportedOperationException();
+	}
+
 	public static long getSerialVersionUID() {
 		return serialVersionUID;
 	}

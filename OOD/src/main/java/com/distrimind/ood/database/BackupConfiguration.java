@@ -35,10 +35,9 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+import com.distrimind.util.progress_monitors.ProgressMonitorDM;
 import com.distrimind.util.progress_monitors.ProgressMonitorFactory;
 import com.distrimind.util.progress_monitors.ProgressMonitorParameters;
-
-import javax.swing.*;
 
 /**
  * @author Jason Mahdjoub
@@ -119,7 +118,7 @@ public class BackupConfiguration {
 		return maxBackupFileAgeInMs;
 	}
 
-	public ProgressMonitor getProgressMonitorForBackup()
+	public ProgressMonitorDM getProgressMonitorForBackup()
 	{
 		ProgressMonitorFactory progressMonitorFactory;
 		if (backupProgressMonitorParameters ==null)
@@ -128,7 +127,7 @@ public class BackupConfiguration {
 			progressMonitorFactory=ProgressMonitorFactory.getDefaultProgressMonitorFactory();
 		return progressMonitorFactory.getProgressMonitor(backupProgressMonitorParameters);
 	}
-	public ProgressMonitor getProgressMonitorForRestore()
+	public ProgressMonitorDM getProgressMonitorForRestore()
 	{
 		ProgressMonitorFactory progressMonitorFactory;
 		if (restoreProgressMonitorParameters ==null)

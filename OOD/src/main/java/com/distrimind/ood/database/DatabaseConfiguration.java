@@ -42,10 +42,9 @@ import java.util.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.i18n.DatabaseMessages;
 import com.distrimind.util.ListClasses;
+import com.distrimind.util.progress_monitors.ProgressMonitorDM;
 import com.distrimind.util.progress_monitors.ProgressMonitorFactory;
 import com.distrimind.util.progress_monitors.ProgressMonitorParameters;
-
-import javax.swing.*;
 
 /**
  * Describe a database configuration. A database is defined by its package, and
@@ -112,7 +111,7 @@ public class DatabaseConfiguration {
 		this.progressMonitorParametersForDatabaseUpgrade = progressMonitorParametersForDatabaseUpgrade;
 	}
 
-	public ProgressMonitor getProgressMonitorForDatabaseUpgrade()
+	public ProgressMonitorDM getProgressMonitorForDatabaseUpgrade()
 	{
 		if (this.progressMonitorParametersForDatabaseUpgrade==null)
 		{
@@ -138,7 +137,7 @@ public class DatabaseConfiguration {
 		this.progressMonitorParametersForDatabaseInitialisation = progressMonitorParametersForDatabaseInitialisation;
 	}
 
-	public ProgressMonitor getProgressMonitorForDatabaseInitialisation()
+	public ProgressMonitorDM getProgressMonitorForDatabaseInitialisation()
 	{
 		if (this.progressMonitorParametersForDatabaseInitialisation==null)
 		{

@@ -42,9 +42,9 @@ import com.distrimind.ood.i18n.DatabaseMessages;
 import com.distrimind.util.FileTools;
 import com.distrimind.util.Reference;
 import com.distrimind.util.io.*;
+import com.distrimind.util.progress_monitors.ProgressMonitorDM;
 import com.distrimind.util.progress_monitors.ProgressMonitorParameters;
 
-import javax.swing.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
@@ -217,7 +217,7 @@ public class BackupRestoreManager {
 
 	public long getNearestFileUTCFromGivenTimeNotIncluded(long utc)
 	{
-		ArrayList<File> res = new ArrayList<>(fileTimeStamps.size());
+		//ArrayList<File> res = new ArrayList<>(fileTimeStamps.size());
 		int s = fileTimeStamps.size();
 
 		if (s > 0) {
@@ -1147,22 +1147,23 @@ public class BackupRestoreManager {
 
 						File file = initNewFileForBackupReference(currentBackupTime.get());
 						final AtomicReference<RandomOutputStream> rout = new AtomicReference<RandomOutputStream>(new BufferedRandomOutputStream(new RandomFileOutputStream(file, RandomFileOutputStream.AccessMode.READ_AND_WRITE), maxBufferSize, maxBuffersNumber));
+						final ProgressMonitorDM progressMonitor = backupConfiguration.getProgressMonitorForBackup();
+						long t = 0;
+						if (progressMonitor != null) {
+							for (Class<? extends Table<?>> c : classes) {
+								final Table<?> table = databaseWrapper.getTableInstance(c);
+								t += table.getRecordsNumber();
+							}
+							progressMonitor.setMinimum(0);
+							progressMonitor.setMaximum(1000);
+						}
+						final long totalRecords = t;
 						try {
 							//final AtomicReference<RecordsIndex> index=new AtomicReference<>(null);
 							saveHeader(rout.get(), currentBackupTime.get(), true/*, null, index*/);
 
 							final AtomicInteger nextTransactionReference = new AtomicInteger(saveTransactionHeader(rout.get(), currentBackupTime.get()));
-							final ProgressMonitor progressMonitor = backupConfiguration.getProgressMonitorForBackup();
-							long t = 0;
-							if (progressMonitor != null) {
-								for (Class<? extends Table<?>> c : classes) {
-									final Table<?> table = databaseWrapper.getTableInstance(c);
-									t += table.getRecordsNumber();
-								}
-								progressMonitor.setMinimum(0);
-								progressMonitor.setMaximum(1000);
-							}
-							final long totalRecords = t;
+
 
 
 							for (Class<? extends Table<?>> c : classes) {
@@ -1191,7 +1192,7 @@ public class BackupRestoreManager {
 													if (progressMonitor != null) {
 
 														++numberOfSavedRecords;
-														progressMonitor.setProgress((int) ((numberOfSavedRecords * 1000) / totalRecords));
+														progressMonitor.setProgress((int) (((numberOfSavedRecords+1) * 1000) / totalRecords));
 													}
 
 													if (out.currentPosition() >= backupConfiguration.getMaxBackupFileSizeInBytes()) {
@@ -1245,7 +1246,11 @@ public class BackupRestoreManager {
 
 							}
 							saveTransactionQueue(rout.get(), nextTransactionReference.get(), currentBackupTime.get(), null, null/*, index.get()*/);
+
 						} finally {
+							if (progressMonitor != null) {
+								progressMonitor.setProgress(1000);
+							}
 							rout.get().close();
 						}
 						//scanFiles();
@@ -1456,7 +1461,7 @@ public class BackupRestoreManager {
 			int oldVersion;
 			int newVersion;
 			File currentFile;
-			ProgressMonitor pg;
+			ProgressMonitorDM pg;
 			long s;
 			ArrayList<Table<?>> tbls, tbls2;
 			boolean reference=true;
@@ -1572,7 +1577,7 @@ public class BackupRestoreManager {
 			}
 			final long totalSize = s;
 			long progressPosition = 0;
-			final ProgressMonitor progressMonitor=pg;
+			final ProgressMonitorDM progressMonitor=pg;
 			final ArrayList<Table<?>> tables=tbls;
 			final ArrayList<Table<?>> oldTables=tbls2;
 			final int maxBufferSize = backupConfiguration.getMaxStreamBufferSizeForBackupRestoration();
@@ -1720,7 +1725,7 @@ public class BackupRestoreManager {
 											throw new IOException();
 										if (progressMonitor != null && totalSize != 0) {
 											progressPosition += in.currentPosition() - startRecord;
-											progressMonitor.setProgress((int) ((progressPosition * 1000) / totalSize));
+											progressMonitor.setProgress((int) (((progressPosition+1) * 1000) / totalSize));
 										}
 									}
 								}
@@ -1798,7 +1803,6 @@ public class BackupRestoreManager {
 
 				}
 
-
 				databaseWrapper.validateNewDatabaseVersionAndDeleteOldVersion(databaseConfiguration, oldVersion, newVersion);
 				databaseWrapper.getSynchronizer().validateExtendedTransaction();
 				//createBackupReference();
@@ -1812,6 +1816,9 @@ public class BackupRestoreManager {
 				throw DatabaseException.getDatabaseException(e);
 			}
 			finally {
+				if (progressMonitor != null) {
+					progressMonitor.setProgress(1000);
+				}
 				lastCurrentRestorationFileUsed=Long.MIN_VALUE;
 				lastBackupEventUTC=Long.MIN_VALUE;
 				transactionsInterval=null;
