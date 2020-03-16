@@ -21,10 +21,27 @@ public class AndroidSQLiteDatabaseWrapper extends DatabaseWrapper {
     private static volatile boolean driverLoaded=false;
 
     @SuppressLint("SdCardPath")
-    public AndroidSQLiteDatabaseWrapper(String _package, String _database_name, File databaseDirectory, boolean externalStorage) throws DatabaseException {
-        super(_database_name, databaseDirectory, false,false);
-        url = "jdbc:sqldroid:" + (externalStorage?"/sdcard/":"/data/data/") + _package + "/"+_database_name+".db";
+    private static String getPath(String _package, String _database_name, boolean externalStorage)
+    {
+        return (externalStorage?"/sdcard/":"/data/data/") + _package + "/"+_database_name+".db";
+    }
+
+
+    AndroidSQLiteDatabaseWrapper(String _package, String _database_name, boolean externalStorage) throws DatabaseException {
+        super(_database_name, new File(getPath(_package, _database_name, externalStorage)), false,false);
+        url = "jdbc:sqldroid:" + getPath(_package, _database_name, externalStorage);
         checkDriverLoading();
+    }
+
+    public static boolean deleteDatabaseFiles(String _package, String _database_name, boolean externalStorage) {
+        File f=new File(getPath(_package, _database_name, externalStorage));
+        if (f.exists())
+            return f.delete();
+        return false;
+    }
+
+    public static boolean deleteDatabaseFiles(AndroidSQLiteDatabaseFactory factory) {
+        return deleteDatabaseFiles(factory.getPackageName(), factory.getDatabaseName(), factory.isUseExternalCard());
     }
 
     private static void checkDriverLoading()
