@@ -437,7 +437,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 								throw new DatabaseVersionException(table, "The field " + fa.getFieldName()
 										+ " is expected to be " + (fa.isNotNull() ? "not null" : "nullable"));
 							boolean is_autoincrement = rq.tableColumnsResultSet.isAutoIncrement();
-							if (is_autoincrement != fa.isAutoPrimaryKey())
+							if (supportSingleAutoPrimaryKeys() && is_autoincrement != fa.isAutoPrimaryKey())
 								throw new DatabaseVersionException(table,
 										"The field " + fa.getFieldName() + " is " + (is_autoincrement ? "" : "not ")
 												+ "autoincremented into the Sql database where it is "

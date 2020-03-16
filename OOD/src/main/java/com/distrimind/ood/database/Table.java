@@ -804,7 +804,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 													"The column " + col + " is expected to be "
 															+ (founded_sf.not_null ? "not null" : "nullable"));
 										boolean is_autoincrement = rq.tableColumnsResultSet.isAutoIncrement();
-										if (is_autoincrement != founded_fa.isAutoPrimaryKey())
+										if (sql_connection.supportSingleAutoPrimaryKeys() && is_autoincrement != founded_fa.isAutoPrimaryKey())
 											throw new DatabaseVersionException(Table.this,
 													"The column " + col + " is " + (is_autoincrement ? "" : "not ")
 															+ "autoincremented into the Sql database where it is "

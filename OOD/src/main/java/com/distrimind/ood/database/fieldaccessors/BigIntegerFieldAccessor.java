@@ -73,7 +73,7 @@ public class BigIntegerFieldAccessor extends FieldAccessor {
 		sql_fields = new SqlField[1];
 		String type=DatabaseWrapperAccessor.getBigIntegerType(sql_connection, 128);
 		useString=type.contains("CHAR");
-		useGetBigDecimal=!useString && !type.contains("BINARY");
+		useGetBigDecimal=!useString && !type.contains("BINARY") && !type.contains("BLOB");
 		long l=getLimit();
 		if (l<=0)
 			l=useString?128:32;

@@ -911,7 +911,7 @@ public abstract class FieldAccessor {
 			}
 			else if (p instanceof BigInteger) {
 				String t=DatabaseWrapperAccessor.getBigIntegerType(sql_connection, 128);
-				if (t.contains("BINARY"))
+				if (t.contains("BINARY") || t.contains("BLOB"))
 					st.setBytes(index, ((BigInteger)p).toByteArray());
 				else if (t.contains("CHAR"))
 					st.setString(index, p.toString());

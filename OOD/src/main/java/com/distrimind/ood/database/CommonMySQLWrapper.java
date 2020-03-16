@@ -252,7 +252,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 
 		public CReadQuerry(Connection _sql_connection, ResultSet resultSet) {
 			super(_sql_connection, resultSet);
-			setTableColumnsResultSet(new DistantMySQLDBWrapper.TCResultSet(resultSet));
+			setTableColumnsResultSet(new TCResultSet(resultSet));
 		}
 	}
 
@@ -300,7 +300,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 		Connection c;
 		//System.out.println(tableName);
 		ResultSet rs=(c=getConnectionAssociatedWithCurrentThread().getConnection()).getMetaData().getColumns(database_name, null, tableName, columnName);
-		return new DistantMySQLDBWrapper.CReadQuerry(c, rs);
+		return new CReadQuerry(c, rs);
 			/*while (rs.next()) {
 				System.out.println(rs.getString(3)+" "+rs.getString(4));
 				if (rs.getString(3).equals(tableName) && rs.getString(4).equals(columnName)) {
@@ -423,7 +423,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 						throw new DatabaseVersionException(table, "The field " + fa.getFieldName()
 								+ " is expected to be " + (fa.isNotNull() ? "not null" : "nullable"));
 					boolean is_autoincrement = cols.tableColumnsResultSet.isAutoIncrement();
-					if (is_autoincrement != fa.isAutoPrimaryKey())
+					if (supportSingleAutoPrimaryKeys() && is_autoincrement != fa.isAutoPrimaryKey())
 						throw new DatabaseVersionException(table,
 								"The field " + fa.getFieldName() + " is " + (is_autoincrement ? "" : "not ")
 										+ "autoincremented into the Sql database where it is "

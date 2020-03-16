@@ -3161,10 +3161,10 @@ public abstract class TestDatabase {
 
             } else if (o.getClass() == BigInteger.class) {
 				String t=getDatabaseWrapperInstanceA().getBigIntegerType(128);
-                res.add(t.contains("CHAR")?o.toString():t.contains("BINARY")?((BigInteger) o).toByteArray():new BigDecimal((BigInteger)o));
+                res.add(t.contains("CHAR")?o.toString():(t.contains("BINARY") || t.contains("BLOB"))?((BigInteger) o).toByteArray():new BigDecimal((BigInteger)o));
             } else if (o.getClass() == BigDecimal.class) {
 				String t=getDatabaseWrapperInstanceA().getBigDecimalType(128);
-				res.add(t.contains("CHAR")?o.toString():t.contains("BINARY")?BigDecimalFieldAccessor.bigDecimalToBytes((BigDecimal)o):o);
+				res.add(t.contains("CHAR")?o.toString():(t.contains("BINARY") || t.contains("BLOB"))?BigDecimalFieldAccessor.bigDecimalToBytes((BigDecimal)o):o);
 			} else if (o instanceof Date) {
                 res.add(new Timestamp(((Date) o).getTime()));
             }
