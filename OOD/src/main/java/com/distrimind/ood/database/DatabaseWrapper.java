@@ -395,37 +395,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	}
 
-	public int getNetworkTimeout() throws DatabaseException {
-		return (Integer) runTransaction(new Transaction() {
-
-            @Override
-            public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
-                try {
-                    Session sql_connection = getConnectionAssociatedWithCurrentThread();
-                    return sql_connection.getConnection().getNetworkTimeout();
-                } catch (SQLException e) {
-                    throw DatabaseException.getDatabaseException(e);
-                }
-
-            }
-
-            @Override
-            public TransactionIsolation getTransactionIsolation() {
-                return TransactionIsolation.TRANSACTION_READ_UNCOMMITTED;
-            }
-
-            @Override
-            public boolean doesWriteData() {
-                return false;
-            }
-
-            @Override
-            public void initOrReset() {
-
-            }
-        }, true);
-
-	}
 
 	/**
 	 * Gets the interface that enable database synchronization between different

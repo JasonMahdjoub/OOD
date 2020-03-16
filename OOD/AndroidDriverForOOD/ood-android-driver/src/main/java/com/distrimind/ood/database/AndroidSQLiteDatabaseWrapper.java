@@ -33,15 +33,16 @@ public class AndroidSQLiteDatabaseWrapper extends DatabaseWrapper {
         checkDriverLoading();
     }
 
-    public static boolean deleteDatabaseFiles(String _package, String _database_name, boolean externalStorage) {
+    private static void deleteDatabaseFiles(String _package, String _database_name, boolean externalStorage) {
         File f=new File(getPath(_package, _database_name, externalStorage));
-        if (f.exists())
-            return f.delete();
-        return false;
+        if (f.exists()) {
+            //noinspection ResultOfMethodCallIgnored
+            f.delete();
+        }
     }
 
-    public static boolean deleteDatabaseFiles(AndroidSQLiteDatabaseFactory factory) {
-        return deleteDatabaseFiles(factory.getPackageName(), factory.getDatabaseName(), factory.isUseExternalCard());
+    static void deleteDatabaseFiles(AndroidSQLiteDatabaseFactory factory) {
+        deleteDatabaseFiles(factory.getPackageName(), factory.getDatabaseName(), factory.isUseExternalCard());
     }
 
     private static void checkDriverLoading()
