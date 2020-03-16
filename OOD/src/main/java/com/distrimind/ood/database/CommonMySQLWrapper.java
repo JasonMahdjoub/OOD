@@ -521,6 +521,13 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 	}
 
 	@Override
+	protected boolean supportSingleAutoPrimaryKeys()
+	{
+		return true;
+	}
+
+
+	@Override
 	protected int getVarCharLimit() {
 		return 65535/maxCharSize;
 	}

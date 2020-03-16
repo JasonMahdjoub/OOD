@@ -85,6 +85,12 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 
 	}
 
+	@Override
+	protected boolean supportSingleAutoPrimaryKeys()
+	{
+		return true;
+	}
+
 	EmbeddedDerbyWrapper(File _directory, boolean alwaysDisconnectAfterOnTransaction) throws IllegalArgumentException, DatabaseException {
 		super(/* getConnection(_directory), */"Database from file : " + _directory.getAbsolutePath(), _directory, alwaysDisconnectAfterOnTransaction, false);
 		// dbURL = getDBUrl(_directory);

@@ -70,6 +70,7 @@ class DatabaseWrapperAccessor {
 	private static final Method m_get_var_char_limit;
 	private static final Method m_support_full_sql_field_name;
 	private static final Method m_support_multiple_auto_primary_keys;
+	private static final Method m_support_single_auto_primary_keys;
 	private static final Method m_get_max_key_size;
 	private static final Constructor<DecentralizedIDGenerator> m_decentralized_id_constructor;
 	private static final Constructor<RenforcedDecentralizedIDGenerator> m_renforced_decentralized_id_constructor;
@@ -241,6 +242,19 @@ class DatabaseWrapperAccessor {
 		return false;
 	}
 
+	static boolean supportSingleAutoPrimaryKeys(DatabaseWrapper wrapper) {
+		if (wrapper == null)
+			throw new NullPointerException();
+		try {
+			return (Boolean) invoke(m_support_single_auto_primary_keys, wrapper);
+		} catch (InvocationTargetException e) {
+			System.err.println("Unexpected error :");
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		return false;
+	}
+
 	static boolean isVarBinarySupported(DatabaseWrapper wrapper) {
 		try {
 			return (Boolean) invoke(m_is_var_binary_supported, wrapper);
@@ -317,6 +331,7 @@ class DatabaseWrapperAccessor {
 		m_get_date_time_type = getMethod(DatabaseWrapper.class, "getDateTimeType");
 		m_support_full_sql_field_name = getMethod(DatabaseWrapper.class, "supportFullSqlFieldName");
 		m_support_multiple_auto_primary_keys = getMethod(DatabaseWrapper.class, "supportMultipleAutoPrimaryKeys");
+		m_support_single_auto_primary_keys = getMethod(DatabaseWrapper.class, "supportSingleAutoPrimaryKeys");
 		m_decentralized_id_constructor = getConstructor(DecentralizedIDGenerator.class, long.class, long.class);
 		m_renforced_decentralized_id_constructor = getConstructor(RenforcedDecentralizedIDGenerator.class, long.class,
 				long.class);

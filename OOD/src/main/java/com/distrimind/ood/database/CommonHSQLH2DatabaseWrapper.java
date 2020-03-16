@@ -65,6 +65,11 @@ public abstract class CommonHSQLH2DatabaseWrapper extends DatabaseWrapper{
 		return true;
 	}
 
+	@Override
+	protected boolean supportSingleAutoPrimaryKeys()
+	{
+		return true;
+	}
 
 	/*
 	 * Constructor

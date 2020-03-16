@@ -3530,7 +3530,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	private void checkAutoIncrementTable() throws DatabaseException {
 		try {
-			if (!supportMultipleAutoPrimaryKeys() && !doesTableExists(DatabaseWrapper.AUTOINCREMENT_TABLE)) {
+			if ((!supportMultipleAutoPrimaryKeys() || !supportSingleAutoPrimaryKeys()) && !doesTableExists(DatabaseWrapper.AUTOINCREMENT_TABLE)) {
 				try (Statement pst = getConnectionAssociatedWithCurrentThread().getConnection()
 						.createStatement()) {
 					pst.execute("CREATE TABLE `" + DatabaseWrapper.AUTOINCREMENT_TABLE +
@@ -4734,7 +4734,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	protected abstract String getLongType();
 
-	protected abstract String getBigDecimalType(long limit);
+	protected abstract String getBigDecimalType(@SuppressWarnings("SameParameterValue") long limit);
 
 	protected abstract String getBigIntegerType(long limit);
 
@@ -4744,6 +4744,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 
 	protected abstract String getDropTableCascadeQuery(Table<?> table);
+
+
+	protected abstract boolean supportSingleAutoPrimaryKeys();
 
 	protected abstract boolean supportMultipleAutoPrimaryKeys();
 

@@ -148,7 +148,7 @@ public abstract class FieldAccessor {
 		auto_primary_key = _field.isAnnotationPresent(AutoPrimaryKey.class);
 		random_primary_key = field.isAnnotationPresent(RandomPrimaryKey.class);
 
-		manual_auto_primary_key = auto_primary_key && severalPrimaryKeysPresentIntoTable && !DatabaseWrapperAccessor.supportMultipleAutoPrimaryKeys(table.getDatabaseWrapper());
+		manual_auto_primary_key = auto_primary_key && (!DatabaseWrapperAccessor.supportSingleAutoPrimaryKeys(table.getDatabaseWrapper()) || (severalPrimaryKeysPresentIntoTable && !DatabaseWrapperAccessor.supportMultipleAutoPrimaryKeys(table.getDatabaseWrapper())));
 		if (auto_primary_key && random_primary_key)
 			throw new DatabaseException(
 					"The field " + field.getName() + " of the DatabaseRecord " + field.getDeclaringClass().getName()
