@@ -21,12 +21,20 @@ android {
         }
     }
 
+    sourceSets {
+        main.java.srcDirs += '../../src/main/java'
+        main.resources.srcDirs += '../../src/main/resources'
+        test.java.srcDirs += '../../src/test/java'
+        test.resources.srcDirs += '../../src/test/resources'
+    }
+
 }
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'org.sqldroid:sqldroid:1.0.3'
 
-    implementation 'androidx.appcompat:appcompat:1.0.2'
+    implementation 'androidx.appcompat:appcompat:1.1.0'
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
