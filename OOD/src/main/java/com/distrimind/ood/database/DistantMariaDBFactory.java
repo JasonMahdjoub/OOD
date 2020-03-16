@@ -142,6 +142,11 @@ class DistantMariaDBFactory extends CommonMySQLDatabaseFactory<DistantMariaDBWra
 			return new DistantMariaDBWrapper(urlLocation, port, databaseName, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, css, useSSL, trustServerCertificate, enabledSslProtocolSuites, enabledSslCipherSuites, serverSslCert, autoReconnect, additionalParams);
 	}
 
+	@Override
+	public void deleteDatabase()  {
+		throw new UnsupportedOperationException();
+	}
+
 	/**
 	 *
 	 * @return true if force SSL/TLS on connection
@@ -227,4 +232,7 @@ class DistantMariaDBFactory extends CommonMySQLDatabaseFactory<DistantMariaDBWra
 	public void setServerSslCert(File serverSslCert) {
 		this.serverSslCert = serverSslCert;
 	}
+
+
+
 }

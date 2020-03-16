@@ -112,4 +112,10 @@ public class InFileEmbeddedDerbyDatabaseFactory extends DatabaseFactory<Embedded
 	public void setAlwaysDisconnectAfterOnTransaction(boolean alwaysDisconnectAfterOnTransaction) {
 		this.alwaysDisconnectAfterOnTransaction = alwaysDisconnectAfterOnTransaction;
 	}
+
+	@Override
+	public void deleteDatabase()  {
+		EmbeddedDerbyWrapper.deleteDatabaseFiles(directory);
+	}
+
 }

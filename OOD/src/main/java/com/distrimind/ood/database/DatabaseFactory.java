@@ -73,4 +73,6 @@ public abstract class DatabaseFactory<DW extends DatabaseWrapper> extends MultiF
 	protected abstract DW newWrapperInstance() throws DatabaseException;
 
 
+	public abstract void deleteDatabase() throws DatabaseException;
+
 }

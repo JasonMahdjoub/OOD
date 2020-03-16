@@ -52,7 +52,7 @@ public class InFileEmbeddedHSQLDatabaseFactory extends DatabaseFactory<EmbeddedH
 	 */
 	private static final long serialVersionUID = -5549181783426731120L;
 
-	private File fileName;
+	private File directory;
 	private HSQLDBConcurrencyControl concurrencyControl=HSQLDBConcurrencyControl.DEFAULT;
 	private int cacheRows=50000;
 	private int cacheSizeBytes =10000*1024;
@@ -97,7 +97,7 @@ public class InFileEmbeddedHSQLDatabaseFactory extends DatabaseFactory<EmbeddedH
 	 *
 	 */
 	public InFileEmbeddedHSQLDatabaseFactory(File databaseFileName, boolean alwaysDisconnectAfterOneTransaction) {
-		setFileName(databaseFileName);
+		setDirectory(databaseFileName);
 		this.alwaysDisconnectAfterOneTransaction = alwaysDisconnectAfterOneTransaction;
 	}
 	/**
@@ -140,7 +140,7 @@ public class InFileEmbeddedHSQLDatabaseFactory extends DatabaseFactory<EmbeddedH
 	public InFileEmbeddedHSQLDatabaseFactory(File databaseFileName, boolean alwaysDisconnectAfterOneTransaction, HSQLDBConcurrencyControl concurrencyControl, int _cache_rows,
 											 int _cache_size, int _result_max_memory_rows, int _cache_free_count, boolean lockFile) {
 
-		setFileName(databaseFileName);
+		setDirectory(databaseFileName);
 		setConcurrencyControl(concurrencyControl);
 		cacheRows = _cache_rows;
 		cacheSizeBytes = _cache_size;
@@ -152,20 +152,20 @@ public class InFileEmbeddedHSQLDatabaseFactory extends DatabaseFactory<EmbeddedH
 
 	@Override
 	protected EmbeddedHSQLDBWrapper newWrapperInstance() throws DatabaseException {
-		return new EmbeddedHSQLDBWrapper(fileName, alwaysDisconnectAfterOneTransaction, concurrencyControl, cacheRows, cacheSizeBytes,
+		return new EmbeddedHSQLDBWrapper(directory, alwaysDisconnectAfterOneTransaction, concurrencyControl, cacheRows, cacheSizeBytes,
 					resultMaxMemoryRows, cacheFreeCount, lockFile);
 	}
 
-	public File getFileName() {
-		return fileName;
+	public File getDirectory() {
+		return directory;
 	}
 
-	public void setFileName(File _file_name) {
+	public void setDirectory(File _file_name) {
 		if (_file_name == null)
 			throw new NullPointerException("The parameter _file_name is a null pointer !");
 		if (_file_name.exists() && !_file_name.isDirectory())
 			throw new IllegalArgumentException("The given file name is not a directory !");
-		this.fileName = _file_name;
+		this.directory = _file_name;
 	}
 
 	public HSQLDBConcurrencyControl getConcurrencyControl() {
@@ -225,5 +225,10 @@ public class InFileEmbeddedHSQLDatabaseFactory extends DatabaseFactory<EmbeddedH
 
 	public void setAlwaysDisconnectAfterOneTransaction(boolean alwaysDisconnectAfterOneTransaction) {
 		this.alwaysDisconnectAfterOneTransaction = alwaysDisconnectAfterOneTransaction;
+	}
+
+	@Override
+	public void deleteDatabase()  {
+		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(directory);
 	}
 }

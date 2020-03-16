@@ -52,7 +52,7 @@ public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH2D
 	 */
 	private static final long serialVersionUID = -5549181783426731120L;
 
-	private File directoryName;
+	private File directory;
 	protected boolean alwaysDisconnectAfterOneTransaction;
 	private boolean fileLock;
 	private int pageSizeBytes=2048;
@@ -92,7 +92,7 @@ public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH2D
 	 *             If the given file is a directory.
 	 */
 	public InFileEmbeddedH2DatabaseFactory(File _directory_name, boolean alwaysDisconnectAfterOneTransaction) {
-		setDirectoryName(_directory_name);
+		setDirectory(_directory_name);
 		this.alwaysDisconnectAfterOneTransaction = alwaysDisconnectAfterOneTransaction;
 	}
 
@@ -114,7 +114,7 @@ public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH2D
 	 */
 	public InFileEmbeddedH2DatabaseFactory(File _directory_name, boolean alwaysDisconnectAfterOneTransaction, boolean fileLock, int pageSizeBytes
 			, int cacheSizeBytes) {
-		setDirectoryName(_directory_name);
+		setDirectory(_directory_name);
 		this.alwaysDisconnectAfterOneTransaction = alwaysDisconnectAfterOneTransaction;
 		this.fileLock=fileLock;
 		this.pageSizeBytes=pageSizeBytes;
@@ -123,7 +123,7 @@ public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH2D
 
 	@Override
 	protected EmbeddedH2DatabaseWrapper newWrapperInstance() throws DatabaseException {
-		return new EmbeddedH2DatabaseWrapper(directoryName, alwaysDisconnectAfterOneTransaction, fileLock, pageSizeBytes, cacheSizeBytes);
+		return new EmbeddedH2DatabaseWrapper(directory, alwaysDisconnectAfterOneTransaction, fileLock, pageSizeBytes, cacheSizeBytes);
 	}
 
 	public boolean isAlwaysDisconnectAfterOneTransaction() {
@@ -134,16 +134,16 @@ public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH2D
 		this.alwaysDisconnectAfterOneTransaction = alwaysDisconnectAfterOneTransaction;
 	}
 
-	public File getDirectoryName() {
-		return directoryName;
+	public File getDirectory() {
+		return directory;
 	}
 
-	public void setDirectoryName(File _file_name) {
+	public void setDirectory(File _file_name) {
 		if (_file_name == null)
 			throw new NullPointerException("The parameter _file_name is a null pointer !");
 		if (_file_name.exists() && !_file_name.isDirectory())
 			throw new IllegalArgumentException("The given file name is not a directory !");
-		directoryName = _file_name;
+		directory = _file_name;
 	}
 
 	public static long getSerialVersionUID() {
@@ -174,5 +174,9 @@ public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH2D
 		this.cacheSizeBytes = cacheSizeBytes;
 	}
 
+	@Override
+	public void deleteDatabase()  {
+		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(directory);
+	}
 
 }

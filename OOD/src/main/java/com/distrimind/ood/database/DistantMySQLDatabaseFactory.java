@@ -243,4 +243,10 @@ public class DistantMySQLDatabaseFactory extends CommonMySQLDatabaseFactory<Dist
 	public void setNoCache(boolean noCache) {
 		this.noCache = noCache;
 	}
+
+	@Override
+	public void deleteDatabase()  {
+		throw new UnsupportedOperationException();
+	}
+
 }

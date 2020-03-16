@@ -39,5 +39,10 @@ public class InMemoryEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH
 	public void setDatabaseName(String databaseName) {
 		this.databaseName = databaseName;
 	}
+
+	@Override
+	public void deleteDatabase()  {
+		throw new UnsupportedOperationException();
+	}
 }
 

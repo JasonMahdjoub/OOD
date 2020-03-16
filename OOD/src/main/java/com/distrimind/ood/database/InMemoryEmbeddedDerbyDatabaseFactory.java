@@ -46,6 +46,11 @@ public class InMemoryEmbeddedDerbyDatabaseFactory extends DatabaseFactory<Embedd
 		this.databaseName = databaseName;
 	}
 
+	@Override
+	public void deleteDatabase()  {
+		throw new UnsupportedOperationException();
+	}
+
 
 }
 

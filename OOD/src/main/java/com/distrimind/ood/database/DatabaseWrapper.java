@@ -4854,7 +4854,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * @param _directory
 	 *            the database directory
 	 */
-	public static void deleteDatabaseFiles(File _directory) {
+	static void deleteDatabaseFiles(File _directory) {
 		if (_directory.exists() && _directory.isDirectory()) {
 			FileTools.deleteDirectory(_directory);
 		}
