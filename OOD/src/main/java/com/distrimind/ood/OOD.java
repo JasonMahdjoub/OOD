@@ -75,8 +75,10 @@ public class OOD {
 			c = Calendar.getInstance();
 			c.set(2020, Calendar.FEBRUARY, 21);
 			Description d = new Description((short)2, (short)5, (short)0, Version.Type.Stable, (short)1, c.getTime());
-			d.addItem("Update Utils to 4.11.0");
+			d.addItem("Update Utils to 4.14.0");
 			d.addItem("Implementation of data synchronization with central database backup");
+			d.addItem("Implementation of driver for MySQL");
+			d.addItem("Implementation of driver for Android SQLite");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
