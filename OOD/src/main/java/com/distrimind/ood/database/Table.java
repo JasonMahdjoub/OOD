@@ -759,14 +759,16 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 										throw new DatabaseException("SQL table meta data not found !");
 									// while (rq.result_set.next())
 									while (rq.tableColumnsResultSet.next()) {
+										if (!rq.tableColumnsResultSet.getTableName().toUpperCase().equals(getSqlTableName()))
+											continue;
 										// String col=Table.this.getSqlTableName()+"."+rq.result_set.getString("COLUMN_NAME");
-										String col = Table.this.getSqlTableName() + ".`"
-												+ rq.tableColumnsResultSet.getColumnName()+"`";
+										String col = Table.this.getSqlTableName()+"."
+												+ rq.tableColumnsResultSet.getColumnName();
 										FieldAccessor founded_fa = null;
 										SqlField founded_sf = null;
 										for (FieldAccessor fa : fields) {
 											for (SqlField sf : fa.getDeclaredSqlFields()) {
-												if (sf.field.equalsIgnoreCase(col)) {
+												if (sf.field_without_quote.equalsIgnoreCase(col)) {
 													founded_fa = fa;
 													founded_sf = sf;
 													break;
@@ -776,12 +778,22 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 												break;
 										}
 
-										if (founded_fa == null)
+										if (founded_fa == null) {
+											String fs="(";
+											for (FieldAccessor fa : fields)
+											{
+												for (SqlField sf : fa.getDeclaredSqlFields())
+												{
+													fs+=sf.field_without_quote+" , ";
+												}
+											}
+											fs+=")";
 											throw new DatabaseVersionException(Table.this,
 													"The table " + Table.this.getClass().getSimpleName() + " contains a column named "
 															+ col
 															+ " which does not correspond to any field of the class "
-															+ class_record.getName());
+															+ class_record.getName() + " with table ID " + getTableID() + " "+fs);
+										}
 										// String type=rq.result_set.getString("TYPE_NAME").toUpperCase();
 										String type = rq.tableColumnsResultSet.getTypeName().toUpperCase();
 
@@ -803,8 +815,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 											throw new DatabaseVersionException(Table.this,
 													"The column " + col + " is expected to be "
 															+ (founded_sf.not_null ? "not null" : "nullable"));
-										boolean is_autoincrement = rq.tableColumnsResultSet.isAutoIncrement();
-										if (sql_connection.supportSingleAutoPrimaryKeys() && is_autoincrement != founded_fa.isAutoPrimaryKey())
+										boolean is_autoincrement = false;
+										if (sql_connection.supportSingleAutoPrimaryKeys() && (is_autoincrement=rq.tableColumnsResultSet.isAutoIncrement()) != founded_fa.isAutoPrimaryKey())
 											throw new DatabaseVersionException(Table.this,
 													"The column " + col + " is " + (is_autoincrement ? "" : "not ")
 															+ "autoincremented into the Sql database where it is "

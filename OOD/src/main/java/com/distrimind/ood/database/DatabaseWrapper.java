@@ -3513,27 +3513,29 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 	}
-
 	protected long getNextAutoIncrement(Table<?> table, FieldAccessor fa) throws DatabaseException {
+		return getNextAutoIncrement(table.getTableID(), table.getDatabaseVersion(), fa.getStartValue());
+	}
+	protected long getNextAutoIncrement(int tableID, int databaseVersion, long startValue) throws DatabaseException {
 		try {
 			boolean insert=false;
 			long res;
 			try(PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
 					.prepareStatement("SELECT AI FROM `" + DatabaseWrapper.AUTOINCREMENT_TABLE + "` WHERE TABLE_ID='"
-							+ table.getTableID() + "' AND TABLE_VERSION='"+table.getDatabaseVersion()+"'"+ getSqlComma())) {
+							+ tableID + "' AND TABLE_VERSION='"+databaseVersion+"'"+ getSqlComma())) {
 				ResultSet rs = pst.executeQuery();
 
 				if (rs.next()) {
 					res = rs.getLong(1);
 				} else {
 					insert=true;
-					res = fa.getStartValue();
+					res = startValue;
 				}
 			}
 			if (insert) {
 				try (PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
 						.prepareStatement("INSERT INTO `" + DatabaseWrapper.AUTOINCREMENT_TABLE + "`(TABLE_ID, TABLE_VERSION, AI) VALUES('"
-								+ table.getTableID()+"', '" +table.getDatabaseVersion()+"', '"+ (res + 1) + "')" + getSqlComma())) {
+								+ tableID+"', '" +databaseVersion+"', '"+ (res + 1) + "')" + getSqlComma())) {
 					pst.executeUpdate();
 				}
 			}
@@ -3541,7 +3543,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			{
 				try (PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
 						.prepareStatement("UPDATE `" + DatabaseWrapper.AUTOINCREMENT_TABLE + "` SET AI='"+(res+1)+"' WHERE TABLE_ID='"
-								+ table.getTableID() + "' AND TABLE_VERSION='"+table.getDatabaseVersion()+"'" + getSqlComma())) {
+								+ tableID + "' AND TABLE_VERSION='"+databaseVersion+"'" + getSqlComma())) {
 					pst.executeUpdate();
 				}
 			}
@@ -4313,12 +4315,24 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (res!=null)
 				return res;
 
-			Statement st = getConnectionAssociatedWithCurrentThread().getConnection()
-					.createStatement();
-			st.executeUpdate("INSERT INTO " + DatabaseWrapper.ROW_PROPERTIES_OF_TABLES + "(TABLE_NAME, TABLE_VERSION, PACKAGE_NAME) VALUES('"
-					+ longTableName +"', "+databaseVersion+", '"+getLongPackageName(tTableClass.getPackage())+ "')" + getSqlComma());
 
-			st.close();
+			if (supportSingleAutoPrimaryKeys()) {
+				Statement st = getConnectionAssociatedWithCurrentThread().getConnection()
+						.createStatement();
+				st.executeUpdate("INSERT INTO " + DatabaseWrapper.ROW_PROPERTIES_OF_TABLES + "(TABLE_NAME, TABLE_VERSION, PACKAGE_NAME) VALUES('"
+						+ longTableName + "', " + databaseVersion + ", '" + getLongPackageName(tTableClass.getPackage()) + "')" + getSqlComma());
+				st.close();
+			}
+			else
+			{
+				long id=getNextAutoIncrement(-1, databaseVersion, 0L);
+				Statement st = getConnectionAssociatedWithCurrentThread().getConnection()
+						.createStatement();
+				st.executeUpdate("INSERT INTO " + DatabaseWrapper.ROW_PROPERTIES_OF_TABLES + "(TABLE_ID, TABLE_NAME, TABLE_VERSION, PACKAGE_NAME) VALUES("
+						+id+", '"+ longTableName +"', "+databaseVersion+", '"+getLongPackageName(tTableClass.getPackage())+ "')" + getSqlComma());
+				st.close();
+			}
+
 			/*if (!doesVersionExists(tTableClass.getPackage(), databaseVersion)) {
 				st = getConnectionAssociatedWithCurrentThread().getConnection()
 						.createStatement();
@@ -4661,6 +4675,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		public boolean next() throws SQLException {
 			return resultSet.next();
 		}
+
+		public abstract String getTableName() throws SQLException;
 
 		public abstract String getColumnName() throws SQLException;
 

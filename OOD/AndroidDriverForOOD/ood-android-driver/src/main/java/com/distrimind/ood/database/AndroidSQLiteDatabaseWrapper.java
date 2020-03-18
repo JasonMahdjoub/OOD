@@ -187,6 +187,11 @@ public class AndroidSQLiteDatabaseWrapper extends DatabaseWrapper {
         }
 
         @Override
+        public String getTableName() throws SQLException {
+            return resultSet.getString(3);
+        }
+
+        @Override
         public String getColumnName() throws SQLException {
             return resultSet.getString(4);
         }

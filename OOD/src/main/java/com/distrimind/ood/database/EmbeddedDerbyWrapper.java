@@ -396,6 +396,11 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 		}
 
 		@Override
+		public String getTableName() throws SQLException {
+			return resultSet.getString(3);
+		}
+
+		@Override
 		public String getColumnName() throws SQLException {
 			return resultSet.getString("COLUMN_NAME");
 		}
