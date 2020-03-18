@@ -1,8 +1,11 @@
 package com.distrimind.ood.database;
 
 
+import android.content.Context;
+
 import com.distrimind.ood.database.database.Table1;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.harddrive.AndroidHardDriveDetect;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -16,6 +19,7 @@ import java.sql.SQLException;
 import java.util.Map;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 
 @SuppressWarnings("ConstantConditions")
@@ -25,6 +29,9 @@ public class AndroidSqlLiteTestDatabase extends TestDatabase {
 
     private static final AndroidSQLiteDatabaseFactory factoryA=new AndroidSQLiteDatabaseFactory(AndroidSQLiteDatabaseFactory.class.getPackage(), "androidDBTestA", false);
     private static final AndroidSQLiteDatabaseFactory factoryB=new AndroidSQLiteDatabaseFactory(AndroidSQLiteDatabaseFactory.class.getPackage(), "androidDBTestB", false);
+    static {
+        AndroidHardDriveDetect.context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+    }
 
     public AndroidSqlLiteTestDatabase() throws DatabaseException, NoSuchAlgorithmException, NoSuchProviderException {
     }
