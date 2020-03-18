@@ -1,8 +1,8 @@
 package com.distrimind.ood.database;
 
 
-import android.content.Context;
 
+import com.distrimind.ood.StorageList;
 import com.distrimind.ood.database.database.Table1;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.harddrive.AndroidHardDriveDetect;
@@ -27,8 +27,8 @@ import androidx.test.platform.app.InstrumentationRegistry;
 public class AndroidSqlLiteTestDatabase extends TestDatabase {
 
 
-    private static final AndroidSQLiteDatabaseFactory factoryA=new AndroidSQLiteDatabaseFactory(AndroidSQLiteDatabaseFactory.class.getPackage(), "androidDBTestA", false);
-    private static final AndroidSQLiteDatabaseFactory factoryB=new AndroidSQLiteDatabaseFactory(AndroidSQLiteDatabaseFactory.class.getPackage(), "androidDBTestB", false);
+    private static final AndroidSQLiteDatabaseFactory factoryA=new AndroidSQLiteDatabaseFactory(StorageList.class.getPackage().getName()+".test", "androidDBTestA", false);
+    private static final AndroidSQLiteDatabaseFactory factoryB=new AndroidSQLiteDatabaseFactory(StorageList.class.getPackage().getName()+".test", "androidDBTestB", false);
     static {
         AndroidHardDriveDetect.context = InstrumentationRegistry.getInstrumentation().getTargetContext();
     }

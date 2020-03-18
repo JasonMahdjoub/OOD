@@ -27,6 +27,7 @@ public class AndroidSQLiteDatabaseWrapper extends DatabaseWrapper {
     }
 
 
+
     AndroidSQLiteDatabaseWrapper(String _package, String _database_name, boolean externalStorage) throws DatabaseException {
         super(_database_name, new File(getPath(_package, _database_name, externalStorage)), false,false);
         url = "jdbc:sqldroid:" + getPath(_package, _database_name, externalStorage);
