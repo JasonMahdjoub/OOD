@@ -67,7 +67,7 @@ public class InFileEmbeddedHSQLDatabaseFactory extends DatabaseFactory<EmbeddedH
 	/**
 	 * Constructor
 	 *
-	 * @param databaseFileName
+	 * @param databaseDirectory
 	 *            The directory which contains the database. If this directory does not
 	 *            exists, it will be automatically created with the correspondent
 	 *            database.
@@ -78,14 +78,14 @@ public class InFileEmbeddedHSQLDatabaseFactory extends DatabaseFactory<EmbeddedH
 	 *             If the given file is a directory.
 	 *
 	 */
-	public InFileEmbeddedHSQLDatabaseFactory(File databaseFileName) {
-		this(databaseFileName, false);
+	public InFileEmbeddedHSQLDatabaseFactory(File databaseDirectory) {
+		this(databaseDirectory, false);
 	}
 
 	/**
 	 * Constructor
 	 *
-	 * @param databaseFileName
+	 * @param databaseDirectory
 	 *            The directory which contains the database. If this directory does not
 	 *            exists, it will be automatically created with the correspondent
 	 *            database.
@@ -96,14 +96,14 @@ public class InFileEmbeddedHSQLDatabaseFactory extends DatabaseFactory<EmbeddedH
 	 *             If the given file is a directory.
 	 *
 	 */
-	public InFileEmbeddedHSQLDatabaseFactory(File databaseFileName, boolean alwaysDisconnectAfterOneTransaction) {
-		setDirectory(databaseFileName);
+	public InFileEmbeddedHSQLDatabaseFactory(File databaseDirectory, boolean alwaysDisconnectAfterOneTransaction) {
+		setDirectory(databaseDirectory);
 		this.alwaysDisconnectAfterOneTransaction = alwaysDisconnectAfterOneTransaction;
 	}
 	/**
 	 * Constructor
 	 *
-	 * @param databaseFileName
+	 * @param databaseDirectory
 	 *            The directory which contains the database. If this directory does not
 	 *            exists, it will be automatically created with the correspondent
 	 *            database.
@@ -137,10 +137,10 @@ public class InFileEmbeddedHSQLDatabaseFactory extends DatabaseFactory<EmbeddedH
 	 *             If the given file is a directory.
 	 *
 	 */
-	public InFileEmbeddedHSQLDatabaseFactory(File databaseFileName, boolean alwaysDisconnectAfterOneTransaction, HSQLDBConcurrencyControl concurrencyControl, int _cache_rows,
+	public InFileEmbeddedHSQLDatabaseFactory(File databaseDirectory, boolean alwaysDisconnectAfterOneTransaction, HSQLDBConcurrencyControl concurrencyControl, int _cache_rows,
 											 int _cache_size, int _result_max_memory_rows, int _cache_free_count, boolean lockFile) {
 
-		setDirectory(databaseFileName);
+		setDirectory(databaseDirectory);
 		setConcurrencyControl(concurrencyControl);
 		cacheRows = _cache_rows;
 		cacheSizeBytes = _cache_size;

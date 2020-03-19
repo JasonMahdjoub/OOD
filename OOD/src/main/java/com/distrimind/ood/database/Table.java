@@ -759,8 +759,6 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 										throw new DatabaseException("SQL table meta data not found !");
 									// while (rq.result_set.next())
 									while (rq.tableColumnsResultSet.next()) {
-										if (!rq.tableColumnsResultSet.getTableName().toUpperCase().equals(getSqlTableName()))
-											continue;
 										// String col=Table.this.getSqlTableName()+"."+rq.result_set.getString("COLUMN_NAME");
 										String col = Table.this.getSqlTableName()+"."
 												+ rq.tableColumnsResultSet.getColumnName();
@@ -871,7 +869,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						}
 						sqlQuerry.append(")");
 					}
-					foreign_keys_to_create = true;
+					foreign_keys_to_create = sql_connection.supportForeignKeys();
 
 					for (FieldAccessor f : fields) {
 						if (f.isUnique() && !f.isForeignKey()) {
@@ -1099,7 +1097,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				if (foreign_keys_fields.size() > 0) {
 					for (ForeignKeyFieldAccessor f : foreign_keys_fields) {
 						final StringBuffer SqlQuerry = new StringBuffer(
-								"ALTER TABLE " + Table.this.getSqlTableName() + " ADD FOREIGN KEY(");
+								"ALTER TABLE " + Table.this.getSqlTableName()+ " ADD FOREIGN KEY(");
 						boolean first = true;
 						for (SqlField sf : f.getDeclaredSqlFields()) {
 							if (first)
@@ -5371,12 +5369,12 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 	}
 	@SuppressWarnings("SameParameterValue")
-	private int removeRecordsWithCascade(String where, final Map<String, Object> parameters,
+	private long removeRecordsWithCascade(String where, final Map<String, Object> parameters,
 										 boolean is_already_in_transaction) throws DatabaseException {
 
 		final RuleInstance rule = where==null?null:Interpreter.getRuleInstance(where);
 		if (rule != null && !rule.isIndependantFromOtherTables(Table.this)) {
-			return removeRecords(new Filter<T>() {
+			return removeRecordsWithCascade(new Filter<T>() {
 				@Override
 				public boolean nextRecord(T _record) {
 					return true;
@@ -6027,6 +6025,66 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 	}
 
+	/**
+	 * Remove with cascade records of other tables pointing to the given record
+	 * @param record the referenced record
+	 * @return the number of removed records
+	 * @throws DatabaseException if a problem occurs
+	 */
+	public long removeWithCascadeRecordsPointingToThisRecord(final T record) throws DatabaseException {
+		if (record == null)
+			throw new NullPointerException("The parameter record is a null pointer !");
+		// synchronized(sql_connection)
+		{
+			try (Lock ignored = new WriteLock(this)) {
+				return (long)sql_connection.runTransaction(new Transaction() {
+					@Override
+					public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
+						return removeWithCascadeRecordsPointingToThisRecordImpl(record);
+					}
+
+					@Override
+					public TransactionIsolation getTransactionIsolation() {
+						return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+					}
+
+					@Override
+					public boolean doesWriteData() {
+						return true;
+					}
+
+					@Override
+					public void initOrReset() throws DatabaseException {
+
+					}
+				}, true);
+
+			} catch (Exception e) {
+				throw DatabaseException.getDatabaseException(e);
+			}
+		}
+	}
+
+	private long removeWithCascadeRecordsPointingToThisRecordImpl(T record) throws DatabaseException {
+		long total=0;
+		for (Class<? extends Table<?>> c : getTablesClassesPointingToThisTable())
+		{
+			Table<?> t=sql_connection.getTableInstance(c);
+			HashMap<String, Object> hm=new HashMap<>();
+			for (ForeignKeyFieldAccessor fa : t.foreign_keys_fields)
+			{
+				if (fa.getPointedTable().equals(t))
+				{
+					hm.put(fa.getFieldName(), record);
+				}
+			}
+			if (hm.size()==0)
+				throw new IllegalAccessError();
+			total+=t.removeRecordsWithOneOfFieldsWithCascade(hm);
+		}
+		return total;
+	}
+
 	@SuppressWarnings({"unused", "SameParameterValue"})
     private long removeRecordsWithCascade(final Filter<T> _filter, String where,
                                           final Map<String, Object> parameters, final boolean _is_already_sql_transaction) throws DatabaseException {
@@ -6058,6 +6116,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 							if ((rule == null || rule.isConcernedBy(Table.this, parameters, _instance))
 									&& _filter.nextRecord(_instance))
 							{
+								if (!sql_connection.supportForeignKeys())
+									removeWithCascadeRecordsPointingToThisRecordImpl(_instance);
 								_cursor.deleteRow();
 								++deleted_records_number;
 								_instance.__createdIntoDatabase = false;

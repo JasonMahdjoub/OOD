@@ -67,7 +67,7 @@ public class AndroidSQLiteDatabaseFactory extends DatabaseFactory<AndroidSQLiteD
     }
 
     @Override
-    public void deleteDatabase() throws DatabaseException {
+    public void deleteDatabase() {
         AndroidSQLiteDatabaseWrapper.deleteDatabaseFiles(this);
     }
 

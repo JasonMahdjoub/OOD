@@ -4325,7 +4325,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 			else
 			{
-				long id=getNextAutoIncrement(-1, databaseVersion, 0L);
+				long id=getNextAutoIncrement(-1, databaseVersion, 1L);
 				Statement st = getConnectionAssociatedWithCurrentThread().getConnection()
 						.createStatement();
 				st.executeUpdate("INSERT INTO " + DatabaseWrapper.ROW_PROPERTIES_OF_TABLES + "(TABLE_ID, TABLE_NAME, TABLE_VERSION, PACKAGE_NAME) VALUES("
@@ -4396,6 +4396,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 								   final boolean createDatabaseIfNecessaryAndCheckIt) throws DatabaseException {
 		loadDatabase(configuration, createDatabaseIfNecessaryAndCheckIt, -1);
 	}
+
 	final void loadDatabase(final DatabaseConfiguration configuration,
 			final boolean createDatabaseIfNecessaryAndCheckIt, int databaseVersion) throws DatabaseException {
 		try  {
@@ -4416,17 +4417,17 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 			}
 			try {
-
-
 				allNotFound=loadDatabaseTables(configuration, createDatabaseIfNecessaryAndCheckIt, databaseVersion);
+				Database actualDatabaseLoading=this.actualDatabaseLoading;
 				if (databaseVersion==-1)
 					databaseVersion=getCurrentDatabaseVersion(configuration.getPackage());
 				if (allNotFound) {
+
 					try {
 						DatabaseLifeCycles callable = configuration.getDatabaseLifeCycles();
-						Database db=actualDatabaseLoading;
+						this.actualDatabaseLoading=null;
 						Collection<DatabaseHooksTable.Record> hosts=getSynchronizer().resetSynchronizerAndGetAllHosts();
-						actualDatabaseLoading=db;
+						this.actualDatabaseLoading=actualDatabaseLoading;
 						int currentVersion=getCurrentDatabaseVersion(configuration.getPackage());
 						if (currentVersion==databaseVersion) {
 							DatabaseConfiguration oldConfig = configuration.getOldVersionOfDatabaseConfiguration();
@@ -4434,9 +4435,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							boolean removeOldDatabase = false;
 							if (oldConfig != null && callable != null) {
 								try {
-									db=actualDatabaseLoading;
+									this.actualDatabaseLoading=null;
 									loadDatabase(oldConfig, false);
-									actualDatabaseLoading=db;
+									this.actualDatabaseLoading=actualDatabaseLoading;
 									callable.transferDatabaseFromOldVersion(this, oldConfig, configuration);
 
 									removeOldDatabase = callable.hasToRemoveOldDatabase();
@@ -4460,6 +4461,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 					}
 				}
+
 
 				@SuppressWarnings("unchecked")
 				HashMap<Package, Database> sd = (HashMap<Package, Database>) sql_database.clone();
@@ -4487,6 +4489,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	{
 		return "";
 	}
+
+	protected abstract boolean supportForeignKeys();
 
 	/*
 	 * result found into actualDatabaseLoading
@@ -4675,8 +4679,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		public boolean next() throws SQLException {
 			return resultSet.next();
 		}
-
-		public abstract String getTableName() throws SQLException;
 
 		public abstract String getColumnName() throws SQLException;
 

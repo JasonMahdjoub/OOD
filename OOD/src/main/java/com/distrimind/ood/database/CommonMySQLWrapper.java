@@ -263,11 +263,6 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 		}
 
 		@Override
-		public String getTableName() throws SQLException {
-			return resultSet.getString(3);
-		}
-
-		@Override
 		public String getColumnName() throws SQLException {
 			return resultSet.getString(4);
 		}
@@ -717,6 +712,11 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 
 	@Override
 	protected boolean supportFullSqlFieldName() {
+		return true;
+	}
+
+	@Override
+	protected boolean supportForeignKeys() {
 		return true;
 	}
 

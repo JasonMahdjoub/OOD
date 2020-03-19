@@ -3,6 +3,8 @@ package com.distrimind.ood.database;
 import android.annotation.SuppressLint;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
+import com.distrimind.util.FileTools;
 
 import org.sqldroid.SQLDroidBlob;
 
@@ -14,6 +16,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Savepoint;
+import java.sql.Statement;
 
 public class AndroidSQLiteDatabaseWrapper extends DatabaseWrapper {
 
@@ -21,16 +24,22 @@ public class AndroidSQLiteDatabaseWrapper extends DatabaseWrapper {
     private static volatile boolean driverLoaded=false;
 
     @SuppressLint("SdCardPath")
-    private static String getPath(String _package, String _database_name, boolean externalStorage)
+    private static String getDirectory(String _package, String _database_name, boolean externalStorage)
     {
-        return (externalStorage?"/sdcard/":"/data/data/") + _package + "/"+_database_name+".db";
+        return (externalStorage?"/sdcard/":"/data/data/") + _package + "/"+_database_name;
     }
 
-
+    private static String getPath(String _package, String _database_name, boolean externalStorage)
+    {
+        return getDirectory(_package, _database_name, externalStorage)+ "/"+_database_name+".db";
+    }
 
     AndroidSQLiteDatabaseWrapper(String _package, String _database_name, boolean externalStorage) throws DatabaseException {
-        super(_database_name, new File(getPath(_package, _database_name, externalStorage)), false,false);
+        super(_database_name, new File(getDirectory(_package, _database_name, externalStorage)), false,false);
         url = "jdbc:sqldroid:" + getPath(_package, _database_name, externalStorage);
+        if (!getDatabaseDirectory().exists()) {
+            FileTools.checkFolderRecursive(getDatabaseDirectory());
+        }
         checkDriverLoading();
     }
 
@@ -61,11 +70,13 @@ public class AndroidSQLiteDatabaseWrapper extends DatabaseWrapper {
     @Override
     protected Connection reopenConnectionImpl() throws DatabaseLoadingException {
         try {
-            return DriverManager.getConnection(url);
+            Connection c=DriverManager.getConnection(url);
+            return c;
         } catch (SQLException e) {
             throw new DatabaseLoadingException("Impossible to load database", e);
         }
     }
+
 
     @Override
     protected String getCachedKeyword() {
@@ -159,6 +170,11 @@ public class AndroidSQLiteDatabaseWrapper extends DatabaseWrapper {
     }
 
     @Override
+    protected boolean supportForeignKeys() {
+        return false;
+    }
+
+    @Override
     protected boolean doesTableExists(String tableName) throws Exception {
         try(ResultSet rs=getConnectionAssociatedWithCurrentThread().getConnection().getMetaData().getTables(null, null, tableName, null)) {
             return rs.next();
@@ -186,10 +202,6 @@ public class AndroidSQLiteDatabaseWrapper extends DatabaseWrapper {
             super(_rs);
         }
 
-        @Override
-        public String getTableName() throws SQLException {
-            return resultSet.getString(3);
-        }
 
         @Override
         public String getColumnName() throws SQLException {

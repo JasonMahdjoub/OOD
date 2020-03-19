@@ -29,6 +29,7 @@ public class AndroidSqlLiteTestDatabase extends TestDatabase {
 
     private static final AndroidSQLiteDatabaseFactory factoryA=new AndroidSQLiteDatabaseFactory(StorageList.class.getPackage().getName()+".test", "androidDBTestA", false);
     private static final AndroidSQLiteDatabaseFactory factoryB=new AndroidSQLiteDatabaseFactory(StorageList.class.getPackage().getName()+".test", "androidDBTestB", false);
+
     static {
         AndroidHardDriveDetect.context = InstrumentationRegistry.getInstrumentation().getTargetContext();
     }
@@ -72,12 +73,12 @@ public class AndroidSqlLiteTestDatabase extends TestDatabase {
 
     @Override
     public void deleteDatabaseFilesA() throws IllegalArgumentException {
-        AndroidSQLiteDatabaseWrapper.deleteDatabaseFiles(factoryA);
+        factoryA.deleteDatabase();
     }
 
     @Override
     public void deleteDatabaseFilesB() throws IllegalArgumentException {
-        AndroidSQLiteDatabaseWrapper.deleteDatabaseFiles(factoryB);
+        factoryB.deleteDatabase();
     }
 
     @Override

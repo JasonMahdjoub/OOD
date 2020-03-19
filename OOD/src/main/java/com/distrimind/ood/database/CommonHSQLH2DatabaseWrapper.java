@@ -344,5 +344,10 @@ public abstract class CommonHSQLH2DatabaseWrapper extends DatabaseWrapper{
 		return "DROP TABLE " + table.getSqlTableName() +
 				" IF EXISTS CASCADE";
 	}
+	@Override
+	protected boolean supportForeignKeys() {
+		return true;
+	}
+
 }
 

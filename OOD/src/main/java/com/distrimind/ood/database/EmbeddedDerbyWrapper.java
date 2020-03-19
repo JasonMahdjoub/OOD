@@ -396,11 +396,6 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 		}
 
 		@Override
-		public String getTableName() throws SQLException {
-			return resultSet.getString(3);
-		}
-
-		@Override
 		public String getColumnName() throws SQLException {
 			return resultSet.getString("COLUMN_NAME");
 		}
@@ -706,6 +701,11 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	{
 		return "DROP TABLE " + table.getSqlTableName() +
 				" IF EXISTS CASCADE";
+	}
+
+	@Override
+	protected boolean supportForeignKeys() {
+		return true;
 	}
 
 }

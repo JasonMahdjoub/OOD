@@ -11,6 +11,10 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.Enumeration;
+
 import static org.junit.Assert.*;
 
 /**
@@ -21,7 +25,7 @@ import static org.junit.Assert.*;
 @RunWith(AndroidJUnit4.class)
 public class ExampleInstrumentedTest {
     @Test
-    public void useAppContext() throws ClassNotFoundException {
+    public void useAppContext() throws ClassNotFoundException, SocketException {
         // Context of the app under test.
         Log.i("perso", ""+OSVersion.getCurrentOSVersion().getOS());
 

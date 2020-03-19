@@ -67,6 +67,7 @@ apply from: '../../common_dependencies.gradle'
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     androidTestImplementation 'org.testng:testng:6.14.3'
+    androidTestImplementation(group:'org.hsqldb', name: 'hsqldb', version: '2.3.4')
     implementation 'org.sqldroid:sqldroid:1.0.3'
     implementation 'androidx.appcompat:appcompat:1.1.0'
     testImplementation 'junit:junit:4.12'

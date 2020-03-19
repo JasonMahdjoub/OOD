@@ -436,11 +436,6 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 		}
 
 		@Override
-		public String getTableName() throws SQLException {
-			return resultSet.getString("TABLE_NAME");
-		}
-
-		@Override
 		public String getColumnName() throws SQLException {
 			return resultSet.getString("COLUMN_NAME");
 		}

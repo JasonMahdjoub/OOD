@@ -107,8 +107,9 @@ public abstract class TestDatabase {
 	static Table5 table5b;
 	static Table6 table6b;
 
-	static DatabaseConfiguration dbConfig1 = new DatabaseConfiguration(Table1.class.getPackage());
-	static DatabaseConfiguration dbConfig2 = new DatabaseConfiguration(Lecture.class.getPackage());
+	static List<Class<?>> listClasses=Arrays.asList((Class<?>)Table1.class, Table2.class, Table3.class, Table4.class, Table5.class, Table6.class, Table7.class);
+	static DatabaseConfiguration dbConfig1 = new DatabaseConfiguration(Table1.class.getPackage(), listClasses);
+	static DatabaseConfiguration dbConfig2 = new DatabaseConfiguration(Lecture.class.getPackage(), listClasses);
 	private static DatabaseWrapper sql_db;
 	private static DatabaseWrapper sql_dbb;
 
