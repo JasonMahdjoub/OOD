@@ -37,6 +37,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database;
 
+
 import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.database.*;
 import com.distrimind.ood.database.database.Table1.Record;
@@ -291,6 +292,7 @@ public abstract class TestDatabase {
 	@Test
 	public void checkUnloadedDatabase() throws IllegalArgumentException, DatabaseException {
 		deleteDatabaseFilesA();
+		deleteDatabaseFilesB();
 		sql_db = getDatabaseWrapperInstanceA();
 		try {
 			sql_db.loadDatabase(dbConfig1, false);
@@ -646,6 +648,7 @@ public abstract class TestDatabase {
 
 	@Test(dependsOnMethods = { "testCursor" })
 	public void addSecondRecord() throws DatabaseException {
+
 		try {
 			table1.addRecord((Map<String, Object>) null);
             fail();
@@ -697,9 +700,10 @@ public abstract class TestDatabase {
 				tab[0] = 0;
 				tab[1] = 1;
 				tab[2] = 2;
-				
+
 				map.put("byte_array_value", tab);
 				Table1.Record r1=table1.addRecord(map);
+
 				Map<String, Object> pks=new HashMap<>();
 				pks.put("pk1", r1.pk1);
 				pks.put("pk2", r1.pk2);
@@ -709,7 +713,9 @@ public abstract class TestDatabase {
 				pks.put("pk6", r1.pk6);
 				pks.put("pk7", r1.pk7);
 				assertNotNull(table1.getRecord(pks));
+
 				Table3.Record r3=table3.addRecord(map);
+
 				pks=new HashMap<>();
 				pks.put("pk1", r3.pk1);
 				pks.put("pk2", r3.pk2);
@@ -719,6 +725,7 @@ public abstract class TestDatabase {
 				pks.put("pk6", r3.pk6);
 				pks.put("pk7", r3.pk7);
 				assertNotNull(table3.getRecord(pks));
+
 				return null;
 			}
 
@@ -737,12 +744,14 @@ public abstract class TestDatabase {
 				
 			}
 		});
+
 		table1.checkDataIntegrity();
 		table3.checkDataIntegrity();
 		table2.checkDataIntegrity();
 		table4.checkDataIntegrity();
 		table5.checkDataIntegrity();
 		table6.checkDataIntegrity();
+
 
 	}
 
@@ -3162,10 +3171,10 @@ public abstract class TestDatabase {
 
             } else if (o.getClass() == BigInteger.class) {
 				String t=getDatabaseWrapperInstanceA().getBigIntegerType(128);
-                res.add(t.contains("CHAR")?o.toString():(t.contains("BINARY") || t.contains("BLOB"))?((BigInteger) o).toByteArray():new BigDecimal((BigInteger)o));
+                res.add(t.contains("CHAR")?o.toString():((t.contains("BINARY") || t.contains("BLOB"))?((BigInteger) o).toByteArray():new BigDecimal((BigInteger)o)));
             } else if (o.getClass() == BigDecimal.class) {
 				String t=getDatabaseWrapperInstanceA().getBigDecimalType(128);
-				res.add(t.contains("CHAR")?o.toString():(t.contains("BINARY") || t.contains("BLOB"))?BigDecimalFieldAccessor.bigDecimalToBytes((BigDecimal)o):o);
+				res.add(t.contains("CHAR")?o.toString():((t.contains("BINARY") || t.contains("BLOB"))?BigDecimalFieldAccessor.bigDecimalToBytes((BigDecimal)o):o));
 			} else if (o instanceof Date) {
                 res.add(new Timestamp(((Date) o).getTime()));
             }

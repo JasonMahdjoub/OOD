@@ -37,6 +37,8 @@ package com.distrimind.ood.database;
 
 
 
+import android.util.Log;
+
 import com.distrimind.ood.StorageList;
 import com.distrimind.ood.database.database.Table1;
 import com.distrimind.ood.database.exceptions.DatabaseException;
@@ -48,6 +50,9 @@ import org.testng.annotations.DataProvider;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.sql.SQLException;
@@ -75,7 +80,22 @@ public abstract class AbstractAndroidTestDatabase<DW extends DatabaseWrapper> ex
     }
 
     public AbstractAndroidTestDatabase() throws DatabaseException, NoSuchAlgorithmException, NoSuchProviderException {
-
+        try{
+            Field outField = System.class.getDeclaredField("out");
+            Field modifiersField = Field.class.getDeclaredField("accessFlags");
+            modifiersField.setAccessible(true);
+            modifiersField.set(outField, outField.getModifiers() & ~Modifier.FINAL);
+            outField.setAccessible(true);
+            outField.set(null, new PrintStream(new RedirectLogOutputStream("testood")));
+            Field errField = System.class.getDeclaredField("out");
+            modifiersField.set(errField, errField.getModifiers() & ~Modifier.FINAL);
+            errField.setAccessible(true);
+            errField.set(null, new PrintStream(new RedirectLogErrorStream("testood")));
+        }catch(NoSuchFieldException e){
+            e.printStackTrace();
+        }catch(IllegalAccessException e){
+            e.printStackTrace();
+        }
     }
 
     abstract DatabaseFactory<DW> getDatabaseFactoryA();
@@ -134,41 +154,74 @@ public abstract class AbstractAndroidTestDatabase<DW extends DatabaseWrapper> ex
     @SuppressWarnings("unchecked")
     @Test
     public void allTests() throws DatabaseException, NoSuchProviderException, NoSuchAlgorithmException, IOException, SQLException {
+        Log.i("testood", "checkUnloadedDatabase()");
         checkUnloadedDatabase();
+        Log.i("testood", "firstLoad()");
         firstLoad();
+        Log.i("testood", "isLoadedIntoMemory()");
         isLoadedIntoMemory();
+        Log.i("testood", "firstAdd()");
         firstAdd();
+        Log.i("testood", "firstTestSize()");
         firstTestSize();
+        Log.i("testood", "firstReload()");
         firstReload();
+        Log.i("testood", "secondTestSize()");
         secondTestSize();
+        Log.i("testood", "testFirstAdd()");
         testFirstAdd();
+        Log.i("testood", "testCursor()");
         testCursor();
+        Log.i("testood", "addSecondRecord()");
         addSecondRecord();
+        Log.i("testood", "alterRecord()");
         alterRecord();
+        Log.i("testood", "getRecord()");
         getRecord();
+        Log.i("testood", "getRecordFilter()");
         getRecordFilter();
+        Log.i("testood", "removeRecord()");
         removeRecord();
+        Log.i("testood", "testArrayRecordParameters()");
         testArrayRecordParameters();
+        Log.i("testood", "removeRecords()");
         removeRecords();
+        Log.i("testood", "testFilters()");
         testFilters();
+        Log.i("testood", "testRemoveFilters()");
         testRemoveFilters();
+        Log.i("testood", "addForeignKeyAndTestUniqueKeys()");
         addForeignKeyAndTestUniqueKeys();
+        Log.i("testood", "alterRecordWithCascade()");
         alterRecordWithCascade();
+        Log.i("testood", "removePointedRecords()");
         removePointedRecords();
+        Log.i("testood", "removeForeignKeyRecords()");
         removeForeignKeyRecords();
+        Log.i("testood", "testIsPointed()");
         testIsPointed();
+        Log.i("testood", "removeWithCascade()");
         removeWithCascade();
+        Log.i("testood", "setAutoRandomFields()");
         setAutoRandomFields();
+        Log.i("testood", "testCommandTranslatorInterpreter()");
         for (Object[] o : interpreterCommandsProvider())
         {
             testCommandTranslatorInterpreter((Class<? extends Table<?>>)o[0], (String)o[1], (Map<String, Object>)o[2], (String)o[3], (Map<Integer, Object>)o[4], (Table1.Record)o[5], (boolean)o[6]);
         }
+        Log.i("testood", "prepareMultipleTest()");
         prepareMultipleTest();
+        Log.i("testood", "multipleTests()");
         multipleTests();
+        Log.i("testood", "testThreadSafe()");
         testThreadSafe();
+        Log.i("testood", "testCheckPoint()");
         testCheckPoint();
+        Log.i("testood", "testBackup()");
         testBackup();
+        Log.i("testood", "testDatabaseRemove()");
         testDatabaseRemove();
+        Log.i("testood", "Finished");
 
     }
 }

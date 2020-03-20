@@ -62,6 +62,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	private static Object blobStateNewValue=null;
 	protected int pageSizeBytes;
 	protected int cacheSizeBytes;
+	private boolean android;
 
 	EmbeddedH2DatabaseWrapper(boolean loadToMemory, String databaseName) throws DatabaseException {
 		super(databaseName, null, false, true, true);
@@ -69,12 +70,22 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 			throw new IllegalArgumentException();
 		this.pageSizeBytes=0;
 		this.cacheSizeBytes=0;
+		this.android=false;
 	}
 	EmbeddedH2DatabaseWrapper(File _directory_name, boolean alwaysDisconnectAfterOnTransaction, boolean fileLock, int pageSizeBytes
 			,int cacheSizeBytes) throws DatabaseException {
 		super("Database from file : " + getH2DataFileName(getDatabaseFileName(_directory_name)), _directory_name, alwaysDisconnectAfterOnTransaction, false, fileLock);
 		this.pageSizeBytes=pageSizeBytes;
 		this.cacheSizeBytes=cacheSizeBytes;
+		this.android=false;
+	}
+
+	EmbeddedH2DatabaseWrapper(File _directory_name, boolean alwaysDisconnectAfterOnTransaction, int pageSizeBytes
+			,int cacheSizeBytes) throws DatabaseException {
+		super("Database from file : " + getH2DataFileName(getDatabaseFileName(_directory_name)), _directory_name, alwaysDisconnectAfterOnTransaction, false, true);
+		this.pageSizeBytes=pageSizeBytes;
+		this.cacheSizeBytes=cacheSizeBytes;
+		this.android=true;
 	}
 
 	private static File getDatabaseFileName(File directoryName)
@@ -109,7 +120,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 			}
 		}
 	}
-	private static Connection getConnection(String databaseName, File _file_name, boolean loadToMemory, boolean fileLock, int pageSize, int cacheSize)
+	private static Connection getConnection(String databaseName, File _file_name, boolean loadToMemory, boolean android, boolean fileLock, int pageSize, int cacheSize)
 			throws DatabaseLoadingException {
 		ensureH2Loading();
 		try {
@@ -123,7 +134,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 					throw new IllegalArgumentException("The given file name is a directory !");
 
 				c = DriverManager
-						.getConnection("jdbc:h2:file:" + getH2DataFileName(_file_name) + ";PAGE_SIZE=" + pageSize + ";CACHE_SIZE=" + (cacheSize / 1024) + (fileLock ? "" : "FILE_LOCK:NO"), "SA", "");
+						.getConnection("jdbc:h2:file:" + getH2DataFileName(_file_name) + ";PAGE_SIZE=" + pageSize + ";CACHE_SIZE=" + (cacheSize / 1024) + (fileLock ? (android?";FILE_LOCK=FS":"") : ";FILE_LOCK=NO"), "SA", "");
 			}
 			databaseShutdown.set(false);
 			if (c==null)
@@ -168,7 +179,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 
 	@Override
 	protected Connection reopenConnectionImpl() throws DatabaseLoadingException {
-		return getConnection(database_name, getDatabaseFileName(super.getDatabaseDirectory()), isLoadedToMemory(), fileLock, pageSizeBytes, cacheSizeBytes);
+		return getConnection(database_name, getDatabaseFileName(super.getDatabaseDirectory()), isLoadedToMemory(), android, fileLock, pageSizeBytes, cacheSizeBytes);
 	}
 
 	@Override

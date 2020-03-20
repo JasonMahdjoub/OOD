@@ -56,10 +56,10 @@ import java.sql.SQLException;
  */
 @RunWith(AndroidJUnit4.class)
 public class AndroidH2TestDatabase extends AbstractAndroidTestDatabase<EmbeddedH2DatabaseWrapper> {
-    private final InFileEmbeddedH2DatabaseFactory factoryA, factoryB;
+    private final InFileEmbeddedAndroidH2DatabaseFactory factoryA, factoryB;
     public AndroidH2TestDatabase() throws DatabaseException, NoSuchAlgorithmException, NoSuchProviderException {
-        factoryA=new InFileEmbeddedH2DatabaseFactory(new File("/data/data/"+ StorageList.class.getPackage().getName()+".test/androidDBTestA"),false);
-        factoryB=new InFileEmbeddedH2DatabaseFactory(new File("/data/data/"+StorageList.class.getPackage().getName()+".test/androidDBTestB"),false);
+        factoryA=new InFileEmbeddedAndroidH2DatabaseFactory( StorageList.class.getPackage().getName()+".test", "androidDBTestA",false);
+        factoryB=new InFileEmbeddedAndroidH2DatabaseFactory( StorageList.class.getPackage().getName()+".test", "androidDBTestB",false);
     }
 
     @Override
@@ -69,12 +69,12 @@ public class AndroidH2TestDatabase extends AbstractAndroidTestDatabase<EmbeddedH
     }
 
     @Override
-    InFileEmbeddedH2DatabaseFactory getDatabaseFactoryA() {
+    InFileEmbeddedAndroidH2DatabaseFactory getDatabaseFactoryA() {
         return factoryA;
     }
 
     @Override
-    InFileEmbeddedH2DatabaseFactory getDatabaseFactoryB() {
+    InFileEmbeddedAndroidH2DatabaseFactory getDatabaseFactoryB() {
         return factoryB;
     }
 
