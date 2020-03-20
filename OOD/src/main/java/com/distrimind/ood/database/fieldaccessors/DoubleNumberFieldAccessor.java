@@ -124,7 +124,7 @@ public class DoubleNumberFieldAccessor extends FieldAccessor {
 			Double val1 = null;
 			if (_field_instance instanceof Double)
 				val1 = (Double) _field_instance;
-			Double val2 = (Double) _result_set.getObject(_sft.translateField(sql_fields[0]));
+			Double val2 = getDouble(_result_set);
 
 			return (val1 == null || val2 == null) ? val1 == val2 : val1.equals(val2);
 		} catch (SQLException e) {
@@ -185,11 +185,24 @@ public class DoubleNumberFieldAccessor extends FieldAccessor {
 		}
 	}
 
+
+	private Double getDouble(ResultSet _result_set) throws SQLException {
+		int colIndex=getColmunIndex(_result_set, sql_fields[0].field_without_quote);
+		Object res = _result_set.getObject(colIndex);
+		if (res==null)
+			return null;
+		else if (res instanceof Double)
+			return (Double)res;
+		else {
+			return _result_set.getDouble(colIndex);
+		}
+	}
+
 	@Override
 	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
-			Object res = _result_set.getObject(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
+			Object res = getDouble(_result_set);
 			if (res == null && isNotNull())
 				throw new DatabaseIntegrityException("Unexpected exception");
 			field.set(_class_instance, res);

@@ -58,6 +58,8 @@ import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.io.RandomInputStream;
 import com.distrimind.util.io.RandomOutputStream;
 
+import org.sqldroid.SQLDroidResultSetMetaData;
+
 /**
  * 
  * @author Jason Mahdjoub
@@ -118,7 +120,7 @@ public class LongNumberFieldAccessor extends FieldAccessor {
 			Long val1 = null;
 			if (_field_instance instanceof Long)
 				val1 = (Long) _field_instance;
-			Long val2 = (Long) _result_set.getObject(_sft.translateField(sql_fields[0]));
+			Long val2 = getLong(_result_set);
 
 			//noinspection NumberEquality
 			return (val1 == null || val2 == null) ? val1 == val2 : val1.equals(val2);
@@ -180,11 +182,23 @@ public class LongNumberFieldAccessor extends FieldAccessor {
 		}
 	}
 
+	private Long getLong(ResultSet _result_set) throws SQLException {
+		int colIndex=getColmunIndex(_result_set, sql_fields[0].field_without_quote);
+		Object res = _result_set.getObject(colIndex);
+		if (res==null)
+			return null;
+		else if (res instanceof Long)
+			return (Long)res;
+		else {
+			return _result_set.getLong(colIndex);
+		}
+	}
+
 	@Override
 	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
-			Object res = _result_set.getObject(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
+			Object res = getLong(_result_set);
 			if (res == null && isNotNull())
 				throw new DatabaseIntegrityException("Unexpected exception");
 			field.set(_class_instance, res);

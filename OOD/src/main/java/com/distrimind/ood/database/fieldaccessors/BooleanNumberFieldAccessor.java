@@ -116,7 +116,7 @@ public class BooleanNumberFieldAccessor extends FieldAccessor {
 			Boolean val1 = null;
 			if (_field_instance instanceof Boolean)
 				val1 = (Boolean) _field_instance;
-			Boolean val2 = (Boolean) _result_set.getObject(_sft.translateField(sql_fields[0]));
+			Boolean val2 = getBoolean(_result_set);
 
 			return (val1 == null || val2 == null) ? val1 == val2 : val1.equals(val2);
 		} catch (SQLException e) {
@@ -162,11 +162,23 @@ public class BooleanNumberFieldAccessor extends FieldAccessor {
 		throw new DatabaseException("Unexpected exception");
 	}
 
+	private Boolean getBoolean(ResultSet _result_set) throws SQLException {
+		int colIndex=getColmunIndex(_result_set, sql_fields[0].field_without_quote);
+		Object o=_result_set.getObject(colIndex);
+
+		if (o==null)
+			return null;
+		else if (o instanceof Boolean)
+			return (Boolean)o;
+		else
+			return _result_set.getBoolean(colIndex);
+	}
+
 	@Override
 	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
-			field.set(_class_instance, _result_set.getObject(getColmunIndex(_result_set, sql_fields[0].field_without_quote)));
+			field.set(_class_instance, getBoolean(_result_set));
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}

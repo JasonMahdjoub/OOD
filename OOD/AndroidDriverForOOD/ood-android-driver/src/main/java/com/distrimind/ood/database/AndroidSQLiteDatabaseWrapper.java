@@ -47,10 +47,9 @@ public class AndroidSQLiteDatabaseWrapper extends DatabaseWrapper {
     }
 
     private static void deleteDatabaseFiles(String _package, String _database_name, boolean externalStorage) {
-        File f=new File(getPath(_package, _database_name, externalStorage));
+        File f=new File(getDirectory(_package, _database_name, externalStorage));
         if (f.exists()) {
-            //noinspection ResultOfMethodCallIgnored
-            f.delete();
+            FileTools.deleteDirectory(f);
         }
     }
 
@@ -73,8 +72,7 @@ public class AndroidSQLiteDatabaseWrapper extends DatabaseWrapper {
     @Override
     protected Connection reopenConnectionImpl() throws DatabaseLoadingException {
         try {
-            Connection c=DriverManager.getConnection(url);
-            return c;
+            return DriverManager.getConnection(url);
         } catch (SQLException e) {
             throw new DatabaseLoadingException("Impossible to load database", e);
         }
