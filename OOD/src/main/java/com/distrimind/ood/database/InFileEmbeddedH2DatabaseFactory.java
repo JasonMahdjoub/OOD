@@ -53,8 +53,8 @@ public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH2D
 	private static final long serialVersionUID = -5549181783426731120L;
 
 	private File directory;
-	protected boolean alwaysDisconnectAfterOneTransaction;
-	private boolean fileLock;
+	protected boolean alwaysDisconnectAfterOneTransaction=false;
+	private boolean fileLock=true;
 	private int pageSizeBytes=2048;
 	private int cacheSizeBytes=10000*1024;
 

@@ -3,7 +3,6 @@ package com.distrimind.ood.database;
 import android.annotation.SuppressLint;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.util.FileTools;
 
 import org.sqldroid.SQLDroidBlob;
@@ -16,8 +15,12 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Savepoint;
-import java.sql.Statement;
 
+/**
+ * @author Jason Mahdjoub
+ * @version 1.0
+ * @since OOD 2.5.0
+ */
 public class AndroidSQLiteDatabaseWrapper extends DatabaseWrapper {
 
     private String url;
