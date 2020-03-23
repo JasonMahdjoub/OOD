@@ -984,7 +984,7 @@ public abstract class FieldAccessor {
 			for (SqlField sf : fa.getDeclaredSqlFields()) {
 				SqlField sf_pointing_founded = null;
 				for (SqlField sf_pointing : _sft.field_accessor.getDeclaredSqlFields()) {
-					if (sf_pointing.pointed_field.equals(sf.field)) {
+					if (sf_pointing.pointed_field_without_quote.equals(sf.field_without_quote)) {
 						sf_pointing_founded = sf_pointing;
 						break;
 					}
@@ -992,14 +992,14 @@ public abstract class FieldAccessor {
 				String t;
 				if (sf_pointing_founded == null || (t = _sft.translateField(sf_pointing_founded)) == null) {
 					if (sf.pointed_field != null)
-						sql_fields.put(sf.pointed_field, sf.short_field);
+						sql_fields.put(sf.pointed_field_without_quote, sf.short_field_without_quote);
 					else
-						sql_fields.put(sf.field, sf.short_field);
+						sql_fields.put(sf.field_without_quote, sf.short_field_without_quote);
 				} else {
 					if (sf.pointed_field != null)
-						sql_fields.put(sf.pointed_field, t);
+						sql_fields.put(sf.pointed_field_without_quote, t);
 					else
-						sql_fields.put(sf.field, t);
+						sql_fields.put(sf.field_without_quote, t);
 				}
 			}
 		}
@@ -1008,15 +1008,15 @@ public abstract class FieldAccessor {
 			field_accessor = fa;
 			for (SqlField sf : fa.getDeclaredSqlFields()) {
 				if (sf.pointed_field != null)
-					sql_fields.put(sf.pointed_field, sf.short_field);
+					sql_fields.put(sf.pointed_field_without_quote, sf.short_field_without_quote);
 				else
-					sql_fields.put(sf.field, sf.short_field);
+					sql_fields.put(sf.field_without_quote, sf.short_field_without_quote);
 			}
 
 		}
 
 		public String translateField(SqlField sf) {
-			return sql_fields.get(sf.field);
+			return sql_fields.get(sf.field_without_quote);
 		}
 
 	}
