@@ -429,6 +429,11 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 
 
 	}
+	@Override
+	protected boolean autoPrimaryKeyIndexStartFromOne()
+	{
+		return false;
+	}
 	static class TCResultSet extends TableColumnsResultSet {
 
 		TCResultSet(ResultSet _rs) {

@@ -4669,6 +4669,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	protected abstract void checkConstraints(Table<?> table) throws DatabaseException;
 
+	protected abstract boolean autoPrimaryKeyIndexStartFromOne();
+
 	public static abstract class TableColumnsResultSet {
 		protected ResultSet resultSet;
 

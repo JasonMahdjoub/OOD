@@ -56,6 +56,7 @@ public class H2TestDatabase extends TestDatabase {
 	private static File database_backup_file = new File("databasebackupH2.zip");
 
 	public H2TestDatabase() throws DatabaseException, NoSuchAlgorithmException, NoSuchProviderException {
+
 		super();
 	}
 

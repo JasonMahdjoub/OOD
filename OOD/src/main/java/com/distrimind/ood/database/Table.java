@@ -778,15 +778,15 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 										}
 
 										if (founded_fa == null) {
-											String fs="(";
+											StringBuilder fs= new StringBuilder("(");
 											for (FieldAccessor fa : fields)
 											{
 												for (SqlField sf : fa.getDeclaredSqlFields())
 												{
-													fs+=sf.field_without_quote+" , ";
+													fs.append(sf.field_without_quote).append(" , ");
 												}
 											}
-											fs+=")";
+											fs.append(")");
 											throw new DatabaseVersionException(Table.this,
 													"The table " + Table.this.getClass().getSimpleName() + " contains a column named "
 															+ col
@@ -814,7 +814,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 											throw new DatabaseVersionException(Table.this,
 													"The column " + col + " is expected to be "
 															+ (founded_sf.not_null ? "not null" : "nullable"));
-										boolean is_autoincrement = false;
+										boolean is_autoincrement;
 										if (sql_connection.supportSingleAutoPrimaryKeys() && (is_autoincrement=rq.tableColumnsResultSet.isAutoIncrement()) != founded_fa.isAutoPrimaryKey())
 											throw new DatabaseVersionException(Table.this,
 													"The column " + col + " is " + (is_autoincrement ? "" : "not ")
@@ -1898,6 +1898,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 */
 
 	public final long getRecordsNumberWithOneOfFields(final Object[]... _records) throws DatabaseException {
+		//noinspection RedundantCast
 		return getRecordsNumberWithOneOfFields(convertToMap((Object[]) _records));
 	}
 
@@ -5494,7 +5495,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				}
 				HashMap<Integer, Object> sqlParameters = new HashMap<>();
 				String sqlQuery = null;
-				if (rule != null && rule.isIndependantFromOtherTables(Table.this)) {
+				if (rule.isIndependantFromOtherTables(Table.this)) {
 					sqlQuery = rule.translateToSqlQuery(Table.this, parameters, sqlParameters, new HashSet<TableJunction>())
 							.toString();
 				}
@@ -6055,7 +6056,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					}
 
 					@Override
-					public void initOrReset() throws DatabaseException {
+					public void initOrReset() {
 
 					}
 				}, true);
@@ -7406,15 +7407,19 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 									{
 										ResultSet rsgk=puq.statement.getGeneratedKeys();
 										rsgk.next();
-										Long autovalue = rsgk.getLong(autoPKIndex);
+										long autovalue;
+										if (sql_connection.autoPrimaryKeyIndexStartFromOne())
+											autovalue = rsgk.getLong(1);
+										else
+											autovalue = rsgk.getLong(autoPKIndex);
 
 										FieldAccessor fa = auto_primary_keys_fields.get(0);
 										if (fa.isAssignableTo(byte.class))
-											fa.setValue(instance, (byte) autovalue.longValue());
+											fa.setValue(instance, (byte) autovalue);
 										else if (fa.isAssignableTo(short.class))
-											fa.setValue(instance, (short) autovalue.longValue());
+											fa.setValue(instance, (short) autovalue);
 										else if (fa.isAssignableTo(int.class))
-											fa.setValue(instance, (int) autovalue.longValue());
+											fa.setValue(instance, (int) autovalue);
 										else if (fa.isAssignableTo(long.class))
 											fa.setValue(instance, autovalue);
 									}
@@ -7738,16 +7743,13 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						}
 
 						class CheckTmp /*extends Runnable2*/ {
-							private final HashMap<String, Object> keys;
 							public boolean check_necessary = false;
 							public final HashMap<String, Object> check_random = new HashMap<>();
-							private final ArrayList<FieldAccessor> random_primary_keys_fields;
 
 							public CheckTmp(ArrayList<FieldAccessor> _auto_random_primary_keys_fields)
 									throws DatabaseException {
-								random_primary_keys_fields = _auto_random_primary_keys_fields;
-								keys = new HashMap<>();
-                                for (FieldAccessor fa : random_primary_keys_fields) {
+								HashMap<String, Object> keys = new HashMap<>();
+                                for (FieldAccessor fa : _auto_random_primary_keys_fields) {
                                     if (_fields.containsKey(fa.getFieldName())) {
                                         Object field = _fields.get(fa.getFieldName());
                                         if (!fa.equals(_record, field)) {
@@ -8927,7 +8929,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 	}
 
-	void deserializeFields(Map<String, Object> hm, byte[] tab, int off, int len, boolean includePK, boolean includeFK,
+	void deserializeFields(Map<String, Object> hm, byte[] tab, @SuppressWarnings("SameParameterValue") int off, int len, boolean includePK, boolean includeFK,
 						   boolean includeNonKey) throws DatabaseException {
 		try (RandomByteArrayInputStream ois = new RandomByteArrayInputStream(Arrays.copyOfRange(tab, off, off+len))) {
 			for (FieldAccessor fa : fields) {

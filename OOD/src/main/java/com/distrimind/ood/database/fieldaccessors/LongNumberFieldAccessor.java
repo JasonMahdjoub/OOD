@@ -58,7 +58,6 @@ import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.io.RandomInputStream;
 import com.distrimind.util.io.RandomOutputStream;
 
-import org.sqldroid.SQLDroidResultSetMetaData;
 
 /**
  * 

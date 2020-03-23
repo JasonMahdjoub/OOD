@@ -312,6 +312,12 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 	}
 
 	@Override
+	protected boolean autoPrimaryKeyIndexStartFromOne()
+	{
+		return false;
+	}
+
+	@Override
 	protected void checkConstraints(Table<?> table) throws DatabaseException {
 		Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
 		try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(

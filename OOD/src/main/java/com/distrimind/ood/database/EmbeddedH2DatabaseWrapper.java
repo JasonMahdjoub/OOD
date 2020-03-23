@@ -63,6 +63,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	protected int pageSizeBytes;
 	protected int cacheSizeBytes;
 	private boolean android;
+	private boolean autoPrimaryKeyIndexStartFromOne=false;
 
 	EmbeddedH2DatabaseWrapper(boolean loadToMemory, String databaseName) throws DatabaseException {
 		super(databaseName, null, false, true, true);
@@ -179,7 +180,21 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 
 	@Override
 	protected Connection reopenConnectionImpl() throws DatabaseLoadingException {
-		return getConnection(database_name, getDatabaseFileName(super.getDatabaseDirectory()), isLoadedToMemory(), android, fileLock, pageSizeBytes, cacheSizeBytes);
+
+			Connection c = getConnection(database_name, getDatabaseFileName(super.getDatabaseDirectory()), isLoadedToMemory(), android, fileLock, pageSizeBytes, cacheSizeBytes);
+		try {
+			int majorVersion = c.getMetaData().getDriverMajorVersion();
+			int minorVersion = c.getMetaData().getDatabaseMinorVersion();
+			String tmp= majorVersion +"."+ minorVersion +".";
+			tmp=c.getMetaData().getDatabaseProductVersion().substring(tmp.length());
+			int revisionVersion = Integer.parseInt(tmp.substring(0, tmp.indexOf(' ')));
+			autoPrimaryKeyIndexStartFromOne= majorVersion <= 1 && minorVersion <= 4 && revisionVersion <= 199;
+			return c;
+		}
+		catch (SQLException e)
+		{
+			throw new DatabaseLoadingException("Impossible to get database version", e);
+		}
 	}
 
 	@Override
@@ -593,6 +608,13 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	{
 		return "INFORMATION_SCHEMA.CROSS_REFERENCES";
 	}
+
+	@Override
+	protected boolean autoPrimaryKeyIndexStartFromOne()
+	{
+		return autoPrimaryKeyIndexStartFromOne;
+	}
+
 
 	static class CReadQuerry extends Table.ColumnsReadQuerry {
 
