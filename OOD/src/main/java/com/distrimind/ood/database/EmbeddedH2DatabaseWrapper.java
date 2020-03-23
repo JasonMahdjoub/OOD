@@ -63,6 +63,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	protected int pageSizeBytes;
 	protected int cacheSizeBytes;
 	private boolean android;
+	private boolean loadedOneTime=false;
 	private boolean autoPrimaryKeyIndexStartFromOne=false;
 
 	EmbeddedH2DatabaseWrapper(boolean loadToMemory, String databaseName) throws DatabaseException {
@@ -182,6 +183,8 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	protected Connection reopenConnectionImpl() throws DatabaseLoadingException {
 
 			Connection c = getConnection(database_name, getDatabaseFileName(super.getDatabaseDirectory()), isLoadedToMemory(), android, fileLock, pageSizeBytes, cacheSizeBytes);
+			if (loadedOneTime)
+				return c;
 		try {
 			int majorVersion = c.getMetaData().getDriverMajorVersion();
 			int minorVersion = c.getMetaData().getDatabaseMinorVersion();
@@ -189,6 +192,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 			tmp=c.getMetaData().getDatabaseProductVersion().substring(tmp.length());
 			int revisionVersion = Integer.parseInt(tmp.substring(0, tmp.indexOf(' ')));
 			autoPrimaryKeyIndexStartFromOne= majorVersion <= 1 && minorVersion <= 4 && revisionVersion <= 199;
+			loadedOneTime=true;
 			return c;
 		}
 		catch (SQLException e)

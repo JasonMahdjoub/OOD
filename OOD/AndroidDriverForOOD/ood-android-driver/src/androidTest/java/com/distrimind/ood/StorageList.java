@@ -13,6 +13,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.NetworkInterface;
 import java.nio.file.Files;
 
 import androidx.core.content.ContextCompat;

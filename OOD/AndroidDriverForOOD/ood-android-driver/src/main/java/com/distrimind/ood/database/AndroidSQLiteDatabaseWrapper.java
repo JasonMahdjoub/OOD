@@ -243,6 +243,11 @@ public class AndroidSQLiteDatabaseWrapper extends DatabaseWrapper {
     }
 
     @Override
+    protected boolean autoPrimaryKeyIndexStartFromOne() {
+        return false;
+    }
+
+    @Override
     protected String getSqlComma() {
         return "";
     }
