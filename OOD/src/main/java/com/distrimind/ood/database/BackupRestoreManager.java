@@ -868,8 +868,10 @@ public class BackupRestoreManager {
 
 			try(RandomFileInputStream rfis=new RandomFileInputStream(file)) {
 				lastBackupEventUTC=rfis.readLong();
-				if (rfis.readBoolean())
-					transactionsInterval=null;
+				if (rfis.readBoolean()) {
+					rfis.skipBytes(16);
+					transactionsInterval = null;
+				}
 				else
 				{
 					long s=rfis.readLong();
@@ -2005,7 +2007,7 @@ public class BackupRestoreManager {
 			long last = getMaxDateUTCInMS();
 			AtomicLong fileTimeStamp = new AtomicLong();
 			//AtomicReference<RecordsIndex> index=new AtomicReference<>();
-			Reference<Long> firstTransactionID=new Reference<>(null);
+			Reference<Long> firstTransactionID=new Reference<>((Long)null);
 			RandomOutputStream rfos = getFileForBackupIncrementOrCreateIt(fileTimeStamp, firstTransactionID/*, index*/);
 			return new Transaction(fileTimeStamp.get(), last, rfos, /*index.get(), */oldLastFile, oldLength, firstTransactionID.get());
 		}
