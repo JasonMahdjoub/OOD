@@ -92,7 +92,7 @@ public class BackupRestoreManager {
 		if (fileTimeStamps.size()==0)
 			return null;
 		long l=fileTimeStamps.get(fileTimeStamps.size()-1);
-		return getFile(l, fileReferenceTimeStamps.contains(l));
+		return getFile(l, isReferenceFile(l));
 	}
 	BackupRestoreManager(DatabaseWrapper databaseWrapper, File backupDirectory, BackupFileListener backupFileListener, DatabaseConfiguration databaseConfiguration, boolean passive) throws DatabaseException {
 		this(databaseWrapper, backupDirectory, backupFileListener, databaseConfiguration, databaseConfiguration.getBackupConfiguration(), passive);
@@ -207,13 +207,27 @@ public class BackupRestoreManager {
 	}
 	File getFile(long timeStamp)
 	{
-		return getFile(timeStamp, fileReferenceTimeStamps.contains(timeStamp));
+		return getFile(timeStamp, isReferenceFile(timeStamp));
 	}
 
 	boolean isReference(long timeStamp)
 	{
-		return fileReferenceTimeStamps.contains(timeStamp);
+		return isReferenceFile(timeStamp);
 	}
+
+	private boolean isReferenceFile(long ts)
+	{
+		for (int i=fileReferenceTimeStamps.size()-1;i>=0;i--)
+		{
+			Long v=fileReferenceTimeStamps.get(i);
+			if (v ==ts)
+				return true;
+			if (v <ts)
+				return false;
+		}
+		return false;
+	}
+
 
 	public long getNearestFileUTCFromGivenTimeNotIncluded(long utc)
 	{
@@ -222,7 +236,7 @@ public class BackupRestoreManager {
 
 		if (s > 0) {
 			long ts = fileTimeStamps.get(s - 1);
-			if (/*ts>=currentBackupReferenceUTC || */!isPartFull(ts, getFile(ts, fileReferenceTimeStamps.contains(ts))))
+			if (/*ts>=currentBackupReferenceUTC || */!isPartFull(ts, getFile(ts, isReferenceFile(ts))))
 				--s;
 		}
 		for (int i = 0; i < s; i++) {
@@ -244,7 +258,7 @@ public class BackupRestoreManager {
 
 			if (s > 0) {
 				long ts = fileTimeStamps.get(s - 1);
-				if (/*ts>=currentBackupReferenceUTC || */!isPartFull(ts, getFile(ts, fileReferenceTimeStamps.contains(ts))))
+				if (/*ts>=currentBackupReferenceUTC || */!isPartFull(ts, getFile(ts, isReferenceFile(ts))))
 					--s;
 			}
 			for (int i = 0; i < s; i++) {
@@ -252,7 +266,7 @@ public class BackupRestoreManager {
 				/*if (ts>=currentBackupReferenceUTC)
 					break;*/
 				if (ts >= utc)
-					res.add(getFile(ts, fileReferenceTimeStamps.contains(ts)));
+					res.add(getFile(ts, isReferenceFile(ts)));
 
 			}
 			return res;
@@ -268,7 +282,7 @@ public class BackupRestoreManager {
 			if (s > 0) {
 				long ts = fileTimeStamps.get(s - 1);
 
-				if (/*ts>=currentBackupReferenceUTC || */!isPartFull(ts, getFile(ts, fileReferenceTimeStamps.contains(ts))))
+				if (/*ts>=currentBackupReferenceUTC || */!isPartFull(ts, getFile(ts, isReferenceFile(ts))))
 					--s;
 			}
 			for (int i = 0; i < s; i++) {
@@ -276,7 +290,7 @@ public class BackupRestoreManager {
 				/*if (ts>=currentBackupReferenceUTC)
 					break;*/
 
-				res.add(getFile(ts, fileReferenceTimeStamps.contains(ts)));
+				res.add(getFile(ts, isReferenceFile(ts)));
 			}
 			return res;
 		}
@@ -323,7 +337,7 @@ public class BackupRestoreManager {
 		if (fileTimeStamps.size()>0)
 		{
 			Long timeStamp=fileTimeStamps.get(fileTimeStamps.size()-1);
-			boolean reference=fileReferenceTimeStamps.contains(timeStamp);
+			boolean reference=isReferenceFile(timeStamp);
 			File file=getFile(timeStamp, reference);
 			if (!isPartFull(timeStamp, file)) {
 				res = file;
@@ -333,7 +347,6 @@ public class BackupRestoreManager {
 		try {
 			final int maxBufferSize=backupConfiguration.getMaxStreamBufferSizeForTransaction();
 			final int maxBuffersNumber=backupConfiguration.getMaxStreamBufferNumberForTransaction();
-
 			if (res==null) {
 				fileTimeStamp.set(System.currentTimeMillis());
 				res = initNewFileForBackupIncrement(fileTimeStamp.get());
@@ -1043,7 +1056,7 @@ public class BackupRestoreManager {
 					oldLastFile = Long.MAX_VALUE;
 				else {
 					oldLastFile = fileTimeStamps.get(fileTimeStamps.size() - 1);
-					File f = getFile(oldLastFile, fileReferenceTimeStamps.contains(oldLastFile));
+					File f = getFile(oldLastFile, isReferenceFile(oldLastFile));
 					oldLength = (int) f.length();
 				}
 				try {
@@ -1099,7 +1112,7 @@ public class BackupRestoreManager {
 					oldLastFile = Long.MAX_VALUE;
 				else {
 					oldLastFile = fileTimeStamps.get(fileTimeStamps.size() - 1);
-					File file = getFile(oldLastFile, fileReferenceTimeStamps.contains(oldLastFile));
+					File file = getFile(oldLastFile, isReferenceFile(oldLastFile));
 					oldLength = (int) file.length();
 				}
 				long curTime = System.currentTimeMillis();
@@ -1127,12 +1140,12 @@ public class BackupRestoreManager {
 									long fileRef = dis.readLong();
 									for (Long l : fileTimeStamps) {
 										if (l == fileRef) {
-											boolean reference = fileReferenceTimeStamps.contains(l);
+											boolean reference = isReferenceFile(l);
 											try (RandomFileOutputStream rfos = new RandomFileOutputStream(getFile(l, reference), RandomFileOutputStream.AccessMode.READ_AND_WRITE)) {
 												rfos.setLength(fileRef);
 											}
 										} else if (fileRef < l) {
-											boolean reference = fileReferenceTimeStamps.contains(l);
+											boolean reference = isReferenceFile(l);
 											//noinspection ResultOfMethodCallIgnored
 											getFile(l, reference).delete();
 											fileReferenceTimeStamps.remove(l);
@@ -1353,7 +1366,7 @@ public class BackupRestoreManager {
 		for (Iterator<Long> it = fileTimeStamps.iterator(); it.hasNext(); ) {
 			Long l = it.next();
 			if (l > firstFileReference || (l==firstFileReference && oldLength<=0)) {
-				boolean reference=fileReferenceTimeStamps.contains(l);
+				boolean reference=isReferenceFile(l);
 				File f = getFile(l, reference);
 
 				if (!f.delete())
@@ -1370,7 +1383,7 @@ public class BackupRestoreManager {
 			long l=fileTimeStamps.get(fileTimeStamps.size()-1);
 			if (l!=firstFileReference)
 				throw new DatabaseException("Reference not found");
-			boolean isReference=fileReferenceTimeStamps.contains(l);
+			boolean isReference=isReferenceFile(l);
 			File file=getFile(l, isReference);
 			try(RandomFileOutputStream out=new RandomFileOutputStream(file, RandomFileOutputStream.AccessMode.READ_AND_WRITE))
 			{
@@ -1388,7 +1401,7 @@ public class BackupRestoreManager {
 		for (Iterator<Long> it = fileTimeStamps.iterator(); it.hasNext(); ) {
 			Long l = it.next();
 			if (l <= fileReference) {
-				File f = getFile(l, fileReferenceTimeStamps.contains(l));
+				File f = getFile(l, isReferenceFile(l));
 
 				if (!f.delete()) {
 					System.err.println("Impossible to delete file : " + f);
@@ -1509,7 +1522,7 @@ public class BackupRestoreManager {
 					for (int i = 0; i < fileTimeStamps.size(); i++) {
 						Long l = fileTimeStamps.get(i);
 						if (l > startFileReference) {
-							if (fileReferenceTimeStamps.contains(l))
+							if (isReferenceFile(l))
 								break;
 							lastCurrentRestorationFileUsed = l;
 
@@ -1564,7 +1577,7 @@ public class BackupRestoreManager {
 							if ((((listIncrements.size()>0 && listIncrements.get(listIncrements.size()-1).equals(lastTS))
 									||
 									(listIncrements.size()==0 && startFileReference==lastTS))
-								|| isPartFull(lastTS, getFile(lastTS, fileReferenceTimeStamps.contains(lastTS))))) {
+								|| isPartFull(lastTS, getFile(lastTS, isReferenceFile(lastTS))))) {
 								incrementAfterFile=lastTS;
 							}
 						}
@@ -1960,7 +1973,7 @@ public class BackupRestoreManager {
 			for (int i=filePosition; i>=0;i--)
 			{
 				long t=fileTimeStamps.get(i);
-				if (fileReferenceTimeStamps.contains(t)) {
+				if (isReferenceFile(t)) {
 					fileReference = t;
 					break;
 				}
@@ -1997,10 +2010,11 @@ public class BackupRestoreManager {
 			int oldLength = 0;
 			long oldLastFile;
 			if (fileTimeStamps.size() == 0)
-				oldLastFile = Long.MAX_VALUE;
+				throw new InternalError();
+				//oldLastFile = Long.MAX_VALUE;
 			else {
 				oldLastFile = fileTimeStamps.get(fileTimeStamps.size() - 1);
-				File file = getFile(oldLastFile, fileReferenceTimeStamps.contains(oldLastFile));
+				File file = getFile(oldLastFile, isReferenceFile(oldLastFile));
 				oldLength = (int) file.length();
 			}
 
@@ -2116,7 +2130,7 @@ public class BackupRestoreManager {
 
 				try {
 
-			/*if (!fileTimeStamps.contains(fileTimeStamp)) {
+			/*if (!isReferenceFile(fileTimeStamp)) {
 				fileTimeStamps.add(fileTimeStamp);
 			}*/
 					out.close();

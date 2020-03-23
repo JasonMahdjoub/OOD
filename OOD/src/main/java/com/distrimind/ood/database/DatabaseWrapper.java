@@ -2908,7 +2908,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		void cancelTmpTransaction() throws DatabaseException {
-			resetTmpTransaction(false);
+			resetTmpTransaction(true, false);
 			/*if (eventsStoredIntoMemory) {
 				resetTmpTransaction();
 
@@ -3043,8 +3043,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		}
 
-		void resetTmpTransaction(boolean transactionToSynchronize) throws DatabaseException {
-			cancelBackupTransaction();
+		void resetTmpTransaction(boolean resetBackup, boolean transactionToSynchronize) throws DatabaseException {
+			if (resetBackup)
+				cancelBackupTransaction();
 			temporaryTransactions.clear();
 			actualTransactionEventsNumber.set(0);
 			eventsStoredIntoMemory = true;
@@ -3113,7 +3114,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 									});
 								}
 							}
-							resetTmpTransaction(true);
+							resetTmpTransaction(false, true);
 							return transactionOK.get();
 						}
 
@@ -3208,7 +3209,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 								}
 								getDatabaseTransactionEventsTable().removeRecordWithCascade(t.transaction);
 							}
-							resetTmpTransaction(true);
+							resetTmpTransaction(false, true);
 							return transactionOK.get();
 						}
 
@@ -3587,7 +3588,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							savePointName = generateSavePointName();
 							savePoint = savePoint(cw.connection.getConnection(), savePointName);
 						}
-						cw.connection.resetTmpTransaction(true);
+						cw.connection.resetTmpTransaction(true, true);
 						_transaction.initOrReset();
 						res = _transaction.run(this);
 						if (writeData)
@@ -4711,6 +4712,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	protected abstract String getIntType();
 
+	@SuppressWarnings("SameParameterValue")
 	protected abstract String getBlobType(long limit);
 
 	protected abstract String getTextType(long limit);
