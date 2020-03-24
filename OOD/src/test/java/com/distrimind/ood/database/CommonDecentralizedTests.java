@@ -123,7 +123,7 @@ public abstract class CommonDecentralizedTests {
 	public class CentralDatabaseBackup
 	{
 
-		private final Map<DecentralizedValue, Map<DecentralizedValue, Long>> lastValidatedTransactionsID=new HashMap<>();
+		final Map<DecentralizedValue, Map<DecentralizedValue, Long>> lastValidatedTransactionsID=new HashMap<>();
 		private final Map<String, Map<DecentralizedValue, Long>> lastBackupsTimeStamps=new HashMap<>();
 		private final Map<String, Map<DecentralizedValue, ArrayList<DatabaseWrapper.TransactionsInterval>>> lastBackupsInterval=new HashMap<>();
 
@@ -133,7 +133,7 @@ public abstract class CommonDecentralizedTests {
 		}
 
 
-		public void receiveMessage(DatabaseWrapper.DatabaseBackupToIncorporate message) throws IOException, DatabaseException {
+		public void receiveMessage(DatabaseWrapper.DatabaseBackupToIncorporateFromCentralDatabaseBackup message) throws IOException {
 			FileTools.copy(message.getSourceFile(), getFile(message.getHostSource(),message.getConcernedPackage(), message.getSourceFile()) );
 			Map<DecentralizedValue, Long> map=lastBackupsTimeStamps.get(message.getConcernedPackage());
 			if (map==null)
@@ -232,7 +232,11 @@ public abstract class CommonDecentralizedTests {
 			}
 		}
 
-
+		public void receiveMessage(DatabaseWrapper.DatabaseBackupToRemoveIntoCentralDatabaseBackup message)
+		{
+			this.lastBackupsInterval.remove(message.getPackageName());
+			this.lastBackupsTimeStamps.remove(message.getPackageName());
+		}
 
 		public void receiveMessage(DatabaseWrapper.DatabaseTransactionsIdentifiersToSynchronizeWithCentralDatabaseBackup message) throws DatabaseException {
 			lastValidatedTransactionsID.put(message.getHostSource(), message.getLastDistantTransactionIdentifiers());
@@ -261,7 +265,7 @@ public abstract class CommonDecentralizedTests {
 				}
 			}
 		}
-		public void receiveMessage(DatabaseWrapper.LastIDCorrectionForCentralDatabaseBackup message) throws DatabaseException {
+		public void receiveMessage(DatabaseWrapper.LastIDCorrectionForCentralDatabaseBackup message)  {
 			Map<DecentralizedValue, Long> m=lastValidatedTransactionsID.get(message.getHostSource());
 			if (m==null)
 				lastValidatedTransactionsID.put(message.getHostSource(), m=new HashMap<>());
@@ -275,7 +279,7 @@ public abstract class CommonDecentralizedTests {
 				}
 			}
 		}
-		public void receiveMessage(DatabaseWrapper.TransactionInIDConfirmationEventsWithCentralDatabaseBackupEvent message) throws DatabaseException {
+		public void receiveMessage(DatabaseWrapper.TransactionInIDConfirmationEventsWithCentralDatabaseBackupEvent message) {
 			Map<DecentralizedValue, Long> m=lastValidatedTransactionsID.get(message.getHostSource());
 			if (m==null)
 				lastValidatedTransactionsID.put(message.getHostSource(), m=new HashMap<>());
@@ -290,9 +294,9 @@ public abstract class CommonDecentralizedTests {
 			}
 		}
 		public void receiveMessage(CentralDatabaseBackupEvent message) throws IOException, DatabaseException {
-			if (message instanceof DatabaseWrapper.DatabaseBackupToIncorporate)
+			if (message instanceof DatabaseWrapper.DatabaseBackupToIncorporateFromCentralDatabaseBackup)
 			{
-				receiveMessage((DatabaseWrapper.DatabaseBackupToIncorporate)message);
+				receiveMessage((DatabaseWrapper.DatabaseBackupToIncorporateFromCentralDatabaseBackup)message);
 			}
 			else if (message instanceof DatabaseWrapper.DatabaseTransactionsIdentifiersToSynchronizeWithCentralDatabaseBackup)
 			{
@@ -305,6 +309,10 @@ public abstract class CommonDecentralizedTests {
 			else if (message instanceof DatabaseWrapper.TransactionInIDConfirmationEventsWithCentralDatabaseBackupEvent)
 			{
 				receiveMessage((DatabaseWrapper.TransactionInIDConfirmationEventsWithCentralDatabaseBackupEvent)message);
+			}
+			else if (message instanceof DatabaseWrapper.DatabaseBackupToRemoveIntoCentralDatabaseBackup)
+			{
+				receiveMessage((DatabaseWrapper.DatabaseBackupToRemoveIntoCentralDatabaseBackup)message);
 			}
 		}
 	}
@@ -964,6 +972,12 @@ public abstract class CommonDecentralizedTests {
 		{
 			centralDatabaseBackup.connect(d);
 		}
+	}
+
+	protected void addDatabasePackageToSynchronizeWithCentralDatabaseBackup(Package _package) throws Exception {
+		connectAllDatabase();
+		listDatabase.get(0).getDbwrapper().getSynchronizer().addDatabasePackageToSynchronizeWithCentralBackup(_package);
+		exchangeMessages();
 	}
 
 	protected void disconnectCentralDatabaseBakcup() throws DatabaseException {

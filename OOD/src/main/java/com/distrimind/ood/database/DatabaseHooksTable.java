@@ -76,6 +76,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		@Field(limit=Short.MAX_VALUE, forceUsingBlobOrClob = true)
 		private String databasePackageNames;
 
+
 		@Field
 		private boolean concernsDatabaseHost;
 
@@ -143,12 +144,11 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			return concernsDatabaseHost;
 		}
 
-		protected List<String> setDatabasePackageNames(List<String> packages) {
+		private static ArrayList<String> compactPackages(List<String> packages, StringBuilder compactedPackages)
+		{
 			if (packages == null || packages.size() == 0) {
-				databasePackageNames = null;
 				return new ArrayList<>(0);
 			}
-			StringBuilder sb = new StringBuilder();
 			ArrayList<String> packagesList = new ArrayList<>();
 			for (int i = 0; i < packages.size(); i++) {
 				String p = packages.get(i);
@@ -160,15 +160,27 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 					}
 				}
 				if (!identical) {
-					if (sb.length() != 0)
-						sb.append("\\|");
-					sb.append(p);
+					if (compactedPackages.length() != 0)
+						compactedPackages.append("\\|");
+					compactedPackages.append(p);
 					packagesList.add(p);
 				}
 			}
+			return packagesList;
+		}
+
+		protected List<String> setDatabasePackageNames(List<String> packages) {
+			if (packages == null || packages.size() == 0) {
+				databasePackageNames = null;
+				return new ArrayList<>(0);
+			}
+			StringBuilder sb = new StringBuilder();
+			ArrayList<String> packagesList=compactPackages(packages, sb);
 			databasePackageNames = sb.toString();
 			return packagesList;
 		}
+
+
 
 		/*protected void addDatabasePackageName(Package p) {
 			addDatabasePackageName(p.getSqlTableName());
@@ -187,15 +199,14 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			}
 		}*/
 
-		@SuppressWarnings("StringConcatenationInLoop")
-		protected List<String> addDatabasePackageNames(List<String> ps) {
+		protected List<String> addPackageNames(String compactedPackages, StringBuilder compactedPackagesRes, List<String> ps) {
 			if (ps == null || ps.size() == 0)
 				return new ArrayList<>(0);
-			if (databasePackageNames == null || databasePackageNames.length() == 0) {
+			if (compactedPackages==null || compactedPackages.length() == 0) {
 				return setDatabasePackageNames(ps);
-
 			} else {
-				String[] packages = getDatabasePackageNames();
+				String[] packages = unpackPackageNames(compactedPackages);
+				compactedPackagesRes.append(compactedPackages);
 				ArrayList<String> packagesList = new ArrayList<>();
 				for (int i = 0; i < ps.size(); i++) {
 					String p = ps.get(i);
@@ -219,33 +230,50 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 					if (identical)
 						continue;
 
-					databasePackageNames += "\\|" + p;
+					compactedPackagesRes.append("\\|").append(p);
 					packagesList.add(p);
 				}
 				return packagesList;
 			}
 		}
 
-		String[] getDatabasePackageNames() {
-			if (databasePackageNames == null || databasePackageNames.length() == 0)
+		protected List<String> addDatabasePackageNames(List<String> ps) {
+			StringBuilder sb=new StringBuilder();
+			List<String> res=addPackageNames(databasePackageNames, sb, ps);
+			if (sb.length()>0)
+				databasePackageNames=sb.toString();
+			return res;
+		}
+
+		private static String[] unpackPackageNames(String compactedPackages) {
+			if (compactedPackages == null || compactedPackages.length() == 0)
 				return null;
-			return databasePackageNames.split("\\|");
+			return compactedPackages.split("\\|");
 		}
 
-		boolean isConcernedDatabaseByPackage(String packageName) {
-			return databasePackageNames != null
-					&& (databasePackageNames.equals(packageName) || databasePackageNames.endsWith("|" + packageName)
-							|| databasePackageNames.startsWith(packageName + "|")
-							|| databasePackageNames.contains("|" + packageName + "|"));
+		String[] getDatabasePackageNames() {
+			return unpackPackageNames(databasePackageNames);
 		}
 
-		protected boolean removePackageDatabase(Package... _packages) {
-			if (databasePackageNames == null || databasePackageNames.length() == 0)
+		private static boolean isConcernedByDatabasePackage(String compactedPackages, String packageName) {
+			return compactedPackages != null
+					&& (compactedPackages.equals(packageName) || compactedPackages.endsWith("|" + packageName)
+					|| compactedPackages.startsWith(packageName + "|")
+					|| compactedPackages.contains("|" + packageName + "|"));
+		}
+
+		boolean isConcernedByDatabasePackage(String packageName) {
+			return isConcernedByDatabasePackage(databasePackageNames, packageName);
+		}
+
+
+		private static boolean removePackageDatabase(String compactedPackages, StringBuilder compactedPackagesRes, Package... _packages) {
+			if (compactedPackages == null || compactedPackages.length() == 0)
 				return true;
 			else if (_packages == null || _packages.length == 0)
 				return false;
 			else {
-				String[] ps = databasePackageNames.split("\\|");
+				String[] ps = compactedPackages.split("\\|");
 				ArrayList<String> ps2 = new ArrayList<>(ps.length);
 				for (String s : ps) {
 					boolean found = false;
@@ -258,20 +286,31 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 					if (!found)
 						ps2.add(s);
 				}
-				StringBuilder sb = new StringBuilder();
+
 				for (String s : ps2) {
-					if (sb.length() != 0)
-						sb.append("|");
-					sb.append(s);
+					if (compactedPackagesRes.length() != 0)
+						compactedPackagesRes.append("|");
+					compactedPackagesRes.append(s);
 				}
 				if (ps2.isEmpty()) {
-					databasePackageNames = null;
+					compactedPackagesRes.setLength(0);
 					return true;
 				} else {
-					databasePackageNames = sb.toString();
 					return false;
 				}
 
+			}
+		}
+
+		protected boolean removePackageDatabase(Package... _packages) {
+			StringBuilder sb=new StringBuilder();
+			if (removePackageDatabase(databasePackageNames, sb, _packages)) {
+				databasePackageNames = null;
+				return true;
+			}
+			else {
+				databasePackageNames = sb.toString();
+				return false;
 			}
 		}
 	}
@@ -537,7 +576,6 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 												replaceDistantConflictualRecords));
 								updateRecord(r);
 							}
-							return r;
 						} else {
 							r = l.get(0);
 							List<String> newAddedPackages = r.addDatabasePackageNames(packages);
@@ -552,8 +590,8 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 								updateRecord(r);
 							}
 
-							return r;
 						}
+						return r;
 
 					}
 

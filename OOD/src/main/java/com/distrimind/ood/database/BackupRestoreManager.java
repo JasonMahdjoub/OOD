@@ -228,27 +228,39 @@ public class BackupRestoreManager {
 		return false;
 	}
 
+	public long getLastFileReferenceTimestampUTC()
+	{
+		synchronized (this)
+		{
+			if (fileReferenceTimeStamps.size()==0)
+				return Long.MIN_VALUE;
+			else
+				return fileReferenceTimeStamps.get(fileReferenceTimeStamps.size()-1);
+		}
+	}
 
 	public long getNearestFileUTCFromGivenTimeNotIncluded(long utc)
 	{
-		//ArrayList<File> res = new ArrayList<>(fileTimeStamps.size());
-		int s = fileTimeStamps.size();
+		synchronized (this) {
+			//ArrayList<File> res = new ArrayList<>(fileTimeStamps.size());
+			int s = fileTimeStamps.size();
 
-		if (s > 0) {
-			long ts = fileTimeStamps.get(s - 1);
-			if (/*ts>=currentBackupReferenceUTC || */!isPartFull(ts, getFile(ts, isReferenceFile(ts))))
-				--s;
-		}
-		for (int i = 0; i < s; i++) {
-			long ts = fileTimeStamps.get(i);
+			if (s > 0) {
+				long ts = fileTimeStamps.get(s - 1);
+				if (/*ts>=currentBackupReferenceUTC || */!isPartFull(ts, getFile(ts, isReferenceFile(ts))))
+					--s;
+			}
+			for (int i = 0; i < s; i++) {
+				long ts = fileTimeStamps.get(i);
 				/*if (ts>=currentBackupReferenceUTC)
 					break;*/
-			if (ts > utc) {
-				return ts;
-			}
+				if (ts > utc) {
+					return ts;
+				}
 
+			}
+			return Long.MIN_VALUE;
 		}
-		return Long.MIN_VALUE;
 	}
 	public List<File> getFinalFilesFromGivenTime(long utc)
 	{

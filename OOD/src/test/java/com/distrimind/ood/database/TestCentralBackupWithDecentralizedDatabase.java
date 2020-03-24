@@ -35,12 +35,14 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
+import com.distrimind.ood.database.decentralizeddatabase.TableAlone;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import org.testng.Assert;
-import org.testng.annotations.*;
+import org.testng.annotations.Test;
 
-import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * 
@@ -112,8 +114,8 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 				Thread.sleep(1200);
 				checkForNewDatabaseBackupBlocks();
 				exchangeMessages();
-				i = 0;
-				/*for (CommonDecentralizedTests.Database db : concernedDatabase) {
+				/*i = 0;
+				for (CommonDecentralizedTests.Database db : concernedDatabase) {
 					Assert.assertFalse(db.isNewDatabaseEventDetected());
 
 					CommonDecentralizedTests.DetectedCollision dcollision = db.getDetectedCollision();
@@ -176,6 +178,11 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 	@Test(dependsOnMethods = {"testSynchroAfterTestsBetweenThreePeers" })
 	public void connectCentralDatabaseBackup()
 			throws Exception {
+		addDatabasePackageToSynchronizeWithCentralDatabaseBackup(TableAlone.class.getPackage());
+		disconnectAllDatabase();
+		connectCentralDatabaseBackupWithConnectedDatabase();
+		exchangeMessages();
+		disconnectCentralDatabaseBackup();
 		connectCentralDatabaseBackupWithConnectedDatabase();
 		for (Database d : listDatabase)
 		{
