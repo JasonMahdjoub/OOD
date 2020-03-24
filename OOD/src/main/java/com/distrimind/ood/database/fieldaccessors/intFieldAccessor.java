@@ -179,7 +179,7 @@ public class intFieldAccessor extends FieldAccessor {
 			throws DatabaseException {
 		try {
 
-			field.setInt(_class_instance, _result_set.getInt(getColmunIndex(_result_set, sql_fields[0].field_without_quote)));
+			field.setInt(_class_instance, _result_set.getInt(getColmunIndex(_result_set, sql_fields[0].short_field_without_quote)));
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}

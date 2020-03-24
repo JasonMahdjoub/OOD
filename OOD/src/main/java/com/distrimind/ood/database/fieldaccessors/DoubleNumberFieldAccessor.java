@@ -187,7 +187,7 @@ public class DoubleNumberFieldAccessor extends FieldAccessor {
 
 
 	private Double getDouble(ResultSet _result_set) throws SQLException {
-		int colIndex=getColmunIndex(_result_set, sql_fields[0].field_without_quote);
+		int colIndex=getColmunIndex(_result_set, sql_fields[0].short_field_without_quote);
 		Object res = _result_set.getObject(colIndex);
 		if (res==null)
 			return null;

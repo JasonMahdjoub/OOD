@@ -173,8 +173,8 @@ public class RenforcedDencetralizedIDFieldAccessor extends FieldAccessor {
 	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
-			long ts = _result_set.getLong(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
-			long wsseq = _result_set.getLong(getColmunIndex(_result_set, sql_fields[1].field_without_quote));
+			long ts = _result_set.getLong(getColmunIndex(_result_set, sql_fields[0].short_field_without_quote));
+			long wsseq = _result_set.getLong(getColmunIndex(_result_set, sql_fields[1].short_field_without_quote));
 
 			field.set(_class_instance, DatabaseWrapperAccessor.getRenforcedDecentralizedIDGeneratorInstance(ts, wsseq));
 		} catch (Exception e) {
