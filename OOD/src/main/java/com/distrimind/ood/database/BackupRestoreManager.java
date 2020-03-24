@@ -64,7 +64,7 @@ public class BackupRestoreManager {
 
 	private final static int LAST_BACKUP_UTC_POSITION=0;
 	//private final static int RECORDS_INDEX_POSITION=LAST_BACKUP_UTC_POSITION+8;
-	private final static int LIST_CLASSES_POSITION=LAST_BACKUP_UTC_POSITION+25;
+	private final static int LIST_CLASSES_POSITION=LAST_BACKUP_UTC_POSITION+26;
 
 
 	private ArrayList<Long> fileReferenceTimeStamps;
@@ -882,7 +882,6 @@ public class BackupRestoreManager {
 			try(RandomFileInputStream rfis=new RandomFileInputStream(file)) {
 				lastBackupEventUTC=rfis.readLong();
 				if (rfis.readBoolean()) {
-					rfis.skipBytes(16);
 					transactionsInterval = null;
 				}
 				else
@@ -1612,6 +1611,7 @@ public class BackupRestoreManager {
 						while (in.available()>0) {
 							int startTransaction=(int)in.currentPosition();
 							int nextTransaction=in.readInt();
+							in.skipBytes(9);
 							long currentTransactionUTC=in.readLong();
 							if (currentTransactionUTC<previousTransactionUTC)
 								throw new IOException();
@@ -1620,6 +1620,7 @@ public class BackupRestoreManager {
 								break fileloop;
 							if (in.readInt()!=-1)
 								throw new IOException();
+
 							final long dataTransactionStartPosition=in.currentPosition();
 							final long pp=progressPosition;
 							progressPosition=databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Long>() {
