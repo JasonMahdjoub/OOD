@@ -110,24 +110,28 @@ public class TestDatabaseBackupRestore {
 		List<Table4.Record> lTable4=sourceWrapper.getTableInstance(Table4.class).getRecords();
 
 		Table1 table1=destinationWrapper.getTableInstance(Table1.class);
+		Assert.assertEquals(table1.getRecordsNumber(), 0);
 		for (Table1.Record r : lTable1)
 		{
 			Map<String, Object> m=Table.getFields(table1.getFieldAccessors(), r);
 			Assert.assertTrue(table1.equalsAllFields(table1.addRecord(m), r));
 		}
 		Table3 table3=destinationWrapper.getTableInstance(Table3.class);
+		Assert.assertEquals(table3.getRecordsNumber(), 0);
 		for (Table3.Record r : lTable3)
 		{
 			Map<String, Object> m=Table.getFields(table3.getFieldAccessors(), r);
 			Assert.assertTrue(table3.equalsAllFields(table3.addRecord(m), r));
 		}
 		Table2 table2=destinationWrapper.getTableInstance(Table2.class);
+		Assert.assertEquals(table2.getRecordsNumber(), 0);
 		for (Table2.Record r : lTable2)
 		{
 			Map<String, Object> m=Table.getFields(table2.getFieldAccessors(), r);
 			Assert.assertTrue(table2.equalsAllFields(table2.addRecord(m), r));
 		}
 		Table4 table4=destinationWrapper.getTableInstance(Table4.class);
+		Assert.assertEquals(table4.getRecordsNumber(), 0);
 		for (Table4.Record r : lTable4)
 		{
 			Map<String, Object> m=Table.getFields(table4.getFieldAccessors(), r);

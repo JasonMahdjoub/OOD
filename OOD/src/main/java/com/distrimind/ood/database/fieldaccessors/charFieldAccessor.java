@@ -174,7 +174,7 @@ public class charFieldAccessor extends FieldAccessor {
 	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
-			String s = _result_set.getString(getColmunIndex(_result_set, sql_fields[0].short_field_without_quote));
+			String s = _result_set.getString(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
 			Character c = null;
 			if (s != null)
 				c = s.charAt(0);

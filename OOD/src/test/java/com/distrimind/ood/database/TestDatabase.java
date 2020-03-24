@@ -1769,17 +1769,20 @@ public abstract class TestDatabase {
 		} catch (DatabaseException e) {
 			assertTrue(true);
 		}
+		Assert.assertEquals(table4.getRecords().size(), 0);
 		Assert.assertEquals(table2.addRecord(map1).int_value, 0);
 		Assert.assertEquals(table4.addRecord(map2).int_value, 0);
 		Assert.assertEquals(table5.addRecord(map2).int_value, 0);
+
+		Assert.assertEquals(table2.getRecords().get(0).int_value, 0);
+		Assert.assertEquals(table5.getRecords().get(0).int_value, 0);
+		Assert.assertEquals(table4.getRecords().get(0).int_value, 0);
 
 		Table1.Record r1fr2 = table2.getRecords().get(0).fr1_pk1;
 		Table3.Record r2fr4 = table4.getRecords().get(0).fr1_pk1;
 		Table3.Record r2fr5 = table5.getRecords().get(0).fr1_pk1;
 
-		Assert.assertEquals(table2.getRecords().get(0).int_value, 0);
-		Assert.assertEquals(table4.getRecords().get(0).int_value, 0);
-		Assert.assertEquals(table5.getRecords().get(0).int_value, 0);
+
 
         Assert.assertEquals(r1.pk1, r1fr2.pk1);
         Assert.assertEquals(r1.pk2, r1fr2.pk2);

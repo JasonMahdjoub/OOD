@@ -248,9 +248,9 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 		try {
 			byte[] res;
 			if (isVarBinary) {
-				res = _result_set.getBytes(getColmunIndex(_result_set, sql_fields[0].short_field_without_quote));
+				res = _result_set.getBytes(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
 			} else {
-				res = getBytes(_result_set.getBigDecimal(getColmunIndex(_result_set, sql_fields[0].short_field_without_quote)));
+				res = getBytes(_result_set.getBigDecimal(getColmunIndex(_result_set, sql_fields[0].field_without_quote)));
 			}
 			if (res == null && isNotNull())
 				throw new DatabaseIntegrityException("Unexpected exception. Null value was found into a not null field "

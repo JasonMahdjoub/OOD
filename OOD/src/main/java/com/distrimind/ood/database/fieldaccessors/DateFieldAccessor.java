@@ -106,7 +106,7 @@ public class DateFieldAccessor extends FieldAccessor {
 	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
-			Timestamp res = _result_set.getTimestamp(getColmunIndex(_result_set, sql_fields[0].short_field_without_quote));
+			Timestamp res = _result_set.getTimestamp(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
 			if (res == null && isNotNull())
 				throw new DatabaseIntegrityException("Unexpected exception.");
 			if (res==null)

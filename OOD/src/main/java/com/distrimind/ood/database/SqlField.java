@@ -54,7 +54,7 @@ public class SqlField {
 	/**
 	 * the name of the Sql field without quote appended with the name of the Sql Table.
 	 */
-	public final String field_without_quote;
+	public String field_without_quote;
 
 
 	/**

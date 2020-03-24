@@ -246,6 +246,7 @@ public abstract class FieldAccessor {
 		for (SqlField sf : getDeclaredSqlFields())
 		{
 			sf.field=sf.field.replace(oldInternalTableName, internalTableName);
+			sf.field_without_quote=sf.field_without_quote.replace(oldInternalTableName, internalTableName);
 		}
 	}
 
@@ -848,8 +849,10 @@ public abstract class FieldAccessor {
 	}
 
 	protected int getColmunIndex(ResultSet _result_set, String fieldName) throws SQLException {
-		if (DatabaseWrapperAccessor.supportFullSqlFieldName(sql_connection))
+
+		if (DatabaseWrapperAccessor.supportFullSqlFieldName(sql_connection)) {
 			return _result_set.findColumn(fieldName);
+		}
 		else {
 			ResultSetMetaData rsmd = _result_set.getMetaData();
 			for (int i = 1; i <= rsmd.getColumnCount(); i++) {

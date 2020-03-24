@@ -187,12 +187,12 @@ public class StringFieldAccessor extends FieldAccessor {
 			throws DatabaseException {
 		try {
 			if (sql_fields[0].type.startsWith("VARCHAR")) {
-				String res = _result_set.getString(getColmunIndex(_result_set, sql_fields[0].short_field_without_quote));
+				String res = _result_set.getString(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
 				if (res == null && isNotNull())
 					throw new DatabaseIntegrityException("Unexpected exception.");
 				field.set(_class_instance, res);
 			} else {
-				Clob c = _result_set.getClob(getColmunIndex(_result_set, sql_fields[0].short_field_without_quote));
+				Clob c = _result_set.getClob(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
 				String res = c.getSubString(0, (int) c.length());
 				if (res == null && isNotNull())
 					throw new DatabaseIntegrityException("Unexpected exception.");
