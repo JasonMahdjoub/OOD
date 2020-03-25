@@ -153,11 +153,10 @@ public abstract class FieldAccessor {
 			throw new DatabaseException(
 					"The field " + field.getName() + " of the DatabaseRecord " + field.getDeclaringClass().getName()
 							+ " cannot be an auto primary key and a random primary key at the same time.");
-		if (auto_primary_key && !isTypeCompatible(byte.class) && !isTypeCompatible(short.class)
-				&& !isTypeCompatible(int.class) && !isTypeCompatible(long.class))
+		if (auto_primary_key && !canAutoGenerateValues())
 			throw new DatabaseException(
 					"The field " + field.getName() + " of the DatabaseRecord " + field.getDeclaringClass().getName()
-							+ ", which is an auto primary key, must be a byte, a short, an int, or a long.");
+							+ ", which is an auto primary key, must be a byte, a short, an int, a long, or a decentralized value.");
 		primary_key = field.isAnnotationPresent(PrimaryKey.class) || auto_primary_key || random_primary_key;
 		foreign_key = field.isAnnotationPresent(ForeignKey.class);
 		if (foreign_key && (auto_primary_key || random_primary_key))

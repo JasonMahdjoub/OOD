@@ -70,6 +70,7 @@ android {
 }
 apply from: '../../common_dependencies.gradle'
 dependencies {
+
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     androidTestImplementation 'org.testng:testng:6.14.3'
     androidTestImplementation(group:'com.h2database', name:'h2', version:'1.4.199')

@@ -47,7 +47,7 @@ import com.distrimind.util.io.SerializationTools;
  * @version 1.0
  * @since OOD 2.5.0
  */
-class CentralDatabaseHookTable extends Table<CentralDatabaseHookTable.Record> {
+final class CentralDatabaseHookTable extends Table<CentralDatabaseHookTable.Record> {
 
 	@SuppressWarnings("unused")
 	protected CentralDatabaseHookTable() throws DatabaseException {
