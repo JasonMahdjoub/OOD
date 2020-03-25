@@ -1213,7 +1213,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						if (getCentralDatabaseHookTable().hasRecordsWithOneOfFields("databasePackageName", _package.getName()))
 							return false;
 						else {
-							centralDatabaseHookTable.addRecord("databasePackageName", _package.getName());
+							centralDatabaseHookTable.addRecord("removedButNotNotified", false, "databasePackageName", _package.getName());
 
 							return true;
 						}
