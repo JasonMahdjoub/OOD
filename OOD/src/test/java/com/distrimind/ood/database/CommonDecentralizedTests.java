@@ -137,6 +137,7 @@ public abstract class CommonDecentralizedTests {
 
 
 		public void receiveMessage(DatabaseWrapper.DatabaseBackupToIncorporateFromCentralDatabaseBackup message) throws IOException {
+			assert message!=null;
 			FileTools.copy(message.getSourceFile(), getFile(message.getHostSource(),message.getConcernedPackage(), message.getSourceFile()), true);
 			Map<DecentralizedValue, Long> map=lastBackupsTimeStamps.get(message.getConcernedPackage());
 			if (map==null)
@@ -160,7 +161,9 @@ public abstract class CommonDecentralizedTests {
 				}
 				else
 				{
-					d.getReceivedCentralDatabaseBackupEvents().add(new DatabaseWrapper.TransactionInIDConfirmationEventsWithCentralDatabaseBackupEvent(message.getHostSource(), d.hostID, getLastValidatedTransactionID(message.hostIDSource)));
+					Long tid=getLastValidatedTransactionID(message.hostIDSource);
+					if (tid!=null)
+						d.getReceivedCentralDatabaseBackupEvents().add(new DatabaseWrapper.TransactionInIDConfirmationEventsWithCentralDatabaseBackupEvent(message.getHostSource(), d.hostID, tid));
 				}
 			}
 		}
