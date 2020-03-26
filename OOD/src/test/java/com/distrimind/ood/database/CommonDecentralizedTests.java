@@ -192,6 +192,41 @@ public abstract class CommonDecentralizedTests {
 			return res;
 
 		}
+		public void connectHooksBetweenThem() throws DatabaseException {
+			for (Database d : listDatabase)
+			{
+				if (d.getDbwrapper().getSynchronizer().isInitializedWithCentralBackup())
+				{
+					for (Database d2 : listDatabase)
+					{
+
+						if (d2!=d && d2.getDbwrapper().getSynchronizer().isInitializedWithCentralBackup())
+						{
+							if (!d2.dbwrapper.getSynchronizer().isInitializedWithCentralBackup(d.getHostID())) {
+								Map<DecentralizedValue, Long> m=lastValidatedTransactionsID.get(d.getHostID());
+								if (m!=null) {
+									d2.getDbwrapper().getSynchronizer().initDistantBackupCenter(d.getHostID(),
+											m.get(d2.getHostID()));
+								}
+								else
+									d2.getDbwrapper().getSynchronizer().initDistantBackupCenter(d.getHostID(),
+											Long.MIN_VALUE);
+
+							}
+							if (!d.dbwrapper.getSynchronizer().isInitializedWithCentralBackup(d2.getHostID())) {
+								Map<DecentralizedValue, Long> m=lastValidatedTransactionsID.get(d2.getHostID());
+								if (m!=null) {
+									d.getDbwrapper().getSynchronizer().initDistantBackupCenter(d2.getHostID(), m.get(d.getHostID()));
+								}
+								else
+									d.getDbwrapper().getSynchronizer().initDistantBackupCenter(d2.getHostID(), Long.MIN_VALUE);
+
+							}
+						}
+					}
+				}
+			}
+		}
 		public void connect(Database d) throws DatabaseException {
 			Map<String, Long> map=new HashMap<>();
 			for (Map.Entry<String, Map<DecentralizedValue, Long>> e : lastBackupsTimeStamps.entrySet())
@@ -205,27 +240,7 @@ public abstract class CommonDecentralizedTests {
 				}
 			}
 			d.getDbwrapper().getSynchronizer().initDistantBackupCenterForThisHostWithStringPackages(map);
-			for (Database d2 : listDatabase)
-			{
-				if (d2!=d)
-				{
-					if (!d2.dbwrapper.getSynchronizer().isInitializedWithCentralBackup(d.getHostID())) {
-						Map<DecentralizedValue, Long> m=lastValidatedTransactionsID.get(d.getHostID());
-						if (m!=null) {
-							d2.getDbwrapper().getSynchronizer().initDistantBackupCenter(d.getHostID(),
-									m.get(d2.getHostID()));
-						}
 
-					}
-					if (!d.dbwrapper.getSynchronizer().isInitializedWithCentralBackup(d2.getHostID())) {
-						Map<DecentralizedValue, Long> m=lastValidatedTransactionsID.get(d2.getHostID());
-						if (m!=null) {
-							d.getDbwrapper().getSynchronizer().initDistantBackupCenter(d2.getHostID(), m.get(d.getHostID()));
-						}
-
-					}
-				}
-			}
 		}
 
 
@@ -976,6 +991,7 @@ public abstract class CommonDecentralizedTests {
 		{
 			centralDatabaseBackup.connect(d);
 		}
+		centralDatabaseBackup.connectHooksBetweenThem();
 	}
 
 	protected void addDatabasePackageToSynchronizeWithCentralDatabaseBackup(Package _package) throws Exception {

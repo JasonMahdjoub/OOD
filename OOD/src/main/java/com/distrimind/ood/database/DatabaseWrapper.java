@@ -818,7 +818,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 			long l = getDatabaseTransactionsPerHostTable().validateTransactions(r, lastTransferedTransactionID);
 			if (l < lastTransferedTransactionID)
-				throw new IllegalAccessError();
+				throw new IllegalAccessError("l="+l+"; lastTransferedTransactionID="+lastTransferedTransactionID);
 
 			if (central)
 			{
