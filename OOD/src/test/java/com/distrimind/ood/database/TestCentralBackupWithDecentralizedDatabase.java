@@ -175,12 +175,13 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 		checkAllDatabaseInternalDataUsedForSynchro();
 
 	}
+
 	@Test(dependsOnMethods = {"testSynchroAfterTestsBetweenThreePeers" })
 	public void connectCentralDatabaseBackup()
 			throws Exception {
+		connectCentralDatabaseBackupWithConnectedDatabase();
 		addDatabasePackageToSynchronizeWithCentralDatabaseBackup(TableAlone.class.getPackage());
 		disconnectAllDatabase();
-		connectCentralDatabaseBackupWithConnectedDatabase();
 		exchangeMessages();
 		disconnectCentralDatabaseBackup();
 		connectCentralDatabaseBackupWithConnectedDatabase();

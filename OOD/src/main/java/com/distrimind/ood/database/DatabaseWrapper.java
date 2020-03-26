@@ -1323,12 +1323,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						boolean found = false;
 						for (Map.Entry<String, Long> e : lastValidatedTransactionsUTC.entrySet()) {
 							if (e.getKey().equals(r.getDatabasePackageName())) {
+								System.out.println("Validate with central database backup");
 								validateLastSynchronizationWithCentralDatabaseBackup(e.getKey(), e.getValue());
 								found = true;
 								break;
 							}
 						}
 						if (!found) {
+							System.out.println("Validate with not found central database backup");
 							validateLastSynchronizationWithCentralDatabaseBackup(r.getDatabasePackageName(), Long.MIN_VALUE);
 						}
 					}
@@ -1688,16 +1690,20 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 		private void validateLastSynchronizationWithCentralDatabaseBackup(Package _package, Database d, long lastValidatedTransactionUTC) throws DatabaseException {
 			BackupRestoreManager b=d.backupRestoreManager;
-	  		if (b==null)
+	  		if (b==null) {
+	  			System.out.println("not validated");
 				return;
+			}
 			long timeStamp;
 			d.lastValidatedTransactionUTCForCentralBackup = lastValidatedTransactionUTC;
 	  		if (lastValidatedTransactionUTC==Long.MIN_VALUE)
 			{
 				timeStamp = b.getLastFileReferenceTimestampUTC();
+				System.out.println("chosen reference time stamp : "+timeStamp);
 			}
 	  		else {
 				timeStamp = b.getNearestFileUTCFromGivenTimeNotIncluded(lastValidatedTransactionUTC);
+				System.out.println("chosen time stamp : "+timeStamp);
 			}
 
 			if (timeStamp!=Long.MIN_VALUE)

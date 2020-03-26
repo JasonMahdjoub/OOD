@@ -338,13 +338,38 @@ public abstract class CommonDecentralizedTests {
 		private final List<CommonDecentralizedTests.Anomaly> anomalies;
 		private final List<CentralDatabaseBackupEvent> centralDatabaseBackupEvents=new ArrayList<>();
 
-		Database(DatabaseWrapper dbwrapper) throws DatabaseException {
+		Database(DatabaseWrapper dbwrapper, BackupConfiguration backupConfiguration) throws DatabaseException {
 			this.dbwrapper = dbwrapper;
 			connected = false;
 			hostID = new DecentralizedIDGenerator();
 			localEvents = new ArrayList<>();
 			eventsReceivedStack = Collections.synchronizedList(new LinkedList<CommonDecentralizedTests.DistantDatabaseEvent>());
-			dbwrapper.loadDatabase(new DatabaseConfiguration(TableAlone.class.getPackage()), true);
+
+			getDbwrapper()
+					.loadDatabase(new DatabaseConfiguration(TableAlone.class.getPackage(), new DatabaseLifeCycles() {
+
+
+						@Override
+						public void transferDatabaseFromOldVersion(DatabaseWrapper wrapper, DatabaseConfiguration oldDatabaseConfiguration, DatabaseConfiguration newDatabaseConfiguration) {
+
+						}
+
+						@Override
+						public void afterDatabaseCreation(DatabaseWrapper wrapper, DatabaseConfiguration newDatabaseConfiguration) {
+
+						}
+
+						@Override
+						public boolean hasToRemoveOldDatabase() {
+							return false;
+						}
+
+						@Override
+						public boolean replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized() {
+							return false;
+						}
+					}, null, backupConfiguration), true);
+
 			tableAlone = dbwrapper.getTableInstance(TableAlone.class);
 			tablePointed = dbwrapper.getTableInstance(TablePointed.class);
 			tablePointing = dbwrapper.getTableInstance(TablePointing.class);
@@ -654,40 +679,13 @@ public abstract class CommonDecentralizedTests {
 	{
 		return false;
 	}
-	public void loadDatabase(CommonDecentralizedTests.Database db) throws DatabaseException {
-		db.getDbwrapper()
-				.loadDatabase(new DatabaseConfiguration(TableAlone.class.getPackage(), new DatabaseLifeCycles() {
-
-
-					@Override
-					public void transferDatabaseFromOldVersion(DatabaseWrapper wrapper, DatabaseConfiguration oldDatabaseConfiguration, DatabaseConfiguration newDatabaseConfiguration) {
-
-					}
-
-					@Override
-					public void afterDatabaseCreation(DatabaseWrapper wrapper, DatabaseConfiguration newDatabaseConfiguration) {
-
-					}
-
-					@Override
-					public boolean hasToRemoveOldDatabase() {
-						return false;
-					}
-
-					@Override
-					public boolean replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized() {
-						return false;
-					}
-				}, null, getBackupConfiguration()), true);
-
-	}
 
 	@BeforeClass
 	public void loadDatabase() throws DatabaseException {
 		unloadDatabase();
-		db1 = new CommonDecentralizedTests.Database(getDatabaseWrapperInstance1());
-		db2 = new CommonDecentralizedTests.Database(getDatabaseWrapperInstance2());
-		db3 = new CommonDecentralizedTests.Database(getDatabaseWrapperInstance3());
+		db1 = new CommonDecentralizedTests.Database(getDatabaseWrapperInstance1(), getBackupConfiguration());
+		db2 = new CommonDecentralizedTests.Database(getDatabaseWrapperInstance2(), getBackupConfiguration());
+		db3 = new CommonDecentralizedTests.Database(getDatabaseWrapperInstance3(), getBackupConfiguration());
 		listDatabase.add(db1);
 		listDatabase.add(db2);
 		listDatabase.add(db3);
