@@ -126,15 +126,18 @@ public abstract class CommonDecentralizedTests {
 		final Map<DecentralizedValue, Map<DecentralizedValue, Long>> lastValidatedTransactionsID=new HashMap<>();
 		private final Map<String, Map<DecentralizedValue, Long>> lastBackupsTimeStamps=new HashMap<>();
 		private final Map<String, Map<DecentralizedValue, ArrayList<DatabaseWrapper.TransactionsInterval>>> lastBackupsInterval=new HashMap<>();
-
+		public File getDirectory(DecentralizedValue host, String packageString)
+		{
+			return new File(centralDatabaseBackupDirectory, host.encodeString()+File.separator+packageString.replace('.', File.separatorChar));
+		}
 		public File getFile(DecentralizedValue host, String packageString, File file)
 		{
-			return new File(centralDatabaseBackupDirectory, host.toString()+File.separator+packageString.replace('.', File.separatorChar)+File.separator+file.getName());
+			return new File(getDirectory(host, packageString), file.getName());
 		}
 
 
 		public void receiveMessage(DatabaseWrapper.DatabaseBackupToIncorporateFromCentralDatabaseBackup message) throws IOException {
-			FileTools.copy(message.getSourceFile(), getFile(message.getHostSource(),message.getConcernedPackage(), message.getSourceFile()) );
+			FileTools.copy(message.getSourceFile(), getFile(message.getHostSource(),message.getConcernedPackage(), message.getSourceFile()), true);
 			Map<DecentralizedValue, Long> map=lastBackupsTimeStamps.get(message.getConcernedPackage());
 			if (map==null)
 				lastBackupsTimeStamps.put(message.getConcernedPackage(), map=new HashMap<>());
