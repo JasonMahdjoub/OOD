@@ -216,9 +216,9 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
                                         "maxLocalID", actualLastID.get() - 1, "minLocalID",
                                         lastID + 1, "peersInformedFull", Boolean.FALSE);
                     }
-
-                    if (actualLastID.get() == Long.MAX_VALUE)
-                        actualLastID.set(getIDTable().getLastTransactionID());
+                    if (actualLastID.get() == Long.MAX_VALUE) {
+						actualLastID.set(getIDTable().getLastTransactionID());
+					}
                     else if (actualLastID.get() < lastID)
                         throw new IllegalAccessError();
                     hook.setLastValidatedTransaction(actualLastID.get());

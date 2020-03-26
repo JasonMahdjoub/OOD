@@ -780,7 +780,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			
 		}
 
-		void validateLastSynchronization(DecentralizedValue hostID, long lastTransferedTransactionID)
+		void validateLastSynchronization(DecentralizedValue hostID, long lastTransferredTransactionID)
 				throws DatabaseException {
 			if (hostID == null)
 				throw new NullPointerException("hostID");
@@ -810,30 +810,30 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (r == null)
 				throw DatabaseException.getDatabaseException(
 						new IllegalArgumentException("The host ID " + hostID + " has not been initialized !"));
-			if (r.getLastValidatedTransaction() > lastTransferedTransactionID)
-				throw new DatabaseException("The given transfer ID limit " + lastTransferedTransactionID
+			if (r.getLastValidatedTransaction() > lastTransferredTransactionID)
+				throw new DatabaseException("The given transfer ID limit " + lastTransferredTransactionID
 						+ " is lower than the stored transfer ID limit " + r.getLastValidatedTransaction());
 			if (r.concernsLocalDatabaseHost())
 				throw new DatabaseException("The given host ID correspond to the local database host !");
 
-			long l = getDatabaseTransactionsPerHostTable().validateTransactions(r, lastTransferedTransactionID);
-			if (l < lastTransferedTransactionID)
-				throw new IllegalAccessError("l="+l+"; lastTransferedTransactionID="+lastTransferedTransactionID);
+			long l = getDatabaseTransactionsPerHostTable().validateTransactions(r, lastTransferredTransactionID);
+			if (l < lastTransferredTransactionID)
+				throw new IllegalAccessError("l="+l+"; lastTransferredTransactionID="+lastTransferredTransactionID);
 
 			if (central)
 			{
-				if (l != lastTransferedTransactionID)
+				if (l != lastTransferredTransactionID)
 					addNewDatabaseEvent(new LastIDCorrectionForCentralDatabaseBackup(getHooksTransactionsTable().getLocalDatabaseHost().getHostID(),
 							hostID, l));
 			}
 			else {
-				if (l != lastTransferedTransactionID) {
+				if (l != lastTransferredTransactionID) {
 					Long centralPeerTID = suspendedHooksWithCentralBackup.get(hostID);
 					if (centralPeerTID != null && centralPeerTID != Long.MIN_VALUE)
 						addNewDatabaseEvent(new LastIDCorrectionForCentralDatabaseBackup(getHooksTransactionsTable().getLocalDatabaseHost().getHostID(),
 								hostID, l));
 				}
-				if (l != lastTransferedTransactionID)
+				if (l != lastTransferredTransactionID)
 					addNewDatabaseEvent(new LastIDCorrection(getHooksTransactionsTable().getLocalDatabaseHost().getHostID(),
 							hostID, l));
 
@@ -1323,14 +1323,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						boolean found = false;
 						for (Map.Entry<String, Long> e : lastValidatedTransactionsUTC.entrySet()) {
 							if (e.getKey().equals(r.getDatabasePackageName())) {
-								System.out.println("Validate with central database backup");
 								validateLastSynchronizationWithCentralDatabaseBackup(e.getKey(), e.getValue());
 								found = true;
 								break;
 							}
 						}
 						if (!found) {
-							System.out.println("Validate with not found central database backup");
 							validateLastSynchronizationWithCentralDatabaseBackup(r.getDatabasePackageName(), Long.MIN_VALUE);
 						}
 					}
@@ -1691,7 +1689,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		private void validateLastSynchronizationWithCentralDatabaseBackup(Package _package, Database d, long lastValidatedTransactionUTC) throws DatabaseException {
 			BackupRestoreManager b=d.backupRestoreManager;
 	  		if (b==null) {
-	  			System.out.println("not validated");
 				return;
 			}
 			long timeStamp;
@@ -1699,11 +1696,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	  		if (lastValidatedTransactionUTC==Long.MIN_VALUE)
 			{
 				timeStamp = b.getLastFileReferenceTimestampUTC();
-				System.out.println("chosen reference time stamp : "+timeStamp);
 			}
 	  		else {
 				timeStamp = b.getNearestFileUTCFromGivenTimeNotIncluded(lastValidatedTransactionUTC);
-				System.out.println("chosen time stamp : "+timeStamp);
 			}
 
 			if (timeStamp!=Long.MIN_VALUE)

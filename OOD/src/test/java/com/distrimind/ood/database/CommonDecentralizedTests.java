@@ -124,6 +124,7 @@ public abstract class CommonDecentralizedTests {
 	{
 
 		final Map<DecentralizedValue, Map<DecentralizedValue, Long>> lastValidatedTransactionsID=new HashMap<>();
+		final Map<DecentralizedValue, Map<DecentralizedValue, Long>> lastCorrectedTransactionsID=new HashMap<>();
 		private final Map<String, Map<DecentralizedValue, Long>> lastBackupsTimeStamps=new HashMap<>();
 		private final Map<String, Map<DecentralizedValue, ArrayList<DatabaseWrapper.TransactionsInterval>>> lastBackupsInterval=new HashMap<>();
 		public File getDirectory(DecentralizedValue host, String packageString)
@@ -240,7 +241,15 @@ public abstract class CommonDecentralizedTests {
 				}
 			}
 			d.getDbwrapper().getSynchronizer().initDistantBackupCenterForThisHostWithStringPackages(map);
-
+			Map<DecentralizedValue, Long> m=lastCorrectedTransactionsID.get(d.hostID);
+			if (m!=null)
+			{
+				for (Map.Entry<DecentralizedValue, Long> e : m.entrySet())
+				{
+					d.getReceivedCentralDatabaseBackupEvents().add(new DatabaseWrapper.LastIDCorrectionForCentralDatabaseBackup(e.getKey(), d.hostID, e.getValue()));
+				}
+				lastCorrectedTransactionsID.remove(d.hostID);
+			}
 		}
 
 
@@ -260,6 +269,7 @@ public abstract class CommonDecentralizedTests {
 		}
 
 		public void receiveMessage(DatabaseWrapper.DatabaseTransactionsIdentifiersToSynchronizeWithCentralDatabaseBackup message) throws DatabaseException {
+			System.out.println("here-c");
 			lastValidatedTransactionsID.put(message.getHostSource(), message.getLastDistantTransactionIdentifiers());
 			for (Map.Entry<DecentralizedValue, Long> e : message.getLastDistantTransactionIdentifiers().entrySet())
 			{
@@ -287,14 +297,17 @@ public abstract class CommonDecentralizedTests {
 			}
 		}
 		public void receiveMessage(DatabaseWrapper.LastIDCorrectionForCentralDatabaseBackup message)  {
-			Map<DecentralizedValue, Long> m=lastValidatedTransactionsID.get(message.getHostSource());
-			if (m==null)
-				lastValidatedTransactionsID.put(message.getHostSource(), m=new HashMap<>());
-			m.put(message.getHostDestination(), message.getLastValidatedTransaction());
 			for (Database d : listDatabase) {
 				if (d.hostID.equals(message.getHostDestination())) {
-					if (d.isConnected()) {
+					if (d.getDbwrapper().getSynchronizer().isInitializedWithCentralBackup()) {
 						d.getReceivedCentralDatabaseBackupEvents().add(message);
+					}
+					else
+					{
+						Map<DecentralizedValue, Long> m=lastCorrectedTransactionsID.get(message.getHostDestination());
+						if (m==null)
+							lastCorrectedTransactionsID.put(message.getHostDestination(), m=new HashMap<>());
+						m.put(message.getHostSource(), message.getLastValidatedTransaction());
 					}
 					break;
 				}
@@ -307,7 +320,7 @@ public abstract class CommonDecentralizedTests {
 			m.put(message.getHostDestination(), message.getLastValidatedTransaction());
 			for (Database d : listDatabase) {
 				if (d.hostID.equals(message.getHostDestination())) {
-					if (d.isConnected()) {
+					if (d.getDbwrapper().getSynchronizer().isInitializedWithCentralBackup()) {
 						d.getReceivedCentralDatabaseBackupEvents().add(message);
 					}
 					break;
@@ -777,10 +790,13 @@ public abstract class CommonDecentralizedTests {
 						unloadDatabase4();
 					} finally {
 						listDatabase.clear();
+						if (centralDatabaseBackupDirectory.exists())
+							FileTools.deleteDirectory(centralDatabaseBackupDirectory);
 					}
 				}
 			}
 		}
+
 	}
 
 	@SuppressWarnings("deprecation")

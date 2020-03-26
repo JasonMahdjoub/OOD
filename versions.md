@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-2.4.2 Stable (Build: 800) (from 01/04/2013 to 15/02/2019)
+2.5.0 Stable (Build: 906) (from 01/04/2013 to 21/02/2019)
 
 # Creator(s):
 Jason MAHDJOUB
@@ -11,8 +11,11 @@ Jason MAHDJOUB (Entred in the team at 01/04/2013)
 # Modifications:
 
 
-### 2.4.2 Stable (15/02/2020)
-* Update Utils to 4.10.1
+### 2.5.0 Stable (21/02/2020)
+* Update Utils to 4.14.0
+* Implementation of data synchronization with central database backup
+* Implementation of driver for MySQL
+* Implementation of driver for Android SQLite
 
 
 ### 2.4.0 Stable (11/02/2020)

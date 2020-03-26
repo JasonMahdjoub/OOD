@@ -482,7 +482,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							@Override
 							public boolean nextRecord(Record _record) {
 								if (!_record.concernsLocalDatabaseHost())
-									res.put(_record.getHostID(), _record.getLastValidatedTransaction());
+									res.put(_record.getHostID(), _record.getLastValidatedDistantTransaction());
 								return false;
 							}
 						});
