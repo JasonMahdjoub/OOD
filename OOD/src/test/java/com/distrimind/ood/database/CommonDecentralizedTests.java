@@ -154,7 +154,7 @@ public abstract class CommonDecentralizedTests {
 
 			for (Database d : listDatabase)
 			{
-				if (!d.isConnected())
+				if (!d.getDbwrapper().getSynchronizer().isInitializedWithCentralBackup())
 					continue;
 				if (d.hostID.equals(message.getHostSource()))
 				{
@@ -255,11 +255,11 @@ public abstract class CommonDecentralizedTests {
 
 		public void disconnect(Database d) throws DatabaseException {
 			d.getDbwrapper().getSynchronizer().disconnectAllHooksFromThereBackups();
-			for (Database d2 : listDatabase) {
+			/*for (Database d2 : listDatabase) {
 				if (d2 != d && d2.isConnected()) {
 					d2.getDbwrapper().getSynchronizer().disconnectHookFromItsBackup(d.hostID);
 				}
-			}
+			}*/
 		}
 
 		public void receiveMessage(DatabaseWrapper.DatabaseBackupToRemoveIntoCentralDatabaseBackup message)
@@ -269,7 +269,6 @@ public abstract class CommonDecentralizedTests {
 		}
 
 		public void receiveMessage(DatabaseWrapper.DatabaseTransactionsIdentifiersToSynchronizeWithCentralDatabaseBackup message) throws DatabaseException {
-			System.out.println("here-c");
 			lastValidatedTransactionsID.put(message.getHostSource(), message.getLastDistantTransactionIdentifiers());
 			for (Map.Entry<DecentralizedValue, Long> e : message.getLastDistantTransactionIdentifiers().entrySet())
 			{
@@ -327,6 +326,10 @@ public abstract class CommonDecentralizedTests {
 				}
 			}
 		}
+		public void receiveMessage(DatabaseWrapper.AskToDatabaseBackupCenterForSynchronization message)
+		{
+			//TODO complete
+		}
 		public void receiveMessage(CentralDatabaseBackupEvent message) throws IOException, DatabaseException {
 			if (message instanceof DatabaseWrapper.DatabaseBackupToIncorporateFromCentralDatabaseBackup)
 			{
@@ -348,8 +351,14 @@ public abstract class CommonDecentralizedTests {
 			{
 				receiveMessage((DatabaseWrapper.DatabaseBackupToRemoveIntoCentralDatabaseBackup)message);
 			}
+			else if(message instanceof DatabaseWrapper.AskToDatabaseBackupCenterForSynchronization)
+			{
+				receiveMessage((DatabaseWrapper.AskToDatabaseBackupCenterForSynchronization)message);
+			}
 		}
 	}
+
+
 
 	public static class Database implements AutoCloseable, DatabaseNotifier {
 		private final DatabaseWrapper dbwrapper;
@@ -869,7 +878,33 @@ public abstract class CommonDecentralizedTests {
 		while (!db.getReceivedCentralDatabaseBackupEvents().isEmpty())
 		{
 			changed=true;
-			db.dbwrapper.getSynchronizer().received(db.getReceivedCentralDatabaseBackupEvents().remove(0));
+			CentralDatabaseBackupEvent event = db.getReceivedCentralDatabaseBackupEvents().remove(0);
+			if (event instanceof BigDatabaseEventToSend) {
+				try (InputStreamGetter is = new InputStreamGetter() {
+
+					private RandomInputStream actual=null;
+
+					@Override
+					public RandomInputStream initOrResetInputStream() throws IOException {
+						if (actual!=null)
+							actual.close();
+						return actual=dde.getInputStream();
+					}
+
+					@Override
+					public void close() throws IOException {
+						if (actual!=null)
+							actual.close();
+					}
+				})
+				{
+					db.getDbwrapper().getSynchronizer().received((BigDatabaseEventToSend) event, is);
+				}
+			} else {
+				db.getDbwrapper().getSynchronizer().received(event);
+			}
+
+			db.dbwrapper.getSynchronizer().received(event);
 		}
 		return changed;
 	}
@@ -905,6 +940,7 @@ public abstract class CommonDecentralizedTests {
 						loop = true;
 						if (e instanceof CentralDatabaseBackupEvent)
 						{
+							System.out.println("new event : "+e);
 							centralDatabaseBackup.receiveMessage((CentralDatabaseBackupEvent)e);
 						}
 						else if (e instanceof DatabaseEventToSend) {

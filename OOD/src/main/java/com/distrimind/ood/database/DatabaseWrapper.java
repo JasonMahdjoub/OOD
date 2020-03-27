@@ -1058,11 +1058,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (hostID == null)
 				throw new NullPointerException("hostID");
 
-			
+			Long lastValidateTransactionID=null;
+			DatabaseHooksTable.Record hook = null;
 			try {
 				lockWrite();
 				ConnectedPeers peer = initializedHooks.remove(hostID);
-				DatabaseHooksTable.Record hook = null;
+
 				if (peer != null)
 					hook = getHooksTransactionsTable().getHook(peer.getHostID());
 				if (hook == null)
@@ -1080,18 +1081,18 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 					cancelEventToSend(hostID, false);
 					notifier.hostDisconnected(hostID);
-					Long lastValidateTransactionID=suspendedHooksWithCentralBackup.remove(hostID);
-					if (lastValidateTransactionID!=null)
-					{
-						initDistantBackupCenter(hook, lastValidateTransactionID);
-					}
+					lastValidateTransactionID=suspendedHooksWithCentralBackup.remove(hostID);
 				}
 			}
 			finally
 			{
 				unlockWrite();
 			}
-			
+			if (lastValidateTransactionID!=null)
+			{
+				initDistantBackupCenter(hook, lastValidateTransactionID);
+			}
+
 
 		}
 
@@ -1151,6 +1152,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					else {
 						synchronizeMetaData();
 					}
+					addNewDatabaseEvent(new AskToDatabaseBackupCenterForSynchronization(getLocalHostID(), hostID, true));
 				}
 			}
 			finally {
@@ -1447,6 +1449,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				else {
 					cancelEventToSend(hostID, true);
 					cancelDifferedDatabaseBackupToIncorporate(peer.hook.getHostID());
+					if (isInitializedWithCentralBackup())
+						addNewDatabaseEvent(new AskToDatabaseBackupCenterForSynchronization(getLocalHostID(), hostID, false));
+
 				}
 			}
 			finally
@@ -1560,6 +1565,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					cancelEventToSend(hostID, true);
 					cancelDifferedDatabaseBackupToIncorporate(centralPeer.hook.getHostID());
 					suspendedHooksWithCentralBackup.put(hostID, Long.MIN_VALUE);
+					addNewDatabaseEvent(new AskToDatabaseBackupCenterForSynchronization(getLocalHostID(), hostID, false));
 				}
 				initializedHooks.put(hostID, new ConnectedPeers(r));
 
@@ -1595,6 +1601,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		public void received(BigDatabaseEventToSend data, InputStreamGetter inputStream) throws DatabaseException {
+			System.out.println("received big data : "+data);
 			data.importFromInputStream(DatabaseWrapper.this, inputStream);
 			synchronizedDataIfNecessary();
 		}
@@ -1621,6 +1628,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		private void lastIDCorrection(final DecentralizedValue hostSource, final long lastValidatedTransaction) throws DatabaseException {
+			if (hostSource.equals(getLocalHostID()))
+				throw new IllegalArgumentException();
 			runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
 
 				@Override
@@ -1650,6 +1659,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 			});
 		}
+
+
 		private void validateLastSynchronizationWithCentralDatabaseBackup(Package _package, long lastValidatedTransactionUTC) throws DatabaseException {
 
 			lockWrite();
@@ -1754,6 +1765,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				receivedHookAddRequest((HookAddRequest) data);
 			} else if (data instanceof LastIDCorrection) {
 				received((LastIDCorrection) data);
+			} else if (data instanceof CentralDatabaseBackupEvent)
+			{
+				received((CentralDatabaseBackupEvent)data);
 			}
 		}
 
@@ -2189,6 +2203,56 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
 			packageName=in.readString(false, SerializationTools.MAX_CLASS_LENGTH);
 			hostSource=in.readObject(false, DecentralizedValue.class);
+		}
+	}
+
+	public static class AskToDatabaseBackupCenterForSynchronization extends DatabaseEvent implements CentralDatabaseBackupEvent, DatabaseEventToSend
+	{
+		private DecentralizedValue hostSource;
+		private DecentralizedValue hostDestination;
+		private boolean synchronizationActivated;
+
+		@SuppressWarnings("unused")
+		private AskToDatabaseBackupCenterForSynchronization() {
+		}
+
+		AskToDatabaseBackupCenterForSynchronization(DecentralizedValue hostSource, DecentralizedValue hostDestination, boolean synchronizationActivated) {
+			this.hostSource=hostSource;
+			this.hostDestination=hostDestination;
+			this.synchronizationActivated=synchronizationActivated;
+		}
+
+		public boolean isSynchronizationActivated() {
+			return synchronizationActivated;
+		}
+
+		@Override
+		public DecentralizedValue getHostDestination() {
+			return hostDestination;
+		}
+
+		@Override
+		public DecentralizedValue getHostSource() {
+			return hostSource;
+		}
+
+		@Override
+		public int getInternalSerializedSize() {
+			return 1+SerializationTools.getInternalSize((SecureExternalizable)hostSource)+SerializationTools.getInternalSize((SecureExternalizable)hostDestination);
+		}
+
+		@Override
+		public void writeExternal(SecuredObjectOutputStream out) throws IOException {
+			out.writeBoolean(synchronizationActivated);
+			out.writeObject(hostSource, false);
+			out.writeObject(hostDestination, false);
+		}
+
+		@Override
+		public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
+			synchronizationActivated=in.readBoolean();
+			hostSource=in.readObject(false, DecentralizedValue.class);
+			hostDestination=in.readObject(false, DecentralizedValue.class);
 		}
 	}
 
