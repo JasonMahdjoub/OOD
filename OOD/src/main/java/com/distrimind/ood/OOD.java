@@ -60,8 +60,8 @@ public class OOD {
 		Calendar c1 = Calendar.getInstance();
 		c1.set(2013, Calendar.APRIL, 1);
 		Calendar c2 = Calendar.getInstance();
-		c2.set(2019, Calendar.FEBRUARY, 21);
-		VERSION = new Version("Object Oriented Database", "OOD", (short)2, (short)5, (short)0, Version.Type.Stable, (short)1, c1.getTime(),
+		c2.set(2019, Calendar.MARCH, 30);
+		VERSION = new Version("Object Oriented Database", "OOD", (short)3, (short)0, (short)0, Version.Type.Stable, (short)1, c1.getTime(),
 				c2.getTime());
 		try {
 			InputStream is = OOD.class.getResourceAsStream("build.txt");
@@ -73,12 +73,13 @@ public class OOD {
 			VERSION.addDeveloper(new PersonDeveloper("mahdjoub", "jason", c.getTime()));
 
 			c = Calendar.getInstance();
-			c.set(2020, Calendar.FEBRUARY, 21);
-			Description d = new Description((short)2, (short)5, (short)0, Version.Type.Stable, (short)1, c.getTime());
+			c.set(2020, Calendar.MARCH, 30);
+			Description d = new Description((short)3, (short)0, (short)0, Version.Type.Stable, (short)1, c.getTime());
 			d.addItem("Update Utils to 4.14.0");
 			d.addItem("Implementation of data synchronization with central database backup");
+			d.addItem("Make OOD compatible with Android");
 			d.addItem("Implementation of driver for MySQL");
-			d.addItem("Implementation of driver for Android SQLite");
+			d.addItem("Implementation of driver for Android H2 Database");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();

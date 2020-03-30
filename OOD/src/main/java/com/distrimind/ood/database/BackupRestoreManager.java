@@ -65,7 +65,7 @@ public class BackupRestoreManager {
 	private final static int LAST_BACKUP_UTC_POSITION=0;
 	//private final static int RECORDS_INDEX_POSITION=LAST_BACKUP_UTC_POSITION+8;
 	private final static int LIST_CLASSES_POSITION=LAST_BACKUP_UTC_POSITION+26;
-
+	public static final int MIN_TRANSACTION_SIZE_IN_BYTES=38;
 
 	private ArrayList<Long> fileReferenceTimeStamps;
 	private ArrayList<Long> fileTimeStamps;

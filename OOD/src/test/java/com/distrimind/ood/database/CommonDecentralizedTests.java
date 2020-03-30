@@ -879,8 +879,7 @@ public abstract class CommonDecentralizedTests {
 		{
 			changed=true;
 			CentralDatabaseBackupEvent event = db.getReceivedCentralDatabaseBackupEvents().remove(0);
-			//TODO complete
-			/*if (event instanceof BigDatabaseEventToSend) {
+			if (event instanceof BigDatabaseEventToSend) {
 				try (InputStreamGetter is = new InputStreamGetter() {
 
 					private RandomInputStream actual=null;
@@ -903,7 +902,7 @@ public abstract class CommonDecentralizedTests {
 				}
 			} else {
 				db.getDbwrapper().getSynchronizer().received(event);
-			}*/
+			}
 
 			db.dbwrapper.getSynchronizer().received(event);
 		}
