@@ -2809,13 +2809,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			return thread;
 		}
 
-		private BackupRestoreManager.Transaction getBackupManagerAndStartTransactionIfNecessary(Package p) throws DatabaseException {
+		private BackupRestoreManager.Transaction getBackupManagerAndStartTransactionIfNecessary(Package p, boolean transactionToSynchronizeFromCentralDatabaseBackup) throws DatabaseException {
 			if (!backupManager.containsKey(p)) {
 				BackupRestoreManager brm = getBackupRestoreManager(p);
 
 				if (brm!=null)
 				{
-					BackupRestoreManager.Transaction res=brm.startTransaction();
+					BackupRestoreManager.Transaction res=brm.startTransaction(transactionToSynchronizeFromCentralDatabaseBackup);
 					backupManager.put(p, res);
 					return res;
 				}
@@ -2836,7 +2836,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new NullPointerException("de");
 			Package p = table.getClass().getPackage();
 
-			BackupRestoreManager.Transaction backupTransaction=getBackupManagerAndStartTransactionIfNecessary(p);
+			BackupRestoreManager.Transaction backupTransaction=getBackupManagerAndStartTransactionIfNecessary(p, applySynchro);
 			if (backupTransaction!=null)
 				backupTransaction.backupRecordEvent(table, de);
 			if (!applySynchro)

@@ -2015,12 +2015,12 @@ public class BackupRestoreManager {
 
 	}
 
-	Transaction startTransaction() throws DatabaseException {
+	Transaction startTransaction(boolean transactionToSynchronize) throws DatabaseException {
 		synchronized (this) {
 
 			if (!isReady())
 				return null;
-			int oldLength = 0;
+			int oldLength;
 			long oldLastFile;
 			if (fileTimeStamps.size() == 0)
 				throw new InternalError();
@@ -2036,7 +2036,7 @@ public class BackupRestoreManager {
 			//AtomicReference<RecordsIndex> index=new AtomicReference<>();
 			Reference<Long> firstTransactionID=new Reference<>((Long)null);
 			RandomOutputStream rfos = getFileForBackupIncrementOrCreateIt(fileTimeStamp, firstTransactionID/*, index*/);
-			return new Transaction(fileTimeStamp.get(), last, rfos, /*index.get(), */oldLastFile, oldLength, firstTransactionID.get());
+			return new Transaction(fileTimeStamp.get(), last, rfos, /*index.get(), */oldLastFile, oldLength, firstTransactionID.get(), transactionToSynchronize);
 		}
 
 	}
@@ -2064,10 +2064,11 @@ public class BackupRestoreManager {
 		private final int oldLength;
 		private final long oldLastFile;
 		private final Long firstTransactionID;
+		private boolean transactionToSynchronize;
 
 
 
-		Transaction(long fileTimeStamp, long lastTransactionUTC, RandomOutputStream out, /*RecordsIndex index, */long oldLastFile, int oldLength, Long firstTransactionID) throws DatabaseException {
+		Transaction(long fileTimeStamp, long lastTransactionUTC, RandomOutputStream out, /*RecordsIndex index, */long oldLastFile, int oldLength, Long firstTransactionID, boolean transactionToSynchronize) throws DatabaseException {
 			//this.index=index;
 			this.fileTimeStamp=fileTimeStamp;
 			this.lastTransactionUTC = lastTransactionUTC;
@@ -2075,6 +2076,7 @@ public class BackupRestoreManager {
 			this.oldLastFile=oldLastFile;
 			this.oldLength=oldLength;
 			this.firstTransactionID=firstTransactionID;
+			this.transactionToSynchronize = transactionToSynchronize;
 			transactionUTC=System.currentTimeMillis();
 			if (transactionUTC<lastTransactionUTC)
 				throw new InternalError(transactionUTC+";"+lastTransactionUTC);
@@ -2139,7 +2141,7 @@ public class BackupRestoreManager {
 
 				if (closed)
 					return;
-				saveTransactionQueue(out, nextTransactionReference, transactionUTC, firstTransactionID, transactionID/*, index*/);
+				saveTransactionQueue(out, nextTransactionReference, transactionUTC, firstTransactionID, transactionToSynchronize ?transactionID:null/*, index*/);
 
 				try {
 

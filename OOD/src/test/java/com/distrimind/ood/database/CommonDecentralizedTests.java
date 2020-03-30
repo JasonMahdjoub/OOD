@@ -328,7 +328,7 @@ public abstract class CommonDecentralizedTests {
 		}
 		public void receiveMessage(DatabaseWrapper.AskToDatabaseBackupCenterForSynchronization message)
 		{
-			//TODO complete
+			//TODO message
 		}
 		public void receiveMessage(CentralDatabaseBackupEvent message) throws IOException, DatabaseException {
 			if (message instanceof DatabaseWrapper.DatabaseBackupToIncorporateFromCentralDatabaseBackup)
@@ -879,7 +879,8 @@ public abstract class CommonDecentralizedTests {
 		{
 			changed=true;
 			CentralDatabaseBackupEvent event = db.getReceivedCentralDatabaseBackupEvents().remove(0);
-			if (event instanceof BigDatabaseEventToSend) {
+			//TODO complete
+			/*if (event instanceof BigDatabaseEventToSend) {
 				try (InputStreamGetter is = new InputStreamGetter() {
 
 					private RandomInputStream actual=null;
@@ -902,7 +903,7 @@ public abstract class CommonDecentralizedTests {
 				}
 			} else {
 				db.getDbwrapper().getSynchronizer().received(event);
-			}
+			}*/
 
 			db.dbwrapper.getSynchronizer().received(event);
 		}
