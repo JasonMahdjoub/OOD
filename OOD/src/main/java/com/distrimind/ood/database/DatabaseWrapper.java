@@ -55,9 +55,12 @@ import com.distrimind.util.harddrive.HardDriveDetect;
 import com.distrimind.util.harddrive.Partition;
 import com.distrimind.util.io.*;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Modifier;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.sql.*;
@@ -5124,5 +5127,39 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	{
 		return false;
 	}
+
+	static
+	{
+		initPreloadedClasses();
+	}
+
+	private static void initPreloadedClasses()
+	{
+		ArrayList<Class<? extends SecureExternalizableWithoutInnerSizeControl>> classes = new ArrayList<>(Arrays.asList(
+				(Class<? extends SecureExternalizableWithoutInnerSizeControl>)DatabaseBackupMetaData.class,
+				DatabaseBackupMetaData.TransactionMetaData.class,
+				DatabaseBackupMetaData.DatabaseBackupMetaPerFile.class,
+				DatabaseEventToSend.class,
+				DatabaseWrapper.TransactionsInterval.class,
+				DatabaseWrapper.DatabaseTransactionsIdentifiersToSynchronize.class,
+				DatabaseWrapper.DatabaseTransactionsIdentifiersToSynchronizeWithCentralDatabaseBackup.class,
+				LastIDCorrection.class,
+				LastIDCorrectionForCentralDatabaseBackup.class,
+				TransactionConfirmationEvents.class,
+				TransactionInIDConfirmationEventsWithCentralDatabaseBackupEvent.class,
+				TransactionInUTCConfirmationEventsWithCentralDatabaseBackupEvent.class,
+				DatabaseEventsToSynchronize.class,
+				HookAddRequest.class
+				));
+		for (Class<?> c : classes)
+			assert !Modifier.isAbstract(c.getModifiers()):""+c;
+
+		ArrayList<Class<? extends Enum<?>>> enums = new ArrayList<>(Arrays.asList(
+				DatabaseEventType.class,
+				TransactionIsolation.class));
+
+		SerializationTools.addPredefinedClasses(classes, enums);
+	}
+
 
 }

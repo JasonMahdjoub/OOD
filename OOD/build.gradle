@@ -139,12 +139,12 @@ allprojects {
         javadoc.options.addStringOption("html5", "-quiet")
 }
 
-idea {
+/*idea {
     project {
         jdkName = javaVersion
         languageLevel = javaVersion
     }
-}
+}*/
 
 
 
