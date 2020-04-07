@@ -1,4 +1,4 @@
-
+package com.distrimind.ood.database.messages;
 /*
 Copyright or © or Copr. Jason Mahdjoub (01/04/2013)
 
@@ -34,20 +34,15 @@ same conditions as regards security.
 The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
-package com.distrimind.ood.database;
 
-import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
-import com.distrimind.util.io.SecureExternalizable;
 
 /**
- * 
  * @author Jason Mahdjoub
  * @version 1.0
- * @since OOD 2.0
+ * @since OOS 3.0.0
  */
-public interface DatabaseEventToSend extends SecureExternalizable {
-	DecentralizedValue getHostDestination() throws DatabaseException;
+public interface MessageFromCentralDatabaseBackupEvent {
+	DecentralizedValue getHostDestination();
 
-	DecentralizedValue getHostSource() throws DatabaseException;
 }

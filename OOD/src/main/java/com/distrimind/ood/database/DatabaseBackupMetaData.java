@@ -50,7 +50,13 @@ public class DatabaseBackupMetaData implements Iterable<DatabaseBackupMetaData.D
 	public static final int MAX_BLOCK_CHAIN_LENGTH_IN_BYTES=80484736;
 	public static int MAX_INCREMENTAL_FILES=MAX_BLOCK_CHAIN_LENGTH_IN_BYTES/(44+64);
 	public static int MAX_TRANSACTIONS_NUMBER_PER_FILE=MAX_DATA_LENGTH_IN_BYTES/BackupRestoreManager.MIN_TRANSACTION_SIZE_IN_BYTES;
-	private List<DatabaseBackupMetaPerFile> metaDataPerFiles;
+	final List<DatabaseBackupMetaPerFile> metaDataPerFiles;
+	DatabaseBackupMetaData()
+	{
+		this.metaDataPerFiles = new ArrayList<>();
+	}
+
+
 
 	public DatabaseBackupMetaData(List<DatabaseBackupMetaPerFile> metaDataPerFiles) {
 		this.metaDataPerFiles = new ArrayList<>(metaDataPerFiles);
@@ -103,6 +109,7 @@ public class DatabaseBackupMetaData implements Iterable<DatabaseBackupMetaData.D
 		{
 			DatabaseBackupMetaPerFile m=new DatabaseBackupMetaPerFile();
 			m.readExternal(in);
+			metaDataPerFiles.add(m);
 		}
 		try
 		{
@@ -113,6 +120,23 @@ public class DatabaseBackupMetaData implements Iterable<DatabaseBackupMetaData.D
 			throw new MessageExternalizationException(Integrity.FAIL, e);
 		}
 	}
+
+	Long getLastUpdatedTransactionID()
+	{
+		if (metaDataPerFiles.size()==0)
+			return null;
+		List<TransactionMetaData> tmd=metaDataPerFiles.get(metaDataPerFiles.size()-1).transactionsMetaData;
+		return tmd.get(tmd.size()-1).transactionID;
+	}
+
+	Long getLastUpdatedTransactionUTC()
+	{
+		if (metaDataPerFiles.size()==0)
+			return null;
+		List<TransactionMetaData> tmd=metaDataPerFiles.get(metaDataPerFiles.size()-1).transactionsMetaData;
+		return tmd.get(tmd.size()-1).transactionUTC;
+	}
+
 
 	public static class DatabaseBackupMetaPerFile implements Comparable<DatabaseBackupMetaPerFile>, Iterable<TransactionMetaData>, SecureExternalizable
 	{

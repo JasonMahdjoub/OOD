@@ -39,6 +39,7 @@ package com.distrimind.ood.database;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import com.distrimind.ood.database.messages.DatabaseEventToSend;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.*;
 

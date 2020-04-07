@@ -1,4 +1,4 @@
-
+package com.distrimind.ood.database.messages;
 /*
 Copyright or © or Copr. Jason Mahdjoub (01/04/2013)
 
@@ -34,23 +34,48 @@ same conditions as regards security.
 The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
-package com.distrimind.ood.database;
 
-import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.ood.database.messages.DatabaseEventToSend;
+import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.io.SecuredObjectInputStream;
+import com.distrimind.util.io.SecuredObjectOutputStream;
+
+import java.io.IOException;
+import java.util.Map;
 
 /**
- * 
  * @author Jason Mahdjoub
  * @version 1.0
- * @since OOD 2.0
+ * @since OOD 3.0.0
  */
-public interface BigDatabaseEventToSend extends DatabaseEventToSend {
+public class DatabaseTransactionsIdentifiersToSynchronizeToCentralDatabaseBackup extends AbstractDatabaseTransactionsIdentifiersToSynchronize implements MessageToCentralDatabaseBackupEvent{
+	private long lastTransactionUTC;
+	@SuppressWarnings("unused")
+	private DatabaseTransactionsIdentifiersToSynchronizeToCentralDatabaseBackup() {
+	}
 
-	void importFromInputStream(DatabaseWrapper wrapper, final InputStreamGetter inputStream) throws DatabaseException;
+	public DatabaseTransactionsIdentifiersToSynchronizeToCentralDatabaseBackup(DecentralizedValue hostIDSource, Map<DecentralizedValue, Long> lastTransactionFieldsBetweenDistantHosts, long lastTransactionUTC) {
+		super(hostIDSource, lastTransactionFieldsBetweenDistantHosts);
+		this.lastTransactionUTC=lastTransactionUTC;
+	}
 
-	@SuppressWarnings("UnusedReturnValue")
-	boolean exportToOutputStream(DatabaseWrapper wrapper, final OutputStreamGetter outputStreamGetter)
-			throws DatabaseException;
+	public long getLastTransactionUTC() {
+		return lastTransactionUTC;
+	}
 
+	@Override
+	public int getInternalSerializedSize() {
+		return super.getInternalSerializedSize()+8;
+	}
+
+	@Override
+	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
+		super.writeExternal(out);
+		out.writeLong(lastTransactionUTC);
+	}
+
+	@Override
+	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
+		super.readExternal(in);
+		lastTransactionUTC=in.readLong();
+	}
 }

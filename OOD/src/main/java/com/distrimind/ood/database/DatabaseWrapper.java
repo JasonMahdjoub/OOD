@@ -46,8 +46,11 @@ import com.distrimind.ood.database.fieldaccessors.ByteTabObjectConverter;
 import com.distrimind.ood.database.fieldaccessors.DefaultByteTabObjectConverter;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
+import com.distrimind.ood.database.messages.CentralDatabaseBackupEvent;
+import com.distrimind.ood.database.messages.DatabaseEventToSend;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.FileTools;
+import com.distrimind.util.Reference;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.SecureRandomType;
 import com.distrimind.util.harddrive.Disk;
@@ -122,8 +125,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	private volatile AbstractSecureRandom randomForKeys;
 	private final boolean alwaysDeconectAfterOnTransaction;
 	private static final int MAX_TRANSACTIONS_TO_SYNCHRONIZE_AT_THE_SAME_TIME=1000000;
-	static final int MAX_DISTANT_PEERS=Short.MAX_VALUE;
-	static final int MAX_PACKAGE_TO_SYNCHRONIZE=Short.MAX_VALUE;
+	public static final int MAX_DISTANT_PEERS=Short.MAX_VALUE;
+	public static final int MAX_PACKAGE_TO_SYNCHRONIZE=Short.MAX_VALUE;
 
 
 
@@ -1863,127 +1866,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 	}
 
-	public static class DatabaseTransactionsIdentifiersToSynchronizeWithCentralDatabaseBackup extends AbstractDatabaseTransactionsIdentifiersToSynchronize implements CentralDatabaseBackupEvent
-	{
-
-		@SuppressWarnings("unused")
-		DatabaseTransactionsIdentifiersToSynchronizeWithCentralDatabaseBackup() {
-		}
-
-		DatabaseTransactionsIdentifiersToSynchronizeWithCentralDatabaseBackup(DecentralizedValue hostIDSource, Map<DecentralizedValue, Long> lastTransactionFieldsBetweenDistantHosts) {
-			super(hostIDSource, lastTransactionFieldsBetweenDistantHosts);
-		}
-	}
-
-	public static abstract class AbstractDatabaseTransactionsIdentifiersToSynchronize extends DatabaseEvent implements SecureExternalizable
-			{
-
-		protected DecentralizedValue hostIDSource;
-		Map<DecentralizedValue, Long> lastTransactionFieldsBetweenDistantHosts;
-
-		@SuppressWarnings("unused")
-		AbstractDatabaseTransactionsIdentifiersToSynchronize()
-		{
-
-		}
-
-		@Override
-		public int getInternalSerializedSize() {
-			int res=4+lastTransactionFieldsBetweenDistantHosts.size()*8+SerializationTools.getInternalSize(hostIDSource,0);
-			for (DecentralizedValue dv: lastTransactionFieldsBetweenDistantHosts.keySet())
-				res+=SerializationTools.getInternalSize(dv, 0);
-			return res;
-		}
-
-		@Override
-		public void writeExternal(SecuredObjectOutputStream out) throws IOException {
-			out.writeObject(hostIDSource, false);
-			out.writeInt(lastTransactionFieldsBetweenDistantHosts.size());
-			for (Map.Entry<DecentralizedValue, Long> e : lastTransactionFieldsBetweenDistantHosts.entrySet())
-			{
-				out.writeObject(e.getKey(), false);
-				out.writeLong(e.getValue());
-			}
-		}
-
-		@Override
-		public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
-			hostIDSource=in.readObject(false, DecentralizedValue.class);
-			int s=in.readInt();
-			if (s<0 || s>MAX_DISTANT_PEERS)
-				throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN, ""+s);
-			lastTransactionFieldsBetweenDistantHosts=new HashMap<>();
-			for (int i=0;i<s;i++)
-			{
-				DecentralizedValue dv=in.readObject(false, DecentralizedValue.class);
-				lastTransactionFieldsBetweenDistantHosts.put(dv, in.readLong());
-			}
-		}
 
 
-		AbstractDatabaseTransactionsIdentifiersToSynchronize(DecentralizedValue hostIDSource,
-													 Map<DecentralizedValue, Long> lastTransactionFieldsBetweenDistantHosts) {
-			this.hostIDSource = hostIDSource;
-			this.lastTransactionFieldsBetweenDistantHosts = lastTransactionFieldsBetweenDistantHosts;
-		}
-
-
-
-		public DecentralizedValue getHostSource() {
-			return hostIDSource;
-		}
-
-		public Map<DecentralizedValue, Long> getLastDistantTransactionIdentifiers() {
-			return lastTransactionFieldsBetweenDistantHosts;
-		}
-
-
-	}
-
-
-
-	public static class DatabaseTransactionsIdentifiersToSynchronize extends AbstractDatabaseTransactionsIdentifiersToSynchronize implements DatabaseEventToSend {
-
-		protected DecentralizedValue hostIDDestination;
-
-		@SuppressWarnings("unused")
-		DatabaseTransactionsIdentifiersToSynchronize()
-		{
-
-		}
-
-		@Override
-		public int getInternalSerializedSize() {
-			return super.getInternalSerializedSize()+SerializationTools.getInternalSize(hostIDDestination, 0);
-		}
-
-		@Override
-		public void writeExternal(SecuredObjectOutputStream out) throws IOException {
-			super.writeExternal(out);
-			out.writeObject(hostIDDestination, false);
-		}
-
-		@Override
-		public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
-			super.readExternal(in);
-			hostIDDestination=in.readObject(false, DecentralizedValue.class);
-		}
-
-
-		DatabaseTransactionsIdentifiersToSynchronize(DecentralizedValue hostIDSource,
-													 DecentralizedValue hostIDDestination,
-				Map<DecentralizedValue, Long> lastTransactionFieldsBetweenDistantHosts) {
-			super(hostIDSource, lastTransactionFieldsBetweenDistantHosts);
-			this.hostIDDestination = hostIDDestination;
-		}
-
-		@Override
-		public DecentralizedValue getHostDestination() {
-			return hostIDDestination;
-		}
-
-
-	}
 
 	public static abstract class AbstractTransactionConfirmationEvents extends DatabaseEvent implements SecureExternalizable{
 
@@ -2209,55 +2093,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 	}
 
-	public static class AskToDatabaseBackupCenterForSynchronization extends DatabaseEvent implements CentralDatabaseBackupEvent, DatabaseEventToSend
-	{
-		private DecentralizedValue hostSource;
-		private DecentralizedValue hostDestination;
-		private boolean synchronizationActivated;
-
-		@SuppressWarnings("unused")
-		private AskToDatabaseBackupCenterForSynchronization() {
-		}
-
-		AskToDatabaseBackupCenterForSynchronization(DecentralizedValue hostSource, DecentralizedValue hostDestination, boolean synchronizationActivated) {
-			this.hostSource=hostSource;
-			this.hostDestination=hostDestination;
-			this.synchronizationActivated=synchronizationActivated;
-		}
-
-		public boolean isSynchronizationActivated() {
-			return synchronizationActivated;
-		}
-
-		@Override
-		public DecentralizedValue getHostDestination() {
-			return hostDestination;
-		}
-
-		@Override
-		public DecentralizedValue getHostSource() {
-			return hostSource;
-		}
-
-		@Override
-		public int getInternalSerializedSize() {
-			return 1+SerializationTools.getInternalSize((SecureExternalizable)hostSource)+SerializationTools.getInternalSize((SecureExternalizable)hostDestination);
-		}
-
-		@Override
-		public void writeExternal(SecuredObjectOutputStream out) throws IOException {
-			out.writeBoolean(synchronizationActivated);
-			out.writeObject(hostSource, false);
-			out.writeObject(hostDestination, false);
-		}
-
-		@Override
-		public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
-			synchronizationActivated=in.readBoolean();
-			hostSource=in.readObject(false, DecentralizedValue.class);
-			hostDestination=in.readObject(false, DecentralizedValue.class);
-		}
-	}
 
 
 	public static class DatabaseBackupToIncorporateFromCentralDatabaseBackup extends AbstractDatabaseEventsToSynchronize implements Comparable<DatabaseBackupToIncorporateFromCentralDatabaseBackup>, CentralDatabaseBackupEvent {
@@ -3406,7 +3241,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							for ( final Map.Entry<Package, TransactionPerDatabase> e : temporaryTransactions.entrySet()) {
 								final TransactionPerDatabase t=e.getValue();
 								if (t.eventsNumber.get() > 0) {
-									final AtomicReference<DatabaseTransactionEventsTable.Record> finalTR = new AtomicReference<>(
+									final Reference<DatabaseTransactionEventsTable.Record> finalTR = new Reference<>(
 											null);
 									/*
 									 * final ArrayList<AbstractDecentralizedID> excludedHooks=new ArrayList<>();

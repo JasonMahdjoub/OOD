@@ -1,4 +1,4 @@
-
+package com.distrimind.ood.database.messages;
 /*
 Copyright or © or Copr. Jason Mahdjoub (01/04/2013)
 
@@ -34,23 +34,55 @@ same conditions as regards security.
 The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
-package com.distrimind.ood.database;
 
-import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.ood.database.messages.DatabaseEventToSend;
+import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.io.SecuredObjectInputStream;
+import com.distrimind.util.io.SecuredObjectOutputStream;
+import com.distrimind.util.io.SerializationTools;
+
+import java.io.IOException;
+import java.util.Map;
 
 /**
- * 
  * @author Jason Mahdjoub
  * @version 1.0
- * @since OOD 2.0
+ * @since OOD 3.0.0
  */
-public interface BigDatabaseEventToSend extends DatabaseEventToSend {
+public class DatabaseTransactionsIdentifiersToSynchronize extends AbstractDatabaseTransactionsIdentifiersToSynchronize implements P2PDatabaseEventToSend {
+	protected DecentralizedValue hostIDDestination;
 
-	void importFromInputStream(DatabaseWrapper wrapper, final InputStreamGetter inputStream) throws DatabaseException;
 
-	@SuppressWarnings("UnusedReturnValue")
-	boolean exportToOutputStream(DatabaseWrapper wrapper, final OutputStreamGetter outputStreamGetter)
-			throws DatabaseException;
+	@Override
+	public int getInternalSerializedSize() {
+		return super.getInternalSerializedSize()+ SerializationTools.getInternalSize(hostIDDestination, 0);
+	}
 
+	@Override
+	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
+		super.writeExternal(out);
+		out.writeObject(hostIDDestination, false);
+	}
+
+	@Override
+	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
+		super.readExternal(in);
+		hostIDDestination=in.readObject(false, DecentralizedValue.class);
+	}
+
+
+	@SuppressWarnings("unused")
+	private DatabaseTransactionsIdentifiersToSynchronize() {
+	}
+
+	public DatabaseTransactionsIdentifiersToSynchronize(DecentralizedValue hostIDSource,
+												 DecentralizedValue hostIDDestination,
+												 Map<DecentralizedValue, Long> lastTransactionFieldsBetweenDistantHosts) {
+		super(hostIDSource, lastTransactionFieldsBetweenDistantHosts);
+		this.hostIDDestination = hostIDDestination;
+	}
+
+	@Override
+	public DecentralizedValue getHostDestination() {
+		return hostIDDestination;
+	}
 }
