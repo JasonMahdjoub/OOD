@@ -1,4 +1,4 @@
 dependencies {
-    testImplementation 'org.testng:testng:6.14.3'
+    testImplementation 'org.testng:testng:7.1.0'
     api(group: 'com.distrimind.util', name: 'Utils', version: '5.2.0-Stable')
 }
