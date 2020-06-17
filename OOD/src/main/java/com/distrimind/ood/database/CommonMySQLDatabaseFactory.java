@@ -108,6 +108,7 @@ public abstract class CommonMySQLDatabaseFactory<T extends DatabaseWrapper> exte
 	 * @param additionalParams the personalized sql params for JDBC connection
 	 */
 	public CommonMySQLDatabaseFactory(String urlLocation, int port, String databaseName, String user, String password, String additionalParams) {
+		this(urlLocation, port, databaseName, user, password);
 		if (additionalParams ==null)
 			throw new NullPointerException();
 		this.additionalParams = additionalParams;

@@ -4464,7 +4464,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	}
 
-	public abstract String getAutoIncrementPart(long startWith);
+	public abstract String getSequenceQueryCreation(String sqlTableName, String sqlFieldName, long startWith);
+
+	public abstract String getAutoIncrementPart(String sqlTableName, String sqlFieldName, long startWith);
 
 	/**
 	 * Associate a Sql database with a given database configuration. Every
@@ -4606,10 +4608,17 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					 */
 					checkAutoIncrementTable();
 					if (!doesTableExists(ROW_PROPERTIES_OF_TABLES)) {
+						String seqQuery=getSequenceQueryCreation(ROW_PROPERTIES_OF_TABLES,"PACKAGE_NAME", 1);
+						if (seqQuery!=null && seqQuery.length()>0) {
+							Statement st = getConnectionAssociatedWithCurrentThread().getConnection()
+									.createStatement();
+							st.executeUpdate(seqQuery);
+							st.close();
+						}
 						Statement st = getConnectionAssociatedWithCurrentThread().getConnection()
 								.createStatement();
 						st.executeUpdate("CREATE TABLE " + ROW_PROPERTIES_OF_TABLES
-								+ " (TABLE_NAME VARCHAR(512), TABLE_VERSION INTEGER, PACKAGE_NAME VARCHAR(512), TABLE_ID INTEGER "+getAutoIncrementPart(1)
+								+ " (TABLE_NAME VARCHAR(512), TABLE_VERSION INTEGER, PACKAGE_NAME VARCHAR(512), TABLE_ID INTEGER "+getAutoIncrementPart(ROW_PROPERTIES_OF_TABLES,"PACKAGE_NAME", 1)
 								//+", CONSTRAINT TABLE_NAME_PK PRIMARY KEY(TABLE_NAME)"
 								+", CONSTRAINT TABLE_ID_PK PRIMARY KEY(TABLE_ID, TABLE_VERSION))"+getPostCreateTable(1L)
 								+ getSqlComma());
@@ -4939,7 +4948,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * @param _directory
 	 *            the database directory
 	 */
-	static void deleteDatabaseFiles(File _directory) {
+	public static void deleteDatabaseFiles(File _directory) {
 		if (_directory.exists() && _directory.isDirectory()) {
 			FileTools.deleteDirectory(_directory);
 		}

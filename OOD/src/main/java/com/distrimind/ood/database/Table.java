@@ -836,6 +836,51 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					}, true);
 			} else {
 				if (createDatabaseIfNecessaryAndCheckIt) {
+					for (FieldAccessor f : fields)
+					{
+						if (!f.isAutoPrimaryKey())
+							continue;
+						final String seqQuery=sql_connection.getSequenceQueryCreation(getSqlTableName(),f.getSqlFieldName(), f.getStartValue());
+						if (seqQuery!=null && seqQuery.length()>0) {
+							sql_connection.runTransaction(new Transaction() {
+															  @Override
+															  public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
+																try {
+																	Statement st = sql_connection.getConnectionAssociatedWithCurrentThread().getConnection()
+																		.createStatement();
+																	st.executeUpdate(seqQuery);
+																	st.close();
+																	return null;
+																}
+																catch (SQLException e)
+																{
+																	throw DatabaseException.getDatabaseException(e);
+																}
+															  }
+
+															  @Override
+															  public TransactionIsolation getTransactionIsolation() {
+																  return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+															  }
+
+															  @Override
+															  public boolean doesWriteData() {
+																  return true;
+															  }
+
+															  @Override
+															  public void initOrReset()  {
+
+															  }
+														  }, true);
+
+
+
+						}
+						else
+							break;
+					}
+
 					String cachedKeyWord="";
 					if (sql_connection.supportCache())
 					{
@@ -2261,7 +2306,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				if (field.isAutoPrimaryKey() && !field.isManualAutoPrimaryKey()) {
 					res.append(" ");
 					autoIncrementStart.set(field.getStartValue());
-					res.append(getDatabaseWrapper().getAutoIncrementPart(field.getStartValue()));
+					res.append(getDatabaseWrapper().getAutoIncrementPart(this.getSqlTableName(), field.getSqlFieldName(), field.getStartValue()));
 				}
 				res .append(sf.not_null ? sqlNotNull : sqlNull);
 			}

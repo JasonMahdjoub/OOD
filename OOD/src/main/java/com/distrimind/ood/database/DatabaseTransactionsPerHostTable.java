@@ -926,8 +926,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 
 		try  {
-			if (ois.skip(8)!=8)
-				throw new IOException();
+			ois.skipNBytes(8);
 
 			if (!ois.readBoolean())
 				return null;
@@ -940,8 +939,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 				ois.seek(ois.readInt());
 			}
 			else
-				if (ois.skip(4)!=4)
-					throw new IOException();
+				ois.skipNBytes(4);
 			boolean findOneTransactionWithID=false;
 			while(ois.available()>0) {
 				int nextTransactionPosition = ois.readInt();
@@ -958,8 +956,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 					continue;
 				}
 				findOneTransactionWithID=true;
-				if (ois.skip(8)!=8)
-					throw new IOException();
+				ois.skipNBytes(8);
 				final DatabaseTransactionEventsTable.Record dte=new DatabaseTransactionEventsTable.Record(transactionID, databasePackage);
 				List<Class<? extends Table<?>>> classes=getDatabaseWrapper().getDatabaseConfiguration(databasePackage).getSortedTableClasses(getDatabaseWrapper());
 				final ArrayList<Table<?>> tables=new ArrayList<>(classes.size());

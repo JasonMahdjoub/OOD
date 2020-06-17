@@ -2190,4 +2190,22 @@ public class BackupRestoreManager {
 		void fileListChanged();
 	}
 
+	public static class InputStream extends RandomInputStream
+	{
+
+	}
+
+	public static class ExportMetaData extends SecureExternalizable
+	{
+		private long timeStampUTC;
+		private byte[] encodedBackupRestoreMetaData;
+
+		public ExportMetaData(long timeStampUTC, DatabaseBackupMetaData databaseBackupMetaData) {
+			this.timeStampUTC = timeStampUTC;
+
+			this.encodedBackupRestoreMetaData = encodedBackupRestoreMetaData;
+		}
+	}
+
+
 }
