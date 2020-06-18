@@ -48,7 +48,19 @@ import java.lang.reflect.Method;
 class DatabaseWrapperAccessor {
 	private static final Method m_get_big_decimal_type;
 	private static final Method m_get_big_integer_type;
+	private static final Method m_get_binary_base_word;
 
+
+	static String getBinaryBaseWord(DatabaseWrapper wrapper) {
+		try {
+			return (String) invoke(m_get_binary_base_word, wrapper);
+		} catch (InvocationTargetException e) {
+			System.err.println("Unexpected error :");
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		return null;
+	}
 	static String getBigDecimalType(DatabaseWrapper wrapper, long limit) {
 		try {
 			return (String) invoke(m_get_big_decimal_type, wrapper, limit);
@@ -76,6 +88,7 @@ class DatabaseWrapperAccessor {
 	static {
 		m_get_big_decimal_type = getMethod(DatabaseWrapper.class, "getBigDecimalType", long.class);
 		m_get_big_integer_type = getMethod(DatabaseWrapper.class, "getBigIntegerType", long.class);
+		m_get_binary_base_word = getMethod(DatabaseWrapper.class, "getBinaryBaseWord");
 
 	}
 

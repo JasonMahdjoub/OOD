@@ -62,7 +62,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	private static Object blobStateNewValue=null;
 	protected int pageSizeBytes;
 	protected int cacheSizeBytes;
-	private boolean android;
+	private final boolean android;
 	private boolean loadedOneTime=false;
 	private boolean autoPrimaryKeyIndexStartFromOne=false;
 

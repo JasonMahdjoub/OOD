@@ -904,7 +904,7 @@ public abstract class FieldAccessor {
 				st.setDouble(index, (Double)p);
 			else if (p instanceof BigDecimal) {
 				String t=DatabaseWrapperAccessor.getBigDecimalType(sql_connection, 128);
-				if (t.contains("BINARY"))
+				if (t.contains(DatabaseWrapperAccessor.getBinaryBaseWord(sql_connection)))
 					st.setBytes(index, BigDecimalFieldAccessor.bigDecimalToBytes((BigDecimal)p));
 				else if (t.contains("CHAR"))
 					st.setString(index, p.toString());
@@ -913,7 +913,7 @@ public abstract class FieldAccessor {
 			}
 			else if (p instanceof BigInteger) {
 				String t=DatabaseWrapperAccessor.getBigIntegerType(sql_connection, 128);
-				if (t.contains("BINARY") || t.contains("BLOB"))
+				if (t.contains(DatabaseWrapperAccessor.getBinaryBaseWord(sql_connection)) || t.contains(DatabaseWrapperAccessor.getBlobBaseWord(sql_connection)))
 					st.setBytes(index, ((BigInteger)p).toByteArray());
 				else if (t.contains("CHAR"))
 					st.setString(index, p.toString());

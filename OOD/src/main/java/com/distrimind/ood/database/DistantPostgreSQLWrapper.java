@@ -41,8 +41,6 @@ import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 
 import java.io.File;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.sql.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
@@ -306,15 +304,6 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 	public String getSequenceQueryCreation(String sqlTableName, String sqlFieldName, long startWith)
 	{
 		return "CREATE SEQUENCE "+getSequenceName(sqlTableName, sqlFieldName)+" START WITH "+startWith;
-	}
-
-	@Override
-	protected String getPostCreateTable(Long autoIncrementStart) {
-		String cs=charset==null?"":" DEFAULT CHARSET="+charset;
-		if (autoIncrementStart==null)
-			return " ENGINE=InnoDB"+cs;
-		else
-			return " ENGINE=InnoDB AUTO_INCREMENT="+autoIncrementStart+cs;
 	}
 
 	@Override
@@ -583,28 +572,9 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 		return ";";
 	}
 
-	private static int getMaxCharSize(String charset)
-	{
-		switch (charset)
-		{
-			case "dec8": case "cp850": case "hp8": case"koi8r": case "latin1": case "latin2": case "swe7": case "ascii":
-			case "hebrew": case "tis620": case "koi8u": case "greek": case "cp1250": case "latin5": case "armscii8":
-			case "cp866": case "keybcs2":case "macce":case "macroman":case "cp852":case "latin7": case "cp1251":case "cp1256":
-			case "cp1257":case "binary":case "geostd8":
-			return 1;
-			case "big5":case "sjis":case "euckr": case "gb2312": case "gbk": case "ucs2":case "cp932":
-			return 2;
-			case "ujis": case "utf8":case "eucjpms":
-			return 3;
-			case "utf8mb4":case "utf16":case "utf16le": case "utf32":case "gb18030":
-			return 4;
-		}
-		return 4;
-	}
-
 	@Override
 	protected boolean supportMultipleAutoPrimaryKeys() {
-		return false;
+		return true;
 	}
 
 	@Override
@@ -616,7 +586,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 
 	@Override
 	protected int getVarCharLimit() {
-		return 65535/maxCharSize;
+		return 65535;
 	}
 
 	@Override
@@ -626,8 +596,29 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 
 	@Override
 	protected boolean isLongVarBinarySupported() {
-		return false;
+		return true;
 	}
+
+
+	protected String getBinaryBaseWord()
+	{
+		return "BYTEA";
+	}
+	protected String getBlobBaseWord()
+	{
+		return "BYTEA";
+	}
+
+	protected String getVarBinaryType(long limit)
+	{
+		return "BYTEA";
+	}
+
+	protected String getLongVarBinaryType(long limit)
+	{
+		return "BYTEA";
+	}
+
 
 	@Override
 	protected String getLimitSqlPart(long startPosition, long rowLimit)
@@ -658,35 +649,23 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 
 	@Override
 	protected String getByteType() {
-		return "TINYINT";
+		return "SMALLINT";
 	}
 
 	@Override
 	protected String getIntType() {
-		return "INT";
+		return "INTEGER";
 	}
 
 	@Override
 	protected String getBlobType(long limit) {
-		if (limit<=255)
-			return "TINYBLOB";
-		else if (limit<=65535)
-			return "BLOB";
-		else if (limit<=16777215)
-			return "MEDIUMBLOB";
-		return "LONGBLOB";
+		return "BYTEA";
 	}
 
 	@Override
 	protected String getTextType(long limit)
 	{
-		if (limit<=255)
-			return "TINYTEXT";
-		else if (limit<=65535)
-			return "TEXT";
-		else if (limit<=16777215)
-			return "MEDIUMTEXT";
-		return "LONGTEXT";
+		return "TEXT";
 	}
 
 	@Override
@@ -697,12 +676,12 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 
 	@Override
 	protected String getFloatType() {
-		return "FLOAT";
+		return "DOUBLE PRECISION";
 	}
 
 	@Override
 	protected String getDoubleType() {
-		return "DOUBLE";
+		return "DOUBLE PRECISION";
 	}
 
 	@Override
@@ -733,7 +712,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 	@Override
 	protected String getDateTimeType()
 	{
-		return "DATETIME(3)";
+		return "TIMESTAMP";
 	}
 
 
@@ -755,36 +734,10 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 		return "ON DELETE CASCADE";
 	}
 
-	private static final Constructor<? extends Blob> blobConstructor;
-	static
-	{
-		Constructor<? extends Blob> bc=null;
-		try {
-			//noinspection unchecked
-			bc=(Constructor<? extends Blob>)Class.forName("com.mysql.cj.jdbc.Blob").getDeclaredConstructor(byte[].class, Class.forName("com.mysql.cj.exceptions.ExceptionInterceptor"));
-		} catch (NoSuchMethodException | ClassNotFoundException e) {
-			e.printStackTrace();
-			System.exit(-1);
-		}
-		blobConstructor=bc;
-	}
 
 	@Override
-	protected Blob getBlob(byte[] bytes) throws SQLException {
-		try {
-			return blobConstructor.newInstance(bytes, null);
-		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException e) {
-			throw new SQLException(e);
-		}
-		catch(InvocationTargetException e)
-		{
-			Throwable t=e.getCause();
-			if (t instanceof SQLException)
-				throw (SQLException)t;
-			else
-				throw new SQLException(t);
-		}
-
+	protected Blob getBlob(byte[] bytes) {
+		return null;
 	}
 
 	@Override

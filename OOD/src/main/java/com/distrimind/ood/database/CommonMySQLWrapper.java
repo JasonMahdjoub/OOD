@@ -223,8 +223,13 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 
 
 	@Override
-	public String getAutoIncrementPart(long startWith) {
+	protected String getAutoIncrementPart(String sqlTableName, String sqlFieldName, long startWith) {
 		return "AUTO_INCREMENT";
+	}
+
+	protected String getSequenceQueryCreation(String sqlTableName, String sqlFieldName, long startWith)
+	{
+		return null;
 	}
 
 	@Override
@@ -541,6 +546,24 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 	@Override
 	protected boolean isVarBinarySupported() {
 		return true;
+	}
+	protected String getBinaryBaseWord()
+	{
+		return "BINARY";
+	}
+	protected String getBlobBaseWord()
+	{
+		return "BLOB";
+	}
+
+	protected String getVarBinaryType(long limit)
+	{
+		return "VARBINARY("+limit+")";
+	}
+
+	protected String getLongVarBinaryType(long limit)
+	{
+		return null;
 	}
 
 	@Override

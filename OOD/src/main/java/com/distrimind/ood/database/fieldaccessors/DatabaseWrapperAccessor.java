@@ -58,6 +58,10 @@ class DatabaseWrapperAccessor {
 	private static final Method m_get_byte_type;
 	private static final Method m_is_var_binary_supported;
 	private static final Method m_is_long_var_binary_supported;
+	private static final Method m_get_blob_base_word;
+	private static final Method m_get_binary_base_word;
+	private static final Method m_get_varbinary_type;
+	private static final Method m_get_longvarbinary_type;
 	private static final Method m_get_blob;
 	private static final Method m_get_double_type;
 	private static final Method m_get_float_type;
@@ -277,6 +281,48 @@ class DatabaseWrapperAccessor {
 		return false;
 	}
 
+	static String getBlobBaseWord(DatabaseWrapper wrapper) {
+		try {
+			return (String) invoke(m_get_blob_base_word, wrapper);
+		} catch (InvocationTargetException e) {
+			System.err.println("Unexpected error :");
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		return null;
+	}
+
+	static String getBinaryBaseWord(DatabaseWrapper wrapper) {
+		try {
+			return (String) invoke(m_get_binary_base_word, wrapper);
+		} catch (InvocationTargetException e) {
+			System.err.println("Unexpected error :");
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		return null;
+	}
+	static String getVarBinaryType(DatabaseWrapper wrapper, long limit) {
+		try {
+			return (String) invoke(m_get_varbinary_type, wrapper, limit);
+		} catch (InvocationTargetException e) {
+			System.err.println("Unexpected error :");
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		return null;
+	}
+	static String getLongVarBinaryType(DatabaseWrapper wrapper, long limit) {
+		try {
+			return (String) invoke(m_get_longvarbinary_type, wrapper, limit);
+		} catch (InvocationTargetException e) {
+			System.err.println("Unexpected error :");
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		return null;
+	}
+
 	static Blob getBlob(DatabaseWrapper wrapper, byte[] tab) throws SQLException {
 		try {
 			return (Blob) invoke(m_get_blob, wrapper, (Object) tab);
@@ -312,12 +358,18 @@ class DatabaseWrapperAccessor {
 		return null;
 	}
 
+
+
 	static {
 		m_get_big_decimal_type = getMethod(DatabaseWrapper.class, "getBigDecimalType", long.class);
 		m_get_big_integer_type = getMethod(DatabaseWrapper.class, "getBigIntegerType", long.class);
 		m_get_byte_type = getMethod(DatabaseWrapper.class, "getByteType");
 		m_is_var_binary_supported = getMethod(DatabaseWrapper.class, "isVarBinarySupported");
 		m_is_long_var_binary_supported = getMethod(DatabaseWrapper.class, "isLongVarBinarySupported");
+		m_get_blob_base_word = getMethod(DatabaseWrapper.class, "getBlobBaseWord");
+		m_get_binary_base_word = getMethod(DatabaseWrapper.class, "getBinaryBaseWord");
+		m_get_varbinary_type = getMethod(DatabaseWrapper.class, "getVarBinaryType", long.class);
+		m_get_longvarbinary_type = getMethod(DatabaseWrapper.class, "getLongVarBinaryType", long.class);
 		m_get_blob = getMethod(DatabaseWrapper.class, "getBlob", byte[].class);
 		m_get_double_type = getMethod(DatabaseWrapper.class, "getDoubleType");
 		m_get_float_type = getMethod(DatabaseWrapper.class, "getFloatType");
@@ -380,5 +432,6 @@ class DatabaseWrapperAccessor {
 			return null;
 		}
 	}
+
 
 }

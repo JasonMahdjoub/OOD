@@ -83,7 +83,7 @@ public class AbstractDecentralizedIDFieldAccessor extends FieldAccessor {
 
 		sql_fields = new SqlField[1];
 		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(),
-				Objects.requireNonNull(DatabaseWrapperAccessor.isVarBinarySupported(sql_connection) ? "VARBINARY("+l+")"
+				Objects.requireNonNull(DatabaseWrapperAccessor.isVarBinarySupported(sql_connection) ? DatabaseWrapperAccessor.getVarBinaryType(_sql_connection, l)
 						: DatabaseWrapperAccessor.getBigIntegerType(sql_connection, l)),
 				null, null, isNotNull());
 		isVarBinary = DatabaseWrapperAccessor.isVarBinarySupported(sql_connection);

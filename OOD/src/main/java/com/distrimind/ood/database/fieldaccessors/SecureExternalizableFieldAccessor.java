@@ -70,6 +70,7 @@ import com.distrimind.util.io.RandomOutputStream;
 public class SecureExternalizableFieldAccessor extends FieldAccessor {
 	protected final SqlField[] sql_fields;
 	protected Method compareTo_method;
+	private final String blobBaseName;
 
 	protected SecureExternalizableFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection,
 												Field _field, String parentFieldName, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
@@ -77,6 +78,7 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 		if (!Serializable.class.isAssignableFrom(field.getType()))
 			throw new FieldDatabaseException("The given field " + field.getName() + " of type "
 					+ field.getType().getName() + " must be a serializable field.");
+		this.blobBaseName=DatabaseWrapperAccessor.getBlobBaseWord(_sql_connection);
 		sql_fields = new SqlField[1];
 		long l=getLimit();
 		if (l<=0)
@@ -153,7 +155,7 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 			throws DatabaseException {
 		setValue(_class_instance, _field_instance);
 		try {
-			if (DatabaseWrapperAccessor.getBlobType(sql_connection, getLimit()).contains("BLOB")) {
+			if (DatabaseWrapperAccessor.getBlobType(sql_connection, getLimit()).contains(blobBaseName)) {
 				try (RandomByteArrayOutputStream os = new RandomByteArrayOutputStream()) {
 					serialize(os, _class_instance);
 					// os.writeObject(field.get(_class_instance));
@@ -175,7 +177,7 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 	protected void updateResultSetValue(Object _class_instance, ResultSet _result_set, SqlFieldTranslation _sft)
 			throws DatabaseException {
 		try {
-			if (DatabaseWrapperAccessor.getBlobType(sql_connection, getLimit()).contains("BLOB")) {
+			if (DatabaseWrapperAccessor.getBlobType(sql_connection, getLimit()).contains(blobBaseName)) {
 				try (RandomByteArrayOutputStream os = new RandomByteArrayOutputStream()) {
 					serialize(os, _class_instance);
 					// os.writeObject(field.get(_class_instance));
@@ -246,7 +248,7 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 	@Override
 	public void getValue(PreparedStatement _prepared_statement, int _field_start, Object o) throws DatabaseException {
 		try {
-			if (DatabaseWrapperAccessor.getBlobType(sql_connection, getLimit()).contains("BLOB")) {
+			if (DatabaseWrapperAccessor.getBlobType(sql_connection, getLimit()).contains(blobBaseName)) {
 				try (RandomByteArrayOutputStream baos = new RandomByteArrayOutputStream()) {
 					serializeObject(baos, o);
 					// os.writeObject(o);
@@ -270,7 +272,7 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 	@Override
 	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
 		SqlFieldInstance[] res = new SqlFieldInstance[1];
-		if (DatabaseWrapperAccessor.getBlobType(sql_connection, getLimit()).contains("BLOB")) {
+		if (DatabaseWrapperAccessor.getBlobType(sql_connection, getLimit()).contains(blobBaseName)) {
 			try (RandomByteArrayOutputStream baos = new RandomByteArrayOutputStream()) {
 				this.serialize(baos, _instance);
 				res[0] = new SqlFieldInstance(sql_fields[0], baos.getBytes());

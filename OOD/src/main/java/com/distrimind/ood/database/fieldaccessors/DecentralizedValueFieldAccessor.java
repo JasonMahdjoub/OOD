@@ -88,7 +88,7 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 
 		}
 		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(),
-				Objects.requireNonNull(DatabaseWrapperAccessor.isVarBinarySupported(sql_connection) ? "VARBINARY(" + limit + ")"
+				Objects.requireNonNull(DatabaseWrapperAccessor.isVarBinarySupported(sql_connection) ? DatabaseWrapperAccessor.getVarBinaryType(_sql_connection, limit)
 						: DatabaseWrapperAccessor.getBigIntegerType(sql_connection, limit)),
 				null, null, isNotNull());
 		isVarBinary = DatabaseWrapperAccessor.isVarBinarySupported(sql_connection);

@@ -86,9 +86,9 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 		}
 		else if (l <= ByteTabFieldAccessor.shortTabSizeLimit) {
 			if (DatabaseWrapperAccessor.isVarBinarySupported(sql_connection))
-				type = "VARBINARY(" + l + ")";
+				type = DatabaseWrapperAccessor.getVarBinaryType(_sql_connection, l);
 			else if (DatabaseWrapperAccessor.isLongVarBinarySupported(sql_connection))
-				type = "LONGVARBINARY(" + l + ")";
+				type = DatabaseWrapperAccessor.getLongVarBinaryType(_sql_connection, l);
 			else
 			{
 				isBigInteger=true;
@@ -96,14 +96,25 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 			}
 		} else {
 			if (DatabaseWrapperAccessor.isLongVarBinarySupported(sql_connection))
-				type = "LONGVARBINARY(" + l + ")";
+				type = DatabaseWrapperAccessor.getLongVarBinaryType(_sql_connection, l);
 			else
 				type=DatabaseWrapperAccessor.getBlobType(sql_connection, l);
 		}
 		assert type != null;
 		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(), type, null, null, isNotNull());
-
-		isVarBinary = type.startsWith("VARBINARY") || type.startsWith("LONGVARBINARY");
+		String vb=DatabaseWrapperAccessor.getVarBinaryType(_sql_connection, 0);
+		String lvb=DatabaseWrapperAccessor.getLongVarBinaryType(_sql_connection, 0);
+		if (vb!=null) {
+			int i = vb.indexOf("(");
+			if (i > 0)
+				vb = vb.substring(0, i);
+		}
+		if (lvb!=null) {
+			int i = lvb.indexOf("(");
+			if (i > 0)
+				lvb = lvb.substring(0, i);
+		}
+		isVarBinary = (vb!=null && type.startsWith(vb)) || (lvb!=null && type.startsWith(lvb));
 		this.isBigInteger=isBigInteger;
 		this.converter = converter;
 		this.limit=l;

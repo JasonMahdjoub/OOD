@@ -312,12 +312,12 @@ public class RuleInstance implements QueryPart {
 					if (s.getContent() instanceof BigDecimal)
 					{
 						String t=DatabaseWrapperAccessor.getBigDecimalType(table.getDatabaseWrapper(), 64);
-						return t.contains("CHAR")?s.getContent().toString():t.contains("BINARY")? BigDecimalFieldAccessor.bigDecimalToBytes((BigDecimal)s.getContent()):s.getContent();
+						return t.contains("CHAR")?s.getContent().toString():t.contains(DatabaseWrapperAccessor.getBinaryBaseWord(table.getDatabaseWrapper()))? BigDecimalFieldAccessor.bigDecimalToBytes((BigDecimal)s.getContent()):s.getContent();
 					}
 					else if (s.getContent() instanceof BigInteger)
 					{
 						String t=DatabaseWrapperAccessor.getBigIntegerType(table.getDatabaseWrapper(), 64);
-						return t.contains("CHAR")?s.getContent().toString():t.contains("BINARY")? ((BigInteger)s.getContent()).toByteArray():new BigDecimal(((BigInteger)s.getContent()));
+						return t.contains("CHAR")?s.getContent().toString():t.contains(DatabaseWrapperAccessor.getBinaryBaseWord(table.getDatabaseWrapper()))? ((BigInteger)s.getContent()).toByteArray():new BigDecimal(((BigInteger)s.getContent()));
 					}
 					else
 						return s.getContent().toString();
@@ -761,14 +761,14 @@ public class RuleInstance implements QueryPart {
 									int id = currentParameterID.getAndIncrement();
 									res.append("?");
 									String t=DatabaseWrapperAccessor.getBigDecimalType(table.getDatabaseWrapper(), 64);
-									outputParameters.put(id, t.contains("CHAR")?parameter2.toString():t.contains("BINARY")? BigDecimalFieldAccessor.bigDecimalToBytes((BigDecimal)parameter2):parameter2);
+									outputParameters.put(id, t.contains("CHAR")?parameter2.toString():t.contains(DatabaseWrapperAccessor.getBinaryBaseWord(table.getDatabaseWrapper()))? BigDecimalFieldAccessor.bigDecimalToBytes((BigDecimal)parameter2):parameter2);
 								}
 								else if (parameter2 instanceof BigInteger)
 								{
 									int id = currentParameterID.getAndIncrement();
 									res.append("?");
 									String t=DatabaseWrapperAccessor.getBigIntegerType(table.getDatabaseWrapper(), 64);
-									outputParameters.put(id, t.contains("CHAR")?parameter2.toString():t.contains("BINARY")? ((BigInteger)parameter2).toByteArray():new BigDecimal(((BigInteger)parameter2)));
+									outputParameters.put(id, t.contains("CHAR")?parameter2.toString():t.contains(DatabaseWrapperAccessor.getBinaryBaseWord(table.getDatabaseWrapper()))? ((BigInteger)parameter2).toByteArray():new BigDecimal(((BigInteger)parameter2)));
 								}
 								else
 									res.append(parameter2.toString());

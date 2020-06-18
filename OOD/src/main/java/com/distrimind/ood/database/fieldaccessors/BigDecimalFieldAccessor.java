@@ -77,7 +77,7 @@ public class BigDecimalFieldAccessor extends FieldAccessor {
 		sql_fields = new SqlField[1];
 		String type=DatabaseWrapperAccessor.getBigIntegerType(sql_connection, 128);
 		useString=type.contains("CHAR");
-		useGetBigDecimal=!useString && !type.contains("BINARY") && !type.contains("BLOB");
+		useGetBigDecimal=!useString && !type.contains(DatabaseWrapperAccessor.getBinaryBaseWord(sql_connection)) && !type.contains(DatabaseWrapperAccessor.getBlobBaseWord(sql_connection));
 		long l=getLimit();
 		if (l<=0)
 			l=useString?128:36;

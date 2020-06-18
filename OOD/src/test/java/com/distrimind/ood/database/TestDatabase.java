@@ -3164,9 +3164,7 @@ public abstract class TestDatabase {
                     }
                     res.add(new BigDecimal(r));
                 }
-            } else if (o.getClass() == int.class || o.getClass() == byte.class || o.getClass() == char.class
-                    || o.getClass() == boolean.class || o.getClass() == short.class || o.getClass() == long.class
-                    || o.getClass() == float.class || o.getClass() == double.class || o.getClass() == Integer.class
+            } else if (o.getClass() == Integer.class
                     || o.getClass() == Byte.class || o.getClass() == Character.class || o.getClass() == Boolean.class
                     || o.getClass() == Short.class || o.getClass() == Long.class || o.getClass() == Float.class
                     || o.getClass() == Double.class || o.getClass() == byte[].class || o.getClass() == String.class) {
@@ -3174,10 +3172,11 @@ public abstract class TestDatabase {
 
             } else if (o.getClass() == BigInteger.class) {
 				String t=getDatabaseWrapperInstanceA().getBigIntegerType(128);
-                res.add(t.contains("CHAR")?o.toString():((t.contains("BINARY") || t.contains("BLOB"))?((BigInteger) o).toByteArray():new BigDecimal((BigInteger)o)));
+
+                res.add(t.contains("CHAR")?o.toString():(((sql_db.isVarBinarySupported() && t.contains(sql_db.getBinaryBaseWord())) || (t.contains(sql_db.getBlobBaseWord())))?((BigInteger) o).toByteArray():new BigDecimal((BigInteger)o)));
             } else if (o.getClass() == BigDecimal.class) {
 				String t=getDatabaseWrapperInstanceA().getBigDecimalType(128);
-				res.add(t.contains("CHAR")?o.toString():((t.contains("BINARY") || t.contains("BLOB"))?BigDecimalFieldAccessor.bigDecimalToBytes((BigDecimal)o):o));
+				res.add(t.contains("CHAR")?o.toString():(((sql_db.isVarBinarySupported() && t.contains(sql_db.getBinaryBaseWord())) || (t.contains(sql_db.getBlobBaseWord())))?BigDecimalFieldAccessor.bigDecimalToBytes((BigDecimal)o):o));
 			} else if (o instanceof Date) {
                 res.add(new Timestamp(((Date) o).getTime()));
             }
@@ -3187,7 +3186,8 @@ public abstract class TestDatabase {
             }
             else if (o instanceof Serializable) {
 				String s=sql_db.getBlobType(70000);
-                if (s!=null && s.contains("BLOB")) {
+
+                if (s!=null && s.contains(sql_db.getBlobBaseWord())) {
                     try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
                         try (ObjectOutputStream os = new ObjectOutputStream(baos)) {
                             os.writeObject(o);

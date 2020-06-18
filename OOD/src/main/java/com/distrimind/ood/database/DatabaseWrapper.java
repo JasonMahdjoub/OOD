@@ -4464,9 +4464,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	}
 
-	public abstract String getSequenceQueryCreation(String sqlTableName, String sqlFieldName, long startWith);
+	protected abstract String getSequenceQueryCreation(String sqlTableName, String sqlFieldName, long startWith);
 
-	public abstract String getAutoIncrementPart(String sqlTableName, String sqlFieldName, long startWith);
+	protected abstract String getAutoIncrementPart(String sqlTableName, String sqlFieldName, long startWith);
 
 	/**
 	 * Associate a Sql database with a given database configuration. Every
@@ -4802,6 +4802,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	protected abstract String getSqlComma();
 
 	protected abstract int getVarCharLimit();
+
+	protected abstract String getBinaryBaseWord();
+	protected abstract String getBlobBaseWord();
+
+	protected abstract String getVarBinaryType(long limit);
+
+	protected abstract String getLongVarBinaryType(long limit);
 
 	protected abstract boolean isVarBinarySupported();
 
