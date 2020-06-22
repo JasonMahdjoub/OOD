@@ -41,6 +41,9 @@ import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.i18n.DatabaseMessages;
 import com.distrimind.util.FileTools;
 import com.distrimind.util.Reference;
+import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.crypto.EncryptionProfileProvider;
+import com.distrimind.util.crypto.EncryptionSignatureHashEncoder;
 import com.distrimind.util.io.*;
 import com.distrimind.util.progress_monitors.ProgressMonitorDM;
 import com.distrimind.util.progress_monitors.ProgressMonitorParameters;
@@ -1472,6 +1475,25 @@ public class BackupRestoreManager {
 	public boolean restoreDatabaseToDateUTC(long dateUTCInMs) throws DatabaseException {
 		return restoreDatabaseToDateUTC(dateUTCInMs, true);
 	}
+
+	RandomCacheFileOutputStream getEncryptedFilePart(long timeStamp, boolean backupReference, AbstractSecureRandom random, EncryptionProfileProvider profileProvider) throws IOException {
+		if (backupReference) {
+			if (!fileReferenceTimeStamps.contains(timeStamp))
+				throw new IllegalArgumentException();
+		} else {
+			if (!fileTimeStamps.contains(timeStamp))
+				throw new IllegalArgumentException();
+			else if (fileReferenceTimeStamps.contains(timeStamp))
+				throw new IllegalArgumentException();
+		}
+		RandomCacheFileOutputStream randomCacheFileOutputStream=RandomCacheFileCenter.getSingleton().getNewBufferedRandomCacheFileOutputStream(true);
+		new EncryptionSignatureHashEncoder()
+				.withSecretKeyProvider(random, profileProvider )
+				.withRandomInputStream(new RandomFileInputStream(getFile(timeStamp, backupReference)))
+				.encode(randomCacheFileOutputStream);
+		return randomCacheFileOutputStream;
+	}
+
 	/**
 	 * Restore the database to the nearest given date UTC
 	 * @param dateUTCInMs the UTC time in milliseconds
