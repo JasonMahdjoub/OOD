@@ -4988,8 +4988,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	{
 		ArrayList<Class<? extends SecureExternalizableWithoutInnerSizeControl>> classes = new ArrayList<>(Arrays.asList(
 				(Class<? extends SecureExternalizableWithoutInnerSizeControl>)DatabaseBackupMetaData.class,
-				DatabaseBackupMetaData.TransactionMetaData.class,
-				DatabaseBackupMetaData.DatabaseBackupMetaPerFile.class,
+				TransactionMetaData.class,
+				DatabaseBackupMetaDataPerFile.class,
+				EncryptedDatabaseBackupMetaDataPerFile.class,
+				EncryptedBackupPart.class,
 				DatabaseEventToSend.class,
 				DatabaseWrapper.TransactionsInterval.class,
 				DatabaseWrapper.DatabaseTransactionsIdentifiersToSynchronize.class,

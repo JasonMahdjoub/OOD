@@ -35,15 +35,38 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.util.io.RandomInputStream;
+import com.distrimind.util.io.*;
+
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
- * @since OOD 3.0.0
+ * @since Utils 3.0.0
  */
-public class BackupPartPackage {
-	private long timeStampUTC;
-	private RandomInputStream randomInputStream;
-	//TODO complete
+public class EncryptedBackupPart {
+
+	private EncryptedDatabaseBackupMetaDataPerFile metaData;
+	private RandomInputStream partInputStream;
+
+	@SuppressWarnings("unused")
+	private EncryptedBackupPart() {
+	}
+
+	public EncryptedBackupPart(EncryptedDatabaseBackupMetaDataPerFile metaData, RandomInputStream partInputStream) {
+		if (metaData==null)
+			throw new NullPointerException();
+		if (partInputStream==null)
+			throw new NullPointerException();
+		this.metaData = metaData;
+		this.partInputStream = partInputStream;
+	}
+
+	public EncryptedDatabaseBackupMetaDataPerFile getMetaData() {
+		return metaData;
+	}
+
+	public RandomInputStream getPartInputStream() {
+		return partInputStream;
+	}
+
 }

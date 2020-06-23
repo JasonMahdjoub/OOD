@@ -1476,7 +1476,8 @@ public class BackupRestoreManager {
 		return restoreDatabaseToDateUTC(dateUTCInMs, true);
 	}
 
-	RandomCacheFileOutputStream getEncryptedFilePart(long timeStamp, boolean backupReference, AbstractSecureRandom random, EncryptionProfileProvider profileProvider) throws IOException {
+	private void checkFile(long timeStamp, boolean backupReference)
+	{
 		if (backupReference) {
 			if (!fileReferenceTimeStamps.contains(timeStamp))
 				throw new IllegalArgumentException();
@@ -1486,13 +1487,72 @@ public class BackupRestoreManager {
 			else if (fileReferenceTimeStamps.contains(timeStamp))
 				throw new IllegalArgumentException();
 		}
-		RandomCacheFileOutputStream randomCacheFileOutputStream=RandomCacheFileCenter.getSingleton().getNewBufferedRandomCacheFileOutputStream(true);
-		new EncryptionSignatureHashEncoder()
-				.withSecretKeyProvider(random, profileProvider )
-				.withRandomInputStream(new RandomFileInputStream(getFile(timeStamp, backupReference)))
-				.encode(randomCacheFileOutputStream);
-		return randomCacheFileOutputStream;
 	}
+
+	EncryptedBackupPart getEncryptedFilePartWithMetaData(long timeStamp, boolean backupReference, AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
+		EncryptedDatabaseBackupMetaDataPerFile metaData=getEncryptedDatabaseBackupMetaDataPerFile(timeStamp, backupReference, random, encryptionProfileProvider);
+		RandomCacheFileOutputStream out=getEncryptedFilePart(timeStamp, backupReference, random, encryptionProfileProvider);
+		try {
+			return new EncryptedBackupPart(metaData, out.getRandomInputStream());
+		} catch (IOException e) {
+			throw DatabaseException.getDatabaseException(e);
+		}
+
+	}
+
+	EncryptedDatabaseBackupMetaDataPerFile getEncryptedDatabaseBackupMetaDataPerFile(long timeStamp, boolean backupReference, AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
+		try {
+			return new EncryptedDatabaseBackupMetaDataPerFile(getDatabaseBackupMetaDataPerFile(timeStamp, backupReference), random, encryptionProfileProvider);
+		} catch (IOException e) {
+			throw DatabaseException.getDatabaseException(e);
+		}
+	}
+	DatabaseBackupMetaDataPerFile getDatabaseBackupMetaDataPerFile(long timeStamp, boolean backupReference) throws DatabaseException {
+		checkFile(timeStamp, backupReference);
+		File file=getFile(timeStamp, backupReference);
+		List<TransactionMetaData> transactionsMetaData=new ArrayList<>();
+
+		try (RandomFileInputStream in = new RandomFileInputStream(file)) {
+			positionForDataRead(in, backupReference);
+
+			while (in.available()>0) {
+				int startTransaction = (int) in.currentPosition();
+				int nextTransaction = in.readInt();
+				if (in.readBoolean()) {
+					long transactionID=in.readLong();
+					long currentTransactionUTC = in.readLong();
+					transactionsMetaData.add(new TransactionMetaData(currentTransactionUTC, transactionID, startTransaction));
+				}
+				if (nextTransaction < 0)
+					break;
+				in.seek(nextTransaction);
+			}
+			return new DatabaseBackupMetaDataPerFile(timeStamp, backupReference, transactionsMetaData);
+		} catch (IOException e) {
+			throw DatabaseException.getDatabaseException(e);
+		}
+	}
+
+
+
+	public RandomCacheFileOutputStream getEncryptedFilePart(long timeStamp, boolean backupReference, AbstractSecureRandom random, EncryptionProfileProvider profileProvider) throws DatabaseException {
+		checkFile(timeStamp, backupReference);
+		try {
+			RandomCacheFileOutputStream randomCacheFileOutputStream = RandomCacheFileCenter.getSingleton().getNewBufferedRandomCacheFileOutputStream(true);
+			new EncryptionSignatureHashEncoder()
+					.withEncryptionProfileProvider(random, profileProvider)
+					.withRandomInputStream(new RandomFileInputStream(getFile(timeStamp, backupReference)))
+					.encode(randomCacheFileOutputStream);
+			return randomCacheFileOutputStream;
+		}
+		catch (IOException e)
+		{
+			throw DatabaseException.getDatabaseException(e);
+		}
+	}
+
+
+
 
 	/**
 	 * Restore the database to the nearest given date UTC

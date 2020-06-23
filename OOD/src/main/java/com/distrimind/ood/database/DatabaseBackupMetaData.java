@@ -45,12 +45,10 @@ import java.util.*;
  * @version 1.0
  * @since OOD 2.5.0
  */
-public class DatabaseBackupMetaData implements Iterable<DatabaseBackupMetaData.DatabaseBackupMetaPerFile>, SecureExternalizable {
-	public static final int MAX_DATA_LENGTH_IN_BYTES=10484736;
+public class DatabaseBackupMetaData implements Iterable<DatabaseBackupMetaDataPerFile>, SecureExternalizable {
 	public static final int MAX_BLOCK_CHAIN_LENGTH_IN_BYTES=80484736;
 	public static int MAX_INCREMENTAL_FILES=MAX_BLOCK_CHAIN_LENGTH_IN_BYTES/(44+64);
-	public static int MAX_TRANSACTIONS_NUMBER_PER_FILE=MAX_DATA_LENGTH_IN_BYTES/BackupRestoreManager.MIN_TRANSACTION_SIZE_IN_BYTES;
-	final List<DatabaseBackupMetaPerFile> metaDataPerFiles;
+	final List<DatabaseBackupMetaDataPerFile> metaDataPerFiles;
 	DatabaseBackupMetaData()
 	{
 		this.metaDataPerFiles = new ArrayList<>();
@@ -58,7 +56,7 @@ public class DatabaseBackupMetaData implements Iterable<DatabaseBackupMetaData.D
 
 
 
-	public DatabaseBackupMetaData(List<DatabaseBackupMetaPerFile> metaDataPerFiles) {
+	public DatabaseBackupMetaData(List<DatabaseBackupMetaDataPerFile> metaDataPerFiles) {
 		this.metaDataPerFiles = new ArrayList<>(metaDataPerFiles);
 		checkMetaData();
 	}
@@ -69,8 +67,8 @@ public class DatabaseBackupMetaData implements Iterable<DatabaseBackupMetaData.D
 		int m=metaDataPerFiles.size()-1;
 		for (int i=0;i<m;i++)
 		{
-			DatabaseBackupMetaPerFile d1=this.metaDataPerFiles.get(i);
-			DatabaseBackupMetaPerFile d2=this.metaDataPerFiles.get(i+1);
+			DatabaseBackupMetaDataPerFile d1=this.metaDataPerFiles.get(i);
+			DatabaseBackupMetaDataPerFile d2=this.metaDataPerFiles.get(i+1);
 			if (d1.timeStampUTC==d2.timeStampUTC)
 				throw new IllegalArgumentException();
 			if (d1.transactionsMetaData.get(d1.transactionsMetaData.size()-1).transactionUTC>d2.timeStampUTC)
@@ -79,14 +77,14 @@ public class DatabaseBackupMetaData implements Iterable<DatabaseBackupMetaData.D
 	}
 
 	@Override
-	public Iterator<DatabaseBackupMetaPerFile> iterator() {
+	public Iterator<DatabaseBackupMetaDataPerFile> iterator() {
 		return metaDataPerFiles.iterator();
 	}
 
 	@Override
 	public int getInternalSerializedSize() {
 		int s=4;
-		for (DatabaseBackupMetaPerFile m : metaDataPerFiles)
+		for (DatabaseBackupMetaDataPerFile m : metaDataPerFiles)
 			s+=m.getInternalSerializedSize();
 		return s;
 	}
@@ -96,7 +94,7 @@ public class DatabaseBackupMetaData implements Iterable<DatabaseBackupMetaData.D
 		if (metaDataPerFiles.size()>MAX_INCREMENTAL_FILES)
 			throw new IOException();
 		out.writeInt(metaDataPerFiles.size());
-		for (DatabaseBackupMetaPerFile m : metaDataPerFiles)
+		for (DatabaseBackupMetaDataPerFile m : metaDataPerFiles)
 			m.writeExternal(out);
 	}
 
@@ -107,7 +105,7 @@ public class DatabaseBackupMetaData implements Iterable<DatabaseBackupMetaData.D
 			throw new MessageExternalizationException(Integrity.FAIL);
 		for (int i=0;i<s;i++)
 		{
-			DatabaseBackupMetaPerFile m=new DatabaseBackupMetaPerFile();
+			DatabaseBackupMetaDataPerFile m=new DatabaseBackupMetaDataPerFile();
 			m.readExternal(in);
 			metaDataPerFiles.add(m);
 		}
@@ -138,135 +136,8 @@ public class DatabaseBackupMetaData implements Iterable<DatabaseBackupMetaData.D
 	}
 
 
-	public static class DatabaseBackupMetaPerFile implements Comparable<DatabaseBackupMetaPerFile>, Iterable<TransactionMetaData>, SecureExternalizable
-	{
-		private long timeStampUTC;
-		private boolean referenceFile;
-		private List<TransactionMetaData> transactionsMetaData;
-
-		private DatabaseBackupMetaPerFile()
-		{
-
-		}
-
-		public DatabaseBackupMetaPerFile(long timeStampUTC, boolean referenceFile, List<TransactionMetaData> transactionsMetaData) {
-			if (transactionsMetaData.size()==0)
-				throw new IllegalArgumentException();
-			this.timeStampUTC = timeStampUTC;
-			this.referenceFile = referenceFile;
-			this.transactionsMetaData = new ArrayList<>(transactionsMetaData);
-			checkMetaData();
-		}
-
-		private void checkMetaData()
-		{
-			Collections.sort(this.transactionsMetaData);
-			if (this.transactionsMetaData.get(0).transactionUTC<timeStampUTC)
-				throw new IllegalArgumentException();
-		}
-
-		@Override
-		public int compareTo(DatabaseBackupMetaPerFile o) {
-			return Long.compare(timeStampUTC, o.timeStampUTC);
-		}
-		@Override
-		public Iterator<TransactionMetaData> iterator() {
-			return transactionsMetaData.iterator();
-		}
-
-		public long getTimeStampUTC() {
-			return timeStampUTC;
-		}
-
-		public boolean isReferenceFile() {
-			return referenceFile;
-		}
 
 
-		@Override
-		public int getInternalSerializedSize() {
-			int s=9;
-			for (TransactionMetaData t : transactionsMetaData)
-				s+=t.getInternalSerializedSize();
-			return s;
-		}
-
-		@Override
-		public void writeExternal(SecuredObjectOutputStream out) throws IOException {
-			out.writeLong(timeStampUTC);
-			out.writeBoolean(referenceFile);
-			if (this.transactionsMetaData.size()>MAX_TRANSACTIONS_NUMBER_PER_FILE)
-				throw new IOException();
-			out.writeInt(this.transactionsMetaData.size());
-			for (TransactionMetaData t : transactionsMetaData)
-			{
-				t.writeExternal(out);
-			}
-		}
-
-		@Override
-		public void readExternal(SecuredObjectInputStream in) throws IOException {
-			timeStampUTC=in.readInt();
-			referenceFile=in.readBoolean();
-			int s=in.readInt();
-			if (s<=0 || s>MAX_TRANSACTIONS_NUMBER_PER_FILE)
-				throw new MessageExternalizationException(Integrity.FAIL);
-			this.transactionsMetaData=new ArrayList<>(s);
-			for (int i=0;i<s;i++)
-			{
-				TransactionMetaData t=new TransactionMetaData();
-				t.readExternal(in);
-				this.transactionsMetaData.add(t);
-			}
-			try
-			{
-				checkMetaData();
-			}
-			catch (IllegalArgumentException e)
-			{
-				throw new MessageExternalizationException(Integrity.FAIL, e);
-			}
-		}
-	}
-
-	public static class TransactionMetaData implements Comparable<TransactionMetaData>, SecureExternalizable
-	{
-		private long transactionUTC;
-		private long transactionID;
-
-		@Override
-		public int compareTo(TransactionMetaData o) {
-			if (transactionUTC==o.transactionUTC)
-				return Long.compare(transactionID, o.transactionID);
-			else
-				return Long.compare(transactionUTC, o.transactionUTC);
-		}
-
-		public long getTransactionUTC() {
-			return transactionUTC;
-		}
-
-		public long getTransactionID() {
-			return transactionID;
-		}
-
-		@Override
-		public int getInternalSerializedSize() {
-			return 16;
-		}
-
-		@Override
-		public void writeExternal(SecuredObjectOutputStream out) throws IOException {
-			out.writeLong(transactionUTC);
-			out.writeLong(transactionID);
-		}
-
-		@Override
-		public void readExternal(SecuredObjectInputStream in) throws IOException {
-			transactionUTC=in.readLong();
-			transactionID=in.readLong();
-		}
-	}
 
 
 
