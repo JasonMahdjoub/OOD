@@ -86,6 +86,7 @@ public class BackupRestoreManager {
 	private final boolean generateRestoreProgressBar;
 	private volatile long lastCurrentRestorationFileUsed=Long.MIN_VALUE;
 	private final BackupFileListener backupFileListener;
+	private volatile Long maxDateUTC=null;
 
 	//private volatile long currentBackupReferenceUTC=Long.MAX_VALUE;
 
@@ -154,6 +155,7 @@ public class BackupRestoreManager {
 
 	private void scanFiles()
 	{
+
 		fileTimeStamps=new ArrayList<>();
 		fileReferenceTimeStamps=new ArrayList<>();
 		File []files=this.backupDirectory.listFiles();
@@ -197,6 +199,7 @@ public class BackupRestoreManager {
 		}
 		Collections.sort(fileTimeStamps);
 		Collections.sort(fileReferenceTimeStamps);
+		maxDateUTC=null;
 	}
 
 
@@ -1456,12 +1459,17 @@ public class BackupRestoreManager {
 	 */
 	public long getMaxDateUTCInMS() throws DatabaseException {
 		synchronized (this) {
-			if (fileTimeStamps.size()>0 && fileReferenceTimeStamps.size()>0)
-			{
-				long ts=fileTimeStamps.get(fileTimeStamps.size()-1);
-				return extractLastBackupEventUTC(getFile(ts, fileReferenceTimeStamps.get(fileReferenceTimeStamps.size()-1).equals(ts)));
+			Long m=maxDateUTC;
+			if (m==null) {
+
+				if (fileTimeStamps.size() > 0 && fileReferenceTimeStamps.size() > 0) {
+					long ts = fileTimeStamps.get(fileTimeStamps.size() - 1);
+					m=maxDateUTC=extractLastBackupEventUTC(getFile(ts, fileReferenceTimeStamps.get(fileReferenceTimeStamps.size() - 1).equals(ts)));
+				}
+				else
+					m=maxDateUTC=Long.MIN_VALUE;
 			}
-			return Long.MIN_VALUE;
+			return m;
 		}
 	}
 	private final byte[] recordBuffer=new byte[1<<24-1];
@@ -2219,32 +2227,41 @@ public class BackupRestoreManager {
 
 		final void validateTransaction(Long transactionID) throws DatabaseException
 		{
-			synchronized (BackupRestoreManager.this) {
+			try {
+				synchronized (BackupRestoreManager.this) {
 
 
-				if (closed)
-					return;
-				saveTransactionQueue(out, nextTransactionReference, transactionUTC, firstTransactionID, transactionToSynchronize ?transactionID:null/*, index*/);
+					if (closed)
+						return;
+					saveTransactionQueue(out, nextTransactionReference, transactionUTC, firstTransactionID, transactionToSynchronize ? transactionID : null/*, index*/);
 
-				try {
+					try {
 
 			/*if (!isReferenceFile(fileTimeStamp)) {
 				fileTimeStamps.add(fileTimeStamp);
 			}*/
-					out.close();
-				} catch (IOException e) {
-					throw DatabaseException.getDatabaseException(e);
-				}
-				BackupRestoreManager.this.lastBackupEventUTC = Long.MIN_VALUE;
-				transactionsInterval=null;
-				if (!computeDatabaseReference.delete())
-					throw new DatabaseException("Impossible to delete file : " + computeDatabaseReference);
+						out.close();
+					} catch (IOException e) {
+						throw DatabaseException.getDatabaseException(e);
+					}
+					BackupRestoreManager.this.lastBackupEventUTC = Long.MIN_VALUE;
+					transactionsInterval = null;
+					if (!computeDatabaseReference.delete())
+						throw new DatabaseException("Impossible to delete file : " + computeDatabaseReference);
 
-				closed = true;
+					closed = true;
+				}
+				if (backupFileListener != null && fileTimeStamp != oldLastFile)
+					backupFileListener.fileListChanged();
+				createIfNecessaryNewBackupReference();
 			}
-			if (backupFileListener!=null && fileTimeStamp!=oldLastFile)
-				backupFileListener.fileListChanged();
-			createIfNecessaryNewBackupReference();
+			finally {
+				Long m=maxDateUTC;
+				if (m==null)
+					maxDateUTC=transactionUTC;
+				else
+					maxDateUTC=Math.max(m, transactionUTC);
+			}
 		}
 
 		final void backupRecordEvent(Table<?> table, TableEvent<?> _de) throws DatabaseException {

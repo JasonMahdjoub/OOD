@@ -65,7 +65,7 @@ final class IDTable extends Table<IDTable.Record> {
 	}
 
 	long getAndIncrementTransactionID() throws DatabaseException {
-		return getAndIncrementID(TRANSACTIONID);
+		return getAndIncrementID(TRANSACTION_ID);
 	}
 
 	/*void decrementTransactionID() throws DatabaseException {
@@ -93,8 +93,8 @@ final class IDTable extends Table<IDTable.Record> {
 		}
 	}*/
 
-	long setLastValidatedTransactionIDI(long transactionID) throws DatabaseException {
-		return setID(GLOBAL_VALIDATED_TRANSACTIONID, transactionID);
+	long setLastValidatedTransactionID(long transactionID) throws DatabaseException {
+		return setID(GLOBAL_VALIDATED_TRANSACTION_ID, transactionID);
 	}
 
 	@SuppressWarnings("SameParameterValue")
@@ -112,7 +112,7 @@ final class IDTable extends Table<IDTable.Record> {
 	}
 
 	long getLastTransactionID() throws DatabaseException {
-		long id = getLastID(TRANSACTIONID);
+		long id = getLastID(TRANSACTION_ID);
 		if (id == -1)
 			return -1;
 		else
@@ -120,11 +120,11 @@ final class IDTable extends Table<IDTable.Record> {
 	}
 
 	void setLastTransactionID(long id) throws DatabaseException {
-		setID(TRANSACTIONID, id);
+		setID(TRANSACTION_ID, id);
 	}
 
 	long getLastValidatedTransactionID() throws DatabaseException {
-		return getLastID(GLOBAL_VALIDATED_TRANSACTIONID);
+		return getLastID(GLOBAL_VALIDATED_TRANSACTION_ID);
 	}
 
 	private long getLastID(int id) throws DatabaseException {
@@ -137,6 +137,52 @@ final class IDTable extends Table<IDTable.Record> {
 		}
 	}
 
-	private static final int TRANSACTIONID = 1;
-	private static final int GLOBAL_VALIDATED_TRANSACTIONID = 2;
+	/*public long getLastTransactionUTC() throws DatabaseException {
+		Record r = getRecord("id", LAST_LOCAL_TRANSACTION_UTC);
+
+		if (r == null) {
+			return Long.MIN_VALUE;
+		} else {
+			return r.transactionID;
+		}
+	}
+
+	public void setTransactionUTCToBeCandidateForLastValue(final long transactionUTC) throws DatabaseException {
+		getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
+			@Override
+			public Void run() throws Exception {
+				Record r = getRecord("id", LAST_LOCAL_TRANSACTION_UTC);
+
+				if (r == null) {
+					r=new Record();
+					r.id=LAST_LOCAL_TRANSACTION_UTC;
+					r.transactionID=transactionUTC;
+					addRecord(r);
+				} else if (r.transactionID<transactionUTC) {
+					updateRecord(r, "transactionID", transactionUTC);
+				}
+				return null;
+			}
+
+			@Override
+			public TransactionIsolation getTransactionIsolation() {
+				return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
+			}
+
+			@Override
+			public boolean doesWriteData() {
+				return true;
+			}
+
+			@Override
+			public void initOrReset() {
+
+			}
+		});
+	}*/
+
+
+	private static final int TRANSACTION_ID = 1;
+	private static final int GLOBAL_VALIDATED_TRANSACTION_ID = 2;
+	//private static final int LAST_LOCAL_TRANSACTION_UTC = 4;
 }

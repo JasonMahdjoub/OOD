@@ -46,8 +46,7 @@ import com.distrimind.ood.database.fieldaccessors.ByteTabObjectConverter;
 import com.distrimind.ood.database.fieldaccessors.DefaultByteTabObjectConverter;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
-import com.distrimind.ood.database.messages.CentralDatabaseBackupEvent;
-import com.distrimind.ood.database.messages.DatabaseEventToSend;
+import com.distrimind.ood.database.messages.DatabaseTransactionsIdentifiersToSynchronize;
 import com.distrimind.ood.database.messages.DatabaseTransactionsIdentifiersToSynchronizeToCentralDatabaseBackup;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.FileTools;
@@ -87,7 +86,7 @@ import java.util.concurrent.locks.ReentrantLock;
 @SuppressWarnings("ThrowFromFinallyBlock")
 public abstract class DatabaseWrapper implements AutoCloseable {
 
-	private static List<Class<?>> internalDatabaseClassesList = Arrays.<Class<?>>asList(DatabaseDistantTransactionEvent.class, DatabaseDistantEventsTable.class, 
+	private static final List<Class<?>> internalDatabaseClassesList = Arrays.<Class<?>>asList(DatabaseDistantTransactionEvent.class, DatabaseDistantEventsTable.class,
 			DatabaseEventsTable.class, DatabaseHooksTable.class, DatabaseTransactionEventsTable.class, DatabaseTransactionsPerHostTable.class, IDTable.class, CentralDatabaseHookTable.class);
 	
 	
@@ -417,7 +416,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	}
 
 	static class ConnectedPeers {
-		private DatabaseHooksTable.Record hook;
+		private final DatabaseHooksTable.Record hook;
 		private boolean transferInProgress = false;
 
 		ConnectedPeers(Record _hook) {
@@ -455,16 +454,25 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 	}
+	private long getLastTransactionUTC() throws DatabaseException {
 
+		long res=Long.MIN_VALUE;
+		for (Database d : sql_database.values())
+		{
+			if (d.backupRestoreManager!=null)
+				res=Math.max(d.backupRestoreManager.getMaxDateUTCInMS(), res);
+		}
+		return res;
+	}
 	public class DatabaseSynchronizer {
 		private DatabaseNotifier notifier = null;
 		private boolean canNotify = true;
-		private LinkedList<DatabaseEvent> events = new LinkedList<>();
+		private final LinkedList<DatabaseEvent> events = new LinkedList<>();
 		protected HashMap<DecentralizedValue, ConnectedPeers> initializedHooks = new HashMap<>();
 		protected HashMap<DecentralizedValue, ConnectedPeers> initializedHooksWithCentralBackup = new HashMap<>();
 		protected HashMap<DecentralizedValue, Long> suspendedHooksWithCentralBackup = new HashMap<>();
 		protected boolean centralBackupInitialized=false;
-		private Condition newEventCondition=locker.newCondition();
+		private final Condition newEventCondition=locker.newCondition();
 		private boolean extendedTransactionInProgress=false;
 		private long lastTransactionID=Long.MIN_VALUE;
 		private final TreeSet<DatabaseBackupToIncorporateFromCentralDatabaseBackup> differedDatabaseBackupToIncorporate=new TreeSet<>();
@@ -868,6 +876,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		}
 
+
+
 		private void synchronizeMetaData() throws DatabaseException {
 			Map<DecentralizedValue, Long> lastIds = getHooksTransactionsTable()
 					.getLastValidatedDistantTransactions();
@@ -880,14 +890,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						// map.remove(hostID);
 						map.remove(host);
 						if (map.size() > 0) {
-							addNewDatabaseEvent(new DatabaseTransactionsIdentifiersToSynchronizeToCentralDatabaseBackup(
-									getHooksTransactionsTable().getLocalDatabaseHost().getHostID(), map, ));
+							addNewDatabaseEvent(new DatabaseTransactionsIdentifiersToSynchronize(
+									getHooksTransactionsTable().getLocalDatabaseHost().getHostID(), host, map));
 						}
 					}
 				}
 				if (initializedHooksWithCentralBackup.size()>0 || suspendedHooksWithCentralBackup.size()>0)
 					addNewDatabaseEvent(new DatabaseTransactionsIdentifiersToSynchronizeToCentralDatabaseBackup(
-							getHooksTransactionsTable().getLocalDatabaseHost().getHostID(), new HashMap<>(lastIds), las));
+							getHooksTransactionsTable().getLocalDatabaseHost().getHostID(), new HashMap<>(lastIds), getLastTransactionUTC()));
 			}
 			finally
 			{
@@ -3150,193 +3160,206 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		boolean validateTmpTransaction() throws DatabaseException {
 			final HashMap<Package, Long> transactionsID=new HashMap<>();
 			try {
-				if (!transactionToSynchronize)
-					return false;
-				if (eventsStoredIntoMemory) {
+				boolean res=transactionToSynchronize;
+				if (res) {
+					if (eventsStoredIntoMemory) {
 
-					return runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
-						boolean alreadyDone = false;
+						res = runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
+							final boolean alreadyDone = false;
 
-						@Override
-						public Boolean run() throws Exception {
-							final AtomicBoolean transactionOK = new AtomicBoolean(false);
+							@Override
+							public Boolean run() throws Exception {
+								final AtomicBoolean transactionOK = new AtomicBoolean(false);
 
-							for (final Map.Entry<Package, TransactionPerDatabase> e : temporaryTransactions.entrySet()) {
-								final TransactionPerDatabase t = e.getValue();
-								if (t.eventsNumber.get() > 0) {
-									final AtomicReference<DatabaseTransactionEventsTable.Record> finalTR = new AtomicReference<>(
-											null);
-									/*
-									 * final ArrayList<AbstractDecentralizedID> excludedHooks=new ArrayList<>();
-									 * long
-									 * previousLastTransactionID=getTransactionIDTable().getLastTransactionID();
-									 * final AtomicBoolean hasIgnoredHooks=new AtomicBoolean(false);
-									 */
+								for (final Map.Entry<Package, TransactionPerDatabase> e : temporaryTransactions.entrySet()) {
+									final TransactionPerDatabase t = e.getValue();
+									if (t.eventsNumber.get() > 0) {
+										final AtomicReference<DatabaseTransactionEventsTable.Record> finalTR = new AtomicReference<>(
+												null);
+										/*
+										 * final ArrayList<AbstractDecentralizedID> excludedHooks=new ArrayList<>();
+										 * long
+										 * previousLastTransactionID=getTransactionIDTable().getLastTransactionID();
+										 * final AtomicBoolean hasIgnoredHooks=new AtomicBoolean(false);
+										 */
 
-									getHooksTransactionsTable().getRecords(new Filter<Record>() {
+										getHooksTransactionsTable().getRecords(new Filter<Record>() {
 
-										@Override
-										public boolean nextRecord(Record _record)
-												throws DatabaseException {
-											if (!_record.concernsLocalDatabaseHost()) {
-												if (_record.isConcernedByDatabasePackage(
-														t.transaction.concernedDatabasePackage)
-														&& (t.concernedHosts == null || t.concernedHosts.isEmpty()
-														|| t.concernedHosts.contains(_record.getHostID()))) {
+											@Override
+											public boolean nextRecord(Record _record)
+													throws DatabaseException {
+												if (!_record.concernsLocalDatabaseHost()) {
+													if (_record.isConcernedByDatabasePackage(
+															t.transaction.concernedDatabasePackage)
+															&& (t.concernedHosts == null || t.concernedHosts.isEmpty()
+															|| t.concernedHosts.contains(_record.getHostID()))) {
 
-													if (finalTR.get() == null) {
-														finalTR.set(t.transaction = getDatabaseTransactionEventsTable()
-																.addRecord(new DatabaseTransactionEventsTable.Record(
-																		getTransactionIDTable()
-																				.getAndIncrementTransactionID(),
-																		t.transaction.concernedDatabasePackage,
-																		t.concernedHosts)));
-														transactionsID.put(e.getKey(), t.transaction.id);
-														for (DatabaseEventsTable.Record r : t.events) {
-															r.setTransaction(finalTR.get());
-															getDatabaseEventsTable().addRecord(r);
+														if (finalTR.get() == null) {
+															finalTR.set(t.transaction = getDatabaseTransactionEventsTable()
+																	.addRecord(new DatabaseTransactionEventsTable.Record(
+																			getTransactionIDTable()
+																					.getAndIncrementTransactionID(),
+																			t.transaction.concernedDatabasePackage,
+																			t.concernedHosts)));
+															transactionsID.put(e.getKey(), t.transaction.id);
+															for (DatabaseEventsTable.Record r : t.events) {
+																r.setTransaction(finalTR.get());
+																getDatabaseEventsTable().addRecord(r);
+															}
+
 														}
-
+														DatabaseTransactionsPerHostTable.Record trhost = new DatabaseTransactionsPerHostTable.Record();
+														trhost.set(finalTR.get(), _record);
+														getDatabaseTransactionsPerHostTable().addRecord(trhost);
+														transactionOK.set(true);
 													}
-													DatabaseTransactionsPerHostTable.Record trhost = new DatabaseTransactionsPerHostTable.Record();
-													trhost.set(finalTR.get(), _record);
-													getDatabaseTransactionsPerHostTable().addRecord(trhost);
-													transactionOK.set(true);
 												}
+												return false;
 											}
-											return false;
-										}
-									});
+										});
+									}
 								}
+								resetTmpTransaction(false, true);
+								return transactionOK.get();
 							}
-							resetTmpTransaction(false, true);
-							return transactionOK.get();
-						}
 
-						@Override
-						public TransactionIsolation getTransactionIsolation() {
-							return TransactionIsolation.TRANSACTION_READ_UNCOMMITTED;
-						}
+							@Override
+							public TransactionIsolation getTransactionIsolation() {
+								return TransactionIsolation.TRANSACTION_READ_UNCOMMITTED;
+							}
 
-						@Override
-						public boolean doesWriteData() {
-							return true;
-						}
+							@Override
+							public boolean doesWriteData() {
+								return true;
+							}
 
-						@Override
-						public void initOrReset() {
-							if (alreadyDone)
-								throw new IllegalAccessError();
-						}
+							@Override
+							public void initOrReset() {
+								if (alreadyDone)
+									throw new IllegalAccessError();
+							}
 
-					});
+						});
 
-				} else {
+					} else {
 
-					return runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
-						boolean alreadyDone = false;
+						res = runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
+							boolean alreadyDone = false;
 
-						@Override
-						public Boolean run() throws Exception {
-							final AtomicBoolean transactionOK = new AtomicBoolean(false);
-							for ( final Map.Entry<Package, TransactionPerDatabase> e : temporaryTransactions.entrySet()) {
-								final TransactionPerDatabase t=e.getValue();
-								if (t.eventsNumber.get() > 0) {
-									final Reference<DatabaseTransactionEventsTable.Record> finalTR = new Reference<>(
-											null);
-									/*
-									 * final ArrayList<AbstractDecentralizedID> excludedHooks=new ArrayList<>();
-									 * long
-									 * previousLastTransactionID=getTransactionIDTable().getLastTransactionID();
-									 * final AtomicBoolean hasIgnoredHooks=new AtomicBoolean(false);
-									 */
-									getHooksTransactionsTable().getRecords(new Filter<Record>() {
+							@Override
+							public Boolean run() throws Exception {
+								final AtomicBoolean transactionOK = new AtomicBoolean(false);
+								for (final Map.Entry<Package, TransactionPerDatabase> e : temporaryTransactions.entrySet()) {
+									final TransactionPerDatabase t = e.getValue();
+									if (t.eventsNumber.get() > 0) {
+										final Reference<DatabaseTransactionEventsTable.Record> finalTR = new Reference<>(
+												null);
+										/*
+										 * final ArrayList<AbstractDecentralizedID> excludedHooks=new ArrayList<>();
+										 * long
+										 * previousLastTransactionID=getTransactionIDTable().getLastTransactionID();
+										 * final AtomicBoolean hasIgnoredHooks=new AtomicBoolean(false);
+										 */
+										getHooksTransactionsTable().getRecords(new Filter<Record>() {
 
-										@Override
-										public boolean nextRecord(Record _record)
-												throws DatabaseException {
-											if (!_record.concernsLocalDatabaseHost()) {
-												if (_record.isConcernedByDatabasePackage(
-														t.transaction.concernedDatabasePackage)
-														&& (t.concernedHosts == null || t.concernedHosts.isEmpty()
-														|| t.concernedHosts.contains(_record.getHostID()))) {
-													// excludedHooks.add(_record.getHostID());
-													if (finalTR.get() == null) {
-														DatabaseTransactionEventsTable.Record te;
-														finalTR.set(te=getDatabaseTransactionEventsTable()
-																.addRecord(new DatabaseTransactionEventsTable.Record(
-																		getTransactionIDTable()
-																				.getAndIncrementTransactionID(),
-																		t.transaction.concernedDatabasePackage,
-																		t.concernedHosts)));
-														transactionsID.put(e.getKey(), te.id);
-														final HashMap<String, Object> hm = new HashMap<>();
-														hm.put("transaction", finalTR.get());
-														getDatabaseEventsTable().updateRecords(
-																new AlterRecordFilter<DatabaseEventsTable.Record>() {
+											@Override
+											public boolean nextRecord(Record _record)
+													throws DatabaseException {
+												if (!_record.concernsLocalDatabaseHost()) {
+													if (_record.isConcernedByDatabasePackage(
+															t.transaction.concernedDatabasePackage)
+															&& (t.concernedHosts == null || t.concernedHosts.isEmpty()
+															|| t.concernedHosts.contains(_record.getHostID()))) {
+														// excludedHooks.add(_record.getHostID());
+														if (finalTR.get() == null) {
+															DatabaseTransactionEventsTable.Record te;
+															finalTR.set(te = getDatabaseTransactionEventsTable()
+																	.addRecord(new DatabaseTransactionEventsTable.Record(
+																			getTransactionIDTable()
+																					.getAndIncrementTransactionID(),
+																			t.transaction.concernedDatabasePackage,
+																			t.concernedHosts)));
+															transactionsID.put(e.getKey(), te.id);
+															final HashMap<String, Object> hm = new HashMap<>();
+															hm.put("transaction", finalTR.get());
+															getDatabaseEventsTable().updateRecords(
+																	new AlterRecordFilter<DatabaseEventsTable.Record>() {
 
-																	@Override
-																	public void nextRecord(
-																			DatabaseEventsTable.Record _record) {
-																		update(hm);
-																	}
-																}, "transaction=%transaction", "transaction",
-																t.transaction);
+																		@Override
+																		public void nextRecord(
+																				DatabaseEventsTable.Record _record) {
+																			update(hm);
+																		}
+																	}, "transaction=%transaction", "transaction",
+																	t.transaction);
 
+														}
+														DatabaseTransactionsPerHostTable.Record trhost = new DatabaseTransactionsPerHostTable.Record();
+														trhost.set(finalTR.get(), _record);
+														getDatabaseTransactionsPerHostTable().addRecord(trhost);
+														transactionOK.set(true);
 													}
-													DatabaseTransactionsPerHostTable.Record trhost = new DatabaseTransactionsPerHostTable.Record();
-													trhost.set(finalTR.get(), _record);
-													getDatabaseTransactionsPerHostTable().addRecord(trhost);
-													transactionOK.set(true);
+													/*
+													 * else hasIgnoredHooks.set(true);
+													 */
 												}
-												/*
-												 * else hasIgnoredHooks.set(true);
-												 */
+												return false;
 											}
-											return false;
-										}
-									});
-									/*
-									 * if (hasIgnoredHooks.get())
-									 * getHooksTransactionsTable().actualizeLastTransactionID(excludedHooks,
-									 * previousLastTransactionID);
-									 */
+										});
+										/*
+										 * if (hasIgnoredHooks.get())
+										 * getHooksTransactionsTable().actualizeLastTransactionID(excludedHooks,
+										 * previousLastTransactionID);
+										 */
+									}
+									getDatabaseTransactionEventsTable().removeRecordWithCascade(t.transaction);
 								}
-								getDatabaseTransactionEventsTable().removeRecordWithCascade(t.transaction);
+								resetTmpTransaction(false, true);
+								return transactionOK.get();
 							}
-							resetTmpTransaction(false, true);
-							return transactionOK.get();
-						}
 
-						@Override
-						public TransactionIsolation getTransactionIsolation() {
-							return TransactionIsolation.TRANSACTION_READ_COMMITTED;
-						}
+							@Override
+							public TransactionIsolation getTransactionIsolation() {
+								return TransactionIsolation.TRANSACTION_READ_COMMITTED;
+							}
 
-						@Override
-						public boolean doesWriteData() {
-							return true;
-						}
+							@Override
+							public boolean doesWriteData() {
+								return true;
+							}
 
-						@Override
-						public void initOrReset() {
-							if (alreadyDone)
-								throw new IllegalAccessError();
+							@Override
+							public void initOrReset() {
+								if (alreadyDone)
+									throw new IllegalAccessError();
 
-						}
-					});
+							}
+						});
 
+					}
 				}
-			}
-			finally {
 				for (Map.Entry<Package, BackupRestoreManager.Transaction> e: backupManager.entrySet())
 				{
 					BackupRestoreManager.Transaction t=e.getValue();
 					if (t!=null)
 						t.validateTransaction(transactionsID.get(e.getKey()));
 				}
+				/*if (min==Long.MIN_VALUE)
+					getTransactionIDTable().setTransactionUTCToBeCandidateForLastValue(System.currentTimeMillis());
+				else
+					getTransactionIDTable().setTransactionUTCToBeCandidateForLastValue(min);*/
 				backupManager.clear();
-
+				return res;
+			}
+			catch (DatabaseException e)
+			{
+				for (Map.Entry<Package, BackupRestoreManager.Transaction> e: backupManager.entrySet())
+				{
+					BackupRestoreManager.Transaction t=e.getValue();
+					if (t!=null)
+						t.cancelTransaction();
+				}
+				throw e;
 			}
 		}
 

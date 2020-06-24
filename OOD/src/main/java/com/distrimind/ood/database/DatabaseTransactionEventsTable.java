@@ -273,7 +273,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 		long globalLast = getDatabaseHooksTable().getGlobalLastValidatedTransactionID();
 		long prevGlobalLast = getIDTable().getLastValidatedTransactionID();
 		if (prevGlobalLast != globalLast) {
-			getIDTable().setLastValidatedTransactionIDI(globalLast);
+			getIDTable().setLastValidatedTransactionID(globalLast);
 			removeTransactionUntilID(globalLast);
 		}
 
