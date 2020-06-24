@@ -45,6 +45,7 @@ import com.distrimind.ood.database.exceptions.SerializationDatabaseException;
 import com.distrimind.util.io.RandomInputStream;
 import com.distrimind.util.io.RandomOutputStream;
 
+import java.io.IOException;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
@@ -112,8 +113,8 @@ final class DatabaseDistantEventsTable extends Table<DatabaseDistantEventsTable.
 
 	}
 
-	DatabaseEventsIterator distantEventTableIterator(RandomInputStream ois, int cacheSize) {
-		return new DatabaseEventsIterator(ois, cacheSize) {
+	DatabaseEventsIterator distantEventTableIterator(RandomInputStream ois) throws IOException {
+		return new DatabaseEventsIterator(ois) {
 			private int index = 0;
 			private int next = 0;
 

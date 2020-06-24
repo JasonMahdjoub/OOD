@@ -34,12 +34,9 @@ import com.distrimind.ood.database.DatabaseWrapper.SynchronizationAnomalyType;
 import com.distrimind.ood.database.annotations.ForeignKey;
 import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.*;
-import com.distrimind.ood.util.CachedInputStream;
-import com.distrimind.ood.util.CachedOutputStream;
 import com.distrimind.util.Bits;
 import com.distrimind.util.DecentralizedValue;
-import com.distrimind.util.io.RandomInputStream;
-import com.distrimind.util.io.RandomOutputStream;
+import com.distrimind.util.io.*;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -221,7 +218,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 					}
                     else if (actualLastID.get() < lastID)
                         throw new IllegalAccessError();
-                    hook.setLastValidatedTransaction(actualLastID.get());
+                    hook.setLastValidatedLocalTransaction(actualLastID.get());
                     getDatabaseHooksTable().updateRecord(hook);
                     getDatabaseTransactionEventsTable().removeTransactionsFromLastID();
 
@@ -403,12 +400,12 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 						}
 						try {
 							transactionNotEmpty = getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
-
+								final byte[] longTab = new byte[8];
 								@Override
 								public Boolean run() throws Exception {
 									boolean transactionNotEmpty = false;
 									boolean validatedTransaction = true;
-									try (CachedOutputStream cos = new CachedOutputStream(getDatabaseWrapper().getMaxTransactionEventsKeepedIntoMemoryDuringImportInBytes() / 10)) {
+									try (RandomCacheFileOutputStream cos= RandomCacheFileCenter.getSingleton().getNewBufferedRandomCacheFileOutputStream(true, RandomFileOutputStream.AccessMode.READ_AND_WRITE, BufferedRandomInputStream.DEFAULT_MAX_BUFFER_SIZE, 1)) {
 
 										while (iterator.hasNext()) {
 											transactionNotEmpty = true;
@@ -474,15 +471,13 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 												if (validatedTransaction) {
 													for (DatabaseTransactionEventsTable.Record er : r) {
 														cos.write(0);
-														byte[] b = new byte[8];
-														Bits.putLong(b, 0, er.id);
-														cos.write(b);
+														Bits.putLong(longTab, 0, er.id);
+														cos.write(longTab);
 													}
 													for (DatabaseDistantTransactionEvent.Record er : ir) {
 														cos.write(1);
-														byte[] b = new byte[8];
-														Bits.putLong(b, 0, er.id);
-														cos.write(b);
+														Bits.putLong(longTab, 0, er.id);
+														cos.write(longTab);
 													}
 
 												}
@@ -522,20 +517,18 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 										cos.write(2);
 										if (!validatedTransaction)
 											throw new TransactionCanceledException();
-										try (CachedInputStream cis = cos.getCachedInputStream()) {
+										try (RandomInputStream cis = cos.getRandomInputStream()) {
+											if (cis.currentPosition()!=0)
+												cis.seek(0);
 											int next = cis.read();
 											while (next != 2) {
 												if (next == 0) {
-													byte[] b = new byte[8];
-													if (cis.read(b) != 8)
-														throw new IllegalAccessError();
-													getDatabaseTransactionEventsTable().removeRecordsWithAllFieldsWithCascade("id", Bits.getLong(b, 0));
+													cis.readFully(longTab);
+													getDatabaseTransactionEventsTable().removeRecordsWithAllFieldsWithCascade("id", Bits.getLong(longTab, 0));
 												} else if (next == 1) {
-													byte[] b = new byte[8];
-													if (cis.read(b) != 8)
-														throw new IllegalAccessError();
+													cis.readFully(longTab);
 
-													getDatabaseDistantTransactionEvent().removeRecordsWithAllFieldsWithCascade("id", Bits.getLong(b, 0));
+													getDatabaseDistantTransactionEvent().removeRecordsWithAllFieldsWithCascade("id", Bits.getLong(longTab, 0));
 												} else
 													throw new IllegalAccessError();
 
@@ -858,13 +851,13 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 								.unserializeDistantTransactionEvent(ois);
 						
 						alterDatabase(directPeer, new AtomicReference<DatabaseHooksTable.Record>(null),
-								ite, it=getDatabaseDistantEventsTable().distantEventTableIterator(ois, getDatabaseWrapper().getMaxTransactionEventsKeepedIntoMemoryDuringImportInBytes()),
+								ite, it=getDatabaseDistantEventsTable().distantEventTableIterator(ois),
 								lastValidatedTransaction, hooksToNotify);
 					} else if (next.get() == EXPORT_DIRECT_TRANSACTION) {
 						DatabaseTransactionEventsTable.Record dte = getDatabaseTransactionEventsTable().unserialize(ois,
 								true, false);
 						alterDatabase(directPeer, new AtomicReference<>(directPeer),
-								dte, it=getDatabaseEventsTable().eventsTableIterator(ois, getDatabaseWrapper().getMaxTransactionEventsKeepedIntoMemoryDuringImportInBytes()), lastValidatedTransaction,
+								dte, it=getDatabaseEventsTable().eventsTableIterator(ois), lastValidatedTransaction,
 								hooksToNotify);
 					}
 				}
@@ -964,7 +957,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 					Table<?> t = getDatabaseWrapper().getTableInstance(c);
 					tables.add(t);
 				}
-				DatabaseEventsTable.DatabaseEventsIterator it=new DatabaseEventsTable.DatabaseEventsIterator(ois, getDatabaseWrapper().getMaxTransactionEventsKeepedIntoMemoryDuringImportInBytes()){
+				DatabaseEventsTable.DatabaseEventsIterator it=new DatabaseEventsTable.DatabaseEventsIterator(ois){
 					byte eventTypeByte;
 					int position=0;
 					private final byte[] recordBuffer=new byte[1<<24-1];
@@ -1110,7 +1103,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 		if (hook == null)
 			return 0;
-		long currentTransactionID = hook.getLastValidatedTransaction();
+		long currentTransactionID = hook.getLastValidatedLocalTransaction();
 
 		try {
 			number.set(getDatabaseDistantTransactionEvent().exportTransactions(oos, hook, maxEventsRecords,

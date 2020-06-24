@@ -80,7 +80,7 @@ public class BackupRestoreManager {
 	private static final Pattern fileIncrementPattern = Pattern.compile("^backup-ood-([1-9][0-9]*)\\.dincrement");
 
 	private final File computeDatabaseReference;
-	private DatabaseWrapper databaseWrapper;
+	private final DatabaseWrapper databaseWrapper;
 	private final boolean passive;
 	private final Package dbPackage;
 	private final boolean generateRestoreProgressBar;
@@ -1233,6 +1233,7 @@ public class BackupRestoreManager {
 														long curTime = System.currentTimeMillis();
 														while (curTime == currentBackupTime.get()) {
 															try {
+																//noinspection BusyWait
 																Thread.sleep(1);
 															} catch (InterruptedException e) {
 																e.printStackTrace();
@@ -1538,7 +1539,7 @@ public class BackupRestoreManager {
 	public RandomCacheFileOutputStream getEncryptedFilePart(long timeStamp, boolean backupReference, AbstractSecureRandom random, EncryptionProfileProvider profileProvider) throws DatabaseException {
 		checkFile(timeStamp, backupReference);
 		try {
-			RandomCacheFileOutputStream randomCacheFileOutputStream = RandomCacheFileCenter.getSingleton().getNewBufferedRandomCacheFileOutputStream(true);
+			RandomCacheFileOutputStream randomCacheFileOutputStream = RandomCacheFileCenter.getSingleton().getNewBufferedRandomCacheFileOutputStream(true, RandomFileOutputStream.AccessMode.READ_AND_WRITE, BufferedRandomInputStream.DEFAULT_MAX_BUFFER_SIZE, 1);
 			new EncryptionSignatureHashEncoder()
 					.withEncryptionProfileProvider(random, profileProvider)
 					.withRandomInputStream(new RandomFileInputStream(getFile(timeStamp, backupReference)))
@@ -2146,7 +2147,7 @@ public class BackupRestoreManager {
 		private final int oldLength;
 		private final long oldLastFile;
 		private final Long firstTransactionID;
-		private boolean transactionToSynchronize;
+		private final boolean transactionToSynchronize;
 
 
 
@@ -2270,23 +2271,6 @@ public class BackupRestoreManager {
 	public interface BackupFileListener
 	{
 		void fileListChanged();
-	}
-
-	public static class InputStream extends RandomInputStream
-	{
-
-	}
-
-	public static class ExportMetaData extends SecureExternalizable
-	{
-		private long timeStampUTC;
-		private byte[] encodedBackupRestoreMetaData;
-
-		public ExportMetaData(long timeStampUTC, DatabaseBackupMetaData databaseBackupMetaData) {
-			this.timeStampUTC = timeStampUTC;
-
-			this.encodedBackupRestoreMetaData = encodedBackupRestoreMetaData;
-		}
 	}
 
 

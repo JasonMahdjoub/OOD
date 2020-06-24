@@ -311,8 +311,8 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 				@Override
 				public boolean nextRecord(DatabaseHooksTable.Record _record) {
 					if (!_record.concernsLocalDatabaseHost() && !_record.getHostID().equals(hook.getHostID())) {
-						if (lastTransactionID.get() > _record.getLastValidatedTransaction()) {
-							lastTransactionID.set(_record.getLastValidatedTransaction());
+						if (lastTransactionID.get() > _record.getLastValidatedLocalTransaction()) {
+							lastTransactionID.set(_record.getLastValidatedLocalTransaction());
 						}
 					}
 					return false;

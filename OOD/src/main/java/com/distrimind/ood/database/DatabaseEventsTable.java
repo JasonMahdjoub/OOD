@@ -42,10 +42,7 @@ import com.distrimind.ood.database.annotations.ForeignKey;
 import com.distrimind.ood.database.annotations.NotNull;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.SerializationDatabaseException;
-import com.distrimind.ood.util.CachedInputStream;
-import com.distrimind.ood.util.CachedOutputStream;
-import com.distrimind.util.io.RandomInputStream;
-import com.distrimind.util.io.RandomOutputStream;
+import com.distrimind.util.io.*;
 
 import java.io.IOException;
 import java.util.NoSuchElementException;
@@ -115,18 +112,17 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 	public static abstract class DatabaseEventsIterator {
 		
 		private RandomInputStream dis;
-		private CachedInputStream cachedInputStream;
-		private CachedOutputStream cachedOutputStream;
+		private RandomInputStream cachedInputStream=null;
+		private RandomCacheFileOutputStream cachedOutputStream;
 
 		private int nextEvent=-1;
 		
 		
-		protected DatabaseEventsIterator(RandomInputStream dis, int cacheSize)
-		{
+		protected DatabaseEventsIterator(RandomInputStream dis) throws IOException {
 			if (dis==null)
 				throw new NullPointerException();
 			this.dis=dis;
-			cachedOutputStream=new CachedOutputStream(cacheSize);
+			cachedOutputStream=RandomCacheFileCenter.getSingleton().getNewBufferedRandomCacheFileOutputStream(true, RandomFileOutputStream.AccessMode.READ_AND_WRITE, BufferedRandomInputStream.DEFAULT_MAX_BUFFER_SIZE, 1);
 
 		}
 		
@@ -144,13 +140,15 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 				{
 					cachedOutputStream.writeByte(dis.read());
 				}
-				cachedInputStream=cachedOutputStream.getCachedInputStream();
+				cachedInputStream=cachedOutputStream.getRandomInputStream();
+				if (cachedInputStream.currentPosition()!=0)
+					cachedInputStream.seek(0);
 				dis=cachedInputStream;
 				cachedOutputStream=null;
 			}
 			else
 			{
-				cachedInputStream.reset();
+				cachedInputStream.seek(0);
 				dis=cachedInputStream;
 			}
 		}
@@ -303,8 +301,8 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 
 	}
 
-	DatabaseEventsIterator eventsTableIterator(RandomInputStream ois, int cacheSize) {
-		return new DatabaseEventsIterator(ois, cacheSize) {
+	DatabaseEventsIterator eventsTableIterator(RandomInputStream ois) throws IOException {
+		return new DatabaseEventsIterator(ois) {
 
 			private byte next = 0;
 			private int position = 0;
