@@ -42,6 +42,12 @@ import com.distrimind.util.DecentralizedValue;
  * @version 1.0
  * @since OOD 3.0.0
  */
-public interface MessageToCentralDatabaseBackupEvent {
-	DecentralizedValue getHostSource();
+public class AskDestinedToDatabaseBackupCenterForSynchronization extends AbstractDatabaseBackupCenterMessageForSynchronization implements MessageDestinedToCentralDatabaseBackup {
+	@SuppressWarnings("unused")
+	private AskDestinedToDatabaseBackupCenterForSynchronization() {
+	}
+
+	public AskDestinedToDatabaseBackupCenterForSynchronization(DecentralizedValue hostSource, DecentralizedValue hostDestination, long fromIncludedDatabaseTransactionID) {
+		super(hostSource, hostDestination, fromIncludedDatabaseTransactionID);
+	}
 }

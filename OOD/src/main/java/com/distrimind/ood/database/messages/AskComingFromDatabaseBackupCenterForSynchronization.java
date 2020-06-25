@@ -42,12 +42,12 @@ import com.distrimind.util.DecentralizedValue;
  * @version 1.0
  * @since OOD 3.0.0
  */
-public class AskFromDatabaseBackupCenterForSynchronization extends AbstractDatabaseBackupCenterMessageForSynchronization implements MessageFromCentralDatabaseBackupEvent {
+public class AskComingFromDatabaseBackupCenterForSynchronization extends AbstractDatabaseBackupCenterMessageForSynchronization implements MessageComingFromCentralDatabaseBackup {
 	@SuppressWarnings("unused")
-	private AskFromDatabaseBackupCenterForSynchronization() {
+	private AskComingFromDatabaseBackupCenterForSynchronization() {
 	}
 
-	public AskFromDatabaseBackupCenterForSynchronization(DecentralizedValue hostDestination, long fromIncludedDatabaseTransactionID) {
+	public AskComingFromDatabaseBackupCenterForSynchronization(DecentralizedValue hostDestination, long fromIncludedDatabaseTransactionID) {
 		super(null, hostDestination, fromIncludedDatabaseTransactionID);
 	}
 

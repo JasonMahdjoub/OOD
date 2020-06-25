@@ -47,13 +47,13 @@ import java.util.Map;
  * @version 1.0
  * @since OOD 3.0.0
  */
-public class DatabaseTransactionsIdentifiersToSynchronizeToCentralDatabaseBackup extends AbstractDatabaseTransactionsIdentifiersToSynchronize implements MessageToCentralDatabaseBackupEvent{
+public class DatabaseTransactionsIdentifiersToSynchronizeDestinedToCentralDatabaseBackup extends AbstractDatabaseTransactionsIdentifiersToSynchronize implements MessageDestinedToCentralDatabaseBackup {
 	private long lastTransactionUTC;
 	@SuppressWarnings("unused")
-	private DatabaseTransactionsIdentifiersToSynchronizeToCentralDatabaseBackup() {
+	private DatabaseTransactionsIdentifiersToSynchronizeDestinedToCentralDatabaseBackup() {
 	}
 
-	public DatabaseTransactionsIdentifiersToSynchronizeToCentralDatabaseBackup(DecentralizedValue hostIDSource, Map<DecentralizedValue, Long> lastTransactionFieldsBetweenDistantHosts, long lastTransactionUTC) {
+	public DatabaseTransactionsIdentifiersToSynchronizeDestinedToCentralDatabaseBackup(DecentralizedValue hostIDSource, Map<DecentralizedValue, Long> lastTransactionFieldsBetweenDistantHosts, long lastTransactionUTC) {
 		super(hostIDSource, lastTransactionFieldsBetweenDistantHosts);
 		this.lastTransactionUTC=lastTransactionUTC;
 	}

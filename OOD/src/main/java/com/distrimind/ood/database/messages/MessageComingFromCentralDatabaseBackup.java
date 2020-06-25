@@ -1,4 +1,4 @@
-package com.distrimind.ood.database;
+package com.distrimind.ood.database.messages;
 /*
 Copyright or © or Copr. Jason Mahdjoub (01/04/2013)
 
@@ -35,38 +35,14 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.util.io.*;
-
+import com.distrimind.util.DecentralizedValue;
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
- * @since Utils 3.0.0
+ * @since OOS 3.0.0
  */
-public class EncryptedBackupPart {
-
-	private EncryptedDatabaseBackupMetaDataPerFile metaData;
-	private RandomInputStream partInputStream;
-
-	@SuppressWarnings("unused")
-	private EncryptedBackupPart() {
-	}
-
-	public EncryptedBackupPart(EncryptedDatabaseBackupMetaDataPerFile metaData, RandomInputStream partInputStream) {
-		if (metaData==null)
-			throw new NullPointerException();
-		if (partInputStream==null)
-			throw new NullPointerException();
-		this.metaData = metaData;
-		this.partInputStream = partInputStream;
-	}
-
-	public EncryptedDatabaseBackupMetaDataPerFile getMetaData() {
-		return metaData;
-	}
-
-	public RandomInputStream getPartInputStream() {
-		return partInputStream;
-	}
+public interface MessageComingFromCentralDatabaseBackup {
+	DecentralizedValue getHostDestination();
 
 }

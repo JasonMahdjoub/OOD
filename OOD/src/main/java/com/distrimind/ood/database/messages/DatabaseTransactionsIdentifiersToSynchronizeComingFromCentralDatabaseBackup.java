@@ -35,14 +35,56 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+import com.distrimind.ood.database.DatabaseEvent;
 import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.io.SecureExternalizable;
+import com.distrimind.util.io.SecuredObjectInputStream;
+import com.distrimind.util.io.SecuredObjectOutputStream;
+import com.distrimind.util.io.SerializationTools;
+
+import java.io.IOException;
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
- * @since OOS 3.0.0
+ * @since OOD 3.0.0
  */
-public interface MessageFromCentralDatabaseBackupEvent {
-	DecentralizedValue getHostDestination();
+public class DatabaseTransactionsIdentifiersToSynchronizeComingFromCentralDatabaseBackup extends DatabaseEvent implements SecureExternalizable, MessageComingFromCentralDatabaseBackup {
+	private DecentralizedValue hostDestination;
+	private long lastSynchronizedTransactionID;
 
+	@SuppressWarnings("unused")
+	private DatabaseTransactionsIdentifiersToSynchronizeComingFromCentralDatabaseBackup()
+	{
+
+	}
+	public DatabaseTransactionsIdentifiersToSynchronizeComingFromCentralDatabaseBackup(DecentralizedValue hostDestination, long lastSynchronizedTransactionID) {
+		this.hostDestination = hostDestination;
+		this.lastSynchronizedTransactionID = lastSynchronizedTransactionID;
+	}
+
+	public DecentralizedValue getHostDestination() {
+		return hostDestination;
+	}
+
+	public long getLastSynchronizedTransactionID() {
+		return lastSynchronizedTransactionID;
+	}
+
+	@Override
+	public int getInternalSerializedSize() {
+		return 8+ SerializationTools.getInternalSize((SecureExternalizable) hostDestination);
+	}
+
+	@Override
+	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
+		out.writeObject(hostDestination, false);
+		out.writeLong(lastSynchronizedTransactionID);
+	}
+
+	@Override
+	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
+		hostDestination =in.readObject(false, DecentralizedValue.class);
+		lastSynchronizedTransactionID=in.readLong();
+	}
 }

@@ -47,7 +47,8 @@ import com.distrimind.ood.database.fieldaccessors.DefaultByteTabObjectConverter;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.ood.database.messages.DatabaseTransactionsIdentifiersToSynchronize;
-import com.distrimind.ood.database.messages.DatabaseTransactionsIdentifiersToSynchronizeToCentralDatabaseBackup;
+import com.distrimind.ood.database.messages.DatabaseTransactionsIdentifiersToSynchronizeDestinedToCentralDatabaseBackup;
+import com.distrimind.ood.database.messages.EncryptedBackupPartDestinedToCentralDatabaseBackup;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.FileTools;
 import com.distrimind.util.Reference;
@@ -899,7 +900,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				if (initializedHooksWithCentralBackup.size()>0 || suspendedHooksWithCentralBackup.size()>0) {
 					lastIds = getHooksTransactionsTable()
 							.getLastValidatedDistantTransactionUTCs();
-					addNewDatabaseEvent(new DatabaseTransactionsIdentifiersToSynchronizeToCentralDatabaseBackup(
+					addNewDatabaseEvent(new DatabaseTransactionsIdentifiersToSynchronizeDestinedToCentralDatabaseBackup(
 							getHooksTransactionsTable().getLocalDatabaseHost().getHostID(), new HashMap<>(lastIds), getLastTransactionUTC()));
 				}
 			}
@@ -2107,7 +2108,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			hostSource=in.readObject(false, DecentralizedValue.class);
 		}
 	}
-
 
 
 	public static class DatabaseBackupToIncorporateFromCentralDatabaseBackup extends AbstractDatabaseEventsToSynchronize implements Comparable<DatabaseBackupToIncorporateFromCentralDatabaseBackup>, CentralDatabaseBackupEvent {
@@ -5019,7 +5019,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				TransactionMetaData.class,
 				DatabaseBackupMetaDataPerFile.class,
 				EncryptedDatabaseBackupMetaDataPerFile.class,
-				EncryptedBackupPart.class,
+				EncryptedBackupPartDestinedToCentralDatabaseBackup.class,
 				DatabaseEventToSend.class,
 				DatabaseWrapper.TransactionsInterval.class,
 				DatabaseWrapper.DatabaseTransactionsIdentifiersToSynchronize.class,

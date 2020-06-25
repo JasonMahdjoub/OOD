@@ -36,55 +36,77 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 import com.distrimind.ood.database.DatabaseEvent;
+import com.distrimind.ood.database.EncryptedDatabaseBackupMetaDataPerFile;
 import com.distrimind.util.DecentralizedValue;
-import com.distrimind.util.io.SecureExternalizable;
-import com.distrimind.util.io.SecuredObjectInputStream;
-import com.distrimind.util.io.SecuredObjectOutputStream;
-import com.distrimind.util.io.SerializationTools;
+import com.distrimind.util.io.*;
 
 import java.io.IOException;
+
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
- * @since OOD 3.0.0
+ * @since Utils 3.0.0
  */
-public class DatabaseTransactionsIdentifiersToSynchronizeFromCentralDatabaseBackup extends DatabaseEvent implements SecureExternalizable, MessageFromCentralDatabaseBackupEvent {
-	private DecentralizedValue hostDestination;
-	private long lastSynchronizedTransactionID;
+public class EncryptedBackupPartDestinedToCentralDatabaseBackup extends DatabaseEvent implements SecureExternalizable, MessageDestinedToCentralDatabaseBackup {
+
+	private DecentralizedValue hostSource;
+	private EncryptedDatabaseBackupMetaDataPerFile metaData;
+	private RandomInputStream partInputStream;
+
 
 	@SuppressWarnings("unused")
-	private DatabaseTransactionsIdentifiersToSynchronizeFromCentralDatabaseBackup()
-	{
-
-	}
-	public DatabaseTransactionsIdentifiersToSynchronizeFromCentralDatabaseBackup(DecentralizedValue hostDestination, long lastSynchronizedTransactionID) {
-		this.hostDestination = hostDestination;
-		this.lastSynchronizedTransactionID = lastSynchronizedTransactionID;
+	private EncryptedBackupPartDestinedToCentralDatabaseBackup() {
 	}
 
-	public DecentralizedValue getHostDestination() {
-		return hostDestination;
+	public EncryptedBackupPartDestinedToCentralDatabaseBackup(DecentralizedValue hostSource, EncryptedDatabaseBackupMetaDataPerFile metaData, RandomInputStream partInputStream) {
+		if (metaData==null)
+			throw new NullPointerException();
+		if (partInputStream==null)
+			throw new NullPointerException();
+		if (hostSource==null)
+			throw new NullPointerException();
+		this.hostSource=hostSource;
+		this.metaData = metaData;
+		this.partInputStream = partInputStream;
+
 	}
 
-	public long getLastSynchronizedTransactionID() {
-		return lastSynchronizedTransactionID;
+	public EncryptedDatabaseBackupMetaDataPerFile getMetaData() {
+		return metaData;
+	}
+
+	public RandomInputStream getPartInputStream() {
+		return partInputStream;
+	}
+
+	public void setPartInputStream(RandomInputStream partInputStream) {
+		if (partInputStream==null)
+			throw new NullPointerException();
+		this.partInputStream = partInputStream;
+	}
+
+	@Override
+	public DecentralizedValue getHostSource() {
+		return hostSource;
 	}
 
 	@Override
 	public int getInternalSerializedSize() {
-		return 8+ SerializationTools.getInternalSize((SecureExternalizable) hostDestination);
+		return SerializationTools.getInternalSize(metaData)+SerializationTools.getInternalSize((SecureExternalizable)hostSource);
 	}
 
 	@Override
 	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
-		out.writeObject(hostDestination, false);
-		out.writeLong(lastSynchronizedTransactionID);
+		out.writeObject(hostSource, false);
+		out.writeObject(metaData, false);
 	}
 
 	@Override
 	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
-		hostDestination =in.readObject(false, DecentralizedValue.class);
-		lastSynchronizedTransactionID=in.readLong();
+		partInputStream=null;
+		hostSource=in.readObject(false, DecentralizedValue.class);
+		metaData=in.readObject(false, EncryptedDatabaseBackupMetaDataPerFile.class);
 	}
+
 }

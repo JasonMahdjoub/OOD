@@ -38,7 +38,9 @@ knowledge of the CeCILL-C license and that you accept its terms.
 import com.distrimind.ood.database.exceptions.ConstraintsNotRespectedDatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
+import com.distrimind.ood.database.messages.EncryptedBackupPartDestinedToCentralDatabaseBackup;
 import com.distrimind.ood.i18n.DatabaseMessages;
+import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.FileTools;
 import com.distrimind.util.Reference;
 import com.distrimind.util.crypto.AbstractSecureRandom;
@@ -290,7 +292,14 @@ public class BackupRestoreManager {
 			return res;
 		}
 	}
-
+	public File getFinalFile(long fileTimeStamp, boolean referenceFile)
+	{
+		checkFile(fileTimeStamp, referenceFile);
+		File f=getFile(fileTimeStamp, referenceFile);
+		if (fileTimeStamps.get(fileTimeStamps.size()-1)==fileTimeStamp && !isPartFull(fileTimeStamp, f))
+			throw new IllegalArgumentException("File is not final");
+		return f;
+	}
 	public List<File> getFinalFiles()
 	{
 		synchronized (this) {
@@ -1498,11 +1507,11 @@ public class BackupRestoreManager {
 		}
 	}
 
-	EncryptedBackupPart getEncryptedFilePartWithMetaData(long timeStamp, boolean backupReference, AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
+	EncryptedBackupPartDestinedToCentralDatabaseBackup getEncryptedFilePartWithMetaData(DecentralizedValue fromHostIdentifier, long timeStamp, boolean backupReference, AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
 		EncryptedDatabaseBackupMetaDataPerFile metaData=getEncryptedDatabaseBackupMetaDataPerFile(timeStamp, backupReference, random, encryptionProfileProvider);
 		RandomCacheFileOutputStream out=getEncryptedFilePart(timeStamp, backupReference, random, encryptionProfileProvider);
 		try {
-			return new EncryptedBackupPart(metaData, out.getRandomInputStream());
+			return new EncryptedBackupPartDestinedToCentralDatabaseBackup(fromHostIdentifier, metaData, out.getRandomInputStream());
 		} catch (IOException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -1517,8 +1526,7 @@ public class BackupRestoreManager {
 		}
 	}
 	DatabaseBackupMetaDataPerFile getDatabaseBackupMetaDataPerFile(long timeStamp, boolean backupReference) throws DatabaseException {
-		checkFile(timeStamp, backupReference);
-		File file=getFile(timeStamp, backupReference);
+		File file=getFinalFile(timeStamp, backupReference);
 		List<TransactionMetaData> transactionsMetaData=new ArrayList<>();
 
 		try (RandomFileInputStream in = new RandomFileInputStream(file)) {
@@ -1545,12 +1553,11 @@ public class BackupRestoreManager {
 
 
 	public RandomCacheFileOutputStream getEncryptedFilePart(long timeStamp, boolean backupReference, AbstractSecureRandom random, EncryptionProfileProvider profileProvider) throws DatabaseException {
-		checkFile(timeStamp, backupReference);
 		try {
 			RandomCacheFileOutputStream randomCacheFileOutputStream = RandomCacheFileCenter.getSingleton().getNewBufferedRandomCacheFileOutputStream(true, RandomFileOutputStream.AccessMode.READ_AND_WRITE, BufferedRandomInputStream.DEFAULT_MAX_BUFFER_SIZE, 1);
 			new EncryptionSignatureHashEncoder()
 					.withEncryptionProfileProvider(random, profileProvider)
-					.withRandomInputStream(new RandomFileInputStream(getFile(timeStamp, backupReference)))
+					.withRandomInputStream(new RandomFileInputStream(getFinalFile(timeStamp, backupReference)))
 					.encode(randomCacheFileOutputStream);
 			return randomCacheFileOutputStream;
 		}
@@ -2148,7 +2155,7 @@ public class BackupRestoreManager {
 		int transactionsNumber=0;
 		RandomOutputStream out;
 		private boolean closed=false;
-		private long transactionUTC;
+		private final long transactionUTC;
 		private final int nextTransactionReference;
 		private final long fileTimeStamp;
 		//private final RecordsIndex index;

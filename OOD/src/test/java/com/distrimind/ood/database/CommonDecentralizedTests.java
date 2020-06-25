@@ -136,7 +136,7 @@ public abstract class CommonDecentralizedTests {
 			return new File(getDirectory(host, packageString), file.getName());
 		}
 		//this function is called when client is connecting to server
-		public void receiveMessage(DatabaseTransactionsIdentifiersToSynchronizeToCentralDatabaseBackup message) throws DatabaseException {
+		public void receiveMessage(DatabaseTransactionsIdentifiersToSynchronizeDestinedToCentralDatabaseBackup message) throws DatabaseException {
 			for (Map.Entry<DecentralizedValue, Long> e : message.getLastDistantTransactionIdentifiers().entrySet())
 			{
 				DatabaseBackupMetaData m=channels.get(e.getKey());
@@ -169,7 +169,7 @@ public abstract class CommonDecentralizedTests {
 							if (d2.hostID.equals(message.getHostSource()))
 							{
 								d2.getReceivedCentralDatabaseBackupEvents().add(
-										new AskFromDatabaseBackupCenterForSynchronization(message.getHostSource(), lastTransactionID ));
+										new AskComingFromDatabaseBackupCenterForSynchronization(message.getHostSource(), lastTransactionID ));
 								break;
 							}
 						}
@@ -204,7 +204,7 @@ public abstract class CommonDecentralizedTests {
 								{
 									if (d2.isConnected()) {
 										d2.getReceivedCentralDatabaseBackupEvents().add(
-												new AskFromDatabaseBackupCenterForSynchronization(d2.hostID, e.getValue() + 1));
+												new AskComingFromDatabaseBackupCenterForSynchronization(d2.hostID, e.getValue() + 1));
 									}
 									break;
 								}
@@ -230,7 +230,7 @@ public abstract class CommonDecentralizedTests {
 			}
 		}
 
-		public void receiveMessage(AskToDatabaseBackupCenterForSynchronization message)
+		public void receiveMessage(AskDestinedToDatabaseBackupCenterForSynchronization message)
 		{
 			//TODO message
 		}
@@ -468,7 +468,7 @@ public abstract class CommonDecentralizedTests {
 		private TablePointing.Record recordPointingNull = null, recordPointingNotNull = null;
 		private TableAlone.Record recordAlone = null;
 		private final List<CommonDecentralizedTests.Anomaly> anomalies;
-		private final List<MessageFromCentralDatabaseBackupEvent> centralDatabaseBackupEvents=new ArrayList<>();
+		private final List<MessageComingFromCentralDatabaseBackup> centralDatabaseBackupEvents=new ArrayList<>();
 
 		Database(DatabaseWrapper dbwrapper, BackupConfiguration backupConfiguration) throws DatabaseException {
 			this.dbwrapper = dbwrapper;
@@ -632,7 +632,7 @@ public abstract class CommonDecentralizedTests {
 			return this.eventsReceivedStack;
 		}
 
-		public List<MessageFromCentralDatabaseBackupEvent> getReceivedCentralDatabaseBackupEvents() {
+		public List<MessageComingFromCentralDatabaseBackup> getReceivedCentralDatabaseBackupEvents() {
 			return this.centralDatabaseBackupEvents;
 		}
 
