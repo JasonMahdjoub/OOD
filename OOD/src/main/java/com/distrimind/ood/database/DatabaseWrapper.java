@@ -3161,6 +3161,15 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			this.transactionToSynchronize=transactionToSynchronize;
 		}
 
+		long getTransactionUTC(String concernedDatabasePackage)
+		{
+			for (Map.Entry<Package, BackupRestoreManager.Transaction> e: backupManager.entrySet()) {
+				if (e.getKey().toString().equals(concernedDatabasePackage))
+					return e.getValue().getTransactionUTC();
+			}
+			return System.currentTimeMillis();
+		}
+
 		boolean validateTmpTransaction() throws DatabaseException {
 			final HashMap<Package, Long> transactionsID=new HashMap<>();
 			try {
@@ -3199,10 +3208,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 															|| t.concernedHosts.contains(_record.getHostID()))) {
 
 														if (finalTR.get() == null) {
+															long timeUTC=getTransactionUTC(t.transaction.concernedDatabasePackage);
 															finalTR.set(t.transaction = getDatabaseTransactionEventsTable()
 																	.addRecord(new DatabaseTransactionEventsTable.Record(
 																			getTransactionIDTable()
-																					.getAndIncrementTransactionID(),
+																					.getAndIncrementTransactionID(),timeUTC,
 																			t.transaction.concernedDatabasePackage,
 																			t.concernedHosts)));
 															transactionsID.put(e.getKey(), t.transaction.id);
@@ -3276,11 +3286,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 															|| t.concernedHosts.contains(_record.getHostID()))) {
 														// excludedHooks.add(_record.getHostID());
 														if (finalTR.get() == null) {
+															long timeUTC=getTransactionUTC(t.transaction.concernedDatabasePackage);
 															DatabaseTransactionEventsTable.Record te;
 															finalTR.set(te = getDatabaseTransactionEventsTable()
 																	.addRecord(new DatabaseTransactionEventsTable.Record(
 																			getTransactionIDTable()
-																					.getAndIncrementTransactionID(),
+																					.getAndIncrementTransactionID(),timeUTC,
 																			t.transaction.concernedDatabasePackage,
 																			t.concernedHosts)));
 															transactionsID.put(e.getKey(), te.id);

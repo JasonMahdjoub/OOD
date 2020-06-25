@@ -410,6 +410,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 
 					DatabaseTransactionEventsTable.Record tr = new DatabaseTransactionEventsTable.Record();
 					tr.id = getTransactionIDTable().getAndIncrementTransactionID();
+					tr.timeUTC=transaction.get().getTimeUTC();
 					tr.concernedDatabasePackage = databasePackage;
 					tr.setConcernedHosts(Collections.singletonList(hook.getHostID()));
 					tr.setForced(force);
@@ -427,6 +428,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 		// final long previousLastTransacionID=getIDTable().getLastTransactionID();
 		DatabaseTransactionEventsTable.Record tr = new DatabaseTransactionEventsTable.Record();
 		tr.id = getTransactionIDTable().getAndIncrementTransactionID();
+		tr.timeUTC=System.currentTimeMillis();
 		tr.concernedDatabasePackage = databasePackage;
 		tr.setConcernedHosts(Collections.singletonList(hook.getHostID()));
 		tr.setForced(force);

@@ -2232,6 +2232,10 @@ public class BackupRestoreManager {
 
 		}
 
+		public long getTransactionUTC() {
+			return transactionUTC;
+		}
+
 		final void validateTransaction(Long transactionID) throws DatabaseException
 		{
 			try {
