@@ -66,6 +66,7 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 		@Field(index = true)
 		protected long localID;
 
+
 		@ForeignKey
 		@PrimaryKey
 		protected DatabaseHooksTable.Record hook;
@@ -95,15 +96,14 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 			return (int) this.localID;
 		}
 
-		public Record(long _id, long localID, com.distrimind.ood.database.DatabaseHooksTable.Record _hook,
+		public Record(long _id, long localID, long timeUTC, com.distrimind.ood.database.DatabaseHooksTable.Record _hook,
 				/* byte[] _transaction, */boolean peersInformedFull, byte[] peersInformed, boolean force) {
-			super();
+			super(_id, timeUTC);
 			if (_hook == null)
 				throw new NullPointerException("_hook");
 			/*
 			 * if (_transaction==null) throw new NullPointerException("_transaction");
 			 */
-			setID(_id);
 			this.localID = localID;
 			hook = _hook;
 			/*
@@ -317,6 +317,7 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 
 			long transactionID = ois.readLong();
 			long localTransactionID = ois.readLong();
+			long timeUTC=ois.readLong();
 			boolean force = ois.readBoolean();
 
 			boolean peersInformedFull = ois.readBoolean();
@@ -332,7 +333,7 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 			}
 
 			DatabaseDistantTransactionEvent.Record res = new DatabaseDistantTransactionEvent.Record(transactionID,
-					localTransactionID, hooks.get(0), peersInformedFull, peersInformed, force);
+					localTransactionID, timeUTC, hooks.get(0), peersInformedFull, peersInformed, force);
 			try {
 				res.getPeersInformed();
 			} catch (Exception e) {
@@ -397,6 +398,7 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 								oos.write(b);
 								oos.writeLong(_record.getID());
 								oos.writeLong(_record.getLocalID());
+								oos.writeLong(_record.getTimeUTC());
 								oos.writeBoolean(_record.isForced());
 								oos.writeBoolean(_record.peersInformedFull);
 								if (!_record.peersInformedFull) {

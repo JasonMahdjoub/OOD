@@ -70,16 +70,16 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 		@Field
 		private boolean forced = false;
 
+		@Field
+		protected Long timeUTC;
+
 		AbstractRecord() {
 
 		}
 
-		AbstractRecord(long id) {
+		AbstractRecord(long id, long timeUTC) {
 			this.id = id;
-		}
-
-		void setID(long id) {
-			this.id = id;
+			this.timeUTC=timeUTC;
 		}
 
 		long getID() {
@@ -108,6 +108,10 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 			return (int) id;
 		}
 
+		Long getTimeUTC() {
+			return timeUTC;
+		}
+
 	}
 
 	private static final int concernedHostsSizeLimit = 10000;
@@ -127,14 +131,14 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 			this.concernedHosts = null;
 		}
 
-		Record(long id, String concernedDatabasePackage) {
-			super(id);
+		Record(long id, long timeUTC, String concernedDatabasePackage) {
+			super(id, timeUTC);
 			this.concernedDatabasePackage = concernedDatabasePackage;
 			this.concernedHosts = null;
 		}
 
-		Record(long id, String concernedDatabasePackage, Set<DecentralizedValue> concernedHosts) {
-			this(id, concernedDatabasePackage);
+		Record(long id, long timeUTC, String concernedDatabasePackage, Set<DecentralizedValue> concernedHosts) {
+			this(id, timeUTC, concernedDatabasePackage);
 
 			setConcernedHosts(concernedHosts);
 		}
@@ -311,8 +315,8 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 				@Override
 				public boolean nextRecord(DatabaseHooksTable.Record _record) {
 					if (!_record.concernsLocalDatabaseHost() && !_record.getHostID().equals(hook.getHostID())) {
-						if (lastTransactionID.get() > _record.getLastValidatedLocalTransaction()) {
-							lastTransactionID.set(_record.getLastValidatedLocalTransaction());
+						if (lastTransactionID.get() > _record.getLastValidatedLocalTransactionID()) {
+							lastTransactionID.set(_record.getLastValidatedLocalTransactionID());
 						}
 					}
 					return false;

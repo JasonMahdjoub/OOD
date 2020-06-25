@@ -81,10 +81,13 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		private boolean concernsDatabaseHost;
 
 		@Field
-		private long lastValidatedLocalTransaction = -1;
+		private long lastValidatedLocalTransactionID = -1;
 
 		@Field
-		private long lastValidatedDistantTransaction = -1;
+		private long lastValidatedDistantTransactionID = -1;
+
+		@Field
+		private long lastValidatedDistantTransactionUTCMs=Long.MIN_VALUE;
 
 		@Override
 		public boolean equals(Object o) {
@@ -98,30 +101,40 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			return false;
 		}
 
+		long getLastValidatedDistantTransactionUTCMs() {
+			return lastValidatedDistantTransactionUTCMs;
+		}
+
+		void setLastValidatedDistantTransactionUTCMs(long lastValidatedDistantTransactionUTCMs) {
+			if (lastValidatedDistantTransactionUTCMs<this.lastValidatedDistantTransactionUTCMs)
+				throw new IllegalArgumentException();
+			this.lastValidatedDistantTransactionUTCMs = lastValidatedDistantTransactionUTCMs;
+		}
+
 		@Override
 		public int hashCode() {
 			return id;
 		}
 
-		long getLastValidatedLocalTransaction() {
-			return lastValidatedLocalTransaction;
+		long getLastValidatedLocalTransactionID() {
+			return lastValidatedLocalTransactionID;
 		}
 
-		void setLastValidatedLocalTransaction(long _lastValidatedTransaction) {
-			lastValidatedLocalTransaction = _lastValidatedTransaction;
+		void setLastValidatedLocalTransactionID(long _lastValidatedTransaction) {
+			lastValidatedLocalTransactionID = _lastValidatedTransaction;
 		}
 
-		long getLastValidatedDistantTransaction() {
-			return lastValidatedDistantTransaction;
+		long getLastValidatedDistantTransactionID() {
+			return lastValidatedDistantTransactionID;
 		}
 
 		@SuppressWarnings("SameParameterValue")
-		void setLastValidatedDistantTransaction(long _lastValidatedDistantTransaction) throws DatabaseException {
-			if (this.lastValidatedDistantTransaction > _lastValidatedDistantTransaction)
+		void setLastValidatedDistantTransactionID(long _lastValidatedDistantTransaction) throws DatabaseException {
+			if (this.lastValidatedDistantTransactionID > _lastValidatedDistantTransaction)
 				throw DatabaseException.getDatabaseException(new IllegalArgumentException("The host " + this.getHostID()
 						+ " can't valid a transaction (N°" + _lastValidatedDistantTransaction
-						+ ") lower than the last validated transaction : " + this.lastValidatedDistantTransaction));
-			this.lastValidatedDistantTransaction = _lastValidatedDistantTransaction;
+						+ ") lower than the last validated transaction : " + this.lastValidatedDistantTransactionID));
+			this.lastValidatedDistantTransactionID = _lastValidatedDistantTransaction;
 		}
 
 		int getID() {
@@ -406,13 +419,13 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 									if (_record.getTransaction().getID() - 1 < actualLastID.get())
 										actualLastID.set(_record.getTransaction().getID() - 1);
-									if (actualLastID.get() == h.getLastValidatedLocalTransaction())
+									if (actualLastID.get() == h.getLastValidatedLocalTransactionID())
 										this.stopTableParsing();
 									return false;
 								}
 
 							}, "hook=%hook", "hook", h);
-					if (actualLastID.get() > h.getLastValidatedLocalTransaction()) {
+					if (actualLastID.get() > h.getLastValidatedLocalTransactionID()) {
 						getDatabaseDistantTransactionEvent()
 								.getRecords(new Filter<DatabaseDistantTransactionEvent.Record>() {
 
@@ -423,24 +436,24 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 										if (_record.isConcernedBy(h.getHostID())) {
 											if (_record.getLocalID() - 1 < actualLastID.get())
 												actualLastID.set(_record.getLocalID() - 1);
-											if (actualLastID.get() == h.getLastValidatedLocalTransaction())
+											if (actualLastID.get() == h.getLastValidatedLocalTransactionID())
 												this.stopTableParsing();
 										}
 										return false;
 									}
 								}, "localID<=%maxLocalID AND localID>%minLocalID and peersInformedFull=%peersInformedFull",
 										"maxLocalID", actualLastID.get() , "minLocalID",
-										h.getLastValidatedLocalTransaction() , "peersInformedFull",
+										h.getLastValidatedLocalTransactionID() , "peersInformedFull",
 										Boolean.FALSE);
 					}
 
 					if (actualLastID.get() == Long.MAX_VALUE)
 						actualLastID.set(lastTransactionID);
-					else if (actualLastID.get() < h.getLastValidatedLocalTransaction())
+					else if (actualLastID.get() < h.getLastValidatedLocalTransactionID())
 						throw new IllegalAccessError();
 
-					if (h.getLastValidatedLocalTransaction() < actualLastID.get()) {
-						h.setLastValidatedLocalTransaction(actualLastID.get());
+					if (h.getLastValidatedLocalTransactionID() < actualLastID.get()) {
+						h.setLastValidatedLocalTransactionID(actualLastID.get());
 						toUpdate.add(h);
 					}
 
@@ -449,7 +462,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			}
 		});
 		for (DatabaseHooksTable.Record h : toUpdate) {
-			updateRecord(h, "lastValidatedTransaction", h.getLastValidatedLocalTransaction());
+			updateRecord(h, "lastValidatedTransaction", h.getLastValidatedLocalTransactionID());
 		}
 	}
 
@@ -469,7 +482,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		return this.lastTransactionFieldsBetweenDistantHosts.get(new HostPair(hostSource, hostDestination));
 	}*/
 
-	Map<DecentralizedValue, Long> getLastValidatedDistantTransactions() throws DatabaseException {
+	Map<DecentralizedValue, Long> getLastValidatedDistantTransactionIDs() throws DatabaseException {
 		return getDatabaseWrapper()
 				.runSynchronizedTransaction(new SynchronizedTransaction<Map<DecentralizedValue, Long>>() {
 
@@ -482,7 +495,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							@Override
 							public boolean nextRecord(Record _record) {
 								if (!_record.concernsLocalDatabaseHost())
-									res.put(_record.getHostID(), _record.getLastValidatedDistantTransaction());
+									res.put(_record.getHostID(), _record.getLastValidatedDistantTransactionID());
 								return false;
 							}
 						});
@@ -503,6 +516,44 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 					@Override
 					public void initOrReset() {
 						
+					}
+				});
+	}
+
+	Map<DecentralizedValue, Long> getLastValidatedDistantTransactionUTCs() throws DatabaseException {
+		return getDatabaseWrapper()
+				.runSynchronizedTransaction(new SynchronizedTransaction<Map<DecentralizedValue, Long>>() {
+
+					@Override
+					public Map<DecentralizedValue, Long> run() throws Exception {
+						final Map<DecentralizedValue, Long> res = new HashMap<>();
+
+						getRecords(new Filter<DatabaseHooksTable.Record>() {
+
+							@Override
+							public boolean nextRecord(Record _record) {
+								if (!_record.concernsLocalDatabaseHost())
+									res.put(_record.getHostID(), _record.getLastValidatedDistantTransactionUTCMs());
+								return false;
+							}
+						});
+						return res;
+					}
+
+					@Override
+					public TransactionIsolation getTransactionIsolation() {
+
+						return TransactionIsolation.TRANSACTION_READ_COMMITTED;
+					}
+
+					@Override
+					public boolean doesWriteData() {
+						return false;
+					}
+
+					@Override
+					public void initOrReset() {
+
 					}
 				});
 	}
@@ -564,14 +615,14 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							r.setHostID(hostID);
 							List<String> newAddedPackages = r.setDatabasePackageNames(packages);
 							r.setConcernsDatabaseHost(concernsDatabaseHost);
-							r.setLastValidatedDistantTransaction(-1);
-							r.setLastValidatedLocalTransaction(-1);
+							r.setLastValidatedDistantTransactionID(-1);
+							r.setLastValidatedLocalTransactionID(-1);
 							r = addRecord(r);
 							
 							localHost = null;
 							supportedDatabasePackages = null;
 							if (!concernsDatabaseHost) {
-								r.setLastValidatedLocalTransaction(getDatabaseTransactionEventsTable()
+								r.setLastValidatedLocalTransactionID(getDatabaseTransactionEventsTable()
 										.addTransactionToSynchronizeTables(newAddedPackages, hostAlreadySynchronized, r,
 												replaceDistantConflictualRecords));
 								updateRecord(r);
@@ -584,7 +635,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							supportedDatabasePackages = null;
 
 							if (!concernsDatabaseHost) {
-								r.setLastValidatedLocalTransaction(getDatabaseTransactionEventsTable()
+								r.setLastValidatedLocalTransactionID(getDatabaseTransactionEventsTable()
 										.addTransactionToSynchronizeTables(newAddedPackages, hostAlreadySynchronized, r,
 												replaceDistantConflictualRecords));
 								updateRecord(r);
@@ -738,8 +789,8 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			@Override
 			public boolean nextRecord(DatabaseHooksTable.Record _record) {
 				if (!_record.concernsLocalDatabaseHost()) {
-					if (min.get() > _record.getLastValidatedLocalTransaction())
-						min.set(_record.getLastValidatedLocalTransaction());
+					if (min.get() > _record.getLastValidatedLocalTransactionID())
+						min.set(_record.getLastValidatedLocalTransactionID());
 				}
 				return false;
 			}
