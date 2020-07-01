@@ -91,7 +91,7 @@ public class DatabaseBackupMetaDataPerFile implements Comparable<DatabaseBackupM
 		return transactionsMetaData.iterator();
 	}
 
-	public long getTimeStampUTC() {
+	public long getFileTimestampUTC() {
 		return timeStampUTC;
 	}
 
@@ -153,4 +153,7 @@ public class DatabaseBackupMetaDataPerFile implements Comparable<DatabaseBackupM
 		readMetaData(in);
 	}
 
+	public long getLastTransactionTimestampUTC() {
+		return transactionsMetaData.get(transactionsMetaData.size()-1).transactionUTC;
+	}
 }

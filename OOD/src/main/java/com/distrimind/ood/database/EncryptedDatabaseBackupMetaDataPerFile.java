@@ -46,8 +46,10 @@ import java.io.IOException;
  * @since Utils 3.0.0
  */
 public class EncryptedDatabaseBackupMetaDataPerFile implements SecureExternalizable {
-	private long timeStampUTC;
+	private long fileTimestampUTC;
+	private long lastTransactionTimestampUTC;
 	private boolean referenceFile;
+	private String packageString;
 	private byte[] encryptedMetaData;
 	public static final int MAX_ENCRYPTED_DATA_LENGTH_IN_BYTES=(int)EncryptionSignatureHashEncoder.getMaximumOutputLengthWhateverParameters(DatabaseBackupMetaDataPerFile.MAXIMUM_INTERNAL_DATA_SIZE_IN_BYTES);
 	@SuppressWarnings("unused")
@@ -56,19 +58,35 @@ public class EncryptedDatabaseBackupMetaDataPerFile implements SecureExternaliza
 
 	}
 
-	public EncryptedDatabaseBackupMetaDataPerFile(long timeStampUTC, boolean referenceFile, byte[] encryptedMetaData) {
+	public EncryptedDatabaseBackupMetaDataPerFile(long fileTimestampUTC, long lastTransactionTimestampUTC, boolean referenceFile, String packageString, byte[] encryptedMetaData) {
 		if (encryptedMetaData==null)
 			throw new NullPointerException();
 		if (encryptedMetaData.length==0)
 			throw new IllegalArgumentException();
-		this.timeStampUTC = timeStampUTC;
+		if (fileTimestampUTC>lastTransactionTimestampUTC)
+			throw new IllegalArgumentException();
+		if (packageString==null)
+			throw new NullPointerException();
+		this.fileTimestampUTC = fileTimestampUTC;
+		this.lastTransactionTimestampUTC=lastTransactionTimestampUTC;
 		this.referenceFile = referenceFile;
+		this.packageString=packageString;
 		this.encryptedMetaData = encryptedMetaData;
+
 	}
 
-	public EncryptedDatabaseBackupMetaDataPerFile(DatabaseBackupMetaDataPerFile databaseBackupMetaDataPerFile, AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws IOException {
+	public EncryptedDatabaseBackupMetaDataPerFile(String packageString, DatabaseBackupMetaDataPerFile databaseBackupMetaDataPerFile, AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws IOException {
+		if (packageString==null)
+			throw new NullPointerException();
+		this.fileTimestampUTC=databaseBackupMetaDataPerFile.getFileTimestampUTC();
+		this.lastTransactionTimestampUTC=databaseBackupMetaDataPerFile.getLastTransactionTimestampUTC();
+		if (fileTimestampUTC>lastTransactionTimestampUTC)
+			throw new IllegalArgumentException();
+		this.referenceFile=databaseBackupMetaDataPerFile.isReferenceFile();
+		this.packageString=packageString;
 		try(RandomByteArrayOutputStream out=new RandomByteArrayOutputStream(); RandomByteArrayOutputStream out2=new RandomByteArrayOutputStream()) {
 			databaseBackupMetaDataPerFile.writeExternal(out);
+			out.flush();
 
 			new EncryptionSignatureHashEncoder()
 					.withEncryptionProfileProvider(random, encryptionProfileProvider)
@@ -78,20 +96,24 @@ public class EncryptedDatabaseBackupMetaDataPerFile implements SecureExternaliza
 		}
 	}
 
+	public String getPackageString() {
+		return packageString;
+	}
+
 	public DatabaseBackupMetaDataPerFile decodeMetaData(EncryptionProfileProvider encryptionProfileProvider) throws IOException {
 		try(RandomInputStream in=new RandomByteArrayInputStream(encryptedMetaData); RandomByteArrayOutputStream out=new RandomByteArrayOutputStream()) {
 			new EncryptionSignatureHashDecoder()
 					.withEncryptionProfileProvider(encryptionProfileProvider)
 					.withRandomInputStream(in)
 					.decodeAndCheckHashAndSignaturesIfNecessary(out);
-			DatabaseBackupMetaDataPerFile res=new DatabaseBackupMetaDataPerFile(timeStampUTC, referenceFile);
+			DatabaseBackupMetaDataPerFile res=new DatabaseBackupMetaDataPerFile(fileTimestampUTC, referenceFile);
 			res.readMetaData(out.getRandomInputStream());
 			return res;
 		}
 	}
 
-	public long getTimeStampUTC() {
-		return timeStampUTC;
+	public long getFileTimestampUTC() {
+		return fileTimestampUTC;
 	}
 
 	public boolean isReferenceFile() {
@@ -102,22 +124,31 @@ public class EncryptedDatabaseBackupMetaDataPerFile implements SecureExternaliza
 		return encryptedMetaData;
 	}
 
+	public long getLastTransactionTimestampUTC() {
+		return lastTransactionTimestampUTC;
+	}
+
+
 	@Override
 	public int getInternalSerializedSize() {
-		return 9+SerializationTools.getInternalSize(encryptedMetaData, MAX_ENCRYPTED_DATA_LENGTH_IN_BYTES);
+		return 17+SerializationTools.getInternalSize(encryptedMetaData, MAX_ENCRYPTED_DATA_LENGTH_IN_BYTES)+SerializationTools.getInternalSize(packageString, SerializationTools.MAX_CLASS_LENGTH);
 	}
 
 	@Override
 	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
-		out.writeLong(timeStampUTC);
+		out.writeLong(fileTimestampUTC);
+		out.writeLong(lastTransactionTimestampUTC);
 		out.writeBoolean(referenceFile);
+		out.writeString(packageString, false, SerializationTools.MAX_CLASS_LENGTH);
 		out.writeBytesArray(encryptedMetaData, false, MAX_ENCRYPTED_DATA_LENGTH_IN_BYTES);
 	}
 
 	@Override
 	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
-		timeStampUTC=in.readLong();
+		fileTimestampUTC =in.readLong();
+		lastTransactionTimestampUTC=in.readLong();
 		referenceFile=in.readBoolean();
+		packageString=in.readString(false, SerializationTools.MAX_CLASS_LENGTH);
 		encryptedMetaData=in.readBytesArray(false, MAX_ENCRYPTED_DATA_LENGTH_IN_BYTES);
 	}
 }

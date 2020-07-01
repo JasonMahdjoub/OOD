@@ -60,7 +60,6 @@ import com.distrimind.util.io.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
@@ -1334,7 +1333,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 		}
 
-		public void initDistantBackupCenterForThisHostWithStringPackages(Map<String, Long> lastValidatedTransactionsUTC) throws DatabaseException {
+		public void initDistantBackupCenterForThisHostWithStringPackages(Set<String> authorizedPackagesToBeSynchronizedWithCentralDatabaseBackup, Map<String, Long> lastValidatedTransactionsUTC) throws DatabaseException {
 			lockWrite();
 			try {
 				centralBackupInitialized = true;
@@ -1363,7 +1362,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				unlockWrite();
 			}
 		}
-		public void initDistantBackupCenterForThisHost(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider, Map<Package, Long> lastValidatedTransactionsUTC) throws DatabaseException {
+		public void initDistantBackupCenterForThisHost(Set<Package> authorizedPackagesToBeSynchronizedWithCentralDatabaseBackup, AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider, Map<Package, Long> lastValidatedTransactionsUTC) throws DatabaseException {
+			//TODO complete and make it same with initDistantBackupCenterForThisHostWithsStringPackages
+			//check authorised package synchronization with central database backup
 			lockWrite();
 			try {
 				if (random==null)
@@ -1766,6 +1767,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					//addNewDatabaseEvent(new DatabaseBackupToIncorporateFromCentralDatabaseBackup(getLocalHostID(), getHooksTransactionsTable().getLocalDatabaseHost(), _package,timeStamp, b.isReference(timeStamp), b.extractTransactionInterval(f), f ));
 				}
 			}
+		}
+
+		private void received(EncryptedBackupPartTransmissionConfirmationFromCentralDatabaseBackup confirmation) throws DatabaseException {
+			if (!confirmation.getHostDestination().equals(getLocalHostID()))
+				throw DatabaseException.getDatabaseException(new MessageExternalizationException(Integrity.FAIL));
+			//TODO complete
 		}
 		public void received(CentralDatabaseBackupEvent data) throws DatabaseException {
 			lockWrite();
@@ -5058,6 +5065,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				EncryptedDatabaseBackupMetaDataPerFile.class,
 				EncryptedBackupPartComingFromCentralDatabaseBackup.class,
 				EncryptedBackupPartDestinedToCentralDatabaseBackup.class,
+				EncryptedBackupPartTransmissionConfirmationFromCentralDatabaseBackup.class,
 				DatabaseEventToSend.class,
 				DatabaseWrapper.TransactionsInterval.class,
 				DatabaseWrapper.DatabaseTransactionsIdentifiersToSynchronize.class,
