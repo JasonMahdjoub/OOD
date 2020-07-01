@@ -51,6 +51,7 @@ import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.FileTools;
 import com.distrimind.util.Reference;
 import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.crypto.EncryptionProfileProvider;
 import com.distrimind.util.crypto.SecureRandomType;
 import com.distrimind.util.harddrive.Disk;
 import com.distrimind.util.harddrive.HardDriveDetect;
@@ -474,10 +475,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		private final Condition newEventCondition=locker.newCondition();
 		private boolean extendedTransactionInProgress=false;
 		private long lastTransactionID=Long.MIN_VALUE;
-		private final TreeSet<DatabaseBackupToIncorporateFromCentralDatabaseBackup> differedDatabaseBackupToIncorporate=new TreeSet<>();
-		private final HashMap<DatabaseBackupToIncorporateFromCentralDatabaseBackup, InputStreamGetter> differedDatabaseBackupToIncorporateInputStreams=new HashMap<>();
+		/*private final TreeSet<DatabaseBackupToIncorporateFromCentralDatabaseBackup> differedDatabaseBackupToIncorporate=new TreeSet<>();
+		private final HashMap<DatabaseBackupToIncorporateFromCentralDatabaseBackup, InputStreamGetter> differedDatabaseBackupToIncorporateInputStreams=new HashMap<>();*/
+		private final Set<Package> backupDatabasePartsSynchronizingWithCentralDatabaseBackup=new HashSet<>();
 		private boolean sendIndirectTransactions;
-
+		private AbstractSecureRandom random=null;
+		private EncryptionProfileProvider encryptionProfileProvider=null;
 
 		DatabaseSynchronizer() {
 		}
@@ -1360,9 +1363,17 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				unlockWrite();
 			}
 		}
-		public void initDistantBackupCenterForThisHost(Map<Package, Long> lastValidatedTransactionsUTC) throws DatabaseException {
+		public void initDistantBackupCenterForThisHost(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider, Map<Package, Long> lastValidatedTransactionsUTC) throws DatabaseException {
 			lockWrite();
 			try {
+				if (random==null)
+					throw new NullPointerException();
+				if (encryptionProfileProvider==null)
+					throw new NullPointerException();
+				if (lastValidatedTransactionsUTC==null)
+					throw new NullPointerException();
+				this.random=random;
+				this.encryptionProfileProvider=encryptionProfileProvider;
 				centralBackupInitialized = true;
 				for (Map.Entry<Package, Long> e : lastValidatedTransactionsUTC.entrySet())
 					validateLastSynchronizationWithCentralDatabaseBackup(e.getKey(), e.getValue());
@@ -1451,11 +1462,27 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 		}
 
+		private void disconnectLocalHookFromItsCentralBackup()
+		{
+			lockWrite();
+			try {
+				random=null;
+				encryptionProfileProvider=null;
+				centralBackupInitialized=false;
+				backupDatabasePartsSynchronizingWithCentralDatabaseBackup.clear();
+			}
+			finally {
+				unlockWrite();
+			}
+		}
+
 		public void disconnectHookFromItsBackup(final DecentralizedValue hostID) throws DatabaseException {
 			if (hostID == null)
 				throw new NullPointerException("hostID");
-			if (hostID.equals(getLocalHostID()))
+			if (hostID.equals(getLocalHostID())) {
+				disconnectAllHooksFromThereBackups();
 				return;
+			}
 
 			try {
 				lockWrite();
@@ -1501,7 +1528,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		public void disconnectAllHooksFromThereBackups() throws DatabaseException {
 			try {
 				lockWrite();
-				centralBackupInitialized=false;
+				disconnectLocalHookFromItsCentralBackup();
 				suspendedHooksWithCentralBackup.clear();
 
 
@@ -1724,19 +1751,20 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 			long timeStamp;
 			d.lastValidatedTransactionUTCForCentralBackup = lastValidatedTransactionUTC;
-	  		if (lastValidatedTransactionUTC==Long.MIN_VALUE)
-			{
-				timeStamp = b.getLastFileReferenceTimestampUTC();
-			}
-	  		else {
-				timeStamp = b.getNearestFileUTCFromGivenTimeNotIncluded(lastValidatedTransactionUTC);
-			}
+			if (!backupDatabasePartsSynchronizingWithCentralDatabaseBackup.contains(_package)) {
 
-			if (timeStamp!=Long.MIN_VALUE)
-			{
-				File f=b.getFile(timeStamp);
+				if (lastValidatedTransactionUTC == Long.MIN_VALUE) {
+					timeStamp = b.getLastFileReferenceTimestampUTC();
+				} else {
+					timeStamp = b.getNearestFileUTCFromGivenTimeNotIncluded(lastValidatedTransactionUTC);
+				}
 
-				addNewDatabaseEvent(new DatabaseBackupToIncorporateFromCentralDatabaseBackup(getLocalHostID(), getHooksTransactionsTable().getLocalDatabaseHost(), _package,timeStamp, b.isReference(timeStamp), b.extractTransactionInterval(f), f ));
+				if (timeStamp != Long.MIN_VALUE) {
+					File f = b.getFile(timeStamp);
+					backupDatabasePartsSynchronizingWithCentralDatabaseBackup.add(_package);
+					addNewDatabaseEvent(b.getEncryptedFilePartWithMetaData(getLocalHostID(), timeStamp, b.isReference(timeStamp), random, encryptionProfileProvider));
+					//addNewDatabaseEvent(new DatabaseBackupToIncorporateFromCentralDatabaseBackup(getLocalHostID(), getHooksTransactionsTable().getLocalDatabaseHost(), _package,timeStamp, b.isReference(timeStamp), b.extractTransactionInterval(f), f ));
+				}
 			}
 		}
 		public void received(CentralDatabaseBackupEvent data) throws DatabaseException {
@@ -2108,7 +2136,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	}
 
 
-	public static class DatabaseBackupToIncorporateFromCentralDatabaseBackup extends AbstractDatabaseEventsToSynchronize implements Comparable<DatabaseBackupToIncorporateFromCentralDatabaseBackup>, CentralDatabaseBackupEvent {
+	/*public static class DatabaseBackupToIncorporateFromCentralDatabaseBackup extends AbstractDatabaseEventsToSynchronize implements Comparable<DatabaseBackupToIncorporateFromCentralDatabaseBackup>, CentralDatabaseBackupEvent {
 
 		private TransactionsInterval interval;
 		private transient File sourceFile=null;
@@ -2234,7 +2262,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		public String getConcernedPackage() {
 			return concernedPackage;
 		}
-	}
+	}*/
 	public static class DatabaseEventsToSynchronize extends AbstractDatabaseEventsToSynchronize {
 		private long lastTransactionIDIncluded;
 		int maxEventsRecords;
