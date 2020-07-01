@@ -38,7 +38,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 import com.distrimind.ood.database.exceptions.ConstraintsNotRespectedDatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
-import com.distrimind.ood.database.messages.EncryptedBackupPartDestinedToCentralDatabaseBackup;
+import com.distrimind.ood.database.messages.AbstractEncryptedBackupPart;
 import com.distrimind.ood.i18n.DatabaseMessages;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.FileTools;
@@ -1507,11 +1507,11 @@ public class BackupRestoreManager {
 		}
 	}
 
-	EncryptedBackupPartDestinedToCentralDatabaseBackup getEncryptedFilePartWithMetaData(DecentralizedValue fromHostIdentifier, long timeStamp, boolean backupReference, AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
+	AbstractEncryptedBackupPart getEncryptedFilePartWithMetaData(DecentralizedValue fromHostIdentifier, long timeStamp, boolean backupReference, AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
 		EncryptedDatabaseBackupMetaDataPerFile metaData=getEncryptedDatabaseBackupMetaDataPerFile(timeStamp, backupReference, random, encryptionProfileProvider);
 		RandomCacheFileOutputStream out=getEncryptedFilePart(timeStamp, backupReference, random, encryptionProfileProvider);
 		try {
-			return new EncryptedBackupPartDestinedToCentralDatabaseBackup(fromHostIdentifier, metaData, out.getRandomInputStream());
+			return new AbstractEncryptedBackupPart(fromHostIdentifier, metaData, out.getRandomInputStream());
 		} catch (IOException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}

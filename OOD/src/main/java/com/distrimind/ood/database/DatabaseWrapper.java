@@ -46,9 +46,7 @@ import com.distrimind.ood.database.fieldaccessors.ByteTabObjectConverter;
 import com.distrimind.ood.database.fieldaccessors.DefaultByteTabObjectConverter;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
-import com.distrimind.ood.database.messages.DatabaseTransactionsIdentifiersToSynchronize;
-import com.distrimind.ood.database.messages.DatabaseTransactionsIdentifiersToSynchronizeDestinedToCentralDatabaseBackup;
-import com.distrimind.ood.database.messages.EncryptedBackupPartDestinedToCentralDatabaseBackup;
+import com.distrimind.ood.database.messages.*;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.FileTools;
 import com.distrimind.util.Reference;
@@ -5030,6 +5028,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				TransactionMetaData.class,
 				DatabaseBackupMetaDataPerFile.class,
 				EncryptedDatabaseBackupMetaDataPerFile.class,
+				EncryptedBackupPartComingFromCentralDatabaseBackup.class,
 				EncryptedBackupPartDestinedToCentralDatabaseBackup.class,
 				DatabaseEventToSend.class,
 				DatabaseWrapper.TransactionsInterval.class,

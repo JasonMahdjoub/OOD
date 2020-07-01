@@ -48,7 +48,7 @@ import java.io.IOException;
  * @version 1.0
  * @since Utils 3.0.0
  */
-public class EncryptedBackupPartDestinedToCentralDatabaseBackup extends DatabaseEvent implements SecureExternalizable, MessageDestinedToCentralDatabaseBackup {
+public abstract class AbstractEncryptedBackupPart extends DatabaseEvent implements SecureExternalizable {
 
 	private DecentralizedValue hostSource;
 	private EncryptedDatabaseBackupMetaDataPerFile metaData;
@@ -56,10 +56,10 @@ public class EncryptedBackupPartDestinedToCentralDatabaseBackup extends Database
 
 
 	@SuppressWarnings("unused")
-	private EncryptedBackupPartDestinedToCentralDatabaseBackup() {
+	private AbstractEncryptedBackupPart() {
 	}
 
-	public EncryptedBackupPartDestinedToCentralDatabaseBackup(DecentralizedValue hostSource, EncryptedDatabaseBackupMetaDataPerFile metaData, RandomInputStream partInputStream) {
+	public AbstractEncryptedBackupPart(DecentralizedValue hostSource, EncryptedDatabaseBackupMetaDataPerFile metaData, RandomInputStream partInputStream) {
 		if (metaData==null)
 			throw new NullPointerException();
 		if (partInputStream==null)
@@ -86,7 +86,6 @@ public class EncryptedBackupPartDestinedToCentralDatabaseBackup extends Database
 		this.partInputStream = partInputStream;
 	}
 
-	@Override
 	public DecentralizedValue getHostSource() {
 		return hostSource;
 	}
