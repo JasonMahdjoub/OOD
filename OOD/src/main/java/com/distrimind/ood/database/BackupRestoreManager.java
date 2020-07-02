@@ -38,6 +38,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 import com.distrimind.ood.database.exceptions.ConstraintsNotRespectedDatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
+import com.distrimind.ood.database.messages.EncryptedBackupPartComingFromCentralDatabaseBackup;
 import com.distrimind.ood.database.messages.EncryptedBackupPartDestinedToCentralDatabaseBackup;
 import com.distrimind.ood.i18n.DatabaseMessages;
 import com.distrimind.util.DecentralizedValue;
@@ -45,6 +46,7 @@ import com.distrimind.util.FileTools;
 import com.distrimind.util.Reference;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
+import com.distrimind.util.crypto.EncryptionSignatureHashDecoder;
 import com.distrimind.util.crypto.EncryptionSignatureHashEncoder;
 import com.distrimind.util.io.*;
 import com.distrimind.util.progress_monitors.ProgressMonitorDM;
@@ -208,10 +210,16 @@ public class BackupRestoreManager {
 	public File getBackupDirectory() {
 		return backupDirectory;
 	}
-
 	private File getFile(long timeStamp, boolean backupReference)
 	{
-		return new File(backupDirectory, "backup-ood-"+timeStamp+(backupReference?".dreference":".dincrement"));
+		return getFile(timeStamp, backupReference, false);
+	}
+	private File getFile(long timeStamp, boolean backupReference, boolean tmp)
+	{
+		String name="backup-ood-"+timeStamp+(backupReference?".dreference":".dincrement");
+		if (tmp)
+			name=name+".tmp";
+		return new File(backupDirectory, name);
 	}
 	File getFile(long timeStamp)
 	{
@@ -246,6 +254,19 @@ public class BackupRestoreManager {
 				return fileReferenceTimeStamps.get(fileReferenceTimeStamps.size()-1);
 		}
 	}
+
+	public long getLastFileTimestampUTC()
+	{
+		synchronized (this)
+		{
+			if (fileTimeStamps.size()==0)
+				return Long.MIN_VALUE;
+			else
+				return fileTimeStamps.get(fileTimeStamps.size()-1);
+		}
+	}
+
+
 
 	public long getNearestFileUTCFromGivenTimeNotIncluded(long utc)
 	{
@@ -1454,7 +1475,7 @@ public class BackupRestoreManager {
 	 * Gets the older backup event UTC time
 	 * @return the older backup event UTC time
 	 */
-	public long getMinDateUTCInMs()
+	public long getFirstTransactionUTCInMs()
 	{
 		synchronized (this) {
 			return fileTimeStamps.size()>0?fileTimeStamps.get(0):Long.MIN_VALUE;
@@ -1466,7 +1487,7 @@ public class BackupRestoreManager {
 	 * @return the younger backup event UTC time
 	 * @throws DatabaseException if a problem occurs
 	 */
-	public long getMaxDateUTCInMS() throws DatabaseException {
+	public long getLastTransactionUTCInMS() throws DatabaseException {
 		synchronized (this) {
 			Long m=maxDateUTC;
 			if (m==null) {
@@ -1525,6 +1546,8 @@ public class BackupRestoreManager {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
+
+
 	DatabaseBackupMetaDataPerFile getDatabaseBackupMetaDataPerFile(long timeStamp, boolean backupReference) throws DatabaseException {
 		File file=getFinalFile(timeStamp, backupReference);
 		List<TransactionMetaData> transactionsMetaData=new ArrayList<>();
@@ -1550,7 +1573,46 @@ public class BackupRestoreManager {
 		}
 	}
 
+	void importEncryptedBackupPartComingFromCentralDatabaseBackup(EncryptedBackupPartComingFromCentralDatabaseBackup backupPart, EncryptionProfileProvider encryptionProfileProvider, boolean replaceExistingFilePart) throws DatabaseException {
+		try {
+			Integrity i = backupPart.getMetaData().checkSignature(encryptionProfileProvider);
+			if (i != Integrity.OK)
+				throw new MessageExternalizationException(i);
+			File f=getFile(backupPart.getMetaData().getFileTimestampUTC(), backupPart.getMetaData().isReferenceFile(), false);
+			boolean exists=f.exists();
+			if (!exists || replaceExistingFilePart){
 
+				try {
+					File fileDest=f;
+					f = getFile(backupPart.getMetaData().getFileTimestampUTC(), backupPart.getMetaData().isReferenceFile(), true);
+					new EncryptionSignatureHashDecoder()
+							.withEncryptionProfileProvider(encryptionProfileProvider)
+							.withRandomInputStream(backupPart.getPartInputStream())
+							.decodeAndCheckHashAndSignaturesIfNecessary(new RandomFileOutputStream(f));
+					if (exists) {
+						if (!fileDest.delete())
+							throw new DatabaseException("Impossible to remove file "+fileDest);
+					}
+					if (!f.renameTo(fileDest))
+						throw new DatabaseException("Impossible to remame file "+f);
+
+					scanFiles();
+					backupPart.getPartInputStream().close();
+				}
+				catch(IOException e)
+				{
+					if (f.exists())
+						f.delete();
+					throw e;
+				}
+			}
+		}
+		catch (IOException e)
+		{
+			throw DatabaseException.getDatabaseException(e);
+		}
+
+	}
 
 	public RandomCacheFileOutputStream getEncryptedFilePart(long timeStamp, boolean backupReference, AbstractSecureRandom random, EncryptionProfileProvider profileProvider) throws DatabaseException {
 		try {
@@ -2129,7 +2191,7 @@ public class BackupRestoreManager {
 				oldLength = (int) file.length();
 			}
 
-			long last = getMaxDateUTCInMS();
+			long last = getLastTransactionUTCInMS();
 			AtomicLong fileTimeStamp = new AtomicLong();
 			//AtomicReference<RecordsIndex> index=new AtomicReference<>();
 			Reference<Long> firstTransactionID=new Reference<>((Long)null);

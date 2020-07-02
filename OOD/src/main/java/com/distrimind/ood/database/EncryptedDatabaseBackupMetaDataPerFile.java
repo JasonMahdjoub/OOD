@@ -35,6 +35,7 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.crypto.*;
 import com.distrimind.util.io.*;
 
@@ -51,6 +52,7 @@ public class EncryptedDatabaseBackupMetaDataPerFile implements SecureExternaliza
 	private boolean referenceFile;
 	private String packageString;
 	private byte[] encryptedMetaData;
+	private byte[] associatedData;
 	public static final int MAX_ENCRYPTED_DATA_LENGTH_IN_BYTES=(int)EncryptionSignatureHashEncoder.getMaximumOutputLengthWhateverParameters(DatabaseBackupMetaDataPerFile.MAXIMUM_INTERNAL_DATA_SIZE_IN_BYTES);
 	@SuppressWarnings("unused")
 	private EncryptedDatabaseBackupMetaDataPerFile()
@@ -84,6 +86,7 @@ public class EncryptedDatabaseBackupMetaDataPerFile implements SecureExternaliza
 			throw new IllegalArgumentException();
 		this.referenceFile=databaseBackupMetaDataPerFile.isReferenceFile();
 		this.packageString=packageString;
+
 		try(RandomByteArrayOutputStream out=new RandomByteArrayOutputStream(); RandomByteArrayOutputStream out2=new RandomByteArrayOutputStream()) {
 			databaseBackupMetaDataPerFile.writeExternal(out);
 			out.flush();
@@ -91,9 +94,31 @@ public class EncryptedDatabaseBackupMetaDataPerFile implements SecureExternaliza
 			new EncryptionSignatureHashEncoder()
 					.withEncryptionProfileProvider(random, encryptionProfileProvider)
 					.withRandomInputStream(out.getRandomInputStream())
+					.withAssociatedData(getAssociatedData())
 					.encode(out2);
 			encryptedMetaData=out2.getBytes();
 		}
+	}
+
+	private byte[] getAssociatedData() throws IOException {
+		if (associatedData==null){
+			RandomByteArrayOutputStream out=new RandomByteArrayOutputStream();
+			out.writeLong(this.fileTimestampUTC);
+			out.writeLong(this.lastTransactionTimestampUTC);
+			out.writeString(this.packageString, false, SerializationTools.MAX_CLASS_LENGTH);
+			out.flush();
+			associatedData=out.getBytes();
+		}
+		return associatedData;
+	}
+
+	public Integrity checkSignature(EncryptionProfileProvider encryptionProfileProvider) throws IOException {
+		return new EncryptionSignatureHashDecoder()
+				.withEncryptionProfileProvider(encryptionProfileProvider)
+				.withRandomInputStream(new RandomByteArrayInputStream(encryptedMetaData))
+				.withAssociatedData(getAssociatedData())
+				.checkHashAndSignature();
+
 	}
 
 	public String getPackageString() {

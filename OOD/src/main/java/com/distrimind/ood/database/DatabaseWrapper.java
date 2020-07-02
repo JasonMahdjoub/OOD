@@ -459,7 +459,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		for (Database d : sql_database.values())
 		{
 			if (d.backupRestoreManager!=null)
-				res=Math.max(d.backupRestoreManager.getMaxDateUTCInMS(), res);
+				res=Math.max(d.backupRestoreManager.getLastTransactionUTCInMS(), res);
 		}
 		return res;
 	}
@@ -1736,25 +1736,60 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 		}
 		private void validateLastSynchronizationWithCentralDatabaseBackup(Package _package, Database d, long lastValidatedTransactionUTC) throws DatabaseException {
-			BackupRestoreManager b=d.backupRestoreManager;
-	  		if (b==null) {
+
+	  		if (d.backupRestoreManager==null) {
 				return;
 			}
 			long timeStamp;
 			d.lastValidatedTransactionUTCForCentralBackup = lastValidatedTransactionUTC;
-			if (!backupDatabasePartsSynchronizingWithCentralDatabaseBackup.contains(_package.getName())) {
+			if (lastValidatedTransactionUTC == Long.MIN_VALUE) {
+				timeStamp = b.getLastFileReferenceTimestampUTC();
+			} else {
+				timeStamp = b.getNearestFileUTCFromGivenTimeNotIncluded(lastValidatedTransactionUTC);
+			}
 
-				if (lastValidatedTransactionUTC == Long.MIN_VALUE) {
-					timeStamp = b.getLastFileReferenceTimestampUTC();
-				} else {
-					timeStamp = b.getNearestFileUTCFromGivenTimeNotIncluded(lastValidatedTransactionUTC);
+			if (timeStamp != Long.MIN_VALUE) {
+				if (!backupDatabasePartsSynchronizingWithCentralDatabaseBackup.contains(_package.getName())) {
+					File f = d.backupRestoreManager.getFile(timeStamp);
+					backupDatabasePartsSynchronizingWithCentralDatabaseBackup.add(_package.getName());
+					addNewDatabaseEvent(d.backupRestoreManager.getEncryptedFilePartWithMetaData(getLocalHostID(), timeStamp, d.backupRestoreManager.isReference(timeStamp), random, encryptionProfileProvider));
+					//addNewDatabaseEvent(new DatabaseBackupToIncorporateFromCentralDatabaseBackup(getLocalHostID(), getHooksTransactionsTable().getLocalDatabaseHost(), _package,timeStamp, b.isReference(timeStamp), b.extractTransactionInterval(f), f ));
+				}
+			}
+			else
+				checkAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(d);
+		}
+
+		private void checkAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(Database d) throws DatabaseException {
+			if (d.lastValidatedTransactionUTCForCentralBackup>Long.MIN_VALUE)
+			{
+				long lts=d.backupRestoreManager.getLastTransactionUTCInMS();
+				if (lts<d.lastValidatedTransactionUTCForCentralBackup)
+					addNewDatabaseEvent(new AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(getLocalHostID(), lts));
+			}
+		}
+
+		private void received(EncryptedBackupPartComingFromCentralDatabaseBackup backupPart) throws DatabaseException {
+			String pname=backupPart.getMetaData().getPackageString();
+			if (getDatabasePackagesToSynchronizeWithCentralBackup().contains(pname))
+			{
+				for (Map.Entry<Package, Database> e : sql_database.entrySet()){
+					if (e.getKey().getName().equals(pname))
+					{
+						Database d=e.getValue();
+						d.backupRestoreManager.importEncryptedBackupPartComingFromCentralDatabaseBackup(backupPart, encryptionProfileProvider, false);
+						checkAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(d);
+						break;
+					}
 				}
 
-				if (timeStamp != Long.MIN_VALUE) {
-					File f = b.getFile(timeStamp);
-					backupDatabasePartsSynchronizingWithCentralDatabaseBackup.add(_package.getName());
-					addNewDatabaseEvent(b.getEncryptedFilePartWithMetaData(getLocalHostID(), timeStamp, b.isReference(timeStamp), random, encryptionProfileProvider));
-					//addNewDatabaseEvent(new DatabaseBackupToIncorporateFromCentralDatabaseBackup(getLocalHostID(), getHooksTransactionsTable().getLocalDatabaseHost(), _package,timeStamp, b.isReference(timeStamp), b.extractTransactionInterval(f), f ));
+			}
+			else
+			{
+				try {
+					backupPart.getPartInputStream().close();
+				} catch (IOException e) {
+					throw DatabaseException.getDatabaseException(e);
 				}
 			}
 		}
@@ -1814,6 +1849,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			} else if (data instanceof EncryptedBackupPartTransmissionConfirmationFromCentralDatabaseBackup)
 			{
 				received((EncryptedBackupPartTransmissionConfirmationFromCentralDatabaseBackup)data);
+			} else if (data instanceof EncryptedBackupPartComingFromCentralDatabaseBackup)
+			{
+				received((EncryptedBackupPartComingFromCentralDatabaseBackup)data);
 			} else if (data instanceof CentralDatabaseBackupEvent)
 			{
 				received((CentralDatabaseBackupEvent)data);

@@ -439,11 +439,11 @@ public class TestDatabaseBackupRestore {
 			externalBRM.createBackupReference();
 			Assert.assertEquals(externalBRM.getBackupDirectory(), new File(externalBackupDirectory, DatabaseWrapper.getLongPackageName(Table1.class.getPackage())));
 
-			Assert.assertTrue(externalBRM.getMinDateUTCInMs() > dataLoadStart.get(), externalBRM.getMinDateUTCInMs()+";"+dataLoadStart.get());
-			Assert.assertTrue(t<externalBRM.getMinDateUTCInMs(), t+";"+externalBRM.getMinDateUTCInMs());
-			Assert.assertTrue(System.currentTimeMillis()>externalBRM.getMinDateUTCInMs());
-			Assert.assertTrue(externalBRM.getMinDateUTCInMs()<externalBRM.getMaxDateUTCInMS());
-			Assert.assertTrue(System.currentTimeMillis()>externalBRM.getMaxDateUTCInMS());
+			Assert.assertTrue(externalBRM.getFirstTransactionUTCInMs() > dataLoadStart.get(), externalBRM.getFirstTransactionUTCInMs()+";"+dataLoadStart.get());
+			Assert.assertTrue(t<externalBRM.getFirstTransactionUTCInMs(), t+";"+externalBRM.getFirstTransactionUTCInMs());
+			Assert.assertTrue(System.currentTimeMillis()>externalBRM.getFirstTransactionUTCInMs());
+			Assert.assertTrue(externalBRM.getFirstTransactionUTCInMs()<externalBRM.getLastTransactionUTCInMS());
+			Assert.assertTrue(System.currentTimeMillis()>externalBRM.getLastTransactionUTCInMS());
 		}
 		Thread.sleep(100);
 		dateRestoration.set(System.currentTimeMillis());
@@ -486,11 +486,11 @@ public class TestDatabaseBackupRestore {
 			Assert.assertEquals(internalBRM != null, useInternalBackup);
 
 			if (internalBRM != null) {
-				Assert.assertTrue(internalBRM.getMinDateUTCInMs() > dataLoadStart.get(), internalBRM.getMinDateUTCInMs()+";"+dataLoadStart.get());
-				Assert.assertTrue(internalBRM.getMinDateUTCInMs() < internalBRM.getMaxDateUTCInMS(), internalBRM.getMinDateUTCInMs()+";"+internalBRM.getMaxDateUTCInMS());
+				Assert.assertTrue(internalBRM.getFirstTransactionUTCInMs() > dataLoadStart.get(), internalBRM.getFirstTransactionUTCInMs()+";"+dataLoadStart.get());
+				Assert.assertTrue(internalBRM.getFirstTransactionUTCInMs() < internalBRM.getLastTransactionUTCInMS(), internalBRM.getFirstTransactionUTCInMs()+";"+internalBRM.getLastTransactionUTCInMS());
 				Thread.sleep(1);
 				long utc=System.currentTimeMillis();
-				Assert.assertTrue(internalBRM.getMaxDateUTCInMS() < utc, internalBRM.getMaxDateUTCInMS()+";"+utc);
+				Assert.assertTrue(internalBRM.getLastTransactionUTCInMS() < utc, internalBRM.getLastTransactionUTCInMS()+";"+utc);
 				//dataLoadStart.set(utc);
 				Thread.sleep(1);
 			}
@@ -520,7 +520,7 @@ public class TestDatabaseBackupRestore {
 		BackupRestoreManager usedBRM;
 		if (useExternalBRM) {
 			usedBRM = wrapper.getExternalBackupRestoreManager(externalBackupDirectory, Table1.class.getPackage(), getBackupConfiguration());
-			Assert.assertTrue(usedBRM.getMaxDateUTCInMS() < dateRestoration.get());
+			Assert.assertTrue(usedBRM.getLastTransactionUTCInMS() < dateRestoration.get());
 
 		}
 		else {
@@ -528,13 +528,13 @@ public class TestDatabaseBackupRestore {
 			//noinspection ConstantConditions
 			if (alterRecords || addAdditionData) {
 
-				Assert.assertTrue(usedBRM.getMaxDateUTCInMS() > dateRestoration.get());
+				Assert.assertTrue(usedBRM.getLastTransactionUTCInMS() > dateRestoration.get());
 			}
 			else {
-				Assert.assertTrue(usedBRM.getMaxDateUTCInMS() < dateRestoration.get());
+				Assert.assertTrue(usedBRM.getLastTransactionUTCInMS() < dateRestoration.get());
 			}
 		}
-		Assert.assertTrue(usedBRM.getMinDateUTCInMs() < usedBRM.getMaxDateUTCInMS());
+		Assert.assertTrue(usedBRM.getFirstTransactionUTCInMs() < usedBRM.getLastTransactionUTCInMS());
 
 
 
@@ -608,17 +608,17 @@ public class TestDatabaseBackupRestore {
 		Assert.assertNotEquals(table6ID, wrapper.getTableInstance(Table6.class).getTableID());
 		Assert.assertNotEquals(table7ID, wrapper.getTableInstance(Table7.class).getTableID());
 		assertEquals(wrapperForReferenceDatabase,wrapper, true);
-		Assert.assertTrue(usedBRM.getMinDateUTCInMs()>dataLoadStart.get(), usedBRM.getMinDateUTCInMs()+";"+dataLoadStart.get());
-		Assert.assertTrue(usedBRM.getMinDateUTCInMs()<usedBRM.getMaxDateUTCInMS());
+		Assert.assertTrue(usedBRM.getFirstTransactionUTCInMs()>dataLoadStart.get(), usedBRM.getFirstTransactionUTCInMs()+";"+dataLoadStart.get());
+		Assert.assertTrue(usedBRM.getFirstTransactionUTCInMs()<usedBRM.getLastTransactionUTCInMS());
 		if (useExternalBRM)
-			Assert.assertTrue(usedBRM.getMaxDateUTCInMS()<dateRestoration.get());
+			Assert.assertTrue(usedBRM.getLastTransactionUTCInMS()<dateRestoration.get());
 		else
-			Assert.assertTrue(usedBRM.getMaxDateUTCInMS()>dateRestoration.get());
+			Assert.assertTrue(usedBRM.getLastTransactionUTCInMS()>dateRestoration.get());
 		if (internalBRM!=null)
 		{
-			Assert.assertTrue(internalBRM.getMinDateUTCInMs()>dataLoadStart.get());
-			Assert.assertTrue(internalBRM.getMinDateUTCInMs()<internalBRM.getMaxDateUTCInMS());
-			Assert.assertTrue(internalBRM.getMaxDateUTCInMS()<System.currentTimeMillis());
+			Assert.assertTrue(internalBRM.getFirstTransactionUTCInMs()>dataLoadStart.get());
+			Assert.assertTrue(internalBRM.getFirstTransactionUTCInMs()<internalBRM.getLastTransactionUTCInMS());
+			Assert.assertTrue(internalBRM.getLastTransactionUTCInMS()<System.currentTimeMillis());
 		}
 
 	}
@@ -880,15 +880,15 @@ public class TestDatabaseBackupRestore {
 		BackupRestoreManager manager=wrapper.getBackupRestoreManager(Table1.class.getPackage());
 		long start=System.currentTimeMillis();
 		addAndRemoveData(wrapper, 100);
-		Assert.assertTrue(start<=manager.getMinDateUTCInMs());
-		Assert.assertTrue(manager.getMinDateUTCInMs()<=manager.getMaxDateUTCInMS());
-		start=manager.getMinDateUTCInMs();
+		Assert.assertTrue(start<=manager.getFirstTransactionUTCInMs());
+		Assert.assertTrue(manager.getFirstTransactionUTCInMs()<=manager.getLastTransactionUTCInMS());
+		start=manager.getFirstTransactionUTCInMs();
 		Thread.sleep(200);
 		addAndRemoveData(wrapper, 100);
 		Thread.sleep(1000);
 		manager.cleanOldBackups();
-		Assert.assertTrue(start<manager.getMinDateUTCInMs());
-		Assert.assertTrue(manager.getMinDateUTCInMs()<=manager.getMaxDateUTCInMS());
+		Assert.assertTrue(start<manager.getFirstTransactionUTCInMs());
+		Assert.assertTrue(manager.getFirstTransactionUTCInMs()<=manager.getLastTransactionUTCInMS());
 	}
 
 
@@ -1001,8 +1001,8 @@ public class TestDatabaseBackupRestore {
 		{
 			manager.createIfNecessaryNewBackupReference();
 		}
-		long minDate=manager.getMinDateUTCInMs();
-		long maxDate=manager.getMaxDateUTCInMS();
+		long minDate=manager.getFirstTransactionUTCInMs();
+		long maxDate=manager.getLastTransactionUTCInMS();
 		File lastFile=manager.getLastFile();
 		long lastFileSize=-1;
 		if (lastFile!=null)
@@ -1051,8 +1051,8 @@ public class TestDatabaseBackupRestore {
 		{
 
 		}
-		Assert.assertEquals(manager.getMinDateUTCInMs(), minDate);
-		Assert.assertEquals(manager.getMaxDateUTCInMS(), maxDate);
+		Assert.assertEquals(manager.getFirstTransactionUTCInMs(), minDate);
+		Assert.assertEquals(manager.getLastTransactionUTCInMS(), maxDate);
 		File lastFile2=manager.getLastFile();
 		if (lastFile2==null)
 			Assert.assertNull(lastFile);
