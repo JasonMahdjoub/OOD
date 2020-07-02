@@ -47,10 +47,10 @@ import com.distrimind.util.io.SerializationTools;
  * @version 1.0
  * @since OOD 2.5.0
  */
-final class CentralDatabaseHookTable extends Table<CentralDatabaseHookTable.Record> {
+final class DatabaseTable extends Table<DatabaseTable.Record> {
 
 	@SuppressWarnings("unused")
-	protected CentralDatabaseHookTable() throws DatabaseException {
+	protected DatabaseTable() throws DatabaseException {
 	}
 
 	public static class Record extends DatabaseRecord
@@ -64,7 +64,7 @@ final class CentralDatabaseHookTable extends Table<CentralDatabaseHookTable.Reco
 		private String databasePackageName;
 
 		@Field
-		private boolean removedButNotNotified=false;
+		private boolean synchronizedWithCentralDatabaseBackup;
 
 		@SuppressWarnings("unused")
 		private Record() {
@@ -72,6 +72,7 @@ final class CentralDatabaseHookTable extends Table<CentralDatabaseHookTable.Reco
 
 		Record(String databasePackageName) {
 			this.databasePackageName = databasePackageName;
+			this.synchronizedWithCentralDatabaseBackup=false;
 		}
 
 		DecentralizedIDGenerator getId() {
@@ -82,12 +83,12 @@ final class CentralDatabaseHookTable extends Table<CentralDatabaseHookTable.Reco
 			return databasePackageName;
 		}
 
-		boolean isRemovedButNotNotified() {
-			return removedButNotNotified;
+		boolean isSynchronizedWithCentralDatabaseBackup() {
+			return synchronizedWithCentralDatabaseBackup;
 		}
 
-		void setRemovedButNotNotified(boolean removedButNotNotified) {
-			this.removedButNotNotified = removedButNotNotified;
+		void setSynchronizedWithCentralDatabaseBackup(boolean synchronizedWithCentralDatabaseBackup) {
+			this.synchronizedWithCentralDatabaseBackup = synchronizedWithCentralDatabaseBackup;
 		}
 	}
 }

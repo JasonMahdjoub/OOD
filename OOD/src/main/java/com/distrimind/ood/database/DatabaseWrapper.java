@@ -86,7 +86,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public abstract class DatabaseWrapper implements AutoCloseable {
 
 	private static final List<Class<?>> internalDatabaseClassesList = Arrays.<Class<?>>asList(DatabaseDistantTransactionEvent.class, DatabaseDistantEventsTable.class,
-			DatabaseEventsTable.class, DatabaseHooksTable.class, DatabaseTransactionEventsTable.class, DatabaseTransactionsPerHostTable.class, IDTable.class, CentralDatabaseHookTable.class);
+			DatabaseEventsTable.class, DatabaseHooksTable.class, DatabaseTransactionEventsTable.class, DatabaseTransactionsPerHostTable.class, IDTable.class, DatabaseTable.class);
 	
 	
 	// protected Connection sql_connection;
@@ -108,7 +108,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	// private final DatabaseMetaData dmd;
 	private volatile DatabaseTransactionEventsTable transactionTable = null;
 	private volatile DatabaseHooksTable databaseHooksTable = null;
-	private volatile CentralDatabaseHookTable centralDatabaseHookTable=null;
+	private volatile DatabaseTable databaseTable =null;
 	private volatile DatabaseTransactionsPerHostTable databaseTransactionsPerHostTable = null;
 	private volatile DatabaseEventsTable databaseEventsTable = null;
 	private volatile DatabaseDistantTransactionEvent databaseDistantTransactionEvent = null;
@@ -1223,22 +1223,22 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		@SuppressWarnings("UnusedReturnValue")
-		public boolean addDatabasePackageToSynchronizeWithCentralBackup(final Package _package) throws DatabaseException {
+		public boolean synchronizeDatabasePackageWithCentralBackup(final Package _package) throws DatabaseException {
 			lockWrite();
 			try {
 				if (_package.equals(DatabaseWrapper.class.getPackage()))
 					throw new IllegalArgumentException();
-				Database db=DatabaseWrapper.this.sql_database.get(_package);
-				if (db == null)
-					throw new DatabaseException("You must load first database package "+_package);
 				if (runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
 					@Override
 					public Boolean run() throws Exception {
-						if (getCentralDatabaseHookTable().hasRecordsWithOneOfFields("databasePackageName", _package.getName()))
+						DatabaseTable.Record r=getDatabaseTable().getRecord("databasePackageName", _package.getName());
+						if (r==null)
+							throw new DatabaseException("You must load first database package "+_package);
+						if (r.isSynchronizedWithCentralDatabaseBackup())
 							return false;
-						else {
-							centralDatabaseHookTable.addRecord("removedButNotNotified", false, "databasePackageName", _package.getName());
-
+						else
+						{
+							getDatabaseTable().updateRecord(r, "synchronizedWithCentralDatabaseBackup", true);
 							return true;
 						}
 					}
@@ -1259,7 +1259,56 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					}
 				}))
 				{
-					validateLastSynchronizationWithCentralDatabaseBackup(_package.getName(), Long.MIN_VALUE);
+					validateLastSynchronizationWithCentralDatabaseBackup(_package, Long.MIN_VALUE);
+					return true;
+				}
+				else
+					return false;
+
+			}
+			finally {
+				unlockWrite();
+			}
+		}
+		@SuppressWarnings("UnusedReturnValue")
+		public boolean unsynchronizeDatabasePackageWithCentralBackup(final Package _package) throws DatabaseException {
+			lockWrite();
+			try {
+				if (_package.equals(DatabaseWrapper.class.getPackage()))
+					throw new IllegalArgumentException();
+				if (runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
+					@Override
+					public Boolean run() throws Exception {
+						DatabaseTable.Record r=getDatabaseTable().getRecord("databasePackageName", _package.getName());
+						if (r==null)
+							throw new DatabaseException("You must load first database package "+_package);
+						if (!r.isSynchronizedWithCentralDatabaseBackup())
+							return false;
+						else
+						{
+							getDatabaseTable().updateRecord(r, "synchronizedWithCentralDatabaseBackup", false);
+							return true;
+						}
+					}
+
+					@Override
+					public TransactionIsolation getTransactionIsolation() {
+						return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
+					}
+
+					@Override
+					public boolean doesWriteData() {
+						return true;
+					}
+
+					@Override
+					public void initOrReset() {
+
+					}
+				}))
+				{
+					if (centralBackupInitialized)
+						addNewDatabaseEvent(new DatabaseBackupToRemoveDestinedToCentralDatabaseBackup(getLocalHostID(), _package.getName()));
 					return true;
 				}
 				else
@@ -1271,100 +1320,23 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 		}
 
-		public boolean removeDatabasePackageToSynchronizeWithCentralBackup(final Package _package) throws DatabaseException {
-			lockWrite();
-			try {
-				if (centralBackupInitialized) {
-					if (getCentralDatabaseHookTable().removeRecordsWithAllFields("databasePackageName", _package.getName()) > 0) {
-						addNewDatabaseEvent(new DatabaseBackupToRemoveIntoCentralDatabaseBackup(getLocalHostID(), _package.getName()));
-						return true;
-					} else
-						return false;
-				}
-				else {
-					return runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
-						@Override
-						public Boolean run() throws Exception {
-							CentralDatabaseHookTable.Record r=getCentralDatabaseHookTable().getRecord("databasePackageName", _package.getName());
-							if (r==null)
-								return false;
-							else {
-								r.setRemovedButNotNotified(true);
-								centralDatabaseHookTable.updateRecord(r);
-								return true;
-							}
-						}
-
-						@Override
-						public TransactionIsolation getTransactionIsolation() {
-							return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
-						}
-
-						@Override
-						public boolean doesWriteData() {
-							return true;
-						}
-
-						@Override
-						public void initOrReset() {
-
-						}
-					});
-
-
-				}
-			}
-			finally {
-				unlockWrite();
-			}
-		}
-
-		public List<String> getDatabasePackagesToSynchronizeWithCentralBackup() throws DatabaseException {
+		public Set<String> getDatabasePackagesToSynchronizeWithCentralBackup() throws DatabaseException {
 			lockRead();
 			try {
-				List<CentralDatabaseHookTable.Record> l=getCentralDatabaseHookTable().getRecords();
-				ArrayList<String> res=new ArrayList<>(l.size());
-				for (CentralDatabaseHookTable.Record r : l)
-					res.add(r.getDatabasePackageName());
+				List<DatabaseTable.Record> l= getDatabaseTable().getRecords();
+				Set<String> res=new HashSet<>(l.size());
+				for (DatabaseTable.Record r : l) {
+					if (r.isSynchronizedWithCentralDatabaseBackup())
+						res.add(r.getDatabasePackageName());
+				}
 				return res;
 			}
 			finally {
-				lockRead();
+				unlockRead();
 			}
 		}
 
-		public void initDistantBackupCenterForThisHostWithStringPackages(Set<String> authorizedPackagesToBeSynchronizedWithCentralDatabaseBackup, Map<String, Long> lastValidatedTransactionsUTC) throws DatabaseException {
-			lockWrite();
-			try {
-				centralBackupInitialized = true;
-
-				for (CentralDatabaseHookTable.Record r : getCentralDatabaseHookTable().getRecords()) {
-					if (r.isRemovedButNotNotified()) {
-						addNewDatabaseEvent(new DatabaseBackupToRemoveIntoCentralDatabaseBackup(getLocalHostID(), r.getDatabasePackageName()));
-						centralDatabaseHookTable.removeRecord(r);
-					}
-					else {
-						boolean found = false;
-						for (Map.Entry<String, Long> e : lastValidatedTransactionsUTC.entrySet()) {
-							if (e.getKey().equals(r.getDatabasePackageName())) {
-								validateLastSynchronizationWithCentralDatabaseBackup(e.getKey(), e.getValue());
-								found = true;
-								break;
-							}
-						}
-						if (!found) {
-							validateLastSynchronizationWithCentralDatabaseBackup(r.getDatabasePackageName(), Long.MIN_VALUE);
-						}
-					}
-				}
-			}
-			finally {
-				unlockWrite();
-			}
-		}
-		public void initDistantBackupCenterForThisHost(Set<Package> authorizedPackagesToBeSynchronizedWithCentralDatabaseBackup, AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider, Map<Package, Long> lastValidatedTransactionsUTC) throws DatabaseException {
-			//TODO complete and make it same with initDistantBackupCenterForThisHostWithsStringPackages
-			//check authorised package synchronization with central database backup
+		public void initDistantBackupCenterForThisHostWithStringPackages(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider, Map<String, Long> lastValidatedTransactionsUTC) throws DatabaseException {
 			lockWrite();
 			try {
 				if (random==null)
@@ -1376,12 +1348,30 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				this.random=random;
 				this.encryptionProfileProvider=encryptionProfileProvider;
 				centralBackupInitialized = true;
-				for (Map.Entry<Package, Long> e : lastValidatedTransactionsUTC.entrySet())
-					validateLastSynchronizationWithCentralDatabaseBackup(e.getKey(), e.getValue());
+				Set<String> authorizedPackagesToBeSynchronizedWithCentralDatabaseBackup=getDatabasePackagesToSynchronizeWithCentralBackup();
+				for (Map.Entry<String, Long> e : lastValidatedTransactionsUTC.entrySet()) {
+					if (authorizedPackagesToBeSynchronizedWithCentralDatabaseBackup.contains(e.getKey())) {
+						validateLastSynchronizationWithCentralDatabaseBackup(e.getKey(), e.getValue());
+					}
+					else
+						addNewDatabaseEvent(new DatabaseBackupToRemoveDestinedToCentralDatabaseBackup(getLocalHostID(), e.getKey()));
+				}
+				for (String p : authorizedPackagesToBeSynchronizedWithCentralDatabaseBackup)
+				{
+					if (!lastValidatedTransactionsUTC.containsKey(p))
+						validateLastSynchronizationWithCentralDatabaseBackup(p, Long.MIN_VALUE);
+				}
 			}
 			finally {
 				unlockWrite();
 			}
+
+		}
+		public void initDistantBackupCenterForThisHost(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider, Map<Package, Long> lastValidatedTransactionsUTC) throws DatabaseException {
+			Map<String, Long> m=new HashMap<>();
+			for (Map.Entry<Package, Long> e : lastValidatedTransactionsUTC.entrySet())
+				m.put(e.getKey().getName(), e.getValue());
+			initDistantBackupCenterForThisHostWithStringPackages(random, encryptionProfileProvider, m);
 		}
 
 
@@ -1709,7 +1699,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 
-		private void validateLastSynchronizationWithCentralDatabaseBackup(Package _package, long lastValidatedTransactionUTC) throws DatabaseException {
+		private void validateLastSynchronizationWithCentralDatabaseBackup(Package _package, @SuppressWarnings("SameParameterValue") long lastValidatedTransactionUTC) throws DatabaseException {
 
 			lockWrite();
 			try {
@@ -2094,53 +2084,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 	}
 
-	public static class DatabaseBackupToRemoveIntoCentralDatabaseBackup extends DatabaseEvent implements CentralDatabaseBackupEvent, DatabaseEventToSend
-	{
-		private String packageName;
-		private DecentralizedValue hostSource;
-
-
-		@SuppressWarnings("unused")
-		private DatabaseBackupToRemoveIntoCentralDatabaseBackup() {
-		}
-
-		DatabaseBackupToRemoveIntoCentralDatabaseBackup(DecentralizedValue hostSource, String packageName) {
-			this.packageName = packageName;
-			this.hostSource=hostSource;
-		}
-
-		public String getPackageName() {
-			return packageName;
-		}
-
-
-		@Override
-		public DecentralizedValue getHostDestination() {
-			return hostSource;
-		}
-
-		@Override
-		public DecentralizedValue getHostSource() {
-			return hostSource;
-		}
-
-		@Override
-		public int getInternalSerializedSize() {
-			return SerializationTools.getInternalSize(packageName, SerializationTools.MAX_CLASS_LENGTH)+SerializationTools.getInternalSize((SecureExternalizable)hostSource);
-		}
-
-		@Override
-		public void writeExternal(SecuredObjectOutputStream out) throws IOException {
-			out.writeString(packageName, false, SerializationTools.MAX_CLASS_LENGTH);
-			out.writeObject(hostSource, false);
-		}
-
-		@Override
-		public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
-			packageName=in.readString(false, SerializationTools.MAX_CLASS_LENGTH);
-			hostSource=in.readObject(false, DecentralizedValue.class);
-		}
-	}
 
 
 	/*public static class DatabaseBackupToIncorporateFromCentralDatabaseBackup extends AbstractDatabaseEventsToSynchronize implements Comparable<DatabaseBackupToIncorporateFromCentralDatabaseBackup>, CentralDatabaseBackupEvent {
@@ -2436,10 +2379,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		return databaseHooksTable;
 	}
 
-	CentralDatabaseHookTable getCentralDatabaseHookTable() throws DatabaseException {
-		if (centralDatabaseHookTable == null)
-			centralDatabaseHookTable = getTableInstance(CentralDatabaseHookTable.class);
-		return centralDatabaseHookTable;
+	DatabaseTable getDatabaseTable() throws DatabaseException {
+		if (databaseTable == null)
+			databaseTable = getTableInstance(DatabaseTable.class);
+		return databaseTable;
 	}
 
 	DatabaseTransactionsPerHostTable getDatabaseTransactionsPerHostTable() throws DatabaseException {
@@ -4215,6 +4158,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 				@Override
 				public Void run(DatabaseWrapper sql_connection) throws DatabaseException {
+					getSynchronizer().unsynchronizeDatabasePackageWithCentralBackup(configuration.getPackage());
 
 					try {
 						if (!sql_database.containsKey(configuration.getPackage()))
@@ -4256,7 +4200,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						db.updateCurrentVersion();
 					sql_database = sd;
 
-
+					getDatabaseTable().removeRecord("databasePackageName", configuration.getPackage().getName());
 					return null;
 				}
 
@@ -4671,6 +4615,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			@Override
 			public Boolean run(DatabaseWrapper sql_connection) throws DatabaseException {
 				try {
+
 					boolean allNotFound=true;
 					/*
 					 * boolean table_found=false; try (ReadQuerry rq=new
@@ -4736,7 +4681,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					for (Table<?> t : list_tables) {
 						t.initializeStep3();
 					}
-
+					DatabaseTable.Record dbt=getDatabaseTable().getRecord("databasePackageName", configuration.getPackage().getName());
+					if (dbt==null)
+					{
+						getDatabaseTable().addRecord(new DatabaseTable.Record(configuration.getPackage().getName()));
+					}
 					return allNotFound;
 
 				} /*catch (ClassNotFoundException e) {
