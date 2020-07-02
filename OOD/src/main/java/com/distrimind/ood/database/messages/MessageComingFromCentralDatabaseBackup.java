@@ -42,7 +42,7 @@ import com.distrimind.util.DecentralizedValue;
  * @version 1.0
  * @since OOS 3.0.0
  */
-public interface MessageComingFromCentralDatabaseBackup {
+public interface MessageComingFromCentralDatabaseBackup extends DatabaseEventToSend{
 	DecentralizedValue getHostDestination();
 
 }

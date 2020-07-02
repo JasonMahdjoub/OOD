@@ -43,7 +43,7 @@ import com.distrimind.util.DecentralizedValue;
  * @version 1.0
  * @since OOD 3.0.0
  */
-public interface P2PDatabaseEventToSend {
+public interface P2PDatabaseEventToSend extends DatabaseEventToSend {
 	DecentralizedValue getHostDestination() throws DatabaseException;
 
 	DecentralizedValue getHostSource() throws DatabaseException;

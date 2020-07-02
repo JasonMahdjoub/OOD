@@ -49,7 +49,7 @@ import com.distrimind.util.io.*;
  * @version 1.0
  * @since OOD 2.0
  */
-public class HookAddRequest extends DatabaseEvent implements DatabaseEventToSend {
+public class HookAddRequest extends DatabaseEvent implements DBEventToSend {
 
 	private DecentralizedValue hostSource;
 	private DecentralizedValue hostDestination;

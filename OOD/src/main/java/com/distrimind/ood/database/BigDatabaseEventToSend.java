@@ -37,7 +37,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.ood.database.messages.DatabaseEventToSend;
+import com.distrimind.ood.database.messages.P2PDatabaseEventToSend;
 
 /**
  * 
@@ -45,7 +45,7 @@ import com.distrimind.ood.database.messages.DatabaseEventToSend;
  * @version 1.0
  * @since OOD 2.0
  */
-public interface BigDatabaseEventToSend extends DatabaseEventToSend {
+public interface BigDatabaseEventToSend extends P2PDatabaseEventToSend {
 
 	void importFromInputStream(DatabaseWrapper wrapper, final InputStreamGetter inputStream) throws DatabaseException;
 

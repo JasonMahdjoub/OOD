@@ -69,7 +69,7 @@ public abstract class CommonDecentralizedTests {
 		private final byte[] joinedData;
 		private final DecentralizedValue hostDest;
 
-		DistantDatabaseEvent(DatabaseWrapper wrapper, DatabaseEventToSend eventToSend)
+		DistantDatabaseEvent(DatabaseWrapper wrapper, DBEventToSend eventToSend)
 				throws Exception {
 			try (RandomByteArrayOutputStream baos = new RandomByteArrayOutputStream()) {
 				baos.writeObject(eventToSend, false);
@@ -106,9 +106,9 @@ public abstract class CommonDecentralizedTests {
 			hostDest = eventToSend.getHostDestination();
 		}
 
-		public DatabaseEventToSend getDatabaseEventToSend() throws IOException, ClassNotFoundException {
+		public DBEventToSend getDatabaseEventToSend() throws IOException, ClassNotFoundException {
 			try (RandomByteArrayInputStream bais = new RandomByteArrayInputStream(eventToSend)) {
-				return bais.readObject(false, DatabaseEventToSend.class);
+				return bais.readObject(false, DBEventToSend.class);
 			}
 		}
 
@@ -937,7 +937,7 @@ public abstract class CommonDecentralizedTests {
 			changed = true;
 			final CommonDecentralizedTests.DistantDatabaseEvent dde = db.getReceivedDatabaseEvents().remove(0);
 
-			DatabaseEventToSend event = dde.getDatabaseEventToSend();
+			DBEventToSend event = dde.getDatabaseEventToSend();
 
 			if (event instanceof BigDatabaseEventToSend) {
 				try (InputStreamGetter is = new InputStreamGetter() {
@@ -1032,8 +1032,8 @@ public abstract class CommonDecentralizedTests {
 							System.out.println("new event : "+e);
 							centralDatabaseBackup.receiveMessage((CentralDatabaseBackupEvent)e);
 						}
-						else if (e instanceof DatabaseEventToSend) {
-							DatabaseEventToSend es = (DatabaseEventToSend) e;
+						else if (e instanceof DBEventToSend) {
+							DBEventToSend es = (DBEventToSend) e;
 
 							Assert.assertEquals(es.getHostSource(), db.getHostID());
 							Assert.assertNotEquals(es.getHostDestination(), db.getHostID());
