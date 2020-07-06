@@ -14,10 +14,10 @@ import java.io.IOException;
  * @version 1.0
  * @since MaDKitLanEdition 3.0.0
  */
-public class AskForDatabaseBackupPartDestinedToCentralDatabaseBackup extends DatabaseEvent implements MessageDestinedToCentralDatabaseBackup, SecureExternalizable {
+public class AskForDatabaseBackupPartDestinedToCentralDatabaseBackup extends DatabaseEvent implements ChannelMessageDestinedToCentralDatabaseBackup, SecureExternalizable {
 
 	private DecentralizedValue hostSource;
-	private DecentralizedValue hostChannel;
+	private DecentralizedValue channelHost;
 	private long lastFileTimestampUTCToNotInclude;
 
 	@SuppressWarnings("unused")
@@ -27,18 +27,19 @@ public class AskForDatabaseBackupPartDestinedToCentralDatabaseBackup extends Dat
 		if (hostSource==null)
 			throw new NullPointerException();
 		this.hostSource = hostSource;
-		this.hostChannel=hostSource;
+		this.channelHost =hostSource;
 		this.lastFileTimestampUTCToNotInclude = lastFileTimestampUTCToNotInclude;
 	}
-	public AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(DecentralizedValue hostSource, DecentralizedValue hostChannel, long lastFileTimestampUTCToNotInclude) {
+	public AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(DecentralizedValue hostSource, DecentralizedValue channelHost, long lastFileTimestampUTCToNotInclude) {
 		this(hostSource, lastFileTimestampUTCToNotInclude);
-		if (hostChannel==null)
+		if (channelHost ==null)
 			throw new NullPointerException();
-		this.hostChannel=hostChannel;
+		this.channelHost = channelHost;
 	}
 
-	public DecentralizedValue getHostChannel() {
-		return hostChannel;
+	@Override
+	public DecentralizedValue getChannelHost() {
+		return channelHost;
 	}
 
 	@Override
@@ -52,23 +53,23 @@ public class AskForDatabaseBackupPartDestinedToCentralDatabaseBackup extends Dat
 
 	@Override
 	public int getInternalSerializedSize() {
-		return 8+ SerializationTools.getInternalSize((SecureExternalizable)hostSource)+SerializationTools.getInternalSize((SecureExternalizable)hostChannel);
+		return 8+ SerializationTools.getInternalSize((SecureExternalizable)hostSource)+SerializationTools.getInternalSize((SecureExternalizable) channelHost);
 	}
 
 	@Override
 	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
 		out.writeObject(hostSource, false);
-		assert hostChannel!=null;
-		out.writeObject(hostChannel==hostSource?null:hostChannel, true);
+		assert channelHost !=null;
+		out.writeObject(channelHost ==hostSource?null: channelHost, true);
 		out.writeLong(lastFileTimestampUTCToNotInclude);
 	}
 
 	@Override
 	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
 		hostSource=in.readObject(false, DecentralizedValue.class);
-		hostChannel=in.readObject(true, DecentralizedValue.class);
-		if (hostChannel==null)
-			hostChannel=hostSource;
+		channelHost =in.readObject(true, DecentralizedValue.class);
+		if (channelHost ==null)
+			channelHost =hostSource;
 		lastFileTimestampUTCToNotInclude =in.readLong();
 	}
 }

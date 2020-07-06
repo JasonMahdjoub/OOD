@@ -87,7 +87,6 @@ public class BackupRestoreManager {
 	private final Package dbPackage;
 	private final boolean generateRestoreProgressBar;
 	private volatile long lastCurrentRestorationFileUsed=Long.MIN_VALUE;
-	private final BackupFileListener backupFileListener;
 	private volatile Long maxDateUTC=null;
 
 	//private volatile long currentBackupReferenceUTC=Long.MAX_VALUE;
@@ -100,10 +99,10 @@ public class BackupRestoreManager {
 		long l=fileTimeStamps.get(fileTimeStamps.size()-1);
 		return getFile(l, isReferenceFile(l));
 	}
-	BackupRestoreManager(DatabaseWrapper databaseWrapper, File backupDirectory, BackupFileListener backupFileListener, DatabaseConfiguration databaseConfiguration, boolean passive) throws DatabaseException {
-		this(databaseWrapper, backupDirectory, backupFileListener, databaseConfiguration, databaseConfiguration.getBackupConfiguration(), passive);
+	BackupRestoreManager(DatabaseWrapper databaseWrapper, File backupDirectory, DatabaseConfiguration databaseConfiguration, boolean passive) throws DatabaseException {
+		this(databaseWrapper, backupDirectory, databaseConfiguration, databaseConfiguration.getBackupConfiguration(), passive);
 	}
-	BackupRestoreManager(DatabaseWrapper databaseWrapper, File backupDirectory, BackupFileListener backupFileListener, DatabaseConfiguration databaseConfiguration, BackupConfiguration backupConfiguration, boolean passive) throws DatabaseException {
+	BackupRestoreManager(DatabaseWrapper databaseWrapper, File backupDirectory, DatabaseConfiguration databaseConfiguration, BackupConfiguration backupConfiguration, boolean passive) throws DatabaseException {
 		if (backupDirectory==null)
 			throw new NullPointerException();
 		if (backupDirectory.exists() && backupDirectory.isFile())
@@ -114,7 +113,6 @@ public class BackupRestoreManager {
 			throw new NullPointerException();
 		if (backupConfiguration==null)
 			throw new NullPointerException();
-		this.backupFileListener=backupFileListener;
 		this.passive=passive;
 		this.databaseConfiguration=databaseConfiguration;
 		this.databaseWrapper=databaseWrapper;
@@ -343,7 +341,6 @@ public class BackupRestoreManager {
 	}
 
 
-	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	private boolean isPartFull(long timeStamp, File file)
 	{
 		if (timeStamp==lastCurrentRestorationFileUsed)
@@ -908,7 +905,7 @@ public class BackupRestoreManager {
 
 	private File currentFileReference=null;
 	private List<Class<? extends Table<?>>> currentClassesList=null;
-	private DatabaseWrapper.TransactionsInterval transactionsInterval=null;
+	//private DatabaseWrapper.TransactionsInterval transactionsInterval=null;
 
 	private long lastBackupEventUTC=Long.MIN_VALUE;
 
@@ -917,7 +914,7 @@ public class BackupRestoreManager {
 		currentFileReference=null;
 		currentClassesList=null;
 		lastBackupEventUTC=Long.MIN_VALUE;
-		transactionsInterval=null;
+		//transactionsInterval=null;
 	}
 
 
@@ -927,14 +924,15 @@ public class BackupRestoreManager {
 
 			try(RandomFileInputStream rfis=new RandomFileInputStream(file)) {
 				lastBackupEventUTC=rfis.readLong();
-				if (rfis.readBoolean()) {
-					transactionsInterval = null;
+				if (!rfis.readBoolean()) {
+					/*transactionsInterval = null;
 				}
 				else
-				{
-					long s=rfis.readLong();
+				{*/
+					rfis.seek(16);
+					/*long s=rfis.readLong();
 					long e=rfis.readLong();
-					transactionsInterval=new DatabaseWrapper.TransactionsInterval(s, e);
+					transactionsInterval=new DatabaseWrapper.TransactionsInterval(s, e);*/
 				}
 
 				rfis.seek(LIST_CLASSES_POSITION/*RecordsIndex.getListClassPosition(rfis)*/+4);
@@ -974,7 +972,7 @@ public class BackupRestoreManager {
 			}
 		}
 	}
-	DatabaseWrapper.TransactionsInterval extractTransactionInterval(RandomFileInputStream rfis) throws DatabaseException {
+	/*DatabaseWrapper.TransactionsInterval extractTransactionInterval(RandomFileInputStream rfis) throws DatabaseException {
 		try {
 			rfis.seek(8);
 
@@ -1002,7 +1000,7 @@ public class BackupRestoreManager {
 				throw DatabaseException.getDatabaseException(e);
 			}
 		}
-	}
+	}*/
 
 
 		private boolean checkTablesHeader(File file) throws DatabaseException {
@@ -1337,10 +1335,10 @@ public class BackupRestoreManager {
 		finally {
 			databaseWrapper.unlockRead();
 			lastBackupEventUTC=Long.MIN_VALUE;
-			transactionsInterval=null;
+			//transactionsInterval=null;
 			//currentBackupReferenceUTC=Long.MAX_VALUE;
-			if (notify && backupFileListener!=null && globalNumberOfSavedRecords.get()>0)
-				backupFileListener.fileListChanged();
+			if (notify && globalNumberOfSavedRecords.get()>0)
+				databaseWrapper.getSynchronizer().checkForNewBackupFilePartToSendToCentralDatabaseBackup(dbPackage);
 
 		}
 	}
@@ -1527,23 +1525,17 @@ public class BackupRestoreManager {
 	}
 
 	EncryptedBackupPartDestinedToCentralDatabaseBackup getEncryptedFilePartWithMetaData(DecentralizedValue fromHostIdentifier, long timeStamp, boolean backupReference, AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
-		EncryptedDatabaseBackupMetaDataPerFile metaData=getEncryptedDatabaseBackupMetaDataPerFile(timeStamp, backupReference, random, encryptionProfileProvider);
 		RandomCacheFileOutputStream out=getEncryptedFilePart(timeStamp, backupReference, random, encryptionProfileProvider);
 		try {
-			return new EncryptedBackupPartDestinedToCentralDatabaseBackup(fromHostIdentifier, metaData, out.getRandomInputStream());
+			DatabaseBackupMetaDataPerFile metaData=getDatabaseBackupMetaDataPerFile(timeStamp, backupReference);
+			EncryptedDatabaseBackupMetaDataPerFile encryptedMetaData=new EncryptedDatabaseBackupMetaDataPerFile(dbPackage.getName(), metaData, random, encryptionProfileProvider);
+			return new EncryptedBackupPartDestinedToCentralDatabaseBackup(fromHostIdentifier, encryptedMetaData, out.getRandomInputStream(), EncryptionTools.encryptID(metaData.getLastTransactionID(), random, encryptionProfileProvider));
 		} catch (IOException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
 
 	}
 
-	EncryptedDatabaseBackupMetaDataPerFile getEncryptedDatabaseBackupMetaDataPerFile(long timeStamp, boolean backupReference, AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
-		try {
-			return new EncryptedDatabaseBackupMetaDataPerFile(dbPackage.getName(), getDatabaseBackupMetaDataPerFile(timeStamp, backupReference), random, encryptionProfileProvider);
-		} catch (IOException e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}
 
 
 	DatabaseBackupMetaDataPerFile getDatabaseBackupMetaDataPerFile(long timeStamp, boolean backupReference) throws DatabaseException {
@@ -1571,7 +1563,7 @@ public class BackupRestoreManager {
 		}
 	}
 
-	void importEncryptedBackupPartComingFromCentralDatabaseBackup(EncryptedBackupPartComingFromCentralDatabaseBackup backupPart, EncryptionProfileProvider encryptionProfileProvider, boolean replaceExistingFilePart) throws DatabaseException {
+	void importEncryptedBackupPartComingFromCentralDatabaseBackup(EncryptedBackupPartComingFromCentralDatabaseBackup backupPart, EncryptionProfileProvider encryptionProfileProvider, @SuppressWarnings("SameParameterValue") boolean replaceExistingFilePart) throws DatabaseException {
 		try {
 			Integrity i = backupPart.getMetaData().checkSignature(encryptionProfileProvider);
 			if (i != Integrity.OK)
@@ -1597,6 +1589,7 @@ public class BackupRestoreManager {
 				catch(IOException e)
 				{
 					if (f.exists())
+						//noinspection ResultOfMethodCallIgnored
 						f.delete();
 					throw e;
 				}
@@ -2001,9 +1994,9 @@ public class BackupRestoreManager {
 				}
 				lastCurrentRestorationFileUsed=Long.MIN_VALUE;
 				lastBackupEventUTC=Long.MIN_VALUE;
-				transactionsInterval=null;
-				if (notify && backupFileListener!=null)
-					backupFileListener.fileListChanged();
+				//transactionsInterval=null;
+				if (notify)
+					databaseWrapper.getSynchronizer().checkForNewBackupFilePartToSendToCentralDatabaseBackup(dbPackage);
 			}
 		}
 		finally {
@@ -2258,7 +2251,7 @@ public class BackupRestoreManager {
 			try {
 				out.setLength(backupPosition);
 				lastBackupEventUTC=Long.MAX_VALUE;
-				transactionsInterval=null;
+				//transactionsInterval=null;
 			} catch (IOException e) {
 				throw DatabaseException.getDatabaseException(e);
 			}
@@ -2310,14 +2303,14 @@ public class BackupRestoreManager {
 						throw DatabaseException.getDatabaseException(e);
 					}
 					BackupRestoreManager.this.lastBackupEventUTC = Long.MIN_VALUE;
-					transactionsInterval = null;
+					//transactionsInterval = null;
 					if (!computeDatabaseReference.delete())
 						throw new DatabaseException("Impossible to delete file : " + computeDatabaseReference);
 
 					closed = true;
 				}
-				if (backupFileListener != null && fileTimeStamp != oldLastFile)
-					backupFileListener.fileListChanged();
+				if (fileTimeStamp != oldLastFile && isPartFull(fileTimeStamp, getFile(fileTimeStamp)))
+					databaseWrapper.getSynchronizer().checkForNewBackupFilePartToSendToCentralDatabaseBackup(dbPackage);
 				createIfNecessaryNewBackupReference();
 			}
 			finally {
@@ -2350,10 +2343,6 @@ public class BackupRestoreManager {
 		return fileReferenceTimeStamps.size();
 	}
 
-	public interface BackupFileListener
-	{
-		void fileListChanged();
-	}
 
 
 }

@@ -37,8 +37,14 @@ package com.distrimind.ood.database.messages;
 
 
 import com.distrimind.ood.database.EncryptedDatabaseBackupMetaDataPerFile;
+import com.distrimind.ood.database.EncryptionTools;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.RandomInputStream;
+import com.distrimind.util.io.SecuredObjectInputStream;
+import com.distrimind.util.io.SecuredObjectOutputStream;
+import com.distrimind.util.io.SerializationTools;
+
+import java.io.IOException;
 
 /**
  * @author Jason Mahdjoub
@@ -46,11 +52,36 @@ import com.distrimind.util.io.RandomInputStream;
  * @since OOD 3.0
  */
 public class EncryptedBackupPartDestinedToCentralDatabaseBackup extends AbstractEncryptedBackupPart implements MessageDestinedToCentralDatabaseBackup{
+	private byte[] lastValidatedAndEncryptedID;
 	@SuppressWarnings("unused")
 	private EncryptedBackupPartDestinedToCentralDatabaseBackup() {
 	}
 
-	public EncryptedBackupPartDestinedToCentralDatabaseBackup(DecentralizedValue hostSource, EncryptedDatabaseBackupMetaDataPerFile metaData, RandomInputStream partInputStream) {
+	public EncryptedBackupPartDestinedToCentralDatabaseBackup(DecentralizedValue hostSource, EncryptedDatabaseBackupMetaDataPerFile metaData, RandomInputStream partInputStream, byte[] lastValidatedAndEncryptedID) {
 		super(hostSource, metaData, partInputStream);
+		if (lastValidatedAndEncryptedID==null)
+			throw new NullPointerException();
+		this.lastValidatedAndEncryptedID=lastValidatedAndEncryptedID;
+	}
+
+	public byte[] getLastValidatedAndEncryptedID() {
+		return lastValidatedAndEncryptedID;
+	}
+
+	@Override
+	public int getInternalSerializedSize() {
+		return super.getInternalSerializedSize()+ SerializationTools.getInternalSize(lastValidatedAndEncryptedID, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+	}
+
+	@Override
+	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
+		super.writeExternal(out);
+		out.writeBytesArray(lastValidatedAndEncryptedID, false, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+	}
+
+	@Override
+	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
+		super.readExternal(in);
+		lastValidatedAndEncryptedID=in.readBytesArray(false, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
 	}
 }

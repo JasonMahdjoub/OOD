@@ -49,27 +49,28 @@ import java.io.IOException;
  * @version 1.0
  * @since OOD 3.0.0
  */
-public class AskForMetaDataPerFileToCentralDatabaseBackup extends DatabaseEvent implements DatabaseEventToSend, MessageDestinedToCentralDatabaseBackup, SecureExternalizable {
+public class AskForMetaDataPerFileToCentralDatabaseBackup extends DatabaseEvent implements DatabaseEventToSend, ChannelMessageDestinedToCentralDatabaseBackup, SecureExternalizable {
 	private DecentralizedValue hostSource;
-	private DecentralizedValue hostChannel;
+	private DecentralizedValue channelHost;
 	private long fromMaximumExcludeTransactionID;
 	@SuppressWarnings("unused")
 	private AskForMetaDataPerFileToCentralDatabaseBackup()
 	{
 
 	}
-	public AskForMetaDataPerFileToCentralDatabaseBackup(DecentralizedValue hostSource, DecentralizedValue hostChannel, long fromMaximumExcludeTransactionID) {
+	public AskForMetaDataPerFileToCentralDatabaseBackup(DecentralizedValue hostSource, DecentralizedValue channelHost, long fromMaximumExcludeTransactionID) {
 		if (hostSource==null)
 			throw new NullPointerException();
-		if (hostChannel==null)
+		if (channelHost ==null)
 			throw new NullPointerException();
 		this.hostSource = hostSource;
-		this.hostChannel = hostChannel;
+		this.channelHost = channelHost;
 		this.fromMaximumExcludeTransactionID = fromMaximumExcludeTransactionID;
 	}
 
-	public DecentralizedValue getHostChannel() {
-		return hostChannel;
+	@Override
+	public DecentralizedValue getChannelHost() {
+		return channelHost;
 	}
 
 	public long getFromMaximumExcludeTransactionID() {
@@ -83,20 +84,20 @@ public class AskForMetaDataPerFileToCentralDatabaseBackup extends DatabaseEvent 
 
 	@Override
 	public int getInternalSerializedSize() {
-		return 8+SerializationTools.getInternalSize((SecureExternalizable)hostSource)+SerializationTools.getInternalSize((SecureExternalizable)hostChannel);
+		return 8+SerializationTools.getInternalSize((SecureExternalizable)hostSource)+SerializationTools.getInternalSize((SecureExternalizable) channelHost);
 	}
 
 	@Override
 	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
 		out.writeObject(hostSource, false);
-		out.writeObject(hostChannel, false);
+		out.writeObject(channelHost, false);
 		out.writeLong(fromMaximumExcludeTransactionID);
 	}
 
 	@Override
 	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
 		hostSource=in.readObject(false, DecentralizedValue.class);
-		hostChannel=in.readObject(false, DecentralizedValue.class);
+		channelHost =in.readObject(false, DecentralizedValue.class);
 		fromMaximumExcludeTransactionID=in.readLong();
 	}
 }

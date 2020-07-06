@@ -887,7 +887,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 	}
 
-	DatabaseWrapper.TransactionsInterval alterDatabase(final String databasePackage, final DecentralizedValue comingFrom,
+	/*DatabaseWrapper.TransactionsInterval */void alterDatabase(final String databasePackage, final DecentralizedValue comingFrom,
 													   final RandomInputStream ois) throws DatabaseException {
 
 		if (comingFrom == null)
@@ -924,11 +924,11 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 			ois.skipNBytes(8);
 
 			if (!ois.readBoolean())
-				return null;
+				return ;//null;
 			long startTransactionID=ois.readLong();
 			long endTransactionID=ois.readLong();
 			if (startTransactionID>lastDistantTransactionID || endTransactionID<=lastDistantTransactionID)
-				return new DatabaseWrapper.TransactionsInterval(startTransactionID, endTransactionID);
+				return ;//new DatabaseWrapper.TransactionsInterval(startTransactionID, endTransactionID);
 
 			if (ois.readBoolean()) {
 				ois.seek(ois.readInt());
@@ -1066,7 +1066,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 					it.close();
 				}
 			}
-			return null;
+			//return null;
 
 		} catch (EOFException e) {
 			try {
