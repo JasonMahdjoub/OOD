@@ -156,4 +156,16 @@ public class DatabaseBackupMetaDataPerFile implements Comparable<DatabaseBackupM
 	public long getLastTransactionTimestampUTC() {
 		return transactionsMetaData.get(transactionsMetaData.size()-1).transactionUTC;
 	}
+
+	public long getFirstTransactionID()
+	{
+		return transactionsMetaData.get(0).transactionID;
+	}
+
+	public long getLastTransactionID()
+	{
+		return transactionsMetaData.get(transactionsMetaData.size()-1).transactionID;
+	}
+
+
 }
