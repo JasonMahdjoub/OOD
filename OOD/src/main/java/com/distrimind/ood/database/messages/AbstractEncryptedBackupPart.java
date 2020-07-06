@@ -48,15 +48,14 @@ import java.io.IOException;
  * @version 1.0
  * @since Utils 3.0.0
  */
-public abstract class AbstractEncryptedBackupPart extends DatabaseEvent implements SecureExternalizable {
+public abstract class AbstractEncryptedBackupPart extends DatabaseEvent implements SecureExternalizable, BigDataEventToSendWithCentralDatabaseBackup {
 
 	private DecentralizedValue hostSource;
 	private EncryptedDatabaseBackupMetaDataPerFile metaData;
 	private RandomInputStream partInputStream;
 
 
-	@SuppressWarnings("unused")
-	private AbstractEncryptedBackupPart() {
+	protected AbstractEncryptedBackupPart() {
 	}
 
 	public AbstractEncryptedBackupPart(DecentralizedValue hostSource, EncryptedDatabaseBackupMetaDataPerFile metaData, RandomInputStream partInputStream) {

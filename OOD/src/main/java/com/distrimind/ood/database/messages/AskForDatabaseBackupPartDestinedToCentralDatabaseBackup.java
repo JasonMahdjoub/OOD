@@ -17,17 +17,28 @@ import java.io.IOException;
 public class AskForDatabaseBackupPartDestinedToCentralDatabaseBackup extends DatabaseEvent implements MessageDestinedToCentralDatabaseBackup, SecureExternalizable {
 
 	private DecentralizedValue hostSource;
+	private DecentralizedValue hostChannel;
 	private long lastFileTimestampUTCToNotInclude;
 
 	@SuppressWarnings("unused")
 	private AskForDatabaseBackupPartDestinedToCentralDatabaseBackup() {
 	}
-
 	public AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(DecentralizedValue hostSource, long lastFileTimestampUTCToNotInclude) {
 		if (hostSource==null)
 			throw new NullPointerException();
 		this.hostSource = hostSource;
+		this.hostChannel=hostSource;
 		this.lastFileTimestampUTCToNotInclude = lastFileTimestampUTCToNotInclude;
+	}
+	public AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(DecentralizedValue hostSource, DecentralizedValue hostChannel, long lastFileTimestampUTCToNotInclude) {
+		this(hostSource, lastFileTimestampUTCToNotInclude);
+		if (hostChannel==null)
+			throw new NullPointerException();
+		this.hostChannel=hostChannel;
+	}
+
+	public DecentralizedValue getHostChannel() {
+		return hostChannel;
 	}
 
 	@Override
@@ -41,18 +52,23 @@ public class AskForDatabaseBackupPartDestinedToCentralDatabaseBackup extends Dat
 
 	@Override
 	public int getInternalSerializedSize() {
-		return 8+ SerializationTools.getInternalSize((SecureExternalizable)hostSource);
+		return 8+ SerializationTools.getInternalSize((SecureExternalizable)hostSource)+SerializationTools.getInternalSize((SecureExternalizable)hostChannel);
 	}
 
 	@Override
 	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
 		out.writeObject(hostSource, false);
+		assert hostChannel!=null;
+		out.writeObject(hostChannel==hostSource?null:hostChannel, true);
 		out.writeLong(lastFileTimestampUTCToNotInclude);
 	}
 
 	@Override
 	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
 		hostSource=in.readObject(false, DecentralizedValue.class);
+		hostChannel=in.readObject(true, DecentralizedValue.class);
+		if (hostChannel==null)
+			hostChannel=hostSource;
 		lastFileTimestampUTCToNotInclude =in.readLong();
 	}
 }

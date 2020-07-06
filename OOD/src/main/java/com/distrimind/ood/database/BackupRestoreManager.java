@@ -46,8 +46,6 @@ import com.distrimind.util.FileTools;
 import com.distrimind.util.Reference;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
-import com.distrimind.util.crypto.EncryptionSignatureHashDecoder;
-import com.distrimind.util.crypto.EncryptionSignatureHashEncoder;
 import com.distrimind.util.io.*;
 import com.distrimind.util.progress_monitors.ProgressMonitorDM;
 import com.distrimind.util.progress_monitors.ProgressMonitorParameters;
@@ -1585,10 +1583,7 @@ public class BackupRestoreManager {
 				try {
 					File fileDest=f;
 					f = getFile(backupPart.getMetaData().getFileTimestampUTC(), backupPart.getMetaData().isReferenceFile(), true);
-					new EncryptionSignatureHashDecoder()
-							.withEncryptionProfileProvider(encryptionProfileProvider)
-							.withRandomInputStream(backupPart.getPartInputStream())
-							.decodeAndCheckHashAndSignaturesIfNecessary(new RandomFileOutputStream(f));
+					EncryptionTools.decode(encryptionProfileProvider, backupPart.getPartInputStream(), new RandomFileOutputStream(f));
 					if (exists) {
 						if (!fileDest.delete())
 							throw new DatabaseException("Impossible to remove file "+fileDest);
@@ -1617,10 +1612,7 @@ public class BackupRestoreManager {
 	public RandomCacheFileOutputStream getEncryptedFilePart(long timeStamp, boolean backupReference, AbstractSecureRandom random, EncryptionProfileProvider profileProvider) throws DatabaseException {
 		try {
 			RandomCacheFileOutputStream randomCacheFileOutputStream = RandomCacheFileCenter.getSingleton().getNewBufferedRandomCacheFileOutputStream(true, RandomFileOutputStream.AccessMode.READ_AND_WRITE, BufferedRandomInputStream.DEFAULT_MAX_BUFFER_SIZE, 1);
-			new EncryptionSignatureHashEncoder()
-					.withEncryptionProfileProvider(random, profileProvider)
-					.withRandomInputStream(new RandomFileInputStream(getFinalFile(timeStamp, backupReference)))
-					.encode(randomCacheFileOutputStream);
+			EncryptionTools.encode(random, profileProvider, new RandomFileInputStream(getFinalFile(timeStamp, backupReference)), randomCacheFileOutputStream);
 			return randomCacheFileOutputStream;
 		}
 		catch (IOException e)

@@ -296,6 +296,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * 
 	 */
 	protected DatabaseWrapper(String _database_name, File databaseDirectory, boolean alwaysDisconnectAfterOnTransaction, boolean loadToMemory) throws DatabaseException {
+
 		if (loadToMemory)
 		{
 			this.alwaysDeconectAfterOnTransaction=false;
@@ -343,6 +344,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		// isWindows=OSValidator.isWindows();
 
 		locker = getLocker();
+		importEvent=locker.newCondition();
 		converters = new ArrayList<>();
 		converters.add(new DefaultByteTabObjectConverter());
 		synchronizer=new DatabaseSynchronizer();
@@ -483,14 +485,41 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 			metaData.add(m);
 		}
-		long getLastTransactionID()
+		/*long getLastTransactionID()
 		{
 			if (metaData.size()==0)
 				return Long.MIN_VALUE;
 			else
 				return metaData.last().getLastTransactionID();
+		}*/
+
+		long getFileUTCToTransfer(long lastValidatedDistantTransactionID) {
+			++lastValidatedDistantTransactionID;
+			for (DatabaseBackupMetaDataPerFile m : metaData)
+			{
+				if (lastValidatedDistantTransactionID>=m.getFirstTransactionID() && lastValidatedDistantTransactionID<=m.getLastTransactionID())
+					return m.getFileTimestampUTC();
+			}
+			return Long.MIN_VALUE;
+		}
+
+		void validateLastTransaction(long lastValidatedTransaction) {
+			for (Iterator<DatabaseBackupMetaDataPerFile> it=metaData.iterator();it.hasNext();)
+			{
+				if (it.next().getLastTransactionID()<=lastValidatedTransaction)
+				{
+					it.remove();
+				}
+				else
+					break;
+			}
+
 		}
 	}
+
+
+
+
 	public class DatabaseSynchronizer {
 		private DatabaseNotifier notifier = null;
 		private boolean canNotify = true;
@@ -808,7 +837,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						if (cp != null && !_record.concernsLocalDatabaseHost() && !cp.isTransferInProgress()) {
 							if (lastID > _record.getLastValidatedLocalTransactionID()) {
 								cp.setTransferInProgress(true);
-								addNewDatabaseEvent(new DatabaseEventsToSynchronize(
+								addNewDatabaseEvent(new DatabaseEventsToSynchronizeP2P(
 										getHooksTransactionsTable().getLocalDatabaseHost().getHostID(), _record, lastID,
 										maxTransactionsToSynchronizeAtTheSameTime));
 							}
@@ -954,7 +983,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						if (cp != null && !_record.concernsLocalDatabaseHost() && !cp.isTransferInProgress()) {
 							if (lastID > _record.getLastValidatedLocalTransactionID()) {
 								cp.setTransferInProgress(true);
-								addNewDatabaseEvent(new DatabaseEventsToSynchronize(
+								addNewDatabaseEvent(new DatabaseEventsToSynchronizeP2P(
 										getHooksTransactionsTable().getLocalDatabaseHost().getHostID(), _record, lastID,
 										maxTransactionsToSynchronizeAtTheSameTime));
 							}
@@ -985,7 +1014,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				DatabaseHooksTable.Record hook = getHooksTransactionsTable().getHook(peer.getHostID());
 				if (lastID > hook.getLastValidatedLocalTransactionID() && !peer.isTransferInProgress()) {
 					peer.setTransferInProgress(true);
-					addNewDatabaseEvent(new DatabaseEventsToSynchronize(
+					addNewDatabaseEvent(new DatabaseEventsToSynchronizeP2P(
 							getHooksTransactionsTable().getLocalDatabaseHost().getHostID(), hook, lastID,
 							maxTransactionsToSynchronizeAtTheSameTime));
 				}
@@ -1008,11 +1037,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							getLocalHostID(), hostDestination,
 							lastValidatedTransaction));
 				}
-				if (initializedHooksWithCentralBackup.size()>0 || suspendedHooksWithCentralBackup.size()>0)
+				ValidatedIDPerDistantHook v=validatedIDPerDistantHook.get(hostDestination);
+				if (v!=null)
 				{
-					notify=true;
-					events.add(new TransactionInIDConfirmationEventsWithCentralDatabaseBackupEvent(getLocalHostID(), hostDestination,
-							lastValidatedTransaction));
+					v.validateLastTransaction(lastValidatedTransaction);
 				}
 				if (notify)
 					notifyNewEvent();
@@ -1032,11 +1060,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			try {
 				lockWrite();
 				boolean add = true;
-				if (e.getClass() == DatabaseEventsToSynchronize.class) {
-					DatabaseEventsToSynchronize dets = (DatabaseEventsToSynchronize) e;
+				if (e.getClass() == DatabaseEventsToSynchronizeP2P.class) {
+					DatabaseEventsToSynchronizeP2P dets = (DatabaseEventsToSynchronizeP2P) e;
 					for (DatabaseEvent detmp : events) {
-						if (detmp.getClass() == DatabaseEventsToSynchronize.class
-								&& dets.tryToMerge((DatabaseEventsToSynchronize) detmp)) {
+						if (detmp.getClass() == DatabaseEventsToSynchronizeP2P.class
+								&& dets.tryToMerge((DatabaseEventsToSynchronizeP2P) detmp)) {
 							add = false;
 							break;
 						}
@@ -1187,9 +1215,26 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			long firstTransactionID=v.getFirstTransactionID();
 			DatabaseHooksTable.Record r=getHooksTransactionsTable().getRecord("hostID", hostChannel);
 			assert r!=null;
-			if (firstTransactionID>r.getLastValidatedDistantTransactionID())
+			if (firstTransactionID-1>r.getLastValidatedDistantTransactionID())
 				addNewDatabaseEvent(new AskForMetaDataPerFileToCentralDatabaseBackup(getLocalHostID(), hostChannel, firstTransactionID));
+			else
+			{
+				checkAskForEncryptedBackupFilePart(hostChannel);
+			}
 		}
+		private void checkAskForEncryptedBackupFilePart(DecentralizedValue hostChannel) throws DatabaseException {
+			ConnectedPeers cp=initializedHooksWithCentralBackup.get(hostChannel);
+			if (cp!=null) {
+				ValidatedIDPerDistantHook v= validatedIDPerDistantHook.get(hostChannel);
+				DatabaseHooksTable.Record r=getHooksTransactionsTable().getRecord("hostID", hostChannel);
+				assert r!=null;
+				long fileUTC=v.getFileUTCToTransfer(r.getLastValidatedDistantTransactionID());
+				if (fileUTC!=Long.MIN_VALUE) {
+					addNewDatabaseEvent(new AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(getLocalHostID(), hostChannel, fileUTC-1));
+				}
+			}
+		}
+
 		private void received(EncryptedMetaDataFromCentralDatabaseBackup metaData) throws DatabaseException {
 			ValidatedIDPerDistantHook v= validatedIDPerDistantHook.get(metaData.getHostSource());
 			if (v==null)
@@ -1695,8 +1740,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					d.getLastDistantTransactionIdentifiers(), true);
 		}
 
-		public void received(BigDatabaseEventToSend data, InputStreamGetter inputStream) throws DatabaseException {
-			System.out.println("received big data : "+data);
+		public void received(P2PBigDatabaseEventToSend data, InputStreamGetter inputStream) throws DatabaseException {
 			data.importFromInputStream(DatabaseWrapper.this, inputStream);
 			synchronizedDataIfNecessary();
 		}
@@ -1821,33 +1865,48 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (d.lastValidatedTransactionUTCForCentralBackup>Long.MIN_VALUE)
 			{
 				long lts=d.backupRestoreManager.getLastTransactionUTCInMS();
-				if (lts<d.lastValidatedTransactionUTCForCentralBackup)
+				if (lts<d.lastValidatedTransactionUTCForCentralBackup) {
 					addNewDatabaseEvent(new AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(getLocalHostID(), lts));
+				}
 			}
 		}
 
 		private void received(EncryptedBackupPartComingFromCentralDatabaseBackup backupPart) throws DatabaseException {
-			String pname=backupPart.getMetaData().getPackageString();
-			if (getDatabasePackagesToSynchronizeWithCentralBackup().contains(pname))
+			if (!backupPart.getHostDestination().equals(getLocalHostID()))
 			{
-				for (Map.Entry<Package, Database> e : sql_database.entrySet()){
-					if (e.getKey().getName().equals(pname))
-					{
-						Database d=e.getValue();
-						d.backupRestoreManager.importEncryptedBackupPartComingFromCentralDatabaseBackup(backupPart, encryptionProfileProvider, false);
-						checkAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(d);
-						break;
+				throw new DatabaseException("Invalid host destination");
+			}
+			if (backupPart.getHostDestination()==backupPart.getHostSource())
+			{
+				String pname = backupPart.getMetaData().getPackageString();
+				if (getDatabasePackagesToSynchronizeWithCentralBackup().contains(pname)) {
+					for (Map.Entry<Package, Database> e : sql_database.entrySet()) {
+						if (e.getKey().getName().equals(pname)) {
+							Database d = e.getValue();
+							d.backupRestoreManager.importEncryptedBackupPartComingFromCentralDatabaseBackup(backupPart, encryptionProfileProvider, false);
+							checkAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(d);
+							break;
+						}
+					}
+
+				} else {
+					try {
+						backupPart.getPartInputStream().close();
+					} catch (IOException e) {
+						throw DatabaseException.getDatabaseException(e);
 					}
 				}
-
 			}
-			else
-			{
-				try {
-					backupPart.getPartInputStream().close();
+			else {
+				try (RandomCacheFileOutputStream out=RandomCacheFileCenter.getSingleton().getNewBufferedRandomCacheFileOutputStream(true, RandomFileOutputStream.AccessMode.READ_AND_WRITE)){
+					EncryptionTools.decode(encryptionProfileProvider, backupPart.getPartInputStream(), out);
+					out.flush();
+					getDatabaseTransactionsPerHostTable().alterDatabase(backupPart.getMetaData().getPackageString(), backupPart.getHostSource(), out.getRandomInputStream());
+					checkAskForEncryptedBackupFilePart(backupPart.getHostSource());
 				} catch (IOException e) {
 					throw DatabaseException.getDatabaseException(e);
 				}
+
 			}
 		}
 
@@ -2097,7 +2156,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	}
 
-	public static class TransactionConfirmationEvents extends AbstractTransactionConfirmationEvents implements DBEventToSend {
+	public static class TransactionConfirmationEvents extends AbstractTransactionConfirmationEvents implements DatabaseEventToSend {
 
 
 
@@ -2317,14 +2376,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			return concernedPackage;
 		}
 	}*/
-	public static class DatabaseEventsToSynchronize extends AbstractDatabaseEventsToSynchronize {
+	public static class DatabaseEventsToSynchronizeP2P extends AbstractDatabaseEventsToSynchronizeP2P {
 		private long lastTransactionIDIncluded;
 		int maxEventsRecords;
 		@SuppressWarnings("unused")
-		DatabaseEventsToSynchronize() {
+		DatabaseEventsToSynchronizeP2P() {
 		}
 
-		DatabaseEventsToSynchronize(DecentralizedValue hostIDSource, Record hook, long lastTransactionIDIncluded, int maxEventsRecords) {
+		DatabaseEventsToSynchronizeP2P(DecentralizedValue hostIDSource, Record hook, long lastTransactionIDIncluded, int maxEventsRecords) {
 			super(hostIDSource, hook);
 			this.lastTransactionIDIncluded = lastTransactionIDIncluded;
 			this.maxEventsRecords = maxEventsRecords;
@@ -2393,7 +2452,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		}
 
-		public boolean tryToMerge(DatabaseEventsToSynchronize dest) {
+		public boolean tryToMerge(DatabaseEventsToSynchronizeP2P dest) {
 			if (hookID == dest.hookID) {
 				lastTransactionIDIncluded = Math.max(lastTransactionIDIncluded, dest.lastTransactionIDIncluded);
 				return true;
@@ -2401,14 +2460,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				return false;
 		}
 	}
-	public static abstract class AbstractDatabaseEventsToSynchronize extends DatabaseEvent implements BigDatabaseEventToSend {
+	public static abstract class AbstractDatabaseEventsToSynchronizeP2P extends DatabaseEvent implements P2PBigDatabaseEventToSend {
 		protected transient DatabaseHooksTable.Record hook;
 		protected int hookID;
 		protected DecentralizedValue hostIDSource, hostIDDestination;
 
 
 		@SuppressWarnings("unused")
-		AbstractDatabaseEventsToSynchronize() {
+		AbstractDatabaseEventsToSynchronizeP2P() {
 
 		}
 
@@ -2432,7 +2491,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 
-		AbstractDatabaseEventsToSynchronize(DecentralizedValue hostIDSource, DatabaseHooksTable.Record hookDestination) {
+		AbstractDatabaseEventsToSynchronizeP2P(DecentralizedValue hostIDSource, DatabaseHooksTable.Record hookDestination) {
 			this.hook = hookDestination;
 			this.hookID = hookDestination.getID();
 			this.hostIDDestination = hookDestination.getHostID();
@@ -2670,6 +2729,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	}
 
 	private final Lock locker;
+	private final Condition importEvent;
 	
 	protected void lockRead()
 	{
@@ -5127,7 +5187,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				TransactionConfirmationEvents.class,
 				TransactionInIDConfirmationEventsWithCentralDatabaseBackupEvent.class,
 				TransactionInUTCConfirmationEventsWithCentralDatabaseBackupEvent.class,
-				DatabaseEventsToSynchronize.class,
+				DatabaseEventsToSynchronizeP2P.class,
 				HookAddRequest.class,
 				BackupChannelInitializationMessageFromCentralDatabaseBackup.class,
 				EncryptedMetaDataFromCentralDatabaseBackup.class,

@@ -53,7 +53,11 @@ public class AskForMetaDataPerFileToCentralDatabaseBackup extends DatabaseEvent 
 	private DecentralizedValue hostSource;
 	private DecentralizedValue hostChannel;
 	private long fromMaximumExcludeTransactionID;
+	@SuppressWarnings("unused")
+	private AskForMetaDataPerFileToCentralDatabaseBackup()
+	{
 
+	}
 	public AskForMetaDataPerFileToCentralDatabaseBackup(DecentralizedValue hostSource, DecentralizedValue hostChannel, long fromMaximumExcludeTransactionID) {
 		if (hostSource==null)
 			throw new NullPointerException();

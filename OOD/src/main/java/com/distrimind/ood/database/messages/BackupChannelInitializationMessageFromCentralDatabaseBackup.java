@@ -35,6 +35,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database.messages;
 
+import com.distrimind.ood.database.EncryptionTools;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 import com.distrimind.util.io.*;
@@ -52,6 +53,9 @@ public class BackupChannelInitializationMessageFromCentralDatabaseBackup impleme
 	private DecentralizedValue hostChannel;
 	private byte[] lastValidatedAndEncryptedID;
 
+	@SuppressWarnings("unused")
+	private BackupChannelInitializationMessageFromCentralDatabaseBackup() {
+	}
 
 	public BackupChannelInitializationMessageFromCentralDatabaseBackup(DecentralizedValue hostDestination, DecentralizedValue hostChannel, byte[] lastValidatedAndEncryptedID) {
 		if (hostChannel==null)
@@ -78,21 +82,21 @@ public class BackupChannelInitializationMessageFromCentralDatabaseBackup impleme
 		return lastValidatedAndEncryptedID;
 	}
 	public long getLastValidatedID(EncryptionProfileProvider encryptionProfileProvider) throws IOException {
-		return LastValidatedIDEncryptionTools.decryptID(encryptionProfileProvider, lastValidatedAndEncryptedID);
+		return EncryptionTools.decryptID(encryptionProfileProvider, lastValidatedAndEncryptedID);
 	}
 
 	@Override
 	public int getInternalSerializedSize() {
 		return SerializationTools.getInternalSize((SecureExternalizable)hostDestination)
 				+SerializationTools.getInternalSize((SecureExternalizable)hostChannel)
-				+SerializationTools.getInternalSize(lastValidatedAndEncryptedID, LastValidatedIDEncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+				+SerializationTools.getInternalSize(lastValidatedAndEncryptedID, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
 	}
 
 	@Override
 	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
 		out.writeObject(hostDestination, false);
 		out.writeObject(hostChannel, false);
-		out.writeBytesArray(lastValidatedAndEncryptedID, false, LastValidatedIDEncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+		out.writeBytesArray(lastValidatedAndEncryptedID, false, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
 	}
 
 	@Override
@@ -101,6 +105,6 @@ public class BackupChannelInitializationMessageFromCentralDatabaseBackup impleme
 		hostChannel=in.readObject(false, DecentralizedValue.class);
 		if (hostChannel.equals(hostDestination))
 			throw new MessageExternalizationException(Integrity.FAIL);
-		lastValidatedAndEncryptedID=in.readBytesArray(false, LastValidatedIDEncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+		lastValidatedAndEncryptedID=in.readBytesArray(false, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
 	}
 }

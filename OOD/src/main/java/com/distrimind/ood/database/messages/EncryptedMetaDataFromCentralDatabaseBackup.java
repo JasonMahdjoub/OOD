@@ -54,6 +54,10 @@ public class EncryptedMetaDataFromCentralDatabaseBackup implements DatabaseEvent
 	private DecentralizedValue hostDestination, hostSource;
 	private EncryptedDatabaseBackupMetaDataPerFile metaData;
 
+	@SuppressWarnings("unused")
+	private EncryptedMetaDataFromCentralDatabaseBackup() {
+	}
+
 	public EncryptedMetaDataFromCentralDatabaseBackup(DecentralizedValue hostDestination, DecentralizedValue hostSource, EncryptedDatabaseBackupMetaDataPerFile metaData) {
 		if (hostDestination==null)
 			throw new NullPointerException();

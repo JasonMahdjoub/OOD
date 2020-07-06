@@ -46,6 +46,10 @@ import com.distrimind.util.io.RandomInputStream;
  * @since OOD 3.0
  */
 public class EncryptedBackupPartDestinedToCentralDatabaseBackup extends AbstractEncryptedBackupPart implements MessageDestinedToCentralDatabaseBackup{
+	@SuppressWarnings("unused")
+	private EncryptedBackupPartDestinedToCentralDatabaseBackup() {
+	}
+
 	public EncryptedBackupPartDestinedToCentralDatabaseBackup(DecentralizedValue hostSource, EncryptedDatabaseBackupMetaDataPerFile metaData, RandomInputStream partInputStream) {
 		super(hostSource, metaData, partInputStream);
 	}

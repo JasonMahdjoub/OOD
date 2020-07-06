@@ -78,8 +78,8 @@ public abstract class CommonDecentralizedTests {
 
 				this.eventToSend = baos.getBytes();
 			}
-			if (eventToSend instanceof BigDatabaseEventToSend) {
-				BigDatabaseEventToSend b = (BigDatabaseEventToSend) eventToSend;
+			if (eventToSend instanceof P2PBigDatabaseEventToSend) {
+				P2PBigDatabaseEventToSend b = (P2PBigDatabaseEventToSend) eventToSend;
 				final AtomicReference<RandomByteArrayOutputStream> baos=new AtomicReference<>();
 				try (OutputStreamGetter osg=new OutputStreamGetter() {
 
@@ -228,11 +228,6 @@ public abstract class CommonDecentralizedTests {
 					}
 				}
 			}
-		}
-
-		public void receiveMessage(AskDestinedToDatabaseBackupCenterForSynchronization message)
-		{
-			//TODO message
 		}
 
 		void disconnect(DecentralizedValue host)
@@ -939,7 +934,7 @@ public abstract class CommonDecentralizedTests {
 
 			DBEventToSend event = dde.getDatabaseEventToSend();
 
-			if (event instanceof BigDatabaseEventToSend) {
+			if (event instanceof P2PBigDatabaseEventToSend) {
 				try (InputStreamGetter is = new InputStreamGetter() {
 
 					private RandomInputStream actual=null;
@@ -958,7 +953,7 @@ public abstract class CommonDecentralizedTests {
 					}
 				})
 				{
-					db.getDbwrapper().getSynchronizer().received((BigDatabaseEventToSend) event, is);
+					db.getDbwrapper().getSynchronizer().received((P2PBigDatabaseEventToSend) event, is);
 				}
 			} else {
 				db.getDbwrapper().getSynchronizer().received(event);
@@ -968,7 +963,7 @@ public abstract class CommonDecentralizedTests {
 		{
 			changed=true;
 			CentralDatabaseBackupEvent event = db.getReceivedCentralDatabaseBackupEvents().remove(0);
-			if (event instanceof BigDatabaseEventToSend) {
+			if (event instanceof P2PBigDatabaseEventToSend) {
 				try (InputStreamGetter is = new InputStreamGetter() {
 
 					private RandomInputStream actual=null;
@@ -987,7 +982,7 @@ public abstract class CommonDecentralizedTests {
 					}
 				})
 				{
-					db.getDbwrapper().getSynchronizer().received((BigDatabaseEventToSend) event, is);
+					db.getDbwrapper().getSynchronizer().received((P2PBigDatabaseEventToSend) event, is);
 				}
 			} else {
 				db.getDbwrapper().getSynchronizer().received(event);

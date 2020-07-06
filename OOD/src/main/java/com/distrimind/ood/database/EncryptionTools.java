@@ -33,14 +33,14 @@ same conditions as regards security.
 The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
-package com.distrimind.ood.database.messages;
+package com.distrimind.ood.database;
 
 import com.distrimind.util.Bits;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 import com.distrimind.util.crypto.EncryptionSignatureHashDecoder;
 import com.distrimind.util.crypto.EncryptionSignatureHashEncoder;
-import com.distrimind.util.io.RandomByteArrayOutputStream;
+import com.distrimind.util.io.*;
 
 import java.io.IOException;
 
@@ -49,7 +49,7 @@ import java.io.IOException;
  * @version 1.0
  * @since OOD 3.0.0
  */
-public class LastValidatedIDEncryptionTools {
+public class EncryptionTools {
 	public static final int MAX_ENCRYPTED_ID_SIZE=(int)EncryptionSignatureHashEncoder.getMaximumOutputLengthWhateverParameters(8);
 	public static byte[] encryptID(long id, AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws IOException {
 		try(RandomByteArrayOutputStream out=new RandomByteArrayOutputStream();RandomByteArrayOutputStream out2=new RandomByteArrayOutputStream()) {
@@ -70,5 +70,19 @@ public class LastValidatedIDEncryptionTools {
 				.withEncryptionProfileProvider(encryptionProfileProvider)
 				.decodeAndCheckHashAndSignaturesIfNecessary(encryptedData, 0, encryptedData.length, data, 0, data.length);
 		return Bits.getLong(data, 0);
+	}
+
+	static void encode(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider, RandomInputStream in, RandomOutputStream out) throws IOException {
+		new EncryptionSignatureHashEncoder()
+				.withEncryptionProfileProvider(random, encryptionProfileProvider)
+				.withRandomInputStream(in)
+				.encode(out);
+	}
+
+	static void decode(EncryptionProfileProvider encryptionProfileProvider, RandomInputStream in, RandomOutputStream out) throws IOException {
+		new EncryptionSignatureHashDecoder()
+				.withEncryptionProfileProvider(encryptionProfileProvider)
+				.withRandomInputStream(in)
+				.decodeAndCheckHashAndSignaturesIfNecessary(out);
 	}
 }

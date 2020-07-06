@@ -1,4 +1,4 @@
-package com.distrimind.ood.database.messages;
+
 /*
 Copyright or © or Copr. Jason Mahdjoub (01/04/2013)
 
@@ -34,20 +34,26 @@ same conditions as regards security.
 The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
+package com.distrimind.ood.database.messages;
 
-import com.distrimind.util.DecentralizedValue;
+import com.distrimind.ood.database.DatabaseWrapper;
+import com.distrimind.ood.database.InputStreamGetter;
+import com.distrimind.ood.database.OutputStreamGetter;
+import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.messages.P2PDatabaseEventToSend;
 
 /**
+ * 
  * @author Jason Mahdjoub
  * @version 1.0
- * @since OOD 3.0.0
+ * @since OOD 2.0
  */
-public class AskDestinedToDatabaseBackupCenterForSynchronization extends AbstractDatabaseBackupCenterMessageForSynchronization implements MessageDestinedToCentralDatabaseBackup {
-	@SuppressWarnings("unused")
-	private AskDestinedToDatabaseBackupCenterForSynchronization() {
-	}
+public interface P2PBigDatabaseEventToSend extends P2PDatabaseEventToSend {
 
-	public AskDestinedToDatabaseBackupCenterForSynchronization(DecentralizedValue hostSource, DecentralizedValue hostDestination, long fromIncludedDatabaseTransactionID) {
-		super(hostSource, hostDestination, fromIncludedDatabaseTransactionID);
-	}
+	void importFromInputStream(DatabaseWrapper wrapper, final InputStreamGetter inputStream) throws DatabaseException;
+
+	@SuppressWarnings("UnusedReturnValue")
+	boolean exportToOutputStream(DatabaseWrapper wrapper, final OutputStreamGetter outputStreamGetter)
+			throws DatabaseException;
+
 }

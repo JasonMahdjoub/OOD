@@ -49,8 +49,14 @@ import java.io.IOException;
 public class EncryptedBackupPartComingFromCentralDatabaseBackup extends AbstractEncryptedBackupPart implements MessageComingFromCentralDatabaseBackup{
 	private DecentralizedValue hostDestination;
 
+	@SuppressWarnings("unused")
+	private EncryptedBackupPartComingFromCentralDatabaseBackup() {
+	}
+
 	public EncryptedBackupPartComingFromCentralDatabaseBackup(DecentralizedValue hostSource, DecentralizedValue hostDestination, EncryptedDatabaseBackupMetaDataPerFile metaData, RandomInputStream partInputStream) {
 		super(hostSource, metaData, partInputStream);
+		if (hostDestination==null)
+			throw new NullPointerException();
 		this.hostDestination=hostDestination;
 	}
 
@@ -67,12 +73,15 @@ public class EncryptedBackupPartComingFromCentralDatabaseBackup extends Abstract
 	@Override
 	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
 		super.writeExternal(out);
-		out.writeObject(hostDestination, false);
+		assert hostDestination!=null;
+		out.writeObject(hostDestination==getHostSource()?null:hostDestination, true);
 	}
 
 	@Override
 	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
 		super.readExternal(in);
-		hostDestination=in.readObject(false, DecentralizedValue.class);
+		hostDestination=in.readObject(true, DecentralizedValue.class);
+		if (hostDestination==null)
+			hostDestination=getHostSource();
 	}
 }
