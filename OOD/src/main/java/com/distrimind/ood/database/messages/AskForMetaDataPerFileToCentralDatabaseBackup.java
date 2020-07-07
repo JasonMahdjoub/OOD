@@ -37,10 +37,7 @@ package com.distrimind.ood.database.messages;
 
 import com.distrimind.ood.database.DatabaseEvent;
 import com.distrimind.util.DecentralizedValue;
-import com.distrimind.util.io.SecureExternalizable;
-import com.distrimind.util.io.SecuredObjectInputStream;
-import com.distrimind.util.io.SecuredObjectOutputStream;
-import com.distrimind.util.io.SerializationTools;
+import com.distrimind.util.io.*;
 
 import java.io.IOException;
 
@@ -64,6 +61,10 @@ public class AskForMetaDataPerFileToCentralDatabaseBackup extends DatabaseEvent 
 			throw new NullPointerException();
 		if (channelHost ==null)
 			throw new NullPointerException();
+		if (packageString==null)
+			throw new NullPointerException();
+		if (packageString.trim().length()==0)
+			throw new IllegalArgumentException();
 		this.hostSource = hostSource;
 		this.channelHost = channelHost;
 		this.fromMaximumExcludeTransactionID = fromMaximumExcludeTransactionID;
@@ -109,5 +110,7 @@ public class AskForMetaDataPerFileToCentralDatabaseBackup extends DatabaseEvent 
 		channelHost =in.readObject(false, DecentralizedValue.class);
 		fromMaximumExcludeTransactionID=in.readLong();
 		packageString=in.readString(false, SerializationTools.MAX_CLASS_LENGTH);
+		if (packageString.trim().length()==0)
+			throw new MessageExternalizationException(Integrity.FAIL);
 	}
 }

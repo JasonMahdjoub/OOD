@@ -69,6 +69,8 @@ public class EncryptedDatabaseBackupMetaDataPerFile implements SecureExternaliza
 			throw new IllegalArgumentException();
 		if (packageString==null)
 			throw new NullPointerException();
+		if (packageString.trim().length()==0)
+			throw new IllegalArgumentException();
 		this.fileTimestampUTC = fileTimestampUTC;
 		this.lastTransactionTimestampUTC=lastTransactionTimestampUTC;
 		this.referenceFile = referenceFile;
@@ -174,6 +176,8 @@ public class EncryptedDatabaseBackupMetaDataPerFile implements SecureExternaliza
 		lastTransactionTimestampUTC=in.readLong();
 		referenceFile=in.readBoolean();
 		packageString=in.readString(false, SerializationTools.MAX_CLASS_LENGTH);
+		if (packageString.trim().length()==0)
+			throw new MessageExternalizationException(Integrity.FAIL);
 		encryptedMetaData=in.readBytesArray(false, MAX_ENCRYPTED_DATA_LENGTH_IN_BYTES);
 	}
 }

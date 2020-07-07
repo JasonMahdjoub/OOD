@@ -2,10 +2,7 @@ package com.distrimind.ood.database.messages;
 
 import com.distrimind.ood.database.DatabaseEvent;
 import com.distrimind.util.DecentralizedValue;
-import com.distrimind.util.io.SecureExternalizable;
-import com.distrimind.util.io.SecuredObjectInputStream;
-import com.distrimind.util.io.SecuredObjectOutputStream;
-import com.distrimind.util.io.SerializationTools;
+import com.distrimind.util.io.*;
 
 import java.io.IOException;
 
@@ -19,19 +16,25 @@ public class AskForDatabaseBackupPartDestinedToCentralDatabaseBackup extends Dat
 	private DecentralizedValue hostSource;
 	private DecentralizedValue channelHost;
 	private long lastFileTimestampUTCToNotInclude;
+	private String packageString;
 
 	@SuppressWarnings("unused")
 	private AskForDatabaseBackupPartDestinedToCentralDatabaseBackup() {
 	}
-	public AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(DecentralizedValue hostSource, long lastFileTimestampUTCToNotInclude) {
+	public AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(String packageString, DecentralizedValue hostSource, long lastFileTimestampUTCToNotInclude) {
 		if (hostSource==null)
 			throw new NullPointerException();
+		if (packageString==null)
+			throw new NullPointerException();
+		if (packageString.trim().length()==0)
+			throw new IllegalArgumentException();
 		this.hostSource = hostSource;
 		this.channelHost =hostSource;
 		this.lastFileTimestampUTCToNotInclude = lastFileTimestampUTCToNotInclude;
+		this.packageString=packageString;
 	}
-	public AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(DecentralizedValue hostSource, DecentralizedValue channelHost, long lastFileTimestampUTCToNotInclude) {
-		this(hostSource, lastFileTimestampUTCToNotInclude);
+	public AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(String packageString, DecentralizedValue hostSource, DecentralizedValue channelHost, long lastFileTimestampUTCToNotInclude) {
+		this(packageString, hostSource, lastFileTimestampUTCToNotInclude);
 		if (channelHost ==null)
 			throw new NullPointerException();
 		this.channelHost = channelHost;
@@ -53,7 +56,9 @@ public class AskForDatabaseBackupPartDestinedToCentralDatabaseBackup extends Dat
 
 	@Override
 	public int getInternalSerializedSize() {
-		return 8+ SerializationTools.getInternalSize((SecureExternalizable)hostSource)+SerializationTools.getInternalSize((SecureExternalizable) channelHost);
+		return 8+ SerializationTools.getInternalSize((SecureExternalizable)hostSource)
+				+SerializationTools.getInternalSize((SecureExternalizable) channelHost)
+				+SerializationTools.getInternalSize(packageString, SerializationTools.MAX_CLASS_LENGTH);
 	}
 
 	@Override
@@ -62,6 +67,7 @@ public class AskForDatabaseBackupPartDestinedToCentralDatabaseBackup extends Dat
 		assert channelHost !=null;
 		out.writeObject(channelHost ==hostSource?null: channelHost, true);
 		out.writeLong(lastFileTimestampUTCToNotInclude);
+		out.writeString(packageString, false, SerializationTools.MAX_CLASS_LENGTH);
 	}
 
 	@Override
@@ -71,5 +77,12 @@ public class AskForDatabaseBackupPartDestinedToCentralDatabaseBackup extends Dat
 		if (channelHost ==null)
 			channelHost =hostSource;
 		lastFileTimestampUTCToNotInclude =in.readLong();
+		packageString=in.readString(false, SerializationTools.MAX_CLASS_LENGTH);
+		if (packageString.trim().length()==0)
+			throw new MessageExternalizationException(Integrity.FAIL);
+	}
+
+	public String getPackageString() {
+		return packageString;
 	}
 }

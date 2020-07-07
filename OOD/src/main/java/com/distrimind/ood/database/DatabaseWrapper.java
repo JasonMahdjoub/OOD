@@ -1928,7 +1928,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 			}
 			else
-				checkAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(d);
+				checkAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(_package.getName(), d);
 		}
 
 		void checkForNewBackupFilePartToSendToCentralDatabaseBackup(Package p) throws DatabaseException {
@@ -1952,12 +1952,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 		}
 
-		private void checkAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(Database d) throws DatabaseException {
+		private void checkAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(String packageString, Database d) throws DatabaseException {
 			if (d.lastValidatedTransactionUTCForCentralBackup>Long.MIN_VALUE)
 			{
 				long lts=d.backupRestoreManager.getLastTransactionUTCInMS();
 				if (lts<d.lastValidatedTransactionUTCForCentralBackup) {
-					addNewDatabaseEvent(new AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(getLocalHostID(), lts));
+
+					addNewDatabaseEvent(new AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(getLocalHostID(), lts, packageString));
 				}
 			}
 		}
@@ -1975,7 +1976,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						if (e.getKey().getName().equals(pname)) {
 							Database d = e.getValue();
 							d.backupRestoreManager.importEncryptedBackupPartComingFromCentralDatabaseBackup(backupPart, encryptionProfileProvider, false);
-							checkAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(d);
+							checkAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(e.getKey().getName(), d);
 							break;
 						}
 					}
@@ -5029,6 +5030,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				DatabaseEventsToSynchronizeP2P.class,
 				HookAddRequest.class,
 				BackupChannelInitializationMessageFromCentralDatabaseBackup.class,
+				BackupChannelUpdateMessageFromCentralDatabaseBackup.class,
 				EncryptedMetaDataFromCentralDatabaseBackup.class,
 				AskForMetaDataPerFileToCentralDatabaseBackup.class
 				));

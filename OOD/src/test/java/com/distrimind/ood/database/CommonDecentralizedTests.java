@@ -186,6 +186,12 @@ public abstract class CommonDecentralizedTests {
 			if (m!=null)
 				sendMessage(getEncryptedBackupPartComingFromCentralDatabaseBackup(message.getHostSource(), m.getFileTimestampUTC()));
 		}
+		private void received(AskForMetaDataPerFileToCentralDatabaseBackup message) throws FileNotFoundException {
+			EncryptedDatabaseBackupMetaDataPerFile m=getBackupMetaDataPerFileJustBeforeGivenTime(message.getFromMaximumExcludeTransactionID());
+			if (m!=null)
+				sendMessage(new EncryptedMetaDataFromCentralDatabaseBackup(message.getHostSource(), channelHost, m));
+		}
+
 		public File getDirectory(DecentralizedValue host, String packageString)
 		{
 			return new File(centralDatabaseBackupDirectory, host.encodeString()+File.separator+packageString.replace('.', File.separatorChar));
@@ -222,11 +228,16 @@ public abstract class CommonDecentralizedTests {
 			return res;
 		}
 		private void received(AskForDatabaseBackupPartDestinedToCentralDatabaseBackup message) throws FileNotFoundException {
-			for (DatabaseBackup dbb : databaseBackupPerPackage.values())
-			{
+			DatabaseBackup dbb=databaseBackupPerPackage.get(message.getPackageString());
+			if (dbb!=null)
 				dbb.received(message);
-			}
 		}
+		private void received(AskForMetaDataPerFileToCentralDatabaseBackup message) throws FileNotFoundException {
+			DatabaseBackup dbb=databaseBackupPerPackage.get(message.getPackageString());
+			if (dbb!=null)
+				dbb.received(message);
+		}
+
 
 	}
 	private void sendMessage(MessageComingFromCentralDatabaseBackup message)
@@ -294,13 +305,20 @@ public abstract class CommonDecentralizedTests {
 		}
 
 		private void received(AskForDatabaseBackupPartDestinedToCentralDatabaseBackup message) throws FileNotFoundException {
-			DatabaseBackupPerHost m=databaseBackup.get(message.getHostSource());
+			DatabaseBackupPerHost m=databaseBackup.get(message.getChannelHost());
 			if (m==null)
 				return;
 			m.received(message);
 		}
 
-		private void received(AskForMetaDataPerFileToCentralDatabaseBackup message)
+		private void received(AskForMetaDataPerFileToCentralDatabaseBackup message) throws FileNotFoundException {
+			DatabaseBackupPerHost m=databaseBackup.get(message.getChannelHost());
+			if (m!=null)
+				m.received(message);
+		}
+
+
+		private void received(DatabaseTransactionsIdentifiersToSynchronizeDestinedToCentralDatabaseBackup message)
 		{
 
 		}
@@ -309,12 +327,6 @@ public abstract class CommonDecentralizedTests {
 		{
 
 		}
-
-		private void received(DatabaseTransactionsIdentifiersToSynchronizeDestinedToCentralDatabaseBackup message)
-		{
-
-		}
-
 
 
 

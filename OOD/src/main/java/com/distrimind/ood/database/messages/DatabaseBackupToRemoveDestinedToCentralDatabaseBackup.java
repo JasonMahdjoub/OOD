@@ -2,10 +2,7 @@ package com.distrimind.ood.database.messages;
 
 import com.distrimind.ood.database.DatabaseEvent;
 import com.distrimind.util.DecentralizedValue;
-import com.distrimind.util.io.SecureExternalizable;
-import com.distrimind.util.io.SecuredObjectInputStream;
-import com.distrimind.util.io.SecuredObjectOutputStream;
-import com.distrimind.util.io.SerializationTools;
+import com.distrimind.util.io.*;
 
 import java.io.IOException;
 
@@ -16,7 +13,7 @@ import java.io.IOException;
  */
 public class DatabaseBackupToRemoveDestinedToCentralDatabaseBackup extends DatabaseEvent implements MessageDestinedToCentralDatabaseBackup, SecureExternalizable
 {
-	private String packageName;
+	private String packageString;
 	private DecentralizedValue hostSource;
 
 
@@ -24,13 +21,19 @@ public class DatabaseBackupToRemoveDestinedToCentralDatabaseBackup extends Datab
 	private DatabaseBackupToRemoveDestinedToCentralDatabaseBackup() {
 	}
 
-	public DatabaseBackupToRemoveDestinedToCentralDatabaseBackup(DecentralizedValue hostSource, String packageName) {
-		this.packageName = packageName;
+	public DatabaseBackupToRemoveDestinedToCentralDatabaseBackup(DecentralizedValue hostSource, String packageString) {
+		if (hostSource==null)
+			throw new NullPointerException();
+		if (packageString==null)
+			throw new NullPointerException();
+		if (packageString.trim().length()==0)
+			throw new IllegalArgumentException();
+		this.packageString = packageString;
 		this.hostSource=hostSource;
 	}
 
-	public String getPackageName() {
-		return packageName;
+	public String getPackageString() {
+		return packageString;
 	}
 
 
@@ -41,18 +44,21 @@ public class DatabaseBackupToRemoveDestinedToCentralDatabaseBackup extends Datab
 
 	@Override
 	public int getInternalSerializedSize() {
-		return SerializationTools.getInternalSize(packageName, SerializationTools.MAX_CLASS_LENGTH)+SerializationTools.getInternalSize((SecureExternalizable)hostSource);
+		return SerializationTools.getInternalSize(packageString, SerializationTools.MAX_CLASS_LENGTH)+SerializationTools.getInternalSize((SecureExternalizable)hostSource);
 	}
 
 	@Override
 	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
-		out.writeString(packageName, false, SerializationTools.MAX_CLASS_LENGTH);
+		out.writeString(packageString, false, SerializationTools.MAX_CLASS_LENGTH);
 		out.writeObject(hostSource, false);
 	}
 
 	@Override
 	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
-		packageName=in.readString(false, SerializationTools.MAX_CLASS_LENGTH);
+		packageString =in.readString(false, SerializationTools.MAX_CLASS_LENGTH);
+		if (packageString.trim().length()==0)
+			throw new MessageExternalizationException(Integrity.FAIL);
 		hostSource=in.readObject(false, DecentralizedValue.class);
+
 	}
 }

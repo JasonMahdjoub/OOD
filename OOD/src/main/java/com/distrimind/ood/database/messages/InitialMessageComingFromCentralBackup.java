@@ -151,6 +151,8 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 		for (int i=0;i<s;i++)
 		{
 			String packageString=in.readString(false, SerializationTools.MAX_CLASS_LENGTH);
+			if (packageString.trim().length()==0)
+				throw new MessageExternalizationException(Integrity.FAIL);
 			long utc=in.readLong();
 			this.lastValidatedTransactionsUTCForDestinationHost.put(packageString, utc);
 		}
