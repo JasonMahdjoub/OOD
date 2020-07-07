@@ -126,11 +126,19 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	private static final int MAX_TRANSACTIONS_TO_SYNCHRONIZE_AT_THE_SAME_TIME=1000000;
 	public static final int MAX_DISTANT_PEERS=Short.MAX_VALUE;
 	public static final int MAX_PACKAGE_TO_SYNCHRONIZE=Short.MAX_VALUE;
+	private static volatile int MAX_HOST_NUMBERS=5;
 
+	public static int getMaxHostNumbers() {
+		return MAX_HOST_NUMBERS;
+	}
 
+	public static void setMaxHostNumbers(int maxHostNumbers) {
+		if (maxHostNumbers>=1>>0xFFFF)
+			throw new IllegalArgumentException();
+		MAX_HOST_NUMBERS = maxHostNumbers;
+	}
 
-
-    public boolean isAlwaysDeconectAfterOnTransaction() {
+	public boolean isAlwaysDeconectAfterOnTransaction() {
         return alwaysDeconectAfterOnTransaction;
     }
 
@@ -1408,17 +1416,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 		}
 
-		public void initDistantBackupCenterForThisHostWithStringPackages(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider, Map<String, Long> lastValidatedTransactionsUTC) throws DatabaseException {
+		private void initDistantBackupCenterForThisHostWithStringPackages(Map<String, Long> lastValidatedTransactionsUTC) throws DatabaseException {
 			lockWrite();
 			try {
-				if (random==null)
-					throw new NullPointerException();
-				if (encryptionProfileProvider==null)
-					throw new NullPointerException();
 				if (lastValidatedTransactionsUTC==null)
 					throw new NullPointerException();
-				this.random=random;
-				this.encryptionProfileProvider=encryptionProfileProvider;
 				centralBackupInitialized = true;
 				Set<String> authorizedPackagesToBeSynchronizedWithCentralDatabaseBackup=getDatabasePackagesToSynchronizeWithCentralBackup();
 				for (Map.Entry<String, Long> e : lastValidatedTransactionsUTC.entrySet()) {
@@ -1439,19 +1441,39 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 
 		}
-		public void initDistantBackupCenterForThisHost(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider, Map<Package, Long> lastValidatedTransactionsUTC) throws DatabaseException {
+		private void received(InitialMessageComingFromCentralBackup initialMessageComingFromCentralBackup) throws DatabaseException {
+			if (!initialMessageComingFromCentralBackup.getHostDestination().equals(getLocalHostID()))
+				throw new IllegalArgumentException();
+			initDistantBackupCenterForThisHostWithStringPackages(initialMessageComingFromCentralBackup.getLastValidatedTransactionsUTCForDestinationHost());
+			try {
+				for (Map.Entry<DecentralizedValue, Long> e : initialMessageComingFromCentralBackup.getLastValidatedIDPerHost(encryptionProfileProvider).entrySet()) {
+					initDistantBackupCenter(e.getKey(), e.getValue());
+				}
+			}
+			catch (IOException e)
+			{
+				throw DatabaseException.getDatabaseException(e);
+			}
+		}
+		/*private void initDistantBackupCenterForThisHost(Map<Package, Long> lastValidatedTransactionsUTC) throws DatabaseException {
 			Map<String, Long> m=new HashMap<>();
 			for (Map.Entry<Package, Long> e : lastValidatedTransactionsUTC.entrySet())
 				m.put(e.getKey().getName(), e.getValue());
-			initDistantBackupCenterForThisHostWithStringPackages(random, encryptionProfileProvider, m);
-		}
+			initDistantBackupCenterForThisHostWithStringPackages(m);
+		}*/
 
-		public void initConnexionWithDistantBackupCenter() throws DatabaseException {
+		public void initConnexionWithDistantBackupCenter(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
+			if (random==null)
+				throw new NullPointerException();
+			if (encryptionProfileProvider==null)
+				throw new NullPointerException();
 			lockWrite();
 			try
 			{
 				if (!centralBackupInitialized)
 				{
+					this.random=random;
+					this.encryptionProfileProvider=encryptionProfileProvider;
 					addNewDatabaseEvent(new DistantBackupCenterConnexionInitialisation(getLocalHostID()));
 				}
 			}
@@ -1954,6 +1976,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			else if (data instanceof BackupChannelInitializationMessageFromCentralDatabaseBackup)
 			{
 				received((BackupChannelInitializationMessageFromCentralDatabaseBackup)data);
+			}
+			else if (data instanceof InitialMessageComingFromCentralBackup)
+			{
+				received((InitialMessageComingFromCentralBackup)data);
 			}
 		}
 

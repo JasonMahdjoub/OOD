@@ -45,14 +45,12 @@ import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.FileTools;
 import com.distrimind.util.crypto.ASymmetricAuthenticatedSignatureType;
 import com.distrimind.util.crypto.SecureRandomType;
-import com.distrimind.util.io.RandomByteArrayInputStream;
-import com.distrimind.util.io.RandomByteArrayOutputStream;
-import com.distrimind.util.io.RandomInputStream;
-import com.distrimind.util.io.RandomOutputStream;
+import com.distrimind.util.io.*;
 import org.testng.Assert;
 import org.testng.annotations.*;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -69,7 +67,7 @@ public abstract class CommonDecentralizedTests {
 		private final byte[] joinedData;
 		private final DecentralizedValue hostDest;
 
-		DistantDatabaseEvent(DatabaseWrapper wrapper, DBEventToSend eventToSend)
+		DistantDatabaseEvent(DatabaseWrapper wrapper, P2PDatabaseEventToSend eventToSend)
 				throws Exception {
 			try (RandomByteArrayOutputStream baos = new RandomByteArrayOutputStream()) {
 				baos.writeObject(eventToSend, false);
@@ -121,16 +119,191 @@ public abstract class CommonDecentralizedTests {
 		}
 	}
 	static File centralDatabaseBackupDirectory=new File("centralDatabaseBackup");
-	public class CentralDatabaseBackup
+	public static class DatabaseBackup
 	{
-		final Map<DecentralizedValue, DatabaseBackupMetaData> channels=new HashMap<>();
-		final Map<DecentralizedValue, Long> lastAskedTransactionSynchronizationFromServer=new HashMap<>();
-		final Map<DecentralizedValue, Map<DecentralizedValue, Long>> validatedDistantTransactionsIDPerHost=new HashMap<>();
+		private final String packageString;
+		private final DecentralizedValue channelHost;
 
+		public DatabaseBackup(String packageString, DecentralizedValue channelHost) {
+			this.packageString = packageString;
+			this.channelHost = channelHost;
+		}
+
+		private HashMap<Long, EncryptedDatabaseBackupMetaDataPerFile> metaDataPerFile=new HashMap<>();
+		private HashMap<Long, File> fileBackupLocations=new HashMap<>();
+		public void addFileBackupPart(EncryptedBackupPartDestinedToCentralDatabaseBackup message) throws IOException {
+			assert message.getMetaData().getPackageString().equals(packageString);
+			if (!fileBackupLocations.containsKey(message.getMetaData().getFileTimestampUTC()))
+			{
+				File f=getFile(message.getHostSource(), message.getMetaData().getPackageString(), message.getMetaData().getFileTimestampUTC(),message.getMetaData().isReferenceFile());
+				try(RandomFileOutputStream out=new RandomFileOutputStream(f))
+				{
+					message.getPartInputStream().transferTo(out);
+				}
+				message.getPartInputStream().close();
+				fileBackupLocations.put(message.getMetaData().getFileTimestampUTC(), f);
+				metaDataPerFile.put(message.getMetaData().getFileTimestampUTC(), message.getMetaData());
+			}
+		}
+
+		public EncryptedDatabaseBackupMetaDataPerFile getEncryptedDatabaseBackupMetaDataPerFile(long timeStamp)
+		{
+			return metaDataPerFile.get(timeStamp);
+		}
+
+		public EncryptedBackupPartComingFromCentralDatabaseBackup getEncryptedBackupPartComingFromCentralDatabaseBackup(DecentralizedValue hostDestination, long timeStamp) throws FileNotFoundException {
+			EncryptedDatabaseBackupMetaDataPerFile metaData=metaDataPerFile.get(timeStamp);
+			if (metaData==null)
+				return null;
+			File f=fileBackupLocations.get(timeStamp);
+			assert f!=null;
+			return new EncryptedBackupPartComingFromCentralDatabaseBackup(channelHost, hostDestination, metaData, new RandomFileInputStream(f));
+		}
+		public long getLastFileBackupPartUTC()
+		{
+			long res=Long.MIN_VALUE;
+			for (long utc : fileBackupLocations.keySet()) {
+				if (utc > res)
+					res = utc;
+			}
+			return res;
+		}
+		public EncryptedDatabaseBackupMetaDataPerFile getBackupMetaDataPerFileJustBeforeGivenTime(long timestamp)
+		{
+			Map.Entry<Long, EncryptedDatabaseBackupMetaDataPerFile> found=null;
+			for (Map.Entry<Long, EncryptedDatabaseBackupMetaDataPerFile> e : metaDataPerFile.entrySet())
+			{
+				if (e.getKey()<timestamp)
+				{
+					if (found==null || found.getKey()<e.getKey())
+						found=e;
+				}
+			}
+			return found.getValue();
+		}
 		public File getDirectory(DecentralizedValue host, String packageString)
 		{
 			return new File(centralDatabaseBackupDirectory, host.encodeString()+File.separator+packageString.replace('.', File.separatorChar));
 		}
+		public File getFile(DecentralizedValue host, String packageString, long timeStamp, boolean reference)
+		{
+			return new File(getDirectory(host, packageString), (reference?"refbackup":"backup")+timeStamp+".data";
+		}
+	}
+	public class DatabaseBackupPerHost
+	{
+		private final DecentralizedValue channelHost;
+		private final Map<String, DatabaseBackup> databaseBackupPerPackage=new HashMap<>();
+		private byte[] lastValidatedAndEncryptedID=null;
+		private boolean connected=false;
+
+		public DatabaseBackupPerHost(DecentralizedValue channelHost) {
+			this.channelHost = channelHost;
+		}
+
+		private void received(EncryptedBackupPartDestinedToCentralDatabaseBackup message) throws IOException {
+			DatabaseBackup dbb=databaseBackupPerPackage.get(message.getMetaData().getPackageString());
+			if (dbb==null)
+				databaseBackupPerPackage.put(message.getMetaData().getPackageString(), dbb=new DatabaseBackup(message.getMetaData().getPackageString(), message.getHostSource()));
+			dbb.addFileBackupPart(message);
+		}
+
+	}
+	private void sendMessage(MessageComingFromCentralDatabaseBackup message)
+	{
+		for (Database d2 : listDatabase)
+		{
+			if (d2.hostID.equals(message.getHostDestination()))
+			{
+				d2.getReceivedCentralDatabaseBackupEvents().add(message);
+				break;
+			}
+		}
+	}
+	public class CentralDatabaseBackup
+	{
+		final Map<DecentralizedValue, DatabaseBackupPerHost> databaseBackup=new HashMap<>();
+
+
+		private void received(EncryptedBackupPartDestinedToCentralDatabaseBackup message) throws DatabaseException, IOException {
+			DatabaseBackupPerHost m=databaseBackup.get(message.getHostSource());
+			if (m==null)
+				throw new DatabaseException("");
+			m.received(message);
+		}
+		private DatabaseBackupPerHost addHost(DecentralizedValue host)
+		{
+			DatabaseBackupPerHost res=new DatabaseBackupPerHost(host);
+			databaseBackup.put(host, res);
+			return res;
+		}
+		private void disconnect(DecentralizedValue host)
+		{
+			DatabaseBackupPerHost m=databaseBackup.get(host);
+			if (m!=null)
+				m.connected=false;
+		}
+		private void received(DistantBackupCenterConnexionInitialisation message)
+		{
+			DatabaseBackupPerHost m=databaseBackup.get(message.getHostSource());
+			if (m==null)
+				m=addHost(message.getHostSource());
+			m.connected=true;
+			Map<DecentralizedValue, byte[]> lastValidatedAndEncryptedIDPerHost=new HashMap<>();
+			Map<String, Long> lastValidatedTransactionsUTCForDestinationHost=new HashMap<>();
+			for (Map.Entry<DecentralizedValue, DatabaseBackupPerHost> e : databaseBackup.entrySet())
+			{
+				lastValidatedAndEncryptedIDPerHost.put(e.getKey(), e.getValue().lastValidatedAndEncryptedID);
+			}
+			for (Map.Entry<String, DatabaseBackup> e : m.databaseBackupPerPackage.entrySet())
+			{
+				lastValidatedTransactionsUTCForDestinationHost.put(e.getKey(), e.getValue().getLastFileBackupPartUTC());
+			}
+			sendMessage(new InitialMessageComingFromCentralBackup(message.getHostSource(), lastValidatedAndEncryptedIDPerHost, lastValidatedTransactionsUTCForDestinationHost));
+		}
+
+		private void received(AskForDatabaseBackupPartDestinedToCentralDatabaseBackup message)
+		{
+
+		}
+
+		private void received(AskForMetaDataPerFileToCentralDatabaseBackup message)
+		{
+
+		}
+
+		private void received(DatabaseBackupToRemoveDestinedToCentralDatabaseBackup message)
+		{
+
+		}
+
+		private void received(DatabaseTransactionsIdentifiersToSynchronizeDestinedToCentralDatabaseBackup message)
+		{
+
+		}
+
+
+
+
+		public void received(MessageDestinedToCentralDatabaseBackup message) throws DatabaseException, IOException {
+			if (message instanceof EncryptedBackupPartDestinedToCentralDatabaseBackup)
+				received((EncryptedBackupPartDestinedToCentralDatabaseBackup)message);
+			else if (message instanceof AskForDatabaseBackupPartDestinedToCentralDatabaseBackup)
+				received((AskForDatabaseBackupPartDestinedToCentralDatabaseBackup)message);
+			else if (message instanceof AskForMetaDataPerFileToCentralDatabaseBackup)
+				received((AskForMetaDataPerFileToCentralDatabaseBackup)message);
+			else if (message instanceof DatabaseBackupToRemoveDestinedToCentralDatabaseBackup)
+				received((DatabaseBackupToRemoveDestinedToCentralDatabaseBackup)message);
+			else if (message instanceof DatabaseTransactionsIdentifiersToSynchronizeDestinedToCentralDatabaseBackup)
+				received((DatabaseTransactionsIdentifiersToSynchronizeDestinedToCentralDatabaseBackup)message);
+			else if (message instanceof DistantBackupCenterConnexionInitialisation)
+				received((DistantBackupCenterConnexionInitialisation)message);
+			else
+				throw new IllegalAccessError();
+		}
+
+
+
 		public File getFile(DecentralizedValue host, String packageString, File file)
 		{
 			return new File(getDirectory(host, packageString), file.getName());
@@ -383,14 +556,6 @@ public abstract class CommonDecentralizedTests {
 		}
 
 
-		public void disconnect(Database d) throws DatabaseException {
-			d.getDbwrapper().getSynchronizer().disconnectAllHooksFromThereBackups();
-			/*for (Database d2 : listDatabase) {
-				if (d2 != d && d2.isConnected()) {
-					d2.getDbwrapper().getSynchronizer().disconnectHookFromItsBackup(d.hostID);
-				}
-			}*/
-		}
 
 		public void receiveMessage(DatabaseWrapper.DatabaseBackupToRemoveIntoCentralDatabaseBackup message)
 		{

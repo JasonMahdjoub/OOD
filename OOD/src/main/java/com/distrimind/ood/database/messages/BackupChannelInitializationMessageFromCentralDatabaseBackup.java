@@ -56,16 +56,20 @@ public class BackupChannelInitializationMessageFromCentralDatabaseBackup impleme
 	@SuppressWarnings("unused")
 	private BackupChannelInitializationMessageFromCentralDatabaseBackup() {
 	}
-
-	public BackupChannelInitializationMessageFromCentralDatabaseBackup(DecentralizedValue hostDestination, DecentralizedValue hostChannel, byte[] lastValidatedAndEncryptedID) {
+	public BackupChannelInitializationMessageFromCentralDatabaseBackup(DecentralizedValue hostDestination, DecentralizedValue hostChannel) {
 		if (hostChannel==null)
 			throw new NullPointerException();
 		if (hostDestination==null)
 			throw new NullPointerException();
-		if (lastValidatedAndEncryptedID ==null)
-			throw new NullPointerException();
 		this.hostDestination = hostDestination;
 		this.hostChannel = hostChannel;
+		this.lastValidatedAndEncryptedID = null;
+
+	}
+	public BackupChannelInitializationMessageFromCentralDatabaseBackup(DecentralizedValue hostDestination, DecentralizedValue hostChannel, byte[] lastValidatedAndEncryptedID) {
+		this(hostDestination, hostChannel);
+		if (lastValidatedAndEncryptedID ==null)
+			throw new NullPointerException();
 		this.lastValidatedAndEncryptedID = lastValidatedAndEncryptedID;
 	}
 
@@ -82,7 +86,7 @@ public class BackupChannelInitializationMessageFromCentralDatabaseBackup impleme
 		return lastValidatedAndEncryptedID;
 	}
 	public long getLastValidatedID(EncryptionProfileProvider encryptionProfileProvider) throws IOException {
-		return EncryptionTools.decryptID(encryptionProfileProvider, lastValidatedAndEncryptedID);
+		return lastValidatedAndEncryptedID==null?Long.MIN_VALUE:EncryptionTools.decryptID(encryptionProfileProvider, lastValidatedAndEncryptedID);
 	}
 
 	@Override
@@ -96,7 +100,7 @@ public class BackupChannelInitializationMessageFromCentralDatabaseBackup impleme
 	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
 		out.writeObject(hostDestination, false);
 		out.writeObject(hostChannel, false);
-		out.writeBytesArray(lastValidatedAndEncryptedID, false, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+		out.writeBytesArray(lastValidatedAndEncryptedID, true, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
 	}
 
 	@Override
@@ -105,6 +109,6 @@ public class BackupChannelInitializationMessageFromCentralDatabaseBackup impleme
 		hostChannel=in.readObject(false, DecentralizedValue.class);
 		if (hostChannel.equals(hostDestination))
 			throw new MessageExternalizationException(Integrity.FAIL);
-		lastValidatedAndEncryptedID=in.readBytesArray(false, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+		lastValidatedAndEncryptedID=in.readBytesArray(true, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
 	}
 }
