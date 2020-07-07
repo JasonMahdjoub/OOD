@@ -119,7 +119,7 @@ public abstract class CommonDecentralizedTests {
 		}
 	}
 	static File centralDatabaseBackupDirectory=new File("centralDatabaseBackup");
-	public static class DatabaseBackup
+	public class DatabaseBackup
 	{
 		private final String packageString;
 		private final DecentralizedValue channelHost;
@@ -179,7 +179,12 @@ public abstract class CommonDecentralizedTests {
 						found=e;
 				}
 			}
-			return found.getValue();
+			return found==null?null:found.getValue();
+		}
+		private void received(AskForDatabaseBackupPartDestinedToCentralDatabaseBackup message) throws FileNotFoundException {
+			EncryptedDatabaseBackupMetaDataPerFile m=getBackupMetaDataPerFileJustBeforeGivenTime(message.getLastFileTimestampUTCToNotInclude());
+			if (m!=null)
+				sendMessage(getEncryptedBackupPartComingFromCentralDatabaseBackup(message.getHostSource(), m.getFileTimestampUTC()));
 		}
 		public File getDirectory(DecentralizedValue host, String packageString)
 		{
@@ -189,6 +194,8 @@ public abstract class CommonDecentralizedTests {
 		{
 			return new File(getDirectory(host, packageString), (reference?"refbackup":"backup")+timeStamp+".data";
 		}
+
+
 	}
 	public class DatabaseBackupPerHost
 	{
@@ -206,6 +213,12 @@ public abstract class CommonDecentralizedTests {
 			if (dbb==null)
 				databaseBackupPerPackage.put(message.getMetaData().getPackageString(), dbb=new DatabaseBackup(message.getMetaData().getPackageString(), message.getHostSource()));
 			dbb.addFileBackupPart(message);
+		}
+		private void received(AskForDatabaseBackupPartDestinedToCentralDatabaseBackup message) throws FileNotFoundException {
+			for (DatabaseBackup dbb : databaseBackupPerPackage.values())
+			{
+				dbb.received(message);
+			}
 		}
 
 	}
@@ -262,9 +275,11 @@ public abstract class CommonDecentralizedTests {
 			sendMessage(new InitialMessageComingFromCentralBackup(message.getHostSource(), lastValidatedAndEncryptedIDPerHost, lastValidatedTransactionsUTCForDestinationHost));
 		}
 
-		private void received(AskForDatabaseBackupPartDestinedToCentralDatabaseBackup message)
-		{
-
+		private void received(AskForDatabaseBackupPartDestinedToCentralDatabaseBackup message) throws FileNotFoundException {
+			DatabaseBackupPerHost m=databaseBackup.get(message.getHostSource());
+			if (m==null)
+				return;
+			m.received(message);
 		}
 
 		private void received(AskForMetaDataPerFileToCentralDatabaseBackup message)

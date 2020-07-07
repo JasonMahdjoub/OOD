@@ -53,12 +53,13 @@ public class AskForMetaDataPerFileToCentralDatabaseBackup extends DatabaseEvent 
 	private DecentralizedValue hostSource;
 	private DecentralizedValue channelHost;
 	private long fromMaximumExcludeTransactionID;
+	private String packageString;
 	@SuppressWarnings("unused")
 	private AskForMetaDataPerFileToCentralDatabaseBackup()
 	{
 
 	}
-	public AskForMetaDataPerFileToCentralDatabaseBackup(DecentralizedValue hostSource, DecentralizedValue channelHost, long fromMaximumExcludeTransactionID) {
+	public AskForMetaDataPerFileToCentralDatabaseBackup(DecentralizedValue hostSource, DecentralizedValue channelHost, long fromMaximumExcludeTransactionID, String packageString) {
 		if (hostSource==null)
 			throw new NullPointerException();
 		if (channelHost ==null)
@@ -66,6 +67,11 @@ public class AskForMetaDataPerFileToCentralDatabaseBackup extends DatabaseEvent 
 		this.hostSource = hostSource;
 		this.channelHost = channelHost;
 		this.fromMaximumExcludeTransactionID = fromMaximumExcludeTransactionID;
+		this.packageString=packageString;
+	}
+
+	public String getPackageString() {
+		return packageString;
 	}
 
 	@Override
@@ -84,7 +90,9 @@ public class AskForMetaDataPerFileToCentralDatabaseBackup extends DatabaseEvent 
 
 	@Override
 	public int getInternalSerializedSize() {
-		return 8+SerializationTools.getInternalSize((SecureExternalizable)hostSource)+SerializationTools.getInternalSize((SecureExternalizable) channelHost);
+		return 8+SerializationTools.getInternalSize((SecureExternalizable)hostSource)+
+				SerializationTools.getInternalSize((SecureExternalizable) channelHost)+
+				SerializationTools.getInternalSize(packageString, SerializationTools.MAX_CLASS_LENGTH);
 	}
 
 	@Override
@@ -92,6 +100,7 @@ public class AskForMetaDataPerFileToCentralDatabaseBackup extends DatabaseEvent 
 		out.writeObject(hostSource, false);
 		out.writeObject(channelHost, false);
 		out.writeLong(fromMaximumExcludeTransactionID);
+		out.writeString(packageString, false, SerializationTools.MAX_CLASS_LENGTH);
 	}
 
 	@Override
@@ -99,5 +108,6 @@ public class AskForMetaDataPerFileToCentralDatabaseBackup extends DatabaseEvent 
 		hostSource=in.readObject(false, DecentralizedValue.class);
 		channelHost =in.readObject(false, DecentralizedValue.class);
 		fromMaximumExcludeTransactionID=in.readLong();
+		packageString=in.readString(false, SerializationTools.MAX_CLASS_LENGTH);
 	}
 }

@@ -133,7 +133,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	}
 
 	public static void setMaxHostNumbers(int maxHostNumbers) {
-		if (maxHostNumbers>=1>>0xFFFF)
+		if (maxHostNumbers>=0xFFFF)
 			throw new IllegalArgumentException();
 		MAX_HOST_NUMBERS = maxHostNumbers;
 	}
@@ -457,35 +457,48 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	}
 	private static class ValidatedIDPerDistantHook
 	{
-		final TreeSet<DatabaseBackupMetaDataPerFile> metaData=new TreeSet<>();
-		long getFirstTransactionID()
+		final HashMap<String, TreeSet<DatabaseBackupMetaDataPerFile>> metaData=new HashMap<>();
+		long getFirstTransactionID(String packageString)
 		{
-			if (metaData.size()==0)
+			TreeSet<DatabaseBackupMetaDataPerFile> ts=metaData.get(packageString);
+			if (ts==null || ts.size()==0)
 				return Long.MAX_VALUE;
 			else
-				return metaData.first().getFirstTransactionID();
+				return ts.first().getFirstTransactionID();
 		}
-		void addMetaData(DatabaseBackupMetaDataPerFile m) throws DatabaseException {
-			for (DatabaseBackupMetaDataPerFile me : metaData) {
+		void addMetaData(String packageString, DatabaseBackupMetaDataPerFile m) throws DatabaseException {
+			if (packageString==null)
+				throw new NullPointerException();
+			if (packageString.trim().length()==0)
+				throw new IllegalArgumentException();
+			TreeSet<DatabaseBackupMetaDataPerFile> ts=metaData.get(packageString);
+			if (ts==null)
+				metaData.put(packageString, ts=new TreeSet<>());
+			for (DatabaseBackupMetaDataPerFile me : ts) {
 				if (me.timeStampUTC == m.timeStampUTC)
 					throw new DatabaseException("Already added !");
 				if (me.timeStampUTC > m.timeStampUTC)
 					break;
 			}
 
-			metaData.add(m);
+			ts.add(m);
 		}
-		long getLastTransactionID()
+		long getLastTransactionID(String packageString)
 		{
-			if (metaData.size()==0)
+			TreeSet<DatabaseBackupMetaDataPerFile> ts=metaData.get(packageString);
+
+			if (ts==null || ts.size()==0)
 				return Long.MIN_VALUE;
 			else
-				return metaData.last().getLastTransactionID();
+				return ts.last().getLastTransactionID();
 		}
 
-		long getFileUTCToTransfer(long lastValidatedDistantTransactionID) {
+		long getFileUTCToTransfer(String packageString, long lastValidatedDistantTransactionID) {
+			TreeSet<DatabaseBackupMetaDataPerFile> ts=metaData.get(packageString);
+			if (ts==null)
+				return Long.MIN_VALUE;
 			++lastValidatedDistantTransactionID;
-			for (DatabaseBackupMetaDataPerFile m : metaData)
+			for (DatabaseBackupMetaDataPerFile m : ts)
 			{
 				if (lastValidatedDistantTransactionID>=m.getFirstTransactionID() && lastValidatedDistantTransactionID<=m.getLastTransactionID())
 					return m.getFileTimestampUTC();
@@ -493,17 +506,16 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			return Long.MIN_VALUE;
 		}
 
-		void validateLastTransaction(long lastValidatedTransaction) {
-			for (Iterator<DatabaseBackupMetaDataPerFile> it=metaData.iterator();it.hasNext();)
-			{
-				if (it.next().getLastTransactionID()<=lastValidatedTransaction)
-				{
+		void validateLastTransaction(String packageString, long lastValidatedTransaction) {
+			TreeSet<DatabaseBackupMetaDataPerFile> ts=metaData.get(packageString);
+			if (ts==null)
+				return;
+			for (Iterator<DatabaseBackupMetaDataPerFile> it = ts.iterator(); it.hasNext(); ) {
+				if (it.next().getLastTransactionID() <= lastValidatedTransaction) {
 					it.remove();
-				}
-				else
+				} else
 					break;
 			}
-
 		}
 	}
 
@@ -1006,7 +1018,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			
 			return lastID;
 		}
-		void addNewTransactionConfirmationEvents(DecentralizedValue hostDestination, long lastValidatedTransaction) throws DatabaseException {
+		void addNewTransactionConfirmationEvents(DecentralizedValue hostDestination, String packageString, long lastValidatedTransaction) throws DatabaseException {
 			try
 			{
 				lockWrite();
@@ -1020,7 +1032,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				ValidatedIDPerDistantHook v=validatedIDPerDistantHook.get(hostDestination);
 				if (v!=null)
 				{
-					v.validateLastTransaction(lastValidatedTransaction);
+					v.validateLastTransaction(packageString, lastValidatedTransaction);
 				}
 				if (notify)
 					notifyNewEvent();
@@ -1192,23 +1204,24 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 		private void checkMetaDataUpdate(DecentralizedValue hostChannel) throws DatabaseException {
 			ValidatedIDPerDistantHook v= validatedIDPerDistantHook.get(hostChannel);
-			long firstTransactionID=v.getFirstTransactionID();
-			DatabaseHooksTable.Record r=getHooksTransactionsTable().getRecord("hostID", hostChannel);
-			assert r!=null;
-			if (firstTransactionID-1>r.getLastValidatedDistantTransactionID())
-				addNewDatabaseEvent(new AskForMetaDataPerFileToCentralDatabaseBackup(getLocalHostID(), hostChannel, firstTransactionID));
-			else
-			{
-				checkAskForEncryptedBackupFilePart(hostChannel);
+			for (String packageString : getDatabasePackagesToSynchronizeWithCentralBackup()) {
+				long firstTransactionID = v.getFirstTransactionID(packageString);
+				DatabaseHooksTable.Record r = getHooksTransactionsTable().getRecord("hostID", hostChannel);
+				assert r != null;
+				if (firstTransactionID - 1 > r.getLastValidatedDistantTransactionID())
+					addNewDatabaseEvent(new AskForMetaDataPerFileToCentralDatabaseBackup(getLocalHostID(), hostChannel, firstTransactionID, packageString));
+				else {
+					checkAskForEncryptedBackupFilePart(hostChannel, packageString);
+				}
 			}
 		}
-		private void checkAskForEncryptedBackupFilePart(DecentralizedValue hostChannel) throws DatabaseException {
+		private void checkAskForEncryptedBackupFilePart(DecentralizedValue hostChannel, String packageString) throws DatabaseException {
 			ConnectedPeers cp=initializedHooksWithCentralBackup.get(hostChannel);
 			if (cp!=null) {
 				ValidatedIDPerDistantHook v= validatedIDPerDistantHook.get(hostChannel);
 				DatabaseHooksTable.Record r=getHooksTransactionsTable().getRecord("hostID", hostChannel);
 				assert r!=null;
-				long fileUTC=v.getFileUTCToTransfer(r.getLastValidatedDistantTransactionID());
+				long fileUTC=v.getFileUTCToTransfer(packageString, r.getLastValidatedDistantTransactionID());
 				if (fileUTC!=Long.MIN_VALUE) {
 					addNewDatabaseEvent(new AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(getLocalHostID(), hostChannel, fileUTC-1));
 				}
@@ -1225,8 +1238,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				return;
 			try {
 
-				v.addMetaData(metaData.getMetaData().decodeMetaData(encryptionProfileProvider));
-				lastValidatedTransactionIDFromCentralBackup.put(metaData.getHostSource(), v.getLastTransactionID());
+				v.addMetaData(metaData.getMetaData().getPackageString(), metaData.getMetaData().decodeMetaData(encryptionProfileProvider));
+				lastValidatedTransactionIDFromCentralBackup.put(metaData.getHostSource(), v.getLastTransactionID(metaData.getMetaData().getPackageString()));
 				checkMetaDataUpdate(metaData.getHostSource());
 			} catch (IOException e) {
 				throw DatabaseException.getDatabaseException(e);
@@ -1922,7 +1935,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					EncryptionTools.decode(encryptionProfileProvider, backupPart.getPartInputStream(), out);
 					out.flush();
 					getDatabaseTransactionsPerHostTable().alterDatabase(backupPart.getMetaData().getPackageString(), backupPart.getHostSource(), out.getRandomInputStream());
-					checkAskForEncryptedBackupFilePart(backupPart.getHostSource());
+					checkAskForEncryptedBackupFilePart(backupPart.getHostSource(), backupPart.getMetaData().getPackageString());
 				} catch (IOException e) {
 					throw DatabaseException.getDatabaseException(e);
 				}

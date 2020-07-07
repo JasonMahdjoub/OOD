@@ -36,6 +36,7 @@ import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.*;
 import com.distrimind.util.Bits;
 import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.Reference;
 import com.distrimind.util.io.*;
 
 import java.io.EOFException;
@@ -351,10 +352,11 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 		alterDatabase(comingFrom, comingFrom, inputStream);
 	}
 	private void alterDatabase(final DatabaseHooksTable.Record directPeer,
-			final AtomicReference<DatabaseHooksTable.Record> _fromHook,
+			final Reference<DatabaseHooksTable.Record> _fromHook,
 			final DatabaseTransactionEventsTable.AbstractRecord transaction,
 			final DatabaseEventsTable.DatabaseEventsIterator iterator, final AtomicLong lastValidatedTransaction,
-			final HashSet<DecentralizedValue> hooksToNotify) throws DatabaseException {
+			final HashSet<DecentralizedValue> hooksToNotify,
+			final Reference<String>	databasePackage) throws DatabaseException {
 			getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
 
 				@SuppressWarnings("unchecked")
@@ -415,6 +417,8 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 											Table<DatabaseRecord> t;
 											try {
 												t = (Table<DatabaseRecord>) getDatabaseWrapper().getTableInstance(event.getConcernedTable());
+												if (databasePackage.get()==null)
+													databasePackage.set(t.getClass().getPackage().getName());
 											} catch (Exception e) {
 												throw new SerializationDatabaseException("", e);
 											}
@@ -586,8 +590,10 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 								hooksToNotify.add(fromHook.getHostID());
 							}
 						}
-						if (!validatedTransaction)
+						if (!validatedTransaction) {
+							databasePackage.set(null);
 							return null;
+						}
 
 						boolean distantTransactionAdded = false;
 						if (getDatabaseHooksTable().isConcernedByIndirectTransaction(distantTransaction)
@@ -782,8 +788,10 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 								getDatabaseWrapper().getSynchronizer().addNewDatabaseEvent(localDTE);
 							}
 
-						} else
+						} else {
+							databasePackage.set(null);
 							throw new SerializationDatabaseException("The transaction should not be empty");
+						}
 
 						return null;
 					}
@@ -841,27 +849,31 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 		final DatabaseHooksTable.Record directPeer = hooks.get(0);
 		final AtomicLong lastValidatedTransaction = new AtomicLong(-1);
 		final HashSet<DecentralizedValue> hooksToNotify = new HashSet<>();
-
+		final Map<String, Long> lastValidatedIDPerPackages=new HashMap<>();
 		try  {
 			final AtomicInteger next = new AtomicInteger(ois.readByte());
 			while (next.get() != EXPORT_FINISHED) {
 				DatabaseEventsIterator it=null;
+
 				try
 				{
+					Reference<String> packageString=new Reference<>();
 					if (next.get() == EXPORT_INDIRECT_TRANSACTION) {
 						DatabaseDistantTransactionEvent.Record ite = getDatabaseDistantTransactionEvent()
 								.unserializeDistantTransactionEvent(ois);
-						
-						alterDatabase(directPeer, new AtomicReference<DatabaseHooksTable.Record>(null),
+
+						alterDatabase(directPeer, new Reference<DatabaseHooksTable.Record>(),
 								ite, it=getDatabaseDistantEventsTable().distantEventTableIterator(ois),
-								lastValidatedTransaction, hooksToNotify);
+								lastValidatedTransaction, hooksToNotify, packageString);
 					} else if (next.get() == EXPORT_DIRECT_TRANSACTION) {
 						DatabaseTransactionEventsTable.Record dte = getDatabaseTransactionEventsTable().unserialize(ois,
 								true, false);
-						alterDatabase(directPeer, new AtomicReference<>(directPeer),
+						alterDatabase(directPeer, new Reference<>(directPeer),
 								dte, it=getDatabaseEventsTable().eventsTableIterator(ois), lastValidatedTransaction,
-								hooksToNotify);
+								hooksToNotify, packageString);
 					}
+					if (packageString.get()!=null)
+						lastValidatedIDPerPackages.put(packageString.get(), lastValidatedTransaction.get());
 				}
 				finally
 				{
@@ -875,9 +887,9 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		} finally {
-			if (lastValidatedTransaction.get() != -1) {
+			for (Map.Entry<String, Long> e : lastValidatedIDPerPackages.entrySet()) {
 				getDatabaseWrapper().getSynchronizer()
-						.addNewTransactionConfirmationEvents(comingFrom, lastValidatedTransaction.get());
+						.addNewTransactionConfirmationEvents(comingFrom, e.getKey(), e.getValue());
 			}
 			for (DecentralizedValue id : hooksToNotify) {
 				DatabaseHooksTable.Record h = getDatabaseHooksTable().getHook(id);
@@ -1057,9 +1069,9 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 					}
 				};
 				try {
-					alterDatabase(comingFromRecord, new AtomicReference<>(comingFromRecord),
+					alterDatabase(comingFromRecord, new Reference<>(comingFromRecord),
 							dte, it, lastValidatedTransaction,
-							hooksToNotify);
+							hooksToNotify, new Reference<String>());
 					ois.seek(nextTransactionPosition);
 				}
 				finally {
@@ -1085,7 +1097,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 		} finally {
 			if (lastValidatedTransaction.get() != -1) {
 				getDatabaseWrapper().getSynchronizer()
-						.addNewTransactionConfirmationEvents(comingFrom, lastValidatedTransaction.get());
+						.addNewTransactionConfirmationEvents(comingFrom, databasePackage, lastValidatedTransaction.get());
 			}
 			for (DecentralizedValue id : hooksToNotify) {
 				DatabaseHooksTable.Record h = getDatabaseHooksTable().getHook(id);
