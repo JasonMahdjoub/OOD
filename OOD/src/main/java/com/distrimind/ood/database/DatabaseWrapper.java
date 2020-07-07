@@ -1446,7 +1446,21 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			initDistantBackupCenterForThisHostWithStringPackages(random, encryptionProfileProvider, m);
 		}
 
-		public void initDistantBackupCenter(final BackupChannelInitializationMessageFromCentralDatabaseBackup message) throws DatabaseException {
+		public void initConnexionWithDistantBackupCenter() throws DatabaseException {
+			lockWrite();
+			try
+			{
+				if (!centralBackupInitialized)
+				{
+					addNewDatabaseEvent(new DistantBackupCenterConnexionInitialisation(getLocalHostID()));
+				}
+			}
+			finally {
+				unlockWrite();
+			}
+		}
+
+		private void received(final BackupChannelInitializationMessageFromCentralDatabaseBackup message) throws DatabaseException {
 			if (message == null)
 				throw new NullPointerException();
 			if (!message.getHostDestination().equals(getLocalHostID()))
@@ -1902,6 +1916,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		public void received(DatabaseEventToSend data) throws DatabaseException {
+			if (data instanceof P2PDatabaseEventToSend)
+				received((P2PDatabaseEventToSend)data);
+			else if (data instanceof MessageComingFromCentralDatabaseBackup)
+				received((MessageComingFromCentralDatabaseBackup)data);
+		}
+		private void received(P2PDatabaseEventToSend data) throws DatabaseException {
 			if (data instanceof DatabaseTransactionsIdentifiersToSynchronize)
 				received((DatabaseTransactionsIdentifiersToSynchronize) data);
 
@@ -1917,7 +1937,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				receivedHookAddRequest((HookAddRequest) data);
 			} else if (data instanceof LastIDCorrection) {
 				received((LastIDCorrection) data);
-			} else if (data instanceof EncryptedBackupPartTransmissionConfirmationFromCentralDatabaseBackup)
+			}
+		}
+		private void received(MessageComingFromCentralDatabaseBackup data) throws DatabaseException {
+			if (data instanceof EncryptedBackupPartTransmissionConfirmationFromCentralDatabaseBackup)
 			{
 				received((EncryptedBackupPartTransmissionConfirmationFromCentralDatabaseBackup)data);
 			} else if (data instanceof EncryptedBackupPartComingFromCentralDatabaseBackup)
@@ -1928,7 +1951,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			{
 				received((EncryptedMetaDataFromCentralDatabaseBackup)data);
 			}
+			else if (data instanceof BackupChannelInitializationMessageFromCentralDatabaseBackup)
+			{
+				received((BackupChannelInitializationMessageFromCentralDatabaseBackup)data);
+			}
 		}
+
 
 
 
