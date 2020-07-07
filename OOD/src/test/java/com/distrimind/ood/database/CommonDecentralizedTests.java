@@ -208,11 +208,18 @@ public abstract class CommonDecentralizedTests {
 			this.channelHost = channelHost;
 		}
 
-		private void received(EncryptedBackupPartDestinedToCentralDatabaseBackup message) throws IOException {
+		private byte[] received(EncryptedBackupPartDestinedToCentralDatabaseBackup message) throws IOException {
 			DatabaseBackup dbb=databaseBackupPerPackage.get(message.getMetaData().getPackageString());
 			if (dbb==null)
 				databaseBackupPerPackage.put(message.getMetaData().getPackageString(), dbb=new DatabaseBackup(message.getMetaData().getPackageString(), message.getHostSource()));
+			byte[] res=null;
+			if (dbb.getLastFileBackupPartUTC()<message.getMetaData().getFileTimestampUTC()) {
+				res=lastValidatedAndEncryptedID = message.getLastValidatedAndEncryptedID();
+
+			}
 			dbb.addFileBackupPart(message);
+			sendMessage(new EncryptedBackupPartTransmissionConfirmationFromCentralDatabaseBackup(message.getHostSource(), message.getMetaData().getFileTimestampUTC(), message.getMetaData().getLastTransactionTimestampUTC(), message.getMetaData().getPackageString()));
+			return res;
 		}
 		private void received(AskForDatabaseBackupPartDestinedToCentralDatabaseBackup message) throws FileNotFoundException {
 			for (DatabaseBackup dbb : databaseBackupPerPackage.values())
@@ -228,11 +235,13 @@ public abstract class CommonDecentralizedTests {
 		{
 			if (d2.hostID.equals(message.getHostDestination()))
 			{
-				d2.getReceivedCentralDatabaseBackupEvents().add(message);
+				if (d2.isConnected())
+					d2.getReceivedCentralDatabaseBackupEvents().add(message);
 				break;
 			}
 		}
 	}
+
 	public class CentralDatabaseBackup
 	{
 		final Map<DecentralizedValue, DatabaseBackupPerHost> databaseBackup=new HashMap<>();
@@ -242,7 +251,16 @@ public abstract class CommonDecentralizedTests {
 			DatabaseBackupPerHost m=databaseBackup.get(message.getHostSource());
 			if (m==null)
 				throw new DatabaseException("");
-			m.received(message);
+			byte[] toBroadcast=m.received(message);
+			if (toBroadcast!=null)
+			{
+				for (Map.Entry<DecentralizedValue, DatabaseBackupPerHost> e : databaseBackup.entrySet())
+				{
+					if (e.getValue().connected && !e.getKey().equals(message.getHostSource()))
+						sendMessage(new BackupChannelUpdateMessageFromCentralDatabaseBackup(e.getKey(), message.getHostSource(), toBroadcast));
+				}
+
+			}
 		}
 		private DatabaseBackupPerHost addHost(DecentralizedValue host)
 		{

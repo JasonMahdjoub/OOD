@@ -1274,7 +1274,33 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				unlockWrite();
 			}
 		}
-
+		private void updateDistantBackupCenter(final DatabaseHooksTable.Record r, final long lastValidatedDistantTransactionID) throws DatabaseException {
+			if (r==null)
+				return;
+			try {
+				lockWrite();
+				if (!validatedIDPerDistantHook.containsKey(r.getHostID()))
+					validatedIDPerDistantHook.put(r.getHostID(), new ValidatedIDPerDistantHook());
+				DecentralizedValue hostID=r.getHostID();
+				if (initializedHooks.containsKey(hostID))
+				{
+					initDistantBackupCenter(hostID, lastValidatedDistantTransactionID);
+				}
+				else
+				{
+					lastValidatedTransactionIDFromCentralBackup.put(r.getHostID(), lastValidatedDistantTransactionID);
+					if (lastValidatedDistantTransactionID!=Long.MIN_VALUE) {
+						validateLastSynchronization(hostID,
+								Math.max(r.getLastValidatedLocalTransactionID(), lastValidatedDistantTransactionID));
+					}
+					else {
+						synchronizeMetaData();
+					}
+				}
+			} finally {
+				unlockWrite();
+			}
+		}
 		public void checkForNewCentralBackupDatabaseEvent() throws DatabaseException {
 			lockWrite();
 			try {
@@ -1506,6 +1532,17 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw DatabaseException.getDatabaseException(e);
 			}
 		}
+		private void received(final BackupChannelUpdateMessageFromCentralDatabaseBackup message) throws DatabaseException {
+			if (message == null)
+				throw new NullPointerException();
+			if (!message.getHostDestination().equals(getLocalHostID()))
+				throw new IllegalArgumentException();
+			try {
+				updateDistantBackupCenter(message.getHostChannel(), message.getLastValidatedID(encryptionProfileProvider));
+			} catch (IOException e) {
+				throw DatabaseException.getDatabaseException(e);
+			}
+		}
 		private void initDistantBackupCenter(final DecentralizedValue hostChannel, final long lastValidatedDistantTransactionID) throws DatabaseException {
 
 
@@ -1527,7 +1564,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			finally {
 				unlockWrite();
 			}
-			DatabaseHooksTable.Record r = runSynchronizedTransaction(
+			initDistantBackupCenter(getDatabaseHookRecord(hostChannel), lastValidatedDistantTransactionID);
+		}
+		DatabaseHooksTable.Record getDatabaseHookRecord(final DecentralizedValue hostChannel) throws DatabaseException {
+			return runSynchronizedTransaction(
 					new SynchronizedTransaction<DatabaseHooksTable.Record>() {
 
 						@Override
@@ -1560,7 +1600,25 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 						}
 					});
-			initDistantBackupCenter(r, lastValidatedDistantTransactionID);
+		}
+		private void updateDistantBackupCenter(final DecentralizedValue hostChannel, final long lastValidatedDistantTransactionID) throws DatabaseException {
+
+
+			lockWrite();
+			if (!centralBackupInitialized)
+				throw new DatabaseException("Distant database backup must be initialized first with function initDistantBackupCenterForThisHost");
+
+			try
+			{
+				if (initializedHooks.containsKey(hostChannel)) {
+					return;
+				}
+			}
+			finally {
+				unlockWrite();
+			}
+
+			updateDistantBackupCenter(getDatabaseHookRecord(hostChannel), lastValidatedDistantTransactionID);
 		}
 
 		private void cancelEventToSend(DecentralizedValue peerDestination, boolean centralDatabaseBackupEvent) throws DatabaseException {
@@ -1986,9 +2044,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			{
 				received((EncryptedMetaDataFromCentralDatabaseBackup)data);
 			}
-			else if (data instanceof BackupChannelInitializationMessageFromCentralDatabaseBackup)
+			else if (data instanceof BackupChannelUpdateMessageFromCentralDatabaseBackup)
 			{
-				received((BackupChannelInitializationMessageFromCentralDatabaseBackup)data);
+				if (data instanceof BackupChannelInitializationMessageFromCentralDatabaseBackup)
+				{
+					received((BackupChannelInitializationMessageFromCentralDatabaseBackup)data);
+				}
+				else
+					received((BackupChannelUpdateMessageFromCentralDatabaseBackup)data);
 			}
 			else if (data instanceof InitialMessageComingFromCentralBackup)
 			{

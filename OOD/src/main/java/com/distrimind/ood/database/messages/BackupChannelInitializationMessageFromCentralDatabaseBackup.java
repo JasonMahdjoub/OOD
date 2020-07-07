@@ -47,68 +47,16 @@ import java.io.IOException;
  * @version 1.0
  * @since OOD 3.0.0
  */
-public class BackupChannelInitializationMessageFromCentralDatabaseBackup implements MessageComingFromCentralDatabaseBackup, DatabaseEventToSend, SecureExternalizable {
-
-	private DecentralizedValue hostDestination;
-	private DecentralizedValue hostChannel;
-	private byte[] lastValidatedAndEncryptedID;
-
+public class BackupChannelInitializationMessageFromCentralDatabaseBackup extends BackupChannelUpdateMessageFromCentralDatabaseBackup {
 	@SuppressWarnings("unused")
 	private BackupChannelInitializationMessageFromCentralDatabaseBackup() {
 	}
+
 	public BackupChannelInitializationMessageFromCentralDatabaseBackup(DecentralizedValue hostDestination, DecentralizedValue hostChannel) {
-		if (hostChannel==null)
-			throw new NullPointerException();
-		if (hostDestination==null)
-			throw new NullPointerException();
-		this.hostDestination = hostDestination;
-		this.hostChannel = hostChannel;
-		this.lastValidatedAndEncryptedID = null;
-
+		super(hostDestination, hostChannel);
 	}
+
 	public BackupChannelInitializationMessageFromCentralDatabaseBackup(DecentralizedValue hostDestination, DecentralizedValue hostChannel, byte[] lastValidatedAndEncryptedID) {
-		this(hostDestination, hostChannel);
-		if (lastValidatedAndEncryptedID ==null)
-			throw new NullPointerException();
-		this.lastValidatedAndEncryptedID = lastValidatedAndEncryptedID;
-	}
-
-	@Override
-	public DecentralizedValue getHostDestination() {
-		return hostDestination;
-	}
-
-	public DecentralizedValue getHostChannel() {
-		return hostChannel;
-	}
-
-	public byte[] getLastValidatedAndEncryptedID() {
-		return lastValidatedAndEncryptedID;
-	}
-	public long getLastValidatedID(EncryptionProfileProvider encryptionProfileProvider) throws IOException {
-		return lastValidatedAndEncryptedID==null?Long.MIN_VALUE:EncryptionTools.decryptID(encryptionProfileProvider, lastValidatedAndEncryptedID);
-	}
-
-	@Override
-	public int getInternalSerializedSize() {
-		return SerializationTools.getInternalSize((SecureExternalizable)hostDestination)
-				+SerializationTools.getInternalSize((SecureExternalizable)hostChannel)
-				+SerializationTools.getInternalSize(lastValidatedAndEncryptedID, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
-	}
-
-	@Override
-	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
-		out.writeObject(hostDestination, false);
-		out.writeObject(hostChannel, false);
-		out.writeBytesArray(lastValidatedAndEncryptedID, true, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
-	}
-
-	@Override
-	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
-		hostDestination=in.readObject(false, DecentralizedValue.class);
-		hostChannel=in.readObject(false, DecentralizedValue.class);
-		if (hostChannel.equals(hostDestination))
-			throw new MessageExternalizationException(Integrity.FAIL);
-		lastValidatedAndEncryptedID=in.readBytesArray(true, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+		super(hostDestination, hostChannel, lastValidatedAndEncryptedID);
 	}
 }
