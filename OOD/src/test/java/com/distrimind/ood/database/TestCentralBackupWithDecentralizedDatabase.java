@@ -40,6 +40,8 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -53,6 +55,8 @@ import java.util.List;
 public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonDecentralizedTests {
 
 
+	public TestCentralBackupWithDecentralizedDatabase() throws NoSuchProviderException, NoSuchAlgorithmException {
+	}
 
 	@Override
 	public boolean canInitCentralBackup()
@@ -89,7 +93,6 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 			}
 
 			Thread.sleep(1200);
-			checkForNewDatabaseBackupBlocks();
 			exchangeMessages();
 
 			for (int i = 1; i < peersNumber; i++) {
@@ -112,7 +115,6 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 
 				}
 				Thread.sleep(1200);
-				checkForNewDatabaseBackupBlocks();
 				exchangeMessages();
 				i = 0;
 				for (CommonDecentralizedTests.Database db : concernedDatabase) {
@@ -133,7 +135,6 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 				proceedEvent(db, false, levents);
 
 				Thread.sleep(1200);
-				checkForNewDatabaseBackupBlocks();
 
 				exchangeMessages();
 				Assert.assertTrue(db.getAnomalies().isEmpty());
@@ -156,7 +157,6 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 			}
 
 			Thread.sleep(1200);
-			checkForNewDatabaseBackupBlocks();
 			exchangeMessages();
 
 			for (int i = peersNumber; i < listDatabase.size(); i++) {

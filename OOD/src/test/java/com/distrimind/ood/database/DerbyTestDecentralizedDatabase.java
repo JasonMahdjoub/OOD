@@ -36,6 +36,8 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database;
 
 import java.io.File;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
 
@@ -50,6 +52,9 @@ public class DerbyTestDecentralizedDatabase extends TestDecentralizedDatabase {
 	private final File data_directory2 = new File("databasetestDerby2");
 	private final File data_directory3 = new File("databasetestDerby3");
 	private final File data_directory4 = new File("databasetestDerby4");
+
+	public DerbyTestDecentralizedDatabase() throws NoSuchProviderException, NoSuchAlgorithmException {
+	}
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstance1() throws IllegalArgumentException, DatabaseException {

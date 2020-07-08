@@ -39,6 +39,8 @@ package com.distrimind.ood.database;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 
 import java.io.File;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 
 /**
  * @author Jason Mahdjoub
@@ -51,6 +53,9 @@ public class H2TestCentralBackupWithDecentralizedDatabase extends TestCentralBac
 	final String database_file_name3 = "decentralizedDatabaseWithBackup3";
 	final String database_file_name4 = "decentralizedDatabaseWithBackup4";
 	final BackupConfiguration backupConfiguration=new BackupConfiguration(10000, 20000, 1000000, 1000, null);
+
+	public H2TestCentralBackupWithDecentralizedDatabase() throws NoSuchProviderException, NoSuchAlgorithmException {
+	}
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstance1() throws IllegalArgumentException, DatabaseException {

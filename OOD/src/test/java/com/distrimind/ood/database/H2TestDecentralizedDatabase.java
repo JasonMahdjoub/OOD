@@ -38,6 +38,8 @@ package com.distrimind.ood.database;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 
 import java.io.File;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 
 /**
  * 
@@ -50,6 +52,9 @@ public class H2TestDecentralizedDatabase extends TestDecentralizedDatabase {
 	final String database_file_name2 = "decentralizedDatabase2";
 	final String database_file_name3 = "decentralizedDatabase3";
 	final String database_file_name4 = "decentralizedDatabase4";
+
+	public H2TestDecentralizedDatabase() throws NoSuchProviderException, NoSuchAlgorithmException {
+	}
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstance1() throws IllegalArgumentException, DatabaseException {

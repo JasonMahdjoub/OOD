@@ -42,6 +42,8 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -55,10 +57,8 @@ import java.util.List;
 public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests{
 
 
-
-
-
-
+	public TestDecentralizedDatabase() throws NoSuchProviderException, NoSuchAlgorithmException {
+	}
 
 	@DataProvider(name = "provideDataForIndirectSynchro")
 	public Object[][] provideDataForIndirectSynchro() throws DatabaseException {
@@ -90,11 +90,7 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 			int i = 0;
 			for (Database db : indirectDatabase)// TODO test with opposite direction
 			{
-				if (i++ == 0) {
-					db.setReplaceWhenCollisionDetected(false);
-				} else {
-					db.setReplaceWhenCollisionDetected(true);
-				}
+				db.setReplaceWhenCollisionDetected(i++ != 0);
 
 				proceedEvent(db, false, levents);
 			}
@@ -256,10 +252,7 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 		if (generateDirectConflict) {
 			int i = 0;
 			for (Database db : indirectDatabase) {
-				if (i++ == 0)
-					db.setReplaceWhenCollisionDetected(false);
-				else
-					db.setReplaceWhenCollisionDetected(true);
+				db.setReplaceWhenCollisionDetected(i++ != 0);
 				proceedEvent(db, false, levents);
 			}
 			segmentA[1].setReplaceWhenCollisionDetected(false);

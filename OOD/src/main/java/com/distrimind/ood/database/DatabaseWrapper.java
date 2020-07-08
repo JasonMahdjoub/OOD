@@ -1655,10 +1655,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 		}
 
-		private void disconnectLocalHookFromItsCentralBackup()
-		{
+		private void disconnectLocalHookFromItsCentralBackup() throws DatabaseException {
 			lockWrite();
 			try {
+				addNewDatabaseEvent(new DisconnectCentralDatabaseBackup(getLocalHostID()));
 				random=null;
 				encryptionProfileProvider=null;
 				centralBackupInitialized=false;

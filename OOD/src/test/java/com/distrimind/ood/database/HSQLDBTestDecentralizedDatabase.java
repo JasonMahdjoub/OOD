@@ -36,6 +36,8 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database;
 
 import java.io.File;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
 
@@ -50,6 +52,9 @@ public class HSQLDBTestDecentralizedDatabase extends TestDecentralizedDatabase {
 	final String database_file_name2 = "decentralizedDatabase2";
 	final String database_file_name3 = "decentralizedDatabase3";
 	final String database_file_name4 = "decentralizedDatabase4";
+
+	public HSQLDBTestDecentralizedDatabase() throws NoSuchProviderException, NoSuchAlgorithmException {
+	}
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstance1() throws IllegalArgumentException, DatabaseException {

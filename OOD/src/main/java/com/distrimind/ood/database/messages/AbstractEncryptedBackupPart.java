@@ -75,10 +75,12 @@ public abstract class AbstractEncryptedBackupPart extends DatabaseEvent implemen
 		return metaData;
 	}
 
+	@Override
 	public RandomInputStream getPartInputStream() {
 		return partInputStream;
 	}
 
+	@Override
 	public void setPartInputStream(RandomInputStream partInputStream) {
 		if (partInputStream==null)
 			throw new NullPointerException();

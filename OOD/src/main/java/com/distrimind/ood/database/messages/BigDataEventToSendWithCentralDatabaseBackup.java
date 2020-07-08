@@ -36,6 +36,7 @@ import com.distrimind.util.io.RandomInputStream;
  * @version 1.0
  * @since OOD 3.0.0
  */
-public interface BigDataEventToSendWithCentralDatabaseBackup {
+public interface BigDataEventToSendWithCentralDatabaseBackup extends DatabaseEventToSend{
 	RandomInputStream getPartInputStream();
+	void setPartInputStream(RandomInputStream ris);
 }
