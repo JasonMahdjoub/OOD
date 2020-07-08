@@ -318,14 +318,11 @@ public abstract class CommonDecentralizedTests {
 		}
 
 
-		private void received(DatabaseTransactionsIdentifiersToSynchronizeDestinedToCentralDatabaseBackup message)
-		{
-
-		}
-
 		private void received(DatabaseBackupToRemoveDestinedToCentralDatabaseBackup message)
 		{
-
+			DatabaseBackupPerHost m=databaseBackup.get(message.getHostSource());
+			if (m!=null)
+				m.databaseBackupPerPackage.remove(message.getPackageString());
 		}
 
 
@@ -339,8 +336,6 @@ public abstract class CommonDecentralizedTests {
 				received((AskForMetaDataPerFileToCentralDatabaseBackup)message);
 			else if (message instanceof DatabaseBackupToRemoveDestinedToCentralDatabaseBackup)
 				received((DatabaseBackupToRemoveDestinedToCentralDatabaseBackup)message);
-			else if (message instanceof DatabaseTransactionsIdentifiersToSynchronizeDestinedToCentralDatabaseBackup)
-				received((DatabaseTransactionsIdentifiersToSynchronizeDestinedToCentralDatabaseBackup)message);
 			else if (message instanceof DistantBackupCenterConnexionInitialisation)
 				received((DistantBackupCenterConnexionInitialisation)message);
 			else
@@ -1203,12 +1198,11 @@ public abstract class CommonDecentralizedTests {
 		return changed;
 	}
 
-	protected void checkForNewDatabaseBackupBlocks() throws DatabaseException {
+	protected void x() throws DatabaseException {
 		for (Database d : listDatabase)
 			if (d.dbwrapper.getSynchronizer().isInitializedWithCentralBackup())
 				d.dbwrapper.getSynchronizer().checkForNewCentralBackupDatabaseEvent();
-			else
-				System.out.println("not initialized");
+
 	}
 
 	protected boolean checkMessages() throws Exception {

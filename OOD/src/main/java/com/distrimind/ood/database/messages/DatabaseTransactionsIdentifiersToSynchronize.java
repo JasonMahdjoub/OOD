@@ -35,13 +35,12 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.util.DecentralizedValue;
-import com.distrimind.util.io.SecureExternalizable;
-import com.distrimind.util.io.SecuredObjectInputStream;
-import com.distrimind.util.io.SecuredObjectOutputStream;
-import com.distrimind.util.io.SerializationTools;
+import com.distrimind.util.io.*;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -51,23 +50,41 @@ import java.util.Map;
  */
 public class DatabaseTransactionsIdentifiersToSynchronize extends AbstractDatabaseTransactionsIdentifiersToSynchronize implements P2PDatabaseEventToSend, SecureExternalizable {
 	protected DecentralizedValue hostIDDestination;
-
+	private Map<DecentralizedValue, Long> lastTransactionFieldsBetweenDistantHosts;
 
 	@Override
 	public int getInternalSerializedSize() {
-		return super.getInternalSerializedSize()+ SerializationTools.getInternalSize(hostIDDestination, 0);
+		int res=super.getInternalSerializedSize()+ SerializationTools.getInternalSize(hostIDDestination, 0)+4+lastTransactionFieldsBetweenDistantHosts.size()*8;
+		for (DecentralizedValue dv: lastTransactionFieldsBetweenDistantHosts.keySet())
+			res+=SerializationTools.getInternalSize((SecureExternalizable)dv);
+		return res;
 	}
 
 	@Override
 	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
 		super.writeExternal(out);
 		out.writeObject(hostIDDestination, false);
+		out.writeInt(lastTransactionFieldsBetweenDistantHosts.size());
+		for (Map.Entry<DecentralizedValue, Long> e : lastTransactionFieldsBetweenDistantHosts.entrySet())
+		{
+			out.writeObject(e.getKey(), false);
+			out.writeLong(e.getValue());
+		}
 	}
 
 	@Override
 	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
 		super.readExternal(in);
 		hostIDDestination=in.readObject(false, DecentralizedValue.class);
+		int s=in.readInt();
+		if (s<0 || s> DatabaseWrapper.MAX_DISTANT_PEERS)
+			throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN, ""+s);
+		lastTransactionFieldsBetweenDistantHosts=new HashMap<>();
+		for (int i=0;i<s;i++)
+		{
+			DecentralizedValue dv=in.readObject(false, DecentralizedValue.class);
+			lastTransactionFieldsBetweenDistantHosts.put(dv, in.readLong());
+		}
 	}
 
 
@@ -78,12 +95,20 @@ public class DatabaseTransactionsIdentifiersToSynchronize extends AbstractDataba
 	public DatabaseTransactionsIdentifiersToSynchronize(DecentralizedValue hostIDSource,
 												 DecentralizedValue hostIDDestination,
 												 Map<DecentralizedValue, Long> lastTransactionFieldsBetweenDistantHosts) {
-		super(hostIDSource, lastTransactionFieldsBetweenDistantHosts);
+		super(hostIDSource);
+		if (hostIDDestination==null)
+			throw new NullPointerException();
 		this.hostIDDestination = hostIDDestination;
+		if (lastTransactionFieldsBetweenDistantHosts==null)
+			throw new NullPointerException();
+		this.lastTransactionFieldsBetweenDistantHosts=lastTransactionFieldsBetweenDistantHosts;
 	}
 
 	@Override
 	public DecentralizedValue getHostDestination() {
 		return hostIDDestination;
+	}
+	public Map<DecentralizedValue, Long> getLastDistantTransactionIdentifiers() {
+		return lastTransactionFieldsBetweenDistantHosts;
 	}
 }

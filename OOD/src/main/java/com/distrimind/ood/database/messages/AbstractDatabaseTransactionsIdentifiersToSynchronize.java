@@ -51,7 +51,7 @@ import java.util.Map;
  */
 public class AbstractDatabaseTransactionsIdentifiersToSynchronize extends DatabaseEvent implements SecureExternalizable {
 	protected DecentralizedValue hostIDSource;
-	Map<DecentralizedValue, Long> lastTransactionFieldsBetweenDistantHosts;
+
 
 	AbstractDatabaseTransactionsIdentifiersToSynchronize()
 	{
@@ -60,42 +60,24 @@ public class AbstractDatabaseTransactionsIdentifiersToSynchronize extends Databa
 
 	@Override
 	public int getInternalSerializedSize() {
-		int res=4+lastTransactionFieldsBetweenDistantHosts.size()*8+ SerializationTools.getInternalSize(hostIDSource,0);
-		for (DecentralizedValue dv: lastTransactionFieldsBetweenDistantHosts.keySet())
-			res+=SerializationTools.getInternalSize(dv, 0);
-		return res;
+		return SerializationTools.getInternalSize(hostIDSource,0);
 	}
 
 	@Override
 	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
 		out.writeObject(hostIDSource, false);
-		out.writeInt(lastTransactionFieldsBetweenDistantHosts.size());
-		for (Map.Entry<DecentralizedValue, Long> e : lastTransactionFieldsBetweenDistantHosts.entrySet())
-		{
-			out.writeObject(e.getKey(), false);
-			out.writeLong(e.getValue());
-		}
+
 	}
 
 	@Override
 	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
 		hostIDSource=in.readObject(false, DecentralizedValue.class);
-		int s=in.readInt();
-		if (s<0 || s> DatabaseWrapper.MAX_DISTANT_PEERS)
-			throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN, ""+s);
-		lastTransactionFieldsBetweenDistantHosts=new HashMap<>();
-		for (int i=0;i<s;i++)
-		{
-			DecentralizedValue dv=in.readObject(false, DecentralizedValue.class);
-			lastTransactionFieldsBetweenDistantHosts.put(dv, in.readLong());
-		}
+
 	}
 
 
-	AbstractDatabaseTransactionsIdentifiersToSynchronize(DecentralizedValue hostIDSource,
-														 Map<DecentralizedValue, Long> lastTransactionFieldsBetweenDistantHosts) {
+	AbstractDatabaseTransactionsIdentifiersToSynchronize(DecentralizedValue hostIDSource) {
 		this.hostIDSource = hostIDSource;
-		this.lastTransactionFieldsBetweenDistantHosts = lastTransactionFieldsBetweenDistantHosts;
 	}
 
 
@@ -104,8 +86,6 @@ public class AbstractDatabaseTransactionsIdentifiersToSynchronize extends Databa
 		return hostIDSource;
 	}
 
-	public Map<DecentralizedValue, Long> getLastDistantTransactionIdentifiers() {
-		return lastTransactionFieldsBetweenDistantHosts;
-	}
+
 
 }
