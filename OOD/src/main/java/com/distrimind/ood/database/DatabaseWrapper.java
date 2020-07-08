@@ -4074,20 +4074,24 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (_class_table == null)
 				throw new NullPointerException("The parameter _class_table is a null pointer !");
 			//Database db = this.sql_database.get(_class_table.getPackage());
-			if (databaseVersion<0)
-				databaseVersion=getCurrentDatabaseVersion(_class_table.getPackage());
-			Database db=sql_database.get(_class_table.getPackage());
-			DatabasePerVersion dpv=db==null?null:db.tables_per_versions.get(databaseVersion);
 
-			if (dpv == null) {
+			Database db=sql_database.get(_class_table.getPackage());
+			DatabasePerVersion dpv;
+
+			if (db == null) {
 				if (_class_table.getPackage().equals(this.getClass().getPackage()) && (actualDatabaseLoading == null
 						|| !actualDatabaseLoading.getConfiguration().getPackage().equals(_class_table.getPackage()) )) {
 					loadDatabase(new DatabaseConfiguration(_class_table.getPackage(), internalDatabaseClassesList), true, databaseVersion);
+					if (databaseVersion<0)
+						databaseVersion=getCurrentDatabaseVersion(_class_table.getPackage());
 					db=sql_database.get(_class_table.getPackage());
 					dpv=db.tables_per_versions.get(databaseVersion);
+
 				} else {
 					try {
 						lockWrite();
+						if (databaseVersion<0)
+							databaseVersion=getCurrentDatabaseVersion(_class_table.getPackage());
 						if (actualDatabaseLoading != null && actualDatabaseLoading.getConfiguration().getPackage()
 								.equals(_class_table.getPackage()) && actualDatabaseLoading.tables_per_versions.containsKey(databaseVersion)) {
 							db = actualDatabaseLoading;
@@ -4102,6 +4106,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						unlockWrite();
 					}
 				}
+
+			}
+			else
+			{
+				if (databaseVersion<0)
+					databaseVersion=getCurrentDatabaseVersion(_class_table.getPackage());
+				dpv=db.tables_per_versions.get(databaseVersion);
 			}
 			Table<?> founded_table = dpv.tables_instances.get(_class_table);
 			if (founded_table != null)
@@ -4528,14 +4539,18 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	final void loadDatabase(final DatabaseConfiguration configuration,
 			final boolean createDatabaseIfNecessaryAndCheckIt, int databaseVersion) throws DatabaseException {
+		if (configuration == null)
+			throw new NullPointerException("tables is a null pointer.");
+
+		if (!configuration.getPackage().equals(this.getClass().getPackage()))
+			getDatabaseTable();
 		try  {
 			lockWrite();
+
 			boolean allNotFound=true;
 			//final AtomicBoolean allNotFound = new AtomicBoolean(true);
 			if (this.closed)
 				throw new DatabaseException("The given Database was closed : " + this);
-			if (configuration == null)
-				throw new NullPointerException("tables is a null pointer.");
 			{
 				Database db = sql_database.get(configuration.getPackage());
 				if (db != null) {
@@ -4546,8 +4561,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 			}
 			try {
+
 				allNotFound=loadDatabaseTables(configuration, createDatabaseIfNecessaryAndCheckIt, databaseVersion);
 				Database actualDatabaseLoading=this.actualDatabaseLoading;
+				assert actualDatabaseLoading!=null;
 				if (databaseVersion==-1)
 					databaseVersion=getCurrentDatabaseVersion(configuration.getPackage());
 				if (allNotFound) {

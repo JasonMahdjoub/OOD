@@ -38,6 +38,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 import com.distrimind.ood.database.annotations.AutoPrimaryKey;
 import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.annotations.NotNull;
+import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedIDGenerator;
 import com.distrimind.util.io.SerializationTools;
@@ -56,10 +57,8 @@ final class DatabaseTable extends Table<DatabaseTable.Record> {
 	public static class Record extends DatabaseRecord
 	{
 
-		@AutoPrimaryKey
-		private DecentralizedIDGenerator id=null;
-
 		@Field(limit = SerializationTools.MAX_CLASS_LENGTH)
+		@PrimaryKey
 		@NotNull
 		private String databasePackageName;
 
@@ -73,10 +72,6 @@ final class DatabaseTable extends Table<DatabaseTable.Record> {
 		Record(String databasePackageName) {
 			this.databasePackageName = databasePackageName;
 			this.synchronizedWithCentralDatabaseBackup=false;
-		}
-
-		DecentralizedIDGenerator getId() {
-			return id;
 		}
 
 		String getDatabasePackageName() {

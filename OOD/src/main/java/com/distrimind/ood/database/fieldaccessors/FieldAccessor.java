@@ -277,7 +277,7 @@ public abstract class FieldAccessor {
 
 	public boolean isDecentralizablePrimaryKey()
 	{
-		return false;
+		return !isAutoPrimaryKey() && !isRandomPrimaryKey();
 	}
 
 	public Class<? extends Table<?>> getTableClass() {
