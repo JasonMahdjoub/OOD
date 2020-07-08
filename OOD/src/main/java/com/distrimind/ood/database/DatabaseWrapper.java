@@ -4078,16 +4078,16 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new NullPointerException("The parameter _class_table is a null pointer !");
 			//Database db = this.sql_database.get(_class_table.getPackage());
 			if (_class_table.getPackage().equals(getClass().getPackage()))
-				databaseVersion=1;
+				databaseVersion=0;
+			else if (databaseVersion<0)
+				databaseVersion=getCurrentDatabaseVersion(_class_table.getPackage());
 			Database db=sql_database.get(_class_table.getPackage());
-			DatabasePerVersion dpv;
+			DatabasePerVersion dpv=db==null?null:db.tables_per_versions.get(databaseVersion);
 
-			if (db == null) {
+			if (dpv == null) {
 				if (_class_table.getPackage().equals(this.getClass().getPackage()) && (actualDatabaseLoading == null
 						|| !actualDatabaseLoading.getConfiguration().getPackage().equals(_class_table.getPackage()) )) {
-					loadDatabase(new DatabaseConfiguration(_class_table.getPackage(), internalDatabaseClassesList), true, 1);
-					if (databaseVersion<0)
-						databaseVersion=getCurrentDatabaseVersion(_class_table.getPackage());
+					loadDatabase(new DatabaseConfiguration(_class_table.getPackage(), internalDatabaseClassesList), true, 0);
 					db=sql_database.get(_class_table.getPackage());
 					dpv=db.tables_per_versions.get(databaseVersion);
 
@@ -4112,12 +4112,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 
 			}
-			else
-			{
-				if (databaseVersion<0)
-					databaseVersion=getCurrentDatabaseVersion(_class_table.getPackage());
-				dpv=db.tables_per_versions.get(databaseVersion);
-			}
+
 			Table<?> founded_table = dpv.tables_instances.get(_class_table);
 			if (founded_table != null)
 				//noinspection unchecked
@@ -4289,6 +4284,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		return getCurrentDatabaseVersion(p, false);
 	}
 	int getCurrentDatabaseVersion(final Package p, final boolean forceUpdate) throws DatabaseException {
+		return getCurrentDatabaseVersion(p, forceUpdate, -1);
+	}
+	int getCurrentDatabaseVersion(final Package p, final boolean forceUpdate, final int defaultValue) throws DatabaseException {
 		lockRead();
 		try {
 			Database db = null;
@@ -4305,9 +4303,17 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 									.prepareStatement("SELECT CURRENT_DATABASE_VERSION FROM `" + DatabaseWrapper.VERSIONS_OF_DATABASE + "` WHERE PACKAGE_NAME='"
 											+ getLongPackageName(p) + "'" + getSqlComma());
 							ResultSet rs = pst.executeQuery();
-							int res=0;
+							int res=defaultValue==-1?0:defaultValue;
 							if (rs.next())
 								res=rs.getInt(1);
+							else
+							{
+								Statement st = getConnectionAssociatedWithCurrentThread().getConnection()
+										.createStatement();
+								st.executeUpdate("INSERT INTO `" + DatabaseWrapper.VERSIONS_OF_DATABASE + "`(PACKAGE_NAME, CURRENT_DATABASE_VERSION) VALUES('"
+										+ getLongPackageName(p) + "', '" + res + "')" + getSqlComma());
+								st.close();
+							}
 							if (fdb!=null)
 								fdb.currentVersion=res;
 							return res;
@@ -4349,10 +4355,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					try {
 						assert oldDatabasaseVersion != newDatabaseVersion;
 						int r = getConnectionAssociatedWithCurrentThread().getConnection().createStatement()
-								.executeUpdate("UPDATE " + VERSIONS_OF_DATABASE + " SET CURRENT_DATABASE_VERSION=" + newDatabaseVersion
-										+ " WHERE PACKAGE_NAME='" + getLongPackageName(configuration.getPackage()) + "'" + getSqlComma());
+								.executeUpdate("UPDATE `" + VERSIONS_OF_DATABASE + "` SET CURRENT_DATABASE_VERSION='" + newDatabaseVersion
+										+ "' WHERE PACKAGE_NAME='" + getLongPackageName(configuration.getPackage()) + "'" + getSqlComma());
 						if (r != 1)
-							throw new DatabaseException("no record found");
+							throw new DatabaseException("no record found (r="+r+")");
 						if (oldDatabasaseVersion >= 0) {
 							Database db = sql_database.get(configuration.getPackage());
 							HashMap<Class<? extends Table<?>>, Table<?>> hm = new HashMap<>(db.tables_per_versions.get(oldDatabasaseVersion).tables_instances);
@@ -4618,6 +4624,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				@SuppressWarnings("unchecked")
 				HashMap<Package, Database> sd = (HashMap<Package, Database>) sql_database.clone();
 				Database db=sd.get(configuration.getPackage());
+
 				if (db==null) {
 					sd.put(configuration.getPackage(), actualDatabaseLoading);
 				}
@@ -4684,8 +4691,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					if (!doesTableExists(VERSIONS_OF_DATABASE)) {
 						Statement st = getConnectionAssociatedWithCurrentThread().getConnection()
 								.createStatement();
-						st.executeUpdate("CREATE TABLE " + VERSIONS_OF_DATABASE
-								+ "(PACKAGE_NAME VARCHAR(512), CURRENT_DATABASE_VERSION INTEGER "
+						st.executeUpdate("CREATE TABLE `" + VERSIONS_OF_DATABASE
+								+ "`(PACKAGE_NAME VARCHAR(512), CURRENT_DATABASE_VERSION INTEGER "
 								+", CONSTRAINT VERSION_DB_ID_PK PRIMARY KEY(PACKAGE_NAME))"+getPostCreateTable(null)
 								+ getSqlComma());
 						st.close();
@@ -4693,12 +4700,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							version=0;
 						st = getConnectionAssociatedWithCurrentThread().getConnection()
 								.createStatement();
-						st.executeUpdate("INSERT INTO " + DatabaseWrapper.VERSIONS_OF_DATABASE + "(PACKAGE_NAME, CURRENT_DATABASE_VERSION) VALUES('"
-								+ getLongPackageName(configuration.getPackage()) + "', " + version + ")" + getSqlComma());
+						st.executeUpdate("INSERT INTO `" + DatabaseWrapper.VERSIONS_OF_DATABASE + "`(PACKAGE_NAME, CURRENT_DATABASE_VERSION) VALUES('"
+								+ getLongPackageName(configuration.getPackage()) + "', '" + version + "')" + getSqlComma());
 						st.close();
 					}
-					else if (version==-1)
-						version=getCurrentDatabaseVersion(configuration.getPackage());
+					else
+						version=getCurrentDatabaseVersion(configuration.getPackage(), false, version);
+
+
 
 					ArrayList<Table<?>> list_tables = new ArrayList<>(configuration.getTableClasses().size());
 					DatabasePerVersion dpv=new DatabasePerVersion();
@@ -4721,6 +4730,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						t.initializeStep3();
 					}
 					Database actualDatabaseLoading=DatabaseWrapper.this.actualDatabaseLoading;
+					DatabaseWrapper.this.actualDatabaseLoading=null;
 					DatabaseTable.Record dbt=getDatabaseTable().getRecord("databasePackageName", configuration.getPackage().getName());
 					if (dbt==null)
 					{
