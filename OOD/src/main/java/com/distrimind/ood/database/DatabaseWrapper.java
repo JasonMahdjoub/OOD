@@ -445,7 +445,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 	}
-	private long getLastTransactionUTC() throws DatabaseException {
+	/*private long getLastTransactionUTC() throws DatabaseException {
 
 		long res=Long.MIN_VALUE;
 		for (Database d : sql_database.values())
@@ -454,7 +454,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				res=Math.max(d.backupRestoreManager.getLastTransactionUTCInMS(), res);
 		}
 		return res;
-	}
+	}*/
 	private static class ValidatedIDPerDistantHook
 	{
 		final HashMap<String, TreeSet<DatabaseBackupMetaDataPerFile>> metaData=new HashMap<>();
@@ -466,7 +466,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			else
 				return ts.first().getFirstTransactionID();
 		}
-		void addMetaData(String packageString, DatabaseBackupMetaDataPerFile m) throws DatabaseException {
+		void addMetaData(String packageString, DatabaseBackupMetaDataPerFile m)  {
 			if (packageString==null)
 				throw new NullPointerException();
 			if (packageString.trim().length()==0)
@@ -1201,21 +1201,24 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		private void checkMetaDataUpdate(DecentralizedValue hostChannel) throws DatabaseException {
 			ValidatedIDPerDistantHook v= validatedIDPerDistantHook.get(hostChannel);
 			Long lastValidatedDistantID=lastValidatedTransactionIDFromCentralBackup.get(hostChannel);
-
+			DatabaseHooksTable.Record r=null;
 			for (String packageString : getDatabasePackagesToSynchronizeWithCentralBackup()) {
+
 				long from=v.getLastTransactionID(packageString);
 				if (from<lastValidatedDistantID)
 					addNewDatabaseEvent(new AskForMetaDataPerFileToCentralDatabaseBackup(getLocalHostID(), hostChannel, from, packageString));
-				else
-					checkAskForEncryptedBackupFilePart(hostChannel, packageString);
-				/*long firstTransactionID = v.getFirstTransactionID(packageString);
-				DatabaseHooksTable.Record r = getHooksTransactionsTable().getRecord("hostID", hostChannel);
-				assert r != null;
-				if (firstTransactionID - 1 > r.getLastValidatedDistantTransactionID())
-					addNewDatabaseEvent(new AskForMetaDataPerFileToCentralDatabaseBackup(getLocalHostID(), hostChannel, firstTransactionID, packageString));
 				else {
-					checkAskForEncryptedBackupFilePart(hostChannel, packageString);
-				}*/
+					long firstTransactionID = v.getFirstTransactionID(packageString);
+					if (r==null) {
+						r = getHooksTransactionsTable().getRecord("hostID", hostChannel);
+						assert r != null;
+					}
+					if (firstTransactionID - 1 > r.getLastValidatedDistantTransactionID())
+						addNewDatabaseEvent(new AskForMetaDataPerFileToCentralDatabaseBackup(getLocalHostID(), hostChannel, firstTransactionID, packageString));
+					else {
+						checkAskForEncryptedBackupFilePart(hostChannel, packageString);
+					}
+				}
 			}
 		}
 		private void checkAskForEncryptedBackupFilePart(DecentralizedValue hostChannel, String packageString) throws DatabaseException {
