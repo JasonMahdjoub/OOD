@@ -3249,7 +3249,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 									final TransactionPerDatabase t = e.getValue();
 									if (t.eventsNumber.get() > 0) {
 										final Reference<DatabaseTransactionEventsTable.Record> finalTR = new Reference<>(
-												null);
+												);
 										/*
 										 * final ArrayList<AbstractDecentralizedID> excludedHooks=new ArrayList<>();
 										 * long
