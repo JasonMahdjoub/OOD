@@ -462,7 +462,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			}
 		});
 		for (DatabaseHooksTable.Record h : toUpdate) {
-			updateRecord(h, "lastValidatedTransaction", h.getLastValidatedLocalTransactionID());
+			updateRecord(h, "lastValidatedLocalTransactionID", h.getLastValidatedLocalTransactionID());
 		}
 	}
 
@@ -482,7 +482,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		return this.lastTransactionFieldsBetweenDistantHosts.get(new HostPair(hostSource, hostDestination));
 	}*/
 
-	Map<DecentralizedValue, Long> getLastValidatedDistantTransactionIDs() throws DatabaseException {
+	Map<DecentralizedValue, Long> getLastValidatedLocalTransactionIDs() throws DatabaseException {
 		return getDatabaseWrapper()
 				.runSynchronizedTransaction(new SynchronizedTransaction<Map<DecentralizedValue, Long>>() {
 
@@ -495,7 +495,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							@Override
 							public boolean nextRecord(Record _record) {
 								if (!_record.concernsLocalDatabaseHost())
-									res.put(_record.getHostID(), _record.getLastValidatedDistantTransactionID());
+									res.put(_record.getHostID(), _record.getLastValidatedLocalTransactionID());
 								return false;
 							}
 						});
@@ -618,6 +618,8 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							r.setLastValidatedDistantTransactionID(-1);
 							r.setLastValidatedLocalTransactionID(-1);
 							r = addRecord(r);
+
+
 							
 							localHost = null;
 							supportedDatabasePackages = null;

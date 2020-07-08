@@ -63,10 +63,10 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 	@DataProvider(name = "provideDataForIndirectSynchro")
 	public Object[][] provideDataForIndirectSynchro() throws DatabaseException {
 		int numberEvents = 40;
-		Object[][] res = new Object[numberEvents * 2 * 2 * 2][];
+		Object[][] res = new Object[numberEvents * 3][];
 		int index = 0;
 		for (boolean generateDirectConflict : new boolean[] { true, false }) {
-			boolean[] ict = generateDirectConflict ? new boolean[]{true} : new boolean[]{false};
+			boolean[] ict = generateDirectConflict ? new boolean[]{true} : new boolean[]{true, false};
 			for (boolean peersInitiallyConnected : ict) {
 				for (TableEvent<DatabaseRecord> te : provideTableEvents(numberEvents)) {
 					res[index++] = new Object[] {generateDirectConflict,

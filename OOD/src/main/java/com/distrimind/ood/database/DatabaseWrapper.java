@@ -930,7 +930,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		private void synchronizeMetaData() throws DatabaseException {
 			Map<DecentralizedValue, Long> lastIds = getHooksTransactionsTable()
-					.getLastValidatedDistantTransactionIDs();
+					.getLastValidatedLocalTransactionIDs();
 
 			try {
 				lockWrite();
@@ -4077,14 +4077,15 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (_class_table == null)
 				throw new NullPointerException("The parameter _class_table is a null pointer !");
 			//Database db = this.sql_database.get(_class_table.getPackage());
-
+			if (_class_table.getPackage().equals(getClass().getPackage()))
+				databaseVersion=1;
 			Database db=sql_database.get(_class_table.getPackage());
 			DatabasePerVersion dpv;
 
 			if (db == null) {
 				if (_class_table.getPackage().equals(this.getClass().getPackage()) && (actualDatabaseLoading == null
 						|| !actualDatabaseLoading.getConfiguration().getPackage().equals(_class_table.getPackage()) )) {
-					loadDatabase(new DatabaseConfiguration(_class_table.getPackage(), internalDatabaseClassesList), true, databaseVersion);
+					loadDatabase(new DatabaseConfiguration(_class_table.getPackage(), internalDatabaseClassesList), true, 1);
 					if (databaseVersion<0)
 						databaseVersion=getCurrentDatabaseVersion(_class_table.getPackage());
 					db=sql_database.get(_class_table.getPackage());
@@ -4544,9 +4545,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			final boolean createDatabaseIfNecessaryAndCheckIt, int databaseVersion) throws DatabaseException {
 		if (configuration == null)
 			throw new NullPointerException("tables is a null pointer.");
+		boolean internalPackage=configuration.getPackage().equals(this.getClass().getPackage());
+		if (!internalPackage)
+			getTableInstance(DatabaseTable.class, databaseVersion);
 
-		if (!configuration.getPackage().equals(this.getClass().getPackage()))
-			getDatabaseTable();
 		try  {
 			lockWrite();
 
@@ -4570,11 +4572,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				assert actualDatabaseLoading!=null;
 				if (databaseVersion==-1)
 					databaseVersion=getCurrentDatabaseVersion(configuration.getPackage());
-				if (allNotFound) {
+				if (!internalPackage && allNotFound) {
 
 					try {
 						DatabaseLifeCycles callable = configuration.getDatabaseLifeCycles();
 						this.actualDatabaseLoading=null;
+
 						Collection<DatabaseHooksTable.Record> hosts=getSynchronizer().resetSynchronizerAndGetAllHosts();
 						this.actualDatabaseLoading=actualDatabaseLoading;
 						int currentVersion=getCurrentDatabaseVersion(configuration.getPackage());
@@ -4717,11 +4720,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					for (Table<?> t : list_tables) {
 						t.initializeStep3();
 					}
+					Database actualDatabaseLoading=DatabaseWrapper.this.actualDatabaseLoading;
 					DatabaseTable.Record dbt=getDatabaseTable().getRecord("databasePackageName", configuration.getPackage().getName());
 					if (dbt==null)
 					{
 						getDatabaseTable().addRecord(new DatabaseTable.Record(configuration.getPackage().getName()));
 					}
+					DatabaseWrapper.this.actualDatabaseLoading=actualDatabaseLoading;
 					return allNotFound;
 
 				} /*catch (ClassNotFoundException e) {

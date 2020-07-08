@@ -1510,20 +1510,22 @@ public abstract class CommonDecentralizedTests {
 	@DataProvider(name = "provideDataForSynchroBetweenTwoPeers")
 	public Object[][] provideDataForSynchroBetweenTwoPeers() throws DatabaseException {
 		int numberEvents = 40;
-		Object[][] res = new Object[numberEvents * 2 * 2 * 2][];
+		Object[][] res = new Object[numberEvents * 2 * 3][];
 		int index = 0;
 		for (boolean exceptionDuringTransaction : new boolean[] { false, true }) {
 			boolean[] gdc = exceptionDuringTransaction ? new boolean[] { false } : new boolean[] { true, false };
 			for (boolean generateDirectConflict : gdc) {
 				for (boolean peersInitiallyConnected : new boolean[] { true, false }) {
-					for (TableEvent<DatabaseRecord> te : provideTableEvents(numberEvents)) {
+					Collection<TableEvent<DatabaseRecord>> l=provideTableEvents(numberEvents);
+					assert l.size()==numberEvents;
+					for (TableEvent<DatabaseRecord> te : l) {
 						res[index++] = new Object[] {exceptionDuringTransaction,
 								generateDirectConflict, peersInitiallyConnected, te };
 					}
 				}
 			}
-
 		}
+		assert index==res.length;
 		return res;
 	}
 

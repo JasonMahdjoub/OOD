@@ -287,7 +287,8 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 													 final ArrayList<DecentralizedValue> hostAlreadySynchronized, final DatabaseHooksTable.Record hook,
 													 boolean force) throws DatabaseException {
 		final Set<String> packageSynchroOneTime = new HashSet<>();
-
+		System.out.println(hook.getHostID());
+		assert getDatabaseHooksTable().getRecord("id", hook.getID())!=null;
 		getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
 
 			@Override
@@ -380,6 +381,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 		if (tablesDone.contains(tableClass))
 			return;
 
+
 		final Table<DatabaseRecord> table = (Table<DatabaseRecord>) getDatabaseWrapper().getTableInstance(tableClass);
 		if (!table.supportSynchronizationWithOtherPeers())
 			return;
@@ -391,6 +393,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 					(Class<? extends Table<?>>) (fa.getPointedTable().getClass()), tablesDone, currentEventPos,
 					maxEvents, force);
 		}
+
 		table.getRecords(new Filter<DatabaseRecord>() {
 
 			@Override
@@ -426,6 +429,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 	protected void addTransactionToSynchronizeTables(final String databasePackage, final DatabaseHooksTable.Record hook,
 			final boolean force) throws DatabaseException {
 		// final long previousLastTransacionID=getIDTable().getLastTransactionID();
+
 		DatabaseTransactionEventsTable.Record tr = new DatabaseTransactionEventsTable.Record();
 		tr.id = getTransactionIDTable().getAndIncrementTransactionID();
 		tr.timeUTC=System.currentTimeMillis();
