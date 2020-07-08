@@ -166,9 +166,15 @@ public class AndroidSQLiteDatabaseWrapper extends DatabaseWrapper {
     }
 
     @Override
-    public String getAutoIncrementPart(long startWith) {
+    protected String getSequenceQueryCreation(String sqlTableName, String sqlFieldName, long startWith) {
+        return null;
+    }
+
+    @Override
+    protected String getAutoIncrementPart(String sqlTableName, String sqlFieldName, long startWith) {
         return "";
     }
+
 
     @Override
     protected boolean supportForeignKeys() {
@@ -255,6 +261,26 @@ public class AndroidSQLiteDatabaseWrapper extends DatabaseWrapper {
     @Override
     protected int getVarCharLimit() {
         return 2147483647;
+    }
+
+    @Override
+    protected String getBinaryBaseWord() {
+        return "BLOB";
+    }
+
+    @Override
+    protected String getBlobBaseWord() {
+        return "BLOB";
+    }
+
+    @Override
+    protected String getVarBinaryType(long limit) {
+        return "BINARY";
+    }
+
+    @Override
+    protected String getLongVarBinaryType(long limit) {
+        return "VARBINARY";
     }
 
     @Override
