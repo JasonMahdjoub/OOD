@@ -160,7 +160,7 @@ public abstract class CommonDecentralizedTests {
 
 		public DatabaseEventToSend getDatabaseEventToSend() throws IOException, ClassNotFoundException {
 			try (RandomByteArrayInputStream bais = new RandomByteArrayInputStream(eventToSend)) {
-				DatabaseEventToSend res=bais.readObject(false, P2PDatabaseEventToSend.class);
+				DatabaseEventToSend res=bais.readObject(false, DatabaseEventToSend.class);
 				if (res instanceof BigDataEventToSendWithCentralDatabaseBackup) {
 					Assert.assertNotNull(this.joinedData);
 					((BigDataEventToSendWithCentralDatabaseBackup) res).setPartInputStream(new RandomByteArrayInputStream(joinedData));
