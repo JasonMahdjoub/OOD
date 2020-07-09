@@ -460,7 +460,7 @@ public class TestDatabaseBackupRestore {
 				nbReferenceFiles = internalBRM.getReferenceFileCount();
 			}
 			addAndRemoveData(wrapper, 3);
-			Thread.sleep(200);
+			Thread.sleep(250);
 			addAndRemoveData(wrapper, 3);
 			if (internalBRM!=null) {
 				Assert.assertTrue(nbPartFiles<internalBRM.getPartFilesCount(), "nb="+nbPartFiles+" ; internalNb="+internalBRM.getPartFilesCount()+" ; maxBackupFileAgeInMs="+internalBRM.getBackupConfiguration().getMaxBackupFileAgeInMs());

@@ -2162,7 +2162,6 @@ public class BackupRestoreManager {
 
 	Transaction startTransaction(boolean transactionToSynchronize) throws DatabaseException {
 		synchronized (this) {
-
 			if (!isReady())
 				return null;
 			int oldLength;

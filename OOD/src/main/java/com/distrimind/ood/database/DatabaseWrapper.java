@@ -3153,9 +3153,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		boolean validateTmpTransaction() throws DatabaseException {
 			final HashMap<Package, Long> transactionsID=new HashMap<>();
+
 			try {
 				boolean res=transactionToSynchronize;
-				if (res) {
+				if (transactionToSynchronize) {
 					if (eventsStoredIntoMemory) {
 
 						res = runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
@@ -3335,23 +3336,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 					}
 				}
-				if (res) {
-					for (Map.Entry<Package, BackupRestoreManager.Transaction> e : backupManager.entrySet()) {
+				for (Map.Entry<Package, BackupRestoreManager.Transaction> e : backupManager.entrySet()) {
 
-						BackupRestoreManager.Transaction t = e.getValue();
-						if (t != null) {
-							long tid=transactionsID.get(e.getKey());
-							t.validateTransaction(tid);
-						}
-					}
-
-				}
-				else
-				{
-					for (Map.Entry<Package, BackupRestoreManager.Transaction> e : backupManager.entrySet()) {
-						BackupRestoreManager.Transaction t = e.getValue();
-						if (t != null)
-							t.cancelTransaction();
+					BackupRestoreManager.Transaction t = e.getValue();
+					if (t != null) {
+						Long tid=transactionsID.get(e.getKey());
+						t.validateTransaction(tid==null?-1:tid);
 					}
 				}
 				/*if (min==Long.MIN_VALUE)
@@ -4554,6 +4544,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		boolean internalPackage=configuration.getPackage().equals(this.getClass().getPackage());
 		if (!internalPackage)
 			getTableInstance(DatabaseTable.class, databaseVersion);
+		else
+			databaseVersion=0;
 
 		try  {
 			lockWrite();
@@ -4629,7 +4621,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					sd.put(configuration.getPackage(), actualDatabaseLoading);
 				}
 				else {
-					db.tables_per_versions.put(databaseVersion, actualDatabaseLoading.tables_per_versions.get(databaseVersion));
+					DatabasePerVersion dpv=actualDatabaseLoading.tables_per_versions.get(databaseVersion);
+					if (dpv==null)
+						throw new InternalError();
+
+					db.tables_per_versions.put(databaseVersion, dpv);
 					//db.updateCurrentVersion();
 				}
 				sql_database = sd;
@@ -4704,8 +4700,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 								+ getLongPackageName(configuration.getPackage()) + "', '" + version + "')" + getSqlComma());
 						st.close();
 					}
-					else
-						version=getCurrentDatabaseVersion(configuration.getPackage(), false, version);
+					else {
+						int v = getCurrentDatabaseVersion(configuration.getPackage(), false, version);
+						if (version==-1)
+							version=v;
+					}
 
 
 
@@ -4729,14 +4728,15 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					for (Table<?> t : list_tables) {
 						t.initializeStep3();
 					}
-					Database actualDatabaseLoading=DatabaseWrapper.this.actualDatabaseLoading;
-					DatabaseWrapper.this.actualDatabaseLoading=null;
-					DatabaseTable.Record dbt=getDatabaseTable().getRecord("databasePackageName", configuration.getPackage().getName());
-					if (dbt==null)
-					{
-						getDatabaseTable().addRecord(new DatabaseTable.Record(configuration.getPackage().getName()));
+					if (!configuration.getPackage().equals(this.getClass().getPackage())) {
+						Database actualDatabaseLoading = DatabaseWrapper.this.actualDatabaseLoading;
+						DatabaseWrapper.this.actualDatabaseLoading = null;
+						DatabaseTable.Record dbt = getDatabaseTable().getRecord("databasePackageName", configuration.getPackage().getName());
+						if (dbt == null) {
+							getDatabaseTable().addRecord(new DatabaseTable.Record(configuration.getPackage().getName()));
+						}
+						DatabaseWrapper.this.actualDatabaseLoading = actualDatabaseLoading;
 					}
-					DatabaseWrapper.this.actualDatabaseLoading=actualDatabaseLoading;
 					return allNotFound;
 
 				} /*catch (ClassNotFoundException e) {
