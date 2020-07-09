@@ -66,8 +66,8 @@ public class H2TestAutoIncrement {
 			Assert.assertEquals(ps.executeUpdate(), 1);
 			ResultSet r=ps.getGeneratedKeys();
 			Assert.assertTrue(r.next());
-			Assert.assertEquals(r.getMetaData().getColumnCount(), 1 );
-			Assert.assertEquals(r.getLong(1), 1);
+			Assert.assertEquals(r.getMetaData().getColumnCount(), 2 );
+			Assert.assertEquals(r.getLong(2), 1);
 			ps.close();
 
 		} catch (SQLException e) {

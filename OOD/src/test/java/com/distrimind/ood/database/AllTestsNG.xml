@@ -9,9 +9,11 @@
  -->
 	<test name="testCentralizedDatabase">
 		<classes>
+			<class name="com.distrimind.ood.database.H2TestAutoIncrement" />
 			<class name="com.distrimind.ood.database.H2TestDatabase" />
 			<class name="com.distrimind.ood.database.HSQLDBTestDatabase" />
 			<class name="com.distrimind.ood.database.MySQLTestDatabase" />
+
 		</classes>
 	</test>
 	<test name="testBackupRestore">
