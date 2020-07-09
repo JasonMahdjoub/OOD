@@ -883,12 +883,12 @@ public class TestDatabaseBackupRestore {
 		Assert.assertTrue(start<=manager.getFirstTransactionUTCInMs());
 		Assert.assertTrue(manager.getFirstTransactionUTCInMs()<=manager.getLastTransactionUTCInMS());
 		start=manager.getFirstTransactionUTCInMs();
-		Thread.sleep(200);
+		Thread.sleep(250);
 		addAndRemoveData(wrapper, 100);
-		Thread.sleep(1000);
+		Thread.sleep(1100);
 		manager.cleanOldBackups();
 		Assert.assertTrue(start<manager.getFirstTransactionUTCInMs());
-		Assert.assertTrue(manager.getFirstTransactionUTCInMs()<=manager.getLastTransactionUTCInMS());
+		Assert.assertTrue(manager.getFirstTransactionUTCInMs()<=manager.getLastTransactionUTCInMS(), "first="+manager.getFirstTransactionUTCInMs()+", last="+manager.getLastTransactionUTCInMS());
 	}
 
 

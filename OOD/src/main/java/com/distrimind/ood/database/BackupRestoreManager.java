@@ -1357,19 +1357,19 @@ public class BackupRestoreManager {
 			{
 				Long l=fileReferenceTimeStamps.get(i);
 				if (l<limitUTC) {
-					int istart=fileTimeStamps.indexOf(l)+1;
-					int iend=fileTimeStamps.indexOf(fileReferenceTimeStamps.get(i+1));
+					int istart=fileTimeStamps.indexOf(l);
+					int iend=fileTimeStamps.indexOf(fileReferenceTimeStamps.get(i+1))-1;
 					if (iend<0)
 						throw new IllegalAccessError();
 					if (iend<istart)
 						throw new IllegalAccessError();
-					long lastFile=fileTimeStamps.get(iend-1);
-					long limit=extractLastBackupEventUTC(getFile(lastFile, istart==iend));
+					long lastTimeUTC=fileTimeStamps.get(iend);
+					long limit=extractLastBackupEventUTC(getFile(lastTimeUTC, istart==iend));
 					if ( limit>= limitUTC) {
 						continue;
 					}
 
-					concretLimitUTC = lastFile;
+					concretLimitUTC = lastTimeUTC;
 					break;
 				}
 			}
