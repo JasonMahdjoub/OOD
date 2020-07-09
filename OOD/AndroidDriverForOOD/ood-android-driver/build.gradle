@@ -35,11 +35,11 @@ repositories {
 }
 
 android {
-    compileSdkVersion 29
+    compileSdkVersion 30
 
     defaultConfig {
-        minSdkVersion 21
-        targetSdkVersion 29
+        minSdkVersion 24
+        targetSdkVersion 30
         versionCode 1
         versionName "1.0"
 
@@ -62,17 +62,17 @@ android {
         androidTest.resources.srcDirs += '../../src/test/resources'
     }
     compileOptions {
-        sourceCompatibility = 1.7
-        targetCompatibility = 1.7
+        sourceCompatibility = 1.8
+        targetCompatibility = 1.8
     }
-    buildToolsVersion = '29.0.2'
+    buildToolsVersion = '30.0.1'
 
 }
 apply from: '../../common_dependencies.gradle'
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    androidTestImplementation 'org.testng:testng:7.1.0'
-    androidTestImplementation(group:'com.h2database', name:'h2', version:'1.4.200')
+    androidTestImplementation 'org.testng:testng:6.14.3'
+    androidTestImplementation(group:'com.h2database', name:'h2', version:'1.4.199')
     implementation 'org.sqldroid:sqldroid:1.0.3'
     implementation 'androidx.appcompat:appcompat:1.1.0'
     testImplementation 'junit:junit:4.13'
