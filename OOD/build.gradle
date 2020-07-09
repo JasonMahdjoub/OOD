@@ -56,15 +56,15 @@ repositories {
 apply from: 'common_dependencies.gradle'
 dependencies {
 
-    testImplementation(group:'org.hsqldb', name: 'hsqldb', version: '2.5.0')
+    testImplementation(group:'org.hsqldb', name: 'hsqldb', version: '2.5.1')
     testImplementation(group:'org.apache.derby', name: 'derby', version: '10.15.2.0')
     testImplementation(group:'com.h2database', name:'h2', version:'1.4.200')
-    testImplementation(group: 'mysql', name: 'mysql-connector-java', version: '8.0.19')
-    testImplementation(group:'org.postgresql', name:'postgresql', version:'42.2.14.jre7')
+    testImplementation(group: 'mysql', name: 'mysql-connector-java', version: '8.0.20')
+    testImplementation(group:'org.postgresql', name:'postgresql', version:'42.2.14')
 
 
 }
-def javaVersion="7"
+def javaVersion="8"
 sourceCompatibility = javaVersion
 targetCompatibility= javaVersion
 
