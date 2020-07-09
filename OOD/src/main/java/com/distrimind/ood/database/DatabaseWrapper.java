@@ -4543,7 +4543,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			throw new NullPointerException("tables is a null pointer.");
 		boolean internalPackage=configuration.getPackage().equals(this.getClass().getPackage());
 		if (!internalPackage)
-			getTableInstance(DatabaseTable.class, databaseVersion);
+			if (createDatabaseIfNecessaryAndCheckIt)
+				getTableInstance(DatabaseTable.class, databaseVersion);
 		else
 			databaseVersion=0;
 

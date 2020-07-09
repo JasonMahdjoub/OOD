@@ -32,10 +32,7 @@ Adapt into your build.gradle file, the next code :
 		...
 		compile(group:'com.distrimind.ood', name: 'OOD', version: '//PROJECT_VERSION//')
 		//choose one of these optional drivers for H2 database
-			//optional and under Android
-			testImplementation(group:'com.h2database', name: 'h2', version: '1.4.199')
-			//optional and under JDK8 
-			testImplementation(group:'com.h2database', name: 'h2', version: '1.4.200')
+		testImplementation(group:'com.h2database', name: 'h2', version: '1.4.200')
 		//optional and under JDK8 or newer
 		testImplementation(group:'org.hsqldb', name: 'hsqldb', version: '2.5.1')
 		//optional and under JDK8 or newer
@@ -66,9 +63,6 @@ Adapt into your pom.xml file, the next code :
 					<groupId>com.h2database</groupId>
 					<artifactId>h2</artifactId>
 
-					<!-- under Android or newer -->
-					<version>1.4.199</version>
-						
 					<!-- under JDK 8 or newer -->
 					<version>1.4.200</version>
 				</dependency>

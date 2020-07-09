@@ -56,6 +56,7 @@ import java.lang.reflect.Modifier;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Map;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -80,22 +81,26 @@ public abstract class AbstractAndroidTestDatabase<DW extends DatabaseWrapper> ex
     }
 
     public AbstractAndroidTestDatabase() throws DatabaseException, NoSuchAlgorithmException, NoSuchProviderException {
-        try{
-            Field outField = System.class.getDeclaredField("out");
+        /*try {
             Field modifiersField = Field.class.getDeclaredField("accessFlags");
             modifiersField.setAccessible(true);
             modifiersField.set(outField, outField.getModifiers() & ~Modifier.FINAL);
+        }
+        catch(NoSuchFieldException | IllegalAccessException e){
+            e.printStackTrace();
+        }
+        try{
+            Field outField = System.class.getDeclaredField("out");
+
             outField.setAccessible(true);
             outField.set(null, new PrintStream(new RedirectLogOutputStream("testood")));
             Field errField = System.class.getDeclaredField("out");
-            modifiersField.set(errField, errField.getModifiers() & ~Modifier.FINAL);
+            errField.set(errField, errField.getModifiers() & ~Modifier.FINAL);
             errField.setAccessible(true);
             errField.set(null, new PrintStream(new RedirectLogErrorStream("testood")));
-        }catch(NoSuchFieldException e){
+        }catch(NoSuchFieldException | IllegalAccessException e){
             e.printStackTrace();
-        }catch(IllegalAccessException e){
-            e.printStackTrace();
-        }
+        }*/
     }
 
     abstract DatabaseFactory<DW> getDatabaseFactoryA();

@@ -75,11 +75,14 @@ public class OOD {
 			c = Calendar.getInstance();
 			c.set(2020, Calendar.MARCH, 30);
 			Description d = new Description((short)3, (short)0, (short)0, Version.Type.Stable, (short)1, c.getTime());
-			d.addItem("Update Utils to 4.14.0");
+			d.addItem("Update Utils to 4.15.2");
+			d.addItem("Update HSQLDB to 2.5.1");
 			d.addItem("Implementation of data synchronization with central database backup");
 			d.addItem("Make OOD compatible with Android");
 			d.addItem("Implementation of driver for MySQL");
 			d.addItem("Implementation of driver for Android H2 Database");
+			d.addItem("Implementation of driver for PostgreSQL");
+			d.addItem("Compatible with Java 8 and newer");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();

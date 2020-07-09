@@ -455,7 +455,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 					if (fa.isForeignKey()) {
 						try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
 								"select REFERENCED_TABLE_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
-										+ table.getSqlTableName() + "' AND REFERENCED_TABLE_NAME='" + sf.pointed_table
+										+ table.getSqlTableName() + "' AND REFERENCED_TABLE_NAME='" + sf.pointed_table_without_quote
 										+ "' AND REFERENCED_COLUMN_NAME='" + sf.short_pointed_field_without_quote + "' AND COLUMN_NAME='"
 										+ sf.short_field_without_quote + "'"))) {
 							if (!rq.result_set.next())

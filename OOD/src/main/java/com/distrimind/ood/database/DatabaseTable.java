@@ -57,7 +57,7 @@ final class DatabaseTable extends Table<DatabaseTable.Record> {
 	public static class Record extends DatabaseRecord
 	{
 
-		@Field(limit = SerializationTools.MAX_CLASS_LENGTH)
+		@Field(limit = 1024)
 		@PrimaryKey
 		@NotNull
 		private String databasePackageName;
