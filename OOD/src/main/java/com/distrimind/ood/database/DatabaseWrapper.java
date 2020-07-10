@@ -1523,6 +1523,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				{
 					this.random=random;
 					this.encryptionProfileProvider=encryptionProfileProvider;
+					centralBackupInitialized=true;
 					addNewDatabaseEvent(new DistantBackupCenterConnexionInitialisation(getLocalHostID()));
 				}
 			}
