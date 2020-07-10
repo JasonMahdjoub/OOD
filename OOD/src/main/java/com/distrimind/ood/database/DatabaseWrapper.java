@@ -85,7 +85,7 @@ import java.util.concurrent.locks.ReentrantLock;
 @SuppressWarnings("ThrowFromFinallyBlock")
 public abstract class DatabaseWrapper implements AutoCloseable {
 
-	private static final List<Class<?>> internalDatabaseClassesList = Arrays.<Class<?>>asList(DatabaseDistantTransactionEvent.class, DatabaseDistantEventsTable.class,
+	private static final List<Class<?>> internalDatabaseClassesList = Arrays.asList(DatabaseDistantTransactionEvent.class, DatabaseDistantEventsTable.class,
 			DatabaseEventsTable.class, DatabaseHooksTable.class, DatabaseTransactionEventsTable.class, DatabaseTransactionsPerHostTable.class, IDTable.class, DatabaseTable.class);
 	
 	
@@ -471,9 +471,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new NullPointerException();
 			if (packageString.trim().length()==0)
 				throw new IllegalArgumentException();
-			TreeSet<DatabaseBackupMetaDataPerFile> ts=metaData.get(packageString);
-			if (ts==null)
-				metaData.put(packageString, ts=new TreeSet<>());
+			TreeSet<DatabaseBackupMetaDataPerFile> ts = metaData.computeIfAbsent(packageString, k -> new TreeSet<>());
 			for (DatabaseBackupMetaDataPerFile me : ts) {
 				if (me.timeStampUTC == m.timeStampUTC)
 					return;
@@ -707,7 +705,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			for (Package p : databasePackages) {
 				packages.add(p.getName());
 			}
-			getHooksTransactionsTable().addHooks(hostID, true, false, new ArrayList<DecentralizedValue>(),
+			getHooksTransactionsTable().addHooks(hostID, true, false, new ArrayList<>(),
 					packages);
 		}
 
@@ -1105,12 +1103,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 			if (local==null)
 				throw new IllegalAccessError();
-			getHooksTransactionsTable().addHooks(local.getHostID(), true, false, new ArrayList<DecentralizedValue>(),
+			getHooksTransactionsTable().addHooks(local.getHostID(), true, false, new ArrayList<>(),
 					Arrays.asList(local.getDatabasePackageNames()));
 
 			for (DatabaseHooksTable.Record r : hosts)
 				getHooksTransactionsTable().addHooks(r.getHostID(), false,
-						replaceDistantConflictualRecords, new ArrayList<DecentralizedValue>(), Arrays.asList(r.getDatabasePackageNames()));
+						replaceDistantConflictualRecords, new ArrayList<>(), Arrays.asList(r.getDatabasePackageNames()));
 			isReliedToDistantHook();
 
 		}

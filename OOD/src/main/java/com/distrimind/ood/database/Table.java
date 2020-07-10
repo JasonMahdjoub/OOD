@@ -143,7 +143,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	final ArrayList<ForeignKeyFieldAccessor> foreign_keys_fields = new ArrayList<>();
 	ArrayList<FieldAccessor> fields;
 	private final ArrayList<FieldAccessor> fields_without_primary_and_foreign_keys = new ArrayList<>();
-	private AtomicReference<ArrayList<T>> records_instances = new AtomicReference<>(new ArrayList<T>());
+	private final AtomicReference<ArrayList<T>> records_instances = new AtomicReference<>(new ArrayList<>());
 	private final boolean is_loaded_in_memory;
 	private String table_name;
 	private int table_id=-1;
@@ -359,7 +359,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		setToRefreshNow();
 	}
 	void memoryToRefreshWithCascade() throws DatabaseException {
-		memoryToRefreshWithCascade(new HashSet<Table<?>>());
+		memoryToRefreshWithCascade(new HashSet<>());
 	}
 
 	private void memoryToRefreshWithCascade(Set<Table<?>> tables) throws DatabaseException {
@@ -466,21 +466,17 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					"Impossible to find the default constructor of the class " + class_record.getName(), e1);
 		}
 		grouped_results_constructor = AccessController
-				.doPrivileged(new PrivilegedAction<Constructor<GroupedResults>>() {
-
-					@Override
-					public Constructor<GroupedResults> run() {
-						Constructor<GroupedResults> res;
-						try {
-							res = GroupedResults.class.getDeclaredConstructor(
-									DatabaseWrapper.class, int.class, Collection.class, Class.class, String[].class);
-							res.setAccessible(true);
-							return res;
-						} catch (NoSuchMethodException | SecurityException e) {
-							e.printStackTrace();
-							System.exit(-1);
-							return null;
-						}
+				.doPrivileged((PrivilegedAction<Constructor<GroupedResults>>) () -> {
+					Constructor<GroupedResults> res;
+					try {
+						res = GroupedResults.class.getDeclaredConstructor(
+								DatabaseWrapper.class, int.class, Collection.class, Class.class, String[].class);
+						res.setAccessible(true);
+						return res;
+					} catch (NoSuchMethodException | SecurityException e) {
+						e.printStackTrace();
+						System.exit(-1);
+						return null;
 					}
 				});
 
@@ -696,7 +692,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	boolean foreign_keys_to_create = false;
 
 	boolean initializeStep2(final boolean createDatabaseIfNecessaryAndCheckIt) throws DatabaseException {
-		containsLoopBetweenTables = containsLoop(new HashSet<Class<? extends Table<?>>>());
+		containsLoopBetweenTables = containsLoop(new HashSet<>());
 		/*
 		 * Load table in Sql database
 		 */
@@ -1135,7 +1131,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		try {
 			sql_connection.lockWrite();
 			isPointedByTableLoadedIntoMemory = isPointedByTableLoadedIntoMemoryInCascade(
-					list_tables_pointing_to_this_table, new ArrayList<Class<?>>());
+					list_tables_pointing_to_this_table, new ArrayList<>());
 
 			if (foreign_keys_to_create) {
 				foreign_keys_to_create = false;
@@ -1206,7 +1202,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				}
 
 			}
-			supportSynchronizationWithOtherPeers = isGloballyDecentralizable(new HashSet<Table<?>>());
+			supportSynchronizationWithOtherPeers = isGloballyDecentralizable(new HashSet<>());
 			hasBackupMananager=sql_connection.getBackupRestoreManager(getClass().getPackage())!=null;
 		} finally {
 			sql_connection.unlockWrite();
@@ -1632,7 +1628,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 	private class SqlGeneralSelectQuerryWithFieldMatch extends SqlQuerry {
 		private final Map<String, Object> fields;
-		private List<FieldAccessor> fieldAccessors;
+		private final List<FieldAccessor> fieldAccessors;
 
 		SqlGeneralSelectQuerryWithFieldMatch(long rowstart, long rowlength, List<FieldAccessor> fieldAccessors, boolean loadJunctions, Map<String, Object> fields, String AndOr,
 				boolean ascendant, String[] orderByFields) {
@@ -1807,7 +1803,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	public final long getRecordsNumber(Filter<T> _filter, String whereCondition, Object... parameters)
 			throws DatabaseException {
 		return getRecordsNumber(_filter, whereCondition,
-				whereCondition == null ? new HashMap<String, Object>() : convertToMap(parameters));
+				whereCondition == null ? new HashMap<>() : convertToMap(parameters));
 	}
 
 	/**
@@ -1823,7 +1819,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 */
 	public final long getRecordsNumber(String whereCondition, Object... parameters) throws DatabaseException {
 		return getRecordsNumber(whereCondition,
-				whereCondition == null ? new HashMap<String, Object>() : convertToMap(parameters));
+				whereCondition == null ? new HashMap<>() : convertToMap(parameters));
 	}
 
 
@@ -2027,7 +2023,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			return rowcount;
 		} else {
 			HashMap<Integer, Object> sqlParameters = new HashMap<>();
-			String sqlQuery = rule.translateToSqlQuery(this, parameters, sqlParameters, new HashSet<TableJunction>())
+			String sqlQuery = rule.translateToSqlQuery(this, parameters, sqlParameters, new HashSet<>())
 					.toString();
 			final AtomicLong rowcount = new AtomicLong(0);
 			getListRecordsFromSqlConnection(new Runnable() {
@@ -2152,7 +2148,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * 
 	 */
 	public final FieldAccessor getFieldAccessor(String fieldName) {
-		return getFieldAccessor(fieldName, new HashSet<RuleInstance.TableJunction>());
+		return getFieldAccessor(fieldName, new HashSet<>());
 	}
 	public static class FieldAccessorValue
 	{
@@ -2173,7 +2169,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 	}
 	public FieldAccessorValue getFieldAccessorAndValue(Object record, String fieldName) throws DatabaseException {
-		return getFieldAccessorAndValue(record, fieldName, new HashSet<RuleInstance.TableJunction>());
+		return getFieldAccessorAndValue(record, fieldName, new HashSet<>());
 	}
 
 
@@ -2450,7 +2446,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * @since 1.2
 	 */
 	public final ArrayList<T> getOrderedRecords(boolean _ascendant, String... _fields) throws DatabaseException {
-		return getOrderedRecords(null, new HashMap<String, Object>(), _ascendant, _fields);
+		return getOrderedRecords(null, new HashMap<>(), _ascendant, _fields);
 	}
 
 	/**
@@ -2478,7 +2474,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 */
 	public final ArrayList<T> getOrderedRecords(final Filter<T> _filter, boolean _ascendant, String... _fields)
 			throws DatabaseException {
-		return getOrderedRecords(_filter, null, new HashMap<String, Object>(), _ascendant, _fields);
+		return getOrderedRecords(_filter, null, new HashMap<>(), _ascendant, _fields);
 	}
 
 	/**
@@ -2511,7 +2507,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	public final ArrayList<T> getOrderedRecords(final Filter<T> _filter, String whereCondition, Object[] parameters,
 			boolean _ascendant, String... _fields) throws DatabaseException {
 		return getOrderedRecords(_filter, whereCondition,
-				whereCondition == null ? new HashMap<String, Object>() : convertToMap(parameters), _ascendant, _fields);
+				whereCondition == null ? new HashMap<>() : convertToMap(parameters), _ascendant, _fields);
 	}
 
 	/**
@@ -2594,7 +2590,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			} else {
 				HashMap<Integer, Object> sqlParameters = new HashMap<>();
 				String sqlQuery = rule == null ? null
-						: rule.translateToSqlQuery(this, parameters, sqlParameters, new HashSet<TableJunction>())
+						: rule.translateToSqlQuery(this, parameters, sqlParameters, new HashSet<>())
 								.toString();
 				final ArrayList<T> res = new ArrayList<>();
 				getListRecordsFromSqlConnection(new Runnable() {
@@ -2933,7 +2929,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			} else {
 				HashMap<Integer, Object> sqlParameters = new HashMap<>();
 				String sqlQuery = rule == null ? null
-						: rule.translateToSqlQuery(this, parameters, sqlParameters, new HashSet<TableJunction>())
+						: rule.translateToSqlQuery(this, parameters, sqlParameters, new HashSet<>())
 								.toString();
 				final ArrayList<T> res = new ArrayList<>();
 				getListRecordsFromSqlConnection(new Runnable() {
@@ -2984,7 +2980,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	}
 
 	private final class Comparator {
-		private ArrayList<FieldComparator> accessors = new ArrayList<>();
+		private final ArrayList<FieldComparator> accessors = new ArrayList<>();
 		private final boolean ascendant;
 
 		public Comparator(boolean _ascendant, String... _fields) throws ConstraintsNotRespectedDatabaseException {
@@ -3316,7 +3312,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	public final ArrayList<T> getRecords(final Filter<T> _filter, String whereCondition, Object... parameters)
 			throws DatabaseException {
 		return getRecords(_filter, whereCondition,
-				whereCondition == null ? new HashMap<String, Object>() : convertToMap(parameters));
+				whereCondition == null ? new HashMap<>() : convertToMap(parameters));
 	}
 
 	/**
@@ -3363,7 +3359,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	public final ArrayList<T> getPaginedRecords(long rowpos, long rowlength, final Filter<T> _filter,
 			String whereCondition, Object... parameters) throws DatabaseException {
 		return getPaginedRecords(rowpos, rowlength, _filter, whereCondition,
-				whereCondition == null ? new HashMap<String, Object>() : convertToMap(parameters));
+				whereCondition == null ? new HashMap<>() : convertToMap(parameters));
 	}
 
 	/**
@@ -3416,7 +3412,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 */
 	public final ArrayList<T> getRecords(String whereCondition, Object... parameters) throws DatabaseException {
 		return getPaginedRecords(-1, -1, whereCondition,
-				whereCondition == null ? new HashMap<String, Object>() : convertToMap(parameters));
+				whereCondition == null ? new HashMap<>() : convertToMap(parameters));
 	}
 
 	/**
@@ -3515,7 +3511,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			}
 		} else {
 			HashMap<Integer, Object> sqlParameters = new HashMap<>();
-			String sqlQuery = rule.translateToSqlQuery(this, parameters, sqlParameters, new HashSet<TableJunction>())
+			String sqlQuery = rule.translateToSqlQuery(this, parameters, sqlParameters, new HashSet<>())
 					.toString();
 			final AtomicInteger pos = new AtomicInteger(0);
 			getListRecordsFromSqlConnection(new Runnable() {
@@ -5087,7 +5083,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		{
 			try (Lock ignored = new WriteLock(this)) {
 
-				return removeRecordsWithCascade(new SimpleAllFieldsFilter(-1,-1,true, null, _fields, fields), null,new HashMap<String, Object>(), false);
+				return removeRecordsWithCascade(new SimpleAllFieldsFilter(-1,-1,true, null, _fields, fields), null, new HashMap<>(), false);
 			} catch (Exception e) {
 				throw DatabaseException.getDatabaseException(e);
 			}
@@ -5142,7 +5138,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		{
 			try (Lock ignored = new WriteLock(this)) {
 				return removeRecordsWithCascade(new MultipleAllFieldsFilter(-1,-1,true, null, fields, _records), null,
-						new HashMap<String, Object>(), false);
+						new HashMap<>(), false);
 			} catch (Exception e) {
 				throw DatabaseException.getDatabaseException(e);
 			}
@@ -5201,7 +5197,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
     private long removeRecordsWithOneOfFieldsWithCascade(Map<String, Object> _fields,
                                                          boolean _is_already_sql_transaction) throws DatabaseException {
 		return removeRecordsWithCascade(new SimpleOneOfFieldsFilter(-1,-1,true, null, _fields, fields), null,
-				new HashMap<String, Object>(), _is_already_sql_transaction);
+				new HashMap<>(), _is_already_sql_transaction);
 	}
 
 	/**
@@ -5266,7 +5262,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		if (_records.length == 0)
 			throw new NullPointerException("The parameter _records is an empty array !");
 		return removeRecordsWithCascade(new MultipleOneOfFieldsFilter(-1,-1,true, null, fields, _records), null,
-				new HashMap<String, Object>(), is_already_in_transaction);
+				new HashMap<>(), is_already_in_transaction);
 	}
 
 	private HashMap<String, Object> getSqlPrimaryKeys(T _record) throws DatabaseException {
@@ -5327,7 +5323,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			public boolean nextRecord(T _record) {
 				return true;
 			}
-		}, whereCommand, whereCommand == null ? new HashMap<String, Object>() : convertToMap(parameters));
+		}, whereCommand, whereCommand == null ? new HashMap<>() : convertToMap(parameters));
 	}
 
 	/**
@@ -5350,7 +5346,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	public final long removeRecords(final Filter<T> _filter, String whereCommand, Object... parameters)
 			throws DatabaseException {
 		return removeRecords(_filter, whereCommand,
-				whereCommand == null ? new HashMap<String, Object>() : convertToMap(parameters));
+				whereCommand == null ? new HashMap<>() : convertToMap(parameters));
 	}
 
 	/**
@@ -5432,10 +5428,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 			@Override
 			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
-				HashMap<Integer, Object> sqlParameters = rule==null?null:new HashMap<Integer, Object>();
+				HashMap<Integer, Object> sqlParameters = rule==null?null: new HashMap<>();
 				String sqlQuery = "DELETE FROM "+getSqlTableName();
 				if (rule != null) {
-					sqlQuery+=" WHERE "+ rule.translateToSqlQuery(Table.this, parameters, sqlParameters, new HashSet<TableJunction>())
+					sqlQuery+=" WHERE "+ rule.translateToSqlQuery(Table.this, parameters, sqlParameters, new HashSet<>())
 							.toString();
 				}
 				sqlQuery+=sql_connection.getSqlComma();
@@ -5541,7 +5537,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				HashMap<Integer, Object> sqlParameters = new HashMap<>();
 				String sqlQuery = null;
 				if (rule.isIndependantFromOtherTables(Table.this)) {
-					sqlQuery = rule.translateToSqlQuery(Table.this, parameters, sqlParameters, new HashSet<TableJunction>())
+					sqlQuery = rule.translateToSqlQuery(Table.this, parameters, sqlParameters, new HashSet<>())
 							.toString();
 				}
 
@@ -5912,7 +5908,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 *             if parameters are null pointers.
 	 */
 	public final long removeRecordsWithCascade(final Filter<T> _filter) throws DatabaseException {
-		return removeRecordsWithCascade(_filter, null, new HashMap<String, Object>());
+		return removeRecordsWithCascade(_filter, null, new HashMap<>());
 	}
 
 
@@ -5938,7 +5934,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	public final long removeRecordsWithCascade(final Filter<T> _filter, String whereCommand, Object... parameters)
 			throws DatabaseException {
 		return removeRecordsWithCascade(_filter, whereCommand,
-				whereCommand == null ? new HashMap<String, Object>() : convertToMap(parameters));
+				whereCommand == null ? new HashMap<>() : convertToMap(parameters));
 	}
 
 	/**
@@ -5994,7 +5990,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			public boolean nextRecord(T _record) {
 				return true;
 			}
-		}, whereCommand, whereCommand == null ? new HashMap<String, Object>() : convertToMap(parameters));
+		}, whereCommand, whereCommand == null ? new HashMap<>() : convertToMap(parameters));
 	}
 
 	@SafeVarargs
@@ -6186,7 +6182,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				String sqlQuery = null;
 				if (rule != null && rule.isIndependantFromOtherTables(Table.this)) {
 					sqlQuery = rule
-							.translateToSqlQuery(Table.this, parameters, sqlParameters, new HashSet<TableJunction>())
+							.translateToSqlQuery(Table.this, parameters, sqlParameters, new HashSet<>())
 							.toString();
 				}
 
@@ -8082,7 +8078,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	public final void updateRecords(final AlterRecordFilter<T> _filter, String whereCommand, Object... parameters)
 			throws DatabaseException {
 		updateRecords(_filter, whereCommand,
-				whereCommand == null ? new HashMap<String, Object>() : convertToMap(parameters));
+				whereCommand == null ? new HashMap<>() : convertToMap(parameters));
 	}
 
 	private Map<String, Object> convertToMap(Object... parameters) {
@@ -8281,7 +8277,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					HashMap<Integer, Object> sqlParameters = new HashMap<>();
 					String sqlQuery = null;
 					if (rule != null && rule.isIndependantFromOtherTables(Table.this)) {
-						sqlQuery = rule.translateToSqlQuery(Table.this, parameters, sqlParameters, new HashSet<TableJunction>())
+						sqlQuery = rule.translateToSqlQuery(Table.this, parameters, sqlParameters, new HashSet<>())
 								.toString();
 					}
 
@@ -8432,7 +8428,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						return r.get(0);*/
 					class RunnableTmp extends Runnable {
 						public T instance = null;
-						protected ArrayList<FieldAccessor> primary_keys_fields;
+						protected final ArrayList<FieldAccessor> primary_keys_fields;
 
 						public RunnableTmp(ArrayList<FieldAccessor> _primary_keys_fields) {
 							primary_keys_fields = _primary_keys_fields;
@@ -8531,11 +8527,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			throw new NullPointerException();
 		Thread thread = Thread.currentThread();
 		synchronized (actual_locks) {
-			HashMap<Table<?>, Lock> hm = actual_locks.get(thread.getId());
-			if (hm == null) {
-				hm = new HashMap<>();
-				actual_locks.put(thread.getId(), hm);
-			}
+			HashMap<Table<?>, Lock> hm = actual_locks.computeIfAbsent(thread.getId(), k -> new HashMap<>());
 			hm.put(table, lock);
 		}
 	}
@@ -8558,7 +8550,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		protected abstract void close(ArrayList<Table<?>> _comes_from_tables) throws DatabaseException;
 
 		protected static boolean indirectlyPointTo(Table<?> _table, Table<?> _pointed_table) {
-			return indirectlyPointTo(_table, _pointed_table, new ArrayList<Table<?>>());
+			return indirectlyPointTo(_table, _pointed_table, new ArrayList<>());
 		}
 
 		private static boolean indirectlyPointTo(Table<?> _table, Table<?> _pointed_table,
@@ -8593,7 +8585,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 	static class WriteLock extends Lock {
 		public WriteLock(Table<?> _current_table) throws DatabaseException {
-			this(_current_table, new ArrayList<Table<?>>(20), _current_table);
+			this(_current_table, new ArrayList<>(20), _current_table);
 		}
 
 		protected WriteLock(Table<?> _current_table, ArrayList<Table<?>> _comes_from_tables,
@@ -8645,7 +8637,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 		@Override
 		public void close() throws Exception {
-			close(new ArrayList<Table<?>>(20));
+			close(new ArrayList<>(20));
 		}
 
 		@Override
@@ -8678,7 +8670,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 	private static class ReadLock extends Lock {
 		public ReadLock(Table<?> _current_table) throws DatabaseException {
-			this(_current_table, new ArrayList<Table<?>>(20));
+			this(_current_table, new ArrayList<>(20));
 		}
 
 		protected ReadLock(Table<?> _current_table, ArrayList<Table<?>> _comes_from_tables) throws DatabaseException {
@@ -8728,7 +8720,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 		@Override
 		public void close() throws Exception {
-			close(new ArrayList<Table<?>>(20));
+			close(new ArrayList<>(20));
 		}
 
 		@Override

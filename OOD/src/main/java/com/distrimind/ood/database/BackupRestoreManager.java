@@ -363,7 +363,7 @@ public class BackupRestoreManager {
 			fileTimeStamps.add(dateUTC);
 			if (referenceFile)
 				fileReferenceTimeStamps.add(dateUTC);
-
+			maxDateUTC=null;
 			return file;
 		} catch (IOException e) {
 			throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
@@ -1204,7 +1204,7 @@ public class BackupRestoreManager {
 
 
 						File file = initNewFileForBackupReference(currentBackupTime.get());
-						final AtomicReference<RandomOutputStream> rout = new AtomicReference<RandomOutputStream>(new BufferedRandomOutputStream(new RandomFileOutputStream(file, RandomFileOutputStream.AccessMode.READ_AND_WRITE), maxBufferSize, maxBuffersNumber));
+						final AtomicReference<RandomOutputStream> rout = new AtomicReference<>(new BufferedRandomOutputStream(new RandomFileOutputStream(file, RandomFileOutputStream.AccessMode.READ_AND_WRITE), maxBufferSize, maxBuffersNumber));
 						final ProgressMonitorDM progressMonitor = backupConfiguration.getProgressMonitorForBackup();
 						long t = 0;
 						if (progressMonitor != null) {
@@ -1359,10 +1359,12 @@ public class BackupRestoreManager {
 				if (l<limitUTC) {
 					int istart=fileTimeStamps.indexOf(l);
 					int iend=fileTimeStamps.indexOf(fileReferenceTimeStamps.get(i+1))-1;
+					if (istart<0)
+						throw new IllegalAccessError();
 					if (iend<0)
 						throw new IllegalAccessError();
 					if (iend<istart)
-						throw new IllegalAccessError();
+						throw new IllegalAccessError("istart="+istart+", iend="+istart);
 					long lastTimeUTC=fileTimeStamps.get(iend);
 					long limit=extractLastBackupEventUTC(getFile(lastTimeUTC, istart==iend));
 					if ( limit>= limitUTC) {
@@ -1436,6 +1438,7 @@ public class BackupRestoreManager {
 				throw DatabaseException.getDatabaseException(e);
 			}
 		}
+		maxDateUTC=null;
 		cleanCache();
 		//scanFiles();
 	}
@@ -1456,13 +1459,19 @@ public class BackupRestoreManager {
 				}
 				it.remove();
 			}
+			else
+				break;
 		}
 		for (Iterator<Long> it = fileReferenceTimeStamps.iterator(); it.hasNext(); ) {
 			Long l = it.next();
 			if (l <= fileReference) {
 				it.remove();
 			}
+			else
+				break;
 		}
+		if (fileTimeStamps.size()==0)
+			maxDateUTC=null;
 		cleanCache();
 		//scanFiles();
 	}
