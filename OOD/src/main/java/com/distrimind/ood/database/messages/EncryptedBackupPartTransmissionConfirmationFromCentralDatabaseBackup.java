@@ -68,6 +68,7 @@ public class EncryptedBackupPartTransmissionConfirmationFromCentralDatabaseBacku
 			throw new NullPointerException();
 		if (packageString.trim().length()==0)
 			throw new IllegalArgumentException();
+		this.hostDestination=hostDestination;
 		this.fileUTC = fileUTC;
 		this.lastTransactionUTC=lastTransactionUTC;
 		this.packageString=packageString;
