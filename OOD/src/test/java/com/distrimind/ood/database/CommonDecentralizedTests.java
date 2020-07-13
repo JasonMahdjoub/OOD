@@ -301,6 +301,9 @@ public abstract class CommonDecentralizedTests {
 
 	}
 	private void sendMessageFromCentralDatabaseBackup(MessageComingFromCentralDatabaseBackup message) throws DatabaseException {
+		sendMessageFromCentralDatabaseBackup(message, false);
+	}
+	private void sendMessageFromCentralDatabaseBackup(MessageComingFromCentralDatabaseBackup message, boolean onlyIfConnected) throws DatabaseException {
 
 
 		try(RandomByteArrayOutputStream out=new RandomByteArrayOutputStream())
@@ -327,7 +330,7 @@ public abstract class CommonDecentralizedTests {
 			{
 				if (d2.isConnected() && d2.dbwrapper.getSynchronizer().isInitializedWithCentralBackup())
 					d2.getReceivedDatabaseEvents().add(new DistantDatabaseEvent(db2.dbwrapper, message));
-				else
+				else if (!onlyIfConnected)
 					Assert.fail(""+message.getClass()+", is connected : "+d2.isConnected());
 				break;
 			}
@@ -349,7 +352,7 @@ public abstract class CommonDecentralizedTests {
 				for (Map.Entry<DecentralizedValue, DatabaseBackupPerHost> e : databaseBackup.entrySet())
 				{
 					if (e.getValue().connected && !e.getKey().equals(message.getHostSource()))
-						sendMessageFromCentralDatabaseBackup(new BackupChannelUpdateMessageFromCentralDatabaseBackup(e.getKey(), message.getHostSource(), toBroadcast));
+						sendMessageFromCentralDatabaseBackup(new BackupChannelUpdateMessageFromCentralDatabaseBackup(e.getKey(), message.getHostSource(), toBroadcast), true);
 				}
 
 			}
