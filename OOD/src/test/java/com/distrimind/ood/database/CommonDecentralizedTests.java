@@ -298,6 +298,26 @@ public abstract class CommonDecentralizedTests {
 
 	}
 	private void sendMessageFromCentralDatabaseBackup(MessageComingFromCentralDatabaseBackup message) throws DatabaseException {
+
+
+		try(RandomByteArrayOutputStream out=new RandomByteArrayOutputStream())
+		{
+			out.writeObject(message, false);
+			RandomInputStream ris=null;
+			if (message instanceof BigDataEventToSendWithCentralDatabaseBackup)
+			{
+				ris=((BigDataEventToSendWithCentralDatabaseBackup) message).getPartInputStream();
+			}
+			try(RandomByteArrayInputStream  in=new RandomByteArrayInputStream(out.getBytes()))
+			{
+				message=in.readObject(false, MessageComingFromCentralDatabaseBackup.class);
+				if (ris!=null)
+					((BigDataEventToSendWithCentralDatabaseBackup) message).setPartInputStream(ris);
+			}
+		} catch (IOException | ClassNotFoundException e) {
+			throw DatabaseException.getDatabaseException(e);
+		}
+
 		for (Database d2 : listDatabase)
 		{
 			if (d2.hostID.equals(message.getHostDestination()))
@@ -305,7 +325,7 @@ public abstract class CommonDecentralizedTests {
 				if (d2.isConnected() && d2.dbwrapper.getSynchronizer().isInitializedWithCentralBackup())
 					d2.getReceivedDatabaseEvents().add(new DistantDatabaseEvent(db2.dbwrapper, message));
 				else
-					Assert.fail();
+					Assert.fail(""+message.getClass()+", is connected : "+d2.isConnected());
 				break;
 			}
 		}
@@ -1081,6 +1101,10 @@ public abstract class CommonDecentralizedTests {
 	protected void connectCentralDatabaseBackupWithConnectedDatabase() throws Exception {
 		for (Database d : listDatabase)
 		{
+			if (!d.getDbwrapper().getSynchronizer().isInitialized(d.hostID)) {
+				d.dbwrapper.getSynchronizer().initLocalHostID(d.hostID, true);
+				d.setConnected(true);
+			}
 			d.dbwrapper.getSynchronizer().initConnexionWithDistantBackupCenter(random, encryptionProfileProvider);
 		}
 		exchangeMessages();

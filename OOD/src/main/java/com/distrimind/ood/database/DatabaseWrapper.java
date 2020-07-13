@@ -1519,6 +1519,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			lockWrite();
 			try
 			{
+				if (!isInitialized(getLocalHostID()))
+					throw new DatabaseException("The function initLocalHostID(DecentralizedValue, boolean) must be called first");
 				if (!centralBackupInitialized)
 				{
 					this.random=random;

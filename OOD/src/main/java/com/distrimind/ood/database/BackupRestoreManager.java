@@ -1557,6 +1557,8 @@ public class BackupRestoreManager {
 			while (in.available()>0) {
 				int startTransaction = (int) in.currentPosition();
 				int nextTransaction = in.readInt();
+				if (nextTransaction<=in.currentPosition())
+					throw new InternalError("curPos="+in.currentPosition()+", nextTransaction="+in.currentPosition());
 				if (in.readBoolean()) {
 					long transactionID=in.readLong();
 					long currentTransactionUTC = in.readLong();
@@ -1564,7 +1566,7 @@ public class BackupRestoreManager {
 				}
 				if (nextTransaction < 0)
 					break;
-				in.seek(nextTransaction);
+				in.seek(nextTransaction+4);
 			}
 			return new DatabaseBackupMetaDataPerFile(timeStamp, backupReference, transactionsMetaData);
 		} catch (IOException e) {
@@ -1777,6 +1779,7 @@ public class BackupRestoreManager {
 						while (in.available()>0) {
 							int startTransaction=(int)in.currentPosition();
 							int nextTransaction=in.readInt();
+
 							in.skipBytes(9);
 							long currentTransactionUTC=in.readLong();
 							if (currentTransactionUTC<previousTransactionUTC)
