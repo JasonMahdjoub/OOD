@@ -195,6 +195,7 @@ public abstract class CommonDecentralizedTests {
 			if (!fileBackupLocations.containsKey(message.getMetaData().getFileTimestampUTC()))
 			{
 				File f=getFile(message.getHostSource(), message.getMetaData().getPackageString(), message.getMetaData().getFileTimestampUTC(),message.getMetaData().isReferenceFile());
+
 				try(RandomFileOutputStream out=new RandomFileOutputStream(f))
 				{
 					message.getPartInputStream().transferTo(out);
@@ -253,7 +254,9 @@ public abstract class CommonDecentralizedTests {
 
 		public File getDirectory(DecentralizedValue host, String packageString)
 		{
-			return new File(centralDatabaseBackupDirectory, host.encodeString()+File.separator+packageString.replace('.', File.separatorChar));
+			File res=new File(centralDatabaseBackupDirectory, host.encodeString()+File.separator+packageString.replace('.', File.separatorChar));
+			FileTools.checkFolderRecursive(res);
+			return res;
 		}
 		public File getFile(DecentralizedValue host, String packageString, long timeStamp, boolean reference)
 		{
@@ -851,6 +854,13 @@ public abstract class CommonDecentralizedTests {
 		removeDatabaseFiles4();
 	}
 
+	@BeforeClass
+	public void createCentralBackupDirectory()
+	{
+		if (centralDatabaseBackupDirectory.exists())
+			FileTools.deleteDirectory(centralDatabaseBackupDirectory);
+		Assert.assertTrue(centralDatabaseBackupDirectory.mkdir());
+	}
 	@AfterClass
 	public void unloadDatabase() {
 		try {
