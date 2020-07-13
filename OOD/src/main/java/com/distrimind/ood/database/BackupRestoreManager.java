@@ -2318,6 +2318,11 @@ public class BackupRestoreManager {
 
 					if (closed)
 						return;
+					if (transactionsNumber==0) {
+						cancelTransaction();
+						return;
+					}
+
 					saveTransactionQueue(out, nextTransactionReference, transactionUTC, firstTransactionID, transactionToSynchronize ? transactionID : null/*, index*/);
 
 					try {
