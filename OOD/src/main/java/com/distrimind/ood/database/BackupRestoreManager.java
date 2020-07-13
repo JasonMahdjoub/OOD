@@ -240,25 +240,41 @@ public class BackupRestoreManager {
 		return false;
 	}
 
-	public long getLastFileReferenceTimestampUTC()
+	public long getLastFileReferenceTimestampUTC(boolean returnsOnlyValidatedFiles)
 	{
 		synchronized (this)
 		{
 			if (fileReferenceTimeStamps.size()==0)
 				return Long.MIN_VALUE;
-			else
-				return fileReferenceTimeStamps.get(fileReferenceTimeStamps.size()-1);
+			else {
+				long res=fileReferenceTimeStamps.get(fileReferenceTimeStamps.size() - 1);
+				if (!returnsOnlyValidatedFiles || isPartFull(res, getFile(res, true)))
+					return res;
+
+				if (fileReferenceTimeStamps.size()==1)
+					return Long.MIN_VALUE;
+				else
+					return fileReferenceTimeStamps.get(fileReferenceTimeStamps.size() - 2);
+			}
 		}
 	}
 
-	public long getLastFileTimestampUTC()
+	public long getLastFileTimestampUTC(boolean returnsOnlyValidatedFiles)
 	{
 		synchronized (this)
 		{
 			if (fileTimeStamps.size()==0)
 				return Long.MIN_VALUE;
-			else
-				return fileTimeStamps.get(fileTimeStamps.size()-1);
+			else {
+				long res=fileTimeStamps.get(fileTimeStamps.size() - 1);
+				if (!returnsOnlyValidatedFiles || isPartFull(res, getFile(res)))
+					return res;
+
+				if (fileTimeStamps.size()==1)
+					return Long.MIN_VALUE;
+				else
+					return fileTimeStamps.get(fileTimeStamps.size() - 2);
+			}
 		}
 	}
 

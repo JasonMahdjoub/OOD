@@ -1927,7 +1927,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			long timeStamp;
 			d.lastValidatedTransactionUTCForCentralBackup = lastValidatedTransactionUTC;
 			if (lastValidatedTransactionUTC == Long.MIN_VALUE) {
-				timeStamp = d.backupRestoreManager.getLastFileReferenceTimestampUTC();
+				timeStamp = d.backupRestoreManager.getLastFileReferenceTimestampUTC(true);
 			} else {
 				timeStamp = d.backupRestoreManager.getNearestFileUTCFromGivenTimeNotIncluded(lastValidatedTransactionUTC);
 			}
