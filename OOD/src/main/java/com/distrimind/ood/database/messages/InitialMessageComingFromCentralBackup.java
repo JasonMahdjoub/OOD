@@ -54,7 +54,7 @@ import java.util.Map;
 public class InitialMessageComingFromCentralBackup extends DatabaseEvent implements DatabaseEventToSend, MessageComingFromCentralDatabaseBackup, SecureExternalizable {
 
 	private DecentralizedValue hostDestination;
-	private Map<DecentralizedValue, byte[]> lastValidatedAndEncryptedIDPerHost;
+	private Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> lastValidatedAndEncryptedIDsPerHost;
 	private Map<String, Long> lastValidatedTransactionsUTCForDestinationHost;
 
 	@SuppressWarnings("unused")
@@ -62,32 +62,37 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 	{
 
 	}
-	public InitialMessageComingFromCentralBackup(DecentralizedValue hostDestination, Map<DecentralizedValue, byte[]> lastValidatedAndEncryptedIDPerHost, Map<String, Long> lastValidatedTransactionsUTCForDestinationHost) {
-		if (lastValidatedAndEncryptedIDPerHost==null)
+	public InitialMessageComingFromCentralBackup(DecentralizedValue hostDestination, Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> lastValidatedAndEncryptedIDsPerHost, Map<String, Long> lastValidatedTransactionsUTCForDestinationHost) {
+		if (lastValidatedAndEncryptedIDsPerHost==null)
 			throw new NullPointerException();
 		if (lastValidatedTransactionsUTCForDestinationHost ==null)
 			throw new NullPointerException();
 		if (hostDestination==null)
 			throw new NullPointerException();
-		this.lastValidatedAndEncryptedIDPerHost = lastValidatedAndEncryptedIDPerHost;
+		this.lastValidatedAndEncryptedIDsPerHost = lastValidatedAndEncryptedIDsPerHost;
 		this.lastValidatedTransactionsUTCForDestinationHost = lastValidatedTransactionsUTCForDestinationHost;
 		this.hostDestination = hostDestination;
 	}
 
-	public Map<DecentralizedValue, byte[]> getLastValidatedAndEncryptedIDPerHost() {
-		return lastValidatedAndEncryptedIDPerHost;
+	public InitialMessageComingFromCentralBackup(Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> lastValidatedAndEncryptedIDsPerHost) {
+		this.lastValidatedAndEncryptedIDsPerHost = lastValidatedAndEncryptedIDsPerHost;
 	}
 
-	public Map<DecentralizedValue, Long> getLastValidatedIDPerHost(EncryptionProfileProvider encryptionProfileProvider) throws IOException {
-		Map<DecentralizedValue, Long> res=new HashMap<>();
-		for (Map.Entry<DecentralizedValue, byte[]> e : lastValidatedAndEncryptedIDPerHost.entrySet())
+
+	public Map<DecentralizedValue, LastValidatedLocalAndDistantID> getLastValidatedIDsPerHost(EncryptionProfileProvider encryptionProfileProvider) throws IOException {
+		Map<DecentralizedValue, LastValidatedLocalAndDistantID> res=new HashMap<>();
+		for (Map.Entry<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> e : lastValidatedAndEncryptedIDsPerHost.entrySet())
 		{
-			if (e.getValue()!=null)
-			{
-				res.put(e.getKey(), EncryptionTools.decryptID(encryptionProfileProvider, e.getValue()));
-			}
+			long localID, distantID;
+			if (e.getValue()==null || e.getValue().getLastValidatedLocalID()==null)
+				localID=Long.MIN_VALUE;
 			else
-				res.put(e.getKey(), Long.MIN_VALUE);
+				localID=EncryptionTools.decryptID(encryptionProfileProvider, e.getValue().getLastValidatedLocalID());
+			if (e.getValue()==null || e.getValue().getLastValidatedDistantID()==null)
+				distantID=Long.MIN_VALUE;
+			else
+				distantID=EncryptionTools.decryptID(encryptionProfileProvider, e.getValue().getLastValidatedDistantID());
+			res.put(e.getKey(), new LastValidatedLocalAndDistantID(localID, distantID));
 		}
 		return res;
 	}
@@ -104,10 +109,11 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 	@Override
 	public int getInternalSerializedSize() {
 		int res=SerializationTools.getInternalSize((SecureExternalizable)hostDestination)+4+this.lastValidatedTransactionsUTCForDestinationHost.size()*8;
-		for (Map.Entry<DecentralizedValue, byte[]> e : this.lastValidatedAndEncryptedIDPerHost.entrySet())
+		for (Map.Entry<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> e : lastValidatedAndEncryptedIDsPerHost.entrySet())
 		{
 			res+=SerializationTools.getInternalSize((SecureExternalizable)e.getKey())+
-					SerializationTools.getInternalSize(e.getValue(), EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+					SerializationTools.getInternalSize(e.getValue().getLastValidatedLocalID(), EncryptionTools.MAX_ENCRYPTED_ID_SIZE)+
+					SerializationTools.getInternalSize(e.getValue().getLastValidatedDistantID(), EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
 		}
 		for (String s : this.lastValidatedTransactionsUTCForDestinationHost.keySet())
 			res+=SerializationTools.getInternalSize(s, SerializationTools.MAX_CLASS_LENGTH);
@@ -117,11 +123,12 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 	@Override
 	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
 		out.writeObject(hostDestination, false);
-		out.writeUnsignedShort(this.lastValidatedAndEncryptedIDPerHost.size());
-		for (Map.Entry<DecentralizedValue, byte[]> e : this.lastValidatedAndEncryptedIDPerHost.entrySet())
+		out.writeUnsignedShort(this.lastValidatedAndEncryptedIDsPerHost.size());
+		for (Map.Entry<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> e : lastValidatedAndEncryptedIDsPerHost.entrySet())
 		{
 			out.writeObject(e.getKey(), false);
-			out.writeBytesArray(e.getValue(), true, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+			out.writeBytesArray(e.getValue().getLastValidatedLocalID(), true, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+			out.writeBytesArray(e.getValue().getLastValidatedDistantID(), true, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
 		}
 		out.writeUnsignedShort(this.lastValidatedTransactionsUTCForDestinationHost.size());
 		for (Map.Entry<String, Long> e : lastValidatedTransactionsUTCForDestinationHost.entrySet())
@@ -134,7 +141,7 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 	@Override
 	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
 		this.lastValidatedTransactionsUTCForDestinationHost=new HashMap<>();
-		this.lastValidatedAndEncryptedIDPerHost=new HashMap<>();
+		this.lastValidatedAndEncryptedIDsPerHost=new HashMap<>();
 		hostDestination=in.readObject(false, DecentralizedValue.class);
 		int s=in.readUnsignedShort();
 		if (s>DatabaseWrapper.getMaxHostNumbers())
@@ -142,8 +149,9 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 		for (int i=0;i<s;i++)
 		{
 			DecentralizedValue channelHost=in.readObject(false, DecentralizedValue.class);
-			byte[] lastValidatedAndEncryptedID=in.readBytesArray(true, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
-			this.lastValidatedAndEncryptedIDPerHost.put(channelHost, lastValidatedAndEncryptedID);
+			byte[] lastValidatedAndEncryptedLocalID=in.readBytesArray(true, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+			byte[] lastValidatedAndEncryptedDistantID=in.readBytesArray(true, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+			this.lastValidatedAndEncryptedIDsPerHost.put(channelHost, new LastValidatedLocalAndDistantEncryptedID(lastValidatedAndEncryptedLocalID, lastValidatedAndEncryptedDistantID));
 		}
 		s=in.readUnsignedShort();
 		if (s>DatabaseWrapper.getMaxHostNumbers())

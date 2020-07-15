@@ -929,7 +929,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 			throw new IllegalAccessError();
 		final DatabaseHooksTable.Record comingFromRecord = hooks.get(0);
 
-		long lastDistantTransactionID=getDatabaseWrapper().getSynchronizer().getLastValidatedSynchronization(comingFrom);
+		long lastDistantTransactionID=getDatabaseWrapper().getSynchronizer().getLastValidatedDistantIDSynchronization(comingFrom);
 
 
 		try  {

@@ -106,11 +106,7 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 			if (generateDirectConflict) {
 				int i = 0;
 				for (CommonDecentralizedTests.Database db : concernedDatabase) {
-					if (i++ == 0) {
-						db.setReplaceWhenCollisionDetected(false);
-					} else {
-						db.setReplaceWhenCollisionDetected(true);
-					}
+					db.setReplaceWhenCollisionDetected(i++ != 0);
 					proceedEvent(db, false, clone(levents), true);
 
 				}

@@ -269,7 +269,7 @@ public abstract class CommonDecentralizedTests {
 	{
 		private final Map<String, DatabaseBackup> databaseBackupPerPackage=new HashMap<>();
 		private byte[] lastValidatedAndEncryptedID=null;
-		private final Map<DecentralizedValue, Long> lastValidatedAndEncryptedDistantID=new HashMap<>();
+		private final Map<DecentralizedValue, byte[]> lastValidatedAndEncryptedDistantID=new HashMap<>();
 		private boolean connected=false;
 
 		public DatabaseBackupPerHost(DecentralizedValue channelHost) {
@@ -298,7 +298,19 @@ public abstract class CommonDecentralizedTests {
 			if (dbb!=null)
 				dbb.received(message);
 		}
-
+		private void received(LastValidatedDistantTransactionDestinedToCentralDatabaseBackup message)
+		{
+			lastValidatedAndEncryptedDistantID.put(message.getChannelHost(), message.getEncryptedLastValidatedDistantID());
+		}
+		private void received(DistantBackupCenterConnexionInitialisation message) {
+			lastValidatedAndEncryptedDistantID.putAll(message.getEncryptedDistantLastValidatedIDs());
+			/*for (Database d : listDatabase)
+			{
+				if (d.hostID.equals(message.getHostSource()))
+					continue;
+				sendMessageFromCentralDatabaseBackup(new LastIDCorrectionFromCentralDatabaseBackup(message.getHostSource(), lastValidatedAndEncryptedDistantID.get(d.hostID)), true);
+			}*/
+		}
 
 	}
 	private void sendMessageFromCentralDatabaseBackup(MessageComingFromCentralDatabaseBackup message) throws DatabaseException {
@@ -347,13 +359,21 @@ public abstract class CommonDecentralizedTests {
 			DatabaseBackupPerHost m=databaseBackup.get(message.getHostSource());
 			if (m==null)
 				throw new DatabaseException("");
-			byte[] toBroadcast=m.received(message);
-			if (toBroadcast!=null)
+			byte[] lastValidatedDistantIDtoBroadcast=m.received(message);
+
+			if (lastValidatedDistantIDtoBroadcast!=null)
 			{
 				for (Map.Entry<DecentralizedValue, DatabaseBackupPerHost> e : databaseBackup.entrySet())
 				{
 					if (e.getValue().connected && !e.getKey().equals(message.getHostSource()))
-						sendMessageFromCentralDatabaseBackup(new BackupChannelUpdateMessageFromCentralDatabaseBackup(e.getKey(), message.getHostSource(), toBroadcast), true);
+						sendMessageFromCentralDatabaseBackup(
+								new BackupChannelUpdateMessageFromCentralDatabaseBackup(
+										e.getKey(),
+										message.getHostSource(),
+										m.lastValidatedAndEncryptedDistantID.get(e.getKey()),
+										lastValidatedDistantIDtoBroadcast
+								)
+								, true);
 				}
 
 			}
@@ -374,18 +394,19 @@ public abstract class CommonDecentralizedTests {
 			DatabaseBackupPerHost m=databaseBackup.get(message.getHostSource());
 			if (m==null)
 				m=addHost(message.getHostSource());
+			m.received(message);
 			m.connected=true;
-			Map<DecentralizedValue, byte[]> lastValidatedAndEncryptedIDPerHost=new HashMap<>();
+			Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> lastValidatedAndEncryptedIDsPerHost=new HashMap<>();
 			Map<String, Long> lastValidatedTransactionsUTCForDestinationHost=new HashMap<>();
 			for (Map.Entry<DecentralizedValue, DatabaseBackupPerHost> e : databaseBackup.entrySet())
 			{
-				lastValidatedAndEncryptedIDPerHost.put(e.getKey(), e.getValue().lastValidatedAndEncryptedID);
+				lastValidatedAndEncryptedIDsPerHost.put(e.getKey(), new LastValidatedLocalAndDistantEncryptedID(e.getValue().lastValidatedAndEncryptedDistantID.get(message.getHostSource()), e.getValue().lastValidatedAndEncryptedID));
 			}
 			for (Map.Entry<String, DatabaseBackup> e : m.databaseBackupPerPackage.entrySet())
 			{
 				lastValidatedTransactionsUTCForDestinationHost.put(e.getKey(), e.getValue().getLastFileBackupPartUTC());
 			}
-			sendMessageFromCentralDatabaseBackup(new InitialMessageComingFromCentralBackup(message.getHostSource(), lastValidatedAndEncryptedIDPerHost, lastValidatedTransactionsUTCForDestinationHost));
+			sendMessageFromCentralDatabaseBackup(new InitialMessageComingFromCentralBackup(message.getHostSource(), lastValidatedAndEncryptedIDsPerHost, lastValidatedTransactionsUTCForDestinationHost));
 		}
 
 		private void received(AskForDatabaseBackupPartDestinedToCentralDatabaseBackup message) throws FileNotFoundException, DatabaseException {
@@ -408,6 +429,12 @@ public abstract class CommonDecentralizedTests {
 			if (m!=null)
 				m.databaseBackupPerPackage.remove(message.getPackageString());
 		}
+		private void received(LastValidatedDistantTransactionDestinedToCentralDatabaseBackup message)
+		{
+			DatabaseBackupPerHost m=databaseBackup.get(message.getHostSource());
+			if (m!=null)
+				m.received(message);
+		}
 
 		public void received(MessageDestinedToCentralDatabaseBackup message) throws DatabaseException, IOException {
 			if (message instanceof EncryptedBackupPartDestinedToCentralDatabaseBackup)
@@ -420,6 +447,8 @@ public abstract class CommonDecentralizedTests {
 				received((DatabaseBackupToRemoveDestinedToCentralDatabaseBackup)message);
 			else if (message instanceof DistantBackupCenterConnexionInitialisation)
 				received((DistantBackupCenterConnexionInitialisation)message);
+			else if (message instanceof LastValidatedDistantTransactionDestinedToCentralDatabaseBackup)
+				received((LastValidatedDistantTransactionDestinedToCentralDatabaseBackup)message);
 			else if (message instanceof DisconnectCentralDatabaseBackup)
 				disconnect(message.getHostSource());
 			else
@@ -458,7 +487,7 @@ public abstract class CommonDecentralizedTests {
 			connected = false;
 			hostID = new DecentralizedIDGenerator();
 			localEvents = new ArrayList<>();
-			eventsReceivedStack = Collections.synchronizedList(new LinkedList<CommonDecentralizedTests.DistantDatabaseEvent>());
+			eventsReceivedStack = Collections.synchronizedList(new LinkedList<>());
 
 			getDbwrapper()
 					.loadDatabase(new DatabaseConfiguration(TableAlone.class.getPackage(), new DatabaseLifeCycles() {
@@ -492,14 +521,9 @@ public abstract class CommonDecentralizedTests {
 					.getTableInstance(UndecentralizableTableA1.class);
 			undecentralizableTableB1 = dbwrapper
 					.getTableInstance(UndecentralizableTableB1.class);
-			anomalies = Collections.synchronizedList(new ArrayList<CommonDecentralizedTests.Anomaly>());
+			anomalies = Collections.synchronizedList(new ArrayList<>());
 
-			tableAlone.setDatabaseAnomaliesNotifier(new DatabaseAnomaliesNotifier<TableAlone.Record, Table<TableAlone.Record>>() {
-				@Override
-				public void anomalyDetected(DecentralizedValue distantPeerID, DecentralizedValue intermediatePeerID, DatabaseWrapper.SynchronizationAnomalyType type, Table<TableAlone.Record> concernedTable, Map<String, Object> primary_keys, TableAlone.Record record) {
-					CommonDecentralizedTests.Database.this.anomalyDetected( distantPeerID, intermediatePeerID, type, concernedTable, primary_keys, record);
-				}
-			});
+			tableAlone.setDatabaseAnomaliesNotifier(Database.this::anomalyDetected);
 			tableAlone.setDatabaseCollisionsNotifier(new DatabaseCollisionsNotifier<TableAlone.Record, Table<TableAlone.Record>>() {
 				@Override
 				public boolean collisionDetected(DecentralizedValue distantPeerID, DecentralizedValue intermediatePeerID, DatabaseEventType type, Table<TableAlone.Record> concernedTable, HashMap<String, Object> keys, TableAlone.Record newValues, TableAlone.Record actualValues) {
@@ -511,12 +535,7 @@ public abstract class CommonDecentralizedTests {
 					return false;
 				}
 			});
-			tablePointed.setDatabaseAnomaliesNotifier(new DatabaseAnomaliesNotifier<TablePointed.Record, Table<TablePointed.Record>>() {
-				@Override
-				public void anomalyDetected(DecentralizedValue distantPeerID, DecentralizedValue intermediatePeerID, DatabaseWrapper.SynchronizationAnomalyType type, Table<TablePointed.Record> concernedTable, Map<String, Object> primary_keys, TablePointed.Record record) {
-					CommonDecentralizedTests.Database.this.anomalyDetected( distantPeerID, intermediatePeerID, type, concernedTable, primary_keys, record);
-				}
-			});
+			tablePointed.setDatabaseAnomaliesNotifier(Database.this::anomalyDetected);
 			tablePointed.setDatabaseCollisionsNotifier(new DatabaseCollisionsNotifier<TablePointed.Record, Table<TablePointed.Record>>() {
 				@Override
 				public boolean collisionDetected(DecentralizedValue distantPeerID, DecentralizedValue intermediatePeerID, DatabaseEventType type, Table<TablePointed.Record> concernedTable, HashMap<String, Object> keys, TablePointed.Record newValues, TablePointed.Record actualValues) {
@@ -528,12 +547,7 @@ public abstract class CommonDecentralizedTests {
 				}
 
 			});
-			tablePointing.setDatabaseAnomaliesNotifier(new DatabaseAnomaliesNotifier<TablePointing.Record, Table<TablePointing.Record>>() {
-				@Override
-				public void anomalyDetected(DecentralizedValue distantPeerID, DecentralizedValue intermediatePeerID, DatabaseWrapper.SynchronizationAnomalyType type, Table<TablePointing.Record> concernedTable, Map<String, Object> primary_keys, TablePointing.Record record) {
-					CommonDecentralizedTests.Database.this.anomalyDetected( distantPeerID, intermediatePeerID, type, concernedTable, primary_keys, record);
-				}
-			});
+			tablePointing.setDatabaseAnomaliesNotifier(Database.this::anomalyDetected);
 			tablePointing.setDatabaseCollisionsNotifier(new DatabaseCollisionsNotifier<TablePointing.Record, Table<TablePointing.Record>>() {
 				@Override
 				public boolean collisionDetected(DecentralizedValue distantPeerID, DecentralizedValue intermediatePeerID, DatabaseEventType type, Table<TablePointing.Record> concernedTable, HashMap<String, Object> keys, TablePointing.Record newValues, TablePointing.Record actualValues) {
@@ -1078,7 +1092,7 @@ public abstract class CommonDecentralizedTests {
 				for (CommonDecentralizedTests.Database otherdb : listDatabase) {
 					if (otherdb != db && otherdb.isConnected()) {
 						db.getDbwrapper().getSynchronizer().initHook(otherdb.getHostID(), otherdb.getDbwrapper()
-								.getSynchronizer().getLastValidatedSynchronization(db.getHostID()));
+								.getSynchronizer().getLastValidatedDistantIDSynchronization(db.getHostID()));
 						// otherdb.getDbwrapper().getSynchronizer().initHook(db.getHostID(),
 						// db.getDbwrapper().getSynchronizer().getLastValidatedSynchronization(otherdb.getHostID()));
 					}

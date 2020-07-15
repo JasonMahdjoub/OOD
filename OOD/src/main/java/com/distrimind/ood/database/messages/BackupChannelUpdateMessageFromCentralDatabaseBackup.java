@@ -51,25 +51,25 @@ public class BackupChannelUpdateMessageFromCentralDatabaseBackup implements Mess
 
 	private DecentralizedValue hostDestination;
 	private DecentralizedValue hostChannel;
-	private byte[] lastValidatedAndEncryptedID;
+	private byte[] lastValidatedAndEncryptedLocalID;
+	private byte[] lastValidatedAndEncryptedDistantID;
 
 	protected BackupChannelUpdateMessageFromCentralDatabaseBackup() {
 	}
-	public BackupChannelUpdateMessageFromCentralDatabaseBackup(DecentralizedValue hostDestination, DecentralizedValue hostChannel) {
+
+	public BackupChannelUpdateMessageFromCentralDatabaseBackup(DecentralizedValue hostDestination, DecentralizedValue hostChannel, byte[] lastValidatedAndEncryptedLocalID, byte[] lastValidatedAndEncryptedDistantID) {
 		if (hostChannel==null)
 			throw new NullPointerException();
 		if (hostDestination==null)
 			throw new NullPointerException();
+		if (lastValidatedAndEncryptedLocalID ==null)
+			throw new NullPointerException();
+		if (lastValidatedAndEncryptedDistantID ==null)
+			throw new NullPointerException();
 		this.hostDestination = hostDestination;
 		this.hostChannel = hostChannel;
-		this.lastValidatedAndEncryptedID = null;
-
-	}
-	public BackupChannelUpdateMessageFromCentralDatabaseBackup(DecentralizedValue hostDestination, DecentralizedValue hostChannel, byte[] lastValidatedAndEncryptedID) {
-		this(hostDestination, hostChannel);
-		if (lastValidatedAndEncryptedID ==null)
-			throw new NullPointerException();
-		this.lastValidatedAndEncryptedID = lastValidatedAndEncryptedID;
+		this.lastValidatedAndEncryptedLocalID = lastValidatedAndEncryptedLocalID;
+		this.lastValidatedAndEncryptedDistantID = lastValidatedAndEncryptedDistantID;
 	}
 
 	@Override
@@ -81,25 +81,35 @@ public class BackupChannelUpdateMessageFromCentralDatabaseBackup implements Mess
 		return hostChannel;
 	}
 
-	public byte[] getLastValidatedAndEncryptedID() {
-		return lastValidatedAndEncryptedID;
+	public byte[] getLastValidatedAndEncryptedLocalID() {
+		return lastValidatedAndEncryptedLocalID;
 	}
-	public long getLastValidatedID(EncryptionProfileProvider encryptionProfileProvider) throws IOException {
-		return lastValidatedAndEncryptedID==null?Long.MIN_VALUE:EncryptionTools.decryptID(encryptionProfileProvider, lastValidatedAndEncryptedID);
+
+	public byte[] getLastValidatedAndEncryptedDistantID() {
+		return lastValidatedAndEncryptedDistantID;
+	}
+
+	public long getLastValidatedLocalID(EncryptionProfileProvider encryptionProfileProvider) throws IOException {
+		return lastValidatedAndEncryptedLocalID==null?Long.MIN_VALUE:EncryptionTools.decryptID(encryptionProfileProvider, lastValidatedAndEncryptedLocalID);
+	}
+	public long getLastValidatedDistantID(EncryptionProfileProvider encryptionProfileProvider) throws IOException {
+		return lastValidatedAndEncryptedDistantID==null?Long.MIN_VALUE:EncryptionTools.decryptID(encryptionProfileProvider, lastValidatedAndEncryptedDistantID);
 	}
 
 	@Override
 	public int getInternalSerializedSize() {
 		return SerializationTools.getInternalSize((SecureExternalizable)hostDestination)
 				+SerializationTools.getInternalSize((SecureExternalizable)hostChannel)
-				+SerializationTools.getInternalSize(lastValidatedAndEncryptedID, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+				+SerializationTools.getInternalSize(lastValidatedAndEncryptedLocalID, EncryptionTools.MAX_ENCRYPTED_ID_SIZE)
+				+SerializationTools.getInternalSize(lastValidatedAndEncryptedDistantID, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
 	}
 
 	@Override
 	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
 		out.writeObject(hostDestination, false);
 		out.writeObject(hostChannel, false);
-		out.writeBytesArray(lastValidatedAndEncryptedID, true, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+		out.writeBytesArray(lastValidatedAndEncryptedLocalID, true, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+		out.writeBytesArray(lastValidatedAndEncryptedDistantID, true, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
 	}
 
 	@Override
@@ -108,6 +118,7 @@ public class BackupChannelUpdateMessageFromCentralDatabaseBackup implements Mess
 		hostChannel=in.readObject(false, DecentralizedValue.class);
 		if (hostChannel.equals(hostDestination))
 			throw new MessageExternalizationException(Integrity.FAIL);
-		lastValidatedAndEncryptedID=in.readBytesArray(true, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+		lastValidatedAndEncryptedLocalID=in.readBytesArray(true, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+		lastValidatedAndEncryptedDistantID=in.readBytesArray(true, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
 	}
 }
