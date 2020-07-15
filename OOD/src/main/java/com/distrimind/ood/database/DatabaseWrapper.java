@@ -912,7 +912,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			try {
 				lockWrite();
 				if (initializedHooks.containsKey(hook.getHostID()))
-					addNewDatabaseEvent(new DatabaseWrapper.TransactionConfirmationEvents(
+					addNewDatabaseEvent(new TransactionConfirmationEvents(
 							getHooksTransactionsTable().getLocalDatabaseHost().getHostID(), hook.getHostID(),
 							hook.getLastValidatedDistantTransactionID()));
 			}
@@ -1019,7 +1019,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				boolean notify=false;
 				if (isInitialized(hostDestination)) {
 					notify=true;
-					events.add(new DatabaseWrapper.TransactionConfirmationEvents(
+					events.add(new TransactionConfirmationEvents(
 							getLocalHostID(), hostDestination,
 							lastValidatedTransaction));
 				}
@@ -2145,79 +2145,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 
 
-	public static abstract class AbstractTransactionConfirmationEvents extends DatabaseEvent implements SecureExternalizable{
-
-		protected DecentralizedValue hostIDSource;
-		protected DecentralizedValue hostIDDestination;
-		protected long lastValidatedTransaction;
-
-		@Override
-		public int getInternalSerializedSize() {
-			return SerializationTools.getInternalSize(hostIDSource,0)+SerializationTools.getInternalSize(hostIDDestination,0);
-		}
-
-		@Override
-		public void writeExternal(SecuredObjectOutputStream out) throws IOException {
-			out.writeObject(hostIDSource, false);
-			out.writeObject(hostIDDestination, false);
-			out.writeLong(lastValidatedTransaction);
-		}
-
-		@Override
-		public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
-			hostIDSource=in.readObject(false, DecentralizedValue.class);
-			hostIDDestination=in.readObject(false, DecentralizedValue.class);
-			lastValidatedTransaction=in.readLong();
-		}
-		@SuppressWarnings("unused")
-		AbstractTransactionConfirmationEvents()
-		{
-
-		}
-		AbstractTransactionConfirmationEvents(DecentralizedValue _hostIDSource,DecentralizedValue _hostDestination,
-									  long _lastValidatedTransaction) {
-			super();
-			hostIDSource = _hostIDSource;
-			hostIDDestination = _hostDestination;
-			lastValidatedTransaction = _lastValidatedTransaction;
-		}
-
-		public DecentralizedValue getHostDestination() {
-			return hostIDDestination;
-		}
-
-
-		public DecentralizedValue getHostSource() {
-			return hostIDSource;
-		}
-
-		public long getLastValidatedTransaction() {
-			return lastValidatedTransaction;
-		}
-
-	}
-
-	public static class TransactionConfirmationEvents extends AbstractTransactionConfirmationEvents implements P2PDatabaseEventToSend, SecureExternalizable {
 
 
 
-
-
-		@SuppressWarnings("unused")
-		TransactionConfirmationEvents()
-		{
-
-		}
-		TransactionConfirmationEvents(DecentralizedValue _hostIDSource, DecentralizedValue _hostIDDestination,
-				long _lastValidatedTransaction) {
-			super(_hostIDSource,_hostIDDestination, _lastValidatedTransaction);
-			hostIDDestination = _hostIDDestination;
-		}
-
-
-
-
-	}
 
 	public static class DatabaseEventsToSynchronizeP2P extends AbstractDatabaseEventsToSynchronizeP2P {
 		private long lastTransactionIDIncluded;

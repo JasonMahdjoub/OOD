@@ -269,6 +269,7 @@ public abstract class CommonDecentralizedTests {
 	{
 		private final Map<String, DatabaseBackup> databaseBackupPerPackage=new HashMap<>();
 		private byte[] lastValidatedAndEncryptedID=null;
+		private final Map<DecentralizedValue, Long> lastValidatedAndEncryptedDistantID=new HashMap<>();
 		private boolean connected=false;
 
 		public DatabaseBackupPerHost(DecentralizedValue channelHost) {
