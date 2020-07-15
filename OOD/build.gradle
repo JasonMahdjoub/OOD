@@ -11,6 +11,7 @@ apply plugin: 'java-library'
 apply plugin: 'eclipse'
 apply plugin: 'maven-publish'
 apply plugin: 'idea'
+apply plugin: 'signing'
 
 
 Properties props = new Properties()
@@ -205,17 +206,57 @@ publishing {
             from components.java
             artifact sourcesJar
             artifact javadocJar
-            
+            pom {
+                name = 'OOD'
+                description = 'OD is a decentralized and asynchrone ORM (Object-Relational Mapping)'
+                url = 'https://github.com/JazZ51/OOD'
+                developers {
+                    developer {
+                        id = 'mahdjoub'
+                        name = 'Jason Mahdjoub'
+                        email = 'jason.mahdjoub@distri-mind.fr'
+                    }
+                }
+                organization {
+                    name = 'DistriMind'
+                    url = 'https://github.com/JazZ51'
+                }
+                issueManagement {
+                    system = 'GitHub'
+                    url = 'https://github.com/JazZ51/OOD/issues'
+                }
+                scm {
+                    connection = 'https://github.com/JazZ51/OOD'
+                }
+                licenses {
+                    license {
+                        name = 'CeCILL-C FREE SOFTWARE LICENSE AGREEMENT'
+                        url = 'http://cecill.info/licences/Licence_CeCILL-C_V1-en.txt'
+                    }
+                }
+
+            }
         }
     }
     repositories {
         maven {
             credentials {
-              username "${user}"
-              password "${pwd}"
+                username "${user}"
+                password "${pwd}"
             }
             url "${artifactory_Url}/DistriMind-Public"
         }
+    }
+}
+signing {
+    useGpgCmd()
+    sign configurations.archives
+    sign publishing.publications.mavenJava
+}
+
+javadoc {
+    if(JavaVersion.current().isJava9Compatible()) {
+        options.addBooleanOption('html5', true)
     }
 }
 
