@@ -1208,7 +1208,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				else {
 					long firstTransactionID = v.getFirstTransactionID(packageString);
 					if (r==null) {
-						r = getHooksTransactionsTable().getRecord("hostID", hostChannel);
+						List<DatabaseHooksTable.Record> l=getHooksTransactionsTable().getRecordsWithAllFields("hostID", hostChannel);
+						assert l.size()==1;
+						r=l.iterator().next();
 						assert r != null;
 					}
 					if (firstTransactionID - 1 > r.getLastValidatedDistantTransactionID())
