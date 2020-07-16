@@ -35,8 +35,10 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.util.crypto.*;
+import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.crypto.EncryptionProfileProvider;
+import com.distrimind.util.crypto.EncryptionSignatureHashDecoder;
+import com.distrimind.util.crypto.EncryptionSignatureHashEncoder;
 import com.distrimind.util.io.*;
 
 import java.io.IOException;
@@ -98,6 +100,7 @@ public class EncryptedDatabaseBackupMetaDataPerFile implements SecureExternaliza
 					.withRandomInputStream(out.getRandomInputStream())
 					.withAssociatedData(getAssociatedData())
 					.encode(out2);
+			out2.flush();
 			encryptedMetaData=out2.getBytes();
 		}
 	}
@@ -115,11 +118,13 @@ public class EncryptedDatabaseBackupMetaDataPerFile implements SecureExternaliza
 	}
 
 	public Integrity checkSignature(EncryptionProfileProvider encryptionProfileProvider) throws IOException {
-		return new EncryptionSignatureHashDecoder()
-				.withEncryptionProfileProvider(encryptionProfileProvider)
-				.withRandomInputStream(new RandomByteArrayInputStream(encryptedMetaData))
-				.withAssociatedData(getAssociatedData())
-				.checkHashAndSignature();
+		try(RandomInputStream in=new RandomByteArrayInputStream(encryptedMetaData)) {
+			return new EncryptionSignatureHashDecoder()
+					.withEncryptionProfileProvider(encryptionProfileProvider)
+					.withRandomInputStream(in)
+					.withAssociatedData(getAssociatedData())
+					.checkHashAndSignatures();
+		}
 
 	}
 
@@ -132,9 +137,10 @@ public class EncryptedDatabaseBackupMetaDataPerFile implements SecureExternaliza
 			new EncryptionSignatureHashDecoder()
 					.withEncryptionProfileProvider(encryptionProfileProvider)
 					.withRandomInputStream(in)
+					.withAssociatedData(getAssociatedData())
 					.decodeAndCheckHashAndSignaturesIfNecessary(out);
 			DatabaseBackupMetaDataPerFile res=new DatabaseBackupMetaDataPerFile(fileTimestampUTC, referenceFile);
-			res.readMetaData(out.getRandomInputStream());
+			res.readExternal(out.getRandomInputStream());
 			return res;
 		}
 	}
@@ -172,8 +178,11 @@ public class EncryptedDatabaseBackupMetaDataPerFile implements SecureExternaliza
 
 	@Override
 	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
+		associatedData=null;
 		fileTimestampUTC =in.readLong();
 		lastTransactionTimestampUTC=in.readLong();
+		if (fileTimestampUTC>lastTransactionTimestampUTC)
+			throw new MessageExternalizationException(Integrity.FAIL);
 		referenceFile=in.readBoolean();
 		packageString=in.readString(false, SerializationTools.MAX_CLASS_LENGTH);
 		if (packageString.trim().length()==0)

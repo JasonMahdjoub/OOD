@@ -67,8 +67,6 @@ public class DatabaseBackupMetaDataPerFile implements Comparable<DatabaseBackupM
 	}
 
 	public DatabaseBackupMetaDataPerFile(long timeStampUTC, boolean referenceFile, List<TransactionMetaData> transactionsMetaData) {
-		if (transactionsMetaData.size()==0)
-			throw new IllegalArgumentException();
 		this.timeStampUTC = timeStampUTC;
 		this.referenceFile = referenceFile;
 		this.transactionsMetaData = new ArrayList<>(transactionsMetaData);
@@ -78,7 +76,7 @@ public class DatabaseBackupMetaDataPerFile implements Comparable<DatabaseBackupM
 	private void checkMetaData()
 	{
 		Collections.sort(this.transactionsMetaData);
-		if (this.transactionsMetaData.get(0).transactionUTC<timeStampUTC)
+		if (this.transactionsMetaData.size()>0 && this.transactionsMetaData.get(0).transactionUTC<timeStampUTC)
 			throw new IllegalArgumentException();
 	}
 
@@ -127,7 +125,7 @@ public class DatabaseBackupMetaDataPerFile implements Comparable<DatabaseBackupM
 
 	public void readMetaData(SecuredObjectInputStream in) throws IOException {
 		int s=in.readInt();
-		if (s<=0 || s>MAX_TRANSACTIONS_NUMBER_PER_FILE)
+		if (s<0 || s>MAX_TRANSACTIONS_NUMBER_PER_FILE)
 			throw new MessageExternalizationException(Integrity.FAIL);
 		this.transactionsMetaData=new ArrayList<>(s);
 		for (int i=0;i<s;i++)
@@ -148,23 +146,23 @@ public class DatabaseBackupMetaDataPerFile implements Comparable<DatabaseBackupM
 
 	@Override
 	public void readExternal(SecuredObjectInputStream in) throws IOException {
-		timeStampUTC=in.readInt();
+		timeStampUTC=in.readLong();
 		referenceFile=in.readBoolean();
 		readMetaData(in);
 	}
 
 	public long getLastTransactionTimestampUTC() {
-		return transactionsMetaData.get(transactionsMetaData.size()-1).transactionUTC;
+		return transactionsMetaData.size()==0?timeStampUTC:transactionsMetaData.get(transactionsMetaData.size()-1).transactionUTC;
 	}
 
-	public long getFirstTransactionID()
+	public Long getFirstTransactionID()
 	{
-		return transactionsMetaData.get(0).transactionID;
+		return transactionsMetaData.size()==0?null:transactionsMetaData.get(0).transactionID;
 	}
 
-	public long getLastTransactionID()
+	public Long getLastTransactionID()
 	{
-		return transactionsMetaData.get(transactionsMetaData.size()-1).transactionID;
+		return transactionsMetaData.size()==0?null:transactionsMetaData.get(transactionsMetaData.size()-1).transactionID;
 	}
 
 

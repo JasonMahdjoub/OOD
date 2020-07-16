@@ -57,7 +57,10 @@ public class EncryptedBackupPartComingFromCentralDatabaseBackup extends Abstract
 		super(hostSource, metaData, partInputStream);
 		if (hostDestination==null)
 			throw new NullPointerException();
-		this.hostDestination=hostDestination;
+		if (hostDestination!=hostSource && hostDestination.equals(hostSource))
+			this.hostDestination=hostSource;
+		else
+			this.hostDestination=hostDestination;
 	}
 
 	@Override

@@ -114,7 +114,8 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 				exchangeMessages();
 				i = 0;
 				for (CommonDecentralizedTests.Database db : concernedDatabase) {
-					Assert.assertFalse(db.isNewDatabaseEventDetected());
+
+					//Assert.assertFalse(db.isNewDatabaseEventDetected());
 
 					/*CommonDecentralizedTests.DetectedCollision dcollision = db.getDetectedCollision();
 					Assert.assertNotNull(dcollision, "i=" + (i));
