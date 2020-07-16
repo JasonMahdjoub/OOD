@@ -247,9 +247,10 @@ public abstract class CommonDecentralizedTests {
 				sendMessageFromCentralDatabaseBackup(getEncryptedBackupPartComingFromCentralDatabaseBackup(message.getHostSource(), m.getFileTimestampUTC()));
 		}
 		private void received(AskForMetaDataPerFileToCentralDatabaseBackup message) throws DatabaseException {
-			EncryptedDatabaseBackupMetaDataPerFile m=getBackupMetaDataPerFileJustBeforeGivenTime(message.getFromMaximumExcludeTransactionID());
+			EncryptedDatabaseBackupMetaDataPerFile m=getBackupMetaDataPerFileJustBeforeGivenTime(message.getFromMaximumExcludeFileTimestamp());
 			if (m!=null)
 				sendMessageFromCentralDatabaseBackup(new EncryptedMetaDataFromCentralDatabaseBackup(message.getHostSource(), channelHost, m));
+
 		}
 
 		public File getDirectory(DecentralizedValue host, String packageString)
@@ -400,6 +401,8 @@ public abstract class CommonDecentralizedTests {
 			Map<String, Long> lastValidatedTransactionsUTCForDestinationHost=new HashMap<>();
 			for (Map.Entry<DecentralizedValue, DatabaseBackupPerHost> e : databaseBackup.entrySet())
 			{
+				if (e.getKey().equals(message.getHostSource()))
+					continue;
 				lastValidatedAndEncryptedIDsPerHost.put(e.getKey(), new LastValidatedLocalAndDistantEncryptedID(e.getValue().lastValidatedAndEncryptedDistantID.get(message.getHostSource()), e.getValue().lastValidatedAndEncryptedID));
 			}
 			for (Map.Entry<String, DatabaseBackup> e : m.databaseBackupPerPackage.entrySet())

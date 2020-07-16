@@ -49,14 +49,14 @@ import java.io.IOException;
 public class AskForMetaDataPerFileToCentralDatabaseBackup extends DatabaseEvent implements DatabaseEventToSend, ChannelMessageDestinedToCentralDatabaseBackup, SecureExternalizable {
 	private DecentralizedValue hostSource;
 	private DecentralizedValue channelHost;
-	private long fromMaximumExcludeTransactionID;
+	private long fromMaximumExcludeFileTimestamp;
 	private String packageString;
 	@SuppressWarnings("unused")
 	private AskForMetaDataPerFileToCentralDatabaseBackup()
 	{
 
 	}
-	public AskForMetaDataPerFileToCentralDatabaseBackup(DecentralizedValue hostSource, DecentralizedValue channelHost, long fromMaximumExcludeTransactionID, String packageString) {
+	public AskForMetaDataPerFileToCentralDatabaseBackup(DecentralizedValue hostSource, DecentralizedValue channelHost, long fromMaximumExcludeFileTimestamp, String packageString) {
 		if (hostSource==null)
 			throw new NullPointerException();
 		if (channelHost ==null)
@@ -67,7 +67,7 @@ public class AskForMetaDataPerFileToCentralDatabaseBackup extends DatabaseEvent 
 			throw new IllegalArgumentException();
 		this.hostSource = hostSource;
 		this.channelHost = channelHost;
-		this.fromMaximumExcludeTransactionID = fromMaximumExcludeTransactionID;
+		this.fromMaximumExcludeFileTimestamp = fromMaximumExcludeFileTimestamp;
 		this.packageString=packageString;
 	}
 
@@ -80,8 +80,8 @@ public class AskForMetaDataPerFileToCentralDatabaseBackup extends DatabaseEvent 
 		return channelHost;
 	}
 
-	public long getFromMaximumExcludeTransactionID() {
-		return fromMaximumExcludeTransactionID;
+	public long getFromMaximumExcludeFileTimestamp() {
+		return fromMaximumExcludeFileTimestamp;
 	}
 
 	@Override
@@ -100,7 +100,7 @@ public class AskForMetaDataPerFileToCentralDatabaseBackup extends DatabaseEvent 
 	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
 		out.writeObject(hostSource, false);
 		out.writeObject(channelHost, false);
-		out.writeLong(fromMaximumExcludeTransactionID);
+		out.writeLong(fromMaximumExcludeFileTimestamp);
 		out.writeString(packageString, false, SerializationTools.MAX_CLASS_LENGTH);
 	}
 
@@ -108,7 +108,7 @@ public class AskForMetaDataPerFileToCentralDatabaseBackup extends DatabaseEvent 
 	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
 		hostSource=in.readObject(false, DecentralizedValue.class);
 		channelHost =in.readObject(false, DecentralizedValue.class);
-		fromMaximumExcludeTransactionID=in.readLong();
+		fromMaximumExcludeFileTimestamp =in.readLong();
 		packageString=in.readString(false, SerializationTools.MAX_CLASS_LENGTH);
 		if (packageString.trim().length()==0)
 			throw new MessageExternalizationException(Integrity.FAIL);

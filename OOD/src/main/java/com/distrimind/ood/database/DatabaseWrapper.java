@@ -487,6 +487,24 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 			ts.add(m);
 		}
+		long getFirstFileTimestamp(String packageString) {
+			TreeSet<DatabaseBackupMetaDataPerFile> ts=metaData.get(packageString);
+
+			if (ts==null || ts.size()==0)
+				return Long.MIN_VALUE;
+			else {
+				return ts.first().getFileTimestampUTC();
+			}
+		}
+		long getLastFileTimestamp(String packageString) {
+			TreeSet<DatabaseBackupMetaDataPerFile> ts=metaData.get(packageString);
+
+			if (ts==null || ts.size()==0)
+				return Long.MIN_VALUE;
+			else {
+				return ts.last().getFileTimestampUTC();
+			}
+		}
 		long getLastTransactionID(String packageString) throws DatabaseException {
 			TreeSet<DatabaseBackupMetaDataPerFile> ts=metaData.get(packageString);
 
@@ -498,8 +516,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					if (l!=null)
 						return l;
 				}
-
-				throw DatabaseException.getDatabaseException(new IllegalAccessException());
+				return Long.MIN_VALUE;
+				//throw DatabaseException.getDatabaseException(new IllegalAccessException("ts.size="+ts.size()));
 			}
 		}
 
@@ -950,8 +968,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 
 				if (centralBackupInitialized && initializedHooksWithCentralBackup.size()>0) {
-					for (ConnectedPeers cp : initializedHooksWithCentralBackup.values())
+					for (ConnectedPeers cp : initializedHooksWithCentralBackup.values()) {
 						checkMetaDataUpdate(cp.hook.getHostID());
+					}
 				}
 			} finally
 			{
@@ -1209,16 +1228,39 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					});
 			return r!=null;
 		}
+		private void askForMetaData(DecentralizedValue hostChannel, String packageString, ValidatedIDPerDistantHook v) throws DatabaseException {
+			Long lastValidatedTimeUTC=null;
+			for (Map.Entry<Package, Database> d : sql_database.entrySet())
+			{
+				if (d.getKey().getName().equals(packageString))
+				{
+					lastValidatedTimeUTC=d.getValue().lastValidatedTransactionUTCForCentralBackup;
+				}
+			}
+			assert lastValidatedTimeUTC!=null;
+
+			long fromFileTimestampUTC=v.getLastFileTimestamp(packageString);
+
+			if (fromFileTimestampUTC==Long.MIN_VALUE)
+				fromFileTimestampUTC= Long.MAX_VALUE;
+			addNewDatabaseEvent(new AskForMetaDataPerFileToCentralDatabaseBackup(getLocalHostID(), hostChannel, fromFileTimestampUTC, packageString));
+		}
 		private void checkMetaDataUpdate(DecentralizedValue hostChannel) throws DatabaseException {
+			assert !hostChannel.equals(getLocalHostID());
 			ValidatedIDPerDistantHook v= validatedIDPerDistantHook.get(hostChannel);
 			Long lastValidatedDistantID=lastValidatedTransactionIDFromCentralBackup.get(hostChannel);
+
+
 			DatabaseHooksTable.Record r=null;
 			for (String packageString : getDatabasePackagesToSynchronizeWithCentralBackup()) {
 
 				long from=v.getLastTransactionID(packageString);
-				if (from<lastValidatedDistantID)
-					addNewDatabaseEvent(new AskForMetaDataPerFileToCentralDatabaseBackup(getLocalHostID(), hostChannel, from, packageString));
+
+				if (from<lastValidatedDistantID) {
+					askForMetaData(hostChannel, packageString, v);
+				}
 				else {
+
 					long firstTransactionID = v.getFirstTransactionID(packageString);
 					if (r==null) {
 						List<DatabaseHooksTable.Record> l=getHooksTransactionsTable().getRecordsWithAllFields("hostID", hostChannel);
@@ -1227,7 +1269,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						assert r != null;
 					}
 					if (firstTransactionID - 1 > r.getLastValidatedDistantTransactionID())
-						addNewDatabaseEvent(new AskForMetaDataPerFileToCentralDatabaseBackup(getLocalHostID(), hostChannel, firstTransactionID, packageString));
+						askForMetaData(hostChannel, packageString, v);
 					else {
 						checkAskForEncryptedBackupFilePart(hostChannel, packageString);
 					}
@@ -1511,6 +1553,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			initDistantBackupCenterForThisHostWithStringPackages(initialMessageComingFromCentralBackup.getLastValidatedTransactionsUTCForDestinationHost());
 			try {
 				for (Map.Entry<DecentralizedValue, LastValidatedLocalAndDistantID> e : initialMessageComingFromCentralBackup.getLastValidatedIDsPerHost(encryptionProfileProvider).entrySet()) {
+					assert !e.getKey().equals(getLocalHostID());
 					initDistantBackupCenter(e.getKey(), e.getValue().getLastValidatedDistantID(), e.getValue().getLastValidatedLocalID());
 				}
 			}
@@ -1611,6 +1654,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			finally {
 				unlockWrite();
 			}
+
 			initDistantBackupCenter(getDatabaseHookRecord(hostChannel), lastValidatedDistantTransactionID, lastValidatedLocalTransactionID);
 		}
 		DatabaseHooksTable.Record getDatabaseHookRecord(final DecentralizedValue hostChannel) throws DatabaseException {
