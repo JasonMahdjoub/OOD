@@ -487,7 +487,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 			ts.add(m);
 		}
-		long getFirstFileTimestamp(String packageString) {
+		/*long getFirstFileTimestamp(String packageString) {
 			TreeSet<DatabaseBackupMetaDataPerFile> ts=metaData.get(packageString);
 
 			if (ts==null || ts.size()==0)
@@ -495,7 +495,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			else {
 				return ts.first().getFileTimestampUTC();
 			}
-		}
+		}*/
 		long getLastFileTimestamp(String packageString) {
 			TreeSet<DatabaseBackupMetaDataPerFile> ts=metaData.get(packageString);
 
@@ -505,20 +505,18 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				return ts.last().getFileTimestampUTC();
 			}
 		}
-		long getLastTransactionID(String packageString) throws DatabaseException {
+		long getLastTransactionID(String packageString)  {
 			TreeSet<DatabaseBackupMetaDataPerFile> ts=metaData.get(packageString);
 
-			if (ts==null || ts.size()==0)
-				return Long.MIN_VALUE;
-			else {
+			if (ts!=null) {
 				for (Iterator<DatabaseBackupMetaDataPerFile> it=ts.descendingIterator();it.hasNext();) {
 					Long l=it.next().getLastTransactionID();
 					if (l!=null)
 						return l;
 				}
-				return Long.MIN_VALUE;
 				//throw DatabaseException.getDatabaseException(new IllegalAccessException("ts.size="+ts.size()));
 			}
+			return Long.MIN_VALUE;
 		}
 
 		long getFileUTCToTransfer(String packageString, long lastValidatedDistantTransactionID) {
@@ -1282,8 +1280,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			ConnectedPeers cp=initializedHooksWithCentralBackup.get(hostChannel);
 			if (cp!=null) {
 				ValidatedIDPerDistantHook v= validatedIDPerDistantHook.get(hostChannel);
-				DatabaseHooksTable.Record r=getHooksTransactionsTable().getRecord("hostID", hostChannel);
-				assert r!=null;
+				DatabaseHooksTable.Record r=getDatabaseHookRecord(hostChannel);
 				long fileUTC=v.getFileUTCToTransfer(packageString, r.getLastValidatedDistantTransactionID());
 				if (fileUTC!=Long.MIN_VALUE) {
 					otherBackupDatabasePartsSynchronizingWithCentralDatabaseBackup.add(hostChannel);
