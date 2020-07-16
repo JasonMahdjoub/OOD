@@ -1082,7 +1082,7 @@ public class BackupRestoreManager {
 					out.writeBoolean(true);
 					out.writeLong(lastTransactionID);
 				} else
-					out.seek(LAST_BACKUP_UTC_POSITION + 9);
+					out.seek(LAST_BACKUP_UTC_POSITION + 17);
 				out.writeLong(lastTransactionID);
 			}
 			//next transaction of previous transaction
@@ -1554,7 +1554,11 @@ public class BackupRestoreManager {
 		try {
 			DatabaseBackupMetaDataPerFile metaData=getDatabaseBackupMetaDataPerFile(timeStamp, backupReference);
 			EncryptedDatabaseBackupMetaDataPerFile encryptedMetaData=new EncryptedDatabaseBackupMetaDataPerFile(dbPackage.getName(), metaData, random, encryptionProfileProvider);
-			return new EncryptedBackupPartDestinedToCentralDatabaseBackup(fromHostIdentifier, encryptedMetaData, out.getRandomInputStream(), EncryptionTools.encryptID(metaData.getLastTransactionID(), random, encryptionProfileProvider));
+
+			Long lid=metaData.getLastTransactionID();
+			if (lid==null)
+				lid=getLastTransactionIDBeforeGiveTimeStamp(timeStamp);
+			return new EncryptedBackupPartDestinedToCentralDatabaseBackup(fromHostIdentifier, encryptedMetaData, out.getRandomInputStream(), EncryptionTools.encryptID(lid, random, encryptionProfileProvider));
 		} catch (IOException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -1574,7 +1578,7 @@ public class BackupRestoreManager {
 				int startTransaction = (int) in.currentPosition();
 				int nextTransaction = in.readInt();
 				if (nextTransaction<=in.currentPosition())
-					throw new InternalError("curPos="+in.currentPosition()+", nextTransaction="+in.currentPosition());
+					throw new DatabaseException("curPos="+in.currentPosition()+", nextTransaction="+in.currentPosition());
 				if (in.readBoolean()) {
 					long transactionID=in.readLong();
 					long currentTransactionUTC = in.readLong();
@@ -1590,11 +1594,34 @@ public class BackupRestoreManager {
 		}
 	}
 
+	private long getLastTransactionIDBeforeGiveTimeStamp(long timeStamp) throws DatabaseException {
+		int i=fileTimeStamps.indexOf(timeStamp);
+		assert i>=0;
+		for (;i>0;i--)
+		{
+			File f=getFile(fileTimeStamps.get(i));
+			try(RandomFileInputStream fis=new RandomFileInputStream(f))
+			{
+				fis.seek(LAST_BACKUP_UTC_POSITION+9);
+				if (fis.readBoolean()) {
+					fis.skipNBytes(8);
+					return fis.readLong();
+				}
+			}
+			catch (IOException e)
+			{
+				throw DatabaseException.getDatabaseException(e);
+			}
+		}
+		return Long.MIN_VALUE;
+	}
+
 	void importEncryptedBackupPartComingFromCentralDatabaseBackup(EncryptedBackupPartComingFromCentralDatabaseBackup backupPart, EncryptionProfileProvider encryptionProfileProvider, @SuppressWarnings("SameParameterValue") boolean replaceExistingFilePart) throws DatabaseException {
 		try {
 			Integrity i = backupPart.getMetaData().checkSignature(encryptionProfileProvider);
-			if (i != Integrity.OK)
+			if (i != Integrity.OK) {
 				throw new MessageExternalizationException(i);
+			}
 			File f=getFile(backupPart.getMetaData().getFileTimestampUTC(), backupPart.getMetaData().isReferenceFile(), false);
 			boolean exists=f.exists();
 			if (!exists || replaceExistingFilePart){

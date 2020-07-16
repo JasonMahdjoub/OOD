@@ -463,8 +463,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			TreeSet<DatabaseBackupMetaDataPerFile> ts=metaData.get(packageString);
 			if (ts==null || ts.size()==0)
 				return Long.MAX_VALUE;
-			else
-				return ts.first().getFirstTransactionID();
+			else {
+				for (DatabaseBackupMetaDataPerFile t : ts) {
+					Long l = t.getFirstTransactionID();
+					if (l != null)
+						return l;
+				}
+				return Long.MAX_VALUE;
+			}
 		}
 		void addMetaData(String packageString, DatabaseBackupMetaDataPerFile m)  {
 			if (packageString==null)
@@ -481,14 +487,20 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 			ts.add(m);
 		}
-		long getLastTransactionID(String packageString)
-		{
+		long getLastTransactionID(String packageString) throws DatabaseException {
 			TreeSet<DatabaseBackupMetaDataPerFile> ts=metaData.get(packageString);
 
 			if (ts==null || ts.size()==0)
 				return Long.MIN_VALUE;
-			else
-				return ts.last().getLastTransactionID();
+			else {
+				for (Iterator<DatabaseBackupMetaDataPerFile> it=ts.descendingIterator();it.hasNext();) {
+					Long l=it.next().getLastTransactionID();
+					if (l!=null)
+						return l;
+				}
+
+				throw DatabaseException.getDatabaseException(new IllegalAccessException());
+			}
 		}
 
 		long getFileUTCToTransfer(String packageString, long lastValidatedDistantTransactionID) {
@@ -498,7 +510,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			++lastValidatedDistantTransactionID;
 			for (DatabaseBackupMetaDataPerFile m : ts)
 			{
-				if (lastValidatedDistantTransactionID>=m.getFirstTransactionID() && lastValidatedDistantTransactionID<=m.getLastTransactionID())
+				Long fid=m.getFirstTransactionID();
+				if (fid==null)
+					continue;
+				if (lastValidatedDistantTransactionID>=fid && lastValidatedDistantTransactionID<=m.getLastTransactionID())
 					return m.getFileTimestampUTC();
 			}
 			return Long.MIN_VALUE;
@@ -509,7 +524,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (ts==null)
 				return;
 			for (Iterator<DatabaseBackupMetaDataPerFile> it = ts.iterator(); it.hasNext(); ) {
-				if (it.next().getLastTransactionID() <= lastValidatedTransaction) {
+				Long l=it.next().getLastTransactionID();
+				if (l==null || l <= lastValidatedTransaction) {
 					it.remove();
 				} else
 					break;
