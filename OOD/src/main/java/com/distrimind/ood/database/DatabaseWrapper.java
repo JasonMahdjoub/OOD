@@ -523,15 +523,21 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			TreeSet<DatabaseBackupMetaDataPerFile> ts=metaData.get(packageString);
 			if (ts==null)
 				return Long.MIN_VALUE;
+			System.out.println(4+";"+ts.size());
 			++lastValidatedDistantTransactionID;
 			for (DatabaseBackupMetaDataPerFile m : ts)
 			{
 				Long fid=m.getFirstTransactionID();
-				if (fid==null)
+				if (fid==null) {
+					System.out.println(5);
 					continue;
+				}
 				if (lastValidatedDistantTransactionID>=fid && lastValidatedDistantTransactionID<=m.getLastTransactionID())
 					return m.getFileTimestampUTC();
+				else
+					System.out.println(lastValidatedDistantTransactionID+";"+fid+";"+m.getLastTransactionID());
 			}
+			System.out.println(6);
 			return Long.MIN_VALUE;
 		}
 
@@ -1275,10 +1281,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 		}
 		private void checkAskForEncryptedBackupFilePart(DecentralizedValue hostChannel, String packageString) throws DatabaseException {
+			System.out.println(1);
 			if (otherBackupDatabasePartsSynchronizingWithCentralDatabaseBackup.contains(hostChannel))
 				return;
+			System.out.println(2);
 			ConnectedPeers cp=initializedHooksWithCentralBackup.get(hostChannel);
 			if (cp!=null) {
+				System.out.println(3);
 				ValidatedIDPerDistantHook v= validatedIDPerDistantHook.get(hostChannel);
 				DatabaseHooksTable.Record r=getDatabaseHookRecord(hostChannel);
 				long fileUTC=v.getFileUTCToTransfer(packageString, r.getLastValidatedDistantTransactionID());
@@ -3325,7 +3334,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					BackupRestoreManager.Transaction t = e.getValue();
 					if (t != null) {
 						Long tid=transactionsID.get(e.getKey());
-						t.validateTransaction(tid==null?-1:tid);
+						t.validateTransaction(tid);
 					}
 				}
 				/*if (min==Long.MIN_VALUE)
