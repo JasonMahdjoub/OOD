@@ -1069,9 +1069,9 @@ public class BackupRestoreManager {
 	private void saveTransactionQueue(RandomOutputStream out, int nextTransactionReference, long transactionUTC, Long firstTransactionID, Long lastTransactionID/*, RecordsIndex index*/) throws DatabaseException {
 		try {
 			out.writeByte(-1);
-			int nextTransaction=(int)out.currentPosition();
 			//backup previous transaction reference
 			out.writeInt(nextTransactionReference);
+			int nextTransaction=(int)out.currentPosition();
 
 
 			out.seek(LAST_BACKUP_UTC_POSITION);
@@ -1577,6 +1577,8 @@ public class BackupRestoreManager {
 			while (in.available()>0) {
 				int startTransaction = (int) in.currentPosition();
 				int nextTransaction = in.readInt();
+				if (nextTransaction < 0)
+					break;
 				if (nextTransaction<=in.currentPosition())
 					throw new DatabaseException("curPos="+in.currentPosition()+", nextTransaction="+in.currentPosition());
 				if (in.readBoolean()) {
@@ -1584,9 +1586,8 @@ public class BackupRestoreManager {
 					long currentTransactionUTC = in.readLong();
 					transactionsMetaData.add(new TransactionMetaData(currentTransactionUTC, transactionID, startTransaction));
 				}
-				if (nextTransaction < 0)
-					break;
-				in.seek(nextTransaction+4);
+
+				in.seek(nextTransaction);
 			}
 			return new DatabaseBackupMetaDataPerFile(timeStamp, backupReference, transactionsMetaData);
 		} catch (IOException e) {
