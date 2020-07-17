@@ -472,7 +472,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				return Long.MAX_VALUE;
 			}
 		}*/
-		void addMetaData(String packageString, DatabaseBackupMetaDataPerFile m)  {
+		boolean addMetaData(String packageString, DatabaseBackupMetaDataPerFile m)  {
 			if (packageString==null)
 				throw new NullPointerException();
 			if (packageString.trim().length()==0)
@@ -480,11 +480,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			TreeSet<DatabaseBackupMetaDataPerFile> ts = metaData.computeIfAbsent(packageString, k -> new TreeSet<>());
 			for (DatabaseBackupMetaDataPerFile me : ts) {
 				if (me.timeStampUTC == m.timeStampUTC)
-					return;
+					return false;
 				if (me.timeStampUTC > m.timeStampUTC)
 					break;
 			}
 			ts.add(m);
+			return true;
 		}
 		/*long getFirstFileTimestamp(String packageString) {
 			TreeSet<DatabaseBackupMetaDataPerFile> ts=metaData.get(packageString);
@@ -1331,7 +1332,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				return;
 			try {
 
-				v.addMetaData(metaData.getMetaData().getPackageString(), metaData.getMetaData().decodeMetaData(encryptionProfileProvider));
+				if (!v.addMetaData(metaData.getMetaData().getPackageString(), metaData.getMetaData().decodeMetaData(encryptionProfileProvider)))
+					return;
 				Long m=lastValidatedTransactionIDFromCentralBackup.get(metaData.getHostSource());
 				Long mn=v.getLastTransactionID(metaData.getMetaData().getPackageString());
 				if (m==null || m<mn)
