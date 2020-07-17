@@ -458,7 +458,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	private static class ValidatedIDPerDistantHook
 	{
 		final HashMap<String, TreeSet<DatabaseBackupMetaDataPerFile>> metaData=new HashMap<>();
-		long getFirstTransactionID(String packageString)
+		/*long getFirstTransactionID(String packageString)
 		{
 			TreeSet<DatabaseBackupMetaDataPerFile> ts=metaData.get(packageString);
 			if (ts==null || ts.size()==0)
@@ -471,7 +471,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 				return Long.MAX_VALUE;
 			}
-		}
+		}*/
 		void addMetaData(String packageString, DatabaseBackupMetaDataPerFile m)  {
 			if (packageString==null)
 				throw new NullPointerException();
@@ -484,7 +484,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				if (me.timeStampUTC > m.timeStampUTC)
 					break;
 			}
-
 			ts.add(m);
 		}
 		/*long getFirstFileTimestamp(String packageString) {
@@ -496,7 +495,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				return ts.first().getFileTimestampUTC();
 			}
 		}*/
-		long getLastFileTimestamp(String packageString) {
+		/*long getLastFileTimestamp(String packageString) {
 			TreeSet<DatabaseBackupMetaDataPerFile> ts=metaData.get(packageString);
 
 			if (ts==null || ts.size()==0)
@@ -504,7 +503,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			else {
 				return ts.last().getFileTimestampUTC();
 			}
-		}
+		}*/
 		long getLastTransactionID(String packageString)  {
 			TreeSet<DatabaseBackupMetaDataPerFile> ts=metaData.get(packageString);
 
@@ -518,26 +517,74 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 			return Long.MIN_VALUE;
 		}
+		FileCoordinate getTimestampTransactionToAsk(String packageString, long lastDistantTransactionID, long lastValidatedDistantTransactionID)  {
+			if (lastDistantTransactionID<=lastValidatedDistantTransactionID)
+				return null;
+
+			TreeSet<DatabaseBackupMetaDataPerFile> ts=metaData.get(packageString);
+
+			if (ts!=null) {
+
+				Iterator<DatabaseBackupMetaDataPerFile> it=ts.descendingIterator();
+				DatabaseBackupMetaDataPerFile previous=it.hasNext()?it.next():null;
+				if (previous==null)
+					return new FileCoordinate(Long.MAX_VALUE, FileCoordinate.Boundary.UPPER_LIMIT);
+				Long firstTID=previous.getFirstTransactionID();
+
+				if (firstTID!=null)
+					firstTID=firstTID-1;
+				while (it.hasNext()) {
+					DatabaseBackupMetaDataPerFile actual=it.next();
+					Long lastTID=actual.getLastTransactionID();
+					if (lastTID==null) {
+						previous=actual;
+					}
+					else {
+						if (firstTID==null)
+							return new FileCoordinate(actual.timeStampUTC, FileCoordinate.Boundary.LOWER_LIMIT);
+						if (lastTID < firstTID)
+							return new FileCoordinate(previous.timeStampUTC, FileCoordinate.Boundary.UPPER_LIMIT);
+						previous = actual;
+						firstTID = previous.getFirstTransactionID()-1;
+
+					}
+				}
+				if (firstTID==null || firstTID>lastValidatedDistantTransactionID)
+					return new FileCoordinate(previous.timeStampUTC, FileCoordinate.Boundary.UPPER_LIMIT);
+
+				/*for (it=ts.descendingIterator();it.hasNext();)
+				{
+					DatabaseBackupMetaDataPerFile actual=it.next();
+					Long lastID=actual.getLastTransactionID();
+					if (lastID==null)
+						continue;
+					if (lastID<lastDistantTransactionID)
+						return new AskForMetaDataPerFileToCentralDatabaseBackup.FileCoordinate(actual.timeStampUTC, AskForMetaDataPerFileToCentralDatabaseBackup.CoordinateBoundary.LOWER_LIMIT);
+					break;
+				}*/
+				return null;
+			}
+			return new FileCoordinate(Long.MAX_VALUE, FileCoordinate.Boundary.UPPER_LIMIT);
+		}
 
 		long getFileUTCToTransfer(String packageString, long lastValidatedDistantTransactionID) {
 			TreeSet<DatabaseBackupMetaDataPerFile> ts=metaData.get(packageString);
 			if (ts==null)
 				return Long.MIN_VALUE;
-			System.out.println(4+";"+ts.size());
 			++lastValidatedDistantTransactionID;
 			for (DatabaseBackupMetaDataPerFile m : ts)
 			{
 				Long fid=m.getFirstTransactionID();
 				if (fid==null) {
-					System.out.println(5);
 					continue;
 				}
-				if (lastValidatedDistantTransactionID>=fid && lastValidatedDistantTransactionID<=m.getLastTransactionID())
+				if (lastValidatedDistantTransactionID>=fid && lastValidatedDistantTransactionID<=m.getLastTransactionID()) {
+					System.out.println(4);
 					return m.getFileTimestampUTC();
+				}
 				else
 					System.out.println(lastValidatedDistantTransactionID+";"+fid+";"+m.getLastTransactionID());
 			}
-			System.out.println(6);
 			return Long.MIN_VALUE;
 		}
 
@@ -1232,59 +1279,35 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					});
 			return r!=null;
 		}
-		private void askForMetaData(DecentralizedValue hostChannel, String packageString, ValidatedIDPerDistantHook v) throws DatabaseException {
-			Long lastValidatedTimeUTC=null;
-			for (Map.Entry<Package, Database> d : sql_database.entrySet())
-			{
-				if (d.getKey().getName().equals(packageString))
-				{
-					lastValidatedTimeUTC=d.getValue().lastValidatedTransactionUTCForCentralBackup;
-				}
-			}
-			assert lastValidatedTimeUTC!=null;
 
-			long fromFileTimestampUTC=v.getLastFileTimestamp(packageString);
-
-			if (fromFileTimestampUTC==Long.MIN_VALUE)
-				fromFileTimestampUTC= Long.MAX_VALUE;
-			addNewDatabaseEvent(new AskForMetaDataPerFileToCentralDatabaseBackup(getLocalHostID(), hostChannel, fromFileTimestampUTC, packageString));
-		}
 		private void checkMetaDataUpdate(DecentralizedValue hostChannel) throws DatabaseException {
-			assert !hostChannel.equals(getLocalHostID());
+			//assert !hostChannel.equals(getLocalHostID());
 			ValidatedIDPerDistantHook v= validatedIDPerDistantHook.get(hostChannel);
-			Long lastValidatedDistantID=lastValidatedTransactionIDFromCentralBackup.get(hostChannel);
+			Long lastDistantID=lastValidatedTransactionIDFromCentralBackup.get(hostChannel);
+			if (lastDistantID==null)
+				return;
+			Collection<String> databasePackagesToSynchronizeWithCentralBackup=getDatabasePackagesToSynchronizeWithCentralBackup();
+			if (databasePackagesToSynchronizeWithCentralBackup.size()==0)
+				return;
+			DatabaseHooksTable.Record r=getDatabaseHookRecord(hostChannel);
+			long lastValidatedDistantID=r.getLastValidatedDistantTransactionID();
+			for (String packageString : databasePackagesToSynchronizeWithCentralBackup) {
 
-
-			DatabaseHooksTable.Record r=null;
-			for (String packageString : getDatabasePackagesToSynchronizeWithCentralBackup()) {
-
-				long from=v.getLastTransactionID(packageString);
-
-				if (from<lastValidatedDistantID) {
-					askForMetaData(hostChannel, packageString, v);
+				FileCoordinate fc=v.getTimestampTransactionToAsk(packageString, lastDistantID, lastValidatedDistantID);
+				if (fc==null)
+				{
+					checkAskForEncryptedBackupFilePart(hostChannel, packageString);
 				}
-				else {
-
-					long firstTransactionID = v.getFirstTransactionID(packageString);
-					if (r==null) {
-						List<DatabaseHooksTable.Record> l=getHooksTransactionsTable().getRecordsWithAllFields("hostID", hostChannel);
-						assert l.size()==1;
-						r=l.iterator().next();
-						assert r != null;
-					}
-					if (firstTransactionID - 1 > r.getLastValidatedDistantTransactionID())
-						askForMetaData(hostChannel, packageString, v);
-					else {
-						checkAskForEncryptedBackupFilePart(hostChannel, packageString);
-					}
+				else
+				{
+					System.out.println(fc);
+					addNewDatabaseEvent(new AskForMetaDataPerFileToCentralDatabaseBackup(getLocalHostID(), hostChannel, fc, packageString));
 				}
 			}
 		}
 		private void checkAskForEncryptedBackupFilePart(DecentralizedValue hostChannel, String packageString) throws DatabaseException {
-			System.out.println(1);
 			if (otherBackupDatabasePartsSynchronizingWithCentralDatabaseBackup.contains(hostChannel))
 				return;
-			System.out.println(2);
 			ConnectedPeers cp=initializedHooksWithCentralBackup.get(hostChannel);
 			if (cp!=null) {
 				System.out.println(3);
@@ -1293,7 +1316,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				long fileUTC=v.getFileUTCToTransfer(packageString, r.getLastValidatedDistantTransactionID());
 				if (fileUTC!=Long.MIN_VALUE) {
 					otherBackupDatabasePartsSynchronizingWithCentralDatabaseBackup.add(hostChannel);
-					addNewDatabaseEvent(new AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(packageString, getLocalHostID(), hostChannel, fileUTC-1));
+					addNewDatabaseEvent(new AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(packageString, getLocalHostID(), hostChannel, new FileCoordinate(fileUTC-1, FileCoordinate.Boundary.LOWER_LIMIT)));
 				}
 			}
 		}
@@ -2031,7 +2054,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				long lts=d.backupRestoreManager.getLastTransactionUTCInMS();
 				if (lts<d.lastValidatedTransactionUTCForCentralBackup) {
 
-					addNewDatabaseEvent(new AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(packageString, getLocalHostID(), lts));
+					addNewDatabaseEvent(new AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(packageString, getLocalHostID(), new FileCoordinate(lts, FileCoordinate.Boundary.LOWER_LIMIT)));
 				}
 			}
 		}

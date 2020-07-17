@@ -49,14 +49,14 @@ import java.io.IOException;
 public class AskForMetaDataPerFileToCentralDatabaseBackup extends DatabaseEvent implements DatabaseEventToSend, ChannelMessageDestinedToCentralDatabaseBackup, SecureExternalizable {
 	private DecentralizedValue hostSource;
 	private DecentralizedValue channelHost;
-	private long fromMaximumExcludeFileTimestamp;
+	private FileCoordinate fileCoordinate;
 	private String packageString;
 	@SuppressWarnings("unused")
 	private AskForMetaDataPerFileToCentralDatabaseBackup()
 	{
 
 	}
-	public AskForMetaDataPerFileToCentralDatabaseBackup(DecentralizedValue hostSource, DecentralizedValue channelHost, long fromMaximumExcludeFileTimestamp, String packageString) {
+	public AskForMetaDataPerFileToCentralDatabaseBackup(DecentralizedValue hostSource, DecentralizedValue channelHost, FileCoordinate fileCoordinate, String packageString) {
 		if (hostSource==null)
 			throw new NullPointerException();
 		if (channelHost ==null)
@@ -65,9 +65,11 @@ public class AskForMetaDataPerFileToCentralDatabaseBackup extends DatabaseEvent 
 			throw new NullPointerException();
 		if (packageString.trim().length()==0)
 			throw new IllegalArgumentException();
+		if (fileCoordinate==null)
+			throw new NullPointerException();
 		this.hostSource = hostSource;
 		this.channelHost = channelHost;
-		this.fromMaximumExcludeFileTimestamp = fromMaximumExcludeFileTimestamp;
+		this.fileCoordinate = fileCoordinate;
 		this.packageString=packageString;
 	}
 
@@ -80,8 +82,8 @@ public class AskForMetaDataPerFileToCentralDatabaseBackup extends DatabaseEvent 
 		return channelHost;
 	}
 
-	public long getFromMaximumExcludeFileTimestamp() {
-		return fromMaximumExcludeFileTimestamp;
+	public FileCoordinate getFileCoordinate() {
+		return fileCoordinate;
 	}
 
 	@Override
@@ -91,7 +93,7 @@ public class AskForMetaDataPerFileToCentralDatabaseBackup extends DatabaseEvent 
 
 	@Override
 	public int getInternalSerializedSize() {
-		return 8+SerializationTools.getInternalSize((SecureExternalizable)hostSource)+
+		return 9+SerializationTools.getInternalSize((SecureExternalizable)hostSource)+
 				SerializationTools.getInternalSize((SecureExternalizable) channelHost)+
 				SerializationTools.getInternalSize(packageString, SerializationTools.MAX_CLASS_LENGTH);
 	}
@@ -100,7 +102,7 @@ public class AskForMetaDataPerFileToCentralDatabaseBackup extends DatabaseEvent 
 	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
 		out.writeObject(hostSource, false);
 		out.writeObject(channelHost, false);
-		out.writeLong(fromMaximumExcludeFileTimestamp);
+		fileCoordinate.write(out);
 		out.writeString(packageString, false, SerializationTools.MAX_CLASS_LENGTH);
 	}
 
@@ -108,9 +110,13 @@ public class AskForMetaDataPerFileToCentralDatabaseBackup extends DatabaseEvent 
 	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
 		hostSource=in.readObject(false, DecentralizedValue.class);
 		channelHost =in.readObject(false, DecentralizedValue.class);
-		fromMaximumExcludeFileTimestamp =in.readLong();
+		fileCoordinate=FileCoordinate.read(in);
+		if (fileCoordinate==null)
+			throw new MessageExternalizationException(Integrity.FAIL);
 		packageString=in.readString(false, SerializationTools.MAX_CLASS_LENGTH);
 		if (packageString.trim().length()==0)
 			throw new MessageExternalizationException(Integrity.FAIL);
 	}
+
+
 }

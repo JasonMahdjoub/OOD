@@ -228,26 +228,37 @@ public abstract class CommonDecentralizedTests {
 			}
 			return res;
 		}
-		public EncryptedDatabaseBackupMetaDataPerFile getBackupMetaDataPerFileJustBeforeGivenTime(long timestamp)
+		public EncryptedDatabaseBackupMetaDataPerFile getBackupMetaDataPerFile(FileCoordinate fileCoordinate)
 		{
-			Map.Entry<Long, EncryptedDatabaseBackupMetaDataPerFile> found=null;
-			for (Map.Entry<Long, EncryptedDatabaseBackupMetaDataPerFile> e : metaDataPerFile.entrySet())
+			Map.Entry<Long, EncryptedDatabaseBackupMetaDataPerFile> found = null;
+			if (fileCoordinate.getBoundary()== FileCoordinate.Boundary.UPPER_LIMIT) {
+
+				for (Map.Entry<Long, EncryptedDatabaseBackupMetaDataPerFile> e : metaDataPerFile.entrySet()) {
+					if (e.getKey() < fileCoordinate.getTimeStamp()) {
+						if (found == null || found.getKey() < e.getKey())
+							found = e;
+					}
+				}
+
+			}
+			else
 			{
-				if (e.getKey()<timestamp)
-				{
-					if (found==null || found.getKey()<e.getKey())
-						found=e;
+				for (Map.Entry<Long, EncryptedDatabaseBackupMetaDataPerFile> e : metaDataPerFile.entrySet()) {
+					if (e.getKey() > fileCoordinate.getTimeStamp()) {
+						if (found == null || found.getKey() > e.getKey())
+							found = e;
+					}
 				}
 			}
-			return found==null?null:found.getValue();
+			return found == null ? null : found.getValue();
 		}
 		private void received(AskForDatabaseBackupPartDestinedToCentralDatabaseBackup message) throws FileNotFoundException, DatabaseException {
-			EncryptedDatabaseBackupMetaDataPerFile m=getBackupMetaDataPerFileJustBeforeGivenTime(message.getLastFileTimestampUTCToNotInclude());
+			EncryptedDatabaseBackupMetaDataPerFile m=getBackupMetaDataPerFile(message.getFileCoordinate());
 			if (m!=null)
 				sendMessageFromCentralDatabaseBackup(getEncryptedBackupPartComingFromCentralDatabaseBackup(message.getHostSource(), m.getFileTimestampUTC()));
 		}
 		private void received(AskForMetaDataPerFileToCentralDatabaseBackup message) throws DatabaseException {
-			EncryptedDatabaseBackupMetaDataPerFile m=getBackupMetaDataPerFileJustBeforeGivenTime(message.getFromMaximumExcludeFileTimestamp());
+			EncryptedDatabaseBackupMetaDataPerFile m=getBackupMetaDataPerFile(message.getFileCoordinate());
 			if (m!=null)
 				sendMessageFromCentralDatabaseBackup(new EncryptedMetaDataFromCentralDatabaseBackup(message.getHostSource(), channelHost, m));
 

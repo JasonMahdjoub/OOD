@@ -15,26 +15,28 @@ public class AskForDatabaseBackupPartDestinedToCentralDatabaseBackup extends Dat
 
 	private DecentralizedValue hostSource;
 	private DecentralizedValue channelHost;
-	private long lastFileTimestampUTCToNotInclude;
+	private FileCoordinate fileCoordinate;
 	private String packageString;
 
 	@SuppressWarnings("unused")
 	private AskForDatabaseBackupPartDestinedToCentralDatabaseBackup() {
 	}
-	public AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(String packageString, DecentralizedValue hostSource, long lastFileTimestampUTCToNotInclude) {
+	public AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(String packageString, DecentralizedValue hostSource, FileCoordinate fileCoordinate) {
 		if (hostSource==null)
 			throw new NullPointerException();
 		if (packageString==null)
 			throw new NullPointerException();
 		if (packageString.trim().length()==0)
 			throw new IllegalArgumentException();
+		if (fileCoordinate==null)
+			throw new NullPointerException();
 		this.hostSource = hostSource;
 		this.channelHost =hostSource;
-		this.lastFileTimestampUTCToNotInclude = lastFileTimestampUTCToNotInclude;
+		this.fileCoordinate = fileCoordinate;
 		this.packageString=packageString;
 	}
-	public AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(String packageString, DecentralizedValue hostSource, DecentralizedValue channelHost, long lastFileTimestampUTCToNotInclude) {
-		this(packageString, hostSource, lastFileTimestampUTCToNotInclude);
+	public AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(String packageString, DecentralizedValue hostSource, DecentralizedValue channelHost, FileCoordinate fileCoordinate) {
+		this(packageString, hostSource, fileCoordinate);
 		if (channelHost ==null)
 			throw new NullPointerException();
 		this.channelHost = channelHost;
@@ -50,13 +52,13 @@ public class AskForDatabaseBackupPartDestinedToCentralDatabaseBackup extends Dat
 		return hostSource;
 	}
 
-	public long getLastFileTimestampUTCToNotInclude() {
-		return lastFileTimestampUTCToNotInclude;
+	public FileCoordinate getFileCoordinate() {
+		return fileCoordinate;
 	}
 
 	@Override
 	public int getInternalSerializedSize() {
-		return 8+ SerializationTools.getInternalSize((SecureExternalizable)hostSource)
+		return 9+ SerializationTools.getInternalSize((SecureExternalizable)hostSource)
 				+SerializationTools.getInternalSize((SecureExternalizable) channelHost)
 				+SerializationTools.getInternalSize(packageString, SerializationTools.MAX_CLASS_LENGTH);
 	}
@@ -66,7 +68,7 @@ public class AskForDatabaseBackupPartDestinedToCentralDatabaseBackup extends Dat
 		out.writeObject(hostSource, false);
 		assert channelHost !=null;
 		out.writeObject(channelHost ==hostSource?null: channelHost, true);
-		out.writeLong(lastFileTimestampUTCToNotInclude);
+		fileCoordinate.write(out);
 		out.writeString(packageString, false, SerializationTools.MAX_CLASS_LENGTH);
 	}
 
@@ -76,7 +78,9 @@ public class AskForDatabaseBackupPartDestinedToCentralDatabaseBackup extends Dat
 		channelHost =in.readObject(true, DecentralizedValue.class);
 		if (channelHost ==null)
 			channelHost =hostSource;
-		lastFileTimestampUTCToNotInclude =in.readLong();
+		fileCoordinate=FileCoordinate.read(in);
+		if (fileCoordinate==null)
+			throw new MessageExternalizationException(Integrity.FAIL);
 		packageString=in.readString(false, SerializationTools.MAX_CLASS_LENGTH);
 		if (packageString.trim().length()==0)
 			throw new MessageExternalizationException(Integrity.FAIL);
@@ -85,4 +89,5 @@ public class AskForDatabaseBackupPartDestinedToCentralDatabaseBackup extends Dat
 	public String getPackageString() {
 		return packageString;
 	}
+
 }
