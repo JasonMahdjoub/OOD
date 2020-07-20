@@ -153,55 +153,49 @@ public class BackupRestoreManager {
 		return backupConfiguration;
 	}
 
-	private void scanFiles()
-	{
+	private void scanFiles() {
 
 		fileTimeStamps=new ArrayList<>();
 		fileReferenceTimeStamps=new ArrayList<>();
 		File []files=this.backupDirectory.listFiles();
-		maxDateUTC=null;
+		try {
 
-		if (files==null)
-			return;
-		for (File f : files)
-		{
-			if (f.isDirectory())
-				continue;
-			Matcher m=fileIncrementPattern.matcher(f.getName());
-			if (m.matches())
-			{
-				try {
-					long timeStamp = Long.parseLong(m.group(1));
-					fileTimeStamps.add(timeStamp);
-				}
-				catch(NumberFormatException e)
-				{
-					e.printStackTrace();
-				}
-
-			}
-			else
-			{
-				m=fileReferencePattern.matcher(f.getName());
-				if (m.matches())
-				{
+			if (files == null)
+				return;
+			for (File f : files) {
+				if (f.isDirectory())
+					continue;
+				Matcher m = fileIncrementPattern.matcher(f.getName());
+				if (m.matches()) {
 					try {
 						long timeStamp = Long.parseLong(m.group(1));
 						fileTimeStamps.add(timeStamp);
-						fileReferenceTimeStamps.add(timeStamp);
-					}
-					catch(NumberFormatException e)
-					{
+					} catch (NumberFormatException e) {
 						e.printStackTrace();
 					}
 
+				} else {
+					m = fileReferencePattern.matcher(f.getName());
+					if (m.matches()) {
+						try {
+							long timeStamp = Long.parseLong(m.group(1));
+							fileTimeStamps.add(timeStamp);
+							fileReferenceTimeStamps.add(timeStamp);
+						} catch (NumberFormatException e) {
+							e.printStackTrace();
+						}
+
+					}
 				}
+
 			}
+			Collections.sort(fileTimeStamps);
+			Collections.sort(fileReferenceTimeStamps);
+		}
+		finally {
+			cleanCache();
 
 		}
-		Collections.sort(fileTimeStamps);
-		Collections.sort(fileReferenceTimeStamps);
-
 	}
 
 
@@ -381,7 +375,7 @@ public class BackupRestoreManager {
 			fileTimeStamps.add(dateUTC);
 			if (referenceFile)
 				fileReferenceTimeStamps.add(dateUTC);
-			maxDateUTC=null;
+			cleanCache();
 			return file;
 		} catch (IOException e) {
 			throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
@@ -427,7 +421,7 @@ public class BackupRestoreManager {
 				else
 					firstTransactionID.set(ris.readLong());
 				//recordsIndex.set(new RecordsIndex(out.getUnbufferedRandomInputStream()));
-				positionateFileForNewEvent(out);
+				positionFileForNewEvent(out);
 				return out;
 			}
 		} catch (IOException e) {
@@ -911,7 +905,7 @@ public class BackupRestoreManager {
 		}
 	}*/
 
-	private void positionateFileForNewEvent(RandomOutputStream out) throws DatabaseException {
+	private void positionFileForNewEvent(RandomOutputStream out) throws DatabaseException {
 		try {
 			out.seek(out.length());
 		}
@@ -922,69 +916,93 @@ public class BackupRestoreManager {
 	}
 
 	private File currentFileReference=null;
-	private List<Class<? extends Table<?>>> currentClassesList=null;
+	private long currentFileReferenceUTC=Long.MIN_VALUE;
+	private List<Class<? extends Table<?>>> currentClassesList=new ArrayList<>();
 	//private DatabaseWrapper.TransactionsInterval transactionsInterval=null;
 
 	private long lastBackupEventUTC=Long.MIN_VALUE;
 
-	private void cleanCache()
-	{
-		currentFileReference=null;
-		currentClassesList=null;
+	private void cleanCache()  {
+		maxDateUTC=null;
 		lastBackupEventUTC=Long.MIN_VALUE;
-		//transactionsInterval=null;
+
 	}
-
-
-	private List<Class<? extends Table<?>>> extractClassesList(File file) throws DatabaseException {
-		if (currentClassesList==null || currentFileReference!=file)
-		{
-
-			try(RandomFileInputStream rfis=new RandomFileInputStream(file)) {
+	private List<Class<? extends Table<?>>> extractClassesList(File file, long fileTimeStamp, boolean lastFileReference) throws DatabaseException {
+		List<Class<? extends Table<?>>> currentClassesList;
+		try(RandomFileInputStream rfis=new RandomFileInputStream(file)) {
+			if (lastFileReference)
 				lastBackupEventUTC=rfis.readLong();
-				if (!rfis.readBoolean()) {
+			if (!rfis.readBoolean()) {
 					/*transactionsInterval = null;
 				}
 				else
 				{*/
-					rfis.seek(16);
+				rfis.seek(16);
 					/*long s=rfis.readLong();
 					long e=rfis.readLong();
 					transactionsInterval=new DatabaseWrapper.TransactionsInterval(s, e);*/
-				}
-
-				rfis.seek(LIST_CLASSES_POSITION/*RecordsIndex.getListClassPosition(rfis)*/+4);
-
-				int s=rfis.readShort();
-				if (s<0)
-					throw new IOException();
-
-				currentClassesList=new ArrayList<>(s);
-				byte[] tab=new byte[Short.MAX_VALUE];
-				for (int i=0;i<s;i++)
-				{
-					int l=rfis.readShort();
-					rfis.readFully(tab, 0, l);
-					String className=new String(tab, 0, l, StandardCharsets.UTF_8);
-					@SuppressWarnings("unchecked")
-					Class<? extends Table<?>> c=(Class<? extends Table<?>>)Class.forName(className);
-					currentClassesList.add(c);
-				}
-			} catch (IOException | ClassCastException | ClassNotFoundException e) {
-				throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 			}
-			currentFileReference=file;
+
+			rfis.seek(LIST_CLASSES_POSITION/*RecordsIndex.getListClassPosition(rfis)*/+4);
+
+			int s=rfis.readShort();
+			if (s<0)
+				throw new IOException();
+
+			currentClassesList=new ArrayList<>(s);
+			byte[] tab=new byte[Short.MAX_VALUE];
+			for (int i=0;i<s;i++)
+			{
+				int l=rfis.readShort();
+				rfis.readFully(tab, 0, l);
+				String className=new String(tab, 0, l, StandardCharsets.UTF_8);
+				@SuppressWarnings("unchecked")
+				Class<? extends Table<?>> c=(Class<? extends Table<?>>)Class.forName(className);
+				currentClassesList.add(c);
+			}
+			if (lastFileReference) {
+				currentFileReferenceUTC = fileTimeStamp;
+				currentFileReference=file;
+				this.currentClassesList=currentClassesList;
+			}
+			return currentClassesList;
+
+		} catch (IOException | ClassCastException | ClassNotFoundException e) {
+			throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 		}
+
+	}
+
+	private List<Class<? extends Table<?>>> extractClassesList(File file) throws DatabaseException {
+		assert file!=null;
+		assert fileReferenceTimeStamps.size()>0;
+		long last = fileReferenceTimeStamps.get(fileReferenceTimeStamps.size() - 1);
+		File lastFile=getFile(last, true);
+		if (fileReferenceTimeStamps.size()>1 && file.length()<LIST_CLASSES_POSITION+6)
+		{
+			last = fileReferenceTimeStamps.get(fileReferenceTimeStamps.size() - 2);
+			lastFile=getFile(last, true);
+		}
+		boolean lastFileUpdating=file.equals(lastFile);
+		if (last != currentFileReferenceUTC || !lastFileUpdating)
+		{
+			return extractClassesList(file, last, lastFileUpdating);
+		}
+
 		return currentClassesList;
 	}
 
 	private long extractLastBackupEventUTC(File file) throws DatabaseException {
-		if (file==currentFileReference && lastBackupEventUTC!=Long.MIN_VALUE)
+		boolean lastFileReference=file.equals(currentFileReference);
+		if (lastFileReference && lastBackupEventUTC!=Long.MIN_VALUE)
 			return lastBackupEventUTC;
 		else
 		{
 			try(RandomFileInputStream rfis=new RandomFileInputStream(file)) {
-				return rfis.readLong();
+				long res=rfis.readLong();
+				if (lastFileReference)
+					lastBackupEventUTC=res;
+				return res;
 			} catch (IOException e) {
 				throw DatabaseException.getDatabaseException(e);
 			}
@@ -1021,7 +1039,7 @@ public class BackupRestoreManager {
 	}*/
 
 
-		private boolean checkTablesHeader(File file) throws DatabaseException {
+	private boolean checkTablesHeader(File file) throws DatabaseException {
 
 		boolean ok=true;
 		if (file!=null && file.exists())
@@ -1456,7 +1474,6 @@ public class BackupRestoreManager {
 				throw DatabaseException.getDatabaseException(e);
 			}
 		}
-		maxDateUTC=null;
 		cleanCache();
 		//scanFiles();
 	}
@@ -1488,8 +1505,7 @@ public class BackupRestoreManager {
 			else
 				break;
 		}
-		if (fileTimeStamps.size()==0)
-			maxDateUTC=null;
+
 		cleanCache();
 		//scanFiles();
 	}
@@ -2318,22 +2334,29 @@ public class BackupRestoreManager {
 
 		final void cancelTransaction() throws DatabaseException
 		{
-			synchronized (BackupRestoreManager.this) {
+			try {
+				synchronized (BackupRestoreManager.this) {
 
-				if (closed)
-					return;
-				try {
-					out.close();
-				} catch (IOException e) {
-					throw DatabaseException.getDatabaseException(e);
+					if (closed)
+						return;
+					try {
+						out.close();
+					} catch (IOException e) {
+						throw DatabaseException.getDatabaseException(e);
+					}
+
+					deleteDatabaseFilesFromReferenceToLastFile(oldLastFile, oldLength);
+
+					if (!computeDatabaseReference.delete())
+						throw new DatabaseException("Impossible to delete file : " + computeDatabaseReference);
+
+
+					closed = true;
+
 				}
-
-				deleteDatabaseFilesFromReferenceToLastFile(oldLastFile, oldLength);
-
-				if (!computeDatabaseReference.delete())
-					throw new DatabaseException("Impossible to delete file : " + computeDatabaseReference);
-
-				closed = true;
+			}
+			finally {
+				lastBackupEventUTC=Long.MIN_VALUE;
 			}
 
 		}
@@ -2381,8 +2404,11 @@ public class BackupRestoreManager {
 				Long m=maxDateUTC;
 				if (m==null)
 					maxDateUTC=transactionUTC;
-				else
-					maxDateUTC=Math.max(m, transactionUTC);
+				else {
+					if (m==lastBackupEventUTC)
+						lastBackupEventUTC=Long.MIN_VALUE;
+					maxDateUTC = Math.max(m, transactionUTC);
+				}
 			}
 		}
 
