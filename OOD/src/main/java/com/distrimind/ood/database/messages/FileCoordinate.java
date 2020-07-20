@@ -58,6 +58,8 @@ public class FileCoordinate
 	private final Boundary boundary;
 
 	public FileCoordinate(long timeStamp, Boundary boundary) {
+		if (boundary==null)
+			throw new NullPointerException();
 		this.timeStamp = timeStamp;
 		this.boundary = boundary;
 	}

@@ -159,6 +159,8 @@ public class BackupRestoreManager {
 		fileTimeStamps=new ArrayList<>();
 		fileReferenceTimeStamps=new ArrayList<>();
 		File []files=this.backupDirectory.listFiles();
+		maxDateUTC=null;
+
 		if (files==null)
 			return;
 		for (File f : files)
@@ -199,7 +201,7 @@ public class BackupRestoreManager {
 		}
 		Collections.sort(fileTimeStamps);
 		Collections.sort(fileReferenceTimeStamps);
-		maxDateUTC=null;
+
 	}
 
 
@@ -1617,7 +1619,7 @@ public class BackupRestoreManager {
 		return Long.MIN_VALUE;
 	}
 
-	void importEncryptedBackupPartComingFromCentralDatabaseBackup(EncryptedBackupPartComingFromCentralDatabaseBackup backupPart, EncryptionProfileProvider encryptionProfileProvider, @SuppressWarnings("SameParameterValue") boolean replaceExistingFilePart) throws DatabaseException {
+	boolean importEncryptedBackupPartComingFromCentralDatabaseBackup(EncryptedBackupPartComingFromCentralDatabaseBackup backupPart, EncryptionProfileProvider encryptionProfileProvider, @SuppressWarnings("SameParameterValue") boolean replaceExistingFilePart) throws DatabaseException {
 		try {
 			Integrity i = backupPart.getMetaData().checkSignature(encryptionProfileProvider);
 			if (i != Integrity.OK) {
@@ -1640,6 +1642,7 @@ public class BackupRestoreManager {
 
 					scanFiles();
 					backupPart.getPartInputStream().close();
+					return true;
 				}
 				catch(IOException e)
 				{
@@ -1649,6 +1652,7 @@ public class BackupRestoreManager {
 					throw e;
 				}
 			}
+			return false;
 		}
 		catch (IOException e)
 		{

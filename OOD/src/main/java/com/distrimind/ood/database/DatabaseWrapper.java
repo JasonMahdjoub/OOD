@@ -485,6 +485,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					break;
 			}
 			ts.add(m);
+			System.out.println("received :"+m.timeStampUTC);
 			return true;
 		}
 		/*long getFirstFileTimestamp(String packageString) {
@@ -1107,7 +1108,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 				if (centralBackupInitialized) {
 					try {
-						events.add(new LastValidatedDistantTransactionDestinedToCentralDatabaseBackup(getLocalHostID(), hostDestination, lastValidatedTransaction, random, encryptionProfileProvider));
+						addNewDatabaseEvent(new LastValidatedDistantTransactionDestinedToCentralDatabaseBackup(getLocalHostID(), hostDestination, lastValidatedTransaction, random, encryptionProfileProvider));
 					} catch (IOException e) {
 						throw DatabaseException.getDatabaseException(e);
 					}
@@ -1323,6 +1324,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		private void received(EncryptedMetaDataFromCentralDatabaseBackup metaData) throws DatabaseException {
+
 			ValidatedIDPerDistantHook v= validatedIDPerDistantHook.get(metaData.getHostSource());
 			if (v==null)
 				return;
@@ -1338,6 +1340,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				Long mn=v.getLastTransactionID(metaData.getMetaData().getPackageString());
 				if (m==null || m<mn)
 					lastValidatedTransactionIDFromCentralBackup.put(metaData.getHostSource(), mn);
+
 				checkMetaDataUpdate(metaData.getHostSource());
 			} catch (IOException e) {
 				throw DatabaseException.getDatabaseException(e);
@@ -2066,15 +2069,17 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			{
 				throw new DatabaseException("Invalid host destination");
 			}
+			System.out.println("received backup part : "+backupPart);
 			if (backupPart.getHostDestination()==backupPart.getHostSource())
 			{
+				System.out.println("A");
 				String pname = backupPart.getMetaData().getPackageString();
 				if (getDatabasePackagesToSynchronizeWithCentralBackup().contains(pname)) {
 					for (Map.Entry<Package, Database> e : sql_database.entrySet()) {
 						if (e.getKey().getName().equals(pname)) {
 							Database d = e.getValue();
-							d.backupRestoreManager.importEncryptedBackupPartComingFromCentralDatabaseBackup(backupPart, encryptionProfileProvider, false);
-							checkAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(e.getKey().getName(), d);
+							if (d.backupRestoreManager.importEncryptedBackupPartComingFromCentralDatabaseBackup(backupPart, encryptionProfileProvider, false))
+								checkAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(e.getKey().getName(), d);
 							break;
 						}
 					}
@@ -2088,12 +2093,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 			}
 			else {
+				System.out.println("B : ");
 				try (RandomCacheFileOutputStream out=RandomCacheFileCenter.getSingleton().getNewBufferedRandomCacheFileOutputStream(true, RandomFileOutputStream.AccessMode.READ_AND_WRITE)){
 					EncryptionTools.decode(encryptionProfileProvider, backupPart.getPartInputStream(), out);
 					out.flush();
-					getDatabaseTransactionsPerHostTable().alterDatabase(backupPart.getMetaData().getPackageString(), backupPart.getHostSource(), out.getRandomInputStream());
 					otherBackupDatabasePartsSynchronizingWithCentralDatabaseBackup.remove(backupPart.getHostSource());
-					checkAskForEncryptedBackupFilePart(backupPart.getHostSource(), backupPart.getMetaData().getPackageString());
+					if (getDatabaseTransactionsPerHostTable().alterDatabase(backupPart.getMetaData().getPackageString(), backupPart.getHostSource(), out.getRandomInputStream())) {
+						checkAskForEncryptedBackupFilePart(backupPart.getHostSource(), backupPart.getMetaData().getPackageString());
+					}
 				} catch (IOException e) {
 					throw DatabaseException.getDatabaseException(e);
 				}

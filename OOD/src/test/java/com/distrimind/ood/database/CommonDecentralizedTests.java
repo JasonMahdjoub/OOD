@@ -241,8 +241,7 @@ public abstract class CommonDecentralizedTests {
 				}
 
 			}
-			else
-			{
+			else if (fileCoordinate.getBoundary()== FileCoordinate.Boundary.LOWER_LIMIT) {
 				for (Map.Entry<Long, EncryptedDatabaseBackupMetaDataPerFile> e : metaDataPerFile.entrySet()) {
 					if (e.getKey() > fileCoordinate.getTimeStamp()) {
 						if (found == null || found.getKey() > e.getKey())
@@ -250,6 +249,8 @@ public abstract class CommonDecentralizedTests {
 					}
 				}
 			}
+			else
+				throw new IllegalAccessError();
 			return found == null ? null : found.getValue();
 		}
 		private void received(AskForDatabaseBackupPartDestinedToCentralDatabaseBackup message) throws FileNotFoundException, DatabaseException {

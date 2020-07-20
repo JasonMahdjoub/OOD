@@ -356,7 +356,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 			final DatabaseTransactionEventsTable.AbstractRecord transaction,
 			final DatabaseEventsTable.DatabaseEventsIterator iterator, final AtomicLong lastValidatedTransaction,
 			final HashSet<DecentralizedValue> hooksToNotify,
-			final Reference<String>	databasePackage) throws DatabaseException {
+			final Reference<String>	databasePackage, final boolean acceptTransactionEmpty) throws DatabaseException {
 			getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
 
 				@SuppressWarnings("unchecked")
@@ -604,7 +604,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 							distantTransactionAdded = true;
 						}
 
-						if (transactionNotEmpty) {
+						if (transactionNotEmpty || acceptTransactionEmpty) {
 							DatabaseTransactionEvent localDTE = new DatabaseTransactionEvent();
 							iterator.reset();
 							while (iterator.hasNext()) {
@@ -862,15 +862,15 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 						DatabaseDistantTransactionEvent.Record ite = getDatabaseDistantTransactionEvent()
 								.unserializeDistantTransactionEvent(ois);
 
-						alterDatabase(directPeer, new Reference<DatabaseHooksTable.Record>(),
+						alterDatabase(directPeer, new Reference<>(),
 								ite, it=getDatabaseDistantEventsTable().distantEventTableIterator(ois),
-								lastValidatedTransaction, hooksToNotify, packageString);
+								lastValidatedTransaction, hooksToNotify, packageString, false);
 					} else if (next.get() == EXPORT_DIRECT_TRANSACTION) {
 						DatabaseTransactionEventsTable.Record dte = getDatabaseTransactionEventsTable().unserialize(ois,
 								true, false);
 						alterDatabase(directPeer, new Reference<>(directPeer),
 								dte, it=getDatabaseEventsTable().eventsTableIterator(ois), lastValidatedTransaction,
-								hooksToNotify, packageString);
+								hooksToNotify, packageString, false);
 					}
 					if (packageString.get()!=null)
 						lastValidatedIDPerPackages.put(packageString.get(), lastValidatedTransaction.get());
@@ -899,7 +899,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 	}
 
-	/*DatabaseWrapper.TransactionsInterval */void alterDatabase(final String databasePackage, final DecentralizedValue comingFrom,
+	boolean alterDatabase(final String databasePackage, final DecentralizedValue comingFrom,
 													   final RandomInputStream ois) throws DatabaseException {
 
 		if (comingFrom == null)
@@ -936,11 +936,11 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 			ois.skipNBytes(8);
 
 			if (!ois.readBoolean())
-				return ;//null;
+				return false;//null;
 			long startTransactionID=ois.readLong();
 			long endTransactionID=ois.readLong();
-			if (startTransactionID>lastDistantTransactionID || endTransactionID<=lastDistantTransactionID)
-				return ;//new DatabaseWrapper.TransactionsInterval(startTransactionID, endTransactionID);
+			if (startTransactionID>lastDistantTransactionID+1 || endTransactionID<=lastDistantTransactionID)
+				return false;//new DatabaseWrapper.TransactionsInterval(startTransactionID, endTransactionID);
 
 			if (ois.readBoolean()) {
 				ois.seek(ois.readInt());
@@ -971,7 +971,8 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 					Table<?> t = getDatabaseWrapper().getTableInstance(c);
 					tables.add(t);
 				}
-				DatabaseEventsTable.DatabaseEventsIterator it=new DatabaseEventsTable.DatabaseEventsIterator(ois){
+
+				DatabaseEventsTable.DatabaseEventsIterator it=new DatabaseEventsTable.DatabaseEventsIterator(new LimitedRandomInputStream(ois, ois.currentPosition()), false){
 					byte eventTypeByte;
 					int position=0;
 					private final byte[] recordBuffer=new byte[1<<24-1];
@@ -1062,23 +1063,26 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 					@Override
 					public boolean hasNext() throws DatabaseException {
 						try {
-							return (eventTypeByte=getDataInputStream().readByte())!=-1;
+							eventTypeByte=getDataInputStream().readByte();
+							setNextEvent(eventTypeByte);
+							return eventTypeByte!=-1;
 						} catch (IOException e) {
 							throw DatabaseException.getDatabaseException(e);
 						}
 					}
+
 				};
 				try {
 					alterDatabase(comingFromRecord, new Reference<>(comingFromRecord),
 							dte, it, lastValidatedTransaction,
-							hooksToNotify, new Reference<String>());
+							hooksToNotify, new Reference<>(), true);
 					ois.seek(nextTransactionPosition);
 				}
 				finally {
 					it.close();
 				}
 			}
-			//return null;
+			return lastValidatedTransaction.get()>=0;
 
 		} catch (EOFException e) {
 			try {

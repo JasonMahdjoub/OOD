@@ -116,13 +116,18 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 		private RandomCacheFileOutputStream cachedOutputStream;
 
 		private int nextEvent=-1;
-		
-		
+
 		protected DatabaseEventsIterator(RandomInputStream dis) throws IOException {
+			this(dis, true);
+		}
+		protected DatabaseEventsIterator(RandomInputStream dis, boolean useCache) throws IOException {
 			if (dis==null)
 				throw new NullPointerException();
 			this.dis=dis;
-			cachedOutputStream=RandomCacheFileCenter.getSingleton().getNewBufferedRandomCacheFileOutputStream(true, RandomFileOutputStream.AccessMode.READ_AND_WRITE, BufferedRandomInputStream.DEFAULT_MAX_BUFFER_SIZE, 1);
+			if (useCache)
+				cachedOutputStream=RandomCacheFileCenter.getSingleton().getNewBufferedRandomCacheFileOutputStream(true, RandomFileOutputStream.AccessMode.READ_AND_WRITE, BufferedRandomInputStream.DEFAULT_MAX_BUFFER_SIZE, 1);
+			else
+				cachedOutputStream=null;
 
 		}
 		
@@ -133,7 +138,9 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 		
 		public void reset() throws IOException
 		{
-			if (cachedInputStream==null)
+			if (cachedOutputStream==null)
+				dis.seek(0);
+			else if (cachedInputStream==null)
 			{
 				
 				while ((((byte)nextEvent) & DatabaseTransactionsPerHostTable.EXPORT_FINISHED)!=DatabaseTransactionsPerHostTable.EXPORT_FINISHED)
@@ -156,7 +163,8 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 		protected void setNextEvent(int b) throws IOException
 		{
 			nextEvent=b;
-			getDataOutputStream().writeByte(b);
+			if (cachedOutputStream!=null)
+				cachedOutputStream.writeByte(b);
 		}
 		
 		protected RandomInputStream getDataInputStream()
