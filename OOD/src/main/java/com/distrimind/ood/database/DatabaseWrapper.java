@@ -90,6 +90,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	
 	
 	// protected Connection sql_connection;
+	private static final String NATIVE_BACKUPS_DIRECTORY_NAME="native_backups";
 	private volatile boolean closed = false;
 	protected final String database_name;
 	protected final boolean loadToMemory;
@@ -202,13 +203,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				return;
 			if (configuration.getBackupConfiguration()!=null)
 			{
-				this.backupRestoreManager =new BackupRestoreManager(wrapper, new File(new File(databaseDirectory, "nativeBackups"), DatabaseWrapper.getLongPackageName(configuration.getPackage())), configuration, false);
+				this.backupRestoreManager =new BackupRestoreManager(wrapper, new File(new File(databaseDirectory, NATIVE_BACKUPS_DIRECTORY_NAME), DatabaseWrapper.getLongPackageName(configuration.getPackage())), configuration, false);
 				while((configuration=configuration.getOldVersionOfDatabaseConfiguration())!=null)
 				{
 					if (this.configuration.getPackage().equals(configuration.getPackage()))
 						continue;
 
-					File f=new File(new File(databaseDirectory, "nativeBackups"),DatabaseWrapper.getLongPackageName(configuration.getPackage()));
+					File f=new File(new File(databaseDirectory, NATIVE_BACKUPS_DIRECTORY_NAME),DatabaseWrapper.getLongPackageName(configuration.getPackage()));
 					if (!f.exists())
 						continue;
 					BackupRestoreManager m=new BackupRestoreManager(wrapper, f,  configuration, false);
