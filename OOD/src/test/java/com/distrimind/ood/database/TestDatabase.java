@@ -108,9 +108,9 @@ public abstract class TestDatabase {
 	static Table5 table5b;
 	static Table6 table6b;
 
-	static List<Class<?>> listClasses=Arrays.asList((Class<?>)Table1.class, Table2.class, Table3.class, Table4.class, Table5.class, Table6.class, Table7.class);
-	static DatabaseConfiguration dbConfig1 = new DatabaseConfiguration(Table1.class.getPackage(), listClasses);
-	static DatabaseConfiguration dbConfig2 = new DatabaseConfiguration(Lecture.class.getPackage(), listClasses);
+	static List<Class<?>> listClasses=Arrays.asList(Table1.class, Table2.class, Table3.class, Table4.class, Table5.class, Table6.class, Table7.class);
+	static DatabaseConfiguration dbConfig1 = new DatabaseConfiguration(new DatabaseConfigurationParameters(Table1.class.getPackage(), DatabaseConfigurationParameters.SynchronizationType.NO_SYNCHRONIZATION), listClasses);
+	static DatabaseConfiguration dbConfig2 = new DatabaseConfiguration(new DatabaseConfigurationParameters(Lecture.class.getPackage(), DatabaseConfigurationParameters.SynchronizationType.NO_SYNCHRONIZATION), listClasses);
 	private static DatabaseWrapper sql_db;
 	private static DatabaseWrapper sql_dbb;
 
@@ -131,7 +131,7 @@ public abstract class TestDatabase {
 		try {
 
 			SubField res = new SubField();
-			res.BigDecimal_value = new BigDecimal(3.0);
+			res.BigDecimal_value = new BigDecimal("3.0");
 			res.BigInteger_value = new BigInteger("54");
 			res.boolean_value = false;
 			res.BooleanNumber_value = Boolean.TRUE;
@@ -165,7 +165,7 @@ public abstract class TestDatabase {
 	public static SubSubField getSubSubField() throws DatabaseException {
 		try {
 			SubSubField res = new SubSubField();
-			res.BigDecimal_value = new BigDecimal(3.0);
+			res.BigDecimal_value = new BigDecimal("3.0");
 			res.BigInteger_value = new BigInteger("54");
 			res.boolean_value = false;
 			res.BooleanNumber_value = Boolean.TRUE;
@@ -2055,7 +2055,7 @@ public abstract class TestDatabase {
         Assert.assertEquals('s', r1.char_value);
 		assertTrue(r1.boolean_value);
         Assert.assertEquals(r1.short_value, (short) 3);
-        Assert.assertEquals(r1.long_value, (long) 3);
+        Assert.assertEquals(r1.long_value, 3);
         Assert.assertEquals(3.3f, r1.float_value, 0.0);
         Assert.assertEquals(3.3, r1.double_value, 0.0);
         Assert.assertEquals("test string", r1.string_value);
@@ -2064,7 +2064,7 @@ public abstract class TestDatabase {
         Assert.assertEquals('x', r1.CharacterNumber_value.charValue());
 		assertTrue(r1.BooleanNumber_value);
         Assert.assertEquals(r1.ShortNumber_value.shortValue(), (short) 3);
-        Assert.assertEquals(r1.LongNumber_value.longValue(), (long) 3);
+        Assert.assertEquals(r1.LongNumber_value.longValue(), 3);
         Assert.assertEquals(3.3f, r1.FloatNumber_value, 0.0);
         Assert.assertEquals(7.7, r1.DoubleNumber_value, 0.0);
         Assert.assertEquals(r1.BigInteger_value, new BigInteger("5"));
@@ -2086,7 +2086,7 @@ public abstract class TestDatabase {
         Assert.assertEquals('s', r2.char_value);
 		assertTrue(r2.boolean_value);
         Assert.assertEquals(r2.short_value, (short) 3);
-        Assert.assertEquals(r2.long_value, (long) 3);
+        Assert.assertEquals(r2.long_value, 3);
         Assert.assertEquals(3.3f, r2.float_value, 0.0);
         Assert.assertEquals(3.3, r2.double_value, 0.0);
         Assert.assertEquals("test string", r2.string_value);
@@ -2095,7 +2095,7 @@ public abstract class TestDatabase {
         Assert.assertEquals('x', r2.CharacterNumber_value.charValue());
 		assertTrue(r2.BooleanNumber_value);
         Assert.assertEquals(r2.ShortNumber_value.shortValue(), (short) 3);
-        Assert.assertEquals(r2.LongNumber_value.longValue(), (long) 3);
+        Assert.assertEquals(r2.LongNumber_value.longValue(), 3);
         Assert.assertEquals(3.3f, r2.FloatNumber_value, 0.0);
         Assert.assertEquals(7.7, r2.DoubleNumber_value, 0.0);
         Assert.assertEquals(r2.BigInteger_value, new BigInteger("5"));
@@ -2860,19 +2860,19 @@ public abstract class TestDatabase {
 		table3.addRecord(map);
 		Table1.Record r1 = table1.getRecords().get(0);
 
-		assertTrue(map.get("pk1").equals(r1.pk1));
-		assertTrue(map.get("pk2").equals(r1.pk2));
-		assertTrue(map.get("pk3").equals(r1.pk3));
-		assertTrue(map.get("pk4").equals(r1.pk4));
-		assertTrue(map.get("pk5").equals(r1.pk5));
-		assertTrue(map.get("pk6").equals(r1.pk6));
-		assertTrue(map.get("pk7").equals(r1.pk7));
-		assertTrue(map.get("int_value").equals(r1.int_value));
-		assertTrue(map.get("byte_value").equals(r1.byte_value));
-		assertTrue(map.get("char_value").equals(r1.char_value));
-		assertTrue(map.get("boolean_value").equals(r1.boolean_value));
-		assertTrue(map.get("short_value").equals(r1.short_value));
-		assertTrue(map.get("long_value").equals(r1.long_value));
+		Assert.assertEquals(r1.pk1, map.get("pk1"));
+		Assert.assertEquals(r1.pk2, map.get("pk2"));
+		Assert.assertEquals(r1.pk3, map.get("pk3"));
+		Assert.assertEquals(r1.pk4, map.get("pk4"));
+		Assert.assertEquals(r1.pk5, map.get("pk5"));
+		Assert.assertEquals(r1.pk6, map.get("pk6"));
+		Assert.assertEquals(r1.pk7, map.get("pk7"));
+		Assert.assertEquals(r1.int_value, map.get("int_value"));
+		Assert.assertEquals(r1.byte_value, map.get("byte_value"));
+		Assert.assertEquals(r1.char_value, map.get("char_value"));
+		Assert.assertEquals(r1.boolean_value, map.get("boolean_value"));
+		Assert.assertEquals(r1.short_value, map.get("short_value"));
+		Assert.assertEquals(r1.long_value, map.get("long_value"));
         Assert.assertEquals(map.get("float_value"), r1.float_value);
         Assert.assertEquals(map.get("double_value"), r1.double_value);
         Assert.assertEquals(map.get("string_value"), r1.string_value);

@@ -38,13 +38,15 @@ knowledge of the CeCILL-C license and that you accept its terms.
 import com.distrimind.util.progress_monitors.ProgressMonitorDM;
 import com.distrimind.util.progress_monitors.ProgressMonitorFactory;
 import com.distrimind.util.progress_monitors.ProgressMonitorParameters;
+import com.distrimind.util.properties.MultiFormatProperties;
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 2.0.0
  */
-public class BackupConfiguration {
+@SuppressWarnings("FieldMayBeFinal")
+public class BackupConfiguration extends MultiFormatProperties {
 	/**
 	 * A complete nativeBackup will be done with this regular interval. If will be understood as a nativeBackup reference.
 	 */
@@ -84,6 +86,7 @@ public class BackupConfiguration {
 	public BackupConfiguration(long backupReferenceDurationInMs, long maxBackupDurationInMs,
 							   int maxBackupFileSizeInBytes, long maxBackupFileAgeInMs/*, int maxIndexSize*/,
 							   ProgressMonitorParameters backupProgressMonitorParameters) {
+		super(null);
 		if (backupReferenceDurationInMs<0)
 			throw new IllegalArgumentException();
 		if (maxBackupDurationInMs<0)

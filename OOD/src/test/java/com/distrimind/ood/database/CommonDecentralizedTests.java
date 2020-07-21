@@ -497,7 +497,7 @@ public abstract class CommonDecentralizedTests {
 		private final List<CommonDecentralizedTests.Anomaly> anomalies;
 		//private final List<MessageComingFromCentralDatabaseBackup> centralDatabaseBackupEvents=new ArrayList<>();
 
-		Database(DatabaseWrapper dbwrapper, BackupConfiguration backupConfiguration) throws DatabaseException {
+		Database(DatabaseWrapper dbwrapper, BackupConfiguration backupConfiguration, boolean canInitCentralBackup) throws DatabaseException {
 			this.dbwrapper = dbwrapper;
 			connected = false;
 			hostID = new DecentralizedIDGenerator();
@@ -505,7 +505,11 @@ public abstract class CommonDecentralizedTests {
 			eventsReceivedStack = Collections.synchronizedList(new LinkedList<>());
 
 			getDbwrapper()
-					.loadDatabase(new DatabaseConfiguration(TableAlone.class.getPackage(), new DatabaseLifeCycles() {
+					.loadDatabase(new DatabaseConfiguration(new DatabaseConfigurationParameters(TableAlone.class.getPackage(),
+							canInitCentralBackup?DatabaseConfigurationParameters.SynchronizationType.DECENTRALIZED_SYNCHRONIZATION_AND_SYNCHRONIZATION_WITH_CENTRAL_BACKUP_DATABASE:DatabaseConfigurationParameters.SynchronizationType.DECENTRALIZED_SYNCHRONIZATION,
+							backupConfiguration
+							)
+							, new DatabaseLifeCycles() {
 
 
 						@Override
@@ -527,7 +531,7 @@ public abstract class CommonDecentralizedTests {
 						public boolean replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized() {
 							return false;
 						}
-					}, null, backupConfiguration), true);
+					}, null), true);
 
 			tableAlone = dbwrapper.getTableInstance(TableAlone.class);
 			tablePointed = dbwrapper.getTableInstance(TablePointed.class);
@@ -829,16 +833,16 @@ public abstract class CommonDecentralizedTests {
 	@BeforeClass
 	public void loadDatabase() throws DatabaseException {
 		unloadDatabase();
-		db1 = new CommonDecentralizedTests.Database(getDatabaseWrapperInstance1(), getBackupConfiguration());
-		db2 = new CommonDecentralizedTests.Database(getDatabaseWrapperInstance2(), getBackupConfiguration());
-		db3 = new CommonDecentralizedTests.Database(getDatabaseWrapperInstance3(), getBackupConfiguration());
+		db1 = new CommonDecentralizedTests.Database(getDatabaseWrapperInstance1(), getBackupConfiguration(), canInitCentralBackup());
+		db2 = new CommonDecentralizedTests.Database(getDatabaseWrapperInstance2(), getBackupConfiguration(), canInitCentralBackup());
+		db3 = new CommonDecentralizedTests.Database(getDatabaseWrapperInstance3(), getBackupConfiguration(), canInitCentralBackup());
 		listDatabase.add(db1);
 		listDatabase.add(db2);
 		listDatabase.add(db3);
-		Assert.assertTrue(db1.getDbwrapper().getTableInstance(TableAlone.class).isLocallyDecentralizable());
-		Assert.assertTrue(db1.getDbwrapper().getTableInstance(TablePointed.class).isLocallyDecentralizable());
-		Assert.assertTrue(db1.getDbwrapper().getTableInstance(TablePointing.class).isLocallyDecentralizable());
-		Assert.assertFalse(db1.getDbwrapper().getTableInstance(UndecentralizableTableA1.class).isLocallyDecentralizable());
+		Assert.assertTrue(db1.getDbwrapper().getTableInstance(TableAlone.class).isLocallyDecentralized());
+		Assert.assertTrue(db1.getDbwrapper().getTableInstance(TablePointed.class).isLocallyDecentralized());
+		Assert.assertTrue(db1.getDbwrapper().getTableInstance(TablePointing.class).isLocallyDecentralized());
+		Assert.assertFalse(db1.getDbwrapper().getTableInstance(UndecentralizableTableA1.class).isLocallyDecentralized());
 		//Assert.assertFalse(db1.getDbwrapper().getTableInstance(UndecentralizableTableB1.class).isLocallyDecentralizable());
 	}
 
@@ -1155,7 +1159,7 @@ public abstract class CommonDecentralizedTests {
 
 	protected void addDatabasePackageToSynchronizeWithCentralDatabaseBackup(Package _package) throws Exception {
 		connectAllDatabase();
-		listDatabase.get(0).getDbwrapper().getSynchronizer().synchronizeDatabasePackageWithCentralBackup(_package);
+		//listDatabase.get(0).getDbwrapper().getSynchronizer().synchronizeDatabasePackageWithCentralBackup(_package);
 		exchangeMessages();
 	}
 

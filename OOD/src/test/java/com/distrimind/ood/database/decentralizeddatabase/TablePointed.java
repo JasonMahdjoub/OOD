@@ -37,6 +37,7 @@ package com.distrimind.ood.database.decentralizeddatabase;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.Table;
+import com.distrimind.ood.database.annotations.ExcludeFromDecentralization;
 import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;

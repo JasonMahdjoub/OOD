@@ -36,15 +36,11 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
+import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.ListClasses;
+
 import java.lang.reflect.Modifier;
 import java.util.*;
-
-import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.ood.i18n.DatabaseMessages;
-import com.distrimind.util.ListClasses;
-import com.distrimind.util.progress_monitors.ProgressMonitorDM;
-import com.distrimind.util.progress_monitors.ProgressMonitorFactory;
-import com.distrimind.util.progress_monitors.ProgressMonitorParameters;
 
 /**
  * Describe a database configuration. A database is defined by its package, and
@@ -58,122 +54,59 @@ import com.distrimind.util.progress_monitors.ProgressMonitorParameters;
  */
 public class DatabaseConfiguration {
 
+	private final DatabaseConfigurationParameters databaseConfigurationParameters;
 	private final Set<Class<? extends Table<?>>> classes;
-	private final Package dbPackage;
+
 	private DatabaseConfiguration oldDatabaseTables;
 	private DatabaseLifeCycles databaseLifeCycles;
-	private BackupConfiguration backupConfiguration;
-	/**
-	 * The progress monitor's parameter for database upgrade
-	 */
-	private ProgressMonitorParameters progressMonitorParametersForDatabaseUpgrade;
 
-	/**
-	 * The progress monitor's parameter for database initialisation
-	 */
-	private ProgressMonitorParameters progressMonitorParametersForDatabaseInitialisation;
-
-	public DatabaseConfiguration(Package _package) {
-		this(_package, ListClasses.getClasses(_package), null, null);
+	public DatabaseConfiguration(DatabaseConfigurationParameters databaseConfigurationParameters) {
+		this(databaseConfigurationParameters, ListClasses.getClasses(databaseConfigurationParameters.getPackage()), null, null);
 	}
-	public DatabaseConfiguration(Package _package, DatabaseLifeCycles callable,
-								 DatabaseConfiguration oldVersionOfDatabaseTables)
+	public DatabaseConfiguration(DatabaseConfigurationParameters databaseConfigurationParameters, DatabaseLifeCycles callable)
 	{
-		this(_package, callable, oldVersionOfDatabaseTables, null);
+		this(databaseConfigurationParameters, callable, null);
 	}
-	public DatabaseConfiguration(Package _package, DatabaseLifeCycles callable,
-			DatabaseConfiguration oldVersionOfDatabaseTables, BackupConfiguration backupConfiguration) {
-		this(_package, ListClasses.getClasses(_package), callable, oldVersionOfDatabaseTables, backupConfiguration);
+	public DatabaseConfiguration(DatabaseConfigurationParameters databaseConfigurationParameters, DatabaseLifeCycles callable,
+			DatabaseConfiguration oldVersionOfDatabaseTables) {
+		this(databaseConfigurationParameters, ListClasses.getClasses(databaseConfigurationParameters.getPackage()), callable, oldVersionOfDatabaseTables);
 	}
 
-	public DatabaseConfiguration(Package _package, Collection<Class<?>> _classes) {
-		this(_package, _classes, null, null);
+	public DatabaseConfiguration(DatabaseConfigurationParameters databaseConfigurationParameters, Collection<Class<?>> _classes) {
+		this(databaseConfigurationParameters, _classes, null);
 	}
-	public DatabaseConfiguration(Package _package, Collection<Class<?>> _classes, DatabaseLifeCycles callable,
-								 DatabaseConfiguration oldVersionOfDatabaseTables)
+	public DatabaseConfiguration(DatabaseConfigurationParameters databaseConfigurationParameters, Collection<Class<?>> _classes, DatabaseLifeCycles callable)
 	{
-		this(_package, _classes, callable, oldVersionOfDatabaseTables, null);
+		this(databaseConfigurationParameters, _classes, callable, null);
 	}
 
 
-	/**
-	 * @return The progress monitor's parameter for database upgrade
-	 */
-	public ProgressMonitorParameters getProgressMonitorParametersForDatabaseUpgrade() {
-		return progressMonitorParametersForDatabaseUpgrade;
-	}
-
-	/**
-	 * Set the progress monitor's parameter for database upgrade
-	 * @param progressMonitorParametersForDatabaseUpgrade the progress monitor parameter
-	 */
-	public void setProgressMonitorParametersForDatabaseUpgrade(ProgressMonitorParameters progressMonitorParametersForDatabaseUpgrade) {
-		this.progressMonitorParametersForDatabaseUpgrade = progressMonitorParametersForDatabaseUpgrade;
-	}
-
-	public ProgressMonitorDM getProgressMonitorForDatabaseUpgrade()
-	{
-		if (this.progressMonitorParametersForDatabaseUpgrade==null)
-		{
-			progressMonitorParametersForDatabaseUpgrade=new ProgressMonitorParameters(String.format(DatabaseMessages.CONVERT_DATABASE.toString(), getPackage().toString()), null, 0, 100);
-			progressMonitorParametersForDatabaseUpgrade.setMillisToDecideToPopup(1000);
-			progressMonitorParametersForDatabaseUpgrade.setMillisToPopup(1000);
-		}
-		return ProgressMonitorFactory.getDefaultProgressMonitorFactory().getProgressMonitor(progressMonitorParametersForDatabaseUpgrade);
-	}
-
-	/**
-	 * @return The progress monitor's parameter for database initialisation
-	 */
-	public ProgressMonitorParameters getProgressMonitorParametersForDatabaseInitialisation() {
-		return progressMonitorParametersForDatabaseInitialisation;
-	}
-
-	/**
-	 * Set the progress monitor's parameter for database initialisation
-	 * @param progressMonitorParametersForDatabaseInitialisation the progress monitor parameter
-	 */
-	public void setProgressMonitorParametersForDatabaseInitialisation(ProgressMonitorParameters progressMonitorParametersForDatabaseInitialisation) {
-		this.progressMonitorParametersForDatabaseInitialisation = progressMonitorParametersForDatabaseInitialisation;
-	}
-
-	public ProgressMonitorDM getProgressMonitorForDatabaseInitialisation()
-	{
-		if (this.progressMonitorParametersForDatabaseInitialisation==null)
-		{
-			progressMonitorParametersForDatabaseInitialisation=new ProgressMonitorParameters(String.format(DatabaseMessages.INIT_DATABASE.toString(), getPackage().toString()), null, 0, 100);
-			progressMonitorParametersForDatabaseInitialisation.setMillisToDecideToPopup(1000);
-			progressMonitorParametersForDatabaseInitialisation.setMillisToPopup(1000);
-		}
-		return ProgressMonitorFactory.getDefaultProgressMonitorFactory().getProgressMonitor(progressMonitorParametersForDatabaseInitialisation);
-	}
 
 	@SuppressWarnings("unchecked")
-	public DatabaseConfiguration(Package _package, Collection<Class<?>> _classes, DatabaseLifeCycles callable,
-			DatabaseConfiguration oldVersionOfDatabaseTables, BackupConfiguration backupConfiguration) {
+	public DatabaseConfiguration(DatabaseConfigurationParameters databaseConfigurationParameters, Collection<Class<?>> _classes, DatabaseLifeCycles callable,
+			DatabaseConfiguration oldVersionOfDatabaseTables) {
 		if (_classes == null)
 			throw new NullPointerException("_classes");
-		if (_package == null)
+		if (databaseConfigurationParameters == null)
 			throw new NullPointerException("_package");
 		if (_classes.size()>Short.MAX_VALUE*2+1)
 			throw new IllegalArgumentException("Tables number cannot be greater than "+(Short.MAX_VALUE*2+1)+". Here, "+_classes.size()+" tables given.");
 
+		this.databaseConfigurationParameters=databaseConfigurationParameters;
 		classes = new HashSet<>();
-		dbPackage = _package;
-		if (oldVersionOfDatabaseTables != null && oldVersionOfDatabaseTables.getPackage().equals(_package))
+		if (oldVersionOfDatabaseTables != null && oldVersionOfDatabaseTables.getDatabaseConfigurationParameters().getPackage().equals(databaseConfigurationParameters.getPackage()))
 			throw new IllegalArgumentException("The old database version cannot have the same package");
 		this.databaseLifeCycles = callable;
 		this.oldDatabaseTables = oldVersionOfDatabaseTables;
 		for (Class<?> c : _classes) {
-			if (c != null && Table.class.isAssignableFrom(c) && c.getPackage().equals(_package)
+			if (c != null && Table.class.isAssignableFrom(c) && c.getPackage().equals(databaseConfigurationParameters.getPackage())
 					&& !Modifier.isAbstract(c.getModifiers()))
 				classes.add((Class<? extends Table<?>>) c);
 		}
-		this.backupConfiguration=backupConfiguration;
 	}
 
-	public BackupConfiguration getBackupConfiguration() {
-		return backupConfiguration;
+	public DatabaseConfigurationParameters getDatabaseConfigurationParameters() {
+		return databaseConfigurationParameters;
 	}
 
 	public Set<Class<? extends Table<?>>> getTableClasses() {
@@ -197,9 +130,6 @@ public class DatabaseConfiguration {
 
 	}
 
-	public Package getPackage() {
-		return dbPackage;
-	}
 
 	@Override
 	public boolean equals(Object o) {
@@ -209,14 +139,14 @@ public class DatabaseConfiguration {
 			return true;
 		if (o instanceof DatabaseConfiguration) {
 			DatabaseConfiguration dt = (DatabaseConfiguration) o;
-			return dt.dbPackage.equals(dbPackage);
+			return dt.databaseConfigurationParameters.equals(databaseConfigurationParameters);
 		}
 		return false;
 	}
 
 	@Override
 	public int hashCode() {
-		return dbPackage.hashCode();
+		return databaseConfigurationParameters.hashCode();
 	}
 
 	public DatabaseLifeCycles getDatabaseLifeCycles() {

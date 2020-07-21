@@ -69,9 +69,10 @@ final class DatabaseTable extends Table<DatabaseTable.Record> {
 		private Record() {
 		}
 
-		Record(String databasePackageName) {
+
+		Record(String databasePackageName, boolean synchronizedWithCentralDatabaseBackup) {
 			this.databasePackageName = databasePackageName;
-			this.synchronizedWithCentralDatabaseBackup=false;
+			this.synchronizedWithCentralDatabaseBackup=synchronizedWithCentralDatabaseBackup;
 		}
 
 		String getDatabasePackageName() {

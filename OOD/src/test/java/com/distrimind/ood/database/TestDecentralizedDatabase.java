@@ -456,7 +456,7 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 		connectAllDatabase();
 		testSynchronisation();
 		disconnectAllDatabase();
-		db4 = new Database(getDatabaseWrapperInstance4(), getBackupConfiguration());
+		db4 = new Database(getDatabaseWrapperInstance4(), getBackupConfiguration(), canInitCentralBackup());
 		listDatabase.add(db4);
 
 		db4.getDbwrapper().getSynchronizer().setNotifier(db4);

@@ -495,7 +495,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 		if (sql_connection == null)
 			throw new DatabaseException(
-					"No database was given to instanciate the class/table " + this.getClass().getName()
+					"No database was given to instantiate the class/table " + this.getClass().getName()
 							+ ". Please use the function associatePackageToSqlJetDatabase before !");
 		if (databaseVersion<0)
 			throw new IllegalArgumentException();
@@ -635,6 +635,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			fa.initialize();
 		}
 		this.tables = tables;
+		this.supportSynchronizationWithOtherPeers=tables.getDatabaseConfigurationParameters().isDecentralized();
 	}
 
     public DatabaseCollisionsNotifier<T, Table<T>> getDatabaseCollisionsNotifier() {
@@ -1202,7 +1203,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				}
 
 			}
-			supportSynchronizationWithOtherPeers = isGloballyDecentralizable(new HashSet<>());
+			supportSynchronizationWithOtherPeers &= isGloballyDecentralized(new HashSet<>());
 			hasBackupMananager=sql_connection.getBackupRestoreManager(getClass().getPackage())!=null;
 		} finally {
 			sql_connection.unlockWrite();
@@ -1214,26 +1215,26 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		return supportSynchronizationWithOtherPeers;
 	}
 
-	private boolean isGloballyDecentralizable(HashSet<Table<?>> checkedTables) throws DatabaseException {
-		if (!isLocallyDecentralizable())
+	private boolean isGloballyDecentralized(HashSet<Table<?>> checkedTables) throws DatabaseException {
+		if (!isLocallyDecentralized())
 			return false;
 		checkedTables.add(this);
 		for (NeighboringTable nt : list_tables_pointing_to_this_table) {
 			Table<?> t = nt.getPoitingTable();
 			if (!checkedTables.contains(t)) {
-				if (!t.isGloballyDecentralizable(checkedTables))
+				if (!t.isGloballyDecentralized(checkedTables))
 					return false;
 			}
 		}
 		for (ForeignKeyFieldAccessor fa : foreign_keys_fields) {
 			Table<?> t = fa.getPointedTable();
-			if (!checkedTables.contains(t) && !t.isGloballyDecentralizable(checkedTables))
+			if (!checkedTables.contains(t) && !t.isGloballyDecentralized(checkedTables))
 				return false;
 		}
 		return true;
 	}
 
-	public boolean isLocallyDecentralizable() {
+	boolean isLocallyDecentralized() {
 		return !nonDecentralizableAnnotation && hasDecentralizedPrimaryKey() && !hasNonDecentralizedIDUniqueKey();
 	}
 

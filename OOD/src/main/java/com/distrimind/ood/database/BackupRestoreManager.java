@@ -100,7 +100,7 @@ public class BackupRestoreManager {
 		return getFile(l, isReferenceFile(l));
 	}
 	BackupRestoreManager(DatabaseWrapper databaseWrapper, File backupDirectory, DatabaseConfiguration databaseConfiguration, boolean passive) throws DatabaseException {
-		this(databaseWrapper, backupDirectory, databaseConfiguration, databaseConfiguration.getBackupConfiguration(), passive);
+		this(databaseWrapper, backupDirectory, databaseConfiguration, databaseConfiguration.getDatabaseConfigurationParameters().getBackupConfiguration(), passive);
 	}
 	BackupRestoreManager(DatabaseWrapper databaseWrapper, File backupDirectory, DatabaseConfiguration databaseConfiguration, BackupConfiguration backupConfiguration, boolean passive) throws DatabaseException {
 		if (backupDirectory==null)
@@ -116,7 +116,7 @@ public class BackupRestoreManager {
 		this.passive=passive;
 		this.databaseConfiguration=databaseConfiguration;
 		this.databaseWrapper=databaseWrapper;
-		this.dbPackage=databaseConfiguration.getPackage();
+		this.dbPackage=databaseConfiguration.getDatabaseConfigurationParameters().getPackage();
 		FileTools.checkFolderRecursive(backupDirectory);
 		this.backupDirectory=backupDirectory;
 		this.backupConfiguration=backupConfiguration;
@@ -126,7 +126,7 @@ public class BackupRestoreManager {
 		if (this.computeDatabaseReference.exists() && this.computeDatabaseReference.isDirectory())
 			throw new IllegalArgumentException();
 		if (this.backupConfiguration.backupProgressMonitorParameters==null) {
-			ProgressMonitorParameters p=new ProgressMonitorParameters(String.format(DatabaseMessages.BACKUP_DATABASE.toString(), databaseConfiguration.getPackage().toString()), null, 0, 100);
+			ProgressMonitorParameters p=new ProgressMonitorParameters(String.format(DatabaseMessages.BACKUP_DATABASE.toString(), databaseConfiguration.getDatabaseConfigurationParameters().getPackage().toString()), null, 0, 100);
 			p.setMillisToDecideToPopup(1000);
 			p.setMillisToPopup(1000);
 			this.backupConfiguration.setBackupProgressMonitorParameters(p);
@@ -141,7 +141,7 @@ public class BackupRestoreManager {
 	{
 		if (generateRestoreProgressBar)
 		{
-			ProgressMonitorParameters p=new ProgressMonitorParameters(String.format(DatabaseMessages.RESTORE_DATABASE.toString(), new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS zzz").format(new Date(timeUTC)),databaseConfiguration.getPackage().toString()), null, 0, 100);
+			ProgressMonitorParameters p=new ProgressMonitorParameters(String.format(DatabaseMessages.RESTORE_DATABASE.toString(), new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS zzz").format(new Date(timeUTC)),databaseConfiguration.getDatabaseConfigurationParameters().getPackage().toString()), null, 0, 100);
 			p.setMillisToDecideToPopup(1000);
 			p.setMillisToPopup(1000);
 			this.backupConfiguration.setRestoreProgressMonitorParameters(p);
