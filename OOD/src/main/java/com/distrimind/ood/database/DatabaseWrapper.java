@@ -1244,7 +1244,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 			if (backupChannelInitializationMessageFromCentralDatabaseBackup!=null)
 			{
-				initDistantBackupCenter(hook, backupChannelInitializationMessageFromCentralDatabaseBackup.getLastValidatedDistantID(), backupChannelInitializationMessageFromCentralDatabaseBackup.getLastValidatedLocalID());
+				if (isInitialized(getLocalHostID()))
+					initConnexionWithDistantBackupCenter();
+				//initDistantBackupCenter(hook, backupChannelInitializationMessageFromCentralDatabaseBackup.getLastValidatedDistantID(), backupChannelInitializationMessageFromCentralDatabaseBackup.getLastValidatedLocalID());
 			}
 
 
@@ -1606,7 +1608,27 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				m.put(e.getKey().getName(), e.getValue());
 			initDistantBackupCenterForThisHostWithStringPackages(m);
 		}*/
+		private void initConnexionWithDistantBackupCenter() throws DatabaseException {
+			final Map<DecentralizedValue, Long> lastValidatedDistantIDs=new HashMap<>();
 
+			getHooksTransactionsTable()
+					.getRecords(new Filter<Record>() {
+						@Override
+						public boolean nextRecord(Record _record) throws DatabaseException {
+							if (!_record.getHostID().equals(getLocalHostID()))
+							{
+								lastValidatedDistantIDs.put(_record.getHostID(), _record.getLastValidatedDistantTransactionID());
+							}
+							return false;
+						}
+					});
+
+			try {
+				addNewDatabaseEvent(new DistantBackupCenterConnexionInitialisation(getLocalHostID(), lastValidatedDistantIDs, random, encryptionProfileProvider));
+			} catch (IOException e) {
+				throw DatabaseException.getDatabaseException(e);
+			}
+		}
 		public void initConnexionWithDistantBackupCenter(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
 			if (random==null)
 				throw new NullPointerException();
@@ -1623,25 +1645,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					this.encryptionProfileProvider=encryptionProfileProvider;
 					centralBackupInitialized=true;
 
-					final Map<DecentralizedValue, Long> lastValidatedDistantIDs=new HashMap<>();
-
-					getHooksTransactionsTable()
-							.getRecords(new Filter<Record>() {
-								@Override
-								public boolean nextRecord(Record _record) throws DatabaseException {
-									if (!_record.getHostID().equals(getLocalHostID()))
-									{
-										lastValidatedDistantIDs.put(_record.getHostID(), _record.getLastValidatedDistantTransactionID());
-									}
-									return false;
-								}
-							});
-
-					try {
-						addNewDatabaseEvent(new DistantBackupCenterConnexionInitialisation(getLocalHostID(), lastValidatedDistantIDs, random, encryptionProfileProvider));
-					} catch (IOException e) {
-						throw DatabaseException.getDatabaseException(e);
-					}
+					initConnexionWithDistantBackupCenter();
 				}
 			}
 			finally {
