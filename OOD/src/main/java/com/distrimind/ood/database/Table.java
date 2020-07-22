@@ -1234,7 +1234,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		return true;
 	}
 
-	boolean isLocallyDecentralized() {
+	private boolean isLocallyDecentralized() {
 		return !nonDecentralizableAnnotation && hasDecentralizedPrimaryKey() && !hasNonDecentralizedIDUniqueKey();
 	}
 

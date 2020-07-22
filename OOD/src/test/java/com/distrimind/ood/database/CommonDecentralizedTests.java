@@ -51,6 +51,8 @@ import org.testng.annotations.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.*;
@@ -62,6 +64,30 @@ import java.util.concurrent.atomic.AtomicReference;
  * @since OOD 2.5.0
  */
 public abstract class CommonDecentralizedTests {
+
+	private static final Method isLocallyDecentralized;
+	static{
+		Method m=null;
+		try {
+			m=Table.class.getDeclaredMethod("isLocallyDecentralized");
+			m.setAccessible(true);
+		} catch (NoSuchMethodException e) {
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		isLocallyDecentralized=m;
+	}
+
+	boolean isLocallyDecentralized(Table<?> table)
+	{
+		try {
+			return (boolean)isLocallyDecentralized.invoke(table);
+		} catch (IllegalAccessException | InvocationTargetException e) {
+			e.printStackTrace();
+			System.exit(-1);
+			return false;
+		}
+	}
 
 	protected CommonDecentralizedTests() throws NoSuchProviderException, NoSuchAlgorithmException {
 		this.random=SecureRandomType.DEFAULT.getSingleton(null);
@@ -839,10 +865,11 @@ public abstract class CommonDecentralizedTests {
 		listDatabase.add(db1);
 		listDatabase.add(db2);
 		listDatabase.add(db3);
-		Assert.assertTrue(db1.getDbwrapper().getTableInstance(TableAlone.class).isLocallyDecentralized());
-		Assert.assertTrue(db1.getDbwrapper().getTableInstance(TablePointed.class).isLocallyDecentralized());
-		Assert.assertTrue(db1.getDbwrapper().getTableInstance(TablePointing.class).isLocallyDecentralized());
-		Assert.assertFalse(db1.getDbwrapper().getTableInstance(UndecentralizableTableA1.class).isLocallyDecentralized());
+
+		Assert.assertTrue(isLocallyDecentralized(db1.getDbwrapper().getTableInstance(TableAlone.class)));
+		Assert.assertTrue(isLocallyDecentralized(db1.getDbwrapper().getTableInstance(TablePointed.class)));
+		Assert.assertTrue(isLocallyDecentralized(db1.getDbwrapper().getTableInstance(TablePointing.class)));
+		Assert.assertFalse(isLocallyDecentralized(db1.getDbwrapper().getTableInstance(UndecentralizableTableA1.class)));
 		//Assert.assertFalse(db1.getDbwrapper().getTableInstance(UndecentralizableTableB1.class).isLocallyDecentralizable());
 	}
 
