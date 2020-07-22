@@ -1011,10 +1011,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 			else {
 
-
+				long l = getDatabaseTransactionsPerHostTable().validateTransactions(r, lastTransferredTransactionID);
 				if (!fromCentral)
 				{
-					long l = getDatabaseTransactionsPerHostTable().validateTransactions(r, lastTransferredTransactionID);
+
 					if (l < lastTransferredTransactionID)
 						throw new IllegalAccessError("l=" + l + "; lastTransferredTransactionID=" + lastTransferredTransactionID);
 					if (l != lastTransferredTransactionID)
@@ -1437,7 +1437,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				cp.lastValidatedTransactionIDFromCentralBackup=lastValidatedDistantTransactionID;//cp.lastValidatedTransactionIDFromCentralBackup==null?lastValidatedDistantTransactionID:Math.max(cp.lastValidatedTransactionIDFromCentralBackup, lastValidatedDistantTransactionID);
 				if (lastValidatedLocalTransactionID!=Long.MIN_VALUE) {
 					validateLastSynchronization(hostID,
-							lastValidatedDistantTransactionID, true);
+							lastValidatedLocalTransactionID, true);
 				}
 				else {
 					synchronizeMetaData();
