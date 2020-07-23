@@ -1117,16 +1117,22 @@ public abstract class CommonDecentralizedTests {
 				if (dc.getDatabaseConfigurationParameters().isSynchronizedWithCentralBackupDatabase())
 				{
 					BackupRestoreManager brm=dw.getBackupRestoreManager(dc.getDatabaseConfigurationParameters().getPackage());
-					Map<Long, EncryptedDatabaseBackupMetaDataPerFile> hm=centralDatabaseBackup
+					DatabaseBackup dbb=centralDatabaseBackup
 							.databaseBackup
 							.get(d.hostID)
 							.databaseBackupPerPackage
-							.get(dc.getDatabaseConfigurationParameters().getPackage().getName())
-							.metaDataPerFile;
+							.get(dc.getDatabaseConfigurationParameters().getPackage().getName());
+					Map<Long, EncryptedDatabaseBackupMetaDataPerFile> hm;
+					if (dbb==null)
+					{
+						hm=new HashMap<>();
+					}
+					else
+						hm=dbb.metaDataPerFile;
 					List<Long> list=brm.getFinalTimestamps();
 					for (long l : list)
 					{
-						Assert.assertTrue(hm.containsKey(l));
+						Assert.assertTrue(hm.containsKey(l), "l="+l+", list.size="+list.size()+", hm.size="+hm.size());
 					}
 					for (long l : hm.keySet())
 					{
