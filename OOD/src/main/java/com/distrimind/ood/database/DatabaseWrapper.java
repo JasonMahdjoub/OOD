@@ -1015,10 +1015,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 			else {
 
-				long l = getDatabaseTransactionsPerHostTable().validateTransactions(r, lastTransferredTransactionID);
+
 				if (!fromCentral)
 				{
-
+					long l = getDatabaseTransactionsPerHostTable().validateTransactions(r, lastTransferredTransactionID);
 					if (l < lastTransferredTransactionID)
 						throw new IllegalAccessError("l=" + l + "; lastTransferredTransactionID=" + lastTransferredTransactionID);
 					if (l != lastTransferredTransactionID)
