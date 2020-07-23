@@ -519,7 +519,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					break;
 			}
 			ts.add(m);
-			System.out.println("received :"+m.timeStampUTC);
+			System.out.println("received meta data :"+m.timeStampUTC);
 			return true;
 		}
 		/*long getFirstFileTimestamp(String packageString) {
@@ -1340,7 +1340,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 		private boolean isSynchronizationActivatedWithChannelAndThroughCentralDatabaseBackup(ConnectedPeersWithCentralBackup cp)
 		{
-			return cp != null && !this.initializedHooksWithCentralBackup.containsKey(cp.hookID);
+			return cp != null && !this.initializedHooks.containsKey(cp.hookID);
 		}
 		public boolean isSynchronizationActivatedWithChannelAndThroughCentralDatabaseBackup(DecentralizedValue hostChannel)
 		{
@@ -1356,7 +1356,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		private boolean isSynchronizationSuspendedWith(DecentralizedValue hostChannel)
 		{
 			ConnectedPeersWithCentralBackup cp = this.initializedHooksWithCentralBackup.get(hostChannel);
-			return cp != null && this.initializedHooksWithCentralBackup.containsKey(hostChannel);
+			return cp != null && this.initializedHooks.containsKey(hostChannel);
 		}
 		private void checkMetaDataUpdate(DecentralizedValue hostChannel) throws DatabaseException {
 			ConnectedPeersWithCentralBackup cp = this.initializedHooksWithCentralBackup.get(hostChannel);
@@ -1384,8 +1384,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		private void checkAskForEncryptedBackupFilePart(DecentralizedValue hostChannel, String packageString) throws DatabaseException {
 			ConnectedPeersWithCentralBackup cp=initializedHooksWithCentralBackup.get(hostChannel);
 
-			if (isSynchronizationActivatedWithChannelAndThroughCentralDatabaseBackup(cp) && !cp.otherBackupDatabasePartsSynchronizingWithCentralDatabaseBackup) {
+			if (isSynchronizationActivatedWithChannelAndThroughCentralDatabaseBackup(cp)) {
 				System.out.println(3);
+				if (cp.otherBackupDatabasePartsSynchronizingWithCentralDatabaseBackup)
+					return;
+
 
 				DatabaseHooksTable.Record r=getDatabaseHookRecord(hostChannel);
 				long fileUTC=cp.validatedIDPerDistantHook.getFileUTCToTransfer(packageString, r.getLastValidatedDistantTransactionID());

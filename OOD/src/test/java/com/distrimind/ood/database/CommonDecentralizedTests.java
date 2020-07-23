@@ -1089,6 +1089,7 @@ public abstract class CommonDecentralizedTests {
 				loop |= checkMessages();
 			}
 			checkCentralBackupSynchronization();
+
 		}
 	}
 
@@ -1130,7 +1131,8 @@ public abstract class CommonDecentralizedTests {
 					}
 					for (long l : hm.keySet())
 					{
-						Assert.assertTrue(list.contains(l));
+						if (!list.contains(l))
+							Assert.assertTrue(list.get(0)>l, "l="+l+", list.size="+list.size()+", hm.size="+hm.size());
 					}
 				}
 			}
@@ -1151,7 +1153,7 @@ public abstract class CommonDecentralizedTests {
 							{
 								Assert.assertEquals(
 										d.getDbwrapper().getSynchronizer().getLastValidatedDistantIDSynchronization(dother.hostID),
-										dother.getDbwrapper().getSynchronizer().getLastValidatedLocalIDSynchronization(dother.hostID));
+										dother.getDbwrapper().getTransactionIDTable().getLastTransactionID());
 							}
 						}
 					}

@@ -110,7 +110,7 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 					proceedEvent(db, false, clone(levents), true);
 
 				}
-				Thread.sleep(1200);
+				Thread.sleep(1500);
 				exchangeMessages();
 				i = 0;
 				for (CommonDecentralizedTests.Database db : concernedDatabase) {
