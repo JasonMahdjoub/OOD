@@ -330,23 +330,32 @@ public class BackupRestoreManager {
 			throw new IllegalArgumentException("File is not final");
 		return f;
 	}
-	public List<File> getFinalFiles()
+	List<Long> getFinalTimestamps()
 	{
 		synchronized (this) {
-			ArrayList<File> res = new ArrayList<>(fileTimeStamps.size());
+			ArrayList<Long> res = new ArrayList<>(fileTimeStamps.size());
 			int s = fileTimeStamps.size();
 
 			if (s > 0) {
 				long ts = fileTimeStamps.get(s - 1);
 
-				if (/*ts>=currentBackupReferenceUTC || */!isPartFull(ts, getFile(ts, isReferenceFile(ts))))
+				if (!isPartFull(ts, getFile(ts, isReferenceFile(ts))))
 					--s;
 			}
 			for (int i = 0; i < s; i++) {
 				long ts = fileTimeStamps.get(i);
-				/*if (ts>=currentBackupReferenceUTC)
-					break;*/
 
+				res.add(ts);
+			}
+			return res;
+		}
+	}
+	public List<File> getFinalFiles()
+	{
+		synchronized (this) {
+			ArrayList<File> res = new ArrayList<>(fileTimeStamps.size());
+
+			for (long ts : getFinalTimestamps()) {
 				res.add(getFile(ts, isReferenceFile(ts)));
 			}
 			return res;

@@ -1062,6 +1062,7 @@ public abstract class CommonDecentralizedTests {
 		}
 	}
 
+
 	protected void exchangeMessages() throws Exception {
 		synchronized (CommonDecentralizedTests.class) {
 			boolean loop = true;
@@ -1093,8 +1094,72 @@ public abstract class CommonDecentralizedTests {
 				}
 				loop |= checkMessages();
 			}
+			checkCentralBackupSynchronization();
 		}
 	}
+
+	void checkCentralBackupSynchronization() throws DatabaseException {
+		for (Database d : listDatabase)
+		{
+			checkCentralBackupSynchronization(d);
+		}
+		for (Database d : listDatabase)
+		{
+			checkCentralBackupSynchronizationWithOtherPeers(d);
+		}
+	}
+	void checkCentralBackupSynchronization(Database d)
+	{
+		DatabaseWrapper dw=d.getDbwrapper();
+		if (dw.getSynchronizer().isInitializedWithCentralBackup())
+		{
+			for (DatabaseConfiguration dc : dw.getDatabaseConfigurations()) {
+				if (dc.getDatabaseConfigurationParameters().isSynchronizedWithCentralBackupDatabase())
+				{
+					BackupRestoreManager brm=dw.getBackupRestoreManager(dc.getDatabaseConfigurationParameters().getPackage());
+					Map<Long, EncryptedDatabaseBackupMetaDataPerFile> hm=centralDatabaseBackup
+							.databaseBackup
+							.get(d.hostID)
+							.databaseBackupPerPackage
+							.get(dc.getDatabaseConfigurationParameters().getPackage().getName())
+							.metaDataPerFile;
+					List<Long> list=brm.getFinalTimestamps();
+					for (long l : list)
+					{
+						Assert.assertTrue(hm.containsKey(l));
+					}
+					for (long l : hm.keySet())
+					{
+						Assert.assertTrue(list.contains(l));
+					}
+				}
+			}
+		}
+	}
+	void checkCentralBackupSynchronizationWithOtherPeers(Database d) throws DatabaseException {
+		DatabaseWrapper dw=d.getDbwrapper();
+		if (dw.getSynchronizer().isInitializedWithCentralBackup())
+		{
+			for (DatabaseConfiguration dc : dw.getDatabaseConfigurations()) {
+				if (dc.getDatabaseConfigurationParameters().isSynchronizedWithCentralBackupDatabase())
+				{
+					for (Database dother : listDatabase)
+					{
+						if (dother!=d)
+						{
+							if (d.getDbwrapper().getSynchronizer().isSynchronizationActivatedWithChannelAndThroughCentralDatabaseBackup(dother.hostID))
+							{
+								Assert.assertEquals(
+										d.getDbwrapper().getSynchronizer().getLastValidatedDistantIDSynchronization(dother.hostID),
+										dother.getDbwrapper().getSynchronizer().getLastValidatedLocalIDSynchronization(dother.hostID));
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
 
 	protected void checkAllDatabaseInternalDataUsedForSynchro() throws DatabaseException {
 		for (CommonDecentralizedTests.Database db : listDatabase) {

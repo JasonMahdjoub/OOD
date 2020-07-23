@@ -2271,7 +2271,20 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 	}*/
 
-
+	public Set<DatabaseConfiguration> getDatabaseConfigurations()
+	{
+		lockRead();
+		try {
+			Set<DatabaseConfiguration> res = new HashSet<>();
+			for (Database d : sql_database.values()) {
+				res.add(d.configuration);
+			}
+			return res;
+		}
+		finally {
+			unlockRead();
+		}
+	}
 
 
 
