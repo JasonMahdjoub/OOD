@@ -1045,12 +1045,6 @@ public abstract class CommonDecentralizedTests {
 		return changed;
 	}
 
-	protected void x() throws DatabaseException {
-		for (Database d : listDatabase)
-			if (d.dbwrapper.getSynchronizer().isInitializedWithCentralBackup())
-				d.dbwrapper.getSynchronizer().checkForNewCentralBackupDatabaseEvent();
-
-	}
 
 	protected boolean checkMessages() throws Exception {
 		synchronized (CommonDecentralizedTests.class) {

@@ -67,6 +67,7 @@ import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -663,6 +664,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		private boolean sendIndirectTransactions;
 		private AbstractSecureRandom random=null;
 		private EncryptionProfileProvider encryptionProfileProvider=null;
+		private long minFilePartDurationBeforeBecomingFinalFilePart=Long.MAX_VALUE;
 
 		DatabaseSynchronizer() {
 		}
@@ -726,13 +728,15 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				notifier.newDatabaseEventDetected(DatabaseWrapper.this);
 		}
 
-		public DatabaseEvent nextEvent() {
+		public DatabaseEvent nextEvent() throws DatabaseException {
 			
 			try
 			{
 				lockWrite();
 				if (this.extendedTransactionInProgress)
 					return null;
+
+				checkForNewCentralBackupDatabaseEvent();
 				if (events.isEmpty())
 					return null;
 				else {
@@ -761,15 +765,15 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			
 		}*/
 
-		public DatabaseEvent waitNextEvent() throws InterruptedException {
+		public DatabaseEvent waitNextEvent() throws InterruptedException, DatabaseException {
 
 			try {
 				lockWrite();
-				DatabaseEvent de = nextEvent();
-				for (; de != null; de = nextEvent()) {
-					newEventCondition.await();
+				DatabaseEvent de;
+				while ((de = nextEvent()) == null) {
+					newEventCondition.await(minFilePartDurationBeforeBecomingFinalFilePart, TimeUnit.MILLISECONDS);
 				}
-				return null;
+				return de;
 			}
 			finally
 			{
@@ -1469,23 +1473,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				unlockWrite();
 			}
 		}
-		public void checkForNewCentralBackupDatabaseEvent() throws DatabaseException {
-			lockWrite();
-			try {
-				if (centralBackupInitialized) {
-					for (Map.Entry<Package, Database> e : sql_database.entrySet()) {
-						if (e.getValue().backupRestoreManager != null) {
-							checkForNewBackupFilePartToSendToCentralDatabaseBackup(e.getKey());
-						}
+		private void checkForNewCentralBackupDatabaseEvent() throws DatabaseException {
+			if (centralBackupInitialized) {
+				for (Map.Entry<Package, Database> e : sql_database.entrySet()) {
+					if (e.getValue().backupRestoreManager != null) {
+						checkForNewBackupFilePartToSendToCentralDatabaseBackup(e.getKey());
 					}
 				}
-
 			}
-			finally {
-				unlockWrite();
-			}
-
-
 		}
 
 		public boolean isInitializedWithCentralBackup(){
@@ -1671,7 +1666,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}*/
 		private void initConnexionWithDistantBackupCenter() throws DatabaseException {
 			final Map<DecentralizedValue, Long> lastValidatedDistantIDs=new HashMap<>();
-
+			minFilePartDurationBeforeBecomingFinalFilePart=Long.MAX_VALUE;
+			for (Database d : sql_database.values())
+			{
+				if (d.backupRestoreManager!=null && d.configuration.getDatabaseConfigurationParameters().getBackupConfiguration().getMaxBackupFileAgeInMs()<minFilePartDurationBeforeBecomingFinalFilePart)
+					minFilePartDurationBeforeBecomingFinalFilePart=d.configuration.getDatabaseConfigurationParameters().getBackupConfiguration().getMaxBackupFileAgeInMs();
+			}
 			getHooksTransactionsTable()
 					.getRecords(new Filter<Record>() {
 						@Override
@@ -2078,7 +2078,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						return;
 					}
 					Database db=sql_database.get(p);
-					if (db!=null){
+					if (db!=null && db.configuration.getDatabaseConfigurationParameters().isSynchronizedWithCentralBackupDatabase()){
 						validateLastSynchronizationWithCentralDatabaseBackup(p,db, db.lastValidatedTransactionUTCForCentralBackup );
 					}
 				}
