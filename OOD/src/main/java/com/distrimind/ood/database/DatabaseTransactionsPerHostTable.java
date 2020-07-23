@@ -952,6 +952,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 				int nextTransactionPosition = ois.readInt();
 				if (nextTransactionPosition==-1)
 					break;
+				System.out.println("transaction read");
 				long transactionID;
 				boolean withID;
 				if (!(withID=ois.readBoolean()) || (transactionID=ois.readLong())<=lastDistantTransactionID)
@@ -973,11 +974,13 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 				}
 
 				DatabaseEventsTable.DatabaseEventsIterator it=new DatabaseEventsTable.DatabaseEventsIterator(new LimitedRandomInputStream(ois, ois.currentPosition()), false){
-					byte eventTypeByte;
+					Byte eventTypeByte;
 					int position=0;
 					private final byte[] recordBuffer=new byte[1<<24-1];
 					@Override
 					public DatabaseEventsTable.AbstractRecord next() throws DatabaseException {
+						System.out.println("record read");
+						eventTypeByte=null;
 						try {
 							long startRecord=getDataInputStream().currentPosition();
 							DatabaseEventType eventType = DatabaseEventType.getEnum(eventTypeByte);
@@ -1063,14 +1066,31 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 					@Override
 					public boolean hasNext() throws DatabaseException {
 						try {
-							eventTypeByte=getDataInputStream().readByte();
-							setNextEvent(eventTypeByte);
+							if (eventTypeByte==null) {
+								eventTypeByte = getDataInputStream().readByte();
+								setNextEvent(eventTypeByte);
+								if (eventTypeByte==-1)
+									System.out.println("transaction read end");
+							}
+
 							return eventTypeByte!=-1;
 						} catch (IOException e) {
 							throw DatabaseException.getDatabaseException(e);
 						}
 					}
 
+					@Override
+					public void close() throws IOException {
+						super.close();
+						eventTypeByte=null;
+					}
+
+					@Override
+					public void reset() throws IOException {
+						super.reset();
+						System.out.println("transaction read reset");
+						eventTypeByte=null;
+					}
 				};
 				try {
 					alterDatabase(comingFromRecord, new Reference<>(comingFromRecord),
