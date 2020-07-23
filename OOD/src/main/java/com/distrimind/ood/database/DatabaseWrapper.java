@@ -1551,13 +1551,15 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			finally {
 				unlockWrite();
 			}
-		}*/
+		}
 		@SuppressWarnings("UnusedReturnValue")
 		public boolean unsynchronizeDatabasePackageWithCentralBackup(final Package _package) throws DatabaseException {
 			lockWrite();
+
 			try {
 				if (_package.equals(DatabaseWrapper.class.getPackage()))
 					throw new IllegalArgumentException();
+
 				if (runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
 					@Override
 					public Boolean run() throws Exception {
@@ -1600,7 +1602,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			finally {
 				unlockWrite();
 			}
-		}
+		}*/
 
 		public Set<String> getDatabasePackagesToSynchronizeWithCentralBackup() throws DatabaseException {
 			lockRead();
@@ -4249,7 +4251,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 				@Override
 				public Void run(DatabaseWrapper sql_connection) throws DatabaseException {
-					getSynchronizer().unsynchronizeDatabasePackageWithCentralBackup(configuration.getDatabaseConfigurationParameters().getPackage());
+					//getSynchronizer().unsynchronizeDatabasePackageWithCentralBackup(configuration.getDatabaseConfigurationParameters().getPackage());
 
 					try {
 						if (!sql_database.containsKey(configuration.getDatabaseConfigurationParameters().getPackage()))
