@@ -56,6 +56,7 @@ public class DatabaseConfiguration {
 
 	private final DatabaseConfigurationParameters databaseConfigurationParameters;
 	private final Set<Class<? extends Table<?>>> classes;
+	private List<Class<? extends Table<?>>> sortedClasses=null;
 
 	private DatabaseConfiguration oldDatabaseTables;
 	private DatabaseLifeCycles databaseLifeCycles;
@@ -112,21 +113,23 @@ public class DatabaseConfiguration {
 	public Set<Class<? extends Table<?>>> getTableClasses() {
 		return classes;
 	}
-
-	public List<Class<? extends Table<?>>> getSortedTableClasses(DatabaseWrapper wrapper) throws DatabaseException {
-
-
+	void setDatabaseWrapper(DatabaseWrapper wrapper) throws DatabaseException {
 		ArrayList<Table<?>> tables=new ArrayList<>(this.classes.size());
 		for (Class<? extends Table<?>> c : this.classes)
 		{
 			tables.add(wrapper.getTableInstance(c));
 		}
 		Collections.sort(tables);
-		ArrayList<Class<? extends Table<?>>> classes=new ArrayList<>(this.classes.size());
+		sortedClasses=new ArrayList<>(tables.size());
 		for (Table<?> t : tables)
 			//noinspection unchecked
-			classes.add((Class<? extends Table<?>>)t.getClass());
-		return classes;
+			sortedClasses.add((Class<? extends Table<?>>)t.getClass());
+	}
+	public List<Class<? extends Table<?>>> getSortedTableClasses() throws DatabaseException {
+		if (sortedClasses==null)
+			throw new DatabaseException("This configuration was not loaded");
+		return sortedClasses;
+
 
 	}
 

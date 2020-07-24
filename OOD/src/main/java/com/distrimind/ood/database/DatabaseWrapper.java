@@ -4651,13 +4651,17 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				assert actualDatabaseLoading!=null;
 				if (databaseVersion==-1)
 					databaseVersion=getCurrentDatabaseVersion(configuration.getDatabaseConfigurationParameters().getPackage());
+				boolean initBackupRestore=false;
+				boolean restoreSynchronizerHosts=false;
+				DatabaseLifeCycles callable=null;
+				Collection<DatabaseHooksTable.Record> hosts=null;
 				if (!internalPackage && allNotFound) {
 
 					try {
-						DatabaseLifeCycles callable = configuration.getDatabaseLifeCycles();
+						callable = configuration.getDatabaseLifeCycles();
 						this.actualDatabaseLoading=null;
 
-						Collection<DatabaseHooksTable.Record> hosts=getSynchronizer().resetSynchronizerAndGetAllHosts();
+						hosts=getSynchronizer().resetSynchronizerAndGetAllHosts();
 						this.actualDatabaseLoading=actualDatabaseLoading;
 						int currentVersion=getCurrentDatabaseVersion(configuration.getDatabaseConfigurationParameters().getPackage());
 						if (currentVersion==databaseVersion) {
@@ -4682,9 +4686,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 								if (removeOldDatabase)
 									deleteDatabase(oldConfig, databaseVersion);
 							}
-							actualDatabaseLoading.initBackupRestoreManager(this, getDatabaseDirectory(), configuration);
+							initBackupRestore=true;
 						}
-						getSynchronizer().restoreHosts(hosts, callable != null && callable.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized());
+						restoreSynchronizerHosts=true;
 
 
 
@@ -4710,6 +4714,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					//db.updateCurrentVersion();
 				}
 				sql_database = sd;
+				configuration.setDatabaseWrapper(this);
+				if (initBackupRestore)
+					actualDatabaseLoading.initBackupRestoreManager(this, getDatabaseDirectory(), configuration);
+				if (restoreSynchronizerHosts)
+					getSynchronizer().restoreHosts(hosts, callable != null && callable.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized());
 			} finally {
 				actualDatabaseLoading = null;
 				if (!allNotFound && !configuration.getDatabaseConfigurationParameters().getPackage().equals(this.getClass().getPackage()))

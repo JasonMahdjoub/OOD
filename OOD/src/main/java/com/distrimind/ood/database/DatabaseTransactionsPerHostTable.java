@@ -941,6 +941,9 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 			long endTransactionID=ois.readLong();
 			if (startTransactionID>lastDistantTransactionID+1 || endTransactionID<=lastDistantTransactionID)
 				return false;//new DatabaseWrapper.TransactionsInterval(startTransactionID, endTransactionID);
+			List<Class<? extends Table<?>>> fileListTables=null;
+			if (referenceFile)
+				fileListTables=BackupRestoreManager.extractClassesList(ois);
 			BackupRestoreManager.positionForDataRead(ois, referenceFile);
 			/*if (ois.readBoolean()) {
 				ois.seek(ois.readInt());
@@ -973,12 +976,18 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 				if (ois.readInt()!=-1)
 					throw new DatabaseException("Invalid data");
 				final DatabaseTransactionEventsTable.Record dte=new DatabaseTransactionEventsTable.Record(transactionID, transactionUTC, databasePackage);
-				List<Class<? extends Table<?>>> classes=getDatabaseWrapper().getDatabaseConfiguration(databasePackage).getSortedTableClasses(getDatabaseWrapper());
+				List<Class<? extends Table<?>>> classes=getDatabaseWrapper().getDatabaseConfiguration(databasePackage).getSortedTableClasses();
+				if (fileListTables!=null)
+				{
+					if (!fileListTables.equals(classes))
+						return false;
+				}
 				final ArrayList<Table<?>> tables=new ArrayList<>(classes.size());
 				for (Class<? extends Table<?>> c : classes) {
 					Table<?> t = getDatabaseWrapper().getTableInstance(c);
 					tables.add(t);
 				}
+
 				final long positionOffset=ois.currentPosition();
 				DatabaseEventsTable.DatabaseEventsIterator it=new DatabaseEventsTable.DatabaseEventsIterator(new LimitedRandomInputStream(ois, positionOffset), false){
 					Byte eventTypeByte;

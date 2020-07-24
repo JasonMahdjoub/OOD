@@ -120,7 +120,7 @@ public class BackupRestoreManager {
 		FileTools.checkFolderRecursive(backupDirectory);
 		this.backupDirectory=backupDirectory;
 		this.backupConfiguration=backupConfiguration;
-		classes=databaseConfiguration.getSortedTableClasses(databaseWrapper);
+		classes=databaseConfiguration.getSortedTableClasses();
 
 		this.computeDatabaseReference=new File(this.backupDirectory, "compute_database_new_reference.query");
 		if (this.computeDatabaseReference.exists() && this.computeDatabaseReference.isDirectory())
@@ -937,11 +937,18 @@ public class BackupRestoreManager {
 		lastBackupEventUTC=Long.MIN_VALUE;
 
 	}
-	private List<Class<? extends Table<?>>> extractClassesList(File file, long fileTimeStamp, boolean lastFileReference) throws DatabaseException {
-		List<Class<? extends Table<?>>> currentClassesList;
-		try(RandomFileInputStream rfis=new RandomFileInputStream(file)) {
-			if (lastFileReference)
-				lastBackupEventUTC=rfis.readLong();
+	static List<Class<? extends Table<?>>> extractClassesList(RandomInputStream rfis) throws DatabaseException {
+		return extractClassesList(rfis, null);
+	}
+	private static List<Class<? extends Table<?>>> extractClassesList(RandomInputStream rfis, BackupRestoreManager backupRestoreManager) throws DatabaseException {
+		try {
+			if (backupRestoreManager != null) {
+				if (rfis.currentPosition() != 0)
+					rfis.seek(0);
+				backupRestoreManager.lastBackupEventUTC = rfis.readLong();
+			}
+			else
+				rfis.seek(8);
 			if (!rfis.readBoolean()) {
 					/*transactionsInterval = null;
 				}
@@ -953,31 +960,40 @@ public class BackupRestoreManager {
 					transactionsInterval=new DatabaseWrapper.TransactionsInterval(s, e);*/
 			}
 
-			rfis.seek(LIST_CLASSES_POSITION/*RecordsIndex.getListClassPosition(rfis)*/+4);
+			rfis.seek(LIST_CLASSES_POSITION/*RecordsIndex.getListClassPosition(rfis)*/ + 4);
 
-			int s=rfis.readShort();
-			if (s<0)
+			int s = rfis.readShort();
+			if (s < 0)
 				throw new IOException();
 
-			currentClassesList=new ArrayList<>(s);
-			byte[] tab=new byte[Short.MAX_VALUE];
-			for (int i=0;i<s;i++)
-			{
-				int l=rfis.readShort();
+			ArrayList<Class<? extends Table<?>>> currentClassesList = new ArrayList<>(s);
+			byte[] tab = new byte[Short.MAX_VALUE];
+			for (int i = 0; i < s; i++) {
+				int l = rfis.readShort();
 				rfis.readFully(tab, 0, l);
-				String className=new String(tab, 0, l, StandardCharsets.UTF_8);
+				String className = new String(tab, 0, l, StandardCharsets.UTF_8);
 				@SuppressWarnings("unchecked")
-				Class<? extends Table<?>> c=(Class<? extends Table<?>>)Class.forName(className);
+				Class<? extends Table<?>> c = (Class<? extends Table<?>>) Class.forName(className);
 				currentClassesList.add(c);
 			}
+
+			return currentClassesList;
+		}
+		catch (IOException | ClassCastException | ClassNotFoundException e) {
+			throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
+		}
+	}
+	private List<Class<? extends Table<?>>> extractClassesList(File file, long fileTimeStamp, boolean lastFileReference) throws DatabaseException {
+
+		try(RandomFileInputStream rfis=new RandomFileInputStream(file)) {
+			List<Class<? extends Table<?>>> currentClassesList=extractClassesList(rfis, lastFileReference?this:null);
 			if (lastFileReference) {
 				currentFileReferenceUTC = fileTimeStamp;
 				currentFileReference=file;
 				this.currentClassesList=currentClassesList;
 			}
 			return currentClassesList;
-
-		} catch (IOException | ClassCastException | ClassNotFoundException e) {
+		} catch (IOException | ClassCastException e) {
 			throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 		}
 
