@@ -983,7 +983,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 				DatabaseEventsTable.DatabaseEventsIterator it=new DatabaseEventsTable.DatabaseEventsIterator(new LimitedRandomInputStream(ois, positionOffset), false){
 					Byte eventTypeByte;
 					int position=0;
-					private final byte[] recordBuffer=new byte[1<<24-1];
+					//private final byte[] recordBuffer=new byte[1<<24-1];
 					@Override
 					public DatabaseEventsTable.AbstractRecord next() throws DatabaseException {
 						System.out.println("record read");
@@ -1002,11 +1002,12 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 							int s = getDataInputStream().readUnsignedShortInt();
 							if (s == 0)
 								throw new IOException();
-							getDataInputStream().readFully(recordBuffer, 0, s);
+							byte[] spks=new byte[s];
+							getDataInputStream().readFully(spks);
 							DatabaseEventsTable.Record event=new DatabaseEventsTable.Record();
 							event.setConcernedTable(table.getClass().getName());
 							event.setPosition(position++);
-							event.setConcernedSerializedPrimaryKey(recordBuffer);
+							event.setConcernedSerializedPrimaryKey(spks);
 							event.setType(eventTypeByte);
 							event.setTransaction(dte);
 							switch (eventType) {
@@ -1015,8 +1016,9 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 									if (getDataInputStream().readBoolean()) {
 										s = getDataInputStream().readUnsignedShortInt();
-										getDataInputStream().readFully(recordBuffer, 0, s);
-										event.setConcernedSerializedNewForeignKey(recordBuffer);
+										byte[] snfk=new byte[s];
+										getDataInputStream().readFully(snfk);
+										event.setConcernedSerializedNewForeignKey(snfk);
 									}
 
 									if (getDataInputStream().readBoolean()) {
@@ -1024,9 +1026,10 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 										if (s < 0)
 											throw new IOException();
 										if (s > 0) {
-											getDataInputStream().readFully(recordBuffer, 0, s);
+											byte[] snfk=new byte[s];
+											getDataInputStream().readFully(snfk);
 
-											event.setConcernedSerializedNewForeignKey(recordBuffer);
+											event.setConcernedSerializedNewForeignKey(snfk);
 										}
 									}
 
@@ -1036,8 +1039,9 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 									if (getDataInputStream().readBoolean()) {
 										s = getDataInputStream().readUnsignedShortInt();
-										getDataInputStream().readFully(recordBuffer, 0, s);
-										event.setConcernedSerializedNewForeignKey(recordBuffer);
+										byte[] snfk=new byte[s];
+										getDataInputStream().readFully(snfk);
+										event.setConcernedSerializedNewForeignKey(snfk);
 									}
 
 									if (getDataInputStream().readBoolean()) {
@@ -1045,8 +1049,9 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 										if (s < 0)
 											throw new IOException();
 										if (s > 0) {
-											getDataInputStream().readFully(recordBuffer, 0, s);
-											event.setConcernedSerializedNewForeignKey(recordBuffer);
+											byte[] snfk=new byte[s];
+											getDataInputStream().readFully(snfk);
+											event.setConcernedSerializedNewForeignKey(snfk);
 										}
 									}
 
