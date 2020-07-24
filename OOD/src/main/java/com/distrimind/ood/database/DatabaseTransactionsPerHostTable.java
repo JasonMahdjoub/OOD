@@ -971,6 +971,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 				}
 				else if (transactionID!=lastDistantTransactionID+1)
 					throw new DatabaseException("Invalid received backup file");
+				System.out.println("transaction id : "+transactionID);
 				findOneTransactionWithID=true;
 				long transactionUTC=ois.readLong();
 				if (ois.readInt()!=-1)
@@ -1020,9 +1021,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 							event.setType(eventTypeByte);
 							event.setTransaction(dte);
 							switch (eventType) {
-								case ADD: {
-									assert eventTypeByte == 2;
-
+								case ADD: case UPDATE:{
 									if (getDataInputStream().readBoolean()) {
 										s = getDataInputStream().readUnsignedShortInt();
 										byte[] snfk=new byte[s];
@@ -1035,36 +1034,15 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 										if (s < 0)
 											throw new IOException();
 										if (s > 0) {
-											byte[] snfk=new byte[s];
-											getDataInputStream().readFully(snfk);
+											byte[] snk=new byte[s];
+											getDataInputStream().readFully(snk);
 
-											event.setConcernedSerializedNewForeignKey(snfk);
+											event.setConcernedSerializedNewNonKey(snk);
 										}
 									}
 
 								}
-								break;
-								case UPDATE: {
 
-									if (getDataInputStream().readBoolean()) {
-										s = getDataInputStream().readUnsignedShortInt();
-										byte[] snfk=new byte[s];
-										getDataInputStream().readFully(snfk);
-										event.setConcernedSerializedNewForeignKey(snfk);
-									}
-
-									if (getDataInputStream().readBoolean()) {
-										s = getDataInputStream().readInt();
-										if (s < 0)
-											throw new IOException();
-										if (s > 0) {
-											byte[] snfk=new byte[s];
-											getDataInputStream().readFully(snfk);
-											event.setConcernedSerializedNewForeignKey(snfk);
-										}
-									}
-
-								}
 								break;
 								case REMOVE:
 								case REMOVE_WITH_CASCADE:

@@ -8909,7 +8909,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	}
 	@SuppressWarnings("SameParameterValue")
 	void deserializePrimaryKeys(DatabaseRecord record, byte[] tab, int off, int len) throws DatabaseException {
-		try (RandomByteArrayInputStream bais = new RandomByteArrayInputStream(Arrays.copyOfRange(tab, off, off+len))) {
+		checkLimits(tab, off, len);
+		try (RandomByteArrayInputStream bais = new RandomByteArrayInputStream(tab.length==len?tab:Arrays.copyOfRange(tab, off, off+len))) {
 			for (FieldAccessor fa : primary_keys_fields) {
 				fa.deserialize(bais, record);
 			}
@@ -8926,7 +8927,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	}
 	@SuppressWarnings("SameParameterValue")
 	void deserializePrimaryKeys(HashMap<String, Object> map, byte[] tab, int off, int len) throws DatabaseException {
-		try (RandomByteArrayInputStream bais = new RandomByteArrayInputStream(Arrays.copyOfRange(tab, off, off+len))) {
+		checkLimits(tab, off, len);
+		try (RandomByteArrayInputStream bais = new RandomByteArrayInputStream(tab.length==len?tab:Arrays.copyOfRange(tab, off, off+len))) {
 			for (FieldAccessor fa : primary_keys_fields) {
 				fa.deserialize(bais, map);
 			}
@@ -8941,13 +8943,23 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	@SuppressWarnings("SameParameterValue")
 	void deserializeFields(DatabaseRecord record, byte[] tab, boolean includePK, boolean includeFK,boolean includeNonKey) throws DatabaseException
 	{
-		deserializeFields(record, tab, 0, tab.length, includePK, includeFK, includeNonKey);
+		deserializeFields(record, tab, 0, tab==null?0:tab.length, includePK, includeFK, includeNonKey);
 	}
-
+	private static void checkLimits(byte[] b, int off, int len)
+	{
+		if (b==null)
+			throw new NullPointerException();
+		if ((off | len) < 0 || len > b.length - off)
+			throw new IndexOutOfBoundsException();
+	}
     @SuppressWarnings("SameParameterValue")
 	void deserializeFields(DatabaseRecord record, byte[] tab, int off, int len, boolean includePK, boolean includeFK,
 						   boolean includeNonKey) throws DatabaseException {
-		try (RandomByteArrayInputStream ois = new RandomByteArrayInputStream(Arrays.copyOfRange(tab, off, len))) {
+
+		if (!includePK && (tab==null || len==0))
+			return;
+		checkLimits(tab, off, len);
+		try (RandomByteArrayInputStream ois = new RandomByteArrayInputStream(tab.length==len?tab:Arrays.copyOfRange(tab, off, len))) {
 			for (FieldAccessor fa : fields) {
 				if (fa.isPrimaryKey()) {
 					if (includePK)
@@ -8969,7 +8981,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 	void deserializeFields(Map<String, Object> hm, byte[] tab, @SuppressWarnings("SameParameterValue") int off, int len, boolean includePK, boolean includeFK,
 						   boolean includeNonKey) throws DatabaseException {
-		try (RandomByteArrayInputStream ois = new RandomByteArrayInputStream(Arrays.copyOfRange(tab, off, off+len))) {
+		if (!includePK && (tab==null || len==0))
+			return;
+		checkLimits(tab, off, len);
+		try (RandomByteArrayInputStream ois = new RandomByteArrayInputStream(tab.length==len?tab:Arrays.copyOfRange(tab, off, off+len))) {
 			for (FieldAccessor fa : fields) {
 				if (fa.isPrimaryKey()) {
 					if (includePK)

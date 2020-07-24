@@ -1975,7 +1975,7 @@ public abstract class CommonDecentralizedTests {
 
 			for (int i = 1; i < peersNumber; i++) {
 				db = concernedDatabase[i];
-				if (peersInitiallyConnected)
+				if (peersInitiallyConnected && !canInitCentralBackup())
 					Assert.assertFalse(db.isNewDatabaseEventDetected(), "" + db.getLocalEvents());
 				testEventSynchronized(db, event, false);
 			}
