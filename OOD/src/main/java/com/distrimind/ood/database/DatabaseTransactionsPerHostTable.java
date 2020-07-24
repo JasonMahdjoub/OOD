@@ -900,7 +900,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 	}
 
 	boolean alterDatabase(final String databasePackage, final DecentralizedValue comingFrom,
-													   final RandomInputStream ois) throws DatabaseException {
+													   final RandomInputStream ois, boolean referenceFile) throws DatabaseException {
 
 		if (comingFrom == null)
 			throw new NullPointerException("comingFrom");
@@ -941,17 +941,19 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 			long endTransactionID=ois.readLong();
 			if (startTransactionID>lastDistantTransactionID+1 || endTransactionID<=lastDistantTransactionID)
 				return false;//new DatabaseWrapper.TransactionsInterval(startTransactionID, endTransactionID);
-
-			if (ois.readBoolean()) {
+			BackupRestoreManager.positionForDataRead(ois, referenceFile);
+			/*if (ois.readBoolean()) {
 				ois.seek(ois.readInt());
 			}
 			else
-				ois.skipNBytes(4);
+				ois.skipNBytes(4);*/
 			boolean findOneTransactionWithID=false;
 			while(ois.available()>0) {
 				int nextTransactionPosition = ois.readInt();
 				if (nextTransactionPosition==-1)
 					break;
+				if (nextTransactionPosition<=ois.currentPosition())
+					throw new DatabaseException("Invalid data");
 				System.out.println("transaction read");
 				long transactionID;
 				boolean withID;
@@ -961,10 +963,15 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 						throw new DatabaseException("Synchronization was disabled during backup process");
 					findOneTransactionWithID|=withID;
 					ois.seek(nextTransactionPosition);
+					System.out.println("transaction next : "+withID);
 					continue;
 				}
+				else if (transactionID!=lastDistantTransactionID+1)
+					throw new DatabaseException("Invalid received backup file");
 				findOneTransactionWithID=true;
 				long transactionUTC=ois.readLong();
+				if (ois.readInt()!=-1)
+					throw new DatabaseException("Invalid data");
 				final DatabaseTransactionEventsTable.Record dte=new DatabaseTransactionEventsTable.Record(transactionID, transactionUTC, databasePackage);
 				List<Class<? extends Table<?>>> classes=getDatabaseWrapper().getDatabaseConfiguration(databasePackage).getSortedTableClasses(getDatabaseWrapper());
 				final ArrayList<Table<?>> tables=new ArrayList<>(classes.size());
@@ -972,17 +979,17 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 					Table<?> t = getDatabaseWrapper().getTableInstance(c);
 					tables.add(t);
 				}
-
-				DatabaseEventsTable.DatabaseEventsIterator it=new DatabaseEventsTable.DatabaseEventsIterator(new LimitedRandomInputStream(ois, ois.currentPosition()), false){
+				final long positionOffset=ois.currentPosition();
+				DatabaseEventsTable.DatabaseEventsIterator it=new DatabaseEventsTable.DatabaseEventsIterator(new LimitedRandomInputStream(ois, positionOffset), false){
 					Byte eventTypeByte;
 					int position=0;
 					private final byte[] recordBuffer=new byte[1<<24-1];
 					@Override
 					public DatabaseEventsTable.AbstractRecord next() throws DatabaseException {
 						System.out.println("record read");
-						eventTypeByte=null;
+
 						try {
-							long startRecord=getDataInputStream().currentPosition();
+							long startRecord=getDataInputStream().currentPosition()+positionOffset-1;
 							DatabaseEventType eventType = DatabaseEventType.getEnum(eventTypeByte);
 							if (eventType == null)
 								throw new IOException();
@@ -1053,13 +1060,17 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 
 							}
-							if (getDataInputStream().readInt() != startRecord)
-								throw new IOException();
+							int previous=getDataInputStream().readInt();
+							if (previous != startRecord)
+								throw new IOException("previous="+previous+", startRecord="+startRecord);
 							return event;
 						}
 						catch (IOException e)
 						{
 							throw DatabaseException.getDatabaseException(e);
+						}
+						finally {
+							eventTypeByte=null;
 						}
 					}
 
@@ -1096,6 +1107,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 					alterDatabase(comingFromRecord, new Reference<>(comingFromRecord),
 							dte, it, lastValidatedTransaction,
 							hooksToNotify, new Reference<>(), true);
+					lastDistantTransactionID=transactionID;
 					ois.seek(nextTransactionPosition);
 				}
 				finally {

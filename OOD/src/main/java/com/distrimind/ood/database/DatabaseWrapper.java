@@ -2140,7 +2140,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						EncryptionTools.decode(encryptionProfileProvider, backupPart.getPartInputStream(), out);
 						out.flush();
 						cp.otherBackupDatabasePartsSynchronizingWithCentralDatabaseBackup=false;
-						if (getDatabaseTransactionsPerHostTable().alterDatabase(backupPart.getMetaData().getPackageString(), backupPart.getHostSource(), out.getRandomInputStream())) {
+						if (getDatabaseTransactionsPerHostTable().alterDatabase(backupPart.getMetaData().getPackageString(), backupPart.getHostSource(), out.getRandomInputStream(), backupPart.getMetaData().isReferenceFile())) {
 							checkAskForEncryptedBackupFilePart(backupPart.getHostSource(), backupPart.getMetaData().getPackageString());
 						}
 					} catch (IOException e) {

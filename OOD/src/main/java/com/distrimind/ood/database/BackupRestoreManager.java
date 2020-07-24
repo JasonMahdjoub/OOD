@@ -2104,7 +2104,7 @@ public class BackupRestoreManager {
 			databaseWrapper.unlockWrite();
 		}
 	}
-	private void positionForDataRead(RandomInputStream in, boolean reference) throws DatabaseException {
+	static void positionForDataRead(RandomInputStream in, boolean reference) throws DatabaseException {
 		try {
 
 			if (reference) {
