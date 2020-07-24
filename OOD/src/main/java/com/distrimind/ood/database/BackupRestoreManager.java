@@ -1604,7 +1604,8 @@ public class BackupRestoreManager {
 
 			Long lid=metaData.getLastTransactionID();
 			if (lid==null)
-				lid=getLastTransactionIDBeforeGiveTimeStamp(timeStamp);
+				lid= getLastTransactionIDBeforeGivenTimeStamp(timeStamp);
+			System.out.println("getEncryptedFilePartWithMetaData getLastTransactionID="+lid+", reference="+backupReference);
 			return new EncryptedBackupPartDestinedToCentralDatabaseBackup(fromHostIdentifier, encryptedMetaData, out.getRandomInputStream(), EncryptionTools.encryptID(lid, random, encryptionProfileProvider));
 		} catch (IOException e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -1642,7 +1643,7 @@ public class BackupRestoreManager {
 		}
 	}
 
-	private long getLastTransactionIDBeforeGiveTimeStamp(long timeStamp) throws DatabaseException {
+	private long getLastTransactionIDBeforeGivenTimeStamp(long timeStamp) throws DatabaseException {
 		int i=fileTimeStamps.indexOf(timeStamp);
 		assert i>=0;
 		for (;i>0;i--)
@@ -2418,7 +2419,7 @@ public class BackupRestoreManager {
 						cancelTransaction();
 						return;
 					}
-
+System.out.println("validateTransaction : "+transactionID);
 					saveTransactionQueue(out, nextTransactionReference, transactionUTC, firstTransactionID, transactionToSynchronize ? transactionID : null/*, index*/);
 
 					try {

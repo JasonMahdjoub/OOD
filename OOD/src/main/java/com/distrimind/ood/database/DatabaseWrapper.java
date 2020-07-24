@@ -659,7 +659,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		private long lastTransactionID=Long.MIN_VALUE;
 		/*private final TreeSet<DatabaseBackupToIncorporateFromCentralDatabaseBackup> differedDatabaseBackupToIncorporate=new TreeSet<>();
 		private final HashMap<DatabaseBackupToIncorporateFromCentralDatabaseBackup, InputStreamGetter> differedDatabaseBackupToIncorporateInputStreams=new HashMap<>();*/
-		private final Set<String> backupDatabasePartsSynchronizingWithCentralDatabaseBackup=new HashSet<>();
+		final Set<String> backupDatabasePartsSynchronizingWithCentralDatabaseBackup=new HashSet<>();
 		//private final Set<DecentralizedValue> otherBackupDatabasePartsSynchronizingWithCentralDatabaseBackup=new HashSet<>();
 		private boolean sendIndirectTransactions;
 		private AbstractSecureRandom random=null;
@@ -1464,7 +1464,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				DecentralizedValue hostID=r.getHostID();
 
 				cp.lastValidatedTransactionIDFromCentralBackup=lastValidatedDistantTransactionID;//cp.lastValidatedTransactionIDFromCentralBackup==null?lastValidatedDistantTransactionID:Math.max(cp.lastValidatedTransactionIDFromCentralBackup, lastValidatedDistantTransactionID);
+				System.out.println("updateDistantBackupCenter and validate : "+lastValidatedDistantTransactionID);
 				if (lastValidatedLocalTransactionID!=Long.MIN_VALUE) {
+
 					validateLastSynchronization(hostID,
 							lastValidatedLocalTransactionID, true);
 				}
@@ -1480,6 +1482,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (centralBackupInitialized) {
 				for (Map.Entry<Package, Database> e : sql_database.entrySet()) {
 					if (e.getValue().backupRestoreManager != null) {
+						System.out.println("Check last file for paclage "+e.getKey());
 						checkForNewBackupFilePartToSendToCentralDatabaseBackup(e.getKey());
 					}
 				}
@@ -1767,6 +1770,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 
 			lockWrite();
+			System.out.println("updateDistantBackupCenter : "+lastValidatedDistantTransactionID);
 			if (!centralBackupInitialized)
 				throw new DatabaseException("Distant database backup must be initialized first with function initDistantBackupCenterForThisHost");
 
@@ -2060,6 +2064,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				timeStamp = d.backupRestoreManager.getLastFileReferenceTimestampUTC(true);
 			} else {
 				timeStamp = d.backupRestoreManager.getNearestFileUTCFromGivenTimeNotIncluded(lastValidatedTransactionUTC);
+				if (timeStamp!=d.backupRestoreManager.getLastFileTimestampUTC(false))
+					System.out.println("Last file not included : timeStamp="+timeStamp+", lastTimeStamp="+d.backupRestoreManager.getLastFileTimestampUTC(false)+", deltaWithCurrentTime="+(d.backupRestoreManager.getLastFileTimestampUTC(false)-(System.currentTimeMillis()-d.backupRestoreManager.getBackupConfiguration().getMaxBackupFileAgeInMs()))+", lastValidatedUTC="+lastValidatedTransactionUTC);
 			}
 
 			if (timeStamp != Long.MIN_VALUE) {

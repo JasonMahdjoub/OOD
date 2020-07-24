@@ -230,6 +230,8 @@ public abstract class CommonDecentralizedTests {
 				fileBackupLocations.put(message.getMetaData().getFileTimestampUTC(), f);
 				metaDataPerFile.put(message.getMetaData().getFileTimestampUTC(), message.getMetaData());
 			}
+			else
+				Assert.fail();
 		}
 
 		public EncryptedDatabaseBackupMetaDataPerFile getEncryptedDatabaseBackupMetaDataPerFile(long timeStamp)
@@ -416,6 +418,8 @@ public abstract class CommonDecentralizedTests {
 				}
 
 			}
+			else
+				Assert.fail();
 		}
 		private DatabaseBackupPerHost addHost(DecentralizedValue host)
 		{
@@ -1106,11 +1110,14 @@ public abstract class CommonDecentralizedTests {
 	void checkCentralBackupSynchronization(Database d)
 	{
 		DatabaseWrapper dw=d.getDbwrapper();
+		Assert.assertEquals(dw.getSynchronizer().backupDatabasePartsSynchronizingWithCentralDatabaseBackup.size(), 0);
 		if (dw.getSynchronizer().isInitializedWithCentralBackup())
 		{
 			for (DatabaseConfiguration dc : dw.getDatabaseConfigurations()) {
+
 				if (dc.getDatabaseConfigurationParameters().isSynchronizedWithCentralBackupDatabase())
 				{
+					Assert.assertEquals(dc.getDatabaseConfigurationParameters().getBackupConfiguration().getMaxBackupFileAgeInMs(), 1000);
 					BackupRestoreManager brm=dw.getBackupRestoreManager(dc.getDatabaseConfigurationParameters().getPackage());
 					DatabaseBackup dbb=centralDatabaseBackup
 							.databaseBackup
@@ -1151,9 +1158,25 @@ public abstract class CommonDecentralizedTests {
 						{
 							if (d.getDbwrapper().getSynchronizer().isSynchronizationActivatedWithChannelAndThroughCentralDatabaseBackup(dother.hostID))
 							{
-								Assert.assertEquals(
-										d.getDbwrapper().getSynchronizer().getLastValidatedDistantIDSynchronization(dother.hostID),
-										dother.getDbwrapper().getTransactionIDTable().getLastTransactionID());
+								BackupRestoreManager brmo=dother.getDbwrapper().getBackupRestoreManager(dc.getDatabaseConfigurationParameters().getPackage());
+								List<Long> finalTimeStamps=brmo.getFinalTimestamps();
+								Long lastID=null;
+								if (finalTimeStamps.size()>0) {
+									long ts = finalTimeStamps.get(brmo.getFinalTimestamps().size() - 1);
+									lastID = brmo.getDatabaseBackupMetaDataPerFile(ts, brmo.isReference(ts)).getLastTransactionID();
+								}
+								if (lastID==null && finalTimeStamps.size()>1) {
+									long ts=finalTimeStamps.get(brmo.getFinalTimestamps().size()-2);
+									lastID = brmo.getDatabaseBackupMetaDataPerFile(ts, brmo.isReference(ts)).getLastTransactionID();
+								}
+								if (lastID!=null) {
+									//lastID = Long.MIN_VALUE;
+									System.out.println("Last other id : "+lastID);
+									Assert.assertEquals(
+											d.getDbwrapper().getSynchronizer().getLastValidatedDistantIDSynchronization(dother.hostID),
+											(long) lastID);
+								}
+
 							}
 						}
 					}
@@ -1852,7 +1875,7 @@ public abstract class CommonDecentralizedTests {
 			if (synchronizedOk)
 				Assert.assertNotNull(dr, event.getType().name() + " ; " + event.getTable(db.getDbwrapper()));
 			Assert.assertEquals(table.equalsAllFields(dr, event.getNewDatabaseRecord()), synchronizedOk,
-					"Concerned event : " + event);
+					"Concerned event=" + event+", table event="+dr+", type="+event.getType());
 		} else if (event.getType() == DatabaseEventType.REMOVE
 				|| event.getType() == DatabaseEventType.REMOVE_WITH_CASCADE) {
 			Table<DatabaseRecord> table = event.getTable(db.getDbwrapper());

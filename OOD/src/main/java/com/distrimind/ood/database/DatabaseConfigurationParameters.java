@@ -142,7 +142,7 @@ public class DatabaseConfigurationParameters extends MultiFormatProperties {
 
 
 	public boolean isSynchronizedWithCentralBackupDatabase() {
-		return synchronizationType==SynchronizationType.DECENTRALIZED_SYNCHRONIZATION_AND_SYNCHRONIZATION_WITH_CENTRAL_BACKUP_DATABASE;
+		return backupConfiguration!=null && synchronizationType==SynchronizationType.DECENTRALIZED_SYNCHRONIZATION_AND_SYNCHRONIZATION_WITH_CENTRAL_BACKUP_DATABASE;
 	}
 
 	public boolean isDecentralized()
