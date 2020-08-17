@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-2.5.0 Stable (Build: 906) (from 01/04/2013 to 21/02/2019)
+3.0.0 Stable (Build: 1038) (from 01/04/2013 to 30/03/2019)
 
 # Creator(s):
 Jason MAHDJOUB
@@ -11,11 +11,15 @@ Jason MAHDJOUB (Entred in the team at 01/04/2013)
 # Modifications:
 
 
-### 2.5.0 Stable (21/02/2020)
-* Update Utils to 4.14.0
+### 3.0.0 Stable (30/03/2020)
+* Update Utils to 4.15.2
+* Update HSQLDB to 2.5.1
 * Implementation of data synchronization with central database backup
+* Make OOD compatible with Android
 * Implementation of driver for MySQL
-* Implementation of driver for Android SQLite
+* Implementation of driver for Android H2 Database
+* Implementation of driver for PostgreSQL
+* Compatible with Java 8 and newer
 
 
 ### 2.4.0 Stable (11/02/2020)

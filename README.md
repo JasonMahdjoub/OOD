@@ -1,5 +1,14 @@
 # OOD
-Object Oriented Database Using HSQLDB
+OOD is a decentralized and asynchrone ORM (Object-Relational Mapping):
+* Compatible with Java 8 and newer
+* drivers for MySQL, PostgreSQL, H2, H2 for Android, DerbyDB, HSQLDB
+* Object
+* Decentralized database with tools of synchronization between peers
+* Database backup, historical tools and possiblity to revert database to a given time
+* Automating backup file's synchronization with central database server. Backup files can be encrypted (end-to-end encryption)
+* pseudo SQL querries possible (where clause)
+
+
 
 # Changes
 
@@ -21,26 +30,17 @@ Adapt into your build.gradle file, the next code :
 	...
 	dependencies {
 		...
-		compile(group:'com.distrimind.ood', name: 'OOD', version: '2.5.0-Stable')
+		compile(group:'com.distrimind.ood', name: 'OOD', version: '3.0.0-Stable')
 		//choose one of these optional drivers for H2 database
-			//optional and under JDK7 or Android API21
-			testImplementation(group:'com.h2database', name: 'h2', version: '1.4.199')
-			//optional and under JDK8 or newer
-			testImplementation(group:'com.h2database', name: 'h2', version: '1.4.200')
-		//choose one of these optional drivers for HSQLDB
-			//optional and under JDK7 
-			testImplementation(group:'org.hsqldb', name: 'hsqldb', version: '2.3.4')
-			//optional and under JDK8 or newer
-			testImplementation(group:'org.hsqldb', name: 'hsqldb', version: '2.5.0')
-		//choose one of these optional drivers for DerbyDB
-			//optional and under JDK7 
-			testImplementation(group:'org.apache.derby', name: 'derby', version: '10.11.1.1')
-			//optional and under JDK8 or newer
-			testImplementation(group:'org.apache.derby', name: 'derby', version: '10.15.1.3')
+		testImplementation(group:'com.h2database', name: 'h2', version: '1.4.200')
+		//optional and under JDK8 or newer
+		testImplementation(group:'org.hsqldb', name: 'hsqldb', version: '2.5.1')
+		//optional and under JDK8 or newer
+		testImplementation(group:'org.apache.derby', name: 'derby', version: '10.15.2.0')
 		//choose this optional driver for MySQL 
-			testImplementation(group: 'mysql', name: 'mysql-connector-java', version: '8.0.19')
-
-		...
+		testImplementation(group: 'mysql', name: 'mysql-connector-java', version: '8.0.20')
+		//choose this optional driver for PostgreSQL 
+		testImplementation(group: 'org.postgresql', name: 'postgresql', version: '42.2.14')
 	}
 	...
 
@@ -56,15 +56,12 @@ Adapt into your pom.xml file, the next code :
 			<dependency>
 				<groupId>com.distrimind.ood</groupId>
 				<artifactId>OOD</artifactId>
-				<version>2.5.0-Stable</version>
+				<version>3.0.0-Stable</version>
 			</dependency>
 			<!-- choose one of these optional drivers for H2 database-->
 				<dependency>
 					<groupId>com.h2database</groupId>
 					<artifactId>h2</artifactId>
-	
-					<!-- under JDK 7 or Android API21-->
-					<version>1.4.199</version>
 
 					<!-- under JDK 8 or newer -->
 					<version>1.4.200</version>
@@ -76,10 +73,7 @@ Adapt into your pom.xml file, the next code :
 					<artifactId>hsqldb</artifactId>
 	
 					<!-- under JDK 8 or newer -->
-					<version>2.5.0</version>
-	
-					<!-- under JDK 7 or newer -->
-					<version>2.3.4</version>
+					<version>2.5.1</version>
 				</dependency>
 			<!-- choose one of these optional drivers for DerbyDB-->
 				<dependency>
@@ -87,16 +81,19 @@ Adapt into your pom.xml file, the next code :
 					<artifactId>derby</artifactId>
 	
 					<!-- under JDK 8 or newer -->
-					<version>10.15.1.3</version>
-	
-					<!-- under JDK 7 or newer -->
-					<version>10.11.1.1</version>
+					<version>10.15.2.0</version>
 				</dependency>
 			<!-- choose this optional driver for MySQL-->
 				<dependency>
 					<groupId>mysql</groupId>
 					<artifactId>mysql-connector-java</artifactId>
-					<version>8.0.19</version>
+					<version>8.0.20</version>
+				</dependency>
+			<!-- choose this optional driver for PostgreSQL-->
+				<dependency>
+					<groupId>org.postgresql</groupId>
+					<artifactId>postgresql</artifactId>
+					<version>42.2.14</version>
 				</dependency>
 			...
 		</dependencies>

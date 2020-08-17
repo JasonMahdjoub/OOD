@@ -1,1 +1,1 @@
-2.5.0-Stable
+3.0.0-Stable
