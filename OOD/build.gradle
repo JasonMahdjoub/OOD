@@ -136,9 +136,11 @@ allprojects {
 
     
     //compileJava.options.compilerArgs << "-Xlint"
-    compileJava.options.compilerArgs.addAll(['--release', javaVersion] as Collection<? extends String>)
-    if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_1_9))
+
+    if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_1_9)) {
+        compileJava.options.compilerArgs.addAll(['--release', javaVersion] as Collection<? extends String>)
         javadoc.options.addStringOption("html5", "-quiet")
+    }
 }
 
 /*idea {
@@ -250,8 +252,11 @@ publishing {
 }
 signing {
     useGpgCmd()
-    sign configurations.archives
-    sign publishing.publications.mavenJava
+    required {!project.hasProperty('disableSigning')}
+    if (required) {
+        sign configurations.archives
+        sign publishing.publications.mavenJava
+    }
 }
 
 javadoc {
