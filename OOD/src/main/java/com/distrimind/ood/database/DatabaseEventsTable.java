@@ -284,6 +284,8 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 		}
 
 		void setConcernedSerializedNewNonKey(byte[] _concernedSerializedNewNonKey) {
+			if (concernedSerializedNewForeignKey==null)
+				throw new IllegalAccessError();
 			concernedSerializedNewNonKey = _concernedSerializedNewNonKey;
 		}
 

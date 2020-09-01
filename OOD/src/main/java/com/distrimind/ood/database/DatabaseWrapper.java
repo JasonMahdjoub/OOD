@@ -2305,7 +2305,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	public static class DatabaseEventsToSynchronizeP2P extends AbstractDatabaseEventsToSynchronizeP2P {
 		private long lastTransactionIDIncluded;
 		int maxEventsRecords;
-		@SuppressWarnings("unused")
 		DatabaseEventsToSynchronizeP2P() {
 		}
 
@@ -2392,7 +2391,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		protected DecentralizedValue hostIDSource, hostIDDestination;
 
 
-		@SuppressWarnings("unused")
 		AbstractDatabaseEventsToSynchronizeP2P() {
 
 		}

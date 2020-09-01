@@ -1092,19 +1092,18 @@ public abstract class CommonDecentralizedTests {
 				}
 				loop |= checkMessages();
 			}
-			checkCentralBackupSynchronization();
-
 		}
+		checkCentralBackupSynchronization();
 	}
 
 	void checkCentralBackupSynchronization() throws DatabaseException {
-		for (Database d : listDatabase)
-		{
-			checkCentralBackupSynchronization(d);
-		}
-		for (Database d : listDatabase)
-		{
-			checkCentralBackupSynchronizationWithOtherPeers(d);
+		synchronized (CommonDecentralizedTests.class) {
+			for (Database d : listDatabase) {
+				checkCentralBackupSynchronization(d);
+			}
+			for (Database d : listDatabase) {
+				checkCentralBackupSynchronizationWithOtherPeers(d);
+			}
 		}
 	}
 	void checkCentralBackupSynchronization(Database d)
@@ -1145,6 +1144,7 @@ public abstract class CommonDecentralizedTests {
 			}
 		}
 	}
+	boolean actualGenerateDirectConflict=false;
 	void checkCentralBackupSynchronizationWithOtherPeers(Database d) throws DatabaseException {
 		DatabaseWrapper dw=d.getDbwrapper();
 		if (dw.getSynchronizer().isInitializedWithCentralBackup())
@@ -1162,16 +1162,16 @@ public abstract class CommonDecentralizedTests {
 								List<Long> finalTimeStamps=brmo.getFinalTimestamps();
 								Long lastID=null;
 								if (finalTimeStamps.size()>0) {
-									long ts = finalTimeStamps.get(brmo.getFinalTimestamps().size() - 1);
+									long ts = finalTimeStamps.get(finalTimeStamps.size() - 1);
 									lastID = brmo.getDatabaseBackupMetaDataPerFile(ts, brmo.isReference(ts)).getLastTransactionID();
 								}
 								if (lastID==null && finalTimeStamps.size()>1) {
-									long ts=finalTimeStamps.get(brmo.getFinalTimestamps().size()-2);
+									long ts=finalTimeStamps.get(finalTimeStamps.size()-2);
 									lastID = brmo.getDatabaseBackupMetaDataPerFile(ts, brmo.isReference(ts)).getLastTransactionID();
 								}
-								if (lastID!=null) {
+								if (lastID!=null && !actualGenerateDirectConflict) {
 									//lastID = Long.MIN_VALUE;
-									System.out.println("Last other id : "+lastID);
+									System.out.println("Last other id : "+lastID+" ; hostID="+dother.hostID);
 									Assert.assertEquals(
 											d.getDbwrapper().getSynchronizer().getLastValidatedDistantIDSynchronization(dother.hostID),
 											(long) lastID);

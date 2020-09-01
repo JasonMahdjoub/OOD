@@ -843,4 +843,19 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		return res;
 	}
 
+	boolean validateLastDistantTransactionIDAndLastTransactionUTC(Record hook, long transactionID, long timeUTC) throws DatabaseException {
+		HashMap<String, Object> hm = new HashMap<>();
+		if (hook.getLastValidatedDistantTransactionID() < transactionID)
+			hm.put("lastValidatedDistantTransactionID", transactionID);
+		if (hook.getLastValidatedDistantTransactionUTCMs()<timeUTC)
+			hm.put("lastValidatedDistantTransactionUTCMs", timeUTC);
+		if (hm.size()>0)
+		{
+			updateRecord(hook, hm);
+			return true;
+		}
+		else
+			return false;
+	}
+
 }

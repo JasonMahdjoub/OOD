@@ -49,6 +49,7 @@ public class TransactionCanceledException extends DatabaseException {
 		super(_message);
 	}
 
+
 	/**
 	 * 
 	 */

@@ -72,6 +72,7 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 	protected void testSynchroBetweenPeersWithCentralBackupImpl(int peersNumber, boolean exceptionDuringTransaction,
 																boolean generateDirectConflict, TableEvent<DatabaseRecord> event)
 			throws Exception {
+		this.actualGenerateDirectConflict=generateDirectConflict;
 		if (peersNumber < 2 || peersNumber > listDatabase.size())
 			throw new IllegalArgumentException();
 		List<TableEvent<DatabaseRecord>> levents = Collections.singletonList(event);
@@ -145,13 +146,15 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 
 				}
 
+				for (int i = peersNumber; i < listDatabase.size(); i++) {
+					db = listDatabase.get(i);
+					testEventSynchronized(db, event, false);
+					db.clearPendingEvents();
+				}
+
 			}
 
-			for (int i = peersNumber; i < listDatabase.size(); i++) {
-				CommonDecentralizedTests.Database db = listDatabase.get(i);
-				testEventSynchronized(db, event, false);
-				db.clearPendingEvents();
-			}
+
 
 			Thread.sleep(1200);
 			exchangeMessages();
@@ -169,8 +172,8 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 
 		}
 		testSynchronisation();
+		connectCentralDatabaseBackup();
 		checkAllDatabaseInternalDataUsedForSynchro();
-
 	}
 
 	@Test(dependsOnMethods = {"testSynchroAfterTestsBetweenThreePeers" })
@@ -197,6 +200,8 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 
 	}
 
+
+
 	@Test(dataProvider = "provideDataForSynchroBetweenTwoPeers", dependsOnMethods = {
 			"connectCentralDatabaseBackup" })
 	// @Test(dataProvider = "provideDataForSynchroBetweenTwoPeers",
@@ -204,6 +209,7 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 	public void testSynchroBetweenTwoPeersWithCentralBackup(boolean exceptionDuringTransaction, boolean generateDirectConflict,
 										   boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event)
 			throws Exception {
+		this.actualGenerateDirectConflict=generateDirectConflict;
 		testSynchroBetweenPeersWithCentralBackupImpl(2, exceptionDuringTransaction, peersInitiallyConnected, event);
 	}
 
@@ -216,6 +222,7 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 	public void testSynchroBetweenThreePeersWithCentralBackup(boolean exceptionDuringTransaction, boolean generateDirectConflict,
 											 boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event)
 			throws Exception {
+		this.actualGenerateDirectConflict=generateDirectConflict;
 		testSynchroBetweenPeersWithCentralBackupImpl(3, exceptionDuringTransaction, generateDirectConflict, event);
 	}
 

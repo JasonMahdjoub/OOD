@@ -362,7 +362,9 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 				@SuppressWarnings("unchecked")
 				@Override
 				public Void run() throws Exception {
-					getDatabaseWrapper().getSynchronizer().getNotifier().startNewSynchronizationTransaction();
+					DatabaseNotifier dn=getDatabaseWrapper().getSynchronizer().getNotifier();
+					if (dn!=null)
+						dn.startNewSynchronizationTransaction();
 					try {
 						final boolean indirectTransaction = transaction instanceof DatabaseDistantTransactionEvent.Record;
 						boolean validatedTransaction = true;
@@ -373,6 +375,8 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 
 						DatabaseDistantTransactionEvent.Record distantTransaction;
+						if (transaction.getID()==162)
+							System.out.println("break point");
 
 						if (indirectTransaction) {
 							distantTransaction = (DatabaseDistantTransactionEvent.Record) transaction;
@@ -465,9 +469,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 												if (collision || indirectCollisionWith != null) {
 													if (!type.hasOldValue())
 														drOld = t.getRecord(mapKeys);
-													if (t.areDuplicatedEventsNotConsideredAsCollisions() && (drOld == drNew || (drNew != null && t.equalsAllFields(drNew, drOld))))
-														validatedTransaction = false;
-													else
+													if (!t.areDuplicatedEventsNotConsideredAsCollisions() || (drOld == drNew || (drNew != null && t.equalsAllFields(drNew, drOld))))
 														validatedTransaction = (eventForce = t.collisionDetected(
 																fromHook.getHostID(), indirectTransaction ? directPeer.getHostID() : null,
 																type, mapKeys, drNew, drOld));
@@ -570,9 +572,8 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 									throw new DatabaseException("Transactions must be ordered !");
 								lastValidatedTransaction.set(distantTransaction.getLocalID());
 
-								HashMap<String, Object> hm = new HashMap<>();
-								hm.put("lastValidatedDistantTransactionID", distantTransaction.getLocalID());
-								getDatabaseHooksTable().updateRecord(directPeer, hm);
+								getDatabaseHooksTable().validateLastDistantTransactionIDAndLastTransactionUTC(directPeer, distantTransaction.getLocalID(), distantTransaction.getTimeUTC());
+
 
 							}
 						} else {
@@ -582,10 +583,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 								lastValidatedTransaction.set(transaction.getID());
 							}
 						}
-						if (fromHook.getLastValidatedDistantTransactionID() < transaction.getID()) {
-							HashMap<String, Object> hm = new HashMap<>();
-							hm.put("lastValidatedDistantTransactionID", transaction.getID());
-							getDatabaseHooksTable().updateRecord(fromHook, hm);
+						if (getDatabaseHooksTable().validateLastDistantTransactionIDAndLastTransactionUTC(fromHook, transaction.getID(), transaction.getTimeUTC())) {
 							if (indirectTransaction) {
 								hooksToNotify.add(fromHook.getHostID());
 							}
@@ -782,8 +780,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 										break;
 								}
 							}
-							if (fromHook.getLastValidatedDistantTransactionUTCMs()<transaction.getTimeUTC())
-								getDatabaseHooksTable().updateRecord(fromHook, "lastValidatedDistantTransactionUTCMs", transaction.getTimeUTC());
+
 							if (localDTE.getEvents().size() > 0) {
 								getDatabaseWrapper().getSynchronizer().addNewDatabaseEvent(localDTE);
 							}
@@ -797,7 +794,8 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 					}
 					finally
 					{
-						getDatabaseWrapper().getSynchronizer().getNotifier().endSynchronizationTransaction();
+						if (dn!=null)
+							dn.endSynchronizationTransaction();
 					}
 				}
 
@@ -1028,6 +1026,8 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 										getDataInputStream().readFully(snfk);
 										event.setConcernedSerializedNewForeignKey(snfk);
 									}
+									else
+										event.setConcernedSerializedNewForeignKey(new byte[0]);
 
 									if (getDataInputStream().readBoolean()) {
 										s = getDataInputStream().readInt();
