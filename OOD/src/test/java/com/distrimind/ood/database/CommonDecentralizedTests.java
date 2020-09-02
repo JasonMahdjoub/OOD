@@ -1066,6 +1066,7 @@ public abstract class CommonDecentralizedTests {
 			boolean loop = true;
 			while (loop) {
 				loop = false;
+				System.out.println("new exchange message loop");
 				for (CommonDecentralizedTests.Database db : listDatabase) {
 
 					DatabaseEvent e = db.getDbwrapper().getSynchronizer().nextEvent();
@@ -1074,6 +1075,8 @@ public abstract class CommonDecentralizedTests {
 						loop = true;
 						if (e instanceof MessageDestinedToCentralDatabaseBackup)
 						{
+							if (e instanceof EncryptedBackupPartDestinedToCentralDatabaseBackup)
+								System.out.println("send backup part : "+((EncryptedBackupPartDestinedToCentralDatabaseBackup) e).getMetaData().getFileTimestampUTC());
 							centralDatabaseBackup.received((MessageDestinedToCentralDatabaseBackup)new CommonDecentralizedTests.DistantDatabaseEvent(db.getDbwrapper(), (MessageDestinedToCentralDatabaseBackup)e).getDatabaseEventToSend());
 						}
 						else if (e instanceof P2PDatabaseEventToSend) {
@@ -1163,7 +1166,10 @@ public abstract class CommonDecentralizedTests {
 								Long lastID=null;
 								if (finalTimeStamps.size()>0) {
 									long ts = finalTimeStamps.get(finalTimeStamps.size() - 1);
-									lastID = brmo.getDatabaseBackupMetaDataPerFile(ts, brmo.isReference(ts)).getLastTransactionID();
+									if (!brmo.isReference(ts))
+										lastID = brmo.getDatabaseBackupMetaDataPerFile(ts, false).getLastTransactionID();
+									else
+										System.out.println("reference found : "+ts+" "+brmo.getDatabaseBackupMetaDataPerFile(ts, true).getLastTransactionID());
 								}
 								if (lastID==null && finalTimeStamps.size()>1) {
 									long ts=finalTimeStamps.get(finalTimeStamps.size()-2);
@@ -1172,9 +1178,8 @@ public abstract class CommonDecentralizedTests {
 								if (lastID!=null && !actualGenerateDirectConflict) {
 									//lastID = Long.MIN_VALUE;
 									System.out.println("Last other id : "+lastID+" ; hostID="+dother.hostID);
-									Assert.assertEquals(
-											d.getDbwrapper().getSynchronizer().getLastValidatedDistantIDSynchronization(dother.hostID),
-											(long) lastID);
+									Assert.assertTrue(
+											d.getDbwrapper().getSynchronizer().getLastValidatedDistantIDSynchronization(dother.hostID)>= lastID, "lastID="+lastID+" ; lastOtherID="+d.getDbwrapper().getSynchronizer().getLastValidatedDistantIDSynchronization(dother.hostID));
 								}
 
 							}
@@ -1701,7 +1706,7 @@ public abstract class CommonDecentralizedTests {
 		Object[][] res = new Object[numberEvents * 2 * 3][];
 		int index = 0;
 		for (boolean exceptionDuringTransaction : new boolean[] { false, true }) {
-			boolean[] gdc = exceptionDuringTransaction ? new boolean[] { false } : new boolean[] { true, false };
+			boolean[] gdc = exceptionDuringTransaction ? new boolean[] { false } : new boolean[] { false, true };
 			for (boolean generateDirectConflict : gdc) {
 				for (boolean peersInitiallyConnected : new boolean[] { true, false }) {
 					Collection<TableEvent<DatabaseRecord>> l=provideTableEvents(numberEvents);

@@ -396,7 +396,7 @@ public class BackupRestoreManager {
 		return initNewFile(dateUTC, true);
 	}
 
-	private BufferedRandomOutputStream getFileForBackupIncrementOrCreateIt(AtomicLong fileTimeStamp, Reference<Long> firstTransactionID/*, AtomicReference<RecordsIndex> recordsIndex*/) throws DatabaseException {
+	private BufferedRandomOutputStream getFileForBackupIncrementOrCreateIt(Reference<Long> fileTimeStamp, Reference<Long> firstTransactionID/*, AtomicReference<RecordsIndex> recordsIndex*/) throws DatabaseException {
 		File res=null;
 
 		if (fileTimeStamps.size()>0)
@@ -414,6 +414,7 @@ public class BackupRestoreManager {
 			final int maxBuffersNumber=backupConfiguration.getMaxStreamBufferNumberForTransaction();
 			if (res==null) {
 				fileTimeStamp.set(System.currentTimeMillis());
+				System.out.println("backup file to increment created : "+fileTimeStamp.get());
 				res = initNewFileForBackupIncrement(fileTimeStamp.get());
 
 				BufferedRandomOutputStream out=new BufferedRandomOutputStream(new RandomFileOutputStream(res, RandomFileOutputStream.AccessMode.READ_AND_WRITE), maxBufferSize, maxBuffersNumber);
@@ -2294,7 +2295,7 @@ public class BackupRestoreManager {
 			}
 
 			long last = getLastTransactionUTCInMS();
-			AtomicLong fileTimeStamp = new AtomicLong();
+			Reference<Long> fileTimeStamp = new Reference<>();
 			//AtomicReference<RecordsIndex> index=new AtomicReference<>();
 			Reference<Long> firstTransactionID=new Reference<>((Long)null);
 			RandomOutputStream rfos = getFileForBackupIncrementOrCreateIt(fileTimeStamp, firstTransactionID/*, index*/);
@@ -2419,7 +2420,7 @@ public class BackupRestoreManager {
 						cancelTransaction();
 						return;
 					}
-System.out.println("validateTransaction : "+transactionID);
+System.out.println("validateTransaction : "+transactionID+" ; "+fileTimeStamp);
 					saveTransactionQueue(out, nextTransactionReference, transactionUTC, firstTransactionID, transactionToSynchronize ? transactionID : null/*, index*/);
 
 					try {

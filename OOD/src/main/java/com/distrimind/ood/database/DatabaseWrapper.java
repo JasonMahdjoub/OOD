@@ -519,7 +519,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					break;
 			}
 			ts.add(m);
-			System.out.println("received meta data :"+m.timeStampUTC);
+			System.out.println("received meta data :"+m.timeStampUTC+" ; "+m.transactionsMetaData.size());
 			return true;
 		}
 		/*long getFirstFileTimestamp(String packageString) {
@@ -2047,6 +2047,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						}
 					}
 				}
+				System.out.println("no validation possible");
 
 			}
 			finally {
@@ -2056,6 +2057,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		private void validateLastSynchronizationWithCentralDatabaseBackup(Package _package, Database d, long lastValidatedTransactionUTC) throws DatabaseException {
 
 	  		if (d.backupRestoreManager==null) {
+	  			System.out.println("no backup restore manager");
 				return;
 			}
 			long timeStamp;
@@ -2065,16 +2067,22 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			} else {
 				timeStamp = d.backupRestoreManager.getNearestFileUTCFromGivenTimeNotIncluded(lastValidatedTransactionUTC);
 				if (timeStamp!=d.backupRestoreManager.getLastFileTimestampUTC(false))
-					System.out.println("Last file not included : timeStamp="+timeStamp+", lastTimeStamp="+d.backupRestoreManager.getLastFileTimestampUTC(false)+", deltaWithCurrentTime="+(d.backupRestoreManager.getLastFileTimestampUTC(false)-(System.currentTimeMillis()-d.backupRestoreManager.getBackupConfiguration().getMaxBackupFileAgeInMs()))+", lastValidatedUTC="+lastValidatedTransactionUTC);
+					System.out.println("Last file not included : timeStamp="+timeStamp+", lastTimeStamp="+d.backupRestoreManager.getLastFileTimestampUTC(false)+", lastValidatedTimeStamp="+d.backupRestoreManager.getLastFileTimestampUTC(true)+", deltaWithCurrentTime="+(d.backupRestoreManager.getLastFileTimestampUTC(false)-(System.currentTimeMillis()-d.backupRestoreManager.getBackupConfiguration().getMaxBackupFileAgeInMs()))+", lastValidatedDistantTimeStampUTC="+lastValidatedTransactionUTC);
+				else if (timeStamp != Long.MIN_VALUE)
+					System.out.println("found timeStamp to send="+timeStamp+", lastTimeStamp="+d.backupRestoreManager.getLastFileTimestampUTC(false)+", lastValidatedTimeStamp="+d.backupRestoreManager.getLastFileTimestampUTC(true)+", deltaWithCurrentTime="+(d.backupRestoreManager.getLastFileTimestampUTC(false)-(System.currentTimeMillis()-d.backupRestoreManager.getBackupConfiguration().getMaxBackupFileAgeInMs()))+", lastValidatedDistantTimeStampUTC="+lastValidatedTransactionUTC);
 			}
 
 			if (timeStamp != Long.MIN_VALUE) {
 				if (!backupDatabasePartsSynchronizingWithCentralDatabaseBackup.contains(_package.getName())) {
 					//File f = d.backupRestoreManager.getFile(timeStamp);
 					backupDatabasePartsSynchronizingWithCentralDatabaseBackup.add(_package.getName());
+					System.out.println("prepare backup part to send : "+timeStamp);
+					new Exception().printStackTrace();
 					addNewDatabaseEvent(d.backupRestoreManager.getEncryptedFilePartWithMetaData(getLocalHostID(), timeStamp, d.backupRestoreManager.isReference(timeStamp), random, encryptionProfileProvider));
 					//addNewDatabaseEvent(new DatabaseBackupToIncorporateFromCentralDatabaseBackup(getLocalHostID(), getHooksTransactionsTable().getLocalDatabaseHost(), _package,timeStamp, b.isReference(timeStamp), b.extractTransactionInterval(f), f ));
 				}
+				else
+					System.out.println("impossible to send file. Sync already in progress");
 			}
 			else
 				checkAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(_package.getName(), d);
@@ -2160,6 +2168,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (!confirmation.getHostDestination().equals(getLocalHostID()))
 				throw DatabaseException.getDatabaseException(new MessageExternalizationException(Integrity.FAIL));
 			this.backupDatabasePartsSynchronizingWithCentralDatabaseBackup.remove(confirmation.getPackageString());
+			System.out.println("backup part sent to central database backup : "+confirmation.getFileUTC()+" ; "+confirmation.getLastTransactionUTC());
 			validateLastSynchronizationWithCentralDatabaseBackup(confirmation.getPackageString(), confirmation.getLastTransactionUTC());
 		}
 

@@ -131,7 +131,7 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 
 				CommonDecentralizedTests.Database db = concernedDatabase[0];
 				proceedEvent(db, false, levents);
-
+				System.out.println("sleep");
 				Thread.sleep(1200);
 
 				exchangeMessages();
@@ -148,16 +148,12 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 
 				for (int i = peersNumber; i < listDatabase.size(); i++) {
 					db = listDatabase.get(i);
-					testEventSynchronized(db, event, false);
+//					testEventSynchronized(db, event, true);
 					db.clearPendingEvents();
 				}
 
 			}
 
-
-
-			Thread.sleep(1200);
-			exchangeMessages();
 
 			for (int i = peersNumber; i < listDatabase.size(); i++) {
 				CommonDecentralizedTests.Database db = listDatabase.get(i);
@@ -209,8 +205,7 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 	public void testSynchroBetweenTwoPeersWithCentralBackup(boolean exceptionDuringTransaction, boolean generateDirectConflict,
 										   boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event)
 			throws Exception {
-		this.actualGenerateDirectConflict=generateDirectConflict;
-		testSynchroBetweenPeersWithCentralBackupImpl(2, exceptionDuringTransaction, peersInitiallyConnected, event);
+		testSynchroBetweenPeersWithCentralBackupImpl(2, exceptionDuringTransaction, generateDirectConflict, event);
 	}
 
 	@Test(dependsOnMethods = { "testSynchroBetweenTwoPeersWithCentralBackup" })
@@ -222,7 +217,6 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 	public void testSynchroBetweenThreePeersWithCentralBackup(boolean exceptionDuringTransaction, boolean generateDirectConflict,
 											 boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event)
 			throws Exception {
-		this.actualGenerateDirectConflict=generateDirectConflict;
 		testSynchroBetweenPeersWithCentralBackupImpl(3, exceptionDuringTransaction, generateDirectConflict, event);
 	}
 
