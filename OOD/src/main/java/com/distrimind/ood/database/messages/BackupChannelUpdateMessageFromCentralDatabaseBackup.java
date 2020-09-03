@@ -108,8 +108,8 @@ public class BackupChannelUpdateMessageFromCentralDatabaseBackup implements Mess
 	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
 		out.writeObject(hostDestination, false);
 		out.writeObject(hostChannel, false);
-		out.writeBytesArray(lastValidatedAndEncryptedLocalID, true, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
-		out.writeBytesArray(lastValidatedAndEncryptedDistantID, true, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+		out.writeBytesArray(lastValidatedAndEncryptedLocalID, false, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+		out.writeBytesArray(lastValidatedAndEncryptedDistantID, false, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
 	}
 
 	@Override
@@ -118,7 +118,7 @@ public class BackupChannelUpdateMessageFromCentralDatabaseBackup implements Mess
 		hostChannel=in.readObject(false, DecentralizedValue.class);
 		if (hostChannel.equals(hostDestination))
 			throw new MessageExternalizationException(Integrity.FAIL);
-		lastValidatedAndEncryptedLocalID=in.readBytesArray(true, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
-		lastValidatedAndEncryptedDistantID=in.readBytesArray(true, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+		lastValidatedAndEncryptedLocalID=in.readBytesArray(false, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+		lastValidatedAndEncryptedDistantID=in.readBytesArray(false, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
 	}
 }

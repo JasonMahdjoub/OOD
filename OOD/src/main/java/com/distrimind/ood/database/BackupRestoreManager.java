@@ -1647,12 +1647,11 @@ public class BackupRestoreManager {
 	private long getLastTransactionIDBeforeGivenTimeStamp(long timeStamp) throws DatabaseException {
 		int i=fileTimeStamps.indexOf(timeStamp);
 		assert i>=0;
-		for (;i>0;i--)
-		{
+		while (--i>0) {
 			File f=getFile(fileTimeStamps.get(i));
 			try(RandomFileInputStream fis=new RandomFileInputStream(f))
 			{
-				fis.seek(LAST_BACKUP_UTC_POSITION+9);
+				fis.seek(LAST_BACKUP_UTC_POSITION+8);
 				if (fis.readBoolean()) {
 					fis.skipNBytes(8);
 					return fis.readLong();

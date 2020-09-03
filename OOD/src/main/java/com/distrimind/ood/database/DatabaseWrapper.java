@@ -554,6 +554,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			return Long.MIN_VALUE;
 		}
 		FileCoordinate getTimestampTransactionToAsk(String packageString, long lastDistantTransactionID, long lastValidatedDistantTransactionID)  {
+			System.out.println("Check meta data : "+lastDistantTransactionID+" ; "+ lastValidatedDistantTransactionID);
 			if (lastDistantTransactionID<=lastValidatedDistantTransactionID)
 				return null;
 
@@ -1462,8 +1463,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				if (cp==null)
 					return;
 				DecentralizedValue hostID=r.getHostID();
-
-				cp.lastValidatedTransactionIDFromCentralBackup=lastValidatedDistantTransactionID;//cp.lastValidatedTransactionIDFromCentralBackup==null?lastValidatedDistantTransactionID:Math.max(cp.lastValidatedTransactionIDFromCentralBackup, lastValidatedDistantTransactionID);
+				if (lastValidatedDistantTransactionID==Long.MIN_VALUE && cp.lastValidatedTransactionIDFromCentralBackup!=null && cp.lastValidatedTransactionIDFromCentralBackup!=Long.MIN_VALUE)
+					throw DatabaseException.getDatabaseException(new IllegalAccessException());
+				cp.lastValidatedTransactionIDFromCentralBackup=lastValidatedDistantTransactionID;
+				//cp.lastValidatedTransactionIDFromCentralBackup=cp.lastValidatedTransactionIDFromCentralBackup==null?lastValidatedDistantTransactionID:Math.max(cp.lastValidatedTransactionIDFromCentralBackup, lastValidatedDistantTransactionID);
 				System.out.println("updateDistantBackupCenter and validate : "+lastValidatedDistantTransactionID);
 				if (lastValidatedLocalTransactionID!=Long.MIN_VALUE) {
 
