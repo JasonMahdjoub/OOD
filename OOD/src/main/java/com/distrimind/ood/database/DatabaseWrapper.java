@@ -459,7 +459,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			hookID = _hook.getHostID();
 		}
 
-
+		@Override
+		public String toString() {
+			return getClass().getName() + "@" + Integer.toHexString(super.hashCode());
+		}
 
 		@Override
 		public boolean equals(Object o) {
@@ -567,8 +570,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				if (previous==null)
 					return new FileCoordinate(Long.MAX_VALUE, FileCoordinate.Boundary.UPPER_LIMIT);
 				Long lastID=previous.getLastTransactionID();
-				if (lastID!=null && lastID<lastDistantTransactionID)
+				if (lastID!=null && lastID<lastDistantTransactionID) {
 					return new FileCoordinate(previous.timeStampUTC, FileCoordinate.Boundary.LOWER_LIMIT);
+				}
 				Long firstTID=previous.getFirstTransactionID();
 
 				if (firstTID!=null)
@@ -580,28 +584,20 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						previous=actual;
 					}
 					else {
-						if (firstTID==null)
+						/*if (firstTID==null) {
 							return new FileCoordinate(actual.timeStampUTC, FileCoordinate.Boundary.LOWER_LIMIT);
-						if (lastTID < firstTID)
+						}*/
+						if (firstTID!=null && lastTID < firstTID)
 							return new FileCoordinate(previous.timeStampUTC, FileCoordinate.Boundary.UPPER_LIMIT);
 						previous = actual;
 						firstTID = previous.getFirstTransactionID()-1;
 
 					}
 				}
-				if (firstTID==null || firstTID>lastValidatedDistantTransactionID)
+				if (firstTID==null || firstTID>lastValidatedDistantTransactionID) {
 					return new FileCoordinate(previous.timeStampUTC, FileCoordinate.Boundary.UPPER_LIMIT);
+				}
 
-				/*for (it=ts.descendingIterator();it.hasNext();)
-				{
-					DatabaseBackupMetaDataPerFile actual=it.next();
-					Long lastID=actual.getLastTransactionID();
-					if (lastID==null)
-						continue;
-					if (lastID<lastDistantTransactionID)
-						return new AskForMetaDataPerFileToCentralDatabaseBackup.FileCoordinate(actual.timeStampUTC, AskForMetaDataPerFileToCentralDatabaseBackup.CoordinateBoundary.LOWER_LIMIT);
-					break;
-				}*/
 				return null;
 			}
 			return new FileCoordinate(Long.MAX_VALUE, FileCoordinate.Boundary.UPPER_LIMIT);
@@ -1360,8 +1356,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			return cp != null && this.initializedHooks.containsKey(hostChannel);
 		}
 		private void checkMetaDataUpdate(DecentralizedValue hostChannel) throws DatabaseException {
+
 			ConnectedPeersWithCentralBackup cp = this.initializedHooksWithCentralBackup.get(hostChannel);
 			if (cp!=null) {
+				if (cp.otherBackupDatabasePartsSynchronizingWithCentralDatabaseBackup)
+					return;
 				if (cp.lastValidatedTransactionIDFromCentralBackup == null)
 					return;
 
@@ -1376,7 +1375,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					if (fc == null) {
 						checkAskForEncryptedBackupFilePart(hostChannel, packageString);
 					} else {
-						System.out.println(fc);
+						cp.otherBackupDatabasePartsSynchronizingWithCentralDatabaseBackup=true;
+
 						addNewDatabaseEvent(new AskForMetaDataPerFileToCentralDatabaseBackup(getLocalHostID(), hostChannel, fc, packageString));
 					}
 				}
@@ -1411,9 +1411,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (metaData.getHostDestination().equals(metaData.getHostSource()))
 				return;
 			try {
-
-				if (!cp.validatedIDPerDistantHook.addMetaData(metaData.getMetaData().getPackageString(), metaData.getMetaData().decodeMetaData(encryptionProfileProvider)))
+				System.out.println("received meta data from "+metaData.getHostSource()+" ; "+metaData);
+				cp.otherBackupDatabasePartsSynchronizingWithCentralDatabaseBackup=false;
+				if (!cp.validatedIDPerDistantHook.addMetaData(metaData.getMetaData().getPackageString(), metaData.getMetaData().decodeMetaData(encryptionProfileProvider))) {
+					System.out.println("not valid meta data");
 					return;
+				}
+
 
 				long mn=cp.validatedIDPerDistantHook.getLastTransactionID(metaData.getMetaData().getPackageString());
 				cp.lastValidatedTransactionIDFromCentralBackup=cp.lastValidatedTransactionIDFromCentralBackup==null?mn:Math.max(cp.lastValidatedTransactionIDFromCentralBackup, mn);
@@ -1829,6 +1833,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 			try {
 				lockWrite();
+				System.out.println("disconnect from central backup : "+hostID);
 				ConnectedPeersWithCentralBackup peer = initializedHooksWithCentralBackup.remove(hostID);
 
 				if (peer == null) {
@@ -1857,6 +1862,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					cancelEventToSend(peer.hookID, true);
 				}
 				initializedHooksWithCentralBackup.clear();
+				System.out.println("disconnect all from central backup ");
 			}
 			finally
 			{
