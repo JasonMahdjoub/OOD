@@ -831,16 +831,16 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		public HookAddRequest askForHookAddingAndSynchronizeDatabase(DecentralizedValue hostID,
-				boolean replaceDistantConflitualRecords, Package... packages) throws DatabaseException {
+				boolean replaceDistantConflictualRecords, Package... packages) throws DatabaseException {
 			ArrayList<String> packagesString = new ArrayList<>();
 			for (Package p : packages)
 				packagesString.add(p.getName());
-			return askForHookAddingAndSynchronizeDatabase(hostID, true, replaceDistantConflitualRecords,
+			return askForHookAddingAndSynchronizeDatabase(hostID, true, replaceDistantConflictualRecords,
 					packagesString);
 		}
 
 		private HookAddRequest askForHookAddingAndSynchronizeDatabase(DecentralizedValue hostID,
-				boolean mustReturnMessage, boolean replaceDistantConflitualRecords, ArrayList<String> packages)
+				boolean mustReturnMessage, boolean replaceDistantConflictualRecords, ArrayList<String> packages)
 				throws DatabaseException {
 			if (packages.size()>MAX_PACKAGE_TO_SYNCHRONIZE)
 				throw new DatabaseException("The number of packages to synchronize cannot be greater than "+MAX_PACKAGE_TO_SYNCHRONIZE);
@@ -880,7 +880,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (hostAlreadySynchronized.size()>=MAX_DISTANT_PEERS)
 				throw new DatabaseException("The maximum number of distant peers ("+MAX_DISTANT_PEERS+") is reached");
 			return new HookAddRequest(getHooksTransactionsTable().getLocalDatabaseHost().getHostID(), hostID, packages,
-					hostAlreadySynchronized, mustReturnMessage, replaceDistantConflitualRecords);
+					hostAlreadySynchronized, mustReturnMessage, replaceDistantConflictualRecords);
 		}
 
 		public HookAddRequest receivedHookAddRequest(HookAddRequest hookAddRequest) throws DatabaseException {
@@ -1005,7 +1005,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (r.getLastValidatedLocalTransactionID() > lastTransferredTransactionID) {
 				if (!fromCentral)
 					throw new DatabaseException("The given transfer ID limit " + lastTransferredTransactionID
-							+ " is lower than the stored transfer ID limit " + r.getLastValidatedLocalTransactionID());
+							+ " is lower than the stored transfer ID limit " + r.getLastValidatedLocalTransactionID()+". LastValidatedDistantTransactionID="+r.getLastValidatedDistantTransactionID());
 			}
 			else {
 
