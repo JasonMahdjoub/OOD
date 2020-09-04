@@ -287,7 +287,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 													 final ArrayList<DecentralizedValue> hostAlreadySynchronized, final DatabaseHooksTable.Record hook,
 													 boolean force) throws DatabaseException {
 		final Set<String> packageSynchroOneTime = new HashSet<>();
-		assert getDatabaseHooksTable().getRecord("id", hook.getID())!=null;
+		//assert getDatabaseHooksTable().getRecord("id", hook.getID())!=null;
 		getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
 
 			@Override
@@ -453,7 +453,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 		} else {
 			removeRecord(transaction.get());
 		}
-		getDatabaseHooksTable().actualizeLastTransactionID(new ArrayList<DecentralizedValue>(0));
+		getDatabaseHooksTable().actualizeLastTransactionID(new ArrayList<>(0));
 	}
 
 	DatabaseTransactionsPerHostTable getDatabaseTransactionsPerHostTable() throws DatabaseException {

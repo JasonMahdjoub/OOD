@@ -520,7 +520,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 				});
 	}
 
-	Map<DecentralizedValue, Long> getLastValidatedDistantTransactionUTCs() throws DatabaseException {
+	/*Map<DecentralizedValue, Long> getLastValidatedDistantTransactionUTCs() throws DatabaseException {
 		return getDatabaseWrapper()
 				.runSynchronizedTransaction(new SynchronizedTransaction<Map<DecentralizedValue, Long>>() {
 
@@ -556,7 +556,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 					}
 				});
-	}
+	}*/
 
 	protected DatabaseHooksTable() throws DatabaseException {
 		super();
@@ -687,13 +687,8 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							if (localHost.get().getHostID().equals(hostID))
 								localHost=null;
 							supportedDatabasePackages = null;
-							for (Iterator<Map.Entry<HostPair, Long>> it=lastTransactionFieldsBetweenDistantHosts.entrySet().iterator();it.hasNext(); )
-							{
-								Map.Entry<HostPair, Long> e=it.next();
-								if (e.getKey().getHostServer().equals(hostID)
-										|| e.getKey().getHostToSynchronize().equals(hostID))
-									it.remove();
-							}
+							lastTransactionFieldsBetweenDistantHosts.entrySet().removeIf(e -> e.getKey().getHostServer().equals(hostID)
+									|| e.getKey().getHostToSynchronize().equals(hostID));
 
 							if (r.removePackageDatabase(packages)) {
 								removeRecordWithCascade(r);
