@@ -564,6 +564,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 						} catch (TransactionCanceledException e) {
 							validatedTransaction = false;
 						}
+
 						if (indirectTransaction) {
 							if (distantTransaction.getLocalID() > directPeer.getLastValidatedDistantTransactionID()) {
 								if (lastValidatedTransaction.get() > distantTransaction.getLocalID())

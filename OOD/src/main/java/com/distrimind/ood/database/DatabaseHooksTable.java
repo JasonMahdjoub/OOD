@@ -627,7 +627,6 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 								r.setLastValidatedLocalTransactionID(getDatabaseTransactionEventsTable()
 										.addTransactionToSynchronizeTables(newAddedPackages, hostAlreadySynchronized, r,
 												replaceDistantConflictualRecords));
-								System.out.println("add hook : " +r.getHostID()+" ; "+r.getLastValidatedLocalTransactionID());
 								updateRecord(r);
 							}
 						} else {
@@ -641,7 +640,6 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 								r.setLastValidatedLocalTransactionID(getDatabaseTransactionEventsTable()
 										.addTransactionToSynchronizeTables(newAddedPackages, hostAlreadySynchronized, r,
 												replaceDistantConflictualRecords));
-								System.out.println("update hook : " +r.getHostID()+" ; "+r.getLastValidatedLocalTransactionID());
 								updateRecord(r);
 							}
 

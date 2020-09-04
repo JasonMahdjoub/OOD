@@ -2025,7 +2025,7 @@ public abstract class CommonDecentralizedTests {
 					Assert.assertNotNull(dcollision, "i=" + (i));
 					testCollision(db, event, dcollision);
 					Assert.assertTrue(db.getAnomalies().isEmpty() || !sendIndirectTransactions(), db.getAnomalies().toString());
-
+					db.getAnomalies().clear();
 					++i;
 				}
 

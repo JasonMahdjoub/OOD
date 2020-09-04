@@ -1002,13 +1002,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (r.concernsLocalDatabaseHost())
 				throw new DatabaseException("The given host ID correspond to the local database host !");
 
-			if (r.getLastValidatedLocalTransactionID() > lastTransferredTransactionID) {
+			/*if (r.getLastValidatedLocalTransactionID() > lastTransferredTransactionID) {
 				if (!fromCentral)
 					throw new DatabaseException("The given transfer ID limit " + lastTransferredTransactionID
-							+ " is lower than the stored transfer ID limit " + r.getLastValidatedLocalTransactionID()+". LastValidatedDistantTransactionID="+r.getLastValidatedDistantTransactionID());
+							+ " is lower than the stored transfer ID limit " + r.getLastValidatedLocalTransactionID()+". LastValidatedDistantTransactionID="+r.getLastValidatedDistantTransactionID()+" ; hook="+hostID+" ; localHostID="+getLocalHostID());
 			}
-			else {
-
+			else {*/
+			if (r.getLastValidatedLocalTransactionID() <= lastTransferredTransactionID) {
 
 				if (!fromCentral)
 				{
