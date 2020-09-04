@@ -452,6 +452,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		private Long lastValidatedTransactionIDFromCentralBackup=null;
 		private final ValidatedIDPerDistantHook validatedIDPerDistantHook=new ValidatedIDPerDistantHook();
 		private boolean otherBackupDatabasePartsSynchronizingWithCentralDatabaseBackup=false;
+		private boolean otherBackupMetaDataDatabasePartsSynchronizingWithCentralDatabaseBackup=false;
 		//private boolean synchronizationWithCentralBackupSuspended=true;
 
 		ConnectedPeersWithCentralBackup(Record _hook) {
@@ -1359,7 +1360,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 			ConnectedPeersWithCentralBackup cp = this.initializedHooksWithCentralBackup.get(hostChannel);
 			if (cp!=null) {
-				if (cp.otherBackupDatabasePartsSynchronizingWithCentralDatabaseBackup)
+				if (cp.otherBackupMetaDataDatabasePartsSynchronizingWithCentralDatabaseBackup)
 					return;
 				if (cp.lastValidatedTransactionIDFromCentralBackup == null)
 					return;
@@ -1375,7 +1376,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					if (fc == null) {
 						checkAskForEncryptedBackupFilePart(hostChannel, packageString);
 					} else {
-						cp.otherBackupDatabasePartsSynchronizingWithCentralDatabaseBackup=true;
+						cp.otherBackupMetaDataDatabasePartsSynchronizingWithCentralDatabaseBackup=true;
 
 						addNewDatabaseEvent(new AskForMetaDataPerFileToCentralDatabaseBackup(getLocalHostID(), hostChannel, fc, packageString));
 					}
@@ -1412,7 +1413,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				return;
 			try {
 				System.out.println("received meta data from "+metaData.getHostSource()+" ; "+metaData);
-				cp.otherBackupDatabasePartsSynchronizingWithCentralDatabaseBackup=false;
+				cp.otherBackupMetaDataDatabasePartsSynchronizingWithCentralDatabaseBackup=false;
 				if (!cp.validatedIDPerDistantHook.addMetaData(metaData.getMetaData().getPackageString(), metaData.getMetaData().decodeMetaData(encryptionProfileProvider))) {
 					System.out.println("not valid meta data");
 					return;

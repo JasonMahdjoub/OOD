@@ -382,6 +382,7 @@ public abstract class CommonDecentralizedTests {
 		{
 			if (d2.hostID.equals(message.getHostDestination()))
 			{
+				centralDatabaseBackupMessageSent=true;
 				if (d2.isConnected() && d2.dbwrapper.getSynchronizer().isInitializedWithCentralBackup())
 					d2.getReceivedDatabaseEvents().add(new DistantDatabaseEvent(db2.dbwrapper, message));
 				else if (!onlyIfConnected)
@@ -1060,12 +1061,13 @@ public abstract class CommonDecentralizedTests {
 		}
 	}
 
-
+	private boolean centralDatabaseBackupMessageSent=false;
 	protected void exchangeMessages() throws Exception {
 		synchronized (CommonDecentralizedTests.class) {
 			boolean loop = true;
 			while (loop) {
 				loop = false;
+				centralDatabaseBackupMessageSent=false;
 				System.out.println("new exchange message loop");
 				for (CommonDecentralizedTests.Database db : listDatabase) {
 
@@ -1094,6 +1096,7 @@ public abstract class CommonDecentralizedTests {
 					}
 				}
 				loop |= checkMessages();
+				loop |= centralDatabaseBackupMessageSent;
 			}
 		}
 		checkCentralBackupSynchronization();
@@ -1706,7 +1709,7 @@ public abstract class CommonDecentralizedTests {
 		Object[][] res = new Object[numberEvents * 2 * 3][];
 		int index = 0;
 		for (boolean exceptionDuringTransaction : new boolean[] { false, true }) {
-			boolean[] gdc = exceptionDuringTransaction ? new boolean[] { false } : new boolean[] { false, true };
+			boolean[] gdc = exceptionDuringTransaction ? new boolean[] { false } : new boolean[] { true, false };
 			for (boolean generateDirectConflict : gdc) {
 				for (boolean peersInitiallyConnected : new boolean[] { true, false }) {
 					Collection<TableEvent<DatabaseRecord>> l=provideTableEvents(numberEvents);

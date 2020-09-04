@@ -375,8 +375,6 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 
 						DatabaseDistantTransactionEvent.Record distantTransaction;
-						if (transaction.getID()==162)
-							System.out.println("break point");
 
 						if (indirectTransaction) {
 							distantTransaction = (DatabaseDistantTransactionEvent.Record) transaction;
@@ -564,6 +562,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 								}
 							});
 						} catch (TransactionCanceledException e) {
+							System.out.println("canceled");
 							validatedTransaction = false;
 						}
 						if (indirectTransaction) {
@@ -1127,6 +1126,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 				getDatabaseWrapper().getSynchronizer()
 						.addNewTransactionConfirmationEvents(comingFrom, databasePackage, lastValidatedTransaction.get());
 			}
+
 			for (DecentralizedValue id : hooksToNotify) {
 				DatabaseHooksTable.Record h = getDatabaseHooksTable().getHook(id);
 				getDatabaseWrapper().getSynchronizer().sendLastValidatedIDIfConnected(h);
