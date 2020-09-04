@@ -457,7 +457,6 @@ public class BackupRestoreManager {
 	 * Tells if the manager is ready for backup new database events
 	 * @return true if the manager is ready for backup new database events
 	 */
-	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	public boolean isReady()
 	{
 		synchronized (this) {
@@ -1211,6 +1210,7 @@ public class BackupRestoreManager {
 		boolean notify=false;
 		try {
 			databaseWrapper.lockRead();
+			Thread.sleep(1);
 			synchronized (this) {
 				int oldLength = 0;
 				long oldLastFile;
@@ -1394,8 +1394,9 @@ public class BackupRestoreManager {
 				notify=true;
 				return backupTime;
 			}
-		}
-		finally {
+		} catch (InterruptedException e) {
+			throw DatabaseException.getDatabaseException(e);
+		} finally {
 			cleanCache();
 			databaseWrapper.unlockRead();
 			//transactionsInterval=null;

@@ -2122,7 +2122,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			{
 				long lts=d.backupRestoreManager.getLastTransactionUTCInMS();
 				if (lts<d.lastValidatedTransactionUTCForCentralBackup) {
-
+					System.out.println("ask for database backup part :"+lts);
 					addNewDatabaseEvent(new AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(packageString, getLocalHostID(), new FileCoordinate(lts, FileCoordinate.Boundary.LOWER_LIMIT)));
 				}
 			}
