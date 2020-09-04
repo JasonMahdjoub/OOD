@@ -562,7 +562,6 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 								}
 							});
 						} catch (TransactionCanceledException e) {
-							System.out.println("canceled");
 							validatedTransaction = false;
 						}
 						if (indirectTransaction) {
@@ -954,7 +953,6 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 					break;
 				if (nextTransactionPosition<=ois.currentPosition())
 					throw new DatabaseException("Invalid data");
-				System.out.println("transaction read");
 				long transactionID;
 				boolean withID;
 				if (!(withID=ois.readBoolean()) || (transactionID=ois.readLong())<=lastDistantTransactionID)
@@ -963,12 +961,10 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 						throw new DatabaseException("Synchronization was disabled during backup process");
 					findOneTransactionWithID|=withID;
 					ois.seek(nextTransactionPosition);
-					System.out.println("transaction next : "+withID);
 					continue;
 				}
 				else if (transactionID!=lastDistantTransactionID+1)
 					throw new DatabaseException("Invalid received backup file");
-				System.out.println("transaction id : "+transactionID);
 				findOneTransactionWithID=true;
 				long transactionUTC=ois.readLong();
 				if (ois.readInt()!=-1)
@@ -993,7 +989,6 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 					//private final byte[] recordBuffer=new byte[1<<24-1];
 					@Override
 					public DatabaseEventsTable.AbstractRecord next() throws DatabaseException {
-						System.out.println("record read");
 
 						try {
 							long startRecord=getDataInputStream().currentPosition()+positionOffset-1;
@@ -1071,8 +1066,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 							if (eventTypeByte==null) {
 								eventTypeByte = getDataInputStream().readByte();
 								setNextEvent(eventTypeByte);
-								if (eventTypeByte==-1)
-									System.out.println("transaction read end");
+
 							}
 
 							return eventTypeByte!=-1;
@@ -1090,7 +1084,6 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 					@Override
 					public void reset() throws IOException {
 						super.reset();
-						System.out.println("transaction read reset");
 						eventTypeByte=null;
 					}
 				};

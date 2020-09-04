@@ -1068,7 +1068,6 @@ public abstract class CommonDecentralizedTests {
 			while (loop) {
 				loop = false;
 				centralDatabaseBackupMessageSent=false;
-				System.out.println("new exchange message loop");
 				for (CommonDecentralizedTests.Database db : listDatabase) {
 
 					DatabaseEvent e = db.getDbwrapper().getSynchronizer().nextEvent();
@@ -1077,8 +1076,6 @@ public abstract class CommonDecentralizedTests {
 						loop = true;
 						if (e instanceof MessageDestinedToCentralDatabaseBackup)
 						{
-							if (e instanceof EncryptedBackupPartDestinedToCentralDatabaseBackup)
-								System.out.println("send backup part : "+((EncryptedBackupPartDestinedToCentralDatabaseBackup) e).getMetaData().getFileTimestampUTC());
 							centralDatabaseBackup.received((MessageDestinedToCentralDatabaseBackup)new CommonDecentralizedTests.DistantDatabaseEvent(db.getDbwrapper(), (MessageDestinedToCentralDatabaseBackup)e).getDatabaseEventToSend());
 						}
 						else if (e instanceof P2PDatabaseEventToSend) {
@@ -1171,8 +1168,6 @@ public abstract class CommonDecentralizedTests {
 									long ts = finalTimeStamps.get(finalTimeStamps.size() - 1);
 									if (!brmo.isReference(ts))
 										lastID = brmo.getDatabaseBackupMetaDataPerFile(ts, false).getLastTransactionID();
-									else
-										System.out.println("reference found : "+ts+" "+brmo.getDatabaseBackupMetaDataPerFile(ts, true).getLastTransactionID());
 								}
 								if (lastID==null && finalTimeStamps.size()>1) {
 									long ts=finalTimeStamps.get(finalTimeStamps.size()-2);
@@ -1180,7 +1175,6 @@ public abstract class CommonDecentralizedTests {
 								}
 								if (lastID!=null && !actualGenerateDirectConflict) {
 									//lastID = Long.MIN_VALUE;
-									System.out.println("Last other id : "+lastID+" ; hostID="+dother.hostID);
 									Assert.assertTrue(
 											d.getDbwrapper().getSynchronizer().getLastValidatedDistantIDSynchronization(dother.hostID)>= lastID, "lastID="+lastID+" ; lastOtherID="+d.getDbwrapper().getSynchronizer().getLastValidatedDistantIDSynchronization(dother.hostID));
 								}

@@ -414,7 +414,6 @@ public class BackupRestoreManager {
 			final int maxBuffersNumber=backupConfiguration.getMaxStreamBufferNumberForTransaction();
 			if (res==null) {
 				fileTimeStamp.set(System.currentTimeMillis());
-				System.out.println("backup file to increment created : "+fileTimeStamp.get());
 				res = initNewFileForBackupIncrement(fileTimeStamp.get());
 
 				BufferedRandomOutputStream out=new BufferedRandomOutputStream(new RandomFileOutputStream(res, RandomFileOutputStream.AccessMode.READ_AND_WRITE), maxBufferSize, maxBuffersNumber);
@@ -1607,7 +1606,6 @@ public class BackupRestoreManager {
 			Long lid=metaData.getLastTransactionID();
 			if (lid==null)
 				lid= getLastTransactionIDBeforeGivenTimeStamp(timeStamp);
-			System.out.println("getEncryptedFilePartWithMetaData getLastTransactionID="+lid+", reference="+backupReference);
 			return new EncryptedBackupPartDestinedToCentralDatabaseBackup(fromHostIdentifier, encryptedMetaData, out.getRandomInputStream(), EncryptionTools.encryptID(lid, random, encryptionProfileProvider));
 		} catch (IOException e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -2420,7 +2418,6 @@ public class BackupRestoreManager {
 						cancelTransaction();
 						return;
 					}
-System.out.println("validateTransaction : "+transactionID+" ; "+fileTimeStamp);
 					saveTransactionQueue(out, nextTransactionReference, transactionUTC, firstTransactionID, transactionToSynchronize ? transactionID : null/*, index*/);
 
 					try {

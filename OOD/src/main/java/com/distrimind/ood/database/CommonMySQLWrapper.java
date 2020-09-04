@@ -303,17 +303,10 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 	@Override
 	protected Table.ColumnsReadQuerry getColumnMetaData(String tableName, String columnName) throws Exception {
 		Connection c;
-		//System.out.println(tableName);
 		ResultSet rs=(c=getConnectionAssociatedWithCurrentThread().getConnection()).getMetaData().getColumns(database_name, null, tableName, columnName);
 		return new CReadQuerry(c, rs);
-			/*while (rs.next()) {
-				System.out.println(rs.getString(3)+" "+rs.getString(4));
-				if (rs.getString(3).equals(tableName) && rs.getString(4).equals(columnName)) {
-					return new CReadQuerry(c, rs);
-				}
-			}
-			return null;*/
-//		}
+
+
 	}
 
 	@Override

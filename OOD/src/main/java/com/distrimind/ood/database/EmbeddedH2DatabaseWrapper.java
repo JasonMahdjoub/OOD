@@ -307,31 +307,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	}
 	@Override
 	protected void checkConstraints(Table<?> table) throws DatabaseException {
-		/*try(ResultSet res = getConnectionAssociatedWithCurrentThread().getConnection().getMetaData().getTables(null, null, null, null)) {
-			while (res.next()) {
-				System.out.println(res.getString("TABLE_NAME"));
-			}
-			try (Statement s = getConnectionAssociatedWithCurrentThread().getConnection().createStatement()) {
-				System.out.println("here");
-				ResultSet rs=s.executeQuery("SELECT * FROM "+ROW_PROPERTIES_OF_TABLES);
-				if (rs.next())
-				{
-					for (int i=1;i<=rs.getMetaData().getColumnCount();i++)
-						System.out.print(rs.getMetaData().getColumnName(i)+" \t; ");
-					System.out.println();
-					do {
-						for (int i=1;i<=rs.getMetaData().getColumnCount();i++)
-							System.out.print(rs.getString(i)+" \t; ");
-						System.out.println();
-					} while(rs.next());
-				}
-			}
-			//System.exit(0);
-		}
-		catch(SQLException e)
-		{
-			throw DatabaseException.getDatabaseException(e);
-		}*/
+
 		Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
 		try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
 				"select CONSTRAINT_NAME, CONSTRAINT_TYPE, COLUMN_LIST from "+getConstraintsTableName()+" WHERE TABLE_NAME='"
@@ -441,14 +417,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 			Pattern col_size_matcher = Pattern.compile("([0-9]+)");
 			for (FieldAccessor fa : table.getFieldAccessors()) {
 				for (SqlField sf : fa.getDeclaredSqlFields()) {
-					/*
-					 * System.out.println("SF : "+sf.short_field);
-					 * System.out.println("SF : "+table.getSqlTableName()); try(ReadQuerry rq=new
-					 * ReadQuerry(sql_connection,
-					 * "SELECT TYPE_NAME, COLUMN_SIZE, IS_NULLABLE, ORDINAL_POSITION, IS_AUTOINCREMENT FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS"
-					 * +getSqlComma())) { while (rq.result_set.next()) {
-					 * System.out.println("\t"+rq.result_set.getString("TABLE_NAME")); } }
-					 */
+
 					try (Table.ColumnsReadQuerry rq = getColumnMetaData(table.getSqlTableName(), sf.short_field_without_quote)) {
 						if (rq.result_set.next()) {
 							String type = rq.tableColumnsResultSet.getTypeName().toUpperCase();
