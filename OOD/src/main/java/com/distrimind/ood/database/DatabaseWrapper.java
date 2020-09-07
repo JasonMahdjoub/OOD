@@ -690,7 +690,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		public boolean isInitialized() throws DatabaseException {
-			return getHooksTransactionsTable().getLocalDatabaseHost() != null;
+			return getDatabaseHooksTable().getLocalDatabaseHost() != null;
 		}
 
 		public boolean isInitialized(DecentralizedValue hostID) {
@@ -792,7 +792,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		@SuppressWarnings("unlikely-arg-type")
 		public void initLocalHostID(DecentralizedValue localHostID, boolean sendIndirectTransactions) throws DatabaseException {
-			DatabaseHooksTable.Record local = getHooksTransactionsTable().getLocalDatabaseHost();
+			DatabaseHooksTable.Record local = getDatabaseHooksTable().getLocalDatabaseHost();
 			if (local != null && !local.getHostID().equals(localHostID))
 				throw new DatabaseException("The given local host id is different from the stored local host id !");
 			if (local == null) {
@@ -826,7 +826,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			for (Package p : databasePackages) {
 				packages.add(p.getName());
 			}
-			getHooksTransactionsTable().addHooks(hostID, true, false, new ArrayList<>(),
+			getDatabaseHooksTable().addHooks(hostID, true, false, new ArrayList<>(),
 					packages);
 		}
 
@@ -849,7 +849,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				
 				@Override
 				public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
-					getHooksTransactionsTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
+					getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
 
 						@Override
 						public boolean nextRecord(Record _record) {
@@ -879,12 +879,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}, true);
 			if (hostAlreadySynchronized.size()>=MAX_DISTANT_PEERS)
 				throw new DatabaseException("The maximum number of distant peers ("+MAX_DISTANT_PEERS+") is reached");
-			return new HookAddRequest(getHooksTransactionsTable().getLocalDatabaseHost().getHostID(), hostID, packages,
+			return new HookAddRequest(getDatabaseHooksTable().getLocalDatabaseHost().getHostID(), hostID, packages,
 					hostAlreadySynchronized, mustReturnMessage, replaceDistantConflictualRecords);
 		}
 
 		public HookAddRequest receivedHookAddRequest(HookAddRequest hookAddRequest) throws DatabaseException {
-			DatabaseHooksTable.Record localDatabaseHost = getHooksTransactionsTable().getLocalDatabaseHost();
+			DatabaseHooksTable.Record localDatabaseHost = getDatabaseHooksTable().getLocalDatabaseHost();
 			if (localDatabaseHost == null)
 				throw new DatabaseException("Function must be called before addHookForLocalDatabaseHost.");
 			if (hookAddRequest == null || !hookAddRequest.getHostDestination().equals(localDatabaseHost.getHostID()))
@@ -894,7 +894,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				res = askForHookAddingAndSynchronizeDatabase(hookAddRequest.getHostSource(), false,
 						!hookAddRequest.isReplaceDistantConflictualData(), hookAddRequest.getPackagesToSynchronize());
 			}
-			getHooksTransactionsTable().addHooks(hookAddRequest.getHostSource(), false,
+			getDatabaseHooksTable().addHooks(hookAddRequest.getHostSource(), false,
 					!hookAddRequest.isReplaceDistantConflictualData(), hookAddRequest.getHostsAlreadySynchronized(),
 					hookAddRequest.getPackagesToSynchronize());
 			isReliedToDistantHook();
@@ -911,14 +911,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		 */
 
 		public void removeHook(DecentralizedValue hostID, Package... databasePackages) throws DatabaseException {
-			getHooksTransactionsTable().removeHooks(hostID, databasePackages);
+			getDatabaseHooksTable().removeHooks(hostID, databasePackages);
 			isReliedToDistantHook();
 		}
 		
 		@SuppressWarnings("UnusedReturnValue")
         protected boolean isReliedToDistantHook() throws DatabaseException
 		{
-			return hasOnePeerSyncronized=getHooksTransactionsTable().hasRecordsWithAllFields("concernsDatabaseHost", Boolean.FALSE);
+			return hasOnePeerSyncronized= getDatabaseHooksTable().hasRecordsWithAllFields("concernsDatabaseHost", Boolean.FALSE);
 		}
 		
 
@@ -940,7 +940,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			try {
 				lockWrite();
 
-				getHooksTransactionsTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
+				getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
 
 					@Override
 					public boolean nextRecord(Record _record) throws DatabaseException {
@@ -949,7 +949,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							if (lastID > _record.getLastValidatedLocalTransactionID()) {
 								cp.setTransferInProgress(true);
 								addNewDatabaseEvent(new DatabaseEventsToSynchronizeP2P(
-										getHooksTransactionsTable().getLocalDatabaseHost().getHostID(), _record, lastID,
+										getDatabaseHooksTable().getLocalDatabaseHost().getHostID(), _record, lastID,
 										maxTransactionsToSynchronizeAtTheSameTime));
 							}
 						}
@@ -991,38 +991,34 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			{
 				unlockWrite();
 			}
-			
-			DatabaseHooksTable.Record r = null;
-			if (peer != null)
-				r = getHooksTransactionsTable().getHook(hostID);
-
-			if (r == null)
+			if (peer == null)
 				throw DatabaseException.getDatabaseException(
 						new IllegalArgumentException("The host ID " + hostID + " has not been initialized !"));
+			DatabaseHooksTable.Record r = getDatabaseHooksTable().getHook(hostID);
+
 			if (r.concernsLocalDatabaseHost())
 				throw new DatabaseException("The given host ID correspond to the local database host !");
 
-			/*if (r.getLastValidatedLocalTransactionID() > lastTransferredTransactionID) {
-				if (!fromCentral)
-					throw new DatabaseException("The given transfer ID limit " + lastTransferredTransactionID
-							+ " is lower than the stored transfer ID limit " + r.getLastValidatedLocalTransactionID()+". LastValidatedDistantTransactionID="+r.getLastValidatedDistantTransactionID()+" ; hook="+hostID+" ; localHostID="+getLocalHostID());
-			}
-			else {*/
-			if (r.getLastValidatedLocalTransactionID() <= lastTransferredTransactionID) {
+			if (lastTransferredTransactionID>=0 || r.getLastValidatedLocalTransactionID()<0) {
+				if (r.getLastValidatedLocalTransactionID() > lastTransferredTransactionID) {
+					if (!fromCentral)
+						throw new DatabaseException("The given transfer ID limit " + lastTransferredTransactionID
+								+ " is lower than the stored transfer ID limit " + r.getLastValidatedLocalTransactionID() + ". LastValidatedDistantTransactionID=" + r.getLastValidatedDistantTransactionID() + " ; hook=" + hostID + " ; localHostID=" + getLocalHostID() + " ; last local transaction id=" + getTransactionIDTable().getLastTransactionID());
+				} else {
+					//if (r.getLastValidatedLocalTransactionID() <= lastTransferredTransactionID) {
 
-				if (!fromCentral)
-				{
-					long l = getDatabaseTransactionsPerHostTable().validateTransactions(r, lastTransferredTransactionID);
-					if (l < lastTransferredTransactionID)
-						throw new IllegalAccessError("l=" + l + "; lastTransferredTransactionID=" + lastTransferredTransactionID);
-					if (l != lastTransferredTransactionID)
-						addNewDatabaseEvent(new LastIDCorrection(getHooksTransactionsTable().getLocalDatabaseHost().getHostID(),
-								hostID, l));
+					if (!fromCentral) {
+						long l = getDatabaseTransactionsPerHostTable().validateTransactions(r, lastTransferredTransactionID);
+						if (l < lastTransferredTransactionID)
+							throw new IllegalAccessError("l=" + l + "; lastTransferredTransactionID=" + lastTransferredTransactionID);
+						if (l != lastTransferredTransactionID)
+							addNewDatabaseEvent(new LastIDCorrection(getDatabaseHooksTable().getLocalDatabaseHost().getHostID(),
+									hostID, l));
 
-					synchronizedDataIfNecessary(cp);
+						synchronizedDataIfNecessary(cp);
+					}
 				}
 			}
-
 			synchronizeMetaData();
 		}
 
@@ -1032,7 +1028,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				lockWrite();
 				if (initializedHooks.containsKey(hook.getHostID()))
 					addNewDatabaseEvent(new TransactionConfirmationEvents(
-							getHooksTransactionsTable().getLocalDatabaseHost().getHostID(), hook.getHostID(),
+							getDatabaseHooksTable().getLocalDatabaseHost().getHostID(), hook.getHostID(),
 							hook.getLastValidatedDistantTransactionID()));
 
 			}
@@ -1047,7 +1043,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 
 		private void synchronizeMetaData() throws DatabaseException {
-			Map<DecentralizedValue, Long> lastIds = getHooksTransactionsTable()
+			Map<DecentralizedValue, Long> lastIds = getDatabaseHooksTable()
 					.getLastValidatedLocalTransactionIDs();
 
 			try {
@@ -1059,7 +1055,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						map.remove(host);
 						if (map.size() > 0) {
 							addNewDatabaseEvent(new DatabaseTransactionsIdentifiersToSynchronize(
-									getHooksTransactionsTable().getLocalDatabaseHost().getHostID(), host, map));
+									getDatabaseHooksTable().getLocalDatabaseHost().getHostID(), host, map));
 						}
 					}
 				}
@@ -1082,7 +1078,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			
 			try {
 				lockWrite();
-				getHooksTransactionsTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
+				getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
 
 					@Override
 					public boolean nextRecord(Record _record) throws DatabaseException {
@@ -1091,7 +1087,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							if (lastID > _record.getLastValidatedLocalTransactionID()) {
 								cp.setTransferInProgress(true);
 								addNewDatabaseEvent(new DatabaseEventsToSynchronizeP2P(
-										getHooksTransactionsTable().getLocalDatabaseHost().getHostID(), _record, lastID,
+										getDatabaseHooksTable().getLocalDatabaseHost().getHostID(), _record, lastID,
 										maxTransactionsToSynchronizeAtTheSameTime));
 							}
 
@@ -1118,11 +1114,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			
 			try {
 				lockWrite();
-				DatabaseHooksTable.Record hook = getHooksTransactionsTable().getHook(peer.getHostID());
+				DatabaseHooksTable.Record hook = getDatabaseHooksTable().getHook(peer.getHostID());
 				if (lastID > hook.getLastValidatedLocalTransactionID() && !peer.isTransferInProgress()) {
 					peer.setTransferInProgress(true);
 					addNewDatabaseEvent(new DatabaseEventsToSynchronizeP2P(
-							getHooksTransactionsTable().getLocalDatabaseHost().getHostID(), hook, lastID,
+							getDatabaseHooksTable().getLocalDatabaseHost().getHostID(), hook, lastID,
 							maxTransactionsToSynchronizeAtTheSameTime));
 				}
 			}
@@ -1198,7 +1194,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			
 		}
 		public DecentralizedValue getLocalHostID() throws DatabaseException {
-			DatabaseHooksTable.Record r=getHooksTransactionsTable().getLocalDatabaseHost();
+			DatabaseHooksTable.Record r= getDatabaseHooksTable().getLocalDatabaseHost();
 			if (r==null)
 				return null;
 			else
@@ -1212,7 +1208,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (getLocalHostID()==null)
 				return null;
 			disconnectAll();
-			Collection<DatabaseHooksTable.Record> r=getHooksTransactionsTable().resetAllHosts();
+			Collection<DatabaseHooksTable.Record> r= getDatabaseHooksTable().resetAllHosts();
 			getDatabaseTransactionEventsTable().resetAllTransactions();
 			return r;
 		}
@@ -1232,11 +1228,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 			if (local==null)
 				throw new IllegalAccessError();
-			getHooksTransactionsTable().addHooks(local.getHostID(), true, false, new ArrayList<>(),
+			getDatabaseHooksTable().addHooks(local.getHostID(), true, false, new ArrayList<>(),
 					Arrays.asList(local.getDatabasePackageNames()));
 
 			for (DatabaseHooksTable.Record r : hosts)
-				getHooksTransactionsTable().addHooks(r.getHostID(), false,
+				getDatabaseHooksTable().addHooks(r.getHostID(), false,
 						replaceDistantConflictualRecords, new ArrayList<>(), Arrays.asList(r.getDatabasePackageNames()));
 			isReliedToDistantHook();
 
@@ -1260,7 +1256,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				ConnectedPeers peer = initializedHooks.remove(hostID);
 
 				if (peer != null)
-					hook = getHooksTransactionsTable().getHook(peer.getHostID());
+					hook = getDatabaseHooksTable().getHook(peer.getHostID());
 				if (hook == null)
 					throw DatabaseException.getDatabaseException(
 							new IllegalAccessException("hostID " + hostID + " has not been initialized !"));
@@ -1299,37 +1295,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 
 		public boolean isPairedWith(final DecentralizedValue hostID) throws DatabaseException {
-			DatabaseHooksTable.Record r = runSynchronizedTransaction(
-					new SynchronizedTransaction<DatabaseHooksTable.Record>() {
-
-						@Override
-						public DatabaseHooksTable.Record run() throws Exception {
-							List<DatabaseHooksTable.Record> l = getHooksTransactionsTable()
-									.getRecordsWithAllFields("hostID", hostID);
-							DatabaseHooksTable.Record r = null;
-							if (l.size() == 1)
-								r = l.iterator().next();
-							else if (l.size() > 1)
-								throw new IllegalAccessError();
-
-							return r;
-						}
-
-						@Override
-						public TransactionIsolation getTransactionIsolation() {
-							return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
-						}
-
-						@Override
-						public boolean doesWriteData() {
-							return true;
-						}
-
-						@Override
-						public void initOrReset() {
-
-						}
-					});
+			DatabaseHooksTable.Record r = getDatabaseHooksTable().getHook(hostID, true);
 			return r!=null;
 		}
 		private boolean isSynchronizationActivatedWithChannelAndThroughCentralDatabaseBackup(ConnectedPeersWithCentralBackup cp)
@@ -1679,7 +1645,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				if (d.backupRestoreManager!=null && d.configuration.getDatabaseConfigurationParameters().getBackupConfiguration().getMaxBackupFileAgeInMs()<minFilePartDurationBeforeBecomingFinalFilePart)
 					minFilePartDurationBeforeBecomingFinalFilePart=d.configuration.getDatabaseConfigurationParameters().getBackupConfiguration().getMaxBackupFileAgeInMs();
 			}
-			getHooksTransactionsTable()
+			getDatabaseHooksTable()
 					.getRecords(new Filter<Record>() {
 						@Override
 						public boolean nextRecord(Record _record) throws DatabaseException {
@@ -1754,7 +1720,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 		DatabaseHooksTable.Record getDatabaseHookRecord(final DecentralizedValue hostChannel) throws DatabaseException {
 			DatabaseHooksTable.Record r = null;
-			List<DatabaseHooksTable.Record> l = getHooksTransactionsTable()
+			List<DatabaseHooksTable.Record> l = getDatabaseHooksTable()
 					.getRecordsWithAllFields("hostID", hostChannel);
 			if (l.size() == 1)
 				r = l.iterator().next();
@@ -1881,39 +1847,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				unlockWrite();
 			}
 			
-			DatabaseHooksTable.Record r = runSynchronizedTransaction(
-					new SynchronizedTransaction<DatabaseHooksTable.Record>() {
-
-						@Override
-						public DatabaseHooksTable.Record run() throws Exception {
-							List<DatabaseHooksTable.Record> l = getHooksTransactionsTable()
-									.getRecordsWithAllFields("hostID", hostID);
-							DatabaseHooksTable.Record r = null;
-							if (l.size() == 1)
-								r = l.iterator().next();
-							else if (l.size() > 1)
-								throw new IllegalAccessError();
-							if (r == null)
-								throw new NullPointerException("Unknow host " + hostID);
-
-							return r;
-						}
-
-						@Override
-						public TransactionIsolation getTransactionIsolation() {
-							return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
-						}
-
-						@Override
-						public boolean doesWriteData() {
-							return true;
-						}
-
-						@Override
-						public void initOrReset() {
-							
-						}
-					});
+			DatabaseHooksTable.Record r = getDatabaseHooksTable().getHook(hostID);
 			
 			try {
 				lockWrite();
@@ -1938,7 +1872,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		public Collection<DecentralizedValue> getDistantHostsIDs() throws DatabaseException {
 			HashSet<DecentralizedValue> res=new HashSet<>();
-			for (DatabaseHooksTable.Record hook : getHooksTransactionsTable().getRecords())
+			for (DatabaseHooksTable.Record hook : getDatabaseHooksTable().getRecords())
 			{
 				if (hook.concernsLocalDatabaseHost())
 					continue;
@@ -1951,7 +1885,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (!isInitialized())
 				throw new DatabaseException("The Synchronizer must be initialized (initLocalHostID function) !");
 
-			getHooksTransactionsTable().validateDistantTransactions(d.getHostSource(),
+			getDatabaseHooksTable().validateDistantTransactions(d.getHostSource(),
 					d.getLastDistantTransactionIdentifiers(), true);
 		}
 
@@ -1988,11 +1922,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 				@Override
 				public Void run() throws Exception {
-					DatabaseHooksTable.Record hook = getHooksTransactionsTable().getHook(hostSource);
-					if (hook == null)
-						throw new DatabaseException("Impossbile to find hook " + hostSource);
+					DatabaseHooksTable.Record hook = getDatabaseHooksTable().getHook(hostSource);
 
-					getHooksTransactionsTable().updateRecord(hook, "lastValidatedDistantTransactionID",
+					getDatabaseHooksTable().updateRecord(hook, "lastValidatedDistantTransactionID",
 							lastValidatedTransaction);
 					return null;
 				}
@@ -2453,7 +2385,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		return transactionTable;
 	}
 
-	DatabaseHooksTable getHooksTransactionsTable() throws DatabaseException {
+	DatabaseHooksTable getDatabaseHooksTable() throws DatabaseException {
 		if (databaseHooksTable == null)
 			databaseHooksTable = getTableInstance(DatabaseHooksTable.class);
 		return databaseHooksTable;
@@ -2756,7 +2688,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (!table.supportSynchronizationWithOtherPeers())
 				return false;
 
-			if (!getHooksTransactionsTable().supportPackage(p))
+			if (!getDatabaseHooksTable().supportPackage(p))
 				return false;
 			if (!transactionToSynchronize)
 				return false;
@@ -3255,7 +3187,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 										 * final AtomicBoolean hasIgnoredHooks=new AtomicBoolean(false);
 										 */
 
-										getHooksTransactionsTable().getRecords(new Filter<Record>() {
+										getDatabaseHooksTable().getRecords(new Filter<Record>() {
 
 											@Override
 											public boolean nextRecord(Record _record)
@@ -3334,7 +3266,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 										 * previousLastTransactionID=getTransactionIDTable().getLastTransactionID();
 										 * final AtomicBoolean hasIgnoredHooks=new AtomicBoolean(false);
 										 */
-										getHooksTransactionsTable().getRecords(new Filter<Record>() {
+										getDatabaseHooksTable().getRecords(new Filter<Record>() {
 
 											@Override
 											public boolean nextRecord(Record _record)

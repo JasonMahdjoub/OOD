@@ -46,6 +46,8 @@ import com.distrimind.ood.database.annotations.LoadToMemory;
 import com.distrimind.ood.database.annotations.Unique;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.SerializationDatabaseException;
+import com.distrimind.util.AbstractDecentralizedIDGenerator;
+import com.distrimind.util.DecentralizedIDGenerator;
 import com.distrimind.util.DecentralizedValue;
 
 /**
@@ -447,12 +449,12 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 										Boolean.FALSE);
 					}
 
-					if (actualLastID.get() == Long.MAX_VALUE)
+					if (actualLastID.get() == Long.MAX_VALUE && h.getLastValidatedLocalTransactionID()<0)
 						actualLastID.set(lastTransactionID);
 					else if (actualLastID.get() < h.getLastValidatedLocalTransactionID())
 						throw new IllegalAccessError();
 
-					if (h.getLastValidatedLocalTransactionID() < actualLastID.get()) {
+					if (actualLastID.get() != Long.MAX_VALUE && h.getLastValidatedLocalTransactionID() < actualLastID.get()) {
 						h.setLastValidatedLocalTransactionID(actualLastID.get());
 						toUpdate.add(h);
 					}
@@ -465,13 +467,18 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			updateRecord(h, "lastValidatedLocalTransactionID", h.getLastValidatedLocalTransactionID());
 		}
 	}
-
 	Record getHook(DecentralizedValue host) throws DatabaseException {
+		return getHook(host, false);
+	}
+	Record getHook(DecentralizedValue host, boolean nullAccepted) throws DatabaseException {
 		if (host == null)
 			throw new NullPointerException("host");
 		List<Record> l = getRecordsWithAllFields("hostID", host);
-		if (l.size() == 0)
-			throw new DatabaseException("Unkown host " + host);
+		if (l.size() == 0) {
+			if (nullAccepted)
+				return null;
+			throw new DatabaseException("Unknown host " + host);
+		}
 		if (l.size() > 1)
 			throw new IllegalAccessError();
 		return l.iterator().next();
@@ -839,9 +846,11 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 	}
 
 	boolean validateLastDistantTransactionIDAndLastTransactionUTC(Record hook, long distantTransactionID, Long timeUTC) throws DatabaseException {
+
 		HashMap<String, Object> hm = new HashMap<>();
-		if (hook.getLastValidatedDistantTransactionID() < distantTransactionID)
+		if (hook.getLastValidatedDistantTransactionID() < distantTransactionID) {
 			hm.put("lastValidatedDistantTransactionID", distantTransactionID);
+		}
 		if (hook.getLastValidatedDistantTransactionUTCMs()<timeUTC)
 			hm.put("lastValidatedDistantTransactionUTCMs", timeUTC);
 		if (hm.size()>0)
