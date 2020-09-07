@@ -999,24 +999,20 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (r.concernsLocalDatabaseHost())
 				throw new DatabaseException("The given host ID correspond to the local database host !");
 
-			if (lastTransferredTransactionID>=0 || r.getLastValidatedLocalTransactionID()<0) {
+			if (!fromCentral && (lastTransferredTransactionID>=0 || r.getLastValidatedLocalTransactionID()<0)) {
 				if (r.getLastValidatedLocalTransactionID() > lastTransferredTransactionID) {
-					if (!fromCentral)
-						throw new DatabaseException("The given transfer ID limit " + lastTransferredTransactionID
+					throw new DatabaseException("The given transfer ID limit " + lastTransferredTransactionID
 								+ " is lower than the stored transfer ID limit " + r.getLastValidatedLocalTransactionID() + ". LastValidatedDistantTransactionID=" + r.getLastValidatedDistantTransactionID() + " ; hook=" + hostID + " ; localHostID=" + getLocalHostID() + " ; last local transaction id=" + getTransactionIDTable().getLastTransactionID());
 				} else {
-					//if (r.getLastValidatedLocalTransactionID() <= lastTransferredTransactionID) {
 
-					if (!fromCentral) {
-						long l = getDatabaseTransactionsPerHostTable().validateTransactions(r, lastTransferredTransactionID);
-						if (l < lastTransferredTransactionID)
-							throw new IllegalAccessError("l=" + l + "; lastTransferredTransactionID=" + lastTransferredTransactionID);
-						if (l != lastTransferredTransactionID)
-							addNewDatabaseEvent(new LastIDCorrection(getDatabaseHooksTable().getLocalDatabaseHost().getHostID(),
-									hostID, l));
+					long l = getDatabaseTransactionsPerHostTable().validateTransactions(r, lastTransferredTransactionID);
+					if (l < lastTransferredTransactionID)
+						throw new IllegalAccessError("l=" + l + "; lastTransferredTransactionID=" + lastTransferredTransactionID);
+					if (l != lastTransferredTransactionID)
+						addNewDatabaseEvent(new LastIDCorrection(getDatabaseHooksTable().getLocalDatabaseHost().getHostID(),
+								hostID, l));
 
-						synchronizedDataIfNecessary(cp);
-					}
+					synchronizedDataIfNecessary(cp);
 				}
 			}
 			synchronizeMetaData();
