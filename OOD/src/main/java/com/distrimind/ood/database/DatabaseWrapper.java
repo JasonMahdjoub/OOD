@@ -3636,8 +3636,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if ((!supportMultipleAutoPrimaryKeys() || !supportSingleAutoPrimaryKeys()) && !doesTableExists(DatabaseWrapper.AUTOINCREMENT_TABLE)) {
 				try (Statement pst = getConnectionAssociatedWithCurrentThread().getConnection()
 						.createStatement()) {
-					pst.execute("CREATE TABLE `" + DatabaseWrapper.AUTOINCREMENT_TABLE +
-							"` (TABLE_ID INT NOT NULL, TABLE_VERSION INT NOT NULL, AI BIGINT NOT NULL, CONSTRAINT TABLE_ID_PK PRIMARY KEY(TABLE_ID, TABLE_VERSION))"
+					pst.execute("CREATE TABLE " + DatabaseWrapper.AUTOINCREMENT_TABLE +
+							" (TABLE_ID INT NOT NULL, TABLE_VERSION INT NOT NULL, AI BIGINT NOT NULL, CONSTRAINT TABLE_ID_PK PRIMARY KEY(TABLE_ID, TABLE_VERSION))"
 							+ getPostCreateTable(null) + getSqlComma());
 				}
 			}
@@ -3655,7 +3655,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			boolean insert=false;
 			long res;
 			try(PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
-					.prepareStatement("SELECT AI FROM `" + DatabaseWrapper.AUTOINCREMENT_TABLE + "` WHERE TABLE_ID='"
+					.prepareStatement("SELECT AI FROM " + DatabaseWrapper.AUTOINCREMENT_TABLE + " WHERE TABLE_ID='"
 							+ tableID + "' AND TABLE_VERSION='"+databaseVersion+"'"+ getSqlComma())) {
 				ResultSet rs = pst.executeQuery();
 
@@ -3668,7 +3668,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 			if (insert) {
 				try (PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
-						.prepareStatement("INSERT INTO `" + DatabaseWrapper.AUTOINCREMENT_TABLE + "`(TABLE_ID, TABLE_VERSION, AI) VALUES('"
+						.prepareStatement("INSERT INTO " + DatabaseWrapper.AUTOINCREMENT_TABLE + " (TABLE_ID, TABLE_VERSION, AI) VALUES('"
 								+ tableID+"', '" +databaseVersion+"', '"+ (res + 1) + "')" + getSqlComma())) {
 					pst.executeUpdate();
 				}
@@ -3676,7 +3676,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			else
 			{
 				try (PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
-						.prepareStatement("UPDATE `" + DatabaseWrapper.AUTOINCREMENT_TABLE + "` SET AI='"+(res+1)+"' WHERE TABLE_ID='"
+						.prepareStatement("UPDATE " + DatabaseWrapper.AUTOINCREMENT_TABLE + " SET AI='"+(res+1)+"' WHERE TABLE_ID='"
 								+ tableID + "' AND TABLE_VERSION='"+databaseVersion+"'" + getSqlComma())) {
 					pst.executeUpdate();
 				}
@@ -4306,7 +4306,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						try {
 
 							PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
-									.prepareStatement("SELECT CURRENT_DATABASE_VERSION FROM `" + DatabaseWrapper.VERSIONS_OF_DATABASE + "` WHERE PACKAGE_NAME='"
+									.prepareStatement("SELECT CURRENT_DATABASE_VERSION FROM " + DatabaseWrapper.VERSIONS_OF_DATABASE + " WHERE PACKAGE_NAME='"
 											+ getLongPackageName(p) + "'" + getSqlComma());
 							ResultSet rs = pst.executeQuery();
 							int res=defaultValue==-1?0:defaultValue;
@@ -4316,7 +4316,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							{
 								Statement st = getConnectionAssociatedWithCurrentThread().getConnection()
 										.createStatement();
-								st.executeUpdate("INSERT INTO `" + DatabaseWrapper.VERSIONS_OF_DATABASE + "`(PACKAGE_NAME, CURRENT_DATABASE_VERSION) VALUES('"
+								st.executeUpdate("INSERT INTO " + DatabaseWrapper.VERSIONS_OF_DATABASE + " (PACKAGE_NAME, CURRENT_DATABASE_VERSION) VALUES('"
 										+ getLongPackageName(p) + "', '" + res + "')" + getSqlComma());
 								st.close();
 							}
@@ -4361,7 +4361,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					try {
 						assert oldDatabasaseVersion != newDatabaseVersion;
 						int r = getConnectionAssociatedWithCurrentThread().getConnection().createStatement()
-								.executeUpdate("UPDATE `" + VERSIONS_OF_DATABASE + "` SET CURRENT_DATABASE_VERSION='" + newDatabaseVersion
+								.executeUpdate("UPDATE " + VERSIONS_OF_DATABASE + " SET CURRENT_DATABASE_VERSION='" + newDatabaseVersion
 										+ "' WHERE PACKAGE_NAME='" + getLongPackageName(configuration.getDatabaseConfigurationParameters().getPackage()) + "'" + getSqlComma());
 						if (r != 1)
 							throw new DatabaseException("no record found (r="+r+")");

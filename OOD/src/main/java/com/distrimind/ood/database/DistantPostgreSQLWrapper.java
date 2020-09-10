@@ -269,7 +269,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 
 	@Override
 	protected boolean doesTableExists(String tableName) throws Exception {
-		try(ResultSet rs=getConnectionAssociatedWithCurrentThread().getConnection().getMetaData().getTables(database_name, null, tableName, null)) {
+		try(ResultSet rs=getConnectionAssociatedWithCurrentThread().getConnection().getMetaData().getTables(database_name, null, tableName.toLowerCase(), null)) {
 			return rs.next();
 			/*while (rs.next()) {
 				if (rs.getString(3).equals(tableName) && rs.getString().equals(database_name))
