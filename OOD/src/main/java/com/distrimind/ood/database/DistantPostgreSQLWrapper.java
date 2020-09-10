@@ -649,18 +649,20 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 
 	@Override
 	protected String getBigDecimalType(long limit) {
-		if (limit<=0)
+		return "DECIMAL";
+		/*if (limit<=0)
 			return "VARCHAR(1024) CHARACTER SET latin1";
 		else
-			return "VARCHAR("+limit+") CHARACTER SET latin1";
+			return "VARCHAR("+limit+") CHARACTER SET latin1";*/
 	}
 
 	@Override
 	protected String getBigIntegerType(long limit) {
-		if (limit<=0)
+		return "DECIMAL";
+		/*if (limit<=0)
 			return "VARCHAR(1024) CHARACTER SET latin1";
 		else
-			return "VARCHAR("+limit+") CHARACTER SET latin1";
+			return "VARCHAR("+limit+") CHARACTER SET latin1";*/
 	}
 	@Override
 	protected String getDateTimeType()
