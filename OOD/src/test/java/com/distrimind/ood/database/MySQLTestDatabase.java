@@ -52,8 +52,8 @@ import java.security.NoSuchProviderException;
  * @since OOD 2.5.0
  */
 public class MySQLTestDatabase extends TestDatabase {
-	private static DistantMySQLDatabaseFactory factoryA= new DistantMySQLDatabaseFactory("127.0.0.1", 3306, "databasetestAMySQL", "usertest", "passwordtest");
-	private static DistantMySQLDatabaseFactory factoryB= new DistantMySQLDatabaseFactory("127.0.0.1", 3306, "databasetestBMySQL", "usertest", "passwordtest");
+	private static final DistantMySQLDatabaseFactory factoryA= new DistantMySQLDatabaseFactory("127.0.0.1", 3306, "databasetestAMySQL", "usertest", "passwordtest");
+	private static final DistantMySQLDatabaseFactory factoryB= new DistantMySQLDatabaseFactory("127.0.0.1", 3306, "databasetestBMySQL", "usertest", "passwordtest");
 	private static final String dockerName="mysqlOOD";
 
 	public MySQLTestDatabase() throws DatabaseException, NoSuchAlgorithmException, NoSuchProviderException {
@@ -79,13 +79,13 @@ public class MySQLTestDatabase extends TestDatabase {
 
 		String rootPw=getRootMySQLPassword();
 		System.out.println("Create MySQL Database");
-		File tmpScript=new File("tmpScriptDockerForOOD.bash");
+		File tmpScript=new File("tmpScriptMySQLDockerForOOD.bash");
 
 		Process p=null;
 		try {
 			try(FileWriter fos=new FileWriter(tmpScript))
 			{
-				fos.write("docker exec "+dockerName+" mysql --connect-expired-password --user=\"root\" --password=\""+rootPw+"\" -Bse \"ALTER USER 'root'@'localhost' IDENTIFIED BY 'rootpassword'; CREATE USER 'usertest' IDENTIFIED by 'passwordtest';CREATE DATABASE databasetestAMySQL;CREATE DATABASE databasetestBMySQL;GRANT ALL PRIVILEGES ON databasetestAMySQL.* TO 'usertest';GRANT ALL PRIVILEGES ON databasetestBMySQL.* TO 'usertest';FLUSH PRIVILEGES;\"\n");
+				fos.write("docker exec "+dockerName+" mysql --connect-expired-password --user=\"root\" --password=\""+rootPw+"\" -Bse \"ALTER USER 'root'@'localhost' IDENTIFIED BY 'rootpassword'; CREATE USER '"+factoryA.user+"' IDENTIFIED by '"+factoryA.password+"';CREATE DATABASE "+factoryA.databaseName+";CREATE DATABASE "+factoryB.databaseName+";GRANT ALL PRIVILEGES ON "+factoryA.databaseName+".* TO '"+factoryA.databaseName+"';GRANT ALL PRIVILEGES ON "+factoryB.databaseName+".* TO '"+factoryB.user+"';FLUSH PRIVILEGES;\"\n");
 			}
 			ProcessBuilder pb=new ProcessBuilder("bash", tmpScript.toString());
 			p = pb.start();

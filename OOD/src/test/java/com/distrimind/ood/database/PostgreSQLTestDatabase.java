@@ -52,40 +52,41 @@ import java.security.NoSuchProviderException;
  * @since OOD 2.5.0
  */
 public class PostgreSQLTestDatabase extends TestDatabase {
-	private static DistantMySQLDatabaseFactory factoryA= new DistantMySQLDatabaseFactory("127.0.0.1", 3306, "databasetestAMySQL", "usertest", "passwordtest");
-	private static DistantMySQLDatabaseFactory factoryB= new DistantMySQLDatabaseFactory("127.0.0.1", 3306, "databasetestBMySQL", "usertest", "passwordtest");
-	private static final String dockerName="mysqlOOD";
+	private static final String dockerName="postgreSQLOOD";
+	static final String rootPwd="rootPassword";
+	static final String userName="postgres";
+	private static final DistantPostgreSQLDatabaseFactory factoryA= new DistantPostgreSQLDatabaseFactory("127.0.0.1", 5432, "databasetestAPostgreSQL", userName, rootPwd);
+	private static final DistantPostgreSQLDatabaseFactory factoryB= new DistantPostgreSQLDatabaseFactory("127.0.0.1", 5432, "databasetestBPostgreSQL", userName, rootPwd);
 
 	public PostgreSQLTestDatabase() throws DatabaseException, NoSuchAlgorithmException, NoSuchProviderException {
 		super();
 	}
 	@BeforeClass
-	public void createMySQLDocker() throws InterruptedException {
-		stopMySQLDocker();
-		rmMySQLDocker();
-		runMySQLDocker();
-		Thread.sleep(20000);
-		createMySQLDB();
+	public void createPostgreSQLDocker() throws InterruptedException {
+		stopPostgreSQLDocker();
+		rmPostgreSQLDocker();
+		runPostgreSQLDocker();
+		Thread.sleep(5000);
+		createPostgreSQLDB();
 	}
 
 	@AfterClass
-	public void deleteMySQLDocker()
+	public void deletePostgreSQLDocker()
 	{
-		stopMySQLDocker();
-		rmMySQLDocker();
+		stopPostgreSQLDocker();
+		rmPostgreSQLDocker();
 	}
-	private void createMySQLDB()
+	private void createPostgreSQLDB()
 	{
 
-		String rootPw=getRootMySQLPassword();
 		System.out.println("Create MySQL Database");
-		File tmpScript=new File("tmpScriptDockerForOOD.bash");
+		File tmpScript=new File("tmpPostGreScriptDockerForOOD.bash");
 
 		Process p=null;
 		try {
 			try(FileWriter fos=new FileWriter(tmpScript))
 			{
-				fos.write("docker exec "+dockerName+" mysql --connect-expired-password --user=\"root\" --password=\""+rootPw+"\" -Bse \"ALTER USER 'root'@'localhost' IDENTIFIED BY 'rootpassword'; CREATE USER 'usertest' IDENTIFIED by 'passwordtest';CREATE DATABASE databasetestAMySQL;CREATE DATABASE databasetestBMySQL;GRANT ALL PRIVILEGES ON databasetestAMySQL.* TO 'usertest';GRANT ALL PRIVILEGES ON databasetestBMySQL.* TO 'usertest';FLUSH PRIVILEGES;\"\n");
+				fos.write("docker exec "+dockerName+" su -c \\\"CREATE DATABASE "+factoryA.databaseName+";CREATE DATABASE "+factoryB.databaseName+";GRANT ALL PRIVILEGES ON "+factoryA.databaseName+".* TO '"+userName+"';GRANT ALL PRIVILEGES ON "+factoryB.databaseName+".* TO '"+userName+"';\\\"\n");
 			}
 			ProcessBuilder pb=new ProcessBuilder("bash", tmpScript.toString());
 			p = pb.start();
@@ -130,43 +131,13 @@ public class PostgreSQLTestDatabase extends TestDatabase {
 		}
 	}
 
-	private String getRootMySQLPassword()
-	{
-		System.out.println("Get root password");
-		Process p=null;
-		File tmpScript=new File("tmpScriptDockerForOOD.bash");
-		try {
-			try(FileWriter fos=new FileWriter(tmpScript))
-			{
-				fos.write("docker logs "+dockerName+" 2>&1 | grep GENERATED | awk '{print $NF}'\n");
-			}
-			ProcessBuilder pb = new ProcessBuilder("bash", tmpScript.toString());
-			p = pb.start();
-			InputStreamReader isr = new InputStreamReader(p.getInputStream());
-			BufferedReader br = new BufferedReader(isr);
-			return br.readLine();
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace();
-		}
-		finally {
-			assert p != null;
-			flushOutput(p);
-			Utils.flushAndDestroyProcess(p);
-			if (tmpScript.exists())
-				//noinspection ResultOfMethodCallIgnored
-				tmpScript.delete();
-		}
-		return null;
-	}
 
-	private void runMySQLDocker()
+	private void runPostgreSQLDocker()
 	{
-		System.out.println("RUN Mysql docker");
+		System.out.println("RUN PostgreSQL docker");
 		Process p=null;
 		try {
-			p = Runtime.getRuntime().exec("docker run -p 3306:3306 --name="+dockerName+" -e MYSQL_ROOT_HOST=% -d mysql/mysql-server:latest");
+			p = Runtime.getRuntime().exec("docker run -p 5432:5432 --name="+dockerName+" -e POSTGRES_PASSWORD="+rootPwd+" -d postgres");
 		}
 		catch(Exception e)
 		{
@@ -178,9 +149,9 @@ public class PostgreSQLTestDatabase extends TestDatabase {
 			Utils.flushAndDestroyProcess(p);
 		}
 	}
-	private void stopMySQLDocker()
+	private void stopPostgreSQLDocker()
 	{
-		System.out.println("STOP Mysql docker");
+		System.out.println("STOP PostgreSQL docker");
 		Process p=null;
 		try {
 			p = Runtime.getRuntime().exec("docker stop "+dockerName);
@@ -195,9 +166,9 @@ public class PostgreSQLTestDatabase extends TestDatabase {
 			Utils.flushAndDestroyProcess(p);
 		}
 	}
-	private void rmMySQLDocker()
+	private void rmPostgreSQLDocker()
 	{
-		System.out.println("RM Mysql docker");
+		System.out.println("RM PostgreSQL docker");
 		Process p=null;
 		try {
 			p = Runtime.getRuntime().exec("docker rm -v "+dockerName);
