@@ -3637,7 +3637,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				try (Statement pst = getConnectionAssociatedWithCurrentThread().getConnection()
 						.createStatement()) {
 					pst.execute("CREATE TABLE " + DatabaseWrapper.AUTOINCREMENT_TABLE +
-							" (TABLE_ID INT NOT NULL, TABLE_VERSION INT NOT NULL, AI BIGINT NOT NULL, CONSTRAINT TABLE_ID_PK PRIMARY KEY(TABLE_ID, TABLE_VERSION))"
+							" (TABLE_ID INT NOT NULL, TABLE_VERSION INT NOT NULL, AI BIGINT NOT NULL, CONSTRAINT AUTOINCREMENT_TABLE_PK_CONSTRAINT PRIMARY KEY(TABLE_ID, TABLE_VERSION))"
 							+ getPostCreateTable(null) + getSqlComma());
 				}
 			}
@@ -4710,7 +4710,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						st.executeUpdate("CREATE TABLE " + ROW_PROPERTIES_OF_TABLES
 								+ " (TABLE_NAME VARCHAR(512), TABLE_VERSION INTEGER, PACKAGE_NAME VARCHAR(512), TABLE_ID INTEGER "+getAutoIncrementPart(ROW_PROPERTIES_OF_TABLES,"PACKAGE_NAME", 1)
 								//+", CONSTRAINT TABLE_NAME_PK PRIMARY KEY(TABLE_NAME)"
-								+", CONSTRAINT TABLE_ID_PK PRIMARY KEY(TABLE_ID, TABLE_VERSION))"+getPostCreateTable(1L)
+								+", CONSTRAINT ROW_PROPERTIES_OF_TABLES_PK_CONSTRAINT PRIMARY KEY(TABLE_ID, TABLE_VERSION))"+getPostCreateTable(1L)
 								+ getSqlComma());
 						st.close();
 					}

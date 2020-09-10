@@ -949,7 +949,6 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 							try {
 								st = sql_connection.getConnectionAssociatedWithCurrentThread().getConnection()
 										.createStatement();
-								System.out.println(sqlQuerry);
 								st.executeUpdate(sqlQuerry.toString());
 
 							} catch (SQLException e) {

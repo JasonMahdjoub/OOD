@@ -527,13 +527,13 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 
 	@Override
 	protected boolean supportMultipleAutoPrimaryKeys() {
-		return true;
+		return false;
 	}
 
 	@Override
 	protected boolean supportSingleAutoPrimaryKeys()
 	{
-		return true;
+		return false;
 	}
 
 
@@ -707,7 +707,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 
 	@Override
 	protected boolean supportFullSqlFieldName() {
-		return true;
+		return false;
 	}
 
 	@Override
