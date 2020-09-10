@@ -855,6 +855,7 @@ public abstract class FieldAccessor {
 			return _result_set.findColumn(fieldName);
 		}
 		else {
+			fieldName=fieldName.toLowerCase();
 			ResultSetMetaData rsmd = _result_set.getMetaData();
 			for (int i = 1; i <= rsmd.getColumnCount(); i++) {
 				String tableName = rsmd.getTableName(i);
@@ -864,7 +865,7 @@ public abstract class FieldAccessor {
 				sb.append(".");
 				sb.append(colName);
 
-				if (sb.toString().equals(fieldName))
+				if (sb.toString().toLowerCase().equals(fieldName))
 					return i;
 			}
 			throw new SQLException("colmun " + fieldName + " not found !");

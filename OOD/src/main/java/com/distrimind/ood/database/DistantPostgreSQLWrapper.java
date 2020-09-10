@@ -233,23 +233,23 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 
 	@Override
 	protected boolean isSerializationException(SQLException e)  {
-		return e.getSQLState().equals("40001");
+		return e.getSQLState()!=null && e.getSQLState().equals("40001");
 	}
 
 	@Override
 	protected boolean isTransactionDeadLockException(SQLException e)
 	{
-		return e.getSQLState().equals("40P01");
+		return e.getSQLState()!=null && e.getSQLState().equals("40P01");
 	}
 
 	@Override
 	protected boolean isDisconnectionException(SQLException e)  {
-		return e.getSQLState().startsWith("80");
+		return e.getSQLState()!=null && e.getSQLState().startsWith("80");
 	}
 
 	@Override
 	protected boolean isDuplicateKeyException(SQLException e) {
-		return e.getSQLState().equals("23505");
+		return e.getSQLState()!=null && e.getSQLState().equals("23505");
 	}
 
 	private String getSequenceName(String sqlTableName, String sqlFieldName)
