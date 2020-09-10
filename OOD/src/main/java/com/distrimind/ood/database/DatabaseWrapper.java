@@ -3589,6 +3589,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	protected abstract void commit(Connection openedConnection) throws SQLException, DatabaseException;
 
+	protected boolean mustReleaseSavepointAfterRollBack()
+	{
+		return true;
+	}
+
 	protected abstract boolean supportSavePoint(Connection openedConnection) throws SQLException;
 
 	protected abstract void rollback(Connection openedConnection, String savePointName, Savepoint savePoint)
@@ -3770,7 +3775,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 								cw.connection.clearTransactions(false);
 							rollback(cw.connection.getConnection());
 							if (writeData) {
-								if (savePoint != null || savePointName != null) {
+								if ((savePoint != null || savePointName != null) && mustReleaseSavepointAfterRollBack()) {
 									releasePoint(cw.connection.getConnection(), savePointName, savePoint);
 								}
 							}
@@ -3812,7 +3817,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 								cw.connection.clearTransactions(false);
 							rollback(cw.connection.getConnection());
 							if (writeData) {
-								if (savePoint != null || savePointName != null) {
+								if ((savePoint != null || savePointName != null) && mustReleaseSavepointAfterRollBack()) {
 									releasePoint(cw.connection.getConnection(), savePointName, savePoint);
 								}
 		
@@ -3870,7 +3875,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					if (writeData && savePoint != null) {
 						rollback(cw.connection.getConnection(), savePointName, savePoint);
 						getConnectionAssociatedWithCurrentThread().cancelTmpTransactionEvents(previousPosition, backupPositions);
-						releasePoint(cw.connection.getConnection(), savePointName, savePoint);
+						if (mustReleaseSavepointAfterRollBack())
+							releasePoint(cw.connection.getConnection(), savePointName, savePoint);
 					}
 				} catch (SQLException se) {
 					throw DatabaseException.getDatabaseException(e);
@@ -4662,6 +4668,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	protected abstract boolean supportForeignKeys();
 
+	protected boolean supportsItalicQuotesWithTableAndFieldNames()
+	{
+		return true;
+	}
+
 	/*
 	 * result found into actualDatabaseLoading
 	 */
@@ -4702,8 +4713,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					if (!doesTableExists(VERSIONS_OF_DATABASE)) {
 						Statement st = getConnectionAssociatedWithCurrentThread().getConnection()
 								.createStatement();
-						st.executeUpdate("CREATE TABLE `" + VERSIONS_OF_DATABASE
-								+ "`(PACKAGE_NAME VARCHAR(512), CURRENT_DATABASE_VERSION INTEGER "
+						st.executeUpdate("CREATE TABLE " + VERSIONS_OF_DATABASE
+								+ " (PACKAGE_NAME VARCHAR(512), CURRENT_DATABASE_VERSION INTEGER "
 								+", CONSTRAINT VERSION_DB_ID_PK PRIMARY KEY(PACKAGE_NAME))"+getPostCreateTable(null)
 								+ getSqlComma());
 						st.close();
@@ -4711,7 +4722,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							version=0;
 						st = getConnectionAssociatedWithCurrentThread().getConnection()
 								.createStatement();
-						st.executeUpdate("INSERT INTO `" + DatabaseWrapper.VERSIONS_OF_DATABASE + "`(PACKAGE_NAME, CURRENT_DATABASE_VERSION) VALUES('"
+						st.executeUpdate("INSERT INTO " + DatabaseWrapper.VERSIONS_OF_DATABASE + " (PACKAGE_NAME, CURRENT_DATABASE_VERSION) VALUES('"
 								+ getLongPackageName(configuration.getDatabaseConfigurationParameters().getPackage()) + "', '" + version + "')" + getSqlComma());
 						st.close();
 					}

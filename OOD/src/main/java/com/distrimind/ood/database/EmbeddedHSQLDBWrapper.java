@@ -746,7 +746,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 		}
 
 		try (Statement s = _openedConnection.getConnection().createStatement()) {
-			s.executeQuery("START TRANSACTION" + (isoLevel != null ? (" ISOLATION LEVEL " + isoLevel + ", ") : "")
+			s.executeQuery("START TRANSACTION" + (isoLevel != null ? (" ISOLATION LEVEL " + isoLevel + ", ") : " ")
 					+ (write ? "READ WRITE" : "READ ONLY") + getSqlComma());
 		}
 		/*

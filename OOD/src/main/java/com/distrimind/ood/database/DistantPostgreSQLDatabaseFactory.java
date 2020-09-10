@@ -123,7 +123,7 @@ public class DistantPostgreSQLDatabaseFactory extends DatabaseFactory<DistantPos
 			throw new NullPointerException();
 		this.urlLocation = urlLocation;
 		this.port = port;
-		this.databaseName = databaseName;
+		this.databaseName = databaseName.toLowerCase();
 		this.user = user;
 		this.password = password;
 		this.additionalParams =null;
@@ -227,7 +227,7 @@ public class DistantPostgreSQLDatabaseFactory extends DatabaseFactory<DistantPos
 	public void setDatabaseName(String databaseName) {
 		if (databaseName==null)
 			throw new NullPointerException();
-		this.databaseName = databaseName;
+		this.databaseName = databaseName.toLowerCase();
 	}
 
 	/**

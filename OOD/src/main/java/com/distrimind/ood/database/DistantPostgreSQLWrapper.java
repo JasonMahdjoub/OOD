@@ -197,56 +197,9 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 
 	@Override
 	protected void startTransaction(Session _openedConnection, TransactionIsolation transactionIsolation, boolean write) throws SQLException {
-		/*int isoLevel;
-		switch (transactionIsolation) {
-			case TRANSACTION_NONE:
-				isoLevel = Connection.TRANSACTION_NONE;
-				break;
-			case TRANSACTION_READ_COMMITTED:
-				isoLevel = Connection.TRANSACTION_READ_COMMITTED;
-				break;
-			case TRANSACTION_READ_UNCOMMITTED:
-				isoLevel = Connection.TRANSACTION_READ_UNCOMMITTED;
-				break;
-			case TRANSACTION_REPEATABLE_READ:
-				isoLevel = Connection.TRANSACTION_REPEATABLE_READ;
-				break;
-			case TRANSACTION_SERIALIZABLE:
-				isoLevel = Connection.TRANSACTION_SERIALIZABLE;
-				break;
-			default:
-				throw new IllegalAccessError();
-
-		}
 		_openedConnection.getConnection().setReadOnly(!write);
-		_openedConnection.getConnection().setTransactionIsolation(isoLevel);*/
-
-		String isoLevel;
-		switch (transactionIsolation) {
-			case TRANSACTION_NONE:
-				isoLevel = null;
-				break;
-			case TRANSACTION_READ_COMMITTED:
-				isoLevel = "READ COMMITTED";
-				break;
-			case TRANSACTION_READ_UNCOMMITTED:
-				isoLevel = "READ UNCOMMITTED";
-				break;
-			case TRANSACTION_REPEATABLE_READ:
-				isoLevel = "REPEATABLE READ";
-				break;
-			case TRANSACTION_SERIALIZABLE:
-				isoLevel = "SERIALIZABLE";
-				break;
-			default:
-				throw new IllegalAccessError();
-
-		}
-		try (Statement s = _openedConnection.getConnection().createStatement()) {
-			s.executeQuery("START TRANSACTION" + (isoLevel != null ? (" ISOLATION LEVEL " + isoLevel + ", ") : "")
-					+ (write ? "READ WRITE" : "READ ONLY") + getSqlComma());
-		}
-
+		//noinspection MagicConstant
+		_openedConnection.getConnection().setTransactionIsolation(transactionIsolation.getCode());
 	}
 
 	@Override
@@ -259,6 +212,11 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 		openedConnection.commit();
 	}
 
+	@Override
+	protected boolean mustReleaseSavepointAfterRollBack()
+	{
+		return false;
+	}
 
 
 
@@ -752,4 +710,9 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 		return true;
 	}
 
+	@Override
+	protected boolean supportsItalicQuotesWithTableAndFieldNames()
+	{
+		return false;
+	}
 }

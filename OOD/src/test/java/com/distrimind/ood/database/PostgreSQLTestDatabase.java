@@ -66,7 +66,7 @@ public class PostgreSQLTestDatabase extends TestDatabase {
 		stopPostgreSQLDocker();
 		rmPostgreSQLDocker();
 		runPostgreSQLDocker();
-		Thread.sleep(5000);
+		Thread.sleep(1000);
 		createPostgreSQLDB();
 	}
 
@@ -75,6 +75,10 @@ public class PostgreSQLTestDatabase extends TestDatabase {
 	{
 		stopPostgreSQLDocker();
 		rmPostgreSQLDocker();
+	}
+	private String createDatabaseBashQuery(String databaseName)
+	{
+		return "docker exec "+dockerName+" su -c \"psql -c \\\"CREATE DATABASE "+databaseName+";\\\"\" postgres";
 	}
 	private void createPostgreSQLDB()
 	{
@@ -86,7 +90,10 @@ public class PostgreSQLTestDatabase extends TestDatabase {
 		try {
 			try(FileWriter fos=new FileWriter(tmpScript))
 			{
-				fos.write("docker exec "+dockerName+" su -c \\\"CREATE DATABASE "+factoryA.databaseName+";CREATE DATABASE "+factoryB.databaseName+";GRANT ALL PRIVILEGES ON "+factoryA.databaseName+".* TO '"+userName+"';GRANT ALL PRIVILEGES ON "+factoryB.databaseName+".* TO '"+userName+"';\\\"\n");
+				fos.write(createDatabaseBashQuery(factoryA.databaseName));
+				fos.write(" && ");
+				fos.write(createDatabaseBashQuery(factoryB.databaseName));
+				fos.write("\n");
 			}
 			ProcessBuilder pb=new ProcessBuilder("bash", tmpScript.toString());
 			p = pb.start();
