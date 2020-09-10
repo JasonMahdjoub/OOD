@@ -3594,6 +3594,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		return true;
 	}
 
+	protected boolean mustReleaseSavepointAfterCommit()
+	{
+		return true;
+	}
+
 	protected abstract boolean supportSavePoint(Connection openedConnection) throws SQLException;
 
 	protected abstract void rollback(Connection openedConnection, String savePointName, Savepoint savePoint)
@@ -3736,7 +3741,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						}
 						if (writeData) {
 							
-							if (savePoint != null)
+							if (savePoint != null && mustReleaseSavepointAfterCommit())
 								releasePoint(cw.connection.getConnection(), savePointName, savePoint);
 		
 						}

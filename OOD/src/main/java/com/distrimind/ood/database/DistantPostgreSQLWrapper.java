@@ -218,8 +218,11 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 		return false;
 	}
 
-
-
+	@Override
+	protected boolean mustReleaseSavepointAfterCommit()
+	{
+		return false;
+	}
 
 	@Override
 	protected void disableAutoCommit(Connection openedConnection) throws SQLException {
