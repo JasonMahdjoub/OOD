@@ -116,19 +116,16 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 			@SuppressWarnings("unchecked")
 			Class<? extends DatabaseRecord> c = (Class<? extends DatabaseRecord>) field.getType();
 			try {
-				Method f=AccessController.doPrivileged(new PrivilegedAction<Method>() {
-					@Override
-					public Method run() {
-						Method f;
-						try {
-							f = DatabaseWrapper.class.getDeclaredMethod("getTableInstance", Class.class, int.class);
-						} catch (NoSuchMethodException e) {
-							e.printStackTrace();
-							return null;
-						}
-						f.setAccessible(true);
-						return f;
+				Method f=AccessController.doPrivileged((PrivilegedAction<Method>) () -> {
+					Method f1;
+					try {
+						f1 = DatabaseWrapper.class.getDeclaredMethod("getTableInstance", Class.class, int.class);
+					} catch (NoSuchMethodException e) {
+						e.printStackTrace();
+						return null;
 					}
+					f1.setAccessible(true);
+					return f1;
 				});
 				pointed_table = (Table<?>)f.invoke(sql_connection, Table.getTableClass(c), tableVersion);
 			} catch (IllegalAccessException | InvocationTargetException | NullPointerException e) {
@@ -143,7 +140,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 					((ForeignKeyFieldAccessor) fa).initialize();
 				}
 				for (SqlField sf : fa.getDeclaredSqlFields()) {
-					sql_fields.add(new SqlField(table_name + "." + this.getSqlFieldName() + "__" + pointed_table.getSqlTableName()
+					sql_fields.add(new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName() + "__" + pointed_table.getSqlTableName()
 							+ "_" + sf.short_field_without_quote, sf.type, pointed_table.getSqlTableName(), sf.field, isNotNull()));
 				}
 			}
@@ -256,13 +253,13 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 		SqlFieldInstance[] res = new SqlFieldInstance[sql_fields.length];
 		if (val == null) {
 			for (int i = 0; i < sql_fields.length; i++)
-				res[i] = new SqlFieldInstance(sql_fields[i], null);
+				res[i] = new SqlFieldInstance(supportQuotes, sql_fields[i], null);
 		} else {
 			int i = 0;
 			for (FieldAccessor fa : linked_primary_keys) {
 				SqlFieldInstance[] linked_sql_field_instances = fa.getSqlFieldsInstances(val);
 				for (SqlFieldInstance sfi : linked_sql_field_instances) {
-					res[i++] = new SqlFieldInstance(
+					res[i++] = new SqlFieldInstance(supportQuotes,
 							table_name + "." + this.getSqlFieldName() + "__" + pointed_table.getSqlTableName() + "_"
 									+ sfi.short_field_without_quote,
 							sfi.type, linked_table_name, sfi.field, sfi.not_null, sfi.instance);
@@ -322,7 +319,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 
 				SqlFieldInstance[] sfis = new SqlFieldInstance[sfs.length];
 				for (int i = 0; i < sfs.length; i++) {
-					sfis[i] = new SqlFieldInstance(sfs[i], _result_set.getObject(sfs[i].short_field_without_quote));
+					sfis[i] = new SqlFieldInstance(supportQuotes, sfs[i], _result_set.getObject(sfs[i].short_field_without_quote));
 				}
 				field.set(_class_instance, get_record_method.invoke(getPointedTable(), sfis, list));
 			} else {

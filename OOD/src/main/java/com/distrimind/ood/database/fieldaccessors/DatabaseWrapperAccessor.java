@@ -76,10 +76,11 @@ class DatabaseWrapperAccessor {
 	private static final Method m_support_multiple_auto_primary_keys;
 	private static final Method m_support_single_auto_primary_keys;
 	private static final Method m_get_max_key_size;
+	private static final Method m_support_italic_quotes_with_table_field_names;
 	private static final Constructor<DecentralizedIDGenerator> m_decentralized_id_constructor;
 	private static final Constructor<RenforcedDecentralizedIDGenerator> m_renforced_decentralized_id_constructor;
 
-	static String getBigDecimalType(DatabaseWrapper wrapper, long limit) {
+	static String getBigDecimalType(DatabaseWrapper wrapper, @SuppressWarnings("SameParameterValue") long limit) {
 		try {
 			return (String) invoke(m_get_big_decimal_type, wrapper, limit);
 		} catch (InvocationTargetException e) {
@@ -233,6 +234,20 @@ class DatabaseWrapperAccessor {
 		}
 		return false;
 	}
+
+	static boolean supportsItalicQuotesWithTableAndFieldNames(DatabaseWrapper wrapper) {
+		if (wrapper == null)
+			throw new NullPointerException();
+		try {
+			return (Boolean) invoke(m_support_italic_quotes_with_table_field_names, wrapper);
+		} catch (InvocationTargetException e) {
+			System.err.println("Unexpected error :");
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		return false;
+	}
+
 	static boolean supportMultipleAutoPrimaryKeys(DatabaseWrapper wrapper) {
 		if (wrapper == null)
 			throw new NullPointerException();
@@ -325,6 +340,7 @@ class DatabaseWrapperAccessor {
 
 	static Blob getBlob(DatabaseWrapper wrapper, byte[] tab) throws SQLException {
 		try {
+			//noinspection RedundantCast
 			return (Blob) invoke(m_get_blob, wrapper, (Object) tab);
 		} catch (InvocationTargetException e) {
 			e.printStackTrace();
@@ -387,6 +403,7 @@ class DatabaseWrapperAccessor {
 		m_decentralized_id_constructor = getConstructor(DecentralizedIDGenerator.class, long.class, long.class);
 		m_renforced_decentralized_id_constructor = getConstructor(RenforcedDecentralizedIDGenerator.class, long.class,
 				long.class);
+		m_support_italic_quotes_with_table_field_names=getMethod(DatabaseWrapper.class, "supportsItalicQuotesWithTableAndFieldNames");
 
 	}
 

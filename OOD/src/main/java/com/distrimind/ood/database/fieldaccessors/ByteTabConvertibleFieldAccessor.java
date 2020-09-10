@@ -101,7 +101,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 				type=DatabaseWrapperAccessor.getBlobType(sql_connection, l);
 		}
 		assert type != null;
-		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(), type, null, null, isNotNull());
+		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(), type, null, null, isNotNull());
 		String vb=DatabaseWrapperAccessor.getVarBinaryType(_sql_connection, 0);
 		String lvb=DatabaseWrapperAccessor.getLongVarBinaryType(_sql_connection, 0);
 		if (vb!=null) {
@@ -229,21 +229,21 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 								+ field.getDeclaringClass().getCanonicalName());
 			
 			if (isVarBinary)
-				res[0] = new SqlFieldInstance(sql_fields[0], bytes);
+				res[0] = new SqlFieldInstance(supportQuotes, sql_fields[0], bytes);
 			else if (isBigInteger)
 			{
-				res[0] = new SqlFieldInstance(sql_fields[0], ByteTabFieldAccessor.getBigDecimalValue(bytes));
+				res[0] = new SqlFieldInstance(supportQuotes, sql_fields[0], ByteTabFieldAccessor.getBigDecimalValue(bytes));
 			}
 			else {
 
 				if (bytes == null)
-					res[0] = new SqlFieldInstance(sql_fields[0], null);
+					res[0] = new SqlFieldInstance(supportQuotes, sql_fields[0], null);
 				else {
 					Blob blob = DatabaseWrapperAccessor.getBlob(sql_connection, bytes);
 					if (blob == null)
-						res[0] = new SqlFieldInstance(sql_fields[0], new ByteArrayInputStream(bytes));
+						res[0] = new SqlFieldInstance(supportQuotes, sql_fields[0], new ByteArrayInputStream(bytes));
 					else
-						res[0] = new SqlFieldInstance(sql_fields[0], blob);
+						res[0] = new SqlFieldInstance(supportQuotes, sql_fields[0], blob);
 				}
 			}
 		}

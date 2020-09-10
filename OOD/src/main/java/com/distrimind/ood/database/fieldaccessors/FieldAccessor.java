@@ -102,6 +102,7 @@ public abstract class FieldAccessor {
 	private final boolean cacheDisabled;
 	protected final boolean useBlob;
 	private final boolean manual_auto_primary_key;
+	protected final boolean supportQuotes;
 
 	private static final Class<?> databaseEventsRecordTableClass;
 
@@ -122,6 +123,7 @@ public abstract class FieldAccessor {
 							Class<?>[] compatible_classes, Table<?> table, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
 		if (compatible_classes == null)
 			throw new NullPointerException("compatible_classes");
+		this.supportQuotes=DatabaseWrapperAccessor.supportsItalicQuotesWithTableAndFieldNames(_sql_connection);
 		this.compatible_classes = compatible_classes;
 		sql_connection = _sql_connection;
 		field = _field;

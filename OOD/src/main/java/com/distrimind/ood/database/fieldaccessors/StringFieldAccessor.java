@@ -71,7 +71,7 @@ public class StringFieldAccessor extends FieldAccessor {
 		long l=limit;
 		if (l<=0)
 			l=defaultStringLengthLimit;
-		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(),
+		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(),
 				l < DatabaseWrapperAccessor.getVarCharLimit(sql_connection)
 						? "VARCHAR(" + l + ")"
 						:DatabaseWrapperAccessor.getTextType(sql_connection, l),
@@ -147,7 +147,7 @@ public class StringFieldAccessor extends FieldAccessor {
 	@Override
 	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
 		SqlFieldInstance[] res = new SqlFieldInstance[1];
-		res[0] = new SqlFieldInstance(sql_fields[0], getValue(_instance));
+		res[0] = new SqlFieldInstance(supportQuotes, sql_fields[0], getValue(_instance));
 		return res;
 	}
 

@@ -82,7 +82,7 @@ public class AbstractDecentralizedIDFieldAccessor extends FieldAccessor {
 			l=65;
 
 		sql_fields = new SqlField[1];
-		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(),
+		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(),
 				Objects.requireNonNull(DatabaseWrapperAccessor.isVarBinarySupported(sql_connection) ? DatabaseWrapperAccessor.getVarBinaryType(_sql_connection, l)
 						: DatabaseWrapperAccessor.getBigIntegerType(sql_connection, l)),
 				null, null, isNotNull());
@@ -199,9 +199,9 @@ public class AbstractDecentralizedIDFieldAccessor extends FieldAccessor {
 	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
 		SqlFieldInstance[] res = new SqlFieldInstance[1];
 		if (isVarBinary)
-			res[0] = new SqlFieldInstance(sql_fields[0], ((AbstractDecentralizedID) getValue(_instance)).encode());
+			res[0] = new SqlFieldInstance(supportQuotes, sql_fields[0], ((AbstractDecentralizedID) getValue(_instance)).encode());
 		else
-			res[0] = new SqlFieldInstance(sql_fields[0],
+			res[0] = new SqlFieldInstance(supportQuotes, sql_fields[0],
 					getBigDecimal(((AbstractDecentralizedID) getValue(_instance)).encode()));
 		return res;
 	}

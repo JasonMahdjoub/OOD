@@ -73,7 +73,7 @@ public class DateFieldAccessor extends FieldAccessor {
 			throw new FieldDatabaseException("The field " + _field.getName() + " of the class "
 					+ _field.getDeclaringClass().getName() + " of type " + _field.getType() + " must be a Date type.");
 		sql_fields = new SqlField[1];
-		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(), DatabaseWrapperAccessor.getDateTimeType(sql_connection), null, null, isNotNull());
+		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(), DatabaseWrapperAccessor.getDateTimeType(sql_connection), null, null, isNotNull());
 	}
 
 	private static Class<?>[] getCompatibleClasses(Field field) {
@@ -211,7 +211,7 @@ public class DateFieldAccessor extends FieldAccessor {
 	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
 		SqlFieldInstance[] res = new SqlFieldInstance[1];
 		Date date=(Date) getValue(_instance);
-		res[0] = new SqlFieldInstance(sql_fields[0], date==null?null:new Timestamp(date.getTime()));
+		res[0] = new SqlFieldInstance(supportQuotes, sql_fields[0], date==null?null:new Timestamp(date.getTime()));
 		return res;
 	}
 

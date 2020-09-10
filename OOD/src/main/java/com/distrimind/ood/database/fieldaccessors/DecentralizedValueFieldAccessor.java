@@ -87,7 +87,7 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 				limit= compatibleClasses[0]== ASymmetricPublicKey.class?8999:(compatibleClasses[0]== ASymmetricPrivateKey.class?1200:(compatibleClasses[0]== SymmetricSecretKey.class?55:10500));
 
 		}
-		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(),
+		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(),
 				Objects.requireNonNull(DatabaseWrapperAccessor.isVarBinarySupported(sql_connection) ? DatabaseWrapperAccessor.getVarBinaryType(_sql_connection, limit)
 						: DatabaseWrapperAccessor.getBigIntegerType(sql_connection, limit)),
 				null, null, isNotNull());
@@ -220,9 +220,9 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
 		SqlFieldInstance[] res = new SqlFieldInstance[1];
 		if (isVarBinary)
-			res[0] = new SqlFieldInstance(sql_fields[0], encode(getValue(_instance)));
+			res[0] = new SqlFieldInstance(supportQuotes, sql_fields[0], encode(getValue(_instance)));
 		else
-			res[0] = new SqlFieldInstance(sql_fields[0],
+			res[0] = new SqlFieldInstance(supportQuotes, sql_fields[0],
 					getBigDecimal(encode(getValue(_instance))));
 		return res;
 	}

@@ -68,7 +68,7 @@ public class charFieldAccessor extends FieldAccessor {
 			String parentFieldName, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
 		super(_sql_connection, _field, parentFieldName, compatible_classes, table, severalPrimaryKeysPresentIntoTable);
 		sql_fields = new SqlField[1];
-		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(), "CHARACTER", null, null, isNotNull());
+		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(), "CHARACTER", null, null, isNotNull());
 	}
 
 	@Override
@@ -145,7 +145,7 @@ public class charFieldAccessor extends FieldAccessor {
 	@Override
 	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
 		SqlFieldInstance[] res = new SqlFieldInstance[1];
-		res[0] = new SqlFieldInstance(sql_fields[0], getValue(_instance));
+		res[0] = new SqlFieldInstance(supportQuotes, sql_fields[0], getValue(_instance));
 		return res;
 	}
 

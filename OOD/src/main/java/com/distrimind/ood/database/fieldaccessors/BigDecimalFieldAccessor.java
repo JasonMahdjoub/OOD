@@ -83,7 +83,7 @@ public class BigDecimalFieldAccessor extends FieldAccessor {
 			l=useString?128:36;
 		type=DatabaseWrapperAccessor.getBigIntegerType(sql_connection, l);
 
-		sql_fields[0] = new SqlField(this.table_name + "." + this.getSqlFieldName(),
+		sql_fields[0] = new SqlField(supportQuotes, this.table_name + "." + this.getSqlFieldName(),
 				Objects.requireNonNull(type), null, null, isNotNull());
 	}
 
@@ -203,7 +203,7 @@ public class BigDecimalFieldAccessor extends FieldAccessor {
 	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
 		SqlFieldInstance[] res = new SqlFieldInstance[1];
 		BigDecimal v=(BigDecimal)getValue(_instance);
-		res[0] = new SqlFieldInstance(sql_fields[0], useGetBigDecimal?v:useString?v.toString():bigDecimalToBytes(v));
+		res[0] = new SqlFieldInstance(supportQuotes, sql_fields[0], useGetBigDecimal?v:useString?v.toString():bigDecimalToBytes(v));
 		return res;
 	}
 

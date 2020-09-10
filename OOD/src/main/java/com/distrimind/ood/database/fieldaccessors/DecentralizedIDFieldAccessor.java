@@ -69,9 +69,9 @@ public class DecentralizedIDFieldAccessor extends FieldAccessor {
 										   Field _field, String parentFieldName, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
 		super(_sql_connection, _field, parentFieldName, compatibleClasses, table, severalPrimaryKeysPresentIntoTable);
 		sql_fields = new SqlField[2];
-		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName() + "_ts",
+		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName() + "_ts",
 				Objects.requireNonNull(DatabaseWrapperAccessor.getLongType(sql_connection)), null, null, isNotNull());
-		sql_fields[1] = new SqlField(table_name + "." + this.getSqlFieldName() + "_widseq",
+		sql_fields[1] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName() + "_widseq",
 				Objects.requireNonNull(DatabaseWrapperAccessor.getLongType(sql_connection)), null, null, isNotNull());
 	}
 
@@ -152,13 +152,13 @@ public class DecentralizedIDFieldAccessor extends FieldAccessor {
 		DecentralizedIDGenerator did = (DecentralizedIDGenerator) getValue(_instance);
 		if (did==null)
 		{
-			res[0] = new SqlFieldInstance(sql_fields[0], null);
-			res[1] = new SqlFieldInstance(sql_fields[1], null);
+			res[0] = new SqlFieldInstance(supportQuotes, sql_fields[0], null);
+			res[1] = new SqlFieldInstance(supportQuotes, sql_fields[1], null);
 		}
 		else
 		{
-			res[0] = new SqlFieldInstance(sql_fields[0], did.getTimeStamp());
-			res[1] = new SqlFieldInstance(sql_fields[1], did.getWorkerIDAndSequence());
+			res[0] = new SqlFieldInstance(supportQuotes, sql_fields[0], did.getTimeStamp());
+			res[1] = new SqlFieldInstance(supportQuotes, sql_fields[1], did.getWorkerIDAndSequence());
 		}
 		return res;
 	}

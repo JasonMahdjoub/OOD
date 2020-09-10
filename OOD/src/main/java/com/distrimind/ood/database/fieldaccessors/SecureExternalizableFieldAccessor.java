@@ -83,7 +83,7 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 		long l=getLimit();
 		if (l<=0)
 			l=ByteTabFieldAccessor.defaultByteTabSize;
-		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(),
+		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(),
 				Objects.requireNonNull(DatabaseWrapperAccessor.getBlobType(sql_connection, l)), null, null, isNotNull());
 
 		if (Comparable.class.isAssignableFrom(field.getType())) {
@@ -275,13 +275,13 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 		if (DatabaseWrapperAccessor.getBlobType(sql_connection, getLimit()).contains(blobBaseName)) {
 			try (RandomByteArrayOutputStream baos = new RandomByteArrayOutputStream()) {
 				this.serialize(baos, _instance);
-				res[0] = new SqlFieldInstance(sql_fields[0], baos.getBytes());
+				res[0] = new SqlFieldInstance(supportQuotes, sql_fields[0], baos.getBytes());
 
 			} catch (Exception e) {
 				throw DatabaseException.getDatabaseException(e);
 			}
 		} else {
-			res[0] = new SqlFieldInstance(sql_fields[0], getValue(_instance));
+			res[0] = new SqlFieldInstance(supportQuotes, sql_fields[0], getValue(_instance));
 		}
 		return res;
 

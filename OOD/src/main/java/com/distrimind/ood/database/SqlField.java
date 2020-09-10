@@ -128,7 +128,7 @@ public class SqlField {
 	 * @param _not_null
 	 *            tells if the field is not null
 	 */
-	public SqlField(String _field, String _type, String _pointed_table, String _pointed_field, boolean _not_null) {
+	public SqlField(boolean supportQuote, String _field, String _type, String _pointed_table, String _pointed_field, boolean _not_null) {
 		field_without_quote = _field.toUpperCase();
 		type = _type.toUpperCase();
 		pointed_table = _pointed_table == null ? null : _pointed_table.toUpperCase();
@@ -143,12 +143,24 @@ public class SqlField {
 		}
 		if (index != -1) {
 			short_field_without_quote = field_without_quote.substring(index);
-			short_field = "`" + short_field_without_quote + "`";
-			field=field_without_quote.substring(0, index )+"`"+field_without_quote.substring(index)+"`";
+			if (supportQuote) {
+				short_field = "`" + short_field_without_quote + "`";
+				field = field_without_quote.substring(0, index) + "`" + field_without_quote.substring(index) + "`";
+			}
+			else {
+				short_field = short_field_without_quote;
+				field = field_without_quote;
+			}
+
 		}
 		else {
 			short_field_without_quote = field_without_quote;
-			short_field = "`" + field_without_quote + "`";
+			if (supportQuote) {
+				short_field = "`" + field_without_quote + "`";
+			}
+			else
+				short_field = field_without_quote;
+
 			field=short_field;
 		}
 
