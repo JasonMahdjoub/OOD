@@ -38,9 +38,9 @@ Adapt into your build.gradle file, the next code :
 		//optional and under JDK8 or newer
 		testImplementation(group:'org.apache.derby', name: 'derby', version: '10.15.2.0')
 		//choose this optional driver for MySQL 
-		testImplementation(group: 'mysql', name: 'mysql-connector-java', version: '8.0.20')
+		testImplementation(group: 'mysql', name: 'mysql-connector-java', version: '8.0.21')
 		//choose this optional driver for PostgreSQL 
-		testImplementation(group: 'org.postgresql', name: 'postgresql', version: '42.2.14')
+		testImplementation(group: 'org.postgresql', name: 'postgresql', version: '42.2.16')
 	}
 	...
 
@@ -87,13 +87,13 @@ Adapt into your pom.xml file, the next code :
 				<dependency>
 					<groupId>mysql</groupId>
 					<artifactId>mysql-connector-java</artifactId>
-					<version>8.0.20</version>
+					<version>8.0.21</version>
 				</dependency>
 			<!-- choose this optional driver for PostgreSQL-->
 				<dependency>
 					<groupId>org.postgresql</groupId>
 					<artifactId>postgresql</artifactId>
-					<version>42.2.14</version>
+					<version>42.2.16</version>
 				</dependency>
 			...
 		</dependencies>
