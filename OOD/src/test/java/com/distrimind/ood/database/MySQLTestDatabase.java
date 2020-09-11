@@ -85,7 +85,7 @@ public class MySQLTestDatabase extends TestDatabase {
 		try {
 			try(FileWriter fos=new FileWriter(tmpScript))
 			{
-				fos.write("docker exec "+dockerName+" mysql --connect-expired-password --user=\"root\" --password=\""+rootPw+"\" -Bse \"ALTER USER 'root'@'localhost' IDENTIFIED BY 'rootpassword'; CREATE USER '"+factoryA.user+"' IDENTIFIED by '"+factoryA.password+"';CREATE DATABASE "+factoryA.databaseName+";CREATE DATABASE "+factoryB.databaseName+";GRANT ALL PRIVILEGES ON "+factoryA.databaseName+".* TO '"+factoryA.databaseName+"';GRANT ALL PRIVILEGES ON "+factoryB.databaseName+".* TO '"+factoryB.user+"';FLUSH PRIVILEGES;\"\n");
+				fos.write("docker exec "+dockerName+" mysql --connect-expired-password --user=\"root\" --password=\""+rootPw+"\" -Bse \"ALTER USER 'root'@'localhost' IDENTIFIED BY 'rootpassword'; CREATE USER '"+factoryA.user+"' IDENTIFIED by '"+factoryA.password+"';CREATE DATABASE "+factoryA.databaseName+";CREATE DATABASE "+factoryB.databaseName+";GRANT ALL PRIVILEGES ON "+factoryA.databaseName+".* TO '"+factoryA.user+"';GRANT ALL PRIVILEGES ON "+factoryB.databaseName+".* TO '"+factoryB.user+"';FLUSH PRIVILEGES;\"\n");
 			}
 			ProcessBuilder pb=new ProcessBuilder("bash", tmpScript.toString());
 			p = pb.start();
