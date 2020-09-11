@@ -472,11 +472,12 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 					}
 					if (fa.isForeignKey()) {
 						String constraintName=table.getSqlTableName().toLowerCase()+"_%"+sf.short_field_without_quote.toLowerCase()+"%_fkey";
+						constraintName=constraintName.replace("_", "!_");
 						try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
 								"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
 										+ table.getSqlTableName().toLowerCase()
-										+ "' AND CONSTRAINT_NAME LIKE '" + constraintName
-										+ "' AND COLUMN_NAME='"+ sf.short_field_without_quote.toLowerCase() + "';"))) {
+										+ "' AND CONSTRAINT_NAME LIKE '" + constraintName+"' ESCAPE '!'"
+										+ " AND COLUMN_NAME='"+ sf.short_field_without_quote.toLowerCase() + "';"))) {
 							if (!rq.result_set.next())
 								throw new DatabaseVersionException(table,
 										"The field " + fa.getFieldName() + " is a foreign key. One of its Sql fields "
