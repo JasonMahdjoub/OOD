@@ -329,7 +329,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 	@Override
 	protected Table.ColumnsReadQuerry getColumnMetaData(String tableName, String columnName) throws Exception {
 		Connection c;
-		ResultSet rs=(c=getConnectionAssociatedWithCurrentThread().getConnection()).getMetaData().getColumns(database_name, null, tableName, columnName);
+		ResultSet rs=(c=getConnectionAssociatedWithCurrentThread().getConnection()).getMetaData().getColumns(database_name, null, tableName==null?null:tableName.toLowerCase(), columnName==null?null:columnName.toLowerCase());
 		return new CReadQuerry(c, rs);
 
 	}
@@ -399,19 +399,19 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 			throw DatabaseException.getDatabaseException(e);
 		}
 		try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
-				"select REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME, COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
+				"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
 						+ table.getSqlTableName() + "' AND CONSTRAINT_SCHEMA='"+database_name+"';"))) {
 			while (rq.result_set.next()) {
-				String pointed_table = rq.result_set.getString("REFERENCED_TABLE_NAME");
-				String pointed_col = pointed_table + "." + rq.result_set.getString("REFERENCED_COLUMN_NAME");
+				/*String pointed_table = rq.result_set.getString("REFERENCED_TABLE_NAME");
+				String pointed_col = pointed_table + "." + rq.result_set.getString("REFERENCED_COLUMN_NAME");*/
 				String fk = table.getSqlTableName() + "." + rq.result_set.getString("COLUMN_NAME");
-				if (pointed_table==null)
-					continue;
+				/*if (pointed_table==null)
+					continue;*/
 				boolean found = false;
 				for (ForeignKeyFieldAccessor fa : table.getForeignKeysFieldAccessors()) {
 					for (SqlField sf : fa.getDeclaredSqlFields()) {
-						if (sf.field_without_quote.equals(fk) && sf.pointed_field_without_quote.equals(pointed_col)
-								&& sf.pointed_table_without_quote.equals(pointed_table)) {
+						if (sf.field_without_quote.equals(fk)/* && sf.pointed_field_without_quote.equals(pointed_col)
+								&& sf.pointed_table_without_quote.equals(pointed_table)*/) {
 							found = true;
 							break;
 						}
@@ -421,7 +421,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 				}
 				if (!found)
 					throw new DatabaseVersionException(table,
-							"There is foreign keys defined into the Sql database which have not been found in the OOD database : table="+pointed_table+" col="+pointed_col);
+							"There is foreign keys defined into the Sql database which have not been found in the OOD database");
 			}
 		} catch (SQLException e) {
 			throw new DatabaseException("Impossible to check constraints of the table " + table.getClass().getSimpleName(), e);
@@ -462,20 +462,21 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 					if (fa.isPrimaryKey()) {
 						try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection,
 								new Table.SqlQuerry(
-										"select * from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
-												+ table.getSqlTableName() + "' AND COLUMN_NAME='" + sf.short_field_without_quote
-												+ "' AND CONSTRAINT_NAME='PRIMARY' AND CONSTRAINT_SCHEMA='"+database_name+"';"))) {
+										"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
+												+ table.getSqlTableName().toLowerCase() + "' AND COLUMN_NAME='" + sf.short_field_without_quote.toLowerCase()
+												+ "' AND CONSTRAINT_NAME='"+table.getSqlPrimaryKeyName().toLowerCase()+"';"))) {
 							if (!rq.result_set.next())
 								throw new DatabaseVersionException(table, "The field " + fa.getFieldName()
 										+ " is not declared as a primary key into the Sql database.");
 						}
 					}
 					if (fa.isForeignKey()) {
+						String constraintName=table.getSqlTableName().toLowerCase()+"_%"+sf.short_field_without_quote.toLowerCase()+"%_fkey";
 						try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
-								"select REFERENCED_TABLE_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
-										+ table.getSqlTableName() + "' AND REFERENCED_TABLE_NAME='" + sf.pointed_table
-										+ "' AND REFERENCED_COLUMN_NAME='" + sf.short_pointed_field_without_quote + "' AND COLUMN_NAME='"
-										+ sf.short_field_without_quote + "'"))) {
+								"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
+										+ table.getSqlTableName().toLowerCase()
+										+ "' AND CONSTRAINT_NAME LIKE '" + constraintName
+										+ "' AND COLUMN_NAME='"+ sf.short_field_without_quote.toLowerCase() + "';"))) {
 							if (!rq.result_set.next())
 								throw new DatabaseVersionException(table,
 										"The field " + fa.getFieldName() + " is a foreign key. One of its Sql fields "
@@ -487,22 +488,14 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 						boolean found = false;
 						try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
 								"select CONSTRAINT_NAME, CONSTRAINT_TYPE from INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_NAME='"
-										+ table.getSqlTableName() + "' AND CONSTRAINT_SCHEMA='"+database_name+"';"))) {
+										+ table.getSqlTableName().toLowerCase() + "';"))) {
 							while (rq.result_set.next()) {
 								if (rq.result_set.getString("CONSTRAINT_TYPE").equals("UNIQUE")) {
 									String constraint_name = rq.result_set.getString("CONSTRAINT_NAME");
-									try (Table.ReadQuerry rq2 = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
-											"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
-													+ table.getSqlTableName() + "' AND CONSTRAINT_NAME='" + constraint_name
-													+ "';"))) {
-										if (rq2.result_set.next()) {
-											String col = table.getSqlTableName() + "."
-													+ rq2.result_set.getString("COLUMN_NAME");
-											if (col.equals(sf.field_without_quote)) {
-												found = true;
-												break;
-											}
-										}
+									if (constraint_name.equals(table.getSqlTableName().toLowerCase()+"_"+sf.short_field_without_quote.toLowerCase()+"_key"))
+									{
+										found=true;
+										break;
 									}
 								}
 							}
@@ -602,12 +595,12 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 
 	@Override
 	protected String getByteType() {
-		return "SMALLINT";
+		return "INT2";
 	}
 
 	@Override
 	protected String getIntType() {
-		return "INTEGER";
+		return "INT4";
 	}
 
 	@Override
@@ -639,12 +632,12 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 
 	@Override
 	protected String getShortType() {
-		return "SMALLINT";
+		return "INT2";
 	}
 
 	@Override
 	protected String getLongType() {
-		return "BIGINT";
+		return "INT8";
 	}
 
 	@Override
@@ -678,6 +671,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 		return "DROP TABLE IF EXISTS " + table.getSqlTableName()
 				+ " CASCADE";
 	}
+
 
 	@Override
 	protected String getOnUpdateCascadeSqlQuery() {
