@@ -13,6 +13,7 @@
 			<class name="com.distrimind.ood.database.H2TestDatabase" />
 			<class name="com.distrimind.ood.database.HSQLDBTestDatabase" />
 			<class name="com.distrimind.ood.database.MySQLTestDatabase" />
+			<class name="com.distrimind.ood.database.PostgreSQLTestDatabase" />
 
 		</classes>
 	</test>
