@@ -7868,7 +7868,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 													first = false;
 												else
 													querry.append(", ");
-												querry.append(sf.field).append(" = ?");
+												querry.append(sf.short_field).append(" = ?");
 											}
 										}
 									}

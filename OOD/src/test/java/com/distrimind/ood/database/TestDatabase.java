@@ -3516,6 +3516,10 @@ public abstract class TestDatabase {
 		RuleInstance rule = Interpreter.getRuleInstance(command);
 		String sqlCommand = rule.translateToSqlQuery(table, parameters, sqlParameters, new HashSet<TableJunction>())
 				.toString();
+		if (!table.getDatabaseWrapper().supportsItalicQuotesWithTableAndFieldNames()) {
+			assert expectedSqlCommand != null;
+			expectedSqlCommand=expectedSqlCommand.replace("`", "");
+		}
 		Assert.assertEquals(sqlCommand, expectedSqlCommand);
 		for (Map.Entry<Integer, Object> e : sqlParameters.entrySet()) {
 			if (e.getValue() == null)
