@@ -84,6 +84,7 @@ public class BackupRestoreManager {
 	private final File computeDatabaseReference;
 	private final DatabaseWrapper databaseWrapper;
 	private final boolean passive;
+	private boolean temporaryDisabled=false;
 	private final Package dbPackage;
 	private final boolean generateRestoreProgressBar;
 	private volatile long lastCurrentRestorationFileUsed=Long.MIN_VALUE;
@@ -459,7 +460,7 @@ public class BackupRestoreManager {
 	public boolean isReady()
 	{
 		synchronized (this) {
-			return fileTimeStamps.size() > 0 && !computeDatabaseReference.exists();
+			return fileTimeStamps.size() > 0 && !computeDatabaseReference.exists() && !temporaryDisabled;
 		}
 	}
 
@@ -1461,7 +1462,7 @@ public class BackupRestoreManager {
 
 	boolean doesCreateNewBackupReference()
 	{
-		return !passive && (!isReady() || fileReferenceTimeStamps.size()==0 || fileReferenceTimeStamps.get(fileReferenceTimeStamps.size()-1)+backupConfiguration.getBackupReferenceDurationInMs()<System.currentTimeMillis());
+		return !passive && !temporaryDisabled && (!isReady() || fileReferenceTimeStamps.size()==0 || fileReferenceTimeStamps.get(fileReferenceTimeStamps.size()-1)+backupConfiguration.getBackupReferenceDurationInMs()<System.currentTimeMillis());
 	}
 
 	/*boolean isExternalBackupManager()
@@ -1730,7 +1731,14 @@ public class BackupRestoreManager {
 	}
 
 
-
+	/**
+	 * Restore the database to the last known backup
+	 * @return true if a backup is available. False no backup is available.
+	 * @throws DatabaseException if a problem occurs
+	 */
+	public boolean restoreDatabaseToLastKnownBackup() throws DatabaseException {
+		return restoreDatabaseToDateUTC(Long.MAX_VALUE, false);
+	}
 
 	/**
 	 * Restore the database to the nearest given date UTC
@@ -1757,8 +1765,15 @@ public class BackupRestoreManager {
 
 
 			synchronized (this) {
+				if (temporaryDisabled)
+					return false;
 				if (fileReferenceTimeStamps.size() == 0)
 					return false;
+				long lastTransactionUTCInMs=getLastTransactionUTCInMS();
+				if (lastTransactionUTCInMs>Long.MIN_VALUE && lastTransactionUTCInMs<=dateUTCInMs) {
+					temporaryDisabled = true;
+					dateUTCInMs=lastTransactionUTCInMs;
+				}
 				oldVersion = databaseWrapper.getCurrentDatabaseVersion(dbPackage);
 
 				newVersion = oldVersion + 1;
@@ -2117,6 +2132,9 @@ public class BackupRestoreManager {
 			}
 		}
 		finally {
+			synchronized (this) {
+				temporaryDisabled = false;
+			}
 			databaseWrapper.unlockWrite();
 		}
 	}
@@ -2328,8 +2346,7 @@ public class BackupRestoreManager {
 		private final boolean transactionToSynchronize;
 
 
-
-		Transaction(long fileTimeStamp, long lastTransactionUTC, RandomOutputStream out, /*RecordsIndex index, */long oldLastFile, int oldLength, Long firstTransactionID, boolean transactionToSynchronize) throws DatabaseException {
+		private Transaction(long fileTimeStamp, long lastTransactionUTC, RandomOutputStream out, /*RecordsIndex index, */long oldLastFile, int oldLength, Long firstTransactionID, boolean transactionToSynchronize) throws DatabaseException {
 			//this.index=index;
 			this.fileTimeStamp=fileTimeStamp;
 			this.lastTransactionUTC = lastTransactionUTC;
