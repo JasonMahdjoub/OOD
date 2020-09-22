@@ -349,7 +349,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 							List<DecentralizedValue> l = _record.getConcernedHosts();
 							l.add(hook.getHostID());
 							_record.setConcernedHosts(l);
-							update();
+							update("concernedHosts", _record.concernedHosts);
 						}
 					}
 				}, "id>%lastID" + sb.toString(), parameters);

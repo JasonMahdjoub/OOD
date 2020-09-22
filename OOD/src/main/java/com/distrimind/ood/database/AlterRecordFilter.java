@@ -39,7 +39,10 @@ package com.distrimind.ood.database;
 
 import java.util.Map;
 
+import com.distrimind.ood.database.exceptions.ConstraintsNotRespectedDatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.exceptions.FieldDatabaseException;
+import com.distrimind.ood.database.exceptions.RecordNotFoundDatabaseException;
 
 /**
  * This interface is used to filter records which have to be altered or deleted
@@ -108,14 +111,30 @@ public abstract class AlterRecordFilter<T> {
 	 */
 	protected final void update(Map<String, Object> fields) {
 		modifications = fields;
+		modificationFromRecordInstance=false;
 	}
-
+	/**
+	 * Must be called into the function {@link #nextRecord(Object)}. This function
+	 * aims to alter the current record.
+	 *
+	 * @param fields
+	 *            the list of fields to include into the new record. Must be
+	 *            formated as follow : {"field1", value1,"field2", value2, etc.}
+	 * @throws DatabaseException
+	 *             if a problem occurs during the insertion into the Sql database.
+	 * @throws NullPointerException
+	 *             if parameters are null pointers.
+	 */
+	protected final void update(Object... fields) throws DatabaseException {
+		update(Table.transformToMapField(fields));
+	}
 	/**
 	 * Must be called into the function {@link #nextRecord(Object)}. This function
 	 * aims to alter the current record.
 	 * 
 	 */
 	protected final void update() {
+		modifications=null;
 		modificationFromRecordInstance = true;
 	}
 

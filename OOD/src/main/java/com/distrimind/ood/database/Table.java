@@ -7074,7 +7074,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 	}
 
-	Map<String, Object> transformToMapField(Object... _fields) throws DatabaseException {
+	static Map<String, Object> transformToMapField(Object... _fields) throws DatabaseException {
 		HashMap<String, Object> res = new HashMap<>();
 		if (_fields == null)
 			throw new NullPointerException("_fields");
