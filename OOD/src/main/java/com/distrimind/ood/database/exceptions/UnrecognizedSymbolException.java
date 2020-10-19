@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -49,6 +49,6 @@ public class UnrecognizedSymbolException extends DatabaseSyntaxException {
 	private static final long serialVersionUID = -4662148092770269660L;
 
 	public UnrecognizedSymbolException(String symbol) {
-		super("The symbol '" + symbol + "' is unknow !");
+		super("The symbol '" + symbol + "' is unknown !");
 	}
 }

@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -427,7 +427,6 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 
 	protected void addTransactionToSynchronizeTables(final String databasePackage, final DatabaseHooksTable.Record hook,
 			final boolean force) throws DatabaseException {
-		// final long previousLastTransacionID=getIDTable().getLastTransactionID();
 
 		DatabaseTransactionEventsTable.Record tr = new DatabaseTransactionEventsTable.Record();
 		tr.id = getTransactionIDTable().getAndIncrementTransactionID();

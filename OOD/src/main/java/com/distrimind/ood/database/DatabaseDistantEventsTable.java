@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -100,9 +100,9 @@ final class DatabaseDistantEventsTable extends Table<DatabaseDistantEventsTable.
 					oos.writeInt(foreignKeys.length);
 					oos.write(foreignKeys);
 
-					byte[] nonkey = getConcernedSerializedNewNonKey();
-					oos.writeInt(nonkey.length);
-					oos.write(nonkey);
+					byte[] nonKey = getConcernedSerializedNewNonKey();
+					oos.writeInt(nonKey.length);
+					oos.write(nonKey);
 				}
 
 			} catch (Exception e) {
@@ -195,14 +195,14 @@ final class DatabaseDistantEventsTable extends Table<DatabaseDistantEventsTable.
 						if (getDataOutputStream()!=null)
 							getDataOutputStream().writeInt(size);
 						
-						byte[] nonpk = new byte[size];
-						if (getDataInputStream().read(nonpk) != size)
+						byte[] nonPk = new byte[size];
+						if (getDataInputStream().read(nonPk) != size)
 							throw new SerializationDatabaseException(
 									"Impossible to read the expected bytes number : " + size);
 						if (getDataOutputStream()!=null)
-							getDataOutputStream().write(nonpk);
+							getDataOutputStream().write(nonPk);
 
-						event.setConcernedSerializedNewNonKey(nonpk);
+						event.setConcernedSerializedNewNonKey(nonPk);
 
 					}
 					next = 0;

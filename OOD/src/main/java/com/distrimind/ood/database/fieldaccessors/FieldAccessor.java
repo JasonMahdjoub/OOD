@@ -548,7 +548,7 @@ public abstract class FieldAccessor {
 							res.add(new DecentralizedIDFieldAccessor(_table, _sql_connection, f,
 									parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (type.equals(RenforcedDecentralizedIDGenerator.class))
-							res.add(new RenforcedDencetralizedIDFieldAccessor(_table, _sql_connection, f,
+							res.add(new ReinforcedDecentralizedIDFieldAccessor(_table, _sql_connection, f,
 									parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (AbstractDecentralizedID.class.isAssignableFrom(type))
 							res.add(new AbstractDecentralizedIDFieldAccessor(_table, _sql_connection, f,

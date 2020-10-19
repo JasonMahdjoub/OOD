@@ -5,7 +5,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -62,11 +62,11 @@ import com.distrimind.util.io.RandomOutputStream;
  * @since OOD 1.7.0
  * 
  */
-public class RenforcedDencetralizedIDFieldAccessor extends FieldAccessor {
+public class ReinforcedDecentralizedIDFieldAccessor extends FieldAccessor {
 	protected final SqlField[] sql_fields;
 
-	protected RenforcedDencetralizedIDFieldAccessor(Table<?> table,
-			DatabaseWrapper _sql_connection, Field _field, String parentFieldName, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
+	protected ReinforcedDecentralizedIDFieldAccessor(Table<?> table,
+													 DatabaseWrapper _sql_connection, Field _field, String parentFieldName, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
 		super(_sql_connection, _field, parentFieldName, compatibleClasses, table, severalPrimaryKeysPresentIntoTable);
 		sql_fields = new SqlField[2];
 		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName() + "_ts",
@@ -176,7 +176,7 @@ public class RenforcedDencetralizedIDFieldAccessor extends FieldAccessor {
 			long ts = _result_set.getLong(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
 			long wsseq = _result_set.getLong(getColmunIndex(_result_set, sql_fields[1].field_without_quote));
 
-			field.set(_class_instance, DatabaseWrapperAccessor.getRenforcedDecentralizedIDGeneratorInstance(ts, wsseq));
+			field.set(_class_instance, DatabaseWrapperAccessor.getReinforcedDecentralizedIDGeneratorInstance(ts, wsseq));
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -276,7 +276,7 @@ public class RenforcedDencetralizedIDFieldAccessor extends FieldAccessor {
 		try {
 			long ts = _ois.readLong();
 			long wsseq = _ois.readLong();
-			_map.put(getFieldName(), DatabaseWrapperAccessor.getRenforcedDecentralizedIDGeneratorInstance(ts, wsseq));
+			_map.put(getFieldName(), DatabaseWrapperAccessor.getReinforcedDecentralizedIDGeneratorInstance(ts, wsseq));
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -289,7 +289,7 @@ public class RenforcedDencetralizedIDFieldAccessor extends FieldAccessor {
 			long wsseq = _ois.readLong();
 
 			RenforcedDecentralizedIDGenerator a = DatabaseWrapperAccessor
-					.getRenforcedDecentralizedIDGeneratorInstance(ts, wsseq);
+					.getReinforcedDecentralizedIDGeneratorInstance(ts, wsseq);
 			setValue(_classInstance, a);
 			return a;
 		} catch (Exception e) {

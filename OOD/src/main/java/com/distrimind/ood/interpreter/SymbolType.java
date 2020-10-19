@@ -5,7 +5,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -67,13 +67,13 @@ public enum SymbolType {
 
 	private final Pattern pattern;
 	private final String content;
-	private final String matches[];
+	private final String[] matches;
 	private final boolean isOperator;
 	private final boolean isCondition;
 	private final boolean mustHaveSpaces;
 
-	SymbolType(boolean isOperator, boolean isCondition, boolean mustHaveSpaces, String regex, String matches[],
-			String content) {
+	SymbolType(boolean isOperator, boolean isCondition, boolean mustHaveSpaces, String regex, String[] matches,
+			   String content) {
 		this.isOperator = isOperator;
 		this.isCondition = isCondition;
 		this.mustHaveSpaces = mustHaveSpaces;
@@ -140,7 +140,7 @@ public enum SymbolType {
 		else
 			regex = likeContent;
 		if (regex.startsWith("%"))
-			regex = regex.substring(1, regex.length());
+			regex = regex.substring(1);
 		else
 			regex = "^" + likeContent;
 		if (regex.endsWith("%"))

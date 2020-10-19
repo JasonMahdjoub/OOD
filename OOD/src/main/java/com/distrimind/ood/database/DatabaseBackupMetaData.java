@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -49,6 +49,7 @@ public class DatabaseBackupMetaData implements Iterable<DatabaseBackupMetaDataPe
 	public static final int MAX_BLOCK_CHAIN_LENGTH_IN_BYTES=80484736;
 	public static int MAX_INCREMENTAL_FILES=MAX_BLOCK_CHAIN_LENGTH_IN_BYTES/(44+64);
 	final List<DatabaseBackupMetaDataPerFile> metaDataPerFiles;
+	@SuppressWarnings("unused")
 	DatabaseBackupMetaData()
 	{
 		this.metaDataPerFiles = new ArrayList<>();

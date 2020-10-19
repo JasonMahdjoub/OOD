@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -35,7 +35,6 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.ood.database.DatabaseBackupMetaData;
 import com.distrimind.ood.database.DatabaseEvent;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.SecureExternalizable;

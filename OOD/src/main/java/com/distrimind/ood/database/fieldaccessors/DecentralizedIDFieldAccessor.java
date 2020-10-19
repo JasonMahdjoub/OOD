@@ -5,7 +5,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -91,7 +91,7 @@ public class DecentralizedIDFieldAccessor extends FieldAccessor {
 						+ field.getDeclaringClass().getName() + ") into the DatabaseField class "
 						+ field.getDeclaringClass().getName() + ", is null and should not be.");
 		} else if (!(_field_instance instanceof DecentralizedIDGenerator))
-			throw new FieldDatabaseException("The given _field_instance parameter, destinated to the field "
+			throw new FieldDatabaseException("The given _field_instance parameter, destined to the field "
 					+ field.getName() + " of the class " + field.getDeclaringClass().getName()
 					+ ", should be an Long and not a " + _field_instance.getClass().getName());
 		try {

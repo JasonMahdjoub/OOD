@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -43,8 +43,8 @@ public class QueryInterpretationImpossible extends DatabaseSyntaxException {
 	 */
 	private static final long serialVersionUID = -6590395532263276236L;
 
-	public QueryInterpretationImpossible(String querry) {
-		super("The next querry can interpreted with several rules : " + querry);
+	public QueryInterpretationImpossible(String query) {
+		super("The next query can interpreted with several rules : " + query);
 	}
 
 }

@@ -1257,7 +1257,7 @@ public abstract class TestDatabase {
 				}
 			});
 			assertTrue(true);
-		} catch (ConcurentTransactionDatabaseException e) {
+		} catch (ConcurrentTransactionDatabaseException e) {
 			fail();
 		}
 
@@ -1271,7 +1271,7 @@ public abstract class TestDatabase {
 				}
 			});
 			assertTrue(true);
-		} catch (ConcurentTransactionDatabaseException e) {
+		} catch (ConcurrentTransactionDatabaseException e) {
 			fail();
 		}
 		try {
@@ -1283,7 +1283,7 @@ public abstract class TestDatabase {
 					return false;
 				}
 			});
-		} catch (ConcurentTransactionDatabaseException e) {
+		} catch (ConcurrentTransactionDatabaseException e) {
 			assertTrue(true);
 		}
 
@@ -1302,7 +1302,7 @@ public abstract class TestDatabase {
 				}
 			});
             fail();
-		} catch (ConcurentTransactionDatabaseException e) {
+		} catch (ConcurrentTransactionDatabaseException e) {
 			assertTrue(true);
 		}
 
@@ -1335,7 +1335,7 @@ public abstract class TestDatabase {
 				}
 			});
             fail();
-		} catch (ConcurentTransactionDatabaseException e) {
+		} catch (ConcurrentTransactionDatabaseException e) {
 			assertTrue(true);
 		}
 		table2.removeRecords(table2.getRecords());

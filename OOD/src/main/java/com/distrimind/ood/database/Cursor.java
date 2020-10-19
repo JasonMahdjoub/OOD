@@ -69,7 +69,7 @@ public class Cursor<T extends DatabaseRecord> {
 		this.position=-1;
 		this.records=null;
 		this.recordsNumber=-1;
-		this.parameters=parameters==null?new HashMap<String, Object>():parameters;
+		this.parameters=parameters==null? new HashMap<>():parameters;
 		this.ascendant=ascendant;
 		this.fields=fields;
 	}

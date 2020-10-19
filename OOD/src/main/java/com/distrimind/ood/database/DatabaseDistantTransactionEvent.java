@@ -3,7 +3,7 @@ Copyright or © or Copr. Jason Mahdjoub (01/04/2013)
 jason.mahdjoub@distri-mind.fr
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
 modify and/ or redistribute the software under the terms of the CeCILL-C
@@ -268,19 +268,6 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 			databaseHooksTable = getDatabaseWrapper().getTableInstance(DatabaseHooksTable.class);
 		return databaseHooksTable;
 	}
-	/*
-	 * DatabaseDistantTransactionEvent getDatabaseDistantTransactionEvent() throws
-	 * DatabaseException { if (databaseDistantTransactionEventTable==null)
-	 * databaseDistantTransactionEventTable=(DatabaseDistantTransactionEvent)
-	 * getDatabaseWrapper().getTableInstance(DatabaseDistantTransactionEvent.class);
-	 * return databaseDistantTransactionEventTable; }
-	 */
-
-	/*
-	 * long removeTransactions(DatabaseHooksTable.Record hook, long lastTransfertID)
-	 * throws DatabaseException { return removeRecords("id<=%id", "id", new
-	 * Long(lastTransfertID)); }
-	 */
 
 	void cleanDistantTransactions() throws DatabaseException {
 		removeRecordsWithCascade(new Filter<DatabaseDistantTransactionEvent.Record>() {
@@ -337,7 +324,7 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 			try {
 				res.getPeersInformed();
 			} catch (Exception e) {
-				throw new SerializationDatabaseException("Impossible to interprete informed peers", e);
+				throw new SerializationDatabaseException("Impossible to interpret informed peers", e);
 			}
 			return res;
 		} catch (EOFException e) {

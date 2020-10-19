@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -37,12 +37,9 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database;
 
-import java.util.Map;
-
-import com.distrimind.ood.database.exceptions.ConstraintsNotRespectedDatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.ood.database.exceptions.FieldDatabaseException;
-import com.distrimind.ood.database.exceptions.RecordNotFoundDatabaseException;
+
+import java.util.Map;
 
 /**
  * This interface is used to filter records which have to be altered or deleted
@@ -62,7 +59,7 @@ public abstract class AlterRecordFilter<T> {
 
 	private Map<String, Object> modifications = null;
 	private boolean modificationFromRecordInstance = false;
-	private boolean isStoped = false;
+	private boolean isStopped = false;
 
 	/**
 	 * This function is called for every instance record present on the database.
@@ -119,7 +116,7 @@ public abstract class AlterRecordFilter<T> {
 	 *
 	 * @param fields
 	 *            the list of fields to include into the new record. Must be
-	 *            formated as follow : {"field1", value1,"field2", value2, etc.}
+	 *            formatted as follow : {"field1", value1,"field2", value2, etc.}
 	 * @throws DatabaseException
 	 *             if a problem occurs during the insertion into the Sql database.
 	 * @throws NullPointerException
@@ -169,7 +166,7 @@ public abstract class AlterRecordFilter<T> {
 		return modifications;
 	}
 
-	final boolean isModificatiedFromRecordInstance() {
+	final boolean isModifiedFromRecordInstance() {
 		return modificationFromRecordInstance;
 	}
 	
@@ -177,11 +174,11 @@ public abstract class AlterRecordFilter<T> {
 	 * Stop the parsing of the current table
 	 */
 	public void stopTableParsing() {
-		isStoped = true;
+		isStopped = true;
 	}
 
-	public boolean isTableParsingStoped() {
-		return isStoped;
+	public boolean isTableParsingStopped() {
+		return isStopped;
 	}
 
 }

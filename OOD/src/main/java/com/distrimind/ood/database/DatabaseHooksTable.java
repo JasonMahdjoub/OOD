@@ -67,6 +67,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 	protected volatile AtomicReference<DatabaseHooksTable.Record> localHost = null;
 	protected final HashMap<HostPair, Long> lastTransactionFieldsBetweenDistantHosts = new HashMap<>();
 
+	@SuppressWarnings("FieldMayBeFinal")
 	static class Record extends DatabaseRecord {
 		@AutoPrimaryKey
 		private int id=-1;

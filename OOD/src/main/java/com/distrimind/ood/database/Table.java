@@ -1979,7 +1979,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				if (rule.isConcernedBy(this, parameters, r)) {
 					if (_filter.nextRecord(r))
 						++rowCount;
-					if (_filter.isTableParsingStoped())
+					if (_filter.isTableParsingStopped())
 						break;
 				}
 			}
@@ -1995,7 +1995,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				public boolean setInstance(T r, ResultSet _cursor) throws DatabaseException {
 					if (_filter.nextRecord(r))
 						rowCount.incrementAndGet();
-					return !_filter.isTableParsingStoped();
+					return !_filter.isTableParsingStopped();
 				}
 
 				@Override
@@ -2070,7 +2070,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				if (_filter.nextRecord(r))
 					++count;
 
-				if (_filter.isTableParsingStoped())
+				if (_filter.isTableParsingStopped())
 					break;
 			}
 			return count;
@@ -2083,7 +2083,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				public boolean setInstance(T r, ResultSet _cursor) throws DatabaseException {
 					if (personalFilter || _filter.nextRecord(r))
 						pos.incrementAndGet();
-					return !_filter.isTableParsingStoped();
+					return !_filter.isTableParsingStopped();
 				}
 
 				@Override
@@ -2543,7 +2543,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				for (T r : getRecords(-1, -1, false)) {
 					if ((rule == null || rule.isConcernedBy(this, parameters, r)) && _filter.nextRecord(r))
 						res.addRecord(r);
-					if (_filter.isTableParsingStoped())
+					if (_filter.isTableParsingStopped())
 						break;
 				}
 				return res.getRecords();
@@ -2560,7 +2560,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						if (_filter.nextRecord(_instance)) {
 							res.add(_instance);
 						}
-						return !_filter.isTableParsingStoped();
+						return !_filter.isTableParsingStopped();
 					}
 
 					@Override
@@ -3464,7 +3464,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						&& ((rowPos <= 0 || rowLength <= 0) || (++pos >= rowPos && (rowPos - pos) < rowLength))) {
 					if (_filter.nextRecord(r))
 						res.add(r);
-					if (_filter.isTableParsingStoped()
+					if (_filter.isTableParsingStopped()
 							|| (rowPos > 0 && rowLength > 0 && (rowPos - pos) >= rowLength - 1))
 						break;
 				}
@@ -3481,7 +3481,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					if (_filter.nextRecord(r) && ((rowPos <= 0 || rowLength <= 0)
 							|| (pos.incrementAndGet() >= rowPos && (rowPos - pos.get()) < rowLength)))
 						res.add(r);
-					return !_filter.isTableParsingStoped()
+					return !_filter.isTableParsingStopped()
 							|| !(rowPos > 0 && rowLength > 0 && (rowPos - pos.get()) >= rowLength - 1);
 				}
 
@@ -3506,7 +3506,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						&& _filter.nextRecord(r))
 					res.add(r);
 
-				if (_filter.isTableParsingStoped()
+				if (_filter.isTableParsingStopped()
 						|| (rowPos > 0 && rowLength > 0 && (rowPos - pos) >= (rowLength - 1)))
 					break;
 			}
@@ -3521,7 +3521,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					if (((rowPos < 1 || rowLength < 1)
 							|| (pos.incrementAndGet() >= rowPos && (rowPos - pos.get()) < rowLength)) && (personalFilter || _filter.nextRecord(r)))
 						res.add(r);
-					return !_filter.isTableParsingStoped()
+					return !_filter.isTableParsingStopped()
 							|| !(rowPos > 0 && rowLength > 0 && (rowPos - pos.get()) >= (rowLength - 1));
 				}
 
@@ -3566,7 +3566,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			for (T r : records) {
 				if (_filter.nextRecord(r))
 					return true;
-				if (_filter.isTableParsingStoped())
+				if (_filter.isTableParsingStopped())
 					break;
 			}
 			return false;
@@ -3581,7 +3581,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						res = true;
 						return false;
 					}
-					return !_filter.isTableParsingStoped();
+					return !_filter.isTableParsingStopped();
 				}
 
 				@Override
@@ -5486,7 +5486,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 								getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
 										new TableEvent<>(-1, DatabaseEventType.REMOVE, _instance, null, null), true);
 							}
-							return !_filter.isTableParsingStoped();
+							return !_filter.isTableParsingStopped();
 						} catch (Exception e) {
 							throw DatabaseException.getDatabaseException(e);
 						}
@@ -5575,7 +5575,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 								getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
 										new TableEvent<>(-1, DatabaseEventType.REMOVE, _instance, null, null), true);
 							}
-							return !_filter.isTableParsingStoped();
+							return !_filter.isTableParsingStopped();
 						} catch (Exception e) {
 							throw DatabaseException.getDatabaseException(e);
 						}
@@ -6129,7 +6129,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 										new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, _instance, null,
 												null), true);
 							}
-							return !_filter.isTableParsingStoped();
+							return !_filter.isTableParsingStopped();
 						} catch (Exception e) {
 							throw DatabaseException.getDatabaseException(e);
 						}
@@ -8021,7 +8021,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 														null), true);
 									} else {
 										Map<String, Object> m = _filter.getModifications();
-										if (m == null && _filter.isModificatiedFromRecordInstance()) {
+										if (m == null && _filter.isModifiedFromRecordInstance()) {
 											m = getMap(_instance, false, false);
 										}
 										final Map<String, Object> map = m;
@@ -8406,7 +8406,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					_comes_from_tables.add(actual_table);
 
 					if (!isValid())
-						throw new ConcurentTransactionDatabaseException(
+						throw new ConcurrentTransactionDatabaseException(
 								"Attempting to write, through several nested queries, on the table "
 										+ actual_table.getClass().getSimpleName() + ".");
 					for (NeighboringTable nt : actual_table.list_tables_pointing_to_this_table) {
@@ -8489,7 +8489,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 					initialize(_current_table);
 					if (!isValid())
-						throw new ConcurentTransactionDatabaseException(
+						throw new ConcurrentTransactionDatabaseException(
 								"Attempting to read and write, through several nested queries, on the table "
 										+ actual_table.getClass().getSimpleName() + ".");
 					_comes_from_tables.add(actual_table);

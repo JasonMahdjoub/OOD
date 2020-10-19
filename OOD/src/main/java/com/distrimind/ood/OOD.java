@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -284,7 +284,7 @@ public class OOD {
 			c.set(2018, Calendar.JULY, 17);
 			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)84, c.getTime());
 			d.addItem("Updating utils to 3.17.0");
-            d.addItem("Do not loop infinitely if deconnection exception is generated infinitely");
+            d.addItem("Do not loop infinitely if disconnection exception is generated infinitely");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
@@ -305,7 +305,7 @@ public class OOD {
 			c.set(2018, Calendar.MARCH, 30);
 			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)71, c.getTime());
 			d.addItem("Optimization of CachedInputStream");
-			d.addItem("Optimization of CachedOutoutStream");
+			d.addItem("Optimization of CachedOutputStream");
 			d.addItem("Updating utils to 3.13.1");
 			VERSION.addDescription(d);
 
@@ -326,7 +326,7 @@ public class OOD {
 			c.set(2017, Calendar.DECEMBER, 13);
 			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)57, c.getTime());
 			d.addItem("Updating utils to 3.7.1");
-			d.addItem("Managing deconnection database exception/reconnection");
+			d.addItem("Managing disconnection database exception/reconnection");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
@@ -505,18 +505,18 @@ public class OOD {
 			c.set(2017, Calendar.JUNE, 1);
 			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)3, c.getTime());
 			d.addItem("Adding database factory.");
-			d.addItem("Correcting a bug in database connections/deconnections.");
+			d.addItem("Correcting a bug in database connections/disconnections.");
 			d.addItem("Updating Utils to 2.8.0.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
 			c.set(2017, Calendar.MAY, 26);
 			d = new Description((short)2, (short)0, (short)0, Version.Type.Beta, (short)2, c.getTime());
-			d.addItem("Debuging transaction's use.");
-			d.addItem("Adding pagined queries.");
+			d.addItem("Debugging transaction's use.");
+			d.addItem("Adding paginated queries.");
 			d.addItem("Adding ordered queries.");
 			d.addItem("Adding records numbers queries.");
-			d.addItem("Correcting a bug with multi fields match querries.");
+			d.addItem("Correcting a bug with multi fields match queries.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
@@ -537,7 +537,7 @@ public class OOD {
 					"Changing the database loading policy : enabling transfer data from old database to new database.");
 			d.addItem("Minimizing code duplication of tests.");
 			d.addItem("Adding remove database possibility.");
-			d.addItem("Use of savepoints.");
+			d.addItem("Use of savepoint.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
@@ -575,7 +575,7 @@ public class OOD {
 			d = new Description((short)1, (short)9, (short)2, Version.Type.Stable, (short)0, c.getTime());
 			d.addItem("Correcting a problem of data integrity check.");
 			d.addItem("Updating Derby DB to 10.13.1.1.");
-			d.addItem("Solving a problem of multithread execution into windows (SQLNonTransientConnectionException).");
+			d.addItem("Solving a problem of multithreading execution into windows (SQLNonTransientConnectionException).");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
@@ -636,7 +636,7 @@ public class OOD {
 			d = new Description((short)1, (short)6, (short)2, Version.Type.Stable, (short)0, c.getTime());
 			d.addItem("Updating Utils to 1.7.");
 			d.addItem("Updating to Common-Net 3.5.");
-			d.addItem("Updating to HSDQLDB 3.3.4.");
+			d.addItem("Updating to HSQLDB 3.3.4.");
 			VERSION.addDescription(d);
 
 			c = Calendar.getInstance();
@@ -680,7 +680,7 @@ public class OOD {
 			d.addItem("Adding ByteTabConvertibleFieldAccessor class.");
 			d.addItem("Adding function addByteTabObjectConverter in DatabaseWrapper class.");
 			d.addItem(
-					"Adding possibility to use Object tabs as an alternative of use of maps when reffering to fields.");
+					"Adding possibility to use Object tabs as an alternative of use of maps when referring to fields.");
 			d.addItem("Optimizing use of SQL database.");
 			d.addItem("Linking with Utils 1.3.");
 			VERSION.addDescription(d);
@@ -696,7 +696,7 @@ public class OOD {
 			c.set(2016, Calendar.FEBRUARY, 8);
 			d = new Description((short)1, (short)4, (short)0, Version.Type.Stable, (short)0, c.getTime());
 			d.addItem(
-					"One databse is associated to one package. Now, its is possible to load several database/packages into the same file.");
+					"One database is associated to one package. Now, its is possible to load several database/packages into the same file.");
 			d.addItem("OOD works now with HSQLDB or Apache Derby.");
 			VERSION.addDescription(d);
 

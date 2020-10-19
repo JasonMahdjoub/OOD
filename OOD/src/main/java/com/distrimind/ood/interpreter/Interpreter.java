@@ -5,7 +5,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -129,7 +129,7 @@ public class Interpreter {
 
 	private static ArrayList<Symbol> lexicalAnalyse(String command) throws UnrecognizedSymbolException {
 		command = preProcess(command);
-		String sls[] = command.split(" ");
+		String[] sls = command.split(" ");
 		ArrayList<Symbol> symbols = new ArrayList<>(sls.length);
 		for (String s : sls) {
 			String st = s.trim();
@@ -210,7 +210,7 @@ public class Interpreter {
 	private static RuleInstance getQuery(ArrayList<QueryPart> parts, int index,
 										 AtomicInteger newIndex) {
 
-		Rule choosenValidRule = null;
+		Rule chosenValidRule = null;
 
 		StringBuilder currentRule = new StringBuilder();
 		int len = 0;
@@ -218,30 +218,30 @@ public class Interpreter {
 		for (int i = index; i < parts.size(); i++) {
 			boolean valid = true;
 
-			Rule choosenRule = null;
+			Rule chosenRule = null;
 			currentRule.append(parts.get(i).getBackusNaurNotation());
 
 			String rc = currentRule.toString();
 			for (Rule r : Rule.values()) {
 				if (r.match(rc)) {
-					if (choosenRule != null) {
+					if (chosenRule != null) {
 						valid = false;
 						break;
 					}
-					choosenRule = r;
+					chosenRule = r;
 				}
 			}
-			if (valid && choosenRule != null) {
-				choosenValidRule = choosenRule;
+			if (valid && chosenRule != null) {
+				chosenValidRule = chosenRule;
 				len = i - index + 1;
 			}
 		}
-		if (choosenValidRule == null) {
+		if (chosenValidRule == null) {
 			return null;
 		}
 
 		newIndex.set(index + len);
-		return new RuleInstance(choosenValidRule, parts, index, len);
+		return new RuleInstance(chosenValidRule, parts, index, len);
 	}
 
 }

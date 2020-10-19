@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -156,13 +156,13 @@ public final class GroupedResults<T extends DatabaseRecord> {
 	private final ArrayList<Group> groups = new ArrayList<>();
 
 	@SuppressWarnings("unchecked")
-	private GroupedResults(DatabaseWrapper _sql_conncection, int databaseVersion, Collection<T> _records, Class<T> _class_record,
+	private GroupedResults(DatabaseWrapper _sql_connection, int databaseVersion, Collection<T> _records, Class<T> _class_record,
 			String... _fields) throws DatabaseException {
 		Class<T> class_record;
 
 		class_record = _class_record;
 
-		table = (Table<T>) _sql_conncection.getTableInstance(Table.getTableClass(class_record), databaseVersion);
+		table = (Table<T>) _sql_connection.getTableInstance(Table.getTableClass(class_record), databaseVersion);
 
 		if (_fields.length == 0)
 			throw new ConstraintsNotRespectedDatabaseException("It must have at mean one field to use.");

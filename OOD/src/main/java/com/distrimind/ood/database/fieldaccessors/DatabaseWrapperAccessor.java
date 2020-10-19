@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -78,7 +78,7 @@ class DatabaseWrapperAccessor {
 	private static final Method m_get_max_key_size;
 	private static final Method m_support_italic_quotes_with_table_field_names;
 	private static final Constructor<DecentralizedIDGenerator> m_decentralized_id_constructor;
-	private static final Constructor<RenforcedDecentralizedIDGenerator> m_renforced_decentralized_id_constructor;
+	private static final Constructor<RenforcedDecentralizedIDGenerator> m_reinforced_decentralized_id_constructor;
 
 	static String getBigDecimalType(DatabaseWrapper wrapper, @SuppressWarnings("SameParameterValue") long limit) {
 		try {
@@ -360,10 +360,10 @@ class DatabaseWrapperAccessor {
 		return null;
 	}
 
-	static RenforcedDecentralizedIDGenerator getRenforcedDecentralizedIDGeneratorInstance(long timestamp,
-			long work_id_sequence) {
+	static RenforcedDecentralizedIDGenerator getReinforcedDecentralizedIDGeneratorInstance(long timestamp,
+																						   long work_id_sequence) {
 		try {
-			return m_renforced_decentralized_id_constructor.newInstance(timestamp,
+			return m_reinforced_decentralized_id_constructor.newInstance(timestamp,
 					work_id_sequence);
 		} catch (InvocationTargetException | InstantiationException | IllegalAccessException
 				| IllegalArgumentException e) {
@@ -401,7 +401,7 @@ class DatabaseWrapperAccessor {
 		m_support_multiple_auto_primary_keys = getMethod(DatabaseWrapper.class, "supportMultipleAutoPrimaryKeys");
 		m_support_single_auto_primary_keys = getMethod(DatabaseWrapper.class, "supportSingleAutoPrimaryKeys");
 		m_decentralized_id_constructor = getConstructor(DecentralizedIDGenerator.class, long.class, long.class);
-		m_renforced_decentralized_id_constructor = getConstructor(RenforcedDecentralizedIDGenerator.class, long.class,
+		m_reinforced_decentralized_id_constructor = getConstructor(RenforcedDecentralizedIDGenerator.class, long.class,
 				long.class);
 		m_support_italic_quotes_with_table_field_names=getMethod(DatabaseWrapper.class, "supportsItalicQuotesWithTableAndFieldNames");
 

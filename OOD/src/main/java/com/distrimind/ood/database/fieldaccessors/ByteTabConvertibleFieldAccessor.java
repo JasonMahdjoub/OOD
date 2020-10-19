@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -146,7 +146,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 								+ ") into the DatabaseField class " + field.getDeclaringClass().getName()
 								+ ", is null and should not be (property NotNull present).");
 		} else if (!(field.getType().isAssignableFrom(_field_instance.getClass())))
-			throw new FieldDatabaseException("The given _field_instance parameter, destinated to the field "
+			throw new FieldDatabaseException("The given _field_instance parameter, destined to the field "
 					+ field.getName() + " of the class " + field.getDeclaringClass().getName() + ", should be a "
 					+ field.getType().getName() + " and not a " + _field_instance.getClass().getName());
 		try {
@@ -468,7 +468,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 				int os = _ois.read(b);
 				if (os != size)
 					throw new DatabaseException(
-							"read bytes insuficiant (expected size=" + size + ", obtained size=" + os + ")");
+							"read bytes insufficient (expected size=" + size + ", obtained size=" + os + ")");
 
 				return converter.getObject(field.getType(), b);
 			} else if (isNotNull())
