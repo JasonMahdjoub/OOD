@@ -1300,7 +1300,7 @@ public class BackupRestoreManager {
 									@Override
 									public Long run() throws Exception {
 
-										table.getPaginedRecordsWithUnknownType(startPosition==0?-1:startPosition, startPosition==0?-1:Long.MAX_VALUE, new Filter<DatabaseRecord>() {
+										table.getPaginatedRecordsWithUnknownType(startPosition==0?-1:startPosition, startPosition==0?-1:Long.MAX_VALUE, new Filter<DatabaseRecord>() {
 
 
 
@@ -2072,7 +2072,7 @@ public class BackupRestoreManager {
 						private long startPosition=0;
 						@Override
 						public Void run() throws Exception {
-							oldTable.getPaginedRecordsWithUnknownType(startPosition==0?-1:startPosition, startPosition==0?-1:Long.MAX_VALUE, new Filter<DatabaseRecord>() {
+							oldTable.getPaginatedRecordsWithUnknownType(startPosition==0?-1:startPosition, startPosition==0?-1:Long.MAX_VALUE, new Filter<DatabaseRecord>() {
 								@Override
 								public boolean nextRecord(DatabaseRecord _record) throws DatabaseException {
 									++startPosition;

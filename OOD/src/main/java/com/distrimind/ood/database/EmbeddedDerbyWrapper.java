@@ -36,8 +36,8 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import com.distrimind.ood.database.Table.ColumnsReadQuerry;
-import com.distrimind.ood.database.Table.ReadQuerry;
+import com.distrimind.ood.database.Table.ColumnsReadQuery;
+import com.distrimind.ood.database.Table.ReadQuery;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseVersionException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
@@ -181,15 +181,15 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	}
 
 	@Override
-	protected ColumnsReadQuerry getColumnMetaData(String tableName, String columnName) throws Exception {
+	protected ColumnsReadQuery getColumnMetaData(String tableName, String columnName) throws Exception {
 		Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
-		return new CReadQuerry(sql_connection, sql_connection.getMetaData().getColumns(null, null, tableName, columnName));
+		return new CReadQuery(sql_connection, sql_connection.getMetaData().getColumns(null, null, tableName, columnName));
 	}
 
 	@Override
 	protected void checkConstraints(Table<?> table) throws DatabaseException {
 		Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
-		try (ReadQuerry rq = new ReadQuerry(sql_connection,
+		try (ReadQuery rq = new ReadQuery(sql_connection,
 				sql_connection.getMetaData().getPrimaryKeys(null, null, table.getSqlTableName()))) {
 			while (rq.result_set.next()) {
 				String pkName = rq.result_set.getString("PK_NAME");
@@ -198,7 +198,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 							"There a grouped primary key named " + rq.result_set.getString("PK_NAME")
 									+ " which should be named " + table.getSqlPrimaryKeyName());
 			}
-			try (ReadQuerry rq2 = new ReadQuerry(sql_connection,
+			try (ReadQuery rq2 = new ReadQuery(sql_connection,
 					sql_connection.getMetaData().getIndexInfo(null, null, table.getSqlTableName(), false, false))) {
 				while (rq2.result_set.next()) {
 					String colName = rq2.result_set.getString("COLUMN_NAME");
@@ -232,7 +232,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 			throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 		}
 		for (Table<?> t : getListTables(table.getClass().getPackage(), getCurrentDatabaseVersion(table.getClass().getPackage()))) {
-			try (ReadQuerry rq = new ReadQuerry(sql_connection,
+			try (ReadQuery rq = new ReadQuery(sql_connection,
 					sql_connection.getMetaData().getExportedKeys(null, null, t.getSqlTableName()))) {
 				while (rq.result_set.next()) {
 					String fk_table_name = rq.result_set.getString("FKTABLE_NAME");
@@ -271,7 +271,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 			for (FieldAccessor fa : table.getFieldAccessors()) {
 				for (SqlField sf : fa.getDeclaredSqlFields()) {
 
-					try (Table.ColumnsReadQuerry rq = getColumnMetaData(table.getSqlTableName(), sf.short_field_without_quote)) {
+					try (ColumnsReadQuery rq = getColumnMetaData(table.getSqlTableName(), sf.short_field_without_quote)) {
 						if (rq.result_set.next()) {
 							String type = rq.tableColumnsResultSet.getTypeName().toUpperCase();
 							if (!sf.type.toUpperCase().startsWith(type))
@@ -300,7 +300,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 									"The field " + fa.getFieldName() + " was not found into the database.");
 					}
 					if (fa.isPrimaryKey()) {
-						try (ReadQuerry rq = new ReadQuerry(sql_connection,
+						try (ReadQuery rq = new ReadQuery(sql_connection,
 								sql_connection.getMetaData().getPrimaryKeys(null, null, table.getSqlTableName()))) {
 							boolean found = false;
 							while (rq.result_set.next()) {
@@ -316,7 +316,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 					if (fa.isForeignKey()) {
 						boolean found = false;
 						for (Table<?> t : getListTables(table.getClass().getPackage(), getCurrentDatabaseVersion(table.getClass().getPackage()))) {
-							try (ReadQuerry rq = new ReadQuerry(sql_connection,
+							try (ReadQuery rq = new ReadQuery(sql_connection,
 									sql_connection.getMetaData().getExportedKeys(null, null, t.getSqlTableName()))) {
 								while (rq.result_set.next()) {
 									String fk_table_name = rq.result_set.getString("FKTABLE_NAME");
@@ -368,9 +368,9 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 
 	}
 
-	static class CReadQuerry extends ColumnsReadQuerry {
+	static class CReadQuery extends ColumnsReadQuery {
 
-		public CReadQuerry(Connection _sql_connection, ResultSet resultSet) {
+		public CReadQuery(Connection _sql_connection, ResultSet resultSet) {
 			super(_sql_connection, resultSet);
 			setTableColumnsResultSet(new TCResultSet(this.result_set));
 		}

@@ -444,7 +444,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 
 		for (Class<? extends Table<?>> c : tables) {
 			addEventsForTablesToSynchronize(transaction, databasePackage, hook, c, tablesDone, currentEventPos,
-					getDatabaseWrapper().getMaxTransactionEventsKeepedIntoMemory(), force);
+					getDatabaseWrapper().getMaxTransactionEventsKeptIntoMemory(), force);
 		}
 		if (currentEventPos.get() > 0) {
 			DatabaseTransactionsPerHostTable.Record trhost = new DatabaseTransactionsPerHostTable.Record();

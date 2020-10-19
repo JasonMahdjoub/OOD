@@ -606,7 +606,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 							iterator.reset();
 							while (iterator.hasNext()) {
 
-								if (localDTE.getEvents().size() > 0 && localDTE.getEvents().size() >= getDatabaseWrapper().getMaxTransactionEventsKeepedIntoMemory()) {
+								if (localDTE.getEvents().size() > 0 && localDTE.getEvents().size() >= getDatabaseWrapper().getMaxTransactionEventsKeptIntoMemory()) {
 									getDatabaseWrapper().getSynchronizer().addNewDatabaseEvent(localDTE);
 									localDTE = new DatabaseTransactionEvent();
 								}

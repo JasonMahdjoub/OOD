@@ -461,7 +461,7 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 
 		db4.getDbwrapper().getSynchronizer().setNotifier(db4);
 		db4.getDbwrapper().setMaxTransactionsToSynchronizeAtTheSameTime(5);
-		db4.getDbwrapper().setMaxTransactionEventsKeepedIntoMemory(3);
+		db4.getDbwrapper().setMaxTransactionEventsKeptIntoMemory(3);
 		db4.getDbwrapper().getSynchronizer().addHookForLocalDatabaseHost(db4.getHostID(),
 				TablePointed.class.getPackage());
 		Assert.assertTrue(db4.getDbwrapper().getSynchronizer().isInitialized());

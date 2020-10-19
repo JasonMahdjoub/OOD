@@ -95,12 +95,12 @@ public class Cursor<T extends DatabaseRecord> {
 		this.position=position-cacheSize/2;
 		if (ascendant==null) {
 			if (whereClause==null)
-				records = table.getPaginedRecords(position, cacheSize);
+				records = table.getPaginatedRecords(position, cacheSize);
 			else
-				records = table.getPaginedRecords(position, cacheSize, whereClause, parameters);
+				records = table.getPaginatedRecords(position, cacheSize, whereClause, parameters);
 		}
 		else {
-			records = table.getPaginedOrderedRecords(position, cacheSize, whereClause, parameters, ascendant, fields);
+			records = table.getPaginatedOrderedRecords(position, cacheSize, whereClause, parameters, ascendant, fields);
 		}
 	}
 	public T getRecord(int position) throws DatabaseException {

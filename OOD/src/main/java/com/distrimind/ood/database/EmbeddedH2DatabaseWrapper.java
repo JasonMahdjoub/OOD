@@ -309,7 +309,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	protected void checkConstraints(Table<?> table) throws DatabaseException {
 
 		Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
-		try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
+		try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection, new Table.SqlQuery(
 				"select CONSTRAINT_NAME, CONSTRAINT_TYPE, COLUMN_LIST from "+getConstraintsTableName()+" WHERE TABLE_NAME='"
 						+ table.getSqlTableName()+"';"))) {
 			boolean foundPK=false;
@@ -385,7 +385,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
-		try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
+		try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection, new Table.SqlQuery(
 				"select PKTABLE_NAME, PKCOLUMN_NAME, FKCOLUMN_NAME from "+getCrossReferencesTableName()+" WHERE FKTABLE_NAME='"
 						+ table.getSqlTableName() + "';"))) {
 			while (rq.result_set.next()) {
@@ -418,7 +418,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 			for (FieldAccessor fa : table.getFieldAccessors()) {
 				for (SqlField sf : fa.getDeclaredSqlFields()) {
 
-					try (Table.ColumnsReadQuerry rq = getColumnMetaData(table.getSqlTableName(), sf.short_field_without_quote)) {
+					try (Table.ColumnsReadQuery rq = getColumnMetaData(table.getSqlTableName(), sf.short_field_without_quote)) {
 						if (rq.result_set.next()) {
 							String type = rq.tableColumnsResultSet.getTypeName().toUpperCase();
 							if (!sf.type.toUpperCase().startsWith(type))
@@ -447,7 +447,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 									"The field " + fa.getFieldName() + " was not found into the database.");
 					}
 					if (fa.isForeignKey()) {
-						try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
+						try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection, new Table.SqlQuery(
 								"select PKTABLE_NAME, FKTABLE_NAME, PKCOLUMN_NAME, FKCOLUMN_NAME from "+ getCrossReferencesTableName()+" WHERE FKTABLE_NAME='"
 										+ table.getSqlTableName() + "' AND PKTABLE_NAME='" + sf.pointed_table
 										+ "' AND PKCOLUMN_NAME='" + sf.short_pointed_field_without_quote + "' AND FKCOLUMN_NAME='"
@@ -461,7 +461,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 					}
 					if (fa.isUnique()) {
 						for(SqlField sf2 : fa.getDeclaredSqlFields())
-							try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
+							try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection, new Table.SqlQuery(
 									"select COLUMN_LIST from "+getConstraintsTableName()+" WHERE TABLE_NAME='"
 											+ table.getSqlTableName() + "' AND CONSTRAINT_TYPE='UNIQUE' AND COLUMN_LIST='"+sf2.short_field_without_quote+"';"))) {
 								if (!rq.result_set.next())
@@ -558,9 +558,9 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	}
 
 	@Override
-	protected Table.ColumnsReadQuerry getColumnMetaData(String tableName, String columnName) throws Exception {
+	protected Table.ColumnsReadQuery getColumnMetaData(String tableName, String columnName) throws Exception {
 		Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
-		return new CReadQuerry(sql_connection, new Table.SqlQuerry(
+		return new CReadQuery(sql_connection, new Table.SqlQuery(
 				"SELECT COLUMN_NAME, TYPE_NAME, CHARACTER_MAXIMUM_LENGTH, IS_NULLABLE, COLUMN_DEFAULT, ORDINAL_POSITION FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='"
 						+ tableName + (columnName==null?"":"' AND COLUMN_NAME='"+columnName)+ "';"));
 	}
@@ -589,9 +589,9 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	}
 
 
-	static class CReadQuerry extends Table.ColumnsReadQuerry {
+	static class CReadQuery extends Table.ColumnsReadQuery {
 
-		public CReadQuerry(Connection _sql_connection, Table.SqlQuerry _querry) throws SQLException, DatabaseException {
+		public CReadQuery(Connection _sql_connection, Table.SqlQuery _querry) throws SQLException, DatabaseException {
 			super(_sql_connection, _querry);
 			setTableColumnsResultSet(new TCResultSet(this.result_set));
 		}

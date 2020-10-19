@@ -1,12 +1,12 @@
 
 /*
-Copyright or © or Copr. Jason Mahdjoub (01/04/2013)
+Copyright or ©. Jason Mahdjoub (01/04/2013)
 
 jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language 
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -130,7 +130,7 @@ import java.util.regex.Pattern;
  * @param <T>
  *            the type of the record
  */
-@SuppressWarnings({"ThrowFromFinallyBlock", "BooleanMethodIsAlwaysInverted"})
+@SuppressWarnings({"ThrowFromFinallyBlock", "BooleanMethodIsAlwaysInverted", "NullableProblems"})
 public abstract class Table<T extends DatabaseRecord> implements Comparable<Table<?>> {
 	public static final String TABLE_NAME_PREFIX="T";
 	final Class<T> class_record;
@@ -157,7 +157,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	public static final int maxPrimaryKeysSizeBytes = 3072;
 	private int databaseVersion=-1;
 	private boolean isPrimaryKeysAndForeignKeysSame;
-	private boolean hasBackupMananager=false;
+	private boolean hasBackupManager =false;
 	public Constructor<T> getDefaultRecordConstructor() {
 		return default_constructor_field;
 	}
@@ -246,7 +246,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 
 
-		public Table<?> getPoitingTable() throws DatabaseException {
+		public Table<?> getPointingTable() throws DatabaseException {
 			if (t == null)
 				t = sql_connection.getTableInstance(class_table, databaseVersion);
 			return t;
@@ -254,7 +254,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 		public HashMap<String, Object>[] getHashMapsSqlFields(HashMap<String, Object> _primary_keys)
 				throws DatabaseException {
-			Table<?> t = getPoitingTable();
+			Table<?> t = getPointingTable();
 
 			@SuppressWarnings("unchecked")
 			HashMap<String, Object>[] res = new HashMap[concerned_fields.size()];
@@ -367,7 +367,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		tables.add(this);
 		for (NeighboringTable nt : list_tables_pointing_to_this_table)
 		{
-			Table<?> t=nt.getPoitingTable();
+			Table<?> t=nt.getPointingTable();
 			if (!tables.contains(t))
 			{
 				t.memoryToRefreshWithCascade(tables);
@@ -420,7 +420,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * 
 	 * @throws DatabaseException
 	 *             is database constraints are not respected or if a problem of
-	 *             database version occured during the Sql loading (typically, when
+	 *             database version occurred during the Sql loading (typically, when
 	 *             the user have modified the fields of its database).
 	 */
 	@SuppressWarnings("rawtypes")
@@ -538,7 +538,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 		if (auto_primary_keys_fields.size() > 1)
 			throw new DatabaseException(
-					"It can have only one autoincrement primary key with Annotation {@link oodforsqljet.annotations.AutoPrimaryKey}. The record "
+					"It can have only one autoincrement primary key with Annotation {@link AutoPrimaryKey}. The record "
 							+ class_record.getName() + " has " + auto_primary_keys_fields.size()
 							+ " AutoPrimary keys.");
 		if (primary_keys_fields.size() == 0)
@@ -602,8 +602,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		if (sql_connection == null)
 			return;
 		for (NeighboringTable t : this.list_tables_pointing_to_this_table) {
-			if (t.getPoitingTable().sql_connection != null) {
-				t.getPoitingTable().removeTableFromDatabaseStep2();
+			if (t.getPointingTable().sql_connection != null) {
+				t.getPointingTable().removeTableFromDatabaseStep2();
 			}
 		}
 		Statement st = null;
@@ -748,11 +748,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 							try {
 								Pattern col_size_matcher = Pattern.compile("([0-9]+)");
-								// try(ReadQuerry rq=new ReadQuerry(_sql_connection.getSqlConnection(), "SELECT
-								// COLUMN_NAME, TYPE_NAME, COLUMN_SIZE, IS_NULLABLE, IS_AUTOINCREMENT FROM
-								// INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE
-								// TABLE_NAME='"+Table.this.getSqlTableName()+"';"))
-								try (ColumnsReadQuerry rq = sql_connection.getColumnMetaData(Table.this.getSqlTableName())) {
+								try (ColumnsReadQuery rq = sql_connection.getColumnMetaData(Table.this.getSqlTableName())) {
 									if (rq==null)
 										throw new DatabaseException("SQL table meta data not found !");
 									// while (rq.result_set.next())
@@ -886,7 +882,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						else
 							cachedKeyWord=sql_connection.getNotCachedKeyword();
 					}
-					final StringBuffer sqlQuerry = new StringBuffer(
+					final StringBuffer sqlQuery = new StringBuffer(
 							"CREATE " + cachedKeyWord + " TABLE " + this.getSqlTableName() + "(");
 
 					boolean first = true;
@@ -895,41 +891,41 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						if (first)
 							first = false;
 						else
-							sqlQuerry.append(", ");
-						sqlQuerry.append(getSqlFieldDeclaration(f, autoIncrementStart));
+							sqlQuery.append(", ");
+						sqlQuery.append(getSqlFieldDeclaration(f, autoIncrementStart));
 					}
 					if (primary_keys_fields.size() > 0) {
-						sqlQuerry.append(", CONSTRAINT ").append(getSqlPrimaryKeyName()).append(" PRIMARY KEY(");
+						sqlQuery.append(", CONSTRAINT ").append(getSqlPrimaryKeyName()).append(" PRIMARY KEY(");
 						first = true;
 						for (FieldAccessor fa : primary_keys_fields) {
 							for (SqlField sf : fa.getDeclaredSqlFields()) {
 								if (first)
 									first = false;
 								else
-									sqlQuerry.append(", ");
-								sqlQuerry.append(sf.short_field);
+									sqlQuery.append(", ");
+								sqlQuery.append(sf.short_field);
 							}
 						}
-						sqlQuerry.append(")");
+						sqlQuery.append(")");
 					}
 					foreign_keys_to_create = sql_connection.supportForeignKeys();
 
 					for (FieldAccessor f : fields) {
 						if (f.isUnique() && !f.isForeignKey()) {
 							first = true;
-							sqlQuerry.append(", UNIQUE(");
+							sqlQuery.append(", UNIQUE(");
 							for (SqlField sf : f.getDeclaredSqlFields()) {
 								if (first)
 									first = false;
 								else
-									sqlQuerry.append(", ");
-								sqlQuerry.append(sf.short_field);
+									sqlQuery.append(", ");
+								sqlQuery.append(sf.short_field);
 							}
-							sqlQuerry.append(")");
+							sqlQuery.append(")");
 						}
 					}
 
-					sqlQuerry.append(")").append(getDatabaseWrapper().getPostCreateTable(autoIncrementStart.get())).append(sql_connection.getSqlComma());
+					sqlQuery.append(")").append(getDatabaseWrapper().getPostCreateTable(autoIncrementStart.get())).append(sql_connection.getSqlComma());
 
 					sql_connection.runTransaction(new Transaction() {
 
@@ -949,7 +945,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 							try {
 								st = sql_connection.getConnectionAssociatedWithCurrentThread().getConnection()
 										.createStatement();
-								st.executeUpdate(sqlQuerry.toString());
+								st.executeUpdate(sqlQuery.toString());
 
 							} catch (SQLException e) {
 								throw DatabaseException.getDatabaseException(e);
@@ -1027,19 +1023,19 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					}, true);*/
 					for (FieldAccessor fa : fields) {
 						if (fa.hasToCreateIndex()) {
-							final StringBuilder indexCreationQuerry = new StringBuilder("CREATE INDEX ");
-							indexCreationQuerry.append(fa.getIndexName());
-							indexCreationQuerry.append(" ON ");
-							indexCreationQuerry.append(getSqlTableName()).append(" (");
+							final StringBuilder indexCreationQuery = new StringBuilder("CREATE INDEX ");
+							indexCreationQuery.append(fa.getIndexName());
+							indexCreationQuery.append(" ON ");
+							indexCreationQuery.append(getSqlTableName()).append(" (");
 							boolean first2 = true;
 							for (SqlField sf : fa.getDeclaredSqlFields()) {
 								if (first2)
 									first2 = false;
 								else
-									indexCreationQuerry.append(", ");
-								indexCreationQuerry.append(sf.short_field).append(fa.isDescendentIndex() ? " DESC" : "");
+									indexCreationQuery.append(", ");
+								indexCreationQuery.append(sf.short_field).append(fa.isDescendentIndex() ? " DESC" : "");
 							}
-							indexCreationQuerry.append(")");
+							indexCreationQuery.append(")");
 							sql_connection.runTransaction(new Transaction() {
 
 								@Override
@@ -1059,7 +1055,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 										st = sql_connection.getConnectionAssociatedWithCurrentThread().getConnection()
 												.createStatement();
 
-										st.executeUpdate(indexCreationQuerry.toString());
+										st.executeUpdate(indexCreationQuery.toString());
 
 									} catch (SQLException e) {
 										throw DatabaseException.getDatabaseException(e);
@@ -1139,27 +1135,27 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 				if (foreign_keys_fields.size() > 0) {
 					for (ForeignKeyFieldAccessor f : foreign_keys_fields) {
-						final StringBuffer SqlQuerry = new StringBuffer(
+						final StringBuffer SqlQuery = new StringBuffer(
 								"ALTER TABLE " + Table.this.getSqlTableName()+ " ADD FOREIGN KEY(");
 						boolean first = true;
 						for (SqlField sf : f.getDeclaredSqlFields()) {
 							if (first)
 								first = false;
 							else
-								SqlQuerry.append(", ");
-							SqlQuerry.append(sf.short_field);
+								SqlQuery.append(", ");
+							SqlQuery.append(sf.short_field);
 						}
-						SqlQuerry.append(") REFERENCES ").append(f.getPointedTable().getSqlTableName()).append("(");
+						SqlQuery.append(") REFERENCES ").append(f.getPointedTable().getSqlTableName()).append("(");
 						first = true;
 						for (SqlField sf : f.getDeclaredSqlFields()) {
 							if (first)
 								first = false;
 							else
-								SqlQuerry.append(", ");
-							SqlQuerry.append(sf.short_pointed_field);
+								SqlQuery.append(", ");
+							SqlQuery.append(sf.short_pointed_field);
 						}
-						// SqlQuerry.append(") ON UPDATE CASCADE ON DELETE CASCADE");
-						SqlQuerry.append(") ").append(sql_connection.getOnDeleteCascadeSqlQuery()).append(" ").append(sql_connection.getOnUpdateCascadeSqlQuery());
+						// SqlQuery.append(") ON UPDATE CASCADE ON DELETE CASCADE");
+						SqlQuery.append(") ").append(sql_connection.getOnDeleteCascadeSqlQuery()).append(" ").append(sql_connection.getOnUpdateCascadeSqlQuery());
 						sql_connection.runTransaction(new Transaction() {
 
 							@Override
@@ -1178,7 +1174,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 								try {
 									st = _sql_connection.getConnectionAssociatedWithCurrentThread().getConnection()
 											.createStatement();
-									st.executeUpdate(SqlQuerry.toString());
+									st.executeUpdate(SqlQuery.toString());
 
 									return null;
 								} catch (Exception e) {
@@ -1204,7 +1200,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 			}
 			supportSynchronizationWithOtherPeers &= isGloballyDecentralized(new HashSet<>());
-			hasBackupMananager=sql_connection.getBackupRestoreManager(getClass().getPackage())!=null;
+			hasBackupManager =sql_connection.getBackupRestoreManager(getClass().getPackage())!=null;
 		} finally {
 			sql_connection.unlockWrite();
 
@@ -1220,7 +1216,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			return false;
 		checkedTables.add(this);
 		for (NeighboringTable nt : list_tables_pointing_to_this_table) {
-			Table<?> t = nt.getPoitingTable();
+			Table<?> t = nt.getPointingTable();
 			if (!checkedTables.contains(t)) {
 				if (!t.isGloballyDecentralized(checkedTables))
 					return false;
@@ -1332,20 +1328,20 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				}
 			}
 
-			final StringBuilder querry = new StringBuilder(
+			final StringBuilder query = new StringBuilder(
 					"SELECT " + getSqlSelectStep1Fields(true) + " FROM " + getFromPart(true, null) + " WHERE ");
 			boolean first = true;
 			for (SqlFieldInstance sfi : _sql_field_instances) {
 				if (first)
 					first = false;
 				else
-					querry.append(" AND ");
-				querry.append(sfi.pointed_field);
-				querry.append(" = ?");
+					query.append(" AND ");
+				query.append(sfi.pointed_field);
+				query.append(" = ?");
 			}
-			querry.append(sql_connection.getSqlComma());
+			query.append(sql_connection.getSqlComma());
 
-			final SqlQuerry sqlquerry = new SqlQuerry(querry.toString()) {
+			final SqlQuery sqlQuery = new SqlQuery(query.toString()) {
 
 				@Override
 				void finishPrepareStatement(PreparedStatement st) throws SQLException {
@@ -1371,8 +1367,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 				@Override
 				public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
-					try (ReadQuerry rq = new ReadQuerry(
-							_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), sqlquerry)) {
+					try (ReadQuery rq = new ReadQuery(
+							_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), sqlQuery)) {
 						if (rq.result_set.next()) {
 							T res = getNewRecordInstance(true);
 							for (FieldAccessor fa : fields) {
@@ -1439,34 +1435,34 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 
 	}
-	SqlQuerry getSqlGeneralSelect(boolean loadJunctions) {
+	SqlQuery getSqlGeneralSelect(boolean loadJunctions) {
 		return getSqlGeneralSelect(-1,-1,loadJunctions);
 
 	}
-	SqlQuerry getSqlGeneralSelect(long startPosition, long rowLimit, boolean loadJunctions) {
-		return new SqlQuerry(
+	SqlQuery getSqlGeneralSelect(long startPosition, long rowLimit, boolean loadJunctions) {
+		return new SqlQuery(
 				"SELECT " + getSqlSelectStep1Fields(loadJunctions) + " FROM " + getFromPart(loadJunctions, null)+getLimitSqlPart(startPosition, rowLimit));
 	}
 
 	@SuppressWarnings("SameParameterValue")
-	SqlQuerry getSqlGeneralSelect(long startPosition, long rowLimit, boolean loadJunctions, boolean ascendant, String[] orderByFields) {
+	SqlQuery getSqlGeneralSelect(long startPosition, long rowLimit, boolean loadJunctions, boolean ascendant, String[] orderByFields) {
 		if (orderByFields != null && orderByFields.length > 0)
 			loadJunctions = true;
-		return new SqlQuerry("SELECT " + getSqlSelectStep1Fields(loadJunctions) + " FROM "
+		return new SqlQuery("SELECT " + getSqlSelectStep1Fields(loadJunctions) + " FROM "
 				+ getFromPart(loadJunctions, null) + getOrderByPart(ascendant, orderByFields)+getLimitSqlPart(startPosition, rowLimit));
 	}
 
 	@SuppressWarnings("SameParameterValue")
-	SqlQuerry getSqlGeneralSelect(long startPosition, long rowLimit, boolean loadJunctions, String condition, final Map<Integer, Object> parameters) {
+	SqlQuery getSqlGeneralSelect(long startPosition, long rowLimit, boolean loadJunctions, String condition, final Map<Integer, Object> parameters) {
 		return getSqlGeneralSelect(startPosition, rowLimit, loadJunctions, condition, parameters, true);
 	}
 
-	SqlQuerry getSqlGeneralCount(String condition, final Map<Integer, Object> parameters,
-			Set<TableJunction> tablesJunction) {
+	SqlQuery getSqlGeneralCount(String condition, final Map<Integer, Object> parameters,
+								Set<TableJunction> tablesJunction) {
 		if (condition == null || condition.trim().equals(""))
-			return new SqlQuerry("SELECT COUNT(*) FROM " + getFromPart(false, tablesJunction));
+			return new SqlQuery("SELECT COUNT(*) FROM " + getFromPart(false, tablesJunction));
 		else
-			return new SqlQuerry("SELECT COUNT(*) FROM " + getFromPart(false, tablesJunction) + " WHERE " + condition) {
+			return new SqlQuery("SELECT COUNT(*) FROM " + getFromPart(false, tablesJunction) + " WHERE " + condition) {
 				@Override
 				void finishPrepareStatement(PreparedStatement st) throws SQLException {
 					if (parameters != null) {
@@ -1573,7 +1569,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		for (String s : _fields) {
 			if (orderBySqlFields.length() > 0)
 				orderBySqlFields.append(", ");
-			orderBySqlFields.append(getFieldToComparare(s));
+			orderBySqlFields.append(getFieldToCompare(s));
 			orderBySqlFields.append(_ascendant ? " ASC" : " DESC");
 		}
 
@@ -1597,16 +1593,16 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			return "";
 	}
 
-	SqlQuerry getSqlGeneralSelect(long startPosition, long rowLimit, boolean loadJunctions, final String condition, final Map<Integer, Object> parameters,
-			boolean _ascendant, String... _fields) {
+	SqlQuery getSqlGeneralSelect(long startPosition, long rowLimit, boolean loadJunctions, final String condition, final Map<Integer, Object> parameters,
+								 boolean _ascendant, String... _fields) {
 		if (_fields.length > 0)
 			loadJunctions = true;
 
 		if (condition == null || condition.trim().equals(""))
-			return new SqlQuerry("SELECT " + getSqlSelectStep1Fields(loadJunctions) + " FROM "
+			return new SqlQuery("SELECT " + getSqlSelectStep1Fields(loadJunctions) + " FROM "
 					+ getFromPart(loadJunctions, null) + " " + getOrderByPart(_ascendant, _fields)+getLimitSqlPart(startPosition, rowLimit));
 		else
-			return new SqlQuerry("SELECT " + getSqlSelectStep1Fields(loadJunctions) + " FROM "
+			return new SqlQuery("SELECT " + getSqlSelectStep1Fields(loadJunctions) + " FROM "
 					+ getFromPart(loadJunctions, null) + " WHERE " + condition + getOrderByPart(_ascendant, _fields)+getLimitSqlPart(startPosition, rowLimit)) {
 				@Override
 				void finishPrepareStatement(PreparedStatement st) throws SQLException {
@@ -1627,13 +1623,13 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	}
 
 
-	private class SqlGeneralSelectQuerryWithFieldMatch extends SqlQuerry {
+	private class SqlGeneralSelectQueryWithFieldMatch extends SqlQuery {
 		private final Map<String, Object> fields;
 		private final List<FieldAccessor> fieldAccessors;
 
-		SqlGeneralSelectQuerryWithFieldMatch(long rowstart, long rowlength, List<FieldAccessor> fieldAccessors, boolean loadJunctions, Map<String, Object> fields, String AndOr,
-				boolean ascendant, String[] orderByFields) {
-			super(getSqlGeneralSelectWithFieldMatch(rowstart, rowlength, fieldAccessors,loadJunctions, fields, AndOr, ascendant, orderByFields));
+		SqlGeneralSelectQueryWithFieldMatch(long rowStart, long rowLength, List<FieldAccessor> fieldAccessors, boolean loadJunctions, Map<String, Object> fields, String AndOr,
+											boolean ascendant, String[] orderByFields) {
+			super(getSqlGeneralSelectWithFieldMatch(rowStart, rowLength, fieldAccessors,loadJunctions, fields, AndOr, ascendant, orderByFields));
 			this.fields = fields;
 			this.fieldAccessors=fieldAccessors;
 		}
@@ -1653,12 +1649,12 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 	}
 
-	private class SqlGeneralSelectQuerryWithMultipleFieldMatch extends SqlQuerry {
+	private class SqlGeneralSelectQueryWithMultipleFieldMatch extends SqlQuery {
 		private final Map<String, Object>[] records;
 
-		SqlGeneralSelectQuerryWithMultipleFieldMatch(long rowstart, long rowlimit, boolean loadJunctions, Map<String, Object>[] records, String AndOr,
-													 boolean asendant, String[] orderByFields) {
-			super(getSqlGeneralSelectWithMultipleFieldMatch(rowstart, rowlimit, loadJunctions, records, AndOr, asendant, orderByFields));
+		SqlGeneralSelectQueryWithMultipleFieldMatch(long rowStart, long rowLimit, boolean loadJunctions, Map<String, Object>[] records, String AndOr,
+													boolean ascendant, String[] orderByFields) {
+			super(getSqlGeneralSelectWithMultipleFieldMatch(rowStart, rowLimit, loadJunctions, records, AndOr, ascendant, orderByFields));
 			this.records = records;
 		}
 
@@ -1678,9 +1674,9 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 	}
 
-	String getSqlGeneralSelectWithFieldMatch(long rowstart, long rowlength, List<FieldAccessor> fieldAccessors, boolean loadJunctions, Map<String, Object> fields, String AndOr,
+	String getSqlGeneralSelectWithFieldMatch(long rowStart, long rowLength, List<FieldAccessor> fieldAccessors, boolean loadJunctions, Map<String, Object> fields, String AndOr,
 			boolean ascendant, String[] orderByFields) {
-		StringBuilder sb = new StringBuilder(getSqlGeneralSelect(loadJunctions).getQuerry());
+		StringBuilder sb = new StringBuilder(getSqlGeneralSelect(loadJunctions).getQuery());
 		boolean first = true;
 		sb.append(" WHERE");
 		for (String key : fields.keySet()) {
@@ -1706,14 +1702,14 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			}
 		}
 		sb.append(getOrderByPart(ascendant, orderByFields));
-		sb.append(getLimitSqlPart(rowstart, rowlength));
+		sb.append(getLimitSqlPart(rowStart, rowLength));
 		sb.append(sql_connection.getSqlComma());
 		return sb.toString();
 	}
 
-	String getSqlGeneralSelectWithMultipleFieldMatch(long rowstart, long rowlength, boolean loadJunctions, Map<String, Object>[] records, String AndOr,
-													 boolean asendant, String[] orderByFields) {
-		StringBuilder sb = new StringBuilder(getSqlGeneralSelect(loadJunctions).getQuerry());
+	String getSqlGeneralSelectWithMultipleFieldMatch(long rowStart, long rowLength, boolean loadJunctions, Map<String, Object>[] records, String AndOr,
+													 boolean ascendant, String[] orderByFields) {
+		StringBuilder sb = new StringBuilder(getSqlGeneralSelect(loadJunctions).getQuery());
 
 		boolean firstOR = true;
 		sb.append(" WHERE");
@@ -1741,8 +1737,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			}
 			sb.append(")");
 		}
-		sb.append(getOrderByPart(asendant, orderByFields));
-		sb.append(getLimitSqlPart(rowstart, rowlength));
+		sb.append(getOrderByPart(ascendant, orderByFields));
+		sb.append(getLimitSqlPart(rowStart, rowLength));
 		sb.append(sql_connection.getSqlComma());
 		return sb.toString();
 	}
@@ -1884,7 +1880,6 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 */
 
 	public final long getRecordsNumberWithAllFields(final Object[]... _records) throws DatabaseException {
-		//noinspection RedundantCast
 		return getRecordsNumberWithAllFields(convertToMap((Object[]) _records));
 	}
 
@@ -1940,7 +1935,6 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 */
 
 	public final long getRecordsNumberWithOneOfFields(final Object[]... _records) throws DatabaseException {
-		//noinspection RedundantCast
 		return getRecordsNumberWithOneOfFields(convertToMap((Object[]) _records));
 	}
 
@@ -1971,39 +1965,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 	private long getRowCount() throws DatabaseException {
 		return getRowCount(null, null, false);
-		/*Transaction t = new Transaction() {
-
-			@Override
-			public TransactionIsolation getTransactionIsolation() {
-				return TransactionIsolation.TRANSACTION_READ_COMMITTED;
-			}
-
-			@Override
-			public boolean doesWriteData() {
-				return false;
-			}
-
-			@Override
-			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
-				try (ReadQuerry rq = new ReadQuerry(
-						_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(),
-						new SqlQuerry("SELECT ROW_COUNT FROM " + DatabaseWrapper.ROW_PROPERTIES_OF_TABLES
-								+ " WHERE TABLE_ID=" + Table.this.getTableID() + ""))) {
-					if (rq.result_set.next()) {
-						return rq.result_set.getLong(1);
-					} else
-						throw new DatabaseException("Unexpected exception.");
-				} catch (Exception e) {
-					throw DatabaseException.getDatabaseException(e);
-				}
-			}
-
-			@Override
-			public void initOrReset() {
-			}
-
-		};
-		return (Long) sql_connection.startTransaction(t, true);*/
+		
 	}
 
 	@SuppressWarnings("SameParameterValue")
@@ -2012,27 +1974,27 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		final RuleInstance rule = Interpreter.getRuleInstance(where);
 		if (isLoadedInMemory()) {
 			ArrayList<T> records = getRecords(-1, -1, is_already_sql_transaction);
-			long rowcount = 0;
+			long rowCount = 0;
 			for (T r : records) {
 				if (rule.isConcernedBy(this, parameters, r)) {
 					if (_filter.nextRecord(r))
-						++rowcount;
+						++rowCount;
 					if (_filter.isTableParsingStoped())
 						break;
 				}
 			}
-			return rowcount;
+			return rowCount;
 		} else {
 			HashMap<Integer, Object> sqlParameters = new HashMap<>();
 			String sqlQuery = rule.translateToSqlQuery(this, parameters, sqlParameters, new HashSet<>())
 					.toString();
-			final AtomicLong rowcount = new AtomicLong(0);
+			final AtomicLong rowCount = new AtomicLong(0);
 			getListRecordsFromSqlConnection(new Runnable() {
 
 				@Override
 				public boolean setInstance(T r, ResultSet _cursor) throws DatabaseException {
 					if (_filter.nextRecord(r))
-						rowcount.incrementAndGet();
+						rowCount.incrementAndGet();
 					return !_filter.isTableParsingStoped();
 				}
 
@@ -2040,7 +2002,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				public void init(int _field_count) {
 				}
 			}, getSqlGeneralSelect(-1,-1,true, sqlQuery, sqlParameters), TransactionIsolation.TRANSACTION_READ_COMMITTED, false);
-			return rowcount.get();
+			return rowCount.get();
 		}
 	}
 
@@ -2050,13 +2012,13 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		final RuleInstance rule = (where==null || where.trim().length()==0)?null:Interpreter.getRuleInstance(where);
 		if (isLoadedInMemory()) {
 			ArrayList<T> records = getRecords(-1, -1, is_already_sql_transaction);
-			long rowcount = 0;
+			long rowCount = 0;
 			for (T r : records) {
 				if (rule==null || rule.isConcernedBy(this, parameters, r)) {
-					++rowcount;
+					++rowCount;
 				}
 			}
-			return rowcount;
+			return rowCount;
 		} else {
 			final HashMap<Integer, Object> sqlParameters = new HashMap<>();
 			final Set<TableJunction> tablesJunction = new HashSet<>();
@@ -2076,7 +2038,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 				@Override
 				public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
-					try (ReadQuerry rq = new ReadQuerry(
+					try (ReadQuery rq = new ReadQuery(
 							_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(),
 							getSqlGeneralCount(sqlQuery, sqlParameters, tablesJunction))) {
 						if (rq.result_set.next()) {
@@ -2113,13 +2075,13 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			}
 			return count;
 		} else {
-			final boolean persoFilter = (_filter instanceof Table.PersonnalFilter);
+			final boolean personalFilter = (_filter instanceof Table.PersonalFilter);
 			final AtomicLong pos = new AtomicLong(0);
 			getListRecordsFromSqlConnection(new Runnable() {
 
 				@Override
 				public boolean setInstance(T r, ResultSet _cursor) throws DatabaseException {
-					if (persoFilter || _filter.nextRecord(r))
+					if (personalFilter || _filter.nextRecord(r))
 						pos.incrementAndGet();
 					return !_filter.isTableParsingStoped();
 				}
@@ -2127,7 +2089,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				@Override
 				public void init(int _field_count) {
 				}
-			}, persoFilter ? ((PersonnalFilter) _filter).getSQLQuerry(true) : getSqlGeneralSelect(-1,-1,true),
+			}, personalFilter ? ((PersonalFilter) _filter).getSQLQuery(true) : getSqlGeneralSelect(-1,-1,true),
 					TransactionIsolation.TRANSACTION_READ_COMMITTED);
 			return pos.get();
 		}
@@ -2276,10 +2238,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		final String sqlNull = " " + sql_connection.getSqlNULL();
 		final String sqlNotNull = " " + sql_connection.getSqlNotNULL();
 
+		StringBuilder res = new StringBuilder();
+		boolean first = true;
 		if (field.isForeignKey()) {
-			StringBuilder res = new StringBuilder();
 
-			boolean first = true;
 			for (SqlField sf : field.getDeclaredSqlFields()) {
 				if (first)
 					first = false;
@@ -2288,10 +2250,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				res.append(sf.short_field).append(" ").append(sf.type).append(sf.not_null ? sqlNotNull : sqlNull);
 			}
 
-			return res.toString();
 		} else {
-            StringBuilder res = new StringBuilder();
-			boolean first = true;
 
 			for (SqlField sf : field.getDeclaredSqlFields()) {
 				if (first)
@@ -2307,8 +2266,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				}
 				res .append(sf.not_null ? sqlNotNull : sqlNull);
 			}
-			return res.toString();
 		}
+		return res.toString();
 
 	}
 
@@ -2319,7 +2278,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 *            the DatabaseRecord class
 	 * @return the corresponding Table Class.
 	 * @throws DatabaseException
-	 *             if database constaints are not respected.
+	 *             if database constraints are not respected.
 	 * @throws NullPointerException
 	 *             if parameters are null pointers.
 	 */
@@ -2350,7 +2309,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 *            the table class
 	 * @return the corresponding DatabaseRecord.
 	 * @throws DatabaseException
-	 *             if database constaints are not respected.
+	 *             if database constraints are not respected.
 	 * @throws NullPointerException
 	 *             if parameters are null pointers.
 	 */
@@ -2540,7 +2499,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 */
 	public final ArrayList<T> getOrderedRecords(final Filter<T> _filter, String whereCondition,
 			Map<String, Object> parameters, boolean _ascendant, String... _fields) throws DatabaseException {
-		return getPaginedOrderedRecords(-1, -1, _filter, whereCondition, parameters, _ascendant, _fields);
+		return getPaginatedOrderedRecords(-1, -1, _filter, whereCondition, parameters, _ascendant, _fields);
 	}
 
 	/**
@@ -2548,9 +2507,9 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * ordered according the given fields, in an ascendant way or in a descendant
 	 * way.
 	 * 
-	 * @param rowpos
+	 * @param rowPos
 	 *            row position (first starts with 1)
-	 * @param rowlength
+	 * @param rowLength
 	 *            page length (size of the returned result)
 	 * @param _filter
 	 *            the filter which select records to include
@@ -2574,13 +2533,13 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 *             is given or if an unknown field is given.
 	 * @since 2.0.0
 	 */
-	public final ArrayList<T> getPaginedOrderedRecords(long rowpos, long rowlength, final Filter<T> _filter,
-			String whereCondition, Map<String, Object> parameters, boolean _ascendant, String... _fields)
+	public final ArrayList<T> getPaginatedOrderedRecords(long rowPos, long rowLength, final Filter<T> _filter,
+														 String whereCondition, Map<String, Object> parameters, boolean _ascendant, String... _fields)
 			throws DatabaseException {
 		try (Lock ignored = new ReadLock(this)) {
 			final RuleInstance rule = whereCondition == null ? null : Interpreter.getRuleInstance(whereCondition);
 			if (isLoadedInMemory()) {
-				final SortedArray res = new SortedArray(rowpos, rowlength, _ascendant, _fields);
+				final SortedArray res = new SortedArray(rowPos, rowLength, _ascendant, _fields);
 				for (T r : getRecords(-1, -1, false)) {
 					if ((rule == null || rule.isConcernedBy(this, parameters, r)) && _filter.nextRecord(r))
 						res.addRecord(r);
@@ -2607,8 +2566,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					@Override
 					public void init(int _field_count) {
 					}
-				}, rule == null ? getSqlGeneralSelect(rowpos, rowlength, true, _ascendant, _fields)
-						: getSqlGeneralSelect(rowpos, rowlength, true, sqlQuery, sqlParameters, _ascendant, _fields),
+				}, rule == null ? getSqlGeneralSelect(rowPos, rowLength, true, _ascendant, _fields)
+						: getSqlGeneralSelect(rowPos, rowLength, true, sqlQuery, sqlParameters, _ascendant, _fields),
 						TransactionIsolation.TRANSACTION_READ_COMMITTED);
 				return res;
 			}
@@ -2618,7 +2577,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 	}
 
-	public String getFieldToComparare(String field) {
+	public String getFieldToCompare(String field) {
 
 		/*String[] strings = field.split("\\.");
 
@@ -2712,7 +2671,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 */
 	public final ArrayList<T> getOrderedRecords(String whereCondition, Map<String, Object> parameters,
 			boolean _ascendant, String... _fields) throws DatabaseException {
-		return getPaginedOrderedRecords(-1, -1, whereCondition, parameters, _ascendant, _fields);
+		return getPaginatedOrderedRecords(-1, -1, whereCondition, parameters, _ascendant, _fields);
 	}
 
 	/**
@@ -2891,9 +2850,9 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * Returns the records of this table, corresponding to a query, and ordered
 	 * according the given fields, in an ascendant way or in a descendant way.
 	 * 
-	 * @param rowpos
+	 * @param rowPos
 	 *            row position (first starts with 1)
-	 * @param rowlength
+	 * @param rowLength
 	 *            page length (size of the returned result)
 	 * @param whereCondition
 	 *            the sql equivalent where condition
@@ -2915,13 +2874,13 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 *             is given or if an unknown field is given.
 	 * @since 2.0.0
 	 */
-	public final ArrayList<T> getPaginedOrderedRecords(long rowpos, long rowlength, String whereCondition,
-			Map<String, Object> parameters, boolean _ascendant, String... _fields) throws DatabaseException {
+	public final ArrayList<T> getPaginatedOrderedRecords(long rowPos, long rowLength, String whereCondition,
+														 Map<String, Object> parameters, boolean _ascendant, String... _fields) throws DatabaseException {
 		try (Lock ignored = new ReadLock(this)) {
 			final RuleInstance rule = whereCondition == null ? null : Interpreter.getRuleInstance(whereCondition);
 
 			if (isLoadedInMemory()) {
-				final SortedArray res = new SortedArray(rowpos, rowlength, _ascendant, _fields);
+				final SortedArray res = new SortedArray(rowPos, rowLength, _ascendant, _fields);
 				for (T r : getRecords(-1, -1, false)) {
 					if ((rule == null || rule.isConcernedBy(this, parameters, r)))
 						res.addRecord(r);
@@ -2944,7 +2903,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					@Override
 					public void init(int _field_count) {
 					}
-				}, getSqlGeneralSelect(rowpos, rowlength, true, sqlQuery, sqlParameters, _ascendant, _fields),
+				}, getSqlGeneralSelect(rowPos, rowLength, true, sqlQuery, sqlParameters, _ascendant, _fields),
 						TransactionIsolation.TRANSACTION_READ_COMMITTED);
 				return res;
 			}
@@ -3056,22 +3015,22 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	private class SortedArray {
 		private final Comparator comparator;
 		private final ArrayList<T> sorted_list;
-		private final long rowpos, rowlength;
+		private final long rowPos, rowLength;
 
-		public SortedArray(long rowpos, long rowlength, boolean _ascendant, String... _fields)
+		public SortedArray(long rowPos, long rowLength, boolean _ascendant, String... _fields)
 				throws ConstraintsNotRespectedDatabaseException {
 			comparator = new Comparator(_ascendant, _fields);
 			sorted_list = new ArrayList<>();
-			this.rowpos = rowpos;
-			this.rowlength = rowlength;
+			this.rowPos = rowPos;
+			this.rowLength = rowLength;
 		}
 
-		public SortedArray(long rowpos, long rowlength, int initial_capacity, boolean _ascendant, String... _fields)
+		public SortedArray(long rowPos, long rowLength, int initial_capacity, boolean _ascendant, String... _fields)
 				throws ConstraintsNotRespectedDatabaseException {
 			comparator = new Comparator(_ascendant, _fields);
 			sorted_list = new ArrayList<>(initial_capacity);
-			this.rowpos = rowpos;
-			this.rowlength = rowlength;
+			this.rowPos = rowPos;
+			this.rowLength = rowLength;
 		}
 
 		public void addRecord(T _record) throws DatabaseException {
@@ -3093,12 +3052,12 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 
 		public ArrayList<T> getRecords() {
-			if (rowpos > 0 && rowlength > 0) {
-				long size = Math.max(0, Math.min(sorted_list.size() - rowpos, rowlength));
+			if (rowPos > 0 && rowLength > 0) {
+				long size = Math.max(0, Math.min(sorted_list.size() - rowPos, rowLength));
 
 				ArrayList<T> res = new ArrayList<>((int)size);
 				for (int i = 0; i < size; i++)
-					res.add(sorted_list.get((int)(rowpos + i)));
+					res.add(sorted_list.get((int)(rowPos + i)));
 				return res;
 			} else
 				return sorted_list;
@@ -3118,7 +3077,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 *             if a Sql exception occurs.
 	 */
 	public final ArrayList<T> getRecords() throws DatabaseException {
-		return getPaginedRecords(-1, -1);
+		return getPaginatedRecords(-1, -1);
 	}
 
 	/**
@@ -3128,19 +3087,19 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * records present in this table. It is preferable to use the function
 	 * {@link #getRecordsNumber()}.
 	 * 
-	 * @param rowpos
+	 * @param rowPos
 	 *            row position (first starts with 1)
-	 * @param rowlength
+	 * @param rowLength
 	 *            page length (size of the returned result)
 	 * @return all the records of the table.
 	 * @throws DatabaseException
 	 *             if a Sql exception occurs.
 	 */
-	public final ArrayList<T> getPaginedRecords(long rowpos, long rowlength) throws DatabaseException {
+	public final ArrayList<T> getPaginatedRecords(long rowPos, long rowLength) throws DatabaseException {
 		// synchronized(sql_connection)
 		{
 			try (Lock ignored = new ReadLock(this)) {
-				return getRecords(rowpos, rowlength, false);
+				return getRecords(rowPos, rowLength, false);
 			} catch (Exception e) {
 				throw DatabaseException.getDatabaseException(e);
 			}
@@ -3150,7 +3109,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 
 	@SuppressWarnings("unused")
-    final ArrayList<T> getRecords(long rowpos, long rowlength, boolean is_already_in_transaction)
+    final ArrayList<T> getRecords(long rowPos, long rowLength, boolean is_already_in_transaction)
 			throws DatabaseException {
 		// try(ReadWriteLock.Lock lock=sql_connection.locker.getAutoCloseableReadLock())
 		{
@@ -3184,12 +3143,12 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					
 					
 				}
-				if (rowpos > 0 && rowlength > 0) {
+				if (rowPos > 0 && rowLength > 0) {
 					ArrayList<T> records = records_instances.get();
-					long size = Math.max(Math.min(records.size() - rowpos - 1, rowlength), 0);
+					long size = Math.max(Math.min(records.size() - rowPos - 1, rowLength), 0);
 					ArrayList<T> res = new ArrayList<>((int)size);
 					for (int i = 0; i < size; i++) {
-						res.add(records.get((int)(i + rowpos - 1)));
+						res.add(records.get((int)(i + rowPos - 1)));
 					}
 					return res;
 				} else {
@@ -3210,7 +3169,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						res.clear();
 						res.ensureCapacity(_field_count);
 					}
-				}, getSqlGeneralSelect(rowpos, rowlength, true), TransactionIsolation.TRANSACTION_READ_COMMITTED);
+				}, getSqlGeneralSelect(rowPos, rowLength, true), TransactionIsolation.TRANSACTION_READ_COMMITTED);
 				return res;
 			}
 		}
@@ -3253,15 +3212,15 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 *             if parameters are null pointers.
 	 */
 	public final ArrayList<T> getRecords(final Filter<T> _filter) throws DatabaseException {
-		return getPaginedRecords(-1, -1, _filter);
+		return getPaginatedRecords(-1, -1, _filter);
 	}
 
 	/**
 	 * Returns the records of this table corresponding to a given filter.
 	 * 
-	 * @param rowpos
+	 * @param rowPos
 	 *            row position (first starts with 1)
-	 * @param rowlength
+	 * @param rowLength
 	 *            page length (size of the returned result)
 	 * @param _filter
 	 *            the filter
@@ -3271,24 +3230,24 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * @throws NullPointerException
 	 *             if parameters are null pointers.
 	 */
-	public final ArrayList<T> getPaginedRecords(long rowpos, long rowlength, final Filter<T> _filter)
+	public final ArrayList<T> getPaginatedRecords(long rowPos, long rowLength, final Filter<T> _filter)
 			throws DatabaseException {
 		if (_filter == null)
 			throw new NullPointerException("The parameter _filter is a null pointer !");
 		try (Lock ignored = new ReadLock(this)) {
-			return getRecords(rowpos, rowlength, _filter, false);
+			return getRecords(rowPos, rowLength, _filter, false);
 		} catch (Exception e) {
 			throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 		}
 	}
 	@SuppressWarnings({"UnusedReturnValue", "SameParameterValue"})
-	final ArrayList<?> getPaginedRecordsWithUnknownType(long rowpos, long rowlength, final Filter<DatabaseRecord> _filter)
+	final ArrayList<?> getPaginatedRecordsWithUnknownType(long rowPos, long rowLength, final Filter<DatabaseRecord> _filter)
 			throws DatabaseException {
 		if (_filter == null)
 			throw new NullPointerException("The parameter _filter is a null pointer !");
 		try (Lock ignored = new ReadLock(this)) {
 			//noinspection unchecked
-			return getRecords(rowpos, rowlength, (Filter<T>)_filter, false);
+			return getRecords(rowPos, rowLength, (Filter<T>)_filter, false);
 		} catch (Exception e) {
 			throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 		}
@@ -3334,16 +3293,16 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 */
 	public final ArrayList<T> getRecords(final Filter<T> _filter, String whereCondition, Map<String, Object> parameters)
 			throws DatabaseException {
-		return getPaginedRecords(-1, -1, _filter, whereCondition, parameters);
+		return getPaginatedRecords(-1, -1, _filter, whereCondition, parameters);
 	}
 
 	/**
 	 * Returns the records of this table corresponding to a given filter and a given
 	 * SQL condition.
 	 * 
-	 * @param rowpos
+	 * @param rowPos
 	 *            row position (first starts with 1)
-	 * @param rowlength
+	 * @param rowLength
 	 *            page length (size of the returned result)
 	 * @param _filter
 	 *            the filter
@@ -3357,9 +3316,9 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * @throws NullPointerException
 	 *             if parameters are null pointers.
 	 */
-	public final ArrayList<T> getPaginedRecords(long rowpos, long rowlength, final Filter<T> _filter,
-			String whereCondition, Object... parameters) throws DatabaseException {
-		return getPaginedRecords(rowpos, rowlength, _filter, whereCondition,
+	public final ArrayList<T> getPaginatedRecords(long rowPos, long rowLength, final Filter<T> _filter,
+												  String whereCondition, Object... parameters) throws DatabaseException {
+		return getPaginatedRecords(rowPos, rowLength, _filter, whereCondition,
 				whereCondition == null ? new HashMap<>() : convertToMap(parameters));
 	}
 
@@ -3367,9 +3326,9 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * Returns the records of this table corresponding to a given filter and a given
 	 * SQL condition.
 	 * 
-	 * @param rowpos
+	 * @param rowPos
 	 *            row position (first starts with 1)
-	 * @param rowlength
+	 * @param rowLength
 	 *            page length (size of the returned result)
 	 * @param _filter
 	 *            the filter
@@ -3383,15 +3342,15 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * @throws NullPointerException
 	 *             if parameters are null pointers.
 	 */
-	public final ArrayList<T> getPaginedRecords(long rowpos, long rowlength, final Filter<T> _filter,
-			String whereCondition, Map<String, Object> parameters) throws DatabaseException {
+	public final ArrayList<T> getPaginatedRecords(long rowPos, long rowLength, final Filter<T> _filter,
+												  String whereCondition, Map<String, Object> parameters) throws DatabaseException {
 		if (_filter == null)
 			throw new NullPointerException("The parameter _filter is a null pointer !");
 		// synchronized(sql_connection)
 		{
 
 			try (Lock ignored = new ReadLock(this)) {
-				return getRecords(rowpos, rowlength, _filter, whereCondition, parameters, false);
+				return getRecords(rowPos, rowLength, _filter, whereCondition, parameters, false);
 			} catch (Exception e) {
 				throw DatabaseException.getDatabaseException(e);
 			}
@@ -3412,7 +3371,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 *             if parameters are null pointers.
 	 */
 	public final ArrayList<T> getRecords(String whereCondition, Object... parameters) throws DatabaseException {
-		return getPaginedRecords(-1, -1, whereCondition,
+		return getPaginatedRecords(-1, -1, whereCondition,
 				whereCondition == null ? new HashMap<>() : convertToMap(parameters));
 	}
 
@@ -3431,15 +3390,15 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 */
 	public final ArrayList<T> getRecords(String whereCondition, Map<String, Object> parameters)
 			throws DatabaseException {
-		return getPaginedRecords(-1, -1, whereCondition, parameters);
+		return getPaginatedRecords(-1, -1, whereCondition, parameters);
 	}
 
 	/**
 	 * Returns the records of this table corresponding to a given SQL condition.
 	 * 
-	 * @param rowpos
+	 * @param rowPos
 	 *            row position (first starts with 1)
-	 * @param rowlength
+	 * @param rowLength
 	 *            page length (size of the returned result)
 	 * @param whereCondition
 	 *            the SQL WHERE condition that filter the results
@@ -3451,17 +3410,17 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * @throws NullPointerException
 	 *             if parameters are null pointers.
 	 */
-	public final ArrayList<T> getPaginedRecords(long rowpos, long rowlength, String whereCondition, Object... parameters)
+	public final ArrayList<T> getPaginatedRecords(long rowPos, long rowLength, String whereCondition, Object... parameters)
 			throws DatabaseException {
-		return getPaginedRecords(rowpos, rowlength, whereCondition, convertToMap(parameters));
+		return getPaginatedRecords(rowPos, rowLength, whereCondition, convertToMap(parameters));
 	}
 
 	/**
 	 * Returns the records of this table corresponding to a given SQL condition.
 	 * 
-	 * @param rowpos
+	 * @param rowPos
 	 *            row position (first starts with 1)
-	 * @param rowlength
+	 * @param rowLength
 	 *            page length (size of the returned result)
 	 * @param whereCondition
 	 *            the SQL WHERE condition that filter the results
@@ -3473,13 +3432,13 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * @throws NullPointerException
 	 *             if parameters are null pointers.
 	 */
-	public final ArrayList<T> getPaginedRecords(long rowpos, long rowlength, String whereCondition,
-			Map<String, Object> parameters) throws DatabaseException {
+	public final ArrayList<T> getPaginatedRecords(long rowPos, long rowLength, String whereCondition,
+												  Map<String, Object> parameters) throws DatabaseException {
 		// synchronized(sql_connection)
 		{
 
 			try (Lock ignored = new ReadLock(this)) {
-				return getRecords(rowpos, rowlength, new Filter<T>() {
+				return getRecords(rowPos, rowLength, new Filter<T>() {
 
 					@Override
 					public boolean nextRecord(T _record) {
@@ -3552,7 +3511,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					break;
 			}
 		} else {
-			final boolean persoFilter = (_filter instanceof Table.PersonnalFilter);
+			final boolean personalFilter = (_filter instanceof Table.PersonalFilter);
 			final AtomicInteger pos = new AtomicInteger(0);
 
 			getListRecordsFromSqlConnection(new Runnable() {
@@ -3560,7 +3519,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				@Override
 				public boolean setInstance(T r, ResultSet _cursor) throws DatabaseException {
 					if (((rowPos < 1 || rowLength < 1)
-							|| (pos.incrementAndGet() >= rowPos && (rowPos - pos.get()) < rowLength)) && (persoFilter || _filter.nextRecord(r)))
+							|| (pos.incrementAndGet() >= rowPos && (rowPos - pos.get()) < rowLength)) && (personalFilter || _filter.nextRecord(r)))
 						res.add(r);
 					return !_filter.isTableParsingStoped()
 							|| !(rowPos > 0 && rowLength > 0 && (rowPos - pos.get()) >= (rowLength - 1));
@@ -3569,7 +3528,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				@Override
 				public void init(int _field_count) {
 				}
-			}, persoFilter ? ((PersonnalFilter) _filter).getSQLQuerry(true) : getSqlGeneralSelect(-1,-1,true),
+			}, personalFilter ? ((PersonalFilter) _filter).getSQLQuery(true) : getSqlGeneralSelect(-1,-1,true),
 					TransactionIsolation.TRANSACTION_READ_COMMITTED);
 		}
 		return res;
@@ -3612,13 +3571,13 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			}
 			return false;
 		} else {
-			final boolean persoFilter = (_filter instanceof Table.PersonnalFilter);
+			final boolean personalFilter = (_filter instanceof Table.PersonalFilter);
 			class RunnableTmp extends Runnable {
 				boolean res;
 
 				@Override
 				public boolean setInstance(T r, ResultSet _cursor) throws DatabaseException {
-					if (persoFilter || _filter.nextRecord(r)) {
+					if (personalFilter || _filter.nextRecord(r)) {
 						res = true;
 						return false;
 					}
@@ -3633,35 +3592,35 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			}
 			RunnableTmp runnable = new RunnableTmp();
 			getListRecordsFromSqlConnection(runnable,
-					persoFilter ? ((PersonnalFilter) _filter).getSQLQuerry(true) : getSqlGeneralSelect(true),
+					personalFilter ? ((PersonalFilter) _filter).getSQLQuery(true) : getSqlGeneralSelect(true),
 					TransactionIsolation.TRANSACTION_READ_COMMITTED);
 			return runnable.res;
 		}
 	}
 
-	abstract class PersonnalFilter extends Filter<T> {
+	abstract class PersonalFilter extends Filter<T> {
 		protected final boolean ascendant;
 		protected final String[] orderByFields;
 
-		PersonnalFilter(boolean ascendant, String[] orderByFields) {
+		PersonalFilter(boolean ascendant, String[] orderByFields) {
 			this.ascendant = ascendant;
 			this.orderByFields = orderByFields;
 		}
 
-		abstract SqlQuerry getSQLQuerry(boolean loadJunctions);
+		abstract SqlQuery getSQLQuery(boolean loadJunctions);
 
 	}
 
-	private abstract class SimpleFieldFilter extends PersonnalFilter {
+	private abstract class SimpleFieldFilter extends PersonalFilter {
 		protected final Map<String, Object> given_fields;
 		protected final ArrayList<FieldAccessor> fields_accessor;
-		protected final long rowstart, rowlength;
+		protected final long rowStart, rowLength;
 
-		public SimpleFieldFilter(long rowstart, long rowlength, boolean ascendant, String[] orderByFields, Map<String, Object> _fields,
-				final ArrayList<FieldAccessor> _fields_accessor) throws DatabaseException {
+		public SimpleFieldFilter(long rowStart, long rowLength, boolean ascendant, String[] orderByFields, Map<String, Object> _fields,
+								 final ArrayList<FieldAccessor> _fields_accessor) throws DatabaseException {
 			super(ascendant, orderByFields);
-			this.rowstart=rowstart;
-			this.rowlength=rowlength;
+			this.rowStart =rowStart;
+			this.rowLength = rowLength;
 			fields_accessor = new ArrayList<>(_fields.size());
 			for (String s : _fields.keySet()) {
 				FieldAccessor fa=getConcernedBy(_fields_accessor, s);
@@ -3691,18 +3650,18 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 	}
 
-	private abstract class MultipleFieldFilter extends PersonnalFilter {
+	private abstract class MultipleFieldFilter extends PersonalFilter {
 		protected final Map<String, Object>[] given_fields;
 		protected final ArrayList<FieldAccessor> fields_accessor;
-		protected final long rowstart;
-		protected final long rowlength;
+		protected final long rowStart;
+		protected final long rowLength;
 		@SafeVarargs
-		public MultipleFieldFilter(long rowstart, long rowlength, boolean ascendant, String[] orderByFields,
-				final ArrayList<FieldAccessor> _fields_accessor, Map<String, Object>... _fields)
+		public MultipleFieldFilter(long rowStart, long rowLength, boolean ascendant, String[] orderByFields,
+								   final ArrayList<FieldAccessor> _fields_accessor, Map<String, Object>... _fields)
 				throws DatabaseException {
 			super(ascendant, orderByFields);
-			this.rowstart=rowstart;
-			this.rowlength=rowlength;
+			this.rowStart = rowStart;
+			this.rowLength = rowLength;
 			fields_accessor = _fields_accessor;
 			Set<String> first = null;
 			for (Map<String, Object> hm : _fields) {
@@ -3742,14 +3701,14 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	private class SimpleAllFieldsFilter extends SimpleFieldFilter {
 
 
-		public SimpleAllFieldsFilter(long rowstart, long rowlength, boolean ascendant, String[] orderByFields, Map<String, Object> _fields,
+		public SimpleAllFieldsFilter(long rowStart, long rowLength, boolean ascendant, String[] orderByFields, Map<String, Object> _fields,
 				final ArrayList<FieldAccessor> _fields_accessor) throws DatabaseException {
-			super(rowstart, rowlength, ascendant, orderByFields, _fields, _fields_accessor);
+			super(rowStart, rowLength, ascendant, orderByFields, _fields, _fields_accessor);
 		}
 
 		@Override
 		public boolean nextRecord(T _instance) throws DatabaseException {
-			boolean toadd = true;
+			boolean toAdd = true;
 			for (String s : given_fields.keySet()) {
 				boolean ok = false;
 				for (FieldAccessor fa : fields_accessor) {
@@ -3761,17 +3720,17 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					}
 				}
 				if (!ok) {
-					toadd = false;
+					toAdd = false;
 					break;
 				}
 			}
 
-			return toadd;
+			return toAdd;
 		}
 
 		@Override
-		public SqlQuerry getSQLQuerry(boolean loadJunctions) {
-			return new SqlGeneralSelectQuerryWithFieldMatch(rowstart, rowlength, fields_accessor, loadJunctions, this.given_fields, "AND", ascendant,
+		public SqlQuery getSQLQuery(boolean loadJunctions) {
+			return new SqlGeneralSelectQueryWithFieldMatch(rowStart, rowLength, fields_accessor, loadJunctions, this.given_fields, "AND", ascendant,
 					orderByFields);
 		}
 
@@ -3779,17 +3738,17 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 	private class MultipleAllFieldsFilter extends MultipleFieldFilter {
 
-		public MultipleAllFieldsFilter(long rowstart, long rowlength, boolean ascendant, String[] orderByFields,
+		public MultipleAllFieldsFilter(long rowStart, long rowLength, boolean ascendant, String[] orderByFields,
 				final ArrayList<FieldAccessor> _fields_accessor, Map<String, Object>[] _records)
 				throws DatabaseException {
-			super(rowstart, rowlength, ascendant, orderByFields, _fields_accessor, _records);
+			super(rowStart, rowLength, ascendant, orderByFields, _fields_accessor, _records);
 		}
 
 		@Override
 		public boolean nextRecord(T _instance) throws DatabaseException {
-			boolean toadd = true;
+			boolean toAdd = true;
 			for (Map<String, Object> hm : given_fields) {
-				toadd = true;
+				toAdd = true;
 				for (String s : hm.keySet()) {
 					boolean ok = false;
 					for (FieldAccessor fa : fields_accessor) {
@@ -3801,20 +3760,20 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						}
 					}
 					if (!ok) {
-						toadd = false;
+						toAdd = false;
 						break;
 					}
 				}
-				if (toadd)
+				if (toAdd)
 					break;
 			}
 
-			return toadd;
+			return toAdd;
 		}
 
 		@Override
-		public SqlQuerry getSQLQuerry(boolean loadJunctions) {
-			return new SqlGeneralSelectQuerryWithMultipleFieldMatch(rowstart, rowlength, loadJunctions, this.given_fields, "AND", ascendant,
+		public SqlQuery getSQLQuery(boolean loadJunctions) {
+			return new SqlGeneralSelectQueryWithMultipleFieldMatch(rowStart, rowLength, loadJunctions, this.given_fields, "AND", ascendant,
 					orderByFields);
 		}
 
@@ -3822,35 +3781,35 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 	private class SimpleOneOfFieldsFilter extends SimpleFieldFilter {
 
-		public SimpleOneOfFieldsFilter(long rowstart, long rowlength, boolean ascendant, String[] orderByFields, Map<String, Object> _fields,
+		public SimpleOneOfFieldsFilter(long rowStart, long rowLength, boolean ascendant, String[] orderByFields, Map<String, Object> _fields,
 				final ArrayList<FieldAccessor> _fields_accessor) throws DatabaseException {
-			super(rowstart, rowlength, ascendant, orderByFields, _fields, _fields_accessor);
+			super(rowStart, rowLength, ascendant, orderByFields, _fields, _fields_accessor);
 		}
 
 		@Override
 		public boolean nextRecord(T _instance) throws DatabaseException {
-			boolean toadd = false;
+			boolean toAdd = false;
 			for (String s : given_fields.keySet()) {
 				for (FieldAccessor fa : fields_accessor) {
 					if (fa.getFieldName().equals(s))
 					{
 						if (fa.equals(fa.getFieldName().contains(".")?Table.this.getFieldAccessorAndValue(_instance, fa.getFieldName()).getValue():_instance, given_fields.get(s))) {
-							toadd = true;
+							toAdd = true;
 						}
 						break;
 					}
 				}
-				if (toadd) {
+				if (toAdd) {
 					break;
 				}
 			}
 
-			return toadd;
+			return toAdd;
 		}
 
 		@Override
-		public SqlQuerry getSQLQuerry(boolean loadJunctions) {
-			return new SqlGeneralSelectQuerryWithFieldMatch(rowstart, rowlength, fields_accessor, loadJunctions, this.given_fields, "OR", ascendant,
+		public SqlQuery getSQLQuery(boolean loadJunctions) {
+			return new SqlGeneralSelectQueryWithFieldMatch(rowStart, rowLength, fields_accessor, loadJunctions, this.given_fields, "OR", ascendant,
 					orderByFields);
 		}
 
@@ -3858,17 +3817,17 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 	private class MultipleOneOfFieldsFilter extends MultipleFieldFilter {
 
-		public MultipleOneOfFieldsFilter(long rowstart, long rowlength, boolean ascendant, String[] orderByFields,
+		public MultipleOneOfFieldsFilter(long rowStart, long rowLength, boolean ascendant, String[] orderByFields,
 				final ArrayList<FieldAccessor> _fields_accessor, Map<String, Object>[] _records)
 				throws DatabaseException {
-			super(rowstart, rowlength, ascendant, orderByFields, _fields_accessor, _records);
+			super(rowStart, rowLength, ascendant, orderByFields, _fields_accessor, _records);
 		}
 
 		@Override
 		public boolean nextRecord(T _instance) throws DatabaseException {
-			boolean toadd = true;
+			boolean toAdd = true;
 			for (Map<String, Object> hm : given_fields) {
-				toadd = false;
+				toAdd = false;
 				for (String s : hm.keySet()) {
 					boolean ok = false;
 					for (FieldAccessor fa : fields_accessor) {
@@ -3880,20 +3839,20 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						}
 					}
 					if (ok) {
-						toadd = true;
+						toAdd = true;
 						break;
 					}
 				}
-				if (toadd)
+				if (toAdd)
 					break;
 			}
 
-			return toadd;
+			return toAdd;
 		}
 
 		@Override
-		public SqlQuerry getSQLQuerry(boolean loadJunctions) {
-			return new SqlGeneralSelectQuerryWithMultipleFieldMatch(rowstart, rowlength, loadJunctions, this.given_fields, "OR", ascendant,
+		public SqlQuery getSQLQuery(boolean loadJunctions) {
+			return new SqlGeneralSelectQueryWithMultipleFieldMatch(rowStart, rowLength, loadJunctions, this.given_fields, "OR", ascendant,
 					orderByFields);
 		}
 
@@ -3949,7 +3908,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * must correspond exactly to the returned records.
 	 * 
 	 * @param _fields
-	 *            the fields that filter the result. Must be formated as follow :
+	 *            the fields that filter the result. Must be formatted as follow :
 	 *            {"field1", value1,"field2", value2, etc.}
 	 * @return the corresponding records.
 	 * @throws DatabaseException
@@ -3972,7 +3931,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * @param orderByFields
 	 *            order by the given fields
 	 * @param _fields
-	 *            the fields that filter the result. Must be formated as follow :
+	 *            the fields that filter the result. Must be formatted as follow :
 	 *            {"field1", value1,"field2", value2, etc.}
 	 * @return the corresponding records.
 	 * @throws DatabaseException
@@ -4025,16 +3984,16 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 */
 	public final ArrayList<T> getRecordsWithAllFieldsOrdered(boolean ascendant, String[] orderByFields,
 			final Map<String, Object> _fields) throws DatabaseException {
-		return getPaginedRecordsWithAllFieldsOrdered(-1, -1, ascendant, orderByFields, _fields);
+		return getPaginatedRecordsWithAllFieldsOrdered(-1, -1, ascendant, orderByFields, _fields);
 	}
 
 	/**
 	 * Returns the records which correspond to the given fields. All given fields
 	 * must correspond exactly to the returned records.
 	 * 
-	 * @param rowpos
+	 * @param rowPos
 	 *            row position (first starts with 1)
-	 * @param rowlength
+	 * @param rowLength
 	 *            page length (size of the returned result)
 	 * @param ascendant
 	 *            order by ascendant (true) or descendant (false)
@@ -4050,9 +4009,9 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * @throws FieldDatabaseException
 	 *             if the given fields do not correspond to the table fields.
 	 */
-	public final ArrayList<T> getPaginedRecordsWithAllFieldsOrdered(long rowpos, long rowlength, boolean ascendant,
-			String[] orderByFields, Object... _fields) throws DatabaseException {
-		return getPaginedRecordsWithAllFieldsOrdered(rowpos, rowlength, ascendant, orderByFields,
+	public final ArrayList<T> getPaginatedRecordsWithAllFieldsOrdered(long rowPos, long rowLength, boolean ascendant,
+																	  String[] orderByFields, Object... _fields) throws DatabaseException {
+		return getPaginatedRecordsWithAllFieldsOrdered(rowPos, rowLength, ascendant, orderByFields,
 				transformToMapField(_fields));
 	}
 
@@ -4060,9 +4019,9 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * Returns the records which correspond to the given fields. All given fields
 	 * must correspond exactly to the returned records.
 	 * 
-	 * @param rowpos
+	 * @param rowPos
 	 *            row position (first starts with 1)
-	 * @param rowlength
+	 * @param rowLength
 	 *            page length (size of the returned result)
 	 * @param ascendant
 	 *            order by ascendant (true) or descendant (false)
@@ -4078,15 +4037,15 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * @throws FieldDatabaseException
 	 *             if the given fields do not correspond to the table fields.
 	 */
-	public final ArrayList<T> getPaginedRecordsWithAllFieldsOrdered(long rowpos, long rowlength, boolean ascendant,
-			String[] orderByFields, final Map<String, Object> _fields) throws DatabaseException {
+	public final ArrayList<T> getPaginatedRecordsWithAllFieldsOrdered(long rowPos, long rowLength, boolean ascendant,
+																	  String[] orderByFields, final Map<String, Object> _fields) throws DatabaseException {
 		if (_fields == null)
 			throw new NullPointerException("The parameter _fields is a null pointer !");
 		// synchronized(sql_connection)
 		{
 			try (Lock ignored = new ReadLock(this)) {
-				return getRecords(rowpos, rowlength,
-						new SimpleAllFieldsFilter(rowpos, rowlength, ascendant, orderByFields, _fields, fields), false);
+				return getRecords(rowPos, rowLength,
+						new SimpleAllFieldsFilter(rowPos, rowLength, ascendant, orderByFields, _fields, fields), false);
 			} catch (Exception e) {
 				throw DatabaseException.getDatabaseException(e);
 			}
@@ -4098,7 +4057,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * fields. All given fields must correspond exactly one the records.
 	 * 
 	 * @param _fields
-	 *            the fields that must match to one of the records. Must be formated
+	 *            the fields that must match to one of the records. Must be formatted
 	 *            as follow : {"field1", value1,"field2", value2, etc.}
 	 * @return true if there is at least one record which correspond the given
 	 *         fields.
@@ -4147,7 +4106,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * that all corresponds exactly.
 	 * 
 	 * @param _records
-	 *            the fields that filter the result. Must be formated as follow :
+	 *            the fields that filter the result. Must be formatted as follow :
 	 *            {"field1", value1,"field2", value2, etc.}
 	 * @return the corresponding records.
 	 * @throws DatabaseException
@@ -4172,7 +4131,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * @param orderByFields
 	 *            order by the given fields
 	 * @param _records
-	 *            the fields that filter the result. Must be formated as follow :
+	 *            the fields that filter the result. Must be formatted as follow :
 	 *            {"field1", value1,"field2", value2, etc.}
 	 * @return the corresponding records.
 	 * @throws DatabaseException
@@ -4230,7 +4189,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	@SafeVarargs
 	public final ArrayList<T> getRecordsWithAllFieldsOrdered(boolean ascendant, String[] orderByFields,
 			final Map<String, Object>... _records) throws DatabaseException {
-		return getPaginedRecordsWithAllFieldsOrdered(-1L, -1L, ascendant, orderByFields, _records);
+		return getPaginatedRecordsWithAllFieldsOrdered(-1L, -1L, ascendant, orderByFields, _records);
 	}
 
 	/**
@@ -4238,16 +4197,16 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * fields. For one considered record, it must have one group of fields (record)
 	 * that all corresponds exactly.
 	 * 
-	 * @param rowpos
+	 * @param rowPos
 	 *            row position (first starts with 1)
-	 * @param rowlength
+	 * @param rowLength
 	 *            page length (size of the returned result)
 	 * @param ascendant
 	 *            order by ascendant (true) or descendant (false)
 	 * @param orderByFields
 	 *            order by the given fields
 	 * @param _records
-	 *            the fields that filter the result. Must be formated as follow :
+	 *            the fields that filter the result. Must be formatted as follow :
 	 *            {"field1", value1,"field2", value2, etc.}
 	 * @return the corresponding records.
 	 * @throws DatabaseException
@@ -4258,9 +4217,9 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 *             if the given fields do not correspond to the table fields.
 	 */
 
-	public final ArrayList<T> getPaginedRecordsWithAllFieldsOrdered(long rowpos, long rowlength, boolean ascendant,
-			String[] orderByFields, Object[]... _records) throws DatabaseException {
-		return getPaginedRecordsWithAllFieldsOrdered(rowpos, rowlength, ascendant, orderByFields,
+	public final ArrayList<T> getPaginatedRecordsWithAllFieldsOrdered(long rowPos, long rowLength, boolean ascendant,
+																	  String[] orderByFields, Object[]... _records) throws DatabaseException {
+		return getPaginatedRecordsWithAllFieldsOrdered(rowPos, rowLength, ascendant, orderByFields,
 				transformToMapField(_records));
 	}
 
@@ -4269,9 +4228,9 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * fields. For one considered record, it must have one group of fields (record)
 	 * that all corresponds exactly.
 	 * 
-	 * @param rowpos
+	 * @param rowPos
 	 *            row position (first starts with 1)
-	 * @param rowlength
+	 * @param rowLength
 	 *            page length (size of the returned result)
 	 * @param ascendant
 	 *            order by ascendant (true) or descendant (false)
@@ -4288,8 +4247,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 *             if the given fields do not correspond to the table fields.
 	 */
 	@SafeVarargs
-	public final ArrayList<T> getPaginedRecordsWithAllFieldsOrdered(long rowpos, long rowlength, boolean ascendant,
-			String[] orderByFields, final Map<String, Object>... _records) throws DatabaseException {
+	public final ArrayList<T> getPaginatedRecordsWithAllFieldsOrdered(long rowPos, long rowLength, boolean ascendant,
+																	  String[] orderByFields, final Map<String, Object>... _records) throws DatabaseException {
 		if (_records == null)
 			throw new NullPointerException("The parameter _records is a null pointer !");
 		if (_records.length == 0)
@@ -4297,8 +4256,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		// synchronized(sql_connection)
 		{
 			try (Lock ignored = new ReadLock(this)) {
-				return getRecords(rowpos, rowlength,
-						new MultipleAllFieldsFilter(rowlength, rowlength, ascendant, orderByFields, fields, _records), false);
+				return getRecords(rowPos, rowLength,
+						new MultipleAllFieldsFilter(rowLength, rowLength, ascendant, orderByFields, fields, _records), false);
 			} catch (Exception e) {
 				throw DatabaseException.getDatabaseException(e);
 			}
@@ -4312,7 +4271,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * 
 	 * @param _records
 	 *            the array fields that must match to one of the records. Must be
-	 *            formated as follow : {"field1", value1,"field2", value2, etc.}
+	 *            formatted as follow : {"field1", value1,"field2", value2, etc.}
 	 * @return true if there is at least one record which correspond to one group of
 	 *         fields of the array of fields.
 	 * @throws DatabaseException
@@ -4366,7 +4325,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * given fields must correspond exactly to the returned records.
 	 * 
 	 * @param _fields
-	 *            the fields that filter the result. Must be formated as follow :
+	 *            the fields that filter the result. Must be formatted as follow :
 	 *            {"field1", value1,"field2", value2, etc.}
 	 * @return the corresponding records.
 	 * @throws DatabaseException
@@ -4389,7 +4348,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * @param orderByFields
 	 *            order by the given fields
 	 * @param _fields
-	 *            the fields that filter the result. Must be formated as follow :
+	 *            the fields that filter the result. Must be formatted as follow :
 	 *            {"field1", value1,"field2", value2, etc.}
 	 * @return the corresponding records.
 	 * @throws DatabaseException
@@ -4442,23 +4401,23 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 */
 	public final ArrayList<T> getRecordsWithOneOfFieldsOrdered(boolean ascendant, String[] orderByFields,
 			final Map<String, Object> _fields) throws DatabaseException {
-		return getPaginedRecordsWithOneOfFieldsOrdered(-1, -1, ascendant, orderByFields, _fields);
+		return getPaginatedRecordsWithOneOfFieldsOrdered(-1, -1, ascendant, orderByFields, _fields);
 	}
 
 	/**
 	 * Returns the records which correspond to one of the given fields. One of the
 	 * given fields must correspond exactly to the returned records.
 	 * 
-	 * @param rowpos
+	 * @param rowPos
 	 *            row position (first starts with 1)
-	 * @param rowlength
+	 * @param rowLength
 	 *            page length (size of the returned result)
 	 * @param ascendant
 	 *            order by ascendant (true) or descendant (false)
 	 * @param orderByFields
 	 *            order by the given fields
 	 * @param _fields
-	 *            the fields that filter the result. Must be formated as follow :
+	 *            the fields that filter the result. Must be formatted as follow :
 	 *            {"field1", value1,"field2", value2, etc.}
 	 * @return the corresponding records.
 	 * @throws DatabaseException
@@ -4468,9 +4427,9 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * @throws FieldDatabaseException
 	 *             if the given fields do not correspond to the table fields.
 	 */
-	public final ArrayList<T> getRecordsWithOneOfFieldsOrdered(long rowpos, long rowlength, boolean ascendant,
+	public final ArrayList<T> getRecordsWithOneOfFieldsOrdered(long rowPos, long rowLength, boolean ascendant,
 			String[] orderByFields, Object... _fields) throws DatabaseException {
-		return getPaginedRecordsWithOneOfFieldsOrdered(rowpos, rowlength, ascendant, orderByFields,
+		return getPaginatedRecordsWithOneOfFieldsOrdered(rowPos, rowLength, ascendant, orderByFields,
 				transformToMapField(_fields));
 	}
 
@@ -4478,9 +4437,9 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * Returns the records which correspond to one of the given fields. One of the
 	 * given fields must correspond exactly to the returned records.
 	 * 
-	 * @param rowpos
+	 * @param rowPos
 	 *            row position (first starts with 1)
-	 * @param rowlength
+	 * @param rowLength
 	 *            page length (size of the returned result)
 	 * @param ascendant
 	 *            order by ascendant (true) or descendant (false)
@@ -4496,15 +4455,15 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * @throws FieldDatabaseException
 	 *             if the given fields do not correspond to the table fields.
 	 */
-	public final ArrayList<T> getPaginedRecordsWithOneOfFieldsOrdered(long rowpos, long rowlength, boolean ascendant,
-			String[] orderByFields, final Map<String, Object> _fields) throws DatabaseException {
+	public final ArrayList<T> getPaginatedRecordsWithOneOfFieldsOrdered(long rowPos, long rowLength, boolean ascendant,
+																		String[] orderByFields, final Map<String, Object> _fields) throws DatabaseException {
 		if (_fields == null)
 			throw new NullPointerException("The parameter _fields is a null pointer !");
 		// synchronized(sql_connection)
 		{
 			try (Lock ignored = new ReadLock(this)) {
-				return getRecords(rowpos, rowlength,
-						new SimpleOneOfFieldsFilter(rowpos, rowlength, ascendant, orderByFields, _fields, fields), false);
+				return getRecords(rowPos, rowLength,
+						new SimpleOneOfFieldsFilter(rowPos, rowLength, ascendant, orderByFields, _fields, fields), false);
 			} catch (Exception e) {
 				throw DatabaseException.getDatabaseException(e);
 			}
@@ -4517,7 +4476,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * records.
 	 * 
 	 * @param _fields
-	 *            the fields. Must be formated as follow : {"field1",
+	 *            the fields. Must be formatted as follow : {"field1",
 	 *            value1,"field2", value2, etc.}
 	 * @return true if there is at least one record which correspond one of the
 	 *         given fields.
@@ -4573,7 +4532,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * array of fields.
 	 * 
 	 * @param _records
-	 *            the fields that filter the result. Must be formated as follow :
+	 *            the fields that filter the result. Must be formatted as follow :
 	 *            {"field1", value1,"field2", value2, etc.}
 	 * @return the corresponding records.
 	 * @throws DatabaseException
@@ -4593,7 +4552,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * array of fields.
 	 * 
 	 * @param _records
-	 *            the fields that filter the result. Must be formated as follow :
+	 *            the fields that filter the result. Must be formatted as follow :
 	 *            {"field1", value1,"field2", value2, etc.}
 	 * @return the corresponding records.
 	 * @throws DatabaseException
@@ -4649,7 +4608,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	@SafeVarargs
 	public final ArrayList<T> getRecordsWithOneOfFieldsOrdered(boolean ascendant, String[] orderByFields,
 			final Map<String, Object>... _records) throws DatabaseException {
-		return getPaginedRecordsWithOneOfFieldsOrdered(-1, -1, ascendant, orderByFields, _records);
+		return getPaginatedRecordsWithOneOfFieldsOrdered(-1, -1, ascendant, orderByFields, _records);
 	}
 
 	/**
@@ -4661,7 +4620,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * @param rowLength
 	 *            page length (size of the returned result)
 	 * @param _records
-	 *            the fields that filter the result. Must be formated as follow :
+	 *            the fields that filter the result. Must be formatted as follow :
 	 *            {"field1", value1,"field2", value2, etc.}
 	 * @return the corresponding records.
 	 * @throws DatabaseException
@@ -4674,7 +4633,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 	public final ArrayList<T> getRecordsWithOneOfFieldsOrdered(long rowPos, long rowLength, final Object[]... _records)
 			throws DatabaseException {
-		return getPaginedRecordsWithOneOfFieldsOrdered(rowPos, rowLength, true, null, transformToMapField(_records));
+		return getPaginatedRecordsWithOneOfFieldsOrdered(rowPos, rowLength, true, null, transformToMapField(_records));
 	}
 
 	/**
@@ -4701,8 +4660,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 */
 
 	@SafeVarargs
-    public final ArrayList<T> getPaginedRecordsWithOneOfFieldsOrdered(long rowPos, long rowLength, boolean ascendant,
-                                                                      String[] orderByFields, final Map<String, Object>... _records) throws DatabaseException {
+    public final ArrayList<T> getPaginatedRecordsWithOneOfFieldsOrdered(long rowPos, long rowLength, boolean ascendant,
+																		String[] orderByFields, final Map<String, Object>... _records) throws DatabaseException {
 		if (_records == null)
 			throw new NullPointerException("The parameter _records is a null pointer !");
 		if (_records.length == 0)
@@ -4723,7 +4682,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * of one group of the array of fields.
 	 * 
 	 * @param _records
-	 *            the fields that filter the result. Must be formated as follow :
+	 *            the fields that filter the result. Must be formatted as follow :
 	 *            {"field1", value1,"field2", value2, etc.}
 	 * @return the corresponding records.
 	 * @throws DatabaseException
@@ -4775,7 +4734,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * other table's records throw foreign keys.
 	 * 
 	 * @param _fields
-	 *            the fields that filter the result. Must be formated as follow :
+	 *            the fields that filter the result. Must be formatted as follow :
 	 *            {"field1", value1,"field2", value2, etc.}
 	 * @return the number of deleted records.
 	 * @throws DatabaseException
@@ -4839,7 +4798,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * table's records throw foreign keys.
 	 * 
 	 * @param _records
-	 *            the fields that filter the result. Must be formated as follow :
+	 *            the fields that filter the result. Must be formatted as follow :
 	 *            {"field1", value1,"field2", value2, etc.}
 	 * @return the number of deleted records.
 	 * @throws DatabaseException
@@ -4892,7 +4851,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * have link with other table's records throw foreign keys.
 	 * 
 	 * @param _fields
-	 *            the fields that filter the result. Must be formated as follow :
+	 *            the fields that filter the result. Must be formatted as follow :
 	 *            {"field1", value1,"field2", value2, etc.}
 	 * @return the number of deleted records.
 	 * @throws DatabaseException
@@ -4941,7 +4900,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * records throw foreign keys.
 	 * 
 	 * @param _records
-	 *            the fields that filter the result. Must be formated as follow :
+	 *            the fields that filter the result. Must be formatted as follow :
 	 *            {"field1", value1,"field2", value2, etc.}
 	 * @return the number of deleted records.
 	 * @throws DatabaseException
@@ -4993,7 +4952,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * keys which points to the deleted records are also deleted.
 	 * 
 	 * @param _fields
-	 *            the fields that filter the result. Must be formated as follow :
+	 *            the fields that filter the result. Must be formatted as follow :
 	 *            {"field1", value1,"field2", value2, etc.}
 	 * @return the number of deleted records.
 	 * @throws DatabaseException
@@ -5098,7 +5057,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * which points to the deleted records are also deleted.
 	 * 
 	 * @param _records
-	 *            the fields that filter the result. Must be formated as follow :
+	 *            the fields that filter the result. Must be formatted as follow :
 	 *            {"field1", value1,"field2", value2, etc.}
 	 * @return the number of deleted records.
 	 * @throws DatabaseException
@@ -5152,7 +5111,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * which have Foreign keys which points to the deleted records are also deleted.
 	 * 
 	 * @param _fields
-	 *            the fields that filter the result. Must be formated as follow :
+	 *            the fields that filter the result. Must be formatted as follow :
 	 *            {"field1", value1,"field2", value2, etc.}
 	 * @return the number of deleted records.
 	 * @throws DatabaseException
@@ -5207,7 +5166,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * to the deleted records are also deleted.
 	 * 
 	 * @param _records
-	 *            the fields that filter the result. Must be formated as follow :
+	 *            the fields that filter the result. Must be formatted as follow :
 	 *            {"field1", value1,"field2", value2, etc.}
 	 * @return the number of deleted records.
 	 * @throws DatabaseException
@@ -5509,18 +5468,18 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					@Override
 					public boolean setInstance(T _instance, ResultSet _cursor) throws DatabaseException {
 						try {
-							boolean toremove = rule == null || rule.isConcernedBy(Table.this, parameters, _instance);
-							if (toremove && list_tables_pointing_to_this_table.size() > 0) {
+							boolean toRemove = rule == null || rule.isConcernedBy(Table.this, parameters, _instance);
+							if (toRemove && list_tables_pointing_to_this_table.size() > 0) {
                                 for (NeighboringTable nt : list_tables_pointing_to_this_table) {
 
-                                    if (nt.getPoitingTable().hasRecordsWithOneOfSqlForeignKeyWithCascade(
+                                    if (nt.getPointingTable().hasRecordsWithOneOfSqlForeignKeyWithCascade(
                                             nt.getHashMapsSqlFields(getSqlPrimaryKeys(_instance)))) {
-                                        toremove = false;
+                                        toRemove = false;
                                         break;
                                     }
                                 }
 							}
-							if (toremove && _filter.nextRecord(_instance)) {
+							if (toRemove && _filter.nextRecord(_instance)) {
 								_cursor.deleteRow();
 								++deleted_records_number;
 								_instance.__createdIntoDatabase = false;
@@ -5592,22 +5551,22 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					@Override
 					public boolean setInstance(T _instance, ResultSet _cursor) throws DatabaseException {
 						try {
-							boolean toremove = true;
+							boolean toRemove = true;
 							if (list_tables_pointing_to_this_table.size() > 0) {
                                 int i = 0;
                                 while (i < list_tables_pointing_to_this_table.size()) {
 
                                     NeighboringTable nt = list_tables_pointing_to_this_table.get(i);
 
-                                    if (nt.getPoitingTable().hasRecordsWithOneOfSqlForeignKeyWithCascade(
+                                    if (nt.getPointingTable().hasRecordsWithOneOfSqlForeignKeyWithCascade(
                                             nt.getHashMapsSqlFields(getSqlPrimaryKeys(_instance)))) {
-                                        toremove = false;
+                                        toRemove = false;
                                         break;
                                     }
                                     i++;
                                 }
                             }
-							if (toremove && _filter.nextRecord(_instance)) {
+							if (toRemove && _filter.nextRecord(_instance)) {
 
 
 								_cursor.deleteRow();
@@ -5627,7 +5586,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 				RunnableTmp runnable = new RunnableTmp();
 				getListRecordsFromSqlConnection(runnable,
-						(_filter instanceof Table.PersonnalFilter) ? ((PersonnalFilter) _filter).getSQLQuerry(false)
+						(_filter instanceof Table.PersonalFilter) ? ((PersonalFilter) _filter).getSQLQuery(false)
 								: getSqlGeneralSelect(false),
 						TransactionIsolation.TRANSACTION_SERIALIZABLE, true);
 				if (runnable.deleted_records_number>0 && isLoadedInMemory())
@@ -5741,14 +5700,14 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					for (T r1 : records) {
 						for (T r2 : records) {
 							if (r1 != r2) {
-								boolean allequals = true;
+								boolean allEquals = true;
 								for (FieldAccessor fa : primary_keys_fields) {
 									if (!fa.equals(r1, fa.getValue(r2))) {
-										allequals = false;
+										allEquals = false;
 										break;
 									}
 								}
-								if (allequals)
+								if (allEquals)
 									throw new DatabaseIntegrityException("There is records into the table "
 											+ getClass().getSimpleName() + " which have the same primary keys.");
 								for (FieldAccessor fa : unique_fields_no_auto_random_primary_keys) {
@@ -5999,7 +5958,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			throws DatabaseException {
 		// try(ReadWriteLock.Lock lock=sql_connection.locker.getAutoCloseableReadLock())
 		{
-			final StringBuilder querry = new StringBuilder("SELECT * FROM " + this.getSqlTableName() + " WHERE ");
+			final StringBuilder query = new StringBuilder("SELECT * FROM " + this.getSqlTableName() + " WHERE ");
 			boolean group_first = true;
 			boolean parenthesis = _foreign_keys.length > 1;
 
@@ -6007,22 +5966,22 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				if (group_first)
 					group_first = false;
 				else
-					querry.append(" OR ");
+					query.append(" OR ");
 				if (parenthesis)
-					querry.append("(");
+					query.append("(");
 				boolean first = true;
 				for (String f : hm.keySet()) {
 					if (first)
 						first = false;
 					else
-						querry.append(" AND ");
-					querry.append(f).append(" = ?");
+						query.append(" AND ");
+					query.append(f).append(" = ?");
 				}
 				if (parenthesis)
-					querry.append(")");
+					query.append(")");
 			}
 
-			final SqlQuerry sqlquerry = new SqlQuerry(querry.toString()) {
+			final SqlQuery sqlQuery = new SqlQuery(query.toString()) {
 				@Override
 				void finishPrepareStatement(PreparedStatement st) throws SQLException {
 					int index = 1;
@@ -6048,8 +6007,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
                 @Override
                 public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
-                    try (ReadQuerry prq = new ReadQuerry(
-                            _sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), sqlquerry)) {
+                    try (ReadQuery prq = new ReadQuery(
+                            _sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), sqlQuery)) {
                         if (prq.result_set.next()) {
                             return Boolean.TRUE;
                         }
@@ -6190,7 +6149,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				RunnableTmp runnable = new RunnableTmp(sqlQuery == null ? rule : null);
 				try {
 					getListRecordsFromSqlConnection(runnable,
-							(_filter instanceof Table.PersonnalFilter) ? ((PersonnalFilter) _filter).getSQLQuerry(false)
+							(_filter instanceof Table.PersonalFilter) ? ((PersonalFilter) _filter).getSQLQuery(false)
 									: (sqlQuery == null ? getSqlGeneralSelect(false)
 											: getSqlGeneralSelect(-1,-1,false, sqlQuery, sqlParameters)),
 							TransactionIsolation.TRANSACTION_SERIALIZABLE, true);
@@ -6198,7 +6157,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						memoryToRefreshWithCascade();
 				} catch (DatabaseException e) {
 					for (NeighboringTable nt : list_tables_pointing_to_this_table) {
-						Table<?> t = nt.getPoitingTable();
+						Table<?> t = nt.getPointingTable();
 						if (t.isLoadedInMemory()) {
 							t.memoryToRefreshWithCascade();
 						}
@@ -6252,7 +6211,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * @param keys the primary keys values
 	 * @return true if the record has been found and removed
 	 * @throws DatabaseException
-	 *             if a Sql problem have occured.
+	 *             if a Sql problem have occurred.
 	 * @throws FieldDatabaseException
 	 * 	               if all primary keys have not been given, or if fields which are
 	 * 	               not primary keys were given.
@@ -6270,10 +6229,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	/**
 	 * Remove the given record from the database.
 	 *
-	 * @param keys the primary keys values. Must be formated as follow : {"field1",value1,"field2", value2, etc.}
+	 * @param keys the primary keys values. Must be formatted as follow : {"field1",value1,"field2", value2, etc.}
 	 * @return true if the record has been found and removed
 	 * @throws DatabaseException
-	 *             if a Sql problem have occured.
+	 *             if a Sql problem have occurred.
 	 * @throws FieldDatabaseException
 	 * 	               if all primary keys have not been given, or if fields which are
 	 * 	               not primary keys were given.
@@ -6290,7 +6249,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * @param keys the primary keys values
 	 * @return true if the record has been found and removed
 	 * @throws DatabaseException
-	 *             if a Sql problem have occured.
+	 *             if a Sql problem have occurred.
 	 * @throws FieldDatabaseException
 	 * 	               if all primary keys have not been given, or if fields which are
 	 * 	               not primary keys were given.
@@ -6308,10 +6267,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	/**
 	 * Remove the given record from the database, with cascade.
 	 *
-	 * @param keys the primary keys values. Must be formated as follow : {"field1",value1,"field2", value2, etc.}
+	 * @param keys the primary keys values. Must be formatted as follow : {"field1",value1,"field2", value2, etc.}
 	 * @return true if the record has been found and removed
 	 * @throws DatabaseException
-	 *             if a Sql problem have occured.
+	 *             if a Sql problem have occurred.
 	 * @throws FieldDatabaseException
 	 * 	               if all primary keys have not been given, or if fields which are
 	 * 	               not primary keys were given.
@@ -6341,15 +6300,15 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				@Override
 				public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 					for (NeighboringTable nt : list_tables_pointing_to_this_table) {
-						if (nt.getPoitingTable().hasRecordsWithOneOfFields(nt.getHashMapFields(_record), false)) {
+						if (nt.getPointingTable().hasRecordsWithOneOfFields(nt.getHashMapFields(_record), false)) {
 							throw new ConstraintsNotRespectedDatabaseException(
 									"The given record is pointed by another record through a foreign key into the table "
-											+ nt.getPoitingTable().getClass().getSimpleName()
+											+ nt.getPointingTable().getClass().getSimpleName()
 											+ ". Impossible to remove it into the table " + getClass().getSimpleName());
 						}
 					}
 
-                    try (PreparedUpdateQuerry puq = new PreparedUpdateQuerry(
+                    try (PreparedUpdateQuery puq = new PreparedUpdateQuery(
 							_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(),
                             "DELETE FROM " + Table.this.getSqlTableName() + " WHERE " + getSqlPrimaryKeyCondition(1))) {
 						int index = 1;
@@ -6363,7 +6322,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 									+ Table.this.getClass().getSimpleName() + ". It has been probably already removed.");
 						else if (nb > 1)
 							throw new DatabaseIntegrityException("Unexpected exception");
-						if (hasBackupMananager || synchronizeIfNecessary)
+						if (hasBackupManager || synchronizeIfNecessary)
 							getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
 									new TableEvent<>(-1, DatabaseEventType.REMOVE, _record, null, hostsDestinations), synchronizeIfNecessary);
 					} catch (Exception e) {
@@ -6431,7 +6390,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				@Override
 				public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 
-                    try (PreparedUpdateQuerry puq = new PreparedUpdateQuerry(
+                    try (PreparedUpdateQuery puq = new PreparedUpdateQuery(
 							_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(),
                             "DELETE FROM " + Table.this.getSqlTableName() + " WHERE " + getSqlPrimaryKeyCondition(1))) {
 						int index = 1;
@@ -6445,7 +6404,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 									+ Table.this.getClass().getSimpleName() + ". It has been probably already removed.");
 						else if (nb > 1)
 							throw new DatabaseIntegrityException("Unexpected exception");
-						if (hasBackupMananager || synchronizeIfNecessary)
+						if (hasBackupManager || synchronizeIfNecessary)
 							getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
 									new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, _record, null,
 											hostsDestinations), synchronizeIfNecessary);
@@ -6479,25 +6438,6 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 	}
 
-	/*private void updateMemoryForRemovingRecordWithCascade(T _record) throws DatabaseException {
-		for (NeighboringTable nt : list_tables_pointing_to_this_table) {
-			Table<?> t = nt.getPoitingTable();
-
-			if (t.isLoadedInMemory()) {
-				t.memoryToRefresh();
-			}
-		}
-	}
-
-	void updateMemoryForRemovingRecordsWithCascade(Collection<T> _records) throws DatabaseException {
-		for (NeighboringTable nt : list_tables_pointing_to_this_table) {
-			Table<?> t = nt.getPoitingTable();
-			if (t.isLoadedInMemory()) {
-				memoryToRefresh();
-			}
-		}
-	}*/
-
 	/**
 	 * Returns true if the given record is pointed by another record through a
 	 * foreign key of another table.
@@ -6513,7 +6453,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		try (Lock ignored = new ReadLock(this)) {
 			boolean res = false;
 			for (NeighboringTable nt : list_tables_pointing_to_this_table) {
-				Table<?> t = nt.getPoitingTable();
+				Table<?> t = nt.getPointingTable();
 				if (t.hasRecordsWithOneOfFields(nt.getHashMapFields(_record))) {
 					res = true;
 					break;
@@ -6541,15 +6481,15 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		try (Lock ignored = new WriteLock(this)) {
 			ArrayList<T> res = new ArrayList<>(_records.size());
 			for (T r : _records) {
-				boolean toadd = true;
+				boolean toAdd = true;
 				for (NeighboringTable nt : list_tables_pointing_to_this_table) {
-					Table<?> t = nt.getPoitingTable();
+					Table<?> t = nt.getPointingTable();
 					if (t.hasRecordsWithOneOfFields(nt.getHashMapFields(r), false)) {
-						toadd = false;
+						toAdd = false;
 						break;
 					}
 				}
-				if (toadd)
+				if (toAdd)
 					res.add(r);
 			}
 			return res;
@@ -6623,7 +6563,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				@Override
 				public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 					for (NeighboringTable nt : list_tables_pointing_to_this_table) {
-						Table<?> t = nt.getPoitingTable();
+						Table<?> t = nt.getPointingTable();
 						for (T record : _records)
 							if (t.hasRecordsWithOneOfFields(nt.getHashMapFields(record), false))
 								throw new ConstraintsNotRespectedDatabaseException(
@@ -6631,7 +6571,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 												+ t.getClass().getSimpleName() + ". Impossible to remove this record into the table "
 												+ getClass().getSimpleName());
 					}
-					try (PreparedUpdateQuerry puq = new PreparedUpdateQuerry(
+					try (PreparedUpdateQuery puq = new PreparedUpdateQuery(
 							_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), "DELETE FROM "
 									+ Table.this.getSqlTableName() + " WHERE " + getSqlPrimaryKeyCondition(_records.size()))) {
 						int index = 1;
@@ -6724,7 +6664,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			@Override
 			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
                 boolean onDeleted=false;
-				try (PreparedUpdateQuerry puq = new PreparedUpdateQuerry(
+				try (PreparedUpdateQuery puq = new PreparedUpdateQuery(
 						_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), "DELETE FROM " + Table.this.getSqlTableName() + " WHERE " + getSqlPrimaryKeyCondition(_records.size()))) {
 					int index = 1;
 					for (T r : _records) {
@@ -6787,15 +6727,15 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		public abstract boolean setInstance(T _instance, ResultSet _cursor) throws DatabaseException;
 	}
 
-	static class SqlQuerry {
-		String querry;
+	static class SqlQuery {
+		String query;
 
-		SqlQuerry(String querry) {
-			this.querry = querry;
+		SqlQuery(String query) {
+			this.query = query;
 		}
 
-		String getQuerry() {
-			return this.querry;
+		String getQuery() {
+			return this.query;
 		}
 
 		void finishPrepareStatement(PreparedStatement st) throws SQLException, DatabaseException {
@@ -6803,25 +6743,14 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 
 	}
-	/*
-	 * private final void getListRecordsFromSqlConnection(final Runnable _runnable,
-	 * final SqlQuerry querry, final TransactionIsolation transactionIsolation)
-	 * throws DatabaseException { getListRecordsFromSqlConnection(_runnable, querry,
-	 * transactionIsolation, -1, -1); } final void
-	 * getListRecordsFromSqlConnection(final Runnable _runnable, final SqlQuerry
-	 * querry, final TransactionIsolation transactionIsolation, final boolean
-	 * updatable) throws DatabaseException {
-	 * getListRecordsFromSqlConnection(_runnable, querry, transactionIsolation, -1,
-	 * -1, updatable); }
-	 */
 
 	@SuppressWarnings("SameParameterValue")
-	private void getListRecordsFromSqlConnection(final Runnable _runnable, final SqlQuerry querry,
+	private void getListRecordsFromSqlConnection(final Runnable _runnable, final SqlQuery query,
 												 final TransactionIsolation transactionIsolation/*, int startPosition, int length*/) throws DatabaseException {
-		getListRecordsFromSqlConnection(_runnable, querry, transactionIsolation/*, startPosition, length*/, false);
+		getListRecordsFromSqlConnection(_runnable, query, transactionIsolation/*, startPosition, length*/, false);
 	}
 
-	final void getListRecordsFromSqlConnection(final Runnable _runnable, final SqlQuerry querry,
+	final void getListRecordsFromSqlConnection(final Runnable _runnable, final SqlQuery query,
 			final TransactionIsolation transactionIsolation/*, final int startPosition, final int length*/,
 			final boolean updatable) throws DatabaseException {
 
@@ -6843,35 +6772,22 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 			@Override
 			public Object run(DatabaseWrapper sql_connection) throws DatabaseException {
-				try (AbstractReadQuerry rq = (updatable
-						? new UpdatableReadQuerry(
-								sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), querry)
-						: new ReadQuerry(sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(),
-								querry))) {
-					// int rowcount=getRowCount();
-					//int rowcount = 0;
+				try (AbstractReadQuery rq = (updatable
+						? new UpdatableReadQuery(
+								sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), query)
+						: new ReadQuery(sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(),
+								query))) {
 					_runnable.init();
-					/*if (startPosition > 0)
-						rq.result_set.absolute(startPosition - 1);*/
 					while (rq.result_set.next()) {
 						T field_instance = getNewRecordInstance(default_constructor_field, true);
 
 						for (FieldAccessor f : fields_accessor) {
 							f.setValue(field_instance, rq.result_set);
 						}
-						// rowcount--;
 						if (!_runnable.setInstance(field_instance, rq.result_set)) {
-							// rowcount=0;
 							break;
 						}
-						/*++rowcount;
-						if (startPosition > 0 && length > 0 && rowcount >= length)
-							break;*/
 					}
-					/*
-					 * if (rowcount!=0) throw new
-					 * DatabaseException("Unexpected exception "+rowcount);
-					 */
 					return null;
 				} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
 						| InvocationTargetException e) {
@@ -6898,97 +6814,6 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 	}
 
-	/*static abstract class Runnable2 {
-		public Runnable2() {
-
-		}
-
-		public abstract void init(int _field_count);
-
-		public void init() {
-			init(20);
-		}
-
-		public abstract boolean setInstance(ResultSet _cursor) throws DatabaseException;
-	}*/
-	/*
-	 * final void getListRecordsFromSqlConnection(final Runnable2 _runnable, final
-	 * SqlQuerry querry, TransactionIsolation transactionIsolation) throws
-	 * DatabaseException { getListRecordsFromSqlConnection(_runnable, querry,
-	 * transactionIsolation,-1, -1); } final void
-	 * getListRecordsFromSqlConnection(final Runnable2 _runnable, final SqlQuerry
-	 * querry, final TransactionIsolation transactionIsolation, final boolean
-	 * updatable) throws DatabaseException {
-	 * getListRecordsFromSqlConnection(_runnable, querry, transactionIsolation,-1,
-	 * -1, updatable); }
-	 */
-
-	/*
-    final void getListRecordsFromSqlConnection(final Runnable2 _runnable, final SqlQuerry querry,
-                                               TransactionIsolation transactionIsolation, int rowOffset, int rowlength) throws DatabaseException {
-		getListRecordsFromSqlConnection(_runnable, querry, transactionIsolation, rowOffset, rowlength, false);
-	}
-
-
-    final void getListRecordsFromSqlConnection(final Runnable2 _runnable, final SqlQuerry querry,
-                                               final TransactionIsolation transactionIsolation, final int rowoffset, final int rowlength,
-                                               final boolean updatable) throws DatabaseException {
-		// synchronized(sql_connection)
-		{
-			class TransactionTmp implements Transaction {
-				public TransactionTmp() {
-				}
-
-				@Override
-				public TransactionIsolation getTransactionIsolation() {
-					return transactionIsolation;
-				}
-
-				@Override
-				public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
-					try (AbstractReadQuerry rq = (updatable
-							? new UpdatableReadQuerry(
-									_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), querry)
-							: new ReadQuerry(_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(),
-									querry))) {
-						// int rowcount=getRowCount();
-						_runnable.init();
-						int rowcount = 0;
-						if (rowoffset > 0)
-							rq.result_set.absolute(rowoffset - 1);
-						while (rq.result_set.next()) {
-							// rowcount--;
-							if (!_runnable.setInstance(rq.result_set)) {
-								// rowcount=0;
-								break;
-							}
-							++rowcount;
-							if (rowoffset > 0 && rowlength > 0 && rowcount >= rowlength)
-								break;
-						}
-
-						return null;
-					} catch (Exception e) {
-						throw DatabaseException.getDatabaseException(e);
-					}
-				}
-
-				@Override
-				public boolean doesWriteData() {
-					return updatable;
-				}
-
-				@Override
-				public void initOrReset() {
-
-				}
-
-			}
-
-			Transaction transaction = new TransactionTmp();
-			sql_connection.runTransaction(transaction, true);
-		}
-	}*/
 
 	/**
 	 * 
@@ -7026,7 +6851,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			return false;
 		} else {
 
-			final SqlQuerry sqlquerry = new SqlQuerry(
+			final SqlQuery sqlQuery = new SqlQuery(
 					"SELECT * FROM " + Table.this.getSqlTableName() + " WHERE " + getSqlPrimaryKeyCondition(1)) {
 				@Override
 				void finishPrepareStatement(PreparedStatement st) throws DatabaseException {
@@ -7042,8 +6867,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 				@Override
 				public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
-					try (ReadQuerry rq = new ReadQuerry(
-							_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), sqlquerry)) {
+					try (ReadQuery rq = new ReadQuery(
+							_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(), sqlQuery)) {
 						if (rq.result_set.next())
 							return Boolean.TRUE;
 						else
@@ -7104,7 +6929,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * 
 	 * @param _fields
 	 *            the list of fields to include into the new record. Must be
-	 *            formated as follow : {"field1", value1,"field2", value2, etc.}
+	 *            formatted as follow : {"field1", value1,"field2", value2, etc.}
 	 * @return the created record
 	 * @throws DatabaseException
 	 *             if a problem occurs during the insertion into the Sql database.
@@ -7396,7 +7221,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 														+ fa.getPointedTable().getClass().getSimpleName());
 								}
 
-								StringBuilder querry = new StringBuilder("INSERT INTO " + Table.this.getSqlTableName() + "(");
+								StringBuilder query = new StringBuilder("INSERT INTO " + Table.this.getSqlTableName() + "(");
 								boolean first = true;
 								for (FieldAccessor fa : Table.this.fields) {
 									if (!fa.isAutoPrimaryKey() || fields.containsKey(fa.getFieldName())) {
@@ -7404,12 +7229,12 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 											if (first)
 												first = false;
 											else
-												querry.append(", ");
-											querry.append(sf.short_field);
+												query.append(", ");
+											query.append(sf.short_field);
 										}
 									}
 								}
-								querry.append(") VALUES(");
+								query.append(") VALUES(");
 								first = true;
 								for (FieldAccessor fa : Table.this.fields) {
 									if (!fa.isAutoPrimaryKey() || fields.containsKey(fa.getFieldName())) {
@@ -7417,16 +7242,16 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 											if (first)
 												first = false;
 											else
-												querry.append(", ");
-											querry.append("?");
+												query.append(", ");
+											query.append("?");
 										}
 									}
 								}
-								querry.append(")").append(sql_connection.getSqlComma());
+								query.append(")").append(sql_connection.getSqlComma());
 								boolean generatedKeys=auto_primary_keys_fields.size()>0 && !include_auto_pk;
-								try (PreparedUpdateQuerry puq = new PreparedUpdateQuerry(
+								try (PreparedUpdateQuery puq = new PreparedUpdateQuery(
 										_db.getConnectionAssociatedWithCurrentThread().getConnection(),
-										querry.toString(), generatedKeys)) {
+										query.toString(), generatedKeys)) {
 
 									int index = 1;
 									int autoPKIndex=1;
@@ -7449,21 +7274,21 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 									{
 										ResultSet rsgk=puq.statement.getGeneratedKeys();
 										rsgk.next();
-										long autovalue;
+										long autoValue;
 										if (sql_connection.autoPrimaryKeyIndexStartFromOne())
-											autovalue = rsgk.getLong(1);
+											autoValue = rsgk.getLong(1);
 										else
-											autovalue = rsgk.getLong(autoPKIndex);
+											autoValue = rsgk.getLong(autoPKIndex);
 
 										FieldAccessor fa = auto_primary_keys_fields.get(0);
 										if (fa.isAssignableTo(byte.class))
-											fa.setValue(instance, (byte) autovalue);
+											fa.setValue(instance, (byte) autoValue);
 										else if (fa.isAssignableTo(short.class))
-											fa.setValue(instance, (short) autovalue);
+											fa.setValue(instance, (short) autoValue);
 										else if (fa.isAssignableTo(int.class))
-											fa.setValue(instance, (int) autovalue);
+											fa.setValue(instance, (int) autoValue);
 										else if (fa.isAssignableTo(long.class))
-											fa.setValue(instance, autovalue);
+											fa.setValue(instance, autoValue);
 									}
 
 								}
@@ -7481,25 +7306,6 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 									throw DatabaseException.getDatabaseException(e);
 								}
 
-								/*if (auto_primary_keys_fields.size() > 0 && !ct.include_auto_pk) {
-									try (ReadQuerry rq = new ReadQuerry(
-											_db.getConnectionAssociatedWithCurrentThread().getConnection(),
-											new SqlQuerry(sql_connection.getSqlQuerryToGetLastGeneratedID()))) {
-										rq.result_set.next();
-										Long autovalue = new Long(rq.result_set.getLong(1));
-										FieldAccessor fa = auto_primary_keys_fields.get(0);
-										if (fa.isAssignableTo(byte.class))
-											fa.setValue(instance, new Byte((byte) autovalue.longValue()));
-										else if (fa.isAssignableTo(short.class))
-											fa.setValue(instance, new Short((short) autovalue.longValue()));
-										else if (fa.isAssignableTo(int.class))
-											fa.setValue(instance, new Integer((int) autovalue.longValue()));
-										else if (fa.isAssignableTo(long.class))
-											fa.setValue(instance, autovalue);
-									} catch (Exception e) {
-										throw DatabaseException.getDatabaseException(e);
-									}
-								}*/
 
 								return null;
 							} catch (Exception e) {
@@ -7517,7 +7323,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					sql_connection.runTransaction(new TransactionTmp(auto_primary_keys_fields, foreign_keys_fields),
 							true);
 
-					if (hasBackupMananager || synchronizeIfNecessary)
+					if (hasBackupManager || synchronizeIfNecessary)
 						getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
 								new TableEvent<>(-1, DatabaseEventType.ADD, null, instance, hostsDestinations), synchronizeIfNecessary);
 
@@ -7547,7 +7353,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * 
 	 * @param _records
 	 *            the list of fields of every record to include into the database.
-	 *            Must be formated as follow : {"field1", value1,"field2", value2,
+	 *            Must be formatted as follow : {"field1", value1,"field2", value2,
 	 *            etc.}
 	 * @return the created records
 	 * @throws DatabaseException
@@ -7625,7 +7431,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 *             if parameters are null pointers.
 	 * @throws ConstraintsNotRespectedDatabaseException
 	 *             if the given primary keys already exists into the table, if a
-	 *             field which has the unique property exists alreay into the table,
+	 *             field which has the unique property exists already into the table,
 	 *             or if primary keys changing induce a problem of constraints
 	 *             through foreign keys into other tables, which are also primary
 	 *             keys.
@@ -7657,7 +7463,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * altered, every foreign key pointing to this record will be transparently
 	 * altered. However, if records pointing to this altered record remain in
 	 * memory, they will no be altered if the current table has not the annotation
-	 * {#link oodforsqljet.annotations.LoadToMemory}. The only solution in this case
+	 * {#link LoadToMemory}. The only solution in this case
 	 * is to reload the concerned records through the functions starting with
 	 * "getRecord".
 	 * 
@@ -7665,14 +7471,14 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 *            the record to alter
 	 * @param _fields
 	 *            the list of fields to include into the new record. Must be
-	 *            formated as follow : {"field1", value1,"field2", value2, etc.}
+	 *            formatted as follow : {"field1", value1,"field2", value2, etc.}
 	 * @throws DatabaseException
 	 *             if a problem occurs during the insertion into the Sql database.
 	 * @throws NullPointerException
 	 *             if parameters are null pointers.
 	 * @throws ConstraintsNotRespectedDatabaseException
 	 *             if the given primary keys already exists into the table, if a
-	 *             field which has the unique property exists alreay into the table,
+	 *             field which has the unique property exists already into the table,
 	 *             or if primary keys changing induce a problem of constraints
 	 *             through foreign keys into other tables, which are also primary
 	 *             keys.
@@ -7704,7 +7510,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * altered, every foreign key pointing to this record will be transparently
 	 * altered. However, if records pointing to this altered record remain in
 	 * memory, they will no be altered if the current table has not the annotation
-	 * {#link oodforsqljet.annotations.LoadToMemory}. The only solution in this case
+	 * {#link LoadToMemory}. The only solution in this case
 	 * is to reload the concerned records through the functions starting with
 	 * "getRecord".
 	 * 
@@ -7718,7 +7524,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 *             if parameters are null pointers.
 	 * @throws ConstraintsNotRespectedDatabaseException
 	 *             if the given primary keys already exists into the table, if a
-	 *             field which has the unique property exists alreay into the table,
+	 *             field which has the unique property exists already into the table,
 	 *             or if primary keys changing induce a problem of constraints
 	 *             through foreign keys into other tables, which are also primary
 	 *             keys.
@@ -7758,7 +7564,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 					try {
 						T oldRecord = null;
-						if (hasBackupMananager || synchronizeIfNecessary)
+						if (hasBackupManager || synchronizeIfNecessary)
 							oldRecord=copyRecord(_record);
 						boolean pkChanged = false;
 						for (String s : _fields.keySet()) {
@@ -7856,7 +7662,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 							@Override
 							public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 								try {
-									StringBuilder querry = new StringBuilder("UPDATE " + Table.this.getSqlTableName() + " SET ");
+									StringBuilder query = new StringBuilder("UPDATE " + Table.this.getSqlTableName() + " SET ");
 									T instance = getNewRecordInstance(true);
 									boolean first = true;
 									for (FieldAccessor fa : fields_accessor) {
@@ -7867,26 +7673,26 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 												if (first)
 													first = false;
 												else
-													querry.append(", ");
-												querry.append(sf.short_field).append(" = ?");
+													query.append(", ");
+												query.append(sf.short_field).append(" = ?");
 											}
 										}
 									}
-									querry.append(" WHERE ");
+									query.append(" WHERE ");
 									first = true;
 									for (FieldAccessor fa : primary_keys_fields) {
 										for (SqlField sf : fa.getDeclaredSqlFields()) {
 											if (first)
 												first = false;
 											else
-												querry.append(" AND ");
-											querry.append(sf.field).append(" = ?");
+												query.append(" AND ");
+											query.append(sf.field).append(" = ?");
 										}
 									}
 
-									try (PreparedUpdateQuerry puq = new PreparedUpdateQuerry(
+									try (PreparedUpdateQuery puq = new PreparedUpdateQuery(
 											_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(),
-											querry.toString())) {
+											query.toString())) {
 										int index = 1;
 										for (FieldAccessor fa : fields_accessor) {
 											if (_fields.containsKey(fa.getFieldName())) {
@@ -7913,7 +7719,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 									} catch (SQLException e) {
 										if (sql_connection.isDuplicateKeyException(e))
 											throw new ConstraintsNotRespectedDatabaseException(
-												"Constraints was not respected. It possible that the given primary keys or the given unique keys does not respect constraints of unicity.",
+												"Constraints was not respected. It possible that the given primary keys or the given unique keys does not respect constraints of unity.",
 												e);
 										else
 											throw DatabaseException.getDatabaseException(e);
@@ -7934,7 +7740,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 						sql_connection.runTransaction(new TransactionTmp(fields), true);
 						memoryToRefreshWithCascade();
-						if (hasBackupMananager || synchronizeIfNecessary) {
+						if (hasBackupManager || synchronizeIfNecessary) {
 
 							if (pkChanged) {
 
@@ -8188,18 +7994,18 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 									final T oldRecord = copyRecord(_instance);
 									_filter.nextRecord(_instance);
 									if (_filter.hasToBeRemoved()) {
-										boolean canberemoved = true;
+										boolean canBeRemoved = true;
 										if (list_tables_pointing_to_this_table.size() > 0) {
                                             for (NeighboringTable nt : list_tables_pointing_to_this_table) {
 
-                                                if (nt.getPoitingTable().hasRecordsWithOneOfSqlForeignKeyWithCascade(
+                                                if (nt.getPointingTable().hasRecordsWithOneOfSqlForeignKeyWithCascade(
                                                         nt.getHashMapsSqlFields(getSqlPrimaryKeys(_instance)))) {
-                                                    canberemoved = false;
+                                                    canBeRemoved = false;
                                                     break;
                                                 }
                                             }
 										}
-										if (canberemoved) {
+										if (canBeRemoved) {
 											_result_set.deleteRow();
 											oneUpdated.set(true);
 											getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
@@ -8330,11 +8136,11 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * include the primary keys into the fields.
 	 * 
 	 * @param keys
-	 *            the primary keys values. Must be formated as follow : {"field1",
+	 *            the primary keys values. Must be formatted as follow : {"field1",
 	 *            value1,"field2", value2, etc.}
 	 * @return the corresponding record. Return null if no record have been founded.
 	 * @throws DatabaseException
-	 *             if a Sql problem have occured.
+	 *             if a Sql problem have occurred.
 	 * @throws FieldDatabaseException
 	 *             if all primary keys have not been given, or if fields which are
 	 *             not primary keys were given.
@@ -8355,7 +8161,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 *            the primary keys values
 	 * @return the corresponding record. Return null if no record have been founded.
 	 * @throws DatabaseException
-	 *             if a Sql problem have occured.
+	 *             if a Sql problem have occurred.
 	 * @throws FieldDatabaseException
 	 *             if all primary keys have not been given, or if fields which are
 	 *             not primary keys were given.
@@ -8458,7 +8264,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					}
 					RunnableTmp runnable = new RunnableTmp(primary_keys_fields);
 					getListRecordsFromSqlConnection(runnable,
-							new SqlGeneralSelectQuerryWithFieldMatch(-1,-1,getFieldAccessors(),true, keys, "AND", true, null),
+							new SqlGeneralSelectQueryWithFieldMatch(-1,-1,getFieldAccessors(),true, keys, "AND", true, null),
 							TransactionIsolation.TRANSACTION_READ_COMMITTED);
 					return runnable.instance;
 				}
@@ -8604,7 +8410,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 								"Attempting to write, through several nested queries, on the table "
 										+ actual_table.getClass().getSimpleName() + ".");
 					for (NeighboringTable nt : actual_table.list_tables_pointing_to_this_table) {
-						Table<?> t = nt.getPoitingTable();
+						Table<?> t = nt.getPointingTable();
 						if (!_comes_from_tables.contains(t)) {
 							new WriteLock(t, _comes_from_tables, _from_comes_original_table);
 						}
@@ -8652,7 +8458,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					// current_table.current_lock=previous_lock;
 					_comes_from_tables.add(actual_table);
 					for (NeighboringTable nt : actual_table.list_tables_pointing_to_this_table) {
-						Table<?> t = nt.getPoitingTable();
+						Table<?> t = nt.getPointingTable();
 						if (!_comes_from_tables.contains(t))
                             Objects.requireNonNull(getActualLock(t)).close(_comes_from_tables);
 					}
@@ -8751,29 +8557,29 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 	}
 
-	static abstract class Querry implements AutoCloseable {
+	static abstract class Query implements AutoCloseable {
 		protected final Connection sql_connection;
 
-		public Querry(Connection _sql_connection) {
+		public Query(Connection _sql_connection) {
 			sql_connection = _sql_connection;
 		}
 
 	}
 
-	static abstract class AbstractReadQuerry extends Querry {
+	static abstract class AbstractReadQuery extends Query {
 		public PreparedStatement statement;
 		public ResultSet result_set;
 
-		protected AbstractReadQuerry(Connection _sql_connection, SqlQuerry querry, int _result_set_type,
-				int _result_set_concurency) throws SQLException, DatabaseException {
+		protected AbstractReadQuery(Connection _sql_connection, SqlQuery query, int _result_set_type,
+									int _result_set_concurrency) throws SQLException, DatabaseException {
 			super(_sql_connection);
 
-			statement = sql_connection.prepareStatement(querry.getQuerry(), _result_set_type, _result_set_concurency);
-			querry.finishPrepareStatement(statement);
+			statement = sql_connection.prepareStatement(query.getQuery(), _result_set_type, _result_set_concurrency);
+			query.finishPrepareStatement(statement);
 			result_set = statement.executeQuery();
 		}
 
-		protected AbstractReadQuerry(Connection _sql_connection, ResultSet resultSet) {
+		protected AbstractReadQuery(Connection _sql_connection, ResultSet resultSet) {
 			super(_sql_connection);
 			statement = null;
 			result_set = resultSet;
@@ -8790,24 +8596,24 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 	}
 
-	static class ReadQuerry extends AbstractReadQuerry {
-		public ReadQuerry(Connection _sql_connection, SqlQuerry querry) throws SQLException, DatabaseException {
-			super(_sql_connection, querry, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+	static class ReadQuery extends AbstractReadQuery {
+		public ReadQuery(Connection _sql_connection, SqlQuery query) throws SQLException, DatabaseException {
+			super(_sql_connection, query, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 		}
 
-		public ReadQuerry(Connection _sql_connection, ResultSet resultSet) {
+		public ReadQuery(Connection _sql_connection, ResultSet resultSet) {
 			super(_sql_connection, resultSet);
 		}
 	}
 
-	static abstract class ColumnsReadQuerry extends AbstractReadQuerry {
+	static abstract class ColumnsReadQuery extends AbstractReadQuery {
 		TableColumnsResultSet tableColumnsResultSet;
 
-		public ColumnsReadQuerry(Connection _sql_connection, SqlQuerry querry) throws SQLException, DatabaseException {
-			super(_sql_connection, querry, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+		public ColumnsReadQuery(Connection _sql_connection, SqlQuery query) throws SQLException, DatabaseException {
+			super(_sql_connection, query, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 		}
 
-		public ColumnsReadQuerry(Connection _sql_connection, ResultSet resultSet) {
+		public ColumnsReadQuery(Connection _sql_connection, ResultSet resultSet) {
 			super(_sql_connection, resultSet);
 		}
 
@@ -8818,50 +8624,26 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 	}
 
-	static class UpdatableReadQuerry extends AbstractReadQuerry {
-		public UpdatableReadQuerry(Connection _sql_connection, SqlQuerry querry)
+	static class UpdatableReadQuery extends AbstractReadQuery {
+		public UpdatableReadQuery(Connection _sql_connection, SqlQuery query)
 				throws SQLException, DatabaseException {
-			super(_sql_connection, querry, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE);
+			super(_sql_connection, query, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE);
 		}
 	}
 
-	/*
-	 * static class PreparedReadQuerry extends Querry { public PreparedStatement
-	 * statement; public ResultSet result_set=null; public
-	 * PreparedReadQuerry(Connection _sql_connection, String querry) throws
-	 * SQLException { super(_sql_connection);
-	 * statement=sql_connection.prepareStatement(querry); }
-	 * 
-	 * public boolean execute() throws SQLException { boolean
-	 * res=statement.execute(); result_set=statement.getResultSet(); return res; }
-	 * 
-	 * @Override public void close() throws Exception { if (result_set!=null)
-	 * result_set.close(); result_set=null; statement.close(); statement=null; } }
-	 * static class PreparedUpdatableReadQuerry extends Querry { public
-	 * PreparedStatement statement; public ResultSet result_set=null; public
-	 * PreparedUpdatableReadQuerry(Connection _sql_connection, String querry) throws
-	 * SQLException { super(_sql_connection);
-	 * statement=sql_connection.prepareStatement(querry); }
-	 * 
-	 * public boolean execute() throws SQLException { boolean
-	 * res=statement.execute(); result_set=statement.getResultSet(); return res; }
-	 * 
-	 * @Override public void close() throws Exception { if (result_set!=null)
-	 * result_set.close(); result_set=null; statement.close(); statement=null; } }
-	 */
 
-	static class PreparedUpdateQuerry extends Querry {
+	static class PreparedUpdateQuery extends Query {
 		public PreparedStatement statement;
 
-		public PreparedUpdateQuerry(Connection _sql_connection, String querry) throws SQLException {
-			this(_sql_connection, querry, false);
+		public PreparedUpdateQuery(Connection _sql_connection, String query) throws SQLException {
+			this(_sql_connection, query, false);
 		}
-		public PreparedUpdateQuerry(Connection _sql_connection, String querry, boolean returnGeneratedKeys) throws SQLException {
+		public PreparedUpdateQuery(Connection _sql_connection, String query, boolean returnGeneratedKeys) throws SQLException {
 			super(_sql_connection);
 			if (returnGeneratedKeys)
-				statement = sql_connection.prepareStatement(querry, Statement.RETURN_GENERATED_KEYS);
+				statement = sql_connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
 			else
-				statement = sql_connection.prepareStatement(querry, ResultSet.TYPE_FORWARD_ONLY,
+				statement = sql_connection.prepareStatement(query, ResultSet.TYPE_FORWARD_ONLY,
 					ResultSet.CONCUR_UPDATABLE);
 		}
 

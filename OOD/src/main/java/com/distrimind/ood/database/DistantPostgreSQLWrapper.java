@@ -279,9 +279,9 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 		}
 	}
 
-	static class CReadQuerry extends Table.ColumnsReadQuerry {
+	static class CReadQuery extends Table.ColumnsReadQuery {
 
-		public CReadQuerry(Connection _sql_connection, ResultSet resultSet) {
+		public CReadQuery(Connection _sql_connection, ResultSet resultSet) {
 			super(_sql_connection, resultSet);
 			setTableColumnsResultSet(new TCResultSet(resultSet));
 		}
@@ -327,10 +327,10 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 	}
 
 	@Override
-	protected Table.ColumnsReadQuerry getColumnMetaData(String tableName, String columnName) throws Exception {
+	protected Table.ColumnsReadQuery getColumnMetaData(String tableName, String columnName) throws Exception {
 		Connection c;
 		ResultSet rs=(c=getConnectionAssociatedWithCurrentThread().getConnection()).getMetaData().getColumns(database_name, null, tableName==null?null:tableName.toLowerCase(), columnName==null?null:columnName.toLowerCase());
-		return new CReadQuerry(c, rs);
+		return new CReadQuery(c, rs);
 
 	}
 
@@ -343,7 +343,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 	@Override
 	protected void checkConstraints(Table<?> table) throws DatabaseException {
 		Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
-		try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
+		try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection, new Table.SqlQuery(
 				"select CONSTRAINT_NAME, CONSTRAINT_TYPE from INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_NAME='"
 						+ table.getSqlTableName() + "' AND CONSTRAINT_SCHEMA='"+database_name+"';"))) {
 			while (rq.result_set.next()) {
@@ -361,8 +361,8 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 					}
 					break;
 					case "UNIQUE": {
-						try (Table.ReadQuerry rq2 = new Table.ReadQuerry(sql_connection,
-								new Table.SqlQuerry(
+						try (Table.ReadQuery rq2 = new Table.ReadQuery(sql_connection,
+								new Table.SqlQuery(
 										"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
 												+ table.getSqlTableName() + "' AND CONSTRAINT_NAME='" + constraint_name + "' AND CONSTRAINT_SCHEMA='"+database_name+"';"))) {
 							if (rq2.result_set.next()) {
@@ -398,7 +398,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
-		try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
+		try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection, new Table.SqlQuery(
 				"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
 						+ table.getSqlTableName() + "' AND CONSTRAINT_SCHEMA='"+database_name+"';"))) {
 			while (rq.result_set.next()) {
@@ -432,7 +432,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 			Pattern col_size_matcher = Pattern.compile("([0-9]+)");
 			for (FieldAccessor fa : table.getFieldAccessors()) {
 				for (SqlField sf : fa.getDeclaredSqlFields()) {
-					Table.ColumnsReadQuerry cols=getColumnMetaData(table.getSqlTableName(), sf.short_field_without_quote);
+					Table.ColumnsReadQuery cols=getColumnMetaData(table.getSqlTableName(), sf.short_field_without_quote);
 					if (cols==null || !cols.tableColumnsResultSet.next())
 						throw new DatabaseVersionException(table,
 								"The field " + fa.getFieldName() + " was not found into the database.");
@@ -460,8 +460,8 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 					sf.sql_position = cols.tableColumnsResultSet.getOrdinalPosition();
 
 					if (fa.isPrimaryKey()) {
-						try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection,
-								new Table.SqlQuerry(
+						try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection,
+								new Table.SqlQuery(
 										"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
 												+ table.getSqlTableName().toLowerCase() + "' AND COLUMN_NAME='" + sf.short_field_without_quote.toLowerCase()
 												+ "' AND CONSTRAINT_NAME='"+table.getSqlPrimaryKeyName().toLowerCase()+"';"))) {
@@ -473,7 +473,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 					if (fa.isForeignKey()) {
 						String constraintName=table.getSqlTableName().toLowerCase()+"_%"+sf.short_field_without_quote.toLowerCase()+"%_fkey";
 						constraintName=constraintName.replace("_", "!_");
-						try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
+						try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection, new Table.SqlQuery(
 								"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
 										+ table.getSqlTableName().toLowerCase()
 										+ "' AND CONSTRAINT_NAME LIKE '" + constraintName+"' ESCAPE '!'"
@@ -487,7 +487,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 					}
 					if (fa.isUnique()) {
 						boolean found = false;
-						try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
+						try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection, new Table.SqlQuery(
 								"select CONSTRAINT_NAME, CONSTRAINT_TYPE from INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_NAME='"
 										+ table.getSqlTableName().toLowerCase() + "';"))) {
 							while (rq.result_set.next()) {

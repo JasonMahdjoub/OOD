@@ -208,9 +208,9 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 		}
 	}
 
-	static class CReadQuerry extends Table.ColumnsReadQuerry {
+	static class CReadQuery extends Table.ColumnsReadQuery {
 
-		public CReadQuerry(Connection _sql_connection, ResultSet resultSet) {
+		public CReadQuery(Connection _sql_connection, ResultSet resultSet) {
 			super(_sql_connection, resultSet);
 			setTableColumnsResultSet(new TCResultSet(resultSet));
 		}
@@ -256,10 +256,10 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 	}
 
 	@Override
-	protected Table.ColumnsReadQuerry getColumnMetaData(String tableName, String columnName) throws Exception {
+	protected Table.ColumnsReadQuery getColumnMetaData(String tableName, String columnName) throws Exception {
 		Connection c;
 		ResultSet rs=(c=getConnectionAssociatedWithCurrentThread().getConnection()).getMetaData().getColumns(database_name, null, tableName, columnName);
-		return new CReadQuerry(c, rs);
+		return new CReadQuery(c, rs);
 
 
 	}
@@ -273,7 +273,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 	@Override
 	protected void checkConstraints(Table<?> table) throws DatabaseException {
 		Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
-		try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
+		try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection, new Table.SqlQuery(
 				"select CONSTRAINT_NAME, CONSTRAINT_TYPE from INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_NAME='"
 						+ table.getSqlTableName() + "' AND CONSTRAINT_SCHEMA='"+database_name+"';"))) {
 			while (rq.result_set.next()) {
@@ -291,8 +291,8 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 					}
 					break;
 					case "UNIQUE": {
-						try (Table.ReadQuerry rq2 = new Table.ReadQuerry(sql_connection,
-								new Table.SqlQuerry(
+						try (Table.ReadQuery rq2 = new Table.ReadQuery(sql_connection,
+								new Table.SqlQuery(
 										"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
 												+ table.getSqlTableName() + "' AND CONSTRAINT_NAME='" + constraint_name + "' AND CONSTRAINT_SCHEMA='"+database_name+"';"))) {
 							if (rq2.result_set.next()) {
@@ -328,7 +328,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
-		try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
+		try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection, new Table.SqlQuery(
 				"select REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME, COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
 						+ table.getSqlTableName() + "' AND CONSTRAINT_SCHEMA='"+database_name+"';"))) {
 			while (rq.result_set.next()) {
@@ -362,7 +362,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 			Pattern col_size_matcher = Pattern.compile("([0-9]+)");
 			for (FieldAccessor fa : table.getFieldAccessors()) {
 				for (SqlField sf : fa.getDeclaredSqlFields()) {
-					Table.ColumnsReadQuerry cols=getColumnMetaData(table.getSqlTableName(), sf.short_field_without_quote);
+					Table.ColumnsReadQuery cols=getColumnMetaData(table.getSqlTableName(), sf.short_field_without_quote);
 					if (cols==null || !cols.tableColumnsResultSet.next())
 						throw new DatabaseVersionException(table,
 								"The field " + fa.getFieldName() + " was not found into the database.");
@@ -390,8 +390,8 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 					sf.sql_position = cols.tableColumnsResultSet.getOrdinalPosition();
 
 					if (fa.isPrimaryKey()) {
-						try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection,
-								new Table.SqlQuerry(
+						try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection,
+								new Table.SqlQuery(
 										"select * from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
 												+ table.getSqlTableName() + "' AND COLUMN_NAME='" + sf.short_field_without_quote
 												+ "' AND CONSTRAINT_NAME='PRIMARY' AND CONSTRAINT_SCHEMA='"+database_name+"';"))) {
@@ -401,7 +401,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 						}
 					}
 					if (fa.isForeignKey()) {
-						try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
+						try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection, new Table.SqlQuery(
 								"select REFERENCED_TABLE_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
 										+ table.getSqlTableName() + "' AND REFERENCED_TABLE_NAME='" + sf.pointed_table_without_quote
 										+ "' AND REFERENCED_COLUMN_NAME='" + sf.short_pointed_field_without_quote + "' AND COLUMN_NAME='"
@@ -415,13 +415,13 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 					}
 					if (fa.isUnique()) {
 						boolean found = false;
-						try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
+						try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection, new Table.SqlQuery(
 								"select CONSTRAINT_NAME, CONSTRAINT_TYPE from INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_NAME='"
 										+ table.getSqlTableName() + "' AND CONSTRAINT_SCHEMA='"+database_name+"';"))) {
 							while (rq.result_set.next()) {
 								if (rq.result_set.getString("CONSTRAINT_TYPE").equals("UNIQUE")) {
 									String constraint_name = rq.result_set.getString("CONSTRAINT_NAME");
-									try (Table.ReadQuerry rq2 = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
+									try (Table.ReadQuery rq2 = new Table.ReadQuery(sql_connection, new Table.SqlQuery(
 											"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
 													+ table.getSqlTableName() + "' AND CONSTRAINT_NAME='" + constraint_name
 													+ "';"))) {

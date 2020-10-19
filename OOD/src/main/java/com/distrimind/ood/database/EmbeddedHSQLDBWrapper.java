@@ -36,9 +36,9 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import com.distrimind.ood.database.Table.ColumnsReadQuerry;
-import com.distrimind.ood.database.Table.ReadQuerry;
-import com.distrimind.ood.database.Table.SqlQuerry;
+import com.distrimind.ood.database.Table.ColumnsReadQuery;
+import com.distrimind.ood.database.Table.ReadQuery;
+import com.distrimind.ood.database.Table.SqlQuery;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseVersionException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
@@ -208,8 +208,8 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 
 	@Override
 	protected boolean doesTableExists(String table_name) throws Exception {
-		try (ReadQuerry rq = new ReadQuerry(getConnectionAssociatedWithCurrentThread().getConnection(),
-				new Table.SqlQuerry("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"
+		try (ReadQuery rq = new ReadQuery(getConnectionAssociatedWithCurrentThread().getConnection(),
+				new SqlQuery("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"
 						+ table_name + "'"))) {
 			if (rq.result_set.next())
 				return true;
@@ -219,9 +219,9 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 	}
 
 	@Override
-	protected ColumnsReadQuerry getColumnMetaData(String tableName, String columnName) throws Exception {
+	protected ColumnsReadQuery getColumnMetaData(String tableName, String columnName) throws Exception {
 		Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
-		return new CReadQuerry(sql_connection, new Table.SqlQuerry(
+		return new CReadQuery(sql_connection, new SqlQuery(
 				"SELECT COLUMN_NAME, TYPE_NAME, COLUMN_SIZE, IS_NULLABLE, IS_AUTOINCREMENT, ORDINAL_POSITION FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"
 						+ tableName + (columnName==null?"":"' AND COLUMN_NAME='"+columnName)+"';"));
 	}
@@ -240,7 +240,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 	@Override
 	protected void checkConstraints(Table<?> table) throws DatabaseException {
 		Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
-		try (ReadQuerry rq = new ReadQuerry(sql_connection, new Table.SqlQuerry(
+		try (ReadQuery rq = new ReadQuery(sql_connection, new SqlQuery(
 				"select CONSTRAINT_NAME, CONSTRAINT_TYPE from INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_NAME='"
 						+ table.getSqlTableName() + "' AND CONSTRAINT_SCHEMA='"+database_name+"';"))) {
 			while (rq.result_set.next()) {
@@ -258,8 +258,8 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 				}
 					break;
 				case "UNIQUE": {
-					try (ReadQuerry rq2 = new ReadQuerry(sql_connection,
-							new Table.SqlQuerry(
+					try (ReadQuery rq2 = new ReadQuery(sql_connection,
+							new SqlQuery(
 									"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
 											+ table.getSqlTableName() + "' AND CONSTRAINT_NAME='" + constraint_name + "' AND CONSTRAINT_SCHEMA='"+database_name+"';"))) {
 						if (rq2.result_set.next()) {
@@ -295,7 +295,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
-		try (ReadQuerry rq = new ReadQuerry(sql_connection, new Table.SqlQuerry(
+		try (ReadQuery rq = new ReadQuery(sql_connection, new SqlQuery(
 				"select PKTABLE_NAME, PKCOLUMN_NAME, FKCOLUMN_NAME from INFORMATION_SCHEMA.SYSTEM_CROSSREFERENCE WHERE FKTABLE_NAME='"
 						+ table.getSqlTableName() + "';"))) {
 			while (rq.result_set.next()) {
@@ -328,7 +328,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 			for (FieldAccessor fa : table.getFieldAccessors()) {
 				for (SqlField sf : fa.getDeclaredSqlFields()) {
 
-					try (ReadQuerry rq = new ReadQuerry(sql_connection, new Table.SqlQuerry(
+					try (ReadQuery rq = new ReadQuery(sql_connection, new SqlQuery(
 							"SELECT TYPE_NAME, COLUMN_SIZE, IS_NULLABLE, ORDINAL_POSITION, IS_AUTOINCREMENT FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"
 									+ table.getSqlTableName() + "' AND COLUMN_NAME='" + sf.short_field_without_quote + "'"
 									+ getSqlComma()))) {
@@ -360,8 +360,8 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 									"The field " + fa.getFieldName() + " was not found into the database.");
 					}
 					if (fa.isPrimaryKey()) {
-						try (ReadQuerry rq = new ReadQuerry(sql_connection,
-								new Table.SqlQuerry(
+						try (ReadQuery rq = new ReadQuery(sql_connection,
+								new SqlQuery(
 										"select * from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
 												+ table.getSqlTableName() + "' AND COLUMN_NAME='" + sf.short_field_without_quote
 												+ "' AND CONSTRAINT_NAME='" + table.getSqlPrimaryKeyName() + "' AND CONSTRAINT_SCHEMA='"+database_name+"';"))) {
@@ -371,7 +371,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 						}
 					}
 					if (fa.isForeignKey()) {
-						try (ReadQuerry rq = new ReadQuerry(sql_connection, new Table.SqlQuerry(
+						try (ReadQuery rq = new ReadQuery(sql_connection, new SqlQuery(
 								"select PKTABLE_NAME, FKTABLE_NAME, PKCOLUMN_NAME, FKCOLUMN_NAME from INFORMATION_SCHEMA.SYSTEM_CROSSREFERENCE WHERE FKTABLE_NAME='"
 										+ table.getSqlTableName() + "' AND PKTABLE_NAME='" + sf.pointed_table
 										+ "' AND PKCOLUMN_NAME='" + sf.short_pointed_field + "' AND FKCOLUMN_NAME='"
@@ -385,13 +385,13 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 					}
 					if (fa.isUnique()) {
 						boolean found = false;
-						try (ReadQuerry rq = new ReadQuerry(sql_connection, new Table.SqlQuerry(
+						try (ReadQuery rq = new ReadQuery(sql_connection, new SqlQuery(
 								"select CONSTRAINT_NAME, CONSTRAINT_TYPE from INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_NAME='"
 										+ table.getSqlTableName() + "';"))) {
 							while (rq.result_set.next()) {
 								if (rq.result_set.getString("CONSTRAINT_TYPE").equals("UNIQUE")) {
 									String constraint_name = rq.result_set.getString("CONSTRAINT_NAME");
-									try (ReadQuerry rq2 = new ReadQuerry(sql_connection, new Table.SqlQuerry(
+									try (ReadQuery rq2 = new ReadQuery(sql_connection, new SqlQuery(
 											"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
 													+ table.getSqlTableName() + "' AND CONSTRAINT_NAME='" + constraint_name
 													+ "' AND CONSTRAINT_SCHEMA='"+database_name+"';"))) {
@@ -420,9 +420,9 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 		}
 	}
 
-	static class CReadQuerry extends ColumnsReadQuerry {
+	static class CReadQuery extends ColumnsReadQuery {
 
-		public CReadQuerry(Connection _sql_connection, SqlQuerry _querry) throws SQLException, DatabaseException {
+		public CReadQuery(Connection _sql_connection, SqlQuery _querry) throws SQLException, DatabaseException {
 			super(_sql_connection, _querry);
 			setTableColumnsResultSet(new TCResultSet(this.result_set));
 		}

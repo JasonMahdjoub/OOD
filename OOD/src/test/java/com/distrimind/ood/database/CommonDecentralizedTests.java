@@ -1454,7 +1454,7 @@ public abstract class CommonDecentralizedTests {
 		for (CommonDecentralizedTests.Database db : listDatabase) {
 			db.getDbwrapper().getSynchronizer().setNotifier(db);
 			db.getDbwrapper().setMaxTransactionsToSynchronizeAtTheSameTime(5);
-			db.getDbwrapper().setMaxTransactionEventsKeepedIntoMemory(3);
+			db.getDbwrapper().setMaxTransactionEventsKeptIntoMemory(3);
 
 			db.getDbwrapper().getSynchronizer().addHookForLocalDatabaseHost(db.getHostID(),
 					TablePointed.class.getPackage());
