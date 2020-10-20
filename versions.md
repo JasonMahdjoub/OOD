@@ -1,12 +1,12 @@
 Object Oriented Database
 ========================
-3.0.0 Stable (Build: 1038) (from 01/04/2013 to 30/03/2019)
+3.0.0 Stable (Build: 1431) (from 01/04/2013 to 30/03/2019)
 
 # Creator(s):
 Jason MAHDJOUB
 
 # Developer(s):
-Jason MAHDJOUB (Entred in the team at 01/04/2013)
+Jason MAHDJOUB (Entered in the team at 01/04/2013)
 
 # Modifications:
 
@@ -161,7 +161,7 @@ Jason MAHDJOUB (Entred in the team at 01/04/2013)
 
 ### 2.0.0 Beta 84 (17/07/2018)
 * Updating utils to 3.17.0
-* Do not loop infinitely if deconnection exception is generated infinitely
+* Do not loop infinitely if disconnection exception is generated infinitely
 
 
 ### 2.0.0 Beta 83 (12/07/2018)
@@ -176,7 +176,7 @@ Jason MAHDJOUB (Entred in the team at 01/04/2013)
 
 ### 2.0.0 Beta 71 (30/03/2018)
 * Optimization of CachedInputStream
-* Optimization of CachedOutoutStream
+* Optimization of CachedOutputStream
 * Updating utils to 3.13.1
 
 
@@ -191,7 +191,7 @@ Jason MAHDJOUB (Entred in the team at 01/04/2013)
 
 ### 2.0.0 Beta 57 (13/12/2017)
 * Updating utils to 3.7.1
-* Managing deconnection database exception/reconnection
+* Managing disconnection database exception/reconnection
 
 
 ### 2.0.0 Beta 50 (16/10/2017)
@@ -316,16 +316,16 @@ Jason MAHDJOUB (Entred in the team at 01/04/2013)
 
 ### 2.0.0 Beta 3 (01/06/2017)
 * Adding database factory.
-* Correcting a bug in database connections/deconnections.
+* Correcting a bug in database connections/disconnections.
 * Updating Utils to 2.8.0.
 
 
 ### 2.0.0 Beta 2 (26/05/2017)
-* Debuging transaction's use.
-* Adding pagined queries.
+* Debugging transaction's use.
+* Adding paginated queries.
 * Adding ordered queries.
 * Adding records numbers queries.
-* Correcting a bug with multi fields match querries.
+* Correcting a bug with multi fields match queries.
 
 
 ### 2.0.0 Beta 1 (24/05/2017)
@@ -342,7 +342,7 @@ Jason MAHDJOUB (Entred in the team at 01/04/2013)
 * Changing the database loading policy : enabling transfer data from old database to new database.
 * Minimizing code duplication of tests.
 * Adding remove database possibility.
-* Use of savepoints.
+* Use of savepoint.
 
 
 ### 1.9.7 Stable (07/03/2017)
@@ -368,7 +368,7 @@ Jason MAHDJOUB (Entred in the team at 01/04/2013)
 ### 1.9.2 Stable (26/12/2016)
 * Correcting a problem of data integrity check.
 * Updating Derby DB to 10.13.1.1.
-* Solving a problem of multithread execution into windows (SQLNonTransientConnectionException).
+* Solving a problem of multithreading execution into windows (SQLNonTransientConnectionException).
 
 
 ### 1.9.1 Stable (24/12/2016)
@@ -411,7 +411,7 @@ Jason MAHDJOUB (Entred in the team at 01/04/2013)
 ### 1.6.2 Stable (04/07/2016)
 * Updating Utils to 1.7.
 * Updating to Common-Net 3.5.
-* Updating to HSDQLDB 3.3.4.
+* Updating to HSQLDB 3.3.4.
 
 
 ### 1.6.1 Stable (10/06/2016)
@@ -444,7 +444,7 @@ Jason MAHDJOUB (Entred in the team at 01/04/2013)
 * Adding DefaultByteTabObjectConverter class.
 * Adding ByteTabConvertibleFieldAccessor class.
 * Adding function addByteTabObjectConverter in DatabaseWrapper class.
-* Adding possibility to use Object tabs as an alternative of use of maps when reffering to fields.
+* Adding possibility to use Object tabs as an alternative of use of maps when referring to fields.
 * Optimizing use of SQL database.
 * Linking with Utils 1.3.
 
@@ -455,7 +455,7 @@ Jason MAHDJOUB (Entred in the team at 01/04/2013)
 
 
 ### 1.4.0 Stable (08/02/2016)
-* One databse is associated to one package. Now, its is possible to load several database/packages into the same file.
+* One database is associated to one package. Now, its is possible to load several database/packages into the same file.
 * OOD works now with HSQLDB or Apache Derby.
 
 

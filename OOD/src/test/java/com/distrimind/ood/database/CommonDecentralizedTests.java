@@ -91,7 +91,7 @@ public abstract class CommonDecentralizedTests {
 
 	protected CommonDecentralizedTests() throws NoSuchProviderException, NoSuchAlgorithmException {
 		this.random=SecureRandomType.DEFAULT.getSingleton(null);
-		final SymmetricSecretKey secretKeyForSignature=SymmetricAuthentifiedSignatureType.DEFAULT.getKeyGenerator(random).generateKey();
+		final SymmetricSecretKey secretKeyForSignature=SymmetricAuthenticatedSignatureType.DEFAULT.getKeyGenerator(random).generateKey();
 		final SymmetricSecretKey secretKeyForEncryption=SymmetricEncryptionType.DEFAULT.getKeyGenerator(random).generateKey();
 		this.encryptionProfileProvider=new EncryptionProfileProvider() {
 
