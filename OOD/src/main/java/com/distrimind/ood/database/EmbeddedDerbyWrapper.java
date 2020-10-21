@@ -652,7 +652,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 
 	@Override
 	protected Connection reopenConnectionImpl() throws DatabaseLoadingException {
-		return getConnection(database_name, getDatabaseDirectory(), isLoadedToMemory());
+		return getConnection(databaseName, getDatabaseDirectory(), isLoadedToMemory());
 	}
 
 	@Override

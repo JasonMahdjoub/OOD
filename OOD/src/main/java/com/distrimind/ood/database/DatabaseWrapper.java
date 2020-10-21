@@ -93,10 +93,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	// protected Connection sql_connection;
 	private static final String NATIVE_BACKUPS_DIRECTORY_NAME="native_backups";
 	private volatile boolean closed = false;
-	protected final String database_name;
+	protected final String databaseName;
 	protected final boolean loadToMemory;
 	protected final File databaseDirectory;
-	protected final String database_identifier;
+	protected final String databaseIdentifier;
 	private static final HashMap<String, Lock> lockers = new HashMap<>();
 	private static final HashMap<String, Integer> number_of_shared_lockers = new HashMap<>();
 	final static String ROW_PROPERTIES_OF_TABLES = "ROW_PROPERTIES_OF_TABLES__";
@@ -293,9 +293,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		if (loadToMemory)
 		{
 			this.alwaysDisconnectAfterOnTransaction =false;
-			this.database_name=_database_name;
+			this.databaseName =_database_name;
 			this.loadToMemory=true;
-			this.database_identifier=this.database_name;
+			this.databaseIdentifier =this.databaseName;
 			this.databaseDirectory=null;
 		}
 		else {
@@ -312,7 +312,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			 * if (_sql_connection==null) throw new NullPointerException("_sql_connection");
 			 */
 
-			database_name = _database_name;
+			databaseName = _database_name;
 			this.databaseDirectory = databaseDirectory;
 			Disk disk = null;
 			try {
@@ -323,9 +323,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 
 			if (disk != null)
-				database_identifier = disk.toString();
+				databaseIdentifier = disk.toString();
 			else
-				database_identifier = _database_name;
+				databaseIdentifier = _database_name;
 		}
 		try {
 			this.randomForKeys = SecureRandomType.BC_FIPS_APPROVED_FOR_KEYS.getSingleton(null);
@@ -2198,7 +2198,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	private Lock getLocker() {
 		synchronized (DatabaseWrapper.class) {
-			String f = database_identifier;
+			String f = databaseIdentifier;
 
 			Lock rwl = lockers.get(f);
 			if (rwl == null) {
@@ -2262,6 +2262,18 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		if (transactionIDTable == null)
 			transactionIDTable = getTableInstance(IDTable.class);
 		return transactionIDTable;
+	}
+
+	void checkMinimumValidatedTransactionIds() throws DatabaseException {
+		long minIds=Long.MIN_VALUE;
+		for (Database d : sql_database.values())
+		{
+			long lastTransactionID=d.backupRestoreManager.getLastTransactionID();
+			if (lastTransactionID>minIds)
+				minIds=lastTransactionID;
+		}
+		if (minIds>Long.MIN_VALUE)
+			getTransactionIDTable().setMinimumValidatedTransactionID(minIds);
 	}
 
 	protected abstract Connection reopenConnectionImpl() throws DatabaseLoadingException;
@@ -2349,14 +2361,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				} finally {
 					synchronized(DatabaseWrapper.class)
 					{
-						DatabaseWrapper.lockers.remove(database_identifier);
-						Integer i=DatabaseWrapper.number_of_shared_lockers.get(database_identifier);
+						DatabaseWrapper.lockers.remove(databaseIdentifier);
+						Integer i=DatabaseWrapper.number_of_shared_lockers.get(databaseIdentifier);
 						if (i!=null) {
 							int v = i - 1;
 							if (v == 0)
-								DatabaseWrapper.number_of_shared_lockers.remove(database_identifier);
+								DatabaseWrapper.number_of_shared_lockers.remove(databaseIdentifier);
 							else if (v > 0)
-								DatabaseWrapper.number_of_shared_lockers.put(database_identifier, v);
+								DatabaseWrapper.number_of_shared_lockers.put(databaseIdentifier, v);
 							else
 								throw new IllegalAccessError();
 						}
@@ -2393,7 +2405,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	@Override
 	public int hashCode() {
-		return database_name.hashCode();
+		return databaseName.hashCode();
 	}
 
 	@Override
@@ -2408,7 +2420,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	@Override
 	public String toString() {
-		return database_name;
+		return databaseName;
 	}
 
 	private final Lock locker;

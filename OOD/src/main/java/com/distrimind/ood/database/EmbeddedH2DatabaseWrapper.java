@@ -182,7 +182,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	@Override
 	protected Connection reopenConnectionImpl() throws DatabaseLoadingException {
 
-			Connection c = getConnection(database_name, getDatabaseFileName(super.getDatabaseDirectory()), isLoadedToMemory(), android, fileLock, pageSizeBytes, cacheSizeBytes);
+			Connection c = getConnection(databaseName, getDatabaseFileName(super.getDatabaseDirectory()), isLoadedToMemory(), android, fileLock, pageSizeBytes, cacheSizeBytes);
 			if (loadedOneTime)
 				return c;
 		try {

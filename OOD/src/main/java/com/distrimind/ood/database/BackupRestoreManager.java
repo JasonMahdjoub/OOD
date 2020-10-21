@@ -1643,9 +1643,13 @@ public class BackupRestoreManager {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
-
+	long getLastTransactionID() throws DatabaseException {
+		return getLastTransactionIDBeforeGivenTimeStampIndex(fileTimeStamps.size());
+	}
 	private long getLastTransactionIDBeforeGivenTimeStamp(long timeStamp) throws DatabaseException {
-		int i=fileTimeStamps.indexOf(timeStamp);
+		return getLastTransactionIDBeforeGivenTimeStampIndex(fileTimeStamps.indexOf(timeStamp));
+	}
+	private long getLastTransactionIDBeforeGivenTimeStampIndex(int i) throws DatabaseException {
 		assert i>=0;
 		while (--i>0) {
 			File f=getFile(fileTimeStamps.get(i));
@@ -1770,6 +1774,7 @@ public class BackupRestoreManager {
 				if (fileReferenceTimeStamps.size() == 0)
 					return false;
 				long lastTransactionUTCInMs=getLastTransactionUTCInMS();
+				databaseWrapper.checkMinimumValidatedTransactionIds();
 				if (lastTransactionUTCInMs>Long.MIN_VALUE && lastTransactionUTCInMs<=dateUTCInMs) {
 					temporaryDisabled = true;
 					dateUTCInMs=lastTransactionUTCInMs;

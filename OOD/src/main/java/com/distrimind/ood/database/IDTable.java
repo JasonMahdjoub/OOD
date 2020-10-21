@@ -51,6 +51,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 @LoadToMemory
 final class IDTable extends Table<IDTable.Record> {
 
+	@SuppressWarnings("FieldMayBeFinal")
 	static class Record extends DatabaseRecord {
 		@SuppressWarnings("unused")
 		@PrimaryKey
@@ -68,19 +69,78 @@ final class IDTable extends Table<IDTable.Record> {
 		return getAndIncrementID(TRANSACTION_ID);
 	}
 
+	void setMinimumValidatedTransactionID(long lastID) throws DatabaseException {
+		setMinimumValidatedID(TRANSACTION_ID, lastID);
+	}
 
+	@SuppressWarnings("SameParameterValue")
+	private void setMinimumValidatedID(int id, long lastID) throws DatabaseException {
+		getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
+			@Override
+			public Void run() throws Exception {
+				Record r = getRecord("id", id);
+				if (r == null) {
+					addRecord("id", id, "transactionID", lastID);
+				} else {
+					if (r.transactionID<=lastID)
+						r.transactionID=lastID+1;
+					updateRecord(r, "transactionID", r.transactionID);
+				}
+				return null;
+			}
+
+			@Override
+			public TransactionIsolation getTransactionIsolation() {
+				return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
+			}
+
+			@Override
+			public boolean doesWriteData() {
+				return true;
+			}
+
+			@Override
+			public void initOrReset() {
+
+			}
+		});
+
+	}
 
 	@SuppressWarnings("SameParameterValue")
 	private long getAndIncrementID(int id) throws DatabaseException {
-		Record r = getRecord("id", id);
-		if (r == null) {
-			addRecord("id", id, "transactionID", 1L);
-			return 0;
-		} else {
-			long res = r.transactionID++;
-			this.updateRecord(r);
-			return res;
-		}
+
+		return getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Long>() {
+			@Override
+			public Long run() throws Exception {
+				Record r = getRecord("id", id);
+				if (r == null) {
+					addRecord("id", id, "transactionID", 1L);
+					return 0L;
+				} else {
+					long res = r.transactionID++;
+					updateRecord(r, "transactionID", r.transactionID);
+					return res;
+				}
+			}
+
+			@Override
+			public TransactionIsolation getTransactionIsolation() {
+				return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
+			}
+
+			@Override
+			public boolean doesWriteData() {
+				return true;
+			}
+
+			@Override
+			public void initOrReset() {
+
+			}
+		});
+
+
 	}
 
 	/*private void decrementID(int id) throws DatabaseException {

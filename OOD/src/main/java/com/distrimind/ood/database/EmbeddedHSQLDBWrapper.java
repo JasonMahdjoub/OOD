@@ -242,7 +242,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 		Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
 		try (ReadQuery rq = new ReadQuery(sql_connection, new SqlQuery(
 				"select CONSTRAINT_NAME, CONSTRAINT_TYPE from INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_NAME='"
-						+ table.getSqlTableName() + "' AND CONSTRAINT_SCHEMA='"+database_name+"';"))) {
+						+ table.getSqlTableName() + "' AND CONSTRAINT_SCHEMA='"+ databaseName +"';"))) {
 			while (rq.result_set.next()) {
 				String constraint_name = rq.result_set.getString("CONSTRAINT_NAME");
 				String constraint_type = rq.result_set.getString("CONSTRAINT_TYPE");
@@ -261,7 +261,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 					try (ReadQuery rq2 = new ReadQuery(sql_connection,
 							new SqlQuery(
 									"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
-											+ table.getSqlTableName() + "' AND CONSTRAINT_NAME='" + constraint_name + "' AND CONSTRAINT_SCHEMA='"+database_name+"';"))) {
+											+ table.getSqlTableName() + "' AND CONSTRAINT_NAME='" + constraint_name + "' AND CONSTRAINT_SCHEMA='"+ databaseName +"';"))) {
 						if (rq2.result_set.next()) {
 							String col = (table.getSqlTableName() + "." + rq2.result_set.getString("COLUMN_NAME"))
 									.toUpperCase();
@@ -364,7 +364,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 								new SqlQuery(
 										"select * from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
 												+ table.getSqlTableName() + "' AND COLUMN_NAME='" + sf.short_field_without_quote
-												+ "' AND CONSTRAINT_NAME='" + table.getSqlPrimaryKeyName() + "' AND CONSTRAINT_SCHEMA='"+database_name+"';"))) {
+												+ "' AND CONSTRAINT_NAME='" + table.getSqlPrimaryKeyName() + "' AND CONSTRAINT_SCHEMA='"+ databaseName +"';"))) {
 							if (!rq.result_set.next())
 								throw new DatabaseVersionException(table, "The field " + fa.getFieldName()
 										+ " is not declared as a primary key into the Sql database.");
@@ -394,7 +394,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 									try (ReadQuery rq2 = new ReadQuery(sql_connection, new SqlQuery(
 											"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
 													+ table.getSqlTableName() + "' AND CONSTRAINT_NAME='" + constraint_name
-													+ "' AND CONSTRAINT_SCHEMA='"+database_name+"';"))) {
+													+ "' AND CONSTRAINT_SCHEMA='"+ databaseName +"';"))) {
 										if (rq2.result_set.next()) {
 											String col = table.getSqlTableName() + "."
 													+ rq2.result_set.getString("COLUMN_NAME");
@@ -713,7 +713,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 
 	@Override
 	protected Connection reopenConnectionImpl() throws DatabaseLoadingException {
-		return getConnection(database_name, getDatabaseFileName(getDatabaseDirectory()), concurrencyControl, cache_rows, cache_size, result_max_memory_rows,
+		return getConnection(databaseName, getDatabaseFileName(getDatabaseDirectory()), concurrencyControl, cache_rows, cache_size, result_max_memory_rows,
 				cache_free_count, fileLock, loadToMemory);
 	}
 

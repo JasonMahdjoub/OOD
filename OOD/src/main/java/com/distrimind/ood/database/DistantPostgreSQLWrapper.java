@@ -269,7 +269,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 
 	@Override
 	protected boolean doesTableExists(String tableName) throws Exception {
-		try(ResultSet rs=getConnectionAssociatedWithCurrentThread().getConnection().getMetaData().getTables(database_name, null, tableName.toLowerCase(), null)) {
+		try(ResultSet rs=getConnectionAssociatedWithCurrentThread().getConnection().getMetaData().getTables(databaseName, null, tableName.toLowerCase(), null)) {
 			return rs.next();
 			/*while (rs.next()) {
 				if (rs.getString(3).equals(tableName) && rs.getString().equals(database_name))
@@ -329,7 +329,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 	@Override
 	protected Table.ColumnsReadQuery getColumnMetaData(String tableName, String columnName) throws Exception {
 		Connection c;
-		ResultSet rs=(c=getConnectionAssociatedWithCurrentThread().getConnection()).getMetaData().getColumns(database_name, null, tableName==null?null:tableName.toLowerCase(), columnName==null?null:columnName.toLowerCase());
+		ResultSet rs=(c=getConnectionAssociatedWithCurrentThread().getConnection()).getMetaData().getColumns(databaseName, null, tableName==null?null:tableName.toLowerCase(), columnName==null?null:columnName.toLowerCase());
 		return new CReadQuery(c, rs);
 
 	}
@@ -345,7 +345,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 		Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
 		try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection, new Table.SqlQuery(
 				"select CONSTRAINT_NAME, CONSTRAINT_TYPE from INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_NAME='"
-						+ table.getSqlTableName() + "' AND CONSTRAINT_SCHEMA='"+database_name+"';"))) {
+						+ table.getSqlTableName() + "' AND CONSTRAINT_SCHEMA='"+ databaseName +"';"))) {
 			while (rq.result_set.next()) {
 				String constraint_name = rq.result_set.getString("CONSTRAINT_NAME");
 				String constraint_type = rq.result_set.getString("CONSTRAINT_TYPE");
@@ -364,7 +364,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 						try (Table.ReadQuery rq2 = new Table.ReadQuery(sql_connection,
 								new Table.SqlQuery(
 										"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
-												+ table.getSqlTableName() + "' AND CONSTRAINT_NAME='" + constraint_name + "' AND CONSTRAINT_SCHEMA='"+database_name+"';"))) {
+												+ table.getSqlTableName() + "' AND CONSTRAINT_NAME='" + constraint_name + "' AND CONSTRAINT_SCHEMA='"+ databaseName +"';"))) {
 							if (rq2.result_set.next()) {
 								String col = (table.getSqlTableName() + "." + rq2.result_set.getString("COLUMN_NAME"))
 										.toUpperCase();
@@ -400,7 +400,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 		}
 		try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection, new Table.SqlQuery(
 				"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
-						+ table.getSqlTableName() + "' AND CONSTRAINT_SCHEMA='"+database_name+"';"))) {
+						+ table.getSqlTableName() + "' AND CONSTRAINT_SCHEMA='"+ databaseName +"';"))) {
 			while (rq.result_set.next()) {
 				/*String pointed_table = rq.result_set.getString("REFERENCED_TABLE_NAME");
 				String pointed_col = pointed_table + "." + rq.result_set.getString("REFERENCED_COLUMN_NAME");*/
