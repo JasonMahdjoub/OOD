@@ -36,19 +36,17 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-
 import com.distrimind.ood.database.annotations.AutoPrimaryKey;
 import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.annotations.LoadToMemory;
 import com.distrimind.ood.database.annotations.Unique;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.SerializationDatabaseException;
-import com.distrimind.util.AbstractDecentralizedIDGenerator;
-import com.distrimind.util.DecentralizedIDGenerator;
 import com.distrimind.util.DecentralizedValue;
+
+import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 
@@ -599,8 +597,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 	@SuppressWarnings("UnusedReturnValue")
 	DatabaseHooksTable.Record addHooks(final DecentralizedValue hostID, final boolean concernsDatabaseHost,
-									   final boolean replaceDistantConflictualRecords,
-									   final ArrayList<DecentralizedValue> hostAlreadySynchronized, final List<String> packages)
+									   final ArrayList<DecentralizedValue> hostAlreadySynchronized, final Map<String, Boolean> packages)
 			throws DatabaseException {
 
 		if (hostID == null)
@@ -621,7 +618,9 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 						if (l.size() == 0) {
 							r = new DatabaseHooksTable.Record();
 							r.setHostID(hostID);
-							List<String> newAddedPackages = r.setDatabasePackageNames(packages);
+							List<String> nap = r.setDatabasePackageNames(new ArrayList<>(packages.keySet()));
+							HashMap<String, Boolean> newAddedPackages=new HashMap<>();
+							nap.forEach(v -> newAddedPackages.put(v, packages.get(v)));
 							r.setConcernsDatabaseHost(concernsDatabaseHost);
 							r.setLastValidatedDistantTransactionID(-1);
 							r.setLastValidatedLocalTransactionID(-1);
@@ -633,13 +632,14 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							supportedDatabasePackages = null;
 							if (!concernsDatabaseHost) {
 								r.setLastValidatedLocalTransactionID(getDatabaseTransactionEventsTable()
-										.addTransactionToSynchronizeTables(newAddedPackages, hostAlreadySynchronized, r,
-												replaceDistantConflictualRecords));
+										.addTransactionToSynchronizeTables(newAddedPackages, hostAlreadySynchronized, r));
 								updateRecord(r, "lastValidatedLocalTransactionID", r.lastValidatedLocalTransactionID);
 							}
 						} else {
 							r = l.get(0);
-							List<String> newAddedPackages = r.addDatabasePackageNames(packages);
+							List<String> nap = r.setDatabasePackageNames(new ArrayList<>(packages.keySet()));
+							HashMap<String, Boolean> newAddedPackages=new HashMap<>();
+							nap.forEach(v -> newAddedPackages.put(v, packages.get(v)));
 							if (newAddedPackages.size()>0)
 								updateRecord(r, "databasePackageNames", r.databasePackageNames);
 							localHost = null;
@@ -647,8 +647,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 							if (!concernsDatabaseHost) {
 								r.setLastValidatedLocalTransactionID(getDatabaseTransactionEventsTable()
-										.addTransactionToSynchronizeTables(newAddedPackages, hostAlreadySynchronized, r,
-												replaceDistantConflictualRecords));
+										.addTransactionToSynchronizeTables(newAddedPackages, hostAlreadySynchronized, r));
 
 								updateRecord(r, "lastValidatedLocalTransactionID", r.lastValidatedLocalTransactionID);
 							}

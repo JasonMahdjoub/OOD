@@ -820,15 +820,66 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 
 
-		public void addHookForLocalDatabaseHost(DecentralizedValue hostID, Package... databasePackages)
+		public void addHookForLocalDatabaseHost(DecentralizedValue hostID, Package ...databasePackages)
 				throws DatabaseException {
-			ArrayList<String> packages = new ArrayList<>();
+			HashMap<String, Boolean> packages = new HashMap<>();
 			for (Package p : databasePackages) {
-				packages.add(p.getName());
+				packages.put(p.getName(), false);
 			}
-			getDatabaseHooksTable().addHooks(hostID, true, false, new ArrayList<>(),
+			getDatabaseHooksTable().addHooks(hostID, true, new ArrayList<>(),
 					packages);
 		}
+		private void includeIfNecessaryDatabaseIntoCloud(Collection<DatabaseConfiguration> configurations)
+		{
+			//TODO complete
+			//TODO compléter en dessous
+		}
+		/*public void askForHookAddingAndSynchronizeDatabase(DecentralizedValue hostID,
+														   boolean replaceDistantConflictualRecords, Package... packages) throws DatabaseException {
+			ArrayList<String> packagesString = new ArrayList<>();
+			for (Package p : packages) {
+				Database d=sql_database.get(p);
+				if (d==null)
+					throw new IllegalArgumentException("The database "+p+" is not loaded");
+				String ps=p.getName();
+				runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
+					@Override
+					public Void run() throws Exception {
+						DatabaseTable.Record r=getDatabaseTable().getRecord("databasePackageName", ps);
+						if (r==null)
+							throw new IllegalAccessError();
+						getDatabaseTable().updateRecord(r, "toSynchronizeWithCentralDatabaseBackup", !d.getConfiguration().getDatabaseConfigurationParameters().isSynchronizedWithCentralBackupDatabase());
+						return null;
+					}
+
+					@Override
+					public TransactionIsolation getTransactionIsolation() {
+						return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
+					}
+
+					@Override
+					public boolean doesWriteData() {
+						return true;
+					}
+
+					@Override
+					public void initOrReset()  {
+
+					}
+				});
+
+				if ()
+				{
+
+				}
+				else
+				{
+
+				}
+				packagesString.add(ps);
+			}
+
+		}*/
 
 		public HookAddRequest askForHookAddingAndSynchronizeDatabase(DecentralizedValue hostID,
 				boolean replaceDistantConflictualRecords, Package... packages) throws DatabaseException {
@@ -1201,7 +1252,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			getDatabaseTransactionEventsTable().resetAllTransactions();
 			return r;
 		}
-		private void restoreHosts(Collection<DatabaseHooksTable.Record> hosts, boolean replaceDistantConflictualRecords) throws DatabaseException {
+		private void restoreHosts(Collection<DatabaseHooksTable.Record> hosts, HashMap<String, Boolean> replaceDistantConflictualRecords) throws DatabaseException {
 			if (hosts==null)
 				return ;
 			DatabaseHooksTable.Record local=null;
@@ -1217,12 +1268,23 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 			if (local==null)
 				throw new IllegalAccessError();
-			getDatabaseHooksTable().addHooks(local.getHostID(), true, false, new ArrayList<>(),
-					Arrays.asList(local.getDatabasePackageNames()));
-
-			for (DatabaseHooksTable.Record r : hosts)
-				getDatabaseHooksTable().addHooks(r.getHostID(), false,
-						replaceDistantConflictualRecords, new ArrayList<>(), Arrays.asList(r.getDatabasePackageNames()));
+			List<String> lsp=Arrays.asList(local.getDatabasePackageNames());
+			{
+				HashMap<String, Boolean> hm=new HashMap<>();
+				lsp.forEach(v->hm.put(v, false));
+				getDatabaseHooksTable().addHooks(local.getHostID(), true, new ArrayList<>(),
+						hm);
+			}
+			{
+				HashMap<String, Boolean> hm=new HashMap<>();
+				lsp.forEach(v->{
+					Boolean replace=replaceDistantConflictualRecords.get(v);
+					hm.put(v, replace!=null && replace);
+				});
+				for (DatabaseHooksTable.Record r : hosts)
+					getDatabaseHooksTable().addHooks(r.getHostID(), false,
+							 new ArrayList<>(), hm);
+			}
 			isReliedToDistantHook();
 
 		}
@@ -4376,6 +4438,71 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	protected abstract String getAutoIncrementPart(String sqlTableName, String sqlFieldName, long startWith);
 
+
+	/**
+	 * Associate a Sql database with a given list of database configuration.
+	 * The database is also restored to a given state at a given time.
+	 * The data is restored from distant peers if need or from central database backup.
+	 *
+	 * Every table/class in the given configuration which inherits to the class
+	 * <code>Table&lsaquo;T extends DatabaseRecord&rsaquo;</code> will be included
+	 * into the same database. This function must be called before every any
+	 * operation with the corresponding tables.
+	 *
+	 * @param configurations
+	 *            the database configuration list
+	 * @param createDatabaseIfNecessaryAndCheckIt
+	 *            If set to false, and if the database does not exists, generate a
+	 *            DatabaseException. If set to true, and if the database does not
+	 *            exists, create it. Use
+	 *            {@link DatabaseConfiguration#getDatabaseLifeCycles()} if the
+	 *            database is created and if transfer from old database must done.
+	 * @param timeUTCOfRestorationInMs the time UTC in milliseconds of the point of restoration.
+	 *                                 Every modification in the database after that point is excluded.
+	 *                                 However, it is possible to recover delete modification by restoring
+	 *                                 the database to a point located after that point (see {@link BackupRestoreManager#restoreDatabaseToDateUTC(long)})
+	 * @throws DatabaseException
+	 *             if the given package is already associated to a database, or if
+	 *             the database cannot be created.
+	 * @throws NullPointerException
+	 *             if the given parameters are null.
+	 */
+	public final void loadDatabaseAndRestoreItToGivenTime(final Collection<DatabaseConfiguration> configurations,
+														  final boolean createDatabaseIfNecessaryAndCheckIt, long timeUTCOfRestorationInMs) throws DatabaseException {
+		loadDatabase(configurations, createDatabaseIfNecessaryAndCheckIt,  timeUTCOfRestorationInMs);
+	}
+	/**
+	 * Associate a Sql database with a given database configuration.
+	 * The database is also restored to a given state at a given time.
+	 * The data is restored from distant peers if need or from central database backup.
+	 *
+	 * Every table/class in the given configuration which inherits to the class
+	 * <code>Table&lsaquo;T extends DatabaseRecord&rsaquo;</code> will be included
+	 * into the same database. This function must be called before every any
+	 * operation with the corresponding tables.
+	 *
+	 * @param configuration
+	 *            the database configuration
+	 * @param createDatabaseIfNecessaryAndCheckIt
+	 *            If set to false, and if the database does not exists, generate a
+	 *            DatabaseException. If set to true, and if the database does not
+	 *            exists, create it. Use
+	 *            {@link DatabaseConfiguration#getDatabaseLifeCycles()} if the
+	 *            database is created and if transfer from old database must done.
+	 * @param timeUTCOfRestorationInMs the time UTC in milliseconds of the point of restoration.
+	 *                                 Every modification in the database after that point is excluded.
+	 *                                 However, it is possible to recover delete modification by restoring
+	 *                                 the database to a point located after that point (see {@link BackupRestoreManager#restoreDatabaseToDateUTC(long)})
+	 * @throws DatabaseException
+	 *             if the given package is already associated to a database, or if
+	 *             the database cannot be created.
+	 * @throws NullPointerException
+	 *             if the given parameters are null.
+	 */
+	public final void loadDatabaseAndRestoreItToGivenTime(final DatabaseConfiguration configuration,
+								   final boolean createDatabaseIfNecessaryAndCheckIt, long timeUTCOfRestorationInMs) throws DatabaseException {
+		loadDatabase(Collections.singleton(configuration), createDatabaseIfNecessaryAndCheckIt,  timeUTCOfRestorationInMs);
+	}
 	/**
 	 * Associate a Sql database with a given database configuration. Every
 	 * table/class in the given configuration which inherits to the class
@@ -4399,118 +4526,223 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 */
 	public final void loadDatabase(final DatabaseConfiguration configuration,
 								   final boolean createDatabaseIfNecessaryAndCheckIt) throws DatabaseException {
-		loadDatabase(configuration, createDatabaseIfNecessaryAndCheckIt, -1);
+		loadDatabase(Collections.singleton(configuration), createDatabaseIfNecessaryAndCheckIt,  null);
 	}
+	/**
+	 * Associate a Sql database with a given list of database configuration. Every
+	 * table/class in the given configuration which inherits to the class
+	 * <code>Table&lsaquo;T extends DatabaseRecord&rsaquo;</code> will be included
+	 * into the same database. This function must be called before every any
+	 * operation with the corresponding tables.
+	 *
+	 * @param configurations
+	 *            the database configuration list
+	 * @param createDatabaseIfNecessaryAndCheckIt
+	 *            If set to false, and if the database does not exists, generate a
+	 *            DatabaseException. If set to true, and if the database does not
+	 *            exists, create it. Use
+	 *            {@link DatabaseConfiguration#getDatabaseLifeCycles()} if the
+	 *            database is created and if transfer from old database must done.
+	 * @throws DatabaseException
+	 *             if the given package is already associated to a database, or if
+	 *             the database cannot be created.
+	 * @throws NullPointerException
+	 *             if the given parameters are null.
+	 */
+	public final void loadDatabase(final Collection<DatabaseConfiguration> configurations,
+								   final boolean createDatabaseIfNecessaryAndCheckIt) throws DatabaseException {
+		loadDatabase(configurations, createDatabaseIfNecessaryAndCheckIt, null);
+	}
+	final void loadDatabaseImpl(final DatabaseConfiguration configuration,
+								final boolean createDatabaseIfNecessaryAndCheckIt,
+								final boolean internalPackage,
+								int databaseVersion,
+								final Reference<Boolean> restoreSynchronizerHosts,
+								final Reference<Collection<DatabaseHooksTable.Record>> hosts,
+								final Reference<Boolean> allNotFounds) throws DatabaseException {
 
-	final void loadDatabase(final DatabaseConfiguration configuration,
-			final boolean createDatabaseIfNecessaryAndCheckIt, int databaseVersion) throws DatabaseException {
-		if (configuration == null)
-			throw new NullPointerException("tables is a null pointer.");
-		boolean internalPackage=configuration.getDatabaseConfigurationParameters().getPackage().equals(this.getClass().getPackage());
-		if (!internalPackage)
-			if (createDatabaseIfNecessaryAndCheckIt)
-				getTableInstance(DatabaseTable.class, databaseVersion);
-		else
-			databaseVersion=0;
-
-		try  {
-			lockWrite();
-
-			boolean allNotFound=true;
-			//final AtomicBoolean allNotFound = new AtomicBoolean(true);
-			if (this.closed)
-				throw new DatabaseException("The given Database was closed : " + this);
-			{
-				Database db = sql_database.get(configuration.getDatabaseConfigurationParameters().getPackage());
-				if (db != null) {
-					if ((databaseVersion == -1 && db.tables_per_versions.containsKey(db.getCurrentVersion()))
-							|| (databaseVersion != -1 && db.tables_per_versions.containsKey(databaseVersion))) {
-						throw new DatabaseException("There is already a database associated to the given wrapper ");
-					}
+		//final AtomicBoolean allNotFound = new AtomicBoolean(true);
+		if (this.closed)
+			throw new DatabaseException("The given Database was closed : " + this);
+		{
+			Database db = sql_database.get(configuration.getDatabaseConfigurationParameters().getPackage());
+			if (db != null) {
+				if ((databaseVersion == -1 && db.tables_per_versions.containsKey(db.getCurrentVersion()))
+						|| (databaseVersion != -1 && db.tables_per_versions.containsKey(databaseVersion))) {
+					throw new DatabaseException("There is already a database associated to the given wrapper ");
 				}
 			}
+		}
+
+
+		boolean allNotFound=loadDatabaseTables(configuration, createDatabaseIfNecessaryAndCheckIt, databaseVersion);
+		if (allNotFounds.get() && allNotFound)
+			allNotFounds.set(true);
+
+		Database actualDatabaseLoading=this.actualDatabaseLoading;
+		assert actualDatabaseLoading!=null;
+		if (databaseVersion==-1)
+			databaseVersion=getCurrentDatabaseVersion(configuration.getDatabaseConfigurationParameters().getPackage());
+		boolean initBackupRestore=false;
+
+
+		if (!internalPackage && allNotFound) {
+
 			try {
+				DatabaseLifeCycles callable = configuration.getDatabaseLifeCycles();
+				this.actualDatabaseLoading=null;
+				if (hosts.get()==null)
+					hosts.set(getSynchronizer().resetSynchronizerAndGetAllHosts());
+				this.actualDatabaseLoading=actualDatabaseLoading;
+				int currentVersion=getCurrentDatabaseVersion(configuration.getDatabaseConfigurationParameters().getPackage());
+				if (currentVersion==databaseVersion) {
+					DatabaseConfiguration oldConfig = configuration.getOldVersionOfDatabaseConfiguration();
 
-				allNotFound=loadDatabaseTables(configuration, createDatabaseIfNecessaryAndCheckIt, databaseVersion);
-				Database actualDatabaseLoading=this.actualDatabaseLoading;
-				assert actualDatabaseLoading!=null;
-				if (databaseVersion==-1)
-					databaseVersion=getCurrentDatabaseVersion(configuration.getDatabaseConfigurationParameters().getPackage());
-				boolean initBackupRestore=false;
-				boolean restoreSynchronizerHosts=false;
-				DatabaseLifeCycles callable=null;
-				Collection<DatabaseHooksTable.Record> hosts=null;
-				if (!internalPackage && allNotFound) {
+					boolean removeOldDatabase = false;
+					if (oldConfig != null && callable != null) {
+						try {
+							this.actualDatabaseLoading=null;
+							loadDatabase(oldConfig, false);
+							this.actualDatabaseLoading=actualDatabaseLoading;
+							callable.transferDatabaseFromOldVersion(this, oldConfig, configuration);
 
-					try {
-						callable = configuration.getDatabaseLifeCycles();
-						this.actualDatabaseLoading=null;
+							removeOldDatabase = callable.hasToRemoveOldDatabase();
 
-						hosts=getSynchronizer().resetSynchronizerAndGetAllHosts();
-						this.actualDatabaseLoading=actualDatabaseLoading;
-						int currentVersion=getCurrentDatabaseVersion(configuration.getDatabaseConfigurationParameters().getPackage());
-						if (currentVersion==databaseVersion) {
-							DatabaseConfiguration oldConfig = configuration.getOldVersionOfDatabaseConfiguration();
-
-							boolean removeOldDatabase = false;
-							if (oldConfig != null && callable != null) {
-								try {
-									this.actualDatabaseLoading=null;
-									loadDatabase(oldConfig, false);
-									this.actualDatabaseLoading=actualDatabaseLoading;
-									callable.transferDatabaseFromOldVersion(this, oldConfig, configuration);
-
-									removeOldDatabase = callable.hasToRemoveOldDatabase();
-
-								} catch (DatabaseException e) {
-									oldConfig = null;
-								}
-							}
-							if (callable != null) {
-								callable.afterDatabaseCreation(this, configuration);
-								if (removeOldDatabase)
-									deleteDatabase(oldConfig, databaseVersion);
-							}
-							initBackupRestore=true;
+						} catch (DatabaseException e) {
+							oldConfig = null;
 						}
-						restoreSynchronizerHosts=true;
-
-
-
-					} catch (Exception e) {
-						throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 					}
+					if (callable != null) {
+						callable.afterDatabaseCreation(this, configuration);
+						if (removeOldDatabase)
+							deleteDatabase(oldConfig, databaseVersion);
+					}
+					initBackupRestore=true;
 				}
+				restoreSynchronizerHosts.set(true);
 
 
-				@SuppressWarnings("unchecked")
-				HashMap<Package, Database> sd = (HashMap<Package, Database>) sql_database.clone();
-				Database db=sd.get(configuration.getDatabaseConfigurationParameters().getPackage());
 
-				if (db==null) {
-					sd.put(configuration.getDatabaseConfigurationParameters().getPackage(), actualDatabaseLoading);
+			} catch (Exception e) {
+				throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
+			}
+		}
+
+
+		@SuppressWarnings("unchecked")
+		HashMap<Package, Database> sd = (HashMap<Package, Database>) sql_database.clone();
+		Database db=sd.get(configuration.getDatabaseConfigurationParameters().getPackage());
+
+		if (db==null) {
+			sd.put(configuration.getDatabaseConfigurationParameters().getPackage(), actualDatabaseLoading);
+		}
+		else {
+			DatabasePerVersion dpv=actualDatabaseLoading.tables_per_versions.get(databaseVersion);
+			if (dpv==null)
+				throw new InternalError();
+
+			db.tables_per_versions.put(databaseVersion, dpv);
+			//db.updateCurrentVersion();
+		}
+		sql_database = sd;
+		configuration.setDatabaseWrapper(this);
+		if (initBackupRestore)
+			actualDatabaseLoading.initBackupRestoreManager(this, getDatabaseDirectory(), configuration);
+
+
+
+	}
+	final void postLoadDatabase(Collection<DatabaseConfiguration> configurations,
+								Reference<Boolean> restoreSynchronizerHosts,
+								Reference<Collection<DatabaseHooksTable.Record>> hosts) throws DatabaseException {
+		if (restoreSynchronizerHosts.get()) {
+			HashMap<String, Boolean> databases=new HashMap<>();
+			configurations.forEach(v -> {
+				DatabaseLifeCycles callable = v.getDatabaseLifeCycles();
+				databases.put(v.getDatabaseConfigurationParameters().getPackage().getName(), callable != null && callable.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized());
+			});
+
+			getSynchronizer().restoreHosts(hosts.get(), databases);
+		}
+		if (configurations.stream().anyMatch(v-> v.getDatabaseConfigurationParameters().isSynchronizedWithCentralBackupDatabase()) && getSynchronizer().isInitializedWithCentralBackup())
+			getSynchronizer().initConnexionWithDistantBackupCenter();
+	}
+	final void postLoadDatabaseFinal( Reference<Boolean> allNotFound, boolean internalDatabasePackage) throws DatabaseException {
+		actualDatabaseLoading = null;
+		if (!allNotFound.get() && !internalDatabasePackage)
+			getSynchronizer().isReliedToDistantHook();
+	}
+	final void loadDatabase(final DatabaseConfiguration configuration,
+							final boolean createDatabaseIfNecessaryAndCheckIt, int databaseVersion) throws DatabaseException {
+		if (configuration == null)
+			throw new NullPointerException();
+		boolean internalPackage=configuration.getDatabaseConfigurationParameters().getPackage().equals(this.getClass().getPackage());
+		if (!internalPackage) {
+			if (createDatabaseIfNecessaryAndCheckIt)
+				getTableInstance(DatabaseTable.class, databaseVersion);
+		}
+		else
+			databaseVersion=0;
+		Reference<Boolean> allNotFound=new Reference<>(false);
+		Reference<Boolean> restoreSynchronizerHosts=new Reference<>(false);
+		Reference<Collection<DatabaseHooksTable.Record>> hosts=new Reference<>(null);
+		try  {
+			lockWrite();
+			try {
+				loadDatabaseImpl(configuration,
+						createDatabaseIfNecessaryAndCheckIt,
+						internalPackage,
+						databaseVersion,
+						restoreSynchronizerHosts,
+						hosts,
+						allNotFound);
+				postLoadDatabase(Collections.singleton(configuration), restoreSynchronizerHosts, hosts);
+			}finally {
+				postLoadDatabaseFinal(allNotFound, internalPackage);
+			}
+		}
+		finally
+		{
+			unlockWrite();
+		}
+	}
+	//TODO manage time of restoration
+	final void loadDatabase(final Collection<DatabaseConfiguration> configurations,
+			final boolean createDatabaseIfNecessaryAndCheckIt, Long timeOfRestoration) throws DatabaseException {
+		if (configurations == null)
+			throw new NullPointerException("tables is a null pointer.");
+		if (configurations.size()==0)
+			throw new IllegalArgumentException();
+		if (configurations.contains(null))
+			throw new NullPointerException();
+		if (configurations.stream().anyMatch(v-> v.getDatabaseConfigurationParameters().getPackage().equals(this.getClass().getPackage())))
+			throw new IllegalArgumentException("The package "+this.getClass().getPackage()+" cannot be included into the list of database");
+
+		if (createDatabaseIfNecessaryAndCheckIt)
+			getTableInstance(DatabaseTable.class, -1);
+
+		Reference<Boolean> allNotFound=new Reference<>(false);
+		Reference<Boolean> restoreSynchronizerHosts=new Reference<>(false);
+		Reference<Collection<DatabaseHooksTable.Record>> hosts=new Reference<>(null);
+		try  {
+			lockWrite();
+			try {
+				for (DatabaseConfiguration configuration : configurations) {
+					int databaseVersion = -1;
+					loadDatabaseImpl(configuration,
+							createDatabaseIfNecessaryAndCheckIt,
+							false,
+							databaseVersion,
+							restoreSynchronizerHosts,
+							hosts,
+							allNotFound);
+
 				}
-				else {
-					DatabasePerVersion dpv=actualDatabaseLoading.tables_per_versions.get(databaseVersion);
-					if (dpv==null)
-						throw new InternalError();
+				postLoadDatabase(configurations, restoreSynchronizerHosts, hosts);
 
-					db.tables_per_versions.put(databaseVersion, dpv);
-					//db.updateCurrentVersion();
-				}
-				sql_database = sd;
-				configuration.setDatabaseWrapper(this);
-				if (initBackupRestore)
-					actualDatabaseLoading.initBackupRestoreManager(this, getDatabaseDirectory(), configuration);
-				if (restoreSynchronizerHosts)
-					getSynchronizer().restoreHosts(hosts, callable != null && callable.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized());
-				if (configuration.getDatabaseConfigurationParameters().isSynchronizedWithCentralBackupDatabase() && getSynchronizer().isInitializedWithCentralBackup())
-					getSynchronizer().initConnexionWithDistantBackupCenter();
-
-			} finally {
-				actualDatabaseLoading = null;
-				if (!allNotFound && !configuration.getDatabaseConfigurationParameters().getPackage().equals(this.getClass().getPackage()))
-					getSynchronizer().isReliedToDistantHook();
+			}
+			finally {
+				postLoadDatabaseFinal(allNotFound, false);
 			}
 		}
 		finally

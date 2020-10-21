@@ -283,9 +283,8 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 
 	}
 
-	protected long addTransactionToSynchronizeTables(final List<String> databasePackages,
-													 final ArrayList<DecentralizedValue> hostAlreadySynchronized, final DatabaseHooksTable.Record hook,
-													 boolean force) throws DatabaseException {
+	protected long addTransactionToSynchronizeTables(final HashMap<String, Boolean> databasePackages,
+													 final ArrayList<DecentralizedValue> hostAlreadySynchronized, final DatabaseHooksTable.Record hook) throws DatabaseException {
 		final Set<String> packageSynchroOneTime = new HashSet<>();
 		//assert getDatabaseHooksTable().getRecord("id", hook.getID())!=null;
 		getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
@@ -294,7 +293,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 			public boolean nextRecord(DatabaseHooksTable.Record _record) {
 				if (!_record.concernsLocalDatabaseHost() && hostAlreadySynchronized.contains(_record.getHostID())) {
 					for (String p : _record.getDatabasePackageNames()) {
-						if (databasePackages.contains(p)) {
+						if (databasePackages.containsKey(p)) {
 							packageSynchroOneTime.add(p);
 						}
 					}
@@ -304,9 +303,9 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 			}
 		});
 
-		for (String databasePackage : databasePackages)
-			if (!packageSynchroOneTime.contains(databasePackage))
-				addTransactionToSynchronizeTables(databasePackage, hook, force);
+		for (Map.Entry<String, Boolean> e : databasePackages.entrySet())
+			if (!packageSynchroOneTime.contains(e.getKey()))
+				addTransactionToSynchronizeTables(e.getKey(), hook, e.getValue());
 
 		if (packageSynchroOneTime.size() > 0) {
 			final AtomicLong lastTransactionID = new AtomicLong(Long.MAX_VALUE);
