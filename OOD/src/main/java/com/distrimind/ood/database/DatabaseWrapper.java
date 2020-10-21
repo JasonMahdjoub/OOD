@@ -4504,6 +4504,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					actualDatabaseLoading.initBackupRestoreManager(this, getDatabaseDirectory(), configuration);
 				if (restoreSynchronizerHosts)
 					getSynchronizer().restoreHosts(hosts, callable != null && callable.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized());
+				if (configuration.getDatabaseConfigurationParameters().isSynchronizedWithCentralBackupDatabase() && getSynchronizer().isInitializedWithCentralBackup())
+					getSynchronizer().initConnexionWithDistantBackupCenter();
+
 			} finally {
 				actualDatabaseLoading = null;
 				if (!allNotFound && !configuration.getDatabaseConfigurationParameters().getPackage().equals(this.getClass().getPackage()))
