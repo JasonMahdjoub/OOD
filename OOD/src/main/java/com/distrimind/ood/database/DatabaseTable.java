@@ -62,6 +62,9 @@ final class DatabaseTable extends Table<DatabaseTable.Record> {
 		@Field
 		private boolean synchronizedWithCentralDatabaseBackup;
 
+		@Field
+		private boolean toSynchronizeWithDistantPeers=false;
+
 		@SuppressWarnings("unused")
 		private Record() {
 		}
@@ -82,6 +85,14 @@ final class DatabaseTable extends Table<DatabaseTable.Record> {
 
 		void setSynchronizedWithCentralDatabaseBackup(boolean synchronizedWithCentralDatabaseBackup) {
 			this.synchronizedWithCentralDatabaseBackup = synchronizedWithCentralDatabaseBackup;
+		}
+
+		public boolean isToSynchronizeWithDistantPeers() {
+			return toSynchronizeWithDistantPeers;
+		}
+
+		public void setToSynchronizeWithDistantPeers(boolean toSynchronizeWithDistantPeers) {
+			this.toSynchronizeWithDistantPeers = toSynchronizeWithDistantPeers;
 		}
 	}
 }
