@@ -93,4 +93,13 @@ public interface DatabaseLifeCycles {
 	 * @return true if the distant conflictual record can be ignored
 	 */
 	boolean replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized();
+
+	/**
+	 * This function is called when the database configuration is altered,
+	 * essentially when distant peers was added or removed.
+	 * The aim of this function is to save the database configuration and to make it persistent.
+	 *
+	 * @param databaseConfiguration the altered database configuration
+	 */
+	void saveDatabaseConfigurationParameters(DatabaseConfiguration databaseConfiguration);
 }

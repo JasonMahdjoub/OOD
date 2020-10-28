@@ -37,6 +37,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.ListClasses;
 
 import java.lang.reflect.Modifier;
@@ -81,7 +82,16 @@ public class DatabaseConfiguration {
 		this(databaseConfigurationParameters, _classes, callable, null);
 	}
 
+	Collection<DecentralizedValue> getDistantPeersThatCanBeSynchronizedWithThisDatabase() {
+		return databaseConfigurationParameters.getDistantPeersThatCanBeSynchronizedWithThisDatabase();
+	}
 
+	void setDistantPeersThatCanBeSynchronizedWithThisDatabase(Collection<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase) throws IllegalAccessException {
+		if (databaseConfigurationParameters.setDistantPeersThatCanBeSynchronizedWithThisDatabase(distantPeersThatCanBeSynchronizedWithThisDatabase)) {
+			if (databaseLifeCycles!=null)
+				databaseLifeCycles.saveDatabaseConfigurationParameters(this);
+		}
+	}
 
 	@SuppressWarnings("unchecked")
 	public DatabaseConfiguration(DatabaseConfigurationParameters databaseConfigurationParameters, Collection<Class<?>> _classes, DatabaseLifeCycles callable,

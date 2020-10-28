@@ -36,10 +36,15 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 import com.distrimind.ood.i18n.DatabaseMessages;
+import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.progress_monitors.ProgressMonitorDM;
 import com.distrimind.util.progress_monitors.ProgressMonitorFactory;
 import com.distrimind.util.progress_monitors.ProgressMonitorParameters;
 import com.distrimind.util.properties.MultiFormatProperties;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Objects;
 
 /**
  * @author Jason Mahdjoub
@@ -58,6 +63,7 @@ public class DatabaseConfigurationParameters extends MultiFormatProperties {
 	private Package dbPackage;
 	private BackupConfiguration backupConfiguration;
 	private SynchronizationType synchronizationType;
+	private Collection<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase;
 
 	/**
 	 * The progress monitor's parameter for database upgrade
@@ -73,10 +79,16 @@ public class DatabaseConfigurationParameters extends MultiFormatProperties {
 	{
 		super(null);
 	}
-	public DatabaseConfigurationParameters(Package _package, SynchronizationType synchronizationType) {
-		this(_package, synchronizationType, null);
+	public DatabaseConfigurationParameters(Package _package, SynchronizationType synchronizationType)  {
+		this(_package, synchronizationType, null, null);
 	}
-	public DatabaseConfigurationParameters(Package _package, SynchronizationType synchronizationType, BackupConfiguration backupConfiguration) {
+	public DatabaseConfigurationParameters(Package _package, SynchronizationType synchronizationType, Collection<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase) {
+		this(_package, synchronizationType, distantPeersThatCanBeSynchronizedWithThisDatabase, null);
+	}
+	public DatabaseConfigurationParameters(Package _package, SynchronizationType synchronizationType, BackupConfiguration backupConfiguration)  {
+		this(_package, synchronizationType, null, backupConfiguration);
+	}
+	public DatabaseConfigurationParameters(Package _package, SynchronizationType synchronizationType, Collection<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase, BackupConfiguration backupConfiguration)  {
 		super(null);
 		if (_package == null)
 			throw new NullPointerException("_package");
@@ -85,6 +97,33 @@ public class DatabaseConfigurationParameters extends MultiFormatProperties {
 		this.dbPackage=_package;
 		this.synchronizationType=synchronizationType;
 		this.backupConfiguration=backupConfiguration;
+		try {
+			setDistantPeersThatCanBeSynchronizedWithThisDatabase(distantPeersThatCanBeSynchronizedWithThisDatabase);
+		} catch (IllegalAccessException e) {
+			throw new IllegalArgumentException(e);
+		}
+	}
+
+	public Collection<DecentralizedValue> getDistantPeersThatCanBeSynchronizedWithThisDatabase() {
+		return distantPeersThatCanBeSynchronizedWithThisDatabase;
+	}
+
+	public boolean setDistantPeersThatCanBeSynchronizedWithThisDatabase(Collection<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase) throws IllegalAccessException {
+		if (distantPeersThatCanBeSynchronizedWithThisDatabase!=null && distantPeersThatCanBeSynchronizedWithThisDatabase.size()>0) {
+			if (distantPeersThatCanBeSynchronizedWithThisDatabase.stream().anyMatch(Objects::isNull))
+				throw new NullPointerException();
+			if (synchronizationType==SynchronizationType.NO_SYNCHRONIZATION)
+				throw new IllegalAccessException();
+			if (this.distantPeersThatCanBeSynchronizedWithThisDatabase.equals(distantPeersThatCanBeSynchronizedWithThisDatabase))
+				return false;
+			this.distantPeersThatCanBeSynchronizedWithThisDatabase = new ArrayList<>(distantPeersThatCanBeSynchronizedWithThisDatabase);
+		}
+		else {
+			if (distantPeersThatCanBeSynchronizedWithThisDatabase==null)
+				return false;
+			this.distantPeersThatCanBeSynchronizedWithThisDatabase = null;
+		}
+		return true;
 	}
 
 	/**

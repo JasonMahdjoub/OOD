@@ -4459,7 +4459,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 *            database is created and if transfer from old database must done.
 	 * @param timeUTCOfRestorationInMs the time UTC in milliseconds of the point of restoration.
 	 *                                 Every modification in the database after that point is excluded.
-	 *                                 However, it is possible to recover delete modification by restoring
+	 *                                 However, it is possible to recover deleted modification by restoring
 	 *                                 the database to a point located after that point (see {@link BackupRestoreManager#restoreDatabaseToDateUTC(long)})
 	 * @throws DatabaseException
 	 *             if the given package is already associated to a database, or if
@@ -4491,7 +4491,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 *            database is created and if transfer from old database must done.
 	 * @param timeUTCOfRestorationInMs the time UTC in milliseconds of the point of restoration.
 	 *                                 Every modification in the database after that point is excluded.
-	 *                                 However, it is possible to recover delete modification by restoring
+	 *                                 However, it is possible to recover deleted modification by restoring
 	 *                                 the database to a point located after that point (see {@link BackupRestoreManager#restoreDatabaseToDateUTC(long)})
 	 * @throws DatabaseException
 	 *             if the given package is already associated to a database, or if
