@@ -58,6 +58,7 @@ import com.distrimind.util.harddrive.HardDriveDetect;
 import com.distrimind.util.harddrive.Partition;
 import com.distrimind.util.io.*;
 
+import javax.security.auth.login.Configuration;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -4461,6 +4462,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 *                                 Every modification in the database after that point is excluded.
 	 *                                 However, it is possible to recover deleted modification by restoring
 	 *                                 the database to a point located after that point (see {@link BackupRestoreManager#restoreDatabaseToDateUTC(long)})
+	 * @param peersToRemove peers to remove from synchronization
 	 * @throws DatabaseException
 	 *             if the given package is already associated to a database, or if
 	 *             the database cannot be created.
@@ -4468,8 +4470,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 *             if the given parameters are null.
 	 */
 	public final void loadDatabaseAndRestoreItToGivenTime(final Collection<DatabaseConfiguration> configurations,
-														  final boolean createDatabaseIfNecessaryAndCheckIt, long timeUTCOfRestorationInMs) throws DatabaseException {
-		loadDatabase(configurations, createDatabaseIfNecessaryAndCheckIt,  timeUTCOfRestorationInMs);
+														  final boolean createDatabaseIfNecessaryAndCheckIt,
+														  long timeUTCOfRestorationInMs,
+														  Collection<DecentralizedValue> peersToRemove) throws DatabaseException {
+		loadDatabase(configurations, createDatabaseIfNecessaryAndCheckIt,  timeUTCOfRestorationInMs, peersToRemove);
 	}
 	/**
 	 * Associate a Sql database with a given database configuration.
@@ -4493,6 +4497,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 *                                 Every modification in the database after that point is excluded.
 	 *                                 However, it is possible to recover deleted modification by restoring
 	 *                                 the database to a point located after that point (see {@link BackupRestoreManager#restoreDatabaseToDateUTC(long)})
+	 * @param peersToRemove peers to remove from synchronization
 	 * @throws DatabaseException
 	 *             if the given package is already associated to a database, or if
 	 *             the database cannot be created.
@@ -4500,8 +4505,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 *             if the given parameters are null.
 	 */
 	public final void loadDatabaseAndRestoreItToGivenTime(final DatabaseConfiguration configuration,
-								   final boolean createDatabaseIfNecessaryAndCheckIt, long timeUTCOfRestorationInMs) throws DatabaseException {
-		loadDatabase(Collections.singleton(configuration), createDatabaseIfNecessaryAndCheckIt,  timeUTCOfRestorationInMs);
+								   final boolean createDatabaseIfNecessaryAndCheckIt,
+														  long timeUTCOfRestorationInMs,
+														  Collection<DecentralizedValue> peersToRemove) throws DatabaseException {
+		loadDatabase(Collections.singleton(configuration), createDatabaseIfNecessaryAndCheckIt,  timeUTCOfRestorationInMs, peersToRemove);
 	}
 	/**
 	 * Associate a Sql database with a given database configuration. Every
@@ -4526,7 +4533,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 */
 	public final void loadDatabase(final DatabaseConfiguration configuration,
 								   final boolean createDatabaseIfNecessaryAndCheckIt) throws DatabaseException {
-		loadDatabase(Collections.singleton(configuration), createDatabaseIfNecessaryAndCheckIt,  null);
+		loadDatabase(Collections.singleton(configuration), createDatabaseIfNecessaryAndCheckIt,  null, null);
 	}
 	/**
 	 * Associate a Sql database with a given list of database configuration. Every
@@ -4551,7 +4558,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 */
 	public final void loadDatabase(final Collection<DatabaseConfiguration> configurations,
 								   final boolean createDatabaseIfNecessaryAndCheckIt) throws DatabaseException {
-		loadDatabase(configurations, createDatabaseIfNecessaryAndCheckIt, null);
+		loadDatabase(configurations, createDatabaseIfNecessaryAndCheckIt, null, null);
 	}
 	final void loadDatabaseImpl(final DatabaseConfiguration configuration,
 								final boolean createDatabaseIfNecessaryAndCheckIt,
@@ -4674,8 +4681,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	}
 	final void loadDatabase(final DatabaseConfiguration configuration,
 							final boolean createDatabaseIfNecessaryAndCheckIt, int databaseVersion) throws DatabaseException {
-		if (configuration == null)
-			throw new NullPointerException();
+		checkConfiguration(configuration);
 		boolean internalPackage=configuration.getDatabaseConfigurationParameters().getPackage().equals(this.getClass().getPackage());
 		if (!internalPackage) {
 			if (createDatabaseIfNecessaryAndCheckIt)
@@ -4706,17 +4712,41 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			unlockWrite();
 		}
 	}
-	//TODO manage time of restoration
+	private void checkConfiguration(DatabaseConfiguration configuration) throws DatabaseException {
+		if (configuration==null)
+			throw new NullPointerException();
+		if (configuration.getDatabaseConfigurationParameters().getPackage().equals(this.getClass().getPackage()))
+			throw new IllegalArgumentException("The package "+this.getClass().getPackage()+" cannot be included into the list of database");
+		DecentralizedValue ldv=getSynchronizer().getLocalHostID();
+		if (ldv!=null)
+		{
+			Collection<DecentralizedValue> c=configuration.getDatabaseConfigurationParameters().getDistantPeersThatCanBeSynchronizedWithThisDatabase();
+			if (c!=null && c.contains(ldv))
+				throw new IllegalArgumentException("Impossible to synchronize the database between one peer and it self : "+ldv);
+		}
+	}
+	//TODO manage time of restoration and peers to remove
 	final void loadDatabase(final Collection<DatabaseConfiguration> configurations,
-			final boolean createDatabaseIfNecessaryAndCheckIt, Long timeOfRestoration) throws DatabaseException {
+			final boolean createDatabaseIfNecessaryAndCheckIt, Long timeOfRestoration, Collection<DecentralizedValue> peersToRemove) throws DatabaseException {
 		if (configurations == null)
 			throw new NullPointerException("tables is a null pointer.");
 		if (configurations.size()==0)
 			throw new IllegalArgumentException();
-		if (configurations.contains(null))
-			throw new NullPointerException();
-		if (configurations.stream().anyMatch(v-> v.getDatabaseConfigurationParameters().getPackage().equals(this.getClass().getPackage())))
-			throw new IllegalArgumentException("The package "+this.getClass().getPackage()+" cannot be included into the list of database");
+		for (DatabaseConfiguration bc : configurations)
+			checkConfiguration(bc);
+
+		if (peersToRemove!=null && peersToRemove.size()==0)
+			peersToRemove=null;
+		if (peersToRemove!=null)
+		{
+			if (peersToRemove.stream().anyMatch(Objects::isNull))
+				throw new NullPointerException();
+			DecentralizedValue ldv=getSynchronizer().getLocalHostID();
+			if (ldv!=null && peersToRemove.contains(ldv))
+				throw new IllegalArgumentException();
+
+		}
+
 
 		if (createDatabaseIfNecessaryAndCheckIt)
 			getTableInstance(DatabaseTable.class, -1);
