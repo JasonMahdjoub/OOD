@@ -35,11 +35,9 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.properties.MultiFormatProperties;
 
-import javax.security.auth.login.Configuration;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -48,19 +46,20 @@ import java.util.Set;
  * @version 1.0
  * @since OOD 3.0.0
  */
+@SuppressWarnings("FieldMayBeFinal")
 public class DatabaseConfigurations extends MultiFormatProperties {
 	private HashSet<DatabaseConfiguration> configurations;
-	private HashSet<DecentralizedValue> distantPeers;
+	HashSet<DecentralizedValue> distantPeers;
 	private DecentralizedValue localPeer;
-	private transient DatabaseWrapper wrapper=null;
-	private transient DatabaseLifeCycles lifeCycles=null;
+	private boolean permitIndirectSynchronizationBetweenPeers;
+
 	public DatabaseConfigurations(Set<DatabaseConfiguration> configurations) {
-		this(configurations,null, null);
+		this(configurations,null, null, false);
 	}
 	public DatabaseConfigurations() {
 		this(new HashSet<>());
 	}
-	public DatabaseConfigurations(Set<DatabaseConfiguration> configurations, Set<DecentralizedValue> distantPeers, DecentralizedValue localPeer) {
+	public DatabaseConfigurations(Set<DatabaseConfiguration> configurations, Set<DecentralizedValue> distantPeers, DecentralizedValue localPeer, boolean permitIndirectSynchronizationBetweenPeers) {
 		super(null);
 		if (configurations ==null)
 			throw new NullPointerException();
@@ -68,7 +67,7 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 			throw new NullPointerException();
 
 		this.configurations = new HashSet<>(configurations);
-
+		this.permitIndirectSynchronizationBetweenPeers=permitIndirectSynchronizationBetweenPeers;
 		if (distantPeers==null)
 			this.distantPeers=new HashSet<>();
 		else {
@@ -82,8 +81,22 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 		}
 		this.localPeer = localPeer;
 		checkLocalPeerNull();
-
 	}
+
+
+	public boolean isPermitIndirectSynchronizationBetweenPeers() {
+		return permitIndirectSynchronizationBetweenPeers;
+	}
+
+	void setPermitIndirectSynchronizationBetweenPeers(boolean permitIndirectSynchronizationBetweenPeers) {
+		this.permitIndirectSynchronizationBetweenPeers = permitIndirectSynchronizationBetweenPeers;
+	}
+
+	void setLocalPeer(DecentralizedValue localPeer) {
+		this.localPeer = localPeer;
+	}
+
+
 	private void checkLocalPeerNull()
 	{
 		if (localPeer==null) {
@@ -94,34 +107,7 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 		}
 	}
 
-	void setWrapper(DatabaseWrapper wrapper, DatabaseLifeCycles lifeCycles) throws DatabaseException {
-		if (wrapper==null)
-			throw new NullPointerException();
-		if (this.wrapper!=null)
-			throw new DatabaseException("Cannot use the same database configuration for several wrappers");
-		this.wrapper = wrapper;
-		this.lifeCycles=lifeCycles;
-		boolean save=false;
-		for (DatabaseConfiguration dc : configurations)
-		{
-			for (DecentralizedValue dv : dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase())
-			{
-				if (this.distantPeers == null)
-					this.distantPeers = new HashSet<>();
 
-				if (this.distantPeers.add(dv))
-					save=true;
-			}
-		}
-		if (save && lifeCycles!=null)
-		{
-			lifeCycles.saveDatabaseConfigurationParameters(this);
-		}
-	}
-
-	DatabaseLifeCycles getLifeCycles() {
-		return lifeCycles;
-	}
 
 
 

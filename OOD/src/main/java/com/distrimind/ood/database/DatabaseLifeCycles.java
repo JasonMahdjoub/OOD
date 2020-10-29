@@ -98,5 +98,5 @@ public interface DatabaseLifeCycles {
 	 *
 	 * @param databaseConfigurations the altered database configuration
 	 */
-	void saveDatabaseConfigurationParameters(DatabaseConfigurations databaseConfigurations);
+	void saveDatabaseConfigurations(DatabaseConfigurations databaseConfigurations);
 }
