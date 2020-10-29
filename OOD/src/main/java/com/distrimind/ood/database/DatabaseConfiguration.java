@@ -36,12 +36,12 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
-import com.distrimind.util.ListClasses;
+import com.distrimind.util.properties.MultiFormatProperties;
 
-import java.lang.reflect.Modifier;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Objects;
 
 /**
  * Describe a database configuration. A database is defined by its package, and
@@ -53,95 +53,77 @@ import java.util.*;
  * @since OOD 2.0
  * @see DatabaseLifeCycles
  */
-public class DatabaseConfiguration {
-
-	private final DatabaseConfigurationParameters databaseConfigurationParameters;
-	private final Set<Class<? extends Table<?>>> classes;
-	private List<Class<? extends Table<?>>> sortedClasses=null;
-
-	private DatabaseConfiguration oldDatabaseTables;
-	private DatabaseLifeCycles databaseLifeCycles;
-
-	public DatabaseConfiguration(DatabaseConfigurationParameters databaseConfigurationParameters) {
-		this(databaseConfigurationParameters, ListClasses.getClasses(databaseConfigurationParameters.getPackage()), null, null);
-	}
-	public DatabaseConfiguration(DatabaseConfigurationParameters databaseConfigurationParameters, DatabaseLifeCycles callable)
+@SuppressWarnings("FieldMayBeFinal")
+public class DatabaseConfiguration extends MultiFormatProperties {
+	public enum SynchronizationType
 	{
-		this(databaseConfigurationParameters, callable, null);
-	}
-	public DatabaseConfiguration(DatabaseConfigurationParameters databaseConfigurationParameters, DatabaseLifeCycles callable,
-			DatabaseConfiguration oldVersionOfDatabaseTables) {
-		this(databaseConfigurationParameters, ListClasses.getClasses(databaseConfigurationParameters.getPackage()), callable, oldVersionOfDatabaseTables);
+		NO_SYNCHRONIZATION,
+		DECENTRALIZED_SYNCHRONIZATION,
+		DECENTRALIZED_SYNCHRONIZATION_AND_SYNCHRONIZATION_WITH_CENTRAL_BACKUP_DATABASE
 	}
 
-	public DatabaseConfiguration(DatabaseConfigurationParameters databaseConfigurationParameters, Collection<Class<?>> _classes) {
-		this(databaseConfigurationParameters, _classes, null);
-	}
-	public DatabaseConfiguration(DatabaseConfigurationParameters databaseConfigurationParameters, Collection<Class<?>> _classes, DatabaseLifeCycles callable)
-	{
-		this(databaseConfigurationParameters, _classes, callable, null);
+	private DatabaseSchema databaseSchema;
+	private SynchronizationType synchronizationType;
+	private Collection<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase;
+	private BackupConfiguration backupConfiguration;
+
+	public DatabaseConfiguration(DatabaseSchema databaseSchema) {
+		this(databaseSchema, SynchronizationType.NO_SYNCHRONIZATION, null, null);
 	}
 
-	Collection<DecentralizedValue> getDistantPeersThatCanBeSynchronizedWithThisDatabase() {
-		return databaseConfigurationParameters.getDistantPeersThatCanBeSynchronizedWithThisDatabase();
+	public DatabaseConfiguration(DatabaseSchema databaseSchema, BackupConfiguration backupConfiguration) {
+		this(databaseSchema, SynchronizationType.NO_SYNCHRONIZATION, null, backupConfiguration);
 	}
 
-	void setDistantPeersThatCanBeSynchronizedWithThisDatabase(Collection<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase) throws IllegalAccessException {
-		if (databaseConfigurationParameters.setDistantPeersThatCanBeSynchronizedWithThisDatabase(distantPeersThatCanBeSynchronizedWithThisDatabase)) {
-			if (databaseLifeCycles!=null)
-				databaseLifeCycles.saveDatabaseConfigurationParameters(this);
-		}
-	}
-
-	@SuppressWarnings("unchecked")
-	public DatabaseConfiguration(DatabaseConfigurationParameters databaseConfigurationParameters, Collection<Class<?>> _classes, DatabaseLifeCycles callable,
-			DatabaseConfiguration oldVersionOfDatabaseTables) {
-		if (_classes == null)
-			throw new NullPointerException("_classes");
-		if (databaseConfigurationParameters == null)
+	public DatabaseConfiguration(DatabaseSchema databaseSchema, SynchronizationType synchronizationType, Collection<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase, BackupConfiguration backupConfiguration) {
+		super(null);
+		if (databaseSchema == null)
 			throw new NullPointerException("_package");
-		if (_classes.size()>Short.MAX_VALUE*2+1)
-			throw new IllegalArgumentException("Tables number cannot be greater than "+(Short.MAX_VALUE*2+1)+". Here, "+_classes.size()+" tables given.");
-
-		this.databaseConfigurationParameters=databaseConfigurationParameters;
-		classes = new HashSet<>();
-		if (oldVersionOfDatabaseTables != null && oldVersionOfDatabaseTables.getDatabaseConfigurationParameters().getPackage().equals(databaseConfigurationParameters.getPackage()))
-			throw new IllegalArgumentException("The old database version cannot have the same package");
-		this.databaseLifeCycles = callable;
-		this.oldDatabaseTables = oldVersionOfDatabaseTables;
-		for (Class<?> c : _classes) {
-			if (c != null && Table.class.isAssignableFrom(c) && c.getPackage().equals(databaseConfigurationParameters.getPackage())
-					&& !Modifier.isAbstract(c.getModifiers()))
-				classes.add((Class<? extends Table<?>>) c);
+		if (synchronizationType == null)
+			throw new NullPointerException();
+		if (synchronizationType==SynchronizationType.DECENTRALIZED_SYNCHRONIZATION_AND_SYNCHRONIZATION_WITH_CENTRAL_BACKUP_DATABASE && backupConfiguration==null)
+			throw new NullPointerException("Backup configuration cannot be null when "+synchronizationType+" is activated");
+		this.databaseSchema = databaseSchema;
+		this.synchronizationType=synchronizationType;
+		this.backupConfiguration=backupConfiguration;
+		try {
+			setDistantPeersThatCanBeSynchronizedWithThisDatabase(distantPeersThatCanBeSynchronizedWithThisDatabase);
+		} catch (IllegalAccessException e) {
+			throw new IllegalArgumentException();
 		}
+
+	}
+	public BackupConfiguration getBackupConfiguration() {
+		return backupConfiguration;
 	}
 
-	public DatabaseConfigurationParameters getDatabaseConfigurationParameters() {
-		return databaseConfigurationParameters;
+	public Collection<DecentralizedValue> getDistantPeersThatCanBeSynchronizedWithThisDatabase() {
+		return distantPeersThatCanBeSynchronizedWithThisDatabase;
 	}
 
-	public Set<Class<? extends Table<?>>> getTableClasses() {
-		return classes;
-	}
-	void setDatabaseWrapper(DatabaseWrapper wrapper) throws DatabaseException {
-		ArrayList<Table<?>> tables=new ArrayList<>(this.classes.size());
-		for (Class<? extends Table<?>> c : this.classes)
-		{
-			tables.add(wrapper.getTableInstance(c));
+	public boolean setDistantPeersThatCanBeSynchronizedWithThisDatabase(Collection<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase) throws IllegalAccessException {
+		if (distantPeersThatCanBeSynchronizedWithThisDatabase!=null && distantPeersThatCanBeSynchronizedWithThisDatabase.size()>0) {
+			if (distantPeersThatCanBeSynchronizedWithThisDatabase.stream().anyMatch(Objects::isNull))
+				throw new NullPointerException();
+			if (synchronizationType==SynchronizationType.NO_SYNCHRONIZATION)
+				throw new IllegalAccessException();
+			if (this.distantPeersThatCanBeSynchronizedWithThisDatabase!=null && this.distantPeersThatCanBeSynchronizedWithThisDatabase.equals(distantPeersThatCanBeSynchronizedWithThisDatabase))
+				return false;
+			this.distantPeersThatCanBeSynchronizedWithThisDatabase = new ArrayList<>(distantPeersThatCanBeSynchronizedWithThisDatabase);
 		}
-		Collections.sort(tables);
-		sortedClasses=new ArrayList<>(tables.size());
-		for (Table<?> t : tables)
-			//noinspection unchecked
-			sortedClasses.add((Class<? extends Table<?>>)t.getClass());
+		else {
+			if (this.distantPeersThatCanBeSynchronizedWithThisDatabase==null)
+				return false;
+			this.distantPeersThatCanBeSynchronizedWithThisDatabase = null;
+		}
+		return true;
 	}
-	public List<Class<? extends Table<?>>> getSortedTableClasses() throws DatabaseException {
-		if (sortedClasses==null)
-			throw new DatabaseException("This configuration was not loaded");
-		return sortedClasses;
+
+	public DatabaseSchema getDatabaseConfigurationParameters() {
+		return databaseSchema;
+	}
 
 
-	}
 
 
 	@Override
@@ -152,29 +134,28 @@ public class DatabaseConfiguration {
 			return true;
 		if (o instanceof DatabaseConfiguration) {
 			DatabaseConfiguration dt = (DatabaseConfiguration) o;
-			return dt.databaseConfigurationParameters.equals(databaseConfigurationParameters);
+			return dt.databaseSchema.equals(databaseSchema);
 		}
 		return false;
 	}
 
 	@Override
 	public int hashCode() {
-		return databaseConfigurationParameters.hashCode();
+		return databaseSchema.hashCode();
 	}
 
-	public DatabaseLifeCycles getDatabaseLifeCycles() {
-		return databaseLifeCycles;
+	public boolean isSynchronizedWithCentralBackupDatabase() {
+		return backupConfiguration!=null && synchronizationType==SynchronizationType.DECENTRALIZED_SYNCHRONIZATION_AND_SYNCHRONIZATION_WITH_CENTRAL_BACKUP_DATABASE;
 	}
 
-	public void setDatabaseLifeCycles(DatabaseLifeCycles _databaseLifeCycles) {
-		databaseLifeCycles = _databaseLifeCycles;
+	public boolean isDecentralized()
+	{
+		return synchronizationType==SynchronizationType.DECENTRALIZED_SYNCHRONIZATION ||
+				synchronizationType==SynchronizationType.DECENTRALIZED_SYNCHRONIZATION_AND_SYNCHRONIZATION_WITH_CENTRAL_BACKUP_DATABASE;
 	}
 
-	public DatabaseConfiguration getOldVersionOfDatabaseConfiguration() {
-		return oldDatabaseTables;
+	public SynchronizationType getSynchronizationType() {
+		return synchronizationType;
 	}
 
-	public void setOldVersionOfDatabaseTables(DatabaseConfiguration _oldDatabaseTables) {
-		oldDatabaseTables = _oldDatabaseTables;
-	}
 }

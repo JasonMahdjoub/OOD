@@ -536,8 +536,8 @@ public abstract class CommonDecentralizedTests {
 			eventsReceivedStack = Collections.synchronizedList(new LinkedList<>());
 
 			getDbwrapper()
-					.loadDatabase(new DatabaseConfiguration(new DatabaseConfigurationParameters(TableAlone.class.getPackage(),
-							canInitCentralBackup?DatabaseConfigurationParameters.SynchronizationType.DECENTRALIZED_SYNCHRONIZATION_AND_SYNCHRONIZATION_WITH_CENTRAL_BACKUP_DATABASE:DatabaseConfigurationParameters.SynchronizationType.DECENTRALIZED_SYNCHRONIZATION,
+					.loadDatabase(new DatabaseConfiguration(new DatabaseSchema(TableAlone.class.getPackage(),
+							canInitCentralBackup? DatabaseSchema.SynchronizationType.DECENTRALIZED_SYNCHRONIZATION_AND_SYNCHRONIZATION_WITH_CENTRAL_BACKUP_DATABASE: DatabaseSchema.SynchronizationType.DECENTRALIZED_SYNCHRONIZATION,
 							backupConfiguration
 							)
 							, new DatabaseLifeCycles() {

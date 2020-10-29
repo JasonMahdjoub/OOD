@@ -109,8 +109,8 @@ public abstract class TestDatabase {
 	static Table6 table6b;
 
 	static List<Class<?>> listClasses=Arrays.asList(Table1.class, Table2.class, Table3.class, Table4.class, Table5.class, Table6.class, Table7.class);
-	static DatabaseConfiguration dbConfig1 = new DatabaseConfiguration(new DatabaseConfigurationParameters(Table1.class.getPackage(), DatabaseConfigurationParameters.SynchronizationType.NO_SYNCHRONIZATION), listClasses);
-	static DatabaseConfiguration dbConfig2 = new DatabaseConfiguration(new DatabaseConfigurationParameters(Lecture.class.getPackage(), DatabaseConfigurationParameters.SynchronizationType.NO_SYNCHRONIZATION), listClasses);
+	static DatabaseConfiguration dbConfig1 = new DatabaseConfiguration(new DatabaseSchema(Table1.class.getPackage(), DatabaseSchema.SynchronizationType.NO_SYNCHRONIZATION), listClasses);
+	static DatabaseConfiguration dbConfig2 = new DatabaseConfiguration(new DatabaseSchema(Lecture.class.getPackage(), DatabaseSchema.SynchronizationType.NO_SYNCHRONIZATION), listClasses);
 	private static DatabaseWrapper sql_db;
 	private static DatabaseWrapper sql_dbb;
 

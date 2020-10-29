@@ -51,15 +51,13 @@ public interface DatabaseLifeCycles {
 	 * not be called.
 	 *
 	 * @param wrapper the database wrapper
-	 * @param oldDatabaseConfiguration
-	 *            the old database configuration
 	 * @param newDatabaseConfiguration
 	 *            the new database configuration
 	 *
 	 * @throws Exception
 	 *             if a problem occurs
 	 */
-	void transferDatabaseFromOldVersion(DatabaseWrapper wrapper, DatabaseConfiguration oldDatabaseConfiguration, DatabaseConfiguration newDatabaseConfiguration) throws Exception;
+	void transferDatabaseFromOldVersion(DatabaseWrapper wrapper, DatabaseConfiguration newDatabaseConfiguration) throws Exception;
 
 	/**
 	 * This function is called after the database was created and after the eventual
@@ -83,7 +81,7 @@ public interface DatabaseLifeCycles {
 	 * @throws Exception
 	 *             if a problem occurs
 	 */
-	boolean hasToRemoveOldDatabase() throws Exception;
+	boolean hasToRemoveOldDatabase(DatabaseConfiguration databaseConfiguration) throws Exception;
 
 	/**
 	 * When a new version of the database is created, the synchronizer is reset.
@@ -92,14 +90,13 @@ public interface DatabaseLifeCycles {
 	 * this function tells if the distant record can be ignored
 	 * @return true if the distant conflictual record can be ignored
 	 */
-	boolean replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized();
+	boolean replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized(DatabaseConfiguration databaseConfiguration);
 
 	/**
-	 * This function is called when the database configuration is altered,
-	 * essentially when distant peers was added or removed.
-	 * The aim of this function is to save the database configuration and to make it persistent.
+	 * This function is called when the database configurations are altered.
+	 * The aim of this function is to save the database configurations and to make it persistent.
 	 *
-	 * @param databaseConfiguration the altered database configuration
+	 * @param databaseConfigurations the altered database configuration
 	 */
-	void saveDatabaseConfigurationParameters(DatabaseConfiguration databaseConfiguration);
+	void saveDatabaseConfigurationParameters(DatabaseConfigurations databaseConfigurations);
 }

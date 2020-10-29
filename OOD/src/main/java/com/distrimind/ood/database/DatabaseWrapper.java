@@ -58,7 +58,6 @@ import com.distrimind.util.harddrive.HardDriveDetect;
 import com.distrimind.util.harddrive.Partition;
 import com.distrimind.util.io.*;
 
-import javax.security.auth.login.Configuration;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -4006,7 +4005,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (dpv == null) {
 				if (_class_table.getPackage().equals(this.getClass().getPackage()) && (actualDatabaseLoading == null
 						|| !actualDatabaseLoading.getConfiguration().getDatabaseConfigurationParameters().getPackage().equals(_class_table.getPackage()) )) {
-					loadDatabase(new DatabaseConfiguration(new DatabaseConfigurationParameters(_class_table.getPackage(), DatabaseConfigurationParameters.SynchronizationType.NO_SYNCHRONIZATION), internalDatabaseClassesList), true, 0);
+					loadDatabase(new DatabaseConfiguration(new DatabaseSchema(_class_table.getPackage(), DatabaseSchema.SynchronizationType.NO_SYNCHRONIZATION), internalDatabaseClassesList), true, 0);
 					db=sql_database.get(_class_table.getPackage());
 					dpv=db.tables_per_versions.get(databaseVersion);
 
@@ -4652,7 +4651,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			//db.updateCurrentVersion();
 		}
 		sql_database = sd;
-		configuration.setDatabaseWrapper(this);
+		configuration.getDatabaseConfigurationParameters().setDatabaseWrapper(this);
 		if (initBackupRestore)
 			actualDatabaseLoading.initBackupRestoreManager(this, getDatabaseDirectory(), configuration);
 

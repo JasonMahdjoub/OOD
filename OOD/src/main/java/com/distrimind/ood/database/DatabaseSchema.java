@@ -35,35 +35,33 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.i18n.DatabaseMessages;
 import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.ListClasses;
 import com.distrimind.util.progress_monitors.ProgressMonitorDM;
 import com.distrimind.util.progress_monitors.ProgressMonitorFactory;
 import com.distrimind.util.progress_monitors.ProgressMonitorParameters;
 import com.distrimind.util.properties.MultiFormatProperties;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Objects;
+import static com.distrimind.ood.database.DatabaseConfiguration.SynchronizationType;
+import java.lang.reflect.Modifier;
+import java.util.*;
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.0.0
  */
-public class DatabaseConfigurationParameters extends MultiFormatProperties {
+public class DatabaseSchema extends MultiFormatProperties {
 
-	public enum SynchronizationType
-	{
-		NO_SYNCHRONIZATION,
-		DECENTRALIZED_SYNCHRONIZATION,
-		DECENTRALIZED_SYNCHRONIZATION_AND_SYNCHRONIZATION_WITH_CENTRAL_BACKUP_DATABASE
-	}
+
 
 	private Package dbPackage;
-	private BackupConfiguration backupConfiguration;
-	private SynchronizationType synchronizationType;
-	private Collection<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase;
+
+
+	private Set<Class<? extends Table<?>>> classes;
+	private transient List<Class<? extends Table<?>>> sortedClasses=null;
+	private DatabaseSchema oldSchema;
 
 	/**
 	 * The progress monitor's parameter for database upgrade
@@ -75,56 +73,62 @@ public class DatabaseConfigurationParameters extends MultiFormatProperties {
 	 */
 	private ProgressMonitorParameters progressMonitorParametersForDatabaseInitialisation=null;
 	@SuppressWarnings("unused")
-	private DatabaseConfigurationParameters()
-	{
-		super(null);
+	public DatabaseSchema(Package _package) {
+		this(_package, (DatabaseSchema) null);
 	}
-	public DatabaseConfigurationParameters(Package _package, SynchronizationType synchronizationType)  {
-		this(_package, synchronizationType, null, null);
+	public DatabaseSchema(Package _package, DatabaseSchema oldSchema)  {
+		this(_package, ListClasses.getClasses(_package), oldSchema);
 	}
-	public DatabaseConfigurationParameters(Package _package, SynchronizationType synchronizationType, Collection<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase) {
-		this(_package, synchronizationType, distantPeersThatCanBeSynchronizedWithThisDatabase, null);
-	}
-	public DatabaseConfigurationParameters(Package _package, SynchronizationType synchronizationType, BackupConfiguration backupConfiguration)  {
-		this(_package, synchronizationType, null, backupConfiguration);
-	}
-	public DatabaseConfigurationParameters(Package _package, SynchronizationType synchronizationType, Collection<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase, BackupConfiguration backupConfiguration)  {
+	public DatabaseSchema(Package _package, Set<Class<?>> classes, DatabaseSchema oldSchema)  {
 		super(null);
 		if (_package == null)
 			throw new NullPointerException("_package");
-		if (synchronizationType == null)
-			throw new NullPointerException("_package");
+		if (classes==null)
+			throw new NullPointerException();
+		if (classes.contains(null))
+			throw new NullPointerException();
+		if (classes.size()>Short.MAX_VALUE*2+1)
+			throw new IllegalArgumentException("Tables number cannot be greater than "+(Short.MAX_VALUE*2+1)+". Here, "+classes.size()+" tables given.");
+		if (oldSchema != null && oldSchema.getPackage().equals(getPackage()))
+			throw new IllegalArgumentException("The old database version cannot have the same package");
 		this.dbPackage=_package;
-		this.synchronizationType=synchronizationType;
-		this.backupConfiguration=backupConfiguration;
-		try {
-			setDistantPeersThatCanBeSynchronizedWithThisDatabase(distantPeersThatCanBeSynchronizedWithThisDatabase);
-		} catch (IllegalAccessException e) {
-			throw new IllegalArgumentException(e);
+
+		this.classes=new HashSet<>();
+		this.oldSchema=oldSchema;
+		for (Class<?> c : classes) {
+			if (c != null && Table.class.isAssignableFrom(c) && c.getPackage().equals(dbPackage)
+					&& !Modifier.isAbstract(c.getModifiers()))
+				//noinspection unchecked
+				classes.add((Class<? extends Table<?>>) c);
 		}
+		if (this.classes.size()==0)
+			throw new IllegalArgumentException();
 	}
 
-	public Collection<DecentralizedValue> getDistantPeersThatCanBeSynchronizedWithThisDatabase() {
-		return distantPeersThatCanBeSynchronizedWithThisDatabase;
+	public Set<Class<? extends Table<?>>> getTableClasses() {
+		return classes;
+	}
+	void setDatabaseWrapper(DatabaseWrapper wrapper) throws DatabaseException {
+		ArrayList<Table<?>> tables=new ArrayList<>(this.classes.size());
+		for (Class<? extends Table<?>> c : this.classes)
+		{
+			tables.add(wrapper.getTableInstance(c));
+		}
+		Collections.sort(tables);
+		sortedClasses=new ArrayList<>(tables.size());
+		for (Table<?> t : tables)
+			//noinspection unchecked
+			sortedClasses.add((Class<? extends Table<?>>)t.getClass());
+	}
+	public List<Class<? extends Table<?>>> getSortedTableClasses() throws DatabaseException {
+		if (sortedClasses==null)
+			throw new DatabaseException("This configuration was not loaded");
+		return sortedClasses;
+
+
 	}
 
-	public boolean setDistantPeersThatCanBeSynchronizedWithThisDatabase(Collection<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase) throws IllegalAccessException {
-		if (distantPeersThatCanBeSynchronizedWithThisDatabase!=null && distantPeersThatCanBeSynchronizedWithThisDatabase.size()>0) {
-			if (distantPeersThatCanBeSynchronizedWithThisDatabase.stream().anyMatch(Objects::isNull))
-				throw new NullPointerException();
-			if (synchronizationType==SynchronizationType.NO_SYNCHRONIZATION)
-				throw new IllegalAccessException();
-			if (this.distantPeersThatCanBeSynchronizedWithThisDatabase.equals(distantPeersThatCanBeSynchronizedWithThisDatabase))
-				return false;
-			this.distantPeersThatCanBeSynchronizedWithThisDatabase = new ArrayList<>(distantPeersThatCanBeSynchronizedWithThisDatabase);
-		}
-		else {
-			if (distantPeersThatCanBeSynchronizedWithThisDatabase==null)
-				return false;
-			this.distantPeersThatCanBeSynchronizedWithThisDatabase = null;
-		}
-		return true;
-	}
+
 
 	/**
 	 * @return The progress monitor's parameter for database upgrade
@@ -180,23 +184,8 @@ public class DatabaseConfigurationParameters extends MultiFormatProperties {
 
 
 
-	public boolean isSynchronizedWithCentralBackupDatabase() {
-		return backupConfiguration!=null && synchronizationType==SynchronizationType.DECENTRALIZED_SYNCHRONIZATION_AND_SYNCHRONIZATION_WITH_CENTRAL_BACKUP_DATABASE;
-	}
 
-	public boolean isDecentralized()
-	{
-		return synchronizationType==SynchronizationType.DECENTRALIZED_SYNCHRONIZATION ||
-				synchronizationType==SynchronizationType.DECENTRALIZED_SYNCHRONIZATION_AND_SYNCHRONIZATION_WITH_CENTRAL_BACKUP_DATABASE;
-	}
 
-	public SynchronizationType getSynchronizationType() {
-		return synchronizationType;
-	}
-
-	public BackupConfiguration getBackupConfiguration() {
-		return backupConfiguration;
-	}
 
 	public Package getPackage() {
 		return dbPackage;
@@ -208,8 +197,8 @@ public class DatabaseConfigurationParameters extends MultiFormatProperties {
 			return false;
 		if (o == this)
 			return true;
-		if (o instanceof DatabaseConfigurationParameters) {
-			DatabaseConfigurationParameters dt = (DatabaseConfigurationParameters) o;
+		if (o instanceof DatabaseSchema) {
+			DatabaseSchema dt = (DatabaseSchema) o;
 			return dt.dbPackage.equals(dbPackage);
 		}
 		return false;

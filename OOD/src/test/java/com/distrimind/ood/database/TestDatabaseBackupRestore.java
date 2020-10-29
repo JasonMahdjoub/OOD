@@ -417,7 +417,7 @@ public class TestDatabaseBackupRestore {
 		BackupConfiguration backupConf=null;
 		if (useInternalBackup)
 			backupConf=getBackupConfiguration();
-		DatabaseConfiguration conf=new DatabaseConfiguration( new DatabaseConfigurationParameters(Table1.class.getPackage(), DatabaseConfigurationParameters.SynchronizationType.NO_SYNCHRONIZATION, backupConf));
+		DatabaseConfiguration conf=new DatabaseConfiguration( new DatabaseSchema(Table1.class.getPackage(), DatabaseSchema.SynchronizationType.NO_SYNCHRONIZATION, backupConf));
 
 		wrapper.loadDatabase(conf, true);
 		return wrapper;
@@ -874,7 +874,7 @@ public class TestDatabaseBackupRestore {
 	public void testBackupCleaning() throws DatabaseException, InterruptedException {
 		wrapper=new InFileEmbeddedH2DatabaseFactory(databaseDirectory).newWrapperInstance();
 		BackupConfiguration backupConf=new BackupConfiguration(200L, 1000L, 1000000, 100L, null);
-		DatabaseConfiguration conf=new DatabaseConfiguration( new DatabaseConfigurationParameters(Table1.class.getPackage(), DatabaseConfigurationParameters.SynchronizationType.NO_SYNCHRONIZATION, backupConf)  );
+		DatabaseConfiguration conf=new DatabaseConfiguration( new DatabaseSchema(Table1.class.getPackage(), DatabaseSchema.SynchronizationType.NO_SYNCHRONIZATION, backupConf)  );
 
 		wrapper.loadDatabase(conf, true);
 		BackupRestoreManager manager=wrapper.getBackupRestoreManager(Table1.class.getPackage());
