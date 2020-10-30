@@ -5213,6 +5213,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				TransactionConfirmationEvents.class,
 				DatabaseEventsToSynchronizeP2P.class,
 				HookAddRequest.class,
+				HookRemoveRequest.class,
 				BackupChannelInitializationMessageFromCentralDatabaseBackup.class,
 				BackupChannelUpdateMessageFromCentralDatabaseBackup.class,
 				EncryptedMetaDataFromCentralDatabaseBackup.class,
