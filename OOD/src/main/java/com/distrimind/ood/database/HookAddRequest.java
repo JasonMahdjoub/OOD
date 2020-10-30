@@ -36,8 +36,11 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import com.distrimind.ood.database.messages.P2PDatabaseEventToSend;
+import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.messages.AuthenticatedP2PMessage;
 import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.crypto.EncryptionProfileProvider;
+import com.distrimind.util.crypto.SymmetricAuthenticatedSignatureType;
 import com.distrimind.util.io.*;
 
 import java.io.IOException;
@@ -49,7 +52,7 @@ import java.util.ArrayList;
  * @version 1.0
  * @since OOD 2.0
  */
-public class HookAddRequest extends DatabaseEvent implements P2PDatabaseEventToSend, SecureExternalizable {
+public class HookAddRequest extends DatabaseEvent implements AuthenticatedP2PMessage {
 
 	private DecentralizedValue hostSource;
 	private DecentralizedValue hostDestination;
@@ -57,20 +60,34 @@ public class HookAddRequest extends DatabaseEvent implements P2PDatabaseEventToS
 	private ArrayList<DecentralizedValue> hostAlreadySynchronized;
 	private boolean mustReturnMessage;
 	private boolean replaceDistantConflictualData;
+	private byte[] symmetricSignature;
+	private short encryptionProfileIdentifier;
 
 	@Override
 	public int getInternalSerializedSize() {
-		int res=10+SerializationTools.getInternalSize(hostSource, 0)
-				+SerializationTools.getInternalSize(hostDestination, 0);
+		int res=12+SerializationTools.getInternalSize(hostSource, 0)
+				+SerializationTools.getInternalSize(hostDestination, 0)
+				+SerializationTools.getInternalSize(symmetricSignature, SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE);
 		for (String s : packagesToSynchronize)
 			res+=SerializationTools.getInternalSize(s, SerializationTools.MAX_CLASS_LENGTH);
 		for (DecentralizedValue dv : hostAlreadySynchronized)
 			res+=SerializationTools.getInternalSize(dv, 0);
+
 		return res;
 	}
 
 	@Override
-	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
+	public byte[] getSymmetricSignature() {
+		return symmetricSignature;
+	}
+
+	@Override
+	public short getEncryptionProfileIdentifier() {
+		return encryptionProfileIdentifier;
+	}
+
+	@Override
+	public void writeExternalWithoutSignature(SecuredObjectOutputStream out) throws IOException {
 		out.writeObject(hostSource, false);
 		out.writeObject(hostDestination, false);
 		out.writeInt(packagesToSynchronize.size());
@@ -81,6 +98,13 @@ public class HookAddRequest extends DatabaseEvent implements P2PDatabaseEventToS
 			out.writeObject(dv, false);
 		out.writeBoolean(mustReturnMessage);
 		out.writeBoolean(replaceDistantConflictualData);
+		out.writeShort(encryptionProfileIdentifier);
+	}
+
+	@Override
+	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
+		writeExternalWithoutSignature(out);
+		out.writeBytesArray(symmetricSignature, false, SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE);
 	}
 
 	@Override
@@ -101,6 +125,8 @@ public class HookAddRequest extends DatabaseEvent implements P2PDatabaseEventToS
 			hostAlreadySynchronized.add(in.readObject(false, DecentralizedValue.class));
 		mustReturnMessage=in.readBoolean();
 		replaceDistantConflictualData=in.readBoolean();
+		encryptionProfileIdentifier =in.readShort();
+		symmetricSignature=in.readBytesArray(false, SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE);
 	}
 
 	@SuppressWarnings("unused")
@@ -111,7 +137,7 @@ public class HookAddRequest extends DatabaseEvent implements P2PDatabaseEventToS
 
 	HookAddRequest(DecentralizedValue _hostSource, DecentralizedValue _hostDestination,
 			ArrayList<String> packagesToSynchronize, ArrayList<DecentralizedValue> hostAlreadySynchronized,
-			boolean mustReturnMessage, boolean replaceDistantConflictualData) {
+			boolean mustReturnMessage, boolean replaceDistantConflictualData, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
 		super();
 		if (_hostSource == null)
 			throw new NullPointerException();
@@ -123,6 +149,8 @@ public class HookAddRequest extends DatabaseEvent implements P2PDatabaseEventToS
 		this.hostAlreadySynchronized = hostAlreadySynchronized;
 		this.replaceDistantConflictualData = replaceDistantConflictualData;
 		this.mustReturnMessage = mustReturnMessage;
+		this.encryptionProfileIdentifier =encryptionProfileProvider.getDefaultKeyID();
+		this.symmetricSignature=sign(encryptionProfileProvider);
 	}
 
 	@Override

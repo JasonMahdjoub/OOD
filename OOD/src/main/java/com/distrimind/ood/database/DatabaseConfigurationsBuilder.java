@@ -80,10 +80,6 @@ public class DatabaseConfigurationsBuilder {
 		}
 	}
 
-	void setWrapper(DatabaseWrapper wrapper, DatabaseLifeCycles lifeCycles) throws DatabaseException {
-
-
-	}
 
 	public void commit() throws DatabaseException {
 		synchronized (this) {
