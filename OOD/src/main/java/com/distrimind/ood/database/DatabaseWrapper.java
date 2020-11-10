@@ -126,8 +126,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	private volatile AbstractSecureRandom randomForKeys;
 	private final boolean alwaysDisconnectAfterOnTransaction;
 	private static final int MAX_TRANSACTIONS_TO_SYNCHRONIZE_AT_THE_SAME_TIME=1000000;
-	public static final int MAX_DISTANT_PEERS=Short.MAX_VALUE;
-	public static final int MAX_PACKAGE_TO_SYNCHRONIZE=Short.MAX_VALUE;
+	public static final int MAX_DISTANT_PEERS=50;
+	public static final int MAX_PACKAGE_TO_SYNCHRONIZE=1000;
 	private static volatile int MAX_HOST_NUMBERS=5;
 
 	public static int getMaxHostNumbers() {

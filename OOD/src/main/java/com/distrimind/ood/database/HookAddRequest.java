@@ -38,6 +38,7 @@ package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.messages.AuthenticatedP2PMessage;
+import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 import com.distrimind.util.crypto.SymmetricAuthenticatedSignatureType;
@@ -54,6 +55,7 @@ import java.util.ArrayList;
  */
 public class HookAddRequest extends DatabaseEvent implements AuthenticatedP2PMessage {
 
+	static final int MAX_HOOK_ADD_REQUEST_LENGTH_IN_BYTES=DatabaseHooksTable.PACKAGES_TO_SYNCHRONIZE_LENGTH*2+DecentralizedValue.MAX_SIZE_IN_BYTES_OF_DECENTRALIZED_VALUE*(2+DatabaseWrapper.MAX_DISTANT_PEERS)+SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE+5;
 	private DecentralizedValue hostSource;
 	private DecentralizedValue hostDestination;
 	private ArrayList<String> packagesToSynchronize;

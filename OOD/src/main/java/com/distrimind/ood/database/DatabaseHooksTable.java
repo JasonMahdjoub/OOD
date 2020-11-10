@@ -42,7 +42,9 @@ import com.distrimind.ood.database.annotations.LoadToMemory;
 import com.distrimind.ood.database.annotations.Unique;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.SerializationDatabaseException;
+import com.distrimind.ood.database.messages.AuthenticatedP2PMessage;
 import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.io.SerializationTools;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -57,6 +59,9 @@ import java.util.concurrent.atomic.AtomicReference;
 @SuppressWarnings({"SameParameterValue", "UnusedReturnValue"})
 @LoadToMemory
 final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
+	static final int PACKAGES_TO_SYNCHRONIZE_LENGTH=DatabaseWrapper.MAX_PACKAGE_TO_SYNCHRONIZE*SerializationTools.MAX_CLASS_LENGTH;
+	private static final int AUTHENTICATED_MESSAGES_QUEUE_TO_SEND_LENGTH=(HookAddRequest.MAX_HOOK_ADD_REQUEST_LENGTH_IN_BYTES+4)*DatabaseWrapper.MAX_DISTANT_PEERS+2;
+
 	private volatile DatabaseTransactionEventsTable databaseTransactionEventsTable = null;
 	private volatile DatabaseTransactionsPerHostTable databaseTransactionsPerHostTable = null;
 	private volatile DatabaseDistantTransactionEvent databaseDistantTransactionEvent = null;
@@ -74,8 +79,8 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		@Field(limit=3072)
 		private DecentralizedValue hostID;
 
-		@Field(limit=Short.MAX_VALUE, forceUsingBlobOrClob = true)
-		private String databasePackageNames;
+		@Field(limit=PACKAGES_TO_SYNCHRONIZE_LENGTH, forceUsingBlobOrClob = true)
+		private Set<String> databasePackageNames;
 
 
 		@Field
@@ -89,6 +94,9 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 		@Field
 		private long lastValidatedDistantTransactionUTCMs=Long.MIN_VALUE;
+
+		@Field(limit = AUTHENTICATED_MESSAGES_QUEUE_TO_SEND_LENGTH, forceUsingBlobOrClob = true)
+		private LinkedList<AuthenticatedP2PMessage> authenticatedMessagesQueueToSend=null;
 
 		@Override
 		public boolean equals(Object o) {
@@ -158,7 +166,33 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			return concernsDatabaseHost;
 		}
 
-		private static ArrayList<String> compactPackages(List<String> packages, StringBuilder compactedPackages)
+		void pushNewAuthenticatedP2PMessage(AuthenticatedP2PMessage message)
+		{
+			if (message==null)
+				throw new NullPointerException();
+			if (authenticatedMessagesQueueToSend==null)
+				authenticatedMessagesQueueToSend=new LinkedList<>();
+			authenticatedMessagesQueueToSend.add(message);
+		}
+
+		AuthenticatedP2PMessage popAuthenticatedP2PMessage(DecentralizedValue destinationPeer) throws DatabaseException {
+			if (destinationPeer==null)
+				throw new NullPointerException();
+			if (authenticatedMessagesQueueToSend==null)
+				return null;
+			for (Iterator<AuthenticatedP2PMessage> it = authenticatedMessagesQueueToSend.iterator(); it.hasNext(); ) {
+				AuthenticatedP2PMessage a = it.next();
+				if (a.getHostDestination().equals(destinationPeer)) {
+					it.remove();
+					if (authenticatedMessagesQueueToSend.size()==0)
+						authenticatedMessagesQueueToSend=null;
+					return a;
+				}
+			}
+			return null;
+		}
+
+		/*private static ArrayList<String> compactPackages(List<String> packages, StringBuilder compactedPackages)
 		{
 			if (packages == null || packages.size() == 0) {
 				return new ArrayList<>(0);
@@ -182,16 +216,18 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			}
 			return packagesList;
 		}
-
-		protected List<String> setDatabasePackageNames(List<String> packages) {
+*/
+		protected Set<String> setDatabasePackageNames(Set<String> packages) {
 			if (packages == null || packages.size() == 0) {
 				databasePackageNames = null;
-				return new ArrayList<>(0);
+				return new HashSet<>(0);
 			}
-			StringBuilder sb = new StringBuilder();
+			databasePackageNames=new HashSet<>(packages);
+			return databasePackageNames;
+			/*StringBuilder sb = new StringBuilder();
 			ArrayList<String> packagesList=compactPackages(packages, sb);
 			databasePackageNames = sb.toString();
-			return packagesList;
+			return packagesList;*/
 		}
 
 
@@ -213,7 +249,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			}
 		}*/
 
-		protected List<String> addPackageNames(String compactedPackages, StringBuilder compactedPackagesRes, List<String> ps) {
+		/*protected List<String> addPackageNames(String compactedPackages, StringBuilder compactedPackagesRes, List<String> ps) {
 			if (ps == null || ps.size() == 0)
 				return new ArrayList<>(0);
 			if (compactedPackages==null || compactedPackages.length() == 0) {
@@ -249,17 +285,24 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 				}
 				return packagesList;
 			}
-		}
+		}*/
 
-		protected List<String> addDatabasePackageNames(List<String> ps) {
-			StringBuilder sb=new StringBuilder();
+		protected Set<String> addDatabasePackageNames(List<String> ps) {
+			if (databasePackageNames==null)
+				databasePackageNames=new HashSet<>(ps);
+			else
+				databasePackageNames.addAll(ps);
+			/*StringBuilder sb=new StringBuilder();
 			List<String> res=addPackageNames(databasePackageNames, sb, ps);
 			if (sb.length()>0)
 				databasePackageNames=sb.toString();
-			return res;
+			return res;*/
+			return databasePackageNames;
 		}
-
-		private static String[] unpackPackageNames(String compactedPackages) {
+		Set<String> getDatabasePackageNames() {
+			return databasePackageNames;
+		}
+		/*private static String[] unpackPackageNames(String compactedPackages) {
 			if (compactedPackages == null || compactedPackages.length() == 0)
 				return null;
 			return compactedPackages.split("\\|");
@@ -274,14 +317,15 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 					&& (compactedPackages.equals(packageName) || compactedPackages.endsWith("|" + packageName)
 					|| compactedPackages.startsWith(packageName + "|")
 					|| compactedPackages.contains("|" + packageName + "|"));
-		}
+		}*/
 
 		boolean isConcernedByDatabasePackage(String packageName) {
-			return isConcernedByDatabasePackage(databasePackageNames, packageName);
+			return databasePackageNames.contains(packageName);
+			//return isConcernedByDatabasePackage(databasePackageNames, packageName);
 		}
 
 
-		private static boolean removePackageDatabase(String compactedPackages, StringBuilder compactedPackagesRes, Package... _packages) {
+		/*private static boolean removePackageDatabase(String compactedPackages, StringBuilder compactedPackagesRes, Package... _packages) {
 			if (compactedPackages == null || compactedPackages.length() == 0)
 				return true;
 			else if (_packages == null || _packages.length == 0)
@@ -314,10 +358,14 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 				}
 
 			}
-		}
+		}*/
 
 		protected boolean removePackageDatabase(Package... _packages) {
-			StringBuilder sb=new StringBuilder();
+			boolean ok=false;
+			for (Package p : _packages)
+				ok|=databasePackageNames.remove(p.getName());
+			return ok;
+			/*StringBuilder sb=new StringBuilder();
 			if (removePackageDatabase(databasePackageNames, sb, _packages)) {
 				databasePackageNames = null;
 				return true;
@@ -325,7 +373,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			else {
 				databasePackageNames = sb.toString();
 				return false;
-			}
+			}*/
 		}
 	}
 
@@ -618,7 +666,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 						if (l.size() == 0) {
 							r = new DatabaseHooksTable.Record();
 							r.setHostID(hostID);
-							List<String> nap = r.setDatabasePackageNames(new ArrayList<>(packages.keySet()));
+							Set<String> nap = r.setDatabasePackageNames(packages.keySet());
 							HashMap<String, Boolean> newAddedPackages=new HashMap<>();
 							nap.forEach(v -> newAddedPackages.put(v, packages.get(v)));
 							r.setConcernsDatabaseHost(concernsDatabaseHost);
@@ -637,7 +685,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							}
 						} else {
 							r = l.get(0);
-							List<String> nap = r.setDatabasePackageNames(new ArrayList<>(packages.keySet()));
+							Set<String> nap = r.setDatabasePackageNames(packages.keySet());
 							HashMap<String, Boolean> newAddedPackages=new HashMap<>();
 							nap.forEach(v -> newAddedPackages.put(v, packages.get(v)));
 							if (newAddedPackages.size()>0)
@@ -752,11 +800,11 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 					@Override
 					public boolean nextRecord(DatabaseHooksTable.Record _record) {
 
-						String[] ps = _record.getDatabasePackageNames();
+						Set<String> ps = _record.getDatabasePackageNames();
 						if (ps == null)
 							databasePackages.add(Object.class.getPackage().getName());
 						else {
-							databasePackages.addAll(Arrays.asList(ps));
+							databasePackages.addAll(ps);
 						}
 
 						return false;

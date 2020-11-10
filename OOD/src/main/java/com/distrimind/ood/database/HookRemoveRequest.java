@@ -53,6 +53,8 @@ import java.io.IOException;
  * @since OOD 3.0.0
  */
 class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2PMessage {
+	//static final int MAX_HOOK_ADD_REQUEST_LENGTH_IN_BYTES=DecentralizedValue.MAX_SIZE_IN_BYTES_OF_DECENTRALIZED_VALUE*3+SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE+3;
+
 	private DecentralizedValue removedHookID, hostDestination, hostSource;
 	private short encryptionProfileIdentifier;
 	private byte[] symmetricSignature;
