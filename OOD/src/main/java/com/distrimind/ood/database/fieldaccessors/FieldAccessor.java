@@ -37,6 +37,19 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database.fieldaccessors;
 
+import com.distrimind.ood.database.*;
+import com.distrimind.ood.database.annotations.*;
+import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.AbstractDecentralizedID;
+import com.distrimind.util.DecentralizedIDGenerator;
+import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.RenforcedDecentralizedIDGenerator;
+import com.distrimind.util.crypto.ASymmetricPublicKey;
+import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.io.RandomInputStream;
+import com.distrimind.util.io.RandomOutputStream;
+import com.distrimind.util.io.SerializationTools;
+
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -44,34 +57,9 @@ import java.math.BigInteger;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Timestamp;
+import java.sql.*;
+import java.util.Date;
 import java.util.*;
-
-import com.distrimind.ood.database.DatabaseRecord;
-import com.distrimind.ood.database.DatabaseWrapper;
-import com.distrimind.ood.database.SqlField;
-import com.distrimind.ood.database.SqlFieldInstance;
-import com.distrimind.ood.database.Table;
-import com.distrimind.ood.database.annotations.AutoPrimaryKey;
-import com.distrimind.ood.database.annotations.ForeignKey;
-import com.distrimind.ood.database.annotations.LoadToMemory;
-import com.distrimind.ood.database.annotations.NotNull;
-import com.distrimind.ood.database.annotations.PrimaryKey;
-import com.distrimind.ood.database.annotations.RandomPrimaryKey;
-import com.distrimind.ood.database.annotations.Unique;
-import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.util.AbstractDecentralizedID;
-import com.distrimind.util.DecentralizedIDGenerator;
-import com.distrimind.util.DecentralizedValue;
-import com.distrimind.util.RenforcedDecentralizedIDGenerator;
-import com.distrimind.util.crypto.*;
-import com.distrimind.util.io.RandomInputStream;
-import com.distrimind.util.io.RandomOutputStream;
-import com.distrimind.util.io.SecureExternalizable;
 
 /**
  * 
@@ -302,7 +290,6 @@ public abstract class FieldAccessor {
 		return field.getType();
 	}
 
-	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	public boolean isTypeCompatible(Class<?> _cls) {
 		for (Class<?> c : getCompatibleClasses())
 			if (c.equals(_cls))
@@ -573,7 +560,7 @@ public abstract class FieldAccessor {
 							pf.add(type);
 
 							res.add(new ComposedFieldAccessor(_sql_connection, _table, f, parentFieldName, pf, severalPrimaryKeysPresentIntoTable));
-						} else if (SecureExternalizable.class.isAssignableFrom(type) || Serializable.class.isAssignableFrom(type))
+						} else if (SerializationTools.isSerializableType(type))
 							res.add(new SecureExternalizableFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else
 							throw new DatabaseException(
@@ -587,12 +574,7 @@ public abstract class FieldAccessor {
 					"Impossible to access to fields of the class " + database_record_class.getName(), e);
 		}
 
-		Collections.sort(res, new Comparator<FieldAccessor>() {
-			@Override
-			public int compare(FieldAccessor f1, FieldAccessor f2) {
-				return f1.getFieldName().compareTo(f2.getFieldName());
-			}
-		});
+		res.sort(Comparator.comparing(FieldAccessor::getFieldName));
 		return res;
 	}
 
@@ -714,7 +696,7 @@ public abstract class FieldAccessor {
 		return true;
 	}
 
-	private static Class<?> class_array_byte = byte[].class;
+	private static final Class<?> class_array_byte = byte[].class;
 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	public static boolean equalsBetween(Object val1, Object val2) throws DatabaseException {
@@ -971,7 +953,7 @@ public abstract class FieldAccessor {
 	}
 
 	protected static class SqlFieldTranslation {
-		private HashMap<String, String> sql_fields = new HashMap<>();
+		private final HashMap<String, String> sql_fields = new HashMap<>();
 		private final FieldAccessor field_accessor;
 
 		public SqlFieldTranslation(FieldAccessor fa, SqlField[] _sql_field) {
