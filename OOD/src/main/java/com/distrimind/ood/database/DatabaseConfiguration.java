@@ -39,9 +39,7 @@ package com.distrimind.ood.database;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.properties.MultiFormatProperties;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Describe a database configuration. A database is defined by its package, and
@@ -64,7 +62,7 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 
 	private DatabaseSchema databaseSchema;
 	private SynchronizationType synchronizationType;
-	private Collection<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase;
+	private Set<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase;
 	private BackupConfiguration backupConfiguration;
 
 	public DatabaseConfiguration(DatabaseSchema databaseSchema) {
@@ -97,11 +95,11 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 		return backupConfiguration;
 	}
 
-	public Collection<DecentralizedValue> getDistantPeersThatCanBeSynchronizedWithThisDatabase() {
+	public Set<DecentralizedValue> getDistantPeersThatCanBeSynchronizedWithThisDatabase() {
 		return distantPeersThatCanBeSynchronizedWithThisDatabase;
 	}
 
-	public boolean setDistantPeersThatCanBeSynchronizedWithThisDatabase(Collection<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase) throws IllegalAccessException {
+	boolean setDistantPeersThatCanBeSynchronizedWithThisDatabase(Collection<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase) throws IllegalAccessException {
 		if (distantPeersThatCanBeSynchronizedWithThisDatabase!=null && distantPeersThatCanBeSynchronizedWithThisDatabase.size()>0) {
 			if (distantPeersThatCanBeSynchronizedWithThisDatabase.stream().anyMatch(Objects::isNull))
 				throw new NullPointerException();
@@ -109,7 +107,7 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 				throw new IllegalAccessException();
 			if (this.distantPeersThatCanBeSynchronizedWithThisDatabase!=null && this.distantPeersThatCanBeSynchronizedWithThisDatabase.equals(distantPeersThatCanBeSynchronizedWithThisDatabase))
 				return false;
-			this.distantPeersThatCanBeSynchronizedWithThisDatabase = new ArrayList<>(distantPeersThatCanBeSynchronizedWithThisDatabase);
+			this.distantPeersThatCanBeSynchronizedWithThisDatabase = new HashSet<>(distantPeersThatCanBeSynchronizedWithThisDatabase);
 		}
 		else {
 			if (this.distantPeersThatCanBeSynchronizedWithThisDatabase==null)
@@ -118,6 +116,20 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 		}
 		return true;
 	}
+	boolean addDistantPeersThatCanBeSynchronizedWithThisDatabase(DecentralizedValue distantPeerThatCanBeSynchronizedWithThisDatabase) throws IllegalAccessException {
+		if (distantPeerThatCanBeSynchronizedWithThisDatabase==null)
+			throw new NullPointerException();
+
+		if (synchronizationType==SynchronizationType.NO_SYNCHRONIZATION)
+			throw new IllegalAccessException();
+		if (this.distantPeersThatCanBeSynchronizedWithThisDatabase!=null && this.distantPeersThatCanBeSynchronizedWithThisDatabase.contains(distantPeerThatCanBeSynchronizedWithThisDatabase))
+			return false;
+		if (this.distantPeersThatCanBeSynchronizedWithThisDatabase==null)
+			this.distantPeersThatCanBeSynchronizedWithThisDatabase=new HashSet<>();
+		return this.distantPeersThatCanBeSynchronizedWithThisDatabase.add(distantPeerThatCanBeSynchronizedWithThisDatabase);
+
+	}
+
 
 	public DatabaseSchema getDatabaseConfigurationParameters() {
 		return databaseSchema;

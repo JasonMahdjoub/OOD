@@ -6,8 +6,7 @@ import com.distrimind.util.Reference;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 
-import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.*;
 
 /**
  * @author Jason Mahdjoub
@@ -46,7 +45,7 @@ public class DatabaseConfigurationsBuilder {
 		{
 			for (DecentralizedValue dv : dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase())
 			{
-				if (configurations.getDistantPeers() == null)
+				if (configurations.distantPeers == null)
 					configurations.distantPeers = new HashSet<>();
 
 				if (configurations.distantPeers.add(dv))
@@ -62,9 +61,11 @@ public class DatabaseConfigurationsBuilder {
 	private static class Transaction {
 		final ArrayList<ConfigurationQuery> queries =new ArrayList<>();
 		private boolean updateConfigurationPersistence=false;
+
 		void updateConfigurationPersistence() {
 			updateConfigurationPersistence = true;
 		}
+
 	}
 	private interface ConfigurationQuery
 	{
@@ -177,7 +178,7 @@ public class DatabaseConfigurationsBuilder {
 
 	}
 
-	DatabaseConfigurationsBuilder addDistantPeer(DecentralizedValue distantPeer, Package ... packages)
+	DatabaseConfigurationsBuilder synchronizeDistantPeerWithGivenAdditionalPackages(DecentralizedValue distantPeer, Package ... packages)
 	{
 		String[] packagesString=new String[packages.length];
 		int i=0;
@@ -187,13 +188,45 @@ public class DatabaseConfigurationsBuilder {
 				throw new NullPointerException();
 			packagesString[i++]=p.getName();
 		}
-		return addDistantPeer(distantPeer, packagesString);
+		return synchronizeDistantPeerWithGivenAdditionalPackages(distantPeer, packagesString);
 	}
 
-	DatabaseConfigurationsBuilder addDistantPeer(DecentralizedValue distantPeer, String ... packagesString)
+	DatabaseConfigurationsBuilder synchronizeDistantPeerWithGivenAdditionalPackages(DecentralizedValue distantPeer, String ... packagesString)
 	{
+		if (packagesString==null)
+			throw new NullPointerException();
+		if (packagesString.length==0)
+			throw new IllegalArgumentException();
+		if (Arrays.stream(packagesString).anyMatch(Objects::isNull))
+			throw new NullPointerException();
 		pushQuery((t) -> {
-			//TODO complete
+			boolean changed=false;
+			for (String p : packagesString)
+			{
+				DatabaseConfiguration foundDC=null;
+				for (DatabaseConfiguration dc : configurations.getConfigurations())
+				{
+					if (dc.getDatabaseConfigurationParameters().getPackage().getName().equals(p))
+					{
+						foundDC=dc;
+						break;
+					}
+				}
+				if (foundDC==null)
+				{
+					throw new DatabaseException("Database configuration not found for package "+p);
+				}
+				try {
+					changed|=foundDC.addDistantPeersThatCanBeSynchronizedWithThisDatabase(distantPeer);
+				} catch (IllegalAccessException e) {
+					throw DatabaseException.getDatabaseException(e);
+				}
+				changed|=configurations.getDistantPeers().add(distantPeer);
+			}
+			if (changed) {
+				t.updateConfigurationPersistence();
+				checkNewConnexions();
+			}
 		});
 		return this;
 	}
