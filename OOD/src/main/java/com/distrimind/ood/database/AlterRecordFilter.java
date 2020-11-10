@@ -81,7 +81,7 @@ public abstract class AlterRecordFilter<T> {
 	 * pointed by other records.
 	 * 
 	 */
-	protected final void remove() {
+	public final void remove() {
 		to_delete = true;
 		to_delete_with_cascade = false;
 	}
@@ -91,7 +91,7 @@ public abstract class AlterRecordFilter<T> {
 	 * aims to remove the current record and all records pointing to it.
 	 * 
 	 */
-	protected final void removeWithCascade() {
+	public final void removeWithCascade() {
 		to_delete = false;
 		to_delete_with_cascade = true;
 	}
@@ -106,7 +106,7 @@ public abstract class AlterRecordFilter<T> {
 	 *            filter. To do that, please use the function
 	 *            {@link com.distrimind.ood.database.Table#updateRecord(DatabaseRecord, Map)}.
 	 */
-	protected final void update(Map<String, Object> fields) {
+	public final void update(Map<String, Object> fields) {
 		modifications = fields;
 		modificationFromRecordInstance=false;
 	}
@@ -122,7 +122,7 @@ public abstract class AlterRecordFilter<T> {
 	 * @throws NullPointerException
 	 *             if parameters are null pointers.
 	 */
-	protected final void update(Object... fields) throws DatabaseException {
+	public final void update(Object... fields) throws DatabaseException {
 		update(Table.transformToMapField(fields));
 	}
 	/**
@@ -130,7 +130,7 @@ public abstract class AlterRecordFilter<T> {
 	 * aims to alter the current record.
 	 * 
 	 */
-	protected final void update() {
+	public final void update() {
 		modifications=null;
 		modificationFromRecordInstance = true;
 	}

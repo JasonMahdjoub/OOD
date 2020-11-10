@@ -164,8 +164,8 @@ public class DatabaseConfigurationsBuilder {
 							@Override
 							public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
 								if (!_record.concernsLocalDatabaseHost()) {
-									_record.offerNewAuthenticatedP2PMessage(new HookRemoveRequest(localPeerId, _record.getHostID(), removedHostID.get(), encryptionProfileProvider));
-									update("authenticatedMessagesQueueToSend", _record.getAuthenticatedMessagesQueueToSend());
+									_record.offerNewAuthenticatedP2PMessage(new HookRemoveRequest(localPeerId, _record.getHostID(), removedHostID.get(), encryptionProfileProvider), this);
+
 								}
 							}
 						});

@@ -82,6 +82,11 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		@Field(limit=PACKAGES_TO_SYNCHRONIZE_LENGTH, forceUsingBlobOrClob = true)
 		private Set<String> databasePackageNames;
 
+		@Field
+		private long lastLocalAuthenticatedP2PMessageID=0;
+
+		@Field
+		private long lastDistantAuthenticatedP2PMessageID=-1;
 
 		@Field
 		private boolean concernsDatabaseHost;
@@ -109,6 +114,8 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			}
 			return false;
 		}
+
+
 
 		long getLastValidatedDistantTransactionUTCMs() {
 			return lastValidatedDistantTransactionUTCMs;
@@ -166,18 +173,25 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			return concernsDatabaseHost;
 		}
 
-		void offerNewAuthenticatedP2PMessage(AuthenticatedP2PMessage message)
-		{
+		void offerNewAuthenticatedP2PMessage(AuthenticatedP2PMessage message, AlterRecordFilter<Record> alterRecordFilter) throws DatabaseException {
 			if (message==null)
 				throw new NullPointerException();
 			if (authenticatedMessagesQueueToSend==null)
 				authenticatedMessagesQueueToSend=new LinkedList<>();
 			authenticatedMessagesQueueToSend.addLast(message);
+			message.setMessageID(lastLocalAuthenticatedP2PMessageID++);
+			alterRecordFilter.update("authenticatedMessagesQueueToSend", authenticatedMessagesQueueToSend, "lastLocalAuthenticatedP2PMessageID", lastLocalAuthenticatedP2PMessageID);
 		}
 
-		LinkedList<AuthenticatedP2PMessage> getAuthenticatedMessagesQueueToSend() {
-			return authenticatedMessagesQueueToSend;
+		void receivedAuthenticatedP2PMessageFromDistantHost(AuthenticatedP2PMessage message, AlterRecordFilter<Record> alterRecordFilter) throws DatabaseException {
+			if (message.getHostSource().equals(hostID)) {
+				if (lastDistantAuthenticatedP2PMessageID<message.getMessageID()) {
+					lastDistantAuthenticatedP2PMessageID = message.getMessageID();
+					alterRecordFilter.update("lastDistantAuthenticatedP2PMessageID", lastDistantAuthenticatedP2PMessageID);
+				}
+			}
 		}
+
 
 		AuthenticatedP2PMessage poolAuthenticatedP2PMessage() throws DatabaseException {
 			if (authenticatedMessagesQueueToSend==null)

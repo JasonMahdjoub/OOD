@@ -83,4 +83,8 @@ public interface AuthenticatedP2PMessage extends P2PDatabaseEventToSend, SecureE
 	short getEncryptionProfileIdentifier();
 
 	void writeExternalWithoutSignature(SecuredObjectOutputStream out) throws IOException;
+
+	long getMessageID();
+
+	void setMessageID(long messageID);
 }

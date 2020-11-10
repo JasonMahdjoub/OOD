@@ -40,10 +40,7 @@ import com.distrimind.ood.database.messages.AuthenticatedP2PMessage;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 import com.distrimind.util.crypto.SymmetricAuthenticatedSignatureType;
-import com.distrimind.util.io.SecureExternalizable;
-import com.distrimind.util.io.SecuredObjectInputStream;
-import com.distrimind.util.io.SecuredObjectOutputStream;
-import com.distrimind.util.io.SerializationTools;
+import com.distrimind.util.io.*;
 
 import java.io.IOException;
 
@@ -58,6 +55,7 @@ class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2PMessage
 	private DecentralizedValue removedHookID, hostDestination, hostSource;
 	private short encryptionProfileIdentifier;
 	private byte[] symmetricSignature;
+	private long messageID;
 
 	@SuppressWarnings("unused")
 	private HookRemoveRequest() {
@@ -81,9 +79,20 @@ class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2PMessage
 		this.symmetricSignature=sign(encryptionProfileProvider);
 
 	}
+	@Override
+	public long getMessageID() {
+		return messageID;
+	}
 
 	@Override
+	public void setMessageID(long messageID) {
+		if (messageID<0)
+			throw new IllegalArgumentException();
+		this.messageID=messageID;
+	}
+	@Override
 	public void writeExternalWithoutSignature(SecuredObjectOutputStream out) throws IOException {
+		out.writeLong(messageID);
 		out.writeObject(hostSource, false);
 		out.writeObject(hostDestination, false);
 		out.writeObject(removedHookID, false);
@@ -104,7 +113,7 @@ class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2PMessage
 
 	@Override
 	public int getInternalSerializedSize() {
-		return 2+ SerializationTools.getInternalSize((SecureExternalizable)hostSource)
+		return 10+ SerializationTools.getInternalSize((SecureExternalizable)hostSource)
 				+SerializationTools.getInternalSize((SecureExternalizable)hostDestination)
 				+SerializationTools.getInternalSize((SecureExternalizable)removedHookID);
 	}
@@ -117,6 +126,9 @@ class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2PMessage
 
 	@Override
 	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
+		messageID=in.readLong();
+		if (messageID<0)
+			throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN);
 		hostSource=in.readObject(false, DecentralizedValue.class);
 		hostDestination=in.readObject(false, DecentralizedValue.class);
 		removedHookID=in.readObject(false, DecentralizedValue.class);

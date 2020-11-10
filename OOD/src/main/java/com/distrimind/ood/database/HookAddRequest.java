@@ -38,7 +38,6 @@ package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.messages.AuthenticatedP2PMessage;
-import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 import com.distrimind.util.crypto.SymmetricAuthenticatedSignatureType;
@@ -64,10 +63,11 @@ public class HookAddRequest extends DatabaseEvent implements AuthenticatedP2PMes
 	private boolean replaceDistantConflictualData;
 	private byte[] symmetricSignature;
 	private short encryptionProfileIdentifier;
+	private long messageID;
 
 	@Override
 	public int getInternalSerializedSize() {
-		int res=12+SerializationTools.getInternalSize(hostSource, 0)
+		int res=20+SerializationTools.getInternalSize(hostSource, 0)
 				+SerializationTools.getInternalSize(hostDestination, 0)
 				+SerializationTools.getInternalSize(symmetricSignature, SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE);
 		for (String s : packagesToSynchronize)
@@ -90,6 +90,7 @@ public class HookAddRequest extends DatabaseEvent implements AuthenticatedP2PMes
 
 	@Override
 	public void writeExternalWithoutSignature(SecuredObjectOutputStream out) throws IOException {
+		out.writeLong(messageID);
 		out.writeObject(hostSource, false);
 		out.writeObject(hostDestination, false);
 		out.writeInt(packagesToSynchronize.size());
@@ -104,6 +105,18 @@ public class HookAddRequest extends DatabaseEvent implements AuthenticatedP2PMes
 	}
 
 	@Override
+	public long getMessageID() {
+		return messageID;
+	}
+
+	@Override
+	public void setMessageID(long messageID) {
+		if (messageID<0)
+			throw new IllegalArgumentException();
+		this.messageID=messageID;
+	}
+
+	@Override
 	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
 		writeExternalWithoutSignature(out);
 		out.writeBytesArray(symmetricSignature, false, SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE);
@@ -111,6 +124,9 @@ public class HookAddRequest extends DatabaseEvent implements AuthenticatedP2PMes
 
 	@Override
 	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
+		messageID=in.readLong();
+		if (messageID<0)
+			throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN);
 		hostSource=in.readObject(false, DecentralizedValue.class);
 		hostDestination=in.readObject(false, DecentralizedValue.class);
 		int s=in.readInt();
