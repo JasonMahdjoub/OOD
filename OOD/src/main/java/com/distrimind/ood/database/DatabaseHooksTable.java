@@ -166,30 +166,23 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			return concernsDatabaseHost;
 		}
 
-		void pushNewAuthenticatedP2PMessage(AuthenticatedP2PMessage message)
+		void offerNewAuthenticatedP2PMessage(AuthenticatedP2PMessage message)
 		{
 			if (message==null)
 				throw new NullPointerException();
 			if (authenticatedMessagesQueueToSend==null)
 				authenticatedMessagesQueueToSend=new LinkedList<>();
-			authenticatedMessagesQueueToSend.add(message);
+			authenticatedMessagesQueueToSend.addLast(message);
 		}
 
-		AuthenticatedP2PMessage popAuthenticatedP2PMessage(DecentralizedValue destinationPeer) throws DatabaseException {
-			if (destinationPeer==null)
-				throw new NullPointerException();
+		LinkedList<AuthenticatedP2PMessage> getAuthenticatedMessagesQueueToSend() {
+			return authenticatedMessagesQueueToSend;
+		}
+
+		AuthenticatedP2PMessage poolAuthenticatedP2PMessage() throws DatabaseException {
 			if (authenticatedMessagesQueueToSend==null)
 				return null;
-			for (Iterator<AuthenticatedP2PMessage> it = authenticatedMessagesQueueToSend.iterator(); it.hasNext(); ) {
-				AuthenticatedP2PMessage a = it.next();
-				if (a.getHostDestination().equals(destinationPeer)) {
-					it.remove();
-					if (authenticatedMessagesQueueToSend.size()==0)
-						authenticatedMessagesQueueToSend=null;
-					return a;
-				}
-			}
-			return null;
+			return authenticatedMessagesQueueToSend.removeFirst();
 		}
 
 		/*private static ArrayList<String> compactPackages(List<String> packages, StringBuilder compactedPackages)

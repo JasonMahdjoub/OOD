@@ -2,6 +2,7 @@ package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.Reference;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 
@@ -144,10 +145,13 @@ public class DatabaseConfigurationsBuilder {
 							throw new DatabaseException("Local peer identifier is already configured !");
 					}
 				} else {
+					final Reference<DecentralizedValue> removedHostID=new Reference<>();
 					if (replace) {
 						if (wrapper.getSynchronizer().isInitialized(configurations.getLocalPeer())) {
 							wrapper.getSynchronizer().disconnectAll();
-							wrapper.getSynchronizer().removeHook(wrapper.getSynchronizer().getLocalHostID());
+							removedHostID.set(wrapper.getSynchronizer().getLocalHostID());
+							wrapper.getSynchronizer().removeHook(removedHostID.get());
+
 						}
 					} else
 						throw new DatabaseException("Local peer identifier is already configured !");
@@ -155,6 +159,17 @@ public class DatabaseConfigurationsBuilder {
 					configurations.setLocalPeer(localPeerId);
 					t.updateConfigurationPersistence();
 					checkNewConnexions();
+					if (removedHostID.get()!=null) {
+						wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
+							@Override
+							public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
+								if (!_record.concernsLocalDatabaseHost()) {
+									_record.offerNewAuthenticatedP2PMessage(new HookRemoveRequest(localPeerId, _record.getHostID(), removedHostID.get(), encryptionProfileProvider));
+									update("authenticatedMessagesQueueToSend", _record.getAuthenticatedMessagesQueueToSend());
+								}
+							}
+						});
+					}
 				}
 
 			}
