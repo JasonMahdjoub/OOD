@@ -6,7 +6,9 @@ import com.distrimind.util.Reference;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * @author Jason Mahdjoub
@@ -40,18 +42,8 @@ public class DatabaseConfigurationsBuilder {
 		this.lifeCycles = lifeCycles;
 		this.encryptionProfileProvider=encryptionProfileProvider;
 		this.secureRandom=secureRandom;
-		boolean save=false;
-		for (DatabaseConfiguration dc : configurations.getConfigurations())
-		{
-			for (DecentralizedValue dv : dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase())
-			{
-				if (configurations.distantPeers == null)
-					configurations.distantPeers = new HashSet<>();
+		boolean save=configurations.checkDistantPeers();
 
-				if (configurations.distantPeers.add(dv))
-					save=true;
-			}
-		}
 		if (save && lifeCycles!=null)
 		{
 			lifeCycles.saveDatabaseConfigurations(configurations);
@@ -113,7 +105,16 @@ public class DatabaseConfigurationsBuilder {
 	DatabaseConfigurationsBuilder addConfiguration(DatabaseConfiguration configuration, boolean makeConfigurationLoadingPersistent )
 	{
 		pushQuery((t) -> {
-			//TODO complete
+			for (DatabaseConfiguration dc : this.configurations.getConfigurations())
+			{
+				if (dc.getDatabaseConfigurationParameters().getPackage().equals(configuration.getDatabaseConfigurationParameters().getPackage()))
+					throw new IllegalArgumentException();
+			}
+
+			configurations.addConfiguration(configuration, makeConfigurationLoadingPersistent);
+			if (makeConfigurationLoadingPersistent)
+				t.updateConfigurationPersistence();
+			checkNewConnexions();
 		});
 		return this;
 	}
@@ -128,6 +129,7 @@ public class DatabaseConfigurationsBuilder {
 
 	private void checkNewConnexions() throws DatabaseException {
 		checkInitLocalPeer();
+		//TODO complete
 	}
 
 	public void setLocalPeerIdentifier(DecentralizedValue localPeerId, boolean permitIndirectSynchronizationBetweenPeers, boolean replace) throws DatabaseException {

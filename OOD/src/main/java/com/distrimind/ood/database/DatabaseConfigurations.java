@@ -37,8 +37,14 @@ package com.distrimind.ood.database;
 
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.properties.MultiFormatProperties;
+import com.distrimind.util.properties.PropertiesParseException;
+import org.w3c.dom.Document;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.Properties;
 import java.util.Set;
 
 /**
@@ -48,8 +54,15 @@ import java.util.Set;
  */
 @SuppressWarnings("FieldMayBeFinal")
 public class DatabaseConfigurations extends MultiFormatProperties {
-	private HashSet<DatabaseConfiguration> configurations;
-	HashSet<DecentralizedValue> distantPeers;
+	private transient final Set<DatabaseConfiguration> volatileConfigurations=new HashSet<>();
+	private transient final Set<DatabaseConfiguration> allConfigurations=new HashSet<>();
+	private transient final Set<DatabaseConfiguration> allConfigurationsReadOnly= Collections.unmodifiableSet(allConfigurations);
+	private transient final Set<DecentralizedValue> volatileDistantPeers=new HashSet<>();
+	private transient final Set<DecentralizedValue> allDistantPeers=new HashSet<>();
+	private transient final Set<DecentralizedValue> allDistantPeersReadOnly=Collections.unmodifiableSet(allDistantPeers);
+	private Set<DatabaseConfiguration> configurations;
+
+	private Set<DecentralizedValue> distantPeers;
 	private DecentralizedValue localPeer;
 	private boolean permitIndirectSynchronizationBetweenPeers;
 
@@ -82,6 +95,25 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 		this.localPeer = localPeer;
 		checkLocalPeerNull();
 	}
+	boolean checkDistantPeers()
+	{
+		boolean save=false;
+		for (DatabaseConfiguration dc : configurations)
+		{
+			if (dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase()!=null) {
+				save|=distantPeers.addAll(dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase());
+				allDistantPeers.addAll(dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase())
+			}
+		}
+		for (DatabaseConfiguration dc : volatileConfigurations)
+		{
+			if (dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase()!=null) {
+				save|=volatileDistantPeers.addAll(dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase());
+				allDistantPeers.addAll(dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase())
+			}
+		}
+		return save;
+	}
 
 
 	public boolean isPermitIndirectSynchronizationBetweenPeers() {
@@ -108,16 +140,67 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 	}
 
 
+	void addConfiguration(DatabaseConfiguration configuration, boolean makeConfigurationLoadingPersistent )
+	{
+		if (makeConfigurationLoadingPersistent) {
+			configurations.add(configuration);
+			if (configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase()!=null) {
+				distantPeers.addAll(configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase());
+			}
+		}
+		else {
+			volatileConfigurations.add(configuration);
+			if (configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase()!=null) {
+				volatileDistantPeers.addAll(configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase());
+			}
+		}
+		if (configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase()!=null) {
+			allDistantPeers.addAll(configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase());
+		}
+		allConfigurations.add(configuration);
+	}
+
+	@Override
+	public void loadXML(Document document) throws PropertiesParseException {
+		super.loadXML(document);
+		reloadAllConfigurations();
+	}
+
+	private void reloadAllConfigurations()
+	{
+		allConfigurations.clear();
+		allConfigurations.addAll(volatileConfigurations);
+		allConfigurations.addAll(configurations);
+		allDistantPeers.clear();
+		checkDistantPeers();
+
+	}
+
+
+	@Override
+	public void loadFromProperties(Properties properties) throws IllegalArgumentException {
+		super.loadFromProperties(properties);
+		reloadAllConfigurations();
+	}
+
+
+	@Override
+	public void loadYAML(Reader reader) throws IOException {
+		super.loadYAML(reader);
+		reloadAllConfigurations();
+	}
 
 
 
 	Set<DatabaseConfiguration> getConfigurations() {
-		return configurations;
+		return allConfigurationsReadOnly;
 	}
 
 	Set<DecentralizedValue> getDistantPeers() {
-		return distantPeers;
+		return allDistantPeersReadOnly;
 	}
+
+
 
 	DecentralizedValue getLocalPeer() {
 		return localPeer;
