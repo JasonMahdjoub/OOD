@@ -35,6 +35,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
+import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.properties.MultiFormatProperties;
 import com.distrimind.util.properties.PropertiesParseException;
@@ -42,10 +43,7 @@ import org.w3c.dom.Document;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author Jason Mahdjoub
@@ -199,9 +197,88 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 	Set<DecentralizedValue> getDistantPeers() {
 		return allDistantPeersReadOnly;
 	}
+	boolean synchronizeAdditionalDistantPeersWithGivenPackage(String packageString, Collection<DecentralizedValue> distantPeers) throws DatabaseException {
+		return synchronizeAdditionalDistantPeersWithGivenPackage(packageString, distantPeers, false);
+	}
+	private boolean synchronizeAdditionalDistantPeersWithGivenPackage(String packageString, Collection<DecentralizedValue> distantPeers, boolean replaceExistant) throws DatabaseException {
+		boolean volatileConf=true;
+		DatabaseConfiguration foundDC=getVolatileDatabaseConfiguration(packageString);
+		if (foundDC==null)
+		{
+			foundDC=getPersistentDatabaseConfiguration(packageString);
+			if (foundDC==null)
+				throw new DatabaseException("Database configuration not found for package "+packageString);
+			volatileConf=false;
+		}
+		boolean changed;
+		try {
+			if (replaceExistant)
+				changed = foundDC.setDistantPeersThatCanBeSynchronizedWithThisDatabase(distantPeers);
+			else
+				changed = foundDC.addDistantPeersThatCanBeSynchronizedWithThisDatabase(distantPeers);
+		} catch (IllegalAccessException e) {
+			throw DatabaseException.getDatabaseException(e);
+		}
+		if (volatileConf) {
+			volatileDistantPeers.clear();
+			for (DatabaseConfiguration dc : volatileConfigurations)
+			{
+				Set<DecentralizedValue> s=dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase();
+				if (s!=null)
+					volatileDistantPeers.addAll(s);
+			}
+		}
+		else {
+			changed |= this.distantPeers.addAll(distantPeers);
+		}
+		allDistantPeers.addAll(distantPeers);
+		return changed;
+	}
+	boolean setDistantPeersWithGivenPackage(String packageString, Collection<DecentralizedValue> distantPeers) throws DatabaseException {
+		return synchronizeAdditionalDistantPeersWithGivenPackage(packageString, distantPeers, true);
+	}
 
 
 
+	public DatabaseConfiguration getDatabaseConfiguration(Package packageString)
+	{
+		return getDatabaseConfiguration(packageString.getName());
+	}
+	public DatabaseConfiguration getDatabaseConfiguration(String packageString)
+	{
+		for (DatabaseConfiguration dc : getConfigurations())
+		{
+			if (dc.getDatabaseSchema().getPackage().getName().equals(packageString))
+				return dc;
+		}
+		return null;
+	}
+	public DatabaseConfiguration getVolatileDatabaseConfiguration(Package packageString)
+	{
+		return getDatabaseConfiguration(packageString.getName());
+	}
+	public DatabaseConfiguration getVolatileDatabaseConfiguration(String packageString)
+	{
+		for (DatabaseConfiguration dc : volatileConfigurations)
+		{
+			if (dc.getDatabaseSchema().getPackage().getName().equals(packageString))
+				return dc;
+		}
+		return null;
+	}
+	public DatabaseConfiguration getPersistentDatabaseConfiguration(Package packageString)
+	{
+		return getDatabaseConfiguration(packageString.getName());
+	}
+	public DatabaseConfiguration getPersistentDatabaseConfiguration(String packageString)
+	{
+		for (DatabaseConfiguration dc : configurations)
+		{
+			if (dc.getDatabaseSchema().getPackage().getName().equals(packageString))
+				return dc;
+		}
+		return null;
+	}
 	DecentralizedValue getLocalPeer() {
 		return localPeer;
 	}

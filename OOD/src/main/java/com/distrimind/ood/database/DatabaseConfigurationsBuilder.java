@@ -6,9 +6,7 @@ import com.distrimind.util.Reference;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * @author Jason Mahdjoub
@@ -212,8 +210,11 @@ public class DatabaseConfigurationsBuilder {
 		}
 		return synchronizeDistantPeerWithGivenAdditionalPackages(distantPeer, packagesString);
 	}
-
 	public DatabaseConfigurationsBuilder synchronizeDistantPeerWithGivenAdditionalPackages(DecentralizedValue distantPeer, String ... packagesString)
+	{
+		return synchronizeDistantPeerWithGivenAdditionalPackages(Collections.singletonList(distantPeer), packagesString);
+	}
+	public DatabaseConfigurationsBuilder synchronizeDistantPeerWithGivenAdditionalPackages(Collection<DecentralizedValue> distantPeers, String ... packagesString)
 	{
 		if (packagesString==null)
 			throw new NullPointerException();
@@ -225,25 +226,7 @@ public class DatabaseConfigurationsBuilder {
 			boolean changed=false;
 			for (String p : packagesString)
 			{
-				DatabaseConfiguration foundDC=null;
-				for (DatabaseConfiguration dc : configurations.getConfigurations())
-				{
-					if (dc.getDatabaseSchema().getPackage().getName().equals(p))
-					{
-						foundDC=dc;
-						break;
-					}
-				}
-				if (foundDC==null)
-				{
-					throw new DatabaseException("Database configuration not found for package "+p);
-				}
-				try {
-					changed|=foundDC.addDistantPeersThatCanBeSynchronizedWithThisDatabase(distantPeer);
-				} catch (IllegalAccessException e) {
-					throw DatabaseException.getDatabaseException(e);
-				}
-				changed|=configurations.getDistantPeers().add(distantPeer);
+				changed|=configurations.synchronizeAdditionalDistantPeersWithGivenPackage(p, distantPeers);
 			}
 			if (changed) {
 				t.updateConfigurationPersistence();
@@ -252,5 +235,26 @@ public class DatabaseConfigurationsBuilder {
 		});
 		return this;
 	}
+
+
+
+	public DatabaseConfigurationsBuilder setDistantPeersWithGivenAdditionalPackages(String packageString, Collection<DecentralizedValue> distantPeers)
+	{
+		if (packageString==null)
+			throw new NullPointerException();
+		if (distantPeers==null)
+			throw new NullPointerException();
+		if (configurations.getLocalPeer()!=null && distantPeers.contains(configurations.getLocalPeer()))
+			throw new IllegalArgumentException();
+		pushQuery((t) -> {
+			boolean changed=configurations.setDistantPeersWithGivenPackage(packageString, distantPeers);
+			if (changed) {
+				t.updateConfigurationPersistence();
+				checkNewConnexions();
+			}
+		});
+		return this;
+	}
+
 
 }

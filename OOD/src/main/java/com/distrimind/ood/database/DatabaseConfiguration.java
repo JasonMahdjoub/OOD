@@ -141,17 +141,15 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 		}
 		return true;
 	}
-	boolean addDistantPeersThatCanBeSynchronizedWithThisDatabase(DecentralizedValue distantPeerThatCanBeSynchronizedWithThisDatabase) throws IllegalAccessException {
-		if (distantPeerThatCanBeSynchronizedWithThisDatabase==null)
+	boolean addDistantPeersThatCanBeSynchronizedWithThisDatabase(Collection<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase) throws IllegalAccessException {
+		if (distantPeersThatCanBeSynchronizedWithThisDatabase==null)
 			throw new NullPointerException();
 
 		if (synchronizationType==SynchronizationType.NO_SYNCHRONIZATION)
 			throw new IllegalAccessException();
-		if (this.distantPeersThatCanBeSynchronizedWithThisDatabase!=null && this.distantPeersThatCanBeSynchronizedWithThisDatabase.contains(distantPeerThatCanBeSynchronizedWithThisDatabase))
-			return false;
 		if (this.distantPeersThatCanBeSynchronizedWithThisDatabase==null)
 			this.distantPeersThatCanBeSynchronizedWithThisDatabase=new HashSet<>();
-		return this.distantPeersThatCanBeSynchronizedWithThisDatabase.add(distantPeerThatCanBeSynchronizedWithThisDatabase);
+		return this.distantPeersThatCanBeSynchronizedWithThisDatabase.addAll(distantPeersThatCanBeSynchronizedWithThisDatabase);
 
 	}
 
