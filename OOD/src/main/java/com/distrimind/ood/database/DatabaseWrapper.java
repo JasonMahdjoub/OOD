@@ -186,7 +186,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		int getCurrentVersion() throws DatabaseException {
 			if (currentVersion==-1)
-				DatabaseWrapper.this.getCurrentDatabaseVersion(configuration.getDatabaseConfigurationParameters().getPackage(), true);
+				DatabaseWrapper.this.getCurrentDatabaseVersion(configuration.getDatabaseSchema().getPackage(), true);
 			return currentVersion;
 		}
 
@@ -202,15 +202,15 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		void initBackupRestoreManager(DatabaseWrapper wrapper, File databaseDirectory, DatabaseConfiguration configuration) throws DatabaseException {
 			if (this.backupRestoreManager!=null)
 				return;
-			if (configuration.getDatabaseConfigurationParameters().getBackupConfiguration()!=null)
+			if (configuration.getDatabaseSchema().getBackupConfiguration()!=null)
 			{
-				this.backupRestoreManager =new BackupRestoreManager(wrapper, new File(new File(databaseDirectory, NATIVE_BACKUPS_DIRECTORY_NAME), DatabaseWrapper.getLongPackageName(configuration.getDatabaseConfigurationParameters().getPackage())), configuration, false);
+				this.backupRestoreManager =new BackupRestoreManager(wrapper, new File(new File(databaseDirectory, NATIVE_BACKUPS_DIRECTORY_NAME), DatabaseWrapper.getLongPackageName(configuration.getDatabaseSchema().getPackage())), configuration, false);
 				while((configuration=configuration.getOldVersionOfDatabaseConfiguration())!=null)
 				{
-					if (this.configuration.getDatabaseConfigurationParameters().getPackage().equals(configuration.getDatabaseConfigurationParameters().getPackage()))
+					if (this.configuration.getDatabaseSchema().getPackage().equals(configuration.getDatabaseSchema().getPackage()))
 						continue;
 
-					File f=new File(new File(databaseDirectory, NATIVE_BACKUPS_DIRECTORY_NAME),DatabaseWrapper.getLongPackageName(configuration.getDatabaseConfigurationParameters().getPackage()));
+					File f=new File(new File(databaseDirectory, NATIVE_BACKUPS_DIRECTORY_NAME),DatabaseWrapper.getLongPackageName(configuration.getDatabaseSchema().getPackage()));
 					if (!f.exists())
 						continue;
 					BackupRestoreManager m=new BackupRestoreManager(wrapper, f,  configuration, false);
@@ -1593,8 +1593,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			minFilePartDurationBeforeBecomingFinalFilePart=Long.MAX_VALUE;
 			for (Database d : sql_database.values())
 			{
-				if (d.backupRestoreManager!=null && d.configuration.getDatabaseConfigurationParameters().getBackupConfiguration().getMaxBackupFileAgeInMs()<minFilePartDurationBeforeBecomingFinalFilePart)
-					minFilePartDurationBeforeBecomingFinalFilePart=d.configuration.getDatabaseConfigurationParameters().getBackupConfiguration().getMaxBackupFileAgeInMs();
+				if (d.backupRestoreManager!=null && d.configuration.getDatabaseSchema().getBackupConfiguration().getMaxBackupFileAgeInMs()<minFilePartDurationBeforeBecomingFinalFilePart)
+					minFilePartDurationBeforeBecomingFinalFilePart=d.configuration.getDatabaseSchema().getBackupConfiguration().getMaxBackupFileAgeInMs();
 			}
 			getDatabaseHooksTable()
 					.getRecords(new Filter<Record>() {
@@ -1969,7 +1969,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						return;
 					}
 					Database db=sql_database.get(p);
-					if (db!=null && db.configuration.getDatabaseConfigurationParameters().isSynchronizedWithCentralBackupDatabase()){
+					if (db!=null && db.configuration.getDatabaseSchema().isSynchronizedWithCentralBackupDatabase()){
 						validateLastSynchronizationWithCentralDatabaseBackup(p,db, db.lastValidatedTransactionUTCForCentralBackup );
 					}
 				}
@@ -2698,7 +2698,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
         void addNewTemporaryEvent(final Table<?> table, final TableEvent<?> event) throws DatabaseException {
 			final TransactionPerDatabase transaction = getAndCreateIfNecessaryTemporaryTransaction(
-					table.getDatabaseConfiguration().getDatabaseConfigurationParameters().getPackage());
+					table.getDatabaseConfiguration().getDatabaseSchema().getPackage());
 			final AtomicInteger nb = new AtomicInteger(0);
 			try {
 				if (eventsStoredIntoMemory) {
@@ -4004,7 +4004,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 			if (dpv == null) {
 				if (_class_table.getPackage().equals(this.getClass().getPackage()) && (actualDatabaseLoading == null
-						|| !actualDatabaseLoading.getConfiguration().getDatabaseConfigurationParameters().getPackage().equals(_class_table.getPackage()) )) {
+						|| !actualDatabaseLoading.getConfiguration().getDatabaseSchema().getPackage().equals(_class_table.getPackage()) )) {
 					loadDatabase(new DatabaseConfiguration(new DatabaseSchema(_class_table.getPackage(), DatabaseSchema.SynchronizationType.NO_SYNCHRONIZATION), internalDatabaseClassesList), true, 0);
 					db=sql_database.get(_class_table.getPackage());
 					dpv=db.tables_per_versions.get(databaseVersion);
@@ -4014,7 +4014,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						lockWrite();
 						if (databaseVersion<0)
 							databaseVersion=getCurrentDatabaseVersion(_class_table.getPackage());
-						if (actualDatabaseLoading != null && actualDatabaseLoading.getConfiguration().getDatabaseConfigurationParameters().getPackage()
+						if (actualDatabaseLoading != null && actualDatabaseLoading.getConfiguration().getDatabaseSchema().getPackage()
 								.equals(_class_table.getPackage()) && actualDatabaseLoading.tables_per_versions.containsKey(databaseVersion)) {
 							db = actualDatabaseLoading;
 							dpv = db.tables_per_versions.get(databaseVersion);
@@ -4092,7 +4092,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 *             if a problem occurs
 	 */
 	public final void deleteDatabase(final DatabaseConfiguration configuration) throws DatabaseException {
-		deleteDatabase(configuration, getCurrentDatabaseVersion(configuration.getDatabaseConfigurationParameters().getPackage()));
+		deleteDatabase(configuration, getCurrentDatabaseVersion(configuration.getDatabaseSchema().getPackage()));
 	}
 	final void deleteDatabase(final DatabaseConfiguration configuration, final int databaseVersion) throws DatabaseException {
 		try  {
@@ -4104,14 +4104,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				public Void run(DatabaseWrapper sql_connection) throws DatabaseException {
 
 					try {
-						if (!sql_database.containsKey(configuration.getDatabaseConfigurationParameters().getPackage()))
+						if (!sql_database.containsKey(configuration.getDatabaseSchema().getPackage()))
 							loadDatabase(configuration, false, databaseVersion);
 
 					} catch (DatabaseException e) {
 						return null;
 					}
 
-					Database db = sql_database.get(configuration.getDatabaseConfigurationParameters().getPackage());
+					Database db = sql_database.get(configuration.getDatabaseSchema().getPackage());
 					if (db == null)
 						throw new IllegalAccessError();
 
@@ -4135,15 +4135,15 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 
 					HashMap<Package, Database> sd = new HashMap<>(sql_database);
-					db=sd.get(configuration.getDatabaseConfigurationParameters().getPackage());
+					db=sd.get(configuration.getDatabaseSchema().getPackage());
 					db.tables_per_versions.remove(databaseVersion);
 					if (db.tables_per_versions.size()==0)
-						sd.remove(configuration.getDatabaseConfigurationParameters().getPackage());
+						sd.remove(configuration.getDatabaseSchema().getPackage());
 					else
 						db.updateCurrentVersion();
 					sql_database = sd;
 
-					getDatabaseTable().removeRecord("databasePackageName", configuration.getDatabaseConfigurationParameters().getPackage().getName());
+					getDatabaseTable().removeRecord("databasePackageName", configuration.getDatabaseSchema().getPackage().getName());
 					return null;
 				}
 
@@ -4273,11 +4273,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						assert oldDatabaseVersion != newDatabaseVersion;
 						int r = getConnectionAssociatedWithCurrentThread().getConnection().createStatement()
 								.executeUpdate("UPDATE " + VERSIONS_OF_DATABASE + " SET CURRENT_DATABASE_VERSION='" + newDatabaseVersion
-										+ "' WHERE PACKAGE_NAME='" + getLongPackageName(configuration.getDatabaseConfigurationParameters().getPackage()) + "'" + getSqlComma());
+										+ "' WHERE PACKAGE_NAME='" + getLongPackageName(configuration.getDatabaseSchema().getPackage()) + "'" + getSqlComma());
 						if (r != 1)
 							throw new DatabaseException("no record found (r="+r+")");
 						if (oldDatabaseVersion >= 0) {
-							Database db = sql_database.get(configuration.getDatabaseConfigurationParameters().getPackage());
+							Database db = sql_database.get(configuration.getDatabaseSchema().getPackage());
 							HashMap<Class<? extends Table<?>>, Table<?>> hm = new HashMap<>(db.tables_per_versions.get(oldDatabaseVersion).tables_instances);
 							deleteDatabase(configuration, oldDatabaseVersion);
 							for (Table<?> t : hm.values()) {
@@ -4561,7 +4561,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	}
 
 	private boolean isDatabaseLoadedImpl(DatabaseConfiguration configuration, int databaseVersion) throws DatabaseException {
-		Database db = sql_database.get(configuration.getDatabaseConfigurationParameters().getPackage());
+		Database db = sql_database.get(configuration.getDatabaseSchema().getPackage());
 		if (db != null) {
 			return (databaseVersion == -1 && db.tables_per_versions.containsKey(db.getCurrentVersion()))
 					|| (databaseVersion != -1 && db.tables_per_versions.containsKey(databaseVersion));
@@ -4602,7 +4602,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		Database actualDatabaseLoading=this.actualDatabaseLoading;
 		assert actualDatabaseLoading!=null;
 		if (databaseVersion==-1)
-			databaseVersion=getCurrentDatabaseVersion(configuration.getDatabaseConfigurationParameters().getPackage());
+			databaseVersion=getCurrentDatabaseVersion(configuration.getDatabaseSchema().getPackage());
 		boolean initBackupRestore=false;
 
 
@@ -4614,7 +4614,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				if (hosts.get()==null)
 					hosts.set(getSynchronizer().resetSynchronizerAndGetAllHosts());
 				this.actualDatabaseLoading=actualDatabaseLoading;
-				int currentVersion=getCurrentDatabaseVersion(configuration.getDatabaseConfigurationParameters().getPackage());
+				int currentVersion=getCurrentDatabaseVersion(configuration.getDatabaseSchema().getPackage());
 				if (currentVersion==databaseVersion) {
 					DatabaseConfiguration oldConfig = configuration.getOldVersionOfDatabaseConfiguration();
 
@@ -4651,10 +4651,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		@SuppressWarnings("unchecked")
 		HashMap<Package, Database> sd = (HashMap<Package, Database>) sql_database.clone();
-		Database db=sd.get(configuration.getDatabaseConfigurationParameters().getPackage());
+		Database db=sd.get(configuration.getDatabaseSchema().getPackage());
 
 		if (db==null) {
-			sd.put(configuration.getDatabaseConfigurationParameters().getPackage(), actualDatabaseLoading);
+			sd.put(configuration.getDatabaseSchema().getPackage(), actualDatabaseLoading);
 		}
 		else {
 			DatabasePerVersion dpv=actualDatabaseLoading.tables_per_versions.get(databaseVersion);
@@ -4665,7 +4665,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			//db.updateCurrentVersion();
 		}
 		sql_database = sd;
-		configuration.getDatabaseConfigurationParameters().setDatabaseWrapper(this);
+		configuration.getDatabaseSchema().setDatabaseWrapper(this);
 		if (initBackupRestore)
 			actualDatabaseLoading.initBackupRestoreManager(this, getDatabaseDirectory(), configuration);
 
@@ -4679,12 +4679,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			HashMap<String, Boolean> databases=new HashMap<>();
 			configurations.forEach(v -> {
 				DatabaseLifeCycles callable = v.getDatabaseLifeCycles();
-				databases.put(v.getDatabaseConfigurationParameters().getPackage().getName(), callable != null && callable.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized());
+				databases.put(v.getDatabaseSchema().getPackage().getName(), callable != null && callable.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized());
 			});
 
 			getSynchronizer().restoreHosts(hosts.get(), databases);
 		}
-		if (configurations.stream().anyMatch(v-> v.getDatabaseConfigurationParameters().isSynchronizedWithCentralBackupDatabase()) && getSynchronizer().isInitializedWithCentralBackup())
+		if (configurations.stream().anyMatch(v-> v.getDatabaseSchema().isSynchronizedWithCentralBackupDatabase()) && getSynchronizer().isInitializedWithCentralBackup())
 			getSynchronizer().initConnexionWithDistantBackupCenter();
 	}
 	final void postLoadDatabaseFinal( Reference<Boolean> allNotFound, boolean internalDatabasePackage) throws DatabaseException {
@@ -4695,7 +4695,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	final void loadDatabase(final DatabaseConfiguration configuration,
 							final boolean createDatabaseIfNecessaryAndCheckIt, int databaseVersion) throws DatabaseException {
 		checkConfiguration(configuration);
-		boolean internalPackage=configuration.getDatabaseConfigurationParameters().getPackage().equals(this.getClass().getPackage());
+		boolean internalPackage=configuration.getDatabaseSchema().getPackage().equals(this.getClass().getPackage());
 		if (!internalPackage) {
 			if (createDatabaseIfNecessaryAndCheckIt)
 				getTableInstance(DatabaseTable.class, databaseVersion);
@@ -4728,12 +4728,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	private void checkConfiguration(DatabaseConfiguration configuration) throws DatabaseException {
 		if (configuration==null)
 			throw new NullPointerException();
-		if (configuration.getDatabaseConfigurationParameters().getPackage().equals(this.getClass().getPackage()))
+		if (configuration.getDatabaseSchema().getPackage().equals(this.getClass().getPackage()))
 			throw new IllegalArgumentException("The package "+this.getClass().getPackage()+" cannot be included into the list of database");
 		DecentralizedValue ldv=getSynchronizer().getLocalHostID();
 		if (ldv!=null)
 		{
-			Collection<DecentralizedValue> c=configuration.getDatabaseConfigurationParameters().getDistantPeersThatCanBeSynchronizedWithThisDatabase();
+			Collection<DecentralizedValue> c=configuration.getDatabaseSchema().getDistantPeersThatCanBeSynchronizedWithThisDatabase();
 			if (c!=null && c.contains(ldv))
 				throw new IllegalArgumentException("Impossible to synchronize the database between one peer and it self : "+ldv);
 		}
@@ -4849,11 +4849,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						st = getConnectionAssociatedWithCurrentThread().getConnection()
 								.createStatement();
 						st.executeUpdate("INSERT INTO " + DatabaseWrapper.VERSIONS_OF_DATABASE + " (PACKAGE_NAME, CURRENT_DATABASE_VERSION) VALUES('"
-								+ getLongPackageName(configuration.getDatabaseConfigurationParameters().getPackage()) + "', '" + version + "')" + getSqlComma());
+								+ getLongPackageName(configuration.getDatabaseSchema().getPackage()) + "', '" + version + "')" + getSqlComma());
 						st.close();
 					}
 					else {
-						int v = getCurrentDatabaseVersion(configuration.getDatabaseConfigurationParameters().getPackage(), false, version);
+						int v = getCurrentDatabaseVersion(configuration.getDatabaseSchema().getPackage(), false, version);
 						if (version==-1)
 							version=v;
 					}
@@ -4880,16 +4880,16 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					for (Table<?> t : list_tables) {
 						t.initializeStep3();
 					}
-					if (!configuration.getDatabaseConfigurationParameters().getPackage().equals(this.getClass().getPackage())) {
+					if (!configuration.getDatabaseSchema().getPackage().equals(this.getClass().getPackage())) {
 						Database actualDatabaseLoading = DatabaseWrapper.this.actualDatabaseLoading;
 						DatabaseWrapper.this.actualDatabaseLoading = null;
-						DatabaseTable.Record dbt = getDatabaseTable().getRecord("databasePackageName", configuration.getDatabaseConfigurationParameters().getPackage().getName());
+						DatabaseTable.Record dbt = getDatabaseTable().getRecord("databasePackageName", configuration.getDatabaseSchema().getPackage().getName());
 						if (dbt == null) {
-							getDatabaseTable().addRecord(new DatabaseTable.Record(configuration.getDatabaseConfigurationParameters().getPackage().getName(), configuration.getDatabaseConfigurationParameters().isSynchronizedWithCentralBackupDatabase()));
+							getDatabaseTable().addRecord(new DatabaseTable.Record(configuration.getDatabaseSchema().getPackage().getName(), configuration.getDatabaseSchema().isSynchronizedWithCentralBackupDatabase()));
 						}
-						else if (dbt.isSynchronizedWithCentralDatabaseBackup()!=configuration.getDatabaseConfigurationParameters().isSynchronizedWithCentralBackupDatabase())
+						else if (dbt.isSynchronizedWithCentralDatabaseBackup()!=configuration.getDatabaseSchema().isSynchronizedWithCentralBackupDatabase())
 						{
-							getDatabaseTable().updateRecord(dbt, "synchronizedWithCentralDatabaseBackup", configuration.getDatabaseConfigurationParameters().isSynchronizedWithCentralBackupDatabase());
+							getDatabaseTable().updateRecord(dbt, "synchronizedWithCentralDatabaseBackup", configuration.getDatabaseSchema().isSynchronizedWithCentralBackupDatabase());
 						}
 						DatabaseWrapper.this.actualDatabaseLoading = actualDatabaseLoading;
 					}
@@ -5083,7 +5083,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		if (db == null) {
 			try  {
 				lockWrite();
-				if (actualDatabaseLoading != null && actualDatabaseLoading.getConfiguration().getDatabaseConfigurationParameters().getPackage().equals(p))
+				if (actualDatabaseLoading != null && actualDatabaseLoading.getConfiguration().getDatabaseSchema().getPackage().equals(p))
 					db = actualDatabaseLoading;
 			}
 			finally

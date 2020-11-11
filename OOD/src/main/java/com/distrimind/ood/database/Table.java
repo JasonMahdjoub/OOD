@@ -635,7 +635,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			fa.initialize();
 		}
 		this.tables = tables;
-		this.supportSynchronizationWithOtherPeers=tables.getDatabaseConfigurationParameters().isDecentralized();
+		this.supportSynchronizationWithOtherPeers=tables.getDatabaseSchema().isDecentralized();
 	}
 
     public DatabaseCollisionsNotifier<T, Table<T>> getDatabaseCollisionsNotifier() {

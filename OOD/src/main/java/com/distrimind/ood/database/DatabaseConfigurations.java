@@ -102,14 +102,14 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 		{
 			if (dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase()!=null) {
 				save|=distantPeers.addAll(dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase());
-				allDistantPeers.addAll(dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase())
+				allDistantPeers.addAll(dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase());
 			}
 		}
 		for (DatabaseConfiguration dc : volatileConfigurations)
 		{
 			if (dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase()!=null) {
 				save|=volatileDistantPeers.addAll(dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase());
-				allDistantPeers.addAll(dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase())
+				allDistantPeers.addAll(dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase());
 			}
 		}
 		return save;
@@ -204,5 +204,10 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 
 	DecentralizedValue getLocalPeer() {
 		return localPeer;
+	}
+
+	void setCreateDatabasesIfNecessaryAndCheckIt(boolean createDatabasesIfNecessaryAndCheckIt) {
+		for (DatabaseConfiguration dc : configurations)
+			dc.setCreateDatabaseIfNecessaryAndCheckItDuringCurrentSession(createDatabasesIfNecessaryAndCheckIt);
 	}
 }

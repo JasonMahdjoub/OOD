@@ -27,7 +27,8 @@ public class DatabaseConfigurationsBuilder {
 								  DatabaseWrapper wrapper,
 								  DatabaseLifeCycles lifeCycles,
 								  EncryptionProfileProvider encryptionProfileProvider,
-								  AbstractSecureRandom secureRandom) throws DatabaseException {
+								  AbstractSecureRandom secureRandom,
+								  boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
 		if (configurations==null)
 			throw new NullPointerException();
 		if (wrapper==null)
@@ -43,6 +44,7 @@ public class DatabaseConfigurationsBuilder {
 		this.encryptionProfileProvider=encryptionProfileProvider;
 		this.secureRandom=secureRandom;
 		boolean save=configurations.checkDistantPeers();
+		configurations.setCreateDatabasesIfNecessaryAndCheckIt(createDatabasesIfNecessaryAndCheckIt);
 
 		if (save && lifeCycles!=null)
 		{
@@ -101,16 +103,19 @@ public class DatabaseConfigurationsBuilder {
 	AbstractSecureRandom getSecureRandom() {
 		return secureRandom;
 	}
-
 	DatabaseConfigurationsBuilder addConfiguration(DatabaseConfiguration configuration, boolean makeConfigurationLoadingPersistent )
+	{
+		return addConfiguration(configuration, makeConfigurationLoadingPersistent, configuration.isCreateDatabaseIfNecessaryAndCheckItDuringLoading());
+	}
+	DatabaseConfigurationsBuilder addConfiguration(DatabaseConfiguration configuration, boolean makeConfigurationLoadingPersistent, boolean createDatabaseIfNecessaryAndCheckItDuringCurrentSession )
 	{
 		pushQuery((t) -> {
 			for (DatabaseConfiguration dc : this.configurations.getConfigurations())
 			{
-				if (dc.getDatabaseConfigurationParameters().getPackage().equals(configuration.getDatabaseConfigurationParameters().getPackage()))
+				if (dc.getDatabaseSchema().getPackage().equals(configuration.getDatabaseSchema().getPackage()))
 					throw new IllegalArgumentException();
 			}
-
+			configuration.setCreateDatabaseIfNecessaryAndCheckItDuringCurrentSession(createDatabaseIfNecessaryAndCheckItDuringCurrentSession);
 			configurations.addConfiguration(configuration, makeConfigurationLoadingPersistent);
 			if (makeConfigurationLoadingPersistent)
 				t.updateConfigurationPersistence();
@@ -141,13 +146,13 @@ public class DatabaseConfigurationsBuilder {
 		for (DatabaseConfiguration dc : configurations.getConfigurations())
 		{
 			if (!wrapper.isDatabaseLoaded(dc)) {
-				wrapper.loadDatabase(dc, true);
+				wrapper.loadDatabase(dc, dc.isCreateDatabaseIfNecessaryAndCheckItDuringCurrentSession());
 				//TOTO revisit this part : take account of the restoration and time of restoration
 			}
 		}
 	}
 
-	public void setLocalPeerIdentifier(DecentralizedValue localPeerId, boolean permitIndirectSynchronizationBetweenPeers, boolean replace) throws DatabaseException {
+	public void setLocalPeerIdentifier(DecentralizedValue localPeerId, boolean permitIndirectSynchronizationBetweenPeers, boolean replace) {
 		if (localPeerId==null)
 			throw new NullPointerException();
 		pushQuery((t)-> {
@@ -195,7 +200,7 @@ public class DatabaseConfigurationsBuilder {
 
 	}
 
-	DatabaseConfigurationsBuilder synchronizeDistantPeerWithGivenAdditionalPackages(DecentralizedValue distantPeer, Package ... packages)
+	public DatabaseConfigurationsBuilder synchronizeDistantPeerWithGivenAdditionalPackages(DecentralizedValue distantPeer, Package ... packages)
 	{
 		String[] packagesString=new String[packages.length];
 		int i=0;
@@ -208,7 +213,7 @@ public class DatabaseConfigurationsBuilder {
 		return synchronizeDistantPeerWithGivenAdditionalPackages(distantPeer, packagesString);
 	}
 
-	DatabaseConfigurationsBuilder synchronizeDistantPeerWithGivenAdditionalPackages(DecentralizedValue distantPeer, String ... packagesString)
+	public DatabaseConfigurationsBuilder synchronizeDistantPeerWithGivenAdditionalPackages(DecentralizedValue distantPeer, String ... packagesString)
 	{
 		if (packagesString==null)
 			throw new NullPointerException();
@@ -223,7 +228,7 @@ public class DatabaseConfigurationsBuilder {
 				DatabaseConfiguration foundDC=null;
 				for (DatabaseConfiguration dc : configurations.getConfigurations())
 				{
-					if (dc.getDatabaseConfigurationParameters().getPackage().getName().equals(p))
+					if (dc.getDatabaseSchema().getPackage().getName().equals(p))
 					{
 						foundDC=dc;
 						break;

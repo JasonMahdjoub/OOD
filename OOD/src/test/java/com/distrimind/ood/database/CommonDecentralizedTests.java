@@ -1117,15 +1117,15 @@ public abstract class CommonDecentralizedTests {
 		{
 			for (DatabaseConfiguration dc : dw.getDatabaseConfigurations()) {
 
-				if (dc.getDatabaseConfigurationParameters().isSynchronizedWithCentralBackupDatabase())
+				if (dc.getDatabaseSchema().isSynchronizedWithCentralBackupDatabase())
 				{
-					Assert.assertEquals(dc.getDatabaseConfigurationParameters().getBackupConfiguration().getMaxBackupFileAgeInMs(), 1000);
-					BackupRestoreManager brm=dw.getBackupRestoreManager(dc.getDatabaseConfigurationParameters().getPackage());
+					Assert.assertEquals(dc.getDatabaseSchema().getBackupConfiguration().getMaxBackupFileAgeInMs(), 1000);
+					BackupRestoreManager brm=dw.getBackupRestoreManager(dc.getDatabaseSchema().getPackage());
 					DatabaseBackup dbb=centralDatabaseBackup
 							.databaseBackup
 							.get(d.hostID)
 							.databaseBackupPerPackage
-							.get(dc.getDatabaseConfigurationParameters().getPackage().getName());
+							.get(dc.getDatabaseSchema().getPackage().getName());
 					Map<Long, EncryptedDatabaseBackupMetaDataPerFile> hm;
 					if (dbb==null)
 					{
@@ -1153,7 +1153,7 @@ public abstract class CommonDecentralizedTests {
 		if (dw.getSynchronizer().isInitializedWithCentralBackup())
 		{
 			for (DatabaseConfiguration dc : dw.getDatabaseConfigurations()) {
-				if (dc.getDatabaseConfigurationParameters().isSynchronizedWithCentralBackupDatabase())
+				if (dc.getDatabaseSchema().isSynchronizedWithCentralBackupDatabase())
 				{
 					for (Database dother : listDatabase)
 					{
@@ -1161,7 +1161,7 @@ public abstract class CommonDecentralizedTests {
 						{
 							if (d.getDbwrapper().getSynchronizer().isSynchronizationActivatedWithChannelAndThroughCentralDatabaseBackup(dother.hostID))
 							{
-								BackupRestoreManager brmo=dother.getDbwrapper().getBackupRestoreManager(dc.getDatabaseConfigurationParameters().getPackage());
+								BackupRestoreManager brmo=dother.getDbwrapper().getBackupRestoreManager(dc.getDatabaseSchema().getPackage());
 								List<Long> finalTimeStamps=brmo.getFinalTimestamps();
 								Long lastID=null;
 								if (finalTimeStamps.size()>0) {

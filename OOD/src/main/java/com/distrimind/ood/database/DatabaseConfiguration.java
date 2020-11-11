@@ -38,7 +38,11 @@ package com.distrimind.ood.database;
 
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.properties.MultiFormatProperties;
+import com.distrimind.util.properties.PropertiesParseException;
+import org.w3c.dom.Document;
 
+import java.io.IOException;
+import java.io.Reader;
 import java.util.*;
 
 /**
@@ -64,16 +68,29 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 	private SynchronizationType synchronizationType;
 	private Set<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase;
 	private BackupConfiguration backupConfiguration;
+	private transient boolean createDatabaseIfNecessaryAndCheckItDuringCurrentSession=true;
+	private boolean createDatabaseIfNecessaryAndCheckItDuringLoading;
 
 	public DatabaseConfiguration(DatabaseSchema databaseSchema) {
 		this(databaseSchema, SynchronizationType.NO_SYNCHRONIZATION, null, null);
 	}
 
+	boolean isCreateDatabaseIfNecessaryAndCheckItDuringCurrentSession() {
+		return createDatabaseIfNecessaryAndCheckItDuringCurrentSession;
+	}
+
+	void setCreateDatabaseIfNecessaryAndCheckItDuringCurrentSession(boolean createDatabaseIfNecessaryAndCheckItDuringCurrentSession) {
+		this.createDatabaseIfNecessaryAndCheckItDuringCurrentSession = createDatabaseIfNecessaryAndCheckItDuringCurrentSession;
+	}
+
 	public DatabaseConfiguration(DatabaseSchema databaseSchema, BackupConfiguration backupConfiguration) {
 		this(databaseSchema, SynchronizationType.NO_SYNCHRONIZATION, null, backupConfiguration);
 	}
-
 	public DatabaseConfiguration(DatabaseSchema databaseSchema, SynchronizationType synchronizationType, Collection<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase, BackupConfiguration backupConfiguration) {
+		this(databaseSchema, SynchronizationType.NO_SYNCHRONIZATION, distantPeersThatCanBeSynchronizedWithThisDatabase, backupConfiguration, true);
+	}
+
+	public DatabaseConfiguration(DatabaseSchema databaseSchema, SynchronizationType synchronizationType, Collection<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase, BackupConfiguration backupConfiguration, boolean createDatabaseIfNecessaryAndCheckItDuringLoading) {
 		super(null);
 		if (databaseSchema == null)
 			throw new NullPointerException("_package");
@@ -93,6 +110,14 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 	}
 	public BackupConfiguration getBackupConfiguration() {
 		return backupConfiguration;
+	}
+
+	public boolean isCreateDatabaseIfNecessaryAndCheckItDuringLoading() {
+		return createDatabaseIfNecessaryAndCheckItDuringLoading;
+	}
+
+	public void setCreateDatabaseIfNecessaryAndCheckItDuringLoading(boolean createDatabaseIfNecessaryAndCheckItDuringLoading) {
+		this.createDatabaseIfNecessaryAndCheckItDuringLoading = createDatabaseIfNecessaryAndCheckItDuringLoading;
 	}
 
 	public Set<DecentralizedValue> getDistantPeersThatCanBeSynchronizedWithThisDatabase() {
@@ -131,7 +156,7 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 	}
 
 
-	public DatabaseSchema getDatabaseConfigurationParameters() {
+	public DatabaseSchema getDatabaseSchema() {
 		return databaseSchema;
 	}
 
@@ -170,4 +195,29 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 		return synchronizationType;
 	}
 
+
+	@Override
+	public void loadXML(Document document) throws PropertiesParseException {
+		super.loadXML(document);
+		reloadedFromDocument();
+	}
+
+	private void reloadedFromDocument()
+	{
+		createDatabaseIfNecessaryAndCheckItDuringCurrentSession=createDatabaseIfNecessaryAndCheckItDuringLoading;
+	}
+
+
+	@Override
+	public void loadFromProperties(Properties properties) throws IllegalArgumentException {
+		super.loadFromProperties(properties);
+		reloadedFromDocument();
+	}
+
+
+	@Override
+	public void loadYAML(Reader reader) throws IOException {
+		super.loadYAML(reader);
+		reloadedFromDocument();
+	}
 }
