@@ -4559,6 +4559,26 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 								   final boolean createDatabaseIfNecessaryAndCheckIt) throws DatabaseException {
 		loadDatabase(configurations, createDatabaseIfNecessaryAndCheckIt, null, null);
 	}
+
+	private boolean isDatabaseLoadedImpl(DatabaseConfiguration configuration, int databaseVersion) throws DatabaseException {
+		Database db = sql_database.get(configuration.getDatabaseConfigurationParameters().getPackage());
+		if (db != null) {
+			return (databaseVersion == -1 && db.tables_per_versions.containsKey(db.getCurrentVersion()))
+					|| (databaseVersion != -1 && db.tables_per_versions.containsKey(databaseVersion));
+		}
+		return false;
+	}
+	boolean isDatabaseLoaded(DatabaseConfiguration configuration) throws DatabaseException {
+		lockRead();
+		try{
+			return isDatabaseLoadedImpl(configuration, -1);
+
+		}
+		finally {
+			unlockRead();
+		}
+	}
+
 	final void loadDatabaseImpl(final DatabaseConfiguration configuration,
 								final boolean createDatabaseIfNecessaryAndCheckIt,
 								final boolean internalPackage,
@@ -4570,15 +4590,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		//final AtomicBoolean allNotFound = new AtomicBoolean(true);
 		if (this.closed)
 			throw new DatabaseException("The given Database was closed : " + this);
-		{
-			Database db = sql_database.get(configuration.getDatabaseConfigurationParameters().getPackage());
-			if (db != null) {
-				if ((databaseVersion == -1 && db.tables_per_versions.containsKey(db.getCurrentVersion()))
-						|| (databaseVersion != -1 && db.tables_per_versions.containsKey(databaseVersion))) {
-					throw new DatabaseException("There is already a database associated to the given wrapper ");
-				}
-			}
-		}
+
+		if (isDatabaseLoadedImpl(configuration, databaseVersion))
+			throw new DatabaseException("There is already a database associated to the given wrapper ");
 
 
 		boolean allNotFound=loadDatabaseTables(configuration, createDatabaseIfNecessaryAndCheckIt, databaseVersion);

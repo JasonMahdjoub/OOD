@@ -114,7 +114,7 @@ public class DatabaseConfigurationsBuilder {
 			configurations.addConfiguration(configuration, makeConfigurationLoadingPersistent);
 			if (makeConfigurationLoadingPersistent)
 				t.updateConfigurationPersistence();
-			checkNewConnexions();
+			checkConfigurationLoading();
 		});
 		return this;
 	}
@@ -130,6 +130,21 @@ public class DatabaseConfigurationsBuilder {
 	private void checkNewConnexions() throws DatabaseException {
 		checkInitLocalPeer();
 		//TODO complete
+	}
+
+	private void checkConfigurationLoading() throws DatabaseException {
+		checkDatabaseLoading();
+		checkNewConnexions();
+	}
+
+	private void checkDatabaseLoading() throws DatabaseException {
+		for (DatabaseConfiguration dc : configurations.getConfigurations())
+		{
+			if (!wrapper.isDatabaseLoaded(dc)) {
+				wrapper.loadDatabase(dc, true);
+				//TOTO revisit this part : take account of the restoration and time of restoration
+			}
+		}
 	}
 
 	public void setLocalPeerIdentifier(DecentralizedValue localPeerId, boolean permitIndirectSynchronizationBetweenPeers, boolean replace) throws DatabaseException {
