@@ -2,7 +2,6 @@ package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
-import com.distrimind.util.Reference;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 
@@ -53,11 +52,48 @@ public class DatabaseConfigurationsBuilder {
 	private static class Transaction {
 		final ArrayList<ConfigurationQuery> queries =new ArrayList<>();
 		private boolean updateConfigurationPersistence=false;
+		private boolean checkNewConnexions=false;
+		private boolean checkDatabaseLoading=false;
+		private List<DecentralizedValue> removedPeersID=null;
 
 		void updateConfigurationPersistence() {
 			updateConfigurationPersistence = true;
 		}
 
+		void checkNewConnexions() {
+			checkNewConnexions=true;
+		}
+
+		void addIDToRemove(DecentralizedValue dv)
+		{
+			if (dv==null)
+				throw new NullPointerException();
+			if (removedPeersID==null)
+				removedPeersID=new ArrayList<>();
+			else if (removedPeersID.contains(dv))
+				return;
+
+			removedPeersID.add(dv);
+		}
+  		void checkDatabaseLoading()
+		{
+			checkDatabaseLoading=true;
+		}
+		void checkConfigurationLoading() {
+			checkDatabaseLoading();
+			checkNewConnexions();
+
+		}
+
+		void checkNotRemovedID(DecentralizedValue localPeerId) throws DatabaseException {
+			if (removedPeersID!=null && removedPeersID.contains(localPeerId))
+				throw new DatabaseException("The id "+localPeerId+" was already removed !");
+		}
+
+		void checkNotRemovedIDs(Collection<DecentralizedValue> distantPeers) throws DatabaseException {
+			if (removedPeersID!=null && distantPeers.stream().anyMatch(v-> removedPeersID.contains(v)))
+				throw new DatabaseException("There are ids that have been removed !");
+		}
 	}
 	private interface ConfigurationQuery
 	{
@@ -85,6 +121,25 @@ public class DatabaseConfigurationsBuilder {
 					q.execute(currentTransaction);
 				if (currentTransaction.updateConfigurationPersistence)
 					lifeCycles.saveDatabaseConfigurations(configurations);
+				if (currentTransaction.checkDatabaseLoading)
+					checkDatabaseLoading();
+				if (currentTransaction.checkNewConnexions)
+					checkNewConnexions();
+				if (currentTransaction.removedPeersID!=null)
+				{
+
+					for (DecentralizedValue peerIDToRemove : currentTransaction.removedPeersID) {
+						wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
+							@Override
+							public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
+								if (!_record.concernsLocalDatabaseHost()) {
+									_record.offerNewAuthenticatedP2PMessage(new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), peerIDToRemove, encryptionProfileProvider), this);
+
+								}
+							}
+						});
+					}
+				}
 
 			}
 			finally {
@@ -125,7 +180,7 @@ public class DatabaseConfigurationsBuilder {
 			configurations.addConfiguration(configuration, makeConfigurationLoadingPersistent);
 			if (makeConfigurationLoadingPersistent)
 				t.updateConfigurationPersistence();
-			checkConfigurationLoading();
+			t.checkConfigurationLoading();
 		});
 		return this;
 	}
@@ -143,10 +198,7 @@ public class DatabaseConfigurationsBuilder {
 		//TODO complete
 	}
 
-	private void checkConfigurationLoading() throws DatabaseException {
-		checkDatabaseLoading();
-		checkNewConnexions();
-	}
+
 
 	private void checkDatabaseLoading() throws DatabaseException {
 		for (DatabaseConfiguration dc : configurations.getConfigurations())
@@ -162,46 +214,43 @@ public class DatabaseConfigurationsBuilder {
 		if (localPeerId==null)
 			throw new NullPointerException();
 		pushQuery((t)-> {
-			if (configurations.getLocalPeer() != null) {
-				if (configurations.getLocalPeer().equals(localPeerId)) {
-					if (configurations.isPermitIndirectSynchronizationBetweenPeers() != permitIndirectSynchronizationBetweenPeers) {
-						if (replace) {
-							wrapper.getSynchronizer().disconnectAll();
-							configurations.setPermitIndirectSynchronizationBetweenPeers(permitIndirectSynchronizationBetweenPeers);
-							t.updateConfigurationPersistence();
-							checkNewConnexions();
-						} else
-							throw new DatabaseException("Local peer identifier is already configured !");
-					}
-				} else {
-					final Reference<DecentralizedValue> removedHostID=new Reference<>();
-					if (replace) {
-						if (wrapper.getSynchronizer().isInitialized(configurations.getLocalPeer())) {
-							wrapper.getSynchronizer().disconnectAll();
-							removedHostID.set(wrapper.getSynchronizer().getLocalHostID());
-							wrapper.getSynchronizer().removeHook(removedHostID.get());
+			t.checkNotRemovedID(localPeerId);
 
-						}
+			if (localPeerId.equals(configurations.getLocalPeer())) {
+				if (configurations.isPermitIndirectSynchronizationBetweenPeers() != permitIndirectSynchronizationBetweenPeers) {
+					if (replace) {
+						wrapper.getSynchronizer().disconnectAll();
+						configurations.setPermitIndirectSynchronizationBetweenPeers(permitIndirectSynchronizationBetweenPeers);
+						t.updateConfigurationPersistence();
+						t.checkNewConnexions();
 					} else
 						throw new DatabaseException("Local peer identifier is already configured !");
-					configurations.setPermitIndirectSynchronizationBetweenPeers(permitIndirectSynchronizationBetweenPeers);
-					configurations.setLocalPeer(localPeerId);
-					t.updateConfigurationPersistence();
-					checkNewConnexions();
-					if (removedHostID.get()!=null) {
-						wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
-							@Override
-							public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
-								if (!_record.concernsLocalDatabaseHost()) {
-									_record.offerNewAuthenticatedP2PMessage(new HookRemoveRequest(localPeerId, _record.getHostID(), removedHostID.get(), encryptionProfileProvider), this);
-
-								}
-							}
-						});
-					}
 				}
+			} else {
+				DecentralizedValue removedHostID=configurations.getLocalPeer();
+				if (removedHostID!=null) {
+					if (replace) {
+						if (wrapper.getSynchronizer().isInitialized()) {
+							if (!wrapper.getSynchronizer().getLocalHostID().equals(removedHostID))
+								throw new IllegalAccessError();
+							wrapper.getSynchronizer().disconnectAll();
+							wrapper.getSynchronizer().removeHook(removedHostID);
+						}
+
+					} else
+						throw new DatabaseException("Local peer identifier is already configured !");
+				}
+				else if (wrapper.getSynchronizer().isInitialized())
+					throw new IllegalAccessError();
+				configurations.setPermitIndirectSynchronizationBetweenPeers(permitIndirectSynchronizationBetweenPeers);
+				configurations.setLocalPeer(localPeerId);
+				t.updateConfigurationPersistence();
+				t.checkNewConnexions();
+				if (removedHostID!=null)
+					t.addIDToRemove(removedHostID);
 
 			}
+
 		});
 
 	}
@@ -231,6 +280,7 @@ public class DatabaseConfigurationsBuilder {
 		if (Arrays.stream(packagesString).anyMatch(Objects::isNull))
 			throw new NullPointerException();
 		pushQuery((t) -> {
+			t.checkNotRemovedIDs(distantPeers);
 			boolean changed=false;
 			for (String p : packagesString)
 			{
@@ -238,7 +288,7 @@ public class DatabaseConfigurationsBuilder {
 			}
 			if (changed) {
 				t.updateConfigurationPersistence();
-				checkNewConnexions();
+				t.checkNewConnexions();
 			}
 		});
 		return this;
@@ -255,10 +305,11 @@ public class DatabaseConfigurationsBuilder {
 		if (configurations.getLocalPeer()!=null && distantPeers.contains(configurations.getLocalPeer()))
 			throw new IllegalArgumentException();
 		pushQuery((t) -> {
+			t.checkNotRemovedIDs(distantPeers);
 			boolean changed=configurations.setDistantPeersWithGivenPackage(packageString, distantPeers);
 			if (changed) {
 				t.updateConfigurationPersistence();
-				checkNewConnexions();
+				t.checkNewConnexions();
 			}
 		});
 		return this;
