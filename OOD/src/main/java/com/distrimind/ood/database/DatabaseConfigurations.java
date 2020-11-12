@@ -128,10 +128,25 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 		this.localPeer = localPeer;
 	}
 
-
 	private void checkLocalPeerNull() throws DatabaseException {
-		if (allDistantPeers.size()>0 && localPeer==null)
-			throw new DatabaseException("Local peer must be defined !");
+		checkLocalPeerNull(allDistantPeers);
+	}
+	private void checkLocalPeerNull(Collection<DecentralizedValue> allDistantPeers) throws DatabaseException {
+		if (localPeer==null) {
+			boolean e=allDistantPeers.size()>0;
+			if (!e)
+			{
+				for (DatabaseConfiguration dc : configurations)
+				{
+					if (dc.getSynchronizationType()== DatabaseConfiguration.SynchronizationType.DECENTRALIZED_SYNCHRONIZATION_AND_SYNCHRONIZATION_WITH_CENTRAL_BACKUP_DATABASE) {
+						e = true;
+						break;
+					}
+				}
+			}
+			if (e)
+				throw new DatabaseException("Local peer must be defined !");
+		}
 	}
 
 
@@ -220,9 +235,7 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 		}
 		if (distantPeers==null)
 			throw new NullPointerException();
-		if (localPeer==null && distantPeers.size()>0) {
-			throw new DatabaseException("Local peer identifier must be defined first");
-		}
+		checkLocalPeerNull(distantPeers);
 		boolean changed;
 		try {
 			if (replaceExistant)
