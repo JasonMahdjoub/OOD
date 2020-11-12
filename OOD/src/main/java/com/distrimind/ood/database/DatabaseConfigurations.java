@@ -64,13 +64,13 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 	private DecentralizedValue localPeer;
 	private boolean permitIndirectSynchronizationBetweenPeers;
 
-	public DatabaseConfigurations(Set<DatabaseConfiguration> configurations) {
+	public DatabaseConfigurations(Set<DatabaseConfiguration> configurations) throws DatabaseException {
 		this(configurations,null, null, false);
 	}
-	public DatabaseConfigurations() {
+	public DatabaseConfigurations() throws DatabaseException {
 		this(new HashSet<>());
 	}
-	public DatabaseConfigurations(Set<DatabaseConfiguration> configurations, Set<DecentralizedValue> distantPeers, DecentralizedValue localPeer, boolean permitIndirectSynchronizationBetweenPeers) {
+	public DatabaseConfigurations(Set<DatabaseConfiguration> configurations, Set<DecentralizedValue> distantPeers, DecentralizedValue localPeer, boolean permitIndirectSynchronizationBetweenPeers) throws DatabaseException {
 		super(null);
 		if (configurations ==null)
 			throw new NullPointerException();
@@ -91,10 +91,10 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 			this.distantPeers = new HashSet<>(distantPeers);
 		}
 		this.localPeer = localPeer;
-		checkLocalPeerNull();
+		checkDistantPeers();
+
 	}
-	boolean checkDistantPeers()
-	{
+	boolean checkDistantPeers() throws DatabaseException {
 		boolean save=false;
 		for (DatabaseConfiguration dc : configurations)
 		{
@@ -110,6 +110,8 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 				allDistantPeers.addAll(dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase());
 			}
 		}
+		checkLocalPeerNull();
+
 		return save;
 	}
 
@@ -127,14 +129,9 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 	}
 
 
-	private void checkLocalPeerNull()
-	{
-		if (localPeer==null) {
-			for (DatabaseConfiguration dc : configurations) {
-				if (dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase().size() > 0)
-					throw new NullPointerException("The local peer must be defined");
-			}
-		}
+	private void checkLocalPeerNull() throws DatabaseException {
+		if (allDistantPeers.size()>0 && localPeer==null)
+			throw new DatabaseException("Local peer must be defined !");
 	}
 
 
@@ -161,11 +158,14 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 	@Override
 	public void loadXML(Document document) throws PropertiesParseException {
 		super.loadXML(document);
-		reloadAllConfigurations();
+		try {
+			reloadAllConfigurations();
+		} catch (DatabaseException e) {
+			throw new IllegalArgumentException(e);
+		}
 	}
 
-	private void reloadAllConfigurations()
-	{
+	private void reloadAllConfigurations() throws DatabaseException {
 		allConfigurations.clear();
 		allConfigurations.addAll(volatileConfigurations);
 		allConfigurations.addAll(configurations);
@@ -178,14 +178,22 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 	@Override
 	public void loadFromProperties(Properties properties) throws IllegalArgumentException {
 		super.loadFromProperties(properties);
-		reloadAllConfigurations();
+		try {
+			reloadAllConfigurations();
+		} catch (DatabaseException e) {
+			throw new IllegalArgumentException(e);
+		}
 	}
 
 
 	@Override
 	public void loadYAML(Reader reader) throws IOException {
 		super.loadYAML(reader);
-		reloadAllConfigurations();
+		try {
+			reloadAllConfigurations();
+		} catch (DatabaseException e) {
+			throw new IllegalArgumentException(e);
+		}
 	}
 
 
@@ -209,6 +217,11 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 			if (foundDC==null)
 				throw new DatabaseException("Database configuration not found for package "+packageString);
 			volatileConf=false;
+		}
+		if (distantPeers==null)
+			throw new NullPointerException();
+		if (localPeer==null && distantPeers.size()>0) {
+			throw new DatabaseException("Local peer identifier must be defined first");
 		}
 		boolean changed;
 		try {
