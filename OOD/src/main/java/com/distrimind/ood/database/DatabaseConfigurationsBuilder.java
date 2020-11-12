@@ -85,11 +85,19 @@ public class DatabaseConfigurationsBuilder {
 					q.execute(currentTransaction);
 				if (currentTransaction.updateConfigurationPersistence)
 					lifeCycles.saveDatabaseConfigurations(configurations);
-				currentTransaction = null;
+
 			}
 			finally {
+				currentTransaction = null;
 				wrapper.unlockWrite();
 			}
+		}
+	}
+	public void rollBack()
+	{
+		synchronized (this)
+		{
+			currentTransaction=null;
 		}
 	}
 
@@ -101,11 +109,11 @@ public class DatabaseConfigurationsBuilder {
 	AbstractSecureRandom getSecureRandom() {
 		return secureRandom;
 	}
-	DatabaseConfigurationsBuilder addConfiguration(DatabaseConfiguration configuration, boolean makeConfigurationLoadingPersistent )
+	public DatabaseConfigurationsBuilder addConfiguration(DatabaseConfiguration configuration, boolean makeConfigurationLoadingPersistent )
 	{
 		return addConfiguration(configuration, makeConfigurationLoadingPersistent, configuration.isCreateDatabaseIfNecessaryAndCheckItDuringLoading());
 	}
-	DatabaseConfigurationsBuilder addConfiguration(DatabaseConfiguration configuration, boolean makeConfigurationLoadingPersistent, boolean createDatabaseIfNecessaryAndCheckItDuringCurrentSession )
+	public DatabaseConfigurationsBuilder addConfiguration(DatabaseConfiguration configuration, boolean makeConfigurationLoadingPersistent, boolean createDatabaseIfNecessaryAndCheckItDuringCurrentSession )
 	{
 		pushQuery((t) -> {
 			for (DatabaseConfiguration dc : this.configurations.getConfigurations())
