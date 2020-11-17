@@ -4629,8 +4629,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							this.actualDatabaseLoading=null;
 							loadDatabase(oldConfig, null);
 							this.actualDatabaseLoading=actualDatabaseLoading;
-
-							lifeCycles.transferDatabaseFromOldVersion(this, configuration);
+							SynchronizedTransaction<?> st=lifeCycles.transferDatabaseFromOldVersion(this, configuration);
+							if (st!=null)
+								runSynchronizedTransaction(st);
 							removeOldDatabase = lifeCycles.hasToRemoveOldDatabase(oldConfig);
 
 						} catch (DatabaseException e) {
@@ -4844,7 +4845,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						Statement st = getConnectionAssociatedWithCurrentThread().getConnection()
 								.createStatement();
 						st.executeUpdate("CREATE TABLE " + VERSIONS_OF_DATABASE
-								+ " (PACKAGE_NAME VARCHAR(512), CURRENT_DATABASE_VERSION INTEGER "
+								+ " (PACKAGE_NAME VARCHAR(512), CURRENT_DATABASE_VERSION INTEGER"
 								+", CONSTRAINT VERSION_DB_ID_PK PRIMARY KEY(PACKAGE_NAME))"+getPostCreateTable(null)
 								+ getSqlComma());
 						st.close();

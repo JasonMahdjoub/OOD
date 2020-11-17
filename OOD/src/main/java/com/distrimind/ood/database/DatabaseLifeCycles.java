@@ -50,6 +50,8 @@ public interface DatabaseLifeCycles {
 	 * data from old database. If old database does not exists, this function will
 	 * not be called.
 	 *
+	 * @return the transaction to apply in order to transfer old database to new database. Returns <code>null</code> if not transfer is needed.
+	 *
 	 * @param wrapper the database wrapper
 	 * @param newDatabaseConfiguration
 	 *            the new database configuration
@@ -57,7 +59,7 @@ public interface DatabaseLifeCycles {
 	 * @throws Exception
 	 *             if a problem occurs
 	 */
-	void transferDatabaseFromOldVersion(DatabaseWrapper wrapper, DatabaseConfiguration newDatabaseConfiguration) throws Exception;
+	SynchronizedTransaction<?> transferDatabaseFromOldVersion(DatabaseWrapper wrapper, DatabaseConfiguration newDatabaseConfiguration) throws Exception;
 
 	/**
 	 * This function is called after the database was created and after the eventual
