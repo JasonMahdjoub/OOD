@@ -201,13 +201,15 @@ public class DatabaseConfigurationsBuilder {
 
 
 	private void checkDatabaseLoading() throws DatabaseException {
+		ArrayList<DatabaseConfiguration> dls=new ArrayList<>();
 		for (DatabaseConfiguration dc : configurations.getConfigurations())
 		{
 			if (!wrapper.isDatabaseLoaded(dc)) {
-				wrapper.loadDatabase(dc, dc.isCreateDatabaseIfNecessaryAndCheckItDuringCurrentSession());
-				//TOTO revisit this part : take account of the restoration and time of restoration
+				dls.add(dc);
 			}
 		}
+		wrapper.loadDatabase(dls, lifeCycles);
+		//TOTO revisit this part : take account of the restoration and time of restoration
 	}
 
 	public void setLocalPeerIdentifier(DecentralizedValue localPeerId, boolean permitIndirectSynchronizationBetweenPeers, boolean replace) {

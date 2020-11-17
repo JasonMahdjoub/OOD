@@ -76,6 +76,9 @@ public class DatabaseSchema extends MultiFormatProperties {
 	public DatabaseSchema(Package _package) {
 		this(_package, (DatabaseSchema) null);
 	}
+	public DatabaseSchema(Package _package, Set<Class<?>> classes)  {
+		this(_package, classes, null);
+	}
 	public DatabaseSchema(Package _package, DatabaseSchema oldSchema)  {
 		this(_package, ListClasses.getClasses(_package), oldSchema);
 	}
@@ -128,7 +131,13 @@ public class DatabaseSchema extends MultiFormatProperties {
 
 	}
 
+	public DatabaseSchema getOldSchema() {
+		return oldSchema;
+	}
 
+	void setOldSchema(DatabaseSchema oldSchema) {
+		this.oldSchema = oldSchema;
+	}
 
 	/**
 	 * @return The progress monitor's parameter for database upgrade

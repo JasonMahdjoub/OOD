@@ -101,7 +101,7 @@ public class BackupRestoreManager {
 		return getFile(l, isReferenceFile(l));
 	}
 	BackupRestoreManager(DatabaseWrapper databaseWrapper, File backupDirectory, DatabaseConfiguration databaseConfiguration, boolean passive) throws DatabaseException {
-		this(databaseWrapper, backupDirectory, databaseConfiguration, databaseConfiguration.getDatabaseSchema().getBackupConfiguration(), passive);
+		this(databaseWrapper, backupDirectory, databaseConfiguration, databaseConfiguration.getBackupConfiguration(), passive);
 	}
 	BackupRestoreManager(DatabaseWrapper databaseWrapper, File backupDirectory, DatabaseConfiguration databaseConfiguration, BackupConfiguration backupConfiguration, boolean passive) throws DatabaseException {
 		if (backupDirectory==null)
@@ -121,7 +121,7 @@ public class BackupRestoreManager {
 		FileTools.checkFolderRecursive(backupDirectory);
 		this.backupDirectory=backupDirectory;
 		this.backupConfiguration=backupConfiguration;
-		classes=databaseConfiguration.getSortedTableClasses();
+		classes=databaseConfiguration.getDatabaseSchema().getSortedTableClasses();
 
 		this.computeDatabaseReference=new File(this.backupDirectory, "compute_database_new_reference.query");
 		if (this.computeDatabaseReference.exists() && this.computeDatabaseReference.isDirectory())
@@ -1824,7 +1824,7 @@ public class BackupRestoreManager {
 					if (!checkTablesHeader(currentFile))
 						throw new DatabaseException("The database backup is incompatible with current database tables");
 
-					databaseWrapper.loadDatabase(databaseConfiguration, true, newVersion);
+					databaseWrapper.loadDatabase(databaseConfiguration, newVersion, null);
 					newVersionLoaded = true;
 					tbls = new ArrayList<>();
 					for (Class<? extends Table<?>> c : classes) {

@@ -58,6 +58,7 @@ import com.distrimind.util.harddrive.HardDriveDetect;
 import com.distrimind.util.harddrive.Partition;
 import com.distrimind.util.io.*;
 
+import javax.security.auth.login.Configuration;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -86,8 +87,8 @@ import java.util.concurrent.locks.ReentrantLock;
 @SuppressWarnings("ThrowFromFinallyBlock")
 public abstract class DatabaseWrapper implements AutoCloseable {
 
-	private static final List<Class<?>> internalDatabaseClassesList = Arrays.asList(DatabaseDistantTransactionEvent.class, DatabaseDistantEventsTable.class,
-			DatabaseEventsTable.class, DatabaseHooksTable.class, DatabaseTransactionEventsTable.class, DatabaseTransactionsPerHostTable.class, IDTable.class, DatabaseTable.class);
+	private static final Set<Class<?>> internalDatabaseClassesList = new HashSet<>(Arrays.asList(DatabaseDistantTransactionEvent.class, DatabaseDistantEventsTable.class,
+			DatabaseEventsTable.class, DatabaseHooksTable.class, DatabaseTransactionEventsTable.class, DatabaseTransactionsPerHostTable.class, IDTable.class, DatabaseTable.class));
 	
 	
 	// protected Connection sql_connection;
@@ -198,29 +199,57 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		DatabaseConfiguration getConfiguration() {
 			return configuration;
 		}
-
-		void initBackupRestoreManager(DatabaseWrapper wrapper, File databaseDirectory, DatabaseConfiguration configuration) throws DatabaseException {
-			if (this.backupRestoreManager!=null)
-				return;
-			if (configuration.getDatabaseSchema().getBackupConfiguration()!=null)
+		void checkOldDatabaseBackupsRemoving(DatabaseWrapper wrapper, File databaseDirectory, DatabaseConfiguration configuration) throws DatabaseException {
+			ArrayList<DatabaseSchema> l=new ArrayList<>();
+			DatabaseSchema c=configuration.getDatabaseSchema();
+			while (c!=null)
 			{
-				this.backupRestoreManager =new BackupRestoreManager(wrapper, new File(new File(databaseDirectory, NATIVE_BACKUPS_DIRECTORY_NAME), DatabaseWrapper.getLongPackageName(configuration.getDatabaseSchema().getPackage())), configuration, false);
-				while((configuration=configuration.getOldVersionOfDatabaseConfiguration())!=null)
+				l.add(c);
+				c=c.getOldSchema();
+			}
+			if (l.size()>1)
+			{
+				for (int i=l.size()-1;i>0;i--)
 				{
-					if (this.configuration.getDatabaseSchema().getPackage().equals(configuration.getDatabaseSchema().getPackage()))
-						continue;
-
-					File f=new File(new File(databaseDirectory, NATIVE_BACKUPS_DIRECTORY_NAME),DatabaseWrapper.getLongPackageName(configuration.getDatabaseSchema().getPackage()));
-					if (!f.exists())
-						continue;
-					BackupRestoreManager m=new BackupRestoreManager(wrapper, f,  configuration, false);
-					m.cleanOldBackups();
-					if (m.isEmpty())
-					{
-						FileTools.deleteDirectory(f);
+					c=l.get(i);
+					DatabaseSchema cn=l.get(i-1);
+					if (!c.getPackage().equals(cn.getPackage())) {
+						File f=getDatabaseBackupFileName(databaseDirectory, c);
+						if (f.exists()) {
+							boolean setNull;
+							if (configuration.getBackupConfiguration()==null)
+							{
+								setNull=true;
+								long defaultMaxBackupConfiguration=3L*30L*24L*60L*60L*1000L;
+								configuration.setBackupConfiguration(new BackupConfiguration(defaultMaxBackupConfiguration,defaultMaxBackupConfiguration,100000, 1, null ));
+							}
+							else
+								setNull=false;
+							this.backupRestoreManager = new BackupRestoreManager(wrapper, f, configuration, true);
+							this.backupRestoreManager.cleanOldBackups();
+							if (setNull)
+								configuration.setBackupConfiguration(null);
+							if (this.backupRestoreManager.getFinalTimestamps().size()==0)
+							{
+								FileTools.deleteDirectory(f);
+							}
+						}
 					}
 				}
 			}
+		}
+		private File getDatabaseBackupFileName(File databaseDirectory, DatabaseSchema schema)
+		{
+			return new File(new File(databaseDirectory, NATIVE_BACKUPS_DIRECTORY_NAME), DatabaseWrapper.getLongPackageName(schema.getPackage()));
+		}
+		void initBackupRestoreManager(DatabaseWrapper wrapper, File databaseDirectory, DatabaseConfiguration configuration) throws DatabaseException {
+			if (this.backupRestoreManager!=null)
+				return;
+			if (configuration.getBackupConfiguration()!=null)
+			{
+				this.backupRestoreManager =new BackupRestoreManager(wrapper, getDatabaseBackupFileName(databaseDirectory, configuration.getDatabaseSchema()), configuration, false);
+			}
+			checkOldDatabaseBackupsRemoving(wrapper, databaseDirectory, configuration);
 		}
 	}
 
@@ -1268,7 +1297,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 			if (local==null)
 				throw new IllegalAccessError();
-			List<String> lsp=Arrays.asList(local.getDatabasePackageNames());
+			Set<String> lsp=local.getDatabasePackageNames();
 			{
 				HashMap<String, Boolean> hm=new HashMap<>();
 				lsp.forEach(v->hm.put(v, false));
@@ -1593,8 +1622,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			minFilePartDurationBeforeBecomingFinalFilePart=Long.MAX_VALUE;
 			for (Database d : sql_database.values())
 			{
-				if (d.backupRestoreManager!=null && d.configuration.getDatabaseSchema().getBackupConfiguration().getMaxBackupFileAgeInMs()<minFilePartDurationBeforeBecomingFinalFilePart)
-					minFilePartDurationBeforeBecomingFinalFilePart=d.configuration.getDatabaseSchema().getBackupConfiguration().getMaxBackupFileAgeInMs();
+				if (d.backupRestoreManager!=null && d.configuration.getBackupConfiguration().getMaxBackupFileAgeInMs()<minFilePartDurationBeforeBecomingFinalFilePart)
+					minFilePartDurationBeforeBecomingFinalFilePart=d.configuration.getBackupConfiguration().getMaxBackupFileAgeInMs();
 			}
 			getDatabaseHooksTable()
 					.getRecords(new Filter<Record>() {
@@ -1969,7 +1998,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						return;
 					}
 					Database db=sql_database.get(p);
-					if (db!=null && db.configuration.getDatabaseSchema().isSynchronizedWithCentralBackupDatabase()){
+					if (db!=null && db.configuration.isSynchronizedWithCentralBackupDatabase()){
 						validateLastSynchronizationWithCentralDatabaseBackup(p,db, db.lastValidatedTransactionUTCForCentralBackup );
 					}
 				}
@@ -4005,7 +4034,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (dpv == null) {
 				if (_class_table.getPackage().equals(this.getClass().getPackage()) && (actualDatabaseLoading == null
 						|| !actualDatabaseLoading.getConfiguration().getDatabaseSchema().getPackage().equals(_class_table.getPackage()) )) {
-					loadDatabase(new DatabaseConfiguration(new DatabaseSchema(_class_table.getPackage(), DatabaseSchema.SynchronizationType.NO_SYNCHRONIZATION), internalDatabaseClassesList), true, 0);
+					loadDatabase(new DatabaseConfiguration(new DatabaseSchema(_class_table.getPackage(), internalDatabaseClassesList)), 0, null);
 					db=sql_database.get(_class_table.getPackage());
 					dpv=db.tables_per_versions.get(databaseVersion);
 
@@ -4104,8 +4133,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				public Void run(DatabaseWrapper sql_connection) throws DatabaseException {
 
 					try {
-						if (!sql_database.containsKey(configuration.getDatabaseSchema().getPackage()))
-							loadDatabase(configuration, false, databaseVersion);
+						if (!sql_database.containsKey(configuration.getDatabaseSchema().getPackage())) {
+							configuration.setCreateDatabaseIfNecessaryAndCheckItDuringCurrentSession(false);
+							loadDatabase(configuration, databaseVersion, null);
+						}
 
 					} catch (DatabaseException e) {
 						return null;
@@ -4115,8 +4146,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					if (db == null)
 						throw new IllegalAccessError();
 
-					ArrayList<Table<?>> list_tables = new ArrayList<>(configuration.getTableClasses().size());
-					for (Class<? extends Table<?>> c : configuration.getTableClasses()) {
+					ArrayList<Table<?>> list_tables = new ArrayList<>(configuration.getDatabaseSchema().getTableClasses().size());
+					for (Class<? extends Table<?>> c : configuration.getDatabaseSchema().getTableClasses()) {
 						Table<?> t = getTableInstance(c, databaseVersion);
 						list_tables.add(t);
 					}
@@ -4451,12 +4482,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 *
 	 * @param configurations
 	 *            the database configuration list
-	 * @param createDatabaseIfNecessaryAndCheckIt
-	 *            If set to false, and if the database does not exists, generate a
-	 *            DatabaseException. If set to true, and if the database does not
-	 *            exists, create it. Use
-	 *            {@link DatabaseConfiguration#getDatabaseLifeCycles()} if the
-	 *            database is created and if transfer from old database must done.
 	 * @param timeUTCOfRestorationInMs the time UTC in milliseconds of the point of restoration.
 	 *                                 Every modification in the database after that point is excluded.
 	 *                                 However, it is possible to recover deleted modification by restoring
@@ -4468,11 +4493,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * @throws NullPointerException
 	 *             if the given parameters are null.
 	 */
-	public final void loadDatabaseAndRestoreItToGivenTime(final Collection<DatabaseConfiguration> configurations,
-														  final boolean createDatabaseIfNecessaryAndCheckIt,
+	final void loadDatabaseAndRestoreItToGivenTime(final Collection<DatabaseConfiguration> configurations,
 														  long timeUTCOfRestorationInMs,
-														  Collection<DecentralizedValue> peersToRemove) throws DatabaseException {
-		loadDatabase(configurations, createDatabaseIfNecessaryAndCheckIt,  timeUTCOfRestorationInMs, peersToRemove);
+														  Collection<DecentralizedValue> peersToRemove,
+												   			DatabaseLifeCycles lifeCycles) throws DatabaseException {
+		loadDatabase(configurations,  timeUTCOfRestorationInMs, peersToRemove, lifeCycles);
 	}
 	/**
 	 * Associate a Sql database with a given database configuration.
@@ -4486,12 +4511,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 *
 	 * @param configuration
 	 *            the database configuration
-	 * @param createDatabaseIfNecessaryAndCheckIt
-	 *            If set to false, and if the database does not exists, generate a
-	 *            DatabaseException. If set to true, and if the database does not
-	 *            exists, create it. Use
-	 *            {@link DatabaseConfiguration#getDatabaseLifeCycles()} if the
-	 *            database is created and if transfer from old database must done.
 	 * @param timeUTCOfRestorationInMs the time UTC in milliseconds of the point of restoration.
 	 *                                 Every modification in the database after that point is excluded.
 	 *                                 However, it is possible to recover deleted modification by restoring
@@ -4503,11 +4522,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * @throws NullPointerException
 	 *             if the given parameters are null.
 	 */
-	public final void loadDatabaseAndRestoreItToGivenTime(final DatabaseConfiguration configuration,
-								   final boolean createDatabaseIfNecessaryAndCheckIt,
+	final void loadDatabaseAndRestoreItToGivenTime(final DatabaseConfiguration configuration,
 														  long timeUTCOfRestorationInMs,
-														  Collection<DecentralizedValue> peersToRemove) throws DatabaseException {
-		loadDatabase(Collections.singleton(configuration), createDatabaseIfNecessaryAndCheckIt,  timeUTCOfRestorationInMs, peersToRemove);
+														  Collection<DecentralizedValue> peersToRemove, DatabaseLifeCycles lifeCycles) throws DatabaseException {
+		loadDatabase(Collections.singleton(configuration),  timeUTCOfRestorationInMs, peersToRemove, lifeCycles);
 	}
 	/**
 	 * Associate a Sql database with a given database configuration. Every
@@ -4518,21 +4536,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * 
 	 * @param configuration
 	 *            the database configuration
-	 * @param createDatabaseIfNecessaryAndCheckIt
-	 *            If set to false, and if the database does not exists, generate a
-	 *            DatabaseException. If set to true, and if the database does not
-	 *            exists, create it. Use
-	 *            {@link DatabaseConfiguration#getDatabaseLifeCycles()} if the
-	 *            database is created and if transfer from old database must done.
 	 * @throws DatabaseException
 	 *             if the given package is already associated to a database, or if
 	 *             the database cannot be created.
 	 * @throws NullPointerException
 	 *             if the given parameters are null.
 	 */
-	public final void loadDatabase(final DatabaseConfiguration configuration,
-								   final boolean createDatabaseIfNecessaryAndCheckIt) throws DatabaseException {
-		loadDatabase(Collections.singleton(configuration), createDatabaseIfNecessaryAndCheckIt,  null, null);
+	final void loadDatabase(final DatabaseConfiguration configuration, DatabaseLifeCycles lifeCycles) throws DatabaseException {
+		loadDatabase(Collections.singleton(configuration),  null, null, lifeCycles);
 	}
 	/**
 	 * Associate a Sql database with a given list of database configuration. Every
@@ -4543,21 +4554,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 *
 	 * @param configurations
 	 *            the database configuration list
-	 * @param createDatabaseIfNecessaryAndCheckIt
-	 *            If set to false, and if the database does not exists, generate a
-	 *            DatabaseException. If set to true, and if the database does not
-	 *            exists, create it. Use
-	 *            {@link DatabaseConfiguration#getDatabaseLifeCycles()} if the
-	 *            database is created and if transfer from old database must done.
 	 * @throws DatabaseException
 	 *             if the given package is already associated to a database, or if
 	 *             the database cannot be created.
 	 * @throws NullPointerException
 	 *             if the given parameters are null.
 	 */
-	public final void loadDatabase(final Collection<DatabaseConfiguration> configurations,
-								   final boolean createDatabaseIfNecessaryAndCheckIt) throws DatabaseException {
-		loadDatabase(configurations, createDatabaseIfNecessaryAndCheckIt, null, null);
+	final void loadDatabase(final Collection<DatabaseConfiguration> configurations, DatabaseLifeCycles lifeCycles) throws DatabaseException {
+		loadDatabase(configurations, null, null, lifeCycles);
 	}
 
 	private boolean isDatabaseLoadedImpl(DatabaseConfiguration configuration, int databaseVersion) throws DatabaseException {
@@ -4580,12 +4584,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	}
 
 	final void loadDatabaseImpl(final DatabaseConfiguration configuration,
-								final boolean createDatabaseIfNecessaryAndCheckIt,
 								final boolean internalPackage,
 								int databaseVersion,
 								final Reference<Boolean> restoreSynchronizerHosts,
 								final Reference<Collection<DatabaseHooksTable.Record>> hosts,
-								final Reference<Boolean> allNotFounds) throws DatabaseException {
+								final Reference<Boolean> allNotFounds,
+								final DatabaseLifeCycles lifeCycles) throws DatabaseException {
 
 		//final AtomicBoolean allNotFound = new AtomicBoolean(true);
 		if (this.closed)
@@ -4595,7 +4599,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			throw new DatabaseException("There is already a database associated to the given wrapper ");
 
 
-		boolean allNotFound=loadDatabaseTables(configuration, createDatabaseIfNecessaryAndCheckIt, databaseVersion);
+		boolean allNotFound=loadDatabaseTables(configuration, databaseVersion);
 		if (allNotFounds.get() && allNotFound)
 			allNotFounds.set(true);
 
@@ -4609,31 +4613,32 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		if (!internalPackage && allNotFound) {
 
 			try {
-				DatabaseLifeCycles callable = configuration.getDatabaseLifeCycles();
+
 				this.actualDatabaseLoading=null;
 				if (hosts.get()==null)
 					hosts.set(getSynchronizer().resetSynchronizerAndGetAllHosts());
 				this.actualDatabaseLoading=actualDatabaseLoading;
 				int currentVersion=getCurrentDatabaseVersion(configuration.getDatabaseSchema().getPackage());
 				if (currentVersion==databaseVersion) {
-					DatabaseConfiguration oldConfig = configuration.getOldVersionOfDatabaseConfiguration();
-
+					DatabaseSchema oldSchema = configuration.getDatabaseSchema().getOldSchema();
+					DatabaseConfiguration oldConfig=null;
 					boolean removeOldDatabase = false;
-					if (oldConfig != null && callable != null) {
+					if (oldSchema != null && lifeCycles != null) {
 						try {
+							oldConfig=new DatabaseConfiguration(oldSchema, DatabaseConfiguration.SynchronizationType.NO_SYNCHRONIZATION, null, configuration.getBackupConfiguration(), false);
 							this.actualDatabaseLoading=null;
-							loadDatabase(oldConfig, false);
+							loadDatabase(oldConfig, null);
 							this.actualDatabaseLoading=actualDatabaseLoading;
-							callable.transferDatabaseFromOldVersion(this, oldConfig, configuration);
 
-							removeOldDatabase = callable.hasToRemoveOldDatabase();
+							lifeCycles.transferDatabaseFromOldVersion(this, configuration);
+							removeOldDatabase = lifeCycles.hasToRemoveOldDatabase(oldConfig);
 
 						} catch (DatabaseException e) {
 							oldConfig = null;
 						}
 					}
-					if (callable != null) {
-						callable.afterDatabaseCreation(this, configuration);
+					if (lifeCycles != null) {
+						lifeCycles.afterDatabaseCreation(this, configuration);
 						if (removeOldDatabase)
 							deleteDatabase(oldConfig, databaseVersion);
 					}
@@ -4672,19 +4677,18 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 
 	}
+
 	final void postLoadDatabase(Collection<DatabaseConfiguration> configurations,
 								Reference<Boolean> restoreSynchronizerHosts,
-								Reference<Collection<DatabaseHooksTable.Record>> hosts) throws DatabaseException {
+								Reference<Collection<DatabaseHooksTable.Record>> hosts,
+								DatabaseLifeCycles lifeCycles) throws DatabaseException {
 		if (restoreSynchronizerHosts.get()) {
 			HashMap<String, Boolean> databases=new HashMap<>();
-			configurations.forEach(v -> {
-				DatabaseLifeCycles callable = v.getDatabaseLifeCycles();
-				databases.put(v.getDatabaseSchema().getPackage().getName(), callable != null && callable.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized());
-			});
+			configurations.forEach(v -> databases.put(v.getDatabaseSchema().getPackage().getName(), lifeCycles != null && lifeCycles.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized(v)));
 
 			getSynchronizer().restoreHosts(hosts.get(), databases);
 		}
-		if (configurations.stream().anyMatch(v-> v.getDatabaseSchema().isSynchronizedWithCentralBackupDatabase()) && getSynchronizer().isInitializedWithCentralBackup())
+		if (configurations.stream().anyMatch(DatabaseConfiguration::isSynchronizedWithCentralBackupDatabase) && getSynchronizer().isInitializedWithCentralBackup())
 			getSynchronizer().initConnexionWithDistantBackupCenter();
 	}
 	final void postLoadDatabaseFinal( Reference<Boolean> allNotFound, boolean internalDatabasePackage) throws DatabaseException {
@@ -4692,12 +4696,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		if (!allNotFound.get() && !internalDatabasePackage)
 			getSynchronizer().isReliedToDistantHook();
 	}
-	final void loadDatabase(final DatabaseConfiguration configuration,
-							final boolean createDatabaseIfNecessaryAndCheckIt, int databaseVersion) throws DatabaseException {
+	final void loadDatabase(final DatabaseConfiguration configuration, int databaseVersion,
+							final DatabaseLifeCycles lifeCycles) throws DatabaseException {
 		checkConfiguration(configuration);
 		boolean internalPackage=configuration.getDatabaseSchema().getPackage().equals(this.getClass().getPackage());
 		if (!internalPackage) {
-			if (createDatabaseIfNecessaryAndCheckIt)
+			if (configuration.isCreateDatabaseIfNecessaryAndCheckItDuringCurrentSession())
 				getTableInstance(DatabaseTable.class, databaseVersion);
 		}
 		else
@@ -4709,13 +4713,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			lockWrite();
 			try {
 				loadDatabaseImpl(configuration,
-						createDatabaseIfNecessaryAndCheckIt,
 						internalPackage,
 						databaseVersion,
 						restoreSynchronizerHosts,
 						hosts,
-						allNotFound);
-				postLoadDatabase(Collections.singleton(configuration), restoreSynchronizerHosts, hosts);
+						allNotFound,
+						lifeCycles);
+				postLoadDatabase(Collections.singleton(configuration), restoreSynchronizerHosts, hosts, lifeCycles);
 			}finally {
 				postLoadDatabaseFinal(allNotFound, internalPackage);
 			}
@@ -4733,14 +4737,15 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		DecentralizedValue ldv=getSynchronizer().getLocalHostID();
 		if (ldv!=null)
 		{
-			Collection<DecentralizedValue> c=configuration.getDatabaseSchema().getDistantPeersThatCanBeSynchronizedWithThisDatabase();
+			Collection<DecentralizedValue> c=configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase();
 			if (c!=null && c.contains(ldv))
 				throw new IllegalArgumentException("Impossible to synchronize the database between one peer and it self : "+ldv);
 		}
 	}
 	//TODO manage time of restoration and peers to remove
 	final void loadDatabase(final Collection<DatabaseConfiguration> configurations,
-			final boolean createDatabaseIfNecessaryAndCheckIt, Long timeOfRestoration, Collection<DecentralizedValue> peersToRemove) throws DatabaseException {
+			 Long timeOfRestoration, Collection<DecentralizedValue> peersToRemove,
+							final DatabaseLifeCycles lifeCycles) throws DatabaseException {
 		if (configurations == null)
 			throw new NullPointerException("tables is a null pointer.");
 		if (configurations.size()==0)
@@ -4761,7 +4766,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 
-		if (createDatabaseIfNecessaryAndCheckIt)
+		if (configurations.stream().anyMatch(DatabaseConfiguration::isCreateDatabaseIfNecessaryAndCheckItDuringCurrentSession))
 			getTableInstance(DatabaseTable.class, -1);
 
 		Reference<Boolean> allNotFound=new Reference<>(false);
@@ -4773,15 +4778,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				for (DatabaseConfiguration configuration : configurations) {
 					int databaseVersion = -1;
 					loadDatabaseImpl(configuration,
-							createDatabaseIfNecessaryAndCheckIt,
 							false,
 							databaseVersion,
 							restoreSynchronizerHosts,
 							hosts,
-							allNotFound);
+							allNotFound, lifeCycles);
 
 				}
-				postLoadDatabase(configurations, restoreSynchronizerHosts, hosts);
+				postLoadDatabase(configurations, restoreSynchronizerHosts, hosts, lifeCycles);
 
 			}
 			finally {
@@ -4808,7 +4812,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	/*
 	 * result found into actualDatabaseLoading
 	 */
-	final boolean loadDatabaseTables(final DatabaseConfiguration configuration, final boolean createDatabaseIfNecessaryAndCheckIt, final int _version) throws DatabaseException {
+	final boolean loadDatabaseTables(final DatabaseConfiguration configuration, final int _version) throws DatabaseException {
 
 		return (boolean)runTransaction(new Transaction() {
 
@@ -4860,11 +4864,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 
 
-					ArrayList<Table<?>> list_tables = new ArrayList<>(configuration.getTableClasses().size());
+					ArrayList<Table<?>> list_tables = new ArrayList<>(configuration.getDatabaseSchema().getTableClasses().size());
 					DatabasePerVersion dpv=new DatabasePerVersion();
 					actualDatabaseLoading.tables_per_versions.put(version, dpv);
 					//actualDatabaseLoading.updateCurrentVersion();
-					for (Class<? extends Table<?>> class_to_load : configuration.getTableClasses()) {
+					for (Class<? extends Table<?>> class_to_load : configuration.getDatabaseSchema().getTableClasses()) {
 						Table<?> t = newInstance(class_to_load, version);
 						list_tables.add(t);
 						dpv.tables_instances.put(class_to_load, t);
@@ -4875,7 +4879,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					}
 					for (Table<?> t : list_tables) {
 						allNotFound=
-								!t.initializeStep2(createDatabaseIfNecessaryAndCheckIt) && allNotFound;
+								!t.initializeStep2(configuration.isCreateDatabaseIfNecessaryAndCheckItDuringCurrentSession()) && allNotFound;
 					}
 					for (Table<?> t : list_tables) {
 						t.initializeStep3();
@@ -4885,11 +4889,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						DatabaseWrapper.this.actualDatabaseLoading = null;
 						DatabaseTable.Record dbt = getDatabaseTable().getRecord("databasePackageName", configuration.getDatabaseSchema().getPackage().getName());
 						if (dbt == null) {
-							getDatabaseTable().addRecord(new DatabaseTable.Record(configuration.getDatabaseSchema().getPackage().getName(), configuration.getDatabaseSchema().isSynchronizedWithCentralBackupDatabase()));
+							getDatabaseTable().addRecord(new DatabaseTable.Record(configuration.getDatabaseSchema().getPackage().getName(), configuration.isSynchronizedWithCentralBackupDatabase()));
 						}
-						else if (dbt.isSynchronizedWithCentralDatabaseBackup()!=configuration.getDatabaseSchema().isSynchronizedWithCentralBackupDatabase())
+						else if (dbt.isSynchronizedWithCentralDatabaseBackup()!=configuration.isSynchronizedWithCentralBackupDatabase())
 						{
-							getDatabaseTable().updateRecord(dbt, "synchronizedWithCentralDatabaseBackup", configuration.getDatabaseSchema().isSynchronizedWithCentralBackupDatabase());
+							getDatabaseTable().updateRecord(dbt, "synchronizedWithCentralDatabaseBackup", configuration.isSynchronizedWithCentralBackupDatabase());
 						}
 						DatabaseWrapper.this.actualDatabaseLoading = actualDatabaseLoading;
 					}
