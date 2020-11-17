@@ -4629,9 +4629,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							this.actualDatabaseLoading=null;
 							loadDatabase(oldConfig, null);
 							this.actualDatabaseLoading=actualDatabaseLoading;
-							SynchronizedTransaction<?> st=lifeCycles.transferDatabaseFromOldVersion(this, configuration);
-							if (st!=null)
-								runSynchronizedTransaction(st);
+							lifeCycles.transferDatabaseFromOldVersion(this, configuration);
 							removeOldDatabase = lifeCycles.hasToRemoveOldDatabase(oldConfig);
 
 						} catch (DatabaseException e) {
