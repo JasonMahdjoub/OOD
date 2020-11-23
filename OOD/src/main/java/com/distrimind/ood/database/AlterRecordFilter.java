@@ -107,7 +107,10 @@ public abstract class AlterRecordFilter<T> {
 	 *            {@link com.distrimind.ood.database.Table#updateRecord(DatabaseRecord, Map)}.
 	 */
 	public final void update(Map<String, Object> fields) {
-		modifications = fields;
+		if (modifications!=null)
+			modifications.putAll(fields);
+		else
+			modifications = fields;
 		modificationFromRecordInstance=false;
 	}
 	/**
