@@ -223,7 +223,12 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			}
 			return packagesList;
 		}
-*/
+*/		protected Set<String> setDatabasePackageNames(Set<String> packages, AlterRecordFilter<Record> filter) throws DatabaseException {
+			Set<String> res=setDatabasePackageNames(packages);
+			filter.update("databasePackageNames", databasePackageNames);
+			return res;
+
+		}
 		protected Set<String> setDatabasePackageNames(Set<String> packages) {
 			if (packages == null || packages.size() == 0) {
 				databasePackageNames = null;

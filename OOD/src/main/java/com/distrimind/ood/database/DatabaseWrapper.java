@@ -4120,7 +4120,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * @throws DatabaseException
 	 *             if a problem occurs
 	 */
-	public final void deleteDatabase(final DatabaseConfiguration configuration) throws DatabaseException {
+	final void deleteDatabase(final DatabaseConfiguration configuration) throws DatabaseException {
 		deleteDatabase(configuration, getCurrentDatabaseVersion(configuration.getDatabaseSchema().getPackage()));
 	}
 	final void deleteDatabase(final DatabaseConfiguration configuration, final int databaseVersion) throws DatabaseException {
