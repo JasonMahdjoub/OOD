@@ -1242,33 +1242,68 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 
 		}
-		private void addNewAuthenticatedDatabaseEvents(DatabaseHooksTable.Record hook)
-		{
+		private void addNewAuthenticatedDatabaseEvents(DatabaseHooksTable.Record hook) throws DatabaseException {
 			lockWrite();
 			try
 			{
-				boolean add=true;
-				for (ListIterator<DatabaseEvent> it=events.listIterator(events.size());it.hasPrevious();)
-				{
-					if (it.previous() instanceof AuthenticatedP2PMessage)
-					{
-						it.next();
-						for (AuthenticatedP2PMessage a : hook.getAuthenticatedMessagesQueueToSend())
-							it.add((DatabaseEvent)a);
-						add=false;
-						break;
-					}
-				}
-				if (add)
-				{
-					for (AuthenticatedP2PMessage a : hook.getAuthenticatedMessagesQueueToSend())
-						events.addFirst((DatabaseEvent)a);
-				}
+				List<DatabaseEvent> authenticatedMessages=tryToMerge(hook.getAuthenticatedMessagesQueueToSend());
+				if (authenticatedMessages.size()>0) {
 
+					boolean add = true;
+					for (ListIterator<DatabaseEvent> it = events.listIterator(events.size()); it.hasPrevious(); ) {
+						if (it.previous() instanceof AuthenticatedP2PMessage) {
+							it.next();
+							for (DatabaseEvent a : authenticatedMessages)
+								it.add(a);
+							add = false;
+							break;
+						}
+					}
+					if (add) {
+						for (DatabaseEvent a : authenticatedMessages)
+							events.addFirst(a);
+					}
+					notifyNewEvent();
+				}
 			}
 			finally {
 				unlockWrite();
 			}
+		}
+
+		void deleteMessage(DatabaseEvent event) throws DatabaseException {
+			if (event instanceof AuthenticatedP2PMessage)
+				getDatabaseHooksTable().authenticatedMessageSent((AuthenticatedP2PMessage)event);
+		}
+		List<DatabaseEvent> tryToMerge(List<?> c) throws DatabaseException {
+			ArrayList<DatabaseEvent> res=new ArrayList<>();
+			if (c.size()==0)
+				return res;
+			ArrayList<DatabaseEvent> messagesToRemove=new ArrayList<>();
+
+
+			for (Object e : c) {
+				boolean add=true;
+				for (ListIterator<DatabaseEvent> it = events.listIterator(events.size()); it.hasPrevious(); ) {
+					DatabaseEvent de = it.previous();
+					DatabaseEvent.MergeState ms = de.tryToMerge((DatabaseEvent)e);
+					if (ms == DatabaseEvent.MergeState.DELETE_BOTH || ms == DatabaseEvent.MergeState.DELETE_OLD) {
+
+						messagesToRemove.add(de);
+						it.remove();
+					}
+					if (ms == DatabaseEvent.MergeState.DELETE_BOTH || ms == DatabaseEvent.MergeState.DELETE_NEW) {
+
+						messagesToRemove.add((DatabaseEvent)e);
+						add=false;
+					}
+				}
+				if (add)
+					res.add((DatabaseEvent)e);
+			}
+			for (DatabaseEvent m : messagesToRemove)
+				deleteMessage(m);
+			return res;
 		}
 
 		void addNewDatabaseEvent(DatabaseEvent e) throws DatabaseException {
@@ -1277,21 +1312,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 			try {
 				lockWrite();
-				boolean add = true;
-				for (ListIterator<DatabaseEvent> it=events.listIterator(events.size());it.hasPrevious();)
-				{
-					DatabaseEvent de=it.previous();
-					DatabaseEvent.MergeState ms=de.tryToMerge(e);
-					if (ms==DatabaseEvent.MergeState.DELETE_BOTH || ms==DatabaseEvent.MergeState.DELETE_OLD)
-						it.remove();
-					if (ms==DatabaseEvent.MergeState.DELETE_BOTH || ms==DatabaseEvent.MergeState.DELETE_NEW)
-					{
-						add=false;
-						break;
-					}
-				}
+				List<DatabaseEvent> r = tryToMerge(Collections.singletonList(e));
+				boolean add=r.size()>0;
+
 
 				if (add) {
+					assert r.size()==1;
+					e=r.get(0);
+
 					if (e instanceof AuthenticatedP2PMessage) {
 						for (ListIterator<DatabaseEvent> it=events.listIterator(events.size());it.hasPrevious();)
 						{
