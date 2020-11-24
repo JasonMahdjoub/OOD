@@ -152,7 +152,7 @@ public class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2P
 		return removedHookID;
 	}
 	@Override
-	public DatabaseEvent.MergeState tryToMergeWithNewAuthenticatedMessage(EncryptionProfileProvider encryptionProfileProvider, DatabaseEvent newEvent) throws DatabaseException {
+	public DatabaseEvent.MergeState tryToMergeWithNewAuthenticatedMessage(DatabaseEvent newEvent) throws DatabaseException {
 		if (newEvent instanceof AuthenticatedP2PMessage)
 		{
 			if (newEvent instanceof HookAddRequest)

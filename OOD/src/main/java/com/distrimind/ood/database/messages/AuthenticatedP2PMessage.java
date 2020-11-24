@@ -96,7 +96,7 @@ public interface AuthenticatedP2PMessage extends P2PDatabaseEventToSend, SecureE
 
 	void setMessageID(long messageID);
 
-	DatabaseEvent.MergeState tryToMergeWithNewAuthenticatedMessage(EncryptionProfileProvider encryptionProfileProvider, DatabaseEvent newEvent) throws DatabaseException ;
+	DatabaseEvent.MergeState tryToMergeWithNewAuthenticatedMessage(DatabaseEvent newEvent) throws DatabaseException ;
 
 
 

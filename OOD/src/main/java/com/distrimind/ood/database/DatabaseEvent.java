@@ -56,14 +56,12 @@ public abstract class DatabaseEvent {
 		NO_FUSION,
 		DELETE_OLD,
 		DELETE_NEW,
-		UPDATE_OLD_AND_ADD_NEW,
-		UPDATE_NEW,
 		DELETE_BOTH
 	}
 
-	final MergeState tryToMerge(EncryptionProfileProvider encryptionProfileProvider, DatabaseEvent newEvent) throws DatabaseException {
+	final MergeState tryToMerge(DatabaseEvent newEvent) throws DatabaseException {
 		if (this instanceof AuthenticatedP2PMessage)
-			return ((AuthenticatedP2PMessage) this).tryToMergeWithNewAuthenticatedMessage(encryptionProfileProvider, newEvent);
+			return ((AuthenticatedP2PMessage) this).tryToMergeWithNewAuthenticatedMessage(newEvent);
 		else if (this instanceof P2PDatabaseEventToSend)
 			return ((P2PDatabaseEventToSend) this).mergeWithP2PDatabaseEventToSend(newEvent);
 		else if (this instanceof MessageDestinedToCentralDatabaseBackup)

@@ -197,7 +197,7 @@ public class HookAddRequest extends DatabaseEvent implements AuthenticatedP2PMes
 	}
 
 	@Override
-	public DatabaseEvent.MergeState tryToMergeWithNewAuthenticatedMessage(EncryptionProfileProvider encryptionProfileProvider, DatabaseEvent newEvent) {
+	public DatabaseEvent.MergeState tryToMergeWithNewAuthenticatedMessage(DatabaseEvent newEvent) {
 
 		if (newEvent instanceof AuthenticatedP2PMessage)
 		{

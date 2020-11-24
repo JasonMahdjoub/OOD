@@ -58,7 +58,6 @@ import com.distrimind.util.harddrive.HardDriveDetect;
 import com.distrimind.util.harddrive.Partition;
 import com.distrimind.util.io.*;
 
-import javax.security.auth.login.Configuration;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -722,6 +721,18 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			return getDatabaseHooksTable().getLocalDatabaseHost() != null;
 		}
 
+		void notifyNewAuthenticatedMessage(AuthenticatedP2PMessage authenticatedP2PMessage) throws DatabaseException {
+			lockWrite();
+			try {
+				ConnectedPeers cp = initializedHooks.get(authenticatedP2PMessage.getHostDestination());
+				if (cp != null)
+					addNewDatabaseEvent((DatabaseEvent) authenticatedP2PMessage);
+			}
+			finally {
+				unlockWrite();
+			}
+		}
+
 		public boolean isInitialized(DecentralizedValue hostID) {
 			lockRead();
 			try {
@@ -920,13 +931,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		private HookAddRequest askForHookAddingAndSynchronizeDatabase(DecentralizedValue hostID,
-				boolean mustReturnMessage, boolean replaceDistantConflictualRecords, ArrayList<String> packages)
+				boolean mustReturnMessage, boolean replaceDistantConflictualRecords, Set<String> packages)
 				throws DatabaseException {
 			if (packages.size()>MAX_PACKAGE_TO_SYNCHRONIZE)
 				throw new DatabaseException("The number of packages to synchronize cannot be greater than "+MAX_PACKAGE_TO_SYNCHRONIZE);
-			final ArrayList<DecentralizedValue> hostAlreadySynchronized = new ArrayList<>();
+			final Set<DecentralizedValue> hostAlreadySynchronized = new HashSet<>();
 			runTransaction(new Transaction() {
-				
+
 				@Override
 				public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 					getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
@@ -940,18 +951,18 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					});
 					return null;
 				}
-				
+
 				@Override
 				public void initOrReset() {
-					
+
 					hostAlreadySynchronized.clear();
 				}
-				
+
 				@Override
 				public TransactionIsolation getTransactionIsolation() {
 					return TransactionIsolation.TRANSACTION_READ_COMMITTED;
 				}
-				
+
 				@Override
 				public boolean doesWriteData() {
 					return false;
@@ -1231,7 +1242,34 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 
 		}
+		private void addNewAuthenticatedDatabaseEvents(DatabaseHooksTable.Record hook)
+		{
+			lockWrite();
+			try
+			{
+				boolean add=true;
+				for (ListIterator<DatabaseEvent> it=events.listIterator(events.size());it.hasPrevious();)
+				{
+					if (it.previous() instanceof AuthenticatedP2PMessage)
+					{
+						it.next();
+						for (AuthenticatedP2PMessage a : hook.getAuthenticatedMessagesQueueToSend())
+							it.add((DatabaseEvent)a);
+						add=false;
+						break;
+					}
+				}
+				if (add)
+				{
+					for (AuthenticatedP2PMessage a : hook.getAuthenticatedMessagesQueueToSend())
+						events.addFirst((DatabaseEvent)a);
+				}
 
+			}
+			finally {
+				unlockWrite();
+			}
+		}
 
 		void addNewDatabaseEvent(DatabaseEvent e) throws DatabaseException {
 			if (e == null)
@@ -1240,19 +1278,36 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			try {
 				lockWrite();
 				boolean add = true;
-				if (e.getClass() == DatabaseEventsToSynchronizeP2P.class) {
-					DatabaseEventsToSynchronizeP2P dets = (DatabaseEventsToSynchronizeP2P) e;
-					for (DatabaseEvent detmp : events) {
-						if (detmp.getClass() == DatabaseEventsToSynchronizeP2P.class
-								&& dets.tryToMerge((DatabaseEventsToSynchronizeP2P) detmp)) {
-							add = false;
-							break;
-						}
+				for (ListIterator<DatabaseEvent> it=events.listIterator(events.size());it.hasPrevious();)
+				{
+					DatabaseEvent de=it.previous();
+					DatabaseEvent.MergeState ms=de.tryToMerge(e);
+					if (ms==DatabaseEvent.MergeState.DELETE_BOTH || ms==DatabaseEvent.MergeState.DELETE_OLD)
+						it.remove();
+					if (ms==DatabaseEvent.MergeState.DELETE_BOTH || ms==DatabaseEvent.MergeState.DELETE_NEW)
+					{
+						add=false;
+						break;
 					}
 				}
-				if (add) {
 
-					events.add(e);
+				if (add) {
+					if (e instanceof AuthenticatedP2PMessage) {
+						for (ListIterator<DatabaseEvent> it=events.listIterator(events.size());it.hasPrevious();)
+						{
+							if (it.previous() instanceof AuthenticatedP2PMessage)
+							{
+								it.next();
+								it.add(e);
+								add=false;
+								break;
+							}
+						}
+						if (add)
+							events.addFirst(e);
+					}
+					else
+						events.addLast(e);
 					notifyNewEvent();
 				}
 			}
@@ -1837,7 +1892,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 
 				initializedHooks.put(hostID, new ConnectedPeers(r));
-
+				addNewAuthenticatedDatabaseEvents(r);
 				validateLastSynchronization(hostID,
 						lastValidatedTransactionID, false);
 				if (notifier!=null && !r.concernsLocalDatabaseHost())
@@ -2227,12 +2282,18 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		}
 
-		public boolean tryToMerge(DatabaseEventsToSynchronizeP2P dest) {
-			if (hookID == dest.hookID) {
-				lastTransactionIDIncluded = Math.max(lastTransactionIDIncluded, dest.lastTransactionIDIncluded);
-				return true;
-			} else
-				return false;
+		@Override
+		public MergeState mergeWithP2PDatabaseEventToSend(DatabaseEvent newEvent) throws DatabaseException {
+			if (newEvent instanceof DatabaseEventsToSynchronizeP2P) {
+				DatabaseEventsToSynchronizeP2P ne=(DatabaseEventsToSynchronizeP2P)newEvent;
+				if (hookID == ne.hookID) {
+					lastTransactionIDIncluded = Math.max(lastTransactionIDIncluded, ne.lastTransactionIDIncluded);
+					return MergeState.DELETE_NEW;
+				} else
+					return MergeState.NO_FUSION;
+			}
+			else
+				return super.mergeWithP2PDatabaseEventToSend(newEvent);
 		}
 	}
 	public static abstract class AbstractDatabaseEventsToSynchronizeP2P extends DatabaseEvent implements P2PBigDatabaseEventToSend, SecureExternalizable {
@@ -2240,6 +2301,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		protected int hookID;
 		protected DecentralizedValue hostIDSource, hostIDDestination;
 
+		@Override
+		public boolean cannotBeMerged() {
+			return false;
+		}
 
 		AbstractDatabaseEventsToSynchronizeP2P() {
 
