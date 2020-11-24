@@ -51,6 +51,11 @@ public interface P2PBigDatabaseEventToSend extends P2PDatabaseEventToSend {
 
 	void importFromInputStream(DatabaseWrapper wrapper, final InputStreamGetter inputStream) throws DatabaseException;
 
+	@Override
+	default boolean cannotBeMerged() {
+		return false;
+	}
+
 	@SuppressWarnings("UnusedReturnValue")
 	boolean exportToOutputStream(DatabaseWrapper wrapper, final OutputStreamGetter outputStreamGetter)
 			throws DatabaseException;

@@ -43,6 +43,11 @@ public class DatabaseBackupToRemoveDestinedToCentralDatabaseBackup extends Datab
 	}
 
 	@Override
+	public boolean cannotBeMerged() {
+		return true;
+	}
+
+	@Override
 	public int getInternalSerializedSize() {
 		return SerializationTools.getInternalSize(packageString, SerializationTools.MAX_CLASS_LENGTH)+SerializationTools.getInternalSize((SecureExternalizable)hostSource);
 	}

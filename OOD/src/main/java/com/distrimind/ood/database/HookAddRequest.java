@@ -44,7 +44,8 @@ import com.distrimind.util.crypto.SymmetricAuthenticatedSignatureType;
 import com.distrimind.util.io.*;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * 
@@ -57,8 +58,9 @@ public class HookAddRequest extends DatabaseEvent implements AuthenticatedP2PMes
 	static final int MAX_HOOK_ADD_REQUEST_LENGTH_IN_BYTES=DatabaseHooksTable.PACKAGES_TO_SYNCHRONIZE_LENGTH*2+DecentralizedValue.MAX_SIZE_IN_BYTES_OF_DECENTRALIZED_VALUE*(2+DatabaseWrapper.MAX_DISTANT_PEERS)+SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE+5;
 	private DecentralizedValue hostSource;
 	private DecentralizedValue hostDestination;
-	private ArrayList<String> packagesToSynchronize;
-	private ArrayList<DecentralizedValue> hostAlreadySynchronized;
+	private DecentralizedValue hostAdded;
+	private Set<String> packagesToSynchronize;
+
 	private boolean mustReturnMessage;
 	private boolean replaceDistantConflictualData;
 	private byte[] symmetricSignature;
@@ -69,11 +71,10 @@ public class HookAddRequest extends DatabaseEvent implements AuthenticatedP2PMes
 	public int getInternalSerializedSize() {
 		int res=20+SerializationTools.getInternalSize(hostSource, 0)
 				+SerializationTools.getInternalSize(hostDestination, 0)
+				+SerializationTools.getInternalSize(hostAdded, 0)
 				+SerializationTools.getInternalSize(symmetricSignature, SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE);
 		for (String s : packagesToSynchronize)
 			res+=SerializationTools.getInternalSize(s, SerializationTools.MAX_CLASS_LENGTH);
-		for (DecentralizedValue dv : hostAlreadySynchronized)
-			res+=SerializationTools.getInternalSize(dv, 0);
 
 		return res;
 	}
@@ -93,12 +94,10 @@ public class HookAddRequest extends DatabaseEvent implements AuthenticatedP2PMes
 		out.writeLong(messageID);
 		out.writeObject(hostSource, false);
 		out.writeObject(hostDestination, false);
+		out.writeObject(hostAdded, false);
 		out.writeInt(packagesToSynchronize.size());
 		for (String p : packagesToSynchronize)
 			out.writeString(p, false, SerializationTools.MAX_CLASS_LENGTH);
-		out.writeInt(hostAlreadySynchronized.size());
-		for (DecentralizedValue dv : hostAlreadySynchronized)
-			out.writeObject(dv, false);
 		out.writeBoolean(mustReturnMessage);
 		out.writeBoolean(replaceDistantConflictualData);
 		out.writeShort(encryptionProfileIdentifier);
@@ -129,18 +128,13 @@ public class HookAddRequest extends DatabaseEvent implements AuthenticatedP2PMes
 			throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN);
 		hostSource=in.readObject(false, DecentralizedValue.class);
 		hostDestination=in.readObject(false, DecentralizedValue.class);
+		hostAdded=in.readObject(false, DecentralizedValue.class);
 		int s=in.readInt();
 		if (s<1 || s>DatabaseWrapper.MAX_PACKAGE_TO_SYNCHRONIZE)
 			throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN, ""+s);
-		packagesToSynchronize=new ArrayList<>(s);
+		packagesToSynchronize=new HashSet<>(s);
 		for (int i=0;i<s;i++)
 			packagesToSynchronize.add(in.readString(false, SerializationTools.MAX_CLASS_LENGTH));
-		s=in.readInt();
-		if (s<0 || s>DatabaseWrapper.MAX_DISTANT_PEERS)
-			throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN, ""+s);
-		hostAlreadySynchronized=new ArrayList<>(s);
-		for (int i=0;i<s;i++)
-			hostAlreadySynchronized.add(in.readObject(false, DecentralizedValue.class));
 		mustReturnMessage=in.readBoolean();
 		replaceDistantConflictualData=in.readBoolean();
 		encryptionProfileIdentifier =in.readShort();
@@ -153,22 +147,30 @@ public class HookAddRequest extends DatabaseEvent implements AuthenticatedP2PMes
 
 	}
 
-	HookAddRequest(DecentralizedValue _hostSource, DecentralizedValue _hostDestination,
-			ArrayList<String> packagesToSynchronize, ArrayList<DecentralizedValue> hostAlreadySynchronized,
+	HookAddRequest(DecentralizedValue _hostSource, DecentralizedValue _hostDestination, DecentralizedValue hostAdded,
+			Set<String> packagesToSynchronize,
 			boolean mustReturnMessage, boolean replaceDistantConflictualData, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
 		super();
 		if (_hostSource == null)
 			throw new NullPointerException();
 		if (_hostDestination == null)
 			throw new NullPointerException();
+		if (hostAdded ==null)
+			throw new NullPointerException();
+
 		hostSource = _hostSource;
 		hostDestination = _hostDestination;
+		this.hostAdded = hostAdded;
 		this.packagesToSynchronize = packagesToSynchronize;
-		this.hostAlreadySynchronized = hostAlreadySynchronized;
+
 		this.replaceDistantConflictualData = replaceDistantConflictualData;
 		this.mustReturnMessage = mustReturnMessage;
 		this.encryptionProfileIdentifier =encryptionProfileProvider.getDefaultKeyID();
 		this.symmetricSignature=sign(encryptionProfileProvider);
+	}
+
+	public DecentralizedValue getHostAdded() {
+		return hostAdded;
 	}
 
 	@Override
@@ -181,10 +183,6 @@ public class HookAddRequest extends DatabaseEvent implements AuthenticatedP2PMes
 		return hostSource;
 	}
 
-	public ArrayList<DecentralizedValue> getHostsAlreadySynchronized() {
-		return hostAlreadySynchronized;
-	}
-
 	public boolean mustReturnsMessage() {
 		return mustReturnMessage;
 	}
@@ -194,8 +192,48 @@ public class HookAddRequest extends DatabaseEvent implements AuthenticatedP2PMes
 		return replaceDistantConflictualData;
 	}
 
-	public ArrayList<String> getPackagesToSynchronize() {
+	public Set<String> getPackagesToSynchronize() {
 		return packagesToSynchronize;
+	}
+
+	@Override
+	public DatabaseEvent.MergeState tryToMergeWithNewAuthenticatedMessage(EncryptionProfileProvider encryptionProfileProvider, DatabaseEvent newEvent) {
+
+		if (newEvent instanceof AuthenticatedP2PMessage)
+		{
+			if (newEvent instanceof HookAddRequest)
+			{
+				HookAddRequest nhar=(HookAddRequest)newEvent;
+				if (nhar.hostDestination.equals(this.hostDestination))
+				{
+					if (nhar.hostAdded.equals(this.hostAdded)) {
+						return MergeState.DELETE_NEW;
+					}
+					else
+						return MergeState.NO_FUSION;
+				}
+				else
+					return MergeState.NO_FUSION;
+			}
+			else if (newEvent instanceof HookRemoveRequest)
+			{
+				HookRemoveRequest nhrr=(HookRemoveRequest)newEvent;
+				if (nhrr.getRemovedHookID().equals(getHostAdded()))
+					return MergeState.DELETE_BOTH;
+				else if (nhrr.getRemovedHookID().equals(hostDestination) || nhrr.getRemovedHookID().equals(hostAdded))
+				{
+					return MergeState.DELETE_OLD;
+				}
+				else
+				{
+					return MergeState.NO_FUSION;
+				}
+			}
+			else
+				throw new IllegalAccessError();
+		}
+		else
+			return MergeState.NO_FUSION;
 	}
 
 }

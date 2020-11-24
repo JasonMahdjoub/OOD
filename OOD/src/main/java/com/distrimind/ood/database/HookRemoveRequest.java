@@ -37,6 +37,8 @@ package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.messages.AuthenticatedP2PMessage;
+import com.distrimind.ood.database.messages.MessageDestinedToCentralDatabaseBackup;
+import com.distrimind.ood.database.messages.P2PDatabaseEventToSend;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 import com.distrimind.util.crypto.SymmetricAuthenticatedSignatureType;
@@ -49,7 +51,7 @@ import java.io.IOException;
  * @version 1.0
  * @since OOD 3.0.0
  */
-class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2PMessage {
+public class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2PMessage {
 	//static final int MAX_HOOK_ADD_REQUEST_LENGTH_IN_BYTES=DecentralizedValue.MAX_SIZE_IN_BYTES_OF_DECENTRALIZED_VALUE*3+SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE+3;
 
 	private DecentralizedValue removedHookID, hostDestination, hostSource;
@@ -146,5 +148,35 @@ class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2PMessage
 		return encryptionProfileIdentifier;
 	}
 
-
+	public DecentralizedValue getRemovedHookID() {
+		return removedHookID;
+	}
+	@Override
+	public DatabaseEvent.MergeState tryToMergeWithNewAuthenticatedMessage(EncryptionProfileProvider encryptionProfileProvider, DatabaseEvent newEvent) throws DatabaseException {
+		if (newEvent instanceof AuthenticatedP2PMessage)
+		{
+			if (newEvent instanceof HookAddRequest)
+			{
+				HookAddRequest ne=(HookAddRequest)newEvent;
+				if (removedHookID.equals(ne.getHostAdded()))
+					return MergeState.DELETE_BOTH;
+				else if (removedHookID.equals(ne.getHostSource()) || removedHookID.equals(ne.getHostDestination()))
+					return MergeState.DELETE_NEW;
+				else
+					return MergeState.NO_FUSION;
+			}
+			else if (newEvent instanceof HookRemoveRequest)
+			{
+				HookRemoveRequest hrr=(HookRemoveRequest)newEvent;
+				if (this.removedHookID.equals(this.hostDestination) && this.removedHookID.equals(hrr.getHostDestination()) || this.removedHookID.equals(hrr.hostSource))
+					return MergeState.DELETE_NEW;
+				else
+					return MergeState.NO_FUSION;
+			}
+			else
+				throw new IllegalAccessError();
+		}
+		else
+			return MergeState.NO_FUSION;
+	}
 }

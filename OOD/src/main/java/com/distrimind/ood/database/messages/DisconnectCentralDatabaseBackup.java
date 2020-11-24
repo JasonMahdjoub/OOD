@@ -31,6 +31,11 @@ public class DisconnectCentralDatabaseBackup extends DatabaseEvent implements Me
 	}
 
 	@Override
+	public boolean cannotBeMerged() {
+		return true;
+	}
+
+	@Override
 	public int getInternalSerializedSize() {
 		return SerializationTools.getInternalSize((SecureExternalizable)hostSource);
 	}

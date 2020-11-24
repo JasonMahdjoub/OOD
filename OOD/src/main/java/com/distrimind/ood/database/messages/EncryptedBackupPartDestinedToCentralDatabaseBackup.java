@@ -84,4 +84,9 @@ public class EncryptedBackupPartDestinedToCentralDatabaseBackup extends Abstract
 		super.readExternal(in);
 		lastValidatedAndEncryptedID=in.readBytesArray(false, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
 	}
+
+	@Override
+	public boolean cannotBeMerged() {
+		return false;
+	}
 }

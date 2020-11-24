@@ -51,6 +51,11 @@ public class TransactionConfirmationEvents extends AbstractTransactionConfirmati
 	{
 
 	}
+
+	@Override
+	public boolean cannotBeMerged() {
+		return true;
+	}
 	public TransactionConfirmationEvents(DecentralizedValue _hostIDSource, DecentralizedValue _hostIDDestination,
 								  long _lastValidatedTransaction) {
 		super(_hostIDSource,_hostIDDestination, _lastValidatedTransaction);

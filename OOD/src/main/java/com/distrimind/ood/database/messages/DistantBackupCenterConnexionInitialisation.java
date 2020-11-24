@@ -86,6 +86,11 @@ public class DistantBackupCenterConnexionInitialisation extends DatabaseEvent im
 	}
 
 	@Override
+	public boolean cannotBeMerged() {
+		return true;
+	}
+
+	@Override
 	public int getInternalSerializedSize() {
 		return SerializationTools.getInternalSize((SecureExternalizable)hostSource);
 	}

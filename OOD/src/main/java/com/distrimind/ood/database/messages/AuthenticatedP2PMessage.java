@@ -35,6 +35,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database.messages;
 
+import com.distrimind.ood.database.DatabaseEvent;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 import com.distrimind.util.crypto.SymmetricAuthenticatedSignatureCheckerAlgorithm;
@@ -63,6 +64,13 @@ public interface AuthenticatedP2PMessage extends P2PDatabaseEventToSend, SecureE
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
+
+	@Override
+	default boolean cannotBeMerged()
+	{
+		return false;
+	}
+
 	default boolean checkAuthentication(EncryptionProfileProvider profileProvider) throws DatabaseException {
 		try {
 			SymmetricAuthenticatedSignatureCheckerAlgorithm checker=new SymmetricAuthenticatedSignatureCheckerAlgorithm(profileProvider.getSecretKeyForSignature(this.getEncryptionProfileIdentifier(), true));
@@ -87,4 +95,9 @@ public interface AuthenticatedP2PMessage extends P2PDatabaseEventToSend, SecureE
 	long getMessageID();
 
 	void setMessageID(long messageID);
+
+	DatabaseEvent.MergeState tryToMergeWithNewAuthenticatedMessage(EncryptionProfileProvider encryptionProfileProvider, DatabaseEvent newEvent) throws DatabaseException ;
+
+
+
 }

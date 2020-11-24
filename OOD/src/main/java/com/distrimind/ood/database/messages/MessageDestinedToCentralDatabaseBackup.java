@@ -35,6 +35,8 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+import com.distrimind.ood.database.DatabaseEvent;
+import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
 
 /**
@@ -44,4 +46,12 @@ import com.distrimind.util.DecentralizedValue;
  */
 public interface MessageDestinedToCentralDatabaseBackup extends DatabaseEventToSend{
 	DecentralizedValue getHostSource();
+
+
+
+	default DatabaseEvent.MergeState mergeWithP2PDatabaseEventToSend(DatabaseEvent newEvent) throws DatabaseException {
+		if (cannotBeMerged())
+			return DatabaseEvent.MergeState.NO_FUSION;
+		return DatabaseEventToSend.mergeWithP2PDatabaseEventToSend(getHostSource(), null, newEvent);
+	}
 }

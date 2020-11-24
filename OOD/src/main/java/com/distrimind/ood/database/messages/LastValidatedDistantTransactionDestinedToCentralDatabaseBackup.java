@@ -77,6 +77,11 @@ public class LastValidatedDistantTransactionDestinedToCentralDatabaseBackup exte
 		return hostSource;
 	}
 
+	@Override
+	public boolean cannotBeMerged() {
+		return false;
+	}
+
 	public DecentralizedValue getChannelHost() {
 		return channelHost;
 	}

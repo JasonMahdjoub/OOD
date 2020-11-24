@@ -35,10 +35,29 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database.messages;
 
+import com.distrimind.ood.database.DatabaseEvent;
+import com.distrimind.ood.database.HookRemoveRequest;
+import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.DecentralizedValue;
+
 /**
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.0.0
  */
 public interface DatabaseEventToSend {
+	static DatabaseEvent.MergeState mergeWithP2PDatabaseEventToSend(DecentralizedValue hostSource, DecentralizedValue hostDestination, DatabaseEvent newEvent) throws DatabaseException {
+
+		if (newEvent instanceof HookRemoveRequest)
+		{
+			HookRemoveRequest hrr=((HookRemoveRequest) newEvent);
+			if (hrr.getRemovedHookID().equals(hostSource) || hrr.getRemovedHookID().equals(hostDestination))
+				return DatabaseEvent.MergeState.DELETE_OLD;
+			else
+				return DatabaseEvent.MergeState.NO_FUSION;
+		}
+		else
+			return DatabaseEvent.MergeState.NO_FUSION;
+	}
+	boolean cannotBeMerged();
 }

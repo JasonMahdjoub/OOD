@@ -54,6 +54,11 @@ public class LastIDCorrection extends DatabaseEvent implements P2PDatabaseEventT
 	protected long lastValidatedTransaction;
 
 	@Override
+	public boolean cannotBeMerged() {
+		return false;
+	}
+
+	@Override
 	public int getInternalSerializedSize() {
 		return SerializationTools.getInternalSize(hostIDDestination,0)+SerializationTools.getInternalSize(hostIDSource,0);
 	}

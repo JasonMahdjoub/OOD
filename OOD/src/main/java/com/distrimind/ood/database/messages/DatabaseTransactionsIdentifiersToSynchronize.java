@@ -53,6 +53,11 @@ public class DatabaseTransactionsIdentifiersToSynchronize extends AbstractDataba
 	private Map<DecentralizedValue, Long> lastTransactionFieldsBetweenDistantHosts;
 
 	@Override
+	public boolean cannotBeMerged() {
+		return false;
+	}
+
+	@Override
 	public int getInternalSerializedSize() {
 		int res=super.getInternalSerializedSize()+ SerializationTools.getInternalSize(hostIDDestination, 0)+4+lastTransactionFieldsBetweenDistantHosts.size()*8;
 		for (DecentralizedValue dv: lastTransactionFieldsBetweenDistantHosts.keySet())

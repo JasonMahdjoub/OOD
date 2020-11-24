@@ -45,4 +45,7 @@ import com.distrimind.util.DecentralizedValue;
 public interface ChannelMessageDestinedToCentralDatabaseBackup extends MessageDestinedToCentralDatabaseBackup{
 	DecentralizedValue getChannelHost();
 
+	default boolean cannotBeMerged() {
+		return false;
+	}
 }
