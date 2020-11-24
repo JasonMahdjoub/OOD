@@ -37,11 +37,8 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.ood.database.messages.AbstractEncryptedBackupPart;
-import com.distrimind.ood.database.messages.AuthenticatedP2PMessage;
 import com.distrimind.ood.database.messages.MessageDestinedToCentralDatabaseBackup;
 import com.distrimind.ood.database.messages.P2PDatabaseEventToSend;
-import com.distrimind.util.crypto.EncryptionProfileProvider;
 
 /**
  * 

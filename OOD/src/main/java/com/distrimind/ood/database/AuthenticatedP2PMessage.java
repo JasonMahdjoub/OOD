@@ -33,10 +33,10 @@ same conditions as regards security.
 The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
-package com.distrimind.ood.database.messages;
+package com.distrimind.ood.database;
 
-import com.distrimind.ood.database.DatabaseEvent;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.messages.P2PDatabaseEventToSend;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 import com.distrimind.util.crypto.SymmetricAuthenticatedSignatureCheckerAlgorithm;
 import com.distrimind.util.crypto.SymmetricAuthenticatedSignerAlgorithm;
@@ -98,6 +98,21 @@ public interface AuthenticatedP2PMessage extends P2PDatabaseEventToSend, SecureE
 
 	DatabaseEvent.MergeState tryToMergeWithNewAuthenticatedMessage(DatabaseEvent newEvent) throws DatabaseException ;
 
+	DatabaseWrapper getDatabaseWrapper();
+	void setDatabaseWrapper(DatabaseWrapper wrapper);
 
 
+	@Override
+	default void writeExternal(SecuredObjectOutputStream out) throws IOException
+	{
+		writeExternalWithoutSignature(out);
+		writeExternalSignature(out);
+		try {
+			getDatabaseWrapper().getDatabaseHooksTable().authenticatedMessageSent(this);
+		} catch (DatabaseException e) {
+			throw new IOException(e);
+		}
+	}
+
+	void writeExternalSignature(SecuredObjectOutputStream out) throws IOException;
 }

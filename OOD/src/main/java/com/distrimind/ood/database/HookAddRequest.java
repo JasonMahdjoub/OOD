@@ -37,7 +37,6 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.ood.database.messages.AuthenticatedP2PMessage;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 import com.distrimind.util.crypto.SymmetricAuthenticatedSignatureType;
@@ -116,8 +115,7 @@ public class HookAddRequest extends DatabaseEvent implements AuthenticatedP2PMes
 	}
 
 	@Override
-	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
-		writeExternalWithoutSignature(out);
+	public void writeExternalSignature(SecuredObjectOutputStream out) throws IOException {
 		out.writeBytesArray(symmetricSignature, false, SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE);
 	}
 

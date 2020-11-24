@@ -42,7 +42,6 @@ import com.distrimind.ood.database.annotations.LoadToMemory;
 import com.distrimind.ood.database.annotations.Unique;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.SerializationDatabaseException;
-import com.distrimind.ood.database.messages.AuthenticatedP2PMessage;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.SerializationTools;
 
@@ -198,7 +197,12 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 				}
 			}
 		}
-
+		boolean removeAuthenticatedMessage(AuthenticatedP2PMessage message)
+		{
+			if (authenticatedMessagesQueueToSend==null)
+				return false;
+			return authenticatedMessagesQueueToSend.remove(message);
+		}
 
 		AuthenticatedP2PMessage poolAuthenticatedP2PMessage() throws DatabaseException {
 			if (authenticatedMessagesQueueToSend==null)
@@ -461,6 +465,18 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		}
 		if (cleanNow) {
 			getDatabaseDistantTransactionEvent().cleanDistantTransactions();
+		}
+	}
+
+	void authenticatedMessageSent(AuthenticatedP2PMessage message) throws DatabaseException {
+		List<Record> l=getRecordsWithAllFields("hostID", message.getHostSource());
+		if (l.size()>1)
+			throw new InternalError();
+		else if (l.size()==1)
+		{
+			Record r=l.get(0);
+			if (r.removeAuthenticatedMessage(message))
+				updateRecord(r, "authenticatedMessagesQueueToSend", r.authenticatedMessagesQueueToSend);
 		}
 	}
 
