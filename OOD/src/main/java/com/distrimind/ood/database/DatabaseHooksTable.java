@@ -36,10 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import com.distrimind.ood.database.annotations.AutoPrimaryKey;
-import com.distrimind.ood.database.annotations.Field;
-import com.distrimind.ood.database.annotations.LoadToMemory;
-import com.distrimind.ood.database.annotations.Unique;
+import com.distrimind.ood.database.annotations.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.SerializationDatabaseException;
 import com.distrimind.util.DecentralizedValue;
@@ -68,6 +65,14 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 	protected volatile HashSet<String> supportedDatabasePackages = null;
 	protected volatile AtomicReference<DatabaseHooksTable.Record> localHost = null;
 	protected final HashMap<HostPair, Long> lastTransactionFieldsBetweenDistantHosts = new HashMap<>();
+
+	enum PairingState
+	{
+		CENTRAL_PAIRING_IN_PROGRESS,
+		P2P_PAIRING_IN_PROGRESS,
+		PAIRED,
+		REMOVED
+	}
 
 	@SuppressWarnings("FieldMayBeFinal")
 	static class Record extends DatabaseRecord {
@@ -102,6 +107,23 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		@Field(limit = AUTHENTICATED_MESSAGES_QUEUE_TO_SEND_LENGTH, forceUsingBlobOrClob = true)
 		private LinkedList<AuthenticatedP2PMessage> authenticatedMessagesQueueToSend=null;
 
+		@Field
+		@NotNull
+		private PairingState pairingState;
+
+		void setRemoved()
+		{
+			pairingState=PairingState.REMOVED;
+			concernsDatabaseHost=false;
+			lastLocalAuthenticatedP2PMessageID=0;
+			lastDistantAuthenticatedP2PMessageID=-1;
+			lastValidatedDistantTransactionID=-1;
+			lastValidatedLocalTransactionID=-1;
+			lastValidatedDistantTransactionUTCMs=Long.MIN_VALUE;
+			databasePackageNames=null;
+			authenticatedMessagesQueueToSend=null;
+		}
+
 		@Override
 		public boolean equals(Object o) {
 			if (o == null)
@@ -124,6 +146,16 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			if (lastValidatedDistantTransactionUTCMs<this.lastValidatedDistantTransactionUTCMs)
 				throw new IllegalArgumentException();
 			this.lastValidatedDistantTransactionUTCMs = lastValidatedDistantTransactionUTCMs;
+		}
+
+		PairingState getPairingState() {
+			return pairingState;
+		}
+
+
+
+		void setPairingState(PairingState pairingState) {
+			this.pairingState = pairingState;
 		}
 
 		@Override
@@ -701,6 +733,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 						if (l.size() == 0) {
 							r = new DatabaseHooksTable.Record();
 							r.setHostID(hostID);
+							r.setPairingState(PairingState.PAIRING_IN_PROGRESS);
 							Set<String> nap = r.setDatabasePackageNames(packages.keySet());
 							HashMap<String, Boolean> newAddedPackages=new HashMap<>();
 							nap.forEach(v -> newAddedPackages.put(v, packages.get(v)));
@@ -758,7 +791,13 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 	}
 
-	DatabaseHooksTable.Record removeHooks(final DecentralizedValue hostID, final Package... packages)
+	DatabaseHooksTable.Record unpairHook(final DecentralizedValue hostID) throws DatabaseException {
+		return removeHooks(hostID, true);
+	}
+	DatabaseHooksTable.Record removeHooks(final DecentralizedValue hostID, final Package... packages) throws DatabaseException {
+		return removeHooks(hostID, false, packages);
+	}
+	private DatabaseHooksTable.Record removeHooks(final DecentralizedValue hostID, final boolean removeAllPackage, final Package... packages)
 			throws DatabaseException {
 		if (hostID == null)
 			throw new NullPointerException("hostID");
@@ -782,7 +821,8 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							lastTransactionFieldsBetweenDistantHosts.entrySet().removeIf(e -> e.getKey().getHostServer().equals(hostID)
 									|| e.getKey().getHostToSynchronize().equals(hostID));
 
-							if (r.removePackageDatabase(packages)) {
+							if (removeAllPackage || r.removePackageDatabase(packages)) {
+								r.setRemoved();
 								removeRecordWithCascade(r);
 								getDatabaseTransactionEventsTable().removeTransactionsFromLastID();
 								return null;

@@ -101,6 +101,10 @@ public interface AuthenticatedP2PMessage extends P2PDatabaseEventToSend, SecureE
 	DatabaseWrapper getDatabaseWrapper();
 	void setDatabaseWrapper(DatabaseWrapper wrapper);
 
+	default void messageSent() throws DatabaseException {
+		getDatabaseWrapper().getDatabaseHooksTable().authenticatedMessageSent(this);
+
+	}
 
 	@Override
 	default void writeExternal(SecuredObjectOutputStream out) throws IOException
@@ -108,7 +112,7 @@ public interface AuthenticatedP2PMessage extends P2PDatabaseEventToSend, SecureE
 		writeExternalWithoutSignature(out);
 		writeExternalSignature(out);
 		try {
-			getDatabaseWrapper().getDatabaseHooksTable().authenticatedMessageSent(this);
+			messageSent();
 		} catch (DatabaseException e) {
 			throw new IOException(e);
 		}

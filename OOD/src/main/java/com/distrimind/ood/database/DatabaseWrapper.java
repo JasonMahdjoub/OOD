@@ -994,6 +994,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 
+
+		void unpairHook(DecentralizedValue hostID) throws DatabaseException {
+			disconnectHook(hostID);
+			getDatabaseHooksTable().unpairHook(hostID);
+
+		}
 		public void removeHook(DecentralizedValue hostID, Package... databasePackages) throws DatabaseException {
 			getDatabaseHooksTable().removeHooks(hostID, databasePackages);
 			isReliedToDistantHook();
