@@ -40,6 +40,7 @@ import com.distrimind.ood.database.annotations.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.SerializationDatabaseException;
 import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.crypto.EncryptionProfileProvider;
 import com.distrimind.util.io.SerializationTools;
 
 import java.util.*;
@@ -204,15 +205,19 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			return concernsDatabaseHost;
 		}
 
-		void offerNewAuthenticatedP2PMessage(DatabaseWrapper wrapper, AuthenticatedP2PMessage message, AlterRecordFilter<Record> alterRecordFilter) throws DatabaseException {
+		void offerNewAuthenticatedP2PMessage(DatabaseWrapper wrapper, AuthenticatedP2PMessage message, EncryptionProfileProvider encryptionProfileProvider, AlterRecordFilter<Record> alterRecordFilter) throws DatabaseException {
 			if (message==null)
 				throw new NullPointerException();
 			if (!(message instanceof DatabaseEvent))
 				throw new IllegalAccessError();
 			if (authenticatedMessagesQueueToSend==null)
 				authenticatedMessagesQueueToSend=new LinkedList<>();
-			authenticatedMessagesQueueToSend.addLast(message);
 			message.setMessageID(lastLocalAuthenticatedP2PMessageID++);
+			message.setDatabaseWrapper(wrapper);
+			message.updateSignature(encryptionProfileProvider);
+			authenticatedMessagesQueueToSend.addLast(message);
+
+
 			alterRecordFilter.update("authenticatedMessagesQueueToSend", authenticatedMessagesQueueToSend, "lastLocalAuthenticatedP2PMessageID", lastLocalAuthenticatedP2PMessageID);
 			wrapper.getSynchronizer().notifyNewAuthenticatedMessage(message);
 		}

@@ -56,29 +56,35 @@ public class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2P
 	private short encryptionProfileIdentifier;
 	private byte[] symmetricSignature;
 	private long messageID;
+	private transient DatabaseWrapper databaseWrapper=null;
 
 	@SuppressWarnings("unused")
 	private HookRemoveRequest() {
 	}
 
-	HookRemoveRequest(DecentralizedValue hostSource, DecentralizedValue hostDestination, DecentralizedValue removedHookID, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
+	HookRemoveRequest(DecentralizedValue hostSource, DecentralizedValue hostDestination, DecentralizedValue removedHookID) {
 		if (hostSource==null)
 			throw new NullPointerException();
 		if (hostDestination==null)
 			throw new NullPointerException();
 		if (removedHookID==null)
 			throw new NullPointerException();
-		if (encryptionProfileProvider==null)
-			throw new NullPointerException();
+
 		if (hostDestination.equals(removedHookID))
 			throw new IllegalArgumentException();
 		this.hostSource=hostSource;
 		this.hostDestination=hostDestination;
 		this.removedHookID = removedHookID;
+	}
+
+	@Override
+	public void updateSignature(EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
+		if (encryptionProfileProvider==null)
+			throw new NullPointerException();
 		this.encryptionProfileIdentifier = encryptionProfileProvider.getDefaultKeyID();
 		this.symmetricSignature=sign(encryptionProfileProvider);
-
 	}
+
 	@Override
 	public long getMessageID() {
 		return messageID;
@@ -185,4 +191,13 @@ public class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2P
 		}
 	}
 
+	@Override
+	public DatabaseWrapper getDatabaseWrapper() {
+		return databaseWrapper;
+	}
+
+	@Override
+	public void setDatabaseWrapper(DatabaseWrapper databaseWrapper) {
+		this.databaseWrapper = databaseWrapper;
+	}
 }

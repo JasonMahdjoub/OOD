@@ -62,9 +62,11 @@ public class HookAddRequest extends DatabaseEvent implements AuthenticatedP2PMes
 
 	private boolean mustReturnMessage;
 	private boolean replaceDistantConflictualData;
-	private byte[] symmetricSignature;
+	private byte[] symmetricSignature=null;
 	private short encryptionProfileIdentifier;
 	private long messageID;
+	private transient DatabaseWrapper databaseWrapper=null;
+
 
 	@Override
 	public int getInternalSerializedSize() {
@@ -147,7 +149,7 @@ public class HookAddRequest extends DatabaseEvent implements AuthenticatedP2PMes
 
 	HookAddRequest(DecentralizedValue _hostSource, DecentralizedValue _hostDestination, DecentralizedValue hostAdded,
 			Set<String> packagesToSynchronize,
-			boolean mustReturnMessage, boolean replaceDistantConflictualData, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
+			boolean mustReturnMessage, boolean replaceDistantConflictualData) {
 		super();
 		if (_hostSource == null)
 			throw new NullPointerException();
@@ -163,6 +165,12 @@ public class HookAddRequest extends DatabaseEvent implements AuthenticatedP2PMes
 
 		this.replaceDistantConflictualData = replaceDistantConflictualData;
 		this.mustReturnMessage = mustReturnMessage;
+	}
+
+	@Override
+	public void updateSignature(EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
+		if (encryptionProfileProvider==null)
+			throw new NullPointerException();
 		this.encryptionProfileIdentifier =encryptionProfileProvider.getDefaultKeyID();
 		this.symmetricSignature=sign(encryptionProfileProvider);
 	}
@@ -234,4 +242,21 @@ public class HookAddRequest extends DatabaseEvent implements AuthenticatedP2PMes
 			return MergeState.NO_FUSION;
 	}
 
+	@Override
+	public void messageSent() throws DatabaseException {
+		if (this.hostAdded.equals(this.hostDestination))
+		{
+			getDatabaseWrapper().getSynchronizer().removeHook(this.hostDestination);
+		}
+	}
+
+	@Override
+	public DatabaseWrapper getDatabaseWrapper() {
+		return databaseWrapper;
+	}
+
+	@Override
+	public void setDatabaseWrapper(DatabaseWrapper databaseWrapper) {
+		this.databaseWrapper = databaseWrapper;
+	}
 }

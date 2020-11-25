@@ -65,6 +65,8 @@ public interface AuthenticatedP2PMessage extends P2PDatabaseEventToSend, SecureE
 		}
 	}
 
+	void updateSignature(EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException;
+
 	@Override
 	default boolean cannotBeMerged()
 	{

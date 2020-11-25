@@ -139,7 +139,7 @@ public class DatabaseConfigurationsBuilder {
 							@Override
 							public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
 								if (!_record.concernsLocalDatabaseHost()) {
-									_record.offerNewAuthenticatedP2PMessage(new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), peerIDToRemove, encryptionProfileProvider), this);
+									_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), peerIDToRemove), encryptionProfileProvider, this);
 
 								}
 							}
@@ -214,7 +214,7 @@ public class DatabaseConfigurationsBuilder {
 					{
 						_record.setDatabasePackageNames(null, this);
 						//TODO check if must change state
-						_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), _record.getHostID(), encryptionProfileProvider), this);
+						_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), _record.getHostID()), encryptionProfileProvider, this);
 					}
 					deletedRecords.add(_record);
 				}
@@ -230,7 +230,7 @@ public class DatabaseConfigurationsBuilder {
 					{
 						//TODO check if must change state
 						for (DatabaseHooksTable.Record r : deletedRecords)
-							_record.offerNewAuthenticatedP2PMessage(new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), r.getHostID(), encryptionProfileProvider), this);
+							_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), r.getHostID()),encryptionProfileProvider, this);
 					}
 				}
 			}
@@ -241,7 +241,7 @@ public class DatabaseConfigurationsBuilder {
 				@Override
 				public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
 					if (!_record.concernsLocalDatabaseHost()) {
-						_record.offerNewAuthenticatedP2PMessage(new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), peerIDToRemove, encryptionProfileProvider), this);
+						_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), peerIDToRemove), encryptionProfileProvider, this);
 
 					}
 				}
