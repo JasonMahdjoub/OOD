@@ -791,13 +791,13 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 	}
 
-	DatabaseHooksTable.Record unpairHook(final DecentralizedValue hostID) throws DatabaseException {
-		return removeHooks(hostID, true);
+	DatabaseHooksTable.Record removeHook(final DecentralizedValue hostID) throws DatabaseException {
+		return unsynchronizeDatabase(hostID, true);
 	}
-	DatabaseHooksTable.Record removeHooks(final DecentralizedValue hostID, final Package... packages) throws DatabaseException {
-		return removeHooks(hostID, false, packages);
+	DatabaseHooksTable.Record unsynchronizeDatabase(final DecentralizedValue hostID, final Package... packages) throws DatabaseException {
+		return unsynchronizeDatabase(hostID, false, packages);
 	}
-	private DatabaseHooksTable.Record removeHooks(final DecentralizedValue hostID, final boolean removeAllPackage, final Package... packages)
+	private DatabaseHooksTable.Record unsynchronizeDatabase(final DecentralizedValue hostID, final boolean removeHook, final Package... packages)
 			throws DatabaseException {
 		if (hostID == null)
 			throw new NullPointerException("hostID");
@@ -820,8 +820,8 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							supportedDatabasePackages = null;
 							lastTransactionFieldsBetweenDistantHosts.entrySet().removeIf(e -> e.getKey().getHostServer().equals(hostID)
 									|| e.getKey().getHostToSynchronize().equals(hostID));
-
-							if (removeAllPackage || r.removePackageDatabase(packages)) {
+							r.removePackageDatabase(packages);
+							if (removeHook) {
 								r.setRemoved();
 								removeRecordWithCascade(r);
 								getDatabaseTransactionEventsTable().removeTransactionsFromLastID();

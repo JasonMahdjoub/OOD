@@ -179,10 +179,10 @@ public class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2P
 
 	@Override
 	public void messageSent() throws DatabaseException {
-		AuthenticatedP2PMessage.super.messageSent();
 		if (this.removedHookID.equals(this.hostDestination))
 		{
-			getDatabaseWrapper().getSynchronizer().unpairHook(this.hostDestination);
+			getDatabaseWrapper().getSynchronizer().removeHook(this.hostDestination);
 		}
 	}
+
 }
