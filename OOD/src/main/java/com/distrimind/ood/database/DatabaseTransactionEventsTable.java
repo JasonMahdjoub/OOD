@@ -164,13 +164,10 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 			return p.getName().equals(concernedDatabasePackage);
 		}
 
-		boolean isConcernedByOneOf(Package... ps) {
-			if (ps == null)
+		boolean isConcernedByOneOf(Set<String> packages) {
+			if (packages == null)
 				return false;
-			for (Package p : ps)
-				if (concernedDatabasePackage.equals(p.getName()))
-					return true;
-			return false;
+			return packages.contains(concernedDatabasePackage);
 		}
 
 		void setConcernedHosts(Collection<DecentralizedValue> peers) {
@@ -283,15 +280,15 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 
 	}
 
-	protected long addTransactionToSynchronizeTables(final HashMap<String, Boolean> databasePackages,
-													 final ArrayList<DecentralizedValue> hostAlreadySynchronized, final DatabaseHooksTable.Record hook) throws DatabaseException {
+	protected long addTransactionToSynchronizeTables(final Map<String, Boolean> databasePackages,
+													 final Set<DecentralizedValue> peerInCloud, final DatabaseHooksTable.Record hook) throws DatabaseException {
 		final Set<String> packageSynchroOneTime = new HashSet<>();
 		//assert getDatabaseHooksTable().getRecord("id", hook.getID())!=null;
 		getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
 
 			@Override
 			public boolean nextRecord(DatabaseHooksTable.Record _record) {
-				if (!_record.concernsLocalDatabaseHost() && hostAlreadySynchronized.contains(_record.getHostID())) {
+				if (!_record.concernsLocalDatabaseHost() && peerInCloud.contains(_record.getHostID())) {
 					for (String p : _record.getDatabasePackageNames()) {
 						if (databasePackages.containsKey(p)) {
 							packageSynchroOneTime.add(p);

@@ -42,7 +42,6 @@ import com.distrimind.util.crypto.SymmetricAuthenticatedSignatureType;
 import com.distrimind.util.io.*;
 
 import java.io.IOException;
-import java.util.HashSet;
 
 /**
  * @author Jason Mahdjoub
@@ -155,14 +154,14 @@ public class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2P
 		return removedHookID;
 	}
 	@Override
-	public DatabaseEvent.MergeState tryToMergeWithNewAuthenticatedMessage(DatabaseEvent newEvent) throws DatabaseException {
+	public DatabaseEvent.MergeState tryToMergeWithNewAuthenticatedMessage(DatabaseEvent newEvent) {
 		if (newEvent instanceof AuthenticatedP2PMessage)
 		{
-			if (newEvent instanceof HookAddRequest)
+			if (newEvent instanceof AbstractHookRequest)
 			{
-				HookAddRequest ne=(HookAddRequest)newEvent;
-				if (removedHookID.equals(ne.getHostAdded()))
-					return MergeState.DELETE_BOTH;
+				AbstractHookRequest ne=(AbstractHookRequest)newEvent;
+				if (ne.getConcernedPeers().contains(removedHookID))
+					return MergeState.DELETE_OLD;
 				else if (removedHookID.equals(ne.getHostSource()) || removedHookID.equals(ne.getHostDestination()))
 					return MergeState.DELETE_NEW;
 				else

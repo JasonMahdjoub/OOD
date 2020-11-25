@@ -468,7 +468,7 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 
 		for (Database other : listDatabase) {
 			if (other != db4) {
-				HookAddRequest har = db4.getDbwrapper().getSynchronizer().askForHookAddingAndSynchronizeDatabase(
+				AbstractHookRequest har = db4.getDbwrapper().getSynchronizer().askForHookAddingAndSynchronizeDatabase(
 						other.getHostID(), false, TablePointed.class.getPackage());
 				har = other.getDbwrapper().getSynchronizer().receivedHookAddRequest(har);
 				db4.getDbwrapper().getSynchronizer().receivedHookAddRequest(har);

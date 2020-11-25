@@ -1465,7 +1465,7 @@ public abstract class CommonDecentralizedTests {
 		for (CommonDecentralizedTests.Database db : listDatabase) {
 			for (CommonDecentralizedTests.Database other : listDatabase) {
 				if (other != db) {
-					HookAddRequest har = db.getDbwrapper().getSynchronizer().askForHookAddingAndSynchronizeDatabase(
+					AbstractHookRequest har = db.getDbwrapper().getSynchronizer().askForHookAddingAndSynchronizeDatabase(
 							other.getHostID(), false, TablePointed.class.getPackage());
 					har = other.getDbwrapper().getSynchronizer().receivedHookAddRequest(har);
 					db.getDbwrapper().getSynchronizer().receivedHookAddRequest(har);

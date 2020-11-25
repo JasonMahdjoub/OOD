@@ -57,7 +57,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @LoadToMemory
 final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 	static final int PACKAGES_TO_SYNCHRONIZE_LENGTH=DatabaseWrapper.MAX_PACKAGE_TO_SYNCHRONIZE*SerializationTools.MAX_CLASS_LENGTH;
-	private static final int AUTHENTICATED_MESSAGES_QUEUE_TO_SEND_LENGTH=(HookAddRequest.MAX_HOOK_ADD_REQUEST_LENGTH_IN_BYTES+4)*DatabaseWrapper.MAX_DISTANT_PEERS+2;
+	private static final int AUTHENTICATED_MESSAGES_QUEUE_TO_SEND_LENGTH=(AbstractHookRequest.MAX_HOOK_ADD_REQUEST_LENGTH_IN_BYTES+4)*DatabaseWrapper.MAX_DISTANT_PEERS+2;
 
 	private volatile DatabaseTransactionEventsTable databaseTransactionEventsTable = null;
 	private volatile DatabaseTransactionsPerHostTable databaseTransactionsPerHostTable = null;
@@ -216,9 +216,8 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			message.setDatabaseWrapper(wrapper);
 			message.updateSignature(encryptionProfileProvider);
 			authenticatedMessagesQueueToSend.addLast(message);
-
-
 			alterRecordFilter.update("authenticatedMessagesQueueToSend", authenticatedMessagesQueueToSend, "lastLocalAuthenticatedP2PMessageID", lastLocalAuthenticatedP2PMessageID);
+			message.messageReadyToSend();
 			wrapper.getSynchronizer().notifyNewAuthenticatedMessage(message);
 		}
 
@@ -271,19 +270,16 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			}
 			return packagesList;
 		}
-*/		protected Set<String> setDatabasePackageNames(Set<String> packages, AlterRecordFilter<Record> filter) throws DatabaseException {
-			Set<String> res=setDatabasePackageNames(packages);
+*/		protected void setDatabasePackageNames(Set<String> packages, AlterRecordFilter<Record> filter) throws DatabaseException {
+			setDatabasePackageNames(packages);
 			filter.update("databasePackageNames", databasePackageNames);
-			return res;
 
 		}
-		protected Set<String> setDatabasePackageNames(Set<String> packages) {
+		protected void setDatabasePackageNames(Set<String> packages) {
 			if (packages == null || packages.size() == 0) {
 				databasePackageNames = null;
-				return new HashSet<>(0);
 			}
 			databasePackageNames=new HashSet<>(packages);
-			return databasePackageNames;
 			/*StringBuilder sb = new StringBuilder();
 			ArrayList<String> packagesList=compactPackages(packages, sb);
 			databasePackageNames = sb.toString();
@@ -420,11 +416,8 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			}
 		}*/
 
-		protected boolean removePackageDatabase(Package... _packages) {
-			boolean ok=false;
-			for (Package p : _packages)
-				ok|=databasePackageNames.remove(p.getName());
-			return ok;
+		protected boolean removePackageDatabase(Set<String> packages) {
+			return databasePackageNames.removeAll(packages);
 			/*StringBuilder sb=new StringBuilder();
 			if (removePackageDatabase(databasePackageNames, sb, _packages)) {
 				databasePackageNames = null;
@@ -715,9 +708,104 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		return databaseDistantTransactionEvent;
 	}
 
+	private Record initLocalHook(DecentralizedValue hostID) throws DatabaseException {
+		if (getLocalDatabaseHost()!=null)
+			throw new DatabaseException("Local database host already set !");
+		DatabaseHooksTable.Record r = new DatabaseHooksTable.Record();
+		r.setHostID(hostID);
+		r.setPairingState(PairingState.PAIRED);
+		r.setConcernsDatabaseHost(false);
+		r.setLastValidatedDistantTransactionID(-1);
+		r.setLastValidatedLocalTransactionID(-1);
+		r = addRecord(r);
+		localHost = null;
+		supportedDatabasePackages = null;
+		return r;
+	}
+	void addHooks(final Map<String, Boolean> packages,
+									   final Set<DecentralizedValue> peerInCloud  )
+			throws DatabaseException {
+
+		if (peerInCloud == null)
+			throw new NullPointerException("hostID");
+
+		getDatabaseWrapper()
+				.runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
+
+					@Override
+					public Void run() throws Exception {
+						Set<DecentralizedValue> peerInCloudRemaining=new HashSet<>(peerInCloud);
+						if (getLocalDatabaseHost()==null)
+							throw new DatabaseException("Local database host not set");
+						getRecords(new Filter<Record>() {
+							@Override
+							public boolean nextRecord(Record r) throws DatabaseException {
+								if (peerInCloudRemaining.remove(r.getHostID()))
+								{
+									Set<String> nap=new HashSet<>(r.getDatabasePackageNames());
+									nap.removeAll(packages.keySet());
+									HashMap<String, Boolean> newAddedPackages=new HashMap<>();
+									r.setDatabasePackageNames(packages.keySet());
+									nap.forEach(v -> newAddedPackages.put(v, packages.get(v)));
+									if (newAddedPackages.size()>0)
+										updateRecord(r, "databasePackageNames", r.databasePackageNames);
+									localHost = null;
+									supportedDatabasePackages = null;
+
+									if (!r.concernsDatabaseHost) {
+										r.setLastValidatedLocalTransactionID(getDatabaseTransactionEventsTable()
+												.addTransactionToSynchronizeTables(newAddedPackages, peerInCloud, r));
+
+										updateRecord(r, "lastValidatedLocalTransactionID", r.lastValidatedLocalTransactionID);
+									}
+								}
+								return false;
+							}
+						});
+						for (DecentralizedValue hostID : peerInCloudRemaining)
+						{
+							DatabaseHooksTable.Record r = new DatabaseHooksTable.Record();
+							r.setHostID(hostID);
+							r.setPairingState(PairingState.PAIRING_IN_PROGRESS);
+							r.setDatabasePackageNames(packages.keySet());
+							r.setConcernsDatabaseHost(false);
+							r.setLastValidatedDistantTransactionID(-1);
+							r.setLastValidatedLocalTransactionID(-1);
+							r = addRecord(r);
+
+
+
+							r.setLastValidatedLocalTransactionID(getDatabaseTransactionEventsTable()
+									.addTransactionToSynchronizeTables(packages, peerInCloud, r));
+							updateRecord(r, "lastValidatedLocalTransactionID", r.lastValidatedLocalTransactionID);
+						}
+						localHost = null;
+						supportedDatabasePackages = null;
+
+						return null;
+					}
+
+					@Override
+					public TransactionIsolation getTransactionIsolation() {
+						return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+					}
+
+					@Override
+					public boolean doesWriteData() {
+						return true;
+					}
+
+					@Override
+					public void initOrReset() {
+
+					}
+				});
+
+	}
 	@SuppressWarnings("UnusedReturnValue")
-	DatabaseHooksTable.Record addHooks(final DecentralizedValue hostID, final boolean concernsDatabaseHost,
-									   final ArrayList<DecentralizedValue> hostAlreadySynchronized, final Map<String, Boolean> packages)
+	/*DatabaseHooksTable.Record addHooks(final DecentralizedValue hostID, final boolean concernsDatabaseHost,
+									   final ArrayList<DecentralizedValue> hostAlreadySynchronized,
+									   final Map<String, Boolean> packages)
 			throws DatabaseException {
 
 		if (hostID == null)
@@ -794,15 +882,49 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 					}
 				});
 
-	}
+	}*/
 
 	DatabaseHooksTable.Record removeHook(final DecentralizedValue hostID) throws DatabaseException {
-		return unsynchronizeDatabase(hostID, true);
+		return unsynchronizeDatabase(hostID, true, new HashSet<>());
 	}
-	DatabaseHooksTable.Record unsynchronizeDatabase(final DecentralizedValue hostID, final Package... packages) throws DatabaseException {
-		return unsynchronizeDatabase(hostID, false, packages);
+
+	void unsynchronizeDatabase(Set<String> packages, Set<DecentralizedValue> concernedHosts) throws DatabaseException {
+		if (packages==null)
+			throw new NullPointerException();
+		if (concernedHosts==null)
+			throw new NullPointerException();
+		if (packages.size()==0)
+			throw new IllegalArgumentException();
+
+		getDatabaseWrapper()
+				.runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
+
+					@Override
+					public Void run() throws Exception {
+						for (DecentralizedValue host : concernedHosts) {
+							unsynchronizeDatabase(host, false, packages);
+						}
+						return null;
+					}
+
+					@Override
+					public TransactionIsolation getTransactionIsolation() {
+						return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+					}
+
+					@Override
+					public boolean doesWriteData() {
+						return true;
+					}
+
+					@Override
+					public void initOrReset() {
+
+					}
+
+				});
 	}
-	private DatabaseHooksTable.Record unsynchronizeDatabase(final DecentralizedValue hostID, final boolean removeHook, final Package... packages)
+	private DatabaseHooksTable.Record unsynchronizeDatabase(final DecentralizedValue hostID, final boolean removeHook, Set<String> packages)
 			throws DatabaseException {
 		if (hostID == null)
 			throw new NullPointerException("hostID");

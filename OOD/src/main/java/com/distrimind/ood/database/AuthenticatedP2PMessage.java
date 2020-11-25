@@ -103,7 +103,13 @@ public interface AuthenticatedP2PMessage extends P2PDatabaseEventToSend, SecureE
 	DatabaseWrapper getDatabaseWrapper();
 	void setDatabaseWrapper(DatabaseWrapper wrapper);
 
-	void messageSent() throws DatabaseException ;
+	default void messageReadyToSend() throws DatabaseException {
+
+	}
+	default void messageSent() throws DatabaseException
+	{
+
+	}
 
 	@Override
 	default void writeExternal(SecuredObjectOutputStream out) throws IOException

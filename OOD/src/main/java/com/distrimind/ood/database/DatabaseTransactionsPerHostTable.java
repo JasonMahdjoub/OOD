@@ -129,7 +129,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 		}
 	}
 
-	void removeTransactions(final DatabaseHooksTable.Record hook, final Package... removedPackages)
+	void removeTransactions(final DatabaseHooksTable.Record hook, final Set<String> removedPackages)
 			throws DatabaseException {
 		if (hook == null)
 			throw new NullPointerException("hook");

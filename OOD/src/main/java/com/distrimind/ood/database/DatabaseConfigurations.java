@@ -110,11 +110,17 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 				allDistantPeers.addAll(dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase());
 			}
 		}
+
+		checkForMaxDistantPeersReached();
 		checkLocalPeerNull();
 
 		return save;
 	}
 
+	private void checkForMaxDistantPeersReached() throws DatabaseException {
+		if (allDistantPeers.size()>DatabaseWrapper.MAX_DISTANT_PEERS)
+			throw new DatabaseException("The number of distant peers "+allDistantPeers.size()+" has reached the maximum number of peers "+DatabaseWrapper.MAX_DISTANT_PEERS);
+	}
 
 	public boolean isPermitIndirectSynchronizationBetweenPeers() {
 		return permitIndirectSynchronizationBetweenPeers;
@@ -150,8 +156,7 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 	}
 
 
-	void addConfiguration(DatabaseConfiguration configuration, boolean makeConfigurationLoadingPersistent )
-	{
+	void addConfiguration(DatabaseConfiguration configuration, boolean makeConfigurationLoadingPersistent ) throws DatabaseException {
 		if (makeConfigurationLoadingPersistent) {
 			configurations.add(configuration);
 			if (configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase()!=null) {
@@ -166,6 +171,7 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 		}
 		if (configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase()!=null) {
 			allDistantPeers.addAll(configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase());
+			checkForMaxDistantPeersReached();
 		}
 		allConfigurations.add(configuration);
 	}
@@ -258,6 +264,7 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 			changed |= this.distantPeers.addAll(distantPeers);
 		}
 		allDistantPeers.addAll(distantPeers);
+		checkForMaxDistantPeersReached();
 		return changed;
 	}
 	boolean setDistantPeersWithGivenPackage(String packageString, Collection<DecentralizedValue> distantPeers) throws DatabaseException {
