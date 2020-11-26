@@ -68,7 +68,6 @@ public class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2P
 			throw new NullPointerException();
 		if (removedHookID==null)
 			throw new NullPointerException();
-
 		if (hostDestination.equals(removedHookID))
 			throw new IllegalArgumentException();
 		this.hostSource=hostSource;
@@ -135,6 +134,8 @@ public class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2P
 			throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN);
 		hostSource=in.readObject(false, DecentralizedValue.class);
 		hostDestination=in.readObject(false, DecentralizedValue.class);
+		if (hostDestination.equals(hostSource))
+			throw new MessageExternalizationException(Integrity.FAIL);
 		removedHookID=in.readObject(false, DecentralizedValue.class);
 		encryptionProfileIdentifier=in.readShort();
 		symmetricSignature=in.readBytesArray(false, SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE);

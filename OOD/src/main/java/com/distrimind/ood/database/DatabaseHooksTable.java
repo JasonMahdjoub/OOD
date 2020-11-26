@@ -125,6 +125,17 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			authenticatedMessagesQueueToSend=null;
 		}
 
+		boolean validateDistantAuthenticatedP2PMessage(AuthenticatedP2PMessage message, DatabaseHooksTable table) throws DatabaseException {
+			if (message.getMessageID()<=lastDistantAuthenticatedP2PMessageID)
+				return false;
+			else
+			{
+				lastDistantAuthenticatedP2PMessageID=message.getMessageID();
+				table.updateRecord(this, "lastDistantAuthenticatedP2PMessageID", lastDistantAuthenticatedP2PMessageID);
+				return true;
+			}
+		}
+
 		@Override
 		public boolean equals(Object o) {
 			if (o == null)

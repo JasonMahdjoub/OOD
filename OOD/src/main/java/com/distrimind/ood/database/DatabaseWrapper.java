@@ -860,7 +860,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 
 
-		public void addHookForLocalDatabaseHost(DecentralizedValue hostID, Package ...databasePackages)
+		/*public void addHookForLocalDatabaseHost(DecentralizedValue hostID, Package ...databasePackages)
 				throws DatabaseException {
 			HashMap<String, Boolean> packages = new HashMap<>();
 			for (Package p : databasePackages) {
@@ -868,12 +868,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 			getDatabaseHooksTable().addHooks(hostID, true, new ArrayList<>(),
 					packages);
-		}
-		private void includeIfNecessaryDatabaseIntoCloud(Collection<DatabaseConfiguration> configurations)
-		{
-			//TODO complete
-			//TODO compléter en dessous
-		}
+		}*/
+
 		/*public void askForHookAddingAndSynchronizeDatabase(DecentralizedValue hostID,
 														   boolean replaceDistantConflictualRecords, Package... packages) throws DatabaseException {
 			ArrayList<String> packagesString = new ArrayList<>();
@@ -951,12 +947,46 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			isReliedToDistantHook();
 		}
 		void receivedHookSynchronizeRequest(HookSynchronizeRequest hookSynchronizeRequest) throws DatabaseException {
+			addDistantPeers(hookSynchronizeRequest);
+		}
+		private void received(HookRemoveRequest m) throws DatabaseException {
+			getDatabaseHooksTable().removeHook(m.getRemovedHookID());
+		}
+
+		private void received(AuthenticatedP2PMessage m) throws MessageExternalizationException, DatabaseException {
 			DatabaseHooksTable.Record localDatabaseHost = getDatabaseHooksTable().getLocalDatabaseHost();
 			if (localDatabaseHost == null)
 				throw new DatabaseException("Function must be called before addHookForLocalDatabaseHost.");
-			/*if (hookSynchronizeRequest == null || !hookSynchronizeRequest.getHostDestination().equals(localDatabaseHost.getHostID()))
-				return;*/
-			addDistantPeers(hookSynchronizeRequest);
+			if (m.getHostDestination().equals(getLocalHostID()))
+			{
+				if (!m.checkAuthentication(encryptionProfileProvider))
+					throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN);
+				DatabaseHooksTable.Record r =getDatabaseHookRecord(m.getHostSource(), false);
+				if (r==null)
+				{
+					if (m instanceof HookSynchronizeRequest)
+						receivedHookSynchronizeRequest((HookSynchronizeRequest)m);
+					else
+						throw new MessageExternalizationException(Integrity.FAIL);
+					r =getDatabaseHookRecord(m.getHostSource());
+				}
+				else
+				{
+					if (r.validateDistantAuthenticatedP2PMessage(m, getDatabaseHooksTable())) {
+						if (m instanceof HookSynchronizeRequest)
+							receivedHookSynchronizeRequest((HookSynchronizeRequest) m);
+						else if (m instanceof HookUnsynchronizeRequest)
+							receivedHookUnsynchronizeRequest((HookUnsynchronizeRequest) m);
+						else if (m instanceof HookRemoveRequest)
+							received((HookRemoveRequest)m);
+						else
+							throw new MessageExternalizationException(Integrity.FAIL);
+					}
+				}
+
+			}
+			else
+				throw new MessageExternalizationException(Integrity.FAIL);
 		}
 
 
@@ -974,9 +1004,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			isReliedToDistantHook();
 		}
 		void receivedHookUnsynchronizeRequest(HookUnsynchronizeRequest hookUnsynchronizeRequest) throws DatabaseException {
-			DatabaseHooksTable.Record localDatabaseHost = getDatabaseHooksTable().getLocalDatabaseHost();
-			if (localDatabaseHost == null)
-				throw new DatabaseException("Function must be called before addHookForLocalDatabaseHost.");
 			unsynchronizeRequest(hookUnsynchronizeRequest);
 		}
 		
@@ -2135,7 +2162,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			validateLastSynchronizationWithCentralDatabaseBackup(confirmation.getPackageString(), confirmation.getLastTransactionUTC());
 		}
 
-		public void received(DatabaseEventToSend data) throws DatabaseException {
+		public void received(DatabaseEventToSend data) throws DatabaseException, MessageExternalizationException {
+			if (data instanceof AuthenticatedP2PMessage)
+				received((AuthenticatedP2PMessage)data);
 			if (data instanceof P2PDatabaseEventToSend)
 				received((P2PDatabaseEventToSend)data);
 			else if (data instanceof MessageComingFromCentralDatabaseBackup)

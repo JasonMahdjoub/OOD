@@ -122,6 +122,8 @@ public abstract class AbstractHookRequest extends DatabaseEvent implements Authe
 			throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN);
 		hostSource=in.readObject(false, DecentralizedValue.class);
 		hostDestination=in.readObject(false, DecentralizedValue.class);
+		if (hostSource.equals(hostDestination))
+			throw new MessageExternalizationException(Integrity.FAIL);
 		try {
 			//noinspection unchecked
 			concernedPeers =(Set<DecentralizedValue>)in.readCollection(false, MAX_PEERS_DESCRIPTION_SIZE_IN_BYTES);
@@ -152,6 +154,8 @@ public abstract class AbstractHookRequest extends DatabaseEvent implements Authe
 			throw new NullPointerException();
 		if (concernedPeers ==null)
 			throw new NullPointerException();
+		if (hostSource.equals(hostDestination))
+			throw new IllegalArgumentException();
 
 		hostSource = _hostSource;
 		hostDestination = _hostDestination;
