@@ -68,7 +68,20 @@ public class IndirectMessagesDestinedToCentralDatabaseBackup extends DatabaseEve
 	{
 
 	}
-
+	public IndirectMessagesDestinedToCentralDatabaseBackup(DecentralizedValue hostSource, DecentralizedValue hostDestination, List<byte[]> encryptedAuthenticatedP2PMessages) {
+		if (hostSource==null)
+			throw new NullPointerException();
+		if (hostDestination==null)
+			throw new NullPointerException();
+		if (encryptedAuthenticatedP2PMessages==null)
+			throw new NullPointerException();
+		if (encryptedAuthenticatedP2PMessages.contains(null))
+			throw new NullPointerException();
+		this.hostSource=hostSource;
+		this.hostDestination=hostDestination;
+		this.encryptedAuthenticatedP2PMessages=encryptedAuthenticatedP2PMessages;
+		authenticatedP2PMessages=null;
+	}
 	public IndirectMessagesDestinedToCentralDatabaseBackup(List<AuthenticatedP2PMessage> authenticatedP2PMessages, AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
 		if (authenticatedP2PMessages==null)
 			throw new NullPointerException();
@@ -115,6 +128,9 @@ public class IndirectMessagesDestinedToCentralDatabaseBackup extends DatabaseEve
 		}
 	}
 
+	public List<byte[]> getEncryptedAuthenticatedP2PMessages() {
+		return encryptedAuthenticatedP2PMessages;
+	}
 
 	@Override
 	public DecentralizedValue getHostSource() {

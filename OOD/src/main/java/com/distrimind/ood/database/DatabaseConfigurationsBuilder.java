@@ -16,21 +16,24 @@ public class DatabaseConfigurationsBuilder {
 	private final DatabaseConfigurations configurations;
 	private final DatabaseWrapper wrapper;
 	private final DatabaseLifeCycles lifeCycles;
-	private final EncryptionProfileProvider encryptionProfileProvider;
+	private final EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedMessages;
 	private final AbstractSecureRandom secureRandom;
 
 
 	DatabaseConfigurationsBuilder(DatabaseConfigurations configurations,
 								  DatabaseWrapper wrapper,
 								  DatabaseLifeCycles lifeCycles,
-								  EncryptionProfileProvider encryptionProfileProvider,
+								  EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
+								  EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedMessages,
 								  AbstractSecureRandom secureRandom,
 								  boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
 		if (configurations==null)
 			throw new NullPointerException();
 		if (wrapper==null)
 			throw new NullPointerException();
-		if (encryptionProfileProvider==null)
+		if (encryptionProfileProviderForCentralDatabaseBackup ==null)
+			throw new NullPointerException();
+		if (protectedEncryptionProfileProviderForAuthenticatedMessages==null)
 			throw new NullPointerException();
 		if (secureRandom==null)
 			throw new NullPointerException();
@@ -38,7 +41,8 @@ public class DatabaseConfigurationsBuilder {
 		this.configurations = configurations;
 		this.wrapper = wrapper;
 		this.lifeCycles = lifeCycles;
-		this.encryptionProfileProvider=encryptionProfileProvider;
+		this.encryptionProfileProviderForCentralDatabaseBackup = encryptionProfileProviderForCentralDatabaseBackup;
+		this.protectedEncryptionProfileProviderForAuthenticatedMessages=protectedEncryptionProfileProviderForAuthenticatedMessages;
 		this.secureRandom=secureRandom;
 		boolean save=configurations.checkDistantPeers();
 		configurations.setCreateDatabasesIfNecessaryAndCheckIt(createDatabasesIfNecessaryAndCheckIt);
@@ -139,7 +143,7 @@ public class DatabaseConfigurationsBuilder {
 							@Override
 							public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
 								if (!_record.concernsLocalDatabaseHost()) {
-									_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), peerIDToRemove), encryptionProfileProvider, this);
+									_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), peerIDToRemove), protectedEncryptionProfileProviderForAuthenticatedMessages, this);
 
 								}
 							}
@@ -163,8 +167,8 @@ public class DatabaseConfigurationsBuilder {
 	}
 
 
-	public EncryptionProfileProvider getEncryptionProfileProvider() {
-		return encryptionProfileProvider;
+	public EncryptionProfileProvider getEncryptionProfileProviderForCentralDatabaseBackup() {
+		return encryptionProfileProviderForCentralDatabaseBackup;
 	}
 
 	AbstractSecureRandom getSecureRandom() {
@@ -214,7 +218,7 @@ public class DatabaseConfigurationsBuilder {
 					{
 						_record.setDatabasePackageNames(null, this);
 						//TODO check if must change state
-						_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), _record.getHostID()), encryptionProfileProvider, this);
+						_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), _record.getHostID()), protectedEncryptionProfileProviderForAuthenticatedMessages, this);
 					}
 					deletedRecords.add(_record);
 				}
@@ -230,7 +234,7 @@ public class DatabaseConfigurationsBuilder {
 					{
 						//TODO check if must change state
 						for (DatabaseHooksTable.Record r : deletedRecords)
-							_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), r.getHostID()),encryptionProfileProvider, this);
+							_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), r.getHostID()),protectedEncryptionProfileProviderForAuthenticatedMessages, this);
 					}
 				}
 			}
@@ -241,7 +245,7 @@ public class DatabaseConfigurationsBuilder {
 				@Override
 				public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
 					if (!_record.concernsLocalDatabaseHost()) {
-						_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), peerIDToRemove), encryptionProfileProvider, this);
+						_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), peerIDToRemove), protectedEncryptionProfileProviderForAuthenticatedMessages, this);
 
 					}
 				}
