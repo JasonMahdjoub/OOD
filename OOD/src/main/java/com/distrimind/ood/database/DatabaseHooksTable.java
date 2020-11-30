@@ -39,7 +39,9 @@ package com.distrimind.ood.database;
 import com.distrimind.ood.database.annotations.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.SerializationDatabaseException;
+import com.distrimind.ood.database.messages.IndirectMessagesDestinedToCentralDatabaseBackup;
 import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 import com.distrimind.util.io.SerializationTools;
 
@@ -57,7 +59,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @LoadToMemory
 final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 	static final int PACKAGES_TO_SYNCHRONIZE_LENGTH=DatabaseWrapper.MAX_PACKAGE_TO_SYNCHRONIZE*SerializationTools.MAX_CLASS_LENGTH;
-	private static final int AUTHENTICATED_MESSAGES_QUEUE_TO_SEND_LENGTH=(AbstractHookRequest.MAX_HOOK_ADD_REQUEST_LENGTH_IN_BYTES+4)*DatabaseWrapper.MAX_DISTANT_PEERS+2;
+	private static final int SIZE_IN_BYTES_OF_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND =AuthenticatedP2PMessage.MAX_AUTHENTICATED_P2P_MESSAGE_SIZE_IN_BYTES*AuthenticatedP2PMessage.MAX_NUMBER_OF_P2P_MESSAGES_PER_PEER+2;
 
 	private volatile DatabaseTransactionEventsTable databaseTransactionEventsTable = null;
 	private volatile DatabaseTransactionsPerHostTable databaseTransactionsPerHostTable = null;
@@ -105,7 +107,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		@Field
 		private long lastValidatedDistantTransactionUTCMs=Long.MIN_VALUE;
 
-		@Field(limit = AUTHENTICATED_MESSAGES_QUEUE_TO_SEND_LENGTH, forceUsingBlobOrClob = true)
+		@Field(limit = SIZE_IN_BYTES_OF_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND, forceUsingBlobOrClob = true)
 		private LinkedList<AuthenticatedP2PMessage> authenticatedMessagesQueueToSend=null;
 
 		@Field
@@ -232,8 +234,38 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			wrapper.getSynchronizer().notifyNewAuthenticatedMessage(message);
 		}
 
+		void addAuthenticatedP2PMessageToSendToCentralDatabaseBackup(AuthenticatedP2PMessage message, DatabaseHooksTable table) throws DatabaseException {
+			if (message==null)
+				throw new NullPointerException();
+			if (!(message instanceof DatabaseEvent))
+				throw new IllegalAccessError();
+			if (authenticatedMessagesQueueToSend==null)
+				authenticatedMessagesQueueToSend=new LinkedList<>();
+			assert concernsDatabaseHost;
+			authenticatedMessagesQueueToSend.add(message);
+			table.updateRecord(this, "authenticatedMessagesQueueToSend", authenticatedMessagesQueueToSend);
+		}
+
 		LinkedList<AuthenticatedP2PMessage> getAuthenticatedMessagesQueueToSend() {
 			return authenticatedMessagesQueueToSend;
+		}
+
+		List<IndirectMessagesDestinedToCentralDatabaseBackup> getAuthenticatedMessagesQueueToSendToCentralDatabaseBackup(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
+			assert concernsDatabaseHost;
+			List<IndirectMessagesDestinedToCentralDatabaseBackup> res=new ArrayList<>();
+			if (authenticatedMessagesQueueToSend==null)
+				return res;
+			Map<DecentralizedValue, ArrayList<AuthenticatedP2PMessage>> resTmp=new HashMap<>();
+			for (AuthenticatedP2PMessage a : authenticatedMessagesQueueToSend)
+			{
+				ArrayList<AuthenticatedP2PMessage> l = resTmp.computeIfAbsent(a.getHostDestination(), k -> new ArrayList<>());
+				l.add(a);
+			}
+			for (Map.Entry<DecentralizedValue, ArrayList<AuthenticatedP2PMessage>> e : resTmp.entrySet())
+			{
+				res.add(new IndirectMessagesDestinedToCentralDatabaseBackup(e.getValue(), random, encryptionProfileProvider));
+			}
+			return res;
 		}
 
 		void receivedAuthenticatedP2PMessageFromDistantHost(AuthenticatedP2PMessage message, AlterRecordFilter<Record> alterRecordFilter) throws DatabaseException {
