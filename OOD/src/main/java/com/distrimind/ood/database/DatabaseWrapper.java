@@ -974,6 +974,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					else
 						throw new MessageExternalizationException(Integrity.FAIL);
 					r =getDatabaseHookRecord(m.getHostSource());
+					r.validateDistantAuthenticatedP2PMessage(m, getDatabaseHooksTable());
 				}
 				else
 				{
