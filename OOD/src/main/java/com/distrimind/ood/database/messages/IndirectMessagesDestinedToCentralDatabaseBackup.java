@@ -39,10 +39,7 @@ import com.distrimind.ood.database.AuthenticatedP2PMessage;
 import com.distrimind.ood.database.DatabaseEvent;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
-import com.distrimind.util.crypto.AbstractSecureRandom;
-import com.distrimind.util.crypto.EncryptionProfileProvider;
-import com.distrimind.util.crypto.EncryptionSignatureHashDecoder;
-import com.distrimind.util.crypto.EncryptionSignatureHashEncoder;
+import com.distrimind.util.crypto.*;
 import com.distrimind.util.io.*;
 
 import java.io.IOException;
@@ -56,8 +53,8 @@ import java.util.List;
  */
 public class IndirectMessagesDestinedToCentralDatabaseBackup extends DatabaseEvent implements MessageDestinedToCentralDatabaseBackup, SecureExternalizable {
 
-	private static final long MAX_AUTHENTICATED_P2P_MESSAGE_SIZE_IN_BYTES=EncryptionSignatureHashEncoder.getMaximumOutputLengthWhateverParameters(AuthenticatedP2PMessage.MAX_AUTHENTICATED_P2P_MESSAGE_SIZE_IN_BYTES);
-	private static final int SIZE_IN_BYTES_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND =(int)Math.min(MAX_AUTHENTICATED_P2P_MESSAGE_SIZE_IN_BYTES*AuthenticatedP2PMessage.MAX_NUMBER_OF_P2P_MESSAGES_PER_PEER+4, 1<<20);
+	public static final long MAX_AUTHENTICATED_P2P_MESSAGE_SIZE_IN_BYTES= SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE+HybridASymmetricAuthenticatedSignatureType.MAX_HYBRID_ASYMMETRIC_SIGNATURE_SIZE+MessageDigestType.MAX_HASH_LENGTH+AuthenticatedP2PMessage.MAX_AUTHENTICATED_P2P_MESSAGE_SIZE_IN_BYTES+31+SymmetricEncryptionType.MAX_IV_SIZE_IN_BYTES;
+	public static final int SIZE_IN_BYTES_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND =1<<20;//MAX_AUTHENTICATED_P2P_MESSAGE_SIZE_IN_BYTES*AuthenticatedP2PMessage.MAX_NUMBER_OF_P2P_MESSAGES_PER_PEER+4;
 	private DecentralizedValue hostSource;
 	private DecentralizedValue hostDestination;
 	private List<byte[]> encryptedAuthenticatedP2PMessages;

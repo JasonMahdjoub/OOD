@@ -36,10 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database;
 
 import com.distrimind.util.Bits;
-import com.distrimind.util.crypto.AbstractSecureRandom;
-import com.distrimind.util.crypto.EncryptionProfileProvider;
-import com.distrimind.util.crypto.EncryptionSignatureHashDecoder;
-import com.distrimind.util.crypto.EncryptionSignatureHashEncoder;
+import com.distrimind.util.crypto.*;
 import com.distrimind.util.io.*;
 
 import java.io.IOException;
@@ -50,7 +47,7 @@ import java.io.IOException;
  * @since OOD 3.0.0
  */
 public class EncryptionTools {
-	public static final int MAX_ENCRYPTED_ID_SIZE=(int)EncryptionSignatureHashEncoder.getMaximumOutputLengthWhateverParameters(8);
+	public static final int MAX_ENCRYPTED_ID_SIZE= SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE+HybridASymmetricAuthenticatedSignatureType.MAX_HYBRID_ASYMMETRIC_SIGNATURE_SIZE+MessageDigestType.MAX_HASH_LENGTH+SymmetricEncryptionType.MAX_IV_SIZE_IN_BYTES+8+31;
 	public static byte[] encryptID(long id, AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws IOException {
 		try(RandomByteArrayOutputStream out=new RandomByteArrayOutputStream();RandomByteArrayOutputStream out2=new RandomByteArrayOutputStream()) {
 			out.writeLong(id);

@@ -8138,7 +8138,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * @param keys
 	 *            the primary keys values. Must be formatted as follow : {"field1",
 	 *            value1,"field2", value2, etc.}
-	 * @return the corresponding record. Return null if no record have been founded.
+	 * @return the corresponding record. Return null if no record have been found.
 	 * @throws DatabaseException
 	 *             if a Sql problem have occurred.
 	 * @throws FieldDatabaseException
@@ -8159,7 +8159,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * 
 	 * @param keys
 	 *            the primary keys values
-	 * @return the corresponding record. Return null if no record have been founded.
+	 * @return the corresponding record. Return null if no record have been found.
 	 * @throws DatabaseException
 	 *             if a Sql problem have occurred.
 	 * @throws FieldDatabaseException
