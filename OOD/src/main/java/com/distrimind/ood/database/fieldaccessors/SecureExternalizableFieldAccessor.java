@@ -345,7 +345,7 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 			if (object == null && isNotNull())
 				throw new DatabaseException("The field should not be null");
 
-			dos.writeObject(object, true, (int)limit);
+			dos.writeObject(object, !isAlwaysNotNull(), (int)limit);
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -355,7 +355,7 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 			long limit=getLimit();
 			if (limit==0 || limit>Integer.MAX_VALUE)
 				limit=Integer.MAX_VALUE;
-			Object o=ois.readObject(true, (int)limit);
+			Object o=ois.readObject(!isAlwaysNotNull(), (int)limit);
 			if (o != null && !field.getType().isAssignableFrom(o.getClass()))
 				throw new DatabaseException(
 						"Incompatible class : " + o.getClass() + " (expected=" + field.getType() + ")");
