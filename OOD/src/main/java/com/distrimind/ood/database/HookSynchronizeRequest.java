@@ -40,15 +40,14 @@ public class HookSynchronizeRequest extends AbstractHookRequest {
 
 	@Override
 	public void writeExternalWithoutSignature(SecuredObjectOutputStream out) throws IOException {
-		out.writeMap(packagesToSynchronize, false, MAX_PACKAGE_ENCODING_SIZE_IN_BYTES);
+		out.writeMap(packagesToSynchronize, false, MAX_PACKAGE_ENCODING_SIZE_IN_BYTES, false, false);
 		super.writeExternalWithoutSignature(out);
 	}
 
 	@Override
 	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
 		try {
-			//noinspection unchecked
-			packagesToSynchronize=(Map<String, Boolean>)in.readMap(false, MAX_PACKAGE_ENCODING_SIZE_IN_BYTES);
+			packagesToSynchronize=in.readMap(false, MAX_PACKAGE_ENCODING_SIZE_IN_BYTES, false, false, String.class, Boolean.class);
 			if (packagesToSynchronize.size()==0)
 				throw new MessageExternalizationException(Integrity.FAIL);
 		}

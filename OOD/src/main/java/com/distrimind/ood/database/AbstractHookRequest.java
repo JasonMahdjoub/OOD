@@ -94,7 +94,7 @@ public abstract class AbstractHookRequest extends DatabaseEvent implements Authe
 		out.writeLong(messageID);
 		out.writeObject(hostSource, false);
 		out.writeObject(hostDestination, false);
-		out.writeCollection(concernedPeers, false, MAX_PEERS_DESCRIPTION_SIZE_IN_BYTES);
+		out.writeCollection(concernedPeers, false, MAX_PEERS_DESCRIPTION_SIZE_IN_BYTES, false);
 		out.writeShort(encryptionProfileIdentifier);
 	}
 
@@ -125,8 +125,7 @@ public abstract class AbstractHookRequest extends DatabaseEvent implements Authe
 		if (hostSource.equals(hostDestination))
 			throw new MessageExternalizationException(Integrity.FAIL);
 		try {
-			//noinspection unchecked
-			concernedPeers =(Set<DecentralizedValue>)in.readCollection(false, MAX_PEERS_DESCRIPTION_SIZE_IN_BYTES);
+			concernedPeers =in.readCollection(false,MAX_PEERS_DESCRIPTION_SIZE_IN_BYTES, false);
 		}
 		catch (ClassCastException e)
 		{

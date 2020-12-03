@@ -123,14 +123,14 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 	@Override
 	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
 		out.writeObject(hostDestination, false);
-		out.writeUnsignedShort(this.lastValidatedAndEncryptedIDsPerHost.size());
+		out.writeUnsignedInt16Bits(this.lastValidatedAndEncryptedIDsPerHost.size());
 		for (Map.Entry<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> e : lastValidatedAndEncryptedIDsPerHost.entrySet())
 		{
 			out.writeObject(e.getKey(), false);
 			out.writeBytesArray(e.getValue().getLastValidatedLocalID(), true, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
 			out.writeBytesArray(e.getValue().getLastValidatedDistantID(), true, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
 		}
-		out.writeUnsignedShort(this.lastValidatedTransactionsUTCForDestinationHost.size());
+		out.writeUnsignedInt16Bits(this.lastValidatedTransactionsUTCForDestinationHost.size());
 		for (Map.Entry<String, Long> e : lastValidatedTransactionsUTCForDestinationHost.entrySet())
 		{
 			out.writeString(e.getKey(), false, SerializationTools.MAX_CLASS_LENGTH);
@@ -165,5 +165,10 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 			this.lastValidatedTransactionsUTCForDestinationHost.put(packageString, utc);
 		}
 
+	}
+
+	@Override
+	public boolean cannotBeMerged() {
+		return true;
 	}
 }

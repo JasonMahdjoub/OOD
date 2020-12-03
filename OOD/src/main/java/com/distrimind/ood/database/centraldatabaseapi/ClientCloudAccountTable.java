@@ -37,10 +37,12 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.Table;
-import com.distrimind.ood.database.annotations.AutoPrimaryKey;
 import com.distrimind.ood.database.annotations.Field;
+import com.distrimind.ood.database.annotations.PrimaryKey;
+import com.distrimind.ood.database.annotations.RandomPrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.crypto.IASymmetricPublicKey;
 import com.distrimind.util.io.SecureExternalizable;
 
 /**
@@ -58,15 +60,15 @@ public class ClientCloudAccountTable extends Table<ClientCloudAccountTable.Recor
 
 
 		@SuppressWarnings("unused")
-		@AutoPrimaryKey
+		@PrimaryKey
 		private long accountID;
 
 		@Field
 		private short maxClients;
 
 
-		@Field(limit = MAX_EXTERNAL_ACCOUNT_ID_SIZE_IN_BYTES)
-		private SecureExternalizable externalAccountID;
+		@Field(limit = IASymmetricPublicKey.MAX_SIZE_IN_BYTES_OF_KEY)
+		private IASymmetricPublicKey externalAccountID;
 
 
 		@SuppressWarnings("unused")

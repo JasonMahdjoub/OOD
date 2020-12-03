@@ -687,6 +687,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		private AbstractSecureRandom random=null;
 		private EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup =null;
 		private EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedMessages=null;
+		private SecureExternalizable certificate;
 		private long minFilePartDurationBeforeBecomingFinalFilePart=Long.MAX_VALUE;
 
 		DatabaseSynchronizer() {
@@ -1737,7 +1738,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					});
 
 			try {
-				addNewDatabaseEvent(new DistantBackupCenterConnexionInitialisation(getLocalHostID(), lastValidatedDistantIDs, random, encryptionProfileProviderForCentralDatabaseBackup));
+				addNewDatabaseEvent(new DistantBackupCenterConnexionInitialisation(getLocalHostID(), lastValidatedDistantIDs, random, encryptionProfileProviderForCentralDatabaseBackup, certificate));
 				for (IndirectMessagesDestinedToCentralDatabaseBackup i : getDatabaseHooksTable().getLocalDatabaseHost().getAuthenticatedMessagesQueueToSendToCentralDatabaseBackup(random, encryptionProfileProviderForCentralDatabaseBackup))
 				{
 					addNewDatabaseEvent(i);
@@ -1746,12 +1747,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw DatabaseException.getDatabaseException(e);
 			}
 		}
-		public void initConnexionWithDistantBackupCenter(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider, EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedMessages) throws DatabaseException {
+		public void initConnexionWithDistantBackupCenter(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider, EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedMessages, SecureExternalizable certificate) throws DatabaseException {
 			if (random==null)
 				throw new NullPointerException();
 			if (encryptionProfileProvider==null)
 				throw new NullPointerException();
 			if (protectedEncryptionProfileProviderForAuthenticatedMessages==null)
+				throw new NullPointerException();
+			if (certificate==null)
 				throw new NullPointerException();
 			lockWrite();
 			try
@@ -1764,6 +1767,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					this.encryptionProfileProviderForCentralDatabaseBackup =encryptionProfileProvider;
 					this.protectedEncryptionProfileProviderForAuthenticatedMessages=protectedEncryptionProfileProviderForAuthenticatedMessages;
 					centralBackupInitialized=true;
+					this.certificate=certificate;
 
 
 					initConnexionWithDistantBackupCenter();

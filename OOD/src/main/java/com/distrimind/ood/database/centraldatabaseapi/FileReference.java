@@ -56,6 +56,8 @@ public interface FileReference extends SecureExternalizable {
 
 	long lengthInBytes();
 
+	boolean delete();
+
 	RandomInputStream getRandomInputStream() throws IOException;
 
 	RandomOutputStream getRandomOutputStream() throws IOException;
