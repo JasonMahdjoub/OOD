@@ -42,6 +42,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
 import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.data_buffers.WrappedData;
 import com.distrimind.util.io.RandomInputStream;
 import com.distrimind.util.io.RandomOutputStream;
 
@@ -135,7 +136,13 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 			return res;
 		}
 	}
-	
+	public static BigDecimal getBigDecimalValue(WrappedData wd)
+	{
+		if (wd==null)
+			return null;
+		else
+			return getBigDecimalValue(wd.getBytes());
+	}
 	public static BigDecimal getBigDecimalValue(byte[] value)
 	{
 		if (value==null)
