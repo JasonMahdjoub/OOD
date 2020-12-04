@@ -35,9 +35,7 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.ood.database.DatabaseRecord;
-import com.distrimind.ood.database.EncryptedDatabaseBackupMetaDataPerFile;
-import com.distrimind.ood.database.Table;
+import com.distrimind.ood.database.*;
 import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.annotations.ForeignKey;
 import com.distrimind.ood.database.annotations.NotNull;
@@ -46,6 +44,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.messages.EncryptedBackupPartComingFromCentralDatabaseBackup;
 import com.distrimind.ood.database.messages.EncryptedBackupPartDestinedToCentralDatabaseBackup;
 import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.io.Integrity;
 import com.distrimind.util.io.RandomInputStream;
 
 import java.io.IOException;
@@ -86,7 +85,7 @@ public class EncryptedBackupPartReferenceTable extends Table<EncryptedBackupPart
 
 		}
 
-		public Record(DatabaseBackupPerClientTable.Record database, FileReference fileReference, EncryptedBackupPartDestinedToCentralDatabaseBackup message) throws IOException {
+		private Record(DatabaseBackupPerClientTable.Record database, FileReference fileReference, EncryptedBackupPartDestinedToCentralDatabaseBackup message) throws IOException {
 			if (database==null)
 				throw new NullPointerException();
 			if (fileReference==null)
@@ -128,5 +127,42 @@ public class EncryptedBackupPartReferenceTable extends Table<EncryptedBackupPart
 		public EncryptedDatabaseBackupMetaDataPerFile getMetaData() {
 			return metaData;
 		}
+	}
+	public Integrity addEncryptedBackupPartReference(DatabaseBackupPerClientTable.Record database, FileReference fileReference, EncryptedBackupPartDestinedToCentralDatabaseBackup message) throws DatabaseException {
+		return getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
+			@Override
+			public Integrity run() throws Exception {
+				Long l=database.getLastFileBackupPartUTC();
+				if (l!=null && l>=message.getMetaData().getFileTimestampUTC())
+					return Integrity.FAIL;
+				Record r=new Record(database, fileReference, message);
+				try {
+					addRecord(r);
+					getDatabaseWrapper().getTableInstance(DatabaseBackupPerClientTable.class).updateRecord(database, "lastFileBackupPartUTC", message.getMetaData().getFileTimestampUTC());
+					return Integrity.OK;
+				}
+				catch (DatabaseException e)
+				{
+					fileReference.delete();
+					throw e;
+				}
+			}
+
+			@Override
+			public TransactionIsolation getTransactionIsolation() {
+				return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
+			}
+
+			@Override
+			public boolean doesWriteData() {
+				return true;
+			}
+
+			@Override
+			public void initOrReset() throws Exception {
+
+			}
+		});
+
 	}
 }

@@ -63,6 +63,9 @@ public class DatabaseBackupPerClientTable extends Table<DatabaseBackupPerClientT
 		@Field(limit= SerializationTools.MAX_CLASS_LENGTH)
 		private String packageString;
 
+		@Field
+		Long lastFileBackupPartUTC=null;
+
 		@SuppressWarnings("unused")
 		private Record()
 		{
@@ -87,6 +90,11 @@ public class DatabaseBackupPerClientTable extends Table<DatabaseBackupPerClientT
 		public String getPackageString() {
 			return packageString;
 		}
+
+		public Long getLastFileBackupPartUTC() {
+			return lastFileBackupPartUTC;
+		}
+
 	}
 
 }
