@@ -46,6 +46,7 @@ import com.distrimind.util.io.SecureExternalizable;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -104,49 +105,70 @@ public abstract class CentralDatabaseBackupReceiver {
 			disconnect();
 			return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
 		}
-		List<ClientCloudAccountTable.Record> l=clientCloudAccountTable.getRecordsWithAllFields("externalAccountID", certificate.getCertifiedAccountPublicKey());
-		this.clientCloud=null;
-		if (l.size()>0)
-			this.clientCloud=l.iterator().next();
+		return clientCloudAccountTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
+			@Override
+			public Integrity run() throws Exception {
+				List<ClientCloudAccountTable.Record> l=clientCloudAccountTable.getRecordsWithAllFields("externalAccountID", certificate.getCertifiedAccountPublicKey());
+				CentralDatabaseBackupReceiver.this.clientCloud=null;
+				if (l.size()>0)
+					CentralDatabaseBackupReceiver.this.clientCloud=l.iterator().next();
 
-		if (this.clientCloud==null || !isValidCertificate(certificate))
-		{
-			disconnect();
-			return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
-		}
-		else {
-			this.connectedClientID = initialMessage.getHostSource();
-			this.connectedClientRecord=clientTable.getRecord("clientID", initialMessage.getHostSource());
-			if (this.connectedClientRecord==null) {
-				if (clientTable.getRecordsNumber("account=%a", "a", clientCloud)>=clientCloud.getMaxClients())
-					return Integrity.FAIL;
-				try {
-					connectedClientRecord = clientTable.addRecord(new ClientTable.Record(connectedClientID, this.clientCloud));
-				}
-				catch (ConstraintsNotRespectedDatabaseException e)
+				if (CentralDatabaseBackupReceiver.this.clientCloud==null || !isValidCertificate(certificate))
 				{
 					disconnect();
 					return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
 				}
-			}
-			else
-			{
-				if (this.connectedClientRecord.getAccount().getAccountID()!=clientCloud.getAccountID()) {
-					disconnect();
-					return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
+				else {
+					CentralDatabaseBackupReceiver.this.connectedClientID = initialMessage.getHostSource();
+					CentralDatabaseBackupReceiver.this.connectedClientRecord=clientTable.getRecord("clientID", initialMessage.getHostSource());
+					if (CentralDatabaseBackupReceiver.this.connectedClientRecord==null) {
+						if (clientTable.getRecordsNumber("account=%a", "a", clientCloud)>=clientCloud.getMaxClients())
+							return Integrity.FAIL;
+						try {
+							connectedClientRecord = clientTable.addRecord(new ClientTable.Record(connectedClientID, CentralDatabaseBackupReceiver.this.clientCloud));
+						}
+						catch (ConstraintsNotRespectedDatabaseException e)
+						{
+							disconnect();
+							return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
+						}
+					}
+					else
+					{
+						if (CentralDatabaseBackupReceiver.this.connectedClientRecord.getAccount().getAccountID()!=clientCloud.getAccountID()) {
+							disconnect();
+							return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
+						}
+					}
+					try {
+						connectedClientsTable.addRecord(new ConnectedClientsTable.Record(connectedClientID));
+					}
+					catch (ConstraintsNotRespectedDatabaseException ignored)
+					{
+
+					}
+					CentralDatabaseBackupReceiver.this.connected=true;
+
+					return received(initialMessage);
 				}
 			}
-			try {
-				connectedClientsTable.addRecord(new ConnectedClientsTable.Record(connectedClientID));
+
+			@Override
+			public TransactionIsolation getTransactionIsolation() {
+				return TransactionIsolation.TRANSACTION_SERIALIZABLE;
 			}
-			catch (ConstraintsNotRespectedDatabaseException ignored)
-			{
+
+			@Override
+			public boolean doesWriteData() {
+				return true;
+			}
+
+			@Override
+			public void initOrReset() throws Exception {
 
 			}
-			this.connected=true;
+		});
 
-			return received(initialMessage);
-		}
 	}
 
 
@@ -178,7 +200,40 @@ public abstract class CentralDatabaseBackupReceiver {
 
 	}
 	private Integrity received(IndirectMessagesDestinedToCentralDatabaseBackup message) throws DatabaseException {
-		return clientTable.addEncryptedAuthenticatedMessage(message, connectedClientRecord );
+		return clientTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
+			@Override
+			public Integrity run() throws Exception {
+				ClientTable.Record r=clientTable.getRecord("clientID", m.getDestination());
+				if (r==null)
+					return Integrity.OK;
+				if (r.getAccount().getAccountID()==connectedClientRecord.getAccount().getAccountID())
+				{
+					List<byte[]> encryptedAuthenticatedMessagesToSend=r.getEncryptedAuthenticatedMessagesToSend();
+					if (encryptedAuthenticatedMessagesToSend==null)
+						encryptedAuthenticatedMessagesToSend=new ArrayList<>();
+					encryptedAuthenticatedMessagesToSend.addAll(message.getEncryptedAuthenticatedP2PMessages());
+					clientTable.updateRecord(r, "encryptedAuthenticatedMessagesToSend", encryptedAuthenticatedMessagesToSend);
+					return Integrity.OK;
+				}
+				else
+					return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
+			}
+
+			@Override
+			public TransactionIsolation getTransactionIsolation() {
+				return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
+			}
+
+			@Override
+			public boolean doesWriteData() {
+				return true;
+			}
+
+			@Override
+			public void initOrReset() {
+
+			}
+		});
 	}
 	public abstract FileReference getFileReference(EncryptedDatabaseBackupMetaDataPerFile encryptedDatabaseBackupMetaDataPerFile);
 	private Integrity received(EncryptedBackupPartDestinedToCentralDatabaseBackup message) throws DatabaseException{
@@ -258,18 +313,7 @@ public abstract class CentralDatabaseBackupReceiver {
 		});
 
 	}
-	private DatabaseBackupPerClientTable addHost(DecentralizedValue host)
-	{
-		DatabaseBackupPerClientTable res=new DatabaseBackupPerClientTable(host);
-		databaseBackup.put(host, res);
-		return res;
-	}
-	private void disconnect(DecentralizedValue host)
-	{
-		DatabaseBackupPerClientTable m=databaseBackup.get(host);
-		if (m!=null)
-			m.connected=false;
-	}
+
 	private byte[] getLastValidatedAndEncryptedDistantID(ClientTable.Record client, ClientTable.Record distantClient) throws DatabaseException {
 		LastValidatedDistantIDPerClientTable.Record r2=lastValidatedDistantIDPerClientTable.getRecord("client", client, "distantClient", distantClient);
 		if (r2==null)
@@ -278,28 +322,49 @@ public abstract class CentralDatabaseBackupReceiver {
 			return r2.getLastValidatedAndEncryptedDistantID();
 	}
 	private Integrity received(DistantBackupCenterConnexionInitialisation message) throws DatabaseException {
-		Integrity i=lastValidatedDistantIDPerClientTable.received(message, connectedClientRecord);
-		if (i!=Integrity.OK)
-			return i;
-
-		Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> lastValidatedAndEncryptedIDsPerHost=new HashMap<>();
-		Map<String, Long> lastValidatedTransactionsUTCForDestinationHost=new HashMap<>();
-
-		for (ClientTable.Record r : clientTable.getRecords("account=%a", "a", clientCloud))
-		{
-			if (r.getClientID().equals(connectedClientID))
-				continue;
-			lastValidatedAndEncryptedIDsPerHost.put(r.getClientID(), new LastValidatedLocalAndDistantEncryptedID(getLastValidatedAndEncryptedDistantID(r, connectedClientRecord), r.getLastValidatedAndEncryptedID()));
-		}
-		databaseBackupPerClientTable.getRecords(new Filter<DatabaseBackupPerClientTable.Record>() {
+		return clientTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
 			@Override
-			public boolean nextRecord(DatabaseBackupPerClientTable.Record _record) throws DatabaseException {
-				lastValidatedTransactionsUTCForDestinationHost.put(_record.getPackageString(), _record.getLastFileBackupPartUTC());
-				return false;
+			public Integrity run() throws Exception {
+				Integrity i=lastValidatedDistantIDPerClientTable.received(message, connectedClientRecord);
+				if (i!=Integrity.OK)
+					return i;
+
+				Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> lastValidatedAndEncryptedIDsPerHost=new HashMap<>();
+				Map<String, Long> lastValidatedTransactionsUTCForDestinationHost=new HashMap<>();
+
+				for (ClientTable.Record r : clientTable.getRecords("account=%a", "a", clientCloud))
+				{
+					if (r.getClientID().equals(connectedClientID))
+						continue;
+					lastValidatedAndEncryptedIDsPerHost.put(r.getClientID(), new LastValidatedLocalAndDistantEncryptedID(getLastValidatedAndEncryptedDistantID(r, connectedClientRecord), r.getLastValidatedAndEncryptedID()));
+				}
+				databaseBackupPerClientTable.getRecords(new Filter<DatabaseBackupPerClientTable.Record>() {
+					@Override
+					public boolean nextRecord(DatabaseBackupPerClientTable.Record _record) throws DatabaseException {
+						lastValidatedTransactionsUTCForDestinationHost.put(_record.getPackageString(), _record.getLastFileBackupPartUTC());
+						return false;
+					}
+				},"client=%c", "c", connectedClientRecord);
+				sendMessageFromCentralDatabaseBackup(new InitialMessageComingFromCentralBackup(message.getHostSource(), lastValidatedAndEncryptedIDsPerHost, lastValidatedTransactionsUTCForDestinationHost));
+				return Integrity.OK;
 			}
-		},"client=%c", "c", connectedClientRecord);
-		sendMessageFromCentralDatabaseBackup(new InitialMessageComingFromCentralBackup(message.getHostSource(), lastValidatedAndEncryptedIDsPerHost, lastValidatedTransactionsUTCForDestinationHost));
-		return Integrity.OK;
+
+			@Override
+			public TransactionIsolation getTransactionIsolation() {
+				return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+			}
+
+			@Override
+			public boolean doesWriteData() {
+				return true;
+			}
+
+			@Override
+			public void initOrReset() throws Exception {
+
+			}
+		});
+
 	}
 
 	private void received(AskForDatabaseBackupPartDestinedToCentralDatabaseBackup message) throws FileNotFoundException, DatabaseException {

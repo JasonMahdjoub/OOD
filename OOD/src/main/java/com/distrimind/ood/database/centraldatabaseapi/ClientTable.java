@@ -102,40 +102,5 @@ public class ClientTable extends Table<ClientTable.Record> {
 		}
 	}
 
-	public Integrity addEncryptedAuthenticatedMessage(IndirectMessagesDestinedToCentralDatabaseBackup m, Record sourcePeer) throws DatabaseException {
-		return getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
-			@Override
-			public Integrity run() throws Exception {
-				Record r=getRecord("clientID", m.getDestination());
-				if (r==null)
-					return Integrity.OK;
-				if (r.getAccount().getAccountID()==sourcePeer.getAccount().getAccountID())
-				{
-					if (r.encryptedAuthenticatedMessagesToSend==null)
-						r.encryptedAuthenticatedMessagesToSend=new ArrayList<>();
-					r.encryptedAuthenticatedMessagesToSend.addAll(m.getEncryptedAuthenticatedP2PMessages());
-					updateRecord(r, "encryptedAuthenticatedMessagesToSend", r.encryptedAuthenticatedMessagesToSend);
-					return Integrity.OK;
-				}
-				else
-					return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
-			}
 
-			@Override
-			public TransactionIsolation getTransactionIsolation() {
-				return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
-			}
-
-			@Override
-			public boolean doesWriteData() {
-				return true;
-			}
-
-			@Override
-			public void initOrReset() {
-
-			}
-		});
-
-	}
 }
