@@ -1754,6 +1754,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new NullPointerException();
 			if (protectedEncryptionProfileProviderForAuthenticatedMessages==null)
 				throw new NullPointerException();
+			if (certificate==null)
+				throw new NullPointerException();
 			lockWrite();
 			try
 			{

@@ -64,6 +64,8 @@ public abstract class AuthenticatedMessageDestinedToCentralDatabaseBackup extend
 	protected AuthenticatedMessageDestinedToCentralDatabaseBackup(DecentralizedValue hostSource, CentralDatabaseBackupCertificate certificate) {
 		if (hostSource==null)
 			throw new NullPointerException();
+		if (certificate==null)
+			throw new NullPointerException();
 		this.hostSource = hostSource;
 		this.encryptionProfileIdentifier = -1;
 		this.certificate = certificate;
@@ -94,13 +96,13 @@ public abstract class AuthenticatedMessageDestinedToCentralDatabaseBackup extend
 	public void writeExternalWithoutSignature(SecuredObjectOutputStream out) throws IOException {
 		out.writeObject(hostSource, false);
 		out.writeShort(encryptionProfileIdentifier);
-		out.writeObject(certificate, true);
+		out.writeObject(certificate, false);
 	}
 
 	protected void readExternalWithoutSignature(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
 		hostSource=in.readObject(false, DecentralizedValue.class );
 		encryptionProfileIdentifier=in.readShort();
-		certificate=in.readObject(true);
+		certificate=in.readObject(false);
 	}
 
 	@Override
@@ -111,22 +113,19 @@ public abstract class AuthenticatedMessageDestinedToCentralDatabaseBackup extend
 	@Override
 	public int getInternalSerializedSize() {
 		int res= SerializationTools.getInternalSize(hostSource, 0)+2+SerializationTools.getInternalSize(certificate);
-		if (certificate!=null)
-			res+=SerializationTools.getInternalSize(asymmetricSignature, ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE);
+		res+=SerializationTools.getInternalSize(asymmetricSignature, ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE);
 		return res;
 	}
 
 	@Override
 	public final void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
 		readExternalWithoutSignature(in);
-		if (certificate!=null)
-			asymmetricSignature=in.readBytesArray(false,  ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE);
+		asymmetricSignature=in.readBytesArray(false,  ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE);
 	}
 
 	@Override
 	public void writeExternalSignature(SecuredObjectOutputStream out) throws IOException {
-		if (certificate!=null)
-			out.writeBytesArray(asymmetricSignature, false, ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE);
+		out.writeBytesArray(asymmetricSignature, false, ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE);
 
 	}
 
