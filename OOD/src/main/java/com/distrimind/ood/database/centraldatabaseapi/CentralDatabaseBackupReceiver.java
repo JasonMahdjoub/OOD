@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 import com.distrimind.ood.database.DatabaseWrapper;
+import com.distrimind.ood.database.exceptions.ConstraintsNotRespectedDatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.messages.*;
 import com.distrimind.util.DecentralizedValue;
@@ -78,78 +79,60 @@ public abstract class CentralDatabaseBackupReceiver {
 	{
 		return connected;
 	}
-	public Integrity init(DecentralizedValue connectedClientID) throws DatabaseException {
-		return init(connectedClientID, (ClientCloudAccountTable.Record)null);
-	}
-	public Integrity init(DecentralizedValue connectedClientID, long clientCloudID) throws DatabaseException {
-		ClientCloudAccountTable.Record clientCloud=clientCloudAccountTable.getRecord("accountID", clientCloudID);
-		return initPrivate(connectedClientID, clientCloud);
-	}
-	private Integrity initPrivate(DecentralizedValue connectedClientID, ClientCloudAccountTable.Record clientCloud) throws DatabaseException {
-		if (clientCloud==null)
+
+	protected abstract boolean isValidCertificate(CentralDatabaseBackupCertificate certificate);
+
+	public Integrity init(DistantBackupCenterConnexionInitialisation initialMessage) throws DatabaseException {
+		CentralDatabaseBackupCertificate certificate=initialMessage.getCertificate();
+		if (certificate==null) {
+			disconnect();
+			return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
+		}
+		List<ClientCloudAccountTable.Record> l=clientCloudAccountTable.getRecordsWithAllFields("externalAccountID", certificate.getCertifiedAccountPublicKey());
+		this.clientCloud=null;
+		if (l.size()>0)
+			this.clientCloud=l.iterator().next();
+
+		if (this.clientCloud==null || !isValidCertificate(certificate))
 		{
-			Integrity i=init(connectedClientID, (ClientCloudAccountTable.Record)null);
-			if (connectedClientRecord!=null) {
-				disconnect();
-				return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
+			disconnect();
+			return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
+		}
+		else {
+			this.connectedClientID = initialMessage.getHostSource();
+			this.connectedClientRecord=clientTable.getRecord("clientID", initialMessage.getHostSource());
+			if (this.connectedClientRecord==null) {
+				if (clientTable.getRecordsNumber("account=%a", "a", clientCloud)>=clientCloud.getMaxClients())
+					return Integrity.FAIL;
+				try {
+					connectedClientRecord = clientTable.addRecord(new ClientTable.Record(connectedClientID, this.clientCloud));
+				}
+				catch (ConstraintsNotRespectedDatabaseException e)
+				{
+					disconnect();
+					return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
+				}
 			}
 			else
-				return i;
+			{
+				if (this.connectedClientRecord.getAccount().getAccountID()!=clientCloud.getAccountID()) {
+					disconnect();
+					return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
+				}
+			}
+			this.connected=true;
+			received(initialMessage);
+			return Integrity.OK;
 		}
-		else
-			return init(connectedClientID, clientCloud);
-	}
-	public Integrity init(DecentralizedValue connectedClientID, SecureExternalizable clientCloudExternalID) throws DatabaseException {
-		List<ClientCloudAccountTable.Record> l=clientCloudAccountTable.getRecordsWithAllFields("externalAccountID", clientCloudExternalID);
-		ClientCloudAccountTable.Record clientCloud=null;
-		if (l.size()>0)
-			clientCloud=l.iterator().next();
-		return initPrivate(connectedClientID, clientCloud);
-
-	}
-	public Integrity init(DecentralizedValue connectedClientID, ClientCloudAccountTable.Record clientCloud) throws DatabaseException {
-		if (connectedClientID==null)
-			throw new NullPointerException();
-		this.connectedClientID = connectedClientID;
-
-		this.connectedClientRecord=clientTable.getRecord("clientID", connectedClientID);
-		if (this.connectedClientRecord!=null)
-		{
-			if (clientCloud==null)
-				clientCloud=this.connectedClientRecord.getAccount();
-			else if (this.connectedClientRecord.getAccount().getAccountID()!=clientCloud.getAccountID()))
-				return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
-		}
-		this.clientCloud=clientCloud;
-		this.connected=true;
-		return Integrity.OK;
 	}
 
-	public abstract short getDefaultMaxClientsPerAccount();
-
-	protected void createAccount() throws DatabaseException {
-		assert clientCloud==null;
-		clientCloud=clientCloudAccountTable.addRecord(new ClientCloudAccountTable.Record(getDefaultMaxClientsPerAccount()));
-	}
-	protected void createClient() throws DatabaseException {
-		assert connectedClientRecord==null;
-		assert clientCloud!=null;
-		connectedClientRecord=clientTable.addRecord(new ClientTable.Record(connectedClientID, clientCloud));
-
-	}
-	private void checkCreationOfClient() throws DatabaseException {
-		if (clientCloud==null)
-			createAccount();
-		if (connectedClientRecord==null)
-			createClient();
-	}
 
 	public Integrity received(MessageDestinedToCentralDatabaseBackup message) throws DatabaseException, IOException {
 		if (!connected)
 			return Integrity.FAIL;
 		if (!message.getHostSource().equals(connectedClientID))
 			return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
-		checkCreationOfClient();
+
 		if (message instanceof EncryptedBackupPartDestinedToCentralDatabaseBackup)
 			return received((EncryptedBackupPartDestinedToCentralDatabaseBackup)message);
 		else if (message instanceof AskForDatabaseBackupPartDestinedToCentralDatabaseBackup)

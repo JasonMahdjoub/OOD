@@ -37,13 +37,10 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.Table;
-import com.distrimind.ood.database.annotations.Field;
-import com.distrimind.ood.database.annotations.PrimaryKey;
-import com.distrimind.ood.database.annotations.RandomPrimaryKey;
+import com.distrimind.ood.database.annotations.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.crypto.IASymmetricPublicKey;
-import com.distrimind.util.io.SecureExternalizable;
 
 /**
  * @author Jason Mahdjoub
@@ -60,7 +57,7 @@ public class ClientCloudAccountTable extends Table<ClientCloudAccountTable.Recor
 
 
 		@SuppressWarnings("unused")
-		@PrimaryKey
+		@AutoPrimaryKey
 		private long accountID;
 
 		@Field
@@ -68,6 +65,7 @@ public class ClientCloudAccountTable extends Table<ClientCloudAccountTable.Recor
 
 
 		@Field(limit = IASymmetricPublicKey.MAX_SIZE_IN_BYTES_OF_KEY)
+		@Unique
 		private IASymmetricPublicKey externalAccountID;
 
 
@@ -77,7 +75,7 @@ public class ClientCloudAccountTable extends Table<ClientCloudAccountTable.Recor
 		public Record(short maxClients) {
 			this(maxClients, null);
 		}
-		public Record(short maxClients, SecureExternalizable externalAccountID) {
+		public Record(short maxClients, IASymmetricPublicKey externalAccountID) {
 			if (maxClients<1)
 				throw new IllegalArgumentException();
 			this.externalAccountID = externalAccountID;
@@ -88,11 +86,11 @@ public class ClientCloudAccountTable extends Table<ClientCloudAccountTable.Recor
 			return accountID;
 		}
 
-		public SecureExternalizable getExternalAccountID() {
+		public IASymmetricPublicKey getExternalAccountID() {
 			return externalAccountID;
 		}
 
-		public void setExternalAccountID(SecureExternalizable externalAccountID) {
+		public void setExternalAccountID(IASymmetricPublicKey externalAccountID) {
 			this.externalAccountID = externalAccountID;
 		}
 

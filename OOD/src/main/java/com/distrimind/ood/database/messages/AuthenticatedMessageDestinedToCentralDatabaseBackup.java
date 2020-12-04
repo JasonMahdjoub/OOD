@@ -129,4 +129,8 @@ public abstract class AuthenticatedMessageDestinedToCentralDatabaseBackup extend
 			out.writeBytesArray(asymmetricSignature, false, ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE);
 
 	}
+
+	public CentralDatabaseBackupCertificate getCertificate() {
+		return certificate;
+	}
 }
