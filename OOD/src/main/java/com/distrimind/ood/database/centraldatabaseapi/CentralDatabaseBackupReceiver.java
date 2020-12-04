@@ -42,6 +42,7 @@ import com.distrimind.ood.database.messages.*;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.Reference;
 import com.distrimind.util.io.Integrity;
+import com.distrimind.util.io.MessageExternalizationException;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -119,7 +120,13 @@ public abstract class CentralDatabaseBackupReceiver {
 				}
 				else {
 					CentralDatabaseBackupReceiver.this.connectedClientID = initialMessage.getHostSource();
-					CentralDatabaseBackupReceiver.this.connectedClientRecord=getClientRecord(initialMessage.getHostSource());
+					try {
+						CentralDatabaseBackupReceiver.this.connectedClientRecord = getClientRecord(initialMessage.getHostSource());
+					}
+					catch (MessageExternalizationException e)
+					{
+						return e.getIntegrity();
+					}
 					if (CentralDatabaseBackupReceiver.this.connectedClientRecord==null) {
 						if (clientTable.getRecordsNumber("account=%a", "a", clientCloud)>=clientCloud.getMaxClients())
 							return Integrity.FAIL;
@@ -205,7 +212,14 @@ public abstract class CentralDatabaseBackupReceiver {
 		return clientTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
 			@Override
 			public Integrity run() throws Exception {
-				ClientTable.Record r=getClientRecord(message.getDestination());
+				ClientTable.Record r;
+				try {
+					r = getClientRecord(message.getDestination());
+				}
+				catch (MessageExternalizationException e)
+				{
+					return e.getIntegrity();
+				}
 				if (r==null)
 					return Integrity.OK;
 				if (r.getAccount().getAccountID()==connectedClientRecord.getAccount().getAccountID())
@@ -411,11 +425,17 @@ public abstract class CentralDatabaseBackupReceiver {
 		return databaseBackupPerClientTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
 			@Override
 			public Integrity run() throws Exception {
-				ClientTable.Record channelHost=getClientRecord(message.getChannelHost());
+				ClientTable.Record channelHost;
+				try {
+					channelHost = getClientRecord(message.getChannelHost());
+				}
+				catch (MessageExternalizationException e)
+				{
+					return e.getIntegrity();
+				}
 				if (channelHost==null)
 					return Integrity.OK;
-				else if (channelHost.getAccount().getAccountID()!=connectedClientRecord.getAccount().getAccountID())
-					return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
+
 				DatabaseBackupPerClientTable.Record r=getDatabaseBackupPerClientRecord(channelHost, message.getPackageString());
 				if (r!=null) {
 					EncryptedBackupPartReferenceTable.Record e=getBackupMetaDataPerFile(r, message.getFileCoordinate());
@@ -442,10 +462,16 @@ public abstract class CentralDatabaseBackupReceiver {
 		});
 
 	}
-	private ClientTable.Record getClientRecord(DecentralizedValue clientID) throws DatabaseException {
+	private ClientTable.Record getClientRecord(DecentralizedValue clientID) throws DatabaseException, MessageExternalizationException {
 		if (clientID==null)
 			throw new NullPointerException();
-		return clientTable.getRecord("clientID", clientID);
+		ClientTable.Record r= clientTable.getRecord("clientID", clientID);
+		if (r==null)
+			return null;
+		if (connectedClientRecord!=null && r.getAccount().getAccountID()!=connectedClientRecord.getAccount().getAccountID())
+			throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN);
+		return r;
+
 	}
 
 	private DatabaseBackupPerClientTable.Record getDatabaseBackupPerClientRecord(ClientTable.Record client, String packageString) throws DatabaseException {
@@ -459,11 +485,17 @@ public abstract class CentralDatabaseBackupReceiver {
 		return databaseBackupPerClientTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
 			@Override
 			public Integrity run() throws Exception {
-				ClientTable.Record channelHost=getClientRecord(message.getChannelHost());
+				ClientTable.Record channelHost;
+				try {
+					channelHost = getClientRecord(message.getChannelHost());
+				}
+				catch (MessageExternalizationException e)
+				{
+					return e.getIntegrity();
+				}
 				if (channelHost==null)
 					return Integrity.OK;
-				else if (channelHost.getAccount().getAccountID()!=connectedClientRecord.getAccount().getAccountID())
-					return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
+
 				DatabaseBackupPerClientTable.Record r=getDatabaseBackupPerClientRecord(channelHost, message.getPackageString());
 				if (r!=null) {
 					EncryptedBackupPartReferenceTable.Record e=getBackupMetaDataPerFile(r, message.getFileCoordinate());
@@ -498,11 +530,16 @@ public abstract class CentralDatabaseBackupReceiver {
 		return clientTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
 			@Override
 			public Integrity run() throws Exception {
-				ClientTable.Record distantClient=getClientRecord(message.getChannelHost());
+				ClientTable.Record distantClient;
+				try {
+					distantClient = getClientRecord(message.getChannelHost());
+				}
+				catch (MessageExternalizationException e)
+				{
+					return e.getIntegrity();
+				}
 				if (distantClient==null)
 					return Integrity.OK;
-				if (distantClient.getAccount().getAccountID()!=connectedClientRecord.getAccount().getAccountID())
-					return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
 				LastValidatedDistantIDPerClientTable.Record r=lastValidatedDistantIDPerClientTable.getRecord("client", connectedClientRecord, "distantClient", distantClient);
 				if (r==null)
 				{
