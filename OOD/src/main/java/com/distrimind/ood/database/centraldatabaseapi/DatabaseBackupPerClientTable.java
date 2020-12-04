@@ -41,6 +41,7 @@ import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.annotations.NotNull;
 import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.SerializationTools;
 
 /**
@@ -100,5 +101,6 @@ public class DatabaseBackupPerClientTable extends Table<DatabaseBackupPerClientT
 			this.lastFileBackupPartUTC = lastFileBackupPartUTC;
 		}
 	}
+
 
 }

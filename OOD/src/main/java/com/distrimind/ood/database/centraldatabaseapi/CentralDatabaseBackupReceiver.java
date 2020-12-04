@@ -118,7 +118,7 @@ public abstract class CentralDatabaseBackupReceiver {
 				}
 				else {
 					CentralDatabaseBackupReceiver.this.connectedClientID = initialMessage.getHostSource();
-					CentralDatabaseBackupReceiver.this.connectedClientRecord=clientTable.getRecord("clientID", initialMessage.getHostSource());
+					CentralDatabaseBackupReceiver.this.connectedClientRecord=getClientRecord(initialMessage.getHostSource());
 					if (CentralDatabaseBackupReceiver.this.connectedClientRecord==null) {
 						if (clientTable.getRecordsNumber("account=%a", "a", clientCloud)>=clientCloud.getMaxClients())
 							return Integrity.FAIL;
@@ -201,7 +201,7 @@ public abstract class CentralDatabaseBackupReceiver {
 		return clientTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
 			@Override
 			public Integrity run() throws Exception {
-				ClientTable.Record r=clientTable.getRecord("clientID", m.getDestination());
+				ClientTable.Record r=getClientRecord(message.getDestination());
 				if (r==null)
 					return Integrity.OK;
 				if (r.getAccount().getAccountID()==connectedClientRecord.getAccount().getAccountID())
@@ -238,7 +238,7 @@ public abstract class CentralDatabaseBackupReceiver {
 		return encryptedBackupPartReferenceTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
 			@Override
 			public Integrity run() throws Exception {
-				DatabaseBackupPerClientTable.Record database=databaseBackupPerClientTable.getRecord("client", connectedClientRecord, "packageString", message.getMetaData().getPackageString());
+				DatabaseBackupPerClientTable.Record database=getDatabaseBackupPerClientRecord( connectedClientRecord,  message.getMetaData().getPackageString());
 				boolean update=false;
 				boolean add=false;
 				if (database==null)
@@ -364,7 +364,7 @@ public abstract class CentralDatabaseBackupReceiver {
 		});
 
 	}
-	private EncryptedBackupPartComingFromCentralDatabaseBackup getBackupMetaDataPerFile(DatabaseBackupPerClientTable.Record databaseBackup, FileCoordinate fileCoordinate, DecentralizedValue hostDestination) throws DatabaseException, IOException {
+	private EncryptedBackupPartReferenceTable.Record getBackupMetaDataPerFile(DatabaseBackupPerClientTable.Record databaseBackup, FileCoordinate fileCoordinate) throws DatabaseException {
 		assert databaseBackup!=null;
 		assert fileCoordinate!=null;
 
@@ -399,18 +399,19 @@ public abstract class CentralDatabaseBackupReceiver {
 		}
 		else
 		{
-			return found.get().readEncryptedBackupPart(hostDestination);
+			return found.get();
 		}
 	}
+
 	private Integrity received(AskForDatabaseBackupPartDestinedToCentralDatabaseBackup message) throws DatabaseException {
 		return databaseBackupPerClientTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
 			@Override
 			public Integrity run() throws Exception {
-				DatabaseBackupPerClientTable.Record r=databaseBackupPerClientTable.getRecord("client", message.getChannelHost(), "packageString", message.getPackageString());
+				DatabaseBackupPerClientTable.Record r=getDatabaseBackupPerClientRecord(message.getChannelHost(), message.getPackageString());
 				if (r!=null) {
-					EncryptedBackupPartComingFromCentralDatabaseBackup m=getBackupMetaDataPerFile(r, message.getFileCoordinate(), message.getHostSource());
-					if (m!=null)
-						sendMessageFromCentralDatabaseBackup(m);
+					EncryptedBackupPartReferenceTable.Record e=getBackupMetaDataPerFile(r, message.getFileCoordinate());
+					if (e!=null)
+						sendMessageFromCentralDatabaseBackup(e.readEncryptedBackupPart(message.getHostSource()));
 				}
 				return Integrity.OK;
 			}
@@ -432,11 +433,53 @@ public abstract class CentralDatabaseBackupReceiver {
 		});
 
 	}
+	private ClientTable.Record getClientRecord(DecentralizedValue clientID) throws DatabaseException {
+		if (clientID==null)
+			throw new NullPointerException();
+		return clientTable.getRecord("clientID", clientID);
+	}
+	private DatabaseBackupPerClientTable.Record getDatabaseBackupPerClientRecord(DecentralizedValue clientID, String packageString) throws DatabaseException {
+		ClientTable.Record client=getClientRecord(clientID);
+		if (client==null)
+			return null;
+		return getDatabaseBackupPerClientRecord(client, packageString);
+	}
+	private DatabaseBackupPerClientTable.Record getDatabaseBackupPerClientRecord(ClientTable.Record client, String packageString) throws DatabaseException {
+		if (packageString==null)
+			throw new NullPointerException();
+		if (client==null)
+			throw new NullPointerException();
+		return databaseBackupPerClientTable.getRecord("client", client, "packageString", packageString);
+	}
+	private Integrity received(AskForMetaDataPerFileToCentralDatabaseBackup message) throws DatabaseException {
+		return databaseBackupPerClientTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
+			@Override
+			public Integrity run() throws Exception {
+				DatabaseBackupPerClientTable.Record r=getDatabaseBackupPerClientRecord(message.getChannelHost(), message.getPackageString());
+				if (r!=null) {
+					EncryptedBackupPartReferenceTable.Record e=getBackupMetaDataPerFile(r, message.getFileCoordinate());
+					if (e!=null)
+						sendMessageFromCentralDatabaseBackup(new EncryptedMetaDataFromCentralDatabaseBackup(message.getHostSource(), message.getChannelHost(), e.getMetaData()));
+				}
+				return Integrity.OK;
+			}
 
-	private void received(AskForMetaDataPerFileToCentralDatabaseBackup message) throws DatabaseException {
-		DatabaseBackupPerClientTable m=databaseBackup.get(message.getChannelHost());
-		if (m!=null)
-			m.received(message);
+			@Override
+			public TransactionIsolation getTransactionIsolation() {
+				return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
+			}
+
+			@Override
+			public boolean doesWriteData() {
+				return false;
+			}
+
+			@Override
+			public void initOrReset()  {
+
+			}
+		});
+
 	}
 
 
