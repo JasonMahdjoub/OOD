@@ -42,9 +42,7 @@ import com.distrimind.ood.database.messages.*;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.Reference;
 import com.distrimind.util.io.Integrity;
-import com.distrimind.util.io.SecureExternalizable;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -164,7 +162,7 @@ public abstract class CentralDatabaseBackupReceiver {
 			}
 
 			@Override
-			public void initOrReset() throws Exception {
+			public void initOrReset() {
 
 			}
 		});
@@ -340,7 +338,7 @@ public abstract class CentralDatabaseBackupReceiver {
 				}
 				databaseBackupPerClientTable.getRecords(new Filter<DatabaseBackupPerClientTable.Record>() {
 					@Override
-					public boolean nextRecord(DatabaseBackupPerClientTable.Record _record) throws DatabaseException {
+					public boolean nextRecord(DatabaseBackupPerClientTable.Record _record)  {
 						lastValidatedTransactionsUTCForDestinationHost.put(_record.getPackageString(), _record.getLastFileBackupPartUTC());
 						return false;
 					}
@@ -360,18 +358,79 @@ public abstract class CentralDatabaseBackupReceiver {
 			}
 
 			@Override
-			public void initOrReset() throws Exception {
+			public void initOrReset()  {
 
 			}
 		});
 
 	}
+	private EncryptedBackupPartComingFromCentralDatabaseBackup getBackupMetaDataPerFile(DatabaseBackupPerClientTable.Record databaseBackup, FileCoordinate fileCoordinate, DecentralizedValue hostDestination) throws DatabaseException, IOException {
+		assert databaseBackup!=null;
+		assert fileCoordinate!=null;
 
-	private void received(AskForDatabaseBackupPartDestinedToCentralDatabaseBackup message) throws FileNotFoundException, DatabaseException {
-		DatabaseBackupPerClientTable m=databaseBackup.get(message.getChannelHost());
-		if (m==null)
-			return;
-		m.received(message);
+		final Reference<EncryptedBackupPartReferenceTable.Record> found = new Reference<>();
+		boolean upper=fileCoordinate.getBoundary()== FileCoordinate.Boundary.UPPER_LIMIT;
+		if (!upper && fileCoordinate.getBoundary()!= FileCoordinate.Boundary.LOWER_LIMIT)
+			throw new IllegalAccessError();
+
+		encryptedBackupPartReferenceTable.getRecords(new Filter<EncryptedBackupPartReferenceTable.Record>() {
+			@Override
+			public boolean nextRecord(EncryptedBackupPartReferenceTable.Record _record) {
+				if (upper) {
+					if (_record.getFileTimeUTC() < fileCoordinate.getTimeStamp()) {
+						if (found.get() == null || found.get().getFileTimeUTC() < _record.getFileTimeUTC())
+							found.set(_record);
+					}
+				}
+				else
+				{
+					if (_record.getFileTimeUTC() > fileCoordinate.getTimeStamp()) {
+						if (found.get() == null || found.get().getFileTimeUTC() > _record.getFileTimeUTC())
+							found.set(_record);
+					}
+				}
+				return false;
+			}
+		}, "database=%d", "d", databaseBackup);
+
+		if (found.get()==null)
+		{
+			return null;
+		}
+		else
+		{
+			return found.get().readEncryptedBackupPart(hostDestination);
+		}
+	}
+	private Integrity received(AskForDatabaseBackupPartDestinedToCentralDatabaseBackup message) throws DatabaseException {
+		return databaseBackupPerClientTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
+			@Override
+			public Integrity run() throws Exception {
+				DatabaseBackupPerClientTable.Record r=databaseBackupPerClientTable.getRecord("client", message.getChannelHost(), "packageString", message.getPackageString());
+				if (r!=null) {
+					EncryptedBackupPartComingFromCentralDatabaseBackup m=getBackupMetaDataPerFile(r, message.getFileCoordinate(), message.getHostSource());
+					if (m!=null)
+						sendMessageFromCentralDatabaseBackup(m);
+				}
+				return Integrity.OK;
+			}
+
+			@Override
+			public TransactionIsolation getTransactionIsolation() {
+				return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
+			}
+
+			@Override
+			public boolean doesWriteData() {
+				return false;
+			}
+
+			@Override
+			public void initOrReset()  {
+
+			}
+		});
+
 	}
 
 	private void received(AskForMetaDataPerFileToCentralDatabaseBackup message) throws DatabaseException {
