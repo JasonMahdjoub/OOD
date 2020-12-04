@@ -35,15 +35,15 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.ood.database.*;
+import com.distrimind.ood.database.DatabaseRecord;
+import com.distrimind.ood.database.EncryptionTools;
+import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.annotations.ForeignKey;
 import com.distrimind.ood.database.annotations.NotNull;
 import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.ood.database.exceptions.TransactionCanceledException;
 import com.distrimind.ood.database.messages.DistantBackupCenterConnexionInitialisation;
-import com.distrimind.ood.database.messages.LastValidatedDistantTransactionDestinedToCentralDatabaseBackup;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.Integrity;
 
@@ -109,96 +109,29 @@ public class LastValidatedDistantIDPerClientTable extends Table<LastValidatedDis
 
 
 
-	public Integrity received(LastValidatedDistantTransactionDestinedToCentralDatabaseBackup message, ClientTable.Record sourcePeer) throws DatabaseException {
+
+	Integrity received(DistantBackupCenterConnexionInitialisation message, ClientTable.Record sourcePeer) throws DatabaseException {
 		if (message==null)
 			throw new NullPointerException();
 		if (sourcePeer==null)
 			throw new NullPointerException();
 		ClientTable clientTable=getDatabaseWrapper().getTableInstance(ClientTable.class);
-		return getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
-			@Override
-			public Integrity run() throws Exception {
-				ClientTable.Record distantClient=clientTable.getRecord("clientID", message.getChannelHost());
-				if (distantClient==null)
-					return Integrity.OK;
-				if (distantClient.getAccount().getAccountID()!=sourcePeer.getAccount().getAccountID())
-					return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
-				Record r=getRecord("client", sourcePeer, "distantClient", distantClient);
-				if (r==null)
-				{
-					addRecord(new Record(sourcePeer, distantClient, message.getEncryptedLastValidatedDistantID()));
-				}
-				else
-					updateRecord(r, "lastValidatedAndEncryptedDistantID", message.getEncryptedLastValidatedDistantID());
-				return Integrity.OK;
+
+		for (Map.Entry<DecentralizedValue, byte[]> e : message.getEncryptedDistantLastValidatedIDs().entrySet()) {
+			ClientTable.Record distantClient = clientTable.getRecord("clientID", e.getKey());
+			if (distantClient == null)
+				continue;
+			if (distantClient.getAccount().getAccountID() != sourcePeer.getAccount().getAccountID()) {
+				return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
 			}
-
-			@Override
-			public TransactionIsolation getTransactionIsolation() {
-				return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
-			}
-
-			@Override
-			public boolean doesWriteData() {
-				return true;
-			}
-
-			@Override
-			public void initOrReset() {
-
-			}
-		});
-
-	}
-
-	public Integrity received(DistantBackupCenterConnexionInitialisation message, ClientTable.Record sourcePeer) throws DatabaseException {
-		if (message==null)
-			throw new NullPointerException();
-		if (sourcePeer==null)
-			throw new NullPointerException();
-		ClientTable clientTable=getDatabaseWrapper().getTableInstance(ClientTable.class);
-		try {
-			return getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
-				@Override
-				public Integrity run() throws Exception {
-
-					for (Map.Entry<DecentralizedValue, byte[]> e : message.getEncryptedDistantLastValidatedIDs().entrySet()) {
-						ClientTable.Record distantClient = clientTable.getRecord("clientID", e.getKey());
-						if (distantClient == null)
-							continue;
-						if (distantClient.getAccount().getAccountID() != sourcePeer.getAccount().getAccountID()) {
-							cancelTransaction();
-							return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
-						}
-						Record r = getRecord("client", sourcePeer, "distantClient", distantClient);
-						if (r == null) {
-							addRecord(new Record(sourcePeer, distantClient, e.getValue()));
-						} else
-							updateRecord(r, "lastValidatedAndEncryptedDistantID", e.getValue());
-					}
-					return Integrity.OK;
-				}
-
-				@Override
-				public TransactionIsolation getTransactionIsolation() {
-					return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
-				}
-
-				@Override
-				public boolean doesWriteData() {
-					return true;
-				}
-
-				@Override
-				public void initOrReset() {
-
-				}
-			});
+			Record r = getRecord("client", sourcePeer, "distantClient", distantClient);
+			if (r == null) {
+				addRecord(new Record(sourcePeer, distantClient, e.getValue()));
+			} else
+				updateRecord(r, "lastValidatedAndEncryptedDistantID", e.getValue());
 		}
-		catch (TransactionCanceledException e)
-		{
-			return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
-		}
+		return Integrity.OK;
+
 
 	}
 }

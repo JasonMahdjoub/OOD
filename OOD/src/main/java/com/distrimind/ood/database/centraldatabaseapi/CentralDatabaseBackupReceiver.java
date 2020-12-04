@@ -78,7 +78,7 @@ public abstract class CentralDatabaseBackupReceiver {
 	}
 	public abstract void sendMessageFromCentralDatabaseBackup(MessageComingFromCentralDatabaseBackup message);
 
-	public void disconnect() throws DatabaseException {
+	public Integrity disconnect() throws DatabaseException {
 		if (connectedClientID!=null)
 			connectedClientsTable.removeRecord("clientID", connectedClientID);
 		this.connectedClientID=null;
@@ -86,6 +86,7 @@ public abstract class CentralDatabaseBackupReceiver {
 		this.connectedClientRecord=null;
 
 		connected=false;
+		return Integrity.OK;
 	}
 	public boolean isConnected(DecentralizedValue clientID) throws DatabaseException {
 		return connectedClientsTable.hasRecordsWithAllFields("clientID", clientID);
@@ -171,8 +172,11 @@ public abstract class CentralDatabaseBackupReceiver {
 
 
 	public Integrity received(MessageDestinedToCentralDatabaseBackup message) throws DatabaseException, IOException {
+
 		if (!connected)
 			return Integrity.FAIL;
+		if (message==null)
+			return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
 		if (!message.getHostSource().equals(connectedClientID))
 			return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
 
@@ -191,7 +195,7 @@ public abstract class CentralDatabaseBackupReceiver {
 		else if (message instanceof IndirectMessagesDestinedToCentralDatabaseBackup)
 			return received((IndirectMessagesDestinedToCentralDatabaseBackup)message);
 		else if (message instanceof DisconnectCentralDatabaseBackup) {
-			disconnect(message.getHostSource());
+			return disconnect();
 		}
 		else
 			return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
@@ -407,7 +411,12 @@ public abstract class CentralDatabaseBackupReceiver {
 		return databaseBackupPerClientTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
 			@Override
 			public Integrity run() throws Exception {
-				DatabaseBackupPerClientTable.Record r=getDatabaseBackupPerClientRecord(message.getChannelHost(), message.getPackageString());
+				ClientTable.Record channelHost=getClientRecord(message.getChannelHost());
+				if (channelHost==null)
+					return Integrity.OK;
+				else if (channelHost.getAccount().getAccountID()!=connectedClientRecord.getAccount().getAccountID())
+					return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
+				DatabaseBackupPerClientTable.Record r=getDatabaseBackupPerClientRecord(channelHost, message.getPackageString());
 				if (r!=null) {
 					EncryptedBackupPartReferenceTable.Record e=getBackupMetaDataPerFile(r, message.getFileCoordinate());
 					if (e!=null)
@@ -438,12 +447,7 @@ public abstract class CentralDatabaseBackupReceiver {
 			throw new NullPointerException();
 		return clientTable.getRecord("clientID", clientID);
 	}
-	private DatabaseBackupPerClientTable.Record getDatabaseBackupPerClientRecord(DecentralizedValue clientID, String packageString) throws DatabaseException {
-		ClientTable.Record client=getClientRecord(clientID);
-		if (client==null)
-			return null;
-		return getDatabaseBackupPerClientRecord(client, packageString);
-	}
+
 	private DatabaseBackupPerClientTable.Record getDatabaseBackupPerClientRecord(ClientTable.Record client, String packageString) throws DatabaseException {
 		if (packageString==null)
 			throw new NullPointerException();
@@ -455,7 +459,12 @@ public abstract class CentralDatabaseBackupReceiver {
 		return databaseBackupPerClientTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
 			@Override
 			public Integrity run() throws Exception {
-				DatabaseBackupPerClientTable.Record r=getDatabaseBackupPerClientRecord(message.getChannelHost(), message.getPackageString());
+				ClientTable.Record channelHost=getClientRecord(message.getChannelHost());
+				if (channelHost==null)
+					return Integrity.OK;
+				else if (channelHost.getAccount().getAccountID()!=connectedClientRecord.getAccount().getAccountID())
+					return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
+				DatabaseBackupPerClientTable.Record r=getDatabaseBackupPerClientRecord(channelHost, message.getPackageString());
 				if (r!=null) {
 					EncryptedBackupPartReferenceTable.Record e=getBackupMetaDataPerFile(r, message.getFileCoordinate());
 					if (e!=null)
@@ -483,19 +492,49 @@ public abstract class CentralDatabaseBackupReceiver {
 	}
 
 
+
+	private Integrity received(LastValidatedDistantTransactionDestinedToCentralDatabaseBackup message) throws DatabaseException {
+
+		return clientTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
+			@Override
+			public Integrity run() throws Exception {
+				ClientTable.Record distantClient=getClientRecord(message.getChannelHost());
+				if (distantClient==null)
+					return Integrity.OK;
+				if (distantClient.getAccount().getAccountID()!=connectedClientRecord.getAccount().getAccountID())
+					return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
+				LastValidatedDistantIDPerClientTable.Record r=lastValidatedDistantIDPerClientTable.getRecord("client", connectedClientRecord, "distantClient", distantClient);
+				if (r==null)
+				{
+					lastValidatedDistantIDPerClientTable.addRecord(new LastValidatedDistantIDPerClientTable.Record(connectedClientRecord, distantClient, message.getEncryptedLastValidatedDistantID()));
+				}
+				else
+					lastValidatedDistantIDPerClientTable.updateRecord(r, "lastValidatedAndEncryptedDistantID", message.getEncryptedLastValidatedDistantID());
+				return Integrity.OK;
+			}
+
+			@Override
+			public TransactionIsolation getTransactionIsolation() {
+				return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
+			}
+
+			@Override
+			public boolean doesWriteData() {
+				return true;
+			}
+
+			@Override
+			public void initOrReset() {
+
+			}
+		});
+	}
 	private void received(DatabaseBackupToRemoveDestinedToCentralDatabaseBackup message)
 	{
 		DatabaseBackupPerClientTable m=databaseBackup.get(message.getHostSource());
 		if (m!=null)
 			m.databaseBackupPerPackage.remove(message.getPackageString());
 	}
-	private void received(LastValidatedDistantTransactionDestinedToCentralDatabaseBackup message)
-	{
-		DatabaseBackupPerClientTable m=databaseBackup.get(message.getHostSource());
-		if (m!=null)
-			m.received(message);
-	}
-
 
 
 }
