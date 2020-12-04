@@ -64,7 +64,7 @@ public class DatabaseBackupPerClientTable extends Table<DatabaseBackupPerClientT
 		private String packageString;
 
 		@Field
-		Long lastFileBackupPartUTC=null;
+		long lastFileBackupPartUTC;
 
 		@SuppressWarnings("unused")
 		private Record()
@@ -72,7 +72,7 @@ public class DatabaseBackupPerClientTable extends Table<DatabaseBackupPerClientT
 
 		}
 
-		public Record(ClientTable.Record client, String packageString) {
+		Record(ClientTable.Record client, String packageString, long lastFileBackupPartUTC) {
 			if (client==null)
 				throw new NullPointerException();
 			if (packageString==null)
@@ -81,6 +81,7 @@ public class DatabaseBackupPerClientTable extends Table<DatabaseBackupPerClientT
 				throw new IllegalArgumentException();
 			this.client = client;
 			this.packageString = packageString;
+			this.lastFileBackupPartUTC=lastFileBackupPartUTC;
 		}
 
 		public ClientTable.Record getClient() {
@@ -91,10 +92,13 @@ public class DatabaseBackupPerClientTable extends Table<DatabaseBackupPerClientT
 			return packageString;
 		}
 
-		public Long getLastFileBackupPartUTC() {
+		public long getLastFileBackupPartUTC() {
 			return lastFileBackupPartUTC;
 		}
 
+		void setLastFileBackupPartUTC(long lastFileBackupPartUTC) {
+			this.lastFileBackupPartUTC = lastFileBackupPartUTC;
+		}
 	}
 
 }

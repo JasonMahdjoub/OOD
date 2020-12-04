@@ -85,7 +85,7 @@ public class EncryptedBackupPartReferenceTable extends Table<EncryptedBackupPart
 
 		}
 
-		private Record(DatabaseBackupPerClientTable.Record database, FileReference fileReference, EncryptedBackupPartDestinedToCentralDatabaseBackup message) throws IOException {
+		Record(DatabaseBackupPerClientTable.Record database, FileReference fileReference, EncryptedBackupPartDestinedToCentralDatabaseBackup message) throws IOException {
 			if (database==null)
 				throw new NullPointerException();
 			if (fileReference==null)
@@ -128,17 +128,27 @@ public class EncryptedBackupPartReferenceTable extends Table<EncryptedBackupPart
 			return metaData;
 		}
 	}
-	public Integrity addEncryptedBackupPartReference(DatabaseBackupPerClientTable.Record database, FileReference fileReference, EncryptedBackupPartDestinedToCentralDatabaseBackup message) throws DatabaseException {
+	Integrity addEncryptedBackupPartReference(DatabaseBackupPerClientTable databaseBackupPerClientTable, ClientTable.Record clientRecord, FileReference fileReference, EncryptedBackupPartDestinedToCentralDatabaseBackup message) throws DatabaseException {
 		return getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
 			@Override
 			public Integrity run() throws Exception {
-				Long l=database.getLastFileBackupPartUTC();
-				if (l!=null && l>=message.getMetaData().getFileTimestampUTC())
+				DatabaseBackupPerClientTable.Record database=databaseBackupPerClientTable.getRecord("client", clientRecord, "packageString", message.getMetaData().getPackageString());
+				boolean update=true;
+				if (database==null)
+				{
+					database=new DatabaseBackupPerClientTable.Record(clientRecord, message.getMetaData().getPackageString(), message.getMetaData().getFileTimestampUTC());
+					update=false;
+				}
+				long l=database.getLastFileBackupPartUTC();
+				if (l>=message.getMetaData().getFileTimestampUTC())
 					return Integrity.FAIL;
 				Record r=new Record(database, fileReference, message);
 				try {
 					addRecord(r);
-					getDatabaseWrapper().getTableInstance(DatabaseBackupPerClientTable.class).updateRecord(database, "lastFileBackupPartUTC", message.getMetaData().getFileTimestampUTC());
+					if (update)
+						databaseBackupPerClientTable.updateRecord(database, "lastFileBackupPartUTC", message.getMetaData().getFileTimestampUTC());
+					else
+						databaseBackupPerClientTable.addRecord(database);
 					return Integrity.OK;
 				}
 				catch (DatabaseException e)
@@ -159,7 +169,7 @@ public class EncryptedBackupPartReferenceTable extends Table<EncryptedBackupPart
 			}
 
 			@Override
-			public void initOrReset() throws Exception {
+			public void initOrReset()  {
 
 			}
 		});
