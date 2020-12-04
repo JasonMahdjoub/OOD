@@ -67,13 +67,16 @@ public interface AuthenticatedCentralDatabaseBackupMessage extends Authenticated
 	}
 	@Override
 	default boolean checkAuthentication(EncryptionProfileProvider profileProvider) throws DatabaseException {
+		byte[] sig=getASymmetricSignature();
+		if (sig==null)
+			return true;
 		try {
 			ASymmetricAuthenticatedSignatureCheckerAlgorithm checker=new ASymmetricAuthenticatedSignatureCheckerAlgorithm(profileProvider.getPublicKeyForSignature(this.getEncryptionProfileIdentifier()));
 			try(RandomByteArrayOutputStream out=new RandomByteArrayOutputStream())
 			{
 				writeExternalWithoutSignature(out);
 				out.flush();
-				return checker.verify(out.getBytes(), getASymmetricSignature());
+				return checker.verify(out.getBytes(), sig);
 			}
 		} catch (NoSuchAlgorithmException | NoSuchProviderException | IOException e) {
 			throw DatabaseException.getDatabaseException(e);

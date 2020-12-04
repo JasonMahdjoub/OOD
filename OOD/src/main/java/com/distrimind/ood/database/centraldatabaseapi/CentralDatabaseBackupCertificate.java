@@ -44,5 +44,5 @@ import com.distrimind.util.io.SecureExternalizable;
  * @since OOD 3.0.0
  */
 public interface CentralDatabaseBackupCertificate extends SecureExternalizable {
-	IASymmetricPublicKey getCertifiedPublicKey();
+	IASymmetricPublicKey getCertifiedAccountPublicKey();
 }

@@ -64,8 +64,6 @@ public abstract class AuthenticatedMessageDestinedToCentralDatabaseBackup extend
 	protected AuthenticatedMessageDestinedToCentralDatabaseBackup(DecentralizedValue hostSource, CentralDatabaseBackupCertificate certificate) {
 		if (hostSource==null)
 			throw new NullPointerException();
-		if (certificate==null)
-			throw new NullPointerException();
 		this.hostSource = hostSource;
 		this.encryptionProfileIdentifier = -1;
 		this.certificate = certificate;
@@ -96,13 +94,13 @@ public abstract class AuthenticatedMessageDestinedToCentralDatabaseBackup extend
 	public void writeExternalWithoutSignature(SecuredObjectOutputStream out) throws IOException {
 		out.writeObject(hostSource, false);
 		out.writeShort(encryptionProfileIdentifier);
-		out.writeObject(certificate, false);
+		out.writeObject(certificate, true);
 	}
 
 	protected void readExternalWithoutSignature(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
 		hostSource=in.readObject(false, DecentralizedValue.class );
 		encryptionProfileIdentifier=in.readShort();
-		certificate=in.readObject(false);
+		certificate=in.readObject(true);
 	}
 
 	@Override
@@ -121,12 +119,14 @@ public abstract class AuthenticatedMessageDestinedToCentralDatabaseBackup extend
 	@Override
 	public final void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
 		readExternalWithoutSignature(in);
-		asymmetricSignature=in.readBytesArray(false,  ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE);
+		if (certificate!=null)
+			asymmetricSignature=in.readBytesArray(false,  ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE);
 	}
 
 	@Override
 	public void writeExternalSignature(SecuredObjectOutputStream out) throws IOException {
-		out.writeBytesArray(asymmetricSignature, false, ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE);
+		if (certificate!=null)
+			out.writeBytesArray(asymmetricSignature, false, ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE);
 
 	}
 }
