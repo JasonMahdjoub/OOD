@@ -40,6 +40,7 @@ package com.distrimind.ood.database;
 import com.distrimind.ood.database.DatabaseHooksTable.Record;
 import com.distrimind.ood.database.Table.ColumnsReadQuery;
 import com.distrimind.ood.database.Table.DefaultConstructorAccessPrivilegedAction;
+import com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupCertificate;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
 import com.distrimind.ood.database.fieldaccessors.ByteTabObjectConverter;
@@ -687,7 +688,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		private AbstractSecureRandom random=null;
 		private EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup =null;
 		private EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedMessages=null;
-		private SecureExternalizable certificate;
+		private CentralDatabaseBackupCertificate certificate;
 		private long minFilePartDurationBeforeBecomingFinalFilePart=Long.MAX_VALUE;
 
 		DatabaseSynchronizer() {
@@ -1683,7 +1684,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						validateLastSynchronizationWithCentralDatabaseBackup(e.getKey(), e.getValue());
 					}
 					else
-						addNewDatabaseEvent(new DatabaseBackupToRemoveDestinedToCentralDatabaseBackup(getLocalHostID(), e.getKey()));
+						addNewDatabaseEvent(new DatabaseBackupToRemoveDestinedToCentralDatabaseBackup(getLocalHostID(), e.getKey(), certificate));
 				}
 				for (String p : authorizedPackagesToBeSynchronizedWithCentralDatabaseBackup)
 				{
@@ -1747,7 +1748,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw DatabaseException.getDatabaseException(e);
 			}
 		}
-		public void initConnexionWithDistantBackupCenter(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider, EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedMessages, SecureExternalizable certificate) throws DatabaseException {
+		public void initConnexionWithDistantBackupCenter(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider, EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedMessages, CentralDatabaseBackupCertificate certificate) throws DatabaseException {
 			if (random==null)
 				throw new NullPointerException();
 			if (encryptionProfileProvider==null)

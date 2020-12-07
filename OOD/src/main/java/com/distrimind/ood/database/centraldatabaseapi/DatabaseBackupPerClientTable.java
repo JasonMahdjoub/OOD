@@ -67,6 +67,9 @@ public class DatabaseBackupPerClientTable extends Table<DatabaseBackupPerClientT
 		@Field
 		long lastFileBackupPartUTC;
 
+		@Field
+		Long removeTimeUTC;
+
 		@SuppressWarnings("unused")
 		private Record()
 		{
@@ -99,6 +102,10 @@ public class DatabaseBackupPerClientTable extends Table<DatabaseBackupPerClientT
 
 		void setLastFileBackupPartUTC(long lastFileBackupPartUTC) {
 			this.lastFileBackupPartUTC = lastFileBackupPartUTC;
+		}
+
+		public Long getRemoveTimeUTC() {
+			return removeTimeUTC;
 		}
 	}
 

@@ -94,13 +94,18 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 	}
 
 	protected abstract boolean isValidCertificate(CentralDatabaseBackupCertificate certificate);
-
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
+	private boolean checkCertificate(AuthenticatedMessageDestinedToCentralDatabaseBackup message) {
+		CentralDatabaseBackupCertificate certificate=message.getCertificate();
+		return certificate != null && isValidCertificate(certificate);
+	}
 	public Integrity init(DistantBackupCenterConnexionInitialisation initialMessage) throws DatabaseException {
-		CentralDatabaseBackupCertificate certificate=initialMessage.getCertificate();
+		final CentralDatabaseBackupCertificate certificate=initialMessage.getCertificate();
 		if (certificate==null) {
 			disconnect();
 			return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
 		}
+
 		return centralDatabaseBackupReceiver.clientCloudAccountTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
 			@Override
 			public Integrity run() throws Exception {
@@ -109,7 +114,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 				if (l.size()>0)
 					CentralDatabaseBackupReceiverPerPeer.this.clientCloud=l.iterator().next();
 
-				if (CentralDatabaseBackupReceiverPerPeer.this.clientCloud==null || !isValidCertificate(certificate))
+				if (CentralDatabaseBackupReceiverPerPeer.this.clientCloud==null || !checkCertificate(initialMessage))
 				{
 					disconnect();
 					return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
@@ -192,6 +197,14 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 		if (!message.getHostSource().equals(connectedClientID))
 			return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
 
+		if (message instanceof AuthenticatedCentralDatabaseBackupMessage)
+			if (!checkCertificate((AuthenticatedMessageDestinedToCentralDatabaseBackup) message))
+			{
+				disconnect();
+				return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
+
+			}
+
 		if (message instanceof EncryptedBackupPartDestinedToCentralDatabaseBackup)
 			return received((EncryptedBackupPartDestinedToCentralDatabaseBackup)message);
 		else if (message instanceof AskForDatabaseBackupPartDestinedToCentralDatabaseBackup)
@@ -233,7 +246,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 					if (encryptedAuthenticatedMessagesToSend==null)
 						encryptedAuthenticatedMessagesToSend=new ArrayList<>();
 					encryptedAuthenticatedMessagesToSend.addAll(message.getEncryptedAuthenticatedP2PMessages());
-					clientTable.updateRecord(r, "encryptedAuthenticatedMessagesToSend", encryptedAuthenticatedMessagesToSend);
+					centralDatabaseBackupReceiver.clientTable.updateRecord(r, "encryptedAuthenticatedMessagesToSend", encryptedAuthenticatedMessagesToSend);
 					return Integrity.OK;
 				}
 				else
@@ -571,11 +584,14 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 			}
 		});
 	}
-	private void received(DatabaseBackupToRemoveDestinedToCentralDatabaseBackup message)
-	{
-		DatabaseBackupPerClientTable m=databaseBackup.get(message.getHostSource());
-		if (m!=null)
-			m.databaseBackupPerPackage.remove(message.getPackageString());
+	public abstract long getDurationInMsBeforeRemovingDatabaseBackup();
+	private Integrity received(DatabaseBackupToRemoveDestinedToCentralDatabaseBackup message) throws DatabaseException {
+		DatabaseBackupPerClientTable.Record r=getDatabaseBackupPerClientRecord(connectedClientRecord, message.getPackageString());
+		if (r!=null)
+		{
+			centralDatabaseBackupReceiver.databaseBackupPerClientTable.updateRecord(r, "removeTimeUTC", System.currentTimeMillis()+ getDurationInMsBeforeRemovingDatabaseBackup());
+		}
+		return Integrity.OK;
 	}
 
 
