@@ -117,6 +117,7 @@ public abstract class CentralDatabaseBackupReceiver {
 	}
 	private void disconnectAllPeers() throws DatabaseException {
 		connectedClientsTable.removeRecordsWithAllFields("centralID", centralID);
+		receiversPerPeer.clear();
 	}
 
 	public void cleanObsoleteData() throws DatabaseException {
