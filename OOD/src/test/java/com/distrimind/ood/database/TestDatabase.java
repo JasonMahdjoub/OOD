@@ -3229,7 +3229,7 @@ public abstract class TestDatabase {
 				return;
 		} else if (op_comp == SymbolType.GREATEROPERATOR || op_comp == SymbolType.GREATEROREQUALOPERATOR
 				|| op_comp == SymbolType.LOWEROPERATOR || op_comp == SymbolType.LOWEROREQUALOPERATOR) {
-			if (!(value instanceof Number) || value.getClass() == Boolean.class)
+			if (!(value instanceof Number))
 				return;
 		} else if (!useParameter) {
 			if (!(value instanceof String))
@@ -3271,6 +3271,10 @@ public abstract class TestDatabase {
 				test = !fa.equals(nearestObjectInstance, value);
 			else if (op_comp == SymbolType.LIKE)
 				test = fa.equals(nearestObjectInstance, value);
+			else if (op_comp == SymbolType.ISNULL)
+				test = fa.equals(nearestObjectInstance, (Object)null);
+			else if (op_comp == SymbolType.ISNOTNULL)
+				test = !fa.equals(nearestObjectInstance, (Object)null);
 			else if (op_comp == SymbolType.NOTLIKE)
 				test = !fa.equals(nearestObjectInstance, value);
 			else {

@@ -44,17 +44,27 @@ import java.util.regex.Pattern;
  */
 public enum Rule {
 
-    TERME("^(<" + SymbolType.IDENTIFIER.name() + ">|<" + SymbolType.NUMBER.name() + ">|<" + SymbolType.STRING.name() + ">|<" + SymbolType.NULL.name() + ">|<" + SymbolType.PARAMETER.name() + ">|\\(<EXPRESSION>\\))$"),
+    NULL("^(<" + SymbolType.IDENTIFIER.name()+">$"),
+    TERME("^(<" + SymbolType.IDENTIFIER.name() + ">|<" + SymbolType.NUMBER.name() + ">|<" + SymbolType.STRING.name() + ">|<" + SymbolType.PARAMETER.name() + ">|\\(<EXPRESSION>\\))$"),
     EXPRESSION(
-            "^<" + TERME.name() + ">$"), OPCOMP("^(<" + SymbolType.EQUALOPERATOR.name() + ">|<"
+            "^<" + TERME.name() + ">$"),
+    OPCOMP("^(<" + SymbolType.EQUALOPERATOR.name() + ">|<"
             + SymbolType.NOTEQUALOPERATOR.name() + ">|<" + SymbolType.LOWEROPERATOR.name() + ">|<"
             + SymbolType.LOWEROREQUALOPERATOR.name() + ">|<" + SymbolType.GREATEROPERATOR.name() + ">|<"
             + SymbolType.GREATEROREQUALOPERATOR.name() + ">|<" + SymbolType.LIKE.name() + ">|<"
-            + SymbolType.NOTLIKE.name() + ">)$"), COMPARE(
+            + SymbolType.NOTLIKE.name() + ">)$"),
+    ISOP("^(<" + SymbolType.IS.name() + ">|<"
+            + SymbolType.ISNOT.name() + ">)$"),
+    COMPARE(
             "^(<" + EXPRESSION.name() + "><" + OPCOMP.name() + "><" + EXPRESSION.name()
-                    + ">|\\(<QUERY>\\))$"), OPCONDITION(
+                    + ">|\\(<QUERY>\\))$"),
+    NULLTEST(
+            "^(<" + EXPRESSION.name() + "><" + ISOP.name() + "><" + NULL.name()
+                    + ">$"),
+    OPCONDITION(
             "^(<" + SymbolType.ANDCONDITION.name() + ">|<"
-                    + SymbolType.ORCONDITION.name() + ">)$"), QUERY(
+                    + SymbolType.ORCONDITION.name() + ">)$"),
+    QUERY(
             "^(<" + COMPARE.name() + ">|<QUERY><"
                     + OPCONDITION.name() + "><QUERY>)$");
 

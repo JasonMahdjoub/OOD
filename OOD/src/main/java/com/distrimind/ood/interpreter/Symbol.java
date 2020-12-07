@@ -54,8 +54,8 @@ import com.distrimind.util.AbstractDecentralizedID;
  * @since OOD 2.0
  */
 public class Symbol implements QueryPart {
-	private SymbolType type;
-	private String symbol;
+	private final SymbolType type;
+	private final String symbol;
 
 	public Symbol(SymbolType type, String symbol) {
 		if (type == null)
@@ -100,7 +100,7 @@ public class Symbol implements QueryPart {
 		case PARAMETER:
 		case STRING:
 		case NULL:
-			return new RuleInstance(Rule.TERME, this);
+			return new RuleInstance(Rule.NULL, this);
 		case OPEN_PARENTHESIS:
 		case CLOSE_PARENTHESIS:
 			return null;

@@ -63,7 +63,10 @@ public enum SymbolType {
 	STRING(false, false, false, "^(\"|\\')[\\p{Alnum}\\p{Blank}\\!\\#\\$\\%\\&\\(\\)\\*\\+\\,\\-\\.\\/:;\\<\\=\\>\\?\\@\\[\\\\\\]\\^_\\`\\{\\|\\}\\~]+(\"|\\')$", null, null),
 	NULL(false, false, false, "^[nN][uU][lL][lL]$", new String[] {"null","NULL"}, "NULL"),
 	PARAMETER( false, false, false, "(\\%|\\:)[a-zA-Z\\-_][0-9a-zA-Z\\-_]*$", null, null), LIKE(true, false, true, "^(L|l)(I|i)(K|k)(E|e)$", new String[] { " LIKE " }, " LIKE "),
-	NOTLIKE(true, false,true,"^(N|n)(O|o)(T|t)_(L|l)(I|i)(K|k)(E|e)$",new String[] {" NOT LIKE "," NOT_LIKE " }," NOT LIKE ");
+	NOTLIKE(true, false,true,"^(N|n)(O|o)(T|t)_(L|l)(I|i)(K|k)(E|e)$",new String[] {" NOT LIKE "," NOT_LIKE " }," NOT LIKE "),
+	IS(true, false,false,"^[iI][sS]$",new String[] {" IS "," IS " }," IS "),
+	ISNOT(true, false,true,"^[iI][sS]_[Nn][oO][tT]$",new String[] {" IS NOT "," IS_NOT " }," IS NOT "),
+	;
 
 	private final Pattern pattern;
 	private final String content;

@@ -45,6 +45,7 @@ import java.lang.reflect.Method;
  * @version 1.0
  * @since OOD 2.5.0
  */
+@SuppressWarnings("SameParameterValue")
 class DatabaseWrapperAccessor {
 	private static final Method m_get_big_decimal_type;
 	private static final Method m_get_big_integer_type;

@@ -113,16 +113,16 @@ public class RuleInstance implements QueryPart {
 			throws DatabaseSyntaxException {
 		switch (rule) {
 		case COMPARE:
-			return false;
+			case QUERY:
+			case OPCONDITION:
+			case OPCOMP:
+			case NULLTEST:
+			case ISOP:
+			case NULL:
+				return false;
 		case EXPRESSION:
 			return parts.get(0).isMultiType(table, parameters);
-		case OPCOMP:
-			return false;
-		case OPCONDITION:
-			return false;
-		case QUERY:
-			return false;
-		case TERME: {
+			case TERME: {
 			if (parts.size() == 1) {
 				Symbol s = (Symbol) parts.get(0);
 				return s.isMultiType(table, parameters);
@@ -150,16 +150,17 @@ public class RuleInstance implements QueryPart {
 	public <T extends DatabaseRecord> String getValueType(Table<T> table, Map<String, Object> parameters)
 			throws DatabaseSyntaxException {
 		switch (rule) {
-		case COMPARE:
-			return "boolean";
+
 		case EXPRESSION:
 			return parts.get(0).getValueType(table, parameters);
+		case ISOP:
+		case NULLTEST:
+		case COMPARE:
 		case OPCOMP:
-			return "boolean";
 		case OPCONDITION:
-			return "boolean";
 		case QUERY:
 			return "boolean";
+		case NULL:
 		case TERME:
 			if (parts.size() == 1)
 				return parts.get(0).getValueType(table, parameters);
@@ -192,13 +193,15 @@ public class RuleInstance implements QueryPart {
 		switch (rule) {
 		case COMPARE:
 		case QUERY:
-			throw new IllegalAccessError();
+			case OPCOMP:
+			case OPCONDITION:
+			case ISOP:
+			case NULLTEST:
+			case NULL:
+				throw new IllegalAccessError();
 		case EXPRESSION:
 			return ((RuleInstance) parts.get(0)).getComparable(table, parameters, record);
-		case OPCOMP:
-		case OPCONDITION:
-			throw new IllegalAccessError();
-		case TERME:
+			case TERME:
 			if (parts.size() == 1) {
 				Symbol s = (Symbol) parts.get(0);
 				if (s.getType() == SymbolType.IDENTIFIER) {
@@ -234,14 +237,17 @@ public class RuleInstance implements QueryPart {
 	public <T extends DatabaseRecord> Object getEquallable(Table<T> table, Map<String, Object> parameters, T record)
 			throws DatabaseException {
 		switch (rule) {
-		case EXPRESSION:
+			case EXPRESSION:
 			return ((RuleInstance) parts.get(0)).getEquallable(table, parameters, record);
-		case OPCOMP:
-		case OPCONDITION:
-		case COMPARE:
-		case QUERY:
+			case OPCOMP:
+			case OPCONDITION:
+			case COMPARE:
+			case QUERY:
+			case ISOP:
+			case NULL:
+			case NULLTEST:
 			throw new IllegalAccessError();
-		case TERME:
+			case TERME:
 			if (parts.size() == 1) {
 				Symbol s = (Symbol) parts.get(0);
 				if (s.getType() == SymbolType.IDENTIFIER) {
@@ -273,13 +279,21 @@ public class RuleInstance implements QueryPart {
 		switch (rule) {
 		case COMPARE:
 		case QUERY:
-			throw new IllegalAccessError();
+
+			case OPCOMP:
+			case OPCONDITION:
+			case ISOP:
+			case NULLTEST:
+				throw new IllegalAccessError();
 		case EXPRESSION:
 			return ((RuleInstance) parts.get(0)).getStringable(table, parameters, record);
-
-		case OPCOMP:
-		case OPCONDITION:
-			throw new IllegalAccessError();
+			case NULL:
+			if (parts.size() == 1) {
+				Symbol s = (Symbol) parts.get(0);
+				return s.getContent().toString();
+			}
+			else
+				throw new IllegalAccessError();
 		case TERME:
 			if (parts.size() == 1) {
 				Symbol s = (Symbol) parts.get(0);
@@ -439,7 +453,7 @@ public class RuleInstance implements QueryPart {
 
 	private Object getRecordInstance(Table<?> table, DatabaseRecord record, FieldAccessor fa)
 			throws DatabaseException {
-		return getRecordInstance(table, record, fa, new HashSet<Table<?>>());
+		return getRecordInstance(table, record, fa, new HashSet<>());
 	}
 	private Object getRecordInstance(Table<?> table, Object record, FieldAccessor fa, HashSet<Table<?>> tablesDone)
 			throws DatabaseException {
@@ -507,6 +521,12 @@ public class RuleInstance implements QueryPart {
 				}
 			} else
 				throw new IllegalAccessError();
+			case NULLTEST:
+				if (parts.size() == 3) {
+					RuleInstance ri1 = (RuleInstance) parts.get(0);
+					return ri1.isIndependantFromOtherTables(table);
+				} else
+					throw new IllegalAccessError();
 		case QUERY:
 			if (parts.size() == 1) {
 				return ((RuleInstance) parts.get(0)).isIndependantFromOtherTables(table);
@@ -517,6 +537,8 @@ public class RuleInstance implements QueryPart {
 				return ri1.isIndependantFromOtherTables(table) && ri3.isIndependantFromOtherTables(table);
 			} else
 				throw new IllegalAccessError();
+			case NULL:
+				return true;
 		case TERME:
 
 			if (parts.size() == 1) {
@@ -538,6 +560,7 @@ public class RuleInstance implements QueryPart {
 			return ((RuleInstance) parts.get(0)).isIndependantFromOtherTables(table);
 		case OPCOMP:
 		case OPCONDITION:
+			case ISOP:
 			throw new IllegalAccessError();
 		}
 		throw new IllegalAccessError();
@@ -546,6 +569,28 @@ public class RuleInstance implements QueryPart {
 	public <T extends DatabaseRecord> boolean isConcernedBy(Table<T> table, Map<String, Object> parameters, T record)
 			throws DatabaseException {
 		switch (rule) {
+			case NULLTEST:
+				if (parts.size() == 3) {
+					RuleInstance ri2 = (RuleInstance) parts.get(1);
+
+					RuleInstance ri1 = (RuleInstance) parts.get(0);
+					RuleInstance ri3 = (RuleInstance) parts.get(2);
+					if (ri3.rule != Rule.NULL)
+						throw new IllegalAccessError();
+					Symbol s1 = ((Symbol) (((RuleInstance) ri1.parts.get(0)).parts.get(0)));
+					if (s1.getType() != SymbolType.IDENTIFIER)
+						throw new DatabaseSyntaxException("Cannot do null comparison without identifier");
+					Symbol comp = (Symbol) ri2.parts.get(0);
+					if (comp.getType() == SymbolType.IS) {
+						return equals(table, record, ri1.getEquallable(table, parameters, record),
+								null);
+					} else if (comp.getType() == SymbolType.ISNOT) {
+						return !equals(table, record, ri1.getEquallable(table, parameters, record),
+								null);
+					} else
+						throw new IllegalAccessError();
+				} else
+					throw new IllegalAccessError();
 		case COMPARE:
 			if (parts.size() == 3) {
 				RuleInstance ri2 = (RuleInstance) parts.get(1);
@@ -604,6 +649,8 @@ public class RuleInstance implements QueryPart {
 			} else
 				throw new IllegalAccessError();
 		case TERME:
+		case NULL:
+		case ISOP:
 		case EXPRESSION:
 		case OPCOMP:
 		case OPCONDITION:
@@ -725,8 +772,6 @@ public class RuleInstance implements QueryPart {
 											"Cannot find field " + fieldName + " into table " + table.getClass().getSimpleName());
 							} else if (s2.getType() == SymbolType.PARAMETER) {
 								parameter2 = parameters.get(s2.getSymbol());
-								/*if (parameter2 == null)
-									throw new DatabaseSyntaxException("Cannot find parameter " + s2.getSymbol());*/
 
 							} else if (s2.getType() == SymbolType.NUMBER || s2.getType() == SymbolType.STRING || s2.getType()==SymbolType.NULL) {
 								parameter2 = s2.getContent();
@@ -785,9 +830,6 @@ public class RuleInstance implements QueryPart {
 								SqlFieldInstance[] sfis = null;
 								try {
 									if (fa2 == null) {
-										/*Table<?> t = table.getDatabaseWrapper().getTableInstance(fa1.getTableClass());
-										DatabaseRecord record = t.getDefaultRecordConstructor().newInstance();
-										Object value=t.getFieldAccessorAndValue(record, fa1.getFieldName()).getValue();*/
 										Class<?> c=fa1.getField().getDeclaringClass();
 										Constructor<?> cons;
 										if (Modifier.isAbstract(c.getModifiers()))
@@ -878,6 +920,52 @@ public class RuleInstance implements QueryPart {
 				}
 			} else
 				throw new IllegalAccessError();
+			case NULLTEST:
+				if (parts.size() == 3) {
+					RuleInstance ri2 = (RuleInstance) parts.get(1);
+
+					RuleInstance ri1 = (RuleInstance) parts.get(0);
+					RuleInstance ri3 = (RuleInstance) parts.get(2);
+					if (ri3.rule!=Rule.NULL)
+						throw new IllegalAccessError();
+
+					Symbol comp = (Symbol) ri2.parts.get(0);
+
+					if (comp.getType() == SymbolType.IS || comp.getType() == SymbolType.ISNOT) {
+						if (!ri1.isEqualable(table, parameters, null)) {
+							throw new DatabaseSyntaxException(
+									"Cannot compare " + ri1.getContent() + " and " + ri3.getContent());
+						}
+						Symbol s1 = ((Symbol) (((RuleInstance) ri1.parts.get(0)).parts.get(0)));
+						if (s1.getType() != SymbolType.IDENTIFIER)
+							throw new DatabaseSyntaxException("Cannot do null comparison without identifier");
+						String fieldName = s1.getSymbol();
+						FieldAccessor fa1 = table.getFieldAccessor(fieldName, tablesJunction);
+						if (fa1 == null)
+							throw new DatabaseSyntaxException(
+									"Cannot find field " + fieldName + " into table " + table.getClass().getSimpleName());
+
+
+						SqlField[] sfs = fa1.getDeclaredSqlFields();
+						StringBuilder res = new StringBuilder();
+
+						res.append("(");
+						int fieldsNumber = 0;
+						for (SqlField sf : sfs) {
+							++fieldsNumber;
+							if (fieldsNumber > 1)
+								res.append(" AND ");
+							res.append(sf.field);
+							res.append(comp.getType().getContent());
+							res.append(SymbolType.NULL.getContent());
+						}
+						res.append(")");
+						return res;
+					}
+					else
+						throw new IllegalAccessError();
+				} else
+					throw new IllegalAccessError();
 
 		case EXPRESSION:
 		case QUERY:
@@ -926,7 +1014,14 @@ public class RuleInstance implements QueryPart {
 
 		case OPCOMP:
 		case OPCONDITION:
+			case ISOP:
 			throw new IllegalAccessError();
+		case NULL: {
+			if (parts.size() == 1)
+				return new StringBuilder( ((Symbol)parts.get(0)).getSymbol());
+			else
+				throw new IllegalAccessError();
+		}
 		case TERME:
 			if (parts.size() == 1) {
 				Symbol s = (Symbol) parts.get(0);
@@ -991,14 +1086,11 @@ public class RuleInstance implements QueryPart {
 			Constructor<?> c=cachedConstructors.get(declaringClass);
 			if (c==null)
 			{
-				c=AccessController.doPrivileged(new PrivilegedExceptionAction<Constructor<?>>() {
-					@Override
-					public Constructor<?> run() throws Exception {
-						Constructor<?> c=declaringClass.getDeclaredConstructor();
-						c.setAccessible(true);
-						return c;
+				c=AccessController.doPrivileged((PrivilegedExceptionAction<Constructor<?>>) () -> {
+					Constructor<?> c1 =declaringClass.getDeclaredConstructor();
+					c1.setAccessible(true);
+					return c1;
 
-					}
 				});
 				cachedConstructors.put(declaringClass, c);
 			}
@@ -1006,27 +1098,5 @@ public class RuleInstance implements QueryPart {
 		}
 
 	}
-
-	/*private Object getDatabaseRecord(FieldAccessor fa, Set<TableJunction> tablesJunction, DatabaseRecord record)
-			throws DatabaseException {
-		if (record == null)
-			return null;
-		Class<? extends Table<?>> tableclass = Table.getTableClass(record.getClass());
-
-		if (tableclass != fa.getTableClass()) {
-
-			for (TableJunction tj : tablesJunction) {
-				if (tj.getTablePointing().getClass() == tableclass) {
-					Object o = tj.getFieldAccessor().getValue(record);
-					if (o == null)
-						return null;
-					else
-						return getDatabaseRecord(fa, tablesJunction, (DatabaseRecord) o);
-				}
-			}
-			throw new IllegalAccessError(fa.getTableClass() + ";" + record.getClass());
-		}
-		return record;
-	}*/
 
 }
