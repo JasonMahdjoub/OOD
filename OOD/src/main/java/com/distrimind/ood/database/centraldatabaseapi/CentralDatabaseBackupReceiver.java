@@ -20,14 +20,27 @@ public abstract class CentralDatabaseBackupReceiver {
 	private final Map<DecentralizedValue, CentralDatabaseBackupReceiverPerPeer> receiversPerPeer=new HashMap<>();
 	private final DatabaseWrapper wrapper;
 	private final DecentralizedValue centralID;
+	protected final ClientTable clientTable;
+	protected final LastValidatedDistantIDPerClientTable lastValidatedDistantIDPerClientTable;
+	protected final DatabaseBackupPerClientTable databaseBackupPerClientTable;
+	protected final EncryptedBackupPartReferenceTable encryptedBackupPartReferenceTable;
+	protected final ClientCloudAccountTable clientCloudAccountTable;
+	protected final ConnectedClientsTable connectedClientsTable;
 
-	public CentralDatabaseBackupReceiver(DatabaseWrapper wrapper, DecentralizedValue centralID) {
+	public CentralDatabaseBackupReceiver(DatabaseWrapper wrapper, DecentralizedValue centralID) throws DatabaseException {
 		if (wrapper==null)
 			throw new NullPointerException();
 		if (centralID==null)
 			throw new NullPointerException();
 		this.wrapper = wrapper;
 		this.centralID=centralID;
+		this.clientTable=wrapper.getTableInstance(ClientTable.class);
+		this.clientCloudAccountTable=wrapper.getTableInstance(ClientCloudAccountTable.class);
+		this.lastValidatedDistantIDPerClientTable=wrapper.getTableInstance(LastValidatedDistantIDPerClientTable.class);
+		this.encryptedBackupPartReferenceTable=wrapper.getTableInstance(EncryptedBackupPartReferenceTable.class);
+		this.databaseBackupPerClientTable=wrapper.getTableInstance(DatabaseBackupPerClientTable.class);
+		this.connectedClientsTable=wrapper.getTableInstance(ConnectedClientsTable.class);
+		disconnectAllPeers();
 	}
 
 	protected abstract CentralDatabaseBackupReceiverPerPeer newCentralDatabaseBackupReceiverPerPeerInstance(DatabaseWrapper wrapper);
@@ -59,5 +72,12 @@ public abstract class CentralDatabaseBackupReceiver {
 
 	public DecentralizedValue getCentralID() {
 		return centralID;
+	}
+
+	public void disconnect() throws DatabaseException {
+		disconnectAllPeers();
+	}
+	private void disconnectAllPeers() throws DatabaseException {
+		connectedClientsTable.removeRecordsWithAllFields("centralID", centralID);
 	}
 }
