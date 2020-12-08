@@ -1547,6 +1547,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		private void received(EncryptedMetaDataFromCentralDatabaseBackup metaData) throws DatabaseException {
 
+
 			ConnectedPeersWithCentralBackup cp=initializedHooksWithCentralBackup.get(metaData.getHostSource());
 
 			if (cp==null)
@@ -1555,21 +1556,20 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new DatabaseException("Invalid host destination");
 			if (metaData.getHostDestination().equals(metaData.getHostSource()))
 				return;
-			try {
-				cp.otherBackupMetaDataDatabasePartsSynchronizingWithCentralDatabaseBackup=false;
-				if (!cp.validatedIDPerDistantHook.addMetaData(metaData.getMetaData().getPackageString(), metaData.getMetaData().decodeMetaData(encryptionProfileProviderForCentralDatabaseBackup))) {
-					return;
-				}
 
 
-				long mn=cp.validatedIDPerDistantHook.getLastTransactionID(metaData.getMetaData().getPackageString());
-				cp.lastValidatedTransactionIDFromCentralBackup=cp.lastValidatedTransactionIDFromCentralBackup==null?mn:Math.max(cp.lastValidatedTransactionIDFromCentralBackup, mn);
-
-
-				checkMetaDataUpdate(metaData.getHostSource());
-			} catch (IOException e) {
-				throw DatabaseException.getDatabaseException(e);
+			cp.otherBackupMetaDataDatabasePartsSynchronizingWithCentralDatabaseBackup=false;
+			if (!cp.validatedIDPerDistantHook.addMetaData(metaData.getMetaData().getPackageString(), metaData.getMetaData().decodeMetaData(encryptionProfileProviderForCentralDatabaseBackup))) {
+				return;
 			}
+
+
+			long mn=cp.validatedIDPerDistantHook.getLastTransactionID(metaData.getMetaData().getPackageString());
+			cp.lastValidatedTransactionIDFromCentralBackup=cp.lastValidatedTransactionIDFromCentralBackup==null?mn:Math.max(cp.lastValidatedTransactionIDFromCentralBackup, mn);
+
+
+			checkMetaDataUpdate(metaData.getHostSource());
+
 		}
 
 		private void initDistantBackupCenter(final DatabaseHooksTable.Record r, final long lastValidatedDistantTransactionID, final long lastValidatedLocalTransactionID) throws DatabaseException {
@@ -1679,8 +1679,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			try {
 				if (lastValidatedTransactionsUTC==null)
 					throw new NullPointerException();
-				if (!centralBackupInitialized)
-					throw new DatabaseException("Not initialized");
+
 				Set<String> authorizedPackagesToBeSynchronizedWithCentralDatabaseBackup=getDatabasePackagesToSynchronizeWithCentralBackup();
 				for (Map.Entry<String, Long> e : lastValidatedTransactionsUTC.entrySet()) {
 					if (authorizedPackagesToBeSynchronizedWithCentralDatabaseBackup.contains(e.getKey())) {
@@ -1700,23 +1699,17 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 
 		}
-
-		private void received(InitialMessageComingFromCentralBackup initialMessageComingFromCentralBackup) throws DatabaseException {
+		
+		private void received(InitialMessageComingFromCentralBackup initialMessageComingFromCentralBackup) throws DatabaseException, MessageExternalizationException {
 			if (!initialMessageComingFromCentralBackup.getHostDestination().equals(getLocalHostID()))
 				throw new IllegalArgumentException();
 			initDistantBackupCenterForThisHostWithStringPackages(initialMessageComingFromCentralBackup.getLastValidatedTransactionsUTCForDestinationHost());
-			try {
-				for (Map.Entry<DecentralizedValue, LastValidatedLocalAndDistantID> e : initialMessageComingFromCentralBackup.getLastValidatedIDsPerHost(encryptionProfileProviderForCentralDatabaseBackup).entrySet()) {
-					assert !e.getKey().equals(getLocalHostID());
-					initDistantBackupCenter(e.getKey(), e.getValue().getLastValidatedDistantID(), e.getValue().getLastValidatedLocalID());
-				}
-				for (AuthenticatedP2PMessage a : initialMessageComingFromCentralBackup.getAuthenticatedP2PMessages(protectedEncryptionProfileProviderForAuthenticatedMessages))
-					received(a);
+			for (Map.Entry<DecentralizedValue, LastValidatedLocalAndDistantID> e : initialMessageComingFromCentralBackup.getLastValidatedIDsPerHost(encryptionProfileProviderForCentralDatabaseBackup).entrySet()) {
+				assert !e.getKey().equals(getLocalHostID());
+				initDistantBackupCenter(e.getKey(), e.getValue().getLastValidatedDistantID(), e.getValue().getLastValidatedLocalID());
 			}
-			catch (IOException e)
-			{
-				throw DatabaseException.getDatabaseException(e);
-			}
+			for (AuthenticatedP2PMessage a : initialMessageComingFromCentralBackup.getAuthenticatedP2PMessages(protectedEncryptionProfileProviderForAuthenticatedMessages))
+				received(a);
 
 		}
 		/*private void initDistantBackupCenterForThisHost(Map<Package, Long> lastValidatedTransactionsUTC) throws DatabaseException {
@@ -1786,34 +1779,26 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 		}
 
-		private void received(final BackupChannelInitializationMessageFromCentralDatabaseBackup message) throws DatabaseException {
+		private void received(final BackupChannelInitializationMessageFromCentralDatabaseBackup message) throws DatabaseException, IOException {
 			if (message == null)
 				throw new NullPointerException();
 			if (!message.getHostDestination().equals(getLocalHostID()))
 				throw new IllegalArgumentException();
-			try {
-				initDistantBackupCenter(message.getHostChannel(), message.getLastValidatedDistantID(encryptionProfileProviderForCentralDatabaseBackup), message.getLastValidatedLocalID(encryptionProfileProviderForCentralDatabaseBackup));
-			} catch (IOException e) {
-				throw DatabaseException.getDatabaseException(e);
-			}
+
+			initDistantBackupCenter(message.getHostChannel(), message.getLastValidatedDistantID(encryptionProfileProviderForCentralDatabaseBackup), message.getLastValidatedLocalID(encryptionProfileProviderForCentralDatabaseBackup));
 		}
-		private void received(final BackupChannelUpdateMessageFromCentralDatabaseBackup message) throws DatabaseException {
+		private void received(final BackupChannelUpdateMessageFromCentralDatabaseBackup message) throws DatabaseException, IOException {
 			if (message == null)
 				throw new NullPointerException();
 			if (!message.getHostDestination().equals(getLocalHostID()))
 				throw new IllegalArgumentException();
-			try {
-				updateDistantBackupCenter(message.getHostChannel(), message.getLastValidatedDistantID(encryptionProfileProviderForCentralDatabaseBackup), message.getLastValidatedLocalID(encryptionProfileProviderForCentralDatabaseBackup));
-			} catch (IOException e) {
-				throw DatabaseException.getDatabaseException(e);
-			}
+			updateDistantBackupCenter(message.getHostChannel(), message.getLastValidatedDistantID(encryptionProfileProviderForCentralDatabaseBackup), message.getLastValidatedLocalID(encryptionProfileProviderForCentralDatabaseBackup));
 		}
 		private void initDistantBackupCenter(final DecentralizedValue hostChannel, final long lastValidatedDistantTransactionID, final long lastValidatedLocalTransactionID) throws DatabaseException {
 
 
 			lockWrite();
-			if (!centralBackupInitialized)
-				throw new DatabaseException("Distant database backup must be initialized first with function initDistantBackupCenterForThisHost");
+
 
 			initDistantBackupCenter(getDatabaseHookRecord(hostChannel), lastValidatedDistantTransactionID, lastValidatedLocalTransactionID);
 		}
@@ -1833,12 +1818,15 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						new IllegalArgumentException("The host ID " + hostChannel + " has not been initialized !"));
 			return r;
 		}
+		private void checkCentralDatabaseBackupInitialized() throws DatabaseException {
+			if (!centralBackupInitialized)
+				throw new DatabaseException("Distant database backup must be initialized first with function initDistantBackupCenterForThisHost");
+		}
 		private void updateDistantBackupCenter(final DecentralizedValue hostChannel, final long lastValidatedDistantTransactionID, final long lastValidatedLocalTransactionID) throws DatabaseException {
 
 
 			lockWrite();
-			if (!centralBackupInitialized)
-				throw new DatabaseException("Distant database backup must be initialized first with function initDistantBackupCenterForThisHost");
+
 
 			updateDistantBackupCenter(getDatabaseHookRecord(hostChannel), lastValidatedDistantTransactionID, lastValidatedLocalTransactionID);
 		}
@@ -2142,6 +2130,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		private void received(EncryptedBackupPartComingFromCentralDatabaseBackup backupPart) throws DatabaseException {
+
 			if (!backupPart.getHostDestination().equals(getLocalHostID()))
 			{
 				throw new DatabaseException("Invalid host destination");
@@ -2185,13 +2174,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		private void received(EncryptedBackupPartTransmissionConfirmationFromCentralDatabaseBackup confirmation) throws DatabaseException {
+
 			if (!confirmation.getHostDestination().equals(getLocalHostID()))
 				throw DatabaseException.getDatabaseException(new MessageExternalizationException(Integrity.FAIL));
 			this.backupDatabasePartsSynchronizingWithCentralDatabaseBackup.remove(confirmation.getPackageString());
 			validateLastSynchronizationWithCentralDatabaseBackup(confirmation.getPackageString(), confirmation.getLastTransactionUTC());
 		}
 
-		public void received(DatabaseEventToSend data) throws DatabaseException, MessageExternalizationException {
+		public void received(DatabaseEventToSend data) throws DatabaseException, IOException {
 			if (data instanceof AuthenticatedP2PMessage)
 				received((AuthenticatedP2PMessage)data);
 			if (data instanceof P2PDatabaseEventToSend)
@@ -2218,38 +2208,34 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 		}
 		private void received(IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup message) throws DatabaseException, IOException {
+
 			for (AuthenticatedP2PMessage a : message.getAuthenticatedP2PMessages(protectedEncryptionProfileProviderForAuthenticatedMessages))
 				received(a);
 		}
 		private void received(MessageComingFromCentralDatabaseBackup data) throws DatabaseException, IOException {
-			if (data instanceof EncryptedBackupPartTransmissionConfirmationFromCentralDatabaseBackup)
-			{
-				received((EncryptedBackupPartTransmissionConfirmationFromCentralDatabaseBackup)data);
-			} else if (data instanceof EncryptedBackupPartComingFromCentralDatabaseBackup)
-			{
-				received((EncryptedBackupPartComingFromCentralDatabaseBackup)data);
-			}
-			else if (data instanceof EncryptedMetaDataFromCentralDatabaseBackup)
-			{
-				received((EncryptedMetaDataFromCentralDatabaseBackup)data);
-			}
-			else if (data instanceof IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup)
-			{
-				received((IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup) data);
-			}
-			else if (data instanceof BackupChannelUpdateMessageFromCentralDatabaseBackup)
-			{
-				if (data instanceof BackupChannelInitializationMessageFromCentralDatabaseBackup)
-				{
-					received((BackupChannelInitializationMessageFromCentralDatabaseBackup)data);
-				}
-				else
-					received((BackupChannelUpdateMessageFromCentralDatabaseBackup)data);
-			}
-			else if (data instanceof InitialMessageComingFromCentralBackup)
+			if (data instanceof InitialMessageComingFromCentralBackup)
 			{
 				received((InitialMessageComingFromCentralBackup)data);
 			}
+			else {
+				checkCentralDatabaseBackupInitialized();
+				if (data instanceof EncryptedBackupPartTransmissionConfirmationFromCentralDatabaseBackup) {
+					received((EncryptedBackupPartTransmissionConfirmationFromCentralDatabaseBackup) data);
+				} else if (data instanceof EncryptedBackupPartComingFromCentralDatabaseBackup) {
+					received((EncryptedBackupPartComingFromCentralDatabaseBackup) data);
+				} else if (data instanceof EncryptedMetaDataFromCentralDatabaseBackup) {
+					received((EncryptedMetaDataFromCentralDatabaseBackup) data);
+				} else if (data instanceof IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup) {
+
+					received((IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup) data);
+				} else if (data instanceof BackupChannelUpdateMessageFromCentralDatabaseBackup) {
+					if (data instanceof BackupChannelInitializationMessageFromCentralDatabaseBackup) {
+						received((BackupChannelInitializationMessageFromCentralDatabaseBackup) data);
+					} else
+						received((BackupChannelUpdateMessageFromCentralDatabaseBackup) data);
+				}
+			}
+
 		}
 
 
