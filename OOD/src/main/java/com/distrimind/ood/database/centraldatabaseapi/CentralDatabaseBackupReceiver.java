@@ -102,11 +102,25 @@ public abstract class CentralDatabaseBackupReceiver {
 			receiversPerPeer.remove(message.getHostSource());
 		return res;
 	}
-	public boolean isConnected(DecentralizedValue peerID)
+	public boolean isConnectedIntoThisServer(DecentralizedValue peerID)
 	{
 		CentralDatabaseBackupReceiverPerPeer r=receiversPerPeer.get(peerID);
 		return r!=null && r.isConnected();
 	}
+
+	public boolean isConnectedIntoOneOfCentralDatabaseBackupServers(DecentralizedValue peerID) throws DatabaseException {
+		return connectedClientsTable.hasRecordsWithAllFields("clientID", peerID);
+	}
+
+	public DecentralizedValue getCentralDatabaseBackupServerIDConnectedWithGivenPeerID(DecentralizedValue peerID) throws DatabaseException {
+		ConnectedClientsTable.Record r=connectedClientsTable.getRecord("clientID", peerID);
+		if (r==null)
+			return null;
+		else
+			return r.getCentralID();
+	}
+
+
 
 	public DecentralizedValue getCentralID() {
 		return centralID;

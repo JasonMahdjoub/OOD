@@ -73,11 +73,12 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 		this.connected=false;
 	}
 	public void sendMessageFromCentralDatabaseBackup(MessageComingFromCentralDatabaseBackup message) throws DatabaseException {
-		if (centralDatabaseBackupReceiver.isConnected(message.getHostDestination()))
+		if (centralDatabaseBackupReceiver.isConnectedIntoThisServer(message.getHostDestination()))
 			sendMessageFromThisCentralDatabaseBackup(message);
 		else {
-			ConnectedClientsTable.Record r=centralDatabaseBackupReceiver.connectedClientsTable.getRecord("clientID", message.getHostDestination());
-			sendMessageOtherCentralDatabaseBackup(r.getCentralID(), message);
+			DecentralizedValue sid=centralDatabaseBackupReceiver.getCentralDatabaseBackupServerIDConnectedWithGivenPeerID(message.getHostDestination());
+			if (sid!=null)
+				sendMessageOtherCentralDatabaseBackup(sid, message);
 		}
 	}
 	protected abstract void sendMessageFromThisCentralDatabaseBackup(MessageComingFromCentralDatabaseBackup message);
@@ -93,10 +94,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 		connected=false;
 		return Integrity.OK;
 	}
-	private boolean isConnected(DecentralizedValue clientID) throws DatabaseException {
-		//return centralDatabaseBackupReceiver.isConnected(clientID);
-		return centralDatabaseBackupReceiver.connectedClientsTable.hasRecordsWithAllFields("clientID", clientID);
-	}
+
 	public boolean isConnected()
 	{
 		return connected;
@@ -314,7 +312,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 						centralDatabaseBackupReceiver.clientTable.getRecords(new Filter<ClientTable.Record>() {
 							@Override
 							public boolean nextRecord(ClientTable.Record _record) throws DatabaseException {
-								if (!_record.getClientID().equals(connectedClientID) && isConnected(_record.getClientID()))
+								if (!_record.getClientID().equals(connectedClientID) && centralDatabaseBackupReceiver.isConnectedIntoOneOfCentralDatabaseBackupServers(_record.getClientID()))
 								{
 									sendMessageFromCentralDatabaseBackup(
 											new BackupChannelUpdateMessageFromCentralDatabaseBackup(
