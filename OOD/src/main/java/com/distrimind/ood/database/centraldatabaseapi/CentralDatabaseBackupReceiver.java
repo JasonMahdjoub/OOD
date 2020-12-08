@@ -141,7 +141,7 @@ public abstract class CentralDatabaseBackupReceiver {
 			public Void run() throws Exception {
 				encryptedBackupPartReferenceTable.removeRecords(new Filter<EncryptedBackupPartReferenceTable.Record>() {
 					@Override
-					public boolean nextRecord(EncryptedBackupPartReferenceTable.Record _record) throws DatabaseException {
+					public boolean nextRecord(EncryptedBackupPartReferenceTable.Record _record) {
 						_record.getFileReference().delete();
 						return true;
 					}
@@ -162,7 +162,7 @@ public abstract class CentralDatabaseBackupReceiver {
 			}
 
 			@Override
-			public void initOrReset() throws Exception {
+			public void initOrReset() {
 
 			}
 		});

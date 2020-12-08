@@ -51,7 +51,8 @@ import java.util.Map;
  */
 public class DistantBackupCenterConnexionInitialisation extends AuthenticatedMessageDestinedToCentralDatabaseBackup {
 	private Map<DecentralizedValue, byte[]> encryptedDistantLastValidatedIDs;
-	private static final int MAX_DISTANT_VALIDATED_IDS_SIZE_IN_BYTES=4+DatabaseWrapper.MAX_DISTANT_PEERS*(DecentralizedValue.MAX_SIZE_IN_BYTES_OF_DECENTRALIZED_VALUE+8+EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+
+	private static final int MAX_DISTANT_VALIDATED_IDS_SIZE_IN_BYTES=4+DatabaseWrapper.MAX_DISTANT_PEERS*(DatabaseWrapper.MAX_ACCEPTED_SIZE_IN_BYTES_OF_DECENTRALIZED_VALUE+8+EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
 
 	@SuppressWarnings("unused")
 	private DistantBackupCenterConnexionInitialisation() {
@@ -88,7 +89,8 @@ public class DistantBackupCenterConnexionInitialisation extends AuthenticatedMes
 
 	@Override
 	public int getInternalSerializedSize() {
-		return super.getInternalSerializedSize()+SerializationTools.getInternalSize(encryptedDistantLastValidatedIDs, MAX_DISTANT_VALIDATED_IDS_SIZE_IN_BYTES);
+		return super.getInternalSerializedSize()
+				+SerializationTools.getInternalSize(encryptedDistantLastValidatedIDs, MAX_DISTANT_VALIDATED_IDS_SIZE_IN_BYTES);
 	}
 
 	@Override

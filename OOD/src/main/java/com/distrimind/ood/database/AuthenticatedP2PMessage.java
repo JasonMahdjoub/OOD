@@ -53,7 +53,7 @@ import java.security.NoSuchProviderException;
  * @since OOD 3.0.0
  */
 public interface AuthenticatedP2PMessage extends P2PDatabaseEventToSend, AuthenticatedMessage {
-	int MAX_NUMBER_OF_P2P_MESSAGES_PER_PEER=DatabaseWrapper.MAX_DISTANT_PEERS*2;
+	int MAX_NUMBER_OF_AUTHENTICATED_P2P_MESSAGES_PER_PEER =18;
 	int MAX_AUTHENTICATED_P2P_MESSAGE_SIZE_IN_BYTES=AbstractHookRequest.MAX_HOOK_ADD_REQUEST_LENGTH_IN_BYTES+4;
 
 	@Override

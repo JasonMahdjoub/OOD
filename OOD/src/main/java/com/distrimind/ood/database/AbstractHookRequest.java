@@ -38,7 +38,9 @@ package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.crypto.ASymmetricPublicKey;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
+import com.distrimind.util.crypto.IASymmetricPublicKey;
 import com.distrimind.util.crypto.SymmetricAuthenticatedSignatureType;
 import com.distrimind.util.io.*;
 
@@ -55,9 +57,9 @@ public abstract class AbstractHookRequest extends DatabaseEvent implements Authe
 
 
 
-	static final int MAX_PEERS_DESCRIPTION_SIZE_IN_BYTES=DecentralizedValue.MAX_SIZE_IN_BYTES_OF_DECENTRALIZED_VALUE*DatabaseWrapper.MAX_DISTANT_PEERS;
+	static final int MAX_PEERS_DESCRIPTION_SIZE_IN_BYTES= DatabaseWrapper.MAX_ACCEPTED_SIZE_IN_BYTES_OF_DECENTRALIZED_VALUE *DatabaseWrapper.MAX_DISTANT_PEERS;
 	static final int MAX_PACKAGE_ENCODING_SIZE_IN_BYTES=(DatabaseHooksTable.PACKAGES_TO_SYNCHRONIZE_LENGTH+1)*2+10;
-	static final int MAX_HOOK_ADD_REQUEST_LENGTH_IN_BYTES=MAX_PACKAGE_ENCODING_SIZE_IN_BYTES+DecentralizedValue.MAX_SIZE_IN_BYTES_OF_DECENTRALIZED_VALUE*2+MAX_PEERS_DESCRIPTION_SIZE_IN_BYTES+SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE+5;
+	static final int MAX_HOOK_ADD_REQUEST_LENGTH_IN_BYTES=MAX_PACKAGE_ENCODING_SIZE_IN_BYTES+DatabaseWrapper.MAX_ACCEPTED_SIZE_IN_BYTES_OF_DECENTRALIZED_VALUE*2+MAX_PEERS_DESCRIPTION_SIZE_IN_BYTES+SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE+5;
 	private DecentralizedValue hostSource;
 	private DecentralizedValue hostDestination;
 	//private DecentralizedValue hostAdded;

@@ -43,7 +43,6 @@ import com.distrimind.ood.database.messages.IndirectMessagesDestinedToCentralDat
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
-import com.distrimind.util.io.SerializationTools;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -58,8 +57,8 @@ import java.util.concurrent.atomic.AtomicReference;
 @SuppressWarnings({"SameParameterValue", "UnusedReturnValue"})
 @LoadToMemory
 final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
-	static final int PACKAGES_TO_SYNCHRONIZE_LENGTH=DatabaseWrapper.MAX_PACKAGE_TO_SYNCHRONIZE*SerializationTools.MAX_CLASS_LENGTH;
-	private static final int SIZE_IN_BYTES_OF_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND =AuthenticatedP2PMessage.MAX_AUTHENTICATED_P2P_MESSAGE_SIZE_IN_BYTES*AuthenticatedP2PMessage.MAX_NUMBER_OF_P2P_MESSAGES_PER_PEER+2;
+	static final int PACKAGES_TO_SYNCHRONIZE_LENGTH=DatabaseWrapper.MAX_PACKAGE_TO_SYNCHRONIZE*70;
+	private static final int SIZE_IN_BYTES_OF_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND =DatabaseWrapper.MAX_DISTANT_PEERS*2*AuthenticatedP2PMessage.MAX_NUMBER_OF_AUTHENTICATED_P2P_MESSAGES_PER_PEER +2;
 
 	private volatile DatabaseTransactionEventsTable databaseTransactionEventsTable = null;
 	private volatile DatabaseTransactionsPerHostTable databaseTransactionsPerHostTable = null;

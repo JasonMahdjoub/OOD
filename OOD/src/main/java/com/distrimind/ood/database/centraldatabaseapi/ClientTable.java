@@ -100,6 +100,7 @@ public class ClientTable extends Table<ClientTable.Record> {
 		public List<byte[]> getEncryptedAuthenticatedMessagesToSend() {
 			return encryptedAuthenticatedMessagesToSend;
 		}
+
 	}
 
 

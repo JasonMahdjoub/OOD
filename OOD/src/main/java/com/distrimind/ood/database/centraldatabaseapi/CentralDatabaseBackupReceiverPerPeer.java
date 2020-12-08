@@ -72,7 +72,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 		this.centralDatabaseBackupReceiver=centralDatabaseBackupReceiver;
 		this.connected=false;
 	}
-	public void sendMessageFromCentralDatabaseBackup(MessageComingFromCentralDatabaseBackup message) throws DatabaseException {
+	protected void sendMessage(MessageComingFromCentralDatabaseBackup message) throws DatabaseException {
 		if (centralDatabaseBackupReceiver.isConnectedIntoThisServer(message.getHostDestination()))
 			sendMessageFromThisCentralDatabaseBackup(message);
 		else {
@@ -239,7 +239,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 			public Integrity run() throws Exception {
 				ClientTable.Record r;
 				try {
-					r = getClientRecord(message.getDestination());
+					r = getClientRecord(message.getHostDestination());
 				}
 				catch (MessageExternalizationException e)
 				{
@@ -249,11 +249,15 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 					return Integrity.OK;
 				if (r.getAccount().getAccountID()==connectedClientRecord.getAccount().getAccountID())
 				{
-					List<byte[]> encryptedAuthenticatedMessagesToSend=r.getEncryptedAuthenticatedMessagesToSend();
-					if (encryptedAuthenticatedMessagesToSend==null)
-						encryptedAuthenticatedMessagesToSend=new ArrayList<>();
-					encryptedAuthenticatedMessagesToSend.addAll(message.getEncryptedAuthenticatedP2PMessages());
-					centralDatabaseBackupReceiver.clientTable.updateRecord(r, "encryptedAuthenticatedMessagesToSend", encryptedAuthenticatedMessagesToSend);
+					if (centralDatabaseBackupReceiver.isConnectedIntoOneOfCentralDatabaseBackupServers(message.getHostDestination()))
+						sendMessage(message);
+					else {
+						List<byte[]> encryptedAuthenticatedMessagesToSend = r.getEncryptedAuthenticatedMessagesToSend();
+						if (encryptedAuthenticatedMessagesToSend == null)
+							encryptedAuthenticatedMessagesToSend = new ArrayList<>();
+						encryptedAuthenticatedMessagesToSend.addAll(message.getEncryptedAuthenticatedP2PMessages());
+						centralDatabaseBackupReceiver.clientTable.updateRecord(r, "encryptedAuthenticatedMessagesToSend", encryptedAuthenticatedMessagesToSend);
+					}
 					return Integrity.OK;
 				}
 				else
@@ -306,15 +310,16 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 						centralDatabaseBackupReceiver.databaseBackupPerClientTable.updateRecord(database, "lastFileBackupPartUTC", message.getMetaData().getFileTimestampUTC());
 					else if (add)
 						centralDatabaseBackupReceiver.databaseBackupPerClientTable.addRecord(database);
-					sendMessageFromCentralDatabaseBackup(new EncryptedBackupPartTransmissionConfirmationFromCentralDatabaseBackup(message.getHostSource(), message.getMetaData().getFileTimestampUTC(), message.getMetaData().getLastTransactionTimestampUTC(), message.getMetaData().getPackageString()));
+					sendMessage(new EncryptedBackupPartTransmissionConfirmationFromCentralDatabaseBackup(message.getHostSource(), message.getMetaData().getFileTimestampUTC(), message.getMetaData().getLastTransactionTimestampUTC(), message.getMetaData().getPackageString()));
 					if (update || add)
 					{
+						centralDatabaseBackupReceiver.clientTable.updateRecord(connectedClientRecord, "lastValidatedAndEncryptedID", message.getLastValidatedAndEncryptedID());
 						centralDatabaseBackupReceiver.clientTable.getRecords(new Filter<ClientTable.Record>() {
 							@Override
 							public boolean nextRecord(ClientTable.Record _record) throws DatabaseException {
 								if (!_record.getClientID().equals(connectedClientID) && centralDatabaseBackupReceiver.isConnectedIntoOneOfCentralDatabaseBackupServers(_record.getClientID()))
 								{
-									sendMessageFromCentralDatabaseBackup(
+									sendMessage(
 											new BackupChannelUpdateMessageFromCentralDatabaseBackup(
 													_record.getClientID(),
 													message.getHostSource(),
@@ -366,6 +371,13 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 		return centralDatabaseBackupReceiver.clientTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
 			@Override
 			public Integrity run() throws Exception {
+				try {
+					connectedClientRecord = getClientRecord(message.getHostSource());
+				}
+				catch (MessageExternalizationException e)
+				{
+					return e.getIntegrity();
+				}
 				Integrity i=centralDatabaseBackupReceiver.lastValidatedDistantIDPerClientTable.received(message, connectedClientRecord);
 				if (i!=Integrity.OK)
 					return i;
@@ -386,7 +398,10 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 						return false;
 					}
 				},"client=%c", "c", connectedClientRecord);
-				sendMessageFromCentralDatabaseBackup(new InitialMessageComingFromCentralBackup(message.getHostSource(), lastValidatedAndEncryptedIDsPerHost, lastValidatedTransactionsUTCForDestinationHost));
+				List<byte[]> lids=connectedClientRecord.getEncryptedAuthenticatedMessagesToSend();
+				if (lids!=null && lids.size()>0)
+					centralDatabaseBackupReceiver.clientTable.updateRecord(connectedClientRecord, "encryptedAuthenticatedMessagesToSend", null);
+				sendMessage(new InitialMessageComingFromCentralBackup(message.getHostSource(), lastValidatedAndEncryptedIDsPerHost, lastValidatedTransactionsUTCForDestinationHost, lids));
 				return Integrity.OK;
 			}
 
@@ -465,7 +480,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 				if (r!=null) {
 					EncryptedBackupPartReferenceTable.Record e=getBackupMetaDataPerFile(r, message.getFileCoordinate());
 					if (e!=null)
-						sendMessageFromCentralDatabaseBackup(e.readEncryptedBackupPart(message.getHostSource()));
+						sendMessage(e.readEncryptedBackupPart(message.getHostSource()));
 				}
 				return Integrity.OK;
 			}
@@ -525,7 +540,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 				if (r!=null) {
 					EncryptedBackupPartReferenceTable.Record e=getBackupMetaDataPerFile(r, message.getFileCoordinate());
 					if (e!=null)
-						sendMessageFromCentralDatabaseBackup(new EncryptedMetaDataFromCentralDatabaseBackup(message.getHostSource(), message.getChannelHost(), e.getMetaData()));
+						sendMessage(new EncryptedMetaDataFromCentralDatabaseBackup(message.getHostSource(), message.getChannelHost(), e.getMetaData()));
 				}
 				return Integrity.OK;
 			}

@@ -51,6 +51,7 @@ import com.distrimind.ood.database.messages.*;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.FileTools;
 import com.distrimind.util.Reference;
+import com.distrimind.util.crypto.ASymmetricPublicKey;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 import com.distrimind.util.crypto.SecureRandomType;
@@ -86,6 +87,8 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @SuppressWarnings("ThrowFromFinallyBlock")
 public abstract class DatabaseWrapper implements AutoCloseable {
+
+	public static final int MAX_ACCEPTED_SIZE_IN_BYTES_OF_DECENTRALIZED_VALUE= ASymmetricPublicKey.MAX_SIZE_IN_BYTES_OF_NON_PQC_RSA_NON_HYBRID_PUBLIC_KEY;
 
 	private static final Set<Class<?>> internalDatabaseClassesList = new HashSet<>(Arrays.asList(DatabaseDistantTransactionEvent.class, DatabaseDistantEventsTable.class,
 			DatabaseEventsTable.class, DatabaseHooksTable.class, DatabaseTransactionEventsTable.class, DatabaseTransactionsPerHostTable.class, IDTable.class, DatabaseTable.class));

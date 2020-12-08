@@ -51,10 +51,11 @@ import java.util.List;
  * @version 1.0
  * @since OOD 3.0.0
  */
-public class IndirectMessagesDestinedToCentralDatabaseBackup extends DatabaseEvent implements MessageDestinedToCentralDatabaseBackup, SecureExternalizable {
+public class IndirectMessagesDestinedToCentralDatabaseBackup extends DatabaseEvent implements MessageDestinedToCentralDatabaseBackup, MessageComingFromCentralDatabaseBackup, SecureExternalizable {
 
-	public static final long MAX_AUTHENTICATED_P2P_MESSAGE_SIZE_IN_BYTES= SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE+HybridASymmetricAuthenticatedSignatureType.MAX_HYBRID_ASYMMETRIC_SIGNATURE_SIZE+MessageDigestType.MAX_HASH_LENGTH+AuthenticatedP2PMessage.MAX_AUTHENTICATED_P2P_MESSAGE_SIZE_IN_BYTES+31+SymmetricEncryptionType.MAX_IV_SIZE_IN_BYTES;
-	public static final int SIZE_IN_BYTES_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND =1<<20;//MAX_AUTHENTICATED_P2P_MESSAGE_SIZE_IN_BYTES*AuthenticatedP2PMessage.MAX_NUMBER_OF_P2P_MESSAGES_PER_PEER+4;
+	public static final int MAX_AUTHENTICATED_P2P_MESSAGE_SIZE_IN_BYTES= SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE+HybridASymmetricAuthenticatedSignatureType.MAX_HYBRID_ASYMMETRIC_SIGNATURE_SIZE+MessageDigestType.MAX_HASH_LENGTH+AuthenticatedP2PMessage.MAX_AUTHENTICATED_P2P_MESSAGE_SIZE_IN_BYTES+31+SymmetricEncryptionType.MAX_IV_SIZE_IN_BYTES;
+	public static final int SIZE_IN_BYTES_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND =MAX_AUTHENTICATED_P2P_MESSAGE_SIZE_IN_BYTES*AuthenticatedP2PMessage.MAX_NUMBER_OF_AUTHENTICATED_P2P_MESSAGES_PER_PEER +4;
+	public static final int MAX_NUMBER_OF_P2P_MESSAGES_PER_PEER=AuthenticatedP2PMessage.MAX_NUMBER_OF_AUTHENTICATED_P2P_MESSAGES_PER_PEER;//(int)(SIZE_IN_BYTES_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND/MAX_AUTHENTICATED_P2P_MESSAGE_SIZE_IN_BYTES);
 	private DecentralizedValue hostSource;
 	private DecentralizedValue hostDestination;
 	private List<byte[]> encryptedAuthenticatedP2PMessages;
@@ -83,6 +84,8 @@ public class IndirectMessagesDestinedToCentralDatabaseBackup extends DatabaseEve
 		if (authenticatedP2PMessages==null)
 			throw new NullPointerException();
 		if (authenticatedP2PMessages.size()==0)
+			throw new IllegalArgumentException();
+		if (authenticatedP2PMessages.size()>MAX_NUMBER_OF_P2P_MESSAGES_PER_PEER)
 			throw new IllegalArgumentException();
 
 		this.hostSource = null;
@@ -134,7 +137,8 @@ public class IndirectMessagesDestinedToCentralDatabaseBackup extends DatabaseEve
 		return hostSource;
 	}
 
-	public DecentralizedValue getDestination()
+	@Override
+	public DecentralizedValue getHostDestination()
 	{
 		return hostDestination;
 	}
@@ -164,31 +168,37 @@ public class IndirectMessagesDestinedToCentralDatabaseBackup extends DatabaseEve
 		hostDestination=in.readObject(false, DecentralizedValue.class );
 		if (hostSource.equals(hostDestination))
 			throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN);
-		//noinspection unchecked
-		encryptedAuthenticatedP2PMessages=(List<byte[]>)in.readCollection(false, SIZE_IN_BYTES_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND, false);
+		encryptedAuthenticatedP2PMessages=in.readCollection(false, SIZE_IN_BYTES_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND, false, byte[].class);
+		authenticatedP2PMessages=null;
+	}
+
+	static List<AuthenticatedP2PMessage> getAuthenticatedP2PMessages(EncryptionProfileProvider encryptionProfileProvider, List<byte[]> encryptedAuthenticatedP2PMessages) throws IOException {
+		ArrayList<AuthenticatedP2PMessage> tmp=new ArrayList<>();
+		if (encryptedAuthenticatedP2PMessages==null)
+			return tmp;
+		for (byte[] e : encryptedAuthenticatedP2PMessages)
+		{
+			try(RandomByteArrayInputStream ris=new RandomByteArrayInputStream(e);RandomByteArrayOutputStream out=new RandomByteArrayOutputStream())
+			{
+				EncryptionSignatureHashDecoder decoder=new EncryptionSignatureHashDecoder()
+						.withEncryptionProfileProvider(encryptionProfileProvider)
+						.withRandomInputStream(ris);
+				decoder.decodeAndCheckHashAndSignaturesIfNecessary(out);
+				out.flush();
+				try {
+					tmp.add(out.getRandomInputStream().readObject(false, AuthenticatedP2PMessage.class));
+				} catch (ClassNotFoundException classNotFoundException) {
+					throw new MessageExternalizationException(Integrity.FAIL);
+				}
+			}
+		}
+		return tmp;
 	}
 
 	public List<AuthenticatedP2PMessage> getAuthenticatedP2PMessages(EncryptionProfileProvider encryptionProfileProvider) throws IOException {
 		if (authenticatedP2PMessages==null)
 		{
-			ArrayList<AuthenticatedP2PMessage> tmp=new ArrayList<>();
-			for (byte[] e : encryptedAuthenticatedP2PMessages)
-			{
-				try(RandomByteArrayInputStream ris=new RandomByteArrayInputStream(e);RandomByteArrayOutputStream out=new RandomByteArrayOutputStream())
-				{
-					EncryptionSignatureHashDecoder decoder=new EncryptionSignatureHashDecoder()
-							.withEncryptionProfileProvider(encryptionProfileProvider)
-							.withRandomInputStream(ris);
-					decoder.decodeAndCheckHashAndSignaturesIfNecessary(out);
-					out.flush();
-					try {
-						tmp.add(out.getRandomInputStream().readObject(false, AuthenticatedP2PMessage.class));
-					} catch (ClassNotFoundException classNotFoundException) {
-						throw new MessageExternalizationException(Integrity.FAIL);
-					}
-				}
-			}
-			authenticatedP2PMessages=tmp;
+			authenticatedP2PMessages=getAuthenticatedP2PMessages(encryptionProfileProvider, encryptedAuthenticatedP2PMessages);
 		}
 		return authenticatedP2PMessages;
 	}

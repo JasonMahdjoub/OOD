@@ -35,6 +35,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database.messages;
 
+import com.distrimind.ood.database.AuthenticatedP2PMessage;
 import com.distrimind.ood.database.DatabaseEvent;
 import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.EncryptionTools;
@@ -44,6 +45,7 @@ import com.distrimind.util.io.*;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -56,22 +58,41 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 	private DecentralizedValue hostDestination;
 	private Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> lastValidatedAndEncryptedIDsPerHost;
 	private Map<String, Long> lastValidatedTransactionsUTCForDestinationHost;
+	private List<byte[]> encryptedAuthenticatedP2PMessages;
+	private transient List<AuthenticatedP2PMessage> authenticatedP2PMessages=null;
 
 	@SuppressWarnings("unused")
 	private InitialMessageComingFromCentralBackup()
 	{
 
 	}
-	public InitialMessageComingFromCentralBackup(DecentralizedValue hostDestination, Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> lastValidatedAndEncryptedIDsPerHost, Map<String, Long> lastValidatedTransactionsUTCForDestinationHost) {
+	public InitialMessageComingFromCentralBackup(DecentralizedValue hostDestination, Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> lastValidatedAndEncryptedIDsPerHost, Map<String, Long> lastValidatedTransactionsUTCForDestinationHost, List<byte[]> encryptedAuthenticatedP2PMessages) {
 		if (lastValidatedAndEncryptedIDsPerHost==null)
 			throw new NullPointerException();
 		if (lastValidatedTransactionsUTCForDestinationHost ==null)
 			throw new NullPointerException();
 		if (hostDestination==null)
 			throw new NullPointerException();
+		if (encryptedAuthenticatedP2PMessages!=null)
+		{
+			if (encryptedAuthenticatedP2PMessages.contains(null))
+				throw new NullPointerException();
+			if (encryptedAuthenticatedP2PMessages.size()>IndirectMessagesDestinedToCentralDatabaseBackup.MAX_NUMBER_OF_P2P_MESSAGES_PER_PEER)
+				throw new IllegalArgumentException();
+		}
+
+
 		this.lastValidatedAndEncryptedIDsPerHost = lastValidatedAndEncryptedIDsPerHost;
 		this.lastValidatedTransactionsUTCForDestinationHost = lastValidatedTransactionsUTCForDestinationHost;
 		this.hostDestination = hostDestination;
+		this.encryptedAuthenticatedP2PMessages=encryptedAuthenticatedP2PMessages;
+	}
+	public List<AuthenticatedP2PMessage> getAuthenticatedP2PMessages(EncryptionProfileProvider encryptionProfileProvider) throws IOException {
+		if (authenticatedP2PMessages==null)
+		{
+			authenticatedP2PMessages=IndirectMessagesDestinedToCentralDatabaseBackup.getAuthenticatedP2PMessages(encryptionProfileProvider, encryptedAuthenticatedP2PMessages);
+		}
+		return authenticatedP2PMessages;
 	}
 
 	public InitialMessageComingFromCentralBackup(Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> lastValidatedAndEncryptedIDsPerHost) {
@@ -108,7 +129,8 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 
 	@Override
 	public int getInternalSerializedSize() {
-		int res=SerializationTools.getInternalSize((SecureExternalizable)hostDestination)+4+this.lastValidatedTransactionsUTCForDestinationHost.size()*8;
+		int res=SerializationTools.getInternalSize((SecureExternalizable)hostDestination)+4+this.lastValidatedTransactionsUTCForDestinationHost.size()*8
+				+SerializationTools.getInternalSize(encryptedAuthenticatedP2PMessages, IndirectMessagesDestinedToCentralDatabaseBackup.SIZE_IN_BYTES_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND);
 		for (Map.Entry<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> e : lastValidatedAndEncryptedIDsPerHost.entrySet())
 		{
 			res+=SerializationTools.getInternalSize((SecureExternalizable)e.getKey())+
@@ -136,6 +158,7 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 			out.writeString(e.getKey(), false, SerializationTools.MAX_CLASS_LENGTH);
 			out.writeLong(e.getValue());
 		}
+		out.writeCollection(encryptedAuthenticatedP2PMessages, true, IndirectMessagesDestinedToCentralDatabaseBackup.SIZE_IN_BYTES_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND);
 	}
 
 	@Override
@@ -164,11 +187,16 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 			long utc=in.readLong();
 			this.lastValidatedTransactionsUTCForDestinationHost.put(packageString, utc);
 		}
-
+		encryptedAuthenticatedP2PMessages=in.readCollection(true, IndirectMessagesDestinedToCentralDatabaseBackup.SIZE_IN_BYTES_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND, byte[].class);
+		authenticatedP2PMessages=null;
 	}
 
 	@Override
 	public boolean cannotBeMerged() {
 		return true;
+	}
+
+	public List<byte[]> getEncryptedAuthenticatedP2PMessages() {
+		return encryptedAuthenticatedP2PMessages;
 	}
 }
