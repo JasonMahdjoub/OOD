@@ -51,7 +51,7 @@ import java.util.List;
  * @version 1.0
  * @since OOD 3.0.0
  */
-public class IndirectMessagesDestinedToCentralDatabaseBackup extends DatabaseEvent implements MessageDestinedToCentralDatabaseBackup, MessageComingFromCentralDatabaseBackup, SecureExternalizable {
+public class IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup extends DatabaseEvent implements MessageDestinedToCentralDatabaseBackup, MessageComingFromCentralDatabaseBackup, SecureExternalizable {
 
 	public static final int MAX_AUTHENTICATED_P2P_MESSAGE_SIZE_IN_BYTES= SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE+HybridASymmetricAuthenticatedSignatureType.MAX_HYBRID_ASYMMETRIC_SIGNATURE_SIZE+MessageDigestType.MAX_HASH_LENGTH+AuthenticatedP2PMessage.MAX_AUTHENTICATED_P2P_MESSAGE_SIZE_IN_BYTES+31+SymmetricEncryptionType.MAX_IV_SIZE_IN_BYTES;
 	public static final int SIZE_IN_BYTES_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND =MAX_AUTHENTICATED_P2P_MESSAGE_SIZE_IN_BYTES*AuthenticatedP2PMessage.MAX_NUMBER_OF_AUTHENTICATED_P2P_MESSAGES_PER_PEER +4;
@@ -62,11 +62,11 @@ public class IndirectMessagesDestinedToCentralDatabaseBackup extends DatabaseEve
 	private transient List<AuthenticatedP2PMessage> authenticatedP2PMessages;
 
 	@SuppressWarnings("unused")
-	private IndirectMessagesDestinedToCentralDatabaseBackup()
+	private IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup()
 	{
 
 	}
-	public IndirectMessagesDestinedToCentralDatabaseBackup(DecentralizedValue hostSource, DecentralizedValue hostDestination, List<byte[]> encryptedAuthenticatedP2PMessages) {
+	public IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup(DecentralizedValue hostSource, DecentralizedValue hostDestination, List<byte[]> encryptedAuthenticatedP2PMessages) {
 		if (hostSource==null)
 			throw new NullPointerException();
 		if (hostDestination==null)
@@ -80,7 +80,7 @@ public class IndirectMessagesDestinedToCentralDatabaseBackup extends DatabaseEve
 		this.encryptedAuthenticatedP2PMessages=encryptedAuthenticatedP2PMessages;
 		authenticatedP2PMessages=null;
 	}
-	public IndirectMessagesDestinedToCentralDatabaseBackup(List<AuthenticatedP2PMessage> authenticatedP2PMessages, AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
+	public IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup(List<AuthenticatedP2PMessage> authenticatedP2PMessages, AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
 		if (authenticatedP2PMessages==null)
 			throw new NullPointerException();
 		if (authenticatedP2PMessages.size()==0)

@@ -41,11 +41,9 @@ import com.distrimind.ood.database.annotations.ForeignKey;
 import com.distrimind.ood.database.annotations.NotNull;
 import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.ood.database.messages.IndirectMessagesDestinedToCentralDatabaseBackup;
+import com.distrimind.ood.database.messages.IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup;
 import com.distrimind.util.DecentralizedValue;
-import com.distrimind.util.io.Integrity;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -69,7 +67,7 @@ public class ClientTable extends Table<ClientTable.Record> {
 		@Field(limit=EncryptionTools.MAX_ENCRYPTED_ID_SIZE)
 		private byte[] lastValidatedAndEncryptedID;
 
-		@Field(limit=IndirectMessagesDestinedToCentralDatabaseBackup.SIZE_IN_BYTES_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND)
+		@Field(limit= IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup.SIZE_IN_BYTES_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND)
 		private List<byte[]> encryptedAuthenticatedMessagesToSend;
 
 		@SuppressWarnings("unused")

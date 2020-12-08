@@ -224,8 +224,8 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 			return received((DistantBackupCenterConnexionInitialisation)message);
 		else if (message instanceof LastValidatedDistantTransactionDestinedToCentralDatabaseBackup)
 			return received((LastValidatedDistantTransactionDestinedToCentralDatabaseBackup)message);
-		else if (message instanceof IndirectMessagesDestinedToCentralDatabaseBackup)
-			return received((IndirectMessagesDestinedToCentralDatabaseBackup)message);
+		else if (message instanceof IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup)
+			return received((IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup)message);
 		else if (message instanceof DisconnectCentralDatabaseBackup) {
 			return disconnect();
 		}
@@ -233,7 +233,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 			return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
 
 	}
-	private Integrity received(IndirectMessagesDestinedToCentralDatabaseBackup message) throws DatabaseException {
+	private Integrity received(IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup message) throws DatabaseException {
 		return centralDatabaseBackupReceiver.clientTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
 			@Override
 			public Integrity run() throws Exception {

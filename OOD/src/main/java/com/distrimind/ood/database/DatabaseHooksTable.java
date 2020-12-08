@@ -39,7 +39,7 @@ package com.distrimind.ood.database;
 import com.distrimind.ood.database.annotations.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.SerializationDatabaseException;
-import com.distrimind.ood.database.messages.IndirectMessagesDestinedToCentralDatabaseBackup;
+import com.distrimind.ood.database.messages.IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
@@ -249,9 +249,9 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			return authenticatedMessagesQueueToSend;
 		}
 
-		List<IndirectMessagesDestinedToCentralDatabaseBackup> getAuthenticatedMessagesQueueToSendToCentralDatabaseBackup(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
+		List<IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup> getAuthenticatedMessagesQueueToSendToCentralDatabaseBackup(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
 			assert concernsDatabaseHost;
-			List<IndirectMessagesDestinedToCentralDatabaseBackup> res=new ArrayList<>();
+			List<IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup> res=new ArrayList<>();
 			if (authenticatedMessagesQueueToSend==null)
 				return res;
 			Map<DecentralizedValue, ArrayList<AuthenticatedP2PMessage>> resTmp=new HashMap<>();
@@ -262,7 +262,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			}
 			for (Map.Entry<DecentralizedValue, ArrayList<AuthenticatedP2PMessage>> e : resTmp.entrySet())
 			{
-				res.add(new IndirectMessagesDestinedToCentralDatabaseBackup(e.getValue(), random, encryptionProfileProvider));
+				res.add(new IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup(e.getValue(), random, encryptionProfileProvider));
 			}
 			return res;
 		}

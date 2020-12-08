@@ -77,7 +77,7 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 		{
 			if (encryptedAuthenticatedP2PMessages.contains(null))
 				throw new NullPointerException();
-			if (encryptedAuthenticatedP2PMessages.size()>IndirectMessagesDestinedToCentralDatabaseBackup.MAX_NUMBER_OF_P2P_MESSAGES_PER_PEER)
+			if (encryptedAuthenticatedP2PMessages.size()> IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup.MAX_NUMBER_OF_P2P_MESSAGES_PER_PEER)
 				throw new IllegalArgumentException();
 		}
 
@@ -90,7 +90,7 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 	public List<AuthenticatedP2PMessage> getAuthenticatedP2PMessages(EncryptionProfileProvider encryptionProfileProvider) throws IOException {
 		if (authenticatedP2PMessages==null)
 		{
-			authenticatedP2PMessages=IndirectMessagesDestinedToCentralDatabaseBackup.getAuthenticatedP2PMessages(encryptionProfileProvider, encryptedAuthenticatedP2PMessages);
+			authenticatedP2PMessages= IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup.getAuthenticatedP2PMessages(encryptionProfileProvider, encryptedAuthenticatedP2PMessages);
 		}
 		return authenticatedP2PMessages;
 	}
@@ -130,7 +130,7 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 	@Override
 	public int getInternalSerializedSize() {
 		int res=SerializationTools.getInternalSize((SecureExternalizable)hostDestination)+4+this.lastValidatedTransactionsUTCForDestinationHost.size()*8
-				+SerializationTools.getInternalSize(encryptedAuthenticatedP2PMessages, IndirectMessagesDestinedToCentralDatabaseBackup.SIZE_IN_BYTES_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND);
+				+SerializationTools.getInternalSize(encryptedAuthenticatedP2PMessages, IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup.SIZE_IN_BYTES_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND);
 		for (Map.Entry<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> e : lastValidatedAndEncryptedIDsPerHost.entrySet())
 		{
 			res+=SerializationTools.getInternalSize((SecureExternalizable)e.getKey())+
@@ -158,7 +158,7 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 			out.writeString(e.getKey(), false, SerializationTools.MAX_CLASS_LENGTH);
 			out.writeLong(e.getValue());
 		}
-		out.writeCollection(encryptedAuthenticatedP2PMessages, true, IndirectMessagesDestinedToCentralDatabaseBackup.SIZE_IN_BYTES_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND);
+		out.writeCollection(encryptedAuthenticatedP2PMessages, true, IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup.SIZE_IN_BYTES_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND);
 	}
 
 	@Override
@@ -187,7 +187,7 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 			long utc=in.readLong();
 			this.lastValidatedTransactionsUTCForDestinationHost.put(packageString, utc);
 		}
-		encryptedAuthenticatedP2PMessages=in.readCollection(true, IndirectMessagesDestinedToCentralDatabaseBackup.SIZE_IN_BYTES_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND, byte[].class);
+		encryptedAuthenticatedP2PMessages=in.readCollection(true, IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup.SIZE_IN_BYTES_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND, byte[].class);
 		authenticatedP2PMessages=null;
 	}
 
