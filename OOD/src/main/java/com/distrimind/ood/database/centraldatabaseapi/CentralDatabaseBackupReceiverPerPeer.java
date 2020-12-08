@@ -72,7 +72,16 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 		this.centralDatabaseBackupReceiver=centralDatabaseBackupReceiver;
 		this.connected=false;
 	}
-	public abstract void sendMessageFromCentralDatabaseBackup(MessageComingFromCentralDatabaseBackup message);
+	public void sendMessageFromCentralDatabaseBackup(MessageComingFromCentralDatabaseBackup message) throws DatabaseException {
+		if (centralDatabaseBackupReceiver.isConnected(message.getHostDestination()))
+			sendMessageFromThisCentralDatabaseBackup(message);
+		else {
+			ConnectedClientsTable.Record r=centralDatabaseBackupReceiver.connectedClientsTable.getRecord("clientID", message.getHostDestination());
+			sendMessageOtherCentralDatabaseBackup(r.getCentralID(), message);
+		}
+	}
+	protected abstract void sendMessageFromThisCentralDatabaseBackup(MessageComingFromCentralDatabaseBackup message);
+	protected abstract void sendMessageOtherCentralDatabaseBackup(DecentralizedValue centralDatabaseBackupID, MessageComingFromCentralDatabaseBackup message);
 
 	public Integrity disconnect() throws DatabaseException {
 		if (connected)
@@ -84,9 +93,9 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 		connected=false;
 		return Integrity.OK;
 	}
-	private boolean isConnected(DecentralizedValue clientID) {
-		return centralDatabaseBackupReceiver.isConnected(clientID);
-		//return connectedClientsTable.hasRecordsWithAllFields("clientID", clientID);
+	private boolean isConnected(DecentralizedValue clientID) throws DatabaseException {
+		//return centralDatabaseBackupReceiver.isConnected(clientID);
+		return centralDatabaseBackupReceiver.connectedClientsTable.hasRecordsWithAllFields("clientID", clientID);
 	}
 	public boolean isConnected()
 	{
