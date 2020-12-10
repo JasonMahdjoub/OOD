@@ -35,6 +35,10 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+import com.distrimind.ood.database.centraldatabaseapi.ClientTable;
+import com.distrimind.ood.database.centraldatabaseapi.DatabaseBackupPerClientTable;
+import com.distrimind.ood.database.centraldatabaseapi.EncryptedBackupPartReferenceTable;
+import com.distrimind.ood.database.centraldatabaseapi.FileReference;
 import com.distrimind.ood.database.decentralizeddatabase.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
@@ -44,12 +48,12 @@ import com.distrimind.util.DecentralizedIDGenerator;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.FileTools;
 import com.distrimind.util.crypto.*;
+import com.distrimind.util.data_buffers.WrappedData;
 import com.distrimind.util.io.*;
 import org.testng.Assert;
 import org.testng.annotations.*;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -89,8 +93,10 @@ public abstract class CommonDecentralizedTests {
 		}
 	}
 
-	protected CommonDecentralizedTests() throws NoSuchProviderException, NoSuchAlgorithmException {
+	protected CommonDecentralizedTests() throws NoSuchProviderException, NoSuchAlgorithmException, IOException, DatabaseException {
 		this.random=SecureRandomType.DEFAULT.getSingleton(null);
+		this.centralDatabaseBackupKeyPair=ASymmetricAuthenticatedSignatureType.BC_FIPS_Ed25519.getKeyPairGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKeyPair();
+		this.centralDatabaseBackupReceiver=new CentralDatabaseBackupReceiver(getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver(), (DecentralizedValue) centralDatabaseBackupKeyPair.getASymmetricPublicKey());
 		final SymmetricSecretKey secretKeyForSignature=SymmetricAuthenticatedSignatureType.DEFAULT.getKeyGenerator(random).generateKey();
 		final SymmetricSecretKey secretKeyForEncryption=SymmetricEncryptionType.DEFAULT.getKeyGenerator(random).generateKey();
 		this.encryptionProfileProvider=new EncryptionProfileProvider() {
@@ -101,14 +107,20 @@ public abstract class CommonDecentralizedTests {
 			}
 
 			@Override
-			public IASymmetricPrivateKey getSecretKeyForPrivateKey(short keyID) {
+			public Short getKeyID(IASymmetricPublicKey publicKeyForSignature) {
+				return 0;
+			}
+
+			@Override
+			public IASymmetricPrivateKey getPrivateKeyForSignature(short keyID) {
 				return null;
 			}
 
 			@Override
-			public IASymmetricPublicKey getSecretKeyForPublicKey(short keyID) {
+			public IASymmetricPublicKey getPublicKeyForSignature(short keyID) {
 				return null;
 			}
+
 
 			@Override
 			public SymmetricSecretKey getSecretKeyForSignature(short keyID, boolean duringDecryptionPhase) {
@@ -204,7 +216,7 @@ public abstract class CommonDecentralizedTests {
 		}
 	}
 	static File centralDatabaseBackupDirectory=new File("centralDatabaseBackup");
-	public class DatabaseBackup
+	/*public class DatabaseBackup
 	{
 		private final String packageString;
 		private final DecentralizedValue channelHost;
@@ -350,49 +362,218 @@ public abstract class CommonDecentralizedTests {
 				if (d.hostID.equals(message.getHostSource()))
 					continue;
 				sendMessageFromCentralDatabaseBackup(new LastIDCorrectionFromCentralDatabaseBackup(message.getHostSource(), lastValidatedAndEncryptedDistantID.get(d.hostID)), true);
-			}*/
+			}
 		}
 
-	}
-	private void sendMessageFromCentralDatabaseBackup(MessageComingFromCentralDatabaseBackup message) throws DatabaseException {
-		sendMessageFromCentralDatabaseBackup(message, false);
-	}
-	private void sendMessageFromCentralDatabaseBackup(MessageComingFromCentralDatabaseBackup message, boolean onlyIfConnected) throws DatabaseException {
+	}*/
+	public class CentralDatabaseBackupReceiverPerPeer extends com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupReceiverPerPeer
+	{
+
+		public CentralDatabaseBackupReceiverPerPeer(CentralDatabaseBackupReceiver centralDatabaseBackupReceiver, DatabaseWrapper wrapper) {
+			super(centralDatabaseBackupReceiver, wrapper);
+		}
+
+		@Override
+		protected void sendMessageFromThisCentralDatabaseBackup(MessageComingFromCentralDatabaseBackup message) throws DatabaseException {
+			try(RandomByteArrayOutputStream out=new RandomByteArrayOutputStream())
+			{
+				out.writeObject(message, false);
+				RandomInputStream ris=null;
+				if (message instanceof BigDataEventToSendWithCentralDatabaseBackup)
+				{
+					ris=((BigDataEventToSendWithCentralDatabaseBackup) message).getPartInputStream();
+				}
+				try(RandomByteArrayInputStream  in=new RandomByteArrayInputStream(out.getBytes()))
+				{
+					message=in.readObject(false, MessageComingFromCentralDatabaseBackup.class);
+					if (ris!=null)
+						((BigDataEventToSendWithCentralDatabaseBackup) message).setPartInputStream(ris);
+				}
+			} catch (ClassNotFoundException | IOException e) {
+				throw DatabaseException.getDatabaseException(e);
+			}
+
+			for (Database d2 : listDatabase)
+			{
+				if (d2.hostID.equals(message.getHostDestination()))
+				{
+					centralDatabaseBackupMessageSent=true;
+					if (d2.isConnected() && d2.dbwrapper.getSynchronizer().isInitializedWithCentralBackup())
+						d2.getReceivedDatabaseEvents().add(new DistantDatabaseEvent(db2.dbwrapper, message));
+					else
+						Assert.fail(""+message.getClass()+", is connected : "+d2.isConnected());
+					break;
+				}
+			}
+		}
+
+		@Override
+		protected void sendMessageOtherCentralDatabaseBackup(DecentralizedValue centralDatabaseBackupID, MessageComingFromCentralDatabaseBackup message) {
+			Assert.fail();
+		}
+
+		@Override
+		protected boolean isValidCertificate(com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupCertificate certificate) {
+			if (certificate instanceof CentralDatabaseBackupCertificate)
+			{
+				return ((CentralDatabaseBackupCertificate) certificate).getCentralDatabaseBackupPublicKey().equals(centralDatabaseBackupReceiver.getCentralID())
+						&& ((CentralDatabaseBackupCertificate) certificate).isValidSignature();
+			}
+			return false;
+		}
 
 
-		try(RandomByteArrayOutputStream out=new RandomByteArrayOutputStream())
+		@Override
+		public FileReference getFileReference(EncryptedDatabaseBackupMetaDataPerFile encryptedDatabaseBackupMetaDataPerFile) {
+			return new FileReferenceForTests(encryptedDatabaseBackupMetaDataPerFile.getFileTimestampUTC());
+		}
+
+		@Override
+		public long getDurationInMsBeforeRemovingDatabaseBackup() {
+			return 4L*30L*24L*60L*60L*1000L;
+		}
+	}
+	static class CentralDatabaseBackupCertificate implements com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupCertificate
+	{
+		private IASymmetricPublicKey centralDatabaseBackupPublicKey, certifiedAccountPublicKey;
+		private byte[] signature;
+
+		public CentralDatabaseBackupCertificate(AbstractKeyPair<?, ?> centralDatabaseBackupKeyPair, IASymmetricPublicKey certifiedAccountPublicKey) throws IOException, NoSuchProviderException, NoSuchAlgorithmException {
+			this.centralDatabaseBackupPublicKey = centralDatabaseBackupKeyPair.getASymmetricPublicKey();
+			this.certifiedAccountPublicKey = certifiedAccountPublicKey;
+			ASymmetricAuthenticatedSignerAlgorithm signer=new ASymmetricAuthenticatedSignerAlgorithm(centralDatabaseBackupKeyPair.getASymmetricPrivateKey());
+			/*WrappedData wd=centralDatabaseBackupPublicKey.encode();
+			signer.update(wd.getBytes() );*/
+			WrappedData wd=certifiedAccountPublicKey.encode();
+			signer.update(wd.getBytes() );
+			signature= signer.getSignature();
+
+		}
+
+		public IASymmetricPublicKey getCentralDatabaseBackupPublicKey()
 		{
-			out.writeObject(message, false);
-			RandomInputStream ris=null;
-			if (message instanceof BigDataEventToSendWithCentralDatabaseBackup)
-			{
-				ris=((BigDataEventToSendWithCentralDatabaseBackup) message).getPartInputStream();
-			}
-			try(RandomByteArrayInputStream  in=new RandomByteArrayInputStream(out.getBytes()))
-			{
-				message=in.readObject(false, MessageComingFromCentralDatabaseBackup.class);
-				if (ris!=null)
-					((BigDataEventToSendWithCentralDatabaseBackup) message).setPartInputStream(ris);
-			}
-		} catch (IOException | ClassNotFoundException e) {
-			throw DatabaseException.getDatabaseException(e);
+			return centralDatabaseBackupPublicKey;
 		}
 
-		for (Database d2 : listDatabase)
+		public boolean isValidSignature()
 		{
-			if (d2.hostID.equals(message.getHostDestination()))
-			{
-				centralDatabaseBackupMessageSent=true;
-				if (d2.isConnected() && d2.dbwrapper.getSynchronizer().isInitializedWithCentralBackup())
-					d2.getReceivedDatabaseEvents().add(new DistantDatabaseEvent(db2.dbwrapper, message));
-				else if (!onlyIfConnected)
-					Assert.fail(""+message.getClass()+", is connected : "+d2.isConnected());
-				break;
+			try {
+				ASymmetricAuthenticatedSignatureCheckerAlgorithm checker=new ASymmetricAuthenticatedSignatureCheckerAlgorithm(centralDatabaseBackupPublicKey);
+				checker.init(signature);
+				WrappedData wd=certifiedAccountPublicKey.encode();
+				checker.update(wd.getBytes() );
+				return checker.verify();
+			} catch (NoSuchProviderException | NoSuchAlgorithmException | IOException e) {
+				return false;
 			}
+		}
+
+		@Override
+		public IASymmetricPublicKey getCertifiedAccountPublicKey() {
+			return certifiedAccountPublicKey;
+		}
+
+		@Override
+		public int getInternalSerializedSize() {
+			return SerializationTools.getInternalSize(centralDatabaseBackupPublicKey)
+					+SerializationTools.getInternalSize(certifiedAccountPublicKey)
+					+SerializationTools.getInternalSize(signature, ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE);
+		}
+
+		@Override
+		public void writeExternal(SecuredObjectOutputStream out) throws IOException {
+			out.writeObject(centralDatabaseBackupPublicKey, false);
+			out.writeObject(certifiedAccountPublicKey, false);
+			out.writeBytesArray(signature, false, ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE);
+		}
+
+		@Override
+		public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
+			centralDatabaseBackupPublicKey=in.readObject(false);
+			certifiedAccountPublicKey=in.readObject(false);
+			signature=in.readBytesArray(false, ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE);
+		}
+	}
+	static class FileReferenceForTests implements FileReference
+	{
+		private transient File file;
+		private long fileTimeStamp;
+		FileReferenceForTests(long fileTimeStamp)
+		{
+			this.fileTimeStamp=fileTimeStamp;
+			initFile();
+		}
+		private void initFile()
+		{
+			file=new File(centralDatabaseBackupDirectory, fileTimeStamp+".backup");
+		}
+		@Override
+		public boolean equals(Object o) {
+			return o instanceof FileReferenceForTests && ((FileReferenceForTests) o).fileTimeStamp==fileTimeStamp;
+		}
+
+		@Override
+		public int hashCode() {
+			return Long.hashCode(fileTimeStamp);
+		}
+
+		@Override
+		public String toString() {
+			return "FileBackup-"+fileTimeStamp;
+		}
+
+		@Override
+		public long lengthInBytes() {
+			return file.length();
+		}
+
+		@Override
+		public boolean delete() {
+			return file.delete();
+		}
+
+		@Override
+		public RandomInputStream getRandomInputStream() throws IOException {
+			return new RandomFileInputStream(file);
+		}
+
+		@Override
+		public RandomOutputStream getRandomOutputStream() throws IOException {
+			return new RandomFileOutputStream(file);
+		}
+
+		@Override
+		public int getInternalSerializedSize() {
+			return 8;
+		}
+
+		@Override
+		public void writeExternal(SecuredObjectOutputStream out) throws IOException {
+			out.writeLong(fileTimeStamp);
+		}
+
+		@Override
+		public void readExternal(SecuredObjectInputStream in) throws IOException {
+			fileTimeStamp=in.readLong();
+			initFile();
 		}
 	}
 
-	public class CentralDatabaseBackup
+	public class CentralDatabaseBackupReceiver extends com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupReceiver
+	{
+
+		public CentralDatabaseBackupReceiver(DatabaseWrapper wrapper, DecentralizedValue centralID) throws DatabaseException {
+			super(wrapper, centralID);
+		}
+
+		@Override
+		protected CentralDatabaseBackupReceiverPerPeer newCentralDatabaseBackupReceiverPerPeerInstance(DatabaseWrapper wrapper) {
+			return new CentralDatabaseBackupReceiverPerPeer(this, wrapper);
+		}
+	}
+
+
+	/*public class CentralDatabaseBackup
 	{
 		final Map<DecentralizedValue, DatabaseBackupPerHost> databaseBackup=new HashMap<>();
 
@@ -503,7 +684,7 @@ public abstract class CommonDecentralizedTests {
 
 
 
-	}
+	}*/
 
 
 
@@ -832,9 +1013,12 @@ public abstract class CommonDecentralizedTests {
 
 	protected volatile CommonDecentralizedTests.Database db1 = null, db2 = null, db3 = null, db4 = null;
 	protected final ArrayList<CommonDecentralizedTests.Database> listDatabase = new ArrayList<>(3);
-	protected final CentralDatabaseBackup centralDatabaseBackup=new CentralDatabaseBackup();
+	protected final AbstractKeyPair<?, ?> centralDatabaseBackupKeyPair;
+	protected final CentralDatabaseBackupReceiver centralDatabaseBackupReceiver;
 	protected final AbstractSecureRandom random;
 	protected final EncryptionProfileProvider encryptionProfileProvider;
+
+	public abstract DatabaseWrapper getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver() throws IllegalArgumentException, DatabaseException;
 
 	public abstract DatabaseWrapper getDatabaseWrapperInstance1() throws IllegalArgumentException, DatabaseException;
 
@@ -851,6 +1035,7 @@ public abstract class CommonDecentralizedTests {
 	public abstract void removeDatabaseFiles3();
 
 	public abstract void removeDatabaseFiles4();
+	public abstract void removeCentralDatabaseFiles();
 
 	public BackupConfiguration getBackupConfiguration()
 	{
@@ -931,7 +1116,7 @@ public abstract class CommonDecentralizedTests {
 		Assert.assertTrue(centralDatabaseBackupDirectory.mkdir());
 	}
 	@AfterClass
-	public void unloadDatabase() {
+	public void unloadDatabase() throws DatabaseException {
 		try {
 			unloadDatabase1();
 		} finally {
@@ -947,6 +1132,8 @@ public abstract class CommonDecentralizedTests {
 						listDatabase.clear();
 						if (centralDatabaseBackupDirectory.exists())
 							FileTools.deleteDirectory(centralDatabaseBackupDirectory);
+						getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver().close();
+						removeCentralDatabaseFiles();
 					}
 				}
 			}
@@ -1076,7 +1263,7 @@ public abstract class CommonDecentralizedTests {
 						loop = true;
 						if (e instanceof MessageDestinedToCentralDatabaseBackup)
 						{
-							centralDatabaseBackup.received((MessageDestinedToCentralDatabaseBackup)new CommonDecentralizedTests.DistantDatabaseEvent(db.getDbwrapper(), (MessageDestinedToCentralDatabaseBackup)e).getDatabaseEventToSend());
+							centralDatabaseBackupReceiver.received((MessageDestinedToCentralDatabaseBackup)new CommonDecentralizedTests.DistantDatabaseEvent(db.getDbwrapper(), (MessageDestinedToCentralDatabaseBackup)e).getDatabaseEventToSend());
 						}
 						else if (e instanceof P2PDatabaseEventToSend) {
 							P2PDatabaseEventToSend es = (P2PDatabaseEventToSend) e;
@@ -1109,8 +1296,7 @@ public abstract class CommonDecentralizedTests {
 			}
 		}
 	}
-	void checkCentralBackupSynchronization(Database d)
-	{
+	void checkCentralBackupSynchronization(Database d) throws DatabaseException {
 		DatabaseWrapper dw=d.getDbwrapper();
 		Assert.assertEquals(dw.getSynchronizer().backupDatabasePartsSynchronizingWithCentralDatabaseBackup.size(), 0);
 		if (dw.getSynchronizer().isInitializedWithCentralBackup())
@@ -1121,27 +1307,19 @@ public abstract class CommonDecentralizedTests {
 				{
 					Assert.assertEquals(dc.getDatabaseSchema().getBackupConfiguration().getMaxBackupFileAgeInMs(), 1000);
 					BackupRestoreManager brm=dw.getBackupRestoreManager(dc.getDatabaseSchema().getPackage());
-					DatabaseBackup dbb=centralDatabaseBackup
-							.databaseBackup
-							.get(d.hostID)
-							.databaseBackupPerPackage
-							.get(dc.getDatabaseSchema().getPackage().getName());
-					Map<Long, EncryptedDatabaseBackupMetaDataPerFile> hm;
-					if (dbb==null)
-					{
-						hm=new HashMap<>();
-					}
-					else
-						hm=dbb.metaDataPerFile;
+					ClientTable.Record clientRecord=getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver().getTableInstance(ClientTable.class).getRecord("clientID", d.hostID);
+					DatabaseBackupPerClientTable databaseBackupPerClientTable=getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver().getTableInstance(DatabaseBackupPerClientTable.class);
+					DatabaseBackupPerClientTable.Record databaseRecord=databaseBackupPerClientTable.getRecord("client=%c and packageString=%ps", "c", clientRecord, "ps", dc.getDatabaseSchema().getPackage().getName());
+					List<EncryptedBackupPartReferenceTable.Record> records=getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver().getTableInstance(EncryptedBackupPartReferenceTable.class).getRecords("database=%db", "db", databaseRecord);
 					List<Long> list=brm.getFinalTimestamps();
 					for (long l : list)
 					{
-						Assert.assertTrue(hm.containsKey(l), "l="+l+", list.size="+list.size()+", hm.size="+hm.size());
+						Assert.assertTrue(records.stream().anyMatch(r -> r.getFileTimeUTC()==l), "l="+l+", list.size="+list.size()+", hm.size="+records.size());
 					}
-					for (long l : hm.keySet())
+					for ( EncryptedBackupPartReferenceTable.Record r : records)
 					{
-						if (!list.contains(l))
-							Assert.assertTrue(list.get(0)>l, "l="+l+", list.size="+list.size()+", hm.size="+hm.size());
+						if (!list.contains(r.getFileTimeUTC()))
+							Assert.assertTrue(list.get(0)>r.getFileTimeUTC(), "l="+r.getFileTimeUTC()+", list.size="+list.size()+", hm.size="+records.size());
 					}
 				}
 			}

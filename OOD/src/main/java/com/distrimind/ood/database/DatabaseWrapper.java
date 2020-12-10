@@ -1545,7 +1545,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 		}
 
-		private void received(EncryptedMetaDataFromCentralDatabaseBackup metaData) throws DatabaseException {
+		private void received(EncryptedMetaDataFromCentralDatabaseBackup metaData) throws DatabaseException, IOException {
 
 
 			ConnectedPeersWithCentralBackup cp=initializedHooksWithCentralBackup.get(metaData.getHostSource());
@@ -1700,7 +1700,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		}
 		
-		private void received(InitialMessageComingFromCentralBackup initialMessageComingFromCentralBackup) throws DatabaseException, MessageExternalizationException {
+		private void received(InitialMessageComingFromCentralBackup initialMessageComingFromCentralBackup) throws DatabaseException, IOException {
 			if (!initialMessageComingFromCentralBackup.getHostDestination().equals(getLocalHostID()))
 				throw new IllegalArgumentException();
 			initDistantBackupCenterForThisHostWithStringPackages(initialMessageComingFromCentralBackup.getLastValidatedTransactionsUTCForDestinationHost());

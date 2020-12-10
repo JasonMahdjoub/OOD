@@ -81,8 +81,8 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 				sendMessageOtherCentralDatabaseBackup(sid, message);
 		}
 	}
-	protected abstract void sendMessageFromThisCentralDatabaseBackup(MessageComingFromCentralDatabaseBackup message);
-	protected abstract void sendMessageOtherCentralDatabaseBackup(DecentralizedValue centralDatabaseBackupID, MessageComingFromCentralDatabaseBackup message);
+	protected abstract void sendMessageFromThisCentralDatabaseBackup(MessageComingFromCentralDatabaseBackup message) throws DatabaseException;
+	protected abstract void sendMessageOtherCentralDatabaseBackup(DecentralizedValue centralDatabaseBackupID, MessageComingFromCentralDatabaseBackup message) throws DatabaseException;
 
 	public Integrity disconnect() throws DatabaseException {
 		if (connected)
