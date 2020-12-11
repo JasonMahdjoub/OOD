@@ -5429,6 +5429,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				//DatabaseWrapper.TransactionsInterval.class,
 				DatabaseTransactionsIdentifiersToSynchronize.class,
 				LastIDCorrection.class,
+				LastIDCorrectionFromCentralDatabaseBackup.class,
 				TransactionConfirmationEvents.class,
 				DatabaseEventsToSynchronizeP2P.class,
 				AbstractHookRequest.class,
@@ -5437,7 +5438,16 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				BackupChannelUpdateMessageFromCentralDatabaseBackup.class,
 				EncryptedMetaDataFromCentralDatabaseBackup.class,
 				AskForMetaDataPerFileToCentralDatabaseBackup.class,
-				P2PConnexionInitialization.class));
+				AskForDatabaseBackupPartDestinedToCentralDatabaseBackup.class,
+				P2PConnexionInitialization.class,
+				DatabaseBackupToRemoveDestinedToCentralDatabaseBackup.class,
+				DistantBackupCenterConnexionInitialisation.class,
+				DisconnectCentralDatabaseBackup.class,
+				IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup.class,
+				InitialMessageComingFromCentralBackup.class,
+				LastValidatedDistantTransactionDestinedToCentralDatabaseBackup.class,
+				TransactionConfirmationEvents.class
+		));
 		for (Class<?> c : classes)
 			assert !Modifier.isAbstract(c.getModifiers()):""+c;
 
