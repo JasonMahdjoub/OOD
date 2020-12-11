@@ -77,8 +77,7 @@ public interface AuthenticatedP2PMessage extends P2PDatabaseEventToSend, Authent
 	{
 		AuthenticatedMessage.super.writeExternal(out);
 		try {
-			getDatabaseWrapper().getSynchronizer().authenticatedMessageSent(this);
-			messageSent();
+			messageSent(getDatabaseWrapper().getDatabaseHooksTable().authenticatedMessageSent(this));
 		} catch (DatabaseException e) {
 			throw new IOException(e);
 		}
@@ -124,7 +123,7 @@ public interface AuthenticatedP2PMessage extends P2PDatabaseEventToSend, Authent
 	default void messageReadyToSend() throws DatabaseException {
 
 	}
-	default void messageSent() throws DatabaseException
+	default void messageSent(DatabaseHooksTable.Record concernedSenderHook) throws DatabaseException
 	{
 
 	}

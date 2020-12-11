@@ -317,6 +317,14 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			filter.update("databasePackageNames", databasePackageNames);
 
 		}
+		protected void removeDatabasePackageNames(Set<String> packages, AlterRecordFilter<Record> filter) throws DatabaseException {
+			if (this.databasePackageNames!=null) {
+				this.databasePackageNames.removeAll(packages);
+				if (this.databasePackageNames.size()==0)
+					this.databasePackageNames=null;
+				filter.update("databasePackageNames", databasePackageNames);
+			}
+		}
 		protected void setDatabasePackageNames(Set<String> packages) {
 			if (packages == null || packages.size() == 0) {
 				databasePackageNames = null;
@@ -541,21 +549,39 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 	}
 
 	Record authenticatedMessageSent(AuthenticatedP2PMessage message) throws DatabaseException {
-		List<Record> l=getRecordsWithAllFields("hostID", message.getHostSource());
-		if (l.size()>1)
-			throw new InternalError();
-		else if (l.size()==1)
-		{
-			Record r=l.get(0);
-			if (r.removeAuthenticatedMessage(message))
-				updateRecord(r, "authenticatedMessagesQueueToSend", r.authenticatedMessagesQueueToSend);
+		return getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Record>() {
+			@Override
+			public Record run() throws Exception {
+				List<Record> l=getRecordsWithAllFields("hostID", message.getHostSource());
+				if (l.size()>1)
+					throw new InternalError();
+				else if (l.size()==1)
+				{
+					Record r=l.get(0);
+					if (r.removeAuthenticatedMessage(message))
+						updateRecord(r, "authenticatedMessagesQueueToSend", r.authenticatedMessagesQueueToSend);
 
-			if (r.authenticatedMessagesQueueToSend.size()==0 && message instanceof HookSynchronizeRequest)
-			{
-				return r;
+					return r;
+				}
+				return null;
 			}
-		}
-		return null;
+
+			@Override
+			public TransactionIsolation getTransactionIsolation() {
+				return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
+			}
+
+			@Override
+			public boolean doesWriteData() {
+				return true;
+			}
+
+			@Override
+			public void initOrReset() {
+
+			}
+		});
+
 	}
 
 	void actualizeLastTransactionID(final List<DecentralizedValue> excludedHooks) throws DatabaseException {
@@ -756,7 +782,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		return databaseDistantTransactionEvent;
 	}
 
-	private Record initLocalHook(DecentralizedValue hostID) throws DatabaseException {
+	Record initLocalHook(DecentralizedValue hostID) throws DatabaseException {
 		if (getLocalDatabaseHost()!=null)
 			throw new DatabaseException("Local database host already set !");
 		DatabaseHooksTable.Record r = new DatabaseHooksTable.Record();

@@ -57,7 +57,7 @@ public class DatabaseConfigurationsBuilder {
 		final ArrayList<ConfigurationQuery> queries =new ArrayList<>();
 		private boolean updateConfigurationPersistence=false;
 		private boolean checkNewConnexions=false;
-		private boolean checkConnexionsToRemove=false;
+		private boolean checkConnexionsToDesynchronize =false;
 		private boolean checkDatabaseLoading=false;
 		private List<DecentralizedValue> removedPeersID=null;
 
@@ -69,8 +69,8 @@ public class DatabaseConfigurationsBuilder {
 			checkNewConnexions=true;
 		}
 
-		void checkConnexionsToRemove() {
-			checkConnexionsToRemove=true;
+		void checkConnexionsToDesynchronize() {
+			checkConnexionsToDesynchronize =true;
 		}
 		void addIDToRemove(DecentralizedValue dv)
 		{
@@ -135,24 +135,13 @@ public class DatabaseConfigurationsBuilder {
 					lifeCycles.saveDatabaseConfigurations(configurations);
 				if (currentTransaction.checkDatabaseLoading)
 					checkDatabaseLoading();
-				if (currentTransaction.checkConnexionsToRemove)
-					checkConnexionsToRemove();
+				if (currentTransaction.checkConnexionsToDesynchronize)
+					checkConnexionsToDesynchronize();
 				if (currentTransaction.checkNewConnexions)
 					checkNewConnexions();
 				if (currentTransaction.removedPeersID!=null)
 				{
-
-					for (DecentralizedValue peerIDToRemove : currentTransaction.removedPeersID) {
-						wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
-							@Override
-							public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
-								if (!_record.concernsLocalDatabaseHost()) {
-									_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), peerIDToRemove), protectedEncryptionProfileProviderForAuthenticatedMessages, this);
-
-								}
-							}
-						});
-					}
+					checkConnexionsToRemove();
 				}
 
 			}
@@ -211,51 +200,61 @@ public class DatabaseConfigurationsBuilder {
 		checkInitLocalPeer();
 		//TODO complete
 	}
+	private void checkConnexionsToDesynchronize() throws DatabaseException {
+		HashMap<Set<String>, Set<DecentralizedValue>> packagesToUnsynchronize=new HashMap<>();
+
+		wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
+			@Override
+			public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
+
+				if (!currentTransaction.removedPeersID.contains(_record.getHostID()))
+				{
+					Set<String> ptu=new HashSet<>();
+					for (String p : _record.getDatabasePackageNames())
+					{
+						Optional<DatabaseConfiguration> o=configurations.getConfigurations().stream().filter(c -> c.getDatabaseSchema().getPackage().getName().equals(p)).findAny();
+						if (!o.isPresent() || o.get().getDistantPeersThatCanBeSynchronizedWithThisDatabase()==null || o.get().getDistantPeersThatCanBeSynchronizedWithThisDatabase().contains(_record.getHostID()))
+						{
+							ptu.add(p);
+						}
+					}
+					if (ptu.size()>0) {
+						Set<DecentralizedValue> dvs = packagesToUnsynchronize.computeIfAbsent(ptu, k -> new HashSet<>());
+						dvs.add(_record.getHostID());
+						_record.removeDatabasePackageNames(ptu, this);
+					}
+					//TODO check if must change state
+
+				}
+			}
+		}, "concernsDatabaseHost=%cdh", "cdh", false);
+
+
+		wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
+			@Override
+			public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
+				for (Map.Entry<Set<String>, Set<DecentralizedValue>> e : packagesToUnsynchronize.entrySet())
+				{
+					_record.offerNewAuthenticatedP2PMessage(wrapper, new HookUnsynchronizeRequest(configurations.getLocalPeer(), _record.getHostID(), e.getKey(), e.getValue()),protectedEncryptionProfileProviderForAuthenticatedMessages, this);
+				}
+			}
+		}, "concernsDatabaseHost=%cdh", "cdh", false);
+
+
+	}
+
 	private void checkConnexionsToRemove() throws DatabaseException {
-		final ArrayList<DatabaseHooksTable.Record> deletedRecords=new ArrayList<>();
-
-		wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
-			@Override
-			public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
-				if (!_record.concernsLocalDatabaseHost()) {
-					if (!configurations.getDistantPeers().contains(_record.getHostID()))
-					{
-						_record.setDatabasePackageNames(null, this);
-						//TODO check if must change state
-						_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), _record.getHostID()), protectedEncryptionProfileProviderForAuthenticatedMessages, this);
-					}
-					deletedRecords.add(_record);
-				}
-			}
-		});
-
-
-		wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
-			@Override
-			public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
-				if (!_record.concernsLocalDatabaseHost()) {
-					if (!deletedRecords.contains(_record))
-					{
-						//TODO check if must change state
-						for (DatabaseHooksTable.Record r : deletedRecords)
-							_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), r.getHostID()),protectedEncryptionProfileProviderForAuthenticatedMessages, this);
-					}
-				}
-			}
-		});
-
-		for (DecentralizedValue peerIDToRemove : currentTransaction.removedPeersID) {
-			wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
-				@Override
-				public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
-					if (!_record.concernsLocalDatabaseHost()) {
+		if (currentTransaction.removedPeersID!=null) {
+			for (DecentralizedValue peerIDToRemove : currentTransaction.removedPeersID) {
+				wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
+					@Override
+					public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
 						_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), peerIDToRemove), protectedEncryptionProfileProviderForAuthenticatedMessages, this);
-
 					}
-				}
-			});
+				}, "concernsDatabaseHost=%cdh", "cdh", false);
+			}
+			//TODO complete
 		}
-		//TODO complete
 	}
 
 
@@ -373,7 +372,7 @@ public class DatabaseConfigurationsBuilder {
 			if (changed) {
 				t.updateConfigurationPersistence();
 				t.checkNewConnexions();
-				t.checkConnexionsToRemove();
+				t.checkConnexionsToDesynchronize();
 			}
 		});
 		return this;
