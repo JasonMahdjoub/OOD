@@ -55,9 +55,12 @@ public class DatabaseConfigurationsBuilder {
 	}
 	private static class Transaction {
 		final ArrayList<ConfigurationQuery> queries =new ArrayList<>();
+		private boolean checkDatabaseToSynchronize=false;
+		private boolean checkDatabaseUnload=false;
+		private boolean checkDisconnexions=false;
 		private boolean updateConfigurationPersistence=false;
 		private boolean checkNewConnexions=false;
-		private boolean checkConnexionsToDesynchronize =false;
+		private boolean checkDatabaseToDesynchronize =false;
 		private boolean checkDatabaseLoading=false;
 		private List<DecentralizedValue> removedPeersID=null;
 
@@ -70,7 +73,7 @@ public class DatabaseConfigurationsBuilder {
 		}
 
 		void checkConnexionsToDesynchronize() {
-			checkConnexionsToDesynchronize =true;
+			checkDatabaseToDesynchronize =true;
 		}
 		void addIDToRemove(DecentralizedValue dv)
 		{
@@ -102,6 +105,20 @@ public class DatabaseConfigurationsBuilder {
 			if (removedPeersID!=null && distantPeers.stream().anyMatch(v-> removedPeersID.contains(v)))
 				throw new DatabaseException("There are ids that have been removed !");
 		}
+		void checkDisconnexions()
+		{
+			checkDisconnexions=true;
+		}
+		void checkDatabaseUnload()
+		{
+			checkDatabaseUnload=true;
+		}
+		void checkDatabaseToSynchronize()
+		{
+			checkDatabaseToSynchronize=true;
+		}
+
+
 	}
 	private interface ConfigurationQuery
 	{
@@ -135,13 +152,19 @@ public class DatabaseConfigurationsBuilder {
 					lifeCycles.saveDatabaseConfigurations(configurations);
 				if (currentTransaction.checkDatabaseLoading)
 					checkDatabaseLoading();
-				if (currentTransaction.checkConnexionsToDesynchronize)
-					checkConnexionsToDesynchronize();
-				if (currentTransaction.checkNewConnexions)
-					checkNewConnexions();
+				if (currentTransaction.checkDatabaseToDesynchronize)
+					currentTransaction.checkDatabaseUnload|=checkDatabaseToDesynchronize();
 				if (currentTransaction.removedPeersID!=null)
-				{
-					checkConnexionsToRemove();
+					currentTransaction.checkDisconnexions|=checkConnexionsToRemove();
+				if (currentTransaction.checkDatabaseUnload)
+					checkDatabaseLoading();
+				if (currentTransaction.checkDatabaseToSynchronize)
+					currentTransaction.checkNewConnexions|=checkDatabaseToSynchronize();
+				if (currentTransaction.checkNewConnexions) {
+					checkConnexions();
+				}
+				if (currentTransaction.checkDisconnexions) {
+					checkDisconnexions();
 				}
 
 			}
@@ -196,16 +219,64 @@ public class DatabaseConfigurationsBuilder {
 		}
 	}
 
-	private void checkNewConnexions() throws DatabaseException {
+	private void checkConnexions() throws DatabaseException {
 		checkInitLocalPeer();
-		//TODO complete
+		wrapper.getSynchronizer().checkConnexionsToInit();
+		//TODO complete + check authenticated sending requests
 	}
-	private void checkConnexionsToDesynchronize() throws DatabaseException {
-		HashMap<Set<String>, Set<DecentralizedValue>> packagesToUnsynchronize=new HashMap<>();
+	private boolean checkDatabaseToSynchronize() throws DatabaseException {
+		//HashMap<DatabaseConfiguration, Set<DecentralizedValue>> packagesToSynchronize=new HashMap<>();
+		Set<DatabaseConfiguration> packagesToSynchronize=new HashSet<>();
+		for (DatabaseConfiguration c : configurations.getConfigurations()) {
+			Set<DecentralizedValue> dvs = new HashSet<>();
+			if (c.isDecentralized()) {
+
+				wrapper.getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
+					@Override
+					public boolean nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
+
+						if (!currentTransaction.removedPeersID.contains(_record.getHostID())) {
+							Set<DecentralizedValue> sps = c.getDistantPeersThatCanBeSynchronizedWithThisDatabase();
+							if (sps != null && sps.contains(_record.getHostID()) &&
+									!_record.isConcernedByDatabasePackage(c.getDatabaseSchema().getPackage().getName())) {
+								packagesToSynchronize.add(c);
+								stopTableParsing();
+							}
+
+						}
+						return false;
+					}
+				}, "concernsDatabaseHost=%cdh", "cdh", false);
+			}
+
+			//TODO check if must change state
+		}
 
 		wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
 			@Override
 			public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
+				for (DatabaseConfiguration c : packagesToSynchronize)
+				{
+					Map<String, Boolean> hm=new HashMap<>();
+					hm.put(c.getDatabaseSchema().getPackage().getName(), DatabaseConfigurationsBuilder.this.lifeCycles.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized(c));
+					_record.offerNewAuthenticatedP2PMessage(wrapper, new HookSynchronizeRequest(configurations.getLocalPeer(), _record.getHostID(), hm, c.getDistantPeersThatCanBeSynchronizedWithThisDatabase()),protectedEncryptionProfileProviderForAuthenticatedMessages, this);
+				}
+			}
+		}, "concernsDatabaseHost=%cdh", "cdh", false);
+		for (DatabaseConfiguration c : packagesToSynchronize)
+		{
+			Map<String, Boolean> hm=new HashMap<>();
+			hm.put(c.getDatabaseSchema().getPackage().getName(), DatabaseConfigurationsBuilder.this.lifeCycles.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized(c));
+			wrapper.getSynchronizer().receivedHookSynchronizeRequest(new HookSynchronizeRequest(configurations.getLocalPeer(), configurations.getLocalPeer(), hm, c.getDistantPeersThatCanBeSynchronizedWithThisDatabase()));
+		}
+		return packagesToSynchronize.size()>0;
+	}
+	private boolean checkDatabaseToDesynchronize() throws DatabaseException {
+		HashMap<Set<String>, Set<DecentralizedValue>> packagesToUnsynchronize=new HashMap<>();
+
+		wrapper.getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
+			@Override
+			public boolean nextRecord(DatabaseHooksTable.Record _record) {
 
 				if (!currentTransaction.removedPeersID.contains(_record.getHostID()))
 				{
@@ -213,7 +284,7 @@ public class DatabaseConfigurationsBuilder {
 					for (String p : _record.getDatabasePackageNames())
 					{
 						Optional<DatabaseConfiguration> o=configurations.getConfigurations().stream().filter(c -> c.getDatabaseSchema().getPackage().getName().equals(p)).findAny();
-						if (!o.isPresent() || o.get().getDistantPeersThatCanBeSynchronizedWithThisDatabase()==null || o.get().getDistantPeersThatCanBeSynchronizedWithThisDatabase().contains(_record.getHostID()))
+						if (!o.isPresent() || !o.get().isDecentralized() || o.get().getDistantPeersThatCanBeSynchronizedWithThisDatabase()==null || o.get().getDistantPeersThatCanBeSynchronizedWithThisDatabase().contains(_record.getHostID()))
 						{
 							ptu.add(p);
 						}
@@ -221,11 +292,11 @@ public class DatabaseConfigurationsBuilder {
 					if (ptu.size()>0) {
 						Set<DecentralizedValue> dvs = packagesToUnsynchronize.computeIfAbsent(ptu, k -> new HashSet<>());
 						dvs.add(_record.getHostID());
-						_record.removeDatabasePackageNames(ptu, this);
 					}
 					//TODO check if must change state
 
 				}
+				return false;
 			}
 		}, "concernsDatabaseHost=%cdh", "cdh", false);
 
@@ -239,11 +310,14 @@ public class DatabaseConfigurationsBuilder {
 				}
 			}
 		}, "concernsDatabaseHost=%cdh", "cdh", false);
-
+		for (Map.Entry<Set<String>, Set<DecentralizedValue>> e : packagesToUnsynchronize.entrySet()) {
+			wrapper.getSynchronizer().receivedHookUnsynchronizeRequest(new HookUnsynchronizeRequest(configurations.getLocalPeer(), configurations.getLocalPeer(), e.getKey(), e.getValue()));
+		}
+		return packagesToUnsynchronize.size()>0;
 
 	}
 
-	private void checkConnexionsToRemove() throws DatabaseException {
+	private boolean checkConnexionsToRemove() throws DatabaseException {
 		if (currentTransaction.removedPeersID!=null) {
 			for (DecentralizedValue peerIDToRemove : currentTransaction.removedPeersID) {
 				wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
@@ -253,8 +327,9 @@ public class DatabaseConfigurationsBuilder {
 					}
 				}, "concernsDatabaseHost=%cdh", "cdh", false);
 			}
-			//TODO complete
+			return currentTransaction.removedPeersID.size()>0;
 		}
+		return false;
 	}
 
 

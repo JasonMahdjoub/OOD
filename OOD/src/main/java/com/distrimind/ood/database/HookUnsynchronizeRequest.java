@@ -62,11 +62,4 @@ public class HookUnsynchronizeRequest extends AbstractHookRequest {
 	}
 
 
-	@Override
-	public void messageSent(DatabaseHooksTable.Record concernedSenderHook) throws DatabaseException {
-		if (this.getHostSource().equals(getDatabaseWrapper().getSynchronizer().getLocalHostID()))
-		{
-			getDatabaseWrapper().getSynchronizer().receivedHookUnsynchronizeRequest(this);
-		}
-	}
 }

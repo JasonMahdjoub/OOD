@@ -73,8 +73,11 @@ public class HookSynchronizeRequest extends AbstractHookRequest {
 
 	@Override
 	public void messageSent(DatabaseHooksTable.Record concernedSenderHook) throws DatabaseException {
+
 		if (concernedSenderHook!=null && concernedSenderHook.getAuthenticatedMessagesQueueToSend().isEmpty())
 		{
+
+
 			getDatabaseWrapper().getSynchronizer().connectPeerIfAvailable(concernedSenderHook);
 		}
 	}

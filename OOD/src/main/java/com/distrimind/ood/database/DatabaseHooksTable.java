@@ -393,7 +393,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			}
 		}*/
 
-		protected Set<String> addDatabasePackageNames(List<String> ps) {
+		protected Set<String> addDatabasePackageNames(Collection<String> ps) {
 			if (databasePackageNames==null)
 				databasePackageNames=new HashSet<>(ps);
 			else
@@ -467,7 +467,14 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		}*/
 
 		protected boolean removePackageDatabase(Set<String> packages) {
-			return databasePackageNames.removeAll(packages);
+			if (databasePackageNames!=null && databasePackageNames.removeAll(packages))
+			{
+				if (this.databasePackageNames.size()==0)
+					this.databasePackageNames=null;
+				return true;
+			}
+			else
+				return false;
 			/*StringBuilder sb=new StringBuilder();
 			if (removePackageDatabase(databasePackageNames, sb, _packages)) {
 				databasePackageNames = null;
