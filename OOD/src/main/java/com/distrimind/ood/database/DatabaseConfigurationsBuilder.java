@@ -110,6 +110,10 @@ public class DatabaseConfigurationsBuilder {
 
 	private Transaction currentTransaction=null;
 
+	DatabaseConfigurations getConfigurations() {
+		return configurations;
+	}
+
 	private void pushQuery(ConfigurationQuery query) {
 		synchronized (this) {
 			if (currentTransaction==null)

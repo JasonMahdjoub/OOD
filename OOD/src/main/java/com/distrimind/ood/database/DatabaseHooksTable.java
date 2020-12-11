@@ -540,7 +540,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		}
 	}
 
-	void authenticatedMessageSent(AuthenticatedP2PMessage message) throws DatabaseException {
+	Record authenticatedMessageSent(AuthenticatedP2PMessage message) throws DatabaseException {
 		List<Record> l=getRecordsWithAllFields("hostID", message.getHostSource());
 		if (l.size()>1)
 			throw new InternalError();
@@ -549,7 +549,13 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			Record r=l.get(0);
 			if (r.removeAuthenticatedMessage(message))
 				updateRecord(r, "authenticatedMessagesQueueToSend", r.authenticatedMessagesQueueToSend);
+
+			if (r.authenticatedMessagesQueueToSend.size()==0 && message instanceof HookSynchronizeRequest)
+			{
+				return r;
+			}
 		}
+		return null;
 	}
 
 	void actualizeLastTransactionID(final List<DecentralizedValue> excludedHooks) throws DatabaseException {
