@@ -51,7 +51,6 @@ public class DatabaseConfigurationsBuilder {
 		{
 			lifeCycles.saveDatabaseConfigurations(configurations);
 		}
-		checkInitLocalPeer();
 	}
 	private static class Transaction {
 		final ArrayList<ConfigurationQuery> queries =new ArrayList<>();
@@ -164,7 +163,7 @@ public class DatabaseConfigurationsBuilder {
 					checkConnexions();
 				}
 				if (currentTransaction.checkDisconnexions) {
-					checkDisconnexions();
+					checkDisconnections();
 				}
 
 			}
@@ -225,6 +224,9 @@ public class DatabaseConfigurationsBuilder {
 	private void checkConnexions() throws DatabaseException {
 		//checkInitLocalPeer();
 		wrapper.getSynchronizer().checkConnexionsToInit();
+	}
+	private void checkDisconnections() throws DatabaseException {
+		wrapper.getSynchronizer().checkDisconnections();
 	}
 	private boolean checkDatabaseToSynchronize() throws DatabaseException {
 		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {

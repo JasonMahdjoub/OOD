@@ -1952,6 +1952,32 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				unlockWrite();
 			}
 		}
+		void checkDisconnections() throws DatabaseException
+		{
+			lockWrite();
+			try {
+				if (databaseConfigurationsBuilder.getConfigurations().getLocalPeer() != null) {
+
+					if (isInitialized(databaseConfigurationsBuilder.getConfigurations().getLocalPeer()))
+					{
+						for (Map.Entry<DecentralizedValue, ConnectedPeers> e : initializedHooks.entrySet()) {
+							if (e.getValue()!=null && !databaseConfigurationsBuilder.getConfigurations().getDistantPeers().contains(e.getKey()))
+							{
+								disconnectHook(e.getKey());
+							}
+						}
+					}
+				}
+				else
+				{
+					disconnectAll();
+				}
+
+			}
+			finally {
+				unlockWrite();
+			}
+		}
 		void checkConnexionsToInit(DatabaseHooksTable.Record r) throws DatabaseException
 		{
 			assert r!=null;
