@@ -225,111 +225,173 @@ public class DatabaseConfigurationsBuilder {
 		//TODO complete + check authenticated sending requests
 	}
 	private boolean checkDatabaseToSynchronize() throws DatabaseException {
-		//HashMap<DatabaseConfiguration, Set<DecentralizedValue>> packagesToSynchronize=new HashMap<>();
-		Set<DatabaseConfiguration> packagesToSynchronize=new HashSet<>();
-		for (DatabaseConfiguration c : configurations.getConfigurations()) {
-			Set<DecentralizedValue> dvs = new HashSet<>();
-			if (c.isDecentralized()) {
+		wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
+			@Override
+			public Boolean run() throws Exception {
+				Set<DatabaseConfiguration> packagesToSynchronize=new HashSet<>();
+				for (DatabaseConfiguration c : configurations.getConfigurations()) {
+					Set<DecentralizedValue> dvs = new HashSet<>();
+					if (c.isDecentralized()) {
 
+						wrapper.getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
+							@Override
+							public boolean nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
+
+								if (!currentTransaction.removedPeersID.contains(_record.getHostID())) {
+									Set<DecentralizedValue> sps = c.getDistantPeersThatCanBeSynchronizedWithThisDatabase();
+									if (sps != null && sps.contains(_record.getHostID()) &&
+											!_record.isConcernedByDatabasePackage(c.getDatabaseSchema().getPackage().getName())) {
+										packagesToSynchronize.add(c);
+										stopTableParsing();
+									}
+
+								}
+								return false;
+							}
+						}, "concernsDatabaseHost=%cdh", "cdh", false);
+					}
+
+					//TODO check if must change state
+				}
+
+				wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
+					@Override
+					public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
+						for (DatabaseConfiguration c : packagesToSynchronize)
+						{
+							Map<String, Boolean> hm=new HashMap<>();
+							hm.put(c.getDatabaseSchema().getPackage().getName(), DatabaseConfigurationsBuilder.this.lifeCycles.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized(c));
+							_record.offerNewAuthenticatedP2PMessage(wrapper, new HookSynchronizeRequest(configurations.getLocalPeer(), _record.getHostID(), hm, c.getDistantPeersThatCanBeSynchronizedWithThisDatabase()),protectedEncryptionProfileProviderForAuthenticatedMessages, this);
+						}
+					}
+				}, "concernsDatabaseHost=%cdh", "cdh", false);
+				for (DatabaseConfiguration c : packagesToSynchronize)
+				{
+					Map<String, Boolean> hm=new HashMap<>();
+					hm.put(c.getDatabaseSchema().getPackage().getName(), DatabaseConfigurationsBuilder.this.lifeCycles.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized(c));
+					wrapper.getSynchronizer().receivedHookSynchronizeRequest(new HookSynchronizeRequest(configurations.getLocalPeer(), configurations.getLocalPeer(), hm, c.getDistantPeersThatCanBeSynchronizedWithThisDatabase()));
+				}
+				return packagesToSynchronize.size()>0;
+			}
+
+			@Override
+			public TransactionIsolation getTransactionIsolation() {
+				return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+			}
+
+			@Override
+			public boolean doesWriteData() {
+				return true;
+			}
+
+			@Override
+			public void initOrReset() {
+
+			}
+		});
+
+	}
+	private boolean checkDatabaseToDesynchronize() throws DatabaseException {
+
+		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
+			@Override
+			public Boolean run() throws Exception {
+				HashMap<Set<String>, Set<DecentralizedValue>> packagesToUnsynchronize=new HashMap<>();
 				wrapper.getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
 					@Override
-					public boolean nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
+					public boolean nextRecord(DatabaseHooksTable.Record _record) {
 
-						if (!currentTransaction.removedPeersID.contains(_record.getHostID())) {
-							Set<DecentralizedValue> sps = c.getDistantPeersThatCanBeSynchronizedWithThisDatabase();
-							if (sps != null && sps.contains(_record.getHostID()) &&
-									!_record.isConcernedByDatabasePackage(c.getDatabaseSchema().getPackage().getName())) {
-								packagesToSynchronize.add(c);
-								stopTableParsing();
+						if (!currentTransaction.removedPeersID.contains(_record.getHostID()))
+						{
+							Set<String> ptu=new HashSet<>();
+							for (String p : _record.getDatabasePackageNames())
+							{
+								Optional<DatabaseConfiguration> o=configurations.getConfigurations().stream().filter(c -> c.getDatabaseSchema().getPackage().getName().equals(p)).findAny();
+								if (!o.isPresent() || !o.get().isDecentralized() || o.get().getDistantPeersThatCanBeSynchronizedWithThisDatabase()==null || o.get().getDistantPeersThatCanBeSynchronizedWithThisDatabase().contains(_record.getHostID()))
+								{
+									ptu.add(p);
+								}
 							}
+							if (ptu.size()>0) {
+								Set<DecentralizedValue> dvs = packagesToUnsynchronize.computeIfAbsent(ptu, k -> new HashSet<>());
+								dvs.add(_record.getHostID());
+							}
+							//TODO check if must change state
 
 						}
 						return false;
 					}
 				}, "concernsDatabaseHost=%cdh", "cdh", false);
-			}
 
-			//TODO check if must change state
-		}
 
-		wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
-			@Override
-			public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
-				for (DatabaseConfiguration c : packagesToSynchronize)
-				{
-					Map<String, Boolean> hm=new HashMap<>();
-					hm.put(c.getDatabaseSchema().getPackage().getName(), DatabaseConfigurationsBuilder.this.lifeCycles.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized(c));
-					_record.offerNewAuthenticatedP2PMessage(wrapper, new HookSynchronizeRequest(configurations.getLocalPeer(), _record.getHostID(), hm, c.getDistantPeersThatCanBeSynchronizedWithThisDatabase()),protectedEncryptionProfileProviderForAuthenticatedMessages, this);
-				}
-			}
-		}, "concernsDatabaseHost=%cdh", "cdh", false);
-		for (DatabaseConfiguration c : packagesToSynchronize)
-		{
-			Map<String, Boolean> hm=new HashMap<>();
-			hm.put(c.getDatabaseSchema().getPackage().getName(), DatabaseConfigurationsBuilder.this.lifeCycles.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized(c));
-			wrapper.getSynchronizer().receivedHookSynchronizeRequest(new HookSynchronizeRequest(configurations.getLocalPeer(), configurations.getLocalPeer(), hm, c.getDistantPeersThatCanBeSynchronizedWithThisDatabase()));
-		}
-		return packagesToSynchronize.size()>0;
-	}
-	private boolean checkDatabaseToDesynchronize() throws DatabaseException {
-		HashMap<Set<String>, Set<DecentralizedValue>> packagesToUnsynchronize=new HashMap<>();
-
-		wrapper.getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
-			@Override
-			public boolean nextRecord(DatabaseHooksTable.Record _record) {
-
-				if (!currentTransaction.removedPeersID.contains(_record.getHostID()))
-				{
-					Set<String> ptu=new HashSet<>();
-					for (String p : _record.getDatabasePackageNames())
-					{
-						Optional<DatabaseConfiguration> o=configurations.getConfigurations().stream().filter(c -> c.getDatabaseSchema().getPackage().getName().equals(p)).findAny();
-						if (!o.isPresent() || !o.get().isDecentralized() || o.get().getDistantPeersThatCanBeSynchronizedWithThisDatabase()==null || o.get().getDistantPeersThatCanBeSynchronizedWithThisDatabase().contains(_record.getHostID()))
+				wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
+					@Override
+					public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
+						for (Map.Entry<Set<String>, Set<DecentralizedValue>> e : packagesToUnsynchronize.entrySet())
 						{
-							ptu.add(p);
+							_record.offerNewAuthenticatedP2PMessage(wrapper, new HookUnsynchronizeRequest(configurations.getLocalPeer(), _record.getHostID(), e.getKey(), e.getValue()),protectedEncryptionProfileProviderForAuthenticatedMessages, this);
 						}
 					}
-					if (ptu.size()>0) {
-						Set<DecentralizedValue> dvs = packagesToUnsynchronize.computeIfAbsent(ptu, k -> new HashSet<>());
-						dvs.add(_record.getHostID());
-					}
-					//TODO check if must change state
-
+				}, "concernsDatabaseHost=%cdh", "cdh", false);
+				for (Map.Entry<Set<String>, Set<DecentralizedValue>> e : packagesToUnsynchronize.entrySet()) {
+					wrapper.getSynchronizer().receivedHookUnsynchronizeRequest(new HookUnsynchronizeRequest(configurations.getLocalPeer(), configurations.getLocalPeer(), e.getKey(), e.getValue()));
 				}
-				return false;
+				return packagesToUnsynchronize.size()>0;
 			}
-		}, "concernsDatabaseHost=%cdh", "cdh", false);
 
-
-		wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
 			@Override
-			public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
-				for (Map.Entry<Set<String>, Set<DecentralizedValue>> e : packagesToUnsynchronize.entrySet())
-				{
-					_record.offerNewAuthenticatedP2PMessage(wrapper, new HookUnsynchronizeRequest(configurations.getLocalPeer(), _record.getHostID(), e.getKey(), e.getValue()),protectedEncryptionProfileProviderForAuthenticatedMessages, this);
-				}
+			public TransactionIsolation getTransactionIsolation() {
+				return TransactionIsolation.TRANSACTION_SERIALIZABLE;
 			}
-		}, "concernsDatabaseHost=%cdh", "cdh", false);
-		for (Map.Entry<Set<String>, Set<DecentralizedValue>> e : packagesToUnsynchronize.entrySet()) {
-			wrapper.getSynchronizer().receivedHookUnsynchronizeRequest(new HookUnsynchronizeRequest(configurations.getLocalPeer(), configurations.getLocalPeer(), e.getKey(), e.getValue()));
-		}
-		return packagesToUnsynchronize.size()>0;
+
+			@Override
+			public boolean doesWriteData() {
+				return true;
+			}
+
+			@Override
+			public void initOrReset() {
+
+			}
+		});
+
 
 	}
 
 	private boolean checkConnexionsToRemove() throws DatabaseException {
-		if (currentTransaction.removedPeersID!=null) {
-			for (DecentralizedValue peerIDToRemove : currentTransaction.removedPeersID) {
-				wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
-					@Override
-					public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
-						_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), peerIDToRemove), protectedEncryptionProfileProviderForAuthenticatedMessages, this);
+		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
+			@Override
+			public Boolean run() throws Exception {
+				if (currentTransaction.removedPeersID!=null) {
+					for (DecentralizedValue peerIDToRemove : currentTransaction.removedPeersID) {
+						wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
+							@Override
+							public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
+								_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), peerIDToRemove), protectedEncryptionProfileProviderForAuthenticatedMessages, this);
+							}
+						}, "concernsDatabaseHost=%cdh", "cdh", false);
 					}
-				}, "concernsDatabaseHost=%cdh", "cdh", false);
+					return currentTransaction.removedPeersID.size()>0;
+				}
+				return false;
 			}
-			return currentTransaction.removedPeersID.size()>0;
-		}
-		return false;
+
+			@Override
+			public TransactionIsolation getTransactionIsolation() {
+				return TransactionIsolation.TRANSACTION_READ_COMMITTED;
+			}
+
+			@Override
+			public boolean doesWriteData() {
+				return true;
+			}
+
+			@Override
+			public void initOrReset() {
+
+			}
+		});
+
 	}
 
 
