@@ -1952,20 +1952,25 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				unlockWrite();
 			}
 		}
+		void checkConnexionsToInit(DatabaseHooksTable.Record r) throws DatabaseException
+		{
+			assert r!=null;
+			List<AuthenticatedP2PMessage> las = r.getAuthenticatedMessagesQueueToSend();
+			if (las.size() > 0) {
+				for (AuthenticatedP2PMessage a : las) {
+					a.setDatabaseWrapper(DatabaseWrapper.this);
+					addNewDatabaseEvent((DatabaseEvent) a);
+				}
+			} else
+				sendP2PConnexionInitializationMessage(r);
+		}
 		private void checkConnexionsToInit(DecentralizedValue peerID) throws DatabaseException
 		{
 			if (databaseConfigurationsBuilder.getConfigurations().getDistantPeers().contains(peerID)) {
 				DatabaseHooksTable.Record r = getDatabaseHooksTable().getHook(peerID, true);
 				if (r == null)
 					return;
-				List<AuthenticatedP2PMessage> las = r.getAuthenticatedMessagesQueueToSend();
-				if (las.size() > 0) {
-					for (AuthenticatedP2PMessage a : las) {
-						a.setDatabaseWrapper(DatabaseWrapper.this);
-						addNewDatabaseEvent((DatabaseEvent) a);
-					}
-				} else
-					sendP2PConnexionInitializationMessage(r);
+				checkConnexionsToInit(r);
 			}
 		}
 		public void peerConnected(DecentralizedValue peerID) throws DatabaseException {
