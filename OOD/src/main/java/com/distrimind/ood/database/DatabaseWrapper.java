@@ -871,6 +871,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 
 
+
+
 		/*public void addHookForLocalDatabaseHost(DecentralizedValue hostID, Package ...databasePackages)
 				throws DatabaseException {
 			HashMap<String, Boolean> packages = new HashMap<>();
@@ -1930,45 +1932,57 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				unlockWrite();
 			}
 		}
+		void checkConnexionsToInit() throws DatabaseException
+		{
+			lockWrite();
+			try {
+				if (databaseConfigurationsBuilder.getConfigurations().getLocalPeer() != null) {
 
+					if (!isInitialized(databaseConfigurationsBuilder.getConfigurations().getLocalPeer()))
+						initLocalHostID(databaseConfigurationsBuilder.getConfigurations().getLocalPeer(), databaseConfigurationsBuilder.getConfigurations().isPermitIndirectSynchronizationBetweenPeers());
+					for (Map.Entry<DecentralizedValue, ConnectedPeers> e : initializedHooks.entrySet()) {
+						if (e.getValue() == null) {
+							checkConnexionsToInit(e.getKey());
+						}
+					}
+				}
+
+			}
+			finally {
+				unlockWrite();
+			}
+		}
+		private void checkConnexionsToInit(DecentralizedValue peerID) throws DatabaseException
+		{
+			if (databaseConfigurationsBuilder.getConfigurations().getDistantPeers().contains(peerID)) {
+				DatabaseHooksTable.Record r = getDatabaseHooksTable().getHook(peerID, true);
+				if (r == null)
+					return;
+				List<AuthenticatedP2PMessage> las = r.getAuthenticatedMessagesQueueToSend();
+				if (las.size() > 0) {
+					for (AuthenticatedP2PMessage a : las) {
+						a.setDatabaseWrapper(DatabaseWrapper.this);
+						addNewDatabaseEvent((DatabaseEvent) a);
+					}
+				} else
+					sendP2PConnexionInitializationMessage(r);
+			}
+		}
 		public void peerConnected(DecentralizedValue peerID) throws DatabaseException {
 			if (peerID == null)
 				throw new NullPointerException("hostID");
 			if (!isInitialized())
 				return;
 			try {
-				lockRead();
+				lockWrite();
 				if (initializedHooks.containsKey(peerID))
 					throw new DatabaseException("Peer already connected");
+				initializedHooks.put(peerID, null);
+				checkConnexionsToInit(peerID);
+
 			}
 			finally {
-				unlockRead();
-			}
-			if (databaseConfigurationsBuilder.getConfigurations().getDistantPeers().contains(peerID))
-			{
-				DatabaseHooksTable.Record r = getDatabaseHooksTable().getHook(peerID, true);
-				if (r==null)
-					return;
-				List<AuthenticatedP2PMessage> las=r.getAuthenticatedMessagesQueueToSend();
-				if (las.size()>0) {
-					for (AuthenticatedP2PMessage a : las) {
-						a.setDatabaseWrapper(DatabaseWrapper.this);
-						addNewDatabaseEvent((DatabaseEvent) a);
-					}
-				}
-				else
-					sendP2PConnexionInitializationMessage(r);
-			}
-			else
-			{
-				try {
-					lockWrite();
-					if (initializedHooks.containsKey(peerID))
-						initializedHooks.put(peerID, null);
-				}
-				finally {
-					unlockWrite();
-				}
+				unlockWrite();
 			}
 
 		}

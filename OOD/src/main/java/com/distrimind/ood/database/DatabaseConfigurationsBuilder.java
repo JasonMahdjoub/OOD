@@ -211,21 +211,23 @@ public class DatabaseConfigurationsBuilder {
 		return this;
 	}
 
-	private void checkInitLocalPeer() throws DatabaseException {
+	/*private boolean checkInitLocalPeer() throws DatabaseException {
 
 		if (configurations.getLocalPeer() != null) {
 			if (!wrapper.getSynchronizer().isInitialized(configurations.getLocalPeer()))
 				wrapper.getSynchronizer().initLocalHostID(configurations.getLocalPeer(), configurations.isPermitIndirectSynchronizationBetweenPeers());
+			return true;
 		}
-	}
+		else
+			return false;
+	}*/
 
 	private void checkConnexions() throws DatabaseException {
-		checkInitLocalPeer();
+		//checkInitLocalPeer();
 		wrapper.getSynchronizer().checkConnexionsToInit();
-		//TODO complete + check authenticated sending requests
 	}
 	private boolean checkDatabaseToSynchronize() throws DatabaseException {
-		wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
+		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
 			@Override
 			public Boolean run() throws Exception {
 				Set<DatabaseConfiguration> packagesToSynchronize=new HashSet<>();
@@ -261,6 +263,7 @@ public class DatabaseConfigurationsBuilder {
 						{
 							Map<String, Boolean> hm=new HashMap<>();
 							hm.put(c.getDatabaseSchema().getPackage().getName(), DatabaseConfigurationsBuilder.this.lifeCycles.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized(c));
+
 							_record.offerNewAuthenticatedP2PMessage(wrapper, new HookSynchronizeRequest(configurations.getLocalPeer(), _record.getHostID(), hm, c.getDistantPeersThatCanBeSynchronizedWithThisDatabase()),protectedEncryptionProfileProviderForAuthenticatedMessages, this);
 						}
 					}
