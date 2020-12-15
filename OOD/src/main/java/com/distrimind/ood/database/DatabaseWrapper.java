@@ -321,7 +321,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * @throws DatabaseException if a problem occurs
 	 * 
 	 */
-	protected DatabaseWrapper(String _database_name, File databaseDirectory, boolean alwaysDisconnectAfterOnTransaction, boolean loadToMemory) throws DatabaseException {
+	protected DatabaseWrapper(String _database_name, File databaseDirectory, boolean alwaysDisconnectAfterOnTransaction, boolean loadToMemory,
+							  DatabaseConfigurations databaseConfigurations,
+							  DatabaseLifeCycles databaseLifeCycles,
+							  EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
+							  EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedMessages,
+							  AbstractSecureRandom secureRandom,
+							  boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
 
 		if (loadToMemory)
 		{
@@ -373,6 +379,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		converters = new ArrayList<>();
 		converters.add(new DefaultByteTabObjectConverter());
 		synchronizer=new DatabaseSynchronizer();
+		databaseConfigurationsBuilder=new DatabaseConfigurationsBuilder(databaseConfigurations, this, databaseLifeCycles, encryptionProfileProviderForCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedMessages, secureRandom, createDatabasesIfNecessaryAndCheckIt);
 	}
 
 	public boolean isLoadedToMemory()
@@ -743,6 +750,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			finally {
 				unlockWrite();
 			}
+		}
+
+		void checkInitLocalPeer() throws DatabaseException {
+			DecentralizedValue dv=databaseConfigurationsBuilder.getConfigurations().getLocalPeer();
+			if (dv!=null && !isInitialized(dv))
+				initLocalHostID(dv, databaseConfigurationsBuilder.getConfigurations().isPermitIndirectSynchronizationBetweenPeers());
 		}
 
 		public boolean isInitialized(DecentralizedValue hostID) {

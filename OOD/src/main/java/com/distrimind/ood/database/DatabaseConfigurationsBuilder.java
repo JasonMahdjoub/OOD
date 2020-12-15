@@ -51,6 +51,7 @@ public class DatabaseConfigurationsBuilder {
 		{
 			lifeCycles.saveDatabaseConfigurations(configurations);
 		}
+		checkInitLocalPeer();
 	}
 	private static class Transaction {
 		final ArrayList<ConfigurationQuery> queries =new ArrayList<>();
@@ -210,16 +211,10 @@ public class DatabaseConfigurationsBuilder {
 		return this;
 	}
 
-	/*private boolean checkInitLocalPeer() throws DatabaseException {
+	private void checkInitLocalPeer() throws DatabaseException {
 
-		if (configurations.getLocalPeer() != null) {
-			if (!wrapper.getSynchronizer().isInitialized(configurations.getLocalPeer()))
-				wrapper.getSynchronizer().initLocalHostID(configurations.getLocalPeer(), configurations.isPermitIndirectSynchronizationBetweenPeers());
-			return true;
-		}
-		else
-			return false;
-	}*/
+		wrapper.getSynchronizer().checkInitLocalPeer();
+	}
 
 	private void checkConnexions() throws DatabaseException {
 		//checkInitLocalPeer();
