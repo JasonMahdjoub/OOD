@@ -36,7 +36,13 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.crypto.EncryptionProfileProviderFactory;
+import com.distrimind.util.crypto.SecureRandomType;
 import com.distrimind.util.properties.MultiFormatProperties;
+
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 
 /**
  * 
@@ -52,25 +58,101 @@ public abstract class DatabaseFactory<DW extends DatabaseWrapper> extends MultiF
 	private static final long serialVersionUID = 3751773842248044333L;
 
 	private volatile transient DW wrapper;
+	protected EncryptionProfileProviderFactory encryptionProfileProviderFactoryForCentralDatabaseBackup;
+	protected EncryptionProfileProviderFactory protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages;
+	protected SecureRandomType randomType=SecureRandomType.DEFAULT;
+	protected byte[] randomNonce= "fsg24778kqQVEZYogt1°F_:x=,aért16PHMXv;t/+$eùŜF21F0".getBytes();
+	protected byte[] randomPersonalizationString= "SGJST92?GI1N4: carz:fg *£f14902é\"§e'!(y)ĝùa(!h,qàényŝtufx".getBytes();
+	protected DatabaseConfigurations databaseConfigurations;
 
 
-	protected DatabaseFactory() {
-		super(null);
+
+
+
+	public AbstractSecureRandom getSecureRandom() throws DatabaseException {
+		try {
+			return randomType.getSingleton(randomNonce, randomPersonalizationString );
+		} catch (NoSuchAlgorithmException | NoSuchProviderException e) {
+			throw DatabaseException.getDatabaseException(e);
+		}
+	}
+
+	public EncryptionProfileProviderFactory getEncryptionProfileProviderFactoryForCentralDatabaseBackup() {
+		return encryptionProfileProviderFactoryForCentralDatabaseBackup;
+	}
+
+	public void setEncryptionProfileProviders(EncryptionProfileProviderFactory encryptionProfileProviderFactoryForCentralDatabaseBackup,
+											  EncryptionProfileProviderFactory protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages,
+											  SecureRandomType randomType, byte[] randomNonce, byte[] randomPersonalizationString) {
+		if (encryptionProfileProviderFactoryForCentralDatabaseBackup==null)
+			throw new NullPointerException();
+		if (protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages==null)
+			throw new NullPointerException();
+		if (randomType==null)
+			throw new NullPointerException();
+		this.encryptionProfileProviderFactoryForCentralDatabaseBackup = encryptionProfileProviderFactoryForCentralDatabaseBackup;
+		this.protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages=protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages;
+		this.randomType=randomType;
+		this.randomNonce=randomNonce;
+		this.randomPersonalizationString=randomPersonalizationString;
+	}
+
+	public EncryptionProfileProviderFactory getProtectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages() {
+		return protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages;
 	}
 
 
+	public SecureRandomType getRandomType() {
+		return randomType;
+	}
+
+	public byte[] getRandomNonce() {
+		return randomNonce;
+	}
+
+
+	public byte[] getRandomPersonalizationString() {
+		return randomPersonalizationString;
+	}
+
+	public DatabaseConfigurations getDatabaseConfigurations() {
+		return databaseConfigurations;
+	}
+
+	public void setDatabaseConfigurations(DatabaseConfigurations databaseConfigurations) {
+		if (databaseConfigurations==null)
+			throw new NullPointerException();
+		this.databaseConfigurations = databaseConfigurations;
+	}
+
+	protected DatabaseFactory() throws DatabaseException {
+		super(null);
+		databaseConfigurations=new DatabaseConfigurations();
+	}
+	protected DatabaseFactory(DatabaseConfigurations databaseConfigurations) throws DatabaseException {
+		super(null);
+		if (databaseConfigurations==null)
+			databaseConfigurations=new DatabaseConfigurations();
+		this.databaseConfigurations = databaseConfigurations;
+	}
 
 	public final DW getDatabaseWrapperSingleton() throws DatabaseException {
+		return getDatabaseWrapperSingleton(null);
+	}
+	public final DW getDatabaseWrapperSingleton(DatabaseLifeCycles databaseLifeCycles) throws DatabaseException {
+		return getDatabaseWrapperSingleton(databaseLifeCycles, true);
+	}
+	public final DW getDatabaseWrapperSingleton(DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
 		if (wrapper == null) {
 			synchronized (this) {
 				if (wrapper == null)
-					wrapper = newWrapperInstance();
+					wrapper = newWrapperInstance(databaseLifeCycles, createDatabasesIfNecessaryAndCheckIt);
 			}
 		}
 		return wrapper;
 	}
 
-	protected abstract DW newWrapperInstance() throws DatabaseException;
+	protected abstract DW newWrapperInstance(DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException;
 
 
 	public abstract void deleteDatabase() throws DatabaseException;

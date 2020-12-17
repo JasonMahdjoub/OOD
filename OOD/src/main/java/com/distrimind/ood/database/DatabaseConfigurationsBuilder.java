@@ -16,7 +16,7 @@ public class DatabaseConfigurationsBuilder {
 	private final DatabaseConfigurations configurations;
 	private final DatabaseWrapper wrapper;
 	private final DatabaseLifeCycles lifeCycles;
-	private final EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedMessages;
+	private final EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages;
 	private final AbstractSecureRandom secureRandom;
 
 
@@ -24,25 +24,25 @@ public class DatabaseConfigurationsBuilder {
 								  DatabaseWrapper wrapper,
 								  DatabaseLifeCycles lifeCycles,
 								  EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
-								  EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedMessages,
+								  EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 								  AbstractSecureRandom secureRandom,
 								  boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
 		if (configurations==null)
 			throw new NullPointerException();
 		if (wrapper==null)
 			throw new NullPointerException();
-		if (encryptionProfileProviderForCentralDatabaseBackup ==null)
+		if (encryptionProfileProviderForCentralDatabaseBackup ==null && configurations.useCentralBackupDatabase())
 			throw new NullPointerException();
-		if (protectedEncryptionProfileProviderForAuthenticatedMessages==null)
+		if (protectedEncryptionProfileProviderForAuthenticatedP2PMessages ==null && configurations.isDecentralized())
 			throw new NullPointerException();
-		if (secureRandom==null)
+		if (secureRandom==null && (protectedEncryptionProfileProviderForAuthenticatedP2PMessages!=null || encryptionProfileProviderForCentralDatabaseBackup!=null))
 			throw new NullPointerException();
 
 		this.configurations = configurations;
 		this.wrapper = wrapper;
 		this.lifeCycles = lifeCycles;
 		this.encryptionProfileProviderForCentralDatabaseBackup = encryptionProfileProviderForCentralDatabaseBackup;
-		this.protectedEncryptionProfileProviderForAuthenticatedMessages=protectedEncryptionProfileProviderForAuthenticatedMessages;
+		this.protectedEncryptionProfileProviderForAuthenticatedP2PMessages = protectedEncryptionProfileProviderForAuthenticatedP2PMessages;
 		this.secureRandom=secureRandom;
 		boolean save=configurations.checkDistantPeers();
 		configurations.setCreateDatabasesIfNecessaryAndCheckIt(createDatabasesIfNecessaryAndCheckIt);
@@ -51,8 +51,11 @@ public class DatabaseConfigurationsBuilder {
 		{
 			lifeCycles.saveDatabaseConfigurations(configurations);
 		}
+
 		checkInitLocalPeer();
 	}
+
+
 	private static class Transaction {
 		final ArrayList<ConfigurationQuery> queries =new ArrayList<>();
 		private boolean checkDatabaseToSynchronize=false;
@@ -89,11 +92,8 @@ public class DatabaseConfigurationsBuilder {
   		void checkDatabaseLoading()
 		{
 			checkDatabaseLoading=true;
-		}
-		void checkConfigurationLoading() {
-			checkDatabaseLoading();
+			checkDatabaseToSynchronize();
 			checkNewConnexions();
-
 		}
 
 		void checkNotRemovedID(DecentralizedValue localPeerId) throws DatabaseException {
@@ -196,6 +196,10 @@ public class DatabaseConfigurationsBuilder {
 	}
 	public DatabaseConfigurationsBuilder addConfiguration(DatabaseConfiguration configuration, boolean makeConfigurationLoadingPersistent, boolean createDatabaseIfNecessaryAndCheckItDuringCurrentSession )
 	{
+		if (configuration.isSynchronizedWithCentralBackupDatabase() && encryptionProfileProviderForCentralDatabaseBackup==null)
+			throw new IllegalArgumentException("Cannot add configuration without encryption profile provider for central backup database");
+		if (configuration.isDecentralized() && protectedEncryptionProfileProviderForAuthenticatedP2PMessages ==null)
+			throw new IllegalArgumentException("Cannot add configuration without protected encryption profile provider for authenticated P2P messages");
 		pushQuery((t) -> {
 			for (DatabaseConfiguration dc : this.configurations.getConfigurations())
 			{
@@ -206,7 +210,8 @@ public class DatabaseConfigurationsBuilder {
 			configurations.addConfiguration(configuration, makeConfigurationLoadingPersistent);
 			if (makeConfigurationLoadingPersistent)
 				t.updateConfigurationPersistence();
-			t.checkConfigurationLoading();
+			t.checkDatabaseLoading();
+
 		});
 		return this;
 	}
@@ -261,7 +266,7 @@ public class DatabaseConfigurationsBuilder {
 							Map<String, Boolean> hm=new HashMap<>();
 							hm.put(c.getDatabaseSchema().getPackage().getName(), DatabaseConfigurationsBuilder.this.lifeCycles.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized(c));
 
-							_record.offerNewAuthenticatedP2PMessage(wrapper, new HookSynchronizeRequest(configurations.getLocalPeer(), _record.getHostID(), hm, c.getDistantPeersThatCanBeSynchronizedWithThisDatabase()),protectedEncryptionProfileProviderForAuthenticatedMessages, this);
+							_record.offerNewAuthenticatedP2PMessage(wrapper, new HookSynchronizeRequest(configurations.getLocalPeer(), _record.getHostID(), hm, c.getDistantPeersThatCanBeSynchronizedWithThisDatabase()), protectedEncryptionProfileProviderForAuthenticatedP2PMessages, this);
 						}
 					}
 				}, "concernsDatabaseHost=%cdh", "cdh", false);
@@ -329,7 +334,7 @@ public class DatabaseConfigurationsBuilder {
 					public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
 						for (Map.Entry<Set<String>, Set<DecentralizedValue>> e : packagesToUnsynchronize.entrySet())
 						{
-							_record.offerNewAuthenticatedP2PMessage(wrapper, new HookUnsynchronizeRequest(configurations.getLocalPeer(), _record.getHostID(), e.getKey(), e.getValue()),protectedEncryptionProfileProviderForAuthenticatedMessages, this);
+							_record.offerNewAuthenticatedP2PMessage(wrapper, new HookUnsynchronizeRequest(configurations.getLocalPeer(), _record.getHostID(), e.getKey(), e.getValue()), protectedEncryptionProfileProviderForAuthenticatedP2PMessages, this);
 						}
 					}
 				}, "concernsDatabaseHost=%cdh", "cdh", false);
@@ -367,7 +372,7 @@ public class DatabaseConfigurationsBuilder {
 						wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
 							@Override
 							public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
-								_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), peerIDToRemove), protectedEncryptionProfileProviderForAuthenticatedMessages, this);
+								_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), peerIDToRemove), protectedEncryptionProfileProviderForAuthenticatedP2PMessages, this);
 							}
 						}, "concernsDatabaseHost=%cdh", "cdh", false);
 					}
@@ -412,6 +417,8 @@ public class DatabaseConfigurationsBuilder {
 	public void setLocalPeerIdentifier(DecentralizedValue localPeerId, boolean permitIndirectSynchronizationBetweenPeers, boolean replace) {
 		if (localPeerId==null)
 			throw new NullPointerException();
+		if (protectedEncryptionProfileProviderForAuthenticatedP2PMessages ==null)
+			throw new IllegalArgumentException("Cannot set local peer without protected encryption profile provider for authenticated P2P messages");
 		pushQuery((t)-> {
 			t.checkNotRemovedID(localPeerId);
 
@@ -444,7 +451,9 @@ public class DatabaseConfigurationsBuilder {
 				configurations.setPermitIndirectSynchronizationBetweenPeers(permitIndirectSynchronizationBetweenPeers);
 				configurations.setLocalPeer(localPeerId);
 				t.updateConfigurationPersistence();
+				t.checkDisconnexions();
 				t.checkNewConnexions();
+				t.checkDatabaseToSynchronize();
 				if (removedHostID!=null)
 					t.addIDToRemove(removedHostID);
 
@@ -478,6 +487,8 @@ public class DatabaseConfigurationsBuilder {
 			throw new IllegalArgumentException();
 		if (Arrays.stream(packagesString).anyMatch(Objects::isNull))
 			throw new NullPointerException();
+		if (protectedEncryptionProfileProviderForAuthenticatedP2PMessages ==null)
+			throw new IllegalArgumentException("Cannot set local peer without protected encryption profile provider for authenticated P2P messages");
 		pushQuery((t) -> {
 			t.checkNotRemovedIDs(distantPeers);
 			boolean changed=false;
@@ -487,7 +498,9 @@ public class DatabaseConfigurationsBuilder {
 			}
 			if (changed) {
 				t.updateConfigurationPersistence();
+				t.checkDatabaseToSynchronize();
 				t.checkNewConnexions();
+
 			}
 		});
 		return this;
@@ -503,6 +516,8 @@ public class DatabaseConfigurationsBuilder {
 			throw new NullPointerException();
 		if (configurations.getLocalPeer()!=null && distantPeers.contains(configurations.getLocalPeer()))
 			throw new IllegalArgumentException();
+		if (protectedEncryptionProfileProviderForAuthenticatedP2PMessages ==null)
+			throw new IllegalArgumentException("Cannot set local peer without protected encryption profile provider for authenticated P2P messages");
 		pushQuery((t) -> {
 			t.checkNotRemovedIDs(distantPeers);
 			boolean changed=configurations.setDistantPeersWithGivenPackage(packageString, distantPeers);
@@ -510,6 +525,7 @@ public class DatabaseConfigurationsBuilder {
 				t.updateConfigurationPersistence();
 				t.checkNewConnexions();
 				t.checkConnexionsToDesynchronize();
+				t.checkDatabaseToSynchronize();
 			}
 		});
 		return this;

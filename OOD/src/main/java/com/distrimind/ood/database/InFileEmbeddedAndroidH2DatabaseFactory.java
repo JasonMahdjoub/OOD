@@ -60,8 +60,8 @@ public class InFileEmbeddedAndroidH2DatabaseFactory extends DatabaseFactory<Embe
 	private boolean useExternalCard=false;
 
 
-	protected InFileEmbeddedAndroidH2DatabaseFactory() {
-
+	protected InFileEmbeddedAndroidH2DatabaseFactory() throws DatabaseException {
+		super();
 	}
 	/**
 	 * Constructor
@@ -75,8 +75,24 @@ public class InFileEmbeddedAndroidH2DatabaseFactory extends DatabaseFactory<Embe
 	 * @throws IllegalArgumentException
 	 *             If the given file is a directory.
 	 */
-	public InFileEmbeddedAndroidH2DatabaseFactory(String packageName, String databaseName, boolean useExternalCard) {
-		this(packageName, databaseName, useExternalCard, false);
+	public InFileEmbeddedAndroidH2DatabaseFactory(String packageName, String databaseName, boolean useExternalCard) throws DatabaseException {
+		this(null, packageName, databaseName, useExternalCard);
+	}
+	/**
+	 * Constructor
+	 *
+	 * @param databaseConfigurations the database configurations
+	 * @param packageName the application package name
+	 * @param databaseName
+	 *            The database name
+	 * @param useExternalCard if set true, use external storage card
+	 * @throws NullPointerException
+	 *             if parameters are null pointers.
+	 * @throws IllegalArgumentException
+	 *             If the given file is a directory.
+	 */
+	public InFileEmbeddedAndroidH2DatabaseFactory(DatabaseConfigurations databaseConfigurations, String packageName, String databaseName, boolean useExternalCard) throws DatabaseException {
+		this(databaseConfigurations, packageName, databaseName, useExternalCard, false);
 	}
 
 	/**
@@ -92,11 +108,29 @@ public class InFileEmbeddedAndroidH2DatabaseFactory extends DatabaseFactory<Embe
 	 * @throws IllegalArgumentException
 	 *             If the given file is a directory.
 	 */
-	public InFileEmbeddedAndroidH2DatabaseFactory(String packageName, String databaseName, boolean useExternalCard, boolean alwaysDisconnectAfterOneTransaction) {
+	public InFileEmbeddedAndroidH2DatabaseFactory(String packageName, String databaseName, boolean useExternalCard, boolean alwaysDisconnectAfterOneTransaction) throws DatabaseException {
+		this(null, packageName, databaseName, useExternalCard, alwaysDisconnectAfterOneTransaction);
+	}
+
+	/**
+	 * Constructor
+	 *
+	 * @param databaseConfigurations the database configurations
+	 * @param packageName the application package name
+	 * @param databaseName
+	 *            The database name
+	 * @param useExternalCard if set true, use external storage card
+	 * @param alwaysDisconnectAfterOneTransaction true if the database must always be connected and detected during one transaction
+	 * @throws NullPointerException
+	 *             if parameters are null pointers.
+	 * @throws IllegalArgumentException
+	 *             If the given file is a directory.
+	 */
+	public InFileEmbeddedAndroidH2DatabaseFactory(DatabaseConfigurations databaseConfigurations, String packageName, String databaseName, boolean useExternalCard, boolean alwaysDisconnectAfterOneTransaction) throws DatabaseException {
+		super(databaseConfigurations);
 		setDatabasePath(packageName, databaseName, useExternalCard);
 		this.alwaysDisconnectAfterOneTransaction = alwaysDisconnectAfterOneTransaction;
 	}
-
 	/**
 	 * Constructor
 	 *
@@ -113,8 +147,29 @@ public class InFileEmbeddedAndroidH2DatabaseFactory extends DatabaseFactory<Embe
 	 * @throws IllegalArgumentException
 	 *             If the given file is a directory.
 	 */
-	public InFileEmbeddedAndroidH2DatabaseFactory(String packageName, String databaseName, boolean useExternalCard, boolean alwaysDisconnectAfterOneTransaction, boolean fileLock, int pageSizeBytes
-			, int cacheSizeBytes) {
+	public InFileEmbeddedAndroidH2DatabaseFactory(String packageName, String databaseName, boolean useExternalCard, boolean alwaysDisconnectAfterOneTransaction, boolean fileLock, int pageSizeBytes, int cacheSizeBytes) throws DatabaseException {
+		this(null, packageName, databaseName, useExternalCard, alwaysDisconnectAfterOneTransaction, fileLock, pageSizeBytes, cacheSizeBytes);
+	}
+	/**
+	 * Constructor
+	 *
+	 * @param databaseConfigurations the database configurations
+	 * @param packageName the application package name
+	 * @param databaseName
+	 *            The database name
+	 * @param useExternalCard if set true, use external storage card
+	 * @param alwaysDisconnectAfterOneTransaction true if the database must always be connected and detected during one transaction
+	 * @param fileLock true if the database file must be locked when opened
+	 * @param pageSizeBytes the page size of the database in bytes
+	 * @param cacheSizeBytes the cache size in bytes
+	 * @throws NullPointerException
+	 *             if parameters are null pointers.
+	 * @throws IllegalArgumentException
+	 *             If the given file is a directory.
+	 */
+	public InFileEmbeddedAndroidH2DatabaseFactory(DatabaseConfigurations databaseConfigurations, String packageName, String databaseName, boolean useExternalCard, boolean alwaysDisconnectAfterOneTransaction, boolean fileLock, int pageSizeBytes
+			, int cacheSizeBytes) throws DatabaseException {
+		super(databaseConfigurations);
 		setDatabasePath(packageName, databaseName, useExternalCard);
 		this.alwaysDisconnectAfterOneTransaction = alwaysDisconnectAfterOneTransaction;
 		this.pageSizeBytes=pageSizeBytes;

@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.crypto.WrappedPassword;
 
 import java.io.File;
 import java.nio.charset.Charset;
@@ -80,18 +81,28 @@ public class DistantMySQLDatabaseFactory extends CommonMySQLDatabaseFactory<Dist
 	protected boolean noCache=true;
 
 	/**
-	 *
 	 * @param urlLocation the url location
 	 * @param port the port to connect
 	 * @param databaseName the database name
 	 * @param user the user
 	 * @param password the password
 	 */
-	public DistantMySQLDatabaseFactory(String urlLocation, int port, String databaseName, String user, String password) {
-		super(urlLocation, port, databaseName, user, password);
+	public DistantMySQLDatabaseFactory(String urlLocation, int port, String databaseName, String user, WrappedPassword password) throws DatabaseException {
+		this(null, urlLocation, port, databaseName, user, password);
+	}
+
+	/**
+	 * @param databaseConfigurations the database configurations
+	 * @param urlLocation the url location
+	 * @param port the port to connect
+	 * @param databaseName the database name
+	 * @param user the user
+	 * @param password the password
+	 */
+	public DistantMySQLDatabaseFactory(DatabaseConfigurations databaseConfigurations, String urlLocation, int port, String databaseName, String user, WrappedPassword password) throws DatabaseException {
+		super(databaseConfigurations, urlLocation, port, databaseName, user, password);
 	}
 	/**
-	 *
 	 * @param urlLocation the url location
 	 * @param port the port to connect
 	 * @param databaseName the database name
@@ -110,8 +121,35 @@ public class DistantMySQLDatabaseFactory extends CommonMySQLDatabaseFactory<Dist
 	 * This option works only with forward-only cursors. It does not work when the option parameter MULTI_STATEMENTS is set. It can be used in combination with the option parameter NO_CACHE. Its behavior in ADO applications is undefined: the prefetching might or might not occur. Added in 5.1.11.
 	 * @param noCache Do not cache the results locally in the driver, instead read from server (mysql_use_result()). This works only for forward-only cursors. This option is very important in dealing with large tables when you do not want the driver to cache the entire result set.
 	 */
-	public DistantMySQLDatabaseFactory(String urlLocation, int port, String databaseName, String user, String password, int connectTimeInMillis, int socketTimeOutMillis, boolean useCompression, Charset characterEncoding, SSLMode sslMode, boolean paranoid, File serverRSAPublicKeyFile, boolean autoReconnect, int prefetchNumberRows, boolean noCache) {
-		super(urlLocation, port, databaseName, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, characterEncoding, autoReconnect);
+	public DistantMySQLDatabaseFactory(String urlLocation, int port, String databaseName, String user, WrappedPassword password, int connectTimeInMillis,
+									   int socketTimeOutMillis, boolean useCompression, Charset characterEncoding, SSLMode sslMode, boolean paranoid,
+									   File serverRSAPublicKeyFile, boolean autoReconnect, int prefetchNumberRows, boolean noCache) throws DatabaseException {
+		this(null, urlLocation, port, databaseName, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, characterEncoding, sslMode,
+				paranoid, serverRSAPublicKeyFile, autoReconnect, prefetchNumberRows, noCache);
+	}
+
+	/**
+	 * @param databaseConfigurations the database configurations
+	 * @param urlLocation the url location
+	 * @param port the port to connect
+	 * @param databaseName the database name
+	 * @param user the user
+	 * @param password the password
+	 * @param connectTimeInMillis Timeout for socket connect (in milliseconds), with 0 being no timeout. Defaults to '0'.
+	 * @param socketTimeOutMillis Timeout (in milliseconds) on network socket operations (0, the default means no timeout).
+	 * @param useCompression Use zlib compression when communicating with the server (true/false)? Defaults to 'false'.
+	 * @param characterEncoding The character encoding to use for sending and retrieving TEXT, MEDIUMTEXT and LONGTEXT values instead of the configured connection characterEncoding
+	 * @param sslMode  the ssl mode
+	 * @param paranoid Take measures to prevent exposure sensitive information in error messages and clear data structures holding sensitive data when possible? (defaults to 'false')
+	 * @param serverRSAPublicKeyFile File path to the server RSA public key file for sha256_password authentication. If not specified, the public key will be retrieved from the server.
+	 * @param autoReconnect Should the driver try to re-establish stale and/or dead connections? If enabled the driver will throw an exception for a queries issued on a stale or dead connection, which belong to the current transaction, but will attempt reconnect before the next query issued on the connection in a new transaction. The use of this feature is not recommended, because it has side effects related to session state and data consistency when applications don't handle SQLExceptions properly, and is only designed to be used when you are unable to configure your application to handle SQLExceptions resulting from dead and stale connections properly. Alternatively, as a last option, investigate setting the MySQL server variable "wait_timeout" to a high value, rather than the default of 8 hours.
+	 * @param prefetchNumberRows When set to a non-zero value N, causes all queries in the connection to return N rows at a time rather than the entire result set. Useful for queries against very large tables where it is not practical to retrieve the whole result set at once. You can scroll through the result set, N records at a time.
+	 *
+	 * This option works only with forward-only cursors. It does not work when the option parameter MULTI_STATEMENTS is set. It can be used in combination with the option parameter NO_CACHE. Its behavior in ADO applications is undefined: the prefetching might or might not occur. Added in 5.1.11.
+	 * @param noCache Do not cache the results locally in the driver, instead read from server (mysql_use_result()). This works only for forward-only cursors. This option is very important in dealing with large tables when you do not want the driver to cache the entire result set.
+	 */
+	public DistantMySQLDatabaseFactory(DatabaseConfigurations databaseConfigurations, String urlLocation, int port, String databaseName, String user, WrappedPassword password, int connectTimeInMillis, int socketTimeOutMillis, boolean useCompression, Charset characterEncoding, SSLMode sslMode, boolean paranoid, File serverRSAPublicKeyFile, boolean autoReconnect, int prefetchNumberRows, boolean noCache) throws DatabaseException {
+		super(databaseConfigurations, urlLocation, port, databaseName, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, characterEncoding, autoReconnect);
 		if (sslMode==null)
 			throw new NullPointerException();
 		if (characterEncoding==null)
@@ -123,7 +161,6 @@ public class DistantMySQLDatabaseFactory extends CommonMySQLDatabaseFactory<Dist
 		this.noCache = noCache;
 	}
 	/**
-	 *
 	 * @param urlLocation the url location
 	 * @param port the port to connect
 	 * @param databaseName the database name
@@ -131,15 +168,28 @@ public class DistantMySQLDatabaseFactory extends CommonMySQLDatabaseFactory<Dist
 	 * @param password the password
 	 * @param additionalMysqlParams additional MySQL params
 	 */
-	public DistantMySQLDatabaseFactory(String urlLocation, int port, String databaseName, String user, String password, String additionalMysqlParams) {
-		super(urlLocation, port, databaseName, user, password, additionalMysqlParams);
+	public DistantMySQLDatabaseFactory(String urlLocation, int port, String databaseName, String user, WrappedPassword password, String additionalMysqlParams) throws DatabaseException {
+		super(null, urlLocation, port, databaseName, user, password, additionalMysqlParams);
+	}
+	/**
+	 * @param databaseConfigurations the database configurations
+	 * @param urlLocation the url location
+	 * @param port the port to connect
+	 * @param databaseName the database name
+	 * @param user the user
+	 * @param password the password
+	 * @param additionalMysqlParams additional MySQL params
+	 */
+	public DistantMySQLDatabaseFactory(DatabaseConfigurations databaseConfigurations, String urlLocation, int port, String databaseName, String user, WrappedPassword password, String additionalMysqlParams) throws DatabaseException {
+		super(databaseConfigurations, urlLocation, port, databaseName, user, password, additionalMysqlParams);
 	}
 
-	public DistantMySQLDatabaseFactory() {
+	public DistantMySQLDatabaseFactory() throws DatabaseException {
+		super();
 	}
 
 	@Override
-	protected DistantMySQLDBWrapper newWrapperInstance() throws DatabaseException {
+	protected DistantMySQLDBWrapper newWrapperInstance(DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
 		Charset cs=getCharacterEncoding();
 		String css=null;
 		if (cs.name().contains("-")) {

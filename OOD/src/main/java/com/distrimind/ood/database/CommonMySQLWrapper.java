@@ -39,6 +39,9 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseVersionException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
+import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.crypto.EncryptionProfileProvider;
+import com.distrimind.util.crypto.WrappedPassword;
 
 import java.io.File;
 import java.lang.reflect.Constructor;
@@ -54,21 +57,33 @@ import java.util.regex.Pattern;
  */
 public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 	protected final String user;
-	protected final String password;
+	protected final WrappedPassword password;
 	protected final String url;
 	protected final String charset;
 	protected final int maxCharSize;
 
 
 	protected CommonMySQLWrapper(String urlLocation,
+								 DatabaseConfigurations databaseConfigurations,
+								 DatabaseLifeCycles databaseLifeCycles,
+								 EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
+								 EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+								 AbstractSecureRandom secureRandom,
+								 boolean createDatabasesIfNecessaryAndCheckIt,
 								 int port,
 								 String _database_name,
 								 String user,
-								 String password,
+								 WrappedPassword password,
 								 String url,
   								 String characterEncoding
 								) throws DatabaseException {
-		super(_database_name, new File(url), false, false);
+		super(_database_name, new File(url), false, false,
+				databaseConfigurations,
+				databaseLifeCycles,
+				encryptionProfileProviderForCentralDatabaseBackup,
+				protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+				secureRandom,
+				createDatabasesIfNecessaryAndCheckIt);
 		this.url=url;
 		this.user=user;
 		this.password=password;
@@ -76,13 +91,25 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 		this.maxCharSize=getMaxCharSize(this.charset);
 	}
 	protected CommonMySQLWrapper(String urlLocation,
+								 DatabaseConfigurations databaseConfigurations,
+								 DatabaseLifeCycles databaseLifeCycles,
+								 EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
+								 EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+								 AbstractSecureRandom secureRandom,
+								 boolean createDatabasesIfNecessaryAndCheckIt,
 								 int port,
 								 String _database_name,
 								 String user,
-								 String password,
+								 WrappedPassword password,
 								 String url
 	) throws DatabaseException {
-		super(_database_name, new File(url), false, false);
+		super(_database_name, new File(url), false, false,
+				databaseConfigurations,
+				databaseLifeCycles,
+				encryptionProfileProviderForCentralDatabaseBackup,
+				protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+				secureRandom,
+				createDatabasesIfNecessaryAndCheckIt);
 		this.url=url;
 		this.user=user;
 		this.password=password;
@@ -200,11 +227,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 	protected boolean doesTableExists(String tableName) throws Exception {
 		try(ResultSet rs=getConnectionAssociatedWithCurrentThread().getConnection().getMetaData().getTables(databaseName, null, tableName, null)) {
 			return rs.next();
-			/*while (rs.next()) {
-				if (rs.getString(3).equals(tableName) && rs.getString().equals(database_name))
-					return true;
-			}
-			return false;*/
+
 		}
 	}
 

@@ -15,15 +15,21 @@ public class InMemoryEmbeddedDerbyDatabaseFactory extends DatabaseFactory<Embedd
 
 	private String databaseName=null;
 
-	public InMemoryEmbeddedDerbyDatabaseFactory() {
-
+	public InMemoryEmbeddedDerbyDatabaseFactory() throws DatabaseException {
+		super();
 	}
-
-	public InMemoryEmbeddedDerbyDatabaseFactory(String databaseName) {
+	public InMemoryEmbeddedDerbyDatabaseFactory(String databaseName) throws DatabaseException {
+		this(null, databaseName);
+	}
+	public InMemoryEmbeddedDerbyDatabaseFactory(DatabaseConfigurations databaseConfigurations, String databaseName) throws DatabaseException {
+		super(databaseConfigurations);
 		this.databaseName = databaseName;
 	}
-
-	public InMemoryEmbeddedDerbyDatabaseFactory(String databaseName, HSQLDBConcurrencyControl concurrencyControl) {
+	public InMemoryEmbeddedDerbyDatabaseFactory(String databaseName, HSQLDBConcurrencyControl concurrencyControl) throws DatabaseException {
+		this(null, databaseName, concurrencyControl);
+	}
+	public InMemoryEmbeddedDerbyDatabaseFactory(DatabaseConfigurations databaseConfigurations, String databaseName, HSQLDBConcurrencyControl concurrencyControl) throws DatabaseException {
+		super(databaseConfigurations);
 		this.databaseName = databaseName;
 		if (concurrencyControl==null)
 			throw new NullPointerException();

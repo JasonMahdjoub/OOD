@@ -35,6 +35,9 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.crypto.WrappedPassword;
+
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
@@ -48,7 +51,7 @@ public abstract class CommonMySQLDatabaseFactory<T extends DatabaseWrapper> exte
 	protected int port;
 	protected String databaseName;
 	protected String user;
-	protected String password;
+	protected WrappedPassword password;
 	protected int connectTimeInMillis=0;
 	protected int socketTimeOutMillis=0;
 	protected boolean useCompression=false;
@@ -59,14 +62,15 @@ public abstract class CommonMySQLDatabaseFactory<T extends DatabaseWrapper> exte
 	protected String additionalParams =null;
 
 	/**
-	 *
+	 * @param databaseConfigurations the database configurations
 	 * @param urlLocation the url location
 	 * @param port the port to connect
 	 * @param databaseName the database name
 	 * @param user the user
 	 * @param password the password
 	 */
-	public CommonMySQLDatabaseFactory(String urlLocation, int port, String databaseName, String user, String password) {
+	public CommonMySQLDatabaseFactory(DatabaseConfigurations databaseConfigurations, String urlLocation, int port, String databaseName, String user, WrappedPassword password) throws DatabaseException {
+		super(databaseConfigurations);
 		if (urlLocation==null)
 			throw new NullPointerException();
 		if (databaseName==null)
@@ -83,11 +87,11 @@ public abstract class CommonMySQLDatabaseFactory<T extends DatabaseWrapper> exte
 		this.additionalParams =null;
 	}
 
-	public CommonMySQLDatabaseFactory(String urlLocation, int port, String databaseName, String user,
-									  String password, int connectTimeInMillis, int socketTimeOutMillis,
+	public CommonMySQLDatabaseFactory(DatabaseConfigurations databaseConfigurations, String urlLocation, int port, String databaseName, String user,
+									  WrappedPassword password, int connectTimeInMillis, int socketTimeOutMillis,
 									  boolean useCompression, Charset characterEncoding,
-									   boolean autoReconnect) {
-		this(urlLocation, port, databaseName, user, password);
+									   boolean autoReconnect) throws DatabaseException {
+		this(databaseConfigurations, urlLocation, port, databaseName, user, password);
 		if (characterEncoding==null)
 			throw new NullPointerException();
 		this.connectTimeInMillis = connectTimeInMillis;
@@ -99,7 +103,7 @@ public abstract class CommonMySQLDatabaseFactory<T extends DatabaseWrapper> exte
 	}
 
 	/**
-	 *
+	 * @param databaseConfigurations the database configurations
 	 * @param urlLocation the url location
 	 * @param port the port to connect
 	 * @param databaseName the database name
@@ -107,14 +111,15 @@ public abstract class CommonMySQLDatabaseFactory<T extends DatabaseWrapper> exte
 	 * @param password the password
 	 * @param additionalParams the personalized sql params for JDBC connection
 	 */
-	public CommonMySQLDatabaseFactory(String urlLocation, int port, String databaseName, String user, String password, String additionalParams) {
-		this(urlLocation, port, databaseName, user, password);
+	public CommonMySQLDatabaseFactory(DatabaseConfigurations databaseConfigurations, String urlLocation, int port, String databaseName, String user, WrappedPassword password, String additionalParams) throws DatabaseException {
+		this(databaseConfigurations, urlLocation, port, databaseName, user, password);
 		if (additionalParams ==null)
 			throw new NullPointerException();
 		this.additionalParams = additionalParams;
 	}
 
-	public CommonMySQLDatabaseFactory() {
+	public CommonMySQLDatabaseFactory() throws DatabaseException {
+		super();
 	}
 
 	/**
@@ -191,7 +196,7 @@ public abstract class CommonMySQLDatabaseFactory<T extends DatabaseWrapper> exte
 	 *
 	 * @return the password
 	 */
-	public String getPassword() {
+	public WrappedPassword getPassword() {
 		return password;
 	}
 
@@ -199,7 +204,7 @@ public abstract class CommonMySQLDatabaseFactory<T extends DatabaseWrapper> exte
 	 *
 	 * @param password the password
 	 */
-	public void setPassword(String password) {
+	public void setPassword(WrappedPassword password) {
 		if (password==null)
 			throw new NullPointerException();
 		this.password = password;

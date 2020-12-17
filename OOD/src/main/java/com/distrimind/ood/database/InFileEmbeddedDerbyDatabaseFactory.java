@@ -53,12 +53,11 @@ public class InFileEmbeddedDerbyDatabaseFactory extends DatabaseFactory<Embedded
 	private static final long serialVersionUID = 5754965997489003893L;
 	private File directory;
 	private boolean alwaysDisconnectAfterOnTransaction=false;
-	protected InFileEmbeddedDerbyDatabaseFactory() {
-
+	protected InFileEmbeddedDerbyDatabaseFactory() throws DatabaseException {
+		super();
 	}
 	/**
 	 * Constructor
-	 *
 	 * @param directory
 	 *            the database directory
 	 * @throws NullPointerException
@@ -67,12 +66,26 @@ public class InFileEmbeddedDerbyDatabaseFactory extends DatabaseFactory<Embedded
 	 *             If the given _directory is not a directory.
 	 * @throws IllegalArgumentException if arguments are incorrect
 	 */
-	public InFileEmbeddedDerbyDatabaseFactory(File directory) {
-		this(directory, false);
+	public InFileEmbeddedDerbyDatabaseFactory(File directory) throws DatabaseException {
+		this(null, directory);
+	}
+
+	/**
+	 * Constructor
+	 * @param databaseConfigurations the database configurations
+	 * @param directory
+	 *            the database directory
+	 * @throws NullPointerException
+	 *             if parameters are null pointers.
+	 * @throws IllegalArgumentException
+	 *             If the given _directory is not a directory.
+	 * @throws IllegalArgumentException if arguments are incorrect
+	 */
+	public InFileEmbeddedDerbyDatabaseFactory(DatabaseConfigurations databaseConfigurations, File directory) throws DatabaseException {
+		this(databaseConfigurations, directory, false);
 	}
 	/**
 	 * Constructor
-	 *
 	 * @param directory
 	 *            the database directory
 	 * @param alwaysDisconnectAfterOnTransaction true if the database must always be connected and detected during one transaction
@@ -82,8 +95,23 @@ public class InFileEmbeddedDerbyDatabaseFactory extends DatabaseFactory<Embedded
 	 *             If the given _directory is not a directory.
 	 * @throws IllegalArgumentException if arguments are incorrect
 	 */
-	public InFileEmbeddedDerbyDatabaseFactory(File directory, boolean alwaysDisconnectAfterOnTransaction) {
-
+	public InFileEmbeddedDerbyDatabaseFactory(File directory, boolean alwaysDisconnectAfterOnTransaction) throws DatabaseException {
+		this(null, directory, alwaysDisconnectAfterOnTransaction);
+	}
+	/**
+	 * Constructor
+	 * @param databaseConfigurations the database configurations
+	 * @param directory
+	 *            the database directory
+	 * @param alwaysDisconnectAfterOnTransaction true if the database must always be connected and detected during one transaction
+	 * @throws NullPointerException
+	 *             if parameters are null pointers.
+	 * @throws IllegalArgumentException
+	 *             If the given _directory is not a directory.
+	 * @throws IllegalArgumentException if arguments are incorrect
+	 */
+	public InFileEmbeddedDerbyDatabaseFactory(DatabaseConfigurations databaseConfigurations, File directory, boolean alwaysDisconnectAfterOnTransaction) throws DatabaseException {
+		super(databaseConfigurations);
 		setDirectory(directory);
 		this.alwaysDisconnectAfterOnTransaction = alwaysDisconnectAfterOnTransaction;
 	}

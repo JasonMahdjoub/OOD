@@ -320,4 +320,12 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 		for (DatabaseConfiguration dc : configurations)
 			dc.setCreateDatabaseIfNecessaryAndCheckItDuringCurrentSession(createDatabasesIfNecessaryAndCheckIt);
 	}
+	public boolean isDecentralized()
+	{
+		return localPeer!=null || configurations.stream().anyMatch(DatabaseConfiguration::isDecentralized);
+	}
+	public boolean useCentralBackupDatabase()
+	{
+		return configurations.stream().anyMatch(DatabaseConfiguration::isSynchronizedWithCentralBackupDatabase);
+	}
 }

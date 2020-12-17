@@ -39,6 +39,8 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseVersionException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
+import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.crypto.EncryptionProfileProvider;
 
 import java.io.File;
 import java.lang.reflect.Constructor;
@@ -66,25 +68,61 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	private boolean loadedOneTime=false;
 	private boolean autoPrimaryKeyIndexStartFromOne=false;
 
-	EmbeddedH2DatabaseWrapper(boolean loadToMemory, String databaseName) throws DatabaseException {
-		super(databaseName, null, false, true, true);
+	EmbeddedH2DatabaseWrapper(boolean loadToMemory,
+							  DatabaseConfigurations databaseConfigurations,
+							  DatabaseLifeCycles databaseLifeCycles,
+							  EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
+							  EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+							  AbstractSecureRandom secureRandom,
+							  boolean createDatabasesIfNecessaryAndCheckIt, String databaseName) throws DatabaseException {
+		super(databaseName, null, false, true,
+				databaseConfigurations, databaseLifeCycles, encryptionProfileProviderForCentralDatabaseBackup,
+				protectedEncryptionProfileProviderForAuthenticatedP2PMessages, secureRandom, createDatabasesIfNecessaryAndCheckIt, true);
 		if (!loadToMemory)
 			throw new IllegalArgumentException();
 		this.pageSizeBytes=0;
 		this.cacheSizeBytes=0;
 		this.android=false;
 	}
-	EmbeddedH2DatabaseWrapper(File _directory_name, boolean alwaysDisconnectAfterOnTransaction, boolean fileLock, int pageSizeBytes
+	EmbeddedH2DatabaseWrapper(File _directory_name,
+							  DatabaseConfigurations databaseConfigurations,
+							  DatabaseLifeCycles databaseLifeCycles,
+							  EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
+							  EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+							  AbstractSecureRandom secureRandom,
+							  boolean createDatabasesIfNecessaryAndCheckIt, boolean alwaysDisconnectAfterOnTransaction, boolean fileLock, int pageSizeBytes
 			,int cacheSizeBytes) throws DatabaseException {
-		super("Database from file : " + getH2DataFileName(getDatabaseFileName(_directory_name)), _directory_name, alwaysDisconnectAfterOnTransaction, false, fileLock);
+		super("Database from file : " + getH2DataFileName(getDatabaseFileName(_directory_name)), _directory_name,
+				alwaysDisconnectAfterOnTransaction, false,
+				databaseConfigurations,
+				databaseLifeCycles,
+				encryptionProfileProviderForCentralDatabaseBackup,
+				protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+				secureRandom,
+				createDatabasesIfNecessaryAndCheckIt,
+				fileLock);
 		this.pageSizeBytes=pageSizeBytes;
 		this.cacheSizeBytes=cacheSizeBytes;
 		this.android=false;
 	}
 
-	EmbeddedH2DatabaseWrapper(File _directory_name, boolean alwaysDisconnectAfterOnTransaction, int pageSizeBytes
+	EmbeddedH2DatabaseWrapper(File _directory_name,
+							  DatabaseConfigurations databaseConfigurations,
+							  DatabaseLifeCycles databaseLifeCycles,
+							  EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
+							  EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+							  AbstractSecureRandom secureRandom,
+							  boolean createDatabasesIfNecessaryAndCheckIt, boolean alwaysDisconnectAfterOnTransaction, int pageSizeBytes
 			,int cacheSizeBytes) throws DatabaseException {
-		super("Database from file : " + getH2DataFileName(getDatabaseFileName(_directory_name)), _directory_name, alwaysDisconnectAfterOnTransaction, false, true);
+		super("Database from file : " + getH2DataFileName(getDatabaseFileName(_directory_name)),
+				_directory_name, alwaysDisconnectAfterOnTransaction, false,
+				databaseConfigurations,
+				databaseLifeCycles,
+				encryptionProfileProviderForCentralDatabaseBackup,
+				protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+				secureRandom,
+				createDatabasesIfNecessaryAndCheckIt,
+				true);
 		this.pageSizeBytes=pageSizeBytes;
 		this.cacheSizeBytes=cacheSizeBytes;
 		this.android=true;
@@ -334,7 +372,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 						String col=rq.result_set.getString("COLUMN_LIST");
 						for (FieldAccessor fa : table.getFieldAccessors()) {
 							for (SqlField sf : fa.getDeclaredSqlFields()) {
-								if (sf.short_field_without_quote.toUpperCase().equals(col.toUpperCase()) && fa.isUnique()) {
+								if (sf.short_field_without_quote.equalsIgnoreCase(col) && fa.isUnique()) {
 									found = true;
 									break;
 								}

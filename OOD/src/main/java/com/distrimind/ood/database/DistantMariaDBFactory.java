@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.crypto.WrappedPassword;
 
 import java.io.File;
 import java.nio.charset.Charset;
@@ -45,6 +46,7 @@ import java.nio.charset.Charset;
  * @version 1.0
  * @since OOD 2.5.0
  */
+@SuppressWarnings("unused")
 class DistantMariaDBFactory extends CommonMySQLDatabaseFactory<DistantMariaDBWrapper> {
 	private boolean useSSL=false;
 	private boolean trustServerCertificate=false;
@@ -53,20 +55,27 @@ class DistantMariaDBFactory extends CommonMySQLDatabaseFactory<DistantMariaDBWra
 	private File serverSslCert=null;
 
 	/**
-	 *
 	 * @param urlLocation the url location
 	 * @param port the port to connect
 	 * @param databaseName the database name
 	 * @param user the user
 	 * @param password the password
 	 */
-
-	public DistantMariaDBFactory(String urlLocation, int port, String databaseName, String user, String password) {
-		super(urlLocation, port, databaseName, user, password);
+	public DistantMariaDBFactory(String urlLocation, int port, String databaseName, String user, WrappedPassword password) throws DatabaseException {
+		this(null, urlLocation, port, databaseName, user, password);
 	}
-
 	/**
-	 *
+	 * @param databaseConfigurations the database configurations
+	 * @param urlLocation the url location
+	 * @param port the port to connect
+	 * @param databaseName the database name
+	 * @param user the user
+	 * @param password the password
+	 */
+	public DistantMariaDBFactory(DatabaseConfigurations databaseConfigurations, String urlLocation, int port, String databaseName, String user, WrappedPassword password) throws DatabaseException {
+		super(databaseConfigurations, urlLocation, port, databaseName, user, password);
+	}
+	/**
 	 * @param urlLocation the url location
 	 * @param port the port to connect
 	 * @param databaseName the database name
@@ -90,13 +99,47 @@ class DistantMariaDBFactory extends CommonMySQLDatabaseFactory<DistantMariaDBWra
 	 * or as verbatim DER-encoded certificate string "------BEGIN CERTIFICATE-----" .
 	 *
 	 */
-	public DistantMariaDBFactory(String urlLocation, int port, String databaseName, String user, String password, int connectTimeInMillis, int socketTimeOutMillis, boolean useCompression, Charset characterEncoding, boolean autoReconnect,
+	public DistantMariaDBFactory(String urlLocation, int port, String databaseName, String user, WrappedPassword password, int connectTimeInMillis, int socketTimeOutMillis, boolean useCompression, Charset characterEncoding, boolean autoReconnect,
 								 boolean useSSL,
 								 boolean trustServerCertificate,
 								 String enabledSslProtocolSuites,
 								 String enabledSslCipherSuites,
-								 File serverSslCert) {
-		super(urlLocation, port, databaseName, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, characterEncoding, autoReconnect);
+								 File serverSslCert) throws DatabaseException {
+		this(null, urlLocation, port, databaseName, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, characterEncoding, autoReconnect, useSSL, trustServerCertificate,
+				enabledSslProtocolSuites, enabledSslCipherSuites, serverSslCert);
+	}
+	/**
+	 * @param databaseConfigurations the database configurations
+	 * @param urlLocation the url location
+	 * @param port the port to connect
+	 * @param databaseName the database name
+	 * @param user the user
+	 * @param password the password
+	 * @param connectTimeInMillis Timeout for socket connect (in milliseconds), with 0 being no timeout. Defaults to '0'.
+	 * @param socketTimeOutMillis Timeout (in milliseconds) on network socket operations (0, the default means no timeout).
+	 * @param useCompression Use zlib compression when communicating with the server (true/false)? Defaults to 'false'.
+	 * @param characterEncoding The character encoding to use for sending and retrieving TEXT, MEDIUMTEXT and LONGTEXT values instead of the configured connection characterEncoding
+	 * @param autoReconnect Should the driver try to re-establish stale and/or dead connections? If enabled the driver will throw an exception for a queries issued on a stale or dead connection, which belong to the current transaction, but will attempt reconnect before the next query issued on the connection in a new transaction. The use of this feature is not recommended, because it has side effects related to session state and data consistency when applications don't handle SQLExceptions properly, and is only designed to be used when you are unable to configure your application to handle SQLExceptions resulting from dead and stale connections properly. Alternatively, as a last option, investigate setting the MySQL server variable "wait_timeout" to a high value, rather than the default of 8 hours.
+	 * @param useSSL force SSL/TLS on connection
+	 * @param trustServerCertificate When using SSL/TLS, do not check server's certificate.
+	 * @param enabledSslProtocolSuites Force TLS/SSL protocol to a specific set of TLS versions (comma separated list).
+	 * Example : "TLSv1, TLSv1.1, TLSv1.2"
+	 * @param enabledSslCipherSuites Force TLS/SSL cipher (comma separated list).
+	 * Example : "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384, TLS_DHE_DSS_WITH_AES_256_GCM_SHA384"
+	 * @param serverSslCert Permits providing server's certificate in DER form, or server's CA certificate. The server will be added to trustStor. This permits a self-signed certificate to be trusted.
+	 * Can be used in one of 3 forms :
+	 * serverSslCert=/path/to/cert.pem (full path to certificate)
+	 * serverSslCert=classpath:relative/cert.pem (relative to current classpath)
+	 * or as verbatim DER-encoded certificate string "------BEGIN CERTIFICATE-----" .
+	 *
+	 */
+	public DistantMariaDBFactory(DatabaseConfigurations databaseConfigurations, String urlLocation, int port, String databaseName, String user, WrappedPassword password, int connectTimeInMillis, int socketTimeOutMillis, boolean useCompression, Charset characterEncoding, boolean autoReconnect,
+								 boolean useSSL,
+								 boolean trustServerCertificate,
+								 String enabledSslProtocolSuites,
+								 String enabledSslCipherSuites,
+								 File serverSslCert) throws DatabaseException {
+		super(databaseConfigurations, urlLocation, port, databaseName, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, characterEncoding, autoReconnect);
 		this.useSSL=useSSL;
 		this.trustServerCertificate=trustServerCertificate;
 		this.enabledSslCipherSuites=enabledSslCipherSuites;
@@ -104,7 +147,6 @@ class DistantMariaDBFactory extends CommonMySQLDatabaseFactory<DistantMariaDBWra
 		this.serverSslCert=serverSslCert;
 	}
 	/**
-	 *
 	 * @param urlLocation the url location
 	 * @param port the port to connect
 	 * @param databaseName the database name
@@ -113,15 +155,29 @@ class DistantMariaDBFactory extends CommonMySQLDatabaseFactory<DistantMariaDBWra
 	 * @param additionalMariaDBParams additional MariaDB params
 	 *
 	 */
-	public DistantMariaDBFactory(String urlLocation, int port, String databaseName, String user, String password, String additionalMariaDBParams) {
-		super(urlLocation, port, databaseName, user, password, additionalMariaDBParams);
+	public DistantMariaDBFactory(String urlLocation, int port, String databaseName, String user, WrappedPassword password, String additionalMariaDBParams) throws DatabaseException {
+		this(null, urlLocation, port, databaseName, user, password, additionalMariaDBParams);
+	}
+	/**
+	 * @param databaseConfigurations the database configurations
+	 * @param urlLocation the url location
+	 * @param port the port to connect
+	 * @param databaseName the database name
+	 * @param user the user
+	 * @param password the password
+	 * @param additionalMariaDBParams additional MariaDB params
+	 *
+	 */
+	public DistantMariaDBFactory(DatabaseConfigurations databaseConfigurations, String urlLocation, int port, String databaseName, String user, WrappedPassword password, String additionalMariaDBParams) throws DatabaseException {
+		super(databaseConfigurations, urlLocation, port, databaseName, user, password, additionalMariaDBParams);
 	}
 
-	public DistantMariaDBFactory() {
+	public DistantMariaDBFactory() throws DatabaseException {
+		super();
 	}
 
 	@Override
-	protected DistantMariaDBWrapper newWrapperInstance() throws DatabaseException {
+	protected DistantMariaDBWrapper newWrapperInstance(DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
 		Charset cs=getCharacterEncoding();
 		String css=null;
 		if (cs.name().contains("-")) {
@@ -137,9 +193,13 @@ class DistantMariaDBFactory extends CommonMySQLDatabaseFactory<DistantMariaDBWra
 		else
 			css=cs.name();
 		if (additionalParams ==null)
-			return new DistantMariaDBWrapper(urlLocation, port, databaseName, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, css, useSSL, trustServerCertificate, enabledSslProtocolSuites, enabledSslCipherSuites, serverSslCert, autoReconnect);
+			return new DistantMariaDBWrapper(urlLocation, databaseConfigurations, databaseLifeCycles, encryptionProfileProviderFactoryForCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
+					protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(), 
+					getSecureRandom(), createDatabasesIfNecessaryAndCheckIt, port, databaseName, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, css, useSSL, trustServerCertificate, enabledSslProtocolSuites, enabledSslCipherSuites, serverSslCert, autoReconnect);
 		else
-			return new DistantMariaDBWrapper(urlLocation, port, databaseName, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, css, useSSL, trustServerCertificate, enabledSslProtocolSuites, enabledSslCipherSuites, serverSslCert, autoReconnect, additionalParams);
+			return new DistantMariaDBWrapper(urlLocation, databaseConfigurations, databaseLifeCycles, encryptionProfileProviderFactoryForCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
+					protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
+					getSecureRandom(), createDatabasesIfNecessaryAndCheckIt, port, databaseName, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, css, useSSL, trustServerCertificate, enabledSslProtocolSuites, enabledSslCipherSuites, serverSslCert, autoReconnect, additionalParams);
 	}
 
 	@Override

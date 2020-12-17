@@ -325,7 +325,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							  DatabaseConfigurations databaseConfigurations,
 							  DatabaseLifeCycles databaseLifeCycles,
 							  EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
-							  EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedMessages,
+							  EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 							  AbstractSecureRandom secureRandom,
 							  boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
 
@@ -379,7 +379,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		converters = new ArrayList<>();
 		converters.add(new DefaultByteTabObjectConverter());
 		synchronizer=new DatabaseSynchronizer();
-		databaseConfigurationsBuilder=new DatabaseConfigurationsBuilder(databaseConfigurations, this, databaseLifeCycles, encryptionProfileProviderForCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedMessages, secureRandom, createDatabasesIfNecessaryAndCheckIt);
+		databaseConfigurationsBuilder=new DatabaseConfigurationsBuilder(databaseConfigurations, this, databaseLifeCycles, encryptionProfileProviderForCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages, secureRandom, createDatabasesIfNecessaryAndCheckIt);
 	}
 
 	public boolean isLoadedToMemory()

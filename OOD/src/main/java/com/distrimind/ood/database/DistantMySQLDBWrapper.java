@@ -1,6 +1,9 @@
 package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.crypto.EncryptionProfileProvider;
+import com.distrimind.util.crypto.WrappedPassword;
 
 import java.io.File;
 import java.sql.Connection;
@@ -15,15 +18,28 @@ import java.sql.Savepoint;
  */
 public class DistantMySQLDBWrapper extends CommonMySQLWrapper{
 
-	protected DistantMySQLDBWrapper(String urlLocation, int port, String _database_name, String user, String password, int connectTimeInMillis, int socketTimeOutMillis, boolean useCompression, String characterEncoding, DistantMySQLDatabaseFactory.SSLMode sslMode, boolean paranoid, File serverRSAPublicKeyFile, boolean autoReconnect, int prefetchNumberRows, boolean noCache, String additionalParams) throws DatabaseException {
-		super(urlLocation, port, _database_name, user, password,
+	protected DistantMySQLDBWrapper(String urlLocation,
+									DatabaseConfigurations databaseConfigurations,
+									DatabaseLifeCycles databaseLifeCycles,
+									EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
+									EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+									AbstractSecureRandom secureRandom,
+									boolean createDatabasesIfNecessaryAndCheckIt, int port, String _database_name, String user, WrappedPassword password, int connectTimeInMillis, int socketTimeOutMillis, boolean useCompression, String characterEncoding, DistantMySQLDatabaseFactory.SSLMode sslMode, boolean paranoid, File serverRSAPublicKeyFile, boolean autoReconnect, int prefetchNumberRows, boolean noCache, String additionalParams) throws DatabaseException {
+		super(urlLocation, databaseConfigurations, databaseLifeCycles, encryptionProfileProviderForCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages, secureRandom, createDatabasesIfNecessaryAndCheckIt, port, _database_name, user, password,
 				getURL(urlLocation, port, _database_name, connectTimeInMillis, socketTimeOutMillis, useCompression, characterEncoding, sslMode, paranoid, serverRSAPublicKeyFile, autoReconnect, prefetchNumberRows, noCache, additionalParams), characterEncoding);
 		if (additionalParams==null)
 			throw new NullPointerException();
 	}
 
-	protected DistantMySQLDBWrapper(String urlLocation, int port, String _database_name, String user, String password, int connectTimeInMillis, int socketTimeOutMillis, boolean useCompression, String characterEncoding, DistantMySQLDatabaseFactory.SSLMode sslMode, boolean paranoid, File serverRSAPublicKeyFile, boolean autoReconnect, int prefetchNumberRows, boolean noCache) throws DatabaseException {
-		super(urlLocation, port, _database_name, user, password, getURL(urlLocation, port, _database_name, connectTimeInMillis, socketTimeOutMillis, useCompression, characterEncoding, sslMode, paranoid, serverRSAPublicKeyFile, autoReconnect, prefetchNumberRows, noCache, null), characterEncoding);
+	protected DistantMySQLDBWrapper(String urlLocation,
+									DatabaseConfigurations databaseConfigurations,
+									DatabaseLifeCycles databaseLifeCycles,
+									EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
+									EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+									AbstractSecureRandom secureRandom,
+									boolean createDatabasesIfNecessaryAndCheckIt, int port, String _database_name, String user, WrappedPassword password, int connectTimeInMillis, int socketTimeOutMillis, boolean useCompression, String characterEncoding, DistantMySQLDatabaseFactory.SSLMode sslMode, boolean paranoid, File serverRSAPublicKeyFile, boolean autoReconnect, int prefetchNumberRows, boolean noCache) throws DatabaseException {
+		super(urlLocation, databaseConfigurations, databaseLifeCycles, encryptionProfileProviderForCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages, secureRandom,
+				createDatabasesIfNecessaryAndCheckIt, port, _database_name, user, password, getURL(urlLocation, port, _database_name, connectTimeInMillis, socketTimeOutMillis, useCompression, characterEncoding, sslMode, paranoid, serverRSAPublicKeyFile, autoReconnect, prefetchNumberRows, noCache, null), characterEncoding);
 	}
 
 	private static String getURL(String urlLocation, int port,
@@ -56,7 +72,7 @@ public class DistantMySQLDBWrapper extends CommonMySQLWrapper{
 	protected Connection reopenConnectionImpl() throws DatabaseLoadingException {
 
 		try  {
-			Connection conn = DriverManager.getConnection(url, user, password);
+			Connection conn = DriverManager.getConnection(url, user, password.toString());
 			if (conn==null)
 				throw new DatabaseLoadingException("Failed to make connection!");
 

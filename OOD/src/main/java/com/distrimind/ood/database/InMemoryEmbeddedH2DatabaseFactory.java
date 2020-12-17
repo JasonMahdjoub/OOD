@@ -15,11 +15,14 @@ public class InMemoryEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH
 
 	private String databaseName=null;
 
-	public InMemoryEmbeddedH2DatabaseFactory() {
-
+	public InMemoryEmbeddedH2DatabaseFactory() throws DatabaseException {
+		super();
 	}
-
-	public InMemoryEmbeddedH2DatabaseFactory(String databaseName) {
+	public InMemoryEmbeddedH2DatabaseFactory(String databaseName) throws DatabaseException {
+		this(null, databaseName);
+	}
+	public InMemoryEmbeddedH2DatabaseFactory(DatabaseConfigurations databaseConfigurations, String databaseName) throws DatabaseException {
+		super(databaseConfigurations);
 		this.databaseName = databaseName;
 	}
 

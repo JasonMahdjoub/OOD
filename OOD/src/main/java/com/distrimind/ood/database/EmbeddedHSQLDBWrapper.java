@@ -43,6 +43,8 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseVersionException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
+import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.crypto.EncryptionProfileProvider;
 
 import java.io.File;
 import java.io.IOException;
@@ -66,8 +68,18 @@ import org.hsqldb.lib.tar.TarMalformatException;*/
  * @since OOD 1.0
  */
 public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
-	EmbeddedHSQLDBWrapper(boolean loadToMemory, String databaseName, HSQLDBConcurrencyControl concurrencyControl) throws DatabaseException {
-		super(databaseName, null, false, true, true);
+	EmbeddedHSQLDBWrapper(String databaseName, boolean loadToMemory,
+						  DatabaseConfigurations databaseConfigurations,
+						  DatabaseLifeCycles databaseLifeCycles,
+						  EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
+						  EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+						  AbstractSecureRandom secureRandom,
+						  boolean createDatabasesIfNecessaryAndCheckIt, HSQLDBConcurrencyControl concurrencyControl) throws DatabaseException {
+		super(databaseName, null, false, true, databaseConfigurations,
+				databaseLifeCycles, encryptionProfileProviderForCentralDatabaseBackup,
+				protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+				secureRandom,
+				createDatabasesIfNecessaryAndCheckIt,true);
 		if (!loadToMemory)
 			throw new IllegalArgumentException();
 
@@ -78,13 +90,23 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 		this.cache_free_count = 0;
 
 	}
-	EmbeddedHSQLDBWrapper(File databaseDirectory, boolean alwaysDisconnectAfterOnTransaction, HSQLDBConcurrencyControl concurrencyControl, int _cache_rows,
+	EmbeddedHSQLDBWrapper(File databaseDirectory,
+						  DatabaseConfigurations databaseConfigurations,
+						  DatabaseLifeCycles databaseLifeCycles,
+						  EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
+						  EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+						  AbstractSecureRandom secureRandom,
+						  boolean createDatabasesIfNecessaryAndCheckIt, boolean alwaysDisconnectAfterOnTransaction, HSQLDBConcurrencyControl concurrencyControl, int _cache_rows,
 			int _cache_size, int _result_max_memory_rows, int _cache_free_count, boolean lockFile)
 			throws IllegalArgumentException, DatabaseException {
 		super(/*
 				 * getConnection(_file_name, concurrencyControl, _cache_rows, _cache_size,
 				 * _result_max_memory_rows, _cache_free_count),
-				 */"Database from file : " + getHSQLDBDataFileName(getDatabaseFileName(databaseDirectory)) + ".data", databaseDirectory, alwaysDisconnectAfterOnTransaction, false, lockFile);
+				 */"Database from file : " + getHSQLDBDataFileName(getDatabaseFileName(databaseDirectory)) + ".data", databaseDirectory, alwaysDisconnectAfterOnTransaction, false, databaseConfigurations,
+				databaseLifeCycles, encryptionProfileProviderForCentralDatabaseBackup,
+				protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+				secureRandom,
+				createDatabasesIfNecessaryAndCheckIt, lockFile);
 
 		this.concurrencyControl = concurrencyControl;
 		this.cache_rows = _cache_rows;
@@ -534,6 +556,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 		}, true);
 	}
 
+	@SuppressWarnings("RedundantCast")
 	@Override
 	protected Blob getBlob(byte[] _bytes) throws SQLException {
 		try {

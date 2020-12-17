@@ -16,15 +16,21 @@ public class InMemoryEmbeddedHSQLDatabaseFactory extends DatabaseFactory<Embedde
 	private String databaseName=null;
 	private HSQLDBConcurrencyControl concurrencyControl=HSQLDBConcurrencyControl.DEFAULT;
 
-	public InMemoryEmbeddedHSQLDatabaseFactory() {
-
+	public InMemoryEmbeddedHSQLDatabaseFactory() throws DatabaseException {
+		super();
 	}
-
-	public InMemoryEmbeddedHSQLDatabaseFactory(String databaseName) {
+	public InMemoryEmbeddedHSQLDatabaseFactory(String databaseName) throws DatabaseException {
+		this(null, databaseName);
+	}
+	public InMemoryEmbeddedHSQLDatabaseFactory(DatabaseConfigurations databaseConfigurations, String databaseName) throws DatabaseException {
+		super(databaseConfigurations);
 		this.databaseName = databaseName;
 	}
-
-	public InMemoryEmbeddedHSQLDatabaseFactory(String databaseName, HSQLDBConcurrencyControl concurrencyControl) {
+	public InMemoryEmbeddedHSQLDatabaseFactory(String databaseName, HSQLDBConcurrencyControl concurrencyControl) throws DatabaseException {
+		this(null,databaseName, concurrencyControl);
+	}
+	public InMemoryEmbeddedHSQLDatabaseFactory(DatabaseConfigurations databaseConfigurations, String databaseName, HSQLDBConcurrencyControl concurrencyControl) throws DatabaseException {
+		super(databaseConfigurations);
 		this.databaseName = databaseName;
 		if (concurrencyControl==null)
 			throw new NullPointerException();

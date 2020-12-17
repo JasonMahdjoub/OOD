@@ -36,6 +36,8 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.crypto.EncryptionProfileProvider;
 
 import java.io.File;
 import java.sql.Connection;
@@ -54,9 +56,15 @@ public abstract class CommonHSQLH2DatabaseWrapper extends DatabaseWrapper{
 
 	protected boolean fileLock;
 
-	protected CommonHSQLH2DatabaseWrapper(String databaseName, File databaseDirectory, boolean alwaysDisconnectAfterOnTransaction, boolean loadToMemory, boolean fileLock)
+	protected CommonHSQLH2DatabaseWrapper(String databaseName, File databaseDirectory, boolean alwaysDisconnectAfterOnTransaction, boolean loadToMemory,
+										  DatabaseConfigurations databaseConfigurations,
+										  DatabaseLifeCycles databaseLifeCycles,
+										  EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
+										  EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+										  AbstractSecureRandom secureRandom,
+										  boolean createDatabasesIfNecessaryAndCheckIt, boolean fileLock)
 			throws DatabaseException {
-		super(databaseName, databaseDirectory, alwaysDisconnectAfterOnTransaction, loadToMemory);
+		super(databaseName, databaseDirectory, alwaysDisconnectAfterOnTransaction, loadToMemory, databaseConfigurations, databaseLifeCycles, encryptionProfileProviderForCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages, secureRandom, createDatabasesIfNecessaryAndCheckIt);
 		this.fileLock=true;
 
 	}

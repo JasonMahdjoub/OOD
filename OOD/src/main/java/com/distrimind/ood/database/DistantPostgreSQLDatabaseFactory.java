@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.crypto.WrappedPassword;
 
 import java.io.File;
 
@@ -85,7 +86,7 @@ public class DistantPostgreSQLDatabaseFactory extends DatabaseFactory<DistantPos
 	protected int port;
 	protected String databaseName;
 	protected String user;
-	protected String password;
+	protected WrappedPassword password;
 	protected int loginTimeOutInSeconds=0;
 	protected int connectTimeOutInSeconds=0;
 	protected int socketTimeOutSeconds=0;
@@ -97,7 +98,7 @@ public class DistantPostgreSQLDatabaseFactory extends DatabaseFactory<DistantPos
 	protected File sslRootCert =null;
 	protected String sslHostNameVerifier ="org.postgresql.ssl.PGjdbcHostnameVerifier";
 	protected String sslPasswordCallBack ="org.postgresql.ssl.jdbc4.LibPQFactory.ConsoleCallbackHandler";
-	protected String sslPassword=null;
+	protected WrappedPassword sslPassword=null;
 	protected int databaseMetadataCacheFields=65536;
 	protected int databaseMetadataCacheFieldsMiB=5;
 	protected int prepareThreshold=5;
@@ -105,14 +106,25 @@ public class DistantPostgreSQLDatabaseFactory extends DatabaseFactory<DistantPos
 	protected int preparedStatementCacheSizeMiB=5;
 	protected int defaultRowFetchSize=0;
 	/**
-	 *
 	 * @param urlLocation the url location
 	 * @param port the port to connect
 	 * @param databaseName the database name
 	 * @param user the user
 	 * @param password the password
 	 */
-	public DistantPostgreSQLDatabaseFactory(String urlLocation, int port, String databaseName, String user, String password) {
+	public DistantPostgreSQLDatabaseFactory(String urlLocation, int port, String databaseName, String user, WrappedPassword password) throws DatabaseException {
+		this(null, urlLocation, port, databaseName, user, password);
+	}
+	/**
+	 * @param databaseConfigurations the database configuration
+	 * @param urlLocation the url location
+	 * @param port the port to connect
+	 * @param databaseName the database name
+	 * @param user the user
+	 * @param password the password
+	 */
+	public DistantPostgreSQLDatabaseFactory(DatabaseConfigurations databaseConfigurations, String urlLocation, int port, String databaseName, String user, WrappedPassword password) throws DatabaseException {
+		super(databaseConfigurations);
 		if (urlLocation==null)
 			throw new NullPointerException();
 		if (databaseName==null)
@@ -128,7 +140,6 @@ public class DistantPostgreSQLDatabaseFactory extends DatabaseFactory<DistantPos
 		this.password = password;
 		this.additionalParams =null;
 	}
-
 	/**
 	 *
 	 * @param urlLocation the url location
@@ -138,8 +149,20 @@ public class DistantPostgreSQLDatabaseFactory extends DatabaseFactory<DistantPos
 	 * @param password the password
 	 * @param additionalParams additional MySQL params
 	 */
-	public DistantPostgreSQLDatabaseFactory(String urlLocation, int port, String databaseName, String user, String password, String additionalParams) {
-		this(urlLocation, port, databaseName, user, password);
+	public DistantPostgreSQLDatabaseFactory(String urlLocation, int port, String databaseName, String user, WrappedPassword password, String additionalParams) throws DatabaseException {
+		this(null, urlLocation, port, databaseName, user, password, additionalParams);
+	}
+	/**
+	 *  @param databaseConfigurations the database configuration
+	 * @param urlLocation the url location
+	 * @param port the port to connect
+	 * @param databaseName the database name
+	 * @param user the user
+	 * @param password the password
+	 * @param additionalParams additional MySQL params
+	 */
+	public DistantPostgreSQLDatabaseFactory(DatabaseConfigurations databaseConfigurations, String urlLocation, int port, String databaseName, String user, WrappedPassword password, String additionalParams) throws DatabaseException {
+		this(databaseConfigurations, urlLocation, port, databaseName, user, password);
 		if (additionalParams ==null)
 			throw new NullPointerException();
 		this.additionalParams = additionalParams;
@@ -147,11 +170,12 @@ public class DistantPostgreSQLDatabaseFactory extends DatabaseFactory<DistantPos
 
 
 
-	public DistantPostgreSQLDatabaseFactory() {
+	public DistantPostgreSQLDatabaseFactory() throws DatabaseException {
+		super();
 	}
 
 	@Override
-	protected DistantPostgreSQLWrapper newWrapperInstance() throws DatabaseException {
+	protected DistantPostgreSQLWrapper newWrapperInstance(DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
 		return new DistantPostgreSQLWrapper(urlLocation, port, databaseName, user, password, loginTimeOutInSeconds, connectTimeOutInSeconds,
 				socketTimeOutSeconds, additionalParams, sslMode, sslFactory,
 				sslKey, sslCert, sslRootCert, sslHostNameVerifier, sslPasswordCallBack,
@@ -252,7 +276,7 @@ public class DistantPostgreSQLDatabaseFactory extends DatabaseFactory<DistantPos
 	 *
 	 * @return the password
 	 */
-	public String getPassword() {
+	public WrappedPassword getPassword() {
 		return password;
 	}
 
@@ -260,7 +284,7 @@ public class DistantPostgreSQLDatabaseFactory extends DatabaseFactory<DistantPos
 	 *
 	 * @param password the password
 	 */
-	public void setPassword(String password) {
+	public void setPassword(WrappedPassword password) {
 		if (password==null)
 			throw new NullPointerException();
 		this.password = password;
@@ -474,7 +498,7 @@ public class DistantPostgreSQLDatabaseFactory extends DatabaseFactory<DistantPos
 	 *
 	 * @return If provided will be used by ConsoleCallbackHandler
 	 */
-	public String getSslPassword() {
+	public WrappedPassword getSslPassword() {
 		return sslPassword;
 	}
 
@@ -482,7 +506,7 @@ public class DistantPostgreSQLDatabaseFactory extends DatabaseFactory<DistantPos
 	 *
 	 * @param sslPassword If provided will be used by ConsoleCallbackHandler
 	 */
-	public void setSslPassword(String sslPassword) {
+	public void setSslPassword(WrappedPassword sslPassword) {
 		if (sslPassword==null)
 			throw new NullPointerException();
 		this.sslPassword = sslPassword;

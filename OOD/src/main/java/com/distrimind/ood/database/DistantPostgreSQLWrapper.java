@@ -39,6 +39,9 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseVersionException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
+import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.crypto.EncryptionProfileProvider;
+import com.distrimind.util.crypto.WrappedPassword;
 
 import java.io.File;
 import java.sql.*;
@@ -54,15 +57,20 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 	protected final String urlLocation;
 	protected final int port;
 	protected final String user;
-	protected final String password;
+	protected final WrappedPassword password;
 	private final String url;
 
 
-	protected DistantPostgreSQLWrapper(String urlLocation,
+	protected DistantPostgreSQLWrapper(String databaseName,String urlLocation,
+									   DatabaseConfigurations databaseConfigurations,
+									   DatabaseLifeCycles databaseLifeCycles,
+									   EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
+									   EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+									   AbstractSecureRandom secureRandom,
+									   boolean createDatabasesIfNecessaryAndCheckIt,
 									   int port,
-									   String databaseName,
 									   String user,
-									   String password,
+									   WrappedPassword password,
 									   int loginTimeOutInSeconds,
 									   int connectTimeOutInSeconds,
 									   int socketTimeOutSeconds,
@@ -81,7 +89,8 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 									   int preparedStatementCacheQueries,
 									   int preparedStatementCacheSizeMiB,
 									   int defaultRowFetchSize) throws DatabaseException {
-		super(databaseName, new File(urlLocation), false, false);
+		super(databaseName, new File(urlLocation), false, false, databaseConfigurations, databaseLifeCycles, encryptionProfileProviderForCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+				secureRandom, createDatabasesIfNecessaryAndCheckIt);
 		url=getURL(urlLocation, port, databaseName, loginTimeOutInSeconds, connectTimeOutInSeconds, socketTimeOutSeconds, additionalParams, sslMode, sslFactory, sslKey, sslCert, sslRootCert, sslHostNameVerifier, sslPasswordCallBack, sslPassword, databaseMetadataCacheFields, databaseMetadataCacheFieldsMiB, prepareThreshold, preparedStatementCacheQueries, preparedStatementCacheSizeMiB, defaultRowFetchSize);
 		this.urlLocation = urlLocation;
 		this.port = port;
@@ -137,7 +146,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 	protected Connection reopenConnectionImpl() throws DatabaseLoadingException {
 
 		try  {
-			Connection conn = DriverManager.getConnection(url, user, password);
+			Connection conn = DriverManager.getConnection(url, user, password.toString());
 			if (conn==null)
 				throw new DatabaseLoadingException("Failed to make connection!");
 			return conn;

@@ -42,6 +42,8 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseVersionException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
+import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.crypto.EncryptionProfileProvider;
 
 import java.io.File;
 import java.sql.*;
@@ -78,8 +80,16 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	protected boolean supportMultipleAutoPrimaryKeys() {
 		return true;
 	}
-	EmbeddedDerbyWrapper(boolean loadToMemory, String databaseName) throws IllegalArgumentException, DatabaseException {
-		super(databaseName, null, false, true);
+	EmbeddedDerbyWrapper(String databaseName, boolean loadToMemory,
+						 DatabaseConfigurations databaseConfigurations,
+						 DatabaseLifeCycles databaseLifeCycles,
+						 EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
+						 EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+						 AbstractSecureRandom secureRandom,
+						 boolean createDatabasesIfNecessaryAndCheckIt) throws IllegalArgumentException, DatabaseException {
+		super(databaseName, null, false, true, databaseConfigurations, databaseLifeCycles,
+				encryptionProfileProviderForCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+				secureRandom, createDatabasesIfNecessaryAndCheckIt);
 		if (!loadToMemory)
 			throw new IllegalArgumentException();
 
@@ -91,8 +101,17 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 		return true;
 	}
 
-	EmbeddedDerbyWrapper(File _directory, boolean alwaysDisconnectAfterOnTransaction) throws IllegalArgumentException, DatabaseException {
-		super(/* getConnection(_directory), */"Database from file : " + _directory.getAbsolutePath(), _directory, alwaysDisconnectAfterOnTransaction, false);
+	EmbeddedDerbyWrapper(File _directory,
+						 DatabaseConfigurations databaseConfigurations,
+						 DatabaseLifeCycles databaseLifeCycles,
+						 EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
+						 EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+						 AbstractSecureRandom secureRandom,
+						 boolean createDatabasesIfNecessaryAndCheckIt, boolean alwaysDisconnectAfterOnTransaction) throws IllegalArgumentException, DatabaseException {
+		super(/* getConnection(_directory), */"Database from file : " + _directory.getAbsolutePath(), _directory, alwaysDisconnectAfterOnTransaction, false
+				, databaseConfigurations, databaseLifeCycles,
+				encryptionProfileProviderForCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+				secureRandom, createDatabasesIfNecessaryAndCheckIt);
 		// dbURL = getDBUrl(_directory);
 
 	}
@@ -128,8 +147,8 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 			c.setAutoCommit(false);
 			return c;
 		} catch (Exception e) {
-			throw new DatabaseLoadingException("Impossible to create the database " + _directory.getAbsolutePath()
-					+ " into the directory " + _directory.getAbsolutePath(), e);
+			throw new DatabaseLoadingException("Impossible to create the database " + databaseName
+					+ " into the directory " + (_directory==null?null:_directory.getAbsolutePath()), e);
 		}
 	}
 

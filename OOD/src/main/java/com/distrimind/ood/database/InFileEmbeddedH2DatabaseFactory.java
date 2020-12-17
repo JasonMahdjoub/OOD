@@ -59,11 +59,28 @@ public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH2D
 	private int cacheSizeBytes=10000*1024;
 
 
-	protected InFileEmbeddedH2DatabaseFactory() {
-
+	protected InFileEmbeddedH2DatabaseFactory() throws DatabaseException {
+		super();
 	}
 	/**
 	 * Constructor
+	 *
+	 * @param databaseConfigurations the database configurations
+	 * @param _directory_name
+	 *            The directory which contains the database. If this directory does not
+	 *            exists, it will be automatically created with the correspondent
+	 *            database.
+	 * @throws NullPointerException
+	 *             if parameters are null pointers.
+	 * @throws IllegalArgumentException
+	 *             If the given file is a directory.
+	 */
+	public InFileEmbeddedH2DatabaseFactory(DatabaseConfigurations databaseConfigurations, File _directory_name) throws DatabaseException {
+		this(databaseConfigurations, _directory_name, false);
+	}
+	/**
+	 * Constructor
+	 *
 	 *
 	 * @param _directory_name
 	 *            The directory which contains the database. If this directory does not
@@ -74,10 +91,29 @@ public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH2D
 	 * @throws IllegalArgumentException
 	 *             If the given file is a directory.
 	 */
-	public InFileEmbeddedH2DatabaseFactory(File _directory_name) {
-		this(_directory_name, false);
+	public InFileEmbeddedH2DatabaseFactory(File _directory_name) throws DatabaseException {
+		this(null, _directory_name);
 	}
 
+	/**
+	 * Constructor
+	 *
+	 * @param databaseConfigurations the database configurations
+	 * @param _directory_name
+	 *            The directory which contains the database. If this directory does not
+	 *            exists, it will be automatically created with the correspondent
+	 *            database.
+	 * @param alwaysDisconnectAfterOneTransaction true if the database must always be connected and detected during one transaction
+	 * @throws NullPointerException
+	 *             if parameters are null pointers.
+	 * @throws IllegalArgumentException
+	 *             If the given file is a directory.
+	 */
+	public InFileEmbeddedH2DatabaseFactory(DatabaseConfigurations databaseConfigurations, File _directory_name, boolean alwaysDisconnectAfterOneTransaction) throws DatabaseException {
+		super(databaseConfigurations);
+		setDirectory(_directory_name);
+		this.alwaysDisconnectAfterOneTransaction = alwaysDisconnectAfterOneTransaction;
+	}
 	/**
 	 * Constructor
 	 *
@@ -91,11 +127,36 @@ public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH2D
 	 * @throws IllegalArgumentException
 	 *             If the given file is a directory.
 	 */
-	public InFileEmbeddedH2DatabaseFactory(File _directory_name, boolean alwaysDisconnectAfterOneTransaction) {
-		setDirectory(_directory_name);
-		this.alwaysDisconnectAfterOneTransaction = alwaysDisconnectAfterOneTransaction;
+	public InFileEmbeddedH2DatabaseFactory(File _directory_name, boolean alwaysDisconnectAfterOneTransaction) throws DatabaseException {
+		this(null, _directory_name, alwaysDisconnectAfterOneTransaction);
 	}
 
+	/**
+	 * Constructor
+	 *
+	 * @param databaseConfigurations the database configurations
+	 * @param _directory_name
+	 *            The directory which contains the database. If this directory does not
+	 *            exists, it will be automatically created with the correspondent
+	 *            database.
+	 * @param alwaysDisconnectAfterOneTransaction true if the database must always be connected and detected during one transaction
+	 * @param fileLock true if the database file must be locked when opened
+	 * @param pageSizeBytes the page size of the database in bytes
+	 * @param cacheSizeBytes the cache size in bytes
+	 * @throws NullPointerException
+	 *             if parameters are null pointers.
+	 * @throws IllegalArgumentException
+	 *             If the given file is a directory.
+	 */
+	public InFileEmbeddedH2DatabaseFactory(DatabaseConfigurations databaseConfigurations, File _directory_name, boolean alwaysDisconnectAfterOneTransaction, boolean fileLock, int pageSizeBytes
+			, int cacheSizeBytes) throws DatabaseException {
+		super(databaseConfigurations);
+		setDirectory(_directory_name);
+		this.alwaysDisconnectAfterOneTransaction = alwaysDisconnectAfterOneTransaction;
+		this.fileLock=fileLock;
+		this.pageSizeBytes=pageSizeBytes;
+		this.cacheSizeBytes=cacheSizeBytes;
+	}
 	/**
 	 * Constructor
 	 *
@@ -113,12 +174,8 @@ public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH2D
 	 *             If the given file is a directory.
 	 */
 	public InFileEmbeddedH2DatabaseFactory(File _directory_name, boolean alwaysDisconnectAfterOneTransaction, boolean fileLock, int pageSizeBytes
-			, int cacheSizeBytes) {
-		setDirectory(_directory_name);
-		this.alwaysDisconnectAfterOneTransaction = alwaysDisconnectAfterOneTransaction;
-		this.fileLock=fileLock;
-		this.pageSizeBytes=pageSizeBytes;
-		this.cacheSizeBytes=cacheSizeBytes;
+			, int cacheSizeBytes) throws DatabaseException {
+		this(null, _directory_name, alwaysDisconnectAfterOneTransaction, fileLock, pageSizeBytes, cacheSizeBytes);
 	}
 
 	@Override
