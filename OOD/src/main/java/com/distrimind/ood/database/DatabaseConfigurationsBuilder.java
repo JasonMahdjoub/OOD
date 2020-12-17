@@ -28,7 +28,7 @@ public class DatabaseConfigurationsBuilder {
 								  AbstractSecureRandom secureRandom,
 								  boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
 		if (configurations==null)
-			throw new NullPointerException();
+			configurations=new DatabaseConfigurations();
 		if (wrapper==null)
 			throw new NullPointerException();
 		if (encryptionProfileProviderForCentralDatabaseBackup ==null && configurations.useCentralBackupDatabase())

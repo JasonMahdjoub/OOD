@@ -27,8 +27,11 @@ public class InMemoryEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH
 	}
 
 	@Override
-	protected EmbeddedH2DatabaseWrapper newWrapperInstance() throws DatabaseException {
-		return new EmbeddedH2DatabaseWrapper(true, databaseName);
+	protected EmbeddedH2DatabaseWrapper newWrapperInstance(DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
+		return new EmbeddedH2DatabaseWrapper(databaseName, true, databaseConfigurations, databaseLifeCycles,
+				encryptionProfileProviderFactoryForCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
+				protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
+				getSecureRandom(), createDatabasesIfNecessaryAndCheckIt);
 	}
 
 	public static long getSerialVersionUID() {

@@ -38,8 +38,11 @@ public class InMemoryEmbeddedHSQLDatabaseFactory extends DatabaseFactory<Embedde
 	}
 
 	@Override
-	protected EmbeddedHSQLDBWrapper newWrapperInstance() throws DatabaseException {
-		return new EmbeddedHSQLDBWrapper(true, databaseName, concurrencyControl);
+	protected EmbeddedHSQLDBWrapper newWrapperInstance(DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
+		return new EmbeddedHSQLDBWrapper(databaseName, true, databaseConfigurations, databaseLifeCycles,
+				encryptionProfileProviderFactoryForCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
+				protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
+				getSecureRandom(), createDatabasesIfNecessaryAndCheckIt, concurrencyControl);
 	}
 
 	@Override

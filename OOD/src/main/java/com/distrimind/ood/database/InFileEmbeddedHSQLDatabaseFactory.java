@@ -229,8 +229,11 @@ public class InFileEmbeddedHSQLDatabaseFactory extends DatabaseFactory<EmbeddedH
 	}
 
 	@Override
-	protected EmbeddedHSQLDBWrapper newWrapperInstance() throws DatabaseException {
-		return new EmbeddedHSQLDBWrapper(directory, alwaysDisconnectAfterOneTransaction, concurrencyControl, cacheRows, cacheSizeBytes,
+	protected EmbeddedHSQLDBWrapper newWrapperInstance(DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
+		return new EmbeddedHSQLDBWrapper(directory, databaseConfigurations, databaseLifeCycles,
+				encryptionProfileProviderFactoryForCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
+				protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
+				getSecureRandom(), createDatabasesIfNecessaryAndCheckIt, alwaysDisconnectAfterOneTransaction, concurrencyControl, cacheRows, cacheSizeBytes,
 					resultMaxMemoryRows, cacheFreeCount, lockFile);
 	}
 

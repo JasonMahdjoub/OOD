@@ -117,8 +117,11 @@ public class InFileEmbeddedDerbyDatabaseFactory extends DatabaseFactory<Embedded
 	}
 
 	@Override
-	protected EmbeddedDerbyWrapper newWrapperInstance() throws DatabaseException {
-		return new EmbeddedDerbyWrapper(directory, alwaysDisconnectAfterOnTransaction);
+	protected EmbeddedDerbyWrapper newWrapperInstance(DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
+		return new EmbeddedDerbyWrapper(directory, databaseConfigurations, databaseLifeCycles,
+				encryptionProfileProviderFactoryForCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
+				protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
+				getSecureRandom(), createDatabasesIfNecessaryAndCheckIt, alwaysDisconnectAfterOnTransaction);
 	}
 
 	public File getDirectory() {

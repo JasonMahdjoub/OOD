@@ -36,8 +36,11 @@ public class InMemoryEmbeddedDerbyDatabaseFactory extends DatabaseFactory<Embedd
 	}
 
 	@Override
-	protected EmbeddedDerbyWrapper newWrapperInstance() throws DatabaseException {
-		return new EmbeddedDerbyWrapper(true, databaseName);
+	protected EmbeddedDerbyWrapper newWrapperInstance(DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
+		return new EmbeddedDerbyWrapper(databaseName, true, databaseConfigurations, databaseLifeCycles,
+				encryptionProfileProviderFactoryForCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
+				protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
+				getSecureRandom(), createDatabasesIfNecessaryAndCheckIt);
 	}
 
 	public static long getSerialVersionUID() {

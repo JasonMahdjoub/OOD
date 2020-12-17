@@ -182,8 +182,11 @@ public class InFileEmbeddedAndroidH2DatabaseFactory extends DatabaseFactory<Embe
 	}
 
 	@Override
-	protected EmbeddedH2DatabaseWrapper newWrapperInstance() throws DatabaseException {
-		return new EmbeddedH2DatabaseWrapper(getDirectory(), alwaysDisconnectAfterOneTransaction, pageSizeBytes, cacheSizeBytes);
+	protected EmbeddedH2DatabaseWrapper newWrapperInstance(DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
+		return new EmbeddedH2DatabaseWrapper(getDirectory(), databaseConfigurations, databaseLifeCycles,
+				encryptionProfileProviderFactoryForCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
+				protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
+				getSecureRandom(), createDatabasesIfNecessaryAndCheckIt, alwaysDisconnectAfterOneTransaction, pageSizeBytes, cacheSizeBytes);
 	}
 
 	public boolean isAlwaysDisconnectAfterOneTransaction() {

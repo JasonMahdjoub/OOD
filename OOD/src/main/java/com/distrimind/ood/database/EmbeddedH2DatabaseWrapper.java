@@ -68,13 +68,13 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	private boolean loadedOneTime=false;
 	private boolean autoPrimaryKeyIndexStartFromOne=false;
 
-	EmbeddedH2DatabaseWrapper(boolean loadToMemory,
+	EmbeddedH2DatabaseWrapper(String databaseName, boolean loadToMemory,
 							  DatabaseConfigurations databaseConfigurations,
 							  DatabaseLifeCycles databaseLifeCycles,
 							  EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
 							  EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 							  AbstractSecureRandom secureRandom,
-							  boolean createDatabasesIfNecessaryAndCheckIt, String databaseName) throws DatabaseException {
+							  boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
 		super(databaseName, null, false, true,
 				databaseConfigurations, databaseLifeCycles, encryptionProfileProviderForCentralDatabaseBackup,
 				protectedEncryptionProfileProviderForAuthenticatedP2PMessages, secureRandom, createDatabasesIfNecessaryAndCheckIt, true);
