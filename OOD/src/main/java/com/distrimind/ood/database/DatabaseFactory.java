@@ -65,9 +65,24 @@ public abstract class DatabaseFactory<DW extends DatabaseWrapper> extends MultiF
 	protected byte[] randomPersonalizationString= "SGJST92?GI1N4: carz:fg *£f14902é\"§e'!(y)ĝùa(!h,qàényŝtufx".getBytes();
 	protected DatabaseConfigurations databaseConfigurations;
 
+	private transient DatabaseLifeCycles databaseLifeCycles=null;
+	private transient boolean createDatabasesIfNecessaryAndCheckIt=true;
 
+	public DatabaseLifeCycles getDatabaseLifeCycles() {
+		return databaseLifeCycles;
+	}
 
+	public void setDatabaseLifeCycles(DatabaseLifeCycles databaseLifeCycles) {
+		this.databaseLifeCycles = databaseLifeCycles;
+	}
 
+	public boolean isCreateDatabasesIfNecessaryAndCheckIt() {
+		return createDatabasesIfNecessaryAndCheckIt;
+	}
+
+	public void setCreateDatabasesIfNecessaryAndCheckIt(boolean createDatabasesIfNecessaryAndCheckIt) {
+		this.createDatabasesIfNecessaryAndCheckIt = createDatabasesIfNecessaryAndCheckIt;
+	}
 
 	public AbstractSecureRandom getSecureRandom() throws DatabaseException {
 		try {
@@ -137,12 +152,6 @@ public abstract class DatabaseFactory<DW extends DatabaseWrapper> extends MultiF
 	}
 
 	public final DW getDatabaseWrapperSingleton() throws DatabaseException {
-		return getDatabaseWrapperSingleton(null);
-	}
-	public final DW getDatabaseWrapperSingleton(DatabaseLifeCycles databaseLifeCycles) throws DatabaseException {
-		return getDatabaseWrapperSingleton(databaseLifeCycles, true);
-	}
-	public final DW getDatabaseWrapperSingleton(DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
 		if (wrapper == null) {
 			synchronized (this) {
 				if (wrapper == null)
