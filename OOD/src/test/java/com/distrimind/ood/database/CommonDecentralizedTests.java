@@ -718,30 +718,34 @@ public abstract class CommonDecentralizedTests {
 
 			getDbwrapper()
 					.loadDatabase(new DatabaseConfiguration(new DatabaseSchema(TableAlone.class.getPackage(),
-							canInitCentralBackup? DatabaseSchema.SynchronizationType.DECENTRALIZED_SYNCHRONIZATION_AND_SYNCHRONIZATION_WITH_CENTRAL_BACKUP_DATABASE: DatabaseSchema.SynchronizationType.DECENTRALIZED_SYNCHRONIZATION,
+							canInitCentralBackup? DatabaseConfiguration.SynchronizationType.DECENTRALIZED_SYNCHRONIZATION_AND_SYNCHRONIZATION_WITH_CENTRAL_BACKUP_DATABASE: DatabaseConfiguration.SynchronizationType.DECENTRALIZED_SYNCHRONIZATION,
 							backupConfiguration
 							)
 							, new DatabaseLifeCycles() {
 
-
 						@Override
-						public void transferDatabaseFromOldVersion(DatabaseWrapper wrapper, DatabaseConfiguration oldDatabaseConfiguration, DatabaseConfiguration newDatabaseConfiguration) {
+						public void transferDatabaseFromOldVersion(DatabaseWrapper wrapper, DatabaseConfiguration newDatabaseConfiguration) throws Exception {
 
 						}
 
 						@Override
-						public void afterDatabaseCreation(DatabaseWrapper wrapper, DatabaseConfiguration newDatabaseConfiguration) {
+						public void afterDatabaseCreation(DatabaseWrapper wrapper, DatabaseConfiguration newDatabaseConfiguration) throws Exception {
 
 						}
 
 						@Override
-						public boolean hasToRemoveOldDatabase() {
+						public boolean hasToRemoveOldDatabase(DatabaseConfiguration databaseConfiguration) throws Exception {
+							return true;
+						}
+
+						@Override
+						public boolean replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized(DatabaseConfiguration databaseConfiguration) {
 							return false;
 						}
 
 						@Override
-						public boolean replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized() {
-							return false;
+						public void saveDatabaseConfigurations(DatabaseConfigurations databaseConfigurations) {
+
 						}
 					}, null), true);
 
@@ -1303,9 +1307,9 @@ public abstract class CommonDecentralizedTests {
 		{
 			for (DatabaseConfiguration dc : dw.getDatabaseConfigurations()) {
 
-				if (dc.getDatabaseSchema().isSynchronizedWithCentralBackupDatabase())
+				if (dc.isSynchronizedWithCentralBackupDatabase())
 				{
-					Assert.assertEquals(dc.getDatabaseSchema().getBackupConfiguration().getMaxBackupFileAgeInMs(), 1000);
+					Assert.assertEquals(dc.getBackupConfiguration().getMaxBackupFileAgeInMs(), 1000);
 					BackupRestoreManager brm=dw.getBackupRestoreManager(dc.getDatabaseSchema().getPackage());
 					ClientTable.Record clientRecord=getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver().getTableInstance(ClientTable.class).getRecord("clientID", d.hostID);
 					DatabaseBackupPerClientTable databaseBackupPerClientTable=getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver().getTableInstance(DatabaseBackupPerClientTable.class);
@@ -1331,7 +1335,7 @@ public abstract class CommonDecentralizedTests {
 		if (dw.getSynchronizer().isInitializedWithCentralBackup())
 		{
 			for (DatabaseConfiguration dc : dw.getDatabaseConfigurations()) {
-				if (dc.getDatabaseSchema().isSynchronizedWithCentralBackupDatabase())
+				if (dc.isSynchronizedWithCentralBackupDatabase())
 				{
 					for (Database dother : listDatabase)
 					{
