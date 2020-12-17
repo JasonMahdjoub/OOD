@@ -205,9 +205,13 @@ public class DistantMySQLDatabaseFactory extends CommonMySQLDatabaseFactory<Dist
 		else
 			css=cs.name();
 		if (additionalParams ==null)
-			return new DistantMySQLDBWrapper(urlLocation, port, databaseName, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, css, sslMode, paranoid, serverRSAPublicKeyFile, autoReconnect, prefetchNumberRows, noCache);
+			return new DistantMySQLDBWrapper(databaseName, urlLocation, databaseConfigurations, databaseLifeCycles, encryptionProfileProviderFactoryForCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
+					protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
+					getSecureRandom(), createDatabasesIfNecessaryAndCheckIt, port, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, css, sslMode, paranoid, serverRSAPublicKeyFile, autoReconnect, prefetchNumberRows, noCache);
 		else
-			return new DistantMySQLDBWrapper(urlLocation, port, databaseName, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, css, sslMode, paranoid, serverRSAPublicKeyFile, autoReconnect, prefetchNumberRows, noCache, additionalParams);
+			return new DistantMySQLDBWrapper(databaseName, urlLocation, databaseConfigurations, databaseLifeCycles, encryptionProfileProviderFactoryForCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
+					protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
+					getSecureRandom(), createDatabasesIfNecessaryAndCheckIt, port, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, css, sslMode, paranoid, serverRSAPublicKeyFile, autoReconnect, prefetchNumberRows, noCache, additionalParams);
 	}
 
 	/**

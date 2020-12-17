@@ -121,4 +121,9 @@ public class BackupChannelUpdateMessageFromCentralDatabaseBackup implements Mess
 		lastValidatedAndEncryptedLocalID=in.readBytesArray(false, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
 		lastValidatedAndEncryptedDistantID=in.readBytesArray(false, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
 	}
+
+	@Override
+	public boolean cannotBeMerged() {
+		return true;
+	}
 }

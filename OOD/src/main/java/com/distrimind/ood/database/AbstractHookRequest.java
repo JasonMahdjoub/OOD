@@ -38,9 +38,7 @@ package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
-import com.distrimind.util.crypto.ASymmetricPublicKey;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
-import com.distrimind.util.crypto.IASymmetricPublicKey;
 import com.distrimind.util.crypto.SymmetricAuthenticatedSignatureType;
 import com.distrimind.util.io.*;
 
@@ -127,7 +125,7 @@ public abstract class AbstractHookRequest extends DatabaseEvent implements Authe
 		if (hostSource.equals(hostDestination))
 			throw new MessageExternalizationException(Integrity.FAIL);
 		try {
-			concernedPeers =in.readCollection(false,MAX_PEERS_DESCRIPTION_SIZE_IN_BYTES, false);
+			concernedPeers =in.readCollection(false,MAX_PEERS_DESCRIPTION_SIZE_IN_BYTES, false, DecentralizedValue.class);
 		}
 		catch (ClassCastException e)
 		{

@@ -18,28 +18,28 @@ import java.sql.Savepoint;
  */
 public class DistantMySQLDBWrapper extends CommonMySQLWrapper{
 
-	protected DistantMySQLDBWrapper(String urlLocation,
+	protected DistantMySQLDBWrapper(String _database_name, String urlLocation,
 									DatabaseConfigurations databaseConfigurations,
 									DatabaseLifeCycles databaseLifeCycles,
 									EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
 									EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 									AbstractSecureRandom secureRandom,
-									boolean createDatabasesIfNecessaryAndCheckIt, int port, String _database_name, String user, WrappedPassword password, int connectTimeInMillis, int socketTimeOutMillis, boolean useCompression, String characterEncoding, DistantMySQLDatabaseFactory.SSLMode sslMode, boolean paranoid, File serverRSAPublicKeyFile, boolean autoReconnect, int prefetchNumberRows, boolean noCache, String additionalParams) throws DatabaseException {
-		super(urlLocation, databaseConfigurations, databaseLifeCycles, encryptionProfileProviderForCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages, secureRandom, createDatabasesIfNecessaryAndCheckIt, port, _database_name, user, password,
+									boolean createDatabasesIfNecessaryAndCheckIt, int port, String user, WrappedPassword password, int connectTimeInMillis, int socketTimeOutMillis, boolean useCompression, String characterEncoding, DistantMySQLDatabaseFactory.SSLMode sslMode, boolean paranoid, File serverRSAPublicKeyFile, boolean autoReconnect, int prefetchNumberRows, boolean noCache, String additionalParams) throws DatabaseException {
+		super(_database_name, urlLocation, databaseConfigurations, databaseLifeCycles, encryptionProfileProviderForCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages, secureRandom, createDatabasesIfNecessaryAndCheckIt, port, user, password,
 				getURL(urlLocation, port, _database_name, connectTimeInMillis, socketTimeOutMillis, useCompression, characterEncoding, sslMode, paranoid, serverRSAPublicKeyFile, autoReconnect, prefetchNumberRows, noCache, additionalParams), characterEncoding);
 		if (additionalParams==null)
 			throw new NullPointerException();
 	}
 
-	protected DistantMySQLDBWrapper(String urlLocation,
+	protected DistantMySQLDBWrapper(String _database_name, String urlLocation,
 									DatabaseConfigurations databaseConfigurations,
 									DatabaseLifeCycles databaseLifeCycles,
 									EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
 									EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 									AbstractSecureRandom secureRandom,
-									boolean createDatabasesIfNecessaryAndCheckIt, int port, String _database_name, String user, WrappedPassword password, int connectTimeInMillis, int socketTimeOutMillis, boolean useCompression, String characterEncoding, DistantMySQLDatabaseFactory.SSLMode sslMode, boolean paranoid, File serverRSAPublicKeyFile, boolean autoReconnect, int prefetchNumberRows, boolean noCache) throws DatabaseException {
-		super(urlLocation, databaseConfigurations, databaseLifeCycles, encryptionProfileProviderForCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages, secureRandom,
-				createDatabasesIfNecessaryAndCheckIt, port, _database_name, user, password, getURL(urlLocation, port, _database_name, connectTimeInMillis, socketTimeOutMillis, useCompression, characterEncoding, sslMode, paranoid, serverRSAPublicKeyFile, autoReconnect, prefetchNumberRows, noCache, null), characterEncoding);
+									boolean createDatabasesIfNecessaryAndCheckIt, int port, String user, WrappedPassword password, int connectTimeInMillis, int socketTimeOutMillis, boolean useCompression, String characterEncoding, DistantMySQLDatabaseFactory.SSLMode sslMode, boolean paranoid, File serverRSAPublicKeyFile, boolean autoReconnect, int prefetchNumberRows, boolean noCache) throws DatabaseException {
+		super(_database_name, urlLocation, databaseConfigurations, databaseLifeCycles, encryptionProfileProviderForCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages, secureRandom,
+				createDatabasesIfNecessaryAndCheckIt, port, user, password, getURL(urlLocation, port, _database_name, connectTimeInMillis, socketTimeOutMillis, useCompression, characterEncoding, sslMode, paranoid, serverRSAPublicKeyFile, autoReconnect, prefetchNumberRows, noCache, null), characterEncoding);
 	}
 
 	private static String getURL(String urlLocation, int port,

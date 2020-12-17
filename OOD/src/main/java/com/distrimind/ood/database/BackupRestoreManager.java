@@ -472,9 +472,9 @@ public class BackupRestoreManager {
 			int tableIndex=classes.indexOf(table.getClass());
 			if (tableIndex<0)
 				throw new IOException();
-			out.writeUnsignedShort(tableIndex);
+			out.writeUnsignedInt16Bits(tableIndex);
 			byte[] pks=table.serializeFieldsWithUnknownType(newRecord==null?oldRecord:newRecord, true, false, false);
-			out.writeUnsignedShortInt(pks.length);
+			out.writeUnsignedInt24Bits(pks.length);
 			out.write(pks);
 
 			switch(eventType)
@@ -484,7 +484,7 @@ public class BackupRestoreManager {
 					if (!table.isPrimaryKeysAndForeignKeysSame() && table.getForeignKeysFieldAccessors().size()>0) {
 						out.writeBoolean(true);
 						byte[] fks=table.serializeFieldsWithUnknownType(newRecord, false, true, false);
-						out.writeUnsignedShortInt(fks.length);
+						out.writeUnsignedInt24Bits(fks.length);
 						out.write(fks);
 					}
 					else
@@ -1934,7 +1934,7 @@ public class BackupRestoreManager {
 											throw new IOException();
 										Table<?> table = tables.get(tableIndex);
 										Table<?> oldTable = oldTables.get(tableIndex);
-										int s = in.readUnsignedShortInt();
+										int s = in.readUnsignedShort24Bits();
 										if (s==0)
 											throw new IOException();
 										in.readFully(recordBuffer, 0, s);
@@ -1947,7 +1947,7 @@ public class BackupRestoreManager {
 												DatabaseRecord drRecord=oldTable.getRecord(hm);
 
 												if (in.readBoolean()) {
-													s = in.readUnsignedShortInt();
+													s = in.readUnsignedShort24Bits();
 													in.readFully(recordBuffer, 0, s);
 													table.deserializeFields(hm, recordBuffer, 0, s, false, true, false);
 												}
@@ -1991,7 +1991,7 @@ public class BackupRestoreManager {
 												table.deserializeFields(dr, recordBuffer, 0, s, true, false, false);
 
 												if (in.readBoolean()) {
-													s = in.readUnsignedShortInt();
+													s = in.readUnsignedShort24Bits();
 													in.readFully(recordBuffer, 0, s);
 													table.deserializeFields(dr, recordBuffer, 0, s, false, true, false);
 												}

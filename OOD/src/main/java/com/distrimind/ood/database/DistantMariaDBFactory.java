@@ -193,13 +193,13 @@ class DistantMariaDBFactory extends CommonMySQLDatabaseFactory<DistantMariaDBWra
 		else
 			css=cs.name();
 		if (additionalParams ==null)
-			return new DistantMariaDBWrapper(urlLocation, databaseConfigurations, databaseLifeCycles, encryptionProfileProviderFactoryForCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
+			return new DistantMariaDBWrapper(databaseName, urlLocation, databaseConfigurations, databaseLifeCycles, encryptionProfileProviderFactoryForCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
 					protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(), 
-					getSecureRandom(), createDatabasesIfNecessaryAndCheckIt, port, databaseName, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, css, useSSL, trustServerCertificate, enabledSslProtocolSuites, enabledSslCipherSuites, serverSslCert, autoReconnect);
+					getSecureRandom(), createDatabasesIfNecessaryAndCheckIt, port, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, css, useSSL, trustServerCertificate, enabledSslProtocolSuites, enabledSslCipherSuites, serverSslCert, autoReconnect);
 		else
-			return new DistantMariaDBWrapper(urlLocation, databaseConfigurations, databaseLifeCycles, encryptionProfileProviderFactoryForCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
+			return new DistantMariaDBWrapper(databaseName, urlLocation, databaseConfigurations, databaseLifeCycles, encryptionProfileProviderFactoryForCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
 					protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
-					getSecureRandom(), createDatabasesIfNecessaryAndCheckIt, port, databaseName, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, css, useSSL, trustServerCertificate, enabledSslProtocolSuites, enabledSslCipherSuites, serverSslCert, autoReconnect, additionalParams);
+					getSecureRandom(), createDatabasesIfNecessaryAndCheckIt, port, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, css, useSSL, trustServerCertificate, enabledSslProtocolSuites, enabledSslCipherSuites, serverSslCert, autoReconnect, additionalParams);
 	}
 
 	@Override

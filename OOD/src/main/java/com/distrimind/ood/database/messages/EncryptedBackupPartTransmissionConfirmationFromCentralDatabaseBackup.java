@@ -113,4 +113,9 @@ public class EncryptedBackupPartTransmissionConfirmationFromCentralDatabaseBacku
 	public String getPackageString() {
 		return packageString;
 	}
+
+	@Override
+	public boolean cannotBeMerged() {
+		return true;
+	}
 }

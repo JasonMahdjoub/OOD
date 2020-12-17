@@ -63,7 +63,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 	protected final int maxCharSize;
 
 
-	protected CommonMySQLWrapper(String urlLocation,
+	protected CommonMySQLWrapper(String _database_name,String urlLocation,
 								 DatabaseConfigurations databaseConfigurations,
 								 DatabaseLifeCycles databaseLifeCycles,
 								 EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
@@ -71,7 +71,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 								 AbstractSecureRandom secureRandom,
 								 boolean createDatabasesIfNecessaryAndCheckIt,
 								 int port,
-								 String _database_name,
+
 								 String user,
 								 WrappedPassword password,
 								 String url,
@@ -90,7 +90,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 		this.charset=characterEncoding;
 		this.maxCharSize=getMaxCharSize(this.charset);
 	}
-	protected CommonMySQLWrapper(String urlLocation,
+	protected CommonMySQLWrapper(String _database_name, String urlLocation,
 								 DatabaseConfigurations databaseConfigurations,
 								 DatabaseLifeCycles databaseLifeCycles,
 								 EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
@@ -98,7 +98,6 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 								 AbstractSecureRandom secureRandom,
 								 boolean createDatabasesIfNecessaryAndCheckIt,
 								 int port,
-								 String _database_name,
 								 String user,
 								 WrappedPassword password,
 								 String url

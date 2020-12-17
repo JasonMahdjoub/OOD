@@ -847,7 +847,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 						{
 							DatabaseHooksTable.Record r = new DatabaseHooksTable.Record();
 							r.setHostID(hostID);
-							r.setPairingState(PairingState.PAIRING_IN_PROGRESS);
+							r.setPairingState(PairingState.PAIRED);//TODO change state
 							r.setDatabasePackageNames(packages.keySet());
 							r.setConcernsDatabaseHost(false);
 							r.setLastValidatedDistantTransactionID(-1);

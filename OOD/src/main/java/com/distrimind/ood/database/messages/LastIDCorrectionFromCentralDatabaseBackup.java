@@ -96,4 +96,9 @@ public class LastIDCorrectionFromCentralDatabaseBackup extends DatabaseEvent imp
 	public byte[] getLastEncryptedValidatedTransaction() {
 		return lastEncryptedValidatedTransaction;
 	}
+
+	@Override
+	public boolean cannotBeMerged() {
+		return true;
+	}
 }

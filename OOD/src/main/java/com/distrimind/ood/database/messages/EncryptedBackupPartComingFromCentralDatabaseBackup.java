@@ -87,4 +87,9 @@ public class EncryptedBackupPartComingFromCentralDatabaseBackup extends Abstract
 		if (hostDestination==null)
 			hostDestination=getHostSource();
 	}
+
+	@Override
+	public boolean cannotBeMerged() {
+		return true;
+	}
 }

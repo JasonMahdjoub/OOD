@@ -49,14 +49,14 @@ import java.sql.*;
  * @since OOD 2.5.0
  */
 class DistantMariaDBWrapper extends CommonMySQLWrapper{
-	protected DistantMariaDBWrapper(String urlLocation,
+	protected DistantMariaDBWrapper(String _database_name, String urlLocation,
 									DatabaseConfigurations databaseConfigurations,
 									DatabaseLifeCycles databaseLifeCycles,
 									EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
 									EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 									AbstractSecureRandom secureRandom,
 									boolean createDatabasesIfNecessaryAndCheckIt,
-									int port, String _database_name, String user, WrappedPassword password,
+									int port, String user, WrappedPassword password,
 									int connectTimeInMillis,
 									int socketTimeOutMillis,
 									boolean useCompression,
@@ -68,25 +68,25 @@ class DistantMariaDBWrapper extends CommonMySQLWrapper{
 									File serverSslCert,
 									boolean autoReconnect,
 									String additionalParams) throws DatabaseException {
-		super(urlLocation, databaseConfigurations,
+		super(_database_name, urlLocation, databaseConfigurations,
 				databaseLifeCycles,
 				encryptionProfileProviderForCentralDatabaseBackup,
 				protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 				secureRandom,
-				createDatabasesIfNecessaryAndCheckIt,port, _database_name, user, password,
+				createDatabasesIfNecessaryAndCheckIt,port, user, password,
 				getURL(user, password, urlLocation, port, _database_name, connectTimeInMillis, socketTimeOutMillis, useCompression, characterEncoding, useSSL, trustServerCertificate, enabledSslProtocolSuites, enabledSslCipherSuites, serverSslCert, autoReconnect, additionalParams), characterEncoding);
 		if (additionalParams==null)
 			throw new NullPointerException();
 	}
 
-	protected DistantMariaDBWrapper(String urlLocation,
+	protected DistantMariaDBWrapper(String _database_name, String urlLocation,
 									DatabaseConfigurations databaseConfigurations,
 									DatabaseLifeCycles databaseLifeCycles,
 									EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
 									EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 									AbstractSecureRandom secureRandom,
 									boolean createDatabasesIfNecessaryAndCheckIt,
-									int port, String _database_name, String user, WrappedPassword password,
+									int port, String user, WrappedPassword password,
 									int connectTimeInMillis,
 									int socketTimeOutMillis,
 									boolean useCompression,
@@ -97,12 +97,12 @@ class DistantMariaDBWrapper extends CommonMySQLWrapper{
 									String enabledSslCipherSuites,
 									File serverSslCert,
 									boolean autoReconnect) throws DatabaseException {
-		super(urlLocation, databaseConfigurations,
+		super(_database_name, urlLocation, databaseConfigurations,
 				databaseLifeCycles,
 				encryptionProfileProviderForCentralDatabaseBackup,
 				protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 				secureRandom,
-				createDatabasesIfNecessaryAndCheckIt,port, _database_name, user, password,
+				createDatabasesIfNecessaryAndCheckIt,port, user, password,
 				getURL(user, password, urlLocation, port, _database_name, connectTimeInMillis, socketTimeOutMillis, useCompression, characterEncoding, useSSL, trustServerCertificate, enabledSslProtocolSuites, enabledSslCipherSuites, serverSslCert, autoReconnect, null), characterEncoding);
 	}
 

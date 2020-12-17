@@ -82,7 +82,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 									   File sslRootCert,
 									   String sslHostNameVerifier,
 									   String sslPasswordCallBack,
-									   String sslPassword,
+									   WrappedPassword sslPassword,
 									   int databaseMetadataCacheFields,
 									   int databaseMetadataCacheFieldsMiB,
 									   int prepareThreshold,
@@ -114,7 +114,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 								 File sslRootCert,
 								 String sslHostNameVerifier,
 								 String sslPasswordCallBack,
-								 String sslPassword,
+								 WrappedPassword sslPassword,
 								 int databaseMetadataCacheFields,
 								 int databaseMetadataCacheFieldsMiB,
 								 int prepareThreshold,
@@ -132,7 +132,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 				(sslRootCert==null?"":"&sslRootCert="+sslRootCert.toURI().toString())+
 				"&sslHostNameVerifier="+sslHostNameVerifier+
 				"&sslPasswordCallBack="+sslPasswordCallBack+
-				(sslPassword==null?"":"&sslPassword="+sslPassword)+
+				((sslPassword==null || sslPassword.toString()==null)?"":"&sslPassword="+sslPassword)+
 				"&databaseMetadataCacheFields="+databaseMetadataCacheFields+
 				"&databaseMetadataCacheFieldsMiB="+databaseMetadataCacheFieldsMiB+
 				"&prepareThreshold="+prepareThreshold+

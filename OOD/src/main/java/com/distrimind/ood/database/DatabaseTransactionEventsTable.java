@@ -36,19 +36,18 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-
 import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.annotations.NotNull;
 import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.SerializationDatabaseException;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
-import com.distrimind.util.Bits;
 import com.distrimind.util.DecentralizedValue;
+
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 
@@ -123,7 +122,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 		protected String concernedDatabasePackage;
 
 		@Field(limit = concernedHostsSizeLimit, forceUsingBlobOrClob = true)
-		private byte[] concernedHosts;
+		private Set<DecentralizedValue> concernedHosts;
 		//private AbstractDecentralizedID newHostID;
 
 		Record() {
@@ -160,9 +159,9 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 			return (int) getID();
 		}
 
-		boolean isConcernedBy(Package p) {
+		/*boolean isConcernedBy(Package p) {
 			return p.getName().equals(concernedDatabasePackage);
-		}
+		}*/
 
 		boolean isConcernedByOneOf(Set<String> packages) {
 			if (packages == null)
@@ -170,15 +169,25 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 			return packages.contains(concernedDatabasePackage);
 		}
 
-		void setConcernedHosts(Collection<DecentralizedValue> peers) {
+		void addConcernedHost(DecentralizedValue peer)
+		{
+			if (concernedHosts==null) {
+				setForced(true);
+				concernedHosts = new HashSet<>();
+			}
+			concernedHosts.add(peer);
+
+		}
+
+		void setConcernedHosts(Set<DecentralizedValue> peers) {
 			if (peers == null || peers.isEmpty()) {
 				concernedHosts = null;
 				setForced(false);
 				return;
 			} else
 				setForced(true);
-
-			byte[][] bytes = new byte[peers.size()][];
+			concernedHosts=peers;
+			/*byte[][] bytes = new byte[peers.size()][];
 			int i = 0;
 			int size = 2 + peers.size() * 2;
 			for (DecentralizedValue id : peers) {
@@ -197,13 +206,14 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 					System.arraycopy(b, 0, concernedHosts, i, b.length);
 					i += b.length;
 				}
-			}
+			}*/
 		}
 
-		List<DecentralizedValue> getConcernedHosts() throws SerializationDatabaseException {
+		Set<DecentralizedValue> getConcernedHosts() {
 			if (concernedHosts == null)
-				return new ArrayList<>(0);
-			short nbPeers = Bits.getShort(concernedHosts, 0);
+				return new HashSet<>();
+			return concernedHosts;
+			/*short nbPeers = Bits.getShort(concernedHosts, 0);
 			ArrayList<DecentralizedValue> res = new ArrayList<>(nbPeers);
 			int off = 2;
 			for (int i = 0; i < nbPeers; i++) {
@@ -215,15 +225,14 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 				res.add(DecentralizedValue.decode(concernedHosts, off, size));
 				off += size;
 			}
-			return res;
+			return res;*/
 		}
 
 		boolean isConcernedBy(DecentralizedValue newHostID) throws SerializationDatabaseException {
 			//this.newHostID = newHostID;
 			if (concernedHosts == null)
 				return true;
-			List<DecentralizedValue> l = getConcernedHosts();
-			return !l.contains(newHostID);
+			return !concernedHosts.contains(newHostID);
 		}
 
 	}
@@ -342,9 +351,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 					@Override
 					public void nextRecord(Record _record) throws DatabaseException {
 						if (!_record.isConcernedBy(hook.getHostID())) {
-							List<DecentralizedValue> l = _record.getConcernedHosts();
-							l.add(hook.getHostID());
-							_record.setConcernedHosts(l);
+							_record.addConcernedHost(hook.getHostID());
 							update("concernedHosts", _record.concernedHosts);
 						}
 					}
@@ -410,7 +417,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 					tr.id = getTransactionIDTable().getAndIncrementTransactionID();
 					tr.timeUTC=transaction.get().getTimeUTC();
 					tr.concernedDatabasePackage = databasePackage;
-					tr.setConcernedHosts(Collections.singletonList(hook.getHostID()));
+					tr.addConcernedHost(hook.getHostID());
 					tr.setForced(force);
 					transaction.set(addRecord(tr));
 					currentEventPos.set(0);
@@ -428,13 +435,13 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 		tr.id = getTransactionIDTable().getAndIncrementTransactionID();
 		tr.timeUTC=System.currentTimeMillis();
 		tr.concernedDatabasePackage = databasePackage;
-		tr.setConcernedHosts(Collections.singletonList(hook.getHostID()));
+		tr.addConcernedHost(hook.getHostID());
 		tr.setForced(force);
 
 		AtomicReference<DatabaseTransactionEventsTable.Record> transaction = new AtomicReference<>(addRecord(tr));
 		AtomicInteger currentEventPos = new AtomicInteger(0);
 		Set<Class<? extends Table<?>>> tables = getDatabaseWrapper().getDatabaseConfiguration(databasePackage)
-				.getTableClasses();
+				.getDatabaseSchema().getTableClasses();
 		Set<Class<? extends Table<?>>> tablesDone = new HashSet<>();
 
 		for (Class<? extends Table<?>> c : tables) {

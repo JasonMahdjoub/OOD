@@ -319,33 +319,6 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 		return collision.get();
 	}
 	
-	/*protected void removeIndirectTransactionAfterCollisionDetection(final AbstractDecentralizedID comingFrom,
-			final String concernedTable, final byte[] keys) throws DatabaseException {
-		final AtomicReference<AbstractDecentralizedID> collision = new AtomicReference<>(null);
-		getDatabaseDistantEventsTable().removeRecordsWithCascade(new Filter<DatabaseDistantEventsTable.Record>() {
-
-			@Override
-			public boolean nextRecord(com.distrimind.ood.database.DatabaseDistantEventsTable.Record _record)
-					throws DatabaseException {
-				if (_record.getTransaction().isConcernedBy(comingFrom)) {
-					collision.set(_record.getTransaction().getHook().getHostID());
-					stopTableParsing();
-				}
-				return false;
-			}
-		}, "concernedTable==%concernedTable AND concernedSerializedPrimaryKey==%concernedSerializedPrimaryKey",
-				"concernedTable", concernedTable, "concernedSerializedPrimaryKey", keys);
-	}
-
-	
-
-	void removeObsoleteEvents(final Set<DatabaseTransactionEventsTable.Record> directTransactionToRemove,
-			final Set<DatabaseDistantTransactionEvent.Record> indirectTransactionToRemove) throws DatabaseException {
-		if (!directTransactionToRemove.isEmpty())
-			getDatabaseTransactionEventsTable().removeRecordsWithCascade(directTransactionToRemove);
-		if (!indirectTransactionToRemove.isEmpty())
-			getDatabaseDistantTransactionEvent().removeRecordsWithCascade(indirectTransactionToRemove);
-	}*/
 
 	void alterDatabase(final DecentralizedValue comingFrom, final RandomInputStream inputStream)
 			throws DatabaseException {
@@ -382,10 +355,10 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 						} else {
 							distantTransaction = new DatabaseDistantTransactionEvent.Record(transaction.getID(),
 									getIDTable().getLastTransactionID(), transaction.getTimeUTC(), _fromHook.get(), false, null, false);
-							final List<DecentralizedValue> concernedHosts = ((DatabaseTransactionEventsTable.Record) transaction)
+							final Set<DecentralizedValue> concernedHosts = ((DatabaseTransactionEventsTable.Record) transaction)
 									.getConcernedHosts();
 							if (transaction.isForced() || concernedHosts.size() > 0) {
-								final List<DecentralizedValue> l = new ArrayList<>();
+								final Set<DecentralizedValue> l = new HashSet<>();
 								getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
 
 									@Override
@@ -942,11 +915,6 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 			if (referenceFile)
 				fileListTables=BackupRestoreManager.extractClassesList(ois);
 			BackupRestoreManager.positionForDataRead(ois, referenceFile);
-			/*if (ois.readBoolean()) {
-				ois.seek(ois.readInt());
-			}
-			else
-				ois.skipNBytes(4);*/
 			boolean findOneTransactionWithID=false;
 			while(ois.available()>0) {
 				int nextTransactionPosition = ois.readInt();
@@ -971,7 +939,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 				if (ois.readInt()!=-1)
 					throw new DatabaseException("Invalid data");
 				final DatabaseTransactionEventsTable.Record dte=new DatabaseTransactionEventsTable.Record(transactionID, transactionUTC, databasePackage);
-				List<Class<? extends Table<?>>> classes=getDatabaseWrapper().getDatabaseConfiguration(databasePackage).getSortedTableClasses();
+				List<Class<? extends Table<?>>> classes=getDatabaseWrapper().getDatabaseConfiguration(databasePackage).getDatabaseSchema().getSortedTableClasses();
 				if (fileListTables!=null)
 				{
 					if (!fileListTables.equals(classes))
@@ -1002,7 +970,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 								throw new IOException();
 							Table<?> table = tables.get(tableIndex);
 
-							int s = getDataInputStream().readUnsignedShortInt();
+							int s = getDataInputStream().readUnsignedShort24Bits();
 							if (s == 0)
 								throw new IOException();
 							byte[] spks=new byte[s];
@@ -1016,7 +984,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 							switch (eventType) {
 								case ADD: case UPDATE:{
 									if (getDataInputStream().readBoolean()) {
-										s = getDataInputStream().readUnsignedShortInt();
+										s = getDataInputStream().readUnsignedShort24Bits();
 										byte[] snfk=new byte[s];
 										getDataInputStream().readFully(snfk);
 										event.setConcernedSerializedNewForeignKey(snfk);

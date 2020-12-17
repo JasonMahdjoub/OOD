@@ -45,8 +45,7 @@ public class HookUnsynchronizeRequest extends AbstractHookRequest {
 	@Override
 	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
 		try {
-			//noinspection unchecked
-			packagesToUnsynchronize=in.readCollection(false,MAX_PACKAGE_ENCODING_SIZE_IN_BYTES, false);
+			packagesToUnsynchronize=in.readCollection(false,MAX_PACKAGE_ENCODING_SIZE_IN_BYTES, false, String.class);
 			if (packagesToUnsynchronize.size()==0)
 				throw new MessageExternalizationException(Integrity.FAIL);
 		}

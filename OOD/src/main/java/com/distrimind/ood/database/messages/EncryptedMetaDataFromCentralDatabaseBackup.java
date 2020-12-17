@@ -101,4 +101,9 @@ public class EncryptedMetaDataFromCentralDatabaseBackup implements DatabaseEvent
 		hostDestination=in.readObject(false, DecentralizedValue.class);
 		metaData=in.readObject(false, EncryptedDatabaseBackupMetaDataPerFile.class);
 	}
+
+	@Override
+	public boolean cannotBeMerged() {
+		return true;
+	}
 }

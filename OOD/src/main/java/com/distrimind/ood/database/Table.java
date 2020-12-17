@@ -120,7 +120,7 @@ import java.util.regex.Pattern;
  * Before getting any table instance, the user must associate the package
  * containing the class tables of the same database to a Sql database throw the
  * function
- * {@link DatabaseWrapper#loadDatabase(DatabaseConfiguration, boolean)}.
+ * {@link DatabaseConfigurationsBuilder#addConfiguration(DatabaseConfiguration, boolean)}.
  * 
  * This class is thread safe
  * 
@@ -635,7 +635,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			fa.initialize();
 		}
 		this.tables = tables;
-		this.supportSynchronizationWithOtherPeers=tables.getDatabaseSchema().isDecentralized();
+		this.supportSynchronizationWithOtherPeers=tables.isDecentralized();
 	}
 
     public DatabaseCollisionsNotifier<T, Table<T>> getDatabaseCollisionsNotifier() {
@@ -1085,7 +1085,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			sql_connection.unlockWrite();
 		}
 		boolean this_class_found = false;
-		for (Class<? extends Table<?>> c : tables.getTableClasses()) {
+		for (Class<? extends Table<?>> c : tables.getDatabaseSchema().getTableClasses()) {
 			if (c.equals(this.getClass()))
 				this_class_found = true;
 
