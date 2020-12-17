@@ -830,6 +830,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				lockWrite();
 				DatabaseEvent de;
 				while ((de = nextEvent()) == null) {
+					//noinspection ResultOfMethodCallIgnored
 					newEventCondition.await(minFilePartDurationBeforeBecomingFinalFilePart, TimeUnit.MILLISECONDS);
 				}
 				return de;
@@ -1405,6 +1406,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		public void resetSynchronizerAndRemoveAllHosts() throws DatabaseException {
 			resetSynchronizerAndGetAllHosts();
 		}
+		@SuppressWarnings("UnusedReturnValue")
 		private Collection<DatabaseHooksTable.Record> resetSynchronizerAndGetAllHosts() throws DatabaseException {
 			if (getLocalHostID()==null)
 				return null;
@@ -1413,7 +1415,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			getDatabaseTransactionEventsTable().resetAllTransactions();
 			return r;
 		}
-		private void restoreHosts(Collection<DatabaseHooksTable.Record> hosts, HashMap<String, Boolean> replaceDistantConflictualRecords) throws DatabaseException {
+		/*private void restoreHosts(Collection<DatabaseHooksTable.Record> hosts, HashMap<String, Boolean> replaceDistantConflictualRecords) throws DatabaseException {
 			if (hosts==null)
 				return ;
 			DatabaseHooksTable.Record local=null;
@@ -1448,7 +1450,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 			isReliedToDistantHook();
 
-		}
+		}*/
+
 		void disconnectAll() throws DatabaseException {
 			DecentralizedValue hostID=getLocalHostID();
 			if (isInitialized(hostID))
@@ -4848,8 +4851,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	final void loadDatabaseImpl(final DatabaseConfiguration configuration,
 								final boolean internalPackage,
 								int databaseVersion,
-								final Reference<Boolean> restoreSynchronizerHosts,
-								final Reference<Collection<DatabaseHooksTable.Record>> hosts,
+								/*final Reference<Boolean> restoreSynchronizerHosts,
+								final Reference<Collection<DatabaseHooksTable.Record>> hosts,*/
 								final Reference<Boolean> allNotFounds,
 								final DatabaseLifeCycles lifeCycles) throws DatabaseException {
 
@@ -4877,8 +4880,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			try {
 
 				this.actualDatabaseLoading=null;
-				if (hosts.get()==null)
-					hosts.set(getSynchronizer().resetSynchronizerAndGetAllHosts());
+				/*if (hosts.get()==null)
+					hosts.set(getSynchronizer().resetSynchronizerAndGetAllHosts());*/
 				this.actualDatabaseLoading=actualDatabaseLoading;
 				int currentVersion=getCurrentDatabaseVersion(configuration.getDatabaseSchema().getPackage());
 				if (currentVersion==databaseVersion) {
@@ -4905,7 +4908,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					}
 					initBackupRestore=true;
 				}
-				restoreSynchronizerHosts.set(true);
+				//restoreSynchronizerHosts.set(true);
 
 
 
@@ -4939,16 +4942,16 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	}
 
-	final void postLoadDatabase(Collection<DatabaseConfiguration> configurations,
+	final void postLoadDatabase(Collection<DatabaseConfiguration> configurations/*,
 								Reference<Boolean> restoreSynchronizerHosts,
 								Reference<Collection<DatabaseHooksTable.Record>> hosts,
-								DatabaseLifeCycles lifeCycles) throws DatabaseException {
-		if (restoreSynchronizerHosts.get()) {
+								DatabaseLifeCycles lifeCycles*/) throws DatabaseException {
+		/*if (restoreSynchronizerHosts.get()) {
 			HashMap<String, Boolean> databases=new HashMap<>();
 			configurations.forEach(v -> databases.put(v.getDatabaseSchema().getPackage().getName(), lifeCycles != null && lifeCycles.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized(v)));
 
 			getSynchronizer().restoreHosts(hosts.get(), databases);
-		}
+		}*/
 		if (configurations.stream().anyMatch(DatabaseConfiguration::isSynchronizedWithCentralBackupDatabase) && getSynchronizer().isInitializedWithCentralBackup())
 			getSynchronizer().initConnexionWithDistantBackupCenter();
 	}
@@ -4968,19 +4971,19 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		else
 			databaseVersion=0;
 		Reference<Boolean> allNotFound=new Reference<>(false);
-		Reference<Boolean> restoreSynchronizerHosts=new Reference<>(false);
-		Reference<Collection<DatabaseHooksTable.Record>> hosts=new Reference<>(null);
+		//Reference<Boolean> restoreSynchronizerHosts=new Reference<>(false);
+		//Reference<Collection<DatabaseHooksTable.Record>> hosts=new Reference<>(null);
 		try  {
 			lockWrite();
 			try {
 				loadDatabaseImpl(configuration,
 						internalPackage,
 						databaseVersion,
-						restoreSynchronizerHosts,
-						hosts,
+						/*restoreSynchronizerHosts,
+						hosts,*/
 						allNotFound,
 						lifeCycles);
-				postLoadDatabase(Collections.singleton(configuration), restoreSynchronizerHosts, hosts, lifeCycles);
+				postLoadDatabase(Collections.singleton(configuration)/*, restoreSynchronizerHosts, hosts, lifeCycles*/);
 			}finally {
 				postLoadDatabaseFinal(allNotFound, internalPackage);
 			}
@@ -5031,8 +5034,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			getTableInstance(DatabaseTable.class, -1);
 
 		Reference<Boolean> allNotFound=new Reference<>(false);
-		Reference<Boolean> restoreSynchronizerHosts=new Reference<>(false);
-		Reference<Collection<DatabaseHooksTable.Record>> hosts=new Reference<>(null);
+		//Reference<Boolean> restoreSynchronizerHosts=new Reference<>(false);
+		//Reference<Collection<DatabaseHooksTable.Record>> hosts=new Reference<>(null);
 		try  {
 			lockWrite();
 			try {
@@ -5041,12 +5044,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					loadDatabaseImpl(configuration,
 							false,
 							databaseVersion,
-							restoreSynchronizerHosts,
-							hosts,
+							/*restoreSynchronizerHosts,
+							hosts,*/
 							allNotFound, lifeCycles);
 
 				}
-				postLoadDatabase(configurations, restoreSynchronizerHosts, hosts, lifeCycles);
+				postLoadDatabase(configurations/*, restoreSynchronizerHosts, hosts, lifeCycles*/);
 
 			}
 			finally {

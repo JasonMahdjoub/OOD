@@ -81,7 +81,7 @@ public interface AuthenticatedP2PMessage extends P2PDatabaseEventToSend, Authent
 			messageSent();
 			if (concernedSenderHook!=null && !(this instanceof HookRemoveRequest) && concernedSenderHook.getAuthenticatedMessagesQueueToSend().isEmpty())
 			{
-				getDatabaseWrapper().getSynchronizer().checkConnexionsToInit(concernedSenderHook);
+				getDatabaseWrapper().getSynchronizer().connectPeerIfAvailable(concernedSenderHook);
 			}
 		} catch (DatabaseException e) {
 			throw new IOException(e);

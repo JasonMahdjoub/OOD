@@ -531,5 +531,7 @@ public class DatabaseConfigurationsBuilder {
 		return this;
 	}
 
-
+	public DatabaseLifeCycles getLifeCycles() {
+		return lifeCycles;
+	}
 }
