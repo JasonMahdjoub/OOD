@@ -1400,7 +1400,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				return r.getHostID();
 		}
 
-		/*public void resetSynchronizerAndRemoveAllHosts() throws DatabaseException {
+		void resetSynchronizerAndRemoveAllHosts() throws DatabaseException {
 			resetSynchronizerAndGetAllHosts();
 		}
 		@SuppressWarnings("UnusedReturnValue")
@@ -1411,7 +1411,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			Collection<DatabaseHooksTable.Record> r= getDatabaseHooksTable().resetAllHosts();
 			getDatabaseTransactionEventsTable().resetAllTransactions();
 			return r;
-		}*/
+		}
 		/*private void restoreHosts(Collection<DatabaseHooksTable.Record> hosts, HashMap<String, Boolean> replaceDistantConflictualRecords) throws DatabaseException {
 			if (hosts==null)
 				return ;

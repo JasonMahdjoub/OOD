@@ -608,4 +608,16 @@ public class DatabaseConfigurationsBuilder {
 	public DatabaseLifeCycles getLifeCycles() {
 		return lifeCycles;
 	}
+
+	public DatabaseConfigurationsBuilder resetSynchronizerAndRemoveAllHosts()
+	{
+		pushQuery((t) -> {
+			wrapper.getSynchronizer().resetSynchronizerAndRemoveAllHosts();
+			t.checkDatabaseLoading();
+			t.checkNewConnexions();
+			t.checkDatabaseToSynchronize();
+		});
+		return this;
+	}
+
 }
