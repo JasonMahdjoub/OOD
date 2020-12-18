@@ -229,6 +229,7 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 	boolean synchronizeAdditionalDistantPeersWithGivenPackage(String packageString, Collection<DecentralizedValue> distantPeers) throws DatabaseException {
 		return synchronizeAdditionalDistantPeersWithGivenPackage(packageString, distantPeers, false);
 	}
+
 	private boolean synchronizeAdditionalDistantPeersWithGivenPackage(String packageString, Collection<DecentralizedValue> distantPeers, boolean replaceExistant) throws DatabaseException {
 		boolean volatileConf=true;
 		DatabaseConfiguration foundDC=getVolatileDatabaseConfiguration(packageString);
@@ -270,7 +271,46 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 	boolean setDistantPeersWithGivenPackage(String packageString, Collection<DecentralizedValue> distantPeers) throws DatabaseException {
 		return synchronizeAdditionalDistantPeersWithGivenPackage(packageString, distantPeers, true);
 	}
+	boolean desynchronizeAdditionalDistantPeersWithGivenPackage(String packageString, Collection<DecentralizedValue> distantPeers) throws DatabaseException {
+		DatabaseConfiguration foundDC=getVolatileDatabaseConfiguration(packageString);
+		if (foundDC==null)
+		{
+			foundDC=getPersistentDatabaseConfiguration(packageString);
+			if (foundDC==null)
+				throw new DatabaseException("Database configuration not found for package "+packageString);
+		}
+		if (distantPeers==null)
+			throw new NullPointerException();
+		checkLocalPeerNull(distantPeers);
+		boolean changed;
+		try {
+			changed = foundDC.removeDistantPeersThatCanBeSynchronizedWithThisDatabase(distantPeers);
+		} catch (IllegalAccessException e) {
+			throw DatabaseException.getDatabaseException(e);
+		}
+		return changed;
+	}
 
+	boolean removeDistantPeers(Collection<DecentralizedValue> distantPeers) throws DatabaseException {
+
+		boolean changed=false;
+		try {
+			for (DatabaseConfiguration dc : volatileConfigurations)
+			{
+				changed|=dc.removeDistantPeersThatCanBeSynchronizedWithThisDatabase(distantPeers);
+			}
+			for (DatabaseConfiguration dc : configurations)
+			{
+				changed|=dc.removeDistantPeersThatCanBeSynchronizedWithThisDatabase(distantPeers);
+			}
+			changed|=this.distantPeers.removeAll(distantPeers);
+			changed|=volatileDistantPeers.removeAll(distantPeers);
+			changed|=allDistantPeers.removeAll(distantPeers);
+			return changed;
+		} catch (IllegalAccessException e) {
+			throw DatabaseException.getDatabaseException(e);
+		}
+	}
 
 
 	public DatabaseConfiguration getDatabaseConfiguration(Package packageString)

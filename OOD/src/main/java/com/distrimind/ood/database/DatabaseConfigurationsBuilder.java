@@ -65,7 +65,7 @@ public class DatabaseConfigurationsBuilder {
 		private boolean checkNewConnexions=false;
 		private boolean checkDatabaseToDesynchronize =false;
 		private boolean checkDatabaseLoading=false;
-		private List<DecentralizedValue> removedPeersID=null;
+		private Set<DecentralizedValue> removedPeersID=null;
 
 		void updateConfigurationPersistence() {
 			updateConfigurationPersistence = true;
@@ -78,15 +78,20 @@ public class DatabaseConfigurationsBuilder {
 		void checkConnexionsToDesynchronize() {
 			checkDatabaseToDesynchronize =true;
 		}
+		void addIDsToRemove(Collection<DecentralizedValue> ids)
+		{
+			if (ids==null)
+				throw new NullPointerException();
+			if (removedPeersID==null)
+				removedPeersID=new HashSet<>();
+			removedPeersID.addAll(ids);
+		}
 		void addIDToRemove(DecentralizedValue dv)
 		{
 			if (dv==null)
 				throw new NullPointerException();
 			if (removedPeersID==null)
-				removedPeersID=new ArrayList<>();
-			else if (removedPeersID.contains(dv))
-				return;
-
+				removedPeersID=new HashSet<>();
 			removedPeersID.add(dv);
 		}
   		void checkDatabaseLoading()
@@ -463,7 +468,7 @@ public class DatabaseConfigurationsBuilder {
 
 	}
 
-	public DatabaseConfigurationsBuilder synchronizeDistantPeerWithGivenAdditionalPackages(DecentralizedValue distantPeer, Package ... packages)
+	public DatabaseConfigurationsBuilder synchronizeDistantPeersWithGivenAdditionalPackages(DecentralizedValue distantPeer, Package ... packages)
 	{
 		String[] packagesString=new String[packages.length];
 		int i=0;
@@ -473,13 +478,13 @@ public class DatabaseConfigurationsBuilder {
 				throw new NullPointerException();
 			packagesString[i++]=p.getName();
 		}
-		return synchronizeDistantPeerWithGivenAdditionalPackages(distantPeer, packagesString);
+		return synchronizeDistantPeersWithGivenAdditionalPackages(distantPeer, packagesString);
 	}
-	public DatabaseConfigurationsBuilder synchronizeDistantPeerWithGivenAdditionalPackages(DecentralizedValue distantPeer, String ... packagesString)
+	public DatabaseConfigurationsBuilder synchronizeDistantPeersWithGivenAdditionalPackages(DecentralizedValue distantPeer, String ... packagesString)
 	{
-		return synchronizeDistantPeerWithGivenAdditionalPackages(Collections.singletonList(distantPeer), packagesString);
+		return synchronizeDistantPeersWithGivenAdditionalPackages(Collections.singletonList(distantPeer), packagesString);
 	}
-	public DatabaseConfigurationsBuilder synchronizeDistantPeerWithGivenAdditionalPackages(Collection<DecentralizedValue> distantPeers, String ... packagesString)
+	public DatabaseConfigurationsBuilder synchronizeDistantPeersWithGivenAdditionalPackages(Collection<DecentralizedValue> distantPeers, String ... packagesString)
 	{
 		if (packagesString==null)
 			throw new NullPointerException();
@@ -505,7 +510,47 @@ public class DatabaseConfigurationsBuilder {
 		});
 		return this;
 	}
+	public DatabaseConfigurationsBuilder desynchronizeDistantPeersWithGivenAdditionalPackages(Collection<DecentralizedValue> distantPeers, String ... packagesString)
+	{
+		if (packagesString==null)
+			throw new NullPointerException();
+		if (packagesString.length==0)
+			throw new IllegalArgumentException();
+		if (Arrays.stream(packagesString).anyMatch(Objects::isNull))
+			throw new NullPointerException();
+		if (protectedEncryptionProfileProviderForAuthenticatedP2PMessages ==null)
+			throw new IllegalArgumentException("Cannot set local peer without protected encryption profile provider for authenticated P2P messages");
+		pushQuery((t) -> {
+			t.checkNotRemovedIDs(distantPeers);
+			boolean changed=false;
+			for (String p : packagesString)
+			{
+				changed|=configurations.desynchronizeAdditionalDistantPeersWithGivenPackage(p, distantPeers);
+			}
+			if (changed) {
+				t.checkConnexionsToDesynchronize();
+				t.updateConfigurationPersistence();
 
+			}
+		});
+		return this;
+	}
+
+	public DatabaseConfigurationsBuilder removeDistantPeers(Collection<DecentralizedValue> distantPeers)
+	{
+		if (protectedEncryptionProfileProviderForAuthenticatedP2PMessages ==null)
+			throw new IllegalArgumentException("Cannot set local peer without protected encryption profile provider for authenticated P2P messages");
+		pushQuery((t) -> {
+			if (configurations.removeDistantPeers(distantPeers))
+			{
+				t.addIDsToRemove(distantPeers);
+				t.checkDisconnexions();
+				t.checkConnexionsToDesynchronize();
+				t.updateConfigurationPersistence();
+			}
+		});
+		return this;
+	}
 
 
 	public DatabaseConfigurationsBuilder setDistantPeersWithGivenAdditionalPackages(String packageString, Collection<DecentralizedValue> distantPeers)
