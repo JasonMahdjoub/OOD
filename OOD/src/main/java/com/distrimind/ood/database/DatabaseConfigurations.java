@@ -383,4 +383,13 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 	{
 		return configurations.stream().anyMatch(DatabaseConfiguration::isSynchronizedWithCentralBackupDatabase);
 	}
+
+	/*boolean setSynchronizationTypeAndBackupConfiguration(String databasePackage, DatabaseConfiguration.SynchronizationType synchronizationType, BackupConfiguration backupConfiguration)
+	{
+		Optional<DatabaseConfiguration> o=allConfigurations.stream()
+				.filter(c -> c.getDatabaseSchema().getPackage().getName().equals(databasePackage))
+				.findAny();
+		return o.map(databaseConfiguration -> databaseConfiguration.setSynchronizationTypeAndBackupConfiguration(synchronizationType, backupConfiguration)).orElse(false);
+
+	}*/
 }

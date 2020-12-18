@@ -112,9 +112,20 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 		return backupConfiguration;
 	}
 
-	void setBackupConfiguration(BackupConfiguration backupConfiguration) {
-		this.backupConfiguration = backupConfiguration;
-	}
+	/*boolean setSynchronizationTypeAndBackupConfiguration(SynchronizationType synchronizationType, BackupConfiguration backupConfiguration) {
+		if (synchronizationType==SynchronizationType.DECENTRALIZED_SYNCHRONIZATION_AND_SYNCHRONIZATION_WITH_CENTRAL_BACKUP_DATABASE && backupConfiguration==null)
+			throw new NullPointerException();
+		if (synchronizationType==this.synchronizationType && backupConfiguration!=this.backupConfiguration) {
+			this.backupConfiguration = backupConfiguration;
+			this.synchronizationType = synchronizationType;
+			if (synchronizationType == SynchronizationType.NO_SYNCHRONIZATION)
+				distantPeersThatCanBeSynchronizedWithThisDatabase = null;
+			return true;
+		}
+		else
+			return false;
+	}*/
+
 
 	public boolean isCreateDatabaseIfNecessaryAndCheckItDuringLoading() {
 		return createDatabaseIfNecessaryAndCheckItDuringLoading;
