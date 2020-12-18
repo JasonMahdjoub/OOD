@@ -2379,6 +2379,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				received(a);
 		}
 		private void received(MessageComingFromCentralDatabaseBackup data) throws DatabaseException, IOException {
+			if (!isInitialized())
+				throw new DatabaseException("Not initialized !");
 			if (data instanceof InitialMessageComingFromCentralBackup)
 			{
 				received((InitialMessageComingFromCentralBackup)data);
