@@ -57,6 +57,8 @@ import java.util.*;
  */
 @SuppressWarnings("FieldMayBeFinal")
 public class DatabaseConfiguration extends MultiFormatProperties {
+
+
 	public enum SynchronizationType
 	{
 		NO_SYNCHRONIZATION,
@@ -86,6 +88,9 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 	public DatabaseConfiguration(DatabaseSchema databaseSchema, BackupConfiguration backupConfiguration) {
 		this(databaseSchema, SynchronizationType.NO_SYNCHRONIZATION, null, backupConfiguration);
 	}
+	public DatabaseConfiguration(DatabaseSchema databaseSchema, SynchronizationType synchronizationType, Collection<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase) {
+		this(databaseSchema, synchronizationType, distantPeersThatCanBeSynchronizedWithThisDatabase, null);
+	}
 	public DatabaseConfiguration(DatabaseSchema databaseSchema, SynchronizationType synchronizationType, Collection<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase, BackupConfiguration backupConfiguration) {
 		this(databaseSchema, SynchronizationType.NO_SYNCHRONIZATION, distantPeersThatCanBeSynchronizedWithThisDatabase, backupConfiguration, true);
 	}
@@ -110,6 +115,9 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 	}
 	public BackupConfiguration getBackupConfiguration() {
 		return backupConfiguration;
+	}
+	void setBackupConfiguration(BackupConfiguration backupConfiguration) {
+		this.backupConfiguration=backupConfiguration;
 	}
 
 	/*boolean setSynchronizationTypeAndBackupConfiguration(SynchronizationType synchronizationType, BackupConfiguration backupConfiguration) {

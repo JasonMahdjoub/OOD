@@ -5,7 +5,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program
 whose purpose is to manage a local database with the object paradigm
-and the java langage
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use,
@@ -34,11 +34,16 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-package com.distrimind.ood.database;
+package com.distrimind.ood.database.tests;
 
+import com.distrimind.ood.database.BackupConfiguration;
+import com.distrimind.ood.database.DatabaseWrapper;
+import com.distrimind.ood.database.EmbeddedH2DatabaseWrapper;
+import com.distrimind.ood.database.InFileEmbeddedH2DatabaseFactory;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 
 import java.io.File;
+import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 
@@ -48,33 +53,40 @@ import java.security.NoSuchProviderException;
  * @since OOD 2.5.0
  */
 public class H2TestCentralBackupWithDecentralizedDatabase extends TestCentralBackupWithDecentralizedDatabase {
+	final String centralDatabaseFileName = "centralDatabase";
 	final String database_file_name1 = "decentralizedDatabaseWithBackup1";
 	final String database_file_name2 = "decentralizedDatabaseWithBackup2";
 	final String database_file_name3 = "decentralizedDatabaseWithBackup3";
 	final String database_file_name4 = "decentralizedDatabaseWithBackup4";
 	final BackupConfiguration backupConfiguration=new BackupConfiguration(10000, 20000, 1000000, 1000, null);
 
-	public H2TestCentralBackupWithDecentralizedDatabase() throws NoSuchProviderException, NoSuchAlgorithmException {
+	public H2TestCentralBackupWithDecentralizedDatabase() throws NoSuchProviderException, NoSuchAlgorithmException, IOException, DatabaseException {
+		super();
+	}
+
+	@Override
+	public DatabaseWrapper getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver() throws IllegalArgumentException, DatabaseException {
+		return new InFileEmbeddedH2DatabaseFactory(new File(centralDatabaseFileName)).getDatabaseWrapperSingleton();
 	}
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstance1() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name1)).newWrapperInstance();
+		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name1)).getDatabaseWrapperSingleton();
 	}
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstance2() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name2)).newWrapperInstance();
+		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name2)).getDatabaseWrapperSingleton();
 	}
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstance3() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name3)).newWrapperInstance();
+		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name3)).getDatabaseWrapperSingleton();
 	}
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstance4() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name4)).newWrapperInstance();
+		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name4)).getDatabaseWrapperSingleton();
 	}
 
 	@Override
@@ -96,6 +108,11 @@ public class H2TestCentralBackupWithDecentralizedDatabase extends TestCentralBac
 	@Override
 	public void removeDatabaseFiles4() {
 		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(new File(database_file_name4));
+	}
+
+	@Override
+	public void removeCentralDatabaseFiles() {
+		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(new File(centralDatabaseFileName));
 	}
 
 	@Override

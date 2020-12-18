@@ -33,13 +33,17 @@ same conditions as regards security.
 The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
-package com.distrimind.ood.database;
+package com.distrimind.ood.database.tests;
 
+import com.distrimind.ood.database.CommonDecentralizedTests;
+import com.distrimind.ood.database.DatabaseRecord;
+import com.distrimind.ood.database.TableEvent;
 import com.distrimind.ood.database.decentralizeddatabase.TableAlone;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.ArrayList;
@@ -55,7 +59,8 @@ import java.util.List;
 public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonDecentralizedTests {
 
 
-	public TestCentralBackupWithDecentralizedDatabase() throws NoSuchProviderException, NoSuchAlgorithmException {
+	public TestCentralBackupWithDecentralizedDatabase() throws NoSuchProviderException, NoSuchAlgorithmException, IOException, DatabaseException {
+		super();
 	}
 
 	@Override

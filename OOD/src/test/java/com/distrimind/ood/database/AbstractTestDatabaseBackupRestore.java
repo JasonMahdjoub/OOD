@@ -59,7 +59,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @version 1.0
  * @since OOD 2.0.0
  */
-public class TestDatabaseBackupRestore {
+public abstract class AbstractTestDatabaseBackupRestore {
 
 
 	private DatabaseWrapper wrapperForReferenceDatabase;
@@ -79,7 +79,7 @@ public class TestDatabaseBackupRestore {
 	private final File fileTest;
 	private DatabaseWrapper wrapper;
 
-	public TestDatabaseBackupRestore() throws DatabaseException, NoSuchProviderException, NoSuchAlgorithmException {
+	public AbstractTestDatabaseBackupRestore() throws DatabaseException, NoSuchProviderException, NoSuchAlgorithmException {
 		typeSecretKey = SymmetricEncryptionType.AES_CBC_PKCS5Padding;
 		secretKey = typeSecretKey.getKeyGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKey();
 		subField = TestDatabase.getSubField();
@@ -113,7 +113,7 @@ public class TestDatabaseBackupRestore {
 		Assert.assertEquals(table1.getRecordsNumber(), 0);
 		for (Table1.Record r : lTable1)
 		{
-			Map<String, Object> m=Table.getFields(table1.getFieldAccessors(), r);
+			Map<String, Object> m= Table.getFields(table1.getFieldAccessors(), r);
 			Assert.assertTrue(table1.equalsAllFields(table1.addRecord(m), r));
 		}
 		Table3 table3=destinationWrapper.getTableInstance(Table3.class);
@@ -413,13 +413,13 @@ public class TestDatabaseBackupRestore {
 
 	private DatabaseWrapper loadWrapper(File databaseDirectory, boolean useInternalBackup, boolean checkDatabaseDirectoryNull) throws DatabaseException {
 		assert !checkDatabaseDirectoryNull || !databaseDirectory.exists();
-		DatabaseWrapper wrapper=new InFileEmbeddedH2DatabaseFactory(databaseDirectory).newWrapperInstance();
+		DatabaseWrapper wrapper=new InFileEmbeddedH2DatabaseFactory(databaseDirectory).getDatabaseWrapperSingleton();
 		BackupConfiguration backupConf=null;
 		if (useInternalBackup)
 			backupConf=getBackupConfiguration();
-		DatabaseConfiguration conf=new DatabaseConfiguration( new DatabaseSchema(Table1.class.getPackage(), DatabaseSchema.SynchronizationType.NO_SYNCHRONIZATION, backupConf));
-
-		wrapper.loadDatabase(conf, true);
+		DatabaseConfiguration conf=new DatabaseConfiguration( new DatabaseSchema(Table1.class.getPackage()), backupConf);
+		wrapper.getDatabaseConfigurationsBuilder().addConfiguration(conf, false, true)
+				.commit();
 		return wrapper;
 	}
 
@@ -872,11 +872,12 @@ public class TestDatabaseBackupRestore {
 
 	@Test(dependsOnMethods = "testExternalBackupAndRestore")
 	public void testBackupCleaning() throws DatabaseException, InterruptedException {
-		wrapper=new InFileEmbeddedH2DatabaseFactory(databaseDirectory).newWrapperInstance();
+		wrapper=new InFileEmbeddedH2DatabaseFactory(databaseDirectory).getDatabaseWrapperSingleton();
 		BackupConfiguration backupConf=new BackupConfiguration(200L, 1000L, 1000000, 100L, null);
-		DatabaseConfiguration conf=new DatabaseConfiguration( new DatabaseSchema(Table1.class.getPackage(), DatabaseSchema.SynchronizationType.NO_SYNCHRONIZATION, backupConf)  );
-
-		wrapper.loadDatabase(conf, true);
+		DatabaseConfiguration conf=new DatabaseConfiguration( new DatabaseSchema(Table1.class.getPackage()), backupConf) ;
+		wrapper.getDatabaseConfigurationsBuilder()
+				.addConfiguration(conf, false, true)
+				.commit();
 		BackupRestoreManager manager=wrapper.getBackupRestoreManager(Table1.class.getPackage());
 		long start=System.currentTimeMillis();
 		addAndRemoveData(wrapper, 100);

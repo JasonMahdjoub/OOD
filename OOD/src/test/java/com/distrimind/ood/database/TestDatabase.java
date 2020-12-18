@@ -48,7 +48,6 @@ import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.schooldatabase.Lecture;
 import com.distrimind.ood.interpreter.Interpreter;
 import com.distrimind.ood.interpreter.RuleInstance;
-import com.distrimind.ood.interpreter.RuleInstance.TableJunction;
 import com.distrimind.ood.interpreter.SymbolType;
 import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.DecentralizedIDGenerator;
@@ -58,6 +57,7 @@ import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.SecureRandomType;
 import com.distrimind.util.crypto.SymmetricEncryptionType;
 import com.distrimind.util.crypto.SymmetricSecretKey;
+import com.distrimind.util.data_buffers.WrappedData;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.DataProvider;
@@ -85,7 +85,7 @@ import static org.testng.Assert.*;
  * @version 2.0
  * @since OOD 1.0
  */
-@SuppressWarnings("deprecation")
+@SuppressWarnings({"deprecation", "ConstantConditions"})
 
 public abstract class TestDatabase {
 	public abstract int getMultiTestsNumber();
@@ -94,25 +94,25 @@ public abstract class TestDatabase {
 
 	public abstract boolean isMultiConcurrentDatabase();
 
-	static Table1 table1;
-	static Table2 table2;
-	static Table3 table3;
-	static Table4 table4;
-	static Table5 table5;
-	static Table6 table6;
-	static Table7 table7;
-	static Table1 table1b;
-	static Table2 table2b;
-	static Table3 table3b;
-	static Table4 table4b;
-	static Table5 table5b;
-	static Table6 table6b;
+	protected Table1 table1;
+	protected Table2 table2;
+	protected Table3 table3;
+	protected Table4 table4;
+	protected Table5 table5;
+	protected Table6 table6;
+	protected Table7 table7;
+	protected Table1 table1b;
+	protected Table2 table2b;
+	protected Table3 table3b;
+	protected Table4 table4b;
+	protected Table5 table5b;
+	protected Table6 table6b;
 
-	static List<Class<?>> listClasses=Arrays.asList(Table1.class, Table2.class, Table3.class, Table4.class, Table5.class, Table6.class, Table7.class);
-	static DatabaseConfiguration dbConfig1 = new DatabaseConfiguration(new DatabaseSchema(Table1.class.getPackage(), DatabaseSchema.SynchronizationType.NO_SYNCHRONIZATION), listClasses);
-	static DatabaseConfiguration dbConfig2 = new DatabaseConfiguration(new DatabaseSchema(Lecture.class.getPackage(), DatabaseSchema.SynchronizationType.NO_SYNCHRONIZATION), listClasses);
-	private static DatabaseWrapper sql_db;
-	private static DatabaseWrapper sql_dbb;
+	static Set<Class<?>> listClasses=new HashSet<>(Arrays.asList(Table1.class, Table2.class, Table3.class, Table4.class, Table5.class, Table6.class, Table7.class));
+	static DatabaseConfiguration dbConfig1 = new DatabaseConfiguration(new DatabaseSchema(Table1.class.getPackage(), listClasses));
+	static DatabaseConfiguration dbConfig2 = new DatabaseConfiguration(new DatabaseSchema(Lecture.class.getPackage(), listClasses));
+	private DatabaseWrapper sql_db;
+	private DatabaseWrapper sql_dbb;
 
 	public abstract File getDatabaseBackupFileName();
 
@@ -268,7 +268,7 @@ public abstract class TestDatabase {
 	}
 
 	@AfterClass
-	public static void unloadDatabase()  {
+	public void unloadDatabase()  {
 		System.out.println("Unload database !");
 		if (sql_db != null) {
 			sql_db.close();
@@ -295,7 +295,10 @@ public abstract class TestDatabase {
 		deleteDatabaseFilesB();
 		sql_db = getDatabaseWrapperInstanceA();
 		try {
-			sql_db.loadDatabase(dbConfig1, false);
+			sql_db.getDatabaseConfigurationsBuilder()
+					.addConfiguration(dbConfig1, false, false)
+					.commit();
+			//sql_db.loadDatabase(dbConfig1, false);
 			fail();
 		} catch (DatabaseException ignored) {
 		}
@@ -304,7 +307,9 @@ public abstract class TestDatabase {
 	@Test(dependsOnMethods = { "checkUnloadedDatabase" })
 	public void firstLoad() throws IllegalArgumentException, DatabaseException {
 
-		sql_db.loadDatabase(dbConfig1, true);
+		sql_db.getDatabaseConfigurationsBuilder()
+				.addConfiguration(dbConfig1, false, true)
+				.commit();
 		table2 = sql_db.getTableInstance(Table2.class);
 		table1 = sql_db.getTableInstance(Table1.class);
 		table3 = sql_db.getTableInstance(Table3.class);
@@ -410,8 +415,10 @@ public abstract class TestDatabase {
 	public void firstReload() throws DatabaseException {
 		sql_db.close();
 		sql_db = getDatabaseWrapperInstanceA();
-		sql_db.loadDatabase(dbConfig1, false);
-		sql_db.loadDatabase(dbConfig2, true);
+		sql_db.getDatabaseConfigurationsBuilder()
+				.addConfiguration(dbConfig1, false, false)
+				.addConfiguration(dbConfig2, false, true)
+				.commit();
 
 		table2 = sql_db.getTableInstance(Table2.class);
 		table1 = sql_db.getTableInstance(Table1.class);
@@ -421,7 +428,9 @@ public abstract class TestDatabase {
 		table6 = sql_db.getTableInstance(Table6.class);
 		table7 = sql_db.getTableInstance(Table7.class);
 		sql_dbb = getDatabaseWrapperInstanceB();
-		sql_dbb.loadDatabase(dbConfig1, true);
+		sql_dbb.getDatabaseConfigurationsBuilder()
+				.addConfiguration(dbConfig1, false, true)
+				.commit();
 		table2b = sql_dbb.getTableInstance(Table2.class);
 		table1b = sql_dbb.getTableInstance(Table1.class);
 		table3b = sql_dbb.getTableInstance(Table3.class);
@@ -656,7 +665,7 @@ public abstract class TestDatabase {
 			assertTrue(true);
 		}
 		try {
-			table1.addRecord(new HashMap<String, Object>());
+			table1.addRecord(new HashMap<>());
             fail();
 		} catch (DatabaseException e) {
 			assertTrue(true);
@@ -1578,7 +1587,7 @@ public abstract class TestDatabase {
 			Assert.assertTrue(table1.removeRecord("pk1", rec1.pk1,"pk2", rec1.pk2,"pk3", rec1.pk3,"pk4", rec1.pk4,"pk5", rec1.pk5,"pk6", rec1.pk6));
 			Assert.fail();
 		}
-		catch (FieldDatabaseException e)
+		catch (FieldDatabaseException ignored)
 		{
 
 		}
@@ -1587,7 +1596,7 @@ public abstract class TestDatabase {
 			Assert.assertTrue(table3.removeRecord("pk1", rec1.pk1,"pk2", rec1.pk2,"pk3", rec1.pk3,"pk4", rec1.pk4,"pk5", rec1.pk5,"pk6", rec1.pk6));
 			Assert.fail();
 		}
-		catch (FieldDatabaseException e)
+		catch (FieldDatabaseException ignored)
 		{
 
 		}
@@ -2684,7 +2693,7 @@ public abstract class TestDatabase {
 			Assert.assertTrue(table1.removeRecordWithCascade("pk1", rec1.pk1,"pk2", rec1.pk2,"pk3", rec1.pk3,"pk4", rec1.pk4,"pk5", rec1.pk5,"pk6", rec1.pk6));
 			Assert.fail();
 		}
-		catch (FieldDatabaseException e)
+		catch (FieldDatabaseException ignored)
 		{
 
 		}
@@ -2693,7 +2702,7 @@ public abstract class TestDatabase {
 			Assert.assertTrue(table3.removeRecordWithCascade("pk1", rec1.pk1,"pk2", rec1.pk2,"pk3", rec1.pk3,"pk4", rec1.pk4,"pk5", rec1.pk5,"pk6", rec1.pk6));
 			Assert.fail();
 		}
-		catch (FieldDatabaseException e)
+		catch (FieldDatabaseException ignored)
 		{
 
 		}
@@ -2896,19 +2905,19 @@ public abstract class TestDatabase {
 
 		Table3.Record r3 = table3.getRecords().get(0);
 
-		assertTrue(map.get("pk1").equals(r3.pk1));
-		assertTrue(map.get("pk2").equals(r3.pk2));
-		assertTrue(map.get("pk3").equals(r3.pk3));
-		assertTrue(map.get("pk4").equals(r3.pk4));
-		assertTrue(map.get("pk5").equals(r3.pk5));
-		assertTrue(map.get("pk6").equals(r3.pk6));
-		assertTrue(map.get("pk7").equals(r3.pk7));
-		assertTrue(map.get("int_value").equals(r3.int_value));
-		assertTrue(map.get("byte_value").equals(r3.byte_value));
-		assertTrue(map.get("char_value").equals(r3.char_value));
-		assertTrue(map.get("boolean_value").equals(r3.boolean_value));
-		assertTrue(map.get("short_value").equals(r3.short_value));
-		assertTrue(map.get("long_value").equals(r3.long_value));
+		Assert.assertEquals(r3.pk1, map.get("pk1"));
+		Assert.assertEquals(r3.pk2, map.get("pk2"));
+		Assert.assertEquals(r3.pk3, map.get("pk3"));
+		Assert.assertEquals(r3.pk4, map.get("pk4"));
+		Assert.assertEquals(r3.pk5, map.get("pk5"));
+		Assert.assertEquals(r3.pk6, map.get("pk6"));
+		Assert.assertEquals(r3.pk7, map.get("pk7"));
+		Assert.assertEquals(r3.int_value, map.get("int_value"));
+		Assert.assertEquals(r3.byte_value, map.get("byte_value"));
+		Assert.assertEquals(r3.char_value, map.get("char_value"));
+		Assert.assertEquals(r3.boolean_value, map.get("boolean_value"));
+		Assert.assertEquals(r3.short_value, map.get("short_value"));
+		Assert.assertEquals(r3.long_value, map.get("long_value"));
         Assert.assertEquals(map.get("float_value"), r3.float_value);
         Assert.assertEquals(map.get("double_value"), r3.double_value);
         Assert.assertEquals(map.get("string_value"), r3.string_value);
@@ -2977,7 +2986,7 @@ public abstract class TestDatabase {
 		}
 		map.put("pk2", Long.valueOf("2"));
 		map.put("pk3", new BigInteger("2"));
-		Map<String, Object> maps[] = new Map[2];
+		Map<String, Object>[] maps = new Map[2];
 		maps[0] = map;
 		maps[1] = map;
 		try {
@@ -3106,7 +3115,7 @@ public abstract class TestDatabase {
 		assertEquals((SubField) map.get("subField"), r3.subField);
 		assertEquals((SubSubField) map.get("subSubField"), r3.subSubField);
 
-		Map<String, Object> maps2[] = new Map[1];
+		Map<String, Object>[] maps2 = new Map[1];
 		maps2[0] = maps[0];
 
 		try {
@@ -3117,7 +3126,7 @@ public abstract class TestDatabase {
 		}
 		try {
 			table3.addRecords(maps2);
-			assertTrue(false);
+			fail();
 		} catch (ConstraintsNotRespectedDatabaseException e) {
 			assertTrue(true);
 		}
@@ -3157,9 +3166,9 @@ public abstract class TestDatabase {
                 if (sql_db.isVarBinarySupported())
                     res.add(id.encode());
                 else {
-                    byte[] bytes = id.encode();
+                    WrappedData bytes = id.encode();
                     BigInteger r = BigInteger.valueOf(1);
-                    for (byte aByte : bytes) {
+                    for (byte aByte : bytes.getBytes()) {
                         r = r.shiftLeft(8).or(BigInteger.valueOf(aByte & 0xFF));
                     }
                     res.add(new BigDecimal(r));
@@ -3271,9 +3280,9 @@ public abstract class TestDatabase {
 				test = !fa.equals(nearestObjectInstance, value);
 			else if (op_comp == SymbolType.LIKE)
 				test = fa.equals(nearestObjectInstance, value);
-			else if (op_comp == SymbolType.ISNULL)
+			else if (op_comp == SymbolType.IS)
 				test = fa.equals(nearestObjectInstance, (Object)null);
-			else if (op_comp == SymbolType.ISNOTNULL)
+			else if (op_comp == SymbolType.ISNOT)
 				test = !fa.equals(nearestObjectInstance, (Object)null);
 			else if (op_comp == SymbolType.NOTLIKE)
 				test = !fa.equals(nearestObjectInstance, value);
@@ -3405,7 +3414,7 @@ public abstract class TestDatabase {
 		
 
 		Calendar calendar = Calendar.getInstance(Locale.CANADA);
-		calendar.set(2045, 7, 29, 18, 32, 43);
+		calendar.set(2045, Calendar.AUGUST, 29, 18, 32, 43);
 
 		parametersTable1Equallable.put("byte_array_value", new byte[] { (byte) 0, (byte) 1 });
 		parametersTable1Equallable.put("BigInteger_value", BigInteger.valueOf(3));
@@ -3513,12 +3522,12 @@ public abstract class TestDatabase {
 			String expectedSqlCommand, Map<Integer, Object> expectedSqlParameters, Table1.Record record,
 			boolean expectedTestResult) throws DatabaseException, IOException, SQLException {
 		Table<?> table=sql_db.getTableInstance(tableClass);
-		Table1 table1=(Table1)sql_db.getTableInstance(Table1.class);
+		Table1 table1= sql_db.getTableInstance(Table1.class);
 		if (expectedSqlCommand!=null)
 			expectedSqlCommand=expectedSqlCommand.replace("%Table1Name%", table1.getSqlTableName());
 		HashMap<Integer, Object> sqlParameters = new HashMap<>();
 		RuleInstance rule = Interpreter.getRuleInstance(command);
-		String sqlCommand = rule.translateToSqlQuery(table, parameters, sqlParameters, new HashSet<TableJunction>())
+		String sqlCommand = rule.translateToSqlQuery(table, parameters, sqlParameters, new HashSet<>())
 				.toString();
 		if (!table.getDatabaseWrapper().supportsItalicQuotesWithTableAndFieldNames()) {
 			assert expectedSqlCommand != null;
@@ -3576,7 +3585,7 @@ public abstract class TestDatabase {
 	}
 
 	private static final AtomicInteger next_unique = new AtomicInteger(0);
-	private static AtomicInteger number_thread_test = new AtomicInteger(0);
+	private static final AtomicInteger number_thread_test = new AtomicInteger(0);
 
 	@Test(dependsOnMethods = { "setAutoRandomFields" })
 	public void prepareMultipleTest() throws DatabaseException {
@@ -3618,9 +3627,8 @@ public abstract class TestDatabase {
 		table1.addRecord(map);
 		table3.addRecord(map);
 		@SuppressWarnings("unchecked")
-		HashMap<String, Object> list[] = new HashMap[10];
-		for (int i = 0; i < list.length; i++)
-			list[i] = map;
+		HashMap<String, Object>[] list = new HashMap[10];
+		Arrays.fill(list, map);
 		table1.addRecords(list);
 		table3.addRecords(list);
 
@@ -3631,7 +3639,7 @@ public abstract class TestDatabase {
 				map2.put("fr1_pk1", records.get(random.nextInt(records.size())));
 				map2.put("int_value", random.nextInt());
 				table2.addRecord(map2);
-			} catch (ConstraintsNotRespectedDatabaseException e) {
+			} catch (ConstraintsNotRespectedDatabaseException ignored) {
 			} catch (RecordNotFoundDatabaseException e) {
 				if (no_thread)
 					throw e;
@@ -3646,7 +3654,7 @@ public abstract class TestDatabase {
 
 				table4.addRecord(map2);
 				table5.addRecord(map2);
-			} catch (ConstraintsNotRespectedDatabaseException e) {
+			} catch (ConstraintsNotRespectedDatabaseException ignored) {
 
 			} catch (RecordNotFoundDatabaseException e) {
 				if (no_thread)
@@ -3667,7 +3675,7 @@ public abstract class TestDatabase {
 					}
 				}
 
-			} catch (ConstraintsNotRespectedDatabaseException e) {
+			} catch (ConstraintsNotRespectedDatabaseException ignored) {
 			} catch (RecordNotFoundDatabaseException e) {
 				if (no_thread)
 					throw e;
@@ -3696,19 +3704,19 @@ public abstract class TestDatabase {
 		Table5 table5;
 		Table6 table6;
 		if (!isMultiConcurrentDatabase() || random.nextInt(5) != 0) {
-			table1 = TestDatabase.table1;
-			table2 = TestDatabase.table2;
-			table3 = TestDatabase.table3;
-			table4 = TestDatabase.table4;
-			table5 = TestDatabase.table5;
-			table6 = TestDatabase.table6;
+			table1 = this.table1;
+			table2 = this.table2;
+			table3 = this.table3;
+			table4 = this.table4;
+			table5 = this.table5;
+			table6 = this.table6;
 		} else {
-			table1 = TestDatabase.table1b;
-			table2 = TestDatabase.table2b;
-			table3 = TestDatabase.table3b;
-			table4 = TestDatabase.table4b;
-			table5 = TestDatabase.table5b;
-			table6 = TestDatabase.table6b;
+			table1 = this.table1b;
+			table2 = this.table2b;
+			table3 = this.table3b;
+			table4 = this.table4b;
+			table5 = this.table5b;
+			table6 = this.table6b;
 		}
 		int r = random.nextInt(33);
 
@@ -3783,19 +3791,19 @@ public abstract class TestDatabase {
                     Assert.assertEquals(r1.CharacterNumber_value, map.get("CharacterNumber_value"));
                     Assert.assertEquals(r1.BooleanNumber_value, map.get("BooleanNumber_value"));
                     Assert.assertEquals(r1.ShortNumber_value, map.get("ShortNumber_value"));
-					assertTrue(r1.LongNumber_value.equals(map.get("LongNumber_value")));
-					assertTrue(r1.FloatNumber_value.equals(map.get("FloatNumber_value")));
-					assertTrue(r1.DoubleNumber_value.equals(map.get("DoubleNumber_value")));
-					assertTrue(r1.BigInteger_value.equals(map.get("BigInteger_value")));
-					assertTrue(r1.BigDecimal_value.equals(map.get("BigDecimal_value")));
-					assertTrue(r1.secretKey.equals(map.get("secretKey")));
-					assertTrue(r1.typeSecretKey.equals(map.get("typeSecretKey")));
-					assertTrue(r1.file.equals(map.get("file")));
+					Assert.assertEquals(map.get("LongNumber_value"), r1.LongNumber_value);
+					Assert.assertEquals(map.get("FloatNumber_value"), r1.FloatNumber_value);
+					Assert.assertEquals(map.get("DoubleNumber_value"), r1.DoubleNumber_value);
+					Assert.assertEquals(map.get("BigInteger_value"), r1.BigInteger_value);
+					Assert.assertEquals(map.get("BigDecimal_value"), r1.BigDecimal_value);
+					Assert.assertEquals(map.get("secretKey"), r1.secretKey);
+					Assert.assertEquals(map.get("typeSecretKey"), r1.typeSecretKey);
+					Assert.assertEquals(map.get("file"), r1.file);
 					assertEquals((SubField) map.get("subField"), r1.subField);
 					assertEquals((SubSubField) map.get("subSubField"), r1.subSubField);
 
 					for (int i = 0; i < 3; i++)
-						assertTrue(r1.byte_array_value[i] == ((byte[]) map.get("byte_array_value"))[i]);
+						Assert.assertEquals(((byte[]) map.get("byte_array_value"))[i], r1.byte_array_value[i]);
 
                     Assert.assertEquals(r3.pk1, (int) (Integer) map.get("pk1"));
                     Assert.assertEquals(r3.int_value, (int) (Integer) map.get("int_value"));
@@ -4177,22 +4185,22 @@ public abstract class TestDatabase {
                     }
                 }));
 				if (no_thread)
-					assertTrue(l == table1.getRecordsNumber());
+					Assert.assertEquals(table1.getRecordsNumber(), l);
 				table2.getRecords();
 				table6.getRecords();
 			}
 				break;
 			case 15: {
 				long l = table3.getRecordsNumber();
-				assertTrue(table3.removeRecordsWithCascade(new Filter<Table3.Record>() {
+				Assert.assertEquals(table3.removeRecordsWithCascade(new Filter<Table3.Record>() {
 
 					@Override
 					public boolean nextRecord(Table3.Record _record) {
 						return false;
 					}
-				}) == 0);
+				}), 0);
 				if (no_thread)
-					assertTrue(l == table3.getRecordsNumber());
+					Assert.assertEquals(table3.getRecordsNumber(), l);
 				table4.getRecords();
 				table5.getRecords();
 				table6.getRecords();
@@ -4337,9 +4345,7 @@ public abstract class TestDatabase {
 
 						@Override
 						public boolean nextRecord(Table1.Record _record) {
-							if ((val++) % 3 == 0)
-								return true;
-							return false;
+							return (val++) % 3 == 0;
 						}
 					});
 					try {
@@ -4371,9 +4377,7 @@ public abstract class TestDatabase {
 
 						@Override
 						public boolean nextRecord(Table3.Record _record) {
-							if ((val++) % 3 == 0)
-								return true;
-							return false;
+							return (val++) % 3 == 0;
 						}
 					});
 					try {
@@ -4410,9 +4414,7 @@ public abstract class TestDatabase {
 
 						@Override
 						public boolean nextRecord(Table1.Record _record) {
-							if ((val++) % 3 == 0)
-								return true;
-							return false;
+							return (val++) % 3 == 0;
 						}
 					});
 					for (Iterator<Table1.Record> it = recs.iterator(); it.hasNext();) {
@@ -4448,9 +4450,7 @@ public abstract class TestDatabase {
 
 						@Override
 						public boolean nextRecord(Table3.Record _record) {
-							if ((val++) % 3 == 0)
-								return true;
-							return false;
+							return (val++) % 3 == 0;
 						}
 					});
 					for (Iterator<Table3.Record> it = recs.iterator(); it.hasNext();) {
@@ -4641,7 +4641,7 @@ public abstract class TestDatabase {
 				if (no_thread) {
 					ArrayList<Table1.Record> r1b = table1.getOrderedRecords(table1.getRecords(), false, "subField.short_value",
 							"LongNumber_value");
-					assertTrue(r1.size() == r1b.size());
+					Assert.assertEquals(r1b.size(), r1.size());
 
 					for (int i = 0; i < r1.size(); i++) {
 						Assert.assertEquals(r1.get(i).subField.short_value, r1b.get(i).subField.short_value);
@@ -4686,7 +4686,7 @@ public abstract class TestDatabase {
 				if (no_thread) {
 					ArrayList<Table3.Record> r3b = table3.getOrderedRecords(table3.getRecords(), true, "subField.short_value",
 							"LongNumber_value");
-					assertTrue(r3.size() == r3b.size());
+					Assert.assertEquals(r3b.size(), r3.size());
 
 					for (int i = 0; i < r3.size(); i++) {
 						assertTrue(table3.equalsAllFields(r3.get(i), r3b.get(i)));
@@ -4997,9 +4997,11 @@ public abstract class TestDatabase {
 	public void testDatabaseRemove() throws DatabaseException {
 		sql_db.deleteDatabase(dbConfig1);
 		try {
-			sql_db.loadDatabase(dbConfig1, false);
+			sql_db.getDatabaseConfigurationsBuilder()
+					.addConfiguration(dbConfig1, false, false)
+					.commit();
 			fail();
-		} catch (Exception e) {
+		} catch (Exception ignored) {
 
 		}
 	}

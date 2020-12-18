@@ -34,10 +34,14 @@ same conditions as regards security.
 The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
-package com.distrimind.ood.database;
+package com.distrimind.ood.database.tests;
 
+import com.distrimind.ood.database.DatabaseWrapper;
+import com.distrimind.ood.database.DistantPostgreSQLDatabaseFactory;
+import com.distrimind.ood.database.TestDatabase;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.Utils;
+import com.distrimind.util.crypto.WrappedPassword;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 
@@ -51,41 +55,51 @@ import java.security.NoSuchProviderException;
  * @version 2.0
  * @since OOD 2.5.0
  */
-public class MySQLTestDatabase extends TestDatabase {
-	private static final DistantMySQLDatabaseFactory factoryA= new DistantMySQLDatabaseFactory("127.0.0.1", 3306, "databasetestAMySQL", "usertest", "passwordtest");
-	private static final DistantMySQLDatabaseFactory factoryB= new DistantMySQLDatabaseFactory("127.0.0.1", 3306, "databasetestBMySQL", "usertest", "passwordtest");
-	private static final String dockerName="mysqlOOD";
+public class PostgreSQLTestDatabase extends TestDatabase {
+	private static final String dockerName="postgreSQLOOD";
+	static final String rootPwd="rootPassword";
+	static final String userName="postgres";
+	private final DistantPostgreSQLDatabaseFactory factoryA;
+	private final DistantPostgreSQLDatabaseFactory factoryB;
 
-	public MySQLTestDatabase() throws DatabaseException, NoSuchAlgorithmException, NoSuchProviderException {
+	public PostgreSQLTestDatabase() throws DatabaseException, NoSuchAlgorithmException, NoSuchProviderException {
 		super();
+		factoryA= new DistantPostgreSQLDatabaseFactory("127.0.0.1", 5432, "databasetestAPostgreSQL", userName, new WrappedPassword(rootPwd));
+		factoryB= new DistantPostgreSQLDatabaseFactory("127.0.0.1", 5432, "databasetestBPostgreSQL", userName, new WrappedPassword(rootPwd));
 	}
 	@BeforeClass
-	public void createMySQLDocker() throws InterruptedException {
-		stopMySQLDocker();
-		rmMySQLDocker();
-		runMySQLDocker();
-		Thread.sleep(20000);
-		createMySQLDB();
+	public void createPostgreSQLDocker() throws InterruptedException {
+		stopPostgreSQLDocker();
+		rmPostgreSQLDocker();
+		runPostgreSQLDocker();
+		Thread.sleep(1000);
+		createPostgreSQLDB();
 	}
 
 	@AfterClass
-	public void deleteMySQLDocker()
+	public void deletePostgreSQLDocker()
 	{
-		stopMySQLDocker();
-		rmMySQLDocker();
+		stopPostgreSQLDocker();
+		rmPostgreSQLDocker();
 	}
-	private void createMySQLDB()
+	private String createDatabaseBashQuery(String databaseName)
+	{
+		return "docker exec "+dockerName+" su -c \"psql -c \\\"CREATE DATABASE "+databaseName+";\\\"\" postgres";
+	}
+	private void createPostgreSQLDB()
 	{
 
-		String rootPw=getRootMySQLPassword();
 		System.out.println("Create MySQL Database");
-		File tmpScript=new File("tmpScriptMySQLDockerForOOD.bash");
+		File tmpScript=new File("tmpPostGreScriptDockerForOOD.bash");
 
 		Process p=null;
 		try {
 			try(FileWriter fos=new FileWriter(tmpScript))
 			{
-				fos.write("docker exec "+dockerName+" mysql --connect-expired-password --user=\"root\" --password=\""+rootPw+"\" -Bse \"ALTER USER 'root'@'localhost' IDENTIFIED BY 'rootpassword'; CREATE USER '"+factoryA.user+"' IDENTIFIED by '"+factoryA.password+"';CREATE DATABASE "+factoryA.databaseName+";CREATE DATABASE "+factoryB.databaseName+";GRANT ALL PRIVILEGES ON "+factoryA.databaseName+".* TO '"+factoryA.user+"';GRANT ALL PRIVILEGES ON "+factoryB.databaseName+".* TO '"+factoryB.user+"';FLUSH PRIVILEGES;\"\n");
+				fos.write(createDatabaseBashQuery(factoryA.getDatabaseName()));
+				fos.write(" && ");
+				fos.write(createDatabaseBashQuery(factoryB.getDatabaseName()));
+				fos.write("\n");
 			}
 			ProcessBuilder pb=new ProcessBuilder("bash", tmpScript.toString());
 			p = pb.start();
@@ -130,43 +144,13 @@ public class MySQLTestDatabase extends TestDatabase {
 		}
 	}
 
-	private String getRootMySQLPassword()
-	{
-		System.out.println("Get root password");
-		Process p=null;
-		File tmpScript=new File("tmpScriptDockerForOOD.bash");
-		try {
-			try(FileWriter fos=new FileWriter(tmpScript))
-			{
-				fos.write("docker logs "+dockerName+" 2>&1 | grep GENERATED | awk '{print $NF}'\n");
-			}
-			ProcessBuilder pb = new ProcessBuilder("bash", tmpScript.toString());
-			p = pb.start();
-			InputStreamReader isr = new InputStreamReader(p.getInputStream());
-			BufferedReader br = new BufferedReader(isr);
-			return br.readLine();
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace();
-		}
-		finally {
-			assert p != null;
-			flushOutput(p);
-			Utils.flushAndDestroyProcess(p);
-			if (tmpScript.exists())
-				//noinspection ResultOfMethodCallIgnored
-				tmpScript.delete();
-		}
-		return null;
-	}
 
-	private void runMySQLDocker()
+	private void runPostgreSQLDocker()
 	{
-		System.out.println("RUN Mysql docker");
+		System.out.println("RUN PostgreSQL docker");
 		Process p=null;
 		try {
-			p = Runtime.getRuntime().exec("docker run -p 3306:3306 --name="+dockerName+" -e MYSQL_ROOT_HOST=% -d mysql/mysql-server:latest");
+			p = Runtime.getRuntime().exec("docker run -p 5432:5432 --name="+dockerName+" -e POSTGRES_PASSWORD="+rootPwd+" -d postgres");
 		}
 		catch(Exception e)
 		{
@@ -178,9 +162,9 @@ public class MySQLTestDatabase extends TestDatabase {
 			Utils.flushAndDestroyProcess(p);
 		}
 	}
-	private void stopMySQLDocker()
+	private void stopPostgreSQLDocker()
 	{
-		System.out.println("STOP Mysql docker");
+		System.out.println("STOP PostgreSQL docker");
 		Process p=null;
 		try {
 			p = Runtime.getRuntime().exec("docker stop "+dockerName);
@@ -195,9 +179,9 @@ public class MySQLTestDatabase extends TestDatabase {
 			Utils.flushAndDestroyProcess(p);
 		}
 	}
-	private void rmMySQLDocker()
+	private void rmPostgreSQLDocker()
 	{
-		System.out.println("RM Mysql docker");
+		System.out.println("RM PostgreSQL docker");
 		Process p=null;
 		try {
 			p = Runtime.getRuntime().exec("docker rm -v "+dockerName);
@@ -215,12 +199,12 @@ public class MySQLTestDatabase extends TestDatabase {
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstanceA() throws IllegalArgumentException, DatabaseException {
-		return factoryA.newWrapperInstance();
+		return factoryA.getDatabaseWrapperSingleton();
 	}
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstanceB() throws IllegalArgumentException, DatabaseException {
-		return factoryB.newWrapperInstance();
+		return factoryB.getDatabaseWrapperSingleton();
 	}
 
 	@Override
@@ -234,8 +218,8 @@ public class MySQLTestDatabase extends TestDatabase {
 	}
 
 	@AfterClass
-	public static void unloadDatabase()  {
-		TestDatabase.unloadDatabase();
+	public void unloadDatabase()  {
+		super.unloadDatabase();
 	}
 
 	@Override

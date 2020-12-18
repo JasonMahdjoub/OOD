@@ -35,13 +35,13 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import com.distrimind.ood.database.decentralizeddatabase.TableAlone;
 import com.distrimind.ood.database.decentralizeddatabase.TablePointed;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.ArrayList;
@@ -54,10 +54,11 @@ import java.util.List;
  * @version 1.0
  * @since OOD 2.0
  */
-public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests{
+public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests {
 
 
-	public TestDecentralizedDatabase() throws NoSuchProviderException, NoSuchAlgorithmException {
+	public TestDecentralizedDatabase() throws NoSuchProviderException, NoSuchAlgorithmException, IOException, DatabaseException {
+		super();
 	}
 
 	@DataProvider(name = "provideDataForIndirectSynchro")
@@ -456,24 +457,24 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 		connectAllDatabase();
 		testSynchronisation();
 		disconnectAllDatabase();
-		db4 = new Database(getDatabaseWrapperInstance4(), getBackupConfiguration(), canInitCentralBackup());
+		db4 = new Database(getDatabaseWrapperInstance4());
 		listDatabase.add(db4);
-
-		db4.getDbwrapper().getSynchronizer().setNotifier(db4);
+		addConfiguration(db4);
+		/*db4.getDbwrapper().getSynchronizer().setNotifier(db4);
 		db4.getDbwrapper().setMaxTransactionsToSynchronizeAtTheSameTime(5);
 		db4.getDbwrapper().setMaxTransactionEventsKeptIntoMemory(3);
 		db4.getDbwrapper().getSynchronizer().addHookForLocalDatabaseHost(db4.getHostID(),
-				TablePointed.class.getPackage());
+				TablePointed.class.getPackage());*/
 		Assert.assertTrue(db4.getDbwrapper().getSynchronizer().isInitialized());
 
-		for (Database other : listDatabase) {
+		/*for (Database other : listDatabase) {
 			if (other != db4) {
 				AbstractHookRequest har = db4.getDbwrapper().getSynchronizer().askForHookAddingAndSynchronizeDatabase(
 						other.getHostID(), false, TablePointed.class.getPackage());
 				har = other.getDbwrapper().getSynchronizer().receivedHookAddRequest(har);
 				db4.getDbwrapper().getSynchronizer().receivedHookAddRequest(har);
 			}
-		}
+		}*/
 
 		testAllConnect();
 		disconnectAllDatabase();
@@ -578,11 +579,20 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 
 		for (Database other : listDatabase) {
 			if (db4 != other) {
-				other.getDbwrapper().getSynchronizer().removeHook(db4.getHostID(), TableAlone.class.getPackage());
-				db4.getDbwrapper().getSynchronizer().removeHook(other.getHostID(), TableAlone.class.getPackage());
+				other.getDbwrapper().getDatabaseConfigurationsBuilder()
+						.removeDistantPeer(db4.getHostID())
+						.commit();
+				db4.getDbwrapper().getDatabaseConfigurationsBuilder()
+						.removeDistantPeer(other.getHostID())
+						.commit();
+				/*other.getDbwrapper().getSynchronizer().removeHook(db4.getHostID(), TableAlone.class.getPackage());
+				db4.getDbwrapper().getSynchronizer().removeHook(other.getHostID(), TableAlone.class.getPackage());*/
 			}
 		}
-		db4.getDbwrapper().getSynchronizer().removeHook(db4.getHostID(), TableAlone.class.getPackage());
+		//db4.getDbwrapper().getSynchronizer().removeHook(db4.getHostID(), TableAlone.class.getPackage());
+		testAllConnect();
+		testSynchronisation();
+		disconnectAllDatabase();
 
 		unloadDatabase4();
 
@@ -696,7 +706,7 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 			events2.add(levents.get(i));
 
 		Database db=listDatabase.get(0);
-		BackupRestoreManager manager=db.getDbwrapper().getExternalBackupRestoreManager(TestDatabaseBackupRestore.externalBackupDirectory, TablePointed.class.getPackage(), TestDatabaseBackupRestore.getBackupConfiguration());
+		BackupRestoreManager manager=db.getDbwrapper().getExternalBackupRestoreManager(AbstractTestDatabaseBackupRestore.externalBackupDirectory, TablePointed.class.getPackage(), getBackupConfiguration());
 		if (nbPeers==2)
 			testTransactionBetweenTwoPeers(peersInitiallyConnected, events1);
 		else

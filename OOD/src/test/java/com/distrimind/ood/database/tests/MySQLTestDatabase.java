@@ -1,4 +1,4 @@
-package com.distrimind.ood.database;
+
 /*
 Copyright or © or Copr. Jason Mahdjoub (01/04/2013)
 
@@ -34,9 +34,14 @@ same conditions as regards security.
 The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
+package com.distrimind.ood.database.tests;
 
+import com.distrimind.ood.database.DatabaseWrapper;
+import com.distrimind.ood.database.DistantMySQLDatabaseFactory;
+import com.distrimind.ood.database.TestDatabase;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.Utils;
+import com.distrimind.util.crypto.WrappedPassword;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 
@@ -45,46 +50,48 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 
 /**
+ * 
  * @author Jason Mahdjoub
- * @version 1.0
+ * @version 2.0
  * @since OOD 2.5.0
  */
-public class MariaDBTests extends TestDatabase{
-	private static final String rootPw="rootpw";
-	private static DistantMariaDBFactory factoryA= new DistantMariaDBFactory("127.0.0.1", 3307, "databasetestAMariaDB", "usertest", "passwordtest");
-	private static DistantMariaDBFactory factoryB= new DistantMariaDBFactory("127.0.0.1", 3307, "databasetestBMariaDB", "usertest", "passwordtest");
-	private static final String dockerName="mariadbOOD";
+public class MySQLTestDatabase extends TestDatabase {
+	private final DistantMySQLDatabaseFactory factoryA;
+	private final DistantMySQLDatabaseFactory factoryB;
+	private final String dockerName="mysqlOOD";
 
-	public MariaDBTests() throws DatabaseException, NoSuchAlgorithmException, NoSuchProviderException {
+	public MySQLTestDatabase() throws DatabaseException, NoSuchAlgorithmException, NoSuchProviderException {
 		super();
+		factoryA= new DistantMySQLDatabaseFactory("127.0.0.1", 3306, "databasetestAMySQL", "usertest", new WrappedPassword("passwordtest"));
+		factoryB= new DistantMySQLDatabaseFactory("127.0.0.1", 3306, "databasetestBMySQL", "usertest", new WrappedPassword("passwordtest"));
 	}
 	@BeforeClass
 	public void createMySQLDocker() throws InterruptedException {
-		stopMariaDBDocker();
-		rmMariaDBDocker();
-		runMariaDBDocker();
-		Thread.sleep(30000);
-		createMariaDB();
+		stopMySQLDocker();
+		rmMySQLDocker();
+		runMySQLDocker();
+		Thread.sleep(20000);
+		createMySQLDB();
 	}
 
 	@AfterClass
 	public void deleteMySQLDocker()
 	{
-		stopMariaDBDocker();
-		rmMariaDBDocker();
+		stopMySQLDocker();
+		rmMySQLDocker();
 	}
-	private void createMariaDB()
+	private void createMySQLDB()
 	{
 
-
-		System.out.println("Create MariaDB Database");
-		File tmpScript=new File("tmpScriptDockerForOOD.bash");
+		String rootPw=getRootMySQLPassword();
+		System.out.println("Create MySQL Database");
+		File tmpScript=new File("tmpScriptMySQLDockerForOOD.bash");
 
 		Process p=null;
 		try {
 			try(FileWriter fos=new FileWriter(tmpScript))
 			{
-				fos.write("docker exec "+dockerName+" mysql --user=\"root\" --password="+rootPw+" -e \"CREATE USER 'usertest' IDENTIFIED by 'passwordtest';CREATE DATABASE databasetestAMariaDB;CREATE DATABASE databasetestBMariaDB;GRANT ALL PRIVILEGES ON databasetestAMariaDB.* TO 'usertest';GRANT ALL PRIVILEGES ON databasetestBMariaDB.* TO 'usertest';FLUSH PRIVILEGES;\"\n");
+				fos.write("docker exec "+dockerName+" mysql --connect-expired-password --user=\"root\" --password=\""+rootPw+"\" -Bse \"ALTER USER 'root'@'localhost' IDENTIFIED BY 'rootpassword'; CREATE USER '"+factoryA.getUser()+"' IDENTIFIED by '"+factoryA.getPassword()+"';CREATE DATABASE "+factoryA.getDatabaseName()+";CREATE DATABASE "+factoryB.getDatabaseName()+";GRANT ALL PRIVILEGES ON "+factoryA.getDatabaseName()+".* TO '"+factoryA.getUser()+"';GRANT ALL PRIVILEGES ON "+factoryB.getDatabaseName()+".* TO '"+factoryB.getUser()+"';FLUSH PRIVILEGES;\"\n");
 			}
 			ProcessBuilder pb=new ProcessBuilder("bash", tmpScript.toString());
 			p = pb.start();
@@ -107,7 +114,7 @@ public class MariaDBTests extends TestDatabase{
 
 	private void flushOutput(Process p) {
 		try {
-			try(BufferedReader br=new BufferedReader(new InputStreamReader(p.getInputStream())); BufferedReader brerr=new BufferedReader(new InputStreamReader(p.getErrorStream())))
+			try(BufferedReader br=new BufferedReader(new InputStreamReader(p.getInputStream()));BufferedReader brerr=new BufferedReader(new InputStreamReader(p.getErrorStream())))
 			{
 				boolean c;
 				do {
@@ -129,14 +136,43 @@ public class MariaDBTests extends TestDatabase{
 		}
 	}
 
-
-
-	private void runMariaDBDocker()
+	private String getRootMySQLPassword()
 	{
-		System.out.println("RUN MariaDB docker");
+		System.out.println("Get root password");
+		Process p=null;
+		File tmpScript=new File("tmpScriptDockerForOOD.bash");
+		try {
+			try(FileWriter fos=new FileWriter(tmpScript))
+			{
+				fos.write("docker logs "+dockerName+" 2>&1 | grep GENERATED | awk '{print $NF}'\n");
+			}
+			ProcessBuilder pb = new ProcessBuilder("bash", tmpScript.toString());
+			p = pb.start();
+			InputStreamReader isr = new InputStreamReader(p.getInputStream());
+			BufferedReader br = new BufferedReader(isr);
+			return br.readLine();
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		finally {
+			assert p != null;
+			flushOutput(p);
+			Utils.flushAndDestroyProcess(p);
+			if (tmpScript.exists())
+				//noinspection ResultOfMethodCallIgnored
+				tmpScript.delete();
+		}
+		return null;
+	}
+
+	private void runMySQLDocker()
+	{
+		System.out.println("RUN Mysql docker");
 		Process p=null;
 		try {
-			p = Runtime.getRuntime().exec("docker run -p 3307:3306 --name "+dockerName+" -e MYSQL_ROOT_PASSWORD="+rootPw+" -d mariadb:latest");
+			p = Runtime.getRuntime().exec("docker run -p 3306:3306 --name="+dockerName+" -e MYSQL_ROOT_HOST=% -d mysql/mysql-server:latest");
 		}
 		catch(Exception e)
 		{
@@ -148,9 +184,9 @@ public class MariaDBTests extends TestDatabase{
 			Utils.flushAndDestroyProcess(p);
 		}
 	}
-	private void stopMariaDBDocker()
+	private void stopMySQLDocker()
 	{
-		System.out.println("STOP MariaDB docker");
+		System.out.println("STOP Mysql docker");
 		Process p=null;
 		try {
 			p = Runtime.getRuntime().exec("docker stop "+dockerName);
@@ -165,9 +201,9 @@ public class MariaDBTests extends TestDatabase{
 			Utils.flushAndDestroyProcess(p);
 		}
 	}
-	private void rmMariaDBDocker()
+	private void rmMySQLDocker()
 	{
-		System.out.println("RM MariaDB docker");
+		System.out.println("RM Mysql docker");
 		Process p=null;
 		try {
 			p = Runtime.getRuntime().exec("docker rm -v "+dockerName);
@@ -185,12 +221,12 @@ public class MariaDBTests extends TestDatabase{
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstanceA() throws IllegalArgumentException, DatabaseException {
-		return factoryA.newWrapperInstance();
+		return factoryA.getDatabaseWrapperSingleton();
 	}
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstanceB() throws IllegalArgumentException, DatabaseException {
-		return factoryB.newWrapperInstance();
+		return factoryB.getDatabaseWrapperSingleton();
 	}
 
 	@Override
@@ -204,8 +240,8 @@ public class MariaDBTests extends TestDatabase{
 	}
 
 	@AfterClass
-	public static void unloadDatabase()  {
-		TestDatabase.unloadDatabase();
+	public void unloadDatabase()  {
+		super.unloadDatabase();
 	}
 
 	@Override

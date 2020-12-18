@@ -34,9 +34,9 @@ same conditions as regards security.
 The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
-package com.distrimind.ood.database;
+package com.distrimind.ood.database.tests;
 
-import com.distrimind.ood.database.database.Table1;
+import com.distrimind.ood.database.*;
 import com.distrimind.ood.database.database.Table1.Record;
 import com.distrimind.ood.database.database.Table3;
 import com.distrimind.ood.database.exceptions.ConstraintsNotRespectedDatabaseException;
@@ -63,18 +63,18 @@ public class DerbyTestDatabase extends TestDatabase {
 		super();
 	}
 
-	private static File data_directory = new File("databasetestDerby");
-	private static File data_directoryb = new File("databasetestDerbyb");
-	private static File database_backup_directory = new File("databasebackupDerby");
+	private static final File data_directory = new File("databasetestDerby");
+	private static final File data_directoryb = new File("databasetestDerbyb");
+	private static final File database_backup_directory = new File("databasebackupDerby");
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstanceA() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedH2DatabaseFactory(data_directory).newWrapperInstance();
+		return new InFileEmbeddedH2DatabaseFactory(data_directory).getDatabaseWrapperSingleton();
 	}
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstanceB() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedH2DatabaseFactory(data_directoryb).newWrapperInstance();
+		return new InFileEmbeddedH2DatabaseFactory(data_directoryb).getDatabaseWrapperSingleton();
 	}
 
 	@Override
@@ -89,8 +89,8 @@ public class DerbyTestDatabase extends TestDatabase {
 	}
 
 	@AfterClass
-	public static void unloadDatabase()  {
-		TestDatabase.unloadDatabase();
+	public void unloadDatabase()  {
+		super.unloadDatabase();
 		EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directory);
 		EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directoryb);
 		FileTools.deleteDirectory(database_backup_directory);
@@ -242,7 +242,7 @@ public class DerbyTestDatabase extends TestDatabase {
 		 * map.put("int_value", new Integer(1)); table4.addRecord(map);
 		 */
 
-		table1.removeRecords(new Filter<Table1.Record>() {
+		table1.removeRecords(new Filter<Record>() {
 
 			@Override
 			public boolean nextRecord(Record _record) {

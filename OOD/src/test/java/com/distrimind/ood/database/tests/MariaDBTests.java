@@ -1,4 +1,4 @@
-
+package com.distrimind.ood.database.tests;
 /*
 Copyright or © or Copr. Jason Mahdjoub (01/04/2013)
 
@@ -34,66 +34,48 @@ same conditions as regards security.
 The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
-package com.distrimind.ood.database;
-
-import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.util.Utils;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-
-import java.io.*;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 
 /**
- * 
  * @author Jason Mahdjoub
- * @version 2.0
+ * @version 1.0
  * @since OOD 2.5.0
  */
-public class PostgreSQLTestDatabase extends TestDatabase {
-	private static final String dockerName="postgreSQLOOD";
-	static final String rootPwd="rootPassword";
-	static final String userName="postgres";
-	private static final DistantPostgreSQLDatabaseFactory factoryA= new DistantPostgreSQLDatabaseFactory("127.0.0.1", 5432, "databasetestAPostgreSQL", userName, rootPwd);
-	private static final DistantPostgreSQLDatabaseFactory factoryB= new DistantPostgreSQLDatabaseFactory("127.0.0.1", 5432, "databasetestBPostgreSQL", userName, rootPwd);
+public class MariaDBTests /*extends TestDatabase */{
+	/*private static final String rootPw="rootpw";
+	private static DistantMariaDBFactory factoryA= new DistantMariaDBFactory("127.0.0.1", 3307, "databasetestAMariaDB", "usertest", "passwordtest");
+	private static DistantMariaDBFactory factoryB= new DistantMariaDBFactory("127.0.0.1", 3307, "databasetestBMariaDB", "usertest", "passwordtest");
+	private static final String dockerName="mariadbOOD";
 
-	public PostgreSQLTestDatabase() throws DatabaseException, NoSuchAlgorithmException, NoSuchProviderException {
+	public MariaDBTests() throws DatabaseException, NoSuchAlgorithmException, NoSuchProviderException {
 		super();
 	}
 	@BeforeClass
-	public void createPostgreSQLDocker() throws InterruptedException {
-		stopPostgreSQLDocker();
-		rmPostgreSQLDocker();
-		runPostgreSQLDocker();
-		Thread.sleep(1000);
-		createPostgreSQLDB();
+	public void createMySQLDocker() throws InterruptedException {
+		stopMariaDBDocker();
+		rmMariaDBDocker();
+		runMariaDBDocker();
+		Thread.sleep(30000);
+		createMariaDB();
 	}
 
 	@AfterClass
-	public void deletePostgreSQLDocker()
+	public void deleteMySQLDocker()
 	{
-		stopPostgreSQLDocker();
-		rmPostgreSQLDocker();
+		stopMariaDBDocker();
+		rmMariaDBDocker();
 	}
-	private String createDatabaseBashQuery(String databaseName)
-	{
-		return "docker exec "+dockerName+" su -c \"psql -c \\\"CREATE DATABASE "+databaseName+";\\\"\" postgres";
-	}
-	private void createPostgreSQLDB()
+	private void createMariaDB()
 	{
 
-		System.out.println("Create MySQL Database");
-		File tmpScript=new File("tmpPostGreScriptDockerForOOD.bash");
+
+		System.out.println("Create MariaDB Database");
+		File tmpScript=new File("tmpScriptDockerForOOD.bash");
 
 		Process p=null;
 		try {
 			try(FileWriter fos=new FileWriter(tmpScript))
 			{
-				fos.write(createDatabaseBashQuery(factoryA.databaseName));
-				fos.write(" && ");
-				fos.write(createDatabaseBashQuery(factoryB.databaseName));
-				fos.write("\n");
+				fos.write("docker exec "+dockerName+" mysql --user=\"root\" --password="+rootPw+" -e \"CREATE USER 'usertest' IDENTIFIED by 'passwordtest';CREATE DATABASE databasetestAMariaDB;CREATE DATABASE databasetestBMariaDB;GRANT ALL PRIVILEGES ON databasetestAMariaDB.* TO 'usertest';GRANT ALL PRIVILEGES ON databasetestBMariaDB.* TO 'usertest';FLUSH PRIVILEGES;\"\n");
 			}
 			ProcessBuilder pb=new ProcessBuilder("bash", tmpScript.toString());
 			p = pb.start();
@@ -116,7 +98,7 @@ public class PostgreSQLTestDatabase extends TestDatabase {
 
 	private void flushOutput(Process p) {
 		try {
-			try(BufferedReader br=new BufferedReader(new InputStreamReader(p.getInputStream()));BufferedReader brerr=new BufferedReader(new InputStreamReader(p.getErrorStream())))
+			try(BufferedReader br=new BufferedReader(new InputStreamReader(p.getInputStream())); BufferedReader brerr=new BufferedReader(new InputStreamReader(p.getErrorStream())))
 			{
 				boolean c;
 				do {
@@ -139,12 +121,13 @@ public class PostgreSQLTestDatabase extends TestDatabase {
 	}
 
 
-	private void runPostgreSQLDocker()
+
+	private void runMariaDBDocker()
 	{
-		System.out.println("RUN PostgreSQL docker");
+		System.out.println("RUN MariaDB docker");
 		Process p=null;
 		try {
-			p = Runtime.getRuntime().exec("docker run -p 5432:5432 --name="+dockerName+" -e POSTGRES_PASSWORD="+rootPwd+" -d postgres");
+			p = Runtime.getRuntime().exec("docker run -p 3307:3306 --name "+dockerName+" -e MYSQL_ROOT_PASSWORD="+rootPw+" -d mariadb:latest");
 		}
 		catch(Exception e)
 		{
@@ -156,9 +139,9 @@ public class PostgreSQLTestDatabase extends TestDatabase {
 			Utils.flushAndDestroyProcess(p);
 		}
 	}
-	private void stopPostgreSQLDocker()
+	private void stopMariaDBDocker()
 	{
-		System.out.println("STOP PostgreSQL docker");
+		System.out.println("STOP MariaDB docker");
 		Process p=null;
 		try {
 			p = Runtime.getRuntime().exec("docker stop "+dockerName);
@@ -173,9 +156,9 @@ public class PostgreSQLTestDatabase extends TestDatabase {
 			Utils.flushAndDestroyProcess(p);
 		}
 	}
-	private void rmPostgreSQLDocker()
+	private void rmMariaDBDocker()
 	{
-		System.out.println("RM PostgreSQL docker");
+		System.out.println("RM MariaDB docker");
 		Process p=null;
 		try {
 			p = Runtime.getRuntime().exec("docker rm -v "+dockerName);
@@ -244,6 +227,6 @@ public class PostgreSQLTestDatabase extends TestDatabase {
 	@Override
 	public void testBackup() {
 
-	}
+	}*/
 
 }

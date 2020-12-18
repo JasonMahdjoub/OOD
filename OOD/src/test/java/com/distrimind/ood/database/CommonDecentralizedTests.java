@@ -73,7 +73,7 @@ public abstract class CommonDecentralizedTests {
 	static{
 		Method m=null;
 		try {
-			m=Table.class.getDeclaredMethod("isLocallyDecentralized");
+			m= Table.class.getDeclaredMethod("isLocallyDecentralized");
 			m.setAccessible(true);
 		} catch (NoSuchMethodException e) {
 			e.printStackTrace();
@@ -433,7 +433,7 @@ public abstract class CommonDecentralizedTests {
 			return 4L*30L*24L*60L*60L*1000L;
 		}
 	}
-	static class CentralDatabaseBackupCertificate implements com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupCertificate
+	static class CentralDatabaseBackupCertificate extends com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupCertificate
 	{
 		private IASymmetricPublicKey centralDatabaseBackupPublicKey, certifiedAccountPublicKey;
 		private byte[] signature;
@@ -707,16 +707,19 @@ public abstract class CommonDecentralizedTests {
 		private TablePointing.Record recordPointingNull = null, recordPointingNotNull = null;
 		private TableAlone.Record recordAlone = null;
 		private final List<CommonDecentralizedTests.Anomaly> anomalies;
+
+
 		//private final List<MessageComingFromCentralDatabaseBackup> centralDatabaseBackupEvents=new ArrayList<>();
 
-		Database(DatabaseWrapper dbwrapper, BackupConfiguration backupConfiguration, boolean canInitCentralBackup) throws DatabaseException {
+		public Database(DatabaseWrapper dbwrapper) throws DatabaseException {
 			this.dbwrapper = dbwrapper;
 			connected = false;
 			hostID = new DecentralizedIDGenerator();
 			localEvents = new ArrayList<>();
 			eventsReceivedStack = Collections.synchronizedList(new LinkedList<>());
 
-			getDbwrapper()
+
+			/*getDbwrapper()
 					.loadDatabase(new DatabaseConfiguration(new DatabaseSchema(TableAlone.class.getPackage(),
 							canInitCentralBackup? DatabaseConfiguration.SynchronizationType.DECENTRALIZED_SYNCHRONIZATION_AND_SYNCHRONIZATION_WITH_CENTRAL_BACKUP_DATABASE: DatabaseConfiguration.SynchronizationType.DECENTRALIZED_SYNCHRONIZATION,
 							backupConfiguration
@@ -747,7 +750,7 @@ public abstract class CommonDecentralizedTests {
 						public void saveDatabaseConfigurations(DatabaseConfigurations databaseConfigurations) {
 
 						}
-					}, null), true);
+					}, null), true);*/
 
 			tableAlone = dbwrapper.getTableInstance(TableAlone.class);
 			tablePointed = dbwrapper.getTableInstance(TablePointed.class);
@@ -1050,15 +1053,35 @@ public abstract class CommonDecentralizedTests {
 		return false;
 	}
 
+	protected void addConfiguration(CommonDecentralizedTests.Database db) throws DatabaseException {
+		db.getDbwrapper().getSynchronizer().setNotifier(db);
+		db.getDbwrapper().setMaxTransactionsToSynchronizeAtTheSameTime(5);
+		db.getDbwrapper().setMaxTransactionEventsKeptIntoMemory(3);
+		Set<DecentralizedValue> peers=new HashSet<>();
+		for (CommonDecentralizedTests.Database dbOther : listDatabase) {
+			if (db!=dbOther)
+				peers.add(db.getHostID());
+		}
+		db.getDbwrapper().getDatabaseConfigurationsBuilder()
+				.setLocalPeerIdentifier(db.getHostID(), sendIndirectTransactions(), true)
+				.addConfiguration(new DatabaseConfiguration(new DatabaseSchema(TablePointed.class.getPackage()), canInitCentralBackup()?DatabaseConfiguration.SynchronizationType.DECENTRALIZED_SYNCHRONIZATION_AND_SYNCHRONIZATION_WITH_CENTRAL_BACKUP_DATABASE:DatabaseConfiguration.SynchronizationType.DECENTRALIZED_SYNCHRONIZATION, peers, getBackupConfiguration(), true), false)
+				.commit();
+	}
+
 	@BeforeClass
 	public void loadDatabase() throws DatabaseException {
 		unloadDatabase();
-		db1 = new CommonDecentralizedTests.Database(getDatabaseWrapperInstance1(), getBackupConfiguration(), canInitCentralBackup());
-		db2 = new CommonDecentralizedTests.Database(getDatabaseWrapperInstance2(), getBackupConfiguration(), canInitCentralBackup());
-		db3 = new CommonDecentralizedTests.Database(getDatabaseWrapperInstance3(), getBackupConfiguration(), canInitCentralBackup());
+		db1 = new CommonDecentralizedTests.Database(getDatabaseWrapperInstance1());
+		db2 = new CommonDecentralizedTests.Database(getDatabaseWrapperInstance2());
+		db3 = new CommonDecentralizedTests.Database(getDatabaseWrapperInstance3());
 		listDatabase.add(db1);
 		listDatabase.add(db2);
 		listDatabase.add(db3);
+		for (CommonDecentralizedTests.Database db : listDatabase) {
+
+			addConfiguration(db);
+
+		}
 
 		Assert.assertTrue(isLocallyDecentralized(db1.getDbwrapper().getTableInstance(TableAlone.class)));
 		Assert.assertTrue(isLocallyDecentralized(db1.getDbwrapper().getTableInstance(TablePointed.class)));
@@ -1147,7 +1170,7 @@ public abstract class CommonDecentralizedTests {
 
 	@SuppressWarnings("deprecation")
 	@Override
-	public void finalize() {
+	public void finalize() throws DatabaseException {
 		unloadDatabase();
 	}
 
@@ -1329,7 +1352,7 @@ public abstract class CommonDecentralizedTests {
 			}
 		}
 	}
-	boolean actualGenerateDirectConflict=false;
+	protected boolean actualGenerateDirectConflict=false;
 	void checkCentralBackupSynchronizationWithOtherPeers(Database d) throws DatabaseException {
 		DatabaseWrapper dw=d.getDbwrapper();
 		if (dw.getSynchronizer().isInitializedWithCentralBackup())
@@ -1396,12 +1419,16 @@ public abstract class CommonDecentralizedTests {
 
 	protected void connectLocal(CommonDecentralizedTests.Database db) throws DatabaseException {
 		synchronized (CommonDecentralizedTests.class) {
-			if (!db.isConnected()) {
+			if (canInitCentralBackup())
+				db.getDbwrapper().getSynchronizer().centralDatabaseBackupAvailable();
+			assert db.isConnected();
+			db.setConnected(true);
+			/*if (!db.isConnected()) {
 				db.getDbwrapper().getSynchronizer().initLocalHostID(db.getHostID(), sendIndirectTransactions());
 				if (canInitCentralBackup())
 					db.getDbwrapper().getSynchronizer().initConnexionWithDistantBackupCenter(random, encryptionProfileProvider);
 				db.setConnected(true);
-			}
+			}*/
 		}
 	}
 
@@ -1411,8 +1438,9 @@ public abstract class CommonDecentralizedTests {
 			if (db.isConnected()) {
 				for (CommonDecentralizedTests.Database otherdb : listDatabase) {
 					if (otherdb != db && otherdb.isConnected()) {
-						db.getDbwrapper().getSynchronizer().initHook(otherdb.getHostID(), otherdb.getDbwrapper()
-								.getSynchronizer().getLastValidatedDistantIDSynchronization(db.getHostID()));
+						db.getDbwrapper().getSynchronizer().peerConnected(otherdb.getHostID());
+						/*db.getDbwrapper().getSynchronizer().initHook(otherdb.getHostID(), otherdb.getDbwrapper()
+								.getSynchronizer().getLastValidatedDistantIDSynchronization(db.getHostID()));*/
 						// otherdb.getDbwrapper().getSynchronizer().initHook(db.getHostID(),
 						// db.getDbwrapper().getSynchronizer().getLastValidatedSynchronization(otherdb.getHostID()));
 					}
@@ -1449,11 +1477,14 @@ public abstract class CommonDecentralizedTests {
 	protected void connectCentralDatabaseBackupWithConnectedDatabase() throws Exception {
 		for (Database d : listDatabase)
 		{
-			if (!d.getDbwrapper().getSynchronizer().isInitialized(d.hostID)) {
+			assert d.getDbwrapper().getSynchronizer().isInitialized(d.hostID);
+			d.getDbwrapper().getSynchronizer().centralDatabaseBackupAvailable();
+			d.setConnected(true);
+			/*if (!d.getDbwrapper().getSynchronizer().isInitialized(d.hostID)) {
 				d.dbwrapper.getSynchronizer().initLocalHostID(d.hostID, true);
 				d.setConnected(true);
 			}
-			d.dbwrapper.getSynchronizer().initConnexionWithDistantBackupCenter(random, encryptionProfileProvider);
+			d.dbwrapper.getSynchronizer().initConnexionWithDistantBackupCenter(random, encryptionProfileProvider);*/
 		}
 		exchangeMessages();
 	}
@@ -1634,26 +1665,37 @@ public abstract class CommonDecentralizedTests {
 	@Test(dependsOnMethods = { "testAddFirstElements" })
 	public void testInit() throws DatabaseException {
 		for (CommonDecentralizedTests.Database db : listDatabase) {
-			db.getDbwrapper().getSynchronizer().setNotifier(db);
+			/*db.getDbwrapper().getSynchronizer().setNotifier(db);
 			db.getDbwrapper().setMaxTransactionsToSynchronizeAtTheSameTime(5);
 			db.getDbwrapper().setMaxTransactionEventsKeptIntoMemory(3);
+			Set<DecentralizedValue> peers=new HashSet<>();
+			for (CommonDecentralizedTests.Database dbOther : listDatabase) {
+				if (db!=dbOther)
+					peers.add(db.getHostID());
+			}
+			db.getDbwrapper().getDatabaseConfigurationsBuilder()
+					.setLocalPeerIdentifier(db.getHostID(), sendIndirectTransactions(), true)
+					.addConfiguration(new DatabaseConfiguration(new DatabaseSchema(TablePointed.class.getPackage()), db.canInitCentralBackup?DatabaseConfiguration.SynchronizationType.DECENTRALIZED_SYNCHRONIZATION_AND_SYNCHRONIZATION_WITH_CENTRAL_BACKUP_DATABASE:DatabaseConfiguration.SynchronizationType.DECENTRALIZED_SYNCHRONIZATION, peers, db.backupConfiguration, true), false)
+					.commit();*/
 
-			db.getDbwrapper().getSynchronizer().addHookForLocalDatabaseHost(db.getHostID(),
-					TablePointed.class.getPackage());
+					/*.getSynchronizer().addHookForLocalDatabaseHost(db.getHostID(),
+					TablePointed.class.getPackage());*/
 			Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized());
 
 		}
 
-		for (CommonDecentralizedTests.Database db : listDatabase) {
+/*		for (CommonDecentralizedTests.Database db : listDatabase) {
 			for (CommonDecentralizedTests.Database other : listDatabase) {
 				if (other != db) {
+					db.getDbwrapper().getDatabaseConfigurationsBuilder().syn
 					AbstractHookRequest har = db.getDbwrapper().getSynchronizer().askForHookAddingAndSynchronizeDatabase(
 							other.getHostID(), false, TablePointed.class.getPackage());
 					har = other.getDbwrapper().getSynchronizer().receivedHookAddRequest(har);
 					db.getDbwrapper().getSynchronizer().receivedHookAddRequest(har);
 				}
 			}
-		}
+			break;
+		}*/
 
 	}
 

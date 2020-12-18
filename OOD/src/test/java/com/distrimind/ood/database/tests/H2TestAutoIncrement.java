@@ -1,3 +1,4 @@
+package com.distrimind.ood.database.tests;
 /*
 Copyright or © or Copr. Jason Mahdjoub (01/04/2013)
 
@@ -33,60 +34,50 @@ same conditions as regards security.
 The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
-package com.distrimind.ood.database.decentralizeddatabase;
 
-import com.distrimind.ood.database.DatabaseRecord;
-import com.distrimind.ood.database.Table;
-import com.distrimind.ood.database.annotations.Field;
-import com.distrimind.ood.database.annotations.PrimaryKey;
-import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.util.AbstractDecentralizedID;
-import com.distrimind.util.crypto.ASymmetricPublicKey;
+import com.distrimind.util.FileTools;
+import org.testng.Assert;
+import org.testng.annotations.Test;
+
+import java.io.File;
+import java.sql.*;
 
 /**
- * 
  * @author Jason Mahdjoub
  * @version 1.0
- * @since OOD 2.0
+ * @since OOD 2.3.5
  */
-public final class TableAlone extends Table<TableAlone.Record> {
-	protected TableAlone() throws DatabaseException {
-		super();
-	}
 
-	public static class Record extends DatabaseRecord implements Cloneable {
-		@PrimaryKey
-		public AbstractDecentralizedID id;
+public class H2TestAutoIncrement {
+	@Test
+	public void testAutoIncrement() throws ClassNotFoundException, SQLException {
+		Class.forName("org.h2.Driver");
+		File databaseFile=new File("tmpH2Dir/h2");
+		FileTools.deleteDirectory(databaseFile.getParentFile());
+		databaseFile.getParentFile().mkdir();
+		Connection c=null;
+		try {
+			c= DriverManager
+				.getConnection("jdbc:h2:file:" + databaseFile.getAbsolutePath(), "SA", "");
+			Statement s=c.createStatement();
+			s.executeUpdate("CREATE  TABLE T11__(FLOATNUMBER_VALUE DOUBLE NOT NULL, PK1 INTEGER NOT NULL, PK2 BIGINT AUTO_INCREMENT(1,1) NOT NULL, CONSTRAINT T11____PK PRIMARY KEY(PK1, PK2));");
+			s.close();
+			PreparedStatement ps=c.prepareStatement("INSERT INTO T11__(FLOATNUMBER_VALUE, PK1) VALUES('20', '21');", Statement.RETURN_GENERATED_KEYS );
+			Assert.assertEquals(ps.executeUpdate(), 1);
+			ResultSet r=ps.getGeneratedKeys();
+			Assert.assertTrue(r.next());
+			Assert.assertEquals(r.getMetaData().getColumnCount(), 2 );
+			Assert.assertEquals(r.getLong(2), 1);
+			ps.close();
 
-		@PrimaryKey
-		public ASymmetricPublicKey id2;
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			if (c!=null) {
+				c.close();
+				FileTools.deleteDirectory(databaseFile.getParentFile());
+			}
 
-		@Field
-		public String value;
-
-		public String toString() {
-			return "TableAlone[" + (id == null ? null : id.toString()) + ", id2="+id2.toString()+", " + value + "]";
 		}
-
-		@SuppressWarnings("MethodDoesntCallSuperMethod")
-		@Override
-		public Record clone() {
-			Record r = new Record();
-			r.id = this.id;
-			r.id2 = this.id2;
-			r.value = this.value;
-			return r;
-		}
-
-		@Override
-		public boolean equals(Object o) {
-			if (o == null)
-				return false;
-			if (o instanceof TableAlone.Record)
-				return ((TableAlone.Record) o).id.equals(id) && ((TableAlone.Record) o).id2.equals(id2);
-			return false;
-		}
-
-
 	}
 }

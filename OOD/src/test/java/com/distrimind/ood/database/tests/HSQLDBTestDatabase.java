@@ -34,8 +34,12 @@ same conditions as regards security.
 The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
-package com.distrimind.ood.database;
+package com.distrimind.ood.database.tests;
 
+import com.distrimind.ood.database.DatabaseWrapper;
+import com.distrimind.ood.database.EmbeddedHSQLDBWrapper;
+import com.distrimind.ood.database.InFileEmbeddedH2DatabaseFactory;
+import com.distrimind.ood.database.TestDatabase;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.FileTools;
 import org.testng.annotations.AfterClass;
@@ -50,41 +54,40 @@ import java.security.NoSuchProviderException;
  * @version 2.0
  * @since OOD 1.0
  */
-public class H2TestDatabase extends TestDatabase {
-	private static String database_file_name = "databasetestAH2";
-	private static String database_file_nameb = "databasetestBH2";
-	private static File database_backup_file = new File("databasebackupH2.zip");
+public class HSQLDBTestDatabase extends TestDatabase {
+	private static final String database_file_name = "databasetestHSQLDB";
+	private static final String database_file_nameb = "databasetestHSQLDBb";
+	private static final File database_backup_file = new File("databasebackupHSQLDB.tar");
 
-	public H2TestDatabase() throws DatabaseException, NoSuchAlgorithmException, NoSuchProviderException {
-
+	public HSQLDBTestDatabase() throws DatabaseException, NoSuchAlgorithmException, NoSuchProviderException {
 		super();
 	}
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstanceA() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name)).newWrapperInstance();
+		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name)).getDatabaseWrapperSingleton();
 	}
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstanceB() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_nameb)).newWrapperInstance();
+		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_nameb)).getDatabaseWrapperSingleton();
 	}
 
 	@Override
 	public void deleteDatabaseFilesA() throws IllegalArgumentException {
-		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(new File(database_file_name ));
+		EmbeddedHSQLDBWrapper.deleteDatabaseFiles(new File(database_file_name ));
 	}
 
 	@Override
 	public void deleteDatabaseFilesB() throws IllegalArgumentException {
-		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(new File(database_file_nameb));
+		EmbeddedHSQLDBWrapper.deleteDatabaseFiles(new File(database_file_nameb ));
 	}
 
 	@AfterClass
-	public static void unloadDatabase()  {
-		TestDatabase.unloadDatabase();
-		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(new File(database_file_name));
-		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(new File(database_file_nameb));
+	public void unloadDatabase()  {
+		super.unloadDatabase();
+		EmbeddedHSQLDBWrapper.deleteDatabaseFiles(new File(database_file_name ));
+		EmbeddedHSQLDBWrapper.deleteDatabaseFiles(new File(database_file_nameb));
 		FileTools.deleteDirectory(database_backup_file);
 	}
 
@@ -112,5 +115,6 @@ public class H2TestDatabase extends TestDatabase {
 	public boolean isMultiConcurrentDatabase() {
 		return true;
 	}
+
 
 }

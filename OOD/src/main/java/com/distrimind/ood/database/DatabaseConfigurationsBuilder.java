@@ -464,7 +464,7 @@ public class DatabaseConfigurationsBuilder {
 		//TOTO revisit this part : take account of the restoration and time of restoration
 	}
 
-	public void setLocalPeerIdentifier(DecentralizedValue localPeerId, boolean permitIndirectSynchronizationBetweenPeers, boolean replace) {
+	public DatabaseConfigurationsBuilder setLocalPeerIdentifier(DecentralizedValue localPeerId, boolean permitIndirectSynchronizationBetweenPeers, boolean replace) {
 		if (localPeerId==null)
 			throw new NullPointerException();
 		if (protectedEncryptionProfileProviderForAuthenticatedP2PMessages ==null)
@@ -510,7 +510,7 @@ public class DatabaseConfigurationsBuilder {
 			}
 
 		});
-
+		return this;
 	}
 
 	public DatabaseConfigurationsBuilder synchronizeDistantPeerWithGivenAdditionalPackages(DecentralizedValue distantPeer, Package ... packages)

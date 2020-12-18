@@ -144,6 +144,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		MAX_HOST_NUMBERS = maxHostNumbers;
 	}
 
+	public DatabaseConfigurationsBuilder getDatabaseConfigurationsBuilder() {
+		return databaseConfigurationsBuilder;
+	}
+
 	public boolean isAlwaysDisconnectAfterOnTransaction() {
         return alwaysDisconnectAfterOnTransaction;
     }

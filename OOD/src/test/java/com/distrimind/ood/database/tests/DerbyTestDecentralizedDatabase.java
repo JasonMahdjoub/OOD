@@ -33,68 +33,88 @@ same conditions as regards security.
 The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
-package com.distrimind.ood.database;
-
-import com.distrimind.ood.database.exceptions.DatabaseException;
+package com.distrimind.ood.database.tests;
 
 import java.io.File;
+import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+
+import com.distrimind.ood.database.DatabaseWrapper;
+import com.distrimind.ood.database.EmbeddedDerbyWrapper;
+import com.distrimind.ood.database.InFileEmbeddedH2DatabaseFactory;
+import com.distrimind.ood.database.TestDecentralizedDatabase;
+import com.distrimind.ood.database.exceptions.DatabaseException;
 
 /**
  * 
  * @author Jason Mahdjoub
- * @version 1.0
- * @since OOD 2.0
+ * @version 2.0
+ * @since OOD 1.0
  */
-public class H2TestDecentralizedDatabase extends TestDecentralizedDatabase {
-	final String database_file_name1 = "decentralizedDatabase1";
-	final String database_file_name2 = "decentralizedDatabase2";
-	final String database_file_name3 = "decentralizedDatabase3";
-	final String database_file_name4 = "decentralizedDatabase4";
+public class DerbyTestDecentralizedDatabase extends TestDecentralizedDatabase {
+	final File centralDatabaseFileName = new File("centralDatabase");
+	private final File data_directory1 = new File("databasetestDerby1");
+	private final File data_directory2 = new File("databasetestDerby2");
+	private final File data_directory3 = new File("databasetestDerby3");
+	private final File data_directory4 = new File("databasetestDerby4");
 
-	public H2TestDecentralizedDatabase() throws NoSuchProviderException, NoSuchAlgorithmException {
+	public DerbyTestDecentralizedDatabase() throws NoSuchProviderException, NoSuchAlgorithmException, IOException, DatabaseException {
+		super();
+	}
+
+	@Override
+	public DatabaseWrapper getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver() throws IllegalArgumentException, DatabaseException {
+		return new InFileEmbeddedH2DatabaseFactory(centralDatabaseFileName).getDatabaseWrapperSingleton();
 	}
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstance1() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name1)).newWrapperInstance();
+		return new InFileEmbeddedH2DatabaseFactory(data_directory1).getDatabaseWrapperSingleton();
 	}
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstance2() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name2)).newWrapperInstance();
+
+		return new InFileEmbeddedH2DatabaseFactory(data_directory2).getDatabaseWrapperSingleton();
 	}
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstance3() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name3)).newWrapperInstance();
+		return new InFileEmbeddedH2DatabaseFactory(data_directory3).getDatabaseWrapperSingleton();
 	}
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstance4() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name4)).newWrapperInstance();
+		return new InFileEmbeddedH2DatabaseFactory(data_directory4).getDatabaseWrapperSingleton();
 	}
 
 	@Override
 	public void removeDatabaseFiles1() {
-		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(new File(database_file_name1 ));
+		EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directory1);
 
 	}
 
 	@Override
 	public void removeDatabaseFiles2() {
-		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(new File(database_file_name2 ));
+		EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directory2);
+
 	}
 
 	@Override
 	public void removeDatabaseFiles3() {
-		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(new File(database_file_name3 ));
+		EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directory3);
 	}
 
 	@Override
 	public void removeDatabaseFiles4() {
-		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(new File(database_file_name4 ));
+		EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directory4);
+	}
+
+	@Override
+	public void removeCentralDatabaseFiles() {
+		EmbeddedDerbyWrapper.deleteDatabaseFiles(centralDatabaseFileName);
+
 	}
 
 }

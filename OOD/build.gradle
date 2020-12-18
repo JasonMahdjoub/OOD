@@ -194,7 +194,7 @@ test {
      // enable TestNG support (default is JUnit)
    	useTestNG
    	{
-   		suites 'src/test/java/com/distrimind/ood/database/AllTestsNG.xml'
+   		suites 'src/test/java/com/distrimind/ood/database/tests/AllTestsNG.xml'
    	}
 
    // set heap size for the test JVM(s)
