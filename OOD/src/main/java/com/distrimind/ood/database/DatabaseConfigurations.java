@@ -175,6 +175,14 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 		}
 		allConfigurations.add(configuration);
 	}
+	boolean removeConfiguration(String databasePackage) {
+		if (databasePackage==null)
+			throw new NullPointerException();
+		boolean changed=volatileConfigurations.removeIf(c -> c.getDatabaseSchema().getPackage().getName().equals(databasePackage));
+		changed|=configurations.removeIf(c -> c.getDatabaseSchema().getPackage().getName().equals(databasePackage));
+		changed|=allConfigurations.removeIf(c -> c.getDatabaseSchema().getPackage().getName().equals(databasePackage));
+		return changed;
+	}
 
 	@Override
 	public void loadXML(Document document) throws PropertiesParseException {

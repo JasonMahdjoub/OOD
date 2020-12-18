@@ -220,6 +220,32 @@ public class DatabaseConfigurationsBuilder {
 		});
 		return this;
 	}
+	public DatabaseConfigurationsBuilder removeConfiguration(DatabaseConfiguration databaseConfiguration)
+	{
+		return removeConfiguration(databaseConfiguration.getDatabaseSchema().getPackage());
+	}
+	public DatabaseConfigurationsBuilder removeConfiguration(Package databasePackage)
+	{
+		return removeConfiguration(databasePackage.getName());
+	}
+	public DatabaseConfigurationsBuilder removeConfiguration(String databasePackage)
+	{
+		if (databasePackage==null)
+			throw new NullPointerException();
+
+		pushQuery((t) -> {
+			if (configurations.removeConfiguration(databasePackage))
+			{
+				t.updateConfigurationPersistence();
+				t.checkDatabaseUnload();
+				t.checkDisconnexions();
+				t.checkConnexionsToDesynchronize();
+			}
+
+		});
+		return this;
+	}
+
 
 	private void checkInitLocalPeer() throws DatabaseException {
 
