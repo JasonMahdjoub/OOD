@@ -687,6 +687,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		//protected final HashMap<DecentralizedValue, Long> lastValidatedTransactionIDFromCentralBackup = new HashMap<>();
 		//private final HashMap<DecentralizedValue, ValidatedIDPerDistantHook> validatedIDPerDistantHook =new HashMap<>();
 		protected boolean centralBackupInitialized=false;
+		protected boolean centralBackupAvailable=false;
 		private final Condition newEventCondition=locker.newCondition();
 		private boolean extendedTransactionInProgress=false;
 		private long lastTransactionID=Long.MIN_VALUE;
@@ -1052,12 +1053,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 		
 
-		public long getLastValidatedDistantIDSynchronization(DecentralizedValue hostID) throws DatabaseException {
+		long getLastValidatedDistantIDSynchronization(DecentralizedValue hostID) throws DatabaseException {
 			return getDatabaseHookRecord(hostID).getLastValidatedDistantTransactionID();
 
 		}
 
-		public long getLastValidatedLocalIDSynchronization(DecentralizedValue hostID) throws DatabaseException {
+		long getLastValidatedLocalIDSynchronization(DecentralizedValue hostID) throws DatabaseException {
 
 
 			return getDatabaseHookRecord(hostID).getLastValidatedLocalTransactionID();
@@ -1399,7 +1400,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				return r.getHostID();
 		}
 
-		public void resetSynchronizerAndRemoveAllHosts() throws DatabaseException {
+		/*public void resetSynchronizerAndRemoveAllHosts() throws DatabaseException {
 			resetSynchronizerAndGetAllHosts();
 		}
 		@SuppressWarnings("UnusedReturnValue")
@@ -1410,7 +1411,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			Collection<DatabaseHooksTable.Record> r= getDatabaseHooksTable().resetAllHosts();
 			getDatabaseTransactionEventsTable().resetAllTransactions();
 			return r;
-		}
+		}*/
 		/*private void restoreHosts(Collection<DatabaseHooksTable.Record> hosts, HashMap<String, Boolean> replaceDistantConflictualRecords) throws DatabaseException {
 			if (hosts==null)
 				return ;
@@ -1777,17 +1778,15 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw DatabaseException.getDatabaseException(e);
 			}
 		}
-		public void initConnectionWithDistantBackupCenter() throws DatabaseException {
+
+		public void centralDatabaseBackupAvailable() throws DatabaseException {
 			lockWrite();
 			try
 			{
-				if (!isInitialized(getLocalHostID()))
-					throw new DatabaseException("The function initLocalHostID(DecentralizedValue, boolean) must be called first");
-				if (!centralBackupInitialized)
+				centralBackupAvailable=true;
+				if (!centralBackupInitialized && isInitialized())
 				{
 					centralBackupInitialized=true;
-
-
 					privInitConnectionWithDistantBackupCenter();
 				}
 			}
@@ -1795,6 +1794,21 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				unlockWrite();
 			}
 		}
+		public void centralDatabaseBackupDisconnected() throws DatabaseException {
+			lockWrite();
+			try
+			{
+				centralBackupAvailable=false;
+				if (centralBackupInitialized)
+				{
+					disconnectAllHooksFromThereBackups();
+				}
+			}
+			finally {
+				unlockWrite();
+			}
+		}
+
 
 		private void received(final BackupChannelInitializationMessageFromCentralDatabaseBackup message) throws DatabaseException, IOException {
 			if (message == null)
@@ -1885,7 +1899,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 		}
 
-		public void disconnectHookFromItsBackup(final DecentralizedValue hostID) throws DatabaseException {
+		/*void disconnectHookFromItsBackup(final DecentralizedValue hostID) throws DatabaseException {
 			if (hostID == null)
 				throw new NullPointerException("hostID");
 			if (hostID.equals(getLocalHostID())) {
@@ -1910,9 +1924,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			{
 				unlockWrite();
 			}
-		}
+		}*/
 
-		public void disconnectAllHooksFromThereBackups() throws DatabaseException {
+		void disconnectAllHooksFromThereBackups() throws DatabaseException {
 			try {
 				lockWrite();
 				disconnectLocalHookFromItsCentralBackup();
@@ -1996,6 +2010,19 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				checkConnexionsToInit(r);
 			}
 		}
+		public void connectionLost() throws DatabaseException {
+			if (!isInitialized())
+				return;
+			try {
+				lockWrite();
+				disconnectAll();
+				initializedHooks.clear();
+				centralBackupAvailable=false;
+			}
+			finally {
+				unlockWrite();
+			}
+		}
 		public void peerConnected(DecentralizedValue peerID) throws DatabaseException {
 			if (peerID == null)
 				throw new NullPointerException("hostID");
@@ -2028,10 +2055,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				unlockWrite();
 			}
 		}
-		public void lanConnexionIsClosed() throws DatabaseException {
-			disconnectAll();
-			initializedHooks.clear();
-		}
+
 		void initHook(final DecentralizedValue hostID, final long lastValidatedTransactionID) throws DatabaseException {
 			if (hostID == null)
 				throw new NullPointerException("hostID");
