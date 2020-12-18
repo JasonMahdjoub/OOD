@@ -192,6 +192,10 @@ public class DatabaseConfigurationsBuilder {
 		return encryptionProfileProviderForCentralDatabaseBackup;
 	}
 
+	public EncryptionProfileProvider getProtectedEncryptionProfileProviderForAuthenticatedP2PMessages() {
+		return protectedEncryptionProfileProviderForAuthenticatedP2PMessages;
+	}
+
 	AbstractSecureRandom getSecureRandom() {
 		return secureRandom;
 	}
@@ -265,12 +269,11 @@ public class DatabaseConfigurationsBuilder {
 			public Boolean run() throws Exception {
 				Set<DatabaseConfiguration> packagesToSynchronize=new HashSet<>();
 				for (DatabaseConfiguration c : configurations.getConfigurations()) {
-					Set<DecentralizedValue> dvs = new HashSet<>();
 					if (c.isDecentralized()) {
 
 						wrapper.getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
 							@Override
-							public boolean nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
+							public boolean nextRecord(DatabaseHooksTable.Record _record)  {
 
 								if (!currentTransaction.removedPeersID.contains(_record.getHostID())) {
 									Set<DecentralizedValue> sps = c.getDistantPeersThatCanBeSynchronizedWithThisDatabase();

@@ -37,12 +37,18 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 import com.distrimind.util.crypto.IASymmetricPublicKey;
 import com.distrimind.util.io.SecureExternalizable;
+import com.distrimind.util.properties.AbstractMultiFormatObjectParser;
+import com.distrimind.util.properties.MultiFormatProperties;
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.0.0
  */
-public interface CentralDatabaseBackupCertificate extends SecureExternalizable {
-	IASymmetricPublicKey getCertifiedAccountPublicKey();
+public abstract class CentralDatabaseBackupCertificate extends MultiFormatProperties implements SecureExternalizable {
+	protected CentralDatabaseBackupCertificate() {
+		super(null);
+	}
+
+	public abstract IASymmetricPublicKey getCertifiedAccountPublicKey();
 }

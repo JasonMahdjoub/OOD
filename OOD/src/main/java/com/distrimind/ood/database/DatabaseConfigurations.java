@@ -35,6 +35,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
+import com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupCertificate;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.properties.MultiFormatProperties;
@@ -63,6 +64,7 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 	private Set<DecentralizedValue> distantPeers;
 	private DecentralizedValue localPeer;
 	private boolean permitIndirectSynchronizationBetweenPeers;
+	CentralDatabaseBackupCertificate centralDatabaseBackupCertificate=null;
 
 	public DatabaseConfigurations(Set<DatabaseConfiguration> configurations) throws DatabaseException {
 		this(configurations,null, null, false);
@@ -70,6 +72,11 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 	public DatabaseConfigurations() throws DatabaseException {
 		this(new HashSet<>());
 	}
+
+	public CentralDatabaseBackupCertificate getCentralDatabaseBackupCertificate() {
+		return centralDatabaseBackupCertificate;
+	}
+
 	public DatabaseConfigurations(Set<DatabaseConfiguration> configurations, Set<DecentralizedValue> distantPeers, DecentralizedValue localPeer, boolean permitIndirectSynchronizationBetweenPeers) throws DatabaseException {
 		super(null);
 		if (configurations ==null)
