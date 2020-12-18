@@ -1,5 +1,6 @@
 package com.distrimind.ood.database;
 
+import com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupCertificate;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.crypto.AbstractSecureRandom;
@@ -65,6 +66,7 @@ public class DatabaseConfigurationsBuilder {
 		private boolean checkNewConnexions=false;
 		private boolean checkDatabaseToDesynchronize =false;
 		private boolean checkDatabaseLoading=false;
+		private boolean checkInitCentralDatabaseBackup=false;
 		private Set<DecentralizedValue> removedPeersID=null;
 
 		void updateConfigurationPersistence() {
@@ -73,6 +75,10 @@ public class DatabaseConfigurationsBuilder {
 
 		void checkNewConnexions() {
 			checkNewConnexions=true;
+		}
+		void checkInitCentralDatabaseBackup()
+		{
+			checkInitCentralDatabaseBackup=true;
 		}
 
 		void checkConnexionsToDesynchronize() {
@@ -171,6 +177,9 @@ public class DatabaseConfigurationsBuilder {
 				if (currentTransaction.checkDisconnexions) {
 					checkDisconnections();
 				}
+				if (currentTransaction.checkInitCentralDatabaseBackup)
+					checkInitCentralDatabaseBackup();
+
 
 			}
 			finally {
@@ -179,6 +188,12 @@ public class DatabaseConfigurationsBuilder {
 			}
 		}
 	}
+
+	private void checkInitCentralDatabaseBackup() throws DatabaseException {
+		if (wrapper.getSynchronizer().centralBackupAvailable)
+			wrapper.getSynchronizer().centralDatabaseBackupAvailable();
+	}
+
 	public void rollBack()
 	{
 		synchronized (this)
@@ -330,6 +345,7 @@ public class DatabaseConfigurationsBuilder {
 		});
 
 	}
+
 	private boolean checkDatabaseToDesynchronize() throws DatabaseException {
 
 		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
@@ -497,7 +513,7 @@ public class DatabaseConfigurationsBuilder {
 
 	}
 
-	public DatabaseConfigurationsBuilder synchronizeDistantPeersWithGivenAdditionalPackages(DecentralizedValue distantPeer, Package ... packages)
+	public DatabaseConfigurationsBuilder synchronizeDistantPeerWithGivenAdditionalPackages(DecentralizedValue distantPeer, Package ... packages)
 	{
 		String[] packagesString=new String[packages.length];
 		int i=0;
@@ -507,9 +523,9 @@ public class DatabaseConfigurationsBuilder {
 				throw new NullPointerException();
 			packagesString[i++]=p.getName();
 		}
-		return synchronizeDistantPeersWithGivenAdditionalPackages(distantPeer, packagesString);
+		return synchronizeDistantPeerWithGivenAdditionalPackages(distantPeer, packagesString);
 	}
-	public DatabaseConfigurationsBuilder synchronizeDistantPeersWithGivenAdditionalPackages(DecentralizedValue distantPeer, String ... packagesString)
+	public DatabaseConfigurationsBuilder synchronizeDistantPeerWithGivenAdditionalPackages(DecentralizedValue distantPeer, String ... packagesString)
 	{
 		return synchronizeDistantPeersWithGivenAdditionalPackages(Collections.singletonList(distantPeer), packagesString);
 	}
@@ -539,6 +555,10 @@ public class DatabaseConfigurationsBuilder {
 		});
 		return this;
 	}
+	public DatabaseConfigurationsBuilder desynchronizeDistantPeerWithGivenAdditionalPackages(DecentralizedValue distantPeer, String ... packagesString)
+	{
+		return desynchronizeDistantPeersWithGivenAdditionalPackages(Collections.singleton(distantPeer), packagesString);
+	}
 	public DatabaseConfigurationsBuilder desynchronizeDistantPeersWithGivenAdditionalPackages(Collection<DecentralizedValue> distantPeers, String ... packagesString)
 	{
 		if (packagesString==null)
@@ -564,7 +584,10 @@ public class DatabaseConfigurationsBuilder {
 		});
 		return this;
 	}
-
+	public DatabaseConfigurationsBuilder removeDistantPeer(DecentralizedValue distantPeer)
+	{
+		return removeDistantPeers(Collections.singleton(distantPeer));
+	}
 	public DatabaseConfigurationsBuilder removeDistantPeers(Collection<DecentralizedValue> distantPeers)
 	{
 		if (protectedEncryptionProfileProviderForAuthenticatedP2PMessages ==null)
@@ -580,7 +603,6 @@ public class DatabaseConfigurationsBuilder {
 		});
 		return this;
 	}
-
 
 	public DatabaseConfigurationsBuilder setDistantPeersWithGivenAdditionalPackages(String packageString, Collection<DecentralizedValue> distantPeers)
 	{
@@ -616,6 +638,17 @@ public class DatabaseConfigurationsBuilder {
 			t.checkDatabaseLoading();
 			t.checkNewConnexions();
 			t.checkDatabaseToSynchronize();
+		});
+		return this;
+	}
+
+	public DatabaseConfigurationsBuilder setCentralDatabaseBackupCertificate(CentralDatabaseBackupCertificate centralDatabaseBackupCertificate)
+	{
+		pushQuery((t) -> {
+			configurations.centralDatabaseBackupCertificate=centralDatabaseBackupCertificate;
+			wrapper.getSynchronizer().disconnectAllHooksFromThereBackups();
+			currentTransaction.checkInitCentralDatabaseBackup();
+
 		});
 		return this;
 	}
