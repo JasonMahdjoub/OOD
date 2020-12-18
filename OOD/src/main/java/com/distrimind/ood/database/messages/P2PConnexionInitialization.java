@@ -66,6 +66,10 @@ public class P2PConnexionInitialization extends DatabaseEvent implements P2PData
 		this.lastValidatedTransactionID = lastValidatedTransactionID;
 	}
 
+	public long getLastValidatedTransactionID() {
+		return lastValidatedTransactionID;
+	}
+
 	@Override
 	public boolean cannotBeMerged() {
 		return false;

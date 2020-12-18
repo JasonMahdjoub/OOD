@@ -228,10 +228,14 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			message.setDatabaseWrapper(wrapper);
 			message.updateSignature(encryptionProfileProvider);
 			authenticatedMessagesQueueToSend.addLast(message);
-			alterRecordFilter.update("authenticatedMessagesQueueToSend", authenticatedMessagesQueueToSend, "lastLocalAuthenticatedP2PMessageID", lastLocalAuthenticatedP2PMessageID);
+			if (message instanceof HookRemoveRequest && ((HookRemoveRequest) message).getRemovedHookID().equals(hostID))
+				alterRecordFilter.update("authenticatedMessagesQueueToSend", authenticatedMessagesQueueToSend, "lastLocalAuthenticatedP2PMessageID", lastLocalAuthenticatedP2PMessageID, "pairingState", PairingState.REMOVED);
+			else
+				alterRecordFilter.update("authenticatedMessagesQueueToSend", authenticatedMessagesQueueToSend, "lastLocalAuthenticatedP2PMessageID", lastLocalAuthenticatedP2PMessageID);
 			message.messageReadyToSend();
 			wrapper.getSynchronizer().notifyNewAuthenticatedMessage(message);
 		}
+
 
 		void addAuthenticatedP2PMessageToSendToCentralDatabaseBackup(AuthenticatedP2PMessage message, DatabaseHooksTable table) throws DatabaseException {
 			if (message==null)

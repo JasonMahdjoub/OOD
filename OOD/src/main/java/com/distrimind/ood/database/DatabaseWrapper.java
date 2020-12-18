@@ -979,6 +979,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		void sendP2PConnexionInitializationMessage(DatabaseHooksTable.Record peer) throws DatabaseException {
+			if (hookCannotBeConnected(peer))
+				return;
 			addNewDatabaseEvent(new P2PConnexionInitialization(getLocalHostID(), peer.getHostID(), peer.getLastValidatedDistantTransactionID()));
 		}
 
@@ -1477,7 +1479,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					throw DatabaseException.getDatabaseException(
 							new IllegalAccessException("hostID " + hostID + " has not been initialized !"));
 				if (hook.concernsLocalDatabaseHost()) {
-					initializedHooks.remove(hostID);
+					initializedHooks.put(hostID, null);
 					ArrayList<DecentralizedValue> hs=new ArrayList<>(initializedHooks.keySet());
 					initializedHooks.replaceAll((k, v)-> null);
 					this.events.clear();
@@ -2007,7 +2009,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 		private void checkConnexionsToInit(DecentralizedValue peerID) throws DatabaseException
 		{
-			if (databaseConfigurationsBuilder.getConfigurations().getDistantPeers().contains(peerID)) {
+			//if (databaseConfigurationsBuilder.getConfigurations().getDistantPeers().contains(peerID))
+			{
 				DatabaseHooksTable.Record r = getDatabaseHooksTable().getHook(peerID, true);
 				if (r == null)
 					return;
@@ -2065,7 +2068,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new NullPointerException("hostID");
 			try {
 				lockRead();
-				if (initializedHooks.remove(hostID) != null)
+				if (initializedHooks.put(hostID, null) != null)
 					throw DatabaseException.getDatabaseException(
 							new IllegalAccessException("hostID " + hostID + " already initialized !"));
 			}
@@ -2074,16 +2077,24 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				unlockRead();
 			}
 			DatabaseHooksTable.Record r = getDatabaseHooksTable().getHook(hostID);
+
 			initHook(r, lastValidatedTransactionID);
 		}
+
+		private boolean hookCannotBeConnected(DatabaseHooksTable.Record hook)
+		{
+			return hook.getPairingState() == DatabaseHooksTable.PairingState.REMOVED && databaseConfigurationsBuilder.getConfigurations().getDistantPeers().contains(hook.getHostID());
+		}
+
 		@SuppressWarnings("unlikely-arg-type")
 		void initHook(final DatabaseHooksTable.Record r, final long lastValidatedTransactionID)
 				throws DatabaseException {
 			if (r == null)
-				throw new NullPointerException("r");
+				throw new DatabaseException("r");
 			if (!isInitialized())
 				throw new DatabaseException("The Synchronizer must be initialized (initLocalHostID function) !");
-
+			if (hookCannotBeConnected(r))
+				return;
 
 
 			
@@ -2351,6 +2362,16 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			} else if (data instanceof LastIDCorrection) {
 				received((LastIDCorrection) data);
 			}
+			else if (data instanceof P2PConnexionInitialization)
+			{
+				received((P2PConnexionInitialization)data);
+			}
+			else
+				throw new DatabaseException("Invalid message "+data, new IllegalArgumentException());
+		}
+		private void received(P2PConnexionInitialization p2PConnexionInitialization) throws DatabaseException {
+
+			initHook(p2PConnexionInitialization.getHostSource(), p2PConnexionInitialization.getLastValidatedTransactionID());
 		}
 		private void received(IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup message) throws DatabaseException, IOException {
 
