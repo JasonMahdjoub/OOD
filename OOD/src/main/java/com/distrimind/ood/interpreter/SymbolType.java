@@ -61,11 +61,11 @@ public enum SymbolType {
 	IDENTIFIER(false, false, false, "^[a-zA-Z][a-zA-Z0-9\\._\\-]*+$", null, null), 
 	NUMBER(false, false, false, "^(\\+|\\-)?(([0-9]+(\\.[0-9]+)?(E(\\-|\\+)?[0-9]+)?)|([0-9]*\\.[0-9]+(E(\\-|\\+)?[0-9]+)?))$", null, null), 
 	STRING(false, false, false, "^(\"|\\')[\\p{Alnum}\\p{Blank}\\!\\#\\$\\%\\&\\(\\)\\*\\+\\,\\-\\.\\/:;\\<\\=\\>\\?\\@\\[\\\\\\]\\^_\\`\\{\\|\\}\\~]+(\"|\\')$", null, null),
-	NULL(false, false, false, "^[nN][uU][lL][lL]$", new String[] {"null","NULL"}, "NULL"),
+	NULL(false, false, false, "^(N|n)(U|u)(L|l)(L|l)$", null, "NULL"),
 	PARAMETER( false, false, false, "(\\%|\\:)[a-zA-Z\\-_][0-9a-zA-Z\\-_]*$", null, null), LIKE(true, false, true, "^(L|l)(I|i)(K|k)(E|e)$", new String[] { " LIKE " }, " LIKE "),
 	NOTLIKE(true, false,true,"^(N|n)(O|o)(T|t)_(L|l)(I|i)(K|k)(E|e)$",new String[] {" NOT LIKE "," NOT_LIKE " }," NOT LIKE "),
-	IS(true, false,false,"^[iI][sS]$",new String[] {" IS "," IS " }," IS "),
-	ISNOT(true, false,true,"^[iI][sS]_[Nn][oO][tT]$",new String[] {" IS NOT "," IS_NOT " }," IS NOT "),
+	IS(true, false,false,"^(I|i)(S|s)$",new String[] {" IS "}," IS "),
+	ISNOT(true, false,true,"^(I|i)(S|s)_(N|n)(O|o)(T|t)$",new String[] {" IS NOT "," IS_NOT " }," IS NOT "),
 	;
 
 	private final Pattern pattern;

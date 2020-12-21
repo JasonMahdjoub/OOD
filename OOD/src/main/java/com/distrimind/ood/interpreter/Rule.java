@@ -44,10 +44,9 @@ import java.util.regex.Pattern;
  */
 public enum Rule {
 
-    NULL("^(<" + SymbolType.IDENTIFIER.name()+">$"),
+    NULL("^(<" + SymbolType.NULL.name()+">)$"),
     TERME("^(<" + SymbolType.IDENTIFIER.name() + ">|<" + SymbolType.NUMBER.name() + ">|<" + SymbolType.STRING.name() + ">|<" + SymbolType.PARAMETER.name() + ">|\\(<EXPRESSION>\\))$"),
-    EXPRESSION(
-            "^<" + TERME.name() + ">$"),
+    EXPRESSION("^<" + TERME.name() + ">$"),
     OPCOMP("^(<" + SymbolType.EQUALOPERATOR.name() + ">|<"
             + SymbolType.NOTEQUALOPERATOR.name() + ">|<" + SymbolType.LOWEROPERATOR.name() + ">|<"
             + SymbolType.LOWEROREQUALOPERATOR.name() + ">|<" + SymbolType.GREATEROPERATOR.name() + ">|<"
@@ -55,17 +54,17 @@ public enum Rule {
             + SymbolType.NOTLIKE.name() + ">)$"),
     ISOP("^(<" + SymbolType.IS.name() + ">|<"
             + SymbolType.ISNOT.name() + ">)$"),
+    NULLTEST(
+            "^(<" + TERME.name() + "><" + ISOP.name() + "><" + NULL.name()
+                    + ">)$"),
     COMPARE(
             "^(<" + EXPRESSION.name() + "><" + OPCOMP.name() + "><" + EXPRESSION.name()
                     + ">|\\(<QUERY>\\))$"),
-    NULLTEST(
-            "^(<" + EXPRESSION.name() + "><" + ISOP.name() + "><" + NULL.name()
-                    + ">$"),
     OPCONDITION(
             "^(<" + SymbolType.ANDCONDITION.name() + ">|<"
                     + SymbolType.ORCONDITION.name() + ">)$"),
     QUERY(
-            "^(<" + COMPARE.name() + ">|<QUERY><"
+            "^(<" + COMPARE.name() + ">|<"+NULLTEST.name()+">|<QUERY><"
                     + OPCONDITION.name() + "><QUERY>)$");
 
     private final Pattern pattern;

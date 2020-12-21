@@ -35,12 +35,12 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.interpreter;
 
-import java.util.ArrayList;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import com.distrimind.ood.database.exceptions.DatabaseSyntaxException;
 import com.distrimind.ood.database.exceptions.QueryInterpretationImpossible;
 import com.distrimind.ood.database.exceptions.UnrecognizedSymbolException;
+import com.distrimind.util.Reference;
+
+import java.util.ArrayList;
 
 /**
  * 
@@ -186,14 +186,15 @@ public class Interpreter {
 		if (command == null)
 			throw new NullPointerException("command");
 
-		AtomicInteger index = new AtomicInteger(0);
+		Reference<Integer> index = new Reference<>(0);
 		ArrayList<QueryPart> res = new ArrayList<>(parts.size());
 		boolean changed = false;
 		while (index.get() < parts.size()) {
 			RuleInstance ri = getQuery(parts, index.get(), index);
 
 			if (ri == null) {
-				res.add(parts.get(index.getAndIncrement()));
+				res.add(parts.get(index.get()));
+				index.set(index.get()+1);
 			} else {
 				changed = true;
 				res.add(ri);
@@ -208,7 +209,7 @@ public class Interpreter {
 	}
 
 	private static RuleInstance getQuery(ArrayList<QueryPart> parts, int index,
-										 AtomicInteger newIndex) {
+										 Reference<Integer> newIndex) {
 
 		Rule chosenValidRule = null;
 

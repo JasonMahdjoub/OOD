@@ -99,8 +99,12 @@ public class Symbol implements QueryPart {
 		case NUMBER:
 		case PARAMETER:
 		case STRING:
+			return new RuleInstance(Rule.TERME, this);
 		case NULL:
 			return new RuleInstance(Rule.NULL, this);
+		case IS:
+		case ISNOT:
+			return new RuleInstance(Rule.ISOP, this);
 		case OPEN_PARENTHESIS:
 		case CLOSE_PARENTHESIS:
 			return null;
