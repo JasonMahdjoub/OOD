@@ -200,12 +200,25 @@ public class CalendarFieldAccessor extends FieldAccessor{
 
 	@Override
 	public boolean isComparable() {
-		return false;
+		return true;
 	}
 
 	@Override
-	public int compare(Object _r1, Object _r2) throws DatabaseException {
-		throw new DatabaseException("Unexpected exception");
+	public int compare(Object _o1, Object _o2) throws DatabaseException {
+		try {
+			Object val1 = field.get(_o1);
+			Object val2 = field.get(_o2);
+			if (val1 == null && val2 != null)
+				return -1;
+			else if (val1 != null && val2 == null)
+				return 1;
+			else if (val1 == val2)
+				return 0;
+			return ((Calendar) val1).compareTo((Calendar) val2);
+		} catch (Exception e) {
+			throw DatabaseException.getDatabaseException(e);
+		}
+
 	}
 
 	@Override

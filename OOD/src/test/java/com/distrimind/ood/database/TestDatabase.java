@@ -3328,7 +3328,7 @@ public abstract class TestDatabase {
 				return;
 		} else if (op_comp == SymbolType.GREATEROPERATOR || op_comp == SymbolType.GREATEROREQUALOPERATOR
 				|| op_comp == SymbolType.LOWEROPERATOR || op_comp == SymbolType.LOWEROREQUALOPERATOR) {
-			if (!(value instanceof Number))
+			if (!(value instanceof Number) && !(value instanceof Calendar) && !(value instanceof Date))
 				return;
 		} else if (!useParameter) {
 			if (!(value instanceof String))
@@ -3437,9 +3437,9 @@ public abstract class TestDatabase {
 			else if (op_comp == SymbolType.NOTLIKE)
 				test = !fa.getValue(nearestObjectInstance).toString().equals(value.toString());
 			else {
-				BigDecimal v = new BigDecimal(fa.getValue(nearestObjectInstance).toString());
+				Comparable v = (Comparable)fa.getValue(nearestObjectInstance);
 
-				int comp = v.compareTo(new BigDecimal(value.toString()));
+				int comp = v.compareTo(value);
 				if (op_comp == SymbolType.GREATEROPERATOR)
 					test = comp > 0;
 				else if (op_comp == SymbolType.GREATEROREQUALOPERATOR)
