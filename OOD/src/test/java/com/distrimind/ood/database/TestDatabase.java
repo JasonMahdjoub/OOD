@@ -110,7 +110,7 @@ public abstract class TestDatabase {
 
 	static Set<Class<?>> listClasses=new HashSet<>(Arrays.asList(Table1.class, Table2.class, Table3.class, Table4.class, Table5.class, Table6.class, Table7.class));
 	static DatabaseConfiguration dbConfig1 = new DatabaseConfiguration(new DatabaseSchema(Table1.class.getPackage(), listClasses));
-	static DatabaseConfiguration dbConfig2 = new DatabaseConfiguration(new DatabaseSchema(Lecture.class.getPackage(), listClasses));
+	static DatabaseConfiguration dbConfig2 = new DatabaseConfiguration(new DatabaseSchema(Lecture.class.getPackage()));
 	private DatabaseWrapper sql_db;
 	private DatabaseWrapper sql_dbb;
 
