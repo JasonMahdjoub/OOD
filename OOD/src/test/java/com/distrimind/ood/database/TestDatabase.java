@@ -65,7 +65,10 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -3165,10 +3168,13 @@ public abstract class TestDatabase {
                 res.add(d.getWorkerIDAndSequence());
             } else if (AbstractDecentralizedID.class.isAssignableFrom(type)) {
                 AbstractDecentralizedID id = (AbstractDecentralizedID) o;
-                if (sql_db.isVarBinarySupported())
-                    res.add(id.encode().getBytes());
+                if (sql_db.isVarBinarySupported()) {
+					WrappedData wd=id.encode();
+					res.add(wd.getBytes().clone());
+				}
                 else {
-                    byte[] bytes = id.encode().getBytes();
+					WrappedData wd=id.encode();
+                    byte[] bytes = wd.getBytes().clone();
                     BigInteger r = BigInteger.valueOf(1);
                     for (byte aByte : bytes) {
                         r = r.shiftLeft(8).or(BigInteger.valueOf(aByte & 0xFF));
@@ -3191,6 +3197,10 @@ public abstract class TestDatabase {
 			} else if (o instanceof Date) {
                 res.add(new Timestamp(((Date) o).getTime()));
             }
+            else if (o instanceof Calendar)
+			{
+				res.add(getDatabaseWrapperInstanceA().getByteTabObjectConverter(Calendar.class).getBytes(o));
+			}
             else if (o instanceof File)
             {
                 res.add(((File)o).getPath().getBytes(StandardCharsets.UTF_8));
@@ -3227,13 +3237,77 @@ public abstract class TestDatabase {
 
 		return res;
 	}
+	private <T extends Record> void subInterpreterCommandProvider(SymbolType op_cond, SymbolType op_comp, StringBuffer command, StringBuffer expectedCommand,
+																  String fieldName, AtomicInteger openedParenthesis, Table<T> table, T record,
+																  AtomicBoolean whereResult) throws DatabaseException {
+		if (op_comp==SymbolType.IS || op_comp==SymbolType.ISNOT)
+		{
+			boolean startCommand = true;
+			boolean test = false;
+			if (command.length() > 0) {
+				startCommand = false;
+				command.append(" ");
+				command.append(op_cond.getContent());
+				command.append(" ");
 
+				expectedCommand.append(" ");
+				expectedCommand.append(op_cond.getContent());
+				expectedCommand.append(" ");
+			}
+			Table.FieldAccessorValue fieldAccessorAndValue =table.getFieldAccessorAndValue(record, fieldName);
+			FieldAccessor fa=fieldAccessorAndValue.getFieldAccessor();
+			Object nearestObjectInstance=fieldAccessorAndValue.getValue();
+			SqlField[] sqlFields=fa.getDeclaredSqlFields();
+			expectedCommand.append("(");
+			for (int i = 0; i < sqlFields.length; i++) {
+				if (i > 0)
+					expectedCommand.append(" AND ");
+				expectedCommand.append("%Table1Name%");
+				expectedCommand.append(".`");
+				expectedCommand.append(sqlFields[i].short_field_without_quote.replace(".", "_").toUpperCase());
+				expectedCommand.append("`");
+				expectedCommand.append(op_comp.getContent());
+				expectedCommand.append(" ")
+						.append(SymbolType.NULL.getContent());
+			}
+			expectedCommand.append(")");
+
+
+			if (op_comp == SymbolType.IS) {
+				test = fa.getValue(nearestObjectInstance)==null;
+			}
+			else if (op_comp == SymbolType.ISNOT) {
+				test = fa.getValue(nearestObjectInstance)!=null;
+			}
+
+			if (Math.random() < 0.5) {
+				command.append("(");
+				expectedCommand.append("(");
+				openedParenthesis.incrementAndGet();
+			}
+
+			if (openedParenthesis.get() > 0 && Math.random() < 0.5) {
+				command.append(")");
+				expectedCommand.append(")");
+				openedParenthesis.decrementAndGet();
+			}
+			if (startCommand)
+				whereResult.set(test);
+			else if (op_cond == SymbolType.ANDCONDITION)
+				whereResult.set(whereResult.get() && test);
+			else if (op_cond == SymbolType.ORCONDITION)
+				whereResult.set(whereResult.get() || test);
+		}
+
+	}
 	@SuppressWarnings("unused")
 	private <T extends Record> void subInterpreterCommandProvider(SymbolType op_cond, SymbolType op_comp, String cs,
 																  HashMap<String, Object> parametersTable1Equallable, StringBuffer command, StringBuffer expectedCommand,
 																  String fieldName, Object value, HashMap<Integer, Object> expectedParameters, boolean useParameter,
 																  AtomicInteger expectedParamterIndex, AtomicInteger openedParenthesis, Table<T> table, T record,
 																  AtomicBoolean whereResult) throws IOException, DatabaseException {
+		if (value==null)
+			return;
 		if (op_comp == SymbolType.LIKE || op_comp == SymbolType.NOTLIKE) {
 			if (!(value instanceof String))
 				return;
@@ -3309,6 +3383,7 @@ public abstract class TestDatabase {
 			ArrayList<Object> sqlInstance = getExpectedParameter(fa.getFieldClassType(), value);
 			if (op_comp == SymbolType.EQUALOPERATOR || op_comp == SymbolType.NOTEQUALOPERATOR)
 				expectedCommand.append("(");
+			assert sqlInstance.size()>0;
 			for (int i = 0; i < sqlInstance.size(); i++) {
 				if (i > 0)
 					expectedCommand.append(" AND ");
@@ -3319,7 +3394,7 @@ public abstract class TestDatabase {
 				expectedCommand.append(op_comp.getContent());
 				if (value==null)
 				{
-					expectedCommand.append("NULL");
+					throw new IllegalAccessError();
 				}
 				else
 				{
@@ -3330,7 +3405,13 @@ public abstract class TestDatabase {
 			if (op_comp == SymbolType.EQUALOPERATOR || op_comp == SymbolType.NOTEQUALOPERATOR)
 				expectedCommand.append(")");
 		} else {
-			if (op_comp == SymbolType.EQUALOPERATOR) {
+			if (op_comp == SymbolType.IS) {
+				test = fa.getValue(nearestObjectInstance)==null;
+			}
+			else if (op_comp == SymbolType.ISNOT) {
+				test = fa.getValue(nearestObjectInstance)!=null;
+			}
+			else if (op_comp == SymbolType.EQUALOPERATOR) {
 				assert fa!=null;
 				test = fa.getValue(nearestObjectInstance).toString().equals(value.toString());
 			}
@@ -3465,12 +3546,13 @@ public abstract class TestDatabase {
 		SymbolType[] ops_cond = new SymbolType[] { SymbolType.ANDCONDITION, SymbolType.ORCONDITION };
 		SymbolType[] ops_comp = new SymbolType[] { SymbolType.EQUALOPERATOR, SymbolType.NOTEQUALOPERATOR,
 				SymbolType.LIKE, SymbolType.NOTLIKE, SymbolType.GREATEROPERATOR, SymbolType.GREATEROREQUALOPERATOR,
-				SymbolType.LOWEROPERATOR, SymbolType.LOWEROREQUALOPERATOR };
+				SymbolType.LOWEROPERATOR, SymbolType.LOWEROREQUALOPERATOR/*, SymbolType.IS, SymbolType.ISNOT*/};
 
 		for (SymbolType op_cond : ops_cond) {
 			for (SymbolType op_comp : ops_comp) {
 				for (String cs : op_comp.getMatches()) {
 					for (boolean useParameter : new boolean[] { false, true }) {
+
 						StringBuffer command = new StringBuffer();
 						StringBuffer expectedCommand = new StringBuffer();
 
@@ -3479,14 +3561,24 @@ public abstract class TestDatabase {
 						AtomicInteger openedParenthesis = new AtomicInteger(0);
 						AtomicBoolean expectedTestResult = new AtomicBoolean();
 						HashMap<String, Object> parametersTable1Equallable2 = new HashMap<>();
-						for (Map.Entry<String, Object> m : parametersTable1Equallable.entrySet()) {
-							if (m.getValue()!=null || op_comp==SymbolType.EQUALOPERATOR || op_comp==SymbolType.NOTEQUALOPERATOR)
-								subInterpreterCommandProvider(op_cond, op_comp, cs, parametersTable1Equallable, command,
-									expectedCommand, m.getKey(), m.getValue(), expectedParameters, useParameter,
-									expectedParamterIndex, openedParenthesis, table1, record, expectedTestResult);
-							parametersTable1Equallable2.put(m.getKey().replace(".", "_"), m.getValue());
+						if (op_comp==SymbolType.IS || op_comp==SymbolType.ISNOT)
+						{
+							for (FieldAccessor fa : table1.getFieldAccessors()) {
+								subInterpreterCommandProvider(op_cond, op_comp, command, expectedCommand,
+										fa.getFieldName(), openedParenthesis, table1, record, expectedTestResult);
+							}
 						}
+						else {
 
+							for (Map.Entry<String, Object> m : parametersTable1Equallable.entrySet()) {
+
+								if (m.getValue() != null/* || op_comp == SymbolType.EQUALOPERATOR*/)
+									subInterpreterCommandProvider(op_cond, op_comp, cs, parametersTable1Equallable, command,
+											expectedCommand, m.getKey(), m.getValue(), expectedParameters, useParameter,
+											expectedParamterIndex, openedParenthesis, table1, record, expectedTestResult);
+								parametersTable1Equallable2.put(m.getKey().replace(".", "_"), m.getValue());
+							}
+						}
 
 						while (openedParenthesis.get() > 0) {
 							command.append(")");
@@ -3547,7 +3639,8 @@ public abstract class TestDatabase {
 			{
 				value=ByteTabFieldAccessor.getByteTab((BigDecimal)value);
 			}
-			assertEqualsParameters(value, ep, "Class type source " + e.getValue().getClass()+", expected class "+ep.getClass());
+
+			assertEqualsParameters(value, ep, "Parameter "+e.getKey()+". Class type source " + e.getValue().getClass()+", expected class "+ep.getClass()+".");
 		}
 		Assert.assertEquals(rule.isConcernedBy(table1, parameters, record), expectedTestResult, command);
 	}
@@ -3564,14 +3657,11 @@ public abstract class TestDatabase {
 			if (parameter instanceof ByteArrayInputStream)
 			{
 				ByteArrayInputStream bais=(ByteArrayInputStream)parameter;
+
 				try(ByteArrayOutputStream baos=new ByteArrayOutputStream())
 				{
-					int val=bais.read();
-					while (val!=-1)
-					{
-						baos.write(val);
-						val=bais.read();
-					}
+					bais.transferTo(baos);
+					baos.flush();
 					parameter=baos.toByteArray();
 				}
 			}

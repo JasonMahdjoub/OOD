@@ -90,15 +90,7 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 			Bits.putLong(res, 0, timeUTC);
 			System.arraycopy(timeZone, 0, res, 8, timeZone.length);
 			return res;
-			/*try(ByteArrayOutputStream baos=new ByteArrayOutputStream();ObjectOutputStream oos=new ObjectOutputStream(baos))
-			{
-				oos.writeObject(_o);
-				return baos.toByteArray();
-			}
-			catch(Exception e)
-			{
-				throw new IncompatibleFieldDatabaseException("",e);
-			}*/
+
 		}
 
 		throw new IncompatibleFieldDatabaseException("Incompatible type " + _o.getClass().getCanonicalName());
