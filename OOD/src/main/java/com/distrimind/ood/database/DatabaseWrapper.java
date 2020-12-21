@@ -383,6 +383,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		converters.add(new DefaultByteTabObjectConverter());
 		synchronizer=new DatabaseSynchronizer();
 		databaseConfigurationsBuilder=new DatabaseConfigurationsBuilder(databaseConfigurations, this, databaseLifeCycles, encryptionProfileProviderForCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages, secureRandom, createDatabasesIfNecessaryAndCheckIt);
+		databaseConfigurationsBuilder.checkInitLocalPeer();
 	}
 
 	public boolean isLoadedToMemory()
@@ -4994,7 +4995,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	}
 	final void loadDatabase(final DatabaseConfiguration configuration, int databaseVersion,
 							final DatabaseLifeCycles lifeCycles) throws DatabaseException {
-		checkConfiguration(configuration);
+
 		boolean internalPackage=configuration.getDatabaseSchema().getPackage().equals(this.getClass().getPackage());
 		if (!internalPackage) {
 			if (configuration.isCreateDatabaseIfNecessaryAndCheckItDuringCurrentSession())
@@ -5025,19 +5026,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			unlockWrite();
 		}
 	}
-	private void checkConfiguration(DatabaseConfiguration configuration) throws DatabaseException {
-		if (configuration==null)
-			throw new NullPointerException();
-		if (configuration.getDatabaseSchema().getPackage().equals(this.getClass().getPackage()))
-			throw new IllegalArgumentException("The package "+this.getClass().getPackage()+" cannot be included into the list of database");
-		DecentralizedValue ldv=getSynchronizer().getLocalHostID();
-		if (ldv!=null)
-		{
-			Collection<DecentralizedValue> c=configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase();
-			if (c!=null && c.contains(ldv))
-				throw new IllegalArgumentException("Impossible to synchronize the database between one peer and it self : "+ldv);
-		}
-	}
+
 	//TODO manage time of restoration and peers to remove
 	final void loadDatabase(final Collection<DatabaseConfiguration> configurations,
 			 Long timeOfRestoration, Collection<DecentralizedValue> peersToRemove,
@@ -5046,8 +5035,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			throw new NullPointerException("tables is a null pointer.");
 		if (configurations.size()==0)
 			throw new IllegalArgumentException();
-		for (DatabaseConfiguration bc : configurations)
-			checkConfiguration(bc);
 
 		if (peersToRemove!=null && peersToRemove.size()==0)
 			peersToRemove=null;
@@ -5526,7 +5513,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				LastIDCorrectionFromCentralDatabaseBackup.class,
 				TransactionConfirmationEvents.class,
 				DatabaseEventsToSynchronizeP2P.class,
-				AbstractHookRequest.class,
+				HookSynchronizeRequest.class,
+				HookUnsynchronizeRequest.class,
 				HookRemoveRequest.class,
 				BackupChannelInitializationMessageFromCentralDatabaseBackup.class,
 				BackupChannelUpdateMessageFromCentralDatabaseBackup.class,

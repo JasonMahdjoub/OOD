@@ -42,7 +42,9 @@ import com.distrimind.util.properties.MultiFormatProperties;
 import com.distrimind.util.properties.PropertiesParseException;
 import org.w3c.dom.Document;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Reader;
 import java.util.*;
 
@@ -98,9 +100,12 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 			this.distantPeers = new HashSet<>(distantPeers);
 		}
 		this.localPeer = localPeer;
+		checkConfigurations();
 		checkDistantPeers();
 
 	}
+
+
 	boolean checkDistantPeers() throws DatabaseException {
 		boolean save=false;
 		for (DatabaseConfiguration dc : configurations)
@@ -138,6 +143,9 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 	}
 
 	void setLocalPeer(DecentralizedValue localPeer) {
+		for (DatabaseConfiguration dc : configurations)
+			if (dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase()!=null && dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase().contains(localPeer))
+				throw new IllegalArgumentException();
 		this.localPeer = localPeer;
 	}
 
@@ -161,9 +169,35 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 				throw new DatabaseException("Local peer must be defined !");
 		}
 	}
+	private void checkConfigurations() throws DatabaseException {
+		try {
+			for (DatabaseConfiguration dc : configurations)
+			{
+				checkConfiguration(dc);
+			}
+		}
+		catch (NullPointerException | IllegalArgumentException e)
+		{
+			throw DatabaseException.getDatabaseException(e);
+		}
 
+	}
+	private void checkConfiguration(DatabaseConfiguration configuration)  {
+		if (configuration==null)
+			throw new NullPointerException();
+		if (configuration.getDatabaseSchema().getPackage().equals(this.getClass().getPackage()))
+			throw new IllegalArgumentException("The package "+this.getClass().getPackage()+" cannot be included into the list of database");
+
+		if (localPeer!=null)
+		{
+			Collection<DecentralizedValue> c=configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase();
+			if (c!=null && c.contains(localPeer))
+				throw new IllegalArgumentException("Impossible to synchronize the database between one peer and it self : "+localPeer);
+		}
+	}
 
 	void addConfiguration(DatabaseConfiguration configuration, boolean makeConfigurationLoadingPersistent ) throws DatabaseException {
+		checkConfiguration(configuration);
 		if (makeConfigurationLoadingPersistent) {
 			configurations.add(configuration);
 			if (configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase()!=null) {
@@ -202,6 +236,7 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 	}
 
 	private void reloadAllConfigurations() throws DatabaseException {
+		checkConfigurations();
 		allConfigurations.clear();
 		allConfigurations.addAll(volatileConfigurations);
 		allConfigurations.addAll(configurations);

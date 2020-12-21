@@ -53,7 +53,6 @@ public class DatabaseConfigurationsBuilder {
 			lifeCycles.saveDatabaseConfigurations(configurations);
 		}
 
-		checkInitLocalPeer();
 	}
 
 
@@ -225,11 +224,7 @@ public class DatabaseConfigurationsBuilder {
 		if (configuration.isDecentralized() && protectedEncryptionProfileProviderForAuthenticatedP2PMessages ==null)
 			throw new IllegalArgumentException("Cannot add configuration without protected encryption profile provider for authenticated P2P messages");
 		pushQuery((t) -> {
-			for (DatabaseConfiguration dc : this.configurations.getConfigurations())
-			{
-				if (dc.getDatabaseSchema().getPackage().equals(configuration.getDatabaseSchema().getPackage()))
-					throw new IllegalArgumentException();
-			}
+
 			configuration.setCreateDatabaseIfNecessaryAndCheckItDuringCurrentSession(createDatabaseIfNecessaryAndCheckItDuringCurrentSession);
 			configurations.addConfiguration(configuration, makeConfigurationLoadingPersistent);
 			if (makeConfigurationLoadingPersistent)
@@ -266,7 +261,7 @@ public class DatabaseConfigurationsBuilder {
 	}
 
 
-	private void checkInitLocalPeer() throws DatabaseException {
+	void checkInitLocalPeer() throws DatabaseException {
 
 		wrapper.getSynchronizer().checkInitLocalPeer();
 	}
