@@ -37,6 +37,8 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database.fieldaccessors;
 
 import com.distrimind.ood.database.exceptions.IncompatibleFieldDatabaseException;
+import com.distrimind.util.Bits;
+import com.distrimind.util.FileTools;
 import com.distrimind.util.io.SerializationTools;
 
 import java.io.*;
@@ -45,6 +47,8 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.TimeZone;
 
 /**
  * 
@@ -76,7 +80,17 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 		}
 		else if (_o instanceof Calendar)
 		{
-			try(ByteArrayOutputStream baos=new ByteArrayOutputStream();ObjectOutputStream oos=new ObjectOutputStream(baos))
+			Calendar c=((Calendar)_o);
+			long timeUTC=c.getTime().getTime();
+			byte[] timeZone=c.getTimeZone().getID().getBytes(StandardCharsets.UTF_8);
+			if (timeZone.length>56)
+				throw new IllegalAccessError(""+timeZone.length);
+			byte[] res=new byte[8+timeZone.length];
+
+			Bits.putLong(res, 0, timeUTC);
+			System.arraycopy(timeZone, 0, res, 8, timeZone.length);
+			return res;
+			/*try(ByteArrayOutputStream baos=new ByteArrayOutputStream();ObjectOutputStream oos=new ObjectOutputStream(baos))
 			{
 				oos.writeObject(_o);
 				return baos.toByteArray();
@@ -84,7 +98,7 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 			catch(Exception e)
 			{
 				throw new IncompatibleFieldDatabaseException("",e);
-			}
+			}*/
 		}
 
 		throw new IncompatibleFieldDatabaseException("Incompatible type " + _o.getClass().getCanonicalName());
@@ -110,17 +124,12 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 			}
 			else if (Calendar.class.isAssignableFrom(_object_type))
 			{
-				try(ByteArrayInputStream bais=new ByteArrayInputStream(_bytesTab); ObjectInputStream dis=new ObjectInputStream(bais))
-				{
-					Object o=dis.readObject();
-					if (o!=null && !(o instanceof Calendar))
-						throw new IncompatibleFieldDatabaseException("The class "+o.getClass()+" does is not a calendar !");
-					return o;
-				}
-				catch(Exception e)
-				{
-					throw new IncompatibleFieldDatabaseException("",e);
-				}
+				long timeUTC=Bits.getLong(_bytesTab, 0);
+				String timeZoneID=new String(_bytesTab, 8, _bytesTab.length-8, StandardCharsets.UTF_8);
+				TimeZone tz=TimeZone.getTimeZone(timeZoneID);
+				Calendar calendar=Calendar.getInstance(tz);
+				calendar.setTime(new Date(timeUTC));
+				return calendar;
 			}
 		} catch (Exception e) {
 			throw new IncompatibleFieldDatabaseException("A problems occurs", e);
@@ -154,7 +163,7 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 		}
 		else if (Calendar.class.isAssignableFrom(_object_type))
 		{
-			return 128;
+			return 64;
 		}
 		throw new IncompatibleFieldDatabaseException("Incompatible type " + _object_type.getCanonicalName());
 	}
