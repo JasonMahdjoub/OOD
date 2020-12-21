@@ -67,7 +67,7 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 			return ((InetAddress) _o).getAddress();
 		else if (_o instanceof Enum<?>)
 		{
-			return ((Enum<?>)_o).name().getBytes();
+			return ((Enum<?>)_o).name().getBytes(StandardCharsets.UTF_8);
 		}
 		else if (_o instanceof File)
 		{
@@ -90,7 +90,7 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 			if (_object_type == Inet6Address.class || _object_type == Inet4Address.class)
 				return InetAddress.getByAddress(_bytesTab);
 			else if (Enum.class.isAssignableFrom(_object_type)) {
-				return _object_type.getDeclaredMethod("valueOf", String.class).invoke(null, new String(_bytesTab));
+				return _object_type.getDeclaredMethod("valueOf", String.class).invoke(null, new String(_bytesTab, StandardCharsets.UTF_8));
 			}
 			else if (File.class.isAssignableFrom(_object_type))
 			{
