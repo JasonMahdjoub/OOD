@@ -577,7 +577,7 @@ public class RuleInstance implements QueryPart {
 					RuleInstance ri3 = (RuleInstance) parts.get(2);
 					if (ri3.rule != Rule.NULL)
 						throw new IllegalAccessError();
-					Symbol s1 = ((Symbol) (((RuleInstance) ri1.parts.get(0)).parts.get(0)));
+					Symbol s1 = ((Symbol)ri1.parts.get(0));
 					if (s1.getType() != SymbolType.IDENTIFIER)
 						throw new DatabaseSyntaxException("Cannot do null comparison without identifier");
 					Symbol comp = (Symbol) ri2.parts.get(0);
@@ -714,7 +714,6 @@ public class RuleInstance implements QueryPart {
 	<T extends DatabaseRecord> StringBuilder translateToSqlQuery(Table<T> table, Map<String, Object> parameters,
 			Map<Integer, Object> outputParameters, AtomicInteger currentParameterID, Set<TableJunction> tablesJunction)
 			throws DatabaseSyntaxException {
-
 		switch (rule) {
 		case COMPARE:
 			if (parts.size() == 3) {
@@ -933,11 +932,11 @@ public class RuleInstance implements QueryPart {
 					Symbol comp = (Symbol) ri2.parts.get(0);
 
 					if (comp.getType() == SymbolType.IS || comp.getType() == SymbolType.ISNOT) {
-						if (!ri1.isEqualable(table, parameters, null)) {
+						/*if (!ri1.isEqualable(table, parameters, null)) {
 							throw new DatabaseSyntaxException(
 									"Cannot compare " + ri1.getContent() + " and " + ri3.getContent());
-						}
-						Symbol s1 = ((Symbol) (((RuleInstance) ri1.parts.get(0)).parts.get(0)));
+						}*/
+						Symbol s1 = (Symbol)ri1.parts.get(0);
 						if (s1.getType() != SymbolType.IDENTIFIER)
 							throw new DatabaseSyntaxException("Cannot do null comparison without identifier");
 						String fieldName = s1.getSymbol();

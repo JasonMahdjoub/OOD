@@ -3254,10 +3254,25 @@ public abstract class TestDatabase {
 				expectedCommand.append(op_cond.getContent());
 				expectedCommand.append(" ");
 			}
+
 			Table.FieldAccessorValue fieldAccessorAndValue =table.getFieldAccessorAndValue(record, fieldName);
 			FieldAccessor fa=fieldAccessorAndValue.getFieldAccessor();
 			Object nearestObjectInstance=fieldAccessorAndValue.getValue();
 			SqlField[] sqlFields=fa.getDeclaredSqlFields();
+			assert sqlFields.length>0;
+			if (Math.random() < 0.5) {
+				command.append("(");
+				expectedCommand.append("(");
+				openedParenthesis.incrementAndGet();
+			}
+			command.append(fa.getFieldName())
+					.append(" ");
+			if (op_comp==SymbolType.IS)
+				command.append(Math.random()>0.5?"IS":"is");
+			else
+				command.append(Math.random()>0.5?"IS NOT":"is not");
+			command.append(" ");
+			command.append(Math.random()>0.5?"NULL":"null");
 			expectedCommand.append("(");
 			for (int i = 0; i < sqlFields.length; i++) {
 				if (i > 0)
@@ -3267,8 +3282,7 @@ public abstract class TestDatabase {
 				expectedCommand.append(sqlFields[i].short_field_without_quote.replace(".", "_").toUpperCase());
 				expectedCommand.append("`");
 				expectedCommand.append(op_comp.getContent());
-				expectedCommand.append(" ")
-						.append(SymbolType.NULL.getContent());
+				expectedCommand.append(SymbolType.NULL.getContent());
 			}
 			expectedCommand.append(")");
 
@@ -3280,11 +3294,6 @@ public abstract class TestDatabase {
 				test = fa.getValue(nearestObjectInstance)!=null;
 			}
 
-			if (Math.random() < 0.5) {
-				command.append("(");
-				expectedCommand.append("(");
-				openedParenthesis.incrementAndGet();
-			}
 
 			if (openedParenthesis.get() > 0 && Math.random() < 0.5) {
 				command.append(")");
@@ -3546,7 +3555,7 @@ public abstract class TestDatabase {
 		SymbolType[] ops_cond = new SymbolType[] { SymbolType.ANDCONDITION, SymbolType.ORCONDITION };
 		SymbolType[] ops_comp = new SymbolType[] { SymbolType.EQUALOPERATOR, SymbolType.NOTEQUALOPERATOR,
 				SymbolType.LIKE, SymbolType.NOTLIKE, SymbolType.GREATEROPERATOR, SymbolType.GREATEROREQUALOPERATOR,
-				SymbolType.LOWEROPERATOR, SymbolType.LOWEROREQUALOPERATOR/*, SymbolType.IS, SymbolType.ISNOT*/};
+				SymbolType.LOWEROPERATOR, SymbolType.LOWEROREQUALOPERATOR, SymbolType.IS, SymbolType.ISNOT};
 
 		for (SymbolType op_cond : ops_cond) {
 			for (SymbolType op_comp : ops_comp) {
@@ -3619,6 +3628,7 @@ public abstract class TestDatabase {
 		if (expectedSqlCommand!=null)
 			expectedSqlCommand=expectedSqlCommand.replace("%Table1Name%", table1.getSqlTableName());
 		HashMap<Integer, Object> sqlParameters = new HashMap<>();
+
 		RuleInstance rule = Interpreter.getRuleInstance(command);
 		String sqlCommand = rule.translateToSqlQuery(table, parameters, sqlParameters, new HashSet<>())
 				.toString();

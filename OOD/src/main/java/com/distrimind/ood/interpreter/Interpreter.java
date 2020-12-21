@@ -79,7 +79,8 @@ public class Interpreter {
 	 */
 
 	private static String preProcess(String command) {
-		command = command.replaceAll("\\p{Blank}([Nn])([Oo])([Tt]) ([Ll])([Ii])([Kk])([Ee])\\p{Blank}", " NOT_LIKE ");
+		command = command.replaceAll("\\p{Blank}([Nn])([Oo])([Tt])\\p{Blank}([Ll])([Ii])([Kk])([Ee])\\p{Blank}", " NOT_LIKE ");
+		command = command.replaceAll("\\p{Blank}([Ii])([Ss])\\p{Blank}([Nn])([Oo])([Tt])\\p{Blank}", " IS_NOT ");
 
 		StringBuilder sb = new StringBuilder();
 
@@ -112,7 +113,7 @@ public class Interpreter {
 				}
 			}
 			if (bestMatch != null) {
-				boolean space = bestSymbol != SymbolType.LIKE && bestSymbol != SymbolType.NOTLIKE;
+				boolean space = bestSymbol != SymbolType.LIKE && bestSymbol != SymbolType.NOTLIKE && bestSymbol!=SymbolType.IS && bestSymbol!=SymbolType.ISNOT;
 				if (space)
 					sb.append(" ");
 				sb.append(bestMatch);
