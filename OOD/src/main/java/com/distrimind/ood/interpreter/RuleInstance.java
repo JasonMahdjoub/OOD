@@ -714,6 +714,7 @@ public class RuleInstance implements QueryPart {
 	<T extends DatabaseRecord> StringBuilder translateToSqlQuery(Table<T> table, Map<String, Object> parameters,
 			Map<Integer, Object> outputParameters, AtomicInteger currentParameterID, Set<TableJunction> tablesJunction)
 			throws DatabaseSyntaxException {
+
 		switch (rule) {
 		case COMPARE:
 			if (parts.size() == 3) {
@@ -857,7 +858,7 @@ public class RuleInstance implements QueryPart {
 										boolean found = false;
 										for (SqlFieldInstance sfi : sfis) {
 											if (sfi.field_without_quote.equals(sf.field_without_quote)) {
-												
+
 												if (parameter2==null)
 												{
 													res.append("NULL");

@@ -58,6 +58,8 @@ import com.distrimind.util.crypto.SecureRandomType;
 import com.distrimind.util.crypto.SymmetricEncryptionType;
 import com.distrimind.util.crypto.SymmetricSecretKey;
 import com.distrimind.util.data_buffers.WrappedData;
+import com.distrimind.util.io.RandomByteArrayOutputStream;
+import com.distrimind.util.io.SerializationTools;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.DataProvider;
@@ -3164,11 +3166,11 @@ public abstract class TestDatabase {
             } else if (AbstractDecentralizedID.class.isAssignableFrom(type)) {
                 AbstractDecentralizedID id = (AbstractDecentralizedID) o;
                 if (sql_db.isVarBinarySupported())
-                    res.add(id.encode());
+                    res.add(id.encode().getBytes());
                 else {
-                    WrappedData bytes = id.encode();
+                    byte[] bytes = id.encode().getBytes();
                     BigInteger r = BigInteger.valueOf(1);
-                    for (byte aByte : bytes.getBytes()) {
+                    for (byte aByte : bytes) {
                         r = r.shiftLeft(8).or(BigInteger.valueOf(aByte & 0xFF));
                     }
                     res.add(new BigDecimal(r));
@@ -3193,15 +3195,14 @@ public abstract class TestDatabase {
             {
                 res.add(((File)o).getPath().getBytes(StandardCharsets.UTF_8));
             }
-            else if (o instanceof Serializable) {
+            else if (SerializationTools.isSerializable(o)) {
 				String s=sql_db.getBlobType(70000);
 
                 if (s!=null && s.contains(sql_db.getBlobBaseWord())) {
-                    try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-                        try (ObjectOutputStream os = new ObjectOutputStream(baos)) {
-                            os.writeObject(o);
-                            res.add(baos.toByteArray());
-                        }
+                    try (RandomByteArrayOutputStream baos = new RandomByteArrayOutputStream()) {
+                    	baos.writeObject(o, true, Integer.MAX_VALUE);
+                    	baos.flush();
+						res.add(baos.getBytes());
                     }
                 } else
                     res.add(o);
