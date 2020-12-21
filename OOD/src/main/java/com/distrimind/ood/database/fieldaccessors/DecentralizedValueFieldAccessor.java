@@ -71,10 +71,8 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 		sql_fields = new SqlField[1];
 		Class<?>[] compatibleClasses = new Class<?>[]{_field.getType()};
 
-		long limit;
-		if (getLimit()>0)
-			limit=getLimit();
-		else
+
+		if (limit<=0)
 		{
 			if (AbstractDecentralizedID.class.isAssignableFrom(compatibleClasses[0]))
 			{

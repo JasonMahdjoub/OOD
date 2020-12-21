@@ -77,29 +77,29 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 		super(_sql_connection, _field, parentFieldName, compatible_classes, table, severalPrimaryKeysPresentIntoTable);
 		sql_fields = new SqlField[1];
 		String type;
-		long l = limit;
-		if (l <= 0)
-			l = defaultByteTabSize;
+
+		if (limit <= 0)
+			limit = defaultByteTabSize;
 		boolean isBigInteger=false;
 		if (useBlob)
 		{
-			type=DatabaseWrapperAccessor.getBlobType(sql_connection, l);
+			type=DatabaseWrapperAccessor.getBlobType(sql_connection, limit);
 		}
-		else if (l <= shortTabSizeLimit) {
+		else if (limit <= shortTabSizeLimit) {
 			if (DatabaseWrapperAccessor.isVarBinarySupported(sql_connection))
-				type = DatabaseWrapperAccessor.getVarBinaryType(_sql_connection, l);
+				type = DatabaseWrapperAccessor.getVarBinaryType(_sql_connection, limit);
 			else if (DatabaseWrapperAccessor.isLongVarBinarySupported(sql_connection))
-				type = DatabaseWrapperAccessor.getLongVarBinaryType(_sql_connection, l);
+				type = DatabaseWrapperAccessor.getLongVarBinaryType(_sql_connection, limit);
 			else
 			{
 				isBigInteger=true;
-				type = DatabaseWrapperAccessor.getBigIntegerType(sql_connection, l);
+				type = DatabaseWrapperAccessor.getBigIntegerType(sql_connection, limit);
 			}
 		} else {
 			if (DatabaseWrapperAccessor.isLongVarBinarySupported(sql_connection))
-				type = DatabaseWrapperAccessor.getLongVarBinaryType(_sql_connection, l);
+				type = DatabaseWrapperAccessor.getLongVarBinaryType(_sql_connection, limit);
 			else
-				type=DatabaseWrapperAccessor.getBlobType(sql_connection, l);
+				type=DatabaseWrapperAccessor.getBlobType(sql_connection, limit);
 
 		}
 		assert type != null;

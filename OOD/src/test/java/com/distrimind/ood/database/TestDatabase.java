@@ -3199,7 +3199,9 @@ public abstract class TestDatabase {
             }
             else if (o instanceof Calendar)
 			{
-				res.add(getDatabaseWrapperInstanceA().getByteTabObjectConverter(Calendar.class).getBytes(o));
+				Calendar c=(Calendar)o;
+				res.add(c.getTimeInMillis());
+				res.add(c.getTimeZone().getID().getBytes(StandardCharsets.UTF_8));
 			}
             else if (o instanceof File)
             {
@@ -3230,7 +3232,11 @@ public abstract class TestDatabase {
 		} else if (objectClass == RenforcedDecentralizedIDGenerator.class) {
 			res.add(variableName + "_ts");
 			res.add(variableName + "_widseq");
-		} else {
+		}if (Calendar.class.isAssignableFrom(objectClass)) {
+			res.add(variableName + "_utc");
+			res.add(variableName + "_tz");
+		}
+		else {
 			res.add(variableName);
 
 		}
@@ -3349,7 +3355,7 @@ public abstract class TestDatabase {
 
 		boolean test = false;
 
-		ArrayList<String> sqlVariablesName = getExpectedParametersName(fieldName, value==null?DecentralizedIDGenerator.class:value.getClass());
+		ArrayList<String> sqlVariablesName = getExpectedParametersName(fieldName, value.getClass());
 
 		Table.FieldAccessorValue fieldAccessorAndValue =table.getFieldAccessorAndValue(record, fieldName);
 		FieldAccessor fa=fieldAccessorAndValue.getFieldAccessor();

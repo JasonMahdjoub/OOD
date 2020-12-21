@@ -540,6 +540,9 @@ public abstract class FieldAccessor {
 						else if (AbstractDecentralizedID.class.isAssignableFrom(type))
 							res.add(new AbstractDecentralizedIDFieldAccessor(_table, _sql_connection, f,
 									parentFieldName, severalPrimaryKeysPresentIntoTable));
+						else if (Calendar.class.isAssignableFrom(type))
+							res.add(new CalendarFieldAccessor(_table, _sql_connection, f,
+									parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (type.equals(UUID.class))
 							res.add(new UUIDFieldAccessor(_table, _sql_connection, f,
 									parentFieldName, severalPrimaryKeysPresentIntoTable));

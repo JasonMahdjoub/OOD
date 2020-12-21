@@ -37,18 +37,13 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database.fieldaccessors;
 
 import com.distrimind.ood.database.exceptions.IncompatibleFieldDatabaseException;
-import com.distrimind.util.Bits;
-import com.distrimind.util.FileTools;
 import com.distrimind.util.io.SerializationTools;
 
-import java.io.*;
+import java.io.File;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.TimeZone;
 
 /**
  * 
@@ -78,20 +73,7 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 		{
 			return ((File) _o).getPath().getBytes(StandardCharsets.UTF_8);
 		}
-		else if (_o instanceof Calendar)
-		{
-			Calendar c=((Calendar)_o);
-			long timeUTC=c.getTime().getTime();
-			byte[] timeZone=c.getTimeZone().getID().getBytes(StandardCharsets.UTF_8);
-			if (timeZone.length>56)
-				throw new IllegalAccessError(""+timeZone.length);
-			byte[] res=new byte[8+timeZone.length];
 
-			Bits.putLong(res, 0, timeUTC);
-			System.arraycopy(timeZone, 0, res, 8, timeZone.length);
-			return res;
-
-		}
 
 		throw new IncompatibleFieldDatabaseException("Incompatible type " + _o.getClass().getCanonicalName());
 	}
@@ -114,15 +96,7 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 			{
 				return new File(new String(_bytesTab, StandardCharsets.UTF_8));
 			}
-			else if (Calendar.class.isAssignableFrom(_object_type))
-			{
-				long timeUTC=Bits.getLong(_bytesTab, 0);
-				String timeZoneID=new String(_bytesTab, 8, _bytesTab.length-8, StandardCharsets.UTF_8);
-				TimeZone tz=TimeZone.getTimeZone(timeZoneID);
-				Calendar calendar=Calendar.getInstance(tz);
-				calendar.setTime(new Date(timeUTC));
-				return calendar;
-			}
+
 		} catch (Exception e) {
 			throw new IncompatibleFieldDatabaseException("A problems occurs", e);
 		}
@@ -138,7 +112,7 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 	@Override
 	public boolean isCompatible(Class<?> field_type) {
 		return field_type == Inet4Address.class || field_type == Inet6Address.class ||
-				Enum.class.isAssignableFrom(field_type) || Calendar.class.isAssignableFrom(field_type)
+				Enum.class.isAssignableFrom(field_type)
 				|| File.class.isAssignableFrom(field_type);
 	}
 
@@ -153,10 +127,7 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 		{
 			return 16384;
 		}
-		else if (Calendar.class.isAssignableFrom(_object_type))
-		{
-			return 64;
-		}
+
 		throw new IncompatibleFieldDatabaseException("Incompatible type " + _object_type.getCanonicalName());
 	}
 
