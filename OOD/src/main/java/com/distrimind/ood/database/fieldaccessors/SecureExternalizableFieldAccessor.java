@@ -56,10 +56,7 @@ import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
-import com.distrimind.util.io.RandomByteArrayInputStream;
-import com.distrimind.util.io.RandomByteArrayOutputStream;
-import com.distrimind.util.io.RandomInputStream;
-import com.distrimind.util.io.RandomOutputStream;
+import com.distrimind.util.io.*;
 
 /**
  * 
@@ -75,9 +72,9 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 	protected SecureExternalizableFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection,
 												Field _field, String parentFieldName, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
 		super(_sql_connection, _field, parentFieldName, getCompatibleClasses(_field), table, severalPrimaryKeysPresentIntoTable);
-		if (!Serializable.class.isAssignableFrom(field.getType()))
-			throw new FieldDatabaseException("The given field " + field.getName() + " of type "
-					+ field.getType().getName() + " must be a serializable field.");
+		if (!SerializationTools.isSerializableType(field.getType()))
+			throw new FieldDatabaseException("The given field " + field.getType() + " of type "
+					+ field.getType().getName() + " must be a secure externalizable field.");
 		this.blobBaseName=DatabaseWrapperAccessor.getBlobBaseWord(_sql_connection);
 		sql_fields = new SqlField[1];
 		long l=getLimit();
