@@ -205,12 +205,12 @@ public class DistantMySQLDatabaseFactory extends CommonMySQLDatabaseFactory<Dist
 		else
 			css=cs.name();
 		if (additionalParams ==null)
-			return new DistantMySQLDBWrapper(databaseName, urlLocation, databaseConfigurations, databaseLifeCycles, encryptionProfileProviderFactoryForCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
-					protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
+			return new DistantMySQLDBWrapper(databaseName, urlLocation, databaseConfigurations, databaseLifeCycles, encryptionProfileProviderFactoryForCentralDatabaseBackup==null?null:encryptionProfileProviderFactoryForCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
+					protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages==null?null:protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
 					getSecureRandom(), createDatabasesIfNecessaryAndCheckIt, port, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, css, sslMode, paranoid, serverRSAPublicKeyFile, autoReconnect, prefetchNumberRows, noCache);
 		else
-			return new DistantMySQLDBWrapper(databaseName, urlLocation, databaseConfigurations, databaseLifeCycles, encryptionProfileProviderFactoryForCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
-					protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
+			return new DistantMySQLDBWrapper(databaseName, urlLocation, databaseConfigurations, databaseLifeCycles, encryptionProfileProviderFactoryForCentralDatabaseBackup==null?null:encryptionProfileProviderFactoryForCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
+					protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages==null?null:protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
 					getSecureRandom(), createDatabasesIfNecessaryAndCheckIt, port, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, css, sslMode, paranoid, serverRSAPublicKeyFile, autoReconnect, prefetchNumberRows, noCache, additionalParams);
 	}
 

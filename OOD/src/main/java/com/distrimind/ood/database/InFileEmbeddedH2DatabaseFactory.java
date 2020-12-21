@@ -181,8 +181,8 @@ public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH2D
 	@Override
 	protected EmbeddedH2DatabaseWrapper newWrapperInstance(DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
 		return new EmbeddedH2DatabaseWrapper(directory, databaseConfigurations, databaseLifeCycles,
-				encryptionProfileProviderFactoryForCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
-				protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
+				encryptionProfileProviderFactoryForCentralDatabaseBackup==null?null:encryptionProfileProviderFactoryForCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
+				protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages==null?null:protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
 				getSecureRandom(), createDatabasesIfNecessaryAndCheckIt, alwaysDisconnectAfterOneTransaction, fileLock, pageSizeBytes, cacheSizeBytes);
 	}
 

@@ -193,12 +193,12 @@ class DistantMariaDBFactory extends CommonMySQLDatabaseFactory<DistantMariaDBWra
 		else
 			css=cs.name();
 		if (additionalParams ==null)
-			return new DistantMariaDBWrapper(databaseName, urlLocation, databaseConfigurations, databaseLifeCycles, encryptionProfileProviderFactoryForCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
-					protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(), 
+			return new DistantMariaDBWrapper(databaseName, urlLocation, databaseConfigurations, databaseLifeCycles, encryptionProfileProviderFactoryForCentralDatabaseBackup==null?null:encryptionProfileProviderFactoryForCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
+					protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages==null?null:protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
 					getSecureRandom(), createDatabasesIfNecessaryAndCheckIt, port, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, css, useSSL, trustServerCertificate, enabledSslProtocolSuites, enabledSslCipherSuites, serverSslCert, autoReconnect);
 		else
-			return new DistantMariaDBWrapper(databaseName, urlLocation, databaseConfigurations, databaseLifeCycles, encryptionProfileProviderFactoryForCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
-					protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
+			return new DistantMariaDBWrapper(databaseName, urlLocation, databaseConfigurations, databaseLifeCycles, encryptionProfileProviderFactoryForCentralDatabaseBackup==null?null:encryptionProfileProviderFactoryForCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
+					protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages==null?null:protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
 					getSecureRandom(), createDatabasesIfNecessaryAndCheckIt, port, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, css, useSSL, trustServerCertificate, enabledSslProtocolSuites, enabledSslCipherSuites, serverSslCert, autoReconnect, additionalParams);
 	}
 

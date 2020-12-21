@@ -176,8 +176,8 @@ public class DistantPostgreSQLDatabaseFactory extends DatabaseFactory<DistantPos
 
 	@Override
 	protected DistantPostgreSQLWrapper newWrapperInstance(DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
-		return new DistantPostgreSQLWrapper(databaseName, urlLocation, databaseConfigurations, databaseLifeCycles, encryptionProfileProviderFactoryForCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
-				protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
+		return new DistantPostgreSQLWrapper(databaseName, urlLocation, databaseConfigurations, databaseLifeCycles, encryptionProfileProviderFactoryForCentralDatabaseBackup==null?null:encryptionProfileProviderFactoryForCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
+				protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages==null?null:protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
 				getSecureRandom(), createDatabasesIfNecessaryAndCheckIt, port, user, password, loginTimeOutInSeconds, connectTimeOutInSeconds,
 				socketTimeOutSeconds, additionalParams, sslMode, sslFactory,
 				sslKey, sslCert, sslRootCert, sslHostNameVerifier, sslPasswordCallBack,

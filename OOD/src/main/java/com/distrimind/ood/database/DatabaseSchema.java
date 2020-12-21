@@ -102,7 +102,7 @@ public class DatabaseSchema extends MultiFormatProperties {
 			if (c != null && Table.class.isAssignableFrom(c) && c.getPackage().equals(dbPackage)
 					&& !Modifier.isAbstract(c.getModifiers()))
 				//noinspection unchecked
-				classes.add((Class<? extends Table<?>>) c);
+				this.classes.add((Class<? extends Table<?>>) c);
 		}
 		if (this.classes.size()==0)
 			throw new IllegalArgumentException();
