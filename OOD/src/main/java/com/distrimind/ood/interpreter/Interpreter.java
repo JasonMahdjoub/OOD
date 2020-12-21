@@ -190,16 +190,21 @@ public class Interpreter {
 		Reference<Integer> index = new Reference<>(0);
 		ArrayList<QueryPart> res = new ArrayList<>(parts.size());
 		boolean changed = false;
-		while (index.get() < parts.size()) {
-			RuleInstance ri = getQuery(parts, index.get(), index);
 
-			if (ri == null) {
-				res.add(parts.get(index.get()));
+		while (index.get() < parts.size()) {
+			int previousIndex=index.get();
+
+			QueryPart ap = getQuery(parts, index.get(), index);
+
+			if (ap == null) {
+				ap=parts.get(index.get());
 				index.set(index.get()+1);
 			} else {
 				changed = true;
-				res.add(ri);
 			}
+			res.add(ap);
+			if (index.get()==previousIndex && res.size()>0 && ap.equals(res.get(res.size()-1)))
+				throw new DatabaseSyntaxException("Invalid syntax");
 		}
 		if (changed)
 			return res;

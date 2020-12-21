@@ -38,6 +38,7 @@ package com.distrimind.ood.interpreter;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.Table;
@@ -66,6 +67,19 @@ public class Symbol implements QueryPart {
 		this.type = type;
 		this.symbol = symbol;
 
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		Symbol symbol1 = (Symbol) o;
+		return type == symbol1.type && Objects.equals(symbol, symbol1.symbol);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(type, symbol);
 	}
 
 	public SymbolType getType() {

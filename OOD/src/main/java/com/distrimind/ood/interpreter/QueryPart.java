@@ -62,4 +62,5 @@ public interface QueryPart {
 			throws DatabaseSyntaxException;
 
 	boolean needParenthesis();
+
 }

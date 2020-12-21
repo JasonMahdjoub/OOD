@@ -392,6 +392,19 @@ public class RuleInstance implements QueryPart {
 
 	}
 
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		RuleInstance that = (RuleInstance) o;
+		return rule == that.rule && Objects.equals(parts, that.parts) && Objects.equals(cachedConstructors, that.cachedConstructors);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(rule, parts, cachedConstructors);
+	}
+
 	public <T extends DatabaseRecord> boolean equals(Table<T> table, T record, Object o1, Object o2)
 			throws DatabaseSyntaxException {
 		try {
