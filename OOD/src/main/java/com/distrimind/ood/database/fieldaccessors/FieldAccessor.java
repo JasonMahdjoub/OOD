@@ -299,7 +299,7 @@ public abstract class FieldAccessor {
 
 	public boolean isAssignableTo(Class<?> _cls) {
 		for (Class<?> c : getCompatibleClasses())
-			if (_cls.isAssignableFrom(c) /* || _cls.equals(c) */)
+			if (c.isAssignableFrom(_cls) /* || _cls.equals(c) */)
 				return true;
 		return false;
 	}

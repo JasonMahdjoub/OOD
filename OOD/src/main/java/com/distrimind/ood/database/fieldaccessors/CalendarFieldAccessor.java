@@ -63,7 +63,7 @@ public class CalendarFieldAccessor extends FieldAccessor{
 
 	protected CalendarFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection,
 										   Field _field, String parentFieldName, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
-		super(_sql_connection, _field, parentFieldName, compatibleClasses, table, severalPrimaryKeysPresentIntoTable);
+		super(_sql_connection, _field, parentFieldName, getCompatibleClasses(_field), table, severalPrimaryKeysPresentIntoTable);
 		sql_fields = new SqlField[2];
 		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName() + "_utc",
 				Objects.requireNonNull(DatabaseWrapperAccessor.getLongType(sql_connection)), null, null, isNotNull());
@@ -79,10 +79,10 @@ public class CalendarFieldAccessor extends FieldAccessor{
 		isVarBinary = DatabaseWrapperAccessor.isVarBinarySupported(sql_connection);
 	}
 
-	private static final Class<?>[] compatibleClasses;
-	static {
-		compatibleClasses = new Class<?>[1];
-		compatibleClasses[0] = Calendar.class;
+	private static Class<?>[] getCompatibleClasses(Field field) {
+		Class<?>[] res = new Class<?>[1];
+		res[0] = field.getType();
+		return res;
 	}
 
 	@Override

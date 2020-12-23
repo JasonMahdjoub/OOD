@@ -385,6 +385,18 @@ public class RuleInstance implements QueryPart {
 				else
 					return new BigDecimal(o1.toString()).compareTo(new BigDecimal(o2.toString()));
 			}
+			else if (Date.class.isAssignableFrom(o1.getClass())) {
+				if (Date.class.isAssignableFrom(o2.getClass()))
+					return ((Date)o1).compareTo((Date) o2);
+				else if (Calendar.class.isAssignableFrom(o2.getClass()))
+					return Long.compare(((Date)o1).getTime(), ((Calendar) o2).getTimeInMillis());
+			}
+			else if (Calendar.class.isAssignableFrom(o1.getClass())) {
+				if (Calendar.class.isAssignableFrom(o2.getClass()))
+					return ((Calendar)o1).compareTo((Calendar) o2);
+				else if (Date.class.isAssignableFrom(o2.getClass()))
+					return Long.compare(((Calendar)o1).getTimeInMillis(), ((Date) o2).getTime());
+			}
 		} catch (Exception e) {
 			throw new DatabaseSyntaxException("Unexpected exception ! ", e);
 		}
@@ -1045,7 +1057,7 @@ public class RuleInstance implements QueryPart {
 						throw new DatabaseSyntaxException(
 								"Cannot find field " + fieldName + " into table " + table.getClass().getSimpleName());
 					SqlField[] sfs = fa.getDeclaredSqlFields();
-					if (sfs.length > 1)
+					if (!fa.isComparable())
 						throw new IllegalAccessError();
 					return new StringBuilder(sfs[0].field);
 				} else if (s.getType() == SymbolType.PARAMETER) {
@@ -1060,6 +1072,8 @@ public class RuleInstance implements QueryPart {
 							throw new DatabaseSyntaxException(
 									"Cannot find parameter type " + parameter1.getClass().getName() + " of "
 											+ s.getSymbol() + " into table " + table.getClass().getName());
+						if (!fa.isComparable())
+							throw new DatabaseSyntaxException("Field accessor field must be comparable ");
 
 						sfis = fa.getSqlFieldsInstances(getRecordInstance(table, record, fa));
 					} catch (DatabaseSyntaxException de) {
@@ -1070,8 +1084,6 @@ public class RuleInstance implements QueryPart {
 					int id = currentParameterID.getAndIncrement();
 					if (sfis == null)
 						throw new DatabaseSyntaxException("Database exception");
-					if (sfis.length != 1)
-						throw new DatabaseSyntaxException("Sql field must be equal to 1 and not " + sfis.length);
 					outputParameters.put(id, sfis[0].instance);
 					return new StringBuilder("?");
 				} else

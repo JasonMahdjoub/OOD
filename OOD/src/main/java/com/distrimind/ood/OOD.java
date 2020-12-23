@@ -74,6 +74,9 @@ public class OOD {
 									.addItem("Implementation of driver for Android H2 Database")
 									.addItem("Implementation of driver for PostgreSQL")
 									.addItem("Compatible with Java 8 and newer")
+									.addItem("Calendar is better serialized into database (better performances, and lower space)")
+									.addItem("Calendar is now comparable")
+									.addItem("Implementation of DatabaseConfigurationBuilder that centralize database loading, and database synchronization with decentralized peers and with central backup database")
 					)
 					.addDescription(
 							new Description((short)2, (short)4, (short)0, Version.Type.STABLE, (short)1, "2020-02-11")

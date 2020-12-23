@@ -3321,6 +3321,7 @@ public abstract class TestDatabase {
 																  String fieldName, Object value, HashMap<Integer, Object> expectedParameters, boolean useParameter,
 																  AtomicInteger expectedParamterIndex, AtomicInteger openedParenthesis, Table<T> table, T record,
 																  AtomicBoolean whereResult) throws IOException, DatabaseException {
+		boolean compare=false;
 		if (value==null)
 			return;
 		if (op_comp == SymbolType.LIKE || op_comp == SymbolType.NOTLIKE) {
@@ -3328,7 +3329,12 @@ public abstract class TestDatabase {
 				return;
 		} else if (op_comp == SymbolType.GREATEROPERATOR || op_comp == SymbolType.GREATEROREQUALOPERATOR
 				|| op_comp == SymbolType.LOWEROPERATOR || op_comp == SymbolType.LOWEROREQUALOPERATOR) {
-			if (!(value instanceof Number) && !(value instanceof Calendar) && !(value instanceof Date))
+			compare=true;
+			if (((value instanceof Calendar) || (value instanceof Date))) {
+				if (!useParameter)
+					return;
+			}
+			else if (!(value instanceof Number))
 				return;
 		} else if (!useParameter) {
 			if (!(value instanceof String))
@@ -3399,7 +3405,10 @@ public abstract class TestDatabase {
 			if (op_comp == SymbolType.EQUALOPERATOR || op_comp == SymbolType.NOTEQUALOPERATOR)
 				expectedCommand.append("(");
 			assert sqlInstance.size()>0;
-			for (int i = 0; i < sqlInstance.size(); i++) {
+			int s=sqlInstance.size();
+			if (compare)
+				s=1;
+			for (int i = 0; i < s; i++) {
 				if (i > 0)
 					expectedCommand.append(" AND ");
 				expectedCommand.append("%Table1Name%");
