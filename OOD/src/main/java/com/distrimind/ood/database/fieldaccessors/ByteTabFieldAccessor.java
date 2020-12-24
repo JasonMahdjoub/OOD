@@ -458,13 +458,8 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 	@Override
 	public void serialize(RandomOutputStream _oos, Object _class_instance) throws DatabaseException {
 		try {
-			byte[] b = (byte[]) getValue(_class_instance);
-			if (b != null) {
-				_oos.writeInt(b.length);
-				_oos.write(b);
-			} else {
-				_oos.writeInt(-1);
-			}
+			byte[] b = (byte[])getValue(_class_instance);
+			_oos.writeBytesArray(b, !isAlwaysNotNull(), (int)Math.min(Integer.MAX_VALUE, getLimit()));
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -472,16 +467,11 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 
 	private byte[] deserialize(RandomInputStream _ois) throws DatabaseException {
 		try {
-			int size = _ois.readInt();
-			if (size > -1) {
-				if (getLimit() > 0 && size > getLimit())
+			byte[] b=_ois.readBytesArray(!isAlwaysNotNull(), (int)Math.min(Integer.MAX_VALUE, getLimit()));
+			if (b!=null) {
+				if (getLimit() > 0 && b.length > getLimit())
 					throw new IOException();
 
-				byte[] b = new byte[size];
-				int os = _ois.read(b);
-				if (os != size)
-					throw new DatabaseException(
-							"read bytes insufficient (expected size=" + size + ", obtained size=" + os + ")");
 				return b;
 			} else if (isNotNull())
 				throw new DatabaseException("field should not be null");

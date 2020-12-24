@@ -77,11 +77,11 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 					+ field.getType().getName() + " must be a secure externalizable field.");
 		this.blobBaseName=DatabaseWrapperAccessor.getBlobBaseWord(_sql_connection);
 		sql_fields = new SqlField[1];
-		long l=getLimit();
-		if (l<=0)
-			l=ByteTabFieldAccessor.defaultByteTabSize;
+
+		if (limit<=0)
+			limit=ByteTabFieldAccessor.defaultByteTabSize;
 		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(),
-				Objects.requireNonNull(DatabaseWrapperAccessor.getBlobType(sql_connection, l)), null, null, isNotNull());
+				Objects.requireNonNull(DatabaseWrapperAccessor.getBlobType(sql_connection, limit)), null, null, isNotNull());
 
 		if (Comparable.class.isAssignableFrom(field.getType())) {
 			try {
@@ -336,23 +336,17 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 
 	public void serializeObject(RandomOutputStream dos, Object object) throws DatabaseException {
 		try {
-			long limit=getLimit();
-			if (limit==0 || limit>Integer.MAX_VALUE)
-				limit=Integer.MAX_VALUE;
 			if (object == null && isNotNull())
 				throw new DatabaseException("The field should not be null");
 
-			dos.writeObject(object, !isAlwaysNotNull(), (int)limit);
+			dos.writeObject(object, !isAlwaysNotNull(), (int)Math.min(Integer.MAX_VALUE, getLimit()));
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
 	private Object deserialize(RandomInputStream ois) throws DatabaseException {
 		try  {
-			long limit=getLimit();
-			if (limit==0 || limit>Integer.MAX_VALUE)
-				limit=Integer.MAX_VALUE;
-			Object o=ois.readObject(!isAlwaysNotNull(), (int)limit);
+			Object o=ois.readObject(!isAlwaysNotNull(), (int)Math.min(Integer.MAX_VALUE, getLimit()));
 			if (o != null && !field.getType().isAssignableFrom(o.getClass()))
 				throw new DatabaseException(
 						"Incompatible class : " + o.getClass() + " (expected=" + field.getType() + ")");

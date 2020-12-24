@@ -444,14 +444,15 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 	public void serialize(RandomOutputStream _oos, Object _class_instance) throws DatabaseException {
 		try {
 			Object o = getValue(_class_instance);
+			byte[] b;
 
 			if (o != null) {
-				byte[] b = converter.getBytes(o);
-				_oos.writeInt(b.length);
-				_oos.write(b);
+				 b = converter.getBytes(o);
+
 			} else {
-				_oos.writeInt(-1);
+				b=null;
 			}
+			_oos.writeBytesArray(b, !isAlwaysNotNull(), (int)Math.min(Integer.MAX_VALUE, getLimit()));
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -459,16 +460,10 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 
 	private Object deserialize(RandomInputStream _ois) throws DatabaseException {
 		try {
-			int size = _ois.readInt();
-			if (size > -1) {
-				if (getLimit() > 0 && size > getLimit())
+			byte[] b=_ois.readBytesArray(!isAlwaysNotNull(), (int)Math.min(Integer.MAX_VALUE, getLimit()));
+			if (b!=null) {
+				if (getLimit() > 0 && b.length > getLimit())
 					throw new IOException();
-
-				byte[] b = new byte[size];
-				int os = _ois.read(b);
-				if (os != size)
-					throw new DatabaseException(
-							"read bytes insufficient (expected size=" + size + ", obtained size=" + os + ")");
 
 				return converter.getObject(field.getType(), b);
 			} else if (isNotNull())
