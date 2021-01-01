@@ -119,6 +119,10 @@ public abstract class TestDatabase {
 	private DatabaseWrapper sql_db;
 	private DatabaseWrapper sql_dbb;
 
+	public static DatabaseWrapper getDatabaseInstance(DatabaseFactory<?> df) throws DatabaseException {
+		return df.newWrapperInstance();
+	}
+
 	public abstract File getDatabaseBackupFileName();
 
 	public static final AbstractSecureRandom secureRandom;
@@ -2355,76 +2359,78 @@ public abstract class TestDatabase {
 			assertTrue(true);
 		}
 
-		table1.updateRecords(new AlterRecordFilter<Table1.Record>() {
-
-			@Override
-			public void nextRecord(Record _record) {
-				HashMap<String, Object> m = new HashMap<>();
-				m.put("int_value", 15);
-				this.update(m);
-			}
-		});
-
-		for (Table1.Record r : table1.getRecords())
-            Assert.assertEquals(15, r.int_value);
-
-		table3.updateRecords(new AlterRecordFilter<Table3.Record>() {
-
-			@Override
-			public void nextRecord(Table3.Record _record) {
-				HashMap<String, Object> m = new HashMap<>();
-				m.put("int_value", 15);
-
-				this.update(m);
-			}
-		});
-
-		for (Table3.Record r : table3.getRecords())
-            Assert.assertEquals(15, r.int_value);
-
-		try {
+		if (supportPrimaryKeyUpdateWithCascade()) {
 			table1.updateRecords(new AlterRecordFilter<Table1.Record>() {
 
 				@Override
 				public void nextRecord(Record _record) {
 					HashMap<String, Object> m = new HashMap<>();
-					m.put("pk1", 15);
+					m.put("int_value", 15);
 					this.update(m);
 				}
 			});
-            fail();
-		} catch (FieldDatabaseException e) {
-			assertTrue(true);
-		}
-		try {
+
+			for (Table1.Record r : table1.getRecords())
+				Assert.assertEquals(15, r.int_value);
+
 			table3.updateRecords(new AlterRecordFilter<Table3.Record>() {
 
 				@Override
 				public void nextRecord(Table3.Record _record) {
 					HashMap<String, Object> m = new HashMap<>();
-					m.put("pk1", 15);
-					this.update(m);
-				}
-			});
-            fail();
-		} catch (FieldDatabaseException e) {
-			assertTrue(true);
-		}
-		try {
-			table2.updateRecords(new AlterRecordFilter<Table2.Record>() {
-
-				@Override
-				public void nextRecord(Table2.Record _record) {
-					HashMap<String, Object> m = new HashMap<>();
 					m.put("int_value", 15);
+
 					this.update(m);
 				}
 			});
-            fail();
-		} catch (FieldDatabaseException e) {
-			assertTrue(true);
-		}
 
+			for (Table3.Record r : table3.getRecords())
+				Assert.assertEquals(15, r.int_value);
+
+			try {
+				table1.updateRecords(new AlterRecordFilter<Table1.Record>() {
+
+					@Override
+					public void nextRecord(Record _record) {
+						HashMap<String, Object> m = new HashMap<>();
+						m.put("pk1", 15);
+						this.update(m);
+					}
+				});
+				fail();
+			} catch (FieldDatabaseException e) {
+				assertTrue(true);
+			}
+			try {
+				table3.updateRecords(new AlterRecordFilter<Table3.Record>() {
+
+					@Override
+					public void nextRecord(Table3.Record _record) {
+						HashMap<String, Object> m = new HashMap<>();
+						m.put("pk1", 15);
+						this.update(m);
+					}
+				});
+				fail();
+			} catch (FieldDatabaseException e) {
+				assertTrue(true);
+			}
+			try {
+				table2.updateRecords(new AlterRecordFilter<Table2.Record>() {
+
+					@Override
+					public void nextRecord(Table2.Record _record) {
+						HashMap<String, Object> m = new HashMap<>();
+						m.put("int_value", 15);
+						this.update(m);
+					}
+				});
+				fail();
+			} catch (FieldDatabaseException e) {
+				assertTrue(true);
+			}
+
+		}
 		table1.checkDataIntegrity();
 		table3.checkDataIntegrity();
 		table2.checkDataIntegrity();
@@ -2432,6 +2438,11 @@ public abstract class TestDatabase {
 		table5.checkDataIntegrity();
 		table6.checkDataIntegrity();
 
+	}
+
+	protected boolean supportPrimaryKeyUpdateWithCascade()
+	{
+		return true;
 	}
 
 	private boolean equals(DatabaseRecord _instance1, DatabaseRecord _instance2) throws DatabaseException {
@@ -4422,34 +4433,36 @@ public abstract class TestDatabase {
 			}
 				break;
 			case 21: {
-				table1.updateRecords(new AlterRecordFilter<Table1.Record>() {
+				if (supportPrimaryKeyUpdateWithCascade()) {
+					table1.updateRecords(new AlterRecordFilter<Table1.Record>() {
 
-					@Override
-					public void nextRecord(Record _record) {
-						HashMap<String, Object> m = new HashMap<>();
-						m.put("int_value", 18);
-						this.update(m);
+						@Override
+						public void nextRecord(Record _record) {
+							HashMap<String, Object> m = new HashMap<>();
+							m.put("int_value", 18);
+							this.update(m);
+						}
+					});
+					if (no_thread) {
+						ArrayList<Table1.Record> records1 = table1.getRecords();
+						for (Table1.Record r1 : records1)
+							Assert.assertEquals(18, r1.int_value);
 					}
-				});
-				if (no_thread) {
-					ArrayList<Table1.Record> records1 = table1.getRecords();
-					for (Table1.Record r1 : records1)
-                        Assert.assertEquals(18, r1.int_value);
-				}
 
-				table3.updateRecords(new AlterRecordFilter<Table3.Record>() {
+					table3.updateRecords(new AlterRecordFilter<Table3.Record>() {
 
-					@Override
-					public void nextRecord(Table3.Record _record) {
-						HashMap<String, Object> m = new HashMap<>();
-						m.put("int_value", 18);
-						this.update(m);
+						@Override
+						public void nextRecord(Table3.Record _record) {
+							HashMap<String, Object> m = new HashMap<>();
+							m.put("int_value", 18);
+							this.update(m);
+						}
+					});
+					if (no_thread) {
+						ArrayList<Table3.Record> records3 = table3.getRecords();
+						for (Table3.Record r3 : records3)
+							Assert.assertEquals(18, r3.int_value);
 					}
-				});
-				if (no_thread) {
-					ArrayList<Table3.Record> records3 = table3.getRecords();
-					for (Table3.Record r3 : records3)
-                        Assert.assertEquals(18, r3.int_value);
 				}
 
 			}

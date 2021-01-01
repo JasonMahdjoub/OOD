@@ -155,10 +155,15 @@ public abstract class DatabaseFactory<DW extends DatabaseWrapper> extends MultiF
 		if (wrapper == null) {
 			synchronized (this) {
 				if (wrapper == null)
-					wrapper = newWrapperInstance(databaseLifeCycles, createDatabasesIfNecessaryAndCheckIt);
+					wrapper = newWrapperInstance();
 			}
 		}
 		return wrapper;
+	}
+
+	DW newWrapperInstance() throws DatabaseException
+	{
+		return newWrapperInstance(databaseLifeCycles, createDatabasesIfNecessaryAndCheckIt);
 	}
 
 	protected abstract DW newWrapperInstance(DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException;

@@ -8061,10 +8061,17 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 																				.getPointedTable().getClass().getSimpleName());
 												}
 											}
-											for (FieldAccessor fa : fields) {
-												if (map.containsKey(fa.getFieldName())) {
-													fa.updateValue(_instance, map.get(fa.getFieldName()), _result_set);
+											for (Map.Entry<String, Object> e : map.entrySet()) {
+												boolean found = false;
+												for (FieldAccessor fa : fields) {
+													if (fa.getFieldName().equals(e.getKey())) {
+														fa.updateValue(_instance, map.get(fa.getFieldName()), _result_set);
+														found = true;
+														break;
+													}
 												}
+												if (!found)
+													throw new DatabaseException("Field not found : " + e.getKey());
 											}
 
 											_result_set.updateRow();

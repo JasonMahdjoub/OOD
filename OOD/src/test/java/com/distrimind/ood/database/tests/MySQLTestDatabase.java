@@ -221,12 +221,17 @@ public class MySQLTestDatabase extends TestDatabase {
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstanceA() throws IllegalArgumentException, DatabaseException {
-		return factoryA.getDatabaseWrapperSingleton();
+		return TestDatabase.getDatabaseInstance(factoryA);
 	}
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstanceB() throws IllegalArgumentException, DatabaseException {
-		return factoryB.getDatabaseWrapperSingleton();
+		return TestDatabase.getDatabaseInstance(factoryB);
+	}
+
+	protected boolean supportPrimaryKeyUpdateWithCascade()
+	{
+		return false;
 	}
 
 	@Override
