@@ -48,7 +48,7 @@ import com.distrimind.util.DecentralizedValue;
  * @version 1.0
  * @since OOD 3.0.0
  */
-public class ConnectedClientsTable extends Table<ConnectedClientsTable.Record> {
+public final class ConnectedClientsTable extends Table<ConnectedClientsTable.Record> {
 	protected ConnectedClientsTable() throws DatabaseException {
 	}
 

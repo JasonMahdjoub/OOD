@@ -694,11 +694,11 @@ public abstract class CommonDecentralizedTests {
 		private final AbstractDecentralizedID hostID;
 		private final ArrayList<DatabaseEvent> localEvents;
 		private final List<CommonDecentralizedTests.DistantDatabaseEvent> eventsReceivedStack;
-		private final TableAlone tableAlone;
-		private final TablePointed tablePointed;
-		private final TablePointing tablePointing;
-		private final UndecentralizableTableA1 undecentralizableTableA1;
-		private final UndecentralizableTableB1 undecentralizableTableB1;
+		private TableAlone tableAlone;
+		private TablePointed tablePointed;
+		private TablePointing tablePointing;
+		private UndecentralizableTableA1 undecentralizableTableA1;
+		private UndecentralizableTableB1 undecentralizableTableB1;
 		private volatile boolean newDatabaseEventDetected = false;
 		private volatile boolean replaceWhenCollisionDetected = false;
 		private volatile CommonDecentralizedTests.DetectedCollision collisionDetected = null;
@@ -706,7 +706,7 @@ public abstract class CommonDecentralizedTests {
 		private volatile TablePointed.Record recordPointed = null;
 		private TablePointing.Record recordPointingNull = null, recordPointingNotNull = null;
 		private TableAlone.Record recordAlone = null;
-		private final List<CommonDecentralizedTests.Anomaly> anomalies;
+		private List<CommonDecentralizedTests.Anomaly> anomalies;
 
 
 		//private final List<MessageComingFromCentralDatabaseBackup> centralDatabaseBackupEvents=new ArrayList<>();
@@ -752,6 +752,10 @@ public abstract class CommonDecentralizedTests {
 						}
 					}, null), true);*/
 
+
+		}
+
+		void initStep2() throws DatabaseException {
 			tableAlone = dbwrapper.getTableInstance(TableAlone.class);
 			tablePointed = dbwrapper.getTableInstance(TablePointed.class);
 			tablePointing = dbwrapper.getTableInstance(TablePointing.class);
@@ -799,6 +803,7 @@ public abstract class CommonDecentralizedTests {
 
 			});
 		}
+
 
 		public TableAlone getTableAlone() {
 			return tableAlone;
@@ -1066,6 +1071,7 @@ public abstract class CommonDecentralizedTests {
 				.setLocalPeerIdentifier(db.getHostID(), sendIndirectTransactions(), true)
 				.addConfiguration(new DatabaseConfiguration(new DatabaseSchema(TablePointed.class.getPackage()), canInitCentralBackup()?DatabaseConfiguration.SynchronizationType.DECENTRALIZED_SYNCHRONIZATION_AND_SYNCHRONIZATION_WITH_CENTRAL_BACKUP_DATABASE:DatabaseConfiguration.SynchronizationType.DECENTRALIZED_SYNCHRONIZATION, peers, getBackupConfiguration(), true), false)
 				.commit();
+		db.initStep2();
 	}
 
 	@BeforeClass

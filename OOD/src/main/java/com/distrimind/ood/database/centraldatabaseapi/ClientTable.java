@@ -51,7 +51,7 @@ import java.util.List;
  * @version 1.0
  * @since OOD 3.0.0
  */
-public class ClientTable extends Table<ClientTable.Record> {
+public final class ClientTable extends Table<ClientTable.Record> {
 	protected ClientTable() throws DatabaseException {
 	}
 

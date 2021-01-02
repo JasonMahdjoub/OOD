@@ -38,6 +38,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.annotations.Field;
+import com.distrimind.ood.database.annotations.ForeignKey;
 import com.distrimind.ood.database.annotations.NotNull;
 import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
@@ -49,13 +50,14 @@ import com.distrimind.util.io.SerializationTools;
  * @version 1.0
  * @since OOD 3.0.0
  */
-public class DatabaseBackupPerClientTable extends Table<DatabaseBackupPerClientTable.Record> {
+public final class DatabaseBackupPerClientTable extends Table<DatabaseBackupPerClientTable.Record> {
 	protected DatabaseBackupPerClientTable() throws DatabaseException {
 	}
 
 	public static class Record extends DatabaseRecord
 	{
 		@PrimaryKey
+		@ForeignKey
 		@NotNull
 		private ClientTable.Record client;
 

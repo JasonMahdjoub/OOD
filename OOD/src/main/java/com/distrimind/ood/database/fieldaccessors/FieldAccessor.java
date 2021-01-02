@@ -46,6 +46,7 @@ import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.RenforcedDecentralizedIDGenerator;
 import com.distrimind.util.crypto.ASymmetricPublicKey;
 import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.crypto.IKey;
 import com.distrimind.util.io.RandomInputStream;
 import com.distrimind.util.io.RandomOutputStream;
 import com.distrimind.util.io.SerializationTools;
@@ -546,7 +547,7 @@ public abstract class FieldAccessor {
 						else if (type.equals(UUID.class))
 							res.add(new UUIDFieldAccessor(_table, _sql_connection, f,
 									parentFieldName, severalPrimaryKeysPresentIntoTable));
-						else if (DecentralizedValue.class.isAssignableFrom(type))
+						else if (DecentralizedValue.class.isAssignableFrom(type) || IKey.class.isAssignableFrom(type))
 						{
 							res.add(new DecentralizedValueFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
 						}

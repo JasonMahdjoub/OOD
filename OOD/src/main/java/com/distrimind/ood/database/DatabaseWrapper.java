@@ -4544,7 +4544,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					@Override
 					public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 						try {
-
+							if (!doesTableExists(DatabaseWrapper.VERSIONS_OF_DATABASE))
+								return -1;
 							PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
 									.prepareStatement("SELECT CURRENT_DATABASE_VERSION FROM " + DatabaseWrapper.VERSIONS_OF_DATABASE + " WHERE PACKAGE_NAME='"
 											+ getLongPackageName(p) + "'" + getSqlComma());
@@ -4564,7 +4565,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 								fdb.currentVersion=res;
 							return res;
 
-						} catch (SQLException e) {
+						} catch (Exception e) {
 							throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 						}
 					}

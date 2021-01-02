@@ -48,7 +48,7 @@ import com.distrimind.util.crypto.IASymmetricPublicKey;
  * @version 1.0
  * @since OOD 3.0.0
  */
-public class ClientCloudAccountTable extends Table<ClientCloudAccountTable.Record> {
+public final class ClientCloudAccountTable extends Table<ClientCloudAccountTable.Record> {
 	public static final int MAX_EXTERNAL_ACCOUNT_ID_SIZE_IN_BYTES= DatabaseWrapper.MAX_ACCEPTED_SIZE_IN_BYTES_OF_DECENTRALIZED_VALUE+4;
 	protected ClientCloudAccountTable() throws DatabaseException {
 	}

@@ -54,7 +54,7 @@ import java.io.IOException;
  * @version 1.0
  * @since OOD 3.0.0
  */
-public class EncryptedBackupPartReferenceTable extends Table<EncryptedBackupPartReferenceTable.Record> {
+public final class EncryptedBackupPartReferenceTable extends Table<EncryptedBackupPartReferenceTable.Record> {
 	protected EncryptedBackupPartReferenceTable() throws DatabaseException {
 	}
 

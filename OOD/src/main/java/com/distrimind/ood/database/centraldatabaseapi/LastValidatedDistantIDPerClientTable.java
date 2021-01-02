@@ -54,7 +54,7 @@ import java.util.Map;
  * @version 1.0
  * @since OOD 3.0.0
  */
-public class LastValidatedDistantIDPerClientTable extends Table<LastValidatedDistantIDPerClientTable.Record> {
+public final class LastValidatedDistantIDPerClientTable extends Table<LastValidatedDistantIDPerClientTable.Record> {
 	protected LastValidatedDistantIDPerClientTable() throws DatabaseException {
 	}
 

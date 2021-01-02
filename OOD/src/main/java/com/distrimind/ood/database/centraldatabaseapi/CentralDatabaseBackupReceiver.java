@@ -35,10 +35,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database.centraldatabaseapi;
 
-import com.distrimind.ood.database.DatabaseWrapper;
-import com.distrimind.ood.database.Filter;
-import com.distrimind.ood.database.SynchronizedTransaction;
-import com.distrimind.ood.database.TransactionIsolation;
+import com.distrimind.ood.database.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.messages.DistantBackupCenterConnexionInitialisation;
 import com.distrimind.ood.database.messages.MessageDestinedToCentralDatabaseBackup;
@@ -46,8 +43,7 @@ import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.Integrity;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author Jason Mahdjoub
@@ -64,6 +60,15 @@ public abstract class CentralDatabaseBackupReceiver {
 	protected final EncryptedBackupPartReferenceTable encryptedBackupPartReferenceTable;
 	protected final ClientCloudAccountTable clientCloudAccountTable;
 	protected final ConnectedClientsTable connectedClientsTable;
+	private static final Set<Class<?>> listTableClasses=new HashSet<>(Arrays.asList(
+			ClientCloudAccountTable.class,
+			ClientTable.class,
+			ConnectedClientsTable.class,
+			DatabaseBackupPerClientTable.class,
+			EncryptedBackupPartReferenceTable.class,
+			LastValidatedDistantIDPerClientTable.class));
+
+
 
 	public CentralDatabaseBackupReceiver(DatabaseWrapper wrapper, DecentralizedValue centralID) throws DatabaseException {
 		if (wrapper==null)
@@ -72,6 +77,9 @@ public abstract class CentralDatabaseBackupReceiver {
 			throw new NullPointerException();
 		this.wrapper = wrapper;
 		this.centralID=centralID;
+		wrapper.getDatabaseConfigurationsBuilder()
+				.addConfiguration(new DatabaseConfiguration(new DatabaseSchema(CentralDatabaseBackupReceiver.class.getPackage(), listTableClasses)), false, true )
+				.commit();
 		this.clientTable=wrapper.getTableInstance(ClientTable.class);
 		this.clientCloudAccountTable=wrapper.getTableInstance(ClientCloudAccountTable.class);
 		this.lastValidatedDistantIDPerClientTable=wrapper.getTableInstance(LastValidatedDistantIDPerClientTable.class);
