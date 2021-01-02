@@ -68,7 +68,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 	protected volatile AtomicReference<DatabaseHooksTable.Record> localHost = null;
 	protected final HashMap<HostPair, Long> lastTransactionFieldsBetweenDistantHosts = new HashMap<>();
 
-	enum PairingState
+	public enum PairingState
 	{
 		CENTRAL_PAIRING_IN_PROGRESS,
 		P2P_PAIRING_IN_PROGRESS,
@@ -430,7 +430,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		}*/
 
 		boolean isConcernedByDatabasePackage(String packageName) {
-			return databasePackageNames.contains(packageName);
+			return databasePackageNames!=null && databasePackageNames.contains(packageName);
 			//return isConcernedByDatabasePackage(databasePackageNames, packageName);
 		}
 

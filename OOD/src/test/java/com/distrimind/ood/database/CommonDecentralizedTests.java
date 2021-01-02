@@ -82,6 +82,8 @@ public abstract class CommonDecentralizedTests {
 		isLocallyDecentralized=m;
 	}
 
+
+
 	boolean isLocallyDecentralized(Table<?> table)
 	{
 		try {
@@ -96,47 +98,14 @@ public abstract class CommonDecentralizedTests {
 	protected CommonDecentralizedTests() throws NoSuchProviderException, NoSuchAlgorithmException, IOException, DatabaseException {
 		this.random=SecureRandomType.DEFAULT.getSingleton(null);
 		this.centralDatabaseBackupKeyPair=ASymmetricAuthenticatedSignatureType.BC_FIPS_Ed25519.getKeyPairGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKeyPair();
-		this.centralDatabaseBackupReceiver=new CentralDatabaseBackupReceiver(getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver(), (DecentralizedValue) centralDatabaseBackupKeyPair.getASymmetricPublicKey());
-		final SymmetricSecretKey secretKeyForSignature=SymmetricAuthenticatedSignatureType.DEFAULT.getKeyGenerator(random).generateKey();
-		final SymmetricSecretKey secretKeyForEncryption=SymmetricEncryptionType.DEFAULT.getKeyGenerator(random).generateKey();
-		this.encryptionProfileProvider=new EncryptionProfileProvider() {
-
-			@Override
-			public MessageDigestType getMessageDigest(short keyID, boolean duringDecryptionPhase) {
-				return MessageDigestType.DEFAULT;
-			}
-
-			@Override
-			public Short getKeyID(IASymmetricPublicKey publicKeyForSignature) {
-				return 0;
-			}
-
-			@Override
-			public IASymmetricPrivateKey getPrivateKeyForSignature(short keyID) {
-				return null;
-			}
-
-			@Override
-			public IASymmetricPublicKey getPublicKeyForSignature(short keyID) {
-				return null;
-			}
-
-
-			@Override
-			public SymmetricSecretKey getSecretKeyForSignature(short keyID, boolean duringDecryptionPhase) {
-				return secretKeyForSignature;
-			}
-
-			@Override
-			public SymmetricSecretKey getSecretKeyForEncryption(short keyID, boolean duringDecryptionPhase) {
-				return secretKeyForEncryption;
-			}
-
-			@Override
-			public short getDefaultKeyID() {
-				return 0;
-			}
-		};
+		this.centralDatabaseBackupDatabase=getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver().getDatabaseWrapperSingleton();
+		this.centralDatabaseBackupReceiver=new CentralDatabaseBackupReceiver(centralDatabaseBackupDatabase, (DecentralizedValue) centralDatabaseBackupKeyPair.getASymmetricPublicKey());
+		SymmetricSecretKey secretKeyForSignature=SymmetricAuthenticatedSignatureType.DEFAULT.getKeyGenerator(random).generateKey();
+		SymmetricSecretKey secretKeyForEncryption=SymmetricEncryptionType.DEFAULT.getKeyGenerator(random).generateKey();
+		((EncryptionProfileCollection)this.encryptionProfileProvider).putProfile((short)0, MessageDigestType.DEFAULT, null, null, secretKeyForSignature,secretKeyForEncryption, false, true );
+		secretKeyForSignature=SymmetricAuthenticatedSignatureType.DEFAULT.getKeyGenerator(random).generateKey();
+		secretKeyForEncryption=SymmetricEncryptionType.DEFAULT.getKeyGenerator(random).generateKey();
+		((EncryptionProfileCollection)this.protectedEncryptionProfileProvider).putProfile((short)0, MessageDigestType.DEFAULT, null, null, secretKeyForSignature,secretKeyForEncryption, false, true );
 	}
 
 	public static class DistantDatabaseEvent {
@@ -442,8 +411,7 @@ public abstract class CommonDecentralizedTests {
 			this.centralDatabaseBackupPublicKey = centralDatabaseBackupKeyPair.getASymmetricPublicKey();
 			this.certifiedAccountPublicKey = certifiedAccountPublicKey;
 			ASymmetricAuthenticatedSignerAlgorithm signer=new ASymmetricAuthenticatedSignerAlgorithm(centralDatabaseBackupKeyPair.getASymmetricPrivateKey());
-			/*WrappedData wd=centralDatabaseBackupPublicKey.encode();
-			signer.update(wd.getBytes() );*/
+
 			WrappedData wd=certifiedAccountPublicKey.encode();
 			signer.update(wd.getBytes() );
 			signature= signer.getSignature();
@@ -573,118 +541,6 @@ public abstract class CommonDecentralizedTests {
 	}
 
 
-	/*public class CentralDatabaseBackup
-	{
-		final Map<DecentralizedValue, DatabaseBackupPerHost> databaseBackup=new HashMap<>();
-
-
-		private void received(EncryptedBackupPartDestinedToCentralDatabaseBackup message) throws DatabaseException, IOException {
-			DatabaseBackupPerHost m=databaseBackup.get(message.getHostSource());
-			if (m==null)
-				throw new DatabaseException("");
-			byte[] lastValidatedDistantIDtoBroadcast=m.received(message);
-
-			if (lastValidatedDistantIDtoBroadcast!=null)
-			{
-				for (Map.Entry<DecentralizedValue, DatabaseBackupPerHost> e : databaseBackup.entrySet())
-				{
-					if (e.getValue().connected && !e.getKey().equals(message.getHostSource()))
-						sendMessageFromCentralDatabaseBackup(
-								new BackupChannelUpdateMessageFromCentralDatabaseBackup(
-										e.getKey(),
-										message.getHostSource(),
-										m.lastValidatedAndEncryptedDistantID.get(e.getKey()),
-										lastValidatedDistantIDtoBroadcast
-								)
-								, true);
-				}
-
-			}
-			else
-				Assert.fail();
-		}
-		private DatabaseBackupPerHost addHost(DecentralizedValue host)
-		{
-			DatabaseBackupPerHost res=new DatabaseBackupPerHost(host);
-			databaseBackup.put(host, res);
-			return res;
-		}
-		private void disconnect(DecentralizedValue host)
-		{
-			DatabaseBackupPerHost m=databaseBackup.get(host);
-			if (m!=null)
-				m.connected=false;
-		}
-		private void received(DistantBackupCenterConnexionInitialisation message) throws DatabaseException {
-			DatabaseBackupPerHost m=databaseBackup.get(message.getHostSource());
-			if (m==null)
-				m=addHost(message.getHostSource());
-			m.received(message);
-			m.connected=true;
-			Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> lastValidatedAndEncryptedIDsPerHost=new HashMap<>();
-			Map<String, Long> lastValidatedTransactionsUTCForDestinationHost=new HashMap<>();
-			for (Map.Entry<DecentralizedValue, DatabaseBackupPerHost> e : databaseBackup.entrySet())
-			{
-				if (e.getKey().equals(message.getHostSource()))
-					continue;
-				lastValidatedAndEncryptedIDsPerHost.put(e.getKey(), new LastValidatedLocalAndDistantEncryptedID(e.getValue().lastValidatedAndEncryptedDistantID.get(message.getHostSource()), e.getValue().lastValidatedAndEncryptedID));
-			}
-			for (Map.Entry<String, DatabaseBackup> e : m.databaseBackupPerPackage.entrySet())
-			{
-				lastValidatedTransactionsUTCForDestinationHost.put(e.getKey(), e.getValue().getLastFileBackupPartUTC());
-			}
-			sendMessageFromCentralDatabaseBackup(new InitialMessageComingFromCentralBackup(message.getHostSource(), lastValidatedAndEncryptedIDsPerHost, lastValidatedTransactionsUTCForDestinationHost));
-		}
-
-		private void received(AskForDatabaseBackupPartDestinedToCentralDatabaseBackup message) throws FileNotFoundException, DatabaseException {
-			DatabaseBackupPerHost m=databaseBackup.get(message.getChannelHost());
-			if (m==null)
-				return;
-			m.received(message);
-		}
-
-		private void received(AskForMetaDataPerFileToCentralDatabaseBackup message) throws DatabaseException {
-			DatabaseBackupPerHost m=databaseBackup.get(message.getChannelHost());
-			if (m!=null)
-				m.received(message);
-		}
-
-
-		private void received(DatabaseBackupToRemoveDestinedToCentralDatabaseBackup message)
-		{
-			DatabaseBackupPerHost m=databaseBackup.get(message.getHostSource());
-			if (m!=null)
-				m.databaseBackupPerPackage.remove(message.getPackageString());
-		}
-		private void received(LastValidatedDistantTransactionDestinedToCentralDatabaseBackup message)
-		{
-			DatabaseBackupPerHost m=databaseBackup.get(message.getHostSource());
-			if (m!=null)
-				m.received(message);
-		}
-
-		public void received(MessageDestinedToCentralDatabaseBackup message) throws DatabaseException, IOException {
-			if (message instanceof EncryptedBackupPartDestinedToCentralDatabaseBackup)
-				received((EncryptedBackupPartDestinedToCentralDatabaseBackup)message);
-			else if (message instanceof AskForDatabaseBackupPartDestinedToCentralDatabaseBackup)
-				received((AskForDatabaseBackupPartDestinedToCentralDatabaseBackup)message);
-			else if (message instanceof AskForMetaDataPerFileToCentralDatabaseBackup)
-				received((AskForMetaDataPerFileToCentralDatabaseBackup)message);
-			else if (message instanceof DatabaseBackupToRemoveDestinedToCentralDatabaseBackup)
-				received((DatabaseBackupToRemoveDestinedToCentralDatabaseBackup)message);
-			else if (message instanceof DistantBackupCenterConnexionInitialisation)
-				received((DistantBackupCenterConnexionInitialisation)message);
-			else if (message instanceof LastValidatedDistantTransactionDestinedToCentralDatabaseBackup)
-				received((LastValidatedDistantTransactionDestinedToCentralDatabaseBackup)message);
-			else if (message instanceof DisconnectCentralDatabaseBackup)
-				disconnect(message.getHostSource());
-			else
-				throw new IllegalAccessError();
-		}
-
-
-
-	}*/
 
 
 
@@ -709,8 +565,6 @@ public abstract class CommonDecentralizedTests {
 		private List<CommonDecentralizedTests.Anomaly> anomalies;
 
 
-		//private final List<MessageComingFromCentralDatabaseBackup> centralDatabaseBackupEvents=new ArrayList<>();
-
 		public Database(DatabaseWrapper dbwrapper) throws DatabaseException {
 			this.dbwrapper = dbwrapper;
 			connected = false;
@@ -719,38 +573,6 @@ public abstract class CommonDecentralizedTests {
 			eventsReceivedStack = Collections.synchronizedList(new LinkedList<>());
 
 
-			/*getDbwrapper()
-					.loadDatabase(new DatabaseConfiguration(new DatabaseSchema(TableAlone.class.getPackage(),
-							canInitCentralBackup? DatabaseConfiguration.SynchronizationType.DECENTRALIZED_SYNCHRONIZATION_AND_SYNCHRONIZATION_WITH_CENTRAL_BACKUP_DATABASE: DatabaseConfiguration.SynchronizationType.DECENTRALIZED_SYNCHRONIZATION,
-							backupConfiguration
-							)
-							, new DatabaseLifeCycles() {
-
-						@Override
-						public void transferDatabaseFromOldVersion(DatabaseWrapper wrapper, DatabaseConfiguration newDatabaseConfiguration) throws Exception {
-
-						}
-
-						@Override
-						public void afterDatabaseCreation(DatabaseWrapper wrapper, DatabaseConfiguration newDatabaseConfiguration) throws Exception {
-
-						}
-
-						@Override
-						public boolean hasToRemoveOldDatabase(DatabaseConfiguration databaseConfiguration) throws Exception {
-							return true;
-						}
-
-						@Override
-						public boolean replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized(DatabaseConfiguration databaseConfiguration) {
-							return false;
-						}
-
-						@Override
-						public void saveDatabaseConfigurations(DatabaseConfigurations databaseConfigurations) {
-
-						}
-					}, null), true);*/
 
 
 		}
@@ -872,9 +694,7 @@ public abstract class CommonDecentralizedTests {
 			return this.eventsReceivedStack;
 		}
 
-		/*public List<MessageComingFromCentralDatabaseBackup> getReceivedCentralDatabaseBackupEvents() {
-			return this.centralDatabaseBackupEvents;
-		}*/
+
 
 		@Override
 		public void newDatabaseEventDetected(DatabaseWrapper _wrapper) {
@@ -1026,19 +846,23 @@ public abstract class CommonDecentralizedTests {
 	protected volatile CommonDecentralizedTests.Database db1 = null, db2 = null, db3 = null, db4 = null;
 	protected final ArrayList<CommonDecentralizedTests.Database> listDatabase = new ArrayList<>(3);
 	protected final AbstractKeyPair<?, ?> centralDatabaseBackupKeyPair;
+	private final DatabaseWrapper centralDatabaseBackupDatabase;
 	protected final CentralDatabaseBackupReceiver centralDatabaseBackupReceiver;
 	protected final AbstractSecureRandom random;
-	protected final EncryptionProfileProvider encryptionProfileProvider;
+	protected final EncryptionProfileProviderFactory encryptionProfileProvider=new EncryptionProfileCollection(){};
+	protected final EncryptionProfileProviderFactory protectedEncryptionProfileProvider=new EncryptionProfileCollection(){};
 
-	public abstract DatabaseWrapper getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver() throws IllegalArgumentException, DatabaseException;
 
-	public abstract DatabaseWrapper getDatabaseWrapperInstance1() throws IllegalArgumentException, DatabaseException;
 
-	public abstract DatabaseWrapper getDatabaseWrapperInstance2() throws IllegalArgumentException, DatabaseException;
+	public abstract DatabaseFactory<?> getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver() throws IllegalArgumentException, DatabaseException;
 
-	public abstract DatabaseWrapper getDatabaseWrapperInstance3() throws IllegalArgumentException, DatabaseException;
+	public abstract DatabaseFactory<?> getDatabaseWrapperInstance1() throws IllegalArgumentException, DatabaseException;
 
-	public abstract DatabaseWrapper getDatabaseWrapperInstance4() throws IllegalArgumentException, DatabaseException;
+	public abstract DatabaseFactory<?> getDatabaseWrapperInstance2() throws IllegalArgumentException, DatabaseException;
+
+	public abstract DatabaseFactory<?> getDatabaseWrapperInstance3() throws IllegalArgumentException, DatabaseException;
+
+	public abstract DatabaseFactory<?> getDatabaseWrapperInstance4() throws IllegalArgumentException, DatabaseException;
 
 	public abstract void removeDatabaseFiles1();
 
@@ -1065,11 +889,16 @@ public abstract class CommonDecentralizedTests {
 		Set<DecentralizedValue> peers=new HashSet<>();
 		for (CommonDecentralizedTests.Database dbOther : listDatabase) {
 			if (db!=dbOther)
-				peers.add(db.getHostID());
+				peers.add(dbOther.getHostID());
 		}
 		db.getDbwrapper().getDatabaseConfigurationsBuilder()
 				.setLocalPeerIdentifier(db.getHostID(), sendIndirectTransactions(), true)
-				.addConfiguration(new DatabaseConfiguration(new DatabaseSchema(TablePointed.class.getPackage()), canInitCentralBackup()?DatabaseConfiguration.SynchronizationType.DECENTRALIZED_SYNCHRONIZATION_AND_SYNCHRONIZATION_WITH_CENTRAL_BACKUP_DATABASE:DatabaseConfiguration.SynchronizationType.DECENTRALIZED_SYNCHRONIZATION, peers, getBackupConfiguration(), true), false)
+				.addConfiguration(new DatabaseConfiguration(
+							new DatabaseSchema(TablePointed.class.getPackage()),
+							canInitCentralBackup()?DatabaseConfiguration.SynchronizationType.DECENTRALIZED_SYNCHRONIZATION_AND_SYNCHRONIZATION_WITH_CENTRAL_BACKUP_DATABASE:DatabaseConfiguration.SynchronizationType.DECENTRALIZED_SYNCHRONIZATION,
+							peers, getBackupConfiguration(),
+							true),
+						false)
 				.commit();
 		db.initStep2();
 	}
@@ -1077,9 +906,15 @@ public abstract class CommonDecentralizedTests {
 	@BeforeClass
 	public void loadDatabase() throws DatabaseException {
 		unloadDatabase();
-		db1 = new CommonDecentralizedTests.Database(getDatabaseWrapperInstance1());
-		db2 = new CommonDecentralizedTests.Database(getDatabaseWrapperInstance2());
-		db3 = new CommonDecentralizedTests.Database(getDatabaseWrapperInstance3());
+		DatabaseFactory<?> df=getDatabaseWrapperInstance1();
+		df.setEncryptionProfileProviders(encryptionProfileProvider, protectedEncryptionProfileProvider, SecureRandomType.DEFAULT);
+		db1 = new CommonDecentralizedTests.Database(df.getDatabaseWrapperSingleton());
+		df=getDatabaseWrapperInstance2();
+		df.setEncryptionProfileProviders(encryptionProfileProvider, protectedEncryptionProfileProvider, SecureRandomType.DEFAULT);
+		db2 = new CommonDecentralizedTests.Database(df.getDatabaseWrapperSingleton());
+		df=getDatabaseWrapperInstance3();
+		df.setEncryptionProfileProviders(encryptionProfileProvider, protectedEncryptionProfileProvider, SecureRandomType.DEFAULT);
+		db3 = new CommonDecentralizedTests.Database(df.getDatabaseWrapperSingleton());
 		listDatabase.add(db1);
 		listDatabase.add(db2);
 		listDatabase.add(db3);
@@ -1149,7 +984,7 @@ public abstract class CommonDecentralizedTests {
 		Assert.assertTrue(centralDatabaseBackupDirectory.mkdir());
 	}
 	@AfterClass
-	public void unloadDatabase() throws DatabaseException {
+	public void unloadDatabase()  {
 		try {
 			unloadDatabase1();
 		} finally {
@@ -1165,7 +1000,7 @@ public abstract class CommonDecentralizedTests {
 						listDatabase.clear();
 						if (centralDatabaseBackupDirectory.exists())
 							FileTools.deleteDirectory(centralDatabaseBackupDirectory);
-						getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver().close();
+						centralDatabaseBackupDatabase.close();
 						removeCentralDatabaseFiles();
 					}
 				}
@@ -1176,7 +1011,7 @@ public abstract class CommonDecentralizedTests {
 
 	@SuppressWarnings("deprecation")
 	@Override
-	public void finalize() throws DatabaseException {
+	public void finalize() {
 		unloadDatabase();
 	}
 
@@ -1236,37 +1071,7 @@ public abstract class CommonDecentralizedTests {
 				db.getDbwrapper().getSynchronizer().received(event);
 			}
 		}
-		/*while (!db.getReceivedCentralDatabaseBackupEvents().isEmpty())
-		{
-			changed=true;
-			CentralDatabaseBackupEvent event = db.getReceivedCentralDatabaseBackupEvents().remove(0);
-			if (event instanceof P2PBigDatabaseEventToSend) {
-				try (InputStreamGetter is = new InputStreamGetter() {
 
-					private RandomInputStream actual=null;
-
-					@Override
-					public RandomInputStream initOrResetInputStream() throws IOException {
-						if (actual!=null)
-							actual.close();
-						return actual=dde.getInputStream();
-					}
-
-					@Override
-					public void close() throws IOException {
-						if (actual!=null)
-							actual.close();
-					}
-				})
-				{
-					db.getDbwrapper().getSynchronizer().received((P2PBigDatabaseEventToSend) event, is);
-				}
-			} else {
-				db.getDbwrapper().getSynchronizer().received(event);
-			}
-
-			db.dbwrapper.getSynchronizer().received(event);
-		}*/
 		return changed;
 	}
 
@@ -1340,10 +1145,10 @@ public abstract class CommonDecentralizedTests {
 				{
 					Assert.assertEquals(dc.getBackupConfiguration().getMaxBackupFileAgeInMs(), 1000);
 					BackupRestoreManager brm=dw.getBackupRestoreManager(dc.getDatabaseSchema().getPackage());
-					ClientTable.Record clientRecord=getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver().getTableInstance(ClientTable.class).getRecord("clientID", d.hostID);
-					DatabaseBackupPerClientTable databaseBackupPerClientTable=getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver().getTableInstance(DatabaseBackupPerClientTable.class);
+					ClientTable.Record clientRecord=centralDatabaseBackupDatabase.getTableInstance(ClientTable.class).getRecord("clientID", d.hostID);
+					DatabaseBackupPerClientTable databaseBackupPerClientTable=centralDatabaseBackupDatabase.getTableInstance(DatabaseBackupPerClientTable.class);
 					DatabaseBackupPerClientTable.Record databaseRecord=databaseBackupPerClientTable.getRecord("client=%c and packageString=%ps", "c", clientRecord, "ps", dc.getDatabaseSchema().getPackage().getName());
-					List<EncryptedBackupPartReferenceTable.Record> records=getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver().getTableInstance(EncryptedBackupPartReferenceTable.class).getRecords("database=%db", "db", databaseRecord);
+					List<EncryptedBackupPartReferenceTable.Record> records=centralDatabaseBackupDatabase.getTableInstance(EncryptedBackupPartReferenceTable.class).getRecords("database=%db", "db", databaseRecord);
 					List<Long> list=brm.getFinalTimestamps();
 					for (long l : list)
 					{

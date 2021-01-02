@@ -35,10 +35,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database.tests;
 
-import com.distrimind.ood.database.DatabaseWrapper;
-import com.distrimind.ood.database.EmbeddedH2DatabaseWrapper;
-import com.distrimind.ood.database.InFileEmbeddedH2DatabaseFactory;
-import com.distrimind.ood.database.TestDecentralizedDatabase;
+import com.distrimind.ood.database.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 
 import java.io.File;
@@ -64,28 +61,28 @@ public class H2TestDecentralizedDatabase extends TestDecentralizedDatabase {
 	}
 
 	@Override
-	public DatabaseWrapper getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedH2DatabaseFactory(new File(centralDatabaseFileName)).getDatabaseWrapperSingleton();
+	public DatabaseFactory<?> getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver() throws IllegalArgumentException, DatabaseException {
+		return new InFileEmbeddedH2DatabaseFactory(new File(centralDatabaseFileName));
 	}
 
 	@Override
-	public DatabaseWrapper getDatabaseWrapperInstance1() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name1)).getDatabaseWrapperSingleton();
+	public DatabaseFactory<?> getDatabaseWrapperInstance1() throws IllegalArgumentException, DatabaseException {
+		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name1));
 	}
 
 	@Override
-	public DatabaseWrapper getDatabaseWrapperInstance2() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name2)).getDatabaseWrapperSingleton();
+	public DatabaseFactory<?> getDatabaseWrapperInstance2() throws IllegalArgumentException, DatabaseException {
+		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name2));
 	}
 
 	@Override
-	public DatabaseWrapper getDatabaseWrapperInstance3() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name3)).getDatabaseWrapperSingleton();
+	public DatabaseFactory<?> getDatabaseWrapperInstance3() throws IllegalArgumentException, DatabaseException {
+		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name3));
 	}
 
 	@Override
-	public DatabaseWrapper getDatabaseWrapperInstance4() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name4)).getDatabaseWrapperSingleton();
+	public DatabaseFactory<?> getDatabaseWrapperInstance4() throws IllegalArgumentException, DatabaseException {
+		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name4));
 	}
 
 	@Override

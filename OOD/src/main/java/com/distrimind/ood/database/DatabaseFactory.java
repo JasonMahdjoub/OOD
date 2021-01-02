@@ -95,7 +95,11 @@ public abstract class DatabaseFactory<DW extends DatabaseWrapper> extends MultiF
 	public EncryptionProfileProviderFactory getEncryptionProfileProviderFactoryForCentralDatabaseBackup() {
 		return encryptionProfileProviderFactoryForCentralDatabaseBackup;
 	}
-
+	public void setEncryptionProfileProviders(EncryptionProfileProviderFactory encryptionProfileProviderFactoryForCentralDatabaseBackup,
+											  EncryptionProfileProviderFactory protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages,
+											  SecureRandomType randomType) {
+		setEncryptionProfileProviders(encryptionProfileProviderFactoryForCentralDatabaseBackup, protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages, randomType, this.randomNonce, this.randomPersonalizationString);
+	}
 	public void setEncryptionProfileProviders(EncryptionProfileProviderFactory encryptionProfileProviderFactoryForCentralDatabaseBackup,
 											  EncryptionProfileProviderFactory protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages,
 											  SecureRandomType randomType, byte[] randomNonce, byte[] randomPersonalizationString) {

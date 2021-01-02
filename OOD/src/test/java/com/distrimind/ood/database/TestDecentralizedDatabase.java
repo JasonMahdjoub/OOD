@@ -37,6 +37,7 @@ package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.decentralizeddatabase.TablePointed;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.crypto.SecureRandomType;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -457,7 +458,9 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 		connectAllDatabase();
 		testSynchronisation();
 		disconnectAllDatabase();
-		db4 = new Database(getDatabaseWrapperInstance4());
+		DatabaseFactory<?> df=getDatabaseWrapperInstance4();
+		df.setEncryptionProfileProviders(encryptionProfileProvider, protectedEncryptionProfileProvider, SecureRandomType.DEFAULT);
+		db4 = new Database(df.getDatabaseWrapperSingleton());
 		listDatabase.add(db4);
 		addConfiguration(db4);
 		/*db4.getDbwrapper().getSynchronizer().setNotifier(db4);

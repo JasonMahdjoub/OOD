@@ -70,7 +70,7 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 	private SynchronizationType synchronizationType;
 	private Set<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase;
 	private BackupConfiguration backupConfiguration;
-	private transient boolean createDatabaseIfNecessaryAndCheckItDuringCurrentSession=true;
+	private transient boolean createDatabaseIfNecessaryAndCheckItDuringCurrentSession;
 	private boolean createDatabaseIfNecessaryAndCheckItDuringLoading;
 
 	public DatabaseConfiguration(DatabaseSchema databaseSchema) {
@@ -106,6 +106,8 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 		this.databaseSchema = databaseSchema;
 		this.synchronizationType=synchronizationType;
 		this.backupConfiguration=backupConfiguration;
+		this.createDatabaseIfNecessaryAndCheckItDuringCurrentSession=createDatabaseIfNecessaryAndCheckItDuringLoading;
+		this.createDatabaseIfNecessaryAndCheckItDuringLoading=createDatabaseIfNecessaryAndCheckItDuringLoading;
 		try {
 			setDistantPeersThatCanBeSynchronizedWithThisDatabase(distantPeersThatCanBeSynchronizedWithThisDatabase);
 		} catch (IllegalAccessException e) {
@@ -120,19 +122,6 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 		this.backupConfiguration=backupConfiguration;
 	}
 
-	/*boolean setSynchronizationTypeAndBackupConfiguration(SynchronizationType synchronizationType, BackupConfiguration backupConfiguration) {
-		if (synchronizationType==SynchronizationType.DECENTRALIZED_SYNCHRONIZATION_AND_SYNCHRONIZATION_WITH_CENTRAL_BACKUP_DATABASE && backupConfiguration==null)
-			throw new NullPointerException();
-		if (synchronizationType==this.synchronizationType && backupConfiguration!=this.backupConfiguration) {
-			this.backupConfiguration = backupConfiguration;
-			this.synchronizationType = synchronizationType;
-			if (synchronizationType == SynchronizationType.NO_SYNCHRONIZATION)
-				distantPeersThatCanBeSynchronizedWithThisDatabase = null;
-			return true;
-		}
-		else
-			return false;
-	}*/
 
 
 	public boolean isCreateDatabaseIfNecessaryAndCheckItDuringLoading() {

@@ -158,7 +158,7 @@ public class DatabaseConfigurationsBuilder {
 			try {
 				for (ConfigurationQuery q : currentTransaction.queries)
 					q.execute(currentTransaction);
-				if (currentTransaction.updateConfigurationPersistence)
+				if (currentTransaction.updateConfigurationPersistence && lifeCycles!=null)
 					lifeCycles.saveDatabaseConfigurations(configurations);
 				if (currentTransaction.checkDatabaseLoading)
 					checkDatabaseLoading();
