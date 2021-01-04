@@ -1008,7 +1008,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new DatabaseException("Function must be called before addHookForLocalDatabaseHost.");
 			if (m.getHostDestination().equals(getLocalHostID()))
 			{
-				if (!m.checkAuthentication(databaseConfigurationsBuilder.getEncryptionProfileProviderForCentralDatabaseBackup()))
+				if (!m.checkAuthentication(databaseConfigurationsBuilder.getProtectedEncryptionProfileProviderForAuthenticatedP2PMessages()))
 					throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN);
 				DatabaseHooksTable.Record r =getDatabaseHookRecord(m.getHostSource(), false);
 				if (r==null)
@@ -2347,7 +2347,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		public void received(DatabaseEventToSend data) throws DatabaseException, IOException {
 			if (data instanceof AuthenticatedP2PMessage)
 				received((AuthenticatedP2PMessage)data);
-			if (data instanceof P2PDatabaseEventToSend)
+			else if (data instanceof P2PDatabaseEventToSend)
 				received((P2PDatabaseEventToSend)data);
 			else if (data instanceof MessageComingFromCentralDatabaseBackup)
 				received((MessageComingFromCentralDatabaseBackup)data);
