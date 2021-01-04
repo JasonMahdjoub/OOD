@@ -1235,6 +1235,7 @@ public abstract class CommonDecentralizedTests {
 				if (canInitCentralBackup())
 					db.getDbwrapper().getSynchronizer().centralDatabaseBackupAvailable();
 				db.setConnected(true);
+				assert db.getDbwrapper().getSynchronizer().isInitialized();
 			}
 			/*if (!db.isConnected()) {
 				db.getDbwrapper().getSynchronizer().initLocalHostID(db.getHostID(), sendIndirectTransactions());

@@ -153,8 +153,6 @@ public abstract class AbstractHookRequest extends DatabaseEvent implements Authe
 			throw new NullPointerException();
 		if (concernedPeers ==null)
 			throw new NullPointerException();
-		if (hostSource.equals(hostDestination))
-			throw new IllegalArgumentException();
 
 		hostSource = _hostSource;
 		hostDestination = _hostDestination;

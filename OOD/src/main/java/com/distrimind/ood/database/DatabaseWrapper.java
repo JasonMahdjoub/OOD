@@ -745,9 +745,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					addNewDatabaseEvent((DatabaseEvent) authenticatedP2PMessage);
 				if (isInitializedWithCentralBackup())
 					addNewDatabaseEvent(new IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup(Collections.singletonList(authenticatedP2PMessage), databaseConfigurationsBuilder.getSecureRandom(), databaseConfigurationsBuilder.getEncryptionProfileProviderForCentralDatabaseBackup()));
-				else {
+				/*else {
 					getDatabaseHooksTable().getLocalDatabaseHost().addAuthenticatedP2PMessageToSendToCentralDatabaseBackup(authenticatedP2PMessage, getDatabaseHooksTable());
-				}
+				}*/
 			}
 			finally {
 				unlockWrite();
@@ -2015,8 +2015,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			//if (databaseConfigurationsBuilder.getConfigurations().getDistantPeers().contains(peerID))
 			{
 				DatabaseHooksTable.Record r = getDatabaseHooksTable().getHook(peerID, true);
+
 				if (r == null)
 					return;
+
 				checkConnexionsToInit(r);
 			}
 		}

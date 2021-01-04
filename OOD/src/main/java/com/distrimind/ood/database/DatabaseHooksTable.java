@@ -797,16 +797,25 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 	Record initLocalHook(DecentralizedValue hostID) throws DatabaseException {
 		if (getLocalDatabaseHost()!=null)
 			throw new DatabaseException("Local database host already set !");
-		DatabaseHooksTable.Record r = new DatabaseHooksTable.Record();
-		r.setHostID(hostID);
-		r.setPairingState(PairingState.PAIRED);
-		r.setConcernsDatabaseHost(true);
-		r.setLastValidatedDistantTransactionID(-1);
-		r.setLastValidatedLocalTransactionID(-1);
-		r = addRecord(r);
+		DatabaseHooksTable.Record r=initHook(hostID, true);
 		localHost = null;
 		supportedDatabasePackages = null;
 		return r;
+	}
+	private Record initHook(DecentralizedValue hostID, boolean local) throws DatabaseException {
+		if (getLocalDatabaseHost()!=null)
+			throw new DatabaseException("Local database host already set !");
+		DatabaseHooksTable.Record r = new DatabaseHooksTable.Record();
+		r.setHostID(hostID);
+		r.setPairingState(PairingState.PAIRED);
+		r.setConcernsDatabaseHost(local);
+		r.setLastValidatedDistantTransactionID(-1);
+		r.setLastValidatedLocalTransactionID(-1);
+		r = addRecord(r);
+		return r;
+	}
+	Record initDistantHook(DecentralizedValue hostID) throws DatabaseException {
+		return initHook(hostID, false);
 	}
 	void addHooks(final Map<String, Boolean> packages,
 									   final Set<DecentralizedValue> peerInCloud  )
@@ -823,18 +832,23 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 						Set<DecentralizedValue> peerInCloudRemaining=new HashSet<>(peerInCloud);
 						if (getLocalDatabaseHost()==null)
 							throw new DatabaseException("Local database host not set");
-						getRecords(new Filter<Record>() {
+						updateRecords(new AlterRecordFilter<Record>() {
 							@Override
-							public boolean nextRecord(Record r) throws DatabaseException {
+							public void nextRecord(Record r) throws DatabaseException {
 								if (peerInCloudRemaining.remove(r.getHostID()))
 								{
-									Set<String> nap=new HashSet<>(r.getDatabasePackageNames());
+									Set<String> dpn=r.getDatabasePackageNames();
+									Set<String> nap;
+									if (dpn==null)
+										nap=new HashSet<>();
+									else
+										nap=new HashSet<>(dpn);
 									nap.removeAll(packages.keySet());
 									HashMap<String, Boolean> newAddedPackages=new HashMap<>();
 									r.setDatabasePackageNames(packages.keySet());
 									nap.forEach(v -> newAddedPackages.put(v, packages.get(v)));
 									if (newAddedPackages.size()>0)
-										updateRecord(r, "databasePackageNames", r.databasePackageNames);
+										update("databasePackageNames", r.databasePackageNames);
 									localHost = null;
 									supportedDatabasePackages = null;
 
@@ -842,10 +856,9 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 										r.setLastValidatedLocalTransactionID(getDatabaseTransactionEventsTable()
 												.addTransactionToSynchronizeTables(newAddedPackages, peerInCloud, r));
 
-										updateRecord(r, "lastValidatedLocalTransactionID", r.lastValidatedLocalTransactionID);
+										update("lastValidatedLocalTransactionID", r.lastValidatedLocalTransactionID);
 									}
 								}
-								return false;
 							}
 						});
 						for (DecentralizedValue hostID : peerInCloudRemaining)

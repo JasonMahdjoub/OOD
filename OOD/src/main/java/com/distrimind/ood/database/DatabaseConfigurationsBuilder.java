@@ -58,6 +58,7 @@ public class DatabaseConfigurationsBuilder {
 
 	private static class Transaction {
 		final ArrayList<ConfigurationQuery> queries =new ArrayList<>();
+		private boolean checkPeersToAdd;
 		private boolean checkInitLocalPeer=false;
 		private boolean checkDatabaseToSynchronize=false;
 		private boolean checkDatabaseUnload=false;
@@ -83,6 +84,10 @@ public class DatabaseConfigurationsBuilder {
 		void checkInitLocalPeer()
 		{
 			checkInitLocalPeer=true;
+		}
+		void checkPeersToAdd()
+		{
+			checkPeersToAdd=true;
 		}
 		void checkConnexionsToDesynchronize() {
 			checkDatabaseToDesynchronize =true;
@@ -172,11 +177,17 @@ public class DatabaseConfigurationsBuilder {
 					currentTransaction.checkDisconnexions|=checkConnexionsToRemove();
 				if (currentTransaction.checkDatabaseUnload)
 					checkDatabaseLoading();
-				if (currentTransaction.checkDatabaseToSynchronize)
-					currentTransaction.checkNewConnexions|=checkDatabaseToSynchronize();
+				if (currentTransaction.checkPeersToAdd) {
+					boolean b=checkPeersToAdd();
+					currentTransaction.checkDatabaseToSynchronize |=b;
+					currentTransaction.checkNewConnexions|=b;
+				}
 				if (currentTransaction.checkInitLocalPeer) {
 					checkInitLocalPeer();
 				}
+				if (currentTransaction.checkDatabaseToSynchronize)
+					currentTransaction.checkNewConnexions|=checkDatabaseToSynchronize();
+
 				if (currentTransaction.checkNewConnexions) {
 					checkConnexions();
 				}
@@ -237,6 +248,9 @@ public class DatabaseConfigurationsBuilder {
 			if (makeConfigurationLoadingPersistent)
 				t.updateConfigurationPersistence();
 			t.checkDatabaseLoading();
+			t.checkNewConnexions();
+			t.checkDatabaseToSynchronize();
+			t.checkPeersToAdd();
 
 		});
 		return this;
@@ -280,6 +294,43 @@ public class DatabaseConfigurationsBuilder {
 	private void checkDisconnections() throws DatabaseException {
 		wrapper.getSynchronizer().checkDisconnections();
 	}
+	private boolean checkPeersToAdd() throws DatabaseException {
+		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
+			@Override
+			public Boolean run() throws Exception {
+				Set<DecentralizedValue> peersID=configurations.getDistantPeers();
+				boolean res=false;
+				if (peersID!=null && peersID.size()>0)
+				{
+					for (DecentralizedValue dv : peersID)
+					{
+						List<DatabaseHooksTable.Record> l=wrapper.getDatabaseHooksTable().getRecords("concernsDatabaseHost=%cdh and hostID=%h", "cdh", false, "h", dv);
+						if (l.size() == 0)
+						{
+							wrapper.getDatabaseHooksTable().initDistantHook(dv);
+							res=true;
+						}
+					}
+				}
+				return res;
+			}
+
+			@Override
+			public TransactionIsolation getTransactionIsolation() {
+				return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
+			}
+
+			@Override
+			public boolean doesWriteData() {
+				return true;
+			}
+
+			@Override
+			public void initOrReset() {
+
+			}
+		});
+	}
 	private boolean checkDatabaseToSynchronize() throws DatabaseException {
 		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
 			@Override
@@ -287,13 +338,13 @@ public class DatabaseConfigurationsBuilder {
 				Set<DatabaseConfiguration> packagesToSynchronize=new HashSet<>();
 				for (DatabaseConfiguration c : configurations.getConfigurations()) {
 					if (c.isDecentralized()) {
-
+						Set<DecentralizedValue> sps = c.getDistantPeersThatCanBeSynchronizedWithThisDatabase();
 						wrapper.getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
 							@Override
 							public boolean nextRecord(DatabaseHooksTable.Record _record)  {
 
-								if (!currentTransaction.removedPeersID.contains(_record.getHostID())) {
-									Set<DecentralizedValue> sps = c.getDistantPeersThatCanBeSynchronizedWithThisDatabase();
+								if (currentTransaction.removedPeersID==null || !currentTransaction.removedPeersID.contains(_record.getHostID())) {
+
 									if (sps != null && sps.contains(_record.getHostID()) &&
 											!_record.isConcernedByDatabasePackage(c.getDatabaseSchema().getPackage().getName())) {
 										packagesToSynchronize.add(c);
@@ -314,8 +365,9 @@ public class DatabaseConfigurationsBuilder {
 					public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
 						for (DatabaseConfiguration c : packagesToSynchronize)
 						{
+
 							Map<String, Boolean> hm=new HashMap<>();
-							hm.put(c.getDatabaseSchema().getPackage().getName(), DatabaseConfigurationsBuilder.this.lifeCycles.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized(c));
+							hm.put(c.getDatabaseSchema().getPackage().getName(), DatabaseConfigurationsBuilder.this.lifeCycles != null && DatabaseConfigurationsBuilder.this.lifeCycles.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized(c));
 
 							_record.offerNewAuthenticatedP2PMessage(wrapper, new HookSynchronizeRequest(configurations.getLocalPeer(), _record.getHostID(), hm, c.getDistantPeersThatCanBeSynchronizedWithThisDatabase()), protectedEncryptionProfileProviderForAuthenticatedP2PMessages, this);
 						}
@@ -324,7 +376,7 @@ public class DatabaseConfigurationsBuilder {
 				for (DatabaseConfiguration c : packagesToSynchronize)
 				{
 					Map<String, Boolean> hm=new HashMap<>();
-					hm.put(c.getDatabaseSchema().getPackage().getName(), DatabaseConfigurationsBuilder.this.lifeCycles.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized(c));
+					hm.put(c.getDatabaseSchema().getPackage().getName(), DatabaseConfigurationsBuilder.this.lifeCycles != null && DatabaseConfigurationsBuilder.this.lifeCycles.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized(c));
 					wrapper.getSynchronizer().receivedHookSynchronizeRequest(new HookSynchronizeRequest(configurations.getLocalPeer(), configurations.getLocalPeer(), hm, c.getDistantPeersThatCanBeSynchronizedWithThisDatabase()));
 				}
 				return packagesToSynchronize.size()>0;
@@ -553,6 +605,7 @@ public class DatabaseConfigurationsBuilder {
 				t.updateConfigurationPersistence();
 				t.checkDatabaseToSynchronize();
 				t.checkNewConnexions();
+				t.checkPeersToAdd();
 
 			}
 		});
@@ -625,6 +678,7 @@ public class DatabaseConfigurationsBuilder {
 				t.checkNewConnexions();
 				t.checkConnexionsToDesynchronize();
 				t.checkDatabaseToSynchronize();
+				t.checkPeersToAdd();
 			}
 		});
 		return this;

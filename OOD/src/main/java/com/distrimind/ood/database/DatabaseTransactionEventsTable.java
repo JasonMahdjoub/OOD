@@ -298,9 +298,12 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 			@Override
 			public boolean nextRecord(DatabaseHooksTable.Record _record) {
 				if (!_record.concernsLocalDatabaseHost() && peerInCloud.contains(_record.getHostID())) {
-					for (String p : _record.getDatabasePackageNames()) {
-						if (databasePackages.containsKey(p)) {
-							packageSynchroOneTime.add(p);
+					Set<String> dpn=_record.getDatabasePackageNames();
+					if (dpn!=null) {
+						for (String p : dpn) {
+							if (databasePackages.containsKey(p)) {
+								packageSynchroOneTime.add(p);
+							}
 						}
 					}
 
