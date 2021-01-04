@@ -756,8 +756,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		void checkInitLocalPeer() throws DatabaseException {
 			DecentralizedValue dv=databaseConfigurationsBuilder.getConfigurations().getLocalPeer();
-			if (dv!=null && !isInitialized(dv))
+			if (dv!=null && !isInitialized(dv)) {
 				initLocalHostID(dv, databaseConfigurationsBuilder.getConfigurations().isPermitIndirectSynchronizationBetweenPeers());
+			}
 		}
 
 		public boolean isInitialized(DecentralizedValue hostID) {
@@ -875,6 +876,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					throw DatabaseException.getDatabaseException(
 							new IllegalAccessException("Local hostID " + localHostID + " already initialized !"));
 				}
+
 				initializedHooks.put(localHostID, new ConnectedPeers(local));
 				canNotify = true;
 			}

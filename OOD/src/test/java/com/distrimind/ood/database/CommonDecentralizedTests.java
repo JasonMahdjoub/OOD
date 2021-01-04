@@ -1230,10 +1230,12 @@ public abstract class CommonDecentralizedTests {
 
 	protected void connectLocal(CommonDecentralizedTests.Database db) throws DatabaseException {
 		synchronized (CommonDecentralizedTests.class) {
-			if (canInitCentralBackup())
-				db.getDbwrapper().getSynchronizer().centralDatabaseBackupAvailable();
-			assert db.isConnected();
-			db.setConnected(true);
+
+			if (!db.isConnected()) {
+				if (canInitCentralBackup())
+					db.getDbwrapper().getSynchronizer().centralDatabaseBackupAvailable();
+				db.setConnected(true);
+			}
 			/*if (!db.isConnected()) {
 				db.getDbwrapper().getSynchronizer().initLocalHostID(db.getHostID(), sendIndirectTransactions());
 				if (canInitCentralBackup())

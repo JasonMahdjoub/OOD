@@ -58,6 +58,7 @@ public class DatabaseConfigurationsBuilder {
 
 	private static class Transaction {
 		final ArrayList<ConfigurationQuery> queries =new ArrayList<>();
+		private boolean checkInitLocalPeer=false;
 		private boolean checkDatabaseToSynchronize=false;
 		private boolean checkDatabaseUnload=false;
 		private boolean checkDisconnexions=false;
@@ -79,7 +80,10 @@ public class DatabaseConfigurationsBuilder {
 		{
 			checkInitCentralDatabaseBackup=true;
 		}
-
+		void checkInitLocalPeer()
+		{
+			checkInitLocalPeer=true;
+		}
 		void checkConnexionsToDesynchronize() {
 			checkDatabaseToDesynchronize =true;
 		}
@@ -170,6 +174,9 @@ public class DatabaseConfigurationsBuilder {
 					checkDatabaseLoading();
 				if (currentTransaction.checkDatabaseToSynchronize)
 					currentTransaction.checkNewConnexions|=checkDatabaseToSynchronize();
+				if (currentTransaction.checkInitLocalPeer) {
+					checkInitLocalPeer();
+				}
 				if (currentTransaction.checkNewConnexions) {
 					checkConnexions();
 				}
@@ -497,6 +504,7 @@ public class DatabaseConfigurationsBuilder {
 				configurations.setLocalPeer(localPeerId);
 				t.updateConfigurationPersistence();
 				t.checkDisconnexions();
+				t.checkInitLocalPeer();
 				t.checkNewConnexions();
 				t.checkDatabaseToSynchronize();
 				if (removedHostID!=null)

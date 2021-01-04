@@ -41,6 +41,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.SerializationDatabaseException;
 import com.distrimind.ood.database.messages.IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup;
 import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.Reference;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 
@@ -65,7 +66,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 	private volatile DatabaseDistantTransactionEvent databaseDistantTransactionEvent = null;
 	private volatile IDTable idTable = null;
 	protected volatile HashSet<String> supportedDatabasePackages = null;
-	protected volatile AtomicReference<DatabaseHooksTable.Record> localHost = null;
+	protected volatile Reference<DatabaseHooksTable.Record> localHost = null;
 	protected final HashMap<HostPair, Long> lastTransactionFieldsBetweenDistantHosts = new HashMap<>();
 
 	public enum PairingState
@@ -799,7 +800,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		DatabaseHooksTable.Record r = new DatabaseHooksTable.Record();
 		r.setHostID(hostID);
 		r.setPairingState(PairingState.PAIRED);
-		r.setConcernsDatabaseHost(false);
+		r.setConcernsDatabaseHost(true);
 		r.setLastValidatedDistantTransactionID(-1);
 		r.setLastValidatedLocalTransactionID(-1);
 		r = addRecord(r);
@@ -1155,20 +1156,17 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 	DatabaseHooksTable.Record getLocalDatabaseHost() throws DatabaseException {
 		if (localHost == null) {
-			final AtomicReference<DatabaseHooksTable.Record> res = new AtomicReference<>(null);
+			final Reference<DatabaseHooksTable.Record> res = new Reference<>();
 			getRecords(new Filter<DatabaseHooksTable.Record>() {
 
 				@Override
 				public boolean nextRecord(DatabaseHooksTable.Record _record) {
-					if (_record.concernsLocalDatabaseHost()) {
-						res.set(_record);
-						stopTableParsing();
-					}
-
+					res.set(_record);
+					stopTableParsing();
 					return false;
 				}
-			});
-			localHost = new AtomicReference<>(res.get());
+			}, "concernsDatabaseHost=%b", "b", true);
+			localHost = res;
 		}
 		return localHost.get();
 	}
