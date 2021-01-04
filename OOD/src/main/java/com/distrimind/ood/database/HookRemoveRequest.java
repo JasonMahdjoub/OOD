@@ -42,6 +42,7 @@ import com.distrimind.util.crypto.SymmetricAuthenticatedSignatureType;
 import com.distrimind.util.io.*;
 
 import java.io.IOException;
+import java.util.Objects;
 
 /**
  * @author Jason Mahdjoub
@@ -199,5 +200,18 @@ public class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2P
 	@Override
 	public void setDatabaseWrapper(DatabaseWrapper databaseWrapper) {
 		this.databaseWrapper = databaseWrapper;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		HookRemoveRequest that = (HookRemoveRequest) o;
+		return messageID == that.messageID;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(messageID);
 	}
 }

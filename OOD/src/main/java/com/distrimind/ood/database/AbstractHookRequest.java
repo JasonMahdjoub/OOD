@@ -43,6 +43,7 @@ import com.distrimind.util.crypto.SymmetricAuthenticatedSignatureType;
 import com.distrimind.util.io.*;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -236,5 +237,18 @@ public abstract class AbstractHookRequest extends DatabaseEvent implements Authe
 	@Override
 	public void setDatabaseWrapper(DatabaseWrapper databaseWrapper) {
 		this.databaseWrapper = databaseWrapper;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		AbstractHookRequest that = (AbstractHookRequest) o;
+		return messageID == that.messageID;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(messageID);
 	}
 }

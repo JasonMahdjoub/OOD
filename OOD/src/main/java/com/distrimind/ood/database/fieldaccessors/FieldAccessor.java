@@ -240,17 +240,7 @@ public abstract class FieldAccessor {
 		}
 	}
 
-	/*public void changeInternalPointedTableName(String oldInternalTableName, String internalTableName)
-	{
-		for (SqlField sf : getDeclaredSqlFields())
-		{
-			if (sf.pointed_table!=null) {
-				sf.pointed_table = sf.pointed_table.replace(oldInternalTableName, internalTableName);
-				sf.pointed_field = sf.pointed_field.replace(oldInternalTableName, internalTableName);
-				sf.short_pointed_field = sf.short_pointed_field.replace(oldInternalTableName, internalTableName);
-			}
-		}
-	}*/
+
 	public final boolean isCacheDisabled()
 	{
 		return cacheDisabled;
@@ -547,7 +537,7 @@ public abstract class FieldAccessor {
 						else if (type.equals(UUID.class))
 							res.add(new UUIDFieldAccessor(_table, _sql_connection, f,
 									parentFieldName, severalPrimaryKeysPresentIntoTable));
-						else if (DecentralizedValue.class.isAssignableFrom(type) || IKey.class.isAssignableFrom(type))
+						else if (DecentralizedValue.class.isAssignableFrom(type) )
 						{
 							res.add(new DecentralizedValueFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
 						}
@@ -909,48 +899,7 @@ public abstract class FieldAccessor {
 				else
 					st.setBigDecimal(index, new BigDecimal((BigInteger)p));
 			}
-			/*switch (st.getParameterMetaData().getParameterType(index)) {
-			case Types.TINYINT:
-				st.setByte(index, (Byte) p);
-				break;
-			case Types.INTEGER:
-				st.setInt(index, (Integer) p);
-				break;
-			case Types.BIGINT:
-				if (p instanceof Integer)
-					st.setInt(index, (Integer) p);
-				else
-					st.setLong(index, (Long) p);
-				break;
-			case Types.VARBINARY:
-				st.setBytes(index, (byte[]) p);
-				break;
-			case Types.BLOB: {
-				Blob blob = DatabaseWrapperAccessor.getBlob(sql_connection, (byte[]) p);
-				if (blob == null && p != null)
-					st.setBinaryStream(index, new ByteArrayInputStream((byte[]) p));
-				else {
-					st.setBlob(index, blob);
-				}
-			}
-				break;
-			case Types.CHAR:
-				st.setString(index, p.toString());
-				break;
-			case Types.SMALLINT:
-				st.setShort(index, (Short) p);
-				break;
-			case Types.BOOLEAN:
-				st.setBoolean(index, (Boolean) p);
-				break;
-			case Types.FLOAT:
-				st.setFloat(index, (Float) p);
-				break;
-			case Types.DOUBLE:
-				st.setDouble(index, (Double) p);
-				break;
 
-			}*/
 		}
 		else
 			st.setObject(index, p);

@@ -564,7 +564,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		return getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Record>() {
 			@Override
 			public Record run() throws Exception {
-				List<Record> l=getRecordsWithAllFields("hostID", message.getHostSource());
+				List<Record> l=getRecordsWithAllFields("hostID", message.getHostDestination());
 				if (l.size()>1)
 					throw new InternalError();
 				else if (l.size()==1)

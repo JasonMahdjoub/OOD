@@ -56,11 +56,19 @@ public class P2PConnexionInitialization extends DatabaseEvent implements P2PData
 	private DecentralizedValue hostDestination;
 	private long lastValidatedTransactionID;
 
+	@SuppressWarnings("unused")
+	private P2PConnexionInitialization()
+	{
+
+	}
+
 	public P2PConnexionInitialization(DecentralizedValue hostSource, DecentralizedValue hostDestination, long lastValidatedTransactionID) {
 		if (hostSource==null)
 			throw new NullPointerException();
 		if (hostDestination==null)
 			throw new NullPointerException();
+		if (hostSource.equals(hostDestination))
+			throw new IllegalArgumentException();
 		this.hostSource = hostSource;
 		this.hostDestination = hostDestination;
 		this.lastValidatedTransactionID = lastValidatedTransactionID;

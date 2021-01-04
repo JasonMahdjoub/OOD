@@ -1107,7 +1107,7 @@ public abstract class CommonDecentralizedTests {
 							P2PDatabaseEventToSend es = (P2PDatabaseEventToSend) e;
 
 							Assert.assertEquals(es.getHostSource(), db.getHostID());
-							Assert.assertNotEquals(es.getHostDestination(), db.getHostID());
+							Assert.assertNotEquals(es.getHostDestination(), db.getHostID(), ""+es);
 							if (db.isConnected()) {
 								sendDistantDatabaseEvent(new CommonDecentralizedTests.DistantDatabaseEvent(db.getDbwrapper(), es));
 							} else
