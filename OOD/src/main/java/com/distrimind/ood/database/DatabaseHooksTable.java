@@ -832,35 +832,36 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 						Set<DecentralizedValue> peerInCloudRemaining=new HashSet<>(peerInCloud);
 						if (getLocalDatabaseHost()==null)
 							throw new DatabaseException("Local database host not set");
-						updateRecords(new AlterRecordFilter<Record>() {
+						List<Record> records=getRecords(new Filter<Record>(){
 							@Override
-							public void nextRecord(Record r) throws DatabaseException {
-								if (peerInCloudRemaining.remove(r.getHostID()))
-								{
-									Set<String> dpn=r.getDatabasePackageNames();
-									Set<String> nap;
-									if (dpn==null)
-										nap=new HashSet<>();
-									else
-										nap=new HashSet<>(dpn);
-									nap.removeAll(packages.keySet());
-									HashMap<String, Boolean> newAddedPackages=new HashMap<>();
-									r.setDatabasePackageNames(packages.keySet());
-									nap.forEach(v -> newAddedPackages.put(v, packages.get(v)));
-									if (newAddedPackages.size()>0)
-										update("databasePackageNames", r.databasePackageNames);
-									localHost = null;
-									supportedDatabasePackages = null;
-
-									if (!r.concernsDatabaseHost) {
-										r.setLastValidatedLocalTransactionID(getDatabaseTransactionEventsTable()
-												.addTransactionToSynchronizeTables(newAddedPackages, peerInCloud, r));
-
-										update("lastValidatedLocalTransactionID", r.lastValidatedLocalTransactionID);
-									}
-								}
+							public boolean nextRecord(Record r) throws DatabaseException {
+								return peerInCloudRemaining.remove(r.getHostID());
 							}
 						});
+						for (Record r : records)
+						{
+							Set<String> dpn=r.getDatabasePackageNames();
+							Set<String> nap=new HashSet<>(packages.keySet());;
+							if (dpn!=null)
+								nap.removeAll(dpn);
+							HashMap<String, Boolean> newAddedPackages=new HashMap<>();
+							r.setDatabasePackageNames(packages.keySet());
+							nap.forEach(v -> newAddedPackages.put(v, packages.get(v)));
+							HashMap<String, Object> hm=new HashMap<>();
+							if (newAddedPackages.size()>0)
+								hm.put("databasePackageNames", r.databasePackageNames);
+							localHost = null;
+							supportedDatabasePackages = null;
+
+							if (!r.concernsDatabaseHost) {
+								r.setLastValidatedLocalTransactionID(getDatabaseTransactionEventsTable()
+										.addTransactionToSynchronizeTables(newAddedPackages, peerInCloud, r));
+
+								hm.put("lastValidatedLocalTransactionID", r.lastValidatedLocalTransactionID);
+							}
+							if (hm.size()>0)
+								updateRecord(r, hm);
+						}
 						for (DecentralizedValue hostID : peerInCloudRemaining)
 						{
 							DatabaseHooksTable.Record r = new DatabaseHooksTable.Record();

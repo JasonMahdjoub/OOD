@@ -7546,6 +7546,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			throw new NullPointerException("The parameter _record is a null pointer !");
 		if (_fields == null)
 			throw new NullPointerException("The parameter _fields is a null pointer !");
+		if (_fields.size()==0)
+			throw new IllegalArgumentException();
 		try (Lock ignored = new WriteLock(Table.this)) {
 
 			sql_connection.runTransaction(new Transaction() {

@@ -1020,6 +1020,7 @@ public abstract class CommonDecentralizedTests {
 	public void cleanPendedEvents() {
 		synchronized (CommonDecentralizedTests.class) {
 			for (CommonDecentralizedTests.Database db : listDatabase) {
+				Assert.assertEquals(db.localEvents.size(), 0);
 				db.clearPendingEvents();
 			}
 		}
