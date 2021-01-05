@@ -97,7 +97,7 @@ public class P2PConnexionInitialization extends DatabaseEvent implements P2PData
 	public int getInternalSerializedSize() {
 		return SerializationTools.getInternalSize(hostDestination, 0)
 				+SerializationTools.getInternalSize(hostSource, 0)
-				+8;
+				+9;
 	}
 
 	@Override
@@ -113,4 +113,6 @@ public class P2PConnexionInitialization extends DatabaseEvent implements P2PData
 		hostDestination=in.readObject(false);
 		lastValidatedTransactionID=in.readLong();
 	}
+
+
 }

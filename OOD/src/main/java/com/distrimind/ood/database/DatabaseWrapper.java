@@ -687,6 +687,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		private boolean canNotify = true;
 		private final LinkedList<DatabaseEvent> events = new LinkedList<>();
 		protected final HashMap<DecentralizedValue, ConnectedPeers> initializedHooks = new HashMap<>();
+		protected final Set<DecentralizedValue> initializingHooks = new HashSet<>();
 		protected final HashMap<DecentralizedValue, ConnectedPeersWithCentralBackup> initializedHooksWithCentralBackup = new HashMap<>();
 		//protected final HashMap<DecentralizedValue, LastValidatedLocalAndDistantID> suspendedHooksWithCentralBackup = new HashMap<>();
 		//protected final HashMap<DecentralizedValue, Long> lastValidatedTransactionIDFromCentralBackup = new HashMap<>();
@@ -984,6 +985,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		void sendP2PConnexionInitializationMessage(DatabaseHooksTable.Record peer) throws DatabaseException {
 			if (hookCannotBeConnected(peer))
 				return;
+			initializingHooks.add(peer.getHostID());
 			addNewDatabaseEvent(new P2PConnexionInitialization(getLocalHostID(), peer.getHostID(), peer.getLastValidatedDistantTransactionID()));
 		}
 
@@ -2111,6 +2113,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 
 				initializedHooks.put(r.getHostID(), new ConnectedPeers(r));
+				if (!initializingHooks.remove(r.getHostID()))
+					sendP2PConnexionInitializationMessage(r);
 				addNewAuthenticatedDatabaseEvents(r);
 				validateLastSynchronization(r.getHostID(),
 						lastValidatedTransactionID, false);
