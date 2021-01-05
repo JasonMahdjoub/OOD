@@ -735,7 +735,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		public boolean isInitialized() throws DatabaseException {
-			return getDatabaseHooksTable().getLocalDatabaseHost() != null;
+			DatabaseHooksTable.Record r=getDatabaseHooksTable().getLocalDatabaseHost();
+			return r != null && isInitialized(r.getHostID());
 		}
 
 		void notifyNewAuthenticatedMessage(AuthenticatedP2PMessage authenticatedP2PMessage) throws DatabaseException {
@@ -879,6 +880,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 
 				initializedHooks.put(localHostID, new ConnectedPeers(local));
+
 				canNotify = true;
 			}
 			finally
@@ -1983,7 +1985,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					if (isInitialized(databaseConfigurationsBuilder.getConfigurations().getLocalPeer()))
 					{
 						for (Map.Entry<DecentralizedValue, ConnectedPeers> e : initializedHooks.entrySet()) {
-							if (e.getValue()!=null && !databaseConfigurationsBuilder.getConfigurations().getDistantPeers().contains(e.getKey()))
+							if (e.getValue()!=null && !e.getKey().equals(databaseConfigurationsBuilder.getConfigurations().getLocalPeer()) && !databaseConfigurationsBuilder.getConfigurations().getDistantPeers().contains(e.getKey()))
 							{
 								disconnectHook(e.getKey());
 							}

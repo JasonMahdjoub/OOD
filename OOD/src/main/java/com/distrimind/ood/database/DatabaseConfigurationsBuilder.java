@@ -187,7 +187,6 @@ public class DatabaseConfigurationsBuilder {
 				}
 				if (currentTransaction.checkDatabaseToSynchronize)
 					currentTransaction.checkNewConnexions|=checkDatabaseToSynchronize();
-
 				if (currentTransaction.checkNewConnexions) {
 					checkConnexions();
 				}
@@ -196,8 +195,6 @@ public class DatabaseConfigurationsBuilder {
 				}
 				if (currentTransaction.checkInitCentralDatabaseBackup)
 					checkInitCentralDatabaseBackup();
-
-
 			}
 			finally {
 				currentTransaction = null;
@@ -335,6 +332,7 @@ public class DatabaseConfigurationsBuilder {
 		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
 			@Override
 			public Boolean run() throws Exception {
+
 				Set<DatabaseConfiguration> packagesToSynchronize=new HashSet<>();
 				for (DatabaseConfiguration c : configurations.getConfigurations()) {
 					if (c.isDecentralized()) {
@@ -373,6 +371,7 @@ public class DatabaseConfigurationsBuilder {
 						}
 					}
 				}, "concernsDatabaseHost=%cdh", "cdh", false);
+
 				for (DatabaseConfiguration c : packagesToSynchronize)
 				{
 					Map<String, Boolean> hm=new HashMap<>();

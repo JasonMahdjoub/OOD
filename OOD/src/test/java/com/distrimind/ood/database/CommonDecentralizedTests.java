@@ -99,7 +99,7 @@ public abstract class CommonDecentralizedTests {
 		this.random=SecureRandomType.DEFAULT.getSingleton(null);
 		this.centralDatabaseBackupKeyPair=ASymmetricAuthenticatedSignatureType.BC_FIPS_Ed25519.getKeyPairGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKeyPair();
 		this.centralDatabaseBackupDatabase=getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver().getDatabaseWrapperSingleton();
-		this.centralDatabaseBackupReceiver=new CentralDatabaseBackupReceiver(centralDatabaseBackupDatabase, (DecentralizedValue) centralDatabaseBackupKeyPair.getASymmetricPublicKey());
+		this.centralDatabaseBackupReceiver=new CentralDatabaseBackupReceiver(centralDatabaseBackupDatabase, centralDatabaseBackupKeyPair.getASymmetricPublicKey());
 		SymmetricSecretKey secretKeyForSignature=SymmetricAuthenticatedSignatureType.DEFAULT.getKeyGenerator(random).generateKey();
 		SymmetricSecretKey secretKeyForEncryption=SymmetricEncryptionType.DEFAULT.getKeyGenerator(random).generateKey();
 		((EncryptionProfileCollection)this.encryptionProfileProvider).putProfile((short)0, MessageDigestType.DEFAULT, null, null, secretKeyForSignature,secretKeyForEncryption, false, true );
@@ -921,6 +921,7 @@ public abstract class CommonDecentralizedTests {
 		for (CommonDecentralizedTests.Database db : listDatabase) {
 
 			addConfiguration(db);
+			Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized());
 
 		}
 
@@ -1518,7 +1519,10 @@ public abstract class CommonDecentralizedTests {
 
 		connectAllDatabase();
 		exchangeMessages();
+
 		for (CommonDecentralizedTests.Database db : listDatabase) {
+			Assert.assertTrue(db.isConnected());
+			Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized());
 			for (CommonDecentralizedTests.Database other : listDatabase) {
 				Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized(other.getHostID()));
 			}
