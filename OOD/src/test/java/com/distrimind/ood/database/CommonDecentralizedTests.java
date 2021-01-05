@@ -1526,6 +1526,9 @@ public abstract class CommonDecentralizedTests {
 			for (CommonDecentralizedTests.Database other : listDatabase) {
 				Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized(other.getHostID()));
 			}
+			DatabaseHooksTable.Record r=db.getDbwrapper().getTableInstance(DatabaseHooksTable.class).getLocalDatabaseHost();
+			Assert.assertNotNull(r.getDatabasePackageNames());
+			Assert.assertTrue(r.getDatabasePackageNames().contains(TableAlone.class.getPackage().getName()));
 		}
 	}
 
