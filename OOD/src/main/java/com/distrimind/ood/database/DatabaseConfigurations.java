@@ -42,9 +42,7 @@ import com.distrimind.util.properties.MultiFormatProperties;
 import com.distrimind.util.properties.PropertiesParseException;
 import org.w3c.dom.Document;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.Reader;
 import java.util.*;
 
@@ -168,6 +166,11 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 			if (e)
 				throw new DatabaseException("Local peer must be defined !");
 		}
+		else
+		{
+			if (allDistantPeers.contains(localPeer))
+				throw new DatabaseException("Local peer cannot be a distant peer");
+		}
 	}
 	private void checkConfigurations() throws DatabaseException {
 		try {
@@ -275,6 +278,16 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 
 	Set<DecentralizedValue> getDistantPeers() {
 		return allDistantPeersReadOnly;
+	}
+
+	boolean addDistantPeer(DecentralizedValue distantPeer) throws DatabaseException {
+		if (distantPeer==null)
+			throw new NullPointerException();
+		checkLocalPeerNull(Collections.singleton(distantPeer));
+		boolean changed = this.distantPeers.add(distantPeer);
+		allDistantPeers.add(distantPeer);
+		checkForMaxDistantPeersReached();
+		return changed;
 	}
 	boolean synchronizeAdditionalDistantPeersWithGivenPackage(String packageString, Collection<DecentralizedValue> distantPeers) throws DatabaseException {
 		return synchronizeAdditionalDistantPeersWithGivenPackage(packageString, distantPeers, false);

@@ -977,7 +977,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		void receivedHookSynchronizeRequest(HookSynchronizeRequest hookSynchronizeRequest) throws DatabaseException {
 			getDatabaseHooksTable().addHooks(hookSynchronizeRequest.getHostSource(), hookSynchronizeRequest.getPackagesToSynchronize(getLocalHostID()),
-					hookSynchronizeRequest.getConcernedPeers());
+					hookSynchronizeRequest.getConcernedPeers(), !hookSynchronizeRequest.getHostSource().equals(getLocalHostID()));
 			isReliedToDistantHook();
 		}
 		private void received(HookRemoveRequest m) throws DatabaseException {
@@ -1057,7 +1057,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 
 		void receivedHookUnsynchronizeRequest(HookUnsynchronizeRequest hookUnsynchronizeRequest) throws DatabaseException {
-			getDatabaseHooksTable().unsynchronizeDatabase(hookUnsynchronizeRequest.getPackagesToUnsynchronize(), hookUnsynchronizeRequest.getConcernedPeers());
+			getDatabaseHooksTable().desynchronizeDatabase(hookUnsynchronizeRequest.getPackagesToUnsynchronize(), hookUnsynchronizeRequest.getConcernedPeers());
 			isReliedToDistantHook();
 		}
 		
