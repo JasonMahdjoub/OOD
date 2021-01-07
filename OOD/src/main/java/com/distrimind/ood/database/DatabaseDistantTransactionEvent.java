@@ -140,16 +140,16 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 
 
 			try(RandomByteArrayOutputStream out=new RandomByteArrayOutputStream()) {
-				out.writeObject(peers, false);
-				out.flush();
-				if (out.currentPosition()> MAX_SIZE_IN_BYTES_FOR_INFORMED_PEERS) {
+				try {
+					out.writeCollection(peers, false, MAX_SIZE_IN_BYTES_FOR_INFORMED_PEERS);
+					out.flush();
+				}
+				catch (IOException ignored)
+				{
 					peersInformedFull = true;
 					peersInformed=null;
 					return;
 				}
-			} catch (IOException e) {
-				e.printStackTrace();
-				return;
 			}
 			this.peersInformed=peers;
 			peersInformedFull = false;
@@ -227,9 +227,6 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 	DatabaseDistantTransactionEvent.Record unserializeDistantTransactionEvent(final RandomInputStream ois)
 			throws DatabaseException {
 		try {
-			int size = ois.readShort();
-			if (size > 1024)
-				throw new SerializationDatabaseException("Invalid data (hook id size est greater to 1024)");
 			DecentralizedValue hookID=ois.readObject(false);
 			ArrayList<DatabaseHooksTable.Record> hooks = getDatabaseHooksTable().getRecordsWithAllFields("hostID",
 					hookID);
