@@ -2048,7 +2048,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			try {
 				lockWrite();
 				if (initializedHooks.containsKey(peerID))
-					throw new DatabaseException("Peer already connected");
+					return;
 				initializedHooks.put(peerID, null);
 				checkConnexionsToInit(peerID);
 
