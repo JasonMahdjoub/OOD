@@ -817,7 +817,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 	Record initDistantHook(DecentralizedValue hostID) throws DatabaseException {
 		return initHook(hostID, false);
 	}
-	void addHooks(final Map<String, Boolean> packages,
+	void addHooks(final DecentralizedValue hostSource, final Map<String, Boolean> packages,
 									   final Set<DecentralizedValue> peerInCloud  )
 			throws DatabaseException {
 
@@ -832,6 +832,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 						Set<DecentralizedValue> peerInCloudRemaining=new HashSet<>(peerInCloud);
 						if (getLocalDatabaseHost()==null)
 							throw new DatabaseException("Local database host not set");
+						boolean unknownHostSource=hostSource!=null && !peerInCloudRemaining.contains(hostSource);
 						List<Record> records=getRecords(new Filter<Record>(){
 							@Override
 							public boolean nextRecord(Record r) throws DatabaseException {
@@ -879,6 +880,11 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 									.addTransactionToSynchronizeTables(packages, peerInCloud, r));
 							updateRecord(r, "lastValidatedLocalTransactionID", r.lastValidatedLocalTransactionID);
 						}
+						if (unknownHostSource)
+						{
+							initDistantHook(hostSource);
+						}
+
 						localHost = null;
 						supportedDatabasePackages = null;
 

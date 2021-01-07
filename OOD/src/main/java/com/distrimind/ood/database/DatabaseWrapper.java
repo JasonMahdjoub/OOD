@@ -1017,8 +1017,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				DatabaseHooksTable.Record r =getDatabaseHookRecord(m.getHostSource(), false);
 				if (r==null)
 				{
-					if (m instanceof HookSynchronizeRequest)
-						receivedHookSynchronizeRequest((HookSynchronizeRequest)m);
+					if (m instanceof HookSynchronizeRequest) {
+						receivedHookSynchronizeRequest((HookSynchronizeRequest) m);
+					}
 					else
 						throw new MessageExternalizationException(Integrity.FAIL);
 					r =getDatabaseHookRecord(m.getHostSource());
