@@ -802,7 +802,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		return r;
 	}
 	private Record initHook(DecentralizedValue hostID, boolean local) throws DatabaseException {
-		if (getLocalDatabaseHost()!=null)
+		if (local && getLocalDatabaseHost()!=null)
 			throw new DatabaseException("Local database host already set !");
 		DatabaseHooksTable.Record r = new DatabaseHooksTable.Record();
 		r.setHostID(hostID);
@@ -822,6 +822,8 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 		if (peerInCloud == null)
 			throw new NullPointerException("hostID");
+		/*if (!peerInCloud.contains(getLocalDatabaseHost().getHostID()))
+			return ;*/
 
 		getDatabaseWrapper()
 				.runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
@@ -831,13 +833,16 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 						Set<DecentralizedValue> peerInCloudRemaining=new HashSet<>(peerInCloud);
 						if (getLocalDatabaseHost()==null)
 							throw new DatabaseException("Local database host not set");
-						boolean unknownHostSource=hostSource!=null && !peerInCloudRemaining.contains(hostSource);
+						Reference<Boolean> unknownHostSource=new Reference<>(hostSource!=null);
 						List<Record> records=getRecords(new Filter<Record>(){
 							@Override
 							public boolean nextRecord(Record r) {
+								if (unknownHostSource.get() && r.getHostID().equals(hostSource))
+									unknownHostSource.set(false);
 								return peerInCloudRemaining.remove(r.getHostID());
 							}
 						});
+
 						Map<DecentralizedValue, Set<String>> synchronizedPackages=new HashMap<>();
 						for (Record r : records)
 						{
@@ -850,7 +855,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							nap.forEach(v -> newAddedPackages.put(v, packages.get(v)));
 							HashMap<String, Object> hm=new HashMap<>();
 							if (newAddedPackages.size()>0) {
-								if (fromDistantMessage)
+								if (fromDistantMessage && !r.concernsDatabaseHost)
 									synchronizedPackages.put(r.getHostID(), nap);
 								hm.put("databasePackageNames", r.databasePackageNames);
 								localHost = null;
@@ -884,7 +889,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							if (fromDistantMessage)
 								synchronizedPackages.put(r.getHostID(), packages.keySet());
 						}
-						if (unknownHostSource)
+						if (unknownHostSource.get())
 						{
 							initDistantHook(hostSource);
 						}
@@ -892,11 +897,11 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							DatabaseConfigurationsBuilder builder = getDatabaseWrapper().getDatabaseConfigurationsBuilder();
 							boolean commit=false;
 							for (Map.Entry<DecentralizedValue, Set<String>> e : synchronizedPackages.entrySet()) {
-								builder.synchronizeDistantPeersWithGivenAdditionalPackages(Collections.singletonList(e.getKey()), (String[]) synchronizedPackages.values().toArray());
+								builder.synchronizeDistantPeersWithGivenAdditionalPackages(Collections.singletonList(e.getKey()), e.getValue().toArray(new String[synchronizedPackages.size()]));
 								commit=true;
 							}
-							if (unknownHostSource) {
-								builder.addDistantPeer(hostSource);
+							if (unknownHostSource.get()) {
+								builder.addDistantPeer(hostSource, false);
 								commit = true;
 							}
 							if (commit)
@@ -1034,7 +1039,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							desynchronizeDatabase(host, false, packages);
 						}
 						if (concernedHosts.size()>0 && packages.size()>0)
-							getDatabaseWrapper().getDatabaseConfigurationsBuilder().desynchronizeDistantPeersWithGivenAdditionalPackages(concernedHosts, (String[])packages.toArray())
+							getDatabaseWrapper().getDatabaseConfigurationsBuilder().desynchronizeDistantPeersWithGivenAdditionalPackages(concernedHosts, packages.toArray(new String[packages.size()]))
 								.commit();
 						return null;
 					}

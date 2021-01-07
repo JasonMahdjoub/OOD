@@ -1339,7 +1339,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 		List<DatabaseEvent> tryToMerge(List<?> c) throws DatabaseException {
 			ArrayList<DatabaseEvent> res=new ArrayList<>();
-			if (c.size()==0)
+			if (c==null || c.size()==0)
 				return res;
 			ArrayList<DatabaseEvent> messagesToRemove=new ArrayList<>();
 
@@ -1497,6 +1497,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							notifier.hostDisconnected(h);
 					}
 				} else {
+					initializingHooks.remove(hostID);
 					initializedHooks.put(hostID, null);
 					cancelEventToSend(hostID, false);
 					notifier.hostDisconnected(hostID);
@@ -2008,7 +2009,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		{
 			assert r!=null;
 			List<AuthenticatedP2PMessage> las = r.getAuthenticatedMessagesQueueToSend();
-			if (las.size() > 0) {
+			if (las!=null && las.size() > 0) {
 				for (AuthenticatedP2PMessage a : las) {
 					a.setDatabaseWrapper(DatabaseWrapper.this);
 					addNewDatabaseEvent((DatabaseEvent) a);
@@ -2035,6 +2036,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				lockWrite();
 				disconnectAll();
 				initializedHooks.clear();
+				initializingHooks.clear();
 				centralBackupAvailable=false;
 			}
 			finally {
@@ -2068,6 +2070,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				if (cp!=null)
 					disconnectHook(peerID);
 				initializedHooks.remove(peerID);
+				initializingHooks.remove(peerID);
 			}
 			finally {
 				unlockWrite();
@@ -2079,9 +2082,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new NullPointerException("hostID");
 			try {
 				lockRead();
-				if (initializedHooks.put(hostID, null) != null)
-					throw DatabaseException.getDatabaseException(
-							new IllegalAccessException("hostID " + hostID + " already initialized !"));
+
+				if (initializedHooks.put(hostID, null) != null) {
+					return;
+					/*throw DatabaseException.getDatabaseException(
+							new IllegalAccessException("hostID " + hostID + " already initialized !"));*/
+				}
 			}
 			finally
 			{

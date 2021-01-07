@@ -144,7 +144,7 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 	 * 	@return false if an exception is generated if the database loading, when it does not exists. Moreover, do not check the database schema during loading.
 	 */
 	public Set<DecentralizedValue> getDistantPeersThatCanBeSynchronizedWithThisDatabase() {
-		return Collections.unmodifiableSet(distantPeersThatCanBeSynchronizedWithThisDatabase);
+		return distantPeersThatCanBeSynchronizedWithThisDatabase==null?null:Collections.unmodifiableSet(distantPeersThatCanBeSynchronizedWithThisDatabase);
 	}
 
 	boolean setDistantPeersThatCanBeSynchronizedWithThisDatabase(Collection<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase) throws IllegalAccessException {

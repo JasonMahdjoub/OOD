@@ -612,14 +612,14 @@ public class DatabaseConfigurationsBuilder {
 		return this;
 	}
 	@SuppressWarnings("UnusedReturnValue")
-	public DatabaseConfigurationsBuilder addDistantPeer(DecentralizedValue distantPeer) {
+	public DatabaseConfigurationsBuilder addDistantPeer(DecentralizedValue distantPeer, boolean volatilePeer) {
 		if (distantPeer==null)
 			throw new NullPointerException();
 		if (protectedEncryptionProfileProviderForAuthenticatedP2PMessages ==null)
 			throw new IllegalArgumentException("Cannot set local peer without protected encryption profile provider for authenticated P2P messages");
 		pushQuery((t) -> {
 			t.checkNotRemovedIDs(Collections.singleton(distantPeer));
-			boolean changed=configurations.addDistantPeer(distantPeer);
+			boolean changed=configurations.addDistantPeer(distantPeer, volatilePeer);
 			if (changed) {
 				t.checkNewConnexions();
 				t.checkPeersToAdd();

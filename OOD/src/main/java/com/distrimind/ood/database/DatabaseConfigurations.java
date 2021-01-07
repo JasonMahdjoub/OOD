@@ -280,11 +280,15 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 		return allDistantPeersReadOnly;
 	}
 
-	boolean addDistantPeer(DecentralizedValue distantPeer) throws DatabaseException {
+	boolean addDistantPeer(DecentralizedValue distantPeer, boolean volatilePeer) throws DatabaseException {
 		if (distantPeer==null)
 			throw new NullPointerException();
 		checkLocalPeerNull(Collections.singleton(distantPeer));
-		boolean changed = this.distantPeers.add(distantPeer);
+		boolean changed;
+		if (volatilePeer)
+			changed = this.volatileDistantPeers.add(distantPeer);
+		else
+			changed = this.distantPeers.add(distantPeer);
 		allDistantPeers.add(distantPeer);
 		checkForMaxDistantPeersReached();
 		return changed;
