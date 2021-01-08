@@ -182,7 +182,6 @@ public class DatabaseConfigurationsBuilder {
 				if (currentTransaction.checkPeersToAdd) {
 					boolean b=checkPeersToAdd();
 					currentTransaction.checkDatabaseToSynchronize |=b;
-					currentTransaction.checkNewConnexions|=b;
 				}
 				if (currentTransaction.checkInitLocalPeer) {
 					checkInitLocalPeer();
@@ -586,6 +585,10 @@ public class DatabaseConfigurationsBuilder {
 	}
 	public DatabaseConfigurationsBuilder synchronizeDistantPeersWithGivenAdditionalPackages(Collection<DecentralizedValue> distantPeers, String ... packagesString)
 	{
+		return synchronizeDistantPeersWithGivenAdditionalPackages(true, distantPeers, packagesString);
+	}
+	DatabaseConfigurationsBuilder synchronizeDistantPeersWithGivenAdditionalPackages(boolean checkNewConnexion, Collection<DecentralizedValue> distantPeers, String ... packagesString)
+	{
 		if (packagesString==null)
 			throw new NullPointerException();
 		if (packagesString.length==0)
@@ -604,7 +607,8 @@ public class DatabaseConfigurationsBuilder {
 			if (changed) {
 				t.updateConfigurationPersistence();
 				t.checkDatabaseToSynchronize();
-				t.checkNewConnexions();
+				if (checkNewConnexion)
+					t.checkNewConnexions();
 				t.checkPeersToAdd();
 
 			}
@@ -613,6 +617,9 @@ public class DatabaseConfigurationsBuilder {
 	}
 	@SuppressWarnings("UnusedReturnValue")
 	public DatabaseConfigurationsBuilder addDistantPeer(DecentralizedValue distantPeer, boolean volatilePeer) {
+		return addDistantPeer(true, distantPeer, volatilePeer);
+	}
+	DatabaseConfigurationsBuilder addDistantPeer(boolean checkNewConnexion, DecentralizedValue distantPeer, boolean volatilePeer) {
 		if (distantPeer==null)
 			throw new NullPointerException();
 		if (protectedEncryptionProfileProviderForAuthenticatedP2PMessages ==null)
@@ -621,7 +628,8 @@ public class DatabaseConfigurationsBuilder {
 			t.checkNotRemovedIDs(Collections.singleton(distantPeer));
 			boolean changed=configurations.addDistantPeer(distantPeer, volatilePeer);
 			if (changed) {
-				t.checkNewConnexions();
+				if (checkNewConnexion)
+					t.checkNewConnexions();
 				t.checkPeersToAdd();
 
 			}
@@ -632,6 +640,7 @@ public class DatabaseConfigurationsBuilder {
 	{
 		return desynchronizeDistantPeersWithGivenAdditionalPackages(Collections.singleton(distantPeer), packagesString);
 	}
+
 	public DatabaseConfigurationsBuilder desynchronizeDistantPeersWithGivenAdditionalPackages(Collection<DecentralizedValue> distantPeers, String ... packagesString)
 	{
 		if (packagesString==null)

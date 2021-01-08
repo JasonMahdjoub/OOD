@@ -2084,9 +2084,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				lockRead();
 
 				if (initializedHooks.put(hostID, null) != null) {
-					return;
-					/*throw DatabaseException.getDatabaseException(
-							new IllegalAccessException("hostID " + hostID + " already initialized !"));*/
+					throw DatabaseException.getDatabaseException(
+							new IllegalAccessException("hostID " + hostID + " already initialized !"));
 				}
 			}
 			finally

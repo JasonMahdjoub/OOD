@@ -1530,7 +1530,12 @@ public abstract class CommonDecentralizedTests {
 				Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized(other.getHostID()));
 			}
 			DatabaseHooksTable.Record r=db.getDbwrapper().getTableInstance(DatabaseHooksTable.class).getLocalDatabaseHost();
-			Assert.assertNotNull(r.getDatabasePackageNames());
+			if (r.getDatabasePackageNames()==null) {
+				db.getDbwrapper().getTableInstance(DatabaseHooksTable.class).localHost=null;
+				r=db.getDbwrapper().getTableInstance(DatabaseHooksTable.class).getLocalDatabaseHost();
+				Assert.assertNotNull(r.getDatabasePackageNames());
+				Assert.fail();
+			}
 			Assert.assertTrue(r.getDatabasePackageNames().contains(TableAlone.class.getPackage().getName()));
 		}
 	}

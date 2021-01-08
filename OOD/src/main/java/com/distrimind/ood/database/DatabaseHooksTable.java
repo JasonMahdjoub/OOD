@@ -65,7 +65,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 	private volatile DatabaseDistantTransactionEvent databaseDistantTransactionEvent = null;
 	private volatile IDTable idTable = null;
 	protected volatile HashSet<String> supportedDatabasePackages = null;
-	protected volatile Reference<DatabaseHooksTable.Record> localHost = null;
+	protected volatile DatabaseHooksTable.Record localHost = null;
 	protected final HashMap<HostPair, Long> lastTransactionFieldsBetweenDistantHosts = new HashMap<>();
 
 	public enum PairingState
@@ -124,6 +124,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			lastValidatedDistantTransactionUTCMs=Long.MIN_VALUE;
 			databasePackageNames=null;
 			authenticatedMessagesQueueToSend=null;
+
 		}
 
 		boolean validateDistantAuthenticatedP2PMessage(AuthenticatedP2PMessage message, DatabaseHooksTable table) throws DatabaseException {
@@ -133,6 +134,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			{
 				lastDistantAuthenticatedP2PMessageID=message.getMessageID();
 				table.updateRecord(this, "lastDistantAuthenticatedP2PMessageID", lastDistantAuthenticatedP2PMessageID);
+				table.updateLocalDatabaseHostIfNecessary(this);
 				return true;
 			}
 		}
@@ -155,11 +157,11 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			return lastValidatedDistantTransactionUTCMs;
 		}
 
-		void setLastValidatedDistantTransactionUTCMs(long lastValidatedDistantTransactionUTCMs) {
+		/*void setLastValidatedDistantTransactionUTCMs(long lastValidatedDistantTransactionUTCMs) {
 			if (lastValidatedDistantTransactionUTCMs<this.lastValidatedDistantTransactionUTCMs)
 				throw new IllegalArgumentException();
 			this.lastValidatedDistantTransactionUTCMs = lastValidatedDistantTransactionUTCMs;
-		}
+		}*/
 
 		PairingState getPairingState() {
 			return pairingState;
@@ -232,12 +234,13 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 				alterRecordFilter.update("authenticatedMessagesQueueToSend", authenticatedMessagesQueueToSend, "lastLocalAuthenticatedP2PMessageID", lastLocalAuthenticatedP2PMessageID, "pairingState", PairingState.REMOVED);
 			else
 				alterRecordFilter.update("authenticatedMessagesQueueToSend", authenticatedMessagesQueueToSend, "lastLocalAuthenticatedP2PMessageID", lastLocalAuthenticatedP2PMessageID);
+			wrapper.getDatabaseHooksTable().updateLocalDatabaseHostIfNecessary(this);
 			message.messageReadyToSend();
 			wrapper.getSynchronizer().notifyNewAuthenticatedMessage(message);
 		}
 
 
-		void addAuthenticatedP2PMessageToSendToCentralDatabaseBackup(AuthenticatedP2PMessage message, DatabaseHooksTable table) throws DatabaseException {
+		/*void addAuthenticatedP2PMessageToSendToCentralDatabaseBackup(AuthenticatedP2PMessage message, DatabaseHooksTable table) throws DatabaseException {
 			if (message==null)
 				throw new NullPointerException();
 			if (!(message instanceof DatabaseEvent))
@@ -247,7 +250,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			assert concernsDatabaseHost;
 			authenticatedMessagesQueueToSend.add(message);
 			table.updateRecord(this, "authenticatedMessagesQueueToSend", authenticatedMessagesQueueToSend);
-		}
+		}*/
 
 		LinkedList<AuthenticatedP2PMessage> getAuthenticatedMessagesQueueToSend() {
 			return authenticatedMessagesQueueToSend;
@@ -271,14 +274,14 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			return res;
 		}
 
-		void receivedAuthenticatedP2PMessageFromDistantHost(AuthenticatedP2PMessage message, AlterRecordFilter<Record> alterRecordFilter) throws DatabaseException {
+		/*void receivedAuthenticatedP2PMessageFromDistantHost(AuthenticatedP2PMessage message, AlterRecordFilter<Record> alterRecordFilter) throws DatabaseException {
 			if (message.getHostSource().equals(hostID)) {
 				if (lastDistantAuthenticatedP2PMessageID<message.getMessageID()) {
 					lastDistantAuthenticatedP2PMessageID = message.getMessageID();
 					alterRecordFilter.update("lastDistantAuthenticatedP2PMessageID", lastDistantAuthenticatedP2PMessageID);
 				}
 			}
-		}
+		}*/
 		boolean removeAuthenticatedMessage(AuthenticatedP2PMessage message)
 		{
 			if (authenticatedMessagesQueueToSend==null)
@@ -286,11 +289,11 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			return authenticatedMessagesQueueToSend.remove(message);
 		}
 
-		AuthenticatedP2PMessage poolAuthenticatedP2PMessage() throws DatabaseException {
+		/*AuthenticatedP2PMessage poolAuthenticatedP2PMessage() throws DatabaseException {
 			if (authenticatedMessagesQueueToSend==null)
 				return null;
 			return authenticatedMessagesQueueToSend.removeFirst();
-		}
+		}*/
 
 		/*private static ArrayList<String> compactPackages(List<String> packages, StringBuilder compactedPackages)
 		{
@@ -321,19 +324,21 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			filter.update("databasePackageNames", databasePackageNames);
 
 		}
-		protected void removeDatabasePackageNames(Set<String> packages, AlterRecordFilter<Record> filter) throws DatabaseException {
+		protected void removeDatabasePackageNames(DatabaseHooksTable table, Set<String> packages, AlterRecordFilter<Record> filter) throws DatabaseException {
 			if (this.databasePackageNames!=null) {
 				this.databasePackageNames.removeAll(packages);
 				if (this.databasePackageNames.size()==0)
 					this.databasePackageNames=null;
 				filter.update("databasePackageNames", databasePackageNames);
+				table.updateLocalDatabaseHostIfNecessary(this);
 			}
 		}
 		protected void setDatabasePackageNames(Set<String> packages) {
 			if (packages == null || packages.size() == 0) {
 				databasePackageNames = null;
 			}
-			databasePackageNames=new HashSet<>(packages);
+			else
+				databasePackageNames=new HashSet<>(packages);
 			/*StringBuilder sb = new StringBuilder();
 			ArrayList<String> packagesList=compactPackages(packages, sb);
 			databasePackageNames = sb.toString();
@@ -397,18 +402,13 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			}
 		}*/
 
-		protected Set<String> addDatabasePackageNames(Collection<String> ps) {
+		/*protected Set<String> addDatabasePackageNames(Collection<String> ps) {
 			if (databasePackageNames==null)
 				databasePackageNames=new HashSet<>(ps);
 			else
 				databasePackageNames.addAll(ps);
-			/*StringBuilder sb=new StringBuilder();
-			List<String> res=addPackageNames(databasePackageNames, sb, ps);
-			if (sb.length()>0)
-				databasePackageNames=sb.toString();
-			return res;*/
 			return databasePackageNames;
-		}
+		}*/
 		Set<String> getDatabasePackageNames() {
 			return databasePackageNames;
 		}
@@ -559,6 +559,8 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		}
 	}
 
+
+
 	Record authenticatedMessageSent(AuthenticatedP2PMessage message) throws DatabaseException {
 		return getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Record>() {
 			@Override
@@ -571,7 +573,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 					Record r=l.get(0);
 					if (r.removeAuthenticatedMessage(message))
 						updateRecord(r, "authenticatedMessagesQueueToSend", r.authenticatedMessagesQueueToSend);
-
+					updateLocalDatabaseHostIfNecessary(r);
 					return r;
 				}
 				return null;
@@ -811,6 +813,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		r.setLastValidatedDistantTransactionID(-1);
 		r.setLastValidatedLocalTransactionID(-1);
 		r = addRecord(r);
+		updateLocalDatabaseHostIfNecessary(r);
 		return r;
 	}
 	Record initDistantHook(DecentralizedValue hostID) throws DatabaseException {
@@ -839,10 +842,13 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							public boolean nextRecord(Record r) {
 								if (unknownHostSource.get() && r.getHostID().equals(hostSource))
 									unknownHostSource.set(false);
-								return peerInCloudRemaining.remove(r.getHostID());
+								return peerInCloudRemaining.remove(r.getHostID()) || r.concernsDatabaseHost;
 							}
 						});
-
+						if (unknownHostSource.get())
+						{
+							initDistantHook(hostSource);
+						}
 						Map<DecentralizedValue, Set<String>> synchronizedPackages=new HashMap<>();
 						for (Record r : records)
 						{
@@ -851,12 +857,12 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							if (dpn!=null)
 								nap.removeAll(dpn);
 							HashMap<String, Boolean> newAddedPackages=new HashMap<>();
-							r.setDatabasePackageNames(packages.keySet());
 							nap.forEach(v -> newAddedPackages.put(v, packages.get(v)));
 							HashMap<String, Object> hm=new HashMap<>();
 							if (newAddedPackages.size()>0) {
 								if (fromDistantMessage && !r.concernsDatabaseHost)
 									synchronizedPackages.put(r.getHostID(), nap);
+								r.setDatabasePackageNames(packages.keySet());
 								hm.put("databasePackageNames", r.databasePackageNames);
 								localHost = null;
 								supportedDatabasePackages = null;
@@ -868,6 +874,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 									hm.put("lastValidatedLocalTransactionID", r.lastValidatedLocalTransactionID);
 								}
 								updateRecord(r, hm);
+								updateLocalDatabaseHostIfNecessary(r);
 							}
 						}
 						for (DecentralizedValue hostID : peerInCloudRemaining)
@@ -886,22 +893,21 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							r.setLastValidatedLocalTransactionID(getDatabaseTransactionEventsTable()
 									.addTransactionToSynchronizeTables(packages, peerInCloud, r));
 							updateRecord(r, "lastValidatedLocalTransactionID", r.lastValidatedLocalTransactionID);
+							updateLocalDatabaseHostIfNecessary(r);
 							if (fromDistantMessage)
 								synchronizedPackages.put(r.getHostID(), packages.keySet());
+
 						}
-						if (unknownHostSource.get())
-						{
-							initDistantHook(hostSource);
-						}
+
 						if (fromDistantMessage) {
 							DatabaseConfigurationsBuilder builder = getDatabaseWrapper().getDatabaseConfigurationsBuilder();
 							boolean commit=false;
 							for (Map.Entry<DecentralizedValue, Set<String>> e : synchronizedPackages.entrySet()) {
-								builder.synchronizeDistantPeersWithGivenAdditionalPackages(Collections.singletonList(e.getKey()), e.getValue().toArray(new String[synchronizedPackages.size()]));
+								builder.synchronizeDistantPeersWithGivenAdditionalPackages(false, Collections.singletonList(e.getKey()), e.getValue().toArray(new String[synchronizedPackages.size()]));
 								commit=true;
 							}
 							if (unknownHostSource.get()) {
-								builder.addDistantPeer(hostSource, false);
+								builder.addDistantPeer(false, hostSource, false);
 								commit = true;
 							}
 							if (commit)
@@ -1039,6 +1045,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							desynchronizeDatabase(host, false, packages);
 						}
 						if (concernedHosts.size()>0 && packages.size()>0)
+							//noinspection ToArrayCallWithZeroLengthArrayArgument
 							getDatabaseWrapper().getDatabaseConfigurationsBuilder().desynchronizeDistantPeersWithGivenAdditionalPackages(concernedHosts, packages.toArray(new String[packages.size()]))
 								.commit();
 						return null;
@@ -1079,7 +1086,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							return null;
 						} else {
 							r = l.get(0);
-							if (localHost.get().getHostID().equals(hostID))
+							if (localHost.getHostID().equals(hostID))
 								localHost=null;
 							supportedDatabasePackages = null;
 							lastTransactionFieldsBetweenDistantHosts.entrySet().removeIf(e -> e.getKey().getHostServer().equals(hostID)
@@ -1217,9 +1224,14 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 					return false;
 				}
 			}, "concernsDatabaseHost=%b", "b", true);
-			localHost = res;
+			localHost = res.get();
 		}
-		return localHost.get();
+		return localHost;
+	}
+	private void updateLocalDatabaseHostIfNecessary(DatabaseHooksTable.Record r)
+	{
+		if (r.concernsDatabaseHost)
+			localHost=r;
 	}
 
 	Collection<DatabaseHooksTable.Record> resetAllHosts() throws DatabaseException {
