@@ -1216,7 +1216,7 @@ public abstract class CommonDecentralizedTests {
 		synchronized (CommonDecentralizedTests.class) {
 			Assert.assertEquals(db.getDbwrapper().getDatabaseTransactionsPerHostTable().getRecords().size(), 0);
 
-			Assert.assertEquals(db.getDbwrapper().getTransactionsTable().getRecords().size(), 0);
+			Assert.assertEquals(db.getDbwrapper().getTransactionsTable().getRecords().size(), 0, "db:"+db.getHostID());
 			Assert.assertEquals(db.getDbwrapper().getDatabaseEventsTable().getRecords().size(), 0);
 			Assert.assertEquals(db.getDbwrapper().getDatabaseHooksTable().getRecords().size(), listDatabase.size());
 			Assert.assertEquals(db.getDbwrapper().getDatabaseDistantTransactionEvent().getRecords().size(), 0);
@@ -1289,6 +1289,11 @@ public abstract class CommonDecentralizedTests {
 			connectDistant(db, dbs);
 		}
 		exchangeMessages();
+		for (CommonDecentralizedTests.Database db : listDatabase) {
+			for (CommonDecentralizedTests.Database otherdb : listDatabase) {
+				Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized(otherdb.getHostID()));
+			}
+		}
 	}
 
 	protected void connectCentralDatabaseBackupWithConnectedDatabase() throws Exception {

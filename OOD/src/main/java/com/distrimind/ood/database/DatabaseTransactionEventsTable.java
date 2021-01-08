@@ -231,8 +231,8 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 		boolean isConcernedBy(DecentralizedValue newHostID) throws SerializationDatabaseException {
 			//this.newHostID = newHostID;
 			if (concernedHosts == null)
-				return true;
-			return !concernedHosts.contains(newHostID);
+				return false;
+			return concernedHosts.contains(newHostID);
 		}
 
 	}
@@ -290,31 +290,41 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 	}
 
 	protected long addTransactionToSynchronizeTables(final Map<String, Boolean> databasePackages,
-													 final Set<DecentralizedValue> peerInCloud, final DatabaseHooksTable.Record hook) throws DatabaseException {
+													 final Map<String, Set<DecentralizedValue>> hostsAlreadySynchronized, final DatabaseHooksTable.Record hook) throws DatabaseException {
+
 		final Set<String> packageSynchroOneTime = new HashSet<>();
 		//assert getDatabaseHooksTable().getRecord("id", hook.getID())!=null;
-		getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
+		/*getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
 
 			@Override
 			public boolean nextRecord(DatabaseHooksTable.Record _record) {
-				if (!_record.concernsLocalDatabaseHost() && peerInCloud.contains(_record.getHostID())) {
+				if (!_record.concernsLocalDatabaseHost()) {
 					Set<String> dpn=_record.getDatabasePackageNames();
 					if (dpn!=null) {
 						for (String p : dpn) {
-							if (databasePackages.containsKey(p)) {
+							Set<DecentralizedValue> has=hostsAlreadySynchronized.get(p);
+							if (has!=null && has.contains(_record.getHostID()))
 								packageSynchroOneTime.add(p);
-							}
 						}
 					}
 
 				}
 				return false;
 			}
-		});
+		});*/
 
-		for (Map.Entry<String, Boolean> e : databasePackages.entrySet())
-			if (!packageSynchroOneTime.contains(e.getKey()))
+		for (Map.Entry<String, Boolean> e : databasePackages.entrySet()) {
+			Set<DecentralizedValue> has=hostsAlreadySynchronized.get(e.getKey());
+			if (has==null || !has.contains(hook.getHostID()))
+			//if (!packageSynchroOneTime.contains(e.getKey()))
+			{
+				System.out.println(getDatabaseWrapper().getSynchronizer().getLocalHostID()+" ; "+hook.getHostID()+" ; "+e.getKey());
+				//packageSynchroOneTime.add(e.getKey());
 				addTransactionToSynchronizeTables(e.getKey(), hook, e.getValue());
+			}
+			else
+				packageSynchroOneTime.add(e.getKey());
+		}
 
 		if (packageSynchroOneTime.size() > 0) {
 			final AtomicLong lastTransactionID = new AtomicLong(Long.MAX_VALUE);
@@ -359,6 +369,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 						}
 					}
 				}, "id>%lastID" + sb.toString(), parameters);
+
 				getRecords(new Filter<DatabaseTransactionEventsTable.Record>() {
 
 					@Override

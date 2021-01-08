@@ -376,6 +376,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 							}
 						}
 						final DatabaseHooksTable.Record fromHook=_fromHook.get();
+
 						try {
 							transactionNotEmpty = getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
 								final byte[] longTab = new byte[8];
@@ -556,7 +557,8 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 							}
 						}
 						if (getDatabaseHooksTable().validateLastDistantTransactionIDAndLastTransactionUTC(fromHook, transaction.getID(), transaction.getTimeUTC())) {
-							if (indirectTransaction) {
+							if (indirectTransaction)
+							{
 								hooksToNotify.add(fromHook.getHostID());
 							}
 						}
@@ -809,14 +811,10 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 			throw new IllegalArgumentException(
 					"The given distant host ID cannot be equals to the local host ID : " + comingFrom);
 
-		ArrayList<DatabaseHooksTable.Record> hooks = getDatabaseHooksTable().getRecordsWithAllFields("hostID",
-				comingFrom);
-		if (hooks.isEmpty())
+		final DatabaseHooksTable.Record directPeer = getDatabaseHooksTable().getHook(comingFrom);
+		if (directPeer==null)
 			throw new SerializationDatabaseException("The give host id is not valid : " + comingFrom);
-		else if (hooks.size() > 1)
-			throw new IllegalAccessError();
 
-		final DatabaseHooksTable.Record directPeer = hooks.get(0);
 		final AtomicLong lastValidatedTransaction = new AtomicLong(-1);
 		final HashSet<DecentralizedValue> hooksToNotify = new HashSet<>();
 		final Map<String, Long> lastValidatedIDPerPackages=new HashMap<>();
@@ -835,15 +833,24 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 						alterDatabase(directPeer, new Reference<>(),
 								ite, it=getDatabaseDistantEventsTable().distantEventTableIterator(ois),
 								lastValidatedTransaction, hooksToNotify, packageString, false);
+
 					} else if (next.get() == EXPORT_DIRECT_TRANSACTION) {
 						DatabaseTransactionEventsTable.Record dte = getDatabaseTransactionEventsTable().unserialize(ois,
 								true, false);
 						alterDatabase(directPeer, new Reference<>(directPeer),
 								dte, it=getDatabaseEventsTable().eventsTableIterator(ois), lastValidatedTransaction,
 								hooksToNotify, packageString, false);
+						if (packageString.get()==null)
+							hooksToNotify.add(comingFrom);
+						/*else
+						{
+							for (String p : directPeer.getDatabasePackageNames())
+								lastValidatedIDPerPackages.put(p, directPeer.getLastValidatedDistantTransactionID());
+						}*/
 					}
 					if (packageString.get()!=null)
 						lastValidatedIDPerPackages.put(packageString.get(), lastValidatedTransaction.get());
+
 				}
 				finally
 				{

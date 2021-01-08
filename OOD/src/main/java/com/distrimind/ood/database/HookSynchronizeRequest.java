@@ -6,6 +6,7 @@ import com.distrimind.util.io.*;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -31,6 +32,8 @@ public class HookSynchronizeRequest extends AbstractHookRequest {
 		if (packagesToSynchronize.size()==0)
 			throw new IllegalArgumentException();
 		this.packagesToSynchronize=packagesToSynchronize;
+		this.concernedPeers=new HashSet<>(concernedPeers);
+		this.concernedPeers.add(_hostSource);
 	}
 
 	@Override

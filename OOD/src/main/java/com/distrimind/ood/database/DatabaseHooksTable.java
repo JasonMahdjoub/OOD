@@ -40,6 +40,7 @@ import com.distrimind.ood.database.annotations.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.SerializationDatabaseException;
 import com.distrimind.ood.database.messages.IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup;
+import com.distrimind.ood.database.messages.LastIDCorrection;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.Reference;
 import com.distrimind.util.crypto.AbstractSecureRandom;
@@ -819,13 +820,14 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 	Record initDistantHook(DecentralizedValue hostID) throws DatabaseException {
 		return initHook(hostID, false);
 	}
-	void addHooks(final DecentralizedValue hostSource, final Map<String, Boolean> packages,
-									   final Set<DecentralizedValue> peerInCloud, boolean fromDistantMessage)
+	void addHooks(final Map<String, Boolean> packages,
+									   final Set<DecentralizedValue> peersInCloud, boolean fromDistantMessage)
 			throws DatabaseException {
 
-		if (peerInCloud == null)
+		if (peersInCloud == null)
 			throw new NullPointerException("hostID");
-		/*if (!peerInCloud.contains(getLocalDatabaseHost().getHostID()))
+
+		/*if (!peersInCloud.contains(getLocalDatabaseHost().getHostID()))
 			return ;*/
 
 		getDatabaseWrapper()
@@ -833,49 +835,37 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 					@Override
 					public Void run() throws Exception {
-						Set<DecentralizedValue> peerInCloudRemaining=new HashSet<>(peerInCloud);
+						Set<DecentralizedValue> peerInCloudRemaining=new HashSet<>(peersInCloud);
 						if (getLocalDatabaseHost()==null)
 							throw new DatabaseException("Local database host not set");
-						Reference<Boolean> unknownHostSource=new Reference<>(hostSource!=null);
 						List<Record> records=getRecords(new Filter<Record>(){
 							@Override
 							public boolean nextRecord(Record r) {
-								if (unknownHostSource.get() && r.getHostID().equals(hostSource))
-									unknownHostSource.set(false);
 								return peerInCloudRemaining.remove(r.getHostID()) || r.concernsDatabaseHost;
 							}
 						});
-						if (unknownHostSource.get())
-						{
-							initDistantHook(hostSource);
-						}
 						Map<DecentralizedValue, Set<String>> synchronizedPackages=new HashMap<>();
+						Map<String, Set<DecentralizedValue>> synchronizedHosts=new HashMap<>();
 						for (Record r : records)
 						{
 							Set<String> dpn=r.getDatabasePackageNames();
 							Set<String> nap=new HashSet<>(packages.keySet());
-							if (dpn!=null)
+							if (dpn!=null) {
+								dpn.forEach(v-> synchronizedHosts.compute(v, (s, h) -> {
+									if (h==null)
+										h=new HashSet<>();
+									h.add(r.getHostID());
+									return h;
+								}));
 								nap.removeAll(dpn);
-							HashMap<String, Boolean> newAddedPackages=new HashMap<>();
-							nap.forEach(v -> newAddedPackages.put(v, packages.get(v)));
-							HashMap<String, Object> hm=new HashMap<>();
-							if (newAddedPackages.size()>0) {
-								if (fromDistantMessage && !r.concernsDatabaseHost)
-									synchronizedPackages.put(r.getHostID(), nap);
-								r.setDatabasePackageNames(packages.keySet());
-								hm.put("databasePackageNames", r.databasePackageNames);
-								localHost = null;
-								supportedDatabasePackages = null;
-
-								if (!r.concernsDatabaseHost) {
-									r.setLastValidatedLocalTransactionID(getDatabaseTransactionEventsTable()
-											.addTransactionToSynchronizeTables(newAddedPackages, peerInCloud, r));
-
-									hm.put("lastValidatedLocalTransactionID", r.lastValidatedLocalTransactionID);
-								}
-								updateRecord(r, hm);
-								updateLocalDatabaseHostIfNecessary(r);
 							}
+
+							r.setDatabasePackageNames(packages.keySet());
+							updateRecord(r, "databasePackageNames", r.databasePackageNames);
+							if (nap.size()>0 && !r.concernsDatabaseHost)
+								synchronizedPackages.put(r.getHostID(), nap);
+							updateLocalDatabaseHostIfNecessary(r);
+
 						}
 						for (DecentralizedValue hostID : peerInCloudRemaining)
 						{
@@ -887,28 +877,37 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							r.setLastValidatedDistantTransactionID(-1);
 							r.setLastValidatedLocalTransactionID(-1);
 							r = addRecord(r);
-
-
-
-							r.setLastValidatedLocalTransactionID(getDatabaseTransactionEventsTable()
-									.addTransactionToSynchronizeTables(packages, peerInCloud, r));
-							updateRecord(r, "lastValidatedLocalTransactionID", r.lastValidatedLocalTransactionID);
-							updateLocalDatabaseHostIfNecessary(r);
-							if (fromDistantMessage)
+							if (packages.keySet().size()>0)
 								synchronizedPackages.put(r.getHostID(), packages.keySet());
 
+
 						}
+						for (Record r : getRecords())
+						{
+							if (!r.concernsDatabaseHost) {
+								Set<String> pkgs=synchronizedPackages.get(r.getHostID());
+								if (pkgs!=null && pkgs.size()>0) {
+									HashMap<String, Boolean> newAddedPackages = new HashMap<>();
+									pkgs.forEach(v -> newAddedPackages.put(v, packages.get(v)));
+									r.setLastValidatedLocalTransactionID(getDatabaseTransactionEventsTable()
+											.addTransactionToSynchronizeTables(newAddedPackages, synchronizedHosts, r));
+
+									updateRecord(r, "lastValidatedLocalTransactionID", r.lastValidatedLocalTransactionID);
+									records.add(r);
+
+								}
+							}
+
+						}
+						supportedDatabasePackages = null;
 
 						if (fromDistantMessage) {
 							DatabaseConfigurationsBuilder builder = getDatabaseWrapper().getDatabaseConfigurationsBuilder();
 							boolean commit=false;
 							for (Map.Entry<DecentralizedValue, Set<String>> e : synchronizedPackages.entrySet()) {
-								builder.synchronizeDistantPeersWithGivenAdditionalPackages(false, Collections.singletonList(e.getKey()), e.getValue().toArray(new String[synchronizedPackages.size()]));
+								//noinspection ToArrayCallWithZeroLengthArrayArgument
+								builder.synchronizeDistantPeersWithGivenAdditionalPackages(false, Collections.singletonList(e.getKey()), e.getValue().toArray(new String[e.getValue().size()]));
 								commit=true;
-							}
-							if (unknownHostSource.get()) {
-								builder.addDistantPeer(false, hostSource, false);
-								commit = true;
 							}
 							if (commit)
 								builder.commit();
@@ -918,6 +917,13 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 						localHost = null;
 						supportedDatabasePackages = null;
+						System.out.println("here1");
+						getDatabaseWrapper().getSynchronizer().notifyNewTransactionsIfNecessary();
+						System.out.println("here2");
+						/*for (Record r : records)
+							if (getDatabaseWrapper().getSynchronizer().isInitialized(r.getHostID()))
+								getDatabaseWrapper().getSynchronizer().addNewDatabaseEvent(new LastIDCorrection(getLocalDatabaseHost().getHostID(),
+									r.getHostID(), r.getLastValidatedLocalTransactionID()));*/
 
 						return null;
 					}

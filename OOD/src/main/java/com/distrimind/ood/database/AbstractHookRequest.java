@@ -63,7 +63,7 @@ public abstract class AbstractHookRequest extends DatabaseEvent implements Authe
 	private DecentralizedValue hostDestination;
 	//private DecentralizedValue hostAdded;
 
-	private Set<DecentralizedValue> concernedPeers;
+	protected Set<DecentralizedValue> concernedPeers;
 
 	private byte[] symmetricSignature=null;
 	private short encryptionProfileIdentifier;

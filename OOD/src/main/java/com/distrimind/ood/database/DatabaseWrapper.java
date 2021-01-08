@@ -812,6 +812,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 			finally
 			{
+
 				unlockWrite();
 			}
 		}
@@ -976,7 +977,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 
 		void receivedHookSynchronizeRequest(HookSynchronizeRequest hookSynchronizeRequest) throws DatabaseException {
-			getDatabaseHooksTable().addHooks(hookSynchronizeRequest.getHostSource(), hookSynchronizeRequest.getPackagesToSynchronize(getLocalHostID()),
+			getDatabaseHooksTable().addHooks(hookSynchronizeRequest.getPackagesToSynchronize(getLocalHostID()),
 					hookSynchronizeRequest.getConcernedPeers(), !hookSynchronizeRequest.getHostSource().equals(getLocalHostID()));
 			isReliedToDistantHook();
 		}
@@ -1080,36 +1081,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		}
 
-		void notifyNewTransactionsIfNecessary() throws DatabaseException {
-			final long lastID = getTransactionIDTable().getLastTransactionID();
-			
-			try {
-				lockWrite();
 
-				getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
-
-					@Override
-					public boolean nextRecord(Record _record) throws DatabaseException {
-						ConnectedPeers cp = initializedHooks.get(_record.getHostID());
-						if (cp != null && !_record.concernsLocalDatabaseHost() && !cp.isTransferInProgress()) {
-							if (lastID > _record.getLastValidatedLocalTransactionID()) {
-								cp.setTransferInProgress(true);
-								addNewDatabaseEvent(new DatabaseEventsToSynchronizeP2P(
-										getDatabaseHooksTable().getLocalDatabaseHost().getHostID(), _record, lastID,
-										maxTransactionsToSynchronizeAtTheSameTime));
-							}
-						}
-						return false;
-					}
-
-				});
-			}
-			finally
-			{
-				unlockWrite();
-			}
-			
-		}
 
 		void validateLastSynchronization(DecentralizedValue hostID, long lastTransferredTransactionID, boolean fromCentral)
 				throws DatabaseException {
@@ -1157,7 +1129,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					if (l != lastTransferredTransactionID)
 						addNewDatabaseEvent(new LastIDCorrection(getDatabaseHooksTable().getLocalDatabaseHost().getHostID(),
 								hostID, l));
-
+					cp.setTransferInProgress(false);
 					synchronizedDataIfNecessary(cp);
 				}
 			}
@@ -1168,10 +1140,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			
 			try {
 				lockWrite();
-				if (initializedHooks.get(hook.getHostID())!=null)
+				ConnectedPeers cp=initializedHooks.get(hook.getHostID());
+				if (cp!=null) {
 					addNewDatabaseEvent(new TransactionConfirmationEvents(
 							getDatabaseHooksTable().getLocalDatabaseHost().getHostID(), hook.getHostID(),
 							hook.getLastValidatedDistantTransactionID()));
+				}
 
 			}
 			finally
@@ -1214,39 +1188,48 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			
 		}
 
-		@SuppressWarnings("UnusedReturnValue")
-        private long synchronizedDataIfNecessary() throws DatabaseException {
+		void notifyNewTransactionsIfNecessary() throws DatabaseException {
 			final long lastID = getTransactionIDTable().getLastTransactionID();
-			
+
 			try {
 				lockWrite();
+
 				getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
 
 					@Override
 					public boolean nextRecord(Record _record) throws DatabaseException {
 						ConnectedPeers cp = initializedHooks.get(_record.getHostID());
-						if (cp != null && !_record.concernsLocalDatabaseHost() && !cp.isTransferInProgress()) {
-							if (lastID > _record.getLastValidatedLocalTransactionID()) {
-								cp.setTransferInProgress(true);
-								addNewDatabaseEvent(new DatabaseEventsToSynchronizeP2P(
-										getDatabaseHooksTable().getLocalDatabaseHost().getHostID(), _record, lastID,
-										maxTransactionsToSynchronizeAtTheSameTime));
-							}
+						if (cp != null && !_record.concernsLocalDatabaseHost()) {
+							if (!cp.isTransferInProgress())
+							{
+								if (lastID > _record.getLastValidatedLocalTransactionID()) {
+									cp.setTransferInProgress(true);
+									addNewDatabaseEvent(new DatabaseEventsToSynchronizeP2P(
+											getDatabaseHooksTable().getLocalDatabaseHost().getHostID(), _record, lastID,
+											maxTransactionsToSynchronizeAtTheSameTime));
+								}
+								else
+									System.out.println(getLocalHostID()+" ; "+_record.getHostID()+" ; "+lastID+" ; "+_record.getLastValidatedLocalTransactionID());
 
+							}
+							else
+								System.out.println("locked");
 						}
+						else if (!_record.concernsLocalDatabaseHost())
+							System.out.println(cp);
+
 						return false;
 					}
 
 				});
-
 			}
 			finally
 			{
 				unlockWrite();
 			}
-			
-			return lastID;
+
 		}
+
 
 		@SuppressWarnings("UnusedReturnValue")
         private long synchronizedDataIfNecessary(ConnectedPeers peer) throws DatabaseException {
@@ -2160,7 +2143,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		public void received(P2PBigDatabaseEventToSend data, InputStreamGetter inputStream) throws DatabaseException {
 			data.importFromInputStream(DatabaseWrapper.this, inputStream);
-			synchronizedDataIfNecessary();
+			//synchronizedDataIfNecessary();
+			notifyNewTransactionsIfNecessary();
 		}
 
 
@@ -2175,6 +2159,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				cp = initializedHooks.get(idCorrection.getHostSource());
 				if (cp == null)
 					throw new DatabaseException("The host " + idCorrection.getHostSource() + " is not connected !");
+				cp.setTransferInProgress(false);
 			}
 			finally
 			{
