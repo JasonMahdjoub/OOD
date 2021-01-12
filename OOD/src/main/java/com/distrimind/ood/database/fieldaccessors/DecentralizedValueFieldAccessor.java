@@ -399,7 +399,7 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 	@Override
 	public void serialize(RandomOutputStream _oos, Object _class_instance) throws DatabaseException {
 		try {
-			_oos.writeObject(getValue(_class_instance), !isAlwaysNotNull());
+			_oos.writeObject(getValue(_class_instance), !isNotNull());
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -408,7 +408,7 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 	@Override
 	public void deserialize(RandomInputStream _ois, Map<String, Object> _map) throws DatabaseException {
 		try {
-			_map.put(getFieldName(), _ois.readObject(!isAlwaysNotNull(), DecentralizedValue.class));
+			_map.put(getFieldName(), _ois.readObject(!isNotNull(), DecentralizedValue.class));
 
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -418,7 +418,7 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 	@Override
 	public Object deserialize(RandomInputStream _ois, Object _classInstance) throws DatabaseException {
 		try {
-			DecentralizedValue dv=_ois.readObject(!isAlwaysNotNull(), DecentralizedValue.class);
+			DecentralizedValue dv=_ois.readObject(!isNotNull(), DecentralizedValue.class);
 			setValue(_classInstance, dv);
 			return dv;
 		} catch (Exception e) {

@@ -55,11 +55,17 @@ public class DatabaseConfigurationsBuilder {
 
 	}
 
-
+	public boolean isCommitInProgress() {
+		synchronized (this)
+		{
+			return commitInProgress;
+		}
+	}
 
 
 	private static class Transaction {
 		final ArrayList<ConfigurationQuery> queries =new ArrayList<>();
+		private boolean propagate=false;
 		private boolean checkPeersToAdd;
 		private boolean checkInitLocalPeer=false;
 		private boolean checkDatabaseToSynchronize=false;
@@ -147,6 +153,7 @@ public class DatabaseConfigurationsBuilder {
 	}
 
 	private Transaction currentTransaction=null;
+	private boolean commitInProgress=false;
 
 	DatabaseConfigurations getConfigurations() {
 		return configurations;
@@ -165,6 +172,9 @@ public class DatabaseConfigurationsBuilder {
 		synchronized (this) {
 			if (currentTransaction==null)
 				throw new DatabaseException("No query was added ! Nothing to commit !");
+			if (commitInProgress)
+				throw new IllegalAccessError();
+			commitInProgress=true;
 			wrapper.lockWrite();
 			try {
 				for (ConfigurationQuery q : currentTransaction.queries)
@@ -187,7 +197,7 @@ public class DatabaseConfigurationsBuilder {
 					checkInitLocalPeer();
 				}
 				if (currentTransaction.checkDatabaseToSynchronize)
-					currentTransaction.checkNewConnexions|=checkDatabaseToSynchronize();
+					checkDatabaseToSynchronize();
 				if (currentTransaction.checkNewConnexions) {
 					checkConnexions();
 				}
@@ -199,6 +209,7 @@ public class DatabaseConfigurationsBuilder {
 			}
 			finally {
 				currentTransaction = null;
+				commitInProgress=false;
 				wrapper.unlockWrite();
 			}
 		}
@@ -213,6 +224,8 @@ public class DatabaseConfigurationsBuilder {
 	{
 		synchronized (this)
 		{
+			if (commitInProgress)
+				throw new IllegalAccessError();
 			currentTransaction=null;
 		}
 	}
@@ -329,6 +342,7 @@ public class DatabaseConfigurationsBuilder {
 			}
 		});
 	}
+	@SuppressWarnings("UnusedReturnValue")
 	private boolean checkDatabaseToSynchronize() throws DatabaseException {
 		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
 			@Override
@@ -409,20 +423,22 @@ public class DatabaseConfigurationsBuilder {
 					@Override
 					public boolean nextRecord(DatabaseHooksTable.Record _record) {
 
-						if (!currentTransaction.removedPeersID.contains(_record.getHostID()))
+						if (currentTransaction.removedPeersID==null || !currentTransaction.removedPeersID.contains(_record.getHostID()))
 						{
-							Set<String> ptu=new HashSet<>();
-							for (String p : _record.getDatabasePackageNames())
-							{
-								Optional<DatabaseConfiguration> o=configurations.getConfigurations().stream().filter(c -> c.getDatabaseSchema().getPackage().getName().equals(p)).findAny();
-								if (!o.isPresent() || !o.get().isDecentralized() || o.get().getDistantPeersThatCanBeSynchronizedWithThisDatabase()==null || o.get().getDistantPeersThatCanBeSynchronizedWithThisDatabase().contains(_record.getHostID()))
-								{
-									ptu.add(p);
+
+							Set<String> packages=_record.getDatabasePackageNames();
+							if (packages!=null && packages.size()>0) {
+								Set<String> ptu=new HashSet<>();
+								for (String p : packages) {
+									Optional<DatabaseConfiguration> o = configurations.getConfigurations().stream().filter(c -> c.getDatabaseSchema().getPackage().getName().equals(p)).findAny();
+									if (!o.isPresent() || !o.get().isDecentralized() || o.get().getDistantPeersThatCanBeSynchronizedWithThisDatabase() == null || o.get().getDistantPeersThatCanBeSynchronizedWithThisDatabase().contains(_record.getHostID())) {
+										ptu.add(p);
+									}
 								}
-							}
-							if (ptu.size()>0) {
-								Set<DecentralizedValue> dvs = packagesToUnsynchronize.computeIfAbsent(ptu, k -> new HashSet<>());
-								dvs.add(_record.getHostID());
+								if (ptu.size() > 0) {
+									Set<DecentralizedValue> dvs = packagesToUnsynchronize.computeIfAbsent(ptu, k -> new HashSet<>());
+									dvs.add(_record.getHostID());
+								}
 							}
 							//TODO check if must change state
 
@@ -431,19 +447,20 @@ public class DatabaseConfigurationsBuilder {
 					}
 				}, "concernsDatabaseHost=%cdh", "cdh", false);
 
-
-				wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
-					@Override
-					public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
-						for (Map.Entry<Set<String>, Set<DecentralizedValue>> e : packagesToUnsynchronize.entrySet())
-						{
-							_record.offerNewAuthenticatedP2PMessage(wrapper, new HookUnsynchronizeRequest(configurations.getLocalPeer(), _record.getHostID(), e.getKey(), e.getValue()), protectedEncryptionProfileProviderForAuthenticatedP2PMessages, this);
+				if (currentTransaction.propagate) {
+					wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
+						@Override
+						public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
+							for (Map.Entry<Set<String>, Set<DecentralizedValue>> e : packagesToUnsynchronize.entrySet()) {
+								_record.offerNewAuthenticatedP2PMessage(wrapper, new HookDesynchronizeRequest(configurations.getLocalPeer(), _record.getHostID(), e.getKey(), e.getValue()), protectedEncryptionProfileProviderForAuthenticatedP2PMessages, this);
+							}
 						}
-					}
-				}, "concernsDatabaseHost=%cdh", "cdh", false);
-				for (Map.Entry<Set<String>, Set<DecentralizedValue>> e : packagesToUnsynchronize.entrySet()) {
-					wrapper.getSynchronizer().receivedHookUnsynchronizeRequest(new HookUnsynchronizeRequest(configurations.getLocalPeer(), configurations.getLocalPeer(), e.getKey(), e.getValue()));
+					}, "concernsDatabaseHost=%cdh", "cdh", false);
 				}
+				for (Map.Entry<Set<String>, Set<DecentralizedValue>> e : packagesToUnsynchronize.entrySet()) {
+					wrapper.getSynchronizer().receivedHookDesynchronizeRequest(new HookDesynchronizeRequest(configurations.getLocalPeer(), configurations.getLocalPeer(), e.getKey(), e.getValue()));
+				}
+
 				return packagesToUnsynchronize.size()>0;
 			}
 
@@ -479,6 +496,7 @@ public class DatabaseConfigurationsBuilder {
 							}
 						}, "concernsDatabaseHost=%cdh", "cdh", false);
 					}
+
 					return currentTransaction.removedPeersID.size()>0;
 				}
 				return false;
@@ -513,7 +531,8 @@ public class DatabaseConfigurationsBuilder {
 				dls.add(dc);
 			}
 		}
-		wrapper.loadDatabase(dls, lifeCycles);
+		if (!dls.isEmpty())
+			wrapper.loadDatabase(dls, lifeCycles);
 		//TOTO revisit this part : take account of the restoration and time of restoration
 	}
 
@@ -619,7 +638,7 @@ public class DatabaseConfigurationsBuilder {
 	public DatabaseConfigurationsBuilder addDistantPeer(DecentralizedValue distantPeer, boolean volatilePeer) {
 		return addDistantPeer(true, distantPeer, volatilePeer);
 	}
-	DatabaseConfigurationsBuilder addDistantPeer(boolean checkNewConnexion, DecentralizedValue distantPeer, boolean volatilePeer) {
+	DatabaseConfigurationsBuilder addDistantPeer(@SuppressWarnings("SameParameterValue") boolean checkNewConnexion, DecentralizedValue distantPeer, boolean volatilePeer) {
 		if (distantPeer==null)
 			throw new NullPointerException();
 		if (protectedEncryptionProfileProviderForAuthenticatedP2PMessages ==null)
@@ -640,8 +659,11 @@ public class DatabaseConfigurationsBuilder {
 	{
 		return desynchronizeDistantPeersWithGivenAdditionalPackages(Collections.singleton(distantPeer), packagesString);
 	}
-
 	public DatabaseConfigurationsBuilder desynchronizeDistantPeersWithGivenAdditionalPackages(Collection<DecentralizedValue> distantPeers, String ... packagesString)
+	{
+		return desynchronizeDistantPeersWithGivenAdditionalPackages(true, distantPeers, packagesString);
+	}
+	DatabaseConfigurationsBuilder desynchronizeDistantPeersWithGivenAdditionalPackages(boolean propagate, Collection<DecentralizedValue> distantPeers, String ... packagesString)
 	{
 		if (packagesString==null)
 			throw new NullPointerException();
@@ -659,8 +681,10 @@ public class DatabaseConfigurationsBuilder {
 				changed|=configurations.desynchronizeAdditionalDistantPeersWithGivenPackage(p, distantPeers);
 			}
 			if (changed) {
+				t.propagate=propagate;
 				t.checkConnexionsToDesynchronize();
 				t.updateConfigurationPersistence();
+				t.checkInitLocalPeer();
 
 			}
 		});
@@ -672,15 +696,24 @@ public class DatabaseConfigurationsBuilder {
 	}
 	public DatabaseConfigurationsBuilder removeDistantPeers(Collection<DecentralizedValue> distantPeers)
 	{
+		return removeDistantPeers(true, distantPeers);
+	}
+	DatabaseConfigurationsBuilder removeDistantPeers(boolean propagate, Collection<DecentralizedValue> distantPeers)
+	{
 		if (protectedEncryptionProfileProviderForAuthenticatedP2PMessages ==null)
 			throw new IllegalArgumentException("Cannot set local peer without protected encryption profile provider for authenticated P2P messages");
 		pushQuery((t) -> {
-			if (configurations.removeDistantPeers(distantPeers))
+			HashSet<DecentralizedValue> dps=new HashSet<>(distantPeers);
+			if (configurations.removeDistantPeers(dps))
 			{
-				t.addIDsToRemove(distantPeers);
+
+				if (propagate)
+					t.addIDsToRemove(dps);
+
 				t.checkDisconnexions();
 				t.checkConnexionsToDesynchronize();
 				t.updateConfigurationPersistence();
+				t.checkInitLocalPeer();
 			}
 		});
 		return this;

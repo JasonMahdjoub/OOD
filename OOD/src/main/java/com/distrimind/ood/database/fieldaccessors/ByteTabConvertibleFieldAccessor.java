@@ -452,7 +452,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 			} else {
 				b=null;
 			}
-			_oos.writeBytesArray(b, !isAlwaysNotNull(), (int)Math.min(Integer.MAX_VALUE, getLimit()));
+			_oos.writeBytesArray(b, !isNotNull(), (int)Math.min(Integer.MAX_VALUE, getLimit()));
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -460,7 +460,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 
 	private Object deserialize(RandomInputStream _ois) throws DatabaseException {
 		try {
-			byte[] b=_ois.readBytesArray(!isAlwaysNotNull(), (int)Math.min(Integer.MAX_VALUE, getLimit()));
+			byte[] b=_ois.readBytesArray(!isNotNull(), (int)Math.min(Integer.MAX_VALUE, getLimit()));
 			if (b!=null) {
 				if (getLimit() > 0 && b.length > getLimit())
 					throw new IOException();

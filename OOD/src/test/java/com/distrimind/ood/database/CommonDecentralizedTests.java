@@ -1255,7 +1255,7 @@ public abstract class CommonDecentralizedTests {
 				for (CommonDecentralizedTests.Database otherdb : listDatabase) {
 					if (otherdb != db && otherdb.isConnected()) {
 						db.getDbwrapper().getSynchronizer().peerConnected(otherdb.getHostID());
-						otherdb.getDbwrapper().getSynchronizer().peerConnected(db.getHostID());
+						//otherdb.getDbwrapper().getSynchronizer().peerConnected(db.getHostID());
 						/*db.getDbwrapper().getSynchronizer().initHook(otherdb.getHostID(), otherdb.getDbwrapper()
 								.getSynchronizer().getLastValidatedDistantIDSynchronization(db.getHostID()));*/
 						// otherdb.getDbwrapper().getSynchronizer().initHook(db.getHostID(),
@@ -1291,7 +1291,12 @@ public abstract class CommonDecentralizedTests {
 		exchangeMessages();
 		for (CommonDecentralizedTests.Database db : listDatabase) {
 			for (CommonDecentralizedTests.Database otherdb : listDatabase) {
-				Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized(otherdb.getHostID()));
+				if (db==otherdb)
+					Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized(otherdb.getHostID()));
+				else
+					Assert.assertEquals(db.getDbwrapper().getSynchronizer().isInitialized(otherdb.getHostID()),
+						db.getDbwrapper().getDatabaseConfigurationsBuilder().getConfigurations().getDistantPeers().contains(otherdb.getHostID()), db.getHostID().toString());
+
 			}
 		}
 	}
@@ -1530,18 +1535,32 @@ public abstract class CommonDecentralizedTests {
 
 		for (CommonDecentralizedTests.Database db : listDatabase) {
 			Assert.assertTrue(db.isConnected());
-			Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized());
-			for (CommonDecentralizedTests.Database other : listDatabase) {
-				Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized(other.getHostID()));
+			if (!db.getDbwrapper().getSynchronizer().isInitialized()) {
+				Assert.assertNotNull(db.getDbwrapper().getDatabaseConfigurationsBuilder().getConfigurations().getLocalPeer());
 			}
-			DatabaseHooksTable.Record r=db.getDbwrapper().getTableInstance(DatabaseHooksTable.class).getLocalDatabaseHost();
-			if (r.getDatabasePackageNames()==null) {
-				db.getDbwrapper().getTableInstance(DatabaseHooksTable.class).localHost=null;
-				r=db.getDbwrapper().getTableInstance(DatabaseHooksTable.class).getLocalDatabaseHost();
-				Assert.assertNotNull(r.getDatabasePackageNames());
-				Assert.fail();
+			Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized(), db.getHostID().toString());
+			for (CommonDecentralizedTests.Database otherdb : listDatabase) {
+				if (db==otherdb)
+					Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized(otherdb.getHostID()));
+				else
+					Assert.assertEquals(db.getDbwrapper().getSynchronizer().isInitialized(otherdb.getHostID()),
+							db.getDbwrapper().getDatabaseConfigurationsBuilder().getConfigurations().getDistantPeers().contains(otherdb.getHostID()), db.getHostID().toString());
+			}
+			DatabaseHooksTable.Record r = db.getDbwrapper().getTableInstance(DatabaseHooksTable.class).getLocalDatabaseHost();
+			if (r.getDatabasePackageNames() == null) {
+
+				db.getDbwrapper().getTableInstance(DatabaseHooksTable.class).localHost = null;
+				r = db.getDbwrapper().getTableInstance(DatabaseHooksTable.class).getLocalDatabaseHost();
+				if (r.getDatabasePackageNames()==null)
+				{
+					Assert.assertEquals(db, db4, ""+listDatabase.indexOf(db));
+					Assert.assertEquals(db.getDbwrapper().getDatabaseConfigurationsBuilder().getConfigurations().getDatabaseConfiguration(TableAlone.class.getPackage().getName()).getDistantPeersThatCanBeSynchronizedWithThisDatabase().size(), 0);
+				}
+				else
+					Assert.fail();
 			}
 			Assert.assertTrue(r.getDatabasePackageNames().contains(TableAlone.class.getPackage().getName()));
+
 		}
 	}
 
@@ -1761,10 +1780,10 @@ public abstract class CommonDecentralizedTests {
 		Object[][] res = new Object[numberEvents * 2 * 3][];
 		int index = 0;
 		for (boolean exceptionDuringTransaction : new boolean[] { false, true }) {
-			boolean[] gdc = exceptionDuringTransaction ? new boolean[] { false } : new boolean[] { true, false };
+			boolean[] gdc = exceptionDuringTransaction ? new boolean[] { false } : new boolean[] { false, true };
 			for (boolean generateDirectConflict : gdc) {
 				for (boolean peersInitiallyConnected : new boolean[] { true, false }) {
-					Collection<TableEvent<DatabaseRecord>> l=provideTableEvents(numberEvents);
+					List<TableEvent<DatabaseRecord>> l=provideTableEvents(numberEvents);
 					assert l.size()==numberEvents;
 					for (TableEvent<DatabaseRecord> te : l) {
 						res[index++] = new Object[] {exceptionDuringTransaction,

@@ -12,16 +12,16 @@ import java.util.Set;
  * @version 1.0
  * @since MaDKitLanEdition 5.10.0
  */
-public class HookUnsynchronizeRequest extends AbstractHookRequest {
+public class HookDesynchronizeRequest extends AbstractHookRequest {
 	Set<String> packagesToUnsynchronize;
 
 	@SuppressWarnings("unused")
-	HookUnsynchronizeRequest()
+	HookDesynchronizeRequest()
 	{
 		super();
 	}
 
-	HookUnsynchronizeRequest(DecentralizedValue _hostSource, DecentralizedValue _hostDestination,
+	HookDesynchronizeRequest(DecentralizedValue _hostSource, DecentralizedValue _hostDestination,
 							 Set<String> packagesToUnsynchronize, Set<DecentralizedValue> peersInCloud) {
 		super(_hostSource, _hostDestination, peersInCloud);
 		if (packagesToUnsynchronize==null)

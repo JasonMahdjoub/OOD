@@ -73,6 +73,12 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 	private transient boolean createDatabaseIfNecessaryAndCheckItDuringCurrentSession;
 	private boolean createDatabaseIfNecessaryAndCheckItDuringLoading;
 
+	void setSynchronizationType(SynchronizationType synchronizationType) {
+		if (synchronizationType==null)
+			throw new NullPointerException();
+		this.synchronizationType = synchronizationType;
+	}
+
 	public DatabaseConfiguration(DatabaseSchema databaseSchema) {
 		this(databaseSchema, SynchronizationType.NO_SYNCHRONIZATION, null, null);
 	}
@@ -179,8 +185,6 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 		if (distantPeersThatCanBeSynchronizedWithThisDatabase==null)
 			throw new NullPointerException();
 
-		if (synchronizationType==SynchronizationType.NO_SYNCHRONIZATION)
-			throw new IllegalAccessException();
 		if (this.distantPeersThatCanBeSynchronizedWithThisDatabase==null)
 			return false;
 		return this.distantPeersThatCanBeSynchronizedWithThisDatabase.removeAll(distantPeersThatCanBeSynchronizedWithThisDatabase);

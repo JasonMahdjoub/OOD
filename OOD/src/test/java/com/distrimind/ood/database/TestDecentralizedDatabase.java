@@ -458,6 +458,7 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 		connectAllDatabase();
 		testSynchronisation();
 		disconnectAllDatabase();
+		checkAllDatabaseInternalDataUsedForSynchro();
 		DatabaseFactory<?> df=getDatabaseWrapperInstance4();
 		df.setEncryptionProfileProviders(encryptionProfileProvider, protectedEncryptionProfileProvider, SecureRandomType.DEFAULT);
 		db4 = new Database(df.getDatabaseWrapperSingleton());
@@ -579,19 +580,11 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 
 	@Test(dependsOnMethods = { "testSynchroTransactionTests2" })
 	public void removeNewPeer() throws Exception {
-
-		for (Database other : listDatabase) {
-			if (db4 != other) {
-				other.getDbwrapper().getDatabaseConfigurationsBuilder()
-						.removeDistantPeer(db4.getHostID())
-						.commit();
-				db4.getDbwrapper().getDatabaseConfigurationsBuilder()
-						.removeDistantPeer(other.getHostID())
-						.commit();
-				/*other.getDbwrapper().getSynchronizer().removeHook(db4.getHostID(), TableAlone.class.getPackage());
-				db4.getDbwrapper().getSynchronizer().removeHook(other.getHostID(), TableAlone.class.getPackage());*/
-			}
-		}
+		listDatabase.get(0).getDbwrapper().getDatabaseConfigurationsBuilder()
+				.removeDistantPeer(db4.getHostID())
+				.commit();
+		DatabaseHooksTable.Record r = db1.getDbwrapper().getTableInstance(DatabaseHooksTable.class).getLocalDatabaseHost();
+		Assert.assertNotNull(r.getDatabasePackageNames());
 		//db4.getDbwrapper().getSynchronizer().removeHook(db4.getHostID(), TableAlone.class.getPackage());
 		testAllConnect();
 		testSynchronisation();
@@ -601,6 +594,11 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 
 		testAllConnect();
 		testSynchronisation();
+		for (CommonDecentralizedTests.Database db : listDatabase) {
+			for (CommonDecentralizedTests.Database otherdb : listDatabase) {
+				Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized(otherdb.getHostID()));
+			}
+		}
 		disconnectAllDatabase();
 
 	}

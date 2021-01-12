@@ -40,7 +40,6 @@ import com.distrimind.ood.database.annotations.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.SerializationDatabaseException;
 import com.distrimind.ood.database.messages.IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup;
-import com.distrimind.ood.database.messages.LastIDCorrection;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.Reference;
 import com.distrimind.util.crypto.AbstractSecureRandom;
@@ -228,7 +227,6 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			if (authenticatedMessagesQueueToSend==null)
 				authenticatedMessagesQueueToSend=new LinkedList<>();
 			message.setMessageID(lastLocalAuthenticatedP2PMessageID++);
-			message.setDatabaseWrapper(wrapper);
 			message.updateSignature(encryptionProfileProvider);
 			authenticatedMessagesQueueToSend.addLast(message);
 			if (message instanceof HookRemoveRequest && ((HookRemoveRequest) message).getRemovedHookID().equals(hostID))
@@ -611,7 +609,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			@Override
 			public boolean nextRecord(final com.distrimind.ood.database.DatabaseHooksTable.Record h)
 					throws DatabaseException {
-				if (!h.concernsLocalDatabaseHost() && !excludedHooks.contains(h.getHostID())) {
+				if (!excludedHooks.contains(h.getHostID())) {
 					final AtomicLong actualLastID = new AtomicLong(Long.MAX_VALUE);
 					getDatabaseTransactionsPerHostTable()
 							.getRecords(new Filter<DatabaseTransactionsPerHostTable.Record>() {
@@ -662,7 +660,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 				}
 				return false;
 			}
-		});
+		}, "concernsDatabaseHost=%c", "c", false);
 		for (DatabaseHooksTable.Record h : toUpdate) {
 			updateRecord(h, "lastValidatedLocalTransactionID", h.getLastValidatedLocalTransactionID());
 		}
@@ -891,9 +889,10 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 									pkgs.forEach(v -> newAddedPackages.put(v, packages.get(v)));
 									r.setLastValidatedLocalTransactionID(getDatabaseTransactionEventsTable()
 											.addTransactionToSynchronizeTables(newAddedPackages, synchronizedHosts, r));
+									getDatabaseTransactionEventsTable()
+											.addTransactionToSynchronizeTables(newAddedPackages, synchronizedHosts, r);
 
 									updateRecord(r, "lastValidatedLocalTransactionID", r.lastValidatedLocalTransactionID);
-									records.add(r);
 
 								}
 							}
@@ -905,8 +904,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							DatabaseConfigurationsBuilder builder = getDatabaseWrapper().getDatabaseConfigurationsBuilder();
 							boolean commit=false;
 							for (Map.Entry<DecentralizedValue, Set<String>> e : synchronizedPackages.entrySet()) {
-								//noinspection ToArrayCallWithZeroLengthArrayArgument
-								builder.synchronizeDistantPeersWithGivenAdditionalPackages(false, Collections.singletonList(e.getKey()), e.getValue().toArray(new String[e.getValue().size()]));
+								builder.synchronizeDistantPeersWithGivenAdditionalPackages(false, Collections.singletonList(e.getKey()), e.getValue().toArray(new String[0]));
 								commit=true;
 							}
 							if (commit)
@@ -917,9 +915,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 						localHost = null;
 						supportedDatabasePackages = null;
-						System.out.println("here1");
 						getDatabaseWrapper().getSynchronizer().notifyNewTransactionsIfNecessary();
-						System.out.println("here2");
 						/*for (Record r : records)
 							if (getDatabaseWrapper().getSynchronizer().isInitialized(r.getHostID()))
 								getDatabaseWrapper().getSynchronizer().addNewDatabaseEvent(new LastIDCorrection(getLocalDatabaseHost().getHostID(),
@@ -1027,9 +1023,10 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 	}*/
 
-	DatabaseHooksTable.Record removeHook(final DecentralizedValue hostID) throws DatabaseException {
+	DatabaseHooksTable.Record removeHook(boolean propagate, final DecentralizedValue hostID) throws DatabaseException {
 		DatabaseHooksTable.Record r= desynchronizeDatabase(hostID, true, new HashSet<>());
-		getDatabaseWrapper().getDatabaseConfigurationsBuilder().removeDistantPeer(hostID)
+
+		getDatabaseWrapper().getDatabaseConfigurationsBuilder().removeDistantPeers(propagate, Collections.singleton(hostID))
 				.commit();
 		return r;
 	}
@@ -1051,9 +1048,10 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							desynchronizeDatabase(host, false, packages);
 						}
 						if (concernedHosts.size()>0 && packages.size()>0)
-							//noinspection ToArrayCallWithZeroLengthArrayArgument
-							getDatabaseWrapper().getDatabaseConfigurationsBuilder().desynchronizeDistantPeersWithGivenAdditionalPackages(concernedHosts, packages.toArray(new String[packages.size()]))
-								.commit();
+							if (!getDatabaseWrapper().getDatabaseConfigurationsBuilder().isCommitInProgress()) {
+								getDatabaseWrapper().getDatabaseConfigurationsBuilder().desynchronizeDistantPeersWithGivenAdditionalPackages(false, concernedHosts, packages.toArray(new String[0]))
+										.commit();
+							}
 						return null;
 					}
 
@@ -1092,8 +1090,9 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							return null;
 						} else {
 							r = l.get(0);
-							if (localHost.getHostID().equals(hostID))
-								localHost=null;
+							if (localHost!=null && localHost.getHostID().equals(hostID)) {
+								localHost = null;
+							}
 							supportedDatabasePackages = null;
 							lastTransactionFieldsBetweenDistantHosts.entrySet().removeIf(e -> e.getKey().getHostServer().equals(hostID)
 									|| e.getKey().getHostToSynchronize().equals(hostID));
@@ -1195,8 +1194,9 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			@Override
 			public boolean nextRecord(DatabaseHooksTable.Record _record) {
 				if (!_record.concernsLocalDatabaseHost()) {
-					if (min.get() > _record.getLastValidatedLocalTransactionID())
+					if (min.get() > _record.getLastValidatedLocalTransactionID()) {
 						min.set(_record.getLastValidatedLocalTransactionID());
+					}
 				}
 				return false;
 			}

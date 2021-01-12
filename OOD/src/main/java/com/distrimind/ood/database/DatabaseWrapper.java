@@ -47,9 +47,7 @@ import com.distrimind.ood.database.fieldaccessors.DefaultByteTabObjectConverter;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.ood.database.messages.*;
-import com.distrimind.util.DecentralizedValue;
-import com.distrimind.util.FileTools;
-import com.distrimind.util.Reference;
+import com.distrimind.util.*;
 import com.distrimind.util.crypto.ASymmetricPublicKey;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
@@ -805,6 +803,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					return null;
 				else {
 					DatabaseEvent e = events.removeFirst();
+					if (e instanceof AuthenticatedP2PMessage)
+					{
+						((AuthenticatedP2PMessage) e).messageSent(DatabaseWrapper.this);
+					}
 					if (events.isEmpty())
 						canNotify = true;
 					return e;
@@ -982,13 +984,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			isReliedToDistantHook();
 		}
 		private void received(HookRemoveRequest m) throws DatabaseException {
-			getDatabaseHooksTable().removeHook(m.getRemovedHookID());
+			getDatabaseHooksTable().removeHook(false, m.getRemovedHookID());
 		}
 
 		void sendP2PConnexionInitializationMessage(DatabaseHooksTable.Record peer) throws DatabaseException {
 			if (hookCannotBeConnected(peer))
 				return;
 			initializingHooks.add(peer.getHostID());
+			//new IllegalAccessError().printStackTrace();
 			addNewDatabaseEvent(new P2PConnexionInitialization(getLocalHostID(), peer.getHostID(), peer.getLastValidatedDistantTransactionID()));
 		}
 
@@ -1022,7 +1025,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						receivedHookSynchronizeRequest((HookSynchronizeRequest) m);
 					}
 					else
-						throw new MessageExternalizationException(Integrity.FAIL);
+						throw new MessageExternalizationException(Integrity.FAIL, m.getClass().getName());
 					r =getDatabaseHookRecord(m.getHostSource());
 					r.validateDistantAuthenticatedP2PMessage(m, getDatabaseHooksTable());
 					if (r.getAuthenticatedMessagesQueueToSend()==null || r.getAuthenticatedMessagesQueueToSend().size()==0)
@@ -1033,8 +1036,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					if (r.validateDistantAuthenticatedP2PMessage(m, getDatabaseHooksTable())) {
 						if (m instanceof HookSynchronizeRequest)
 							receivedHookSynchronizeRequest((HookSynchronizeRequest) m);
-						else if (m instanceof HookUnsynchronizeRequest)
-							receivedHookUnsynchronizeRequest((HookUnsynchronizeRequest) m);
+						else if (m instanceof HookDesynchronizeRequest)
+							receivedHookDesynchronizeRequest((HookDesynchronizeRequest) m);
 						else if (m instanceof HookRemoveRequest)
 							received((HookRemoveRequest)m);
 						else
@@ -1052,13 +1055,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		void removeHook(DecentralizedValue hostID) throws DatabaseException {
 			if (isInitialized(hostID))
 				disconnectHook(hostID);
-			getDatabaseHooksTable().removeHook(hostID);
+			getDatabaseHooksTable().removeHook(true, hostID);
 
 		}
 
 
-		void receivedHookUnsynchronizeRequest(HookUnsynchronizeRequest hookUnsynchronizeRequest) throws DatabaseException {
-			getDatabaseHooksTable().desynchronizeDatabase(hookUnsynchronizeRequest.getPackagesToUnsynchronize(), hookUnsynchronizeRequest.getConcernedPeers());
+		void receivedHookDesynchronizeRequest(HookDesynchronizeRequest hookDesynchronizeRequest) throws DatabaseException {
+			getDatabaseHooksTable().desynchronizeDatabase(hookDesynchronizeRequest.getPackagesToUnsynchronize(), hookDesynchronizeRequest.getConcernedPeers());
 			isReliedToDistantHook();
 		}
 		
@@ -1126,9 +1129,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					long l = getDatabaseTransactionsPerHostTable().validateTransactions(r, lastTransferredTransactionID);
 					if (l < lastTransferredTransactionID)
 						throw new IllegalAccessError("l=" + l + "; lastTransferredTransactionID=" + lastTransferredTransactionID);
-					if (l != lastTransferredTransactionID)
+					if (l != lastTransferredTransactionID) {
 						addNewDatabaseEvent(new LastIDCorrection(getDatabaseHooksTable().getLocalDatabaseHost().getHostID(),
 								hostID, l));
+					}
 					cp.setTransferInProgress(false);
 					synchronizedDataIfNecessary(cp);
 				}
@@ -1208,15 +1212,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 											getDatabaseHooksTable().getLocalDatabaseHost().getHostID(), _record, lastID,
 											maxTransactionsToSynchronizeAtTheSameTime));
 								}
-								else
-									System.out.println(getLocalHostID()+" ; "+_record.getHostID()+" ; "+lastID+" ; "+_record.getLastValidatedLocalTransactionID());
 
 							}
-							else
-								System.out.println("locked");
 						}
-						else if (!_record.concernsLocalDatabaseHost())
-							System.out.println(cp);
 
 						return false;
 					}
@@ -1305,8 +1303,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						}
 					}
 					if (add) {
-						for (DatabaseEvent a : authenticatedMessages)
+						for (DatabaseEvent a : authenticatedMessages) {
 							events.addFirst(a);
+						}
 					}
 					notifyNewEvent();
 				}
@@ -1994,7 +1993,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			List<AuthenticatedP2PMessage> las = r.getAuthenticatedMessagesQueueToSend();
 			if (las!=null && las.size() > 0) {
 				for (AuthenticatedP2PMessage a : las) {
-					a.setDatabaseWrapper(DatabaseWrapper.this);
 					addNewDatabaseEvent((DatabaseEvent) a);
 				}
 			} else
@@ -2077,7 +2075,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 			DatabaseHooksTable.Record r = getDatabaseHooksTable().getHook(hostID, true);
 			if (r==null)
-				throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN);
+				return;
 
 			initHook(r, lastValidatedTransactionID);
 		}
@@ -2094,8 +2092,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new DatabaseException("r");
 			if (!isInitialized())
 				throw new DatabaseException("The Synchronizer must be initialized (initLocalHostID function) !");
-			if (hookCannotBeConnected(r))
+			if (hookCannotBeConnected(r)) {
 				return;
+			}
 
 
 			
@@ -2105,7 +2104,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					throw DatabaseException.getDatabaseException(
 							new IllegalAccessException("hostID " + r.getHostID() + " already initialized !"));
 				}
-
 				initializedHooks.put(r.getHostID(), new ConnectedPeers(r));
 				if (!initializingHooks.remove(r.getHostID()))
 					sendP2PConnexionInitializationMessage(r);
@@ -2380,7 +2378,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new DatabaseException("Invalid message "+data, new IllegalArgumentException());
 		}
 		private void received(P2PConnexionInitialization p2PConnexionInitialization) throws DatabaseException, MessageExternalizationException {
-
 			initHook(p2PConnexionInitialization.getHostSource(), p2PConnexionInitialization.getLastValidatedTransactionID());
 		}
 		private void received(IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup message) throws DatabaseException, IOException {
@@ -5524,7 +5521,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				TransactionConfirmationEvents.class,
 				DatabaseEventsToSynchronizeP2P.class,
 				HookSynchronizeRequest.class,
-				HookUnsynchronizeRequest.class,
+				HookDesynchronizeRequest.class,
 				HookRemoveRequest.class,
 				BackupChannelInitializationMessageFromCentralDatabaseBackup.class,
 				BackupChannelUpdateMessageFromCentralDatabaseBackup.class,

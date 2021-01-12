@@ -76,16 +76,6 @@ public interface AuthenticatedP2PMessage extends P2PDatabaseEventToSend, Authent
 	default void writeExternal(SecuredObjectOutputStream out) throws IOException
 	{
 		AuthenticatedMessage.super.writeExternal(out);
-		try {
-			DatabaseHooksTable.Record concernedDestinationHook=getDatabaseWrapper().getDatabaseHooksTable().authenticatedMessageSent(this);
-			messageSent();
-			if (concernedDestinationHook!=null && !(this instanceof HookRemoveRequest) && (concernedDestinationHook.getAuthenticatedMessagesQueueToSend()==null || concernedDestinationHook.getAuthenticatedMessagesQueueToSend().isEmpty()))
-			{
-				getDatabaseWrapper().getSynchronizer().connectPeerIfAvailable(concernedDestinationHook);
-			}
-		} catch (DatabaseException e) {
-			throw new IOException(e);
-		}
 	}
 
 	@Override
@@ -122,14 +112,22 @@ public interface AuthenticatedP2PMessage extends P2PDatabaseEventToSend, Authent
 
 	DatabaseEvent.MergeState tryToMergeWithNewAuthenticatedMessage(DatabaseEvent newEvent) throws DatabaseException ;
 
-	DatabaseWrapper getDatabaseWrapper();
-	void setDatabaseWrapper(DatabaseWrapper wrapper);
-
 	@SuppressWarnings("RedundantThrows")
 	default void messageReadyToSend() throws DatabaseException {
 
 	}
-	default void messageSent() throws DatabaseException
+	default void messageSent(DatabaseWrapper wrapper) throws DatabaseException
+	{
+		DatabaseHooksTable.Record concernedDestinationHook=wrapper.getDatabaseHooksTable().authenticatedMessageSent(this);
+		messageSentImpl(wrapper);
+
+		if (concernedDestinationHook!=null && !(this instanceof HookRemoveRequest) && (concernedDestinationHook.getAuthenticatedMessagesQueueToSend()==null || concernedDestinationHook.getAuthenticatedMessagesQueueToSend().isEmpty()))
+		{
+			wrapper.getSynchronizer().connectPeerIfAvailable(concernedDestinationHook);
+		}
+	}
+
+	default void messageSentImpl(DatabaseWrapper wrapper) throws DatabaseException
 	{
 
 	}

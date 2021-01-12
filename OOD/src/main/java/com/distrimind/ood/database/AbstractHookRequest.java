@@ -68,7 +68,6 @@ public abstract class AbstractHookRequest extends DatabaseEvent implements Authe
 	private byte[] symmetricSignature=null;
 	private short encryptionProfileIdentifier;
 	private long messageID;
-	private transient DatabaseWrapper databaseWrapper=null;
 
 
 	@Override
@@ -198,8 +197,8 @@ public abstract class AbstractHookRequest extends DatabaseEvent implements Authe
 						else
 							return MergeState.NO_FUSION;
 					}
-					else if (nhar instanceof HookUnsynchronizeRequest) {
-						if (this instanceof HookUnsynchronizeRequest && ((HookUnsynchronizeRequest) this).packagesToUnsynchronize.equals(((HookUnsynchronizeRequest) nhar).packagesToUnsynchronize))
+					else if (nhar instanceof HookDesynchronizeRequest) {
+						if (this instanceof HookDesynchronizeRequest && ((HookDesynchronizeRequest) this).packagesToUnsynchronize.equals(((HookDesynchronizeRequest) nhar).packagesToUnsynchronize))
 							return MergeState.DELETE_OLD;
 						else
 							return MergeState.NO_FUSION;
@@ -228,16 +227,6 @@ public abstract class AbstractHookRequest extends DatabaseEvent implements Authe
 	}
 
 
-
-	@Override
-	public DatabaseWrapper getDatabaseWrapper() {
-		return databaseWrapper;
-	}
-
-	@Override
-	public void setDatabaseWrapper(DatabaseWrapper databaseWrapper) {
-		this.databaseWrapper = databaseWrapper;
-	}
 
 	@Override
 	public boolean equals(Object o) {

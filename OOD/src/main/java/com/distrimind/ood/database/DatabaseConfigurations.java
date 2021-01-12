@@ -348,10 +348,19 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 		}
 		if (distantPeers==null)
 			throw new NullPointerException();
-		checkLocalPeerNull(distantPeers);
 		boolean changed;
+
+
 		try {
-			changed = foundDC.removeDistantPeersThatCanBeSynchronizedWithThisDatabase(distantPeers);
+			if (localPeer!=null && distantPeers.contains(localPeer))
+			{
+				changed = foundDC.removeDistantPeersThatCanBeSynchronizedWithThisDatabase(foundDC.getDistantPeersThatCanBeSynchronizedWithThisDatabase());
+				foundDC.setSynchronizationType(DatabaseConfiguration.SynchronizationType.NO_SYNCHRONIZATION);
+			}
+			else {
+				checkLocalPeerNull(distantPeers);
+				changed = foundDC.removeDistantPeersThatCanBeSynchronizedWithThisDatabase(distantPeers);
+			}
 		} catch (IllegalAccessException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -362,6 +371,12 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 
 		boolean changed=false;
 		try {
+			boolean allNoSync=false;
+			if (distantPeers.contains(localPeer)) {
+				distantPeers.clear();
+				distantPeers.addAll(allDistantPeers);
+				allNoSync=true;
+			}
 			for (DatabaseConfiguration dc : volatileConfigurations)
 			{
 				changed|=dc.removeDistantPeersThatCanBeSynchronizedWithThisDatabase(distantPeers);
@@ -373,6 +388,9 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 			changed|=this.distantPeers.removeAll(distantPeers);
 			changed|=volatileDistantPeers.removeAll(distantPeers);
 			changed|=allDistantPeers.removeAll(distantPeers);
+			if (allNoSync)
+				for (DatabaseConfiguration c : allConfigurations)
+					c.setSynchronizationType(DatabaseConfiguration.SynchronizationType.NO_SYNCHRONIZATION);
 			return changed;
 		} catch (IllegalAccessException e) {
 			throw DatabaseException.getDatabaseException(e);

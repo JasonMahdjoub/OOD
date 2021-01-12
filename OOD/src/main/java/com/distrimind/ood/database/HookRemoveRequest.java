@@ -56,7 +56,6 @@ public class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2P
 	private short encryptionProfileIdentifier;
 	private byte[] symmetricSignature;
 	private long messageID;
-	private transient DatabaseWrapper databaseWrapper=null;
 
 	@SuppressWarnings("unused")
 	private HookRemoveRequest() {
@@ -69,7 +68,7 @@ public class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2P
 			throw new NullPointerException();
 		if (removedHookID==null)
 			throw new NullPointerException();
-		if (hostDestination.equals(removedHookID))
+		if (hostDestination.equals(hostSource))
 			throw new IllegalArgumentException();
 		this.hostSource=hostSource;
 		this.hostDestination=hostDestination;
@@ -185,22 +184,14 @@ public class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2P
 	}
 
 	@Override
-	public void messageSent() throws DatabaseException {
+	public void messageSentImpl(DatabaseWrapper wrapper) throws DatabaseException {
 		if (this.removedHookID.equals(this.hostDestination))
 		{
-			getDatabaseWrapper().getSynchronizer().removeHook(this.hostDestination);
+			wrapper.getSynchronizer().removeHook(this.hostDestination);
 		}
 	}
 
-	@Override
-	public DatabaseWrapper getDatabaseWrapper() {
-		return databaseWrapper;
-	}
 
-	@Override
-	public void setDatabaseWrapper(DatabaseWrapper databaseWrapper) {
-		this.databaseWrapper = databaseWrapper;
-	}
 
 	@Override
 	public boolean equals(Object o) {

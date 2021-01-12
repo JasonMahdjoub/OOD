@@ -43,10 +43,10 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.SerializationDatabaseException;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.Reference;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -280,11 +280,21 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 	}
 
 	void removeTransactionsFromLastID() throws DatabaseException {
-		long globalLast = getDatabaseHooksTable().getGlobalLastValidatedTransactionID();
-		long prevGlobalLast = getIDTable().getLastValidatedTransactionID();
-		if (prevGlobalLast != globalLast) {
-			getIDTable().setLastValidatedTransactionID(globalLast);
-			removeTransactionUntilID(globalLast);
+		if (getDatabaseTransactionsPerHostTable().getRecordsNumber()==0)
+		{
+			if (getRecordsNumber()>0)
+			{
+				removeAllRecordsWithCascade();
+				getIDTable().setLastValidatedTransactionID(getIDTable().getLastTransactionID()-1);
+			}
+		}
+		else {
+			long globalLast = getDatabaseHooksTable().getGlobalLastValidatedTransactionID();
+			long prevGlobalLast = getIDTable().getLastValidatedTransactionID();
+			if (prevGlobalLast != globalLast) {
+				getIDTable().setLastValidatedTransactionID(globalLast);
+				removeTransactionUntilID(globalLast);
+			}
 		}
 
 	}
@@ -294,7 +304,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 
 		final Set<String> packageSynchroOneTime = new HashSet<>();
 		//assert getDatabaseHooksTable().getRecord("id", hook.getID())!=null;
-		/*getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
+		getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
 
 			@Override
 			public boolean nextRecord(DatabaseHooksTable.Record _record) {
@@ -311,38 +321,31 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 				}
 				return false;
 			}
-		});*/
+		});
 
 		for (Map.Entry<String, Boolean> e : databasePackages.entrySet()) {
 			Set<DecentralizedValue> has=hostsAlreadySynchronized.get(e.getKey());
 			if (has==null || !has.contains(hook.getHostID()))
-			//if (!packageSynchroOneTime.contains(e.getKey()))
 			{
-				System.out.println(getDatabaseWrapper().getSynchronizer().getLocalHostID()+" ; "+hook.getHostID()+" ; "+e.getKey());
-				//packageSynchroOneTime.add(e.getKey());
 				addTransactionToSynchronizeTables(e.getKey(), hook, e.getValue());
 			}
-			else
-				packageSynchroOneTime.add(e.getKey());
 		}
 
 		if (packageSynchroOneTime.size() > 0) {
-			final AtomicLong lastTransactionID = new AtomicLong(Long.MAX_VALUE);
+
+			final Reference<Long> lastTransactionID = new Reference<>(Long.MAX_VALUE);
 			getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
 
 				@Override
 				public boolean nextRecord(DatabaseHooksTable.Record _record) {
-					if (!_record.concernsLocalDatabaseHost() && !_record.getHostID().equals(hook.getHostID())) {
-						if (lastTransactionID.get() > _record.getLastValidatedLocalTransactionID()) {
-							lastTransactionID.set(_record.getLastValidatedLocalTransactionID());
-						}
+					if (lastTransactionID.get() > _record.getLastValidatedLocalTransactionID()) {
+						lastTransactionID.set(_record.getLastValidatedLocalTransactionID());
 					}
 					return false;
 				}
-			});
+			}, "concernsDatabaseHost==%c and hostID!=%h", "c", false, "h", hook.getHostID());
 			if (lastTransactionID.get() == Long.MAX_VALUE)
-				lastTransactionID.set(-1);
-
+				lastTransactionID.set(-1L);
 			if (lastTransactionID.get() < getIDTable().getLastTransactionID()) {
 				StringBuilder sb = new StringBuilder();
 				int index = 0;
@@ -366,21 +369,14 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 						if (!_record.isConcernedBy(hook.getHostID())) {
 							_record.addConcernedHost(hook.getHostID());
 							update("concernedHosts", _record.concernedHosts);
+							DatabaseTransactionsPerHostTable.Record r = new DatabaseTransactionsPerHostTable.Record();
+							r.set(_record, hook);
+							getDatabaseTransactionsPerHostTable().addRecord(r);
 						}
 					}
 				}, "id>%lastID" + sb.toString(), parameters);
 
-				getRecords(new Filter<DatabaseTransactionEventsTable.Record>() {
 
-					@Override
-					public boolean nextRecord(Record _record) throws DatabaseException {
-						DatabaseTransactionsPerHostTable.Record r = new DatabaseTransactionsPerHostTable.Record();
-						r.set(_record, hook);
-						getDatabaseTransactionsPerHostTable().addRecord(r);
-						return false;
-					}
-
-				}, "id>%lastID" + sb.toString(), parameters);
 			}
 			return lastTransactionID.get();
 		} else
@@ -445,8 +441,10 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 	protected void addTransactionToSynchronizeTables(final String databasePackage, final DatabaseHooksTable.Record hook,
 			final boolean force) throws DatabaseException {
 
+		//long oldLastID;
 		DatabaseTransactionEventsTable.Record tr = new DatabaseTransactionEventsTable.Record();
 		tr.id = getTransactionIDTable().getAndIncrementTransactionID();
+		//oldLastID=tr.id-1;
 		tr.timeUTC=System.currentTimeMillis();
 		tr.concernedDatabasePackage = databasePackage;
 		tr.addConcernedHost(hook.getHostID());
@@ -469,6 +467,16 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 		} else {
 			removeRecord(transaction.get());
 		}
+		/*final long lastTID=getTransactionIDTable().getLastTransactionID()-1;
+		getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
+			@Override
+			public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
+				update("lastValidatedLocalTransactionID", lastTID);
+			}
+		}, "concernsDatabaseHost=%c and lastValidatedLocalTransactionID=%l and hostID!=%h",
+				"c", false, "l", oldLastID, "h", hook.getHostID());
+		if (hook.getLastValidatedLocalTransactionID()==-1)
+			getDatabaseHooksTable().updateRecord(hook, "lastValidatedLocalTransactionID", oldLastID);*/
 		getDatabaseHooksTable().actualizeLastTransactionID(new ArrayList<>(0));
 	}
 
