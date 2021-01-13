@@ -339,14 +339,14 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 			if (object == null && isNotNull())
 				throw new DatabaseException("The field should not be null");
 
-			dos.writeObject(object, !isNotNull(), (int)Math.min(Integer.MAX_VALUE, getLimit()));
+			dos.writeObject(object, !isAlwaysNotNull(), (int)Math.min(Integer.MAX_VALUE, getLimit()));
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
 	private Object deserialize(RandomInputStream ois) throws DatabaseException {
 		try  {
-			Object o=ois.readObject(!isNotNull(), (int)Math.min(Integer.MAX_VALUE, getLimit()));
+			Object o=ois.readObject(!isAlwaysNotNull(), (int)Math.min(Integer.MAX_VALUE, getLimit()));
 			if (o != null && !field.getType().isAssignableFrom(o.getClass()))
 				throw new DatabaseException(
 						"Incompatible class : " + o.getClass() + " (expected=" + field.getType() + ")");

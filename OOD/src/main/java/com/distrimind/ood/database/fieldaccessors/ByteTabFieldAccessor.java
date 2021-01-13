@@ -459,7 +459,7 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 	public void serialize(RandomOutputStream _oos, Object _class_instance) throws DatabaseException {
 		try {
 			byte[] b = (byte[])getValue(_class_instance);
-			_oos.writeBytesArray(b, !isNotNull(), (int)Math.min(Integer.MAX_VALUE, getLimit()));
+			_oos.writeBytesArray(b, !isAlwaysNotNull(), (int)Math.min(Integer.MAX_VALUE, getLimit()));
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -467,7 +467,7 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 
 	private byte[] deserialize(RandomInputStream _ois) throws DatabaseException {
 		try {
-			byte[] b=_ois.readBytesArray(!isNotNull(), (int)Math.min(Integer.MAX_VALUE, getLimit()));
+			byte[] b=_ois.readBytesArray(!isAlwaysNotNull(), (int)Math.min(Integer.MAX_VALUE, getLimit()));
 			if (b!=null) {
 				if (getLimit() > 0 && b.length > getLimit())
 					throw new IOException();
