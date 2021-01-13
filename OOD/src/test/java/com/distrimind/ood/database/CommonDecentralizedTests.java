@@ -1206,7 +1206,8 @@ public abstract class CommonDecentralizedTests {
 	}
 
 
-	protected void checkAllDatabaseInternalDataUsedForSynchro() throws DatabaseException {
+	protected void checkAllDatabaseInternalDataUsedForSynchro() throws Exception {
+
 		for (CommonDecentralizedTests.Database db : listDatabase) {
 			checkDatabaseInternalDataUsedForSynchro(db);
 		}
@@ -1346,9 +1347,10 @@ public abstract class CommonDecentralizedTests {
 
 				//db.getDbwrapper().getSynchronizer().disconnectHook(db.getHostID());
 				for (CommonDecentralizedTests.Database dbother : listDatabase) {
-					if (dbother != db && dbother.isConnected()) {
-						dbother.getDbwrapper().getSynchronizer().peerDisconnected(db.getHostID());
+
+					if (dbother != db) {
 						db.getDbwrapper().getSynchronizer().peerDisconnected(dbother.getHostID());
+						dbother.getDbwrapper().getSynchronizer().peerDisconnected(db.getHostID());
 					}
 				}
 				Assert.assertFalse(db.isConnected());
@@ -2163,8 +2165,6 @@ public abstract class CommonDecentralizedTests {
 
 
 		}
-		disconnectAllDatabase();
-		connectAllDatabase();
 		testSynchronisation();
 		disconnectAllDatabase();
 		checkAllDatabaseInternalDataUsedForSynchro();
@@ -2230,8 +2230,7 @@ public abstract class CommonDecentralizedTests {
 
 			}
 
-			disconnectAllDatabase();
-			connectAllDatabase();
+			testSynchronisation();
 			disconnectAllDatabase();
 			checkAllDatabaseInternalDataUsedForSynchro();
 		}

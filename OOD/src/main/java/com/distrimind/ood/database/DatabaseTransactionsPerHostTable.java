@@ -221,7 +221,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
                         throw new IllegalAccessError();
                     hook.setLastValidatedLocalTransactionID(actualLastID.get());
                     getDatabaseHooksTable().updateRecord(hook);
-                    getDatabaseTransactionEventsTable().removeTransactionsFromLastID();
+
 
                     getDatabaseDistantTransactionEvent()
                             .updateRecords(new AlterRecordFilter<DatabaseDistantTransactionEvent.Record>() {
@@ -239,6 +239,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
                                 }
 
                             }, "localID<=%lastID", "lastID", actualLastID.get());
+					getDatabaseTransactionEventsTable().removeTransactionsFromLastID();
 
                     return actualLastID.get();
                 }
@@ -817,7 +818,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 		final AtomicLong lastValidatedTransaction = new AtomicLong(-1);
 		final HashSet<DecentralizedValue> hooksToNotify = new HashSet<>();
-		final Map<String, Long> lastValidatedIDPerPackages=new HashMap<>();
+		final Set<String> lastValidatedIDPerPackages=new HashSet<>();
 		try  {
 			final AtomicInteger next = new AtomicInteger(ois.readByte());
 			while (next.get() != EXPORT_FINISHED) {
@@ -849,7 +850,8 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 						}*/
 					}
 					if (packageString.get()!=null)
-						lastValidatedIDPerPackages.put(packageString.get(), lastValidatedTransaction.get());
+						lastValidatedIDPerPackages.add(packageString.get());
+
 
 				}
 				finally
@@ -864,9 +866,10 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		} finally {
-			for (Map.Entry<String, Long> e : lastValidatedIDPerPackages.entrySet()) {
+			hooksToNotify.add(comingFrom);
+			for (String p : lastValidatedIDPerPackages) {
 				getDatabaseWrapper().getSynchronizer()
-						.addNewTransactionConfirmationEvents(comingFrom, e.getKey(), e.getValue());
+						.addNewTransactionConfirmationEvents(comingFrom, p, lastValidatedTransaction.get());
 			}
 			for (DecentralizedValue id : hooksToNotify) {
 				DatabaseHooksTable.Record h = getDatabaseHooksTable().getHook(id);
@@ -1091,6 +1094,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 			}
 			throw DatabaseException.getDatabaseException(e);
 		} finally {
+			hooksToNotify.add(comingFrom);
 			if (lastValidatedTransaction.get() != -1) {
 				getDatabaseWrapper().getSynchronizer()
 						.addNewTransactionConfirmationEvents(comingFrom, databasePackage, lastValidatedTransaction.get());

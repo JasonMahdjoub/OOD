@@ -62,27 +62,27 @@ public class HSQLDBTestDecentralizedDatabase extends TestDecentralizedDatabase {
 
 	@Override
 	public DatabaseFactory<?> getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedH2DatabaseFactory(new File(centralDatabaseFileName));
+		return new InFileEmbeddedHSQLDatabaseFactory(new File(centralDatabaseFileName));
 	}
 
 	@Override
 	public DatabaseFactory<?> getDatabaseWrapperInstance1() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name1));
+		return new InFileEmbeddedHSQLDatabaseFactory(new File(database_file_name1));
 	}
 
 	@Override
 	public DatabaseFactory<?> getDatabaseWrapperInstance2() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name2));
+		return new InFileEmbeddedHSQLDatabaseFactory(new File(database_file_name2));
 	}
 
 	@Override
 	public DatabaseFactory<?> getDatabaseWrapperInstance3() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name3));
+		return new InFileEmbeddedHSQLDatabaseFactory(new File(database_file_name3));
 	}
 
 	@Override
 	public DatabaseFactory<?> getDatabaseWrapperInstance4() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name4));
+		return new InFileEmbeddedHSQLDatabaseFactory(new File(database_file_name4));
 	}
 
 	@Override

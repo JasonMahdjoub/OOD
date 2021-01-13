@@ -948,7 +948,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 								st.executeUpdate(sqlQuery.toString());
 
 							} catch (SQLException e) {
-								throw DatabaseException.getDatabaseException(e);
+								throw new DatabaseException(sqlQuery.toString(), e);
 							} finally {
 								try {
 

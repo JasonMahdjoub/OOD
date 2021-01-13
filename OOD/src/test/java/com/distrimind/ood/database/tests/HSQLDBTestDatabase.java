@@ -36,10 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database.tests;
 
-import com.distrimind.ood.database.DatabaseWrapper;
-import com.distrimind.ood.database.EmbeddedHSQLDBWrapper;
-import com.distrimind.ood.database.InFileEmbeddedH2DatabaseFactory;
-import com.distrimind.ood.database.TestDatabase;
+import com.distrimind.ood.database.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.FileTools;
 import org.testng.annotations.AfterClass;
@@ -65,12 +62,12 @@ public class HSQLDBTestDatabase extends TestDatabase {
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstanceA() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name)).getDatabaseWrapperSingleton();
+		return new InFileEmbeddedHSQLDatabaseFactory(new File(database_file_name)).getDatabaseWrapperSingleton();
 	}
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstanceB() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_nameb)).getDatabaseWrapperSingleton();
+		return new InFileEmbeddedHSQLDatabaseFactory(new File(database_file_nameb)).getDatabaseWrapperSingleton();
 	}
 
 	@Override

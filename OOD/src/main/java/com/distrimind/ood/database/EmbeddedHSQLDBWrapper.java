@@ -178,6 +178,9 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 			return s;
 	}
 
+
+
+
 	@Override
 	public String getConstraintsTableName() {
 		return "INFORMATION_SCHEMA.TABLE_CONSTRAINTS";

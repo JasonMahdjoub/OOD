@@ -222,9 +222,8 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 			Assert.assertTrue(db.getAnomalies().isEmpty());
 			disconnectSelectedDatabase(segmentB);
 		}
-
 		connectAllDatabase();
-		exchangeMessages();
+		testSynchronisation();
 		disconnectAllDatabase();
 		checkAllDatabaseInternalDataUsedForSynchro();
 
@@ -376,8 +375,6 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 
 		connectAllDatabase();
 		exchangeMessages();
-		disconnectAllDatabase();
-		connectAllDatabase();
 		disconnectAllDatabase();
 
 		checkAllDatabaseInternalDataUsedForSynchro();

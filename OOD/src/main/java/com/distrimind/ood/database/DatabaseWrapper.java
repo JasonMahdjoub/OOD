@@ -1258,12 +1258,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			{
 				lockWrite();
 				boolean notify=false;
-				if (isInitialized(hostDestination)) {
+				/*if (isInitialized(hostDestination)) {
 					notify=true;
 					events.add(new TransactionConfirmationEvents(
 							getLocalHostID(), hostDestination,
-							lastValidatedTransaction));
-				}
+							getDatabaseHookRecord(hostDestination).getLastValidatedDistantTransactionID()));
+				}*/
 				ConnectedPeersWithCentralBackup cp=this.initializedHooksWithCentralBackup.get(hostDestination);
 				if (cp!=null)
 				{
@@ -1276,8 +1276,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						throw DatabaseException.getDatabaseException(e);
 					}
 				}
-				if (notify)
-					notifyNewEvent();
+				/*if (notify)
+					notifyNewEvent();*/
 
 			}
 			finally {
@@ -1469,6 +1469,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				if (hook == null)
 					throw DatabaseException.getDatabaseException(
 							new IllegalAccessException("hostID " + hostID + " has not been initialized !"));
+				initializingHooks.remove(hostID);
 				if (hook.concernsLocalDatabaseHost()) {
 					initializedHooks.put(hostID, null);
 					ArrayList<DecentralizedValue> hs=new ArrayList<>(initializedHooks.keySet());
@@ -2051,7 +2052,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				if (cp!=null)
 					disconnectHook(peerID);
 				initializedHooks.remove(peerID);
-				initializingHooks.remove(peerID);
+
+
 			}
 			finally {
 				unlockWrite();
