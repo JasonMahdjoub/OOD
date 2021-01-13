@@ -1024,7 +1024,21 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 	}*/
 
 	DatabaseHooksTable.Record removeHook(boolean propagate, final DecentralizedValue hostID) throws DatabaseException {
-		DatabaseHooksTable.Record r= desynchronizeDatabase(hostID, true, new HashSet<>());
+		DatabaseHooksTable.Record r=getLocalDatabaseHost();
+
+		if (hostID.equals(r.getHostID()))
+		{
+			if (r.getDatabasePackageNames()!=null && r.getDatabasePackageNames().size()>0)
+				desynchronizeDatabase(hostID, false, r.getDatabasePackageNames());
+
+			for (DatabaseHooksTable.Record r2 : getRecords())
+			{
+				if (!r2.concernsLocalDatabaseHost())
+					desynchronizeDatabase(r2.getHostID(), true, new HashSet<>());
+			}
+		}
+		else
+			r= desynchronizeDatabase(hostID, true, new HashSet<>());
 
 		getDatabaseWrapper().getDatabaseConfigurationsBuilder().removeDistantPeers(propagate, Collections.singleton(hostID))
 				.commit();
@@ -1048,10 +1062,9 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							desynchronizeDatabase(host, false, packages);
 						}
 						if (concernedHosts.size()>0 && packages.size()>0)
-							if (!getDatabaseWrapper().getDatabaseConfigurationsBuilder().isCommitInProgress()) {
-								getDatabaseWrapper().getDatabaseConfigurationsBuilder().desynchronizeDistantPeersWithGivenAdditionalPackages(false, concernedHosts, packages.toArray(new String[0]))
+							getDatabaseWrapper().getDatabaseConfigurationsBuilder().desynchronizeDistantPeersWithGivenAdditionalPackages(false, concernedHosts, packages.toArray(new String[0]))
 										.commit();
-							}
+
 						return null;
 					}
 

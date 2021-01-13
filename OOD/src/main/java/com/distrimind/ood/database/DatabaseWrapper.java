@@ -1025,7 +1025,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						receivedHookSynchronizeRequest((HookSynchronizeRequest) m);
 					}
 					else
-						throw new MessageExternalizationException(Integrity.FAIL, m.getClass().getName());
+						return;
 					r =getDatabaseHookRecord(m.getHostSource());
 					r.validateDistantAuthenticatedP2PMessage(m, getDatabaseHooksTable());
 					if (r.getAuthenticatedMessagesQueueToSend()==null || r.getAuthenticatedMessagesQueueToSend().size()==0)
@@ -2090,8 +2090,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throws DatabaseException {
 			if (r == null)
 				throw new DatabaseException("r");
-			if (!isInitialized())
-				throw new DatabaseException("The Synchronizer must be initialized (initLocalHostID function) !");
+			if (!isInitialized()) {
+				throw new DatabaseException("The Synchronizer must be initialized (initLocalHostID function) ! (Local host ID=" + getDatabaseConfigurationsBuilder().getConfigurations().getLocalPeer() + ")");
+			}
 			if (hookCannotBeConnected(r)) {
 				return;
 			}

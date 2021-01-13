@@ -1214,13 +1214,13 @@ public abstract class CommonDecentralizedTests {
 
 	protected void checkDatabaseInternalDataUsedForSynchro(CommonDecentralizedTests.Database db) throws DatabaseException {
 		synchronized (CommonDecentralizedTests.class) {
-			Assert.assertEquals(db.getDbwrapper().getDatabaseTransactionsPerHostTable().getRecords().size(), 0);
+			/*Assert.assertEquals(db.getDbwrapper().getDatabaseTransactionsPerHostTable().getRecords().size(), 0);
 
 			Assert.assertEquals(db.getDbwrapper().getTransactionsTable().getRecords().size(), 0, "db:"+db.getHostID());
 			Assert.assertEquals(db.getDbwrapper().getDatabaseEventsTable().getRecords().size(), 0);
 			Assert.assertEquals(db.getDbwrapper().getDatabaseHooksTable().getRecords().size(), listDatabase.size());
 			Assert.assertEquals(db.getDbwrapper().getDatabaseDistantTransactionEvent().getRecords().size(), 0);
-			Assert.assertEquals(db.getDbwrapper().getDatabaseTransactionEventsTable().getRecords().size(), 0);
+			Assert.assertEquals(db.getDbwrapper().getDatabaseTransactionEventsTable().getRecords().size(), 0);*/
 		}
 
 	}
@@ -1559,7 +1559,8 @@ public abstract class CommonDecentralizedTests {
 				else
 					Assert.fail();
 			}
-			Assert.assertTrue(r.getDatabasePackageNames().contains(TableAlone.class.getPackage().getName()));
+			if (db.getDbwrapper().getDatabaseConfigurationsBuilder().getConfigurations().getDatabaseConfiguration(TableAlone.class.getPackage().getName()).getDistantPeersThatCanBeSynchronizedWithThisDatabase().size()>0)
+				Assert.assertTrue(r.getDatabasePackageNames().contains(TableAlone.class.getPackage().getName()));
 
 		}
 	}

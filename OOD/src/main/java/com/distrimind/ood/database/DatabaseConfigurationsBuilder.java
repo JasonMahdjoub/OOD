@@ -447,7 +447,8 @@ public class DatabaseConfigurationsBuilder {
 					}
 				}, "concernsDatabaseHost=%cdh", "cdh", false);
 
-				if (currentTransaction.propagate) {
+				if (currentTransaction.propagate)
+				{
 					wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
 						@Override
 						public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
@@ -456,11 +457,11 @@ public class DatabaseConfigurationsBuilder {
 							}
 						}
 					}, "concernsDatabaseHost=%cdh", "cdh", false);
-				}
-				for (Map.Entry<Set<String>, Set<DecentralizedValue>> e : packagesToUnsynchronize.entrySet()) {
-					wrapper.getSynchronizer().receivedHookDesynchronizeRequest(new HookDesynchronizeRequest(configurations.getLocalPeer(), configurations.getLocalPeer(), e.getKey(), e.getValue()));
-				}
 
+					for (Map.Entry<Set<String>, Set<DecentralizedValue>> e : packagesToUnsynchronize.entrySet()) {
+						wrapper.getSynchronizer().receivedHookDesynchronizeRequest(new HookDesynchronizeRequest(configurations.getLocalPeer(), configurations.getLocalPeer(), e.getKey(), e.getValue()));
+					}
+				}
 				return packagesToUnsynchronize.size()>0;
 			}
 
