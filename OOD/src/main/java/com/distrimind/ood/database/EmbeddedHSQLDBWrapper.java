@@ -54,6 +54,8 @@ import java.lang.reflect.Method;
 import java.sql.*;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 /*import org.hsqldb.jdbc.JDBCBlob;
@@ -141,6 +143,9 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 								+ _cache_rows + ";hsqldb.cache_size=" + _cache_size + ";hsqldb.result_max_memory_rows="
 								+ _result_max_memory_rows + ";hsqldb.cache_free_count=" + _cache_free_count + ";hsqldb.lock_file=" + lockFile, "SA", "");
 			}
+
+			Logger.getLogger("hsqldb.db").setLevel(Level.OFF);
+
 			databaseShutdown.set(false);
 
 			try (Statement s = c.createStatement()) {
@@ -818,10 +823,12 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 		synchronized (EmbeddedHSQLDBWrapper.class) {
 			if (!hsql_loaded) {
 				try {
+					System.setProperty("hsqldb.reconfig_logging", "false");
 					Class.forName("org.hsqldb.jdbc.JDBCDriver");
 					JDBCBlobConstructor=(Constructor<? extends Blob>)Class.forName("org.hsqldb.jdbc.JDBCBlob").getDeclaredConstructor(byte[].class);
 					DbBackupMain=Class.forName("org.hsqldb.lib.tar.DbBackupMain").getDeclaredMethod("main", String[].class);
 					hsql_loaded = true;
+
 				} catch (Exception e) {
 					throw new DatabaseLoadingException("Impossible to load HSQLDB ", e);
 				}

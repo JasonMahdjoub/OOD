@@ -3673,7 +3673,7 @@ public abstract class TestDatabase {
 			Object value=e.getValue();
 			if (ep instanceof byte[] && value instanceof BigDecimal)
 			{
-				value=ByteTabFieldAccessor.getByteTab((BigDecimal)value);
+				value=BigDecimalFieldAccessor.bigDecimalToBytes((BigDecimal)value);
 			}
 
 			assertEqualsParameters(value, ep, "Parameter "+e.getKey()+". Class type source " + e.getValue().getClass()+", expected class "+ep.getClass()+".");
@@ -3707,10 +3707,7 @@ public abstract class TestDatabase {
 				
 				parameter=blob.getBytes(1, (int)blob.length());
 			}
-			else if (parameter instanceof BigDecimal)
-			{
-				parameter=BigDecimalFieldAccessor.bigDecimalToBytes((BigDecimal)parameter);
-			}
+
 		}
 		Assert.assertEquals(parameter, expectedParameter, message);
 	}
