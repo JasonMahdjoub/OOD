@@ -887,17 +887,18 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 								if (pkgs!=null && pkgs.size()>0) {
 									HashMap<String, Boolean> newAddedPackages = new HashMap<>();
 									pkgs.forEach(v -> newAddedPackages.put(v, packages.get(v)));
-									r.setLastValidatedLocalTransactionID(getDatabaseTransactionEventsTable()
-											.addTransactionToSynchronizeTables(newAddedPackages, synchronizedHosts, r));
-									getDatabaseTransactionEventsTable()
+									/*r.setLastValidatedLocalTransactionID(getDatabaseTransactionEventsTable()
+											.addTransactionToSynchronizeTables(newAddedPackages, synchronizedHosts, r));*/
+									long id=getDatabaseTransactionEventsTable()
 											.addTransactionToSynchronizeTables(newAddedPackages, synchronizedHosts, r);
-
-									updateRecord(r, "lastValidatedLocalTransactionID", r.lastValidatedLocalTransactionID);
+									if (id==-1)
+										updateRecord(r, "lastValidatedLocalTransactionID", -1L);
 
 								}
 							}
-
 						}
+						//updateLastLocalTransferIDs();
+
 						supportedDatabasePackages = null;
 
 						if (fromDistantMessage) {
@@ -941,6 +942,32 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 				});
 
 	}
+
+	/*void updateLastLocalTransferIDs() throws DatabaseException {
+		long lastVTID=getIDTable().getLastTransactionID()-1;
+		updateRecords(new AlterRecordFilter<Record>() {
+			@Override
+			public void nextRecord(Record _record) throws DatabaseException {
+
+				Reference<Long> firstTID=new Reference<>(Long.MAX_VALUE);
+				getDatabaseTransactionsPerHostTable().getRecords(new Filter<DatabaseTransactionsPerHostTable.Record>() {
+					@Override
+					public boolean nextRecord(DatabaseTransactionsPerHostTable.Record _record) throws DatabaseException {
+						if (_record.getTransaction().getID()<firstTID.get())
+							firstTID.set(_record.getTransaction().getID());
+						return false;
+					}
+				}, "hook.hostID=%h", "h", _record.getHostID());
+				if (firstTID.get()==Long.MAX_VALUE)
+				{
+					update("lastValidatedLocalTransactionID", lastVTID);
+				}
+				else
+					update("lastValidatedLocalTransactionID", firstTID.get()-1);
+			}
+		}, "concernsDatabaseHost=%c and lastValidatedLocalTransactionID!=-1", "c", false);
+	}*/
+
 	@SuppressWarnings("UnusedReturnValue")
 	/*DatabaseHooksTable.Record addHooks(final DecentralizedValue hostID, final boolean concernsDatabaseHost,
 									   final ArrayList<DecentralizedValue> hostAlreadySynchronized,
@@ -1039,7 +1066,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		}
 		else
 			r= desynchronizeDatabase(hostID, true, new HashSet<>());
-
+		//updateLastLocalTransferIDs();
 		getDatabaseWrapper().getDatabaseConfigurationsBuilder().removeDistantPeers(propagate, Collections.singleton(hostID))
 				.commit();
 		return r;

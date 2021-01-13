@@ -1214,13 +1214,21 @@ public abstract class CommonDecentralizedTests {
 
 	protected void checkDatabaseInternalDataUsedForSynchro(CommonDecentralizedTests.Database db) throws DatabaseException {
 		synchronized (CommonDecentralizedTests.class) {
-			/*Assert.assertEquals(db.getDbwrapper().getDatabaseTransactionsPerHostTable().getRecords().size(), 0);
+			Assert.assertEquals(db.getDbwrapper().getDatabaseTransactionsPerHostTable().getRecords().size(), 0);
 
 			Assert.assertEquals(db.getDbwrapper().getTransactionsTable().getRecords().size(), 0, "db:"+db.getHostID());
 			Assert.assertEquals(db.getDbwrapper().getDatabaseEventsTable().getRecords().size(), 0);
 			Assert.assertEquals(db.getDbwrapper().getDatabaseHooksTable().getRecords().size(), listDatabase.size());
+			/*if (db.getDbwrapper().getDatabaseDistantTransactionEvent().getRecords().size()>0)
+			{
+				System.out.println(listDatabase.indexOf(db));
+				if (db==db1)
+				{
+					Assert.assertEquals(db2.getDbwrapper().getDatabaseDistantTransactionEvent().getRecords().size(), 0);
+				}
+			}*/
 			Assert.assertEquals(db.getDbwrapper().getDatabaseDistantTransactionEvent().getRecords().size(), 0);
-			Assert.assertEquals(db.getDbwrapper().getDatabaseTransactionEventsTable().getRecords().size(), 0);*/
+			Assert.assertEquals(db.getDbwrapper().getDatabaseTransactionEventsTable().getRecords().size(), 0);
 		}
 
 	}
@@ -2153,9 +2161,12 @@ public abstract class CommonDecentralizedTests {
 
 			}
 
-			disconnectAllDatabase();
+
 		}
+		disconnectAllDatabase();
+		connectAllDatabase();
 		testSynchronisation();
+		disconnectAllDatabase();
 		checkAllDatabaseInternalDataUsedForSynchro();
 
 	}
@@ -2219,6 +2230,8 @@ public abstract class CommonDecentralizedTests {
 
 			}
 
+			disconnectAllDatabase();
+			connectAllDatabase();
 			disconnectAllDatabase();
 			checkAllDatabaseInternalDataUsedForSynchro();
 		}

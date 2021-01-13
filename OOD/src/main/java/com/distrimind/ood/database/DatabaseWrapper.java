@@ -2664,9 +2664,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		long minIds=Long.MIN_VALUE;
 		for (Database d : sql_database.values())
 		{
-			long lastTransactionID=d.backupRestoreManager.getLastTransactionID();
-			if (lastTransactionID>minIds)
-				minIds=lastTransactionID;
+			if (d.backupRestoreManager!=null) {
+				long lastTransactionID = d.backupRestoreManager.getLastTransactionID();
+				if (lastTransactionID > minIds)
+					minIds = lastTransactionID;
+			}
 		}
 		if (minIds>Long.MIN_VALUE)
 			getTransactionIDTable().setMinimumValidatedTransactionID(minIds);

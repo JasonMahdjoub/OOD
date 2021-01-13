@@ -56,7 +56,7 @@ import java.util.List;
  * @since OOD 2.0
  */
 public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests {
-
+	final BackupConfiguration backupConfiguration=new BackupConfiguration(10000, 20000, 1000000, 1000, null);
 
 	public TestDecentralizedDatabase() throws NoSuchProviderException, NoSuchAlgorithmException, IOException, DatabaseException {
 		super();
@@ -377,7 +377,8 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 		connectAllDatabase();
 		exchangeMessages();
 		disconnectAllDatabase();
-		testSynchronisation();
+		connectAllDatabase();
+		disconnectAllDatabase();
 
 		checkAllDatabaseInternalDataUsedForSynchro();
 	}
@@ -580,6 +581,7 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 
 	@Test(dependsOnMethods = { "testSynchroTransactionTests2" })
 	public void removeNewPeer() throws Exception {
+		checkAllDatabaseInternalDataUsedForSynchro();
 		listDatabase.get(0).getDbwrapper().getDatabaseConfigurationsBuilder()
 				.removeDistantPeer(db4.getHostID())
 				.commit();
@@ -600,6 +602,7 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 			}
 		}
 		disconnectAllDatabase();
+		checkAllDatabaseInternalDataUsedForSynchro();
 
 	}
 
@@ -695,7 +698,10 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 	}
 
 
-
+	public BackupConfiguration getBackupConfiguration()
+	{
+		return backupConfiguration;
+	}
 	public void testSynchroBetweenPeersAfterRestoration(int nbPeers, boolean peersInitiallyConnected,
 														   List<TableEvent<DatabaseRecord>> levents) throws Exception {
 		ArrayList<TableEvent<DatabaseRecord>> events1=new ArrayList<>();
