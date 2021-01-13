@@ -198,15 +198,7 @@ public abstract class CommonHSQLH2DatabaseWrapper extends DatabaseWrapper{
 		return "SMALLINT";
 	}
 
-	@Override
-	protected String getBigDecimalType(long limit) {
-		return "DECIMAL";
-		/*if (limit<=0)
-			return "VARBINARY(1024)";
-		else
-			return "VARBINARY("+limit+")";*/
 
-	}
 
 
 	protected boolean useGetBigDecimalInResultSet()

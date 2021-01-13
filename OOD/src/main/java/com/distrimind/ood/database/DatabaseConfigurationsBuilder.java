@@ -188,7 +188,7 @@ public class DatabaseConfigurationsBuilder {
 				if (currentTransaction.removedPeersID!=null)
 					currentTransaction.checkDisconnexions|=checkConnexionsToRemove();
 				if (currentTransaction.checkDatabaseUnload)
-					checkDatabaseLoading();
+					checkDatabaseToUnload();
 				if (currentTransaction.checkPeersToAdd) {
 					boolean b=checkPeersToAdd();
 					currentTransaction.checkDatabaseToSynchronize |=b;
@@ -522,7 +522,9 @@ public class DatabaseConfigurationsBuilder {
 	}
 
 
-
+	private void checkDatabaseToUnload() throws DatabaseException {
+		//TODO complete
+	}
 
 	private void checkDatabaseLoading() throws DatabaseException {
 		ArrayList<DatabaseConfiguration> dls=new ArrayList<>();
@@ -770,5 +772,9 @@ public class DatabaseConfigurationsBuilder {
 		return this;
 	}
 
+	public void removeDatabaseConfiguration(String packageString, boolean removeData)
+	{
+		//TODO complete
+	}
 
 }

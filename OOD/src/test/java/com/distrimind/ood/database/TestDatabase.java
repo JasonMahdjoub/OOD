@@ -3707,6 +3707,10 @@ public abstract class TestDatabase {
 				
 				parameter=blob.getBytes(1, (int)blob.length());
 			}
+			else if (parameter instanceof BigDecimal)
+			{
+				parameter=BigDecimalFieldAccessor.bigDecimalToBytes((BigDecimal)parameter);
+			}
 		}
 		Assert.assertEquals(parameter, expectedParameter, message);
 	}

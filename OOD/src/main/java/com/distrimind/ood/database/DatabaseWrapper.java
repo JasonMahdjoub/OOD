@@ -4035,7 +4035,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 								}
 							}
 						} catch (SQLException se) {
-
 							if (!retry) {
 								t = se.getCause();
 
@@ -4063,10 +4062,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 									throw new DatabaseIntegrityException("Impossible to rollback the database changes", se);
 							}
 						}
-						if (!retry)
-							throw e;
+						if (!retry) {
+						 	throw e;
+						}
 					} catch (SQLException e) {
-						
+
 						try {
 							if (writeData)
 								cw.connection.clearTransactions(false);
@@ -4341,7 +4341,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			DatabasePerVersion dpv=db==null?null:db.tables_per_versions.get(databaseVersion);
 
 			if (dpv == null) {
-				if (_class_table.getPackage().equals(this.getClass().getPackage()) && (actualDatabaseLoading == null
+				if (_class_table.getPackage().equals(DatabaseWrapper.class.getPackage()) && (actualDatabaseLoading == null
 						|| !actualDatabaseLoading.getConfiguration().getDatabaseSchema().getPackage().equals(_class_table.getPackage()) )) {
 					loadDatabase(new DatabaseConfiguration(new DatabaseSchema(_class_table.getPackage(), internalDatabaseClassesList)), 0, null);
 					db=sql_database.get(_class_table.getPackage());
@@ -5008,7 +5008,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	final void loadDatabase(final DatabaseConfiguration configuration, int databaseVersion,
 							final DatabaseLifeCycles lifeCycles) throws DatabaseException {
 
-		boolean internalPackage=configuration.getDatabaseSchema().getPackage().equals(this.getClass().getPackage());
+		boolean internalPackage=configuration.getDatabaseSchema().getPackage().equals(DatabaseWrapper.class.getPackage());
 		if (!internalPackage) {
 			if (configuration.isCreateDatabaseIfNecessaryAndCheckItDuringCurrentSession())
 				getTableInstance(DatabaseTable.class, databaseVersion);
@@ -5020,18 +5020,17 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		//Reference<Collection<DatabaseHooksTable.Record>> hosts=new Reference<>(null);
 		try  {
 			lockWrite();
-			try {
-				loadDatabaseImpl(configuration,
-						internalPackage,
-						databaseVersion,
-						/*restoreSynchronizerHosts,
-						hosts,*/
-						allNotFound,
-						lifeCycles);
-				postLoadDatabase(Collections.singleton(configuration)/*, restoreSynchronizerHosts, hosts, lifeCycles*/);
-			}finally {
-				postLoadDatabaseFinal(allNotFound, internalPackage);
-			}
+
+			loadDatabaseImpl(configuration,
+					internalPackage,
+					databaseVersion,
+					/*restoreSynchronizerHosts,
+					hosts,*/
+					allNotFound,
+					lifeCycles);
+			postLoadDatabase(Collections.singleton(configuration)/*, restoreSynchronizerHosts, hosts, lifeCycles*/);
+			postLoadDatabaseFinal(allNotFound, internalPackage);
+
 		}
 		finally
 		{
@@ -5060,7 +5059,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		}
 
-
 		if (configurations.stream().anyMatch(DatabaseConfiguration::isCreateDatabaseIfNecessaryAndCheckItDuringCurrentSession))
 			getTableInstance(DatabaseTable.class, -1);
 
@@ -5069,23 +5067,18 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		//Reference<Collection<DatabaseHooksTable.Record>> hosts=new Reference<>(null);
 		try  {
 			lockWrite();
-			try {
-				for (DatabaseConfiguration configuration : configurations) {
-					int databaseVersion = -1;
-					loadDatabaseImpl(configuration,
-							false,
-							databaseVersion,
-							/*restoreSynchronizerHosts,
-							hosts,*/
-							allNotFound, lifeCycles);
-
-				}
-				postLoadDatabase(configurations/*, restoreSynchronizerHosts, hosts, lifeCycles*/);
+			for (DatabaseConfiguration configuration : configurations) {
+				int databaseVersion = -1;
+				loadDatabaseImpl(configuration,
+						false,
+						databaseVersion,
+						/*restoreSynchronizerHosts,
+						hosts,*/
+						allNotFound, lifeCycles);
 
 			}
-			finally {
-				postLoadDatabaseFinal(allNotFound, false);
-			}
+			postLoadDatabase(configurations/*, restoreSynchronizerHosts, hosts, lifeCycles*/);
+			postLoadDatabaseFinal(allNotFound, false);
 		}
 		finally
 		{
@@ -5168,7 +5161,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						list_tables.add(t);
 						dpv.tables_instances.put(class_to_load, t);
 					}
-
 					for (Table<?> t : list_tables) {
 						t.initializeStep1(configuration);
 					}

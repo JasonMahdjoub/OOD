@@ -133,7 +133,11 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 		return new File(directoryName, "data.db");
 	}
 
+	@Override
+	protected String getBigDecimalType(long limit) {
+		return "DECIMAL";
 
+	}
 	private static void ensureH2Loading() throws DatabaseLoadingException {
 		synchronized (EmbeddedHSQLDBWrapper.class) {
 			if (!hsql_loaded) {

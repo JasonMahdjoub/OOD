@@ -179,6 +179,15 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 	}
 
 
+	/*@Override
+	protected String getBlobType(long limit) {
+		return "BLOB";
+	}
+
+	@Override
+	protected String getTextType(long limit) {
+		return "CLOB";
+	}*/
 
 
 	@Override
@@ -196,6 +205,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 	{
 		return false;
 	}
+
 
 	/*
 	 * Constructor
@@ -389,7 +399,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 								new SqlQuery(
 										"select * from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
 												+ table.getSqlTableName() + "' AND COLUMN_NAME='" + sf.short_field_without_quote
-												+ "' AND CONSTRAINT_NAME='" + table.getSqlPrimaryKeyName() + "' AND CONSTRAINT_SCHEMA='"+ databaseName +"';"))) {
+												+ "' AND CONSTRAINT_NAME='" + table.getSqlPrimaryKeyName() +"';"))) {
 							if (!rq.result_set.next())
 								throw new DatabaseVersionException(table, "The field " + fa.getFieldName()
 										+ " is not declared as a primary key into the Sql database.");
@@ -419,7 +429,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 									try (ReadQuery rq2 = new ReadQuery(sql_connection, new SqlQuery(
 											"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
 													+ table.getSqlTableName() + "' AND CONSTRAINT_NAME='" + constraint_name
-													+ "' AND CONSTRAINT_SCHEMA='"+ databaseName +"';"))) {
+													+ "';"))) {
 										if (rq2.result_set.next()) {
 											String col = table.getSqlTableName() + "."
 													+ rq2.result_set.getString("COLUMN_NAME");
@@ -557,6 +567,14 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 
 			}
 		}, true);
+	}
+
+	@Override
+	protected String getBigDecimalType(long limit) {
+		if (limit<=0)
+			return "VARBINARY(1024)";
+		else
+			return "VARBINARY("+limit+")";
 	}
 
 	@SuppressWarnings("RedundantCast")
@@ -743,8 +761,10 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 				cache_free_count, fileLock, loadToMemory);
 	}
 
-
-
+	@Override
+	protected boolean supportsItalicQuotesWithTableAndFieldNames() {
+		return false;
+	}
 
 	@Override
 	protected void startTransaction(Session _openedConnection, TransactionIsolation transactionIsolation, boolean write)
