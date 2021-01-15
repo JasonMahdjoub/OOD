@@ -27,14 +27,14 @@
 		<classes>
 
 			<class name="com.distrimind.ood.database.tests.H2TestDecentralizedDatabase" />
-		    <class name="com.distrimind.ood.database.tests.HSQLDBTestDecentralizedDatabase" />
-		</classes>
-	</test>
+			<!-- 	<class name="com.distrimind.ood.database.tests.HSQLDBTestDecentralizedDatabase" /> -->
+        </classes>
+    </test>
 
-	<test name="testCentralBackupDatabase">
-		<classes>
+    <test name="testCentralBackupDatabase">
+        <classes>
 
-			<class name="com.distrimind.ood.database.tests.H2TestCentralBackupWithDecentralizedDatabase" />
-		</classes>
-	</test>
+            <class name="com.distrimind.ood.database.tests.H2TestCentralBackupWithDecentralizedDatabase" />
+        </classes>
+    </test>
 </suite>

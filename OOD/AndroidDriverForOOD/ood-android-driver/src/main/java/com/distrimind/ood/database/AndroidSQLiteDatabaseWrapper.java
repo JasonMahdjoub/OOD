@@ -4,6 +4,8 @@ import android.annotation.SuppressLint;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.FileTools;
+import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.crypto.EncryptionProfileProvider;
 
 import org.sqldroid.SQLDroidBlob;
 
@@ -37,9 +39,15 @@ public class AndroidSQLiteDatabaseWrapper extends DatabaseWrapper {
         return getDirectory(_package, _database_name, externalStorage)+ "/"+_database_name+".db";
     }
 
-    AndroidSQLiteDatabaseWrapper(String _package, String _database_name, boolean externalStorage) throws DatabaseException {
-        super(_database_name, new File(getDirectory(_package, _database_name, externalStorage)), false,false);
-        url = "jdbc:sqldroid:" + getPath(_package, _database_name, externalStorage);
+    AndroidSQLiteDatabaseWrapper(String _package, String databaseName,
+                                 DatabaseConfigurations databaseConfigurations,
+                                 DatabaseLifeCycles databaseLifeCycles,
+                                 EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
+                                 EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+                                 AbstractSecureRandom secureRandom,
+                                 boolean createDatabasesIfNecessaryAndCheckIt, boolean externalStorage) throws DatabaseException {
+        super(databaseName, new File(getDirectory(_package, databaseName, externalStorage)), false,false, databaseConfigurations, databaseLifeCycles, encryptionProfileProviderForCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages, secureRandom, createDatabasesIfNecessaryAndCheckIt);
+        url = "jdbc:sqldroid:" + getPath(_package, databaseName, externalStorage);
         if (!getDatabaseDirectory().exists()) {
             FileTools.checkFolderRecursive(getDatabaseDirectory());
         }
@@ -189,13 +197,13 @@ public class AndroidSQLiteDatabaseWrapper extends DatabaseWrapper {
     }
 
     @Override
-    protected Table.ColumnsReadQuerry getColumnMetaData(String tableName, String columnName) throws Exception {
+    protected Table.ColumnsReadQuery getColumnMetaData(String tableName, String columnName) throws Exception {
         Connection c;
-        ResultSet rs=(c=getConnectionAssociatedWithCurrentThread().getConnection()).getMetaData().getColumns(database_name, null, tableName, columnName);
+        ResultSet rs=(c=getConnectionAssociatedWithCurrentThread().getConnection()).getMetaData().getColumns(databaseName, null, tableName, columnName);
         return new CReadQuerry(c, rs);
     }
 
-    static class CReadQuerry extends Table.ColumnsReadQuerry {
+    static class CReadQuerry extends Table.ColumnsReadQuery {
 
         CReadQuerry(Connection _sql_connection, ResultSet resultSet) {
             super(_sql_connection, resultSet);

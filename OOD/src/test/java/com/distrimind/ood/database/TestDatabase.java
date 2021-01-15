@@ -45,7 +45,12 @@ import com.distrimind.ood.database.exceptions.*;
 import com.distrimind.ood.database.fieldaccessors.BigDecimalFieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ByteTabFieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
+import com.distrimind.ood.database.schooldatabase.Group;
 import com.distrimind.ood.database.schooldatabase.Lecture;
+import com.distrimind.ood.database.schooldatabase.Student;
+import com.distrimind.ood.database.schooldatabase.StudentGroup;
+import com.distrimind.ood.database.schooldatabase.Teacher;
+import com.distrimind.ood.database.schooldatabase.TeacherLecture;
 import com.distrimind.ood.interpreter.Interpreter;
 import com.distrimind.ood.interpreter.RuleInstance;
 import com.distrimind.ood.interpreter.SymbolType;
@@ -114,8 +119,9 @@ public abstract class TestDatabase {
 	protected Table6 table6b;
 
 	static Set<Class<?>> listClasses=new HashSet<>(Arrays.asList(Table1.class, Table2.class, Table3.class, Table4.class, Table5.class, Table6.class, Table7.class));
+	static Set<Class<?>> listClasses2=new HashSet<>(Arrays.asList(Group.class, Lecture.class, Student.class, StudentGroup.class, Teacher.class, TeacherLecture.class));
 	static DatabaseConfiguration dbConfig1 = new DatabaseConfiguration(new DatabaseSchema(Table1.class.getPackage(), listClasses));
-	static DatabaseConfiguration dbConfig2 = new DatabaseConfiguration(new DatabaseSchema(Lecture.class.getPackage()));
+	static DatabaseConfiguration dbConfig2 = new DatabaseConfiguration(new DatabaseSchema(Lecture.class.getPackage(), listClasses2));
 	private DatabaseWrapper sql_db;
 	private DatabaseWrapper sql_dbb;
 
@@ -3703,7 +3709,9 @@ public abstract class TestDatabase {
 
 				try(ByteArrayOutputStream baos=new ByteArrayOutputStream())
 				{
-					bais.transferTo(baos);
+					int b;
+					while((b=bais.read())>=0)
+						baos.write(b);
 					baos.flush();
 					parameter=baos.toByteArray();
 				}
