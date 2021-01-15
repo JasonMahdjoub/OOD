@@ -67,15 +67,16 @@ public class CalendarFieldAccessor extends FieldAccessor{
 		sql_fields = new SqlField[2];
 		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName() + "_utc",
 				Objects.requireNonNull(DatabaseWrapperAccessor.getLongType(sql_connection)), null, null, isNotNull());
-
+		boolean isVarBinarySupported=DatabaseWrapperAccessor.isVarBinarySupported(sql_connection);
 		if (limit<=0)
 			limit=32;
 		else
 			limit=Math.min(limit, MAX_SIZE_OF_TIME_ZONE_IN_BYTES);
-
+		if (!isVarBinarySupported)
+			limit*=3;
 		sql_fields[1] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName() + "_tz",
-				Objects.requireNonNull(DatabaseWrapperAccessor.isVarBinarySupported(sql_connection) ? DatabaseWrapperAccessor.getVarBinaryType(_sql_connection, limit)
-						: DatabaseWrapperAccessor.getBigIntegerType(sql_connection, limit)), null, null, isNotNull());
+				Objects.requireNonNull(isVarBinarySupported ? DatabaseWrapperAccessor.getVarBinaryType(_sql_connection, limit)
+						: DatabaseWrapperAccessor.getBigDecimalType(sql_connection, limit)), null, null, isNotNull());
 		isVarBinary = DatabaseWrapperAccessor.isVarBinarySupported(sql_connection);
 	}
 

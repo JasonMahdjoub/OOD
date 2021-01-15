@@ -36,20 +36,17 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database.tests;
 
-import com.distrimind.ood.database.*;
-import com.distrimind.ood.database.database.Table1.Record;
-import com.distrimind.ood.database.database.Table3;
-import com.distrimind.ood.database.exceptions.ConstraintsNotRespectedDatabaseException;
+import com.distrimind.ood.database.DatabaseWrapper;
+//import com.distrimind.ood.database.EmbeddedDerbyWrapper;
+//import com.distrimind.ood.database.InFileEmbeddedDerbyDatabaseFactory;
+import com.distrimind.ood.database.TestDatabase;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.FileTools;
-import org.testng.Assert;
 import org.testng.annotations.AfterClass;
-import org.testng.annotations.Test;
 
 import java.io.File;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
-import java.util.HashMap;
 
 /**
  * 
@@ -69,30 +66,32 @@ public class DerbyTestDatabase extends TestDatabase {
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstanceA() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedDerbyDatabaseFactory(data_directory).getDatabaseWrapperSingleton();
+		return null;
+		//return new InFileEmbeddedDerbyDatabaseFactory(data_directory).getDatabaseWrapperSingleton();
 	}
 
 	@Override
 	public DatabaseWrapper getDatabaseWrapperInstanceB() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedDerbyDatabaseFactory(data_directoryb).getDatabaseWrapperSingleton();
+		return null;
+		//return new InFileEmbeddedDerbyDatabaseFactory(data_directoryb).getDatabaseWrapperSingleton();
 	}
 
 	@Override
 	public void deleteDatabaseFilesA() throws IllegalArgumentException {
-		EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directory);
+		//EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directory);
 
 	}
 
 	@Override
 	public void deleteDatabaseFilesB() throws IllegalArgumentException {
-		EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directoryb);
+		//EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directoryb);
 	}
 
 	@AfterClass
 	public void unloadDatabase()  {
 		super.unloadDatabase();
-		EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directory);
-		EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directoryb);
+		//EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directory);
+		//EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directoryb);
 		FileTools.deleteDirectory(database_backup_directory);
 	}
 
@@ -121,5 +120,7 @@ public class DerbyTestDatabase extends TestDatabase {
 	public boolean isMultiConcurrentDatabase() {
 		return true;
 	}
+
+
 
 }

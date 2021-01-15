@@ -62,55 +62,60 @@ public class DerbyTestDecentralizedDatabase extends TestDecentralizedDatabase {
 
 	@Override
 	public DatabaseFactory<?> getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedDerbyDatabaseFactory(centralDatabaseFileName);
+		return null;
+		//return new InFileEmbeddedDerbyDatabaseFactory(centralDatabaseFileName);
 	}
 
 	@Override
 	public DatabaseFactory<?> getDatabaseWrapperInstance1() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedDerbyDatabaseFactory(data_directory1);
+		return null;
+		//return new InFileEmbeddedDerbyDatabaseFactory(data_directory1);
 	}
 
 	@Override
 	public DatabaseFactory<?> getDatabaseWrapperInstance2() throws IllegalArgumentException, DatabaseException {
-
-		return new InFileEmbeddedDerbyDatabaseFactory(data_directory2);
+		return null;
+		//return new InFileEmbeddedDerbyDatabaseFactory(data_directory2);
 	}
 
 	@Override
 	public DatabaseFactory<?> getDatabaseWrapperInstance3() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedDerbyDatabaseFactory(data_directory3);
+		return null;
+		//return new InFileEmbeddedDerbyDatabaseFactory(data_directory3);
 	}
 
 	@Override
 	public DatabaseFactory<?> getDatabaseWrapperInstance4() throws IllegalArgumentException, DatabaseException {
-		return new InFileEmbeddedDerbyDatabaseFactory(data_directory4);
+		return null;
+		//return new InFileEmbeddedDerbyDatabaseFactory(data_directory4);
 	}
 
 	@Override
 	public void removeDatabaseFiles1() {
-		EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directory1);
+
+		//EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directory1);
 
 	}
 
 	@Override
 	public void removeDatabaseFiles2() {
-		EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directory2);
+		//EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directory2);
 
 	}
 
 	@Override
 	public void removeDatabaseFiles3() {
-		EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directory3);
+		//EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directory3);
 	}
 
 	@Override
 	public void removeDatabaseFiles4() {
-		EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directory4);
+		//EmbeddedDerbyWrapper.deleteDatabaseFiles(data_directory4);
 	}
 
 	@Override
 	public void removeCentralDatabaseFiles() {
-		EmbeddedDerbyWrapper.deleteDatabaseFiles(centralDatabaseFileName);
+		//EmbeddedDerbyWrapper.deleteDatabaseFiles(centralDatabaseFileName);
 
 	}
 

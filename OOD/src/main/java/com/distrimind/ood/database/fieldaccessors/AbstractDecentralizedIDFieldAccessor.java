@@ -79,16 +79,18 @@ public class AbstractDecentralizedIDFieldAccessor extends FieldAccessor {
 	protected AbstractDecentralizedIDFieldAccessor(Table<?> table,
 												   DatabaseWrapper _sql_connection, Field _field, String parentFieldName, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
 		super(_sql_connection, _field, parentFieldName, compatibleClasses, table, severalPrimaryKeysPresentIntoTable);
-		long l=getLimit();
-		if (l<=0)
-			l=AbstractDecentralizedID.MAX_DECENTRALIZED_ID_SIZE_IN_BYTES;
+		isVarBinary = DatabaseWrapperAccessor.isVarBinarySupported(sql_connection);
 
+		if (limit<=0)
+			limit=AbstractDecentralizedID.MAX_DECENTRALIZED_ID_SIZE_IN_BYTES;
+		if (!isVarBinary)
+			limit*=3;
 		sql_fields = new SqlField[1];
 		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(),
-				Objects.requireNonNull(DatabaseWrapperAccessor.isVarBinarySupported(sql_connection) ? DatabaseWrapperAccessor.getVarBinaryType(_sql_connection, l)
-						: DatabaseWrapperAccessor.getBigIntegerType(sql_connection, l)),
+				Objects.requireNonNull( isVarBinary? DatabaseWrapperAccessor.getVarBinaryType(_sql_connection, limit)
+						: DatabaseWrapperAccessor.getBigIntegerType(sql_connection, limit)),
 				null, null, isNotNull());
-		isVarBinary = DatabaseWrapperAccessor.isVarBinarySupported(sql_connection);
+
 	}
 
 	private static final Class<?>[] compatibleClasses;

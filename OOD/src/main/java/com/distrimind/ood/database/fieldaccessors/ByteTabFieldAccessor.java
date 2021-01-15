@@ -77,6 +77,7 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 		super(_sql_connection, _field, parentFieldName, compatible_classes, table, severalPrimaryKeysPresentIntoTable);
 		sql_fields = new SqlField[1];
 		String type;
+		isVarBinary=DatabaseWrapperAccessor.isVarBinarySupported(sql_connection);
 
 		if (limit <= 0)
 			limit = defaultByteTabSize;
@@ -86,14 +87,14 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 			type=DatabaseWrapperAccessor.getBlobType(sql_connection, limit);
 		}
 		else if (limit <= shortTabSizeLimit) {
-			if (DatabaseWrapperAccessor.isVarBinarySupported(sql_connection))
+			if (isVarBinary)
 				type = DatabaseWrapperAccessor.getVarBinaryType(_sql_connection, limit);
 			else if (DatabaseWrapperAccessor.isLongVarBinarySupported(sql_connection))
 				type = DatabaseWrapperAccessor.getLongVarBinaryType(_sql_connection, limit);
 			else
 			{
 				isBigInteger=true;
-				type = DatabaseWrapperAccessor.getBigIntegerType(sql_connection, limit);
+				type = DatabaseWrapperAccessor.getBigDecimalType(sql_connection, limit);
 			}
 		} else {
 			if (DatabaseWrapperAccessor.isLongVarBinarySupported(sql_connection))
@@ -105,7 +106,7 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 		assert type != null;
 		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(), type, null, null, isNotNull());
 
-		String vb=DatabaseWrapperAccessor.getVarBinaryType(_sql_connection, 0);
+		/*String vb=DatabaseWrapperAccessor.getVarBinaryType(_sql_connection, 0);
 		String lvb=DatabaseWrapperAccessor.getLongVarBinaryType(_sql_connection, 0);
 		if (vb!=null) {
 			int i = vb.indexOf("(");
@@ -117,7 +118,7 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 			if (i > 0)
 				lvb = lvb.substring(0, i);
 		}
-		isVarBinary = (vb!=null && type.startsWith(vb)) || (lvb!=null && type.startsWith(lvb));
+		isVarBinary = (vb!=null && type.startsWith(vb)) || (lvb!=null && type.startsWith(lvb));*/
 		this.isBigInteger=isBigInteger;
 	}
 	public static byte[] getByteTab(BigDecimal value)
@@ -136,6 +137,12 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 			return res;
 		}
 	}
+	public static class BD extends BigDecimal
+	{
+		public BD(BigInteger val) {
+			super(val);
+		}
+	}
 	public static BigDecimal getBigDecimalValue(WrappedData wd)
 	{
 		if (wd==null)
@@ -143,7 +150,7 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 		else
 			return getBigDecimalValue(wd.getBytes());
 	}
-	public static BigDecimal getBigDecimalValue(byte[] value)
+	public static BD getBigDecimalValue(byte[] value)
 	{
 		if (value==null)
 			return null;
@@ -152,7 +159,7 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 			byte[] tab = new byte[value.length + 1];
 			tab[0]=1;
 			System.arraycopy(value, 0, tab, 1, value.length);
-			return new BigDecimal(new BigInteger(tab));
+			return new BD(new BigInteger(tab));
 		}
 	}
 	@Override

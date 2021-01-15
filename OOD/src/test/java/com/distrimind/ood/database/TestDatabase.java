@@ -3225,7 +3225,10 @@ public abstract class TestDatabase {
                     try (RandomByteArrayOutputStream baos = new RandomByteArrayOutputStream()) {
                     	baos.writeObject(o, true, Integer.MAX_VALUE);
                     	baos.flush();
-						res.add(baos.getBytes());
+                    	if (sql_db.isVarBinarySupported())
+							res.add(baos.getBytes());
+                    	else
+							res.add(new BigInteger(baos.getBytes()));
                     }
                 } else
                     res.add(o);
@@ -3673,7 +3676,11 @@ public abstract class TestDatabase {
 			Object value=e.getValue();
 			if (ep instanceof byte[] && value instanceof BigDecimal)
 			{
-				value=BigDecimalFieldAccessor.bigDecimalToBytes((BigDecimal)value);
+				byte[] t;
+				t=BigDecimalFieldAccessor.bigDecimalToBytes((BigDecimal)value);
+				if (!Arrays.equals(t, (byte[])ep))
+					t=ByteTabFieldAccessor.getByteTab((BigDecimal)value);
+				value=t;
 			}
 
 			assertEqualsParameters(value, ep, "Parameter "+e.getKey()+". Class type source " + e.getValue().getClass()+", expected class "+ep.getClass()+".");

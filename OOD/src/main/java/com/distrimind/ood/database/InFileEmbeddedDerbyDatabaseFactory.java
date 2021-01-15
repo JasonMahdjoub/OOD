@@ -46,7 +46,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  * @version 1.2
  * @since OOD 2.0.0
  */
-public class InFileEmbeddedDerbyDatabaseFactory extends DatabaseFactory<EmbeddedDerbyWrapper> {
+class InFileEmbeddedDerbyDatabaseFactory extends DatabaseFactory<EmbeddedDerbyWrapper> {
 	/**
 	 * 
 	 */

@@ -882,13 +882,24 @@ public abstract class FieldAccessor {
 			else if (p instanceof Double)
 				st.setDouble(index, (Double)p);
 			else if (p instanceof BigDecimal) {
-				String t=DatabaseWrapperAccessor.getBigDecimalType(sql_connection, 128);
-				if (t.contains(DatabaseWrapperAccessor.getBinaryBaseWord(sql_connection)))
-					st.setBytes(index, BigDecimalFieldAccessor.bigDecimalToBytes((BigDecimal)p));
-				else if (t.contains("CHAR"))
-					st.setString(index, p.toString());
-				else
-					st.setBigDecimal(index, (BigDecimal)p);
+				String t = DatabaseWrapperAccessor.getBigDecimalType(sql_connection, 128);
+				if (p instanceof ByteTabFieldAccessor.BD)
+				{
+					if (t.contains(DatabaseWrapperAccessor.getBinaryBaseWord(sql_connection)))
+						st.setBytes(index, ByteTabFieldAccessor.getByteTab((BigDecimal) p));
+					else if (t.contains("CHAR"))
+						st.setString(index, p.toString());
+					else
+						st.setBigDecimal(index, (BigDecimal) p);
+				}
+				else {
+					if (t.contains(DatabaseWrapperAccessor.getBinaryBaseWord(sql_connection)))
+						st.setBytes(index, BigDecimalFieldAccessor.bigDecimalToBytes((BigDecimal) p));
+					else if (t.contains("CHAR"))
+						st.setString(index, p.toString());
+					else
+						st.setBigDecimal(index, (BigDecimal) p);
+				}
 			}
 			else if (p instanceof BigInteger) {
 				String t=DatabaseWrapperAccessor.getBigIntegerType(sql_connection, 128);

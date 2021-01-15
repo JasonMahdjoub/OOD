@@ -76,12 +76,13 @@ public class BigDecimalFieldAccessor extends FieldAccessor {
 		super(_sql_connection, _field, parentFieldName, compatible_classes, table, severalPrimaryKeysPresentIntoTable);
 		sql_fields = new SqlField[1];
 		String type=DatabaseWrapperAccessor.getBigDecimalType(sql_connection, 128);
-		useString=type.contains("CHAR");
-		useGetBigDecimal=!useString && !type.toUpperCase().contains(DatabaseWrapperAccessor.getBinaryBaseWord(sql_connection).toUpperCase()) && !type.toUpperCase().contains(DatabaseWrapperAccessor.getBlobBaseWord(sql_connection).toUpperCase());
-		long l=getLimit();
-		if (l<=0)
-			l=useString?128:36;
-		type=DatabaseWrapperAccessor.getBigDecimalType(sql_connection, l);
+		useString=type.toUpperCase().contains("CHAR");
+		String binaryBasedWord=DatabaseWrapperAccessor.getBinaryBaseWord(sql_connection);
+		useGetBigDecimal=!useString && (binaryBasedWord==null || !type.toUpperCase().contains(binaryBasedWord.toUpperCase())) && !type.toUpperCase().contains(DatabaseWrapperAccessor.getBlobBaseWord(sql_connection).toUpperCase());
+
+		if (limit<=0)
+			limit=useString?128:36;
+		type=DatabaseWrapperAccessor.getBigDecimalType(sql_connection, limit);
 
 		sql_fields[0] = new SqlField(supportQuotes, this.table_name + "." + this.getSqlFieldName(),
 				type, null, null, isNotNull());

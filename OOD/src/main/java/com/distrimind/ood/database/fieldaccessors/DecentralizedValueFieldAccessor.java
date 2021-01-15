@@ -70,7 +70,7 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 		super(_sql_connection, _field, parentFieldName, new Class<?>[] {_field.getType()}, table, severalPrimaryKeysPresentIntoTable);
 		sql_fields = new SqlField[1];
 		Class<?>[] compatibleClasses = new Class<?>[]{_field.getType()};
-
+		isVarBinary=DatabaseWrapperAccessor.isVarBinarySupported(sql_connection);
 
 		if (limit<=0)
 		{
@@ -109,11 +109,13 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 			}
 
 		}
+		if (!isVarBinary)
+			limit*=3;
 		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(),
-				Objects.requireNonNull(DatabaseWrapperAccessor.isVarBinarySupported(sql_connection) ? DatabaseWrapperAccessor.getVarBinaryType(_sql_connection, limit)
-						: DatabaseWrapperAccessor.getBigIntegerType(sql_connection, limit)),
+				Objects.requireNonNull(isVarBinary ? DatabaseWrapperAccessor.getVarBinaryType(_sql_connection, limit)
+						: DatabaseWrapperAccessor.getBigDecimalType(sql_connection, limit)),
 				null, null, isNotNull());
-		isVarBinary = DatabaseWrapperAccessor.isVarBinarySupported(sql_connection);
+		//isVarBinary = DatabaseWrapperAccessor.isVarBinarySupported(sql_connection);
 
 		if (_field.isAnnotationPresent(com.distrimind.ood.database.annotations.Field.class))
 			encodeExpirationUTC=_field.getAnnotation(com.distrimind.ood.database.annotations.Field.class).includeKeyExpiration();

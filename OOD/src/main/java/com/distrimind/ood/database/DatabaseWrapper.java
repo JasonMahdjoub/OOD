@@ -4569,7 +4569,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 								Statement st = getConnectionAssociatedWithCurrentThread().getConnection()
 										.createStatement();
 								st.executeUpdate("INSERT INTO " + DatabaseWrapper.VERSIONS_OF_DATABASE + " (PACKAGE_NAME, CURRENT_DATABASE_VERSION) VALUES('"
-										+ getLongPackageName(p) + "', '" + res + "')" + getSqlComma());
+										+ getLongPackageName(p) + "', " + res + ")" + getSqlComma());
 								st.close();
 							}
 							if (fdb!=null)
@@ -4613,8 +4613,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					try {
 						assert oldDatabaseVersion != newDatabaseVersion;
 						int r = getConnectionAssociatedWithCurrentThread().getConnection().createStatement()
-								.executeUpdate("UPDATE " + VERSIONS_OF_DATABASE + " SET CURRENT_DATABASE_VERSION='" + newDatabaseVersion
-										+ "' WHERE PACKAGE_NAME='" + getLongPackageName(configuration.getDatabaseSchema().getPackage()) + "'" + getSqlComma());
+								.executeUpdate("UPDATE " + VERSIONS_OF_DATABASE + " SET CURRENT_DATABASE_VERSION=" + newDatabaseVersion
+										+ " WHERE PACKAGE_NAME='" + getLongPackageName(configuration.getDatabaseSchema().getPackage()) + "'" + getSqlComma());
 						if (r != 1)
 							throw new DatabaseException("no record found (r="+r+")");
 						if (oldDatabaseVersion >= 0) {
@@ -5141,7 +5141,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						st = getConnectionAssociatedWithCurrentThread().getConnection()
 								.createStatement();
 						st.executeUpdate("INSERT INTO " + DatabaseWrapper.VERSIONS_OF_DATABASE + " (PACKAGE_NAME, CURRENT_DATABASE_VERSION) VALUES('"
-								+ getLongPackageName(configuration.getDatabaseSchema().getPackage()) + "', '" + version + "')" + getSqlComma());
+								+ getLongPackageName(configuration.getDatabaseSchema().getPackage()) + "', " + version + ")" + getSqlComma());
 						st.close();
 					}
 					else {

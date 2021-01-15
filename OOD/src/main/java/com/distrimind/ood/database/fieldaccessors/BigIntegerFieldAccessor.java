@@ -71,13 +71,18 @@ public class BigIntegerFieldAccessor extends FieldAccessor {
 			Field _field, String parentFieldName, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
 		super(_sql_connection, _field, parentFieldName, compatible_classes, table, severalPrimaryKeysPresentIntoTable);
 		sql_fields = new SqlField[1];
+		boolean isVarBinary=DatabaseWrapperAccessor.isVarBinarySupported(_sql_connection);
 		String type=DatabaseWrapperAccessor.getBigIntegerType(sql_connection, 128);
 		useString=type.contains("CHAR");
-		useGetBigDecimal=!useString && !type.contains(DatabaseWrapperAccessor.getBinaryBaseWord(sql_connection)) && !type.contains(DatabaseWrapperAccessor.getBlobBaseWord(sql_connection));
-		long l=getLimit();
-		if (l<=0)
-			l=useString?128:32;
-		type=DatabaseWrapperAccessor.getBigIntegerType(sql_connection, l);
+		String binaryBasedWord=DatabaseWrapperAccessor.getBinaryBaseWord(sql_connection);
+		useGetBigDecimal=!useString && (binaryBasedWord==null || !type.toUpperCase().contains(binaryBasedWord.toUpperCase())) && !type.toUpperCase().contains(DatabaseWrapperAccessor.getBlobBaseWord(sql_connection).toUpperCase());
+
+		if (limit<=0) {
+			limit = useString ? 128 : 32;
+		}
+		if (!isVarBinary && !useString)
+			limit*=3;
+		type=DatabaseWrapperAccessor.getBigIntegerType(sql_connection, limit);
 		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(),
 				Objects.requireNonNull(type), null, null, isNotNull());
 

@@ -74,25 +74,27 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 			Field _field, String parentFieldName, ByteTabObjectConverter converter, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
 		super(_sql_connection, _field, parentFieldName, getCompatibleClasses(_field), table, severalPrimaryKeysPresentIntoTable);
 		sql_fields = new SqlField[1];
-
+		isVarBinary=DatabaseWrapperAccessor.isVarBinarySupported(sql_connection);
 		String type;
 		long l = converter.getDefaultSizeLimit(field.getType());
 		if (l <= 0)
 			l = ByteTabFieldAccessor.defaultByteTabSize;
+		if (!isVarBinary)
+			l*=3;
 		boolean isBigInteger=false;
 		if (useBlob)
 		{
 			type=DatabaseWrapperAccessor.getBlobType(sql_connection, l);
 		}
 		else if (l <= ByteTabFieldAccessor.shortTabSizeLimit) {
-			if (DatabaseWrapperAccessor.isVarBinarySupported(sql_connection))
+			if (isVarBinary)
 				type = DatabaseWrapperAccessor.getVarBinaryType(_sql_connection, l);
 			else if (DatabaseWrapperAccessor.isLongVarBinarySupported(sql_connection))
 				type = DatabaseWrapperAccessor.getLongVarBinaryType(_sql_connection, l);
 			else
 			{
 				isBigInteger=true;
-				type = DatabaseWrapperAccessor.getBigIntegerType(sql_connection, l);
+				type = DatabaseWrapperAccessor.getBigDecimalType(sql_connection, l);
 			}
 		} else {
 			if (DatabaseWrapperAccessor.isLongVarBinarySupported(sql_connection))
@@ -102,7 +104,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 		}
 		assert type != null;
 		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(), type, null, null, isNotNull());
-		String vb=DatabaseWrapperAccessor.getVarBinaryType(_sql_connection, 0);
+		/*String vb=DatabaseWrapperAccessor.getVarBinaryType(_sql_connection, 0);
 		String lvb=DatabaseWrapperAccessor.getLongVarBinaryType(_sql_connection, 0);
 		if (vb!=null) {
 			int i = vb.indexOf("(");
@@ -114,7 +116,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 			if (i > 0)
 				lvb = lvb.substring(0, i);
 		}
-		isVarBinary = (vb!=null && type.startsWith(vb)) || (lvb!=null && type.startsWith(lvb));
+		this.isVarBinary = (vb!=null && type.startsWith(vb)) || (lvb!=null && type.startsWith(lvb));*/
 		this.isBigInteger=isBigInteger;
 		this.converter = converter;
 		this.limit=l;

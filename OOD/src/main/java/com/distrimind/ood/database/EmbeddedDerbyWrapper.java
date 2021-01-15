@@ -57,7 +57,7 @@ import java.util.regex.Pattern;
  * @version 1.3
  * @since OOD 1.4
  */
-public class EmbeddedDerbyWrapper extends DatabaseWrapper {
+class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	private static boolean derby_loaded = false;
 	// private final String dbURL;
 
@@ -550,17 +550,22 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	@Override
 	protected String getBigDecimalType(long limit) {
 		if (limit<=0)
-			return "VARCHAR(1024) CHARACTER SET latin1";
+			return "VARCHAR(1024)";
 		else
-			return "VARCHAR("+limit+") CHARACTER SET latin1";
+			return "VARCHAR("+limit+")";
+	}
+
+	@Override
+	protected boolean supportsItalicQuotesWithTableAndFieldNames() {
+		return false;
 	}
 
 	@Override
 	protected String getBigIntegerType(long limit) {
 		if (limit<=0)
-			return "VARCHAR(1024) CHARACTER SET latin1";
+			return "VARCHAR(1024)";
 		else
-			return "VARCHAR("+limit+") CHARACTER SET latin1";
+			return "VARCHAR("+limit+")";
 	}
 
 
