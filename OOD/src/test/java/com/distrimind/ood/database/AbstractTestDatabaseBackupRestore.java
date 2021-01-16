@@ -417,8 +417,9 @@ public abstract class AbstractTestDatabaseBackupRestore {
 		BackupConfiguration backupConf=null;
 		if (useInternalBackup)
 			backupConf=getBackupConfiguration();
-		DatabaseConfiguration conf=new DatabaseConfiguration( new DatabaseSchema(Table1.class.getPackage()), backupConf);
-		wrapper.getDatabaseConfigurationsBuilder().addConfiguration(conf, false, true)
+		DatabaseConfiguration conf=new DatabaseConfiguration( new DatabaseSchema(Table1.class.getPackage(), TestDatabase.listClasses), backupConf);
+		wrapper.getDatabaseConfigurationsBuilder()
+				.addConfiguration(conf, false, true)
 				.commit();
 		return wrapper;
 	}
@@ -442,7 +443,9 @@ public abstract class AbstractTestDatabaseBackupRestore {
 			Assert.assertTrue(externalBRM.getFirstTransactionUTCInMs() > dataLoadStart.get(), externalBRM.getFirstTransactionUTCInMs()+";"+dataLoadStart.get());
 			Assert.assertTrue(t<externalBRM.getFirstTransactionUTCInMs(), t+";"+externalBRM.getFirstTransactionUTCInMs());
 			Assert.assertTrue(System.currentTimeMillis()>externalBRM.getFirstTransactionUTCInMs());
-			Assert.assertTrue(externalBRM.getFirstTransactionUTCInMs()<externalBRM.getLastTransactionUTCInMS());
+			Assert.assertTrue(externalBRM.getFirstTransactionUTCInMs()<=externalBRM.getLastTransactionUTCInMS(), ""+externalBRM.getFirstTransactionUTCInMs());
+			externalBRM.createBackupReference();
+			Assert.assertTrue(externalBRM.getFirstTransactionUTCInMs()<externalBRM.getLastTransactionUTCInMS(), ""+externalBRM.getFirstTransactionUTCInMs());
 			Assert.assertTrue(System.currentTimeMillis()>externalBRM.getLastTransactionUTCInMS());
 		}
 		Thread.sleep(100);
