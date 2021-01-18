@@ -457,6 +457,7 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 		testSynchronisation();
 		disconnectAllDatabase();
 		checkAllDatabaseInternalDataUsedForSynchro();
+		accessNumberInProtectedEncruptionProfile=0;
 		DatabaseFactory<?> df=getDatabaseWrapperInstance4();
 		df.setEncryptionProfileProviders(encryptionProfileProvider, protectedEncryptionProfileProvider, SecureRandomType.DEFAULT);
 		db4 = new Database(df.getDatabaseWrapperSingleton());
@@ -479,6 +480,7 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 		}*/
 
 		testAllConnect();
+		Assert.assertEquals(accessNumberInProtectedEncruptionProfile, 3);
 		disconnectAllDatabase();
 		checkAllDatabaseInternalDataUsedForSynchro();
 		testSynchronisation();
@@ -578,6 +580,7 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 
 	@Test(dependsOnMethods = { "testSynchroTransactionTests2" })
 	public void removeNewPeer() throws Exception {
+		accessNumberInProtectedEncruptionProfile=0;
 		checkAllDatabaseInternalDataUsedForSynchro();
 		listDatabase.get(0).getDbwrapper().getDatabaseConfigurationsBuilder()
 				.removeDistantPeer(db4.getHostID())
@@ -588,7 +591,7 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 		testAllConnect();
 		testSynchronisation();
 		disconnectAllDatabase();
-
+		Assert.assertEquals(accessNumberInProtectedEncruptionProfile, 3);
 		unloadDatabase4();
 
 		testAllConnect();

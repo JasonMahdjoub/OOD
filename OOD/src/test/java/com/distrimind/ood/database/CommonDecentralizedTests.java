@@ -850,7 +850,15 @@ public abstract class CommonDecentralizedTests {
 	protected final CentralDatabaseBackupReceiver centralDatabaseBackupReceiver;
 	protected final AbstractSecureRandom random;
 	protected final EncryptionProfileProviderFactory encryptionProfileProvider=new EncryptionProfileCollection(){};
-	protected final EncryptionProfileProviderFactory protectedEncryptionProfileProvider=new EncryptionProfileCollection(){};
+	protected int accessNumberInProtectedEncruptionProfile=0;
+	protected final EncryptionProfileProviderFactory protectedEncryptionProfileProvider=new EncryptionProfileCollection(){
+		@Override
+		public SymmetricSecretKey getSecretKeyForSignature(short keyID, boolean duringDecryptionPhase) throws IOException {
+			++accessNumberInProtectedEncruptionProfile;
+			return super.getSecretKeyForSignature(keyID, duringDecryptionPhase);
+		}
+
+	};
 
 
 
