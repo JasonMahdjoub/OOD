@@ -36,9 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
-import com.distrimind.util.crypto.EncryptionProfileProvider;
 import com.distrimind.util.crypto.SymmetricAuthenticatedSignatureType;
 import com.distrimind.util.io.*;
 
@@ -65,37 +63,23 @@ public abstract class AbstractHookRequest extends DatabaseEvent implements Authe
 
 	protected Set<DecentralizedValue> concernedPeers;
 
-	private byte[] symmetricSignature=null;
-	private short encryptionProfileIdentifier;
 	private long messageID;
 
 
 	@Override
-	public int getInternalSerializedSize() {
-		return 18+SerializationTools.getInternalSize(hostSource, 0)
+	public int getInternalSerializedSizeWithoutEncryption() {
+		return 16+SerializationTools.getInternalSize(hostSource, 0)
 				+SerializationTools.getInternalSize(hostDestination, 0)
-				+SerializationTools.getInternalSize(symmetricSignature, SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE)
 				+SerializationTools.getInternalSize(concernedPeers, MAX_PEERS_DESCRIPTION_SIZE_IN_BYTES);
 
 	}
 
 	@Override
-	public byte[] getSymmetricSignature() {
-		return symmetricSignature;
-	}
-
-	@Override
-	public short getEncryptionProfileIdentifier() {
-		return encryptionProfileIdentifier;
-	}
-
-	@Override
-	public void writeExternalWithoutSignature(SecuredObjectOutputStream out) throws IOException {
+	public void writeExternalWithoutEncryption(SecuredObjectOutputStream out) throws IOException {
 		out.writeLong(messageID);
 		out.writeObject(hostSource, false);
 		out.writeObject(hostDestination, false);
 		out.writeCollection(concernedPeers, false, MAX_PEERS_DESCRIPTION_SIZE_IN_BYTES, false);
-		out.writeShort(encryptionProfileIdentifier);
 	}
 
 	@Override
@@ -110,13 +94,9 @@ public abstract class AbstractHookRequest extends DatabaseEvent implements Authe
 		this.messageID=messageID;
 	}
 
-	@Override
-	public void writeExternalSignature(SecuredObjectOutputStream out) throws IOException {
-		out.writeBytesArray(symmetricSignature, false, SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE);
-	}
 
 	@Override
-	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
+	public void readExternalWithoutEncryption(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
 		messageID=in.readLong();
 		if (messageID<0)
 			throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN);
@@ -131,8 +111,6 @@ public abstract class AbstractHookRequest extends DatabaseEvent implements Authe
 		{
 			throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN, e);
 		}
-		encryptionProfileIdentifier =in.readShort();
-		symmetricSignature=in.readBytesArray(false, SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE);
 	}
 
 	public Set<DecentralizedValue> getConcernedPeers() {
@@ -157,14 +135,6 @@ public abstract class AbstractHookRequest extends DatabaseEvent implements Authe
 		hostSource = _hostSource;
 		hostDestination = _hostDestination;
 		this.concernedPeers = concernedPeers;
-	}
-
-	@Override
-	public void updateSignature(EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
-		if (encryptionProfileProvider==null)
-			throw new NullPointerException();
-		this.encryptionProfileIdentifier =encryptionProfileProvider.getDefaultKeyID();
-		this.symmetricSignature=sign(encryptionProfileProvider);
 	}
 
 	@Override

@@ -37,18 +37,18 @@ public class HookSynchronizeRequest extends AbstractHookRequest {
 	}
 
 	@Override
-	public int getInternalSerializedSize() {
-		return super.getInternalSerializedSize()+ SerializationTools.getInternalSize(packagesToSynchronize, MAX_PACKAGE_ENCODING_SIZE_IN_BYTES);
+	public int getInternalSerializedSizeWithoutEncryption() {
+		return super.getInternalSerializedSizeWithoutEncryption()+ SerializationTools.getInternalSize(packagesToSynchronize, MAX_PACKAGE_ENCODING_SIZE_IN_BYTES);
 	}
 
 	@Override
-	public void writeExternalWithoutSignature(SecuredObjectOutputStream out) throws IOException {
+	public void writeExternalWithoutEncryption(SecuredObjectOutputStream out) throws IOException {
 		out.writeMap(packagesToSynchronize, false, MAX_PACKAGE_ENCODING_SIZE_IN_BYTES, false, false);
-		super.writeExternalWithoutSignature(out);
+		super.writeExternalWithoutEncryption(out);
 	}
 
 	@Override
-	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
+	public void readExternalWithoutEncryption(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
 		try {
 			packagesToSynchronize=in.readMap(false, MAX_PACKAGE_ENCODING_SIZE_IN_BYTES, false, false, String.class, Boolean.class);
 			if (packagesToSynchronize.size()==0)
@@ -58,7 +58,7 @@ public class HookSynchronizeRequest extends AbstractHookRequest {
 		{
 			throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN, e);
 		}
-		super.readExternal(in);
+		super.readExternalWithoutEncryption(in);
 	}
 
 	public Map<String, Boolean> getPackagesToSynchronize(DecentralizedValue localHostID) throws DatabaseException {

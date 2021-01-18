@@ -1,6 +1,5 @@
 package com.distrimind.ood.database;
 
-import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.*;
 
@@ -32,18 +31,18 @@ public class HookDesynchronizeRequest extends AbstractHookRequest {
 	}
 
 	@Override
-	public int getInternalSerializedSize() {
-		return super.getInternalSerializedSize()+ SerializationTools.getInternalSize(packagesToUnsynchronize, MAX_PACKAGE_ENCODING_SIZE_IN_BYTES);
+	public int getInternalSerializedSizeWithoutEncryption() {
+		return super.getInternalSerializedSizeWithoutEncryption()+ SerializationTools.getInternalSize(packagesToUnsynchronize, MAX_PACKAGE_ENCODING_SIZE_IN_BYTES);
 	}
 
 	@Override
-	public void writeExternalWithoutSignature(SecuredObjectOutputStream out) throws IOException {
+	public void writeExternalWithoutEncryption(SecuredObjectOutputStream out) throws IOException {
 		out.writeCollection(packagesToUnsynchronize, false, MAX_PACKAGE_ENCODING_SIZE_IN_BYTES);
-		super.writeExternalWithoutSignature(out);
+		super.writeExternalWithoutEncryption(out);
 	}
 
 	@Override
-	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
+	public void readExternalWithoutEncryption(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
 		try {
 			packagesToUnsynchronize=in.readCollection(false,MAX_PACKAGE_ENCODING_SIZE_IN_BYTES, false, String.class);
 			if (packagesToUnsynchronize.size()==0)
@@ -53,7 +52,7 @@ public class HookDesynchronizeRequest extends AbstractHookRequest {
 		{
 			throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN, e);
 		}
-		super.readExternal(in);
+		super.readExternalWithoutEncryption(in);
 	}
 
 	public Set<String> getPackagesToUnsynchronize() {

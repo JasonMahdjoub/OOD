@@ -227,7 +227,6 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			if (authenticatedMessagesQueueToSend==null)
 				authenticatedMessagesQueueToSend=new LinkedList<>();
 			message.setMessageID(lastLocalAuthenticatedP2PMessageID++);
-			message.updateSignature(encryptionProfileProvider);
 			authenticatedMessagesQueueToSend.addLast(message);
 			if (message instanceof HookRemoveRequest && ((HookRemoveRequest) message).getRemovedHookID().equals(hostID))
 				alterRecordFilter.update("authenticatedMessagesQueueToSend", authenticatedMessagesQueueToSend, "lastLocalAuthenticatedP2PMessageID", lastLocalAuthenticatedP2PMessageID, "pairingState", PairingState.REMOVED);

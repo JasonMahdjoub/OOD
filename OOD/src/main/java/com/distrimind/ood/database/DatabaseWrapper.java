@@ -89,11 +89,111 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	private static final Set<Class<?>> internalDatabaseClassesList = new HashSet<>(Arrays.asList(DatabaseDistantTransactionEvent.class, DatabaseDistantEventsTable.class,
 			DatabaseEventsTable.class, DatabaseHooksTable.class, DatabaseTransactionEventsTable.class, DatabaseTransactionsPerHostTable.class, IDTable.class, DatabaseTable.class));
+	private static final List<DatabaseWrapper> openedDatabaseWrappers=new ArrayList<>();
+	private static final Map<DecentralizedValue, CachedEPV> cachedEPVsForCentralDatabaseBackup=new HashMap<>();
+	private static final Map<DecentralizedValue, CachedEPV> cachedEPVsForAuthenticatedP2PMessages=new HashMap<>();
+	private static class CachedEPV
+	{
+		private final DatabaseWrapper wrapper;
+		private final ProfileProviderTree.EPV epv;
+
+		public CachedEPV(DatabaseWrapper wrapper, ProfileProviderTree.EPV epv) {
+			if (wrapper==null)
+				throw new NullPointerException();
+			this.wrapper = wrapper;
+			this.epv = epv;
+		}
+	}
+
+
+	static void addOpenedDatabaseWrapper(DatabaseWrapper wrapper)
+	{
+		synchronized (DatabaseWrapper.class) {
+			openedDatabaseWrappers.add(wrapper);
+		}
+	}
+	static void removeClosedDatabaseWrapper(DatabaseWrapper wrapper)
+	{
+		synchronized (DatabaseWrapper.class) {
+			openedDatabaseWrappers.remove(wrapper);
+			removeCachedEncryptionProfileProvider(cachedEPVsForAuthenticatedP2PMessages, wrapper);
+			removeCachedEncryptionProfileProvider(cachedEPVsForCentralDatabaseBackup, wrapper);
+		}
+	}
+
+	static ProfileProviderTree.EPV getEncryptionProfileProviderForCentralDatabaseBackup(DecentralizedValue localHostID) throws DatabaseException {
+		synchronized (DatabaseWrapper.class) {
+			ProfileProviderTree.EPV epv=getCachedEncryptionProfileProvider(cachedEPVsForCentralDatabaseBackup, localHostID);
+			if (epv==null)
+			{
+				Reference<ProfileProviderTree.EPV> encryptionProfileProviderForCentralDatabaseBackup=new Reference<>();
+				Reference<ProfileProviderTree.EPV> protectedEncryptionProfileProviderForAuthenticatedP2PMessages=new Reference<>();
+				refreshEPVCache(localHostID, null, encryptionProfileProviderForCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages);
+				return encryptionProfileProviderForCentralDatabaseBackup.get();
+			}
+			else
+				return epv;
+		}
+	}
+
 	
-	
+	static ProfileProviderTree.EPV getProtectedEncryptionProfileProviderForAuthenticatedP2PMessages(DecentralizedValue host1, DecentralizedValue host2) throws DatabaseException {
+		synchronized (DatabaseWrapper.class) {
+			ProfileProviderTree.EPV epv=getCachedEncryptionProfileProvider(cachedEPVsForAuthenticatedP2PMessages, host1);
+			if (epv==null && host2!=null)
+				epv=getCachedEncryptionProfileProvider(cachedEPVsForAuthenticatedP2PMessages, host2);
+			if (epv==null)
+			{
+				Reference<ProfileProviderTree.EPV> encryptionProfileProviderForCentralDatabaseBackup=new Reference<>();
+				Reference<ProfileProviderTree.EPV> protectedEncryptionProfileProviderForAuthenticatedP2PMessages=new Reference<>();
+				refreshEPVCache(host1, host2, encryptionProfileProviderForCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages);
+				return protectedEncryptionProfileProviderForAuthenticatedP2PMessages.get();
+			}
+			else
+				return epv;
+		}
+	}
+	private static void refreshEPVCache(DecentralizedValue host1, DecentralizedValue host2, Reference<ProfileProviderTree.EPV> encryptionProfileProviderForCentralDatabaseBackup, Reference<ProfileProviderTree.EPV> protectedEncryptionProfileProviderForAuthenticatedP2PMessages) throws DatabaseException {
+		for (DatabaseWrapper w : openedDatabaseWrappers)
+		{
+			DecentralizedValue localHostID=null;
+			if (host1.equals(w.getSynchronizer().getLocalHostID()))
+				localHostID=host1;
+			else if (host2!=null && host2.equals(w.getSynchronizer().getLocalHostID()))
+				localHostID=host2;
+			if (localHostID!=null)
+			{
+				removeCachedEncryptionProfileProvider(cachedEPVsForAuthenticatedP2PMessages, w);
+				removeCachedEncryptionProfileProvider(cachedEPVsForCentralDatabaseBackup, w);
+				if (w.getDatabaseConfigurationsBuilder().getEncryptionProfileProviderForCentralDatabaseBackup()!=null)
+					encryptionProfileProviderForCentralDatabaseBackup.set(new ProfileProviderTree.EPV(w.getDatabaseConfigurationsBuilder().getEncryptionProfileProviderForCentralDatabaseBackup(),
+						w.getDatabaseConfigurationsBuilder().getSecureRandom()));
+				if (w.getDatabaseConfigurationsBuilder().getProtectedEncryptionProfileProviderForAuthenticatedP2PMessages()!=null)
+					protectedEncryptionProfileProviderForAuthenticatedP2PMessages.set(new ProfileProviderTree.EPV(w.getDatabaseConfigurationsBuilder().getProtectedEncryptionProfileProviderForAuthenticatedP2PMessages(),
+						w.getDatabaseConfigurationsBuilder().getSecureRandom()));
+				cachedEPVsForCentralDatabaseBackup.put(localHostID, new CachedEPV(w,encryptionProfileProviderForCentralDatabaseBackup.get()));
+				cachedEPVsForAuthenticatedP2PMessages.put(localHostID, new CachedEPV(w,protectedEncryptionProfileProviderForAuthenticatedP2PMessages.get()));
+				break;
+			}
+		}
+	}
+	private static void removeCachedEncryptionProfileProvider(Map<DecentralizedValue, CachedEPV> cachedEPVs, DatabaseWrapper wrapper)
+	{
+		cachedEPVs.entrySet().removeIf(decentralizedValueCachedEPVEntry -> decentralizedValueCachedEPVEntry.getValue().wrapper == wrapper);
+	}
+	private static ProfileProviderTree.EPV getCachedEncryptionProfileProvider(Map<DecentralizedValue, CachedEPV> cachedEPVs, DecentralizedValue localHostID)
+	{
+		CachedEPV cepv=cachedEPVs.get(localHostID);
+		if (cepv==null)
+			return null;
+		else
+			return cepv.epv;
+	}
+
 	// protected Connection sql_connection;
 	private static final String NATIVE_BACKUPS_DIRECTORY_NAME="native_backups";
 	private volatile boolean closed = false;
+	private volatile boolean openedOneTime = false;
 	protected final String databaseName;
 	protected final boolean loadToMemory;
 	protected final File databaseDirectory;
@@ -1016,8 +1116,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new DatabaseException("Function must be called before addHookForLocalDatabaseHost.");
 			if (m.getHostDestination().equals(getLocalHostID()))
 			{
-				if (!m.checkAuthentication(databaseConfigurationsBuilder.getProtectedEncryptionProfileProviderForAuthenticatedP2PMessages()))
-					throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN);
 				DatabaseHooksTable.Record r =getDatabaseHookRecord(m.getHostSource(), false);
 				if (r==null)
 				{
@@ -2683,6 +2781,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			Connection c = reopenConnectionImpl();
 
 			disableAutoCommit(c);
+			if (!openedOneTime)
+			{
+				addOpenedDatabaseWrapper(this);
+				openedOneTime=true;
+
+			}
 			return c;
 		} catch (SQLException e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -2738,6 +2842,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					try {
 						lockWrite();
 						closed = true;
+						removeClosedDatabaseWrapper(this);
 						for (Iterator<Session> it = threadPerConnection.iterator(); it.hasNext();) {
 							Session s = it.next();
 							/*

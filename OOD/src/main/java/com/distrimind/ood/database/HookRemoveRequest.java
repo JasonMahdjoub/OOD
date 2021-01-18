@@ -37,8 +37,6 @@ package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
-import com.distrimind.util.crypto.EncryptionProfileProvider;
-import com.distrimind.util.crypto.SymmetricAuthenticatedSignatureType;
 import com.distrimind.util.io.*;
 
 import java.io.IOException;
@@ -53,8 +51,6 @@ public class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2P
 	//static final int MAX_HOOK_ADD_REQUEST_LENGTH_IN_BYTES=DecentralizedValue.MAX_SIZE_IN_BYTES_OF_DECENTRALIZED_VALUE*3+SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE+3;
 
 	private DecentralizedValue removedHookID, hostDestination, hostSource;
-	private short encryptionProfileIdentifier;
-	private byte[] symmetricSignature;
 	private long messageID;
 
 	@SuppressWarnings("unused")
@@ -75,13 +71,7 @@ public class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2P
 		this.removedHookID = removedHookID;
 	}
 
-	@Override
-	public void updateSignature(EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
-		if (encryptionProfileProvider==null)
-			throw new NullPointerException();
-		this.encryptionProfileIdentifier = encryptionProfileProvider.getDefaultKeyID();
-		this.symmetricSignature=sign(encryptionProfileProvider);
-	}
+
 
 	@Override
 	public long getMessageID() {
@@ -95,12 +85,11 @@ public class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2P
 		this.messageID=messageID;
 	}
 	@Override
-	public void writeExternalWithoutSignature(SecuredObjectOutputStream out) throws IOException {
+	public void writeExternalWithoutEncryption(SecuredObjectOutputStream out) throws IOException {
 		out.writeLong(messageID);
 		out.writeObject(hostSource, false);
 		out.writeObject(hostDestination, false);
 		out.writeObject(removedHookID, false);
-		out.writeShort(encryptionProfileIdentifier);
 	}
 
 
@@ -116,19 +105,16 @@ public class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2P
 	}
 
 	@Override
-	public int getInternalSerializedSize() {
-		return 10+ SerializationTools.getInternalSize((SecureExternalizable)hostSource)
+	public int getInternalSerializedSizeWithoutEncryption() {
+		return 8+ SerializationTools.getInternalSize((SecureExternalizable)hostSource)
 				+SerializationTools.getInternalSize((SecureExternalizable)hostDestination)
 				+SerializationTools.getInternalSize((SecureExternalizable)removedHookID);
 	}
 
-	@Override
-	public void writeExternalSignature(SecuredObjectOutputStream out) throws IOException {
-		out.writeBytesArray(symmetricSignature, false, SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE);
-	}
+
 
 	@Override
-	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
+	public void readExternalWithoutEncryption(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
 		messageID=in.readLong();
 		if (messageID<0)
 			throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN);
@@ -137,19 +123,8 @@ public class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2P
 		if (hostDestination.equals(hostSource))
 			throw new MessageExternalizationException(Integrity.FAIL);
 		removedHookID=in.readObject(false, DecentralizedValue.class);
-		encryptionProfileIdentifier=in.readShort();
-		symmetricSignature=in.readBytesArray(false, SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE);
 	}
 
-	@Override
-	public byte[] getSymmetricSignature() {
-		return symmetricSignature;
-	}
-
-	@Override
-	public short getEncryptionProfileIdentifier() {
-		return encryptionProfileIdentifier;
-	}
 
 	public DecentralizedValue getRemovedHookID() {
 		return removedHookID;

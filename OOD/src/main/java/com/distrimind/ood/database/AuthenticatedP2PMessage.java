@@ -38,44 +38,34 @@ package com.distrimind.ood.database;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.messages.AuthenticatedMessage;
 import com.distrimind.ood.database.messages.P2PDatabaseEventToSend;
-import com.distrimind.util.crypto.EncryptionProfileProvider;
-import com.distrimind.util.crypto.SymmetricAuthenticatedSignatureCheckerAlgorithm;
-import com.distrimind.util.crypto.SymmetricAuthenticatedSignerAlgorithm;
-import com.distrimind.util.io.*;
+import com.distrimind.util.io.ProfileProviderTree;
+import com.distrimind.util.io.SecureExternalizableWithEncryptionProfileProvider;
 
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.0.0
  */
-public interface AuthenticatedP2PMessage extends P2PDatabaseEventToSend, AuthenticatedMessage {
+public interface AuthenticatedP2PMessage extends P2PDatabaseEventToSend, AuthenticatedMessage, SecureExternalizableWithEncryptionProfileProvider {
 	int MAX_NUMBER_OF_AUTHENTICATED_P2P_MESSAGES_PER_PEER =18;
 	int MAX_AUTHENTICATED_P2P_MESSAGE_SIZE_IN_BYTES=AbstractHookRequest.MAX_HOOK_ADD_REQUEST_LENGTH_IN_BYTES+4;
-
 	@Override
-	default byte[] sign(EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
+	default ProfileProviderTree.EPV getEncryptionProfileProviderForEncoding() throws IOException {
 		try {
-			SymmetricAuthenticatedSignerAlgorithm signer = new SymmetricAuthenticatedSignerAlgorithm(encryptionProfileProvider.getSecretKeyForSignature(getEncryptionProfileIdentifier(), false));
-			signer.init();
-			try(SignerRandomOutputStream out=new SignerRandomOutputStream(new NullRandomOutputStream(), signer)) {
-				writeExternalWithoutSignature(out);
-			}
-			return signer.getSignature();
-		} catch (NoSuchAlgorithmException | NoSuchProviderException | IOException e) {
-			throw DatabaseException.getDatabaseException(e);
+			return DatabaseWrapper.getProtectedEncryptionProfileProviderForAuthenticatedP2PMessages(getHostSource(), getHostDestination());
+		} catch (DatabaseException e) {
+			throw new IOException(e);
 		}
 	}
-
-
-
 	@Override
-	default void writeExternal(SecuredObjectOutputStream out) throws IOException
-	{
-		AuthenticatedMessage.super.writeExternal(out);
+	default ProfileProviderTree.EPV getEncryptionProfileProviderForDecoding() throws IOException {
+		try {
+			return DatabaseWrapper.getProtectedEncryptionProfileProviderForAuthenticatedP2PMessages(getHostDestination(), getHostSource());
+		} catch (DatabaseException e) {
+			throw new IOException(e);
+		}
 	}
 
 	@Override
@@ -83,28 +73,6 @@ public interface AuthenticatedP2PMessage extends P2PDatabaseEventToSend, Authent
 	{
 		return false;
 	}
-
-	@Override
-	default boolean checkAuthentication(EncryptionProfileProvider profileProvider) throws DatabaseException {
-		try {
-			SymmetricAuthenticatedSignatureCheckerAlgorithm checker=new SymmetricAuthenticatedSignatureCheckerAlgorithm(profileProvider.getSecretKeyForSignature(this.getEncryptionProfileIdentifier(), true));
-			try(RandomByteArrayOutputStream out=new RandomByteArrayOutputStream())
-			{
-				writeExternalWithoutSignature(out);
-				out.flush();
-				return checker.verify(out.getBytes(), getSymmetricSignature());
-			}
-		} catch (NoSuchAlgorithmException | NoSuchProviderException | IOException e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-
-	}
-
-	byte[] getSymmetricSignature();
-
-
-
-
 
 	long getMessageID();
 

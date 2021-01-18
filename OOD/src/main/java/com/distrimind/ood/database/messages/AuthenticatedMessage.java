@@ -36,8 +36,10 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 import com.distrimind.util.io.SecureExternalizable;
+import com.distrimind.util.io.SecureExternalizableWithEncryptionProfileProvider;
 import com.distrimind.util.io.SecuredObjectOutputStream;
 
 import java.io.IOException;
@@ -49,21 +51,4 @@ import java.io.IOException;
  */
 public interface AuthenticatedMessage extends SecureExternalizable, DatabaseEventToSend {
 
-	byte[] sign(EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException;
-	boolean checkAuthentication(EncryptionProfileProvider profileProvider) throws DatabaseException;
-
-	void updateSignature(EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException;
-
-	@Override
-	default void writeExternal(SecuredObjectOutputStream out) throws IOException
-	{
-		writeExternalWithoutSignature(out);
-		writeExternalSignature(out);
-	}
-
-	void writeExternalSignature(SecuredObjectOutputStream out) throws IOException;
-
-	void writeExternalWithoutSignature(SecuredObjectOutputStream out) throws IOException;
-
-	short getEncryptionProfileIdentifier();
 }

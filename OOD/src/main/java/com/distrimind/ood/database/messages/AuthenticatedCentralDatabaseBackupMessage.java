@@ -37,10 +37,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.crypto.*;
-import com.distrimind.util.io.NullRandomOutputStream;
-import com.distrimind.util.io.RandomByteArrayOutputStream;
-import com.distrimind.util.io.SecureExternalizable;
-import com.distrimind.util.io.SignerRandomOutputStream;
+import com.distrimind.util.io.*;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -52,7 +49,21 @@ import java.security.NoSuchProviderException;
  * @since OOD 3.0.0
  */
 public interface AuthenticatedCentralDatabaseBackupMessage extends AuthenticatedMessage {
+
 	@Override
+	default void writeExternal(SecuredObjectOutputStream out) throws IOException
+	{
+		writeExternalWithoutSignature(out);
+		writeExternalSignature(out);
+	}
+
+	void writeExternalSignature(SecuredObjectOutputStream out) throws IOException;
+
+	void writeExternalWithoutSignature(SecuredObjectOutputStream out) throws IOException;
+
+	short getEncryptionProfileIdentifier();
+
+
 	default byte[] sign(EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
 		try {
 			ASymmetricAuthenticatedSignerAlgorithm signer = new ASymmetricAuthenticatedSignerAlgorithm(encryptionProfileProvider.getPrivateKeyForSignature(getEncryptionProfileIdentifier()));
@@ -65,7 +76,7 @@ public interface AuthenticatedCentralDatabaseBackupMessage extends Authenticated
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
-	@Override
+
 	default boolean checkAuthentication(EncryptionProfileProvider profileProvider) throws DatabaseException {
 		byte[] sig=getASymmetricSignature();
 		if (sig==null)
