@@ -38,8 +38,8 @@ package com.distrimind.ood.database;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.messages.AuthenticatedMessage;
 import com.distrimind.ood.database.messages.P2PDatabaseEventToSend;
-import com.distrimind.util.io.ProfileProviderTree;
-import com.distrimind.util.io.SecureExternalizableWithEncryptionProfileProvider;
+import com.distrimind.util.crypto.*;
+import com.distrimind.util.io.*;
 
 import java.io.IOException;
 
@@ -48,25 +48,63 @@ import java.io.IOException;
  * @version 1.0
  * @since OOD 3.0.0
  */
-public interface AuthenticatedP2PMessage extends P2PDatabaseEventToSend, AuthenticatedMessage, SecureExternalizableWithEncryptionProfileProvider {
+public interface AuthenticatedP2PMessage extends P2PDatabaseEventToSend, AuthenticatedMessage, SecureExternalizable {
 	int MAX_NUMBER_OF_AUTHENTICATED_P2P_MESSAGES_PER_PEER =18;
 	int MAX_AUTHENTICATED_P2P_MESSAGE_SIZE_IN_BYTES=AbstractHookRequest.MAX_HOOK_ADD_REQUEST_LENGTH_IN_BYTES+4;
-	@Override
-	default ProfileProviderTree.EPV getEncryptionProfileProviderForEncoding() throws IOException {
-		try {
-			return DatabaseWrapper.getProtectedEncryptionProfileProviderForAuthenticatedP2PMessages(getHostSource(), getHostDestination());
-		} catch (DatabaseException e) {
-			throw new IOException(e);
+	int MAX_SIGNATURES_SIZE= SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE+MessageDigestType.MAX_HASH_LENGTH+ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE+EncryptionSignatureHashEncoder.headSize+10;
+
+
+	default void writeExternal(SecuredObjectOutputStream out) throws IOException
+	{
+		writeExternalWithoutSignatures(out);
+		out.writeBytesArray(getSignatures(), false, MAX_SIGNATURES_SIZE);
+	}
+	default void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException
+	{
+		readExternalWithoutSignatures(in);
+		setSignatures(in.readBytesArray(false, MAX_SIGNATURES_SIZE));
+	}
+	default int getInternalSerializedSize()
+	{
+		return getInternalSerializedSizeWithoutSignatures()+SerializationTools.getInternalSize(getSignatures(), MAX_SIGNATURES_SIZE);
+	}
+	void writeExternalWithoutSignatures(SecuredObjectOutputStream out) throws IOException;
+	void readExternalWithoutSignatures(SecuredObjectInputStream in) throws IOException, ClassNotFoundException;
+	int getInternalSerializedSizeWithoutSignatures();
+
+	default void generateAndSetSignature(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws IOException {
+		if (encryptionProfileProvider==null)
+			throw new NullPointerException();
+		if (random==null)
+			throw new NullPointerException();
+		try(RandomByteArrayOutputStream out=new RandomByteArrayOutputStream();RandomByteArrayOutputStream outSig=new RandomByteArrayOutputStream())
+		{
+			writeExternalWithoutSignatures(out);
+			out.flush();
+			new EncryptionSignatureHashEncoder()
+					.withEncryptionProfileProvider(random, encryptionProfileProvider)
+					.withRandomInputStream(out.getRandomInputStream())
+					.generatesOnlyHashAndSignatures(outSig);
+			outSig.flush();
+			setSignatures(outSig.getBytes());
 		}
 	}
-	@Override
-	default ProfileProviderTree.EPV getEncryptionProfileProviderForDecoding() throws IOException {
-		try {
-			return DatabaseWrapper.getProtectedEncryptionProfileProviderForAuthenticatedP2PMessages(getHostDestination(), getHostSource());
-		} catch (DatabaseException e) {
-			throw new IOException(e);
+	default Integrity checkSignature(EncryptionProfileProvider encryptionProfileProvider) {
+		if (encryptionProfileProvider==null)
+			throw new NullPointerException();
+		try(RandomByteArrayOutputStream out=new RandomByteArrayOutputStream())
+		{
+			writeExternalWithoutSignatures(out);
+			out.flush();
+			return new EncryptionSignatureHashDecoder()
+					.withEncryptionProfileProvider(encryptionProfileProvider)
+					.checkHashAndSignatures(new RandomByteArrayInputStream(getSignatures()), out.getRandomInputStream());
+		} catch (IOException e) {
+			return Integrity.FAIL;
 		}
 	}
+	void setSignatures(byte[] signatures);
+	byte[] getSignatures();
 
 	@Override
 	default boolean cannotBeMerged()

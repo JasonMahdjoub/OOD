@@ -62,12 +62,24 @@ public abstract class AbstractHookRequest extends DatabaseEvent implements Authe
 	//private DecentralizedValue hostAdded;
 
 	protected Set<DecentralizedValue> concernedPeers;
+	private transient byte[] signatures=null;
 
 	private long messageID;
 
+	@Override
+	public void setSignatures(byte[] signatures) {
+		if (signatures==null)
+			throw new NullPointerException();
+		this.signatures=signatures;
+	}
 
 	@Override
-	public int getInternalSerializedSizeWithoutEncryption() {
+	public byte[] getSignatures() {
+		return signatures;
+	}
+
+	@Override
+	public int getInternalSerializedSizeWithoutSignatures() {
 		return 16+SerializationTools.getInternalSize(hostSource, 0)
 				+SerializationTools.getInternalSize(hostDestination, 0)
 				+SerializationTools.getInternalSize(concernedPeers, MAX_PEERS_DESCRIPTION_SIZE_IN_BYTES);
@@ -75,7 +87,7 @@ public abstract class AbstractHookRequest extends DatabaseEvent implements Authe
 	}
 
 	@Override
-	public void writeExternalWithoutEncryption(SecuredObjectOutputStream out) throws IOException {
+	public void writeExternalWithoutSignatures(SecuredObjectOutputStream out) throws IOException {
 		out.writeLong(messageID);
 		out.writeObject(hostSource, false);
 		out.writeObject(hostDestination, false);
@@ -96,7 +108,7 @@ public abstract class AbstractHookRequest extends DatabaseEvent implements Authe
 
 
 	@Override
-	public void readExternalWithoutEncryption(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
+	public void readExternalWithoutSignatures(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
 		messageID=in.readLong();
 		if (messageID<0)
 			throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN);

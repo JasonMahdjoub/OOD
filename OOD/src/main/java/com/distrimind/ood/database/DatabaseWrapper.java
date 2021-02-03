@@ -1116,6 +1116,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new DatabaseException("Function must be called before addHookForLocalDatabaseHost.");
 			if (m.getHostDestination().equals(getLocalHostID()))
 			{
+				Integrity i=m.checkSignature(databaseConfigurationsBuilder.getProtectedEncryptionProfileProviderForAuthenticatedP2PMessages());
+				if (i!=Integrity.OK)
+					throw new MessageExternalizationException(i);
 				DatabaseHooksTable.Record r =getDatabaseHookRecord(m.getHostSource(), false);
 				if (r==null)
 				{

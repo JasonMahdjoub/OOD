@@ -35,14 +35,8 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.util.crypto.AbstractSecureRandom;
-import com.distrimind.util.crypto.EncryptionProfileProvider;
-import com.distrimind.util.io.SecureExternalizable;
-import com.distrimind.util.io.SecureExternalizableWithEncryptionProfileProvider;
-import com.distrimind.util.io.SecuredObjectOutputStream;
 
-import java.io.IOException;
+import com.distrimind.util.io.SecureExternalizable;
 
 /**
  * @author Jason Mahdjoub

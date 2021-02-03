@@ -2,6 +2,8 @@ package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.crypto.EncryptionProfileProvider;
 import com.distrimind.util.io.*;
 
 import java.io.IOException;
@@ -25,7 +27,8 @@ public class HookSynchronizeRequest extends AbstractHookRequest {
 	}
 
 	HookSynchronizeRequest(DecentralizedValue _hostSource, DecentralizedValue _hostDestination,
-						   Map<String, Boolean> packagesToSynchronize, Set<DecentralizedValue> peersInCloud) {
+						   Map<String, Boolean> packagesToSynchronize, Set<DecentralizedValue> peersInCloud,
+						   AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws IOException {
 		super(_hostSource, _hostDestination, peersInCloud);
 		if (packagesToSynchronize==null)
 			throw new NullPointerException();
@@ -34,21 +37,22 @@ public class HookSynchronizeRequest extends AbstractHookRequest {
 		this.packagesToSynchronize=packagesToSynchronize;
 		this.concernedPeers=new HashSet<>(concernedPeers);
 		this.concernedPeers.add(_hostSource);
+		generateAndSetSignature(random, encryptionProfileProvider);
 	}
 
 	@Override
-	public int getInternalSerializedSizeWithoutEncryption() {
-		return super.getInternalSerializedSizeWithoutEncryption()+ SerializationTools.getInternalSize(packagesToSynchronize, MAX_PACKAGE_ENCODING_SIZE_IN_BYTES);
+	public int getInternalSerializedSizeWithoutSignatures() {
+		return super.getInternalSerializedSizeWithoutSignatures()+ SerializationTools.getInternalSize(packagesToSynchronize, MAX_PACKAGE_ENCODING_SIZE_IN_BYTES);
 	}
 
 	@Override
-	public void writeExternalWithoutEncryption(SecuredObjectOutputStream out) throws IOException {
+	public void writeExternalWithoutSignatures(SecuredObjectOutputStream out) throws IOException {
 		out.writeMap(packagesToSynchronize, false, MAX_PACKAGE_ENCODING_SIZE_IN_BYTES, false, false);
-		super.writeExternalWithoutEncryption(out);
+		super.writeExternalWithoutSignatures(out);
 	}
 
 	@Override
-	public void readExternalWithoutEncryption(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
+	public void readExternalWithoutSignatures(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
 		try {
 			packagesToSynchronize=in.readMap(false, MAX_PACKAGE_ENCODING_SIZE_IN_BYTES, false, false, String.class, Boolean.class);
 			if (packagesToSynchronize.size()==0)
@@ -58,7 +62,7 @@ public class HookSynchronizeRequest extends AbstractHookRequest {
 		{
 			throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN, e);
 		}
-		super.readExternalWithoutEncryption(in);
+		super.readExternalWithoutSignatures(in);
 	}
 
 	public Map<String, Boolean> getPackagesToSynchronize(DecentralizedValue localHostID) throws DatabaseException {

@@ -37,6 +37,8 @@ package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.crypto.EncryptionProfileProvider;
 import com.distrimind.util.io.*;
 
 import java.io.IOException;
@@ -52,12 +54,15 @@ public class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2P
 
 	private DecentralizedValue removedHookID, hostDestination, hostSource;
 	private long messageID;
+	private transient byte[] signatures=null;
 
 	@SuppressWarnings("unused")
 	private HookRemoveRequest() {
 	}
 
-	HookRemoveRequest(DecentralizedValue hostSource, DecentralizedValue hostDestination, DecentralizedValue removedHookID) {
+	HookRemoveRequest(DecentralizedValue hostSource, DecentralizedValue hostDestination,
+					  DecentralizedValue removedHookID,
+					  AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws IOException {
 		if (hostSource==null)
 			throw new NullPointerException();
 		if (hostDestination==null)
@@ -69,8 +74,20 @@ public class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2P
 		this.hostSource=hostSource;
 		this.hostDestination=hostDestination;
 		this.removedHookID = removedHookID;
+		generateAndSetSignature(random, encryptionProfileProvider);
 	}
 
+	@Override
+	public void setSignatures(byte[] signatures) {
+		if (signatures==null)
+			throw new NullPointerException();
+		this.signatures=signatures;
+	}
+
+	@Override
+	public byte[] getSignatures() {
+		return signatures;
+	}
 
 
 	@Override
@@ -85,7 +102,7 @@ public class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2P
 		this.messageID=messageID;
 	}
 	@Override
-	public void writeExternalWithoutEncryption(SecuredObjectOutputStream out) throws IOException {
+	public void writeExternalWithoutSignatures(SecuredObjectOutputStream out) throws IOException {
 		out.writeLong(messageID);
 		out.writeObject(hostSource, false);
 		out.writeObject(hostDestination, false);
@@ -105,7 +122,7 @@ public class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2P
 	}
 
 	@Override
-	public int getInternalSerializedSizeWithoutEncryption() {
+	public int getInternalSerializedSizeWithoutSignatures() {
 		return 8+ SerializationTools.getInternalSize((SecureExternalizable)hostSource)
 				+SerializationTools.getInternalSize((SecureExternalizable)hostDestination)
 				+SerializationTools.getInternalSize((SecureExternalizable)removedHookID);
@@ -114,7 +131,7 @@ public class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2P
 
 
 	@Override
-	public void readExternalWithoutEncryption(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
+	public void readExternalWithoutSignatures(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
 		messageID=in.readLong();
 		if (messageID<0)
 			throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN);
