@@ -110,7 +110,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 		EncryptionProfileProvider encryptionProfileProvider=getEncryptionProfileProviderToValidateCertificateOrGetNullIfNoValidProviderIsAvailable(certificate);
 		if (encryptionProfileProvider==null)
 			return false;
-		return message.checkSignature(encryptionProfileProvider)==Integrity.OK;
+		return message.checkHashAndPublicSignature(encryptionProfileProvider)==Integrity.OK;
 	}
 	public Integrity init(DistantBackupCenterConnexionInitialisation initialMessage) throws DatabaseException {
 		final CentralDatabaseBackupCertificate certificate=initialMessage.getCertificate();

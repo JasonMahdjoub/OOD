@@ -23,15 +23,13 @@ public class HookDesynchronizeRequest extends AbstractHookRequest {
 	}
 
 	HookDesynchronizeRequest(DecentralizedValue _hostSource, DecentralizedValue _hostDestination,
-							 Set<String> packagesToUnsynchronize, Set<DecentralizedValue> peersInCloud,
-							 AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws IOException {
+							 Set<String> packagesToUnsynchronize, Set<DecentralizedValue> peersInCloud) {
 		super(_hostSource, _hostDestination, peersInCloud);
 		if (packagesToUnsynchronize==null)
 			throw new NullPointerException();
 		if (packagesToUnsynchronize.size()==0)
 			throw new IllegalArgumentException();
 		this.packagesToUnsynchronize=packagesToUnsynchronize;
-		generateAndSetSignature(random, encryptionProfileProvider);
 	}
 
 	@Override

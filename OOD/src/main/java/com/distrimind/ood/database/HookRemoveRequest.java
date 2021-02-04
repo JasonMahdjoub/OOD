@@ -61,8 +61,7 @@ public class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2P
 	}
 
 	HookRemoveRequest(DecentralizedValue hostSource, DecentralizedValue hostDestination,
-					  DecentralizedValue removedHookID,
-					  AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws IOException {
+					  DecentralizedValue removedHookID)  {
 		if (hostSource==null)
 			throw new NullPointerException();
 		if (hostDestination==null)
@@ -74,7 +73,6 @@ public class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2P
 		this.hostSource=hostSource;
 		this.hostDestination=hostDestination;
 		this.removedHookID = removedHookID;
-		generateAndSetSignature(random, encryptionProfileProvider);
 	}
 
 	@Override

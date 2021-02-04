@@ -32,6 +32,7 @@ package com.distrimind.ood.database.messages;
 import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.EncryptionTools;
 import com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupCertificate;
+import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
@@ -57,7 +58,7 @@ public class DistantBackupCenterConnexionInitialisation extends AuthenticatedMes
 	private DistantBackupCenterConnexionInitialisation() {
 	}
 
-	public DistantBackupCenterConnexionInitialisation(DecentralizedValue hostSource, Map<DecentralizedValue, Long> distantLastValidatedIDs, AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider, CentralDatabaseBackupCertificate certificate) throws IOException {
+	public DistantBackupCenterConnexionInitialisation(DecentralizedValue hostSource, Map<DecentralizedValue, Long> distantLastValidatedIDs, AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider, CentralDatabaseBackupCertificate certificate) throws DatabaseException {
 		super(hostSource, certificate);
 		if (distantLastValidatedIDs==null)
 			throw new NullPointerException();
@@ -72,9 +73,12 @@ public class DistantBackupCenterConnexionInitialisation extends AuthenticatedMes
 				throw new NullPointerException();
 			if (e.getValue()==null)
 				throw new NullPointerException();
-			this.encryptedDistantLastValidatedIDs.put(e.getKey(), EncryptionTools.encryptID(e.getValue(), random, encryptionProfileProvider));
+			try {
+				this.encryptedDistantLastValidatedIDs.put(e.getKey(), EncryptionTools.encryptID(e.getValue(), random, encryptionProfileProvider));
+			} catch (IOException ioException) {
+				throw DatabaseException.getDatabaseException(ioException);
+			}
 		}
-		generateAndSetSignature(random, encryptionProfileProvider);
 	}
 
 	public Map<DecentralizedValue, byte[]> getEncryptedDistantLastValidatedIDs() {

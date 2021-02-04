@@ -1,6 +1,7 @@
 package com.distrimind.ood.database.messages;
 
 import com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupCertificate;
+import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
@@ -22,15 +23,13 @@ public class DatabaseBackupToRemoveDestinedToCentralDatabaseBackup extends Authe
 	private DatabaseBackupToRemoveDestinedToCentralDatabaseBackup() {
 	}
 
-	public DatabaseBackupToRemoveDestinedToCentralDatabaseBackup(DecentralizedValue hostSource, String packageString, CentralDatabaseBackupCertificate certificate,
-																 AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws IOException {
+	public DatabaseBackupToRemoveDestinedToCentralDatabaseBackup(DecentralizedValue hostSource, String packageString, CentralDatabaseBackupCertificate certificate){
 		super(hostSource, certificate);
 		if (packageString==null)
 			throw new NullPointerException();
 		if (packageString.trim().length()==0)
 			throw new IllegalArgumentException();
 		this.packageString = packageString;
-		generateAndSetSignature(random, encryptionProfileProvider);
 	}
 
 	public String getPackageString() {

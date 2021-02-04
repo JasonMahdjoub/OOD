@@ -6,7 +6,6 @@ import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 
-import java.io.IOException;
 import java.util.*;
 
 /**
@@ -382,11 +381,7 @@ public class DatabaseConfigurationsBuilder {
 
 							Map<String, Boolean> hm=new HashMap<>();
 							hm.put(c.getDatabaseSchema().getPackage().getName(), DatabaseConfigurationsBuilder.this.lifeCycles != null && DatabaseConfigurationsBuilder.this.lifeCycles.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized(c));
-							try {
-								_record.offerNewAuthenticatedP2PMessage(wrapper, new HookSynchronizeRequest(configurations.getLocalPeer(), _record.getHostID(), hm, c.getDistantPeersThatCanBeSynchronizedWithThisDatabase(), secureRandom, protectedEncryptionProfileProviderForAuthenticatedP2PMessages), protectedEncryptionProfileProviderForAuthenticatedP2PMessages, this);
-							} catch (IOException e) {
-								throw DatabaseException.getDatabaseException(e);
-							}
+							_record.offerNewAuthenticatedP2PMessage(wrapper, new HookSynchronizeRequest(configurations.getLocalPeer(), _record.getHostID(), hm, c.getDistantPeersThatCanBeSynchronizedWithThisDatabase()), getSecureRandom(), protectedEncryptionProfileProviderForAuthenticatedP2PMessages, this);
 						}
 					}
 				}, "concernsDatabaseHost=%cdh", "cdh", false);
@@ -395,7 +390,7 @@ public class DatabaseConfigurationsBuilder {
 				{
 					Map<String, Boolean> hm=new HashMap<>();
 					hm.put(c.getDatabaseSchema().getPackage().getName(), DatabaseConfigurationsBuilder.this.lifeCycles != null && DatabaseConfigurationsBuilder.this.lifeCycles.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized(c));
-					wrapper.getSynchronizer().receivedHookSynchronizeRequest(new HookSynchronizeRequest(configurations.getLocalPeer(), configurations.getLocalPeer(), hm, c.getDistantPeersThatCanBeSynchronizedWithThisDatabase(), secureRandom, protectedEncryptionProfileProviderForAuthenticatedP2PMessages));
+					wrapper.getSynchronizer().receivedHookSynchronizeRequest(new HookSynchronizeRequest(configurations.getLocalPeer(), configurations.getLocalPeer(), hm, c.getDistantPeersThatCanBeSynchronizedWithThisDatabase()));
 				}
 				return packagesToSynchronize.size()>0;
 			}
@@ -458,17 +453,13 @@ public class DatabaseConfigurationsBuilder {
 						@Override
 						public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
 							for (Map.Entry<Set<String>, Set<DecentralizedValue>> e : packagesToUnsynchronize.entrySet()) {
-								try {
-									_record.offerNewAuthenticatedP2PMessage(wrapper, new HookDesynchronizeRequest(configurations.getLocalPeer(), _record.getHostID(), e.getKey(), e.getValue(), secureRandom, protectedEncryptionProfileProviderForAuthenticatedP2PMessages), protectedEncryptionProfileProviderForAuthenticatedP2PMessages, this);
-								} catch (IOException ioException) {
-									throw DatabaseException.getDatabaseException(ioException);
-								}
+								_record.offerNewAuthenticatedP2PMessage(wrapper, new HookDesynchronizeRequest(configurations.getLocalPeer(), _record.getHostID(), e.getKey(), e.getValue()), getSecureRandom(), protectedEncryptionProfileProviderForAuthenticatedP2PMessages, this);
 							}
 						}
 					}, "concernsDatabaseHost=%cdh", "cdh", false);
 
 					for (Map.Entry<Set<String>, Set<DecentralizedValue>> e : packagesToUnsynchronize.entrySet()) {
-						wrapper.getSynchronizer().receivedHookDesynchronizeRequest(new HookDesynchronizeRequest(configurations.getLocalPeer(), configurations.getLocalPeer(), e.getKey(), e.getValue(), secureRandom, protectedEncryptionProfileProviderForAuthenticatedP2PMessages));
+						wrapper.getSynchronizer().receivedHookDesynchronizeRequest(new HookDesynchronizeRequest(configurations.getLocalPeer(), configurations.getLocalPeer(), e.getKey(), e.getValue()));
 					}
 				}
 				return packagesToUnsynchronize.size()>0;
@@ -502,11 +493,7 @@ public class DatabaseConfigurationsBuilder {
 						wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
 							@Override
 							public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
-								try {
-									_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), peerIDToRemove, secureRandom, protectedEncryptionProfileProviderForAuthenticatedP2PMessages), protectedEncryptionProfileProviderForAuthenticatedP2PMessages, this);
-								} catch (IOException e) {
-									throw DatabaseException.getDatabaseException(e);
-								}
+								_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), peerIDToRemove), getSecureRandom(), protectedEncryptionProfileProviderForAuthenticatedP2PMessages, this);
 							}
 						}, "concernsDatabaseHost=%cdh", "cdh", false);
 					}

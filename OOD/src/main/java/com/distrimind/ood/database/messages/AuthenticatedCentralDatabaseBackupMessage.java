@@ -35,6 +35,7 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 import com.distrimind.util.crypto.IASymmetricPublicKey;
@@ -48,7 +49,7 @@ import java.io.IOException;
  */
 public interface AuthenticatedCentralDatabaseBackupMessage extends AuthenticatedMessage {
 	@Override
-	default void generateAndSetSignature(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws IOException {
+	default void generateAndSetSignature(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
 		short defaultKeyID=encryptionProfileProvider.getDefaultKeyID();
 		try {
 			if (encryptionProfileProvider.getSecretKeyForEncryption(defaultKeyID, false) != null)
@@ -66,11 +67,16 @@ public interface AuthenticatedCentralDatabaseBackupMessage extends Authenticated
 		{
 
 		}
-		IASymmetricPublicKey publicKey=encryptionProfileProvider.getPublicKeyForSignature(defaultKeyID);
-		if (publicKey==null)
-			throw new IOException();
-		if (!publicKey.equals(getCertificateASymmetricPublicKey()))
-			throw new IOException();
+		try {
+			IASymmetricPublicKey publicKey = encryptionProfileProvider.getPublicKeyForSignature(defaultKeyID);
+			if (publicKey==null)
+				throw new DatabaseException("");
+			if (!publicKey.equals(getCertificateASymmetricPublicKey()))
+				throw new DatabaseException("");
+		} catch (IOException e) {
+			throw DatabaseException.getDatabaseException(e);
+		}
+
 		AuthenticatedMessage.super.generateAndSetSignature(random, encryptionProfileProvider);
 	}
 	IASymmetricPublicKey getCertificateASymmetricPublicKey();

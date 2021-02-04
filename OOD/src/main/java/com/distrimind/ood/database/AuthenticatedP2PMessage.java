@@ -38,10 +38,8 @@ package com.distrimind.ood.database;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.messages.AuthenticatedMessage;
 import com.distrimind.ood.database.messages.P2PDatabaseEventToSend;
-import com.distrimind.util.crypto.*;
 import com.distrimind.util.io.*;
 
-import java.io.IOException;
 
 /**
  * @author Jason Mahdjoub

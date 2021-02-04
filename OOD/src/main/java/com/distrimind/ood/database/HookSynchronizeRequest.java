@@ -27,8 +27,7 @@ public class HookSynchronizeRequest extends AbstractHookRequest {
 	}
 
 	HookSynchronizeRequest(DecentralizedValue _hostSource, DecentralizedValue _hostDestination,
-						   Map<String, Boolean> packagesToSynchronize, Set<DecentralizedValue> peersInCloud,
-						   AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws IOException {
+						   Map<String, Boolean> packagesToSynchronize, Set<DecentralizedValue> peersInCloud) {
 		super(_hostSource, _hostDestination, peersInCloud);
 		if (packagesToSynchronize==null)
 			throw new NullPointerException();
@@ -37,7 +36,6 @@ public class HookSynchronizeRequest extends AbstractHookRequest {
 		this.packagesToSynchronize=packagesToSynchronize;
 		this.concernedPeers=new HashSet<>(concernedPeers);
 		this.concernedPeers.add(_hostSource);
-		generateAndSetSignature(random, encryptionProfileProvider);
 	}
 
 	@Override

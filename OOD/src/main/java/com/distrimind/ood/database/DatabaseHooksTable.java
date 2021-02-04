@@ -219,13 +219,14 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			return concernsDatabaseHost;
 		}
 
-		void offerNewAuthenticatedP2PMessage(DatabaseWrapper wrapper, AuthenticatedP2PMessage message, EncryptionProfileProvider encryptionProfileProvider, AlterRecordFilter<Record> alterRecordFilter) throws DatabaseException {
+		void offerNewAuthenticatedP2PMessage(DatabaseWrapper wrapper, AuthenticatedP2PMessage message, AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider, AlterRecordFilter<Record> alterRecordFilter) throws DatabaseException {
 			if (message==null)
 				throw new NullPointerException();
 			if (!(message instanceof DatabaseEvent))
 				throw new IllegalAccessError();
 			if (authenticatedMessagesQueueToSend==null)
 				authenticatedMessagesQueueToSend=new LinkedList<>();
+			message.generateAndSetSignature(random, encryptionProfileProvider);
 			message.setMessageID(lastLocalAuthenticatedP2PMessageID++);
 			authenticatedMessagesQueueToSend.addLast(message);
 			if (message instanceof HookRemoveRequest && ((HookRemoveRequest) message).getRemovedHookID().equals(hostID))
