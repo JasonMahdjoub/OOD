@@ -36,7 +36,10 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 
-import com.distrimind.util.io.SecureExternalizable;
+import com.distrimind.util.crypto.*;
+import com.distrimind.util.io.*;
+
+import java.io.IOException;
 
 /**
  * @author Jason Mahdjoub
@@ -44,5 +47,56 @@ import com.distrimind.util.io.SecureExternalizable;
  * @since OOD 3.0.0
  */
 public interface AuthenticatedMessage extends SecureExternalizable, DatabaseEventToSend {
+	int MAX_SIGNATURES_SIZE= SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE+MessageDigestType.MAX_HASH_LENGTH+ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE+EncryptionSignatureHashEncoder.headSize+10;
+	default void writeExternal(SecuredObjectOutputStream out) throws IOException
+	{
+		writeExternalWithoutSignatures(out);
+		out.writeBytesArray(getSignatures(), false, MAX_SIGNATURES_SIZE);
+	}
+	default void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException
+	{
+		readExternalWithoutSignatures(in);
+		setSignatures(in.readBytesArray(false, MAX_SIGNATURES_SIZE));
+	}
+	default int getInternalSerializedSize()
+	{
+		return getInternalSerializedSizeWithoutSignatures()+ SerializationTools.getInternalSize(getSignatures(), MAX_SIGNATURES_SIZE);
+	}
+	void writeExternalWithoutSignatures(SecuredObjectOutputStream out) throws IOException;
+	void readExternalWithoutSignatures(SecuredObjectInputStream in) throws IOException, ClassNotFoundException;
+	int getInternalSerializedSizeWithoutSignatures();
 
+	default void generateAndSetSignature(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws IOException {
+		if (encryptionProfileProvider==null)
+			throw new NullPointerException();
+		if (random==null)
+			throw new NullPointerException();
+		try(RandomByteArrayOutputStream out=new RandomByteArrayOutputStream(); RandomByteArrayOutputStream outSig=new RandomByteArrayOutputStream())
+		{
+			writeExternalWithoutSignatures(out);
+			out.flush();
+			new EncryptionSignatureHashEncoder()
+					.withEncryptionProfileProvider(random, encryptionProfileProvider)
+					.withRandomInputStream(out.getRandomInputStream())
+					.generatesOnlyHashAndSignatures(outSig);
+			outSig.flush();
+			setSignatures(outSig.getBytes());
+		}
+	}
+	default Integrity checkSignature(EncryptionProfileProvider encryptionProfileProvider) {
+		if (encryptionProfileProvider==null)
+			throw new NullPointerException();
+		try(RandomByteArrayOutputStream out=new RandomByteArrayOutputStream())
+		{
+			writeExternalWithoutSignatures(out);
+			out.flush();
+			return new EncryptionSignatureHashDecoder()
+					.withEncryptionProfileProvider(encryptionProfileProvider)
+					.checkHashAndSignatures(new RandomByteArrayInputStream(getSignatures()), out.getRandomInputStream());
+		} catch (IOException e) {
+			return Integrity.FAIL;
+		}
+	}
+	void setSignatures(byte[] signatures);
+	byte[] getSignatures();
 }

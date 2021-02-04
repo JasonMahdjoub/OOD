@@ -35,10 +35,7 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.ood.database.centraldatabaseapi.ClientTable;
-import com.distrimind.ood.database.centraldatabaseapi.DatabaseBackupPerClientTable;
-import com.distrimind.ood.database.centraldatabaseapi.EncryptedBackupPartReferenceTable;
-import com.distrimind.ood.database.centraldatabaseapi.FileReference;
+import com.distrimind.ood.database.centraldatabaseapi.*;
 import com.distrimind.ood.database.decentralizeddatabase.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
@@ -382,6 +379,57 @@ public abstract class CommonDecentralizedTests {
 		}
 
 		@Override
+		protected EncryptionProfileProvider getEncryptionProfileProviderToValidateCertificateOrGetNullIfNoValidProviderIsAvailable(com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupCertificate certificate) {
+			if (!isValidCertificate(certificate))
+				return null;
+			return new EncryptionProfileProvider() {
+				@Override
+				public MessageDigestType getMessageDigest(short keyID, boolean duringDecryptionPhase) throws IOException {
+					return null;
+				}
+
+				@Override
+				public IASymmetricPrivateKey getPrivateKeyForSignature(short keyID) throws IOException {
+					return null;
+				}
+
+				@Override
+				public IASymmetricPublicKey getPublicKeyForSignature(short keyID) throws IOException {
+					if (keyID==0)
+						return certificate.getCertifiedAccountPublicKey();
+					throw new IOException();
+				}
+
+				@Override
+				public SymmetricSecretKey getSecretKeyForSignature(short keyID, boolean duringDecryptionPhase) throws IOException {
+					return null;
+				}
+
+				@Override
+				public SymmetricSecretKey getSecretKeyForEncryption(short keyID, boolean duringDecryptionPhase) throws IOException {
+					return null;
+				}
+
+				@Override
+				public boolean isValidProfileID(short id) {
+					return id==0;
+				}
+
+				@Override
+				public Short getValidProfileIDFromPublicKeyForSignature(IASymmetricPublicKey publicKeyForSignature) {
+					if (certificate.getCertifiedAccountPublicKey().equals(publicKeyForSignature))
+						return 0;
+					return null;
+				}
+
+				@Override
+				public short getDefaultKeyID() {
+					return 0;
+				}
+			};
+		}
+
+
 		protected boolean isValidCertificate(com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupCertificate certificate) {
 			if (certificate instanceof CentralDatabaseBackupCertificate)
 			{

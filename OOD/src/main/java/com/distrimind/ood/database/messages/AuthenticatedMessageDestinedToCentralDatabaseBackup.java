@@ -37,10 +37,11 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 import com.distrimind.ood.database.DatabaseEvent;
 import com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupCertificate;
-import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.crypto.ASymmetricAuthenticatedSignatureType;
+import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
+import com.distrimind.util.crypto.IASymmetricPublicKey;
 import com.distrimind.util.io.SecuredObjectInputStream;
 import com.distrimind.util.io.SecuredObjectOutputStream;
 import com.distrimind.util.io.SerializationTools;
@@ -54,7 +55,7 @@ import java.io.IOException;
  */
 public abstract class AuthenticatedMessageDestinedToCentralDatabaseBackup extends DatabaseEvent implements MessageDestinedToCentralDatabaseBackup, AuthenticatedCentralDatabaseBackupMessage {
 	private DecentralizedValue hostSource;
-	private short encryptionProfileIdentifier;
+
 	private byte[] asymmetricSignature;
 	private CentralDatabaseBackupCertificate certificate;
 
@@ -67,8 +68,26 @@ public abstract class AuthenticatedMessageDestinedToCentralDatabaseBackup extend
 		if (certificate==null)
 			throw new NullPointerException();
 		this.hostSource = hostSource;
-		this.encryptionProfileIdentifier = -1;
 		this.certificate = certificate;
+
+	}
+
+	@Override
+	public IASymmetricPublicKey getCertificateASymmetricPublicKey()
+	{
+		return certificate.getCertifiedAccountPublicKey();
+	}
+
+	@Override
+	public byte[] getSignatures() {
+		return asymmetricSignature;
+	}
+
+	@Override
+	public void setSignatures(byte[] signatures) {
+		if (signatures==null)
+			throw new NullPointerException();
+		this.asymmetricSignature=signatures;
 	}
 
 	@Override
@@ -76,58 +95,29 @@ public abstract class AuthenticatedMessageDestinedToCentralDatabaseBackup extend
 		return hostSource;
 	}
 
-	@Override
-	public short getEncryptionProfileIdentifier() {
-		return encryptionProfileIdentifier;
-	}
 
 	@Override
-	public byte[] getASymmetricSignature() {
-		return asymmetricSignature;
-	}
-
-	@Override
-	public void updateSignature(EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
-		encryptionProfileIdentifier = encryptionProfileProvider.getDefaultKeyID();
-		asymmetricSignature = sign(encryptionProfileProvider);
-	}
-
-	@Override
-	public void writeExternalWithoutSignature(SecuredObjectOutputStream out) throws IOException {
+	public void writeExternalWithoutSignatures(SecuredObjectOutputStream out) throws IOException {
 		out.writeObject(hostSource, false);
-		out.writeShort(encryptionProfileIdentifier);
 		out.writeObject(certificate, false);
 	}
 
-	protected void readExternalWithoutSignature(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
+	@Override
+	public void readExternalWithoutSignatures(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
 		hostSource=in.readObject(false, DecentralizedValue.class );
-		encryptionProfileIdentifier=in.readShort();
 		certificate=in.readObject(false);
 	}
 
-	@Override
-	public final void writeExternal(SecuredObjectOutputStream out) throws IOException {
-		AuthenticatedCentralDatabaseBackupMessage.super.writeExternal(out);
-	}
+
 
 	@Override
-	public int getInternalSerializedSize() {
+	public int getInternalSerializedSizeWithoutSignatures() {
 		int res= SerializationTools.getInternalSize(hostSource, 0)+2+SerializationTools.getInternalSize(certificate);
 		res+=SerializationTools.getInternalSize(asymmetricSignature, ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE);
 		return res;
 	}
 
-	@Override
-	public final void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
-		readExternalWithoutSignature(in);
-		asymmetricSignature=in.readBytesArray(false,  ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE);
-	}
 
-	@Override
-	public void writeExternalSignature(SecuredObjectOutputStream out) throws IOException {
-		out.writeBytesArray(asymmetricSignature, false, ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE);
-
-	}
 
 	public CentralDatabaseBackupCertificate getCertificate() {
 		return certificate;

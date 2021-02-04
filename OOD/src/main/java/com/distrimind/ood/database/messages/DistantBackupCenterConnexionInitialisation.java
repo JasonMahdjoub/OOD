@@ -32,7 +32,6 @@ package com.distrimind.ood.database.messages;
 import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.EncryptionTools;
 import com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupCertificate;
-import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
@@ -58,7 +57,7 @@ public class DistantBackupCenterConnexionInitialisation extends AuthenticatedMes
 	private DistantBackupCenterConnexionInitialisation() {
 	}
 
-	public DistantBackupCenterConnexionInitialisation(DecentralizedValue hostSource, Map<DecentralizedValue, Long> distantLastValidatedIDs, AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider, CentralDatabaseBackupCertificate certificate) throws IOException, DatabaseException {
+	public DistantBackupCenterConnexionInitialisation(DecentralizedValue hostSource, Map<DecentralizedValue, Long> distantLastValidatedIDs, AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider, CentralDatabaseBackupCertificate certificate) throws IOException {
 		super(hostSource, certificate);
 		if (distantLastValidatedIDs==null)
 			throw new NullPointerException();
@@ -75,7 +74,7 @@ public class DistantBackupCenterConnexionInitialisation extends AuthenticatedMes
 				throw new NullPointerException();
 			this.encryptedDistantLastValidatedIDs.put(e.getKey(), EncryptionTools.encryptID(e.getValue(), random, encryptionProfileProvider));
 		}
-		updateSignature(encryptionProfileProvider);
+		generateAndSetSignature(random, encryptionProfileProvider);
 	}
 
 	public Map<DecentralizedValue, byte[]> getEncryptedDistantLastValidatedIDs() {
@@ -88,20 +87,20 @@ public class DistantBackupCenterConnexionInitialisation extends AuthenticatedMes
 	}
 
 	@Override
-	public int getInternalSerializedSize() {
-		return super.getInternalSerializedSize()
+	public int getInternalSerializedSizeWithoutSignatures() {
+		return super.getInternalSerializedSizeWithoutSignatures()
 				+SerializationTools.getInternalSize(encryptedDistantLastValidatedIDs, MAX_DISTANT_VALIDATED_IDS_SIZE_IN_BYTES);
 	}
 
 	@Override
-	public void writeExternalWithoutSignature(SecuredObjectOutputStream out) throws IOException {
-		super.writeExternalWithoutSignature(out);
+	public void writeExternalWithoutSignatures(SecuredObjectOutputStream out) throws IOException {
+		super.writeExternalWithoutSignatures(out);
 		out.writeMap(encryptedDistantLastValidatedIDs, false, MAX_DISTANT_VALIDATED_IDS_SIZE_IN_BYTES, false, false );
 	}
 
 	@Override
-	protected void readExternalWithoutSignature(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
-		super.readExternalWithoutSignature(in);
+	public void readExternalWithoutSignatures(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
+		super.readExternalWithoutSignatures(in);
 		encryptedDistantLastValidatedIDs=in.readMap(false, MAX_DISTANT_VALIDATED_IDS_SIZE_IN_BYTES, false, false, DecentralizedValue.class, byte[].class);
 	}
 

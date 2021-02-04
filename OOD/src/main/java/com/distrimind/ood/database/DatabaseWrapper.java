@@ -1815,8 +1815,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					if (authorizedPackagesToBeSynchronizedWithCentralDatabaseBackup.contains(e.getKey())) {
 						validateLastSynchronizationWithCentralDatabaseBackup(e.getKey(), e.getValue());
 					}
-					else
-						addNewDatabaseEvent(new DatabaseBackupToRemoveDestinedToCentralDatabaseBackup(getLocalHostID(), e.getKey(), databaseConfigurationsBuilder.getConfigurations().getCentralDatabaseBackupCertificate()));
+					else {
+						try {
+							addNewDatabaseEvent(new DatabaseBackupToRemoveDestinedToCentralDatabaseBackup(getLocalHostID(), e.getKey(), databaseConfigurationsBuilder.getConfigurations().getCentralDatabaseBackupCertificate(),
+									databaseConfigurationsBuilder.getSecureRandom(), databaseConfigurationsBuilder.getEncryptionProfileProviderForCentralDatabaseBackup()));
+						} catch (IOException ioException) {
+							throw DatabaseException.getDatabaseException(ioException);
+						}
+					}
 				}
 				for (String p : authorizedPackagesToBeSynchronizedWithCentralDatabaseBackup)
 				{

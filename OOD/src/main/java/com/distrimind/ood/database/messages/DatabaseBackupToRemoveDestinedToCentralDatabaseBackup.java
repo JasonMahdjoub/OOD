@@ -2,6 +2,8 @@ package com.distrimind.ood.database.messages;
 
 import com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupCertificate;
 import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.crypto.EncryptionProfileProvider;
 import com.distrimind.util.io.*;
 
 import java.io.IOException;
@@ -20,13 +22,15 @@ public class DatabaseBackupToRemoveDestinedToCentralDatabaseBackup extends Authe
 	private DatabaseBackupToRemoveDestinedToCentralDatabaseBackup() {
 	}
 
-	public DatabaseBackupToRemoveDestinedToCentralDatabaseBackup(DecentralizedValue hostSource, String packageString, CentralDatabaseBackupCertificate certificate) {
+	public DatabaseBackupToRemoveDestinedToCentralDatabaseBackup(DecentralizedValue hostSource, String packageString, CentralDatabaseBackupCertificate certificate,
+																 AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws IOException {
 		super(hostSource, certificate);
 		if (packageString==null)
 			throw new NullPointerException();
 		if (packageString.trim().length()==0)
 			throw new IllegalArgumentException();
 		this.packageString = packageString;
+		generateAndSetSignature(random, encryptionProfileProvider);
 	}
 
 	public String getPackageString() {
@@ -40,19 +44,19 @@ public class DatabaseBackupToRemoveDestinedToCentralDatabaseBackup extends Authe
 	}
 
 	@Override
-	public int getInternalSerializedSize() {
-		return SerializationTools.getInternalSize(packageString, SerializationTools.MAX_CLASS_LENGTH)+super.getInternalSerializedSize();
+	public int getInternalSerializedSizeWithoutSignatures() {
+		return SerializationTools.getInternalSize(packageString, SerializationTools.MAX_CLASS_LENGTH)+super.getInternalSerializedSizeWithoutSignatures();
 	}
 
 	@Override
-	public void writeExternalWithoutSignature(SecuredObjectOutputStream out) throws IOException {
-		super.writeExternalWithoutSignature(out);
+	public void writeExternalWithoutSignatures(SecuredObjectOutputStream out) throws IOException {
+		super.writeExternalWithoutSignatures(out);
 		out.writeString(packageString, false, SerializationTools.MAX_CLASS_LENGTH);
 	}
 
 	@Override
-	public void readExternalWithoutSignature(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
-		super.readExternalWithoutSignature(in);
+	public void readExternalWithoutSignatures(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
+		super.readExternalWithoutSignatures(in);
 		packageString =in.readString(false, SerializationTools.MAX_CLASS_LENGTH);
 		if (packageString.trim().length()==0)
 			throw new MessageExternalizationException(Integrity.FAIL);

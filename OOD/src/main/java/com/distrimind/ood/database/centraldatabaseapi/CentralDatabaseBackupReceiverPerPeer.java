@@ -41,6 +41,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.messages.*;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.Reference;
+import com.distrimind.util.crypto.EncryptionProfileProvider;
 import com.distrimind.util.io.Integrity;
 import com.distrimind.util.io.MessageExternalizationException;
 
@@ -99,12 +100,17 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 	{
 		return connected;
 	}
+	protected abstract EncryptionProfileProvider getEncryptionProfileProviderToValidateCertificateOrGetNullIfNoValidProviderIsAvailable(CentralDatabaseBackupCertificate certificate);
 
-	protected abstract boolean isValidCertificate(CentralDatabaseBackupCertificate certificate);
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	private boolean checkCertificate(AuthenticatedMessageDestinedToCentralDatabaseBackup message) {
 		CentralDatabaseBackupCertificate certificate=message.getCertificate();
-		return certificate != null && isValidCertificate(certificate);
+		if (certificate==null)
+			return false;
+		EncryptionProfileProvider encryptionProfileProvider=getEncryptionProfileProviderToValidateCertificateOrGetNullIfNoValidProviderIsAvailable(certificate);
+		if (encryptionProfileProvider==null)
+			return false;
+		return message.checkSignature(encryptionProfileProvider)==Integrity.OK;
 	}
 	public Integrity init(DistantBackupCenterConnexionInitialisation initialMessage) throws DatabaseException {
 		final CentralDatabaseBackupCertificate certificate=initialMessage.getCertificate();

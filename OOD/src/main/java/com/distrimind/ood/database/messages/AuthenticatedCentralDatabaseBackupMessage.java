@@ -35,13 +35,11 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.util.crypto.*;
-import com.distrimind.util.io.*;
+import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.crypto.EncryptionProfileProvider;
+import com.distrimind.util.crypto.IASymmetricPublicKey;
 
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 
 /**
  * @author Jason Mahdjoub
@@ -49,54 +47,34 @@ import java.security.NoSuchProviderException;
  * @since OOD 3.0.0
  */
 public interface AuthenticatedCentralDatabaseBackupMessage extends AuthenticatedMessage {
-
 	@Override
-	default void writeExternal(SecuredObjectOutputStream out) throws IOException
-	{
-		writeExternalWithoutSignature(out);
-		writeExternalSignature(out);
-	}
-
-	void writeExternalSignature(SecuredObjectOutputStream out) throws IOException;
-
-	void writeExternalWithoutSignature(SecuredObjectOutputStream out) throws IOException;
-
-	short getEncryptionProfileIdentifier();
-
-
-	default byte[] sign(EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
+	default void generateAndSetSignature(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws IOException {
+		short defaultKeyID=encryptionProfileProvider.getDefaultKeyID();
 		try {
-			ASymmetricAuthenticatedSignerAlgorithm signer = new ASymmetricAuthenticatedSignerAlgorithm(encryptionProfileProvider.getPrivateKeyForSignature(getEncryptionProfileIdentifier()));
-			signer.init();
-			try(SignerRandomOutputStream out=new SignerRandomOutputStream(new NullRandomOutputStream(), signer)) {
-				writeExternalWithoutSignature(out);
-			}
-			return signer.getSignature();
-		} catch (NoSuchAlgorithmException | NoSuchProviderException | IOException e) {
-			throw DatabaseException.getDatabaseException(e);
+			if (encryptionProfileProvider.getSecretKeyForEncryption(defaultKeyID, false) != null)
+				throw new IOException();
 		}
-	}
+		catch (IOException ignored)
+		{
 
-	default boolean checkAuthentication(EncryptionProfileProvider profileProvider) throws DatabaseException {
-		byte[] sig=getASymmetricSignature();
-		if (sig==null)
-			return true;
+		}
 		try {
-			ASymmetricAuthenticatedSignatureCheckerAlgorithm checker=new ASymmetricAuthenticatedSignatureCheckerAlgorithm(profileProvider.getPublicKeyForSignature(this.getEncryptionProfileIdentifier()));
-			try(RandomByteArrayOutputStream out=new RandomByteArrayOutputStream())
-			{
-				writeExternalWithoutSignature(out);
-				out.flush();
-				return checker.verify(out.getBytes(), sig);
-			}
-		} catch (NoSuchAlgorithmException | NoSuchProviderException | IOException e) {
-			throw DatabaseException.getDatabaseException(e);
+			if (encryptionProfileProvider.getSecretKeyForSignature(defaultKeyID, false) != null)
+				throw new IOException();
 		}
+		catch (IOException ignored)
+		{
 
+		}
+		IASymmetricPublicKey publicKey=encryptionProfileProvider.getPublicKeyForSignature(defaultKeyID);
+		if (publicKey==null)
+			throw new IOException();
+		if (!publicKey.equals(getCertificateASymmetricPublicKey()))
+			throw new IOException();
+		AuthenticatedMessage.super.generateAndSetSignature(random, encryptionProfileProvider);
 	}
-
-	byte[] getASymmetricSignature();
-
-	void updateSignature(EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException;
-
+	IASymmetricPublicKey getCertificateASymmetricPublicKey();
+	default byte[] getASymmetricSignature() {
+		return getSignatures();
+	}
 }
