@@ -226,7 +226,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 				throw new IllegalAccessError();
 			if (authenticatedMessagesQueueToSend==null)
 				authenticatedMessagesQueueToSend=new LinkedList<>();
-			message.generateAndSetSignature(random, encryptionProfileProvider);
+			message.generateAndSetSignatures(random, encryptionProfileProvider);
 			message.setMessageID(lastLocalAuthenticatedP2PMessageID++);
 			authenticatedMessagesQueueToSend.addLast(message);
 			if (message instanceof HookRemoveRequest && ((HookRemoveRequest) message).getRemovedHookID().equals(hostID))

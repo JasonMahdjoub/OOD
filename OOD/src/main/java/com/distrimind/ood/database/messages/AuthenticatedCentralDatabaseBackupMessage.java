@@ -49,7 +49,7 @@ import java.io.IOException;
  */
 public interface AuthenticatedCentralDatabaseBackupMessage extends AuthenticatedMessage {
 	@Override
-	default void generateAndSetSignature(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
+	default void generateAndSetSignatures(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
 		short defaultKeyID=encryptionProfileProvider.getDefaultKeyID();
 		try {
 			if (encryptionProfileProvider.getSecretKeyForEncryption(defaultKeyID, false) != null)
@@ -77,7 +77,7 @@ public interface AuthenticatedCentralDatabaseBackupMessage extends Authenticated
 			throw DatabaseException.getDatabaseException(e);
 		}
 
-		AuthenticatedMessage.super.generateAndSetSignature(random, encryptionProfileProvider);
+		AuthenticatedMessage.super.generateAndSetSignatures(random, encryptionProfileProvider);
 	}
 	IASymmetricPublicKey getCertificateASymmetricPublicKey();
 	default byte[] getASymmetricSignature() {

@@ -1457,48 +1457,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				lockWrite();
 				if (e instanceof AuthenticatedMessageDestinedToCentralDatabaseBackup)
 				{
-					((AuthenticatedMessageDestinedToCentralDatabaseBackup) e).generateAndSetSignature(databaseConfigurationsBuilder.getSecureRandom(), new EncryptionProfileProvider() {
-						private EncryptionProfileProvider e=databaseConfigurationsBuilder.getEncryptionProfileProviderForCentralDatabaseBackup();
-						@Override
-						public MessageDigestType getMessageDigest(short keyID, boolean duringDecryptionPhase) throws IOException {
-							return e.getMessageDigest(keyID, duringDecryptionPhase);
-						}
-
-						@Override
-						public IASymmetricPrivateKey getPrivateKeyForSignature(short keyID) throws IOException {
-							return e.getPrivateKeyForSignature(keyID);
-						}
-
-						@Override
-						public IASymmetricPublicKey getPublicKeyForSignature(short keyID) throws IOException {
-							return e.getPublicKeyForSignature(keyID);
-						}
-
-						@Override
-						public SymmetricSecretKey getSecretKeyForSignature(short keyID, boolean duringDecryptionPhase) throws IOException {
-							return e.getSecretKeyForSignature(keyID, duringDecryptionPhase);
-						}
-
-						@Override
-						public SymmetricSecretKey getSecretKeyForEncryption(short keyID, boolean duringDecryptionPhase) {
-							return null;
-						}
-
-						@Override
-						public boolean isValidProfileID(short id) {
-							return e.isValidProfileID(id);
-						}
-
-						@Override
-						public Short getValidProfileIDFromPublicKeyForSignature(IASymmetricPublicKey publicKeyForSignature) {
-							return e.getValidProfileIDFromPublicKeyForSignature(publicKeyForSignature);
-						}
-
-						@Override
-						public short getDefaultKeyID() {
-							return e.getDefaultKeyID();
-						}
-					});
+					((AuthenticatedMessageDestinedToCentralDatabaseBackup) e).generateAndSetSignatures(databaseConfigurationsBuilder.getSecureRandom(), databaseConfigurationsBuilder.getEncryptionProfileProviderForCentralDatabaseBackup());
 				}
 				List<DatabaseEvent> r = tryToMerge(Collections.singletonList(e));
 				boolean add=r.size()>0;
