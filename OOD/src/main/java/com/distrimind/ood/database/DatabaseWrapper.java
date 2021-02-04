@@ -1113,7 +1113,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new DatabaseException("Function must be called before addHookForLocalDatabaseHost.");
 			if (m.getHostDestination().equals(getLocalHostID()))
 			{
-				Integrity i=m.checkHashAndSignatures(databaseConfigurationsBuilder.getProtectedEncryptionProfileProviderForAuthenticatedP2PMessages());
+				Integrity i=m.checkHashAndSignatures(databaseConfigurationsBuilder.getProtectedSignatureProfileProviderForAuthenticatedP2PMessages());
 				if (i!=Integrity.OK) {
 					throw new MessageExternalizationException(i);
 				}
@@ -1842,7 +1842,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				assert !e.getKey().equals(getLocalHostID());
 				initDistantBackupCenter(e.getKey(), e.getValue().getLastValidatedDistantID(), e.getValue().getLastValidatedLocalID());
 			}
-			for (AuthenticatedP2PMessage a : initialMessageComingFromCentralBackup.getAuthenticatedP2PMessages(databaseConfigurationsBuilder.getProtectedEncryptionProfileProviderForAuthenticatedP2PMessages()))
+			for (AuthenticatedP2PMessage a : initialMessageComingFromCentralBackup.getAuthenticatedP2PMessages(databaseConfigurationsBuilder.getEncryptionProfileProviderForCentralDatabaseBackup()))
 				received(a);
 
 		}
@@ -2486,7 +2486,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 		private void received(IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup message) throws DatabaseException, IOException {
 
-			for (AuthenticatedP2PMessage a : message.getAuthenticatedP2PMessages(databaseConfigurationsBuilder.getProtectedEncryptionProfileProviderForAuthenticatedP2PMessages()))
+			for (AuthenticatedP2PMessage a : message.getAuthenticatedP2PMessages(databaseConfigurationsBuilder.getEncryptionProfileProviderForCentralDatabaseBackup()))
 				received(a);
 		}
 		private void received(MessageComingFromCentralDatabaseBackup data) throws DatabaseException, IOException {

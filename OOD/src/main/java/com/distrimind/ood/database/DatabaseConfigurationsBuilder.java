@@ -17,7 +17,7 @@ public class DatabaseConfigurationsBuilder {
 	private final DatabaseConfigurations configurations;
 	private final DatabaseWrapper wrapper;
 	private final DatabaseLifeCycles lifeCycles;
-	private final EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages;
+	private final EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup, protectedSignatureProfileProviderForAuthenticatedP2PMessages;
 	private final AbstractSecureRandom secureRandom;
 
 
@@ -25,7 +25,7 @@ public class DatabaseConfigurationsBuilder {
 								  DatabaseWrapper wrapper,
 								  DatabaseLifeCycles lifeCycles,
 								  EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
-								  EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+								  EncryptionProfileProvider protectedSignatureProfileProviderForAuthenticatedP2PMessages,
 								  AbstractSecureRandom secureRandom,
 								  boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
 		if (configurations==null)
@@ -34,16 +34,16 @@ public class DatabaseConfigurationsBuilder {
 			throw new NullPointerException();
 		if (encryptionProfileProviderForCentralDatabaseBackup ==null && configurations.useCentralBackupDatabase())
 			throw new NullPointerException();
-		if (protectedEncryptionProfileProviderForAuthenticatedP2PMessages ==null && configurations.isDecentralized())
+		if (protectedSignatureProfileProviderForAuthenticatedP2PMessages ==null && configurations.isDecentralized())
 			throw new NullPointerException();
-		if (secureRandom==null && (protectedEncryptionProfileProviderForAuthenticatedP2PMessages!=null || encryptionProfileProviderForCentralDatabaseBackup!=null))
+		if (secureRandom==null && (protectedSignatureProfileProviderForAuthenticatedP2PMessages !=null || encryptionProfileProviderForCentralDatabaseBackup!=null))
 			throw new NullPointerException();
 
 		this.configurations = configurations;
 		this.wrapper = wrapper;
 		this.lifeCycles = lifeCycles;
 		this.encryptionProfileProviderForCentralDatabaseBackup = encryptionProfileProviderForCentralDatabaseBackup;
-		this.protectedEncryptionProfileProviderForAuthenticatedP2PMessages = protectedEncryptionProfileProviderForAuthenticatedP2PMessages;
+		this.protectedSignatureProfileProviderForAuthenticatedP2PMessages = protectedSignatureProfileProviderForAuthenticatedP2PMessages;
 		this.secureRandom=secureRandom;
 		boolean save=configurations.checkDistantPeers();
 		configurations.setCreateDatabasesIfNecessaryAndCheckIt(createDatabasesIfNecessaryAndCheckIt);
@@ -235,8 +235,8 @@ public class DatabaseConfigurationsBuilder {
 		return encryptionProfileProviderForCentralDatabaseBackup;
 	}
 
-	public EncryptionProfileProvider getProtectedEncryptionProfileProviderForAuthenticatedP2PMessages() {
-		return protectedEncryptionProfileProviderForAuthenticatedP2PMessages;
+	public EncryptionProfileProvider getProtectedSignatureProfileProviderForAuthenticatedP2PMessages() {
+		return protectedSignatureProfileProviderForAuthenticatedP2PMessages;
 	}
 
 	AbstractSecureRandom getSecureRandom() {
@@ -250,7 +250,7 @@ public class DatabaseConfigurationsBuilder {
 	{
 		if (configuration.isSynchronizedWithCentralBackupDatabase() && encryptionProfileProviderForCentralDatabaseBackup==null)
 			throw new IllegalArgumentException("Cannot add configuration without encryption profile provider for central backup database");
-		if (configuration.isDecentralized() && protectedEncryptionProfileProviderForAuthenticatedP2PMessages ==null)
+		if (configuration.isDecentralized() && protectedSignatureProfileProviderForAuthenticatedP2PMessages ==null)
 			throw new IllegalArgumentException("Cannot add configuration without protected encryption profile provider for authenticated P2P messages");
 		pushQuery((t) -> {
 
@@ -381,7 +381,7 @@ public class DatabaseConfigurationsBuilder {
 
 							Map<String, Boolean> hm=new HashMap<>();
 							hm.put(c.getDatabaseSchema().getPackage().getName(), DatabaseConfigurationsBuilder.this.lifeCycles != null && DatabaseConfigurationsBuilder.this.lifeCycles.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized(c));
-							_record.offerNewAuthenticatedP2PMessage(wrapper, new HookSynchronizeRequest(configurations.getLocalPeer(), _record.getHostID(), hm, c.getDistantPeersThatCanBeSynchronizedWithThisDatabase()), getSecureRandom(), protectedEncryptionProfileProviderForAuthenticatedP2PMessages, this);
+							_record.offerNewAuthenticatedP2PMessage(wrapper, new HookSynchronizeRequest(configurations.getLocalPeer(), _record.getHostID(), hm, c.getDistantPeersThatCanBeSynchronizedWithThisDatabase()), getSecureRandom(), protectedSignatureProfileProviderForAuthenticatedP2PMessages, this);
 						}
 					}
 				}, "concernsDatabaseHost=%cdh", "cdh", false);
@@ -453,7 +453,7 @@ public class DatabaseConfigurationsBuilder {
 						@Override
 						public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
 							for (Map.Entry<Set<String>, Set<DecentralizedValue>> e : packagesToUnsynchronize.entrySet()) {
-								_record.offerNewAuthenticatedP2PMessage(wrapper, new HookDesynchronizeRequest(configurations.getLocalPeer(), _record.getHostID(), e.getKey(), e.getValue()), getSecureRandom(), protectedEncryptionProfileProviderForAuthenticatedP2PMessages, this);
+								_record.offerNewAuthenticatedP2PMessage(wrapper, new HookDesynchronizeRequest(configurations.getLocalPeer(), _record.getHostID(), e.getKey(), e.getValue()), getSecureRandom(), protectedSignatureProfileProviderForAuthenticatedP2PMessages, this);
 							}
 						}
 					}, "concernsDatabaseHost=%cdh", "cdh", false);
@@ -493,7 +493,7 @@ public class DatabaseConfigurationsBuilder {
 						wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
 							@Override
 							public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
-								_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), peerIDToRemove), getSecureRandom(), protectedEncryptionProfileProviderForAuthenticatedP2PMessages, this);
+								_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), peerIDToRemove), getSecureRandom(), protectedSignatureProfileProviderForAuthenticatedP2PMessages, this);
 							}
 						}, "concernsDatabaseHost=%cdh", "cdh", false);
 					}
@@ -542,7 +542,7 @@ public class DatabaseConfigurationsBuilder {
 	public DatabaseConfigurationsBuilder setLocalPeerIdentifier(DecentralizedValue localPeerId, boolean permitIndirectSynchronizationBetweenPeers, boolean replace) {
 		if (localPeerId==null)
 			throw new NullPointerException();
-		if (protectedEncryptionProfileProviderForAuthenticatedP2PMessages ==null)
+		if (protectedSignatureProfileProviderForAuthenticatedP2PMessages ==null)
 			throw new IllegalArgumentException("Cannot set local peer without protected encryption profile provider for authenticated P2P messages");
 		pushQuery((t)-> {
 			t.checkNotRemovedID(localPeerId);
@@ -617,7 +617,7 @@ public class DatabaseConfigurationsBuilder {
 			throw new IllegalArgumentException();
 		if (Arrays.stream(packagesString).anyMatch(Objects::isNull))
 			throw new NullPointerException();
-		if (protectedEncryptionProfileProviderForAuthenticatedP2PMessages ==null)
+		if (protectedSignatureProfileProviderForAuthenticatedP2PMessages ==null)
 			throw new IllegalArgumentException("Cannot set local peer without protected encryption profile provider for authenticated P2P messages");
 		pushQuery((t) -> {
 			t.checkNotRemovedIDs(distantPeers);
@@ -644,7 +644,7 @@ public class DatabaseConfigurationsBuilder {
 	DatabaseConfigurationsBuilder addDistantPeer(@SuppressWarnings("SameParameterValue") boolean checkNewConnexion, DecentralizedValue distantPeer, boolean volatilePeer) {
 		if (distantPeer==null)
 			throw new NullPointerException();
-		if (protectedEncryptionProfileProviderForAuthenticatedP2PMessages ==null)
+		if (protectedSignatureProfileProviderForAuthenticatedP2PMessages ==null)
 			throw new IllegalArgumentException("Cannot set local peer without protected encryption profile provider for authenticated P2P messages");
 		pushQuery((t) -> {
 			t.checkNotRemovedIDs(Collections.singleton(distantPeer));
@@ -674,7 +674,7 @@ public class DatabaseConfigurationsBuilder {
 			throw new IllegalArgumentException();
 		if (Arrays.stream(packagesString).anyMatch(Objects::isNull))
 			throw new NullPointerException();
-		if (protectedEncryptionProfileProviderForAuthenticatedP2PMessages ==null)
+		if (protectedSignatureProfileProviderForAuthenticatedP2PMessages ==null)
 			throw new IllegalArgumentException("Cannot set local peer without protected encryption profile provider for authenticated P2P messages");
 		pushQuery((t) -> {
 			t.checkNotRemovedIDs(distantPeers);
@@ -703,7 +703,7 @@ public class DatabaseConfigurationsBuilder {
 	}
 	DatabaseConfigurationsBuilder removeDistantPeers(boolean propagate, Collection<DecentralizedValue> distantPeers)
 	{
-		if (protectedEncryptionProfileProviderForAuthenticatedP2PMessages ==null)
+		if (protectedSignatureProfileProviderForAuthenticatedP2PMessages ==null)
 			throw new IllegalArgumentException("Cannot set local peer without protected encryption profile provider for authenticated P2P messages");
 		pushQuery((t) -> {
 			HashSet<DecentralizedValue> dps=new HashSet<>(distantPeers);
@@ -730,7 +730,7 @@ public class DatabaseConfigurationsBuilder {
 			throw new NullPointerException();
 		if (configurations.getLocalPeer()!=null && distantPeers.contains(configurations.getLocalPeer()))
 			throw new IllegalArgumentException();
-		if (protectedEncryptionProfileProviderForAuthenticatedP2PMessages ==null)
+		if (protectedSignatureProfileProviderForAuthenticatedP2PMessages ==null)
 			throw new IllegalArgumentException("Cannot set local peer without protected encryption profile provider for authenticated P2P messages");
 		pushQuery((t) -> {
 			t.checkNotRemovedIDs(distantPeers);

@@ -101,8 +101,7 @@ public abstract class CommonDecentralizedTests {
 		SymmetricSecretKey secretKeyForEncryption=SymmetricEncryptionType.DEFAULT.getKeyGenerator(random).generateKey();
 		((EncryptionProfileCollection)this.encryptionProfileProvider).putProfile((short)0, MessageDigestType.DEFAULT, null, null, secretKeyForSignature,secretKeyForEncryption, false, true );
 		secretKeyForSignature=SymmetricAuthenticatedSignatureType.DEFAULT.getKeyGenerator(random).generateKey();
-		secretKeyForEncryption=SymmetricEncryptionType.DEFAULT.getKeyGenerator(random).generateKey();
-		((EncryptionProfileCollection)this.protectedEncryptionProfileProvider).putProfile((short)0, MessageDigestType.DEFAULT, null, null, secretKeyForSignature,secretKeyForEncryption, false, true );
+		((EncryptionProfileCollection)this.protectedEncryptionProfileProvider).putProfile((short)0, MessageDigestType.DEFAULT, null, null, secretKeyForSignature,null, false, true );
 	}
 
 	public static class DistantDatabaseEvent {

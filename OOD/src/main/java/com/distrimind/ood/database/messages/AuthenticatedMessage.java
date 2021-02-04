@@ -67,7 +67,7 @@ public interface AuthenticatedMessage extends SecureExternalizable, DatabaseEven
 	void readExternalWithoutSignatures(SecuredObjectInputStream in) throws IOException, ClassNotFoundException;
 	int getInternalSerializedSizeWithoutSignatures();
 
-	static EncryptionProfileProvider getEncryptionProfileProviderCompatibleForSignature(final EncryptionProfileProvider encryptionProfileProvider)
+	/*static EncryptionProfileProvider getEncryptionProfileProviderCompatibleForSignature(final EncryptionProfileProvider encryptionProfileProvider)
 	{
 		return new EncryptionProfileProvider() {
 			@Override
@@ -110,14 +110,14 @@ public interface AuthenticatedMessage extends SecureExternalizable, DatabaseEven
 				return encryptionProfileProvider.getDefaultKeyID();
 			}
 		};
-	}
+	}*/
 
 	default void generateAndSetSignatures(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
 		if (encryptionProfileProvider==null)
 			throw new NullPointerException();
 		if (random==null)
 			throw new NullPointerException();
-		encryptionProfileProvider=getEncryptionProfileProviderCompatibleForSignature(encryptionProfileProvider);
+		//encryptionProfileProvider=getEncryptionProfileProviderCompatibleForSignature(encryptionProfileProvider);
 		try(RandomByteArrayOutputStream out=new RandomByteArrayOutputStream(); RandomByteArrayOutputStream outSig=new RandomByteArrayOutputStream())
 		{
 			writeExternalWithoutSignatures(out);
@@ -138,7 +138,7 @@ public interface AuthenticatedMessage extends SecureExternalizable, DatabaseEven
 	default Integrity checkHashAndSignatures(EncryptionProfileProvider encryptionProfileProvider, boolean checkOnlyHashAndPublicSignature) {
 		if (encryptionProfileProvider==null)
 			throw new NullPointerException();
-		encryptionProfileProvider=getEncryptionProfileProviderCompatibleForSignature(encryptionProfileProvider);
+		//encryptionProfileProvider=getEncryptionProfileProviderCompatibleForSignature(encryptionProfileProvider);
 		try(RandomByteArrayOutputStream out=new RandomByteArrayOutputStream())
 		{
 			writeExternalWithoutSignatures(out);
