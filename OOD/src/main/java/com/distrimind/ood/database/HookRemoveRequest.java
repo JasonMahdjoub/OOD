@@ -131,11 +131,11 @@ public class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2P
 		messageID=in.readLong();
 		if (messageID<0)
 			throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN);
-		hostSource=in.readObject(false, DecentralizedValue.class);
-		hostDestination=in.readObject(false, DecentralizedValue.class);
+		hostSource=in.readObject(false);
+		hostDestination=in.readObject(false);
 		if (hostDestination.equals(hostSource))
 			throw new MessageExternalizationException(Integrity.FAIL);
-		removedHookID=in.readObject(false, DecentralizedValue.class);
+		removedHookID=in.readObject(false);
 	}
 
 

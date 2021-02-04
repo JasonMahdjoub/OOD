@@ -480,7 +480,7 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 		}*/
 
 		testAllConnect();
-		Assert.assertEquals(accessNumberInProtectedEncruptionProfile, 3);
+		Assert.assertEquals(accessNumberInProtectedEncruptionProfile, 6);
 		disconnectAllDatabase();
 		checkAllDatabaseInternalDataUsedForSynchro();
 		testSynchronisation();
@@ -591,7 +591,7 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 		testAllConnect();
 		testSynchronisation();
 		disconnectAllDatabase();
-		Assert.assertEquals(accessNumberInProtectedEncruptionProfile, 3);
+		Assert.assertEquals(accessNumberInProtectedEncruptionProfile, 7);
 		unloadDatabase4();
 
 		testAllConnect();

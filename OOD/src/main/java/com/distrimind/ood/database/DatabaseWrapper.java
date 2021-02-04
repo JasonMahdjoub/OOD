@@ -1114,8 +1114,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (m.getHostDestination().equals(getLocalHostID()))
 			{
 				Integrity i=m.checkHashAndSignatures(databaseConfigurationsBuilder.getProtectedEncryptionProfileProviderForAuthenticatedP2PMessages());
-				if (i!=Integrity.OK)
+				if (i!=Integrity.OK) {
 					throw new MessageExternalizationException(i);
+				}
 				DatabaseHooksTable.Record r =getDatabaseHookRecord(m.getHostSource(), false);
 				if (r==null)
 				{
