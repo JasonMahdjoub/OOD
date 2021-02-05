@@ -17,14 +17,17 @@ public class DatabaseConfigurationsBuilder {
 	private final DatabaseConfigurations configurations;
 	private final DatabaseWrapper wrapper;
 	private final DatabaseLifeCycles lifeCycles;
-	private final EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup, protectedSignatureProfileProviderForAuthenticatedP2PMessages;
+	private final EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+			encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
+			protectedSignatureProfileProviderForAuthenticatedP2PMessages;
 	private final AbstractSecureRandom secureRandom;
 
 
 	DatabaseConfigurationsBuilder(DatabaseConfigurations configurations,
 								  DatabaseWrapper wrapper,
 								  DatabaseLifeCycles lifeCycles,
-								  EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
+								  EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+								  EncryptionProfileProvider encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
 								  EncryptionProfileProvider protectedSignatureProfileProviderForAuthenticatedP2PMessages,
 								  AbstractSecureRandom secureRandom,
 								  boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
@@ -32,17 +35,22 @@ public class DatabaseConfigurationsBuilder {
 			configurations=new DatabaseConfigurations();
 		if (wrapper==null)
 			throw new NullPointerException();
-		if (encryptionProfileProviderForCentralDatabaseBackup ==null && configurations.useCentralBackupDatabase())
-			throw new NullPointerException();
+		if (configurations.useCentralBackupDatabase()) {
+			if (signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup == null)
+				throw new NullPointerException();
+			if (encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup == null)
+				throw new NullPointerException();
+		}
 		if (protectedSignatureProfileProviderForAuthenticatedP2PMessages ==null && configurations.isDecentralized())
 			throw new NullPointerException();
-		if (secureRandom==null && (protectedSignatureProfileProviderForAuthenticatedP2PMessages !=null || encryptionProfileProviderForCentralDatabaseBackup!=null))
+		if (secureRandom==null && (protectedSignatureProfileProviderForAuthenticatedP2PMessages !=null || signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup!=null || encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup!=null))
 			throw new NullPointerException();
 
 		this.configurations = configurations;
 		this.wrapper = wrapper;
 		this.lifeCycles = lifeCycles;
-		this.encryptionProfileProviderForCentralDatabaseBackup = encryptionProfileProviderForCentralDatabaseBackup;
+		this.signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup = signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup;
+		this.encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup = encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup;
 		this.protectedSignatureProfileProviderForAuthenticatedP2PMessages = protectedSignatureProfileProviderForAuthenticatedP2PMessages;
 		this.secureRandom=secureRandom;
 		boolean save=configurations.checkDistantPeers();
@@ -246,8 +254,12 @@ public class DatabaseConfigurationsBuilder {
 	}
 
 
-	public EncryptionProfileProvider getEncryptionProfileProviderForCentralDatabaseBackup() {
-		return encryptionProfileProviderForCentralDatabaseBackup;
+	public EncryptionProfileProvider getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup() {
+		return encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup;
+	}
+
+	public EncryptionProfileProvider getSignatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup() {
+		return signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup;
 	}
 
 	public EncryptionProfileProvider getProtectedSignatureProfileProviderForAuthenticatedP2PMessages() {
@@ -263,12 +275,18 @@ public class DatabaseConfigurationsBuilder {
 	}
 	public DatabaseConfigurationsBuilder addConfiguration(DatabaseConfiguration configuration, boolean makeConfigurationLoadingPersistent, boolean createDatabaseIfNecessaryAndCheckItDuringCurrentSession )
 	{
-		if (configuration.isSynchronizedWithCentralBackupDatabase() && encryptionProfileProviderForCentralDatabaseBackup==null)
-			throw new IllegalArgumentException("Cannot add configuration without encryption profile provider for central backup database");
-		if (configuration.isDecentralized() && protectedSignatureProfileProviderForAuthenticatedP2PMessages ==null)
-			throw new IllegalArgumentException("Cannot add configuration without protected encryption profile provider for authenticated P2P messages");
-		pushQuery((t) -> {
 
+		pushQuery((t) -> {
+			if (configuration.isSynchronizedWithCentralBackupDatabase()) {
+				if (encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup == null)
+					throw new IllegalArgumentException("Cannot add configuration without encryption profile provider for central backup database");
+				if (signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup == null)
+					throw new IllegalArgumentException("Cannot add configuration without signature profile provider for central backup database");
+			}
+			if (configuration.isDecentralized() && protectedSignatureProfileProviderForAuthenticatedP2PMessages ==null)
+				throw new IllegalArgumentException("Cannot add configuration without protected encryption profile provider for authenticated P2P messages");
+			if (configuration.isSynchronizedWithCentralBackupDatabase() && getConfigurations().getCentralDatabaseBackupCertificate()==null)
+				throw new IllegalArgumentException("Central database certificate must be set before adding configuration that can be synchronized with central database backup");
 			configuration.setCreateDatabaseIfNecessaryAndCheckItDuringCurrentSession(createDatabaseIfNecessaryAndCheckItDuringCurrentSession);
 			configurations.addConfiguration(configuration, makeConfigurationLoadingPersistent);
 			if (makeConfigurationLoadingPersistent)
@@ -370,6 +388,7 @@ public class DatabaseConfigurationsBuilder {
 			}
 		});
 	}
+
 	@SuppressWarnings("UnusedReturnValue")
 	private boolean checkDatabaseToSynchronize() throws DatabaseException {
 		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
@@ -796,14 +815,14 @@ public class DatabaseConfigurationsBuilder {
 	public DatabaseConfigurationsBuilder setCentralDatabaseBackupCertificate(CentralDatabaseBackupCertificate centralDatabaseBackupCertificate)
 	{
 		pushQuery((t) -> {
-			configurations.centralDatabaseBackupCertificate=centralDatabaseBackupCertificate;
+			if (centralDatabaseBackupCertificate==null && configurations.getConfigurations().stream().anyMatch(DatabaseConfiguration::isSynchronizedWithCentralBackupDatabase))
+				throw new NullPointerException("You cannot set a null certificate when using a least one database configuration that is synchronized with central database backup");
+			configurations.setCentralDatabaseBackupCertificate(centralDatabaseBackupCertificate);
 			wrapper.getSynchronizer().disconnectAllHooksFromThereBackups();
 			currentTransaction.checkInitCentralDatabaseBackup();
 
 		});
 		return this;
 	}
-
-
 
 }

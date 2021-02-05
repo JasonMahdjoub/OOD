@@ -97,11 +97,17 @@ public abstract class CommonDecentralizedTests {
 		this.centralDatabaseBackupKeyPair=ASymmetricAuthenticatedSignatureType.BC_FIPS_Ed25519.getKeyPairGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKeyPair();
 		this.centralDatabaseBackupDatabase=getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver().getDatabaseWrapperSingleton();
 		this.centralDatabaseBackupReceiver=new CentralDatabaseBackupReceiver(centralDatabaseBackupDatabase, centralDatabaseBackupKeyPair.getASymmetricPublicKey());
+		peerKeyPairUsedWithCentralDatabaseBackupCertificate=ASymmetricAuthenticatedSignatureType.DEFAULT.getKeyPairGenerator(random).generateKeyPair();
 		SymmetricSecretKey secretKeyForSignature=SymmetricAuthenticatedSignatureType.DEFAULT.getKeyGenerator(random).generateKey();
 		SymmetricSecretKey secretKeyForEncryption=SymmetricEncryptionType.DEFAULT.getKeyGenerator(random).generateKey();
-		((EncryptionProfileCollection)this.encryptionProfileProvider).putProfile((short)0, MessageDigestType.DEFAULT, null, null, secretKeyForSignature,secretKeyForEncryption, false, true );
+		((EncryptionProfileCollection)this.signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup).putProfile((short)0, MessageDigestType.DEFAULT, peerKeyPairUsedWithCentralDatabaseBackupCertificate.getASymmetricPublicKey(),
+				peerKeyPairUsedWithCentralDatabaseBackupCertificate.getASymmetricPrivateKey(), null,null, false, true );
+		((EncryptionProfileCollection)this.encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup).putProfile((short)0, MessageDigestType.DEFAULT, null,
+				null, secretKeyForSignature,secretKeyForEncryption, false, true );
 		secretKeyForSignature=SymmetricAuthenticatedSignatureType.DEFAULT.getKeyGenerator(random).generateKey();
-		((EncryptionProfileCollection)this.protectedEncryptionProfileProvider).putProfile((short)0, MessageDigestType.DEFAULT, null, null, secretKeyForSignature,null, false, true );
+		((EncryptionProfileCollection)this.protectedSignatureProfileProviderForAuthenticatedP2PMessages).putProfile((short)0, MessageDigestType.DEFAULT, null, null, secretKeyForSignature,null, false, true );
+
+		peerCertificate =new CentralDatabaseBackupCertificate(centralDatabaseBackupKeyPair, peerKeyPairUsedWithCentralDatabaseBackupCertificate.getASymmetricPublicKey());
 	}
 
 	public static class DistantDatabaseEvent {
@@ -383,12 +389,12 @@ public abstract class CommonDecentralizedTests {
 				return null;
 			return new EncryptionProfileProvider() {
 				@Override
-				public MessageDigestType getMessageDigest(short keyID, boolean duringDecryptionPhase) throws IOException {
+				public MessageDigestType getMessageDigest(short keyID, boolean duringDecryptionPhase) {
 					return null;
 				}
 
 				@Override
-				public IASymmetricPrivateKey getPrivateKeyForSignature(short keyID) throws IOException {
+				public IASymmetricPrivateKey getPrivateKeyForSignature(short keyID)  {
 					return null;
 				}
 
@@ -400,12 +406,12 @@ public abstract class CommonDecentralizedTests {
 				}
 
 				@Override
-				public SymmetricSecretKey getSecretKeyForSignature(short keyID, boolean duringDecryptionPhase) throws IOException {
+				public SymmetricSecretKey getSecretKeyForSignature(short keyID, boolean duringDecryptionPhase) {
 					return null;
 				}
 
 				@Override
-				public SymmetricSecretKey getSecretKeyForEncryption(short keyID, boolean duringDecryptionPhase) throws IOException {
+				public SymmetricSecretKey getSecretKeyForEncryption(short keyID, boolean duringDecryptionPhase) {
 					return null;
 				}
 
@@ -458,7 +464,7 @@ public abstract class CommonDecentralizedTests {
 			this.centralDatabaseBackupPublicKey = centralDatabaseBackupKeyPair.getASymmetricPublicKey();
 			this.certifiedAccountPublicKey = certifiedAccountPublicKey;
 			ASymmetricAuthenticatedSignerAlgorithm signer=new ASymmetricAuthenticatedSignerAlgorithm(centralDatabaseBackupKeyPair.getASymmetricPrivateKey());
-
+			signer.init();
 			WrappedData wd=certifiedAccountPublicKey.encode();
 			signer.update(wd.getBytes() );
 			signature= signer.getSignature();
@@ -896,9 +902,12 @@ public abstract class CommonDecentralizedTests {
 	private final DatabaseWrapper centralDatabaseBackupDatabase;
 	protected final CentralDatabaseBackupReceiver centralDatabaseBackupReceiver;
 	protected final AbstractSecureRandom random;
-	protected final EncryptionProfileProviderFactory encryptionProfileProvider=new EncryptionProfileCollection(){};
+	protected final EncryptionProfileProviderFactory signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup=new EncryptionProfileCollection(){};
+	protected final EncryptionProfileProviderFactory encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup=new EncryptionProfileCollection(){};
+	private final CentralDatabaseBackupCertificate peerCertificate;
+	private final AbstractKeyPair<?, ?> peerKeyPairUsedWithCentralDatabaseBackupCertificate;
 	protected int accessNumberInProtectedEncruptionProfile=0;
-	protected final EncryptionProfileProviderFactory protectedEncryptionProfileProvider=new EncryptionProfileCollection(){
+	protected final EncryptionProfileProviderFactory protectedSignatureProfileProviderForAuthenticatedP2PMessages =new EncryptionProfileCollection(){
 		@Override
 		public SymmetricSecretKey getSecretKeyForSignature(short keyID, boolean duringDecryptionPhase) throws IOException {
 			++accessNumberInProtectedEncruptionProfile;
@@ -948,6 +957,7 @@ public abstract class CommonDecentralizedTests {
 		}
 		db.getDbwrapper().getDatabaseConfigurationsBuilder()
 				.setLocalPeerIdentifier(db.getHostID(), sendIndirectTransactions(), true)
+				.setCentralDatabaseBackupCertificate(peerCertificate)
 				.addConfiguration(new DatabaseConfiguration(
 							new DatabaseSchema(TablePointed.class.getPackage()),
 							canInitCentralBackup()?DatabaseConfiguration.SynchronizationType.DECENTRALIZED_SYNCHRONIZATION_AND_SYNCHRONIZATION_WITH_CENTRAL_BACKUP_DATABASE:DatabaseConfiguration.SynchronizationType.DECENTRALIZED_SYNCHRONIZATION,
@@ -962,13 +972,13 @@ public abstract class CommonDecentralizedTests {
 	public void loadDatabase() throws DatabaseException {
 		unloadDatabase();
 		DatabaseFactory<?> df=getDatabaseWrapperInstance1();
-		df.setEncryptionProfileProviders(encryptionProfileProvider, protectedEncryptionProfileProvider, SecureRandomType.DEFAULT);
+		df.setEncryptionProfileProviders(signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup, encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedSignatureProfileProviderForAuthenticatedP2PMessages, SecureRandomType.DEFAULT);
 		db1 = new CommonDecentralizedTests.Database(df.getDatabaseWrapperSingleton());
 		df=getDatabaseWrapperInstance2();
-		df.setEncryptionProfileProviders(encryptionProfileProvider, protectedEncryptionProfileProvider, SecureRandomType.DEFAULT);
+		df.setEncryptionProfileProviders(signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup, encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedSignatureProfileProviderForAuthenticatedP2PMessages, SecureRandomType.DEFAULT);
 		db2 = new CommonDecentralizedTests.Database(df.getDatabaseWrapperSingleton());
 		df=getDatabaseWrapperInstance3();
-		df.setEncryptionProfileProviders(encryptionProfileProvider, protectedEncryptionProfileProvider, SecureRandomType.DEFAULT);
+		df.setEncryptionProfileProviders(signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup, encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedSignatureProfileProviderForAuthenticatedP2PMessages, SecureRandomType.DEFAULT);
 		db3 = new CommonDecentralizedTests.Database(df.getDatabaseWrapperSingleton());
 		listDatabase.add(db1);
 		listDatabase.add(db2);

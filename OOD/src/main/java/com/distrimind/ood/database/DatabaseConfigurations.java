@@ -77,6 +77,10 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 		return centralDatabaseBackupCertificate;
 	}
 
+	void setCentralDatabaseBackupCertificate(CentralDatabaseBackupCertificate centralDatabaseBackupCertificate) {
+		this.centralDatabaseBackupCertificate = centralDatabaseBackupCertificate;
+	}
+
 	public DatabaseConfigurations(Set<DatabaseConfiguration> configurations, Set<DecentralizedValue> distantPeers, DecentralizedValue localPeer, boolean permitIndirectSynchronizationBetweenPeers) throws DatabaseException {
 		super(null);
 		if (configurations ==null)

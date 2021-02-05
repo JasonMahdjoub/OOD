@@ -58,7 +58,8 @@ public abstract class DatabaseFactory<DW extends DatabaseWrapper> extends MultiF
 	private static final long serialVersionUID = 3751773842248044333L;
 
 	private volatile transient DW wrapper;
-	protected EncryptionProfileProviderFactory encryptionProfileProviderFactoryForCentralDatabaseBackup;
+	protected EncryptionProfileProviderFactory signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup;
+	protected EncryptionProfileProviderFactory encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup;
 	protected EncryptionProfileProviderFactory protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages;
 	protected SecureRandomType randomType=SecureRandomType.DEFAULT;
 	protected byte[] randomNonce= "fsg24778kqQVEZYogt1°F_:x=,aért16PHMXv;t/+$eùŜF21F0".getBytes();
@@ -92,24 +93,34 @@ public abstract class DatabaseFactory<DW extends DatabaseWrapper> extends MultiF
 		}
 	}
 
-	public EncryptionProfileProviderFactory getEncryptionProfileProviderFactoryForCentralDatabaseBackup() {
-		return encryptionProfileProviderFactoryForCentralDatabaseBackup;
+	public EncryptionProfileProviderFactory getSignatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup() {
+		return signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup;
 	}
-	public void setEncryptionProfileProviders(EncryptionProfileProviderFactory encryptionProfileProviderFactoryForCentralDatabaseBackup,
+
+	public EncryptionProfileProviderFactory getEncryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup() {
+		return encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup;
+	}
+
+	public void setEncryptionProfileProviders(EncryptionProfileProviderFactory signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+											  EncryptionProfileProviderFactory encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
 											  EncryptionProfileProviderFactory protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages,
 											  SecureRandomType randomType) {
-		setEncryptionProfileProviders(encryptionProfileProviderFactoryForCentralDatabaseBackup, protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages, randomType, this.randomNonce, this.randomPersonalizationString);
+		setEncryptionProfileProviders(signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
+				protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages, randomType, this.randomNonce, this.randomPersonalizationString);
 	}
-	public void setEncryptionProfileProviders(EncryptionProfileProviderFactory encryptionProfileProviderFactoryForCentralDatabaseBackup,
+	public void setEncryptionProfileProviders(EncryptionProfileProviderFactory signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+											  EncryptionProfileProviderFactory encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
 											  EncryptionProfileProviderFactory protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages,
 											  SecureRandomType randomType, byte[] randomNonce, byte[] randomPersonalizationString) {
-		if (encryptionProfileProviderFactoryForCentralDatabaseBackup==null)
+		if ((signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup==null)!=(encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup==null))
 			throw new NullPointerException();
 		if (protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages==null)
 			throw new NullPointerException();
 		if (randomType==null)
 			throw new NullPointerException();
-		this.encryptionProfileProviderFactoryForCentralDatabaseBackup = encryptionProfileProviderFactoryForCentralDatabaseBackup;
+		this.signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup = signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup;
+		this.encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup = encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup;
 		this.protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages=protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages;
 		this.randomType=randomType;
 		this.randomNonce=randomNonce;

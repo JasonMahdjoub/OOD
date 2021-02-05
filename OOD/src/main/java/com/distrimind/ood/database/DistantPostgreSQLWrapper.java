@@ -64,7 +64,8 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 	protected DistantPostgreSQLWrapper(String databaseName,String urlLocation,
 									   DatabaseConfigurations databaseConfigurations,
 									   DatabaseLifeCycles databaseLifeCycles,
-									   EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
+									   EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+									   EncryptionProfileProvider encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
 									   EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 									   AbstractSecureRandom secureRandom,
 									   boolean createDatabasesIfNecessaryAndCheckIt,
@@ -89,7 +90,8 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 									   int preparedStatementCacheQueries,
 									   int preparedStatementCacheSizeMiB,
 									   int defaultRowFetchSize) throws DatabaseException {
-		super(databaseName, new File(urlLocation), false, false, databaseConfigurations, databaseLifeCycles, encryptionProfileProviderForCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+		super(databaseName, new File(urlLocation), false, false, databaseConfigurations, databaseLifeCycles, signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 				secureRandom, createDatabasesIfNecessaryAndCheckIt);
 		url=getURL(urlLocation, port, databaseName, loginTimeOutInSeconds, connectTimeOutInSeconds, socketTimeOutSeconds, additionalParams, sslMode, sslFactory, sslKey, sslCert, sslRootCert, sslHostNameVerifier, sslPasswordCallBack, sslPassword, databaseMetadataCacheFields, databaseMetadataCacheFieldsMiB, prepareThreshold, preparedStatementCacheQueries, preparedStatementCacheSizeMiB, defaultRowFetchSize);
 		this.urlLocation = urlLocation;

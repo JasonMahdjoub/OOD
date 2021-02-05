@@ -54,7 +54,6 @@ import com.distrimind.util.harddrive.HardDriveDetect;
 import com.distrimind.util.harddrive.Partition;
 import com.distrimind.util.io.*;
 
-import javax.security.auth.login.Configuration;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -423,7 +422,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	protected DatabaseWrapper(String _database_name, File databaseDirectory, boolean alwaysDisconnectAfterOnTransaction, boolean loadToMemory,
 							  DatabaseConfigurations databaseConfigurations,
 							  DatabaseLifeCycles databaseLifeCycles,
-							  EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
+							  EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+							  EncryptionProfileProvider encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
 							  EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 							  AbstractSecureRandom secureRandom,
 							  boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
@@ -478,7 +478,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		converters = new ArrayList<>();
 		converters.add(new DefaultByteTabObjectConverter());
 		synchronizer=new DatabaseSynchronizer();
-		databaseConfigurationsBuilder=new DatabaseConfigurationsBuilder(databaseConfigurations, this, databaseLifeCycles, encryptionProfileProviderForCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages, secureRandom, createDatabasesIfNecessaryAndCheckIt);
+		databaseConfigurationsBuilder=new DatabaseConfigurationsBuilder(databaseConfigurations, this, databaseLifeCycles, signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages, secureRandom, createDatabasesIfNecessaryAndCheckIt);
 		databaseConfigurationsBuilder.checkInitLocalPeer();
 	}
 
@@ -842,7 +842,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				if (cp != null)
 					addNewDatabaseEvent((DatabaseEvent) authenticatedP2PMessage);
 				if (isInitializedWithCentralBackup())
-					addNewDatabaseEvent(new IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup(Collections.singletonList(authenticatedP2PMessage), databaseConfigurationsBuilder.getSecureRandom(), databaseConfigurationsBuilder.getEncryptionProfileProviderForCentralDatabaseBackup()));
+					addNewDatabaseEvent(new IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup(Collections.singletonList(authenticatedP2PMessage), databaseConfigurationsBuilder.getSecureRandom(), databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup()));
 				/*else {
 					getDatabaseHooksTable().getLocalDatabaseHost().addAuthenticatedP2PMessageToSendToCentralDatabaseBackup(authenticatedP2PMessage, getDatabaseHooksTable());
 				}*/
@@ -1371,7 +1371,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 				if (centralBackupInitialized) {
 					try {
-						addNewDatabaseEvent(new LastValidatedDistantTransactionDestinedToCentralDatabaseBackup(getLocalHostID(), hostDestination, lastValidatedTransaction, databaseConfigurationsBuilder.getSecureRandom(), databaseConfigurationsBuilder.getEncryptionProfileProviderForCentralDatabaseBackup()));
+						addNewDatabaseEvent(new LastValidatedDistantTransactionDestinedToCentralDatabaseBackup(getLocalHostID(), hostDestination, lastValidatedTransaction, databaseConfigurationsBuilder.getSecureRandom(), databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup()));
 					} catch (IOException e) {
 						throw DatabaseException.getDatabaseException(e);
 					}
@@ -1459,7 +1459,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				lockWrite();
 				if (e instanceof AuthenticatedMessageDestinedToCentralDatabaseBackup)
 				{
-					((AuthenticatedMessageDestinedToCentralDatabaseBackup) e).generateAndSetSignatures(databaseConfigurationsBuilder.getSecureRandom(), databaseConfigurationsBuilder.getEncryptionProfileProviderForCentralDatabaseBackup());
+					((AuthenticatedMessageDestinedToCentralDatabaseBackup) e).generateAndSetSignatures(databaseConfigurationsBuilder.getSecureRandom(), databaseConfigurationsBuilder.getSignatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup());
 				}
 				List<DatabaseEvent> r = tryToMerge(Collections.singletonList(e));
 				boolean add=r.size()>0;
@@ -1693,7 +1693,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 
 			cp.otherBackupMetaDataDatabasePartsSynchronizingWithCentralDatabaseBackup=false;
-			if (!cp.validatedIDPerDistantHook.addMetaData(metaData.getMetaData().getPackageString(), metaData.getMetaData().decodeMetaData(databaseConfigurationsBuilder.getEncryptionProfileProviderForCentralDatabaseBackup()))) {
+			if (!cp.validatedIDPerDistantHook.addMetaData(metaData.getMetaData().getPackageString(), metaData.getMetaData().decodeMetaData(databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup()))) {
 				return;
 			}
 
@@ -1839,11 +1839,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (!initialMessageComingFromCentralBackup.getHostDestination().equals(getLocalHostID()))
 				throw new IllegalArgumentException();
 			initDistantBackupCenterForThisHostWithStringPackages(initialMessageComingFromCentralBackup.getLastValidatedTransactionsUTCForDestinationHost());
-			for (Map.Entry<DecentralizedValue, LastValidatedLocalAndDistantID> e : initialMessageComingFromCentralBackup.getLastValidatedIDsPerHost(databaseConfigurationsBuilder.getEncryptionProfileProviderForCentralDatabaseBackup()).entrySet()) {
+			for (Map.Entry<DecentralizedValue, LastValidatedLocalAndDistantID> e : initialMessageComingFromCentralBackup.getLastValidatedIDsPerHost(databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup()).entrySet()) {
 				assert !e.getKey().equals(getLocalHostID());
 				initDistantBackupCenter(e.getKey(), e.getValue().getLastValidatedDistantID(), e.getValue().getLastValidatedLocalID());
 			}
-			for (AuthenticatedP2PMessage a : initialMessageComingFromCentralBackup.getAuthenticatedP2PMessages(databaseConfigurationsBuilder.getEncryptionProfileProviderForCentralDatabaseBackup()))
+			for (AuthenticatedP2PMessage a : initialMessageComingFromCentralBackup.getAuthenticatedP2PMessages(databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup()))
 				received(a);
 
 		}
@@ -1873,8 +1873,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						}
 					});
 
-			addNewDatabaseEvent(new DistantBackupCenterConnexionInitialisation(getLocalHostID(), lastValidatedDistantIDs, databaseConfigurationsBuilder.getSecureRandom(), databaseConfigurationsBuilder.getEncryptionProfileProviderForCentralDatabaseBackup(), databaseConfigurationsBuilder.getConfigurations().getCentralDatabaseBackupCertificate()));
-			for (IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup i : getDatabaseHooksTable().getLocalDatabaseHost().getAuthenticatedMessagesQueueToSendToCentralDatabaseBackup(databaseConfigurationsBuilder.getSecureRandom(), databaseConfigurationsBuilder.getEncryptionProfileProviderForCentralDatabaseBackup()))
+			addNewDatabaseEvent(new DistantBackupCenterConnexionInitialisation(getLocalHostID(), lastValidatedDistantIDs, databaseConfigurationsBuilder.getSecureRandom(), databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup(), databaseConfigurationsBuilder.getConfigurations().getCentralDatabaseBackupCertificate()));
+			for (IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup i : getDatabaseHooksTable().getLocalDatabaseHost().getAuthenticatedMessagesQueueToSendToCentralDatabaseBackup(databaseConfigurationsBuilder.getSecureRandom(), databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup()))
 			{
 				addNewDatabaseEvent(i);
 			}
@@ -1917,14 +1917,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (!message.getHostDestination().equals(getLocalHostID()))
 				throw new IllegalArgumentException();
 
-			initDistantBackupCenter(message.getHostChannel(), message.getLastValidatedDistantID(databaseConfigurationsBuilder.getEncryptionProfileProviderForCentralDatabaseBackup()), message.getLastValidatedLocalID(databaseConfigurationsBuilder.getEncryptionProfileProviderForCentralDatabaseBackup()));
+			initDistantBackupCenter(message.getHostChannel(), message.getLastValidatedDistantID(databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup()), message.getLastValidatedLocalID(databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup()));
 		}
 		private void received(final BackupChannelUpdateMessageFromCentralDatabaseBackup message) throws DatabaseException, IOException {
 			if (message == null)
 				throw new NullPointerException();
 			if (!message.getHostDestination().equals(getLocalHostID()))
 				throw new IllegalArgumentException();
-			updateDistantBackupCenter(message.getHostChannel(), message.getLastValidatedDistantID(databaseConfigurationsBuilder.getEncryptionProfileProviderForCentralDatabaseBackup()), message.getLastValidatedLocalID(databaseConfigurationsBuilder.getEncryptionProfileProviderForCentralDatabaseBackup()));
+			updateDistantBackupCenter(message.getHostChannel(), message.getLastValidatedDistantID(databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup()), message.getLastValidatedLocalID(databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup()));
 		}
 		private void initDistantBackupCenter(final DecentralizedValue hostChannel, final long lastValidatedDistantTransactionID, final long lastValidatedLocalTransactionID) throws DatabaseException {
 
@@ -2357,7 +2357,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				if (!backupDatabasePartsSynchronizingWithCentralDatabaseBackup.contains(_package.getName())) {
 					//File f = d.backupRestoreManager.getFile(timeStamp);
 					backupDatabasePartsSynchronizingWithCentralDatabaseBackup.add(_package.getName());
-					addNewDatabaseEvent(d.backupRestoreManager.getEncryptedFilePartWithMetaData(getLocalHostID(), timeStamp, d.backupRestoreManager.isReference(timeStamp), databaseConfigurationsBuilder.getSecureRandom(), databaseConfigurationsBuilder.getEncryptionProfileProviderForCentralDatabaseBackup()));
+					addNewDatabaseEvent(d.backupRestoreManager.getEncryptedFilePartWithMetaData(getLocalHostID(), timeStamp, d.backupRestoreManager.isReference(timeStamp), databaseConfigurationsBuilder.getSecureRandom(), databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup()));
 					//addNewDatabaseEvent(new DatabaseBackupToIncorporateFromCentralDatabaseBackup(getLocalHostID(), getHooksTransactionsTable().getLocalDatabaseHost(), _package,timeStamp, b.isReference(timeStamp), b.extractTransactionInterval(f), f ));
 				}
 
@@ -2408,7 +2408,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					for (Map.Entry<Package, Database> e : sql_database.entrySet()) {
 						if (e.getKey().getName().equals(pname)) {
 							Database d = e.getValue();
-							if (d.backupRestoreManager.importEncryptedBackupPartComingFromCentralDatabaseBackup(backupPart, databaseConfigurationsBuilder.getEncryptionProfileProviderForCentralDatabaseBackup(), false))
+							if (d.backupRestoreManager.importEncryptedBackupPartComingFromCentralDatabaseBackup(backupPart, databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup(), false))
 								checkAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(e.getKey().getName(), d);
 							break;
 						}
@@ -2426,7 +2426,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				ConnectedPeersWithCentralBackup cp=initializedHooksWithCentralBackup.get(backupPart.getHostSource());
 				if (isSynchronizationActivatedWithChannelAndThroughCentralDatabaseBackup(cp)) {
 					try (RandomCacheFileOutputStream out = RandomCacheFileCenter.getSingleton().getNewBufferedRandomCacheFileOutputStream(true, RandomFileOutputStream.AccessMode.READ_AND_WRITE)) {
-						EncryptionTools.decode(databaseConfigurationsBuilder.getEncryptionProfileProviderForCentralDatabaseBackup(), backupPart.getPartInputStream(), out);
+						EncryptionTools.decode(databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup(), backupPart.getPartInputStream(), out);
 						out.flush();
 						cp.otherBackupDatabasePartsSynchronizingWithCentralDatabaseBackup=false;
 						if (getDatabaseTransactionsPerHostTable().alterDatabase(backupPart.getMetaData().getPackageString(), backupPart.getHostSource(), out.getRandomInputStream(), backupPart.getMetaData().isReferenceFile())) {
@@ -2487,7 +2487,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 		private void received(IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup message) throws DatabaseException, IOException {
 
-			for (AuthenticatedP2PMessage a : message.getAuthenticatedP2PMessages(databaseConfigurationsBuilder.getEncryptionProfileProviderForCentralDatabaseBackup()))
+			for (AuthenticatedP2PMessage a : message.getAuthenticatedP2PMessages(databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup()))
 				received(a);
 		}
 		private void received(MessageComingFromCentralDatabaseBackup data) throws DatabaseException, IOException {

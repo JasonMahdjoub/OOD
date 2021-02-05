@@ -459,7 +459,7 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 		checkAllDatabaseInternalDataUsedForSynchro();
 		accessNumberInProtectedEncruptionProfile=0;
 		DatabaseFactory<?> df=getDatabaseWrapperInstance4();
-		df.setEncryptionProfileProviders(encryptionProfileProvider, protectedEncryptionProfileProvider, SecureRandomType.DEFAULT);
+		df.setEncryptionProfileProviders(signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup, encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedSignatureProfileProviderForAuthenticatedP2PMessages, SecureRandomType.DEFAULT);
 		db4 = new Database(df.getDatabaseWrapperSingleton());
 		listDatabase.add(db4);
 		addConfiguration(db4);

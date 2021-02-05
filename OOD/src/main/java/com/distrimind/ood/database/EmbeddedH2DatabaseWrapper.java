@@ -71,12 +71,14 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	EmbeddedH2DatabaseWrapper(String databaseName, boolean loadToMemory,
 							  DatabaseConfigurations databaseConfigurations,
 							  DatabaseLifeCycles databaseLifeCycles,
-							  EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
+							  EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+							  EncryptionProfileProvider encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
 							  EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 							  AbstractSecureRandom secureRandom,
 							  boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
 		super(databaseName, null, false, true,
-				databaseConfigurations, databaseLifeCycles, encryptionProfileProviderForCentralDatabaseBackup,
+				databaseConfigurations, databaseLifeCycles, signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
 				protectedEncryptionProfileProviderForAuthenticatedP2PMessages, secureRandom, createDatabasesIfNecessaryAndCheckIt, true);
 		if (!loadToMemory)
 			throw new IllegalArgumentException();
@@ -87,7 +89,8 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	EmbeddedH2DatabaseWrapper(File _directory_name,
 							  DatabaseConfigurations databaseConfigurations,
 							  DatabaseLifeCycles databaseLifeCycles,
-							  EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
+							  EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+							  EncryptionProfileProvider encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
 							  EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 							  AbstractSecureRandom secureRandom,
 							  boolean createDatabasesIfNecessaryAndCheckIt, boolean alwaysDisconnectAfterOnTransaction, boolean fileLock, int pageSizeBytes
@@ -96,7 +99,8 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 				alwaysDisconnectAfterOnTransaction, false,
 				databaseConfigurations,
 				databaseLifeCycles,
-				encryptionProfileProviderForCentralDatabaseBackup,
+				signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
 				protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 				secureRandom,
 				createDatabasesIfNecessaryAndCheckIt,
@@ -109,7 +113,8 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	EmbeddedH2DatabaseWrapper(File _directory_name,
 							  DatabaseConfigurations databaseConfigurations,
 							  DatabaseLifeCycles databaseLifeCycles,
-							  EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
+							  EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+							  EncryptionProfileProvider encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
 							  EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 							  AbstractSecureRandom secureRandom,
 							  boolean createDatabasesIfNecessaryAndCheckIt, boolean alwaysDisconnectAfterOnTransaction, int pageSizeBytes
@@ -118,7 +123,8 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 				_directory_name, alwaysDisconnectAfterOnTransaction, false,
 				databaseConfigurations,
 				databaseLifeCycles,
-				encryptionProfileProviderForCentralDatabaseBackup,
+				signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
 				protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 				secureRandom,
 				createDatabasesIfNecessaryAndCheckIt,

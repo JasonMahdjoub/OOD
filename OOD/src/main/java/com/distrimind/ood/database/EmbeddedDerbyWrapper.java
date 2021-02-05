@@ -83,12 +83,14 @@ class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	EmbeddedDerbyWrapper(String databaseName, boolean loadToMemory,
 						 DatabaseConfigurations databaseConfigurations,
 						 DatabaseLifeCycles databaseLifeCycles,
-						 EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
+						 EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+						 EncryptionProfileProvider encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
 						 EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 						 AbstractSecureRandom secureRandom,
 						 boolean createDatabasesIfNecessaryAndCheckIt) throws IllegalArgumentException, DatabaseException {
 		super(databaseName, null, false, true, databaseConfigurations, databaseLifeCycles,
-				encryptionProfileProviderForCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+				signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 				secureRandom, createDatabasesIfNecessaryAndCheckIt);
 		if (!loadToMemory)
 			throw new IllegalArgumentException();
@@ -104,13 +106,15 @@ class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	EmbeddedDerbyWrapper(File _directory,
 						 DatabaseConfigurations databaseConfigurations,
 						 DatabaseLifeCycles databaseLifeCycles,
-						 EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
+						 EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+						 EncryptionProfileProvider encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
 						 EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 						 AbstractSecureRandom secureRandom,
 						 boolean createDatabasesIfNecessaryAndCheckIt, boolean alwaysDisconnectAfterOnTransaction) throws IllegalArgumentException, DatabaseException {
 		super(/* getConnection(_directory), */"Database from file : " + _directory.getAbsolutePath(), _directory, alwaysDisconnectAfterOnTransaction, false
 				, databaseConfigurations, databaseLifeCycles,
-				encryptionProfileProviderForCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+				signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 				secureRandom, createDatabasesIfNecessaryAndCheckIt);
 		// dbURL = getDBUrl(_directory);
 
