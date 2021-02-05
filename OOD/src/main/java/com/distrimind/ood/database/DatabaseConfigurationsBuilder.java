@@ -77,6 +77,8 @@ public class DatabaseConfigurationsBuilder {
 		private boolean checkDatabaseLoading=false;
 		private boolean checkInitCentralDatabaseBackup=false;
 		private Set<DecentralizedValue> removedPeersID=null;
+		private Set<DatabaseConfiguration> configurationsToDefinitivelyDelete;
+		private Set<DatabaseConfiguration> configurationsToLoad;
 
 		void updateConfigurationPersistence() {
 			updateConfigurationPersistence = true;
@@ -116,8 +118,14 @@ public class DatabaseConfigurationsBuilder {
 				removedPeersID=new HashSet<>();
 			removedPeersID.add(dv);
 		}
-  		void checkDatabaseLoading()
-		{
+  		void checkDatabaseLoading(DatabaseConfiguration loadedDatabase) throws DatabaseException {
+			if(configurationsToDefinitivelyDelete!=null && configurationsToDefinitivelyDelete.contains(loadedDatabase))
+				throw new DatabaseException("Cannot load database which was removed into the same transaction");
+			if (loadedDatabase!=null) {
+				if (configurationsToLoad == null)
+					configurationsToLoad = new HashSet<>();
+				configurationsToLoad.add(loadedDatabase);
+			}
 			checkDatabaseLoading=true;
 			checkDatabaseToSynchronize();
 			checkNewConnexions();
@@ -136,9 +144,16 @@ public class DatabaseConfigurationsBuilder {
 		{
 			checkDisconnexions=true;
 		}
-		void checkDatabaseUnload()
-		{
+		void checkDatabaseUnload(DatabaseConfiguration configurationToDefinitivelyDelete) throws DatabaseException {
 			checkDatabaseUnload=true;
+			if(configurationsToLoad!=null && configurationsToLoad.contains(configurationToDefinitivelyDelete))
+				throw new DatabaseException("Cannot remove database which was added into the same transaction");
+
+			if (configurationToDefinitivelyDelete!=null) {
+				if (this.configurationsToDefinitivelyDelete==null)
+					this.configurationsToDefinitivelyDelete=new HashSet<>();
+				this.configurationsToDefinitivelyDelete.add(configurationToDefinitivelyDelete);
+			}
 		}
 		void checkDatabaseToSynchronize()
 		{
@@ -258,7 +273,7 @@ public class DatabaseConfigurationsBuilder {
 			configurations.addConfiguration(configuration, makeConfigurationLoadingPersistent);
 			if (makeConfigurationLoadingPersistent)
 				t.updateConfigurationPersistence();
-			t.checkDatabaseLoading();
+			t.checkDatabaseLoading(configuration);
 			t.checkNewConnexions();
 			t.checkDatabaseToSynchronize();
 			t.checkPeersToAdd();
@@ -266,24 +281,37 @@ public class DatabaseConfigurationsBuilder {
 		});
 		return this;
 	}
-	public DatabaseConfigurationsBuilder removeConfiguration(DatabaseConfiguration databaseConfiguration)
+	public DatabaseConfigurationsBuilder removeDatabaseConfiguration(DatabaseConfiguration databaseConfiguration)
 	{
-		return removeConfiguration(databaseConfiguration.getDatabaseSchema().getPackage());
+		return removeDatabaseConfiguration(databaseConfiguration, false);
 	}
-	public DatabaseConfigurationsBuilder removeConfiguration(Package databasePackage)
+	public DatabaseConfigurationsBuilder removeDatabaseConfiguration(DatabaseConfiguration databaseConfiguration, boolean removeData)
 	{
-		return removeConfiguration(databasePackage.getName());
+		return removeDatabaseConfiguration(databaseConfiguration.getDatabaseSchema().getPackage(), removeData);
 	}
-	public DatabaseConfigurationsBuilder removeConfiguration(String databasePackage)
+	public DatabaseConfigurationsBuilder removeDatabaseConfiguration(Package databasePackage)
+	{
+		return removeDatabaseConfiguration(databasePackage, false);
+	}
+	public DatabaseConfigurationsBuilder removeDatabaseConfiguration(Package databasePackage, boolean removeData)
+	{
+		return removeDatabaseConfiguration(databasePackage.getName(), removeData);
+	}
+	public DatabaseConfigurationsBuilder removeDatabaseConfiguration(String databasePackage)
+	{
+		return removeDatabaseConfiguration(databasePackage, false);
+	}
+	public DatabaseConfigurationsBuilder removeDatabaseConfiguration(String databasePackage, boolean removeData)
 	{
 		if (databasePackage==null)
 			throw new NullPointerException();
 
 		pushQuery((t) -> {
-			if (configurations.removeConfiguration(databasePackage))
+			DatabaseConfiguration c=configurations.getDatabaseConfiguration(databasePackage);
+			if (c!=null && configurations.removeConfiguration(databasePackage))
 			{
 				t.updateConfigurationPersistence();
-				t.checkDatabaseUnload();
+				t.checkDatabaseUnload(removeData?c:null);
 				t.checkDisconnexions();
 				t.checkConnexionsToDesynchronize();
 			}
@@ -523,7 +551,11 @@ public class DatabaseConfigurationsBuilder {
 
 
 	private void checkDatabaseToUnload() throws DatabaseException {
-		//TODO complete
+		if (currentTransaction.configurationsToDefinitivelyDelete!=null) {
+			for (DatabaseConfiguration c : currentTransaction.configurationsToDefinitivelyDelete)
+				wrapper.deleteDatabase(c);
+		}
+		wrapper.checkDatabaseToUnload();
 	}
 
 	private void checkDatabaseLoading() throws DatabaseException {
@@ -754,7 +786,7 @@ public class DatabaseConfigurationsBuilder {
 	{
 		pushQuery((t) -> {
 			wrapper.getSynchronizer().resetSynchronizerAndRemoveAllHosts();
-			t.checkDatabaseLoading();
+			t.checkDatabaseLoading(null);
 			t.checkNewConnexions();
 			t.checkDatabaseToSynchronize();
 		});
@@ -772,9 +804,6 @@ public class DatabaseConfigurationsBuilder {
 		return this;
 	}
 
-	public void removeDatabaseConfiguration(String packageString, boolean removeData)
-	{
-		//TODO complete
-	}
+
 
 }

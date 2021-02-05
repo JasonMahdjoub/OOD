@@ -54,6 +54,7 @@ import com.distrimind.util.harddrive.HardDriveDetect;
 import com.distrimind.util.harddrive.Partition;
 import com.distrimind.util.io.*;
 
+import javax.security.auth.login.Configuration;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -5145,7 +5146,32 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			unlockWrite();
 		}
 	}
-
+	final void checkDatabaseToUnload()  {
+		try  {
+			lockWrite();
+			HashMap<Package, Database> sd = new HashMap<>(sql_database);
+			for (Iterator<Map.Entry<Package, Database>> it=sd.entrySet().iterator();it.hasNext();)
+			{
+				Map.Entry<Package, Database> e=it.next();
+				boolean found=false;
+				for (DatabaseConfiguration configuration : getDatabaseConfigurationsBuilder().getConfigurations().getConfigurations())
+				{
+					if (configuration.getDatabaseSchema().getPackage().equals(e.getKey()))
+					{
+						found=true;
+						break;
+					}
+				}
+				if (!found)
+					it.remove();
+			}
+			sql_database = sd;
+		}
+		finally
+		{
+			unlockWrite();
+		}
+	}
 	//TODO manage time of restoration and peers to remove
 	final void loadDatabase(final Collection<DatabaseConfiguration> configurations,
 			 Long timeOfRestoration, Collection<DecentralizedValue> peersToRemove,
