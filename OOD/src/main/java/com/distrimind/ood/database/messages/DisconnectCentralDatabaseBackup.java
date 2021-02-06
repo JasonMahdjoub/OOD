@@ -22,6 +22,8 @@ public class DisconnectCentralDatabaseBackup extends DatabaseEvent implements Me
 	}
 
 	public DisconnectCentralDatabaseBackup(DecentralizedValue hostSource) {
+		if (hostSource==null)
+			throw new NullPointerException();
 		this.hostSource = hostSource;
 	}
 

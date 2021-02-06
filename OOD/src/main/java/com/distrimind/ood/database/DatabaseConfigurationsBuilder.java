@@ -818,7 +818,8 @@ public class DatabaseConfigurationsBuilder {
 			if (centralDatabaseBackupCertificate==null && configurations.getConfigurations().stream().anyMatch(DatabaseConfiguration::isSynchronizedWithCentralBackupDatabase))
 				throw new NullPointerException("You cannot set a null certificate when using a least one database configuration that is synchronized with central database backup");
 			configurations.setCentralDatabaseBackupCertificate(centralDatabaseBackupCertificate);
-			wrapper.getSynchronizer().disconnectAllHooksFromThereBackups();
+			if (wrapper.getSynchronizer().getLocalHostID()!=null)
+				wrapper.getSynchronizer().disconnectAllHooksFromThereBackups();
 			currentTransaction.checkInitCentralDatabaseBackup();
 
 		});

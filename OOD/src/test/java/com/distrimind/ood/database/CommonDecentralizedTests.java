@@ -95,8 +95,7 @@ public abstract class CommonDecentralizedTests {
 	protected CommonDecentralizedTests() throws NoSuchProviderException, NoSuchAlgorithmException, IOException, DatabaseException {
 		this.random=SecureRandomType.DEFAULT.getSingleton(null);
 		this.centralDatabaseBackupKeyPair=ASymmetricAuthenticatedSignatureType.BC_FIPS_Ed25519.getKeyPairGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKeyPair();
-		this.centralDatabaseBackupDatabase=getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver().getDatabaseWrapperSingleton();
-		this.centralDatabaseBackupReceiver=new CentralDatabaseBackupReceiver(centralDatabaseBackupDatabase, centralDatabaseBackupKeyPair.getASymmetricPublicKey());
+
 		peerKeyPairUsedWithCentralDatabaseBackupCertificate=ASymmetricAuthenticatedSignatureType.DEFAULT.getKeyPairGenerator(random).generateKeyPair();
 		SymmetricSecretKey secretKeyForSignature=SymmetricAuthenticatedSignatureType.DEFAULT.getKeyGenerator(random).generateKey();
 		SymmetricSecretKey secretKeyForEncryption=SymmetricEncryptionType.DEFAULT.getKeyGenerator(random).generateKey();
@@ -106,8 +105,8 @@ public abstract class CommonDecentralizedTests {
 				null, secretKeyForSignature,secretKeyForEncryption, false, true );
 		secretKeyForSignature=SymmetricAuthenticatedSignatureType.DEFAULT.getKeyGenerator(random).generateKey();
 		((EncryptionProfileCollection)this.protectedSignatureProfileProviderForAuthenticatedP2PMessages).putProfile((short)0, MessageDigestType.DEFAULT, null, null, secretKeyForSignature,null, false, true );
-
 		peerCertificate =new CentralDatabaseBackupCertificate(centralDatabaseBackupKeyPair, peerKeyPairUsedWithCentralDatabaseBackupCertificate.getASymmetricPublicKey());
+
 	}
 
 	public static class DistantDatabaseEvent {
@@ -459,7 +458,11 @@ public abstract class CommonDecentralizedTests {
 	{
 		private IASymmetricPublicKey centralDatabaseBackupPublicKey, certifiedAccountPublicKey;
 		private byte[] signature;
+		@SuppressWarnings("unused")
+		CentralDatabaseBackupCertificate()
+		{
 
+		}
 		public CentralDatabaseBackupCertificate(AbstractKeyPair<?, ?> centralDatabaseBackupKeyPair, IASymmetricPublicKey certifiedAccountPublicKey) throws IOException, NoSuchProviderException, NoSuchAlgorithmException {
 			this.centralDatabaseBackupPublicKey = centralDatabaseBackupKeyPair.getASymmetricPublicKey();
 			this.certifiedAccountPublicKey = certifiedAccountPublicKey;
@@ -899,8 +902,8 @@ public abstract class CommonDecentralizedTests {
 	protected volatile CommonDecentralizedTests.Database db1 = null, db2 = null, db3 = null, db4 = null;
 	protected final ArrayList<CommonDecentralizedTests.Database> listDatabase = new ArrayList<>(3);
 	protected final AbstractKeyPair<?, ?> centralDatabaseBackupKeyPair;
-	private final DatabaseWrapper centralDatabaseBackupDatabase;
-	protected final CentralDatabaseBackupReceiver centralDatabaseBackupReceiver;
+	private DatabaseWrapper centralDatabaseBackupDatabase=null;
+	protected CentralDatabaseBackupReceiver centralDatabaseBackupReceiver=null;
 	protected final AbstractSecureRandom random;
 	protected final EncryptionProfileProviderFactory signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup=new EncryptionProfileCollection(){};
 	protected final EncryptionProfileProviderFactory encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup=new EncryptionProfileCollection(){};
@@ -967,10 +970,16 @@ public abstract class CommonDecentralizedTests {
 				.commit();
 		db.initStep2();
 	}
-
+	void initCentralDatabaseBackup() throws DatabaseException {
+		if (canInitCentralBackup()) {
+			this.centralDatabaseBackupDatabase = getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver().getDatabaseWrapperSingleton();
+			this.centralDatabaseBackupReceiver = new CentralDatabaseBackupReceiver(centralDatabaseBackupDatabase, centralDatabaseBackupKeyPair.getASymmetricPublicKey());
+		}
+	}
 	@BeforeClass
 	public void loadDatabase() throws DatabaseException {
 		unloadDatabase();
+		initCentralDatabaseBackup();
 		DatabaseFactory<?> df=getDatabaseWrapperInstance1();
 		df.setEncryptionProfileProviders(signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup, encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedSignatureProfileProviderForAuthenticatedP2PMessages, SecureRandomType.DEFAULT);
 		db1 = new CommonDecentralizedTests.Database(df.getDatabaseWrapperSingleton());
@@ -1064,9 +1073,10 @@ public abstract class CommonDecentralizedTests {
 						unloadDatabase4();
 					} finally {
 						listDatabase.clear();
+						if (centralDatabaseBackupDatabase!=null)
+							centralDatabaseBackupDatabase.close();
 						if (centralDatabaseBackupDirectory.exists())
 							FileTools.deleteDirectory(centralDatabaseBackupDirectory);
-						centralDatabaseBackupDatabase.close();
 						removeCentralDatabaseFiles();
 					}
 				}
