@@ -1073,8 +1073,10 @@ public abstract class CommonDecentralizedTests {
 						unloadDatabase4();
 					} finally {
 						listDatabase.clear();
-						if (centralDatabaseBackupDatabase!=null)
+						if (centralDatabaseBackupDatabase!=null) {
 							centralDatabaseBackupDatabase.close();
+							centralDatabaseBackupDatabase = null;
+						}
 						if (centralDatabaseBackupDirectory.exists())
 							FileTools.deleteDirectory(centralDatabaseBackupDirectory);
 						removeCentralDatabaseFiles();
