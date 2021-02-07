@@ -47,6 +47,7 @@ import com.distrimind.util.FileTools;
 import com.distrimind.util.crypto.*;
 import com.distrimind.util.data_buffers.WrappedData;
 import com.distrimind.util.io.*;
+import com.google.protobuf.Message;
 import org.testng.Assert;
 import org.testng.annotations.*;
 
@@ -388,8 +389,10 @@ public abstract class CommonDecentralizedTests {
 				return null;
 			return new EncryptionProfileProvider() {
 				@Override
-				public MessageDigestType getMessageDigest(short keyID, boolean duringDecryptionPhase) {
-					return null;
+				public MessageDigestType getMessageDigest(short keyID, boolean duringDecryptionPhase) throws IOException {
+					if (keyID==0)
+						return MessageDigestType.DEFAULT;
+					throw new MessageExternalizationException(Integrity.FAIL);
 				}
 
 				@Override
@@ -588,6 +591,8 @@ public abstract class CommonDecentralizedTests {
 
 		public CentralDatabaseBackupReceiver(DatabaseWrapper wrapper, DecentralizedValue centralID) throws DatabaseException {
 			super(wrapper, centralID);
+			ClientCloudAccountTable.Record r=new ClientCloudAccountTable.Record((short)10, CommonDecentralizedTests.this.peerKeyPairUsedWithCentralDatabaseBackupCertificate.getASymmetricPublicKey());
+			clientCloudAccountTable.addRecord(r);
 		}
 
 		@Override
@@ -974,6 +979,7 @@ public abstract class CommonDecentralizedTests {
 		if (canInitCentralBackup()) {
 			this.centralDatabaseBackupDatabase = getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver().getDatabaseWrapperSingleton();
 			this.centralDatabaseBackupReceiver = new CentralDatabaseBackupReceiver(centralDatabaseBackupDatabase, centralDatabaseBackupKeyPair.getASymmetricPublicKey());
+
 		}
 	}
 	@BeforeClass
