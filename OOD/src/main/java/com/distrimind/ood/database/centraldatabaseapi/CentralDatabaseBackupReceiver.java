@@ -99,9 +99,10 @@ public abstract class CentralDatabaseBackupReceiver {
 
 			if (message instanceof DistantBackupCenterConnexionInitialisation) {
 				r = newCentralDatabaseBackupReceiverPerPeerInstance(wrapper);
+				receiversPerPeer.put(message.getHostSource(), r);
 				Integrity res=r.init((DistantBackupCenterConnexionInitialisation)message);
-				if (r.isConnected())
-					receiversPerPeer.put(message.getHostSource(), r);
+				if (!r.isConnected())
+					receiversPerPeer.remove(message.getHostSource());
 				return res;
 			}
 			else {
