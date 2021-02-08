@@ -1232,17 +1232,17 @@ public abstract class CommonDecentralizedTests {
 					BackupRestoreManager brm=dw.getBackupRestoreManager(dc.getDatabaseSchema().getPackage());
 					ClientTable.Record clientRecord=centralDatabaseBackupDatabase.getTableInstance(ClientTable.class).getRecord("clientID", d.hostID);
 					DatabaseBackupPerClientTable databaseBackupPerClientTable=centralDatabaseBackupDatabase.getTableInstance(DatabaseBackupPerClientTable.class);
-					DatabaseBackupPerClientTable.Record databaseRecord=databaseBackupPerClientTable.getRecord("client=%c and packageString=%ps", "c", clientRecord, "ps", dc.getDatabaseSchema().getPackage().getName());
-					List<EncryptedBackupPartReferenceTable.Record> records=centralDatabaseBackupDatabase.getTableInstance(EncryptedBackupPartReferenceTable.class).getRecords("database=%db", "db", databaseRecord);
-					List<Long> list=brm.getFinalTimestamps();
-					for (long l : list)
-					{
-						Assert.assertTrue(records.stream().anyMatch(r -> r.getFileTimeUTC()==l), "l="+l+", list.size="+list.size()+", hm.size="+records.size());
-					}
-					for ( EncryptedBackupPartReferenceTable.Record r : records)
-					{
-						if (!list.contains(r.getFileTimeUTC()))
-							Assert.assertTrue(list.get(0)>r.getFileTimeUTC(), "l="+r.getFileTimeUTC()+", list.size="+list.size()+", hm.size="+records.size());
+					DatabaseBackupPerClientTable.Record databaseRecord=databaseBackupPerClientTable.getRecord("client", clientRecord, "packageString", dc.getDatabaseSchema().getPackage().getName());
+					if (databaseRecord!=null) {
+						List<EncryptedBackupPartReferenceTable.Record> records = centralDatabaseBackupDatabase.getTableInstance(EncryptedBackupPartReferenceTable.class).getRecords("database=%db", "db", databaseRecord);
+						List<Long> list = brm.getFinalTimestamps();
+						for (long l : list) {
+							Assert.assertTrue(records.stream().anyMatch(r -> r.getFileTimeUTC() == l), "l=" + l + ", list.size=" + list.size() + ", hm.size=" + records.size());
+						}
+						for (EncryptedBackupPartReferenceTable.Record r : records) {
+							if (!list.contains(r.getFileTimeUTC()))
+								Assert.assertTrue(list.get(0) > r.getFileTimeUTC(), "l=" + r.getFileTimeUTC() + ", list.size=" + list.size() + ", hm.size=" + records.size());
+						}
 					}
 				}
 			}
