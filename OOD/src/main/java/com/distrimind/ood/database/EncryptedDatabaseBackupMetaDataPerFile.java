@@ -35,10 +35,7 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.util.crypto.AbstractSecureRandom;
-import com.distrimind.util.crypto.EncryptionProfileProvider;
-import com.distrimind.util.crypto.EncryptionSignatureHashDecoder;
-import com.distrimind.util.crypto.EncryptionSignatureHashEncoder;
+import com.distrimind.util.crypto.*;
 import com.distrimind.util.io.*;
 
 import java.io.IOException;
@@ -55,7 +52,9 @@ public class EncryptedDatabaseBackupMetaDataPerFile implements SecureExternaliza
 	private String packageString;
 	private byte[] encryptedMetaData;
 	private byte[] associatedData;
-	public static final int MAX_ENCRYPTED_DATA_LENGTH_IN_BYTES=(int)EncryptionSignatureHashEncoder.getMaximumOutputLengthWhateverParameters(DatabaseBackupMetaDataPerFile.MAXIMUM_INTERNAL_DATA_SIZE_IN_BYTES);
+	public static final int MAX_ENCRYPTED_DATA_LENGTH_IN_BYTES= DatabaseBackupMetaDataPerFile.MAXIMUM_INTERNAL_DATA_SIZE_IN_BYTES+128+ SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE+HybridASymmetricAuthenticatedSignatureType.MAX_HYBRID_ASYMMETRIC_SIGNATURE_SIZE+MessageDigestType.MAX_HASH_LENGTH;//(int)EncryptionSignatureHashEncoder.getMaximumOutputLengthWhateverParameters(DatabaseBackupMetaDataPerFile.MAXIMUM_INTERNAL_DATA_SIZE_IN_BYTES);
+	private static final int PRIMITIVE_INTERNAL_SIZE_IN_BYTES=17;
+	public static final int MAX_ENCRYPTED_DATABASE_BACKUP_META_DATA_SIZE_IN_BYTES=SerializationTools.MAX_CLASS_LENGTH+MAX_ENCRYPTED_DATA_LENGTH_IN_BYTES+PRIMITIVE_INTERNAL_SIZE_IN_BYTES;
 	@SuppressWarnings("unused")
 	private EncryptedDatabaseBackupMetaDataPerFile()
 	{
@@ -164,7 +163,7 @@ public class EncryptedDatabaseBackupMetaDataPerFile implements SecureExternaliza
 
 	@Override
 	public int getInternalSerializedSize() {
-		return 17+SerializationTools.getInternalSize(encryptedMetaData, MAX_ENCRYPTED_DATA_LENGTH_IN_BYTES)+SerializationTools.getInternalSize(packageString, SerializationTools.MAX_CLASS_LENGTH);
+		return PRIMITIVE_INTERNAL_SIZE_IN_BYTES+SerializationTools.getInternalSize(encryptedMetaData, MAX_ENCRYPTED_DATA_LENGTH_IN_BYTES)+SerializationTools.getInternalSize(packageString, SerializationTools.MAX_CLASS_LENGTH);
 	}
 
 	@Override

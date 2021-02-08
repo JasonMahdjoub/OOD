@@ -525,6 +525,10 @@ public abstract class CommonDecentralizedTests {
 	{
 		private transient File file;
 		private long fileTimeStamp;
+		FileReferenceForTests()
+		{
+
+		}
 		FileReferenceForTests(long fileTimeStamp)
 		{
 			this.fileTimeStamp=fileTimeStamp;
@@ -532,6 +536,9 @@ public abstract class CommonDecentralizedTests {
 		}
 		private void initFile()
 		{
+			if (!centralDatabaseBackupDirectory.exists())
+				if (!centralDatabaseBackupDirectory.mkdir())
+					throw new IllegalAccessError();
 			file=new File(centralDatabaseBackupDirectory, fileTimeStamp+".backup");
 		}
 		@Override

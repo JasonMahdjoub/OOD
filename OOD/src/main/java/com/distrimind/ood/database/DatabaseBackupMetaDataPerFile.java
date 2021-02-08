@@ -50,8 +50,8 @@ import java.util.List;
  */
 public class DatabaseBackupMetaDataPerFile implements Comparable<DatabaseBackupMetaDataPerFile>, Iterable<TransactionMetaData>, SecureExternalizable {
 	public static final int MAX_DATA_LENGTH_IN_BYTES=10484736;
-	public static int MAX_TRANSACTIONS_NUMBER_PER_FILE=MAX_DATA_LENGTH_IN_BYTES/ BackupRestoreManager.MIN_TRANSACTION_SIZE_IN_BYTES;
-	public static int MAXIMUM_INTERNAL_DATA_SIZE_IN_BYTES=13+TransactionMetaData.INTERNAL_TRANSACTION_META_SIZE_IN_BYTES*MAX_TRANSACTIONS_NUMBER_PER_FILE;
+	public static final int MAX_TRANSACTIONS_NUMBER_PER_FILE=MAX_DATA_LENGTH_IN_BYTES/ BackupRestoreManager.MIN_TRANSACTION_SIZE_IN_BYTES;
+	public static final int MAXIMUM_INTERNAL_DATA_SIZE_IN_BYTES=13+TransactionMetaData.INTERNAL_TRANSACTION_META_SIZE_IN_BYTES*MAX_TRANSACTIONS_NUMBER_PER_FILE;
 	long timeStampUTC;
 	private boolean referenceFile;
 	List<TransactionMetaData> transactionsMetaData;

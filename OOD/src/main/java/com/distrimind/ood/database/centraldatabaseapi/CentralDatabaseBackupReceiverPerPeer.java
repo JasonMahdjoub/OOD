@@ -311,11 +311,12 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 				FileReference fileReference=getFileReference(message.getMetaData());
 				EncryptedBackupPartReferenceTable.Record r=new EncryptedBackupPartReferenceTable.Record(database, fileReference, message);
 				try {
-					centralDatabaseBackupReceiver.encryptedBackupPartReferenceTable.addRecord(r);
+
 					if (update)
 						centralDatabaseBackupReceiver.databaseBackupPerClientTable.updateRecord(database, "lastFileBackupPartUTC", message.getMetaData().getFileTimestampUTC());
 					else if (add)
 						centralDatabaseBackupReceiver.databaseBackupPerClientTable.addRecord(database);
+					centralDatabaseBackupReceiver.encryptedBackupPartReferenceTable.addRecord(r);
 					sendMessage(new EncryptedBackupPartTransmissionConfirmationFromCentralDatabaseBackup(message.getHostSource(), message.getMetaData().getFileTimestampUTC(), message.getMetaData().getLastTransactionTimestampUTC(), message.getMetaData().getPackageString()));
 					if (update || add)
 					{

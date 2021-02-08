@@ -71,11 +71,11 @@ public final class EncryptedBackupPartReferenceTable extends Table<EncryptedBack
 		@Field
 		private boolean isReferenceFile;
 
-		@Field
+		@Field(limit=FileReference.MAX_FILE_REFERENCE_SIZE_IN_BYTES)
 		@NotNull
 		private FileReference fileReference=null;
 
-		@Field
+		@Field(limit = EncryptedDatabaseBackupMetaDataPerFile.MAX_ENCRYPTED_DATABASE_BACKUP_META_DATA_SIZE_IN_BYTES)
 		@NotNull
 		private EncryptedDatabaseBackupMetaDataPerFile metaData;
 

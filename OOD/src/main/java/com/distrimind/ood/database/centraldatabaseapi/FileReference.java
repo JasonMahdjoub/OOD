@@ -47,6 +47,7 @@ import java.io.IOException;
  * @since OOD 3.0.0
  */
 public interface FileReference extends SecureExternalizable {
+	int MAX_FILE_REFERENCE_SIZE_IN_BYTES=2048;
 	@Override
 	boolean equals(Object o);
 	@Override

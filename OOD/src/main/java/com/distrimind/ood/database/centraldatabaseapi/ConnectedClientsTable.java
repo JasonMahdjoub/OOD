@@ -62,6 +62,7 @@ public final class ConnectedClientsTable extends Table<ConnectedClientsTable.Rec
 		@NotNull
 		private DecentralizedValue centralID;
 
+		@SuppressWarnings("unused")
 		private Record()
 		{
 
