@@ -326,11 +326,11 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 		alterDatabase(comingFrom, comingFrom, inputStream);
 	}
 	private void alterDatabase(final DatabaseHooksTable.Record directPeer,
-			final Reference<DatabaseHooksTable.Record> _fromHook,
-			final DatabaseTransactionEventsTable.AbstractRecord transaction,
-			final DatabaseEventsTable.DatabaseEventsIterator iterator, final AtomicLong lastValidatedTransaction,
-			final HashSet<DecentralizedValue> hooksToNotify,
-			final Reference<String>	databasePackage, final boolean acceptTransactionEmpty) throws DatabaseException {
+							   final Reference<DatabaseHooksTable.Record> _fromHook,
+							   final DatabaseTransactionEventsTable.AbstractRecord transaction,
+							   final DatabaseEventsTable.DatabaseEventsIterator iterator, final AtomicLong lastValidatedTransaction,
+							   final HashSet<DecentralizedValue> hooksToNotify,
+							   final Reference<String>	databasePackage, final boolean acceptTransactionEmpty, boolean comingFromBackup) throws DatabaseException {
 			getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
 
 				@SuppressWarnings("unchecked")
@@ -466,7 +466,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 												switch (type) {
 													case REMOVE:
 													case REMOVE_WITH_CASCADE: {
-														if (drOld == null) {
+														if (drOld == null && !comingFromBackup) {
 															if (!transaction.isForced() && !eventForce) {
 
 																t.anomalyDetected(fromHook.getHostID(),
@@ -480,7 +480,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 													}
 													break;
 													case UPDATE:
-														if (drOld == null && !eventForce && !transaction.isForced()) {
+														if (drOld == null && !eventForce && !transaction.isForced() && !comingFromBackup) {
 
 															t.anomalyDetected(fromHook.getHostID(),
 																	indirectTransaction ? directPeer.getHostID() : null,
@@ -800,7 +800,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 
 	private void alterDatabase(final DecentralizedValue directPeerID, final DecentralizedValue comingFrom,
-			final RandomInputStream ois) throws DatabaseException {
+							   final RandomInputStream ois) throws DatabaseException {
 
 		if (comingFrom == null)
 			throw new NullPointerException("comingFrom");
@@ -833,14 +833,14 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 						alterDatabase(directPeer, new Reference<>(),
 								ite, it=getDatabaseDistantEventsTable().distantEventTableIterator(ois),
-								lastValidatedTransaction, hooksToNotify, packageString, false);
+								lastValidatedTransaction, hooksToNotify, packageString, false, false);
 
 					} else if (next.get() == EXPORT_DIRECT_TRANSACTION) {
 						DatabaseTransactionEventsTable.Record dte = getDatabaseTransactionEventsTable().unserialize(ois,
 								true, false);
 						alterDatabase(directPeer, new Reference<>(directPeer),
 								dte, it=getDatabaseEventsTable().eventsTableIterator(ois), lastValidatedTransaction,
-								hooksToNotify, packageString, false);
+								hooksToNotify, packageString, false, false);
 						if (packageString.get()==null)
 							hooksToNotify.add(comingFrom);
 						/*else
@@ -879,8 +879,8 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 	}
 
-	boolean alterDatabase(final String databasePackage, final DecentralizedValue comingFrom,
-													   final RandomInputStream ois, boolean referenceFile) throws DatabaseException {
+	boolean alterDatabaseFromBackup(final String databasePackage, final DecentralizedValue comingFrom,
+									final RandomInputStream ois, boolean referenceFile) throws DatabaseException {
 
 		if (comingFrom == null)
 			throw new NullPointerException("comingFrom");
@@ -1069,7 +1069,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 				try {
 					alterDatabase(comingFromRecord, new Reference<>(comingFromRecord),
 							dte, it, lastValidatedTransaction,
-							hooksToNotify, new Reference<>(), true);
+							hooksToNotify, new Reference<>(), true, true);
 					lastDistantTransactionID=transactionID;
 					ois.seek(nextTransactionPosition);
 				}

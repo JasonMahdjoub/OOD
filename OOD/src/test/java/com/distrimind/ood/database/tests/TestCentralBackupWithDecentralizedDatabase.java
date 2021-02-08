@@ -84,9 +84,9 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 		ArrayList<CommonDecentralizedTests.Database> l = new ArrayList<>(peersNumber);
 		for (int i = 0; i < peersNumber; i++)
 			l.add(listDatabase.get(i));
-		CommonDecentralizedTests.Database[] concernedDatabase = new CommonDecentralizedTests.Database[l.size()];
-		for (int i = 0; i < l.size(); i++)
-			concernedDatabase[i] = l.get(i);
+		CommonDecentralizedTests.Database[] concernedDatabase = l.toArray(new Database[0]);
+
+
 
 		if (exceptionDuringTransaction) {
 
@@ -123,11 +123,12 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 
 					//Assert.assertFalse(db.isNewDatabaseEventDetected());
 
-					/*CommonDecentralizedTests.DetectedCollision dcollision = db.getDetectedCollision();
-					Assert.assertNotNull(dcollision, "i=" + (i));
-					testCollision(db, event, dcollision);*/
+					CommonDecentralizedTests.DetectedCollision dcollision = db.getDetectedCollision();
+					if (dcollision!=null) {
+						//Assert.assertNotNull(dcollision, "i=" + (i));
+						testCollision(db, event, dcollision);
+					}
 					Assert.assertTrue(db.getAnomalies().isEmpty(), db.getAnomalies().toString());
-
 					++i;
 				}
 
@@ -162,9 +163,13 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 
 			for (int i = peersNumber; i < listDatabase.size(); i++) {
 				CommonDecentralizedTests.Database db = listDatabase.get(i);
+				DetectedCollision collision=db.getDetectedCollision();
+				if (!generateDirectConflict)
+					Assert.assertNull(collision, "Database N°"+i);
 				// DetectedCollision collision=db.getDetectedCollision();
 				// Assert.assertNotNull(collision, "Database N°"+i);
-				Assert.assertTrue(db.getAnomalies().isEmpty());
+				//db.getAnomalies().clear();
+				Assert.assertTrue(db.getAnomalies().isEmpty(), ""+db.getAnomalies());
 				//Assert.assertFalse(db.isNewDatabaseEventDetected());
 				testEventSynchronized(db, event, true);
 
