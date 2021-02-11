@@ -1,4 +1,8 @@
-apply plugin: 'com.android.application'
+//apply plugin: 'com.android.application'
+plugins {
+    id "com.android.application"
+    //id "org.owasp.dependencycheck" version "6.1.0"
+}
 Properties props = new Properties()
 def propFile = file('../../OOD/gradle.properties')
 def artifactory_Url="https://artifactory.distri-mind.fr/artifactory"
