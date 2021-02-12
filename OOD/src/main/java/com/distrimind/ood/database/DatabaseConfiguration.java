@@ -73,10 +73,36 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 	private transient boolean createDatabaseIfNecessaryAndCheckItDuringCurrentSession;
 	private boolean createDatabaseIfNecessaryAndCheckItDuringLoading;
 
-	void setSynchronizationType(SynchronizationType synchronizationType) {
+	private Long timeUTCInMsForRestoringDatabaseToOldVersion=null;
+	private boolean preferOtherChannelThanLocalChannelIfAvailableDuringRestoration =false;
+
+	boolean restoreDatabaseToOldVersion(long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable)
+	{
+		if (backupConfiguration==null && (distantPeersThatCanBeSynchronizedWithThisDatabase.size()==0 || !isSynchronizedWithCentralBackupDatabase()))
+		{
+			if (timeUTCInMsForRestoringDatabaseToOldVersion==null)
+				return false;
+			timeUTCInMsForRestoringDatabaseToOldVersion=null;
+		}
+		else {
+			if (timeUTCInMsForRestoringDatabaseToOldVersion==timeUTCInMs && preferOtherChannelThanLocalChannelIfAvailableDuringRestoration ==preferOtherChannelThanLocalChannelIfAvailable)
+				return false;
+			timeUTCInMsForRestoringDatabaseToOldVersion = timeUTCInMs;
+			preferOtherChannelThanLocalChannelIfAvailableDuringRestoration = preferOtherChannelThanLocalChannelIfAvailable;
+		}
+		return true;
+	}
+
+	boolean setSynchronizationType(SynchronizationType synchronizationType) {
 		if (synchronizationType==null)
 			throw new NullPointerException();
+		if (this.distantPeersThatCanBeSynchronizedWithThisDatabase.size()>0 && synchronizationType==SynchronizationType.NO_SYNCHRONIZATION)
+			throw new IllegalArgumentException();
+		if (synchronizationType==this.synchronizationType)
+			return false;
+
 		this.synchronizationType = synchronizationType;
+		return true;
 	}
 
 	public DatabaseConfiguration(DatabaseSchema databaseSchema) {

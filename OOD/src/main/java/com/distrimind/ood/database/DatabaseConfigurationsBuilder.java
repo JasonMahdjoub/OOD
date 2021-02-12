@@ -3,6 +3,7 @@ package com.distrimind.ood.database;
 import com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupCertificate;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.Reference;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 
@@ -660,6 +661,28 @@ public class DatabaseConfigurationsBuilder {
 	{
 		return synchronizeDistantPeersWithGivenAdditionalPackages(true, distantPeers, packagesString);
 	}
+	public DatabaseConfigurationsBuilder setSynchronizationType(DatabaseConfiguration.SynchronizationType synchronizationType, String ... packagesString)
+	{
+		if (synchronizationType==null)
+			throw new NullPointerException();
+		if (packagesString==null)
+			throw new NullPointerException();
+		if (packagesString.length==0)
+			throw new IllegalArgumentException();
+		pushQuery((t) -> {
+			final Reference<Boolean> changed=new Reference<>(false);
+			for (String p : packagesString)
+			{
+				configurations.getConfigurations().forEach ((c) -> {if (c.getDatabaseSchema().getPackage().getName().equals(p) && c.setSynchronizationType(synchronizationType)) changed.set(true);});
+			}
+			if (changed.get()) {
+				t.updateConfigurationPersistence();
+				t.checkDatabaseToSynchronize();
+				t.checkNewConnexions();
+			}
+		});
+		return this;
+	}
 	DatabaseConfigurationsBuilder synchronizeDistantPeersWithGivenAdditionalPackages(boolean checkNewConnexion, Collection<DecentralizedValue> distantPeers, String ... packagesString)
 	{
 		if (packagesString==null)
@@ -825,5 +848,28 @@ public class DatabaseConfigurationsBuilder {
 		});
 		return this;
 	}
+	public DatabaseConfigurationsBuilder restoreDatabaseToOldVersion(long timeUTCMS)
+	{
+		return restoreDatabaseToOldVersion(timeUTCMS, false);
+	}
+	public DatabaseConfigurationsBuilder restoreDatabaseToOldVersion(long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable)
+	{
+
+		pushQuery((p) -> {
+			Reference<Boolean> changed=new Reference<>(false);
+			configurations.getConfigurations().forEach((c) ->{
+				if (c.restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable))
+					changed.set(true);
+			});
+			if (changed.get())
+			{
+				p.updateConfigurationPersistence();
+				//TODO complete
+			}
+		});
+		return this;
+	}
+
+
 
 }
