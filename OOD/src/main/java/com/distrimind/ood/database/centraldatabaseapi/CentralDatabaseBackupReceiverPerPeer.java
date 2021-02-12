@@ -324,13 +324,14 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 						centralDatabaseBackupReceiver.clientTable.getRecords(new Filter<ClientTable.Record>() {
 							@Override
 							public boolean nextRecord(ClientTable.Record _record) throws DatabaseException {
-								if (!_record.getClientID().equals(connectedClientID) && centralDatabaseBackupReceiver.isConnectedIntoOneOfCentralDatabaseBackupServers(_record.getClientID()))
+								byte[] lastValidatedAndEncryptedDistantID=getLastValidatedAndEncryptedDistantID(connectedClientRecord, _record);
+								if (lastValidatedAndEncryptedDistantID!=null && !_record.getClientID().equals(connectedClientID) && centralDatabaseBackupReceiver.isConnectedIntoOneOfCentralDatabaseBackupServers(_record.getClientID()))
 								{
 									sendMessage(
 											new BackupChannelUpdateMessageFromCentralDatabaseBackup(
 													_record.getClientID(),
 													message.getHostSource(),
-													getLastValidatedAndEncryptedDistantID(connectedClientRecord, _record),
+													lastValidatedAndEncryptedDistantID,
 													message.getLastValidatedAndEncryptedID()
 											));
 								}

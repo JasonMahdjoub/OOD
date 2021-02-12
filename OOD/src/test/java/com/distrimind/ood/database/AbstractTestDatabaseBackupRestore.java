@@ -876,13 +876,14 @@ public abstract class AbstractTestDatabaseBackupRestore {
 	@Test(dependsOnMethods = "testExternalBackupAndRestore")
 	public void testBackupCleaning() throws DatabaseException, InterruptedException {
 		wrapper=new InFileEmbeddedH2DatabaseFactory(databaseDirectory).getDatabaseWrapperSingleton();
+		long start=System.currentTimeMillis();
 		BackupConfiguration backupConf=new BackupConfiguration(200L, 1000L, 1000000, 100L, null);
 		DatabaseConfiguration conf=new DatabaseConfiguration( new DatabaseSchema(Table1.class.getPackage()), backupConf) ;
 		wrapper.getDatabaseConfigurationsBuilder()
 				.addConfiguration(conf, false, true)
 				.commit();
 		BackupRestoreManager manager=wrapper.getBackupRestoreManager(Table1.class.getPackage());
-		long start=System.currentTimeMillis();
+
 		addAndRemoveData(wrapper, 100);
 		Assert.assertTrue(start<=manager.getFirstTransactionUTCInMs());
 		Assert.assertTrue(manager.getFirstTransactionUTCInMs()<=manager.getLastTransactionUTCInMS());

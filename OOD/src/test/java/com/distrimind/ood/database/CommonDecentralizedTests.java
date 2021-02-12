@@ -1186,7 +1186,16 @@ public abstract class CommonDecentralizedTests {
 				loop = false;
 				centralDatabaseBackupMessageSent=false;
 				for (CommonDecentralizedTests.Database db : listDatabase) {
-
+					/*if (canInitCentralBackup())
+					{
+						BackupRestoreManager brm=db.getDbwrapper().getBackupRestoreManager(UndecentralizableTableA1.class.getPackage());
+						long l=brm.getLastFileTimestampUTC(false);
+						if (l!=brm.getLastFileTimestampUTC(true)) {
+							long delta = getBackupConfiguration().getMaxBackupFileAgeInMs() - System.currentTimeMillis() +l;
+							if (delta > 0)
+								Thread.sleep(delta);
+						}
+					}*/
 					DatabaseEvent e = db.getDbwrapper().getSynchronizer().nextEvent();
 					if (e != null) {
 
