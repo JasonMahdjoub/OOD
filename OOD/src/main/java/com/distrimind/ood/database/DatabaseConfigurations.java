@@ -282,8 +282,8 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 		return allConfigurationsReadOnly;
 	}
 
-	Set<DecentralizedValue> getDistantPeers() {
-		return allDistantPeersReadOnly;
+	public Set<DecentralizedValue> getDistantPeers() {
+		return Collections.synchronizedSet(allDistantPeersReadOnly);
 	}
 
 	boolean addDistantPeer(DecentralizedValue distantPeer, boolean volatilePeer) throws DatabaseException {
@@ -443,7 +443,7 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 		}
 		return null;
 	}
-	DecentralizedValue getLocalPeer() {
+	public DecentralizedValue getLocalPeer() {
 		return localPeer;
 	}
 
