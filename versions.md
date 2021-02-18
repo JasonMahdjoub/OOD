@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-3.0.0 STABLE (Build: 1572) (from 01/04/2013 to 28/10/2020)
+3.0.0 STABLE (Build: 2420) (from 01/04/2013 to 28/10/2020)
 
 # Creator(s):
 Jason MAHDJOUB
@@ -20,6 +20,9 @@ Jason MAHDJOUB (Entered in the team at 01/04/2013)
 * Implementation of driver for Android H2 Database
 * Implementation of driver for PostgreSQL
 * Compatible with Java 8 and newer
+* Calendar is better serialized into database (better performances, and lower space)
+* Calendar is now comparable
+* Implementation of DatabaseConfigurationBuilder that centralize database loading, and database synchronization with decentralized peers and with central backup database
 
 
 ### 2.4.0 STABLE (11/02/2020)
