@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-3.0.0 STABLE (Build: 2420) (from 01/04/2013 to 28/10/2020)
+3.0.0 STABLE (Build: 2426) (from 01/04/2013 to 28/10/2020)
 
 # Creator(s):
 Jason MAHDJOUB
