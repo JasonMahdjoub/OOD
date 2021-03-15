@@ -239,6 +239,19 @@ public class DatabaseConfigurationsBuilder {
 		}
 	}
 
+	void databaseWrapperLoaded() throws DatabaseException {
+		checkDatabaseLoading();
+		checkDatabaseToDesynchronize();
+		checkConnexionsToRemove();
+		checkDatabaseToUnload();
+		checkPeersToAdd();
+		checkInitLocalPeer();
+		checkDatabaseToSynchronize();
+		checkConnexions();
+		checkDisconnections();
+		checkInitCentralDatabaseBackup();
+	}
+
 	private void checkInitCentralDatabaseBackup() throws DatabaseException {
 		if (wrapper.getSynchronizer().centralBackupAvailable)
 			wrapper.getSynchronizer().centralDatabaseBackupAvailable();

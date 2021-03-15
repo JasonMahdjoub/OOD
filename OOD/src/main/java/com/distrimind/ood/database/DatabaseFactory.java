@@ -178,7 +178,9 @@ public abstract class DatabaseFactory<DW extends DatabaseWrapper> extends MultiF
 
 	DW newWrapperInstance() throws DatabaseException
 	{
-		return newWrapperInstance(databaseLifeCycles, createDatabasesIfNecessaryAndCheckIt);
+		DW res= newWrapperInstance(databaseLifeCycles, createDatabasesIfNecessaryAndCheckIt);
+		res.getDatabaseConfigurationsBuilder().databaseWrapperLoaded();
+		return res;
 	}
 
 	protected abstract DW newWrapperInstance(DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException;
