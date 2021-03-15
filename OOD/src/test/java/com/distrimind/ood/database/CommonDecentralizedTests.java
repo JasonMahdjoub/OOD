@@ -47,7 +47,6 @@ import com.distrimind.util.FileTools;
 import com.distrimind.util.crypto.*;
 import com.distrimind.util.data_buffers.WrappedData;
 import com.distrimind.util.io.*;
-import com.google.protobuf.Message;
 import org.testng.Assert;
 import org.testng.annotations.*;
 
@@ -1240,7 +1239,7 @@ public abstract class CommonDecentralizedTests {
 		Assert.assertEquals(dw.getSynchronizer().backupDatabasePartsSynchronizingWithCentralDatabaseBackup.size(), 0);
 		if (dw.getSynchronizer().isInitializedWithCentralBackup())
 		{
-			for (DatabaseConfiguration dc : dw.getDatabaseConfigurations()) {
+			for (DatabaseConfiguration dc : dw.getLoadedDatabaseConfigurations()) {
 
 				if (dc.isSynchronizedWithCentralBackupDatabase())
 				{
@@ -1270,7 +1269,7 @@ public abstract class CommonDecentralizedTests {
 		DatabaseWrapper dw=d.getDbwrapper();
 		if (dw.getSynchronizer().isInitializedWithCentralBackup())
 		{
-			for (DatabaseConfiguration dc : dw.getDatabaseConfigurations()) {
+			for (DatabaseConfiguration dc : dw.getLoadedDatabaseConfigurations()) {
 				if (dc.isSynchronizedWithCentralBackupDatabase())
 				{
 					for (Database dother : listDatabase)
