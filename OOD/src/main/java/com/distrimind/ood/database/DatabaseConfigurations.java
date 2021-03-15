@@ -45,6 +45,7 @@ import org.w3c.dom.Document;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.*;
+import java.util.function.Predicate;
 
 /**
  * @author Jason Mahdjoub
@@ -207,17 +208,34 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 
 	void addConfiguration(DatabaseConfiguration configuration, boolean makeConfigurationLoadingPersistent ) throws DatabaseException {
 		checkConfiguration(configuration);
+		Set<DatabaseConfiguration> confs;
+		Set<DecentralizedValue> distPeers;
 		if (makeConfigurationLoadingPersistent) {
-			configurations.add(configuration);
-			if (configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase()!=null) {
-				distantPeers.addAll(configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase());
-			}
+			confs=configurations;
+			distPeers=distantPeers;
 		}
 		else {
-			volatileConfigurations.add(configuration);
-			if (configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase()!=null) {
-				volatileDistantPeers.addAll(configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase());
-			}
+			confs=volatileConfigurations;
+			distPeers=volatileDistantPeers;
+		}
+		if (configuration.getDatabaseSchema().getOldSchema()!=null)
+		{
+			Predicate<DatabaseConfiguration> p= dc -> {
+				DatabaseSchema ds=configuration.getDatabaseSchema().getOldSchema();
+				while (ds!=null) {
+					if (dc.getDatabaseSchema().getPackage().equals(ds.getPackage())) {
+						return true;
+					}
+					ds=ds.getOldSchema();
+				}
+				return false;
+			};
+			if (confs.removeIf(p))
+				allConfigurations.removeIf(p);
+		}
+		confs.add(configuration);
+		if (configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase()!=null) {
+			distPeers.addAll(configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase());
 		}
 		if (configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase()!=null) {
 			allDistantPeers.addAll(configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase());
