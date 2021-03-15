@@ -4984,8 +4984,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * @throws NullPointerException
 	 *             if the given parameters are null.
 	 */
-	final void loadDatabase(final Collection<DatabaseConfiguration> configurations, DatabaseLifeCycles lifeCycles) throws DatabaseException {
-		loadDatabase(configurations, null, null, lifeCycles);
+	final boolean loadDatabase(final Collection<DatabaseConfiguration> configurations, DatabaseLifeCycles lifeCycles) throws DatabaseException {
+		return loadDatabase(configurations, null, null, lifeCycles);
 	}
 
 	private boolean isDatabaseLoadedImpl(DatabaseConfiguration configuration, int databaseVersion) throws DatabaseException {
@@ -5182,7 +5182,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 	}
 	//TODO manage time of restoration and peers to remove
-	final void loadDatabase(final Collection<DatabaseConfiguration> configurations,
+	final boolean loadDatabase(final Collection<DatabaseConfiguration> configurations,
 			 Long timeOfRestoration, Collection<DecentralizedValue> peersToRemove,
 							final DatabaseLifeCycles lifeCycles) throws DatabaseException {
 		if (configurations == null)
@@ -5227,6 +5227,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			getSynchronizer().desynchronizeDatabases(desynchronizedPackages);
 			postLoadDatabase(configurations/*, restoreSynchronizerHosts, hosts, lifeCycles*/);
 			postLoadDatabaseFinal(allNotFound, false);
+			return desynchronizedPackages.size()>0;
 		}
 		finally
 		{

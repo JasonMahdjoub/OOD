@@ -600,7 +600,8 @@ public class DatabaseConfigurationsBuilder {
 			}
 		}
 		if (!dls.isEmpty())
-			wrapper.loadDatabase(dls, lifeCycles);
+			if (wrapper.loadDatabase(dls, lifeCycles))
+				currentTransaction.checkDatabaseUnload(null);
 		//TOTO revisit this part : take account of the restoration and time of restoration
 	}
 
