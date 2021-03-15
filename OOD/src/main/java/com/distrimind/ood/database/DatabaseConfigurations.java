@@ -66,8 +66,27 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 	private DecentralizedValue localPeer;
 	private boolean permitIndirectSynchronizationBetweenPeers;
 	CentralDatabaseBackupCertificate centralDatabaseBackupCertificate=null;
+	//private Version databaseVersion=null;
 
 
+	/*public Version getDatabaseVersion() {
+		return databaseVersion;
+	}
+
+	void setDatabaseVersion(Version databaseVersion) {
+		if (databaseVersion==null)
+			throw new NullPointerException();
+		this.databaseVersion = databaseVersion;
+	}
+
+	public boolean isCompatibleWith(Version databaseVersion)
+	{
+		if (this.databaseVersion==null)
+			return databaseVersion==null;
+		if (databaseVersion==null)
+			return false;
+		return databaseVersion.compareTo(this.databaseVersion)!=0;
+	}*/
 
 	public DatabaseConfigurations(Set<DatabaseConfiguration> configurations) throws DatabaseException {
 		this(configurations,null, null, false);
@@ -206,7 +225,7 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 		}
 	}
 
-	void addConfiguration(DatabaseConfiguration configuration, boolean makeConfigurationLoadingPersistent ) throws DatabaseException {
+	boolean addConfiguration(DatabaseConfiguration configuration, boolean makeConfigurationLoadingPersistent ) throws DatabaseException {
 		checkConfiguration(configuration);
 		Set<DatabaseConfiguration> confs;
 		Set<DecentralizedValue> distPeers;
@@ -218,6 +237,7 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 			confs=volatileConfigurations;
 			distPeers=volatileDistantPeers;
 		}
+		boolean removed=false;
 		if (configuration.getDatabaseSchema().getOldSchema()!=null)
 		{
 			Predicate<DatabaseConfiguration> p= dc -> {
@@ -230,7 +250,7 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 				}
 				return false;
 			};
-			if (confs.removeIf(p))
+			if (removed=confs.removeIf(p))
 				allConfigurations.removeIf(p);
 		}
 		confs.add(configuration);
@@ -242,6 +262,7 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 			checkForMaxDistantPeersReached();
 		}
 		allConfigurations.add(configuration);
+		return removed;
 	}
 	boolean removeConfiguration(String databasePackage) {
 		if (databasePackage==null)

@@ -47,8 +47,13 @@ import com.distrimind.ood.database.fieldaccessors.DefaultByteTabObjectConverter;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.ood.database.messages.*;
-import com.distrimind.util.*;
-import com.distrimind.util.crypto.*;
+import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.FileTools;
+import com.distrimind.util.Reference;
+import com.distrimind.util.crypto.ASymmetricPublicKey;
+import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.crypto.EncryptionProfileProvider;
+import com.distrimind.util.crypto.SecureRandomType;
 import com.distrimind.util.harddrive.Disk;
 import com.distrimind.util.harddrive.HardDriveDetect;
 import com.distrimind.util.harddrive.Partition;
@@ -1165,10 +1170,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			isReliedToDistantHook();
 		}
 
-		void desynchronizeDatabases(Set<String> packages) throws DatabaseException {
+		/*void desynchronizeDatabases(Set<String> packages) throws DatabaseException {
 			getDatabaseHooksTable().desynchronizeDatabases(packages);
 			isReliedToDistantHook();
-		}
+		}*/
 		
 		@SuppressWarnings("UnusedReturnValue")
         protected boolean isReliedToDistantHook() throws DatabaseException
@@ -5007,14 +5012,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 	}
 
-	final void loadDatabaseImpl(final DatabaseConfiguration configuration,
+	final boolean loadDatabaseImpl(final DatabaseConfiguration configuration,
 								final boolean internalPackage,
 								int databaseVersion,
 								/*final Reference<Boolean> restoreSynchronizerHosts,
 								final Reference<Collection<DatabaseHooksTable.Record>> hosts,*/
 								final Reference<Boolean> allNotFounds,
-								final DatabaseLifeCycles lifeCycles,
-								Set<String> desynchronizedPackages) throws DatabaseException {
+								final DatabaseLifeCycles lifeCycles) throws DatabaseException {
 
 		//final AtomicBoolean allNotFound = new AtomicBoolean(true);
 		if (this.closed)
@@ -5023,7 +5027,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		if (isDatabaseLoadedImpl(configuration, databaseVersion))
 			throw new DatabaseException("There is already a database associated to the given wrapper ");
 
-
+		boolean oldDatabaseReplaced=false;
 		boolean allNotFound=loadDatabaseTables(configuration, databaseVersion);
 		if (allNotFounds.get() && allNotFound)
 			allNotFounds.set(true);
@@ -5055,7 +5059,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							loadDatabase(oldConfig, null);
 							this.actualDatabaseLoading=actualDatabaseLoading;
 							lifeCycles.transferDatabaseFromOldVersion(this, configuration);
-							desynchronizedPackages.add(oldConfig.getDatabaseSchema().getPackage().getName());
+							oldDatabaseReplaced=true;
 							removeOldDatabase = lifeCycles.hasToRemoveOldDatabase(oldConfig);
 
 						} catch (DatabaseException e) {
@@ -5099,7 +5103,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		if (initBackupRestore)
 			actualDatabaseLoading.initBackupRestoreManager(this, getDatabaseDirectory(), configuration);
 
-
+		return oldDatabaseReplaced;
 
 	}
 
@@ -5136,16 +5140,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		//Reference<Collection<DatabaseHooksTable.Record>> hosts=new Reference<>(null);
 		try  {
 			lockWrite();
-			Set<String> desynchronizedPackages=new HashSet<>();
 			loadDatabaseImpl(configuration,
 					internalPackage,
 					databaseVersion,
 					/*restoreSynchronizerHosts,
 					hosts,*/
 					allNotFound,
-					lifeCycles,
-					desynchronizedPackages);
-			getSynchronizer().desynchronizeDatabases(desynchronizedPackages);
+					lifeCycles);
+			//getSynchronizer().desynchronizeDatabases(desynchronizedPackages);
 			postLoadDatabase(Collections.singleton(configuration)/*, restoreSynchronizerHosts, hosts, lifeCycles*/);
 			postLoadDatabaseFinal(allNotFound, internalPackage);
 
@@ -5208,26 +5210,25 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		Reference<Boolean> allNotFound=new Reference<>(false);
 		//Reference<Boolean> restoreSynchronizerHosts=new Reference<>(false);
 		//Reference<Collection<DatabaseHooksTable.Record>> hosts=new Reference<>(null);
-		Set<String> desynchronizedPackages=new HashSet<>();
 		try  {
+			boolean oldDatabaseReplaced=false;
 			lockWrite();
 
 			for (DatabaseConfiguration configuration : configurations) {
 				int databaseVersion = -1;
 
-				loadDatabaseImpl(configuration,
+				oldDatabaseReplaced|=loadDatabaseImpl(configuration,
 						false,
 						databaseVersion,
 						/*restoreSynchronizerHosts,
 						hosts,*/
-						allNotFound, lifeCycles,
-						desynchronizedPackages);
+						allNotFound, lifeCycles);
 
 			}
-			getSynchronizer().desynchronizeDatabases(desynchronizedPackages);
+
 			postLoadDatabase(configurations/*, restoreSynchronizerHosts, hosts, lifeCycles*/);
 			postLoadDatabaseFinal(allNotFound, false);
-			return desynchronizedPackages.size()>0;
+			return oldDatabaseReplaced;
 		}
 		finally
 		{

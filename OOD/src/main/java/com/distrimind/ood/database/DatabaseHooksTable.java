@@ -1170,7 +1170,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 				});
 	}
 
-	void desynchronizeDatabases(Set<String> packages)
+	/*void desynchronizeDatabases(Set<String> packages)
 			throws DatabaseException {
 		if (packages == null)
 			return;
@@ -1214,7 +1214,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 					}
 
 				});
-	}
+	}*/
 	boolean supportPackage(Package p) throws DatabaseException {
 		HashSet<String> hs = this.supportedDatabasePackages;
 		if (hs == null) {

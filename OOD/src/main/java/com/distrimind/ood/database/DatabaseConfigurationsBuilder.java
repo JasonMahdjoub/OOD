@@ -6,6 +6,7 @@ import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.Reference;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
+import com.distrimind.util.version.Version;
 
 import java.util.*;
 
@@ -302,7 +303,10 @@ public class DatabaseConfigurationsBuilder {
 			if (configuration.isSynchronizedWithCentralBackupDatabase() && getConfigurations().getCentralDatabaseBackupCertificate()==null)
 				throw new IllegalArgumentException("Central database certificate must be set before adding configuration that can be synchronized with central database backup");
 			configuration.setCreateDatabaseIfNecessaryAndCheckItDuringCurrentSession(createDatabaseIfNecessaryAndCheckItDuringCurrentSession);
-			configurations.addConfiguration(configuration, makeConfigurationLoadingPersistent);
+			if (configurations.addConfiguration(configuration, makeConfigurationLoadingPersistent)) {
+				t.checkConnexionsToDesynchronize();
+				t.propagate=true;
+			}
 			if (makeConfigurationLoadingPersistent)
 				t.updateConfigurationPersistence();
 			t.checkDatabaseLoading(configuration);
@@ -520,6 +524,7 @@ public class DatabaseConfigurationsBuilder {
 					}, "concernsDatabaseHost=%cdh", "cdh", false);
 
 					for (Map.Entry<Set<String>, Set<DecentralizedValue>> e : packagesToUnsynchronize.entrySet()) {
+
 						wrapper.getSynchronizer().receivedHookDesynchronizeRequest(new HookDesynchronizeRequest(configurations.getLocalPeer(), configurations.getLocalPeer(), e.getKey(), e.getValue()));
 					}
 				}
@@ -600,8 +605,11 @@ public class DatabaseConfigurationsBuilder {
 			}
 		}
 		if (!dls.isEmpty())
-			if (wrapper.loadDatabase(dls, lifeCycles))
+			if (wrapper.loadDatabase(dls, lifeCycles)) {
+				currentTransaction.checkDisconnexions();
+				currentTransaction.propagate=true;
 				currentTransaction.checkDatabaseUnload(null);
+			}
 		//TOTO revisit this part : take account of the restoration and time of restoration
 	}
 
@@ -697,6 +705,8 @@ public class DatabaseConfigurationsBuilder {
 		});
 		return this;
 	}
+
+
 	DatabaseConfigurationsBuilder synchronizeDistantPeersWithGivenAdditionalPackages(boolean checkNewConnexion, Collection<DecentralizedValue> distantPeers, String ... packagesString)
 	{
 		if (packagesString==null)
@@ -884,6 +894,12 @@ public class DatabaseConfigurationsBuilder {
 		return this;
 	}
 
+	/*public void setDatabaseVersion(Version databaseVersion)
+	{
+		if (databaseVersion==null)
+			throw new NullPointerException();
+		pushQuery((p) -> configurations.setDatabaseVersion(databaseVersion));
+	}*/
 
 
 }
