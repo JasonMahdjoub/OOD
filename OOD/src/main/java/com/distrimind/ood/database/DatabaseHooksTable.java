@@ -1056,23 +1056,23 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		if (hostID.equals(r.getHostID()))
 		{
 			if (r.getDatabasePackageNames()!=null && r.getDatabasePackageNames().size()>0)
-				desynchronizeDatabase(hostID, false, r.getDatabasePackageNames());
+				desynchronizeDatabases(hostID, false, r.getDatabasePackageNames());
 
 			for (DatabaseHooksTable.Record r2 : getRecords())
 			{
 				if (!r2.concernsLocalDatabaseHost())
-					desynchronizeDatabase(r2.getHostID(), true, new HashSet<>());
+					desynchronizeDatabases(r2.getHostID(), true, new HashSet<>());
 			}
 		}
 		else
-			r= desynchronizeDatabase(hostID, true, new HashSet<>());
+			r= desynchronizeDatabases(hostID, true, new HashSet<>());
 		//updateLastLocalTransferIDs();
 		getDatabaseWrapper().getDatabaseConfigurationsBuilder().removeDistantPeers(propagate, Collections.singleton(hostID))
 				.commit();
 		return r;
 	}
 
-	void desynchronizeDatabase(Set<String> packages, Set<DecentralizedValue> concernedHosts) throws DatabaseException {
+	void desynchronizeDatabases(Set<String> packages, Set<DecentralizedValue> concernedHosts) throws DatabaseException {
 		if (packages==null)
 			throw new NullPointerException();
 		if (concernedHosts==null)
@@ -1086,7 +1086,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 					@Override
 					public Void run() throws Exception {
 						for (DecentralizedValue host : concernedHosts) {
-							desynchronizeDatabase(host, false, packages);
+							desynchronizeDatabases(host, false, packages);
 						}
 						if (concernedHosts.size()>0 && packages.size()>0)
 							getDatabaseWrapper().getDatabaseConfigurationsBuilder().desynchronizeDistantPeersWithGivenAdditionalPackages(false, concernedHosts, packages.toArray(new String[0]))
@@ -1112,7 +1112,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 				});
 	}
-	private DatabaseHooksTable.Record desynchronizeDatabase(final DecentralizedValue hostID, final boolean removeHook, Set<String> packages)
+	private DatabaseHooksTable.Record desynchronizeDatabases(final DecentralizedValue hostID, final boolean removeHook, Set<String> packages)
 			throws DatabaseException {
 		if (hostID == null)
 			throw new NullPointerException("hostID");
@@ -1170,7 +1170,51 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 				});
 	}
 
-	
+	void desynchronizeDatabases(Set<String> packages)
+			throws DatabaseException {
+		if (packages == null)
+			return;
+		if (packages.size()==0)
+			return;
+		getDatabaseWrapper()
+				.runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
+
+					@Override
+					public Void run() throws Exception {
+
+						updateRecords(new AlterRecordFilter<Record>() {
+							@Override
+							public void nextRecord(Record _record) throws DatabaseException {
+								if (_record.removePackageDatabase(packages))
+								{
+									this.update("databasePackageNames", _record.databasePackageNames);
+									lastTransactionFieldsBetweenDistantHosts.entrySet().removeIf(e -> e.getKey().getHostServer().equals(_record.getHostID())
+											|| e.getKey().getHostToSynchronize().equals(_record.getHostID()));
+
+								}
+							}
+						});
+						getDatabaseTransactionsPerHostTable().removeTransactions(packages);
+						return null;
+					}
+
+					@Override
+					public TransactionIsolation getTransactionIsolation() {
+						return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+					}
+
+					@Override
+					public boolean doesWriteData() {
+						return true;
+					}
+
+					@Override
+					public void initOrReset() {
+
+					}
+
+				});
+	}
 	boolean supportPackage(Package p) throws DatabaseException {
 		HashSet<String> hs = this.supportedDatabasePackages;
 		if (hs == null) {

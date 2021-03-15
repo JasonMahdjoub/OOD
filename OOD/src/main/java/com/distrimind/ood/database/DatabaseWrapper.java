@@ -1161,7 +1161,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 
 		void receivedHookDesynchronizeRequest(HookDesynchronizeRequest hookDesynchronizeRequest) throws DatabaseException {
-			getDatabaseHooksTable().desynchronizeDatabase(hookDesynchronizeRequest.getPackagesToUnsynchronize(), hookDesynchronizeRequest.getConcernedPeers());
+			getDatabaseHooksTable().desynchronizeDatabases(hookDesynchronizeRequest.getPackagesToUnsynchronize(), hookDesynchronizeRequest.getConcernedPeers());
+			isReliedToDistantHook();
+		}
+
+		void desynchronizeDatabases(Set<String> packages) throws DatabaseException {
+			getDatabaseHooksTable().desynchronizeDatabases(packages);
 			isReliedToDistantHook();
 		}
 		
@@ -5008,7 +5013,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 								/*final Reference<Boolean> restoreSynchronizerHosts,
 								final Reference<Collection<DatabaseHooksTable.Record>> hosts,*/
 								final Reference<Boolean> allNotFounds,
-								final DatabaseLifeCycles lifeCycles) throws DatabaseException {
+								final DatabaseLifeCycles lifeCycles,
+								Set<String> desynchronizedPackages) throws DatabaseException {
 
 		//final AtomicBoolean allNotFound = new AtomicBoolean(true);
 		if (this.closed)
@@ -5049,6 +5055,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							loadDatabase(oldConfig, null);
 							this.actualDatabaseLoading=actualDatabaseLoading;
 							lifeCycles.transferDatabaseFromOldVersion(this, configuration);
+							desynchronizedPackages.add(oldConfig.getDatabaseSchema().getPackage().getName());
 							removeOldDatabase = lifeCycles.hasToRemoveOldDatabase(oldConfig);
 
 						} catch (DatabaseException e) {
@@ -5129,14 +5136,16 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		//Reference<Collection<DatabaseHooksTable.Record>> hosts=new Reference<>(null);
 		try  {
 			lockWrite();
-
+			Set<String> desynchronizedPackages=new HashSet<>();
 			loadDatabaseImpl(configuration,
 					internalPackage,
 					databaseVersion,
 					/*restoreSynchronizerHosts,
 					hosts,*/
 					allNotFound,
-					lifeCycles);
+					lifeCycles,
+					desynchronizedPackages);
+			getSynchronizer().desynchronizeDatabases(desynchronizedPackages);
 			postLoadDatabase(Collections.singleton(configuration)/*, restoreSynchronizerHosts, hosts, lifeCycles*/);
 			postLoadDatabaseFinal(allNotFound, internalPackage);
 
@@ -5199,18 +5208,23 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		Reference<Boolean> allNotFound=new Reference<>(false);
 		//Reference<Boolean> restoreSynchronizerHosts=new Reference<>(false);
 		//Reference<Collection<DatabaseHooksTable.Record>> hosts=new Reference<>(null);
+		Set<String> desynchronizedPackages=new HashSet<>();
 		try  {
 			lockWrite();
+
 			for (DatabaseConfiguration configuration : configurations) {
 				int databaseVersion = -1;
+
 				loadDatabaseImpl(configuration,
 						false,
 						databaseVersion,
 						/*restoreSynchronizerHosts,
 						hosts,*/
-						allNotFound, lifeCycles);
+						allNotFound, lifeCycles,
+						desynchronizedPackages);
 
 			}
+			getSynchronizer().desynchronizeDatabases(desynchronizedPackages);
 			postLoadDatabase(configurations/*, restoreSynchronizerHosts, hosts, lifeCycles*/);
 			postLoadDatabaseFinal(allNotFound, false);
 		}
