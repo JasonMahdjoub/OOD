@@ -76,6 +76,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Stream;
 
 /**
  * This class represent a SqlJet database.
@@ -959,6 +960,15 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 		}
 
+		Stream<String> getDatabasesSynchronizedWith(DecentralizedValue hostID)
+		{
+			return getDatabaseConfigurationsBuilder().getConfigurations().getConfigurations()
+					.stream()
+					.filter(dc -> dc.getSynchronizationType()!= DatabaseConfiguration.SynchronizationType.NO_SYNCHRONIZATION &&
+							dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase().contains(hostID))
+					.map(dc -> dc.getDatabaseSchema().getPackage().getName());
+		}
+
 		/*DatabaseNotifier getNotifier() {
 			
 			try {
@@ -1121,7 +1131,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		void receivedHookSynchronizeRequest(HookSynchronizeRequest hookSynchronizeRequest) throws DatabaseException {
 			Map<String, Boolean> packagesToSynchronize=hookSynchronizeRequest.getPackagesToSynchronize(getLocalHostID());
 
-			if (!getLoadedDatabasePackagesString().containsAll(packagesToSynchronize.keySet()))
+			if (!getSynchronizer().getDatabasesSynchronizedWith(hookSynchronizeRequest.getHostSource()).allMatch(packagesToSynchronize::containsKey))
 				return;
 			getDatabaseHooksTable().addHooks(packagesToSynchronize,
 					hookSynchronizeRequest.getConcernedPeers(), !hookSynchronizeRequest.getHostSource().equals(getLocalHostID()));
@@ -2629,20 +2639,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 	}
 
-	private Set<String> getLoadedDatabasePackagesString()
-	{
-		lockRead();
-		try {
-			Set<String> res = new HashSet<>();
-			for (Database d : sql_database.values()) {
-				res.add(d.configuration.getDatabaseSchema().getPackage().getName());
-			}
-			return res;
-		}
-		finally {
-			unlockRead();
-		}
-	}
 
 
 
