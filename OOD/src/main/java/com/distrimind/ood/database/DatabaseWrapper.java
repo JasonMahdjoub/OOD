@@ -76,7 +76,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Stream;
 
 /**
  * This class represent a SqlJet database.
@@ -960,15 +959,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 		}
 
-		Stream<String> getSynchronizedDatabases()
+		/*Stream<String> getSynchronizedDatabases()
 		{
 			return getDatabaseConfigurationsBuilder().getConfigurations().getConfigurations()
 					.stream()
 					.filter(dc -> dc.getSynchronizationType()!= DatabaseConfiguration.SynchronizationType.NO_SYNCHRONIZATION &&
-							DatabaseWrapper.this.sql_database.values().stream().anyMatch(sd -> sd.configuration.getDatabaseSchema().getPackage().equals(dc.getDatabaseSchema().getPackage())) /*&&
-							dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase().contains(hostID)*/)
+							DatabaseWrapper.this.sql_database.values().stream().anyMatch(sd -> sd.configuration.getDatabaseSchema().getPackage().equals(dc.getDatabaseSchema().getPackage())) )
 					.map(dc -> dc.getDatabaseSchema().getPackage().getName());
-		}
+		}*/
 
 		/*DatabaseNotifier getNotifier() {
 			
@@ -1132,7 +1130,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		void receivedHookSynchronizeRequest(HookSynchronizeRequest hookSynchronizeRequest) throws DatabaseException {
 			Map<String, Boolean> packagesToSynchronize=hookSynchronizeRequest.getPackagesToSynchronize(getLocalHostID());
 
-			if (packagesToSynchronize.keySet().stream().anyMatch(p -> getSynchronizer().getSynchronizedDatabases().noneMatch(p::equals)))
+			if (packagesToSynchronize.keySet().stream().anyMatch(p -> sql_database.values().stream().map(s -> s.configuration.getDatabaseSchema().getPackage().getName()).noneMatch(p::equals)))
 				return;
 			getDatabaseHooksTable().addHooks(packagesToSynchronize,
 					hookSynchronizeRequest.getConcernedPeers(), !hookSynchronizeRequest.getHostSource().equals(getLocalHostID()));
