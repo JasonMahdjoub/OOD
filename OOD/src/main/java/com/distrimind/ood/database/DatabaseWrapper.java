@@ -77,6 +77,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * This class represent a SqlJet database.
@@ -627,6 +628,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			return hookID.hashCode();
 		}
 
+		boolean isConnectable(DatabaseWrapper wrapper) {
+			Stream<String> stream=wrapper.getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations(hookID);
+			return compatibleDatabasesFromDirectPeer.stream().noneMatch(d -> stream.noneMatch(d::equals));
+		}
 	}
 	static class ConnectedPeersWithCentralBackup {
 		private final DecentralizedValue hookID;
@@ -1159,9 +1164,16 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		void receivedHookSynchronizeRequest(HookSynchronizeRequest hookSynchronizeRequest) throws DatabaseException {
 			Map<String, Boolean> packagesToSynchronize=hookSynchronizeRequest.getPackagesToSynchronize(getLocalHostID());
+			lockRead();
+			try {
+				if (packagesToSynchronize.keySet().stream().anyMatch(p -> getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations().map(s -> s.getDatabaseSchema().getPackage().getName()).noneMatch(p::equals)))
+					return;
+			}
+			finally {
+				unlockRead();
+			}
 
-			if (packagesToSynchronize.keySet().stream().anyMatch(p -> getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations().stream().map(s -> s.getDatabaseSchema().getPackage().getName()).noneMatch(p::equals)))
-				return;
+
 			getDatabaseHooksTable().addHooks(packagesToSynchronize,
 					hookSynchronizeRequest.getConcernedPeers(), !hookSynchronizeRequest.getHostSource().equals(getLocalHostID()));
 			/*if (hookSynchronizeRequest.getBackRequest()!=null)
@@ -2213,14 +2225,18 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				unlockWrite();
 			}
 		}
+
 		void checkConnexionsToInit(DatabaseHooksTable.Record r) throws DatabaseException
 		{
 			assert r!=null;
+			ConnectedPeers cp=initializedHooks.get(r.getHostID());
+			assert cp!=null;
+			boolean connectable=cp.isConnectable(DatabaseWrapper.this);
+			if (!connectable && cp.isConnected())
+				disconnectHook(r.getHostID());
 
 			if (!r.hasNoAuthenticatedMessagesQueueToSend()) {
 				List<AuthenticatedP2PMessage> las = r.getAuthenticatedMessagesQueueToSend(initializedHooks);
-				ConnectedPeers cp=initializedHooks.get(r.getHostID());
-				assert cp!=null;
 				for (AuthenticatedP2PMessage a : las) {
 
 					if (!(a instanceof HookSynchronizeRequest) || cp.compatibleDatabasesFromDirectPeer.containsAll(((HookSynchronizeRequest) a).getPackagesToSynchronize(a.getHostDestination()).keySet()) ) {
@@ -2228,8 +2244,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					}
 
 				}
-			} else
+			} else if (connectable && !cp.isConnected()) {
 				sendP2PConnexionInitializationMessage(r);
+			}
 		}
 		private void checkConnexionsToInit(DecentralizedValue peerID) throws DatabaseException
 		{
@@ -2272,7 +2289,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					return;
 				initializedHooks.put(peerID, new ConnectedPeers(peerID, false));
 				sendAvailableDatabaseTo(peerID);
-				checkConnexionsToInit(peerID);
+
 
 			}
 			finally {
@@ -2605,6 +2622,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				cp.compatibleDatabasesFromDirectPeer.addAll(message.getCompatibleDatabases());
 			}
 
+			checkConnexionsToInit(message.getHostSource());
+
 		}
 
 		private void received(CompatibleDatabasesMessageComingFromCentralDatabaseBackup message) throws DatabaseException {
@@ -2728,29 +2747,27 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 	}
 
-	private Set<DatabaseConfiguration> getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations()
+	private Stream<DatabaseConfiguration> getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations()
 	{
-		lockRead();
-		try {
-			Set<DatabaseConfiguration> res = new HashSet<>();
-			for (Database d : sql_database.values()) {
-				if (getDatabaseConfigurationsBuilder().getConfigurations().getConfigurations().stream().anyMatch(dc-> dc.getDatabaseSchema().getPackage().equals(d.configuration.getDatabaseSchema().getPackage())))
-					res.add(d.configuration);
-			}
-			return res;
-		}
-		finally {
-			unlockRead();
-		}
-
+		return sql_database.values()
+				.stream()
+				.filter(d-> getDatabaseConfigurationsBuilder().getConfigurations().getConfigurations().stream().anyMatch(dc-> dc.getDatabaseSchema().getPackage().equals(d.configuration.getDatabaseSchema().getPackage())))
+				.map(d-> d.configuration);
 	}
 
 	private Set<String> getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString()
 	{
 		return getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations()
-				.stream()
 				.map(c -> c.getDatabaseSchema().getPackage().getName())
 				.collect(Collectors.toSet());
+	}
+	private Stream<String> getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations(DecentralizedValue hostID)
+	{
+		return getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations()
+				.filter(c -> c.getSynchronizationType()!= DatabaseConfiguration.SynchronizationType.NO_SYNCHRONIZATION
+						&& c.getDistantPeersThatCanBeSynchronizedWithThisDatabase().contains(hostID))
+				.map(c -> c.getDatabaseSchema().getPackage().getName())
+			;
 	}
 
 
@@ -4818,6 +4835,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					
 				}
 			}, true);
+			getSynchronizer().broadcastAvailableDatabase();
 
 		}
 		finally
@@ -5354,7 +5372,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			unlockWrite();
 		}
 	}
-	final void checkDatabaseToUnload()  {
+	final void checkDatabaseToUnload() throws DatabaseException {
 		try  {
 			lockWrite();
 			HashMap<Package, Database> sd = new HashMap<>(sql_database);
@@ -5374,6 +5392,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					it.remove();
 			}
 			sql_database = sd;
+			getSynchronizer().broadcastAvailableDatabase();
 		}
 		finally
 		{
