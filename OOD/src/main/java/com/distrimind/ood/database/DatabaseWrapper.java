@@ -76,6 +76,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * This class represent a SqlJet database.
@@ -875,6 +877,32 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			DatabaseHooksTable.Record r=getDatabaseHooksTable().getLocalDatabaseHost();
 			return r != null && isInitialized(r.getHostID());
 		}
+		void sendAvailableDatabaseTo(DecentralizedValue hostDestination) throws DatabaseException {
+			sendAvailableDatabaseTo(hostDestination, getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString());
+		}
+		void sendAvailableDatabaseTo(DecentralizedValue hostDestination, Set<String> packages) throws DatabaseException {
+			addNewDatabaseEvent(new CompatiblePackagesP2PMessage(packages,getLocalHostID(), hostDestination));
+		}
+
+		void sendAvailableDatabaseToCentralDatabaseBackup() throws DatabaseException {
+			sendAvailableDatabaseToCentralDatabaseBackup(getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString());
+		}
+		void sendAvailableDatabaseToCentralDatabaseBackup(Set<String> packages) throws DatabaseException {
+			if (centralBackupInitialized) {
+				addNewDatabaseEvent(new CompatiblePackagesMessageDestinedToCentralDatabaseBackup(packages, getLocalHostID()));
+			}
+		}
+
+		void broadcastAvailableDatabase() throws DatabaseException {
+			Set<String> p=getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString();
+			for (ConnectedPeers cp : initializedHooks.values())
+			{
+				if (cp.getHostID().equals(getLocalHostID()))
+					continue;
+				sendAvailableDatabaseTo(cp.getHostID(), p);
+			}
+			sendAvailableDatabaseToCentralDatabaseBackup(p);
+		}
 
 		void notifyNewAuthenticatedMessage(AuthenticatedP2PMessage authenticatedP2PMessage) throws DatabaseException {
 			lockWrite();
@@ -1130,7 +1158,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		void receivedHookSynchronizeRequest(HookSynchronizeRequest hookSynchronizeRequest) throws DatabaseException {
 			Map<String, Boolean> packagesToSynchronize=hookSynchronizeRequest.getPackagesToSynchronize(getLocalHostID());
 
-			if (packagesToSynchronize.keySet().stream().anyMatch(p -> sql_database.values().stream().map(s -> s.configuration.getDatabaseSchema().getPackage().getName()).noneMatch(p::equals)))
+			if (packagesToSynchronize.keySet().stream().anyMatch(p -> getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations().stream().map(s -> s.getDatabaseSchema().getPackage().getName()).noneMatch(p::equals)))
 				return;
 			getDatabaseHooksTable().addHooks(packagesToSynchronize,
 					hookSynchronizeRequest.getConcernedPeers(), !hookSynchronizeRequest.getHostSource().equals(getLocalHostID()));
@@ -2648,6 +2676,31 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		finally {
 			unlockRead();
 		}
+	}
+
+	private Set<DatabaseConfiguration> getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations()
+	{
+		lockRead();
+		try {
+			Set<DatabaseConfiguration> res = new HashSet<>();
+			for (Database d : sql_database.values()) {
+				if (getDatabaseConfigurationsBuilder().getConfigurations().getConfigurations().stream().anyMatch(dc-> dc.getDatabaseSchema().getPackage().equals(d.configuration.getDatabaseSchema().getPackage())))
+					res.add(d.configuration);
+			}
+			return res;
+		}
+		finally {
+			unlockRead();
+		}
+
+	}
+
+	private Set<String> getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString()
+	{
+		return getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations()
+				.stream()
+				.map(c -> c.getDatabaseSchema().getPackage().getName())
+				.collect(Collectors.toSet());
 	}
 
 
