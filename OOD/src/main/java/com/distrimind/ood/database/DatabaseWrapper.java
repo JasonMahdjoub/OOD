@@ -894,6 +894,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		void broadcastAvailableDatabase() throws DatabaseException {
+			if (!isInitialized())
+				return;
 			Set<String> p=getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString();
 			for (ConnectedPeers cp : initializedHooks.values())
 			{
@@ -1228,7 +1230,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						return;
 					r =getDatabaseHookRecord(m.getHostSource());
 					r.validateDistantAuthenticatedP2PMessage(m, getDatabaseHooksTable());
-					if (r.getAuthenticatedMessagesQueueToSend()==null || r.getAuthenticatedMessagesQueueToSend().size()==0)
+					if (r.hasNoAuthenticatedMessagesQueueToSend())
 						sendP2PConnexionInitializationMessage(r);
 				}
 				else
@@ -1494,7 +1496,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			lockWrite();
 			try
 			{
-				List<DatabaseEvent> authenticatedMessages=tryToMerge(hook.getAuthenticatedMessagesQueueToSend());
+				if (!hook.hasNoAuthenticatedMessagesQueueToSend())
+					disconnectHook(hook.getHostID());
+				List<DatabaseEvent> authenticatedMessages=tryToMerge(hook.getAuthenticatedMessagesQueueToSend(initializedHooks));
 				if (authenticatedMessages.size()>0) {
 
 					boolean add = true;
@@ -1514,6 +1518,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					}
 					notifyNewEvent();
 				}
+
 			}
 			finally {
 				unlockWrite();
@@ -2211,8 +2216,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		void checkConnexionsToInit(DatabaseHooksTable.Record r) throws DatabaseException
 		{
 			assert r!=null;
-			List<AuthenticatedP2PMessage> las = r.getAuthenticatedMessagesQueueToSend();
-			if (las!=null && las.size() > 0) {
+
+			if (!r.hasNoAuthenticatedMessagesQueueToSend()) {
+				List<AuthenticatedP2PMessage> las = r.getAuthenticatedMessagesQueueToSend(initializedHooks);
 				ConnectedPeers cp=initializedHooks.get(r.getHostID());
 				assert cp!=null;
 				for (AuthenticatedP2PMessage a : las) {
@@ -2265,6 +2271,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				if (cp!=null)
 					return;
 				initializedHooks.put(peerID, new ConnectedPeers(peerID, false));
+				sendAvailableDatabaseTo(peerID);
 				checkConnexionsToInit(peerID);
 
 			}
@@ -5418,6 +5425,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 			postLoadDatabase(configurations/*, restoreSynchronizerHosts, hosts, lifeCycles*/);
 			postLoadDatabaseFinal(allNotFound, false);
+			getSynchronizer().broadcastAvailableDatabase();
 			return oldDatabaseReplaced;
 		}
 		finally

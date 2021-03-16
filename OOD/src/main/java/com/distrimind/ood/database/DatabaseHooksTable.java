@@ -47,6 +47,7 @@ import com.distrimind.util.crypto.EncryptionProfileProvider;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 /**
  * 
@@ -279,8 +280,28 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			table.updateRecord(this, "authenticatedMessagesQueueToSend", authenticatedMessagesQueueToSend);
 		}*/
 
-		LinkedList<AuthenticatedP2PMessage> getAuthenticatedMessagesQueueToSend() {
-			return authenticatedMessagesQueueToSend;
+		boolean hasNoAuthenticatedMessagesQueueToSend()
+		{
+			return authenticatedMessagesQueueToSend==null || authenticatedMessagesQueueToSend.size()==0;
+		}
+
+		List<AuthenticatedP2PMessage> getAuthenticatedMessagesQueueToSend(Map<DecentralizedValue, DatabaseWrapper.ConnectedPeers> connectedPeers) {
+
+			return authenticatedMessagesQueueToSend.stream().filter(m -> {
+				try {
+					if (m instanceof HookSynchronizeRequest)
+					{
+						DatabaseWrapper.ConnectedPeers cp=connectedPeers.get(m.getHostDestination());
+						if (cp==null)
+							return false;
+						return cp.compatibleDatabasesFromDirectPeer.containsAll(((HookSynchronizeRequest) m).getPackagesToSynchronize(m.getHostSource()).keySet());
+					}
+					return true;
+				} catch (DatabaseException e) {
+					e.printStackTrace();
+					return false;
+				}
+			}).collect(Collectors.toList());
 		}
 
 		List<IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup> getAuthenticatedMessagesQueueToSendToCentralDatabaseBackup(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider,
