@@ -48,24 +48,26 @@ import java.util.Set;
  * @version 1.0
  * @since Utils 3.0.0
  */
-public class CompatiblePackagesMessageComingFromCentralDatabaseBackup extends AbstractCompatiblePackagesMessage implements MessageComingFromCentralDatabaseBackup{
+public class CompatibleDatabasesMessageComingFromCentralDatabaseBackup extends AbstractCompatibleDatabasesMessage implements MessageComingFromCentralDatabaseBackup{
 	private DecentralizedValue hostDestination;
 
-	public CompatiblePackagesMessageComingFromCentralDatabaseBackup(Set<String> compatiblePackages, DecentralizedValue hostDestination) {
-		super(compatiblePackages);
+	public CompatibleDatabasesMessageComingFromCentralDatabaseBackup(Set<String> compatiblePackages, DecentralizedValue hostSource, DecentralizedValue hostDestination) {
+		super(compatiblePackages, hostSource);
 		if (hostDestination==null)
 			throw new NullPointerException();
 		this.hostDestination = hostDestination;
 	}
 
 	@SuppressWarnings("unused")
-	private CompatiblePackagesMessageComingFromCentralDatabaseBackup() {
+	private CompatibleDatabasesMessageComingFromCentralDatabaseBackup() {
 	}
 
 	@Override
 	public boolean cannotBeMerged() {
-		return false;
+		return true;
 	}
+
+
 
 	@Override
 	public DecentralizedValue getHostDestination() {

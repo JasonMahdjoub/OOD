@@ -37,6 +37,8 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 import com.distrimind.ood.database.DatabaseEvent;
 import com.distrimind.ood.database.DatabaseWrapper;
+import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.SecureExternalizable;
 import com.distrimind.util.io.SecuredObjectInputStream;
 import com.distrimind.util.io.SecuredObjectOutputStream;
@@ -51,35 +53,50 @@ import java.util.Set;
  * @version 1.0
  * @since Utils 3.0.0
  */
-public abstract class AbstractCompatiblePackagesMessage extends DatabaseEvent implements SecureExternalizable {
+public abstract class AbstractCompatibleDatabasesMessage extends DatabaseEvent implements SecureExternalizable {
 
 	private static final int MAX_PACKAGES_NUMBERS= DatabaseWrapper.MAX_PACKAGE_TO_SYNCHRONIZE;
 	private static final int MAX_SIZE_OF_PACKAGES_NAMES_IN_BYTES=MAX_PACKAGES_NUMBERS*SerializationTools.MAX_CLASS_LENGTH*2+4;
 
 
-	private Set<String> compatiblePackages;
+	private Set<String> compatibleDatabases;
+	private DecentralizedValue hostSource;
 
-	protected AbstractCompatiblePackagesMessage(Set<String> compatiblePackages) {
-		if (compatiblePackages==null)
-			compatiblePackages=new HashSet<>();
-		this.compatiblePackages = compatiblePackages;
+	protected AbstractCompatibleDatabasesMessage(Set<String> compatibleDatabases, DecentralizedValue hostSource) {
+		if (hostSource==null)
+			throw new NullPointerException();
+		if (compatibleDatabases ==null)
+			compatibleDatabases =new HashSet<>();
+		this.compatibleDatabases = compatibleDatabases;
+		this.hostSource=hostSource;
 	}
 
-	protected AbstractCompatiblePackagesMessage() {
+	protected AbstractCompatibleDatabasesMessage() {
 	}
 
 	@Override
 	public int getInternalSerializedSize() {
-		return SerializationTools.getInternalSize(compatiblePackages, MAX_SIZE_OF_PACKAGES_NAMES_IN_BYTES);
+		return SerializationTools.getInternalSize(compatibleDatabases, MAX_SIZE_OF_PACKAGES_NAMES_IN_BYTES)
+				+ SerializationTools.getInternalSize(hostSource);
+	}
+
+	public DecentralizedValue getHostSource() {
+		return hostSource;
 	}
 
 	@Override
 	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
-		out.writeCollection(compatiblePackages, false, MAX_SIZE_OF_PACKAGES_NAMES_IN_BYTES);
+		out.writeCollection(compatibleDatabases, false, MAX_SIZE_OF_PACKAGES_NAMES_IN_BYTES);
+		out.writeObject(hostSource, false);
 	}
 
 	@Override
 	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
-		compatiblePackages=in.readCollection(false, MAX_SIZE_OF_PACKAGES_NAMES_IN_BYTES, String.class);
+		compatibleDatabases =in.readCollection(false, MAX_SIZE_OF_PACKAGES_NAMES_IN_BYTES, String.class);
+		hostSource=in.readObject(false);
+	}
+
+	public Set<String> getCompatibleDatabases() {
+		return compatibleDatabases;
 	}
 }

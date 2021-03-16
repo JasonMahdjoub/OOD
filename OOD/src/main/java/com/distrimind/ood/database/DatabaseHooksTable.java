@@ -283,14 +283,35 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			return authenticatedMessagesQueueToSend;
 		}
 
-		List<IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup> getAuthenticatedMessagesQueueToSendToCentralDatabaseBackup(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
+		List<IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup> getAuthenticatedMessagesQueueToSendToCentralDatabaseBackup(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider,
+																																	  Map<DecentralizedValue, DatabaseWrapper.ConnectedPeers> connectedPeers, Map<DecentralizedValue, DatabaseWrapper.ConnectedPeersWithCentralBackup> connectedPeersWithCentralDatabaseBackup) throws DatabaseException {
 			assert concernsDatabaseHost;
 			List<IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup> res=new ArrayList<>();
+
+
 			if (authenticatedMessagesQueueToSend==null)
 				return res;
 			Map<DecentralizedValue, ArrayList<AuthenticatedP2PMessage>> resTmp=new HashMap<>();
 			for (AuthenticatedP2PMessage a : authenticatedMessagesQueueToSend)
 			{
+				if (a instanceof HookSynchronizeRequest)
+				{
+					HookSynchronizeRequest hsr=(HookSynchronizeRequest)a;
+					DatabaseWrapper.ConnectedPeersWithCentralBackup cpcdb=connectedPeersWithCentralDatabaseBackup.get(hsr.getHostDestination());
+
+					if (cpcdb==null)
+						continue;
+					if (cpcdb.compatibleDatabasesFromCentralDatabaseBackup.size()==0)
+					{
+						DatabaseWrapper.ConnectedPeers cp=connectedPeers.get(hsr.getHostDestination());
+						if (cp==null)
+							continue;
+						if (!cp.compatibleDatabasesFromDirectPeer.containsAll(hsr.getPackagesToSynchronize(hsr.getHostSource()).keySet()))
+							continue;
+					}
+					else if (!cpcdb.compatibleDatabasesFromCentralDatabaseBackup.containsAll(hsr.getPackagesToSynchronize(hsr.getHostSource()).keySet()))
+						continue;
+				}
 				ArrayList<AuthenticatedP2PMessage> l = resTmp.computeIfAbsent(a.getHostDestination(), k -> new ArrayList<>());
 				l.add(a);
 			}

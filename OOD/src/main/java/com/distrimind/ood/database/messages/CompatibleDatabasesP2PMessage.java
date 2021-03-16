@@ -35,6 +35,7 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+import com.distrimind.ood.database.DatabaseEvent;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.SecuredObjectInputStream;
@@ -49,22 +50,19 @@ import java.util.Set;
  * @version 1.0
  * @since Utils 3.0.0
  */
-public class CompatiblePackagesP2PMessage extends AbstractCompatiblePackagesMessage implements P2PDatabaseEventToSend {
+public class CompatibleDatabasesP2PMessage extends AbstractCompatibleDatabasesMessage implements P2PDatabaseEventToSend {
 
-	private DecentralizedValue hostSource, hostDestination;
+	private DecentralizedValue hostDestination;
 
-	public CompatiblePackagesP2PMessage(Set<String> compatiblePackages, DecentralizedValue hostSource, DecentralizedValue hostDestination) {
-		super(compatiblePackages);
-		if (hostSource==null)
-			throw new NullPointerException();
+	public CompatibleDatabasesP2PMessage(Set<String> compatiblePackages, DecentralizedValue hostSource, DecentralizedValue hostDestination) {
+		super(compatiblePackages, hostSource);
 		if (hostDestination==null)
 			throw new NullPointerException();
-		this.hostSource = hostSource;
 		this.hostDestination = hostDestination;
 	}
 
 	@SuppressWarnings("unused")
-	private CompatiblePackagesP2PMessage() {
+	private CompatibleDatabasesP2PMessage() {
 		super();
 	}
 
@@ -78,29 +76,32 @@ public class CompatiblePackagesP2PMessage extends AbstractCompatiblePackagesMess
 		return hostDestination;
 	}
 
-	@Override
-	public DecentralizedValue getHostSource() throws DatabaseException {
-		return hostSource;
-	}
+
 
 	@Override
 	public int getInternalSerializedSize() {
 		return super.getInternalSerializedSize()
-				+ SerializationTools.getInternalSize(hostDestination)
-				+ SerializationTools.getInternalSize(hostSource);
+				+ SerializationTools.getInternalSize(hostDestination);
 	}
 
 	@Override
 	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
 		super.writeExternal(out);
-		out.writeObject(hostSource, false);
+
 		out.writeObject(hostDestination, false );
 	}
 
 	@Override
 	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
 		super.readExternal(in);
-		hostSource=in.readObject(false);
+
 		hostDestination=in.readObject(false);
+	}
+
+	@Override
+	public MergeState mergeWithP2PDatabaseEventToSend(DatabaseEvent newEvent) {
+		if (newEvent instanceof CompatibleDatabasesP2PMessage)
+			return MergeState.DELETE_OLD;
+		return MergeState.NO_FUSION;
 	}
 }

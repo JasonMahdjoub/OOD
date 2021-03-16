@@ -35,12 +35,9 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+import com.distrimind.ood.database.DatabaseEvent;
 import com.distrimind.util.DecentralizedValue;
-import com.distrimind.util.io.SecuredObjectInputStream;
-import com.distrimind.util.io.SecuredObjectOutputStream;
-import com.distrimind.util.io.SerializationTools;
 
-import java.io.IOException;
 import java.util.Set;
 
 /**
@@ -48,18 +45,13 @@ import java.util.Set;
  * @version 1.0
  * @since Utils 3.0.0
  */
-public class CompatiblePackagesMessageDestinedToCentralDatabaseBackup extends AbstractCompatiblePackagesMessage implements MessageDestinedToCentralDatabaseBackup{
+public class CompatibleDatabasesMessageDestinedToCentralDatabaseBackup extends AbstractCompatibleDatabasesMessage implements MessageDestinedToCentralDatabaseBackup{
 
-	private DecentralizedValue hostSource;
-
-	public CompatiblePackagesMessageDestinedToCentralDatabaseBackup(Set<String> compatiblePackages, DecentralizedValue hostSource) {
-		super(compatiblePackages);
-		if (hostSource==null)
-			throw new NullPointerException();
-		this.hostSource = hostSource;
+	public CompatibleDatabasesMessageDestinedToCentralDatabaseBackup(Set<String> compatiblePackages, DecentralizedValue hostSource) {
+		super(compatiblePackages, hostSource);
 	}
 
-	public CompatiblePackagesMessageDestinedToCentralDatabaseBackup() {
+	public CompatibleDatabasesMessageDestinedToCentralDatabaseBackup() {
 		super();
 	}
 
@@ -69,24 +61,11 @@ public class CompatiblePackagesMessageDestinedToCentralDatabaseBackup extends Ab
 	}
 
 	@Override
-	public DecentralizedValue getHostSource() {
-		return hostSource;
+	public MergeState mergeWithP2PDatabaseEventToSend(DatabaseEvent newEvent) {
+		if (newEvent instanceof CompatibleDatabasesMessageDestinedToCentralDatabaseBackup)
+			return MergeState.DELETE_OLD;
+		return MergeState.NO_FUSION;
 	}
 
-	@Override
-	public int getInternalSerializedSize() {
-		return super.getInternalSerializedSize()+ SerializationTools.getInternalSize(hostSource);
-	}
 
-	@Override
-	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
-		super.writeExternal(out);
-		out.writeObject(hostSource, false);
-	}
-
-	@Override
-	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
-		super.readExternal(in);
-		hostSource=in.readObject(false);
-	}
 }
