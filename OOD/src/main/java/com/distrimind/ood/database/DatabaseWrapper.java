@@ -960,12 +960,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 		}
 
-		Stream<String> getDatabasesSynchronizedWith(DecentralizedValue hostID)
+		Stream<String> getSynchronizedDatabases()
 		{
 			return getDatabaseConfigurationsBuilder().getConfigurations().getConfigurations()
 					.stream()
 					.filter(dc -> dc.getSynchronizationType()!= DatabaseConfiguration.SynchronizationType.NO_SYNCHRONIZATION &&
-							dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase().contains(hostID))
+							DatabaseWrapper.this.sql_database.values().stream().anyMatch(sd -> sd.configuration.getDatabaseSchema().getPackage().equals(dc.getDatabaseSchema().getPackage())) /*&&
+							dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase().contains(hostID)*/)
 					.map(dc -> dc.getDatabaseSchema().getPackage().getName());
 		}
 
@@ -1131,10 +1132,22 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		void receivedHookSynchronizeRequest(HookSynchronizeRequest hookSynchronizeRequest) throws DatabaseException {
 			Map<String, Boolean> packagesToSynchronize=hookSynchronizeRequest.getPackagesToSynchronize(getLocalHostID());
 
-			if (!getSynchronizer().getDatabasesSynchronizedWith(hookSynchronizeRequest.getHostSource()).allMatch(packagesToSynchronize::containsKey))
+			if (packagesToSynchronize.keySet().stream().anyMatch(p -> getSynchronizer().getSynchronizedDatabases().noneMatch(p::equals)))
 				return;
 			getDatabaseHooksTable().addHooks(packagesToSynchronize,
 					hookSynchronizeRequest.getConcernedPeers(), !hookSynchronizeRequest.getHostSource().equals(getLocalHostID()));
+			/*if (hookSynchronizeRequest.getBackRequest()!=null)
+			{
+				lockRead();
+				try {
+					DatabaseHooksTable.Record r=getDatabaseHooksTable().getHook(hookSynchronizeRequest.getBackRequest().getHostDestination());
+					r.offerNewAuthenticatedP2PMessage(getDatabaseHooksTable(), hookSynchronizeRequest.getBackRequest());
+				}
+				finally {
+					unlockRead();
+				}
+
+			}*/
 			isReliedToDistantHook();
 		}
 		private void received(HookRemoveRequest m) throws DatabaseException {

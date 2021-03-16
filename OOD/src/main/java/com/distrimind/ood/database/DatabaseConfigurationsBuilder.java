@@ -443,7 +443,13 @@ public class DatabaseConfigurationsBuilder {
 					public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
 						for (DatabaseConfiguration c : packagesToSynchronize)
 						{
+							/*
+							Map<String, Boolean> hm=new HashMap<>();
+							hm.put(c.getDatabaseSchema().getPackage().getName(), DatabaseConfigurationsBuilder.this.lifeCycles != null && DatabaseConfigurationsBuilder.this.lifeCycles.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized(c));
+							HookSynchronizeRequest backRequest=new HookSynchronizeRequest(configurations.getLocalPeer(), configurations.getLocalPeer(), hm, c.getDistantPeersThatCanBeSynchronizedWithThisDatabase()));
 
+							_record.offerNewAuthenticatedP2PMessage(wrapper, new HookSynchronizeRequest(configurations.getLocalPeer(), _record.getHostID(), hm, c.getDistantPeersThatCanBeSynchronizedWithThisDatabase(), backRequest), getSecureRandom(), protectedSignatureProfileProviderForAuthenticatedP2PMessages, this);
+							 */
 							Map<String, Boolean> hm=new HashMap<>();
 							hm.put(c.getDatabaseSchema().getPackage().getName(), DatabaseConfigurationsBuilder.this.lifeCycles != null && DatabaseConfigurationsBuilder.this.lifeCycles.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized(c));
 							_record.offerNewAuthenticatedP2PMessage(wrapper, new HookSynchronizeRequest(configurations.getLocalPeer(), _record.getHostID(), hm, c.getDistantPeersThatCanBeSynchronizedWithThisDatabase()), getSecureRandom(), protectedSignatureProfileProviderForAuthenticatedP2PMessages, this);

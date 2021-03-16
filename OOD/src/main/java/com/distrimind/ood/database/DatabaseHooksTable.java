@@ -128,8 +128,13 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		}
 
 		boolean validateDistantAuthenticatedP2PMessage(AuthenticatedP2PMessage message, DatabaseHooksTable table) throws DatabaseException {
-			if (message.getMessageID()<=lastDistantAuthenticatedP2PMessageID)
+			/*if (message instanceof HookSynchronizeRequest && ((HookSynchronizeRequest) message).getBackRequest()==null)
+			{
+				return true;
+			}*/
+			if (message.getMessageID()<=lastDistantAuthenticatedP2PMessageID) {
 				return false;
+			}
 			else
 			{
 				lastDistantAuthenticatedP2PMessageID=message.getMessageID();
@@ -227,6 +232,12 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			if (authenticatedMessagesQueueToSend==null)
 				authenticatedMessagesQueueToSend=new LinkedList<>();
 			message.setMessageID(lastLocalAuthenticatedP2PMessageID++);
+			/*if (message instanceof HookSynchronizeRequest)
+			{
+				HookSynchronizeRequest hsr=(HookSynchronizeRequest) message;
+				hsr.getBackRequest().setMessageID(0);
+				hsr.getBackRequest().generateAndSetSignatures(random, encryptionProfileProvider);
+			}*/
 			message.generateAndSetSignatures(random, encryptionProfileProvider);
 			authenticatedMessagesQueueToSend.addLast(message);
 			if (message instanceof HookRemoveRequest && ((HookRemoveRequest) message).getRemovedHookID().equals(hostID))
@@ -237,6 +248,23 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			message.messageReadyToSend();
 			wrapper.getSynchronizer().notifyNewAuthenticatedMessage(message);
 		}
+		/*void offerNewAuthenticatedP2PMessage(DatabaseHooksTable table, HookSynchronizeRequest message) throws DatabaseException {
+			if (message==null)
+				throw new NullPointerException();
+			if (message.getBackRequest()!=null)
+				throw new IllegalArgumentException();
+			if (message.getSignatures()==null)
+				throw new IllegalArgumentException();
+			if (authenticatedMessagesQueueToSend==null)
+				authenticatedMessagesQueueToSend=new LinkedList<>();
+
+			authenticatedMessagesQueueToSend.addLast(message);
+			table.updateRecord(this, "authenticatedMessagesQueueToSend", authenticatedMessagesQueueToSend);
+			DatabaseWrapper wrapper=table.getDatabaseWrapper();
+			wrapper.getDatabaseHooksTable().updateLocalDatabaseHostIfNecessary(this);
+			message.messageReadyToSend();
+			wrapper.getSynchronizer().notifyNewAuthenticatedMessage(message);
+		}*/
 
 
 		/*void addAuthenticatedP2PMessageToSendToCentralDatabaseBackup(AuthenticatedP2PMessage message, DatabaseHooksTable table) throws DatabaseException {
