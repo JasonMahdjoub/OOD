@@ -41,18 +41,17 @@ import com.distrimind.util.io.SecuredObjectOutputStream;
 import com.distrimind.util.io.SerializationTools;
 
 import java.io.IOException;
-import java.util.Set;
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
  * @since Utils 3.0.0
  */
-public class CompatibleDatabasesMessageComingFromCentralDatabaseBackup extends AbstractCompatibleDatabasesMessage implements MessageComingFromCentralDatabaseBackup{
+public class CompatibleDatabasesMessageComingFromCentralDatabaseBackup extends AbstractCompatibleEncryptedDatabaseMessage implements MessageComingFromCentralDatabaseBackup{
 	private DecentralizedValue hostDestination;
 
-	public CompatibleDatabasesMessageComingFromCentralDatabaseBackup(Set<String> compatiblePackages, DecentralizedValue hostSource, DecentralizedValue hostDestination) {
-		super(compatiblePackages, hostSource);
+	public CompatibleDatabasesMessageComingFromCentralDatabaseBackup(byte[] encryptedCompatibleDatabases, DecentralizedValue hostSource, DecentralizedValue hostDestination) {
+		super(encryptedCompatibleDatabases, hostSource);
 		if (hostDestination==null)
 			throw new NullPointerException();
 		this.hostDestination = hostDestination;

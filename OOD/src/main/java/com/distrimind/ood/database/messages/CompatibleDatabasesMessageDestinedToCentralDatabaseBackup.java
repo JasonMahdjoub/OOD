@@ -36,7 +36,10 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 import com.distrimind.ood.database.DatabaseEvent;
+import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.crypto.EncryptionProfileProvider;
 
 import java.util.Set;
 
@@ -45,10 +48,11 @@ import java.util.Set;
  * @version 1.0
  * @since Utils 3.0.0
  */
-public class CompatibleDatabasesMessageDestinedToCentralDatabaseBackup extends AbstractCompatibleDatabasesMessage implements MessageDestinedToCentralDatabaseBackup{
+public class CompatibleDatabasesMessageDestinedToCentralDatabaseBackup extends AbstractCompatibleEncryptedDatabaseMessage implements MessageDestinedToCentralDatabaseBackup{
 
-	public CompatibleDatabasesMessageDestinedToCentralDatabaseBackup(Set<String> compatiblePackages, DecentralizedValue hostSource) {
-		super(compatiblePackages, hostSource);
+
+	public CompatibleDatabasesMessageDestinedToCentralDatabaseBackup(Set<String> compatiblePackages, DecentralizedValue hostSource, AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
+		super(compatiblePackages, hostSource, random, encryptionProfileProvider);
 	}
 
 	public CompatibleDatabasesMessageDestinedToCentralDatabaseBackup() {

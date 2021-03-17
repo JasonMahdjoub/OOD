@@ -232,7 +232,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	private final boolean alwaysDisconnectAfterOnTransaction;
 	private static final int MAX_TRANSACTIONS_TO_SYNCHRONIZE_AT_THE_SAME_TIME=1000000;
 	public static final int MAX_DISTANT_PEERS=50;
-	public static final int MAX_PACKAGE_TO_SYNCHRONIZE=1000;
+	public static final int MAX_PACKAGE_TO_SYNCHRONIZE=200;
 	private static volatile int MAX_HOST_NUMBERS=5;
 	private final DatabaseConfigurationsBuilder databaseConfigurationsBuilder;
 
@@ -894,7 +894,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 		void sendAvailableDatabaseToCentralDatabaseBackup(Set<String> packages) throws DatabaseException {
 			if (centralBackupInitialized) {
-				addNewDatabaseEvent(new CompatibleDatabasesMessageDestinedToCentralDatabaseBackup(packages, getLocalHostID()));
+				addNewDatabaseEvent(new CompatibleDatabasesMessageDestinedToCentralDatabaseBackup(packages, getLocalHostID(), DatabaseWrapper.this.getDatabaseConfigurationsBuilder().getSecureRandom(), DatabaseWrapper.this.getDatabaseConfigurationsBuilder().getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup()));
 			}
 		}
 
@@ -2635,7 +2635,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (cp!=null)
 			{
 				cp.compatibleDatabasesFromCentralDatabaseBackup.clear();
-				cp.compatibleDatabasesFromCentralDatabaseBackup.addAll(message.getCompatibleDatabases());
+				cp.compatibleDatabasesFromCentralDatabaseBackup.addAll(message.getDecryptedCompatibleDatabases(DatabaseWrapper.this.getDatabaseConfigurationsBuilder().getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup()));
 			}
 			checkForNewAuthenticatedMessagesToSendToCentralDatabaseBackup();
 		}

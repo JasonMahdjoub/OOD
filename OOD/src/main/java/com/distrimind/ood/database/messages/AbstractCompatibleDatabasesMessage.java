@@ -56,7 +56,7 @@ import java.util.Set;
 public abstract class AbstractCompatibleDatabasesMessage extends DatabaseEvent implements SecureExternalizable {
 
 	private static final int MAX_PACKAGES_NUMBERS= DatabaseWrapper.MAX_PACKAGE_TO_SYNCHRONIZE;
-	private static final int MAX_SIZE_OF_PACKAGES_NAMES_IN_BYTES=MAX_PACKAGES_NUMBERS*SerializationTools.MAX_CLASS_LENGTH*2+4;
+	public static final int MAX_SIZE_OF_PACKAGES_NAMES_IN_BYTES=MAX_PACKAGES_NUMBERS*SerializationTools.MAX_CLASS_LENGTH*2+4;
 
 
 	private Set<String> compatibleDatabases;
@@ -67,6 +67,8 @@ public abstract class AbstractCompatibleDatabasesMessage extends DatabaseEvent i
 			throw new NullPointerException();
 		if (compatibleDatabases ==null)
 			compatibleDatabases =new HashSet<>();
+		if (compatibleDatabases.contains(null))
+			throw new NullPointerException();
 		this.compatibleDatabases = compatibleDatabases;
 		this.hostSource=hostSource;
 	}
@@ -86,13 +88,13 @@ public abstract class AbstractCompatibleDatabasesMessage extends DatabaseEvent i
 
 	@Override
 	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
-		out.writeCollection(compatibleDatabases, false, MAX_SIZE_OF_PACKAGES_NAMES_IN_BYTES);
+		out.writeCollection(compatibleDatabases, false, MAX_SIZE_OF_PACKAGES_NAMES_IN_BYTES, false);
 		out.writeObject(hostSource, false);
 	}
 
 	@Override
 	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
-		compatibleDatabases =in.readCollection(false, MAX_SIZE_OF_PACKAGES_NAMES_IN_BYTES, String.class);
+		compatibleDatabases =in.readCollection(false, MAX_SIZE_OF_PACKAGES_NAMES_IN_BYTES, false, String.class);
 		hostSource=in.readObject(false);
 	}
 
