@@ -378,7 +378,7 @@ public abstract class CommonDecentralizedTests {
 		}
 
 		@Override
-		protected void sendMessageOtherCentralDatabaseBackup(DecentralizedValue centralDatabaseBackupID, MessageComingFromCentralDatabaseBackup message) {
+		protected void sendMessageFromOtherCentralDatabaseBackup(DecentralizedValue centralDatabaseBackupID, MessageComingFromCentralDatabaseBackup message) {
 			Assert.fail();
 		}
 
