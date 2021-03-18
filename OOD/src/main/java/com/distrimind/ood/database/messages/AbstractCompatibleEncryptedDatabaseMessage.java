@@ -94,9 +94,11 @@ public class AbstractCompatibleEncryptedDatabaseMessage extends DatabaseEvent im
 	public byte[] getEncryptedCompatibleDatabases() {
 		return encryptedCompatibleDatabases;
 	}
-	public Set<String> getDecryptedCompatibleDatabases(EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
+
+	static Set<String> getDecryptedCompatibleDatabases(byte[] encryptedCompatibleDatabases, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
 		try(RandomByteArrayInputStream in=new RandomByteArrayInputStream(encryptedCompatibleDatabases);
 			RandomInputStream cipherIn=new EncryptionSignatureHashDecoder()
+					.withEncryptionProfileProvider(encryptionProfileProvider)
 					.withRandomInputStream(in)
 					.decodeAndCheckHashAndSignaturesIfNecessary()) {
 			return cipherIn.readCollection(false, AbstractCompatibleDatabasesMessage.MAX_SIZE_OF_PACKAGES_NAMES_IN_BYTES, false, String.class);
@@ -105,6 +107,9 @@ public class AbstractCompatibleEncryptedDatabaseMessage extends DatabaseEvent im
 		{
 			throw DatabaseException.getDatabaseException(e);
 		}
+	}
+	public Set<String> getDecryptedCompatibleDatabases(EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
+		return getDecryptedCompatibleDatabases(encryptedCompatibleDatabases, encryptionProfileProvider);
 	}
 
 

@@ -477,17 +477,19 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 				List<byte[]> lids=connectedClientRecord.getEncryptedAuthenticatedMessagesToSend();
 				if (lids!=null && lids.size()>0)
 					centralDatabaseBackupReceiver.clientTable.updateRecord(connectedClientRecord, "encryptedAuthenticatedMessagesToSend", null);
-				sendMessage(new InitialMessageComingFromCentralBackup(message.getHostSource(), lastValidatedAndEncryptedIDsPerHost, lastValidatedTransactionsUTCForDestinationHost, lids));
+				HashMap<DecentralizedValue, byte[]> encryptedCompatibleDatabases=new HashMap<>();
 				parseClients(
 						new Filter<ClientTable.Record>(){
 
 							@Override
-							public boolean nextRecord(ClientTable.Record _record) throws DatabaseException {
+							public boolean nextRecord(ClientTable.Record _record) {
 								if (_record.getEncryptedCompatiblesDatabases()!=null)
-									sendMessage(new CompatibleDatabasesMessageComingFromCentralDatabaseBackup(_record.getEncryptedCompatiblesDatabases(), _record.getClientID(), connectedClientID));
+									encryptedCompatibleDatabases.put(_record.getClientID(), _record.getEncryptedCompatiblesDatabases());
 								return false;
 							}
 						},connectedClientRecord.getClientID());
+				sendMessage(new InitialMessageComingFromCentralBackup(message.getHostSource(), lastValidatedAndEncryptedIDsPerHost, lastValidatedTransactionsUTCForDestinationHost, lids, encryptedCompatibleDatabases));
+
 				return Integrity.OK;
 			}
 
