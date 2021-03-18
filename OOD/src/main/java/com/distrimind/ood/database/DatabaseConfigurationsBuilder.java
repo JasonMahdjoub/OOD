@@ -241,16 +241,19 @@ public class DatabaseConfigurationsBuilder {
 	}
 
 	void databaseWrapperLoaded() throws DatabaseException {
-		checkDatabaseLoading();
-		checkDatabaseToDesynchronize();
-		checkConnexionsToRemove();
-		checkDatabaseToUnload();
-		checkPeersToAdd();
-		checkInitLocalPeer();
-		checkDatabaseToSynchronize();
-		checkConnexions();
-		checkDisconnections();
-		checkInitCentralDatabaseBackup();
+		pushQuery(t-> {
+			t.checkDatabaseLoading(null);
+			t.checkConnexionsToDesynchronize();
+			t.removedPeersID=new HashSet<>();
+			t.checkDatabaseUnload(null);
+			t.checkPeersToAdd();
+			t.checkInitLocalPeer();
+			t.checkDatabaseToSynchronize();
+			t.checkNewConnexions();
+			t.checkDisconnexions();
+			t.checkInitCentralDatabaseBackup();
+		});
+		commit();
 	}
 
 	private void checkInitCentralDatabaseBackup() throws DatabaseException {

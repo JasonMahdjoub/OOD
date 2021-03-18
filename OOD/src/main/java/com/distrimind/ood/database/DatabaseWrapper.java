@@ -2219,7 +2219,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 				else
 				{
-					disconnectAll();
+					if (isInitialized())
+						disconnectAll();
 				}
 
 			}
