@@ -58,6 +58,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
 
 /**
  * @author Jason
@@ -1004,6 +1005,9 @@ public abstract class CommonDecentralizedTests {
 		listDatabase.add(db1);
 		listDatabase.add(db2);
 		listDatabase.add(db3);
+		db1.getDbwrapper().activateNetworkMessagesLog(Level.FINEST);
+		db2.getDbwrapper().activateNetworkMessagesLog(Level.FINEST);
+		db3.getDbwrapper().activateNetworkMessagesLog(Level.FINEST);
 		for (CommonDecentralizedTests.Database db : listDatabase) {
 
 			addConfiguration(db);
@@ -1397,13 +1401,18 @@ public abstract class CommonDecentralizedTests {
 			connectDistant(db, dbs);
 		}
 		exchangeMessages();
+
+		for (CommonDecentralizedTests.Database db : listDatabase) {
+			Assert.assertTrue(db.isConnected());
+			Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized());
+		}
 		for (CommonDecentralizedTests.Database db : listDatabase) {
 			for (CommonDecentralizedTests.Database otherdb : listDatabase) {
 				if (db==otherdb)
 					Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized(otherdb.getHostID()));
 				else
 					Assert.assertEquals(db.getDbwrapper().getSynchronizer().isInitialized(otherdb.getHostID()),
-						db.getDbwrapper().getDatabaseConfigurationsBuilder().getConfigurations().getDistantPeers().contains(otherdb.getHostID()), db.getHostID().toString());
+						db.getDbwrapper().getDatabaseConfigurationsBuilder().getConfigurations().getDistantPeers().contains(otherdb.getHostID()), db.getHostID().toString()+";"+otherdb.getHostID());
 
 			}
 		}

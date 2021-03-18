@@ -100,8 +100,21 @@ public class CompatibleDatabasesP2PMessage extends AbstractCompatibleDatabasesMe
 
 	@Override
 	public MergeState mergeWithP2PDatabaseEventToSend(DatabaseEvent newEvent) {
-		if (newEvent instanceof CompatibleDatabasesP2PMessage)
-			return MergeState.DELETE_OLD;
+		try {
+			if (newEvent instanceof CompatibleDatabasesP2PMessage && ((CompatibleDatabasesP2PMessage) newEvent).getHostDestination().equals(getHostDestination()))
+				return MergeState.DELETE_OLD;
+		} catch (DatabaseException e) {
+			e.printStackTrace();
+		}
 		return MergeState.NO_FUSION;
+	}
+
+	@Override
+	public String toString() {
+		return "CompatibleDatabasesP2PMessage{" +
+				"hostSource=" + getHostSource() +
+				", hostDestination=" + hostDestination +
+				", compatibleDatabases=" + getCompatibleDatabases() +
+				"} ";
 	}
 }

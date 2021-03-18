@@ -101,4 +101,6 @@ public abstract class AbstractCompatibleDatabasesMessage extends DatabaseEvent i
 	public Set<String> getCompatibleDatabases() {
 		return compatibleDatabases;
 	}
+
+
 }
