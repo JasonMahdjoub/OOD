@@ -361,11 +361,10 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 			public Integrity run() throws Exception {
 				DatabaseBackupPerClientTable.Record database=getDatabaseBackupPerClientRecord( connectedClientRecord,  message.getMetaData().getPackageString());
 				boolean update=false;
-				boolean add=false;
+				final boolean add=database==null;
 				if (database==null)
 				{
 					database=new DatabaseBackupPerClientTable.Record(connectedClientRecord, message.getMetaData().getPackageString(), message.getMetaData().getFileTimestampUTC());
-					add=true;
 				}
 				else {
 					long l = database.getLastFileBackupPartUTC();
@@ -395,7 +394,16 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 								byte[] lastValidatedAndEncryptedDistantID=getLastValidatedAndEncryptedDistantID(connectedClientRecord, _record);
 								if (lastValidatedAndEncryptedDistantID!=null && !_record.getClientID().equals(connectedClientID) && centralDatabaseBackupReceiver.isConnectedIntoOneOfCentralDatabaseBackupServers(_record.getClientID()))
 								{
-									sendMessage(
+									if (add)
+										sendMessage(
+												new BackupChannelInitializationMessageFromCentralDatabaseBackup(
+														_record.getClientID(),
+														message.getHostSource(),
+														lastValidatedAndEncryptedDistantID,
+														message.getLastValidatedAndEncryptedID()
+												));
+									else
+										sendMessage(
 											new BackupChannelUpdateMessageFromCentralDatabaseBackup(
 													_record.getClientID(),
 													message.getHostSource(),
