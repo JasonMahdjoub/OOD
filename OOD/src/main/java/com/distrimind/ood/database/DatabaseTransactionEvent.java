@@ -108,5 +108,7 @@ public class DatabaseTransactionEvent extends DatabaseEvent {
 			b |= de.getType().getByte();
 		return b;
 	}*/
+
+
 	
 }

@@ -263,7 +263,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		lockWrite();
 		try {
 			if (networkLogger==null) {
-				networkLogger = Logger.getAnonymousLogger();
+				Logger networkLogger = Logger.getAnonymousLogger();
 				loggerHandler=new ConsoleHandler();
 				loggerHandler.setFormatter(new Formatter() {
 
@@ -283,6 +283,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 
 				networkLogger.addHandler(loggerHandler);
+				this.networkLogger=networkLogger;
 			}
 			networkLogger.setUseParentHandlers(false);
 			for (Handler h : networkLogger.getHandlers())
@@ -1417,7 +1418,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				if (r.getLastValidatedLocalTransactionID() > lastTransferredTransactionID) {
 					throw new DatabaseException("The given transfer ID limit " + lastTransferredTransactionID
 								+ " is lower than the stored transfer ID limit " + r.getLastValidatedLocalTransactionID() + ". LastValidatedDistantTransactionID=" + r.getLastValidatedDistantTransactionID() + " ; hook=" + hostID + " ; localHostID=" + getLocalHostID() + " ; last local transaction id=" + getTransactionIDTable().getLastTransactionID());
-				} else {
+				}
+				else {
+
 
 					long l = getDatabaseTransactionsPerHostTable().validateTransactions(r, lastTransferredTransactionID);
 					if (l < lastTransferredTransactionID)
@@ -1461,14 +1464,15 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 			try {
 				lockWrite();
+				DecentralizedValue localHostID=getLocalHostID();
 				for (DecentralizedValue host : lastIds.keySet()) {
-					if (isInitialized(host)) {
+					if (!localHostID.equals(host) && isInitialized(host)) {
                         Map<DecentralizedValue, Long> map = new HashMap<>(lastIds);
 						// map.remove(hostID);
 						map.remove(host);
 						if (map.size() > 0) {
 							addNewDatabaseEvent(new DatabaseTransactionsIdentifiersToSynchronize(
-									getDatabaseHooksTable().getLocalDatabaseHost().getHostID(), host, map));
+									localHostID, host, map));
 						}
 					}
 				}
@@ -1486,7 +1490,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		void notifyNewTransactionsIfNecessary() throws DatabaseException {
-			final long lastID = getTransactionIDTable().getLastTransactionID();
+			final long lastID = getTransactionIDTable().getLastTransactionID()-1;
 
 			try {
 				lockWrite();
@@ -2489,8 +2493,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		public void received(DatabaseTransactionsIdentifiersToSynchronize d) throws DatabaseException {
-			if (!isInitialized())
-				throw new DatabaseException("The Synchronizer must be initialized (initLocalHostID function) !");
+
 
 			getDatabaseHooksTable().validateDistantTransactions(d.getHostSource(),
 					d.getLastDistantTransactionIdentifiers(), true);
@@ -2738,35 +2741,41 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				received((MessageComingFromCentralDatabaseBackup)data);
 		}
 		private void received(P2PDatabaseEventToSend data) throws DatabaseException, MessageExternalizationException {
+			if (!isInitialized())
+				throw new DatabaseException("The Synchronizer must be initialized (initLocalHostID function) !");
 			if (data instanceof CompatibleDatabasesP2PMessage)
 			{
 				received((CompatibleDatabasesP2PMessage)data);
-			}
-			else if (data instanceof DatabaseTransactionsIdentifiersToSynchronize)
-				received((DatabaseTransactionsIdentifiersToSynchronize) data);
-
-			else if (data instanceof TransactionConfirmationEvents) {
-				TransactionConfirmationEvents tce=(TransactionConfirmationEvents)data;
-				if (isInitialized(tce.getHostSource()))
-					validateLastSynchronization(tce.getHostSource(),
-							tce.getLastValidatedTransaction(), false);
-				else {
-					try {
-						initHook(tce.getHostSource(),
-								tce.getLastValidatedTransaction());
-					} catch (MessageExternalizationException e) {
-						throw DatabaseException.getDatabaseException(e);
-					}
-				}
-			} else if (data instanceof LastIDCorrection) {
-				received((LastIDCorrection) data);
 			}
 			else if (data instanceof P2PConnexionInitialization)
 			{
 				received((P2PConnexionInitialization)data);
 			}
-			else
-				throw new DatabaseException("Invalid message "+data, new IllegalArgumentException());
+			else {
+				if (!isInitialized(data.getHostSource()))
+					throw new DatabaseException("Host "+data.getHostSource()+" not initialized into host "+data.getHostDestination()+". message="+data);
+				if (data instanceof DatabaseTransactionsIdentifiersToSynchronize)
+					received((DatabaseTransactionsIdentifiersToSynchronize) data);
+				else if (data instanceof TransactionConfirmationEvents) {
+					TransactionConfirmationEvents tce = (TransactionConfirmationEvents) data;
+					//if (isInitialized(tce.getHostSource()))
+						validateLastSynchronization(tce.getHostSource(),
+								tce.getLastValidatedTransaction(), false);
+					/*else {
+						try {
+							initHook(tce.getHostSource(),
+									tce.getLastValidatedTransaction());
+						} catch (MessageExternalizationException e) {
+							throw DatabaseException.getDatabaseException(e);
+						}
+					}*/
+				} else if (data instanceof LastIDCorrection) {
+					received((LastIDCorrection) data);
+				}
+				else
+					throw new DatabaseException("Invalid message "+data, new IllegalArgumentException());
+			}
+
 		}
 		private void received(P2PConnexionInitialization p2PConnexionInitialization) throws DatabaseException, MessageExternalizationException {
 			initHook(p2PConnexionInitialization.getHostSource(), p2PConnexionInitialization.getLastValidatedTransactionID());
@@ -2905,6 +2914,17 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		@Override
+		public String toString() {
+			return "DatabaseEventsToSynchronizeP2P{" +
+					"lastTransactionIDIncluded=" + lastTransactionIDIncluded +
+					", maxEventsRecords=" + maxEventsRecords +
+					", hookID=" + hookID +
+					", hostIDSource=" + hostIDSource +
+					", hostIDDestination=" + hostIDDestination +
+					'}';
+		}
+
+		@Override
 		public boolean exportToOutputStream(final DatabaseWrapper wrapper, final OutputStreamGetter outputStreamGetter)
 				throws DatabaseException {
 			if (wrapper == null)
@@ -2935,6 +2955,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 				}
 			});
+
 
 		}
 

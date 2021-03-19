@@ -93,7 +93,7 @@ public abstract class CommonDecentralizedTests {
 		}
 	}
 
-	protected CommonDecentralizedTests() throws NoSuchProviderException, NoSuchAlgorithmException, IOException, DatabaseException {
+	protected CommonDecentralizedTests() throws NoSuchProviderException, NoSuchAlgorithmException, IOException {
 		this.random=SecureRandomType.DEFAULT.getSingleton(null);
 		this.centralDatabaseBackupKeyPair=ASymmetricAuthenticatedSignatureType.BC_FIPS_Ed25519.getKeyPairGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKeyPair();
 
@@ -525,6 +525,7 @@ public abstract class CommonDecentralizedTests {
 	{
 		private transient File file;
 		private long fileTimeStamp;
+		@SuppressWarnings("unused")
 		FileReferenceForTests()
 		{
 
@@ -1645,18 +1646,14 @@ public abstract class CommonDecentralizedTests {
 
 	}
 
-	@Test(dependsOnMethods = { "testInit" })
-	public void testAllConnect() throws Exception {
-
-		connectAllDatabase();
-		exchangeMessages();
-
+	private void testAllConnected() throws DatabaseException {
 		for (CommonDecentralizedTests.Database db : listDatabase) {
 			Assert.assertTrue(db.isConnected());
-			if (!db.getDbwrapper().getSynchronizer().isInitialized()) {
-				Assert.assertNotNull(db.getDbwrapper().getDatabaseConfigurationsBuilder().getConfigurations().getLocalPeer());
-			}
 			Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized(), db.getHostID().toString());
+			/*if (!db.getDbwrapper().getSynchronizer().isInitialized()) {
+				Assert.assertNotNull(db.getDbwrapper().getDatabaseConfigurationsBuilder().getConfigurations().getLocalPeer());
+			}*/
+
 			for (CommonDecentralizedTests.Database otherdb : listDatabase) {
 				if (db==otherdb)
 					Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized(otherdb.getHostID()));
@@ -1681,6 +1678,50 @@ public abstract class CommonDecentralizedTests {
 				Assert.assertTrue(r.getDatabasePackageNames().contains(TableAlone.class.getPackage().getName()));
 
 		}
+	}
+	private void testAllDisconnected() throws DatabaseException {
+		for (CommonDecentralizedTests.Database db : listDatabase) {
+			Assert.assertFalse(db.isConnected());
+			Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized(), db.getHostID().toString());
+
+			for (CommonDecentralizedTests.Database otherdb : listDatabase) {
+				if (db==otherdb)
+					Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized(otherdb.getHostID()));
+				else
+					Assert.assertNotEquals(db.getDbwrapper().getSynchronizer().isInitialized(otherdb.getHostID()),
+							db.getDbwrapper().getDatabaseConfigurationsBuilder().getConfigurations().getDistantPeers().contains(otherdb.getHostID()), db.getHostID().toString());
+			}
+			DatabaseHooksTable.Record r = db.getDbwrapper().getTableInstance(DatabaseHooksTable.class).getLocalDatabaseHost();
+			if (r.getDatabasePackageNames() == null) {
+
+				db.getDbwrapper().getTableInstance(DatabaseHooksTable.class).localHost = null;
+				r = db.getDbwrapper().getTableInstance(DatabaseHooksTable.class).getLocalDatabaseHost();
+				if (r.getDatabasePackageNames()==null)
+				{
+					Assert.assertEquals(db, db4, ""+listDatabase.indexOf(db));
+					Assert.assertEquals(db.getDbwrapper().getDatabaseConfigurationsBuilder().getConfigurations().getDatabaseConfiguration(TableAlone.class.getPackage().getName()).getDistantPeersThatCanBeSynchronizedWithThisDatabase().size(), 0);
+				}
+				else
+					Assert.fail();
+			}
+			if (db.getDbwrapper().getDatabaseConfigurationsBuilder().getConfigurations().getDatabaseConfiguration(TableAlone.class.getPackage().getName()).getDistantPeersThatCanBeSynchronizedWithThisDatabase().size()>0)
+				Assert.assertTrue(r.getDatabasePackageNames().contains(TableAlone.class.getPackage().getName()));
+
+		}
+	}
+
+	@Test(dependsOnMethods = { "testInit" })
+	public void testAllConnect() throws Exception {
+
+		connectAllDatabase();
+		exchangeMessages();
+		testAllConnected();
+		disconnectAllDatabase();
+		testAllDisconnected();
+		connectAllDatabase();
+		exchangeMessages();
+		testAllConnected();
+
 	}
 
 	@Test(dependsOnMethods = {"testAllConnect"})
