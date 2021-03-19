@@ -1490,7 +1490,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		void notifyNewTransactionsIfNecessary() throws DatabaseException {
-			final long lastID = getTransactionIDTable().getLastTransactionID()-1;
+			final long lastID = getTransactionIDTable().getLastTransactionID();
 
 			try {
 				lockWrite();
