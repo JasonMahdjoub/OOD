@@ -457,7 +457,7 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 		testSynchronisation();
 		disconnectAllDatabase();
 		checkAllDatabaseInternalDataUsedForSynchro();
-		accessNumberInProtectedEncruptionProfile=0;
+		accessNumberInProtectedEncriptionProfile =0;
 		DatabaseFactory<?> df=getDatabaseWrapperInstance4();
 		df.setEncryptionProfileProviders(signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup, encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedSignatureProfileProviderForAuthenticatedP2PMessages, SecureRandomType.DEFAULT);
 		db4 = new Database(df.getDatabaseWrapperSingleton());
@@ -480,7 +480,7 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 		}*/
 
 		testAllConnect();
-		Assert.assertEquals(accessNumberInProtectedEncruptionProfile, 6);
+		Assert.assertEquals(accessNumberInProtectedEncriptionProfile, 6);
 		disconnectAllDatabase();
 		checkAllDatabaseInternalDataUsedForSynchro();
 		testSynchronisation();
@@ -580,18 +580,20 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 
 	@Test(dependsOnMethods = { "testSynchroTransactionTests2" })
 	public void removeNewPeer() throws Exception {
-		accessNumberInProtectedEncruptionProfile=0;
+		accessNumberInProtectedEncriptionProfile =0;
 		checkAllDatabaseInternalDataUsedForSynchro();
+		testAllDisconnected();
 		listDatabase.get(0).getDbwrapper().getDatabaseConfigurationsBuilder()
 				.removeDistantPeer(db4.getHostID())
 				.commit();
+		testAllDisconnected();
 		DatabaseHooksTable.Record r = db1.getDbwrapper().getTableInstance(DatabaseHooksTable.class).getLocalDatabaseHost();
 		Assert.assertNotNull(r.getDatabasePackageNames());
 		//db4.getDbwrapper().getSynchronizer().removeHook(db4.getHostID(), TableAlone.class.getPackage());
 		testAllConnect();
 		testSynchronisation();
 		disconnectAllDatabase();
-		Assert.assertEquals(accessNumberInProtectedEncruptionProfile, 7);
+		Assert.assertEquals(accessNumberInProtectedEncriptionProfile, 6);
 		unloadDatabase4();
 
 		testAllConnect();
