@@ -214,8 +214,8 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 	private void checkConfiguration(DatabaseConfiguration configuration)  {
 		if (configuration==null)
 			throw new NullPointerException();
-		if (configuration.getDatabaseSchema().getPackage().equals(this.getClass().getPackage()))
-			throw new IllegalArgumentException("The package "+this.getClass().getPackage()+" cannot be included into the list of database");
+		if (DatabaseWrapper.reservedDatabases.contains(configuration.getDatabaseSchema().getPackage()))
+			throw new IllegalArgumentException("Impossible to add a database whose package "+configuration.getDatabaseSchema().getPackage()+" corresponds to an internal OOD database : "+DatabaseWrapper.reservedDatabases);
 
 		if (localPeer!=null)
 		{
@@ -290,7 +290,8 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 		allConfigurations.addAll(configurations);
 		allDistantPeers.clear();
 		checkDistantPeers();
-
+		if (DatabaseWrapper.reservedDatabases.stream().anyMatch(c -> allConfigurations.stream().anyMatch(c2-> c2.getDatabaseSchema().getPackage().equals(c))))
+			throw new IllegalArgumentException("Impossible to add databases where on of there packages corresponds to an internal OOD database : "+DatabaseWrapper.reservedDatabases);
 	}
 
 

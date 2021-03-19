@@ -292,7 +292,8 @@ public class DatabaseConfigurationsBuilder {
 	}
 	public DatabaseConfigurationsBuilder addConfiguration(DatabaseConfiguration configuration, boolean makeConfigurationLoadingPersistent, boolean createDatabaseIfNecessaryAndCheckItDuringCurrentSession )
 	{
-
+		if (DatabaseWrapper.reservedDatabases.contains(configuration.getDatabaseSchema().getPackage()))
+			throw new IllegalArgumentException("Impossible to add a database whose package "+configuration.getDatabaseSchema().getPackage()+" corresponds to an internal OOD database : "+DatabaseWrapper.reservedDatabases);
 		pushQuery((t) -> {
 			if (configuration.isSynchronizedWithCentralBackupDatabase()) {
 				if (encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup == null)
@@ -343,6 +344,8 @@ public class DatabaseConfigurationsBuilder {
 	{
 		if (databasePackage==null)
 			throw new NullPointerException();
+		if (DatabaseWrapper.reservedDatabases.stream().map(Package::getName).anyMatch(c->c.equals(databasePackage)))
+			throw new IllegalArgumentException("Impossible to remove a database whose package "+databasePackage+" corresponds to an internal OOD database : "+DatabaseWrapper.reservedDatabases);
 
 		pushQuery((t) -> {
 			DatabaseConfiguration c=configurations.getDatabaseConfiguration(databasePackage);

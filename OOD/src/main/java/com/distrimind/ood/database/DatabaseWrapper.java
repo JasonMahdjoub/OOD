@@ -40,6 +40,7 @@ package com.distrimind.ood.database;
 import com.distrimind.ood.database.DatabaseHooksTable.Record;
 import com.distrimind.ood.database.Table.ColumnsReadQuery;
 import com.distrimind.ood.database.Table.DefaultConstructorAccessPrivilegedAction;
+import com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupReceiverPerPeer;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
 import com.distrimind.ood.database.fieldaccessors.ByteTabObjectConverter;
@@ -96,6 +97,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	private static final Set<Class<?>> internalDatabaseClassesList = new HashSet<>(Arrays.asList(DatabaseDistantTransactionEvent.class, DatabaseDistantEventsTable.class,
 			DatabaseEventsTable.class, DatabaseHooksTable.class, DatabaseTransactionEventsTable.class, DatabaseTransactionsPerHostTable.class, IDTable.class, DatabaseTable.class));
+	static final Set<Package> reservedDatabases=new HashSet<>(Arrays.asList(DatabaseWrapper.class.getPackage(), CentralDatabaseBackupReceiverPerPeer.class.getPackage()));
 	/*private static final List<DatabaseWrapper> openedDatabaseWrappers=new ArrayList<>();
 	private static final Map<DecentralizedValue, CachedEPV> cachedEPVsForCentralDatabaseBackup=new HashMap<>();
 	private static final Map<DecentralizedValue, CachedEPV> cachedEPVsForAuthenticatedP2PMessages=new HashMap<>();
@@ -5560,6 +5562,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			for (Iterator<Map.Entry<Package, Database>> it=sd.entrySet().iterator();it.hasNext();)
 			{
 				Map.Entry<Package, Database> e=it.next();
+
+				if (reservedDatabases.contains(e.getValue().getConfiguration().getDatabaseSchema().getPackage()))
+					continue;
 				boolean found=false;
 				for (DatabaseConfiguration configuration : getDatabaseConfigurationsBuilder().getConfigurations().getConfigurations())
 				{
@@ -5576,7 +5581,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 			}
 			sql_database = sd;
-			//getSynchronizer().broadcastAvailableDatabase();
+			getSynchronizer().broadcastAvailableDatabase();
 		}
 		finally
 		{
