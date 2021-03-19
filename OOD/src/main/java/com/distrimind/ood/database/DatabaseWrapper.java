@@ -672,6 +672,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		private boolean transferInProgress = false;
 		private boolean localHost;
 
+		boolean isLocalHost()
+		{
+			return localHost;
+		}
+
 		ConnectedPeers(DecentralizedValue hookID, boolean connected) {
 			super();
 			if (hookID==null)
@@ -1016,7 +1021,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			Set<String> p=getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString();
 			for (ConnectedPeers cp : initializedHooks.values())
 			{
-				if (cp.getHostID().equals(getLocalHostID()))
+				if (cp.isLocalHost())
 					continue;
 				sendAvailableDatabaseTo(cp.getHostID(), p);
 			}
@@ -1474,7 +1479,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					if (l < lastTransferredTransactionID)
 						throw new IllegalAccessError("l=" + l + "; lastTransferredTransactionID=" + lastTransferredTransactionID);
 					if (l != lastTransferredTransactionID) {
-						addNewDatabaseEvent(new LastIDCorrection(getDatabaseHooksTable().getLocalDatabaseHost().getHostID(),
+						addNewDatabaseEvent(new LastIDCorrection(getLocalHostID(),
 								hostID, l));
 					}
 					cp.setTransferInProgress(false);
@@ -1491,7 +1496,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				ConnectedPeers cp=initializedHooks.get(hook.getHostID());
 				if (cp!=null && cp.isConnected()) {
 					addNewDatabaseEvent(new TransactionConfirmationEvents(
-							getDatabaseHooksTable().getLocalDatabaseHost().getHostID(), hook.getHostID(),
+							getLocalHostID(), hook.getHostID(),
 							hook.getLastValidatedDistantTransactionID()));
 				}
 
@@ -1514,7 +1519,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				lockWrite();
 				DecentralizedValue localHostID=getLocalHostID();
 				for (DecentralizedValue host : lastIds.keySet()) {
-					if (!localHostID.equals(host) && isInitialized(host)) {
+					if (/*!localHostID.equals(host) && */isInitialized(host)) {
                         Map<DecentralizedValue, Long> map = new HashMap<>(lastIds);
 						// map.remove(hostID);
 						map.remove(host);
@@ -1554,7 +1559,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 								if (lastID > _record.getLastValidatedLocalTransactionID()) {
 									cp.setTransferInProgress(true);
 									addNewDatabaseEvent(new DatabaseEventsToSynchronizeP2P(
-											getDatabaseHooksTable().getLocalDatabaseHost().getHostID(), _record, lastID,
+											getLocalHostID(), _record, lastID,
 											maxTransactionsToSynchronizeAtTheSameTime));
 								}
 
@@ -1586,7 +1591,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				if (lastID > hook.getLastValidatedLocalTransactionID() && !peer.isTransferInProgress()) {
 					peer.setTransferInProgress(true);
 					addNewDatabaseEvent(new DatabaseEventsToSynchronizeP2P(
-							getDatabaseHooksTable().getLocalDatabaseHost().getHostID(), hook, lastID,
+							getLocalHostID(), hook, lastID,
 							maxTransactionsToSynchronizeAtTheSameTime));
 				}
 			}
@@ -2129,7 +2134,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					.getRecords(new Filter<Record>() {
 						@Override
 						public boolean nextRecord(Record _record) throws DatabaseException {
-							if (!_record.getHostID().equals(getLocalHostID()))
+							if (!_record.concernsLocalDatabaseHost())
 							{
 								lastValidatedDistantIDs.put(_record.getHostID(), _record.getLastValidatedDistantTransactionID());
 							}
@@ -2418,13 +2423,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new NullPointerException("hostID");
 			if (!isInitialized())
 				return;
-			if (peerID.equals(getLocalHostID()))
-				return;
+
 			try {
 				lockWrite();
 
 				ConnectedPeers cp=initializedHooks.get(peerID);
 				if (cp!=null)
+					return;
+				if (peerID.equals(getLocalHostID()))
 					return;
 				initializedHooks.put(peerID, new ConnectedPeers(peerID, false));
 				sendAvailableDatabaseTo(peerID);
