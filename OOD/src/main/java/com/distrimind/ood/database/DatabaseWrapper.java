@@ -40,7 +40,7 @@ package com.distrimind.ood.database;
 import com.distrimind.ood.database.DatabaseHooksTable.Record;
 import com.distrimind.ood.database.Table.ColumnsReadQuery;
 import com.distrimind.ood.database.Table.DefaultConstructorAccessPrivilegedAction;
-import com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupReceiverPerPeer;
+import com.distrimind.ood.database.centraldatabaseapi.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
 import com.distrimind.ood.database.fieldaccessors.ByteTabObjectConverter;
@@ -97,6 +97,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	private static final Set<Class<?>> internalDatabaseClassesList = new HashSet<>(Arrays.asList(DatabaseDistantTransactionEvent.class, DatabaseDistantEventsTable.class,
 			DatabaseEventsTable.class, DatabaseHooksTable.class, DatabaseTransactionEventsTable.class, DatabaseTransactionsPerHostTable.class, IDTable.class, DatabaseTable.class));
+	private static final Set<Class<?>> internalCentralDatabaseClassesList =new HashSet<>(Arrays.asList(
+			ClientCloudAccountTable.class,
+			ClientTable.class,
+			ConnectedClientsTable.class,
+			DatabaseBackupPerClientTable.class,
+			EncryptedBackupPartReferenceTable.class,
+			LastValidatedDistantIDPerClientTable.class));
 	static final Set<Package> reservedDatabases=new HashSet<>(Arrays.asList(DatabaseWrapper.class.getPackage(), CentralDatabaseBackupReceiverPerPeer.class.getPackage()));
 	/*private static final List<DatabaseWrapper> openedDatabaseWrappers=new ArrayList<>();
 	private static final Map<DecentralizedValue, CachedEPV> cachedEPVsForCentralDatabaseBackup=new HashMap<>();
@@ -969,6 +976,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		private long minFilePartDurationBeforeBecomingFinalFilePart=Long.MAX_VALUE;
 
 		DatabaseSynchronizer() {
+		}
+
+		public void loadCentralDatabaseClassesIfNecessary() throws DatabaseException {
+			if (!sql_database.containsKey(CentralDatabaseBackupReceiver.class.getPackage()))
+				loadDatabase(new DatabaseConfiguration(new DatabaseSchema(CentralDatabaseBackupReceiver.class.getPackage(), internalCentralDatabaseClassesList)), null);
 		}
 
 		public DatabaseNotifier getNotifier() {
