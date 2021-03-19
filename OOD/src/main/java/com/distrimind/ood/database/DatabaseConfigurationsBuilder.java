@@ -6,7 +6,6 @@ import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.Reference;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
-import com.distrimind.util.version.Version;
 
 import java.util.*;
 
@@ -79,7 +78,7 @@ public class DatabaseConfigurationsBuilder {
 		private boolean checkPeersToAdd;
 		private boolean checkInitLocalPeer=false;
 		private boolean checkDatabaseToSynchronize=false;
-		private boolean checkDatabaseUnload=false;
+		private boolean checkDatabaseToUnload =false;
 		private boolean checkDisconnexions=false;
 		private boolean updateConfigurationPersistence=false;
 		private boolean checkNewConnexions=false;
@@ -154,8 +153,8 @@ public class DatabaseConfigurationsBuilder {
 		{
 			checkDisconnexions=true;
 		}
-		void checkDatabaseUnload(DatabaseConfiguration configurationToDefinitivelyDelete) throws DatabaseException {
-			checkDatabaseUnload=true;
+		void checkDatabaseToUnload(DatabaseConfiguration configurationToDefinitivelyDelete) throws DatabaseException {
+			checkDatabaseToUnload =true;
 			if(configurationsToLoad!=null && configurationsToLoad.contains(configurationToDefinitivelyDelete))
 				throw new DatabaseException("Cannot remove database which was added into the same transaction");
 
@@ -209,10 +208,10 @@ public class DatabaseConfigurationsBuilder {
 				if (currentTransaction.checkDatabaseLoading)
 					checkDatabaseLoading();
 				if (currentTransaction.checkDatabaseToDesynchronize)
-					currentTransaction.checkDatabaseUnload|=checkDatabaseToDesynchronize();
+					currentTransaction.checkDatabaseToUnload |=checkDatabaseToDesynchronize();
 				if (currentTransaction.removedPeersID!=null)
 					currentTransaction.checkDisconnexions|=checkConnexionsToRemove();
-				if (currentTransaction.checkDatabaseUnload)
+				if (currentTransaction.checkDatabaseToUnload)
 					checkDatabaseToUnload();
 				if (currentTransaction.checkPeersToAdd) {
 					boolean b=checkPeersToAdd();
@@ -242,16 +241,16 @@ public class DatabaseConfigurationsBuilder {
 
 	void databaseWrapperLoaded() throws DatabaseException {
 		pushQuery(t-> {
-			/*t.checkDatabaseLoading(null);
+			t.checkDatabaseLoading(null);
 			t.checkConnexionsToDesynchronize();
 			t.removedPeersID=new HashSet<>();
-			t.checkDatabaseUnload(null);
-			t.checkPeersToAdd();*/
+			t.checkDatabaseToUnload(null);
+			t.checkPeersToAdd();
 			t.checkInitLocalPeer();
-			/*t.checkDatabaseToSynchronize();
+			t.checkDatabaseToSynchronize();
 			t.checkNewConnexions();
 			t.checkDisconnexions();
-			t.checkInitCentralDatabaseBackup();*/
+			t.checkInitCentralDatabaseBackup();
 		});
 		commit();
 	}
@@ -350,7 +349,7 @@ public class DatabaseConfigurationsBuilder {
 			if (c!=null && configurations.removeConfiguration(databasePackage))
 			{
 				t.updateConfigurationPersistence();
-				t.checkDatabaseUnload(removeData?c:null);
+				t.checkDatabaseToUnload(removeData?c:null);
 				t.checkDisconnexions();
 				t.checkConnexionsToDesynchronize();
 			}
@@ -617,7 +616,7 @@ public class DatabaseConfigurationsBuilder {
 			if (wrapper.loadDatabase(dls, lifeCycles)) {
 				currentTransaction.checkDisconnexions();
 				currentTransaction.propagate=true;
-				currentTransaction.checkDatabaseUnload(null);
+				currentTransaction.checkDatabaseToUnload(null);
 			}
 		//TOTO revisit this part : take account of the restoration and time of restoration
 	}

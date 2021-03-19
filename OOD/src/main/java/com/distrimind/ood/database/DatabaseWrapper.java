@@ -241,7 +241,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	private final DatabaseConfigurationsBuilder databaseConfigurationsBuilder;
 	private volatile Logger networkLogger=null;
 	private volatile Logger databaseLogger=null;
-	private Handler networkLoggerHandler =null, databaseLoggerHandler=null;
 
 	public static int getMaxHostNumbers() {
 		return MAX_HOST_NUMBERS;
@@ -272,20 +271,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			else {
 				if (databaseLogger == null) {
 					Logger networkLogger = Logger.getAnonymousLogger();
-					databaseLoggerHandler = new ConsoleHandler();
-					databaseLoggerHandler.setFormatter(new Formatter() {
-
-						@Override
-						public String format(LogRecord record) {
-							try {
-								return getSynchronizer().getLocalHostID() + "  \t::" + new Date(record.getMillis()) + "::" + record.getLevel() + "::  "
-										+ record.getMessage() + "\n";
-							} catch (DatabaseException e) {
-								e.printStackTrace();
-								return new Date(System.currentTimeMillis()) + "::Error log: " + e.getMessage();
-							}
-						}
-					});
+					Handler databaseLoggerHandler = new ConsoleHandler();
+					databaseLoggerHandler.setFormatter(generatesLogFormatter());
 
 					networkLogger.addHandler(databaseLoggerHandler);
 					this.databaseLogger = networkLogger;
@@ -300,6 +287,32 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			unlockWrite();
 		}
 
+	}
+
+	private Formatter generatesLogFormatter()
+	{
+		return new Formatter() {
+
+			@Override
+			public String format(LogRecord record) {
+				try {
+					StringBuilder sb=new StringBuilder(getSynchronizer().getLocalHostID()+"");
+					while (sb.length()<55)
+						sb.append(" ");
+					sb.append("::");
+					sb.append(new Date(record.getMillis()));
+					sb.append("::");
+					sb.append(record.getLevel());
+					sb.append("::  ");
+					sb.append(record.getMessage());
+					sb.append("\n");
+					return sb.toString();
+				} catch (DatabaseException e) {
+					e.printStackTrace();
+					return new Date(System.currentTimeMillis()) + "::Error log: " + e.getMessage();
+				}
+			}
+		};
 	}
 	public void setNetworkLogLevel(Level level)
 	{
@@ -317,20 +330,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			else {
 				if (networkLogger == null) {
 					Logger networkLogger = Logger.getAnonymousLogger();
-					networkLoggerHandler = new ConsoleHandler();
-					networkLoggerHandler.setFormatter(new Formatter() {
-
-						@Override
-						public String format(LogRecord record) {
-							try {
-								return getSynchronizer().getLocalHostID() + "  \t::" + new Date(record.getMillis()) + "::" + record.getLevel() + "::  "
-										+ record.getMessage() + "\n";
-							} catch (DatabaseException e) {
-								e.printStackTrace();
-								return new Date(System.currentTimeMillis()) + "::Error log: " + e.getMessage();
-							}
-						}
-					});
+					Handler networkLoggerHandler = new ConsoleHandler();
+					networkLoggerHandler.setFormatter(generatesLogFormatter());
 
 					networkLogger.addHandler(networkLoggerHandler);
 					this.networkLogger = networkLogger;
@@ -5575,7 +5576,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 			}
 			sql_database = sd;
-			getSynchronizer().broadcastAvailableDatabase();
+			//getSynchronizer().broadcastAvailableDatabase();
 		}
 		finally
 		{
