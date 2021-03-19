@@ -116,4 +116,13 @@ public class DatabaseTransactionsIdentifiersToSynchronize extends AbstractDataba
 	public Map<DecentralizedValue, Long> getLastDistantTransactionIdentifiers() {
 		return lastTransactionFieldsBetweenDistantHosts;
 	}
+
+	@Override
+	public String toString() {
+		return "DatabaseTransactionsIdentifiersToSynchronize{" +
+				"hostIDSource=" + hostIDSource +
+				", hostIDDestination=" + hostIDDestination +
+				", lastTransactionFieldsBetweenDistantHosts=" + lastTransactionFieldsBetweenDistantHosts +
+				'}';
+	}
 }

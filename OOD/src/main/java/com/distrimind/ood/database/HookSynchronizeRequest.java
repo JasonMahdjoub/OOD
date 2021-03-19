@@ -97,7 +97,11 @@ public class HookSynchronizeRequest extends AbstractHookRequest {
 		}
 	}
 
-
-
-
+	@Override
+	public String toString() {
+		return "HookSynchronizeRequest{" +
+				"concernedPeers=" + concernedPeers +
+				", packagesToSynchronize=" + packagesToSynchronize +
+				'}';
+	}
 }

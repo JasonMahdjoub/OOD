@@ -50,6 +50,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 /**
  * @author Jason Mahdjoub
@@ -74,9 +75,15 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 		this.connected=false;
 	}
 	protected void sendMessage(MessageComingFromCentralDatabaseBackup message) throws DatabaseException {
-		if (centralDatabaseBackupReceiver.isConnectedIntoThisServer(message.getHostDestination()))
+		Logger l=centralDatabaseBackupReceiver.clientTable.getDatabaseWrapper().getNetworkLogger();
+		if (centralDatabaseBackupReceiver.isConnectedIntoThisServer(message.getHostDestination())) {
+			if (l != null)
+				l.finer("Send message from central database backup (" + centralDatabaseBackupReceiver.getCentralID() + ") : " + message);
 			sendMessageFromThisCentralDatabaseBackup(message);
+		}
 		else {
+			if (l!=null)
+				l.finer("Send message from other central database backup : "+message);
 			DecentralizedValue sid=centralDatabaseBackupReceiver.getCentralDatabaseBackupServerIDConnectedWithGivenPeerID(message.getHostDestination());
 			if (sid!=null)
 				sendMessageFromOtherCentralDatabaseBackup(sid, message);

@@ -118,4 +118,14 @@ public class EncryptedBackupPartTransmissionConfirmationFromCentralDatabaseBacku
 	public boolean cannotBeMerged() {
 		return true;
 	}
+
+	@Override
+	public String toString() {
+		return "EncryptedBackupPartTransmissionConfirmationFromCentralDatabaseBackup{" +
+				"fileUTC=" + fileUTC +
+				", lastTransactionUTC=" + lastTransactionUTC +
+				", hostDestination=" + hostDestination +
+				", packageString='" + packageString + '\'' +
+				'}';
+	}
 }

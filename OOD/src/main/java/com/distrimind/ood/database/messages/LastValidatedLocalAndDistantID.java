@@ -57,4 +57,12 @@ public class LastValidatedLocalAndDistantID
 	public long getLastValidatedDistantID() {
 		return lastValidatedDistantID;
 	}
+
+	@Override
+	public String toString() {
+		return "LastValidatedLocalAndDistantID{" +
+				"lastValidatedLocalID=" + lastValidatedLocalID +
+				", lastValidatedDistantID=" + lastValidatedDistantID +
+				'}';
+	}
 }

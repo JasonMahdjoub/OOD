@@ -101,4 +101,11 @@ public class LastIDCorrectionFromCentralDatabaseBackup extends DatabaseEvent imp
 	public boolean cannotBeMerged() {
 		return true;
 	}
+
+	@Override
+	public String toString() {
+		return "LastIDCorrectionFromCentralDatabaseBackup{" +
+				"hostIDDestination=" + hostIDDestination +
+				'}';
+	}
 }

@@ -71,5 +71,8 @@ public class CompatibleDatabasesMessageDestinedToCentralDatabaseBackup extends A
 		return MergeState.NO_FUSION;
 	}
 
-
+	@Override
+	public String toString() {
+		return "CompatibleDatabasesMessageDestinedToCentralDatabaseBackup{}";
+	}
 }

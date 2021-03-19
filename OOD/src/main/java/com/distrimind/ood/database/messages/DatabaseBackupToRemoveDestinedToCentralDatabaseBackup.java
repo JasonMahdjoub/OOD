@@ -60,4 +60,11 @@ public class DatabaseBackupToRemoveDestinedToCentralDatabaseBackup extends Authe
 		if (packageString.trim().length()==0)
 			throw new MessageExternalizationException(Integrity.FAIL);
 	}
+
+	@Override
+	public String toString() {
+		return "DatabaseBackupToRemoveDestinedToCentralDatabaseBackup{" +
+				"packageString='" + packageString + '\'' +
+				'}';
+	}
 }

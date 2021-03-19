@@ -45,6 +45,7 @@ import com.distrimind.util.io.SecuredObjectOutputStream;
 import com.distrimind.util.io.SerializationTools;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * @author Jason Mahdjoub
@@ -119,5 +120,12 @@ public abstract class AuthenticatedMessageDestinedToCentralDatabaseBackup extend
 
 	public CentralDatabaseBackupCertificate getCertificate() {
 		return certificate;
+	}
+
+	@Override
+	public String toString() {
+		return "AuthenticatedMessageDestinedToCentralDatabaseBackup{" +
+				"hostSource=" + hostSource+
+				'}';
 	}
 }

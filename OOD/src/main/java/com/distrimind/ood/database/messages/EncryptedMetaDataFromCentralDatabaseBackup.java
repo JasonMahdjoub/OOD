@@ -106,4 +106,12 @@ public class EncryptedMetaDataFromCentralDatabaseBackup implements DatabaseEvent
 	public boolean cannotBeMerged() {
 		return true;
 	}
+
+	@Override
+	public String toString() {
+		return "EncryptedMetaDataFromCentralDatabaseBackup{" +
+				"hostDestination=" + hostDestination +
+				", hostSource=" + hostSource +
+				'}';
+	}
 }

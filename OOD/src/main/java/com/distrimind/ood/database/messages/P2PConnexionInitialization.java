@@ -114,5 +114,12 @@ public class P2PConnexionInitialization extends DatabaseEvent implements P2PData
 		lastValidatedTransactionID=in.readLong();
 	}
 
-
+	@Override
+	public String toString() {
+		return "P2PConnexionInitialization{" +
+				"hostSource=" + hostSource +
+				", hostDestination=" + hostDestination +
+				", lastValidatedTransactionID=" + lastValidatedTransactionID +
+				'}';
+	}
 }

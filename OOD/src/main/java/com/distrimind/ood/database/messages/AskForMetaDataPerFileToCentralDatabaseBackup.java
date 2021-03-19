@@ -118,5 +118,13 @@ public class AskForMetaDataPerFileToCentralDatabaseBackup extends DatabaseEvent 
 			throw new MessageExternalizationException(Integrity.FAIL);
 	}
 
-
+	@Override
+	public String toString() {
+		return "AskForMetaDataPerFileToCentralDatabaseBackup{" +
+				"hostSource=" + hostSource +
+				", channelHost=" + channelHost +
+				", fileCoordinate=" + fileCoordinate +
+				", packageString='" + packageString + '\'' +
+				'}';
+	}
 }

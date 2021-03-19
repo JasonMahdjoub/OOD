@@ -108,4 +108,8 @@ public class DistantBackupCenterConnexionInitialisation extends AuthenticatedMes
 		encryptedDistantLastValidatedIDs=in.readMap(false, MAX_DISTANT_VALIDATED_IDS_SIZE_IN_BYTES, false, false, DecentralizedValue.class, byte[].class);
 	}
 
+	@Override
+	public String toString() {
+		return "DistantBackupCenterConnexionInitialisation{}";
+	}
 }

@@ -35,6 +35,8 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+import java.util.Arrays;
+
 /**
  * @author Jason Mahdjoub
  * @version 1.0
@@ -55,5 +57,10 @@ public class LastValidatedLocalAndDistantEncryptedID {
 
 	public byte[] getLastValidatedDistantID() {
 		return lastValidatedDistantID;
+	}
+
+	@Override
+	public String toString() {
+		return "LastValidatedLocalAndDistantEncryptedID{}";
 	}
 }

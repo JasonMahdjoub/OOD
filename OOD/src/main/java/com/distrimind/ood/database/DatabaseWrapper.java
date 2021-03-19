@@ -239,7 +239,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	private static volatile int MAX_HOST_NUMBERS=5;
 	public static final String NETWORK_LOGGER_NAME="OOD_NETWORK_LOGGER_NAME";
 	private final DatabaseConfigurationsBuilder databaseConfigurationsBuilder;
-	private Logger networkLogger=null;
+	private volatile Logger networkLogger=null;
 	private Handler loggerHandler=null;
 
 	public static int getMaxHostNumbers() {
@@ -250,6 +250,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		if (maxHostNumbers>=0xFFFF)
 			throw new IllegalArgumentException();
 		MAX_HOST_NUMBERS = maxHostNumbers;
+	}
+
+	public Logger getNetworkLogger() {
+		return networkLogger;
 	}
 
 	public void activateNetworkMessagesLog(Level level)

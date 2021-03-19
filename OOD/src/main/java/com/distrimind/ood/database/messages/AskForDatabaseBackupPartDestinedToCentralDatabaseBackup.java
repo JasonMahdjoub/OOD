@@ -92,4 +92,13 @@ public class AskForDatabaseBackupPartDestinedToCentralDatabaseBackup extends Dat
 		return packageString;
 	}
 
+	@Override
+	public String toString() {
+		return "AskForDatabaseBackupPartDestinedToCentralDatabaseBackup{" +
+				"hostSource=" + hostSource +
+				", channelHost=" + channelHost +
+				", fileCoordinate=" + fileCoordinate +
+				", packageString='" + packageString + '\'' +
+				'}';
+	}
 }

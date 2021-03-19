@@ -219,4 +219,13 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 	public List<byte[]> getEncryptedAuthenticatedP2PMessages() {
 		return encryptedAuthenticatedP2PMessages;
 	}
+
+	@Override
+	public String toString() {
+		return "InitialMessageComingFromCentralBackup{" +
+				"hostDestination=" + hostDestination +
+				", lastValidatedTransactionsUTCForDestinationHost=" + lastValidatedTransactionsUTCForDestinationHost +
+				", authenticatedP2PMessages=" + authenticatedP2PMessages +
+				'}';
+	}
 }

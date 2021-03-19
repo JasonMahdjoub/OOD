@@ -90,4 +90,11 @@ public class CompatibleDatabasesMessageComingFromCentralDatabaseBackup extends A
 		super.readExternal(in);
 		hostDestination=in.readObject(false);
 	}
+
+	@Override
+	public String toString() {
+		return "CompatibleDatabasesMessageComingFromCentralDatabaseBackup{" +
+				"hostDestination=" + hostDestination +
+				'}';
+	}
 }
