@@ -270,7 +270,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					@Override
 					public String format(LogRecord record) {
 						try {
-							return getSynchronizer().getLocalHostID() + " \t::" + new Date(record.getMillis()) + "::"+record.getLevel()+"::  "
+							return getSynchronizer().getLocalHostID() + "  \t::" + new Date(record.getMillis()) + "::"+record.getLevel()+"::  "
 									+ record.getMessage() + "\n";
 						} catch (DatabaseException e) {
 							e.printStackTrace();
@@ -629,6 +629,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		private boolean connected;
 		private boolean initializing;
 		private boolean transferInProgress = false;
+		private boolean localHost;
 
 		ConnectedPeers(DecentralizedValue hookID, boolean connected) {
 			super();
@@ -636,9 +637,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new NullPointerException();
 			this.hookID=hookID;
 			this.connected=connected;
+			this.localHost=false;
 		}
-		ConnectedPeers(Record _hook, boolean connected) {
+		ConnectedPeers(Record _hook, boolean connected, boolean localHost) {
 			this(_hook.getHostID(), connected);
+			this.localHost=localHost;
 		}
 
 
@@ -646,9 +649,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		void setConnected(boolean connected) {
 			if (this.connected && !connected) {
 				transferInProgress = false;
-				this.initializing = false;
 			}
 			this.connected = connected;
+			this.initializing = false;
 		}
 
 		boolean isConnected()
@@ -1137,7 +1140,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							new IllegalAccessException("Local hostID " + localHostID + " already initialized !"));
 				}
 
-				initializedHooks.put(localHostID, new ConnectedPeers(local, true));
+				initializedHooks.put(localHostID, new ConnectedPeers(local, true, true));
 				if (networkLogger!=null)
 					networkLogger.info("Local peer "+localHostID+" connected !");
 
@@ -1273,6 +1276,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 			ConnectedPeers cp=initializedHooks.get(peer.getHostID());
 			if (cp!=null) {
+				if (cp.isInitializing())
+					return;
+				if (cp.isConnected())
+					return;
 				cp.setInitializing(true);
 				//initializingHooks.add(peer.getHostID());
 				//new IllegalAccessError().printStackTrace();
@@ -1284,7 +1291,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			lockWrite();
 			try {
 				ConnectedPeers cp=this.initializedHooks.get(concernedSenderHook.getHostID());
-				if (cp!=null && !cp.isConnected())
+				if (cp!=null)
 				{
 					sendP2PConnexionInitializationMessage(concernedSenderHook);
 				}
@@ -1415,11 +1422,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new DatabaseException("The given host ID correspond to the local database host !");
 
 			if (!fromCentral && (lastTransferredTransactionID>=0 || r.getLastValidatedLocalTransactionID()<0)) {
-				if (r.getLastValidatedLocalTransactionID() > lastTransferredTransactionID) {
+				/*if (r.getLastValidatedLocalTransactionID() > lastTransferredTransactionID) {
 					throw new DatabaseException("The given transfer ID limit " + lastTransferredTransactionID
 								+ " is lower than the stored transfer ID limit " + r.getLastValidatedLocalTransactionID() + ". LastValidatedDistantTransactionID=" + r.getLastValidatedDistantTransactionID() + " ; hook=" + hostID + " ; localHostID=" + getLocalHostID() + " ; last local transaction id=" + getTransactionIDTable().getLastTransactionID());
 				}
-				else {
+				else {*/
 
 
 					long l = getDatabaseTransactionsPerHostTable().validateTransactions(r, lastTransferredTransactionID);
@@ -1431,7 +1438,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					}
 					cp.setTransferInProgress(false);
 					synchronizedDataIfNecessary(cp);
-				}
+				//}
 			}
 			synchronizeMetaData();
 		}
@@ -2332,7 +2339,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					}
 
 				}
-			} else if (connectable && !cp.isConnected()) {
+			} else if (connectable) {
 				sendP2PConnexionInitializationMessage(r);
 			}
 		}
@@ -2461,10 +2468,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					throw DatabaseException.getDatabaseException(
 							new IllegalAccessException("hostID " + r.getHostID() + " already initialized !"));
 				}
-				cp.setConnected(true);
+
 				if (!cp.isInitializing())
 					sendP2PConnexionInitializationMessage(r);
-				cp.setInitializing(false);
+				cp.setConnected(true);
 
 				addNewAuthenticatedDatabaseEvents(r);
 				validateLastSynchronization(r.getHostID(),
@@ -2732,7 +2739,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		public void received(DatabaseEventToSend data) throws DatabaseException, IOException {
-
+			if (networkLogger!=null)
+				networkLogger.finer("Received message : "+data);
 			if (data instanceof AuthenticatedP2PMessage)
 				received((AuthenticatedP2PMessage)data);
 			else if (data instanceof P2PDatabaseEventToSend)

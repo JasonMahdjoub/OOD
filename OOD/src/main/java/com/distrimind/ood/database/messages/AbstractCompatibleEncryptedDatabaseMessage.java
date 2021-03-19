@@ -66,7 +66,6 @@ public class AbstractCompatibleEncryptedDatabaseMessage extends DatabaseEvent im
 		try(RandomByteArrayOutputStream out=new RandomByteArrayOutputStream()) {
 			try(RandomOutputStream cipherOut=new EncryptionSignatureHashEncoder()
 					.withEncryptionProfileProvider(random, encryptionProfileProvider)
-					.withRandomInputStream(out.getRandomInputStream())
 					.getRandomOutputStream(out))
 			{
 				cipherOut.writeCollection(compatibleDatabases, false, AbstractCompatibleDatabasesMessage.MAX_SIZE_OF_PACKAGES_NAMES_IN_BYTES, false);

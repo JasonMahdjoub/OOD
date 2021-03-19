@@ -401,7 +401,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 								byte[] lastValidatedAndEncryptedDistantID=getLastValidatedAndEncryptedDistantID(connectedClientRecord, _record);
 								if (lastValidatedAndEncryptedDistantID!=null && !_record.getClientID().equals(connectedClientID) && centralDatabaseBackupReceiver.isConnectedIntoOneOfCentralDatabaseBackupServers(_record.getClientID()))
 								{
-									if (add)
+									/*if (add)
 										sendMessage(
 												new BackupChannelInitializationMessageFromCentralDatabaseBackup(
 														_record.getClientID(),
@@ -409,7 +409,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 														lastValidatedAndEncryptedDistantID,
 														message.getLastValidatedAndEncryptedID()
 												));
-									else
+									else*/
 										sendMessage(
 											new BackupChannelUpdateMessageFromCentralDatabaseBackup(
 													_record.getClientID(),
