@@ -286,7 +286,8 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		}
 
 		List<AuthenticatedP2PMessage> getAuthenticatedMessagesQueueToSend(Map<DecentralizedValue, DatabaseWrapper.ConnectedPeers> connectedPeers) {
-
+			if (authenticatedMessagesQueueToSend==null)
+				return null;
 			return authenticatedMessagesQueueToSend.stream().filter(m -> {
 				try {
 					if (m instanceof HookSynchronizeRequest)
