@@ -280,8 +280,8 @@ public abstract class AbstractTestDatabaseBackupRestore {
 	@BeforeClass
 	public void loadReferenceDatabase() throws DatabaseException {
 		System.out.println("Loading database reference");
-		DatabaseWrapper.deleteDatabaseFiles(referenceDatabaseDirectory);
-		DatabaseWrapper.deleteDatabaseFiles(databaseDirectory);
+		DatabaseWrapper.deleteDatabasesFiles(referenceDatabaseDirectory);
+		DatabaseWrapper.deleteDatabasesFiles(databaseDirectory);
 		FileTools.deleteDirectory(externalBackupDirectory);
 		wrapperForReferenceDatabase=loadWrapper( referenceDatabaseDirectory, false, true);
 		addAndRemoveData(wrapperForReferenceDatabase, 100);
@@ -382,7 +382,7 @@ public abstract class AbstractTestDatabaseBackupRestore {
 
 			recordPointingToOtherB=null;
 			recordPointingToOtherBToRemove=null;
-			wrapperForReferenceDatabase.deleteDatabaseFiles();
+			wrapperForReferenceDatabase.deleteDatabasesFiles();
 		}
 		finally {
 			wrapperForReferenceDatabase = null;
@@ -396,9 +396,9 @@ public abstract class AbstractTestDatabaseBackupRestore {
 		System.out.println("Removing database");
 		try {
 			if (wrapper!=null)
-				wrapper.deleteDatabaseFiles();
+				wrapper.deleteDatabasesFiles();
 			else
-				DatabaseWrapper.deleteDatabaseFiles(databaseDirectory);
+				DatabaseWrapper.deleteDatabasesFiles(databaseDirectory);
 			FileTools.deleteDirectory(externalBackupDirectory);
 		}
 		finally {
@@ -515,7 +515,7 @@ public abstract class AbstractTestDatabaseBackupRestore {
 
 		if (restoreToEmptyDatabase)
 		{
-			wrapper.deleteDatabaseFiles();
+			wrapper.deleteDatabasesFiles();
 			wrapper=loadWrapper(databaseDirectory, useInternalBackup, true);
 		}
 		BackupRestoreManager internalBRM=wrapper.getBackupRestoreManager(Table1.class.getPackage());

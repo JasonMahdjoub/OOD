@@ -240,7 +240,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	public static final String NETWORK_LOGGER_NAME="OOD_NETWORK_LOGGER_NAME";
 	private final DatabaseConfigurationsBuilder databaseConfigurationsBuilder;
 	private volatile Logger networkLogger=null;
-	private Handler loggerHandler=null;
+	private volatile Logger databaseLogger=null;
+	private Handler networkLoggerHandler =null, databaseLoggerHandler=null;
 
 	public static int getMaxHostNumbers() {
 		return MAX_HOST_NUMBERS;
@@ -255,61 +256,97 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	public Logger getNetworkLogger() {
 		return networkLogger;
 	}
-
-	public void activateNetworkMessagesLog(Level level)
+	public void setDatabaseLogLevel(Level level)
 	{
-		if (level==Level.OFF)
-			deactivateNetworkMessagesLog();
+
 		lockWrite();
 		try {
-			if (networkLogger==null) {
-				Logger networkLogger = Logger.getAnonymousLogger();
-				loggerHandler=new ConsoleHandler();
-				loggerHandler.setFormatter(new Formatter() {
-
-					@Override
-					public String format(LogRecord record) {
-						try {
-							return getSynchronizer().getLocalHostID() + "  \t::" + new Date(record.getMillis()) + "::"+record.getLevel()+"::  "
-									+ record.getMessage() + "\n";
-						} catch (DatabaseException e) {
-							e.printStackTrace();
-							return new Date(System.currentTimeMillis())+"::Error log: "+e.getMessage();
-						}
-					}
-				});
-				for (Handler h : networkLogger.getHandlers())
-					networkLogger.removeHandler(h);
-
-
-				networkLogger.addHandler(loggerHandler);
-				this.networkLogger=networkLogger;
-			}
-			networkLogger.setUseParentHandlers(false);
-			for (Handler h : networkLogger.getHandlers())
-				h.setLevel(level);
-			networkLogger.setLevel(level);
-		}
-		finally {
-			unlockWrite();
-		}
-
-	}
-	public void deactivateNetworkMessagesLog()
-	{
-		lockWrite();
-
-		try {
-			if (networkLogger!=null && loggerHandler!=null)
+			if (level==Level.OFF)
 			{
-				networkLogger.removeHandler(loggerHandler);
+				/*if (databaseLogger!=null && databaseLoggerHandler !=null)
+				{
+					databaseLogger.removeHandler(databaseLoggerHandler);
+				}*/
+				databaseLogger=null;
 			}
-			networkLogger=null;
+			else {
+				if (databaseLogger == null) {
+					Logger networkLogger = Logger.getAnonymousLogger();
+					databaseLoggerHandler = new ConsoleHandler();
+					databaseLoggerHandler.setFormatter(new Formatter() {
+
+						@Override
+						public String format(LogRecord record) {
+							try {
+								return getSynchronizer().getLocalHostID() + "  \t::" + new Date(record.getMillis()) + "::" + record.getLevel() + "::  "
+										+ record.getMessage() + "\n";
+							} catch (DatabaseException e) {
+								e.printStackTrace();
+								return new Date(System.currentTimeMillis()) + "::Error log: " + e.getMessage();
+							}
+						}
+					});
+
+					networkLogger.addHandler(databaseLoggerHandler);
+					this.databaseLogger = networkLogger;
+				}
+				databaseLogger.setUseParentHandlers(false);
+				for (Handler h : databaseLogger.getHandlers())
+					h.setLevel(level);
+				databaseLogger.setLevel(level);
+			}
 		}
 		finally {
 			unlockWrite();
 		}
+
 	}
+	public void setNetworkLogLevel(Level level)
+	{
+
+		lockWrite();
+		try {
+			if (level==Level.OFF)
+			{
+				/*if (networkLogger!=null && networkLoggerHandler !=null)
+				{
+					networkLogger.removeHandler(networkLoggerHandler);
+				}*/
+				networkLogger=null;
+			}
+			else {
+				if (networkLogger == null) {
+					Logger networkLogger = Logger.getAnonymousLogger();
+					networkLoggerHandler = new ConsoleHandler();
+					networkLoggerHandler.setFormatter(new Formatter() {
+
+						@Override
+						public String format(LogRecord record) {
+							try {
+								return getSynchronizer().getLocalHostID() + "  \t::" + new Date(record.getMillis()) + "::" + record.getLevel() + "::  "
+										+ record.getMessage() + "\n";
+							} catch (DatabaseException e) {
+								e.printStackTrace();
+								return new Date(System.currentTimeMillis()) + "::Error log: " + e.getMessage();
+							}
+						}
+					});
+
+					networkLogger.addHandler(networkLoggerHandler);
+					this.networkLogger = networkLogger;
+				}
+				networkLogger.setUseParentHandlers(false);
+				for (Handler h : networkLogger.getHandlers())
+					h.setLevel(level);
+				networkLogger.setLevel(level);
+			}
+		}
+		finally {
+			unlockWrite();
+		}
+
+	}
+
 
 
 
@@ -421,11 +458,15 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		void initBackupRestoreManager(DatabaseWrapper wrapper, File databaseDirectory, DatabaseConfiguration configuration) throws DatabaseException {
 			if (this.backupRestoreManager!=null)
 				return;
+			if (databaseLogger!=null)
+				databaseLogger.fine("Loading backup/restore: "+configuration);
 			if (configuration.getBackupConfiguration()!=null)
 			{
 				this.backupRestoreManager =new BackupRestoreManager(wrapper, getDatabaseBackupFileName(databaseDirectory, configuration.getDatabaseSchema()), configuration, false);
 			}
 			checkOldDatabaseBackupsRemoving(wrapper, databaseDirectory, configuration);
+			if (databaseLogger!=null)
+				databaseLogger.info("Backup/restore loaded: "+configuration);
 		}
 	}
 
@@ -2413,7 +2454,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 		}
 
-		void initHook(final DecentralizedValue hostID, final long lastValidatedTransactionID) throws DatabaseException, MessageExternalizationException {
+		void initHook(final DecentralizedValue hostID, final long lastValidatedTransactionID) throws DatabaseException {
 			if (hostID == null)
 				throw new NullPointerException("hostID");
 			try {
@@ -2785,7 +2826,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 
 		}
-		private void received(P2PConnexionInitialization p2PConnexionInitialization) throws DatabaseException, MessageExternalizationException {
+		private void received(P2PConnexionInitialization p2PConnexionInitialization) throws DatabaseException {
 			initHook(p2PConnexionInitialization.getHostSource(), p2PConnexionInitialization.getLastValidatedTransactionID());
 		}
 		private void received(IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup message) throws DatabaseException, IOException {
@@ -3186,7 +3227,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					
 					try {
 						lockWrite();
-						deactivateNetworkMessagesLog();
+						setDatabaseLogLevel(Level.OFF);
+						setNetworkLogLevel(Level.OFF);
 						closed = true;
 						//removeClosedDatabaseWrapper(this);
 						for (Iterator<Session> it = threadPerConnection.iterator(); it.hasNext();) {
@@ -4885,8 +4927,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	}
 	final void deleteDatabase(final DatabaseConfiguration configuration, final int databaseVersion) throws DatabaseException {
 		try  {
-			lockWrite();
 
+			lockWrite();
+			if (databaseLogger!=null)
+				databaseLogger.fine("Start database removing: "+configuration);
 			runTransaction(new Transaction() {
 
 				@Override
@@ -4953,6 +4997,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					
 				}
 			}, true);
+			if (databaseLogger!=null)
+				databaseLogger.info("Database removed: "+configuration);
 			getSynchronizer().broadcastAvailableDatabase();
 
 		}
@@ -5356,7 +5402,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		//final AtomicBoolean allNotFound = new AtomicBoolean(true);
 		if (this.closed)
 			throw new DatabaseException("The given Database was closed : " + this);
-
+		if (databaseLogger!=null)
+			databaseLogger.fine("Start configuration loading: "+configuration);
 		if (isDatabaseLoadedImpl(configuration, databaseVersion))
 			throw new DatabaseException("There is already a database associated to the given wrapper ");
 
@@ -5391,7 +5438,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							this.actualDatabaseLoading=null;
 							loadDatabase(oldConfig, null);
 							this.actualDatabaseLoading=actualDatabaseLoading;
+							if (databaseLogger!=null)
+								databaseLogger.fine("Transfer database from old to new configuration: "+configuration);
 							lifeCycles.transferDatabaseFromOldVersion(this, configuration);
+							if (databaseLogger!=null)
+								databaseLogger.fine("Transfer OK ");
 							oldDatabaseReplaced=true;
 							removeOldDatabase = lifeCycles.hasToRemoveOldDatabase(oldConfig);
 
@@ -5400,7 +5451,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						}
 					}
 					if (lifeCycles != null) {
+						if (databaseLogger!=null)
+							databaseLogger.fine("Starting post database creation script OK: "+configuration);
 						lifeCycles.afterDatabaseCreation(this, configuration);
+						if (databaseLogger!=null)
+							databaseLogger.fine("Post database creation script OK: "+configuration);
 						if (removeOldDatabase)
 							deleteDatabase(oldConfig, databaseVersion);
 					}
@@ -5435,7 +5490,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		configuration.getDatabaseSchema().setDatabaseWrapper(this);
 		if (initBackupRestore)
 			actualDatabaseLoading.initBackupRestoreManager(this, getDatabaseDirectory(), configuration);
-
+		if (databaseLogger!=null)
+			databaseLogger.info("Configuration loaded: "+configuration);
 		return oldDatabaseReplaced;
 
 	}
@@ -5506,8 +5562,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						break;
 					}
 				}
-				if (!found)
+				if (!found) {
+					if (databaseLogger!=null)
+						databaseLogger.info("Unloading configuration: "+e.getValue().getConfiguration());
 					it.remove();
+				}
 			}
 			sql_database = sd;
 			getSynchronizer().broadcastAvailableDatabase();
@@ -5958,7 +6017,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * @param _directory
 	 *            the database directory
 	 */
-	public static void deleteDatabaseFiles(File _directory) {
+	public static void deleteDatabasesFiles(File _directory) {
 		if (_directory.exists() && _directory.isDirectory()) {
 			FileTools.deleteDirectory(_directory);
 		}
@@ -5969,9 +6028,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * Delete all the files associated to this database
 	 *
 	 */
-	public void deleteDatabaseFiles() {
+	public void deleteDatabasesFiles() {
+		Logger logger=databaseLogger;
 		close();
-		deleteDatabaseFiles(getDatabaseDirectory());
+		if (logger!=null)
+			logger.fine("Start databases files removing: "+getDatabaseDirectory());
+		deleteDatabasesFiles(getDatabaseDirectory());
+		if (logger!=null)
+			logger.info("Start databases files removed: "+getDatabaseDirectory());
 	}
 
 

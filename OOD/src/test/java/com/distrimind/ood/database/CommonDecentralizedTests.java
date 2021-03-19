@@ -66,7 +66,9 @@ import java.util.logging.Level;
  * @since OOD 2.5.0
  */
 public abstract class CommonDecentralizedTests {
-	public static final Level networkLogLevel=Level.FINEST;
+	public static final Level networkLogLevel=Level.INFO;
+	public static final Level databaseLogLevel=Level.INFO;
+
 	private static final Method isLocallyDecentralized;
 	static{
 		Method m=null;
@@ -987,7 +989,7 @@ public abstract class CommonDecentralizedTests {
 		if (canInitCentralBackup()) {
 			this.centralDatabaseBackupDatabase = getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver().getDatabaseWrapperSingleton();
 			this.centralDatabaseBackupReceiver = new CentralDatabaseBackupReceiver(centralDatabaseBackupDatabase, centralDatabaseBackupKeyPair.getASymmetricPublicKey());
-			this.centralDatabaseBackupDatabase.activateNetworkMessagesLog(networkLogLevel);
+			this.centralDatabaseBackupDatabase.setNetworkLogLevel(networkLogLevel);
 
 		}
 	}
@@ -1007,9 +1009,12 @@ public abstract class CommonDecentralizedTests {
 		listDatabase.add(db1);
 		listDatabase.add(db2);
 		listDatabase.add(db3);
-		db1.getDbwrapper().activateNetworkMessagesLog(networkLogLevel);
-		db2.getDbwrapper().activateNetworkMessagesLog(networkLogLevel);
-		db3.getDbwrapper().activateNetworkMessagesLog(networkLogLevel);
+		db1.getDbwrapper().setNetworkLogLevel(networkLogLevel);
+		db2.getDbwrapper().setNetworkLogLevel(networkLogLevel);
+		db3.getDbwrapper().setNetworkLogLevel(networkLogLevel);
+		db1.getDbwrapper().setDatabaseLogLevel(databaseLogLevel);
+		db2.getDbwrapper().setDatabaseLogLevel(databaseLogLevel);
+		db3.getDbwrapper().setDatabaseLogLevel(databaseLogLevel);
 		for (CommonDecentralizedTests.Database db : listDatabase) {
 
 			addConfiguration(db);

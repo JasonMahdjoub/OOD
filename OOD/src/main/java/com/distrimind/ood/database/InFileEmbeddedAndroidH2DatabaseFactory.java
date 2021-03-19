@@ -243,7 +243,7 @@ public class InFileEmbeddedAndroidH2DatabaseFactory extends DatabaseFactory<Embe
 
 	@Override
 	public void deleteDatabase()  {
-		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(getDirectory());
+		EmbeddedH2DatabaseWrapper.deleteDatabasesFiles(getDirectory());
 	}
 
 }

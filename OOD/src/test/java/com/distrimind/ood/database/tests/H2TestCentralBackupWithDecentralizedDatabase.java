@@ -88,28 +88,28 @@ public class H2TestCentralBackupWithDecentralizedDatabase extends TestCentralBac
 
 	@Override
 	public void removeDatabaseFiles1() {
-		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(new File(database_file_name1));
+		EmbeddedH2DatabaseWrapper.deleteDatabasesFiles(new File(database_file_name1));
 
 	}
 
 	@Override
 	public void removeDatabaseFiles2() {
-		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(new File(database_file_name2));
+		EmbeddedH2DatabaseWrapper.deleteDatabasesFiles(new File(database_file_name2));
 	}
 
 	@Override
 	public void removeDatabaseFiles3() {
-		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(new File(database_file_name3));
+		EmbeddedH2DatabaseWrapper.deleteDatabasesFiles(new File(database_file_name3));
 	}
 
 	@Override
 	public void removeDatabaseFiles4() {
-		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(new File(database_file_name4));
+		EmbeddedH2DatabaseWrapper.deleteDatabasesFiles(new File(database_file_name4));
 	}
 
 	@Override
 	public void removeCentralDatabaseFiles() {
-		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(new File(centralDatabaseFileName));
+		EmbeddedH2DatabaseWrapper.deleteDatabasesFiles(new File(centralDatabaseFileName));
 	}
 
 	@Override

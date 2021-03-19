@@ -87,28 +87,28 @@ public class HSQLDBTestDecentralizedDatabase extends TestDecentralizedDatabase {
 
 	@Override
 	public void removeDatabaseFiles1() {
-		EmbeddedHSQLDBWrapper.deleteDatabaseFiles(new File(database_file_name1));
+		EmbeddedHSQLDBWrapper.deleteDatabasesFiles(new File(database_file_name1));
 
 	}
 
 	@Override
 	public void removeDatabaseFiles2() {
-		EmbeddedHSQLDBWrapper.deleteDatabaseFiles(new File(database_file_name2 ));
+		EmbeddedHSQLDBWrapper.deleteDatabasesFiles(new File(database_file_name2 ));
 	}
 
 	@Override
 	public void removeDatabaseFiles3() {
-		EmbeddedHSQLDBWrapper.deleteDatabaseFiles(new File(database_file_name3 ));
+		EmbeddedHSQLDBWrapper.deleteDatabasesFiles(new File(database_file_name3 ));
 	}
 
 	@Override
 	public void removeDatabaseFiles4() {
-		EmbeddedHSQLDBWrapper.deleteDatabaseFiles(new File(database_file_name4 ));
+		EmbeddedHSQLDBWrapper.deleteDatabasesFiles(new File(database_file_name4 ));
 	}
 
 	@Override
 	public void removeCentralDatabaseFiles() {
-		EmbeddedHSQLDBWrapper.deleteDatabaseFiles(new File(centralDatabaseFileName ));
+		EmbeddedHSQLDBWrapper.deleteDatabasesFiles(new File(centralDatabaseFileName ));
 	}
 
 }

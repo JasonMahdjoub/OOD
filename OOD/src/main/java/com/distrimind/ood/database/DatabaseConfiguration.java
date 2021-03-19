@@ -282,4 +282,18 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 		super.loadYAML(reader);
 		reloadedFromDocument();
 	}
+
+	@Override
+	public String toString() {
+		return "DatabaseConfiguration{" +
+				"databaseSchema=" + databaseSchema +
+				", synchronizationType=" + synchronizationType +
+				", distantPeersThatCanBeSynchronizedWithThisDatabase=" + distantPeersThatCanBeSynchronizedWithThisDatabase +
+				", backupConfiguration=" + backupConfiguration +
+				", createDatabaseIfNecessaryAndCheckItDuringCurrentSession=" + createDatabaseIfNecessaryAndCheckItDuringCurrentSession +
+				", createDatabaseIfNecessaryAndCheckItDuringLoading=" + createDatabaseIfNecessaryAndCheckItDuringLoading +
+				", timeUTCInMsForRestoringDatabaseToOldVersion=" + timeUTCInMsForRestoringDatabaseToOldVersion +
+				", preferOtherChannelThanLocalChannelIfAvailableDuringRestoration=" + preferOtherChannelThanLocalChannelIfAvailableDuringRestoration +
+				'}';
+	}
 }

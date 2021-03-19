@@ -147,7 +147,7 @@ class InFileEmbeddedDerbyDatabaseFactory extends DatabaseFactory<EmbeddedDerbyWr
 
 	@Override
 	public void deleteDatabase()  {
-		EmbeddedDerbyWrapper.deleteDatabaseFiles(directory);
+		EmbeddedDerbyWrapper.deleteDatabasesFiles(directory);
 	}
 
 }

@@ -171,4 +171,13 @@ public class BackupConfiguration extends MultiFormatProperties {
 		return 3;
 	}
 
+	@Override
+	public String toString() {
+		return "BackupConfiguration{" +
+				"backupReferenceDurationInMs=" + backupReferenceDurationInMs +
+				", maxBackupDurationInMs=" + maxBackupDurationInMs +
+				", maxBackupFileSizeInBytes=" + maxBackupFileSizeInBytes +
+				", maxBackupFileAgeInMs=" + maxBackupFileAgeInMs +
+				'}';
+	}
 }

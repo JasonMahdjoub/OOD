@@ -311,6 +311,6 @@ public class InFileEmbeddedHSQLDatabaseFactory extends DatabaseFactory<EmbeddedH
 
 	@Override
 	public void deleteDatabase()  {
-		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(directory);
+		EmbeddedH2DatabaseWrapper.deleteDatabasesFiles(directory);
 	}
 }
