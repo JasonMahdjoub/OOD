@@ -112,4 +112,12 @@ public class LastValidatedDistantTransactionDestinedToCentralDatabaseBackup exte
 			throw new MessageExternalizationException(Integrity.FAIL);
 		encryptedLastValidatedDistantID=in.readBytesArray(false, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
 	}
+
+	@Override
+	public String toString() {
+		return "LastValidatedDistantTransactionDestinedToCentralDatabaseBackup{" +
+				"hostSource=" + hostSource +
+				", channelHost=" + channelHost +
+				'}';
+	}
 }

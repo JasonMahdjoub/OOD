@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java language
+and the java language 
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -36,7 +36,8 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 import com.distrimind.ood.database.DatabaseEvent;
-import com.distrimind.ood.database.EncryptionTools;
+import com.distrimind.ood.database.DatabaseWrapper;
+import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.SecureExternalizable;
 import com.distrimind.util.io.SecuredObjectInputStream;
@@ -44,68 +45,62 @@ import com.distrimind.util.io.SecuredObjectOutputStream;
 import com.distrimind.util.io.SerializationTools;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
- * @since OOD 3.0.0
+ * @since Utils 3.0.0
  */
-public class LastIDCorrectionFromCentralDatabaseBackup extends DatabaseEvent implements MessageComingFromCentralDatabaseBackup, SecureExternalizable {
-	protected DecentralizedValue hostIDDestination;
-	protected byte[] lastEncryptedValidatedTransaction;
+public abstract class AbstractCompatibleDatabasesMessage extends DatabaseEvent implements SecureExternalizable {
+
+	private static final int MAX_PACKAGES_NUMBERS= DatabaseWrapper.MAX_PACKAGE_TO_SYNCHRONIZE;
+	public static final int MAX_SIZE_OF_PACKAGES_NAMES_IN_BYTES=MAX_PACKAGES_NUMBERS*SerializationTools.MAX_CLASS_LENGTH*2+4;
+
+
+	private Set<String> compatibleDatabases;
+	private DecentralizedValue hostSource;
+
+	protected AbstractCompatibleDatabasesMessage(Set<String> compatibleDatabases, DecentralizedValue hostSource) {
+		if (hostSource==null)
+			throw new NullPointerException();
+		if (compatibleDatabases ==null)
+			compatibleDatabases =new HashSet<>();
+		if (compatibleDatabases.contains(null))
+			throw new NullPointerException();
+		this.compatibleDatabases = compatibleDatabases;
+		this.hostSource=hostSource;
+	}
+
+	protected AbstractCompatibleDatabasesMessage() {
+	}
 
 	@Override
 	public int getInternalSerializedSize() {
-		return SerializationTools.getInternalSize(hostIDDestination,0);
+		return SerializationTools.getInternalSize(compatibleDatabases, MAX_SIZE_OF_PACKAGES_NAMES_IN_BYTES)
+				+ SerializationTools.getInternalSize(hostSource);
+	}
+
+	public DecentralizedValue getHostSource() {
+		return hostSource;
 	}
 
 	@Override
 	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
-		out.writeObject(hostIDDestination, false);
-		out.writeBytesArray(lastEncryptedValidatedTransaction, false, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+		out.writeCollection(compatibleDatabases, false, MAX_SIZE_OF_PACKAGES_NAMES_IN_BYTES, false);
+		out.writeObject(hostSource, false);
 	}
 
 	@Override
 	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
-		hostIDDestination=in.readObject(false, DecentralizedValue.class);
-		lastEncryptedValidatedTransaction=in.readBytesArray(false, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+		compatibleDatabases =in.readCollection(false, MAX_SIZE_OF_PACKAGES_NAMES_IN_BYTES, false, String.class);
+		hostSource=in.readObject(false);
 	}
 
-	@SuppressWarnings("unused")
-	LastIDCorrectionFromCentralDatabaseBackup()
-	{
-
+	public Set<String> getCompatibleDatabases() {
+		return compatibleDatabases;
 	}
 
-	public LastIDCorrectionFromCentralDatabaseBackup(DecentralizedValue _hostIDDestination,
-													 byte[] lastEncryptedValidatedTransaction) {
-		super();
-		if (hostIDDestination==null)
-			throw new NullPointerException();
-		if (lastEncryptedValidatedTransaction==null)
-			throw new NullPointerException();
-		hostIDDestination = _hostIDDestination;
-		this.lastEncryptedValidatedTransaction = lastEncryptedValidatedTransaction;
-	}
 
-	@Override
-	public DecentralizedValue getHostDestination() {
-		return hostIDDestination;
-	}
-
-	public byte[] getLastEncryptedValidatedTransaction() {
-		return lastEncryptedValidatedTransaction;
-	}
-
-	@Override
-	public boolean cannotBeMerged() {
-		return true;
-	}
-
-	@Override
-	public String toString() {
-		return "LastIDCorrectionFromCentralDatabaseBackup{" +
-				"hostIDDestination=" + hostIDDestination +
-				'}';
-	}
 }

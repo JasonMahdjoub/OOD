@@ -47,7 +47,6 @@ import com.distrimind.util.FileTools;
 import com.distrimind.util.crypto.*;
 import com.distrimind.util.data_buffers.WrappedData;
 import com.distrimind.util.io.*;
-import com.google.protobuf.Message;
 import org.testng.Assert;
 import org.testng.annotations.*;
 
@@ -59,6 +58,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
 
 /**
  * @author Jason
@@ -66,6 +66,8 @@ import java.util.concurrent.atomic.AtomicReference;
  * @since OOD 2.5.0
  */
 public abstract class CommonDecentralizedTests {
+	public static final Level networkLogLevel=Level.INFO;
+	public static final Level databaseLogLevel=Level.INFO;
 
 	private static final Method isLocallyDecentralized;
 	static{
@@ -93,7 +95,7 @@ public abstract class CommonDecentralizedTests {
 		}
 	}
 
-	protected CommonDecentralizedTests() throws NoSuchProviderException, NoSuchAlgorithmException, IOException, DatabaseException {
+	protected CommonDecentralizedTests() throws NoSuchProviderException, NoSuchAlgorithmException, IOException {
 		this.random=SecureRandomType.DEFAULT.getSingleton(null);
 		this.centralDatabaseBackupKeyPair=ASymmetricAuthenticatedSignatureType.BC_FIPS_Ed25519.getKeyPairGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKeyPair();
 
@@ -379,7 +381,7 @@ public abstract class CommonDecentralizedTests {
 		}
 
 		@Override
-		protected void sendMessageOtherCentralDatabaseBackup(DecentralizedValue centralDatabaseBackupID, MessageComingFromCentralDatabaseBackup message) {
+		protected void sendMessageFromOtherCentralDatabaseBackup(DecentralizedValue centralDatabaseBackupID, MessageComingFromCentralDatabaseBackup message) {
 			Assert.fail();
 		}
 
@@ -525,6 +527,7 @@ public abstract class CommonDecentralizedTests {
 	{
 		private transient File file;
 		private long fileTimeStamp;
+		@SuppressWarnings("unused")
 		FileReferenceForTests()
 		{
 
@@ -921,11 +924,11 @@ public abstract class CommonDecentralizedTests {
 	protected final EncryptionProfileProviderFactory encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup=new EncryptionProfileCollection(){};
 	private final CentralDatabaseBackupCertificate peerCertificate;
 	private final AbstractKeyPair<?, ?> peerKeyPairUsedWithCentralDatabaseBackupCertificate;
-	protected int accessNumberInProtectedEncruptionProfile=0;
+	protected int accessNumberInProtectedEncriptionProfile =0;
 	protected final EncryptionProfileProviderFactory protectedSignatureProfileProviderForAuthenticatedP2PMessages =new EncryptionProfileCollection(){
 		@Override
 		public SymmetricSecretKey getSecretKeyForSignature(short keyID, boolean duringDecryptionPhase) throws IOException {
-			++accessNumberInProtectedEncruptionProfile;
+			++accessNumberInProtectedEncriptionProfile;
 			return super.getSecretKeyForSignature(keyID, duringDecryptionPhase);
 		}
 
@@ -986,6 +989,7 @@ public abstract class CommonDecentralizedTests {
 		if (canInitCentralBackup()) {
 			this.centralDatabaseBackupDatabase = getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver().getDatabaseWrapperSingleton();
 			this.centralDatabaseBackupReceiver = new CentralDatabaseBackupReceiver(centralDatabaseBackupDatabase, centralDatabaseBackupKeyPair.getASymmetricPublicKey());
+			this.centralDatabaseBackupDatabase.setNetworkLogLevel(networkLogLevel);
 
 		}
 	}
@@ -1005,6 +1009,12 @@ public abstract class CommonDecentralizedTests {
 		listDatabase.add(db1);
 		listDatabase.add(db2);
 		listDatabase.add(db3);
+		db1.getDbwrapper().setNetworkLogLevel(networkLogLevel);
+		db2.getDbwrapper().setNetworkLogLevel(networkLogLevel);
+		db3.getDbwrapper().setNetworkLogLevel(networkLogLevel);
+		db1.getDbwrapper().setDatabaseLogLevel(databaseLogLevel);
+		db2.getDbwrapper().setDatabaseLogLevel(databaseLogLevel);
+		db3.getDbwrapper().setDatabaseLogLevel(databaseLogLevel);
 		for (CommonDecentralizedTests.Database db : listDatabase) {
 
 			addConfiguration(db);
@@ -1240,7 +1250,7 @@ public abstract class CommonDecentralizedTests {
 		Assert.assertEquals(dw.getSynchronizer().backupDatabasePartsSynchronizingWithCentralDatabaseBackup.size(), 0);
 		if (dw.getSynchronizer().isInitializedWithCentralBackup())
 		{
-			for (DatabaseConfiguration dc : dw.getDatabaseConfigurations()) {
+			for (DatabaseConfiguration dc : dw.getLoadedDatabaseConfigurations()) {
 
 				if (dc.isSynchronizedWithCentralBackupDatabase())
 				{
@@ -1270,7 +1280,7 @@ public abstract class CommonDecentralizedTests {
 		DatabaseWrapper dw=d.getDbwrapper();
 		if (dw.getSynchronizer().isInitializedWithCentralBackup())
 		{
-			for (DatabaseConfiguration dc : dw.getDatabaseConfigurations()) {
+			for (DatabaseConfiguration dc : dw.getLoadedDatabaseConfigurations()) {
 				if (dc.isSynchronizedWithCentralBackupDatabase())
 				{
 					for (Database dother : listDatabase)
@@ -1398,13 +1408,18 @@ public abstract class CommonDecentralizedTests {
 			connectDistant(db, dbs);
 		}
 		exchangeMessages();
+
+		for (CommonDecentralizedTests.Database db : listDatabase) {
+			Assert.assertTrue(db.isConnected());
+			Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized());
+		}
 		for (CommonDecentralizedTests.Database db : listDatabase) {
 			for (CommonDecentralizedTests.Database otherdb : listDatabase) {
 				if (db==otherdb)
 					Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized(otherdb.getHostID()));
 				else
 					Assert.assertEquals(db.getDbwrapper().getSynchronizer().isInitialized(otherdb.getHostID()),
-						db.getDbwrapper().getDatabaseConfigurationsBuilder().getConfigurations().getDistantPeers().contains(otherdb.getHostID()), db.getHostID().toString());
+						db.getDbwrapper().getDatabaseConfigurationsBuilder().getConfigurations().getDistantPeers().contains(otherdb.getHostID()), db.getHostID().toString()+";"+otherdb.getHostID());
 
 			}
 		}
@@ -1637,18 +1652,14 @@ public abstract class CommonDecentralizedTests {
 
 	}
 
-	@Test(dependsOnMethods = { "testInit" })
-	public void testAllConnect() throws Exception {
-
-		connectAllDatabase();
-		exchangeMessages();
-
+	private void testAllConnected() throws DatabaseException {
 		for (CommonDecentralizedTests.Database db : listDatabase) {
 			Assert.assertTrue(db.isConnected());
-			if (!db.getDbwrapper().getSynchronizer().isInitialized()) {
-				Assert.assertNotNull(db.getDbwrapper().getDatabaseConfigurationsBuilder().getConfigurations().getLocalPeer());
-			}
 			Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized(), db.getHostID().toString());
+			/*if (!db.getDbwrapper().getSynchronizer().isInitialized()) {
+				Assert.assertNotNull(db.getDbwrapper().getDatabaseConfigurationsBuilder().getConfigurations().getLocalPeer());
+			}*/
+
 			for (CommonDecentralizedTests.Database otherdb : listDatabase) {
 				if (db==otherdb)
 					Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized(otherdb.getHostID()));
@@ -1673,6 +1684,50 @@ public abstract class CommonDecentralizedTests {
 				Assert.assertTrue(r.getDatabasePackageNames().contains(TableAlone.class.getPackage().getName()));
 
 		}
+	}
+	void testAllDisconnected() throws DatabaseException {
+		for (CommonDecentralizedTests.Database db : listDatabase) {
+			Assert.assertFalse(db.isConnected());
+			Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized(), db.getHostID().toString());
+			Assert.assertEquals(db.getDbwrapper().getSynchronizer().initializedHooks.size(), 1, ""+db.getDbwrapper().getSynchronizer().initializedHooks);
+
+			for (CommonDecentralizedTests.Database otherdb : listDatabase) {
+				if (db==otherdb)
+					Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized(otherdb.getHostID()));
+				else
+					Assert.assertFalse(db.getDbwrapper().getSynchronizer().isInitialized(otherdb.getHostID()),db.getHostID().toString());
+			}
+			DatabaseHooksTable.Record r = db.getDbwrapper().getTableInstance(DatabaseHooksTable.class).getLocalDatabaseHost();
+			if (r.getDatabasePackageNames() == null) {
+
+				db.getDbwrapper().getTableInstance(DatabaseHooksTable.class).localHost = null;
+				r = db.getDbwrapper().getTableInstance(DatabaseHooksTable.class).getLocalDatabaseHost();
+				if (r.getDatabasePackageNames()==null)
+				{
+					Assert.assertEquals(db, db4, ""+listDatabase.indexOf(db));
+					Assert.assertEquals(db.getDbwrapper().getDatabaseConfigurationsBuilder().getConfigurations().getDatabaseConfiguration(TableAlone.class.getPackage().getName()).getDistantPeersThatCanBeSynchronizedWithThisDatabase().size(), 0);
+				}
+				else
+					Assert.fail();
+			}
+			if (db.getDbwrapper().getDatabaseConfigurationsBuilder().getConfigurations().getDatabaseConfiguration(TableAlone.class.getPackage().getName()).getDistantPeersThatCanBeSynchronizedWithThisDatabase().size()>0)
+				Assert.assertTrue(r.getDatabasePackageNames().contains(TableAlone.class.getPackage().getName()));
+
+		}
+	}
+
+	@Test(dependsOnMethods = { "testInit" })
+	public void testAllConnect() throws Exception {
+
+		connectAllDatabase();
+		exchangeMessages();
+		testAllConnected();
+		disconnectAllDatabase();
+		testAllDisconnected();
+		connectAllDatabase();
+		exchangeMessages();
+		testAllConnected();
+
 	}
 
 	@Test(dependsOnMethods = {"testAllConnect"})

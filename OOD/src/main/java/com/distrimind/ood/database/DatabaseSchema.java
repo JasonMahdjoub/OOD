@@ -218,4 +218,11 @@ public class DatabaseSchema extends MultiFormatProperties {
 		return dbPackage.hashCode();
 	}
 
+	@Override
+	public String toString() {
+		return "DatabaseSchema{" +
+				"dbPackage=" + dbPackage +
+				", oldSchema=" + oldSchema +
+				'}';
+	}
 }

@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java language
+and the java language 
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -35,34 +35,66 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.io.SecuredObjectInputStream;
+import com.distrimind.util.io.SecuredObjectOutputStream;
+import com.distrimind.util.io.SerializationTools;
+
+import java.io.IOException;
+
 /**
  * @author Jason Mahdjoub
  * @version 1.0
- * @since OOD 3.0.0
+ * @since Utils 3.0.0
  */
-public class LastValidatedLocalAndDistantID
-{
-	private final long lastValidatedLocalID;
-	private final long lastValidatedDistantID;
+public class CompatibleDatabasesMessageComingFromCentralDatabaseBackup extends AbstractCompatibleEncryptedDatabaseMessage implements MessageComingFromCentralDatabaseBackup{
+	private DecentralizedValue hostDestination;
 
-	public LastValidatedLocalAndDistantID(long lastValidatedLocalID, long lastValidatedDistantID) {
-		this.lastValidatedLocalID = lastValidatedLocalID;
-		this.lastValidatedDistantID = lastValidatedDistantID;
+	public CompatibleDatabasesMessageComingFromCentralDatabaseBackup(byte[] encryptedCompatibleDatabases, DecentralizedValue hostSource, DecentralizedValue hostDestination) {
+		super(encryptedCompatibleDatabases, hostSource);
+		if (hostDestination==null)
+			throw new NullPointerException();
+		this.hostDestination = hostDestination;
 	}
 
-	public long getLastValidatedLocalID() {
-		return lastValidatedLocalID;
+	@SuppressWarnings("unused")
+	private CompatibleDatabasesMessageComingFromCentralDatabaseBackup() {
 	}
 
-	public long getLastValidatedDistantID() {
-		return lastValidatedDistantID;
+	@Override
+	public boolean cannotBeMerged() {
+		return true;
+	}
+
+
+
+	@Override
+	public DecentralizedValue getHostDestination() {
+		return hostDestination;
+	}
+
+	@Override
+	public int getInternalSerializedSize() {
+		return super.getInternalSerializedSize()
+				+ SerializationTools.getInternalSize(hostDestination);
+	}
+
+	@Override
+	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
+		super.writeExternal(out);
+		out.writeObject(hostDestination, false);
+	}
+
+	@Override
+	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
+		super.readExternal(in);
+		hostDestination=in.readObject(false);
 	}
 
 	@Override
 	public String toString() {
-		return "LastValidatedLocalAndDistantID{" +
-				"lastValidatedLocalID=" + lastValidatedLocalID +
-				", lastValidatedDistantID=" + lastValidatedDistantID +
+		return "CompatibleDatabasesMessageComingFromCentralDatabaseBackup{" +
+				"hostDestination=" + hostDestination +
 				'}';
 	}
 }

@@ -3205,11 +3205,11 @@ public abstract class TestDatabase {
                 res.add(o);
 
             } else if (o.getClass() == BigInteger.class) {
-				String t=getDatabaseWrapperInstanceA().getBigIntegerType(128);
+				String t=sql_db.getBigIntegerType(128);
 
                 res.add(t.contains("CHAR")?o.toString():(((sql_db.isVarBinarySupported() && t.contains(sql_db.getBinaryBaseWord())) || (t.contains(sql_db.getBlobBaseWord())))?((BigInteger) o).toByteArray():new BigDecimal((BigInteger)o)));
             } else if (o.getClass() == BigDecimal.class) {
-				String t=getDatabaseWrapperInstanceA().getBigDecimalType(128);
+				String t=sql_db.getBigDecimalType(128);
 				res.add(t.contains("CHAR")?o.toString():(((sql_db.isVarBinarySupported() && t.contains(sql_db.getBinaryBaseWord())) || (t.contains(sql_db.getBlobBaseWord())))?BigDecimalFieldAccessor.bigDecimalToBytes((BigDecimal)o):o));
 			} else if (o instanceof Date) {
                 res.add(new Timestamp(((Date) o).getTime()));

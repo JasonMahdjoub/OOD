@@ -102,4 +102,13 @@ public class LastIDCorrection extends DatabaseEvent implements P2PDatabaseEventT
 	public long getLastValidatedTransaction() {
 		return lastValidatedTransaction;
 	}
+
+	@Override
+	public String toString() {
+		return "LastIDCorrection{" +
+				"hostIDSource=" + hostIDSource +
+				", hostIDDestination=" + hostIDDestination +
+				", lastValidatedTransaction=" + lastValidatedTransaction +
+				'}';
+	}
 }

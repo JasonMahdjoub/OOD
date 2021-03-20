@@ -202,4 +202,13 @@ public class IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup extend
 		}
 		return authenticatedP2PMessages;
 	}
+
+	@Override
+	public String toString() {
+		return "IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup{" +
+				"hostSource=" + hostSource +
+				", hostDestination=" + hostDestination +
+				", authenticatedP2PMessages=" + authenticatedP2PMessages +
+				'}';
+	}
 }

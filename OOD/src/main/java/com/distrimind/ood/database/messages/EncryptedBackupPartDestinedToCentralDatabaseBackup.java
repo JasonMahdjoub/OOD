@@ -89,4 +89,9 @@ public class EncryptedBackupPartDestinedToCentralDatabaseBackup extends Abstract
 	public boolean cannotBeMerged() {
 		return false;
 	}
+
+	@Override
+	public String toString() {
+		return "EncryptedBackupPartDestinedToCentralDatabaseBackup{}";
+	}
 }

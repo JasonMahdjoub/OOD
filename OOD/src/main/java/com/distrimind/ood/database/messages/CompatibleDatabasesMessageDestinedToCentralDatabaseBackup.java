@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java language
+and the java language 
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -35,34 +35,44 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+import com.distrimind.ood.database.DatabaseEvent;
+import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.crypto.EncryptionProfileProvider;
+
+import java.util.Set;
+
 /**
  * @author Jason Mahdjoub
  * @version 1.0
- * @since OOD 3.0.0
+ * @since Utils 3.0.0
  */
-public class LastValidatedLocalAndDistantID
-{
-	private final long lastValidatedLocalID;
-	private final long lastValidatedDistantID;
+public class CompatibleDatabasesMessageDestinedToCentralDatabaseBackup extends AbstractCompatibleEncryptedDatabaseMessage implements MessageDestinedToCentralDatabaseBackup{
 
-	public LastValidatedLocalAndDistantID(long lastValidatedLocalID, long lastValidatedDistantID) {
-		this.lastValidatedLocalID = lastValidatedLocalID;
-		this.lastValidatedDistantID = lastValidatedDistantID;
+
+	public CompatibleDatabasesMessageDestinedToCentralDatabaseBackup(Set<String> compatiblePackages, DecentralizedValue hostSource, AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
+		super(compatiblePackages, hostSource, random, encryptionProfileProvider);
 	}
 
-	public long getLastValidatedLocalID() {
-		return lastValidatedLocalID;
+	public CompatibleDatabasesMessageDestinedToCentralDatabaseBackup() {
+		super();
 	}
 
-	public long getLastValidatedDistantID() {
-		return lastValidatedDistantID;
+	@Override
+	public boolean cannotBeMerged() {
+		return false;
+	}
+
+	@Override
+	public MergeState mergeWithP2PDatabaseEventToSend(DatabaseEvent newEvent) {
+		if (newEvent instanceof CompatibleDatabasesMessageDestinedToCentralDatabaseBackup)
+			return MergeState.DELETE_OLD;
+		return MergeState.NO_FUSION;
 	}
 
 	@Override
 	public String toString() {
-		return "LastValidatedLocalAndDistantID{" +
-				"lastValidatedLocalID=" + lastValidatedLocalID +
-				", lastValidatedDistantID=" + lastValidatedDistantID +
-				'}';
+		return "CompatibleDatabasesMessageDestinedToCentralDatabaseBackup{}";
 	}
 }

@@ -92,4 +92,11 @@ public class EncryptedBackupPartComingFromCentralDatabaseBackup extends Abstract
 	public boolean cannotBeMerged() {
 		return true;
 	}
+
+	@Override
+	public String toString() {
+		return "EncryptedBackupPartComingFromCentralDatabaseBackup{" +
+				"hostDestination=" + hostDestination +
+				'}';
+	}
 }

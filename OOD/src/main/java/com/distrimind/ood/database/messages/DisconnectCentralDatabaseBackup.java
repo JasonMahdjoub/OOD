@@ -51,4 +51,11 @@ public class DisconnectCentralDatabaseBackup extends DatabaseEvent implements Me
 	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
 		hostSource=in.readObject(false, DecentralizedValue.class);
 	}
+
+	@Override
+	public String toString() {
+		return "DisconnectCentralDatabaseBackup{" +
+				"hostSource=" + hostSource +
+				'}';
+	}
 }

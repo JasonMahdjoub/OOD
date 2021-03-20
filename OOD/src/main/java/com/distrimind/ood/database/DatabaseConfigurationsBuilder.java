@@ -78,7 +78,7 @@ public class DatabaseConfigurationsBuilder {
 		private boolean checkPeersToAdd;
 		private boolean checkInitLocalPeer=false;
 		private boolean checkDatabaseToSynchronize=false;
-		private boolean checkDatabaseUnload=false;
+		private boolean checkDatabaseToUnload =false;
 		private boolean checkDisconnexions=false;
 		private boolean updateConfigurationPersistence=false;
 		private boolean checkNewConnexions=false;
@@ -153,8 +153,8 @@ public class DatabaseConfigurationsBuilder {
 		{
 			checkDisconnexions=true;
 		}
-		void checkDatabaseUnload(DatabaseConfiguration configurationToDefinitivelyDelete) throws DatabaseException {
-			checkDatabaseUnload=true;
+		void checkDatabaseToUnload(DatabaseConfiguration configurationToDefinitivelyDelete) throws DatabaseException {
+			checkDatabaseToUnload =true;
 			if(configurationsToLoad!=null && configurationsToLoad.contains(configurationToDefinitivelyDelete))
 				throw new DatabaseException("Cannot remove database which was added into the same transaction");
 
@@ -208,10 +208,10 @@ public class DatabaseConfigurationsBuilder {
 				if (currentTransaction.checkDatabaseLoading)
 					checkDatabaseLoading();
 				if (currentTransaction.checkDatabaseToDesynchronize)
-					currentTransaction.checkDatabaseUnload|=checkDatabaseToDesynchronize();
+					currentTransaction.checkDatabaseToUnload |=checkDatabaseToDesynchronize();
 				if (currentTransaction.removedPeersID!=null)
 					currentTransaction.checkDisconnexions|=checkConnexionsToRemove();
-				if (currentTransaction.checkDatabaseUnload)
+				if (currentTransaction.checkDatabaseToUnload)
 					checkDatabaseToUnload();
 				if (currentTransaction.checkPeersToAdd) {
 					boolean b=checkPeersToAdd();
@@ -237,6 +237,22 @@ public class DatabaseConfigurationsBuilder {
 				wrapper.unlockWrite();
 			}
 		}
+	}
+
+	void databaseWrapperLoaded() throws DatabaseException {
+		pushQuery(t-> {
+			t.checkDatabaseLoading(null);
+			t.checkConnexionsToDesynchronize();
+			t.removedPeersID=new HashSet<>();
+			t.checkDatabaseToUnload(null);
+			t.checkPeersToAdd();
+			t.checkInitLocalPeer();
+			t.checkDatabaseToSynchronize();
+			t.checkNewConnexions();
+			t.checkDisconnexions();
+			t.checkInitCentralDatabaseBackup();
+		});
+		commit();
 	}
 
 	private void checkInitCentralDatabaseBackup() throws DatabaseException {
@@ -276,7 +292,8 @@ public class DatabaseConfigurationsBuilder {
 	}
 	public DatabaseConfigurationsBuilder addConfiguration(DatabaseConfiguration configuration, boolean makeConfigurationLoadingPersistent, boolean createDatabaseIfNecessaryAndCheckItDuringCurrentSession )
 	{
-
+		if (DatabaseWrapper.reservedDatabases.contains(configuration.getDatabaseSchema().getPackage()))
+			throw new IllegalArgumentException("Impossible to add a database whose package "+configuration.getDatabaseSchema().getPackage()+" corresponds to an internal OOD database : "+DatabaseWrapper.reservedDatabases);
 		pushQuery((t) -> {
 			if (configuration.isSynchronizedWithCentralBackupDatabase()) {
 				if (encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup == null)
@@ -289,7 +306,10 @@ public class DatabaseConfigurationsBuilder {
 			if (configuration.isSynchronizedWithCentralBackupDatabase() && getConfigurations().getCentralDatabaseBackupCertificate()==null)
 				throw new IllegalArgumentException("Central database certificate must be set before adding configuration that can be synchronized with central database backup");
 			configuration.setCreateDatabaseIfNecessaryAndCheckItDuringCurrentSession(createDatabaseIfNecessaryAndCheckItDuringCurrentSession);
-			configurations.addConfiguration(configuration, makeConfigurationLoadingPersistent);
+			if (configurations.addConfiguration(configuration, makeConfigurationLoadingPersistent)) {
+				t.checkConnexionsToDesynchronize();
+				t.propagate=true;
+			}
 			if (makeConfigurationLoadingPersistent)
 				t.updateConfigurationPersistence();
 			t.checkDatabaseLoading(configuration);
@@ -324,13 +344,15 @@ public class DatabaseConfigurationsBuilder {
 	{
 		if (databasePackage==null)
 			throw new NullPointerException();
+		if (DatabaseWrapper.reservedDatabases.stream().map(Package::getName).anyMatch(c->c.equals(databasePackage)))
+			throw new IllegalArgumentException("Impossible to remove a database whose package "+databasePackage+" corresponds to an internal OOD database : "+DatabaseWrapper.reservedDatabases);
 
 		pushQuery((t) -> {
 			DatabaseConfiguration c=configurations.getDatabaseConfiguration(databasePackage);
 			if (c!=null && configurations.removeConfiguration(databasePackage))
 			{
 				t.updateConfigurationPersistence();
-				t.checkDatabaseUnload(removeData?c:null);
+				t.checkDatabaseToUnload(removeData?c:null);
 				t.checkDisconnexions();
 				t.checkConnexionsToDesynchronize();
 			}
@@ -426,7 +448,13 @@ public class DatabaseConfigurationsBuilder {
 					public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
 						for (DatabaseConfiguration c : packagesToSynchronize)
 						{
+							/*
+							Map<String, Boolean> hm=new HashMap<>();
+							hm.put(c.getDatabaseSchema().getPackage().getName(), DatabaseConfigurationsBuilder.this.lifeCycles != null && DatabaseConfigurationsBuilder.this.lifeCycles.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized(c));
+							HookSynchronizeRequest backRequest=new HookSynchronizeRequest(configurations.getLocalPeer(), configurations.getLocalPeer(), hm, c.getDistantPeersThatCanBeSynchronizedWithThisDatabase()));
 
+							_record.offerNewAuthenticatedP2PMessage(wrapper, new HookSynchronizeRequest(configurations.getLocalPeer(), _record.getHostID(), hm, c.getDistantPeersThatCanBeSynchronizedWithThisDatabase(), backRequest), getSecureRandom(), protectedSignatureProfileProviderForAuthenticatedP2PMessages, this);
+							 */
 							Map<String, Boolean> hm=new HashMap<>();
 							hm.put(c.getDatabaseSchema().getPackage().getName(), DatabaseConfigurationsBuilder.this.lifeCycles != null && DatabaseConfigurationsBuilder.this.lifeCycles.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized(c));
 							_record.offerNewAuthenticatedP2PMessage(wrapper, new HookSynchronizeRequest(configurations.getLocalPeer(), _record.getHostID(), hm, c.getDistantPeersThatCanBeSynchronizedWithThisDatabase()), getSecureRandom(), protectedSignatureProfileProviderForAuthenticatedP2PMessages, this);
@@ -507,6 +535,7 @@ public class DatabaseConfigurationsBuilder {
 					}, "concernsDatabaseHost=%cdh", "cdh", false);
 
 					for (Map.Entry<Set<String>, Set<DecentralizedValue>> e : packagesToUnsynchronize.entrySet()) {
+
 						wrapper.getSynchronizer().receivedHookDesynchronizeRequest(new HookDesynchronizeRequest(configurations.getLocalPeer(), configurations.getLocalPeer(), e.getKey(), e.getValue()));
 					}
 				}
@@ -587,7 +616,11 @@ public class DatabaseConfigurationsBuilder {
 			}
 		}
 		if (!dls.isEmpty())
-			wrapper.loadDatabase(dls, lifeCycles);
+			if (wrapper.loadDatabase(dls, lifeCycles)) {
+				currentTransaction.checkDisconnexions();
+				currentTransaction.propagate=true;
+				currentTransaction.checkDatabaseToUnload(null);
+			}
 		//TOTO revisit this part : take account of the restoration and time of restoration
 	}
 
@@ -683,6 +716,8 @@ public class DatabaseConfigurationsBuilder {
 		});
 		return this;
 	}
+
+
 	DatabaseConfigurationsBuilder synchronizeDistantPeersWithGivenAdditionalPackages(boolean checkNewConnexion, Collection<DecentralizedValue> distantPeers, String ... packagesString)
 	{
 		if (packagesString==null)
@@ -870,6 +905,12 @@ public class DatabaseConfigurationsBuilder {
 		return this;
 	}
 
+	/*public void setDatabaseVersion(Version databaseVersion)
+	{
+		if (databaseVersion==null)
+			throw new NullPointerException();
+		pushQuery((p) -> configurations.setDatabaseVersion(databaseVersion));
+	}*/
 
 
 }

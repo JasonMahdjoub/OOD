@@ -62,4 +62,12 @@ public class TransactionConfirmationEvents extends AbstractTransactionConfirmati
 		hostIDDestination = _hostIDDestination;
 	}
 
+	@Override
+	public String toString() {
+		return "TransactionConfirmationEvents{" +
+				"hostIDSource=" + hostIDSource +
+				", hostIDDestination=" + hostIDDestination +
+				", lastValidatedTransaction=" + lastValidatedTransaction +
+				'}';
+	}
 }

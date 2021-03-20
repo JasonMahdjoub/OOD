@@ -51,4 +51,6 @@ public class BackupChannelInitializationMessageFromCentralDatabaseBackup extends
 	public BackupChannelInitializationMessageFromCentralDatabaseBackup(DecentralizedValue hostDestination, DecentralizedValue hostChannel, byte[] lastValidatedAndEncryptedLocalID, byte[] lastValidatedAndEncryptedDistantID) {
 		super(hostDestination, hostChannel, lastValidatedAndEncryptedLocalID, lastValidatedAndEncryptedDistantID);
 	}
+
+
 }

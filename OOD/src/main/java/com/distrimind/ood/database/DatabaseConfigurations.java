@@ -45,6 +45,7 @@ import org.w3c.dom.Document;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.*;
+import java.util.function.Predicate;
 
 /**
  * @author Jason Mahdjoub
@@ -65,8 +66,27 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 	private DecentralizedValue localPeer;
 	private boolean permitIndirectSynchronizationBetweenPeers;
 	CentralDatabaseBackupCertificate centralDatabaseBackupCertificate=null;
+	//private Version databaseVersion=null;
 
 
+	/*public Version getDatabaseVersion() {
+		return databaseVersion;
+	}
+
+	void setDatabaseVersion(Version databaseVersion) {
+		if (databaseVersion==null)
+			throw new NullPointerException();
+		this.databaseVersion = databaseVersion;
+	}
+
+	public boolean isCompatibleWith(Version databaseVersion)
+	{
+		if (this.databaseVersion==null)
+			return databaseVersion==null;
+		if (databaseVersion==null)
+			return false;
+		return databaseVersion.compareTo(this.databaseVersion)!=0;
+	}*/
 
 	public DatabaseConfigurations(Set<DatabaseConfiguration> configurations) throws DatabaseException {
 		this(configurations,null, null, false);
@@ -194,8 +214,8 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 	private void checkConfiguration(DatabaseConfiguration configuration)  {
 		if (configuration==null)
 			throw new NullPointerException();
-		if (configuration.getDatabaseSchema().getPackage().equals(this.getClass().getPackage()))
-			throw new IllegalArgumentException("The package "+this.getClass().getPackage()+" cannot be included into the list of database");
+		if (DatabaseWrapper.reservedDatabases.contains(configuration.getDatabaseSchema().getPackage()))
+			throw new IllegalArgumentException("Impossible to add a database whose package "+configuration.getDatabaseSchema().getPackage()+" corresponds to an internal OOD database : "+DatabaseWrapper.reservedDatabases);
 
 		if (localPeer!=null)
 		{
@@ -205,25 +225,44 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 		}
 	}
 
-	void addConfiguration(DatabaseConfiguration configuration, boolean makeConfigurationLoadingPersistent ) throws DatabaseException {
+	boolean addConfiguration(DatabaseConfiguration configuration, boolean makeConfigurationLoadingPersistent ) throws DatabaseException {
 		checkConfiguration(configuration);
+		Set<DatabaseConfiguration> confs;
+		Set<DecentralizedValue> distPeers;
 		if (makeConfigurationLoadingPersistent) {
-			configurations.add(configuration);
-			if (configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase()!=null) {
-				distantPeers.addAll(configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase());
-			}
+			confs=configurations;
+			distPeers=distantPeers;
 		}
 		else {
-			volatileConfigurations.add(configuration);
-			if (configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase()!=null) {
-				volatileDistantPeers.addAll(configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase());
-			}
+			confs=volatileConfigurations;
+			distPeers=volatileDistantPeers;
+		}
+		boolean removed=false;
+		if (configuration.getDatabaseSchema().getOldSchema()!=null)
+		{
+			Predicate<DatabaseConfiguration> p= dc -> {
+				DatabaseSchema ds=configuration.getDatabaseSchema().getOldSchema();
+				while (ds!=null) {
+					if (dc.getDatabaseSchema().getPackage().equals(ds.getPackage())) {
+						return true;
+					}
+					ds=ds.getOldSchema();
+				}
+				return false;
+			};
+			if (removed=confs.removeIf(p))
+				allConfigurations.removeIf(p);
+		}
+		confs.add(configuration);
+		if (configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase()!=null) {
+			distPeers.addAll(configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase());
 		}
 		if (configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase()!=null) {
 			allDistantPeers.addAll(configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase());
 			checkForMaxDistantPeersReached();
 		}
 		allConfigurations.add(configuration);
+		return removed;
 	}
 	boolean removeConfiguration(String databasePackage) {
 		if (databasePackage==null)
@@ -251,7 +290,8 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 		allConfigurations.addAll(configurations);
 		allDistantPeers.clear();
 		checkDistantPeers();
-
+		if (DatabaseWrapper.reservedDatabases.stream().anyMatch(c -> allConfigurations.stream().anyMatch(c2-> c2.getDatabaseSchema().getPackage().equals(c))))
+			throw new IllegalArgumentException("Impossible to add databases where on of there packages corresponds to an internal OOD database : "+DatabaseWrapper.reservedDatabases);
 	}
 
 

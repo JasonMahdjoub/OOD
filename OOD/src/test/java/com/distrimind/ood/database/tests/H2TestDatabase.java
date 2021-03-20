@@ -76,19 +76,19 @@ public class H2TestDatabase extends TestDatabase {
 
 	@Override
 	public void deleteDatabaseFilesA() throws IllegalArgumentException {
-		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(new File(database_file_name ));
+		EmbeddedH2DatabaseWrapper.deleteDatabasesFiles(new File(database_file_name ));
 	}
 
 	@Override
 	public void deleteDatabaseFilesB() throws IllegalArgumentException {
-		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(new File(database_file_nameb));
+		EmbeddedH2DatabaseWrapper.deleteDatabasesFiles(new File(database_file_nameb));
 	}
 
 	@AfterClass
 	public void unloadDatabase()  {
 		super.unloadDatabase();
-		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(new File(database_file_name));
-		EmbeddedH2DatabaseWrapper.deleteDatabaseFiles(new File(database_file_nameb));
+		EmbeddedH2DatabaseWrapper.deleteDatabasesFiles(new File(database_file_name));
+		EmbeddedH2DatabaseWrapper.deleteDatabasesFiles(new File(database_file_nameb));
 		FileTools.deleteDirectory(database_backup_file);
 	}
 

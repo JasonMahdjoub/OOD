@@ -126,4 +126,12 @@ public class BackupChannelUpdateMessageFromCentralDatabaseBackup implements Mess
 	public boolean cannotBeMerged() {
 		return true;
 	}
+
+	@Override
+	public String toString() {
+		return getClass().getSimpleName()+"{" +
+				"hostDestination=" + hostDestination +
+				", hostChannel=" + hostChannel +
+				'}';
+	}
 }

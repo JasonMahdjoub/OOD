@@ -41,6 +41,7 @@ import com.distrimind.ood.database.annotations.ForeignKey;
 import com.distrimind.ood.database.annotations.NotNull;
 import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.messages.AbstractCompatibleEncryptedDatabaseMessage;
 import com.distrimind.ood.database.messages.IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup;
 import com.distrimind.util.DecentralizedValue;
 
@@ -69,6 +70,9 @@ public final class ClientTable extends Table<ClientTable.Record> {
 
 		@Field(limit= IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup.SIZE_IN_BYTES_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND)
 		private List<byte[]> encryptedAuthenticatedMessagesToSend;
+
+		@Field(limit= AbstractCompatibleEncryptedDatabaseMessage.MAX_SIZE_OF_ENCRYPTED_PACKAGES_NAMES_IN_BYTES)
+		private byte[] encryptedCompatiblesDatabases;
 
 		@SuppressWarnings("unused")
 		private Record()
@@ -99,6 +103,9 @@ public final class ClientTable extends Table<ClientTable.Record> {
 			return encryptedAuthenticatedMessagesToSend;
 		}
 
+		public byte[] getEncryptedCompatiblesDatabases() {
+			return encryptedCompatiblesDatabases;
+		}
 	}
 
 
