@@ -36,9 +36,9 @@ Adapt into your build.gradle file, the next code :
 		//optional and under JDK8 or newer
 		testImplementation(group:'org.hsqldb', name: 'hsqldb', version: '2.5.1')
 		//choose this optional driver for MySQL
-		testImplementation(group: 'mysql', name: 'mysql-connector-java', version: '8.0.21')
+		testImplementation(group: 'mysql', name: 'mysql-connector-java', version: '8.0.23')
 		//choose this optional driver for PostgreSQL
-		testImplementation(group: 'org.postgresql', name: 'postgresql', version: '42.2.16')
+		testImplementation(group: 'org.postgresql', name: 'postgresql', version: '42.2.19')
 	}
 	...
 
