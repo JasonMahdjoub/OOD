@@ -146,7 +146,7 @@ public abstract class TestDatabase {
 		try {
 
 			SubField res = new SubField();
-			res.BigDecimal_value = new BigDecimal("3.0");
+			res.BigDecimal_value = new BigDecimal("3.0125540455216975415589186941257440245355150540147450541");
 			res.BigInteger_value = new BigInteger("54");
 			res.boolean_value = false;
 			res.BooleanNumber_value = Boolean.TRUE;
@@ -180,7 +180,7 @@ public abstract class TestDatabase {
 	public static SubSubField getSubSubField() throws DatabaseException {
 		try {
 			SubSubField res = new SubSubField();
-			res.BigDecimal_value = new BigDecimal("3.0");
+			res.BigDecimal_value = new BigDecimal("3.0125540455216975415589186941257440245355150540147450541");
 			res.BigInteger_value = new BigInteger("54");
 			res.boolean_value = false;
 			res.BooleanNumber_value = Boolean.TRUE;

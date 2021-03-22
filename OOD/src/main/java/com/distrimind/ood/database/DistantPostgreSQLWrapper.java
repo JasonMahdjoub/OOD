@@ -448,7 +448,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 						throw new DatabaseVersionException(table,
 								"The field " + fa.getFieldName() + " was not found into the database.");
 					String type = cols.tableColumnsResultSet.getTypeName().toUpperCase();
-					if (!sf.type.toUpperCase().startsWith(type) && !(type.equals("BIT") && sf.type.equals("BOOLEAN")))
+					if (!table.areSameTypes(type, sf.type))
 						throw new DatabaseVersionException(table, "The type of the field " + sf.field
 								+ " should  be " + sf.type + " and not " + type);
 					if (col_size_matcher.matcher(sf.type).matches()) {
@@ -482,7 +482,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 						}
 					}
 					if (fa.isForeignKey()) {
-						String constraintName=table.getSqlTableName().toLowerCase()+"_%"+sf.short_field_without_quote.toLowerCase()+"%_fkey";
+						String constraintName=table.getSqlTableName().toLowerCase()+"_%";//+sf.short_field_without_quote.toLowerCase()+"%_fkey";
 						constraintName=constraintName.replace("_", "!_");
 						try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection, new Table.SqlQuery(
 								"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
@@ -492,8 +492,8 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 							if (!rq.result_set.next())
 								throw new DatabaseVersionException(table,
 										"The field " + fa.getFieldName() + " is a foreign key. One of its Sql fields "
-												+ sf.field + " is not a foreign key pointing to the table "
-												+ sf.pointed_table);
+												+ sf.short_field_without_quote.toLowerCase() + " is not a foreign key pointing to the table "
+												+ sf.pointed_table.toLowerCase());
 						}
 					}
 					if (fa.isUnique()) {
@@ -634,12 +634,12 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 
 	@Override
 	protected String getFloatType() {
-		return "DOUBLE PRECISION";
+		return "FLOAT8";
 	}
 
 	@Override
 	protected String getDoubleType() {
-		return "DOUBLE PRECISION";
+		return "FLOAT8";
 	}
 
 	@Override
@@ -663,7 +663,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 
 	@Override
 	protected String getBigIntegerType(long limit) {
-		return "DECIMAL";
+		return "NUMERIC";
 		/*if (limit<=0)
 			return "VARCHAR(1024) CHARACTER SET latin1";
 		else
