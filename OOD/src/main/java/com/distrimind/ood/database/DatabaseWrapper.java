@@ -1439,12 +1439,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		}
 
-		long getLastValidatedLocalIDSynchronization(DecentralizedValue hostID) throws DatabaseException {
+		/*long getLastValidatedLocalIDSynchronization(DecentralizedValue hostID) throws DatabaseException {
 
 
 			return getDatabaseHookRecord(hostID).getLastValidatedLocalTransactionID();
 
-		}
+		}*/
 
 
 
@@ -1483,11 +1483,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new DatabaseException("The given host ID correspond to the local database host !");
 
 			if (!fromCentral && (lastTransferredTransactionID>=0 || r.getLastValidatedLocalTransactionID()<0)) {
-				/*if (r.getLastValidatedLocalTransactionID() > lastTransferredTransactionID) {
+				if (r.getLastValidatedLocalTransactionID() > lastTransferredTransactionID) {
 					throw new DatabaseException("The given transfer ID limit " + lastTransferredTransactionID
 								+ " is lower than the stored transfer ID limit " + r.getLastValidatedLocalTransactionID() + ". LastValidatedDistantTransactionID=" + r.getLastValidatedDistantTransactionID() + " ; hook=" + hostID + " ; localHostID=" + getLocalHostID() + " ; last local transaction id=" + getTransactionIDTable().getLastTransactionID());
 				}
-				else {*/
+				else {
 
 
 					long l = getDatabaseTransactionsPerHostTable().validateTransactions(r, lastTransferredTransactionID);
@@ -1499,7 +1499,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					}
 					cp.setTransferInProgress(false);
 					synchronizedDataIfNecessary(cp);
-				//}
+				}
 			}
 			synchronizeMetaData();
 		}
@@ -1622,8 +1622,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			try
 			{
 				lockWrite();
-				boolean notify=false;
-				/*if (isInitialized(hostDestination)) {
+				/*boolean notify=false;
+				if (isInitialized(hostDestination)) {
 					notify=true;
 					events.add(new TransactionConfirmationEvents(
 							getLocalHostID(), hostDestination,
@@ -2148,7 +2148,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			getDatabaseHooksTable()
 					.getRecords(new Filter<Record>() {
 						@Override
-						public boolean nextRecord(Record _record) throws DatabaseException {
+						public boolean nextRecord(Record _record) {
 							if (!_record.concernsLocalDatabaseHost())
 							{
 								lastValidatedDistantIDs.put(_record.getHostID(), _record.getLastValidatedDistantTransactionID());
@@ -2810,7 +2810,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			else if (data instanceof MessageComingFromCentralDatabaseBackup)
 				received((MessageComingFromCentralDatabaseBackup)data);
 		}
-		private void received(P2PDatabaseEventToSend data) throws DatabaseException, MessageExternalizationException {
+		private void received(P2PDatabaseEventToSend data) throws DatabaseException {
 			if (!isInitialized())
 				throw new DatabaseException("The Synchronizer must be initialized (initLocalHostID function) !");
 			if (data instanceof CompatibleDatabasesP2PMessage)
@@ -5546,8 +5546,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		else
 			databaseVersion=0;
 		Reference<Boolean> allNotFound=new Reference<>(false);
-		//Reference<Boolean> restoreSynchronizerHosts=new Reference<>(false);
-		//Reference<Collection<DatabaseHooksTable.Record>> hosts=new Reference<>(null);
 		try  {
 			lockWrite();
 			loadDatabaseImpl(configuration,
@@ -5557,7 +5555,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					hosts,*/
 					allNotFound,
 					lifeCycles);
-			//getSynchronizer().desynchronizeDatabases(desynchronizedPackages);
 			postLoadDatabase(Collections.singleton(configuration)/*, restoreSynchronizerHosts, hosts, lifeCycles*/);
 			postLoadDatabaseFinal(allNotFound, internalPackage);
 
@@ -5625,8 +5622,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			getTableInstance(DatabaseTable.class, -1);
 
 		Reference<Boolean> allNotFound=new Reference<>(false);
-		//Reference<Boolean> restoreSynchronizerHosts=new Reference<>(false);
-		//Reference<Collection<DatabaseHooksTable.Record>> hosts=new Reference<>(null);
 		try  {
 			boolean oldDatabaseReplaced=false;
 			lockWrite();
