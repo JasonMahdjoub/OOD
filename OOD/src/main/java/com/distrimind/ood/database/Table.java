@@ -692,6 +692,20 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 	boolean foreign_keys_to_create = false;
 
+	boolean areSameTypes(String dbType, String oodType)
+	{
+		dbType=dbType.toUpperCase();
+		oodType=oodType.toUpperCase();
+
+		if (sql_connection instanceof DistantPostgreSQLWrapper) {
+			if (dbType.contains("CHAR"))
+				return oodType.contains("CHAR");
+			if (oodType.equals("DECIMAL"))
+				return dbType.equals("DECIMAL") || dbType.equals("NUMERIC");
+		}
+		return oodType.startsWith(dbType) || (dbType.equals("BIT") && oodType.equals("BOOLEAN"));
+	}
+
 	boolean initializeStep2(final boolean createDatabaseIfNecessaryAndCheckIt) throws DatabaseException {
 		containsLoopBetweenTables = containsLoop(new HashSet<>());
 		/*
@@ -789,7 +803,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 										// String type=rq.result_set.getString("TYPE_NAME").toUpperCase();
 										String type = rq.tableColumnsResultSet.getTypeName().toUpperCase();
 
-										if (!founded_sf.type.toUpperCase().startsWith(type) && !(type.equals("BIT") && founded_sf.type.equals("BOOLEAN")))
+										if (!areSameTypes(type, founded_sf.type))
 											throw new DatabaseVersionException(Table.this, "The type of the column "
 													+ col + " should  be " + founded_sf.type + " and not " + type);
 										if (col_size_matcher.matcher(founded_sf.type).matches()) {
@@ -812,8 +826,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 											throw new DatabaseVersionException(Table.this,
 													"The column " + col + " is " + (is_autoincrement ? "" : "not ")
 															+ "autoincremented into the Sql database where it is "
-															+ (is_autoincrement ? "not " : "")
-															+ " into the OOD database.");
+															+ (founded_fa.isAutoPrimaryKey() ? "" : "not ")
+															+ "into the OOD database.");
 									}
 								}
 								sql_connection.checkConstraints(Table.this);

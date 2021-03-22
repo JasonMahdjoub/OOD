@@ -83,7 +83,7 @@ public class DistantMySQLDBWrapper extends CommonMySQLWrapper{
 			return conn;
 
 		} catch (Exception e) {
-			throw new DatabaseLoadingException("Failed to make connection!", e);
+			throw new DatabaseLoadingException("Failed to make connection ! (user="+user+")", e);
 		}
 	}
 	@Override
@@ -104,5 +104,8 @@ public class DistantMySQLDBWrapper extends CommonMySQLWrapper{
 		return true;
 	}
 
-
+	@Override
+	protected boolean supportSingleAutoPrimaryKeys() {
+		return false;
+	}
 }

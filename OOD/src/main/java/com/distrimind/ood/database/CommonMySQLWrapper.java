@@ -270,7 +270,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 
 		@Override
 		public boolean isAutoIncrement() throws SQLException {
-			return !resultSet.getString(23).equals("NO");
+			return !resultSet.getString(23).equalsIgnoreCase("NO");
 		}
 
 		@Override

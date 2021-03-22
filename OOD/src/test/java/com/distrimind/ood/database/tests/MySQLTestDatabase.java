@@ -91,7 +91,17 @@ public class MySQLTestDatabase extends TestDatabase {
 		try {
 			try(FileWriter fos=new FileWriter(tmpScript))
 			{
-				fos.write("docker exec "+dockerName+" mysql --connect-expired-password --user=\"root\" --password=\""+rootPw+"\" -Bse \"ALTER USER 'root'@'localhost' IDENTIFIED BY 'rootpassword'; CREATE USER '"+factoryA.getUser()+"' IDENTIFIED by '"+factoryA.getPassword()+"';CREATE DATABASE "+factoryA.getDatabaseName()+";CREATE DATABASE "+factoryB.getDatabaseName()+";GRANT ALL PRIVILEGES ON "+factoryA.getDatabaseName()+".* TO '"+factoryA.getUser()+"';GRANT ALL PRIVILEGES ON "+factoryB.getDatabaseName()+".* TO '"+factoryB.getUser()+"';FLUSH PRIVILEGES;\"\n");
+				assert rootPw!=null;
+				/*rootPw=rootPw.replace("#", "\\#" );
+				rootPw=rootPw.replace(" ", "\\ " );
+				rootPw=rootPw.replace("?", "\\?" );
+				rootPw=rootPw.replace("!", "\\!" );
+				rootPw=rootPw.replace("'", "\\'" );
+				rootPw=rootPw.replace("\"", "\\\"" );
+				rootPw=rootPw.replace("-", "\\-" );*/
+				String str="docker exec "+dockerName+" mysql --connect-expired-password --user=\"root\" --password='"+rootPw+"' -Bse \"ALTER USER 'root'@'localhost' IDENTIFIED BY 'rootpwd';\nCREATE USER '"+factoryA.getUser()+"' IDENTIFIED by '"+factoryA.getPassword()+"';\nCREATE DATABASE "+factoryA.getDatabaseName()+";\nCREATE DATABASE "+factoryB.getDatabaseName()+";\nGRANT ALL PRIVILEGES ON "+factoryA.getDatabaseName()+".* TO '"+factoryA.getUser()+"';\nGRANT ALL PRIVILEGES ON "+factoryB.getDatabaseName()+".* TO '"+factoryB.getUser()+"';\nFLUSH PRIVILEGES;\"\n";
+				fos.write(str);
+				System.out.println("Create database script : \n-------------\n"+str+"\n-------------\n");
 			}
 			ProcessBuilder pb=new ProcessBuilder("bash", tmpScript.toString());
 			p = pb.start();
