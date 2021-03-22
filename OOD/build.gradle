@@ -64,8 +64,8 @@ dependencies {
     //testImplementation(group:'org.apache.derby', name: 'derby', version: '10.15.2.0')
     //testImplementation(group:'org.apache.derby', name: 'derbytools', version: '10.15.2.0')
     testImplementation(group:'com.h2database', name:'h2', version:'1.4.200')
-    testImplementation(group: 'mysql', name: 'mysql-connector-java', version: '8.0.22')
-    testImplementation(group:'org.postgresql', name:'postgresql', version:'42.2.18')
+    testImplementation(group: 'mysql', name: 'mysql-connector-java', version: '8.0.23')
+    testImplementation(group:'org.postgresql', name:'postgresql', version:'42.2.19')
 
 
 }

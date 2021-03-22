@@ -826,8 +826,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 											throw new DatabaseVersionException(Table.this,
 													"The column " + col + " is " + (is_autoincrement ? "" : "not ")
 															+ "autoincremented into the Sql database where it is "
-															+ (is_autoincrement ? "not " : "")
-															+ " into the OOD database.");
+															+ (founded_fa.isAutoPrimaryKey() ? "" : "not ")
+															+ "into the OOD database.");
 									}
 								}
 								sql_connection.checkConstraints(Table.this);
