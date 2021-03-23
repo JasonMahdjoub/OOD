@@ -8,6 +8,7 @@ import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 
 import java.util.*;
+import java.util.function.Predicate;
 
 /**
  * @author Jason Mahdjoub
@@ -889,13 +890,60 @@ public class DatabaseConfigurationsBuilder {
 	}
 	public DatabaseConfigurationsBuilder restoreDatabaseToOldVersion(long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable)
 	{
+		return restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, dc -> true);
+	}
+	public DatabaseConfigurationsBuilder restoreGivenDatabasesToOldVersion(Set<Package> concernedDatabases, long timeUTCInMs)
+	{
+		return restoreGivenDatabasesToOldVersion(concernedDatabases, timeUTCInMs, false);
+	}
+	public DatabaseConfigurationsBuilder restoreGivenDatabasesToOldVersion(Set<Package> concernedDatabases, long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable)
+	{
+		if (concernedDatabases==null)
+			throw new NullPointerException();
+		return restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, dc -> concernedDatabases.contains(dc.getDatabaseSchema().getPackage()));
+	}
+	public DatabaseConfigurationsBuilder restoreGivenDatabaseStringToOldVersion(String concernedDatabase, long timeUTCInMs)
+	{
+		return restoreGivenDatabaseStringToOldVersion(concernedDatabase, timeUTCInMs, false);
+	}
+	public DatabaseConfigurationsBuilder restoreGivenDatabaseStringToOldVersion(String concernedDatabase, long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable)
+	{
+		if (concernedDatabase==null)
+			throw new NullPointerException();
+		return restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, dc -> concernedDatabase.equals(dc.getDatabaseSchema().getPackage().getName()));
+	}
+	public DatabaseConfigurationsBuilder restoreGivenDatabaseToOldVersion(Package concernedDatabase, long timeUTCInMs)
+	{
+		return restoreGivenDatabaseToOldVersion(concernedDatabase, timeUTCInMs, false);
+	}
+	public DatabaseConfigurationsBuilder restoreGivenDatabaseToOldVersion(Package concernedDatabase, long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable)
+	{
+		if (concernedDatabase==null)
+			throw new NullPointerException();
+		return restoreGivenDatabaseStringToOldVersion(concernedDatabase.getName(), timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable);
+	}
+	public DatabaseConfigurationsBuilder restoreGivenDatabasesStringToOldVersion(Set<String> concernedDatabases, long timeUTCInMs)
+	{
+		return restoreGivenDatabasesStringToOldVersion(concernedDatabases, timeUTCInMs, false);
+	}
+	public DatabaseConfigurationsBuilder restoreGivenDatabasesStringToOldVersion(Set<String> concernedDatabases, long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable)
+	{
+		if (concernedDatabases==null)
+			throw new NullPointerException();
+		return restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, dc -> concernedDatabases.contains(dc.getDatabaseSchema().getPackage().getName()));
+	}
+	private DatabaseConfigurationsBuilder restoreDatabaseToOldVersion(long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, Predicate<DatabaseConfiguration> predicate)
+	{
 
 		pushQuery((p) -> {
 			Reference<Boolean> changed=new Reference<>(false);
-			configurations.getConfigurations().forEach((c) ->{
-				if (c.restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable))
-					changed.set(true);
-			});
+			configurations.getConfigurations().stream()
+					.filter(predicate)
+					.forEach((c) ->{
+						if (c.restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable))
+							changed.set(true);
+					}
+					);
 			if (changed.get())
 			{
 				p.updateConfigurationPersistence();
