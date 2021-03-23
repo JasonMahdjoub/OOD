@@ -50,39 +50,39 @@ import java.security.NoSuchProviderException;
  * @since OOD 2.5.0
  */
 public class H2TestCentralBackupWithDecentralizedDatabase extends TestCentralBackupWithDecentralizedDatabase {
-	final String centralDatabaseFileName = "centralDatabase";
-	final String database_file_name1 = "decentralizedDatabaseWithBackup1";
-	final String database_file_name2 = "decentralizedDatabaseWithBackup2";
-	final String database_file_name3 = "decentralizedDatabaseWithBackup3";
-	final String database_file_name4 = "decentralizedDatabaseWithBackup4";
+	final String centralDatabaseFileName = "centralDatabaseToTestCentralDBBackup";
+	final String database_file_name1 = "decentralizedDatabaseToTestCentralDBBackupWithBackup1";
+	final String database_file_name2 = "decentralizedDatabaseToTestCentralDBBackupWithBackup2";
+	final String database_file_name3 = "decentralizedDatabaseToTestCentralDBBackupWithBackup3";
+	final String database_file_name4 = "decentralizedDatabaseToTestCentralDBBackupWithBackup4";
 	final BackupConfiguration backupConfiguration=new BackupConfiguration(10000, 20000, 1000000, 1000, null);
 
-	public H2TestCentralBackupWithDecentralizedDatabase() throws NoSuchProviderException, NoSuchAlgorithmException, IOException, DatabaseException {
+	public H2TestCentralBackupWithDecentralizedDatabase() throws NoSuchProviderException, NoSuchAlgorithmException, IOException {
 		super();
 	}
 
 	@Override
-	public DatabaseFactory<?> getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver() throws IllegalArgumentException, DatabaseException {
+	public DatabaseFactory<?> getDatabaseFactoryInstanceForCentralDatabaseBackupReceiver() throws IllegalArgumentException, DatabaseException {
 		return new InFileEmbeddedH2DatabaseFactory(new File(centralDatabaseFileName));
 	}
 
 	@Override
-	public DatabaseFactory<?> getDatabaseWrapperInstance1() throws IllegalArgumentException, DatabaseException {
+	public DatabaseFactory<?> getDatabaseFactoryInstance1() throws IllegalArgumentException, DatabaseException {
 		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name1));
 	}
 
 	@Override
-	public DatabaseFactory<?> getDatabaseWrapperInstance2() throws IllegalArgumentException, DatabaseException {
+	public DatabaseFactory<?> getDatabaseFactoryInstance2() throws IllegalArgumentException, DatabaseException {
 		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name2));
 	}
 
 	@Override
-	public DatabaseFactory<?> getDatabaseWrapperInstance3() throws IllegalArgumentException, DatabaseException {
+	public DatabaseFactory<?> getDatabaseFactoryInstance3() throws IllegalArgumentException, DatabaseException {
 		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name3));
 	}
 
 	@Override
-	public DatabaseFactory<?> getDatabaseWrapperInstance4() throws IllegalArgumentException, DatabaseException {
+	public DatabaseFactory<?> getDatabaseFactoryInstance4() throws IllegalArgumentException, DatabaseException {
 		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name4));
 	}
 

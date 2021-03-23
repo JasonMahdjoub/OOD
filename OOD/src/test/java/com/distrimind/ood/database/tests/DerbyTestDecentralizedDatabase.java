@@ -61,31 +61,31 @@ public class DerbyTestDecentralizedDatabase extends TestDecentralizedDatabase {
 	}
 
 	@Override
-	public DatabaseFactory<?> getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver() throws IllegalArgumentException, DatabaseException {
+	public DatabaseFactory<?> getDatabaseFactoryInstanceForCentralDatabaseBackupReceiver() throws IllegalArgumentException, DatabaseException {
 		return null;
 		//return new InFileEmbeddedDerbyDatabaseFactory(centralDatabaseFileName);
 	}
 
 	@Override
-	public DatabaseFactory<?> getDatabaseWrapperInstance1() throws IllegalArgumentException, DatabaseException {
+	public DatabaseFactory<?> getDatabaseFactoryInstance1() throws IllegalArgumentException, DatabaseException {
 		return null;
 		//return new InFileEmbeddedDerbyDatabaseFactory(data_directory1);
 	}
 
 	@Override
-	public DatabaseFactory<?> getDatabaseWrapperInstance2() throws IllegalArgumentException, DatabaseException {
+	public DatabaseFactory<?> getDatabaseFactoryInstance2() throws IllegalArgumentException, DatabaseException {
 		return null;
 		//return new InFileEmbeddedDerbyDatabaseFactory(data_directory2);
 	}
 
 	@Override
-	public DatabaseFactory<?> getDatabaseWrapperInstance3() throws IllegalArgumentException, DatabaseException {
+	public DatabaseFactory<?> getDatabaseFactoryInstance3() throws IllegalArgumentException, DatabaseException {
 		return null;
 		//return new InFileEmbeddedDerbyDatabaseFactory(data_directory3);
 	}
 
 	@Override
-	public DatabaseFactory<?> getDatabaseWrapperInstance4() throws IllegalArgumentException, DatabaseException {
+	public DatabaseFactory<?> getDatabaseFactoryInstance4() throws IllegalArgumentException, DatabaseException {
 		return null;
 		//return new InFileEmbeddedDerbyDatabaseFactory(data_directory4);
 	}

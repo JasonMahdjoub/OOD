@@ -61,27 +61,27 @@ public class H2TestDecentralizedDatabase extends TestDecentralizedDatabase {
 	}
 
 	@Override
-	public DatabaseFactory<?> getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver() throws IllegalArgumentException, DatabaseException {
+	public DatabaseFactory<?> getDatabaseFactoryInstanceForCentralDatabaseBackupReceiver() throws IllegalArgumentException, DatabaseException {
 		return new InFileEmbeddedH2DatabaseFactory(new File(centralDatabaseFileName));
 	}
 
 	@Override
-	public DatabaseFactory<?> getDatabaseWrapperInstance1() throws IllegalArgumentException, DatabaseException {
+	public DatabaseFactory<?> getDatabaseFactoryInstance1() throws IllegalArgumentException, DatabaseException {
 		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name1));
 	}
 
 	@Override
-	public DatabaseFactory<?> getDatabaseWrapperInstance2() throws IllegalArgumentException, DatabaseException {
+	public DatabaseFactory<?> getDatabaseFactoryInstance2() throws IllegalArgumentException, DatabaseException {
 		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name2));
 	}
 
 	@Override
-	public DatabaseFactory<?> getDatabaseWrapperInstance3() throws IllegalArgumentException, DatabaseException {
+	public DatabaseFactory<?> getDatabaseFactoryInstance3() throws IllegalArgumentException, DatabaseException {
 		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name3));
 	}
 
 	@Override
-	public DatabaseFactory<?> getDatabaseWrapperInstance4() throws IllegalArgumentException, DatabaseException {
+	public DatabaseFactory<?> getDatabaseFactoryInstance4() throws IllegalArgumentException, DatabaseException {
 		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name4));
 	}
 

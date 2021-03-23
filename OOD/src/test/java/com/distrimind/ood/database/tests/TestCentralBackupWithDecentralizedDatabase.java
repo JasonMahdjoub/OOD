@@ -59,7 +59,7 @@ import java.util.List;
 public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonDecentralizedTests {
 
 
-	public TestCentralBackupWithDecentralizedDatabase() throws NoSuchProviderException, NoSuchAlgorithmException, IOException, DatabaseException {
+	public TestCentralBackupWithDecentralizedDatabase() throws NoSuchProviderException, NoSuchAlgorithmException, IOException {
 		super();
 	}
 

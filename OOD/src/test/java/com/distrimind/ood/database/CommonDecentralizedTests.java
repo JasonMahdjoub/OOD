@@ -936,15 +936,15 @@ public abstract class CommonDecentralizedTests {
 
 
 
-	public abstract DatabaseFactory<?> getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver() throws IllegalArgumentException, DatabaseException;
+	public abstract DatabaseFactory<?> getDatabaseFactoryInstanceForCentralDatabaseBackupReceiver() throws IllegalArgumentException, DatabaseException;
 
-	public abstract DatabaseFactory<?> getDatabaseWrapperInstance1() throws IllegalArgumentException, DatabaseException;
+	public abstract DatabaseFactory<?> getDatabaseFactoryInstance1() throws IllegalArgumentException, DatabaseException;
 
-	public abstract DatabaseFactory<?> getDatabaseWrapperInstance2() throws IllegalArgumentException, DatabaseException;
+	public abstract DatabaseFactory<?> getDatabaseFactoryInstance2() throws IllegalArgumentException, DatabaseException;
 
-	public abstract DatabaseFactory<?> getDatabaseWrapperInstance3() throws IllegalArgumentException, DatabaseException;
+	public abstract DatabaseFactory<?> getDatabaseFactoryInstance3() throws IllegalArgumentException, DatabaseException;
 
-	public abstract DatabaseFactory<?> getDatabaseWrapperInstance4() throws IllegalArgumentException, DatabaseException;
+	public abstract DatabaseFactory<?> getDatabaseFactoryInstance4() throws IllegalArgumentException, DatabaseException;
 
 	public abstract void removeDatabaseFiles1();
 
@@ -987,7 +987,7 @@ public abstract class CommonDecentralizedTests {
 	}
 	void initCentralDatabaseBackup() throws DatabaseException {
 		if (canInitCentralBackup()) {
-			this.centralDatabaseBackupDatabase = getDatabaseWrapperInstanceForCentralDatabaseBackupReceiver().getDatabaseWrapperSingleton();
+			this.centralDatabaseBackupDatabase = getDatabaseFactoryInstanceForCentralDatabaseBackupReceiver().getDatabaseWrapperSingleton();
 			this.centralDatabaseBackupReceiver = new CentralDatabaseBackupReceiver(centralDatabaseBackupDatabase, centralDatabaseBackupKeyPair.getASymmetricPublicKey());
 			this.centralDatabaseBackupDatabase.setNetworkLogLevel(networkLogLevel);
 
@@ -997,13 +997,13 @@ public abstract class CommonDecentralizedTests {
 	public void loadDatabase() throws DatabaseException {
 		unloadDatabase();
 		initCentralDatabaseBackup();
-		DatabaseFactory<?> df=getDatabaseWrapperInstance1();
+		DatabaseFactory<?> df= getDatabaseFactoryInstance1();
 		df.setEncryptionProfileProviders(signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup, encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedSignatureProfileProviderForAuthenticatedP2PMessages, SecureRandomType.DEFAULT);
 		db1 = new CommonDecentralizedTests.Database(df.getDatabaseWrapperSingleton());
-		df=getDatabaseWrapperInstance2();
+		df= getDatabaseFactoryInstance2();
 		df.setEncryptionProfileProviders(signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup, encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedSignatureProfileProviderForAuthenticatedP2PMessages, SecureRandomType.DEFAULT);
 		db2 = new CommonDecentralizedTests.Database(df.getDatabaseWrapperSingleton());
-		df=getDatabaseWrapperInstance3();
+		df= getDatabaseFactoryInstance3();
 		df.setEncryptionProfileProviders(signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup, encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedSignatureProfileProviderForAuthenticatedP2PMessages, SecureRandomType.DEFAULT);
 		db3 = new CommonDecentralizedTests.Database(df.getDatabaseWrapperSingleton());
 		listDatabase.add(db1);
