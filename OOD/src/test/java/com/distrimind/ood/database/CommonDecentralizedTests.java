@@ -964,22 +964,28 @@ public abstract class CommonDecentralizedTests {
 		return false;
 	}
 
-	protected void addConfiguration(CommonDecentralizedTests.Database db) throws DatabaseException {
-		db.getDbwrapper().getSynchronizer().setNotifier(db);
-		db.getDbwrapper().setMaxTransactionsToSynchronizeAtTheSameTime(5);
-		db.getDbwrapper().setMaxTransactionEventsKeptIntoMemory(3);
+	protected Set<DecentralizedValue> getPeersToSynchronize(CommonDecentralizedTests.Database db)
+	{
 		Set<DecentralizedValue> peers=new HashSet<>();
 		for (CommonDecentralizedTests.Database dbOther : listDatabase) {
 			if (db!=dbOther)
 				peers.add(dbOther.getHostID());
 		}
+		return peers;
+	}
+
+	protected void addConfiguration(CommonDecentralizedTests.Database db) throws DatabaseException {
+		db.getDbwrapper().getSynchronizer().setNotifier(db);
+		db.getDbwrapper().setMaxTransactionsToSynchronizeAtTheSameTime(5);
+		db.getDbwrapper().setMaxTransactionEventsKeptIntoMemory(3);
+
 		db.getDbwrapper().getDatabaseConfigurationsBuilder()
 				.setLocalPeerIdentifier(db.getHostID(), sendIndirectTransactions(), true)
 				.setCentralDatabaseBackupCertificate(peerCertificate)
 				.addConfiguration(new DatabaseConfiguration(
 							new DatabaseSchema(TablePointed.class.getPackage()),
 							canInitCentralBackup()?DatabaseConfiguration.SynchronizationType.DECENTRALIZED_SYNCHRONIZATION_AND_SYNCHRONIZATION_WITH_CENTRAL_BACKUP_DATABASE:DatabaseConfiguration.SynchronizationType.DECENTRALIZED_SYNCHRONIZATION,
-							peers, getBackupConfiguration(),
+							getPeersToSynchronize(db), getBackupConfiguration(),
 							true),
 						false)
 				.commit();
