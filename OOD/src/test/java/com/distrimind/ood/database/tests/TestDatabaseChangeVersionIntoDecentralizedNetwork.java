@@ -46,6 +46,8 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.util.Arrays;
+import java.util.Collection;
 
 
 /**
@@ -123,12 +125,14 @@ public abstract class TestDatabaseChangeVersionIntoDecentralizedNetwork extends 
 			disconnectCentralDatabaseBakcup();
 
 		changeConfiguration(db1);
-		//changeConfiguration(db2);
+		changeConfiguration(db2);
 		exchangeMessages();
+		Collection<Database> databasesToTest= Arrays.asList(db1, db2);
 		if (upgradeDatabaseVersionWhenConnectedWithPeers || upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion)
 		{
-			testSynchronisationWithNewDatabaseVersion();
+			testSynchronisationWithNewDatabaseVersion(db1, databasesToTest);
 		}
+
 		if (!upgradeDatabaseVersionWhenConnectedWithPeers)
 		{
 			connectAllDatabase();
@@ -137,13 +141,16 @@ public abstract class TestDatabaseChangeVersionIntoDecentralizedNetwork extends 
 		{
 			connectCentralDatabaseBackupWithConnectedDatabase();
 		}
+		testSynchronisationWithNewDatabaseVersion(db1, databasesToTest);
+		changeConfiguration(db3);
+		exchangeMessages();
 		testSynchronisationWithNewDatabaseVersion();
 	}
 	protected void testSynchronisationWithNewDatabaseVersion() throws DatabaseException {
 		for (CommonDecentralizedTests.Database db : listDatabase)
-			testSynchronisationWithNewDatabaseVersion(db);
+			testSynchronisationWithNewDatabaseVersion(db, listDatabase);
 	}
-	protected void testSynchronisationWithNewDatabaseVersion(CommonDecentralizedTests.Database db) throws DatabaseException {
+	protected void testSynchronisationWithNewDatabaseVersion(CommonDecentralizedTests.Database db, Collection<Database> listDatabase) throws DatabaseException {
 
 		for (TableAloneV2.Record r : db.getDbwrapper().getTableInstance(TableAloneV2.class).getRecords()) {
 
