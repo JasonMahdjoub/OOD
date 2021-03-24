@@ -1187,7 +1187,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		void initLocalHostID(DecentralizedValue localHostID, boolean sendIndirectTransactions) throws DatabaseException {
 			DatabaseHooksTable.Record local = getDatabaseHooksTable().getLocalDatabaseHost();
 			if (local != null && !local.getHostID().equals(localHostID))
-				throw new DatabaseException("The given local host id is different from the stored local host id !");
+				throw new DatabaseException("The given local host id "+localHostID+" is different from the stored local host id "+local.getHostID()+" !");
 			if (local == null) {
 				local=getDatabaseHooksTable().initLocalHook(localHostID);
 			}
@@ -5455,9 +5455,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					boolean removeOldDatabase = false;
 					if (oldSchema != null && lifeCycles != null) {
 						try {
-							oldConfig=new DatabaseConfiguration(oldSchema, DatabaseConfiguration.SynchronizationType.NO_SYNCHRONIZATION, null, configuration.getBackupConfiguration(), false);
-							this.actualDatabaseLoading=null;
-							loadDatabase(oldConfig, null);
+							Database db=sql_database.get(oldSchema.getPackage());
+							if (db!=null)
+								oldConfig=db.configuration;
+							else {
+								oldConfig = new DatabaseConfiguration(oldSchema, DatabaseConfiguration.SynchronizationType.NO_SYNCHRONIZATION, null, configuration.getBackupConfiguration(), false);
+								this.actualDatabaseLoading = null;
+								loadDatabase(oldConfig, lifeCycles);
+							}
 							this.actualDatabaseLoading=actualDatabaseLoading;
 							if (databaseLogger!=null)
 								databaseLogger.fine("Transfer database from old to new configuration: "+configuration);
@@ -5466,8 +5471,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 								databaseLogger.fine("Transfer OK ");
 							oldDatabaseReplaced=true;
 							removeOldDatabase = lifeCycles.hasToRemoveOldDatabase(oldConfig);
-
 						} catch (DatabaseException e) {
+							e.printStackTrace();
 							oldConfig = null;
 						}
 					}
