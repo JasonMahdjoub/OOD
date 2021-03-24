@@ -70,7 +70,10 @@ public final class TablePointingV2 extends Table<TablePointingV2.Record> {
 		public Record(TablePointing.Record r)
 		{
 			this.id=r.id;
-			this.table2=new TablePointedV2.Record(r.table2);
+			if (r.table2==null)
+				this.table2=null;
+			else
+				this.table2=new TablePointedV2.Record(r.table2);
 		}
 
 		@Override

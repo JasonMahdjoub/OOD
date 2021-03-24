@@ -70,7 +70,10 @@ public final class UndecentralizableTableB1V2 extends Table<UndecentralizableTab
 		public Record(UndecentralizableTableB1.Record r)
 		{
 			this.id=r.id;
-			this.pointing=new UndecentralizableTableA1V2.Record(r.pointing);
+			if (r.pointing==null)
+				this.pointing=null;
+			else
+				this.pointing=new UndecentralizableTableA1V2.Record(r.pointing);
 		}
 
 		@SuppressWarnings("MethodDoesntCallSuperMethod")
