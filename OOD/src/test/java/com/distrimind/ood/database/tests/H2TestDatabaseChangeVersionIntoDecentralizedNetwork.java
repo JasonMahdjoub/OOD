@@ -37,12 +37,17 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 import com.distrimind.ood.database.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import org.testng.TestNG;
 import org.testng.annotations.Factory;
+import org.testng.xml.XmlClass;
+import org.testng.xml.XmlSuite;
+import org.testng.xml.XmlTest;
 
 import java.io.File;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.util.Collections;
 
 /**
  * @author Jason Mahdjoub
@@ -51,17 +56,47 @@ import java.security.NoSuchProviderException;
  */
 public class H2TestDatabaseChangeVersionIntoDecentralizedNetwork extends TestDatabaseChangeVersionIntoDecentralizedNetwork{
 
-	final String centralDatabaseFileName = "centralDatabaseToTestChangeVersion";
-	final String database_file_name1 = "decentralizedDatabaseToTestChangeVersionWithBackup1";
-	final String database_file_name2 = "decentralizedDatabaseToTestChangeVersionWithBackup2";
-	final String database_file_name3 = "decentralizedDatabaseToTestChangeVersionWithBackup3";
-	final String database_file_name4 = "decentralizedDatabaseToTestChangeVersionWithBackup4";
+	final String centralDatabaseFileName ;
+	final String database_file_name1 ;
+	final String database_file_name2 ;
+	final String database_file_name3 ;
+	final String database_file_name4 ;
 	final BackupConfiguration backupConfiguration=new BackupConfiguration(10000, 20000, 1000000, 1000, null);
 
 	@Factory(dataProvider = "constructorParameters")
-	public H2TestDatabaseChangeVersionIntoDecentralizedNetwork(boolean useCentralDatabaseBackup, boolean canSendIndirectTransactions, boolean upgradeDatabaseVersionWhenConnectedWithPeers, boolean upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion, boolean hasToRemoveOldDatabase) throws NoSuchProviderException, NoSuchAlgorithmException, IOException {
+	public H2TestDatabaseChangeVersionIntoDecentralizedNetwork(boolean useCentralDatabaseBackup, boolean canSendIndirectTransactions,
+															   boolean upgradeDatabaseVersionWhenConnectedWithPeers,
+															   boolean upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion,
+															   boolean hasToRemoveOldDatabase) throws NoSuchProviderException, NoSuchAlgorithmException, IOException {
 		super(useCentralDatabaseBackup, canSendIndirectTransactions, upgradeDatabaseVersionWhenConnectedWithPeers, upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion, hasToRemoveOldDatabase);
+		String dbCode="";
+		if (useCentralDatabaseBackup)
+			dbCode+="1";
+		else
+			dbCode+="0";
+		if (canSendIndirectTransactions)
+			dbCode+="1";
+		else
+			dbCode+="0";
+		if (upgradeDatabaseVersionWhenConnectedWithPeers)
+			dbCode+="1";
+		else
+			dbCode+="0";
+		if (upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion)
+			dbCode+="1";
+		else
+			dbCode+="0";
+		if (hasToRemoveOldDatabase)
+			dbCode+="1";
+		else
+			dbCode+="0";
+		centralDatabaseFileName = "centralDatabaseToTestChangeVersion"+dbCode;
+		database_file_name1 = "decentralizedDatabaseToTestChangeVersionWithBackup1"+dbCode;
+		database_file_name2 = "decentralizedDatabaseToTestChangeVersionWithBackup2"+dbCode;
+		database_file_name3 = "decentralizedDatabaseToTestChangeVersionWithBackup3"+dbCode;
+		database_file_name4 = "decentralizedDatabaseToTestChangeVersionWithBackup4"+dbCode;
 	}
+
 
 	@Override
 	public DatabaseFactory<?> getDatabaseFactoryInstanceForCentralDatabaseBackupReceiver() throws IllegalArgumentException, DatabaseException {
@@ -125,6 +160,20 @@ public class H2TestDatabaseChangeVersionIntoDecentralizedNetwork extends TestDat
 	@Override
 	public BackupConfiguration getBackupConfiguration() {
 		return backupConfiguration;
+	}
+
+
+	public static void main(String[] args) {
+		TestNG testng = new TestNG();
+		XmlSuite xmlSuite = new XmlSuite();
+		xmlSuite.setGroupByInstances(true);
+		xmlSuite.setName("TestDatabaseChangeVersionIntoDecentralizedNetwork");
+		XmlTest xmlTest = new XmlTest(xmlSuite);
+		xmlTest.setName("H2TestDatabaseChangeVersionIntoDecentralizedNetwork");
+		xmlTest.setClasses(Collections.singletonList(new XmlClass(H2TestDatabaseChangeVersionIntoDecentralizedNetwork.class)));
+		testng.setXmlSuites(Collections.singletonList(xmlSuite));
+		testng.setVerbose(2);
+		testng.run();
 	}
 
 }

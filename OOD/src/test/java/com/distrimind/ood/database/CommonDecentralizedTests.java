@@ -67,7 +67,7 @@ import java.util.logging.Level;
  */
 public abstract class CommonDecentralizedTests {
 	public static final Level networkLogLevel=Level.INFO;
-	public static final Level databaseLogLevel=Level.INFO;
+	public static final Level databaseLogLevel=Level.FINEST;
 
 	private static final Method isLocallyDecentralized;
 	static{
@@ -96,6 +96,9 @@ public abstract class CommonDecentralizedTests {
 	}
 
 	protected CommonDecentralizedTests() throws NoSuchProviderException, NoSuchAlgorithmException, IOException {
+
+	}
+	private void loadCertificates() throws NoSuchProviderException, NoSuchAlgorithmException, IOException {
 		this.random=SecureRandomType.DEFAULT.getSingleton(null);
 		this.centralDatabaseBackupKeyPair=ASymmetricAuthenticatedSignatureType.BC_FIPS_Ed25519.getKeyPairGenerator(SecureRandomType.DEFAULT.getSingleton(null)).generateKeyPair();
 
@@ -916,14 +919,14 @@ public abstract class CommonDecentralizedTests {
 
 	protected volatile CommonDecentralizedTests.Database db1 = null, db2 = null, db3 = null, db4 = null;
 	protected final ArrayList<CommonDecentralizedTests.Database> listDatabase = new ArrayList<>(3);
-	protected final AbstractKeyPair<?, ?> centralDatabaseBackupKeyPair;
+	protected AbstractKeyPair<?, ?> centralDatabaseBackupKeyPair;
 	private DatabaseWrapper centralDatabaseBackupDatabase=null;
 	protected CentralDatabaseBackupReceiver centralDatabaseBackupReceiver=null;
-	protected final AbstractSecureRandom random;
+	protected AbstractSecureRandom random;
 	protected final EncryptionProfileProviderFactory signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup=new EncryptionProfileCollection(){};
 	protected final EncryptionProfileProviderFactory encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup=new EncryptionProfileCollection(){};
-	private final CentralDatabaseBackupCertificate peerCertificate;
-	private final AbstractKeyPair<?, ?> peerKeyPairUsedWithCentralDatabaseBackupCertificate;
+	private CentralDatabaseBackupCertificate peerCertificate;
+	private AbstractKeyPair<?, ?> peerKeyPairUsedWithCentralDatabaseBackupCertificate;
 	protected int accessNumberInProtectedEncriptionProfile =0;
 	protected final EncryptionProfileProviderFactory protectedSignatureProfileProviderForAuthenticatedP2PMessages =new EncryptionProfileCollection(){
 		@Override
@@ -1000,8 +1003,9 @@ public abstract class CommonDecentralizedTests {
 		}
 	}
 	@BeforeClass
-	public void loadDatabase() throws DatabaseException {
+	public void loadDatabase() throws DatabaseException, NoSuchAlgorithmException, NoSuchProviderException, IOException {
 		unloadDatabase();
+		loadCertificates();
 		initCentralDatabaseBackup();
 		DatabaseFactory<?> df= getDatabaseFactoryInstance1();
 		df.setEncryptionProfileProviders(signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup, encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedSignatureProfileProviderForAuthenticatedP2PMessages, SecureRandomType.DEFAULT);
@@ -1021,8 +1025,8 @@ public abstract class CommonDecentralizedTests {
 		db1.getDbwrapper().setDatabaseLogLevel(databaseLogLevel);
 		db2.getDbwrapper().setDatabaseLogLevel(databaseLogLevel);
 		db3.getDbwrapper().setDatabaseLogLevel(databaseLogLevel);
-		for (CommonDecentralizedTests.Database db : listDatabase) {
 
+		for (CommonDecentralizedTests.Database db : listDatabase) {
 			addConfiguration(db);
 			Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized());
 

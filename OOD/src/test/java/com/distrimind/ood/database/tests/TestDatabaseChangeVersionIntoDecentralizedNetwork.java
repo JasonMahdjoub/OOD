@@ -73,7 +73,20 @@ public abstract class TestDatabaseChangeVersionIntoDecentralizedNetwork extends 
 		this.hasToRemoveOldDatabase=hasToRemoveOldDatabase;
 	}
 
-	@DataProvider
+
+
+	@Override
+	public boolean canInitCentralBackup()
+	{
+		return true;
+	}
+	@Override
+	protected boolean sendIndirectTransactions()
+	{
+		return false;
+	}
+
+	@DataProvider(name = "constructorParameters")
 	public static Object[][] constructorParameters() {
 		Object[][] res=new Object[32][5];
 		int i=0;
@@ -97,22 +110,11 @@ public abstract class TestDatabaseChangeVersionIntoDecentralizedNetwork extends 
 		return res;
 	}
 
-	@Override
-	public boolean canInitCentralBackup()
-	{
-		return true;
-	}
-	@Override
-	protected boolean sendIndirectTransactions()
-	{
-		return false;
-	}
-
-
-
 
 	@Test(dependsOnMethods = "testSynchroAfterTestsBetweenThreePeers")
 	public void upgradeDatabaseVersion() throws Exception {
+		for (Database db : listDatabase)
+			Assert.assertNotNull(db.getDbwrapper().getDatabaseConfigurationsBuilder().getLifeCycles());
 		if (upgradeDatabaseVersionWhenConnectedWithPeers)
 		{
 			connectAllDatabase();
@@ -228,7 +230,7 @@ public abstract class TestDatabaseChangeVersionIntoDecentralizedNetwork extends 
 			undecentralizableTableB1NBR=undecentralizableTableB1.getRecordsNumber();
 			db.getDbwrapper().getDatabaseConfigurationsBuilder()
 					.addConfiguration(new DatabaseConfiguration(
-									new DatabaseSchema(TablePointedV2.class.getPackage()),
+									new DatabaseSchema(TablePointedV2.class.getPackage(), new DatabaseSchema(TablePointing.class.getPackage())),
 									canInitCentralBackup() ? DatabaseConfiguration.SynchronizationType.DECENTRALIZED_SYNCHRONIZATION_AND_SYNCHRONIZATION_WITH_CENTRAL_BACKUP_DATABASE : DatabaseConfiguration.SynchronizationType.DECENTRALIZED_SYNCHRONIZATION,
 									getPeersToSynchronize(db), getBackupConfiguration(),
 									true),
