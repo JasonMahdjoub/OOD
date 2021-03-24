@@ -1159,9 +1159,16 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 						for (DecentralizedValue host : concernedHosts) {
 							desynchronizeDatabases(host, false, packages);
 						}
-						if (concernedHosts.size()>0 && packages.size()>0 && !getDatabaseWrapper().getDatabaseConfigurationsBuilder().isCommitInProgress())
-							getDatabaseWrapper().getDatabaseConfigurationsBuilder().desynchronizeDistantPeersWithGivenAdditionalPackages(false, concernedHosts, packages.toArray(new String[0]))
-										.commit();
+						if (concernedHosts.size()>0 && packages.size()>0 && !getDatabaseWrapper().getDatabaseConfigurationsBuilder().isCommitInProgress()) {
+							Set<String> ps=new HashSet<>();
+							packages.forEach(p -> {
+								if (getDatabaseWrapper().getDatabaseConfigurationsBuilder().getConfigurations().getConfigurations().stream().anyMatch(dc -> dc.getDatabaseSchema().getPackage().getName().equals(p)))
+									ps.add(p);
+							});
+							if (ps.size()>0)
+								getDatabaseWrapper().getDatabaseConfigurationsBuilder().desynchronizeDistantPeersWithGivenAdditionalPackages(false, concernedHosts, ps.toArray(new String[0]))
+									.commit();
+						}
 
 						return null;
 					}
