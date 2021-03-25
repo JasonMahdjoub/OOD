@@ -1483,11 +1483,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new DatabaseException("The given host ID correspond to the local database host !");
 
 			if (!fromCentral && (lastTransferredTransactionID>=0 || r.getLastValidatedLocalTransactionID()<0)) {
-				if (r.getLastValidatedLocalTransactionID() > lastTransferredTransactionID) {
+				/*if (r.getLastValidatedLocalTransactionID() > lastTransferredTransactionID) {
 					throw new DatabaseException("The given transfer ID limit " + lastTransferredTransactionID
 								+ " is lower than the stored transfer ID limit " + r.getLastValidatedLocalTransactionID() + ". LastValidatedDistantTransactionID=" + r.getLastValidatedDistantTransactionID() + " ; hook=" + hostID + " ; localHostID=" + getLocalHostID() + " ; last local transaction id=" + getTransactionIDTable().getLastTransactionID());
 				}
-				else {
+				else {*/
 
 
 					long l = getDatabaseTransactionsPerHostTable().validateTransactions(r, lastTransferredTransactionID);
@@ -1499,7 +1499,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					}
 					cp.setTransferInProgress(false);
 					synchronizedDataIfNecessary(cp);
-				}
+				//}
 			}
 			synchronizeMetaData();
 		}

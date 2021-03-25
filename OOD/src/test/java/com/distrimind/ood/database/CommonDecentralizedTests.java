@@ -67,7 +67,7 @@ import java.util.logging.Level;
  */
 public abstract class CommonDecentralizedTests {
 	public static final Level networkLogLevel=Level.INFO;
-	public static final Level databaseLogLevel=Level.FINEST;
+	public static final Level databaseLogLevel=Level.INFO;
 
 	private static final Method isLocallyDecentralized;
 	static{
@@ -1242,7 +1242,8 @@ public abstract class CommonDecentralizedTests {
 				loop |= centralDatabaseBackupMessageSent;
 			}
 		}
-		checkCentralBackupSynchronization();
+		if (db1.getDbwrapper().getSynchronizer().isInitializedWithCentralBackup())
+			checkCentralBackupSynchronization();
 	}
 
 	void checkCentralBackupSynchronization() throws DatabaseException {
@@ -1406,8 +1407,10 @@ public abstract class CommonDecentralizedTests {
 		}
 		exchangeMessages();
 	}
-
 	protected void connectAllDatabase() throws Exception {
+		connectAllDatabase(null);
+	}
+	protected void connectAllDatabase(Collection<DecentralizedValue> notInitializedWithOtherPeers) throws Exception {
 		CommonDecentralizedTests.Database[] dbs = new CommonDecentralizedTests.Database[listDatabase.size()];
 		for (int i = 0; i < dbs.length; i++)
 			dbs[i] = listDatabase.get(i);
@@ -1429,7 +1432,7 @@ public abstract class CommonDecentralizedTests {
 					Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized(otherdb.getHostID()));
 				else
 					Assert.assertEquals(db.getDbwrapper().getSynchronizer().isInitialized(otherdb.getHostID()),
-						db.getDbwrapper().getDatabaseConfigurationsBuilder().getConfigurations().getDistantPeers().contains(otherdb.getHostID()), db.getHostID().toString()+";"+otherdb.getHostID());
+							(notInitializedWithOtherPeers==null || (!notInitializedWithOtherPeers.contains(otherdb.getHostID()) && !notInitializedWithOtherPeers.contains(db.getHostID()))) && db.getDbwrapper().getDatabaseConfigurationsBuilder().getConfigurations().getDistantPeers().contains(otherdb.getHostID()), db.getHostID().toString()+";"+otherdb.getHostID());
 
 			}
 		}
