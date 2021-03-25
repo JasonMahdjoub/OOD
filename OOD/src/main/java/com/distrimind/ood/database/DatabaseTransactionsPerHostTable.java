@@ -442,7 +442,13 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 												if (databasePackage.get()==null)
 													databasePackage.set(t.getClass().getPackage().getName());
 											} catch (Exception e) {
-												throw new SerializationDatabaseException("", e);
+												String p=event.getConcernedPackage();
+												if (getDatabaseWrapper().getDatabaseConfigurationsBuilder().getConfigurations().getConfigurations().stream().noneMatch(c -> c.getDatabaseSchema().getPackage().getName().equals(p))) {
+													continue;
+												}
+												else
+													throw new SerializationDatabaseException("indirectTransaction="+indirectTransaction, e);
+
 											}
 
 											DatabaseEventType type = DatabaseEventType.getEnum(event.getType());
@@ -637,7 +643,12 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 								try {
 									t = (Table<DatabaseRecord>) getDatabaseWrapper().getTableInstance(event.getConcernedTable());
 								} catch (Exception e) {
-									throw new SerializationDatabaseException("", e);
+									String p=event.getConcernedPackage();
+									if (getDatabaseWrapper().getDatabaseConfigurationsBuilder().getConfigurations().getConfigurations().stream().noneMatch(c -> c.getDatabaseSchema().getPackage().getName().equals(p))) {
+										continue;
+									}
+									else
+										throw new SerializationDatabaseException("", e);
 								}
 
 								DatabaseEventType type = DatabaseEventType.getEnum(event.getType());
