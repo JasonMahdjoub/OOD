@@ -95,7 +95,7 @@ public abstract class CommonDecentralizedTests {
 		}
 	}
 
-	protected CommonDecentralizedTests() throws NoSuchProviderException, NoSuchAlgorithmException, IOException {
+	protected CommonDecentralizedTests() {
 
 	}
 	private void loadCertificates() throws NoSuchProviderException, NoSuchAlgorithmException, IOException {
@@ -1138,11 +1138,14 @@ public abstract class CommonDecentralizedTests {
 
 
 
-	protected void sendDistantDatabaseEvent(CommonDecentralizedTests.DistantDatabaseEvent event) {
+	protected void sendDistantDatabaseEvent(CommonDecentralizedTests.DistantDatabaseEvent event, P2PDatabaseEventToSend p2pe) throws DatabaseException {
 		for (CommonDecentralizedTests.Database db : listDatabase) {
 			if (db.getHostID().equals(event.getHostDestination())) {
-				if (db.isConnected())
+				if (db.isConnected()) {
+					if (!(p2pe instanceof HookSynchronizeRequest) && !(p2pe instanceof CompatibleDatabasesP2PMessage))
+						Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized(), p2pe.toString());
 					db.getReceivedDatabaseEvents().add(event);
+				}
 				else
 					Assert.fail();
 				break;
@@ -1222,6 +1225,7 @@ public abstract class CommonDecentralizedTests {
 						loop = true;
 						if (e instanceof MessageDestinedToCentralDatabaseBackup)
 						{
+							Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitializedWithCentralBackup(), e.toString());
 							centralDatabaseBackupReceiver.received((MessageDestinedToCentralDatabaseBackup)new CommonDecentralizedTests.DistantDatabaseEvent(db.getDbwrapper(), (MessageDestinedToCentralDatabaseBackup)e).getDatabaseEventToSend());
 						}
 						else if (e instanceof P2PDatabaseEventToSend) {
@@ -1230,7 +1234,8 @@ public abstract class CommonDecentralizedTests {
 							Assert.assertEquals(es.getHostSource(), db.getHostID());
 							Assert.assertNotEquals(es.getHostDestination(), db.getHostID(), ""+es);
 							if (db.isConnected()) {
-								sendDistantDatabaseEvent(new CommonDecentralizedTests.DistantDatabaseEvent(db.getDbwrapper(), es));
+								Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized(), e.toString());
+								sendDistantDatabaseEvent(new CommonDecentralizedTests.DistantDatabaseEvent(db.getDbwrapper(), es), es);
 							} else
 								Assert.fail();// TODO really ?
 						} else {
@@ -1360,11 +1365,11 @@ public abstract class CommonDecentralizedTests {
 		return true;
 	}
 
-	protected void connectLocal(CommonDecentralizedTests.Database db) throws DatabaseException {
+	protected void connectLocal(CommonDecentralizedTests.Database db, boolean connectToCentral) throws DatabaseException {
 		synchronized (CommonDecentralizedTests.class) {
 
 			if (!db.isConnected()) {
-				if (canInitCentralBackup())
+				if (canInitCentralBackup() && connectToCentral)
 					db.getDbwrapper().getSynchronizer().centralDatabaseBackupAvailable();
 				db.setConnected(true);
 				assert db.getDbwrapper().getSynchronizer().isInitialized();
@@ -1400,7 +1405,7 @@ public abstract class CommonDecentralizedTests {
 	protected void connectSelectedDatabase(CommonDecentralizedTests.Database... listDatabase)
 			throws Exception {
 		for (CommonDecentralizedTests.Database db : listDatabase) {
-			connectLocal(db);
+			connectLocal(db, false);
 		}
 		for (CommonDecentralizedTests.Database db : listDatabase) {
 			connectDistant(db, listDatabase);
@@ -1408,14 +1413,14 @@ public abstract class CommonDecentralizedTests {
 		exchangeMessages();
 	}
 	protected void connectAllDatabase() throws Exception {
-		connectAllDatabase(null);
+		connectAllDatabase(null, true);
 	}
-	protected void connectAllDatabase(Collection<DecentralizedValue> notInitializedWithOtherPeers) throws Exception {
+	protected void connectAllDatabase(Collection<DecentralizedValue> notInitializedWithOtherPeers, boolean connectToCentral) throws Exception {
 		CommonDecentralizedTests.Database[] dbs = new CommonDecentralizedTests.Database[listDatabase.size()];
 		for (int i = 0; i < dbs.length; i++)
 			dbs[i] = listDatabase.get(i);
 		for (CommonDecentralizedTests.Database db : listDatabase) {
-			connectLocal(db);
+			connectLocal(db, connectToCentral);
 		}
 		for (CommonDecentralizedTests.Database db : listDatabase) {
 			connectDistant(db, dbs);

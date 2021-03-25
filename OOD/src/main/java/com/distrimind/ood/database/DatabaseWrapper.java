@@ -755,8 +755,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		boolean isConnectable(DatabaseWrapper wrapper) {
-			Stream<String> stream=wrapper.getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations(hookID);
-			return compatibleDatabasesFromDirectPeer.stream().noneMatch(d -> stream.noneMatch(d::equals));
+			return wrapper.getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations(hookID).allMatch(compatibleDatabasesFromDirectPeer::contains)
+					&& compatibleDatabasesFromDirectPeer.stream().allMatch(p-> wrapper.getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations(hookID).anyMatch(p::equals));
+			/*return compatibleDatabasesFromDirectPeer.size()==compatibleDatabasesFromDirectPeer.stream().noneMatch(d -> wrapper.getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations(hookID).noneMatch(d::equals))
+					&& wrapper.getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations(hookID).noneMatch(d -> compatibleDatabasesFromDirectPeer.stream().noneMatch(d::equals));*/
 		}
 	}
 	static class ConnectedPeersWithCentralBackup {
@@ -1014,7 +1016,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			return r != null && isInitialized(r.getHostID());
 		}
 		void sendAvailableDatabaseTo(DecentralizedValue hostDestination) throws DatabaseException {
-			sendAvailableDatabaseTo(hostDestination, getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString());
+			sendAvailableDatabaseTo(hostDestination, getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString(hostDestination));
 		}
 		void sendAvailableDatabaseTo(DecentralizedValue hostDestination, Set<String> packages) throws DatabaseException {
 
@@ -1022,7 +1024,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		void sendAvailableDatabaseToCentralDatabaseBackup() throws DatabaseException {
-			sendAvailableDatabaseToCentralDatabaseBackup(getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString());
+			//sendAvailableDatabaseToCentralDatabaseBackup(getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString());
 		}
 		void sendAvailableDatabaseToCentralDatabaseBackup(Set<String> packages) throws DatabaseException {
 			if (centralBackupInitialized) {
@@ -1033,14 +1035,17 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		void broadcastAvailableDatabase() throws DatabaseException {
 			if (!isInitialized())
 				return;
-			Set<String> p=getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString();
+			//Set<String> p=getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString();
 			for (ConnectedPeers cp : initializedHooks.values())
 			{
 				if (cp.isLocalHost())
 					continue;
-				sendAvailableDatabaseTo(cp.getHostID(), p);
+				if (!cp.isConnectable(DatabaseWrapper.this) && cp.isConnected())
+					disconnectHook(cp.hookID);
+				sendAvailableDatabaseTo(cp.getHostID(), getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString(cp.hookID));
+
 			}
-			sendAvailableDatabaseToCentralDatabaseBackup(p);
+			//sendAvailableDatabaseToCentralDatabaseBackup(p);
 		}
 
 		void notifyNewAuthenticatedMessage(AuthenticatedP2PMessage authenticatedP2PMessage) throws DatabaseException {
@@ -1303,7 +1308,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			Map<String, Boolean> packagesToSynchronize=hookSynchronizeRequest.getPackagesToSynchronize(getLocalHostID());
 			lockRead();
 			try {
-				if (packagesToSynchronize.keySet().stream().anyMatch(p -> getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations().map(s -> s.getDatabaseSchema().getPackage().getName()).noneMatch(p::equals)))
+				if (packagesToSynchronize.keySet().stream().anyMatch(p -> getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations(hookSynchronizeRequest.getHostSource()).noneMatch(p::equals)))
 					return;
 			}
 			finally {
@@ -2914,25 +2919,34 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 	}
 
-	private Stream<DatabaseConfiguration> getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations()
+	/*private Stream<DatabaseConfiguration> getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations()
 	{
 		return sql_database.values()
 				.stream()
 				.filter(d-> getDatabaseConfigurationsBuilder().getConfigurations().getConfigurations().stream().anyMatch(dc-> dc.getDatabaseSchema().getPackage().equals(d.configuration.getDatabaseSchema().getPackage())))
 				.map(d-> d.configuration);
-	}
+	}*/
 
-	private Set<String> getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString()
+	private Set<String> getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString(DecentralizedValue hostID)
 	{
-		return getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations()
-				.map(c -> c.getDatabaseSchema().getPackage().getName())
+		return getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations(hostID)
 				.collect(Collectors.toSet());
 	}
 	private Stream<String> getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations(DecentralizedValue hostID)
 	{
-		return getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations()
-				.filter(c -> c.getSynchronizationType()!= DatabaseConfiguration.SynchronizationType.NO_SYNCHRONIZATION
-						&& c.getDistantPeersThatCanBeSynchronizedWithThisDatabase().contains(hostID))
+		return sql_database.values()
+				.stream()
+				.map(d-> d.configuration)
+				.filter(dc -> {
+					if (getDatabaseConfigurationsBuilder().getConfigurations().getConfigurations().stream().noneMatch(dc2-> dc2.getDatabaseSchema().getPackage().equals(dc.getDatabaseSchema().getPackage())))
+						return false;
+					if (dc.isDecentralized())
+					{
+						Set<DecentralizedValue> s=dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase();
+						return s!=null && s.contains(hostID);
+					}
+					return false;
+				})
 				.map(c -> c.getDatabaseSchema().getPackage().getName())
 			;
 	}
@@ -4943,15 +4957,15 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * @throws DatabaseException
 	 *             if a problem occurs
 	 */
-	final void deleteDatabase(final DatabaseConfiguration configuration) throws DatabaseException {
-		deleteDatabase(configuration, getCurrentDatabaseVersion(configuration.getDatabaseSchema().getPackage()));
+	final void deleteDatabase(final DatabaseConfiguration configuration, boolean notifyNewCompatibleDatabases) throws DatabaseException {
+		deleteDatabase(configuration, notifyNewCompatibleDatabases, getCurrentDatabaseVersion(configuration.getDatabaseSchema().getPackage()));
 	}
-	final void deleteDatabase(final DatabaseConfiguration configuration, final int databaseVersion) throws DatabaseException {
+	final void deleteDatabase(final DatabaseConfiguration configuration, boolean notifyNewCompatibleDatabases, final int databaseVersion) throws DatabaseException {
 		try  {
 
 			lockWrite();
 			if (databaseLogger!=null)
-				databaseLogger.fine("Start database removing: "+configuration);
+				databaseLogger.fine("Start database removing: "+configuration+" (version="+databaseVersion+")");
 			runTransaction(new Transaction() {
 
 				@Override
@@ -5019,8 +5033,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 			}, true);
 			if (databaseLogger!=null)
-				databaseLogger.info("Database removed: "+configuration);
-			getSynchronizer().broadcastAvailableDatabase();
+				databaseLogger.info("Database removed: "+configuration+" (version="+databaseVersion+")");
+			if (notifyNewCompatibleDatabases)
+				getSynchronizer().broadcastAvailableDatabase();
 
 		}
 		finally
@@ -5139,7 +5154,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						if (oldDatabaseVersion >= 0) {
 							Database db = sql_database.get(configuration.getDatabaseSchema().getPackage());
 							HashMap<Class<? extends Table<?>>, Table<?>> hm = new HashMap<>(db.tables_per_versions.get(oldDatabaseVersion).tables_instances);
-							deleteDatabase(configuration, oldDatabaseVersion);
+							deleteDatabase(configuration, false, oldDatabaseVersion);
 							for (Table<?> t : hm.values()) {
 								t.changeVersion(newDatabaseVersion, getTableID(t.getClass(), newDatabaseVersion), DatabaseWrapper.this);
 							}
@@ -5483,7 +5498,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						if (databaseLogger!=null)
 							databaseLogger.fine("Post database creation script OK: "+configuration);
 						if (removeOldDatabase)
-							deleteDatabase(oldConfig, databaseVersion);
+							deleteDatabase(oldConfig, false, databaseVersion);
 					}
 					initBackupRestore=true;
 				}
@@ -5497,8 +5512,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 
-		@SuppressWarnings("unchecked")
-		HashMap<Package, Database> sd = (HashMap<Package, Database>) sql_database.clone();
+		HashMap<Package, Database> sd = new HashMap<>(sql_database);
 		Database db=sd.get(configuration.getDatabaseSchema().getPackage());
 
 		if (db==null) {

@@ -267,6 +267,11 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 			return concernedTable;
 		}
 
+		String getConcernedPackage()
+		{
+			return concernedTable.substring(0, concernedTable.lastIndexOf("."));
+		}
+
 		void setConcernedTable(String _concernedTable) {
 			concernedTable = _concernedTable;
 		}

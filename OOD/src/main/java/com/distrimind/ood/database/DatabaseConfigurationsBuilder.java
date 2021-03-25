@@ -603,7 +603,7 @@ public class DatabaseConfigurationsBuilder {
 	private void checkDatabaseToUnload() throws DatabaseException {
 		if (currentTransaction.configurationsToDefinitivelyDelete!=null) {
 			for (DatabaseConfiguration c : currentTransaction.configurationsToDefinitivelyDelete)
-				wrapper.deleteDatabase(c);
+				wrapper.deleteDatabase(c, true);
 		}
 		wrapper.checkDatabaseToUnload();
 	}

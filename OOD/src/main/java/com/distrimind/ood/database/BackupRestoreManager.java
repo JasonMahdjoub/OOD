@@ -1877,7 +1877,7 @@ public class BackupRestoreManager {
 				} catch (Exception e) {
 					lastCurrentRestorationFileUsed=Long.MIN_VALUE;
 					if (newVersionLoaded)
-						databaseWrapper.deleteDatabase(databaseConfiguration, newVersion);
+						databaseWrapper.deleteDatabase(databaseConfiguration, false, newVersion);
 					throw DatabaseException.getDatabaseException(e);
 				}
 			}
@@ -2121,7 +2121,7 @@ public class BackupRestoreManager {
 
 			} catch (Exception e) {
 				databaseWrapper.getSynchronizer().cancelExtendedTransaction();
-				databaseWrapper.deleteDatabase(databaseConfiguration, newVersion);
+				databaseWrapper.deleteDatabase(databaseConfiguration, false, newVersion);
 				throw DatabaseException.getDatabaseException(e);
 			}
 			finally {
@@ -2318,7 +2318,7 @@ public class BackupRestoreManager {
 			long last = getLastTransactionUTCInMS();
 			Reference<Long> fileTimeStamp = new Reference<>();
 			//AtomicReference<RecordsIndex> index=new AtomicReference<>();
-			Reference<Long> firstTransactionID=new Reference<>((Long)null);
+			Reference<Long> firstTransactionID=new Reference<>(null);
 			RandomOutputStream rfos = getFileForBackupIncrementOrCreateIt(fileTimeStamp, firstTransactionID/*, index*/);
 			return new Transaction(fileTimeStamp.get(), last, rfos, /*index.get(), */oldLastFile, oldLength, firstTransactionID.get(), transactionToSynchronize);
 		}

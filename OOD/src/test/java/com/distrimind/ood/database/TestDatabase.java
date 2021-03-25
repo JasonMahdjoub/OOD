@@ -5140,7 +5140,7 @@ public abstract class TestDatabase {
 
 	@Test(threadPoolSize = 1, dependsOnMethods = { "testBackup" })
 	public void testDatabaseRemove() throws DatabaseException {
-		sql_db.deleteDatabase(dbConfig1);
+		sql_db.deleteDatabase(dbConfig1, true);
 		try {
 			sql_db.getDatabaseConfigurationsBuilder()
 					.addConfiguration(dbConfig1, false, false)

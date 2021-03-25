@@ -150,7 +150,7 @@ public abstract class TestDatabaseChangeVersionIntoDecentralizedNetwork extends 
 		}
 		if (!upgradeDatabaseVersionWhenConnectedWithPeers)
 		{
-			connectAllDatabase(Collections.singletonList(db3.getHostID()));
+			connectAllDatabase(Collections.singletonList(db3.getHostID()), false);
 		}
 		exchangeMessages();
 		if (!upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion && useCentralDatabaseBackup)
