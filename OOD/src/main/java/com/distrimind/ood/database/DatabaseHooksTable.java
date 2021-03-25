@@ -674,7 +674,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 	void actualizeLastTransactionID(final List<DecentralizedValue> excludedHooks, final long lastTransactionID)
 			throws DatabaseException {
 
-		//final ArrayList<DatabaseHooksTable.Record> toUpdate = new ArrayList<>();
+		final ArrayList<DatabaseHooksTable.Record> toUpdate = new ArrayList<>();
 		getRecords(new Filter<DatabaseHooksTable.Record>() {
 
 			@Override
@@ -723,18 +723,18 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 					else if (actualLastID.get() < h.getLastValidatedLocalTransactionID())
 						throw new IllegalAccessError();
 
-					/*if (actualLastID.get() != Long.MAX_VALUE && h.getLastValidatedLocalTransactionID() < actualLastID.get()) {
+					if (actualLastID.get() != Long.MAX_VALUE && h.getLastValidatedLocalTransactionID() < actualLastID.get()) {
 						h.setLastValidatedLocalTransactionID(actualLastID.get());
 						toUpdate.add(h);
-					}*/
+					}
 
 				}
 				return false;
 			}
 		}, "concernsDatabaseHost=%c", "c", false);
-		/*for (DatabaseHooksTable.Record h : toUpdate) {
+		for (DatabaseHooksTable.Record h : toUpdate) {
 			updateRecord(h, "lastValidatedLocalTransactionID", h.getLastValidatedLocalTransactionID());
-		}*/
+		}
 	}
 	Record getHook(DecentralizedValue host) throws DatabaseException {
 		return getHook(host, false);
