@@ -35,7 +35,10 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.ood.database.*;
+import com.distrimind.ood.database.BackupConfiguration;
+import com.distrimind.ood.database.DatabaseFactory;
+import com.distrimind.ood.database.EmbeddedH2DatabaseWrapper;
+import com.distrimind.ood.database.InFileEmbeddedH2DatabaseFactory;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import org.testng.TestNG;
 import org.testng.annotations.Factory;
@@ -44,9 +47,6 @@ import org.testng.xml.XmlSuite;
 import org.testng.xml.XmlTest;
 
 import java.io.File;
-import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.util.Collections;
 
 /**
@@ -67,34 +67,14 @@ public class H2TestDatabaseChangeVersionIntoDecentralizedNetwork extends TestDat
 	public H2TestDatabaseChangeVersionIntoDecentralizedNetwork(boolean useCentralDatabaseBackup, boolean canSendIndirectTransactions,
 															   boolean upgradeDatabaseVersionWhenConnectedWithPeers,
 															   boolean upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion,
-															   boolean hasToRemoveOldDatabase) throws NoSuchProviderException, NoSuchAlgorithmException, IOException {
+															   boolean hasToRemoveOldDatabase) {
 		super(useCentralDatabaseBackup, canSendIndirectTransactions, upgradeDatabaseVersionWhenConnectedWithPeers, upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion, hasToRemoveOldDatabase);
-		String dbCode="";
-		if (useCentralDatabaseBackup)
-			dbCode+="1";
-		else
-			dbCode+="0";
-		if (canSendIndirectTransactions)
-			dbCode+="1";
-		else
-			dbCode+="0";
-		if (upgradeDatabaseVersionWhenConnectedWithPeers)
-			dbCode+="1";
-		else
-			dbCode+="0";
-		if (upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion)
-			dbCode+="1";
-		else
-			dbCode+="0";
-		if (hasToRemoveOldDatabase)
-			dbCode+="1";
-		else
-			dbCode+="0";
-		centralDatabaseFileName = "centralDatabaseToTestChangeVersion"+dbCode;
-		database_file_name1 = "decentralizedDatabaseToTestChangeVersionWithBackup1"+dbCode;
-		database_file_name2 = "decentralizedDatabaseToTestChangeVersionWithBackup2"+dbCode;
-		database_file_name3 = "decentralizedDatabaseToTestChangeVersionWithBackup3"+dbCode;
-		database_file_name4 = "decentralizedDatabaseToTestChangeVersionWithBackup4"+dbCode;
+
+		centralDatabaseFileName = "centralDatabaseToTestChangeVersion";
+		database_file_name1 = "decentralizedDatabaseToTestChangeVersionWithBackup1";
+		database_file_name2 = "decentralizedDatabaseToTestChangeVersionWithBackup2";
+		database_file_name3 = "decentralizedDatabaseToTestChangeVersionWithBackup3";
+		database_file_name4 = "decentralizedDatabaseToTestChangeVersionWithBackup4";
 	}
 
 

@@ -1553,6 +1553,24 @@ public class BackupRestoreManager {
 		}
 	}
 
+	public Long getFirstValidatedTransactionUTCInMs()
+	{
+		synchronized (this) {
+			if (fileTimeStamps.size()>0)
+			{
+				if (fileTimeStamps.size()>1)
+					return fileTimeStamps.get(0);
+				else
+				{
+					long fts=fileTimeStamps.get(0);
+					if (isPartFull(fts, getFile(fts, true) ))
+						return fts;
+				}
+			}
+			return Long.MIN_VALUE;
+		}
+	}
+
 	/**
 	 * Gets the younger backup event UTC time
 	 * @return the younger backup event UTC time

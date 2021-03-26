@@ -1202,6 +1202,7 @@ public abstract class CommonDecentralizedTests {
 	}
 
 	private boolean centralDatabaseBackupMessageSent=false;
+
 	protected void exchangeMessages() throws Exception {
 		synchronized (CommonDecentralizedTests.class) {
 			boolean loop = true;
@@ -1211,10 +1212,11 @@ public abstract class CommonDecentralizedTests {
 				for (CommonDecentralizedTests.Database db : listDatabase) {
 					/*if (canInitCentralBackup())
 					{
-						BackupRestoreManager brm=db.getDbwrapper().getBackupRestoreManager(UndecentralizableTableA1.class.getPackage());
+						boolean newDBVersion=db.getDbwrapper().getDatabaseConfigurationsBuilder().getConfigurations().getConfigurations().stream().anyMatch(dc -> dc.getDatabaseSchema().getPackage().equals(UndecentralizableTableA1V2.class.getPackage()));
+						BackupRestoreManager brm=db.getDbwrapper().getBackupRestoreManager(newDBVersion?UndecentralizableTableA1V2.class.getPackage():UndecentralizableTableA1.class.getPackage());
 						long l=brm.getLastFileTimestampUTC(false);
 						if (l!=brm.getLastFileTimestampUTC(true)) {
-							long delta = getBackupConfiguration().getMaxBackupFileAgeInMs() - System.currentTimeMillis() +l;
+							long delta = getBackupConfiguration().getMaxBackupFileAgeInMs() - System.currentTimeMillis() +l+1;
 							if (delta > 0)
 								Thread.sleep(delta);
 						}
@@ -1282,7 +1284,7 @@ public abstract class CommonDecentralizedTests {
 						List<Long> list = brm.getFinalTimestamps();
 						for (int i=0;i<list.size();i++) {
 							long l=list.get(i);
-							Assert.assertTrue(records.stream().anyMatch(r -> r.getFileTimeUTC() == l) || i== records.size() && records.size()==list.size()-1, "l=" + l + ", list.size=" + list.size() + ", records.size=" + records.size());
+							Assert.assertTrue(records.stream().anyMatch(r -> r.getFileTimeUTC() == l) || i== records.size() && records.size()==list.size()-1, "l=" + l + ", list.size=" + list.size() + ", records.size=" + records.size()+", databasePackage="+dc.getDatabaseSchema().getPackage()+", db="+(d==db1?1:(d==db2?2:3))+", list="+list+(records.size()>0?", lastRecord="+records.get(records.size()-1).getFileTimeUTC():""));
 						}
 						for (EncryptedBackupPartReferenceTable.Record r : records) {
 							if (!list.contains(r.getFileTimeUTC()))

@@ -64,7 +64,7 @@ public interface DatabaseLifeCycles {
 	/**
 	 * This function is called after the database was created and after the eventual
 	 * call of the function
-	 * {@link #transferDatabaseFromOldVersion(DatabaseWrapper, DatabaseConfiguration, DatabaseConfiguration)}
+	 * {@link #transferDatabaseFromOldVersion(DatabaseWrapper, DatabaseConfiguration)}
 	 * 
 	 * @param wrapper the database wrapper
 	 * @param newDatabaseConfiguration

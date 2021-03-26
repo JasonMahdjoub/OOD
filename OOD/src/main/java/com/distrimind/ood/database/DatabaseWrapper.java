@@ -2108,6 +2108,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				if (lastValidatedTransactionsUTC==null)
 					throw new NullPointerException();
 
+				for (Database d : sql_database.values())
+					d.lastValidatedTransactionUTCForCentralBackup=Long.MIN_VALUE;
 				Set<String> authorizedPackagesToBeSynchronizedWithCentralDatabaseBackup=getDatabasePackagesToSynchronizeWithCentralBackup();
 				for (Map.Entry<String, Long> e : lastValidatedTransactionsUTC.entrySet()) {
 					if (authorizedPackagesToBeSynchronizedWithCentralDatabaseBackup.contains(e.getKey())) {
@@ -2682,10 +2684,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			long timeStamp;
 			d.lastValidatedTransactionUTCForCentralBackup = lastValidatedTransactionUTC;
 			if (lastValidatedTransactionUTC == Long.MIN_VALUE) {
-				timeStamp = d.backupRestoreManager.getLastFileReferenceTimestampUTC(true);
+				Long l=d.backupRestoreManager.getFirstValidatedTransactionUTCInMs();
+				timeStamp = l==null?Long.MIN_VALUE:l;
 			} else {
 				timeStamp = d.backupRestoreManager.getNearestFileUTCFromGivenTimeNotIncluded(lastValidatedTransactionUTC);
-						}
+			}
 
 			if (timeStamp != Long.MIN_VALUE) {
 				if (!backupDatabasePartsSynchronizingWithCentralDatabaseBackup.contains(_package.getName())) {

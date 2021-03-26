@@ -43,9 +43,6 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -66,7 +63,7 @@ public abstract class TestDatabaseChangeVersionIntoDecentralizedNetwork extends 
 	protected TestDatabaseChangeVersionIntoDecentralizedNetwork(boolean useCentralDatabaseBackup, boolean canSendIndirectTransactions,
 																boolean upgradeDatabaseVersionWhenConnectedWithPeers,
 																boolean upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion,
-																boolean hasToRemoveOldDatabase) throws NoSuchProviderException, NoSuchAlgorithmException, IOException {
+																boolean hasToRemoveOldDatabase) {
 		this.useCentralDatabaseBackup=useCentralDatabaseBackup;
 		this.canSendIndirectTransactions=canSendIndirectTransactions;
 		this.upgradeDatabaseVersionWhenConnectedWithPeers=upgradeDatabaseVersionWhenConnectedWithPeers;
@@ -155,11 +152,13 @@ public abstract class TestDatabaseChangeVersionIntoDecentralizedNetwork extends 
 		exchangeMessages();
 		if (!upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion && useCentralDatabaseBackup)
 		{
+			Thread.sleep(getBackupConfiguration().getMaxBackupFileAgeInMs());
 			connectCentralDatabaseBackupWithConnectedDatabase();
 		}
 		testSynchronisationWithNewDatabaseVersion(db1, databasesToTest);
 		changeConfiguration(db3);
 		exchangeMessages();
+
 		testSynchronisationWithNewDatabaseVersion();
 	}
 	protected void testSynchronisationWithNewDatabaseVersion() throws DatabaseException {
