@@ -676,6 +676,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	static class ConnectedPeers {
 		private final DecentralizedValue hookID;
 		final Set<String> compatibleDatabasesFromDirectPeer=new HashSet<>();
+		final Set<String> compatibleDatabases=new HashSet<>();
+
 
 		private boolean connected;
 		private boolean initializing;
@@ -1016,11 +1018,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			return r != null && isInitialized(r.getHostID());
 		}
 		void sendAvailableDatabaseTo(DecentralizedValue hostDestination) throws DatabaseException {
-			sendAvailableDatabaseTo(hostDestination, getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString(hostDestination));
+			sendAvailableDatabaseTo(hostDestination, getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString(), getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString(hostDestination));
 		}
-		void sendAvailableDatabaseTo(DecentralizedValue hostDestination, Set<String> packages) throws DatabaseException {
+		void sendAvailableDatabaseTo(DecentralizedValue hostDestination, Set<String> compatibleDatabases, Set<String> compatibleDatabasesWithDestinationPeer) throws DatabaseException {
 
-			addNewDatabaseEvent(new CompatibleDatabasesP2PMessage(packages,getLocalHostID(), hostDestination));
+			addNewDatabaseEvent(new CompatibleDatabasesP2PMessage(compatibleDatabases, compatibleDatabasesWithDestinationPeer,getLocalHostID(), hostDestination));
 		}
 
 		void sendAvailableDatabaseToCentralDatabaseBackup() throws DatabaseException {
@@ -1035,17 +1037,17 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		void broadcastAvailableDatabase() throws DatabaseException {
 			if (!isInitialized())
 				return;
-			//Set<String> p=getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString();
+			Set<String> p=getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString();
 			for (ConnectedPeers cp : initializedHooks.values())
 			{
 				if (cp.isLocalHost())
 					continue;
 				if (!cp.isConnectable(DatabaseWrapper.this) && cp.isConnected())
 					disconnectHook(cp.hookID);
-				sendAvailableDatabaseTo(cp.getHostID(), getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString(cp.hookID));
+				sendAvailableDatabaseTo(cp.getHostID(), p, getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString(cp.hookID));
 
 			}
-			sendAvailableDatabaseToCentralDatabaseBackup();
+			sendAvailableDatabaseToCentralDatabaseBackup(p);
 		}
 
 		void notifyNewAuthenticatedMessage(AuthenticatedP2PMessage authenticatedP2PMessage) throws DatabaseException {
@@ -1308,7 +1310,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			Map<String, Boolean> packagesToSynchronize=hookSynchronizeRequest.getPackagesToSynchronize(getLocalHostID());
 			lockRead();
 			try {
-				if (packagesToSynchronize.keySet().stream().anyMatch(p -> getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations(hookSynchronizeRequest.getHostSource()).noneMatch(p::equals)))
+				if (packagesToSynchronize.keySet().stream().anyMatch(p -> getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations().noneMatch(p::equals)))
 					return;
 			}
 			finally {
@@ -2407,9 +2409,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				List<AuthenticatedP2PMessage> las = r.getAuthenticatedMessagesQueueToSend(initializedHooks);
 				for (AuthenticatedP2PMessage a : las) {
 
-					if (!(a instanceof HookSynchronizeRequest) || cp.compatibleDatabasesFromDirectPeer.containsAll(((HookSynchronizeRequest) a).getPackagesToSynchronize(a.getHostDestination()).keySet()) ) {
-						addNewDatabaseEvent((DatabaseEvent) a);
-					}
+					//if (!(a instanceof HookSynchronizeRequest) || cp.compatibleDatabases.containsAll(((HookSynchronizeRequest) a).getPackagesToSynchronize(a.getHostDestination()).keySet()) ) {
+					addNewDatabaseEvent((DatabaseEvent) a);
+					//}
 
 				}
 			} else if (connectable) {
@@ -2793,7 +2795,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (cp!=null)
 			{
 				cp.compatibleDatabasesFromDirectPeer.clear();
-				cp.compatibleDatabasesFromDirectPeer.addAll(message.getCompatibleDatabases());
+				cp.compatibleDatabasesFromDirectPeer.addAll(message.getCompatibleDatabasesWithDestinationPeer());
+				cp.compatibleDatabases.clear();
+				cp.compatibleDatabases.addAll(message.getCompatibleDatabases());
 			}
 			checkConnexionsToInit(message.getHostSource());
 
@@ -2934,7 +2938,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				.filter(d-> getDatabaseConfigurationsBuilder().getConfigurations().getConfigurations().stream().anyMatch(dc-> dc.getDatabaseSchema().getPackage().equals(d.configuration.getDatabaseSchema().getPackage())))
 				.map(d-> d.configuration);
 	}*/
-	private Set<String> getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString()
+	private Stream<String> getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations()
 	{
 		return sql_database.values()
 				.stream()
@@ -2944,7 +2948,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						return false;
 					return dc.isDecentralized();
 				})
-				.map(c -> c.getDatabaseSchema().getPackage().getName())
+				.map(c -> c.getDatabaseSchema().getPackage().getName());
+	}
+	private Set<String> getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString()
+	{
+		return getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations()
 				.collect(Collectors.toSet());
 	}
 	private Set<String> getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString(DecentralizedValue hostID)

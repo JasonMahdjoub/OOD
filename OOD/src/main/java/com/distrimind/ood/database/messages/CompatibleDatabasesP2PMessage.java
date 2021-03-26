@@ -54,8 +54,8 @@ public class CompatibleDatabasesP2PMessage extends AbstractCompatibleDatabasesMe
 
 	private DecentralizedValue hostDestination;
 
-	public CompatibleDatabasesP2PMessage(Set<String> compatiblePackages, DecentralizedValue hostSource, DecentralizedValue hostDestination) {
-		super(compatiblePackages, hostSource);
+	public CompatibleDatabasesP2PMessage(Set<String> compatibleDatabases, Set<String> compatibleDatabasesWithDestinationPeer, DecentralizedValue hostSource, DecentralizedValue hostDestination) {
+		super(compatibleDatabases, compatibleDatabasesWithDestinationPeer, hostSource);
 		if (hostDestination==null)
 			throw new NullPointerException();
 		this.hostDestination = hostDestination;

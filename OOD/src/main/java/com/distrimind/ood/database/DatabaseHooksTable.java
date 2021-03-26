@@ -294,7 +294,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 				if (m instanceof HookSynchronizeRequest)
 				{
 					DatabaseWrapper.ConnectedPeers cp=connectedPeers.get(m.getHostDestination());
-					if (cp==null || !cp.compatibleDatabasesFromDirectPeer.containsAll(((HookSynchronizeRequest) m).getPackagesToSynchronize(m.getHostSource()).keySet()))
+					if (cp==null || !cp.compatibleDatabases.containsAll(((HookSynchronizeRequest) m).getPackagesToSynchronize(m.getHostSource()).keySet()))
 						break;
 				}
 				res.add(m);
