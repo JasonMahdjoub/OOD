@@ -1024,7 +1024,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		void sendAvailableDatabaseToCentralDatabaseBackup() throws DatabaseException {
-			//sendAvailableDatabaseToCentralDatabaseBackup(getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString());
+			sendAvailableDatabaseToCentralDatabaseBackup(getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString());
 		}
 		void sendAvailableDatabaseToCentralDatabaseBackup(Set<String> packages) throws DatabaseException {
 			if (centralBackupInitialized) {
@@ -1045,7 +1045,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				sendAvailableDatabaseTo(cp.getHostID(), getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString(cp.hookID));
 
 			}
-			//sendAvailableDatabaseToCentralDatabaseBackup(p);
+			sendAvailableDatabaseToCentralDatabaseBackup();
 		}
 
 		void notifyNewAuthenticatedMessage(AuthenticatedP2PMessage authenticatedP2PMessage) throws DatabaseException {
@@ -2934,7 +2934,19 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				.filter(d-> getDatabaseConfigurationsBuilder().getConfigurations().getConfigurations().stream().anyMatch(dc-> dc.getDatabaseSchema().getPackage().equals(d.configuration.getDatabaseSchema().getPackage())))
 				.map(d-> d.configuration);
 	}*/
-
+	private Set<String> getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString()
+	{
+		return sql_database.values()
+				.stream()
+				.map(d-> d.configuration)
+				.filter(dc -> {
+					if (getDatabaseConfigurationsBuilder().getConfigurations().getConfigurations().stream().noneMatch(dc2-> dc2.getDatabaseSchema().getPackage().equals(dc.getDatabaseSchema().getPackage())))
+						return false;
+					return dc.isDecentralized();
+				})
+				.map(c -> c.getDatabaseSchema().getPackage().getName())
+				.collect(Collectors.toSet());
+	}
 	private Set<String> getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString(DecentralizedValue hostID)
 	{
 		return getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations(hostID)
