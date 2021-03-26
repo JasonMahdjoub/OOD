@@ -1303,11 +1303,14 @@ public abstract class CommonDecentralizedTests {
 				{
 					for (Database dother : listDatabase)
 					{
+						if (!dother.getDbwrapper().getLoadedDatabaseConfigurations().contains(dc))
+							continue;
 						if (dother!=d)
 						{
 							if (d.getDbwrapper().getSynchronizer().isSynchronizationActivatedWithChannelAndThroughCentralDatabaseBackup(dother.hostID))
 							{
 								BackupRestoreManager brmo=dother.getDbwrapper().getBackupRestoreManager(dc.getDatabaseSchema().getPackage());
+								Assert.assertNotNull(brmo, dc.getDatabaseSchema().getPackage().getName());
 								List<Long> finalTimeStamps=brmo.getFinalTimestamps();
 								Long lastID=null;
 								if (finalTimeStamps.size()>0) {
