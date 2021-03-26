@@ -1919,8 +1919,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 		private boolean isSynchronizationSuspendedWith(DecentralizedValue hostChannel)
 		{
-			ConnectedPeersWithCentralBackup cp = this.initializedHooksWithCentralBackup.get(hostChannel);
-			return cp != null && this.initializedHooks.containsKey(hostChannel);
+			ConnectedPeers cp = this.initializedHooks.get(hostChannel);
+			return (cp!=null && cp.isConnected()) && this.initializedHooksWithCentralBackup.containsKey(hostChannel);
 		}
 		private void checkMetaDataUpdate(DecentralizedValue hostChannel) throws DatabaseException {
 
