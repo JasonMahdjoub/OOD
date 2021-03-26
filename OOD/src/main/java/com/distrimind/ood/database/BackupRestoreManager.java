@@ -370,7 +370,8 @@ public class BackupRestoreManager {
 			return true;
 		if (file.length()>=backupConfiguration.getMaxBackupFileSizeInBytes())
 			return true;
-		return timeStamp < System.currentTimeMillis() - backupConfiguration.getMaxBackupFileAgeInMs();
+
+		return /*getTransactionID(file)!=Long.MIN_VALUE && */timeStamp < System.currentTimeMillis() - backupConfiguration.getMaxBackupFileAgeInMs();
 	}
 
 	private File initNewFileForBackupIncrement(long dateUTC) throws DatabaseException {
@@ -1552,6 +1553,24 @@ public class BackupRestoreManager {
 		}
 	}
 
+	public Long getFirstValidatedTransactionUTCInMs()
+	{
+		synchronized (this) {
+			if (fileTimeStamps.size()>0)
+			{
+				if (fileTimeStamps.size()>1)
+					return fileTimeStamps.get(0);
+				else
+				{
+					long fts=fileTimeStamps.get(0);
+					if (isPartFull(fts, getFile(fts, true) ))
+						return fts;
+				}
+			}
+			return Long.MIN_VALUE;
+		}
+	}
+
 	/**
 	 * Gets the younger backup event UTC time
 	 * @return the younger backup event UTC time
@@ -1607,6 +1626,8 @@ public class BackupRestoreManager {
 			Long lid=metaData.getLastTransactionID();
 			if (lid==null)
 				lid= getLastTransactionIDBeforeGivenTimeStamp(timeStamp);
+
+
 			return new EncryptedBackupPartDestinedToCentralDatabaseBackup(fromHostIdentifier, encryptedMetaData, out.getRandomInputStream(), EncryptionTools.encryptID(lid, random, encryptionProfileProvider));
 		} catch (IOException e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -1667,6 +1688,25 @@ public class BackupRestoreManager {
 			}
 		}
 		return Long.MIN_VALUE;
+	}
+	private long getTransactionID(File f) {
+		if (f.length()<LAST_BACKUP_UTC_POSITION+17)
+			return Long.MIN_VALUE;
+		try(RandomFileInputStream fis=new RandomFileInputStream(f))
+		{
+			fis.seek(LAST_BACKUP_UTC_POSITION+8);
+			if (fis.readBoolean()) {
+				fis.skipNBytes(8);
+				return fis.readLong();
+			}
+			else
+				return Long.MIN_VALUE;
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+			return Long.MIN_VALUE;
+		}
 	}
 
 	boolean importEncryptedBackupPartComingFromCentralDatabaseBackup(EncryptedBackupPartComingFromCentralDatabaseBackup backupPart, EncryptionProfileProvider encryptionProfileProvider, @SuppressWarnings("SameParameterValue") boolean replaceExistingFilePart) throws DatabaseException {
@@ -1877,7 +1917,7 @@ public class BackupRestoreManager {
 				} catch (Exception e) {
 					lastCurrentRestorationFileUsed=Long.MIN_VALUE;
 					if (newVersionLoaded)
-						databaseWrapper.deleteDatabase(databaseConfiguration, newVersion);
+						databaseWrapper.deleteDatabase(databaseConfiguration, false, newVersion);
 					throw DatabaseException.getDatabaseException(e);
 				}
 			}
@@ -2121,7 +2161,7 @@ public class BackupRestoreManager {
 
 			} catch (Exception e) {
 				databaseWrapper.getSynchronizer().cancelExtendedTransaction();
-				databaseWrapper.deleteDatabase(databaseConfiguration, newVersion);
+				databaseWrapper.deleteDatabase(databaseConfiguration, false, newVersion);
 				throw DatabaseException.getDatabaseException(e);
 			}
 			finally {
@@ -2318,7 +2358,7 @@ public class BackupRestoreManager {
 			long last = getLastTransactionUTCInMS();
 			Reference<Long> fileTimeStamp = new Reference<>();
 			//AtomicReference<RecordsIndex> index=new AtomicReference<>();
-			Reference<Long> firstTransactionID=new Reference<>((Long)null);
+			Reference<Long> firstTransactionID=new Reference<>(null);
 			RandomOutputStream rfos = getFileForBackupIncrementOrCreateIt(fileTimeStamp, firstTransactionID/*, index*/);
 			return new Transaction(fileTimeStamp.get(), last, rfos, /*index.get(), */oldLastFile, oldLength, firstTransactionID.get(), transactionToSynchronize);
 		}

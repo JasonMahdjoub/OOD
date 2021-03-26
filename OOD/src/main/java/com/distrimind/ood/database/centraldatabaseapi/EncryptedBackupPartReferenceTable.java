@@ -136,7 +136,7 @@ public final class EncryptedBackupPartReferenceTable extends Table<EncryptedBack
 				boolean update=true;
 				if (database==null)
 				{
-					database=new DatabaseBackupPerClientTable.Record(clientRecord, message.getMetaData().getPackageString(), message.getMetaData().getFileTimestampUTC());
+					database=new DatabaseBackupPerClientTable.Record(clientRecord, message.getMetaData().getPackageString(), message.getMetaData().getFileTimestampUTC(), message.getLastValidatedAndEncryptedID());
 					update=false;
 				}
 				long l=database.getLastFileBackupPartUTC();

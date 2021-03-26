@@ -109,6 +109,12 @@ public class DatabaseTransactionEvent extends DatabaseEvent {
 		return b;
 	}*/
 
-
-	
+	@Override
+	public String toString() {
+		return "DatabaseTransactionEvent{" +
+				"id=" + id +
+				", force=" + force +
+				", events=" + events +
+				'}';
+	}
 }

@@ -118,16 +118,20 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 		Map<DecentralizedValue, LastValidatedLocalAndDistantID> res=new HashMap<>();
 		for (Map.Entry<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> e : lastValidatedAndEncryptedIDsPerHost.entrySet())
 		{
-			long localID, distantID;
+			long localID;
+			Map<String, Long> distantIdsPerDatabase=new HashMap<>();
 			if (e.getValue()==null || e.getValue().getLastValidatedLocalID()==null)
 				localID=Long.MIN_VALUE;
 			else
 				localID=EncryptionTools.decryptID(encryptionProfileProvider, e.getValue().getLastValidatedLocalID());
-			if (e.getValue()==null || e.getValue().getLastValidatedDistantID()==null)
-				distantID=Long.MIN_VALUE;
-			else
-				distantID=EncryptionTools.decryptID(encryptionProfileProvider, e.getValue().getLastValidatedDistantID());
-			res.put(e.getKey(), new LastValidatedLocalAndDistantID(localID, distantID));
+
+			if (e.getValue()!=null) {
+				for (Map.Entry<String, byte[]> e2 : e.getValue().getLastValidatedDistantIDPerDatabase().entrySet())
+				{
+					distantIdsPerDatabase.put(e2.getKey(), EncryptionTools.decryptID(encryptionProfileProvider, e2.getValue()));
+				}
+			}
+			res.put(e.getKey(), new LastValidatedLocalAndDistantID(localID, distantIdsPerDatabase));
 		}
 		return res;
 	}
@@ -149,11 +153,15 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 		{
 			res+=SerializationTools.getInternalSize((SecureExternalizable)e.getKey())+
 					SerializationTools.getInternalSize(e.getValue().getLastValidatedLocalID(), EncryptionTools.MAX_ENCRYPTED_ID_SIZE)+
-					SerializationTools.getInternalSize(e.getValue().getLastValidatedDistantID(), EncryptionTools.MAX_ENCRYPTED_ID_SIZE)+
 					SerializationTools.getInternalSize(encryptedCompatibleDatabases.get(e.getKey()), AbstractCompatibleEncryptedDatabaseMessage.MAX_SIZE_OF_ENCRYPTED_PACKAGES_NAMES_IN_BYTES);
+			for (Map.Entry<String, byte[]> e2 : e.getValue().getLastValidatedDistantIDPerDatabase().entrySet()) {
+				res+=SerializationTools.getInternalSize(e2.getKey(), SerializationTools.MAX_CLASS_LENGTH)
+						+SerializationTools.getInternalSize(e2.getValue(), EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+			}
 		}
 		for (String s : this.lastValidatedTransactionsUTCForDestinationHost.keySet())
 			res+=SerializationTools.getInternalSize(s, SerializationTools.MAX_CLASS_LENGTH);
+
 		return res;
 	}
 
@@ -165,7 +173,14 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 		{
 			out.writeObject(e.getKey(), false);
 			out.writeBytesArray(e.getValue().getLastValidatedLocalID(), true, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
-			out.writeBytesArray(e.getValue().getLastValidatedDistantID(), true, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+			int s=e.getValue().getLastValidatedDistantIDPerDatabase().size();
+			if (s>DatabaseWrapper.MAX_PACKAGE_TO_SYNCHRONIZE)
+				throw new IOException();
+			out.writeInt(s);
+			for (Map.Entry<String, byte[]> e2 : e.getValue().getLastValidatedDistantIDPerDatabase().entrySet()) {
+				out.writeString(e2.getKey(), false, SerializationTools.MAX_CLASS_LENGTH);
+				out.writeBytesArray(e2.getValue(), false, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+			}
 			out.writeBytesArray(encryptedCompatibleDatabases.get(e.getKey()), true, AbstractCompatibleEncryptedDatabaseMessage.MAX_SIZE_OF_ENCRYPTED_PACKAGES_NAMES_IN_BYTES);
 		}
 		out.writeUnsignedInt16Bits(this.lastValidatedTransactionsUTCForDestinationHost.size());
@@ -190,8 +205,18 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 		{
 			DecentralizedValue channelHost=in.readObject(false, DecentralizedValue.class);
 			byte[] lastValidatedAndEncryptedLocalID=in.readBytesArray(true, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
-			byte[] lastValidatedAndEncryptedDistantID=in.readBytesArray(true, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
-			this.lastValidatedAndEncryptedIDsPerHost.put(channelHost, new LastValidatedLocalAndDistantEncryptedID(lastValidatedAndEncryptedLocalID, lastValidatedAndEncryptedDistantID));
+			int s2=in.readInt();
+			if (s2<0 || s2>DatabaseWrapper.MAX_PACKAGE_TO_SYNCHRONIZE)
+				throw new MessageExternalizationException(Integrity.FAIL);
+			Map<String, byte[]> lastValidatedDistantIDPerDatabase=new HashMap<>();
+			for (int j=0;j<s2;j++)
+			{
+				String db=in.readString(false, SerializationTools.MAX_CLASS_LENGTH);
+				byte[] lastValidatedDistantID=in.readBytesArray(false, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+				lastValidatedDistantIDPerDatabase.put(db, lastValidatedDistantID);
+			}
+			//byte[] lastValidatedAndEncryptedDistantID=in.readBytesArray(true, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+			this.lastValidatedAndEncryptedIDsPerHost.put(channelHost, new LastValidatedLocalAndDistantEncryptedID(lastValidatedAndEncryptedLocalID, lastValidatedDistantIDPerDatabase));
 			byte[] array=in.readBytesArray(true, AbstractCompatibleEncryptedDatabaseMessage.MAX_SIZE_OF_ENCRYPTED_PACKAGES_NAMES_IN_BYTES);
 			if (array!=null)
 				this.encryptedCompatibleDatabases.put(channelHost, array);

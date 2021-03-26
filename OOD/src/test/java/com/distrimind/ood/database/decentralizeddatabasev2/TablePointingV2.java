@@ -1,4 +1,3 @@
-package com.distrimind.ood.database.messages;
 /*
 Copyright or © or Copr. Jason Mahdjoub (01/04/2013)
 
@@ -6,7 +5,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java language
+and the java langage 
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -34,39 +33,71 @@ same conditions as regards security.
 The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
+package com.distrimind.ood.database.decentralizeddatabasev2;
 
-import java.util.Map;
+import com.distrimind.ood.database.DatabaseRecord;
+import com.distrimind.ood.database.Table;
+import com.distrimind.ood.database.annotations.ForeignKey;
+import com.distrimind.ood.database.annotations.PrimaryKey;
+import com.distrimind.ood.database.decentralizeddatabase.TablePointing;
+import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.crypto.ASymmetricPublicKey;
 
 /**
+ * 
  * @author Jason Mahdjoub
  * @version 1.0
- * @since OOD 3.0.0
+ * @since OOD 3.0
  */
-public class LastValidatedLocalAndDistantID
-{
-	private final long lastValidatedLocalID;
-	private final Map<String, Long> lastValidatedDistantIDPerDatabase;
 
-	public LastValidatedLocalAndDistantID(long lastValidatedLocalID, Map<String, Long> lastValidatedDistantIDPerDatabase) {
-		if (lastValidatedDistantIDPerDatabase==null)
-			throw new NullPointerException();
-		this.lastValidatedLocalID = lastValidatedLocalID;
-		this.lastValidatedDistantIDPerDatabase = lastValidatedDistantIDPerDatabase;
+public final class TablePointingV2 extends Table<TablePointingV2.Record> {
+	protected TablePointingV2() throws DatabaseException {
+		super();
 	}
 
-	public long getLastValidatedLocalID() {
-		return lastValidatedLocalID;
-	}
+	public static class Record extends DatabaseRecord {
+		@PrimaryKey
+		public ASymmetricPublicKey id;
 
-	public Map<String, Long> getLastValidatedDistantIDPerDatabase() {
-		return lastValidatedDistantIDPerDatabase;
-	}
+		@ForeignKey
+		public TablePointedV2.Record table2;
 
-	@Override
-	public String toString() {
-		return "LastValidatedLocalAndDistantID{" +
-				"lastValidatedLocalID=" + lastValidatedLocalID +
-				", lastValidatedDistantIDPerDatabase=" + lastValidatedDistantIDPerDatabase +
-				'}';
+		public Record()
+		{
+
+		}
+
+		public Record(TablePointing.Record r)
+		{
+			this.id=r.id;
+			if (r.table2==null)
+				this.table2=null;
+			else
+				this.table2=new TablePointedV2.Record(r.table2);
+		}
+
+		@Override
+		public String toString() {
+			return "TablePointing[" + id + ", " + table2 + "]";
+		}
+
+		@SuppressWarnings("MethodDoesntCallSuperMethod")
+		@Override
+		public Record clone() {
+			Record r = new Record();
+			r.id = this.id;
+			r.table2 = this.table2.clone();
+			return r;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (o == null)
+				return false;
+			if (o instanceof Record)
+				return ((Record) o).id.equals(id);
+			return false;
+		}
+
 	}
 }

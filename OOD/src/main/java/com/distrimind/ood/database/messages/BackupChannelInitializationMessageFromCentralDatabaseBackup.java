@@ -48,8 +48,8 @@ public class BackupChannelInitializationMessageFromCentralDatabaseBackup extends
 	}
 
 
-	public BackupChannelInitializationMessageFromCentralDatabaseBackup(DecentralizedValue hostDestination, DecentralizedValue hostChannel, byte[] lastValidatedAndEncryptedLocalID, byte[] lastValidatedAndEncryptedDistantID) {
-		super(hostDestination, hostChannel, lastValidatedAndEncryptedLocalID, lastValidatedAndEncryptedDistantID);
+	public BackupChannelInitializationMessageFromCentralDatabaseBackup(DecentralizedValue hostDestination, DecentralizedValue hostChannel, String databasePackage, byte[] lastValidatedAndEncryptedLocalID, byte[] lastValidatedAndEncryptedDistantID) {
+		super(hostDestination, hostChannel, databasePackage, lastValidatedAndEncryptedLocalID, lastValidatedAndEncryptedDistantID);
 	}
 
 

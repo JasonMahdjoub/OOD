@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 import com.distrimind.ood.database.DatabaseRecord;
+import com.distrimind.ood.database.EncryptionTools;
 import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.annotations.ForeignKey;
@@ -72,22 +73,28 @@ public final class DatabaseBackupPerClientTable extends Table<DatabaseBackupPerC
 		@Field
 		Long removeTimeUTC;
 
+		@Field(limit= EncryptionTools.MAX_ENCRYPTED_ID_SIZE)
+		private byte[] lastValidatedAndEncryptedID;
+
 		@SuppressWarnings("unused")
 		private Record()
 		{
 
 		}
 
-		Record(ClientTable.Record client, String packageString, long lastFileBackupPartUTC) {
+		Record(ClientTable.Record client, String packageString, long lastFileBackupPartUTC, byte[] lastValidatedAndEncryptedID) {
 			if (client==null)
 				throw new NullPointerException();
 			if (packageString==null)
 				throw new NullPointerException();
 			if (packageString.length()>SerializationTools.MAX_CLASS_LENGTH)
 				throw new IllegalArgumentException();
+			if (lastValidatedAndEncryptedID==null)
+				throw new NullPointerException();
 			this.client = client;
 			this.packageString = packageString;
 			this.lastFileBackupPartUTC=lastFileBackupPartUTC;
+			this.lastValidatedAndEncryptedID=lastValidatedAndEncryptedID;
 		}
 
 		public ClientTable.Record getClient() {
@@ -108,6 +115,10 @@ public final class DatabaseBackupPerClientTable extends Table<DatabaseBackupPerC
 
 		public Long getRemoveTimeUTC() {
 			return removeTimeUTC;
+		}
+
+		public byte[] getLastValidatedAndEncryptedID() {
+			return lastValidatedAndEncryptedID;
 		}
 	}
 

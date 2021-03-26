@@ -285,24 +285,21 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			return authenticatedMessagesQueueToSend==null || authenticatedMessagesQueueToSend.size()==0;
 		}
 
-		List<AuthenticatedP2PMessage> getAuthenticatedMessagesQueueToSend(Map<DecentralizedValue, DatabaseWrapper.ConnectedPeers> connectedPeers) {
+		List<AuthenticatedP2PMessage> getAuthenticatedMessagesQueueToSend(Map<DecentralizedValue, DatabaseWrapper.ConnectedPeers> connectedPeers) throws DatabaseException {
 			if (authenticatedMessagesQueueToSend==null)
 				return null;
-			return authenticatedMessagesQueueToSend.stream().filter(m -> {
-				try {
-					if (m instanceof HookSynchronizeRequest)
-					{
-						DatabaseWrapper.ConnectedPeers cp=connectedPeers.get(m.getHostDestination());
-						if (cp==null)
-							return false;
-						return cp.compatibleDatabasesFromDirectPeer.containsAll(((HookSynchronizeRequest) m).getPackagesToSynchronize(m.getHostSource()).keySet());
-					}
-					return true;
-				} catch (DatabaseException e) {
-					e.printStackTrace();
-					return false;
+			List<AuthenticatedP2PMessage> res=new ArrayList<>();
+			for (AuthenticatedP2PMessage m : authenticatedMessagesQueueToSend)
+			{
+				if (m instanceof HookSynchronizeRequest)
+				{
+					DatabaseWrapper.ConnectedPeers cp=connectedPeers.get(m.getHostDestination());
+					if (cp==null || !cp.compatibleDatabases.containsAll(((HookSynchronizeRequest) m).getPackagesToSynchronize(m.getHostSource()).keySet()))
+						break;
 				}
-			}).collect(Collectors.toList());
+				res.add(m);
+			}
+			return res;
 		}
 
 		List<IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup> getAuthenticatedMessagesQueueToSendToCentralDatabaseBackup(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider,
@@ -322,8 +319,8 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 					DatabaseWrapper.ConnectedPeersWithCentralBackup cpcdb=connectedPeersWithCentralDatabaseBackup.get(hsr.getHostDestination());
 
 					if (cpcdb==null)
-						continue;
-					if (cpcdb.compatibleDatabasesFromCentralDatabaseBackup.size()==0)
+						break;
+					/*if (cpcdb.compatibleDatabasesFromCentralDatabaseBackup.size()==0)
 					{
 						DatabaseWrapper.ConnectedPeers cp=connectedPeers.get(hsr.getHostDestination());
 						if (cp==null)
@@ -331,8 +328,8 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 						if (!cp.compatibleDatabasesFromDirectPeer.containsAll(hsr.getPackagesToSynchronize(hsr.getHostSource()).keySet()))
 							continue;
 					}
-					else if (!cpcdb.compatibleDatabasesFromCentralDatabaseBackup.containsAll(hsr.getPackagesToSynchronize(hsr.getHostSource()).keySet()))
-						continue;
+					else */if (!cpcdb.compatibleDatabasesFromCentralDatabaseBackup.containsAll(hsr.getPackagesToSynchronize(hsr.getHostSource()).keySet()))
+						break;
 				}
 				ArrayList<AuthenticatedP2PMessage> l = resTmp.computeIfAbsent(a.getHostDestination(), k -> new ArrayList<>());
 				l.add(a);
@@ -674,7 +671,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 	void actualizeLastTransactionID(final List<DecentralizedValue> excludedHooks, final long lastTransactionID)
 			throws DatabaseException {
 
-		//final ArrayList<DatabaseHooksTable.Record> toUpdate = new ArrayList<>();
+		final ArrayList<DatabaseHooksTable.Record> toUpdate = new ArrayList<>();
 		getRecords(new Filter<DatabaseHooksTable.Record>() {
 
 			@Override
@@ -723,18 +720,18 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 					else if (actualLastID.get() < h.getLastValidatedLocalTransactionID())
 						throw new IllegalAccessError();
 
-					/*if (actualLastID.get() != Long.MAX_VALUE && h.getLastValidatedLocalTransactionID() < actualLastID.get()) {
+					if (actualLastID.get() != Long.MAX_VALUE && h.getLastValidatedLocalTransactionID() < actualLastID.get()) {
 						h.setLastValidatedLocalTransactionID(actualLastID.get());
 						toUpdate.add(h);
-					}*/
+					}
 
 				}
 				return false;
 			}
 		}, "concernsDatabaseHost=%c", "c", false);
-		/*for (DatabaseHooksTable.Record h : toUpdate) {
+		for (DatabaseHooksTable.Record h : toUpdate) {
 			updateRecord(h, "lastValidatedLocalTransactionID", h.getLastValidatedLocalTransactionID());
-		}*/
+		}
 	}
 	Record getHook(DecentralizedValue host) throws DatabaseException {
 		return getHook(host, false);
@@ -1159,9 +1156,16 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 						for (DecentralizedValue host : concernedHosts) {
 							desynchronizeDatabases(host, false, packages);
 						}
-						if (concernedHosts.size()>0 && packages.size()>0)
-							getDatabaseWrapper().getDatabaseConfigurationsBuilder().desynchronizeDistantPeersWithGivenAdditionalPackages(false, concernedHosts, packages.toArray(new String[0]))
-										.commit();
+						if (concernedHosts.size()>0 && packages.size()>0 && !getDatabaseWrapper().getDatabaseConfigurationsBuilder().isCommitInProgress()) {
+							Set<String> ps=new HashSet<>();
+							packages.forEach(p -> {
+								if (getDatabaseWrapper().getDatabaseConfigurationsBuilder().getConfigurations().getConfigurations().stream().anyMatch(dc -> dc.getDatabaseSchema().getPackage().getName().equals(p)))
+									ps.add(p);
+							});
+							if (ps.size()>0)
+								getDatabaseWrapper().getDatabaseConfigurationsBuilder().desynchronizeDistantPeersWithGivenAdditionalPackages(false, concernedHosts, ps.toArray(new String[0]))
+									.commit();
+						}
 
 						return null;
 					}
