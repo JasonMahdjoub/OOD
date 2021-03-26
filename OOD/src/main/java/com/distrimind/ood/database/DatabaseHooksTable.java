@@ -285,24 +285,21 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			return authenticatedMessagesQueueToSend==null || authenticatedMessagesQueueToSend.size()==0;
 		}
 
-		List<AuthenticatedP2PMessage> getAuthenticatedMessagesQueueToSend(Map<DecentralizedValue, DatabaseWrapper.ConnectedPeers> connectedPeers) {
+		List<AuthenticatedP2PMessage> getAuthenticatedMessagesQueueToSend(Map<DecentralizedValue, DatabaseWrapper.ConnectedPeers> connectedPeers) throws DatabaseException {
 			if (authenticatedMessagesQueueToSend==null)
 				return null;
-			return authenticatedMessagesQueueToSend.stream().filter(m -> {
-				try {
-					if (m instanceof HookSynchronizeRequest)
-					{
-						DatabaseWrapper.ConnectedPeers cp=connectedPeers.get(m.getHostDestination());
-						if (cp==null)
-							return false;
-						return cp.compatibleDatabasesFromDirectPeer.containsAll(((HookSynchronizeRequest) m).getPackagesToSynchronize(m.getHostSource()).keySet());
-					}
-					return true;
-				} catch (DatabaseException e) {
-					e.printStackTrace();
-					return false;
+			List<AuthenticatedP2PMessage> res=new ArrayList<>();
+			for (AuthenticatedP2PMessage m : authenticatedMessagesQueueToSend)
+			{
+				if (m instanceof HookSynchronizeRequest)
+				{
+					DatabaseWrapper.ConnectedPeers cp=connectedPeers.get(m.getHostDestination());
+					if (cp==null || !cp.compatibleDatabasesFromDirectPeer.containsAll(((HookSynchronizeRequest) m).getPackagesToSynchronize(m.getHostSource()).keySet()))
+						break;
 				}
-			}).collect(Collectors.toList());
+				res.add(m);
+			}
+			return res;
 		}
 
 		List<IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup> getAuthenticatedMessagesQueueToSendToCentralDatabaseBackup(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider,
@@ -322,8 +319,8 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 					DatabaseWrapper.ConnectedPeersWithCentralBackup cpcdb=connectedPeersWithCentralDatabaseBackup.get(hsr.getHostDestination());
 
 					if (cpcdb==null)
-						continue;
-					if (cpcdb.compatibleDatabasesFromCentralDatabaseBackup.size()==0)
+						break;
+					/*if (cpcdb.compatibleDatabasesFromCentralDatabaseBackup.size()==0)
 					{
 						DatabaseWrapper.ConnectedPeers cp=connectedPeers.get(hsr.getHostDestination());
 						if (cp==null)
@@ -331,8 +328,8 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 						if (!cp.compatibleDatabasesFromDirectPeer.containsAll(hsr.getPackagesToSynchronize(hsr.getHostSource()).keySet()))
 							continue;
 					}
-					else if (!cpcdb.compatibleDatabasesFromCentralDatabaseBackup.containsAll(hsr.getPackagesToSynchronize(hsr.getHostSource()).keySet()))
-						continue;
+					else */if (!cpcdb.compatibleDatabasesFromCentralDatabaseBackup.containsAll(hsr.getPackagesToSynchronize(hsr.getHostSource()).keySet()))
+						break;
 				}
 				ArrayList<AuthenticatedP2PMessage> l = resTmp.computeIfAbsent(a.getHostDestination(), k -> new ArrayList<>());
 				l.add(a);

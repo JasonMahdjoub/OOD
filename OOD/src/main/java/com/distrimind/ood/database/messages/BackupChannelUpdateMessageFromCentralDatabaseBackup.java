@@ -53,11 +53,12 @@ public class BackupChannelUpdateMessageFromCentralDatabaseBackup implements Mess
 	private DecentralizedValue hostChannel;
 	private byte[] lastValidatedAndEncryptedLocalID;
 	private byte[] lastValidatedAndEncryptedDistantID;
+	private String databasePackage;
 
 	protected BackupChannelUpdateMessageFromCentralDatabaseBackup() {
 	}
 
-	public BackupChannelUpdateMessageFromCentralDatabaseBackup(DecentralizedValue hostDestination, DecentralizedValue hostChannel, byte[] lastValidatedAndEncryptedLocalID, byte[] lastValidatedAndEncryptedDistantID) {
+	public BackupChannelUpdateMessageFromCentralDatabaseBackup(DecentralizedValue hostDestination, DecentralizedValue hostChannel, String databasePackage, byte[] lastValidatedAndEncryptedLocalID, byte[] lastValidatedAndEncryptedDistantID) {
 		if (hostChannel==null)
 			throw new NullPointerException();
 		if (hostDestination==null)
@@ -66,10 +67,17 @@ public class BackupChannelUpdateMessageFromCentralDatabaseBackup implements Mess
 			throw new NullPointerException();
 		if (lastValidatedAndEncryptedDistantID ==null)
 			throw new NullPointerException();
+		if (databasePackage==null)
+			throw new NullPointerException();
 		this.hostDestination = hostDestination;
 		this.hostChannel = hostChannel;
 		this.lastValidatedAndEncryptedLocalID = lastValidatedAndEncryptedLocalID;
 		this.lastValidatedAndEncryptedDistantID = lastValidatedAndEncryptedDistantID;
+		this.databasePackage=databasePackage;
+	}
+
+	public String getDatabasePackage() {
+		return databasePackage;
 	}
 
 	@Override
@@ -101,7 +109,8 @@ public class BackupChannelUpdateMessageFromCentralDatabaseBackup implements Mess
 		return SerializationTools.getInternalSize((SecureExternalizable)hostDestination)
 				+SerializationTools.getInternalSize((SecureExternalizable)hostChannel)
 				+SerializationTools.getInternalSize(lastValidatedAndEncryptedLocalID, EncryptionTools.MAX_ENCRYPTED_ID_SIZE)
-				+SerializationTools.getInternalSize(lastValidatedAndEncryptedDistantID, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+				+SerializationTools.getInternalSize(lastValidatedAndEncryptedDistantID, EncryptionTools.MAX_ENCRYPTED_ID_SIZE)
+				+SerializationTools.getInternalSize(databasePackage, SerializationTools.MAX_CLASS_LENGTH);
 	}
 
 	@Override
@@ -110,6 +119,7 @@ public class BackupChannelUpdateMessageFromCentralDatabaseBackup implements Mess
 		out.writeObject(hostChannel, false);
 		out.writeBytesArray(lastValidatedAndEncryptedLocalID, false, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
 		out.writeBytesArray(lastValidatedAndEncryptedDistantID, false, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+		out.writeString(databasePackage, false, SerializationTools.MAX_CLASS_LENGTH);
 	}
 
 	@Override
@@ -120,6 +130,7 @@ public class BackupChannelUpdateMessageFromCentralDatabaseBackup implements Mess
 			throw new MessageExternalizationException(Integrity.FAIL);
 		lastValidatedAndEncryptedLocalID=in.readBytesArray(false, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
 		lastValidatedAndEncryptedDistantID=in.readBytesArray(false, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
+		databasePackage=in.readString(false, SerializationTools.MAX_CLASS_LENGTH);
 	}
 
 	@Override

@@ -69,6 +69,7 @@ public class LastValidatedDistantTransactionDestinedToCentralDatabaseBackup exte
 			throw new IllegalArgumentException();
 		this.hostSource = hostSource;
 		this.channelHost = channelHost;
+		assert lastValidatedDistantID!=Long.MIN_VALUE;
 		this.encryptedLastValidatedDistantID = EncryptionTools.encryptID(lastValidatedDistantID, random, encryptionProfileProvider);
 	}
 

@@ -35,6 +35,8 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+import java.util.Map;
+
 /**
  * @author Jason Mahdjoub
  * @version 1.0
@@ -43,26 +45,28 @@ knowledge of the CeCILL-C license and that you accept its terms.
 public class LastValidatedLocalAndDistantID
 {
 	private final long lastValidatedLocalID;
-	private final long lastValidatedDistantID;
+	private final Map<String, Long> lastValidatedDistantIDPerDatabase;
 
-	public LastValidatedLocalAndDistantID(long lastValidatedLocalID, long lastValidatedDistantID) {
+	public LastValidatedLocalAndDistantID(long lastValidatedLocalID, Map<String, Long> lastValidatedDistantIDPerDatabase) {
+		if (lastValidatedDistantIDPerDatabase==null)
+			throw new NullPointerException();
 		this.lastValidatedLocalID = lastValidatedLocalID;
-		this.lastValidatedDistantID = lastValidatedDistantID;
+		this.lastValidatedDistantIDPerDatabase = lastValidatedDistantIDPerDatabase;
 	}
 
 	public long getLastValidatedLocalID() {
 		return lastValidatedLocalID;
 	}
 
-	public long getLastValidatedDistantID() {
-		return lastValidatedDistantID;
+	public Map<String, Long> getLastValidatedDistantIDPerDatabase() {
+		return lastValidatedDistantIDPerDatabase;
 	}
 
 	@Override
 	public String toString() {
 		return "LastValidatedLocalAndDistantID{" +
 				"lastValidatedLocalID=" + lastValidatedLocalID +
-				", lastValidatedDistantID=" + lastValidatedDistantID +
+				", lastValidatedDistantIDPerDatabase=" + lastValidatedDistantIDPerDatabase +
 				'}';
 	}
 }

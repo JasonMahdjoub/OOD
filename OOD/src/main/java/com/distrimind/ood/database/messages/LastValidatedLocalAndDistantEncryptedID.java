@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 import java.util.Arrays;
+import java.util.Map;
 
 /**
  * @author Jason Mahdjoub
@@ -44,19 +45,25 @@ import java.util.Arrays;
  */
 public class LastValidatedLocalAndDistantEncryptedID {
 	private final byte[] lastValidatedLocalID;
-	private final byte[] lastValidatedDistantID;
+	private final Map<String, byte[]> lastValidatedDistantIDPerDatabase;
 
-	public LastValidatedLocalAndDistantEncryptedID(byte[] lastValidatedLocalID, byte[] lastValidatedDistantID) {
+	public LastValidatedLocalAndDistantEncryptedID(byte[] lastValidatedLocalID, Map<String, byte[]> lastValidatedDistantIDPerDatabase) {
+		if (lastValidatedDistantIDPerDatabase==null)
+			throw new NullPointerException();
+		if (lastValidatedDistantIDPerDatabase.containsKey(null))
+			throw new NullPointerException();
+		if (lastValidatedDistantIDPerDatabase.containsValue(null))
+			throw new NullPointerException();
 		this.lastValidatedLocalID = lastValidatedLocalID;
-		this.lastValidatedDistantID = lastValidatedDistantID;
+		this.lastValidatedDistantIDPerDatabase = lastValidatedDistantIDPerDatabase;
 	}
 
 	public byte[] getLastValidatedLocalID() {
 		return lastValidatedLocalID;
 	}
 
-	public byte[] getLastValidatedDistantID() {
-		return lastValidatedDistantID;
+	public Map<String, byte[]> getLastValidatedDistantIDPerDatabase() {
+		return lastValidatedDistantIDPerDatabase;
 	}
 
 	@Override

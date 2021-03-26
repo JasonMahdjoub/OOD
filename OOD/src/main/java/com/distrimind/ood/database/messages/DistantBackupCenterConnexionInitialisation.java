@@ -74,6 +74,7 @@ public class DistantBackupCenterConnexionInitialisation extends AuthenticatedMes
 			if (e.getValue()==null)
 				throw new NullPointerException();
 			try {
+				assert e.getValue()!=Long.MIN_VALUE;
 				this.encryptedDistantLastValidatedIDs.put(e.getKey(), EncryptionTools.encryptID(e.getValue(), random, encryptionProfileProvider));
 			} catch (IOException ioException) {
 				throw DatabaseException.getDatabaseException(ioException);

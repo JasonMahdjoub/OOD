@@ -370,7 +370,8 @@ public class BackupRestoreManager {
 			return true;
 		if (file.length()>=backupConfiguration.getMaxBackupFileSizeInBytes())
 			return true;
-		return timeStamp < System.currentTimeMillis() - backupConfiguration.getMaxBackupFileAgeInMs();
+
+		return /*getTransactionID(file)!=Long.MIN_VALUE && */timeStamp < System.currentTimeMillis() - backupConfiguration.getMaxBackupFileAgeInMs();
 	}
 
 	private File initNewFileForBackupIncrement(long dateUTC) throws DatabaseException {
@@ -1607,6 +1608,8 @@ public class BackupRestoreManager {
 			Long lid=metaData.getLastTransactionID();
 			if (lid==null)
 				lid= getLastTransactionIDBeforeGivenTimeStamp(timeStamp);
+
+
 			return new EncryptedBackupPartDestinedToCentralDatabaseBackup(fromHostIdentifier, encryptedMetaData, out.getRandomInputStream(), EncryptionTools.encryptID(lid, random, encryptionProfileProvider));
 		} catch (IOException e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -1667,6 +1670,25 @@ public class BackupRestoreManager {
 			}
 		}
 		return Long.MIN_VALUE;
+	}
+	private long getTransactionID(File f) {
+		if (f.length()<LAST_BACKUP_UTC_POSITION+17)
+			return Long.MIN_VALUE;
+		try(RandomFileInputStream fis=new RandomFileInputStream(f))
+		{
+			fis.seek(LAST_BACKUP_UTC_POSITION+8);
+			if (fis.readBoolean()) {
+				fis.skipNBytes(8);
+				return fis.readLong();
+			}
+			else
+				return Long.MIN_VALUE;
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+			return Long.MIN_VALUE;
+		}
 	}
 
 	boolean importEncryptedBackupPartComingFromCentralDatabaseBackup(EncryptedBackupPartComingFromCentralDatabaseBackup backupPart, EncryptionProfileProvider encryptionProfileProvider, @SuppressWarnings("SameParameterValue") boolean replaceExistingFilePart) throws DatabaseException {

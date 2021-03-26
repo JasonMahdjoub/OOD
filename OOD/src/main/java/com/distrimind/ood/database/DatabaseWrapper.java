@@ -764,7 +764,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	static class ConnectedPeersWithCentralBackup {
 		private final DecentralizedValue hookID;
 		final Set<String> compatibleDatabasesFromCentralDatabaseBackup=new HashSet<>();
-		private Long lastValidatedTransactionIDFromCentralBackup=null;
+		Map<String, Long> lastValidatedDistantTransactionIDPerDatabaseFromDatabaseBackup=new HashMap<>();
 		private final ValidatedIDPerDistantHook validatedIDPerDistantHook=new ValidatedIDPerDistantHook();
 		private boolean otherBackupDatabasePartsSynchronizingWithCentralDatabaseBackup=false;
 		private boolean otherBackupMetaDataDatabasePartsSynchronizingWithCentralDatabaseBackup=false;
@@ -1928,8 +1928,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (cp!=null) {
 				if (cp.otherBackupMetaDataDatabasePartsSynchronizingWithCentralDatabaseBackup)
 					return;
-				if (cp.lastValidatedTransactionIDFromCentralBackup == null)
-					return;
 
 				Collection<String> databasePackagesToSynchronizeWithCentralBackup = getDatabasePackagesToSynchronizeWithCentralBackup();
 				if (databasePackagesToSynchronizeWithCentralBackup.size() == 0)
@@ -1937,8 +1935,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				DatabaseHooksTable.Record r = getDatabaseHookRecord(hostChannel);
 				long lastValidatedDistantID = r.getLastValidatedDistantTransactionID();
 				for (String packageString : databasePackagesToSynchronizeWithCentralBackup) {
-
-					FileCoordinate fc = cp.validatedIDPerDistantHook.getTimestampTransactionToAsk(packageString, cp.lastValidatedTransactionIDFromCentralBackup, lastValidatedDistantID);
+					Long lastValidatedDistantTransactionIDFromDatabaseBackup=cp.lastValidatedDistantTransactionIDPerDatabaseFromDatabaseBackup.get(packageString);
+					if (lastValidatedDistantTransactionIDFromDatabaseBackup==null)
+						continue;
+					FileCoordinate fc = cp.validatedIDPerDistantHook.getTimestampTransactionToAsk(packageString, lastValidatedDistantTransactionIDFromDatabaseBackup, lastValidatedDistantID);
 					if (fc == null) {
 						checkAskForEncryptedBackupFilePart(hostChannel, packageString);
 					} else {
@@ -1986,14 +1986,19 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 
 			long mn=cp.validatedIDPerDistantHook.getLastTransactionID(metaData.getMetaData().getPackageString());
-			cp.lastValidatedTransactionIDFromCentralBackup=cp.lastValidatedTransactionIDFromCentralBackup==null?mn:Math.max(cp.lastValidatedTransactionIDFromCentralBackup, mn);
+			if (mn!=Long.MIN_VALUE) {
+				Long lastValidatedDistantTransactionIDFromDatabaseBackup=cp.lastValidatedDistantTransactionIDPerDatabaseFromDatabaseBackup.get(metaData.getMetaData().getPackageString());
+				if (lastValidatedDistantTransactionIDFromDatabaseBackup!=null)
+					mn=Math.max(lastValidatedDistantTransactionIDFromDatabaseBackup, mn);
+				cp.lastValidatedDistantTransactionIDPerDatabaseFromDatabaseBackup.put(metaData.getMetaData().getPackageString(), mn);
+			}
 
 
 			checkMetaDataUpdate(metaData.getHostSource());
 
 		}
 
-		private void initDistantBackupCenter(final DatabaseHooksTable.Record r, final long lastValidatedDistantTransactionID, final long lastValidatedLocalTransactionID, Set<String> compatibleDatabases) throws DatabaseException {
+		private void initDistantBackupCenter(final DatabaseHooksTable.Record r, final Map<String, Long> lastValidatedDistantTransactionIDPerDatabase, final long lastValidatedLocalTransactionID, Set<String> compatibleDatabases) throws DatabaseException {
 			if (r==null)
 				return;
 			try {
@@ -2011,8 +2016,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					initializedHooksWithCentralBackup.put(hostID, cp);
 				}
 				
-
-				cp.lastValidatedTransactionIDFromCentralBackup=lastValidatedDistantTransactionID;//cp.lastValidatedTransactionIDFromCentralBackup==null?lastValidatedDistantTransactionID:Math.max(cp.lastValidatedTransactionIDFromCentralBackup, lastValidatedDistantTransactionID);
+				cp.lastValidatedDistantTransactionIDPerDatabaseFromDatabaseBackup=lastValidatedDistantTransactionIDPerDatabase;//cp.lastValidatedTransactionIDFromCentralBackup==null?lastValidatedDistantTransactionID:Math.max(cp.lastValidatedTransactionIDFromCentralBackup, lastValidatedDistantTransactionID);
 				if (lastValidatedLocalTransactionID!=Long.MIN_VALUE) {
 					validateLastSynchronization(hostID,
 							lastValidatedLocalTransactionID, true);
@@ -2024,7 +2028,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				unlockWrite();
 			}
 		}
-		private void updateDistantBackupCenter(final DatabaseHooksTable.Record r, final long lastValidatedDistantTransactionID, final long lastValidatedLocalTransactionID) throws DatabaseException {
+		private void updateDistantBackupCenter(final DatabaseHooksTable.Record r, String databasePackage, final long lastValidatedDistantTransactionID, final long lastValidatedLocalTransactionID) throws DatabaseException {
 			if (r==null)
 				return;
 			try {
@@ -2033,9 +2037,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				if (cp==null)
 					return;
 				DecentralizedValue hostID=r.getHostID();
-				if (lastValidatedDistantTransactionID==Long.MIN_VALUE && cp.lastValidatedTransactionIDFromCentralBackup!=null && cp.lastValidatedTransactionIDFromCentralBackup!=Long.MIN_VALUE)
-					throw DatabaseException.getDatabaseException(new IllegalAccessException());
-				cp.lastValidatedTransactionIDFromCentralBackup=lastValidatedDistantTransactionID;
+				Long lastValidatedTransactionIDFromCentralBackup=cp.lastValidatedDistantTransactionIDPerDatabaseFromDatabaseBackup.get(databasePackage);
+				if (lastValidatedDistantTransactionID==Long.MIN_VALUE && lastValidatedTransactionIDFromCentralBackup!=null && lastValidatedTransactionIDFromCentralBackup!=Long.MIN_VALUE)
+					throw DatabaseException.getDatabaseException(new IllegalAccessException("hostID="+r.getHostID()));
+				cp.lastValidatedDistantTransactionIDPerDatabaseFromDatabaseBackup.put(databasePackage, lastValidatedDistantTransactionID);
 				//cp.lastValidatedTransactionIDFromCentralBackup=cp.lastValidatedTransactionIDFromCentralBackup==null?lastValidatedDistantTransactionID:Math.max(cp.lastValidatedTransactionIDFromCentralBackup, lastValidatedDistantTransactionID);
 				if (lastValidatedLocalTransactionID!=Long.MIN_VALUE) {
 
@@ -2130,7 +2135,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			initDistantBackupCenterForThisHostWithStringPackages(initialMessageComingFromCentralBackup.getLastValidatedTransactionsUTCForDestinationHost());
 			for (Map.Entry<DecentralizedValue, LastValidatedLocalAndDistantID> e : initialMessageComingFromCentralBackup.getLastValidatedIDsPerHost(databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup()).entrySet()) {
 				assert !e.getKey().equals(getLocalHostID());
-				initDistantBackupCenter(e.getKey(), e.getValue().getLastValidatedDistantID(), e.getValue().getLastValidatedLocalID(), initialMessageComingFromCentralBackup.getDecryptedCompatibleDatabases(e.getKey(), getDatabaseConfigurationsBuilder().getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup()));
+				initDistantBackupCenter(e.getKey(), e.getValue().getLastValidatedDistantIDPerDatabase(), e.getValue().getLastValidatedLocalID(), initialMessageComingFromCentralBackup.getDecryptedCompatibleDatabases(e.getKey(), getDatabaseConfigurationsBuilder().getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup()));
 			}
 			for (AuthenticatedP2PMessage a : initialMessageComingFromCentralBackup.getAuthenticatedP2PMessages(databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup()))
 				received(a);
@@ -2206,28 +2211,28 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 
-		private void received(final BackupChannelInitializationMessageFromCentralDatabaseBackup message) throws DatabaseException, IOException {
+		/*private void received(final BackupChannelInitializationMessageFromCentralDatabaseBackup message) throws DatabaseException, IOException {
 			if (message == null)
 				throw new NullPointerException();
 			if (!message.getHostDestination().equals(getLocalHostID()))
 				throw new IllegalArgumentException();
 
 			initDistantBackupCenter(message.getHostChannel(), message.getLastValidatedDistantID(databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup()), message.getLastValidatedLocalID(databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup()), null);
-		}
+		}*/
 		private void received(final BackupChannelUpdateMessageFromCentralDatabaseBackup message) throws DatabaseException, IOException {
 			if (message == null)
 				throw new NullPointerException();
 			if (!message.getHostDestination().equals(getLocalHostID()))
 				throw new IllegalArgumentException();
-			updateDistantBackupCenter(message.getHostChannel(), message.getLastValidatedDistantID(databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup()), message.getLastValidatedLocalID(databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup()));
+			updateDistantBackupCenter(message.getHostChannel(), message.getDatabasePackage(), message.getLastValidatedDistantID(databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup()), message.getLastValidatedLocalID(databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup()));
 		}
-		private void initDistantBackupCenter(final DecentralizedValue hostChannel, final long lastValidatedDistantTransactionID, final long lastValidatedLocalTransactionID, Set<String> compatibleDatabases) throws DatabaseException {
+		private void initDistantBackupCenter(final DecentralizedValue hostChannel, final Map<String, Long> lastValidatedDistantTransactionIDPerDatabase, final long lastValidatedLocalTransactionID, Set<String> compatibleDatabases) throws DatabaseException {
 
 
 			lockWrite();
 
 
-			initDistantBackupCenter(getDatabaseHookRecord(hostChannel), lastValidatedDistantTransactionID, lastValidatedLocalTransactionID, compatibleDatabases);
+			initDistantBackupCenter(getDatabaseHookRecord(hostChannel), lastValidatedDistantTransactionIDPerDatabase, lastValidatedLocalTransactionID, compatibleDatabases);
 		}
 		DatabaseHooksTable.Record getDatabaseHookRecord(final DecentralizedValue hostChannel) throws DatabaseException {
 			return getDatabaseHookRecord(hostChannel, true);
@@ -2249,13 +2254,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (!centralBackupInitialized)
 				throw new DatabaseException("Distant database backup must be initialized first with function initDistantBackupCenterForThisHost");
 		}
-		private void updateDistantBackupCenter(final DecentralizedValue hostChannel, final long lastValidatedDistantTransactionID, final long lastValidatedLocalTransactionID) throws DatabaseException {
+		private void updateDistantBackupCenter(final DecentralizedValue hostChannel, String databasePackage, final long lastValidatedDistantTransactionID, final long lastValidatedLocalTransactionID) throws DatabaseException {
 
 
 			lockWrite();
 
 
-			updateDistantBackupCenter(getDatabaseHookRecord(hostChannel), lastValidatedDistantTransactionID, lastValidatedLocalTransactionID);
+			updateDistantBackupCenter(getDatabaseHookRecord(hostChannel), databasePackage, lastValidatedDistantTransactionID, lastValidatedLocalTransactionID);
 		}
 
 		private void cancelEventToSend(DecentralizedValue peerDestination, boolean centralDatabaseBackupEvent) throws DatabaseException {

@@ -65,8 +65,8 @@ public final class ClientTable extends Table<ClientTable.Record> {
 		@NotNull
 		private ClientCloudAccountTable.Record account;
 
-		@Field(limit=EncryptionTools.MAX_ENCRYPTED_ID_SIZE)
-		private byte[] lastValidatedAndEncryptedID;
+		/*@Field(limit=EncryptionTools.MAX_ENCRYPTED_ID_SIZE)
+		private byte[] lastValidatedAndEncryptedID;*/
 
 		@Field(limit= IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup.SIZE_IN_BYTES_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND)
 		private List<byte[]> encryptedAuthenticatedMessagesToSend;
@@ -83,7 +83,7 @@ public final class ClientTable extends Table<ClientTable.Record> {
 		public Record(DecentralizedValue clientID, ClientCloudAccountTable.Record account) {
 			this.clientID = clientID;
 			this.account = account;
-			this.lastValidatedAndEncryptedID=null;
+			//this.lastValidatedAndEncryptedID=null;
 			this.encryptedAuthenticatedMessagesToSend=null;
 		}
 
@@ -95,9 +95,9 @@ public final class ClientTable extends Table<ClientTable.Record> {
 			return account;
 		}
 
-		public byte[] getLastValidatedAndEncryptedID() {
+		/*public byte[] getLastValidatedAndEncryptedID() {
 			return lastValidatedAndEncryptedID;
-		}
+		}*/
 
 		public List<byte[]> getEncryptedAuthenticatedMessagesToSend() {
 			return encryptedAuthenticatedMessagesToSend;
