@@ -5541,19 +5541,19 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	}
 
-	final void postLoadDatabase(Collection<DatabaseConfiguration> configurations/*,
+	/*final void postLoadDatabase(Collection<DatabaseConfiguration> configurations/*,
 								Reference<Boolean> restoreSynchronizerHosts,
 								Reference<Collection<DatabaseHooksTable.Record>> hosts,
-								DatabaseLifeCycles lifeCycles*/) throws DatabaseException {
+								DatabaseLifeCycles lifeCycles*///) throws DatabaseException {
 		/*if (restoreSynchronizerHosts.get()) {
 			HashMap<String, Boolean> databases=new HashMap<>();
 			configurations.forEach(v -> databases.put(v.getDatabaseSchema().getPackage().getName(), lifeCycles != null && lifeCycles.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized(v)));
 
 			getSynchronizer().restoreHosts(hosts.get(), databases);
 		}*/
-		if (configurations.stream().anyMatch(DatabaseConfiguration::isSynchronizedWithCentralBackupDatabase) && getSynchronizer().isInitializedWithCentralBackup())
-			getSynchronizer().privInitConnectionWithDistantBackupCenter();
-	}
+/*		if (configurations.stream().anyMatch(DatabaseConfiguration::isSynchronizedWithCentralBackupDatabase) && getSynchronizer().isInitializedWithCentralBackup())
+			getSynchronizer().privInitConnectionWithDistantBackupCenter();*/
+	//}
 	final void postLoadDatabaseFinal( Reference<Boolean> allNotFound, boolean internalDatabasePackage) throws DatabaseException {
 		actualDatabaseLoading = null;
 		if (!allNotFound.get() && !internalDatabasePackage)
@@ -5579,7 +5579,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					hosts,*/
 					allNotFound,
 					lifeCycles);
-			postLoadDatabase(Collections.singleton(configuration)/*, restoreSynchronizerHosts, hosts, lifeCycles*/);
+			//postLoadDatabase(Collections.singleton(configuration)/*, restoreSynchronizerHosts, hosts, lifeCycles*/);
 			postLoadDatabaseFinal(allNotFound, internalPackage);
 
 		}
@@ -5645,6 +5645,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		if (configurations.stream().anyMatch(DatabaseConfiguration::isCreateDatabaseIfNecessaryAndCheckItDuringCurrentSession))
 			getTableInstance(DatabaseTable.class, -1);
 
+		boolean isCentralDBBackupInitialized= getSynchronizer().isInitializedWithCentralBackup();
+		if (isCentralDBBackupInitialized)
+			getSynchronizer().centralDatabaseBackupDisconnected();
+
 		Reference<Boolean> allNotFound=new Reference<>(false);
 		try  {
 			boolean oldDatabaseReplaced=false;
@@ -5661,8 +5665,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						allNotFound, lifeCycles);
 
 			}
-
-			postLoadDatabase(configurations/*, restoreSynchronizerHosts, hosts, lifeCycles*/);
+			if (isCentralDBBackupInitialized)
+				getSynchronizer().centralDatabaseBackupAvailable();
+			//postLoadDatabase(configurations/*, restoreSynchronizerHosts, hosts, lifeCycles*/);
 			postLoadDatabaseFinal(allNotFound, false);
 			getSynchronizer().broadcastAvailableDatabase();
 			return oldDatabaseReplaced;
