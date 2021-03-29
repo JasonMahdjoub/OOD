@@ -940,8 +940,23 @@ public class DatabaseConfigurationsBuilder {
 			configurations.getConfigurations().stream()
 					.filter(predicate)
 					.forEach((c) ->{
-						if (c.restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable))
-							changed.set(true);
+						if (c.restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable)) {
+							if (preferOtherChannelThanLocalChannelIfAvailable)
+								changed.set(true);
+							else
+							{
+								try {
+									if (wrapper.checkNotAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(c.getDatabaseSchema().getPackage()))
+										c.disableDatabaseRestorationToOldVersion();
+									else
+										changed.set(true);
+								} catch (DatabaseException e) {
+									e.printStackTrace();
+									changed.set(true);
+								}
+							}
+
+						}
 					}
 					);
 			if (changed.get())
@@ -951,6 +966,27 @@ public class DatabaseConfigurationsBuilder {
 			}
 		});
 		return this;
+	}
+
+	void applyRestorationFromLocalDatabaseBackupIfNecessary(Package databasePackage)
+	{
+		pushQuery((p) -> {
+			for (DatabaseConfiguration c : configurations.getConfigurations()) {
+				if (c.getDatabaseSchema().getPackage().equals(databasePackage)) {
+					Long timeUTCInMs = c.getTimeUTCInMsForRestoringDatabaseToOldVersion();
+					if (timeUTCInMs != null) {
+						if (!c.isPreferOtherChannelThanLocalChannelIfAvailableDuringRestoration()) {
+							BackupRestoreManager b=wrapper.getBackupRestoreManager(databasePackage);
+							assert b!=null;
+							b.restoreDatabaseToDateUTC(timeUTCInMs );
+							c.disableDatabaseRestorationToOldVersion();
+							p.updateConfigurationPersistence();
+							break;
+						}
+					}
+				}
+			}
+		});
 	}
 
 	/*public void setDatabaseVersion(Version databaseVersion)

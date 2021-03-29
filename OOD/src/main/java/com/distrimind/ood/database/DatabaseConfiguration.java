@@ -93,6 +93,19 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 		return true;
 	}
 
+	Long getTimeUTCInMsForRestoringDatabaseToOldVersion() {
+		return timeUTCInMsForRestoringDatabaseToOldVersion;
+	}
+
+	public void disableDatabaseRestorationToOldVersion() {
+		this.timeUTCInMsForRestoringDatabaseToOldVersion = null;
+		preferOtherChannelThanLocalChannelIfAvailableDuringRestoration=false;
+	}
+
+	boolean isPreferOtherChannelThanLocalChannelIfAvailableDuringRestoration() {
+		return preferOtherChannelThanLocalChannelIfAvailableDuringRestoration;
+	}
+
 	boolean setSynchronizationType(SynchronizationType synchronizationType) {
 		if (synchronizationType==null)
 			throw new NullPointerException();
