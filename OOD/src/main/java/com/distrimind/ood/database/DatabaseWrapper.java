@@ -208,6 +208,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	// protected Connection sql_connection;
 	private static final String NATIVE_BACKUPS_DIRECTORY_NAME="native_backups";
+	private static final String EXTERNAL_TEMPORARY_BACKUPS_DIRECTORY_NAME="external_temporary_backups";
+
 	private volatile boolean closed = false;
 	private volatile boolean openedOneTime = false;
 	protected final String databaseName;
@@ -393,12 +395,99 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	}
 
+	public File prepareDatabaseRestorationFromExternalDatabaseBackupAndGetTemporaryBackupDirectoryName(DatabaseConfiguration databaseConfiguration) throws DatabaseException {
+		return prepareDatabaseRestorationFromExternalDatabaseBackupAndGetTemporaryBackupDirectoryName(databaseConfiguration.getDatabaseSchema());
+	}
+	public File prepareDatabaseRestorationFromExternalDatabaseBackupAndGetTemporaryBackupDirectoryName(DatabaseSchema schema) throws DatabaseException {
+		return prepareDatabaseRestorationFromExternalDatabaseBackupAndGetTemporaryBackupDirectoryName(schema.getPackage());
+	}
+	public File prepareDatabaseRestorationFromExternalDatabaseBackupAndGetTemporaryBackupDirectoryName(Package databasePackage) throws DatabaseException {
+		if (databasePackage==null)
+			throw new NullPointerException();
+		lockWrite();
+		try {
+			Database db = sql_database.get(databasePackage);
+			if (db == null)
+				throw new DatabaseException("The database " + databasePackage.getName() + " was not loaded");
+			return db.prepareDatabaseRestorationFromExternalDatabaseBackupAndGetTemporaryBackupDirectoryName();
+		}
+		finally {
+			unlockWrite();
+		}
+	}
+	public void restoreDatabaseToDateUTCFromExternalTemporaryDatabaseBackupAndRemoveBackupFiles(DatabaseConfiguration databaseConfiguration, long dateUTCInMs) throws DatabaseException {
+		restoreDatabaseToDateUTCFromExternalTemporaryDatabaseBackupAndRemoveBackupFiles(databaseConfiguration.getDatabaseSchema(), dateUTCInMs);
+	}
+	public void restoreDatabaseToDateUTCFromExternalTemporaryDatabaseBackupAndRemoveBackupFiles(DatabaseSchema schema, long dateUTCInMs) throws DatabaseException {
+		restoreDatabaseToDateUTCFromExternalTemporaryDatabaseBackupAndRemoveBackupFiles(schema.getPackage(), dateUTCInMs);
+	}
+	public void restoreDatabaseToDateUTCFromExternalTemporaryDatabaseBackupAndRemoveBackupFiles(Package databasePackage, long dateUTCInMs) throws DatabaseException {
+		if (databasePackage==null)
+			throw new NullPointerException();
+		lockWrite();
+		try {
+			Database db = sql_database.get(databasePackage);
+			if (db == null)
+				throw new DatabaseException("The database " + databasePackage.getName() + " was not loaded");
+
+			db.restoreDatabaseToDateUTCFromExternalTemporaryDatabaseBackupAndRemoveBackupFiles(dateUTCInMs);
+		}
+		finally {
+			unlockWrite();
+		}
+	}
+	public void cancelRestorationFromExternalDatabaseBackup(DatabaseConfiguration databaseConfiguration) throws DatabaseException {
+
+		cancelRestorationFromExternalDatabaseBackup(databaseConfiguration.getDatabaseSchema());
+	}
+	public void cancelRestorationFromExternalDatabaseBackup(DatabaseSchema databaseSchema) throws DatabaseException {
+		cancelRestorationFromExternalDatabaseBackup(databaseSchema.getPackage());
+	}
+	public void cancelRestorationFromExternalDatabaseBackup(Package databasePackage) throws DatabaseException {
+		if (databasePackage==null)
+			throw new NullPointerException();
+		lockWrite();
+		try {
+			Database db = sql_database.get(databasePackage);
+			if (db == null)
+				throw new DatabaseException("The database " + databasePackage.getName() + " was not loaded");
+
+			db.cancelRestorationFromExternalDatabaseBackup();
+		}
+		finally {
+			unlockWrite();
+		}
+	}
+	public boolean isCurrentDatabaseInRestorationProcessFromExternalBackup(DatabaseConfiguration databaseConfiguration) throws DatabaseException {
+		return isCurrentDatabaseInRestorationProcessFromExternalBackup(databaseConfiguration.getDatabaseSchema());
+	}
+	public boolean isCurrentDatabaseInRestorationProcessFromExternalBackup(DatabaseSchema databaseSchema) throws DatabaseException {
+		return isCurrentDatabaseInRestorationProcessFromExternalBackup(databaseSchema.getPackage());
+	}
+	public boolean isCurrentDatabaseInRestorationProcessFromExternalBackup(Package databasePackage) throws DatabaseException {
+		if (databasePackage==null)
+			throw new NullPointerException();
+		lockRead();
+		try {
+			Database db = sql_database.get(databasePackage);
+			if (db == null)
+				throw new DatabaseException("The database " + databasePackage.getName() + " was not loaded");
+
+			return db.isCurrentDatabaseInRestorationProcessFromExternalBackup();
+		}
+		finally {
+			unlockRead();
+		}
+	}
+
+
 	// private final boolean isWindows;
 	private class Database {
 		final HashMap<Integer, DatabasePerVersion> tables_per_versions = new HashMap<>();
 		private long lastValidatedTransactionUTCForCentralBackup=Long.MIN_VALUE;
 		BackupRestoreManager backupRestoreManager=null;
 		private int currentVersion=-1;
+		private boolean currentDatabaseInRestorationProcess;
 
 		private final DatabaseConfiguration configuration;
 
@@ -406,6 +495,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (configuration == null)
 				throw new NullPointerException("configuration");
 			this.configuration = configuration;
+			currentDatabaseInRestorationProcess=getExternalTemporaryDatabaseBackupFileName().exists();
 		}
 
 		int getCurrentVersion() throws DatabaseException {
@@ -464,6 +554,44 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		private File getDatabaseBackupFileName(File databaseDirectory, DatabaseSchema schema)
 		{
 			return new File(new File(databaseDirectory, NATIVE_BACKUPS_DIRECTORY_NAME), DatabaseWrapper.getLongPackageName(schema.getPackage()));
+		}
+		private File getExternalTemporaryDatabaseBackupFileName()
+		{
+			return new File(new File(databaseDirectory, EXTERNAL_TEMPORARY_BACKUPS_DIRECTORY_NAME), DatabaseWrapper.getLongPackageName(this.configuration.getDatabaseSchema().getPackage()));
+		}
+
+		private File prepareDatabaseRestorationFromExternalDatabaseBackupAndGetTemporaryBackupDirectoryName() throws DatabaseException {
+			File f=getExternalTemporaryDatabaseBackupFileName();
+			if (f.exists())
+				throw new DatabaseException("The database "+this.configuration.getDatabaseSchema().getPackage().getName()+" is already in a restoration process !");
+			FileTools.checkFolder(f);
+			currentDatabaseInRestorationProcess=true;
+			return f;
+		}
+
+		private void restoreDatabaseToDateUTCFromExternalTemporaryDatabaseBackupAndRemoveBackupFiles(long dateUTCInMs) throws DatabaseException {
+			File directory=getExternalTemporaryDatabaseBackupFileName();
+			if (!directory.exists())
+				throw new DatabaseException("The external database directory does not exists. Please place backup file into directory returned by the function getExternalTemporaryDatabaseBackupFileName");
+
+			DatabaseConfiguration dc=getDatabaseConfiguration(this.configuration.getDatabaseSchema().getPackage());
+			if (dc==null)
+				throw new DatabaseException("The database "+this.configuration.getDatabaseSchema().getPackage().getName()+" was not loaded !");
+
+			BackupRestoreManager backupRestoreManager =new BackupRestoreManager(DatabaseWrapper.this, directory, dc, true);
+			backupRestoreManager.restoreDatabaseToDateUTC(dateUTCInMs);
+			FileTools.deleteDirectory(directory);
+		}
+		private void cancelRestorationFromExternalDatabaseBackup() throws DatabaseException {
+			File directory=getExternalTemporaryDatabaseBackupFileName();
+			if (directory.exists())
+				FileTools.deleteDirectory(directory);
+			else
+				throw new DatabaseException("There is no database restoration to cancel with the database "+this.configuration.getDatabaseSchema().getPackage().getName());
+		}
+		private boolean isCurrentDatabaseInRestorationProcessFromExternalBackup()
+		{
+			return currentDatabaseInRestorationProcess;
 		}
 		void initBackupRestoreManager(DatabaseWrapper wrapper, File databaseDirectory, DatabaseConfiguration configuration) throws DatabaseException {
 			if (this.backupRestoreManager!=null)
@@ -656,6 +784,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
             public void initOrReset() {
 
             }
+
         }, true);
 
 	}
@@ -4501,7 +4630,16 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		
 		ConnectionWrapper cw = isNewTransactionAndStartIt();
 		final boolean writeData=_transaction.doesWriteData();
+		Package databasePackage=writeData?_transaction.getConcernedDatabasePackage():null;
 		boolean needsLock=needsToLock();
+		if (databasePackage!=null)
+		{
+			if (reservedDatabases.contains(databasePackage))
+				databasePackage=null;
+			else
+				needsLock=true;
+		}
+
 		if (cw.newTransaction) {
 			try
 			{
@@ -4512,6 +4650,16 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					else
 						lockRead();
 				}
+				if (databasePackage!=null)
+				{
+					Database db=sql_database.get(databasePackage);
+					if (db!=null)
+					{
+						if (db.isCurrentDatabaseInRestorationProcessFromExternalBackup())
+							throw new DatabaseException("Impossible to write into the database "+databasePackage+" because this database is in a restoration process !");
+					}
+				}
+
 				boolean retry=true;
 				boolean disconnectionException=false;
 				while(retry)

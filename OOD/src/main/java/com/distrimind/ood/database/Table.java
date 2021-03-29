@@ -715,7 +715,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		try {
 			sql_connection.lockWrite();
 			table_found = (Boolean) sql_connection.runTransaction(new Transaction() {
-
+				@Override
+				public Package getConcernedDatabasePackage() {
+					return Table.this.getClass().getPackage();
+				}
 				@Override
 				public TransactionIsolation getTransactionIsolation() {
 					return TransactionIsolation.TRANSACTION_READ_COMMITTED;
@@ -747,7 +750,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				 */
 				if (createDatabaseIfNecessaryAndCheckIt)
 					sql_connection.runTransaction(new Transaction() {
-
+						@Override
+						public Package getConcernedDatabasePackage() {
+							return Table.this.getClass().getPackage();
+						}
 						@Override
 						public TransactionIsolation getTransactionIsolation() {
 							return TransactionIsolation.TRANSACTION_SERIALIZABLE;
@@ -850,36 +856,40 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						final String seqQuery=sql_connection.getSequenceQueryCreation(getSqlTableName(),f.getSqlFieldName(), f.getStartValue());
 						if (seqQuery!=null && seqQuery.length()>0) {
 							sql_connection.runTransaction(new Transaction() {
-															  @Override
-															  public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
-																try {
-																	Statement st = sql_connection.getConnectionAssociatedWithCurrentThread().getConnection()
-																		.createStatement();
-																	st.executeUpdate(seqQuery);
-																	st.close();
-																	return null;
-																}
-																catch (SQLException e)
-																{
-																	throw DatabaseException.getDatabaseException(e);
-																}
-															  }
+								@Override
+								public Package getConcernedDatabasePackage() {
+									return Table.this.getClass().getPackage();
+								}
+							  @Override
+							  public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
+								try {
+									Statement st = sql_connection.getConnectionAssociatedWithCurrentThread().getConnection()
+										.createStatement();
+									st.executeUpdate(seqQuery);
+									st.close();
+									return null;
+								}
+								catch (SQLException e)
+								{
+									throw DatabaseException.getDatabaseException(e);
+								}
+							  }
 
-															  @Override
-															  public TransactionIsolation getTransactionIsolation() {
-																  return TransactionIsolation.TRANSACTION_SERIALIZABLE;
-															  }
+							  @Override
+							  public TransactionIsolation getTransactionIsolation() {
+								  return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+							  }
 
-															  @Override
-															  public boolean doesWriteData() {
-																  return true;
-															  }
+							  @Override
+							  public boolean doesWriteData() {
+								  return true;
+							  }
 
-															  @Override
-															  public void initOrReset()  {
+							  @Override
+							  public void initOrReset()  {
 
-															  }
-														  }, true);
+							  }
+						  }, true);
 
 
 
@@ -942,7 +952,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					sqlQuery.append(")").append(getDatabaseWrapper().getPostCreateTable(autoIncrementStart.get())).append(sql_connection.getSqlComma());
 
 					sql_connection.runTransaction(new Transaction() {
-
+						@Override
+						public Package getConcernedDatabasePackage() {
+							return Table.this.getClass().getPackage();
+						}
 						@Override
 						public TransactionIsolation getTransactionIsolation() {
 							return TransactionIsolation.TRANSACTION_SERIALIZABLE;
@@ -1051,6 +1064,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 							}
 							indexCreationQuery.append(")");
 							sql_connection.runTransaction(new Transaction() {
+								@Override
+								public Package getConcernedDatabasePackage() {
+									return Table.this.getClass().getPackage();
+								}
 
 								@Override
 								public TransactionIsolation getTransactionIsolation() {
@@ -1171,7 +1188,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						// SqlQuery.append(") ON UPDATE CASCADE ON DELETE CASCADE");
 						SqlQuery.append(") ").append(sql_connection.getOnDeleteCascadeSqlQuery()).append(" ").append(sql_connection.getOnUpdateCascadeSqlQuery());
 						sql_connection.runTransaction(new Transaction() {
-
+							@Override
+							public Package getConcernedDatabasePackage() {
+								return Table.this.getClass().getPackage();
+							}
 							@Override
 							public TransactionIsolation getTransactionIsolation() {
 								return TransactionIsolation.TRANSACTION_SERIALIZABLE;
@@ -1368,7 +1388,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			};
 
 			return (T) sql_connection.runTransaction(new Transaction() {
-
+				@Override
+				public Package getConcernedDatabasePackage() {
+					return Table.this.getClass().getPackage();
+				}
 				@Override
 				public TransactionIsolation getTransactionIsolation() {
 					return TransactionIsolation.TRANSACTION_READ_COMMITTED;
@@ -2039,7 +2062,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			final String sqlQuery = rule==null?null:rule.translateToSqlQuery(this, parameters, sqlParameters, tablesJunction)
 					.toString();
 			Transaction t = new Transaction() {
-
+				@Override
+				public Package getConcernedDatabasePackage() {
+					return Table.this.getClass().getPackage();
+				}
 				@Override
 				public TransactionIsolation getTransactionIsolation() {
 					return TransactionIsolation.TRANSACTION_READ_COMMITTED;
@@ -5399,7 +5425,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			}, where, parameters, is_already_in_transaction);
 		}
 		return (int)sql_connection.runTransaction(new Transaction() {
-
+			@Override
+			public Package getConcernedDatabasePackage() {
+				return Table.this.getClass().getPackage();
+			}
 			@Override
 			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 				HashMap<Integer, Object> sqlParameters = rule==null?null: new HashMap<>();
@@ -5462,7 +5491,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 		final RuleInstance rule = Interpreter.getRuleInstance(where);
 		return (int)sql_connection.runTransaction(new Transaction() {
-			
+			@Override
+			public Package getConcernedDatabasePackage() {
+				return Table.this.getClass().getPackage();
+			}
 			@Override
 			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 				class RunnableTmp extends Runnable {
@@ -5550,7 +5582,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			throws DatabaseException {
 
 		return (int)sql_connection.runTransaction(new Transaction() {
-			
+			@Override
+			public Package getConcernedDatabasePackage() {
+				return Table.this.getClass().getPackage();
+			}
 			@Override
 			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 				class RunnableTmp extends Runnable {
@@ -5705,7 +5740,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		try (ReadLock ignored = new ReadLock(this)) {
 			
 			sql_connection.runTransaction(new Transaction() {
-
+				@Override
+				public Package getConcernedDatabasePackage() {
+					return Table.this.getClass().getPackage();
+				}
 				@Override
 				public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 					
@@ -6008,7 +6046,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			};
 
 			return (Boolean) sql_connection.runTransaction(new Transaction() {
-
+				@Override
+				public Package getConcernedDatabasePackage() {
+					return Table.this.getClass().getPackage();
+				}
                 @Override
                 public TransactionIsolation getTransactionIsolation() {
                     return TransactionIsolation.TRANSACTION_READ_COMMITTED;
@@ -6055,6 +6096,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		{
 			try (Lock ignored = new WriteLock(this)) {
 				return (long)sql_connection.runTransaction(new Transaction() {
+					@Override
+					public Package getConcernedDatabasePackage() {
+						return Table.this.getClass().getPackage();
+					}
 					@Override
 					public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 						return removeWithCascadeRecordsPointingToThisRecordImpl(record);
@@ -6110,7 +6155,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 		final RuleInstance rule = where == null ? null : Interpreter.getRuleInstance(where);
 		return (long) sql_connection.runTransaction(new Transaction() {
-
+			@Override
+			public Package getConcernedDatabasePackage() {
+				return Table.this.getClass().getPackage();
+			}
 			@Override
 			public Long run(DatabaseWrapper _sql_connection) throws DatabaseException {
 				class RunnableTmp extends Runnable {
@@ -6307,6 +6355,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 			sql_connection.runTransaction(new Transaction() {
 				@Override
+				public Package getConcernedDatabasePackage() {
+					return Table.this.getClass().getPackage();
+				}
+				@Override
 				public TransactionIsolation getTransactionIsolation() {
 					return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
 				}
@@ -6396,6 +6448,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		try (Lock ignored = new WriteLock(this)) {
 
 			class TransactionTmp implements Transaction {
+				@Override
+				public Package getConcernedDatabasePackage() {
+					return Table.this.getClass().getPackage();
+				}
 				@Override
 				public TransactionIsolation getTransactionIsolation() {
 					return TransactionIsolation.TRANSACTION_SERIALIZABLE;
@@ -6568,7 +6624,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		try (Lock ignored = new WriteLock(this)) {
 
 			sql_connection.runTransaction(new Transaction() {
-
+				@Override
+				public Package getConcernedDatabasePackage() {
+					return Table.this.getClass().getPackage();
+				}
 				@Override
 				public TransactionIsolation getTransactionIsolation() {
 					return TransactionIsolation.TRANSACTION_SERIALIZABLE;
@@ -6667,6 +6726,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		if (_records.isEmpty())
 			return;
 		class TransactionTmp implements Transaction {
+			@Override
+			public Package getConcernedDatabasePackage() {
+				return Table.this.getClass().getPackage();
+			}
 			public TransactionTmp() {
 			}
 
@@ -6769,6 +6832,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			final boolean updatable) throws DatabaseException {
 
 		class TransactionTmp implements Transaction {
+			@Override
+			public Package getConcernedDatabasePackage() {
+				return Table.this.getClass().getPackage();
+			}
 			protected final Constructor<T> default_constructor_field;
 			protected final ArrayList<FieldAccessor> fields_accessor;
 
@@ -6878,7 +6945,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			};
 
 			Transaction transaction = new Transaction() {
-
+				@Override
+				public Package getConcernedDatabasePackage() {
+					return Table.this.getClass().getPackage();
+				}
 				@Override
 				public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 					try (ReadQuery rq = new ReadQuery(
@@ -7104,6 +7174,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			final DatabaseRecord originalRecord, final boolean synchronizeIfNecessary,
 			final Set<DecentralizedValue> hostsDestinations) throws DatabaseException {
 
+
 		return (T) sql_connection.runTransaction(new Transaction() {
 
 			@Override
@@ -7201,6 +7272,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						}
 
 					class TransactionTmp implements Transaction {
+						@Override
+						public Package getConcernedDatabasePackage() {
+							return Table.this.getClass().getPackage();
+						}
 
 						protected final ArrayList<FieldAccessor> auto_primary_keys_fields;
 						protected final ArrayList<ForeignKeyFieldAccessor> foreign_keys_fields;
@@ -7354,6 +7429,11 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			@Override
 			public void initOrReset() {
 
+			}
+
+			@Override
+			public Package getConcernedDatabasePackage() {
+				return Table.this.getClass().getPackage();
 			}
 
 		}, true);
@@ -7565,7 +7645,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		try (Lock ignored = new WriteLock(Table.this)) {
 
 			sql_connection.runTransaction(new Transaction() {
-
+				@Override
+				public Package getConcernedDatabasePackage() {
+					return Table.this.getClass().getPackage();
+				}
 				@Override
 				public TransactionIsolation getTransactionIsolation() {
 					return TransactionIsolation.TRANSACTION_SERIALIZABLE;
@@ -7659,6 +7742,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						}
 
 						class TransactionTmp implements Transaction {
+							@Override
+							public Package getConcernedDatabasePackage() {
+								return Table.this.getClass().getPackage();
+							}
 							protected final ArrayList<FieldAccessor> fields_accessor;
 
 							public TransactionTmp(ArrayList<FieldAccessor> _fields_accessor) {
@@ -7984,6 +8071,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					: null;
 			final AtomicBoolean oneUpdated=new AtomicBoolean(false); 
 			sql_connection.runTransaction(new Transaction() {
+				@Override
+				public Package getConcernedDatabasePackage() {
+					return Table.this.getClass().getPackage();
+				}
 				
 				@Override
 				public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
