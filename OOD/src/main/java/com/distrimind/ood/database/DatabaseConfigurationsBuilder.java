@@ -940,15 +940,22 @@ public class DatabaseConfigurationsBuilder {
 			for (DatabaseConfiguration c : configurations.getConfigurations()) {
 				if (predicate.test(c)) {
 					if (c.restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable)) {
-						wrapper.prepareDatabaseRestorationFromExternalDatabaseBackupAndGetTemporaryBackupDirectoryName(c);
-						if (preferOtherChannelThanLocalChannelIfAvailable) {
 
-							changed=true;
+
+						if (preferOtherChannelThanLocalChannelIfAvailable || c.getBackupConfiguration() == null) {
+							if (c.isSynchronizedWithCentralBackupDatabase()) {
+								//download database from other database's channel
+								wrapper.prepareDatabaseRestorationFromDistantDatabaseBackupChannel(c.getDatabaseSchema().getPackage());
+							} else {
+								//send message to distant peer in order to ask him to restore database to old state
+								//TODO complete
+							}
+							changed = true;
 						} else {
+							//restore database from local backup database
 							if (!wrapper.checkNotAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(c.getDatabaseSchema().getPackage()))
-								changed=true;
+								changed = true;
 						}
-
 					}
 				}
 			}
@@ -979,9 +986,38 @@ public class DatabaseConfigurationsBuilder {
 								c.disableDatabaseRestorationToOldVersion();
 								if (lifeCycles!=null)
 									lifeCycles.saveDatabaseConfigurations(configurations);
-								break;
+
 							}
 						}
+						break;
+					}
+				}
+			}
+			finally {
+				wrapper.unlockWrite();
+			}
+		}
+	}
+	void applyRestorationFromDistantDatabaseBackupIfNecessary(DatabaseWrapper.Database database) throws DatabaseException {
+		if (database==null)
+			throw new NullPointerException();
+		synchronized (this)
+		{
+			wrapper.lockWrite();
+			try {
+				for (DatabaseConfiguration c : configurations.getConfigurations()) {
+					if (c.getDatabaseSchema().getPackage().equals(database.getConfiguration().getDatabaseSchema().getPackage())) {
+						Long timeUTCInMs = c.getTimeUTCInMsForRestoringDatabaseToOldVersion();
+						if (timeUTCInMs != null) {
+							if (c.isPreferOtherChannelThanLocalChannelIfAvailableDuringRestoration()) {
+								database.temporaryBackupRestoreManagerComingFromDistantBackupManager.restoreDatabaseToDateUTC(timeUTCInMs);
+								database.cancelCurrentDatabaseRestorationProcessFromCentralDatabaseBackup();
+								c.disableDatabaseRestorationToOldVersion();
+								if (lifeCycles!=null)
+									lifeCycles.saveDatabaseConfigurations(configurations);
+							}
+						}
+						break;
 					}
 				}
 			}

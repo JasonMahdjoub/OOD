@@ -1549,7 +1549,13 @@ public class BackupRestoreManager {
 	public long getFirstTransactionUTCInMs()
 	{
 		synchronized (this) {
-			return fileTimeStamps.size()>0?fileTimeStamps.get(0):Long.MIN_VALUE;
+			return fileTimeStamps.size()>0?fileTimeStamps.get(0):Long.MAX_VALUE;
+		}
+	}
+	public long getFirstFileReferenceUTCInMs()
+	{
+		synchronized (this) {
+			return fileReferenceTimeStamps.size()>0?fileReferenceTimeStamps.get(0):Long.MAX_VALUE;
 		}
 	}
 

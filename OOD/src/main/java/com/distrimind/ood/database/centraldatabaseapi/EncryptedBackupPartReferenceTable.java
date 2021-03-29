@@ -43,6 +43,7 @@ import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.messages.EncryptedBackupPartComingFromCentralDatabaseBackup;
 import com.distrimind.ood.database.messages.EncryptedBackupPartDestinedToCentralDatabaseBackup;
+import com.distrimind.ood.database.messages.EncryptedBackupPartForRestorationComingFromCentralDatabaseBackup;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.Integrity;
 import com.distrimind.util.io.RandomInputStream;
@@ -102,9 +103,11 @@ public final class EncryptedBackupPartReferenceTable extends Table<EncryptedBack
 				fileReference.save(ris);
 			}
 		}
+		public EncryptedBackupPartComingFromCentralDatabaseBackup readEncryptedBackupPartForRestoration(DecentralizedValue hostDestination, DecentralizedValue channelHost) throws IOException {
+			return new EncryptedBackupPartForRestorationComingFromCentralDatabaseBackup(database.getClient().getClientID(),hostDestination, metaData, fileReference.getRandomInputStream(), channelHost);
+		}
 
 		public EncryptedBackupPartComingFromCentralDatabaseBackup readEncryptedBackupPart(DecentralizedValue hostDestination) throws IOException {
-
 			return new EncryptedBackupPartComingFromCentralDatabaseBackup(database.getClient().getClientID(),hostDestination, metaData, fileReference.getRandomInputStream());
 		}
 
