@@ -936,57 +936,59 @@ public class DatabaseConfigurationsBuilder {
 	{
 
 		pushQuery((p) -> {
-			Reference<Boolean> changed=new Reference<>(false);
-			configurations.getConfigurations().stream()
-					.filter(predicate)
-					.forEach((c) ->{
-						if (c.restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable)) {
-							if (preferOtherChannelThanLocalChannelIfAvailable)
-								changed.set(true);
-							else
-							{
-								try {
-									if (wrapper.checkNotAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(c.getDatabaseSchema().getPackage()))
-										c.disableDatabaseRestorationToOldVersion();
-									else
-										changed.set(true);
-								} catch (DatabaseException e) {
-									e.printStackTrace();
-									changed.set(true);
-								}
-							}
+			boolean changed=false;
+			for (DatabaseConfiguration c : configurations.getConfigurations()) {
+				if (predicate.test(c)) {
+					if (c.restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable)) {
+						wrapper.prepareDatabaseRestorationFromExternalDatabaseBackupAndGetTemporaryBackupDirectoryName(c);
+						if (preferOtherChannelThanLocalChannelIfAvailable) {
 
+							changed=true;
+						} else {
+							if (!wrapper.checkNotAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(c.getDatabaseSchema().getPackage()))
+								changed=true;
 						}
+
 					}
-					);
-			if (changed.get())
+				}
+			}
+			if (changed)
 			{
 				p.updateConfigurationPersistence();
+
 				//TODO complete
 			}
 		});
 		return this;
 	}
 
-	void applyRestorationFromLocalDatabaseBackupIfNecessary(Package databasePackage)
-	{
-		pushQuery((p) -> {
-			for (DatabaseConfiguration c : configurations.getConfigurations()) {
-				if (c.getDatabaseSchema().getPackage().equals(databasePackage)) {
-					Long timeUTCInMs = c.getTimeUTCInMsForRestoringDatabaseToOldVersion();
-					if (timeUTCInMs != null) {
-						if (!c.isPreferOtherChannelThanLocalChannelIfAvailableDuringRestoration()) {
-							BackupRestoreManager b=wrapper.getBackupRestoreManager(databasePackage);
-							assert b!=null;
-							b.restoreDatabaseToDateUTC(timeUTCInMs );
-							c.disableDatabaseRestorationToOldVersion();
-							p.updateConfigurationPersistence();
-							break;
+	void applyRestorationFromLocalDatabaseBackupIfNecessary(Package databasePackage) throws DatabaseException {
+		synchronized (this)
+		{
+			wrapper.lockWrite();
+			try {
+				for (DatabaseConfiguration c : configurations.getConfigurations()) {
+					if (c.getDatabaseSchema().getPackage().equals(databasePackage)) {
+						Long timeUTCInMs = c.getTimeUTCInMsForRestoringDatabaseToOldVersion();
+						if (timeUTCInMs != null) {
+							if (!c.isPreferOtherChannelThanLocalChannelIfAvailableDuringRestoration()) {
+								BackupRestoreManager b = wrapper.getBackupRestoreManager(databasePackage);
+								assert b != null;
+								b.restoreDatabaseToDateUTC(timeUTCInMs);
+								wrapper.cancelRestorationFromExternalDatabaseBackup(c);
+								c.disableDatabaseRestorationToOldVersion();
+								if (lifeCycles!=null)
+									lifeCycles.saveDatabaseConfigurations(configurations);
+								break;
+							}
 						}
 					}
 				}
 			}
-		});
+			finally {
+				wrapper.unlockWrite();
+			}
+		}
 	}
 
 	/*public void setDatabaseVersion(Version databaseVersion)
