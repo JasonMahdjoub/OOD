@@ -1816,13 +1816,13 @@ public class BackupRestoreManager {
 			boolean newVersionLoaded=false;
 			boolean res = true;
 
-
+			long lastTransactionUTCInMs;
 			synchronized (this) {
 				if (temporaryDisabled)
 					return false;
 				if (fileReferenceTimeStamps.size() == 0)
 					return false;
-				long lastTransactionUTCInMs=getLastTransactionUTCInMS();
+				lastTransactionUTCInMs=getLastTransactionUTCInMS();
 				databaseWrapper.checkMinimumValidatedTransactionIds();
 				if (lastTransactionUTCInMs>Long.MIN_VALUE && lastTransactionUTCInMs<=dateUTCInMs) {
 					temporaryDisabled = true;
@@ -2166,7 +2166,8 @@ public class BackupRestoreManager {
 
 				//createBackupReference();
 				notify=true;
-
+				if (notifyOtherPeers)
+					databaseWrapper.getSynchronizer().notifyOtherPeersThatDatabaseRestorationWasDone(dbPackage, dateUTCInMs, lastTransactionUTCInMs);
 				return res;
 
 			} catch (Exception e) {
@@ -2184,8 +2185,7 @@ public class BackupRestoreManager {
 				//transactionsInterval=null;
 				if (notify)
 					databaseWrapper.getSynchronizer().checkForNewBackupFilePartToSendToCentralDatabaseBackup(dbPackage);
-				if (notifyOtherPeers)
-					databaseWrapper.getSynchronizer().notifyOtherPeersThatDatabaseRestorationWasDone(dbPackage, dateUTCInMs);
+
 			}
 		}
 		finally {

@@ -1017,7 +1017,7 @@ public class DatabaseConfigurationsBuilder {
 						if (timeUTCInMs != null) {
 							if (c.isPreferOtherChannelThanLocalChannelIfAvailableDuringRestoration()) {
 								if (c.isSynchronizedWithCentralBackupDatabase()) {
-									database.temporaryBackupRestoreManagerComingFromDistantBackupManager.restoreDatabaseToDateUTC(timeUTCInMs, c.isNotifyOtherPeers());
+									database.temporaryBackupRestoreManagerComingFromDistantBackupManager.restoreDatabaseToDateUTC(timeUTCInMs, false, c.isNotifyOtherPeers());
 									if (c.isNotifyOtherPeers())
 
 									database.cancelCurrentDatabaseRestorationProcessFromCentralDatabaseBackup();
@@ -1068,7 +1068,7 @@ public class DatabaseConfigurationsBuilder {
 							{
 								BackupRestoreManager b = database.backupRestoreManager;
 								assert b != null;
-								b.restoreDatabaseToDateUTC(timeUTCInMs, c.isNotifyOtherPeers());
+								b.restoreDatabaseToDateUTC(timeUTCInMs, false, c.isNotifyOtherPeers());
 								wrapper.cancelRestorationFromExternalDatabaseBackup(c);
 							}
 							c.disableDatabaseRestorationToOldVersion();

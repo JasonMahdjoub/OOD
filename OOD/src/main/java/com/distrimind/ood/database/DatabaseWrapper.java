@@ -1631,18 +1631,25 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new MessageExternalizationException(Integrity.FAIL);
 		}
 
+		private void cleanTransactionsAfterRestoration(String databasePackage, long timeUTCOfRestorationInMs, Long transactionToDeleteUpperLimitUTC, boolean launchRestoration) throws DatabaseException {
+			if (transactionToDeleteUpperLimitUTC!=null)
+				getDatabaseTransactionEventsTable().removeRecordsWithCascade( "concernedDatabasePackage=%c and timeUTC<=%l", "c", databasePackage, "l", transactionToDeleteUpperLimitUTC);
+			else
+				getDatabaseTransactionEventsTable().removeRecordsWithCascade( "concernedDatabasePackage=%c", "c", databasePackage);
+			//getDatabaseDistantTransactionEvent().removeAllRecordsWithCascade();
+			getDatabaseHooksTable().actualizeLastTransactionID(Collections.emptyList());
+			if (launchRestoration)
+			{
+				getDatabaseConfigurationsBuilder().restoreGivenDatabaseStringToOldVersion(databasePackage, timeUTCOfRestorationInMs, false , false);
+			}
+
+		}
+
 		void receivedRestorationOrderMessage(RestorationOrderMessage m) throws DatabaseException {
 			runSynchronizedTransaction(new SynchronizedTransaction<Object>() {
 				@Override
 				public Object run() throws Exception {
-					getDatabaseTransactionEventsTable().removeRecordsWithCascade( "concernedDatabasePackage=%c", "c", m.getDatabasePackage());
-					//getDatabaseDistantTransactionEvent().removeAllRecordsWithCascade();
-					getDatabaseHooksTable().actualizeLastTransactionID(Collections.emptyList());
-					if (m.getHostThatApplyRestoration().equals(getLocalHostID()) && !m.getHostSource().equals(getLocalHostID()))
-					{
-						getDatabaseConfigurationsBuilder().restoreGivenDatabaseStringToOldVersion(m.getDatabasePackage(), m.getTimeUTCOfRestorationInMs(), false , false);
-					}
-
+					cleanTransactionsAfterRestoration(m.getDatabasePackage(), m.getTimeUTCOfRestorationInMs(), null, m.getHostThatApplyRestoration().equals(getLocalHostID()) && !m.getHostSource().equals(getLocalHostID()));
 					return null;
 				}
 
@@ -2958,10 +2965,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 			}
 		}
-		void notifyOtherPeersThatDatabaseRestorationWasDone(Package p, long timeUTCOfRestorationInMs) throws DatabaseException {
-			notifyOtherPeersThatDatabaseRestorationWasDone(p, timeUTCOfRestorationInMs, getLocalHostID());
+		void notifyOtherPeersThatDatabaseRestorationWasDone(Package p, long timeUTCOfRestorationInMs, Long transactionToDeleteUpperLimitUTC) throws DatabaseException {
+			notifyOtherPeersThatDatabaseRestorationWasDone(p, timeUTCOfRestorationInMs, getLocalHostID(), transactionToDeleteUpperLimitUTC);
 		}
 		void notifyOtherPeersThatDatabaseRestorationWasDone(Package p, long timeUTCOfRestorationInMs, DecentralizedValue hostThatApplyRestoration) throws DatabaseException {
+			notifyOtherPeersThatDatabaseRestorationWasDone(p, timeUTCOfRestorationInMs, hostThatApplyRestoration, null);
+		}
+		void notifyOtherPeersThatDatabaseRestorationWasDone(Package p, long timeUTCOfRestorationInMs, DecentralizedValue hostThatApplyRestoration, Long transactionToDeleteUpperLimitUTC) throws DatabaseException {
 			if (p==null)
 				throw new NullPointerException();
 			if (hostThatApplyRestoration==null)
@@ -2969,19 +2979,21 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			runSynchronizedTransaction(new SynchronizedTransaction<Object>() {
 				@Override
 				public Object run() throws Exception {
-
+					Reference<DatabaseHooksTable.Record> localRecord=new Reference<>(null);
 					getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
 
 						@Override
 						public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
 							if (_record.concernsLocalDatabaseHost())
-								getSynchronizer().receivedRestorationOrderMessage(new RestorationOrderMessage(getLocalHostID(), getLocalHostID(), hostThatApplyRestoration, p.getName(), timeUTCOfRestorationInMs));
+								localRecord.set(_record);
 							else
 								_record.offerNewAuthenticatedP2PMessage(DatabaseWrapper.this, new RestorationOrderMessage(getLocalHostID(), _record.getHostID(), hostThatApplyRestoration, p.getName(), timeUTCOfRestorationInMs), getDatabaseConfigurationsBuilder().getSecureRandom(), getDatabaseConfigurationsBuilder().getProtectedSignatureProfileProviderForAuthenticatedP2PMessages(), this);
 						}
 
 					});
-
+					if (localRecord.get()!=null) {
+						getSynchronizer().cleanTransactionsAfterRestoration(p.getName(), timeUTCOfRestorationInMs, transactionToDeleteUpperLimitUTC, transactionToDeleteUpperLimitUTC==null);
+					}
 					return null;
 				}
 
