@@ -2974,11 +2974,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 						@Override
 						public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
-							_record.offerNewAuthenticatedP2PMessage(DatabaseWrapper.this, new RestorationOrderMessage(getLocalHostID(), _record.getHostID(), hostThatApplyRestoration, p.getName(), timeUTCOfRestorationInMs), getDatabaseConfigurationsBuilder().getSecureRandom(), getDatabaseConfigurationsBuilder().getProtectedSignatureProfileProviderForAuthenticatedP2PMessages(), this);
+							if (_record.concernsLocalDatabaseHost())
+								getSynchronizer().receivedRestorationOrderMessage(new RestorationOrderMessage(getLocalHostID(), getLocalHostID(), hostThatApplyRestoration, p.getName(), timeUTCOfRestorationInMs));
+							else
+								_record.offerNewAuthenticatedP2PMessage(DatabaseWrapper.this, new RestorationOrderMessage(getLocalHostID(), _record.getHostID(), hostThatApplyRestoration, p.getName(), timeUTCOfRestorationInMs), getDatabaseConfigurationsBuilder().getSecureRandom(), getDatabaseConfigurationsBuilder().getProtectedSignatureProfileProviderForAuthenticatedP2PMessages(), this);
 						}
 
-					}, "concernsDatabaseHost=%c", "c", false);
-					getSynchronizer().receivedRestorationOrderMessage(new RestorationOrderMessage(getLocalHostID(), getLocalHostID(), hostThatApplyRestoration, p.getName(), timeUTCOfRestorationInMs));
+					});
 
 					return null;
 				}
