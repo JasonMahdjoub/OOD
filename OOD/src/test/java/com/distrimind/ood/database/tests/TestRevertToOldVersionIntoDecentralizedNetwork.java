@@ -99,7 +99,7 @@ public abstract class TestRevertToOldVersionIntoDecentralizedNetwork extends Tes
 			addElements();
 			exchangeMessages();
 		}
-		db1.getDbwrapper().getDatabaseConfigurationsBuilder().restoreDatabaseToOldVersion(timeUTC, preferOtherChannelThanLocalChannelIfAvailable);
+		db1.getDbwrapper().getDatabaseConfigurationsBuilder().restoreDatabaseToOldVersion(timeUTC, preferOtherChannelThanLocalChannelIfAvailable, false);
 
 		if (!upgradeDatabaseVersionWhenConnectedWithPeers)
 		{

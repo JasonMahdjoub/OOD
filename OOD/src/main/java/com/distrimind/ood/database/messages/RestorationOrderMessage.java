@@ -56,13 +56,14 @@ public class RestorationOrderMessage extends DatabaseEvent implements Authentica
 	private long timeUTCOfRestorationInMs;
 	private long messageID;
 	private String databasePackage;
+	private boolean chooseNearestBackupIfNoBackupMatch;
 	private byte[] signatures;
 
 	@SuppressWarnings("unused")
 	private RestorationOrderMessage() {
 	}
 
-	public RestorationOrderMessage(DecentralizedValue hostSource, DecentralizedValue hostDestination, DecentralizedValue hostThatApplyRestoration, String databasePackage, long timeUTCOfRestorationInMs) {
+	public RestorationOrderMessage(DecentralizedValue hostSource, DecentralizedValue hostDestination, DecentralizedValue hostThatApplyRestoration, String databasePackage, long timeUTCOfRestorationInMs,boolean chooseNearestBackupIfNoBackupMatch) {
 		if (hostSource==null)
 			throw new NullPointerException();
 		if (hostDestination==null)
@@ -79,6 +80,11 @@ public class RestorationOrderMessage extends DatabaseEvent implements Authentica
 		this.messageID = -1;
 		this.signatures = null;
 		this.databasePackage=databasePackage;
+		this.chooseNearestBackupIfNoBackupMatch=chooseNearestBackupIfNoBackupMatch;
+	}
+
+	public boolean isChooseNearestBackupIfNoBackupMatch() {
+		return chooseNearestBackupIfNoBackupMatch;
 	}
 
 	@Override
@@ -111,6 +117,7 @@ public class RestorationOrderMessage extends DatabaseEvent implements Authentica
 		out.writeLong(timeUTCOfRestorationInMs);
 		out.writeString(databasePackage, false, SerializationTools.MAX_CLASS_LENGTH);
 		out.writeLong(messageID);
+		out.writeBoolean(chooseNearestBackupIfNoBackupMatch);
 	}
 
 	@Override
@@ -121,11 +128,12 @@ public class RestorationOrderMessage extends DatabaseEvent implements Authentica
 		timeUTCOfRestorationInMs =in.readLong();
 		databasePackage=in.readString(false, SerializationTools.MAX_CLASS_LENGTH);
 		messageID=in.readLong();
+		chooseNearestBackupIfNoBackupMatch=in.readBoolean();
 	}
 
 	@Override
 	public int getInternalSerializedSizeWithoutSignatures() {
-		return 16+SerializationTools.getInternalSize(hostSource)+
+		return 17+SerializationTools.getInternalSize(hostSource)+
 				SerializationTools.getInternalSize(hostDestination)+
 				SerializationTools.getInternalSize(hostThatApplyRestoration)+
 				SerializationTools.getInternalSize(databasePackage, SerializationTools.MAX_CLASS_LENGTH)

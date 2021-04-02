@@ -1631,7 +1631,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new MessageExternalizationException(Integrity.FAIL);
 		}
 
-		private void cleanTransactionsAfterRestoration(String databasePackage, long timeUTCOfRestorationInMs, Long transactionToDeleteUpperLimitUTC, boolean launchRestoration) throws DatabaseException {
+		private void cleanTransactionsAfterRestoration(String databasePackage, long timeUTCOfRestorationInMs, Long transactionToDeleteUpperLimitUTC, boolean launchRestoration, boolean chooseNearestBackupIfNoBackupMatch) throws DatabaseException {
 			if (transactionToDeleteUpperLimitUTC!=null)
 				getDatabaseTransactionEventsTable().removeRecordsWithCascade( "concernedDatabasePackage=%c and timeUTC<=%l", "c", databasePackage, "l", transactionToDeleteUpperLimitUTC);
 			else
@@ -1640,7 +1640,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			getDatabaseHooksTable().actualizeLastTransactionID(Collections.emptyList());
 			if (launchRestoration)
 			{
-				getDatabaseConfigurationsBuilder().restoreGivenDatabaseStringToOldVersion(databasePackage, timeUTCOfRestorationInMs, false , false);
+				getDatabaseConfigurationsBuilder().restoreGivenDatabaseStringToOldVersion(databasePackage, timeUTCOfRestorationInMs, false , chooseNearestBackupIfNoBackupMatch, false);
 			}
 
 		}
@@ -1649,7 +1649,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			runSynchronizedTransaction(new SynchronizedTransaction<Object>() {
 				@Override
 				public Object run() throws Exception {
-					cleanTransactionsAfterRestoration(m.getDatabasePackage(), m.getTimeUTCOfRestorationInMs(), null, m.getHostThatApplyRestoration().equals(getLocalHostID()) && !m.getHostSource().equals(getLocalHostID()));
+					cleanTransactionsAfterRestoration(m.getDatabasePackage(), m.getTimeUTCOfRestorationInMs(), null, m.getHostThatApplyRestoration().equals(getLocalHostID()) && !m.getHostSource().equals(getLocalHostID()), m.isChooseNearestBackupIfNoBackupMatch());
 					return null;
 				}
 
@@ -2966,12 +2966,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 		}
 		void notifyOtherPeersThatDatabaseRestorationWasDone(Package p, long timeUTCOfRestorationInMs, Long transactionToDeleteUpperLimitUTC) throws DatabaseException {
-			notifyOtherPeersThatDatabaseRestorationWasDone(p, timeUTCOfRestorationInMs, getLocalHostID(), transactionToDeleteUpperLimitUTC);
+			notifyOtherPeersThatDatabaseRestorationWasDone(p, timeUTCOfRestorationInMs, getLocalHostID(), transactionToDeleteUpperLimitUTC, false);
 		}
-		void notifyOtherPeersThatDatabaseRestorationWasDone(Package p, long timeUTCOfRestorationInMs, DecentralizedValue hostThatApplyRestoration) throws DatabaseException {
-			notifyOtherPeersThatDatabaseRestorationWasDone(p, timeUTCOfRestorationInMs, hostThatApplyRestoration, null);
+		void notifyOtherPeersThatDatabaseRestorationWasDone(Package p, long timeUTCOfRestorationInMs, DecentralizedValue hostThatApplyRestoration, boolean chooseNearestBackupIfNoBackupMatch) throws DatabaseException {
+			notifyOtherPeersThatDatabaseRestorationWasDone(p, timeUTCOfRestorationInMs, hostThatApplyRestoration, null, chooseNearestBackupIfNoBackupMatch);
 		}
-		void notifyOtherPeersThatDatabaseRestorationWasDone(Package p, long timeUTCOfRestorationInMs, DecentralizedValue hostThatApplyRestoration, Long transactionToDeleteUpperLimitUTC) throws DatabaseException {
+		void notifyOtherPeersThatDatabaseRestorationWasDone(Package p, long timeUTCOfRestorationInMs, DecentralizedValue hostThatApplyRestoration, Long transactionToDeleteUpperLimitUTC, boolean chooseNearestBackupIfNoBackupMatch) throws DatabaseException {
 			if (p==null)
 				throw new NullPointerException();
 			if (hostThatApplyRestoration==null)
@@ -2987,12 +2987,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							if (_record.concernsLocalDatabaseHost())
 								localRecord.set(_record);
 							else
-								_record.offerNewAuthenticatedP2PMessage(DatabaseWrapper.this, new RestorationOrderMessage(getLocalHostID(), _record.getHostID(), hostThatApplyRestoration, p.getName(), timeUTCOfRestorationInMs), getDatabaseConfigurationsBuilder().getSecureRandom(), getDatabaseConfigurationsBuilder().getProtectedSignatureProfileProviderForAuthenticatedP2PMessages(), this);
+								_record.offerNewAuthenticatedP2PMessage(DatabaseWrapper.this, new RestorationOrderMessage(getLocalHostID(), _record.getHostID(), hostThatApplyRestoration, p.getName(), timeUTCOfRestorationInMs, chooseNearestBackupIfNoBackupMatch), getDatabaseConfigurationsBuilder().getSecureRandom(), getDatabaseConfigurationsBuilder().getProtectedSignatureProfileProviderForAuthenticatedP2PMessages(), this);
 						}
 
 					});
 					if (localRecord.get()!=null) {
-						getSynchronizer().cleanTransactionsAfterRestoration(p.getName(), timeUTCOfRestorationInMs, transactionToDeleteUpperLimitUTC, transactionToDeleteUpperLimitUTC==null);
+						getSynchronizer().cleanTransactionsAfterRestoration(p.getName(), timeUTCOfRestorationInMs, transactionToDeleteUpperLimitUTC, transactionToDeleteUpperLimitUTC==null, chooseNearestBackupIfNoBackupMatch);
 					}
 					return null;
 				}

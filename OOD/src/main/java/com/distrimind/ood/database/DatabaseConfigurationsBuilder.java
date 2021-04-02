@@ -886,68 +886,68 @@ public class DatabaseConfigurationsBuilder {
 	}
 	public DatabaseConfigurationsBuilder restoreDatabaseToOldVersion(long timeUTCMS)
 	{
-		return restoreDatabaseToOldVersion(timeUTCMS, false);
+		return restoreDatabaseToOldVersion(timeUTCMS, false, false);
 	}
-	public DatabaseConfigurationsBuilder restoreDatabaseToOldVersion(long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable)
+	public DatabaseConfigurationsBuilder restoreDatabaseToOldVersion(long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, boolean chooseNearestBackupIfNoBackupMatch)
 	{
-		return restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, dc -> true);
+		return restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, chooseNearestBackupIfNoBackupMatch, dc -> true);
 	}
 	public DatabaseConfigurationsBuilder restoreGivenDatabasesToOldVersion(Set<Package> concernedDatabases, long timeUTCInMs)
 	{
-		return restoreGivenDatabasesToOldVersion(concernedDatabases, timeUTCInMs, false);
+		return restoreGivenDatabasesToOldVersion(concernedDatabases, timeUTCInMs, false, false);
 	}
-	public DatabaseConfigurationsBuilder restoreGivenDatabasesToOldVersion(Set<Package> concernedDatabases, long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable)
+	public DatabaseConfigurationsBuilder restoreGivenDatabasesToOldVersion(Set<Package> concernedDatabases, long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, boolean chooseNearestBackupIfNoBackupMatch)
 	{
 		if (concernedDatabases==null)
 			throw new NullPointerException();
-		return restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, dc -> concernedDatabases.contains(dc.getDatabaseSchema().getPackage()));
+		return restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, chooseNearestBackupIfNoBackupMatch, dc -> concernedDatabases.contains(dc.getDatabaseSchema().getPackage()));
 	}
 	public DatabaseConfigurationsBuilder restoreGivenDatabaseStringToOldVersion(String concernedDatabase, long timeUTCInMs)
 	{
-		return restoreGivenDatabaseStringToOldVersion(concernedDatabase, timeUTCInMs, false);
+		return restoreGivenDatabaseStringToOldVersion(concernedDatabase, timeUTCInMs, false, false);
 	}
-	public DatabaseConfigurationsBuilder restoreGivenDatabaseStringToOldVersion(String concernedDatabase, long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable)
+	public DatabaseConfigurationsBuilder restoreGivenDatabaseStringToOldVersion(String concernedDatabase, long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, boolean chooseNearestBackupIfNoBackupMatch)
 	{
-		return restoreGivenDatabaseStringToOldVersion(concernedDatabase, timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, true);
+		return restoreGivenDatabaseStringToOldVersion(concernedDatabase, timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, chooseNearestBackupIfNoBackupMatch, true);
 	}
-	DatabaseConfigurationsBuilder restoreGivenDatabaseStringToOldVersion(String concernedDatabase, long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, boolean notifyOtherPeers)
+	DatabaseConfigurationsBuilder restoreGivenDatabaseStringToOldVersion(String concernedDatabase, long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, boolean chooseNearestBackupIfNoBackupMatch, boolean notifyOtherPeers)
 	{
 		if (concernedDatabase==null)
 			throw new NullPointerException();
-		return restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, dc -> concernedDatabase.equals(dc.getDatabaseSchema().getPackage().getName()), notifyOtherPeers);
+		return restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, chooseNearestBackupIfNoBackupMatch, dc -> concernedDatabase.equals(dc.getDatabaseSchema().getPackage().getName()), notifyOtherPeers);
 	}
 	public DatabaseConfigurationsBuilder restoreGivenDatabaseToOldVersion(Package concernedDatabase, long timeUTCInMs)
 	{
-		return restoreGivenDatabaseToOldVersion(concernedDatabase, timeUTCInMs, false);
+		return restoreGivenDatabaseToOldVersion(concernedDatabase, timeUTCInMs, false, false);
 	}
-	public DatabaseConfigurationsBuilder restoreGivenDatabaseToOldVersion(Package concernedDatabase, long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable)
+	public DatabaseConfigurationsBuilder restoreGivenDatabaseToOldVersion(Package concernedDatabase, long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, boolean chooseNearestBackupIfNoBackupMatch)
 	{
 		if (concernedDatabase==null)
 			throw new NullPointerException();
-		return restoreGivenDatabaseStringToOldVersion(concernedDatabase.getName(), timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable);
+		return restoreGivenDatabaseStringToOldVersion(concernedDatabase.getName(), timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, chooseNearestBackupIfNoBackupMatch);
 	}
 	public DatabaseConfigurationsBuilder restoreGivenDatabasesStringToOldVersion(Set<String> concernedDatabases, long timeUTCInMs)
 	{
-		return restoreGivenDatabasesStringToOldVersion(concernedDatabases, timeUTCInMs, false);
+		return restoreGivenDatabasesStringToOldVersion(concernedDatabases, timeUTCInMs, false, false);
 	}
-	public DatabaseConfigurationsBuilder restoreGivenDatabasesStringToOldVersion(Set<String> concernedDatabases, long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable)
+	public DatabaseConfigurationsBuilder restoreGivenDatabasesStringToOldVersion(Set<String> concernedDatabases, long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, boolean chooseNearestBackupIfNoBackupMatch)
 	{
 		if (concernedDatabases==null)
 			throw new NullPointerException();
-		return restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, dc -> concernedDatabases.contains(dc.getDatabaseSchema().getPackage().getName()));
+		return restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, chooseNearestBackupIfNoBackupMatch, dc -> concernedDatabases.contains(dc.getDatabaseSchema().getPackage().getName()));
 	}
-	private DatabaseConfigurationsBuilder restoreDatabaseToOldVersion(long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, Predicate<DatabaseConfiguration> predicate)
+	private DatabaseConfigurationsBuilder restoreDatabaseToOldVersion(long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, boolean chooseNearestBackupIfNoBackupMatch, Predicate<DatabaseConfiguration> predicate)
 	{
-		return restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, predicate, true);
+		return restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, chooseNearestBackupIfNoBackupMatch, predicate, true);
 	}
-	private DatabaseConfigurationsBuilder restoreDatabaseToOldVersion(long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, Predicate<DatabaseConfiguration> predicate, boolean notifyOtherPeers)
+	private DatabaseConfigurationsBuilder restoreDatabaseToOldVersion(long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, boolean chooseNearestBackupIfNoBackupMatch, Predicate<DatabaseConfiguration> predicate, boolean notifyOtherPeers)
 	{
 
 		pushQuery((p) -> {
 			boolean changed=false;
 			for (DatabaseConfiguration c : configurations.getConfigurations()) {
 				if (predicate.test(c)) {
-					if (c.restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, notifyOtherPeers)) {
+					if (c.restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, notifyOtherPeers, chooseNearestBackupIfNoBackupMatch)) {
 
 
 						if (preferOtherChannelThanLocalChannelIfAvailable || c.getBackupConfiguration() == null) {
@@ -970,8 +970,6 @@ public class DatabaseConfigurationsBuilder {
 			if (changed)
 			{
 				p.updateConfigurationPersistence();
-
-				//TODO complete
 			}
 		});
 		return this;
@@ -1017,7 +1015,7 @@ public class DatabaseConfigurationsBuilder {
 						if (timeUTCInMs != null) {
 							if (c.isPreferOtherChannelThanLocalChannelIfAvailableDuringRestoration()) {
 								if (c.isSynchronizedWithCentralBackupDatabase()) {
-									database.temporaryBackupRestoreManagerComingFromDistantBackupManager.restoreDatabaseToDateUTC(timeUTCInMs, false, c.isNotifyOtherPeers());
+									database.temporaryBackupRestoreManagerComingFromDistantBackupManager.restoreDatabaseToDateUTC(timeUTCInMs, c.isChooseNearestBackupIfNoBackupMatch(), c.isNotifyOtherPeers());
 									if (c.isNotifyOtherPeers())
 
 									database.cancelCurrentDatabaseRestorationProcessFromCentralDatabaseBackup();
@@ -1040,7 +1038,7 @@ public class DatabaseConfigurationsBuilder {
 												}
 											}, "concernsDatabaseHost=%c", "c", false);
 											if (hostThatApplyRestoration.get()!=null)
-												wrapper.getSynchronizer().notifyOtherPeersThatDatabaseRestorationWasDone(c.getDatabaseSchema().getPackage(), timeUTCInMs, hostThatApplyRestoration.get());
+												wrapper.getSynchronizer().notifyOtherPeersThatDatabaseRestorationWasDone(c.getDatabaseSchema().getPackage(), timeUTCInMs, hostThatApplyRestoration.get(), c.isChooseNearestBackupIfNoBackupMatch());
 
 											return null;
 										}
@@ -1068,7 +1066,7 @@ public class DatabaseConfigurationsBuilder {
 							{
 								BackupRestoreManager b = database.backupRestoreManager;
 								assert b != null;
-								b.restoreDatabaseToDateUTC(timeUTCInMs, false, c.isNotifyOtherPeers());
+								b.restoreDatabaseToDateUTC(timeUTCInMs, c.isChooseNearestBackupIfNoBackupMatch(), c.isNotifyOtherPeers());
 								wrapper.cancelRestorationFromExternalDatabaseBackup(c);
 							}
 							c.disableDatabaseRestorationToOldVersion();
