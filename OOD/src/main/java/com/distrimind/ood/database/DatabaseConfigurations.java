@@ -56,7 +56,7 @@ import java.util.function.Predicate;
 public class DatabaseConfigurations extends MultiFormatProperties {
 	private transient final Set<DatabaseConfiguration> volatileConfigurations=new HashSet<>();
 	private transient final Set<DatabaseConfiguration> allConfigurations=new HashSet<>();
-	private transient final Set<DatabaseConfiguration> allConfigurationsReadOnly= Collections.unmodifiableSet(allConfigurations);
+	private transient volatile Set<DatabaseConfiguration> allConfigurationsReadOnly= Collections.unmodifiableSet(new HashSet<>());
 	private transient final Set<DecentralizedValue> volatileDistantPeers=new HashSet<>();
 	private transient final Set<DecentralizedValue> allDistantPeers=new HashSet<>();
 	private transient final Set<DecentralizedValue> allDistantPeersReadOnly=Collections.unmodifiableSet(allDistantPeers);
@@ -101,6 +101,11 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 
 	void setCentralDatabaseBackupCertificate(CentralDatabaseBackupCertificate centralDatabaseBackupCertificate) {
 		this.centralDatabaseBackupCertificate = centralDatabaseBackupCertificate;
+	}
+
+	private void configurationsUpdated()
+	{
+		allConfigurationsReadOnly=Collections.unmodifiableSet(new HashSet<>(allConfigurations));
 	}
 
 	public DatabaseConfigurations(Set<DatabaseConfiguration> configurations, Set<DecentralizedValue> distantPeers, DecentralizedValue localPeer, boolean permitIndirectSynchronizationBetweenPeers) throws DatabaseException {
@@ -262,6 +267,7 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 			checkForMaxDistantPeersReached();
 		}
 		allConfigurations.add(configuration);
+		configurationsUpdated();
 		return removed;
 	}
 	boolean removeConfiguration(String databasePackage) {
@@ -270,6 +276,8 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 		boolean changed=volatileConfigurations.removeIf(c -> c.getDatabaseSchema().getPackage().getName().equals(databasePackage));
 		changed|=configurations.removeIf(c -> c.getDatabaseSchema().getPackage().getName().equals(databasePackage));
 		changed|=allConfigurations.removeIf(c -> c.getDatabaseSchema().getPackage().getName().equals(databasePackage));
+		if (changed)
+			configurationsUpdated();
 		return changed;
 	}
 
@@ -290,6 +298,7 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 		allConfigurations.addAll(configurations);
 		allDistantPeers.clear();
 		checkDistantPeers();
+		configurationsUpdated();
 		if (DatabaseWrapper.reservedDatabases.stream().anyMatch(c -> allConfigurations.stream().anyMatch(c2-> c2.getDatabaseSchema().getPackage().equals(c))))
 			throw new IllegalArgumentException("Impossible to add databases where on of there packages corresponds to an internal OOD database : "+DatabaseWrapper.reservedDatabases);
 	}
