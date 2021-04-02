@@ -1,0 +1,14 @@
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="TestAll" group-by-instances="true">
+
+
+
+    <test name="TestRevertToOldVersionIntoDecentralizedNetwork"  >
+        <classes>
+
+            <class name="com.distrimind.ood.database.tests.H2TestRevertToOldVersionIntoDecentralizedNetwork" />
+        </classes>
+    </test>
+
+
+</suite>

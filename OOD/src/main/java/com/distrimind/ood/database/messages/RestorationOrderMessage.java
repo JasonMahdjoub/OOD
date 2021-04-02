@@ -48,7 +48,7 @@ import java.io.IOException;
 /**
  * @author Jason Mahdjoub
  * @version 1.0
- * @since Utils 3.0.0
+ * @since OOD 3.0.0
  */
 public class RestorationOrderMessage extends DatabaseEvent implements AuthenticatedP2PMessage {
 
