@@ -80,19 +80,20 @@ public abstract class TestRevertToOldVersionIntoDecentralizedNetwork extends Tes
 	@Override
 	public void doAction() throws Exception {
 		backupActualDatabase();
+		exchangeMessages();
+		disconnectAllDatabase();
+		exchangeMessages();
 		if (upgradeDatabaseVersionWhenConnectedWithPeers)
 		{
-			connectAllDatabase(Collections.singletonList(db3.getHostID()), upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion);
+			connectSelectedDatabase(upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion, db1, db2);
+			//connectAllDatabase(Collections.singletonList(db3.getHostID()), upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion);
 			exchangeMessages();
 		} else if (upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion)
 		{
-			disconnectAllDatabase();
-			exchangeMessages();
 			connectCentralDatabaseBackupWithConnectedDatabase();
 			exchangeMessages();
 		}
-		else
-			disconnectAllDatabase();
+
 		long timeUTC=System.currentTimeMillis();
 		Thread.sleep(50);
 		for (int i=0;i<20;i++) {
@@ -103,7 +104,8 @@ public abstract class TestRevertToOldVersionIntoDecentralizedNetwork extends Tes
 
 		if (!upgradeDatabaseVersionWhenConnectedWithPeers)
 		{
-			connectAllDatabase(Collections.singletonList(db3.getHostID()), upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion);
+			connectSelectedDatabase(upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion, db1, db2);
+			//connectAllDatabase(Collections.singletonList(db3.getHostID()), upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion);
 			exchangeMessages();
 			testSynchronizationWithSavedRecords(db1);
 			testSynchronizationWithSavedRecords(db2);
