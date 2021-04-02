@@ -2959,8 +2959,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						long lts=d.temporaryBackupRestoreManagerComingFromDistantBackupManager.getFirstFileReferenceUTCInMs();
 						if (timeUTCInMs<lts)
 							addNewDatabaseEvent(new AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(d.configuration.getDatabaseSchema().getPackage().getName(), getLocalHostID(), d.temporaryBackupRestoreManagerChannelComingFromDistantBackupManager, new FileCoordinate(lts-1, FileCoordinate.Boundary.UPPER_LIMIT), true));
-						else
-							getDatabaseConfigurationsBuilder().applyRestorationFromDistantDatabaseBackupIfNecessary(d);
+						else {
+							checkNotAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(d);
+						}
 					}
 					break;
 				}
@@ -2974,7 +2975,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					addNewDatabaseEvent(new AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(d.configuration.getDatabaseSchema().getPackage().getName(), getLocalHostID(), new FileCoordinate(lts, FileCoordinate.Boundary.LOWER_LIMIT), false));
 				}
 				else {
-					getDatabaseConfigurationsBuilder().applyRestorationFromLocalDatabaseBackupIfNecessary(d.configuration.getDatabaseSchema().getPackage());
+					getDatabaseConfigurationsBuilder().applyRestorationIfNecessary(d);
 					checkAskForTemporaryDatabaseBackupPartDestinedToCentralDatabaseBackup(d);
 				}
 			}
@@ -3000,7 +3001,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				if (d.isCurrentDatabaseInRestorationProcessFromCentralDatabaseBackup())
 					checkAskForTemporaryDatabaseBackupPartDestinedToCentralDatabaseBackup(d);
 				else
-					getDatabaseConfigurationsBuilder().applyRestorationFromLocalDatabaseBackupIfNecessary(d.configuration.getDatabaseSchema().getPackage());
+					getDatabaseConfigurationsBuilder().applyRestorationIfNecessary(d);
 			}
 			return restore;
 		}

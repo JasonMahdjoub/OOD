@@ -969,7 +969,7 @@ public class DatabaseConfigurationsBuilder {
 		return this;
 	}
 
-	void applyRestorationFromLocalDatabaseBackupIfNecessary(Package databasePackage) throws DatabaseException {
+	/*void applyRestorationFromLocalDatabaseBackupIfNecessary(Package databasePackage) throws DatabaseException {
 		synchronized (this)
 		{
 			wrapper.lockWrite();
@@ -997,8 +997,42 @@ public class DatabaseConfigurationsBuilder {
 				wrapper.unlockWrite();
 			}
 		}
+	}*/
+	void applyRestorationIfNecessary(DatabaseWrapper.Database database) throws DatabaseException {
+		synchronized (this)
+		{
+			wrapper.lockWrite();
+			try {
+				for (DatabaseConfiguration c : configurations.getConfigurations()) {
+					if (c.getDatabaseSchema().getPackage().equals(database.getConfiguration().getDatabaseSchema().getPackage())) {
+						Long timeUTCInMs = c.getTimeUTCInMsForRestoringDatabaseToOldVersion();
+						if (timeUTCInMs != null) {
+							if (c.isPreferOtherChannelThanLocalChannelIfAvailableDuringRestoration()) {
+								database.temporaryBackupRestoreManagerComingFromDistantBackupManager.restoreDatabaseToDateUTC(timeUTCInMs);
+								database.cancelCurrentDatabaseRestorationProcessFromCentralDatabaseBackup();
+							}
+							else
+							{
+								BackupRestoreManager b = database.backupRestoreManager;
+								assert b != null;
+								b.restoreDatabaseToDateUTC(timeUTCInMs);
+								wrapper.cancelRestorationFromExternalDatabaseBackup(c);
+							}
+							c.disableDatabaseRestorationToOldVersion();
+							if (lifeCycles != null)
+								lifeCycles.saveDatabaseConfigurations(configurations);
+
+						}
+						break;
+					}
+				}
+			}
+			finally {
+				wrapper.unlockWrite();
+			}
+		}
 	}
-	void applyRestorationFromDistantDatabaseBackupIfNecessary(DatabaseWrapper.Database database) throws DatabaseException {
+	/*void applyRestorationFromDistantDatabaseBackupIfNecessary(DatabaseWrapper.Database database) throws DatabaseException {
 		if (database==null)
 			throw new NullPointerException();
 		synchronized (this)
@@ -1025,7 +1059,7 @@ public class DatabaseConfigurationsBuilder {
 				wrapper.unlockWrite();
 			}
 		}
-	}
+	}*/
 
 	/*public void setDatabaseVersion(Version databaseVersion)
 	{
