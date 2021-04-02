@@ -75,20 +75,23 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 
 	private Long timeUTCInMsForRestoringDatabaseToOldVersion=null;
 	private boolean preferOtherChannelThanLocalChannelIfAvailableDuringRestoration =false;
+	private boolean notifyOtherPeers=false;
 
-	boolean restoreDatabaseToOldVersion(long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable)
+	boolean restoreDatabaseToOldVersion(long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, boolean notifyOtherPeers)
 	{
 		if (backupConfiguration==null && (distantPeersThatCanBeSynchronizedWithThisDatabase.size()==0 || !isSynchronizedWithCentralBackupDatabase()))
 		{
 			if (timeUTCInMsForRestoringDatabaseToOldVersion==null)
 				return false;
 			timeUTCInMsForRestoringDatabaseToOldVersion=null;
+			this.notifyOtherPeers=false;
 		}
 		else {
 			if (timeUTCInMsForRestoringDatabaseToOldVersion==timeUTCInMs && preferOtherChannelThanLocalChannelIfAvailableDuringRestoration ==preferOtherChannelThanLocalChannelIfAvailable)
 				return false;
 			timeUTCInMsForRestoringDatabaseToOldVersion = timeUTCInMs;
 			preferOtherChannelThanLocalChannelIfAvailableDuringRestoration = preferOtherChannelThanLocalChannelIfAvailable;
+			this.notifyOtherPeers=notifyOtherPeers;
 		}
 		return true;
 	}
@@ -97,9 +100,14 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 		return timeUTCInMsForRestoringDatabaseToOldVersion;
 	}
 
+	boolean isNotifyOtherPeers() {
+		return notifyOtherPeers;
+	}
+
 	public void disableDatabaseRestorationToOldVersion() {
 		this.timeUTCInMsForRestoringDatabaseToOldVersion = null;
 		preferOtherChannelThanLocalChannelIfAvailableDuringRestoration=false;
+		this.notifyOtherPeers=false;
 	}
 
 	boolean isPreferOtherChannelThanLocalChannelIfAvailableDuringRestoration() {

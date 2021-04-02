@@ -1619,6 +1619,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							receivedHookDesynchronizeRequest((HookDesynchronizeRequest) m);
 						else if (m instanceof HookRemoveRequest)
 							received((HookRemoveRequest)m);
+						else if (m instanceof RestorationOrderMessage)
+							receivedRestorationOrderMessage((RestorationOrderMessage)m);
 						else
 							throw new MessageExternalizationException(Integrity.FAIL);
 					}
@@ -1627,6 +1629,41 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 			else
 				throw new MessageExternalizationException(Integrity.FAIL);
+		}
+
+		void receivedRestorationOrderMessage(RestorationOrderMessage m) throws DatabaseException {
+			runSynchronizedTransaction(new SynchronizedTransaction<Object>() {
+				@Override
+				public Object run() throws Exception {
+					getDatabaseTransactionEventsTable().removeRecordsWithCascade( "concernedDatabasePackage=%c", "c", m.getDatabasePackage());
+					//getDatabaseDistantTransactionEvent().removeAllRecordsWithCascade();
+					getDatabaseHooksTable().actualizeLastTransactionID(Collections.emptyList());
+					if (m.getHostThatApplyRestoration().equals(getLocalHostID()) && !m.getHostSource().equals(getLocalHostID()))
+					{
+						getDatabaseConfigurationsBuilder().restoreGivenDatabaseStringToOldVersion(m.getDatabasePackage(), m.getTimeUTCOfRestorationInMs(), false , false);
+					}
+
+					return null;
+				}
+
+				@Override
+				public TransactionIsolation getTransactionIsolation() {
+					return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+				}
+
+				@Override
+				public boolean doesWriteData() {
+					return true;
+				}
+
+				@Override
+				public void initOrReset() {
+
+				}
+			});
+
+
+
 		}
 
 
@@ -2920,6 +2957,47 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				checkAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(d);
 
 			}
+		}
+		void notifyOtherPeersThatDatabaseRestorationWasDone(Package p, long timeUTCOfRestorationInMs) throws DatabaseException {
+			notifyOtherPeersThatDatabaseRestorationWasDone(p, timeUTCOfRestorationInMs, getLocalHostID());
+		}
+		void notifyOtherPeersThatDatabaseRestorationWasDone(Package p, long timeUTCOfRestorationInMs, DecentralizedValue hostThatApplyRestoration) throws DatabaseException {
+			if (p==null)
+				throw new NullPointerException();
+			if (hostThatApplyRestoration==null)
+				throw new NullPointerException();
+			runSynchronizedTransaction(new SynchronizedTransaction<Object>() {
+				@Override
+				public Object run() throws Exception {
+
+					getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
+
+						@Override
+						public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
+							_record.offerNewAuthenticatedP2PMessage(DatabaseWrapper.this, new RestorationOrderMessage(getLocalHostID(), _record.getHostID(), hostThatApplyRestoration, p.getName(), timeUTCOfRestorationInMs), getDatabaseConfigurationsBuilder().getSecureRandom(), getDatabaseConfigurationsBuilder().getProtectedSignatureProfileProviderForAuthenticatedP2PMessages(), this);
+						}
+
+					}, "concernsDatabaseHost=%c", "c", false);
+					getSynchronizer().receivedRestorationOrderMessage(new RestorationOrderMessage(getLocalHostID(), getLocalHostID(), hostThatApplyRestoration, p.getName(), timeUTCOfRestorationInMs));
+
+					return null;
+				}
+
+				@Override
+				public TransactionIsolation getTransactionIsolation() {
+					return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+				}
+
+				@Override
+				public boolean doesWriteData() {
+					return true;
+				}
+
+				@Override
+				public void initOrReset() {
+
+				}
+			});
 		}
 
 		void checkForNewBackupFilePartToSendToCentralDatabaseBackup(Package p) throws DatabaseException {

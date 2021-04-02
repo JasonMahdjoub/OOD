@@ -1798,6 +1798,9 @@ public class BackupRestoreManager {
 	 * @throws DatabaseException if a problem occurs
 	 */
 	public boolean restoreDatabaseToDateUTC(long dateUTCInMs, boolean chooseNearestBackupIfNoBackupMatch) throws DatabaseException {
+		return restoreDatabaseToDateUTC(dateUTCInMs, chooseNearestBackupIfNoBackupMatch, true);
+	}
+	boolean restoreDatabaseToDateUTC(long dateUTCInMs, boolean chooseNearestBackupIfNoBackupMatch, boolean notifyOtherPeers) throws DatabaseException {
 		boolean notify=false;
 		try
 		{
@@ -2160,6 +2163,7 @@ public class BackupRestoreManager {
 
 				databaseWrapper.validateNewDatabaseVersionAndDeleteOldVersion(databaseConfiguration, oldVersion, newVersion);
 				databaseWrapper.getSynchronizer().validateExtendedTransaction();
+
 				//createBackupReference();
 				notify=true;
 
@@ -2180,6 +2184,8 @@ public class BackupRestoreManager {
 				//transactionsInterval=null;
 				if (notify)
 					databaseWrapper.getSynchronizer().checkForNewBackupFilePartToSendToCentralDatabaseBackup(dbPackage);
+				if (notifyOtherPeers)
+					databaseWrapper.getSynchronizer().notifyOtherPeersThatDatabaseRestorationWasDone(dbPackage, dateUTCInMs);
 			}
 		}
 		finally {
