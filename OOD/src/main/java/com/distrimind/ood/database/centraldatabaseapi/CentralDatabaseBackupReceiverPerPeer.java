@@ -572,17 +572,43 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 		}
 	}
 
+	protected DatabaseBackupPerClientTable.Record getMostAppropriateChannelHostIDToCreateNewChannel(String packageString) throws DatabaseException {
+		Reference<DatabaseBackupPerClientTable.Record> res=new Reference<>(null);
+		centralDatabaseBackupReceiver.databaseBackupPerClientTable.getRecord(new Filter<DatabaseBackupPerClientTable.Record>() {
+			@Override
+			public boolean nextRecord(DatabaseBackupPerClientTable.Record _record) {
+				if (res.get()==null || _record.getLastFileBackupPartUTC()>res.get().getLastFileBackupPartUTC())
+				{
+					res.set(_record);
+				}
+				return false;
+			}
+		}, "client.account=%a and packageString=%p", "a", connectedClientRecord.getAccount(), "p", packageString);
+		return res.get();
+	}
+
 	private Integrity received(AskForDatabaseBackupPartDestinedToCentralDatabaseBackup message) throws DatabaseException {
 		return centralDatabaseBackupReceiver.databaseBackupPerClientTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
 			@Override
 			public Integrity run() throws Exception {
+				DecentralizedValue channelHostID=message.getChannelHost();
 				ClientTable.Record channelHost;
-				try {
-					channelHost = getClientRecord(message.getChannelHost());
-				}
-				catch (MessageExternalizationException e)
+				if (channelHostID==null)
 				{
-					return e.getIntegrity();
+					assert message.isForRestoration();
+					DatabaseBackupPerClientTable.Record r=getMostAppropriateChannelHostIDToCreateNewChannel(message.getPackageString());
+					if (r==null)
+						return Integrity.OK;
+					else {
+						channelHost = r.getClient();
+					}
+				}
+				else {
+					try {
+						channelHost = getClientRecord(channelHostID);
+					} catch (MessageExternalizationException e) {
+						return e.getIntegrity();
+					}
 				}
 				if (channelHost==null)
 					return Integrity.OK;
@@ -590,8 +616,12 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 				DatabaseBackupPerClientTable.Record r=getDatabaseBackupPerClientRecord(channelHost, message.getPackageString());
 				if (r!=null) {
 					EncryptedBackupPartReferenceTable.Record e=getBackupMetaDataPerFile(r, message.getFileCoordinate());
-					if (e!=null)
-						sendMessage(e.readEncryptedBackupPart(message.getHostSource()));
+					if (e!=null) {
+						if (message.isForRestoration())
+							sendMessage(e.readEncryptedBackupPartForRestoration(message.getHostSource(), channelHost.getClientID()));
+						else
+							sendMessage(e.readEncryptedBackupPart(message.getHostSource()));
+					}
 				}
 				return Integrity.OK;
 			}

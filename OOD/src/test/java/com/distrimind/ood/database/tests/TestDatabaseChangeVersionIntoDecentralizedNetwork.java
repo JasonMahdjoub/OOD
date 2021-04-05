@@ -40,8 +40,6 @@ import com.distrimind.ood.database.decentralizeddatabase.*;
 import com.distrimind.ood.database.decentralizeddatabasev2.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -53,76 +51,16 @@ import java.util.Collections;
  * @version 1.0
  * @since Utils 3.0.0
  */
-public abstract class TestDatabaseChangeVersionIntoDecentralizedNetwork extends CommonDecentralizedTests {
-	final boolean useCentralDatabaseBackup;
-	final boolean canSendIndirectTransactions;
-	final boolean upgradeDatabaseVersionWhenConnectedWithPeers;
-	final boolean upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion;
-	final boolean hasToRemoveOldDatabase;
+public abstract class TestDatabaseChangeVersionIntoDecentralizedNetwork extends TestDatabaseToOperateActionIntoDecentralizedNetwork {
 
-	protected TestDatabaseChangeVersionIntoDecentralizedNetwork(boolean useCentralDatabaseBackup, boolean canSendIndirectTransactions,
-																boolean upgradeDatabaseVersionWhenConnectedWithPeers,
-																boolean upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion,
-																boolean hasToRemoveOldDatabase) {
-		this.useCentralDatabaseBackup=useCentralDatabaseBackup;
-		this.canSendIndirectTransactions=canSendIndirectTransactions;
-		this.upgradeDatabaseVersionWhenConnectedWithPeers=upgradeDatabaseVersionWhenConnectedWithPeers;
-		this.upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion=upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion;
-		this.hasToRemoveOldDatabase=hasToRemoveOldDatabase;
-	}
-
-
-
-	@Override
-	public boolean canInitCentralBackup()
-	{
-		return useCentralDatabaseBackup;
-	}
-	@Override
-	protected boolean sendIndirectTransactions()
-	{
-		return canSendIndirectTransactions;
-	}
-
-	@DataProvider(name = "constructorParameters")
-	public static Object[][] constructorParameters() {
-		Object[][] res=new Object[24][5];
-		int i=0;
-		for (boolean canSendIndirectTransactions : new boolean[]{false, true}) {
-			for (boolean useCentralDatabaseBackup : new boolean[]{false, true}) {
-				for (boolean upgradeDatabaseVersionWhenConnectedWithPeers : new boolean[]{false, true}) {
-					for (boolean upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion : useCentralDatabaseBackup?new boolean[]{false, true}:new boolean[]{false}) {
-						for (boolean hasToRemoveOldDatabase : new boolean[]{false, true}) {
-							res[i][0] = useCentralDatabaseBackup;
-							res[i][1] = canSendIndirectTransactions;
-							res[i][2] = upgradeDatabaseVersionWhenConnectedWithPeers;
-							res[i][3] = upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion;
-							res[i++][4] = hasToRemoveOldDatabase;
-						}
-					}
-				}
-
-			}
-		}
-		assert i==res.length;
-		return res;
+	public TestDatabaseChangeVersionIntoDecentralizedNetwork(boolean useCentralDatabaseBackup, boolean canSendIndirectTransactions, boolean upgradeDatabaseVersionWhenConnectedWithPeers, boolean upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion, boolean hasToRemoveOldDatabase) {
+		super(useCentralDatabaseBackup, canSendIndirectTransactions, upgradeDatabaseVersionWhenConnectedWithPeers, upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion, hasToRemoveOldDatabase);
 	}
 
 
 	@Override
-	public String toString() {
-		return "TestDatabaseChangeVersionIntoDecentralizedNetwork{" +
-				"useCentralDatabaseBackup=" + useCentralDatabaseBackup +
-				", canSendIndirectTransactions=" + canSendIndirectTransactions +
-				", upgradeDatabaseVersionWhenConnectedWithPeers=" + upgradeDatabaseVersionWhenConnectedWithPeers +
-				", upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion=" + upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion +
-				", hasToRemoveOldDatabase=" + hasToRemoveOldDatabase +
-				'}';
-	}
+	public void doAction() throws Exception {
 
-	@Test(dependsOnMethods = "testSynchroAfterTestsBetweenThreePeers")
-	public void upgradeDatabaseVersion() throws Exception {
-		System.out.println(this);
 		for (Database db : listDatabase)
 			Assert.assertNotNull(db.getDbwrapper().getDatabaseConfigurationsBuilder().getLifeCycles());
 		if (upgradeDatabaseVersionWhenConnectedWithPeers)
@@ -135,7 +73,6 @@ public abstract class TestDatabaseChangeVersionIntoDecentralizedNetwork extends 
 			connectCentralDatabaseBackupWithConnectedDatabase();
 		else if (useCentralDatabaseBackup)
 			disconnectCentralDatabaseBakcup();
-
 		changeConfiguration(db1);
 		changeConfiguration(db2);
 		//Thread.sleep(getBackupConfiguration().getMaxBackupFileAgeInMs());
@@ -166,6 +103,13 @@ public abstract class TestDatabaseChangeVersionIntoDecentralizedNetwork extends 
 			testSynchronisationWithNewDatabaseVersion(db, listDatabase);
 	}
 	protected void testSynchronisationWithNewDatabaseVersion(CommonDecentralizedTests.Database db, Collection<Database> listDatabase) throws DatabaseException {
+		for (CommonDecentralizedTests.Database other : listDatabase) {
+			if (other!=db) {
+				Assert.assertEquals(db.getDbwrapper().getTableInstance(TableAloneV2.class).getRecordsNumber(), other.getDbwrapper().getTableInstance(TableAloneV2.class).getRecordsNumber());
+				Assert.assertEquals(db.getDbwrapper().getTableInstance(TablePointedV2.class).getRecordsNumber(), other.getDbwrapper().getTableInstance(TablePointedV2.class).getRecordsNumber());
+				Assert.assertEquals(db.getDbwrapper().getTableInstance(TablePointingV2.class).getRecordsNumber(), other.getDbwrapper().getTableInstance(TablePointingV2.class).getRecordsNumber());
+			}
+		}
 
 		for (TableAloneV2.Record r : db.getDbwrapper().getTableInstance(TableAloneV2.class).getRecords()) {
 

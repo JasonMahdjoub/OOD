@@ -47,4 +47,9 @@ public interface Transaction {
 	boolean doesWriteData();
 	
 	void initOrReset() throws DatabaseException;
+
+	default Package getConcernedDatabasePackage()
+	{
+		return null;
+	}
 }

@@ -886,72 +886,231 @@ public class DatabaseConfigurationsBuilder {
 	}
 	public DatabaseConfigurationsBuilder restoreDatabaseToOldVersion(long timeUTCMS)
 	{
-		return restoreDatabaseToOldVersion(timeUTCMS, false);
+		return restoreDatabaseToOldVersion(timeUTCMS, false, false);
 	}
-	public DatabaseConfigurationsBuilder restoreDatabaseToOldVersion(long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable)
+	public DatabaseConfigurationsBuilder restoreDatabaseToOldVersion(long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, boolean chooseNearestBackupIfNoBackupMatch)
 	{
-		return restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, dc -> true);
+		return restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, chooseNearestBackupIfNoBackupMatch, dc -> true);
 	}
 	public DatabaseConfigurationsBuilder restoreGivenDatabasesToOldVersion(Set<Package> concernedDatabases, long timeUTCInMs)
 	{
-		return restoreGivenDatabasesToOldVersion(concernedDatabases, timeUTCInMs, false);
+		return restoreGivenDatabasesToOldVersion(concernedDatabases, timeUTCInMs, false, false);
 	}
-	public DatabaseConfigurationsBuilder restoreGivenDatabasesToOldVersion(Set<Package> concernedDatabases, long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable)
+	public DatabaseConfigurationsBuilder restoreGivenDatabasesToOldVersion(Set<Package> concernedDatabases, long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, boolean chooseNearestBackupIfNoBackupMatch)
 	{
 		if (concernedDatabases==null)
 			throw new NullPointerException();
-		return restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, dc -> concernedDatabases.contains(dc.getDatabaseSchema().getPackage()));
+		return restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, chooseNearestBackupIfNoBackupMatch, dc -> concernedDatabases.contains(dc.getDatabaseSchema().getPackage()));
 	}
 	public DatabaseConfigurationsBuilder restoreGivenDatabaseStringToOldVersion(String concernedDatabase, long timeUTCInMs)
 	{
-		return restoreGivenDatabaseStringToOldVersion(concernedDatabase, timeUTCInMs, false);
+		return restoreGivenDatabaseStringToOldVersion(concernedDatabase, timeUTCInMs, false, false);
 	}
-	public DatabaseConfigurationsBuilder restoreGivenDatabaseStringToOldVersion(String concernedDatabase, long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable)
+	public DatabaseConfigurationsBuilder restoreGivenDatabaseStringToOldVersion(String concernedDatabase, long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, boolean chooseNearestBackupIfNoBackupMatch)
+	{
+		return restoreGivenDatabaseStringToOldVersion(concernedDatabase, timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, chooseNearestBackupIfNoBackupMatch, true);
+	}
+	DatabaseConfigurationsBuilder restoreGivenDatabaseStringToOldVersion(String concernedDatabase, long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, boolean chooseNearestBackupIfNoBackupMatch, boolean notifyOtherPeers)
 	{
 		if (concernedDatabase==null)
 			throw new NullPointerException();
-		return restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, dc -> concernedDatabase.equals(dc.getDatabaseSchema().getPackage().getName()));
+		return restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, chooseNearestBackupIfNoBackupMatch, dc -> concernedDatabase.equals(dc.getDatabaseSchema().getPackage().getName()), notifyOtherPeers);
 	}
 	public DatabaseConfigurationsBuilder restoreGivenDatabaseToOldVersion(Package concernedDatabase, long timeUTCInMs)
 	{
-		return restoreGivenDatabaseToOldVersion(concernedDatabase, timeUTCInMs, false);
+		return restoreGivenDatabaseToOldVersion(concernedDatabase, timeUTCInMs, false, false);
 	}
-	public DatabaseConfigurationsBuilder restoreGivenDatabaseToOldVersion(Package concernedDatabase, long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable)
+	public DatabaseConfigurationsBuilder restoreGivenDatabaseToOldVersion(Package concernedDatabase, long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, boolean chooseNearestBackupIfNoBackupMatch)
 	{
 		if (concernedDatabase==null)
 			throw new NullPointerException();
-		return restoreGivenDatabaseStringToOldVersion(concernedDatabase.getName(), timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable);
+		return restoreGivenDatabaseStringToOldVersion(concernedDatabase.getName(), timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, chooseNearestBackupIfNoBackupMatch);
 	}
 	public DatabaseConfigurationsBuilder restoreGivenDatabasesStringToOldVersion(Set<String> concernedDatabases, long timeUTCInMs)
 	{
-		return restoreGivenDatabasesStringToOldVersion(concernedDatabases, timeUTCInMs, false);
+		return restoreGivenDatabasesStringToOldVersion(concernedDatabases, timeUTCInMs, false, false);
 	}
-	public DatabaseConfigurationsBuilder restoreGivenDatabasesStringToOldVersion(Set<String> concernedDatabases, long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable)
+	public DatabaseConfigurationsBuilder restoreGivenDatabasesStringToOldVersion(Set<String> concernedDatabases, long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, boolean chooseNearestBackupIfNoBackupMatch)
 	{
 		if (concernedDatabases==null)
 			throw new NullPointerException();
-		return restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, dc -> concernedDatabases.contains(dc.getDatabaseSchema().getPackage().getName()));
+		return restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, chooseNearestBackupIfNoBackupMatch, dc -> concernedDatabases.contains(dc.getDatabaseSchema().getPackage().getName()));
 	}
-	private DatabaseConfigurationsBuilder restoreDatabaseToOldVersion(long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, Predicate<DatabaseConfiguration> predicate)
+	private DatabaseConfigurationsBuilder restoreDatabaseToOldVersion(long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, boolean chooseNearestBackupIfNoBackupMatch, Predicate<DatabaseConfiguration> predicate)
+	{
+		return restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, chooseNearestBackupIfNoBackupMatch, predicate, true);
+	}
+	private DatabaseConfigurationsBuilder restoreDatabaseToOldVersion(long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, boolean chooseNearestBackupIfNoBackupMatch, Predicate<DatabaseConfiguration> predicate, boolean notifyOtherPeers)
 	{
 
 		pushQuery((p) -> {
-			Reference<Boolean> changed=new Reference<>(false);
-			configurations.getConfigurations().stream()
-					.filter(predicate)
-					.forEach((c) ->{
-						if (c.restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable))
-							changed.set(true);
+			boolean changed=false;
+			for (DatabaseConfiguration c : configurations.getConfigurations()) {
+				if (predicate.test(c)) {
+					if (c.restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, notifyOtherPeers, chooseNearestBackupIfNoBackupMatch)) {
+
+
+						if (preferOtherChannelThanLocalChannelIfAvailable || c.getBackupConfiguration() == null) {
+							if (c.isSynchronizedWithCentralBackupDatabase()) {
+								//download database from other database's channel
+								wrapper.prepareDatabaseRestorationFromDistantDatabaseBackupChannel(c.getDatabaseSchema().getPackage());
+							} else {
+								//send message to distant peer in order to ask him to restore database to old state
+								wrapper.checkNotAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(c.getDatabaseSchema().getPackage());
+							}
+							changed = true;
+						} else {
+							//restore database from local backup database
+							if (!wrapper.checkNotAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(c.getDatabaseSchema().getPackage()))
+								changed = true;
+						}
 					}
-					);
-			if (changed.get())
+				}
+			}
+			if (changed)
 			{
 				p.updateConfigurationPersistence();
-				//TODO complete
 			}
 		});
 		return this;
 	}
+
+	/*void applyRestorationFromLocalDatabaseBackupIfNecessary(Package databasePackage) throws DatabaseException {
+		synchronized (this)
+		{
+			wrapper.lockWrite();
+			try {
+				for (DatabaseConfiguration c : configurations.getConfigurations()) {
+					if (c.getDatabaseSchema().getPackage().equals(databasePackage)) {
+						Long timeUTCInMs = c.getTimeUTCInMsForRestoringDatabaseToOldVersion();
+						if (timeUTCInMs != null) {
+							if (!c.isPreferOtherChannelThanLocalChannelIfAvailableDuringRestoration()) {
+								BackupRestoreManager b = wrapper.getBackupRestoreManager(databasePackage);
+								assert b != null;
+								b.restoreDatabaseToDateUTC(timeUTCInMs);
+								wrapper.cancelRestorationFromExternalDatabaseBackup(c);
+								c.disableDatabaseRestorationToOldVersion();
+								if (lifeCycles!=null)
+									lifeCycles.saveDatabaseConfigurations(configurations);
+
+							}
+						}
+						break;
+					}
+				}
+			}
+			finally {
+				wrapper.unlockWrite();
+			}
+		}
+	}*/
+	void applyRestorationIfNecessary(DatabaseWrapper.Database database) throws DatabaseException {
+		synchronized (this)
+		{
+			wrapper.lockWrite();
+			try {
+				for (DatabaseConfiguration c : configurations.getConfigurations()) {
+					if (c.getDatabaseSchema().getPackage().equals(database.getConfiguration().getDatabaseSchema().getPackage())) {
+						Long timeUTCInMs = c.getTimeUTCInMsForRestoringDatabaseToOldVersion();
+						if (timeUTCInMs != null) {
+							if (c.isPreferOtherChannelThanLocalChannelIfAvailableDuringRestoration()) {
+								if (c.isSynchronizedWithCentralBackupDatabase()) {
+									database.temporaryBackupRestoreManagerComingFromDistantBackupManager.restoreDatabaseToDateUTC(timeUTCInMs, c.isChooseNearestBackupIfNoBackupMatch(), c.isNotifyOtherPeers());
+									if (c.isNotifyOtherPeers())
+
+									database.cancelCurrentDatabaseRestorationProcessFromCentralDatabaseBackup();
+								}
+								else {
+									wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Object>() {
+										@Override
+										public Object run() throws Exception {
+
+											Reference<DecentralizedValue> hostThatApplyRestoration = new Reference<>(null);
+											wrapper.getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
+												@Override
+												public boolean nextRecord(DatabaseHooksTable.Record _record) {
+
+													if (_record.getDatabasePackageNames().contains(c.getDatabaseSchema().getPackage().getName())) {
+														hostThatApplyRestoration.set(_record.getHostID());
+														stopTableParsing();
+													}
+													return false;
+												}
+											}, "concernsDatabaseHost=%c", "c", false);
+											if (hostThatApplyRestoration.get()!=null)
+												wrapper.getSynchronizer().notifyOtherPeersThatDatabaseRestorationWasDone(c.getDatabaseSchema().getPackage(), timeUTCInMs, hostThatApplyRestoration.get(), c.isChooseNearestBackupIfNoBackupMatch());
+
+											return null;
+										}
+
+										@Override
+										public TransactionIsolation getTransactionIsolation() {
+											return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+										}
+
+										@Override
+										public boolean doesWriteData() {
+											return true;
+										}
+
+										@Override
+										public void initOrReset() {
+
+										}
+									});
+
+								}
+
+							}
+							else
+							{
+								BackupRestoreManager b = database.backupRestoreManager;
+								assert b != null;
+								b.restoreDatabaseToDateUTC(timeUTCInMs, c.isChooseNearestBackupIfNoBackupMatch(), c.isNotifyOtherPeers());
+								wrapper.cancelRestorationFromExternalDatabaseBackup(c);
+							}
+							c.disableDatabaseRestorationToOldVersion();
+							if (lifeCycles != null)
+								lifeCycles.saveDatabaseConfigurations(configurations);
+
+						}
+						break;
+					}
+				}
+			}
+			finally {
+				wrapper.unlockWrite();
+			}
+		}
+	}
+	/*void applyRestorationFromDistantDatabaseBackupIfNecessary(DatabaseWrapper.Database database) throws DatabaseException {
+		if (database==null)
+			throw new NullPointerException();
+		synchronized (this)
+		{
+			wrapper.lockWrite();
+			try {
+				for (DatabaseConfiguration c : configurations.getConfigurations()) {
+					if (c.getDatabaseSchema().getPackage().equals(database.getConfiguration().getDatabaseSchema().getPackage())) {
+						Long timeUTCInMs = c.getTimeUTCInMsForRestoringDatabaseToOldVersion();
+						if (timeUTCInMs != null) {
+							if (c.isPreferOtherChannelThanLocalChannelIfAvailableDuringRestoration()) {
+								database.temporaryBackupRestoreManagerComingFromDistantBackupManager.restoreDatabaseToDateUTC(timeUTCInMs);
+								database.cancelCurrentDatabaseRestorationProcessFromCentralDatabaseBackup();
+								c.disableDatabaseRestorationToOldVersion();
+								if (lifeCycles!=null)
+									lifeCycles.saveDatabaseConfigurations(configurations);
+							}
+						}
+						break;
+					}
+				}
+			}
+			finally {
+				wrapper.unlockWrite();
+			}
+		}
+	}*/
 
 	/*public void setDatabaseVersion(Version databaseVersion)
 	{

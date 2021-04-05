@@ -47,10 +47,9 @@ import java.io.File;
 /**
  * @author Jason Mahdjoub
  * @version 1.0
- * @since Utils 3.0.0
+ * @since OOD 3.0.0
  */
-public class H2TestDatabaseChangeVersionIntoDecentralizedNetwork extends TestDatabaseChangeVersionIntoDecentralizedNetwork{
-
+public class H2TestRevertToOldVersionIntoDecentralizedNetwork extends TestRevertToOldVersionIntoDecentralizedNetwork{
 	final String centralDatabaseFileName ;
 	final String database_file_name1 ;
 	final String database_file_name2 ;
@@ -58,18 +57,19 @@ public class H2TestDatabaseChangeVersionIntoDecentralizedNetwork extends TestDat
 	final String database_file_name4 ;
 	final BackupConfiguration backupConfiguration=new BackupConfiguration(10000, 20000, 1000000, 1000, null);
 
-	@Factory(dataProvider = "constructorParameters")
-	public H2TestDatabaseChangeVersionIntoDecentralizedNetwork(boolean useCentralDatabaseBackup, boolean canSendIndirectTransactions,
+	@Factory(dataProvider = "constructorRevertParameters")
+	public H2TestRevertToOldVersionIntoDecentralizedNetwork(boolean useCentralDatabaseBackup, boolean canSendIndirectTransactions,
 															   boolean upgradeDatabaseVersionWhenConnectedWithPeers,
 															   boolean upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion,
-															   boolean hasToRemoveOldDatabase) {
-		super(useCentralDatabaseBackup, canSendIndirectTransactions, upgradeDatabaseVersionWhenConnectedWithPeers, upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion, hasToRemoveOldDatabase);
+															   boolean hasToRemoveOldDatabase,
+															boolean preferOtherChannelThanLocalChannelIfAvailable) {
+		super(useCentralDatabaseBackup, canSendIndirectTransactions, upgradeDatabaseVersionWhenConnectedWithPeers, upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion, hasToRemoveOldDatabase, preferOtherChannelThanLocalChannelIfAvailable);
 
-		centralDatabaseFileName = "centralDatabaseToTestChangeVersion";
-		database_file_name1 = "decentralizedDatabaseToTestChangeVersionWithBackup1";
-		database_file_name2 = "decentralizedDatabaseToTestChangeVersionWithBackup2";
-		database_file_name3 = "decentralizedDatabaseToTestChangeVersionWithBackup3";
-		database_file_name4 = "decentralizedDatabaseToTestChangeVersionWithBackup4";
+		centralDatabaseFileName = "centralDatabaseToTestReversionToOldVersion";
+		database_file_name1 = "decentralizedDatabaseToTestReversionToOldVersionWithBackup1";
+		database_file_name2 = "decentralizedDatabaseToTestReversionToOldVersionWithBackup2";
+		database_file_name3 = "decentralizedDatabaseToTestReversionToOldVersionWithBackup3";
+		database_file_name4 = "decentralizedDatabaseToTestReversionToOldVersionWithBackup4";
 	}
 
 
@@ -80,30 +80,22 @@ public class H2TestDatabaseChangeVersionIntoDecentralizedNetwork extends TestDat
 
 	@Override
 	public DatabaseFactory<?> getDatabaseFactoryInstance1() throws IllegalArgumentException, DatabaseException {
-		InFileEmbeddedH2DatabaseFactory f=new InFileEmbeddedH2DatabaseFactory(new File(database_file_name1));
-		f.setDatabaseLifeCycles(getDatabaseLifeCyclesInstance(false));
-		return f;
+		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name1));
 	}
 
 	@Override
 	public DatabaseFactory<?> getDatabaseFactoryInstance2() throws IllegalArgumentException, DatabaseException {
-		InFileEmbeddedH2DatabaseFactory f=new InFileEmbeddedH2DatabaseFactory(new File(database_file_name2));
-		f.setDatabaseLifeCycles(getDatabaseLifeCyclesInstance(true));
-		return f;
+		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name2));
 	}
 
 	@Override
 	public DatabaseFactory<?> getDatabaseFactoryInstance3() throws IllegalArgumentException, DatabaseException {
-		InFileEmbeddedH2DatabaseFactory f=new InFileEmbeddedH2DatabaseFactory(new File(database_file_name3));
-		f.setDatabaseLifeCycles(getDatabaseLifeCyclesInstance(true));
-		return f;
+		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name3));
 	}
 
 	@Override
 	public DatabaseFactory<?> getDatabaseFactoryInstance4() throws IllegalArgumentException, DatabaseException {
-		InFileEmbeddedH2DatabaseFactory f=new InFileEmbeddedH2DatabaseFactory(new File(database_file_name4));
-		f.setDatabaseLifeCycles(getDatabaseLifeCyclesInstance(true));
-		return f;
+		return new InFileEmbeddedH2DatabaseFactory(new File(database_file_name4));
 	}
 
 	@Override
@@ -136,7 +128,5 @@ public class H2TestDatabaseChangeVersionIntoDecentralizedNetwork extends TestDat
 	public BackupConfiguration getBackupConfiguration() {
 		return backupConfiguration;
 	}
-
-
 
 }

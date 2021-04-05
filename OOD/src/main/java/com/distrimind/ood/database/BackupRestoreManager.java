@@ -1549,7 +1549,13 @@ public class BackupRestoreManager {
 	public long getFirstTransactionUTCInMs()
 	{
 		synchronized (this) {
-			return fileTimeStamps.size()>0?fileTimeStamps.get(0):Long.MIN_VALUE;
+			return fileTimeStamps.size()>0?fileTimeStamps.get(0):Long.MAX_VALUE;
+		}
+	}
+	public long getFirstFileReferenceUTCInMs()
+	{
+		synchronized (this) {
+			return fileReferenceTimeStamps.size()>0?fileReferenceTimeStamps.get(0):Long.MAX_VALUE;
 		}
 	}
 
@@ -1792,6 +1798,9 @@ public class BackupRestoreManager {
 	 * @throws DatabaseException if a problem occurs
 	 */
 	public boolean restoreDatabaseToDateUTC(long dateUTCInMs, boolean chooseNearestBackupIfNoBackupMatch) throws DatabaseException {
+		return restoreDatabaseToDateUTC(dateUTCInMs, chooseNearestBackupIfNoBackupMatch, true);
+	}
+	boolean restoreDatabaseToDateUTC(long dateUTCInMs, boolean chooseNearestBackupIfNoBackupMatch, boolean notifyOtherPeers) throws DatabaseException {
 		boolean notify=false;
 		try
 		{
@@ -1807,13 +1816,13 @@ public class BackupRestoreManager {
 			boolean newVersionLoaded=false;
 			boolean res = true;
 
-
+			long lastTransactionUTCInMs;
 			synchronized (this) {
 				if (temporaryDisabled)
 					return false;
 				if (fileReferenceTimeStamps.size() == 0)
 					return false;
-				long lastTransactionUTCInMs=getLastTransactionUTCInMS();
+				lastTransactionUTCInMs=getLastTransactionUTCInMS();
 				databaseWrapper.checkMinimumValidatedTransactionIds();
 				if (lastTransactionUTCInMs>Long.MIN_VALUE && lastTransactionUTCInMs<=dateUTCInMs) {
 					temporaryDisabled = true;
@@ -2154,9 +2163,11 @@ public class BackupRestoreManager {
 
 				databaseWrapper.validateNewDatabaseVersionAndDeleteOldVersion(databaseConfiguration, oldVersion, newVersion);
 				databaseWrapper.getSynchronizer().validateExtendedTransaction();
+
 				//createBackupReference();
 				notify=true;
-
+				if (notifyOtherPeers)
+					databaseWrapper.getSynchronizer().notifyOtherPeersThatDatabaseRestorationWasDone(dbPackage, dateUTCInMs, lastTransactionUTCInMs);
 				return res;
 
 			} catch (Exception e) {
@@ -2174,6 +2185,7 @@ public class BackupRestoreManager {
 				//transactionsInterval=null;
 				if (notify)
 					databaseWrapper.getSynchronizer().checkForNewBackupFilePartToSendToCentralDatabaseBackup(dbPackage);
+
 			}
 		}
 		finally {

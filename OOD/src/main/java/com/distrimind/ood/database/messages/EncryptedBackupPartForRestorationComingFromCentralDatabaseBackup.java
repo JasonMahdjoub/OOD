@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java language
+and the java language 
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -37,66 +37,45 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 import com.distrimind.ood.database.EncryptedDatabaseBackupMetaDataPerFile;
 import com.distrimind.util.DecentralizedValue;
-import com.distrimind.util.io.*;
+import com.distrimind.util.io.RandomInputStream;
+import com.distrimind.util.io.SecuredObjectInputStream;
+import com.distrimind.util.io.SecuredObjectOutputStream;
+import com.distrimind.util.io.SerializationTools;
 
 import java.io.IOException;
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
- * @since OOD 3.0.0
+ * @since Utils 3.0.0
  */
-public class EncryptedBackupPartComingFromCentralDatabaseBackup extends AbstractEncryptedBackupPart implements MessageComingFromCentralDatabaseBackup{
-	private DecentralizedValue hostDestination;
-
-	@SuppressWarnings("unused")
-	private EncryptedBackupPartComingFromCentralDatabaseBackup() {
-	}
-
-	public EncryptedBackupPartComingFromCentralDatabaseBackup(DecentralizedValue hostSource, DecentralizedValue hostDestination, EncryptedDatabaseBackupMetaDataPerFile metaData, RandomInputStream partInputStream) {
-		super(hostSource, metaData, partInputStream);
-		if (hostDestination==null)
+public class EncryptedBackupPartForRestorationComingFromCentralDatabaseBackup extends EncryptedBackupPartComingFromCentralDatabaseBackup{
+	private DecentralizedValue channelHost;
+	public EncryptedBackupPartForRestorationComingFromCentralDatabaseBackup(DecentralizedValue hostSource, DecentralizedValue hostDestination, EncryptedDatabaseBackupMetaDataPerFile metaData, RandomInputStream partInputStream, DecentralizedValue channelHost) {
+		super(hostSource, hostDestination, metaData, partInputStream);
+		if (channelHost==null)
 			throw new NullPointerException();
-		if (hostDestination!=hostSource && hostDestination.equals(hostSource))
-			this.hostDestination=hostSource;
-		else
-			this.hostDestination=hostDestination;
+		this.channelHost=channelHost;
 	}
 
-	@Override
-	public DecentralizedValue getHostDestination() {
-		return hostDestination;
+	public DecentralizedValue getChannelHost() {
+		return channelHost;
 	}
 
 	@Override
 	public int getInternalSerializedSize() {
-		return super.getInternalSerializedSize()+ SerializationTools.getInternalSize((SecureExternalizable)hostDestination)+1;
+		return super.getInternalSerializedSize()+ SerializationTools.getInternalSize(channelHost);
 	}
 
 	@Override
 	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
 		super.writeExternal(out);
-		assert hostDestination!=null;
-		out.writeObject(hostDestination==getHostSource()?null:hostDestination, true);
+		out.writeObject(channelHost, false);
 	}
 
 	@Override
 	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
 		super.readExternal(in);
-		hostDestination=in.readObject(true, DecentralizedValue.class);
-		if (hostDestination==null)
-			hostDestination=getHostSource();
-	}
-
-	@Override
-	public boolean cannotBeMerged() {
-		return true;
-	}
-
-	@Override
-	public String toString() {
-		return "EncryptedBackupPartComingFromCentralDatabaseBackup{" +
-				"hostDestination=" + hostDestination +
-				'}';
+		channelHost=in.readObject(false);
 	}
 }

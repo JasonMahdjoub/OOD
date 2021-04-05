@@ -1408,11 +1408,13 @@ public abstract class CommonDecentralizedTests {
 		}
 
 	}
-
-	protected void connectSelectedDatabase(CommonDecentralizedTests.Database... listDatabase)
+	protected void connectSelectedDatabase(CommonDecentralizedTests.Database... listDatabase) throws Exception {
+		connectSelectedDatabase(false, listDatabase);
+	}
+	protected void connectSelectedDatabase(boolean connectToCentralDatabase, CommonDecentralizedTests.Database... listDatabase)
 			throws Exception {
 		for (CommonDecentralizedTests.Database db : listDatabase) {
-			connectLocal(db, false);
+			connectLocal(db, connectToCentralDatabase);
 		}
 		for (CommonDecentralizedTests.Database db : listDatabase) {
 			connectDistant(db, listDatabase);

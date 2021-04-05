@@ -42,8 +42,14 @@
 		<classes>
 
 			<class name="com.distrimind.ood.database.tests.H2TestDatabaseChangeVersionIntoDecentralizedNetwork" />
+
 		</classes>
 	</test>
+	<test name="TestRevertToOldVersionIntoDecentralizedNetwork"  >
+		<classes>
 
+			<class name="com.distrimind.ood.database.tests.H2TestRevertToOldVersionIntoDecentralizedNetwork" />
+		</classes>
+	</test>
 
 </suite>

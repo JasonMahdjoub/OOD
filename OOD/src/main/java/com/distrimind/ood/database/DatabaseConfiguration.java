@@ -75,22 +75,51 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 
 	private Long timeUTCInMsForRestoringDatabaseToOldVersion=null;
 	private boolean preferOtherChannelThanLocalChannelIfAvailableDuringRestoration =false;
+	private boolean notifyOtherPeers=false;
+	private boolean chooseNearestBackupIfNoBackupMatch;
 
-	boolean restoreDatabaseToOldVersion(long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable)
+	boolean restoreDatabaseToOldVersion(long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, boolean chooseNearestBackupIfNoBackupMatch, boolean notifyOtherPeers)
 	{
 		if (backupConfiguration==null && (distantPeersThatCanBeSynchronizedWithThisDatabase.size()==0 || !isSynchronizedWithCentralBackupDatabase()))
 		{
 			if (timeUTCInMsForRestoringDatabaseToOldVersion==null)
 				return false;
 			timeUTCInMsForRestoringDatabaseToOldVersion=null;
+			this.notifyOtherPeers=false;
+			this.chooseNearestBackupIfNoBackupMatch=false;
 		}
 		else {
 			if (timeUTCInMsForRestoringDatabaseToOldVersion==timeUTCInMs && preferOtherChannelThanLocalChannelIfAvailableDuringRestoration ==preferOtherChannelThanLocalChannelIfAvailable)
 				return false;
 			timeUTCInMsForRestoringDatabaseToOldVersion = timeUTCInMs;
 			preferOtherChannelThanLocalChannelIfAvailableDuringRestoration = preferOtherChannelThanLocalChannelIfAvailable;
+			this.notifyOtherPeers=notifyOtherPeers;
+			this.chooseNearestBackupIfNoBackupMatch=chooseNearestBackupIfNoBackupMatch;
 		}
 		return true;
+	}
+
+	Long getTimeUTCInMsForRestoringDatabaseToOldVersion() {
+		return timeUTCInMsForRestoringDatabaseToOldVersion;
+	}
+
+	boolean isChooseNearestBackupIfNoBackupMatch() {
+		return chooseNearestBackupIfNoBackupMatch;
+	}
+
+	boolean isNotifyOtherPeers() {
+		return notifyOtherPeers;
+	}
+
+	public void disableDatabaseRestorationToOldVersion() {
+		this.timeUTCInMsForRestoringDatabaseToOldVersion = null;
+		preferOtherChannelThanLocalChannelIfAvailableDuringRestoration=false;
+		this.notifyOtherPeers=false;
+		this.chooseNearestBackupIfNoBackupMatch=false;
+	}
+
+	boolean isPreferOtherChannelThanLocalChannelIfAvailableDuringRestoration() {
+		return preferOtherChannelThanLocalChannelIfAvailableDuringRestoration;
 	}
 
 	boolean setSynchronizationType(SynchronizationType synchronizationType) {
