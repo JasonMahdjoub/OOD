@@ -79,7 +79,7 @@ public abstract class TestRevertToOldVersionIntoDecentralizedNetwork extends Tes
 
 	@Override
 	public void doAction() throws Exception {
-		backupActualDatabase();
+
 		exchangeMessages();
 		disconnectAllDatabase();
 		exchangeMessages();
@@ -95,12 +95,15 @@ public abstract class TestRevertToOldVersionIntoDecentralizedNetwork extends Tes
 		}
 
 		long timeUTC=System.currentTimeMillis();
+		backupActualDatabase();
 		Thread.sleep(50);
 		for (int i=0;i<20;i++) {
 			addElements();
 			exchangeMessages();
 		}
-		db1.getDbwrapper().getDatabaseConfigurationsBuilder().restoreDatabaseToOldVersion(timeUTC, preferOtherChannelThanLocalChannelIfAvailable, false);
+		db1.getDbwrapper().getDatabaseConfigurationsBuilder()
+				.restoreDatabaseToOldVersion(timeUTC, preferOtherChannelThanLocalChannelIfAvailable, false)
+				.commit();
 
 		if (!upgradeDatabaseVersionWhenConnectedWithPeers)
 		{
@@ -168,5 +171,16 @@ public abstract class TestRevertToOldVersionIntoDecentralizedNetwork extends Tes
 		}
 	}
 
+	@Override
+	public String toString() {
+		return this.getClass().getSimpleName()+"{" +
+				"useCentralDatabaseBackup=" + useCentralDatabaseBackup +
+				", canSendIndirectTransactions=" + canSendIndirectTransactions +
+				", upgradeDatabaseVersionWhenConnectedWithPeers=" + upgradeDatabaseVersionWhenConnectedWithPeers +
+				", upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion=" + upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion +
+				", hasToRemoveOldDatabase=" + hasToRemoveOldDatabase +
+				", preferOtherChannelThanLocalChannelIfAvailable=" + preferOtherChannelThanLocalChannelIfAvailable +
+				'}';
+	}
 }
 

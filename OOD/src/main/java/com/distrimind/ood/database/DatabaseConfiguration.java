@@ -89,7 +89,7 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 			this.chooseNearestBackupIfNoBackupMatch=false;
 		}
 		else {
-			if (timeUTCInMsForRestoringDatabaseToOldVersion==timeUTCInMs && preferOtherChannelThanLocalChannelIfAvailableDuringRestoration ==preferOtherChannelThanLocalChannelIfAvailable)
+			if (timeUTCInMsForRestoringDatabaseToOldVersion!=null && timeUTCInMsForRestoringDatabaseToOldVersion==timeUTCInMs && preferOtherChannelThanLocalChannelIfAvailableDuringRestoration ==preferOtherChannelThanLocalChannelIfAvailable)
 				return false;
 			timeUTCInMsForRestoringDatabaseToOldVersion = timeUTCInMs;
 			preferOtherChannelThanLocalChannelIfAvailableDuringRestoration = preferOtherChannelThanLocalChannelIfAvailable;

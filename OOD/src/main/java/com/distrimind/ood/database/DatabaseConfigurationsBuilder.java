@@ -947,7 +947,7 @@ public class DatabaseConfigurationsBuilder {
 			boolean changed=false;
 			for (DatabaseConfiguration c : configurations.getConfigurations()) {
 				if (predicate.test(c)) {
-					if (c.restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, notifyOtherPeers, chooseNearestBackupIfNoBackupMatch)) {
+					if (c.restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable || c.getBackupConfiguration()==null, notifyOtherPeers, chooseNearestBackupIfNoBackupMatch)) {
 
 
 						if (preferOtherChannelThanLocalChannelIfAvailable || c.getBackupConfiguration() == null) {
@@ -960,8 +960,9 @@ public class DatabaseConfigurationsBuilder {
 							}
 							changed = true;
 						} else {
+
 							//restore database from local backup database
-							if (!wrapper.checkNotAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(c.getDatabaseSchema().getPackage()))
+							if (!wrapper.prepareDatabaseRestorationFromInternalBackupChannel(c.getDatabaseSchema().getPackage()))
 								changed = true;
 						}
 					}
@@ -1067,7 +1068,7 @@ public class DatabaseConfigurationsBuilder {
 								BackupRestoreManager b = database.backupRestoreManager;
 								assert b != null;
 								b.restoreDatabaseToDateUTC(timeUTCInMs, c.isChooseNearestBackupIfNoBackupMatch(), c.isNotifyOtherPeers());
-								wrapper.cancelRestorationFromExternalDatabaseBackup(c);
+								wrapper.restorationFromInternalDatabaseBackupFinished(c.getDatabaseSchema().getPackage());
 							}
 							c.disableDatabaseRestorationToOldVersion();
 							if (lifeCycles != null)
