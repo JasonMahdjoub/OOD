@@ -3032,7 +3032,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 		}
 		void notifyOtherPeersThatDatabaseRestorationWasDone(Package p, long timeUTCOfRestorationInMs, Long transactionToDeleteUpperLimitUTC) throws DatabaseException {
-			notifyOtherPeersThatDatabaseRestorationWasDone(p, timeUTCOfRestorationInMs, getLocalHostID(), transactionToDeleteUpperLimitUTC, false);
+			DecentralizedValue hostThatApplyRestoration=getLocalHostID();
+			if (hostThatApplyRestoration==null)
+				return;
+			notifyOtherPeersThatDatabaseRestorationWasDone(p, timeUTCOfRestorationInMs, hostThatApplyRestoration, transactionToDeleteUpperLimitUTC, false);
 		}
 		void notifyOtherPeersThatDatabaseRestorationWasDone(Package p, long timeUTCOfRestorationInMs, DecentralizedValue hostThatApplyRestoration, boolean chooseNearestBackupIfNoBackupMatch) throws DatabaseException {
 			notifyOtherPeersThatDatabaseRestorationWasDone(p, timeUTCOfRestorationInMs, hostThatApplyRestoration, null, chooseNearestBackupIfNoBackupMatch);

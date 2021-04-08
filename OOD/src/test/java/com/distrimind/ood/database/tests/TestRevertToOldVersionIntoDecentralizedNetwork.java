@@ -78,7 +78,7 @@ public abstract class TestRevertToOldVersionIntoDecentralizedNetwork extends Tes
 
 	@Override
 	public void doAction() throws Exception {
-
+		connectAllDatabase();
 		exchangeMessages();
 		disconnectAllDatabase();
 		exchangeMessages();
@@ -92,14 +92,18 @@ public abstract class TestRevertToOldVersionIntoDecentralizedNetwork extends Tes
 			connectCentralDatabaseBackupWithConnectedDatabase();
 			exchangeMessages();
 		}
-
-		long timeUTC=System.currentTimeMillis();
 		backupActualDatabase();
-		Thread.sleep(50);
+		final long timeUTC=System.currentTimeMillis();
+		Thread.sleep(getBackupConfiguration().getMaxBackupFileAgeInMs());
+		testSynchronizationWithSavedRecords(db1);
+
 		for (int i=0;i<20;i++) {
 			addElements();
 			exchangeMessages();
 		}
+
+		/*db1.getDbwrapper().getBackupRestoreManager(TableAlone.class.getPackage()).restoreDatabaseToDateUTC(timeUTC, false);
+		testSynchronizationWithSavedRecords(db1);*/
 		db1.getDbwrapper().getDatabaseConfigurationsBuilder()
 				.restoreDatabaseToOldVersion(timeUTC, preferOtherChannelThanLocalChannelIfAvailable, false)
 				.commit();
@@ -137,6 +141,7 @@ public abstract class TestRevertToOldVersionIntoDecentralizedNetwork extends Tes
 
 	private void backupActualDatabase() throws DatabaseException {
 		testSynchronisation();
+
 		aloneRecords=db1.getTableAlone().getRecords();
 		pointedRecords=db1.getTablePointed().getRecords();
 		pointingRecords=db1.getTablePointing().getRecords();
@@ -146,22 +151,25 @@ public abstract class TestRevertToOldVersionIntoDecentralizedNetwork extends Tes
 			testSynchronizationWithSavedRecords(db);
 	}
 	private void testSynchronizationWithSavedRecords(Database db) throws DatabaseException {
-		Assert.assertEquals(db.getTableAlone().getRecordsNumber(), this.aloneRecords.size());
-		Assert.assertEquals(db.getTablePointed().getRecordsNumber(), this.pointedRecords.size());
-		Assert.assertEquals(db.getTablePointing().getRecordsNumber(), this.pointingRecords.size());
+		TableAlone tableAlone=db.getDbwrapper().getTableInstance(TableAlone.class);
+		TablePointed tablePointed=db.getDbwrapper().getTableInstance(TablePointed.class);
+		TablePointing tablePointing=db.getDbwrapper().getTableInstance(TablePointing.class);
+		Assert.assertEquals(tableAlone.getRecordsNumber(), this.aloneRecords.size());
+		Assert.assertEquals(tablePointed.getRecordsNumber(), this.pointedRecords.size());
+		Assert.assertEquals(tablePointing.getRecordsNumber(), this.pointingRecords.size());
 		for (TableAlone.Record r : this.aloneRecords)
 		{
-			TableAlone.Record otherR = db.getTableAlone().getRecord("id", r.id, "id2", r.id2);
+			TableAlone.Record otherR = tableAlone.getRecord("id", r.id, "id2", r.id2);
 			Assert.assertNotNull(otherR);
 			Assert.assertEquals(otherR.value, r.value);
 		}
 		for (TablePointed.Record r : this.pointedRecords) {
-			TablePointed.Record otherR = db.getDbwrapper().getTableInstance(TablePointed.class).getRecord("id", r.id);
+			TablePointed.Record otherR = tablePointed.getRecord("id", r.id);
 			Assert.assertNotNull(otherR);
 			Assert.assertEquals(otherR.value, r.value);
 		}
 		for (TablePointing.Record r : this.pointingRecords) {
-			TablePointing.Record otherR = db.getDbwrapper().getTableInstance(TablePointing.class).getRecord("id", r.id);
+			TablePointing.Record otherR = tablePointing.getRecord("id", r.id);
 			Assert.assertNotNull(otherR);
 			if (r.table2 == null)
 				Assert.assertNull(otherR.table2);

@@ -1855,6 +1855,7 @@ public class BackupRestoreManager {
 						return false;
 				}
 				lastCurrentRestorationFileUsed = startFileReference;
+
 				try {
 					currentFile = getFile(startFileReference, true);
 					listIncrements = new LinkedList<>();

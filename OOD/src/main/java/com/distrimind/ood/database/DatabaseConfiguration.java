@@ -80,6 +80,7 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 
 	boolean restoreDatabaseToOldVersion(long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, boolean chooseNearestBackupIfNoBackupMatch, boolean notifyOtherPeers)
 	{
+
 		if (backupConfiguration==null && (distantPeersThatCanBeSynchronizedWithThisDatabase.size()==0 || !isSynchronizedWithCentralBackupDatabase()))
 		{
 			if (timeUTCInMsForRestoringDatabaseToOldVersion==null)
@@ -92,7 +93,7 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 			if (timeUTCInMsForRestoringDatabaseToOldVersion!=null && timeUTCInMsForRestoringDatabaseToOldVersion==timeUTCInMs && preferOtherChannelThanLocalChannelIfAvailableDuringRestoration ==preferOtherChannelThanLocalChannelIfAvailable)
 				return false;
 			timeUTCInMsForRestoringDatabaseToOldVersion = timeUTCInMs;
-			preferOtherChannelThanLocalChannelIfAvailableDuringRestoration = preferOtherChannelThanLocalChannelIfAvailable;
+			preferOtherChannelThanLocalChannelIfAvailableDuringRestoration = preferOtherChannelThanLocalChannelIfAvailable || backupConfiguration==null;
 			this.notifyOtherPeers=notifyOtherPeers;
 			this.chooseNearestBackupIfNoBackupMatch=chooseNearestBackupIfNoBackupMatch;
 		}

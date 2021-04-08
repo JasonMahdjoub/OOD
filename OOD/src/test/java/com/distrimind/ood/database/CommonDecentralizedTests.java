@@ -1764,6 +1764,10 @@ public abstract class CommonDecentralizedTests {
 		testSynchronisation();
 		disconnectAllDatabase();
 		checkAllDatabaseInternalDataUsedForSynchro();
+		/*if (getBackupConfiguration()!=null) {
+			for (Database db : listDatabase)
+				db.getDbwrapper().getBackupRestoreManager(TableAlone.class.getPackage()).createBackupReference();
+		}*/
 	}
 
 	@Test(dataProvider = "provideDataForSynchroBetweenTwoPeers", dependsOnMethods = {
@@ -2236,6 +2240,7 @@ public abstract class CommonDecentralizedTests {
 	protected void testSynchroBetweenPeersImpl(int peersNumber, boolean exceptionDuringTransaction,
 											   boolean generateDirectConflict, boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event)
 			throws Exception {
+
 		if (peersNumber < 2 || peersNumber > listDatabase.size())
 			throw new IllegalArgumentException();
 		List<TableEvent<DatabaseRecord>> levents = Collections.singletonList(event);
