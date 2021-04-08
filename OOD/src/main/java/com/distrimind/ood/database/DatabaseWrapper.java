@@ -660,30 +660,36 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (isCurrentDatabaseInRestorationProcess())
 				throw new DatabaseException("The database "+this.configuration.getDatabaseSchema().getPackage().getName()+" is already in a restoration process !");
 		}
+		@SuppressWarnings("ResultOfMethodCallIgnored")
 		private void prepareDatabaseRestorationFromDistantDatabaseBackupChannel() throws DatabaseException {
 			checkRestorationNotInProgress();
 			File f=getTemporaryDatabaseBackupFileNameForBackupComingFromDistantDatabaseBackup();
 			if (f.exists())
 				throw new IllegalAccessError();
 			FileTools.checkFolderRecursive(f);
+			f.mkdir();
 			initTemporaryBackupRestoreManagerComingFromDistantBackupRestoreManager(f);
 
 		}
+		@SuppressWarnings("ResultOfMethodCallIgnored")
 		private void prepareDatabaseRestorationFromInternalBackup() throws DatabaseException {
 			checkRestorationNotInProgress();
 			File f=getTemporaryDatabaseBackupFileNameForBackupComingFromInternalBackup();
 			if (f.exists())
 				throw new IllegalAccessError();
 			FileTools.checkFolderRecursive(f);
+			f.mkdir();
 			currentDatabaseInRestorationProcessFromInternalBackup=true;
 
 		}
+		@SuppressWarnings("ResultOfMethodCallIgnored")
 		private File prepareDatabaseRestorationFromExternalDatabaseBackupAndGetTemporaryBackupDirectoryName() throws DatabaseException {
 			checkRestorationNotInProgress();
 			File f=getExternalTemporaryDatabaseBackupFileName();
 			if (f.exists())
 				throw new IllegalAccessError();
 			FileTools.checkFolderRecursive(f);
+			f.mkdir();
 			currentDatabaseInRestorationProcessFromExternalBackup=true;
 			return f;
 		}

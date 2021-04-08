@@ -43,7 +43,6 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 
 import java.util.ArrayList;
-import java.util.Collections;
 
 /**
  * @author Jason Mahdjoub
