@@ -210,6 +210,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	private static final String NATIVE_BACKUPS_DIRECTORY_NAME="native_backups";
 	private static final String EXTERNAL_TEMPORARY_BACKUPS_DIRECTORY_NAME="external_temporary_backups";
 	private static final String TEMPORARY_BACKUPS_COMING_FROM_DISTANT_DATABASE_BACKUP_DIRECTORY_NAME="temporary_backups_coming_from_distant_db_backup";
+	private static final String TEMPORARY_BACKUPS_COMING_FROM_INTERNAL_BACKUP_DIRECTORY_NAME="temporary_backups_coming_from_internal_db_backup";
+
 	private static final String HOST_CHANNEL_ID_FILE_NAME="host_channel_id";
 	private volatile boolean closed = false;
 	private volatile boolean openedOneTime = false;
@@ -431,6 +433,21 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			unlockWrite();
 		}
 	}
+	boolean prepareDatabaseRestorationFromInternalBackupChannel(Package databasePackage) throws DatabaseException {
+		if (databasePackage==null)
+			throw new NullPointerException();
+		lockWrite();
+		try {
+			Database db = sql_database.get(databasePackage);
+			if (db == null)
+				throw new DatabaseException("The database " + databasePackage.getName() + " was not loaded");
+			db.prepareDatabaseRestorationFromInternalBackup();
+			return getSynchronizer().checkNotAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(db);
+		}
+		finally {
+			unlockWrite();
+		}
+	}
 	public void restoreDatabaseToDateUTCFromExternalTemporaryDatabaseBackupAndRemoveBackupFiles(DatabaseConfiguration databaseConfiguration, long dateUTCInMs) throws DatabaseException {
 		restoreDatabaseToDateUTCFromExternalTemporaryDatabaseBackupAndRemoveBackupFiles(databaseConfiguration.getDatabaseSchema(), dateUTCInMs);
 	}
@@ -456,8 +473,24 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		cancelRestorationFromExternalDatabaseBackup(databaseConfiguration.getDatabaseSchema());
 	}
+
 	public void cancelRestorationFromExternalDatabaseBackup(DatabaseSchema databaseSchema) throws DatabaseException {
 		cancelRestorationFromExternalDatabaseBackup(databaseSchema.getPackage());
+	}
+	void restorationFromInternalDatabaseBackupFinished(Package databasePackage) throws DatabaseException {
+		if (databasePackage==null)
+			throw new NullPointerException();
+		lockWrite();
+		try {
+			Database db = sql_database.get(databasePackage);
+			if (db == null)
+				throw new DatabaseException("The database " + databasePackage.getName() + " was not loaded");
+
+			db.restorationFromInternalDatabaseBackupFinished();
+		}
+		finally {
+			unlockWrite();
+		}
 	}
 	public void cancelRestorationFromExternalDatabaseBackup(Package databasePackage) throws DatabaseException {
 		if (databasePackage==null)
@@ -505,6 +538,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		private DecentralizedValue temporaryBackupRestoreManagerChannelComingFromDistantBackupManager=null;
 		private int currentVersion=-1;
 		private boolean currentDatabaseInRestorationProcessFromExternalBackup;
+		private boolean currentDatabaseInRestorationProcessFromInternalBackup;
 
 		private final DatabaseConfiguration configuration;
 
@@ -513,6 +547,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new NullPointerException("configuration");
 			this.configuration = configuration;
 			currentDatabaseInRestorationProcessFromExternalBackup=getExternalTemporaryDatabaseBackupFileName().exists();
+			currentDatabaseInRestorationProcessFromInternalBackup=getTemporaryDatabaseBackupFileNameForBackupComingFromInternalBackup().exists();
 			File f=getTemporaryDatabaseBackupFileNameForBackupComingFromDistantDatabaseBackup();
 			if (f.exists()) {
 				initTemporaryBackupRestoreManagerComingFromDistantBackupRestoreManager(f);
@@ -617,25 +652,44 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		{
 			return new File(new File(databaseDirectory, TEMPORARY_BACKUPS_COMING_FROM_DISTANT_DATABASE_BACKUP_DIRECTORY_NAME), DatabaseWrapper.getLongPackageName(this.configuration.getDatabaseSchema().getPackage()));
 		}
+		private File getTemporaryDatabaseBackupFileNameForBackupComingFromInternalBackup()
+		{
+			return new File(new File(databaseDirectory, TEMPORARY_BACKUPS_COMING_FROM_INTERNAL_BACKUP_DIRECTORY_NAME), DatabaseWrapper.getLongPackageName(this.configuration.getDatabaseSchema().getPackage()));
+		}
 		private void checkRestorationNotInProgress() throws DatabaseException {
 			if (isCurrentDatabaseInRestorationProcess())
 				throw new DatabaseException("The database "+this.configuration.getDatabaseSchema().getPackage().getName()+" is already in a restoration process !");
 		}
+		@SuppressWarnings("ResultOfMethodCallIgnored")
 		private void prepareDatabaseRestorationFromDistantDatabaseBackupChannel() throws DatabaseException {
 			checkRestorationNotInProgress();
 			File f=getTemporaryDatabaseBackupFileNameForBackupComingFromDistantDatabaseBackup();
 			if (f.exists())
 				throw new IllegalAccessError();
-			FileTools.checkFolder(f);
+			FileTools.checkFolderRecursive(f);
+			f.mkdir();
 			initTemporaryBackupRestoreManagerComingFromDistantBackupRestoreManager(f);
 
 		}
+		@SuppressWarnings("ResultOfMethodCallIgnored")
+		private void prepareDatabaseRestorationFromInternalBackup() throws DatabaseException {
+			checkRestorationNotInProgress();
+			File f=getTemporaryDatabaseBackupFileNameForBackupComingFromInternalBackup();
+			if (f.exists())
+				throw new IllegalAccessError();
+			FileTools.checkFolderRecursive(f);
+			f.mkdir();
+			currentDatabaseInRestorationProcessFromInternalBackup=true;
+
+		}
+		@SuppressWarnings("ResultOfMethodCallIgnored")
 		private File prepareDatabaseRestorationFromExternalDatabaseBackupAndGetTemporaryBackupDirectoryName() throws DatabaseException {
 			checkRestorationNotInProgress();
 			File f=getExternalTemporaryDatabaseBackupFileName();
 			if (f.exists())
 				throw new IllegalAccessError();
-			FileTools.checkFolder(f);
+			FileTools.checkFolderRecursive(f);
+			f.mkdir();
 			currentDatabaseInRestorationProcessFromExternalBackup=true;
 			return f;
 		}
@@ -653,10 +707,22 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			backupRestoreManager.restoreDatabaseToDateUTC(dateUTCInMs);
 			FileTools.deleteDirectory(directory);
 		}
+		private void restorationFromInternalDatabaseBackupFinished() throws DatabaseException {
+			File directory=getTemporaryDatabaseBackupFileNameForBackupComingFromInternalBackup();
+			if (currentDatabaseInRestorationProcessFromInternalBackup) {
+				currentDatabaseInRestorationProcessFromInternalBackup=false;
+				FileTools.deleteDirectory(directory);
+			}
+			else
+				throw new DatabaseException("There is no database restoration to cancel with the database "+this.configuration.getDatabaseSchema().getPackage().getName());
+		}
 		private void cancelRestorationFromExternalDatabaseBackup() throws DatabaseException {
 			File directory=getExternalTemporaryDatabaseBackupFileName();
-			if (directory.exists())
+
+			if (currentDatabaseInRestorationProcessFromExternalBackup) {
+				currentDatabaseInRestorationProcessFromExternalBackup=false;
 				FileTools.deleteDirectory(directory);
+			}
 			else
 				throw new DatabaseException("There is no database restoration to cancel with the database "+this.configuration.getDatabaseSchema().getPackage().getName());
 		}
@@ -670,7 +736,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 		private boolean isCurrentDatabaseInRestorationProcess()
 		{
-			return currentDatabaseInRestorationProcessFromExternalBackup || temporaryBackupRestoreManagerComingFromDistantBackupManager!=null;
+			return currentDatabaseInRestorationProcessFromExternalBackup || temporaryBackupRestoreManagerComingFromDistantBackupManager!=null || currentDatabaseInRestorationProcessFromInternalBackup;
 		}
 		void initBackupRestoreManager(DatabaseWrapper wrapper, File databaseDirectory, DatabaseConfiguration configuration) throws DatabaseException {
 			if (this.backupRestoreManager!=null)
@@ -2966,7 +3032,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 		}
 		void notifyOtherPeersThatDatabaseRestorationWasDone(Package p, long timeUTCOfRestorationInMs, Long transactionToDeleteUpperLimitUTC) throws DatabaseException {
-			notifyOtherPeersThatDatabaseRestorationWasDone(p, timeUTCOfRestorationInMs, getLocalHostID(), transactionToDeleteUpperLimitUTC, false);
+			DecentralizedValue hostThatApplyRestoration=getLocalHostID();
+			if (hostThatApplyRestoration==null)
+				return;
+			notifyOtherPeersThatDatabaseRestorationWasDone(p, timeUTCOfRestorationInMs, hostThatApplyRestoration, transactionToDeleteUpperLimitUTC, false);
 		}
 		void notifyOtherPeersThatDatabaseRestorationWasDone(Package p, long timeUTCOfRestorationInMs, DecentralizedValue hostThatApplyRestoration, boolean chooseNearestBackupIfNoBackupMatch) throws DatabaseException {
 			notifyOtherPeersThatDatabaseRestorationWasDone(p, timeUTCOfRestorationInMs, hostThatApplyRestoration, null, chooseNearestBackupIfNoBackupMatch);

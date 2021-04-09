@@ -159,6 +159,7 @@ public abstract class AbstractTestDatabaseBackupRestore {
 			Assert.assertEquals(lTable3D.size(), lTable3.size());
 			Assert.assertEquals(lTable4D.size(), lTable4.size());
 		}
+		assert lTable1.size()>0;
 		Table1 table1=destinationWrapper.getTableInstance(Table1.class);
 		Table2 table2=destinationWrapper.getTableInstance(Table2.class);
 		Table3 table3=destinationWrapper.getTableInstance(Table3.class);
