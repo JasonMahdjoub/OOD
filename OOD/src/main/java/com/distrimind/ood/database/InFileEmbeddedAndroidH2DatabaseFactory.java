@@ -35,9 +35,15 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
+import android.util.Log;
+
 import com.distrimind.ood.database.exceptions.DatabaseException;
 
 import java.io.File;
+import java.lang.reflect.Field;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
+import java.sql.ResultSet;
 
 /**
  * 
@@ -58,7 +64,33 @@ public class InFileEmbeddedAndroidH2DatabaseFactory extends DatabaseFactory<Embe
 	private int pageSizeBytes=1024;
 	private int cacheSizeBytes=8192;
 	private boolean useExternalCard=false;
+	static
+	{
+		try {
+			//noinspection JavaReflectionMemberAccess
+			ResultSet.class.getDeclaredMethod("getObject", int.class, Class.class);
+		} catch (NoSuchMethodException ignored) {
+			try {
+				Class<?> jsr=Class.forName("org.h2.util.JSR310");
+				AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
 
+					try {
+						Field f = jsr.getDeclaredField("PRESENT");
+						f.setAccessible(true);
+						f.setBoolean(null, false);
+					} catch (NoSuchFieldException | IllegalAccessException e) {
+						e.printStackTrace();
+					}
+
+					return null;
+				});
+
+			} catch (ClassNotFoundException e) {
+				e.printStackTrace();
+			}
+		}
+
+	}
 
 	protected InFileEmbeddedAndroidH2DatabaseFactory() throws DatabaseException {
 		super();
