@@ -2353,8 +2353,10 @@ public class BackupRestoreManager {
 
 	}
 
-	Transaction startTransaction(boolean transactionToSynchronize) throws DatabaseException {
+	AbstractTransaction startTransaction(boolean transactionToSynchronize) throws DatabaseException {
 		synchronized (this) {
+			if (fileTimeStamps.size()==0 && !temporaryDisabled && !computeDatabaseReference.exists())
+				return new TransactionToValidateByABackupReference();
 			if (!isReady())
 				return null;
 			int oldLength;
@@ -2387,14 +2389,57 @@ public class BackupRestoreManager {
 			return this.fileReferenceTimeStamps.size() == 0;
 		}
 	}
+	abstract class AbstractTransaction
+	{
+		abstract void cancelTransaction() throws DatabaseException;
 
-	class Transaction
+		abstract long getTransactionUTC();
+
+		abstract void validateTransaction(Long transactionID) throws DatabaseException;
+		abstract void backupRecordEvent(Table<?> table, TableEvent<?> _de) throws DatabaseException;
+		abstract void cancelTransaction(long backupPosition) throws DatabaseException;
+		abstract long getBackupPosition() throws DatabaseException;
+	}
+	class TransactionToValidateByABackupReference extends AbstractTransaction
+	{
+
+		@Override
+		void cancelTransaction() throws DatabaseException {
+
+		}
+
+		@Override
+		long getTransactionUTC() {
+			return 0;
+		}
+
+		@Override
+		void validateTransaction(Long transactionID) throws DatabaseException {
+			createBackupReference();
+		}
+
+		@Override
+		void backupRecordEvent(Table<?> table, TableEvent<?> _de) throws DatabaseException {
+
+		}
+
+		@Override
+		void cancelTransaction(long backupPosition) throws DatabaseException {
+
+		}
+
+		@Override
+		long getBackupPosition() throws DatabaseException {
+			return 0;
+		}
+	}
+	class Transaction extends AbstractTransaction
 	{
 		long lastTransactionUTC;
 		int transactionsNumber=0;
 		RandomOutputStream out;
 		private boolean closed=false;
-		private final long transactionUTC;
+		private long transactionUTC;
 		private final int nextTransactionReference;
 		private final long fileTimeStamp;
 		//private final RecordsIndex index;
@@ -2413,7 +2458,18 @@ public class BackupRestoreManager {
 			this.oldLength=oldLength;
 			this.firstTransactionID=firstTransactionID;
 			this.transactionToSynchronize = transactionToSynchronize;
+
 			transactionUTC=System.currentTimeMillis();
+			while(transactionUTC==lastTransactionUTC)
+			{
+				try {
+					//noinspection BusyWait
+					Thread.sleep(1);
+					transactionUTC=System.currentTimeMillis();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
 			if (transactionUTC<lastTransactionUTC)
 				throw new InternalError(transactionUTC+";"+lastTransactionUTC);
 			nextTransactionReference=saveTransactionHeader(out, transactionUTC);
@@ -2426,7 +2482,7 @@ public class BackupRestoreManager {
 			}
 
 		}
-
+		@Override
 		final long getBackupPosition() throws DatabaseException {
 			try {
 				return out.currentPosition();
@@ -2436,7 +2492,7 @@ public class BackupRestoreManager {
 		}
 
 
-
+		@Override
 		final void cancelTransaction(long backupPosition) throws DatabaseException
 		{
 			try {
@@ -2448,6 +2504,7 @@ public class BackupRestoreManager {
 			}
 		}
 
+		@Override
 		final void cancelTransaction() throws DatabaseException
 		{
 			try {
@@ -2477,10 +2534,12 @@ public class BackupRestoreManager {
 
 		}
 
+		@Override
 		public long getTransactionUTC() {
 			return transactionUTC;
 		}
 
+		@Override
 		final void validateTransaction(Long transactionID) throws DatabaseException
 		{
 			try {
@@ -2527,6 +2586,7 @@ public class BackupRestoreManager {
 			createIfNecessaryNewBackupReference();
 		}
 
+		@Override
 		final void backupRecordEvent(Table<?> table, TableEvent<?> _de) throws DatabaseException {
 
 			if (closed)

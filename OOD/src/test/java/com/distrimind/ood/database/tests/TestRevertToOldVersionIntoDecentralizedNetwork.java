@@ -102,11 +102,12 @@ public abstract class TestRevertToOldVersionIntoDecentralizedNetwork extends Tes
 			exchangeMessages();
 		}
 
-		/*db1.getDbwrapper().getBackupRestoreManager(TableAlone.class.getPackage()).restoreDatabaseToDateUTC(timeUTC, false);
-		testSynchronizationWithSavedRecords(db1);*/
+		//db1.getDbwrapper().getBackupRestoreManager(TableAlone.class.getPackage()).restoreDatabaseToDateUTC(timeUTC, false);
+
 		db1.getDbwrapper().getDatabaseConfigurationsBuilder()
 				.restoreDatabaseToOldVersion(timeUTC, preferOtherChannelThanLocalChannelIfAvailable, false)
 				.commit();
+		testSynchronizationWithSavedRecords(db1);
 
 		if (!upgradeDatabaseVersionWhenConnectedWithPeers)
 		{

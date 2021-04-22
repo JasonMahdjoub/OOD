@@ -3860,7 +3860,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		private final Thread thread;
 		private final long threadID;
 		private final Set<Table<?>> memoryTablesToRefresh;
-		private final HashMap<Package, BackupRestoreManager.Transaction> backupManager=new HashMap<>();
+		private final HashMap<Package, BackupRestoreManager.AbstractTransaction> backupManager=new HashMap<>();
 		// private boolean sessionLocked=false;
 
 		Session(Connection connection, Thread thread) {
@@ -3899,13 +3899,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			return thread;
 		}
 
-		private BackupRestoreManager.Transaction getBackupManagerAndStartTransactionIfNecessary(Package p, boolean transactionToSynchronizeFromCentralDatabaseBackup) throws DatabaseException {
+		private BackupRestoreManager.AbstractTransaction getBackupManagerAndStartTransactionIfNecessary(Package p, boolean transactionToSynchronizeFromCentralDatabaseBackup) throws DatabaseException {
 			if (!backupManager.containsKey(p)) {
 				BackupRestoreManager brm = getBackupRestoreManager(p);
 
 				if (brm!=null)
 				{
-					BackupRestoreManager.Transaction res=brm.startTransaction(transactionToSynchronizeFromCentralDatabaseBackup);
+					BackupRestoreManager.AbstractTransaction res=brm.startTransaction(transactionToSynchronizeFromCentralDatabaseBackup);
 					backupManager.put(p, res);
 					return res;
 				}
@@ -3926,7 +3926,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new NullPointerException("de");
 			Package p = table.getClass().getPackage();
 
-			BackupRestoreManager.Transaction backupTransaction=getBackupManagerAndStartTransactionIfNecessary(p, applySynchro);
+			BackupRestoreManager.AbstractTransaction backupTransaction=getBackupManagerAndStartTransactionIfNecessary(p, applySynchro);
 			if (backupTransaction!=null)
 				backupTransaction.backupRecordEvent(table, de);
 			if (!applySynchro)
@@ -4305,7 +4305,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		public Map<Package, Long> getBackupPositions() throws DatabaseException {
 			HashMap<Package, Long> hashMap=new HashMap<>();
-			for (Map.Entry<Package, BackupRestoreManager.Transaction> e : this.backupManager.entrySet())
+			for (Map.Entry<Package, BackupRestoreManager.AbstractTransaction> e : this.backupManager.entrySet())
 			{
 				if (e.getValue()!=null)
 					hashMap.put(e.getKey(), e.getValue().getBackupPosition());
@@ -4316,9 +4316,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		void cancelTmpTransactionEvents(final int position, Map<Package, Long> backupPositions) throws DatabaseException {
 			if (position == actualPosition.get())
 				return;
-			for (Iterator<Map.Entry<Package, BackupRestoreManager.Transaction>> it = this.backupManager.entrySet().iterator();it.hasNext();)
+			for (Iterator<Map.Entry<Package, BackupRestoreManager.AbstractTransaction>> it = this.backupManager.entrySet().iterator();it.hasNext();)
 			{
-				Map.Entry<Package, BackupRestoreManager.Transaction> e=it.next();
+				Map.Entry<Package, BackupRestoreManager.AbstractTransaction> e=it.next();
 				if (e.getValue()!=null) {
 					if (backupPositions.containsKey(e.getKey())) {
 						e.getValue().cancelTransaction(backupPositions.get(e.getKey()));
@@ -4382,7 +4382,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		private void cancelBackupTransaction() throws DatabaseException {
-			for (BackupRestoreManager.Transaction t : backupManager.values())
+			for (BackupRestoreManager.AbstractTransaction t : backupManager.values())
 			{
 				if (t!=null)
 					t.cancelTransaction();
@@ -4402,7 +4402,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		long getTransactionUTC(String concernedDatabasePackage)
 		{
-			for (Map.Entry<Package, BackupRestoreManager.Transaction> e: backupManager.entrySet()) {
+			for (Map.Entry<Package, BackupRestoreManager.AbstractTransaction> e: backupManager.entrySet()) {
 				if (e.getKey().toString().equals(concernedDatabasePackage))
 					return e.getValue().getTransactionUTC();
 			}
@@ -4594,9 +4594,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 					}
 				}
-				for (Map.Entry<Package, BackupRestoreManager.Transaction> e : backupManager.entrySet()) {
+				for (Map.Entry<Package, BackupRestoreManager.AbstractTransaction> e : backupManager.entrySet()) {
 
-					BackupRestoreManager.Transaction t = e.getValue();
+					BackupRestoreManager.AbstractTransaction t = e.getValue();
 					if (t != null) {
 						Long tid=transactionsID.get(e.getKey());
 						t.validateTransaction(tid);
@@ -4611,9 +4611,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 			catch (DatabaseException e)
 			{
-				for (Map.Entry<Package, BackupRestoreManager.Transaction> element: backupManager.entrySet())
+				for (Map.Entry<Package, BackupRestoreManager.AbstractTransaction> element: backupManager.entrySet())
 				{
-					BackupRestoreManager.Transaction t=element.getValue();
+					BackupRestoreManager.AbstractTransaction t=element.getValue();
 					if (t!=null)
 						t.cancelTransaction();
 				}
