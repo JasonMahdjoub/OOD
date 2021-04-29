@@ -34,7 +34,6 @@ import com.distrimind.ood.database.DatabaseWrapper.SynchronizationAnomalyType;
 import com.distrimind.ood.database.annotations.ForeignKey;
 import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.*;
-import com.distrimind.util.Bits;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.Reference;
 import com.distrimind.util.io.*;
@@ -42,10 +41,8 @@ import com.distrimind.util.io.*;
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 
@@ -1057,10 +1054,11 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 							DatabaseEventsTable.Record event = new DatabaseEventsTable.Record();
 							event.setConcernedTable(table.getClass().getName());
 							event.setPosition(position++);
+
 							event.setType(eventTypeByte);
 							event.setTransaction(dte);
 							if (eventType!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE) {
-								int s = getDataInputStream().readUnsignedShort24Bits();
+								int s = getDataInputStream().readUnsignedInt24Bits();
 								if (s == 0)
 									throw new IOException();
 								byte[] spks = new byte[s];
@@ -1071,7 +1069,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 									case ADD:
 									case UPDATE: {
 										if (getDataInputStream().readBoolean()) {
-											s = getDataInputStream().readUnsignedShort24Bits();
+											s = getDataInputStream().readUnsignedInt24Bits();
 											byte[] snfk = new byte[s];
 											getDataInputStream().readFully(snfk);
 											event.setConcernedSerializedNewForeignKey(snfk);

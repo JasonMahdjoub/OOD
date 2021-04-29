@@ -41,7 +41,6 @@ import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.annotations.ForeignKey;
 import com.distrimind.ood.database.annotations.NotNull;
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.ood.database.exceptions.SerializationDatabaseException;
 import com.distrimind.util.io.*;
 
 import java.io.IOException;
@@ -84,26 +83,7 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 
 		void export(RandomOutputStream oos) throws DatabaseException {
 			try {
-				oos.writeByte(DatabaseTransactionsPerHostTable.EXPORT_DIRECT_TRANSACTION_EVENT);
-				byte type=getType();
-				oos.writeByte(type);
-				oos.writeInt(getConcernedTable().length());
-				oos.writeChars(getConcernedTable());
-				if (type!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE.getByte()) {
-					oos.writeInt(getConcernedSerializedPrimaryKey().length);
-					oos.write(getConcernedSerializedPrimaryKey());
-
-					if (Objects.requireNonNull(DatabaseEventType.getEnum(getType())).needsNewValue()) {
-						byte[] foreignKeys = getConcernedSerializedNewForeignKey();
-						oos.writeInt(foreignKeys.length);
-						oos.write(foreignKeys);
-
-						byte[] nonkey = getConcernedSerializedNewNonKey();
-						oos.writeInt(nonkey.length);
-						oos.write(nonkey);
-					}
-				}
-
+				export(oos,DatabaseTransactionsPerHostTable.EXPORT_DIRECT_TRANSACTION_EVENT);
 			} catch (Exception e) {
 				throw DatabaseException.getDatabaseException(e);
 			}
@@ -122,6 +102,45 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 
 		protected DatabaseEventsIterator(RandomInputStream dis) throws IOException {
 			this(dis, true);
+		}
+		protected void readNext(DatabaseEventsTable.AbstractRecord event, int position) throws IOException {
+			readNext(event, position, getDataInputStream().readByte());
+		}
+		protected void readNext(DatabaseEventsTable.AbstractRecord event, int position, byte eventTypeByte) throws IOException {
+			event.setPosition(position);
+
+			event.setType(eventTypeByte);
+			if (getDataOutputStream()!=null)
+				getDataOutputStream().writeByte(eventTypeByte);
+			final DatabaseEventType type = DatabaseEventType.getEnum(eventTypeByte);
+
+			if (type==null)
+				throw new MessageExternalizationException(Integrity.FAIL);
+
+			String concernedTable=getDataInputStream().readString(false, Table.MAX_TABLE_NAME_SIZE_BYTES);
+			if (getDataOutputStream()!=null)
+				getDataOutputStream().writeString(concernedTable, false, Table.MAX_TABLE_NAME_SIZE_BYTES);
+			event.setConcernedTable(concernedTable);
+			if (type!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE) {
+				byte[] spks=getDataInputStream().readBytesArray(false, Table.MAX_PRIMARY_KEYS_SIZE_BYTES);
+				if (getDataOutputStream() != null)
+					getDataOutputStream().writeBytesArray(spks, false, Table.MAX_PRIMARY_KEYS_SIZE_BYTES);
+				event.setConcernedSerializedPrimaryKey(spks);
+
+				if (type.needsNewValue()) {
+					byte[] foreignKeys=getDataInputStream().readBytesArray(true, Table.MAX_PRIMARY_KEYS_SIZE_BYTES);
+					if (getDataOutputStream() != null)
+						getDataOutputStream().writeBytesArray(foreignKeys, true, Table.MAX_PRIMARY_KEYS_SIZE_BYTES);
+					event.setConcernedSerializedNewForeignKey(foreignKeys);
+
+					byte[] nonPk=getDataInputStream().readBytesArray(true, EVENT_MAX_SIZE_BYTES);
+					if (getDataOutputStream() != null)
+						getDataOutputStream().writeBytesArray(nonPk, true, EVENT_MAX_SIZE_BYTES);
+
+					event.setConcernedSerializedNewNonKey(nonPk);
+
+				}
+			}
 		}
 		protected DatabaseEventsIterator(RandomInputStream dis, boolean useCache) throws IOException {
 			if (dis==null)
@@ -205,10 +224,10 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 		@Field(limit = 400)
 		private String concernedTable;
 
-		@Field(limit = Table.maxPrimaryKeysSizeBytes, index = true)
+		@Field(limit = Table.MAX_PRIMARY_KEYS_SIZE_BYTES, index = true)
 		private byte[] concernedSerializedPrimaryKey;
 
-		@Field(limit = Table.maxPrimaryKeysSizeBytes)
+		@Field(limit = Table.MAX_PRIMARY_KEYS_SIZE_BYTES)
 		private byte[] concernedSerializedNewForeignKey;
 
 		@Field(limit = Integer.MAX_VALUE, forceUsingBlobOrClob = true)
@@ -261,6 +280,23 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 				} else {
 					concernedSerializedNewForeignKey = null;
 					concernedSerializedNewNonKey = null;
+				}
+			}
+		}
+
+		void export(RandomOutputStream oos, byte transactionType) throws IOException {
+			oos.writeByte(transactionType);
+			byte type=getType();
+			oos.writeByte(getType());
+			oos.writeString(getConcernedTable(), false, Table.MAX_TABLE_NAME_SIZE_BYTES);
+			if (type!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE.getByte()) {
+				oos.writeBytesArray(getConcernedSerializedPrimaryKey(), false, Table.MAX_PRIMARY_KEYS_SIZE_BYTES);
+				if (Objects.requireNonNull(DatabaseEventType.getEnum(type)).needsNewValue()) {
+					byte[] foreignKeys = getConcernedSerializedNewForeignKey();
+					oos.writeBytesArray(foreignKeys, true, Table.MAX_PRIMARY_KEYS_SIZE_BYTES);
+
+					byte[] nonKey = getConcernedSerializedNewNonKey();
+					oos.writeBytesArray(nonKey, true, EVENT_MAX_SIZE_BYTES);
 				}
 			}
 		}
@@ -338,76 +374,8 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 					if (next != DatabaseTransactionsPerHostTable.EXPORT_DIRECT_TRANSACTION_EVENT)
 						throw new NoSuchElementException();
 					DatabaseEventsTable.Record event = new DatabaseEventsTable.Record();
-					event.setPosition(position++);
-					byte b=getDataInputStream().readByte();
-					if (getDataOutputStream()!=null)
-						getDataOutputStream().writeByte(b);
-					event.setType(b);
-					final DatabaseEventType type = DatabaseEventType.getEnum(event.getType());
-					if (type == null)
-						throw new SerializationDatabaseException(
-								"Impossible to decode database event type : " + event.getType());
 
-					int size = getDataInputStream().readInt();
-					if (size > Table.maxTableNameSizeBytes)
-						throw new SerializationDatabaseException("Table name too big");
-					if (getDataOutputStream()!=null)
-						getDataOutputStream().writeInt(size);
-					
-					
-					char[] chrs = new char[size];
-					for (int i = 0; i < size; i++)
-					{
-						chrs[i] = getDataInputStream().readChar();
-						if (getDataOutputStream()!=null)
-							getDataOutputStream().writeChar(chrs[i]);
-					}
-					event.setConcernedTable(String.valueOf(chrs));
-					if (type!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE) {
-						size = getDataInputStream().readUnsignedShort24Bits();
-						if (getDataOutputStream() != null)
-							getDataOutputStream().writeUnsignedInt24Bits(size);
-						if (size > Table.maxPrimaryKeysSizeBytes)
-							throw new SerializationDatabaseException("Table name too big");
-						byte[] spks = new byte[size];
-						if (getDataInputStream().read(spks) != size)
-							throw new SerializationDatabaseException(
-									"Impossible to read the expected bytes number : " + size);
-						if (getDataOutputStream() != null)
-							getDataOutputStream().write(spks);
-						event.setConcernedSerializedPrimaryKey(spks);
-
-
-						if (type.needsNewValue()) {
-							size = getDataInputStream().readUnsignedShort24Bits();
-							if (size > Table.maxPrimaryKeysSizeBytes)
-								throw new SerializationDatabaseException("Transaction  event is too big : " + size);
-							if (getDataOutputStream() != null)
-								getDataOutputStream().writeUnsignedInt24Bits(size);
-							byte[] foreignKeys = new byte[size];
-							if (getDataInputStream().read(foreignKeys) != size)
-								throw new SerializationDatabaseException(
-										"Impossible to read the expected bytes number : " + size);
-							if (getDataOutputStream() != null)
-								getDataOutputStream().write(foreignKeys);
-
-							event.setConcernedSerializedNewForeignKey(foreignKeys);
-
-							size = getDataInputStream().readInt();
-							if (getDataOutputStream() != null)
-								getDataOutputStream().writeInt(size);
-							if (size > EVENT_MAX_SIZE_BYTES)
-								throw new SerializationDatabaseException("Transaction  event is too big : " + size);
-							byte[] nonpk = new byte[size];
-							if (getDataInputStream().read(nonpk) != size)
-								throw new SerializationDatabaseException(
-										"Impossible to read the expected bytes number : " + size);
-							if (getDataOutputStream() != null)
-								getDataOutputStream().write(nonpk);
-
-							event.setConcernedSerializedNewNonKey(nonpk);
-						}
-					}
+					readNext(event, position++);
 					next = 0;
 					return event;
 				} catch (Exception e) {

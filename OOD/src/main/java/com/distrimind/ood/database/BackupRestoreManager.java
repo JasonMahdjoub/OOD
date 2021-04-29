@@ -77,7 +77,7 @@ public class BackupRestoreManager {
 	private final File backupDirectory;
 	private final BackupConfiguration backupConfiguration;
 	private final DatabaseConfiguration databaseConfiguration;
-	private final List<Class<? extends Table<?>>> classes;
+	private final ArrayList<Class<? extends Table<?>>> classes;
 	private static final Pattern fileReferencePattern = Pattern.compile("^backup-ood-([1-9][0-9]*)\\.dreference$");
 	private static final Pattern fileIncrementPattern = Pattern.compile("^backup-ood-([1-9][0-9]*)\\.dincrement$");
 
@@ -1808,7 +1808,7 @@ public class BackupRestoreManager {
 			File currentFile;
 			ProgressMonitorDM pg;
 			long s;
-			ArrayList<Table<?>> tbls, tbls2;
+			ArrayList<Table<?>> tbls/*, tbls2*/;
 			boolean reference=true;
 			LinkedList<Long> listIncrements;
 			boolean newVersionLoaded=false;
@@ -1880,11 +1880,11 @@ public class BackupRestoreManager {
 						tbls.add(t);
 					}
 
-					tbls2 = new ArrayList<>();
+					/*tbls2 = new ArrayList<>();
 					for (Class<? extends Table<?>> c : classes) {
 						Table<?> t = databaseWrapper.getTableInstance(c, oldVersion);
 						tbls2.add(t);
-					}
+					}*/
 
 					s = 0;
 					generateProgressBarParameterForRestoration(dateUTCInMs);
@@ -1933,12 +1933,15 @@ public class BackupRestoreManager {
 			long progressPosition = 0;
 			final ProgressMonitorDM progressMonitor=pg;
 			final ArrayList<Table<?>> tables=tbls;
-			final ArrayList<Table<?>> oldTables=tbls2;
+			//final ArrayList<Table<?>> oldTables=tbls2;
 			final int maxBufferSize = backupConfiguration.getMaxStreamBufferSizeForBackupRestoration();
 			final int maxBuffersNumber = backupConfiguration.getMaxStreamBufferNumberForBackupRestoration();
-
+			final Reference<Boolean> addResetDB=new Reference<>(true);
 			try{
 				databaseWrapper.getSynchronizer().startExtendedTransaction();
+
+
+
 				fileloop:while (currentFile!=null)
 				{
 					if (!currentFile.exists())
@@ -1968,6 +1971,22 @@ public class BackupRestoreManager {
 								long progressPosition=pp;
 								@Override
 								public Long run() throws Exception {
+									if (addResetDB.get())
+									{
+										addResetDB.set(false);
+
+										for (int i=tables.size()-1;i>=0;i--)
+										{
+											Table<?> t=tables.get(i);
+											try (Table.Lock ignored = new Table.WriteLock(t)) {
+												t.removeAllRecordsWithCascadeImpl();
+											}
+											catch (Exception e) {
+												throw DatabaseException.getDatabaseException(e);
+											}
+
+										}
+									}
 									for(;;) {
 										int startRecord = (int) in.currentPosition();
 										byte eventTypeCode = in.readByte();
@@ -1981,13 +2000,13 @@ public class BackupRestoreManager {
 										if (tableIndex >= tables.size())
 											throw new IOException();
 										Table<?> table = tables.get(tableIndex);
-										Table<?> oldTable = oldTables.get(tableIndex);
+										//Table<?> oldTable = oldTables.get(tableIndex);
 										if (eventType==DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE)
 										{
 											table.removeAllRecordsWithCascade();
 										}
 										else {
-											int s = in.readUnsignedShort24Bits();
+											int s = in.readUnsignedInt24Bits();
 											if (s == 0)
 												throw new IOException();
 											in.readFully(recordBuffer, 0, s);
@@ -1996,10 +2015,10 @@ public class BackupRestoreManager {
 													assert eventTypeCode == 2;
 													HashMap<String, Object> hm = new HashMap<>();
 													table.deserializeFields(hm, recordBuffer, 0, s, true, false, false);
-													DatabaseRecord drRecord = oldTable.getRecord(hm);
+													//DatabaseRecord drRecord = oldTable.getRecord(hm);
 
 													if (in.readBoolean()) {
-														s = in.readUnsignedShort24Bits();
+														s = in.readUnsignedInt24Bits();
 														in.readFully(recordBuffer, 0, s);
 														table.deserializeFields(hm, recordBuffer, 0, s, false, true, false);
 													}
@@ -2016,7 +2035,8 @@ public class BackupRestoreManager {
 													}
 													DatabaseRecord newRecord;
 													try {
-														newRecord = table.addUntypedRecord(hm, drRecord == null, null);
+														newRecord = table.addUntypedRecord(hm, true, null);
+														//newRecord = table.addUntypedRecord(hm, drRecord == null, null);
 													} catch (ConstraintsNotRespectedDatabaseException ignored) {
 														//TODO this exception occurs sometimes but should not. See why.
 														newRecord = table.getRecord(hm);
@@ -2025,12 +2045,15 @@ public class BackupRestoreManager {
 																fa.setValue(newRecord, hm.get(fa.getFieldName()));
 															}
 														}
-														table.updateUntypedRecord(newRecord, drRecord == null, null);
+														table.updateUntypedRecord(newRecord, true, null);
+														//table.updateUntypedRecord(newRecord, drRecord == null, null);
 													}
-													if (drRecord != null) {
+													databaseWrapper.getConnectionAssociatedWithCurrentThread().addEvent(table,
+															new TableEvent<>(-1, DatabaseEventType.ADD, null, newRecord, null), true);
+													/*if (drRecord != null) {
 														databaseWrapper.getConnectionAssociatedWithCurrentThread().addEvent(table,
 																new TableEvent<>(-1, DatabaseEventType.UPDATE, drRecord, newRecord, null), true);
-													}
+													}*/
 
 												}
 												break;
@@ -2039,7 +2062,7 @@ public class BackupRestoreManager {
 													table.deserializeFields(dr, recordBuffer, 0, s, true, false, false);
 
 													if (in.readBoolean()) {
-														s = in.readUnsignedShort24Bits();
+														s = in.readUnsignedInt24Bits();
 														in.readFully(recordBuffer, 0, s);
 														table.deserializeFields(dr, recordBuffer, 0, s, false, true, false);
 													}
@@ -2118,7 +2141,7 @@ public class BackupRestoreManager {
 						currentFile=null;
 
 				}
-				for (int i=tables.size()-1;i>=0;i--)
+				/*for (int i=tables.size()-1;i>=0;i--)
 				{
 					final Table<?> table=tables.get(i);
 					final Table<?> oldTable=oldTables.get(i);
@@ -2159,7 +2182,7 @@ public class BackupRestoreManager {
 						}
 					});
 
-				}
+				}*/
 
 				databaseWrapper.validateNewDatabaseVersionAndDeleteOldVersion(databaseConfiguration, oldVersion, newVersion);
 				databaseWrapper.getSynchronizer().validateExtendedTransaction();
@@ -2388,7 +2411,7 @@ public class BackupRestoreManager {
 			return this.fileReferenceTimeStamps.size() == 0;
 		}
 	}
-	abstract class AbstractTransaction
+	abstract static class AbstractTransaction
 	{
 		abstract void cancelTransaction() throws DatabaseException;
 
@@ -2403,7 +2426,7 @@ public class BackupRestoreManager {
 	{
 
 		@Override
-		void cancelTransaction() throws DatabaseException {
+		void cancelTransaction()  {
 
 		}
 
@@ -2423,12 +2446,12 @@ public class BackupRestoreManager {
 		}
 
 		@Override
-		void cancelTransaction(long backupPosition) throws DatabaseException {
+		void cancelTransaction(long backupPosition)  {
 
 		}
 
 		@Override
-		long getBackupPosition() throws DatabaseException {
+		long getBackupPosition()  {
 			return 0;
 		}
 	}

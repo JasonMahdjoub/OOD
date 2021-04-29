@@ -3850,7 +3850,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	protected int getMaxKeySize()
 	{
-		return Table.maxPrimaryKeysSizeBytes;
+		return Table.MAX_PRIMARY_KEYS_SIZE_BYTES;
 	}
 
 
@@ -4245,7 +4245,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 											}
 
-										}, "transaction=%transaction" + sb.toString(), parameters));
+										}, "transaction=%transaction" + sb, parameters));
 							}
 							if (eventr.get() != null) {
 								Set<DecentralizedValue> hosts = event.getHostsDestination();
@@ -6492,59 +6492,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
         assert db != null;
         return db.tables_per_versions.get(databaseVersion).tables_instances.values();
 	}
-
-	final long removeAllRecordsWithCascade(Package tablePackage) throws DatabaseException {
-		return (long)runTransaction(new Transaction() {
-			@Override
-			public Package getConcernedDatabasePackage() {
-				return tablePackage;
-			}
-			@Override
-			public Long run(DatabaseWrapper _sql_connection) throws DatabaseException {
-				if (!needsToLock())
-					lockRead();
-				Database d = sql_database.get(tablePackage);
-				if (!needsToLock())
-					unlockRead();
-				if (d==null)
-					throw new DatabaseException("The database "+tablePackage.getName()+" was not loaded !");
-				long total=0;
-				List<Class<? extends Table<?>>> l=d.getConfiguration().getDatabaseSchema().getSortedTableClasses();
-				for (int i=l.size()-1;i>=0;i--)
-				{
-					Class<? extends Table<?>> c =l.get(i);
-					Table<?> t=getTableInstance(c);
-					try (Table.Lock ignored = new Table.WriteLock(t)) {
-						long res=t.removeAllRecordsWithCascadeImpl();
-						if (res>0)
-							total+=res;
-					}
-					catch (Exception e) {
-						throw DatabaseException.getDatabaseException(e);
-					}
-
-				}
-					return total;
-
-			}
-
-			@Override
-			public void initOrReset() {
-
-			}
-
-			@Override
-			public TransactionIsolation getTransactionIsolation() {
-				return TransactionIsolation.TRANSACTION_READ_COMMITTED;
-			}
-
-			@Override
-			public boolean doesWriteData() {
-				return true;
-			}
-		}, true);
-	}
-
 
 	protected abstract String getOnUpdateCascadeSqlQuery();
 

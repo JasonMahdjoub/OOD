@@ -35,8 +35,6 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import android.util.Log;
-
 import com.distrimind.ood.database.exceptions.DatabaseException;
 
 import java.io.File;
@@ -67,7 +65,6 @@ public class InFileEmbeddedAndroidH2DatabaseFactory extends DatabaseFactory<Embe
 	static
 	{
 		try {
-			//noinspection JavaReflectionMemberAccess
 			ResultSet.class.getDeclaredMethod("getObject", int.class, Class.class);
 		} catch (NoSuchMethodException ignored) {
 			try {
