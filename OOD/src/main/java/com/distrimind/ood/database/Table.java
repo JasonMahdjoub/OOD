@@ -4823,10 +4823,52 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * @throws DatabaseException if a problem occurs
 	 */
 	@SuppressWarnings("UnusedReturnValue")
-	final long removeAllRecordsWithCascade() throws DatabaseException {
+	public final long removeAllRecordsWithCascade() throws DatabaseException {
 		try (Lock ignored = new WriteLock(this)) {
-			return removeRecordsWithCascade(null, null, false);
+			return (long)sql_connection.runTransaction(new Transaction() {
+				@Override
+				public Package getConcernedDatabasePackage() {
+					return Table.this.getClass().getPackage();
+				}
+				@Override
+				public Long run(DatabaseWrapper _sql_connection) throws DatabaseException {
+					return removeAllRecordsWithCascadeImpl();
+				}
+
+				@Override
+				public void initOrReset() {
+
+				}
+
+				@Override
+				public TransactionIsolation getTransactionIsolation() {
+					return TransactionIsolation.TRANSACTION_READ_COMMITTED;
+				}
+
+				@Override
+				public boolean doesWriteData() {
+					return true;
+				}
+			}, true);
 		} catch (Exception e) {
+			throw DatabaseException.getDatabaseException(e);
+		}
+	}
+
+	final long removeAllRecordsWithCascadeImpl() throws DatabaseException {
+		String sqlQuery = "DELETE FROM "+getSqlTableName()+sql_connection.getSqlComma();
+		try {
+			PreparedStatement statement= sql_connection.getConnectionAssociatedWithCurrentThread().getConnection().prepareStatement(sqlQuery, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE);
+			int res=statement.executeUpdate();
+
+			if (res!=0 && isLoadedInMemory()) {
+				memoryToRefreshWithCascade();
+			}
+			getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
+					new TableEvent<>(-1, DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE, null, null, null), true);
+			return res;
+
+		} catch (SQLException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
@@ -5411,8 +5453,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			}
 		}
 	}
-	@SuppressWarnings("SameParameterValue")
-	private long removeRecordsWithCascade(String where, final Map<String, Object> parameters,
+
+	/*private long removeRecordsWithCascade(String where, final Map<String, Object> parameters,
 										 boolean is_already_in_transaction) throws DatabaseException {
 
 		final RuleInstance rule = where==null?null:Interpreter.getRuleInstance(where);
@@ -5483,7 +5525,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			}
 		}, true);
 
-	}
+	}*/
 
 	@SuppressWarnings({"SameParameterValue", "unused"})
     private int removeRecords(final Filter<T> _filter, String where, final Map<String, Object> parameters,
@@ -8454,7 +8496,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	}
 
 	@SuppressWarnings("unused")
-    private static abstract class Lock implements AutoCloseable {
+    static abstract class Lock implements AutoCloseable {
 		protected Table<?> actual_table;
 		protected Lock previous_lock;
 
@@ -8505,7 +8547,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	}
 
 	static class WriteLock extends Lock {
-		public WriteLock(Table<?> _current_table) throws DatabaseException {
+		WriteLock(Table<?> _current_table) throws DatabaseException {
 			this(_current_table, new ArrayList<>(20), _current_table);
 		}
 

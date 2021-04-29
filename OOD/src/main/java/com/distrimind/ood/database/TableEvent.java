@@ -64,11 +64,15 @@ public class TableEvent<T extends DatabaseRecord> extends DatabaseEvent {
 			Set<DecentralizedValue> resentTo) {
 		if (type == null)
 			throw new NullPointerException("type");
-		if (oldDatabaseRecord == null && type != DatabaseEventType.ADD)
+		if (oldDatabaseRecord == null && type != DatabaseEventType.ADD && type!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE)
 			throw new NullPointerException("oldDatabaseRecord");
 		if (newDatabaseRecord == null && type != DatabaseEventType.REMOVE
-				&& type != DatabaseEventType.REMOVE_WITH_CASCADE)
+				&& type != DatabaseEventType.REMOVE_WITH_CASCADE
+				&& type!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE)
 			throw new NullPointerException("bewDatabaseRecord");
+		if (type==DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE &&
+				(oldDatabaseRecord!=null || newDatabaseRecord!=null))
+			throw new IllegalArgumentException();
 		this.id = id;
 		this.type = type;
 		this.oldDatabaseRecord = oldDatabaseRecord;
@@ -82,11 +86,16 @@ public class TableEvent<T extends DatabaseRecord> extends DatabaseEvent {
 			Table<T> table) {
 		if (type == null)
 			throw new NullPointerException("type");
-		if (oldDatabaseRecord == null && type != DatabaseEventType.ADD && (mapKeys == null || mapKeys.isEmpty()))
+		if (oldDatabaseRecord == null && type != DatabaseEventType.ADD && (mapKeys == null || mapKeys.isEmpty())
+				&& type!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE)
 			throw new NullPointerException("oldDatabaseRecord");
 		if (newDatabaseRecord == null && type != DatabaseEventType.REMOVE
-				&& type != DatabaseEventType.REMOVE_WITH_CASCADE)
+				&& type != DatabaseEventType.REMOVE_WITH_CASCADE
+				&& type!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE)
 			throw new NullPointerException("bewDatabaseRecord");
+		if (type==DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE &&
+				(oldDatabaseRecord!=null || newDatabaseRecord!=null || (mapKeys != null && !mapKeys.isEmpty())))
+			throw new IllegalArgumentException();
 		this.id = id;
 		this.type = type;
 		this.oldDatabaseRecord = oldDatabaseRecord;
