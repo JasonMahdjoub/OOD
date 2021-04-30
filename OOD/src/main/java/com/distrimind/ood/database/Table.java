@@ -153,8 +153,9 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	private final boolean nonDecentralizableAnnotation;
 	private volatile DatabaseCollisionsNotifier<T, Table<T>> databaseCollisionsNotifier;
 	private volatile DatabaseAnomaliesNotifier<T, Table<T>> databaseAnomaliesNotifier;
-	public static final int MAX_TABLE_NAME_SIZE_BYTES = 8192;
-	public static final int MAX_PRIMARY_KEYS_SIZE_BYTES = 3072;
+	public static final int MAX_TABLE_NAME_SIZE_IN_BYTES = 8192;
+	public static final int MAX_PRIMARY_KEYS_SIZE_IN_BYTES = 3072;
+	public static final int MAX_NON_KEYS_SIZE_IN_BYTES = 33554432;
 	private int databaseVersion=-1;
 	private boolean isPrimaryKeysAndForeignKeysSame;
 	private boolean hasBackupManager =false;

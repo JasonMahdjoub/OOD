@@ -476,8 +476,8 @@ public class BackupRestoreManager {
 			out.writeUnsignedInt16Bits(tableIndex);
 			if (eventType!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE) {
 				byte[] pks = table.serializeFieldsWithUnknownType(newRecord == null ? oldRecord : newRecord, true, false, false);
-				out.writeUnsignedInt24Bits(pks.length);
-				out.write(pks);
+				out.writeBytesArray(pks, false, Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES);
+
 
 				switch (eventType) {
 
@@ -486,8 +486,7 @@ public class BackupRestoreManager {
 						if (!table.isPrimaryKeysAndForeignKeysSame() && table.getForeignKeysFieldAccessors().size() > 0) {
 							out.writeBoolean(true);
 							byte[] fks = table.serializeFieldsWithUnknownType(newRecord, false, true, false);
-							out.writeUnsignedInt24Bits(fks.length);
-							out.write(fks);
+							out.writeBytesArray(fks, false, Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES);
 						} else
 							out.writeBoolean(false);
 
@@ -496,8 +495,7 @@ public class BackupRestoreManager {
 							out.writeBoolean(false);
 						} else {
 							out.writeBoolean(true);
-							out.writeInt(nonkeys.length);
-							out.write(nonkeys);
+							out.writeBytesArray(nonkeys, false, Table.MAX_NON_KEYS_SIZE_IN_BYTES);
 						}
 
 						break;
@@ -2006,10 +2004,8 @@ public class BackupRestoreManager {
 											table.removeAllRecordsWithCascade();
 										}
 										else {
-											int s = in.readUnsignedInt24Bits();
-											if (s == 0)
-												throw new IOException();
-											in.readFully(recordBuffer, 0, s);
+											int s=in.readBytesArray(recordBuffer, 0, false, Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES);
+											
 											switch (eventType) {
 												case ADD: {
 													assert eventTypeCode == 2;
@@ -2018,20 +2014,13 @@ public class BackupRestoreManager {
 													//DatabaseRecord drRecord = oldTable.getRecord(hm);
 
 													if (in.readBoolean()) {
-														s = in.readUnsignedInt24Bits();
-														in.readFully(recordBuffer, 0, s);
+														s=in.readBytesArray(recordBuffer, 0, false, Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES);
 														table.deserializeFields(hm, recordBuffer, 0, s, false, true, false);
 													}
 
 													if (in.readBoolean()) {
-														s = in.readInt();
-														if (s < 0)
-															throw new IOException();
-														if (s > 0) {
-															in.readFully(recordBuffer, 0, s);
-
-															table.deserializeFields(hm, recordBuffer, 0, s, false, false, true);
-														}
+														s=in.readBytesArray(recordBuffer, 0, false, Table.MAX_NON_KEYS_SIZE_IN_BYTES);
+														table.deserializeFields(hm, recordBuffer, 0, s, false, false, true);
 													}
 													DatabaseRecord newRecord;
 													try {
@@ -2048,7 +2037,7 @@ public class BackupRestoreManager {
 														table.updateUntypedRecord(newRecord, true, null);
 														//table.updateUntypedRecord(newRecord, drRecord == null, null);
 													}
-													/*databaseWrapper.getConnectionAssociatedWithCurrentThread().addEvent(table,
+													/*databaseWrapper.getConnectionAssociatedWithCurrentThread().addEvent(
 															new TableEvent<>(-1, DatabaseEventType.ADD, table, null, newRecord, null), true);*/
 													/*if (drRecord != null) {
 														databaseWrapper.getConnectionAssociatedWithCurrentThread().addEvent(table,
@@ -2418,7 +2407,7 @@ public class BackupRestoreManager {
 		abstract long getTransactionUTC();
 
 		abstract void validateTransaction(Long transactionID) throws DatabaseException;
-		abstract void backupRecordEvent(Table<?> table, TableEvent<?> _de) throws DatabaseException;
+		abstract void backupRecordEvent(TableEvent<?> _de) throws DatabaseException;
 		abstract void cancelTransaction(long backupPosition) throws DatabaseException;
 		abstract long getBackupPosition() throws DatabaseException;
 	}
@@ -2441,7 +2430,7 @@ public class BackupRestoreManager {
 		}
 
 		@Override
-		void backupRecordEvent(Table<?> table, TableEvent<?> _de) throws DatabaseException {
+		void backupRecordEvent(TableEvent<?> _de) throws DatabaseException {
 
 		}
 
@@ -2609,13 +2598,13 @@ public class BackupRestoreManager {
 		}
 
 		@Override
-		final void backupRecordEvent(Table<?> table, TableEvent<?> _de) throws DatabaseException {
+		final void backupRecordEvent(TableEvent<?> _de) throws DatabaseException {
 
 			if (closed)
 				return;
 			++transactionsNumber;
 
-			BackupRestoreManager.this.backupRecordEvent(out, table, _de.getOldDatabaseRecord(), _de.getNewDatabaseRecord(), _de.getType()/*, index*/);
+			BackupRestoreManager.this.backupRecordEvent(out, _de.getTable(), _de.getOldDatabaseRecord(), _de.getNewDatabaseRecord(), _de.getType()/*, index*/);
 		}
 
 	}

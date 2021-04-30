@@ -3850,7 +3850,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	protected int getMaxKeySize()
 	{
-		return Table.MAX_PRIMARY_KEYS_SIZE_BYTES;
+		return Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES;
 	}
 
 

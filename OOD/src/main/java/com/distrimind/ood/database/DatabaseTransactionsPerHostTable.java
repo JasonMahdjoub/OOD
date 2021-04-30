@@ -1058,34 +1058,17 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 							event.setType(eventTypeByte);
 							event.setTransaction(dte);
 							if (eventType!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE) {
-								int s = getDataInputStream().readUnsignedInt24Bits();
-								if (s == 0)
-									throw new IOException();
-								byte[] spks = new byte[s];
-								getDataInputStream().readFully(spks);
-
-								event.setConcernedSerializedPrimaryKey(spks);
+								event.setConcernedSerializedPrimaryKey(getDataInputStream().readBytesArray(false, Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES));
 								switch (eventType) {
 									case ADD:
 									case UPDATE: {
 										if (getDataInputStream().readBoolean()) {
-											s = getDataInputStream().readUnsignedInt24Bits();
-											byte[] snfk = new byte[s];
-											getDataInputStream().readFully(snfk);
-											event.setConcernedSerializedNewForeignKey(snfk);
+											event.setConcernedSerializedNewForeignKey(getDataInputStream().readBytesArray(false, Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES));
 										} else
 											event.setConcernedSerializedNewForeignKey(new byte[0]);
 
 										if (getDataInputStream().readBoolean()) {
-											s = getDataInputStream().readInt();
-											if (s < 0)
-												throw new IOException();
-											if (s > 0) {
-												byte[] snk = new byte[s];
-												getDataInputStream().readFully(snk);
-
-												event.setConcernedSerializedNewNonKey(snk);
-											}
+											event.setConcernedSerializedNewNonKey(getDataInputStream().readBytesArray(true, Table.MAX_NON_KEYS_SIZE_IN_BYTES));
 										}
 
 									}

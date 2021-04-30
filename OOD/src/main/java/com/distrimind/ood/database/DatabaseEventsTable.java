@@ -54,7 +54,6 @@ import java.util.Objects;
  * @since OOD 2.0
  */
 final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
-	static final int EVENT_MAX_SIZE_BYTES = 33554432;
 
 	static class Record extends AbstractRecord {
 		@NotNull
@@ -115,25 +114,25 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 			if (type==null)
 				throw new MessageExternalizationException(Integrity.FAIL);
 
-			String concernedTable=getDataInputStream().readString(false, Table.MAX_TABLE_NAME_SIZE_BYTES);
+			String concernedTable=getDataInputStream().readString(false, Table.MAX_TABLE_NAME_SIZE_IN_BYTES);
 			if (getDataOutputStream()!=null)
-				getDataOutputStream().writeString(concernedTable, false, Table.MAX_TABLE_NAME_SIZE_BYTES);
+				getDataOutputStream().writeString(concernedTable, false, Table.MAX_TABLE_NAME_SIZE_IN_BYTES);
 			event.setConcernedTable(concernedTable);
 			if (type!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE) {
-				byte[] spks=getDataInputStream().readBytesArray(false, Table.MAX_PRIMARY_KEYS_SIZE_BYTES);
+				byte[] spks=getDataInputStream().readBytesArray(false, Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES);
 				if (getDataOutputStream() != null)
-					getDataOutputStream().writeBytesArray(spks, false, Table.MAX_PRIMARY_KEYS_SIZE_BYTES);
+					getDataOutputStream().writeBytesArray(spks, false, Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES);
 				event.setConcernedSerializedPrimaryKey(spks);
 
 				if (type.needsNewValue()) {
-					byte[] foreignKeys=getDataInputStream().readBytesArray(false, Table.MAX_PRIMARY_KEYS_SIZE_BYTES);
+					byte[] foreignKeys=getDataInputStream().readBytesArray(false, Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES);
 					if (getDataOutputStream() != null)
-						getDataOutputStream().writeBytesArray(foreignKeys, false, Table.MAX_PRIMARY_KEYS_SIZE_BYTES);
+						getDataOutputStream().writeBytesArray(foreignKeys, false, Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES);
 					event.setConcernedSerializedNewForeignKey(foreignKeys);
 
-					byte[] nonPk=getDataInputStream().readBytesArray(false, EVENT_MAX_SIZE_BYTES);
+					byte[] nonPk=getDataInputStream().readBytesArray(false, Table.MAX_NON_KEYS_SIZE_IN_BYTES);
 					if (getDataOutputStream() != null)
-						getDataOutputStream().writeBytesArray(nonPk, false, EVENT_MAX_SIZE_BYTES);
+						getDataOutputStream().writeBytesArray(nonPk, false, Table.MAX_NON_KEYS_SIZE_IN_BYTES);
 
 					event.setConcernedSerializedNewNonKey(nonPk);
 
@@ -222,13 +221,13 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 		@Field(limit = 400)
 		private String concernedTable;
 
-		@Field(limit = Table.MAX_PRIMARY_KEYS_SIZE_BYTES, index = true)
+		@Field(limit = Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES, index = true)
 		private byte[] concernedSerializedPrimaryKey;
 
-		@Field(limit = Table.MAX_PRIMARY_KEYS_SIZE_BYTES)
+		@Field(limit = Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES)
 		private byte[] concernedSerializedNewForeignKey;
 
-		@Field(limit = Integer.MAX_VALUE, forceUsingBlobOrClob = true)
+		@Field(limit = Table.MAX_NON_KEYS_SIZE_IN_BYTES, forceUsingBlobOrClob = true)
 		private byte[] concernedSerializedNewNonKey;
 
 		AbstractRecord() {
@@ -288,15 +287,15 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 			oos.writeByte(transactionType);
 			byte type=getType();
 			oos.writeByte(getType());
-			oos.writeString(getConcernedTable(), false, Table.MAX_TABLE_NAME_SIZE_BYTES);
+			oos.writeString(getConcernedTable(), false, Table.MAX_TABLE_NAME_SIZE_IN_BYTES);
 			if (type!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE.getByte()) {
-				oos.writeBytesArray(getConcernedSerializedPrimaryKey(), false, Table.MAX_PRIMARY_KEYS_SIZE_BYTES);
+				oos.writeBytesArray(getConcernedSerializedPrimaryKey(), false, Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES);
 				if (Objects.requireNonNull(DatabaseEventType.getEnum(type)).needsNewValue()) {
 					byte[] foreignKeys = getConcernedSerializedNewForeignKey();
-					oos.writeBytesArray(foreignKeys, false, Table.MAX_PRIMARY_KEYS_SIZE_BYTES);
+					oos.writeBytesArray(foreignKeys, false, Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES);
 
 					byte[] nonKey = getConcernedSerializedNewNonKey();
-					oos.writeBytesArray(nonKey, false, EVENT_MAX_SIZE_BYTES);
+					oos.writeBytesArray(nonKey, false, Table.MAX_NON_KEYS_SIZE_IN_BYTES);
 				}
 			}
 		}
