@@ -809,6 +809,10 @@ public abstract class CommonDecentralizedTests {
 		public void setReplaceWhenCollisionDetected(boolean _replaceWhenCollisionDetected) {
 			replaceWhenCollisionDetected = _replaceWhenCollisionDetected;
 		}
+		public void resetCollisions()
+		{
+			collisionDetected=null;
+		}
 
 		public boolean isReplaceWhenCollisionDetected() {
 			return replaceWhenCollisionDetected;
@@ -2024,7 +2028,8 @@ public abstract class CommonDecentralizedTests {
 				int indexException = exceptionDuringTransaction ? ((int) (Math.random() * events.size())) : -1;
 				for (int i = 0; i < events.size(); i++) {
 					TableEvent<DatabaseRecord> te = events.get(i);
-					proceedEvent(getTable(db, te), te, indexException == i, manualKeys);
+					te.setTable(getTable(db, te));
+					proceedEvent(te, indexException == i, manualKeys);
 				}
 				return null;
 			}
@@ -2048,8 +2053,10 @@ public abstract class CommonDecentralizedTests {
 	}
 
 
-	protected void proceedEvent(Table<DatabaseRecord> table, final TableEvent<DatabaseRecord> event,
+	@SuppressWarnings("unchecked")
+	protected void proceedEvent(final TableEvent<DatabaseRecord> event,
 								boolean exceptionDuringTransaction, boolean manualKeys) throws Exception {
+		Table<DatabaseRecord> table=(Table<DatabaseRecord>)event.getTable();
 		switch (event.getType()) {
 
 			case ADD:
@@ -2091,7 +2098,7 @@ public abstract class CommonDecentralizedTests {
 							throw new IllegalAccessError();
 						if (dr2 == null)
 							throw new IllegalAccessError();
-						@SuppressWarnings("unchecked") Table<DatabaseRecord> table = (Table<DatabaseRecord>)te2.getTable();
+						Table<DatabaseRecord> table = getTable(db, te2);
 						if (te.getTable().getClass().getName().equals(table.getClass().getName())
 								&& table.equals(dr1, dr2)) {
 							it.remove();
@@ -2106,7 +2113,7 @@ public abstract class CommonDecentralizedTests {
 					TablePointed.Record recordRemoved = null;
 					for (Iterator<TableEvent<DatabaseRecord>> it = l.iterator(); it.hasNext(); ) {
 						TableEvent<DatabaseRecord> te2 = it.next();
-						@SuppressWarnings("unchecked") Table<DatabaseRecord> table = (Table<DatabaseRecord>)te2.getTable();
+						Table<DatabaseRecord> table = getTable(db, te2);
 						DatabaseRecord dr1 = te.getOldDatabaseRecord() == null ? te.getNewDatabaseRecord()
 								: te.getOldDatabaseRecord();
 						DatabaseRecord dr2 = te2.getOldDatabaseRecord() == null ? te2.getNewDatabaseRecord()
@@ -2131,7 +2138,7 @@ public abstract class CommonDecentralizedTests {
 					if (recordRemoved != null) {
 						for (Iterator<TableEvent<DatabaseRecord>> it = l.iterator(); it.hasNext(); ) {
 							TableEvent<DatabaseRecord> te2 = it.next();
-							@SuppressWarnings("unchecked") Table<DatabaseRecord> table = (Table<DatabaseRecord>) te2.getTable();
+							Table<DatabaseRecord> table = getTable(db, te2);
 							if (table.getClass().getName().equals(TablePointing.class.getName())) {
 								TablePointing.Record tp = te2.getOldDatabaseRecord() == null
 										? (TablePointing.Record) te2.getNewDatabaseRecord()
@@ -2173,12 +2180,12 @@ public abstract class CommonDecentralizedTests {
 
 			DatabaseRecord dr = table.getRecord(getMapPrimaryKeys(table, event.getNewDatabaseRecord()));
 			if (synchronizedOk)
-				Assert.assertNotNull(dr, event.getType().name() + " ; " + event.getTable());
+				Assert.assertNotNull(dr, event.getType().name() + " ; " + table);
 			Assert.assertEquals(table.equalsAllFields(dr, event.getNewDatabaseRecord()), synchronizedOk,
 					"Concerned event=" + event+", table event="+dr+", type="+event.getType()+", table="+table);
 		} else if (event.getType() == DatabaseEventType.REMOVE
 				|| event.getType() == DatabaseEventType.REMOVE_WITH_CASCADE) {
-			@SuppressWarnings("unchecked") Table<DatabaseRecord> table = (Table<DatabaseRecord>) event.getTable();
+			Table<DatabaseRecord> table = getTable(db, event);
 			DatabaseRecord dr = table.getRecord(getMapPrimaryKeys(table, event.getOldDatabaseRecord()));
 			if (synchronizedOk)
 				Assert.assertNull(dr);
@@ -2188,10 +2195,10 @@ public abstract class CommonDecentralizedTests {
 
 	protected void testCollision(CommonDecentralizedTests.Database db, TableEvent<DatabaseRecord> event, CommonDecentralizedTests.DetectedCollision collision)
 			throws DatabaseException {
-		@SuppressWarnings("unchecked") Table<DatabaseRecord> table = (Table<DatabaseRecord>) event.getTable();
+		Table<DatabaseRecord> table = getTable(db, event);
 		Assert.assertNotNull(collision);
 		Assert.assertEquals(collision.type, event.getType());
-		Assert.assertEquals(collision.concernedTable.getSqlTableName(), table.getSqlTableName());
+		Assert.assertEquals(collision.concernedTable.getSqlTableName(), table.getSqlTableName(), event.getTable().getSqlTableName());
 		Assert.assertNotEquals(collision.distantPeerID, db.getHostID());
 		switch (event.getType()) {
 			case ADD:

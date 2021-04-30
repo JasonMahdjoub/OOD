@@ -103,12 +103,10 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 		protected DatabaseEventsIterator(RandomInputStream dis) throws IOException {
 			this(dis, true);
 		}
-		protected void readNext(DatabaseEventsTable.AbstractRecord event, int position) throws IOException {
-			readNext(event, position, getDataInputStream().readByte());
-		}
-		protected void readNext(DatabaseEventsTable.AbstractRecord event, int position, byte eventTypeByte) throws IOException {
-			event.setPosition(position);
 
+		protected void readNext(DatabaseEventsTable.AbstractRecord event, int position) throws IOException {
+			event.setPosition(position);
+			final byte eventTypeByte=getDataInputStream().readByte();
 			event.setType(eventTypeByte);
 			if (getDataOutputStream()!=null)
 				getDataOutputStream().writeByte(eventTypeByte);

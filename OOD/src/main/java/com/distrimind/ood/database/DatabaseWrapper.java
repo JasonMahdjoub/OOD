@@ -3919,22 +3919,20 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		@SuppressWarnings("UnusedReturnValue")
-        boolean addEvent(Table<?> table, TableEvent<?> de, boolean applySynchro) throws DatabaseException {
-			if (table == null)
-				throw new NullPointerException("table");
+        boolean addEvent(TableEvent<?> de, boolean applySynchro) throws DatabaseException {
 			if (de == null)
 				throw new NullPointerException("de");
-			Package p = table.getClass().getPackage();
+			Package p = de.getTable().getClass().getPackage();
 
 			BackupRestoreManager.AbstractTransaction backupTransaction=getBackupManagerAndStartTransactionIfNecessary(p, applySynchro);
 			if (backupTransaction!=null)
-				backupTransaction.backupRecordEvent(table, de);
+				backupTransaction.backupRecordEvent(de);
 			if (!applySynchro)
 				return false;
 
 			if (p.equals(DatabaseWrapper.class.getPackage()))
 				return false;
-			if (!table.supportSynchronizationWithOtherPeers())
+			if (!de.getTable().supportSynchronizationWithOtherPeers())
 				return false;
 
 			if (!getDatabaseHooksTable().supportPackage(p))
@@ -3947,7 +3945,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				/*
 				 * if (!sessionLocked) { locker.lockWrite(); sessionLocked=true; }
 				 */
-				addNewTemporaryEvent(table, de);
+				addNewTemporaryEvent(de);
 				return true;
 
 			} else
@@ -4037,9 +4035,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 
-        void addNewTemporaryEvent(final Table<?> table, final TableEvent<?> event) throws DatabaseException {
+        void addNewTemporaryEvent(final TableEvent<?> event) throws DatabaseException {
 			final TransactionPerDatabase transaction = getAndCreateIfNecessaryTemporaryTransaction(
-					table.getDatabaseConfiguration().getDatabaseSchema().getPackage());
+					event.getTable().getDatabaseConfiguration().getDatabaseSchema().getPackage());
 			final AtomicInteger nb = new AtomicInteger(0);
 			try {
 				if (eventsStoredIntoMemory) {
@@ -4076,7 +4074,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 						if (event.getType() == DatabaseEventType.REMOVE_WITH_CASCADE || event.getType() == DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE) {
 							final List<Table<?>> tables = new ArrayList<>();
-							for (Class<? extends Table<?>> c : table.getTablesClassesPointingToThisTable()) {
+							for (Class<? extends Table<?>> c : event.getTable().getTablesClassesPointingToThisTable()) {
 								Table<?> t = getTableInstance(c);
 								tables.add(t);
 							}
@@ -4095,7 +4093,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 										t.deserializeFields(dr, _record.getConcernedSerializedNewForeignKey(), false,
 												true, false);
 										for (ForeignKeyFieldAccessor fa : t.getForeignKeysFieldAccessors()) {
-											if (fa.getPointedTable().getClass().equals(table.getClass())) {
+											if (fa.getPointedTable().getClass().equals(event.getTable().getClass())) {
 												if (event.getType() == DatabaseEventType.REMOVE_WITH_CASCADE) {
 													try (RandomByteArrayOutputStream baos = new RandomByteArrayOutputStream()) {
 														fa.serialize(baos, dr);
@@ -4185,7 +4183,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 								StringBuilder sb = new StringBuilder();
 								int index = 0;
 								Map<String, Object> parameters = new HashMap<>();
-								for (Class<? extends Table<?>> c : table.getTablesClassesPointingToThisTable()) {
+								for (Class<? extends Table<?>> c : event.getTable().getTablesClassesPointingToThisTable()) {
 									Table<?> t = getTableInstance(c);
 									tables.add(t);
 									if (sb.length() > 0)
@@ -4221,7 +4219,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 															for (ForeignKeyFieldAccessor fa : t
 																	.getForeignKeysFieldAccessors()) {
 																if (fa.getPointedTable().getClass()
-																		.equals(table.getClass())) {
+																		.equals(event.getTable().getClass())) {
 																	if (event.getType() == DatabaseEventType.REMOVE_WITH_CASCADE) {
 																		try (RandomByteArrayOutputStream baos = new RandomByteArrayOutputStream()) {
 																			fa.serialize(baos, dr);

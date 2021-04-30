@@ -57,7 +57,7 @@ public class TableEvent<T extends DatabaseRecord> extends DatabaseEvent {
 	private transient final Set<DecentralizedValue> hostsDestination;
 	private transient HashMap<String, Object> mapKeys = null;
 	private transient boolean oldAlreadyPresent = false;
-	private final Table<? extends T> table;
+	private Table<? extends T> table;
 
 
 	TableEvent(int id, DatabaseEventType type, Table<? extends T> table, T oldDatabaseRecord, T newDatabaseRecord,
@@ -153,4 +153,7 @@ public class TableEvent<T extends DatabaseRecord> extends DatabaseEvent {
 		return table;
 	}
 
+	void setTable(Table<? extends T> table) {
+		this.table = table;
+	}
 }
