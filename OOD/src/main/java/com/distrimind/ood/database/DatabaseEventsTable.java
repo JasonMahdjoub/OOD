@@ -254,17 +254,17 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 				throw new NullPointerException("wrapper");
 
 			type = _de.getType().getByte();
-
+			//noinspection unchecked
+			Table<T> table = (Table<T>)_de.getTable();
+			concernedTable = table.getClass().getName();
 			if (_de.getType()==DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE)
 			{
-				concernedTable=null;
 				concernedSerializedPrimaryKey=null;
 				concernedSerializedNewForeignKey=null;
 				concernedSerializedNewNonKey=null;
 			}
 			else {
-				Table<T> table = _de.getTable(wrapper);
-				concernedTable = table.getClass().getName();
+
 				if (_de.getMapKeys() != null) {
 					concernedSerializedPrimaryKey = table.serializePrimaryKeys(_de.getMapKeys());
 				} else if (_de.getOldDatabaseRecord() != null) {

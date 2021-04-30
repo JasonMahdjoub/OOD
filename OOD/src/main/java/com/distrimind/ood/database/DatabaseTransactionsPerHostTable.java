@@ -681,28 +681,28 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 								TableEvent<DatabaseRecord> addedEvent = null;
 								switch (type) {
 									case REMOVE_ALL_RECORDS_WITH_CASCADE:
-										localDTE.addEvent(addedEvent = new TableEvent<>(-1, type, null, null, null));
+										localDTE.addEvent(addedEvent = new TableEvent<>(-1, type, t, null, null, null));
 										break;
 									case ADD: {
 										if (drOld != null)
-											localDTE.addEvent(addedEvent = new TableEvent<>(-1, type, drOld, drNew, null, null, true, t));
+											localDTE.addEvent(addedEvent = new TableEvent<>(-1, type, t, drOld, drNew, null, null, true));
 										else
-											localDTE.addEvent(addedEvent = new TableEvent<>(-1, type, null, drNew, null));
+											localDTE.addEvent(addedEvent = new TableEvent<>(-1, type, t, null, drNew, null));
 									}
 									break;
 									case REMOVE:
 									case REMOVE_WITH_CASCADE: {
 										if (drOld == null) {
 											localDTE.addEvent(addedEvent =
-													new TableEvent<>(-1, type, null, drNew, null, mapKeys, false, t));
+													new TableEvent<>(-1, type, t, null, drNew, null, mapKeys, false));
 										} else {
-											localDTE.addEvent(addedEvent = new TableEvent<>(-1, type, drOld, drNew, null));
+											localDTE.addEvent(addedEvent = new TableEvent<>(-1, type, t, drOld, drNew, null));
 										}
 
 									}
 									break;
 									case UPDATE:
-										localDTE.addEvent(addedEvent = new TableEvent<>(-1, type, drOld, drNew, null));
+										localDTE.addEvent(addedEvent = new TableEvent<>(-1, type, t, drOld, drNew, null));
 										break;
 								}
 
@@ -722,10 +722,10 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 									case ADD:
 										if (addedEvent.isOldAlreadyPresent()) {
 											try {
-												addedEvent.getTable(getDatabaseWrapper()).updateUntypedRecord(addedEvent.getNewDatabaseRecord(), false, null);
+												addedEvent.getTable().updateUntypedRecord(addedEvent.getNewDatabaseRecord(), false, null);
 											} catch (ConstraintsNotRespectedDatabaseException | FieldDatabaseException | RecordNotFoundDatabaseException e) {
 
-												addedEvent.getTable(getDatabaseWrapper()).anomalyDetected(fromHook.getHostID(),
+												addedEvent.getTable().anomalyDetected(fromHook.getHostID(),
 														indirectTransaction ? directPeer.getHostID() : null,
 														SynchronizationAnomalyType.RECORD_TO_ADD_HAS_INCOMPATIBLE_PRIMARY_KEYS,
 														addedEvent.getMapKeys(),
@@ -733,18 +733,18 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 											}
 										} else {
 											try {
-												addedEvent.getTable(getDatabaseWrapper()).addUntypedRecord(addedEvent.getNewDatabaseRecord(),
+												addedEvent.getTable().addUntypedRecord(addedEvent.getNewDatabaseRecord(),
 														true, transactionToResendFinal, null);
 											} catch (ConstraintsNotRespectedDatabaseException e) {
 
-												addedEvent.getTable(getDatabaseWrapper()).anomalyDetected(fromHook.getHostID(),
+												addedEvent.getTable().anomalyDetected(fromHook.getHostID(),
 														indirectTransaction ? directPeer.getHostID() : null,
 														SynchronizationAnomalyType.RECORD_TO_ADD_ALREADY_PRESENT,
 														addedEvent.getMapKeys(),
 														addedEvent.getNewDatabaseRecord());
 											} catch (FieldDatabaseException | RecordNotFoundDatabaseException e) {
 
-												addedEvent.getTable(getDatabaseWrapper()).anomalyDetected(fromHook.getHostID(),
+												addedEvent.getTable().anomalyDetected(fromHook.getHostID(),
 														indirectTransaction ? directPeer.getHostID() : null,
 														SynchronizationAnomalyType.RECORD_TO_ADD_HAS_INCOMPATIBLE_PRIMARY_KEYS,
 														addedEvent.getMapKeys(),
@@ -755,18 +755,18 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 									case REMOVE:
 										if (addedEvent.getOldDatabaseRecord() != null) {
 											try {
-												addedEvent.getTable(getDatabaseWrapper()).removeUntypedRecord(addedEvent.getOldDatabaseRecord(),
+												addedEvent.getTable().removeUntypedRecord(addedEvent.getOldDatabaseRecord(),
 														transactionToResendFinal, null);
 											} catch (ConstraintsNotRespectedDatabaseException e) {
 
-												addedEvent.getTable(getDatabaseWrapper()).anomalyDetected(fromHook.getHostID(),
+												addedEvent.getTable().anomalyDetected(fromHook.getHostID(),
 														indirectTransaction ? directPeer.getHostID() : null,
 														SynchronizationAnomalyType.RECORD_TO_REMOVE_HAS_DEPENDENCIES,
 														addedEvent.getMapKeys(),
 														addedEvent.getNewDatabaseRecord());
 											} catch (RecordNotFoundDatabaseException e) {
 
-												addedEvent.getTable(getDatabaseWrapper()).anomalyDetected(fromHook.getHostID(),
+												addedEvent.getTable().anomalyDetected(fromHook.getHostID(),
 														indirectTransaction ? directPeer.getHostID() : null,
 														SynchronizationAnomalyType.RECORD_TO_REMOVE_NOT_FOUND,
 														addedEvent.getMapKeys(),
@@ -777,10 +777,10 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 									case REMOVE_WITH_CASCADE:
 										if (addedEvent.getOldDatabaseRecord() != null) {
 											try {
-												addedEvent.getTable(getDatabaseWrapper()).removeUntypedRecordWithCascade(addedEvent.getOldDatabaseRecord(), transactionToResendFinal, null);
+												addedEvent.getTable().removeUntypedRecordWithCascade(addedEvent.getOldDatabaseRecord(), transactionToResendFinal, null);
 											} catch (RecordNotFoundDatabaseException e) {
 
-												addedEvent.getTable(getDatabaseWrapper()).anomalyDetected(fromHook.getHostID(),
+												addedEvent.getTable().anomalyDetected(fromHook.getHostID(),
 														indirectTransaction ? directPeer.getHostID() : null,
 														SynchronizationAnomalyType.RECORD_TO_REMOVE_NOT_FOUND,
 														addedEvent.getMapKeys(),
@@ -791,17 +791,17 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 									case UPDATE:
 										if (addedEvent.getOldDatabaseRecord() == null) {
 											try {
-												addedEvent.getTable(getDatabaseWrapper()).addUntypedRecord(addedEvent.getNewDatabaseRecord(), true, false, null);
+												addedEvent.getTable().addUntypedRecord(addedEvent.getNewDatabaseRecord(), true, false, null);
 											} catch (ConstraintsNotRespectedDatabaseException e) {
 
-												addedEvent.getTable(getDatabaseWrapper()).anomalyDetected(fromHook.getHostID(),
+												addedEvent.getTable().anomalyDetected(fromHook.getHostID(),
 														indirectTransaction ? directPeer.getHostID() : null,
 														SynchronizationAnomalyType.RECORD_TO_ADD_ALREADY_PRESENT,
 														addedEvent.getMapKeys(),
 														addedEvent.getNewDatabaseRecord());
 											} catch (FieldDatabaseException | RecordNotFoundDatabaseException e) {
 
-												addedEvent.getTable(getDatabaseWrapper()).anomalyDetected(fromHook.getHostID(),
+												addedEvent.getTable().anomalyDetected(fromHook.getHostID(),
 														indirectTransaction ? directPeer.getHostID() : null,
 														SynchronizationAnomalyType.RECORD_TO_ADD_HAS_INCOMPATIBLE_PRIMARY_KEYS,
 														addedEvent.getMapKeys(),
@@ -810,11 +810,11 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 										} else {
 											try {
-												addedEvent.getTable(getDatabaseWrapper()).updateUntypedRecord(addedEvent.getNewDatabaseRecord(),
+												addedEvent.getTable().updateUntypedRecord(addedEvent.getNewDatabaseRecord(),
 														transactionToResendFinal, null);
 											} catch (ConstraintsNotRespectedDatabaseException | FieldDatabaseException | RecordNotFoundDatabaseException e) {
 
-												addedEvent.getTable(getDatabaseWrapper()).anomalyDetected(fromHook.getHostID(),
+												addedEvent.getTable().anomalyDetected(fromHook.getHostID(),
 														indirectTransaction ? directPeer.getHostID() : null,
 														SynchronizationAnomalyType.RECORD_TO_UPDATE_HAS_INCOMPATIBLE_PRIMARY_KEYS,
 														addedEvent.getMapKeys(),
@@ -823,7 +823,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 										}
 										break;
 									case REMOVE_ALL_RECORDS_WITH_CASCADE:
-										addedEvent.getTable(getDatabaseWrapper()).removeAllRecordsWithCascade();
+										addedEvent.getTable().removeAllRecordsWithCascade();
 										break;
 								}
 							}

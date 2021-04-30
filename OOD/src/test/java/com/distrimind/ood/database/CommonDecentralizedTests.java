@@ -1770,12 +1770,15 @@ public abstract class CommonDecentralizedTests {
 		}*/
 	}
 
+	private static final int numberEvents=40;
+
 	@Test(dataProvider = "provideDataForSynchroBetweenTwoPeers", dependsOnMethods = {
 			"testOldElementsAddedBeforeAddingSynchroSynchronized" })
 	public void testSynchroBetweenTwoPeers(boolean exceptionDuringTransaction, boolean generateDirectConflict,
-										   boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event)
+										   boolean peersInitiallyConnected)
 			throws Exception {
-		testSynchroBetweenPeersImpl(2, exceptionDuringTransaction, generateDirectConflict, peersInitiallyConnected, event);
+		for (TableEvent<DatabaseRecord> event : provideTableEventsForSynchro())
+			testSynchroBetweenPeersImpl(2, exceptionDuringTransaction, generateDirectConflict, peersInitiallyConnected, event);
 	}
 
 	@Test(dependsOnMethods = { "testSynchroBetweenTwoPeers" })
@@ -1787,9 +1790,10 @@ public abstract class CommonDecentralizedTests {
 
 	@Test(dataProvider = "provideDataSynchroBetweenThreePeers", dependsOnMethods = { "testSynchroBetweenTwoPeers" })
 	public void testSynchroBetweenThreePeers(boolean exceptionDuringTransaction, boolean generateDirectConflict,
-											 boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event)
+											 boolean peersInitiallyConnected)
 			throws Exception {
-		testSynchroBetweenPeersImpl(3, exceptionDuringTransaction, generateDirectConflict, peersInitiallyConnected, event);
+		for (TableEvent<DatabaseRecord> event : provideTableEventsForSynchro())
+			testSynchroBetweenPeersImpl(3, exceptionDuringTransaction, generateDirectConflict, peersInitiallyConnected, event);
 	}
 
 	@Test(dependsOnMethods = { "testSynchroBetweenThreePeers" })
@@ -1880,8 +1884,14 @@ public abstract class CommonDecentralizedTests {
 			testSynchronisation(db);
 	}
 
-
-	protected ArrayList<TableEvent<DatabaseRecord>> provideTableEvents(int number) throws DatabaseException {
+	protected ArrayList<TableEvent<DatabaseRecord>> provideTableEventsForThreads() throws DatabaseException {
+		return provideTableEvents(db1.getDbwrapper(), (int)(5.0+Math.random()*10.0));
+	}
+	protected ArrayList<TableEvent<DatabaseRecord>> provideTableEventsForSynchro() throws DatabaseException {
+		return provideTableEvents(db1.getDbwrapper(), (int)(numberEvents+Math.random()*10.0));
+	}
+	@SuppressWarnings({"unchecked", "RedundantCast"})
+	protected ArrayList<TableEvent<DatabaseRecord>> provideTableEvents(DatabaseWrapper wrapper, int number) throws DatabaseException {
 		ArrayList<TableEvent<DatabaseRecord>> res = new ArrayList<>();
 		ArrayList<TablePointed.Record> pointedRecord = new ArrayList<>();
 		ArrayList<DatabaseRecord> livingRecords = new ArrayList<>();
@@ -1909,7 +1919,10 @@ public abstract class CommonDecentralizedTests {
 										pointedRecord.get((int) (Math.random() * pointedRecord.size())));
 							break;
 					}
-					te = new TableEvent<>(-1, DatabaseEventType.ADD, null, record, null);
+					assert record != null;
+
+					te = new TableEvent<>(-1, DatabaseEventType.ADD, (Table<DatabaseRecord>)wrapper.getTableInstance(Table.getTableClass(
+							record.getClass())),null, record, null);
 					livingRecords.add(record);
 
 				}
@@ -1918,7 +1931,8 @@ public abstract class CommonDecentralizedTests {
 					if (livingRecords.isEmpty())
 						continue;
 					DatabaseRecord record = livingRecords.get((int) (Math.random() * livingRecords.size()));
-					te = new TableEvent<>(-1, DatabaseEventType.REMOVE, record, null, null);
+					te = new TableEvent<>(-1, DatabaseEventType.REMOVE, (Table<DatabaseRecord>)wrapper.getTableInstance(Table.getTableClass(
+							record.getClass())), record, null, null);
 					Assert.assertTrue(livingRecords.remove(record));
 
 					//noinspection SuspiciousMethodCalls
@@ -1929,7 +1943,8 @@ public abstract class CommonDecentralizedTests {
 					if (livingRecords.isEmpty())
 						continue;
 					DatabaseRecord record = livingRecords.get((int) (Math.random() * livingRecords.size()));
-					te = new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, record, null, null);
+					te = new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, (Table<DatabaseRecord>)wrapper.getTableInstance(Table.getTableClass(
+							record.getClass())), record, null, null);
 					Assert.assertTrue(livingRecords.remove(record));
 					//noinspection SuspiciousMethodCalls
 					pointedRecord.remove(record);
@@ -1957,7 +1972,8 @@ public abstract class CommonDecentralizedTests {
 						r.table2 = pointedRecord.get((int) (Math.random() * pointedRecord.size()));
 						recordNew = r;
 					}
-					te = new TableEvent<>(-1, DatabaseEventType.UPDATE, record, recordNew, null);
+					te = new TableEvent<>(-1, DatabaseEventType.UPDATE, (Table<DatabaseRecord>)wrapper.getTableInstance(Table.getTableClass(
+							record.getClass())), record, recordNew, null);
 				}
 				break;
 
@@ -1972,21 +1988,21 @@ public abstract class CommonDecentralizedTests {
 	}
 
 	@DataProvider(name = "provideDataForSynchroBetweenTwoPeers")
-	public Object[][] provideDataForSynchroBetweenTwoPeers() throws DatabaseException {
-		int numberEvents = 40;
-		Object[][] res = new Object[numberEvents * 2 * 3][];
+	public Object[][] provideDataForSynchroBetweenTwoPeers()  {
+		//int numberEvents = 40;
+		Object[][] res = new Object[2 * 3][];
 		int index = 0;
 
 		for (boolean exceptionDuringTransaction : new boolean[] { false, true }) {
 			boolean[] gdc = exceptionDuringTransaction ? new boolean[] { false } : new boolean[] { false, true };
 			for (boolean generateDirectConflict : gdc) {
 				for (boolean peersInitiallyConnected : new boolean[] { true, false }) {
-					List<TableEvent<DatabaseRecord>> l=provideTableEvents(numberEvents);
-					assert l.size()==numberEvents;
-					for (TableEvent<DatabaseRecord> te : l) {
+					//List<TableEvent<DatabaseRecord>> l=provideTableEvents(numberEvents);
+					//assert l.size()==numberEvents;
+					//for (TableEvent<DatabaseRecord> te : l) {
 						res[index++] = new Object[] {exceptionDuringTransaction,
-								generateDirectConflict, peersInitiallyConnected, te };
-					}
+								generateDirectConflict, peersInitiallyConnected};
+					//}
 				}
 			}
 		}
@@ -2008,7 +2024,7 @@ public abstract class CommonDecentralizedTests {
 				int indexException = exceptionDuringTransaction ? ((int) (Math.random() * events.size())) : -1;
 				for (int i = 0; i < events.size(); i++) {
 					TableEvent<DatabaseRecord> te = events.get(i);
-					proceedEvent(te.getTable(db.getDbwrapper()), te, indexException == i, manualKeys);
+					proceedEvent(getTable(db, te), te, indexException == i, manualKeys);
 				}
 				return null;
 			}
@@ -2031,13 +2047,14 @@ public abstract class CommonDecentralizedTests {
 
 	}
 
-	protected void proceedEvent(final Table<DatabaseRecord> table, final TableEvent<DatabaseRecord> event,
+
+	protected void proceedEvent(Table<DatabaseRecord> table, final TableEvent<DatabaseRecord> event,
 								boolean exceptionDuringTransaction, boolean manualKeys) throws Exception {
 		switch (event.getType()) {
 
 			case ADD:
 
-				table.addRecord(table.getMap(event.getNewDatabaseRecord(), true, true));
+				table.addRecord(event.getNewDatabaseRecord());
 				break;
 			case REMOVE:
 				table.removeRecord(event.getOldDatabaseRecord());
@@ -2048,9 +2065,10 @@ public abstract class CommonDecentralizedTests {
 			case UPDATE:
 				table.updateRecord(event.getNewDatabaseRecord());
 				break;
+
 		}
 		if (exceptionDuringTransaction)
-			throw new Exception();
+			throw new Exception(""+event);
 
 	}
 
@@ -2073,8 +2091,8 @@ public abstract class CommonDecentralizedTests {
 							throw new IllegalAccessError();
 						if (dr2 == null)
 							throw new IllegalAccessError();
-						Table<DatabaseRecord> table = te2.getTable(db.getDbwrapper());
-						if (te.getTable(db.getDbwrapper()).getClass().getName().equals(table.getClass().getName())
+						@SuppressWarnings("unchecked") Table<DatabaseRecord> table = (Table<DatabaseRecord>)te2.getTable();
+						if (te.getTable().getClass().getName().equals(table.getClass().getName())
 								&& table.equals(dr1, dr2)) {
 							it.remove();
 							break;
@@ -2088,7 +2106,7 @@ public abstract class CommonDecentralizedTests {
 					TablePointed.Record recordRemoved = null;
 					for (Iterator<TableEvent<DatabaseRecord>> it = l.iterator(); it.hasNext(); ) {
 						TableEvent<DatabaseRecord> te2 = it.next();
-						Table<DatabaseRecord> table = te2.getTable(db.getDbwrapper());
+						@SuppressWarnings("unchecked") Table<DatabaseRecord> table = (Table<DatabaseRecord>)te2.getTable();
 						DatabaseRecord dr1 = te.getOldDatabaseRecord() == null ? te.getNewDatabaseRecord()
 								: te.getOldDatabaseRecord();
 						DatabaseRecord dr2 = te2.getOldDatabaseRecord() == null ? te2.getNewDatabaseRecord()
@@ -2098,7 +2116,7 @@ public abstract class CommonDecentralizedTests {
 						if (dr2 == null)
 							throw new IllegalAccessError();
 
-						if (te.getTable(db.getDbwrapper()).getClass().getName().equals(table.getClass().getName())
+						if (te.getTable().getClass().getName().equals(table.getClass().getName())
 								&& table.equals(dr1, dr2)) {
 
 							it.remove();
@@ -2113,7 +2131,7 @@ public abstract class CommonDecentralizedTests {
 					if (recordRemoved != null) {
 						for (Iterator<TableEvent<DatabaseRecord>> it = l.iterator(); it.hasNext(); ) {
 							TableEvent<DatabaseRecord> te2 = it.next();
-							Table<DatabaseRecord> table = te2.getTable(db.getDbwrapper());
+							@SuppressWarnings("unchecked") Table<DatabaseRecord> table = (Table<DatabaseRecord>) te2.getTable();
 							if (table.getClass().getName().equals(TablePointing.class.getName())) {
 								TablePointing.Record tp = te2.getOldDatabaseRecord() == null
 										? (TablePointing.Record) te2.getNewDatabaseRecord()
@@ -2142,20 +2160,25 @@ public abstract class CommonDecentralizedTests {
 		return res;
 	}
 
+	@SuppressWarnings("unchecked")
+	Table<DatabaseRecord> getTable(CommonDecentralizedTests.Database db, TableEvent<DatabaseRecord> event) throws DatabaseException {
+		return (Table<DatabaseRecord>)db.getDbwrapper().getTableInstance(Table.getTableClass(event.getNewDatabaseRecord()==null?event.getOldDatabaseRecord().getClass():event.getNewDatabaseRecord().getClass()));
+	}
+
 	protected void testEventSynchronized(CommonDecentralizedTests.Database db, TableEvent<DatabaseRecord> event, boolean synchronizedOk)
 			throws DatabaseException {
 
 		if (event.getType() == DatabaseEventType.ADD || event.getType() == DatabaseEventType.UPDATE) {
-			Table<DatabaseRecord> table = event.getTable(db.getDbwrapper());
+			Table<DatabaseRecord> table = getTable(db, event);
 
 			DatabaseRecord dr = table.getRecord(getMapPrimaryKeys(table, event.getNewDatabaseRecord()));
 			if (synchronizedOk)
-				Assert.assertNotNull(dr, event.getType().name() + " ; " + event.getTable(db.getDbwrapper()));
+				Assert.assertNotNull(dr, event.getType().name() + " ; " + event.getTable());
 			Assert.assertEquals(table.equalsAllFields(dr, event.getNewDatabaseRecord()), synchronizedOk,
-					"Concerned event=" + event+", table event="+dr+", type="+event.getType());
+					"Concerned event=" + event+", table event="+dr+", type="+event.getType()+", table="+table);
 		} else if (event.getType() == DatabaseEventType.REMOVE
 				|| event.getType() == DatabaseEventType.REMOVE_WITH_CASCADE) {
-			Table<DatabaseRecord> table = event.getTable(db.getDbwrapper());
+			@SuppressWarnings("unchecked") Table<DatabaseRecord> table = (Table<DatabaseRecord>) event.getTable();
 			DatabaseRecord dr = table.getRecord(getMapPrimaryKeys(table, event.getOldDatabaseRecord()));
 			if (synchronizedOk)
 				Assert.assertNull(dr);
@@ -2165,7 +2188,7 @@ public abstract class CommonDecentralizedTests {
 
 	protected void testCollision(CommonDecentralizedTests.Database db, TableEvent<DatabaseRecord> event, CommonDecentralizedTests.DetectedCollision collision)
 			throws DatabaseException {
-		Table<DatabaseRecord> table = event.getTable(db.getDbwrapper());
+		@SuppressWarnings("unchecked") Table<DatabaseRecord> table = (Table<DatabaseRecord>) event.getTable();
 		Assert.assertNotNull(collision);
 		Assert.assertEquals(collision.type, event.getType());
 		Assert.assertEquals(collision.concernedTable.getSqlTableName(), table.getSqlTableName());
@@ -2226,7 +2249,7 @@ public abstract class CommonDecentralizedTests {
 	}
 
 	protected TableEvent<DatabaseRecord> clone(TableEvent<DatabaseRecord> event) {
-		return new TableEvent<>(event.getID(), event.getType(), clone(event.getOldDatabaseRecord()),
+		return new TableEvent<>(event.getID(), event.getType(),event.getTable(), clone(event.getOldDatabaseRecord()),
 				clone(event.getNewDatabaseRecord()), event.getHostsDestination());
 	}
 
@@ -2337,7 +2360,7 @@ public abstract class CommonDecentralizedTests {
 			disconnectSelectedDatabase(concernedDatabase);
 			for (int i = peersNumber; i < listDatabase.size(); i++) {
 				CommonDecentralizedTests.Database db = listDatabase.get(i);
-				testEventSynchronized(db, event, false);
+				testEventSynchronized(db, event, false );
 				db.clearPendingEvents();
 			}
 
@@ -2428,45 +2451,44 @@ public abstract class CommonDecentralizedTests {
 
 	}
 
-	public Object[][] provideDataForTransactionBetweenTwoPeers(int numberTransactions) throws DatabaseException {
-		Object[][] res = new Object[2 * numberTransactions][];
+	public Object[][] provideDataForTransactionBetweenTwoPeers2() {
+		Object[][] res = new Object[2][];
 		int index = 0;
 		for (boolean peersInitiallyConnected : new boolean[] { true, false }) {
-			for (int i = 0; i < numberTransactions; i++) {
-				res[index++] = new Object[] {peersInitiallyConnected,
-						provideTableEvents((int) (5.0 + Math.random() * 10.0)) };
+			//for (int i = 0; i < numberTransactions; i++) {
+				res[index++] = new Object[] {peersInitiallyConnected };
 
-			}
+			//}
 		}
 
 		return res;
 	}
 
 	@DataProvider(name = "provideDataSynchroBetweenThreePeers")
-	public Object[][] provideDataSynchroBetweenThreePeers() throws DatabaseException {
+	public Object[][] provideDataSynchroBetweenThreePeers() {
 		return provideDataForSynchroBetweenTwoPeers();
 	}
 
 	@DataProvider(name = "provideDataForTransactionBetweenTwoPeers")
-	public Object[][] provideDataForTransactionBetweenTwoPeers() throws DatabaseException {
-		return provideDataForTransactionBetweenTwoPeers(40);
+	public Object[][] provideDataForTransactionBetweenTwoPeers() {
+		return provideDataForTransactionBetweenTwoPeers2();
 	}
 	@DataProvider(name = "provideDataForTransactionBetweenTwoPeersForRestorationTests")
-	public Object[][] provideDataForTransactionBetweenTwoPeersForRestorationTests() throws DatabaseException {
-		return provideDataForTransactionBetweenTwoPeers(5);
+	public Object[][] provideDataForTransactionBetweenTwoPeersForRestorationTests() {
+		return provideDataForTransactionBetweenTwoPeers();
 	}
 
 	@DataProvider(name = "provideDataForTransactionBetweenThreePeers")
-	public Object[][] provideDataForTransactionBetweenThreePeers() throws DatabaseException {
+	public Object[][] provideDataForTransactionBetweenThreePeers()  {
 		return provideDataForTransactionBetweenTwoPeers();
 	}
 	@DataProvider(name = "provideDataForTransactionBetweenThreePeersForRestorationTests")
-	public Object[][] provideDataForTransactionBetweenThreePeersForRestorationTests() throws DatabaseException {
+	public Object[][] provideDataForTransactionBetweenThreePeersForRestorationTests() {
 		return provideDataForTransactionBetweenTwoPeersForRestorationTests();
 	}
 
 	@DataProvider(name = "provideDataForTransactionSynchros")
-	public Object[][] provideDataForTransactionSynchros() throws DatabaseException {
+	public Object[][] provideDataForTransactionSynchros() {
 		return provideDataForTransactionBetweenTwoPeers();
 	}
 
@@ -2476,19 +2498,7 @@ public abstract class CommonDecentralizedTests {
 		return provideDataForTransactionBetweenTwoPeers();
 	}
 
-	@DataProvider(name = "provideDataForTransactionSynchrosWithIndirectConnectionThreaded", parallel = true)
-	public Object[][] provideDataForTransactionSynchrosWithIndirectConnectionThreaded() throws DatabaseException {
-		int numberTransactions = 40;
-		Object[][] res = new Object[numberTransactions][];
-		int index = 0;
-		for (int i = 0; i < numberTransactions; i++) {
-			res[index++] = new Object[] { provideTableEvents((int) (5.0 + Math.random() * 10.0)) };
 
-		}
-
-		return res;
-
-	}
 
 	protected void testTransactionsSynchrosWithIndirectConnection(boolean peersInitiallyConnected,
 																  List<TableEvent<DatabaseRecord>> levents, boolean multiThread)

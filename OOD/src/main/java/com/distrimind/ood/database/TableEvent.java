@@ -36,11 +36,10 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
+import com.distrimind.util.DecentralizedValue;
+
 import java.util.HashMap;
 import java.util.Set;
-
-import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.util.DecentralizedValue;
 
 /**
  * 
@@ -58,12 +57,15 @@ public class TableEvent<T extends DatabaseRecord> extends DatabaseEvent {
 	private transient final Set<DecentralizedValue> hostsDestination;
 	private transient HashMap<String, Object> mapKeys = null;
 	private transient boolean oldAlreadyPresent = false;
-	private transient Table<T> table;
+	private final Table<? extends T> table;
 
-	TableEvent(int id, DatabaseEventType type, T oldDatabaseRecord, T newDatabaseRecord,
+
+	TableEvent(int id, DatabaseEventType type, Table<? extends T> table, T oldDatabaseRecord, T newDatabaseRecord,
 			Set<DecentralizedValue> resentTo) {
 		if (type == null)
 			throw new NullPointerException("type");
+		if (table==null)
+			throw new NullPointerException();
 		if (oldDatabaseRecord == null && type != DatabaseEventType.ADD && type!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE)
 			throw new NullPointerException("oldDatabaseRecord");
 		if (newDatabaseRecord == null && type != DatabaseEventType.REMOVE
@@ -75,17 +77,19 @@ public class TableEvent<T extends DatabaseRecord> extends DatabaseEvent {
 			throw new IllegalArgumentException();
 		this.id = id;
 		this.type = type;
+		this.table=table;
 		this.oldDatabaseRecord = oldDatabaseRecord;
 		this.newDatabaseRecord = newDatabaseRecord;
 		this.forced = resentTo != null && !resentTo.isEmpty();
 		this.hostsDestination = forced ? resentTo : null;
 	}
 
-	TableEvent(int id, DatabaseEventType type, T oldDatabaseRecord, T newDatabaseRecord,
-			Set<DecentralizedValue> resentTo, HashMap<String, Object> mapKeys, boolean oldAlreadyPresent,
-			Table<T> table) {
+	TableEvent(int id, DatabaseEventType type, Table<? extends T> table, T oldDatabaseRecord, T newDatabaseRecord,
+			Set<DecentralizedValue> resentTo, HashMap<String, Object> mapKeys, boolean oldAlreadyPresent) {
 		if (type == null)
 			throw new NullPointerException("type");
+		if (table==null)
+			throw new NullPointerException();
 		if (oldDatabaseRecord == null && type != DatabaseEventType.ADD && (mapKeys == null || mapKeys.isEmpty())
 				&& type!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE)
 			throw new NullPointerException("oldDatabaseRecord");
@@ -98,12 +102,12 @@ public class TableEvent<T extends DatabaseRecord> extends DatabaseEvent {
 			throw new IllegalArgumentException();
 		this.id = id;
 		this.type = type;
+		this.table=table;
 		this.oldDatabaseRecord = oldDatabaseRecord;
 		this.newDatabaseRecord = newDatabaseRecord;
 		this.forced = resentTo != null && !resentTo.isEmpty();
 		this.hostsDestination = forced ? resentTo : null;
 		this.oldAlreadyPresent = oldAlreadyPresent;
-		this.table = table;
 		this.mapKeys = mapKeys;
 	}
 
@@ -145,19 +149,8 @@ public class TableEvent<T extends DatabaseRecord> extends DatabaseEvent {
 		return newDatabaseRecord;
 	}
 
-	@SuppressWarnings("unchecked")
-	public Table<T> getTable(DatabaseWrapper wrapper) throws DatabaseException {
-		if (wrapper == null)
-			throw new NullPointerException();
-		if (table == null) {
-			if (oldDatabaseRecord == null && newDatabaseRecord == null)
-				throw new NullPointerException();
-			table = (Table<T>) wrapper.getTableInstance(Table.getTableClass(
-					oldDatabaseRecord == null ? newDatabaseRecord.getClass() : oldDatabaseRecord.getClass()));
-		} else if (table.getDatabaseWrapper() != wrapper) {
-			return (Table<T>) wrapper.getTableInstance(table.getClass());
-
-		}
+	public Table<? extends T> getTable() {
 		return table;
 	}
+
 }

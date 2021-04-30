@@ -4060,7 +4060,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 								if (event.getType() == DatabaseEventType.UPDATE
 										&& _record.getType() == DatabaseEventType.ADD.getByte()) {
 									eventr = new DatabaseEventsTable.Record(transaction.transaction,
-                                            new TableEvent<>(event.getID(), DatabaseEventType.ADD, null,
+                                            new TableEvent<>(event.getID(), DatabaseEventType.ADD, event.getTable(), null,
                                                     event.getNewDatabaseRecord(), event.getHostsDestination()),
 											DatabaseWrapper.this);
 								} else if ((event.getType() == DatabaseEventType.REMOVE
@@ -4160,7 +4160,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 																				  && _record.getType() == DatabaseEventType.ADD.getByte()) {
 																			  eventr.set(new DatabaseEventsTable.Record(transaction.transaction,
 																					  new TableEvent<>(event.getID(),
-																							  DatabaseEventType.ADD, null,
+																							  DatabaseEventType.ADD, event.getTable(), null,
 																							  event.getNewDatabaseRecord(),
 																							  event.getHostsDestination()),
 																					  DatabaseWrapper.this));

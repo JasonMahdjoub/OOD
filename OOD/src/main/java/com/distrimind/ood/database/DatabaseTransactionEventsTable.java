@@ -374,7 +374,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 							getDatabaseTransactionsPerHostTable().addRecord(r);
 						}
 					}
-				}, "id>%lastID" + sb.toString(), parameters);
+				}, "id>%lastID" + sb, parameters);
 
 
 			}
@@ -411,7 +411,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 			@Override
 			public boolean nextRecord(DatabaseRecord _record) throws DatabaseException {
 				DatabaseEventsTable.Record event = new DatabaseEventsTable.Record(transaction.get(),
-						new TableEvent<>(-1, DatabaseEventType.ADD, null, _record, null),
+						new TableEvent<>(-1, DatabaseEventType.ADD, table, null, _record, null),
 						getDatabaseWrapper());
 				event.setPosition(currentEventPos.getAndIncrement());
 				getDatabaseEventsTable().addRecord(event);

@@ -2049,7 +2049,7 @@ public class BackupRestoreManager {
 														//table.updateUntypedRecord(newRecord, drRecord == null, null);
 													}
 													databaseWrapper.getConnectionAssociatedWithCurrentThread().addEvent(table,
-															new TableEvent<>(-1, DatabaseEventType.ADD, null, newRecord, null), true);
+															new TableEvent<>(-1, DatabaseEventType.ADD, table, null, newRecord, null), true);
 													/*if (drRecord != null) {
 														databaseWrapper.getConnectionAssociatedWithCurrentThread().addEvent(table,
 																new TableEvent<>(-1, DatabaseEventType.UPDATE, drRecord, newRecord, null), true);
