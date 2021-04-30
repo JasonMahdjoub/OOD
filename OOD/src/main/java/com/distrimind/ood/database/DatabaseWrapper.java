@@ -4072,7 +4072,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							}
 						}
 
-						if (event.getType() == DatabaseEventType.REMOVE_WITH_CASCADE || event.getType() == DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE) {
+						/*if (event.getType() == DatabaseEventType.REMOVE_WITH_CASCADE || event.getType() == DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE) {
 							final List<Table<?>> tables = new ArrayList<>();
 							for (Class<? extends Table<?>> c : event.getTable().getTablesClassesPointingToThisTable()) {
 								Table<?> t = getTableInstance(c);
@@ -4116,7 +4116,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 									}
 								}
 							}
-						}
+						}*/
 
 						if (eventr != null) {
 							Set<DecentralizedValue> hosts = event.getHostsDestination();
@@ -4127,7 +4127,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							nb.incrementAndGet();
 						}
 
-					} catch (IllegalArgumentException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
+					} catch (IllegalArgumentException  e) {
 						throw DatabaseException.getDatabaseException(e);
 					}
 
@@ -4178,7 +4178,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 												eventr.get().getConcernedTable()));
 							}
 
-							if (event.getType() == DatabaseEventType.REMOVE_WITH_CASCADE || event.getType() == DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE) {
+							/*if (event.getType() == DatabaseEventType.REMOVE_WITH_CASCADE || event.getType() == DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE) {
 								final List<Table<?>> tables = new ArrayList<>();
 								StringBuilder sb = new StringBuilder();
 								int index = 0;
@@ -4247,7 +4247,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 											}
 
 										}, "transaction=%transaction" + sb+" and type!=%t1 and type!=%t2 and type!=%t3", parameters));
-							}
+							}*/
 							if (eventr.get() != null) {
 								Set<DecentralizedValue> hosts = event.getHostsDestination();
 								if (hosts != null)

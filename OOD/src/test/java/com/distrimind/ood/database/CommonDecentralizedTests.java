@@ -1636,8 +1636,9 @@ public abstract class CommonDecentralizedTests {
 	}
 
 	protected void addElements() throws DatabaseException {
-		for (CommonDecentralizedTests.Database db : listDatabase)
+		for (CommonDecentralizedTests.Database db : listDatabase) {
 			addElements(db);
+		}
 	}
 
 
