@@ -823,7 +823,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 										}
 										break;
 									case REMOVE_ALL_RECORDS_WITH_CASCADE:
-										addedEvent.getTable().removeAllRecordsWithCascade();
+										addedEvent.getTable().removeAllRecordsWithCascade(false, null);
 										break;
 								}
 							}
@@ -1100,6 +1100,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 								}
 							}
+
 							int previous=getDataInputStream().readInt();
 							if (previous != startRecord)
 								throw new IOException("previous="+previous+", startRecord="+startRecord);

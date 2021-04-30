@@ -4824,6 +4824,9 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 */
 	@SuppressWarnings("UnusedReturnValue")
 	public final long removeAllRecordsWithCascade() throws DatabaseException {
+		return removeAllRecordsWithCascade(true, null);
+	}
+	final long removeAllRecordsWithCascade(boolean synchronizeIfNecessary, Set<DecentralizedValue> hostsDestination) throws DatabaseException {
 		try (Lock ignored = new WriteLock(this)) {
 			return (long)sql_connection.runTransaction(new Transaction() {
 				@Override
@@ -4832,7 +4835,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				}
 				@Override
 				public Long run(DatabaseWrapper _sql_connection) throws DatabaseException {
-					return removeAllRecordsWithCascadeImpl();
+					return removeAllRecordsWithCascadeImpl(synchronizeIfNecessary, hostsDestination);
 				}
 
 				@Override
@@ -4855,7 +4858,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 	}
 
-	final long removeAllRecordsWithCascadeImpl() throws DatabaseException {
+	final long removeAllRecordsWithCascadeImpl(boolean synchronizeIfNecessary, Set<DecentralizedValue> hostsDestination) throws DatabaseException {
 		String sqlQuery = "DELETE FROM "+getSqlTableName()+sql_connection.getSqlComma();
 		try {
 			PreparedStatement statement= sql_connection.getConnectionAssociatedWithCurrentThread().getConnection().prepareStatement(sqlQuery, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE);
@@ -4864,8 +4867,9 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			if (res!=0 && isLoadedInMemory()) {
 				memoryToRefreshWithCascade();
 			}
-			getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
-					new TableEvent<>(-1, DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE, this, null, null, null), true);
+			if (hasBackupManager || synchronizeIfNecessary)
+				getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
+					new TableEvent<>(-1, DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE, this, null, null, hostsDestination), synchronizeIfNecessary);
 			return res;
 
 		} catch (SQLException e) {

@@ -4084,8 +4084,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							for (Iterator<DatabaseEventsTable.Record> it = transaction.events.iterator(); it
 									.hasNext();) {
 								DatabaseEventsTable.Record _record = it.next();
-								if (_record.getType()==DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE.getByte())
+								if (_record.getType()==DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE.getByte() ||
+										_record.getType()==DatabaseEventType.REMOVE_WITH_CASCADE.getByte() ||
+										_record.getType()==DatabaseEventType.REMOVE.getByte())
 									continue;
+
 								for (Table<?> t : tables) {
 									if (t.getClass().getName().equals(_record.getConcernedTable())) {
 										DatabaseRecord dr = t.getDefaultRecordConstructor().newInstance();
@@ -4126,8 +4129,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							nb.incrementAndGet();
 						}
 
-					} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
-							| InvocationTargetException e) {
+					} catch (IllegalArgumentException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
 						throw DatabaseException.getDatabaseException(e);
 					}
 
@@ -4197,6 +4199,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 								if (sb.length() > 0)
 									sb.append(")");
 								parameters.put("transaction", transaction.transaction);
+								parameters.put("t1", DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE.getByte());
+								parameters.put("t2", DatabaseEventType.REMOVE_WITH_CASCADE.getByte());
+								parameters.put("t3", DatabaseEventType.REMOVE.getByte());
 								nb.addAndGet(-(int) getDatabaseEventsTable()
 										.removeRecordsWithCascade(new Filter<DatabaseEventsTable.Record>() {
 
@@ -4205,8 +4210,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 													com.distrimind.ood.database.DatabaseEventsTable.Record _record)
 													throws DatabaseException {
 												try {
-													if (_record.getType()==DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE.getByte())
-														return false;
 													for (Table<?> t : tables) {
 														if (t.getClass().getName()
 																.equals(_record.getConcernedTable())) {
@@ -4245,7 +4248,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 											}
 
-										}, "transaction=%transaction" + sb, parameters));
+										}, "transaction=%transaction" + sb+" and type!=%t1 and type!=%t2 and type!=%t3", parameters));
 							}
 							if (eventr.get() != null) {
 								Set<DecentralizedValue> hosts = event.getHostsDestination();

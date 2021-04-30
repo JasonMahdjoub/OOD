@@ -1979,7 +1979,7 @@ public class BackupRestoreManager {
 										{
 											Table<?> t=tables.get(i);
 											try (Table.Lock ignored = new Table.WriteLock(t)) {
-												t.removeAllRecordsWithCascadeImpl();
+												t.removeAllRecordsWithCascadeImpl(true, null);
 											}
 											catch (Exception e) {
 												throw DatabaseException.getDatabaseException(e);
@@ -1988,6 +1988,7 @@ public class BackupRestoreManager {
 										}
 									}
 									for(;;) {
+
 										int startRecord = (int) in.currentPosition();
 										byte eventTypeCode = in.readByte();
 										if (eventTypeCode == -1)
@@ -1995,7 +1996,6 @@ public class BackupRestoreManager {
 										DatabaseEventType eventType = DatabaseEventType.getEnum(eventTypeCode);
 										if (eventType == null)
 											throw new IOException();
-
 										int tableIndex = in.readUnsignedShort();
 										if (tableIndex >= tables.size())
 											throw new IOException();
@@ -2048,8 +2048,8 @@ public class BackupRestoreManager {
 														table.updateUntypedRecord(newRecord, true, null);
 														//table.updateUntypedRecord(newRecord, drRecord == null, null);
 													}
-													databaseWrapper.getConnectionAssociatedWithCurrentThread().addEvent(table,
-															new TableEvent<>(-1, DatabaseEventType.ADD, table, null, newRecord, null), true);
+													/*databaseWrapper.getConnectionAssociatedWithCurrentThread().addEvent(table,
+															new TableEvent<>(-1, DatabaseEventType.ADD, table, null, newRecord, null), true);*/
 													/*if (drRecord != null) {
 														databaseWrapper.getConnectionAssociatedWithCurrentThread().addEvent(table,
 																new TableEvent<>(-1, DatabaseEventType.UPDATE, drRecord, newRecord, null), true);
