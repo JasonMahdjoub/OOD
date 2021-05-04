@@ -180,8 +180,14 @@ public class DatabaseConfigurationsBuilder {
 	private Transaction currentTransaction=null;
 	private boolean commitInProgress=false;
 
-	DatabaseConfigurations getConfigurations() {
+	public DatabaseConfigurations getConfigurations() {
 		return configurations;
+	}
+	public DatabaseConfiguration getDatabaseConfiguration(Package databasePackage) {
+		return configurations.getDatabaseConfiguration(databasePackage);
+	}
+	public DatabaseConfiguration getDatabaseConfiguration(String databasePackage) {
+		return configurations.getDatabaseConfiguration(databasePackage);
 	}
 
 	private void pushQuery(ConfigurationQuery query) {

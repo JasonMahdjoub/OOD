@@ -2022,13 +2022,13 @@ public class BackupRestoreManager {
 														s=in.readBytesArray(recordBuffer, 0, false, Table.MAX_NON_KEYS_SIZE_IN_BYTES);
 														table.deserializeFields(hm, recordBuffer, 0, s, false, false, true);
 													}
-													DatabaseRecord newRecord;
+
 													try {
-														newRecord = table.addUntypedRecord(hm, true, null);
+														 table.addUntypedRecord(hm, true, null);
 														//newRecord = table.addUntypedRecord(hm, drRecord == null, null);
 													} catch (ConstraintsNotRespectedDatabaseException ignored) {
 														//TODO this exception occurs sometimes but should not. See why.
-														newRecord = table.getRecord(hm);
+														DatabaseRecord newRecord = table.getRecord(hm);
 														for (FieldAccessor fa : table.getFieldAccessors()) {
 															if (!fa.isPrimaryKey()) {
 																fa.setValue(newRecord, hm.get(fa.getFieldName()));
@@ -2556,13 +2556,13 @@ public class BackupRestoreManager {
 			try {
 				synchronized (BackupRestoreManager.this) {
 
-
 					if (closed)
 						return;
 					if (transactionsNumber==0) {
 						cancelTransaction();
 						return;
 					}
+
 					saveTransactionQueue(out, nextTransactionReference, transactionUTC, firstTransactionID, transactionToSynchronize ? transactionID : null/*, index*/);
 
 					try {

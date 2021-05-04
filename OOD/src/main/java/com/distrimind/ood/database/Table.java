@@ -158,7 +158,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	public static final int MAX_NON_KEYS_SIZE_IN_BYTES = 33554432;
 	private int databaseVersion=-1;
 	private boolean isPrimaryKeysAndForeignKeysSame;
-	private boolean hasBackupManager =false;
+	boolean hasBackupManager =false;
 	public Constructor<T> getDefaultRecordConstructor() {
 		return default_constructor_field;
 	}
@@ -1235,7 +1235,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 			}
 			supportSynchronizationWithOtherPeers &= isGloballyDecentralized(new HashSet<>());
-			hasBackupManager =sql_connection.getBackupRestoreManager(getClass().getPackage())!=null;
+			hasBackupManager =sql_connection.getBackupRestoreManager(Table.this.getClass().getPackage())!=null;
 		} finally {
 			sql_connection.unlockWrite();
 
@@ -7462,7 +7462,6 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					if (hasBackupManager || synchronizeIfNecessary)
 						getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
 								new TableEvent<>(-1, DatabaseEventType.ADD, Table.this,null, instance, hostsDestinations), synchronizeIfNecessary);
-
 					if (isLoadedInMemory())
 						memoryToRefresh();
 					return instance;

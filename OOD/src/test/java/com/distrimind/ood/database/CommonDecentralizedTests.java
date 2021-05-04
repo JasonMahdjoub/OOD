@@ -655,6 +655,10 @@ public abstract class CommonDecentralizedTests {
 			tableAlone = dbwrapper.getTableInstance(TableAlone.class);
 			tablePointed = dbwrapper.getTableInstance(TablePointed.class);
 			tablePointing = dbwrapper.getTableInstance(TablePointing.class);
+			Assert.assertNotNull(tableAlone.getDatabaseWrapper().getDatabaseConfiguration(TablePointed.class.getPackage()));
+			Assert.assertNotNull(tablePointing.getDatabaseWrapper().getDatabaseConfiguration(TablePointed.class.getPackage()));
+			Assert.assertNotNull(tablePointed.getDatabaseWrapper().getDatabaseConfiguration(TablePointed.class.getPackage()));
+			Assert.assertNotNull(tableAlone.getDatabaseWrapper().getDatabaseConfiguration(TablePointed.class.getPackage()).getBackupConfiguration());
 			undecentralizableTableA1 = dbwrapper
 					.getTableInstance(UndecentralizableTableA1.class);
 			undecentralizableTableB1 = dbwrapper
@@ -996,6 +1000,9 @@ public abstract class CommonDecentralizedTests {
 							true),
 						false)
 				.commit();
+		Assert.assertNotNull(db.getDbwrapper().getDatabaseConfiguration(TablePointed.class.getPackage()));
+
+
 		db.initStep2();
 	}
 	void initCentralDatabaseBackup() throws DatabaseException {
@@ -1645,6 +1652,7 @@ public abstract class CommonDecentralizedTests {
 	@Test
 	public void testAddFirstElements() throws DatabaseException {
 		addElements();
+
 	}
 
 	@Test(dependsOnMethods = { "testAddFirstElements" })
@@ -1666,8 +1674,8 @@ public abstract class CommonDecentralizedTests {
 					/*.getSynchronizer().addHookForLocalDatabaseHost(db.getHostID(),
 					TablePointed.class.getPackage());*/
 			Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized());
-
 		}
+
 
 /*		for (CommonDecentralizedTests.Database db : listDatabase) {
 			for (CommonDecentralizedTests.Database other : listDatabase) {
@@ -1750,7 +1758,6 @@ public abstract class CommonDecentralizedTests {
 
 	@Test(dependsOnMethods = { "testInit" })
 	public void testAllConnect() throws Exception {
-
 		connectAllDatabase();
 		exchangeMessages();
 		testAllConnected();
@@ -1769,6 +1776,7 @@ public abstract class CommonDecentralizedTests {
 		testSynchronisation();
 		disconnectAllDatabase();
 		checkAllDatabaseInternalDataUsedForSynchro();
+
 		/*if (getBackupConfiguration()!=null) {
 			for (Database db : listDatabase)
 				db.getDbwrapper().getBackupRestoreManager(TableAlone.class.getPackage()).createBackupReference();

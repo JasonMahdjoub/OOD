@@ -596,6 +596,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		void updateCurrentVersion()
 		{
 			this.currentVersion=-1;
+			updateTablesThatCanGeneratesBackupEvents();
 		}
 
 		DatabaseConfiguration getConfiguration() {
@@ -746,10 +747,34 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (configuration.getBackupConfiguration()!=null)
 			{
 				this.backupRestoreManager =new BackupRestoreManager(wrapper, getDatabaseBackupFileName(databaseDirectory, configuration.getDatabaseSchema()), configuration, false);
+
 			}
 			checkOldDatabaseBackupsRemoving(wrapper, databaseDirectory, configuration);
+			updateTablesThatCanGeneratesBackupEvents();
 			if (databaseLogger!=null)
 				databaseLogger.info("Backup/restore loaded: "+configuration);
+		}
+
+		void setCurrentVersion(int version)
+		{
+			this.currentVersion=version;
+			updateTablesThatCanGeneratesBackupEvents();
+		}
+
+		void updateTablesThatCanGeneratesBackupEvents()
+		{
+			for (Map.Entry<Integer, DatabasePerVersion> e : tables_per_versions.entrySet())
+			{
+				if (e.getKey().equals(this.currentVersion))
+				{
+					for (Table<?> t : e.getValue().tables_instances.values())
+						t.hasBackupManager=this.backupRestoreManager!=null;
+				}
+				else
+					for (Table<?> t : e.getValue().tables_instances.values())
+						t.hasBackupManager=false;
+			}
+
 		}
 
 		void cancelCurrentDatabaseRestorationProcessFromCentralDatabaseBackup() {
@@ -5628,7 +5653,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 								st.close();
 							}
 							if (fdb!=null)
-								fdb.currentVersion=res;
+								fdb.setCurrentVersion(res);
 							return res;
 
 						} catch (Exception e) {
@@ -5684,6 +5709,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 									fa.initialize();
 							}
 							db.tables_per_versions.get(newDatabaseVersion).tables_instances = hm;
+							db.setCurrentVersion(newDatabaseVersion);
 						}
 					}
 					catch (SQLException e) {
