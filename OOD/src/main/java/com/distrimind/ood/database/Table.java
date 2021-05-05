@@ -153,8 +153,9 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	private final boolean nonDecentralizableAnnotation;
 	private volatile DatabaseCollisionsNotifier<T, Table<T>> databaseCollisionsNotifier;
 	private volatile DatabaseAnomaliesNotifier<T, Table<T>> databaseAnomaliesNotifier;
-	public static final int maxTableNameSizeBytes = 8192;
-	public static final int maxPrimaryKeysSizeBytes = 3072;
+	public static final int MAX_TABLE_NAME_SIZE_IN_BYTES = 8192;
+	public static final int MAX_PRIMARY_KEYS_SIZE_IN_BYTES = 3072;
+	public static final int MAX_NON_KEYS_SIZE_IN_BYTES = 33554432;
 	private int databaseVersion=-1;
 	private boolean isPrimaryKeysAndForeignKeysSame;
 	private boolean hasBackupManager =false;
@@ -4823,10 +4824,56 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * @throws DatabaseException if a problem occurs
 	 */
 	@SuppressWarnings("UnusedReturnValue")
-	final long removeAllRecordsWithCascade() throws DatabaseException {
+	public final long removeAllRecordsWithCascade() throws DatabaseException {
+		return removeAllRecordsWithCascade(true, null);
+	}
+	final long removeAllRecordsWithCascade(boolean synchronizeIfNecessary, Set<DecentralizedValue> hostsDestination) throws DatabaseException {
 		try (Lock ignored = new WriteLock(this)) {
-			return removeRecordsWithCascade(null, null, false);
+			return (long)sql_connection.runTransaction(new Transaction() {
+				@Override
+				public Package getConcernedDatabasePackage() {
+					return Table.this.getClass().getPackage();
+				}
+				@Override
+				public Long run(DatabaseWrapper _sql_connection) throws DatabaseException {
+					return removeAllRecordsWithCascadeImpl(synchronizeIfNecessary, hostsDestination);
+				}
+
+				@Override
+				public void initOrReset() {
+
+				}
+
+				@Override
+				public TransactionIsolation getTransactionIsolation() {
+					return TransactionIsolation.TRANSACTION_READ_COMMITTED;
+				}
+
+				@Override
+				public boolean doesWriteData() {
+					return true;
+				}
+			}, true);
 		} catch (Exception e) {
+			throw DatabaseException.getDatabaseException(e);
+		}
+	}
+
+	final long removeAllRecordsWithCascadeImpl(boolean synchronizeIfNecessary, Set<DecentralizedValue> hostsDestination) throws DatabaseException {
+		String sqlQuery = "DELETE FROM "+getSqlTableName()+sql_connection.getSqlComma();
+		try {
+			PreparedStatement statement= sql_connection.getConnectionAssociatedWithCurrentThread().getConnection().prepareStatement(sqlQuery, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE);
+			int res=statement.executeUpdate();
+
+			if (res!=0 && isLoadedInMemory()) {
+				memoryToRefreshWithCascade();
+			}
+			if (hasBackupManager || synchronizeIfNecessary)
+				getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
+					new TableEvent<>(-1, DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE, this, null, null, hostsDestination), synchronizeIfNecessary);
+			return res;
+
+		} catch (SQLException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
@@ -5411,8 +5458,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			}
 		}
 	}
-	@SuppressWarnings("SameParameterValue")
-	private long removeRecordsWithCascade(String where, final Map<String, Object> parameters,
+
+	/*private long removeRecordsWithCascade(String where, final Map<String, Object> parameters,
 										 boolean is_already_in_transaction) throws DatabaseException {
 
 		final RuleInstance rule = where==null?null:Interpreter.getRuleInstance(where);
@@ -5483,7 +5530,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			}
 		}, true);
 
-	}
+	}*/
 
 	@SuppressWarnings({"SameParameterValue", "unused"})
     private int removeRecords(final Filter<T> _filter, String where, final Map<String, Object> parameters,
@@ -5529,8 +5576,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 								_cursor.deleteRow();
 								++deleted_records_number;
 								_instance.__createdIntoDatabase = false;
-								getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
-										new TableEvent<>(-1, DatabaseEventType.REMOVE, _instance, null, null), true);
+								getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
+										new TableEvent<>(-1, DatabaseEventType.REMOVE, Table.this, _instance, null, null), true);
 							}
 							return !_filter.isTableParsingStopped();
 						} catch (Exception e) {
@@ -5621,8 +5668,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 								_cursor.deleteRow();
 								++deleted_records_number;
 								_instance.__createdIntoDatabase = false;
-								getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
-										new TableEvent<>(-1, DatabaseEventType.REMOVE, _instance, null, null), true);
+								getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
+										new TableEvent<>(-1, DatabaseEventType.REMOVE,Table.this,  _instance, null, null), true);
 							}
 							return !_filter.isTableParsingStopped();
 						} catch (Exception e) {
@@ -6187,8 +6234,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 								++deleted_records_number;
 								_instance.__createdIntoDatabase = false;
 								//updateMemoryForRemovingRecordWithCascade(_instance);
-								getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
-										new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, _instance, null,
+								getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
+										new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE,Table.this,  _instance, null,
 												null), true);
 							}
 							return !_filter.isTableParsingStopped();
@@ -6389,8 +6436,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						else if (nb > 1)
 							throw new DatabaseIntegrityException("Unexpected exception");
 						if (hasBackupManager || synchronizeIfNecessary)
-							getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
-									new TableEvent<>(-1, DatabaseEventType.REMOVE, _record, null, hostsDestinations), synchronizeIfNecessary);
+							getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
+									new TableEvent<>(-1, DatabaseEventType.REMOVE, Table.this,_record, null, hostsDestinations), synchronizeIfNecessary);
 					} catch (Exception e) {
 						throw DatabaseException.getDatabaseException(e);
 					}
@@ -6475,8 +6522,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						else if (nb > 1)
 							throw new DatabaseIntegrityException("Unexpected exception");
 						if (hasBackupManager || synchronizeIfNecessary)
-							getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
-									new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, _record, null,
+							getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
+									new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE,Table.this, _record, null,
 											hostsDestinations), synchronizeIfNecessary);
 					} catch (Exception e) {
 						throw DatabaseException.getDatabaseException(e);
@@ -6664,8 +6711,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						throw DatabaseException.getDatabaseException(e);
 					}
 					for (T r : _records)
-						getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
-								new TableEvent<>(-1, DatabaseEventType.REMOVE, r, null, null), true);
+						getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
+								new TableEvent<>(-1, DatabaseEventType.REMOVE, Table.this,r, null, null), true);
 					if (isLoadedInMemory()) {
 						memoryToRefresh();
 					}
@@ -6759,8 +6806,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					for (T r : _records)
 					{
 						onDeleted=true;
-						getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
-								new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, r, null, null), true);
+						getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
+								new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, Table.this,r, null, null), true);
 					}
 
 				} catch (Exception e) {
@@ -7413,8 +7460,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 							true);
 
 					if (hasBackupManager || synchronizeIfNecessary)
-						getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
-								new TableEvent<>(-1, DatabaseEventType.ADD, null, instance, hostsDestinations), synchronizeIfNecessary);
+						getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
+								new TableEvent<>(-1, DatabaseEventType.ADD, Table.this,null, instance, hostsDestinations), synchronizeIfNecessary);
 
 					if (isLoadedInMemory())
 						memoryToRefresh();
@@ -7848,13 +7895,13 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 							if (pkChanged) {
 
 								DatabaseWrapper.Session session=getDatabaseWrapper().getConnectionAssociatedWithCurrentThread();
-								session.addEvent(Table.this,
-										new TableEvent<>(-1, DatabaseEventType.REMOVE, oldRecord, null, resentTo), synchronizeIfNecessary);
-								session.addEvent(Table.this,
-										new TableEvent<>(-1, DatabaseEventType.ADD, null, _record, resentTo), synchronizeIfNecessary);
+								session.addEvent(
+										new TableEvent<>(-1, DatabaseEventType.REMOVE, Table.this,oldRecord, null, resentTo), synchronizeIfNecessary);
+								session.addEvent(
+										new TableEvent<>(-1, DatabaseEventType.ADD, Table.this,null, _record, resentTo), synchronizeIfNecessary);
 							} else
-								getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
-										new TableEvent<>(-1, DatabaseEventType.UPDATE, oldRecord, _record, resentTo), synchronizeIfNecessary);
+								getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
+										new TableEvent<>(-1, DatabaseEventType.UPDATE, Table.this,oldRecord, _record, resentTo), synchronizeIfNecessary);
 						}
 
 					} catch (Exception e) {
@@ -8115,16 +8162,16 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 										if (canBeRemoved) {
 											_result_set.deleteRow();
 											oneUpdated.set(true);
-											getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
-													new TableEvent<>(-1, DatabaseEventType.REMOVE, oldRecord, null, null), true);
+											getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
+													new TableEvent<>(-1, DatabaseEventType.REMOVE, Table.this,oldRecord, null, null), true);
 										}
 									} else if (_filter.hasToBeRemovedWithCascade()) {
 										_result_set.deleteRow();
 										//updateMemoryForRemovingRecordWithCascade(_instance);
 										updateWithCascade.set(true);
 										oneUpdated.set(true);
-										getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
-												new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, oldRecord, null,
+										getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
+												new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, Table.this,oldRecord, null,
 														null), true);
 									} else {
 										Map<String, Object> m = _filter.getModifications();
@@ -8184,8 +8231,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 											_result_set.updateRow();
 											updateWithCascade.set(true);
 											oneUpdated.set(true);
-											getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(Table.this,
-													new TableEvent<>(-1, DatabaseEventType.UPDATE, oldRecord, _instance, null), true);
+											getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
+													new TableEvent<>(-1, DatabaseEventType.UPDATE, Table.this,oldRecord, _instance, null), true);
 										}
 									}
 								}
@@ -8454,7 +8501,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	}
 
 	@SuppressWarnings("unused")
-    private static abstract class Lock implements AutoCloseable {
+    static abstract class Lock implements AutoCloseable {
 		protected Table<?> actual_table;
 		protected Lock previous_lock;
 
@@ -8505,7 +8552,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	}
 
 	static class WriteLock extends Lock {
-		public WriteLock(Table<?> _current_table) throws DatabaseException {
+		WriteLock(Table<?> _current_table) throws DatabaseException {
 			this(_current_table, new ArrayList<>(20), _current_table);
 		}
 

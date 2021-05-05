@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database.tests;
 
 import com.distrimind.ood.database.CommonDecentralizedTests;
+import com.distrimind.ood.database.DatabaseEventType;
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.TableEvent;
 import com.distrimind.ood.database.decentralizeddatabase.TableAlone;
@@ -43,9 +44,6 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -59,7 +57,7 @@ import java.util.List;
 public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonDecentralizedTests {
 
 
-	public TestCentralBackupWithDecentralizedDatabase() throws NoSuchProviderException, NoSuchAlgorithmException, IOException {
+	public TestCentralBackupWithDecentralizedDatabase() {
 		super();
 	}
 
@@ -111,8 +109,13 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 
 			if (generateDirectConflict) {
 				int i = 0;
-				for (CommonDecentralizedTests.Database db : concernedDatabase) {
+				for (CommonDecentralizedTests.Database db : listDatabase) {
 					db.setReplaceWhenCollisionDetected(i++ != 0);
+					db.resetCollisions();
+					db.getAnomalies().clear();
+				}
+				for (CommonDecentralizedTests.Database db : concernedDatabase) {
+
 					proceedEvent(db, false, clone(levents), true);
 
 				}
@@ -127,8 +130,11 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 					if (dcollision!=null) {
 						//Assert.assertNotNull(dcollision, "i=" + (i));
 						testCollision(db, event, dcollision);
+
 					}
-					Assert.assertTrue(db.getAnomalies().isEmpty(), db.getAnomalies().toString());
+					if (i==0 || (event.getType()!= DatabaseEventType.REMOVE && event.getType()!= DatabaseEventType.REMOVE_WITH_CASCADE))
+						Assert.assertTrue(db.getAnomalies().isEmpty(), ""+i+", eventT="+event.getType()+" : "+db.getAnomalies().toString());
+
 					++i;
 				}
 
@@ -169,7 +175,9 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 				// DetectedCollision collision=db.getDetectedCollision();
 				// Assert.assertNotNull(collision, "Database N°"+i);
 				//db.getAnomalies().clear();
-				Assert.assertTrue(db.getAnomalies().isEmpty(), ""+db.getAnomalies());
+				if (event.getType()!= DatabaseEventType.REMOVE && event.getType()!= DatabaseEventType.REMOVE_WITH_CASCADE)
+					Assert.assertTrue(db.getAnomalies().isEmpty(), ""+i+", eventT="+event.getType()+" : "+db.getAnomalies().toString());
+
 				//Assert.assertFalse(db.isNewDatabaseEventDetected());
 				testEventSynchronized(db, event, true);
 
@@ -213,9 +221,10 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 	// @Test(dataProvider = "provideDataForSynchroBetweenTwoPeers",
 	// dependsOnMethods={"testSynchroBetweenThreePeers2"})
 	public void testSynchroBetweenTwoPeersWithCentralBackup(boolean exceptionDuringTransaction, boolean generateDirectConflict,
-										   boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event)
+										   boolean peersInitiallyConnected)
 			throws Exception {
-		testSynchroBetweenPeersWithCentralBackupImpl(2, exceptionDuringTransaction, generateDirectConflict, event);
+		for (TableEvent<DatabaseRecord> event : provideTableEventsForSynchro())
+			testSynchroBetweenPeersWithCentralBackupImpl(2, exceptionDuringTransaction, generateDirectConflict, event);
 	}
 
 	@Test(dependsOnMethods = { "testSynchroBetweenTwoPeersWithCentralBackup" })
@@ -225,9 +234,10 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 
 	@Test(dataProvider = "provideDataSynchroBetweenThreePeers", dependsOnMethods = { "testSynchroAfterTestsBetweenTwoPeersWithCentralBackup" })
 	public void testSynchroBetweenThreePeersWithCentralBackup(boolean exceptionDuringTransaction, boolean generateDirectConflict,
-											 boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event)
+											 boolean peersInitiallyConnected)
 			throws Exception {
-		testSynchroBetweenPeersWithCentralBackupImpl(3, exceptionDuringTransaction, generateDirectConflict, event);
+		for (TableEvent<DatabaseRecord> event : provideTableEventsForSynchro())
+			testSynchroBetweenPeersWithCentralBackupImpl(3, exceptionDuringTransaction, generateDirectConflict, event);
 	}
 
 	@Test(dependsOnMethods = { "testSynchroBetweenThreePeersWithCentralBackup" })

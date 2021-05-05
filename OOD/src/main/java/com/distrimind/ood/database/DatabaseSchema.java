@@ -37,21 +37,24 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.i18n.DatabaseMessages;
-import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.ListClasses;
 import com.distrimind.util.progress_monitors.ProgressMonitorDM;
 import com.distrimind.util.progress_monitors.ProgressMonitorFactory;
 import com.distrimind.util.progress_monitors.ProgressMonitorParameters;
 import com.distrimind.util.properties.MultiFormatProperties;
-import static com.distrimind.ood.database.DatabaseConfiguration.SynchronizationType;
+
 import java.lang.reflect.Modifier;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.0.0
  */
+@SuppressWarnings("FieldMayBeFinal")
 public class DatabaseSchema extends MultiFormatProperties {
 
 
@@ -60,7 +63,7 @@ public class DatabaseSchema extends MultiFormatProperties {
 
 
 	private Set<Class<? extends Table<?>>> classes;
-	private transient List<Class<? extends Table<?>>> sortedClasses=null;
+	private transient ArrayList<Class<? extends Table<?>>> sortedClasses=null;
 	private DatabaseSchema oldSchema;
 
 	/**
@@ -123,7 +126,7 @@ public class DatabaseSchema extends MultiFormatProperties {
 			//noinspection unchecked
 			sortedClasses.add((Class<? extends Table<?>>)t.getClass());
 	}
-	public List<Class<? extends Table<?>>> getSortedTableClasses() throws DatabaseException {
+	public ArrayList<Class<? extends Table<?>>> getSortedTableClasses() throws DatabaseException {
 		if (sortedClasses==null)
 			throw new DatabaseException("This configuration was not loaded");
 		return sortedClasses;

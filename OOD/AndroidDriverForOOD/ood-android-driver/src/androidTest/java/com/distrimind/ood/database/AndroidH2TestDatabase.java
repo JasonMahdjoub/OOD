@@ -35,7 +35,6 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.distrimind.ood.StorageList;
 import com.distrimind.ood.database.exceptions.DatabaseException;
@@ -43,11 +42,12 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.File;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.sql.SQLException;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 /**
  * @author Jason Mahdjoub

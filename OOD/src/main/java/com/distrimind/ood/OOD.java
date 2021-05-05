@@ -77,6 +77,7 @@ public class OOD {
 									.addItem("Calendar is better serialized into database (better performances, and lower space)")
 									.addItem("Calendar is now comparable")
 									.addItem("Implementation of DatabaseConfigurationBuilder that centralize database loading, and database synchronization with decentralized peers and with central backup database")
+									.addItem("Add function Table.removeAllRecordsWithCascade()")
 					)
 					.addDescription(
 							new Description((short)2, (short)4, (short)0, Version.Type.STABLE, (short)1, "2020-02-11")

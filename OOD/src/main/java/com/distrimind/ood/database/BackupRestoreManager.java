@@ -77,7 +77,7 @@ public class BackupRestoreManager {
 	private final File backupDirectory;
 	private final BackupConfiguration backupConfiguration;
 	private final DatabaseConfiguration databaseConfiguration;
-	private final List<Class<? extends Table<?>>> classes;
+	private final ArrayList<Class<? extends Table<?>>> classes;
 	private static final Pattern fileReferencePattern = Pattern.compile("^backup-ood-([1-9][0-9]*)\\.dreference$");
 	private static final Pattern fileIncrementPattern = Pattern.compile("^backup-ood-([1-9][0-9]*)\\.dincrement$");
 
@@ -474,43 +474,39 @@ public class BackupRestoreManager {
 			if (tableIndex<0)
 				throw new IOException();
 			out.writeUnsignedInt16Bits(tableIndex);
-			byte[] pks=table.serializeFieldsWithUnknownType(newRecord==null?oldRecord:newRecord, true, false, false);
-			out.writeUnsignedInt24Bits(pks.length);
-			out.write(pks);
+			if (eventType!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE) {
+				byte[] pks = table.serializeFieldsWithUnknownType(newRecord == null ? oldRecord : newRecord, true, false, false);
+				out.writeBytesArray(pks, false, Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES);
 
-			switch(eventType)
-			{
-				case ADD:case UPDATE:
-				{
-					if (!table.isPrimaryKeysAndForeignKeysSame() && table.getForeignKeysFieldAccessors().size()>0) {
-						out.writeBoolean(true);
-						byte[] fks=table.serializeFieldsWithUnknownType(newRecord, false, true, false);
-						out.writeUnsignedInt24Bits(fks.length);
-						out.write(fks);
-					}
-					else
-						out.writeBoolean(false);
 
-					byte[] nonkeys=table.serializeFieldsWithUnknownType(newRecord, false,false, true);
-					if (nonkeys==null || nonkeys.length==0)
-					{
-						out.writeBoolean(false);
-					}
-					else
-					{
-						out.writeBoolean(true);
-						out.writeInt(nonkeys.length);
-						out.write(nonkeys);
-					}
+				switch (eventType) {
 
-					break;
+					case ADD:
+					case UPDATE: {
+						if (!table.isPrimaryKeysAndForeignKeysSame() && table.getForeignKeysFieldAccessors().size() > 0) {
+							out.writeBoolean(true);
+							byte[] fks = table.serializeFieldsWithUnknownType(newRecord, false, true, false);
+							out.writeBytesArray(fks, false, Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES);
+						} else
+							out.writeBoolean(false);
+
+						byte[] nonkeys = table.serializeFieldsWithUnknownType(newRecord, false, false, true);
+						if (nonkeys == null || nonkeys.length == 0) {
+							out.writeBoolean(false);
+						} else {
+							out.writeBoolean(true);
+							out.writeBytesArray(nonkeys, false, Table.MAX_NON_KEYS_SIZE_IN_BYTES);
+						}
+
+						break;
+					}
+					case REMOVE:
+					case REMOVE_WITH_CASCADE: {
+						break;
+					}
+					default:
+						throw new IllegalAccessError();
 				}
-				case REMOVE:case REMOVE_WITH_CASCADE:
-				{
-					break;
-				}
-				default:
-					throw new IllegalAccessError();
 			}
 			out.writeInt(start);
 			/*index.writeRecord(out, start, pks, 0, pks.length);*/
@@ -1810,7 +1806,7 @@ public class BackupRestoreManager {
 			File currentFile;
 			ProgressMonitorDM pg;
 			long s;
-			ArrayList<Table<?>> tbls, tbls2;
+			ArrayList<Table<?>> tbls/*, tbls2*/;
 			boolean reference=true;
 			LinkedList<Long> listIncrements;
 			boolean newVersionLoaded=false;
@@ -1882,11 +1878,11 @@ public class BackupRestoreManager {
 						tbls.add(t);
 					}
 
-					tbls2 = new ArrayList<>();
+					/*tbls2 = new ArrayList<>();
 					for (Class<? extends Table<?>> c : classes) {
 						Table<?> t = databaseWrapper.getTableInstance(c, oldVersion);
 						tbls2.add(t);
-					}
+					}*/
 
 					s = 0;
 					generateProgressBarParameterForRestoration(dateUTCInMs);
@@ -1935,12 +1931,15 @@ public class BackupRestoreManager {
 			long progressPosition = 0;
 			final ProgressMonitorDM progressMonitor=pg;
 			final ArrayList<Table<?>> tables=tbls;
-			final ArrayList<Table<?>> oldTables=tbls2;
+			//final ArrayList<Table<?>> oldTables=tbls2;
 			final int maxBufferSize = backupConfiguration.getMaxStreamBufferSizeForBackupRestoration();
 			final int maxBuffersNumber = backupConfiguration.getMaxStreamBufferNumberForBackupRestoration();
-
+			final Reference<Boolean> addResetDB=new Reference<>(true);
 			try{
 				databaseWrapper.getSynchronizer().startExtendedTransaction();
+
+
+
 				fileloop:while (currentFile!=null)
 				{
 					if (!currentFile.exists())
@@ -1970,7 +1969,24 @@ public class BackupRestoreManager {
 								long progressPosition=pp;
 								@Override
 								public Long run() throws Exception {
+									if (addResetDB.get())
+									{
+										addResetDB.set(false);
+
+										for (int i=tables.size()-1;i>=0;i--)
+										{
+											Table<?> t=tables.get(i);
+											try (Table.Lock ignored = new Table.WriteLock(t)) {
+												t.removeAllRecordsWithCascadeImpl(true, null);
+											}
+											catch (Exception e) {
+												throw DatabaseException.getDatabaseException(e);
+											}
+
+										}
+									}
 									for(;;) {
+
 										int startRecord = (int) in.currentPosition();
 										byte eventTypeCode = in.readByte();
 										if (eventTypeCode == -1)
@@ -1978,107 +1994,102 @@ public class BackupRestoreManager {
 										DatabaseEventType eventType = DatabaseEventType.getEnum(eventTypeCode);
 										if (eventType == null)
 											throw new IOException();
-
 										int tableIndex = in.readUnsignedShort();
 										if (tableIndex >= tables.size())
 											throw new IOException();
 										Table<?> table = tables.get(tableIndex);
-										Table<?> oldTable = oldTables.get(tableIndex);
-										int s = in.readUnsignedShort24Bits();
-										if (s==0)
-											throw new IOException();
-										in.readFully(recordBuffer, 0, s);
-										switch (eventType) {
-											case ADD:
-											{
-												assert eventTypeCode==2;
-												HashMap<String, Object> hm=new HashMap<>();
-												table.deserializeFields(hm, recordBuffer, 0, s, true, false, false);
-												DatabaseRecord drRecord=oldTable.getRecord(hm);
+										//Table<?> oldTable = oldTables.get(tableIndex);
+										if (eventType==DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE)
+										{
+											table.removeAllRecordsWithCascade();
+										}
+										else {
+											int s=in.readBytesArray(recordBuffer, 0, false, Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES);
+											
+											switch (eventType) {
+												case ADD: {
+													assert eventTypeCode == 2;
+													HashMap<String, Object> hm = new HashMap<>();
+													table.deserializeFields(hm, recordBuffer, 0, s, true, false, false);
+													//DatabaseRecord drRecord = oldTable.getRecord(hm);
 
-												if (in.readBoolean()) {
-													s = in.readUnsignedShort24Bits();
-													in.readFully(recordBuffer, 0, s);
-													table.deserializeFields(hm, recordBuffer, 0, s, false, true, false);
-												}
+													if (in.readBoolean()) {
+														s=in.readBytesArray(recordBuffer, 0, false, Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES);
+														table.deserializeFields(hm, recordBuffer, 0, s, false, true, false);
+													}
 
-												if (in.readBoolean()) {
-													s = in.readInt();
-													if (s<0)
-														throw new IOException();
-													if (s>0) {
-														in.readFully(recordBuffer, 0, s);
-
+													if (in.readBoolean()) {
+														s=in.readBytesArray(recordBuffer, 0, false, Table.MAX_NON_KEYS_SIZE_IN_BYTES);
 														table.deserializeFields(hm, recordBuffer, 0, s, false, false, true);
 													}
+													DatabaseRecord newRecord;
+													try {
+														newRecord = table.addUntypedRecord(hm, true, null);
+														//newRecord = table.addUntypedRecord(hm, drRecord == null, null);
+													} catch (ConstraintsNotRespectedDatabaseException ignored) {
+														//TODO this exception occurs sometimes but should not. See why.
+														newRecord = table.getRecord(hm);
+														for (FieldAccessor fa : table.getFieldAccessors()) {
+															if (!fa.isPrimaryKey()) {
+																fa.setValue(newRecord, hm.get(fa.getFieldName()));
+															}
+														}
+														table.updateUntypedRecord(newRecord, true, null);
+														//table.updateUntypedRecord(newRecord, drRecord == null, null);
+													}
+													/*databaseWrapper.getConnectionAssociatedWithCurrentThread().addEvent(
+															new TableEvent<>(-1, DatabaseEventType.ADD, table, null, newRecord, null), true);*/
+													/*if (drRecord != null) {
+														databaseWrapper.getConnectionAssociatedWithCurrentThread().addEvent(table,
+																new TableEvent<>(-1, DatabaseEventType.UPDATE, drRecord, newRecord, null), true);
+													}*/
+
 												}
-												DatabaseRecord newRecord;
-												try {
-													newRecord = table.addUntypedRecord(hm, drRecord == null, null);
-												}
-												catch (ConstraintsNotRespectedDatabaseException ignored)
-												{
-													//TODO this exception occurs sometimes but should not. See why.
-													newRecord=table.getRecord(hm);
-													for (FieldAccessor fa : table.getFieldAccessors())
-													{
-														if (!fa.isPrimaryKey())
-														{
-															fa.setValue(newRecord, hm.get(fa.getFieldName()));
+												break;
+												case UPDATE: {
+													DatabaseRecord dr = table.getNewRecordInstance(false);
+													table.deserializeFields(dr, recordBuffer, 0, s, true, false, false);
+
+													if (in.readBoolean()) {
+														s = in.readUnsignedInt24Bits();
+														in.readFully(recordBuffer, 0, s);
+														table.deserializeFields(dr, recordBuffer, 0, s, false, true, false);
+													}
+
+													if (in.readBoolean()) {
+														s = in.readInt();
+														if (s < 0)
+															throw new IOException();
+														if (s > 0) {
+															in.readFully(recordBuffer, 0, s);
+
+															table.deserializeFields(dr, recordBuffer, 0, s, false, false, true);
 														}
 													}
-													table.updateUntypedRecord(newRecord, drRecord==null, null);
-												}
-												if (drRecord!=null) {
-													databaseWrapper.getConnectionAssociatedWithCurrentThread().addEvent(table,
-														new TableEvent<>(-1, DatabaseEventType.UPDATE, drRecord, newRecord, null), true);
-												}
+													table.updateUntypedRecord(dr, true, null);
 
-											}
-											break;
-											case UPDATE: {
-												DatabaseRecord dr = table.getNewRecordInstance(false);
-												table.deserializeFields(dr, recordBuffer, 0, s, true, false, false);
-
-												if (in.readBoolean()) {
-													s = in.readUnsignedShort24Bits();
-													in.readFully(recordBuffer, 0, s);
-													table.deserializeFields(dr, recordBuffer, 0, s, false, true, false);
 												}
-
-												if (in.readBoolean()) {
-													s = in.readInt();
-													if (s<0)
+												break;
+												case REMOVE: {
+													HashMap<String, Object> pks = new HashMap<>();
+													table.deserializeFields(pks, recordBuffer, 0, s, true, false, false);
+													if (!table.removeRecord(pks))
 														throw new IOException();
-													if (s>0) {
-														in.readFully(recordBuffer, 0, s);
-
-														table.deserializeFields(dr, recordBuffer, 0, s, false, false, true);
-													}
 												}
-												table.updateUntypedRecord(dr, true, null);
+												break;
+												case REMOVE_WITH_CASCADE: {
+													HashMap<String, Object> pks = new HashMap<>();
+													table.deserializeFields(pks, recordBuffer, 0, s, true, false, false);
+													if (!table.removeRecordWithCascade(pks))
+														throw new IOException();
+
+												}
+												break;
+												default:
+													throw new IllegalAccessError();
+
 
 											}
-											break;
-											case REMOVE: {
-												HashMap<String, Object> pks = new HashMap<>();
-												table.deserializeFields(pks, recordBuffer, 0, s, true, false, false);
-												if (!table.removeRecord(pks))
-													throw new IOException();
-											}
-											break;
-											case REMOVE_WITH_CASCADE: {
-												HashMap<String, Object> pks = new HashMap<>();
-												table.deserializeFields(pks, recordBuffer, 0, s, true, false, false);
-												if (!table.removeRecordWithCascade(pks))
-													throw new IOException();
-
-											}
-											break;
-											default:
-												throw new IllegalAccessError();
-
-
 										}
 										if (in.readInt() != startRecord)
 											throw new IOException();
@@ -2119,7 +2130,7 @@ public class BackupRestoreManager {
 						currentFile=null;
 
 				}
-				for (int i=tables.size()-1;i>=0;i--)
+				/*for (int i=tables.size()-1;i>=0;i--)
 				{
 					final Table<?> table=tables.get(i);
 					final Table<?> oldTable=oldTables.get(i);
@@ -2160,7 +2171,7 @@ public class BackupRestoreManager {
 						}
 					});
 
-				}
+				}*/
 
 				databaseWrapper.validateNewDatabaseVersionAndDeleteOldVersion(databaseConfiguration, oldVersion, newVersion);
 				databaseWrapper.getSynchronizer().validateExtendedTransaction();
@@ -2389,14 +2400,14 @@ public class BackupRestoreManager {
 			return this.fileReferenceTimeStamps.size() == 0;
 		}
 	}
-	abstract class AbstractTransaction
+	abstract static class AbstractTransaction
 	{
 		abstract void cancelTransaction() throws DatabaseException;
 
 		abstract long getTransactionUTC();
 
 		abstract void validateTransaction(Long transactionID) throws DatabaseException;
-		abstract void backupRecordEvent(Table<?> table, TableEvent<?> _de) throws DatabaseException;
+		abstract void backupRecordEvent(TableEvent<?> _de) throws DatabaseException;
 		abstract void cancelTransaction(long backupPosition) throws DatabaseException;
 		abstract long getBackupPosition() throws DatabaseException;
 	}
@@ -2404,7 +2415,7 @@ public class BackupRestoreManager {
 	{
 
 		@Override
-		void cancelTransaction() throws DatabaseException {
+		void cancelTransaction()  {
 
 		}
 
@@ -2419,17 +2430,17 @@ public class BackupRestoreManager {
 		}
 
 		@Override
-		void backupRecordEvent(Table<?> table, TableEvent<?> _de) throws DatabaseException {
+		void backupRecordEvent(TableEvent<?> _de) throws DatabaseException {
 
 		}
 
 		@Override
-		void cancelTransaction(long backupPosition) throws DatabaseException {
+		void cancelTransaction(long backupPosition)  {
 
 		}
 
 		@Override
-		long getBackupPosition() throws DatabaseException {
+		long getBackupPosition()  {
 			return 0;
 		}
 	}
@@ -2587,13 +2598,13 @@ public class BackupRestoreManager {
 		}
 
 		@Override
-		final void backupRecordEvent(Table<?> table, TableEvent<?> _de) throws DatabaseException {
+		final void backupRecordEvent(TableEvent<?> _de) throws DatabaseException {
 
 			if (closed)
 				return;
 			++transactionsNumber;
 
-			BackupRestoreManager.this.backupRecordEvent(out, table, _de.getOldDatabaseRecord(), _de.getNewDatabaseRecord(), _de.getType()/*, index*/);
+			BackupRestoreManager.this.backupRecordEvent(out, _de.getTable(), _de.getOldDatabaseRecord(), _de.getNewDatabaseRecord(), _de.getType()/*, index*/);
 		}
 
 	}

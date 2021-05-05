@@ -1,6 +1,6 @@
 apply plugin: 'com.android.library'
 Properties props = new Properties()
-def propFile = file('../../../credentials.properties')
+def propFile = new File(project.getProjectDir().getParentFile().getParentFile().getParentFile(), 'credentials.properties')
 def artifactory_Url="https://artifactory.distri-mind.fr/artifactory"
 def user=""
 def pwd=""
@@ -36,12 +36,14 @@ repositories {
 
 android {
     compileSdkVersion 30
+    buildToolsVersion "30.0.3"
 
     defaultConfig {
         minSdkVersion 24
         targetSdkVersion 30
         versionCode 1
         versionName "1.0"
+
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles 'consumer-rules.pro'
@@ -62,10 +64,9 @@ android {
         androidTest.resources.srcDirs += '../../src/test/resources'
     }
     compileOptions {
-        sourceCompatibility = 1.8
-        targetCompatibility = 1.8
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
-    buildToolsVersion = '30.0.1'
 
 }
 apply from: '../../common_dependencies.gradle'

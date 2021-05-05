@@ -71,7 +71,8 @@ public class AndroidSQLiteDatabaseFactory extends DatabaseFactory<AndroidSQLiteD
     @Override
     protected AndroidSQLiteDatabaseWrapper newWrapperInstance(DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
         return new AndroidSQLiteDatabaseWrapper(packageName, databaseName, databaseConfigurations, databaseLifeCycles,
-                encryptionProfileProviderFactoryForCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
+                signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
+                encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
                 protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
                 getSecureRandom(), createDatabasesIfNecessaryAndCheckIt, useExternalCard);
     }

@@ -48,7 +48,9 @@ public enum DatabaseEventType {
 	UPDATE((byte) 1, true, true),
 	ADD((byte) 2, true, false),
 	REMOVE((byte) 4, false, true),
-	REMOVE_WITH_CASCADE((byte) 8, false, true);
+	REMOVE_WITH_CASCADE((byte) 8, false, true),
+	REMOVE_ALL_RECORDS_WITH_CASCADE((byte) 16, false, false);
+
 
 	private final byte type;
 	private final boolean hasNewValue;

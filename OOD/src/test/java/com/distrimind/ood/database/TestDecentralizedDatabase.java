@@ -42,9 +42,6 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -58,22 +55,19 @@ import java.util.List;
 public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests {
 	final BackupConfiguration backupConfiguration=new BackupConfiguration(10000, 20000, 1000000, 1000, null);
 
-	public TestDecentralizedDatabase() throws NoSuchProviderException, NoSuchAlgorithmException, IOException, DatabaseException {
+	public TestDecentralizedDatabase() {
 		super();
 	}
 
 	@DataProvider(name = "provideDataForIndirectSynchro")
-	public Object[][] provideDataForIndirectSynchro() throws DatabaseException {
-		int numberEvents = 40;
-		Object[][] res = new Object[numberEvents * 3][];
+	public Object[][] provideDataForIndirectSynchro()  {
+		Object[][] res = new Object[3][];
 		int index = 0;
 		for (boolean generateDirectConflict : new boolean[] { true, false }) {
 			boolean[] ict = generateDirectConflict ? new boolean[]{true} : new boolean[]{true, false};
 			for (boolean peersInitiallyConnected : ict) {
-				for (TableEvent<DatabaseRecord> te : provideTableEvents(numberEvents)) {
-					res[index++] = new Object[] {generateDirectConflict,
-							peersInitiallyConnected, te };
-				}
+				res[index++] = new Object[] {generateDirectConflict,
+						peersInitiallyConnected};
 			}
 		}
 		return res;
@@ -82,6 +76,10 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 
 	@Test(dataProvider = "provideDataForIndirectSynchro", dependsOnMethods = {
 			"testSynchroAfterTestsBetweenThreePeers" })
+	public void testIndirectSynchro(boolean generateDirectConflict, boolean peersInitiallyConnected) throws Exception {
+		for (TableEvent<DatabaseRecord> event : provideTableEventsForSynchro())
+			testIndirectSynchro(generateDirectConflict, peersInitiallyConnected, event);
+	}
 	public void testIndirectSynchro(boolean generateDirectConflict, boolean peersInitiallyConnected,
 			TableEvent<DatabaseRecord> event) throws Exception {
 		List<TableEvent<DatabaseRecord>> levents = Collections.singletonList(event);
@@ -94,7 +92,7 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 			{
 				db.setReplaceWhenCollisionDetected(i++ != 0);
 
-				proceedEvent(db, false, levents);
+				proceedEvent(db, false, clone(levents));
 			}
 			listDatabase.get(1).setReplaceWhenCollisionDetected(false);
 			connectSelectedDatabase(segmentA);
@@ -235,14 +233,18 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 	}
 
 	@DataProvider(name = "provideDataForIndirectSynchroWithIndirectConnection")
-	public Object[][] provideDataForIndirectSynchroWithIndirectConnection() throws DatabaseException {
+	public Object[][] provideDataForIndirectSynchroWithIndirectConnection()  {
 		return provideDataForIndirectSynchro();
 	}
 
 	@Test(dataProvider = "provideDataForIndirectSynchroWithIndirectConnection", dependsOnMethods = {
 			"testIndirectSynchro" })
-	// @Test(dataProvider = "provideDataForIndirectSynchroWithIndirectConnection",
-	// dependsOnMethods={"testOldElementsAddedBeforeAddingSynchroSynchronized"})
+	public void testIndirectSynchroWithIndirectConnection(boolean generateDirectConflict,
+														  boolean peersInitiallyConnected)
+			throws Exception {
+		for (TableEvent<DatabaseRecord> event : provideTableEventsForSynchro())
+			testIndirectSynchroWithIndirectConnection(generateDirectConflict, peersInitiallyConnected, event);
+	}
 	public void testIndirectSynchroWithIndirectConnection(boolean generateDirectConflict,
 			boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event)
 			throws Exception {
@@ -254,7 +256,7 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 			int i = 0;
 			for (Database db : indirectDatabase) {
 				db.setReplaceWhenCollisionDetected(i++ != 0);
-				proceedEvent(db, false, levents);
+				proceedEvent(db, false, clone(levents));
 			}
 			segmentA[1].setReplaceWhenCollisionDetected(false);
 			connectSelectedDatabase(segmentA);
@@ -333,8 +335,10 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 
 	@Test(dataProvider = "provideDataForTransactionBetweenTwoPeers", dependsOnMethods = {
 			"testSynchroAfterPostIndirectTestsBetweenPeers" })
-	public void testTransactionBetweenTwoPeers(boolean peersInitiallyConnected,
-			List<TableEvent<DatabaseRecord>> levents) throws Exception {
+	public void testTransactionBetweenTwoPeers(boolean peersInitiallyConnected) throws Exception {
+		testTransactionBetweenTwoPeers(peersInitiallyConnected, provideTableEventsForSynchro());
+	}
+	public void testTransactionBetweenTwoPeers(boolean peersInitiallyConnected, ArrayList<TableEvent<DatabaseRecord>> levents) throws Exception {
 		testTransactionBetweenPeers(2, peersInitiallyConnected, levents, false);
 	}
 
@@ -342,8 +346,10 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 
 	@Test(dataProvider = "provideDataForTransactionBetweenThreePeers", dependsOnMethods = {
 			"testTransactionBetweenTwoPeers" })
-	public void testTransactionBetweenThreePeers(boolean peersInitiallyConnected,
-			List<TableEvent<DatabaseRecord>> levents) throws Exception {
+	public void testTransactionBetweenThreePeers(boolean peersInitiallyConnected) throws Exception {
+		testTransactionBetweenThreePeers(peersInitiallyConnected, provideTableEventsForSynchro());
+	}
+	public void testTransactionBetweenThreePeers(boolean peersInitiallyConnected, ArrayList<TableEvent<DatabaseRecord>> levents) throws Exception {
 		testTransactionBetweenPeers(3, peersInitiallyConnected, levents, false);
 	}
 
@@ -358,11 +364,11 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 		connectSelectedDatabase(concernedDatabase);
 	}
 
-	@Test(dataProvider = "provideDataForTransactionSynchrosWithIndirectConnectionThreaded", dependsOnMethods = {
+	@Test(dependsOnMethods = {
 			"preTestTransactionSynchros" }, invocationCount = 4)
-	public void testTransactionSynchros(List<TableEvent<DatabaseRecord>> levents)
+	public void testTransactionSynchros()
 			throws Exception {
-		testTransactionBetweenPeers(3, true, levents, true);
+		testTransactionBetweenPeers(3, true, provideTableEventsForThreads(), true);
 	}
 
 	@Test(dependsOnMethods = { "testTransactionSynchros" })
@@ -381,32 +387,18 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 	}
 
 	@DataProvider(name = "provideDataForTransactionSynchrosWithIndirectConnection")
-	public Object[][] provideDataForTransactionSynchrosWithIndirectConnection() throws DatabaseException {
+	public Object[][] provideDataForTransactionSynchrosWithIndirectConnection()  {
 		return provideDataForTransactionBetweenTwoPeers();
 	}
 
-	@DataProvider(name = "provideDataForTransactionSynchrosWithIndirectConnectionThreaded", parallel = true)
-	public Object[][] provideDataForTransactionSynchrosWithIndirectConnectionThreaded() throws DatabaseException {
-		int numberTransactions = 40;
-		Object[][] res = new Object[numberTransactions][];
-		int index = 0;
-		for (int i = 0; i < numberTransactions; i++) {
-			res[index++] = new Object[] { provideTableEvents((int) (5.0 + Math.random() * 10.0)) };
-
-		}
-
-		return res;
-
-	}
 
 
 
 	@Test(dataProvider = "provideDataForTransactionSynchrosWithIndirectConnection", dependsOnMethods = {
 			"postTestTransactionSynchros" })
-	public void testTransactionSynchrosWithIndirectConnection(boolean peersInitiallyConnected,
-			List<TableEvent<DatabaseRecord>> levents) throws Exception {
+	public void testTransactionSynchrosWithIndirectConnection(boolean peersInitiallyConnected) throws Exception {
 		synchronized (TestDecentralizedDatabase.class) {
-			testTransactionsSynchrosWithIndirectConnection(peersInitiallyConnected, levents, false);
+			testTransactionsSynchrosWithIndirectConnection(peersInitiallyConnected, provideTableEventsForSynchro(), false);
 		}
 	}
 
@@ -421,11 +413,11 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 
 	}
 
-	@Test(dataProvider = "provideDataForTransactionSynchrosWithIndirectConnectionThreaded", dependsOnMethods = {
+	@Test(dependsOnMethods = {
 			"preTestTransactionSynchrosWithIndirectConnectionThreaded" })
-	public void testTransactionSynchrosWithIndirectConnectionThreaded(List<TableEvent<DatabaseRecord>> levents)
+	public void testTransactionSynchrosWithIndirectConnectionThreaded()
 			throws Exception {
-		testTransactionsSynchrosWithIndirectConnection(true, levents, true);
+		testTransactionsSynchrosWithIndirectConnection(true, provideTableEventsForThreads(), true);
 	}
 
 	@Test(dependsOnMethods = { "testTransactionSynchrosWithIndirectConnectionThreaded" })
@@ -489,45 +481,43 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 
 	@Test(dataProvider = "provideDataForSynchroBetweenTwoPeers", dependsOnMethods = { "addNewPeer" })
 	public void testSynchroBetweenTwoPeers2(boolean exceptionDuringTransaction, boolean generateDirectConflict,
-			boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event)
+			boolean peersInitiallyConnected)
 			throws Exception {
-		testSynchroBetweenTwoPeers(exceptionDuringTransaction, generateDirectConflict, peersInitiallyConnected, event);
+		testSynchroBetweenTwoPeers(exceptionDuringTransaction, generateDirectConflict, peersInitiallyConnected);
 	}
 
 	@Test(dataProvider = "provideDataSynchroBetweenThreePeers", dependsOnMethods = { "testSynchroBetweenTwoPeers2" })
 	public void testSynchroBetweenThreePeers2(boolean exceptionDuringTransaction, boolean generateDirectConflict,
-			boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event)
+			boolean peersInitiallyConnected)
 			throws Exception {
-		testSynchroBetweenThreePeers(exceptionDuringTransaction, generateDirectConflict, peersInitiallyConnected,
-				event);
+		testSynchroBetweenThreePeers(exceptionDuringTransaction, generateDirectConflict, peersInitiallyConnected);
 	}
 
 	@Test(dataProvider = "provideDataForIndirectSynchro", dependsOnMethods = { "testSynchroBetweenThreePeers2" })
-	public void testIndirectSynchro2(boolean generateDirectConflict, boolean peersInitiallyConnected,
-			TableEvent<DatabaseRecord> event) throws Exception {
-		testIndirectSynchro(generateDirectConflict, peersInitiallyConnected, event);
+	public void testIndirectSynchro2(boolean generateDirectConflict, boolean peersInitiallyConnected) throws Exception {
+		for (TableEvent<DatabaseRecord> event : provideTableEventsForSynchro())
+			testIndirectSynchro(generateDirectConflict, peersInitiallyConnected, event);
 	}
 
 	@Test(dataProvider = "provideDataForIndirectSynchroWithIndirectConnection", dependsOnMethods = {
 			"testIndirectSynchro2" })
 	public void testIndirectSynchroWithIndirectConnection2(boolean generateDirectConflict,
-			boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event)
+			boolean peersInitiallyConnected)
 			throws Exception {
-		testIndirectSynchroWithIndirectConnection(generateDirectConflict, peersInitiallyConnected, event);
+		for (TableEvent<DatabaseRecord> event : provideTableEventsForSynchro())
+			testIndirectSynchroWithIndirectConnection(generateDirectConflict, peersInitiallyConnected, event);
 	}
 
 	@Test(dataProvider = "provideDataForTransactionBetweenTwoPeers", dependsOnMethods = {
 			"testIndirectSynchroWithIndirectConnection2" })
-	public void testTransactionBetweenTwoPeers2(boolean peersInitiallyConnected,
-			List<TableEvent<DatabaseRecord>> levents) throws Exception {
-		testTransactionBetweenTwoPeers(peersInitiallyConnected, levents);
+	public void testTransactionBetweenTwoPeers2(boolean peersInitiallyConnected) throws Exception {
+		testTransactionBetweenTwoPeers(peersInitiallyConnected);
 	}
 
 	@Test(dataProvider = "provideDataForTransactionBetweenThreePeers", dependsOnMethods = {
 			"testTransactionBetweenTwoPeers2" })
-	public void testTransactionBetweenThreePeers2(boolean peersInitiallyConnected,
-			List<TableEvent<DatabaseRecord>> levents) throws Exception {
-		testTransactionBetweenThreePeers(peersInitiallyConnected, levents);
+	public void testTransactionBetweenThreePeers2(boolean peersInitiallyConnected) throws Exception {
+		testTransactionBetweenThreePeers(peersInitiallyConnected);
 	}
 
 	@Test(dependsOnMethods = { "testTransactionBetweenThreePeers2" })
@@ -535,11 +525,11 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 		preTestTransactionSynchros();
 	}
 
-	@Test(dataProvider = "provideDataForTransactionSynchrosWithIndirectConnectionThreaded", dependsOnMethods = {
+	@Test(dependsOnMethods = {
 			"preTestTransactionSynchros2" }, invocationCount = 4)
-	public void testTransactionSynchros2(List<TableEvent<DatabaseRecord>> levents)
+	public void testTransactionSynchros2()
 			throws Exception {
-		testTransactionSynchros(levents);
+		testTransactionSynchros();
 	}
 
 	@Test(dependsOnMethods = { "testTransactionSynchros2" })
@@ -549,9 +539,8 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 
 	@Test(dataProvider = "provideDataForTransactionSynchrosWithIndirectConnection", dependsOnMethods = {
 			"postTestTransactionSynchros2" })
-	public void testTransactionSynchrosWithIndirectConnection2(boolean peersInitiallyConnected,
-			List<TableEvent<DatabaseRecord>> levents) throws Exception {
-		testTransactionSynchrosWithIndirectConnection(peersInitiallyConnected, levents);
+	public void testTransactionSynchrosWithIndirectConnection2(boolean peersInitiallyConnected) throws Exception {
+		testTransactionSynchrosWithIndirectConnection(peersInitiallyConnected);
 	}
 
 	@Test(dependsOnMethods = { "testTransactionSynchrosWithIndirectConnection2" })
@@ -560,11 +549,11 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 		preTestTransactionSynchrosWithIndirectConnectionThreaded();
 	}
 
-	@Test(dataProvider = "provideDataForTransactionSynchrosWithIndirectConnectionThreaded", dependsOnMethods = {
+	@Test(dependsOnMethods = {
 			"preTestTransactionSynchrosWithIndirectConnectionThreaded2" })
-	public void testTransactionSynchrosWithIndirectConnectionThreaded2(List<TableEvent<DatabaseRecord>> levents)
+	public void testTransactionSynchrosWithIndirectConnectionThreaded2()
 			throws Exception {
-		testTransactionSynchrosWithIndirectConnectionThreaded(levents);
+		testTransactionSynchrosWithIndirectConnectionThreaded();
 	}
 
 	@Test(dependsOnMethods = { "testTransactionSynchrosWithIndirectConnectionThreaded2" })
@@ -610,45 +599,43 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 
 	@Test(dataProvider = "provideDataForSynchroBetweenTwoPeers", dependsOnMethods = { "removeNewPeer" })
 	public void testSynchroBetweenTwoPeers3(boolean exceptionDuringTransaction, boolean generateDirectConflict,
-			boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event)
+			boolean peersInitiallyConnected)
 			throws Exception {
-		testSynchroBetweenTwoPeers(exceptionDuringTransaction, generateDirectConflict, peersInitiallyConnected, event);
+		testSynchroBetweenTwoPeers(exceptionDuringTransaction, generateDirectConflict, peersInitiallyConnected);
 	}
 
 	@Test(dataProvider = "provideDataSynchroBetweenThreePeers", dependsOnMethods = { "testSynchroBetweenTwoPeers3" })
 	public void testSynchroBetweenThreePeers3(boolean exceptionDuringTransaction, boolean generateDirectConflict,
-			boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event)
+			boolean peersInitiallyConnected)
 			throws Exception {
-		testSynchroBetweenThreePeers(exceptionDuringTransaction, generateDirectConflict, peersInitiallyConnected,
-				event);
+		testSynchroBetweenThreePeers(exceptionDuringTransaction, generateDirectConflict, peersInitiallyConnected);
 	}
 
 	@Test(dataProvider = "provideDataForIndirectSynchro", dependsOnMethods = { "testSynchroBetweenThreePeers3" })
-	public void testIndirectSynchro3(boolean generateDirectConflict, boolean peersInitiallyConnected,
-			TableEvent<DatabaseRecord> event) throws Exception {
-		testIndirectSynchro(generateDirectConflict, peersInitiallyConnected, event);
+	public void testIndirectSynchro3(boolean generateDirectConflict, boolean peersInitiallyConnected) throws Exception {
+		for (TableEvent<DatabaseRecord> event : provideTableEventsForSynchro())
+			testIndirectSynchro(generateDirectConflict, peersInitiallyConnected, event);
 	}
 
 	@Test(dataProvider = "provideDataForIndirectSynchroWithIndirectConnection", dependsOnMethods = {
 			"testIndirectSynchro3" })
 	public void testIndirectSynchroWithIndirectConnection3(boolean generateDirectConflict,
-			boolean peersInitiallyConnected, TableEvent<DatabaseRecord> event)
+			boolean peersInitiallyConnected)
 			throws Exception {
-		testIndirectSynchroWithIndirectConnection(generateDirectConflict, peersInitiallyConnected, event);
+		for (TableEvent<DatabaseRecord> event : provideTableEventsForSynchro())
+			testIndirectSynchroWithIndirectConnection(generateDirectConflict, peersInitiallyConnected, event);
 	}
 
 	@Test(dataProvider = "provideDataForTransactionBetweenTwoPeers", dependsOnMethods = {
 			"testIndirectSynchroWithIndirectConnection3" })
-	public void testTransactionBetweenTwoPeers3(boolean peersInitiallyConnected,
-			List<TableEvent<DatabaseRecord>> levents) throws Exception {
-		testTransactionBetweenTwoPeers(peersInitiallyConnected, levents);
+	public void testTransactionBetweenTwoPeers3(boolean peersInitiallyConnected) throws Exception {
+		testTransactionBetweenTwoPeers(peersInitiallyConnected);
 	}
 
 	@Test(dataProvider = "provideDataForTransactionBetweenThreePeers", dependsOnMethods = {
 			"testTransactionBetweenTwoPeers3" })
-	public void testTransactionBetweenThreePeers3(boolean peersInitiallyConnected,
-			List<TableEvent<DatabaseRecord>> levents) throws Exception {
-		testTransactionBetweenThreePeers(peersInitiallyConnected, levents);
+	public void testTransactionBetweenThreePeers3(boolean peersInitiallyConnected) throws Exception {
+		testTransactionBetweenThreePeers(peersInitiallyConnected);
 	}
 
 	@Test(dependsOnMethods = { "testTransactionBetweenThreePeers3" })
@@ -656,11 +643,11 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 		preTestTransactionSynchros();
 	}
 
-	@Test(dataProvider = "provideDataForTransactionSynchrosWithIndirectConnectionThreaded", dependsOnMethods = {
+	@Test(dependsOnMethods = {
 			"preTestTransactionSynchros3" }, invocationCount = 4)
-	public void testTransactionSynchros3(List<TableEvent<DatabaseRecord>> levents)
+	public void testTransactionSynchros3()
 			throws Exception {
-		testTransactionSynchros(levents);
+		testTransactionSynchros();
 	}
 
 	@Test(dependsOnMethods = { "testTransactionSynchros3" })
@@ -670,9 +657,8 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 
 	@Test(dataProvider = "provideDataForTransactionSynchrosWithIndirectConnection", dependsOnMethods = {
 			"postTestTransactionSynchros3" })
-	public void testTransactionSynchrosWithIndirectConnection3(boolean peersInitiallyConnected,
-			List<TableEvent<DatabaseRecord>> levents) throws Exception {
-		testTransactionSynchrosWithIndirectConnection(peersInitiallyConnected, levents);
+	public void testTransactionSynchrosWithIndirectConnection3(boolean peersInitiallyConnected) throws Exception {
+		testTransactionSynchrosWithIndirectConnection(peersInitiallyConnected);
 	}
 
 	@Test(dependsOnMethods = { "testTransactionSynchrosWithIndirectConnection3" })
@@ -681,11 +667,11 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 		preTestTransactionSynchrosWithIndirectConnectionThreaded();
 	}
 
-	@Test(dataProvider = "provideDataForTransactionSynchrosWithIndirectConnectionThreaded", dependsOnMethods = {
+	@Test(dependsOnMethods = {
 			"preTestTransactionSynchrosWithIndirectConnectionThreaded3" })
-	public void testTransactionSynchrosWithIndirectConnectionThreaded3(List<TableEvent<DatabaseRecord>> levents)
+	public void testTransactionSynchrosWithIndirectConnectionThreaded3()
 			throws Exception {
-		testTransactionSynchrosWithIndirectConnectionThreaded(levents);
+		testTransactionSynchrosWithIndirectConnectionThreaded();
 	}
 
 	@Test(dependsOnMethods = { "testTransactionSynchrosWithIndirectConnectionThreaded3" })
@@ -695,8 +681,11 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 	}
 
 	@Test(dependsOnMethods = { "postTestTransactionSynchrosWithIndirectConnectionThreaded3" })
-	public void testSynchroTransactionTests3() throws DatabaseException {
+	public void testSynchroTransactionTests3() throws Exception {
+		connectAllDatabase();
+		exchangeMessages();
 		testSynchronisation();
+		disconnectAllDatabase();
 	}
 
 
@@ -706,6 +695,7 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 	}
 	public void testSynchroBetweenPeersAfterRestoration(int nbPeers, boolean peersInitiallyConnected,
 														   List<TableEvent<DatabaseRecord>> levents) throws Exception {
+
 		ArrayList<TableEvent<DatabaseRecord>> events1=new ArrayList<>();
 		for (int i=0;i<levents.size()/2;i++)
 			events1.add(levents.get(i));
@@ -735,22 +725,21 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 
 		connectAllDatabase();
 		exchangeMessages();
+		testSynchronisation();
 		disconnectAllDatabase();
 		checkAllDatabaseInternalDataUsedForSynchro();
 	}
 
 	@Test(dataProvider = "provideDataForTransactionBetweenTwoPeersForRestorationTests", dependsOnMethods = {
 			"testSynchroTransactionTests3" })
-	public void testSynchroBetweenTwoPeersAfterRestoration(boolean peersInitiallyConnected,
-												List<TableEvent<DatabaseRecord>> levents) throws Exception {
-		testSynchroBetweenPeersAfterRestoration(2, peersInitiallyConnected, levents);
+	public void testSynchroBetweenTwoPeersAfterRestoration(boolean peersInitiallyConnected) throws Exception {
+		testSynchroBetweenPeersAfterRestoration(2, peersInitiallyConnected, provideTableEventsForSynchro());
 	}
 
 	@Test(dataProvider = "provideDataForTransactionBetweenThreePeersForRestorationTests", dependsOnMethods = {
 			"testSynchroBetweenTwoPeersAfterRestoration" })
-	public void testSynchroBetweenThreePeersAfterRestoration(boolean peersInitiallyConnected,
-												  List<TableEvent<DatabaseRecord>> levents) throws Exception {
-		testSynchroBetweenPeersAfterRestoration(3, peersInitiallyConnected, levents);
+	public void testSynchroBetweenThreePeersAfterRestoration(boolean peersInitiallyConnected) throws Exception {
+		testSynchroBetweenPeersAfterRestoration(3, peersInitiallyConnected, provideTableEventsForSynchro());
 	}
 
 }

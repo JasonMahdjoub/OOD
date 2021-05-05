@@ -42,11 +42,12 @@ public class AndroidSQLiteDatabaseWrapper extends DatabaseWrapper {
     AndroidSQLiteDatabaseWrapper(String _package, String databaseName,
                                  DatabaseConfigurations databaseConfigurations,
                                  DatabaseLifeCycles databaseLifeCycles,
-                                 EncryptionProfileProvider encryptionProfileProviderForCentralDatabaseBackup,
+                                 EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+                                 EncryptionProfileProvider encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
                                  EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
                                  AbstractSecureRandom secureRandom,
                                  boolean createDatabasesIfNecessaryAndCheckIt, boolean externalStorage) throws DatabaseException {
-        super(databaseName, new File(getDirectory(_package, databaseName, externalStorage)), false,false, databaseConfigurations, databaseLifeCycles, encryptionProfileProviderForCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages, secureRandom, createDatabasesIfNecessaryAndCheckIt);
+        super(databaseName, new File(getDirectory(_package, databaseName, externalStorage)), false,false, databaseConfigurations, databaseLifeCycles, signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup, encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages, secureRandom, createDatabasesIfNecessaryAndCheckIt);
         url = "jdbc:sqldroid:" + getPath(_package, databaseName, externalStorage);
         if (!getDatabaseDirectory().exists()) {
             FileTools.checkFolderRecursive(getDatabaseDirectory());

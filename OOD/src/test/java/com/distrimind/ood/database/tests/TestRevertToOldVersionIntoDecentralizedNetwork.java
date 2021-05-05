@@ -93,6 +93,7 @@ public abstract class TestRevertToOldVersionIntoDecentralizedNetwork extends Tes
 			exchangeMessages();
 		}
 		backupActualDatabase();
+
 		final long timeUTC=System.currentTimeMillis();
 		Thread.sleep(getBackupConfiguration().getMaxBackupFileAgeInMs());
 		testSynchronizationWithSavedRecords(db1);
@@ -142,7 +143,6 @@ public abstract class TestRevertToOldVersionIntoDecentralizedNetwork extends Tes
 
 	private void backupActualDatabase() throws DatabaseException {
 		testSynchronisation();
-
 		aloneRecords=db1.getTableAlone().getRecords();
 		pointedRecords=db1.getTablePointed().getRecords();
 		pointingRecords=db1.getTablePointing().getRecords();

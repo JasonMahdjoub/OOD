@@ -36,13 +36,13 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database.tests;
 
-import com.distrimind.ood.database.*;
+import com.distrimind.ood.database.BackupConfiguration;
+import com.distrimind.ood.database.DatabaseFactory;
+import com.distrimind.ood.database.EmbeddedH2DatabaseWrapper;
+import com.distrimind.ood.database.InFileEmbeddedH2DatabaseFactory;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 
 import java.io.File;
-import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 
 /**
  * @author Jason Mahdjoub
@@ -57,7 +57,7 @@ public class H2TestCentralBackupWithDecentralizedDatabase extends TestCentralBac
 	final String database_file_name4 = "decentralizedDatabaseToTestCentralDBBackupWithBackup4";
 	final BackupConfiguration backupConfiguration=new BackupConfiguration(10000, 20000, 1000000, 1000, null);
 
-	public H2TestCentralBackupWithDecentralizedDatabase() throws NoSuchProviderException, NoSuchAlgorithmException, IOException {
+	public H2TestCentralBackupWithDecentralizedDatabase()  {
 		super();
 	}
 
