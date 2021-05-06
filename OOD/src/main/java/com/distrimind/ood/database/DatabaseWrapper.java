@@ -5504,9 +5504,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 *             if a problem occurs
 	 */
 	final void deleteDatabase(final DatabaseConfiguration configuration, boolean notifyNewCompatibleDatabases) throws DatabaseException {
-		deleteDatabase(configuration, notifyNewCompatibleDatabases, getCurrentDatabaseVersion(configuration.getDatabaseSchema().getPackage()));
+		deleteDatabase(configuration, notifyNewCompatibleDatabases, getCurrentDatabaseVersion(configuration.getDatabaseSchema().getPackage()), false);
 	}
-	final void deleteDatabase(final DatabaseConfiguration configuration, boolean notifyNewCompatibleDatabases, final int databaseVersion) throws DatabaseException {
+	final void deleteDatabase(final DatabaseConfiguration configuration, boolean notifyNewCompatibleDatabases, final int databaseVersion, boolean databaseReplacedByNewVersionThatIsAlreadySynchronized) throws DatabaseException {
 		try  {
 
 			lockWrite();
@@ -5558,8 +5558,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					else
 						db.updateCurrentVersion();
 					sql_database = sd;
-
-					getDatabaseTable().removeRecord("databasePackageName", configuration.getDatabaseSchema().getPackage().getName());
+					if (!databaseReplacedByNewVersionThatIsAlreadySynchronized)
+						getDatabaseTable().removeRecord("databasePackageName", configuration.getDatabaseSchema().getPackage().getName());
 					return null;
 				}
 
@@ -5697,10 +5697,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 										+ " WHERE PACKAGE_NAME='" + getLongPackageName(configuration.getDatabaseSchema().getPackage()) + "'" + getSqlComma());
 						if (r != 1)
 							throw new DatabaseException("no record found (r="+r+")");
+						Database db = sql_database.get(configuration.getDatabaseSchema().getPackage());
 						if (oldDatabaseVersion >= 0) {
-							Database db = sql_database.get(configuration.getDatabaseSchema().getPackage());
+
 							HashMap<Class<? extends Table<?>>, Table<?>> hm = new HashMap<>(db.tables_per_versions.get(oldDatabaseVersion).tables_instances);
-							deleteDatabase(configuration, false, oldDatabaseVersion);
+							deleteDatabase(configuration, false, oldDatabaseVersion, true);
 							for (Table<?> t : hm.values()) {
 								t.changeVersion(newDatabaseVersion, getTableID(t.getClass(), newDatabaseVersion), DatabaseWrapper.this);
 							}
@@ -5709,8 +5710,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 									fa.initialize();
 							}
 							db.tables_per_versions.get(newDatabaseVersion).tables_instances = hm;
-							db.setCurrentVersion(newDatabaseVersion);
 						}
+						db.setCurrentVersion(newDatabaseVersion);
 					}
 					catch (SQLException e) {
 						throw DatabaseException.getDatabaseException(e);
@@ -6045,7 +6046,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						if (databaseLogger!=null)
 							databaseLogger.fine("Post database creation script OK: "+configuration);
 						if (removeOldDatabase)
-							deleteDatabase(oldConfig, false, databaseVersion);
+							deleteDatabase(oldConfig, false, databaseVersion, false);
 					}
 					initBackupRestore=true;
 				}

@@ -468,7 +468,8 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 														"Impossible to decode database event type : " + event.getType());
 											DatabaseRecord drNew = null, drOld = null;
 											HashMap<String, Object> mapKeys = new HashMap<>();
-											if (type!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE) {
+											if (type!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE)
+											{
 												t.deserializePrimaryKeys(mapKeys, event.getConcernedSerializedPrimaryKey());
 												if (type.needsNewValue()) {
 													drNew = t.getDefaultRecordConstructor().newInstance();
@@ -493,6 +494,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 												boolean collision = detectCollisionAndGetObsoleteEventsToRemove(fromHook.getHostID(),
 														event.getConcernedTable(), type, event.getConcernedSerializedPrimaryKey(),
 														transaction.isForced(), r);
+
 												Set<DatabaseDistantTransactionEvent.Record> ir = new HashSet<>();
 												DecentralizedValue indirectCollisionWith = null;
 												if (!collision) {
@@ -503,6 +505,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 
 												if (collision || indirectCollisionWith != null) {
+
 													if (!type.hasOldValue() && type!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE)
 														drOld = t.getRecord(mapKeys);
 													if (!t.areDuplicatedEventsNotConsideredAsCollisions() || (drOld == drNew || (drNew != null && t.equalsAllFields(drNew, drOld))))
@@ -823,8 +826,9 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 											}
 										}
 										break;
-									case REMOVE_ALL_RECORDS_WITH_CASCADE:
+									case REMOVE_ALL_RECORDS_WITH_CASCADE: {
 										addedEvent.getTable().removeAllRecordsWithCascade(false, null);
+									}
 										break;
 								}
 

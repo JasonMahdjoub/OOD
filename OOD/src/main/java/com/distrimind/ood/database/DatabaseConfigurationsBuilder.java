@@ -890,14 +890,14 @@ public class DatabaseConfigurationsBuilder {
 		});
 		return this;
 	}
-	public DatabaseConfigurationsBuilder restoreDatabaseToOldVersion(long timeUTCMS)
+	/*public DatabaseConfigurationsBuilder restoreDatabasesToOldVersion(long timeUTCMS)
 	{
-		return restoreDatabaseToOldVersion(timeUTCMS, false, false);
+		return restoreDatabasesToOldVersion(timeUTCMS, false, false);
 	}
-	public DatabaseConfigurationsBuilder restoreDatabaseToOldVersion(long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, boolean chooseNearestBackupIfNoBackupMatch)
+	public DatabaseConfigurationsBuilder restoreDatabasesToOldVersion(long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, boolean chooseNearestBackupIfNoBackupMatch)
 	{
 		return restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, chooseNearestBackupIfNoBackupMatch, dc -> true);
-	}
+	}*/
 	public DatabaseConfigurationsBuilder restoreGivenDatabasesToOldVersion(Set<Package> concernedDatabases, long timeUTCInMs)
 	{
 		return restoreGivenDatabasesToOldVersion(concernedDatabases, timeUTCInMs, false, false);
@@ -948,12 +948,11 @@ public class DatabaseConfigurationsBuilder {
 	}
 	private DatabaseConfigurationsBuilder restoreDatabaseToOldVersion(long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, boolean chooseNearestBackupIfNoBackupMatch, Predicate<DatabaseConfiguration> predicate, boolean notifyOtherPeers)
 	{
-
 		pushQuery((p) -> {
 			boolean changed=false;
 			for (DatabaseConfiguration c : configurations.getConfigurations()) {
 				if (predicate.test(c)) {
-					if (c.restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable || c.getBackupConfiguration()==null, notifyOtherPeers, chooseNearestBackupIfNoBackupMatch)) {
+					if (c.restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable || c.getBackupConfiguration()==null, chooseNearestBackupIfNoBackupMatch, notifyOtherPeers)) {
 
 
 						if (preferOtherChannelThanLocalChannelIfAvailable || c.getBackupConfiguration() == null) {
@@ -966,7 +965,6 @@ public class DatabaseConfigurationsBuilder {
 							}
 							changed = true;
 						} else {
-
 							//restore database from local backup database
 							if (!wrapper.prepareDatabaseRestorationFromInternalBackupChannel(c.getDatabaseSchema().getPackage()))
 								changed = true;
@@ -1023,7 +1021,7 @@ public class DatabaseConfigurationsBuilder {
 							if (c.isPreferOtherChannelThanLocalChannelIfAvailableDuringRestoration()) {
 								if (c.isSynchronizedWithCentralBackupDatabase()) {
 									database.temporaryBackupRestoreManagerComingFromDistantBackupManager.restoreDatabaseToDateUTC(timeUTCInMs, c.isChooseNearestBackupIfNoBackupMatch(), c.isNotifyOtherPeers());
-									if (c.isNotifyOtherPeers())
+//									if (c.isNotifyOtherPeers())
 
 									database.cancelCurrentDatabaseRestorationProcessFromCentralDatabaseBackup();
 								}

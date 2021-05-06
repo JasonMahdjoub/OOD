@@ -104,9 +104,8 @@ public abstract class TestRevertToOldVersionIntoDecentralizedNetwork extends Tes
 		}
 
 		//db1.getDbwrapper().getBackupRestoreManager(TableAlone.class.getPackage()).restoreDatabaseToDateUTC(timeUTC, false);
-
 		db1.getDbwrapper().getDatabaseConfigurationsBuilder()
-				.restoreDatabaseToOldVersion(timeUTC, preferOtherChannelThanLocalChannelIfAvailable, false)
+				.restoreGivenDatabaseToOldVersion(TableAlone.class.getPackage(), timeUTC, preferOtherChannelThanLocalChannelIfAvailable, false)
 				.commit();
 		testSynchronizationWithSavedRecords(db1);
 

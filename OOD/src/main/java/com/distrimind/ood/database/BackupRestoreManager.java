@@ -1923,7 +1923,7 @@ public class BackupRestoreManager {
 				} catch (Exception e) {
 					lastCurrentRestorationFileUsed=Long.MIN_VALUE;
 					if (newVersionLoaded)
-						databaseWrapper.deleteDatabase(databaseConfiguration, false, newVersion);
+						databaseWrapper.deleteDatabase(databaseConfiguration, false, newVersion, true);
 					throw DatabaseException.getDatabaseException(e);
 				}
 			}
@@ -2178,13 +2178,14 @@ public class BackupRestoreManager {
 
 				//createBackupReference();
 				notify=true;
-				if (notifyOtherPeers)
+				if (notifyOtherPeers) {
 					databaseWrapper.getSynchronizer().notifyOtherPeersThatDatabaseRestorationWasDone(dbPackage, dateUTCInMs, lastTransactionUTCInMs);
+				}
 				return res;
 
 			} catch (Exception e) {
 				databaseWrapper.getSynchronizer().cancelExtendedTransaction();
-				databaseWrapper.deleteDatabase(databaseConfiguration, false, newVersion);
+				databaseWrapper.deleteDatabase(databaseConfiguration, false, newVersion, false);
 				throw DatabaseException.getDatabaseException(e);
 			}
 			finally {
@@ -2562,7 +2563,6 @@ public class BackupRestoreManager {
 						cancelTransaction();
 						return;
 					}
-
 					saveTransactionQueue(out, nextTransactionReference, transactionUTC, firstTransactionID, transactionToSynchronize ? transactionID : null/*, index*/);
 
 					try {
