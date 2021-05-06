@@ -194,6 +194,8 @@ public class DatabaseConfigurationsBuilder {
 		synchronized (this) {
 			if (currentTransaction==null)
 				currentTransaction=new Transaction();
+			if (commitInProgress)
+				throw new IllegalAccessError();
 			currentTransaction.queries.add(query);
 		}
 	}
@@ -1034,7 +1036,6 @@ public class DatabaseConfigurationsBuilder {
 											wrapper.getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
 												@Override
 												public boolean nextRecord(DatabaseHooksTable.Record _record) {
-
 													if (_record.getDatabasePackageNames().contains(c.getDatabaseSchema().getPackage().getName())) {
 														hostThatApplyRestoration.set(_record.getHostID());
 														stopTableParsing();

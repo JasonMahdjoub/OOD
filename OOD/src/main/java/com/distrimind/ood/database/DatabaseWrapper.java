@@ -3086,7 +3086,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 					});
 					if (localRecord.get()!=null) {
-						getSynchronizer().cleanTransactionsAfterRestoration(p.getName(), timeUTCOfRestorationInMs, transactionToDeleteUpperLimitUTC, transactionToDeleteUpperLimitUTC==null, chooseNearestBackupIfNoBackupMatch);
+						getSynchronizer().cleanTransactionsAfterRestoration(p.getName(), timeUTCOfRestorationInMs, transactionToDeleteUpperLimitUTC, transactionToDeleteUpperLimitUTC==null && hostThatApplyRestoration.equals(getLocalHostID()), chooseNearestBackupIfNoBackupMatch);
 					}
 					return null;
 				}
