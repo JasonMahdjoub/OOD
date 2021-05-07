@@ -1398,7 +1398,7 @@ public class BackupRestoreManager {
 			databaseWrapper.unlockRead();
 			//transactionsInterval=null;
 			//currentBackupReferenceUTC=Long.MAX_VALUE;
-			if (notify && globalNumberOfSavedRecords.get()>0)
+			if (notify)
 				databaseWrapper.getSynchronizer().checkForNewBackupFilePartToSendToCentralDatabaseBackup(dbPackage);
 
 		}

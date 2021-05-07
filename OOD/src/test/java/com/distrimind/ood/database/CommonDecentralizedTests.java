@@ -1262,17 +1262,19 @@ public abstract class CommonDecentralizedTests {
 				loop |= centralDatabaseBackupMessageSent;
 			}
 		}
-		if (db1.getDbwrapper().getSynchronizer().isInitializedWithCentralBackup())
-			checkCentralBackupSynchronization();
+		//if (db1.getDbwrapper().getSynchronizer().isInitializedWithCentralBackup())
+		checkCentralBackupSynchronization();
 	}
 
 	void checkCentralBackupSynchronization() throws DatabaseException {
 		synchronized (CommonDecentralizedTests.class) {
 			for (Database d : listDatabase) {
-				checkCentralBackupSynchronization(d);
+				if (d.getDbwrapper().getSynchronizer().isInitializedWithCentralBackup())
+					checkCentralBackupSynchronization(d);
 			}
 			for (Database d : listDatabase) {
-				checkCentralBackupSynchronizationWithOtherPeers(d);
+				if (d.getDbwrapper().getSynchronizer().isInitializedWithCentralBackup())
+					checkCentralBackupSynchronizationWithOtherPeers(d);
 			}
 		}
 	}
@@ -1295,7 +1297,8 @@ public abstract class CommonDecentralizedTests {
 						List<Long> list = brm.getFinalTimestamps();
 						for (int i=0;i<list.size();i++) {
 							long l=list.get(i);
-							Assert.assertTrue(records.stream().anyMatch(r -> r.getFileTimeUTC() == l) || i== records.size() && records.size()==list.size()-1, "l=" + l + ", list.size=" + list.size() + ", records.size=" + records.size()+", databasePackage="+dc.getDatabaseSchema().getPackage()+", db="+(d==db1?1:(d==db2?2:3))+", list="+list+(records.size()>0?", lastRecord="+records.get(records.size()-1).getFileTimeUTC():""));
+							Assert.assertTrue(records.stream().anyMatch(r -> r.getFileTimeUTC() == l) || i== list.size()-1 /*&& records.size()==list.size()-1*/,
+									"l=" + l + ", i="+i+", list.size=" + list.size() + ", records.size=" + records.size()+", databasePackage="+dc.getDatabaseSchema().getPackage()+", db="+(d==db1?1:(d==db2?2:3))+", list="+list+(records.size()>0?", lastRecord="+records.get(records.size()-1).getFileTimeUTC():""));
 						}
 						for (EncryptedBackupPartReferenceTable.Record r : records) {
 							if (!list.contains(r.getFileTimeUTC()))
