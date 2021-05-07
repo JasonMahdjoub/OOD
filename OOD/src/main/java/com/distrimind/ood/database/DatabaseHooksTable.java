@@ -1438,7 +1438,8 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			@Override
 			public void nextRecord(Record _record) throws DatabaseException {
 				Set<String> hs=new HashSet<>(databasePackageNamesThatUseBackup);
-				hs.removeAll(_record.databasePackageNames);
+				if (_record.databasePackageNames!=null)
+					hs.removeAll(_record.databasePackageNames);
 				if (!hs.equals(_record.databasePackageNamesThatDoNotUseExternalBackup))
 					update("databasePackageNamesThatDoNotUseExternalBackup", hs);
 			}
