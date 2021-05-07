@@ -63,7 +63,7 @@ public abstract class TestRevertToOldVersionIntoDecentralizedNetwork extends Tes
 	@DataProvider(name = "constructorRevertParameters")
 	public static Object[][] constructorRevertParameters() {
 
-		Object[][] res=constructorParameters();
+		Object[][] res= constParameters();
 		Object[][] res2=new Object[res.length*2][res[0].length+1];
 		int index=0;
 		for (boolean preferOtherChannelThanLocalChannelIfAvailable : new boolean[]{false, true}) {
@@ -113,7 +113,12 @@ public abstract class TestRevertToOldVersionIntoDecentralizedNetwork extends Tes
 				.commit();
 		//testSynchronizationWithSavedRecords(db1);
 
-		if (!upgradeDatabaseVersionWhenConnectedWithPeers)
+		if (!upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion && useCentralDatabaseBackup) {
+			connectCentralDatabaseBackupWithConnectedDatabase();
+			exchangeMessages();
+			testSynchronizationWithSavedRecords();
+		}
+		else if (!upgradeDatabaseVersionWhenConnectedWithPeers)
 		{
 			if(preferOtherChannelThanLocalChannelIfAvailable)
 				connectSelectedDatabase(upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion, db1, db2, db3);
@@ -125,11 +130,6 @@ public abstract class TestRevertToOldVersionIntoDecentralizedNetwork extends Tes
 			if (upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion || preferOtherChannelThanLocalChannelIfAvailable)
 				testSynchronizationWithSavedRecords(db3);
 
-		}
-		else if (!upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion && useCentralDatabaseBackup) {
-			connectCentralDatabaseBackupWithConnectedDatabase();
-			exchangeMessages();
-			testSynchronizationWithSavedRecords();
 		}
 		else
 		{

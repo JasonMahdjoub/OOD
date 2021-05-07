@@ -2181,9 +2181,12 @@ public class BackupRestoreManager {
 
 				//createBackupReference();
 				notify=true;
+
 				if (notifyOtherPeers) {
 					databaseWrapper.getSynchronizer().notifyOtherPeersThatDatabaseRestorationWasDone(dbPackage, dateUTCInMs, lastTransactionUTCInMs);
 				}
+				else
+					databaseWrapper.getSynchronizer().cleanTransactionsAfterRestoration(dbPackage.getName(), dateUTCInMs, lastTransactionUTCInMs, false, chooseNearestBackupIfNoBackupMatch);
 				return res;
 
 			} catch (Exception e) {

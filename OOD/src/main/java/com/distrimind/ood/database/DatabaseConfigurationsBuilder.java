@@ -948,7 +948,7 @@ public class DatabaseConfigurationsBuilder {
 	{
 		return restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, chooseNearestBackupIfNoBackupMatch, predicate, true);
 	}
-	private DatabaseConfigurationsBuilder restoreDatabaseToOldVersion(long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, boolean chooseNearestBackupIfNoBackupMatch, Predicate<DatabaseConfiguration> predicate, boolean notifyOtherPeers)
+	private DatabaseConfigurationsBuilder restoreDatabaseToOldVersion(long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, boolean chooseNearestBackupIfNoBackupMatch, Predicate<DatabaseConfiguration> predicate, final boolean notifyOtherPeers)
 	{
 		pushQuery((p) -> {
 			boolean changed=false;

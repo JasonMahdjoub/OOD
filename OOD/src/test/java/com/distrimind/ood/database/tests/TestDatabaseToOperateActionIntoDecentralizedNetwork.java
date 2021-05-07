@@ -76,11 +76,11 @@ public abstract class TestDatabaseToOperateActionIntoDecentralizedNetwork extend
 	}
 
 	@DataProvider(name = "constructorParameters")
-	public static Object[][] constructorParameters() {
+	public static Object[][] constParameters() {
 		Object[][] res=new Object[24][5];
 		int i=0;
 		for (boolean canSendIndirectTransactions : new boolean[]{false, true}) {
-			for (boolean useCentralDatabaseBackup : new boolean[]{false, true}) {
+			for (boolean useCentralDatabaseBackup : new boolean[]{true,false}) {
 				for (boolean upgradeDatabaseVersionWhenConnectedWithPeers : new boolean[]{false, true}) {
 					for (boolean upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion : useCentralDatabaseBackup?new boolean[]{false, true}:new boolean[]{false}) {
 						for (boolean hasToRemoveOldDatabase : new boolean[]{false, true}) {

@@ -428,6 +428,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new DatabaseException("The database " + databasePackage.getName() + " was not loaded");
 			db.prepareDatabaseRestorationFromDistantDatabaseBackupChannel();
 			getSynchronizer().checkNotAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(db);
+
 		}
 		finally {
 			unlockWrite();
@@ -1730,11 +1731,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new MessageExternalizationException(Integrity.FAIL);
 		}
 
-		private void cleanTransactionsAfterRestoration(String databasePackage, long timeUTCOfRestorationInMs, Long transactionToDeleteUpperLimitUTC, boolean launchRestoration, boolean chooseNearestBackupIfNoBackupMatch) throws DatabaseException {
+		void cleanTransactionsAfterRestoration(String databasePackage, long timeUTCOfRestorationInMs, Long transactionToDeleteUpperLimitUTC, boolean launchRestoration, boolean chooseNearestBackupIfNoBackupMatch) throws DatabaseException {
 			if (transactionToDeleteUpperLimitUTC!=null)
 				getDatabaseTransactionEventsTable().removeRecordsWithCascade( "concernedDatabasePackage=%c and timeUTC<=%l", "c", databasePackage, "l", transactionToDeleteUpperLimitUTC);
 			else
 				getDatabaseTransactionEventsTable().removeRecordsWithCascade( "concernedDatabasePackage=%c", "c", databasePackage);
+
 			//getDatabaseDistantTransactionEvent().removeAllRecordsWithCascade();
 			getDatabaseHooksTable().actualizeLastTransactionID(Collections.emptyList());
 			if (launchRestoration)
@@ -3209,14 +3211,15 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			{
 				throw new DatabaseException("Invalid host destination");
 			}
-			if (backupPart.getHostDestination()==backupPart.getHostSource())
+			boolean forRestoration=backupPart instanceof EncryptedBackupPartForRestorationComingFromCentralDatabaseBackup;
+			if (backupPart.getHostDestination()==backupPart.getHostSource() || forRestoration)
 			{
 				String pname = backupPart.getMetaData().getPackageString();
 				if (getDatabasePackagesToSynchronizeWithCentralBackup().contains(pname)) {
 					for (Map.Entry<Package, Database> e : sql_database.entrySet()) {
 						if (e.getKey().getName().equals(pname)) {
 							Database d = e.getValue();
-							if (backupPart instanceof EncryptedBackupPartForRestorationComingFromCentralDatabaseBackup)
+							if (forRestoration)
 							{
 								if (d.temporaryBackupRestoreManagerComingFromDistantBackupManager==null)
 									return;
@@ -3239,6 +3242,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 			}
 			else {
+
 				ConnectedPeersWithCentralBackup cp=initializedHooksWithCentralBackup.get(backupPart.getHostSource());
 				if (isSynchronizationActivatedWithChannelAndThroughCentralDatabaseBackup(cp)) {
 					try (RandomCacheFileOutputStream out = RandomCacheFileCenter.getSingleton().getNewBufferedRandomCacheFileOutputStream(true, RandomFileOutputStream.AccessMode.READ_AND_WRITE)) {
@@ -3365,7 +3369,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 				else if (data instanceof EncryptedBackupPartTransmissionConfirmationFromCentralDatabaseBackup) {
 					received((EncryptedBackupPartTransmissionConfirmationFromCentralDatabaseBackup) data);
-				} else if (data instanceof EncryptedBackupPartComingFromCentralDatabaseBackup) {
+				}
+				else if (data instanceof EncryptedBackupPartComingFromCentralDatabaseBackup) {
 					received((EncryptedBackupPartComingFromCentralDatabaseBackup) data);
 				} else if (data instanceof EncryptedMetaDataFromCentralDatabaseBackup) {
 					received((EncryptedMetaDataFromCentralDatabaseBackup) data);

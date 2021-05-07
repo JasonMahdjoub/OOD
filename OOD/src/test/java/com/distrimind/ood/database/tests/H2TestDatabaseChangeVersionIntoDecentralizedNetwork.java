@@ -58,7 +58,7 @@ public class H2TestDatabaseChangeVersionIntoDecentralizedNetwork extends TestDat
 	final String database_file_name4 ;
 	final BackupConfiguration backupConfiguration=new BackupConfiguration(10000, 20000, 1000000, 1000, null);
 
-	@Factory(dataProvider = "constructorParameters")
+	@Factory(dataProvider = "constParameters")
 	public H2TestDatabaseChangeVersionIntoDecentralizedNetwork(boolean useCentralDatabaseBackup, boolean canSendIndirectTransactions,
 															   boolean upgradeDatabaseVersionWhenConnectedWithPeers,
 															   boolean upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion,
