@@ -429,9 +429,9 @@ public class BackupRestoreManager {
 				RandomInputStream ris=out.getUnbufferedRandomInputStream();
 				ris.seek(LAST_BACKUP_UTC_POSITION+8);
 				if (ris.readBoolean())
-					firstTransactionID.set(null);
-				else
 					firstTransactionID.set(ris.readLong());
+				else
+					firstTransactionID.set(null);
 				//recordsIndex.set(new RecordsIndex(out.getUnbufferedRandomInputStream()));
 				positionFileForNewEvent(out);
 				return out;
@@ -1626,9 +1626,9 @@ public class BackupRestoreManager {
 			EncryptedDatabaseBackupMetaDataPerFile encryptedMetaData=new EncryptedDatabaseBackupMetaDataPerFile(dbPackage.getName(), metaData, random, encryptionProfileProvider);
 
 			Long lid=metaData.getLastTransactionID();
-			if (lid==null)
-				lid= getLastTransactionIDBeforeGivenTimeStamp(timeStamp);
-
+			if (lid==null) {
+				lid = getLastTransactionIDBeforeGivenTimeStamp(timeStamp);
+			}
 
 			return new EncryptedBackupPartDestinedToCentralDatabaseBackup(fromHostIdentifier, encryptedMetaData, out.getRandomInputStream(), EncryptionTools.encryptID(lid, random, encryptionProfileProvider));
 		} catch (IOException e) {
@@ -1676,6 +1676,7 @@ public class BackupRestoreManager {
 		assert i>=0;
 		while (--i>=0) {
 			File f=getFile(fileTimeStamps.get(i));
+			System.out.println(i);
 			try(RandomFileInputStream fis=new RandomFileInputStream(f))
 			{
 				fis.seek(LAST_BACKUP_UTC_POSITION+8);
