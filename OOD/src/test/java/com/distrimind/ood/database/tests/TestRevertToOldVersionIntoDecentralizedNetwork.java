@@ -63,7 +63,7 @@ public abstract class TestRevertToOldVersionIntoDecentralizedNetwork extends Tes
 	@DataProvider(name = "constructorRevertParameters")
 	public static Object[][] constructorRevertParameters() {
 
-		Object[][] res= constParameters();
+		Object[][] res= constructorParameters();
 		Object[][] res2=new Object[res.length*2][res[0].length+1];
 		int index=0;
 		for (boolean preferOtherChannelThanLocalChannelIfAvailable : new boolean[]{false, true}) {

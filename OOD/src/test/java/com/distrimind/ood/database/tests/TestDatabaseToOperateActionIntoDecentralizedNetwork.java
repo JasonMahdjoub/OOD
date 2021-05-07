@@ -76,7 +76,7 @@ public abstract class TestDatabaseToOperateActionIntoDecentralizedNetwork extend
 	}
 
 	@DataProvider(name = "constructorParameters")
-	public static Object[][] constParameters() {
+	public static Object[][] constructorParameters() {
 		Object[][] res=new Object[24][5];
 		int i=0;
 		for (boolean canSendIndirectTransactions : new boolean[]{false, true}) {
