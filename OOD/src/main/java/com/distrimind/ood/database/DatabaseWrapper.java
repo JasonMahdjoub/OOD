@@ -5592,7 +5592,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}, true);
 			if (databaseLogger!=null)
 				databaseLogger.info("Database removed: "+configuration+" (version="+databaseVersion+")");
-			if (notifyNewCompatibleDatabases)
+			if (notifyNewCompatibleDatabases && !databaseReplacedByNewVersionThatIsAlreadySynchronized)
 				getSynchronizer().broadcastAvailableDatabase();
 
 		}
