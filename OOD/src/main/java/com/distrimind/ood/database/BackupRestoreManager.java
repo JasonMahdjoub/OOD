@@ -1674,7 +1674,7 @@ public class BackupRestoreManager {
 	}
 	private long getLastTransactionIDBeforeGivenTimeStampIndex(int i) throws DatabaseException {
 		assert i>=0;
-		while (--i>0) {
+		while (--i>=0) {
 			File f=getFile(fileTimeStamps.get(i));
 			try(RandomFileInputStream fis=new RandomFileInputStream(f))
 			{
