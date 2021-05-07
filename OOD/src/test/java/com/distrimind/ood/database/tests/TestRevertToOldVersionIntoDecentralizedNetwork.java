@@ -84,7 +84,10 @@ public abstract class TestRevertToOldVersionIntoDecentralizedNetwork extends Tes
 		exchangeMessages();
 		if (upgradeDatabaseVersionWhenConnectedWithPeers)
 		{
-			connectSelectedDatabase(upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion, db1, db2);
+			if(preferOtherChannelThanLocalChannelIfAvailable)
+				connectSelectedDatabase(upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion, db1, db2, db3);
+			else
+				connectSelectedDatabase(upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion, db1, db2);
 			//connectAllDatabase(Collections.singletonList(db3.getHostID()), upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion);
 			exchangeMessages();
 		} else if (upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion)
