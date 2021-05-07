@@ -199,6 +199,7 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 		exchangeMessages();
 		disconnectCentralDatabaseBackup();
 		connectCentralDatabaseBackupWithConnectedDatabase();
+		exchangeMessages();
 		for (Database d : listDatabase)
 		{
 			Assert.assertTrue(d.getDbwrapper().getSynchronizer().isInitializedWithCentralBackup());

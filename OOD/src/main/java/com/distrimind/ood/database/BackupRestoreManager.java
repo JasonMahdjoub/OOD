@@ -1627,7 +1627,10 @@ public class BackupRestoreManager {
 
 			Long lid=metaData.getLastTransactionID();
 			if (lid==null) {
-				lid = getLastTransactionIDBeforeGivenTimeStamp(timeStamp);
+				lid=databaseWrapper.getTransactionIDTable().getLastTransactionID();
+				if (lid==-1)
+					lid=null;
+				//lid = getLastTransactionIDBeforeGivenTimeStamp(timeStamp);
 			}
 
 			return new EncryptedBackupPartDestinedToCentralDatabaseBackup(fromHostIdentifier, encryptedMetaData, out.getRandomInputStream(), EncryptionTools.encryptID(lid, random, encryptionProfileProvider));
@@ -1676,7 +1679,6 @@ public class BackupRestoreManager {
 		assert i>=0;
 		while (--i>=0) {
 			File f=getFile(fileTimeStamps.get(i));
-			System.out.println(i);
 			try(RandomFileInputStream fis=new RandomFileInputStream(f))
 			{
 				fis.seek(LAST_BACKUP_UTC_POSITION+8);
@@ -2564,7 +2566,7 @@ public class BackupRestoreManager {
 						cancelTransaction();
 						return;
 					}
-					saveTransactionQueue(out, nextTransactionReference, transactionUTC, firstTransactionID, transactionToSynchronize ? transactionID : null/*, index*/);
+					saveTransactionQueue(out, nextTransactionReference, transactionUTC, firstTransactionID, /*transactionToSynchronize ? */transactionID /*: null/*, index*/);
 
 					try {
 
