@@ -88,7 +88,7 @@ public abstract class AbstractCompatibleDatabasesMessage extends DatabaseEvent i
 
 	@Override
 	public int getInternalSerializedSize() {
-		int res=compatibleDatabasesWithDestinationPeer.size();
+		int res=compatibleDatabasesWithDestinationPeer.size()+2;
 		for (String s : compatibleDatabasesWithDestinationPeer)
 			res+=SerializationTools.getInternalSize(s, SerializationTools.MAX_CLASS_LENGTH);
 		return res+
