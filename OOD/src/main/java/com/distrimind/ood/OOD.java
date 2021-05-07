@@ -79,6 +79,8 @@ public class OOD {
 									.addItem("Implementation of DatabaseConfigurationBuilder that centralize database loading, and database synchronization with decentralized peers and with central backup database")
 									.addItem("Add function Table.removeAllRecordsWithCascade()")
 									.addItem("Fix issue when changing database's version and refresh tables state when BackupRestoreManager was loaded")
+									.addItem("Add function Table.hasRecords(String, Map)")
+									.addItem("Add function Table.hasRecords(Filter, String, Map)")
 					)
 					.addDescription(
 							new Description((short)2, (short)4, (short)0, Version.Type.STABLE, (short)1, "2020-02-11")

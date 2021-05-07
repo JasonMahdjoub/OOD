@@ -3601,6 +3601,69 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 	}
 
+	/**
+	 * Returns true if there is at mean one record which corresponds to the given
+	 * 	 filter and the given command.
+	 *
+	 * @param _filter
+	 *            the filter
+	 * @param whereCondition
+	 *            the SQL WHERE condition that filter the results
+	 * @param parameters
+	 *            the used parameters with the WHERE condition
+	 * @return the corresponding records.
+	 * @throws DatabaseException
+	 *             if a Sql exception occurs.
+	 * @throws NullPointerException
+	 *             if parameters are null pointers.
+	 */
+	public final boolean hasRecords(final Filter<T> _filter, String whereCondition, Map<String, Object> parameters)
+			throws DatabaseException {
+		Reference<Boolean> res=new Reference<>(false);
+		getPaginatedRecords(-1, -1, new Filter<T>() {
+			@Override
+			public boolean nextRecord(T _record) throws DatabaseException {
+				if (_filter.nextRecord(_record))
+				{
+					res.set(true);
+					stopTableParsing();
+				}
+				return false;
+			}
+		}, whereCondition, parameters);
+		return res.get();
+	}
+
+	/**
+	 * Returns true if there is at mean one record which corresponds to the given
+	 * 	 command.
+	 *
+	 * @param whereCondition
+	 *            the SQL WHERE condition that filter the results
+	 * @param parameters
+	 *            the used parameters with the WHERE condition
+	 * @return the corresponding records.
+	 * @throws DatabaseException
+	 *             if a Sql exception occurs.
+	 * @throws NullPointerException
+	 *             if parameters are null pointers.
+	 */
+
+	public final boolean hasRecords(String whereCondition, Map<String, Object> parameters)
+			throws DatabaseException {
+		Reference<Boolean> res=new Reference<>(false);
+		getPaginatedRecords(-1, -1, new Filter<T>() {
+			@Override
+			public boolean nextRecord(T _record) {
+				res.set(true);
+				stopTableParsing();
+				return false;
+			}
+		}, whereCondition, parameters);
+		return res.get();
+	}
+
+
 	private boolean hasRecords(final Filter<T> _filter, boolean is_sql_transaction) throws DatabaseException {
 		if (isLoadedInMemory()) {
 			ArrayList<T> records = getRecords(-1, -1, is_sql_transaction);
