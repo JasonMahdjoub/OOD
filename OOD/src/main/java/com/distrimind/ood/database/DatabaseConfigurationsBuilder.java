@@ -956,17 +956,31 @@ public class DatabaseConfigurationsBuilder {
 				if (predicate.test(c)) {
 					if (c.restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable || c.getBackupConfiguration()==null, chooseNearestBackupIfNoBackupMatch, notifyOtherPeers)) {
 
-
+						boolean localRestoration=true;
 						if (preferOtherChannelThanLocalChannelIfAvailable || c.getBackupConfiguration() == null) {
+							localRestoration=false;
 							if (c.isSynchronizedWithCentralBackupDatabase()) {
 								//download database from other database's channel
 								wrapper.prepareDatabaseRestorationFromDistantDatabaseBackupChannel(c.getDatabaseSchema().getPackage());
+								changed = true;
 							} else {
-								//send message to distant peer in order to ask him to restore database to old state
-								wrapper.checkNotAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(c.getDatabaseSchema().getPackage());
+								if (wrapper.getDatabaseHooksTable().hasRecords(new Filter<DatabaseHooksTable.Record>() {
+									@Override
+									public boolean nextRecord(DatabaseHooksTable.Record _record) {
+										return !_record.concernsLocalDatabaseHost() && _record.getDatabasePackageNames().contains(c.getDatabaseSchema().getPackage().getName())
+												&& !_record.getDatabasePackageNamesThatDoNotUseExternalBackup().contains(c.getDatabaseSchema().getPackage().getName());
+									}
+								}))
+								{
+									//send message to distant peer in order to ask him to restore database to old state
+									wrapper.checkNotAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(c.getDatabaseSchema().getPackage());
+									changed = true;
+								}
+								else if (c.getBackupConfiguration()==null)
+									throw new DatabaseException("No peer and no local backup was found to restore the database "+c.getDatabaseSchema().getPackage().getName());
 							}
-							changed = true;
-						} else {
+						}
+						if (localRestoration){
 							//restore database from local backup database
 							if (!wrapper.prepareDatabaseRestorationFromInternalBackupChannel(c.getDatabaseSchema().getPackage()))
 								changed = true;
@@ -1036,7 +1050,8 @@ public class DatabaseConfigurationsBuilder {
 											wrapper.getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
 												@Override
 												public boolean nextRecord(DatabaseHooksTable.Record _record) {
-													if (_record.getDatabasePackageNames().contains(c.getDatabaseSchema().getPackage().getName())) {
+													if (_record.getDatabasePackageNames().contains(c.getDatabaseSchema().getPackage().getName())
+													   && !_record.getDatabasePackageNamesThatDoNotUseExternalBackup().contains(c.getDatabaseSchema().getPackage().getName())) {
 														hostThatApplyRestoration.set(_record.getHostID());
 														stopTableParsing();
 													}

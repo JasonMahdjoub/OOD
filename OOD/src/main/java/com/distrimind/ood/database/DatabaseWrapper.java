@@ -1324,11 +1324,18 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			return r != null && isInitialized(r.getHostID());
 		}
 		void sendAvailableDatabaseTo(DecentralizedValue hostDestination) throws DatabaseException {
-			sendAvailableDatabaseTo(hostDestination, getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString(), getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString(hostDestination));
+			sendAvailableDatabaseTo(hostDestination,
+					getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString(),
+					getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurationsString(hostDestination));
 		}
 		void sendAvailableDatabaseTo(DecentralizedValue hostDestination, Set<String> compatibleDatabases, Set<String> compatibleDatabasesWithDestinationPeer) throws DatabaseException {
-
-			addNewDatabaseEvent(new CompatibleDatabasesP2PMessage(compatibleDatabases, compatibleDatabasesWithDestinationPeer,getLocalHostID(), hostDestination));
+			Set<String> databasesThatUseBackupRestoreManager=new HashSet<>();
+			for (String s : compatibleDatabases)
+			{
+				if (getDatabaseConfigurationsBuilder().getDatabaseConfiguration(s).getBackupConfiguration()!=null)
+					databasesThatUseBackupRestoreManager.add(s);
+			}
+			addNewDatabaseEvent(new CompatibleDatabasesP2PMessage(compatibleDatabases, compatibleDatabasesWithDestinationPeer,getLocalHostID(), hostDestination, databasesThatUseBackupRestoreManager));
 		}
 
 		void sendAvailableDatabaseToCentralDatabaseBackup() throws DatabaseException {
@@ -1360,8 +1367,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			lockWrite();
 			try {
 				ConnectedPeers cp = initializedHooks.get(authenticatedP2PMessage.getHostDestination());
-				if (cp != null)
+				if (cp != null) {
 					addNewDatabaseEvent((DatabaseEvent) authenticatedP2PMessage);
+				}
 				if (isInitializedWithCentralBackup())
 					addNewDatabaseEvent(new IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup(Collections.singletonList(authenticatedP2PMessage), databaseConfigurationsBuilder.getSecureRandom(), databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup()));
 				/*else {
@@ -1731,7 +1739,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			getDatabaseHooksTable().actualizeLastTransactionID(Collections.emptyList());
 			if (launchRestoration)
 			{
-				getDatabaseConfigurationsBuilder().restoreGivenDatabaseStringToOldVersion(databasePackage, timeUTCOfRestorationInMs, false , chooseNearestBackupIfNoBackupMatch, false);
+				BackupRestoreManager brm=getBackupRestoreManager(databasePackage);
+				brm.restoreDatabaseToDateUTC(timeUTCOfRestorationInMs, chooseNearestBackupIfNoBackupMatch, false);
+				//getDatabaseConfigurationsBuilder().restoreGivenDatabaseStringToOldVersion(databasePackage, timeUTCOfRestorationInMs, false , chooseNearestBackupIfNoBackupMatch, false);
 			}
 
 		}
@@ -3088,6 +3098,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					if (localRecord.get()!=null) {
 						getSynchronizer().cleanTransactionsAfterRestoration(p.getName(), timeUTCOfRestorationInMs, transactionToDeleteUpperLimitUTC, transactionToDeleteUpperLimitUTC==null && hostThatApplyRestoration.equals(getLocalHostID()), chooseNearestBackupIfNoBackupMatch);
 					}
+
 					return null;
 				}
 
@@ -3264,6 +3275,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				cp.compatibleDatabasesFromDirectPeer.addAll(message.getCompatibleDatabasesWithDestinationPeer());
 				cp.compatibleDatabases.clear();
 				cp.compatibleDatabases.addAll(message.getCompatibleDatabases());
+				getDatabaseHooksTable().setDatabasePackageNamesThatUseBackup(message.getHostSource(), message.getDatabasesThatUseBackupRestoreManager());
 			}
 			checkConnexionsToInit(message.getHostSource());
 
@@ -6563,6 +6575,26 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			return d.backupRestoreManager;
 	}
 
+	/**
+	 * Returns the OOD (and non native) backup manager.
+	 *
+	 * Backups into this manager are done in real time.
+	 *
+	 * Backups and restores into this backup manager can be done manually.
+	 *
+	 * Enables to make incremental database backups, and database restore.
+	 * @param _package the concerned database
+	 * @return the backup manager or null if no backup manager was configured.
+	 * @see DatabaseConfiguration
+	 */
+	public BackupRestoreManager getBackupRestoreManager(String _package)
+	{
+		for (Map.Entry<Package, Database> e : this.sql_database.entrySet()) {
+			if (e.getKey().getName().equals(_package))
+				return e.getValue().backupRestoreManager;
+		}
+		return null;
+	}
 
 
 	/**

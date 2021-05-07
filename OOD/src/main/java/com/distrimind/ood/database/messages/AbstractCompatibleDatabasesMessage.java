@@ -38,10 +38,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 import com.distrimind.ood.database.DatabaseEvent;
 import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.util.DecentralizedValue;
-import com.distrimind.util.io.SecureExternalizable;
-import com.distrimind.util.io.SecuredObjectInputStream;
-import com.distrimind.util.io.SecuredObjectOutputStream;
-import com.distrimind.util.io.SerializationTools;
+import com.distrimind.util.io.*;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -60,13 +57,16 @@ public abstract class AbstractCompatibleDatabasesMessage extends DatabaseEvent i
 
 	private Set<String> incompatibleDatabasesWithDestinationPeer;
 	private Set<String> compatibleDatabasesWithDestinationPeer;
+	private Set<String> databasesThatUseBackupRestoreManager;
 	private DecentralizedValue hostSource;
 
-	protected AbstractCompatibleDatabasesMessage(Set<String> compatibleDatabases, Set<String> compatibleDatabasesWithDestinationPeer, DecentralizedValue hostSource) {
+	protected AbstractCompatibleDatabasesMessage(Set<String> compatibleDatabases, Set<String> compatibleDatabasesWithDestinationPeer, DecentralizedValue hostSource, Set<String> databasesThatUseBackupRestoreManager) {
 		if (hostSource==null)
 			throw new NullPointerException();
 		if (compatibleDatabases ==null)
 			compatibleDatabases =new HashSet<>();
+		if (databasesThatUseBackupRestoreManager==null)
+			throw new NullPointerException();
 		if (compatibleDatabases.contains(null))
 			throw new NullPointerException();
 		if (compatibleDatabasesWithDestinationPeer ==null)
@@ -76,6 +76,10 @@ public abstract class AbstractCompatibleDatabasesMessage extends DatabaseEvent i
 		this.incompatibleDatabasesWithDestinationPeer = new HashSet<>(compatibleDatabases);
 		this.incompatibleDatabasesWithDestinationPeer.removeAll(compatibleDatabasesWithDestinationPeer);
 		this.compatibleDatabasesWithDestinationPeer = compatibleDatabasesWithDestinationPeer;
+		Set<String> s=new HashSet<>(databasesThatUseBackupRestoreManager);
+		s.removeAll(this.compatibleDatabasesWithDestinationPeer);
+		this.databasesThatUseBackupRestoreManager=new HashSet<>(databasesThatUseBackupRestoreManager);
+		this.databasesThatUseBackupRestoreManager.removeAll(s);
 		this.hostSource=hostSource;
 	}
 
@@ -84,7 +88,11 @@ public abstract class AbstractCompatibleDatabasesMessage extends DatabaseEvent i
 
 	@Override
 	public int getInternalSerializedSize() {
-		return SerializationTools.getInternalSize(incompatibleDatabasesWithDestinationPeer, MAX_SIZE_OF_PACKAGES_NAMES_IN_BYTES)
+		int res=compatibleDatabasesWithDestinationPeer.size();
+		for (String s : compatibleDatabasesWithDestinationPeer)
+			res+=SerializationTools.getInternalSize(s, SerializationTools.MAX_CLASS_LENGTH);
+		return res+
+			+SerializationTools.getInternalSize(incompatibleDatabasesWithDestinationPeer, MAX_SIZE_OF_PACKAGES_NAMES_IN_BYTES)
 				+ SerializationTools.getInternalSize(hostSource);
 	}
 
@@ -94,14 +102,32 @@ public abstract class AbstractCompatibleDatabasesMessage extends DatabaseEvent i
 
 	@Override
 	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
-		out.writeCollection(compatibleDatabasesWithDestinationPeer, false, MAX_SIZE_OF_PACKAGES_NAMES_IN_BYTES, false);
+		if (compatibleDatabasesWithDestinationPeer.size()>MAX_PACKAGES_NUMBERS)
+			throw new IOException();
+		out.writeUnsignedInt16Bits(compatibleDatabasesWithDestinationPeer.size());
+		for (String s : compatibleDatabasesWithDestinationPeer)
+		{
+			out.writeString(s, false, SerializationTools.MAX_CLASS_LENGTH);
+			out.writeBoolean(databasesThatUseBackupRestoreManager.contains(s));
+		}
 		out.writeCollection(incompatibleDatabasesWithDestinationPeer, false, MAX_SIZE_OF_PACKAGES_NAMES_IN_BYTES, false);
 		out.writeObject(hostSource, false);
 	}
 
 	@Override
 	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
-		compatibleDatabasesWithDestinationPeer =in.readCollection(false, MAX_SIZE_OF_PACKAGES_NAMES_IN_BYTES, false, String.class);
+		int nb=in.readUnsignedInt16Bits();
+		if (nb>MAX_PACKAGES_NUMBERS)
+			throw new MessageExternalizationException(Integrity.FAIL);
+		compatibleDatabasesWithDestinationPeer=new HashSet<>();
+		databasesThatUseBackupRestoreManager=new HashSet<>();
+		for (int i=0;i<nb;i++)
+		{
+			String s=in.readString(false, SerializationTools.MAX_CLASS_LENGTH);
+			compatibleDatabasesWithDestinationPeer.add(s);
+			if (in.readBoolean())
+				databasesThatUseBackupRestoreManager.add(s);
+		}
 		incompatibleDatabasesWithDestinationPeer =in.readCollection(false, MAX_SIZE_OF_PACKAGES_NAMES_IN_BYTES, false, String.class);
 		hostSource=in.readObject(false);
 	}
@@ -114,5 +140,9 @@ public abstract class AbstractCompatibleDatabasesMessage extends DatabaseEvent i
 
 	public Set<String> getCompatibleDatabasesWithDestinationPeer() {
 		return compatibleDatabasesWithDestinationPeer;
+	}
+
+	public Set<String> getDatabasesThatUseBackupRestoreManager() {
+		return databasesThatUseBackupRestoreManager;
 	}
 }

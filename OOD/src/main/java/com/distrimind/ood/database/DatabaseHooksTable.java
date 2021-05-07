@@ -47,7 +47,6 @@ import com.distrimind.util.crypto.EncryptionProfileProvider;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 
 /**
  * 
@@ -89,6 +88,9 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		@Field(limit=PACKAGES_TO_SYNCHRONIZE_LENGTH, forceUsingBlobOrClob = true)
 		private Set<String> databasePackageNames;
 
+		@Field(limit=PACKAGES_TO_SYNCHRONIZE_LENGTH, forceUsingBlobOrClob = true)
+		private Set<String> databasePackageNamesThatDoNotUseExternalBackup =new HashSet<>();
+
 		@Field
 		private long lastLocalAuthenticatedP2PMessageID=0;
 
@@ -126,6 +128,10 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			databasePackageNames=null;
 			authenticatedMessagesQueueToSend=null;
 
+		}
+
+		Set<String> getDatabasePackageNamesThatDoNotUseExternalBackup() {
+			return databasePackageNamesThatDoNotUseExternalBackup;
 		}
 
 		boolean validateDistantAuthenticatedP2PMessage(AuthenticatedP2PMessage message, DatabaseHooksTable table) throws DatabaseException {
@@ -1423,6 +1429,20 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		}
 		else
 			return false;
+	}
+
+	void setDatabasePackageNamesThatUseBackup(DecentralizedValue hostSource, Set<String> databasePackageNamesThatUseBackup) throws DatabaseException {
+		if (hostSource==null)
+			throw new NullPointerException();
+		updateRecords(new AlterRecordFilter<Record>() {
+			@Override
+			public void nextRecord(Record _record) throws DatabaseException {
+				Set<String> hs=new HashSet<>(databasePackageNamesThatUseBackup);
+				hs.removeAll(_record.databasePackageNames);
+				if (!hs.equals(_record.databasePackageNamesThatDoNotUseExternalBackup))
+					update("databasePackageNamesThatDoNotUseExternalBackup", hs);
+			}
+		}, "hostID=%hid", "hid", hostSource);
 	}
 
 }
