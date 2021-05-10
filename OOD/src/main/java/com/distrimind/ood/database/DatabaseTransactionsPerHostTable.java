@@ -1012,9 +1012,9 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 				if (nextTransactionPosition<=ois.currentPosition())
 					throw new DatabaseException("Invalid data");
 				long transactionID;
-				boolean withID;
+				//boolean withID;
 
-				if (!(withID=ois.readBoolean()) || (transactionID=ois.readLong())<=lastDistantTransactionID)
+				if (!(ois.readBoolean()) || (transactionID=ois.readLong())<=lastDistantTransactionID)
 				{
 					/*if (!withID && findOneTransactionWithID)
 						throw new DatabaseException("Synchronization was disabled during backup process");*/
@@ -1022,8 +1022,8 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 					ois.seek(nextTransactionPosition);
 					continue;
 				}
-				else if (transactionID!=lastDistantTransactionID+1)
-					throw new DatabaseException("Invalid received backup file");
+				/*else if (transactionID!=lastDistantTransactionID+1)
+					throw new DatabaseException("Invalid received backup file");*/
 				//findOneTransactionWithID=true;
 				long transactionUTC=ois.readLong();
 				if (lastRestorationTimeUTCInMS!=null && lastRestorationTimeUTCInMS>=transactionUTC) {
