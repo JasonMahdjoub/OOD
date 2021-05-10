@@ -9020,6 +9020,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				fa.setValue(record, o);
 				fa.serialize(oos, record);
 			}
+			if (oos.currentPosition()==0)
+				return null;
 			return oos.getBytes();
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -9031,6 +9033,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			for (FieldAccessor fa : primary_keys_fields) {
 				fa.serialize(oos, record);
 			}
+			if (oos.currentPosition()==0)
+				return null;
 			return oos.getBytes();
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -9061,6 +9065,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					fa.serialize(oos, record);
 				}
 			}
+			if (oos.currentPosition()==0)
+				return null;
 			return oos.getBytes();
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
