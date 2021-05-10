@@ -1554,6 +1554,17 @@ public class BackupRestoreManager {
 			return fileReferenceTimeStamps.size()>0?fileReferenceTimeStamps.get(0):Long.MAX_VALUE;
 		}
 	}
+	public long getFirstFileUTCInMs()
+	{
+		synchronized (this) {
+			return fileTimeStamps.size()>0?fileTimeStamps.get(0):Long.MAX_VALUE;
+		}
+	}
+
+	boolean hasBackupReference()
+	{
+		return fileReferenceTimeStamps.size()>0;
+	}
 
 	public Long getFirstValidatedTransactionUTCInMs()
 	{
@@ -1758,6 +1769,8 @@ public class BackupRestoreManager {
 				}
 
 			}
+			else
+				backupPart.getPartInputStream().close();
 			return false;
 		}
 		catch (IOException e)

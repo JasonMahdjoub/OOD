@@ -1004,7 +1004,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 			if (referenceFile)
 				fileListTables=BackupRestoreManager.extractClassesList(ois);
 			BackupRestoreManager.positionForDataRead(ois, referenceFile);
-			boolean findOneTransactionWithID=false;
+			//boolean findOneTransactionWithID=false;
 			while(ois.available()>0) {
 				int nextTransactionPosition = ois.readInt();
 				if (nextTransactionPosition==-1)
@@ -1015,15 +1015,15 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 				boolean withID;
 				if (!(withID=ois.readBoolean()) || (transactionID=ois.readLong())<=lastDistantTransactionID)
 				{
-					if (!withID && findOneTransactionWithID)
-						throw new DatabaseException("Synchronization was disabled during backup process");
-					findOneTransactionWithID|=withID;
+					/*if (!withID && findOneTransactionWithID)
+						throw new DatabaseException("Synchronization was disabled during backup process");*/
+					//findOneTransactionWithID|=withID;
 					ois.seek(nextTransactionPosition);
 					continue;
 				}
 				else if (transactionID!=lastDistantTransactionID+1)
 					throw new DatabaseException("Invalid received backup file");
-				findOneTransactionWithID=true;
+				//findOneTransactionWithID=true;
 				long transactionUTC=ois.readLong();
 				if (ois.readInt()!=-1)
 					throw new DatabaseException("Invalid data");

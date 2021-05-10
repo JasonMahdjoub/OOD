@@ -49,8 +49,7 @@ import java.io.IOException;
 public class EncryptedBackupPartComingFromCentralDatabaseBackup extends AbstractEncryptedBackupPart implements MessageComingFromCentralDatabaseBackup{
 	private DecentralizedValue hostDestination;
 
-	@SuppressWarnings("unused")
-	private EncryptedBackupPartComingFromCentralDatabaseBackup() {
+	protected EncryptedBackupPartComingFromCentralDatabaseBackup() {
 	}
 
 	public EncryptedBackupPartComingFromCentralDatabaseBackup(DecentralizedValue hostSource, DecentralizedValue hostDestination, EncryptedDatabaseBackupMetaDataPerFile metaData, RandomInputStream partInputStream) {

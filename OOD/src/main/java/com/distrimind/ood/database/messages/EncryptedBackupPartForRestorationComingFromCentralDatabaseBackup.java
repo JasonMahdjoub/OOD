@@ -58,6 +58,11 @@ public class EncryptedBackupPartForRestorationComingFromCentralDatabaseBackup ex
 		this.channelHost=channelHost;
 	}
 
+	@SuppressWarnings("unused")
+	protected EncryptedBackupPartForRestorationComingFromCentralDatabaseBackup() {
+		super();
+	}
+
 	public DecentralizedValue getChannelHost() {
 		return channelHost;
 	}
@@ -77,5 +82,12 @@ public class EncryptedBackupPartForRestorationComingFromCentralDatabaseBackup ex
 	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
 		super.readExternal(in);
 		channelHost=in.readObject(false);
+	}
+	@Override
+	public String toString() {
+		return "EncryptedBackupPartForRestorationComingFromCentralDatabaseBackup{" +
+				"hostDestination=" + getHostDestination() +
+				", metaData="+getMetaData()+
+				'}';
 	}
 }

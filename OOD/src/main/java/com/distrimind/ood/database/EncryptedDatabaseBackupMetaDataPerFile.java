@@ -188,4 +188,14 @@ public class EncryptedDatabaseBackupMetaDataPerFile implements SecureExternaliza
 			throw new MessageExternalizationException(Integrity.FAIL);
 		encryptedMetaData=in.readBytesArray(false, MAX_ENCRYPTED_DATA_LENGTH_IN_BYTES);
 	}
+
+	@Override
+	public String toString() {
+		return "EncryptedDatabaseBackupMetaDataPerFile{" +
+				"fileTimestampUTC=" + fileTimestampUTC +
+				", lastTransactionTimestampUTC=" + lastTransactionTimestampUTC +
+				", referenceFile=" + referenceFile +
+				", packageString='" + packageString + '\'' +
+				'}';
+	}
 }

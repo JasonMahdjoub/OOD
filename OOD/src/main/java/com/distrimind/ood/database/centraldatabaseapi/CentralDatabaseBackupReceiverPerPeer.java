@@ -574,7 +574,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 
 	protected DatabaseBackupPerClientTable.Record getMostAppropriateChannelHostIDToCreateNewChannel(String packageString) throws DatabaseException {
 		Reference<DatabaseBackupPerClientTable.Record> res=new Reference<>(null);
-		centralDatabaseBackupReceiver.databaseBackupPerClientTable.getRecord(new Filter<DatabaseBackupPerClientTable.Record>() {
+		centralDatabaseBackupReceiver.databaseBackupPerClientTable.getRecords(new Filter<DatabaseBackupPerClientTable.Record>() {
 			@Override
 			public boolean nextRecord(DatabaseBackupPerClientTable.Record _record) {
 				if (res.get()==null || _record.getLastFileBackupPartUTC()>res.get().getLastFileBackupPartUTC())
