@@ -35,12 +35,15 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+import com.distrimind.ood.database.DatabaseRecord;
+import com.distrimind.ood.database.TableEvent;
 import com.distrimind.ood.database.decentralizeddatabase.TableAlone;
 import com.distrimind.ood.database.decentralizeddatabase.TablePointed;
 import com.distrimind.ood.database.decentralizeddatabase.TablePointing;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 
@@ -121,7 +124,8 @@ public abstract class TestRevertToOldVersionIntoDecentralizedNetwork extends Tes
 			exchangeMessages();
 			testSynchronizationWithSavedRecords(db1);
 			testSynchronizationWithSavedRecords(db2);
-			testSynchronizationWithSavedRecords(db3);
+			if (!upgradeDatabaseVersionWhenConnectedWithPeers || preferOtherChannelThanLocalChannelIfAvailable)
+				testSynchronizationWithSavedRecords(db3);
 		}
 		else if (!upgradeDatabaseVersionWhenConnectedWithPeers)
 		{
@@ -199,6 +203,19 @@ public abstract class TestRevertToOldVersionIntoDecentralizedNetwork extends Tes
 				", hasToRemoveOldDatabase=" + hasToRemoveOldDatabase +
 				", preferOtherChannelThanLocalChannelIfAvailable=" + preferOtherChannelThanLocalChannelIfAvailable +
 				'}';
+	}
+
+	@Test(dataProvider = "provideDataSynchroBetweenThreePeers", dependsOnMethods = { "testAction" })
+	public void testSynchroBetweenThreePeers2(boolean exceptionDuringTransaction, boolean generateDirectConflict,
+											  boolean peersInitiallyConnected)
+			throws Exception {
+		for (TableEvent<DatabaseRecord> event : provideTableEventsForSynchro())
+			testSynchroBetweenPeersImpl(3, exceptionDuringTransaction, generateDirectConflict, peersInitiallyConnected, event);
+	}
+
+	@Test(dependsOnMethods = { "testSynchroBetweenThreePeers2" })
+	public void testSynchroAfterTestsBetweenThreePeers2() throws DatabaseException {
+		testSynchronisation();
 	}
 }
 

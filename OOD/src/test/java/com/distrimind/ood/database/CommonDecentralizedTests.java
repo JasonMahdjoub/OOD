@@ -40,6 +40,8 @@ import com.distrimind.ood.database.decentralizeddatabase.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.messages.*;
+import com.distrimind.ood.database.tests.TestDatabaseToOperateActionIntoDecentralizedNetwork;
+import com.distrimind.ood.database.tests.TestRevertToOldVersionIntoDecentralizedNetwork;
 import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.DecentralizedIDGenerator;
 import com.distrimind.util.DecentralizedValue;
@@ -651,6 +653,7 @@ public abstract class CommonDecentralizedTests {
 
 
 		}
+
 
 		void initStep2() throws DatabaseException {
 			tableAlone = dbwrapper.getTableInstance(TableAlone.class);
@@ -1328,23 +1331,24 @@ public abstract class CommonDecentralizedTests {
 							{
 								BackupRestoreManager brmo=dother.getDbwrapper().getBackupRestoreManager(dc.getDatabaseSchema().getPackage());
 								Assert.assertNotNull(brmo, dc.getDatabaseSchema().getPackage().getName());
-								List<Long> finalTimeStamps=brmo.getFinalTimestamps();
-								Long lastID=null;
-								if (finalTimeStamps.size()>0) {
-									long ts = finalTimeStamps.get(finalTimeStamps.size() - 1);
-									if (!brmo.isReference(ts))
-										lastID = brmo.getDatabaseBackupMetaDataPerFile(ts, false).getLastTransactionID();
+								if (!(this instanceof TestRevertToOldVersionIntoDecentralizedNetwork)) {
+									List<Long> finalTimeStamps = brmo.getFinalTimestamps();
+									Long lastID = null;
+									if (finalTimeStamps.size() > 0) {
+										long ts = finalTimeStamps.get(finalTimeStamps.size() - 1);
+										if (!brmo.isReference(ts))
+											lastID = brmo.getDatabaseBackupMetaDataPerFile(ts, false).getLastTransactionID();
+									}
+									if (lastID == null && finalTimeStamps.size() > 1) {
+										long ts = finalTimeStamps.get(finalTimeStamps.size() - 2);
+										lastID = brmo.getDatabaseBackupMetaDataPerFile(ts, brmo.isReference(ts)).getLastTransactionID();
+									}
+									if (lastID != null && !actualGenerateDirectConflict) {
+										//lastID = Long.MIN_VALUE;
+										Assert.assertTrue(
+												d.getDbwrapper().getSynchronizer().getLastValidatedDistantIDSynchronization(dother.hostID) >= lastID, "lastID=" + lastID + " ; lastOtherID=" + d.getDbwrapper().getSynchronizer().getLastValidatedDistantIDSynchronization(dother.hostID));
+									}
 								}
-								if (lastID==null && finalTimeStamps.size()>1) {
-									long ts=finalTimeStamps.get(finalTimeStamps.size()-2);
-									lastID = brmo.getDatabaseBackupMetaDataPerFile(ts, brmo.isReference(ts)).getLastTransactionID();
-								}
-								if (lastID!=null && !actualGenerateDirectConflict) {
-									//lastID = Long.MIN_VALUE;
-									Assert.assertTrue(
-											d.getDbwrapper().getSynchronizer().getLastValidatedDistantIDSynchronization(dother.hostID)>= lastID, "lastID="+lastID+" ; lastOtherID="+d.getDbwrapper().getSynchronizer().getLastValidatedDistantIDSynchronization(dother.hostID));
-								}
-
 							}
 						}
 					}
@@ -1870,26 +1874,28 @@ public abstract class CommonDecentralizedTests {
 				}
 			}
 		}
-		for (UndecentralizableTableA1.Record r : db.getUndecentralizableTableA1().getRecords()) {
-			for (CommonDecentralizedTests.Database other : listDatabase) {
-				if (other != db) {
-					UndecentralizableTableA1.Record otherR = other.getUndecentralizableTableA1().getRecord("id",
-							r.id);
-					if (otherR != null) {
-						Assert.assertNotEquals(otherR.value, r.value);
+		if (!(this instanceof TestDatabaseToOperateActionIntoDecentralizedNetwork)) {
+			for (UndecentralizableTableA1.Record r : db.getUndecentralizableTableA1().getRecords()) {
+				for (CommonDecentralizedTests.Database other : listDatabase) {
+					if (other != db) {
+						UndecentralizableTableA1.Record otherR = other.getUndecentralizableTableA1().getRecord("id",
+								r.id);
+						if (otherR != null) {
+							Assert.assertNotEquals(otherR.value, r.value);
+						}
 					}
 				}
 			}
-		}
-		for (UndecentralizableTableB1.Record r : db.getUndecentralizableTableB1().getRecords()) {
-			for (CommonDecentralizedTests.Database other : listDatabase) {
-				if (other != db) {
-					UndecentralizableTableB1.Record otherR = other.getUndecentralizableTableB1().getRecord("id", r.id);
-					if (otherR != null) {
-						if (r.pointing == null)
-							Assert.assertNull(otherR.pointing);
-						else
-							Assert.assertNotEquals(otherR.pointing.value, r.pointing.value);
+			for (UndecentralizableTableB1.Record r : db.getUndecentralizableTableB1().getRecords()) {
+				for (CommonDecentralizedTests.Database other : listDatabase) {
+					if (other != db) {
+						UndecentralizableTableB1.Record otherR = other.getUndecentralizableTableB1().getRecord("id", r.id);
+						if (otherR != null) {
+							if (r.pointing == null)
+								Assert.assertNull(otherR.pointing);
+							else
+								Assert.assertNotEquals(otherR.pointing.value, r.pointing.value);
+						}
 					}
 				}
 			}

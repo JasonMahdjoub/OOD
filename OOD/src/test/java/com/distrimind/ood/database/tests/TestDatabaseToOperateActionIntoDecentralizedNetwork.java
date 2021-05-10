@@ -36,6 +36,9 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 import com.distrimind.ood.database.CommonDecentralizedTests;
+import com.distrimind.ood.database.DatabaseRecord;
+import com.distrimind.ood.database.TableEvent;
+import com.distrimind.ood.database.exceptions.DatabaseException;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -80,7 +83,7 @@ public abstract class TestDatabaseToOperateActionIntoDecentralizedNetwork extend
 		Object[][] res=new Object[24][5];
 		int i=0;
 		for (boolean canSendIndirectTransactions : new boolean[]{false, true}) {
-			for (boolean useCentralDatabaseBackup : new boolean[]{true,false}) {
+			for (boolean useCentralDatabaseBackup : new boolean[]{false, true}) {
 				for (boolean upgradeDatabaseVersionWhenConnectedWithPeers : new boolean[]{false, true}) {
 					for (boolean upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion : useCentralDatabaseBackup?new boolean[]{false, true}:new boolean[]{false}) {
 						for (boolean hasToRemoveOldDatabase : new boolean[]{false, true}) {
