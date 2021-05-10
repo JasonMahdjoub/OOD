@@ -1239,9 +1239,9 @@ public abstract class CommonDecentralizedTests {
 						loop = true;
 						if (e instanceof MessageDestinedToCentralDatabaseBackup)
 						{
-							if (db.getDbwrapper().getSynchronizer().isInitializedWithCentralBackup())
+							if (db.getDbwrapper().getSynchronizer().isInitializedWithCentralBackup() || e instanceof DisconnectCentralDatabaseBackup)
 								centralDatabaseBackupReceiver.received((MessageDestinedToCentralDatabaseBackup)new CommonDecentralizedTests.DistantDatabaseEvent(db.getDbwrapper(), (MessageDestinedToCentralDatabaseBackup)e).getDatabaseEventToSend());
-							else Assert.assertTrue(e instanceof DisconnectCentralDatabaseBackup, e.toString());
+
 
 						}
 						else if (e instanceof P2PDatabaseEventToSend) {
