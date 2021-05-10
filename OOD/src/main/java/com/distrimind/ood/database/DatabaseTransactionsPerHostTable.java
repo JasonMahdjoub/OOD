@@ -989,7 +989,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 		final DatabaseHooksTable.Record comingFromRecord = hooks.get(0);
 
 		long lastDistantTransactionID=getDatabaseWrapper().getSynchronizer().getLastValidatedDistantIDSynchronization(comingFrom);
-
+		Long lastRestorationTimeUTCInMS=getDatabaseWrapper().getDatabaseTable().getLastRestorationTimeUTCInMS(databasePackage);
 
 		try  {
 			ois.skipNBytes(8);
@@ -1013,6 +1013,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 					throw new DatabaseException("Invalid data");
 				long transactionID;
 				boolean withID;
+
 				if (!(withID=ois.readBoolean()) || (transactionID=ois.readLong())<=lastDistantTransactionID)
 				{
 					/*if (!withID && findOneTransactionWithID)
@@ -1025,6 +1026,12 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 					throw new DatabaseException("Invalid received backup file");
 				//findOneTransactionWithID=true;
 				long transactionUTC=ois.readLong();
+				if (lastRestorationTimeUTCInMS!=null && lastRestorationTimeUTCInMS>=transactionUTC) {
+					lastDistantTransactionID=transactionID;
+					getDatabaseHooksTable().validateLastDistantTransactionIDAndLastTransactionUTC(comingFromRecord, transactionID, transactionUTC);
+					ois.seek(nextTransactionPosition);
+					continue;
+				}
 				if (ois.readInt()!=-1)
 					throw new DatabaseException("Invalid data");
 				final DatabaseTransactionEventsTable.Record dte=new DatabaseTransactionEventsTable.Record(transactionID, transactionUTC, databasePackage);

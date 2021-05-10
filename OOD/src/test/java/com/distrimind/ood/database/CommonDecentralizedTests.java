@@ -354,6 +354,7 @@ public abstract class CommonDecentralizedTests {
 			try(RandomByteArrayOutputStream out=new RandomByteArrayOutputStream())
 			{
 				out.writeObject(message, false);
+				out.flush();
 				RandomInputStream ris=null;
 				if (message instanceof BigDataEventToSendWithCentralDatabaseBackup)
 				{

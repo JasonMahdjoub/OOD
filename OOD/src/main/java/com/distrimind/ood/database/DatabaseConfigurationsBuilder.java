@@ -1036,7 +1036,7 @@ public class DatabaseConfigurationsBuilder {
 						if (timeUTCInMs != null) {
 							if (c.isPreferOtherChannelThanLocalChannelIfAvailableDuringRestoration()) {
 								if (c.isSynchronizedWithCentralBackupDatabase()) {
-									database.temporaryBackupRestoreManagerComingFromDistantBackupManager.restoreDatabaseToDateUTC(timeUTCInMs, c.isChooseNearestBackupIfNoBackupMatch(), false);
+									database.temporaryBackupRestoreManagerComingFromDistantBackupManager.restoreDatabaseToDateUTC(timeUTCInMs, c.isChooseNearestBackupIfNoBackupMatch(), true);
 //									if (c.isNotifyOtherPeers())
 
 									database.cancelCurrentDatabaseRestorationProcessFromCentralDatabaseBackup();
@@ -1059,7 +1059,7 @@ public class DatabaseConfigurationsBuilder {
 												}
 											}, "concernsDatabaseHost=%c", "c", false);
 											if (hostThatApplyRestoration.get()!=null)
-												wrapper.getSynchronizer().notifyOtherPeersThatDatabaseRestorationWasDone(c.getDatabaseSchema().getPackage(), timeUTCInMs, hostThatApplyRestoration.get(), c.isChooseNearestBackupIfNoBackupMatch());
+												wrapper.getSynchronizer().notifyOtherPeersThatDatabaseRestorationWasDone(c.getDatabaseSchema().getPackage(), timeUTCInMs, System.currentTimeMillis(), hostThatApplyRestoration.get(), c.isChooseNearestBackupIfNoBackupMatch());
 
 											return null;
 										}

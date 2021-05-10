@@ -327,8 +327,9 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 					return Integrity.OK;
 				if (r.getAccount().getAccountID()==connectedClientRecord.getAccount().getAccountID())
 				{
-					if (centralDatabaseBackupReceiver.isConnectedIntoOneOfCentralDatabaseBackupServers(message.getHostDestination()))
+					if (centralDatabaseBackupReceiver.isConnectedIntoOneOfCentralDatabaseBackupServers(message.getHostDestination())) {
 						sendMessage(message);
+					}
 					else {
 						List<byte[]> encryptedAuthenticatedMessagesToSend = r.getEncryptedAuthenticatedMessagesToSend();
 						if (encryptedAuthenticatedMessagesToSend == null)

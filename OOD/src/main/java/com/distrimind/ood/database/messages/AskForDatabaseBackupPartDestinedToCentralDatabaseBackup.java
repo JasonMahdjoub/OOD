@@ -1,7 +1,6 @@
 package com.distrimind.ood.database.messages;
 
 import com.distrimind.ood.database.DatabaseEvent;
-import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.*;
 

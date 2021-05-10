@@ -106,17 +106,22 @@ public abstract class TestRevertToOldVersionIntoDecentralizedNetwork extends Tes
 		}
 		exchangeMessages();
 
-
 		//db1.getDbwrapper().getBackupRestoreManager(TableAlone.class.getPackage()).restoreDatabaseToDateUTC(timeUTC, false);
 		db1.getDbwrapper().getDatabaseConfigurationsBuilder()
-				.restoreGivenDatabaseToOldVersion(TableAlone.class.getPackage(), timeUTC, preferOtherChannelThanLocalChannelIfAvailable, false)
+				.restoreGivenDatabaseToOldVersion(TableAlone.class.getPackage(), timeUTC, preferOtherChannelThanLocalChannelIfAvailable || useCentralDatabaseBackup, false)
 				.commit();
 		//testSynchronizationWithSavedRecords(db1);
 
-		if (!upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion && useCentralDatabaseBackup) {
-			connectCentralDatabaseBackupWithConnectedDatabase();
+		if (useCentralDatabaseBackup) {
+			if (!upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion) {
+				connectCentralDatabaseBackupWithConnectedDatabase();
+			}
 			exchangeMessages();
-			testSynchronizationWithSavedRecords();
+			Thread.sleep(getBackupConfiguration().getMaxBackupFileAgeInMs());
+			exchangeMessages();
+			testSynchronizationWithSavedRecords(db1);
+			testSynchronizationWithSavedRecords(db2);
+			testSynchronizationWithSavedRecords(db3);
 		}
 		else if (!upgradeDatabaseVersionWhenConnectedWithPeers)
 		{

@@ -1829,6 +1829,7 @@ public class BackupRestoreManager {
 			boolean res = true;
 
 			long lastTransactionUTCInMs;
+			final long restorationTimeUTCInMS=System.currentTimeMillis();
 			synchronized (this) {
 				if (temporaryDisabled)
 					return false;
@@ -2191,15 +2192,14 @@ public class BackupRestoreManager {
 
 				databaseWrapper.validateNewDatabaseVersionAndDeleteOldVersion(databaseConfiguration, oldVersion, newVersion);
 				databaseWrapper.getSynchronizer().validateExtendedTransaction();
-
 				//createBackupReference();
 				notify=true;
-
 				if (notifyOtherPeers) {
-					databaseWrapper.getSynchronizer().notifyOtherPeersThatDatabaseRestorationWasDone(dbPackage, dateUTCInMs, lastTransactionUTCInMs);
+					databaseWrapper.getSynchronizer().notifyOtherPeersThatDatabaseRestorationWasDone(dbPackage, dateUTCInMs,restorationTimeUTCInMS, lastTransactionUTCInMs);
 				}
 				else
-					databaseWrapper.getSynchronizer().cleanTransactionsAfterRestoration(dbPackage.getName(), dateUTCInMs, lastTransactionUTCInMs, false, chooseNearestBackupIfNoBackupMatch);
+					databaseWrapper.getSynchronizer().cleanTransactionsAfterRestoration(dbPackage.getName(), dateUTCInMs, restorationTimeUTCInMS, lastTransactionUTCInMs, false, chooseNearestBackupIfNoBackupMatch);
+
 				return res;
 
 			} catch (Exception e) {
