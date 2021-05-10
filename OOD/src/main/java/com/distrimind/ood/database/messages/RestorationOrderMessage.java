@@ -58,12 +58,12 @@ public class RestorationOrderMessage extends DatabaseEvent implements Authentica
 	private String databasePackage;
 	private boolean chooseNearestBackupIfNoBackupMatch;
 	private byte[] signatures;
-
+	private long timeUTCInMsWhenRestorationIsDone;
 	@SuppressWarnings("unused")
 	private RestorationOrderMessage() {
 	}
 
-	public RestorationOrderMessage(DecentralizedValue hostSource, DecentralizedValue hostDestination, DecentralizedValue hostThatApplyRestoration, String databasePackage, long timeUTCOfRestorationInMs,boolean chooseNearestBackupIfNoBackupMatch) {
+	public RestorationOrderMessage(DecentralizedValue hostSource, DecentralizedValue hostDestination, DecentralizedValue hostThatApplyRestoration, String databasePackage, long timeUTCOfRestorationInMs,boolean chooseNearestBackupIfNoBackupMatch, long timeUTCInMsWhenRestorationIsDone) {
 		if (hostSource==null)
 			throw new NullPointerException();
 		if (hostDestination==null)
@@ -81,6 +81,7 @@ public class RestorationOrderMessage extends DatabaseEvent implements Authentica
 		this.signatures = null;
 		this.databasePackage=databasePackage;
 		this.chooseNearestBackupIfNoBackupMatch=chooseNearestBackupIfNoBackupMatch;
+		this.timeUTCInMsWhenRestorationIsDone = timeUTCInMsWhenRestorationIsDone;
 	}
 
 	public boolean isChooseNearestBackupIfNoBackupMatch() {
@@ -118,6 +119,7 @@ public class RestorationOrderMessage extends DatabaseEvent implements Authentica
 		out.writeString(databasePackage, false, SerializationTools.MAX_CLASS_LENGTH);
 		out.writeLong(messageID);
 		out.writeBoolean(chooseNearestBackupIfNoBackupMatch);
+		out.writeLong(timeUTCInMsWhenRestorationIsDone);
 	}
 
 	@Override
@@ -129,11 +131,12 @@ public class RestorationOrderMessage extends DatabaseEvent implements Authentica
 		databasePackage=in.readString(false, SerializationTools.MAX_CLASS_LENGTH);
 		messageID=in.readLong();
 		chooseNearestBackupIfNoBackupMatch=in.readBoolean();
+		timeUTCInMsWhenRestorationIsDone =in.readLong();
 	}
 
 	@Override
 	public int getInternalSerializedSizeWithoutSignatures() {
-		return 17+SerializationTools.getInternalSize(hostSource)+
+		return 25+SerializationTools.getInternalSize(hostSource)+
 				SerializationTools.getInternalSize(hostDestination)+
 				SerializationTools.getInternalSize(hostThatApplyRestoration)+
 				SerializationTools.getInternalSize(databasePackage, SerializationTools.MAX_CLASS_LENGTH)
@@ -172,5 +175,9 @@ public class RestorationOrderMessage extends DatabaseEvent implements Authentica
 
 	public String getDatabasePackage() {
 		return databasePackage;
+	}
+
+	public long getTimeUTCInMsWhenRestorationIsDone() {
+		return timeUTCInMsWhenRestorationIsDone;
 	}
 }

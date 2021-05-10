@@ -35,12 +35,15 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+import com.distrimind.ood.database.DatabaseRecord;
+import com.distrimind.ood.database.TableEvent;
 import com.distrimind.ood.database.decentralizeddatabase.TableAlone;
 import com.distrimind.ood.database.decentralizeddatabase.TablePointed;
 import com.distrimind.ood.database.decentralizeddatabase.TablePointing;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 
@@ -63,7 +66,7 @@ public abstract class TestRevertToOldVersionIntoDecentralizedNetwork extends Tes
 	@DataProvider(name = "constructorRevertParameters")
 	public static Object[][] constructorRevertParameters() {
 
-		Object[][] res=constructorParameters();
+		Object[][] res= constructorParameters();
 		Object[][] res2=new Object[res.length*2][res[0].length+1];
 		int index=0;
 		for (boolean preferOtherChannelThanLocalChannelIfAvailable : new boolean[]{false, true}) {
@@ -84,7 +87,10 @@ public abstract class TestRevertToOldVersionIntoDecentralizedNetwork extends Tes
 		exchangeMessages();
 		if (upgradeDatabaseVersionWhenConnectedWithPeers)
 		{
-			connectSelectedDatabase(upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion, db1, db2);
+			if(preferOtherChannelThanLocalChannelIfAvailable)
+				connectSelectedDatabase(upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion, db1, db2, db3);
+			else
+				connectSelectedDatabase(upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion, db1, db2);
 			//connectAllDatabase(Collections.singletonList(db3.getHostID()), upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion);
 			exchangeMessages();
 		} else if (upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion)
@@ -100,31 +106,39 @@ public abstract class TestRevertToOldVersionIntoDecentralizedNetwork extends Tes
 
 		for (int i=0;i<20;i++) {
 			addElements();
-			exchangeMessages();
 		}
+		exchangeMessages();
 
 		//db1.getDbwrapper().getBackupRestoreManager(TableAlone.class.getPackage()).restoreDatabaseToDateUTC(timeUTC, false);
-
 		db1.getDbwrapper().getDatabaseConfigurationsBuilder()
-				.restoreDatabaseToOldVersion(timeUTC, preferOtherChannelThanLocalChannelIfAvailable, false)
+				.restoreGivenDatabaseToOldVersion(TableAlone.class.getPackage(), timeUTC, preferOtherChannelThanLocalChannelIfAvailable || useCentralDatabaseBackup, false)
 				.commit();
-		testSynchronizationWithSavedRecords(db1);
+		//testSynchronizationWithSavedRecords(db1);
 
-		if (!upgradeDatabaseVersionWhenConnectedWithPeers)
-		{
-			connectSelectedDatabase(upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion, db1, db2);
-			//connectAllDatabase(Collections.singletonList(db3.getHostID()), upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion);
+		if (useCentralDatabaseBackup) {
+			if (!upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion) {
+				connectCentralDatabaseBackupWithConnectedDatabase();
+			}
+			exchangeMessages();
+			Thread.sleep(getBackupConfiguration().getMaxBackupFileAgeInMs());
 			exchangeMessages();
 			testSynchronizationWithSavedRecords(db1);
 			testSynchronizationWithSavedRecords(db2);
-			if (upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion)
+			if (!upgradeDatabaseVersionWhenConnectedWithPeers || preferOtherChannelThanLocalChannelIfAvailable)
+				testSynchronizationWithSavedRecords(db3);
+		}
+		else if (!upgradeDatabaseVersionWhenConnectedWithPeers)
+		{
+			if(preferOtherChannelThanLocalChannelIfAvailable)
+				connectSelectedDatabase(upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion, db1, db2, db3);
+			else
+				connectSelectedDatabase(upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion, db1, db2);
+			exchangeMessages();
+			testSynchronizationWithSavedRecords(db1);
+			testSynchronizationWithSavedRecords(db2);
+			if (upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion || preferOtherChannelThanLocalChannelIfAvailable)
 				testSynchronizationWithSavedRecords(db3);
 
-		}
-		else if (!upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion && useCentralDatabaseBackup) {
-			connectCentralDatabaseBackupWithConnectedDatabase();
-			exchangeMessages();
-			testSynchronizationWithSavedRecords();
 		}
 		else
 		{
@@ -189,6 +203,19 @@ public abstract class TestRevertToOldVersionIntoDecentralizedNetwork extends Tes
 				", hasToRemoveOldDatabase=" + hasToRemoveOldDatabase +
 				", preferOtherChannelThanLocalChannelIfAvailable=" + preferOtherChannelThanLocalChannelIfAvailable +
 				'}';
+	}
+
+	@Test(dataProvider = "provideDataSynchroBetweenThreePeers", dependsOnMethods = { "testAction" })
+	public void testSynchroBetweenThreePeers2(boolean exceptionDuringTransaction, boolean generateDirectConflict,
+											  boolean peersInitiallyConnected)
+			throws Exception {
+		for (TableEvent<DatabaseRecord> event : provideTableEventsForSynchro())
+			testSynchroBetweenPeersImpl(3, exceptionDuringTransaction, generateDirectConflict, peersInitiallyConnected, event);
+	}
+
+	@Test(dependsOnMethods = { "testSynchroBetweenThreePeers2" })
+	public void testSynchroAfterTestsBetweenThreePeers2() throws DatabaseException {
+		testSynchronisation();
 	}
 }
 

@@ -158,7 +158,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	public static final int MAX_NON_KEYS_SIZE_IN_BYTES = 33554432;
 	private int databaseVersion=-1;
 	private boolean isPrimaryKeysAndForeignKeysSame;
-	private boolean hasBackupManager =false;
+	boolean hasBackupManager =false;
 	public Constructor<T> getDefaultRecordConstructor() {
 		return default_constructor_field;
 	}
@@ -1235,7 +1235,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 			}
 			supportSynchronizationWithOtherPeers &= isGloballyDecentralized(new HashSet<>());
-			hasBackupManager =sql_connection.getBackupRestoreManager(getClass().getPackage())!=null;
+			hasBackupManager =sql_connection.getBackupRestoreManager(Table.this.getClass().getPackage())!=null;
 		} finally {
 			sql_connection.unlockWrite();
 
@@ -3600,6 +3600,69 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			}
 		}
 	}
+
+	/**
+	 * Returns true if there is at mean one record which corresponds to the given
+	 * 	 filter and the given command.
+	 *
+	 * @param _filter
+	 *            the filter
+	 * @param whereCondition
+	 *            the SQL WHERE condition that filter the results
+	 * @param parameters
+	 *            the used parameters with the WHERE condition
+	 * @return the corresponding records.
+	 * @throws DatabaseException
+	 *             if a Sql exception occurs.
+	 * @throws NullPointerException
+	 *             if parameters are null pointers.
+	 */
+	public final boolean hasRecords(final Filter<T> _filter, String whereCondition, Map<String, Object> parameters)
+			throws DatabaseException {
+		Reference<Boolean> res=new Reference<>(false);
+		getPaginatedRecords(-1, -1, new Filter<T>() {
+			@Override
+			public boolean nextRecord(T _record) throws DatabaseException {
+				if (_filter.nextRecord(_record))
+				{
+					res.set(true);
+					stopTableParsing();
+				}
+				return false;
+			}
+		}, whereCondition, parameters);
+		return res.get();
+	}
+
+	/**
+	 * Returns true if there is at mean one record which corresponds to the given
+	 * 	 command.
+	 *
+	 * @param whereCondition
+	 *            the SQL WHERE condition that filter the results
+	 * @param parameters
+	 *            the used parameters with the WHERE condition
+	 * @return the corresponding records.
+	 * @throws DatabaseException
+	 *             if a Sql exception occurs.
+	 * @throws NullPointerException
+	 *             if parameters are null pointers.
+	 */
+
+	public final boolean hasRecords(String whereCondition, Map<String, Object> parameters)
+			throws DatabaseException {
+		Reference<Boolean> res=new Reference<>(false);
+		getPaginatedRecords(-1, -1, new Filter<T>() {
+			@Override
+			public boolean nextRecord(T _record) {
+				res.set(true);
+				stopTableParsing();
+				return false;
+			}
+		}, whereCondition, parameters);
+		return res.get();
+	}
+
 
 	private boolean hasRecords(final Filter<T> _filter, boolean is_sql_transaction) throws DatabaseException {
 		if (isLoadedInMemory()) {
@@ -7462,7 +7525,6 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					if (hasBackupManager || synchronizeIfNecessary)
 						getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
 								new TableEvent<>(-1, DatabaseEventType.ADD, Table.this,null, instance, hostsDestinations), synchronizeIfNecessary);
-
 					if (isLoadedInMemory())
 						memoryToRefresh();
 					return instance;
@@ -8958,6 +9020,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				fa.setValue(record, o);
 				fa.serialize(oos, record);
 			}
+			if (oos.currentPosition()==0)
+				return null;
 			return oos.getBytes();
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -8969,6 +9033,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			for (FieldAccessor fa : primary_keys_fields) {
 				fa.serialize(oos, record);
 			}
+			if (oos.currentPosition()==0)
+				return null;
 			return oos.getBytes();
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -8999,6 +9065,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					fa.serialize(oos, record);
 				}
 			}
+			if (oos.currentPosition()==0)
+				return null;
 			return oos.getBytes();
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);

@@ -125,14 +125,14 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 				event.setConcernedSerializedPrimaryKey(spks);
 
 				if (type.needsNewValue()) {
-					byte[] foreignKeys=getDataInputStream().readBytesArray(false, Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES);
+					byte[] foreignKeys=getDataInputStream().readBytesArray(true, Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES);
 					if (getDataOutputStream() != null)
-						getDataOutputStream().writeBytesArray(foreignKeys, false, Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES);
+						getDataOutputStream().writeBytesArray(foreignKeys, true, Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES);
 					event.setConcernedSerializedNewForeignKey(foreignKeys);
 
-					byte[] nonPk=getDataInputStream().readBytesArray(false, Table.MAX_NON_KEYS_SIZE_IN_BYTES);
+					byte[] nonPk=getDataInputStream().readBytesArray(true, Table.MAX_NON_KEYS_SIZE_IN_BYTES);
 					if (getDataOutputStream() != null)
-						getDataOutputStream().writeBytesArray(nonPk, false, Table.MAX_NON_KEYS_SIZE_IN_BYTES);
+						getDataOutputStream().writeBytesArray(nonPk, true, Table.MAX_NON_KEYS_SIZE_IN_BYTES);
 
 					event.setConcernedSerializedNewNonKey(nonPk);
 
@@ -261,7 +261,6 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 				concernedSerializedNewNonKey=null;
 			}
 			else {
-
 				if (_de.getMapKeys() != null) {
 					concernedSerializedPrimaryKey = table.serializePrimaryKeys(_de.getMapKeys());
 				} else if (_de.getOldDatabaseRecord() != null) {
@@ -281,6 +280,7 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 					concernedSerializedNewNonKey = null;
 				}
 			}
+
 		}
 
 		void export(RandomOutputStream oos, byte transactionType) throws IOException {
@@ -292,10 +292,10 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 				oos.writeBytesArray(getConcernedSerializedPrimaryKey(), false, Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES);
 				if (Objects.requireNonNull(DatabaseEventType.getEnum(type)).needsNewValue()) {
 					byte[] foreignKeys = getConcernedSerializedNewForeignKey();
-					oos.writeBytesArray(foreignKeys, false, Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES);
+					oos.writeBytesArray(foreignKeys, true, Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES);
 
 					byte[] nonKey = getConcernedSerializedNewNonKey();
-					oos.writeBytesArray(nonKey, false, Table.MAX_NON_KEYS_SIZE_IN_BYTES);
+					oos.writeBytesArray(nonKey, true, Table.MAX_NON_KEYS_SIZE_IN_BYTES);
 				}
 			}
 		}
@@ -334,8 +334,6 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 		}
 
 		void setConcernedSerializedNewNonKey(byte[] _concernedSerializedNewNonKey) {
-			if (concernedSerializedNewForeignKey==null)
-				throw new IllegalAccessError();
 			concernedSerializedNewNonKey = _concernedSerializedNewNonKey;
 		}
 

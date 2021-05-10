@@ -36,6 +36,9 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 import com.distrimind.ood.database.CommonDecentralizedTests;
+import com.distrimind.ood.database.DatabaseRecord;
+import com.distrimind.ood.database.TableEvent;
+import com.distrimind.ood.database.exceptions.DatabaseException;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 

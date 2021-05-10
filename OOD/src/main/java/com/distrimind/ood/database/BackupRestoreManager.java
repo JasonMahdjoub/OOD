@@ -429,9 +429,9 @@ public class BackupRestoreManager {
 				RandomInputStream ris=out.getUnbufferedRandomInputStream();
 				ris.seek(LAST_BACKUP_UTC_POSITION+8);
 				if (ris.readBoolean())
-					firstTransactionID.set(null);
-				else
 					firstTransactionID.set(ris.readLong());
+				else
+					firstTransactionID.set(null);
 				//recordsIndex.set(new RecordsIndex(out.getUnbufferedRandomInputStream()));
 				positionFileForNewEvent(out);
 				return out;
@@ -1398,7 +1398,7 @@ public class BackupRestoreManager {
 			databaseWrapper.unlockRead();
 			//transactionsInterval=null;
 			//currentBackupReferenceUTC=Long.MAX_VALUE;
-			if (notify && globalNumberOfSavedRecords.get()>0)
+			if (notify)
 				databaseWrapper.getSynchronizer().checkForNewBackupFilePartToSendToCentralDatabaseBackup(dbPackage);
 
 		}
@@ -1554,6 +1554,17 @@ public class BackupRestoreManager {
 			return fileReferenceTimeStamps.size()>0?fileReferenceTimeStamps.get(0):Long.MAX_VALUE;
 		}
 	}
+	public long getFirstFileUTCInMs()
+	{
+		synchronized (this) {
+			return fileTimeStamps.size()>0?fileTimeStamps.get(0):Long.MAX_VALUE;
+		}
+	}
+
+	boolean hasBackupReference()
+	{
+		return fileReferenceTimeStamps.size()>0;
+	}
 
 	public Long getFirstValidatedTransactionUTCInMs()
 	{
@@ -1626,9 +1637,12 @@ public class BackupRestoreManager {
 			EncryptedDatabaseBackupMetaDataPerFile encryptedMetaData=new EncryptedDatabaseBackupMetaDataPerFile(dbPackage.getName(), metaData, random, encryptionProfileProvider);
 
 			Long lid=metaData.getLastTransactionID();
-			if (lid==null)
-				lid= getLastTransactionIDBeforeGivenTimeStamp(timeStamp);
-
+			if (lid==null) {
+				lid=databaseWrapper.getTransactionIDTable().getLastTransactionID();
+				if (lid==-1)
+					lid=null;
+				//lid = getLastTransactionIDBeforeGivenTimeStamp(timeStamp);
+			}
 
 			return new EncryptedBackupPartDestinedToCentralDatabaseBackup(fromHostIdentifier, encryptedMetaData, out.getRandomInputStream(), EncryptionTools.encryptID(lid, random, encryptionProfileProvider));
 		} catch (IOException e) {
@@ -1674,7 +1688,7 @@ public class BackupRestoreManager {
 	}
 	private long getLastTransactionIDBeforeGivenTimeStampIndex(int i) throws DatabaseException {
 		assert i>=0;
-		while (--i>0) {
+		while (--i>=0) {
 			File f=getFile(fileTimeStamps.get(i));
 			try(RandomFileInputStream fis=new RandomFileInputStream(f))
 			{
@@ -1755,6 +1769,8 @@ public class BackupRestoreManager {
 				}
 
 			}
+			else
+				backupPart.getPartInputStream().close();
 			return false;
 		}
 		catch (IOException e)
@@ -1813,6 +1829,7 @@ public class BackupRestoreManager {
 			boolean res = true;
 
 			long lastTransactionUTCInMs;
+			final long restorationTimeUTCInMS=System.currentTimeMillis();
 			synchronized (this) {
 				if (temporaryDisabled)
 					return false;
@@ -1923,7 +1940,7 @@ public class BackupRestoreManager {
 				} catch (Exception e) {
 					lastCurrentRestorationFileUsed=Long.MIN_VALUE;
 					if (newVersionLoaded)
-						databaseWrapper.deleteDatabase(databaseConfiguration, false, newVersion);
+						databaseWrapper.deleteDatabase(databaseConfiguration, false, newVersion, true);
 					throw DatabaseException.getDatabaseException(e);
 				}
 			}
@@ -2022,13 +2039,13 @@ public class BackupRestoreManager {
 														s=in.readBytesArray(recordBuffer, 0, false, Table.MAX_NON_KEYS_SIZE_IN_BYTES);
 														table.deserializeFields(hm, recordBuffer, 0, s, false, false, true);
 													}
-													DatabaseRecord newRecord;
+
 													try {
-														newRecord = table.addUntypedRecord(hm, true, null);
+														 table.addUntypedRecord(hm, true, null);
 														//newRecord = table.addUntypedRecord(hm, drRecord == null, null);
 													} catch (ConstraintsNotRespectedDatabaseException ignored) {
 														//TODO this exception occurs sometimes but should not. See why.
-														newRecord = table.getRecord(hm);
+														DatabaseRecord newRecord = table.getRecord(hm);
 														for (FieldAccessor fa : table.getFieldAccessors()) {
 															if (!fa.isPrimaryKey()) {
 																fa.setValue(newRecord, hm.get(fa.getFieldName()));
@@ -2175,16 +2192,19 @@ public class BackupRestoreManager {
 
 				databaseWrapper.validateNewDatabaseVersionAndDeleteOldVersion(databaseConfiguration, oldVersion, newVersion);
 				databaseWrapper.getSynchronizer().validateExtendedTransaction();
-
 				//createBackupReference();
 				notify=true;
-				if (notifyOtherPeers)
-					databaseWrapper.getSynchronizer().notifyOtherPeersThatDatabaseRestorationWasDone(dbPackage, dateUTCInMs, lastTransactionUTCInMs);
+				if (notifyOtherPeers) {
+					databaseWrapper.getSynchronizer().notifyOtherPeersThatDatabaseRestorationWasDone(dbPackage, dateUTCInMs,restorationTimeUTCInMS, lastTransactionUTCInMs);
+				}
+				else
+					databaseWrapper.getSynchronizer().cleanTransactionsAfterRestoration(dbPackage.getName(), dateUTCInMs, restorationTimeUTCInMS, lastTransactionUTCInMs, false, chooseNearestBackupIfNoBackupMatch);
+
 				return res;
 
 			} catch (Exception e) {
 				databaseWrapper.getSynchronizer().cancelExtendedTransaction();
-				databaseWrapper.deleteDatabase(databaseConfiguration, false, newVersion);
+				databaseWrapper.deleteDatabase(databaseConfiguration, false, newVersion, false);
 				throw DatabaseException.getDatabaseException(e);
 			}
 			finally {
@@ -2556,14 +2576,13 @@ public class BackupRestoreManager {
 			try {
 				synchronized (BackupRestoreManager.this) {
 
-
 					if (closed)
 						return;
 					if (transactionsNumber==0) {
 						cancelTransaction();
 						return;
 					}
-					saveTransactionQueue(out, nextTransactionReference, transactionUTC, firstTransactionID, transactionToSynchronize ? transactionID : null/*, index*/);
+					saveTransactionQueue(out, nextTransactionReference, transactionUTC, firstTransactionID, /*transactionToSynchronize ? */transactionID /*: null/*, index*/);
 
 					try {
 

@@ -468,7 +468,8 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 														"Impossible to decode database event type : " + event.getType());
 											DatabaseRecord drNew = null, drOld = null;
 											HashMap<String, Object> mapKeys = new HashMap<>();
-											if (type!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE) {
+											if (type!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE)
+											{
 												t.deserializePrimaryKeys(mapKeys, event.getConcernedSerializedPrimaryKey());
 												if (type.needsNewValue()) {
 													drNew = t.getDefaultRecordConstructor().newInstance();
@@ -493,6 +494,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 												boolean collision = detectCollisionAndGetObsoleteEventsToRemove(fromHook.getHostID(),
 														event.getConcernedTable(), type, event.getConcernedSerializedPrimaryKey(),
 														transaction.isForced(), r);
+
 												Set<DatabaseDistantTransactionEvent.Record> ir = new HashSet<>();
 												DecentralizedValue indirectCollisionWith = null;
 												if (!collision) {
@@ -503,6 +505,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 
 												if (collision || indirectCollisionWith != null) {
+
 													if (!type.hasOldValue() && type!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE)
 														drOld = t.getRecord(mapKeys);
 													if (!t.areDuplicatedEventsNotConsideredAsCollisions() || (drOld == drNew || (drNew != null && t.equalsAllFields(drNew, drOld))))
@@ -659,6 +662,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 									else
 										throw new SerializationDatabaseException("", e);
 								}
+								final Table<DatabaseRecord> table=t;
 
 								DatabaseEventType type = DatabaseEventType.getEnum(event.getType());
 								if (type == null)
@@ -667,42 +671,42 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 								DatabaseRecord drNew = null, drOld=null;
 								HashMap<String, Object> mapKeys = new HashMap<>();
 								if (type!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE) {
-									t.deserializePrimaryKeys(mapKeys, event.getConcernedSerializedPrimaryKey());
+									table.deserializePrimaryKeys(mapKeys, event.getConcernedSerializedPrimaryKey());
 									if (type.needsNewValue()) {
-										drNew = t.getDefaultRecordConstructor().newInstance();
-										t.deserializePrimaryKeys(drNew, event.getConcernedSerializedPrimaryKey());
-										t.deserializeFields(drNew, event.getConcernedSerializedNewForeignKey(), false, true, false);
-										t.deserializeFields(drNew, event.getConcernedSerializedNewNonKey(), false, false, true);
+										drNew = table.getDefaultRecordConstructor().newInstance();
+										table.deserializePrimaryKeys(drNew, event.getConcernedSerializedPrimaryKey());
+										table.deserializeFields(drNew, event.getConcernedSerializedNewForeignKey(), false, true, false);
+										table.deserializeFields(drNew, event.getConcernedSerializedNewNonKey(), false, false, true);
 									}
 
-									drOld = t.getRecord(mapKeys);
+									drOld = table.getRecord(mapKeys);
 								}
 
 								TableEvent<DatabaseRecord> addedEvent = null;
 								switch (type) {
 									case REMOVE_ALL_RECORDS_WITH_CASCADE:
-										localDTE.addEvent(addedEvent = new TableEvent<>(-1, type, t, null, null, null));
+										localDTE.addEvent(addedEvent = new TableEvent<>(-1, type, table, null, null, null));
 										break;
 									case ADD: {
 										if (drOld != null)
-											localDTE.addEvent(addedEvent = new TableEvent<>(-1, type, t, drOld, drNew, null, null, true));
+											localDTE.addEvent(addedEvent = new TableEvent<>(-1, type, table, drOld, drNew, null, null, true));
 										else
-											localDTE.addEvent(addedEvent = new TableEvent<>(-1, type, t, null, drNew, null));
+											localDTE.addEvent(addedEvent = new TableEvent<>(-1, type, table, null, drNew, null));
 									}
 									break;
 									case REMOVE:
 									case REMOVE_WITH_CASCADE: {
 										if (drOld == null) {
 											localDTE.addEvent(addedEvent =
-													new TableEvent<>(-1, type, t, null, drNew, null, mapKeys, false));
+													new TableEvent<>(-1, type, table, null, drNew, null, mapKeys, false));
 										} else {
-											localDTE.addEvent(addedEvent = new TableEvent<>(-1, type, t, drOld, drNew, null));
+											localDTE.addEvent(addedEvent = new TableEvent<>(-1, type, table, drOld, drNew, null));
 										}
 
 									}
 									break;
 									case UPDATE:
-										localDTE.addEvent(addedEvent = new TableEvent<>(-1, type, t, drOld, drNew, null));
+										localDTE.addEvent(addedEvent = new TableEvent<>(-1, type, table, drOld, drNew, null));
 										break;
 								}
 
@@ -717,7 +721,6 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 									e.setTransaction(distantTransaction);
 									getDatabaseDistantEventsTable().addRecord(e);
 								}
-
 								switch (addedEvent.getType()) {
 									case ADD:
 										if (addedEvent.isOldAlreadyPresent()) {
@@ -735,6 +738,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 											try {
 												addedEvent.getTable().addUntypedRecord(addedEvent.getNewDatabaseRecord(),
 														true, transactionToResendFinal, null);
+
 											} catch (ConstraintsNotRespectedDatabaseException e) {
 
 												addedEvent.getTable().anomalyDetected(fromHook.getHostID(),
@@ -822,11 +826,14 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 											}
 										}
 										break;
-									case REMOVE_ALL_RECORDS_WITH_CASCADE:
+									case REMOVE_ALL_RECORDS_WITH_CASCADE: {
 										addedEvent.getTable().removeAllRecordsWithCascade(false, null);
+									}
 										break;
 								}
+
 							}
+
 
 							if (localDTE.getEvents().size() > 0) {
 								getDatabaseWrapper().getSynchronizer().addNewDatabaseEvent(localDTE);
@@ -982,7 +989,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 		final DatabaseHooksTable.Record comingFromRecord = hooks.get(0);
 
 		long lastDistantTransactionID=getDatabaseWrapper().getSynchronizer().getLastValidatedDistantIDSynchronization(comingFrom);
-
+		Long lastRestorationTimeUTCInMS=getDatabaseWrapper().getDatabaseTable().getLastRestorationTimeUTCInMS(databasePackage);
 
 		try  {
 			ois.skipNBytes(8);
@@ -997,7 +1004,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 			if (referenceFile)
 				fileListTables=BackupRestoreManager.extractClassesList(ois);
 			BackupRestoreManager.positionForDataRead(ois, referenceFile);
-			boolean findOneTransactionWithID=false;
+			//boolean findOneTransactionWithID=false;
 			while(ois.available()>0) {
 				int nextTransactionPosition = ois.readInt();
 				if (nextTransactionPosition==-1)
@@ -1005,19 +1012,26 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 				if (nextTransactionPosition<=ois.currentPosition())
 					throw new DatabaseException("Invalid data");
 				long transactionID;
-				boolean withID;
-				if (!(withID=ois.readBoolean()) || (transactionID=ois.readLong())<=lastDistantTransactionID)
+				//boolean withID;
+
+				if (!(ois.readBoolean()) || (transactionID=ois.readLong())<=lastDistantTransactionID)
 				{
-					if (!withID && findOneTransactionWithID)
-						throw new DatabaseException("Synchronization was disabled during backup process");
-					findOneTransactionWithID|=withID;
+					/*if (!withID && findOneTransactionWithID)
+						throw new DatabaseException("Synchronization was disabled during backup process");*/
+					//findOneTransactionWithID|=withID;
 					ois.seek(nextTransactionPosition);
 					continue;
 				}
-				else if (transactionID!=lastDistantTransactionID+1)
-					throw new DatabaseException("Invalid received backup file");
-				findOneTransactionWithID=true;
+				/*else if (transactionID!=lastDistantTransactionID+1)
+					throw new DatabaseException("Invalid received backup file");*/
+				//findOneTransactionWithID=true;
 				long transactionUTC=ois.readLong();
+				if (lastRestorationTimeUTCInMS!=null && lastRestorationTimeUTCInMS>=transactionUTC) {
+					lastDistantTransactionID=transactionID;
+					getDatabaseHooksTable().validateLastDistantTransactionIDAndLastTransactionUTC(comingFromRecord, transactionID, transactionUTC);
+					ois.seek(nextTransactionPosition);
+					continue;
+				}
 				if (ois.readInt()!=-1)
 					throw new DatabaseException("Invalid data");
 				final DatabaseTransactionEventsTable.Record dte=new DatabaseTransactionEventsTable.Record(transactionID, transactionUTC, databasePackage);

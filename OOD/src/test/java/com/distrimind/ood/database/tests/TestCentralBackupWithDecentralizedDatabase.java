@@ -72,7 +72,7 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 		return false;
 	}
 
-	protected void testSynchroBetweenPeersWithCentralBackupImpl(int peersNumber, boolean exceptionDuringTransaction,
+	protected void testSynchroBetweenPeersWithCentralBackupImpl(final int peersNumber, boolean exceptionDuringTransaction,
 																boolean generateDirectConflict, TableEvent<DatabaseRecord> event)
 			throws Exception {
 		this.actualGenerateDirectConflict=generateDirectConflict;
@@ -199,6 +199,7 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 		exchangeMessages();
 		disconnectCentralDatabaseBackup();
 		connectCentralDatabaseBackupWithConnectedDatabase();
+		exchangeMessages();
 		for (Database d : listDatabase)
 		{
 			Assert.assertTrue(d.getDbwrapper().getSynchronizer().isInitializedWithCentralBackup());
@@ -228,7 +229,26 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 	}
 
 	@Test(dependsOnMethods = { "testSynchroBetweenTwoPeersWithCentralBackup" })
-	public void testSynchroAfterTestsBetweenTwoPeersWithCentralBackup() throws DatabaseException {
+	public void testSynchroAfterTestsBetweenTwoPeersWithCentralBackup() throws Exception {
+		connectCentralDatabaseBackupWithConnectedDatabase();
+		addDatabasePackageToSynchronizeWithCentralDatabaseBackup(TableAlone.class.getPackage());
+		disconnectAllDatabase();
+		exchangeMessages();
+		disconnectCentralDatabaseBackup();
+		connectCentralDatabaseBackupWithConnectedDatabase();
+		exchangeMessages();
+		for (Database d : listDatabase)
+		{
+			Assert.assertTrue(d.getDbwrapper().getSynchronizer().isInitializedWithCentralBackup());
+			for (Database d2 : listDatabase)
+			{
+				if (d2!=d)
+				{
+					Assert.assertTrue(d.getDbwrapper().getSynchronizer().isInitializedWithCentralBackup(d2.getHostID()));
+				}
+			}
+
+		}
 		testSynchronisation();
 	}
 

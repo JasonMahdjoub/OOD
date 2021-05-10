@@ -39,6 +39,7 @@ import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.annotations.NotNull;
 import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.io.SerializationTools;
 
 /**
  * @author Jason Mahdjoub
@@ -54,7 +55,7 @@ final class DatabaseTable extends Table<DatabaseTable.Record> {
 	public static class Record extends DatabaseRecord
 	{
 
-		@Field(limit = 1024)
+		@Field(limit = SerializationTools.MAX_CLASS_LENGTH)
 		@PrimaryKey
 		@NotNull
 		private String databasePackageName;
@@ -67,6 +68,10 @@ final class DatabaseTable extends Table<DatabaseTable.Record> {
 
 		@Field
 		private boolean toSynchronizeWithDistantPeers=false;
+
+		@SuppressWarnings("FieldMayBeFinal")
+		@Field
+		private Long lastRestorationTimeUTCInMS=null;
 
 		@SuppressWarnings("unused")
 		private Record() {
@@ -105,5 +110,28 @@ final class DatabaseTable extends Table<DatabaseTable.Record> {
 		public void setToSynchronizeWithCentralDatabaseBackup(boolean toSynchronizeWithCentralDatabaseBackup) {
 			this.toSynchronizeWithCentralDatabaseBackup = toSynchronizeWithCentralDatabaseBackup;
 		}
+
+		public Long getLastRestorationTimeUTCInMS() {
+			return lastRestorationTimeUTCInMS;
+		}
+	}
+	void updateLastRestorationTimeUTCInMS(String packageName, long lastRestorationTimeUTCInMS) throws DatabaseException {
+
+		Record r=getRecord("databasePackageName", packageName);
+		if (r!=null)
+		{
+			if (r.lastRestorationTimeUTCInMS==null || r.lastRestorationTimeUTCInMS<lastRestorationTimeUTCInMS)
+				updateRecord(r, "lastRestorationTimeUTCInMS",lastRestorationTimeUTCInMS);
+		}
+
+	}
+	Long getLastRestorationTimeUTCInMS(String packageName) throws DatabaseException {
+		Record r=getRecord("databasePackageName", packageName);
+		if (r!=null)
+		{
+			return r.getLastRestorationTimeUTCInMS();
+		}
+		return null;
+
 	}
 }

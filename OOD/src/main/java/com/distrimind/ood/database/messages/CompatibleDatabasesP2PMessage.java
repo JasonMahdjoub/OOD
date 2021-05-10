@@ -54,8 +54,8 @@ public class CompatibleDatabasesP2PMessage extends AbstractCompatibleDatabasesMe
 
 	private DecentralizedValue hostDestination;
 
-	public CompatibleDatabasesP2PMessage(Set<String> compatibleDatabases, Set<String> compatibleDatabasesWithDestinationPeer, DecentralizedValue hostSource, DecentralizedValue hostDestination) {
-		super(compatibleDatabases, compatibleDatabasesWithDestinationPeer, hostSource);
+	public CompatibleDatabasesP2PMessage(Set<String> compatibleDatabases, Set<String> compatibleDatabasesWithDestinationPeer, DecentralizedValue hostSource, DecentralizedValue hostDestination, Set<String> databasesThatUseBackupRestoreManager) {
+		super(compatibleDatabases, compatibleDatabasesWithDestinationPeer, hostSource, databasesThatUseBackupRestoreManager);
 		if (hostDestination==null)
 			throw new NullPointerException();
 		this.hostDestination = hostDestination;

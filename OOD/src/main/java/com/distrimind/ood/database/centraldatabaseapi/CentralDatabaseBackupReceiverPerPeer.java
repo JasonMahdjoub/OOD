@@ -327,8 +327,9 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 					return Integrity.OK;
 				if (r.getAccount().getAccountID()==connectedClientRecord.getAccount().getAccountID())
 				{
-					if (centralDatabaseBackupReceiver.isConnectedIntoOneOfCentralDatabaseBackupServers(message.getHostDestination()))
+					if (centralDatabaseBackupReceiver.isConnectedIntoOneOfCentralDatabaseBackupServers(message.getHostDestination())) {
 						sendMessage(message);
+					}
 					else {
 						List<byte[]> encryptedAuthenticatedMessagesToSend = r.getEncryptedAuthenticatedMessagesToSend();
 						if (encryptedAuthenticatedMessagesToSend == null)
@@ -574,7 +575,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 
 	protected DatabaseBackupPerClientTable.Record getMostAppropriateChannelHostIDToCreateNewChannel(String packageString) throws DatabaseException {
 		Reference<DatabaseBackupPerClientTable.Record> res=new Reference<>(null);
-		centralDatabaseBackupReceiver.databaseBackupPerClientTable.getRecord(new Filter<DatabaseBackupPerClientTable.Record>() {
+		centralDatabaseBackupReceiver.databaseBackupPerClientTable.getRecords(new Filter<DatabaseBackupPerClientTable.Record>() {
 			@Override
 			public boolean nextRecord(DatabaseBackupPerClientTable.Record _record) {
 				if (res.get()==null || _record.getLastFileBackupPartUTC()>res.get().getLastFileBackupPartUTC())
