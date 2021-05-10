@@ -120,8 +120,8 @@ final class DatabaseTable extends Table<DatabaseTable.Record> {
 		Record r=getRecord("databasePackageName", packageName);
 		if (r!=null)
 		{
-			r.lastRestorationTimeUTCInMS=lastRestorationTimeUTCInMS;
-			updateRecord(r, "lastRestorationTimeUTCInMS",lastRestorationTimeUTCInMS);
+			if (r.lastRestorationTimeUTCInMS==null || r.lastRestorationTimeUTCInMS<lastRestorationTimeUTCInMS)
+				updateRecord(r, "lastRestorationTimeUTCInMS",lastRestorationTimeUTCInMS);
 		}
 
 	}
