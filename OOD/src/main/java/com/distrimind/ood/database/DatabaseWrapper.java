@@ -2640,10 +2640,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 		private void updateDistantBackupCenter(final DecentralizedValue hostChannel, String databasePackage, final long lastValidatedDistantTransactionID, final long lastValidatedLocalTransactionID) throws DatabaseException {
 
-
-			lockWrite();
-
-
 			updateDistantBackupCenter(getDatabaseHookRecord(hostChannel), databasePackage, lastValidatedDistantTransactionID, lastValidatedLocalTransactionID);
 		}
 
