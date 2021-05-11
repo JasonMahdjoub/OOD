@@ -202,6 +202,7 @@ public class DatabaseConfigurationsBuilder {
 
 
 	public void commit() throws DatabaseException {
+		Set<DecentralizedValue> peersAdded=null;
 		synchronized (this) {
 			if (currentTransaction==null)
 				throw new DatabaseException("No query was added ! Nothing to commit !");
@@ -209,6 +210,7 @@ public class DatabaseConfigurationsBuilder {
 				throw new IllegalAccessError();
 			commitInProgress=true;
 			wrapper.lockWrite();
+
 			try {
 				for (ConfigurationQuery q : currentTransaction.queries)
 					q.execute(currentTransaction);
@@ -223,8 +225,8 @@ public class DatabaseConfigurationsBuilder {
 				if (currentTransaction.checkDatabaseToUnload)
 					checkDatabaseToUnload();
 				if (currentTransaction.checkPeersToAdd) {
-					boolean b=checkPeersToAdd();
-					currentTransaction.checkDatabaseToSynchronize |=b;
+					peersAdded=checkPeersToAdd();
+					currentTransaction.checkDatabaseToSynchronize |=peersAdded.size()>0;
 				}
 				if (currentTransaction.checkInitLocalPeer) {
 					checkInitLocalPeer();
@@ -245,6 +247,10 @@ public class DatabaseConfigurationsBuilder {
 				commitInProgress=false;
 				wrapper.unlockWrite();
 			}
+		}
+		if (peersAdded!=null && lifeCycles!=null)
+		{
+			lifeCycles.peersAdded(peersAdded);
 		}
 	}
 
@@ -383,12 +389,13 @@ public class DatabaseConfigurationsBuilder {
 	private void checkDisconnections() throws DatabaseException {
 		wrapper.getSynchronizer().checkDisconnections();
 	}
-	private boolean checkPeersToAdd() throws DatabaseException {
-		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
+	private Set<DecentralizedValue> checkPeersToAdd() throws DatabaseException {
+
+		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Set<DecentralizedValue>>() {
 			@Override
-			public Boolean run() throws Exception {
+			public Set<DecentralizedValue> run() throws Exception {
+				Set<DecentralizedValue> peersAdded=null;
 				Set<DecentralizedValue> peersID=configurations.getDistantPeers();
-				boolean res=false;
 				if (peersID!=null && peersID.size()>0)
 				{
 					for (DecentralizedValue dv : peersID)
@@ -397,11 +404,13 @@ public class DatabaseConfigurationsBuilder {
 						if (l.size() == 0)
 						{
 							wrapper.getDatabaseHooksTable().initDistantHook(dv);
-							res=true;
+							if (peersAdded==null)
+								peersAdded=new HashSet<>();
+							peersAdded.add(dv);
 						}
 					}
 				}
-				return res;
+				return peersAdded;
 			}
 
 			@Override
