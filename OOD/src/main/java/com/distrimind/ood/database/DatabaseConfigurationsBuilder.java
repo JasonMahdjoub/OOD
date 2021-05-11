@@ -586,13 +586,22 @@ public class DatabaseConfigurationsBuilder {
 			public Boolean run() throws Exception {
 				if (currentTransaction.removedPeersID!=null) {
 					for (DecentralizedValue peerIDToRemove : currentTransaction.removedPeersID) {
+						Reference<Boolean> removeLocalNow=new Reference<>(true);
 						wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
 							@Override
 							public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
+								removeLocalNow.set(false);
 								_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), peerIDToRemove), getSecureRandom(), protectedSignatureProfileProviderForAuthenticatedP2PMessages, this);
 							}
 						}, "concernsDatabaseHost=%cdh", "cdh", false);
+						if (removeLocalNow.get())
+							wrapper.getDatabaseHooksTable().removeHook(false, peerIDToRemove);
+						else {
+							wrapper.getDatabaseHooksTable().desynchronizeDatabases(peerIDToRemove);
+							wrapper.getSynchronizer().initializedHooksWithCentralBackup.remove(peerIDToRemove);
+						}
 					}
+
 
 					return currentTransaction.removedPeersID.size()>0;
 				}

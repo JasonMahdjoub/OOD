@@ -968,7 +968,7 @@ public abstract class CommonDecentralizedTests {
 	protected volatile CommonDecentralizedTests.Database db1 = null, db2 = null, db3 = null, db4 = null;
 	protected final ArrayList<CommonDecentralizedTests.Database> listDatabase = new ArrayList<>(3);
 	protected AbstractKeyPair<?, ?> centralDatabaseBackupKeyPair;
-	private DatabaseWrapper centralDatabaseBackupDatabase=null;
+	protected DatabaseWrapper centralDatabaseBackupDatabase=null;
 	protected CentralDatabaseBackupReceiver centralDatabaseBackupReceiver=null;
 	protected AbstractSecureRandom random;
 	protected final EncryptionProfileProviderFactory signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup=new EncryptionProfileCollection(){};
@@ -1234,7 +1234,8 @@ public abstract class CommonDecentralizedTests {
 					db.getDbwrapper().getSynchronizer().received((P2PBigDatabaseEventToSend) event, is);
 				}
 			} else {
-				db.getDbwrapper().getSynchronizer().received(event);
+				if (db.getDbwrapper().getSynchronizer().isInitialized())
+					db.getDbwrapper().getSynchronizer().received(event);
 			}
 		}
 
@@ -1393,29 +1394,24 @@ public abstract class CommonDecentralizedTests {
 		}
 	}
 
-
 	protected void checkAllDatabaseInternalDataUsedForSynchro() throws Exception {
+		checkAllDatabaseInternalDataUsedForSynchro(true);
+	}
+	protected void checkAllDatabaseInternalDataUsedForSynchro(boolean checkHooks) throws Exception {
 
 		for (CommonDecentralizedTests.Database db : listDatabase) {
-			checkDatabaseInternalDataUsedForSynchro(db);
+			checkDatabaseInternalDataUsedForSynchro(checkHooks, db);
 		}
 	}
 
-	protected void checkDatabaseInternalDataUsedForSynchro(CommonDecentralizedTests.Database db) throws DatabaseException {
+	protected void checkDatabaseInternalDataUsedForSynchro(boolean checkHooks, CommonDecentralizedTests.Database db) throws DatabaseException {
 		synchronized (CommonDecentralizedTests.class) {
 			Assert.assertEquals(db.getDbwrapper().getDatabaseTransactionsPerHostTable().getRecords().size(), 0);
 
 			Assert.assertEquals(db.getDbwrapper().getTransactionsTable().getRecords().size(), 0, "db:"+db.getHostID());
 			Assert.assertEquals(db.getDbwrapper().getDatabaseEventsTable().getRecords().size(), 0);
-			Assert.assertEquals(db.getDbwrapper().getDatabaseHooksTable().getRecords().size(), listDatabase.size());
-			/*if (db.getDbwrapper().getDatabaseDistantTransactionEvent().getRecords().size()>0)
-			{
-				System.out.println(listDatabase.indexOf(db));
-				if (db==db1)
-				{
-					Assert.assertEquals(db2.getDbwrapper().getDatabaseDistantTransactionEvent().getRecords().size(), 0);
-				}
-			}*/
+			if (checkHooks)
+				Assert.assertEquals(db.getDbwrapper().getDatabaseHooksTable().getRecords().size(), listDatabase.size());
 			Assert.assertEquals(db.getDbwrapper().getDatabaseDistantTransactionEvent().getRecords().size(), 0);
 			Assert.assertEquals(db.getDbwrapper().getDatabaseTransactionEventsTable().getRecords().size(), 0);
 		}
@@ -1477,9 +1473,12 @@ public abstract class CommonDecentralizedTests {
 		exchangeMessages();
 	}
 	protected void connectAllDatabase() throws Exception {
-		connectAllDatabase(null, true);
+		connectAllDatabase(null, true, true);
 	}
 	protected void connectAllDatabase(Collection<DecentralizedValue> notInitializedWithOtherPeers, boolean connectToCentral) throws Exception {
+		connectAllDatabase(notInitializedWithOtherPeers, connectToCentral, true);
+	}
+	protected void connectAllDatabase(Collection<DecentralizedValue> notInitializedWithOtherPeers, boolean connectToCentral, boolean checkConnections) throws Exception {
 		CommonDecentralizedTests.Database[] dbs = new CommonDecentralizedTests.Database[listDatabase.size()];
 		for (int i = 0; i < dbs.length; i++)
 			dbs[i] = listDatabase.get(i);
@@ -1490,19 +1489,20 @@ public abstract class CommonDecentralizedTests {
 			connectDistant(db, dbs);
 		}
 		exchangeMessages();
+		if (checkConnections) {
+			for (CommonDecentralizedTests.Database db : listDatabase) {
+				Assert.assertTrue(db.isConnected());
+				Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized());
+			}
+			for (CommonDecentralizedTests.Database db : listDatabase) {
+				for (CommonDecentralizedTests.Database otherdb : listDatabase) {
+					if (db == otherdb)
+						Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized(otherdb.getHostID()));
+					else
+						Assert.assertEquals(db.getDbwrapper().getSynchronizer().isInitialized(otherdb.getHostID()),
+								(notInitializedWithOtherPeers == null || (!notInitializedWithOtherPeers.contains(otherdb.getHostID()) && !notInitializedWithOtherPeers.contains(db.getHostID()))) && db.getDbwrapper().getDatabaseConfigurationsBuilder().getConfigurations().getDistantPeers().contains(otherdb.getHostID()), db.getHostID().toString() + ";" + otherdb.getHostID());
 
-		for (CommonDecentralizedTests.Database db : listDatabase) {
-			Assert.assertTrue(db.isConnected());
-			Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized());
-		}
-		for (CommonDecentralizedTests.Database db : listDatabase) {
-			for (CommonDecentralizedTests.Database otherdb : listDatabase) {
-				if (db==otherdb)
-					Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized(otherdb.getHostID()));
-				else
-					Assert.assertEquals(db.getDbwrapper().getSynchronizer().isInitialized(otherdb.getHostID()),
-							(notInitializedWithOtherPeers==null || (!notInitializedWithOtherPeers.contains(otherdb.getHostID()) && !notInitializedWithOtherPeers.contains(db.getHostID()))) && db.getDbwrapper().getDatabaseConfigurationsBuilder().getConfigurations().getDistantPeers().contains(otherdb.getHostID()), db.getHostID().toString()+";"+otherdb.getHostID());
-
+				}
 			}
 		}
 	}

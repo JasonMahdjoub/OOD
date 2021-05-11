@@ -35,7 +35,9 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.ood.database.*;
+import com.distrimind.ood.database.BackupConfiguration;
+import com.distrimind.ood.database.CommonDecentralizedTests;
+import com.distrimind.ood.database.DatabaseFactory;
 import com.distrimind.util.crypto.SecureRandomType;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -110,6 +112,7 @@ public abstract class TestAddPeerWithCentralDatabaseBackupConnected extends Comm
 			}
 		}
 		disconnectAllDatabase();
-		checkAllDatabaseInternalDataUsedForSynchro();
+		checkAllDatabaseInternalDataUsedForSynchro(false);
+
 	}
 }

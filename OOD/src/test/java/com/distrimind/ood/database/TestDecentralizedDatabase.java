@@ -35,6 +35,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
+import com.distrimind.ood.database.decentralizeddatabase.TableAlone;
 import com.distrimind.ood.database.decentralizeddatabase.TablePointed;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.crypto.SecureRandomType;
@@ -579,10 +580,15 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 		DatabaseHooksTable.Record r = db1.getDbwrapper().getTableInstance(DatabaseHooksTable.class).getLocalDatabaseHost();
 		Assert.assertNotNull(r.getDatabasePackageNames());
 		//db4.getDbwrapper().getSynchronizer().removeHook(db4.getHostID(), TableAlone.class.getPackage());
-		testAllConnect();
+		connectAllDatabase(null, true, false);
+		exchangeMessages();
+		disconnectAllDatabase();
+		//testAllDisconnected();
+
 		testSynchronisation();
 		disconnectAllDatabase();
 		Assert.assertEquals(accessNumberInProtectedEncriptionProfile, 6);
+		Assert.assertEquals(db4.getDbwrapper().getDatabaseConfigurationsBuilder().getDatabaseConfiguration(TableAlone.class.getPackage()).getSynchronizationType(), DatabaseConfiguration.SynchronizationType.NO_SYNCHRONIZATION);
 		unloadDatabase4();
 
 		testAllConnect();

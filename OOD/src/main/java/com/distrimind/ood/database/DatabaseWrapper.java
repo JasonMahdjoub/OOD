@@ -103,7 +103,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			ConnectedClientsTable.class,
 			DatabaseBackupPerClientTable.class,
 			EncryptedBackupPartReferenceTable.class,
-			LastValidatedDistantIDPerClientTable.class));
+			LastValidatedDistantIDPerClientTable.class,
+			RevokedCertificateTable.class));
 	static final Set<Package> reservedDatabases=new HashSet<>(Arrays.asList(DatabaseWrapper.class.getPackage(), CentralDatabaseBackupReceiverPerPeer.class.getPackage()));
 
 
@@ -1649,6 +1650,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			isReliedToDistantHook();
 		}
 		private void received(HookRemoveRequest m) throws DatabaseException {
+			//disconnectHook(m.getRemovedHookID());
 			getDatabaseHooksTable().removeHook(false, m.getRemovedHookID());
 		}
 
@@ -1803,8 +1805,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 
 		void removeHook(DecentralizedValue hostID) throws DatabaseException {
-			if (isInitialized(hostID))
-				disconnectHook(hostID);
+
 			getDatabaseHooksTable().removeHook(true, hostID);
 
 		}
@@ -1813,6 +1814,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		void receivedHookDesynchronizeRequest(HookDesynchronizeRequest hookDesynchronizeRequest) throws DatabaseException {
 			getDatabaseHooksTable().desynchronizeDatabases(hookDesynchronizeRequest.getPackagesToUnsynchronize(), hookDesynchronizeRequest.getConcernedPeers());
 			isReliedToDistantHook();
+			sendAvailableDatabaseToCentralDatabaseBackup();
 		}
 
 		/*void desynchronizeDatabases(Set<String> packages) throws DatabaseException {
@@ -2230,42 +2232,64 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				lockWrite();
 				ConnectedPeers peer = initializedHooks.get(hostID);
 
-				if (peer != null && peer.isConnected())
-					hook = getDatabaseHooksTable().getHook(peer.getHostID());
-				if (hook == null)
-					throw DatabaseException.getDatabaseException(
+				if (peer == null) {
+					ConnectedPeersWithCentralBackup peerWithCentralBackup = initializedHooksWithCentralBackup.get(hostID);
+					if (peerWithCentralBackup==null)
+						throw DatabaseException.getDatabaseException(
 							new IllegalAccessException("hostID " + hostID + " has not been initialized !"));
-				peer.setInitializing(false);
+					hook = getDatabaseHooksTable().getHook(hostID, true);
+					if (hook==null) {
+						if (networkLogger!=null)
+							networkLogger.info("peer "+hostID+" disconnected !");
+						cancelEventToSend(hostID, true);
+						if (notifier!=null)
+							notifier.hostDisconnected(hostID);
+						initializedHooksWithCentralBackup.remove(hostID);
+					}
+					return;
+				}
 
-				if (hook.concernsLocalDatabaseHost()) {
-					peer.setConnected(false);
+
+				if (peer.isConnected()) {
+					hook = getDatabaseHooksTable().getHook(peer.getHostID(), true);
+				}
+				peer.setInitializing(false);
+				peer.setConnected(false);
+
+				if (hook == null || !hook.concernsLocalDatabaseHost()) {
 					if (networkLogger!=null)
-						networkLogger.info("Local peer "+hook.getHostID()+" disconnected !");
+						networkLogger.info("peer "+hostID+" disconnected !");
+
+					cancelEventToSend(hostID, false);
+					if (notifier!=null)
+						notifier.hostDisconnected(hostID);
+					if (hook==null) {
+						initializedHooksWithCentralBackup.remove(hostID);
+						cancelEventToSend(hostID, true);
+					}
+					else {
+						ConnectedPeersWithCentralBackup cp = initializedHooksWithCentralBackup.get(hostID);
+						if (cp != null)
+							checkMetaDataUpdate(cp.hookID);
+					}
+
+				}
+				else {
+
+					if (networkLogger!=null)
+						networkLogger.info("Local peer "+hostID+" disconnected !");
 					for (ConnectedPeers h : initializedHooks.values()) {
 						h.setConnected(false);
 						if (networkLogger!=null)
 							networkLogger.info(h.getHostID()+" disconnected !");
 					}
 					this.events.clear();
-					initializedHooks.remove(hook.getHostID());
+					initializedHooks.remove(hostID);
 					if (notifier!=null) {
 						for (ConnectedPeers h : initializedHooks.values()) {
 							notifier.hostDisconnected(h.getHostID());
 						}
 					}
-				} else {
-					if (networkLogger!=null)
-						networkLogger.info("peer "+hook.getHostID()+" disconnected !");
-					peer.setConnected(false);
-
-					cancelEventToSend(hostID, false);
-					if (notifier!=null)
-						notifier.hostDisconnected(hostID);
-					ConnectedPeersWithCentralBackup cp=initializedHooksWithCentralBackup.get(hostID);
-					if (cp!=null)
-						checkMetaDataUpdate(cp.hookID);
-
-					//backupChannelInitializationMessageFromCentralDatabaseBackup=suspendedHooksWithCentralBackup.remove(hostID);
 				}
 			}
 			finally
@@ -2616,7 +2640,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new IllegalArgumentException();
 			updateDistantBackupCenter(message.getHostChannel(), message.getDatabasePackage(), message.getLastValidatedDistantID(databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup()), message.getLastValidatedLocalID(databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup()));
 		}
-		private void initDistantBackupCenter(final DecentralizedValue hostChannel, final Map<String, Long> lastValidatedDistantTransactionIDPerDatabase, final long lastValidatedLocalTransactionID, Set<String> compatibleDatabases) throws DatabaseException { initDistantBackupCenter(getDatabaseHookRecord(hostChannel), lastValidatedDistantTransactionIDPerDatabase, lastValidatedLocalTransactionID, compatibleDatabases);
+		private void initDistantBackupCenter(final DecentralizedValue hostChannel, final Map<String, Long> lastValidatedDistantTransactionIDPerDatabase, final long lastValidatedLocalTransactionID, Set<String> compatibleDatabases) throws DatabaseException {
+			DatabaseHooksTable.Record r=getDatabaseHookRecord(hostChannel, false);
+			if (r==null)
+				return ;
+			initDistantBackupCenter(r, lastValidatedDistantTransactionIDPerDatabase, lastValidatedLocalTransactionID, compatibleDatabases);
 		}
 		DatabaseHooksTable.Record getDatabaseHookRecord(final DecentralizedValue hostChannel) throws DatabaseException {
 			return getDatabaseHookRecord(hostChannel, true);
