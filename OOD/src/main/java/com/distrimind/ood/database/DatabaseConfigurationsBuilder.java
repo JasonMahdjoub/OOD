@@ -226,7 +226,7 @@ public class DatabaseConfigurationsBuilder {
 					checkDatabaseToUnload();
 				if (currentTransaction.checkPeersToAdd) {
 					peersAdded=checkPeersToAdd();
-					currentTransaction.checkDatabaseToSynchronize |=peersAdded.size()>0;
+					currentTransaction.checkDatabaseToSynchronize |=peersAdded!=null && peersAdded.size()>0;
 				}
 				if (currentTransaction.checkInitLocalPeer) {
 					checkInitLocalPeer();
