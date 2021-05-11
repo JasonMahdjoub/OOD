@@ -70,8 +70,6 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 	public enum PairingState
 	{
-		CENTRAL_PAIRING_IN_PROGRESS,
-		P2P_PAIRING_IN_PROGRESS,
 		PAIRED,
 		REMOVED
 	}

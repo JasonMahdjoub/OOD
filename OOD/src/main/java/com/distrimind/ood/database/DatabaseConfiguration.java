@@ -103,6 +103,10 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 	Long getTimeUTCInMsForRestoringDatabaseToOldVersion() {
 		return timeUTCInMsForRestoringDatabaseToOldVersion;
 	}
+	public boolean isRestorationToOldVersionInProgress()
+	{
+		return timeUTCInMsForRestoringDatabaseToOldVersion!=null;
+	}
 
 	boolean isChooseNearestBackupIfNoBackupMatch() {
 		return chooseNearestBackupIfNoBackupMatch;

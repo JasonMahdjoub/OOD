@@ -105,6 +105,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			EncryptedBackupPartReferenceTable.class,
 			LastValidatedDistantIDPerClientTable.class));
 	static final Set<Package> reservedDatabases=new HashSet<>(Arrays.asList(DatabaseWrapper.class.getPackage(), CentralDatabaseBackupReceiverPerPeer.class.getPackage()));
+
+
 	/*private static final List<DatabaseWrapper> openedDatabaseWrappers=new ArrayList<>();
 	private static final Map<DecentralizedValue, CachedEPV> cachedEPVsForCentralDatabaseBackup=new HashMap<>();
 	private static final Map<DecentralizedValue, CachedEPV> cachedEPVsForAuthenticatedP2PMessages=new HashMap<>();
@@ -209,7 +211,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	// protected Connection sql_connection;
 	private static final String NATIVE_BACKUPS_DIRECTORY_NAME="native_backups";
 	private static final String EXTERNAL_TEMPORARY_BACKUPS_DIRECTORY_NAME="external_temporary_backups";
-	private static final String TEMPORARY_BACKUPS_COMING_FROM_DISTANT_DATABASE_BACKUP_DIRECTORY_NAME="temporary_backups_coming_from_distant_db_backup";
+	private static final String TEMPORARY_BACKUPS_COMING_FROM_CENTRAL_DATABASE_BACKUP_DIRECTORY_NAME ="temporary_backups_coming_from_central_db_backup";
 	private static final String TEMPORARY_BACKUPS_COMING_FROM_INTERNAL_BACKUP_DIRECTORY_NAME="temporary_backups_coming_from_internal_db_backup";
 
 	private static final String HOST_CHANNEL_ID_FILE_NAME="host_channel_id";
@@ -418,7 +420,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			unlockWrite();
 		}
 	}
-	void prepareDatabaseRestorationFromDistantDatabaseBackupChannel(Package databasePackage) throws DatabaseException {
+	void prepareDatabaseRestorationFromCentralDatabaseBackupChannel(Package databasePackage) throws DatabaseException {
 		if (databasePackage==null)
 			throw new NullPointerException();
 		lockWrite();
@@ -550,7 +552,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			this.configuration = configuration;
 			currentDatabaseInRestorationProcessFromExternalBackup=getExternalTemporaryDatabaseBackupFileName().exists();
 			currentDatabaseInRestorationProcessFromInternalBackup=getTemporaryDatabaseBackupFileNameForBackupComingFromInternalBackup().exists();
-			File f=getTemporaryDatabaseBackupFileNameForBackupComingFromDistantDatabaseBackup();
+			File f= getTemporaryDatabaseBackupFileNameForBackupComingFromCentralDatabaseBackup();
 			if (f.exists()) {
 				initTemporaryBackupRestoreManagerComingFromDistantBackupRestoreManager(f);
 			}
@@ -651,9 +653,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		{
 			return new File(new File(databaseDirectory, EXTERNAL_TEMPORARY_BACKUPS_DIRECTORY_NAME), DatabaseWrapper.getLongPackageName(this.configuration.getDatabaseSchema().getPackage()));
 		}
-		private File getTemporaryDatabaseBackupFileNameForBackupComingFromDistantDatabaseBackup()
+		private File getTemporaryDatabaseBackupFileNameForBackupComingFromCentralDatabaseBackup()
 		{
-			return new File(new File(databaseDirectory, TEMPORARY_BACKUPS_COMING_FROM_DISTANT_DATABASE_BACKUP_DIRECTORY_NAME), DatabaseWrapper.getLongPackageName(this.configuration.getDatabaseSchema().getPackage()));
+			return new File(new File(databaseDirectory, TEMPORARY_BACKUPS_COMING_FROM_CENTRAL_DATABASE_BACKUP_DIRECTORY_NAME), DatabaseWrapper.getLongPackageName(this.configuration.getDatabaseSchema().getPackage()));
 		}
 		private File getTemporaryDatabaseBackupFileNameForBackupComingFromInternalBackup()
 		{
@@ -666,7 +668,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		private void prepareDatabaseRestorationFromDistantDatabaseBackupChannel() throws DatabaseException {
 			checkRestorationNotInProgress();
-			File f=getTemporaryDatabaseBackupFileNameForBackupComingFromDistantDatabaseBackup();
+			File f= getTemporaryDatabaseBackupFileNameForBackupComingFromCentralDatabaseBackup();
 			if (f.exists())
 				throw new IllegalAccessError();
 			FileTools.checkFolderRecursive(f);

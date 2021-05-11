@@ -961,7 +961,7 @@ public class DatabaseConfigurationsBuilder {
 							localRestoration=false;
 							if (c.isSynchronizedWithCentralBackupDatabase()) {
 								//download database from other database's channel
-								wrapper.prepareDatabaseRestorationFromDistantDatabaseBackupChannel(c.getDatabaseSchema().getPackage());
+								wrapper.prepareDatabaseRestorationFromCentralDatabaseBackupChannel(c.getDatabaseSchema().getPackage());
 								changed = true;
 							} else {
 								if (wrapper.getDatabaseHooksTable().hasRecords(new Filter<DatabaseHooksTable.Record>() {
@@ -994,6 +994,21 @@ public class DatabaseConfigurationsBuilder {
 			}
 		});
 		return this;
+	}
+
+	public boolean isRestorationToOldVersionInProgress(Package databasePackage)
+	{
+		return isRestorationToOldVersionInProgress(databasePackage.getName());
+	}
+
+	public boolean isRestorationToOldVersionInProgress(String databasePackage)
+	{
+		synchronized (this) {
+			DatabaseConfiguration dc = getDatabaseConfiguration(databasePackage);
+			if (dc == null)
+				throw new IllegalArgumentException("The database " + databasePackage + " does not exists !");
+			return dc.isRestorationToOldVersionInProgress();
+		}
 	}
 
 	/*void applyRestorationFromLocalDatabaseBackupIfNecessary(Package databasePackage) throws DatabaseException {
