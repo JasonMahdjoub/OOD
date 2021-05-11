@@ -1733,7 +1733,7 @@ public abstract class CommonDecentralizedTests {
 
 		}
 	}
-	void testAllDisconnected() throws DatabaseException {
+	public void testAllDisconnected() throws DatabaseException {
 		for (CommonDecentralizedTests.Database db : listDatabase) {
 			Assert.assertFalse(db.isConnected());
 			Assert.assertTrue(db.getDbwrapper().getSynchronizer().isInitialized(), db.getHostID().toString());

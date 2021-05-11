@@ -688,7 +688,7 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 		disconnectAllDatabase();
 	}
 
-
+	@Override
 	public BackupConfiguration getBackupConfiguration()
 	{
 		return backupConfiguration;
