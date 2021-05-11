@@ -107,10 +107,6 @@ public interface DatabaseLifeCycles {
 	void saveDatabaseConfigurations(DatabaseConfigurations databaseConfigurations);
 
 
-	/**
-	 * This function is called when a peer or more was added
-	 * @param peersIdentifiers the identifiers of the added peers
-	 */
-	void peersAdded(Set<DecentralizedValue> peersIdentifiers);
+
 
 }

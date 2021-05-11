@@ -35,6 +35,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database.messages;
 
+import com.distrimind.ood.database.DatabaseEvent;
 import com.distrimind.ood.database.EncryptedDatabaseBackupMetaDataPerFile;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.SecureExternalizable;
@@ -49,7 +50,7 @@ import java.io.IOException;
  * @version 1.0
  * @since OOD 3.0.0
  */
-public class EncryptedMetaDataFromCentralDatabaseBackup implements DatabaseEventToSend, MessageComingFromCentralDatabaseBackup, SecureExternalizable {
+public class EncryptedMetaDataFromCentralDatabaseBackup extends DatabaseEvent implements MessageComingFromCentralDatabaseBackup, SecureExternalizable {
 
 	private DecentralizedValue hostDestination, hostSource;
 	private EncryptedDatabaseBackupMetaDataPerFile metaData;

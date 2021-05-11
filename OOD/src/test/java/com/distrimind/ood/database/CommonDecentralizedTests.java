@@ -42,10 +42,7 @@ import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.messages.*;
 import com.distrimind.ood.database.tests.TestDatabaseToOperateActionIntoDecentralizedNetwork;
 import com.distrimind.ood.database.tests.TestRevertToOldVersionIntoDecentralizedNetwork;
-import com.distrimind.util.AbstractDecentralizedID;
-import com.distrimind.util.DecentralizedIDGenerator;
-import com.distrimind.util.DecentralizedValue;
-import com.distrimind.util.FileTools;
+import com.distrimind.util.*;
 import com.distrimind.util.crypto.*;
 import com.distrimind.util.data_buffers.WrappedData;
 import com.distrimind.util.io.*;
@@ -113,7 +110,7 @@ public abstract class CommonDecentralizedTests {
 				null, secretKeyForSignature,secretKeyForEncryption, false, true );
 		secretKeyForSignature=SymmetricAuthenticatedSignatureType.DEFAULT.getKeyGenerator(random).generateKey();
 		((EncryptionProfileCollection)this.protectedSignatureProfileProviderForAuthenticatedP2PMessages).putProfile((short)0, MessageDigestType.DEFAULT, null, null, secretKeyForSignature,null, false, true );
-		peerCertificate =new CentralDatabaseBackupCertificate(centralDatabaseBackupKeyPair, peerKeyPairUsedWithCentralDatabaseBackupCertificate.getASymmetricPublicKey());
+		peerCertificate =new CentralDatabaseBackupCertificate(centralDatabaseBackupKeyPair, peerKeyPairUsedWithCentralDatabaseBackupCertificate.getASymmetricPublicKey(), Long.MAX_VALUE);
 
 	}
 
@@ -448,8 +445,7 @@ public abstract class CommonDecentralizedTests {
 		protected boolean isValidCertificate(com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupCertificate certificate) {
 			if (certificate instanceof CentralDatabaseBackupCertificate)
 			{
-				return ((CentralDatabaseBackupCertificate) certificate).getCentralDatabaseBackupPublicKey().equals(centralDatabaseBackupReceiver.getCentralID())
-						&& ((CentralDatabaseBackupCertificate) certificate).isValidSignature();
+				return ((CentralDatabaseBackupCertificate) certificate).getCentralDatabaseBackupPublicKey().equals(centralDatabaseBackupReceiver.getCentralID());
 			}
 			return false;
 		}
@@ -468,21 +464,32 @@ public abstract class CommonDecentralizedTests {
 	static class CentralDatabaseBackupCertificate extends com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupCertificate
 	{
 		private IASymmetricPublicKey centralDatabaseBackupPublicKey, certifiedAccountPublicKey;
+		private byte[] certificateIdentifier;
+		private long certificateExpirationTimeUTCInMs;
+		private final transient byte[] certificateExpirationTimeUTCInMsArray=new byte[8];
 		private byte[] signature;
 		@SuppressWarnings("unused")
 		CentralDatabaseBackupCertificate()
 		{
 
 		}
-		public CentralDatabaseBackupCertificate(AbstractKeyPair<?, ?> centralDatabaseBackupKeyPair, IASymmetricPublicKey certifiedAccountPublicKey) throws IOException, NoSuchProviderException, NoSuchAlgorithmException {
+		public CentralDatabaseBackupCertificate(AbstractKeyPair<?, ?> centralDatabaseBackupKeyPair, IASymmetricPublicKey certifiedAccountPublicKey, long certificateExpirationTimeUTCInMs) throws IOException, NoSuchProviderException, NoSuchAlgorithmException {
 			this.centralDatabaseBackupPublicKey = centralDatabaseBackupKeyPair.getASymmetricPublicKey();
 			this.certifiedAccountPublicKey = certifiedAccountPublicKey;
+			this.certificateExpirationTimeUTCInMs=certificateExpirationTimeUTCInMs;
+			this.certificateIdentifier=generateCertificateIdentifier();
+			setCertificateExpirationTimeUTCInMsArray();
 			ASymmetricAuthenticatedSignerAlgorithm signer=new ASymmetricAuthenticatedSignerAlgorithm(centralDatabaseBackupKeyPair.getASymmetricPrivateKey());
 			signer.init();
 			WrappedData wd=certifiedAccountPublicKey.encode();
 			signer.update(wd.getBytes() );
+			signer.update(certificateIdentifier);
+			signer.update(certificateExpirationTimeUTCInMsArray);
 			signature= signer.getSignature();
-
+		}
+		private void setCertificateExpirationTimeUTCInMsArray()
+		{
+			Bits.putLong(certificateExpirationTimeUTCInMsArray, 0,  certificateExpirationTimeUTCInMs);
 		}
 
 		public IASymmetricPublicKey getCentralDatabaseBackupPublicKey()
@@ -490,18 +497,26 @@ public abstract class CommonDecentralizedTests {
 			return centralDatabaseBackupPublicKey;
 		}
 
-		public boolean isValidSignature()
-		{
+		@Override
+		public long getCertificateExpirationTimeUTCInMs() {
+			return certificateExpirationTimeUTCInMs;
+		}
+
+		@Override
+		public boolean isValidCertificate(EncryptionProfileProvider encryptionProfileProvider) {
 			try {
 				ASymmetricAuthenticatedSignatureCheckerAlgorithm checker=new ASymmetricAuthenticatedSignatureCheckerAlgorithm(centralDatabaseBackupPublicKey);
 				checker.init(signature);
 				WrappedData wd=certifiedAccountPublicKey.encode();
 				checker.update(wd.getBytes() );
+				checker.update(certificateIdentifier);
+				checker.update(certificateExpirationTimeUTCInMsArray);
 				return checker.verify();
 			} catch (NoSuchProviderException | NoSuchAlgorithmException | IOException e) {
 				return false;
 			}
 		}
+
 
 		@Override
 		public IASymmetricPublicKey getCertifiedAccountPublicKey() {
@@ -509,16 +524,24 @@ public abstract class CommonDecentralizedTests {
 		}
 
 		@Override
+		public byte[] getCertificateIdentifier() {
+			return certificateIdentifier;
+		}
+
+		@Override
 		public int getInternalSerializedSize() {
-			return SerializationTools.getInternalSize(centralDatabaseBackupPublicKey)
+			return 8+SerializationTools.getInternalSize(centralDatabaseBackupPublicKey)
 					+SerializationTools.getInternalSize(certifiedAccountPublicKey)
-					+SerializationTools.getInternalSize(signature, ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE);
+					+SerializationTools.getInternalSize(signature, ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE)
+					+SerializationTools.getInternalSize(certificateIdentifier, MAX_SIZE_IN_BYTES_OF_CERTIFICATE_IDENTIFIER);
 		}
 
 		@Override
 		public void writeExternal(SecuredObjectOutputStream out) throws IOException {
 			out.writeObject(centralDatabaseBackupPublicKey, false);
 			out.writeObject(certifiedAccountPublicKey, false);
+			out.writeBytesArray(certificateIdentifier, false, MAX_SIZE_IN_BYTES_OF_CERTIFICATE_IDENTIFIER);
+			out.writeLong(certificateExpirationTimeUTCInMs);
 			out.writeBytesArray(signature, false, ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE);
 		}
 
@@ -526,7 +549,10 @@ public abstract class CommonDecentralizedTests {
 		public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
 			centralDatabaseBackupPublicKey=in.readObject(false);
 			certifiedAccountPublicKey=in.readObject(false);
+			certificateIdentifier=in.readBytesArray(false, MAX_SIZE_IN_BYTES_OF_CERTIFICATE_IDENTIFIER);
+			certificateExpirationTimeUTCInMs=in.readLong();
 			signature=in.readBytesArray(false, ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE);
+			setCertificateExpirationTimeUTCInMsArray();
 		}
 	}
 	static class FileReferenceForTests implements FileReference
@@ -800,6 +826,16 @@ public abstract class CommonDecentralizedTests {
 
 		@Override
 		public void hostConnected(DecentralizedValue hostID) {
+
+		}
+
+		@Override
+		public void hostsAdded(Set<DecentralizedValue> peersIdentifiers) {
+
+		}
+
+		@Override
+		public void centralDatabaseBackupCertificateRevoked() {
 
 		}
 
@@ -2520,7 +2556,7 @@ public abstract class CommonDecentralizedTests {
 
 
 	@DataProvider(name = "provideDataForTransactionSynchrosWithIndirectConnection")
-	public Object[][] provideDataForTransactionSynchrosWithIndirectConnection() throws DatabaseException {
+	public Object[][] provideDataForTransactionSynchrosWithIndirectConnection()  {
 		return provideDataForTransactionBetweenTwoPeers();
 	}
 

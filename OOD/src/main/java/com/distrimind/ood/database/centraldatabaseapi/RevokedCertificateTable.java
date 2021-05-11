@@ -35,45 +35,37 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.util.DecentralizedIDGenerator;
-import com.distrimind.util.SecuredDecentralizedID;
-import com.distrimind.util.crypto.EncryptionProfileProvider;
-import com.distrimind.util.crypto.IASymmetricPublicKey;
-import com.distrimind.util.crypto.MessageDigestType;
-import com.distrimind.util.crypto.SecureRandomType;
-import com.distrimind.util.data_buffers.WrappedSecretData;
-import com.distrimind.util.io.SecureExternalizable;
-import com.distrimind.util.properties.MultiFormatProperties;
-
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.util.Arrays;
+import com.distrimind.ood.database.DatabaseRecord;
+import com.distrimind.ood.database.Table;
+import com.distrimind.ood.database.annotations.Field;
+import com.distrimind.ood.database.annotations.PrimaryKey;
+import com.distrimind.ood.database.exceptions.DatabaseException;
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
- * @since OOD 3.0.0
+ * @since Utils 3.0.0
  */
-public abstract class CentralDatabaseBackupCertificate extends MultiFormatProperties implements SecureExternalizable {
-	public static final int MAX_SIZE_IN_BYTES_OF_CERTIFICATE_IDENTIFIER =32;
+public final class RevokedCertificateTable extends Table<RevokedCertificateTable.Record> {
+	protected RevokedCertificateTable() throws DatabaseException {
+	}
 
-	public static byte[] generateCertificateIdentifier()
+	public static class Record extends DatabaseRecord
 	{
-		try {
-			WrappedSecretData t=new SecuredDecentralizedID(MessageDigestType.SHA3_256, new DecentralizedIDGenerator(), SecureRandomType.DEFAULT.getInstance(null)).encode();
-			return Arrays.copyOfRange(t.getBytes(), 1, Math.max(t.getBytes().length-1, MAX_SIZE_IN_BYTES_OF_CERTIFICATE_IDENTIFIER));
-		} catch (NoSuchAlgorithmException | NoSuchProviderException e) {
-			throw new IllegalAccessError();
+		@SuppressWarnings("FieldMayBeFinal")
+		@PrimaryKey
+		@Field(limit = CentralDatabaseBackupCertificate.MAX_SIZE_IN_BYTES_OF_CERTIFICATE_IDENTIFIER)
+		private byte[] certificateID;
+
+		public Record(byte[] certificateID) {
+			this.certificateID = certificateID;
+		}
+		protected Record() {
+			this.certificateID = null;
+		}
+
+		public byte[] getCertificateID() {
+			return certificateID;
 		}
 	}
-
-	protected CentralDatabaseBackupCertificate() {
-		super(null);
-	}
-
-	public abstract IASymmetricPublicKey getCertifiedAccountPublicKey();
-	public abstract byte[] getCertificateIdentifier();
-	public abstract long getCertificateExpirationTimeUTCInMs();
-
-	public abstract boolean isValidCertificate(EncryptionProfileProvider encryptionProfileProvider);
 }

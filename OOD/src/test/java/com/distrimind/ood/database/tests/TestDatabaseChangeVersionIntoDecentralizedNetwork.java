@@ -39,13 +39,11 @@ import com.distrimind.ood.database.*;
 import com.distrimind.ood.database.decentralizeddatabase.*;
 import com.distrimind.ood.database.decentralizeddatabasev2.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.util.DecentralizedValue;
 import org.testng.Assert;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Set;
 
 
 /**
@@ -314,10 +312,6 @@ public abstract class TestDatabaseChangeVersionIntoDecentralizedNetwork extends 
 
 			}
 
-			@Override
-			public void peersAdded(Set<DecentralizedValue> peersIdentifiers) {
-				System.out.println("peers added : "+peersIdentifiers);
-			}
 		};
 	}
 }

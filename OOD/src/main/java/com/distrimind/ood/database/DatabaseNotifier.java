@@ -39,6 +39,8 @@ package com.distrimind.ood.database;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
 
+import java.util.Set;
+
 /**
  * @author Jason Mahdjoub
  * @version 1.0
@@ -70,5 +72,16 @@ public interface DatabaseNotifier {
      * @param hostID the connected host
      */
     void hostConnected(DecentralizedValue hostID);
+
+    /**
+     * This function is called when a peer or more was added
+     * @param peersIdentifiers the identifiers of the added peers
+     */
+    void hostsAdded(Set<DecentralizedValue> peersIdentifiers);
+
+    /**
+     * This function is called when central database backup certificate was revoked
+     */
+    void centralDatabaseBackupCertificateRevoked();
 
 }

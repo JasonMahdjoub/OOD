@@ -248,9 +248,10 @@ public class DatabaseConfigurationsBuilder {
 				wrapper.unlockWrite();
 			}
 		}
-		if (peersAdded!=null && lifeCycles!=null)
+		DatabaseNotifier notifier=wrapper.getSynchronizer().getNotifier();
+		if (peersAdded!=null && notifier!=null)
 		{
-			lifeCycles.peersAdded(peersAdded);
+			notifier.hostsAdded(peersAdded);
 		}
 	}
 

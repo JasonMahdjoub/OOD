@@ -55,7 +55,7 @@ import java.util.Set;
  * @version 1.0
  * @since OOD 3.0.0
  */
-public class InitialMessageComingFromCentralBackup extends DatabaseEvent implements DatabaseEventToSend, MessageComingFromCentralDatabaseBackup, SecureExternalizable {
+public class InitialMessageComingFromCentralBackup extends DatabaseEvent implements MessageComingFromCentralDatabaseBackup, SecureExternalizable {
 
 	private DecentralizedValue hostDestination;
 	private Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> lastValidatedAndEncryptedIDsPerHost;

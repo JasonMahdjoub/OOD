@@ -2616,8 +2616,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new IllegalArgumentException();
 			updateDistantBackupCenter(message.getHostChannel(), message.getDatabasePackage(), message.getLastValidatedDistantID(databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup()), message.getLastValidatedLocalID(databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup()));
 		}
-		private void initDistantBackupCenter(final DecentralizedValue hostChannel, final Map<String, Long> lastValidatedDistantTransactionIDPerDatabase, final long lastValidatedLocalTransactionID, Set<String> compatibleDatabases) throws DatabaseException {
-			initDistantBackupCenter(getDatabaseHookRecord(hostChannel), lastValidatedDistantTransactionIDPerDatabase, lastValidatedLocalTransactionID, compatibleDatabases);
+		private void initDistantBackupCenter(final DecentralizedValue hostChannel, final Map<String, Long> lastValidatedDistantTransactionIDPerDatabase, final long lastValidatedLocalTransactionID, Set<String> compatibleDatabases) throws DatabaseException { initDistantBackupCenter(getDatabaseHookRecord(hostChannel), lastValidatedDistantTransactionIDPerDatabase, lastValidatedLocalTransactionID, compatibleDatabases);
 		}
 		DatabaseHooksTable.Record getDatabaseHookRecord(final DecentralizedValue hostChannel) throws DatabaseException {
 			return getDatabaseHookRecord(hostChannel, true);
@@ -3397,6 +3396,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (data instanceof InitialMessageComingFromCentralBackup)
 			{
 				received((InitialMessageComingFromCentralBackup)data);
+			}
+			else if (data instanceof CentralDatabaseBackupCertificateChangedMessage)
+			{
+				if (notifier!=null) {
+					notifier.centralDatabaseBackupCertificateRevoked();
+				}
+				centralDatabaseBackupDisconnected();
 			}
 			else {
 				checkCentralDatabaseBackupInitialized();

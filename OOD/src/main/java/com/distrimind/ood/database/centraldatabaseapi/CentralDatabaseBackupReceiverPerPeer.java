@@ -65,6 +65,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 
 	protected ClientCloudAccountTable.Record clientCloud;
 	protected volatile boolean connected;
+	CentralDatabaseBackupCertificate certificate;
 
 	public CentralDatabaseBackupReceiverPerPeer(CentralDatabaseBackupReceiver centralDatabaseBackupReceiver, DatabaseWrapper wrapper) {
 		if (centralDatabaseBackupReceiver==null)
@@ -107,17 +108,42 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 	{
 		return connected;
 	}
+	protected boolean isRevokedCertificate(CentralDatabaseBackupCertificate certificate) throws DatabaseException {
+		byte[] id=certificate.getCertificateIdentifier();
+		if (id==null)
+			return true;
+		return centralDatabaseBackupReceiver.revokedCertificateTable.hasRecordsWithAllFields("certificateID", id);
+	}
 	protected abstract EncryptionProfileProvider getEncryptionProfileProviderToValidateCertificateOrGetNullIfNoValidProviderIsAvailable(CentralDatabaseBackupCertificate certificate);
-
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
-	private boolean checkCertificate(AuthenticatedMessageDestinedToCentralDatabaseBackup message) {
-		CentralDatabaseBackupCertificate certificate=message.getCertificate();
+	private boolean checkMessageSignature(AuthenticatedMessageDestinedToCentralDatabaseBackup message) throws DatabaseException {
+		if (message==null)
+			throw new NullPointerException();
+		return checkCertificateImpl(message.getCertificate(), message);
+	}
+	private boolean checkCertificateImpl(CentralDatabaseBackupCertificate certificate, AuthenticatedMessageDestinedToCentralDatabaseBackup message) throws DatabaseException {
 		if (certificate==null)
+			return false;
+		if (certificate.getCertificateExpirationTimeUTCInMs()<System.currentTimeMillis())
 			return false;
 		EncryptionProfileProvider encryptionProfileProvider=getEncryptionProfileProviderToValidateCertificateOrGetNullIfNoValidProviderIsAvailable(certificate);
 		if (encryptionProfileProvider==null)
 			return false;
-		return message.checkHashAndPublicSignature(encryptionProfileProvider)==Integrity.OK;
+		if (certificate.isValidCertificate(encryptionProfileProvider) && (message==null || message.checkHashAndPublicSignature(encryptionProfileProvider)==Integrity.OK)) {
+			if (isRevokedCertificate(certificate))
+			{
+				sendMessageFromThisCentralDatabaseBackup(new CentralDatabaseBackupCertificateChangedMessage(connectedClientID));
+				return false;
+			}
+			else
+				return true;
+		}
+		else
+			return false;
+	}
+
+	boolean checkCertificate(CentralDatabaseBackupCertificate certificate) throws DatabaseException {
+		return checkCertificateImpl(certificate, null);
 	}
 	public Integrity init(DistantBackupCenterConnexionInitialisation initialMessage) throws DatabaseException {
 		final CentralDatabaseBackupCertificate certificate=initialMessage.getCertificate();
@@ -134,12 +160,13 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 				if (l.size()>0)
 					CentralDatabaseBackupReceiverPerPeer.this.clientCloud=l.iterator().next();
 
-				if (CentralDatabaseBackupReceiverPerPeer.this.clientCloud==null || !checkCertificate(initialMessage))
+				if (CentralDatabaseBackupReceiverPerPeer.this.clientCloud==null || !checkMessageSignature(initialMessage))
 				{
 					disconnect();
 					return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
 				}
 				else {
+					CentralDatabaseBackupReceiverPerPeer.this.certificate=certificate;
 					CentralDatabaseBackupReceiverPerPeer.this.connectedClientID = initialMessage.getHostSource();
 					try {
 						CentralDatabaseBackupReceiverPerPeer.this.connectedClientRecord = getClientRecord(initialMessage.getHostSource());
@@ -218,7 +245,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 			return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
 
 		if (message instanceof AuthenticatedCentralDatabaseBackupMessage)
-			if (!checkCertificate((AuthenticatedMessageDestinedToCentralDatabaseBackup) message))
+			if (!checkMessageSignature((AuthenticatedMessageDestinedToCentralDatabaseBackup) message))
 			{
 				disconnect();
 				return Integrity.FAIL_AND_CANDIDATE_TO_BAN;

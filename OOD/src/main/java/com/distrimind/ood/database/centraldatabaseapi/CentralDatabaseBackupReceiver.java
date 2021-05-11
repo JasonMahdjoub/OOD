@@ -35,15 +35,22 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database.centraldatabaseapi;
 
-import com.distrimind.ood.database.*;
+import com.distrimind.ood.database.DatabaseWrapper;
+import com.distrimind.ood.database.Filter;
+import com.distrimind.ood.database.SynchronizedTransaction;
+import com.distrimind.ood.database.TransactionIsolation;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.messages.CentralDatabaseBackupCertificateChangedMessage;
 import com.distrimind.ood.database.messages.DistantBackupCenterConnexionInitialisation;
 import com.distrimind.ood.database.messages.MessageDestinedToCentralDatabaseBackup;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.Integrity;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 /**
  * @author Jason Mahdjoub
@@ -60,6 +67,7 @@ public abstract class CentralDatabaseBackupReceiver {
 	protected final EncryptedBackupPartReferenceTable encryptedBackupPartReferenceTable;
 	protected final ClientCloudAccountTable clientCloudAccountTable;
 	protected final ConnectedClientsTable connectedClientsTable;
+	protected final RevokedCertificateTable revokedCertificateTable;
 
 
 
@@ -79,6 +87,7 @@ public abstract class CentralDatabaseBackupReceiver {
 		this.encryptedBackupPartReferenceTable=wrapper.getTableInstance(EncryptedBackupPartReferenceTable.class);
 		this.databaseBackupPerClientTable=wrapper.getTableInstance(DatabaseBackupPerClientTable.class);
 		this.connectedClientsTable=wrapper.getTableInstance(ConnectedClientsTable.class);
+		this.revokedCertificateTable=wrapper.getTableInstance(RevokedCertificateTable.class);
 		disconnectAllPeers();
 	}
 
@@ -126,7 +135,37 @@ public abstract class CentralDatabaseBackupReceiver {
 			return r.getCentralID();
 	}
 
-
+	public Integrity certificateChanged(CentralDatabaseBackupCertificate certificate, CentralDatabaseBackupCertificate certificateToRevoke) throws DatabaseException {
+		if (certificate==null)
+			throw new NullPointerException();
+		if (certificateToRevoke==null)
+			throw new NullPointerException();
+		byte[] id=certificate.getCertificateIdentifier();
+		byte[] revokedID=certificateToRevoke.getCertificateIdentifier();
+		if (id==null)
+			throw new NullPointerException();
+		if (revokedID==null)
+			throw new NullPointerException();
+		if (revokedCertificateTable.hasRecordsWithAllFields("certificateID", id))
+			return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
+		if (!revokedCertificateTable.hasRecordsWithAllFields("certificateID", revokedID))
+			revokedCertificateTable.addRecord("certificateID", revokedID);
+		for (Iterator<Map.Entry<DecentralizedValue, CentralDatabaseBackupReceiverPerPeer>> it =receiversPerPeer.entrySet().iterator();it.hasNext();)
+		{
+			CentralDatabaseBackupReceiverPerPeer c=it.next().getValue();
+			if (c.connectedClientRecord.getAccount().getExternalAccountID().equals(certificate.getCertifiedAccountPublicKey()) && Arrays.equals(c.certificate.getCertificateIdentifier(), certificateToRevoke.getCertificateIdentifier()))
+			{
+				if (c.checkCertificate(certificate)) {
+					c.sendMessageFromThisCentralDatabaseBackup(new CentralDatabaseBackupCertificateChangedMessage(c.connectedClientID));
+					c.disconnect();
+					it.remove();
+				}
+				else
+					return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
+			}
+		}
+		return Integrity.OK;
+	}
 
 	public DecentralizedValue getCentralID() {
 		return centralID;
@@ -173,4 +212,6 @@ public abstract class CentralDatabaseBackupReceiver {
 			}
 		});
 	}
+
+
 }
