@@ -35,10 +35,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database.centraldatabaseapi;
 
-import com.distrimind.ood.database.DatabaseWrapper;
-import com.distrimind.ood.database.Filter;
-import com.distrimind.ood.database.SynchronizedTransaction;
-import com.distrimind.ood.database.TransactionIsolation;
+import com.distrimind.ood.database.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.messages.CentralDatabaseBackupCertificateChangedMessage;
 import com.distrimind.ood.database.messages.DistantBackupCenterConnexionInitialisation;
@@ -184,17 +181,30 @@ public abstract class CentralDatabaseBackupReceiver {
 		wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
 			@Override
 			public Void run() throws Exception {
-				long curTime=System.currentTimeMillis()-getDurationInMsBeforeRemovingDatabaseBackup();
-				long curTimeClient=System.currentTimeMillis()-Math.max(getDurationInMsBeforeCancelingPeerRemovingWhenThePeerIsTryingToReconnect(), getDurationInMsBeforeRemovingDatabaseBackup());
+				long timeReferenceToRemoveObsoleteBackup=System.currentTimeMillis()- getDurationInMsBeforeRemovingDatabaseBackupAfterAnDeletionOrder();
+				long timeReferenceToRemoveObsoleteHosts=System.currentTimeMillis()-Math.max(getDurationInMsBeforeCancelingPeerRemovingWhenThePeerIsTryingToReconnect(), getDurationInMsBeforeRemovingDatabaseBackupAfterAnDeletionOrder());
+				long timeReferenceToOrderObsoleteBackups=System.currentTimeMillis()- getDurationInMsBeforeOrderingDatabaseBackupDeletion();
+
 				encryptedBackupPartReferenceTable.removeRecordsWithCascade(new Filter<EncryptedBackupPartReferenceTable.Record>() {
 					@Override
 					public boolean nextRecord(EncryptedBackupPartReferenceTable.Record _record) {
 						_record.getFileReference().delete();
 						return true;
 					}
-				}, "(database.removeTimeUTC IS NOT NULL AND database.removeTimeUTC<=%ct) OR (database.client.toRemoveOrderTimeUTCInMs IS NOT NULL AND database.client.toRemoveOrderTimeUTCInMs<=%ctc)", "ct", curTime, "ctc", curTimeClient);
-				clientTable.removeRecordsWithCascade("toRemoveOrderTimeUTCInMs IS NOT NULL AND toRemoveOrderTimeUTCInMs<=%ct", "ct", curTimeClient);
-				databaseBackupPerClientTable.removeRecords("removeTimeUTC IS NOT NULL AND removeTimeUTC<=%ct", "ct", curTime);
+				}, "(database.removeTimeUTC IS NOT NULL AND database.removeTimeUTC<=%ct) OR (database.client.toRemoveOrderTimeUTCInMs IS NOT NULL AND database.client.toRemoveOrderTimeUTCInMs<=%ctc)", "ct", timeReferenceToRemoveObsoleteBackup, "ctc", timeReferenceToRemoveObsoleteHosts);
+
+				clientTable.removeRecordsWithCascade("toRemoveOrderTimeUTCInMs IS NOT NULL AND toRemoveOrderTimeUTCInMs<=%ct", "ct", timeReferenceToRemoveObsoleteHosts);
+				databaseBackupPerClientTable.removeRecords("removeTimeUTC IS NOT NULL AND removeTimeUTC<=%ct", "ct", timeReferenceToRemoveObsoleteBackup);
+				databaseBackupPerClientTable.updateRecords(new AlterRecordFilter<DatabaseBackupPerClientTable.Record>() {
+					@Override
+					public void nextRecord(DatabaseBackupPerClientTable.Record _record) throws DatabaseException {
+						if (encryptedBackupPartReferenceTable.getRecordsNumber("isReferenceFile=%rf and database=%d", "rf", true, "d", _record)>=2)
+						{
+							update("removeTimeUTC", System.currentTimeMillis());
+						}
+
+					}
+				},"lastFileBackupPartUTC<=%ct and removeTimeUTC IS NULL", "ct", timeReferenceToOrderObsoleteBackups);
 
 				return null;
 			}
@@ -216,9 +226,11 @@ public abstract class CentralDatabaseBackupReceiver {
 		});
 	}
 
-	public abstract long getDurationInMsBeforeRemovingDatabaseBackup();
+	public abstract long getDurationInMsBeforeRemovingDatabaseBackupAfterAnDeletionOrder();
+	public abstract long getDurationInMsBeforeOrderingDatabaseBackupDeletion();
 
 	public abstract long getDurationInMsBeforeCancelingPeerRemovingWhenThePeerIsTryingToReconnect();
+
 
 
 }

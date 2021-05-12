@@ -3637,7 +3637,45 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}, whereCondition, parameters);
 		return res.get();
 	}
+	/**
+	 * Returns true if there is at mean one record which corresponds to the given
+	 * 	 filter and the given command.
+	 *
+	 * @param _filter
+	 *            the filter
+	 * @param whereCondition
+	 *            the SQL WHERE condition that filter the results
+	 * @param parameters
+	 *            the used parameters with the WHERE condition
+	 * @return the corresponding records.
+	 * @throws DatabaseException
+	 *             if a Sql exception occurs.
+	 * @throws NullPointerException
+	 *             if parameters are null pointers.
+	 */
+	public final boolean hasRecords(final Filter<T> _filter, String whereCondition, Object... parameters)
+			throws DatabaseException {
+		return hasRecords(_filter, whereCondition, convertToMap(parameters));
+	}
+	/**
+	 * Returns true if there is at mean one record which corresponds to the given
+	 * 	 command.
+	 *
+	 * @param whereCondition
+	 *            the SQL WHERE condition that filter the results
+	 * @param parameters
+	 *            the used parameters with the WHERE condition
+	 * @return the corresponding records.
+	 * @throws DatabaseException
+	 *             if a Sql exception occurs.
+	 * @throws NullPointerException
+	 *             if parameters are null pointers.
+	 */
 
+	public final boolean hasRecords(String whereCondition, Object... parameters)
+			throws DatabaseException {
+		return hasRecords(whereCondition, convertToMap(parameters));
+	}
 	/**
 	 * Returns true if there is at mean one record which corresponds to the given
 	 * 	 command.

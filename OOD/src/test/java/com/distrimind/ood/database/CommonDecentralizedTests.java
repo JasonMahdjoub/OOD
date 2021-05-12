@@ -639,8 +639,13 @@ public abstract class CommonDecentralizedTests {
 		}
 
 		@Override
-		public long getDurationInMsBeforeRemovingDatabaseBackup() {
+		public long getDurationInMsBeforeRemovingDatabaseBackupAfterAnDeletionOrder() {
 			return 1000;
+		}
+
+		@Override
+		public long getDurationInMsBeforeOrderingDatabaseBackupDeletion() {
+			return 20*24*60*60*1000;
 		}
 
 		@Override
