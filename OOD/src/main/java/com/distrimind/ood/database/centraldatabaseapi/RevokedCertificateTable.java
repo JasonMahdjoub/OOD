@@ -41,6 +41,8 @@ import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 
+import java.util.Arrays;
+
 /**
  * @author Jason Mahdjoub
  * @version 1.0
@@ -66,6 +68,13 @@ public final class RevokedCertificateTable extends Table<RevokedCertificateTable
 
 		public byte[] getCertificateID() {
 			return certificateID;
+		}
+
+		@Override
+		public String toString() {
+			return "Record{" +
+					"certificateID=" + Arrays.toString(certificateID) +
+					'}';
 		}
 	}
 }

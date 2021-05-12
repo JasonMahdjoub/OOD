@@ -84,5 +84,13 @@ public final class ConnectedClientsTable extends Table<ConnectedClientsTable.Rec
 		public DecentralizedValue getCentralID() {
 			return centralID;
 		}
+
+		@Override
+		public String toString() {
+			return "Record{" +
+					"clientID=" + clientID +
+					", centralID=" + centralID +
+					'}';
+		}
 	}
 }

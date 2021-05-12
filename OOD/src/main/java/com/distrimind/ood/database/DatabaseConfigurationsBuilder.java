@@ -226,12 +226,12 @@ public class DatabaseConfigurationsBuilder {
 					currentTransaction.checkDisconnexions|=checkConnexionsToRemove();
 				if (currentTransaction.checkDatabaseToUnload)
 					checkDatabaseToUnload();
+				if (currentTransaction.checkInitLocalPeer) {
+					checkInitLocalPeer();
+				}
 				if (currentTransaction.checkPeersToAdd) {
 					peersAdded=checkPeersToAdd();
 					currentTransaction.checkDatabaseToSynchronize |=peersAdded!=null && peersAdded.size()>0;
-				}
-				if (currentTransaction.checkInitLocalPeer) {
-					checkInitLocalPeer();
 				}
 				if (currentTransaction.checkDatabaseToSynchronize)
 					checkDatabaseToSynchronize();

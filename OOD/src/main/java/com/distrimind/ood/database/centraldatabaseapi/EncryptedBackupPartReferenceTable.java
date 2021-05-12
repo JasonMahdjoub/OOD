@@ -130,6 +130,17 @@ public final class EncryptedBackupPartReferenceTable extends Table<EncryptedBack
 		public EncryptedDatabaseBackupMetaDataPerFile getMetaData() {
 			return metaData;
 		}
+
+		@Override
+		public String toString() {
+			return "Record{" +
+					"database=" + database +
+					", fileTimeUTC=" + fileTimeUTC +
+					", isReferenceFile=" + isReferenceFile +
+					", fileReference=" + fileReference +
+					", metaData=" + metaData +
+					'}';
+		}
 	}
 	Integrity addEncryptedBackupPartReference(DatabaseBackupPerClientTable databaseBackupPerClientTable, ClientTable.Record clientRecord, FileReference fileReference, EncryptedBackupPartDestinedToCentralDatabaseBackup message) throws DatabaseException {
 		return getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {

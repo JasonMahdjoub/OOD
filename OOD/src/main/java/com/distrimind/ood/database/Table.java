@@ -6295,6 +6295,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 							if ((rule == null || rule.isConcernedBy(Table.this, parameters, _instance))
 									&& _filter.nextRecord(_instance))
 							{
+								System.out.println(_instance);
 								if (!sql_connection.supportForeignKeys())
 									removeWithCascadeRecordsPointingToThisRecordImpl(_instance);
 								_cursor.deleteRow();

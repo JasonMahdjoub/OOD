@@ -45,6 +45,7 @@ import com.distrimind.ood.database.messages.AbstractCompatibleEncryptedDatabaseM
 import com.distrimind.ood.database.messages.IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup;
 import com.distrimind.util.DecentralizedValue;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -112,6 +113,15 @@ public final class ClientTable extends Table<ClientTable.Record> {
 
 		public Long getToRemoveOrderTimeUTCInMs() {
 			return toRemoveOrderTimeUTCInMs;
+		}
+
+		@Override
+		public String toString() {
+			return "Record{" +
+					"clientID=" + clientID +
+					", account=" + account +
+					", toRemoveOrderTimeUTCInMs=" + toRemoveOrderTimeUTCInMs +
+					'}';
 		}
 	}
 

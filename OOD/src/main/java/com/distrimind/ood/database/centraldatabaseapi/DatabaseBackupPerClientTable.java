@@ -120,6 +120,16 @@ public final class DatabaseBackupPerClientTable extends Table<DatabaseBackupPerC
 		public byte[] getLastValidatedAndEncryptedID() {
 			return lastValidatedAndEncryptedID;
 		}
+
+		@Override
+		public String toString() {
+			return "Record{" +
+					"client=" + client +
+					", packageString='" + packageString + '\'' +
+					", lastFileBackupPartUTC=" + lastFileBackupPartUTC +
+					", removeTimeUTC=" + removeTimeUTC +
+					'}';
+		}
 	}
 
 
