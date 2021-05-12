@@ -27,14 +27,9 @@
 		<classes>
 
 			<class name="com.distrimind.ood.database.tests.H2TestDecentralizedDatabase" />
+			<class name="com.distrimind.ood.database.tests.H2TestCentralBackupWithDecentralizedDatabase" />
+			<class name="com.distrimind.ood.database.tests.H2TestAddPeerWithCentralDatabaseBackupConnected" />
 			<!-- 	<class name="com.distrimind.ood.database.tests.HSQLDBTestDecentralizedDatabase" /> -->
-        </classes>
-    </test>
-
-    <test name="testCentralBackupDatabase">
-        <classes>
-
-            <class name="com.distrimind.ood.database.tests.H2TestCentralBackupWithDecentralizedDatabase" />
         </classes>
     </test>
 
