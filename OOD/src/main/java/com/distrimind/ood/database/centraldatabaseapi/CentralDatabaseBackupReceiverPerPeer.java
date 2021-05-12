@@ -176,7 +176,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 						return e.getIntegrity();
 					}
 					if (CentralDatabaseBackupReceiverPerPeer.this.connectedClientRecord==null) {
-						if (centralDatabaseBackupReceiver.clientTable.getRecordsNumber("account=%a", "a", clientCloud)>=clientCloud.getMaxClients())
+						if (centralDatabaseBackupReceiver.clientTable.getRecordsNumber("account=%a and toRemoveOrderTimeUTCInMs is null", "a", clientCloud)>=clientCloud.getMaxClients())
 							return Integrity.FAIL;
 						try {
 							connectedClientRecord = centralDatabaseBackupReceiver.clientTable.addRecord(new ClientTable.Record(connectedClientID, CentralDatabaseBackupReceiverPerPeer.this.clientCloud));
@@ -244,13 +244,13 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 		if (!message.getHostSource().equals(connectedClientID))
 			return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
 
-		if (message instanceof AuthenticatedCentralDatabaseBackupMessage)
-			if (!checkMessageSignature((AuthenticatedMessageDestinedToCentralDatabaseBackup) message))
-			{
+		if (message instanceof AuthenticatedCentralDatabaseBackupMessage) {
+			if (!checkMessageSignature((AuthenticatedMessageDestinedToCentralDatabaseBackup) message)) {
 				disconnect();
 				return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
 
 			}
+		}
 
 		if (message instanceof EncryptedBackupPartDestinedToCentralDatabaseBackup)
 			return received((EncryptedBackupPartDestinedToCentralDatabaseBackup)message);
@@ -260,6 +260,14 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 			return received((AskForMetaDataPerFileToCentralDatabaseBackup)message);
 		else if (message instanceof DatabaseBackupToRemoveDestinedToCentralDatabaseBackup)
 			return received((DatabaseBackupToRemoveDestinedToCentralDatabaseBackup)message);
+		else if (message instanceof PeerToRemoveMessageDestinedToCentralDatabaseBackup)
+		{
+			return received((PeerToRemoveMessageDestinedToCentralDatabaseBackup)message);
+		}
+		else if (message instanceof PeerToAddMessageDestinedToCentralDatabaseBackup)
+		{
+			return received((PeerToAddMessageDestinedToCentralDatabaseBackup)message);
+		}
 		else if (message instanceof DistantBackupCenterConnexionInitialisation)
 			return received((DistantBackupCenterConnexionInitialisation)message);
 		else if (message instanceof LastValidatedDistantTransactionDestinedToCentralDatabaseBackup)
@@ -332,9 +340,9 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 			}
 		};
 		if (exceptThisClientID==null)
-			centralDatabaseBackupReceiver.clientTable.getRecords(filter, "account=%a", "a", connectedClientRecord.getAccount());
+			centralDatabaseBackupReceiver.clientTable.getRecords(filter, "account=%a and toRemoveOrderTimeUTCInMs is null", "a", connectedClientRecord.getAccount());
 		else
-			centralDatabaseBackupReceiver.clientTable.getRecords(filter, "account=%a and clientID!=%c", "a", connectedClientRecord.getAccount(), "c", exceptThisClientID);
+			centralDatabaseBackupReceiver.clientTable.getRecords(filter, "account=%a and toRemoveOrderTimeUTCInMs is null and clientID!=%c", "a", connectedClientRecord.getAccount(), "c", exceptThisClientID);
 
 	}
 
@@ -494,6 +502,36 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 		}, "client=%c", "c", client);
 		return res;
 	}
+	private Integrity received(PeerToRemoveMessageDestinedToCentralDatabaseBackup message) throws DatabaseException {
+		try {
+			DecentralizedValue hostID = message.getHostToRemove();
+			ClientTable.Record r = getClientRecord(hostID);
+			if (r==null)
+				return Integrity.OK;
+			if (r.getToRemoveOrderTimeUTCInMs()==null)
+				centralDatabaseBackupReceiver.clientTable.updateRecord(r, "toRemoveOrderTimeUTCInMs", System.currentTimeMillis());
+			return Integrity.OK;
+		}
+		catch (MessageExternalizationException e)
+		{
+			return e.getIntegrity();
+		}
+	}
+	private Integrity received(PeerToAddMessageDestinedToCentralDatabaseBackup message) throws DatabaseException {
+		try {
+			DecentralizedValue hostID = message.getHostToAdd();
+			ClientTable.Record r = getClientRecord(hostID);
+			if (r==null)
+				return Integrity.OK;
+			if (r.getToRemoveOrderTimeUTCInMs()!=null)
+				centralDatabaseBackupReceiver.clientTable.updateRecord(r, "toRemoveOrderTimeUTCInMs", null);
+			return Integrity.OK;
+		}
+		catch (MessageExternalizationException e)
+		{
+			return e.getIntegrity();
+		}
+	}
 	private Integrity received(DistantBackupCenterConnexionInitialisation message) throws DatabaseException {
 		return centralDatabaseBackupReceiver.clientTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
 			@Override
@@ -512,12 +550,13 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 				Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> lastValidatedAndEncryptedIDsPerHost=new HashMap<>();
 				Map<String, Long> lastValidatedTransactionsUTCForDestinationHost=new HashMap<>();
 
-				for (ClientTable.Record r : centralDatabaseBackupReceiver.clientTable.getRecords("account=%a", "a", clientCloud))
-				{
-					if (r.getClientID().equals(connectedClientID))
-						continue;
-					lastValidatedAndEncryptedIDsPerHost.put(r.getClientID(), new LastValidatedLocalAndDistantEncryptedID(getLastValidatedAndEncryptedDistantID(r, connectedClientRecord), getLastValidatedAndEncryptedDistantIDPerDatabase(r)));
-				}
+				parseClients(new Filter<ClientTable.Record>() {
+					@Override
+					public boolean nextRecord(ClientTable.Record r) throws DatabaseException {
+						lastValidatedAndEncryptedIDsPerHost.put(r.getClientID(), new LastValidatedLocalAndDistantEncryptedID(getLastValidatedAndEncryptedDistantID(r, connectedClientRecord), getLastValidatedAndEncryptedDistantIDPerDatabase(r)));
+						return false;
+					}
+				}, connectedClientID);
 				centralDatabaseBackupReceiver.databaseBackupPerClientTable.getRecords(new Filter<DatabaseBackupPerClientTable.Record>() {
 					@Override
 					public boolean nextRecord(DatabaseBackupPerClientTable.Record _record)  {
@@ -775,15 +814,17 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 			}
 		});
 	}
-	public abstract long getDurationInMsBeforeRemovingDatabaseBackup();
+
 	private Integrity received(DatabaseBackupToRemoveDestinedToCentralDatabaseBackup message) throws DatabaseException {
 		DatabaseBackupPerClientTable.Record r=getDatabaseBackupPerClientRecord(connectedClientRecord, message.getPackageString());
 		if (r!=null)
 		{
-			centralDatabaseBackupReceiver.databaseBackupPerClientTable.updateRecord(r, "removeTimeUTC", System.currentTimeMillis()+ getDurationInMsBeforeRemovingDatabaseBackup());
+			centralDatabaseBackupReceiver.databaseBackupPerClientTable.updateRecord(r, "removeTimeUTC", System.currentTimeMillis());
 		}
 		return Integrity.OK;
 	}
+
+
 
 
 }

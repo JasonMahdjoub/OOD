@@ -1381,6 +1381,18 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				unlockWrite();
 			}
 		}
+		void notifyNewAuthenticatedMessage(AuthenticatedMessageDestinedToCentralDatabaseBackup authenticatedMessage) throws DatabaseException {
+			lockWrite();
+			try {
+				if (isInitializedWithCentralBackup())
+				{
+					addNewDatabaseEvent(authenticatedMessage);
+				}
+			}
+			finally {
+				unlockWrite();
+			}
+		}
 
 		void checkInitLocalPeer() throws DatabaseException {
 			DecentralizedValue dv=databaseConfigurationsBuilder.getConfigurations().getLocalPeer();
@@ -1435,6 +1447,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					if (e instanceof AuthenticatedP2PMessage)
 					{
 						((AuthenticatedP2PMessage) e).messageSent(DatabaseWrapper.this);
+					}
+					else if (e instanceof AuthenticatedMessageDestinedToCentralDatabaseBackup)
+					{
+						getDatabaseHooksTable().messageDestinedToCentralDatabaseBackupSent((AuthenticatedMessageDestinedToCentralDatabaseBackup)e);
 					}
 					if (events.isEmpty())
 						canNotify = true;
@@ -2587,8 +2603,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 		private void checkForNewAuthenticatedMessagesToSendToCentralDatabaseBackup() throws DatabaseException {
 			if (centralBackupInitialized) {
-				for (IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup i : getDatabaseHooksTable().getLocalDatabaseHost().getAuthenticatedMessagesQueueToSendToCentralDatabaseBackup(databaseConfigurationsBuilder.getSecureRandom(), databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup(),
+				DatabaseHooksTable.Record lr=getDatabaseHooksTable().getLocalDatabaseHost();
+				for (IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup i : lr.getAuthenticatedMessagesQueueToSendToCentralDatabaseBackup(databaseConfigurationsBuilder.getSecureRandom(), databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup(),
 						initializedHooks, initializedHooksWithCentralBackup)) {
+					addNewDatabaseEvent(i);
+				}
+				for (AuthenticatedMessageDestinedToCentralDatabaseBackup i : lr.getAuthenticatedMessagesQueueDestinedToCentralDatabaseBackup()) {
 					addNewDatabaseEvent(i);
 				}
 			}
@@ -2642,8 +2662,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 		private void initDistantBackupCenter(final DecentralizedValue hostChannel, final Map<String, Long> lastValidatedDistantTransactionIDPerDatabase, final long lastValidatedLocalTransactionID, Set<String> compatibleDatabases) throws DatabaseException {
 			DatabaseHooksTable.Record r=getDatabaseHookRecord(hostChannel, false);
-			if (r==null)
-				return ;
+			if (r==null || r.willBeRemoved()) {
+
+				return;
+			}
 			initDistantBackupCenter(r, lastValidatedDistantTransactionIDPerDatabase, lastValidatedLocalTransactionID, compatibleDatabases);
 		}
 		DatabaseHooksTable.Record getDatabaseHookRecord(final DecentralizedValue hostChannel) throws DatabaseException {

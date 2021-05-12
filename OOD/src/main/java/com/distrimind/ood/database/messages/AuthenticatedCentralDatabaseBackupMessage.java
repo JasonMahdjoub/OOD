@@ -35,10 +35,11 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+import com.distrimind.ood.database.AbstractHookRequest;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.util.crypto.AbstractSecureRandom;
-import com.distrimind.util.crypto.EncryptionProfileProvider;
-import com.distrimind.util.crypto.IASymmetricPublicKey;
+import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.crypto.*;
 
 import java.io.IOException;
 
@@ -48,6 +49,9 @@ import java.io.IOException;
  * @since OOD 3.0.0
  */
 public interface AuthenticatedCentralDatabaseBackupMessage extends AuthenticatedMessage {
+	int MAX_AUTHENTICATED_MESSAGE_SIZE_IN_BYTES= DatabaseWrapper.MAX_ACCEPTED_SIZE_IN_BYTES_OF_DECENTRALIZED_VALUE*2+
+		ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE+ ASymmetricPublicKey.MAX_SIZE_IN_BYTES_OF_PUBLIC_KEY_FOR_SIGNATURE*2+128;
+
 	@Override
 	default void generateAndSetSignatures(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
 		short defaultKeyID=encryptionProfileProvider.getDefaultKeyID();

@@ -2,6 +2,8 @@ package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupCertificate;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.messages.PeerToAddMessageDestinedToCentralDatabaseBackup;
+import com.distrimind.ood.database.messages.PeerToRemoveMessageDestinedToCentralDatabaseBackup;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.Reference;
 import com.distrimind.util.crypto.AbstractSecureRandom;
@@ -408,6 +410,9 @@ public class DatabaseConfigurationsBuilder {
 							if (peersAdded==null)
 								peersAdded=new HashSet<>();
 							peersAdded.add(dv);
+							wrapper.getDatabaseHooksTable().offerNewAuthenticatedMessageDestinedToCentralDatabaseBackup(
+									new PeerToAddMessageDestinedToCentralDatabaseBackup(getConfigurations().getLocalPeer(), getConfigurations().getCentralDatabaseBackupCertificate(), dv),
+									getSecureRandom(), getSignatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup());
 						}
 					}
 				}
@@ -594,6 +599,10 @@ public class DatabaseConfigurationsBuilder {
 								_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), peerIDToRemove), getSecureRandom(), protectedSignatureProfileProviderForAuthenticatedP2PMessages, this);
 							}
 						}, "concernsDatabaseHost=%cdh", "cdh", false);
+
+						wrapper.getDatabaseHooksTable().offerNewAuthenticatedMessageDestinedToCentralDatabaseBackup(
+								new PeerToRemoveMessageDestinedToCentralDatabaseBackup(getConfigurations().getLocalPeer(), getConfigurations().getCentralDatabaseBackupCertificate(), peerIDToRemove),
+								getSecureRandom(), getSignatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup());
 						if (removeLocalNow.get())
 							wrapper.getDatabaseHooksTable().removeHook(false, peerIDToRemove);
 						else {

@@ -74,6 +74,9 @@ public final class ClientTable extends Table<ClientTable.Record> {
 		@Field(limit= AbstractCompatibleEncryptedDatabaseMessage.MAX_SIZE_OF_ENCRYPTED_PACKAGES_NAMES_IN_BYTES)
 		private byte[] encryptedCompatiblesDatabases;
 
+		@Field
+		private Long toRemoveOrderTimeUTCInMs=null;
+
 		@SuppressWarnings("unused")
 		private Record()
 		{
@@ -105,6 +108,10 @@ public final class ClientTable extends Table<ClientTable.Record> {
 
 		public byte[] getEncryptedCompatiblesDatabases() {
 			return encryptedCompatiblesDatabases;
+		}
+
+		public Long getToRemoveOrderTimeUTCInMs() {
+			return toRemoveOrderTimeUTCInMs;
 		}
 	}
 

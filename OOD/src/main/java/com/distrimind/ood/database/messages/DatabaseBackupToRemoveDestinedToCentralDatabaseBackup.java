@@ -1,10 +1,7 @@
 package com.distrimind.ood.database.messages;
 
 import com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupCertificate;
-import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
-import com.distrimind.util.crypto.AbstractSecureRandom;
-import com.distrimind.util.crypto.EncryptionProfileProvider;
 import com.distrimind.util.io.*;
 
 import java.io.IOException;
@@ -66,5 +63,17 @@ public class DatabaseBackupToRemoveDestinedToCentralDatabaseBackup extends Authe
 		return "DatabaseBackupToRemoveDestinedToCentralDatabaseBackup{" +
 				"packageString='" + packageString + '\'' +
 				'}';
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (o==this)
+			return true;
+		if (o instanceof DatabaseBackupToRemoveDestinedToCentralDatabaseBackup)
+		{
+			return ((DatabaseBackupToRemoveDestinedToCentralDatabaseBackup) o).packageString.equals(this.packageString);
+		}
+		else
+			return false;
 	}
 }

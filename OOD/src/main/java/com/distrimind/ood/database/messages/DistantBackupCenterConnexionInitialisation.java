@@ -113,4 +113,9 @@ public class DistantBackupCenterConnexionInitialisation extends AuthenticatedMes
 	public String toString() {
 		return "DistantBackupCenterConnexionInitialisation{}";
 	}
+
+	@Override
+	public boolean equals(Object o) {
+		return o == this;
+	}
 }

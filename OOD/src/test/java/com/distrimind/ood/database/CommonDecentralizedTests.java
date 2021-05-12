@@ -456,10 +456,6 @@ public abstract class CommonDecentralizedTests {
 			return new FileReferenceForTests(encryptedDatabaseBackupMetaDataPerFile.getFileTimestampUTC());
 		}
 
-		@Override
-		public long getDurationInMsBeforeRemovingDatabaseBackup() {
-			return 4L*30L*24L*60L*60L*1000L;
-		}
 	}
 	static class CentralDatabaseBackupCertificate extends com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupCertificate
 	{
@@ -640,6 +636,16 @@ public abstract class CommonDecentralizedTests {
 		@Override
 		protected CentralDatabaseBackupReceiverPerPeer newCentralDatabaseBackupReceiverPerPeerInstance(DatabaseWrapper wrapper) {
 			return new CentralDatabaseBackupReceiverPerPeer(this, wrapper);
+		}
+
+		@Override
+		public long getDurationInMsBeforeRemovingDatabaseBackup() {
+			return 1000;
+		}
+
+		@Override
+		public long getDurationInMsBeforeCancelingPeerRemovingWhenThePeerIsTryingToReconnect() {
+			return 1000;
 		}
 	}
 

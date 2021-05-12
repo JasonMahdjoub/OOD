@@ -38,6 +38,8 @@ knowledge of the CeCILL-C license and that you accept its terms.
 import com.distrimind.ood.database.BackupConfiguration;
 import com.distrimind.ood.database.CommonDecentralizedTests;
 import com.distrimind.ood.database.DatabaseFactory;
+import com.distrimind.ood.database.centraldatabaseapi.ClientTable;
+import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.crypto.SecureRandomType;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -95,9 +97,13 @@ public abstract class TestAddPeerWithCentralDatabaseBackupConnected extends Comm
 		for (int i=0;i<20;i++)
 			addElements();
 		testAllDisconnected();
+		DecentralizedValue hostID4=db4.getHostID();
+		ClientTable t=centralDatabaseBackupDatabase.getTableInstance(ClientTable.class);
+		Assert.assertTrue(t.hasRecordsWithAllFields("clientID", hostID4));
 		listDatabase.get(0).getDbwrapper().getDatabaseConfigurationsBuilder()
 				.removeDistantPeer(db4.getHostID())
 				.commit();
+
 		unloadDatabase4();
 		testAllDisconnected();
 		testAllConnect();
@@ -113,6 +119,9 @@ public abstract class TestAddPeerWithCentralDatabaseBackupConnected extends Comm
 		}
 		disconnectAllDatabase();
 		checkAllDatabaseInternalDataUsedForSynchro(false);
+		Thread.sleep(1200);
+		centralDatabaseBackupReceiver.cleanObsoleteData();
 
+		Assert.assertFalse(t.hasRecordsWithAllFields("clientID", hostID4));
 	}
 }
