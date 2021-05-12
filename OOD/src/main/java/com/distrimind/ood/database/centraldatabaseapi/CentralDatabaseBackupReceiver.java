@@ -186,13 +186,15 @@ public abstract class CentralDatabaseBackupReceiver {
 			public Void run() throws Exception {
 				long curTime=System.currentTimeMillis()-getDurationInMsBeforeRemovingDatabaseBackup();
 				long curTimeClient=System.currentTimeMillis()-Math.max(getDurationInMsBeforeCancelingPeerRemovingWhenThePeerIsTryingToReconnect(), getDurationInMsBeforeRemovingDatabaseBackup());
+				System.out.println("start : "+curTime+" ; "+curTimeClient);
 				encryptedBackupPartReferenceTable.removeRecordsWithCascade(new Filter<EncryptedBackupPartReferenceTable.Record>() {
 					@Override
 					public boolean nextRecord(EncryptedBackupPartReferenceTable.Record _record) {
 						_record.getFileReference().delete();
 						return true;
 					}
-				}, "database.removeTimeUTC IS NOT NULL AND (database.removeTimeUTC<=%ct OR (database.client.toRemoveOrderTimeUTCInMs IS NOT NULL AND database.client.toRemoveOrderTimeUTCInMs<=%ct2))", "ct", curTime, "ct2", curTimeClient);
+				}, "(database.removeTimeUTC IS NOT NULL AND database.removeTimeUTC<=%ct) OR (database.client.toRemoveOrderTimeUTCInMs IS NOT NULL AND database.client.toRemoveOrderTimeUTCInMs<=%ctc)", "ct", curTime, "ctc", curTimeClient);
+				System.out.println("end");
 				clientTable.removeRecordsWithCascade("toRemoveOrderTimeUTCInMs IS NOT NULL AND toRemoveOrderTimeUTCInMs<=%ct", "ct", curTimeClient);
 				databaseBackupPerClientTable.removeRecords("removeTimeUTC IS NOT NULL AND removeTimeUTC<=%ct", "ct", curTime);
 
