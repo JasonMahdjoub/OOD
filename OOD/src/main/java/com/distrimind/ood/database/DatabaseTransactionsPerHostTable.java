@@ -125,7 +125,38 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 			return hook;
 		}
 	}
+	void removeTransactions(final DatabaseHooksTable.Record hook)
+			throws DatabaseException {
+		if (hook == null)
+			throw new NullPointerException("hook");
+		getDatabaseWrapper().runTransaction(new Transaction() {
 
+			@Override
+			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
+
+				DatabaseTransactionsPerHostTable.this
+						.removeRecordsWithCascade("hook.id=%id", "id", hook.getID());
+				getDatabaseTransactionEventsTable().removeUnusedTransactions();
+				return null;
+			}
+
+			@Override
+			public TransactionIsolation getTransactionIsolation() {
+				return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+			}
+
+			@Override
+			public boolean doesWriteData() {
+				return true;
+			}
+
+			@Override
+			public void initOrReset() {
+
+			}
+		}, true);
+
+	}
 	void removeTransactions(final DatabaseHooksTable.Record hook, final Set<String> removedPackages)
 			throws DatabaseException {
 		if (hook == null)
@@ -140,15 +171,14 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 
 				DatabaseTransactionsPerHostTable.this
-						.removeRecords(new Filter<DatabaseTransactionsPerHostTable.Record>() {
+						.removeRecordsWithCascade(new Filter<DatabaseTransactionsPerHostTable.Record>() {
 
 							@Override
 							public boolean nextRecord(
 									com.distrimind.ood.database.DatabaseTransactionsPerHostTable.Record _record) {
-								return _record.getHook().getID() == hook.getID()
-										&& _record.getTransaction().isConcernedByOneOf(removedPackages);
+								return _record.getTransaction().isConcernedByOneOf(removedPackages);
 							}
-						});
+						}, "hook.id=%id", "id", hook.getID());
 				getDatabaseTransactionEventsTable().removeUnusedTransactions();
 				return null;
 			}
@@ -170,6 +200,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 		}, true);
 
 	}
+
 	void removeTransactions(final Set<String> removedPackages)
 			throws DatabaseException {
 		if (removedPackages == null)

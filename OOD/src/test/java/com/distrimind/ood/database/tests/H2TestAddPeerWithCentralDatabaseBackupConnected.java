@@ -1,3 +1,4 @@
+package com.distrimind.ood.database.tests;
 /*
 Copyright or © or Copr. Jason Mahdjoub (01/04/2013)
 
@@ -5,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language 
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -33,30 +34,28 @@ same conditions as regards security.
 The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
-package com.distrimind.ood.database.tests;
 
 import com.distrimind.ood.database.DatabaseFactory;
 import com.distrimind.ood.database.EmbeddedH2DatabaseWrapper;
 import com.distrimind.ood.database.InFileEmbeddedH2DatabaseFactory;
-import com.distrimind.ood.database.TestDecentralizedDatabase;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 
 import java.io.File;
 
 /**
- * 
  * @author Jason Mahdjoub
  * @version 1.0
- * @since OOD 2.0
+ * @since Utils 3.0.0
  */
-public class H2TestDecentralizedDatabase extends TestDecentralizedDatabase {
-	final String centralDatabaseFileName = "centralDatabase";
-	final String database_file_name1 = "decentralizedDatabase1";
-	final String database_file_name2 = "decentralizedDatabase2";
-	final String database_file_name3 = "decentralizedDatabase3";
-	final String database_file_name4 = "decentralizedDatabase4";
+public class H2TestAddPeerWithCentralDatabaseBackupConnected extends TestAddPeerWithCentralDatabaseBackupConnected {
 
-	public H2TestDecentralizedDatabase() {
+	final String centralDatabaseFileName = "centralDatabaseAddPeer";
+	final String database_file_name1 = "decentralizedDatabaseAddPeer1";
+	final String database_file_name2 = "decentralizedDatabaseAddPeer2";
+	final String database_file_name3 = "decentralizedDatabaseAddPeer3";
+	final String database_file_name4 = "decentralizedDatabaseAddPeer4";
+
+	public H2TestAddPeerWithCentralDatabaseBackupConnected() {
 		super();
 	}
 
@@ -110,5 +109,4 @@ public class H2TestDecentralizedDatabase extends TestDecentralizedDatabase {
 	public void removeCentralDatabaseFiles() {
 		EmbeddedH2DatabaseWrapper.deleteDatabasesFiles(new File(centralDatabaseFileName ));
 	}
-
 }

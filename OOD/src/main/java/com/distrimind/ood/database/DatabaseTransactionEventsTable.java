@@ -362,6 +362,18 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 				sb.append(")");
 				parameters.put("lastID", lastTransactionID.get());
 
+				getRecords(new Filter<DatabaseTransactionEventsTable.Record>() {
+
+					@Override
+					public boolean nextRecord(Record _record) throws DatabaseException {
+						if (!_record.isConcernedBy(hook.getHostID())) {
+							DatabaseTransactionsPerHostTable.Record r = new DatabaseTransactionsPerHostTable.Record();
+							r.set(_record, hook);
+							getDatabaseTransactionsPerHostTable().addRecord(r);
+						}
+						return false;
+					}
+				}, "id>%lastID" + sb, parameters);
 				updateRecords(new AlterRecordFilter<DatabaseTransactionEventsTable.Record>() {
 
 					@Override
@@ -369,12 +381,10 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 						if (!_record.isConcernedBy(hook.getHostID())) {
 							_record.addConcernedHost(hook.getHostID());
 							update("concernedHosts", _record.concernedHosts);
-							DatabaseTransactionsPerHostTable.Record r = new DatabaseTransactionsPerHostTable.Record();
-							r.set(_record, hook);
-							getDatabaseTransactionsPerHostTable().addRecord(r);
 						}
 					}
 				}, "id>%lastID" + sb, parameters);
+
 
 
 			}

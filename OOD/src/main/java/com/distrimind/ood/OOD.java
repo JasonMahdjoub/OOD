@@ -81,6 +81,7 @@ public class OOD {
 									.addItem("Fix issue when changing database's version and refresh tables state when BackupRestoreManager was loaded")
 									.addItem("Add function Table.hasRecords(String, Map)")
 									.addItem("Add function Table.hasRecords(Filter, String, Map)")
+									.addItem("Add function DatabaseLifeCycles.peersAdded(Set<DecentralizedValue>) that is triggered when a set of peers was added")
 					)
 					.addDescription(
 							new Description((short)2, (short)4, (short)0, Version.Type.STABLE, (short)1, "2020-02-11")

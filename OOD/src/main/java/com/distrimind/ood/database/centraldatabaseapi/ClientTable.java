@@ -45,6 +45,7 @@ import com.distrimind.ood.database.messages.AbstractCompatibleEncryptedDatabaseM
 import com.distrimind.ood.database.messages.IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup;
 import com.distrimind.util.DecentralizedValue;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -73,6 +74,9 @@ public final class ClientTable extends Table<ClientTable.Record> {
 
 		@Field(limit= AbstractCompatibleEncryptedDatabaseMessage.MAX_SIZE_OF_ENCRYPTED_PACKAGES_NAMES_IN_BYTES)
 		private byte[] encryptedCompatiblesDatabases;
+
+		@Field
+		private Long toRemoveOrderTimeUTCInMs=null;
 
 		@SuppressWarnings("unused")
 		private Record()
@@ -105,6 +109,19 @@ public final class ClientTable extends Table<ClientTable.Record> {
 
 		public byte[] getEncryptedCompatiblesDatabases() {
 			return encryptedCompatiblesDatabases;
+		}
+
+		public Long getToRemoveOrderTimeUTCInMs() {
+			return toRemoveOrderTimeUTCInMs;
+		}
+
+		@Override
+		public String toString() {
+			return "Record{" +
+					"clientID=" + clientID +
+					", account=" + account +
+					", toRemoveOrderTimeUTCInMs=" + toRemoveOrderTimeUTCInMs +
+					'}';
 		}
 	}
 

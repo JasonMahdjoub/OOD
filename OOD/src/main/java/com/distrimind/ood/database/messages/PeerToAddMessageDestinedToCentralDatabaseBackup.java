@@ -35,11 +35,8 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.ood.database.DatabaseEvent;
 import com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupCertificate;
 import com.distrimind.util.DecentralizedValue;
-import com.distrimind.util.crypto.ASymmetricAuthenticatedSignatureType;
-import com.distrimind.util.crypto.IASymmetricPublicKey;
 import com.distrimind.util.io.SecuredObjectInputStream;
 import com.distrimind.util.io.SecuredObjectOutputStream;
 import com.distrimind.util.io.SerializationTools;
@@ -49,86 +46,55 @@ import java.io.IOException;
 /**
  * @author Jason Mahdjoub
  * @version 1.0
- * @since OOD 3.0.0
+ * @since MaDKitLanEdition 3.0.0
  */
-public abstract class AuthenticatedMessageDestinedToCentralDatabaseBackup extends DatabaseEvent implements MessageDestinedToCentralDatabaseBackup, AuthenticatedCentralDatabaseBackupMessage {
+public class PeerToAddMessageDestinedToCentralDatabaseBackup extends AuthenticatedMessageDestinedToCentralDatabaseBackup {
+	private DecentralizedValue hostToAdd;
 
-
-	private DecentralizedValue hostSource;
-
-	private byte[] asymmetricSignature;
-	private CentralDatabaseBackupCertificate certificate;
-
-	protected AuthenticatedMessageDestinedToCentralDatabaseBackup() {
+	public PeerToAddMessageDestinedToCentralDatabaseBackup(DecentralizedValue hostSource, CentralDatabaseBackupCertificate certificate, DecentralizedValue hostToAdd) {
+		super(hostSource, certificate);
+		this.hostToAdd = hostToAdd;
 	}
 
-	protected AuthenticatedMessageDestinedToCentralDatabaseBackup(DecentralizedValue hostSource, CentralDatabaseBackupCertificate certificate) {
-		if (hostSource==null)
-			throw new NullPointerException();
-		if (certificate==null)
-			throw new NullPointerException();
-		this.hostSource = hostSource;
-		this.certificate = certificate;
-
+	protected PeerToAddMessageDestinedToCentralDatabaseBackup() {
 	}
-
-	@Override
-	public IASymmetricPublicKey getCertificateASymmetricPublicKey()
-	{
-		return certificate.getCertifiedAccountPublicKey();
-	}
-
-	@Override
-	public byte[] getSignatures() {
-		return asymmetricSignature;
-	}
-
-	@Override
-	public void setSignatures(byte[] signatures) {
-		if (signatures==null)
-			throw new NullPointerException();
-		this.asymmetricSignature=signatures;
-	}
-
-	@Override
-	public DecentralizedValue getHostSource() {
-		return hostSource;
-	}
-
 
 	@Override
 	public void writeExternalWithoutSignatures(SecuredObjectOutputStream out) throws IOException {
-		out.writeObject(hostSource, false);
-		out.writeObject(certificate, false);
+		super.writeExternalWithoutSignatures(out);
+		out.writeObject(hostToAdd, false);
 	}
 
 	@Override
 	public void readExternalWithoutSignatures(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
-		hostSource=in.readObject(false, DecentralizedValue.class );
-		certificate=in.readObject(false);
+		super.readExternalWithoutSignatures(in);
+		hostToAdd =in.readObject(false);
 	}
-
-
 
 	@Override
 	public int getInternalSerializedSizeWithoutSignatures() {
-		int res= SerializationTools.getInternalSize(hostSource, 0)+2+SerializationTools.getInternalSize(certificate);
-		res+=SerializationTools.getInternalSize(asymmetricSignature, ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE);
-		return res;
-	}
-
-
-
-	public CentralDatabaseBackupCertificate getCertificate() {
-		return certificate;
+		return super.getInternalSerializedSizeWithoutSignatures()
+				+ SerializationTools.getInternalSize(hostToAdd);
 	}
 
 	@Override
-	public String toString() {
-		return "AuthenticatedMessageDestinedToCentralDatabaseBackup{" +
-				"hostSource=" + hostSource+
-				'}';
+	public boolean equals(Object o) {
+		if (o==this)
+			return true;
+		if (o instanceof PeerToAddMessageDestinedToCentralDatabaseBackup)
+		{
+			return ((PeerToAddMessageDestinedToCentralDatabaseBackup) o).hostToAdd.equals(this.hostToAdd);
+		}
+		else
+			return false;
 	}
 
-	public abstract boolean equals(Object o);
+	@Override
+	public boolean cannotBeMerged() {
+		return false;
+	}
+
+	public DecentralizedValue getHostToAdd() {
+		return hostToAdd;
+	}
 }

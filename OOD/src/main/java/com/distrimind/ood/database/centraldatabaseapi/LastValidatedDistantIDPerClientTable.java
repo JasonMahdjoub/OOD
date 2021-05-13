@@ -105,6 +105,14 @@ public final class LastValidatedDistantIDPerClientTable extends Table<LastValida
 		public byte[] getLastValidatedAndEncryptedDistantID() {
 			return lastValidatedAndEncryptedDistantID;
 		}
+
+		@Override
+		public String toString() {
+			return "Record{" +
+					"client=" + client +
+					", distantClient=" + distantClient +
+					'}';
+		}
 	}
 
 

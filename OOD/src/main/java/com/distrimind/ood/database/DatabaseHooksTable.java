@@ -39,6 +39,8 @@ package com.distrimind.ood.database;
 import com.distrimind.ood.database.annotations.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.SerializationDatabaseException;
+import com.distrimind.ood.database.messages.AuthenticatedCentralDatabaseBackupMessage;
+import com.distrimind.ood.database.messages.AuthenticatedMessageDestinedToCentralDatabaseBackup;
 import com.distrimind.ood.database.messages.IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.Reference;
@@ -58,7 +60,8 @@ import java.util.concurrent.atomic.AtomicLong;
 @LoadToMemory
 final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 	static final int PACKAGES_TO_SYNCHRONIZE_LENGTH=DatabaseWrapper.MAX_PACKAGE_TO_SYNCHRONIZE*70;
-	private static final int SIZE_IN_BYTES_OF_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND =DatabaseWrapper.MAX_DISTANT_PEERS*2*AuthenticatedP2PMessage.MAX_NUMBER_OF_AUTHENTICATED_P2P_MESSAGES_PER_PEER +2;
+	private static final int SIZE_IN_BYTES_OF_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND =DatabaseWrapper.MAX_DISTANT_PEERS*2*AuthenticatedP2PMessage.MAX_AUTHENTICATED_P2P_MESSAGE_SIZE_IN_BYTES +2;
+	private static final int SIZE_IN_BYTES_OF_AUTHENTICATED_MESSAGES_QUEUE_DESTINED_TO_CENTRAL_DATABASE_BACKUP =10* AuthenticatedCentralDatabaseBackupMessage.MAX_AUTHENTICATED_MESSAGE_SIZE_IN_BYTES +2;
 
 	private volatile DatabaseTransactionEventsTable databaseTransactionEventsTable = null;
 	private volatile DatabaseTransactionsPerHostTable databaseTransactionsPerHostTable = null;
@@ -70,8 +73,6 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 	public enum PairingState
 	{
-		CENTRAL_PAIRING_IN_PROGRESS,
-		P2P_PAIRING_IN_PROGRESS,
 		PAIRED,
 		REMOVED
 	}
@@ -112,9 +113,17 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		@Field(limit = SIZE_IN_BYTES_OF_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND, forceUsingBlobOrClob = true)
 		private LinkedList<AuthenticatedP2PMessage> authenticatedMessagesQueueToSend=null;
 
+		@Field(limit = SIZE_IN_BYTES_OF_AUTHENTICATED_MESSAGES_QUEUE_DESTINED_TO_CENTRAL_DATABASE_BACKUP, forceUsingBlobOrClob = true)
+		private LinkedList<AuthenticatedMessageDestinedToCentralDatabaseBackup> authenticatedMessagesQueueDestinedToCentralDatabaseBackup=null;
+
 		@Field
 		@NotNull
 		private PairingState pairingState;
+
+		boolean willBeRemoved()
+		{
+			return authenticatedMessagesQueueToSend!=null && authenticatedMessagesQueueToSend.stream().anyMatch(a -> a instanceof HookRemoveRequest && ((HookRemoveRequest) a).getRemovedHookID().equals(hostID));
+		}
 
 		void setRemoved()
 		{
@@ -255,6 +264,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			message.messageReadyToSend();
 			wrapper.getSynchronizer().notifyNewAuthenticatedMessage(message);
 		}
+
 		/*void offerNewAuthenticatedP2PMessage(DatabaseHooksTable table, HookSynchronizeRequest message) throws DatabaseException {
 			if (message==null)
 				throw new NullPointerException();
@@ -306,6 +316,10 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 				res.add(m);
 			}
 			return res;
+		}
+
+		LinkedList<AuthenticatedMessageDestinedToCentralDatabaseBackup> getAuthenticatedMessagesQueueDestinedToCentralDatabaseBackup() {
+			return authenticatedMessagesQueueDestinedToCentralDatabaseBackup;
 		}
 
 		List<IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup> getAuthenticatedMessagesQueueToSendToCentralDatabaseBackup(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider,
@@ -1130,19 +1144,23 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		if (hostID.equals(r.getHostID()))
 		{
 			if (r.getDatabasePackageNames()!=null && r.getDatabasePackageNames().size()>0)
-				desynchronizeDatabases(hostID, false, r.getDatabasePackageNames());
+				desynchronizeDatabases(hostID, false, r.getDatabasePackageNames(), false);
 
 			for (DatabaseHooksTable.Record r2 : getRecords())
 			{
 				if (!r2.concernsLocalDatabaseHost())
-					desynchronizeDatabases(r2.getHostID(), true, new HashSet<>());
+					desynchronizeDatabases(r2.getHostID(), true, new HashSet<>(), false);
 			}
 		}
 		else
-			r= desynchronizeDatabases(hostID, true, new HashSet<>());
+			r= desynchronizeDatabases(hostID, true, new HashSet<>(), false);
 		//updateLastLocalTransferIDs();
-		getDatabaseWrapper().getDatabaseConfigurationsBuilder().removeDistantPeers(propagate, Collections.singleton(hostID))
+		if (!getDatabaseWrapper().getDatabaseConfigurationsBuilder().isCommitInProgress())
+			getDatabaseWrapper().getDatabaseConfigurationsBuilder().removeDistantPeers(propagate, Collections.singleton(hostID))
 				.commit();
+		if (getDatabaseWrapper().getSynchronizer().isInitialized(hostID) || getDatabaseWrapper().getSynchronizer().isInitializedWithCentralBackup(hostID))
+			getDatabaseWrapper().getSynchronizer().disconnectHook(hostID);
+		getDatabaseWrapper().getSynchronizer().sendAvailableDatabaseToCentralDatabaseBackup();
 		return r;
 	}
 
@@ -1160,7 +1178,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 					@Override
 					public Void run() throws Exception {
 						for (DecentralizedValue host : concernedHosts) {
-							desynchronizeDatabases(host, false, packages);
+							desynchronizeDatabases(host, false, packages, false);
 						}
 						if (concernedHosts.size()>0 && packages.size()>0 && !getDatabaseWrapper().getDatabaseConfigurationsBuilder().isCommitInProgress()) {
 							Set<String> ps=new HashSet<>();
@@ -1193,7 +1211,10 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 				});
 	}
-	private DatabaseHooksTable.Record desynchronizeDatabases(final DecentralizedValue hostID, final boolean removeHook, Set<String> packages)
+	void desynchronizeDatabases(final DecentralizedValue hostID) throws DatabaseException {
+		desynchronizeDatabases(hostID, false, null, true);
+	}
+	private DatabaseHooksTable.Record desynchronizeDatabases(final DecentralizedValue hostID, final boolean removeHook, Set<String> packages, boolean removeAllDependingTransactions)
 			throws DatabaseException {
 		if (hostID == null)
 			throw new NullPointerException("hostID");
@@ -1217,7 +1238,11 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							supportedDatabasePackages = null;
 							lastTransactionFieldsBetweenDistantHosts.entrySet().removeIf(e -> e.getKey().getHostServer().equals(hostID)
 									|| e.getKey().getHostToSynchronize().equals(hostID));
-							r.removePackageDatabase(packages);
+							if (removeAllDependingTransactions) {
+								r.setDatabasePackageNames(null);
+							}
+							else
+								r.removePackageDatabase(packages);
 							if (removeHook) {
 								r.setRemoved();
 								removeRecordWithCascade(r);
@@ -1225,7 +1250,11 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 								return null;
 							} else {
 								updateRecord(r);
-								getDatabaseTransactionsPerHostTable().removeTransactions(r, packages);
+								if (removeAllDependingTransactions) {
+									getDatabaseTransactionsPerHostTable().removeTransactions(r);
+								}
+								else
+									getDatabaseTransactionsPerHostTable().removeTransactions(r, packages);
 								return r;
 							}
 
@@ -1445,5 +1474,33 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			}
 		}, "hostID=%hid", "hid", hostSource);
 	}
-
+	void offerNewAuthenticatedMessageDestinedToCentralDatabaseBackup(AuthenticatedMessageDestinedToCentralDatabaseBackup message, AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
+		offerNewAuthenticatedMessageDestinedToCentralDatabaseBackup(getLocalDatabaseHost(), message, random, encryptionProfileProvider);
+	}
+	void offerNewAuthenticatedMessageDestinedToCentralDatabaseBackup(DatabaseHooksTable.Record record, AuthenticatedMessageDestinedToCentralDatabaseBackup message, AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
+		if (message==null)
+			throw new NullPointerException();
+		if (!record.concernsLocalDatabaseHost())
+			throw new IllegalAccessError();
+		if (record.authenticatedMessagesQueueDestinedToCentralDatabaseBackup==null)
+			record.authenticatedMessagesQueueDestinedToCentralDatabaseBackup=new LinkedList<>();
+			/*if (message instanceof HookSynchronizeRequest)
+			{
+				HookSynchronizeRequest hsr=(HookSynchronizeRequest) message;
+				hsr.getBackRequest().setMessageID(0);
+				hsr.getBackRequest().generateAndSetSignatures(random, encryptionProfileProvider);
+			}*/
+		message.generateAndSetSignatures(random, encryptionProfileProvider);
+		record.authenticatedMessagesQueueDestinedToCentralDatabaseBackup.addLast(message);
+		updateLocalDatabaseHostIfNecessary(record);
+		updateRecord(record, "authenticatedMessagesQueueDestinedToCentralDatabaseBackup", record.authenticatedMessagesQueueDestinedToCentralDatabaseBackup);
+		getDatabaseWrapper().getSynchronizer().notifyNewAuthenticatedMessage(message);
+	}
+	void messageDestinedToCentralDatabaseBackupSent(AuthenticatedMessageDestinedToCentralDatabaseBackup message) throws DatabaseException {
+		Record r=getLocalDatabaseHost();
+		if (r.authenticatedMessagesQueueDestinedToCentralDatabaseBackup!=null && r.authenticatedMessagesQueueDestinedToCentralDatabaseBackup.remove(message))
+		{
+			updateRecord(r, "authenticatedMessagesQueueDestinedToCentralDatabaseBackup", r.authenticatedMessagesQueueDestinedToCentralDatabaseBackup);
+		}
+	}
 }

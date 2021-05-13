@@ -50,7 +50,7 @@ import java.io.IOException;
  * @version 1.0
  * @since OOD 3.0.0
  */
-public class LastIDCorrectionFromCentralDatabaseBackup extends DatabaseEvent implements MessageComingFromCentralDatabaseBackup, SecureExternalizable {
+public class LastIDCorrectionFromCentralDatabaseBackup extends DatabaseEvent implements MessageComingFromCentralDatabaseBackup, SecureExternalizable{
 	protected DecentralizedValue hostIDDestination;
 	protected byte[] lastEncryptedValidatedTransaction;
 

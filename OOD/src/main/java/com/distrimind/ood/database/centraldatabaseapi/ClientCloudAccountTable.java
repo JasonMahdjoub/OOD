@@ -99,5 +99,12 @@ public final class ClientCloudAccountTable extends Table<ClientCloudAccountTable
 			return maxClients;
 		}
 
+		@Override
+		public String toString() {
+			return "Record{" +
+					"accountID=" + accountID +
+					", maxClients=" + maxClients +
+					'}';
+		}
 	}
 }

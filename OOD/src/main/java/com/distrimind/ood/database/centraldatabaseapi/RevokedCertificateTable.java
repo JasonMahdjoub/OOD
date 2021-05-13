@@ -36,101 +36,45 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 import com.distrimind.ood.database.DatabaseRecord;
-import com.distrimind.ood.database.EncryptionTools;
 import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.annotations.Field;
-import com.distrimind.ood.database.annotations.ForeignKey;
-import com.distrimind.ood.database.annotations.NotNull;
 import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.util.DecentralizedValue;
-import com.distrimind.util.io.SerializationTools;
+
+import java.util.Arrays;
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
- * @since OOD 3.0.0
+ * @since Utils 3.0.0
  */
-public final class DatabaseBackupPerClientTable extends Table<DatabaseBackupPerClientTable.Record> {
-	protected DatabaseBackupPerClientTable() throws DatabaseException {
+public final class RevokedCertificateTable extends Table<RevokedCertificateTable.Record> {
+	protected RevokedCertificateTable() throws DatabaseException {
 	}
 
 	public static class Record extends DatabaseRecord
 	{
+		@SuppressWarnings("FieldMayBeFinal")
 		@PrimaryKey
-		@ForeignKey
-		@NotNull
-		private ClientTable.Record client;
+		@Field(limit = CentralDatabaseBackupCertificate.MAX_SIZE_IN_BYTES_OF_CERTIFICATE_IDENTIFIER)
+		private byte[] certificateID;
 
-		@PrimaryKey
-		@NotNull
-		@Field(limit= SerializationTools.MAX_CLASS_LENGTH)
-		private String packageString;
-
-		@Field
-		long lastFileBackupPartUTC;
-
-		@Field
-		Long removeTimeUTC;
-
-		@Field(limit= EncryptionTools.MAX_ENCRYPTED_ID_SIZE)
-		private byte[] lastValidatedAndEncryptedID;
-
-		@SuppressWarnings("unused")
-		private Record()
-		{
-
+		public Record(byte[] certificateID) {
+			this.certificateID = certificateID;
+		}
+		protected Record() {
+			this.certificateID = null;
 		}
 
-		Record(ClientTable.Record client, String packageString, long lastFileBackupPartUTC, byte[] lastValidatedAndEncryptedID) {
-			if (client==null)
-				throw new NullPointerException();
-			if (packageString==null)
-				throw new NullPointerException();
-			if (packageString.length()>SerializationTools.MAX_CLASS_LENGTH)
-				throw new IllegalArgumentException();
-			if (lastValidatedAndEncryptedID==null)
-				throw new NullPointerException();
-			this.client = client;
-			this.packageString = packageString;
-			this.lastFileBackupPartUTC=lastFileBackupPartUTC;
-			this.lastValidatedAndEncryptedID=lastValidatedAndEncryptedID;
-		}
-
-		public ClientTable.Record getClient() {
-			return client;
-		}
-
-		public String getPackageString() {
-			return packageString;
-		}
-
-		public long getLastFileBackupPartUTC() {
-			return lastFileBackupPartUTC;
-		}
-
-		void setLastFileBackupPartUTC(long lastFileBackupPartUTC) {
-			this.lastFileBackupPartUTC = lastFileBackupPartUTC;
-		}
-
-		public Long getRemoveTimeUTC() {
-			return removeTimeUTC;
-		}
-
-		public byte[] getLastValidatedAndEncryptedID() {
-			return lastValidatedAndEncryptedID;
+		public byte[] getCertificateID() {
+			return certificateID;
 		}
 
 		@Override
 		public String toString() {
 			return "Record{" +
-					"client=" + client +
-					", packageString='" + packageString + '\'' +
-					", lastFileBackupPartUTC=" + lastFileBackupPartUTC +
-					", removeTimeUTC=" + removeTimeUTC +
+					"certificateID=" + Arrays.toString(certificateID) +
 					'}';
 		}
 	}
-
-
 }

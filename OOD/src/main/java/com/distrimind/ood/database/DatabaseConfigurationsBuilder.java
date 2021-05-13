@@ -2,6 +2,8 @@ package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupCertificate;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.messages.PeerToAddMessageDestinedToCentralDatabaseBackup;
+import com.distrimind.ood.database.messages.PeerToRemoveMessageDestinedToCentralDatabaseBackup;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.Reference;
 import com.distrimind.util.crypto.AbstractSecureRandom;
@@ -202,6 +204,7 @@ public class DatabaseConfigurationsBuilder {
 
 
 	public void commit() throws DatabaseException {
+		Set<DecentralizedValue> peersAdded=null;
 		synchronized (this) {
 			if (currentTransaction==null)
 				throw new DatabaseException("No query was added ! Nothing to commit !");
@@ -209,6 +212,7 @@ public class DatabaseConfigurationsBuilder {
 				throw new IllegalAccessError();
 			commitInProgress=true;
 			wrapper.lockWrite();
+
 			try {
 				for (ConfigurationQuery q : currentTransaction.queries)
 					q.execute(currentTransaction);
@@ -222,12 +226,12 @@ public class DatabaseConfigurationsBuilder {
 					currentTransaction.checkDisconnexions|=checkConnexionsToRemove();
 				if (currentTransaction.checkDatabaseToUnload)
 					checkDatabaseToUnload();
-				if (currentTransaction.checkPeersToAdd) {
-					boolean b=checkPeersToAdd();
-					currentTransaction.checkDatabaseToSynchronize |=b;
-				}
 				if (currentTransaction.checkInitLocalPeer) {
 					checkInitLocalPeer();
+				}
+				if (currentTransaction.checkPeersToAdd) {
+					peersAdded=checkPeersToAdd();
+					currentTransaction.checkDatabaseToSynchronize |=peersAdded!=null && peersAdded.size()>0;
 				}
 				if (currentTransaction.checkDatabaseToSynchronize)
 					checkDatabaseToSynchronize();
@@ -245,6 +249,11 @@ public class DatabaseConfigurationsBuilder {
 				commitInProgress=false;
 				wrapper.unlockWrite();
 			}
+		}
+		DatabaseNotifier notifier=wrapper.getSynchronizer().getNotifier();
+		if (peersAdded!=null && notifier!=null)
+		{
+			notifier.hostsAdded(peersAdded);
 		}
 	}
 
@@ -383,12 +392,13 @@ public class DatabaseConfigurationsBuilder {
 	private void checkDisconnections() throws DatabaseException {
 		wrapper.getSynchronizer().checkDisconnections();
 	}
-	private boolean checkPeersToAdd() throws DatabaseException {
-		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
+	private Set<DecentralizedValue> checkPeersToAdd() throws DatabaseException {
+
+		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Set<DecentralizedValue>>() {
 			@Override
-			public Boolean run() throws Exception {
+			public Set<DecentralizedValue> run() throws Exception {
+				Set<DecentralizedValue> peersAdded=null;
 				Set<DecentralizedValue> peersID=configurations.getDistantPeers();
-				boolean res=false;
 				if (peersID!=null && peersID.size()>0)
 				{
 					for (DecentralizedValue dv : peersID)
@@ -397,11 +407,16 @@ public class DatabaseConfigurationsBuilder {
 						if (l.size() == 0)
 						{
 							wrapper.getDatabaseHooksTable().initDistantHook(dv);
-							res=true;
+							if (peersAdded==null)
+								peersAdded=new HashSet<>();
+							peersAdded.add(dv);
+							wrapper.getDatabaseHooksTable().offerNewAuthenticatedMessageDestinedToCentralDatabaseBackup(
+									new PeerToAddMessageDestinedToCentralDatabaseBackup(getConfigurations().getLocalPeer(), getConfigurations().getCentralDatabaseBackupCertificate(), dv),
+									getSecureRandom(), getSignatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup());
 						}
 					}
 				}
-				return res;
+				return peersAdded;
 			}
 
 			@Override
@@ -576,13 +591,26 @@ public class DatabaseConfigurationsBuilder {
 			public Boolean run() throws Exception {
 				if (currentTransaction.removedPeersID!=null) {
 					for (DecentralizedValue peerIDToRemove : currentTransaction.removedPeersID) {
+						Reference<Boolean> removeLocalNow=new Reference<>(true);
 						wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
 							@Override
 							public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
+								removeLocalNow.set(false);
 								_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), peerIDToRemove), getSecureRandom(), protectedSignatureProfileProviderForAuthenticatedP2PMessages, this);
 							}
 						}, "concernsDatabaseHost=%cdh", "cdh", false);
+
+						wrapper.getDatabaseHooksTable().offerNewAuthenticatedMessageDestinedToCentralDatabaseBackup(
+								new PeerToRemoveMessageDestinedToCentralDatabaseBackup(getConfigurations().getLocalPeer(), getConfigurations().getCentralDatabaseBackupCertificate(), peerIDToRemove),
+								getSecureRandom(), getSignatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup());
+						if (removeLocalNow.get())
+							wrapper.getDatabaseHooksTable().removeHook(false, peerIDToRemove);
+						else {
+							wrapper.getDatabaseHooksTable().desynchronizeDatabases(peerIDToRemove);
+							wrapper.getSynchronizer().initializedHooksWithCentralBackup.remove(peerIDToRemove);
+						}
 					}
+
 
 					return currentTransaction.removedPeersID.size()>0;
 				}
@@ -961,7 +989,7 @@ public class DatabaseConfigurationsBuilder {
 							localRestoration=false;
 							if (c.isSynchronizedWithCentralBackupDatabase()) {
 								//download database from other database's channel
-								wrapper.prepareDatabaseRestorationFromDistantDatabaseBackupChannel(c.getDatabaseSchema().getPackage());
+								wrapper.prepareDatabaseRestorationFromCentralDatabaseBackupChannel(c.getDatabaseSchema().getPackage());
 								changed = true;
 							} else {
 								if (wrapper.getDatabaseHooksTable().hasRecords(new Filter<DatabaseHooksTable.Record>() {
@@ -994,6 +1022,21 @@ public class DatabaseConfigurationsBuilder {
 			}
 		});
 		return this;
+	}
+
+	public boolean isRestorationToOldVersionInProgress(Package databasePackage)
+	{
+		return isRestorationToOldVersionInProgress(databasePackage.getName());
+	}
+
+	public boolean isRestorationToOldVersionInProgress(String databasePackage)
+	{
+		synchronized (this) {
+			DatabaseConfiguration dc = getDatabaseConfiguration(databasePackage);
+			if (dc == null)
+				throw new IllegalArgumentException("The database " + databasePackage + " does not exists !");
+			return dc.isRestorationToOldVersionInProgress();
+		}
 	}
 
 	/*void applyRestorationFromLocalDatabaseBackupIfNecessary(Package databasePackage) throws DatabaseException {

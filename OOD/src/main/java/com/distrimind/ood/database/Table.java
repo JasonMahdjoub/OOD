@@ -146,6 +146,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	private final AtomicReference<ArrayList<T>> records_instances = new AtomicReference<>(new ArrayList<>());
 	private final boolean is_loaded_in_memory;
 	private String table_name;
+	private String all_fields_list_for_select;
 	private int table_id=-1;
 	private boolean supportSynchronizationWithOtherPeers = false;
 	private DatabaseConfiguration tables = null;
@@ -213,12 +214,20 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		this.table_id=tableID;
 		String oldTableName=table_name;
 		table_name=sql_connection.getInternalTableNameFromTableID(table_id);
+		setAllFieldsForSelect();
 		for (FieldAccessor fa : fields)
 		{
 			fa.changeInternalTableName(oldTableName, table_name, newDatabaseVersion);
 		}
 		if (isLoadedInMemory())
 			this.memoryToRefresh();
+	}
+	private void setAllFieldsForSelect()
+	{
+		if (sql_connection.supportsItalicQuotesWithTableAndFieldNames())
+			all_fields_list_for_select='`'+table_name+"`.*";
+		else
+			all_fields_list_for_select=table_name+".*";
 	}
 
 	private static class NeighboringTable {
@@ -427,7 +436,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	@SuppressWarnings("rawtypes")
 	protected Table() throws DatabaseException {
 		table_name = null;//getSqlTableName(this.getClass());
-
+		all_fields_list_for_select=null;
 		is_loaded_in_memory = this.getClass().isAnnotationPresent(LoadToMemory.class);
 		nonDecentralizableAnnotation=this.getClass().isAnnotationPresent(ExcludeFromDecentralization.class);
 		if (is_loaded_in_memory)
@@ -493,7 +502,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		this.databaseVersion=databaseVersion;
 		table_id=wrapper.getTableID(this, this.databaseVersion);
 		table_name=wrapper.getInternalTableNameFromTableID(table_id);
-
+		setAllFieldsForSelect();
 		if (sql_connection == null)
 			throw new DatabaseException(
 					"No database was given to instantiate the class/table " + this.getClass().getName()
@@ -1458,18 +1467,13 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			if (tablesJunction != null)
 				tablesJunction = null;
 		}
-
-		for (FieldAccessor fa : fields) {
-			for (SqlField sf : fa.getDeclaredSqlFields()) {
-				if (sb.length() > 0)
-					sb.append(", ");
-				sb.append(sf.field);
-			}
-			if (fa instanceof ForeignKeyFieldAccessor) {
-				Table<?> t = ((ForeignKeyFieldAccessor) fa).getPointedTable();
-				if (includeAllJunctions || containsPointedTable(tablesJunction, t))
-					t.getSqlSelectStep1Fields(includeAllJunctions, tablesJunction, sb);
-			}
+		if (sb.length() > 0)
+			sb.append(", ");
+		sb.append(all_fields_list_for_select);
+		for (ForeignKeyFieldAccessor fa : foreign_keys_fields) {
+			Table<?> t = fa.getPointedTable();
+			if (includeAllJunctions || containsPointedTable(tablesJunction, t))
+				t.getSqlSelectStep1Fields(includeAllJunctions, tablesJunction, sb);
 		}
 
 	}
@@ -3633,7 +3637,45 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}, whereCondition, parameters);
 		return res.get();
 	}
+	/**
+	 * Returns true if there is at mean one record which corresponds to the given
+	 * 	 filter and the given command.
+	 *
+	 * @param _filter
+	 *            the filter
+	 * @param whereCondition
+	 *            the SQL WHERE condition that filter the results
+	 * @param parameters
+	 *            the used parameters with the WHERE condition
+	 * @return the corresponding records.
+	 * @throws DatabaseException
+	 *             if a Sql exception occurs.
+	 * @throws NullPointerException
+	 *             if parameters are null pointers.
+	 */
+	public final boolean hasRecords(final Filter<T> _filter, String whereCondition, Object... parameters)
+			throws DatabaseException {
+		return hasRecords(_filter, whereCondition, convertToMap(parameters));
+	}
+	/**
+	 * Returns true if there is at mean one record which corresponds to the given
+	 * 	 command.
+	 *
+	 * @param whereCondition
+	 *            the SQL WHERE condition that filter the results
+	 * @param parameters
+	 *            the used parameters with the WHERE condition
+	 * @return the corresponding records.
+	 * @throws DatabaseException
+	 *             if a Sql exception occurs.
+	 * @throws NullPointerException
+	 *             if parameters are null pointers.
+	 */
 
+	public final boolean hasRecords(String whereCondition, Object... parameters)
+			throws DatabaseException {
+		return hasRecords(whereCondition, convertToMap(parameters));
+	}
 	/**
 	 * Returns true if there is at mean one record which corresponds to the given
 	 * 	 command.

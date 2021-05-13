@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-3.0.0 STABLE (Build: 2765) (from 01/04/2013 to 28/10/2020)
+3.0.0 STABLE (Build: 3245) (from 01/04/2013 to 28/10/2020)
 
 # Creator(s):
 Jason MAHDJOUB
@@ -23,6 +23,10 @@ Jason MAHDJOUB (Entered in the team at 01/04/2013)
 * Calendar is better serialized into database (better performances, and lower space)
 * Calendar is now comparable
 * Implementation of DatabaseConfigurationBuilder that centralize database loading, and database synchronization with decentralized peers and with central backup database
+* Add function Table.removeAllRecordsWithCascade()
+* Fix issue when changing database's version and refresh tables state when BackupRestoreManager was loaded
+* Add function Table.hasRecords(String, Map)
+* Add function Table.hasRecords(Filter, String, Map)
 
 
 ### 2.4.0 STABLE (11/02/2020)

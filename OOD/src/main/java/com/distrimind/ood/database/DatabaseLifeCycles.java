@@ -36,6 +36,10 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
+import com.distrimind.util.DecentralizedValue;
+
+import java.util.Set;
+
 /**
  * Interface whose functions are called after the database's creation
  * 
@@ -101,4 +105,8 @@ public interface DatabaseLifeCycles {
 	 * @param databaseConfigurations the altered database configuration
 	 */
 	void saveDatabaseConfigurations(DatabaseConfigurations databaseConfigurations);
+
+
+
+
 }

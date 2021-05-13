@@ -46,7 +46,6 @@ import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.StringFieldAccessor;
 
-import java.io.ByteArrayInputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
@@ -350,18 +349,18 @@ public class RuleInstance implements QueryPart {
 	public <T extends DatabaseRecord> int compareTo(Table<T> table, T record, Object o1, Object o2)
 			throws DatabaseSyntaxException {
 		try {
-			if ((!Table.FieldAccessorValue.class.isAssignableFrom(o1.getClass())
-					&& Table.FieldAccessorValue.class.isAssignableFrom(o2.getClass()))
-					|| (!BigDecimal.class.isAssignableFrom(o1.getClass())
-							&& BigDecimal.class.isAssignableFrom(o2.getClass())
-							&& !Table.FieldAccessorValue.class.isAssignableFrom(o1.getClass()))) {
+			if (((o1==null || !Table.FieldAccessorValue.class.isAssignableFrom(o1.getClass()))
+					&& (o2!=null && Table.FieldAccessorValue.class.isAssignableFrom(o2.getClass())))
+					|| ((o1==null || !BigDecimal.class.isAssignableFrom(o1.getClass()))
+							&& (o2!=null && BigDecimal.class.isAssignableFrom(o2.getClass()))
+							&& (o1==null || !Table.FieldAccessorValue.class.isAssignableFrom(o1.getClass())))) {
 				Object o = o1;
 				o1 = o2;
 				o2 = o;
 			}
-			if (Table.FieldAccessorValue.class.isAssignableFrom(o1.getClass()))
+			if (o1!=null && Table.FieldAccessorValue.class.isAssignableFrom(o1.getClass()))
 				o1 = ((Table.FieldAccessorValue) o1).getFieldAccessor().getValue(getRecordInstance(table, record, ((Table.FieldAccessorValue) o1).getFieldAccessor()));
-			if (Table.FieldAccessorValue.class.isAssignableFrom(o2.getClass()))
+			if (o2!=null && Table.FieldAccessorValue.class.isAssignableFrom(o2.getClass()))
 				o2 = ((Table.FieldAccessorValue) o2).getFieldAccessor().getValue(getRecordInstance(table, record, ((Table.FieldAccessorValue) o2).getFieldAccessor()));
 			if (o1==null)
 			{
@@ -842,7 +841,7 @@ public class RuleInstance implements QueryPart {
 									outputParameters.put(id, t.contains("CHAR")?parameter2.toString():t.contains(DatabaseWrapperAccessor.getBinaryBaseWord(table.getDatabaseWrapper()))? ((BigInteger)parameter2).toByteArray():new BigDecimal(((BigInteger)parameter2)));
 								}
 								else
-									res.append(parameter2.toString());
+									res.append(parameter2);
 								return res;
 							} else {
 								StringBuilder res = new StringBuilder();

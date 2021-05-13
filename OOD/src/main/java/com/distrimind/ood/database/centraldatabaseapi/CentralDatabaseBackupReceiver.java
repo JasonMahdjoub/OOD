@@ -37,13 +37,17 @@ package com.distrimind.ood.database.centraldatabaseapi;
 
 import com.distrimind.ood.database.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.messages.CentralDatabaseBackupCertificateChangedMessage;
 import com.distrimind.ood.database.messages.DistantBackupCenterConnexionInitialisation;
 import com.distrimind.ood.database.messages.MessageDestinedToCentralDatabaseBackup;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.Integrity;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 /**
  * @author Jason Mahdjoub
@@ -60,6 +64,7 @@ public abstract class CentralDatabaseBackupReceiver {
 	protected final EncryptedBackupPartReferenceTable encryptedBackupPartReferenceTable;
 	protected final ClientCloudAccountTable clientCloudAccountTable;
 	protected final ConnectedClientsTable connectedClientsTable;
+	protected final RevokedCertificateTable revokedCertificateTable;
 
 
 
@@ -79,6 +84,7 @@ public abstract class CentralDatabaseBackupReceiver {
 		this.encryptedBackupPartReferenceTable=wrapper.getTableInstance(EncryptedBackupPartReferenceTable.class);
 		this.databaseBackupPerClientTable=wrapper.getTableInstance(DatabaseBackupPerClientTable.class);
 		this.connectedClientsTable=wrapper.getTableInstance(ConnectedClientsTable.class);
+		this.revokedCertificateTable=wrapper.getTableInstance(RevokedCertificateTable.class);
 		disconnectAllPeers();
 	}
 
@@ -126,7 +132,37 @@ public abstract class CentralDatabaseBackupReceiver {
 			return r.getCentralID();
 	}
 
-
+	public Integrity certificateChanged(CentralDatabaseBackupCertificate certificate, CentralDatabaseBackupCertificate certificateToRevoke) throws DatabaseException {
+		if (certificate==null)
+			throw new NullPointerException();
+		if (certificateToRevoke==null)
+			throw new NullPointerException();
+		byte[] id=certificate.getCertificateIdentifier();
+		byte[] revokedID=certificateToRevoke.getCertificateIdentifier();
+		if (id==null)
+			throw new NullPointerException();
+		if (revokedID==null)
+			throw new NullPointerException();
+		if (revokedCertificateTable.hasRecordsWithAllFields("certificateID", id))
+			return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
+		if (!revokedCertificateTable.hasRecordsWithAllFields("certificateID", revokedID))
+			revokedCertificateTable.addRecord("certificateID", revokedID);
+		for (Iterator<Map.Entry<DecentralizedValue, CentralDatabaseBackupReceiverPerPeer>> it =receiversPerPeer.entrySet().iterator();it.hasNext();)
+		{
+			CentralDatabaseBackupReceiverPerPeer c=it.next().getValue();
+			if (c.connectedClientRecord.getAccount().getExternalAccountID().equals(certificate.getCertifiedAccountPublicKey()) && Arrays.equals(c.certificate.getCertificateIdentifier(), certificateToRevoke.getCertificateIdentifier()))
+			{
+				if (c.checkCertificate(certificate)) {
+					c.sendMessageFromThisCentralDatabaseBackup(new CentralDatabaseBackupCertificateChangedMessage(c.connectedClientID));
+					c.disconnect();
+					it.remove();
+				}
+				else
+					return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
+			}
+		}
+		return Integrity.OK;
+	}
 
 	public DecentralizedValue getCentralID() {
 		return centralID;
@@ -141,18 +177,34 @@ public abstract class CentralDatabaseBackupReceiver {
 	}
 
 	public void cleanObsoleteData() throws DatabaseException {
-		long curTime=System.currentTimeMillis();
+
 		wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
 			@Override
 			public Void run() throws Exception {
-				encryptedBackupPartReferenceTable.removeRecords(new Filter<EncryptedBackupPartReferenceTable.Record>() {
+				long timeReferenceToRemoveObsoleteBackup=System.currentTimeMillis()- getDurationInMsBeforeRemovingDatabaseBackupAfterAnDeletionOrder();
+				long timeReferenceToRemoveObsoleteHosts=System.currentTimeMillis()-Math.max(getDurationInMsBeforeCancelingPeerRemovingWhenThePeerIsTryingToReconnect(), getDurationInMsBeforeRemovingDatabaseBackupAfterAnDeletionOrder());
+				long timeReferenceToOrderObsoleteBackups=System.currentTimeMillis()- getDurationInMsBeforeOrderingDatabaseBackupDeletion();
+
+				encryptedBackupPartReferenceTable.removeRecordsWithCascade(new Filter<EncryptedBackupPartReferenceTable.Record>() {
 					@Override
 					public boolean nextRecord(EncryptedBackupPartReferenceTable.Record _record) {
 						_record.getFileReference().delete();
 						return true;
 					}
-				}, "database.removeTimeUTC IS NOT NULL AND database.removeTimeUTC<=%ct", "ct", curTime);
-				databaseBackupPerClientTable.removeRecords("removeTimeUTC IS NOT NULL AND removeTimeUTC<=%ct", "ct", curTime);
+				}, "(database.removeTimeUTC IS NOT NULL AND database.removeTimeUTC<=%ct) OR (database.client.toRemoveOrderTimeUTCInMs IS NOT NULL AND database.client.toRemoveOrderTimeUTCInMs<=%ctc)", "ct", timeReferenceToRemoveObsoleteBackup, "ctc", timeReferenceToRemoveObsoleteHosts);
+
+				clientTable.removeRecordsWithCascade("toRemoveOrderTimeUTCInMs IS NOT NULL AND toRemoveOrderTimeUTCInMs<=%ct", "ct", timeReferenceToRemoveObsoleteHosts);
+				databaseBackupPerClientTable.removeRecords("removeTimeUTC IS NOT NULL AND removeTimeUTC<=%ct", "ct", timeReferenceToRemoveObsoleteBackup);
+				databaseBackupPerClientTable.updateRecords(new AlterRecordFilter<DatabaseBackupPerClientTable.Record>() {
+					@Override
+					public void nextRecord(DatabaseBackupPerClientTable.Record _record) throws DatabaseException {
+						if (encryptedBackupPartReferenceTable.getRecordsNumber("isReferenceFile=%rf and database=%d", "rf", true, "d", _record)>=2)
+						{
+							update("removeTimeUTC", System.currentTimeMillis());
+						}
+
+					}
+				},"lastFileBackupPartUTC<=%ct and removeTimeUTC IS NULL", "ct", timeReferenceToOrderObsoleteBackups);
 
 				return null;
 			}
@@ -173,4 +225,12 @@ public abstract class CentralDatabaseBackupReceiver {
 			}
 		});
 	}
+
+	public abstract long getDurationInMsBeforeRemovingDatabaseBackupAfterAnDeletionOrder();
+	public abstract long getDurationInMsBeforeOrderingDatabaseBackupDeletion();
+
+	public abstract long getDurationInMsBeforeCancelingPeerRemovingWhenThePeerIsTryingToReconnect();
+
+
+
 }

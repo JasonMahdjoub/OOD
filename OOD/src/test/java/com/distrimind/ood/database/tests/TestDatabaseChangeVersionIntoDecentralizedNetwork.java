@@ -311,6 +311,7 @@ public abstract class TestDatabaseChangeVersionIntoDecentralizedNetwork extends 
 			public void saveDatabaseConfigurations(DatabaseConfigurations databaseConfigurations) {
 
 			}
+
 		};
 	}
 }
