@@ -218,7 +218,7 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 		@Field
 		private byte type;
 		@NotNull
-		@Field(limit = 400)
+		@Field(limit = 400, index = true)
 		private String concernedTable;
 
 		@Field(limit = Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES, index = true)
