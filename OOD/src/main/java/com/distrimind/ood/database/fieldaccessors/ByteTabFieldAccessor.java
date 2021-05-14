@@ -104,21 +104,8 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 
 		}
 		assert type != null;
-		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(), type, null, null, isNotNull());
+		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(), type, isNotNull());
 
-		/*String vb=DatabaseWrapperAccessor.getVarBinaryType(_sql_connection, 0);
-		String lvb=DatabaseWrapperAccessor.getLongVarBinaryType(_sql_connection, 0);
-		if (vb!=null) {
-			int i = vb.indexOf("(");
-			if (i > 0)
-				vb = vb.substring(0, i);
-		}
-		if (lvb!=null) {
-			int i = lvb.indexOf("(");
-			if (i > 0)
-				lvb = lvb.substring(0, i);
-		}
-		isVarBinary = (vb!=null && type.startsWith(vb)) || (lvb!=null && type.startsWith(lvb));*/
 		this.isBigInteger=isBigInteger;
 	}
 	public static byte[] getByteTab(BigDecimal value)

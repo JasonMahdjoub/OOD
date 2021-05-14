@@ -48,6 +48,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
@@ -72,6 +73,8 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 	protected String linked_table_name = null;
 	protected Table<? extends DatabaseRecord> pointed_table = null;
 	private int tableVersion;
+	private final String tableAliasName;
+	private static final AtomicInteger aliasNumber=new AtomicInteger(0);
 	// private final Class<?>[] compatible_classes;
 
 	private static Method get_record_method;
@@ -97,9 +100,14 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 
 	}
 
+	public String getTableAliasName() {
+		return tableAliasName;
+	}
+
 	protected ForeignKeyFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection,
-			Field _field, String parentFieldName, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
+									  Field _field, String parentFieldName, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
 		super(_sql_connection, _field, parentFieldName, getCompatibleClasses(_field), table, severalPrimaryKeysPresentIntoTable);
+		this.tableAliasName=Table.TABLE_ALIAS_NAME_PREFIX+"__"+aliasNumber.incrementAndGet();
 		this.tableVersion=table.getDatabaseVersion();
 		if (!DatabaseRecord.class.isAssignableFrom(_field.getType()))
 			throw new DatabaseException("The field " + _field.getName() + " of the class "
@@ -141,7 +149,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 				}
 				for (SqlField sf : fa.getDeclaredSqlFields()) {
 					sql_fields.add(new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName() + "__" + pointed_table.getSqlTableName()
-							+ "_" + sf.short_field_without_quote, sf.type, pointed_table.getSqlTableName(), sf.field, isNotNull()));
+							+ "_" + sf.short_field_without_quote, sf.type, pointed_table.getSqlTableName(), tableAliasName, sf.field, isNotNull()));
 				}
 			}
 			this.sql_fields = new SqlField[sql_fields.size()];
@@ -262,7 +270,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 					res[i++] = new SqlFieldInstance(supportQuotes,
 							table_name + "." + this.getSqlFieldName() + "__" + pointed_table.getSqlTableName() + "_"
 									+ sfi.short_field_without_quote,
-							sfi.type, linked_table_name, sfi.field, sfi.not_null, sfi.instance);
+							sfi.type, linked_table_name, tableAliasName, sfi.field, sfi.not_null, sfi.instance);
 				}
 			}
 		}

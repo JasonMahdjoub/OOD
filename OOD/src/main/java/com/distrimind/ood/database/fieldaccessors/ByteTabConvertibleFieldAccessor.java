@@ -103,7 +103,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 				type=DatabaseWrapperAccessor.getBlobType(sql_connection, l);
 		}
 		assert type != null;
-		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(), type, null, null, isNotNull());
+		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(), type, isNotNull());
 		/*String vb=DatabaseWrapperAccessor.getVarBinaryType(_sql_connection, 0);
 		String lvb=DatabaseWrapperAccessor.getLongVarBinaryType(_sql_connection, 0);
 		if (vb!=null) {

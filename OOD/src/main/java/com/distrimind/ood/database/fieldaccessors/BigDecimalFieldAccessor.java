@@ -85,7 +85,7 @@ public class BigDecimalFieldAccessor extends FieldAccessor {
 		type=DatabaseWrapperAccessor.getBigDecimalType(sql_connection, limit);
 
 		sql_fields[0] = new SqlField(supportQuotes, this.table_name + "." + this.getSqlFieldName(),
-				type, null, null, isNotNull());
+				type, isNotNull());
 	}
 
 	public static byte[] bigDecimalToBytes(BigDecimal bigDecimal)

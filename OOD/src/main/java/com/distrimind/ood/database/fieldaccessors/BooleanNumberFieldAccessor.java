@@ -67,7 +67,7 @@ public class BooleanNumberFieldAccessor extends FieldAccessor {
 			Field _field, String parentFieldName, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
 		super(_sql_connection, _field, parentFieldName, compatible_classes, table, severalPrimaryKeysPresentIntoTable);
 		sql_fields = new SqlField[1];
-		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(), "BOOLEAN", null, null, isNotNull());
+		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(), "BOOLEAN", isNotNull());
 	}
 
 	@Override

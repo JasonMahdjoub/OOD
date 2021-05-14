@@ -133,6 +133,7 @@ import java.util.regex.Pattern;
 @SuppressWarnings({"ThrowFromFinallyBlock", "BooleanMethodIsAlwaysInverted", "NullableProblems"})
 public abstract class Table<T extends DatabaseRecord> implements Comparable<Table<?>> {
 	public static final String TABLE_NAME_PREFIX="T";
+	public static final String TABLE_ALIAS_NAME_PREFIX="TA";
 	final Class<T> class_record;
 	final Constructor<T> default_constructor_field;
 	final ArrayList<FieldAccessor> auto_random_primary_keys_fields = new ArrayList<>();
@@ -1572,8 +1573,11 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		return false;
 
 	}
-
 	private StringBuffer getFromPart(ForeignKeyFieldAccessor fa, boolean includeAllJunctions,
+									 Set<TableJunction> tablesJunction) {
+		return getFromPart(new StringBuffer(), getSqlTableName(), fa, includeAllJunctions, tablesJunction);
+	}
+	private StringBuffer getFromPart(StringBuffer sb, String sqlTableName, ForeignKeyFieldAccessor fa, boolean includeAllJunctions,
 			Set<TableJunction> tablesJunction) {
 		if (containsLoopBetweenTables) {
 			includeAllJunctions = false;
@@ -1581,25 +1585,33 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				tablesJunction = null;
 		}
 
-		StringBuffer sb = new StringBuffer();
 		if (!includeAllJunctions && !containsPointedTable(tablesJunction, fa.getPointedTable()))
 			return sb;
-		sb.append(" LEFT OUTER JOIN ");
-		sb.append(fa.getPointedTable().getSqlTableName());
-		sb.append(" ON ");
+		sb.append(" LEFT OUTER JOIN ")
+				.append(fa.getPointedTable().getSqlTableName())
+				.append(" ")
+				.append(fa.getTableAliasName())
+				.append(" ON ");
 		boolean firstOn = true;
 		for (SqlField sf : fa.getDeclaredSqlFields()) {
 			if (firstOn)
 				firstOn = false;
 			else
 				sb.append(" AND ");
-			sb.append(sf.field);
-			sb.append("=");
-			sb.append(sf.pointed_field);
+			boolean q=sql_connection.supportsItalicQuotesWithTableAndFieldNames();
+			if (q)
+				sb.append("`");
+			sb.append(sqlTableName);
+			if (q)
+				sb.append("`");
+			sb.append(".")
+					.append(sf.short_field)
+					.append("=")
+					.append(sf.pointed_field);
 		}
 		Table<?> t = fa.getPointedTable();
 		for (ForeignKeyFieldAccessor fa2 : t.getForeignKeysFieldAccessors()) {
-			sb.append(t.getFromPart(fa2, includeAllJunctions, tablesJunction));
+			t.getFromPart(sb, fa.getTableAliasName(), fa2, includeAllJunctions, tablesJunction);
 		}
 		return sb;
 	}

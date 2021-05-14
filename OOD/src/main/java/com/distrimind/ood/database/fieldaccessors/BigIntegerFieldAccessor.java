@@ -84,7 +84,7 @@ public class BigIntegerFieldAccessor extends FieldAccessor {
 			limit*=3;
 		type=DatabaseWrapperAccessor.getBigIntegerType(sql_connection, limit);
 		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(),
-				Objects.requireNonNull(type), null, null, isNotNull());
+				Objects.requireNonNull(type), isNotNull());
 
 	}
 

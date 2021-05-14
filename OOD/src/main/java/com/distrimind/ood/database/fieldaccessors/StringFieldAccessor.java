@@ -75,7 +75,7 @@ public class StringFieldAccessor extends FieldAccessor {
 				l < DatabaseWrapperAccessor.getVarCharLimit(sql_connection)
 						? "VARCHAR(" + l + ")"
 						:DatabaseWrapperAccessor.getTextType(sql_connection, l),
-				null, null, isNotNull());
+				isNotNull());
 	}
 
 	@Override

@@ -68,9 +68,9 @@ public class SqlFieldInstance extends SqlField {
 	 * @param _instance
 	 *            The field instance
 	 */
-	public SqlFieldInstance(boolean supportQuote, String _field, String _type, String _pointed_table, String _pointed_field,
+	public SqlFieldInstance(boolean supportQuote, String _field, String _type, String _pointed_table, String pointed_table_alias, String _pointed_field,
 			boolean _not_null, Object _instance) {
-		super(supportQuote, _field, _type, _pointed_table, _pointed_field, _not_null);
+		super(supportQuote, _field, _type, _pointed_table, pointed_table_alias, _pointed_field, _not_null);
 		instance = _instance;
 	}
 
@@ -83,7 +83,7 @@ public class SqlFieldInstance extends SqlField {
 	 *            The field instance.
 	 */
 	public SqlFieldInstance(boolean supportQuote, SqlField _sql_field, Object _instance) {
-		super(supportQuote, _sql_field.field_without_quote, _sql_field.type, _sql_field.pointed_table, _sql_field.pointed_field,
+		super(supportQuote, _sql_field.field_without_quote, _sql_field.type, _sql_field.pointed_table, _sql_field.pointed_table_alias, _sql_field.pointed_field,
 				_sql_field.not_null);
 		instance = _instance;
 	}

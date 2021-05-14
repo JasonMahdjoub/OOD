@@ -82,7 +82,7 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 			limit=ByteTabFieldAccessor.defaultByteTabSize;
 
 		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(),
-				Objects.requireNonNull(DatabaseWrapperAccessor.getBlobType(sql_connection, limit)), null, null, isNotNull());
+				Objects.requireNonNull(DatabaseWrapperAccessor.getBlobType(sql_connection, limit)), isNotNull());
 
 		if (Comparable.class.isAssignableFrom(field.getType())) {
 			try {

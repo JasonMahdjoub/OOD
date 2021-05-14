@@ -67,6 +67,12 @@ public class SqlField {
 	 */
 	public final String pointed_table;
 
+
+	/**
+	 * The name of the pointed Sql table alias given into a sql query, and if this field is a foreign key
+	 */
+	public final String pointed_table_alias;
+
 	/**
 	 * The name of the pointed Sql field appended with its Sql Table, if this field
 	 * is a foreign key
@@ -116,6 +122,20 @@ public class SqlField {
 
 	/**
 	 * Constructor
+	 *
+	 * @param _field
+	 *            the name of the Sql field.
+	 * @param _type
+	 *            the type of the Sql field.
+	 * @param _not_null
+	 *            tells if the field is not null
+	 */
+	public SqlField(boolean supportQuote, String _field, String _type, boolean _not_null) {
+		this(supportQuote, _field, _type, null, null, null, _not_null);
+	}
+
+	/**
+	 * Constructor
 	 * 
 	 * @param _field
 	 *            the name of the Sql field.
@@ -125,14 +145,20 @@ public class SqlField {
 	 *            The name of the pointed Sql field, if this field is a foreign key
 	 * @param _pointed_table
 	 *            The name of the pointed Sql table, if this field is a foreign key
+	 * @param pointed_table_alias
+	 *            The name of the pointed Sql table alias given into a sql query, and if this field is a foreign key
 	 * @param _not_null
 	 *            tells if the field is not null
 	 */
-	public SqlField(boolean supportQuote, String _field, String _type, String _pointed_table, String _pointed_field, boolean _not_null) {
+	public SqlField(boolean supportQuote, String _field, String _type, String _pointed_table, String pointed_table_alias, String _pointed_field, boolean _not_null) {
+		if ((_pointed_table==null)!=(pointed_table_alias==null) && (_pointed_table==null)!=(_pointed_field==null))
+			throw new NullPointerException();
 		field_without_quote = _field.toUpperCase();
 		type = _type.toUpperCase();
 		pointed_table = _pointed_table == null ? null : _pointed_table.toUpperCase();
-		pointed_field = _pointed_field == null ? null : _pointed_field.toUpperCase();
+		this.pointed_table_alias=pointed_table_alias;
+		pointed_field = _pointed_field == null ? null : (pointed_table_alias+"."+_pointed_field.substring(_pointed_field.lastIndexOf('.')+1)).toUpperCase();
+
 
 		int index = -1;
 		for (int i = 0; i < field_without_quote.length(); i++) {
