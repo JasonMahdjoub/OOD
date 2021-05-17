@@ -1471,10 +1471,21 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			if (tablesJunction != null)
 				tablesJunction = null;
 		}
-		if (sb.length() > startSize)
-			sb.append(", ");
-		sb.append(sqlTableName);
-		sb.append(".*");
+		for (FieldAccessor fa : fields)
+		{
+			for (SqlField sf : fa.getDeclaredSqlFields()) {
+				if (sb.length() > startSize)
+					sb.append(", ");
+				sb.append(sqlTableName)
+						.append(".")
+						.append(sf.short_field)
+						.append(" AS ");
+				sb.append(sqlTableName)
+						.append("__")
+						.append(sf.sql_field_alias_name);
+			}
+		}
+
 		for (ForeignKeyFieldAccessor fa : foreign_keys_fields) {
 			Table<?> t = fa.getPointedTable();
 			if (includeAllJunctions || containsPointedTable(tablesJunction, t))
@@ -7032,7 +7043,6 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	final void getListRecordsFromSqlConnection(final Runnable _runnable, final SqlQuery query,
 			final TransactionIsolation transactionIsolation/*, final int startPosition, final int length*/,
 			final boolean updatable) throws DatabaseException {
-
 		class TransactionTmp implements Transaction {
 			@Override
 			public Package getConcernedDatabasePackage() {
@@ -8248,19 +8258,21 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
                                             }
 										}
 										if (canBeRemoved) {
-											_result_set.deleteRow();
+											removeUntypedRecordWithCascadeImpl(_instance,true, null, false );
+											//_result_set.deleteRow();
 											oneUpdated.set(true);
-											getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
-													new TableEvent<>(-1, DatabaseEventType.REMOVE, Table.this,oldRecord, null, null), true);
+											/*getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
+													new TableEvent<>(-1, DatabaseEventType.REMOVE, Table.this,oldRecord, null, null), true);*/
 										}
 									} else if (_filter.hasToBeRemovedWithCascade()) {
-										_result_set.deleteRow();
+										removeUntypedRecordWithCascadeImpl(_instance,true, null, false );
+										//_result_set.deleteRow();
 										//updateMemoryForRemovingRecordWithCascade(_instance);
 										updateWithCascade.set(true);
 										oneUpdated.set(true);
-										getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
+										/*getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
 												new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, Table.this,oldRecord, null,
-														null), true);
+														null), true);*/
 									} else {
 										boolean updateRecordInstance=true;
 										Map<String, Object> m = _filter.getModifications();
@@ -8307,7 +8319,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 											}*/
 											updateRecordImpl(_instance, map, true, null, true, updateRecordInstance);
 
-											_result_set.updateRow();
+											//_result_set.updateRow();
 											updateWithCascade.set(true);
 											oneUpdated.set(true);
 											/*getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(

@@ -969,7 +969,7 @@ public abstract class FieldAccessor {
 	final String getSqlFieldName(String sqlTableName, SqlField sqlField)
 	{
 		//return sqlField.field_without_quote;
-		return sqlTableName+"."+sqlField.short_field_without_quote;
+		return sqlTableName+"__"+sqlField.sql_field_alias_name;
 	}
 
 	protected static final class FieldAccessPrivilegedAction implements PrivilegedExceptionAction<ArrayList<Field>> {

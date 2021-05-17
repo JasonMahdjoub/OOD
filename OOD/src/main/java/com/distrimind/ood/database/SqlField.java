@@ -37,6 +37,8 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * This class represent a field description into the Sql database. The user
  * should not use this class.
@@ -45,6 +47,8 @@ package com.distrimind.ood.database;
  * @version 1.0
  */
 public class SqlField {
+
+	private static final AtomicInteger fieldAliasNumber=new AtomicInteger(0);
 
 	/**
 	 * the name of the Sql field appended with the name of the Sql Table.
@@ -120,6 +124,8 @@ public class SqlField {
 
 	public int sql_position = -1;
 
+	public final String sql_field_alias_name;
+
 	/**
 	 * Constructor
 	 *
@@ -151,9 +157,15 @@ public class SqlField {
 	 *            tells if the field is not null
 	 */
 	public SqlField(boolean supportQuote, String _field, String _type, String _pointed_table, String pointed_table_alias, String _pointed_field, boolean _not_null) {
+		this(supportQuote, _field, _type,  _pointed_table, pointed_table_alias, _pointed_field, _not_null, "F"+fieldAliasNumber.incrementAndGet()+"__");
+	}
+	protected SqlField(boolean supportQuote, String _field, String _type, String _pointed_table, String pointed_table_alias, String _pointed_field, boolean _not_null, String sql_field_alias_name)
+	{
 		if ((_pointed_table==null)!=(pointed_table_alias==null) && (_pointed_table==null)!=(_pointed_field==null))
 			throw new NullPointerException();
-
+		if (sql_field_alias_name ==null || sql_field_alias_name.length()==0)
+			throw new NullPointerException();
+		this.sql_field_alias_name = sql_field_alias_name;
 		field_without_quote = _field.toUpperCase();
 		type = _type.toUpperCase();
 		pointed_table = _pointed_table == null ? null : _pointed_table.toUpperCase();

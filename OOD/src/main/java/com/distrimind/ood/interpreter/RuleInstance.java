@@ -880,7 +880,9 @@ public class RuleInstance implements QueryPart {
 									++fieldsNumber;
 									if (fieldsNumber > 1)
 										res.append(" AND ");
-									res.append(sf.field);
+									res.append(sqlTableName1.get())
+											.append(".")
+											.append(sf.short_field);
 									res.append(comp.getType().getContent());
 									if (fa2 == null) {
 										boolean found = false;
@@ -986,8 +988,8 @@ public class RuleInstance implements QueryPart {
 								res.append(" AND ");
 							res.append(sqlTableName.get())
 									.append(".")
-									.append(sf.short_field)
-									.append(comp.getType().getContent())
+									.append(sf.short_field);
+							res.append(comp.getType().getContent())
 									.append(SymbolType.NULL.getContent());
 						}
 						res.append(")");
