@@ -824,7 +824,7 @@ public abstract class FieldAccessor {
 			throw new DatabaseException("Unexpected exception.");
 	}
 
-	protected int getColmunIndex(ResultSet _result_set, String fieldName) throws SQLException {
+	protected int getColumnIndex(ResultSet _result_set, String fieldName) throws SQLException {
 
 		if (DatabaseWrapperAccessor.supportFullSqlFieldName(sql_connection)) {
 			return _result_set.findColumn(fieldName);
@@ -839,7 +839,6 @@ public abstract class FieldAccessor {
 				sb.append(tableName);
 				sb.append(".");
 				sb.append(colName);
-
 				if (sb.toString().toLowerCase().equals(fieldName))
 					return i;
 			}
@@ -969,6 +968,7 @@ public abstract class FieldAccessor {
 
 	final String getSqlFieldName(String sqlTableName, SqlField sqlField)
 	{
+		//return sqlField.field_without_quote;
 		return sqlTableName+"."+sqlField.short_field_without_quote;
 	}
 

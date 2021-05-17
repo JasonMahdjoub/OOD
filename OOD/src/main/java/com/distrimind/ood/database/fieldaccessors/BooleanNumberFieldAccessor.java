@@ -163,7 +163,7 @@ public class BooleanNumberFieldAccessor extends FieldAccessor {
 	}
 
 	private Boolean getBoolean(String sqlTableName, ResultSet _result_set) throws SQLException {
-		int colIndex=getColmunIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0]));
+		int colIndex= getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0]));
 		Object o=_result_set.getObject(colIndex);
 
 		if (o==null)

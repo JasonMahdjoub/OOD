@@ -129,7 +129,7 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 	public void setValue(String sqlTableName, Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
-			Blob b = _result_set.getBlob(getColmunIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
+			Blob b = _result_set.getBlob(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
 			if (b == null && isNotNull())
 				throw new DatabaseIntegrityException("Unexpected exception.");
 

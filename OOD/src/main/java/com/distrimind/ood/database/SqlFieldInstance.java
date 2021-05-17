@@ -116,7 +116,7 @@ public class SqlFieldInstance extends SqlField {
 	 *            The field instance.
 	 */
 	public SqlFieldInstance(boolean supportQuote, String _sqlTableName, SqlField _sql_field, Object _instance) {
-		super(supportQuote, supportQuote?_sqlTableName+".`"+_sql_field.short_field+"`":_sqlTableName+"."+_sql_field.short_field, _sql_field.type, _sql_field.pointed_table, _sql_field.pointed_table_alias, _sql_field.pointed_field,
+		super(supportQuote, _sqlTableName+"."+_sql_field.short_field_without_quote, _sql_field.type, _sql_field.pointed_table, _sql_field.pointed_table_alias, _sql_field.pointed_field,
 				_sql_field.not_null);
 		instance = _instance;
 	}

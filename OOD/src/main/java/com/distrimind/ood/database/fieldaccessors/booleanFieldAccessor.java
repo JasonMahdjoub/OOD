@@ -162,7 +162,7 @@ public class booleanFieldAccessor extends FieldAccessor {
 	public void setValue(String sqlTableName, Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
-			field.setBoolean(_class_instance, _result_set.getBoolean(getColmunIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0]))));
+			field.setBoolean(_class_instance, _result_set.getBoolean(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0]))));
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}

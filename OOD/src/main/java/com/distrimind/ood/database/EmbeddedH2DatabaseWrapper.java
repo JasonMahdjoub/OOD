@@ -440,12 +440,13 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 						+ table.getSqlTableName() + "';"))) {
 			while (rq.result_set.next()) {
 				String pointed_table = rq.result_set.getString("PKTABLE_NAME");
-				String pointed_col = pointed_table + "." + rq.result_set.getString("PKCOLUMN_NAME");
+				String pointed_col = /*pointed_table + "." + */rq.result_set.getString("PKCOLUMN_NAME");
 				String fk = table.getSqlTableName() + "." + rq.result_set.getString("FKCOLUMN_NAME");
 				boolean found = false;
 				for (ForeignKeyFieldAccessor fa : table.getForeignKeysFieldAccessors()) {
 					for (SqlField sf : fa.getDeclaredSqlFields()) {
-						if (sf.field_without_quote.equals(fk) && sf.pointed_field_without_quote.equals(pointed_col)
+						if (sf.field_without_quote.equals(fk) && fa.getPointedTable().getSqlTableName().equals(pointed_table)
+							&& sf.pointed_field_without_quote.equals(fa.getTableAliasName()+"."+pointed_col)
 								&& sf.pointed_table.equals(pointed_table)) {
 							found = true;
 							break;
@@ -456,7 +457,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 				}
 				if (!found)
 					throw new DatabaseVersionException(table,
-							"There is foreign keys defined into the Sql database which have not been found in the OOD database.");
+							"There is foreign keys defined into the Sql database which have not been found in the OOD database : "+fk);
 			}
 		} catch (SQLException e) {
 			throw new DatabaseException("Impossible to check constraints of the table " + table.getClass().getSimpleName(), e);

@@ -236,11 +236,11 @@ public class CalendarFieldAccessor extends FieldAccessor{
 			}
 
 			else {
-				utc=_result_set.getLong(getColmunIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
+				utc=_result_set.getLong(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
 				if (isVarBinary) {
-					tz = _result_set.getBytes(getColmunIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[1])));
+					tz = _result_set.getBytes(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[1])));
 				} else {
-					tz = getBytes(_result_set.getBigDecimal(getColmunIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[1]))));
+					tz = getBytes(_result_set.getBigDecimal(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[1]))));
 				}
 			}
 			if ((utc==null)!=(tz==null))

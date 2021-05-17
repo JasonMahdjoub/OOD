@@ -302,17 +302,17 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 			throws DatabaseException {
 		try {
 			if (isVarBinary) {
-				byte[] res = _result_set.getBytes(getColmunIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
+				byte[] res = _result_set.getBytes(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
 				if (res == null && isNotNull())
 					throw new DatabaseIntegrityException("Unexpected exception.");
 				field.set(_class_instance, res);
 			} else if (isBigInteger){
-				byte[] res = getByteTab(_result_set.getBigDecimal(getColmunIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0]))));
+				byte[] res = getByteTab(_result_set.getBigDecimal(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0]))));
 				if (res == null && isNotNull())
 					throw new DatabaseIntegrityException("Unexpected exception.");
 				field.set(_class_instance, res);
 			} else {
-				Blob b = _result_set.getBlob(getColmunIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
+				Blob b = _result_set.getBlob(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
 				byte[] res = b == null ? null : b.getBytes(1, (int) b.length());
 				if (res == null && isNotNull())
 					throw new DatabaseIntegrityException("Unexpected exception.");

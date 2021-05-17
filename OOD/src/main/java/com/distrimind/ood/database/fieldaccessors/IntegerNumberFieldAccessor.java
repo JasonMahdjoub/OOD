@@ -184,7 +184,7 @@ public class IntegerNumberFieldAccessor extends FieldAccessor {
 	public void setValue(String sqlTableName, Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
-			Object res = _result_set.getObject(getColmunIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
+			Object res = _result_set.getObject(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
 			if (res == null && isNotNull())
 				throw new DatabaseIntegrityException("Unexpected exception");
 			field.set(_class_instance, res);

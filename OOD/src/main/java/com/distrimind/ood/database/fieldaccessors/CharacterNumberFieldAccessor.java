@@ -184,7 +184,7 @@ public class CharacterNumberFieldAccessor extends FieldAccessor {
 	public void setValue(String sqlTableName, Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
-			String s = _result_set.getString(getColmunIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
+			String s = _result_set.getString(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
 			Character c = null;
 			if (s != null)
 				c = s.charAt(0);

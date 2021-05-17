@@ -241,9 +241,9 @@ public class AbstractDecentralizedIDFieldAccessor extends FieldAccessor {
 		try {
 			byte[] res;
 			if (isVarBinary) {
-				res = _result_set.getBytes(getColmunIndex(_result_set, getSqlFieldName(table_name, sql_fields[0])));
+				res = _result_set.getBytes(getColumnIndex(_result_set, getSqlFieldName(table_name, sql_fields[0])));
 			} else {
-				res = getBytes(_result_set.getBigDecimal(getColmunIndex(_result_set, getSqlFieldName(table_name, sql_fields[0]))));
+				res = getBytes(_result_set.getBigDecimal(getColumnIndex(_result_set, getSqlFieldName(table_name, sql_fields[0]))));
 			}
 			if (res == null && isNotNull())
 				throw new DatabaseIntegrityException("Unexpected exception. Null value was found into a not null field "

@@ -876,6 +876,7 @@ public class RuleInstance implements QueryPart {
 									sfs2 = fa2.getDeclaredSqlFields();
 
 								for (SqlField sf : sfs) {
+									String sql_field_name=sqlTableName1.get()+"."+sf.short_field_without_quote;
 									++fieldsNumber;
 									if (fieldsNumber > 1)
 										res.append(" AND ");
@@ -884,7 +885,7 @@ public class RuleInstance implements QueryPart {
 									if (fa2 == null) {
 										boolean found = false;
 										for (SqlFieldInstance sfi : sfis) {
-											if (sfi.field_without_quote.equals(sf.field_without_quote)) {
+											if (sfi.field_without_quote.equals(sql_field_name)) {
 
 												if (parameter2==null)
 												{
@@ -902,7 +903,7 @@ public class RuleInstance implements QueryPart {
 										}
 										if (!found)
 											throw new DatabaseSyntaxException(
-													"Field " + sf.field_without_quote + " not found. Unexpected error !");
+													"Field " + sql_field_name + " not found. Unexpected error !");
 
 									} else {
 										if (fa2.getFieldName().equals(fa1.getFieldName()))
@@ -1067,6 +1068,7 @@ public class RuleInstance implements QueryPart {
 						throw new IllegalAccessError();
 					StringBuilder res=new StringBuilder();
 					res.append(sqlTableName.get())
+							.append(".")
 							.append(sfs[0].short_field);
 					return res;
 				} else if (s.getType() == SymbolType.PARAMETER) {

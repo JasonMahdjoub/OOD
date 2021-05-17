@@ -276,7 +276,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					for (SqlField sf : fkfa.getDeclaredSqlFields()) {
 						boolean found = false;
 						for (String field : _primary_keys.keySet()) {
-							if (field.equals(sf.pointed_field)) {
+							if (field.equals(sf.pointed_table+"."+sf.short_pointed_field)) {
 								found = true;
 								res[index].put(sf.field, _primary_keys.get(field));
 								break;
@@ -1373,8 +1373,11 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				}
 			}
 
-			final StringBuilder query = new StringBuilder(
-					"SELECT " + getSqlSelectStep1Fields(true) + " FROM " + getFromPart(true, null) + " WHERE ");
+			final StringBuilder query = new StringBuilder("SELECT ");
+			getSqlSelectStep1Fields(query, true);
+			query.append(" FROM ");
+			getFromPart(query, true, null);
+			query.append(" WHERE ");
 			boolean first = true;
 			for (SqlFieldInstance sfi : _sql_field_instances) {
 				if (first)
@@ -1451,35 +1454,31 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		return getNewRecordInstance(default_constructor_field, createdIntoDatabase);
 	}
 
-	private String getSqlSelectStep1Fields(boolean includeAllJunctions) {
-		if (isLoadedInMemory()) {
+	private void getSqlSelectStep1Fields(StringBuilder sb, boolean includeAllJunctions) {
+		/*if (isLoadedInMemory()) {
 			includeAllJunctions = false;
-		}
+		}*/
 
-		StringBuffer sb = new StringBuffer();
-		getSqlSelectStep1Fields(includeAllJunctions, null, sb);
-		return sb.toString();
+		//StringBuffer sb = new StringBuffer();
+		getSqlSelectStep1Fields(getSqlTableName(), includeAllJunctions, null, sb, sb.length());
+		//return sb;
 	}
 
-	private void getSqlSelectStep1Fields(boolean includeAllJunctions, Set<TableJunction> tablesJunction,
-			StringBuffer sb) {
-		getSqlSelectStep1Fields(getSqlTableName(), includeAllJunctions, tablesJunction, sb);
-	}
 	private void getSqlSelectStep1Fields(String sqlTableName, boolean includeAllJunctions, Set<TableJunction> tablesJunction,
-			StringBuffer sb) {
+										 StringBuilder sb, int startSize) {
 		if (containsLoopBetweenTables) {
 			includeAllJunctions = false;
 			if (tablesJunction != null)
 				tablesJunction = null;
 		}
-		if (sb.length() > 0)
+		if (sb.length() > startSize)
 			sb.append(", ");
 		sb.append(sqlTableName);
 		sb.append(".*");
 		for (ForeignKeyFieldAccessor fa : foreign_keys_fields) {
 			Table<?> t = fa.getPointedTable();
 			if (includeAllJunctions || containsPointedTable(tablesJunction, t))
-				t.getSqlSelectStep1Fields(fa.getTableAliasName(), includeAllJunctions, tablesJunction, sb);
+				t.getSqlSelectStep1Fields(fa.getTableAliasName(), includeAllJunctions, tablesJunction, sb, startSize);
 		}
 
 	}
@@ -1488,16 +1487,25 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 	}
 	SqlQuery getSqlGeneralSelect(long startPosition, long rowLimit, boolean loadJunctions) {
-		return new SqlQuery(
-				"SELECT " + getSqlSelectStep1Fields(loadJunctions) + " FROM " + getFromPart(loadJunctions, null)+getLimitSqlPart(startPosition, rowLimit));
+		StringBuilder sb=new StringBuilder("SELECT ");
+		getSqlSelectStep1Fields(sb, loadJunctions);
+		sb.append(" FROM ");
+		getFromPart(sb, loadJunctions, null);
+		sb.append(getLimitSqlPart(startPosition, rowLimit));
+		return new SqlQuery(sb.toString());
 	}
 
 	@SuppressWarnings("SameParameterValue")
 	SqlQuery getSqlGeneralSelect(long startPosition, long rowLimit, boolean loadJunctions, boolean ascendant, String[] orderByFields) {
 		if (orderByFields != null && orderByFields.length > 0)
 			loadJunctions = true;
-		return new SqlQuery("SELECT " + getSqlSelectStep1Fields(loadJunctions) + " FROM "
-				+ getFromPart(loadJunctions, null) + getOrderByPart(ascendant, orderByFields)+getLimitSqlPart(startPosition, rowLimit));
+		StringBuilder sb=new StringBuilder("SELECT ");
+		getSqlSelectStep1Fields(sb, loadJunctions);
+		sb.append(" FROM ");
+		getFromPart(sb, loadJunctions, null);
+		getOrderByPart(sb, ascendant, orderByFields);
+		sb.append(getLimitSqlPart(startPosition, rowLimit));
+		return new SqlQuery(sb.toString());
 	}
 
 	@SuppressWarnings("SameParameterValue")
@@ -1507,10 +1515,12 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 	SqlQuery getSqlGeneralCount(String condition, final Map<Integer, Object> parameters,
 								Set<TableJunction> tablesJunction) {
+		StringBuilder sb=new StringBuilder("SELECT COUNT(*) FROM ");
+		getFromPart(sb, false, tablesJunction);
 		if (condition == null || condition.trim().equals(""))
-			return new SqlQuery("SELECT COUNT(*) FROM " + getFromPart(false, tablesJunction));
-		else
-			return new SqlQuery("SELECT COUNT(*) FROM " + getFromPart(false, tablesJunction) + " WHERE " + condition) {
+			return new SqlQuery(sb.toString());
+		else {
+			return new SqlQuery(sb.append(" WHERE ").append( condition).toString()) {
 				@Override
 				void finishPrepareStatement(PreparedStatement st) throws SQLException {
 					if (parameters != null) {
@@ -1536,22 +1546,21 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					}*/
 				}
 			};
-
+		}
 	}
 
-	private String getFromPart(boolean includeAllJunctions, Set<TableJunction> tablesJunction) {
-		if (isLoadedInMemory()) {
+	private void getFromPart(StringBuilder sb, boolean includeAllJunctions, Set<TableJunction> tablesJunction) {
+		/*if (isLoadedInMemory()) {
 			includeAllJunctions = false;
 			tablesJunction = null;
-		}
-		StringBuilder sb = new StringBuilder(this.getSqlTableName());
+		}*/
+		sb.append(this.getSqlTableName());
 		if (!includeAllJunctions && (tablesJunction == null || tablesJunction.size() == 0))
-			return sb.toString();
+			return ;
 
 		for (ForeignKeyFieldAccessor fa : getForeignKeysFieldAccessors()) {
-			sb.append(getFromPart(fa, includeAllJunctions, tablesJunction));
+			getFromPart(sb, fa, includeAllJunctions, tablesJunction);
 		}
-		return sb.toString();
 	}
 
 	private boolean containsPointedTable(Set<TableJunction> tablesJunction, Table<?> table) {
@@ -1578,13 +1587,12 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		return false;
 
 	}
-	private StringBuffer getFromPart(ForeignKeyFieldAccessor fa, boolean includeAllJunctions,
+	private void getFromPart(StringBuilder sb, ForeignKeyFieldAccessor fa, boolean includeAllJunctions,
 									 Set<TableJunction> tablesJunction) {
-		StringBuffer sb=new StringBuffer();
+
 		getFromPart(sb, getSqlTableName(), fa, includeAllJunctions, tablesJunction);
-		return sb;
 	}
-	private void getFromPart(StringBuffer sb, String sqlTableName, ForeignKeyFieldAccessor fa, boolean includeAllJunctions,
+	private void getFromPart(StringBuilder sb, String sqlTableName, ForeignKeyFieldAccessor fa, boolean includeAllJunctions,
 			Set<TableJunction> tablesJunction) {
 		if (containsLoopBetweenTables) {
 			includeAllJunctions = false;
@@ -1596,7 +1604,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			return;
 		sb.append(" LEFT OUTER JOIN ")
 				.append(fa.getPointedTable().getSqlTableName())
-				.append(" ")
+				.append(" as ")
 				.append(fa.getTableAliasName())
 				.append(" ON ");
 		boolean firstOn = true;
@@ -1606,12 +1614,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			else
 				sb.append(" AND ");
 			boolean q=sql_connection.supportsItalicQuotesWithTableAndFieldNames();
-			if (q)
-				sb.append("`");
-			sb.append(sqlTableName);
-			if (q)
-				sb.append("`");
-			sb.append(".")
+			sb.append(sqlTableName)
+					.append(".")
 					.append(sf.short_field)
 					.append("=")
 					.append(sf.pointed_field);
@@ -1622,22 +1626,21 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 	}
 
-	String getOrderByPart(boolean _ascendant, String... _fields) {
+	void getOrderByPart(StringBuilder orderBySqlFields, boolean _ascendant, String... _fields) {
 		if (_fields == null || _fields.length == 0)
-			return "";
-		StringBuilder orderBySqlFields = new StringBuilder();
+			return;
+		int startLength=orderBySqlFields.length();
 		for (String s : _fields) {
-			if (orderBySqlFields.length() > 0)
+			if (orderBySqlFields.length() > startLength)
 				orderBySqlFields.append(", ");
 			orderBySqlFields.append(getFieldToCompare(s));
 			orderBySqlFields.append(_ascendant ? " ASC" : " DESC");
 		}
 
-		if (orderBySqlFields.length() > 0) {
-			orderBySqlFields.insert(0, " ORDER BY ");
+		if (orderBySqlFields.length() > startLength) {
+			orderBySqlFields.insert(startLength, " ORDER BY ");
 
 		}
-		return orderBySqlFields.toString();
 	}
 
 	private String getLimitSqlPart(long startPosition, long rowLength)
@@ -1657,13 +1660,24 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 								 boolean _ascendant, String... _fields) {
 		if (_fields.length > 0)
 			loadJunctions = true;
+		StringBuilder sb=new StringBuilder("SELECT ");
+		getSqlSelectStep1Fields(sb, loadJunctions);
+		sb.append(" FROM ");
+		getFromPart(sb, loadJunctions, null);
 
-		if (condition == null || condition.trim().equals(""))
-			return new SqlQuery("SELECT " + getSqlSelectStep1Fields(loadJunctions) + " FROM "
-					+ getFromPart(loadJunctions, null) + " " + getOrderByPart(_ascendant, _fields)+getLimitSqlPart(startPosition, rowLimit));
-		else
-			return new SqlQuery("SELECT " + getSqlSelectStep1Fields(loadJunctions) + " FROM "
-					+ getFromPart(loadJunctions, null) + " WHERE " + condition + getOrderByPart(_ascendant, _fields)+getLimitSqlPart(startPosition, rowLimit)) {
+
+		if (condition == null || condition.trim().equals("")) {
+			sb.append(" ");
+			getOrderByPart(sb, _ascendant, _fields);
+			sb.append(getLimitSqlPart(startPosition, rowLimit));
+			return new SqlQuery(sb.toString());
+		}
+		else {
+			sb.append(" WHERE ")
+				.append(condition);
+			getOrderByPart(sb, _ascendant, _fields);
+			sb.append(getLimitSqlPart(startPosition, rowLimit));
+			return new SqlQuery(sb.toString()) {
 				@Override
 				void finishPrepareStatement(PreparedStatement st) throws SQLException {
 					if (parameters != null) {
@@ -1680,6 +1694,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					}
 				}
 			};
+		}
 	}
 
 
@@ -1761,7 +1776,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				}
 			}
 		}
-		sb.append(getOrderByPart(ascendant, orderByFields));
+		getOrderByPart(sb, ascendant, orderByFields);
 		sb.append(getLimitSqlPart(rowStart, rowLength));
 		sb.append(sql_connection.getSqlComma());
 		return sb.toString();
@@ -1797,7 +1812,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			}
 			sb.append(")");
 		}
-		sb.append(getOrderByPart(ascendant, orderByFields));
+		getOrderByPart(sb, ascendant, orderByFields);
 		sb.append(getLimitSqlPart(rowStart, rowLength));
 		sb.append(sql_connection.getSqlComma());
 		return sb.toString();
@@ -2212,6 +2227,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			}
 			if (indexStart>=indexEnd)
 				return null;
+
 			String prefix = prevPrefix+fieldName.substring(indexStart, indexEnd);
 
 			for (FieldAccessor f : fields) {
@@ -5789,12 +5805,12 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
                             }
 							if (toRemove && _filter.nextRecord(_instance)) {
 
-
-								_cursor.deleteRow();
+								removeUntypedRecordImpl(_instance, true, null, false);
+								//_cursor.deleteRow();
 								++deleted_records_number;
-								_instance.__createdIntoDatabase = false;
+								/*_instance.__createdIntoDatabase = false;
 								getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
-										new TableEvent<>(-1, DatabaseEventType.REMOVE,Table.this,  _instance, null, null), true);
+										new TableEvent<>(-1, DatabaseEventType.REMOVE,Table.this,  _instance, null, null), true);*/
 							}
 							return !_filter.isTableParsingStopped();
 						} catch (Exception e) {
@@ -5807,9 +5823,9 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 				RunnableTmp runnable = new RunnableTmp();
 				getListRecordsFromSqlConnection(runnable,
-						(_filter instanceof Table.PersonalFilter) ? ((PersonalFilter) _filter).getSQLQuery(false)
-								: getSqlGeneralSelect(false),
-						TransactionIsolation.TRANSACTION_SERIALIZABLE, true);
+						(_filter instanceof Table.PersonalFilter) ? ((PersonalFilter) _filter).getSQLQuery(true)
+								: getSqlGeneralSelect(true),
+						TransactionIsolation.TRANSACTION_SERIALIZABLE, false);
 				if (runnable.deleted_records_number>0 && isLoadedInMemory())
 					memoryToRefresh();
 				return runnable.deleted_records_number;
@@ -6187,6 +6203,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			boolean parenthesis = _foreign_keys.length > 1;
 
 			for (HashMap<String, Object> hm : _foreign_keys) {
+				if (hm.size()==0)
+					continue;
 				if (group_first)
 					group_first = false;
 				else
@@ -6204,12 +6222,17 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				if (parenthesis)
 					query.append(")");
 			}
+			if (group_first) {
+				return false;
+			}
 
 			final SqlQuery sqlQuery = new SqlQuery(query.toString()) {
 				@Override
 				void finishPrepareStatement(PreparedStatement st) throws SQLException {
 					int index = 1;
 					for (HashMap<String, Object> hm : _foreign_keys) {
+						if (hm.size()==0)
+							continue;
 						for (String f : hm.keySet()) {
 							st.setObject(index++, hm.get(f));
 						}
@@ -6355,13 +6378,14 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 							{
 								if (!sql_connection.supportForeignKeys())
 									removeWithCascadeRecordsPointingToThisRecordImpl(_instance);
-								_cursor.deleteRow();
+
+								removeUntypedRecordWithCascadeImpl(_instance, true, null, false);
 								++deleted_records_number;
-								_instance.__createdIntoDatabase = false;
+								/*_instance.__createdIntoDatabase = false;
 								//updateMemoryForRemovingRecordWithCascade(_instance);
 								getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
 										new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE,Table.this,  _instance, null,
-												null), true);
+												null), true);*/
 							}
 							return !_filter.isTableParsingStopped();
 						} catch (Exception e) {
@@ -6374,7 +6398,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 				HashMap<Integer, Object> sqlParameters = new HashMap<>();
 				String sqlQuery = null;
-				if (rule != null && rule.isIndependantFromOtherTables(Table.this)) {
+				if (rule != null /*&& rule.isIndependantFromOtherTables(Table.this)*/) {
 					sqlQuery = rule
 							.translateToSqlQuery(Table.this, parameters, sqlParameters, new HashSet<>())
 							.toString();
@@ -6383,9 +6407,9 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				RunnableTmp runnable = new RunnableTmp(sqlQuery == null ? rule : null);
 				try {
 					getListRecordsFromSqlConnection(runnable,
-							(_filter instanceof Table.PersonalFilter) ? ((PersonalFilter) _filter).getSQLQuery(false)
-									: (sqlQuery == null ? getSqlGeneralSelect(false)
-											: getSqlGeneralSelect(-1,-1,false, sqlQuery, sqlParameters)),
+							(_filter instanceof Table.PersonalFilter) ? ((PersonalFilter) _filter).getSQLQuery(true)
+									: (sqlQuery == null ? getSqlGeneralSelect(true)
+											: getSqlGeneralSelect(-1,-1,true, sqlQuery, sqlParameters)),
 							TransactionIsolation.TRANSACTION_SERIALIZABLE, true);
 					if (runnable.deleted_records_number>0 && isLoadedInMemory())
 						memoryToRefreshWithCascade();
@@ -6515,7 +6539,42 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		return removeRecordWithCascade(transformToMapField(keys));
 	}
 
+	private void removeUntypedRecordImpl(final T record, final boolean synchronizeIfNecessary,
+								   final Set<DecentralizedValue> hostsDestinations, boolean refreshMemory) throws DatabaseException {
+		for (NeighboringTable nt : list_tables_pointing_to_this_table) {
+			if (nt.getPointingTable().hasRecordsWithOneOfFields(nt.getHashMapFields(record), false)) {
+				throw new ConstraintsNotRespectedDatabaseException(
+						"The given record is pointed by another record through a foreign key into the table "
+								+ nt.getPointingTable().getClass().getSimpleName()
+								+ ". Impossible to remove it into the table " + getClass().getSimpleName());
+			}
+		}
 
+		try (PreparedUpdateQuery puq = new PreparedUpdateQuery(
+				sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(),
+				"DELETE FROM " + Table.this.getSqlTableName() + " WHERE " + getSqlPrimaryKeyCondition(1))) {
+			int index = 1;
+			for (FieldAccessor fa : primary_keys_fields) {
+				fa.getValue(record, puq.statement, index);
+				index += fa.getDeclaredSqlFields().length;
+			}
+			int nb = puq.statement.executeUpdate();
+			if (nb == 0)
+				throw new RecordNotFoundDatabaseException("the given record was not into the table "
+						+ Table.this.getClass().getSimpleName() + ". It has been probably already removed.");
+			else if (nb > 1)
+				throw new DatabaseIntegrityException("Unexpected exception");
+			if (hasBackupManager || synchronizeIfNecessary)
+				getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
+						new TableEvent<>(-1, DatabaseEventType.REMOVE, Table.this,record, null, hostsDestinations), synchronizeIfNecessary);
+		} catch (Exception e) {
+			throw DatabaseException.getDatabaseException(e);
+		}
+
+		if (refreshMemory && Table.this.isLoadedInMemory())
+			memoryToRefresh();
+		record.__createdIntoDatabase = false;
+	}
 	@SuppressWarnings("SameParameterValue")
     final void removeUntypedRecord(final DatabaseRecord record, final boolean synchronizeIfNecessary,
                                    final Set<DecentralizedValue> hostsDestinations) throws DatabaseException {
@@ -6537,39 +6596,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 				@Override
 				public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
-					for (NeighboringTable nt : list_tables_pointing_to_this_table) {
-						if (nt.getPointingTable().hasRecordsWithOneOfFields(nt.getHashMapFields(_record), false)) {
-							throw new ConstraintsNotRespectedDatabaseException(
-									"The given record is pointed by another record through a foreign key into the table "
-											+ nt.getPointingTable().getClass().getSimpleName()
-											+ ". Impossible to remove it into the table " + getClass().getSimpleName());
-						}
-					}
-
-                    try (PreparedUpdateQuery puq = new PreparedUpdateQuery(
-							_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(),
-                            "DELETE FROM " + Table.this.getSqlTableName() + " WHERE " + getSqlPrimaryKeyCondition(1))) {
-						int index = 1;
-						for (FieldAccessor fa : primary_keys_fields) {
-							fa.getValue(_record, puq.statement, index);
-							index += fa.getDeclaredSqlFields().length;
-						}
-						int nb = puq.statement.executeUpdate();
-						if (nb == 0)
-							throw new RecordNotFoundDatabaseException("the given record was not into the table "
-									+ Table.this.getClass().getSimpleName() + ". It has been probably already removed.");
-						else if (nb > 1)
-							throw new DatabaseIntegrityException("Unexpected exception");
-						if (hasBackupManager || synchronizeIfNecessary)
-							getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
-									new TableEvent<>(-1, DatabaseEventType.REMOVE, Table.this,_record, null, hostsDestinations), synchronizeIfNecessary);
-					} catch (Exception e) {
-						throw DatabaseException.getDatabaseException(e);
-					}
-
-					if (Table.this.isLoadedInMemory())
-						memoryToRefresh();
-					_record.__createdIntoDatabase = false;
+					removeUntypedRecordImpl(_record, synchronizeIfNecessary, hostsDestinations, true);
 					return null;
 				}
 
@@ -6609,7 +6636,33 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	public final void removeRecordWithCascade(final T _record) throws DatabaseException {
 		removeUntypedRecordWithCascade(_record, true, null);
 	}
-
+	private void removeUntypedRecordWithCascadeImpl(final T record, final boolean synchronizeIfNecessary,
+											  final Set<DecentralizedValue> hostsDestinations, boolean refreshMemory) throws DatabaseException {
+		try (PreparedUpdateQuery puq = new PreparedUpdateQuery(
+				sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(),
+				"DELETE FROM " + Table.this.getSqlTableName() + " WHERE " + getSqlPrimaryKeyCondition(1))) {
+			int index = 1;
+			for (FieldAccessor fa : primary_keys_fields) {
+				fa.getValue(record, puq.statement, index);
+				index += fa.getDeclaredSqlFields().length;
+			}
+			int nb = puq.statement.executeUpdate();
+			if (nb == 0)
+				throw new RecordNotFoundDatabaseException("the given record was not into the table "
+						+ Table.this.getClass().getSimpleName() + ". It has been probably already removed.");
+			else if (nb > 1)
+				throw new DatabaseIntegrityException("Unexpected exception");
+			if (hasBackupManager || synchronizeIfNecessary)
+				getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
+						new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE,Table.this, record, null,
+								hostsDestinations), synchronizeIfNecessary);
+		} catch (Exception e) {
+			throw DatabaseException.getDatabaseException(e);
+		}
+		if (refreshMemory && isLoadedInMemory())
+			memoryToRefreshWithCascade();
+		record.__createdIntoDatabase = false;
+	}
 	@SuppressWarnings("SameParameterValue")
     final void removeUntypedRecordWithCascade(final DatabaseRecord record, final boolean synchronizeIfNecessary,
                                               final Set<DecentralizedValue> hostsDestinations) throws DatabaseException {
@@ -6632,30 +6685,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				@Override
 				public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 
-                    try (PreparedUpdateQuery puq = new PreparedUpdateQuery(
-							_sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(),
-                            "DELETE FROM " + Table.this.getSqlTableName() + " WHERE " + getSqlPrimaryKeyCondition(1))) {
-						int index = 1;
-						for (FieldAccessor fa : primary_keys_fields) {
-							fa.getValue(_record, puq.statement, index);
-							index += fa.getDeclaredSqlFields().length;
-						}
-						int nb = puq.statement.executeUpdate();
-						if (nb == 0)
-							throw new RecordNotFoundDatabaseException("the given record was not into the table "
-									+ Table.this.getClass().getSimpleName() + ". It has been probably already removed.");
-						else if (nb > 1)
-							throw new DatabaseIntegrityException("Unexpected exception");
-						if (hasBackupManager || synchronizeIfNecessary)
-							getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
-									new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE,Table.this, _record, null,
-											hostsDestinations), synchronizeIfNecessary);
-					} catch (Exception e) {
-						throw DatabaseException.getDatabaseException(e);
-					}
-					if (isLoadedInMemory())
-						memoryToRefreshWithCascade();
-					_record.__createdIntoDatabase = false;
+                    removeUntypedRecordWithCascadeImpl(_record, synchronizeIfNecessary, null, true);
 
 					return null;
 				}
@@ -7035,7 +7065,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						T field_instance = getNewRecordInstance(default_constructor_field, true);
 
 						for (FieldAccessor f : fields_accessor) {
-							f.setValue(field_instance, rq.result_set);
+							f.setValue(getSqlTableName(), field_instance, rq.result_set);
 						}
 						if (!_runnable.setInstance(field_instance, rq.result_set)) {
 							break;
@@ -7828,7 +7858,9 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 										+ " given in parameters point to a DatabaseRecord which is not contained into the database.");
 							}
 						}
-						if (fa.isAutoPrimaryKey() && fa.isRandomPrimaryKey()) {
+
+						if ((fa.isAutoPrimaryKey() || fa.isRandomPrimaryKey()) && !fa.equals(_record, e.getValue())) {
+
 							if (check_random==null)
 								check_random=new HashMap<>();
 							check_random.put(fa.getFieldName(), e.getValue());
@@ -7842,7 +7874,6 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 							"The given field " + e.getKey() + " is not contained into the table " + getClass().getSimpleName());
 			}
 			if (check_random!=null) {
-
 				if (hasRecordsWithOneOfFields(check_random, isInSQLTransaction))
 					throw new ConstraintsNotRespectedDatabaseException(
 							"the given record have the same auto/random primary key field of one of the records stored into the database. No record have been added.");
@@ -7855,6 +7886,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			T instance = getNewRecordInstance(true);
 			boolean first = true;
 			for (FieldAccessor fa : fields) {
+
 				if (_fields.containsKey(fa.getFieldName())) {
 					fa.setValue(instance, _fields.get(fa.getFieldName()));
 
@@ -7903,7 +7935,6 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					for (FieldAccessor fa : fields) {
 						if (_fields.containsKey(fa.getFieldName())) {
 							fa.setValue(_record, _fields.get(fa.getFieldName()));
-							break;
 						}
 					}
 				}

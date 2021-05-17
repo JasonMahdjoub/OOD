@@ -174,7 +174,7 @@ public class intFieldAccessor extends FieldAccessor {
 			throws DatabaseException {
 		try {
 
-			field.setInt(_class_instance, _result_set.getInt(getColmunIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0]))));
+			field.setInt(_class_instance, _result_set.getInt(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0]))));
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}

@@ -5301,6 +5301,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 
 				_transaction.initOrReset();
+
 				res = _transaction.run(this);
 				if (savePoint != null)
 					releasePoint(cw.connection.getConnection(), savePointName, savePoint);

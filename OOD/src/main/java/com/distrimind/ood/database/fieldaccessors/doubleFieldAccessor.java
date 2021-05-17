@@ -169,7 +169,7 @@ public class doubleFieldAccessor extends FieldAccessor {
 	public void setValue(String sqlTableName, Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
-			field.setDouble(_class_instance, _result_set.getDouble(getColmunIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0]))));
+			field.setDouble(_class_instance, _result_set.getDouble(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0]))));
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}

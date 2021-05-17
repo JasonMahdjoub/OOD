@@ -177,8 +177,8 @@ public class UUIDFieldAccessor extends FieldAccessor {
 	public void setValue(String sqlTableName, Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
-			Long ts = (Long)_result_set.getObject(getColmunIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
-			Long wsseq = (Long)_result_set.getObject(getColmunIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[1])));
+			Long ts = (Long)_result_set.getObject(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
+			Long wsseq = (Long)_result_set.getObject(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[1])));
 
 			if (ts==null || wsseq==null)
 				field.set(_class_instance, null);

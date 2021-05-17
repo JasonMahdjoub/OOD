@@ -187,7 +187,7 @@ public class ShortNumberFieldAccessor extends FieldAccessor {
 	public void setValue(String sqlTableName, Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
-			Object o=_result_set.getObject(getColmunIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
+			Object o=_result_set.getObject(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
 			Integer val;
 			if (o instanceof Short)
 				val= Integer.valueOf((Short)o );

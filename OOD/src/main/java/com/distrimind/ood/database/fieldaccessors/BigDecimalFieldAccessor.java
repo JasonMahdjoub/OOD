@@ -248,14 +248,14 @@ public class BigDecimalFieldAccessor extends FieldAccessor {
 		try {
 			BigDecimal res;
 			if (useGetBigDecimal)
-				res  = _result_set.getBigDecimal(getColmunIndex(_result_set, getSqlFieldName(table_name, sql_fields[0])));
+				res  = _result_set.getBigDecimal(getColumnIndex(_result_set, getSqlFieldName(sqlTable, sql_fields[0])));
 			else if (useString)
 			{
-				String s = _result_set.getString(getColmunIndex(_result_set, getSqlFieldName(table_name, sql_fields[0])));
+				String s = _result_set.getString(getColumnIndex(_result_set, getSqlFieldName(sqlTable, sql_fields[0])));
 				res = s == null ? null : new BigDecimal(s);
 			}
 			else {
-				byte[] s = _result_set.getBytes(getColmunIndex(_result_set, getSqlFieldName(table_name, sql_fields[0])));
+				byte[] s = _result_set.getBytes(getColumnIndex(_result_set, getSqlFieldName(sqlTable, sql_fields[0])));
 				res = s == null ? null : bigDecimalFromBytes(s);
 			}
 			if (res == null && isNotNull())

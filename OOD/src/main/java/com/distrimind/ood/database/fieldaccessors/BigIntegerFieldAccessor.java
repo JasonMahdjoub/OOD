@@ -219,15 +219,15 @@ public class BigIntegerFieldAccessor extends FieldAccessor {
 			BigInteger res;
 			if (useGetBigDecimal)
 			{
-				res=_result_set.getBigDecimal(getColmunIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0]))).toBigInteger();
+				res=_result_set.getBigDecimal(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0]))).toBigInteger();
 			}
 			else if (useString)
 			{
-				String s = _result_set.getString(getColmunIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
+				String s = _result_set.getString(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
 				res = (s == null) ? null : new BigInteger(s);
 			}
 			else {
-				byte[] s = _result_set.getBytes(getColmunIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
+				byte[] s = _result_set.getBytes(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
 				res = (s == null) ? null : new BigInteger(s);
 			}
 			if (res == null && isNotNull())

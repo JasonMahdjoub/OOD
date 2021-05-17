@@ -153,6 +153,7 @@ public class SqlField {
 	public SqlField(boolean supportQuote, String _field, String _type, String _pointed_table, String pointed_table_alias, String _pointed_field, boolean _not_null) {
 		if ((_pointed_table==null)!=(pointed_table_alias==null) && (_pointed_table==null)!=(_pointed_field==null))
 			throw new NullPointerException();
+
 		field_without_quote = _field.toUpperCase();
 		type = _type.toUpperCase();
 		pointed_table = _pointed_table == null ? null : _pointed_table.toUpperCase();

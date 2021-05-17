@@ -273,15 +273,15 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 		try {
 			byte[] res;
 			if (isVarBinary) {
-				res = _result_set.getBytes(getColmunIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
+				res = _result_set.getBytes(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
 				if (res == null && isNotNull())
 					throw new DatabaseIntegrityException("Unexpected exception.");
 			} else if (isBigInteger) {
-				res = ByteTabFieldAccessor.getByteTab(_result_set.getBigDecimal(getColmunIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0]))));
+				res = ByteTabFieldAccessor.getByteTab(_result_set.getBigDecimal(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0]))));
 				if (res == null && isNotNull())
 					throw new DatabaseIntegrityException("Unexpected exception.");
 			} else {
-				Blob b = _result_set.getBlob(getColmunIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
+				Blob b = _result_set.getBlob(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
 				res = b == null ? null : b.getBytes(1, (int) b.length());
 				if (res == null && isNotNull())
 					throw new DatabaseIntegrityException("Unexpected exception.");
