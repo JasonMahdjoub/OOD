@@ -359,14 +359,14 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 						+ table.getSqlTableName() + "' AND CONSTRAINT_SCHEMA='"+ databaseName +"';"))) {
 			while (rq.result_set.next()) {
 				String pointed_table = rq.result_set.getString("REFERENCED_TABLE_NAME");
-				String pointed_col = pointed_table + "." + rq.result_set.getString("REFERENCED_COLUMN_NAME");
+				String pointed_col = rq.result_set.getString("REFERENCED_COLUMN_NAME");
 				String fk = table.getSqlTableName() + "." + rq.result_set.getString("COLUMN_NAME");
 				if (pointed_table==null)
 					continue;
 				boolean found = false;
 				for (ForeignKeyFieldAccessor fa : table.getForeignKeysFieldAccessors()) {
 					for (SqlField sf : fa.getDeclaredSqlFields()) {
-						if (sf.field_without_quote.equals(fk) && sf.pointed_field_without_quote.equals(pointed_col)
+						if (sf.field_without_quote.equals(fk) && sf.pointed_field_without_quote.equals(sf.pointed_table_alias+"."+pointed_col)
 								&& sf.pointed_table_without_quote.equals(pointed_table)) {
 							found = true;
 							break;
