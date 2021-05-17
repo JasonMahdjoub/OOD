@@ -344,12 +344,12 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 						+ table.getSqlTableName() + "';"))) {
 			while (rq.result_set.next()) {
 				String pointed_table = rq.result_set.getString("PKTABLE_NAME");
-				String pointed_col = pointed_table + "." + rq.result_set.getString("PKCOLUMN_NAME");
+				String pointed_col = rq.result_set.getString("PKCOLUMN_NAME");
 				String fk = table.getSqlTableName() + "." + rq.result_set.getString("FKCOLUMN_NAME");
 				boolean found = false;
 				for (ForeignKeyFieldAccessor fa : table.getForeignKeysFieldAccessors()) {
 					for (SqlField sf : fa.getDeclaredSqlFields()) {
-						if (sf.field.equals(fk) && sf.pointed_field.equals(pointed_col)
+						if (sf.field.equals(fk) && sf.pointed_field.equals(sf.pointed_table_alias+"."+pointed_col)
 								&& sf.pointed_table.equals(pointed_table)) {
 							found = true;
 							break;
@@ -360,7 +360,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 				}
 				if (!found)
 					throw new DatabaseVersionException(table,
-							"There is foreign keys defined into the Sql database which have not been found in the OOD database.");
+							"There is foreign keys defined into the Sql database which have not been found in the OOD database : "+fk+" ; "+pointed_col+" ; "+pointed_table);
 			}
 		} catch (SQLException e) {
 			throw new DatabaseException("Impossible to check constraints of the table " + table.getClass().getSimpleName(), e);

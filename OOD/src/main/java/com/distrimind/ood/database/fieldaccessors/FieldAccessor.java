@@ -830,16 +830,9 @@ public abstract class FieldAccessor {
 			return _result_set.findColumn(fieldName);
 		}
 		else {
-			fieldName=fieldName.toLowerCase();
 			ResultSetMetaData rsmd = _result_set.getMetaData();
 			for (int i = 1; i <= rsmd.getColumnCount(); i++) {
-				//String tableName = rsmd.getTableName(i);
-				String colName = rsmd.getColumnName(i);
-				/*StringBuilder sb = new StringBuilder(tableName.length() + colName.length() + 1);
-				sb.append(tableName);
-				sb.append(".");
-				sb.append(colName);*/
-				if (colName.toLowerCase().equals(fieldName))
+				if (rsmd.getColumnName(i).equalsIgnoreCase(fieldName))
 					return i;
 			}
 			throw new SQLException("colmun " + fieldName + " not found !");
