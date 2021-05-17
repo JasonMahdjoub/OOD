@@ -37,28 +37,22 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database.fieldaccessors;
 
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.Objects;
-
-import com.distrimind.ood.database.DatabaseRecord;
-import com.distrimind.ood.database.DatabaseWrapper;
-import com.distrimind.ood.database.SqlField;
-import com.distrimind.ood.database.SqlFieldInstance;
-import com.distrimind.ood.database.Table;
+import com.distrimind.ood.database.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
 import com.distrimind.util.Bits;
 import com.distrimind.util.io.RandomInputStream;
 import com.distrimind.util.io.RandomOutputStream;
+
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.Map;
 
 /**
  * 
@@ -161,7 +155,7 @@ public class BigDecimalFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	@SuppressWarnings("NumberEquality")
+	/*@SuppressWarnings("NumberEquality")
 	@Override
 	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
 			throws DatabaseException {
@@ -193,7 +187,7 @@ public class BigDecimalFieldAccessor extends FieldAccessor {
 		} catch (SQLException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
-	}
+	}*/
 
 	private static final Class<?>[] compatible_classes = { BigDecimal.class };
 
@@ -212,10 +206,10 @@ public class BigDecimalFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
+	public SqlFieldInstance[] getSqlFieldsInstances(String sqlTableName, Object _instance) throws DatabaseException {
 		SqlFieldInstance[] res = new SqlFieldInstance[1];
 		BigDecimal v=(BigDecimal)getValue(_instance);
-		res[0] = new SqlFieldInstance(supportQuotes, sql_fields[0], v==null?null:useGetBigDecimal?v:useString?v.toString():bigDecimalToBytes(v));
+		res[0] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[0], v==null?null:useGetBigDecimal?v:useString?v.toString():bigDecimalToBytes(v));
 		return res;
 	}
 
@@ -246,20 +240,22 @@ public class BigDecimalFieldAccessor extends FieldAccessor {
 		return true;
 	}
 
+
+
 	@Override
-	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
+	public void setValue(String sqlTable, Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
 			BigDecimal res;
 			if (useGetBigDecimal)
-				res  = _result_set.getBigDecimal(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
+				res  = _result_set.getBigDecimal(getColmunIndex(_result_set, getSqlFieldName(table_name, sql_fields[0])));
 			else if (useString)
 			{
-				String s = _result_set.getString(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
+				String s = _result_set.getString(getColmunIndex(_result_set, getSqlFieldName(table_name, sql_fields[0])));
 				res = s == null ? null : new BigDecimal(s);
 			}
 			else {
-				byte[] s = _result_set.getBytes(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
+				byte[] s = _result_set.getBytes(getColmunIndex(_result_set, getSqlFieldName(table_name, sql_fields[0])));
 				res = s == null ? null : bigDecimalFromBytes(s);
 			}
 			if (res == null && isNotNull())
@@ -299,18 +295,18 @@ public class BigDecimalFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	@Override
-	public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set)
+	/*@Override
+	public void updateValue(String sqlTableName, Object _class_instance, Object _field_instance, ResultSet _result_set)
 			throws DatabaseException {
 		setValue(_class_instance, _field_instance);
 		try {
 			BigDecimal bd = (BigDecimal) field.get(_class_instance);
 			if (useGetBigDecimal)
-				_result_set.updateBigDecimal(sql_fields[0].short_field_without_quote, bd);
+				_result_set.updateBigDecimal(sqlTableName+"."+sql_fields[0].short_field_without_quote, bd);
 			else if (useString)
-				_result_set.updateString(sql_fields[0].short_field_without_quote, bd == null ? null : bd.toString());
+				_result_set.updateString(sqlTableName+"."+sql_fields[0].short_field_without_quote, bd == null ? null : bd.toString());
 			else
-				_result_set.updateBytes(sql_fields[0].short_field_without_quote, bd == null ? null : bigDecimalToBytes(bd));
+				_result_set.updateBytes(sqlTableName+"."+sql_fields[0].short_field_without_quote, bd == null ? null : bigDecimalToBytes(bd));
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -318,20 +314,20 @@ public class BigDecimalFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	protected void updateResultSetValue(Object _class_instance, ResultSet _result_set, SqlFieldTranslation _sft)
+	protected void updateResultSetValue(String sqlTableName, Object _class_instance, ResultSet _result_set, SqlFieldTranslation _sft)
 			throws DatabaseException {
 		try {
 			BigDecimal bd = (BigDecimal) field.get(_class_instance);
 			if (useGetBigDecimal)
-				_result_set.updateBigDecimal(_sft.translateField(sql_fields[0]), bd);
+				_result_set.updateBigDecimal(_sft.translateField(sqlTableName, sql_fields[0]), bd);
 			else if (useString)
-				_result_set.updateString(_sft.translateField(sql_fields[0]), bd == null ? null : bd.toString());
+				_result_set.updateString(_sft.translateField(sqlTableName, sql_fields[0]), bd == null ? null : bd.toString());
 			else
-				_result_set.updateBytes(_sft.translateField(sql_fields[0]), bd == null ? null : bigDecimalToBytes(bd));
+				_result_set.updateBytes(_sft.translateField(sqlTableName, sql_fields[0]), bd == null ? null : bigDecimalToBytes(bd));
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
-	}
+	}*/
 
 	@Override
 	public boolean canBePrimaryOrUniqueKey() {

@@ -336,27 +336,27 @@ public abstract class FieldAccessor {
 
 	public abstract void setValue(Object _class_instance, Object _field_instance) throws DatabaseException;
 
-	public final void setValue(Object _class_instance, ResultSet _result_set) throws DatabaseException {
-		setValue(_class_instance, _result_set, null);
+	public final void setValue(String sqlTableName, Object _class_instance, ResultSet _result_set) throws DatabaseException {
+		setValue(sqlTableName, _class_instance, _result_set, null);
 	}
 
-	public abstract void setValue(Object _class_instance, ResultSet _result_set,
+	public abstract void setValue(String sqlTableName, Object _class_instance, ResultSet _result_set,
 			ArrayList<DatabaseRecord> _pointing_records) throws DatabaseException;
 
-	public abstract void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set)
+	/*public abstract void updateValue(String sqlTableName, Object _class_instance, Object _field_instance, ResultSet _result_set)
 			throws DatabaseException;
 
-	protected abstract void updateResultSetValue(Object _class_instance, ResultSet _result_set,
-			SqlFieldTranslation _sft) throws DatabaseException;
+	protected abstract void updateResultSetValue(String sqlTableName, Object _class_instance, ResultSet _result_set,
+			SqlFieldTranslation _sft) throws DatabaseException;*/
 
 	public abstract boolean equals(Object _class_instance, Object _field_instance) throws DatabaseException;
 
-	protected abstract boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
+	/*protected abstract boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
 			throws DatabaseException;
 
 	public final boolean equals(Object _field_instance, ResultSet _result_set) throws DatabaseException {
 		return equals(_field_instance, _result_set, new SqlFieldTranslation(this));
-	}
+	}*/
 
 	public final Class<?>[] getCompatibleClasses() {
 		return compatible_classes;
@@ -372,7 +372,7 @@ public abstract class FieldAccessor {
 
 	public abstract SqlField[] getDeclaredSqlFields();
 
-	public abstract SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException;
+	public abstract SqlFieldInstance[] getSqlFieldsInstances(String sqlTableName, Object _instance) throws DatabaseException;
 
 	public abstract boolean isAlwaysNotNull();
 
@@ -915,7 +915,7 @@ public abstract class FieldAccessor {
 			st.setObject(index, p);
 	}
 
-	protected static class SqlFieldTranslation {
+	/*protected static class SqlFieldTranslation {
 		private final HashMap<String, String> sql_fields = new HashMap<>();
 		private final FieldAccessor field_accessor;
 
@@ -929,10 +929,11 @@ public abstract class FieldAccessor {
 			}
 		}
 
-		public SqlFieldTranslation(FieldAccessor fa, SqlFieldTranslation _sft) {
+		public SqlFieldTranslation(ForeignKeyFieldAccessor fa, SqlFieldTranslation _sft) {
 			field_accessor = fa;
 			for (SqlField sf : fa.getDeclaredSqlFields()) {
 				SqlField sf_pointing_founded = null;
+				assert sf.pointed_field != null;
 				for (SqlField sf_pointing : _sft.field_accessor.getDeclaredSqlFields()) {
 					if (sf_pointing.pointed_field_without_quote.equals(sf.field_without_quote)) {
 						sf_pointing_founded = sf_pointing;
@@ -940,35 +941,35 @@ public abstract class FieldAccessor {
 					}
 				}
 				String t;
+
 				if (sf_pointing_founded == null || (t = _sft.translateField(sf_pointing_founded)) == null) {
-					if (sf.pointed_field != null)
-						sql_fields.put(sf.pointed_field_without_quote, sf.short_field_without_quote);
-					else
-						sql_fields.put(sf.field_without_quote, sf.short_field_without_quote);
+					sql_fields.put(sf.pointed_field_without_quote, sf.short_field_without_quote);
 				} else {
-					if (sf.pointed_field != null)
-						sql_fields.put(sf.pointed_field_without_quote, t);
-					else
-						sql_fields.put(sf.field_without_quote, t);
+					sql_fields.put(sf.pointed_field_without_quote, t);
 				}
 			}
 		}
 
-		public SqlFieldTranslation(FieldAccessor fa) {
+		public SqlFieldTranslation(FieldAccessor fa, String sqlTable) {
 			field_accessor = fa;
 			for (SqlField sf : fa.getDeclaredSqlFields()) {
 				if (sf.pointed_field != null)
 					sql_fields.put(sf.pointed_field_without_quote, sf.short_field_without_quote);
 				else
-					sql_fields.put(sf.field_without_quote, sf.short_field_without_quote);
+					sql_fields.put(sqlTable+"."+sf.short_field_without_quote, sf.short_field_without_quote);
 			}
 
 		}
 
-		public String translateField(SqlField sf) {
-			return sql_fields.get(sf.field_without_quote);
+		public String translateField(String sqlTable, SqlField sf) {
+			return sql_fields.get(sqlTable+"."+sf.short_field_without_quote);
 		}
 
+	}*/
+
+	final String getSqlFieldName(String sqlTableName, SqlField sqlField)
+	{
+		return sqlTableName+"."+sqlField.short_field_without_quote;
 	}
 
 	protected static final class FieldAccessPrivilegedAction implements PrivilegedExceptionAction<ArrayList<Field>> {

@@ -101,10 +101,7 @@ public abstract class AlterRecordFilter<T> {
 	 * aims to alter the current record.
 	 * 
 	 * @param fields
-	 *            a map containing the fields to alter with the given record. Note
-	 *            that primary keys, and unique keys cannot be altered with this
-	 *            filter. To do that, please use the function
-	 *            {@link com.distrimind.ood.database.Table#updateRecord(DatabaseRecord, Map)}.
+	 *            a map containing the fields to alter with the given record.
 	 */
 	public final void update(Map<String, Object> fields) {
 		if (modifications!=null)

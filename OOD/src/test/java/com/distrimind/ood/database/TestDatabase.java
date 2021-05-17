@@ -3161,7 +3161,7 @@ public abstract class TestDatabase {
 
 	}
 
-	private ArrayList<Object> getExpectedParameter(Class<?> type, Object o) throws IOException, DatabaseException {
+	private ArrayList<Object> getExpectedParameter(Class<?> type, Object o) throws IOException {
 		ArrayList<Object> res = new ArrayList<>();
 		
 		if (o==null && type==DecentralizedIDGenerator.class)
@@ -3397,9 +3397,9 @@ public abstract class TestDatabase {
 			else if (op_comp == SymbolType.LIKE)
 				test = fa.equals(nearestObjectInstance, value);
 			else if (op_comp == SymbolType.IS)
-				test = fa.equals(nearestObjectInstance, (Object)null);
+				test = fa.equals(nearestObjectInstance, null);
 			else if (op_comp == SymbolType.ISNOT)
-				test = !fa.equals(nearestObjectInstance, (Object)null);
+				test = !fa.equals(nearestObjectInstance, null);
 			else if (op_comp == SymbolType.NOTLIKE)
 				test = !fa.equals(nearestObjectInstance, value);
 			else {
@@ -3466,9 +3466,9 @@ public abstract class TestDatabase {
 			else if (op_comp == SymbolType.NOTLIKE)
 				test = !fa.getValue(nearestObjectInstance).toString().equals(value.toString());
 			else {
-				Comparable v = (Comparable)fa.getValue(nearestObjectInstance);
+				@SuppressWarnings("rawtypes") Comparable v = (Comparable)fa.getValue(nearestObjectInstance);
 
-				int comp = v.compareTo(value);
+				@SuppressWarnings("unchecked") int comp = v.compareTo(value);
 				if (op_comp == SymbolType.GREATEROPERATOR)
 					test = comp > 0;
 				else if (op_comp == SymbolType.GREATEROREQUALOPERATOR)
@@ -3481,7 +3481,7 @@ public abstract class TestDatabase {
 
 			if (value instanceof CharSequence)
 				command.append("\"");
-			command.append(value.toString());
+			command.append(value);
 			if (value instanceof CharSequence)
 				command.append("\"");
 			expectedCommand.append("%Table1Name%");
@@ -3491,7 +3491,7 @@ public abstract class TestDatabase {
 			expectedCommand.append(op_comp.getContent());
 			if (value instanceof CharSequence)
 				expectedCommand.append("\"");
-			expectedCommand.append(value.toString());
+			expectedCommand.append(value);
 			if (value instanceof CharSequence)
 				expectedCommand.append("\"");
 		}

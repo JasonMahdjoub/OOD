@@ -37,25 +37,20 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database.fieldaccessors;
 
-import java.lang.reflect.Field;
-import java.math.BigInteger;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.Objects;
-
-import com.distrimind.ood.database.DatabaseRecord;
-import com.distrimind.ood.database.DatabaseWrapper;
-import com.distrimind.ood.database.SqlField;
-import com.distrimind.ood.database.SqlFieldInstance;
-import com.distrimind.ood.database.Table;
+import com.distrimind.ood.database.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.io.RandomInputStream;
 import com.distrimind.util.io.RandomOutputStream;
+
+import java.lang.reflect.Field;
+import java.math.BigInteger;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * 
@@ -86,12 +81,11 @@ public class ShortNumberFieldAccessor extends FieldAccessor {
 		try {
 			if (_field_instance == null)
 				field.set(_class_instance, null);
-			if (_field_instance instanceof Short)
+			else if (_field_instance instanceof Short)
 				field.set(_class_instance, _field_instance);
 			else if (_field_instance instanceof Long)
 				field.set(_class_instance, ((Long) _field_instance).shortValue());
 			else {
-				assert _field_instance != null;
 				throw new FieldDatabaseException("The given _field_instance parameter, destined to the field "
 						+ field.getName() + " of the class " + field.getDeclaringClass().getName()
 						+ ", should be a Short and not a " + _field_instance.getClass().getName());
@@ -120,7 +114,7 @@ public class ShortNumberFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	@Override
+	/*@Override
 	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
 			throws DatabaseException {
 		try {
@@ -134,7 +128,7 @@ public class ShortNumberFieldAccessor extends FieldAccessor {
 		} catch (SQLException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
-	}
+	}*/
 
 	private static final Class<?>[] compatible_classes = { short.class, Short.class };
 
@@ -153,9 +147,9 @@ public class ShortNumberFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
+	public SqlFieldInstance[] getSqlFieldsInstances(String sqlTableName, Object _instance) throws DatabaseException {
 		SqlFieldInstance[] res = new SqlFieldInstance[1];
-		res[0] = new SqlFieldInstance(supportQuotes, sql_fields[0], getValue(_instance));
+		res[0] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[0], getValue(_instance));
 		return res;
 	}
 
@@ -190,10 +184,10 @@ public class ShortNumberFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
+	public void setValue(String sqlTableName, Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
-			Object o=_result_set.getObject(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
+			Object o=_result_set.getObject(getColmunIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
 			Integer val;
 			if (o instanceof Short)
 				val= Integer.valueOf((Short)o );
@@ -226,7 +220,7 @@ public class ShortNumberFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	@Override
+	/*@Override
 	public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set)
 			throws DatabaseException {
 		setValue(_class_instance, _field_instance);
@@ -246,7 +240,7 @@ public class ShortNumberFieldAccessor extends FieldAccessor {
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
-	}
+	}*/
 
 	@Override
 	public boolean canBePrimaryOrUniqueKey() {
@@ -320,7 +314,7 @@ public class ShortNumberFieldAccessor extends FieldAccessor {
 			} else if (isNotNull())
 				throw new DatabaseException("field should not be null");
 			else {
-				setValue(_classInstance, (Object) null);
+				setValue(_classInstance, null);
 				return null;
 			}
 		} catch (Exception e) {

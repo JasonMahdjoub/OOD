@@ -74,6 +74,7 @@ public class SqlFieldInstance extends SqlField {
 		instance = _instance;
 	}
 
+
 	/**
 	 * Constructor
 	 * 
@@ -88,4 +89,35 @@ public class SqlFieldInstance extends SqlField {
 		instance = _instance;
 	}
 
+	/**
+	 * Constructor
+	 *
+	 * @param _sql_field
+	 *            The description of the SqlJet field.
+	 * @param _fieldNameWithoutQuote
+	 * 			  the name of the SqlJet field.
+	 * @param _instance
+	 *            The field instance.
+	 */
+	public SqlFieldInstance(boolean supportQuote, SqlField _sql_field, String _fieldNameWithoutQuote, Object _instance) {
+		super(supportQuote, _fieldNameWithoutQuote, _sql_field.type, _sql_field.pointed_table, _sql_field.pointed_table_alias, _sql_field.pointed_field,
+				_sql_field.not_null);
+		instance = _instance;
+	}
+
+	/**
+	 * Constructor
+	 *
+	 * @param _sqlTableName
+	 * 			  the sql table name
+	 * @param _sql_field
+	 *            The description of the SqlJet field.
+	 * @param _instance
+	 *            The field instance.
+	 */
+	public SqlFieldInstance(boolean supportQuote, String _sqlTableName, SqlField _sql_field, Object _instance) {
+		super(supportQuote, supportQuote?_sqlTableName+".`"+_sql_field.short_field+"`":_sqlTableName+"."+_sql_field.short_field, _sql_field.type, _sql_field.pointed_table, _sql_field.pointed_table_alias, _sql_field.pointed_field,
+				_sql_field.not_null);
+		instance = _instance;
+	}
 }

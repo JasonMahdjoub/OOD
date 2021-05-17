@@ -560,7 +560,7 @@ class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	}
 
 	@Override
-	protected boolean supportsItalicQuotesWithTableAndFieldNames() {
+	public boolean supportsItalicQuotesWithTableAndFieldNames() {
 		return false;
 	}
 

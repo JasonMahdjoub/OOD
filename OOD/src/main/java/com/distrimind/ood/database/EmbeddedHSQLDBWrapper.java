@@ -771,7 +771,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 	}
 
 	@Override
-	protected boolean supportsItalicQuotesWithTableAndFieldNames() {
+	public boolean supportsItalicQuotesWithTableAndFieldNames() {
 		return false;
 	}
 

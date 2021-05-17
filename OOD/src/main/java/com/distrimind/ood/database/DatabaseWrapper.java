@@ -6333,7 +6333,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	protected abstract boolean supportForeignKeys();
 
-	protected boolean supportsItalicQuotesWithTableAndFieldNames()
+	public boolean supportsItalicQuotesWithTableAndFieldNames()
 	{
 		return true;
 	}

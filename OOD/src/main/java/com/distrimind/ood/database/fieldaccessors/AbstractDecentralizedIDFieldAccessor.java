@@ -35,34 +35,25 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database.fieldaccessors;
 
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.Objects;
-
-import com.distrimind.ood.database.DatabaseRecord;
-import com.distrimind.ood.database.DatabaseWrapper;
-import com.distrimind.ood.database.SqlField;
-import com.distrimind.ood.database.SqlFieldInstance;
-import com.distrimind.ood.database.Table;
+import com.distrimind.ood.database.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
-import com.distrimind.util.AbstractDecentralizedID;
-import com.distrimind.util.AbstractDecentralizedIDGenerator;
-import com.distrimind.util.DecentralizedIDGenerator;
-import com.distrimind.util.RenforcedDecentralizedIDGenerator;
-import com.distrimind.util.SecuredDecentralizedID;
+import com.distrimind.util.*;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.SecureRandomType;
 import com.distrimind.util.data_buffers.WrappedData;
 import com.distrimind.util.data_buffers.WrappedSecretData;
 import com.distrimind.util.io.RandomInputStream;
 import com.distrimind.util.io.RandomOutputStream;
+
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.Objects;
 
 
 /**
@@ -166,7 +157,7 @@ public class AbstractDecentralizedIDFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	@Override
+	/*@Override
 	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
 			throws DatabaseException {
 		WrappedData wd=null;
@@ -206,7 +197,7 @@ public class AbstractDecentralizedIDFieldAccessor extends FieldAccessor {
 			if (wd instanceof WrappedSecretData)
 				((WrappedSecretData) wd).zeroize();
 		}
-	}
+	}*/
 
 	@Override
 	public Object getValue(Object _class_instance) throws DatabaseException {
@@ -223,9 +214,9 @@ public class AbstractDecentralizedIDFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
+	public SqlFieldInstance[] getSqlFieldsInstances(String sqlTableName, Object _instance) throws DatabaseException {
 		SqlFieldInstance[] res = new SqlFieldInstance[1];
-		res[0] = new SqlFieldInstance(supportQuotes, sql_fields[0], getSQLObject(((AbstractDecentralizedID) getValue(_instance)).encode()));
+		res[0] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[0], getSQLObject(((AbstractDecentralizedID) getValue(_instance)).encode()));
 		return res;
 	}
 
@@ -245,14 +236,14 @@ public class AbstractDecentralizedIDFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
+	public void setValue(String sqlTableName, Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
 			byte[] res;
 			if (isVarBinary) {
-				res = _result_set.getBytes(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
+				res = _result_set.getBytes(getColmunIndex(_result_set, getSqlFieldName(table_name, sql_fields[0])));
 			} else {
-				res = getBytes(_result_set.getBigDecimal(getColmunIndex(_result_set, sql_fields[0].field_without_quote)));
+				res = getBytes(_result_set.getBigDecimal(getColmunIndex(_result_set, getSqlFieldName(table_name, sql_fields[0]))));
 			}
 			if (res == null && isNotNull())
 				throw new DatabaseIntegrityException("Unexpected exception. Null value was found into a not null field "
@@ -292,7 +283,7 @@ public class AbstractDecentralizedIDFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	@Override
+	/*@Override
 	public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set)
 			throws DatabaseException {
 		setValue(_class_instance, _field_instance);
@@ -331,7 +322,7 @@ public class AbstractDecentralizedIDFieldAccessor extends FieldAccessor {
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
-	}
+	}*/
 
 	@Override
 	public boolean canBePrimaryOrUniqueKey() {

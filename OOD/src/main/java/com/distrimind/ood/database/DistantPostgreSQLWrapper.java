@@ -722,7 +722,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 	}
 
 	@Override
-	protected boolean supportsItalicQuotesWithTableAndFieldNames()
+	public boolean supportsItalicQuotesWithTableAndFieldNames()
 	{
 		return false;
 	}
