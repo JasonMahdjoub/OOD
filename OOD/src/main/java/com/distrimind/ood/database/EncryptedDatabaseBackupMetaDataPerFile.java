@@ -54,7 +54,7 @@ public class EncryptedDatabaseBackupMetaDataPerFile implements SecureExternaliza
 	private byte[] associatedData;
 	public static final int MAX_ENCRYPTED_DATA_LENGTH_IN_BYTES= DatabaseBackupMetaDataPerFile.MAXIMUM_INTERNAL_DATA_SIZE_IN_BYTES+128+ SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE+HybridASymmetricAuthenticatedSignatureType.MAX_HYBRID_ASYMMETRIC_SIGNATURE_SIZE+MessageDigestType.MAX_HASH_LENGTH;//(int)EncryptionSignatureHashEncoder.getMaximumOutputLengthWhateverParameters(DatabaseBackupMetaDataPerFile.MAXIMUM_INTERNAL_DATA_SIZE_IN_BYTES);
 	private static final int PRIMITIVE_INTERNAL_SIZE_IN_BYTES=17;
-	public static final int MAX_ENCRYPTED_DATABASE_BACKUP_META_DATA_SIZE_IN_BYTES=SerializationTools.MAX_CLASS_LENGTH+MAX_ENCRYPTED_DATA_LENGTH_IN_BYTES+PRIMITIVE_INTERNAL_SIZE_IN_BYTES;
+	public static final int MAX_ENCRYPTED_DATABASE_BACKUP_META_DATA_SIZE_IN_BYTES=Table.MAX_DATABASE_PACKAGE_NAME_LENGTH +MAX_ENCRYPTED_DATA_LENGTH_IN_BYTES+PRIMITIVE_INTERNAL_SIZE_IN_BYTES;
 	@SuppressWarnings("unused")
 	private EncryptedDatabaseBackupMetaDataPerFile()
 	{
@@ -109,7 +109,7 @@ public class EncryptedDatabaseBackupMetaDataPerFile implements SecureExternaliza
 			RandomByteArrayOutputStream out=new RandomByteArrayOutputStream();
 			out.writeLong(this.fileTimestampUTC);
 			out.writeLong(this.lastTransactionTimestampUTC);
-			out.writeString(this.packageString, false, SerializationTools.MAX_CLASS_LENGTH);
+			out.writeString(this.packageString, false, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
 			out.flush();
 			associatedData=out.getBytes();
 		}
@@ -163,7 +163,7 @@ public class EncryptedDatabaseBackupMetaDataPerFile implements SecureExternaliza
 
 	@Override
 	public int getInternalSerializedSize() {
-		return PRIMITIVE_INTERNAL_SIZE_IN_BYTES+SerializationTools.getInternalSize(encryptedMetaData, MAX_ENCRYPTED_DATA_LENGTH_IN_BYTES)+SerializationTools.getInternalSize(packageString, SerializationTools.MAX_CLASS_LENGTH);
+		return PRIMITIVE_INTERNAL_SIZE_IN_BYTES+SerializationTools.getInternalSize(encryptedMetaData, MAX_ENCRYPTED_DATA_LENGTH_IN_BYTES)+SerializationTools.getInternalSize(packageString, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
 	}
 
 	@Override
@@ -171,7 +171,7 @@ public class EncryptedDatabaseBackupMetaDataPerFile implements SecureExternaliza
 		out.writeLong(fileTimestampUTC);
 		out.writeLong(lastTransactionTimestampUTC);
 		out.writeBoolean(referenceFile);
-		out.writeString(packageString, false, SerializationTools.MAX_CLASS_LENGTH);
+		out.writeString(packageString, false, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
 		out.writeBytesArray(encryptedMetaData, false, MAX_ENCRYPTED_DATA_LENGTH_IN_BYTES);
 	}
 
@@ -183,7 +183,7 @@ public class EncryptedDatabaseBackupMetaDataPerFile implements SecureExternaliza
 		if (fileTimestampUTC>lastTransactionTimestampUTC)
 			throw new MessageExternalizationException(Integrity.FAIL);
 		referenceFile=in.readBoolean();
-		packageString=in.readString(false, SerializationTools.MAX_CLASS_LENGTH);
+		packageString=in.readString(false, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
 		if (packageString.trim().length()==0)
 			throw new MessageExternalizationException(Integrity.FAIL);
 		encryptedMetaData=in.readBytesArray(false, MAX_ENCRYPTED_DATA_LENGTH_IN_BYTES);

@@ -1,5 +1,6 @@
 package com.distrimind.ood.database.messages;
 
+import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupCertificate;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.*;
@@ -41,19 +42,19 @@ public class DatabaseBackupToRemoveDestinedToCentralDatabaseBackup extends Authe
 
 	@Override
 	public int getInternalSerializedSizeWithoutSignatures() {
-		return SerializationTools.getInternalSize(packageString, SerializationTools.MAX_CLASS_LENGTH)+super.getInternalSerializedSizeWithoutSignatures();
+		return SerializationTools.getInternalSize(packageString, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH)+super.getInternalSerializedSizeWithoutSignatures();
 	}
 
 	@Override
 	public void writeExternalWithoutSignatures(SecuredObjectOutputStream out) throws IOException {
 		super.writeExternalWithoutSignatures(out);
-		out.writeString(packageString, false, SerializationTools.MAX_CLASS_LENGTH);
+		out.writeString(packageString, false, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
 	}
 
 	@Override
 	public void readExternalWithoutSignatures(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
 		super.readExternalWithoutSignatures(in);
-		packageString =in.readString(false, SerializationTools.MAX_CLASS_LENGTH);
+		packageString =in.readString(false, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
 		if (packageString.trim().length()==0)
 			throw new MessageExternalizationException(Integrity.FAIL);
 	}

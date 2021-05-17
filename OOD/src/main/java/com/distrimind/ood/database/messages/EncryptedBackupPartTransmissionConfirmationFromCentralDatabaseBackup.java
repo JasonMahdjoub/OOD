@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database.messages;
 
 import com.distrimind.ood.database.DatabaseEvent;
+import com.distrimind.ood.database.Table;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.*;
 
@@ -89,7 +90,7 @@ public class EncryptedBackupPartTransmissionConfirmationFromCentralDatabaseBacku
 
 	@Override
 	public int getInternalSerializedSize() {
-		return 16+ SerializationTools.getInternalSize((SecureExternalizable)hostDestination)+SerializationTools.getInternalSize(packageString, SerializationTools.MAX_CLASS_LENGTH);
+		return 16+ SerializationTools.getInternalSize((SecureExternalizable)hostDestination)+SerializationTools.getInternalSize(packageString, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
 	}
 
 	@Override
@@ -97,7 +98,7 @@ public class EncryptedBackupPartTransmissionConfirmationFromCentralDatabaseBacku
 		out.writeObject(hostDestination, false);
 		out.writeLong(fileUTC);
 		out.writeLong(lastTransactionUTC);
-		out.writeString(packageString, false, SerializationTools.MAX_CLASS_LENGTH);
+		out.writeString(packageString, false, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
 	}
 
 	@Override
@@ -105,7 +106,7 @@ public class EncryptedBackupPartTransmissionConfirmationFromCentralDatabaseBacku
 		hostDestination=in.readObject(false, DecentralizedValue.class);
 		fileUTC=in.readLong();
 		lastTransactionUTC=in.readLong();
-		packageString=in.readString(false, SerializationTools.MAX_CLASS_LENGTH);
+		packageString=in.readString(false, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
 		if (packageString.trim().length()==0)
 			throw new MessageExternalizationException(Integrity.FAIL);
 	}

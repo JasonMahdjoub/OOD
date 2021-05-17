@@ -39,7 +39,6 @@ import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.annotations.NotNull;
 import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.util.io.SerializationTools;
 
 /**
  * @author Jason Mahdjoub
@@ -55,7 +54,7 @@ final class DatabaseTable extends Table<DatabaseTable.Record> {
 	public static class Record extends DatabaseRecord
 	{
 
-		@Field(limit = SerializationTools.MAX_CLASS_LENGTH)
+		@Field(limit = Table.MAX_DATABASE_PACKAGE_NAME_LENGTH)
 		@PrimaryKey
 		@NotNull
 		private String databasePackageName;

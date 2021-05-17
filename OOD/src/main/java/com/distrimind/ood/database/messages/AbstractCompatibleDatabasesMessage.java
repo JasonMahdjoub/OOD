@@ -37,6 +37,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 import com.distrimind.ood.database.DatabaseEvent;
 import com.distrimind.ood.database.DatabaseWrapper;
+import com.distrimind.ood.database.Table;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.*;
 
@@ -52,7 +53,7 @@ import java.util.Set;
 public abstract class AbstractCompatibleDatabasesMessage extends DatabaseEvent implements SecureExternalizable {
 
 	private static final int MAX_PACKAGES_NUMBERS= DatabaseWrapper.MAX_PACKAGE_TO_SYNCHRONIZE;
-	public static final int MAX_SIZE_OF_PACKAGES_NAMES_IN_BYTES=MAX_PACKAGES_NUMBERS*SerializationTools.MAX_CLASS_LENGTH*2+4;
+	public static final int MAX_SIZE_OF_PACKAGES_NAMES_IN_BYTES=MAX_PACKAGES_NUMBERS*Table.MAX_DATABASE_PACKAGE_NAME_LENGTH *2+4;
 
 
 	private Set<String> incompatibleDatabasesWithDestinationPeer;
@@ -90,7 +91,7 @@ public abstract class AbstractCompatibleDatabasesMessage extends DatabaseEvent i
 	public int getInternalSerializedSize() {
 		int res=compatibleDatabasesWithDestinationPeer.size()+2;
 		for (String s : compatibleDatabasesWithDestinationPeer)
-			res+=SerializationTools.getInternalSize(s, SerializationTools.MAX_CLASS_LENGTH);
+			res+=SerializationTools.getInternalSize(s, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
 		return res+
 			+SerializationTools.getInternalSize(incompatibleDatabasesWithDestinationPeer, MAX_SIZE_OF_PACKAGES_NAMES_IN_BYTES)
 				+ SerializationTools.getInternalSize(hostSource);
@@ -107,7 +108,7 @@ public abstract class AbstractCompatibleDatabasesMessage extends DatabaseEvent i
 		out.writeUnsignedInt16Bits(compatibleDatabasesWithDestinationPeer.size());
 		for (String s : compatibleDatabasesWithDestinationPeer)
 		{
-			out.writeString(s, false, SerializationTools.MAX_CLASS_LENGTH);
+			out.writeString(s, false, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
 			out.writeBoolean(databasesThatUseBackupRestoreManager.contains(s));
 		}
 		out.writeCollection(incompatibleDatabasesWithDestinationPeer, false, MAX_SIZE_OF_PACKAGES_NAMES_IN_BYTES, false);
@@ -123,7 +124,7 @@ public abstract class AbstractCompatibleDatabasesMessage extends DatabaseEvent i
 		databasesThatUseBackupRestoreManager=new HashSet<>();
 		for (int i=0;i<nb;i++)
 		{
-			String s=in.readString(false, SerializationTools.MAX_CLASS_LENGTH);
+			String s=in.readString(false, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
 			compatibleDatabasesWithDestinationPeer.add(s);
 			if (in.readBoolean())
 				databasesThatUseBackupRestoreManager.add(s);

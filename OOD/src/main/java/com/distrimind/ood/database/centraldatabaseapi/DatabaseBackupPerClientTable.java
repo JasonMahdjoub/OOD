@@ -43,7 +43,6 @@ import com.distrimind.ood.database.annotations.ForeignKey;
 import com.distrimind.ood.database.annotations.NotNull;
 import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.SerializationTools;
 
 /**
@@ -64,7 +63,7 @@ public final class DatabaseBackupPerClientTable extends Table<DatabaseBackupPerC
 
 		@PrimaryKey
 		@NotNull
-		@Field(limit= SerializationTools.MAX_CLASS_LENGTH)
+		@Field(limit= Table.MAX_DATABASE_PACKAGE_NAME_LENGTH)
 		private String packageString;
 
 		@Field(index = true)
@@ -87,7 +86,7 @@ public final class DatabaseBackupPerClientTable extends Table<DatabaseBackupPerC
 				throw new NullPointerException();
 			if (packageString==null)
 				throw new NullPointerException();
-			if (packageString.length()>SerializationTools.MAX_CLASS_LENGTH)
+			if (packageString.length()>Table.MAX_DATABASE_PACKAGE_NAME_LENGTH)
 				throw new IllegalArgumentException();
 			if (lastValidatedAndEncryptedID==null)
 				throw new NullPointerException();
