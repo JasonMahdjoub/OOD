@@ -67,10 +67,10 @@ public final class DatabaseBackupPerClientTable extends Table<DatabaseBackupPerC
 		@Field(limit= SerializationTools.MAX_CLASS_LENGTH)
 		private String packageString;
 
-		@Field
+		@Field(index = true)
 		long lastFileBackupPartUTC;
 
-		@Field
+		@Field(index = true)
 		Long removeTimeUTC;
 
 		@Field(limit= EncryptionTools.MAX_ENCRYPTED_ID_SIZE)
