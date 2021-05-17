@@ -229,7 +229,7 @@ class EmbeddedDerbyWrapper extends DatabaseWrapper {
 						boolean found = false;
 						for (FieldAccessor fa : table.getFieldAccessors()) {
 							for (SqlField sf : fa.getDeclaredSqlFields()) {
-								if (sf.short_field_without_quote.equals(colName)) {
+								if (sf.shortFieldWithoutQuote.equals(colName)) {
 									if (fa.isUnique() == rq2.result_set.getBoolean("NON_UNIQUE")
 											&& fa.isPrimaryKey() == rq2.result_set.getBoolean("NON_UNIQUE")) {
 										throw new DatabaseVersionException(table, "The field " + colName
@@ -268,8 +268,8 @@ class EmbeddedDerbyWrapper extends DatabaseWrapper {
 
 							for (SqlField sf : fa.getDeclaredSqlFields()) {
 
-								if (sf.short_field_without_quote.equals(fk) && sf.pointed_field.equals(pointed_col)
-										&& sf.pointed_table.equals(pointed_table)) {
+								if (sf.shortFieldWithoutQuote.equals(fk) && sf.pointedField.equals(pointed_col)
+										&& sf.pointedTable.equals(pointed_table)) {
 
 									found = true;
 									break;
@@ -294,7 +294,7 @@ class EmbeddedDerbyWrapper extends DatabaseWrapper {
 			for (FieldAccessor fa : table.getFieldAccessors()) {
 				for (SqlField sf : fa.getDeclaredSqlFields()) {
 
-					try (ColumnsReadQuery rq = getColumnMetaData(table.getSqlTableName(), sf.short_field_without_quote)) {
+					try (ColumnsReadQuery rq = getColumnMetaData(table.getSqlTableName(), sf.shortFieldWithoutQuote)) {
 						if (rq.result_set.next()) {
 							String type = rq.tableColumnsResultSet.getTypeName().toUpperCase();
 							if (!sf.type.toUpperCase().startsWith(type))
@@ -308,7 +308,7 @@ class EmbeddedDerbyWrapper extends DatabaseWrapper {
 											+ " has a size equals to " + col_size + " (expected " + sf.type + ")");
 							}
 							boolean is_null = rq.tableColumnsResultSet.isNullable();
-							if (is_null == sf.not_null)
+							if (is_null == sf.notNull)
 								throw new DatabaseVersionException(table, "The field " + fa.getFieldName()
 										+ " is expected to be " + (fa.isNotNull() ? "not null" : "nullable"));
 							boolean is_autoincrement = rq.tableColumnsResultSet.isAutoIncrement();
@@ -317,7 +317,7 @@ class EmbeddedDerbyWrapper extends DatabaseWrapper {
 										"The field " + fa.getFieldName() + " is " + (is_autoincrement ? "" : "not ")
 												+ "autoincremented into the Sql database where it is "
 												+ (is_autoincrement ? "not " : "") + " into the OOD database.");
-							sf.sql_position = rq.tableColumnsResultSet.getOrdinalPosition();
+							sf.sqlPosition = rq.tableColumnsResultSet.getOrdinalPosition();
 						} else
 							throw new DatabaseVersionException(table,
 									"The field " + fa.getFieldName() + " was not found into the database.");
@@ -327,7 +327,7 @@ class EmbeddedDerbyWrapper extends DatabaseWrapper {
 								sql_connection.getMetaData().getPrimaryKeys(null, null, table.getSqlTableName()))) {
 							boolean found = false;
 							while (rq.result_set.next()) {
-								if (rq.result_set.getString("COLUMN_NAME").equals(sf.short_field_without_quote)
+								if (rq.result_set.getString("COLUMN_NAME").equals(sf.shortFieldWithoutQuote)
 										&& rq.result_set.getString("PK_NAME").equals(table.getSqlPrimaryKeyName()))
 									found = true;
 							}
@@ -344,7 +344,7 @@ class EmbeddedDerbyWrapper extends DatabaseWrapper {
 								while (rq.result_set.next()) {
 									String fk_table_name = rq.result_set.getString("FKTABLE_NAME");
 									if (fk_table_name.equals(table.getSqlTableName())) {
-										if (rq.result_set.getString("FKCOLUMN_NAME").equals(sf.short_field_without_quote))
+										if (rq.result_set.getString("FKCOLUMN_NAME").equals(sf.shortFieldWithoutQuote))
 											found = true;
 									}
 									if (found)
@@ -358,7 +358,7 @@ class EmbeddedDerbyWrapper extends DatabaseWrapper {
 							throw new DatabaseVersionException(table,
 									"The field " + fa.getFieldName() + " is a foreign key one of its Sql fields "
 											+ sf.field + " is not a foreign key pointing to the table "
-											+ sf.pointed_table);
+											+ sf.pointedTable);
 
 					}
 					//TODO check unique columns

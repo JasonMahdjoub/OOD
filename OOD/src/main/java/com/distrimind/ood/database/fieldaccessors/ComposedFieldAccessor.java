@@ -95,7 +95,7 @@ public class ComposedFieldAccessor extends FieldAccessor {
 			return true;
 
 		for (SqlField sf : getDeclaredSqlFields())
-			if (sf.not_null)
+			if (sf.notNull)
 				return true;
 		return false;
 	}

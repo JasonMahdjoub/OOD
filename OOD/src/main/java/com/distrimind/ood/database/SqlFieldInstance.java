@@ -84,8 +84,8 @@ public class SqlFieldInstance extends SqlField {
 	 *            The field instance.
 	 */
 	public SqlFieldInstance(boolean supportQuote, SqlField _sql_field, Object _instance) {
-		super(supportQuote, _sql_field.field_without_quote, _sql_field.type, _sql_field.pointed_table, _sql_field.pointed_table_alias, _sql_field.pointed_field,
-				_sql_field.not_null, _sql_field.sql_field_alias_name);
+		super(supportQuote, _sql_field.fieldWithoutQuote, _sql_field.type, _sql_field.pointedTable, _sql_field.pointedTableAlias, _sql_field.pointedField,
+				_sql_field.notNull, _sql_field.sqlFieldAliasName);
 		instance = _instance;
 	}
 
@@ -100,8 +100,8 @@ public class SqlFieldInstance extends SqlField {
 	 *            The field instance.
 	 */
 	public SqlFieldInstance(boolean supportQuote, SqlField _sql_field, String _fieldNameWithoutQuote, Object _instance) {
-		super(supportQuote, _fieldNameWithoutQuote, _sql_field.type, _sql_field.pointed_table, _sql_field.pointed_table_alias, _sql_field.pointed_field,
-				_sql_field.not_null, _sql_field.sql_field_alias_name);
+		super(supportQuote, _fieldNameWithoutQuote, _sql_field.type, _sql_field.pointedTable, _sql_field.pointedTableAlias, _sql_field.pointedField,
+				_sql_field.notNull, _sql_field.sqlFieldAliasName);
 		instance = _instance;
 	}
 
@@ -116,8 +116,8 @@ public class SqlFieldInstance extends SqlField {
 	 *            The field instance.
 	 */
 	public SqlFieldInstance(boolean supportQuote, String _sqlTableName, SqlField _sql_field, Object _instance) {
-		super(supportQuote, _sqlTableName+"."+_sql_field.short_field_without_quote, _sql_field.type, _sql_field.pointed_table, _sql_field.pointed_table_alias, _sql_field.pointed_field,
-				_sql_field.not_null, _sql_field.sql_field_alias_name);
+		super(supportQuote, _sqlTableName+"."+_sql_field.shortFieldWithoutQuote, _sql_field.type, _sql_field.pointedTable, _sql_field.pointedTableAlias, _sql_field.pointedField,
+				_sql_field.notNull, _sql_field.sqlFieldAliasName);
 		instance = _instance;
 	}
 }

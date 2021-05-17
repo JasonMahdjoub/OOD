@@ -349,8 +349,8 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 				boolean found = false;
 				for (ForeignKeyFieldAccessor fa : table.getForeignKeysFieldAccessors()) {
 					for (SqlField sf : fa.getDeclaredSqlFields()) {
-						if (sf.field.equals(fk) && sf.pointed_field.equals(sf.pointed_table_alias+"."+pointed_col)
-								&& sf.pointed_table.equals(pointed_table)) {
+						if (sf.field.equals(fk) && sf.pointedField.equals(sf.pointedTableAlias +"."+pointed_col)
+								&& sf.pointedTable.equals(pointed_table)) {
 							found = true;
 							break;
 						}
@@ -374,7 +374,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 
 					try (ReadQuery rq = new ReadQuery(sql_connection, new SqlQuery(
 							"SELECT TYPE_NAME, COLUMN_SIZE, IS_NULLABLE, ORDINAL_POSITION, IS_AUTOINCREMENT FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"
-									+ table.getSqlTableName() + "' AND COLUMN_NAME='" + sf.short_field_without_quote + "'"
+									+ table.getSqlTableName() + "' AND COLUMN_NAME='" + sf.shortFieldWithoutQuote + "'"
 									+ getSqlComma()))) {
 						if (rq.result_set.next()) {
 							String type = rq.result_set.getString("TYPE_NAME").toUpperCase();
@@ -389,7 +389,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 											+ " has a size equals to " + col_size + " (expected " + sf.type + ")");
 							}
 							boolean is_null = rq.result_set.getString("IS_NULLABLE").equals("YES");
-							if (is_null == sf.not_null)
+							if (is_null == sf.notNull)
 								throw new DatabaseVersionException(table, "The field " + fa.getFieldName()
 										+ " is expected to be " + (fa.isNotNull() ? "not null" : "nullable"));
 							boolean is_autoincrement = rq.result_set.getString("IS_AUTOINCREMENT").equals("YES");
@@ -398,7 +398,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 										"The field " + fa.getFieldName() + " is " + (is_autoincrement ? "" : "not ")
 												+ "autoincremented into the Sql database where it is "
 												+ (is_autoincrement ? "not " : "") + " into the OOD database.");
-							sf.sql_position = rq.result_set.getInt("ORDINAL_POSITION");
+							sf.sqlPosition = rq.result_set.getInt("ORDINAL_POSITION");
 						} else
 							throw new DatabaseVersionException(table,
 									"The field " + fa.getFieldName() + " was not found into the database.");
@@ -407,7 +407,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 						try (ReadQuery rq = new ReadQuery(sql_connection,
 								new SqlQuery(
 										"select * from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
-												+ table.getSqlTableName() + "' AND COLUMN_NAME='" + sf.short_field_without_quote
+												+ table.getSqlTableName() + "' AND COLUMN_NAME='" + sf.shortFieldWithoutQuote
 												+ "' AND CONSTRAINT_NAME='" + table.getSqlPrimaryKeyName() +"';"))) {
 							if (!rq.result_set.next())
 								throw new DatabaseVersionException(table, "The field " + fa.getFieldName()
@@ -417,14 +417,14 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 					if (fa.isForeignKey()) {
 						try (ReadQuery rq = new ReadQuery(sql_connection, new SqlQuery(
 								"select PKTABLE_NAME, FKTABLE_NAME, PKCOLUMN_NAME, FKCOLUMN_NAME from INFORMATION_SCHEMA.SYSTEM_CROSSREFERENCE WHERE FKTABLE_NAME='"
-										+ table.getSqlTableName() + "' AND PKTABLE_NAME='" + sf.pointed_table
-										+ "' AND PKCOLUMN_NAME='" + sf.short_pointed_field + "' AND FKCOLUMN_NAME='"
-										+ sf.short_field_without_quote + "'"))) {
+										+ table.getSqlTableName() + "' AND PKTABLE_NAME='" + sf.pointedTable
+										+ "' AND PKCOLUMN_NAME='" + sf.shortPointedField + "' AND FKCOLUMN_NAME='"
+										+ sf.shortFieldWithoutQuote + "'"))) {
 							if (!rq.result_set.next())
 								throw new DatabaseVersionException(table,
 										"The field " + fa.getFieldName() + " is a foreign key. One of its Sql fields "
 												+ sf.field + " is not a foreign key pointing to the table "
-												+ sf.pointed_table);
+												+ sf.pointedTable);
 						}
 					}
 					if (fa.isUnique()) {

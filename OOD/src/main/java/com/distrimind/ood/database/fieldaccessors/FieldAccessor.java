@@ -235,7 +235,7 @@ public abstract class FieldAccessor {
 		for (SqlField sf : getDeclaredSqlFields())
 		{
 			sf.field=sf.field.replace(oldInternalTableName, internalTableName);
-			sf.field_without_quote=sf.field_without_quote.replace(oldInternalTableName, internalTableName);
+			sf.fieldWithoutQuote =sf.fieldWithoutQuote.replace(oldInternalTableName, internalTableName);
 		}
 	}
 
@@ -962,7 +962,7 @@ public abstract class FieldAccessor {
 	final String getSqlFieldName(String sqlTableName, SqlField sqlField)
 	{
 		//return sqlField.field_without_quote;
-		return sqlTableName+"__"+sqlField.sql_field_alias_name;
+		return sqlTableName+"__"+sqlField.sqlFieldAliasName;
 	}
 
 	protected static final class FieldAccessPrivilegedAction implements PrivilegedExceptionAction<ArrayList<Field>> {

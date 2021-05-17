@@ -58,7 +58,7 @@ public class SqlField {
 	/**
 	 * the name of the Sql field without quote appended with the name of the Sql Table.
 	 */
-	public String field_without_quote;
+	public String fieldWithoutQuote;
 
 
 	/**
@@ -69,62 +69,62 @@ public class SqlField {
 	/**
 	 * The name of the pointed Sql table, if this field is a foreign key
 	 */
-	public final String pointed_table;
+	public final String pointedTable;
 
 
 	/**
 	 * The name of the pointed Sql table alias given into a sql query, and if this field is a foreign key
 	 */
-	public final String pointed_table_alias;
+	public final String pointedTableAlias;
 
 	/**
 	 * The name of the pointed Sql field appended with its Sql Table, if this field
 	 * is a foreign key
 	 */
-	public final String pointed_field;
+	public final String pointedField;
 
 	/**
 	 * The name of the pointed Sql table, if this field is a foreign key
 	 */
-	public final String pointed_table_without_quote;
+	public final String pointedTableWithoutQuote;
 
 	/**
 	 * The name of the pointed Sql field appended with its Sql Table, if this field
 	 * is a foreign key
 	 */
-	public final String pointed_field_without_quote;
+	public final String pointedFieldWithoutQuote;
 
 	/**
 	 * the name of the Sql field not appended with the name of the Sql Table.
 	 */
-	public final String short_field;
+	public final String shortField;
 
 	/**
 	 * the name of the Sql field without quote not appended with the name of the Sql Table.
 	 */
-	public final String short_field_without_quote;
+	public final String shortFieldWithoutQuote;
 
 	/**
 	 * The name of the pointed Sql field not appended with its Sql Table, if this
 	 * field is a foreign key
 	 */
-	public String short_pointed_field;
+	public String shortPointedField;
 
 	/**
 	 * The name of the pointed Sql field without quote not appended with its Sql Table, if this
 	 * field is a foreign key
 	 */
-	public final String short_pointed_field_without_quote;
+	public final String shortPointedFieldWithoutQuote;
 
 
 	/**
 	 * Tells if this field is not null
 	 */
-	public final boolean not_null;
+	public final boolean notNull;
 
-	public int sql_position = -1;
+	public int sqlPosition = -1;
 
-	public final String sql_field_alias_name;
+	public final String sqlFieldAliasName;
 
 	/**
 	 * Constructor
@@ -151,84 +151,84 @@ public class SqlField {
 	 *            The name of the pointed Sql field, if this field is a foreign key
 	 * @param _pointed_table
 	 *            The name of the pointed Sql table, if this field is a foreign key
-	 * @param pointed_table_alias
+	 * @param pointedTableAlias
 	 *            The name of the pointed Sql table alias given into a sql query, and if this field is a foreign key
 	 * @param _not_null
 	 *            tells if the field is not null
 	 */
-	public SqlField(boolean supportQuote, String _field, String _type, String _pointed_table, String pointed_table_alias, String _pointed_field, boolean _not_null) {
-		this(supportQuote, _field, _type,  _pointed_table, pointed_table_alias, _pointed_field, _not_null, "F"+fieldAliasNumber.incrementAndGet()+"__");
+	public SqlField(boolean supportQuote, String _field, String _type, String _pointed_table, String pointedTableAlias, String _pointed_field, boolean _not_null) {
+		this(supportQuote, _field, _type,  _pointed_table, pointedTableAlias, _pointed_field, _not_null, "F"+fieldAliasNumber.incrementAndGet()+"__");
 	}
-	protected SqlField(boolean supportQuote, String _field, String _type, String _pointed_table, String pointed_table_alias, String _pointed_field, boolean _not_null, String sql_field_alias_name)
+	protected SqlField(boolean supportQuote, String _field, String _type, String _pointed_table, String pointedTableAlias, String _pointed_field, boolean _not_null, String sqlFieldAliasName)
 	{
-		if ((_pointed_table==null)!=(pointed_table_alias==null) && (_pointed_table==null)!=(_pointed_field==null))
+		if ((_pointed_table==null)!=(pointedTableAlias ==null) && (_pointed_table==null)!=(_pointed_field==null))
 			throw new NullPointerException();
-		if (sql_field_alias_name ==null || sql_field_alias_name.length()==0)
+		if (sqlFieldAliasName ==null || sqlFieldAliasName.length()==0)
 			throw new NullPointerException();
-		this.sql_field_alias_name = sql_field_alias_name;
-		field_without_quote = _field.toUpperCase();
+		this.sqlFieldAliasName = sqlFieldAliasName;
+		fieldWithoutQuote = _field.toUpperCase();
 		type = _type.toUpperCase();
-		pointed_table = _pointed_table == null ? null : _pointed_table.toUpperCase();
-		this.pointed_table_alias=pointed_table_alias;
-		pointed_field = _pointed_field == null ? null : (pointed_table_alias+"."+_pointed_field.substring(_pointed_field.lastIndexOf('.')+1)).toUpperCase();
+		pointedTable = _pointed_table == null ? null : _pointed_table.toUpperCase();
+		this.pointedTableAlias = pointedTableAlias;
+		pointedField = _pointed_field == null ? null : (pointedTableAlias +"."+_pointed_field.substring(_pointed_field.lastIndexOf('.')+1)).toUpperCase();
 
 
 		int index = -1;
-		for (int i = 0; i < field_without_quote.length(); i++) {
-			if (field_without_quote.charAt(i) == '.') {
+		for (int i = 0; i < fieldWithoutQuote.length(); i++) {
+			if (fieldWithoutQuote.charAt(i) == '.') {
 				index = i + 1;
 				break;
 			}
 		}
 		if (index != -1) {
-			short_field_without_quote = field_without_quote.substring(index);
+			shortFieldWithoutQuote = fieldWithoutQuote.substring(index);
 			if (supportQuote) {
-				short_field = "`" + short_field_without_quote + "`";
-				field = field_without_quote.substring(0, index) + "`" + field_without_quote.substring(index) + "`";
+				shortField = "`" + shortFieldWithoutQuote + "`";
+				field = fieldWithoutQuote.substring(0, index) + "`" + fieldWithoutQuote.substring(index) + "`";
 			}
 			else {
-				short_field = short_field_without_quote;
-				field = field_without_quote;
+				shortField = shortFieldWithoutQuote;
+				field = fieldWithoutQuote;
 			}
 
 		}
 		else {
-			short_field_without_quote = field_without_quote;
+			shortFieldWithoutQuote = fieldWithoutQuote;
 			if (supportQuote) {
-				short_field = "`" + field_without_quote + "`";
+				shortField = "`" + fieldWithoutQuote + "`";
 			}
 			else
-				short_field = field_without_quote;
+				shortField = fieldWithoutQuote;
 
-			field=short_field;
+			field= shortField;
 		}
 
-		if (pointed_field != null) {
+		if (pointedField != null) {
 			index = -1;
-			for (int i = 0; i < pointed_field.length(); i++) {
-				if (pointed_field.charAt(i) == '.') {
+			for (int i = 0; i < pointedField.length(); i++) {
+				if (pointedField.charAt(i) == '.') {
 					index = i + 1;
 					break;
 				}
 			}
 			if (index != -1) {
-				short_pointed_field = pointed_field.substring(index);
+				shortPointedField = pointedField.substring(index);
 			}
 			else
-				short_pointed_field = pointed_field;
+				shortPointedField = pointedField;
 		} else
-			short_pointed_field = null;
-		if (pointed_table!=null && pointed_field!=null)
+			shortPointedField = null;
+		if (pointedTable !=null && pointedField !=null)
 		{
-			pointed_table_without_quote=pointed_table.replace("`", "");
-			pointed_field_without_quote=pointed_field.replace("`", "");
-			short_pointed_field_without_quote=short_pointed_field.replace("`", "");
+			pointedTableWithoutQuote = pointedTable.replace("`", "");
+			pointedFieldWithoutQuote = pointedField.replace("`", "");
+			shortPointedFieldWithoutQuote = shortPointedField.replace("`", "");
 		}
 		else {
-			pointed_table_without_quote = null;
-			pointed_field_without_quote = null;
-			short_pointed_field_without_quote=null;
+			pointedTableWithoutQuote = null;
+			pointedFieldWithoutQuote = null;
+			shortPointedFieldWithoutQuote =null;
 		}
-		this.not_null = _not_null;
+		this.notNull = _not_null;
 	}
 }

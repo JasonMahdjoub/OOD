@@ -876,18 +876,18 @@ public class RuleInstance implements QueryPart {
 									sfs2 = fa2.getDeclaredSqlFields();
 
 								for (SqlField sf : sfs) {
-									String sql_field_name=sqlTableName1.get()+"."+sf.short_field_without_quote;
+									String sql_field_name=sqlTableName1.get()+"."+sf.shortFieldWithoutQuote;
 									++fieldsNumber;
 									if (fieldsNumber > 1)
 										res.append(" AND ");
 									res.append(sqlTableName1.get())
 											.append(".")
-											.append(sf.short_field);
+											.append(sf.shortField);
 									res.append(comp.getType().getContent());
 									if (fa2 == null) {
 										boolean found = false;
 										for (SqlFieldInstance sfi : sfis) {
-											if (sfi.field_without_quote.equals(sql_field_name)) {
+											if (sfi.fieldWithoutQuote.equals(sql_field_name)) {
 
 												if (parameter2==null)
 												{
@@ -988,7 +988,7 @@ public class RuleInstance implements QueryPart {
 								res.append(" AND ");
 							res.append(sqlTableName.get())
 									.append(".")
-									.append(sf.short_field);
+									.append(sf.shortField);
 							res.append(comp.getType().getContent())
 									.append(SymbolType.NULL.getContent());
 						}
@@ -1071,7 +1071,7 @@ public class RuleInstance implements QueryPart {
 					StringBuilder res=new StringBuilder();
 					res.append(sqlTableName.get())
 							.append(".")
-							.append(sfs[0].short_field);
+							.append(sfs[0].shortField);
 					return res;
 				} else if (s.getType() == SymbolType.PARAMETER) {
 					Object parameter1 = parameters.get(s.getSymbol());

@@ -277,7 +277,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					for (SqlField sf : fkfa.getDeclaredSqlFields()) {
 						boolean found = false;
 						for (String field : _primary_keys.keySet()) {
-							if (field.equals(sf.pointed_table+"."+sf.short_pointed_field)) {
+							if (field.equals(sf.pointedTable +"."+sf.shortPointedField)) {
 								found = true;
 								res[index].put(sf.field, _primary_keys.get(field));
 								break;
@@ -792,7 +792,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 										SqlField founded_sf = null;
 										for (FieldAccessor fa : fields) {
 											for (SqlField sf : fa.getDeclaredSqlFields()) {
-												if (sf.field_without_quote.equalsIgnoreCase(col)) {
+												if (sf.fieldWithoutQuote.equalsIgnoreCase(col)) {
 													founded_fa = fa;
 													founded_sf = sf;
 													break;
@@ -808,7 +808,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 											{
 												for (SqlField sf : fa.getDeclaredSqlFields())
 												{
-													fs.append(sf.field_without_quote).append(" , ");
+													fs.append(sf.fieldWithoutQuote).append(" , ");
 												}
 											}
 											fs.append(")");
@@ -835,10 +835,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 										}
 										// boolean is_null=rq.result_set.getString("IS_NULLABLE").equals("YES");
 										boolean is_null = rq.tableColumnsResultSet.isNullable();
-										if (is_null == founded_sf.not_null)
+										if (is_null == founded_sf.notNull)
 											throw new DatabaseVersionException(Table.this,
 													"The column " + col + " is expected to be "
-															+ (founded_sf.not_null ? "not null" : "nullable"));
+															+ (founded_sf.notNull ? "not null" : "nullable"));
 										boolean is_autoincrement;
 										if (sql_connection.supportSingleAutoPrimaryKeys() && (is_autoincrement=rq.tableColumnsResultSet.isAutoIncrement()) != founded_fa.isAutoPrimaryKey())
 											throw new DatabaseVersionException(Table.this,
@@ -918,8 +918,11 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						else
 							cachedKeyWord=sql_connection.getNotCachedKeyword();
 					}
-					final StringBuffer sqlQuery = new StringBuffer(
-							"CREATE " + cachedKeyWord + " TABLE " + this.getSqlTableName() + "(");
+					final StringBuilder sqlQuery = new StringBuilder("CREATE ")
+							.append(cachedKeyWord)
+							.append(" TABLE ")
+							.append(this.getSqlTableName())
+							.append("(");
 
 					boolean first = true;
 					Reference<Long> autoIncrementStart=new Reference<>();
@@ -939,7 +942,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 									first = false;
 								else
 									sqlQuery.append(", ");
-								sqlQuery.append(sf.short_field);
+								sqlQuery.append(sf.shortField);
 							}
 						}
 						sqlQuery.append(")");
@@ -955,7 +958,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 									first = false;
 								else
 									sqlQuery.append(", ");
-								sqlQuery.append(sf.short_field);
+								sqlQuery.append(sf.shortField);
 							}
 							sqlQuery.append(")");
 						}
@@ -1072,7 +1075,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 									first2 = false;
 								else
 									indexCreationQuery.append(", ");
-								indexCreationQuery.append(sf.short_field).append(fa.isDescendentIndex() ? " DESC" : "");
+								indexCreationQuery.append(sf.shortField).append(fa.isDescendentIndex() ? " DESC" : "");
 							}
 							indexCreationQuery.append(")");
 							sql_connection.runTransaction(new Transaction() {
@@ -1178,15 +1181,16 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 				if (foreign_keys_fields.size() > 0) {
 					for (ForeignKeyFieldAccessor f : foreign_keys_fields) {
-						final StringBuffer SqlQuery = new StringBuffer(
-								"ALTER TABLE " + Table.this.getSqlTableName()+ " ADD FOREIGN KEY(");
+						final StringBuilder SqlQuery = new StringBuilder("ALTER TABLE ")
+								.append(Table.this.getSqlTableName())
+								.append(" ADD FOREIGN KEY(");
 						boolean first = true;
 						for (SqlField sf : f.getDeclaredSqlFields()) {
 							if (first)
 								first = false;
 							else
 								SqlQuery.append(", ");
-							SqlQuery.append(sf.short_field);
+							SqlQuery.append(sf.shortField);
 						}
 						SqlQuery.append(") REFERENCES ").append(f.getPointedTable().getSqlTableName()).append("(");
 						first = true;
@@ -1195,7 +1199,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 								first = false;
 							else
 								SqlQuery.append(", ");
-							SqlQuery.append(sf.short_pointed_field);
+							SqlQuery.append(sf.shortPointedField);
 						}
 						// SqlQuery.append(") ON UPDATE CASCADE ON DELETE CASCADE");
 						SqlQuery.append(") ").append(sql_connection.getOnDeleteCascadeSqlQuery()).append(" ").append(sql_connection.getOnUpdateCascadeSqlQuery());
@@ -1308,7 +1312,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					for (SqlFieldInstance sfi : fa.getSqlFieldsInstances(getSqlTableName(), r)) {
 						boolean found = false;
 						for (SqlFieldInstance sfi2 : _sql_field_instances) {
-							if (sfi2.pointed_field.equals(sfi.field)) {
+							if (sfi2.pointedField.equals(sfi.field)) {
 								found = true;
 								if (!FieldAccessor.equalsBetween(sfi.instance, sfi2.instance)) {
 									all_equals = false;
@@ -1337,7 +1341,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						for (SqlFieldInstance sfi : fa.getSqlFieldsInstances(getSqlTableName(), dr)) {
 							boolean found = false;
 							for (SqlFieldInstance sfi2 : _sql_field_instances) {
-								if (sfi2.pointed_field.equals(sfi.field)) {
+								if (sfi2.pointedField.equals(sfi.field)) {
 									found = true;
 									if (!FieldAccessor.equalsBetween(sfi.instance, sfi2.instance)) {
 										all_equals = false;
@@ -1363,7 +1367,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				for (SqlField sfi : fa.getDeclaredSqlFields()) {
 					boolean found = false;
 					for (SqlFieldInstance sfi2 : _sql_field_instances) {
-						if (sfi2.pointed_field.equals(sfi.field)) {
+						if (sfi2.pointedField.equals(sfi.field)) {
 							found = true;
 							break;
 
@@ -1385,7 +1389,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					first = false;
 				else
 					query.append(" AND ");
-				query.append(sfi.pointed_field);
+				query.append(sfi.pointedField);
 				query.append(" = ?");
 			}
 			query.append(sql_connection.getSqlComma());
@@ -1460,9 +1464,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			includeAllJunctions = false;
 		}*/
 
-		//StringBuffer sb = new StringBuffer();
 		getSqlSelectStep1Fields(getSqlTableName(), includeAllJunctions, null, sb, sb.length());
-		//return sb;
 	}
 
 	private void getSqlSelectStep1Fields(String sqlTableName, boolean includeAllJunctions, Set<TableJunction> tablesJunction,
@@ -1479,11 +1481,11 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					sb.append(", ");
 				sb.append(sqlTableName)
 						.append(".")
-						.append(sf.short_field)
+						.append(sf.shortField)
 						.append(" AS ");
 				sb.append(sqlTableName)
 						.append("__")
-						.append(sf.sql_field_alias_name);
+						.append(sf.sqlFieldAliasName);
 			}
 		}
 
@@ -1625,12 +1627,11 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				firstOn = false;
 			else
 				sb.append(" AND ");
-			boolean q=sql_connection.supportsItalicQuotesWithTableAndFieldNames();
 			sb.append(sqlTableName)
 					.append(".")
-					.append(sf.short_field)
+					.append(sf.shortField)
 					.append("=")
-					.append(sf.pointed_field);
+					.append(sf.pointedField);
 		}
 		Table<?> t = fa.getPointedTable();
 		for (ForeignKeyFieldAccessor fa2 : t.getForeignKeysFieldAccessors()) {
@@ -2339,7 +2340,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					first = false;
 				else
 					res.append(", ");
-				res.append(sf.short_field).append(" ").append(sf.type).append(sf.not_null ? sqlNotNull : sqlNull);
+				res.append(sf.shortField).append(" ").append(sf.type).append(sf.notNull ? sqlNotNull : sqlNull);
 			}
 
 		} else {
@@ -2350,13 +2351,13 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				else
 					res.append(", ");
 
-				res.append(sf.short_field).append(" ").append(sf.type);
+				res.append(sf.shortField).append(" ").append(sf.type);
 				if (field.isAutoPrimaryKey() && !field.isManualAutoPrimaryKey()) {
 					res.append(" ");
 					autoIncrementStart.set(field.getStartValue());
 					res.append(getDatabaseWrapper().getAutoIncrementPart(this.getSqlTableName(), field.getSqlFieldName(), field.getStartValue()));
 				}
-				res .append(sf.not_null ? sqlNotNull : sqlNull);
+				res .append(sf.notNull ? sqlNotNull : sqlNull);
 			}
 		}
 		return res.toString();
@@ -2705,7 +2706,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
         if (!founded_field.isComparable() || founded_field.getDeclaredSqlFields().length > 1)
 			throw new IllegalArgumentException("The field " + field + " starting in the class/table "
 					+ Table.this.getClass().getName() + " is not a comparable field.");
-       	return sqlTableName.get()+"."+founded_field.getDeclaredSqlFields()[0].short_field;
+       	return sqlTableName.get()+"."+founded_field.getDeclaredSqlFields()[0].shortField;
 	}
 
 	/**
@@ -7532,7 +7533,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 												first = false;
 											else
 												query.append(", ");
-											query.append(sf.short_field);
+											query.append(sf.shortField);
 										}
 									}
 								}
@@ -7906,7 +7907,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 							first = false;
 						else
 							query.append(", ");
-						query.append(sf.short_field).append(" = ?");
+						query.append(sf.shortField).append(" = ?");
 					}
 				}
 			}
@@ -8244,7 +8245,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 							try {
 								if ((rule == null || rule.isConcernedBy(Table.this, parameters, _instance))) {
 									_filter.reset();
-									final T oldRecord = copyRecord(_instance);
+									//final T oldRecord = copyRecord(_instance);
 									_filter.nextRecord(_instance);
 									if (_filter.hasToBeRemoved()) {
 										boolean canBeRemoved = true;

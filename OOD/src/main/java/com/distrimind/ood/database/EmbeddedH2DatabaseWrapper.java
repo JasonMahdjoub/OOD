@@ -384,7 +384,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 						String col=rq.result_set.getString("COLUMN_LIST");
 						for (FieldAccessor fa : table.getFieldAccessors()) {
 							for (SqlField sf : fa.getDeclaredSqlFields()) {
-								if (sf.short_field_without_quote.equalsIgnoreCase(col) && fa.isUnique()) {
+								if (sf.shortFieldWithoutQuote.equalsIgnoreCase(col) && fa.isUnique()) {
 									found = true;
 									break;
 								}
@@ -445,9 +445,9 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 				boolean found = false;
 				for (ForeignKeyFieldAccessor fa : table.getForeignKeysFieldAccessors()) {
 					for (SqlField sf : fa.getDeclaredSqlFields()) {
-						if (sf.field_without_quote.equals(fk) && fa.getPointedTable().getSqlTableName().equals(pointed_table)
-							&& sf.pointed_field_without_quote.equals(fa.getTableAliasName()+"."+pointed_col)
-								&& sf.pointed_table.equals(pointed_table)) {
+						if (sf.fieldWithoutQuote.equals(fk) && fa.getPointedTable().getSqlTableName().equals(pointed_table)
+							&& sf.pointedFieldWithoutQuote.equals(fa.getTableAliasName()+"."+pointed_col)
+								&& sf.pointedTable.equals(pointed_table)) {
 							found = true;
 							break;
 						}
@@ -469,7 +469,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 			for (FieldAccessor fa : table.getFieldAccessors()) {
 				for (SqlField sf : fa.getDeclaredSqlFields()) {
 
-					try (Table.ColumnsReadQuery rq = getColumnMetaData(table.getSqlTableName(), sf.short_field_without_quote)) {
+					try (Table.ColumnsReadQuery rq = getColumnMetaData(table.getSqlTableName(), sf.shortFieldWithoutQuote)) {
 						if (rq.result_set.next()) {
 							String type = rq.tableColumnsResultSet.getTypeName().toUpperCase();
 							if (!sf.type.toUpperCase().startsWith(type))
@@ -483,7 +483,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 											+ " has a size equals to " + col_size + " (expected " + sf.type + ")");
 							}
 							boolean is_null = rq.tableColumnsResultSet.isNullable();
-							if (is_null == sf.not_null)
+							if (is_null == sf.notNull)
 								throw new DatabaseVersionException(table, "The field " + fa.getFieldName()
 										+ " is expected to be " + (fa.isNotNull() ? "not null" : "nullable"));
 							boolean is_autoincrement = rq.tableColumnsResultSet.isAutoIncrement();
@@ -492,7 +492,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 										"The field " + fa.getFieldName() + " is " + (is_autoincrement ? "" : "not ")
 												+ "autoincremented into the Sql database where it is "
 												+ (is_autoincrement ? "not " : "") + " into the OOD database.");
-							sf.sql_position = rq.tableColumnsResultSet.getOrdinalPosition();
+							sf.sqlPosition = rq.tableColumnsResultSet.getOrdinalPosition();
 						} else
 							throw new DatabaseVersionException(table,
 									"The field " + fa.getFieldName() + " was not found into the database.");
@@ -500,21 +500,21 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 					if (fa.isForeignKey()) {
 						try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection, new Table.SqlQuery(
 								"select PKTABLE_NAME, FKTABLE_NAME, PKCOLUMN_NAME, FKCOLUMN_NAME from "+ getCrossReferencesTableName()+" WHERE FKTABLE_NAME='"
-										+ table.getSqlTableName() + "' AND PKTABLE_NAME='" + sf.pointed_table
-										+ "' AND PKCOLUMN_NAME='" + sf.short_pointed_field_without_quote + "' AND FKCOLUMN_NAME='"
-										+ sf.short_field_without_quote + "'"))) {
+										+ table.getSqlTableName() + "' AND PKTABLE_NAME='" + sf.pointedTable
+										+ "' AND PKCOLUMN_NAME='" + sf.shortPointedFieldWithoutQuote + "' AND FKCOLUMN_NAME='"
+										+ sf.shortFieldWithoutQuote + "'"))) {
 							if (!rq.result_set.next())
 								throw new DatabaseVersionException(table,
 										"The field " + fa.getFieldName() + " is a foreign key. One of its Sql fields "
 												+ sf.field + " is not a foreign key pointing to the table "
-												+ sf.pointed_table);
+												+ sf.pointedTable);
 						}
 					}
 					if (fa.isUnique()) {
 						for(SqlField sf2 : fa.getDeclaredSqlFields())
 							try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection, new Table.SqlQuery(
 									"select COLUMN_LIST from "+getConstraintsTableName()+" WHERE TABLE_NAME='"
-											+ table.getSqlTableName() + "' AND CONSTRAINT_TYPE='UNIQUE' AND COLUMN_LIST='"+sf2.short_field_without_quote+"';"))) {
+											+ table.getSqlTableName() + "' AND CONSTRAINT_TYPE='UNIQUE' AND COLUMN_LIST='"+sf2.shortFieldWithoutQuote +"';"))) {
 								if (!rq.result_set.next())
 									throw new DatabaseVersionException(table, "The OOD field " + fa.getFieldName()
 											+ " is a unique key, but it not declared as unique into the Sql database.");

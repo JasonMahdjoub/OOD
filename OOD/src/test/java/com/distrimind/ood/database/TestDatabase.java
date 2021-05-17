@@ -3297,7 +3297,7 @@ public abstract class TestDatabase {
 					expectedCommand.append(" AND ");
 				expectedCommand.append("%Table1Name%");
 				expectedCommand.append(".`");
-				expectedCommand.append(sqlFields[i].short_field_without_quote.replace(".", "_").toUpperCase());
+				expectedCommand.append(sqlFields[i].shortFieldWithoutQuote.replace(".", "_").toUpperCase());
 				expectedCommand.append("`");
 				expectedCommand.append(op_comp.getContent());
 				expectedCommand.append(SymbolType.NULL.getContent());

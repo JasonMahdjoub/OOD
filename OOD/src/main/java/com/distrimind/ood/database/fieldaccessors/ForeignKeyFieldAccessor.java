@@ -143,7 +143,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 				}
 				for (SqlField sf : fa.getDeclaredSqlFields()) {
 					sql_fields.add(new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName() + "__" + pointed_table.getSqlTableName()
-							+ "_" + sf.short_field_without_quote, sf.type, pointed_table.getSqlTableName(), tableAliasName, sf.field, isNotNull()));
+							+ "_" + sf.shortFieldWithoutQuote, sf.type, pointed_table.getSqlTableName(), tableAliasName, sf.field, isNotNull()));
 				}
 			}
 			this.sql_fields = new SqlField[sql_fields.size()];
@@ -257,7 +257,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 		if (val == null) {
 			for (int i = 0; i < sql_fields.length; i++) {
 				SqlField sfi = sql_fields[i];
-				res[i] = new SqlFieldInstance(supportQuotes, sfi, preFieldName + sfi.short_field_without_quote, null);
+				res[i] = new SqlFieldInstance(supportQuotes, sfi, preFieldName + sfi.shortFieldWithoutQuote, null);
 			}
 		} else {
 			int i = 0;
@@ -265,7 +265,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 				SqlFieldInstance[] linked_sql_field_instances = fa.getSqlFieldsInstances(tableAliasName, val);
 				for (SqlFieldInstance sfi : linked_sql_field_instances) {
 					res[i++] = new SqlFieldInstance(supportQuotes,sfi,
-							preFieldName+ sfi.short_field_without_quote, sfi.instance);
+							preFieldName+ sfi.shortFieldWithoutQuote, sfi.instance);
 				}
 			}
 		}
@@ -336,7 +336,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 							for (SqlFieldInstance sfi : fa.getSqlFieldsInstances(sqlTableName, dr)) {
 								boolean found = false;
 								for (SqlFieldInstance sfi2 : sfis) {
-									if (sfi2.pointed_field.equals(sfi.field)) {
+									if (sfi2.pointedField.equals(sfi.field)) {
 										found = true;
 										if (!FieldAccessor.equalsBetween(sfi.instance, sfi2.instance)) {
 											all_equals = false;
