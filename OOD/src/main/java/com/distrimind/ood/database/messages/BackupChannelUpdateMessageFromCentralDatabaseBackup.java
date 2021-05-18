@@ -37,6 +37,7 @@ package com.distrimind.ood.database.messages;
 
 import com.distrimind.ood.database.DatabaseEvent;
 import com.distrimind.ood.database.EncryptionTools;
+import com.distrimind.ood.database.Table;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 import com.distrimind.util.io.*;
@@ -111,7 +112,7 @@ public class BackupChannelUpdateMessageFromCentralDatabaseBackup extends Databas
 				+SerializationTools.getInternalSize((SecureExternalizable)hostChannel)
 				+SerializationTools.getInternalSize(lastValidatedAndEncryptedLocalID, EncryptionTools.MAX_ENCRYPTED_ID_SIZE)
 				+SerializationTools.getInternalSize(lastValidatedAndEncryptedDistantID, EncryptionTools.MAX_ENCRYPTED_ID_SIZE)
-				+SerializationTools.getInternalSize(databasePackage, SerializationTools.MAX_CLASS_LENGTH);
+				+SerializationTools.getInternalSize(databasePackage, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
 	}
 
 	@Override
@@ -120,7 +121,7 @@ public class BackupChannelUpdateMessageFromCentralDatabaseBackup extends Databas
 		out.writeObject(hostChannel, false);
 		out.writeBytesArray(lastValidatedAndEncryptedLocalID, false, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
 		out.writeBytesArray(lastValidatedAndEncryptedDistantID, false, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
-		out.writeString(databasePackage, false, SerializationTools.MAX_CLASS_LENGTH);
+		out.writeString(databasePackage, false, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
 	}
 
 	@Override
@@ -131,7 +132,7 @@ public class BackupChannelUpdateMessageFromCentralDatabaseBackup extends Databas
 			throw new MessageExternalizationException(Integrity.FAIL);
 		lastValidatedAndEncryptedLocalID=in.readBytesArray(false, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
 		lastValidatedAndEncryptedDistantID=in.readBytesArray(false, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
-		databasePackage=in.readString(false, SerializationTools.MAX_CLASS_LENGTH);
+		databasePackage=in.readString(false, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
 	}
 
 	@Override

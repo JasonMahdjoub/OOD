@@ -67,7 +67,7 @@ public class BooleanNumberFieldAccessor extends FieldAccessor {
 			Field _field, String parentFieldName, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
 		super(_sql_connection, _field, parentFieldName, compatible_classes, table, severalPrimaryKeysPresentIntoTable);
 		sql_fields = new SqlField[1];
-		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(), "BOOLEAN", null, null, isNotNull());
+		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(), "BOOLEAN", isNotNull());
 	}
 
 	@Override
@@ -109,7 +109,7 @@ public class BooleanNumberFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	@Override
+	/*@Override
 	public boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
 			throws DatabaseException {
 		try {
@@ -122,7 +122,7 @@ public class BooleanNumberFieldAccessor extends FieldAccessor {
 		} catch (SQLException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
-	}
+	}*/
 
 	private static final Class<?>[] compatible_classes = { boolean.class, Boolean.class };
 
@@ -141,9 +141,9 @@ public class BooleanNumberFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
+	public SqlFieldInstance[] getSqlFieldsInstances(String sqlTableName, Object _instance) throws DatabaseException {
 		SqlFieldInstance[] res = new SqlFieldInstance[1];
-		res[0] = new SqlFieldInstance(supportQuotes, sql_fields[0], getValue(_instance));
+		res[0] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[0], getValue(_instance));
 		return res;
 	}
 
@@ -162,8 +162,8 @@ public class BooleanNumberFieldAccessor extends FieldAccessor {
 		throw new DatabaseException("Unexpected exception");
 	}
 
-	private Boolean getBoolean(ResultSet _result_set) throws SQLException {
-		int colIndex=getColmunIndex(_result_set, sql_fields[0].field_without_quote);
+	private Boolean getBoolean(String sqlTableName, ResultSet _result_set) throws SQLException {
+		int colIndex= getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0]));
 		Object o=_result_set.getObject(colIndex);
 
 		if (o==null)
@@ -175,10 +175,10 @@ public class BooleanNumberFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
+	public void setValue(String sqlTableName, Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
-			field.set(_class_instance, getBoolean(_result_set));
+			field.set(_class_instance, getBoolean(sqlTableName, _result_set));
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -205,7 +205,7 @@ public class BooleanNumberFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	@Override
+	/*@Override
 	public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set)
 			throws DatabaseException {
 		setValue(_class_instance, _field_instance);
@@ -225,7 +225,7 @@ public class BooleanNumberFieldAccessor extends FieldAccessor {
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
-	}
+	}*/
 
 	@Override
 	public boolean canBePrimaryOrUniqueKey() {
@@ -275,7 +275,7 @@ public class BooleanNumberFieldAccessor extends FieldAccessor {
 			} else if (isNotNull())
 				throw new DatabaseException("field should not be null");
 			else {
-				setValue(_classInstance, (Object) null);
+				setValue(_classInstance,null);
 				return null;
 			}
 		} catch (Exception e) {

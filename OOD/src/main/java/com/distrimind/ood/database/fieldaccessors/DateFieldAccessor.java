@@ -73,7 +73,7 @@ public class DateFieldAccessor extends FieldAccessor {
 			throw new FieldDatabaseException("The field " + _field.getName() + " of the class "
 					+ _field.getDeclaringClass().getName() + " of type " + _field.getType() + " must be a Date type.");
 		sql_fields = new SqlField[1];
-		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(), DatabaseWrapperAccessor.getDateTimeType(sql_connection), null, null, isNotNull());
+		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(), DatabaseWrapperAccessor.getDateTimeType(sql_connection), isNotNull());
 	}
 
 	private static Class<?>[] getCompatibleClasses(Field field) {
@@ -103,10 +103,10 @@ public class DateFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
+	public void setValue(String sqlTableName, Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
-			Timestamp res = _result_set.getTimestamp(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
+			Timestamp res = _result_set.getTimestamp(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
 			if (res == null && isNotNull())
 				throw new DatabaseIntegrityException("Unexpected exception.");
 			if (res==null)
@@ -118,7 +118,7 @@ public class DateFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	@Override
+	/*@Override
 	public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set)
 			throws DatabaseException {
 		setValue(_class_instance, _field_instance);
@@ -140,7 +140,7 @@ public class DateFieldAccessor extends FieldAccessor {
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
-	}
+	}*/
 
 	@Override
 	public boolean equals(Object _class_instance, Object _field_instance) throws DatabaseException {
@@ -156,7 +156,7 @@ public class DateFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	@Override
+	/*@Override
 	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
 			throws DatabaseException {
 		try {
@@ -169,7 +169,7 @@ public class DateFieldAccessor extends FieldAccessor {
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
-	}
+	}*/
 
 	@Override
 	public Object getValue(Object _class_instance) throws DatabaseException {
@@ -208,10 +208,10 @@ public class DateFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
+	public SqlFieldInstance[] getSqlFieldsInstances(String sqlTableName, Object _instance) throws DatabaseException {
 		SqlFieldInstance[] res = new SqlFieldInstance[1];
 		Date date=(Date) getValue(_instance);
-		res[0] = new SqlFieldInstance(supportQuotes, sql_fields[0], date==null?null:new Timestamp(date.getTime()));
+		res[0] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[0], date==null?null:new Timestamp(date.getTime()));
 		return res;
 	}
 
@@ -289,7 +289,7 @@ public class DateFieldAccessor extends FieldAccessor {
 			} else if (isNotNull())
 				throw new DatabaseException("field should not be null");
 			else {
-				setValue(_classInstance, (Object) null);
+				setValue(_classInstance, null);
 				return null;
 			}
 

@@ -382,7 +382,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 								boolean found = false;
 								for (FieldAccessor fa : table.getFieldAccessors()) {
 									for (SqlField sf : fa.getDeclaredSqlFields()) {
-										if (sf.field_without_quote.equals(col) && fa.isUnique()) {
+										if (sf.fieldWithoutQuote.equals(col) && fa.isUnique()) {
 											found = true;
 											break;
 										}
@@ -421,7 +421,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 				boolean found = false;
 				for (ForeignKeyFieldAccessor fa : table.getForeignKeysFieldAccessors()) {
 					for (SqlField sf : fa.getDeclaredSqlFields()) {
-						if (sf.field_without_quote.equals(fk)/* && sf.pointed_field_without_quote.equals(pointed_col)
+						if (sf.fieldWithoutQuote.equals(fk)/* && sf.pointed_field_without_quote.equals(pointed_col)
 								&& sf.pointed_table_without_quote.equals(pointed_table)*/) {
 							found = true;
 							break;
@@ -443,7 +443,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 			Pattern col_size_matcher = Pattern.compile("([0-9]+)");
 			for (FieldAccessor fa : table.getFieldAccessors()) {
 				for (SqlField sf : fa.getDeclaredSqlFields()) {
-					Table.ColumnsReadQuery cols=getColumnMetaData(table.getSqlTableName(), sf.short_field_without_quote);
+					Table.ColumnsReadQuery cols=getColumnMetaData(table.getSqlTableName(), sf.shortFieldWithoutQuote);
 					if (cols==null || !cols.tableColumnsResultSet.next())
 						throw new DatabaseVersionException(table,
 								"The field " + fa.getFieldName() + " was not found into the database.");
@@ -459,7 +459,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 									+ " has a size equals to " + col_size + " (expected " + sf.type + ")");
 					}
 					boolean is_null = cols.tableColumnsResultSet.isNullable();
-					if (is_null == sf.not_null)
+					if (is_null == sf.notNull)
 						throw new DatabaseVersionException(table, "The field " + fa.getFieldName()
 								+ " is expected to be " + (fa.isNotNull() ? "not null" : "nullable"));
 					boolean is_autoincrement = cols.tableColumnsResultSet.isAutoIncrement();
@@ -468,13 +468,13 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 								"The field " + fa.getFieldName() + " is " + (is_autoincrement ? "" : "not ")
 										+ "autoincremented into the Sql database where it is "
 										+ (is_autoincrement ? "not " : "") + " into the OOD database.");
-					sf.sql_position = cols.tableColumnsResultSet.getOrdinalPosition();
+					sf.sqlPosition = cols.tableColumnsResultSet.getOrdinalPosition();
 
 					if (fa.isPrimaryKey()) {
 						try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection,
 								new Table.SqlQuery(
 										"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
-												+ table.getSqlTableName().toLowerCase() + "' AND COLUMN_NAME='" + sf.short_field_without_quote.toLowerCase()
+												+ table.getSqlTableName().toLowerCase() + "' AND COLUMN_NAME='" + sf.shortFieldWithoutQuote.toLowerCase()
 												+ "' AND CONSTRAINT_NAME='"+table.getSqlPrimaryKeyName().toLowerCase()+"';"))) {
 							if (!rq.result_set.next())
 								throw new DatabaseVersionException(table, "The field " + fa.getFieldName()
@@ -488,12 +488,12 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 								"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
 										+ table.getSqlTableName().toLowerCase()
 										+ "' AND CONSTRAINT_NAME LIKE '" + constraintName+"' ESCAPE '!'"
-										+ " AND COLUMN_NAME='"+ sf.short_field_without_quote.toLowerCase() + "';"))) {
+										+ " AND COLUMN_NAME='"+ sf.shortFieldWithoutQuote.toLowerCase() + "';"))) {
 							if (!rq.result_set.next())
 								throw new DatabaseVersionException(table,
 										"The field " + fa.getFieldName() + " is a foreign key. One of its Sql fields "
-												+ sf.short_field_without_quote.toLowerCase() + " is not a foreign key pointing to the table "
-												+ sf.pointed_table.toLowerCase());
+												+ sf.shortFieldWithoutQuote.toLowerCase() + " is not a foreign key pointing to the table "
+												+ sf.pointedTable.toLowerCase());
 						}
 					}
 					if (fa.isUnique()) {
@@ -504,7 +504,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 							while (rq.result_set.next()) {
 								if (rq.result_set.getString("CONSTRAINT_TYPE").equals("UNIQUE")) {
 									String constraint_name = rq.result_set.getString("CONSTRAINT_NAME");
-									if (constraint_name.equals(table.getSqlTableName().toLowerCase()+"_"+sf.short_field_without_quote.toLowerCase()+"_key"))
+									if (constraint_name.equals(table.getSqlTableName().toLowerCase()+"_"+sf.shortFieldWithoutQuote.toLowerCase()+"_key"))
 									{
 										found=true;
 										break;
@@ -722,7 +722,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 	}
 
 	@Override
-	protected boolean supportsItalicQuotesWithTableAndFieldNames()
+	public boolean supportsItalicQuotesWithTableAndFieldNames()
 	{
 		return false;
 	}

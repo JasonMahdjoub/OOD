@@ -51,7 +51,6 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Objects;
@@ -84,7 +83,7 @@ public class BigIntegerFieldAccessor extends FieldAccessor {
 			limit*=3;
 		type=DatabaseWrapperAccessor.getBigIntegerType(sql_connection, limit);
 		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(),
-				Objects.requireNonNull(type), null, null, isNotNull());
+				Objects.requireNonNull(type), isNotNull());
 
 	}
 
@@ -132,7 +131,7 @@ public class BigIntegerFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	@Override
+	/*@Override
 	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
 			throws DatabaseException {
 		try {
@@ -159,7 +158,7 @@ public class BigIntegerFieldAccessor extends FieldAccessor {
 		} catch (SQLException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
-	}
+	}*/
 
 	private static final Class<?>[] compatible_classes = { BigInteger.class };
 
@@ -178,10 +177,10 @@ public class BigIntegerFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
+	public SqlFieldInstance[] getSqlFieldsInstances(String sqlTableName, Object _instance) throws DatabaseException {
 		SqlFieldInstance[] res = new SqlFieldInstance[1];
 		BigInteger o=(BigInteger)getValue(_instance);
-		res[0] = new SqlFieldInstance(supportQuotes,sql_fields[0], useGetBigDecimal?new BigDecimal(o):(useString?o.toString():o.toByteArray()));
+		res[0] = new SqlFieldInstance(supportQuotes,sqlTableName, sql_fields[0], useGetBigDecimal?new BigDecimal(o):(useString?o.toString():o.toByteArray()));
 		return res;
 	}
 
@@ -214,21 +213,21 @@ public class BigIntegerFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
+	public void setValue(String sqlTableName, Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
 			BigInteger res;
 			if (useGetBigDecimal)
 			{
-				res=_result_set.getBigDecimal(getColmunIndex(_result_set, sql_fields[0].field_without_quote)).toBigInteger();
+				res=_result_set.getBigDecimal(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0]))).toBigInteger();
 			}
 			else if (useString)
 			{
-				String s = _result_set.getString(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
+				String s = _result_set.getString(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
 				res = (s == null) ? null : new BigInteger(s);
 			}
 			else {
-				byte[] s = _result_set.getBytes(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
+				byte[] s = _result_set.getBytes(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
 				res = (s == null) ? null : new BigInteger(s);
 			}
 			if (res == null && isNotNull())
@@ -264,7 +263,7 @@ public class BigIntegerFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	@Override
+	/*@Override
 	public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set)
 			throws DatabaseException {
 		setValue(_class_instance, _field_instance);
@@ -296,7 +295,7 @@ public class BigIntegerFieldAccessor extends FieldAccessor {
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
-	}
+	}*/
 
 	@Override
 	public boolean canBePrimaryOrUniqueKey() {

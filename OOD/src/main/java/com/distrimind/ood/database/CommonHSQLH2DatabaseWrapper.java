@@ -354,7 +354,7 @@ public abstract class CommonHSQLH2DatabaseWrapper extends DatabaseWrapper{
 
 	@Override
 	protected boolean isSerializationException(SQLException e) {
-		return e.getSQLState().equals("40001");
+		return e.getSQLState()!=null && e.getSQLState().equals("40001");
 	}
 
 	@Override

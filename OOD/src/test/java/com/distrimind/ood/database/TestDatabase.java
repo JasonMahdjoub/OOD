@@ -800,8 +800,8 @@ public abstract class TestDatabase {
 		Table3.Record r2 = table3.getRecords().get(0);
 		table3.updateRecord(r2, map);
 
-        Assert.assertEquals(1, r1.pk1);
-        Assert.assertEquals(3, r1.int_value);
+        Assert.assertEquals(r1.pk1, 1);
+        Assert.assertEquals(r1.int_value, 3);
         Assert.assertEquals(r1.byte_value, (byte) 6);
         Assert.assertEquals('y', r1.char_value);
 		assertTrue(r1.boolean_value);
@@ -1994,6 +1994,8 @@ public abstract class TestDatabase {
 		map.put("pk1", 10);
 		map.put("pk2", 1526345L);
 		BigInteger val;
+		Assert.assertEquals(table1.getRecordsNumber(), 2);
+		Assert.assertEquals(table3.getRecordsNumber(), 2);
 		do {
 			val = BigInteger.valueOf(random.nextLong());
 			if (val.longValue() < 0)
@@ -2393,34 +2395,24 @@ public abstract class TestDatabase {
 			for (Table3.Record r : table3.getRecords())
 				Assert.assertEquals(15, r.int_value);
 
-			try {
-				table1.updateRecords(new AlterRecordFilter<Table1.Record>() {
+			table1.updateRecords(new AlterRecordFilter<Table1.Record>() {
 
-					@Override
-					public void nextRecord(Record _record) {
-						HashMap<String, Object> m = new HashMap<>();
-						m.put("pk1", 15);
-						this.update(m);
-					}
-				});
-				fail();
-			} catch (FieldDatabaseException e) {
-				assertTrue(true);
-			}
-			try {
-				table3.updateRecords(new AlterRecordFilter<Table3.Record>() {
+				@Override
+				public void nextRecord(Record _record) {
+					HashMap<String, Object> m = new HashMap<>();
+					m.put("pk1", 15);
+					this.update(m);
+				}
+			});
+			table3.updateRecords(new AlterRecordFilter<Table3.Record>() {
 
-					@Override
-					public void nextRecord(Table3.Record _record) {
-						HashMap<String, Object> m = new HashMap<>();
-						m.put("pk1", 15);
-						this.update(m);
-					}
-				});
-				fail();
-			} catch (FieldDatabaseException e) {
-				assertTrue(true);
-			}
+				@Override
+				public void nextRecord(Table3.Record _record) {
+					HashMap<String, Object> m = new HashMap<>();
+					m.put("pk1", 15);
+					this.update(m);
+				}
+			});
 			try {
 				table2.updateRecords(new AlterRecordFilter<Table2.Record>() {
 
@@ -2432,7 +2424,7 @@ public abstract class TestDatabase {
 					}
 				});
 				fail();
-			} catch (FieldDatabaseException e) {
+			} catch (ConstraintsNotRespectedDatabaseException e) {
 				assertTrue(true);
 			}
 
@@ -3161,7 +3153,7 @@ public abstract class TestDatabase {
 
 	}
 
-	private ArrayList<Object> getExpectedParameter(Class<?> type, Object o) throws IOException, DatabaseException {
+	private ArrayList<Object> getExpectedParameter(Class<?> type, Object o) throws IOException {
 		ArrayList<Object> res = new ArrayList<>();
 		
 		if (o==null && type==DecentralizedIDGenerator.class)
@@ -3305,7 +3297,7 @@ public abstract class TestDatabase {
 					expectedCommand.append(" AND ");
 				expectedCommand.append("%Table1Name%");
 				expectedCommand.append(".`");
-				expectedCommand.append(sqlFields[i].short_field_without_quote.replace(".", "_").toUpperCase());
+				expectedCommand.append(sqlFields[i].shortFieldWithoutQuote.replace(".", "_").toUpperCase());
 				expectedCommand.append("`");
 				expectedCommand.append(op_comp.getContent());
 				expectedCommand.append(SymbolType.NULL.getContent());
@@ -3397,9 +3389,9 @@ public abstract class TestDatabase {
 			else if (op_comp == SymbolType.LIKE)
 				test = fa.equals(nearestObjectInstance, value);
 			else if (op_comp == SymbolType.IS)
-				test = fa.equals(nearestObjectInstance, (Object)null);
+				test = fa.equals(nearestObjectInstance, null);
 			else if (op_comp == SymbolType.ISNOT)
-				test = !fa.equals(nearestObjectInstance, (Object)null);
+				test = !fa.equals(nearestObjectInstance, null);
 			else if (op_comp == SymbolType.NOTLIKE)
 				test = !fa.equals(nearestObjectInstance, value);
 			else {
@@ -3466,9 +3458,9 @@ public abstract class TestDatabase {
 			else if (op_comp == SymbolType.NOTLIKE)
 				test = !fa.getValue(nearestObjectInstance).toString().equals(value.toString());
 			else {
-				Comparable v = (Comparable)fa.getValue(nearestObjectInstance);
+				@SuppressWarnings("rawtypes") Comparable v = (Comparable)fa.getValue(nearestObjectInstance);
 
-				int comp = v.compareTo(value);
+				@SuppressWarnings("unchecked") int comp = v.compareTo(value);
 				if (op_comp == SymbolType.GREATEROPERATOR)
 					test = comp > 0;
 				else if (op_comp == SymbolType.GREATEROREQUALOPERATOR)
@@ -3481,7 +3473,7 @@ public abstract class TestDatabase {
 
 			if (value instanceof CharSequence)
 				command.append("\"");
-			command.append(value.toString());
+			command.append(value);
 			if (value instanceof CharSequence)
 				command.append("\"");
 			expectedCommand.append("%Table1Name%");
@@ -3491,7 +3483,7 @@ public abstract class TestDatabase {
 			expectedCommand.append(op_comp.getContent());
 			if (value instanceof CharSequence)
 				expectedCommand.append("\"");
-			expectedCommand.append(value.toString());
+			expectedCommand.append(value);
 			if (value instanceof CharSequence)
 				expectedCommand.append("\"");
 		}

@@ -66,7 +66,7 @@ public class CalendarFieldAccessor extends FieldAccessor{
 		super(_sql_connection, _field, parentFieldName, getCompatibleClasses(_field), table, severalPrimaryKeysPresentIntoTable);
 		sql_fields = new SqlField[2];
 		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName() + "_utc",
-				Objects.requireNonNull(DatabaseWrapperAccessor.getLongType(sql_connection)), null, null, isNotNull());
+				Objects.requireNonNull(DatabaseWrapperAccessor.getLongType(sql_connection)), isNotNull());
 		boolean isVarBinarySupported=DatabaseWrapperAccessor.isVarBinarySupported(sql_connection);
 		if (limit<=0)
 			limit=32;
@@ -76,7 +76,7 @@ public class CalendarFieldAccessor extends FieldAccessor{
 			limit*=3;
 		sql_fields[1] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName() + "_tz",
 				Objects.requireNonNull(isVarBinarySupported ? DatabaseWrapperAccessor.getVarBinaryType(_sql_connection, limit)
-						: DatabaseWrapperAccessor.getBigDecimalType(sql_connection, limit)), null, null, isNotNull());
+						: DatabaseWrapperAccessor.getBigDecimalType(sql_connection, limit)), isNotNull());
 		isVarBinary = DatabaseWrapperAccessor.isVarBinarySupported(sql_connection);
 	}
 
@@ -123,7 +123,7 @@ public class CalendarFieldAccessor extends FieldAccessor{
 		return ByteTabFieldAccessor.getByteTab(v);
 
 	}
-	@Override
+	/*@Override
 	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
 			throws DatabaseException {
 		try {
@@ -150,7 +150,7 @@ public class CalendarFieldAccessor extends FieldAccessor{
 		} catch (SQLException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
-	}
+	}*/
 
 	@Override
 	public Object getValue(Object _class_instance) throws DatabaseException {
@@ -178,18 +178,18 @@ public class CalendarFieldAccessor extends FieldAccessor{
 	}
 
 	@Override
-	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
+	public SqlFieldInstance[] getSqlFieldsInstances(String sqlTableName, Object _instance) throws DatabaseException {
 		SqlFieldInstance[] res = new SqlFieldInstance[2];
 		Calendar did = (Calendar) getValue(_instance);
 		if (did==null)
 		{
-			res[0] = new SqlFieldInstance(supportQuotes, sql_fields[0], null);
-			res[1] = new SqlFieldInstance(supportQuotes, sql_fields[1], null);
+			res[0] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[0], null);
+			res[1] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[1], null);
 		}
 		else
 		{
-			res[0] = new SqlFieldInstance(supportQuotes, sql_fields[0], did.getTimeInMillis());
-			res[1] = new SqlFieldInstance(supportQuotes, sql_fields[1], getTZSQLObject(did.getTimeZone()));
+			res[0] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[0], did.getTimeInMillis());
+			res[1] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[1], getTZSQLObject(did.getTimeZone()));
 		}
 		return res;
 	}
@@ -223,7 +223,7 @@ public class CalendarFieldAccessor extends FieldAccessor{
 	}
 
 	@Override
-	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
+	public void setValue(String sqlTableName, Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
 
@@ -236,11 +236,11 @@ public class CalendarFieldAccessor extends FieldAccessor{
 			}
 
 			else {
-				utc=_result_set.getLong(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
+				utc=_result_set.getLong(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
 				if (isVarBinary) {
-					tz = _result_set.getBytes(getColmunIndex(_result_set, sql_fields[1].field_without_quote));
+					tz = _result_set.getBytes(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[1])));
 				} else {
-					tz = getBytes(_result_set.getBigDecimal(getColmunIndex(_result_set, sql_fields[1].field_without_quote)));
+					tz = getBytes(_result_set.getBigDecimal(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[1]))));
 				}
 			}
 			if ((utc==null)!=(tz==null))
@@ -289,7 +289,7 @@ public class CalendarFieldAccessor extends FieldAccessor{
 
 	}
 
-	@Override
+	/*@Override
 	public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set)
 			throws DatabaseException {
 		setValue(_class_instance, _field_instance);
@@ -328,7 +328,7 @@ public class CalendarFieldAccessor extends FieldAccessor{
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
-	}
+	}*/
 
 	@Override
 	public boolean canBePrimaryOrUniqueKey() {

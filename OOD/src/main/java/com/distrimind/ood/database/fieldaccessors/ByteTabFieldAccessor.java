@@ -54,7 +54,6 @@ import java.math.BigInteger;
 import java.sql.Blob;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Map;
 
@@ -104,21 +103,8 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 
 		}
 		assert type != null;
-		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(), type, null, null, isNotNull());
+		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(), type, isNotNull());
 
-		/*String vb=DatabaseWrapperAccessor.getVarBinaryType(_sql_connection, 0);
-		String lvb=DatabaseWrapperAccessor.getLongVarBinaryType(_sql_connection, 0);
-		if (vb!=null) {
-			int i = vb.indexOf("(");
-			if (i > 0)
-				vb = vb.substring(0, i);
-		}
-		if (lvb!=null) {
-			int i = lvb.indexOf("(");
-			if (i > 0)
-				lvb = lvb.substring(0, i);
-		}
-		isVarBinary = (vb!=null && type.startsWith(vb)) || (lvb!=null && type.startsWith(lvb));*/
 		this.isBigInteger=isBigInteger;
 	}
 	public static byte[] getByteTab(BigDecimal value)
@@ -212,7 +198,7 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	@Override
+	/*@Override
 	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
 			throws DatabaseException {
 		try {
@@ -247,7 +233,7 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 		} catch (SQLException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
-	}
+	}*/
 
 	private static final Class<?>[] compatible_classes = {byte[].class};
 
@@ -266,26 +252,26 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
+	public SqlFieldInstance[] getSqlFieldsInstances(String sqlTableName, Object _instance) throws DatabaseException {
 		SqlFieldInstance[] res = new SqlFieldInstance[1];
 		try
 		{
 			if (isVarBinary)
-				res[0] = new SqlFieldInstance(supportQuotes, sql_fields[0], getValue(_instance));
+				res[0] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[0], getValue(_instance));
 			else if (isBigInteger)
 			{
-				res[0] = new SqlFieldInstance(supportQuotes, sql_fields[0], getBigDecimalValue((byte[])getValue(_instance)));
+				res[0] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[0], getBigDecimalValue((byte[])getValue(_instance)));
 			}
 			else {
 				byte[] b = (byte[]) field.get(_instance);
 				if (b == null)
-					res[0] = new SqlFieldInstance(supportQuotes, sql_fields[0], null);
+					res[0] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[0], null);
 				else {
 					Blob blob = DatabaseWrapperAccessor.getBlob(sql_connection, b);
 					if (blob == null)
-						res[0] = new SqlFieldInstance(supportQuotes, sql_fields[0], new ByteArrayInputStream(b));
+						res[0] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[0], new ByteArrayInputStream(b));
 					else
-						res[0] = new SqlFieldInstance(supportQuotes, sql_fields[0], blob);
+						res[0] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[0], blob);
 				}
 			}
 		}
@@ -312,21 +298,21 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
+	public void setValue(String sqlTableName, Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
 			if (isVarBinary) {
-				byte[] res = _result_set.getBytes(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
+				byte[] res = _result_set.getBytes(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
 				if (res == null && isNotNull())
 					throw new DatabaseIntegrityException("Unexpected exception.");
 				field.set(_class_instance, res);
 			} else if (isBigInteger){
-				byte[] res = getByteTab(_result_set.getBigDecimal(getColmunIndex(_result_set, sql_fields[0].field_without_quote)));
+				byte[] res = getByteTab(_result_set.getBigDecimal(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0]))));
 				if (res == null && isNotNull())
 					throw new DatabaseIntegrityException("Unexpected exception.");
 				field.set(_class_instance, res);
 			} else {
-				Blob b = _result_set.getBlob(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
+				Blob b = _result_set.getBlob(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
 				byte[] res = b == null ? null : b.getBytes(1, (int) b.length());
 				if (res == null && isNotNull())
 					throw new DatabaseIntegrityException("Unexpected exception.");
@@ -374,7 +360,7 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	@Override
+	/*@Override
 	public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set)
 			throws DatabaseException {
 		setValue(_class_instance, _field_instance);
@@ -428,7 +414,7 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
-	}
+	}*/
 
 	@Override
 	public boolean canBePrimaryOrUniqueKey() {

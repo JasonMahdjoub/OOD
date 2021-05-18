@@ -35,10 +35,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database.messages;
 
-import com.distrimind.ood.database.AuthenticatedP2PMessage;
-import com.distrimind.ood.database.DatabaseEvent;
-import com.distrimind.ood.database.DatabaseWrapper;
-import com.distrimind.ood.database.EncryptionTools;
+import com.distrimind.ood.database.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
@@ -155,12 +152,12 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 					SerializationTools.getInternalSize(e.getValue().getLastValidatedLocalID(), EncryptionTools.MAX_ENCRYPTED_ID_SIZE)+
 					SerializationTools.getInternalSize(encryptedCompatibleDatabases.get(e.getKey()), AbstractCompatibleEncryptedDatabaseMessage.MAX_SIZE_OF_ENCRYPTED_PACKAGES_NAMES_IN_BYTES);
 			for (Map.Entry<String, byte[]> e2 : e.getValue().getLastValidatedDistantIDPerDatabase().entrySet()) {
-				res+=SerializationTools.getInternalSize(e2.getKey(), SerializationTools.MAX_CLASS_LENGTH)
+				res+=SerializationTools.getInternalSize(e2.getKey(), Table.MAX_DATABASE_PACKAGE_NAME_LENGTH)
 						+SerializationTools.getInternalSize(e2.getValue(), EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
 			}
 		}
 		for (String s : this.lastValidatedTransactionsUTCForDestinationHost.keySet())
-			res+=SerializationTools.getInternalSize(s, SerializationTools.MAX_CLASS_LENGTH);
+			res+=SerializationTools.getInternalSize(s, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
 
 		return res;
 	}
@@ -178,7 +175,7 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 				throw new IOException();
 			out.writeInt(s);
 			for (Map.Entry<String, byte[]> e2 : e.getValue().getLastValidatedDistantIDPerDatabase().entrySet()) {
-				out.writeString(e2.getKey(), false, SerializationTools.MAX_CLASS_LENGTH);
+				out.writeString(e2.getKey(), false, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
 				out.writeBytesArray(e2.getValue(), false, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
 			}
 			out.writeBytesArray(encryptedCompatibleDatabases.get(e.getKey()), true, AbstractCompatibleEncryptedDatabaseMessage.MAX_SIZE_OF_ENCRYPTED_PACKAGES_NAMES_IN_BYTES);
@@ -186,7 +183,7 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 		out.writeUnsignedInt16Bits(this.lastValidatedTransactionsUTCForDestinationHost.size());
 		for (Map.Entry<String, Long> e : lastValidatedTransactionsUTCForDestinationHost.entrySet())
 		{
-			out.writeString(e.getKey(), false, SerializationTools.MAX_CLASS_LENGTH);
+			out.writeString(e.getKey(), false, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
 			out.writeLong(e.getValue());
 		}
 		out.writeCollection(encryptedAuthenticatedP2PMessages, true, IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup.SIZE_IN_BYTES_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND);
@@ -211,7 +208,7 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 			Map<String, byte[]> lastValidatedDistantIDPerDatabase=new HashMap<>();
 			for (int j=0;j<s2;j++)
 			{
-				String db=in.readString(false, SerializationTools.MAX_CLASS_LENGTH);
+				String db=in.readString(false, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
 				byte[] lastValidatedDistantID=in.readBytesArray(false, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
 				lastValidatedDistantIDPerDatabase.put(db, lastValidatedDistantID);
 			}
@@ -226,7 +223,7 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 			throw new MessageExternalizationException(Integrity.FAIL);
 		for (int i=0;i<s;i++)
 		{
-			String packageString=in.readString(false, SerializationTools.MAX_CLASS_LENGTH);
+			String packageString=in.readString(false, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
 			if (packageString.trim().length()==0)
 				throw new MessageExternalizationException(Integrity.FAIL);
 			long utc=in.readLong();

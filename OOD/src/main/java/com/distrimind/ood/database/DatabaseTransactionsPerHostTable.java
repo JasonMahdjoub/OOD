@@ -812,7 +812,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 									case REMOVE_WITH_CASCADE:
 										if (addedEvent.getOldDatabaseRecord() != null) {
 											try {
-												addedEvent.getTable().removeUntypedRecordWithCascade(addedEvent.getOldDatabaseRecord(), transactionToResendFinal, null);
+												addedEvent.getTable().removeUntypedRecordWithCascade(addedEvent.getOldDatabaseRecord(), transactionToResendFinal);
 											} catch (RecordNotFoundDatabaseException e) {
 
 												addedEvent.getTable().anomalyDetected(fromHook.getHostID(),
@@ -858,7 +858,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 										}
 										break;
 									case REMOVE_ALL_RECORDS_WITH_CASCADE: {
-										addedEvent.getTable().removeAllRecordsWithCascade(false, null);
+										addedEvent.getTable().removeAllRecordsWithCascade(false);
 									}
 										break;
 								}

@@ -49,7 +49,6 @@ import java.lang.reflect.Field;
 import java.sql.Clob;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Map;
 
@@ -75,7 +74,7 @@ public class StringFieldAccessor extends FieldAccessor {
 				l < DatabaseWrapperAccessor.getVarCharLimit(sql_connection)
 						? "VARCHAR(" + l + ")"
 						:DatabaseWrapperAccessor.getTextType(sql_connection, l),
-				null, null, isNotNull());
+				isNotNull());
 	}
 
 	@Override
@@ -112,7 +111,7 @@ public class StringFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	@Override
+	/*@Override
 	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
 			throws DatabaseException {
 		try {
@@ -126,7 +125,7 @@ public class StringFieldAccessor extends FieldAccessor {
 		} catch (SQLException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
-	}
+	}*/
 
 	private static final Class<?>[] compatible_classes = { String.class };
 
@@ -145,9 +144,9 @@ public class StringFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
+	public SqlFieldInstance[] getSqlFieldsInstances(String sqlTableName, Object _instance) throws DatabaseException {
 		SqlFieldInstance[] res = new SqlFieldInstance[1];
-		res[0] = new SqlFieldInstance(supportQuotes, sql_fields[0], getValue(_instance));
+		res[0] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[0], getValue(_instance));
 		return res;
 	}
 
@@ -183,16 +182,16 @@ public class StringFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
+	public void setValue(String sqlTableName, Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
 			if (sql_fields[0].type.startsWith("VARCHAR")) {
-				String res = _result_set.getString(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
+				String res = _result_set.getString(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
 				if (res == null && isNotNull())
 					throw new DatabaseIntegrityException("Unexpected exception.");
 				field.set(_class_instance, res);
 			} else {
-				Clob c = _result_set.getClob(getColmunIndex(_result_set, sql_fields[0].field_without_quote));
+				Clob c = _result_set.getClob(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
 				String res = c.getSubString(0, (int) c.length());
 				if (res == null && isNotNull())
 					throw new DatabaseIntegrityException("Unexpected exception.");
@@ -225,7 +224,7 @@ public class StringFieldAccessor extends FieldAccessor {
 
 	}
 
-	@Override
+	/*@Override
 	public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set)
 			throws DatabaseException {
 		setValue(_class_instance, _field_instance);
@@ -245,7 +244,7 @@ public class StringFieldAccessor extends FieldAccessor {
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
-	}
+	}*/
 
 	@Override
 	public boolean canBePrimaryOrUniqueKey() {

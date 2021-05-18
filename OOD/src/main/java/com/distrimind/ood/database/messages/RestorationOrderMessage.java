@@ -37,6 +37,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 import com.distrimind.ood.database.AuthenticatedP2PMessage;
 import com.distrimind.ood.database.DatabaseEvent;
+import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.SecuredObjectInputStream;
@@ -116,7 +117,7 @@ public class RestorationOrderMessage extends DatabaseEvent implements Authentica
 		out.writeObject(hostDestination, false );
 		out.writeObject(hostThatApplyRestoration, false );
 		out.writeLong(timeUTCOfRestorationInMs);
-		out.writeString(databasePackage, false, SerializationTools.MAX_CLASS_LENGTH);
+		out.writeString(databasePackage, false, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
 		out.writeLong(messageID);
 		out.writeBoolean(chooseNearestBackupIfNoBackupMatch);
 		out.writeLong(timeUTCInMsWhenRestorationIsDone);
@@ -128,7 +129,7 @@ public class RestorationOrderMessage extends DatabaseEvent implements Authentica
 		hostDestination=in.readObject(false);
 		hostThatApplyRestoration=in.readObject(false);
 		timeUTCOfRestorationInMs =in.readLong();
-		databasePackage=in.readString(false, SerializationTools.MAX_CLASS_LENGTH);
+		databasePackage=in.readString(false, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
 		messageID=in.readLong();
 		chooseNearestBackupIfNoBackupMatch=in.readBoolean();
 		timeUTCInMsWhenRestorationIsDone =in.readLong();
@@ -139,7 +140,7 @@ public class RestorationOrderMessage extends DatabaseEvent implements Authentica
 		return 25+SerializationTools.getInternalSize(hostSource)+
 				SerializationTools.getInternalSize(hostDestination)+
 				SerializationTools.getInternalSize(hostThatApplyRestoration)+
-				SerializationTools.getInternalSize(databasePackage, SerializationTools.MAX_CLASS_LENGTH)
+				SerializationTools.getInternalSize(databasePackage, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH)
 				;
 	}
 

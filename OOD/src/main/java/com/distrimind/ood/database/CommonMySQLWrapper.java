@@ -327,7 +327,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 								boolean found = false;
 								for (FieldAccessor fa : table.getFieldAccessors()) {
 									for (SqlField sf : fa.getDeclaredSqlFields()) {
-										if (sf.field_without_quote.equals(col) && fa.isUnique()) {
+										if (sf.fieldWithoutQuote.equals(col) && fa.isUnique()) {
 											found = true;
 											break;
 										}
@@ -359,15 +359,15 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 						+ table.getSqlTableName() + "' AND CONSTRAINT_SCHEMA='"+ databaseName +"';"))) {
 			while (rq.result_set.next()) {
 				String pointed_table = rq.result_set.getString("REFERENCED_TABLE_NAME");
-				String pointed_col = pointed_table + "." + rq.result_set.getString("REFERENCED_COLUMN_NAME");
+				String pointed_col = rq.result_set.getString("REFERENCED_COLUMN_NAME");
 				String fk = table.getSqlTableName() + "." + rq.result_set.getString("COLUMN_NAME");
 				if (pointed_table==null)
 					continue;
 				boolean found = false;
 				for (ForeignKeyFieldAccessor fa : table.getForeignKeysFieldAccessors()) {
 					for (SqlField sf : fa.getDeclaredSqlFields()) {
-						if (sf.field_without_quote.equals(fk) && sf.pointed_field_without_quote.equals(pointed_col)
-								&& sf.pointed_table_without_quote.equals(pointed_table)) {
+						if (sf.fieldWithoutQuote.equals(fk) && sf.pointedFieldWithoutQuote.equals(sf.pointedTableAlias +"."+pointed_col)
+								&& sf.pointedTableWithoutQuote.equals(pointed_table)) {
 							found = true;
 							break;
 						}
@@ -388,7 +388,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 			Pattern col_size_matcher = Pattern.compile("([0-9]+)");
 			for (FieldAccessor fa : table.getFieldAccessors()) {
 				for (SqlField sf : fa.getDeclaredSqlFields()) {
-					Table.ColumnsReadQuery cols=getColumnMetaData(table.getSqlTableName(), sf.short_field_without_quote);
+					Table.ColumnsReadQuery cols=getColumnMetaData(table.getSqlTableName(), sf.shortFieldWithoutQuote);
 					if (cols==null || !cols.tableColumnsResultSet.next())
 						throw new DatabaseVersionException(table,
 								"The field " + fa.getFieldName() + " was not found into the database.");
@@ -404,7 +404,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 									+ " has a size equals to " + col_size + " (expected " + sf.type + ")");
 					}
 					boolean is_null = cols.tableColumnsResultSet.isNullable();
-					if (is_null == sf.not_null)
+					if (is_null == sf.notNull)
 						throw new DatabaseVersionException(table, "The field " + fa.getFieldName()
 								+ " is expected to be " + (fa.isNotNull() ? "not null" : "nullable"));
 					boolean is_autoincrement = cols.tableColumnsResultSet.isAutoIncrement();
@@ -413,13 +413,13 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 								"The field " + fa.getFieldName() + " is " + (is_autoincrement ? "" : "not ")
 										+ "autoincremented into the Sql database where it is "
 										+ (is_autoincrement ? "not " : "") + " into the OOD database.");
-					sf.sql_position = cols.tableColumnsResultSet.getOrdinalPosition();
+					sf.sqlPosition = cols.tableColumnsResultSet.getOrdinalPosition();
 
 					if (fa.isPrimaryKey()) {
 						try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection,
 								new Table.SqlQuery(
 										"select * from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
-												+ table.getSqlTableName() + "' AND COLUMN_NAME='" + sf.short_field_without_quote
+												+ table.getSqlTableName() + "' AND COLUMN_NAME='" + sf.shortFieldWithoutQuote
 												+ "' AND CONSTRAINT_NAME='PRIMARY' AND CONSTRAINT_SCHEMA='"+ databaseName +"';"))) {
 							if (!rq.result_set.next())
 								throw new DatabaseVersionException(table, "The field " + fa.getFieldName()
@@ -429,14 +429,14 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 					if (fa.isForeignKey()) {
 						try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection, new Table.SqlQuery(
 								"select REFERENCED_TABLE_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
-										+ table.getSqlTableName() + "' AND REFERENCED_TABLE_NAME='" + sf.pointed_table_without_quote
-										+ "' AND REFERENCED_COLUMN_NAME='" + sf.short_pointed_field_without_quote + "' AND COLUMN_NAME='"
-										+ sf.short_field_without_quote + "'"))) {
+										+ table.getSqlTableName() + "' AND REFERENCED_TABLE_NAME='" + sf.pointedTableWithoutQuote
+										+ "' AND REFERENCED_COLUMN_NAME='" + sf.shortPointedFieldWithoutQuote + "' AND COLUMN_NAME='"
+										+ sf.shortFieldWithoutQuote + "'"))) {
 							if (!rq.result_set.next())
 								throw new DatabaseVersionException(table,
 										"The field " + fa.getFieldName() + " is a foreign key. One of its Sql fields "
 												+ sf.field + " is not a foreign key pointing to the table "
-												+ sf.pointed_table);
+												+ sf.pointedTable);
 						}
 					}
 					if (fa.isUnique()) {
@@ -454,7 +454,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 										if (rq2.result_set.next()) {
 											String col = table.getSqlTableName() + "."
 													+ rq2.result_set.getString("COLUMN_NAME");
-											if (col.equals(sf.field_without_quote)) {
+											if (col.equals(sf.fieldWithoutQuote)) {
 												found = true;
 												break;
 											}

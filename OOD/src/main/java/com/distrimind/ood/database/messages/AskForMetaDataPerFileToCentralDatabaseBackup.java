@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database.messages;
 
 import com.distrimind.ood.database.DatabaseEvent;
+import com.distrimind.ood.database.Table;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.*;
 
@@ -95,7 +96,7 @@ public class AskForMetaDataPerFileToCentralDatabaseBackup extends DatabaseEvent 
 	public int getInternalSerializedSize() {
 		return 9+SerializationTools.getInternalSize((SecureExternalizable)hostSource)+
 				SerializationTools.getInternalSize((SecureExternalizable) channelHost)+
-				SerializationTools.getInternalSize(packageString, SerializationTools.MAX_CLASS_LENGTH);
+				SerializationTools.getInternalSize(packageString, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
 	}
 
 	@Override
@@ -103,7 +104,7 @@ public class AskForMetaDataPerFileToCentralDatabaseBackup extends DatabaseEvent 
 		out.writeObject(hostSource, false);
 		out.writeObject(channelHost, false);
 		fileCoordinate.write(out);
-		out.writeString(packageString, false, SerializationTools.MAX_CLASS_LENGTH);
+		out.writeString(packageString, false, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
 	}
 
 	@Override
@@ -113,7 +114,7 @@ public class AskForMetaDataPerFileToCentralDatabaseBackup extends DatabaseEvent 
 		fileCoordinate=FileCoordinate.read(in);
 		if (fileCoordinate==null)
 			throw new MessageExternalizationException(Integrity.FAIL);
-		packageString=in.readString(false, SerializationTools.MAX_CLASS_LENGTH);
+		packageString=in.readString(false, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
 		if (packageString.trim().length()==0)
 			throw new MessageExternalizationException(Integrity.FAIL);
 	}
