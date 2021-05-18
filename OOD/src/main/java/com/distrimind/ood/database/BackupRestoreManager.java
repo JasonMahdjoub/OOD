@@ -1994,7 +1994,7 @@ public class BackupRestoreManager {
 										{
 											Table<?> t=tables.get(i);
 											try (Table.Lock ignored = new Table.WriteLock(t)) {
-												t.removeAllRecordsWithCascadeImpl(true, null);
+												t.removeAllRecordsWithCascadeImpl(true);
 											}
 											catch (Exception e) {
 												throw DatabaseException.getDatabaseException(e);
@@ -2041,7 +2041,7 @@ public class BackupRestoreManager {
 													}
 
 													try {
-														 table.addUntypedRecord(hm, true, null);
+														 table.addUntypedRecord(hm);
 														//newRecord = table.addUntypedRecord(hm, drRecord == null, null);
 													} catch (ConstraintsNotRespectedDatabaseException ignored) {
 														//TODO this exception occurs sometimes but should not. See why.

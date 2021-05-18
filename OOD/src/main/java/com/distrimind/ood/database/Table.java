@@ -2100,9 +2100,11 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		final RuleInstance rule = (where==null || where.trim().length()==0)?null:Interpreter.getRuleInstance(where);
 		if (isLoadedInMemory()) {
 			ArrayList<T> records = getRecords(-1, -1, is_already_sql_transaction);
+			if (rule==null)
+				return records.size();
 			long rowCount = 0;
 			for (T r : records) {
-				if (rule==null || rule.isConcernedBy(this, parameters, r)) {
+				if (rule.isConcernedBy(this, parameters, r)) {
 					++rowCount;
 				}
 			}
@@ -2180,7 +2182,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				@Override
 				public void init(int _field_count) {
 				}
-			}, personalFilter ? ((PersonalFilter) _filter).getSQLQuery(true) : getSqlGeneralSelect(-1,-1,true),
+			}, personalFilter ? ((PersonalFilter) _filter).getSQLQuery() : getSqlGeneralSelect(-1,-1,true),
 					TransactionIsolation.TRANSACTION_READ_COMMITTED);
 			return pos.get();
 		}
@@ -3624,7 +3626,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				@Override
 				public void init(int _field_count) {
 				}
-			}, personalFilter ? ((PersonalFilter) _filter).getSQLQuery(true) : getSqlGeneralSelect(-1,-1,true),
+			}, personalFilter ? ((PersonalFilter) _filter).getSQLQuery() : getSqlGeneralSelect(-1,-1,true),
 					TransactionIsolation.TRANSACTION_READ_COMMITTED);
 		}
 		return res;
@@ -3789,7 +3791,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			}
 			RunnableTmp runnable = new RunnableTmp();
 			getListRecordsFromSqlConnection(runnable,
-					personalFilter ? ((PersonalFilter) _filter).getSQLQuery(true) : getSqlGeneralSelect(true),
+					personalFilter ? ((PersonalFilter) _filter).getSQLQuery() : getSqlGeneralSelect(true),
 					TransactionIsolation.TRANSACTION_READ_COMMITTED);
 			return runnable.res;
 		}
@@ -3804,7 +3806,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			this.orderByFields = orderByFields;
 		}
 
-		abstract SqlQuery getSQLQuery(boolean loadJunctions);
+		abstract SqlQuery getSQLQuery();
 
 	}
 
@@ -3926,8 +3928,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 
 		@Override
-		public SqlQuery getSQLQuery(boolean loadJunctions) {
-			return new SqlGeneralSelectQueryWithFieldMatch(rowStart, rowLength, fields_accessor, loadJunctions, this.given_fields, "AND", ascendant,
+		public SqlQuery getSQLQuery() {
+			return new SqlGeneralSelectQueryWithFieldMatch(rowStart, rowLength, fields_accessor, true, this.given_fields, "AND", ascendant,
 					orderByFields);
 		}
 
@@ -3969,8 +3971,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 
 		@Override
-		public SqlQuery getSQLQuery(boolean loadJunctions) {
-			return new SqlGeneralSelectQueryWithMultipleFieldMatch(rowStart, rowLength, loadJunctions, this.given_fields, "AND", ascendant,
+		public SqlQuery getSQLQuery() {
+			return new SqlGeneralSelectQueryWithMultipleFieldMatch(rowStart, rowLength, true, this.given_fields, "AND", ascendant,
 					orderByFields);
 		}
 
@@ -4005,8 +4007,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 
 		@Override
-		public SqlQuery getSQLQuery(boolean loadJunctions) {
-			return new SqlGeneralSelectQueryWithFieldMatch(rowStart, rowLength, fields_accessor, loadJunctions, this.given_fields, "OR", ascendant,
+		public SqlQuery getSQLQuery() {
+			return new SqlGeneralSelectQueryWithFieldMatch(rowStart, rowLength, fields_accessor, true, this.given_fields, "OR", ascendant,
 					orderByFields);
 		}
 
@@ -4048,8 +4050,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 
 		@Override
-		public SqlQuery getSQLQuery(boolean loadJunctions) {
-			return new SqlGeneralSelectQueryWithMultipleFieldMatch(rowStart, rowLength, loadJunctions, this.given_fields, "OR", ascendant,
+		public SqlQuery getSQLQuery() {
+			return new SqlGeneralSelectQueryWithMultipleFieldMatch(rowStart, rowLength, true, this.given_fields, "OR", ascendant,
 					orderByFields);
 		}
 
@@ -4981,9 +4983,9 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 */
 	@SuppressWarnings("UnusedReturnValue")
 	public final long removeAllRecordsWithCascade() throws DatabaseException {
-		return removeAllRecordsWithCascade(true, null);
+		return removeAllRecordsWithCascade(true);
 	}
-	final long removeAllRecordsWithCascade(boolean synchronizeIfNecessary, Set<DecentralizedValue> hostsDestination) throws DatabaseException {
+	final long removeAllRecordsWithCascade(boolean synchronizeIfNecessary) throws DatabaseException {
 		try (Lock ignored = new WriteLock(this)) {
 			return (long)sql_connection.runTransaction(new Transaction() {
 				@Override
@@ -4992,7 +4994,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				}
 				@Override
 				public Long run(DatabaseWrapper _sql_connection) throws DatabaseException {
-					return removeAllRecordsWithCascadeImpl(synchronizeIfNecessary, hostsDestination);
+					return removeAllRecordsWithCascadeImpl(synchronizeIfNecessary);
 				}
 
 				@Override
@@ -5015,7 +5017,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 	}
 
-	final long removeAllRecordsWithCascadeImpl(boolean synchronizeIfNecessary, Set<DecentralizedValue> hostsDestination) throws DatabaseException {
+	final long removeAllRecordsWithCascadeImpl(boolean synchronizeIfNecessary) throws DatabaseException {
 		String sqlQuery = "DELETE FROM "+getSqlTableName()+sql_connection.getSqlComma();
 		try {
 			PreparedStatement statement= sql_connection.getConnectionAssociatedWithCurrentThread().getConnection().prepareStatement(sqlQuery, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE);
@@ -5026,7 +5028,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			}
 			if (hasBackupManager || synchronizeIfNecessary)
 				getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
-					new TableEvent<>(-1, DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE, this, null, null, hostsDestination), synchronizeIfNecessary);
+					new TableEvent<>(-1, DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE, this, null, null, null), synchronizeIfNecessary);
 			return res;
 
 		} catch (SQLException e) {
@@ -5701,10 +5703,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			@Override
 			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 				class RunnableTmp extends Runnable {
-					private final RuleInstance rule;
 
-					RunnableTmp(RuleInstance rule) {
-						this.rule = rule;
+
+					RunnableTmp() {
+
 					}
 
 					public int deleted_records_number;
@@ -5717,8 +5719,9 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					@Override
 					public boolean setInstance(T _instance, ResultSet _cursor) throws DatabaseException {
 						try {
-							boolean toRemove = rule == null || rule.isConcernedBy(Table.this, parameters, _instance);
-							if (toRemove && list_tables_pointing_to_this_table.size() > 0) {
+							//boolean toRemove = rule == null || rule.isConcernedBy(Table.this, parameters, _instance);
+							boolean toRemove=true;
+							if (/*toRemove && */list_tables_pointing_to_this_table.size() > 0) {
                                 for (NeighboringTable nt : list_tables_pointing_to_this_table) {
 
                                     if (nt.getPointingTable().hasRecordsWithOneOfSqlForeignKeyWithCascade(
@@ -5748,7 +5751,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				String sqlQuery = rule.translateToSqlQuery(Table.this, parameters, sqlParameters, new HashSet<>())
 							.toString();
 
-				RunnableTmp runnable = new RunnableTmp(rule);
+				RunnableTmp runnable = new RunnableTmp();
 				getListRecordsFromSqlConnection(runnable,
 						getSqlGeneralSelect(-1,-1,true, sqlQuery, sqlParameters),
 						TransactionIsolation.TRANSACTION_REPEATABLE_READ, true);
@@ -5836,7 +5839,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 				RunnableTmp runnable = new RunnableTmp();
 				getListRecordsFromSqlConnection(runnable,
-						(_filter instanceof Table.PersonalFilter) ? ((PersonalFilter) _filter).getSQLQuery(true)
+						(_filter instanceof Table.PersonalFilter) ? ((PersonalFilter) _filter).getSQLQuery()
 								: getSqlGeneralSelect(true),
 						TransactionIsolation.TRANSACTION_SERIALIZABLE, false);
 				if (runnable.deleted_records_number>0 && isLoadedInMemory())
@@ -6370,10 +6373,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			@Override
 			public Long run(DatabaseWrapper _sql_connection) throws DatabaseException {
 				class RunnableTmp extends Runnable {
-					private final RuleInstance rule;
+					//private final RuleInstance rule;
 
-					RunnableTmp(RuleInstance rule) {
-						this.rule = rule;
+					RunnableTmp() {
+						//this.rule = rule;
 					}
 
 					public long deleted_records_number;
@@ -6386,13 +6389,13 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					@Override
 					public boolean setInstance(T _instance, ResultSet _cursor) throws DatabaseException {
 						try {
-							if ((rule == null || rule.isConcernedBy(Table.this, parameters, _instance))
-									&& _filter.nextRecord(_instance))
+							if (/*(rule == null || rule.isConcernedBy(Table.this, parameters, _instance))
+									&& */_filter.nextRecord(_instance))
 							{
 								if (!sql_connection.supportForeignKeys())
 									removeWithCascadeRecordsPointingToThisRecordImpl(_instance);
 
-								removeUntypedRecordWithCascadeImpl(_instance, true, null, false);
+								removeUntypedRecordWithCascadeImpl(_instance, true, false);
 								++deleted_records_number;
 								/*_instance.__createdIntoDatabase = false;
 								//updateMemoryForRemovingRecordWithCascade(_instance);
@@ -6417,10 +6420,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 							.toString();
 				}
 
-				RunnableTmp runnable = new RunnableTmp(sqlQuery == null ? rule : null);
+				RunnableTmp runnable = new RunnableTmp();
 				try {
 					getListRecordsFromSqlConnection(runnable,
-							(_filter instanceof Table.PersonalFilter) ? ((PersonalFilter) _filter).getSQLQuery(true)
+							(_filter instanceof Table.PersonalFilter) ? ((PersonalFilter) _filter).getSQLQuery()
 									: (sqlQuery == null ? getSqlGeneralSelect(true)
 											: getSqlGeneralSelect(-1,-1,true, sqlQuery, sqlParameters)),
 							TransactionIsolation.TRANSACTION_SERIALIZABLE, true);
@@ -6647,10 +6650,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 *             occurs if the record has already been deleted.
 	 */
 	public final void removeRecordWithCascade(final T _record) throws DatabaseException {
-		removeUntypedRecordWithCascade(_record, true, null);
+		removeUntypedRecordWithCascade(_record, true);
 	}
 	private void removeUntypedRecordWithCascadeImpl(final T record, final boolean synchronizeIfNecessary,
-											  final Set<DecentralizedValue> hostsDestinations, boolean refreshMemory) throws DatabaseException {
+													boolean refreshMemory) throws DatabaseException {
 		try (PreparedUpdateQuery puq = new PreparedUpdateQuery(
 				sql_connection.getConnectionAssociatedWithCurrentThread().getConnection(),
 				"DELETE FROM " + Table.this.getSqlTableName() + " WHERE " + getSqlPrimaryKeyCondition(1))) {
@@ -6668,7 +6671,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			if (hasBackupManager || synchronizeIfNecessary)
 				getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
 						new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE,Table.this, record, null,
-								hostsDestinations), synchronizeIfNecessary);
+								null), synchronizeIfNecessary);
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -6677,8 +6680,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		record.__createdIntoDatabase = false;
 	}
 	@SuppressWarnings("SameParameterValue")
-    final void removeUntypedRecordWithCascade(final DatabaseRecord record, final boolean synchronizeIfNecessary,
-                                              final Set<DecentralizedValue> hostsDestinations) throws DatabaseException {
+    final void removeUntypedRecordWithCascade(final DatabaseRecord record, final boolean synchronizeIfNecessary) throws DatabaseException {
 		if (record == null)
 			throw new NullPointerException("The parameter _record is a null pointer !");
 		@SuppressWarnings("unchecked")
@@ -6698,7 +6700,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				@Override
 				public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 
-                    removeUntypedRecordWithCascadeImpl(_record, synchronizeIfNecessary, null, true);
+                    removeUntypedRecordWithCascadeImpl(_record, synchronizeIfNecessary, true);
 
 					return null;
 				}
@@ -7329,14 +7331,13 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 	}
 
-	@SuppressWarnings("SameParameterValue")
-	final DatabaseRecord addUntypedRecord(Map<String, Object> fields,
-										  boolean synchronizeIfNecessary, Set<DecentralizedValue> hostsDestination) throws DatabaseException {
+	@SuppressWarnings("UnusedReturnValue")
+	final DatabaseRecord addUntypedRecord(Map<String, Object> fields) throws DatabaseException {
 		if (fields == null)
 			throw new NullPointerException("The parameter fields is a null pointer !");
 
 		try (Lock ignored = new WriteLock(this)) {
-			T res = addRecord(fields, false, null, synchronizeIfNecessary, hostsDestination);
+			T res = addRecord(fields, false, null, true, null);
 			res.__createdIntoDatabase = true;
 			return res;
 		} catch (Exception e) {
@@ -8228,11 +8229,11 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					final AtomicBoolean updateWithCascade=new AtomicBoolean(false);
 					class RunnableTmp extends Runnable {
 						protected final ArrayList<FieldAccessor> fields_accessor;
-						private final RuleInstance rule;
 
-						public RunnableTmp(ArrayList<FieldAccessor> _fields_accessor, RuleInstance rule) {
+
+						public RunnableTmp(ArrayList<FieldAccessor> _fields_accessor) {
 							fields_accessor = _fields_accessor;
-							this.rule = rule;
+
 						}
 
 						@Override
@@ -8243,7 +8244,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						@Override
 						public boolean setInstance(T _instance, ResultSet _result_set) throws DatabaseException {
 							try {
-								if ((rule == null || rule.isConcernedBy(Table.this, parameters, _instance))) {
+								//if ((rule == null || rule.isConcernedBy(Table.this, parameters, _instance))) {
 									_filter.reset();
 									//final T oldRecord = copyRecord(_instance);
 									_filter.nextRecord(_instance);
@@ -8260,14 +8261,14 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
                                             }
 										}
 										if (canBeRemoved) {
-											removeUntypedRecordWithCascadeImpl(_instance,true, null, false );
+											removeUntypedRecordWithCascadeImpl(_instance,true, false );
 											//_result_set.deleteRow();
 											oneUpdated.set(true);
 											/*getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
 													new TableEvent<>(-1, DatabaseEventType.REMOVE, Table.this,oldRecord, null, null), true);*/
 										}
 									} else if (_filter.hasToBeRemovedWithCascade()) {
-										removeUntypedRecordWithCascadeImpl(_instance,true, null, false );
+										removeUntypedRecordWithCascadeImpl(_instance,true, false );
 										//_result_set.deleteRow();
 										//updateMemoryForRemovingRecordWithCascade(_instance);
 										updateWithCascade.set(true);
@@ -8328,7 +8329,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 													new TableEvent<>(-1, DatabaseEventType.UPDATE, Table.this,oldRecord, _instance, null), true);*/
 										}
 									}
-								}
+								//}
 								return true;
 							} catch (Exception e) {
 								throw DatabaseException.getDatabaseException(e);
@@ -8342,7 +8343,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 								.toString();
 					}
 
-					RunnableTmp runnable = new RunnableTmp(fields, sqlQuery == null ? rule : null);
+					RunnableTmp runnable = new RunnableTmp(fields);
 					getListRecordsFromSqlConnection(runnable,
 							sqlQuery == null ? getSqlGeneralSelect(true) : getSqlGeneralSelect(-1,-1,true, sqlQuery, sqlParameters),
 							TransactionIsolation.TRANSACTION_SERIALIZABLE, true);
