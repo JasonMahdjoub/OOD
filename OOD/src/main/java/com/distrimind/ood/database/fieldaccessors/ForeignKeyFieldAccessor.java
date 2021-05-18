@@ -367,7 +367,7 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 					t.getDefaultRecordConstructor(), true);
 
 				for (FieldAccessor fa : t.getFieldAccessors())
-					fa.setValue(tableAliasName, dr, _result_set, _pointing_records);
+					fa.setValue(sqlTableName+tableAliasName, dr, _result_set, _pointing_records);
 				field.set(_class_instance, dr);
 				if (_pointing_records!=null)
 					_pointing_records.add(dr);

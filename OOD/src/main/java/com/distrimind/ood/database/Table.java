@@ -1492,7 +1492,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		for (ForeignKeyFieldAccessor fa : foreign_keys_fields) {
 			Table<?> t = fa.getPointedTable();
 			if (includeAllJunctions || containsPointedTable(tablesJunction, t))
-				t.getSqlSelectStep1Fields(fa.getTableAliasName(), includeAllJunctions, tablesJunction, sb, startSize);
+				t.getSqlSelectStep1Fields(sqlTableName+fa.getTableAliasName(), includeAllJunctions, tablesJunction, sb, startSize);
 		}
 
 	}
@@ -1569,6 +1569,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			tablesJunction = null;
 		}*/
 		sb.append(this.getSqlTableName());
+		if (this.getClass().getSimpleName().equalsIgnoreCase("LastValidatedDistantIDPerClientTable"))
 		if (!includeAllJunctions && (tablesJunction == null || tablesJunction.size() == 0))
 			return ;
 
@@ -1595,8 +1596,13 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			return true;
 		for (ForeignKeyFieldAccessor fa2 : getForeignKeysFieldAccessors()) {
 			Table<?> t = fa2.getPointedTable();
-			if (t.containsLoop(tablesParsed))
+			if (t.containsLoop(new HashSet<>(tablesParsed))) {
 				return true;
+			}
+		}
+		for (ForeignKeyFieldAccessor fa2 : getForeignKeysFieldAccessors()) {
+			Table<?> t = fa2.getPointedTable();
+			tablesParsed.add((Class<? extends Table<?>>) t.getClass());
 		}
 		return false;
 
@@ -1618,7 +1624,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			return;
 		sb.append(" LEFT OUTER JOIN ")
 				.append(fa.getPointedTable().getSqlTableName())
-				.append(" as ")
+				.append(" ")
+				.append(sqlTableName)
 				.append(fa.getTableAliasName())
 				.append(" ON ");
 		boolean firstOn = true;
@@ -1631,11 +1638,12 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					.append(".")
 					.append(sf.shortField)
 					.append("=")
+					.append(sqlTableName)
 					.append(sf.pointedField);
 		}
 		Table<?> t = fa.getPointedTable();
 		for (ForeignKeyFieldAccessor fa2 : t.getForeignKeysFieldAccessors()) {
-			t.getFromPart(sb, fa.getTableAliasName(), fa2, includeAllJunctions, tablesJunction);
+			t.getFromPart(sb, sqlTableName+fa.getTableAliasName(), fa2, includeAllJunctions, tablesJunction);
 		}
 	}
 
@@ -2277,6 +2285,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		int indexStart=0;
 		if (sqlTableName.get()==null)
 			sqlTableName.set(getSqlTableName());
+
 		StringBuilder prevPrefix= new StringBuilder();
 		List<FieldAccessor> fields=this.fields;
 		while(fields!=null) {
@@ -2297,7 +2306,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 						ForeignKeyFieldAccessor fkfa = (ForeignKeyFieldAccessor) f;
 						tablesJunction.add(new RuleInstance.TableJunction(this, fkfa.getPointedTable(), fkfa));
-						sqlTableName.set(fkfa.getTableAliasName());
+						sqlTableName.set(sqlTableName.get()+fkfa.getTableAliasName());
 						return fkfa.getPointedTable().getFieldAccessor(fieldName.substring(indexEnd + 1), tablesJunction, sqlTableName);
 					} else if (f instanceof ComposedFieldAccessor) {
 						ComposedFieldAccessor composedFieldAccessor = (ComposedFieldAccessor) f;
