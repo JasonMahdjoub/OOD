@@ -82,7 +82,7 @@ public class OOD {
 									.addItem("Add function Table.hasRecords(String, Map)")
 									.addItem("Add function Table.hasRecords(Filter, String, Map)")
 									.addItem("Add function DatabaseLifeCycles.peersAdded(Set<DecentralizedValue>) that is triggered when a set of peers was added")
-									.addItem("Fix join issue when table A has two foreign keys toward the same table B")
+									.addItem("Fix join issue when table A has two foreign keys that reference the same table B")
 									.addItem("Optimize queries by using junctions")
 					)
 					.addDescription(
