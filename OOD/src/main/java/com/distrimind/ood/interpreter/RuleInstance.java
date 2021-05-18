@@ -826,8 +826,10 @@ public class RuleInstance implements QueryPart {
 									throw new DatabaseSyntaxException("Cannot compare " + fa1.getFieldName() + " with "
 											+ s2.getType().name() + " using operator " + comp.getType().name());
 								StringBuilder res = new StringBuilder();
-								res.append(sfs[0].field);
-								res.append(comp.getType().getContent());
+								res.append(sqlTableName1.get())
+										.append(".")
+										.append(sfs[0].shortField)
+										.append(comp.getType().getContent());
 								assert parameter2 != null;
 								if (parameter2 instanceof BigDecimal)
 								{
@@ -915,7 +917,9 @@ public class RuleInstance implements QueryPart {
 											throw new DatabaseSyntaxException(
 													"Cannot compare two fields whose type is different : "
 															+ fa1.getFieldName() + " and " + fa2.getFieldName());
-										res.append(sfs2[fieldsNumber - 1].field);
+										res.append(sqlTableName1.get())
+												.append(".")
+												.append(sfs2[fieldsNumber - 1].shortField);
 									}
 								}
 								if (comp.getType() == SymbolType.EQUALOPERATOR

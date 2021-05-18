@@ -2273,6 +2273,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	public final FieldAccessor getFieldAccessor(String fieldName, Set<RuleInstance.TableJunction> tablesJunction, Reference<String> sqlTableName) {
 		int indexEnd = 0;
 		int indexStart=0;
+		if (sqlTableName.get()==null)
+			sqlTableName.set(getSqlTableName());
 		StringBuilder prevPrefix= new StringBuilder();
 		List<FieldAccessor> fields=this.fields;
 		while(fields!=null) {
@@ -2284,7 +2286,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			if (indexStart>=indexEnd)
 				return null;
 			String prefix = prevPrefix+fieldName.substring(indexStart, indexEnd);
-			sqlTableName.set(getSqlTableName());
+
 			for (FieldAccessor f : fields) {
 				if (f.getFieldName().equals(prefix)) {
 					if (indexEnd == fieldName.length())
@@ -5727,11 +5729,12 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
                                 }
 							}
 							if (toRemove && _filter.nextRecord(_instance)) {
-								_cursor.deleteRow();
+								removeUntypedRecordImpl(_instance, true, null, false);
+								//_cursor.deleteRow();
 								++deleted_records_number;
-								_instance.__createdIntoDatabase = false;
+								/*_instance.__createdIntoDatabase = false;
 								getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
-										new TableEvent<>(-1, DatabaseEventType.REMOVE, Table.this, _instance, null, null), true);
+										new TableEvent<>(-1, DatabaseEventType.REMOVE, Table.this, _instance, null, null), true);*/
 							}
 							return !_filter.isTableParsingStopped();
 						} catch (Exception e) {
@@ -5742,15 +5745,12 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 				}
 				HashMap<Integer, Object> sqlParameters = new HashMap<>();
-				String sqlQuery = null;
-				if (rule.isIndependantFromOtherTables(Table.this)) {
-					sqlQuery = rule.translateToSqlQuery(Table.this, parameters, sqlParameters, new HashSet<>())
+				String sqlQuery = rule.translateToSqlQuery(Table.this, parameters, sqlParameters, new HashSet<>())
 							.toString();
-				}
 
-				RunnableTmp runnable = new RunnableTmp(sqlQuery == null ? rule : null);
+				RunnableTmp runnable = new RunnableTmp(rule);
 				getListRecordsFromSqlConnection(runnable,
-						sqlQuery == null ? getSqlGeneralSelect(false) : getSqlGeneralSelect(-1,-1,false, sqlQuery, sqlParameters),
+						getSqlGeneralSelect(-1,-1,true, sqlQuery, sqlParameters),
 						TransactionIsolation.TRANSACTION_REPEATABLE_READ, true);
 				if (runnable.deleted_records_number>0 && isLoadedInMemory()) {
 					memoryToRefresh();
@@ -7077,7 +7077,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						T field_instance = getNewRecordInstance(default_constructor_field, true);
 
 						for (FieldAccessor f : fields_accessor) {
-							f.setValue(getSqlTableName(), field_instance, rq.result_set);
+							f.setValue(getSqlTableName(), field_instance, rq.result_set, isLoadedInMemory()?new ArrayList<>():null);
 						}
 						if (!_runnable.setInstance(field_instance, rq.result_set)) {
 							break;

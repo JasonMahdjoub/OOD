@@ -312,9 +312,9 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 			throws DatabaseException {
 		try {
 
-			ArrayList<DatabaseRecord> list = _pointing_records == null ? new ArrayList<>()
-					: _pointing_records;
-			list.add((DatabaseRecord) _class_instance);
+			//ArrayList<DatabaseRecord> list = _pointing_records == null ? new ArrayList<>() : _pointing_records;
+			if (_pointing_records!=null)
+				_pointing_records.add((DatabaseRecord) _class_instance);
 
 			Table<?> t = getPointedTable();
 			boolean allNull=true;
@@ -329,38 +329,39 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 				field.set(_class_instance, null);
 			else
 			{
-				for (DatabaseRecord dr : list) {
-					if (dr.getClass().equals(t.getClassRecord())) {
-						boolean all_equals = true;
-						for (FieldAccessor fa : t.getPrimaryKeysFieldAccessors()) {
-							for (SqlFieldInstance sfi : fa.getSqlFieldsInstances(sqlTableName, dr)) {
-								boolean found = false;
-								for (SqlFieldInstance sfi2 : sfis) {
-									if (sfi2.pointedField.equals(sfi.field)) {
-										found = true;
-										if (!FieldAccessor.equalsBetween(sfi.instance, sfi2.instance)) {
-											all_equals = false;
-										}
-										break;
+				if (_pointing_records!=null) {
+					for (DatabaseRecord dr : _pointing_records) {
+						if (dr.getClass().equals(t.getClassRecord())) {
+							boolean all_equals = true;
+							for (FieldAccessor fa : t.getPrimaryKeysFieldAccessors()) {
+								for (SqlFieldInstance sfi : fa.getSqlFieldsInstances(sqlTableName, dr)) {
+									boolean found = false;
+									for (SqlFieldInstance sfi2 : sfis) {
+										if (sfi2.pointedField.equals(sfi.field)) {
+											found = true;
+											if (!FieldAccessor.equalsBetween(sfi.instance, sfi2.instance)) {
+												all_equals = false;
+											}
+											break;
 
+										}
 									}
+									if (!found)
+										throw new DatabaseException("Unexpected exception.");
+									if (!all_equals)
+										break;
 								}
-								if (!found)
-									throw new DatabaseException("Unexpected exception.");
 								if (!all_equals)
 									break;
 							}
-							if (!all_equals)
-								break;
+							if (all_equals) {
+								field.set(_class_instance, dr);
+								return;
+							}
 						}
-						if (all_equals) {
-							field.set(_class_instance, dr);
-							return;
-						}
+
 					}
-
 				}
-
 
 				DatabaseRecord dr = (DatabaseRecord) get_new_record_instance_method.invoke(t,
 					t.getDefaultRecordConstructor(), true);
