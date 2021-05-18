@@ -224,13 +224,6 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		if (isLoadedInMemory())
 			this.memoryToRefresh();
 	}
-	/*private void setAllFieldsForSelect()
-	{
-		if (sql_connection.supportsItalicQuotesWithTableAndFieldNames())
-			all_fields_list_for_select='`'+table_name+"`.*";
-		else
-			all_fields_list_for_select=table_name+".*";
-	}*/
 
 	private static class NeighboringTable {
 		public final DatabaseWrapper sql_connection;
@@ -526,8 +519,6 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				auto_random_primary_keys_fields.add(f);
 			if (f.isAutoPrimaryKey())
 				auto_primary_keys_fields.add(f);
-			/*if (!f.isAutoPrimaryKey() && !f.isRandomPrimaryKey() && f.isPrimaryKey())
-				primary_keys_fields_no_auto_no_random.add(f);*/
 			if (f.isForeignKey()) {
 				foreign_keys_fields.add((ForeignKeyFieldAccessor) f);
 			}
@@ -592,14 +583,6 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 	void removeTableFromDatabaseStep1() throws DatabaseException {
 		try {
-			/*Statement st = sql_connection.getConnectionAssociatedWithCurrentThread().getConnection().createStatement();
-			st.executeUpdate("DROP TRIGGER " + Table.this.getSqlTableName() + "_ROW_COUNT_TRIGGER_DELETE__"
-					+ sql_connection.getSqlComma());
-			st.close();
-			st = sql_connection.getConnectionAssociatedWithCurrentThread().getConnection().createStatement();
-			st.executeUpdate("DROP TRIGGER " + Table.this.getSqlTableName() + "_ROW_COUNT_TRIGGER_INSERT__"
-					+ sql_connection.getSqlComma());
-			st.close();*/
 			Statement st = sql_connection.getConnectionAssociatedWithCurrentThread().getConnection().createStatement();
 			st.executeUpdate("DELETE FROM " + DatabaseWrapper.ROW_PROPERTIES_OF_TABLES + " WHERE TABLE_ID="
 					+ Table.this.getTableID()  + sql_connection.getSqlComma());
@@ -1009,60 +992,6 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						}
 
 					}, true);
-					/*sql_connection.startTransaction(new Transaction() {
-						@Override
-						public TransactionIsolation getTransactionIsolation() {
-							return TransactionIsolation.TRANSACTION_SERIALIZABLE;
-						}
-
-						@Override
-						public boolean doesWriteData() {
-							return true;
-						}
-
-						@Override
-						public Object run(DatabaseWrapper sql_connection) throws DatabaseException {
-							Statement st = null;
-							try {
-
-
-
-								st = sql_connection.getConnectionAssociatedWithCurrentThread().getConnection()
-										.createStatement();
-
-								st.executeUpdate("CREATE TRIGGER " + Table.this.getSqlTableName()
-										+ "_ROW_COUNT_TRIGGER_INSERT__ AFTER INSERT ON " + Table.this.getSqlTableName() + "\n"
-										+ "FOR EACH ROW \n" + "UPDATE " + DatabaseWrapper.ROW_PROPERTIES_OF_TABLES
-										+ " SET ROW_COUNT=ROW_COUNT+1 WHERE TABLE_ID=" + getTableID() + "\n"
-										+ sql_connection.getSqlComma());
-								st.close();
-								st = sql_connection.getConnectionAssociatedWithCurrentThread().getConnection()
-										.createStatement();
-								st.executeUpdate("CREATE TRIGGER " + Table.this.getSqlTableName()
-										+ "_ROW_COUNT_TRIGGER_DELETE__ AFTER DELETE ON " + Table.this.getSqlTableName() + "\n"
-										+ "FOR EACH ROW \n" + "UPDATE " + DatabaseWrapper.ROW_PROPERTIES_OF_TABLES
-										+ " SET ROW_COUNT=ROW_COUNT-1 WHERE TABLE_ID=" + getTableID() + "\n"
-										+ sql_connection.getSqlComma());
-								st.close();
-								st = null;
-							} catch (SQLException e) {
-								throw DatabaseException.getDatabaseException(e);
-							} finally {
-								try {
-									if (st != null)
-										st.close();
-								} catch (SQLException e) {
-									throw DatabaseException.getDatabaseException(e);
-								}
-							}
-							return null;
-						}
-
-						@Override
-						public void initOrReset() {
-						}
-
-					}, true);*/
 					for (FieldAccessor fa : fields) {
 						if (fa.hasToCreateIndex()) {
 							final StringBuilder indexCreationQuery = new StringBuilder("CREATE INDEX ");
@@ -1460,9 +1389,6 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	}
 
 	private void getSqlSelectStep1Fields(StringBuilder sb, boolean includeAllJunctions) {
-		/*if (isLoadedInMemory()) {
-			includeAllJunctions = false;
-		}*/
 
 		getSqlSelectStep1Fields(getSqlTableName(), includeAllJunctions, null, sb, sb.length());
 	}
@@ -1549,25 +1475,12 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						}
 
 					}
-					/*if (parameters != null) {
-						int index = 1;
-						Object p = parameters.get(index++);
-						while (p != null) {
-							st.setObject(index, p);
-							p = parameters.get(index++);
-						}
-
-					}*/
 				}
 			};
 		}
 	}
 
 	private void getFromPart(StringBuilder sb, boolean includeAllJunctions, Set<TableJunction> tablesJunction) {
-		/*if (isLoadedInMemory()) {
-			includeAllJunctions = false;
-			tablesJunction = null;
-		}*/
 		sb.append(this.getSqlTableName());
 		if (this.getClass().getSimpleName().equalsIgnoreCase("LastValidatedDistantIDPerClientTable"))
 		if (!includeAllJunctions && (tablesJunction == null || tablesJunction.size() == 0))
@@ -2478,9 +2391,6 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 *            a class
 	 * @return the new class name format
 	 */
-	/*public static String getSqlTableName(Class<?> c) {
-		return c.getCanonicalName().replace(".", "_").toUpperCase();
-	}*/
 
 	@Override
 	public String toString() {
@@ -2685,33 +2595,6 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 	public String getFieldToCompare(String field) {
 
-		/*String[] strings = field.split("\\.");
-
-		Table<?> current_table = Table.this;
-
-		FieldAccessor founded_field = null;
-        for (String f : strings) {
-            if (current_table == null)
-                throw new IllegalArgumentException("The field " + field + " does not exists.");
-
-            for (FieldAccessor fa : current_table.fields) {
-                if (fa.getFieldName().equals(f)) {
-                    founded_field = fa;
-                    break;
-                }
-            }
-            if (founded_field == null)
-                throw new IllegalArgumentException("The field " + f + " does not exist into the class/table "
-                        + current_table.getClass().getSqlTableName());
-
-            if (founded_field.isForeignKey())
-                current_table = ((ForeignKeyFieldAccessor) founded_field).getPointedTable();
-            else {
-                current_table = null;
-            }
-        }
-
-        assert founded_field != null;*/
 		Reference<String> sqlTableName=new Reference<>();
 		FieldAccessor founded_field=getFieldAccessor(field, new HashSet<>(), sqlTableName);
 		if (founded_field==null)
@@ -3029,19 +2912,6 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		public int compare(T _o1, T _o2) throws DatabaseException {
 			Object v1=Table.this.getFieldAccessorAndValue(_o1, field.getFieldName()).getValue();
 			Object v2=Table.this.getFieldAccessorAndValue(_o2, field.getFieldName()).getValue();
-			/*DatabaseRecord dr1 = _o1, dr2 = _o2;
-			for (int i = 0; i < fields.size() - 1; i++) {
-				if (dr1 == null && dr2 != null)
-					return -1;
-				else if (dr1 != null && dr2 == null)
-					return 1;
-				else if (dr1 == null)
-					return 0;
-				ForeignKeyFieldAccessor f = (ForeignKeyFieldAccessor) fields.get(i);
-				dr1 = (DatabaseRecord) f.getValue(dr1);
-				dr2 = (DatabaseRecord) f.getValue(dr2);
-			}
-			return fields.get(fields.size() - 1).compare(dr1, dr2);*/
 			return field.compare(v1, v2);
 		}
 	}
@@ -3081,32 +2951,6 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 
 		public FieldComparator getFieldComparator(String field) throws ConstraintsNotRespectedDatabaseException {
-			/*String[] strings = field.split("\\.");
-			ArrayList<FieldAccessor> fields = new ArrayList<>();
-			Table<?> current_table = Table.this;
-
-            for (String f : strings) {
-                if (current_table == null)
-                    throw new ConstraintsNotRespectedDatabaseException("The field " + field + " does not exists.");
-                FieldAccessor founded_field = null;
-                for (FieldAccessor fa : current_table.fields) {
-                    if (fa.getFieldName().equals(f)) {
-                        founded_field = fa;
-                        break;
-                    }
-                }
-                if (founded_field == null)
-                    throw new ConstraintsNotRespectedDatabaseException("The field " + f
-                            + " does not exist into the class/table " + current_table.getClass().getSqlTableName());
-
-                fields.add(founded_field);
-
-                if (founded_field.isForeignKey())
-                    current_table = ((ForeignKeyFieldAccessor) founded_field).getPointedTable();
-                else
-                    current_table = null;
-
-            }*/
             FieldAccessor fa=Table.this.getFieldAccessor(field);
             if (fa==null)
 				throw new ConstraintsNotRespectedDatabaseException("The field " + field + " does not exists.");
@@ -5221,60 +5065,6 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		return removeRecordsWithAllFieldsWithCascade(transformToMapField(_fields));
 	}
 
-	/*private String getWhereCommand(Map<String, Object> _fields, boolean and)
-	{
-		if (_fields.size()==0)
-			throw new IllegalArgumentException("There is no fields");
-		StringBuilder sb=new StringBuilder();
-		boolean first=true;
-		String op=and?" AND ":" OR ";
-		for(String s : _fields.keySet())
-		{
-			if (first)
-				first=false;
-			else
-				sb.append(op);
-			sb.append(s);
-			sb.append("=%");
-			sb.append(s);
-		}
-		return sb.toString();
-	}
-	private String getWhereCommand(Map<String, Object> []records, boolean and, Map<String, Object> resultedFields)
-	{
-		if (records.length==0)
-			throw new IllegalArgumentException("There is no fields");
-		if (resultedFields==null)
-			throw new NullPointerException();
-		StringBuilder sb=new StringBuilder();
-		boolean globalFirst=true;
-		String op=and?" AND ":" OR ";
-		int index=0;
-		for (Map<String, Object> _fields : records) {
-			if (_fields.size()==0)
-				throw new IllegalArgumentException("There is no fields");
-			if (globalFirst)
-				globalFirst=false;
-			else
-				sb.append(" OR ");
-			sb.append("(");
-			boolean first=true;
-			for (String s : _fields.keySet()) {
-				if (first)
-					first = false;
-				else
-					sb.append(op);
-				sb.append(s);
-				String param="v"+index++;
-				sb.append("=%");
-				sb.append(param);
-				resultedFields.put(param, _fields.get(s));
-			}
-			sb.append(")");
-		}
-		return sb.toString();
-	}*/
-
 	/**
 	 * Remove records which correspond to the given fields. All given fields must
 	 * correspond exactly to the records. Records of other tables which have Foreign
@@ -5626,78 +5416,6 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 	}
 
-	/*private long removeRecordsWithCascade(String where, final Map<String, Object> parameters,
-										 boolean is_already_in_transaction) throws DatabaseException {
-
-		final RuleInstance rule = where==null?null:Interpreter.getRuleInstance(where);
-		if (rule != null && !rule.isIndependantFromOtherTables(Table.this)) {
-			return removeRecordsWithCascade(new Filter<T>() {
-				@Override
-				public boolean nextRecord(T _record) {
-					return true;
-				}
-			}, where, parameters, is_already_in_transaction);
-		}
-		return (int)sql_connection.runTransaction(new Transaction() {
-			@Override
-			public Package getConcernedDatabasePackage() {
-				return Table.this.getClass().getPackage();
-			}
-			@Override
-			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
-				HashMap<Integer, Object> sqlParameters = rule==null?null: new HashMap<>();
-				String sqlQuery = "DELETE FROM "+getSqlTableName();
-				if (rule != null) {
-					sqlQuery+=" WHERE "+ rule.translateToSqlQuery(Table.this, parameters, sqlParameters, new HashSet<>())
-							.toString();
-				}
-				sqlQuery+=sql_connection.getSqlComma();
-				try {
-					PreparedStatement statement= sql_connection.getConnectionAssociatedWithCurrentThread().getConnection().prepareStatement(sqlQuery, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE);
-					if (sqlParameters != null) {
-						int index = 1;
-
-						Object p = sqlParameters.get(index);
-						while (p != null) {
-
-							FieldAccessor.setValue(getDatabaseWrapper(), statement, index, p);
-							// st.setObject(index, p);
-							p = sqlParameters.get(++index);
-						}
-
-					}
-					int res=statement.executeUpdate();
-
-					if (res>0 && isLoadedInMemory()) {
-						memoryToRefreshWithCascade();
-					}
-
-					return res;
-
-				} catch (SQLException e) {
-					throw DatabaseException.getDatabaseException(e);
-				}
-
-
-			}
-
-			@Override
-			public void initOrReset() {
-
-			}
-
-			@Override
-			public TransactionIsolation getTransactionIsolation() {
-				return TransactionIsolation.TRANSACTION_READ_COMMITTED;
-			}
-
-			@Override
-			public boolean doesWriteData() {
-				return true;
-			}
-		}, true);
-
-	}*/
 
 	@SuppressWarnings({"SameParameterValue", "unused"})
     private int removeRecords(final Filter<T> _filter, String where, final Map<String, Object> parameters,
@@ -5742,11 +5460,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 							}
 							if (toRemove && _filter.nextRecord(_instance)) {
 								removeUntypedRecordImpl(_instance, true, null, false);
-								//_cursor.deleteRow();
 								++deleted_records_number;
-								/*_instance.__createdIntoDatabase = false;
-								getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
-										new TableEvent<>(-1, DatabaseEventType.REMOVE, Table.this, _instance, null, null), true);*/
 							}
 							return !_filter.isTableParsingStopped();
 						} catch (Exception e) {
@@ -5831,11 +5545,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 							if (toRemove && _filter.nextRecord(_instance)) {
 
 								removeUntypedRecordImpl(_instance, true, null, false);
-								//_cursor.deleteRow();
 								++deleted_records_number;
-								/*_instance.__createdIntoDatabase = false;
-								getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
-										new TableEvent<>(-1, DatabaseEventType.REMOVE,Table.this,  _instance, null, null), true);*/
 							}
 							return !_filter.isTableParsingStopped();
 						} catch (Exception e) {
@@ -5879,52 +5589,11 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 			if (isLoadedInMemory()) {
 				for (final T r : getRecords(-1, -1, false)) {
-					/*class RunnableTmp extends Runnable {
-						public boolean found = false;
-
-						@Override
-						public void init(int _field_count) {
-							found = false;
-						}
-
-						@Override
-						public boolean setInstance(T _instance, ResultSet _cursor) throws DatabaseException {
-							if (Table.this.equals(r, _instance)) {
-								found = true;
-								return false;
-							}
-							return true;
-						}
-					}
-					RunnableTmp runnable = new RunnableTmp();
-					getListRecordsFromSqlConnection(runnable, getSqlGeneralSelect(true),
-							TransactionIsolation.TRANSACTION_SERIALIZABLE, -1, -1);
-
-					if (!runnable.found)*/
 					if (!hasRecordsWithAllFields(getFields(primary_keys_fields, r)))
 						throw new DatabaseIntegrityException(
 								"All records present in the memory were not found into the database.");
 				}
 				final ArrayList<T> records = getRecords(-1, -1, false);
-				/*class RunnableTmp extends Runnable {
-
-					@Override
-					public void init(int _field_count) {
-
-					}
-
-					@Override
-					public boolean setInstance(T _instance, ResultSet _cursor) throws DatabaseException {
-						for (T r : records) {
-							if (Table.this.equals(r, _instance))
-								return false;
-						}
-						throw new DatabaseIntegrityException(
-								"All records present into the database were not found into the memory.");
-					}
-				}
-				getListRecordsFromSqlConnection(new RunnableTmp(), getSqlGeneralSelect(true),
-						TransactionIsolation.TRANSACTION_SERIALIZABLE, -1, -1);*/
 				for (T r : records) {
 					if (!hasRecordsWithAllFields(getFields(primary_keys_fields, r)))
 						throw new DatabaseIntegrityException(
@@ -6406,11 +6075,6 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 								removeUntypedRecordWithCascadeImpl(_instance, true, false);
 								++deleted_records_number;
-								/*_instance.__createdIntoDatabase = false;
-								//updateMemoryForRemovingRecordWithCascade(_instance);
-								getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
-										new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE,Table.this,  _instance, null,
-												null), true);*/
 							}
 							return !_filter.isTableParsingStopped();
 						} catch (Exception e) {
@@ -8253,92 +7917,44 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						@Override
 						public boolean setInstance(T _instance, ResultSet _result_set) throws DatabaseException {
 							try {
-								//if ((rule == null || rule.isConcernedBy(Table.this, parameters, _instance))) {
-									_filter.reset();
-									//final T oldRecord = copyRecord(_instance);
-									_filter.nextRecord(_instance);
-									if (_filter.hasToBeRemoved()) {
-										boolean canBeRemoved = true;
-										if (list_tables_pointing_to_this_table.size() > 0) {
-                                            for (NeighboringTable nt : list_tables_pointing_to_this_table) {
+								_filter.reset();
+								_filter.nextRecord(_instance);
+								if (_filter.hasToBeRemoved()) {
+									boolean canBeRemoved = true;
+									if (list_tables_pointing_to_this_table.size() > 0) {
+										for (NeighboringTable nt : list_tables_pointing_to_this_table) {
 
-                                                if (nt.getPointingTable().hasRecordsWithOneOfSqlForeignKeyWithCascade(
-                                                        nt.getHashMapsSqlFields(getSqlPrimaryKeys(_instance)))) {
-                                                    canBeRemoved = false;
-                                                    break;
-                                                }
-                                            }
-										}
-										if (canBeRemoved) {
-											removeUntypedRecordWithCascadeImpl(_instance,true, false );
-											//_result_set.deleteRow();
-											oneUpdated.set(true);
-											/*getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
-													new TableEvent<>(-1, DatabaseEventType.REMOVE, Table.this,oldRecord, null, null), true);*/
-										}
-									} else if (_filter.hasToBeRemovedWithCascade()) {
-										removeUntypedRecordWithCascadeImpl(_instance,true, false );
-										//_result_set.deleteRow();
-										//updateMemoryForRemovingRecordWithCascade(_instance);
-										updateWithCascade.set(true);
-										oneUpdated.set(true);
-										/*getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
-												new TableEvent<>(-1, DatabaseEventType.REMOVE_WITH_CASCADE, Table.this,oldRecord, null,
-														null), true);*/
-									} else {
-										boolean updateRecordInstance=true;
-										Map<String, Object> m = _filter.getModifications();
-										if (m == null && _filter.isModifiedFromRecordInstance()) {
-											m = getMap(_instance, false, false);
-											updateRecordInstance=false;
-										}
-										final Map<String, Object> map = m;
-
-										if (map != null && map.size() > 0) {
-											/*for (String s : map.keySet()) {
-												FieldAccessor founded_field = null;
-												for (FieldAccessor fa : fields_accessor) {
-													if (fa.getFieldName().equals(s)) {
-														founded_field = fa;
-														break;
-													}
-												}
-												if (founded_field == null)
-													throw new FieldDatabaseException("The given field " + s
-															+ " does not exists into the record " + class_record.getSimpleName());
-												if (founded_field.isPrimaryKey())
-													throw new FieldDatabaseException(
-															"Attempting to alter the primary key field "
-																	+ founded_field.getFieldName() + " into the table "
-																	+ getClass().getSimpleName()
-																	+ ". This operation is not permitted into this function.");
-												if (founded_field.isUnique())
-													throw new FieldDatabaseException("Attempting to alter the unique field "
-															+ founded_field.getFieldName() + " into the table " + getClass().getSimpleName()
-															+ ". This operation is not permitted into this function.");
-												if (founded_field.isForeignKey()) {
-													Object val = founded_field.getValue(_instance);
-													if (!((ForeignKeyFieldAccessor) founded_field).getPointedTable()
-															.contains(true, (DatabaseRecord) val))
-														throw new RecordNotFoundDatabaseException(
-																"The record, contained as foreign key into the given field "
-																		+ founded_field.getFieldName() + " into the table "
-																		+ Table.this.getClass().getSimpleName()
-																		+ " does not exists into the table "
-																		+ ((ForeignKeyFieldAccessor) founded_field)
-																				.getPointedTable().getClass().getSimpleName());
-												}
-											}*/
-											updateRecordImpl(_instance, map, true, null, true, updateRecordInstance);
-
-											//_result_set.updateRow();
-											updateWithCascade.set(true);
-											oneUpdated.set(true);
-											/*getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
-													new TableEvent<>(-1, DatabaseEventType.UPDATE, Table.this,oldRecord, _instance, null), true);*/
+											if (nt.getPointingTable().hasRecordsWithOneOfSqlForeignKeyWithCascade(
+													nt.getHashMapsSqlFields(getSqlPrimaryKeys(_instance)))) {
+												canBeRemoved = false;
+												break;
+											}
 										}
 									}
-								//}
+									if (canBeRemoved) {
+										removeUntypedRecordWithCascadeImpl(_instance,true, false );
+										oneUpdated.set(true);
+									}
+								} else if (_filter.hasToBeRemovedWithCascade()) {
+									removeUntypedRecordWithCascadeImpl(_instance,true, false );
+									updateWithCascade.set(true);
+									oneUpdated.set(true);
+								} else {
+									boolean updateRecordInstance=true;
+									Map<String, Object> m = _filter.getModifications();
+									if (m == null && _filter.isModifiedFromRecordInstance()) {
+										m = getMap(_instance, false, false);
+										updateRecordInstance=false;
+									}
+									final Map<String, Object> map = m;
+
+									if (map != null && map.size() > 0) {
+										updateRecordImpl(_instance, map, true, null, true, updateRecordInstance);
+
+										updateWithCascade.set(true);
+										oneUpdated.set(true);
+									}
+								}
 								return true;
 							} catch (Exception e) {
 								throw DatabaseException.getDatabaseException(e);
@@ -8483,55 +8099,40 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				}
 				return null;
 			} else {
-				// synchronized(sql_connection)
-				{
-					/*Map<String, Object> map=new HashMap<>();
-					for (FieldAccessor f : primary_keys_fields) {
-						if (!keys.containsKey(f.getFieldName()))
-							throw new IllegalArgumentException("Primary key "+f.getFieldName()+" is lacking to access to a record into table "+Table.this.getClass().getSimpleName());
-						map.put(f.getFieldName(), keys.get(f.getFieldName()));
+				class RunnableTmp extends Runnable {
+					public T instance = null;
+					protected final ArrayList<FieldAccessor> primary_keys_fields;
+
+					public RunnableTmp(ArrayList<FieldAccessor> _primary_keys_fields) {
+						primary_keys_fields = _primary_keys_fields;
 					}
-					ArrayList<T> r=getRecordsWithAllFields(map);
-					assert r.size()<2;
-					if (r.size()==0)
-						return null;
-					else
-						return r.get(0);*/
-					class RunnableTmp extends Runnable {
-						public T instance = null;
-						protected final ArrayList<FieldAccessor> primary_keys_fields;
 
-						public RunnableTmp(ArrayList<FieldAccessor> _primary_keys_fields) {
-							primary_keys_fields = _primary_keys_fields;
-						}
-
-						@Override
-						public void init(int _field_count) {
-						}
-
-						@Override
-						public boolean setInstance(T _instance, ResultSet _cursor) throws DatabaseException {
-							boolean ok = true;
-							for (FieldAccessor f : primary_keys_fields) {
-								Object obj = keys.get(f.getFieldName());
-								if (!f.equals(_instance, obj)) {
-									ok = false;
-									break;
-								}
-							}
-							if (ok) {
-								instance = _instance;
-								return false;
-							}
-							return true;
-						}
+					@Override
+					public void init(int _field_count) {
 					}
-					RunnableTmp runnable = new RunnableTmp(primary_keys_fields);
-					getListRecordsFromSqlConnection(runnable,
-							new SqlGeneralSelectQueryWithFieldMatch(-1,-1,getFieldAccessors(),true, keys, "AND", true, null),
-							TransactionIsolation.TRANSACTION_READ_COMMITTED);
-					return runnable.instance;
+
+					@Override
+					public boolean setInstance(T _instance, ResultSet _cursor) throws DatabaseException {
+						boolean ok = true;
+						for (FieldAccessor f : primary_keys_fields) {
+							Object obj = keys.get(f.getFieldName());
+							if (!f.equals(_instance, obj)) {
+								ok = false;
+								break;
+							}
+						}
+						if (ok) {
+							instance = _instance;
+							return false;
+						}
+						return true;
+					}
 				}
+				RunnableTmp runnable = new RunnableTmp(primary_keys_fields);
+				getListRecordsFromSqlConnection(runnable,
+						new SqlGeneralSelectQueryWithFieldMatch(-1,-1,getFieldAccessors(),true, keys, "AND", true, null),
+						TransactionIsolation.TRANSACTION_READ_COMMITTED);
+				return runnable.instance;
 			}
 		} catch (IllegalArgumentException e) {
 			throw new DatabaseException("Impossible to access to the database fields.", e);
@@ -8785,8 +8386,6 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		@Override
 		protected boolean isValid() {
 			return true;
-			/*Lock cur = getActualLock(actual_table);
-			return cur == null || cur instanceof ReadLock;*/
 		}
 
 		@Override
