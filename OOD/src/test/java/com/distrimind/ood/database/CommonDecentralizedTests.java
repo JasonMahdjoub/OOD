@@ -1867,6 +1867,8 @@ public abstract class CommonDecentralizedTests {
 	@Test(dependsOnMethods = { "testSynchroBetweenThreePeers" })
 	public void testSynchroAfterTestsBetweenThreePeers() throws DatabaseException {
 		testSynchronisation();
+		if (centralDatabaseBackupReceiver!=null)
+			centralDatabaseBackupReceiver.cleanObsoleteData();
 	}
 	/*
 	 * @Test(dependsOnMethods={"testAllConnect"}) public void

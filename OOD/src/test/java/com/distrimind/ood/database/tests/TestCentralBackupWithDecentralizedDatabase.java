@@ -49,7 +49,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * 
+ *
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 2.5
@@ -188,6 +188,8 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 		testSynchronisation();
 		connectCentralDatabaseBackup();
 		checkAllDatabaseInternalDataUsedForSynchro();
+		if (centralDatabaseBackupReceiver!=null)
+			centralDatabaseBackupReceiver.cleanObsoleteData();
 	}
 
 	@Test(dependsOnMethods = {"testSynchroAfterTestsBetweenThreePeers" })
@@ -212,7 +214,8 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 			}
 
 		}
-
+		if (centralDatabaseBackupReceiver!=null)
+			centralDatabaseBackupReceiver.cleanObsoleteData();
 	}
 
 
@@ -222,7 +225,7 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 	// @Test(dataProvider = "provideDataForSynchroBetweenTwoPeers",
 	// dependsOnMethods={"testSynchroBetweenThreePeers2"})
 	public void testSynchroBetweenTwoPeersWithCentralBackup(boolean exceptionDuringTransaction, boolean generateDirectConflict,
-										   boolean peersInitiallyConnected)
+															boolean peersInitiallyConnected)
 			throws Exception {
 		for (TableEvent<DatabaseRecord> event : provideTableEventsForSynchro())
 			testSynchroBetweenPeersWithCentralBackupImpl(2, exceptionDuringTransaction, generateDirectConflict, event);
@@ -250,11 +253,13 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 
 		}
 		testSynchronisation();
+		if (centralDatabaseBackupReceiver!=null)
+			centralDatabaseBackupReceiver.cleanObsoleteData();
 	}
 
 	@Test(dataProvider = "provideDataSynchroBetweenThreePeers", dependsOnMethods = { "testSynchroAfterTestsBetweenTwoPeersWithCentralBackup" })
 	public void testSynchroBetweenThreePeersWithCentralBackup(boolean exceptionDuringTransaction, boolean generateDirectConflict,
-											 boolean peersInitiallyConnected)
+															  boolean peersInitiallyConnected)
 			throws Exception {
 		for (TableEvent<DatabaseRecord> event : provideTableEventsForSynchro())
 			testSynchroBetweenPeersWithCentralBackupImpl(3, exceptionDuringTransaction, generateDirectConflict, event);
@@ -263,6 +268,8 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 	@Test(dependsOnMethods = { "testSynchroBetweenThreePeersWithCentralBackup" })
 	public void testSynchroAfterTestsBetweenThreePeersWithCentralBackup() throws DatabaseException {
 		testSynchronisation();
+		if (centralDatabaseBackupReceiver!=null)
+			centralDatabaseBackupReceiver.cleanObsoleteData();
 	}
 
 	@Test(dependsOnMethods = {"testSynchroAfterTestsBetweenThreePeersWithCentralBackup" })
