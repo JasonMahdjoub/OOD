@@ -82,7 +82,7 @@ public class DatabaseConfigurationsBuilder {
 		private boolean checkInitLocalPeer=false;
 		private boolean checkDatabaseToSynchronize=false;
 		private boolean checkDatabaseToUnload =false;
-		private boolean checkDisconnexions=false;
+		private boolean checkDisconnections =false;
 		private boolean updateConfigurationPersistence=false;
 		private boolean checkNewConnexions=false;
 		private boolean checkDatabaseToDesynchronize =false;
@@ -152,9 +152,9 @@ public class DatabaseConfigurationsBuilder {
 			if (removedPeersID!=null && distantPeers.stream().anyMatch(v-> removedPeersID.contains(v)))
 				throw new DatabaseException("There are ids that have been removed !");
 		}
-		void checkDisconnexions()
+		void checkDisconnections()
 		{
-			checkDisconnexions=true;
+			checkDisconnections =true;
 		}
 		void checkDatabaseToUnload(DatabaseConfiguration configurationToDefinitivelyDelete) throws DatabaseException {
 			checkDatabaseToUnload =true;
@@ -223,7 +223,7 @@ public class DatabaseConfigurationsBuilder {
 				if (currentTransaction.checkDatabaseToDesynchronize)
 					currentTransaction.checkDatabaseToUnload |=checkDatabaseToDesynchronize();
 				if (currentTransaction.removedPeersID!=null)
-					currentTransaction.checkDisconnexions|=checkConnexionsToRemove();
+					currentTransaction.checkDisconnections |=checkConnexionsToRemove();
 				if (currentTransaction.checkDatabaseToUnload)
 					checkDatabaseToUnload();
 				if (currentTransaction.checkInitLocalPeer) {
@@ -238,7 +238,7 @@ public class DatabaseConfigurationsBuilder {
 				if (currentTransaction.checkNewConnexions) {
 					checkConnexions();
 				}
-				if (currentTransaction.checkDisconnexions) {
+				if (currentTransaction.checkDisconnections) {
 					checkDisconnections();
 				}
 				if (currentTransaction.checkInitCentralDatabaseBackup)
@@ -267,7 +267,7 @@ public class DatabaseConfigurationsBuilder {
 			t.checkInitLocalPeer();
 			t.checkDatabaseToSynchronize();
 			t.checkNewConnexions();
-			t.checkDisconnexions();
+			t.checkDisconnections();
 			t.checkInitCentralDatabaseBackup();
 		});
 		commit();
@@ -371,7 +371,7 @@ public class DatabaseConfigurationsBuilder {
 			{
 				t.updateConfigurationPersistence();
 				t.checkDatabaseToUnload(removeData?c:null);
-				t.checkDisconnexions();
+				t.checkDisconnections();
 				t.checkConnexionsToDesynchronize();
 			}
 
@@ -654,7 +654,7 @@ public class DatabaseConfigurationsBuilder {
 		}
 		if (!dls.isEmpty())
 			if (wrapper.loadDatabase(dls, lifeCycles)) {
-				currentTransaction.checkDisconnexions();
+				currentTransaction.checkDisconnections();
 				currentTransaction.propagate=true;
 				currentTransaction.checkDatabaseToUnload(null);
 			}
@@ -698,7 +698,7 @@ public class DatabaseConfigurationsBuilder {
 				configurations.setPermitIndirectSynchronizationBetweenPeers(permitIndirectSynchronizationBetweenPeers);
 				configurations.setLocalPeer(localPeerId);
 				t.updateConfigurationPersistence();
-				t.checkDisconnexions();
+				t.checkDisconnections();
 				t.checkInitLocalPeer();
 				t.checkNewConnexions();
 				t.checkDatabaseToSynchronize();
@@ -859,7 +859,7 @@ public class DatabaseConfigurationsBuilder {
 				if (propagate)
 					t.addIDsToRemove(dps);
 
-				t.checkDisconnexions();
+				t.checkDisconnections();
 				t.checkConnexionsToDesynchronize();
 				t.updateConfigurationPersistence();
 				t.checkInitLocalPeer();
@@ -936,13 +936,9 @@ public class DatabaseConfigurationsBuilder {
 	}
 	public DatabaseConfigurationsBuilder restoreGivenDatabaseStringToOldVersion(String concernedDatabase, long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, boolean chooseNearestBackupIfNoBackupMatch)
 	{
-		return restoreGivenDatabaseStringToOldVersion(concernedDatabase, timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, chooseNearestBackupIfNoBackupMatch, true);
-	}
-	DatabaseConfigurationsBuilder restoreGivenDatabaseStringToOldVersion(String concernedDatabase, long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, boolean chooseNearestBackupIfNoBackupMatch, boolean notifyOtherPeers)
-	{
 		if (concernedDatabase==null)
 			throw new NullPointerException();
-		return restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, chooseNearestBackupIfNoBackupMatch, dc -> concernedDatabase.equals(dc.getDatabaseSchema().getPackage().getName()), notifyOtherPeers);
+		return restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, chooseNearestBackupIfNoBackupMatch, dc -> concernedDatabase.equals(dc.getDatabaseSchema().getPackage().getName()), true);
 	}
 	public DatabaseConfigurationsBuilder restoreGivenDatabaseToOldVersion(Package concernedDatabase, long timeUTCInMs)
 	{
@@ -968,7 +964,7 @@ public class DatabaseConfigurationsBuilder {
 	{
 		return restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable, chooseNearestBackupIfNoBackupMatch, predicate, true);
 	}
-	private DatabaseConfigurationsBuilder restoreDatabaseToOldVersion(long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, boolean chooseNearestBackupIfNoBackupMatch, Predicate<DatabaseConfiguration> predicate, final boolean notifyOtherPeers)
+	private DatabaseConfigurationsBuilder restoreDatabaseToOldVersion(long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, boolean chooseNearestBackupIfNoBackupMatch, Predicate<DatabaseConfiguration> predicate, @SuppressWarnings("SameParameterValue") final boolean notifyOtherPeers)
 	{
 		pushQuery((p) -> {
 			boolean changed=false;

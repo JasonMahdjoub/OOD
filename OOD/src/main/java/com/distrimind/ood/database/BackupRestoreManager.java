@@ -286,13 +286,11 @@ public class BackupRestoreManager {
 
 			if (s > 0) {
 				long ts = fileTimeStamps.get(s - 1);
-				if (/*ts>=currentBackupReferenceUTC || */!isPartFull(ts, getFile(ts, isReferenceFile(ts))))
+				if (!isPartFull(ts, getFile(ts, isReferenceFile(ts))))
 					--s;
 			}
 			for (int i = 0; i < s; i++) {
 				long ts = fileTimeStamps.get(i);
-				/*if (ts>=currentBackupReferenceUTC)
-					break;*/
 				if (ts > utc) {
 					return ts;
 				}
@@ -309,13 +307,11 @@ public class BackupRestoreManager {
 
 			if (s > 0) {
 				long ts = fileTimeStamps.get(s - 1);
-				if (/*ts>=currentBackupReferenceUTC || */!isPartFull(ts, getFile(ts, isReferenceFile(ts))))
+				if (!isPartFull(ts, getFile(ts, isReferenceFile(ts))))
 					--s;
 			}
 			for (int i = 0; i < s; i++) {
 				long ts = fileTimeStamps.get(i);
-				/*if (ts>=currentBackupReferenceUTC)
-					break;*/
 				if (ts >= utc)
 					res.add(getFile(ts, isReferenceFile(ts)));
 
@@ -580,337 +576,6 @@ public class BackupRestoreManager {
 		}
 	}
 
-	/*private class RecordsIndex
-	{
-		private final byte bitsNumber;
-
-		private static final int MAX_SIZE=1<<18;
-		private final int[] cache;
-		private final boolean[] toFlush;
-		private boolean globalFlush;
-		private final AbstractMessageDigest messageDigest;
-		private final int bytesNumber;
-		private final int lastMask;
-		RecordsIndex(int maxSize, RandomOutputStream out) throws DatabaseException {
-			this(getNumBits(maxSize));
-			resetIndex(out);
-
-		}
-		RecordsIndex(RandomInputStream in) throws DatabaseException {
-			this(readBitsNumber(in));
-			Arrays.fill(cache, -2);
-			Arrays.fill(toFlush, false);
-			globalFlush=false;
-		}
-
-
-
-		private static byte readBitsNumber(RandomInputStream in) throws DatabaseException {
-			try {
-				in.seek(RECORDS_INDEX_POSITION);
-				return in.readByte();
-			} catch (IOException e) {
-				throw DatabaseException.getDatabaseException(e);
-			}
-
-
-		}
-
-		private RecordsIndex(byte bitsNumber) throws DatabaseException {
-			try {
-				this.bitsNumber=bitsNumber;
-				if (this.bitsNumber<8)
-					throw new IOException();
-				int size=(1<<this.bitsNumber)*2;
-				if (size>MAX_SIZE*4)
-					throw new IOException();
-				this.cache=new int[size];
-				this.toFlush=new boolean[size/2];
-				messageDigest= MessageDigestType.SHA2_256.getMessageDigestInstance();
-				bytesNumber=bitsNumber/8;
-				int shift=bitsNumber-(bytesNumber*8);
-				if (shift==0)
-					lastMask=0;
-				else
-					lastMask=(1<<shift)-1;
-
-			} catch (IOException | NoSuchAlgorithmException | NoSuchProviderException e) {
-				throw DatabaseException.getDatabaseException(e);
-			}
-
-		}
-
-
-		static byte getNumBits(int maxSize) throws DatabaseException {
-			if (MAX_SIZE<maxSize)
-				throw new DatabaseException("", new IllegalArgumentException());
-			if (maxSize<2048)
-				maxSize=2048;
-			return (byte)(Math.floor(Math.log10(maxSize/8)/Math.log10(2)));
-		}
-		static int getListClassPosition(RandomInputStream in) throws DatabaseException {
-			try {
-				in.seek(RECORDS_INDEX_POSITION);
-				byte bitsNumber=in.readByte();
-				return RECORDS_INDEX_POSITION+1+(1<<bitsNumber)*8;
-			} catch (IOException e) {
-				throw  DatabaseException.getDatabaseException(e);
-			}
-		}
-		void resetIndex(RandomOutputStream out) throws DatabaseException {
-			try {
-				out.seek(RECORDS_INDEX_POSITION);
-				out.writeByte(bitsNumber);
-				Arrays.fill(cache, -1);
-				Arrays.fill(toFlush, true);
-				globalFlush=true;
-
-
-			} catch (IOException e) {
-				throw DatabaseException.getDatabaseException(e);
-			}
-		}
-
-		int hashPK(byte[] primaryKey, int off, int len)
-		{
-			messageDigest.reset();
-			messageDigest.update(primaryKey,off, len);
-			byte[] d=messageDigest.digest();
-			int res=d[0];
-			int shift=0;
-			for (int i=1;i<bytesNumber;i++)
-			{
-				res+=((int)d[i])<<(shift+=8);
-			}
-			if (lastMask!=0)
-			{
-				res+=((d[bytesNumber] & lastMask)<<(shift+8));
-			}
-			return res;
-		}
-
-		private int getStreamPosition(int i)
-		{
-			return RECORDS_INDEX_POSITION+1+i*4;
-		}
-
-		private void refresh(RandomInputStream in, int i) throws DatabaseException {
-			try {
-				in.seek(getStreamPosition(i));
-				cache[i]=in.readInt();
-				cache[i+1]=in.readInt();
-				if (cache[i]<-1)
-					throw new IOException();
-				if (cache[i+1]<-1)
-					throw new IOException();
-			} catch (IOException e) {
-				throw DatabaseException.getDatabaseException(e);
-			}
-		}
-
-		void writeRecord(RandomOutputStream out, int position, byte[] primaryKey, int off, int len) throws DatabaseException {
-			try {
-				if (position<=0)
-					throw new IOException();
-				int index=hashPK(primaryKey, off, len);
-				toFlush[index]=true;
-				index*=2;
-				globalFlush=true;
-
-				if (cache[index]==-2)
-				{
-					refresh(out.getUnbufferedRandomInputStream(), index);
-				}
-
-				if (cache[index]==-1)
-				{
-					cache[index]=position;
-					cache[index+1]=position;
-					out.seek(getStreamPosition(index*4));
-					out.writeInt(position);
-					out.writeInt(position);
-				}
-				else if (cache[index]>position) {
-
-					cache[index] = position;
-					out.seek(getStreamPosition(index*4));
-					out.writeInt(position);
-
-				}
-				else if (cache[index]<position) {
-					cache[index + 1] = position;
-					out.seek(getStreamPosition((index+1)*4));
-					out.writeInt(position);
-				}
-
-			} catch (IOException e) {
-				throw DatabaseException.getDatabaseException(e);
-			}
-		}
-
-		void flush(RandomOutputStream out) throws DatabaseException {
-			if (globalFlush) {
-				for (int i = 0; i < toFlush.length; i++) {
-					if (toFlush[i]) {
-						try {
-							int index = i * 2;
-							out.seek(getStreamPosition(index));
-							out.writeInt(cache[index]);
-							out.writeInt(cache[index + 1]);
-						} catch (IOException e) {
-							throw DatabaseException.getDatabaseException(e);
-						}
-						toFlush[i] = false;
-					}
-				}
-				globalFlush = false;
-			}
-		}
-
-
-		private Position getResearchInterval(RandomOutputStream out, byte[] primaryKey, int off, int len) throws DatabaseException {
-			int index=hashPK(primaryKey, off, len)*2;
-			try {
-				if (cache[index]==-2) {
-					refresh(out.getUnbufferedRandomInputStream(), getStreamPosition(index));
-				}
-				return new Position(cache[index], cache[index+1]);
-			} catch (DatabaseException | IOException e) {
-				throw DatabaseException.getDatabaseException(e);
-			}
-		}
-
-		int getLastPosition(RandomOutputStream out, Table<?> table, byte[] primaryKey, int off, int len) throws DatabaseException {
-			Position interval=getResearchInterval(out, primaryKey, off, len);
-			if (interval.start==-1)
-				return -1;
-			try {
-				RandomInputStream ris=out.getRandomInputStream();
-				do {
-
-					ris.seek(interval.end+1);
-					int tableIndex=ris.readUnsignedShort();
-					boolean goToNext=false;
-					if (tableIndex<classes.size() && classes.get(tableIndex).equals(table.getClass()))
-					{
-						int s=ris.readUnsignedShortInt();
-						if (s==len)
-						{
-							for (int i=0;i<len && !goToNext; i++)
-							{
-								if (primaryKey[i]!=ris.readByte())
-									goToNext=true;
-							}
-							if (!goToNext)
-							{
-								return interval.end;
-							}
-						}
-					}
-					else
-						goToNext=true;
-					if (goToNext)
-					{
-						ris.seek(interval.end-4);
-						interval.end=ris.readInt();
-						while (interval.end==-1)
-						{
-							ris.seek(ris.currentPosition()-20);
-							if (ris.readInt()!=-1) {
-								ris.seek(ris.currentPosition() - 8);
-								interval.end=ris.readInt();
-							}
-							else
-								break;
-						}
-					}
-
-
-				} while (interval.end!=-1 && interval.end>=interval.start);
-				return -1;
-			}
-			catch(IOException e)
-			{
-				throw DatabaseException.getDatabaseException(e);
-			}
-
-		}
-
-		int getFirstPosition(RandomOutputStream out, Table<?> table, byte[] primaryKey, int off, int len) throws DatabaseException {
-			Position interval=getResearchInterval(out, primaryKey, off, len);
-			if (interval.start==-1)
-				return -1;
-			try {
-				RandomInputStream ris=out.getRandomInputStream();
-				do {
-
-					ris.seek(interval.start+1);
-					int tableIndex=ris.readUnsignedShort();
-					boolean goToNext=false;
-					if (tableIndex<classes.size() && classes.get(tableIndex).equals(table.getClass()))
-					{
-						int s=ris.readUnsignedShortInt();
-						if (s==len)
-						{
-							for (int i=0;i<len && !goToNext; i++)
-							{
-								if (primaryKey[i]!=ris.readByte())
-									goToNext=true;
-							}
-							if (!goToNext)
-							{
-								return interval.start;
-							}
-						}
-					}
-					else
-						goToNext=true;
-					if (goToNext)
-					{
-						ris.seek(interval.end-4);
-						interval.end=ris.readInt();
-						while (interval.end==-1)
-						{
-							ris.seek(ris.currentPosition()-20);
-							if (ris.readInt()!=-1) {
-								ris.seek(ris.currentPosition() - 8);
-								interval.end=ris.readInt();
-							}
-							else
-								break;
-						}
-					}
-
-
-				} while (interval.end!=-1 && interval.end>=interval.start);
-				return -1;
-			}
-			catch(IOException e)
-			{
-				throw DatabaseException.getDatabaseException(e);
-			}
-
-		}
-
-	}
-
-	private static class Position
-	{
-		int start;
-		int end;
-
-		public Position(int start, int end) throws DatabaseException {
-			if (start<-1)
-				throw DatabaseException.getDatabaseException(new IOException());
-			if (end<-1)
-				throw DatabaseException.getDatabaseException(new IOException());
-			if ((start==-1) != (end==-1))
-				throw DatabaseException.getDatabaseException(new IOException());
-
-			this.start = start;
-			this.end = end;
-		}
-	}*/
 
 	private void positionFileForNewEvent(RandomOutputStream out) throws DatabaseException {
 		try {
@@ -947,14 +612,7 @@ public class BackupRestoreManager {
 			else
 				rfis.seek(8);
 			if (!rfis.readBoolean()) {
-					/*transactionsInterval = null;
-				}
-				else
-				{*/
 				rfis.seek(16);
-					/*long s=rfis.readLong();
-					long e=rfis.readLong();
-					transactionsInterval=new DatabaseWrapper.TransactionsInterval(s, e);*/
 			}
 
 			rfis.seek(LIST_CLASSES_POSITION/*RecordsIndex.getListClassPosition(rfis)*/ + 4);
@@ -1031,35 +689,6 @@ public class BackupRestoreManager {
 			}
 		}
 	}
-	/*DatabaseWrapper.TransactionsInterval extractTransactionInterval(RandomFileInputStream rfis) throws DatabaseException {
-		try {
-			rfis.seek(8);
-
-			if (rfis.readBoolean())
-			{
-				long s=rfis.readLong();
-				long e=rfis.readLong();
-				return new DatabaseWrapper.TransactionsInterval(e, s);
-			}
-			else
-				return null;
-		} catch (IOException e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}
-	DatabaseWrapper.TransactionsInterval extractTransactionInterval(File file) throws DatabaseException {
-		if (file==currentFileReference && transactionsInterval!=null)
-			return transactionsInterval;
-		else
-		{
-
-			try(RandomFileInputStream rfis=new RandomFileInputStream(file)) {
-				return extractTransactionInterval(rfis);
-			} catch (IOException e) {
-				throw DatabaseException.getDatabaseException(e);
-			}
-		}
-	}*/
 
 
 	private boolean checkTablesHeader(File file) throws DatabaseException {
@@ -1148,52 +777,6 @@ public class BackupRestoreManager {
 
 	}
 
-	/*private void createEmptyBackupReference() throws DatabaseException {
-		boolean notify=false;
-		try {
-			synchronized (this) {
-				int oldLength = 0;
-				long oldLastFile;
-				if (fileTimeStamps.size() == 0)
-					oldLastFile = Long.MAX_VALUE;
-				else {
-					oldLastFile = fileTimeStamps.get(fileTimeStamps.size() - 1);
-					File f = getFile(oldLastFile, isReferenceFile(oldLastFile));
-					oldLength = (int) f.length();
-				}
-				try {
-					long backupTime = System.currentTimeMillis();
-					while (backupTime == oldLastFile) {
-						try {
-							Thread.sleep(1);
-						} catch (InterruptedException e) {
-							e.printStackTrace();
-						}
-						backupTime = System.currentTimeMillis();
-					}
-
-					int maxBufferSize = backupConfiguration.getMaxStreamBufferSizeForBackupRestoration();
-					int maxBuffersNumber = backupConfiguration.getMaxStreamBufferNumberForBackupRestoration();
-
-
-					File file = initNewFileForBackupReference(backupTime);
-					try (RandomOutputStream out = new BufferedRandomOutputStream(new RandomFileOutputStream(file, RandomFileOutputStream.AccessMode.READ_AND_WRITE), maxBufferSize, maxBuffersNumber)) {
-						saveHeader(out, backupTime, true);
-					}
-				} catch (IOException e) {
-					deleteDatabaseFilesFromReferenceToLastFile(oldLastFile, oldLength);
-					throw DatabaseException.getDatabaseException(e);
-				}
-				notify=true;
-			}
-		}
-		finally
-		{
-			if (notify && backupFileListener!=null)
-				backupFileListener.fileListChanged();
-
-		}
-	}*/
 
 	/**
 	 * Create a backup reference
@@ -1372,7 +955,6 @@ public class BackupRestoreManager {
 							}
 							rout.get().close();
 						}
-						//scanFiles();
 						cleanOldBackups();
 						if (!computeDatabaseReference.delete())
 							throw new DatabaseException("Impossible to delete file " + computeDatabaseReference);
@@ -1396,8 +978,6 @@ public class BackupRestoreManager {
 		} finally {
 			cleanCache();
 			databaseWrapper.unlockRead();
-			//transactionsInterval=null;
-			//currentBackupReferenceUTC=Long.MAX_VALUE;
 			if (notify)
 				databaseWrapper.getSynchronizer().checkForNewBackupFilePartToSendToCentralDatabaseBackup(dbPackage);
 
@@ -1470,10 +1050,6 @@ public class BackupRestoreManager {
 		else
 			return lifeCycles.mustCreateNewBackupReference(backupConfiguration, lastBackupReferenceTimeUTC);
 	}
-	/*boolean isExternalBackupManager()
-	{
-		return passive;
-	}*/
 
 	private void deleteDatabaseFilesFromReferenceToLastFile(long firstFileReference, int oldLength) throws DatabaseException {
 		if (firstFileReference==Long.MAX_VALUE)
@@ -1647,9 +1223,6 @@ public class BackupRestoreManager {
 			Long lid=metaData.getLastTransactionID();
 			if (lid==null) {
 				lid=databaseWrapper.getTransactionIDTable().getLastTransactionID();
-				if (lid==-1)
-					lid=null;
-				//lid = getLastTransactionIDBeforeGivenTimeStamp(timeStamp);
 			}
 
 			return new EncryptedBackupPartDestinedToCentralDatabaseBackup(fromHostIdentifier, encryptedMetaData, out.getRandomInputStream(), EncryptionTools.encryptID(lid, random, encryptionProfileProvider));
@@ -1903,12 +1476,6 @@ public class BackupRestoreManager {
 						tbls.add(t);
 					}
 
-					/*tbls2 = new ArrayList<>();
-					for (Class<? extends Table<?>> c : classes) {
-						Table<?> t = databaseWrapper.getTableInstance(c, oldVersion);
-						tbls2.add(t);
-					}*/
-
 					s = 0;
 					generateProgressBarParameterForRestoration(dateUTCInMs);
 					pg = backupConfiguration.getProgressMonitorForRestore();
@@ -1922,29 +1489,6 @@ public class BackupRestoreManager {
 						pg.setMaximum(1000);
 					}
 
-					/*boolean initNewFile=false;
-
-					if (isExternalBackupManager()) {
-						BackupRestoreManager internalManager = databaseWrapper.getBackupRestoreManager(this.databaseConfiguration.getPackage());
-						if (internalManager != null)
-							initNewFile=true;
-					}
-					else
-						initNewFile=true;
-					if (initNewFile) {
-						if (fileTimeStamps.size()>0)
-						{
-							long lastTS=this.fileTimeStamps.get(fileTimeStamps.size()-1);
-
-							if ((((listIncrements.size()>0 && listIncrements.get(listIncrements.size()-1).equals(lastTS))
-									||
-									(listIncrements.size()==0 && startFileReference==lastTS))
-								|| isPartFull(lastTS, getFile(lastTS, isReferenceFile(lastTS))))) {
-								incrementAfterFile=lastTS;
-							}
-						}
-					}*/
-
 				} catch (Exception e) {
 					lastCurrentRestorationFileUsed=Long.MIN_VALUE;
 					if (newVersionLoaded)
@@ -1956,7 +1500,6 @@ public class BackupRestoreManager {
 			long progressPosition = 0;
 			final ProgressMonitorDM progressMonitor=pg;
 			final ArrayList<Table<?>> tables=tbls;
-			//final ArrayList<Table<?>> oldTables=tbls2;
 			final int maxBufferSize = backupConfiguration.getMaxStreamBufferSizeForBackupRestoration();
 			final int maxBuffersNumber = backupConfiguration.getMaxStreamBufferNumberForBackupRestoration();
 			final Reference<Boolean> addResetDB=new Reference<>(true);
@@ -2036,7 +1579,6 @@ public class BackupRestoreManager {
 													assert eventTypeCode == 2;
 													HashMap<String, Object> hm = new HashMap<>();
 													table.deserializeFields(hm, recordBuffer, 0, s, true, false, false);
-													//DatabaseRecord drRecord = oldTable.getRecord(hm);
 
 													if (in.readBoolean()) {
 														s=in.readBytesArray(recordBuffer, 0, false, Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES);
@@ -2060,14 +1602,8 @@ public class BackupRestoreManager {
 															}
 														}
 														table.updateUntypedRecord(newRecord, true, null);
-														//table.updateUntypedRecord(newRecord, drRecord == null, null);
 													}
-													/*databaseWrapper.getConnectionAssociatedWithCurrentThread().addEvent(
-															new TableEvent<>(-1, DatabaseEventType.ADD, table, null, newRecord, null), true);*/
-													/*if (drRecord != null) {
-														databaseWrapper.getConnectionAssociatedWithCurrentThread().addEvent(table,
-																new TableEvent<>(-1, DatabaseEventType.UPDATE, drRecord, newRecord, null), true);
-													}*/
+
 
 												}
 												break;
@@ -2155,48 +1691,6 @@ public class BackupRestoreManager {
 						currentFile=null;
 
 				}
-				/*for (int i=tables.size()-1;i>=0;i--)
-				{
-					final Table<?> table=tables.get(i);
-					final Table<?> oldTable=oldTables.get(i);
-					databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
-						private long startPosition=0;
-						@Override
-						public Void run() throws Exception {
-							oldTable.getPaginatedRecordsWithUnknownType(startPosition==0?-1:startPosition, startPosition==0?-1:Long.MAX_VALUE, new Filter<DatabaseRecord>() {
-								@Override
-								public boolean nextRecord(DatabaseRecord _record) throws DatabaseException {
-									++startPosition;
-
-									if (table.getRecord(Table.getFields(oldTable.getPrimaryKeysFieldAccessors(), _record))==null)
-									{
-										databaseWrapper.getConnectionAssociatedWithCurrentThread().addEvent(table,
-											new TableEvent<>(-1, DatabaseEventType.REMOVE, _record, null, null), true);
-									}
-									return false;
-								}
-							});
-
-							return null;
-						}
-
-						@Override
-						public TransactionIsolation getTransactionIsolation() {
-							return TransactionIsolation.TRANSACTION_READ_COMMITTED;
-						}
-
-						@Override
-						public boolean doesWriteData() {
-							return true;
-						}
-
-						@Override
-						public void initOrReset() {
-
-						}
-					});
-
-				}*/
 
 				databaseWrapper.validateNewDatabaseVersionAndDeleteOldVersion(databaseConfiguration, oldVersion, newVersion);
 				databaseWrapper.getSynchronizer().validateExtendedTransaction();
@@ -2221,8 +1715,6 @@ public class BackupRestoreManager {
 				}
 				lastCurrentRestorationFileUsed=Long.MIN_VALUE;
 				cleanCache();
-				//lastBackupEventUTC=Long.MIN_VALUE;
-				//transactionsInterval=null;
 				if (notify)
 					databaseWrapper.getSynchronizer().checkForNewBackupFilePartToSendToCentralDatabaseBackup(dbPackage);
 
@@ -2251,137 +1743,6 @@ public class BackupRestoreManager {
 		}
 	}
 
-	/*/**
-	 * Restore the given record to the given date
-	 *
-	 * @param dateUTC the reference date to use for the restoration
-	 * @param record the record to restore (only primary keys are used)
-	 * @param restoreWithCascade if true, all foreign key pointing to this record, or pointed by this record will be restored. If this boolean is set to false, this record will not be restored if it is in relation with other records that have been altered.
-	 * @return the reference of record that have been restored. This reference can contain a null pointer if the new version is a null record. Returns null if the restored has not been applied. It can occurs of the record have foreign keys (pointing to or pointed by) that does not exists or that changed, and that are not enabled to be restored (restoreWithCascade=false).
-	 */
-	/*public <R extends DatabaseRecord> Reference<R> restoreRecordToDateUTC(long dateUTC, R record, boolean restoreWithCascade) throws DatabaseException {
-		return restoreRecordToDateUTC(dateUTC,record, restoreWithCascade, true);
-	}*/
-
-/*	/**
-	 * Restore the given record to the given date
-	 *
-	 * @param dateUTC the reference date to use for the restoration
-	 * @param record the record to restore (only primary keys are used)
-	 * @param restoreWithCascade if true, all foreign key pointing to this record, or pointed by this record will be restored. If this boolean is set to false, this record will not be restored if it is in relation with other records that have been altered.
-	 * @param chooseNearestBackupIfNoBackupMatch if set to true, and when no backup was found at the given date/time, than choose the older backup
-	 * @return the reference of record that have been restored. This reference can contain a null pointer if the new version is a null record. Returns null if the restored has not been applied. It can occurs of the record have foreign keys (pointing to or pointed by) that does not exists or that changed, and that are not enabled to be restored (restoreWithCascade=false). It can also occurs if no date correspond to the given date, and if chooseNearestBackupIfNoBackupMatch is equals to false.
-	 */
-	/*public <R extends DatabaseRecord> Reference<R> restoreRecordToDateUTC(long dateUTC, R record, boolean restoreWithCascade, boolean chooseNearestBackupIfNoBackupMatch) throws DatabaseException {
-		Table<R> table=databaseWrapper.getTableInstanceFromRecord(record);
-		return restoreRecordToDateUTC(dateUTC,restoreWithCascade, chooseNearestBackupIfNoBackupMatch, table, Table.getFields(table.getPrimaryKeysFieldAccessors(), record));
-	}
-	/**
-	 * Restore the given record to the given date
-	 *
-	 * @param dateUTC the reference date to use for the restoration
-	 * @param restoreWithCascade if true, all foreign key pointing to this record, or pointed by this record will be restored. If this boolean is set to false, this record will not be restored if it is in relation with other records that have been altered.
-	 * @param table the concerned table
-	 * @param primaryKeys the primary keys of the record to restore.
-	 *                Must be formatted as follow : {"field1", value1,"field2", value2, etc.}
-	 * @param <R> the record type
-	 * @param <T> the table type
-	 * @return the reference of record that have been restored. This reference can contain a null pointer if the new version is a null record. Returns null if the restored has not been applied. It can occurs of the record have foreign keys (pointing to or pointed by) that does not exists or that changed, and that are not enabled to be restored (restoreWithCascade=false).
-	 */
-	/*public <R extends DatabaseRecord, T extends Table<R>> Reference<R> restoreRecordToDateUTC(long dateUTC, boolean restoreWithCascade, T table, Object ... primaryKeys) throws DatabaseException {
-		return restoreRecordToDateUTC(dateUTC, restoreWithCascade, true, table, primaryKeys);
-	}
-	/**
-	 * Restore the given record to the given date
-	 *
-	 * @param dateUTC the reference date to use for the restoration
-	 * @param restoreWithCascade if true, all foreign key pointing to this record, or pointed by this record will be restored. If this boolean is set to false, this record will not be restored if it is in relation with other records that have been altered.
-	 * @param chooseNearestBackupIfNoBackupMatch if set to true, and when no backup was found at the given date/time, than choose the older backup
-	 * @param table the concerned table
-	 * @param primaryKeys the primary keys of the record to restore.
-	 *                Must be formatted as follow : {"field1", value1,"field2", value2, etc.}
-	 * @param <R> the record type
-	 * @param <T> the table type
-	 * @return the reference of record that have been restored. This reference can contain a null pointer if the new version is a null record. Returns null if the restored has not been applied. It can occurs of the record have foreign keys (pointing to or pointed by) that does not exists or that changed, and that are not enabled to be restored (restoreWithCascade=false). It can also occurs if no date correspond to the given date, and if chooseNearestBackupIfNoBackupMatch is equals to false.
-	 */
-	/*public <R extends DatabaseRecord, T extends Table<R>> Reference<R> restoreRecordToDateUTC(long dateUTC, boolean restoreWithCascade, boolean chooseNearestBackupIfNoBackupMatch, T table, Object ... primaryKeys) throws DatabaseException {
-		return restoreRecordToDateUTC(dateUTC, restoreWithCascade, chooseNearestBackupIfNoBackupMatch,  table, table.transformToMapField(primaryKeys));
-	}
-
-
-	/**
-	 * Restore the given record to the given date
-	 *
-	 * @param dateUTC the reference date to use for the restoration
-	 * @param restoreWithCascade if true, all foreign key pointing to this record, or pointed by this record will be restored. If this boolean is set to false, this record will not be restored if it is in relation with other records that have been altered.
-	 * @param table the concerned table
-	 * @param primaryKeys the primary keys of the record to restore
-	 * @param <R> the record type
-	 * @param <T> the table type
-	 * @return the reference of record that have been restored. This reference can contain a null pointer if the new version is a null record. Returns null if the restored has not been applied. It can occurs of the record have foreign keys (pointing to or pointed by) that does not exists or that changed, and that are not enabled to be restored (restoreWithCascade=false).
-	 */
-	/*public <R extends DatabaseRecord, T extends Table<R>> Reference<R> restoreRecordToDateUTC(long dateUTC, boolean restoreWithCascade, T table, Map<String, Object> primaryKeys)
-	{
-		return restoreRecordToDateUTC(dateUTC, restoreWithCascade, true, table, primaryKeys);
-	}
-	/**
-	 * Restore the given record to the given date
-	 *
-	 * @param dateUTC the reference date to use for the restoration
-	 * @param restoreWithCascade if true, all foreign key pointing to this record, or pointed by this record will be restored. If this boolean is set to false, this record will not be restored if it is in relation with other records that have been altered.
-	 * @param chooseNearestBackupIfNoBackupMatch if set to true, and when no backup was found at the given date/time, than choose the older backup
-	 * @param table the concerned table
-	 * @param primaryKeys the primary keys of the record to restore
-	 * @param <R> the record type
-	 * @param <T> the table type
-	 * @return the reference of record that have been restored. This reference can contain a null pointer if the new version is a null record. Returns null if the restored has not been applied. It can occurs of the record have foreign keys (pointing to or pointed by) that does not exists or that changed, and that are not enabled to be restored (restoreWithCascade=false). It can also occurs if no date correspond to the given date, and if chooseNearestBackupIfNoBackupMatch is equals to false.
-	 */
-	/*public <R extends DatabaseRecord, T extends Table<R>> Reference<R> restoreRecordToDateUTC(long dateUTC, boolean restoreWithCascade, boolean chooseNearestBackupIfNoBackupMatch, T table, Map<String, Object> primaryKeys) throws DatabaseException {
-		synchronized (this) {
-			Long foundFile=null;
-			int filePosition=-1;
-			if (fileReferenceTimeStamps.size()==0)
-				return null;
-			for (Long l : fileTimeStamps)
-			{
-				if (l>dateUTC)
-					break;
-				else {
-					foundFile = l;
-					++filePosition;
-				}
-			}
-			if (foundFile==null)
-			{
-				if (!chooseNearestBackupIfNoBackupMatch)
-					return null;
-				foundFile=fileTimeStamps.get(0);
-				filePosition=0;
-				dateUTC=foundFile;
-			}
-			Long fileReference=null;
-			for (int i=filePosition; i>=0;i--)
-			{
-				long t=fileTimeStamps.get(i);
-				if (isReferenceFile(t)) {
-					fileReference = t;
-					break;
-				}
-			}
-			if (fileReference==null)
-				throw new IllegalStateException();
-			if (!checkTablesHeader(getFile(fileReference, true)))
-				throw new DatabaseException("The database backup is incompatible with current database tables");
-			try(RandomFileInputStream fis=new RandomFileInputStream(getFile(foundFile, foundFile.equals(fileReference))))
-			{
-
-			} catch (IOException e) {
-				throw DatabaseException.getDatabaseException(e);
-			}
-
-
-		}
-	}*/
 
 	void createIfNecessaryNewBackupReference() throws DatabaseException {
 		if (doesCreateNewBackupReference())
@@ -2392,7 +1753,7 @@ public class BackupRestoreManager {
 
 	}
 
-	AbstractTransaction startTransaction(boolean transactionToSynchronize) throws DatabaseException {
+	AbstractTransaction startTransaction() throws DatabaseException {
 		synchronized (this) {
 			if (fileTimeStamps.size()==0 && !temporaryDisabled && !computeDatabaseReference.exists())
 				return new TransactionToValidateByABackupReference();
@@ -2402,7 +1763,6 @@ public class BackupRestoreManager {
 			long oldLastFile;
 			if (fileTimeStamps.size() == 0)
 				throw new InternalError();
-				//oldLastFile = Long.MAX_VALUE;
 			else {
 				oldLastFile = fileTimeStamps.get(fileTimeStamps.size() - 1);
 				File file = getFile(oldLastFile, isReferenceFile(oldLastFile));
@@ -2411,10 +1771,9 @@ public class BackupRestoreManager {
 
 			long last = getLastTransactionUTCInMS();
 			Reference<Long> fileTimeStamp = new Reference<>();
-			//AtomicReference<RecordsIndex> index=new AtomicReference<>();
 			Reference<Long> firstTransactionID=new Reference<>(null);
-			RandomOutputStream rfos = getFileForBackupIncrementOrCreateIt(fileTimeStamp, firstTransactionID/*, index*/);
-			return new Transaction(fileTimeStamp.get(), last, rfos, /*index.get(), */oldLastFile, oldLength, firstTransactionID.get(), transactionToSynchronize);
+			RandomOutputStream rfos = getFileForBackupIncrementOrCreateIt(fileTimeStamp, firstTransactionID);
+			return new Transaction(fileTimeStamp.get(), last, rfos, oldLastFile, oldLength, firstTransactionID.get());
 		}
 
 	}
@@ -2481,14 +1840,12 @@ public class BackupRestoreManager {
 		private long transactionUTC;
 		private final int nextTransactionReference;
 		private final long fileTimeStamp;
-		//private final RecordsIndex index;
 		private final int oldLength;
 		private final long oldLastFile;
 		private final Long firstTransactionID;
-		private final boolean transactionToSynchronize;
 
 
-		private Transaction(long fileTimeStamp, long lastTransactionUTC, RandomOutputStream out, /*RecordsIndex index, */long oldLastFile, int oldLength, Long firstTransactionID, boolean transactionToSynchronize) throws DatabaseException {
+		private Transaction(long fileTimeStamp, long lastTransactionUTC, RandomOutputStream out, /*RecordsIndex index, */long oldLastFile, int oldLength, Long firstTransactionID) throws DatabaseException {
 			//this.index=index;
 			this.fileTimeStamp=fileTimeStamp;
 			this.lastTransactionUTC = lastTransactionUTC;
@@ -2496,7 +1853,6 @@ public class BackupRestoreManager {
 			this.oldLastFile=oldLastFile;
 			this.oldLength=oldLength;
 			this.firstTransactionID=firstTransactionID;
-			this.transactionToSynchronize = transactionToSynchronize;
 
 			transactionUTC=System.currentTimeMillis();
 			while(transactionUTC==lastTransactionUTC)
@@ -2594,15 +1950,11 @@ public class BackupRestoreManager {
 
 					try {
 
-			/*if (!isReferenceFile(fileTimeStamp)) {
-				fileTimeStamps.add(fileTimeStamp);
-			}*/
 						out.close();
 					} catch (IOException e) {
 						throw DatabaseException.getDatabaseException(e);
 					}
 					BackupRestoreManager.this.lastBackupEventUTC = Long.MIN_VALUE;
-					//transactionsInterval = null;
 					if (!computeDatabaseReference.delete())
 						throw new DatabaseException("Impossible to delete file : " + computeDatabaseReference);
 
