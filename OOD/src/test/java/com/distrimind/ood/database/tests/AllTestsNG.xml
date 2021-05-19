@@ -46,5 +46,11 @@
 			<class name="com.distrimind.ood.database.tests.H2TestRevertToOldVersionIntoDecentralizedNetwork" />
 		</classes>
 	</test>
+	<test name="testDatabaseAddDatabaseWithCentralDatabaseBackupConnected"  >
+		<classes>
+
+			<class name="com.distrimind.ood.database.tests.H2TestAddDatabaseWithCentralDatabaseBackupConnected" />
+		</classes>
+	</test>
 
 </suite>

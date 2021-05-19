@@ -6230,12 +6230,14 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 	private void removeUntypedRecordImpl(final T record, final boolean synchronizeIfNecessary,
 								   final Set<DecentralizedValue> hostsDestinations, boolean refreshMemory) throws DatabaseException {
-		for (NeighboringTable nt : list_tables_pointing_to_this_table) {
-			if (nt.getPointingTable().hasRecordsWithOneOfFields(nt.getHashMapFields(record), false)) {
-				throw new ConstraintsNotRespectedDatabaseException(
-						"The given record is pointed by another record through a foreign key into the table "
-								+ nt.getPointingTable().getClass().getSimpleName()
-								+ ". Impossible to remove it into the table " + getClass().getSimpleName());
+		if (refreshMemory) {
+			for (NeighboringTable nt : list_tables_pointing_to_this_table) {
+				if (nt.getPointingTable().hasRecordsWithOneOfFields(nt.getHashMapFields(record), false)) {
+					throw new ConstraintsNotRespectedDatabaseException(
+							"The given record is pointed by another record through a foreign key into the table "
+									+ nt.getPointingTable().getClass().getSimpleName()
+									+ ". Impossible to remove it into the table " + getClass().getSimpleName());
+				}
 			}
 		}
 
