@@ -143,14 +143,6 @@ final class IDTable extends Table<IDTable.Record> {
 
 	}
 
-	/*private void decrementID(int id) throws DatabaseException {
-		Record r = getRecord("id", id);
-		if (r != null) {
-			--r.transactionID;
-			this.updateRecord(r);
-		}
-	}*/
-
 	long setLastValidatedTransactionID(long transactionID) throws DatabaseException {
 		return setID(GLOBAL_VALIDATED_TRANSACTION_ID, transactionID);
 	}
@@ -195,52 +187,7 @@ final class IDTable extends Table<IDTable.Record> {
 		}
 	}
 
-	/*public long getLastTransactionUTC() throws DatabaseException {
-		Record r = getRecord("id", LAST_LOCAL_TRANSACTION_UTC);
-
-		if (r == null) {
-			return Long.MIN_VALUE;
-		} else {
-			return r.transactionID;
-		}
-	}
-
-	public void setTransactionUTCToBeCandidateForLastValue(final long transactionUTC) throws DatabaseException {
-		getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
-			@Override
-			public Void run() throws Exception {
-				Record r = getRecord("id", LAST_LOCAL_TRANSACTION_UTC);
-
-				if (r == null) {
-					r=new Record();
-					r.id=LAST_LOCAL_TRANSACTION_UTC;
-					r.transactionID=transactionUTC;
-					addRecord(r);
-				} else if (r.transactionID<transactionUTC) {
-					updateRecord(r, "transactionID", transactionUTC);
-				}
-				return null;
-			}
-
-			@Override
-			public TransactionIsolation getTransactionIsolation() {
-				return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
-			}
-
-			@Override
-			public boolean doesWriteData() {
-				return true;
-			}
-
-			@Override
-			public void initOrReset() {
-
-			}
-		});
-	}*/
-
 
 	private static final int TRANSACTION_ID = 1;
 	private static final int GLOBAL_VALIDATED_TRANSACTION_ID = 2;
-	//private static final int LAST_LOCAL_TRANSACTION_UTC = 4;
 }

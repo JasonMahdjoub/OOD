@@ -49,6 +49,7 @@ import java.io.IOException;
  * @version 1.0
  * @since OOD 3.0.0
  */
+
 public abstract class AbstractDatabaseBackupCenterMessageForSynchronization extends DatabaseEvent implements SecureExternalizable {
 	private DecentralizedValue hostSource;
 	private DecentralizedValue hostDestination;

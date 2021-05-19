@@ -967,10 +967,6 @@ public class RuleInstance implements QueryPart {
 					Symbol comp = (Symbol) ri2.parts.get(0);
 
 					if (comp.getType() == SymbolType.IS || comp.getType() == SymbolType.ISNOT) {
-						/*if (!ri1.isEqualable(table, parameters, null)) {
-							throw new DatabaseSyntaxException(
-									"Cannot compare " + ri1.getContent() + " and " + ri3.getContent());
-						}*/
 						Symbol s1 = (Symbol)ri1.parts.get(0);
 						if (s1.getType() != SymbolType.IDENTIFIER)
 							throw new DatabaseSyntaxException("Cannot do null comparison without identifier");

@@ -101,24 +101,6 @@ public class booleanFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	/*@Override
-	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			if (_field_instance == null)
-				return false;
-			Boolean val1 = null;
-			if (_field_instance instanceof Boolean)
-				val1 = (Boolean) _field_instance;
-			if (val1 == null)
-				return false;
-			boolean val2 = _result_set.getBoolean(_sft.translateField(sql_fields[0]));
-
-			return val1 == val2;
-		} catch (SQLException e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}*/
 
 	private static final Class<?>[] compatible_classes = { boolean.class, Boolean.class };
 
@@ -189,27 +171,6 @@ public class booleanFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	/*@Override
-	public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set)
-			throws DatabaseException {
-		setValue(_class_instance, _field_instance);
-		try {
-			_result_set.updateBoolean(sql_fields[0].short_field_without_quote, field.getBoolean(_class_instance));
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-
-	}
-
-	@Override
-	protected void updateResultSetValue(Object _class_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			_result_set.updateBoolean(_sft.translateField(sql_fields[0]), field.getBoolean(_class_instance));
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}*/
 
 	@Override
 	public boolean canBePrimaryOrUniqueKey() {

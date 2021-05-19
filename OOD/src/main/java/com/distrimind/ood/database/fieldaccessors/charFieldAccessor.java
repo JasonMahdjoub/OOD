@@ -102,25 +102,6 @@ public class charFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	/*@Override
-	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			if (_field_instance == null)
-				return false;
-			Character val1 = null;
-			if (_field_instance instanceof Character)
-				val1 = (Character) _field_instance;
-			if (val1 == null)
-				return false;
-			char val2 = _result_set.getString(_sft.translateField(sql_fields[0])).charAt(0);
-
-			return val1 == val2;
-		} catch (SQLException e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}*/
-
 	private static final Class<?>[] compatible_classes = { char.class, Character.class };
 
 	@Override
@@ -202,29 +183,6 @@ public class charFieldAccessor extends FieldAccessor {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
-
-	/*@Override
-	public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set)
-			throws DatabaseException {
-		setValue(_class_instance, _field_instance);
-		try {
-			_result_set.updateString(sql_fields[0].short_field_without_quote, String.valueOf(field.getChar(_class_instance)));
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-
-	}
-
-	@Override
-	protected void updateResultSetValue(Object _class_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			_result_set.updateString(_sft.translateField(sql_fields[0]),
-					String.valueOf(field.getChar(_class_instance)));
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}*/
 
 	@Override
 	public boolean canBePrimaryOrUniqueKey() {

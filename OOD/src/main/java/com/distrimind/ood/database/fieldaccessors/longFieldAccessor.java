@@ -100,27 +100,6 @@ public class longFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	/*@Override
-	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			if (_field_instance == null)
-				return false;
-			Long val1 = null;
-			if (_field_instance instanceof Long)
-				val1 = (Long) _field_instance;
-
-			if (val1 == null)
-				return false;
-
-			long val2 = _result_set.getLong(_sft.translateField(sql_fields[0]));
-
-			return val1 == val2;
-		} catch (SQLException e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}*/
-
 	private static final Class<?>[] compatible_classes = { long.class, Long.class };
 
 	@Override
@@ -195,28 +174,6 @@ public class longFieldAccessor extends FieldAccessor {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
-
-	/*@Override
-	public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set)
-			throws DatabaseException {
-		setValue(_class_instance, _field_instance);
-		try {
-			_result_set.updateLong(sql_fields[0].short_field_without_quote, field.getLong(_class_instance));
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-
-	}
-
-	@Override
-	protected void updateResultSetValue(Object _class_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			_result_set.updateLong(_sft.translateField(sql_fields[0]), field.getLong(_class_instance));
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}*/
 
 	@Override
 	public boolean canBePrimaryOrUniqueKey() {

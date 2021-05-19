@@ -142,9 +142,6 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 			setConcernedHosts(concernedHosts);
 		}
 
-		/*boolean isTemporaryTransaction() {
-			return id < -1;
-		}*/
 
 		@Override
 		public boolean equals(Object o) {
@@ -158,10 +155,6 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 		public int hashCode() {
 			return (int) getID();
 		}
-
-		/*boolean isConcernedBy(Package p) {
-			return p.getName().equals(concernedDatabasePackage);
-		}*/
 
 		boolean isConcernedByOneOf(Set<String> packages) {
 			if (packages == null)
@@ -187,49 +180,16 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 			} else
 				setForced(true);
 			concernedHosts=peers;
-			/*byte[][] bytes = new byte[peers.size()][];
-			int i = 0;
-			int size = 2 + peers.size() * 2;
-			for (DecentralizedValue id : peers) {
-				bytes[i] = id.encode();
-				size += bytes[i++].length + 2;
-			}
-			if (size > concernedHostsSizeLimit) {
-				concernedHosts = null;
-			} else {
-				concernedHosts = new byte[size];
-				i = 2;
-				Bits.putShort(concernedHosts, 0, (short) peers.size());
-				for (byte[] b : bytes) {
-					Bits.putShort(concernedHosts, i, (short) b.length);
-					i += 2;
-					System.arraycopy(b, 0, concernedHosts, i, b.length);
-					i += b.length;
-				}
-			}*/
 		}
 
 		Set<DecentralizedValue> getConcernedHosts() {
 			if (concernedHosts == null)
 				return new HashSet<>();
 			return concernedHosts;
-			/*short nbPeers = Bits.getShort(concernedHosts, 0);
-			ArrayList<DecentralizedValue> res = new ArrayList<>(nbPeers);
-			int off = 2;
-			for (int i = 0; i < nbPeers; i++) {
-				short size = Bits.getShort(concernedHosts, 2);
-				if (size > 1024)
-					throw new SerializationDatabaseException("Invalid data (hook id size est greater to 1024)");
 
-				off += 2;
-				res.add(DecentralizedValue.decode(concernedHosts, off, size));
-				off += size;
-			}
-			return res;*/
 		}
 
 		boolean isConcernedBy(DecentralizedValue newHostID) throws SerializationDatabaseException {
-			//this.newHostID = newHostID;
 			if (concernedHosts == null)
 				return false;
 			return concernedHosts.contains(newHostID);
@@ -477,16 +437,6 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 		} else {
 			removeRecord(transaction.get());
 		}
-		/*final long lastTID=getTransactionIDTable().getLastTransactionID()-1;
-		getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
-			@Override
-			public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
-				update("lastValidatedLocalTransactionID", lastTID);
-			}
-		}, "concernsDatabaseHost=%c and lastValidatedLocalTransactionID=%l and hostID!=%h",
-				"c", false, "l", oldLastID, "h", hook.getHostID());
-		if (hook.getLastValidatedLocalTransactionID()==-1)
-			getDatabaseHooksTable().updateRecord(hook, "lastValidatedLocalTransactionID", oldLastID);*/
 		getDatabaseHooksTable().actualizeLastTransactionID(new ArrayList<>(0));
 	}
 

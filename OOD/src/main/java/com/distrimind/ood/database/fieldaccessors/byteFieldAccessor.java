@@ -102,25 +102,6 @@ public class byteFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	/*@Override
-	public boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			if (_field_instance == null)
-				return false;
-			Byte val1 = null;
-			if (_field_instance instanceof Byte)
-				val1 = (Byte) _field_instance;
-			if (val1 == null)
-				return false;
-			byte val2 = _result_set.getByte(_sft.translateField(sql_fields[0]));
-
-			return val1 == val2;
-		} catch (SQLException e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}*/
-
 	private static final Class<?>[] compatible_classes = { byte.class, Byte.class };
 
 	@Override
@@ -195,28 +176,6 @@ public class byteFieldAccessor extends FieldAccessor {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
-
-	/*@Override
-	public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set)
-			throws DatabaseException {
-		setValue(_class_instance, _field_instance);
-		try {
-			_result_set.updateByte(sql_fields[0].short_field_without_quote, field.getByte(_class_instance));
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-
-	}
-
-	@Override
-	protected void updateResultSetValue(Object _class_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			_result_set.updateByte(_sft.translateField(sql_fields[0]), field.getByte(_class_instance));
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}*/
 
 	@Override
 	public boolean canBePrimaryOrUniqueKey() {

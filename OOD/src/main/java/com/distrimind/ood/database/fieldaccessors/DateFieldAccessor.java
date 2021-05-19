@@ -118,29 +118,6 @@ public class DateFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	/*@Override
-	public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set)
-			throws DatabaseException {
-		setValue(_class_instance, _field_instance);
-		try {
-			Date d = (Date) field.get(_class_instance);
-			_result_set.updateTimestamp(sql_fields[0].short_field_without_quote, d == null ? null : new Timestamp(d.getTime()));
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}
-
-	@Override
-	protected void updateResultSetValue(Object _class_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			Date d = (Date) field.get(_class_instance);
-			_result_set.updateTimestamp(_sft.translateField(sql_fields[0]),
-					d == null ? null : new Timestamp(d.getTime()));
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}*/
 
 	@Override
 	public boolean equals(Object _class_instance, Object _field_instance) throws DatabaseException {
@@ -155,21 +132,6 @@ public class DateFieldAccessor extends FieldAccessor {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
-
-	/*@Override
-	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			Timestamp val1 = _result_set.getTimestamp(_sft.translateField(sql_fields[0]));
-			if (val1 == null || _field_instance == null)
-				return _field_instance == val1;
-			if ((!(field.getType().isAssignableFrom(_field_instance.getClass()))))
-				return false;
-			return new Date(val1.getTime()).equals(_field_instance);
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}*/
 
 	@Override
 	public Object getValue(Object _class_instance) throws DatabaseException {

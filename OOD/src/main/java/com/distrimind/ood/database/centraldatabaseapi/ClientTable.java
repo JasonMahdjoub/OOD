@@ -35,7 +35,8 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.ood.database.*;
+import com.distrimind.ood.database.DatabaseRecord;
+import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.annotations.ForeignKey;
 import com.distrimind.ood.database.annotations.NotNull;
@@ -45,7 +46,6 @@ import com.distrimind.ood.database.messages.AbstractCompatibleEncryptedDatabaseM
 import com.distrimind.ood.database.messages.IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup;
 import com.distrimind.util.DecentralizedValue;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -66,9 +66,6 @@ public final class ClientTable extends Table<ClientTable.Record> {
 		@NotNull
 		private ClientCloudAccountTable.Record account;
 
-		/*@Field(limit=EncryptionTools.MAX_ENCRYPTED_ID_SIZE)
-		private byte[] lastValidatedAndEncryptedID;*/
-
 		@Field(limit= IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup.SIZE_IN_BYTES_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND)
 		private List<byte[]> encryptedAuthenticatedMessagesToSend;
 
@@ -84,10 +81,17 @@ public final class ClientTable extends Table<ClientTable.Record> {
 
 		}
 
+		public void setEncryptedCompatiblesDatabases(byte[] encryptedCompatiblesDatabases) {
+			this.encryptedCompatiblesDatabases = encryptedCompatiblesDatabases;
+		}
+
+		public void setToRemoveOrderTimeUTCInMs(Long toRemoveOrderTimeUTCInMs) {
+			this.toRemoveOrderTimeUTCInMs = toRemoveOrderTimeUTCInMs;
+		}
+
 		public Record(DecentralizedValue clientID, ClientCloudAccountTable.Record account) {
 			this.clientID = clientID;
 			this.account = account;
-			//this.lastValidatedAndEncryptedID=null;
 			this.encryptedAuthenticatedMessagesToSend=null;
 		}
 
@@ -98,10 +102,6 @@ public final class ClientTable extends Table<ClientTable.Record> {
 		public ClientCloudAccountTable.Record getAccount() {
 			return account;
 		}
-
-		/*public byte[] getLastValidatedAndEncryptedID() {
-			return lastValidatedAndEncryptedID;
-		}*/
 
 		public List<byte[]> getEncryptedAuthenticatedMessagesToSend() {
 			return encryptedAuthenticatedMessagesToSend;

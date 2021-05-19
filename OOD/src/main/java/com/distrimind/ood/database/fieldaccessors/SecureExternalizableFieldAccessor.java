@@ -148,49 +148,6 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	/*@Override
-	public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set)
-			throws DatabaseException {
-		setValue(_class_instance, _field_instance);
-		try {
-			if (DatabaseWrapperAccessor.getBlobType(sql_connection, getLimit()).contains(blobBaseName)) {
-				try (RandomByteArrayOutputStream os = new RandomByteArrayOutputStream()) {
-					serialize(os, _class_instance);
-					// os.writeObject(field.get(_class_instance));
-
-					try (ByteArrayInputStream bais = new ByteArrayInputStream(os.getBytes())) {
-						_result_set.updateBlob(sql_fields[0].short_field_without_quote, bais);
-					}
-
-				}
-			} else
-				_result_set.updateObject(sql_fields[0].short_field_without_quote, field.get(_class_instance));
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-
-	}
-
-	@Override
-	protected void updateResultSetValue(Object _class_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			if (DatabaseWrapperAccessor.getBlobType(sql_connection, getLimit()).contains(blobBaseName)) {
-				try (RandomByteArrayOutputStream os = new RandomByteArrayOutputStream()) {
-					serialize(os, _class_instance);
-					// os.writeObject(field.get(_class_instance));
-
-					try (ByteArrayInputStream bais = new ByteArrayInputStream(os.getBytes())) {
-						_result_set.updateBlob(_sft.translateField(sql_fields[0]), bais);
-					}
-				}
-			} else
-				_result_set.updateObject(_sft.translateField(sql_fields[0]), field.get(_class_instance));
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}
-*/
 	@Override
 	public boolean equals(Object _class_instance, Object _field_instance) throws DatabaseException {
 		try {
@@ -204,25 +161,6 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
-
-	/*@Override
-	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			Blob b = _result_set.getBlob(sql_fields[0].short_field_without_quote);
-			try (RandomByteArrayInputStream bais = new RandomByteArrayInputStream(b.getBytes(1, (int) b.length()))) {
-
-				Object val1 = deserialize(bais);
-				if (val1 == null || _field_instance == null)
-					return _field_instance == val1;
-				if ((!(field.getType().isAssignableFrom(_field_instance.getClass()))))
-					return false;
-				return val1.equals(_field_instance);
-			}
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}*/
 
 	@Override
 	public Object getValue(Object _class_instance) throws DatabaseException {

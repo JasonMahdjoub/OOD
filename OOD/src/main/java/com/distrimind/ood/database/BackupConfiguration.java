@@ -153,10 +153,6 @@ public class BackupConfiguration extends MultiFormatProperties {
 		this.restoreProgressMonitorParameters = restoreProgressMonitorParameters;
 	}
 
-	/*public int getMaxIndexSize() {
-		return maxIndexSize;
-	}*/
-
 	private static final int maxStreamBufferSizeForBackupRestoration=2097152;
 
 	int getMaxStreamBufferSizeForBackupRestoration()

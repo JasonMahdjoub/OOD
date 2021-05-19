@@ -58,10 +58,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
-/*import org.hsqldb.jdbc.JDBCBlob;
-import org.hsqldb.lib.tar.DbBackupMain;
-import org.hsqldb.lib.tar.TarMalformatException;*/
-
 /**
  * Sql connection wrapper for HSQLDB
  * 
@@ -186,17 +182,6 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 		else
 			return s;
 	}
-
-
-	/*@Override
-	protected String getBlobType(long limit) {
-		return "BLOB";
-	}
-
-	@Override
-	protected String getTextType(long limit) {
-		return "CLOB";
-	}*/
 
 
 	@Override

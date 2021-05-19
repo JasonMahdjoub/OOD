@@ -135,7 +135,7 @@ class DistantMariaDBWrapper extends CommonMySQLWrapper{
 				"&trustServerCertificate="+trustServerCertificate+
 				"&enabledSslProtocolSuites="+enabledSslProtocolSuites+
 				"&enabledSslCipherSuites="+enabledSslCipherSuites+
-				(serverSslCert!=null?"&serverSslCert="+serverSslCert.toURI().toString():"")+
+				(serverSslCert!=null?"&serverSslCert="+ serverSslCert.toURI() :"")+
 				"&autoReconnect="+autoReconnect+
 				(additionalParams==null?"":additionalParams);
 	}

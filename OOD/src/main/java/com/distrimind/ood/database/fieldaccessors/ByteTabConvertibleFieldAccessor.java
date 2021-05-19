@@ -99,19 +99,6 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 		}
 		assert type != null;
 		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(), type, isNotNull());
-		/*String vb=DatabaseWrapperAccessor.getVarBinaryType(_sql_connection, 0);
-		String lvb=DatabaseWrapperAccessor.getLongVarBinaryType(_sql_connection, 0);
-		if (vb!=null) {
-			int i = vb.indexOf("(");
-			if (i > 0)
-				vb = vb.substring(0, i);
-		}
-		if (lvb!=null) {
-			int i = lvb.indexOf("(");
-			if (i > 0)
-				lvb = lvb.substring(0, i);
-		}
-		this.isVarBinary = (vb!=null && type.startsWith(vb)) || (lvb!=null && type.startsWith(lvb));*/
 		this.isBigInteger=isBigInteger;
 		this.converter = converter;
 		this.limit=l;
@@ -167,36 +154,6 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	/*@Override
-	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			Object obj1 = null;
-			if (_field_instance!=null && !field.getType().isAssignableFrom(_field_instance.getClass()))
-				obj1 = _field_instance;
-
-			byte[] val2;
-
-			if (isVarBinary) {
-				val2 = _result_set.getBytes(_sft.translateField(sql_fields[0]));
-			} else if (isBigInteger){
-				val2 = ByteTabFieldAccessor.getByteTab(_result_set.getBigDecimal(_sft.translateField(sql_fields[0])));
-			} else {
-				Blob b = _result_set.getBlob(_sft.translateField(sql_fields[0]));
-				val2 = b == null ? null : b.getBytes(1, (int) b.length());
-			}
-			
-			Object obj2=val2==null?null:converter.getObject(field.getType(), val2);
-			if (obj1==null)
-				//noinspection ConstantConditions
-				return obj1==obj2;
-			else
-				return obj1.equals(obj2);
-
-		} catch (SQLException e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}*/
 
 	@Override
 	public Object getValue(Object _class_instance) throws DatabaseException {
@@ -357,80 +314,6 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
-
-	/*@Override
-	public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set)
-			throws DatabaseException {
-		setValue(_class_instance, _field_instance);
-		try {
-			Object o = field.get(_class_instance);
-			byte[] b = null;
-			if (o != null) {
-				b = converter.getBytes(o);
-				if (b == null)
-					throw new FieldDatabaseException(
-							"The given ByteTabObjectConverter should produce an byte tab and not a null reference. This concern the affectation of the field "
-									+ field.getName() + " into the class "
-									+ field.getDeclaringClass().getCanonicalName());
-			}
-			if (isVarBinary)
-				_result_set.updateBytes(sql_fields[0].short_field_without_quote, b);
-			else if (isBigInteger)
-			{
-				_result_set.updateBigDecimal(sql_fields[0].short_field_without_quote, ByteTabFieldAccessor.getBigDecimalValue(b));
-			}
-			else {
-				if (b == null)
-					_result_set.updateObject(sql_fields[0].short_field_without_quote, null);
-				else {
-					Blob blob = DatabaseWrapperAccessor.getBlob(sql_connection, b);
-					if (blob == null)
-						_result_set.updateBinaryStream(sql_fields[0].short_field_without_quote, new ByteArrayInputStream(b));
-					else
-						_result_set.updateBlob(sql_fields[0].short_field_without_quote, blob);
-				}
-			}
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-
-	}
-
-	@Override
-	protected void updateResultSetValue(Object _class_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			Object o = field.get(_class_instance);
-			byte[] b = null;
-			if (o != null) {
-				b = converter.getBytes(o);
-				if (b == null)
-					throw new FieldDatabaseException(
-							"The given ByteTabObjectConverter should produce an byte tab and not a null reference. This concern the affectation of the field "
-									+ field.getName() + " into the class "
-									+ field.getDeclaringClass().getCanonicalName());
-			}
-			if (isVarBinary)
-				_result_set.updateBytes(_sft.translateField(sql_fields[0]), b);
-			else if (isBigInteger)
-			{
-				_result_set.updateBigDecimal(_sft.translateField(sql_fields[0]), ByteTabFieldAccessor.getBigDecimalValue(b));
-			}
-			else {
-				if (b == null)
-					_result_set.updateObject(_sft.translateField(sql_fields[0]), null);
-				else {
-					Blob blob = DatabaseWrapperAccessor.getBlob(sql_connection, b);
-					if (blob == null)
-						_result_set.updateBinaryStream(_sft.translateField(sql_fields[0]), new ByteArrayInputStream(b));
-					else
-						_result_set.updateBlob(_sft.translateField(sql_fields[0]), blob);
-				}
-			}
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}*/
 
 	@Override
 	public boolean canBePrimaryOrUniqueKey() {

@@ -66,28 +66,6 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 	private DecentralizedValue localPeer;
 	private boolean permitIndirectSynchronizationBetweenPeers;
 	CentralDatabaseBackupCertificate centralDatabaseBackupCertificate=null;
-	//private Version databaseVersion=null;
-
-
-	/*public Version getDatabaseVersion() {
-		return databaseVersion;
-	}
-
-	void setDatabaseVersion(Version databaseVersion) {
-		if (databaseVersion==null)
-			throw new NullPointerException();
-		this.databaseVersion = databaseVersion;
-	}
-
-	public boolean isCompatibleWith(Version databaseVersion)
-	{
-		if (this.databaseVersion==null)
-			return databaseVersion==null;
-		if (databaseVersion==null)
-			return false;
-		return databaseVersion.compareTo(this.databaseVersion)!=0;
-	}*/
-
 	public DatabaseConfigurations(Set<DatabaseConfiguration> configurations) throws DatabaseException {
 		this(configurations,null, null, false);
 	}

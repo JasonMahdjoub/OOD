@@ -123,35 +123,6 @@ public class CalendarFieldAccessor extends FieldAccessor{
 		return ByteTabFieldAccessor.getByteTab(v);
 
 	}
-	/*@Override
-	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			Calendar val1 = null;
-			if (_field_instance instanceof Calendar)
-				val1 = (Calendar) _field_instance;
-
-			Long ts = (Long)_result_set.getObject(_sft.translateField(sql_fields[0]));
-			byte[] tz;
-			if (isVarBinary) {
-				tz = _result_set.getBytes(_sft.translateField(sql_fields[1]));
-			} else {
-				tz = getBytes(_result_set.getBigDecimal(_sft.translateField(sql_fields[1])));
-			}
-			if ((ts==null)!=(tz==null))
-				throw new SQLException();
-
-			if (val1==null)
-				return ts==null;
-			else if (ts==null)
-				return false;
-			else
-				return ts==val1.getTimeInMillis() && Arrays.equals(tz, val1.getTimeZone().getID().getBytes(StandardCharsets.UTF_8));
-		} catch (SQLException e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}*/
-
 	@Override
 	public Object getValue(Object _class_instance) throws DatabaseException {
 		try {
@@ -288,47 +259,6 @@ public class CalendarFieldAccessor extends FieldAccessor{
 		}
 
 	}
-
-	/*@Override
-	public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set)
-			throws DatabaseException {
-		setValue(_class_instance, _field_instance);
-		try {
-			Calendar did = (Calendar) field.get(_class_instance);
-			if (did==null)
-			{
-				_result_set.updateObject(sql_fields[0].short_field_without_quote, null);
-				_result_set.updateObject(sql_fields[1].short_field_without_quote, null);
-			}
-			else
-			{
-				_result_set.updateObject(sql_fields[0].short_field_without_quote, did.getTimeInMillis());
-				_result_set.updateObject(sql_fields[1].short_field_without_quote, getTZSQLObject(did.getTimeZone()));
-			}
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}
-
-	@Override
-	protected void updateResultSetValue(Object _class_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			Calendar did = (Calendar) field.get(_class_instance);
-			if (did==null)
-			{
-				_result_set.updateObject(_sft.translateField(sql_fields[0]), null);
-				_result_set.updateObject(_sft.translateField(sql_fields[1]), null);
-			}
-			else
-			{
-				_result_set.updateObject(_sft.translateField(sql_fields[0]), did.getTimeInMillis());
-				_result_set.updateObject(_sft.translateField(sql_fields[1]), getTZSQLObject(did.getTimeZone()));
-			}
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}*/
 
 	@Override
 	public boolean canBePrimaryOrUniqueKey() {

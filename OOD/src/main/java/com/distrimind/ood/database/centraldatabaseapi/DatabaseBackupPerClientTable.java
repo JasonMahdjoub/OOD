@@ -43,7 +43,6 @@ import com.distrimind.ood.database.annotations.ForeignKey;
 import com.distrimind.ood.database.annotations.NotNull;
 import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.util.io.SerializationTools;
 
 /**
  * @author Jason Mahdjoub

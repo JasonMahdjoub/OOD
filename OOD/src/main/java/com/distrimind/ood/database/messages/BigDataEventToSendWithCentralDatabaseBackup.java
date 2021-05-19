@@ -29,9 +29,6 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database.messages;
 
-import com.distrimind.ood.database.DatabaseEvent;
-import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.RandomInputStream;
 
 /**

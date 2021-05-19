@@ -131,34 +131,6 @@ public class BigIntegerFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	/*@Override
-	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			BigInteger val1 = null;
-			if (_field_instance instanceof BigInteger)
-				val1 = (BigInteger) _field_instance;
-			BigInteger val2 ;
-			if (useGetBigDecimal) {
-				BigDecimal tmp = _result_set.getBigDecimal(_sft.translateField(sql_fields[0]));
-				val2= tmp == null ? null : tmp.toBigInteger();
-			}
-			else if (useString)
-			{
-				String s = _result_set.getString(_sft.translateField(sql_fields[0]));
-				val2=s==null?null:new BigInteger(s);
-			}
-			else {
-				byte[] s = _result_set.getBytes(_sft.translateField(sql_fields[0]));
-				val2=s==null?null:new BigInteger(s);
-			}
-
-			//noinspection NumberEquality
-			return (val1 == null || val2 == null) ? val1 == val2 : val1.equals(val2);
-		} catch (SQLException e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}*/
 
 	private static final Class<?>[] compatible_classes = { BigInteger.class };
 
@@ -263,39 +235,6 @@ public class BigIntegerFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	/*@Override
-	public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set)
-			throws DatabaseException {
-		setValue(_class_instance, _field_instance);
-		try {
-			Object o = field.get(_class_instance);
-			if (useGetBigDecimal)
-				_result_set.updateBigDecimal(sql_fields[0].short_field_without_quote, o == null ? null : new BigDecimal((BigInteger)o));
-			else if (useString)
-				_result_set.updateString(sql_fields[0].short_field_without_quote, o == null ? null : o.toString());
-			else
-				_result_set.updateBytes(sql_fields[0].short_field_without_quote, o == null ? null : ((BigInteger)o).toByteArray());
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-
-	}
-
-	@Override
-	protected void updateResultSetValue(Object _class_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			Object o = field.get(_class_instance);
-			if (useGetBigDecimal)
-				_result_set.updateBigDecimal(_sft.translateField(sql_fields[0]), o == null ? null : new BigDecimal((BigInteger)o));
-			else if (useString)
-				_result_set.updateString(_sft.translateField(sql_fields[0]), o == null ? null : o.toString());
-			else
-				_result_set.updateBytes(_sft.translateField(sql_fields[0]), o == null ? null : ((BigInteger)o).toByteArray());
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}*/
 
 	@Override
 	public boolean canBePrimaryOrUniqueKey() {

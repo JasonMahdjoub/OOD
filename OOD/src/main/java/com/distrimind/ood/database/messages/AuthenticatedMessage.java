@@ -66,52 +66,6 @@ public interface AuthenticatedMessage extends SecureExternalizable, DatabaseEven
 	void writeExternalWithoutSignatures(SecuredObjectOutputStream out) throws IOException;
 	void readExternalWithoutSignatures(SecuredObjectInputStream in) throws IOException, ClassNotFoundException;
 	int getInternalSerializedSizeWithoutSignatures();
-
-	/*static EncryptionProfileProvider getEncryptionProfileProviderCompatibleForSignature(final EncryptionProfileProvider encryptionProfileProvider)
-	{
-		return new EncryptionProfileProvider() {
-			@Override
-			public MessageDigestType getMessageDigest(short keyID, boolean duringDecryptionPhase) throws IOException {
-				return encryptionProfileProvider.getMessageDigest(keyID, duringDecryptionPhase);
-			}
-
-			@Override
-			public IASymmetricPrivateKey getPrivateKeyForSignature(short keyID) throws IOException {
-				return encryptionProfileProvider.getPrivateKeyForSignature(keyID);
-			}
-
-			@Override
-			public IASymmetricPublicKey getPublicKeyForSignature(short keyID) throws IOException {
-				return encryptionProfileProvider.getPublicKeyForSignature(keyID);
-			}
-
-			@Override
-			public SymmetricSecretKey getSecretKeyForSignature(short keyID, boolean duringDecryptionPhase) throws IOException {
-				return encryptionProfileProvider.getSecretKeyForSignature(keyID, duringDecryptionPhase);
-			}
-
-			@Override
-			public SymmetricSecretKey getSecretKeyForEncryption(short keyID, boolean duringDecryptionPhase) {
-				return null;
-			}
-
-			@Override
-			public boolean isValidProfileID(short id) {
-				return encryptionProfileProvider.isValidProfileID(id);
-			}
-
-			@Override
-			public Short getValidProfileIDFromPublicKeyForSignature(IASymmetricPublicKey publicKeyForSignature) {
-				return encryptionProfileProvider.getValidProfileIDFromPublicKeyForSignature(publicKeyForSignature);
-			}
-
-			@Override
-			public short getDefaultKeyID() {
-				return encryptionProfileProvider.getDefaultKeyID();
-			}
-		};
-	}*/
-
 	default void generateAndSetSignatures(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
 		if (encryptionProfileProvider==null)
 			throw new NullPointerException();

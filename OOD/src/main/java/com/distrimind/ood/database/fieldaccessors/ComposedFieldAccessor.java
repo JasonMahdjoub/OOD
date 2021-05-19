@@ -144,33 +144,6 @@ public class ComposedFieldAccessor extends FieldAccessor {
 
 	}
 
-	/*@Override
-	public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set)
-			throws DatabaseException {
-		try {
-			setValue(_class_instance, _field_instance);
-			for (FieldAccessor fa : fieldsAccessor) {
-				fa.updateValue(_field_instance, fa.field.get(_field_instance), _result_set);
-			}
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}
-
-	@Override
-	protected void updateResultSetValue(Object _class_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			Object fi = field.get(_class_instance);
-			for (FieldAccessor fa : fieldsAccessor) {
-				fa.updateResultSetValue(fi, _result_set, _sft);
-			}
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-
-	}*/
-
 	@Override
 	public boolean equals(Object _class_instance, Object _field_instance) throws DatabaseException {
 
@@ -195,21 +168,6 @@ public class ComposedFieldAccessor extends FieldAccessor {
 			throw new DatabaseException("", e);
 		}
 	}
-
-	/*@Override
-	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-
-			for (FieldAccessor fa : fieldsAccessor) {
-				if (!fa.equals(fa.field.get(_field_instance), _result_set, _sft))
-					return false;
-			}
-			return true;
-		} catch (IllegalArgumentException | IllegalAccessException e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}*/
 
 	@Override
 	public Object getValue(Object _class_instance) throws DatabaseException {

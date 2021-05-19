@@ -111,22 +111,6 @@ public class StringFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	/*@Override
-	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			String val1 = null;
-			if (_field_instance instanceof String)
-				val1 = (String) _field_instance;
-			String val2 = (String) _result_set.getObject(_sft.translateField(sql_fields[0]));
-
-			assert val1 != null;
-			return val1.equals(val2);
-		} catch (SQLException e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}*/
-
 	private static final Class<?>[] compatible_classes = { String.class };
 
 	@Override
@@ -224,27 +208,6 @@ public class StringFieldAccessor extends FieldAccessor {
 
 	}
 
-	/*@Override
-	public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set)
-			throws DatabaseException {
-		setValue(_class_instance, _field_instance);
-		try {
-			_result_set.updateString(sql_fields[0].short_field_without_quote, (String) field.get(_class_instance));
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-
-	}
-
-	@Override
-	protected void updateResultSetValue(Object _class_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			_result_set.updateString(_sft.translateField(sql_fields[0]), (String) field.get(_class_instance));
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}*/
 
 	@Override
 	public boolean canBePrimaryOrUniqueKey() {

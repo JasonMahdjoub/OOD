@@ -37,7 +37,6 @@ package com.distrimind.ood.database.messages;
 
 import com.distrimind.ood.database.DatabaseEvent;
 import com.distrimind.ood.database.HookRemoveRequest;
-import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
 
 /**
@@ -46,7 +45,7 @@ import com.distrimind.util.DecentralizedValue;
  * @since OOD 3.0.0
  */
 public interface DatabaseEventToSend {
-	static DatabaseEvent.MergeState mergeWithP2PDatabaseEventToSend(DecentralizedValue hostSource, DecentralizedValue hostDestination, DatabaseEvent newEvent) throws DatabaseException {
+	static DatabaseEvent.MergeState mergeWithP2PDatabaseEventToSend(DecentralizedValue hostSource, DecentralizedValue hostDestination, DatabaseEvent newEvent) {
 
 		if (newEvent instanceof HookRemoveRequest)
 		{

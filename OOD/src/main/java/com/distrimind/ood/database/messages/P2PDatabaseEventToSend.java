@@ -36,7 +36,6 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 import com.distrimind.ood.database.DatabaseEvent;
-import com.distrimind.ood.database.HookRemoveRequest;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
 

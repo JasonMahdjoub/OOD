@@ -144,10 +144,6 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		}
 
 		boolean validateDistantAuthenticatedP2PMessage(AuthenticatedP2PMessage message, DatabaseHooksTable table) throws DatabaseException {
-			/*if (message instanceof HookSynchronizeRequest && ((HookSynchronizeRequest) message).getBackRequest()==null)
-			{
-				return true;
-			}*/
 			if (message.getMessageID()<=lastDistantAuthenticatedP2PMessageID) {
 				return false;
 			}
@@ -178,11 +174,6 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			return lastValidatedDistantTransactionUTCMs;
 		}
 
-		/*void setLastValidatedDistantTransactionUTCMs(long lastValidatedDistantTransactionUTCMs) {
-			if (lastValidatedDistantTransactionUTCMs<this.lastValidatedDistantTransactionUTCMs)
-				throw new IllegalArgumentException();
-			this.lastValidatedDistantTransactionUTCMs = lastValidatedDistantTransactionUTCMs;
-		}*/
 
 		PairingState getPairingState() {
 			return pairingState;
@@ -248,12 +239,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			if (authenticatedMessagesQueueToSend==null)
 				authenticatedMessagesQueueToSend=new LinkedList<>();
 			message.setMessageID(lastLocalAuthenticatedP2PMessageID++);
-			/*if (message instanceof HookSynchronizeRequest)
-			{
-				HookSynchronizeRequest hsr=(HookSynchronizeRequest) message;
-				hsr.getBackRequest().setMessageID(0);
-				hsr.getBackRequest().generateAndSetSignatures(random, encryptionProfileProvider);
-			}*/
+
 			message.generateAndSetSignatures(random, encryptionProfileProvider);
 			authenticatedMessagesQueueToSend.addLast(message);
 			if (message instanceof HookRemoveRequest && ((HookRemoveRequest) message).getRemovedHookID().equals(hostID))
@@ -265,36 +251,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			wrapper.getSynchronizer().notifyNewAuthenticatedMessage(message);
 		}
 
-		/*void offerNewAuthenticatedP2PMessage(DatabaseHooksTable table, HookSynchronizeRequest message) throws DatabaseException {
-			if (message==null)
-				throw new NullPointerException();
-			if (message.getBackRequest()!=null)
-				throw new IllegalArgumentException();
-			if (message.getSignatures()==null)
-				throw new IllegalArgumentException();
-			if (authenticatedMessagesQueueToSend==null)
-				authenticatedMessagesQueueToSend=new LinkedList<>();
 
-			authenticatedMessagesQueueToSend.addLast(message);
-			table.updateRecord(this, "authenticatedMessagesQueueToSend", authenticatedMessagesQueueToSend);
-			DatabaseWrapper wrapper=table.getDatabaseWrapper();
-			wrapper.getDatabaseHooksTable().updateLocalDatabaseHostIfNecessary(this);
-			message.messageReadyToSend();
-			wrapper.getSynchronizer().notifyNewAuthenticatedMessage(message);
-		}*/
-
-
-		/*void addAuthenticatedP2PMessageToSendToCentralDatabaseBackup(AuthenticatedP2PMessage message, DatabaseHooksTable table) throws DatabaseException {
-			if (message==null)
-				throw new NullPointerException();
-			if (!(message instanceof DatabaseEvent))
-				throw new IllegalAccessError();
-			if (authenticatedMessagesQueueToSend==null)
-				authenticatedMessagesQueueToSend=new LinkedList<>();
-			assert concernsDatabaseHost;
-			authenticatedMessagesQueueToSend.add(message);
-			table.updateRecord(this, "authenticatedMessagesQueueToSend", authenticatedMessagesQueueToSend);
-		}*/
 
 		boolean hasNoAuthenticatedMessagesQueueToSend()
 		{
@@ -322,8 +279,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			return authenticatedMessagesQueueDestinedToCentralDatabaseBackup;
 		}
 
-		List<IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup> getAuthenticatedMessagesQueueToSendToCentralDatabaseBackup(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider,
-																																	  Map<DecentralizedValue, DatabaseWrapper.ConnectedPeers> connectedPeers, Map<DecentralizedValue, DatabaseWrapper.ConnectedPeersWithCentralBackup> connectedPeersWithCentralDatabaseBackup) throws DatabaseException {
+		List<IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup> getAuthenticatedMessagesQueueToSendToCentralDatabaseBackup(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider, Map<DecentralizedValue, DatabaseWrapper.ConnectedPeersWithCentralBackup> connectedPeersWithCentralDatabaseBackup) throws DatabaseException {
 			assert concernsDatabaseHost;
 			List<IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup> res=new ArrayList<>();
 
@@ -340,15 +296,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 					if (cpcdb==null)
 						break;
-					/*if (cpcdb.compatibleDatabasesFromCentralDatabaseBackup.size()==0)
-					{
-						DatabaseWrapper.ConnectedPeers cp=connectedPeers.get(hsr.getHostDestination());
-						if (cp==null)
-							continue;
-						if (!cp.compatibleDatabasesFromDirectPeer.containsAll(hsr.getPackagesToSynchronize(hsr.getHostSource()).keySet()))
-							continue;
-					}
-					else */if (!cpcdb.compatibleDatabasesFromCentralDatabaseBackup.containsAll(hsr.getPackagesToSynchronize(hsr.getHostSource()).keySet()))
+					if (!cpcdb.compatibleDatabasesFromCentralDatabaseBackup.containsAll(hsr.getPackagesToSynchronize(hsr.getHostSource()).keySet()))
 						break;
 				}
 				ArrayList<AuthenticatedP2PMessage> l = resTmp.computeIfAbsent(a.getHostDestination(), k -> new ArrayList<>());
@@ -361,14 +309,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			return res;
 		}
 
-		/*void receivedAuthenticatedP2PMessageFromDistantHost(AuthenticatedP2PMessage message, AlterRecordFilter<Record> alterRecordFilter) throws DatabaseException {
-			if (message.getHostSource().equals(hostID)) {
-				if (lastDistantAuthenticatedP2PMessageID<message.getMessageID()) {
-					lastDistantAuthenticatedP2PMessageID = message.getMessageID();
-					alterRecordFilter.update("lastDistantAuthenticatedP2PMessageID", lastDistantAuthenticatedP2PMessageID);
-				}
-			}
-		}*/
+
 		boolean removeAuthenticatedMessage(AuthenticatedP2PMessage message)
 		{
 			if (authenticatedMessagesQueueToSend==null)
@@ -376,186 +317,25 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			return authenticatedMessagesQueueToSend.remove(message);
 		}
 
-		/*AuthenticatedP2PMessage poolAuthenticatedP2PMessage() throws DatabaseException {
-			if (authenticatedMessagesQueueToSend==null)
-				return null;
-			return authenticatedMessagesQueueToSend.removeFirst();
-		}*/
 
-		/*private static ArrayList<String> compactPackages(List<String> packages, StringBuilder compactedPackages)
-		{
-			if (packages == null || packages.size() == 0) {
-				return new ArrayList<>(0);
-			}
-			ArrayList<String> packagesList = new ArrayList<>();
-			for (int i = 0; i < packages.size(); i++) {
-				String p = packages.get(i);
-				boolean identical = false;
-				for (int j = 0; j < i; j++) {
-					if (packages.get(j).equals(p)) {
-						identical = true;
-						break;
-					}
-				}
-				if (!identical) {
-					if (compactedPackages.length() != 0)
-						compactedPackages.append("\\|");
-					compactedPackages.append(p);
-					packagesList.add(p);
-				}
-			}
-			return packagesList;
-		}
-		protected void setDatabasePackageNames(Set<String> packages, AlterRecordFilter<Record> filter) throws DatabaseException {
-			setDatabasePackageNames(packages);
-			filter.update("databasePackageNames", databasePackageNames);
-
-		}
-		protected void removeDatabasePackageNames(DatabaseHooksTable table, Set<String> packages, AlterRecordFilter<Record> filter) throws DatabaseException {
-			if (this.databasePackageNames!=null) {
-				this.databasePackageNames.removeAll(packages);
-				if (this.databasePackageNames.size()==0)
-					this.databasePackageNames=null;
-				filter.update("databasePackageNames", databasePackageNames);
-				table.updateLocalDatabaseHostIfNecessary(this);
-			}
-		}*/
 		protected void setDatabasePackageNames(Set<String> packages) {
 			if (packages == null || packages.size() == 0) {
 				databasePackageNames = null;
 			}
 			else
 				databasePackageNames=new HashSet<>(packages);
-			/*StringBuilder sb = new StringBuilder();
-			ArrayList<String> packagesList=compactPackages(packages, sb);
-			databasePackageNames = sb.toString();
-			return packagesList;*/
+
 		}
 
-
-
-		/*protected void addDatabasePackageName(Package p) {
-			addDatabasePackageName(p.getSqlTableName());
-		}
-
-		protected void addDatabasePackageName(String p) {
-
-			if (databasePackageNames == null || databasePackageNames.length() == 0)
-				databasePackageNames = p;
-			else {
-				String[] packages = getDatabasePackageNames();
-				for (String s : packages)
-					if (s.equals(p))
-						return;
-				databasePackageNames += "\\|" + p;
-			}
-		}*/
-
-		/*protected List<String> addPackageNames(String compactedPackages, StringBuilder compactedPackagesRes, List<String> ps) {
-			if (ps == null || ps.size() == 0)
-				return new ArrayList<>(0);
-			if (compactedPackages==null || compactedPackages.length() == 0) {
-				return setDatabasePackageNames(ps);
-			} else {
-				String[] packages = unpackPackageNames(compactedPackages);
-				compactedPackagesRes.append(compactedPackages);
-				ArrayList<String> packagesList = new ArrayList<>();
-				for (int i = 0; i < ps.size(); i++) {
-					String p = ps.get(i);
-
-					boolean identical = false;
-
-					for (String s : packages) {
-						if (s.equals(p)) {
-							identical = true;
-							break;
-						}
-					}
-					if (identical)
-						continue;
-					for (int j = 0; j < i; j++) {
-						if (ps.get(j).equals(p)) {
-							identical = true;
-							break;
-						}
-					}
-					if (identical)
-						continue;
-
-					compactedPackagesRes.append("\\|").append(p);
-					packagesList.add(p);
-				}
-				return packagesList;
-			}
-		}*/
-
-		/*protected Set<String> addDatabasePackageNames(Collection<String> ps) {
-			if (databasePackageNames==null)
-				databasePackageNames=new HashSet<>(ps);
-			else
-				databasePackageNames.addAll(ps);
-			return databasePackageNames;
-		}*/
 		Set<String> getDatabasePackageNames() {
 			return databasePackageNames;
 		}
-		/*private static String[] unpackPackageNames(String compactedPackages) {
-			if (compactedPackages == null || compactedPackages.length() == 0)
-				return null;
-			return compactedPackages.split("\\|");
-		}
-
-		String[] getDatabasePackageNames() {
-			return unpackPackageNames(databasePackageNames);
-		}
-
-		private static boolean isConcernedByDatabasePackage(String compactedPackages, String packageName) {
-			return compactedPackages != null
-					&& (compactedPackages.equals(packageName) || compactedPackages.endsWith("|" + packageName)
-					|| compactedPackages.startsWith(packageName + "|")
-					|| compactedPackages.contains("|" + packageName + "|"));
-		}*/
 
 		boolean isConcernedByDatabasePackage(String packageName) {
 			return databasePackageNames!=null && databasePackageNames.contains(packageName);
-			//return isConcernedByDatabasePackage(databasePackageNames, packageName);
 		}
 
 
-		/*private static boolean removePackageDatabase(String compactedPackages, StringBuilder compactedPackagesRes, Package... _packages) {
-			if (compactedPackages == null || compactedPackages.length() == 0)
-				return true;
-			else if (_packages == null || _packages.length == 0)
-				return false;
-			else {
-				String[] ps = compactedPackages.split("\\|");
-				ArrayList<String> ps2 = new ArrayList<>(ps.length);
-				for (String s : ps) {
-					boolean found = false;
-					for (Package p : _packages) {
-						if (p.getName().equals(s)) {
-							found = true;
-							break;
-						}
-					}
-					if (!found)
-						ps2.add(s);
-				}
-
-				for (String s : ps2) {
-					if (compactedPackagesRes.length() != 0)
-						compactedPackagesRes.append("|");
-					compactedPackagesRes.append(s);
-				}
-				if (ps2.isEmpty()) {
-					compactedPackagesRes.setLength(0);
-					return true;
-				} else {
-					return false;
-				}
-
-			}
-		}*/
 
 		protected boolean removePackageDatabase(Set<String> packages) {
 			if (databasePackageNames!=null && databasePackageNames.removeAll(packages))
@@ -566,15 +346,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			}
 			else
 				return false;
-			/*StringBuilder sb=new StringBuilder();
-			if (removePackageDatabase(databasePackageNames, sb, _packages)) {
-				databasePackageNames = null;
-				return true;
-			}
-			else {
-				databasePackageNames = sb.toString();
-				return false;
-			}*/
+
 		}
 	}
 
@@ -770,11 +542,6 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		return l.iterator().next();
 	}
 
-	/*Long getDistantValidatedTransactionID(AbstractDecentralizedID hostSource, AbstractDecentralizedID hostDestination) {
-
-		return this.lastTransactionFieldsBetweenDistantHosts.get(new HostPair(hostSource, hostDestination));
-	}*/
-
 	Map<DecentralizedValue, Long> getLastValidatedLocalTransactionIDs() throws DatabaseException {
 		return getDatabaseWrapper()
 				.runSynchronizedTransaction(new SynchronizedTransaction<Map<DecentralizedValue, Long>>() {
@@ -812,44 +579,6 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 					}
 				});
 	}
-
-	/*Map<DecentralizedValue, Long> getLastValidatedDistantTransactionUTCs() throws DatabaseException {
-		return getDatabaseWrapper()
-				.runSynchronizedTransaction(new SynchronizedTransaction<Map<DecentralizedValue, Long>>() {
-
-					@Override
-					public Map<DecentralizedValue, Long> run() throws Exception {
-						final Map<DecentralizedValue, Long> res = new HashMap<>();
-
-						getRecords(new Filter<DatabaseHooksTable.Record>() {
-
-							@Override
-							public boolean nextRecord(Record _record) {
-								if (!_record.concernsLocalDatabaseHost())
-									res.put(_record.getHostID(), _record.getLastValidatedDistantTransactionUTCMs());
-								return false;
-							}
-						});
-						return res;
-					}
-
-					@Override
-					public TransactionIsolation getTransactionIsolation() {
-
-						return TransactionIsolation.TRANSACTION_READ_COMMITTED;
-					}
-
-					@Override
-					public boolean doesWriteData() {
-						return false;
-					}
-
-					@Override
-					public void initOrReset() {
-
-					}
-				});
-	}*/
 
 	protected DatabaseHooksTable() throws DatabaseException {
 		super();
@@ -913,8 +642,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		if (peersInCloud == null)
 			throw new NullPointerException("hostID");
 
-		/*if (!peersInCloud.contains(getLocalDatabaseHost().getHostID()))
-			return ;*/
+
 
 		getDatabaseWrapper()
 				.runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
@@ -975,8 +703,6 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 								if (pkgs!=null && pkgs.size()>0) {
 									HashMap<String, Boolean> newAddedPackages = new HashMap<>();
 									pkgs.forEach(v -> newAddedPackages.put(v, packages.get(v)));
-									/*r.setLastValidatedLocalTransactionID(getDatabaseTransactionEventsTable()
-											.addTransactionToSynchronizeTables(newAddedPackages, synchronizedHosts, r));*/
 									long id=getDatabaseTransactionEventsTable()
 											.addTransactionToSynchronizeTables(newAddedPackages, synchronizedHosts, r);
 									if (id==-1)
@@ -985,7 +711,6 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 								}
 							}
 						}
-						//updateLastLocalTransferIDs();
 
 						supportedDatabasePackages = null;
 
@@ -1005,10 +730,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 						localHost = null;
 						supportedDatabasePackages = null;
 						getDatabaseWrapper().getSynchronizer().notifyNewTransactionsIfNecessary();
-						/*for (Record r : records)
-							if (getDatabaseWrapper().getSynchronizer().isInitialized(r.getHostID()))
-								getDatabaseWrapper().getSynchronizer().addNewDatabaseEvent(new LastIDCorrection(getLocalDatabaseHost().getHostID(),
-									r.getHostID(), r.getLastValidatedLocalTransactionID()));*/
+
 
 						return null;
 					}
@@ -1031,113 +753,6 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 	}
 
-	/*void updateLastLocalTransferIDs() throws DatabaseException {
-		long lastVTID=getIDTable().getLastTransactionID()-1;
-		updateRecords(new AlterRecordFilter<Record>() {
-			@Override
-			public void nextRecord(Record _record) throws DatabaseException {
-
-				Reference<Long> firstTID=new Reference<>(Long.MAX_VALUE);
-				getDatabaseTransactionsPerHostTable().getRecords(new Filter<DatabaseTransactionsPerHostTable.Record>() {
-					@Override
-					public boolean nextRecord(DatabaseTransactionsPerHostTable.Record _record) throws DatabaseException {
-						if (_record.getTransaction().getID()<firstTID.get())
-							firstTID.set(_record.getTransaction().getID());
-						return false;
-					}
-				}, "hook.hostID=%h", "h", _record.getHostID());
-				if (firstTID.get()==Long.MAX_VALUE)
-				{
-					update("lastValidatedLocalTransactionID", lastVTID);
-				}
-				else
-					update("lastValidatedLocalTransactionID", firstTID.get()-1);
-			}
-		}, "concernsDatabaseHost=%c and lastValidatedLocalTransactionID!=-1", "c", false);
-	}*/
-
-	@SuppressWarnings("UnusedReturnValue")
-	/*DatabaseHooksTable.Record addHooks(final DecentralizedValue hostID, final boolean concernsDatabaseHost,
-									   final ArrayList<DecentralizedValue> hostAlreadySynchronized,
-									   final Map<String, Boolean> packages)
-			throws DatabaseException {
-
-		if (hostID == null)
-			throw new NullPointerException("hostID");
-
-		return getDatabaseWrapper()
-				.runSynchronizedTransaction(new SynchronizedTransaction<DatabaseHooksTable.Record>() {
-
-					@Override
-					public DatabaseHooksTable.Record run() throws Exception {
-						if (concernsDatabaseHost && getLocalDatabaseHost() != null)
-							throw new DatabaseException("Local database host already set !");
-						ArrayList<DatabaseHooksTable.Record> l = getRecordsWithAllFields(
-								"hostID", hostID);
-						DatabaseHooksTable.Record r;
-						if (l.size() > 1)
-							throw new DatabaseException("Duplicate host id into the database unexpected !");
-						if (l.size() == 0) {
-							r = new DatabaseHooksTable.Record();
-							r.setHostID(hostID);
-							r.setPairingState(PairingState.PAIRING_IN_PROGRESS);
-							Set<String> nap = r.setDatabasePackageNames(packages.keySet());
-							HashMap<String, Boolean> newAddedPackages=new HashMap<>();
-							nap.forEach(v -> newAddedPackages.put(v, packages.get(v)));
-							r.setConcernsDatabaseHost(concernsDatabaseHost);
-							r.setLastValidatedDistantTransactionID(-1);
-							r.setLastValidatedLocalTransactionID(-1);
-							r = addRecord(r);
-
-
-							
-							localHost = null;
-							supportedDatabasePackages = null;
-							if (!concernsDatabaseHost) {
-								r.setLastValidatedLocalTransactionID(getDatabaseTransactionEventsTable()
-										.addTransactionToSynchronizeTables(newAddedPackages, hostAlreadySynchronized, r));
-								updateRecord(r, "lastValidatedLocalTransactionID", r.lastValidatedLocalTransactionID);
-							}
-						} else {
-							r = l.get(0);
-							Set<String> nap = r.setDatabasePackageNames(packages.keySet());
-							HashMap<String, Boolean> newAddedPackages=new HashMap<>();
-							nap.forEach(v -> newAddedPackages.put(v, packages.get(v)));
-							if (newAddedPackages.size()>0)
-								updateRecord(r, "databasePackageNames", r.databasePackageNames);
-							localHost = null;
-							supportedDatabasePackages = null;
-
-							if (!concernsDatabaseHost) {
-								r.setLastValidatedLocalTransactionID(getDatabaseTransactionEventsTable()
-										.addTransactionToSynchronizeTables(newAddedPackages, hostAlreadySynchronized, r));
-
-								updateRecord(r, "lastValidatedLocalTransactionID", r.lastValidatedLocalTransactionID);
-							}
-
-						}
-						return r;
-
-					}
-
-					@Override
-					public TransactionIsolation getTransactionIsolation() {
-						return TransactionIsolation.TRANSACTION_SERIALIZABLE;
-					}
-
-					@Override
-					public boolean doesWriteData() {
-						return true;
-					}
-
-					@Override
-					public void initOrReset() {
-						
-					}
-				});
-
-	}*/
-
 	DatabaseHooksTable.Record removeHook(boolean propagate, final DecentralizedValue hostID) throws DatabaseException {
 		DatabaseHooksTable.Record r=getLocalDatabaseHost();
 
@@ -1154,7 +769,6 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		}
 		else
 			r= desynchronizeDatabases(hostID, true, new HashSet<>(), false);
-		//updateLastLocalTransferIDs();
 		if (!getDatabaseWrapper().getDatabaseConfigurationsBuilder().isCommitInProgress())
 			getDatabaseWrapper().getDatabaseConfigurationsBuilder().removeDistantPeers(propagate, Collections.singleton(hostID))
 				.commit();
@@ -1279,52 +893,6 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 				});
 	}
-
-	/*void desynchronizeDatabases(Set<String> packages)
-			throws DatabaseException {
-		if (packages == null)
-			return;
-		if (packages.size()==0)
-			return;
-		getDatabaseWrapper()
-				.runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
-
-					@Override
-					public Void run() throws Exception {
-
-						updateRecords(new AlterRecordFilter<Record>() {
-							@Override
-							public void nextRecord(Record _record) throws DatabaseException {
-								if (_record.removePackageDatabase(packages))
-								{
-									this.update("databasePackageNames", _record.databasePackageNames);
-									lastTransactionFieldsBetweenDistantHosts.entrySet().removeIf(e -> e.getKey().getHostServer().equals(_record.getHostID())
-											|| e.getKey().getHostToSynchronize().equals(_record.getHostID()));
-
-								}
-							}
-						});
-						getDatabaseTransactionsPerHostTable().removeTransactions(packages);
-						return null;
-					}
-
-					@Override
-					public TransactionIsolation getTransactionIsolation() {
-						return TransactionIsolation.TRANSACTION_SERIALIZABLE;
-					}
-
-					@Override
-					public boolean doesWriteData() {
-						return true;
-					}
-
-					@Override
-					public void initOrReset() {
-
-					}
-
-				});
-	}*/
 	boolean supportPackage(Package p) throws DatabaseException {
 		HashSet<String> hs = this.supportedDatabasePackages;
 		if (hs == null) {
@@ -1400,17 +968,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		return min.get();
 	}
 
-	/*
-	 * Filter<DatabaseHooksTable.Record> getHooksFilter(DatabaseEventType dte,
-	 * DatabaseEventType ..._databaseEventTypes) { return
-	 * getHooksFilter(DatabaseEventType.getByte(dte, _databaseEventTypes)); }
-	 * 
-	 * Filter<DatabaseHooksTable.Record> getHooksFilter(final byte eventsType) {
-	 * return new Filter<DatabaseHooksTable.Record>() {
-	 * 
-	 * @Override public boolean nextRecord(DatabaseHooksTable.Record _record) {
-	 * return _record.isConcernedByAllTypes(eventsType); } }; }
-	 */
+
 
 	DatabaseHooksTable.Record getLocalDatabaseHost() throws DatabaseException {
 		if (localHost == null) {
@@ -1484,12 +1042,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			throw new IllegalAccessError();
 		if (record.authenticatedMessagesQueueDestinedToCentralDatabaseBackup==null)
 			record.authenticatedMessagesQueueDestinedToCentralDatabaseBackup=new LinkedList<>();
-			/*if (message instanceof HookSynchronizeRequest)
-			{
-				HookSynchronizeRequest hsr=(HookSynchronizeRequest) message;
-				hsr.getBackRequest().setMessageID(0);
-				hsr.getBackRequest().generateAndSetSignatures(random, encryptionProfileProvider);
-			}*/
+
 		message.generateAndSetSignatures(random, encryptionProfileProvider);
 		record.authenticatedMessagesQueueDestinedToCentralDatabaseBackup.addLast(message);
 		updateLocalDatabaseHostIfNecessary(record);

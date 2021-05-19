@@ -48,15 +48,15 @@ import java.util.Map;
  */
 public class Cursor<T extends DatabaseRecord> {
 	public static final int DEFAULT_CACHE_SIZE=64;
-	private Table<T> table;
-	private String whereClause;
-	private int cacheSize;
+	private final Table<T> table;
+	private final String whereClause;
+	private final int cacheSize;
 	private int position;
 	private ArrayList<T> records;
 	private long recordsNumber;
-	private Map<String, Object> parameters;
-	private Boolean ascendant;
-	private String[] fields;
+	private final Map<String, Object> parameters;
+	private final Boolean ascendant;
+	private final String[] fields;
 
 	Cursor(Table<T> table, String whereClause, Map<String, Object> parameters, int cacheSize, Boolean ascendant, String ... fields) {
 		if (table==null)

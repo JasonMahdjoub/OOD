@@ -1725,13 +1725,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			try
 			{
 				lockWrite();
-				/*boolean notify=false;
-				if (isInitialized(hostDestination)) {
-					notify=true;
-					events.add(new TransactionConfirmationEvents(
-							getLocalHostID(), hostDestination,
-							getDatabaseHookRecord(hostDestination).getLastValidatedDistantTransactionID()));
-				}*/
 				ConnectedPeersWithCentralBackup cp=this.initializedHooksWithCentralBackup.get(hostDestination);
 				if (cp!=null)
 				{
@@ -2243,7 +2236,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (centralBackupInitialized) {
 				DatabaseHooksTable.Record lr=getDatabaseHooksTable().getLocalDatabaseHost();
 				for (IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup i : lr.getAuthenticatedMessagesQueueToSendToCentralDatabaseBackup(databaseConfigurationsBuilder.getSecureRandom(), databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup(),
-						initializedHooks, initializedHooksWithCentralBackup)) {
+						initializedHooksWithCentralBackup)) {
 					addNewDatabaseEvent(i);
 				}
 				for (AuthenticatedMessageDestinedToCentralDatabaseBackup i : lr.getAuthenticatedMessagesQueueDestinedToCentralDatabaseBackup()) {
@@ -3073,12 +3066,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	public enum SynchronizationAnomalyType {
 		RECORD_TO_REMOVE_NOT_FOUND, RECORD_TO_REMOVE_HAS_DEPENDENCIES, RECORD_TO_UPDATE_NOT_FOUND, RECORD_TO_UPDATE_HAS_INCOMPATIBLE_PRIMARY_KEYS, RECORD_TO_UPDATE_HAS_DEPENDENCIES_NOT_FOUND, RECORD_TO_ADD_ALREADY_PRESENT, RECORD_TO_ADD_HAS_INCOMPATIBLE_PRIMARY_KEYS, RECORD_TO_ADD_HAS_DEPENDENCIES_NOT_FOUND,
 	}
-	boolean checkNotAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(Package databasePackage) throws DatabaseException {
+	void checkNotAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(Package databasePackage) throws DatabaseException {
 		Database d=sql_database.get(databasePackage);
 		if (d==null)
 			throw new DatabaseException("Database "+databasePackage.getName()+" is not loaded !");
 
-		return getSynchronizer().checkNotAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(d);
+		getSynchronizer().checkNotAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(d);
 	}
 
 
@@ -3610,7 +3603,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			return thread;
 		}
 
-		private BackupRestoreManager.AbstractTransaction getBackupManagerAndStartTransactionIfNecessary(Package p, boolean transactionToSynchronizeFromCentralDatabaseBackup) throws DatabaseException {
+		private BackupRestoreManager.AbstractTransaction getBackupManagerAndStartTransactionIfNecessary(Package p) throws DatabaseException {
 			if (!backupManager.containsKey(p)) {
 				BackupRestoreManager brm = getBackupRestoreManager(p);
 
@@ -3635,7 +3628,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new NullPointerException("de");
 			Package p = de.getTable().getClass().getPackage();
 
-			BackupRestoreManager.AbstractTransaction backupTransaction=getBackupManagerAndStartTransactionIfNecessary(p, applySynchro);
+			BackupRestoreManager.AbstractTransaction backupTransaction=getBackupManagerAndStartTransactionIfNecessary(p);
 			if (backupTransaction!=null)
 				backupTransaction.backupRecordEvent(de);
 			if (!applySynchro)
@@ -5135,6 +5128,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * @throws DatabaseException
 	 *             if a problem occurs
 	 */
+	@SuppressWarnings("SameParameterValue")
 	final void deleteDatabase(final DatabaseConfiguration configuration, boolean notifyNewCompatibleDatabases) throws DatabaseException {
 		deleteDatabase(configuration, notifyNewCompatibleDatabases, getCurrentDatabaseVersion(configuration.getDatabaseSchema().getPackage()), false);
 	}
@@ -5479,63 +5473,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	protected abstract String getAutoIncrementPart(String sqlTableName, String sqlFieldName, long startWith);
 
 
-	/**
-	 * Associate a Sql database with a given list of database configuration.
-	 * The database is also restored to a given state at a given time.
-	 * The data is restored from distant peers if need or from central database backup.
-	 *
-	 * Every table/class in the given configuration which inherits to the class
-	 * <code>Table&lsaquo;T extends DatabaseRecord&rsaquo;</code> will be included
-	 * into the same database. This function must be called before every any
-	 * operation with the corresponding tables.
-	 *
-	 * @param configurations
-	 *            the database configuration list
-	 * @param timeUTCOfRestorationInMs the time UTC in milliseconds of the point of restoration.
-	 *                                 Every modification in the database after that point is excluded.
-	 *                                 However, it is possible to recover deleted modification by restoring
-	 *                                 the database to a point located after that point (see {@link BackupRestoreManager#restoreDatabaseToDateUTC(long)})
-	 * @param peersToRemove peers to remove from synchronization
-	 * @throws DatabaseException
-	 *             if the given package is already associated to a database, or if
-	 *             the database cannot be created.
-	 * @throws NullPointerException
-	 *             if the given parameters are null.
-	 */
-	final void loadDatabaseAndRestoreItToGivenTime(final Collection<DatabaseConfiguration> configurations,
-														  long timeUTCOfRestorationInMs,
-														  Collection<DecentralizedValue> peersToRemove,
-												   			DatabaseLifeCycles lifeCycles) throws DatabaseException {
-		loadDatabase(configurations,  timeUTCOfRestorationInMs, peersToRemove, lifeCycles);
-	}
-	/**
-	 * Associate a Sql database with a given database configuration.
-	 * The database is also restored to a given state at a given time.
-	 * The data is restored from distant peers if need or from central database backup.
-	 *
-	 * Every table/class in the given configuration which inherits to the class
-	 * <code>Table&lsaquo;T extends DatabaseRecord&rsaquo;</code> will be included
-	 * into the same database. This function must be called before every any
-	 * operation with the corresponding tables.
-	 *
-	 * @param configuration
-	 *            the database configuration
-	 * @param timeUTCOfRestorationInMs the time UTC in milliseconds of the point of restoration.
-	 *                                 Every modification in the database after that point is excluded.
-	 *                                 However, it is possible to recover deleted modification by restoring
-	 *                                 the database to a point located after that point (see {@link BackupRestoreManager#restoreDatabaseToDateUTC(long)})
-	 * @param peersToRemove peers to remove from synchronization
-	 * @throws DatabaseException
-	 *             if the given package is already associated to a database, or if
-	 *             the database cannot be created.
-	 * @throws NullPointerException
-	 *             if the given parameters are null.
-	 */
-	final void loadDatabaseAndRestoreItToGivenTime(final DatabaseConfiguration configuration,
-														  long timeUTCOfRestorationInMs,
-														  Collection<DecentralizedValue> peersToRemove, DatabaseLifeCycles lifeCycles) throws DatabaseException {
-		loadDatabase(Collections.singleton(configuration),  timeUTCOfRestorationInMs, peersToRemove, lifeCycles);
-	}
+
+
 	/**
 	 * Associate a Sql database with a given database configuration. Every
 	 * table/class in the given configuration which inherits to the class
@@ -5552,26 +5491,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 *             if the given parameters are null.
 	 */
 	final void loadDatabase(final DatabaseConfiguration configuration, DatabaseLifeCycles lifeCycles) throws DatabaseException {
-		loadDatabase(Collections.singleton(configuration),  null, null, lifeCycles);
+		loadDatabase(Collections.singleton(configuration),  lifeCycles);
 	}
-	/**
-	 * Associate a Sql database with a given list of database configuration. Every
-	 * table/class in the given configuration which inherits to the class
-	 * <code>Table&lsaquo;T extends DatabaseRecord&rsaquo;</code> will be included
-	 * into the same database. This function must be called before every any
-	 * operation with the corresponding tables.
-	 *
-	 * @param configurations
-	 *            the database configuration list
-	 * @throws DatabaseException
-	 *             if the given package is already associated to a database, or if
-	 *             the database cannot be created.
-	 * @throws NullPointerException
-	 *             if the given parameters are null.
-	 */
-	final boolean loadDatabase(final Collection<DatabaseConfiguration> configurations, DatabaseLifeCycles lifeCycles) throws DatabaseException {
-		return loadDatabase(configurations, null, null, lifeCycles);
-	}
+
 
 	private boolean isDatabaseLoadedImpl(DatabaseConfiguration configuration, int databaseVersion) throws DatabaseException {
 		Database db = sql_database.get(configuration.getDatabaseSchema().getPackage());
@@ -5717,6 +5639,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		if (!allNotFound.get() && !internalDatabasePackage)
 			getSynchronizer().isReliedToDistantHook();
 	}
+	@SuppressWarnings("SameParameterValue")
 	final void loadDatabase(final DatabaseConfiguration configuration, int databaseVersion,
 							final DatabaseLifeCycles lifeCycles) throws DatabaseException {
 
@@ -5733,11 +5656,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			loadDatabaseImpl(configuration,
 					internalPackage,
 					databaseVersion,
-					/*restoreSynchronizerHosts,
-					hosts,*/
 					allNotFound,
 					lifeCycles);
-			//postLoadDatabase(Collections.singleton(configuration)/*, restoreSynchronizerHosts, hosts, lifeCycles*/);
 			postLoadDatabaseFinal(allNotFound, internalPackage);
 
 		}
@@ -5779,26 +5699,28 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			unlockWrite();
 		}
 	}
-	//TODO manage time of restoration and peers to remove
+
+	/**
+	 * Associate a Sql database with a given database configuration. Every
+	 * table/class in the given configuration which inherits to the class
+	 * <code>Table&lsaquo;T extends DatabaseRecord&rsaquo;</code> will be included
+	 * into the same database. This function must be called before every any
+	 * operation with the corresponding tables.
+	 *
+	 * @param configurations
+	 *            the database configurations
+	 * @throws DatabaseException
+	 *             if the given package is already associated to a database, or if
+	 *             the database cannot be created.
+	 * @throws NullPointerException
+	 *             if the given parameters are null.
+	 */
 	final boolean loadDatabase(final Collection<DatabaseConfiguration> configurations,
-			 Long timeOfRestoration, Collection<DecentralizedValue> peersToRemove,
 							final DatabaseLifeCycles lifeCycles) throws DatabaseException {
 		if (configurations == null)
 			throw new NullPointerException("tables is a null pointer.");
 		if (configurations.size()==0)
 			throw new IllegalArgumentException();
-
-		if (peersToRemove!=null && peersToRemove.size()==0)
-			peersToRemove=null;
-		if (peersToRemove!=null)
-		{
-			if (peersToRemove.stream().anyMatch(Objects::isNull))
-				throw new NullPointerException();
-			DecentralizedValue ldv=getSynchronizer().getLocalHostID();
-			if (ldv!=null && peersToRemove.contains(ldv))
-				throw new IllegalArgumentException();
-
-		}
 
 		if (configurations.stream().anyMatch(DatabaseConfiguration::isCreateDatabaseIfNecessaryAndCheckItDuringCurrentSession))
 			getTableInstance(DatabaseTable.class, -1);
@@ -5818,14 +5740,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				oldDatabaseReplaced|=loadDatabaseImpl(configuration,
 						false,
 						databaseVersion,
-						/*restoreSynchronizerHosts,
-						hosts,*/
 						allNotFound, lifeCycles);
 
 			}
 			if (isCentralDBBackupInitialized)
 				getSynchronizer().centralDatabaseBackupAvailable();
-			//postLoadDatabase(configurations/*, restoreSynchronizerHosts, hosts, lifeCycles*/);
 			postLoadDatabaseFinal(allNotFound, false);
 			getSynchronizer().broadcastAvailableDatabase();
 			return oldDatabaseReplaced;

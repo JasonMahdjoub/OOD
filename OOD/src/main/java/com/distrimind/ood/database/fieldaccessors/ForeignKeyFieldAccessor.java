@@ -69,15 +69,10 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 	private int tableVersion;
 	private final String tableAliasName;
 	private static final AtomicInteger aliasNumber=new AtomicInteger(0);
-	// private final Class<?>[] compatible_classes;
 
-	//private static Method get_record_method;
 	private static Method get_new_record_instance_method;
 	static {
 		try {
-			/*get_record_method = Table.class.getDeclaredMethod("getRecordFromPointingRecord",
-					SqlFieldInstance[].class, ArrayList.class);
-			get_record_method.setAccessible(true);*/
 			get_new_record_instance_method = Table.class.getDeclaredMethod("getNewRecordInstance", Constructor.class, boolean.class);
 			get_new_record_instance_method.setAccessible(true);
 		} catch (SecurityException e) {
@@ -215,19 +210,6 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 
 	}
 
-	/*@Override
-	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		if (_field_instance != null && !(_field_instance.getClass().equals(field.getType())))
-			return false;
-
-		for (FieldAccessor fa : linked_primary_keys) {
-			if (!fa.equals(_field_instance, _result_set, new SqlFieldTranslation(fa, _sft)))
-				return false;
-		}
-		return true;
-	}*/
-
 	private static Class<?>[] getCompatibleClasses(Field field) {
 		Class<?>[] compatible_classes = new Class<?>[1];
 		compatible_classes[0] = field.getType();
@@ -287,25 +269,6 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 	public int compare(Object _r1, Object _r2) throws DatabaseException {
 		throw new DatabaseException("Unexpected exception");
 	}
-
-	/*private int jonctionEnabled(ResultSet _result_set) {
-		try {
-			for (FieldAccessor fa : getPointedTable().getFieldAccessors()) {
-				if (!fa.isPrimaryKey()) {
-					if (fa.isForeignKey()) {
-						int res = ((ForeignKeyFieldAccessor) fa).jonctionEnabled(_result_set);
-						if (res != 2)
-							return res;
-					}
-					fa.getColmunIndex(_result_set, fa.getDeclaredSqlFields()[0].field_without_quote);
-					return 1;
-				}
-			}
-			return 2;
-		} catch (SQLException e) {
-			return 0;
-		}
-	}*/
 
 	@Override
 	public void setValue(String sqlTableName, Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
@@ -373,34 +336,6 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 					_pointing_records.add(dr);
 			}
 
-			/*if (t.isLoadedInMemory() || jonctionEnabled(_result_set) == 0) {
-				ArrayList<DatabaseRecord> list = _pointing_records == null ? new ArrayList<>()
-						: _pointing_records;
-				list.add((DatabaseRecord) _class_instance);
-				SqlField[] sfs = getDeclaredSqlFields();
-
-				SqlFieldInstance[] sfis = new SqlFieldInstance[sfs.length];
-				for (int i = 0; i < sfs.length; i++) {
-					sfis[i] = new SqlFieldInstance(supportQuotes, sfs[i], _result_set.getObject(sfs[i].short_field_without_quote));
-				}
-				field.set(_class_instance, get_record_method.invoke(getPointedTable(), sfis, list));
-			} else {
-				DatabaseRecord dr = (DatabaseRecord) get_new_record_instance_method.invoke(t,
-						t.getDefaultRecordConstructor(), true);
-
-				for (FieldAccessor fa : t.getFieldAccessors()) {
-					try {
-						fa.setValue(dr, _result_set);
-					} catch (DatabaseIntegrityException e) {
-						if (fa.isPrimaryKey()) {
-							dr = null;
-							break;
-						} else
-							throw e;
-					}
-				}
-				field.set(_class_instance, dr);
-			}*/
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -437,50 +372,6 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
-
-	/*@Override
-	public void updateValue(String sqlTableName, Object _class_instance, Object _field_instance, ResultSet _result_set)
-			throws DatabaseException {
-		setValue(_class_instance, _field_instance);
-		try {
-			DatabaseRecord dr = (DatabaseRecord) field.get(_class_instance);
-			for (FieldAccessor fa : linked_primary_keys) {
-
-				if (dr == null) {
-					for (SqlField sf : sql_fields) {
-						_result_set.updateObject(sf.short_field_without_quote, null);
-					}
-				} else {
-					fa.updateResultSetValue(tableAliasName, dr, _result_set, new SqlFieldTranslation(this, sqlTableName));
-				}
-
-			}
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-
-	}
-
-	@Override
-	protected void updateResultSetValue(String sqlTableName, Object _class_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			DatabaseRecord dr = (DatabaseRecord) field.get(_class_instance);
-			for (FieldAccessor fa : linked_primary_keys) {
-
-				if (dr == null) {
-					for (SqlField sf : sql_fields) {
-						_result_set.updateObject(_sft.translateField(tableAliasName, sf), null);
-					}
-				} else {
-					fa.updateResultSetValue(tableAliasName, dr, _result_set, new SqlFieldTranslation(this, _sft));
-				}
-
-			}
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}*/
 
 	@Override
 	public boolean canBePrimaryOrUniqueKey() {

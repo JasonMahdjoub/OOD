@@ -89,17 +89,4 @@ public enum DatabaseEventType {
 		return list;
 	}
 
-	/*static byte getByte(DatabaseEventType dte, DatabaseEventType... _databaseEventTypes) {
-		byte res = dte.getByte();
-		for (DatabaseEventType d : _databaseEventTypes)
-			res |= d.getByte();
-		return res;
-	}
-
-	static byte getByte(Collection<DatabaseEventType> eventsType) {
-		byte res = 0;
-		for (DatabaseEventType d : eventsType)
-			res |= d.getByte();
-		return res;
-	}*/
 }

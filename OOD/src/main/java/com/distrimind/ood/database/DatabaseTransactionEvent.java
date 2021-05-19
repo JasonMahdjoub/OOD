@@ -45,7 +45,7 @@ import java.util.ArrayList;
  * @since OOD 2.0
  */
 public class DatabaseTransactionEvent extends DatabaseEvent {
-	private long id;
+	private final long id;
 	private final ArrayList<TableEvent<?>> events;
 	private boolean force = false;
 
@@ -54,32 +54,6 @@ public class DatabaseTransactionEvent extends DatabaseEvent {
 		events = new ArrayList<>();
 	}
 
-	/*DatabaseTransactionEvent(long id, ArrayList<TableEvent<?>> events) {
-		this.id = id;
-		if (events == null)
-			throw new NullPointerException("events");
-		if (events.isEmpty())
-			throw new IllegalArgumentException("events can't be empty");
-		for (TableEvent<?> de : events)
-			if (de == null)
-				throw new NullPointerException("events element");
-		this.events = events;
-	}
-
-	DatabaseTransactionEvent(long id, TableEvent<?>... events) {
-		this.id = id;
-		if (events == null)
-			throw new NullPointerException("events");
-		if (events.length == 0)
-			throw new IllegalArgumentException("events can't be empty");
-		for (TableEvent<?> de : events)
-			if (de == null)
-				throw new NullPointerException("events element");
-		this.events = new ArrayList<>();
-		for (TableEvent<?> te : events)
-			this.events.add(te);
-
-	}*/
 
 	public ArrayList<TableEvent<?>> getEvents() {
 		return events;
@@ -89,26 +63,12 @@ public class DatabaseTransactionEvent extends DatabaseEvent {
 		return id;
 	}
 
-	/*void setID(long id) {
-		this.id = id;
-	}*/
+
 
 	boolean addEvent(TableEvent<?> event) {
 		force |= event.isForced();
 		return this.events.add(event);
 	}
-
-	/*boolean isForce() {
-		return force;
-	}
-
-	byte getTypesByte() {
-		byte b = 0;
-		for (TableEvent<?> de : events)
-			b |= de.getType().getByte();
-		return b;
-	}*/
-
 	@Override
 	public String toString() {
 		return "DatabaseTransactionEvent{" +

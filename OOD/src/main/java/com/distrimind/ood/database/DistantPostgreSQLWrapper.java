@@ -129,9 +129,9 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 				"&socketTimeout="+socketTimeOutSeconds+
 				"&sslMode="+sslMode.mode()+
 				"&sslFactory="+sslFactory+
-				(sslKey==null?"":"&sslKey="+sslKey.toURI().toString())+
-				(sslCert==null?"":"&sslCert="+sslCert.toURI().toString())+
-				(sslRootCert==null?"":"&sslRootCert="+sslRootCert.toURI().toString())+
+				(sslKey==null?"":"&sslKey="+ sslKey.toURI())+
+				(sslCert==null?"":"&sslCert="+ sslCert.toURI())+
+				(sslRootCert==null?"":"&sslRootCert="+ sslRootCert.toURI())+
 				"&sslHostNameVerifier="+sslHostNameVerifier+
 				"&sslPasswordCallBack="+sslPasswordCallBack+
 				((sslPassword==null || sslPassword.toString()==null)?"":"&sslPassword="+sslPassword)+
@@ -282,11 +282,6 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 	protected boolean doesTableExists(String tableName) throws Exception {
 		try(ResultSet rs=getConnectionAssociatedWithCurrentThread().getConnection().getMetaData().getTables(databaseName, null, tableName.toLowerCase(), null)) {
 			return rs.next();
-			/*while (rs.next()) {
-				if (rs.getString(3).equals(tableName) && rs.getString().equals(database_name))
-					return true;
-			}
-			return false;*/
 		}
 	}
 
@@ -413,16 +408,11 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 				"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
 						+ table.getSqlTableName() + "' AND CONSTRAINT_SCHEMA='"+ databaseName +"';"))) {
 			while (rq.result_set.next()) {
-				/*String pointed_table = rq.result_set.getString("REFERENCED_TABLE_NAME");
-				String pointed_col = pointed_table + "." + rq.result_set.getString("REFERENCED_COLUMN_NAME");*/
 				String fk = table.getSqlTableName() + "." + rq.result_set.getString("COLUMN_NAME");
-				/*if (pointed_table==null)
-					continue;*/
 				boolean found = false;
 				for (ForeignKeyFieldAccessor fa : table.getForeignKeysFieldAccessors()) {
 					for (SqlField sf : fa.getDeclaredSqlFields()) {
-						if (sf.fieldWithoutQuote.equals(fk)/* && sf.pointed_field_without_quote.equals(pointed_col)
-								&& sf.pointed_table_without_quote.equals(pointed_table)*/) {
+						if (sf.fieldWithoutQuote.equals(fk)) {
 							found = true;
 							break;
 						}
@@ -655,19 +645,12 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 	@Override
 	protected String getBigDecimalType(long limit) {
 		return "DECIMAL";
-		/*if (limit<=0)
-			return "VARCHAR(1024) CHARACTER SET latin1";
-		else
-			return "VARCHAR("+limit+") CHARACTER SET latin1";*/
 	}
 
 	@Override
 	protected String getBigIntegerType(long limit) {
 		return "NUMERIC";
-		/*if (limit<=0)
-			return "VARCHAR(1024) CHARACTER SET latin1";
-		else
-			return "VARCHAR("+limit+") CHARACTER SET latin1";*/
+
 	}
 	@Override
 	protected String getDateTimeType()

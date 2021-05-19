@@ -65,7 +65,7 @@ public class DistantMySQLDBWrapper extends CommonMySQLWrapper{
 				"&useCompression="+useCompression+"&characterEncoding="+characterEncoding+
 				"&sslMode="+sslMode.name()+
 				"&paranoid="+paranoid+
-				(serverRSAPublicKeyFile!=null?"&serverRSAPublicKeyFile="+serverRSAPublicKeyFile.toURI().toString():"")+
+				(serverRSAPublicKeyFile!=null?"&serverRSAPublicKeyFile="+ serverRSAPublicKeyFile.toURI() :"")+
 				"&autoReconnect="+autoReconnect
 				+"&prefetch="+prefetchNumberRows
 				+"&NO_CACHE="+(noCache?"1":"0")

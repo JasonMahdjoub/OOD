@@ -35,7 +35,9 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.ood.database.*;
+import com.distrimind.ood.database.DatabaseRecord;
+import com.distrimind.ood.database.EncryptedDatabaseBackupMetaDataPerFile;
+import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.annotations.ForeignKey;
 import com.distrimind.ood.database.annotations.NotNull;
@@ -45,7 +47,6 @@ import com.distrimind.ood.database.messages.EncryptedBackupPartComingFromCentral
 import com.distrimind.ood.database.messages.EncryptedBackupPartDestinedToCentralDatabaseBackup;
 import com.distrimind.ood.database.messages.EncryptedBackupPartForRestorationComingFromCentralDatabaseBackup;
 import com.distrimind.util.DecentralizedValue;
-import com.distrimind.util.io.Integrity;
 import com.distrimind.util.io.RandomInputStream;
 
 import java.io.IOException;
@@ -142,7 +143,7 @@ public final class EncryptedBackupPartReferenceTable extends Table<EncryptedBack
 					'}';
 		}
 	}
-	Integrity addEncryptedBackupPartReference(DatabaseBackupPerClientTable databaseBackupPerClientTable, ClientTable.Record clientRecord, FileReference fileReference, EncryptedBackupPartDestinedToCentralDatabaseBackup message) throws DatabaseException {
+	/*Integrity addEncryptedBackupPartReference(DatabaseBackupPerClientTable databaseBackupPerClientTable, ClientTable.Record clientRecord, FileReference fileReference, EncryptedBackupPartDestinedToCentralDatabaseBackup message) throws DatabaseException {
 		return getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
 			@Override
 			public Integrity run() throws Exception {
@@ -188,5 +189,5 @@ public final class EncryptedBackupPartReferenceTable extends Table<EncryptedBack
 			}
 		});
 
-	}
+	}*/
 }

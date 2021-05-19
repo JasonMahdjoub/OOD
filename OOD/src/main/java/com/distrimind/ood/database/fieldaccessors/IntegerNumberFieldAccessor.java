@@ -111,22 +111,6 @@ public class IntegerNumberFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	/*@SuppressWarnings("NumberEquality")
-	@Override
-	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			Integer val1 = null;
-			if (_field_instance instanceof Integer)
-				val1 = (Integer) _field_instance;
-			Integer val2 = (Integer) _result_set.getObject(_sft.translateField(sql_fields[0]));
-
-			return (val1 == null || val2 == null) ? val1 == val2 : val1.equals(val2);
-		} catch (SQLException e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}*/
-
 	private static final Class<?>[] compatible_classes = { int.class, Integer.class };
 
 	@Override
@@ -214,28 +198,6 @@ public class IntegerNumberFieldAccessor extends FieldAccessor {
 			throw DatabaseException.getDatabaseException(e);
 		}
 	}
-
-	/*@Override
-	public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set)
-			throws DatabaseException {
-		setValue(_class_instance, _field_instance);
-		try {
-			_result_set.updateObject(sql_fields[0].short_field_without_quote, field.get(_class_instance));
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-
-	}
-
-	@Override
-	protected void updateResultSetValue(Object _class_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			_result_set.updateObject(_sft.translateField(sql_fields[0]), field.get(_class_instance));
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}*/
 
 	@Override
 	public boolean canBePrimaryOrUniqueKey() {

@@ -953,11 +953,6 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 								hooksToNotify, packageString, false, false);
 						if (packageString.get()==null)
 							hooksToNotify.add(comingFrom);
-						/*else
-						{
-							for (String p : directPeer.getDatabasePackageNames())
-								lastValidatedIDPerPackages.put(p, directPeer.getLastValidatedDistantTransactionID());
-						}*/
 					}
 					if (packageString.get()!=null)
 						lastValidatedIDPerPackages.add(packageString.get());
@@ -1035,7 +1030,6 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 			if (referenceFile)
 				fileListTables=BackupRestoreManager.extractClassesList(ois);
 			BackupRestoreManager.positionForDataRead(ois, referenceFile);
-			//boolean findOneTransactionWithID=false;
 			while(ois.available()>0) {
 				int nextTransactionPosition = ois.readInt();
 				if (nextTransactionPosition==-1)
@@ -1043,19 +1037,12 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 				if (nextTransactionPosition<=ois.currentPosition())
 					throw new DatabaseException("Invalid data");
 				long transactionID;
-				//boolean withID;
 
 				if (!(ois.readBoolean()) || (transactionID=ois.readLong())<=lastDistantTransactionID)
 				{
-					/*if (!withID && findOneTransactionWithID)
-						throw new DatabaseException("Synchronization was disabled during backup process");*/
-					//findOneTransactionWithID|=withID;
 					ois.seek(nextTransactionPosition);
 					continue;
 				}
-				/*else if (transactionID!=lastDistantTransactionID+1)
-					throw new DatabaseException("Invalid received backup file");*/
-				//findOneTransactionWithID=true;
 				long transactionUTC=ois.readLong();
 				if (lastRestorationTimeUTCInMS!=null && lastRestorationTimeUTCInMS>=transactionUTC) {
 					lastDistantTransactionID=transactionID;

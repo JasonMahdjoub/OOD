@@ -157,47 +157,6 @@ public class AbstractDecentralizedIDFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	/*@Override
-	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		WrappedData wd=null;
-		try {
-			byte[] val1 = null;
-
-			if (_field_instance instanceof byte[])
-				val1 = (byte[]) _field_instance;
-			else if (_field_instance instanceof AbstractDecentralizedID) {
-				wd=((AbstractDecentralizedID) _field_instance).encode();
-				val1 = wd==null?null:wd.getBytes();
-			}
-
-			byte[] val2;
-
-			if (isVarBinary) {
-				val2 = _result_set.getBytes(_sft.translateField(sql_fields[0]));
-			} else {
-				val2 = getBytes(_result_set.getBigDecimal(_sft.translateField(sql_fields[0])));
-			}
-
-			if (val1 == null || val2 == null)
-				return val1 == val2;
-			else {
-				if (val1.length != val2.length)
-					return false;
-				for (int i = 0; i < val1.length; i++)
-					if (val1[i] != val2[i])
-						return false;
-				return true;
-			}
-
-		} catch (SQLException e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-		finally {
-			if (wd instanceof WrappedSecretData)
-				((WrappedSecretData) wd).zeroize();
-		}
-	}*/
 
 	@Override
 	public Object getValue(Object _class_instance) throws DatabaseException {
@@ -283,46 +242,7 @@ public class AbstractDecentralizedIDFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	/*@Override
-	public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set)
-			throws DatabaseException {
-		setValue(_class_instance, _field_instance);
-		try {
-			Object o = field.get(_class_instance);
 
-			WrappedData b = null;
-			if (o != null) {
-				b = ((AbstractDecentralizedID) o).encode();
-			}
-			if (isVarBinary)
-				_result_set.updateBytes(sql_fields[0].short_field_without_quote, (byte[])getSQLObject(b));
-			else {
-				_result_set.updateBigDecimal(sql_fields[0].short_field_without_quote, (BigDecimal)getSQLObject(b));
-			}
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-
-	}
-
-	@Override
-	protected void updateResultSetValue(Object _class_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			Object o = field.get(_class_instance);
-			WrappedData b = null;
-			if (o != null) {
-				b = ((AbstractDecentralizedID) o).encode();
-			}
-			if (isVarBinary)
-				_result_set.updateBytes(_sft.translateField(sql_fields[0]),  (byte[])getSQLObject(b));
-			else {
-				_result_set.updateBigDecimal(sql_fields[0].short_field_without_quote, (BigDecimal)getSQLObject(b));
-			}
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}*/
 
 	@Override
 	public boolean canBePrimaryOrUniqueKey() {

@@ -371,8 +371,6 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 					case "PRIMARY KEY": {
 						if (constraint_name.equals(table.getSqlPrimaryKeyName()))
 							foundPK=true;
-							/*throw new DatabaseVersionException(table, "There a grouped primary key named " + constraint_name
-									+ " which should be named " + table.getSqlPrimaryKeyName());*/
 					}
 					break;
 					case "FOREIGN KEY": {
@@ -395,29 +393,6 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 						if (!found)
 							throw new DatabaseVersionException(table, "There is a unique sql field " + col
 									+ " which does not exists into the OOD database into table "+table.getClass().getSimpleName());
-						/*try (Table.ReadQuerry rq2 = new Table.ReadQuerry(sql_connection,
-								new Table.SqlQuerry(
-										"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
-												+ table.getSqlTableName() + "' AND CONSTRAINT_NAME='" + constraint_name + "';"))) {
-							if (rq2.result_set.next()) {
-								String col = (table.getSqlTableName() + "." + rq2.result_set.getString("COLUMN_NAME"))
-										.toUpperCase();
-								boolean found = false;
-								for (FieldAccessor fa : table.getFieldAccessors()) {
-									for (SqlField sf : fa.getDeclaredSqlFields()) {
-										if (sf.field.equals(col) && fa.isUnique()) {
-											found = true;
-											break;
-										}
-									}
-									if (found)
-										break;
-								}
-								if (!found)
-									throw new DatabaseVersionException(table, "There is a unique sql field " + col
-											+ " which does not exists into the OOD database.");
-							}
-						}*/
 
 					}
 					break;
@@ -521,32 +496,6 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 							}
 
 
-						/*boolean found = false;
-						try (ReadQuerry rq = new ReadQuerry(sql_connection, new Table.SqlQuerry(
-								"select CONSTRAINT_NAME, CONSTRAINT_TYPE from "+getConstraintsTableName()+" WHERE TABLE_NAME='"
-										+ table.getSqlTableName() + "';"))) {
-							while (rq.result_set.next()) {
-								if (rq.result_set.getString("CONSTRAINT_TYPE").equals("UNIQUE")) {
-									String constraint_name = rq.result_set.getString("CONSTRAINT_NAME");
-									try (ReadQuerry rq2 = new ReadQuerry(sql_connection, new Table.SqlQuerry(
-											"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
-													+ table.getSqlTableName() + "' AND CONSTRAINT_NAME='" + constraint_name
-													+ "';"))) {
-										if (rq2.result_set.next()) {
-											String col = table.getSqlTableName() + "."
-													+ rq2.result_set.getString("COLUMN_NAME");
-											if (col.equals(sf.field)) {
-												found = true;
-												break;
-											}
-										}
-									}
-								}
-							}
-						}
-						if (!found)
-							throw new DatabaseVersionException(table, "The OOD field " + fa.getFieldName()
-									+ " is a unique key, but it not declared as unique into the Sql database.");*/
 					}
 				}
 			}
@@ -697,20 +646,6 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	@Override
 	protected boolean isDisconnectionException(SQLException e) {
 		return e.getErrorCode()==90067;
-		/*if (e.getErrorCode()==90067)
-			return true;
-		if (e==null)
-			return false;
-		Throwable cause=e;
-		while ((cause=cause.getCause())!=null)
-		{
-			if (cause instanceof ClosedByInterruptException)
-				return true;
-			if (cause instanceof ClosedChannelException)
-				return true;
-
-		}
-		return false;*/
 	}
 
 
