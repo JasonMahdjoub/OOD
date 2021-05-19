@@ -1459,9 +1459,17 @@ public class BackupRestoreManager {
 
 	boolean doesCreateNewBackupReference()
 	{
-		return !passive && !temporaryDisabled && (!isReady() || fileReferenceTimeStamps.size()==0 || fileReferenceTimeStamps.get(fileReferenceTimeStamps.size()-1)+backupConfiguration.getBackupReferenceDurationInMs()<System.currentTimeMillis());
+		return !passive && !temporaryDisabled && (!isReady() || fileReferenceTimeStamps.size()==0 || doesCreateNewBackupReference(fileReferenceTimeStamps.get(fileReferenceTimeStamps.size()-1)));
 	}
 
+	private boolean doesCreateNewBackupReference(long lastBackupReferenceTimeUTC)
+	{
+		DatabaseLifeCycles lifeCycles=databaseWrapper.getDatabaseConfigurationsBuilder().getLifeCycles();
+		if (lifeCycles==null)
+			return backupConfiguration.mustCreateNewBackupReference(lastBackupReferenceTimeUTC);
+		else
+			return lifeCycles.mustCreateNewBackupReference(backupConfiguration, lastBackupReferenceTimeUTC);
+	}
 	/*boolean isExternalBackupManager()
 	{
 		return passive;

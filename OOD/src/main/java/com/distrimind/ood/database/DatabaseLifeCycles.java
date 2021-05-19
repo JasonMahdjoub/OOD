@@ -107,6 +107,10 @@ public interface DatabaseLifeCycles {
 	void saveDatabaseConfigurations(DatabaseConfigurations databaseConfigurations);
 
 
+	default boolean mustCreateNewBackupReference(BackupConfiguration backupConfiguration, long lastBackupReferenceTimeUTC)
+	{
+		return backupConfiguration.mustCreateNewBackupReference(lastBackupReferenceTimeUTC);
+	}
 
 
 }

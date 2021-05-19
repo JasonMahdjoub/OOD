@@ -84,6 +84,7 @@ public class OOD {
 									.addItem("Add function DatabaseLifeCycles.peersAdded(Set<DecentralizedValue>) that is triggered when a set of peers was added")
 									.addItem("Fix join issue when table A has two foreign keys that reference the same table B")
 									.addItem("Optimize queries by using junctions")
+									.addItem("Add possibility to personalize the moment when OOD will create a new database backup")
 					)
 					.addDescription(
 							new Description((short)2, (short)4, (short)0, Version.Type.STABLE, (short)1, "2020-02-11")

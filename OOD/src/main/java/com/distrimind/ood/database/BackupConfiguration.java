@@ -109,6 +109,11 @@ public class BackupConfiguration extends MultiFormatProperties {
 		return backupReferenceDurationInMs;
 	}
 
+	public boolean mustCreateNewBackupReference(long lastBackupReferenceTimeUTC)
+	{
+		return lastBackupReferenceTimeUTC+backupReferenceDurationInMs<System.currentTimeMillis();
+	}
+
 	public long getMaxBackupDurationInMs() {
 		return maxBackupDurationInMs;
 	}
