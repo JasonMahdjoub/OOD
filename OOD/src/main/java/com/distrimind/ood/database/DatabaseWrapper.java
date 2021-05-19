@@ -1725,6 +1725,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			try
 			{
 				lockWrite();
+				/*boolean notify=false;
+				if (isInitialized(hostDestination)) {
+					notify=true;
+					events.add(new TransactionConfirmationEvents(
+							getLocalHostID(), hostDestination,
+							getDatabaseHookRecord(hostDestination).getLastValidatedDistantTransactionID()));
+				}*/
 				ConnectedPeersWithCentralBackup cp=this.initializedHooksWithCentralBackup.get(hostDestination);
 				if (cp!=null)
 				{
@@ -1737,9 +1744,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						throw DatabaseException.getDatabaseException(e);
 					}
 				}
-				/*if (notify)
-					notifyNewEvent();*/
-
 			}
 			finally {
 				unlockWrite();
@@ -3779,6 +3783,51 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							}
 						}
 
+						/*if (event.getType() == DatabaseEventType.REMOVE_WITH_CASCADE || event.getType() == DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE) {
+							final List<Table<?>> tables = new ArrayList<>();
+							for (Class<? extends Table<?>> c : event.getTable().getTablesClassesPointingToThisTable()) {
+								Table<?> t = getTableInstance(c);
+								tables.add(t);
+							}
+
+							for (Iterator<DatabaseEventsTable.Record> it = transaction.events.iterator(); it
+									.hasNext();) {
+								DatabaseEventsTable.Record _record = it.next();
+								if (_record.getType()==DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE.getByte() ||
+										_record.getType()==DatabaseEventType.REMOVE_WITH_CASCADE.getByte() ||
+										_record.getType()==DatabaseEventType.REMOVE.getByte())
+									continue;
+
+								for (Table<?> t : tables) {
+									if (t.getClass().getName().equals(_record.getConcernedTable())) {
+										DatabaseRecord dr = t.getDefaultRecordConstructor().newInstance();
+										t.deserializeFields(dr, _record.getConcernedSerializedNewForeignKey(), false,
+												true, false);
+										for (ForeignKeyFieldAccessor fa : t.getForeignKeysFieldAccessors()) {
+											if (fa.getPointedTable().getClass().equals(event.getTable().getClass())) {
+												if (event.getType() == DatabaseEventType.REMOVE_WITH_CASCADE) {
+													try (RandomByteArrayOutputStream baos = new RandomByteArrayOutputStream()) {
+														fa.serialize(baos, dr);
+														baos.flush();
+														if (Arrays.equals(baos.getBytes(),
+																originalEvent.getConcernedSerializedPrimaryKey())) {
+															nb.decrementAndGet();
+															it.remove();
+														}
+													}
+												}
+												else if (fa.getValue(dr)!=null)
+												{
+													nb.decrementAndGet();
+													it.remove();
+												}
+											}
+										}
+										break;
+									}
+								}
+							}
+						}*/
 
 						if (eventr != null) {
 							Set<DecentralizedValue> hosts = event.getHostsDestination();
@@ -3840,6 +3889,76 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 												eventr.get().getConcernedTable()));
 							}
 
+							/*if (event.getType() == DatabaseEventType.REMOVE_WITH_CASCADE || event.getType() == DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE) {
+								final List<Table<?>> tables = new ArrayList<>();
+								StringBuilder sb = new StringBuilder();
+								int index = 0;
+								Map<String, Object> parameters = new HashMap<>();
+								for (Class<? extends Table<?>> c : event.getTable().getTablesClassesPointingToThisTable()) {
+									Table<?> t = getTableInstance(c);
+									tables.add(t);
+									if (sb.length() > 0)
+										sb.append(" OR ");
+									else
+										sb.append(" AND (");
+									String varName = "var" + (index++);
+									sb.append("concernedTable=%").append(varName);
+									parameters.put(varName, t.getClass().getName());
+								}
+								if (sb.length() > 0)
+									sb.append(")");
+								parameters.put("transaction", transaction.transaction);
+								parameters.put("t1", DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE.getByte());
+								parameters.put("t2", DatabaseEventType.REMOVE_WITH_CASCADE.getByte());
+								parameters.put("t3", DatabaseEventType.REMOVE.getByte());
+								nb.addAndGet(-(int) getDatabaseEventsTable()
+										.removeRecordsWithCascade(new Filter<DatabaseEventsTable.Record>() {
+
+											@Override
+											public boolean nextRecord(
+													com.distrimind.ood.database.DatabaseEventsTable.Record _record)
+													throws DatabaseException {
+												try {
+													for (Table<?> t : tables) {
+														if (t.getClass().getName()
+																.equals(_record.getConcernedTable())) {
+															DatabaseRecord dr = t.getDefaultRecordConstructor()
+																	.newInstance();
+															t.deserializeFields(dr,
+																	_record.getConcernedSerializedNewForeignKey(),
+																	false, true, false);
+															for (ForeignKeyFieldAccessor fa : t
+																	.getForeignKeysFieldAccessors()) {
+																if (fa.getPointedTable().getClass()
+																		.equals(event.getTable().getClass())) {
+																	if (event.getType() == DatabaseEventType.REMOVE_WITH_CASCADE) {
+																		try (RandomByteArrayOutputStream baos = new RandomByteArrayOutputStream()) {
+																			fa.serialize(baos, dr);
+																			baos.flush();
+																			if (Arrays.equals(baos.getBytes(),
+																					originalEvent
+																							.getConcernedSerializedPrimaryKey())) {
+																				return true;
+																			}
+																		}
+																	}
+																	else if (fa.getValue(dr)!=null) {
+																		return true;
+																	}
+																}
+															}
+															return false;
+														}
+													}
+													return false;
+												} catch (Exception e) {
+													throw DatabaseException.getDatabaseException(e);
+												}
+
+											}
+
+										}, "transaction=%transaction" + sb+" and type!=%t1 and type!=%t2 and type!=%t3", parameters));
+							}*/
 							if (eventr.get() != null) {
 								Set<DecentralizedValue> hosts = event.getHostsDestination();
 								if (hosts != null)
@@ -5016,7 +5135,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 * @throws DatabaseException
 	 *             if a problem occurs
 	 */
-	@SuppressWarnings("SameParameterValue")
 	final void deleteDatabase(final DatabaseConfiguration configuration, boolean notifyNewCompatibleDatabases) throws DatabaseException {
 		deleteDatabase(configuration, notifyNewCompatibleDatabases, getCurrentDatabaseVersion(configuration.getDatabaseSchema().getPackage()), false);
 	}

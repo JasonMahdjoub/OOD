@@ -978,9 +978,12 @@ public class BackupRestoreManager {
 		} finally {
 			cleanCache();
 			databaseWrapper.unlockRead();
-			if (notify)
+			if (notify) {
 				databaseWrapper.getSynchronizer().checkForNewBackupFilePartToSendToCentralDatabaseBackup(dbPackage);
-
+				DatabaseLifeCycles lifeCycles=databaseWrapper.getDatabaseConfigurationsBuilder().getLifeCycles();
+				if (lifeCycles!=null)
+					lifeCycles.newDatabaseBackupFileCreated(this);
+			}
 		}
 	}
 
@@ -1744,12 +1747,14 @@ public class BackupRestoreManager {
 	}
 
 
-	void createIfNecessaryNewBackupReference() throws DatabaseException {
+	boolean createIfNecessaryNewBackupReference() throws DatabaseException {
 		if (doesCreateNewBackupReference())
 		{
 			createBackupReference();
-
+			return true;
 		}
+		else
+			return false;
 
 	}
 
@@ -1957,7 +1962,6 @@ public class BackupRestoreManager {
 					BackupRestoreManager.this.lastBackupEventUTC = Long.MIN_VALUE;
 					if (!computeDatabaseReference.delete())
 						throw new DatabaseException("Impossible to delete file : " + computeDatabaseReference);
-
 					closed = true;
 				}
 				if (fileTimeStamp != oldLastFile && isPartFull(fileTimeStamp, getFile(fileTimeStamp)))
@@ -1973,7 +1977,12 @@ public class BackupRestoreManager {
 					maxDateUTC = Math.max(m, transactionUTC);
 				}
 			}
-			createIfNecessaryNewBackupReference();
+			if (!createIfNecessaryNewBackupReference()) {
+				DatabaseLifeCycles lifeCycles = databaseWrapper.getDatabaseConfigurationsBuilder().getLifeCycles();
+				if (lifeCycles != null)
+					lifeCycles.newDatabaseBackupFileCreated(BackupRestoreManager.this);
+			}
+
 		}
 
 		@Override

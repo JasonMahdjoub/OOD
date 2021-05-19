@@ -107,10 +107,25 @@ public interface DatabaseLifeCycles {
 	void saveDatabaseConfigurations(DatabaseConfigurations databaseConfigurations);
 
 
+	/**
+	 * This function is call to know if OOD must create a new backup reference which can take lot of time
+	 * according the quantity of data into the database
+	 * @param backupConfiguration the current backup configuration
+	 * @param lastBackupReferenceTimeUTC the last backup reference time UTC
+	 * @return true if OOD must create a new backup reference which can take lot of time
+	 */
 	default boolean mustCreateNewBackupReference(BackupConfiguration backupConfiguration, long lastBackupReferenceTimeUTC)
 	{
 		return backupConfiguration.mustCreateNewBackupReference(lastBackupReferenceTimeUTC);
 	}
 
+	/**
+	 * This function is called when a new backup file was added concerning the given backup restore manager
+	 * @param backupRestoreManager the backup restore manager
+	 */
+	default void newDatabaseBackupFileCreated(BackupRestoreManager backupRestoreManager)
+	{
+
+	}
 
 }
