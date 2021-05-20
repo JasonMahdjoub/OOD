@@ -70,6 +70,9 @@ public final class ClientCloudAccountTable extends Table<ClientCloudAccountTable
 		@Unique
 		private IASymmetricPublicKey externalAccountID;
 
+		@Field(index = true)
+		private Long removeAccountQueryUTCInMs=null;
+
 
 		@SuppressWarnings("unused")
 		private Record() {
@@ -106,6 +109,14 @@ public final class ClientCloudAccountTable extends Table<ClientCloudAccountTable
 					"accountID=" + accountID +
 					", maxClients=" + maxClients +
 					'}';
+		}
+
+		public Long getRemoveAccountQueryUTCInMs() {
+			return removeAccountQueryUTCInMs;
+		}
+
+		public void setRemoveAccountQueryUTCInMs(Long removeAccountQueryUTCInMs) {
+			this.removeAccountQueryUTCInMs = removeAccountQueryUTCInMs;
 		}
 	}
 }

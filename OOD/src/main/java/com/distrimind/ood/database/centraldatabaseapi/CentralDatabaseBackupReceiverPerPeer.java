@@ -166,6 +166,10 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 					return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
 				}
 				else {
+					if (CentralDatabaseBackupReceiverPerPeer.this.clientCloud.getRemoveAccountQueryUTCInMs()!=null) {
+						disconnect();
+						return Integrity.FAIL;
+					}
 					CentralDatabaseBackupReceiverPerPeer.this.certificate=certificate;
 					CentralDatabaseBackupReceiverPerPeer.this.connectedClientID = initialMessage.getHostSource();
 					try {
