@@ -649,8 +649,13 @@ public abstract class CommonDecentralizedTests {
 		}
 
 		@Override
-		public long getDurationInMsBeforeCancelingPeerRemovingWhenThePeerIsTryingToReconnect() {
+		public long getDurationInMsThatPermitToCancelPeerRemovingWhenThePeerIsTryingToReconnect() {
 			return 1000;
+		}
+
+		@Override
+		public long getDurationInMsToWaitBeforeRemovingAccountDefinitively() {
+			return 0;
 		}
 	}
 

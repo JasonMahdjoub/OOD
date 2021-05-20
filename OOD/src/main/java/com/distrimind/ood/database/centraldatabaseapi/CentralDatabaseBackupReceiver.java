@@ -41,13 +41,11 @@ import com.distrimind.ood.database.messages.CentralDatabaseBackupCertificateChan
 import com.distrimind.ood.database.messages.DistantBackupCenterConnexionInitialisation;
 import com.distrimind.ood.database.messages.MessageDestinedToCentralDatabaseBackup;
 import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.crypto.IASymmetricPublicKey;
 import com.distrimind.util.io.Integrity;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author Jason Mahdjoub
@@ -182,9 +180,11 @@ public abstract class CentralDatabaseBackupReceiver {
 			@Override
 			public Void run() throws Exception {
 				long timeReferenceToRemoveObsoleteBackup=System.currentTimeMillis()- getDurationInMsBeforeRemovingDatabaseBackupAfterAnDeletionOrder();
-				long timeReferenceToRemoveObsoleteHosts=System.currentTimeMillis()-Math.max(getDurationInMsBeforeCancelingPeerRemovingWhenThePeerIsTryingToReconnect(), getDurationInMsBeforeRemovingDatabaseBackupAfterAnDeletionOrder());
-				long timeReferenceToOrderObsoleteBackups=System.currentTimeMillis()- getDurationInMsBeforeOrderingDatabaseBackupDeletion();
+				long timeReferenceToRemoveObsoleteHosts=System.currentTimeMillis()-Math.max(getDurationInMsThatPermitToCancelPeerRemovingWhenThePeerIsTryingToReconnect(), getDurationInMsBeforeRemovingDatabaseBackupAfterAnDeletionOrder());
+				long timeReferenceToRemoveObsoleteBackups=System.currentTimeMillis()- getDurationInMsBeforeOrderingDatabaseBackupDeletion();
+				long timeReferenceToRemoveObsoleteAccounts=Math.min(Math.min(System.currentTimeMillis()- getDurationInMsToWaitBeforeRemovingAccountDefinitively(),timeReferenceToRemoveObsoleteHosts), timeReferenceToRemoveObsoleteHosts);
 
+				clientCloudAccountTable.removeRecordsWithCascade("removeAccountQueryUTCInMs is not null and removeAccountQueryUTCInMs<=%t", "t", timeReferenceToRemoveObsoleteAccounts);
 				encryptedBackupPartReferenceTable.removeRecordsWithCascade(new Filter<EncryptedBackupPartReferenceTable.Record>() {
 					@Override
 					public boolean nextRecord(EncryptedBackupPartReferenceTable.Record _record) {
@@ -204,7 +204,7 @@ public abstract class CentralDatabaseBackupReceiver {
 						}
 
 					}
-				},"lastFileBackupPartUTC<=%ct and removeTimeUTC IS NULL", "ct", timeReferenceToOrderObsoleteBackups);
+				},"lastFileBackupPartUTC<=%ct and removeTimeUTC IS NULL", "ct", timeReferenceToRemoveObsoleteBackups);
 
 				return null;
 			}
@@ -229,8 +229,98 @@ public abstract class CentralDatabaseBackupReceiver {
 	public abstract long getDurationInMsBeforeRemovingDatabaseBackupAfterAnDeletionOrder();
 	public abstract long getDurationInMsBeforeOrderingDatabaseBackupDeletion();
 
-	public abstract long getDurationInMsBeforeCancelingPeerRemovingWhenThePeerIsTryingToReconnect();
+	public abstract long getDurationInMsThatPermitToCancelPeerRemovingWhenThePeerIsTryingToReconnect();
+	public abstract long getDurationInMsToWaitBeforeRemovingAccountDefinitively();
+	public boolean cancelRemoveAccount(IASymmetricPublicKey externalAccountID) throws DatabaseException {
+		return cancelRemoveAccount("externalAccountID", externalAccountID);
+	}
+	public boolean cancelRemoveAccount(long accountID) throws DatabaseException {
+		return cancelRemoveAccount("accountID", accountID);
+	}
+	public boolean removeAccount(IASymmetricPublicKey externalAccountID) throws DatabaseException {
+		return removeAccount("externalAccountID", externalAccountID);
+	}
+	public boolean removeAccount(long accountID) throws DatabaseException {
+		return removeAccount("accountID", accountID);
+	}
+	private boolean removeAccount(Object ... keys) throws DatabaseException {
+		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
+			@Override
+			public Boolean run() throws Exception {
+				List<ClientCloudAccountTable.Record> l=clientCloudAccountTable.getRecordsWithAllFields(keys);
+				if (l.size()==0)
+					return false;
+				if (l.size()>1)
+					throw new IllegalAccessError();
+				ClientCloudAccountTable.Record r=l.iterator().next();
+				if (r.getRemoveAccountQueryUTCInMs()==null) {
+					clientCloudAccountTable.updateRecord(r, "removeAccountQueryUTCInMs", System.currentTimeMillis());
+					clientTable.getRecords(new Filter<ClientTable.Record>() {
+						@Override
+						public boolean nextRecord(ClientTable.Record _record) throws DatabaseException {
+							CentralDatabaseBackupReceiverPerPeer c=receiversPerPeer.get(_record.getClientID());
+							if (c!=null)
+								c.disconnect();
+							return false;
+						}
+					}, "account=%a", "a", r);
 
+					return true;
+				}
+				else
+					return false;
+			}
 
+			@Override
+			public TransactionIsolation getTransactionIsolation() {
+				return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
+			}
+
+			@Override
+			public boolean doesWriteData() {
+				return true;
+			}
+
+			@Override
+			public void initOrReset() {
+
+			}
+		});
+	}
+	private boolean cancelRemoveAccount(Object ... keys) throws DatabaseException {
+		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
+			@Override
+			public Boolean run() throws Exception {
+				List<ClientCloudAccountTable.Record> l=clientCloudAccountTable.getRecordsWithAllFields(keys);
+				if (l.size()==0)
+					return false;
+				if (l.size()>1)
+					throw new IllegalAccessError();
+				ClientCloudAccountTable.Record r=l.iterator().next();
+				if (r.getRemoveAccountQueryUTCInMs()==null) {
+					return false;
+				}
+				else {
+					clientCloudAccountTable.updateRecord(r, "removeAccountQueryUTCInMs", null);
+					return true;
+				}
+			}
+
+			@Override
+			public TransactionIsolation getTransactionIsolation() {
+				return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
+			}
+
+			@Override
+			public boolean doesWriteData() {
+				return true;
+			}
+
+			@Override
+			public void initOrReset() {
+
+			}
+		});
+	}
 
 }
