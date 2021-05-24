@@ -196,11 +196,15 @@ jar{
 
 
 test {
-
+    maxParallelForks=1
      // enable TestNG support (default is JUnit)
    	useTestNG
    	{
    		suites 'src/test/java/com/distrimind/ood/database/tests/AllTestsNG.xml'
+        suites 'src/test/java/com/distrimind/ood/database/tests/TestRevertToOldVersionIntoDecentralizedNetwork.xml'
+        suites 'src/test/java/com/distrimind/ood/database/tests/TestDatabaseAddDatabaseWithCentralDataaseNetwork.xml'
+        suites 'src/test/java/com/distrimind/ood/database/tests/TestDatabaseChangeVersionIntoDecentralizedNetwork.xml'
+
    	}
 
    // set heap size for the test JVM(s)
