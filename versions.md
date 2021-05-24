@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-3.0.0 STABLE (Build: 3545) (from 01/04/2013 to 20/05/2021)
+3.0.0 STABLE (Build: 3547) (from 01/04/2013 to 20/05/2021)
 
 # Creator(s):
 Jason MAHDJOUB
@@ -12,7 +12,7 @@ Jason MAHDJOUB (Entered in the team at 01/04/2013)
 
 
 ### 3.0.0 STABLE (20/05/2021)
-* Update Utils to 5.17.5
+* Update Utils to 5.17.6
 * Update HSQLDB to 2.5.1
 * Implementation of data synchronization with central database backup
 * Each pear can transfer its encrypted backup into the central database that do not permit backup reversion in a short time.
