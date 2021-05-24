@@ -1,9 +1,8 @@
 # OOD
 OOD is a decentralized and asynchrone ORM (Object-Relational Mapping):
 * Compatible with Java 8 and newer
-* drivers for MySQL, PostgreSQL, H2, H2 for Android, DerbyDB, HSQLDB
-* Object
-* Decentralized database with tools of synchronization between peers
+* drivers for MySQL, PostgreSQL, H2, H2 for Android, HSQLDB
+* Object Decentralized database with tools of synchronization between peers
 * Database backup, historical tools and possiblity to revert database to a given time
 * Automating backup file's synchronization with central database server. Backup files can be encrypted (end-to-end encryption)
 * pseudo SQL querries possible (where clause)
