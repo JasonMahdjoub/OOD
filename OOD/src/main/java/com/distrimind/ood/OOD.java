@@ -65,7 +65,12 @@ public class OOD {
 			VERSION.addCreator(new Person("mahdjoub", "jason"))
 					.addDeveloper(new PersonDeveloper("mahdjoub", "jason", "2013-04-01"))
 					.addDescription(
-							new Description((short)3, (short)0, (short)0, Version.Type.STABLE, (short)0, "2021-05-20")
+							new Description((short)3, (short)1, (short)0, Version.Type.STABLE, (short)0, "2021-05-25")
+									.addItem("Update Utils to 5.17.7")
+									.addItem("Make OOD compatible with MadKitLanEdition")
+					)
+					.addDescription(
+							new Description((short)3, (short)0, (short)0, Version.Type.STABLE, (short)0, "2021-05-24")
 									.addItem("Update Utils to 5.17.6")
 									.addItem("Update HSQLDB to 2.5.1")
 									.addItem("Implementation of data synchronization with central database backup")
