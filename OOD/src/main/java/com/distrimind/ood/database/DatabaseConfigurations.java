@@ -64,6 +64,7 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 
 	private Set<DecentralizedValue> distantPeers;
 	private DecentralizedValue localPeer;
+	private transient String localPeerString;
 	private boolean permitIndirectSynchronizationBetweenPeers;
 	CentralDatabaseBackupCertificate centralDatabaseBackupCertificate=null;
 	public DatabaseConfigurations(Set<DatabaseConfiguration> configurations) throws DatabaseException {
@@ -107,6 +108,7 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 			this.distantPeers = new HashSet<>(distantPeers);
 		}
 		this.localPeer = localPeer;
+		setLocalPeerString();
 		checkConfigurations();
 		checkDistantPeers();
 
@@ -154,6 +156,15 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 			if (dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase()!=null && dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase().contains(localPeer))
 				throw new IllegalArgumentException();
 		this.localPeer = localPeer;
+		setLocalPeerString();
+	}
+
+	private void setLocalPeerString()
+	{
+		if (localPeer==null)
+			localPeerString=null;
+		else
+			localPeerString=localPeer.encode().toWrappedString().toString();
 	}
 
 	private void checkLocalPeerNull() throws DatabaseException {
@@ -270,6 +281,7 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 	}
 
 	private void reloadAllConfigurations() throws DatabaseException {
+		setLocalPeerString();
 		checkConfigurations();
 		allConfigurations.clear();
 		allConfigurations.addAll(volatileConfigurations);
@@ -472,6 +484,9 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 	}
 	public DecentralizedValue getLocalPeer() {
 		return localPeer;
+	}
+	public String getLocalPeerString() {
+		return localPeerString;
 	}
 
 	void setCreateDatabasesIfNecessaryAndCheckIt(boolean createDatabasesIfNecessaryAndCheckIt) {
