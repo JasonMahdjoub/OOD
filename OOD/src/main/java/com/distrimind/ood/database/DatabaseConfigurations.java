@@ -56,7 +56,7 @@ import java.util.function.Predicate;
 public class DatabaseConfigurations extends MultiFormatProperties {
 	private transient final Set<DatabaseConfiguration> volatileConfigurations=new HashSet<>();
 	private transient final Set<DatabaseConfiguration> allConfigurations=new HashSet<>();
-	private transient volatile Set<DatabaseConfiguration> allConfigurationsReadOnly= Collections.unmodifiableSet(new HashSet<>());
+	private transient volatile Set<DatabaseConfiguration> allConfigurationsReadOnly= Collections.unmodifiableSet(allConfigurations);
 	private transient final Set<DecentralizedValue> volatileDistantPeers=new HashSet<>();
 	private transient final Set<DecentralizedValue> allDistantPeers=new HashSet<>();
 	private transient final Set<DecentralizedValue> allDistantPeersReadOnly=Collections.unmodifiableSet(allDistantPeers);
@@ -86,7 +86,18 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 	{
 		allConfigurationsReadOnly=Collections.unmodifiableSet(new HashSet<>(allConfigurations));
 	}
-
+	public DatabaseConfigurations(DatabaseConfigurations databaseConfigurations, Set<DatabaseConfiguration> configurations) throws DatabaseException {
+		this(configurations, null, databaseConfigurations.localPeer, databaseConfigurations.permitIndirectSynchronizationBetweenPeers);
+		this.configurations.addAll(databaseConfigurations.configurations);
+		this.volatileConfigurations.addAll(databaseConfigurations.volatileConfigurations);
+		this.allConfigurations.addAll(databaseConfigurations.configurations);
+		this.allConfigurations.addAll(databaseConfigurations.volatileConfigurations);
+		this.distantPeers.addAll(databaseConfigurations.distantPeers);
+		this.volatileDistantPeers.addAll(databaseConfigurations.volatileDistantPeers);
+		this.allDistantPeers.addAll(databaseConfigurations.distantPeers);
+		this.allDistantPeers.addAll(databaseConfigurations.volatileDistantPeers);
+		this.centralDatabaseBackupCertificate=databaseConfigurations.centralDatabaseBackupCertificate;
+	}
 	public DatabaseConfigurations(Set<DatabaseConfiguration> configurations, Set<DecentralizedValue> distantPeers, DecentralizedValue localPeer, boolean permitIndirectSynchronizationBetweenPeers) throws DatabaseException {
 		super(null);
 		if (configurations ==null)
@@ -101,16 +112,20 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 		else {
 			if (distantPeers.contains(null))
 				throw new NullPointerException();
-			if (localPeer==null)
+			if (localPeer==null && distantPeers.size()>0)
 				throw new NullPointerException();
 			if (distantPeers.contains(localPeer))
 				throw new IllegalArgumentException("The local peer "+localPeer+ " can't be contained into the list of distant peers");
 			this.distantPeers = new HashSet<>(distantPeers);
 		}
 		this.localPeer = localPeer;
+
 		setLocalPeerString();
 		checkConfigurations();
 		checkDistantPeers();
+		this.allConfigurations.addAll(this.volatileConfigurations);
+		this.allConfigurations.addAll(this.configurations);
+
 
 	}
 
@@ -317,7 +332,7 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 
 
 
-	Set<DatabaseConfiguration> getConfigurations() {
+	public Set<DatabaseConfiguration> getDatabaseConfigurations() {
 		return allConfigurationsReadOnly;
 	}
 
@@ -449,7 +464,7 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 	}
 	public DatabaseConfiguration getDatabaseConfiguration(String packageString)
 	{
-		for (DatabaseConfiguration dc : getConfigurations())
+		for (DatabaseConfiguration dc : getDatabaseConfigurations())
 		{
 			if (dc.getDatabaseSchema().getPackage().getName().equals(packageString))
 				return dc;

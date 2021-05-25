@@ -485,7 +485,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 													databasePackage.set(t.getClass().getPackage().getName());
 											} catch (Exception e) {
 												String p=event.getConcernedPackage();
-												if (getDatabaseWrapper().getDatabaseConfigurationsBuilder().getConfigurations().getConfigurations().stream().noneMatch(c -> c.getDatabaseSchema().getPackage().getName().equals(p))) {
+												if (getDatabaseWrapper().getDatabaseConfigurationsBuilder().getConfigurations().getDatabaseConfigurations().stream().noneMatch(c -> c.getDatabaseSchema().getPackage().getName().equals(p))) {
 													continue;
 												}
 												else
@@ -687,7 +687,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 									t = (Table<DatabaseRecord>) getDatabaseWrapper().getTableInstance(event.getConcernedTable());
 								} catch (Exception e) {
 									String p=event.getConcernedPackage();
-									if (getDatabaseWrapper().getDatabaseConfigurationsBuilder().getConfigurations().getConfigurations().stream().noneMatch(c -> c.getDatabaseSchema().getPackage().getName().equals(p))) {
+									if (getDatabaseWrapper().getDatabaseConfigurationsBuilder().getConfigurations().getDatabaseConfigurations().stream().noneMatch(c -> c.getDatabaseSchema().getPackage().getName().equals(p))) {
 										continue;
 									}
 									else

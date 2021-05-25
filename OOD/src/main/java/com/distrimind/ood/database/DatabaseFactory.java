@@ -149,9 +149,11 @@ public abstract class DatabaseFactory<DW extends DatabaseWrapper> extends MultiF
 		return databaseConfigurations;
 	}
 
-	public void setDatabaseConfigurations(DatabaseConfigurations databaseConfigurations) {
+	public void setDatabaseConfigurations(DatabaseConfigurations databaseConfigurations) throws DatabaseException {
 		if (databaseConfigurations==null)
 			throw new NullPointerException();
+		if (wrapper!=null)
+			throw new DatabaseException("Cannot change configuration when database wrapper is already instantiated !");
 		this.databaseConfigurations = databaseConfigurations;
 	}
 
