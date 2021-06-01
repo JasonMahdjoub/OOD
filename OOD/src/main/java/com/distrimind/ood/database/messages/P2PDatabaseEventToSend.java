@@ -38,13 +38,14 @@ knowledge of the CeCILL-C license and that you accept its terms.
 import com.distrimind.ood.database.DatabaseEvent;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.io.SecureExternalizable;
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.0.0
  */
-public interface P2PDatabaseEventToSend extends DatabaseEventToSend {
+public interface P2PDatabaseEventToSend extends DatabaseEventToSend, SecureExternalizable {
 	DecentralizedValue getHostDestination() throws DatabaseException;
 
 	DecentralizedValue getHostSource() throws DatabaseException;

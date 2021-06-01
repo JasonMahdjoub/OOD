@@ -797,7 +797,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 						if (concernedHosts.size()>0 && packages.size()>0 && !getDatabaseWrapper().getDatabaseConfigurationsBuilder().isCommitInProgress()) {
 							Set<String> ps=new HashSet<>();
 							packages.forEach(p -> {
-								if (getDatabaseWrapper().getDatabaseConfigurationsBuilder().getConfigurations().getConfigurations().stream().anyMatch(dc -> dc.getDatabaseSchema().getPackage().getName().equals(p)))
+								if (getDatabaseWrapper().getDatabaseConfigurationsBuilder().getConfigurations().getDatabaseConfigurations().stream().anyMatch(dc -> dc.getDatabaseSchema().getPackage().getName().equals(p)))
 									ps.add(p);
 							});
 							if (ps.size()>0)

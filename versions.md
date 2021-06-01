@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-3.0.0 STABLE (Build: 3245) (from 01/04/2013 to 28/10/2020)
+3.0.0 STABLE (Build: 3549) (from 01/04/2013 to 20/05/2021)
 
 # Creator(s):
 Jason MAHDJOUB
@@ -11,10 +11,15 @@ Jason MAHDJOUB (Entered in the team at 01/04/2013)
 # Modifications:
 
 
-### 3.0.0 STABLE (28/10/2020)
-* Update Utils to 4.15.2
+### 3.0.0 STABLE (20/05/2021)
+* Update Utils to 5.17.6
 * Update HSQLDB to 2.5.1
 * Implementation of data synchronization with central database backup
+* Each pear can transfer its encrypted backup into the central database that do not permit backup reversion in a short time.
+* Removed data into central database backup are removed only after a delay has occurred. Same thing with removed accounts.
+* When a peer is added into the network, it is not necessary to add it into each peach. The adding is broadcast into the network.
+* Primary keys can be now decentralized
+* Do not synchronize database that do not share the same version
 * Make OOD compatible with Android
 * Implementation of driver for MySQL
 * Implementation of driver for Android H2 Database
@@ -22,11 +27,18 @@ Jason MAHDJOUB (Entered in the team at 01/04/2013)
 * Compatible with Java 8 and newer
 * Calendar is better serialized into database (better performances, and lower space)
 * Calendar is now comparable
-* Implementation of DatabaseConfigurationBuilder that centralize database loading, and database synchronization with decentralized peers and with central backup database
+* Implementation of DatabaseConfigurationBuilder that centralize database loading, database restoration, and database synchronization with decentralized peers and with central backup database. The profile can be saved into the disk.
 * Add function Table.removeAllRecordsWithCascade()
 * Fix issue when changing database's version and refresh tables state when BackupRestoreManager was loaded
 * Add function Table.hasRecords(String, Map)
 * Add function Table.hasRecords(Filter, String, Map)
+* Add function DatabaseLifeCycles.peersAdded(Set<DecentralizedValue>) that is triggered when a set of peers was added
+* Fix join issue when table A has two foreign keys that reference the same table B
+* Optimize queries by using junctions
+* Add possibility to personalize the moment when OOD will create a new database backup
+* Add possibility to notify user that new database backup files were created
+* Extends authenticated messages for critical queries, by using protected keys
+* When local host identifier is changed or removed, distant hosts are notified
 
 
 ### 2.4.0 STABLE (11/02/2020)

@@ -2796,7 +2796,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 			if (!isInitializedWithCentralBackup())
 				return;
-			for (DatabaseConfiguration dc : getDatabaseConfigurationsBuilder().getConfigurations().getConfigurations()) {
+			for (DatabaseConfiguration dc : getDatabaseConfigurationsBuilder().getConfigurations().getDatabaseConfigurations()) {
 				if (dc.getDatabaseSchema().getPackage().equals(d.configuration.getDatabaseSchema().getPackage())) {
 					Long timeUTCInMs=dc.getTimeUTCInMsForRestoringDatabaseToOldVersion();
 					if (timeUTCInMs==null)
@@ -3096,7 +3096,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				.stream()
 				.map(d-> d.configuration)
 				.filter(dc -> {
-					if (getDatabaseConfigurationsBuilder().getConfigurations().getConfigurations().stream().noneMatch(dc2-> dc2.getDatabaseSchema().getPackage().equals(dc.getDatabaseSchema().getPackage())))
+					if (getDatabaseConfigurationsBuilder().getConfigurations().getDatabaseConfigurations().stream().noneMatch(dc2-> dc2.getDatabaseSchema().getPackage().equals(dc.getDatabaseSchema().getPackage())))
 						return false;
 					return dc.isDecentralized();
 				})
@@ -3118,7 +3118,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				.stream()
 				.map(d-> d.configuration)
 				.filter(dc -> {
-					if (getDatabaseConfigurationsBuilder().getConfigurations().getConfigurations().stream().noneMatch(dc2-> dc2.getDatabaseSchema().getPackage().equals(dc.getDatabaseSchema().getPackage())))
+					if (getDatabaseConfigurationsBuilder().getConfigurations().getDatabaseConfigurations().stream().noneMatch(dc2-> dc2.getDatabaseSchema().getPackage().equals(dc.getDatabaseSchema().getPackage())))
 						return false;
 					if (dc.isDecentralized())
 					{
@@ -5677,7 +5677,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				if (reservedDatabases.contains(e.getValue().getConfiguration().getDatabaseSchema().getPackage()))
 					continue;
 				boolean found=false;
-				for (DatabaseConfiguration configuration : getDatabaseConfigurationsBuilder().getConfigurations().getConfigurations())
+				for (DatabaseConfiguration configuration : getDatabaseConfigurationsBuilder().getConfigurations().getDatabaseConfigurations())
 				{
 					if (configuration.getDatabaseSchema().getPackage().equals(e.getKey()))
 					{

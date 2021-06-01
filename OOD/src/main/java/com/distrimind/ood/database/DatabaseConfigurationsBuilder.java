@@ -443,7 +443,7 @@ public class DatabaseConfigurationsBuilder {
 			public Boolean run() throws Exception {
 
 				Set<DatabaseConfiguration> packagesToSynchronize=new HashSet<>();
-				for (DatabaseConfiguration c : configurations.getConfigurations()) {
+				for (DatabaseConfiguration c : configurations.getDatabaseConfigurations()) {
 					if (c.isDecentralized()) {
 						Set<DecentralizedValue> sps = c.getDistantPeersThatCanBeSynchronizedWithThisDatabase();
 						wrapper.getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
@@ -522,7 +522,7 @@ public class DatabaseConfigurationsBuilder {
 							if (packages!=null && packages.size()>0) {
 								Set<String> ptu=new HashSet<>();
 								for (String p : packages) {
-									Optional<DatabaseConfiguration> o = configurations.getConfigurations().stream().filter(c -> c.getDatabaseSchema().getPackage().getName().equals(p)).findAny();
+									Optional<DatabaseConfiguration> o = configurations.getDatabaseConfigurations().stream().filter(c -> c.getDatabaseSchema().getPackage().getName().equals(p)).findAny();
 									if (!o.isPresent() || !o.get().isDecentralized() || o.get().getDistantPeersThatCanBeSynchronizedWithThisDatabase() == null || o.get().getDistantPeersThatCanBeSynchronizedWithThisDatabase().contains(_record.getHostID())) {
 										ptu.add(p);
 									}
@@ -636,7 +636,7 @@ public class DatabaseConfigurationsBuilder {
 
 	private void checkDatabaseLoading() throws DatabaseException {
 		ArrayList<DatabaseConfiguration> dls=new ArrayList<>();
-		for (DatabaseConfiguration dc : configurations.getConfigurations())
+		for (DatabaseConfiguration dc : configurations.getDatabaseConfigurations())
 		{
 			if (!wrapper.isDatabaseLoaded(dc)) {
 				dls.add(dc);
@@ -733,7 +733,7 @@ public class DatabaseConfigurationsBuilder {
 			final Reference<Boolean> changed=new Reference<>(false);
 			for (String p : packagesString)
 			{
-				configurations.getConfigurations().forEach ((c) -> {if (c.getDatabaseSchema().getPackage().getName().equals(p) && c.setSynchronizationType(synchronizationType)) changed.set(true);});
+				configurations.getDatabaseConfigurations().forEach ((c) -> {if (c.getDatabaseSchema().getPackage().getName().equals(p) && c.setSynchronizationType(synchronizationType)) changed.set(true);});
 			}
 			if (changed.get()) {
 				t.updateConfigurationPersistence();
@@ -900,7 +900,7 @@ public class DatabaseConfigurationsBuilder {
 	public DatabaseConfigurationsBuilder setCentralDatabaseBackupCertificate(CentralDatabaseBackupCertificate centralDatabaseBackupCertificate)
 	{
 		pushQuery((t) -> {
-			if (centralDatabaseBackupCertificate==null && configurations.getConfigurations().stream().anyMatch(DatabaseConfiguration::isSynchronizedWithCentralBackupDatabase))
+			if (centralDatabaseBackupCertificate==null && configurations.getDatabaseConfigurations().stream().anyMatch(DatabaseConfiguration::isSynchronizedWithCentralBackupDatabase))
 				throw new NullPointerException("You cannot set a null certificate when using a least one database configuration that is synchronized with central database backup");
 			configurations.setCentralDatabaseBackupCertificate(centralDatabaseBackupCertificate);
 			if (wrapper.getSynchronizer().getLocalHostID()!=null)
@@ -958,7 +958,7 @@ public class DatabaseConfigurationsBuilder {
 	{
 		pushQuery((p) -> {
 			boolean changed=false;
-			for (DatabaseConfiguration c : configurations.getConfigurations()) {
+			for (DatabaseConfiguration c : configurations.getDatabaseConfigurations()) {
 				if (predicate.test(c)) {
 					if (c.restoreDatabaseToOldVersion(timeUTCInMs, preferOtherChannelThanLocalChannelIfAvailable || c.getBackupConfiguration()==null, chooseNearestBackupIfNoBackupMatch, notifyOtherPeers)) {
 
@@ -1022,7 +1022,7 @@ public class DatabaseConfigurationsBuilder {
 		{
 			wrapper.lockWrite();
 			try {
-				for (DatabaseConfiguration c : configurations.getConfigurations()) {
+				for (DatabaseConfiguration c : configurations.getDatabaseConfigurations()) {
 					if (c.getDatabaseSchema().getPackage().equals(database.getConfiguration().getDatabaseSchema().getPackage())) {
 						Long timeUTCInMs = c.getTimeUTCInMsForRestoringDatabaseToOldVersion();
 						if (timeUTCInMs != null) {

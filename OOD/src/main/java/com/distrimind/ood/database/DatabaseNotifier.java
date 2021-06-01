@@ -74,6 +74,12 @@ public interface DatabaseNotifier {
     void hostConnected(DecentralizedValue hostID);
 
     /**
+     * The given local host was initialized.
+     * @param hostID the initialized local host
+     */
+    void localHostInitialized(DecentralizedValue hostID);
+
+    /**
      * This function is called when a peer or more was added
      * @param peersIdentifiers the identifiers of the added peers
      */

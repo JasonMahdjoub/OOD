@@ -846,6 +846,11 @@ public abstract class CommonDecentralizedTests {
 		}
 
 		@Override
+		public void localHostInitialized(DecentralizedValue hostID) {
+
+		}
+
+		@Override
 		public void hostsAdded(Set<DecentralizedValue> peersIdentifiers) {
 
 		}
