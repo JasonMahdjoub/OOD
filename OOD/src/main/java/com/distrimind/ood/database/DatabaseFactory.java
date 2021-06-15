@@ -100,7 +100,15 @@ public abstract class DatabaseFactory<DW extends DatabaseWrapper> extends MultiF
 	public EncryptionProfileProviderFactory getEncryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup() {
 		return encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup;
 	}
-
+	public void setEncryptionProfileProviders(EncryptionProfileProviderFactory protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages,
+											  SecureRandomType randomType, byte[] randomNonce, byte[] randomPersonalizationString) {
+		setEncryptionProfileProviders(null, null, protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages, randomType,
+				randomNonce, randomPersonalizationString);
+	}
+	public void setEncryptionProfileProviders(EncryptionProfileProviderFactory protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages,
+											  SecureRandomType randomType) {
+		setEncryptionProfileProviders(null, null, protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages, randomType);
+	}
 	public void setEncryptionProfileProviders(EncryptionProfileProviderFactory signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
 											  EncryptionProfileProviderFactory encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
 											  EncryptionProfileProviderFactory protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages,
