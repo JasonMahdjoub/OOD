@@ -410,7 +410,8 @@ public class DatabaseConfigurationsBuilder {
 							if (peersAdded==null)
 								peersAdded=new HashSet<>();
 							peersAdded.add(dv);
-							wrapper.getDatabaseHooksTable().offerNewAuthenticatedMessageDestinedToCentralDatabaseBackup(
+							if (configurations.useCentralBackupDatabase())
+								wrapper.getDatabaseHooksTable().offerNewAuthenticatedMessageDestinedToCentralDatabaseBackup(
 									new PeerToAddMessageDestinedToCentralDatabaseBackup(getConfigurations().getLocalPeer(), getConfigurations().getCentralDatabaseBackupCertificate(), dv),
 									getSecureRandom(), getSignatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup());
 						}
