@@ -71,6 +71,8 @@ public class OOD {
 									.addItem("Fix NullPointerException into DatabaseConfiguration class")
 									.addItem("Add function void DatabaseFactory.setEncryptionProfileProviders(EncryptionProfileProviderFactory, SecureRandomType randomType, byte[], byte[])")
 									.addItem("Add function void DatabaseFactory.setEncryptionProfileProviders(EncryptionProfileProviderFactory, SecureRandomType randomType)")
+									.addItem("Fix bad using of central database backup when it is not used")
+									.addItem("Fix issue with notification of local host initialization")
 					)
 					.addDescription(
 							new Description((short)3, (short)0, (short)0, Version.Type.STABLE, (short)0, "2021-05-24")

@@ -1343,6 +1343,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 
 				initializedHooks.put(localHostID, new ConnectedPeers(local, true, true));
+                if (notifier!=null)
+                	notifier.localHostInitialized(localHostID);
 				if (networkLogger!=null)
 					networkLogger.info("Local peer "+localHostID+" connected !");
 
