@@ -1239,9 +1239,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		private void notifyNewEvent() throws DatabaseException {
 			boolean notify = false;
-			
+
 			try {
 				lockWrite();
+
 				if (!extendedTransactionInProgress && canNotify && notifier != null) {
 					notify = true;
 					canNotify = false;
@@ -1265,8 +1266,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					return null;
 
 				checkForNewCentralBackupDatabaseEvent();
-				if (events.isEmpty())
+				if (events.isEmpty()) {
 					return null;
+				}
 				else {
 					DatabaseEvent e = events.removeFirst();
 					if (e instanceof AuthenticatedP2PMessage)
@@ -3628,6 +3630,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
         boolean addEvent(TableEvent<?> de, boolean applySynchro) throws DatabaseException {
 			if (de == null)
 				throw new NullPointerException("de");
+
 			Package p = de.getTable().getClass().getPackage();
 
 			BackupRestoreManager.AbstractTransaction backupTransaction=getBackupManagerAndStartTransactionIfNecessary(p);
@@ -3638,6 +3641,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 			if (p.equals(DatabaseWrapper.class.getPackage()))
 				return false;
+
 			if (!de.getTable().supportSynchronizationWithOtherPeers())
 				return false;
 
@@ -3744,6 +3748,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
         void addNewTemporaryEvent(final TableEvent<?> event) throws DatabaseException {
 			final TransactionPerDatabase transaction = getAndCreateIfNecessaryTemporaryTransaction(
 					event.getTable().getDatabaseConfiguration().getDatabaseSchema().getPackage());
+
 			final AtomicInteger nb = new AtomicInteger(0);
 			try {
 				if (eventsStoredIntoMemory) {

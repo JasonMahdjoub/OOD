@@ -734,7 +734,28 @@ public class DatabaseConfigurationsBuilder {
 			final Reference<Boolean> changed=new Reference<>(false);
 			for (String p : packagesString)
 			{
-				configurations.getDatabaseConfigurations().forEach ((c) -> {if (c.getDatabaseSchema().getPackage().getName().equals(p) && c.setSynchronizationType(synchronizationType)) changed.set(true);});
+				configurations.getDatabaseConfigurations().forEach ((c) -> {
+					if (c.getDatabaseSchema().getPackage().getName().equals(p) && c.setSynchronizationType(synchronizationType)) {
+						changed.set(true);
+						try {
+							if (wrapper.isDatabaseLoaded(c))
+							{
+								for (Class<? extends Table<?>> clazz : c.getDatabaseSchema().getTableClasses())
+								{
+									Table<?> table=wrapper.getTableInstance(clazz);
+									table.updateSupportSynchronizationWithOtherPeersStep1();
+								}
+								for (Class<? extends Table<?>> clazz : c.getDatabaseSchema().getTableClasses())
+								{
+									Table<?> table=wrapper.getTableInstance(clazz);
+									table.updateSupportSynchronizationWithOtherPeersStep2();
+								}
+							}
+						} catch (DatabaseException e) {
+							e.printStackTrace();
+						}
+					}
+				});
 			}
 			if (changed.get()) {
 				t.updateConfigurationPersistence();
