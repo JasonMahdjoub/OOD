@@ -74,6 +74,7 @@ public class OOD {
 									.addItem("Fix bad using of central database backup when it is not used")
 									.addItem("Fix issue with notification of local host initialization")
 									.addItem("Fix issue : update internal table state when database becomes decentralized")
+									.addItem("Fix issue with DatabaseConfigurationsBuilder")
 					)
 					.addDescription(
 							new Description((short)3, (short)0, (short)0, Version.Type.STABLE, (short)0, "2021-05-24")
