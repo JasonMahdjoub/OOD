@@ -1368,8 +1368,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			Map<String, Boolean> packagesToSynchronize=hookSynchronizeRequest.getPackagesToSynchronize(getLocalHostID());
 			lockRead();
 			try {
-				if (packagesToSynchronize.keySet().stream().anyMatch(p -> getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations().noneMatch(p::equals)))
+				if (packagesToSynchronize.keySet().stream().anyMatch(p -> getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations().noneMatch(p::equals))) {
 					return;
+				}
 			}
 			finally {
 				unlockRead();
@@ -3100,8 +3101,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				.stream()
 				.map(d-> d.configuration)
 				.filter(dc -> {
-					if (getDatabaseConfigurationsBuilder().getConfigurations().getDatabaseConfigurations().stream().noneMatch(dc2-> dc2.getDatabaseSchema().getPackage().equals(dc.getDatabaseSchema().getPackage())))
+					if (getDatabaseConfigurationsBuilder().getConfigurations().getDatabaseConfigurations().stream().noneMatch(dc2-> dc2.getDatabaseSchema().getPackage().equals(dc.getDatabaseSchema().getPackage()))) {
 						return false;
+					}
 					return dc.isDecentralized();
 				})
 				.map(c -> c.getDatabaseSchema().getPackage().getName());

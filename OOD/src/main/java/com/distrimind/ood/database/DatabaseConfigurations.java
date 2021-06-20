@@ -379,6 +379,7 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 		} catch (IllegalAccessException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
+		allDistantPeers.clear();
 		if (volatileConf) {
 			volatileDistantPeers.clear();
 			for (DatabaseConfiguration dc : volatileConfigurations)
@@ -389,9 +390,16 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 			}
 		}
 		else {
-			changed |= this.distantPeers.addAll(distantPeers);
+			this.distantPeers.clear();
+			for (DatabaseConfiguration dc : configurations)
+			{
+				Set<DecentralizedValue> s=dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase();
+				if (s!=null)
+					this.distantPeers.addAll(s);
+			}
 		}
-		allDistantPeers.addAll(distantPeers);
+		allDistantPeers.addAll(this.distantPeers);
+		allDistantPeers.addAll(this.volatileDistantPeers);
 		checkForMaxDistantPeersReached();
 		return changed;
 	}
