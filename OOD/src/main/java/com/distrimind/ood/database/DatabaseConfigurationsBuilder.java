@@ -593,10 +593,11 @@ public class DatabaseConfigurationsBuilder {
 								_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), peerIDToRemove), getSecureRandom(), protectedSignatureProfileProviderForAuthenticatedP2PMessages, this);
 							}
 						}, "concernsDatabaseHost=%cdh", "cdh", false);
-
-						wrapper.getDatabaseHooksTable().offerNewAuthenticatedMessageDestinedToCentralDatabaseBackup(
-								new PeerToRemoveMessageDestinedToCentralDatabaseBackup(getConfigurations().getLocalPeer(), getConfigurations().getCentralDatabaseBackupCertificate(), peerIDToRemove),
-								getSecureRandom(), getSignatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup());
+						if (configurations.useCentralBackupDatabase()) {
+							wrapper.getDatabaseHooksTable().offerNewAuthenticatedMessageDestinedToCentralDatabaseBackup(
+									new PeerToRemoveMessageDestinedToCentralDatabaseBackup(getConfigurations().getLocalPeer(), getConfigurations().getCentralDatabaseBackupCertificate(), peerIDToRemove),
+									getSecureRandom(), getSignatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup());
+						}
 						if (removeLocalNow.get())
 							wrapper.getDatabaseHooksTable().removeHook(false, peerIDToRemove);
 						else {
@@ -916,6 +917,8 @@ public class DatabaseConfigurationsBuilder {
 	{
 		pushQuery((t) -> {
 			wrapper.getSynchronizer().resetSynchronizerAndRemoveAllHosts();
+			configurations.removeDistantPeers(configurations.getDistantPeers());
+			configurations.setLocalPeer(null);
 			t.checkDatabaseLoading(null);
 			t.checkNewConnexions();
 			t.checkDatabaseToSynchronize();
