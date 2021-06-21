@@ -48,7 +48,7 @@ import java.security.NoSuchProviderException;
  * 
  * 
  * @author Jason Mahdjoub
- * @version 1.0
+ * @version 1.1
  * @since OOD 2.0.0
  */
 public abstract class DatabaseFactory<DW extends DatabaseWrapper> extends MultiFormatProperties {
@@ -184,6 +184,17 @@ public abstract class DatabaseFactory<DW extends DatabaseWrapper> extends MultiF
 			}
 		}
 		return wrapper;
+	}
+
+	public void closeSingletonIfOpened()
+	{
+		synchronized (this)
+		{
+			if (wrapper!=null)
+			{
+				wrapper.close();
+			}
+		}
 	}
 
 	DW newWrapperInstance() throws DatabaseException

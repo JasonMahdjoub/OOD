@@ -77,6 +77,7 @@ public class OOD {
 									.addItem("Fix issue with DatabaseConfigurationsBuilder")
 									.addItem("Fix issue when removing peer whereas OOD does not use CentralDatabaseBackup")
 									.addItem("Fix issue with function DatabaseConfigurationBuilder.resetSynchronizerAndRemoveAllHosts() : distant peers and local host id were not removed")
+									.addItem("Add class CentralDatabaseBackupReceiverFactory")
 
 					)
 					.addDescription(

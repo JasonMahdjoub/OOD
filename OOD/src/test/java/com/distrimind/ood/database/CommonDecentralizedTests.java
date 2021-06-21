@@ -624,6 +624,21 @@ public abstract class CommonDecentralizedTests {
 		}
 	}
 
+	public class CentralDatabaseBackupReceiverFactory extends com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupReceiverFactory<CentralDatabaseBackupReceiver>
+	{
+		public CentralDatabaseBackupReceiverFactory() {
+		}
+
+		public CentralDatabaseBackupReceiverFactory(DecentralizedValue centralID) {
+			super(centralID);
+		}
+
+		@Override
+		public CentralDatabaseBackupReceiver getCentralDatabaseBackupReceiverInstance(DatabaseWrapper wrapper) throws DatabaseException {
+			return new CentralDatabaseBackupReceiver(wrapper, getCentralID());
+		}
+	}
+
 	public class CentralDatabaseBackupReceiver extends com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupReceiver
 	{
 
@@ -1069,7 +1084,7 @@ public abstract class CommonDecentralizedTests {
 	void initCentralDatabaseBackup() throws DatabaseException {
 		if (canInitCentralBackup()) {
 			this.centralDatabaseBackupDatabase = getDatabaseFactoryInstanceForCentralDatabaseBackupReceiver().getDatabaseWrapperSingleton();
-			this.centralDatabaseBackupReceiver = new CentralDatabaseBackupReceiver(centralDatabaseBackupDatabase, centralDatabaseBackupKeyPair.getASymmetricPublicKey());
+			this.centralDatabaseBackupReceiver = new CentralDatabaseBackupReceiverFactory(centralDatabaseBackupKeyPair.getASymmetricPublicKey()).getCentralDatabaseBackupReceiverInstanceSingleton(centralDatabaseBackupDatabase);
 			this.centralDatabaseBackupDatabase.setNetworkLogLevel(networkLogLevel);
 
 		}
