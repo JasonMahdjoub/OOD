@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 import com.distrimind.util.DecentralizedIDGenerator;
+import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.SecuredDecentralizedID;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 import com.distrimind.util.crypto.IASymmetricPublicKey;
@@ -76,4 +77,5 @@ public abstract class CentralDatabaseBackupCertificate extends MultiFormatProper
 	public abstract long getCertificateExpirationTimeUTCInMs();
 
 	public abstract boolean isValidCertificate(EncryptionProfileProvider encryptionProfileProvider);
+	public abstract DecentralizedValue getCentralDatabaseBackupID();
 }

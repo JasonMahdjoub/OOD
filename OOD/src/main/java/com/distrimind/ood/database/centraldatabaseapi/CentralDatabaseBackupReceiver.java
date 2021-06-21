@@ -169,9 +169,15 @@ public abstract class CentralDatabaseBackupReceiver {
 	public void disconnect() throws DatabaseException {
 		disconnectAllPeers();
 	}
-	private void disconnectAllPeers() throws DatabaseException {
-		connectedClientsTable.removeRecordsWithAllFields("centralID", centralID);
+	public void disconnectAllPeers() throws DatabaseException {
+		for (CentralDatabaseBackupReceiverPerPeer cpp : receiversPerPeer.values())
+			cpp.disconnect();
 		receiversPerPeer.clear();
+		connectedClientsTable.removeRecordsWithAllFields("centralID", centralID);
+	}
+	public void peerDisconnected(DecentralizedValue clientID) throws DatabaseException {
+		CentralDatabaseBackupReceiverPerPeer cpp=receiversPerPeer.remove(clientID);
+		cpp.disconnect();
 	}
 
 	public void cleanObsoleteData() throws DatabaseException {

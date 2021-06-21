@@ -488,6 +488,11 @@ public abstract class CommonDecentralizedTests {
 			Bits.putLong(certificateExpirationTimeUTCInMsArray, 0,  certificateExpirationTimeUTCInMs);
 		}
 
+		public IASymmetricPublicKey getCentralDatabaseBackupID()
+		{
+			return centralDatabaseBackupPublicKey;
+		}
+
 		public IASymmetricPublicKey getCentralDatabaseBackupPublicKey()
 		{
 			return centralDatabaseBackupPublicKey;
