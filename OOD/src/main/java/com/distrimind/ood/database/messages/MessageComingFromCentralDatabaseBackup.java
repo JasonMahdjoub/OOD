@@ -36,13 +36,14 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.io.SecureExternalizable;
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOS 3.0.0
  */
-public interface MessageComingFromCentralDatabaseBackup extends DatabaseEventToSend{
+public interface MessageComingFromCentralDatabaseBackup extends DatabaseEventToSend, SecureExternalizable {
 	DecentralizedValue getHostDestination();
 
 }
