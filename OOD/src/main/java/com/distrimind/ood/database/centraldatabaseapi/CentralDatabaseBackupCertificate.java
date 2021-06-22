@@ -77,5 +77,5 @@ public abstract class CentralDatabaseBackupCertificate extends MultiFormatProper
 	public abstract long getCertificateExpirationTimeUTCInMs();
 
 	public abstract boolean isValidCertificate(EncryptionProfileProvider encryptionProfileProvider);
-	public abstract DecentralizedValue getCentralDatabaseBackupID();
+
 }
