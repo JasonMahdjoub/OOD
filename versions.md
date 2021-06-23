@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-3.0.0 STABLE (Build: 3549) (from 01/04/2013 to 20/05/2021)
+3.1.0 STABLE (Build: 4036) (from 01/04/2013 to 25/05/2021)
 
 # Creator(s):
 Jason MAHDJOUB
@@ -11,7 +11,12 @@ Jason MAHDJOUB (Entered in the team at 01/04/2013)
 # Modifications:
 
 
-### 3.0.0 STABLE (20/05/2021)
+### 3.1.0 STABLE (25/05/2021)
+* Update Utils to 5.18.2
+* Make OOD compatible with MadKitLanEdition
+
+
+### 3.0.0 STABLE (24/05/2021)
 * Update Utils to 5.17.6
 * Update HSQLDB to 2.5.1
 * Implementation of data synchronization with central database backup

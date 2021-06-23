@@ -29,7 +29,7 @@ Adapt into your build.gradle file, the next code :
 	...
 	dependencies {
 		...
-		compile(group:'com.distrimind.ood', name: 'OOD', version: '3.0.0-STABLE')
+		compile(group:'com.distrimind.ood', name: 'OOD', version: '3.1.0-STABLE')
 		//choose one of these optional drivers for H2 database
 		testImplementation(group:'com.h2database', name: 'h2', version: '1.4.200')
 		//optional and under JDK8 or newer
@@ -53,7 +53,7 @@ Adapt into your pom.xml file, the next code :
 			<dependency>
 				<groupId>com.distrimind.ood</groupId>
 				<artifactId>OOD</artifactId>
-				<version>3.0.0-STABLE</version>
+				<version>3.1.0-STABLE</version>
 			</dependency>
 			<!-- choose one of these optional drivers for H2 database-->
 				<dependency>

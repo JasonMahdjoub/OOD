@@ -1239,9 +1239,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		private void notifyNewEvent() throws DatabaseException {
 			boolean notify = false;
-			
+
 			try {
 				lockWrite();
+
 				if (!extendedTransactionInProgress && canNotify && notifier != null) {
 					notify = true;
 					canNotify = false;
@@ -1265,8 +1266,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					return null;
 
 				checkForNewCentralBackupDatabaseEvent();
-				if (events.isEmpty())
+				if (events.isEmpty()) {
 					return null;
+				}
 				else {
 					DatabaseEvent e = events.removeFirst();
 					if (e instanceof AuthenticatedP2PMessage)
@@ -1343,6 +1345,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 
 				initializedHooks.put(localHostID, new ConnectedPeers(local, true, true));
+                if (notifier!=null)
+                	notifier.localHostInitialized(localHostID);
 				if (networkLogger!=null)
 					networkLogger.info("Local peer "+localHostID+" connected !");
 
@@ -1364,8 +1368,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			Map<String, Boolean> packagesToSynchronize=hookSynchronizeRequest.getPackagesToSynchronize(getLocalHostID());
 			lockRead();
 			try {
-				if (packagesToSynchronize.keySet().stream().anyMatch(p -> getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations().noneMatch(p::equals)))
+				if (packagesToSynchronize.keySet().stream().anyMatch(p -> getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations().noneMatch(p::equals))) {
 					return;
+				}
 			}
 			finally {
 				unlockRead();
@@ -3096,8 +3101,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				.stream()
 				.map(d-> d.configuration)
 				.filter(dc -> {
-					if (getDatabaseConfigurationsBuilder().getConfigurations().getDatabaseConfigurations().stream().noneMatch(dc2-> dc2.getDatabaseSchema().getPackage().equals(dc.getDatabaseSchema().getPackage())))
+					if (getDatabaseConfigurationsBuilder().getConfigurations().getDatabaseConfigurations().stream().noneMatch(dc2-> dc2.getDatabaseSchema().getPackage().equals(dc.getDatabaseSchema().getPackage()))) {
 						return false;
+					}
 					return dc.isDecentralized();
 				})
 				.map(c -> c.getDatabaseSchema().getPackage().getName());
@@ -3626,6 +3632,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
         boolean addEvent(TableEvent<?> de, boolean applySynchro) throws DatabaseException {
 			if (de == null)
 				throw new NullPointerException("de");
+
 			Package p = de.getTable().getClass().getPackage();
 
 			BackupRestoreManager.AbstractTransaction backupTransaction=getBackupManagerAndStartTransactionIfNecessary(p);
@@ -3636,6 +3643,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 			if (p.equals(DatabaseWrapper.class.getPackage()))
 				return false;
+
 			if (!de.getTable().supportSynchronizationWithOtherPeers())
 				return false;
 
@@ -3742,6 +3750,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
         void addNewTemporaryEvent(final TableEvent<?> event) throws DatabaseException {
 			final TransactionPerDatabase transaction = getAndCreateIfNecessaryTemporaryTransaction(
 					event.getTable().getDatabaseConfiguration().getDatabaseSchema().getPackage());
+
 			final AtomicInteger nb = new AtomicInteger(0);
 			try {
 				if (eventsStoredIntoMemory) {

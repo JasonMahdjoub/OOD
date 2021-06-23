@@ -81,7 +81,7 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 	boolean restoreDatabaseToOldVersion(long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, boolean chooseNearestBackupIfNoBackupMatch, boolean notifyOtherPeers)
 	{
 
-		if (backupConfiguration==null && (distantPeersThatCanBeSynchronizedWithThisDatabase.size()==0 || !isSynchronizedWithCentralBackupDatabase()))
+		if (backupConfiguration==null && (this.distantPeersThatCanBeSynchronizedWithThisDatabase==null || distantPeersThatCanBeSynchronizedWithThisDatabase.size()==0 || !isSynchronizedWithCentralBackupDatabase()))
 		{
 			if (timeUTCInMsForRestoringDatabaseToOldVersion==null)
 				return false;
@@ -130,7 +130,7 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 	boolean setSynchronizationType(SynchronizationType synchronizationType) {
 		if (synchronizationType==null)
 			throw new NullPointerException();
-		if (this.distantPeersThatCanBeSynchronizedWithThisDatabase.size()>0 && synchronizationType==SynchronizationType.NO_SYNCHRONIZATION)
+		if (this.distantPeersThatCanBeSynchronizedWithThisDatabase!=null && this.distantPeersThatCanBeSynchronizedWithThisDatabase.size()>0 && synchronizationType==SynchronizationType.NO_SYNCHRONIZATION)
 			throw new IllegalArgumentException();
 		if (synchronizationType==this.synchronizationType)
 			return false;
@@ -154,11 +154,14 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 	public DatabaseConfiguration(DatabaseSchema databaseSchema, BackupConfiguration backupConfiguration) {
 		this(databaseSchema, SynchronizationType.NO_SYNCHRONIZATION, null, backupConfiguration);
 	}
+	public DatabaseConfiguration(DatabaseSchema databaseSchema, SynchronizationType synchronizationType) {
+		this(databaseSchema, synchronizationType, null);
+	}
 	public DatabaseConfiguration(DatabaseSchema databaseSchema, SynchronizationType synchronizationType, Collection<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase) {
 		this(databaseSchema, synchronizationType, distantPeersThatCanBeSynchronizedWithThisDatabase, null);
 	}
 	public DatabaseConfiguration(DatabaseSchema databaseSchema, SynchronizationType synchronizationType, Collection<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase, BackupConfiguration backupConfiguration) {
-		this(databaseSchema, SynchronizationType.NO_SYNCHRONIZATION, distantPeersThatCanBeSynchronizedWithThisDatabase, backupConfiguration, true);
+		this(databaseSchema, synchronizationType, distantPeersThatCanBeSynchronizedWithThisDatabase, backupConfiguration, true);
 	}
 
 	public DatabaseConfiguration(DatabaseSchema databaseSchema, SynchronizationType synchronizationType, Collection<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase, BackupConfiguration backupConfiguration, boolean createDatabaseIfNecessaryAndCheckItDuringLoading) {

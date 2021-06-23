@@ -58,7 +58,7 @@ public final class ConnectedClientsTable extends Table<ConnectedClientsTable.Rec
 		@NotNull
 		private DecentralizedValue clientID;
 
-		@Field
+		@Field(index = true)
 		@NotNull
 		private DecentralizedValue centralID;
 

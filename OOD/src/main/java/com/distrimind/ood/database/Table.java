@@ -1185,7 +1185,13 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 		}
 	}
-
+	void updateSupportSynchronizationWithOtherPeersStep1() throws DatabaseException {
+		DatabaseConfiguration dc=sql_connection.getDatabaseConfigurationsBuilder().getDatabaseConfiguration(this.getClass().getPackage());
+		supportSynchronizationWithOtherPeers = dc!=null && dc.isDecentralized();
+	}
+	void updateSupportSynchronizationWithOtherPeersStep2() throws DatabaseException {
+		supportSynchronizationWithOtherPeers &=isGloballyDecentralized(new HashSet<>());
+	}
 	public boolean supportSynchronizationWithOtherPeers() {
 		return supportSynchronizationWithOtherPeers;
 	}

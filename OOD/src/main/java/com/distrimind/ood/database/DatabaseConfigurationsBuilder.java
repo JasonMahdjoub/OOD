@@ -397,12 +397,14 @@ public class DatabaseConfigurationsBuilder {
 		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Set<DecentralizedValue>>() {
 			@Override
 			public Set<DecentralizedValue> run() throws Exception {
+
 				Set<DecentralizedValue> peersAdded=null;
 				Set<DecentralizedValue> peersID=configurations.getDistantPeers();
 				if (peersID!=null && peersID.size()>0)
 				{
 					for (DecentralizedValue dv : peersID)
 					{
+
 						List<DatabaseHooksTable.Record> l=wrapper.getDatabaseHooksTable().getRecords("concernsDatabaseHost=%cdh and hostID=%h", "cdh", false, "h", dv);
 						if (l.size() == 0)
 						{
@@ -410,7 +412,8 @@ public class DatabaseConfigurationsBuilder {
 							if (peersAdded==null)
 								peersAdded=new HashSet<>();
 							peersAdded.add(dv);
-							wrapper.getDatabaseHooksTable().offerNewAuthenticatedMessageDestinedToCentralDatabaseBackup(
+							if (configurations.useCentralBackupDatabase())
+								wrapper.getDatabaseHooksTable().offerNewAuthenticatedMessageDestinedToCentralDatabaseBackup(
 									new PeerToAddMessageDestinedToCentralDatabaseBackup(getConfigurations().getLocalPeer(), getConfigurations().getCentralDatabaseBackupCertificate(), dv),
 									getSecureRandom(), getSignatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup());
 						}
@@ -454,6 +457,7 @@ public class DatabaseConfigurationsBuilder {
 
 									if (sps != null && sps.contains(_record.getHostID()) &&
 											!_record.isConcernedByDatabasePackage(c.getDatabaseSchema().getPackage().getName())) {
+
 										packagesToSynchronize.add(c);
 										stopTableParsing();
 									}
@@ -589,10 +593,11 @@ public class DatabaseConfigurationsBuilder {
 								_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), peerIDToRemove), getSecureRandom(), protectedSignatureProfileProviderForAuthenticatedP2PMessages, this);
 							}
 						}, "concernsDatabaseHost=%cdh", "cdh", false);
-
-						wrapper.getDatabaseHooksTable().offerNewAuthenticatedMessageDestinedToCentralDatabaseBackup(
-								new PeerToRemoveMessageDestinedToCentralDatabaseBackup(getConfigurations().getLocalPeer(), getConfigurations().getCentralDatabaseBackupCertificate(), peerIDToRemove),
-								getSecureRandom(), getSignatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup());
+						if (configurations.useCentralBackupDatabase()) {
+							wrapper.getDatabaseHooksTable().offerNewAuthenticatedMessageDestinedToCentralDatabaseBackup(
+									new PeerToRemoveMessageDestinedToCentralDatabaseBackup(getConfigurations().getLocalPeer(), getConfigurations().getCentralDatabaseBackupCertificate(), peerIDToRemove),
+									getSecureRandom(), getSignatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup());
+						}
 						if (removeLocalNow.get())
 							wrapper.getDatabaseHooksTable().removeHook(false, peerIDToRemove);
 						else {
@@ -733,7 +738,29 @@ public class DatabaseConfigurationsBuilder {
 			final Reference<Boolean> changed=new Reference<>(false);
 			for (String p : packagesString)
 			{
-				configurations.getDatabaseConfigurations().forEach ((c) -> {if (c.getDatabaseSchema().getPackage().getName().equals(p) && c.setSynchronizationType(synchronizationType)) changed.set(true);});
+				configurations.getDatabaseConfigurations().forEach ((c) -> {
+
+					if (c.getDatabaseSchema().getPackage().getName().equals(p) && c.setSynchronizationType(synchronizationType)) {
+						changed.set(true);
+						try {
+							if (wrapper.isDatabaseLoaded(c))
+							{
+								for (Class<? extends Table<?>> clazz : c.getDatabaseSchema().getTableClasses())
+								{
+									Table<?> table=wrapper.getTableInstance(clazz);
+									table.updateSupportSynchronizationWithOtherPeersStep1();
+								}
+								for (Class<? extends Table<?>> clazz : c.getDatabaseSchema().getTableClasses())
+								{
+									Table<?> table=wrapper.getTableInstance(clazz);
+									table.updateSupportSynchronizationWithOtherPeersStep2();
+								}
+							}
+						} catch (DatabaseException e) {
+							e.printStackTrace();
+						}
+					}
+				});
 			}
 			if (changed.get()) {
 				t.updateConfigurationPersistence();
@@ -890,6 +917,8 @@ public class DatabaseConfigurationsBuilder {
 	{
 		pushQuery((t) -> {
 			wrapper.getSynchronizer().resetSynchronizerAndRemoveAllHosts();
+			configurations.removeDistantPeers(configurations.getDistantPeers());
+			configurations.setLocalPeer(null);
 			t.checkDatabaseLoading(null);
 			t.checkNewConnexions();
 			t.checkDatabaseToSynchronize();

@@ -35,47 +35,64 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.util.DecentralizedIDGenerator;
+import com.distrimind.ood.database.DatabaseWrapper;
+import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
-import com.distrimind.util.SecuredDecentralizedID;
-import com.distrimind.util.crypto.EncryptionProfileProvider;
-import com.distrimind.util.crypto.IASymmetricPublicKey;
-import com.distrimind.util.crypto.MessageDigestType;
-import com.distrimind.util.crypto.SecureRandomType;
-import com.distrimind.util.data_buffers.WrappedSecretData;
-import com.distrimind.util.io.SecureExternalizable;
 import com.distrimind.util.properties.MultiFormatProperties;
-
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.util.Arrays;
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
- * @since OOD 3.0.0
+ * @since OOD 3.1.0
  */
-public abstract class CentralDatabaseBackupCertificate extends MultiFormatProperties implements SecureExternalizable {
-	public static final int MAX_SIZE_IN_BYTES_OF_CERTIFICATE_IDENTIFIER =32;
+public abstract class CentralDatabaseBackupReceiverFactory<T extends CentralDatabaseBackupReceiver> extends MultiFormatProperties {
 
-	public static byte[] generateCertificateIdentifier()
-	{
-		try {
-			WrappedSecretData t=new SecuredDecentralizedID(MessageDigestType.SHA3_256, new DecentralizedIDGenerator(), SecureRandomType.DEFAULT.getInstance(null)).encode();
-			return Arrays.copyOfRange(t.getBytes(), 1, Math.max(t.getBytes().length-1, MAX_SIZE_IN_BYTES_OF_CERTIFICATE_IDENTIFIER));
-		} catch (NoSuchAlgorithmException | NoSuchProviderException e) {
-			throw new IllegalAccessError();
-		}
-	}
-
-	protected CentralDatabaseBackupCertificate() {
+	private DecentralizedValue centralID;
+	private transient volatile T centralDatabaseBackupReceiver=null;
+	protected CentralDatabaseBackupReceiverFactory() {
 		super(null);
 	}
 
-	public abstract IASymmetricPublicKey getCertifiedAccountPublicKey();
-	public abstract byte[] getCertificateIdentifier();
-	public abstract long getCertificateExpirationTimeUTCInMs();
+	public CentralDatabaseBackupReceiverFactory(DecentralizedValue centralID) {
+		this();
+		if (centralID==null)
+			throw new NullPointerException();
+		this.centralID = centralID;
+	}
 
-	public abstract boolean isValidCertificate(EncryptionProfileProvider encryptionProfileProvider);
+	public DecentralizedValue getCentralID() {
+		return centralID;
+	}
 
+	public void setCentralID(DecentralizedValue centralID) {
+		if (centralID==null)
+			throw new NullPointerException();
+		this.centralID = centralID;
+	}
+
+	public final T getCentralDatabaseBackupReceiverInstanceSingleton(DatabaseWrapper wrapper) throws DatabaseException {
+		if (centralDatabaseBackupReceiver==null)
+		{
+			synchronized (this)
+			{
+				if (centralDatabaseBackupReceiver==null)
+					centralDatabaseBackupReceiver=getCentralDatabaseBackupReceiverInstance(wrapper);
+			}
+		}
+		return centralDatabaseBackupReceiver;
+	}
+
+	public abstract T getCentralDatabaseBackupReceiverInstance(DatabaseWrapper wrapper) throws DatabaseException;
+
+	public boolean disconnectSingletonIfUsed() throws DatabaseException {
+		synchronized (this)
+		{
+			if (centralDatabaseBackupReceiver!=null) {
+				centralDatabaseBackupReceiver.disconnect();
+				return true;
+			}
+			else
+				return false;
+		}
+	}
 }
