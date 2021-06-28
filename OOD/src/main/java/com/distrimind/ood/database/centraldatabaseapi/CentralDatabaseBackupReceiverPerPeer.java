@@ -420,6 +420,8 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 					}
 				}
 				FileReference fileReference=getFileReference(message.getMetaData());
+				if (fileReference==null)
+					return Integrity.FAIL;
 				EncryptedBackupPartReferenceTable.Record r=new EncryptedBackupPartReferenceTable.Record(database, fileReference, message);
 				try {
 

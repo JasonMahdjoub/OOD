@@ -39,6 +39,7 @@ import com.distrimind.ood.database.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.messages.CentralDatabaseBackupCertificateChangedMessage;
 import com.distrimind.ood.database.messages.DistantBackupCenterConnexionInitialisation;
+import com.distrimind.ood.database.messages.MessageComingFromCentralDatabaseBackup;
 import com.distrimind.ood.database.messages.MessageDestinedToCentralDatabaseBackup;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.crypto.IASymmetricPublicKey;
@@ -112,6 +113,17 @@ public abstract class CentralDatabaseBackupReceiver {
 			receiversPerPeer.remove(message.getHostSource());
 		return res;
 	}
+
+	public boolean sendMessageFromThisCentralDatabaseBackup(MessageComingFromCentralDatabaseBackup message) throws DatabaseException {
+		CentralDatabaseBackupReceiverPerPeer r=receiversPerPeer.get(message.getHostDestination());
+		if (r==null)
+			return false;
+		else {
+			r.sendMessageFromThisCentralDatabaseBackup(message);
+			return true;
+		}
+	}
+
 	public boolean isConnectedIntoThisServer(DecentralizedValue peerID)
 	{
 		CentralDatabaseBackupReceiverPerPeer r=receiversPerPeer.get(peerID);
