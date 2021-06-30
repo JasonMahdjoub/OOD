@@ -43,6 +43,7 @@ import com.distrimind.util.crypto.IASymmetricPublicKey;
 import com.distrimind.util.crypto.MessageDigestType;
 import com.distrimind.util.crypto.SecureRandomType;
 import com.distrimind.util.data_buffers.WrappedSecretData;
+import com.distrimind.util.io.Integrity;
 import com.distrimind.util.io.SecureExternalizable;
 import com.distrimind.util.properties.MultiFormatProperties;
 
@@ -76,6 +77,7 @@ public abstract class CentralDatabaseBackupCertificate extends MultiFormatProper
 	public abstract byte[] getCertificateIdentifier();
 	public abstract long getCertificateExpirationTimeUTCInMs();
 
-	public abstract boolean isValidCertificate(EncryptionProfileProvider encryptionProfileProvider);
+	public abstract Integrity isValidCertificate(long accountID, IASymmetricPublicKey externalAccountID, DecentralizedValue hostID, DecentralizedValue centralID);
+
 
 }

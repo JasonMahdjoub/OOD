@@ -390,8 +390,6 @@ public abstract class CommonDecentralizedTests {
 
 		@Override
 		protected EncryptionProfileProvider getEncryptionProfileProviderToValidateCertificateOrGetNullIfNoValidProviderIsAvailable(com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupCertificate certificate) {
-			if (!isValidCertificate(certificate))
-				return null;
 			return new EncryptionProfileProvider() {
 				@Override
 				public MessageDigestType getMessageDigest(short keyID, boolean duringDecryptionPhase) throws IOException {
@@ -441,13 +439,13 @@ public abstract class CommonDecentralizedTests {
 			};
 		}
 
-
-		protected boolean isValidCertificate(com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupCertificate certificate) {
-			if (certificate instanceof CentralDatabaseBackupCertificate)
-			{
-				return ((CentralDatabaseBackupCertificate) certificate).getCentralDatabaseBackupPublicKey().equals(centralDatabaseBackupReceiver.getCentralID());
-			}
-			return false;
+		@Override
+		public Integrity isAcceptableCertificate(com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupCertificate certificate) {
+			if (!(certificate instanceof CentralDatabaseBackupCertificate))
+				return Integrity.FAIL;
+			if (!((CentralDatabaseBackupCertificate)certificate).centralDatabaseBackupPublicKey.equals(getCentralID()) || !certificate.getCertifiedAccountPublicKey().equals(getExternalAccountID()))
+				return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
+			return Integrity.OK;
 		}
 
 
@@ -455,6 +453,7 @@ public abstract class CommonDecentralizedTests {
 		public FileReference getFileReference(EncryptedDatabaseBackupMetaDataPerFile encryptedDatabaseBackupMetaDataPerFile) {
 			return new FileReferenceForTests(encryptedDatabaseBackupMetaDataPerFile.getFileTimestampUTC());
 		}
+
 
 	}
 	static class CentralDatabaseBackupCertificate extends com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupCertificate
@@ -489,19 +488,14 @@ public abstract class CommonDecentralizedTests {
 		}
 
 
-
-		public IASymmetricPublicKey getCentralDatabaseBackupPublicKey()
-		{
-			return centralDatabaseBackupPublicKey;
-		}
-
 		@Override
 		public long getCertificateExpirationTimeUTCInMs() {
 			return certificateExpirationTimeUTCInMs;
 		}
 
 		@Override
-		public boolean isValidCertificate(EncryptionProfileProvider encryptionProfileProvider) {
+		public Integrity isValidCertificate(long accountID, IASymmetricPublicKey externalAccountID, DecentralizedValue hostID, DecentralizedValue centralID) {
+
 			try {
 				ASymmetricAuthenticatedSignatureCheckerAlgorithm checker=new ASymmetricAuthenticatedSignatureCheckerAlgorithm(centralDatabaseBackupPublicKey);
 				checker.init(signature);
@@ -509,9 +503,17 @@ public abstract class CommonDecentralizedTests {
 				checker.update(wd.getBytes() );
 				checker.update(certificateIdentifier);
 				checker.update(certificateExpirationTimeUTCInMsArray);
-				return checker.verify();
-			} catch (NoSuchProviderException | NoSuchAlgorithmException | IOException e) {
-				return false;
+				if (checker.verify())
+					return Integrity.OK;
+				else
+					return Integrity.FAIL;
+			}
+			catch (MessageExternalizationException e)
+			{
+				return e.getIntegrity();
+			}
+			catch (NoSuchProviderException | NoSuchAlgorithmException | IOException e) {
+				return Integrity.FAIL;
 			}
 		}
 
