@@ -81,6 +81,8 @@ public class OOD {
 									.addItem("Fix null pointer exceptions")
 									.addItem("Fix class cast exceptions")
 									.addItem("Add function CentralDatabaseBackupReceiver.sendMessageFromThisCentralDatabaseBackup(MessageComingFromCentralDatabaseBackup)")
+									.addItem("Add function BackupRestoreManager.hasNonFinalFiles()")
+									.addItem("Add function DatabaseWrapper.getNextPossibleEventTimeUTC()")
 					)
 					.addDescription(
 							new Description((short)3, (short)0, (short)0, Version.Type.STABLE, (short)0, "2021-05-24")
