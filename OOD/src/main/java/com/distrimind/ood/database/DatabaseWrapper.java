@@ -2244,8 +2244,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						initializedHooksWithCentralBackup)) {
 					addNewDatabaseEvent(i);
 				}
-				for (AuthenticatedMessageDestinedToCentralDatabaseBackup i : lr.getAuthenticatedMessagesQueueDestinedToCentralDatabaseBackup()) {
-					addNewDatabaseEvent(i);
+				LinkedList<AuthenticatedMessageDestinedToCentralDatabaseBackup> l=lr.getAuthenticatedMessagesQueueDestinedToCentralDatabaseBackup();
+				if (l!=null) {
+					for (AuthenticatedMessageDestinedToCentralDatabaseBackup i : l) {
+						addNewDatabaseEvent(i);
+					}
 				}
 			}
 		}
