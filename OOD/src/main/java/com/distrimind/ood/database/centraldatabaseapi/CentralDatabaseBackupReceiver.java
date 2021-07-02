@@ -189,7 +189,8 @@ public abstract class CentralDatabaseBackupReceiver {
 	}
 	public void peerDisconnected(DecentralizedValue clientID) throws DatabaseException {
 		CentralDatabaseBackupReceiverPerPeer cpp=receiversPerPeer.remove(clientID);
-		cpp.disconnect();
+		if (cpp!=null)
+			cpp.disconnect();
 	}
 
 	public void cleanObsoleteData() throws DatabaseException {
