@@ -114,6 +114,7 @@ public abstract class CentralDatabaseBackupReceiver {
 		return res;
 	}
 
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	public boolean sendMessageFromThisCentralDatabaseBackup(MessageComingFromCentralDatabaseBackup message) throws DatabaseException {
 		CentralDatabaseBackupReceiverPerPeer r=receiversPerPeer.get(message.getHostDestination());
 		if (r==null)
@@ -261,6 +262,11 @@ public abstract class CentralDatabaseBackupReceiver {
 	}
 	public boolean removeAccount(long accountID) throws DatabaseException {
 		return removeAccount("accountID", accountID);
+	}
+	public ClientCloudAccountTable.Record addClient(short maxClients, IASymmetricPublicKey externalAccountID) throws DatabaseException {
+		ClientCloudAccountTable.Record r=new ClientCloudAccountTable.Record(maxClients, externalAccountID);
+		clientCloudAccountTable.addRecord(r);
+		return r;
 	}
 	private boolean removeAccount(Object ... keys) throws DatabaseException {
 		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {

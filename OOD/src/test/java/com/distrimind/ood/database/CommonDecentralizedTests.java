@@ -648,8 +648,7 @@ public abstract class CommonDecentralizedTests {
 
 		public CentralDatabaseBackupReceiver(DatabaseWrapper wrapper, DecentralizedValue centralID) throws DatabaseException {
 			super(wrapper, centralID);
-			ClientCloudAccountTable.Record r=new ClientCloudAccountTable.Record((short)10, CommonDecentralizedTests.this.peerKeyPairUsedWithCentralDatabaseBackupCertificate.getASymmetricPublicKey());
-			clientCloudAccountTable.addRecord(r);
+			addClient((short)10, CommonDecentralizedTests.this.peerKeyPairUsedWithCentralDatabaseBackupCertificate.getASymmetricPublicKey());
 		}
 
 		@Override
