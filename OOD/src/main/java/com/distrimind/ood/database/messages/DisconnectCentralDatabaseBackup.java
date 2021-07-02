@@ -39,7 +39,7 @@ public class DisconnectCentralDatabaseBackup extends DatabaseEvent implements Me
 
 	@Override
 	public int getInternalSerializedSize() {
-		return SerializationTools.getInternalSize((SecureExternalizable)hostSource);
+		return SerializationTools.getInternalSize(hostSource);
 	}
 
 	@Override

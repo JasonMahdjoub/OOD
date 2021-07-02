@@ -94,8 +94,8 @@ public class AskForMetaDataPerFileToCentralDatabaseBackup extends DatabaseEvent 
 
 	@Override
 	public int getInternalSerializedSize() {
-		return 9+SerializationTools.getInternalSize((SecureExternalizable)hostSource)+
-				SerializationTools.getInternalSize((SecureExternalizable) channelHost)+
+		return 9+SerializationTools.getInternalSize(hostSource)+
+				SerializationTools.getInternalSize(channelHost)+
 				SerializationTools.getInternalSize(packageString, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
 	}
 

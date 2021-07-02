@@ -122,6 +122,8 @@ public abstract class CommonDecentralizedTests {
 		DistantDatabaseEvent(DatabaseWrapper wrapper, DatabaseEventToSend eventToSend) throws DatabaseException {
 			try {
 				try (RandomByteArrayOutputStream baos = new RandomByteArrayOutputStream()) {
+					if (eventToSend instanceof SecureExternalizable)
+						((SecureExternalizable) eventToSend).getInternalSerializedSize();
 					baos.writeObject(eventToSend, false);
 
 					baos.flush();
@@ -350,6 +352,7 @@ public abstract class CommonDecentralizedTests {
 
 		@Override
 		protected void sendMessageFromThisCentralDatabaseBackup(MessageComingFromCentralDatabaseBackup message) throws DatabaseException {
+			message.getInternalSerializedSize();
 			try(RandomByteArrayOutputStream out=new RandomByteArrayOutputStream())
 			{
 				out.writeObject(message, false);
