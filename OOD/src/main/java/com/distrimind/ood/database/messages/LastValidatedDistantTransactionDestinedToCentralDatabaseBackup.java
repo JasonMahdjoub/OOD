@@ -93,8 +93,8 @@ public class LastValidatedDistantTransactionDestinedToCentralDatabaseBackup exte
 
 	@Override
 	public int getInternalSerializedSize() {
-		return SerializationTools.getInternalSize((SecureExternalizable)hostSource)
-				+SerializationTools.getInternalSize((SecureExternalizable)channelHost)
+		return SerializationTools.getInternalSize(hostSource)
+				+SerializationTools.getInternalSize(channelHost)
 				+SerializationTools.getInternalSize(encryptedLastValidatedDistantID, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
 	}
 

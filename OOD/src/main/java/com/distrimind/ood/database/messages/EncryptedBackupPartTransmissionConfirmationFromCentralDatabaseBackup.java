@@ -90,7 +90,7 @@ public class EncryptedBackupPartTransmissionConfirmationFromCentralDatabaseBacku
 
 	@Override
 	public int getInternalSerializedSize() {
-		return 16+ SerializationTools.getInternalSize((SecureExternalizable)hostDestination)+SerializationTools.getInternalSize(packageString, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
+		return 16+ SerializationTools.getInternalSize(hostDestination)+SerializationTools.getInternalSize(packageString, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
 	}
 
 	@Override

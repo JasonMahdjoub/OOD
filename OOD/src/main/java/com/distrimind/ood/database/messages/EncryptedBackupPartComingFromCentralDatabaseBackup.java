@@ -69,7 +69,7 @@ public class EncryptedBackupPartComingFromCentralDatabaseBackup extends Abstract
 
 	@Override
 	public int getInternalSerializedSize() {
-		return super.getInternalSerializedSize()+ SerializationTools.getInternalSize((SecureExternalizable)hostDestination)+1;
+		return super.getInternalSerializedSize()+ SerializationTools.getInternalSize(hostDestination)+1;
 	}
 
 	@Override

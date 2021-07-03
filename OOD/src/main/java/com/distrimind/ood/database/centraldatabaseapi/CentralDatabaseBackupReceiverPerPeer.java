@@ -42,6 +42,7 @@ import com.distrimind.ood.database.messages.*;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.Reference;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
+import com.distrimind.util.crypto.IASymmetricPublicKey;
 import com.distrimind.util.io.Integrity;
 import com.distrimind.util.io.MessageExternalizationException;
 
@@ -115,6 +116,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 		return centralDatabaseBackupReceiver.revokedCertificateTable.hasRecordsWithAllFields("certificateID", id);
 	}
 	protected abstract EncryptionProfileProvider getEncryptionProfileProviderToValidateCertificateOrGetNullIfNoValidProviderIsAvailable(CentralDatabaseBackupCertificate certificate);
+	public abstract Integrity isAcceptableCertificate(CentralDatabaseBackupCertificate certificate) ;
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	private boolean checkMessageSignature(AuthenticatedMessageDestinedToCentralDatabaseBackup message) throws DatabaseException {
 		if (message==null)
@@ -126,10 +128,12 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 			return false;
 		if (certificate.getCertificateExpirationTimeUTCInMs()<System.currentTimeMillis())
 			return false;
+		if (isAcceptableCertificate(certificate)!=Integrity.OK)
+			return false;
 		EncryptionProfileProvider encryptionProfileProvider=getEncryptionProfileProviderToValidateCertificateOrGetNullIfNoValidProviderIsAvailable(certificate);
 		if (encryptionProfileProvider==null)
 			return false;
-		if (certificate.isValidCertificate(encryptionProfileProvider) && (message==null || message.checkHashAndPublicSignature(encryptionProfileProvider)==Integrity.OK)) {
+		if (certificate.isValidCertificate(getAccountID(), getExternalAccountID(), connectedClientID==null?(message==null?null:message.getHostSource()):connectedClientID, getCentralID())==Integrity.OK && (message==null || message.checkHashAndPublicSignature(encryptionProfileProvider)==Integrity.OK)) {
 			if (isRevokedCertificate(certificate))
 			{
 				sendMessageFromThisCentralDatabaseBackup(new CentralDatabaseBackupCertificateChangedMessage(connectedClientID));
@@ -399,6 +403,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 		});
 	}
 	public abstract FileReference getFileReference(EncryptedDatabaseBackupMetaDataPerFile encryptedDatabaseBackupMetaDataPerFile);
+
 	private Integrity received(EncryptedBackupPartDestinedToCentralDatabaseBackup message) throws DatabaseException{
 		return centralDatabaseBackupReceiver.encryptedBackupPartReferenceTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
 			@Override
@@ -420,6 +425,8 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 					}
 				}
 				FileReference fileReference=getFileReference(message.getMetaData());
+				if (fileReference==null)
+					return Integrity.FAIL;
 				EncryptedBackupPartReferenceTable.Record r=new EncryptedBackupPartReferenceTable.Record(database, fileReference, message);
 				try {
 
@@ -828,7 +835,27 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 		return Integrity.OK;
 	}
 
+	public long getAccountID()
+	{
+		return clientCloud.getAccountID();
+	}
 
+	public IASymmetricPublicKey getExternalAccountID()
+	{
+		return clientCloud.getExternalAccountID();
+	}
+	public DecentralizedValue getCentralID()
+	{
+		return centralDatabaseBackupReceiver.getCentralID();
+	}
 
+	public CentralDatabaseBackupReceiver getCentralDatabaseBackupReceiver()
+	{
+		return centralDatabaseBackupReceiver;
+	}
+	public DecentralizedValue getHostID()
+	{
+		return this.connectedClientID;
+	}
 
 }

@@ -89,6 +89,7 @@ public abstract class CentralDatabaseBackupReceiverFactory<T extends CentralData
 		{
 			if (centralDatabaseBackupReceiver!=null) {
 				centralDatabaseBackupReceiver.disconnect();
+				centralDatabaseBackupReceiver=null;
 				return true;
 			}
 			else

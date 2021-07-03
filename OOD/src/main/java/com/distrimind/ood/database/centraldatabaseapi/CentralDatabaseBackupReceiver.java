@@ -39,6 +39,7 @@ import com.distrimind.ood.database.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.messages.CentralDatabaseBackupCertificateChangedMessage;
 import com.distrimind.ood.database.messages.DistantBackupCenterConnexionInitialisation;
+import com.distrimind.ood.database.messages.MessageComingFromCentralDatabaseBackup;
 import com.distrimind.ood.database.messages.MessageDestinedToCentralDatabaseBackup;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.crypto.IASymmetricPublicKey;
@@ -112,6 +113,18 @@ public abstract class CentralDatabaseBackupReceiver {
 			receiversPerPeer.remove(message.getHostSource());
 		return res;
 	}
+
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
+	public boolean sendMessageFromThisCentralDatabaseBackup(MessageComingFromCentralDatabaseBackup message) throws DatabaseException {
+		CentralDatabaseBackupReceiverPerPeer r=receiversPerPeer.get(message.getHostDestination());
+		if (r==null)
+			return false;
+		else {
+			r.sendMessageFromThisCentralDatabaseBackup(message);
+			return true;
+		}
+	}
+
 	public boolean isConnectedIntoThisServer(DecentralizedValue peerID)
 	{
 		CentralDatabaseBackupReceiverPerPeer r=receiversPerPeer.get(peerID);
@@ -177,7 +190,8 @@ public abstract class CentralDatabaseBackupReceiver {
 	}
 	public void peerDisconnected(DecentralizedValue clientID) throws DatabaseException {
 		CentralDatabaseBackupReceiverPerPeer cpp=receiversPerPeer.remove(clientID);
-		cpp.disconnect();
+		if (cpp!=null)
+			cpp.disconnect();
 	}
 
 	public void cleanObsoleteData() throws DatabaseException {
@@ -248,6 +262,11 @@ public abstract class CentralDatabaseBackupReceiver {
 	}
 	public boolean removeAccount(long accountID) throws DatabaseException {
 		return removeAccount("accountID", accountID);
+	}
+	public ClientCloudAccountTable.Record addClient(short maxClients, IASymmetricPublicKey externalAccountID) throws DatabaseException {
+		ClientCloudAccountTable.Record r=new ClientCloudAccountTable.Record(maxClients, externalAccountID);
+		clientCloudAccountTable.addRecord(r);
+		return r;
 	}
 	private boolean removeAccount(Object ... keys) throws DatabaseException {
 		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {

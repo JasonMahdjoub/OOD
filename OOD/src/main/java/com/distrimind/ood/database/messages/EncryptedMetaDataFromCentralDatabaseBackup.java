@@ -86,7 +86,9 @@ public class EncryptedMetaDataFromCentralDatabaseBackup extends DatabaseEvent im
 
 	@Override
 	public int getInternalSerializedSize() {
-		return SerializationTools.getInternalSize((SecureExternalizable)hostSource)+SerializationTools.getInternalSize((SecureExternalizable)hostDestination)+SerializationTools.getInternalSize(metaData);
+		return SerializationTools.getInternalSize(hostSource)
+				+SerializationTools.getInternalSize(hostDestination)
+				+SerializationTools.getInternalSize(metaData);
 	}
 
 	@Override

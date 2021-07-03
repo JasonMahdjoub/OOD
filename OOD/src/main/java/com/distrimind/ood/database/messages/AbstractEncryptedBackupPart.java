@@ -95,7 +95,7 @@ public abstract class AbstractEncryptedBackupPart extends DatabaseEvent implemen
 
 	@Override
 	public int getInternalSerializedSize() {
-		return SerializationTools.getInternalSize(metaData)+SerializationTools.getInternalSize((SecureExternalizable)hostSource);
+		return SerializationTools.getInternalSize(metaData)+SerializationTools.getInternalSize(hostSource);
 	}
 
 	@Override

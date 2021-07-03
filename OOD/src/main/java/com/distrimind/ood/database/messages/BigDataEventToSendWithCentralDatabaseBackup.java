@@ -30,13 +30,14 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database.messages;
 
 import com.distrimind.util.io.RandomInputStream;
+import com.distrimind.util.io.SecureExternalizable;
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.0.0
  */
-public interface BigDataEventToSendWithCentralDatabaseBackup extends DatabaseEventToSend{
+public interface BigDataEventToSendWithCentralDatabaseBackup extends DatabaseEventToSend, SecureExternalizable {
 	RandomInputStream getPartInputStream();
 	void setPartInputStream(RandomInputStream ris);
 

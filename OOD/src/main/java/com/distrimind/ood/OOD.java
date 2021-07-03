@@ -66,7 +66,7 @@ public class OOD {
 					.addDeveloper(new PersonDeveloper("mahdjoub", "jason", "2013-04-01"))
 					.addDescription(
 							new Description((short)3, (short)1, (short)0, Version.Type.STABLE, (short)0, "2021-05-25")
-									.addItem("Update Utils to 5.18.2")
+									.addItem("Update Utils to 5.18.3")
 									.addItem("Make OOD compatible with MadKitLanEdition")
 									.addItem("Fix NullPointerException into DatabaseConfiguration class")
 									.addItem("Add function void DatabaseFactory.setEncryptionProfileProviders(EncryptionProfileProviderFactory, SecureRandomType randomType, byte[], byte[])")
@@ -78,7 +78,11 @@ public class OOD {
 									.addItem("Fix issue when removing peer whereas OOD does not use CentralDatabaseBackup")
 									.addItem("Fix issue with function DatabaseConfigurationBuilder.resetSynchronizerAndRemoveAllHosts() : distant peers and local host id were not removed")
 									.addItem("Add class CentralDatabaseBackupReceiverFactory")
-
+									.addItem("Fix null pointer exceptions")
+									.addItem("Fix class cast exceptions")
+									.addItem("Add function CentralDatabaseBackupReceiver.sendMessageFromThisCentralDatabaseBackup(MessageComingFromCentralDatabaseBackup)")
+									.addItem("Add function BackupRestoreManager.hasNonFinalFiles()")
+									.addItem("Add function DatabaseWrapper.getNextPossibleEventTimeUTC()")
 					)
 					.addDescription(
 							new Description((short)3, (short)0, (short)0, Version.Type.STABLE, (short)0, "2021-05-24")

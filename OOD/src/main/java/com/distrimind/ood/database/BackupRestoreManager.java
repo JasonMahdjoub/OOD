@@ -265,7 +265,7 @@ public class BackupRestoreManager {
 				return Long.MIN_VALUE;
 			else {
 				long res=fileTimeStamps.get(fileTimeStamps.size() - 1);
-				if (!returnsOnlyValidatedFiles || isPartFull(res, getFile(res)))
+				if (!returnsOnlyValidatedFiles || isPartFull(res))
 					return res;
 
 				if (fileTimeStamps.size()==1)
@@ -286,7 +286,7 @@ public class BackupRestoreManager {
 
 			if (s > 0) {
 				long ts = fileTimeStamps.get(s - 1);
-				if (!isPartFull(ts, getFile(ts, isReferenceFile(ts))))
+				if (!isPartFull(ts))
 					--s;
 			}
 			for (int i = 0; i < s; i++) {
@@ -307,7 +307,7 @@ public class BackupRestoreManager {
 
 			if (s > 0) {
 				long ts = fileTimeStamps.get(s - 1);
-				if (!isPartFull(ts, getFile(ts, isReferenceFile(ts))))
+				if (!isPartFull(ts))
 					--s;
 			}
 			for (int i = 0; i < s; i++) {
@@ -336,7 +336,7 @@ public class BackupRestoreManager {
 			if (s > 0) {
 				long ts = fileTimeStamps.get(s - 1);
 
-				if (!isPartFull(ts, getFile(ts, isReferenceFile(ts))))
+				if (!isPartFull(ts))
 					--s;
 			}
 			for (int i = 0; i < s; i++) {
@@ -346,6 +346,10 @@ public class BackupRestoreManager {
 			}
 			return res;
 		}
+	}
+	public boolean hasNonFinalFiles()
+	{
+		return fileTimeStamps.size()>0 && !isPartFull(fileTimeStamps.get(fileTimeStamps.size()-1));
 	}
 	public List<File> getFinalFiles()
 	{
@@ -359,15 +363,20 @@ public class BackupRestoreManager {
 		}
 	}
 
+	private boolean isPartFull(long timeStamp)
+	{
+		return isPartFull(timeStamp, null);
 
+	}
 	private boolean isPartFull(long timeStamp, File file)
 	{
 		if (timeStamp==lastCurrentRestorationFileUsed)
 			return true;
-		if (file.length()>=backupConfiguration.getMaxBackupFileSizeInBytes())
+		if (timeStamp < System.currentTimeMillis() - backupConfiguration.getMaxBackupFileAgeInMs())
 			return true;
-
-		return /*getTransactionID(file)!=Long.MIN_VALUE && */timeStamp < System.currentTimeMillis() - backupConfiguration.getMaxBackupFileAgeInMs();
+		if (file==null)
+			file=getFile(timeStamp, isReferenceFile(timeStamp));
+		return file.length()>=backupConfiguration.getMaxBackupFileSizeInBytes();
 	}
 
 	private File initNewFileForBackupIncrement(long dateUTC) throws DatabaseException {
@@ -1964,7 +1973,7 @@ public class BackupRestoreManager {
 						throw new DatabaseException("Impossible to delete file : " + computeDatabaseReference);
 					closed = true;
 				}
-				if (fileTimeStamp != oldLastFile && isPartFull(fileTimeStamp, getFile(fileTimeStamp)))
+				if (fileTimeStamp != oldLastFile && isPartFull(fileTimeStamp))
 					databaseWrapper.getSynchronizer().checkForNewBackupFilePartToSendToCentralDatabaseBackup(dbPackage);
 			}
 			finally {

@@ -144,11 +144,11 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 
 	@Override
 	public int getInternalSerializedSize() {
-		int res=SerializationTools.getInternalSize((SecureExternalizable)hostDestination)+4+this.lastValidatedTransactionsUTCForDestinationHost.size()*8
+		int res=SerializationTools.getInternalSize(hostDestination)+4+this.lastValidatedTransactionsUTCForDestinationHost.size()*8
 				+SerializationTools.getInternalSize(encryptedAuthenticatedP2PMessages, IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup.SIZE_IN_BYTES_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND);
 		for (Map.Entry<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> e : lastValidatedAndEncryptedIDsPerHost.entrySet())
 		{
-			res+=SerializationTools.getInternalSize((SecureExternalizable)e.getKey())+
+			res+=SerializationTools.getInternalSize(e.getKey())+
 					SerializationTools.getInternalSize(e.getValue().getLastValidatedLocalID(), EncryptionTools.MAX_ENCRYPTED_ID_SIZE)+
 					SerializationTools.getInternalSize(encryptedCompatibleDatabases.get(e.getKey()), AbstractCompatibleEncryptedDatabaseMessage.MAX_SIZE_OF_ENCRYPTED_PACKAGES_NAMES_IN_BYTES);
 			for (Map.Entry<String, byte[]> e2 : e.getValue().getLastValidatedDistantIDPerDatabase().entrySet()) {

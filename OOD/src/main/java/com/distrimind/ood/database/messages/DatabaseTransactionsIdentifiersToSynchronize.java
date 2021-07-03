@@ -61,7 +61,7 @@ public class DatabaseTransactionsIdentifiersToSynchronize extends AbstractDataba
 	public int getInternalSerializedSize() {
 		int res=super.getInternalSerializedSize()+ SerializationTools.getInternalSize(hostIDDestination, 0)+4+lastTransactionFieldsBetweenDistantHosts.size()*8;
 		for (DecentralizedValue dv: lastTransactionFieldsBetweenDistantHosts.keySet())
-			res+=SerializationTools.getInternalSize((SecureExternalizable)dv);
+			res+=SerializationTools.getInternalSize(dv);
 		return res;
 	}
 

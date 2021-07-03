@@ -108,8 +108,8 @@ public class BackupChannelUpdateMessageFromCentralDatabaseBackup extends Databas
 
 	@Override
 	public int getInternalSerializedSize() {
-		return SerializationTools.getInternalSize((SecureExternalizable)hostDestination)
-				+SerializationTools.getInternalSize((SecureExternalizable)hostChannel)
+		return SerializationTools.getInternalSize(hostDestination)
+				+SerializationTools.getInternalSize(hostChannel)
 				+SerializationTools.getInternalSize(lastValidatedAndEncryptedLocalID, EncryptionTools.MAX_ENCRYPTED_ID_SIZE)
 				+SerializationTools.getInternalSize(lastValidatedAndEncryptedDistantID, EncryptionTools.MAX_ENCRYPTED_ID_SIZE)
 				+SerializationTools.getInternalSize(databasePackage, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
