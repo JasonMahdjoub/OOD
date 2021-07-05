@@ -371,6 +371,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 				if (r.getAccount().getAccountID()==connectedClientRecord.getAccount().getAccountID())
 				{
 					if (centralDatabaseBackupReceiver.isConnectedIntoOneOfCentralDatabaseBackupServers(message.getHostDestination())) {
+
 						sendMessage(message);
 					}
 					else {
