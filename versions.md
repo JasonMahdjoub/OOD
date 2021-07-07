@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-3.1.0 STABLE (Build: 4376) (from 01/04/2013 to 25/05/2021)
+3.1.0 BETA 1 (Build: 4490) (from 01/04/2013 to 07/07/2021)
 
 # Creator(s):
 Jason MAHDJOUB
@@ -11,8 +11,8 @@ Jason MAHDJOUB (Entered in the team at 01/04/2013)
 # Modifications:
 
 
-### 3.1.0 STABLE (25/05/2021)
-* Update Utils to 5.18.3
+### 3.1.0 BETA 1 (07/07/2021)
+* Update Utils to 5.18.5
 * Make OOD compatible with MadKitLanEdition
 * Fix NullPointerException into DatabaseConfiguration class
 * Add function void DatabaseFactory.setEncryptionProfileProviders(EncryptionProfileProviderFactory, SecureRandomType randomType, byte[], byte[])
