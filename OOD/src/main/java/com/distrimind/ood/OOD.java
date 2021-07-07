@@ -65,7 +65,7 @@ public class OOD {
 			VERSION.addCreator(new Person("mahdjoub", "jason"))
 					.addDeveloper(new PersonDeveloper("mahdjoub", "jason", "2013-04-01"))
 					.addDescription(
-							new Description((short)3, (short)1, (short)0, Version.Type.BETA, (short)1, "2021-05-25")
+							new Description((short)3, (short)1, (short)0, Version.Type.BETA, (short)1, "2021-07-07")
 									.addItem("Update Utils to 5.18.4")
 									.addItem("Make OOD compatible with MadKitLanEdition")
 									.addItem("Fix NullPointerException into DatabaseConfiguration class")

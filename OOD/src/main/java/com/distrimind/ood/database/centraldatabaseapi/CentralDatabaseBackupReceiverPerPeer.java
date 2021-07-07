@@ -518,8 +518,9 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 		try {
 			DecentralizedValue hostID = message.getHostToRemove();
 			ClientTable.Record r = getClientRecord(hostID);
-			if (r==null)
+			if (r==null) {
 				return Integrity.OK;
+			}
 			if (r.getToRemoveOrderTimeUTCInMs()==null)
 				centralDatabaseBackupReceiver.clientTable.updateRecord(r, "toRemoveOrderTimeUTCInMs", System.currentTimeMillis());
 			return Integrity.OK;
