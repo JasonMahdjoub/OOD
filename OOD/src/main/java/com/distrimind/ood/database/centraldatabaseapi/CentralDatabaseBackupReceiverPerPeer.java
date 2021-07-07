@@ -725,6 +725,8 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 	private ClientTable.Record getClientRecord(DecentralizedValue clientID) throws DatabaseException, MessageExternalizationException {
 		if (clientID==null)
 			throw new NullPointerException();
+		if (connectedClientRecord!=null && clientID.equals(connectedClientID))
+			return connectedClientRecord;
 		ClientTable.Record r= centralDatabaseBackupReceiver.clientTable.getRecord("clientID", clientID);
 		if (r==null)
 			return null;
@@ -733,6 +735,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 		return r;
 
 	}
+
 
 	private DatabaseBackupPerClientTable.Record getDatabaseBackupPerClientRecord(ClientTable.Record client, String packageString) throws DatabaseException {
 		if (packageString==null)
