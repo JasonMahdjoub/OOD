@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-3.1.0 BETA 1 (Build: 4490) (from 01/04/2013 to 07/07/2021)
+3.1.0 BETA 2 (Build: 4505) (from 01/04/2013 to 07/07/2021)
 
 # Creator(s):
 Jason MAHDJOUB
@@ -9,6 +9,10 @@ Jason MAHDJOUB
 Jason MAHDJOUB (Entered in the team at 01/04/2013)
 
 # Modifications:
+
+
+### 3.1.0 BETA 2 (07/07/2021)
+* Remove concatenated sql queries
 
 
 ### 3.1.0 BETA 1 (07/07/2021)
