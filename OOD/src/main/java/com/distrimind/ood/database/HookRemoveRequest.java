@@ -119,9 +119,9 @@ public class HookRemoveRequest extends DatabaseEvent implements AuthenticatedP2P
 
 	@Override
 	public int getInternalSerializedSizeWithoutSignatures() {
-		return 8+ SerializationTools.getInternalSize((SecureExternalizable)hostSource)
-				+SerializationTools.getInternalSize((SecureExternalizable)hostDestination)
-				+SerializationTools.getInternalSize((SecureExternalizable)removedHookID);
+		return 8+ SerializationTools.getInternalSize(hostSource)
+				+SerializationTools.getInternalSize(hostDestination)
+				+SerializationTools.getInternalSize(removedHookID);
 	}
 
 

@@ -513,16 +513,16 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 	}
 
 	void setCreateDatabasesIfNecessaryAndCheckIt(boolean createDatabasesIfNecessaryAndCheckIt) {
-		for (DatabaseConfiguration dc : configurations)
+		for (DatabaseConfiguration dc : allConfigurations)
 			dc.setCreateDatabaseIfNecessaryAndCheckItDuringCurrentSession(createDatabasesIfNecessaryAndCheckIt);
 	}
 	public boolean isDecentralized()
 	{
-		return localPeer!=null || configurations.stream().anyMatch(DatabaseConfiguration::isDecentralized);
+		return localPeer!=null || allConfigurations.stream().anyMatch(DatabaseConfiguration::isDecentralized);
 	}
 	public boolean useCentralBackupDatabase()
 	{
-		return configurations.stream().anyMatch(DatabaseConfiguration::isSynchronizedWithCentralBackupDatabase);
+		return allConfigurations.stream().anyMatch(DatabaseConfiguration::isSynchronizedWithCentralBackupDatabase);
 	}
 
 

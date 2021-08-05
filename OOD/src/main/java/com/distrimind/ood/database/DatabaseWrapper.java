@@ -4612,8 +4612,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			boolean insert=false;
 			long res;
 			try(PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
-					.prepareStatement("SELECT AI FROM " + DatabaseWrapper.AUTOINCREMENT_TABLE + " WHERE TABLE_ID='"
-							+ tableID + "' AND TABLE_VERSION='"+databaseVersion+"'"+ getSqlComma())) {
+					.prepareStatement("SELECT AI FROM " + DatabaseWrapper.AUTOINCREMENT_TABLE + " WHERE TABLE_ID=? AND TABLE_VERSION=?"+ getSqlComma())) {
+				pst.setInt(1, tableID);
+				pst.setInt(2, databaseVersion);
 				ResultSet rs = pst.executeQuery();
 
 				if (rs.next()) {
@@ -4625,16 +4626,20 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 			if (insert) {
 				try (PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
-						.prepareStatement("INSERT INTO " + DatabaseWrapper.AUTOINCREMENT_TABLE + " (TABLE_ID, TABLE_VERSION, AI) VALUES('"
-								+ tableID+"', '" +databaseVersion+"', '"+ (res + 1) + "')" + getSqlComma())) {
+						.prepareStatement("INSERT INTO " + DatabaseWrapper.AUTOINCREMENT_TABLE + " (TABLE_ID, TABLE_VERSION, AI) VALUES(?, ?, ?)" + getSqlComma())) {
+					pst.setInt(1, tableID);
+					pst.setInt(2, databaseVersion);
+					pst.setLong(3, res+1);
 					pst.executeUpdate();
 				}
 			}
 			else
 			{
 				try (PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
-						.prepareStatement("UPDATE " + DatabaseWrapper.AUTOINCREMENT_TABLE + " SET AI='"+(res+1)+"' WHERE TABLE_ID='"
-								+ tableID + "' AND TABLE_VERSION='"+databaseVersion+"'" + getSqlComma())) {
+						.prepareStatement("UPDATE " + DatabaseWrapper.AUTOINCREMENT_TABLE + " SET AI=? WHERE TABLE_ID=? AND TABLE_VERSION=?" + getSqlComma())) {
+					pst.setLong(1, res+1);
+					pst.setInt(2, tableID);
+					pst.setInt(3, databaseVersion);
 					pst.executeUpdate();
 				}
 			}
@@ -5285,20 +5290,23 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							if (!doesTableExists(DatabaseWrapper.VERSIONS_OF_DATABASE))
 								return -1;
 							PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
-									.prepareStatement("SELECT CURRENT_DATABASE_VERSION FROM " + DatabaseWrapper.VERSIONS_OF_DATABASE + " WHERE PACKAGE_NAME='"
-											+ getLongPackageName(p) + "'" + getSqlComma());
+									.prepareStatement("SELECT CURRENT_DATABASE_VERSION FROM " + DatabaseWrapper.VERSIONS_OF_DATABASE + " WHERE PACKAGE_NAME=?" + getSqlComma());
+							pst.setString(1, getLongPackageName(p));
 							ResultSet rs = pst.executeQuery();
 							int res=defaultValue==-1?0:defaultValue;
 							if (rs.next())
 								res=rs.getInt(1);
 							else
 							{
-								Statement st = getConnectionAssociatedWithCurrentThread().getConnection()
-										.createStatement();
-								st.executeUpdate("INSERT INTO " + DatabaseWrapper.VERSIONS_OF_DATABASE + " (PACKAGE_NAME, CURRENT_DATABASE_VERSION) VALUES('"
-										+ getLongPackageName(p) + "', " + res + ")" + getSqlComma());
+								PreparedStatement st = getConnectionAssociatedWithCurrentThread().getConnection()
+										.prepareStatement("INSERT INTO " + DatabaseWrapper.VERSIONS_OF_DATABASE + " (PACKAGE_NAME, CURRENT_DATABASE_VERSION) VALUES("
+										+  "?, ?)" + getSqlComma());
+								st.setString(1, getLongPackageName(p));
+								st.setInt(2, res);
+								st.executeUpdate();
 								st.close();
 							}
+							pst.close();
 							if (fdb!=null)
 								fdb.setCurrentVersion(res);
 							return res;
@@ -5339,10 +5347,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 					try {
 						assert oldDatabaseVersion != newDatabaseVersion;
-						int r = getConnectionAssociatedWithCurrentThread().getConnection().createStatement()
-								.executeUpdate("UPDATE " + VERSIONS_OF_DATABASE + " SET CURRENT_DATABASE_VERSION=" + newDatabaseVersion
-										+ " WHERE PACKAGE_NAME='" + getLongPackageName(configuration.getDatabaseSchema().getPackage()) + "'" + getSqlComma());
-						if (r != 1)
+						 PreparedStatement pst= getConnectionAssociatedWithCurrentThread().getConnection().prepareStatement("UPDATE " + VERSIONS_OF_DATABASE + " SET CURRENT_DATABASE_VERSION=?"
+										+ " WHERE PACKAGE_NAME=?" + getSqlComma());
+						 pst.setInt(1, newDatabaseVersion);
+						 pst.setString(2, getLongPackageName(configuration.getDatabaseSchema().getPackage()));
+						 int r=pst.executeUpdate();
+						 pst.close();
+
+						 if (r != 1)
 							throw new DatabaseException("no record found (r="+r+")");
 						Database db = sql_database.get(configuration.getDatabaseSchema().getPackage());
 						if (oldDatabaseVersion >= 0) {
@@ -5397,12 +5409,15 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 					try {
 						PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
-								.prepareStatement("SELECT count(TABLE_VERSION) FROM " + ROW_PROPERTIES_OF_TABLES + " WHERE PACKAGE_NAME='" + getLongPackageName(p) + "' AND TABLE_VERSION="+databaseVersion+getSqlComma());
+								.prepareStatement("SELECT count(TABLE_VERSION) FROM " + ROW_PROPERTIES_OF_TABLES + " WHERE PACKAGE_NAME=? AND TABLE_VERSION=?"+getSqlComma());
+						pst.setString(1, getLongPackageName(p));
+						pst.setInt(2, databaseVersion);
 						ResultSet rs = pst.executeQuery();
 
 						if (!rs.next())
 							return false;
 						int r=rs.getInt(1);
+						pst.close();
 						assert r<2;
 						return r==1;
 					}
@@ -5440,7 +5455,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		try {
 			PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
-					.prepareStatement("SELECT TABLE_ID FROM " + ROW_PROPERTIES_OF_TABLES +" WHERE TABLE_NAME='" + longTableName + "' AND TABLE_VERSION="+databaseVersion+getSqlComma());
+					.prepareStatement("SELECT TABLE_ID FROM " + ROW_PROPERTIES_OF_TABLES +" WHERE TABLE_NAME=? AND TABLE_VERSION=?"+getSqlComma());
+			pst.setString(1, longTableName);
+			pst.setInt(2, databaseVersion);
 			ResultSet rs = pst.executeQuery();
 			Integer res=null;
 			if (rs.next())
@@ -5452,25 +5469,33 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 
 			if (supportSingleAutoPrimaryKeys()) {
-				Statement st = getConnectionAssociatedWithCurrentThread().getConnection()
-						.createStatement();
-				st.executeUpdate("INSERT INTO " + DatabaseWrapper.ROW_PROPERTIES_OF_TABLES + "(TABLE_NAME, TABLE_VERSION, PACKAGE_NAME) VALUES('"
-						+ longTableName + "', " + databaseVersion + ", '" + getLongPackageName(tTableClass.getPackage()) + "')" + getSqlComma());
+				PreparedStatement st = getConnectionAssociatedWithCurrentThread().getConnection()
+						.prepareStatement("INSERT INTO " + DatabaseWrapper.ROW_PROPERTIES_OF_TABLES + "(TABLE_NAME, TABLE_VERSION, PACKAGE_NAME) VALUES(?, ?, ?)" + getSqlComma());
+				st.setString(1, longTableName);
+				st.setInt(2, databaseVersion);
+				st.setString(3, getLongPackageName(tTableClass.getPackage()));
+				st.executeUpdate();
 				st.close();
 			}
 			else
 			{
 				long id=getNextAutoIncrement(-1, databaseVersion, 1L);
-				Statement st = getConnectionAssociatedWithCurrentThread().getConnection()
-						.createStatement();
-				st.executeUpdate("INSERT INTO " + DatabaseWrapper.ROW_PROPERTIES_OF_TABLES + "(TABLE_ID, TABLE_NAME, TABLE_VERSION, PACKAGE_NAME) VALUES("
-						+id+", '"+ longTableName +"', "+databaseVersion+", '"+getLongPackageName(tTableClass.getPackage())+ "')" + getSqlComma());
+				PreparedStatement st = getConnectionAssociatedWithCurrentThread().getConnection()
+						.prepareStatement("INSERT INTO " + DatabaseWrapper.ROW_PROPERTIES_OF_TABLES + "(TABLE_ID, TABLE_NAME, TABLE_VERSION, PACKAGE_NAME) VALUES("
+						+"?, ?, ?, ?)" + getSqlComma());
+				st.setLong(1, id);
+				st.setString(2, longTableName);
+				st.setInt(3, databaseVersion);
+				st.setString(4, getLongPackageName(tTableClass.getPackage()));
+				st.executeUpdate();
+
 				st.close();
 			}
 
 			pst = getConnectionAssociatedWithCurrentThread().getConnection()
-					.prepareStatement("SELECT TABLE_ID FROM " + ROW_PROPERTIES_OF_TABLES +" WHERE TABLE_NAME='" + longTableName + "' AND TABLE_VERSION="+databaseVersion+getSqlComma());
-
+					.prepareStatement("SELECT TABLE_ID FROM " + ROW_PROPERTIES_OF_TABLES +" WHERE TABLE_NAME=? AND TABLE_VERSION=?"+getSqlComma());
+			pst.setString(1, longTableName);
+			pst.setInt(2, databaseVersion);
 			rs = pst.executeQuery();
 			rs.next();
 			res=rs.getInt(1);
@@ -5810,7 +5835,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						}
 						Statement st = getConnectionAssociatedWithCurrentThread().getConnection()
 								.createStatement();
-						st.executeUpdate("CREATE TABLE " + ROW_PROPERTIES_OF_TABLES
+						st.execute("CREATE TABLE " + ROW_PROPERTIES_OF_TABLES
 								+ " (TABLE_NAME VARCHAR(512), TABLE_VERSION INTEGER, PACKAGE_NAME VARCHAR(512), TABLE_ID INTEGER "+getAutoIncrementPart(ROW_PROPERTIES_OF_TABLES,"PACKAGE_NAME", 1)
 								//+", CONSTRAINT TABLE_NAME_PK PRIMARY KEY(TABLE_NAME)"
 								+", CONSTRAINT ROW_PROPERTIES_OF_TABLES_PK_CONSTRAINT PRIMARY KEY(TABLE_ID, TABLE_VERSION))"+getPostCreateTable(1L)
@@ -5828,11 +5853,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						st.close();
 						if (version==-1)
 							version=0;
-						st = getConnectionAssociatedWithCurrentThread().getConnection()
-								.createStatement();
-						st.executeUpdate("INSERT INTO " + DatabaseWrapper.VERSIONS_OF_DATABASE + " (PACKAGE_NAME, CURRENT_DATABASE_VERSION) VALUES('"
-								+ getLongPackageName(configuration.getDatabaseSchema().getPackage()) + "', " + version + ")" + getSqlComma());
-						st.close();
+						PreparedStatement pst = getConnectionAssociatedWithCurrentThread().getConnection()
+								.prepareStatement("INSERT INTO " + DatabaseWrapper.VERSIONS_OF_DATABASE + " (PACKAGE_NAME, CURRENT_DATABASE_VERSION) VALUES(?, ?)" + getSqlComma());
+						pst.setString(1, getLongPackageName(configuration.getDatabaseSchema().getPackage()));
+						pst.setInt(2, version);
+						pst.executeUpdate();
+						pst.close();
 					}
 					else {
 						int v = getCurrentDatabaseVersion(configuration.getDatabaseSchema().getPackage(), false, version);

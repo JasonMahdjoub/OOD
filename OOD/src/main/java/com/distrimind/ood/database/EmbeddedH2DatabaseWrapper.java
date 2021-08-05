@@ -316,8 +316,8 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 		String f = path.getAbsolutePath();
 		if (!f.toLowerCase().endsWith(".zip"))
 			f+=".zip";
-
-		final String querry = "BACKUP TO '" + f+"'";
+		final String file=f;
+		final String querry = "BACKUP TO ?";
 		this.runTransaction(new Transaction() {
 
 			@Override
@@ -332,6 +332,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 					lockWrite();
 					Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
 					try (PreparedStatement preparedStatement = sql_connection.prepareStatement(querry)) {
+						preparedStatement.setString(1, file);
 						preparedStatement.execute();
 					}
 					return null;

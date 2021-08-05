@@ -91,7 +91,12 @@ public class DatabaseConfigurationsBuilder {
 		private Set<DecentralizedValue> removedPeersID=null;
 		private Set<DatabaseConfiguration> configurationsToDefinitivelyDelete;
 		private Set<DatabaseConfiguration> configurationsToLoad;
+		private final boolean usedCentralBackupDatabase;
 
+		Transaction(DatabaseConfigurationsBuilder builder)
+		{
+			usedCentralBackupDatabase=builder.configurations.useCentralBackupDatabase();
+		}
 		void updateConfigurationPersistence() {
 			updateConfigurationPersistence = true;
 		}
@@ -195,7 +200,7 @@ public class DatabaseConfigurationsBuilder {
 	private void pushQuery(ConfigurationQuery query) {
 		synchronized (this) {
 			if (currentTransaction==null)
-				currentTransaction=new Transaction();
+				currentTransaction=new Transaction(this);
 			if (commitInProgress)
 				throw new IllegalAccessError();
 			currentTransaction.queries.add(query);
@@ -593,7 +598,7 @@ public class DatabaseConfigurationsBuilder {
 								_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), peerIDToRemove), getSecureRandom(), protectedSignatureProfileProviderForAuthenticatedP2PMessages, this);
 							}
 						}, "concernsDatabaseHost=%cdh", "cdh", false);
-						if (configurations.useCentralBackupDatabase()) {
+						if (configurations.useCentralBackupDatabase() || (currentTransaction.usedCentralBackupDatabase && wrapper.getSynchronizer()!=null && wrapper.getSynchronizer().isInitializedWithCentralBackup())) {
 							wrapper.getDatabaseHooksTable().offerNewAuthenticatedMessageDestinedToCentralDatabaseBackup(
 									new PeerToRemoveMessageDestinedToCentralDatabaseBackup(getConfigurations().getLocalPeer(), getConfigurations().getCentralDatabaseBackupCertificate(), peerIDToRemove),
 									getSecureRandom(), getSignatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup());
@@ -932,7 +937,7 @@ public class DatabaseConfigurationsBuilder {
 			if (centralDatabaseBackupCertificate==null && configurations.getDatabaseConfigurations().stream().anyMatch(DatabaseConfiguration::isSynchronizedWithCentralBackupDatabase))
 				throw new NullPointerException("You cannot set a null certificate when using a least one database configuration that is synchronized with central database backup");
 			configurations.setCentralDatabaseBackupCertificate(centralDatabaseBackupCertificate);
-			if (wrapper.getSynchronizer().getLocalHostID()!=null)
+			if (wrapper.getSynchronizer().isInitialized())
 				wrapper.getSynchronizer().disconnectAllHooksFromThereBackups();
 			currentTransaction.checkInitCentralDatabaseBackup();
 

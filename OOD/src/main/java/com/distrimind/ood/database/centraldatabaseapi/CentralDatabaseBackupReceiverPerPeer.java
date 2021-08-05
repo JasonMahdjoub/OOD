@@ -371,6 +371,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 				if (r.getAccount().getAccountID()==connectedClientRecord.getAccount().getAccountID())
 				{
 					if (centralDatabaseBackupReceiver.isConnectedIntoOneOfCentralDatabaseBackupServers(message.getHostDestination())) {
+
 						sendMessage(message);
 					}
 					else {
@@ -517,8 +518,9 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 		try {
 			DecentralizedValue hostID = message.getHostToRemove();
 			ClientTable.Record r = getClientRecord(hostID);
-			if (r==null)
+			if (r==null) {
 				return Integrity.OK;
+			}
 			if (r.getToRemoveOrderTimeUTCInMs()==null)
 				centralDatabaseBackupReceiver.clientTable.updateRecord(r, "toRemoveOrderTimeUTCInMs", System.currentTimeMillis());
 			return Integrity.OK;
@@ -724,6 +726,8 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 	private ClientTable.Record getClientRecord(DecentralizedValue clientID) throws DatabaseException, MessageExternalizationException {
 		if (clientID==null)
 			throw new NullPointerException();
+		if (connectedClientRecord!=null && clientID.equals(connectedClientID))
+			return connectedClientRecord;
 		ClientTable.Record r= centralDatabaseBackupReceiver.clientTable.getRecord("clientID", clientID);
 		if (r==null)
 			return null;
@@ -732,6 +736,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 		return r;
 
 	}
+
 
 	private DatabaseBackupPerClientTable.Record getDatabaseBackupPerClientRecord(ClientTable.Record client, String packageString) throws DatabaseException {
 		if (packageString==null)

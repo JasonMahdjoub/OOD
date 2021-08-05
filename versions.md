@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-3.1.0 STABLE (Build: 4036) (from 01/04/2013 to 25/05/2021)
+3.1.0 BETA 2 (Build: 4505) (from 01/04/2013 to 07/07/2021)
 
 # Creator(s):
 Jason MAHDJOUB
@@ -11,9 +11,28 @@ Jason MAHDJOUB (Entered in the team at 01/04/2013)
 # Modifications:
 
 
-### 3.1.0 STABLE (25/05/2021)
-* Update Utils to 5.18.2
+### 3.1.0 BETA 2 (07/07/2021)
+* Remove concatenated sql queries
+
+
+### 3.1.0 BETA 1 (07/07/2021)
+* Update Utils to 5.18.5
 * Make OOD compatible with MadKitLanEdition
+* Fix NullPointerException into DatabaseConfiguration class
+* Add function void DatabaseFactory.setEncryptionProfileProviders(EncryptionProfileProviderFactory, SecureRandomType randomType, byte[], byte[])
+* Add function void DatabaseFactory.setEncryptionProfileProviders(EncryptionProfileProviderFactory, SecureRandomType randomType)
+* Fix bad using of central database backup when it is not used
+* Fix issue with notification of local host initialization
+* Fix issue : update internal table state when database becomes decentralized
+* Fix issue with DatabaseConfigurationsBuilder
+* Fix issue when removing peer whereas OOD does not use CentralDatabaseBackup
+* Fix issue with function DatabaseConfigurationBuilder.resetSynchronizerAndRemoveAllHosts() : distant peers and local host id were not removed
+* Add class CentralDatabaseBackupReceiverFactory
+* Fix null pointer exceptions
+* Fix class cast exceptions
+* Add function CentralDatabaseBackupReceiver.sendMessageFromThisCentralDatabaseBackup(MessageComingFromCentralDatabaseBackup)
+* Add function BackupRestoreManager.hasNonFinalFiles()
+* Add function DatabaseWrapper.getNextPossibleEventTimeUTC()
 
 
 ### 3.0.0 STABLE (24/05/2021)

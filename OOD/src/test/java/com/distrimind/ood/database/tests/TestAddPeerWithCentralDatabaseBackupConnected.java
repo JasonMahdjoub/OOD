@@ -122,6 +122,6 @@ public abstract class TestAddPeerWithCentralDatabaseBackupConnected extends Comm
 		Thread.sleep(1200);
 		centralDatabaseBackupReceiver.cleanObsoleteData();
 
-		Assert.assertFalse(t.hasRecordsWithAllFields("clientID", hostID4));
+		Assert.assertFalse(t.hasRecordsWithAllFields("clientID", hostID4), ""+t.getRecord("clientID", hostID4));
 	}
 }
