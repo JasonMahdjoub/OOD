@@ -15,17 +15,24 @@ public class InMemoryEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH
 
 	private String databaseName=null;
 
-	public InMemoryEmbeddedH2DatabaseFactory() {
-
+	public InMemoryEmbeddedH2DatabaseFactory() throws DatabaseException {
+		super();
 	}
-
-	public InMemoryEmbeddedH2DatabaseFactory(String databaseName) {
+	public InMemoryEmbeddedH2DatabaseFactory(String databaseName) throws DatabaseException {
+		this(null, databaseName);
+	}
+	public InMemoryEmbeddedH2DatabaseFactory(DatabaseConfigurations databaseConfigurations, String databaseName) throws DatabaseException {
+		super(databaseConfigurations);
 		this.databaseName = databaseName;
 	}
 
 	@Override
-	protected EmbeddedH2DatabaseWrapper newWrapperInstance() throws DatabaseException {
-		return new EmbeddedH2DatabaseWrapper(true, databaseName);
+	protected EmbeddedH2DatabaseWrapper newWrapperInstance(DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
+		return new EmbeddedH2DatabaseWrapper(databaseName, true, databaseConfigurations, databaseLifeCycles,
+				signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup==null?null:signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
+				encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup==null?null:encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
+				protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages==null?null:protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
+				getSecureRandom(), createDatabasesIfNecessaryAndCheckIt);
 	}
 
 	public static long getSerialVersionUID() {
@@ -38,6 +45,11 @@ public class InMemoryEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH
 
 	public void setDatabaseName(String databaseName) {
 		this.databaseName = databaseName;
+	}
+
+	@Override
+	public void deleteDatabase()  {
+		throw new UnsupportedOperationException();
 	}
 }
 

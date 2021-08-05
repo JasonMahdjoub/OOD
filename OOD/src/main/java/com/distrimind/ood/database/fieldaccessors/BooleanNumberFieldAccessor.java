@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -64,10 +64,10 @@ public class BooleanNumberFieldAccessor extends FieldAccessor {
 	protected final SqlField[] sql_fields;
 
 	protected BooleanNumberFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection,
-			Field _field, String parentFieldName) throws DatabaseException {
-		super(_sql_connection, _field, parentFieldName, compatible_classes, table);
+			Field _field, String parentFieldName, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
+		super(_sql_connection, _field, parentFieldName, compatible_classes, table, severalPrimaryKeysPresentIntoTable);
 		sql_fields = new SqlField[1];
-		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(), "BOOLEAN", null, null, isNotNull());
+		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(), "BOOLEAN", isNotNull());
 	}
 
 	@Override
@@ -81,11 +81,10 @@ public class BooleanNumberFieldAccessor extends FieldAccessor {
 							+ field.getDeclaringClass().getName() + ", is null and should not be.");
 				field.set(_class_instance, null);
 			}
-			if (_field_instance instanceof Boolean)
+			else if (_field_instance instanceof Boolean)
 				field.set(_class_instance, _field_instance);
 			else {
-				assert _field_instance != null;
-				throw new FieldDatabaseException("The given _field_instance parameter, destinated to the field "
+				throw new FieldDatabaseException("The given _field_instance parameter, destined to the field "
 						+ field.getName() + " of the class " + field.getDeclaringClass().getName()
 						+ ", should be a Boolean and not a " + _field_instance.getClass().getName());
 			}
@@ -109,21 +108,6 @@ public class BooleanNumberFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	@Override
-	public boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			Boolean val1 = null;
-			if (_field_instance instanceof Boolean)
-				val1 = (Boolean) _field_instance;
-			Boolean val2 = (Boolean) _result_set.getObject(_sft.translateField(sql_fields[0]));
-
-			return (val1 == null || val2 == null) ? val1 == val2 : val1.equals(val2);
-		} catch (SQLException e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}
-
 	private static final Class<?>[] compatible_classes = { boolean.class, Boolean.class };
 
 	@Override
@@ -141,9 +125,9 @@ public class BooleanNumberFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
+	public SqlFieldInstance[] getSqlFieldsInstances(String sqlTableName, Object _instance) throws DatabaseException {
 		SqlFieldInstance[] res = new SqlFieldInstance[1];
-		res[0] = new SqlFieldInstance(sql_fields[0], getValue(_instance));
+		res[0] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[0], getValue(_instance));
 		return res;
 	}
 
@@ -162,11 +146,23 @@ public class BooleanNumberFieldAccessor extends FieldAccessor {
 		throw new DatabaseException("Unexpected exception");
 	}
 
+	private Boolean getBoolean(String sqlTableName, ResultSet _result_set) throws SQLException {
+		int colIndex= getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0]));
+		Object o=_result_set.getObject(colIndex);
+
+		if (o==null)
+			return null;
+		else if (o instanceof Boolean)
+			return (Boolean)o;
+		else
+			return _result_set.getBoolean(colIndex);
+	}
+
 	@Override
-	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
+	public void setValue(String sqlTableName, Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
-			field.set(_class_instance, _result_set.getObject(getColmunIndex(_result_set, sql_fields[0].field)));
+			field.set(_class_instance, getBoolean(sqlTableName, _result_set));
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -193,27 +189,6 @@ public class BooleanNumberFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	@Override
-	public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set)
-			throws DatabaseException {
-		setValue(_class_instance, _field_instance);
-		try {
-			_result_set.updateObject(sql_fields[0].short_field, field.get(_class_instance));
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-
-	}
-
-	@Override
-	protected void updateResultSetValue(Object _class_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			_result_set.updateObject(_sft.translateField(sql_fields[0]), field.get(_class_instance));
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}
 
 	@Override
 	public boolean canBePrimaryOrUniqueKey() {
@@ -263,7 +238,7 @@ public class BooleanNumberFieldAccessor extends FieldAccessor {
 			} else if (isNotNull())
 				throw new DatabaseException("field should not be null");
 			else {
-				setValue(_classInstance, (Object) null);
+				setValue(_classInstance,null);
 				return null;
 			}
 		} catch (Exception e) {

@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -38,7 +38,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database;
 
 /**
- * The database record class is a generic abstract class destinated to represent
+ * The database record class is a generic abstract class destined to represent
  * a database record with each of its fields. The user must inherit this class
  * to declare a type of record. He must declare it into the correspondent
  * table/class as a public class. Moreover, he must name the child class

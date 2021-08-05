@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -58,6 +58,7 @@ import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.io.RandomInputStream;
 import com.distrimind.util.io.RandomOutputStream;
 
+
 /**
  * 
  * @author Jason Mahdjoub
@@ -68,11 +69,11 @@ public class LongNumberFieldAccessor extends FieldAccessor {
 	protected final SqlField[] sql_fields;
 
 	protected LongNumberFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection,
-			Field _field, String parentFieldName) throws DatabaseException {
-		super(_sql_connection, _field, parentFieldName, compatible_classes, table);
+			Field _field, String parentFieldName, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
+		super(_sql_connection, _field, parentFieldName, compatible_classes, table, severalPrimaryKeysPresentIntoTable);
 		sql_fields = new SqlField[1];
-		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(),
-				Objects.requireNonNull(DatabaseWrapperAccessor.getLongType(sql_connection)), null, null, isNotNull());
+		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(),
+				Objects.requireNonNull(DatabaseWrapperAccessor.getLongType(sql_connection)), isNotNull());
 	}
 
 	@Override
@@ -84,7 +85,7 @@ public class LongNumberFieldAccessor extends FieldAccessor {
 						+ field.getDeclaringClass().getName() + ") into the DatabaseField class "
 						+ field.getDeclaringClass().getName() + ", is null and should not be.");
 		} else if (!(_field_instance instanceof Long))
-			throw new FieldDatabaseException("The given _field_instance parameter, destinated to the field "
+			throw new FieldDatabaseException("The given _field_instance parameter, destined to the field "
 					+ field.getName() + " of the class " + field.getDeclaringClass().getName()
 					+ ", should be an Long and not a " + _field_instance.getClass().getName());
 		try {
@@ -111,22 +112,6 @@ public class LongNumberFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	@Override
-	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			Long val1 = null;
-			if (_field_instance instanceof Long)
-				val1 = (Long) _field_instance;
-			Long val2 = (Long) _result_set.getObject(_sft.translateField(sql_fields[0]));
-
-			//noinspection NumberEquality
-			return (val1 == null || val2 == null) ? val1 == val2 : val1.equals(val2);
-		} catch (SQLException e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}
-
 	private static final Class<?>[] compatible_classes = { long.class, Long.class };
 
 	@Override
@@ -144,9 +129,9 @@ public class LongNumberFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
+	public SqlFieldInstance[] getSqlFieldsInstances(String sqlTableName, Object _instance) throws DatabaseException {
 		SqlFieldInstance[] res = new SqlFieldInstance[1];
-		res[0] = new SqlFieldInstance(sql_fields[0], getValue(_instance));
+		res[0] = new SqlFieldInstance(supportQuotes,sqlTableName,  sql_fields[0], getValue(_instance));
 		return res;
 	}
 
@@ -180,11 +165,23 @@ public class LongNumberFieldAccessor extends FieldAccessor {
 		}
 	}
 
+	private Long getLong(String sqlTableName, ResultSet _result_set) throws SQLException {
+		int colIndex= getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0]));
+		Object res = _result_set.getObject(colIndex);
+		if (res==null)
+			return null;
+		else if (res instanceof Long)
+			return (Long)res;
+		else {
+			return _result_set.getLong(colIndex);
+		}
+	}
+
 	@Override
-	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
+	public void setValue(String sqlTableName, Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
-			Object res = _result_set.getObject(getColmunIndex(_result_set, sql_fields[0].field));
+			Object res = getLong(sqlTableName, _result_set);
 			if (res == null && isNotNull())
 				throw new DatabaseIntegrityException("Unexpected exception");
 			field.set(_class_instance, res);
@@ -209,28 +206,6 @@ public class LongNumberFieldAccessor extends FieldAccessor {
 	public void getValue(PreparedStatement _prepared_statement, int _field_start, Object o) throws DatabaseException {
 		try {
 			_prepared_statement.setObject(_field_start, o);
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}
-
-	@Override
-	public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set)
-			throws DatabaseException {
-		setValue(_class_instance, _field_instance);
-		try {
-			_result_set.updateObject(sql_fields[0].short_field, field.get(_class_instance));
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-
-	}
-
-	@Override
-	protected void updateResultSetValue(Object _class_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			_result_set.updateObject(_sft.translateField(sql_fields[0]), field.get(_class_instance));
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -308,7 +283,7 @@ public class LongNumberFieldAccessor extends FieldAccessor {
 			} else if (isNotNull())
 				throw new DatabaseException("field should not be null");
 			else {
-				setValue(_classInstance, (Object) null);
+				setValue(_classInstance, null);
 				return null;
 			}
 		} catch (Exception e) {

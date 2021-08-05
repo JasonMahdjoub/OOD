@@ -5,7 +5,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -64,8 +64,8 @@ public class ComposedFieldAccessor extends FieldAccessor {
 	private final SqlField[] sqlFields;
 
 	protected ComposedFieldAccessor(DatabaseWrapper _sql_connection, Table<?> table,
-			Field _field, String parentFieldName, List<Class<?>> parentFields) throws DatabaseException {
-		super(_sql_connection, _field, parentFieldName, new Class<?>[] { _field.getType() }, table);
+			Field _field, String parentFieldName, List<Class<?>> parentFields, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
+		super(_sql_connection, _field, parentFieldName, new Class<?>[] { _field.getType() }, table, severalPrimaryKeysPresentIntoTable);
 		try {
 			defaultConstructor = _field.getType().getDeclaredConstructor();
 			if (!Modifier.isPublic(defaultConstructor.getModifiers())) {
@@ -95,7 +95,7 @@ public class ComposedFieldAccessor extends FieldAccessor {
 			return true;
 
 		for (SqlField sf : getDeclaredSqlFields())
-			if (sf.not_null)
+			if (sf.notNull)
 				return true;
 		return false;
 	}
@@ -118,7 +118,7 @@ public class ComposedFieldAccessor extends FieldAccessor {
 			else if (field.getType().isAssignableFrom(_field_instance.getClass()))
 				field.set(_class_instance, _field_instance);
 			else
-				throw new FieldDatabaseException("The given _field_instance parameter, destinated to the field "
+				throw new FieldDatabaseException("The given _field_instance parameter, destined to the field "
 						+ field.getName() + " of the class " + field.getDeclaringClass().getName()
 						+ ", should be an instance of " + field.getType().getCanonicalName() + " and not a "
 						+ _field_instance.getClass().getName());
@@ -129,42 +129,15 @@ public class ComposedFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
+	public void setValue(String sqlTableName, Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
 			Object instance = defaultConstructor.newInstance();
 
 			for (FieldAccessor fa : fieldsAccessor) {
-				fa.setValue(instance, _result_set, _pointing_records);
+				fa.setValue(sqlTableName, instance, _result_set, _pointing_records);
 			}
 			field.set(_class_instance, instance);
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-
-	}
-
-	@Override
-	public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set)
-			throws DatabaseException {
-		try {
-			setValue(_class_instance, _field_instance);
-			for (FieldAccessor fa : fieldsAccessor) {
-				fa.updateValue(_field_instance, fa.field.get(_field_instance), _result_set);
-			}
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}
-
-	@Override
-	protected void updateResultSetValue(Object _class_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			Object fi = field.get(_class_instance);
-			for (FieldAccessor fa : fieldsAccessor) {
-				fa.updateResultSetValue(fi, _result_set, _sft);
-			}
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -193,21 +166,6 @@ public class ComposedFieldAccessor extends FieldAccessor {
 				return false;
 		} catch (Exception e) {
 			throw new DatabaseException("", e);
-		}
-	}
-
-	@Override
-	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-
-			for (FieldAccessor fa : fieldsAccessor) {
-				if (!fa.equals(fa.field.get(_field_instance), _result_set, _sft))
-					return false;
-			}
-			return true;
-		} catch (IllegalArgumentException | IllegalAccessException e) {
-			throw DatabaseException.getDatabaseException(e);
 		}
 	}
 
@@ -251,12 +209,12 @@ public class ComposedFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
+	public SqlFieldInstance[] getSqlFieldsInstances(String sqlTableName, Object _instance) throws DatabaseException {
 		try {
 			SqlFieldInstance[] res = new SqlFieldInstance[getDeclaredSqlFields().length];
 			int index = 0;
 			for (FieldAccessor fa : fieldsAccessor) {
-				SqlFieldInstance[] r = fa.getSqlFieldsInstances(fa.field.get(_instance));
+				SqlFieldInstance[] r = fa.getSqlFieldsInstances(sqlFieldName, fa.field.get(_instance));
 				for (SqlFieldInstance sfi : r)
 					res[index++] = sfi;
 			}
@@ -339,7 +297,7 @@ public class ComposedFieldAccessor extends FieldAccessor {
 			} else if (isNotNull())
 				throw new DatabaseException("field should not be null");
 			else {
-				setValue(_classInstance, (Object) null);
+				setValue(_classInstance, null);
 				return null;
 			}
 

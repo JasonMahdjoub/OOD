@@ -37,7 +37,19 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database.fieldaccessors;
 
-import java.io.ByteArrayInputStream;
+import com.distrimind.ood.database.*;
+import com.distrimind.ood.database.annotations.*;
+import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.AbstractDecentralizedID;
+import com.distrimind.util.DecentralizedIDGenerator;
+import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.RenforcedDecentralizedIDGenerator;
+import com.distrimind.util.crypto.ASymmetricPublicKey;
+import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.io.RandomInputStream;
+import com.distrimind.util.io.RandomOutputStream;
+import com.distrimind.util.io.SerializationTools;
+
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -45,41 +57,14 @@ import java.math.BigInteger;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
-import java.sql.Blob;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.sql.Types;
+import java.sql.*;
+import java.util.Date;
 import java.util.*;
-
-import com.distrimind.ood.database.DatabaseRecord;
-import com.distrimind.ood.database.DatabaseWrapper;
-import com.distrimind.ood.database.SqlField;
-import com.distrimind.ood.database.SqlFieldInstance;
-import com.distrimind.ood.database.Table;
-import com.distrimind.ood.database.annotations.AutoPrimaryKey;
-import com.distrimind.ood.database.annotations.ForeignKey;
-import com.distrimind.ood.database.annotations.LoadToMemory;
-import com.distrimind.ood.database.annotations.NotNull;
-import com.distrimind.ood.database.annotations.PrimaryKey;
-import com.distrimind.ood.database.annotations.RandomPrimaryKey;
-import com.distrimind.ood.database.annotations.Unique;
-import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.util.AbstractDecentralizedID;
-import com.distrimind.util.DecentralizedIDGenerator;
-import com.distrimind.util.DecentralizedValue;
-import com.distrimind.util.RenforcedDecentralizedIDGenerator;
-import com.distrimind.util.crypto.*;
-import com.distrimind.util.io.RandomInputStream;
-import com.distrimind.util.io.RandomOutputStream;
-import com.distrimind.util.io.SecureExternalizable;
 
 /**
  * 
  * @author Jason Mahdjoub
- * @version 2.0
+ * @version 3.0
  * @since OOD 1.0
  */
 public abstract class FieldAccessor {
@@ -94,7 +79,7 @@ public abstract class FieldAccessor {
 	protected final boolean foreign_key;
 	protected final boolean unique;
 	protected final boolean not_null;
-	protected final long limit;
+	protected long limit;
 	protected final long start_value;
 	protected final int bits_number;
 	protected final boolean hasToCreateIndex;
@@ -103,12 +88,30 @@ public abstract class FieldAccessor {
 	private final String indexName;
 	private final Class<? extends Table<?>> table_class;
 	private final boolean cacheDisabled;
+	protected final boolean useBlob;
+	private final boolean manual_auto_primary_key;
+	protected final boolean supportQuotes;
+
+	private static final Class<?> databaseEventsRecordTableClass;
+
+	static
+	{
+		Class<?> c=null;
+		try {
+			c=Class.forName("com.distrimind.ood.database.DatabaseEventsTable$AbstractRecord");
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		databaseEventsRecordTableClass=c;
+	}
 
 	@SuppressWarnings("unchecked")
 	protected FieldAccessor(DatabaseWrapper _sql_connection, Field _field, String parentFieldName,
-							Class<?>[] compatible_classes, Table<?> table) throws DatabaseException {
+							Class<?>[] compatible_classes, Table<?> table, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
 		if (compatible_classes == null)
 			throw new NullPointerException("compatible_classes");
+		this.supportQuotes=DatabaseWrapperAccessor.supportsItalicQuotesWithTableAndFieldNames(_sql_connection);
 		this.compatible_classes = compatible_classes;
 		sql_connection = _sql_connection;
 		field = _field;
@@ -130,17 +133,20 @@ public abstract class FieldAccessor {
 		table_name = table_class == null ? (DatabaseRecord.class.isAssignableFrom(field.getDeclaringClass())
 				? (_sql_connection.getInternalTableName(Table.getTableClass((Class<? extends DatabaseRecord>) field.getDeclaringClass()), table==null?-1:table.getDatabaseVersion()))
 				: null) : _sql_connection.getInternalTableName(table_class, table.getDatabaseVersion());
+		assert table != null;
+		useBlob= _field.isAnnotationPresent(com.distrimind.ood.database.annotations.Field.class) && _field.getAnnotation(com.distrimind.ood.database.annotations.Field.class).forceUsingBlobOrClob();
 		auto_primary_key = _field.isAnnotationPresent(AutoPrimaryKey.class);
 		random_primary_key = field.isAnnotationPresent(RandomPrimaryKey.class);
+
+		manual_auto_primary_key = auto_primary_key && (!DatabaseWrapperAccessor.supportSingleAutoPrimaryKeys(table.getDatabaseWrapper()) || (severalPrimaryKeysPresentIntoTable && !DatabaseWrapperAccessor.supportMultipleAutoPrimaryKeys(table.getDatabaseWrapper())));
 		if (auto_primary_key && random_primary_key)
 			throw new DatabaseException(
 					"The field " + field.getName() + " of the DatabaseRecord " + field.getDeclaringClass().getName()
 							+ " cannot be an auto primary key and a random primary key at the same time.");
-		if (auto_primary_key && !isTypeCompatible(byte.class) && !isTypeCompatible(short.class)
-				&& !isTypeCompatible(int.class) && !isTypeCompatible(long.class))
+		if (auto_primary_key && !canAutoGenerateValues())
 			throw new DatabaseException(
 					"The field " + field.getName() + " of the DatabaseRecord " + field.getDeclaringClass().getName()
-							+ ", which is an auto primary key, must be a byte, a short, an int, or a long.");
+							+ ", which is an auto primary key, must be a byte, a short, an int, a long, or a decentralized value.");
 		primary_key = field.isAnnotationPresent(PrimaryKey.class) || auto_primary_key || random_primary_key;
 		foreign_key = field.isAnnotationPresent(ForeignKey.class);
 		if (foreign_key && (auto_primary_key || random_primary_key))
@@ -167,13 +173,20 @@ public abstract class FieldAccessor {
 					"The field " + field.getName() + " of the class " + field.getDeclaringClass().getName()
 							+ " of type " + field.getType().getName() + " can't be a unique key.");
 
+		if ((field.getName().equals("concernedSerializedPrimaryKey") || field.getName().equals("concernedSerializedNewForeignKey")) && databaseEventsRecordTableClass.isAssignableFrom(field.getDeclaringClass()))
+			limit=DatabaseWrapperAccessor.getMaxKeySize(sql_connection);
+		else if (field.isAnnotationPresent(com.distrimind.ood.database.annotations.Field.class))
+			limit = _field.getAnnotation(com.distrimind.ood.database.annotations.Field.class).limit();
+		else
+			limit=-1;
+
 		if (auto_primary_key) {
 			start_value = _field.getAnnotation(AutoPrimaryKey.class).startValue();
 			bits_number = -1;
-			limit = -1;
+
 		} else if (random_primary_key) {
 			start_value = -1;
-			int nb = _field.getAnnotation(RandomPrimaryKey.class).bitsNumber();
+			int nb = _field.isAnnotationPresent(RandomPrimaryKey.class)?_field.getAnnotation(RandomPrimaryKey.class).bitsNumber():-1;
 			if (nb == -1) {
 				nb = getDefaultBitsNumberForAutoGeneratedValues();
 			}
@@ -184,14 +197,11 @@ public abstract class FieldAccessor {
 						+ " is a random primary key whose type enables at maximum "
 						+ getMaximumBitsNumberForAutoGeneratedValues()
 						+ " random bits and at minimum 1 random bit. Currently, the number of bits is " + bits_number);
-			limit = -1;
+
 		} else if (primary_key) {
 			start_value = -1;
 			bits_number = -1;
-			if (field.isAnnotationPresent(com.distrimind.ood.database.annotations.Field.class))
-				limit = _field.getAnnotation(com.distrimind.ood.database.annotations.Field.class).limit();
-			else
-				limit=0;
+
 		} else if (foreign_key) {
 			start_value = -1;
 			bits_number = -1;
@@ -199,7 +209,6 @@ public abstract class FieldAccessor {
 		} else {
 			start_value = -1;
 			bits_number = -1;
-			limit = _field.getAnnotation(com.distrimind.ood.database.annotations.Field.class).limit();
 		}
 		if (field.isAnnotationPresent(com.distrimind.ood.database.annotations.Field.class)
 				&& field.getAnnotation(com.distrimind.ood.database.annotations.Field.class).index() && !primary_key
@@ -217,25 +226,20 @@ public abstract class FieldAccessor {
 				&& field.getAnnotation(com.distrimind.ood.database.annotations.Field.class).disableCache());
 	}
 
+	public boolean isManualAutoPrimaryKey() {
+		return manual_auto_primary_key;
+	}
+
 	public void changeInternalTableName(String oldInternalTableName, String internalTableName, int newTableVersion) throws DatabaseException {
 		table_name=table_name.replace(oldInternalTableName, internalTableName);
 		for (SqlField sf : getDeclaredSqlFields())
 		{
 			sf.field=sf.field.replace(oldInternalTableName, internalTableName);
+			sf.fieldWithoutQuote =sf.fieldWithoutQuote.replace(oldInternalTableName, internalTableName);
 		}
 	}
 
-	/*public void changeInternalPointedTableName(String oldInternalTableName, String internalTableName)
-	{
-		for (SqlField sf : getDeclaredSqlFields())
-		{
-			if (sf.pointed_table!=null) {
-				sf.pointed_table = sf.pointed_table.replace(oldInternalTableName, internalTableName);
-				sf.pointed_field = sf.pointed_field.replace(oldInternalTableName, internalTableName);
-				sf.short_pointed_field = sf.short_pointed_field.replace(oldInternalTableName, internalTableName);
-			}
-		}
-	}*/
+
 	public final boolean isCacheDisabled()
 	{
 		return cacheDisabled;
@@ -253,7 +257,7 @@ public abstract class FieldAccessor {
 
 	public boolean isDecentralizablePrimaryKey()
 	{
-		return false;
+		return !isAutoPrimaryKey() && !isRandomPrimaryKey();
 	}
 
 	public Class<? extends Table<?>> getTableClass() {
@@ -276,7 +280,6 @@ public abstract class FieldAccessor {
 		return field.getType();
 	}
 
-	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	public boolean isTypeCompatible(Class<?> _cls) {
 		for (Class<?> c : getCompatibleClasses())
 			if (c.equals(_cls))
@@ -286,7 +289,7 @@ public abstract class FieldAccessor {
 
 	public boolean isAssignableTo(Class<?> _cls) {
 		for (Class<?> c : getCompatibleClasses())
-			if (_cls.isAssignableFrom(c) /* || _cls.equals(c) */)
+			if (c.isAssignableFrom(_cls) /* || _cls.equals(c) */)
 				return true;
 		return false;
 	}
@@ -333,27 +336,27 @@ public abstract class FieldAccessor {
 
 	public abstract void setValue(Object _class_instance, Object _field_instance) throws DatabaseException;
 
-	public final void setValue(Object _class_instance, ResultSet _result_set) throws DatabaseException {
-		setValue(_class_instance, _result_set, null);
+	public final void setValue(String sqlTableName, Object _class_instance, ResultSet _result_set) throws DatabaseException {
+		setValue(sqlTableName, _class_instance, _result_set, null);
 	}
 
-	public abstract void setValue(Object _class_instance, ResultSet _result_set,
+	public abstract void setValue(String sqlTableName, Object _class_instance, ResultSet _result_set,
 			ArrayList<DatabaseRecord> _pointing_records) throws DatabaseException;
 
-	public abstract void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set)
+	/*public abstract void updateValue(String sqlTableName, Object _class_instance, Object _field_instance, ResultSet _result_set)
 			throws DatabaseException;
 
-	protected abstract void updateResultSetValue(Object _class_instance, ResultSet _result_set,
-			SqlFieldTranslation _sft) throws DatabaseException;
+	protected abstract void updateResultSetValue(String sqlTableName, Object _class_instance, ResultSet _result_set,
+			SqlFieldTranslation _sft) throws DatabaseException;*/
 
 	public abstract boolean equals(Object _class_instance, Object _field_instance) throws DatabaseException;
 
-	protected abstract boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
+	/*protected abstract boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
 			throws DatabaseException;
 
 	public final boolean equals(Object _field_instance, ResultSet _result_set) throws DatabaseException {
 		return equals(_field_instance, _result_set, new SqlFieldTranslation(this));
-	}
+	}*/
 
 	public final Class<?>[] getCompatibleClasses() {
 		return compatible_classes;
@@ -369,7 +372,7 @@ public abstract class FieldAccessor {
 
 	public abstract SqlField[] getDeclaredSqlFields();
 
-	public abstract SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException;
+	public abstract SqlFieldInstance[] getSqlFieldsInstances(String sqlTableName, Object _instance) throws DatabaseException;
 
 	public abstract boolean isAlwaysNotNull();
 
@@ -426,7 +429,16 @@ public abstract class FieldAccessor {
 		ArrayList<FieldAccessor> res = new ArrayList<>();
 		try {
 			FieldAccessPrivilegedAction fapa = new FieldAccessPrivilegedAction(database_record_class);
+			int pkNumber=0;
+			for (java.lang.reflect.Field f : AccessController.doPrivileged(fapa)) {
+				if (f.isAnnotationPresent(PrimaryKey.class)
+						|| f.isAnnotationPresent(AutoPrimaryKey.class)
+						|| f.isAnnotationPresent(RandomPrimaryKey.class)) {
 
+					++pkNumber;
+				}
+			}
+			final boolean severalPrimaryKeysPresentIntoTable=pkNumber>1;
 			for (java.lang.reflect.Field f : AccessController.doPrivileged(fapa)) {
 				if (f.isAnnotationPresent(com.distrimind.ood.database.annotations.Field.class)
 						|| (parentFieldName == null
@@ -458,76 +470,79 @@ public abstract class FieldAccessor {
 									+ " is not loaded into memory whereas the table " + _table.getClass().getSimpleName()
 									+ " is ! It is a problem since the table " + _table.getClass().getSimpleName()
 									+ " has a foreign key which points to " + t.getSimpleName());
-						res.add(new ForeignKeyFieldAccessor(_table, _sql_connection, f, null));
+						res.add(new ForeignKeyFieldAccessor(_table, _sql_connection, f, null, severalPrimaryKeysPresentIntoTable));
 					} else {
 						ByteTabObjectConverter converter;
 						if (type.equals(boolean.class))
-							res.add(new booleanFieldAccessor(_table, _sql_connection, f, parentFieldName));
+							res.add(new booleanFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (type.equals(byte.class))
-							res.add(new byteFieldAccessor(_table, _sql_connection, f, parentFieldName));
+							res.add(new byteFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (type.equals(short.class))
-							res.add(new shortFieldAccessor(_table, _sql_connection, f, parentFieldName));
+							res.add(new shortFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (type.equals(char.class))
-							res.add(new charFieldAccessor(_table, _sql_connection, f, parentFieldName));
+							res.add(new charFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (type.equals(int.class))
-							res.add(new intFieldAccessor(_table, _sql_connection, f, parentFieldName));
+							res.add(new intFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (type.equals(long.class))
-							res.add(new longFieldAccessor(_table, _sql_connection, f, parentFieldName));
+							res.add(new longFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (type.equals(float.class))
-							res.add(new floatFieldAccessor(_table, _sql_connection, f, parentFieldName));
+							res.add(new floatFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (type.equals(double.class))
-							res.add(new doubleFieldAccessor(_table, _sql_connection, f, parentFieldName));
+							res.add(new doubleFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (type.equals(String.class))
-							res.add(new StringFieldAccessor(_table, _sql_connection, f, parentFieldName));
+							res.add(new StringFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
 						/*else if (type.equals(ASymmetricPublicKey.class) || type.equals(ASymmetricPrivateKey.class) || type.equals(SymmetricSecretKey.class))
 						{
 							res.add(new KeyFieldAccessor(_table_class, _sql_connection, f, parentFieldName));
 						}*/
 
 						else if (type.equals(class_array_byte))
-							res.add(new ByteTabFieldAccessor(_table, _sql_connection, f, parentFieldName));
+							res.add(new ByteTabFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (type.equals(Boolean.class))
-							res.add(new BooleanNumberFieldAccessor(_table, _sql_connection, f, parentFieldName));
+							res.add(new BooleanNumberFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (type.equals(Byte.class))
-							res.add(new ByteNumberFieldAccessor(_table, _sql_connection, f, parentFieldName));
+							res.add(new ByteNumberFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (type.equals(Short.class))
-							res.add(new ShortNumberFieldAccessor(_table, _sql_connection, f, parentFieldName));
+							res.add(new ShortNumberFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (type.equals(Character.class))
 							res.add(new CharacterNumberFieldAccessor(_table, _sql_connection, f,
-									parentFieldName));
+									parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (type.equals(Integer.class))
-							res.add(new IntegerNumberFieldAccessor(_table, _sql_connection, f, parentFieldName));
+							res.add(new IntegerNumberFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (type.equals(Long.class))
-							res.add(new LongNumberFieldAccessor(_table, _sql_connection, f, parentFieldName));
+							res.add(new LongNumberFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (type.equals(Float.class))
-							res.add(new FloatNumberFieldAccessor(_table, _sql_connection, f, parentFieldName));
+							res.add(new FloatNumberFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (type.equals(Double.class))
-							res.add(new DoubleNumberFieldAccessor(_table, _sql_connection, f, parentFieldName));
+							res.add(new DoubleNumberFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (type.equals(BigDecimal.class))
-							res.add(new BigDecimalFieldAccessor(_table, _sql_connection, f, parentFieldName));
+							res.add(new BigDecimalFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (type.equals(BigInteger.class))
-							res.add(new BigIntegerFieldAccessor(_table, _sql_connection, f, parentFieldName));
+							res.add(new BigIntegerFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (Date.class.isAssignableFrom(type))
-							res.add(new DateFieldAccessor(_table, _sql_connection, f, parentFieldName));
+							res.add(new DateFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (type.equals(DecentralizedIDGenerator.class))
-							res.add(new DencetralizedIDFieldAccessor(_table, _sql_connection, f,
-									parentFieldName));
+							res.add(new DecentralizedIDFieldAccessor(_table, _sql_connection, f,
+									parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (type.equals(RenforcedDecentralizedIDGenerator.class))
-							res.add(new RenforcedDencetralizedIDFieldAccessor(_table, _sql_connection, f,
-									parentFieldName));
+							res.add(new ReinforcedDecentralizedIDFieldAccessor(_table, _sql_connection, f,
+									parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (AbstractDecentralizedID.class.isAssignableFrom(type))
 							res.add(new AbstractDecentralizedIDFieldAccessor(_table, _sql_connection, f,
-									parentFieldName));
+									parentFieldName, severalPrimaryKeysPresentIntoTable));
+						else if (Calendar.class.isAssignableFrom(type))
+							res.add(new CalendarFieldAccessor(_table, _sql_connection, f,
+									parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (type.equals(UUID.class))
 							res.add(new UUIDFieldAccessor(_table, _sql_connection, f,
-									parentFieldName));
-						else if (DecentralizedValue.class.isAssignableFrom(type))
+									parentFieldName, severalPrimaryKeysPresentIntoTable));
+						else if (DecentralizedValue.class.isAssignableFrom(type) )
 						{
-							res.add(new DecentralizedValueFieldAccessor(_table, _sql_connection, f, parentFieldName));
+							res.add(new DecentralizedValueFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
 						}
 						else if ((converter = _sql_connection.getByteTabObjectConverter(type)) != null)
 							res.add(new ByteTabConvertibleFieldAccessor(_table, _sql_connection, f,
-									parentFieldName, converter));
+									parentFieldName, converter, severalPrimaryKeysPresentIntoTable));
 						else if (isComposedField(type)) {
 							for (Class<?> cpf : parentFields)
 								if (cpf.isAssignableFrom(type))
@@ -537,9 +552,9 @@ public abstract class FieldAccessor {
 							ArrayList<Class<?>> pf = new ArrayList<>(parentFields);
 							pf.add(type);
 
-							res.add(new ComposedFieldAccessor(_sql_connection, _table, f, parentFieldName, pf));
-						} else if (SecureExternalizable.class.isAssignableFrom(type) || Serializable.class.isAssignableFrom(type))
-							res.add(new SecureExternalizableFieldAccessor(_table, _sql_connection, f, parentFieldName));
+							res.add(new ComposedFieldAccessor(_sql_connection, _table, f, parentFieldName, pf, severalPrimaryKeysPresentIntoTable));
+						} else if (SerializationTools.isSerializableType(type))
+							res.add(new SecureExternalizableFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else
 							throw new DatabaseException(
 									"The field " + f.getName() + " of the class " + database_record_class.getName()
@@ -552,12 +567,7 @@ public abstract class FieldAccessor {
 					"Impossible to access to fields of the class " + database_record_class.getName(), e);
 		}
 
-		Collections.sort(res, new Comparator<FieldAccessor>() {
-			@Override
-			public int compare(FieldAccessor f1, FieldAccessor f2) {
-				return f1.getFieldName().compareTo(f2.getFieldName());
-			}
-		});
+		res.sort(Comparator.comparing(FieldAccessor::getFieldName));
 		return res;
 	}
 
@@ -679,7 +689,7 @@ public abstract class FieldAccessor {
 		return true;
 	}
 
-	private static Class<?> class_array_byte = byte[].class;
+	private static final Class<?> class_array_byte = byte[].class;
 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	public static boolean equalsBetween(Object val1, Object val2) throws DatabaseException {
@@ -814,20 +824,15 @@ public abstract class FieldAccessor {
 			throw new DatabaseException("Unexpected exception.");
 	}
 
-	protected int getColmunIndex(ResultSet _result_set, String fieldName) throws SQLException {
-		if (DatabaseWrapperAccessor.supportFullSqlFieldName(sql_connection))
+	protected int getColumnIndex(ResultSet _result_set, String fieldName) throws SQLException {
+
+		if (DatabaseWrapperAccessor.supportFullSqlFieldName(sql_connection)) {
 			return _result_set.findColumn(fieldName);
+		}
 		else {
 			ResultSetMetaData rsmd = _result_set.getMetaData();
 			for (int i = 1; i <= rsmd.getColumnCount(); i++) {
-				String tableName = rsmd.getTableName(i);
-				String colName = rsmd.getColumnName(i);
-				StringBuilder sb = new StringBuilder(tableName.length() + colName.length() + 1);
-				sb.append(tableName);
-				sb.append(".");
-				sb.append(colName);
-
-				if (sb.toString().equals(fieldName))
+				if (rsmd.getColumnName(i).equalsIgnoreCase(fieldName))
 					return i;
 			}
 			throw new SQLException("colmun " + fieldName + " not found !");
@@ -847,60 +852,63 @@ public abstract class FieldAccessor {
 	@SuppressWarnings("ConstantConditions")
 	public static void setValue(DatabaseWrapper sql_connection, PreparedStatement st, int index, Object p)
 			throws SQLException {
-		if (p instanceof byte[]
-				|| (p instanceof Number && p.getClass() != BigInteger.class && p.getClass() != BigDecimal.class)) {
+		if (p instanceof byte[] || p instanceof Number) {
 
-			switch (st.getParameterMetaData().getParameterType(index)) {
-			case Types.TINYINT:
+			if (p instanceof Byte)
 				st.setByte(index, (Byte) p);
-				break;
-			case Types.INTEGER:
-				/*
-				 * if (p instanceof Long) st.setLong(index, ((Long)p).longValue()); else
-				 */
+			else if (p instanceof Integer)
 				st.setInt(index, (Integer) p);
-				break;
-			case Types.BIGINT:
-				if (p instanceof Integer)
-					st.setInt(index, (Integer) p);
-				else
-					st.setLong(index, (Long) p);
-				break;
-			case Types.VARBINARY:
+			else if (p instanceof Long)
+				st.setLong(index, (Long) p);
+			else if (p instanceof byte[])
 				st.setBytes(index, (byte[]) p);
-				break;
-			case Types.BLOB: {
-				Blob blob = DatabaseWrapperAccessor.getBlob(sql_connection, (byte[]) p);
-				if (blob == null && p != null)
-					st.setBinaryStream(index, new ByteArrayInputStream((byte[]) p));
+			else if (p instanceof CharSequence)
+				st.setString(index, p.toString());
+			else if (p instanceof Short)
+				st.setShort(index, (Short) p);
+			else if (p instanceof Boolean)
+				st.setBoolean(index, (Boolean)p);
+			else if (p instanceof Float)
+				st.setFloat(index, (Float)p);
+			else if (p instanceof Double)
+				st.setDouble(index, (Double)p);
+			else if (p instanceof BigDecimal) {
+				String t = DatabaseWrapperAccessor.getBigDecimalType(sql_connection, 128);
+				if (p instanceof ByteTabFieldAccessor.BD)
+				{
+					if (t.contains(DatabaseWrapperAccessor.getBinaryBaseWord(sql_connection)))
+						st.setBytes(index, ByteTabFieldAccessor.getByteTab((BigDecimal) p));
+					else if (t.contains("CHAR"))
+						st.setString(index, p.toString());
+					else
+						st.setBigDecimal(index, (BigDecimal) p);
+				}
 				else {
-					st.setBlob(index, blob);
+					if (t.contains(DatabaseWrapperAccessor.getBinaryBaseWord(sql_connection)))
+						st.setBytes(index, BigDecimalFieldAccessor.bigDecimalToBytes((BigDecimal) p));
+					else if (t.contains("CHAR"))
+						st.setString(index, p.toString());
+					else
+						st.setBigDecimal(index, (BigDecimal) p);
 				}
 			}
-				break;
-			case Types.CHAR:
-				st.setString(index, p.toString());
-				break;
-			case Types.SMALLINT:
-				st.setShort(index, (Short) p);
-				break;
-			case Types.BOOLEAN:
-				st.setBoolean(index, (Boolean) p);
-				break;
-			case Types.FLOAT:
-				st.setFloat(index, (Float) p);
-				break;
-			case Types.DOUBLE:
-				st.setDouble(index, (Double) p);
-				break;
-
+			else if (p instanceof BigInteger) {
+				String t=DatabaseWrapperAccessor.getBigIntegerType(sql_connection, 128);
+				if (t.contains(DatabaseWrapperAccessor.getBinaryBaseWord(sql_connection)) || t.contains(DatabaseWrapperAccessor.getBlobBaseWord(sql_connection)))
+					st.setBytes(index, ((BigInteger)p).toByteArray());
+				else if (t.contains("CHAR"))
+					st.setString(index, p.toString());
+				else
+					st.setBigDecimal(index, new BigDecimal((BigInteger)p));
 			}
+
 		}
-		st.setObject(index, p);
+		else
+			st.setObject(index, p);
 	}
 
-	protected static class SqlFieldTranslation {
-		private HashMap<String, String> sql_fields = new HashMap<>();
+	/*protected static class SqlFieldTranslation {
+		private final HashMap<String, String> sql_fields = new HashMap<>();
 		private final FieldAccessor field_accessor;
 
 		public SqlFieldTranslation(FieldAccessor fa, SqlField[] _sql_field) {
@@ -913,46 +921,48 @@ public abstract class FieldAccessor {
 			}
 		}
 
-		public SqlFieldTranslation(FieldAccessor fa, SqlFieldTranslation _sft) {
+		public SqlFieldTranslation(ForeignKeyFieldAccessor fa, SqlFieldTranslation _sft) {
 			field_accessor = fa;
 			for (SqlField sf : fa.getDeclaredSqlFields()) {
 				SqlField sf_pointing_founded = null;
+				assert sf.pointed_field != null;
 				for (SqlField sf_pointing : _sft.field_accessor.getDeclaredSqlFields()) {
-					if (sf_pointing.pointed_field.equals(sf.field)) {
+					if (sf_pointing.pointed_field_without_quote.equals(sf.field_without_quote)) {
 						sf_pointing_founded = sf_pointing;
 						break;
 					}
 				}
 				String t;
+
 				if (sf_pointing_founded == null || (t = _sft.translateField(sf_pointing_founded)) == null) {
-					if (sf.pointed_field != null)
-						sql_fields.put(sf.pointed_field, sf.short_field);
-					else
-						sql_fields.put(sf.field, sf.short_field);
+					sql_fields.put(sf.pointed_field_without_quote, sf.short_field_without_quote);
 				} else {
-					if (sf.pointed_field != null)
-						sql_fields.put(sf.pointed_field, t);
-					else
-						sql_fields.put(sf.field, t);
+					sql_fields.put(sf.pointed_field_without_quote, t);
 				}
 			}
 		}
 
-		public SqlFieldTranslation(FieldAccessor fa) {
+		public SqlFieldTranslation(FieldAccessor fa, String sqlTable) {
 			field_accessor = fa;
 			for (SqlField sf : fa.getDeclaredSqlFields()) {
 				if (sf.pointed_field != null)
-					sql_fields.put(sf.pointed_field, sf.short_field);
+					sql_fields.put(sf.pointed_field_without_quote, sf.short_field_without_quote);
 				else
-					sql_fields.put(sf.field, sf.short_field);
+					sql_fields.put(sqlTable+"."+sf.short_field_without_quote, sf.short_field_without_quote);
 			}
 
 		}
 
-		public String translateField(SqlField sf) {
-			return sql_fields.get(sf.field);
+		public String translateField(String sqlTable, SqlField sf) {
+			return sql_fields.get(sqlTable+"."+sf.short_field_without_quote);
 		}
 
+	}*/
+
+	final String getSqlFieldName(String sqlTableName, SqlField sqlField)
+	{
+		//return sqlField.field_without_quote;
+		return sqlTableName+"__"+sqlField.sqlFieldAliasName;
 	}
 
 	protected static final class FieldAccessPrivilegedAction implements PrivilegedExceptionAction<ArrayList<Field>> {

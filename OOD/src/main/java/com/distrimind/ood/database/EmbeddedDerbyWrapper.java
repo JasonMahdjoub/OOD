@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -36,12 +36,14 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import com.distrimind.ood.database.Table.ColumnsReadQuerry;
-import com.distrimind.ood.database.Table.ReadQuerry;
+import com.distrimind.ood.database.Table.ColumnsReadQuery;
+import com.distrimind.ood.database.Table.ReadQuery;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseVersionException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
+import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.crypto.EncryptionProfileProvider;
 
 import java.io.File;
 import java.sql.*;
@@ -55,7 +57,7 @@ import java.util.regex.Pattern;
  * @version 1.3
  * @since OOD 1.4
  */
-public class EmbeddedDerbyWrapper extends DatabaseWrapper {
+class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	private static boolean derby_loaded = false;
 	// private final String dbURL;
 
@@ -74,15 +76,46 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 		}
 	}
 
-	EmbeddedDerbyWrapper(boolean loadToMemory, String databaseName) throws IllegalArgumentException, DatabaseException {
-		super(databaseName, null, false, true);
+	@Override
+	protected boolean supportMultipleAutoPrimaryKeys() {
+		return true;
+	}
+	EmbeddedDerbyWrapper(String databaseName, boolean loadToMemory,
+						 DatabaseConfigurations databaseConfigurations,
+						 DatabaseLifeCycles databaseLifeCycles,
+						 EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+						 EncryptionProfileProvider encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
+						 EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+						 AbstractSecureRandom secureRandom,
+						 boolean createDatabasesIfNecessaryAndCheckIt) throws IllegalArgumentException, DatabaseException {
+		super(databaseName, null, false, true, databaseConfigurations, databaseLifeCycles,
+				signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+				secureRandom, createDatabasesIfNecessaryAndCheckIt);
 		if (!loadToMemory)
 			throw new IllegalArgumentException();
 
 	}
 
-	EmbeddedDerbyWrapper(File _directory, boolean alwaysDisconnectAfterOnTransaction) throws IllegalArgumentException, DatabaseException {
-		super(/* getConnection(_directory), */"Database from file : " + _directory.getAbsolutePath(), _directory, alwaysDisconnectAfterOnTransaction, false);
+	@Override
+	protected boolean supportSingleAutoPrimaryKeys()
+	{
+		return true;
+	}
+
+	EmbeddedDerbyWrapper(File _directory,
+						 DatabaseConfigurations databaseConfigurations,
+						 DatabaseLifeCycles databaseLifeCycles,
+						 EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+						 EncryptionProfileProvider encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
+						 EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+						 AbstractSecureRandom secureRandom,
+						 boolean createDatabasesIfNecessaryAndCheckIt, boolean alwaysDisconnectAfterOnTransaction) throws IllegalArgumentException, DatabaseException {
+		super(/* getConnection(_directory), */"Database from file : " + _directory.getAbsolutePath(), _directory, alwaysDisconnectAfterOnTransaction, false
+				, databaseConfigurations, databaseLifeCycles,
+				signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+				secureRandom, createDatabasesIfNecessaryAndCheckIt);
 		// dbURL = getDBUrl(_directory);
 
 	}
@@ -93,15 +126,6 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 
 	}
 
-	@Override
-	protected String getDropTableIfExistsKeyWord() {
-		return "";
-	}
-
-	@Override
-	protected String getDropTableCascadeKeyWord() {
-		return "";
-	}
 
 	private static String getDBUrl(File _directory) {
 		return "jdbc:derby:" + _directory.getAbsolutePath();
@@ -127,8 +151,8 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 			c.setAutoCommit(false);
 			return c;
 		} catch (Exception e) {
-			throw new DatabaseLoadingException("Impossible to create the database " + _directory.getAbsolutePath()
-					+ " into the directory " + _directory.getAbsolutePath(), e);
+			throw new DatabaseLoadingException("Impossible to create the database " + databaseName
+					+ " into the directory " + (_directory==null?null:_directory.getAbsolutePath()), e);
 		}
 	}
 
@@ -180,15 +204,15 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	}
 
 	@Override
-	protected ColumnsReadQuerry getColumnMetaData(String tableName, String columnName) throws Exception {
+	protected ColumnsReadQuery getColumnMetaData(String tableName, String columnName) throws Exception {
 		Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
-		return new CReadQuerry(sql_connection, sql_connection.getMetaData().getColumns(null, null, tableName, columnName));
+		return new CReadQuery(sql_connection, sql_connection.getMetaData().getColumns(null, null, tableName, columnName));
 	}
 
 	@Override
 	protected void checkConstraints(Table<?> table) throws DatabaseException {
 		Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
-		try (ReadQuerry rq = new ReadQuerry(sql_connection,
+		try (ReadQuery rq = new ReadQuery(sql_connection,
 				sql_connection.getMetaData().getPrimaryKeys(null, null, table.getSqlTableName()))) {
 			while (rq.result_set.next()) {
 				String pkName = rq.result_set.getString("PK_NAME");
@@ -197,7 +221,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 							"There a grouped primary key named " + rq.result_set.getString("PK_NAME")
 									+ " which should be named " + table.getSqlPrimaryKeyName());
 			}
-			try (ReadQuerry rq2 = new ReadQuerry(sql_connection,
+			try (ReadQuery rq2 = new ReadQuery(sql_connection,
 					sql_connection.getMetaData().getIndexInfo(null, null, table.getSqlTableName(), false, false))) {
 				while (rq2.result_set.next()) {
 					String colName = rq2.result_set.getString("COLUMN_NAME");
@@ -205,7 +229,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 						boolean found = false;
 						for (FieldAccessor fa : table.getFieldAccessors()) {
 							for (SqlField sf : fa.getDeclaredSqlFields()) {
-								if (sf.short_field.equals(colName)) {
+								if (sf.shortFieldWithoutQuote.equals(colName)) {
 									if (fa.isUnique() == rq2.result_set.getBoolean("NON_UNIQUE")
 											&& fa.isPrimaryKey() == rq2.result_set.getBoolean("NON_UNIQUE")) {
 										throw new DatabaseVersionException(table, "The field " + colName
@@ -231,7 +255,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 			throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 		}
 		for (Table<?> t : getListTables(table.getClass().getPackage(), getCurrentDatabaseVersion(table.getClass().getPackage()))) {
-			try (ReadQuerry rq = new ReadQuerry(sql_connection,
+			try (ReadQuery rq = new ReadQuery(sql_connection,
 					sql_connection.getMetaData().getExportedKeys(null, null, t.getSqlTableName()))) {
 				while (rq.result_set.next()) {
 					String fk_table_name = rq.result_set.getString("FKTABLE_NAME");
@@ -244,8 +268,8 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 
 							for (SqlField sf : fa.getDeclaredSqlFields()) {
 
-								if (sf.short_field.equals(fk) && sf.pointed_field.equals(pointed_col)
-										&& sf.pointed_table.equals(pointed_table)) {
+								if (sf.shortFieldWithoutQuote.equals(fk) && sf.pointedField.equals(pointed_col)
+										&& sf.pointedTable.equals(pointed_table)) {
 
 									found = true;
 									break;
@@ -270,7 +294,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 			for (FieldAccessor fa : table.getFieldAccessors()) {
 				for (SqlField sf : fa.getDeclaredSqlFields()) {
 
-					try (Table.ColumnsReadQuerry rq = getColumnMetaData(table.getSqlTableName(), sf.short_field)) {
+					try (ColumnsReadQuery rq = getColumnMetaData(table.getSqlTableName(), sf.shortFieldWithoutQuote)) {
 						if (rq.result_set.next()) {
 							String type = rq.tableColumnsResultSet.getTypeName().toUpperCase();
 							if (!sf.type.toUpperCase().startsWith(type))
@@ -284,26 +308,26 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 											+ " has a size equals to " + col_size + " (expected " + sf.type + ")");
 							}
 							boolean is_null = rq.tableColumnsResultSet.isNullable();
-							if (is_null == sf.not_null)
+							if (is_null == sf.notNull)
 								throw new DatabaseVersionException(table, "The field " + fa.getFieldName()
 										+ " is expected to be " + (fa.isNotNull() ? "not null" : "nullable"));
 							boolean is_autoincrement = rq.tableColumnsResultSet.isAutoIncrement();
-							if (is_autoincrement != fa.isAutoPrimaryKey())
+							if (supportSingleAutoPrimaryKeys() && is_autoincrement != fa.isAutoPrimaryKey())
 								throw new DatabaseVersionException(table,
 										"The field " + fa.getFieldName() + " is " + (is_autoincrement ? "" : "not ")
 												+ "autoincremented into the Sql database where it is "
 												+ (is_autoincrement ? "not " : "") + " into the OOD database.");
-							sf.sql_position = rq.tableColumnsResultSet.getOrdinalPosition();
+							sf.sqlPosition = rq.tableColumnsResultSet.getOrdinalPosition();
 						} else
 							throw new DatabaseVersionException(table,
 									"The field " + fa.getFieldName() + " was not found into the database.");
 					}
 					if (fa.isPrimaryKey()) {
-						try (ReadQuerry rq = new ReadQuerry(sql_connection,
+						try (ReadQuery rq = new ReadQuery(sql_connection,
 								sql_connection.getMetaData().getPrimaryKeys(null, null, table.getSqlTableName()))) {
 							boolean found = false;
 							while (rq.result_set.next()) {
-								if (rq.result_set.getString("COLUMN_NAME").equals(sf.short_field)
+								if (rq.result_set.getString("COLUMN_NAME").equals(sf.shortFieldWithoutQuote)
 										&& rq.result_set.getString("PK_NAME").equals(table.getSqlPrimaryKeyName()))
 									found = true;
 							}
@@ -315,12 +339,12 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 					if (fa.isForeignKey()) {
 						boolean found = false;
 						for (Table<?> t : getListTables(table.getClass().getPackage(), getCurrentDatabaseVersion(table.getClass().getPackage()))) {
-							try (ReadQuerry rq = new ReadQuerry(sql_connection,
+							try (ReadQuery rq = new ReadQuery(sql_connection,
 									sql_connection.getMetaData().getExportedKeys(null, null, t.getSqlTableName()))) {
 								while (rq.result_set.next()) {
 									String fk_table_name = rq.result_set.getString("FKTABLE_NAME");
 									if (fk_table_name.equals(table.getSqlTableName())) {
-										if (rq.result_set.getString("FKCOLUMN_NAME").equals(sf.short_field))
+										if (rq.result_set.getString("FKCOLUMN_NAME").equals(sf.shortFieldWithoutQuote))
 											found = true;
 									}
 									if (found)
@@ -334,7 +358,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 							throw new DatabaseVersionException(table,
 									"The field " + fa.getFieldName() + " is a foreign key one of its Sql fields "
 											+ sf.field + " is not a foreign key pointing to the table "
-											+ sf.pointed_table);
+											+ sf.pointedTable);
 
 					}
 					//TODO check unique columns
@@ -367,9 +391,9 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 
 	}
 
-	static class CReadQuerry extends ColumnsReadQuerry {
+	static class CReadQuery extends ColumnsReadQuery {
 
-		public CReadQuerry(Connection _sql_connection, ResultSet resultSet) {
+		public CReadQuery(Connection _sql_connection, ResultSet resultSet) {
 			super(_sql_connection, resultSet);
 			setTableColumnsResultSet(new TCResultSet(this.result_set));
 		}
@@ -383,9 +407,21 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	}
 
 
-	public String getAutoIncrementPart(long startWith)
+	@Override
+	protected String getAutoIncrementPart(String sqlTableName, String sqlFieldName, long startWith)
 	{
 		return "GENERATED BY DEFAULT AS IDENTITY(START WITH "+startWith+")";
+	}
+
+	protected String getSequenceQueryCreation(String sqlTableName, String sqlFieldName, long startWith)
+	{
+		return null;
+	}
+
+	@Override
+	protected boolean autoPrimaryKeyIndexStartFromOne()
+	{
+		return false;
 	}
 
 	static class TCResultSet extends TableColumnsResultSet {
@@ -446,6 +482,24 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	protected boolean isLongVarBinarySupported() {
 		return false;
 	}
+	protected String getBinaryBaseWord()
+	{
+		return null;
+	}
+	protected String getBlobBaseWord()
+	{
+		return "BLOB";
+	}
+
+	protected String getVarBinaryType(long limit)
+	{
+		return null;
+	}
+
+	protected String getLongVarBinaryType(long limit)
+	{
+		return null;
+	}
 
 	@Override
 	protected String getSqlNULL() {
@@ -468,10 +522,15 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	}
 
 	@Override
-	protected String getSerializableType() {
-		return "BLOB";
+	protected String getBlobType(long limit) {
+		return "BLOB("+limit+")";
 	}
 
+	@Override
+	protected String getTextType(long limit)
+	{
+		return "CLOB(" + limit + ")";
+	}
 	@Override
 	protected String getFloatType() {
 		return "REAL";
@@ -493,27 +552,67 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	}
 
 	@Override
-	protected String getBigDecimalType() {
-		return "VARCHAR(16374)";
+	protected String getBigDecimalType(long limit) {
+		if (limit<=0)
+			return "VARCHAR(1024)";
+		else
+			return "VARCHAR("+limit+")";
 	}
 
 	@Override
-	protected String getBigIntegerType() {
-		return "VARCHAR(16374)";
+	public boolean supportsItalicQuotesWithTableAndFieldNames() {
+		return false;
 	}
 
+	@Override
+	protected String getBigIntegerType(long limit) {
+		if (limit<=0)
+			return "VARCHAR(1024)";
+		else
+			return "VARCHAR("+limit+")";
+	}
+
+
+	protected boolean useGetBigDecimalInResultSet()
+	{
+		return false;
+	}
+
+	@Override
+	protected String getDateTimeType()
+	{
+		return "TIMESTAMP";
+	}
+
+	@Override
+	protected String getLimitSqlPart(long startPosition, long rowLimit)
+	{
+		StringBuilder limit=new StringBuilder();
+		if (rowLimit>=0)
+		{
+			limit.append(" { LIMIT ");
+			limit.append(rowLimit);
+			if (startPosition>0)
+			{
+				limit.append(" OFFSET ");
+				limit.append(startPosition);
+			}
+			limit.append("}");
+		}
+		return limit.toString();
+	}
 	/*@Override
 	protected String getSqlQuerryToGetLastGeneratedID() {
 		return "values IDENTITY_VAL_LOCAL()";
 	}*/
 
 	@Override
-	protected String getOnUpdateCascadeSqlQuerry() {
+	protected String getOnUpdateCascadeSqlQuery() {
 		return "";
 	}
 
 	@Override
-	protected String getOnDeleteCascadeSqlQuerry() {
+	protected String getOnDeleteCascadeSqlQuery() {
 		return "ON DELETE CASCADE";
 	}
 
@@ -581,7 +680,7 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 
 	@Override
 	protected Connection reopenConnectionImpl() throws DatabaseLoadingException {
-		return getConnection(database_name, getDatabaseDirectory(), isLoadedToMemory());
+		return getConnection(databaseName, getDatabaseDirectory(), isLoadedToMemory());
 	}
 
 	@Override
@@ -646,9 +745,25 @@ public class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	}
 
 	@Override
-	protected boolean isDisconnetionException(SQLException e) {
+	protected boolean isDisconnectionException(SQLException e) {
 		return e.getErrorCode()==402 || e.getErrorCode()==1002;
 	}
 
-	
+	@Override
+	protected boolean isTransactionDeadLockException(SQLException e)
+	{
+		return false;
+	}
+	@Override
+	protected String getDropTableCascadeQuery(Table<?> table)
+	{
+		return "DROP TABLE " + table.getSqlTableName() +
+				" IF EXISTS CASCADE";
+	}
+
+	@Override
+	protected boolean supportForeignKeys() {
+		return true;
+	}
+
 }

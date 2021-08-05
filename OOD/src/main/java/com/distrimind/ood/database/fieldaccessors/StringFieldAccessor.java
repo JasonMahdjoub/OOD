@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -49,7 +49,6 @@ import java.lang.reflect.Field;
 import java.sql.Clob;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Map;
 
@@ -62,15 +61,20 @@ import java.util.Map;
 public class StringFieldAccessor extends FieldAccessor {
 	protected final SqlField[] sql_fields;
 
+	public static final long defaultStringLengthLimit=ByteTabFieldAccessor.defaultByteTabSize;
+
 	protected StringFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection, Field _field,
-			String parentFieldName) throws DatabaseException {
-		super(_sql_connection, _field, parentFieldName, compatible_classes, table);
+			String parentFieldName, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
+		super(_sql_connection, _field, parentFieldName, compatible_classes, table, severalPrimaryKeysPresentIntoTable);
 		sql_fields = new SqlField[1];
-		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(),
-				limit == 0 ? "VARCHAR(" + DatabaseWrapperAccessor.getVarCharLimit(sql_connection) + ")"
-						: (limit < DatabaseWrapperAccessor.getVarCharLimit(sql_connection) ? "VARCHAR(" + limit + ")"
-								: "CLOB(" + limit + ")"),
-				null, null, isNotNull());
+		long l=limit;
+		if (l<=0)
+			l=defaultStringLengthLimit;
+		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(),
+				l < DatabaseWrapperAccessor.getVarCharLimit(sql_connection)
+						? "VARCHAR(" + l + ")"
+						:DatabaseWrapperAccessor.getTextType(sql_connection, l),
+				isNotNull());
 	}
 
 	@Override
@@ -83,7 +87,7 @@ public class StringFieldAccessor extends FieldAccessor {
 								+ ") into the DatabaseField class " + field.getDeclaringClass().getName()
 								+ ", is null and should not be (property NotNull present).");
 		} else if (!(_field_instance instanceof String))
-			throw new FieldDatabaseException("The given _field_instance parameter, destinated to the field "
+			throw new FieldDatabaseException("The given _field_instance parameter, destined to the field "
 					+ field.getName() + " of the class " + field.getDeclaringClass().getName()
 					+ ", should be a String and not a " + _field_instance.getClass().getName());
 		try {
@@ -107,22 +111,6 @@ public class StringFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	@Override
-	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			String val1 = null;
-			if (_field_instance instanceof String)
-				val1 = (String) _field_instance;
-			String val2 = (String) _result_set.getObject(_sft.translateField(sql_fields[0]));
-
-			assert val1 != null;
-			return val1.equals(val2);
-		} catch (SQLException e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}
-
 	private static final Class<?>[] compatible_classes = { String.class };
 
 	@Override
@@ -140,9 +128,9 @@ public class StringFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
+	public SqlFieldInstance[] getSqlFieldsInstances(String sqlTableName, Object _instance) throws DatabaseException {
 		SqlFieldInstance[] res = new SqlFieldInstance[1];
-		res[0] = new SqlFieldInstance(sql_fields[0], getValue(_instance));
+		res[0] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[0], getValue(_instance));
 		return res;
 	}
 
@@ -178,16 +166,16 @@ public class StringFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
+	public void setValue(String sqlTableName, Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
 			if (sql_fields[0].type.startsWith("VARCHAR")) {
-				String res = _result_set.getString(getColmunIndex(_result_set, sql_fields[0].field));
+				String res = _result_set.getString(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
 				if (res == null && isNotNull())
 					throw new DatabaseIntegrityException("Unexpected exception.");
 				field.set(_class_instance, res);
 			} else {
-				Clob c = _result_set.getClob(getColmunIndex(_result_set, sql_fields[0].field));
+				Clob c = _result_set.getClob(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
 				String res = c.getSubString(0, (int) c.length());
 				if (res == null && isNotNull())
 					throw new DatabaseIntegrityException("Unexpected exception.");
@@ -220,27 +208,6 @@ public class StringFieldAccessor extends FieldAccessor {
 
 	}
 
-	@Override
-	public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set)
-			throws DatabaseException {
-		setValue(_class_instance, _field_instance);
-		try {
-			_result_set.updateString(sql_fields[0].short_field, (String) field.get(_class_instance));
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-
-	}
-
-	@Override
-	protected void updateResultSetValue(Object _class_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			_result_set.updateString(_sft.translateField(sql_fields[0]), (String) field.get(_class_instance));
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}
 
 	@Override
 	public boolean canBePrimaryOrUniqueKey() {

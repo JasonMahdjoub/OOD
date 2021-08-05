@@ -37,16 +37,22 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database;
 
+
 import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.database.*;
 import com.distrimind.ood.database.database.Table1.Record;
 import com.distrimind.ood.database.exceptions.*;
+import com.distrimind.ood.database.fieldaccessors.BigDecimalFieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ByteTabFieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
+import com.distrimind.ood.database.schooldatabase.Group;
 import com.distrimind.ood.database.schooldatabase.Lecture;
+import com.distrimind.ood.database.schooldatabase.Student;
+import com.distrimind.ood.database.schooldatabase.StudentGroup;
+import com.distrimind.ood.database.schooldatabase.Teacher;
+import com.distrimind.ood.database.schooldatabase.TeacherLecture;
 import com.distrimind.ood.interpreter.Interpreter;
 import com.distrimind.ood.interpreter.RuleInstance;
-import com.distrimind.ood.interpreter.RuleInstance.TableJunction;
 import com.distrimind.ood.interpreter.SymbolType;
 import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.DecentralizedIDGenerator;
@@ -56,12 +62,18 @@ import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.SecureRandomType;
 import com.distrimind.util.crypto.SymmetricEncryptionType;
 import com.distrimind.util.crypto.SymmetricSecretKey;
+import com.distrimind.util.data_buffers.WrappedData;
+import com.distrimind.util.io.RandomByteArrayOutputStream;
+import com.distrimind.util.io.SerializationTools;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -83,7 +95,7 @@ import static org.testng.Assert.*;
  * @version 2.0
  * @since OOD 1.0
  */
-@SuppressWarnings("deprecation")
+@SuppressWarnings({"deprecation", "ConstantConditions"})
 
 public abstract class TestDatabase {
 	public abstract int getMultiTestsNumber();
@@ -92,24 +104,30 @@ public abstract class TestDatabase {
 
 	public abstract boolean isMultiConcurrentDatabase();
 
-	static Table1 table1;
-	static Table2 table2;
-	static Table3 table3;
-	static Table4 table4;
-	static Table5 table5;
-	static Table6 table6;
-	static Table7 table7;
-	static Table1 table1b;
-	static Table2 table2b;
-	static Table3 table3b;
-	static Table4 table4b;
-	static Table5 table5b;
-	static Table6 table6b;
+	protected Table1 table1;
+	protected Table2 table2;
+	protected Table3 table3;
+	protected Table4 table4;
+	protected Table5 table5;
+	protected Table6 table6;
+	protected Table7 table7;
+	protected Table1 table1b;
+	protected Table2 table2b;
+	protected Table3 table3b;
+	protected Table4 table4b;
+	protected Table5 table5b;
+	protected Table6 table6b;
 
-	static DatabaseConfiguration dbConfig1 = new DatabaseConfiguration(Table1.class.getPackage());
-	static DatabaseConfiguration dbConfig2 = new DatabaseConfiguration(Lecture.class.getPackage());
-	private static DatabaseWrapper sql_db;
-	private static DatabaseWrapper sql_dbb;
+	static Set<Class<?>> listClasses=new HashSet<>(Arrays.asList(Table1.class, Table2.class, Table3.class, Table4.class, Table5.class, Table6.class, Table7.class));
+	static Set<Class<?>> listClasses2=new HashSet<>(Arrays.asList(Group.class, Lecture.class, Student.class, StudentGroup.class, Teacher.class, TeacherLecture.class));
+	static DatabaseConfiguration dbConfig1 = new DatabaseConfiguration(new DatabaseSchema(Table1.class.getPackage(), listClasses));
+	static DatabaseConfiguration dbConfig2 = new DatabaseConfiguration(new DatabaseSchema(Lecture.class.getPackage(), listClasses2));
+	private DatabaseWrapper sql_db;
+	private DatabaseWrapper sql_dbb;
+
+	public static DatabaseWrapper getDatabaseInstance(DatabaseFactory<?> df) throws DatabaseException {
+		return df.newWrapperInstance();
+	}
 
 	public abstract File getDatabaseBackupFileName();
 
@@ -128,7 +146,7 @@ public abstract class TestDatabase {
 		try {
 
 			SubField res = new SubField();
-			res.BigDecimal_value = new BigDecimal(3.0);
+			res.BigDecimal_value = new BigDecimal("3.0125540455216975415589186941257440245355150540147450541");
 			res.BigInteger_value = new BigInteger("54");
 			res.boolean_value = false;
 			res.BooleanNumber_value = Boolean.TRUE;
@@ -162,7 +180,7 @@ public abstract class TestDatabase {
 	public static SubSubField getSubSubField() throws DatabaseException {
 		try {
 			SubSubField res = new SubSubField();
-			res.BigDecimal_value = new BigDecimal(3.0);
+			res.BigDecimal_value = new BigDecimal("3.0125540455216975415589186941257440245355150540147450541");
 			res.BigInteger_value = new BigInteger("54");
 			res.boolean_value = false;
 			res.BooleanNumber_value = Boolean.TRUE;
@@ -265,7 +283,7 @@ public abstract class TestDatabase {
 	}
 
 	@AfterClass
-	public static void unloadDatabase()  {
+	public void unloadDatabase()  {
 		System.out.println("Unload database !");
 		if (sql_db != null) {
 			sql_db.close();
@@ -289,9 +307,13 @@ public abstract class TestDatabase {
 	@Test
 	public void checkUnloadedDatabase() throws IllegalArgumentException, DatabaseException {
 		deleteDatabaseFilesA();
+		deleteDatabaseFilesB();
 		sql_db = getDatabaseWrapperInstanceA();
 		try {
-			sql_db.loadDatabase(dbConfig1, false);
+			sql_db.getDatabaseConfigurationsBuilder()
+					.addConfiguration(dbConfig1, false, false)
+					.commit();
+			//sql_db.loadDatabase(dbConfig1, false);
 			fail();
 		} catch (DatabaseException ignored) {
 		}
@@ -300,7 +322,9 @@ public abstract class TestDatabase {
 	@Test(dependsOnMethods = { "checkUnloadedDatabase" })
 	public void firstLoad() throws IllegalArgumentException, DatabaseException {
 
-		sql_db.loadDatabase(dbConfig1, true);
+		sql_db.getDatabaseConfigurationsBuilder()
+				.addConfiguration(dbConfig1, false, true)
+				.commit();
 		table2 = sql_db.getTableInstance(Table2.class);
 		table1 = sql_db.getTableInstance(Table1.class);
 		table3 = sql_db.getTableInstance(Table3.class);
@@ -385,8 +409,9 @@ public abstract class TestDatabase {
         Assert.assertEquals(0, r1.pk1);
         Assert.assertEquals(0, r2.pk1);
 
-        Assert.assertEquals(r1.pk2, 1);
-        Assert.assertEquals(r2.pk2, 1);
+
+		Assert.assertEquals(r1.pk2, 1);
+		Assert.assertEquals(r2.pk2, 1);
 		Assert.assertEquals(table1.getRecordsNumber(), 1);
 		Assert.assertEquals(table3.getRecordsNumber(), 1);
 		Assert.assertEquals(table1.getRecordsNumber("int_value=%v", "v", 3), 1);
@@ -405,8 +430,10 @@ public abstract class TestDatabase {
 	public void firstReload() throws DatabaseException {
 		sql_db.close();
 		sql_db = getDatabaseWrapperInstanceA();
-		sql_db.loadDatabase(dbConfig1, false);
-		sql_db.loadDatabase(dbConfig2, true);
+		sql_db.getDatabaseConfigurationsBuilder()
+				.addConfiguration(dbConfig1, false, false)
+				.addConfiguration(dbConfig2, false, true)
+				.commit();
 
 		table2 = sql_db.getTableInstance(Table2.class);
 		table1 = sql_db.getTableInstance(Table1.class);
@@ -416,7 +443,9 @@ public abstract class TestDatabase {
 		table6 = sql_db.getTableInstance(Table6.class);
 		table7 = sql_db.getTableInstance(Table7.class);
 		sql_dbb = getDatabaseWrapperInstanceB();
-		sql_dbb.loadDatabase(dbConfig1, true);
+		sql_dbb.getDatabaseConfigurationsBuilder()
+				.addConfiguration(dbConfig1, false, true)
+				.commit();
 		table2b = sql_dbb.getTableInstance(Table2.class);
 		table1b = sql_dbb.getTableInstance(Table1.class);
 		table3b = sql_dbb.getTableInstance(Table3.class);
@@ -643,6 +672,7 @@ public abstract class TestDatabase {
 
 	@Test(dependsOnMethods = { "testCursor" })
 	public void addSecondRecord() throws DatabaseException {
+
 		try {
 			table1.addRecord((Map<String, Object>) null);
             fail();
@@ -650,7 +680,7 @@ public abstract class TestDatabase {
 			assertTrue(true);
 		}
 		try {
-			table1.addRecord(new HashMap<String, Object>());
+			table1.addRecord(new HashMap<>());
             fail();
 		} catch (DatabaseException e) {
 			assertTrue(true);
@@ -694,9 +724,10 @@ public abstract class TestDatabase {
 				tab[0] = 0;
 				tab[1] = 1;
 				tab[2] = 2;
-				
+
 				map.put("byte_array_value", tab);
 				Table1.Record r1=table1.addRecord(map);
+
 				Map<String, Object> pks=new HashMap<>();
 				pks.put("pk1", r1.pk1);
 				pks.put("pk2", r1.pk2);
@@ -706,7 +737,9 @@ public abstract class TestDatabase {
 				pks.put("pk6", r1.pk6);
 				pks.put("pk7", r1.pk7);
 				assertNotNull(table1.getRecord(pks));
+
 				Table3.Record r3=table3.addRecord(map);
+
 				pks=new HashMap<>();
 				pks.put("pk1", r3.pk1);
 				pks.put("pk2", r3.pk2);
@@ -716,6 +749,7 @@ public abstract class TestDatabase {
 				pks.put("pk6", r3.pk6);
 				pks.put("pk7", r3.pk7);
 				assertNotNull(table3.getRecord(pks));
+
 				return null;
 			}
 
@@ -734,12 +768,14 @@ public abstract class TestDatabase {
 				
 			}
 		});
+
 		table1.checkDataIntegrity();
 		table3.checkDataIntegrity();
 		table2.checkDataIntegrity();
 		table4.checkDataIntegrity();
 		table5.checkDataIntegrity();
 		table6.checkDataIntegrity();
+
 
 	}
 
@@ -764,8 +800,8 @@ public abstract class TestDatabase {
 		Table3.Record r2 = table3.getRecords().get(0);
 		table3.updateRecord(r2, map);
 
-        Assert.assertEquals(1, r1.pk1);
-        Assert.assertEquals(3, r1.int_value);
+        Assert.assertEquals(r1.pk1, 1);
+        Assert.assertEquals(r1.int_value, 3);
         Assert.assertEquals(r1.byte_value, (byte) 6);
         Assert.assertEquals('y', r1.char_value);
 		assertTrue(r1.boolean_value);
@@ -1245,7 +1281,7 @@ public abstract class TestDatabase {
 				}
 			});
 			assertTrue(true);
-		} catch (ConcurentTransactionDatabaseException e) {
+		} catch (ConcurrentTransactionDatabaseException e) {
 			fail();
 		}
 
@@ -1259,7 +1295,7 @@ public abstract class TestDatabase {
 				}
 			});
 			assertTrue(true);
-		} catch (ConcurentTransactionDatabaseException e) {
+		} catch (ConcurrentTransactionDatabaseException e) {
 			fail();
 		}
 		try {
@@ -1271,7 +1307,7 @@ public abstract class TestDatabase {
 					return false;
 				}
 			});
-		} catch (ConcurentTransactionDatabaseException e) {
+		} catch (ConcurrentTransactionDatabaseException e) {
 			assertTrue(true);
 		}
 
@@ -1290,7 +1326,7 @@ public abstract class TestDatabase {
 				}
 			});
             fail();
-		} catch (ConcurentTransactionDatabaseException e) {
+		} catch (ConcurrentTransactionDatabaseException e) {
 			assertTrue(true);
 		}
 
@@ -1323,7 +1359,7 @@ public abstract class TestDatabase {
 				}
 			});
             fail();
-		} catch (ConcurentTransactionDatabaseException e) {
+		} catch (ConcurrentTransactionDatabaseException e) {
 			assertTrue(true);
 		}
 		table2.removeRecords(table2.getRecords());
@@ -1566,7 +1602,7 @@ public abstract class TestDatabase {
 			Assert.assertTrue(table1.removeRecord("pk1", rec1.pk1,"pk2", rec1.pk2,"pk3", rec1.pk3,"pk4", rec1.pk4,"pk5", rec1.pk5,"pk6", rec1.pk6));
 			Assert.fail();
 		}
-		catch (FieldDatabaseException e)
+		catch (FieldDatabaseException ignored)
 		{
 
 		}
@@ -1575,7 +1611,7 @@ public abstract class TestDatabase {
 			Assert.assertTrue(table3.removeRecord("pk1", rec1.pk1,"pk2", rec1.pk2,"pk3", rec1.pk3,"pk4", rec1.pk4,"pk5", rec1.pk5,"pk6", rec1.pk6));
 			Assert.fail();
 		}
-		catch (FieldDatabaseException e)
+		catch (FieldDatabaseException ignored)
 		{
 
 		}
@@ -1757,17 +1793,20 @@ public abstract class TestDatabase {
 		} catch (DatabaseException e) {
 			assertTrue(true);
 		}
+		Assert.assertEquals(table4.getRecords().size(), 0);
 		Assert.assertEquals(table2.addRecord(map1).int_value, 0);
 		Assert.assertEquals(table4.addRecord(map2).int_value, 0);
 		Assert.assertEquals(table5.addRecord(map2).int_value, 0);
+
+		Assert.assertEquals(table2.getRecords().get(0).int_value, 0);
+		Assert.assertEquals(table5.getRecords().get(0).int_value, 0);
+		Assert.assertEquals(table4.getRecords().get(0).int_value, 0);
 
 		Table1.Record r1fr2 = table2.getRecords().get(0).fr1_pk1;
 		Table3.Record r2fr4 = table4.getRecords().get(0).fr1_pk1;
 		Table3.Record r2fr5 = table5.getRecords().get(0).fr1_pk1;
 
-		Assert.assertEquals(table2.getRecords().get(0).int_value, 0);
-		Assert.assertEquals(table4.getRecords().get(0).int_value, 0);
-		Assert.assertEquals(table5.getRecords().get(0).int_value, 0);
+
 
         Assert.assertEquals(r1.pk1, r1fr2.pk1);
         Assert.assertEquals(r1.pk2, r1fr2.pk2);
@@ -1955,6 +1994,8 @@ public abstract class TestDatabase {
 		map.put("pk1", 10);
 		map.put("pk2", 1526345L);
 		BigInteger val;
+		Assert.assertEquals(table1.getRecordsNumber(), 2);
+		Assert.assertEquals(table3.getRecordsNumber(), 2);
 		do {
 			val = BigInteger.valueOf(random.nextLong());
 			if (val.longValue() < 0)
@@ -2040,7 +2081,7 @@ public abstract class TestDatabase {
         Assert.assertEquals('s', r1.char_value);
 		assertTrue(r1.boolean_value);
         Assert.assertEquals(r1.short_value, (short) 3);
-        Assert.assertEquals(r1.long_value, (long) 3);
+        Assert.assertEquals(r1.long_value, 3);
         Assert.assertEquals(3.3f, r1.float_value, 0.0);
         Assert.assertEquals(3.3, r1.double_value, 0.0);
         Assert.assertEquals("test string", r1.string_value);
@@ -2049,7 +2090,7 @@ public abstract class TestDatabase {
         Assert.assertEquals('x', r1.CharacterNumber_value.charValue());
 		assertTrue(r1.BooleanNumber_value);
         Assert.assertEquals(r1.ShortNumber_value.shortValue(), (short) 3);
-        Assert.assertEquals(r1.LongNumber_value.longValue(), (long) 3);
+        Assert.assertEquals(r1.LongNumber_value.longValue(), 3);
         Assert.assertEquals(3.3f, r1.FloatNumber_value, 0.0);
         Assert.assertEquals(7.7, r1.DoubleNumber_value, 0.0);
         Assert.assertEquals(r1.BigInteger_value, new BigInteger("5"));
@@ -2071,7 +2112,7 @@ public abstract class TestDatabase {
         Assert.assertEquals('s', r2.char_value);
 		assertTrue(r2.boolean_value);
         Assert.assertEquals(r2.short_value, (short) 3);
-        Assert.assertEquals(r2.long_value, (long) 3);
+        Assert.assertEquals(r2.long_value, 3);
         Assert.assertEquals(3.3f, r2.float_value, 0.0);
         Assert.assertEquals(3.3, r2.double_value, 0.0);
         Assert.assertEquals("test string", r2.string_value);
@@ -2080,7 +2121,7 @@ public abstract class TestDatabase {
         Assert.assertEquals('x', r2.CharacterNumber_value.charValue());
 		assertTrue(r2.BooleanNumber_value);
         Assert.assertEquals(r2.ShortNumber_value.shortValue(), (short) 3);
-        Assert.assertEquals(r2.LongNumber_value.longValue(), (long) 3);
+        Assert.assertEquals(r2.LongNumber_value.longValue(), 3);
         Assert.assertEquals(3.3f, r2.FloatNumber_value, 0.0);
         Assert.assertEquals(7.7, r2.DoubleNumber_value, 0.0);
         Assert.assertEquals(r2.BigInteger_value, new BigInteger("5"));
@@ -2326,34 +2367,34 @@ public abstract class TestDatabase {
 			assertTrue(true);
 		}
 
-		table1.updateRecords(new AlterRecordFilter<Table1.Record>() {
+		if (supportPrimaryKeyUpdateWithCascade()) {
+			table1.updateRecords(new AlterRecordFilter<Table1.Record>() {
 
-			@Override
-			public void nextRecord(Record _record) {
-				HashMap<String, Object> m = new HashMap<>();
-				m.put("int_value", 15);
-				this.update(m);
-			}
-		});
+				@Override
+				public void nextRecord(Record _record) {
+					HashMap<String, Object> m = new HashMap<>();
+					m.put("int_value", 15);
+					this.update(m);
+				}
+			});
 
-		for (Table1.Record r : table1.getRecords())
-            Assert.assertEquals(15, r.int_value);
+			for (Table1.Record r : table1.getRecords())
+				Assert.assertEquals(15, r.int_value);
 
-		table3.updateRecords(new AlterRecordFilter<Table3.Record>() {
+			table3.updateRecords(new AlterRecordFilter<Table3.Record>() {
 
-			@Override
-			public void nextRecord(Table3.Record _record) {
-				HashMap<String, Object> m = new HashMap<>();
-				m.put("int_value", 15);
+				@Override
+				public void nextRecord(Table3.Record _record) {
+					HashMap<String, Object> m = new HashMap<>();
+					m.put("int_value", 15);
 
-				this.update(m);
-			}
-		});
+					this.update(m);
+				}
+			});
 
-		for (Table3.Record r : table3.getRecords())
-            Assert.assertEquals(15, r.int_value);
+			for (Table3.Record r : table3.getRecords())
+				Assert.assertEquals(15, r.int_value);
 
-		try {
 			table1.updateRecords(new AlterRecordFilter<Table1.Record>() {
 
 				@Override
@@ -2363,11 +2404,6 @@ public abstract class TestDatabase {
 					this.update(m);
 				}
 			});
-            fail();
-		} catch (FieldDatabaseException e) {
-			assertTrue(true);
-		}
-		try {
 			table3.updateRecords(new AlterRecordFilter<Table3.Record>() {
 
 				@Override
@@ -2377,25 +2413,22 @@ public abstract class TestDatabase {
 					this.update(m);
 				}
 			});
-            fail();
-		} catch (FieldDatabaseException e) {
-			assertTrue(true);
-		}
-		try {
-			table2.updateRecords(new AlterRecordFilter<Table2.Record>() {
+			try {
+				table2.updateRecords(new AlterRecordFilter<Table2.Record>() {
 
-				@Override
-				public void nextRecord(Table2.Record _record) {
-					HashMap<String, Object> m = new HashMap<>();
-					m.put("int_value", 15);
-					this.update(m);
-				}
-			});
-            fail();
-		} catch (FieldDatabaseException e) {
-			assertTrue(true);
-		}
+					@Override
+					public void nextRecord(Table2.Record _record) {
+						HashMap<String, Object> m = new HashMap<>();
+						m.put("int_value", 15);
+						this.update(m);
+					}
+				});
+				fail();
+			} catch (ConstraintsNotRespectedDatabaseException e) {
+				assertTrue(true);
+			}
 
+		}
 		table1.checkDataIntegrity();
 		table3.checkDataIntegrity();
 		table2.checkDataIntegrity();
@@ -2403,6 +2436,11 @@ public abstract class TestDatabase {
 		table5.checkDataIntegrity();
 		table6.checkDataIntegrity();
 
+	}
+
+	protected boolean supportPrimaryKeyUpdateWithCascade()
+	{
+		return true;
 	}
 
 	private boolean equals(DatabaseRecord _instance1, DatabaseRecord _instance2) throws DatabaseException {
@@ -2669,7 +2707,7 @@ public abstract class TestDatabase {
 			Assert.assertTrue(table1.removeRecordWithCascade("pk1", rec1.pk1,"pk2", rec1.pk2,"pk3", rec1.pk3,"pk4", rec1.pk4,"pk5", rec1.pk5,"pk6", rec1.pk6));
 			Assert.fail();
 		}
-		catch (FieldDatabaseException e)
+		catch (FieldDatabaseException ignored)
 		{
 
 		}
@@ -2678,7 +2716,7 @@ public abstract class TestDatabase {
 			Assert.assertTrue(table3.removeRecordWithCascade("pk1", rec1.pk1,"pk2", rec1.pk2,"pk3", rec1.pk3,"pk4", rec1.pk4,"pk5", rec1.pk5,"pk6", rec1.pk6));
 			Assert.fail();
 		}
-		catch (FieldDatabaseException e)
+		catch (FieldDatabaseException ignored)
 		{
 
 		}
@@ -2845,19 +2883,19 @@ public abstract class TestDatabase {
 		table3.addRecord(map);
 		Table1.Record r1 = table1.getRecords().get(0);
 
-		assertTrue(map.get("pk1").equals(r1.pk1));
-		assertTrue(map.get("pk2").equals(r1.pk2));
-		assertTrue(map.get("pk3").equals(r1.pk3));
-		assertTrue(map.get("pk4").equals(r1.pk4));
-		assertTrue(map.get("pk5").equals(r1.pk5));
-		assertTrue(map.get("pk6").equals(r1.pk6));
-		assertTrue(map.get("pk7").equals(r1.pk7));
-		assertTrue(map.get("int_value").equals(r1.int_value));
-		assertTrue(map.get("byte_value").equals(r1.byte_value));
-		assertTrue(map.get("char_value").equals(r1.char_value));
-		assertTrue(map.get("boolean_value").equals(r1.boolean_value));
-		assertTrue(map.get("short_value").equals(r1.short_value));
-		assertTrue(map.get("long_value").equals(r1.long_value));
+		Assert.assertEquals(r1.pk1, map.get("pk1"));
+		Assert.assertEquals(r1.pk2, map.get("pk2"));
+		Assert.assertEquals(r1.pk3, map.get("pk3"));
+		Assert.assertEquals(r1.pk4, map.get("pk4"));
+		Assert.assertEquals(r1.pk5, map.get("pk5"));
+		Assert.assertEquals(r1.pk6, map.get("pk6"));
+		Assert.assertEquals(r1.pk7, map.get("pk7"));
+		Assert.assertEquals(r1.int_value, map.get("int_value"));
+		Assert.assertEquals(r1.byte_value, map.get("byte_value"));
+		Assert.assertEquals(r1.char_value, map.get("char_value"));
+		Assert.assertEquals(r1.boolean_value, map.get("boolean_value"));
+		Assert.assertEquals(r1.short_value, map.get("short_value"));
+		Assert.assertEquals(r1.long_value, map.get("long_value"));
         Assert.assertEquals(map.get("float_value"), r1.float_value);
         Assert.assertEquals(map.get("double_value"), r1.double_value);
         Assert.assertEquals(map.get("string_value"), r1.string_value);
@@ -2881,19 +2919,19 @@ public abstract class TestDatabase {
 
 		Table3.Record r3 = table3.getRecords().get(0);
 
-		assertTrue(map.get("pk1").equals(r3.pk1));
-		assertTrue(map.get("pk2").equals(r3.pk2));
-		assertTrue(map.get("pk3").equals(r3.pk3));
-		assertTrue(map.get("pk4").equals(r3.pk4));
-		assertTrue(map.get("pk5").equals(r3.pk5));
-		assertTrue(map.get("pk6").equals(r3.pk6));
-		assertTrue(map.get("pk7").equals(r3.pk7));
-		assertTrue(map.get("int_value").equals(r3.int_value));
-		assertTrue(map.get("byte_value").equals(r3.byte_value));
-		assertTrue(map.get("char_value").equals(r3.char_value));
-		assertTrue(map.get("boolean_value").equals(r3.boolean_value));
-		assertTrue(map.get("short_value").equals(r3.short_value));
-		assertTrue(map.get("long_value").equals(r3.long_value));
+		Assert.assertEquals(r3.pk1, map.get("pk1"));
+		Assert.assertEquals(r3.pk2, map.get("pk2"));
+		Assert.assertEquals(r3.pk3, map.get("pk3"));
+		Assert.assertEquals(r3.pk4, map.get("pk4"));
+		Assert.assertEquals(r3.pk5, map.get("pk5"));
+		Assert.assertEquals(r3.pk6, map.get("pk6"));
+		Assert.assertEquals(r3.pk7, map.get("pk7"));
+		Assert.assertEquals(r3.int_value, map.get("int_value"));
+		Assert.assertEquals(r3.byte_value, map.get("byte_value"));
+		Assert.assertEquals(r3.char_value, map.get("char_value"));
+		Assert.assertEquals(r3.boolean_value, map.get("boolean_value"));
+		Assert.assertEquals(r3.short_value, map.get("short_value"));
+		Assert.assertEquals(r3.long_value, map.get("long_value"));
         Assert.assertEquals(map.get("float_value"), r3.float_value);
         Assert.assertEquals(map.get("double_value"), r3.double_value);
         Assert.assertEquals(map.get("string_value"), r3.string_value);
@@ -2962,7 +3000,7 @@ public abstract class TestDatabase {
 		}
 		map.put("pk2", Long.valueOf("2"));
 		map.put("pk3", new BigInteger("2"));
-		Map<String, Object> maps[] = new Map[2];
+		Map<String, Object>[] maps = new Map[2];
 		maps[0] = map;
 		maps[1] = map;
 		try {
@@ -3091,7 +3129,7 @@ public abstract class TestDatabase {
 		assertEquals((SubField) map.get("subField"), r3.subField);
 		assertEquals((SubSubField) map.get("subSubField"), r3.subSubField);
 
-		Map<String, Object> maps2[] = new Map[1];
+		Map<String, Object>[] maps2 = new Map[1];
 		maps2[0] = maps[0];
 
 		try {
@@ -3102,7 +3140,7 @@ public abstract class TestDatabase {
 		}
 		try {
 			table3.addRecords(maps2);
-			assertTrue(false);
+			fail();
 		} catch (ConstraintsNotRespectedDatabaseException e) {
 			assertTrue(true);
 		}
@@ -3139,40 +3177,56 @@ public abstract class TestDatabase {
                 res.add(d.getWorkerIDAndSequence());
             } else if (AbstractDecentralizedID.class.isAssignableFrom(type)) {
                 AbstractDecentralizedID id = (AbstractDecentralizedID) o;
-                if (DatabaseWrapperAccessor.isVarBinarySupported(sql_db))
-                    res.add(id.encode());
+                if (sql_db.isVarBinarySupported()) {
+					WrappedData wd=id.encode();
+					res.add(wd.getBytes().clone());
+				}
                 else {
-                    byte[] bytes = id.encode();
+					WrappedData wd=id.encode();
+                    byte[] bytes = wd.getBytes().clone();
                     BigInteger r = BigInteger.valueOf(1);
                     for (byte aByte : bytes) {
                         r = r.shiftLeft(8).or(BigInteger.valueOf(aByte & 0xFF));
                     }
                     res.add(new BigDecimal(r));
                 }
-            } else if (o.getClass() == int.class || o.getClass() == byte.class || o.getClass() == char.class
-                    || o.getClass() == boolean.class || o.getClass() == short.class || o.getClass() == long.class
-                    || o.getClass() == float.class || o.getClass() == double.class || o.getClass() == Integer.class
+            } else if (o.getClass() == Integer.class
                     || o.getClass() == Byte.class || o.getClass() == Character.class || o.getClass() == Boolean.class
                     || o.getClass() == Short.class || o.getClass() == Long.class || o.getClass() == Float.class
                     || o.getClass() == Double.class || o.getClass() == byte[].class || o.getClass() == String.class) {
                 res.add(o);
 
-            } else if (o.getClass() == BigInteger.class || o.getClass() == BigDecimal.class) {
-                res.add(o.toString());
-            } else if (o instanceof Date) {
+            } else if (o.getClass() == BigInteger.class) {
+				String t=sql_db.getBigIntegerType(128);
+
+                res.add(t.contains("CHAR")?o.toString():(((sql_db.isVarBinarySupported() && t.contains(sql_db.getBinaryBaseWord())) || (t.contains(sql_db.getBlobBaseWord())))?((BigInteger) o).toByteArray():new BigDecimal((BigInteger)o)));
+            } else if (o.getClass() == BigDecimal.class) {
+				String t=sql_db.getBigDecimalType(128);
+				res.add(t.contains("CHAR")?o.toString():(((sql_db.isVarBinarySupported() && t.contains(sql_db.getBinaryBaseWord())) || (t.contains(sql_db.getBlobBaseWord())))?BigDecimalFieldAccessor.bigDecimalToBytes((BigDecimal)o):o));
+			} else if (o instanceof Date) {
                 res.add(new Timestamp(((Date) o).getTime()));
             }
+            else if (o instanceof Calendar)
+			{
+				Calendar c=(Calendar)o;
+				res.add(c.getTimeInMillis());
+				res.add(c.getTimeZone().getID().getBytes(StandardCharsets.UTF_8));
+			}
             else if (o instanceof File)
             {
                 res.add(((File)o).getPath().getBytes(StandardCharsets.UTF_8));
             }
-            else if (o instanceof Serializable) {
-                if (Objects.equals(DatabaseWrapperAccessor.getSerializableType(sql_db), "BLOB")) {
-                    try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-                        try (ObjectOutputStream os = new ObjectOutputStream(baos)) {
-                            os.writeObject(o);
-                            res.add(baos.toByteArray());
-                        }
+            else if (SerializationTools.isSerializable(o)) {
+				String s=sql_db.getBlobType(70000);
+
+                if (s!=null && s.contains(sql_db.getBlobBaseWord())) {
+                    try (RandomByteArrayOutputStream baos = new RandomByteArrayOutputStream()) {
+                    	baos.writeObject(o, true, Integer.MAX_VALUE);
+                    	baos.flush();
+                    	if (sql_db.isVarBinarySupported())
+							res.add(baos.getBytes());
+                    	else
+							res.add(new BigInteger(baos.getBytes()));
                     }
                 } else
                     res.add(o);
@@ -3190,26 +3244,109 @@ public abstract class TestDatabase {
 		} else if (objectClass == RenforcedDecentralizedIDGenerator.class) {
 			res.add(variableName + "_ts");
 			res.add(variableName + "_widseq");
-		} else {
+		}if (Calendar.class.isAssignableFrom(objectClass)) {
+			res.add(variableName + "_utc");
+			res.add(variableName + "_tz");
+		}
+		else {
 			res.add(variableName);
 
 		}
 
 		return res;
 	}
+	private <T extends Record> void subInterpreterCommandProvider(SymbolType op_cond, SymbolType op_comp, StringBuffer command, StringBuffer expectedCommand,
+																  String fieldName, AtomicInteger openedParenthesis, Table<T> table, T record,
+																  AtomicBoolean whereResult) throws DatabaseException {
+		if (op_comp==SymbolType.IS || op_comp==SymbolType.ISNOT)
+		{
+			boolean startCommand = true;
+			boolean test = false;
+			if (command.length() > 0) {
+				startCommand = false;
+				command.append(" ");
+				command.append(op_cond.getContent());
+				command.append(" ");
 
+				expectedCommand.append(" ");
+				expectedCommand.append(op_cond.getContent());
+				expectedCommand.append(" ");
+			}
+
+			Table.FieldAccessorValue fieldAccessorAndValue =table.getFieldAccessorAndValue(record, fieldName);
+			FieldAccessor fa=fieldAccessorAndValue.getFieldAccessor();
+			Object nearestObjectInstance=fieldAccessorAndValue.getValue();
+			SqlField[] sqlFields=fa.getDeclaredSqlFields();
+			assert sqlFields.length>0;
+			if (Math.random() < 0.5) {
+				command.append("(");
+				expectedCommand.append("(");
+				openedParenthesis.incrementAndGet();
+			}
+			command.append(fa.getFieldName())
+					.append(" ");
+			if (op_comp==SymbolType.IS)
+				command.append(Math.random()>0.5?"IS":"is");
+			else
+				command.append(Math.random()>0.5?"IS NOT":"is not");
+			command.append(" ");
+			command.append(Math.random()>0.5?"NULL":"null");
+			expectedCommand.append("(");
+			for (int i = 0; i < sqlFields.length; i++) {
+				if (i > 0)
+					expectedCommand.append(" AND ");
+				expectedCommand.append("%Table1Name%");
+				expectedCommand.append(".`");
+				expectedCommand.append(sqlFields[i].shortFieldWithoutQuote.replace(".", "_").toUpperCase());
+				expectedCommand.append("`");
+				expectedCommand.append(op_comp.getContent());
+				expectedCommand.append(SymbolType.NULL.getContent());
+			}
+			expectedCommand.append(")");
+
+
+			if (op_comp == SymbolType.IS) {
+				test = fa.getValue(nearestObjectInstance)==null;
+			}
+			else if (op_comp == SymbolType.ISNOT) {
+				test = fa.getValue(nearestObjectInstance)!=null;
+			}
+
+
+			if (openedParenthesis.get() > 0 && Math.random() < 0.5) {
+				command.append(")");
+				expectedCommand.append(")");
+				openedParenthesis.decrementAndGet();
+			}
+			if (startCommand)
+				whereResult.set(test);
+			else if (op_cond == SymbolType.ANDCONDITION)
+				whereResult.set(whereResult.get() && test);
+			else if (op_cond == SymbolType.ORCONDITION)
+				whereResult.set(whereResult.get() || test);
+		}
+
+	}
 	@SuppressWarnings("unused")
 	private <T extends Record> void subInterpreterCommandProvider(SymbolType op_cond, SymbolType op_comp, String cs,
 																  HashMap<String, Object> parametersTable1Equallable, StringBuffer command, StringBuffer expectedCommand,
 																  String fieldName, Object value, HashMap<Integer, Object> expectedParameters, boolean useParameter,
 																  AtomicInteger expectedParamterIndex, AtomicInteger openedParenthesis, Table<T> table, T record,
 																  AtomicBoolean whereResult) throws IOException, DatabaseException {
+		boolean compare=false;
+		if (value==null)
+			return;
 		if (op_comp == SymbolType.LIKE || op_comp == SymbolType.NOTLIKE) {
 			if (!(value instanceof String))
 				return;
 		} else if (op_comp == SymbolType.GREATEROPERATOR || op_comp == SymbolType.GREATEROREQUALOPERATOR
 				|| op_comp == SymbolType.LOWEROPERATOR || op_comp == SymbolType.LOWEROREQUALOPERATOR) {
-			if (!(value instanceof Number) || value.getClass() == Boolean.class)
+			compare=true;
+			if (((value instanceof Calendar) || (value instanceof Date))) {
+				if (!useParameter)
+					return;
+			}
+			else if (!(value instanceof Number))
 				return;
 		} else if (!useParameter) {
 			if (!(value instanceof String))
@@ -3236,7 +3373,7 @@ public abstract class TestDatabase {
 
 		boolean test = false;
 
-		ArrayList<String> sqlVariablesName = getExpectedParametersName(fieldName, value==null?DecentralizedIDGenerator.class:value.getClass());
+		ArrayList<String> sqlVariablesName = getExpectedParametersName(fieldName, value.getClass());
 
 		Table.FieldAccessorValue fieldAccessorAndValue =table.getFieldAccessorAndValue(record, fieldName);
 		FieldAccessor fa=fieldAccessorAndValue.getFieldAccessor();
@@ -3251,6 +3388,10 @@ public abstract class TestDatabase {
 				test = !fa.equals(nearestObjectInstance, value);
 			else if (op_comp == SymbolType.LIKE)
 				test = fa.equals(nearestObjectInstance, value);
+			else if (op_comp == SymbolType.IS)
+				test = fa.equals(nearestObjectInstance, null);
+			else if (op_comp == SymbolType.ISNOT)
+				test = !fa.equals(nearestObjectInstance, null);
 			else if (op_comp == SymbolType.NOTLIKE)
 				test = !fa.equals(nearestObjectInstance, value);
 			else {
@@ -3275,16 +3416,21 @@ public abstract class TestDatabase {
 			ArrayList<Object> sqlInstance = getExpectedParameter(fa.getFieldClassType(), value);
 			if (op_comp == SymbolType.EQUALOPERATOR || op_comp == SymbolType.NOTEQUALOPERATOR)
 				expectedCommand.append("(");
-			for (int i = 0; i < sqlInstance.size(); i++) {
+			assert sqlInstance.size()>0;
+			int s=sqlInstance.size();
+			if (compare)
+				s=1;
+			for (int i = 0; i < s; i++) {
 				if (i > 0)
 					expectedCommand.append(" AND ");
 				expectedCommand.append("%Table1Name%");
-				expectedCommand.append(".");
+				expectedCommand.append(".`");
 				expectedCommand.append(sqlVariablesName.get(i).replace(".", "_").toUpperCase());
+				expectedCommand.append("`");
 				expectedCommand.append(op_comp.getContent());
 				if (value==null)
 				{
-					expectedCommand.append("NULL");
+					throw new IllegalAccessError();
 				}
 				else
 				{
@@ -3295,7 +3441,13 @@ public abstract class TestDatabase {
 			if (op_comp == SymbolType.EQUALOPERATOR || op_comp == SymbolType.NOTEQUALOPERATOR)
 				expectedCommand.append(")");
 		} else {
-			if (op_comp == SymbolType.EQUALOPERATOR) {
+			if (op_comp == SymbolType.IS) {
+				test = fa.getValue(nearestObjectInstance)==null;
+			}
+			else if (op_comp == SymbolType.ISNOT) {
+				test = fa.getValue(nearestObjectInstance)!=null;
+			}
+			else if (op_comp == SymbolType.EQUALOPERATOR) {
 				assert fa!=null;
 				test = fa.getValue(nearestObjectInstance).toString().equals(value.toString());
 			}
@@ -3306,9 +3458,9 @@ public abstract class TestDatabase {
 			else if (op_comp == SymbolType.NOTLIKE)
 				test = !fa.getValue(nearestObjectInstance).toString().equals(value.toString());
 			else {
-				BigDecimal v = new BigDecimal(fa.getValue(nearestObjectInstance).toString());
+				@SuppressWarnings("rawtypes") Comparable v = (Comparable)fa.getValue(nearestObjectInstance);
 
-				int comp = v.compareTo(new BigDecimal(value.toString()));
+				@SuppressWarnings("unchecked") int comp = v.compareTo(value);
 				if (op_comp == SymbolType.GREATEROPERATOR)
 					test = comp > 0;
 				else if (op_comp == SymbolType.GREATEROREQUALOPERATOR)
@@ -3321,16 +3473,17 @@ public abstract class TestDatabase {
 
 			if (value instanceof CharSequence)
 				command.append("\"");
-			command.append(value.toString());
+			command.append(value);
 			if (value instanceof CharSequence)
 				command.append("\"");
 			expectedCommand.append("%Table1Name%");
-			expectedCommand.append(".");
+			expectedCommand.append(".`");
 			expectedCommand.append(sqlVariablesName.get(0).replace(".", "_").toUpperCase());
+			expectedCommand.append("`");
 			expectedCommand.append(op_comp.getContent());
 			if (value instanceof CharSequence)
 				expectedCommand.append("\"");
-			expectedCommand.append(value.toString());
+			expectedCommand.append(value);
 			if (value instanceof CharSequence)
 				expectedCommand.append("\"");
 		}
@@ -3379,7 +3532,7 @@ public abstract class TestDatabase {
 		
 
 		Calendar calendar = Calendar.getInstance(Locale.CANADA);
-		calendar.set(2045, 7, 29, 18, 32, 43);
+		calendar.set(2045, Calendar.AUGUST, 29, 18, 32, 43);
 
 		parametersTable1Equallable.put("byte_array_value", new byte[] { (byte) 0, (byte) 1 });
 		parametersTable1Equallable.put("BigInteger_value", BigInteger.valueOf(3));
@@ -3429,12 +3582,13 @@ public abstract class TestDatabase {
 		SymbolType[] ops_cond = new SymbolType[] { SymbolType.ANDCONDITION, SymbolType.ORCONDITION };
 		SymbolType[] ops_comp = new SymbolType[] { SymbolType.EQUALOPERATOR, SymbolType.NOTEQUALOPERATOR,
 				SymbolType.LIKE, SymbolType.NOTLIKE, SymbolType.GREATEROPERATOR, SymbolType.GREATEROREQUALOPERATOR,
-				SymbolType.LOWEROPERATOR, SymbolType.LOWEROREQUALOPERATOR };
+				SymbolType.LOWEROPERATOR, SymbolType.LOWEROREQUALOPERATOR, SymbolType.IS, SymbolType.ISNOT};
 
 		for (SymbolType op_cond : ops_cond) {
 			for (SymbolType op_comp : ops_comp) {
 				for (String cs : op_comp.getMatches()) {
 					for (boolean useParameter : new boolean[] { false, true }) {
+
 						StringBuffer command = new StringBuffer();
 						StringBuffer expectedCommand = new StringBuffer();
 
@@ -3443,14 +3597,24 @@ public abstract class TestDatabase {
 						AtomicInteger openedParenthesis = new AtomicInteger(0);
 						AtomicBoolean expectedTestResult = new AtomicBoolean();
 						HashMap<String, Object> parametersTable1Equallable2 = new HashMap<>();
-						for (Map.Entry<String, Object> m : parametersTable1Equallable.entrySet()) {
-							if (m.getValue()!=null || op_comp==SymbolType.EQUALOPERATOR || op_comp==SymbolType.NOTEQUALOPERATOR)
-								subInterpreterCommandProvider(op_cond, op_comp, cs, parametersTable1Equallable, command,
-									expectedCommand, m.getKey(), m.getValue(), expectedParameters, useParameter,
-									expectedParamterIndex, openedParenthesis, table1, record, expectedTestResult);
-							parametersTable1Equallable2.put(m.getKey().replace(".", "_"), m.getValue());
+						if (op_comp==SymbolType.IS || op_comp==SymbolType.ISNOT)
+						{
+							for (FieldAccessor fa : table1.getFieldAccessors()) {
+								subInterpreterCommandProvider(op_cond, op_comp, command, expectedCommand,
+										fa.getFieldName(), openedParenthesis, table1, record, expectedTestResult);
+							}
 						}
+						else {
 
+							for (Map.Entry<String, Object> m : parametersTable1Equallable.entrySet()) {
+
+								if (m.getValue() != null/* || op_comp == SymbolType.EQUALOPERATOR*/)
+									subInterpreterCommandProvider(op_cond, op_comp, cs, parametersTable1Equallable, command,
+											expectedCommand, m.getKey(), m.getValue(), expectedParameters, useParameter,
+											expectedParamterIndex, openedParenthesis, table1, record, expectedTestResult);
+								parametersTable1Equallable2.put(m.getKey().replace(".", "_"), m.getValue());
+							}
+						}
 
 						while (openedParenthesis.get() > 0) {
 							command.append(")");
@@ -3487,13 +3651,18 @@ public abstract class TestDatabase {
 			String expectedSqlCommand, Map<Integer, Object> expectedSqlParameters, Table1.Record record,
 			boolean expectedTestResult) throws DatabaseException, IOException, SQLException {
 		Table<?> table=sql_db.getTableInstance(tableClass);
-		Table1 table1=(Table1)sql_db.getTableInstance(Table1.class);
+		Table1 table1= sql_db.getTableInstance(Table1.class);
 		if (expectedSqlCommand!=null)
 			expectedSqlCommand=expectedSqlCommand.replace("%Table1Name%", table1.getSqlTableName());
 		HashMap<Integer, Object> sqlParameters = new HashMap<>();
+
 		RuleInstance rule = Interpreter.getRuleInstance(command);
-		String sqlCommand = rule.translateToSqlQuery(table, parameters, sqlParameters, new HashSet<TableJunction>())
+		String sqlCommand = rule.translateToSqlQuery(table, parameters, sqlParameters, new HashSet<>())
 				.toString();
+		if (!table.getDatabaseWrapper().supportsItalicQuotesWithTableAndFieldNames()) {
+			assert expectedSqlCommand != null;
+			expectedSqlCommand=expectedSqlCommand.replace("`", "");
+		}
 		Assert.assertEquals(sqlCommand, expectedSqlCommand);
 		for (Map.Entry<Integer, Object> e : sqlParameters.entrySet()) {
 			if (e.getValue() == null)
@@ -3505,9 +3674,14 @@ public abstract class TestDatabase {
 			Object value=e.getValue();
 			if (ep instanceof byte[] && value instanceof BigDecimal)
 			{
-				value=ByteTabFieldAccessor.getByteTab((BigDecimal)value);
+				byte[] t;
+				t=BigDecimalFieldAccessor.bigDecimalToBytes((BigDecimal)value);
+				if (!Arrays.equals(t, (byte[])ep))
+					t=ByteTabFieldAccessor.getByteTab((BigDecimal)value);
+				value=t;
 			}
-			assertEqualsParameters(value, ep, "Class type source " + e.getValue().getClass()+", expected class "+ep.getClass());
+
+			assertEqualsParameters(value, ep, "Parameter "+e.getKey()+". Class type source " + e.getValue().getClass()+", expected class "+ep.getClass()+".");
 		}
 		Assert.assertEquals(rule.isConcernedBy(table1, parameters, record), expectedTestResult, command);
 	}
@@ -3524,14 +3698,13 @@ public abstract class TestDatabase {
 			if (parameter instanceof ByteArrayInputStream)
 			{
 				ByteArrayInputStream bais=(ByteArrayInputStream)parameter;
+
 				try(ByteArrayOutputStream baos=new ByteArrayOutputStream())
 				{
-					int val=bais.read();
-					while (val!=-1)
-					{
-						baos.write(val);
-						val=bais.read();
-					}
+					int b;
+					while((b=bais.read())>=0)
+						baos.write(b);
+					baos.flush();
 					parameter=baos.toByteArray();
 				}
 			}
@@ -3541,12 +3714,13 @@ public abstract class TestDatabase {
 				
 				parameter=blob.getBytes(1, (int)blob.length());
 			}
+
 		}
 		Assert.assertEquals(parameter, expectedParameter, message);
 	}
 
 	private static final AtomicInteger next_unique = new AtomicInteger(0);
-	private static AtomicInteger number_thread_test = new AtomicInteger(0);
+	private static final AtomicInteger number_thread_test = new AtomicInteger(0);
 
 	@Test(dependsOnMethods = { "setAutoRandomFields" })
 	public void prepareMultipleTest() throws DatabaseException {
@@ -3588,9 +3762,8 @@ public abstract class TestDatabase {
 		table1.addRecord(map);
 		table3.addRecord(map);
 		@SuppressWarnings("unchecked")
-		HashMap<String, Object> list[] = new HashMap[10];
-		for (int i = 0; i < list.length; i++)
-			list[i] = map;
+		HashMap<String, Object>[] list = new HashMap[10];
+		Arrays.fill(list, map);
 		table1.addRecords(list);
 		table3.addRecords(list);
 
@@ -3601,7 +3774,7 @@ public abstract class TestDatabase {
 				map2.put("fr1_pk1", records.get(random.nextInt(records.size())));
 				map2.put("int_value", random.nextInt());
 				table2.addRecord(map2);
-			} catch (ConstraintsNotRespectedDatabaseException e) {
+			} catch (ConstraintsNotRespectedDatabaseException ignored) {
 			} catch (RecordNotFoundDatabaseException e) {
 				if (no_thread)
 					throw e;
@@ -3616,7 +3789,7 @@ public abstract class TestDatabase {
 
 				table4.addRecord(map2);
 				table5.addRecord(map2);
-			} catch (ConstraintsNotRespectedDatabaseException e) {
+			} catch (ConstraintsNotRespectedDatabaseException ignored) {
 
 			} catch (RecordNotFoundDatabaseException e) {
 				if (no_thread)
@@ -3637,7 +3810,7 @@ public abstract class TestDatabase {
 					}
 				}
 
-			} catch (ConstraintsNotRespectedDatabaseException e) {
+			} catch (ConstraintsNotRespectedDatabaseException ignored) {
 			} catch (RecordNotFoundDatabaseException e) {
 				if (no_thread)
 					throw e;
@@ -3666,19 +3839,19 @@ public abstract class TestDatabase {
 		Table5 table5;
 		Table6 table6;
 		if (!isMultiConcurrentDatabase() || random.nextInt(5) != 0) {
-			table1 = TestDatabase.table1;
-			table2 = TestDatabase.table2;
-			table3 = TestDatabase.table3;
-			table4 = TestDatabase.table4;
-			table5 = TestDatabase.table5;
-			table6 = TestDatabase.table6;
+			table1 = this.table1;
+			table2 = this.table2;
+			table3 = this.table3;
+			table4 = this.table4;
+			table5 = this.table5;
+			table6 = this.table6;
 		} else {
-			table1 = TestDatabase.table1b;
-			table2 = TestDatabase.table2b;
-			table3 = TestDatabase.table3b;
-			table4 = TestDatabase.table4b;
-			table5 = TestDatabase.table5b;
-			table6 = TestDatabase.table6b;
+			table1 = this.table1b;
+			table2 = this.table2b;
+			table3 = this.table3b;
+			table4 = this.table4b;
+			table5 = this.table5b;
+			table6 = this.table6b;
 		}
 		int r = random.nextInt(33);
 
@@ -3753,19 +3926,19 @@ public abstract class TestDatabase {
                     Assert.assertEquals(r1.CharacterNumber_value, map.get("CharacterNumber_value"));
                     Assert.assertEquals(r1.BooleanNumber_value, map.get("BooleanNumber_value"));
                     Assert.assertEquals(r1.ShortNumber_value, map.get("ShortNumber_value"));
-					assertTrue(r1.LongNumber_value.equals(map.get("LongNumber_value")));
-					assertTrue(r1.FloatNumber_value.equals(map.get("FloatNumber_value")));
-					assertTrue(r1.DoubleNumber_value.equals(map.get("DoubleNumber_value")));
-					assertTrue(r1.BigInteger_value.equals(map.get("BigInteger_value")));
-					assertTrue(r1.BigDecimal_value.equals(map.get("BigDecimal_value")));
-					assertTrue(r1.secretKey.equals(map.get("secretKey")));
-					assertTrue(r1.typeSecretKey.equals(map.get("typeSecretKey")));
-					assertTrue(r1.file.equals(map.get("file")));
+					Assert.assertEquals(map.get("LongNumber_value"), r1.LongNumber_value);
+					Assert.assertEquals(map.get("FloatNumber_value"), r1.FloatNumber_value);
+					Assert.assertEquals(map.get("DoubleNumber_value"), r1.DoubleNumber_value);
+					Assert.assertEquals(map.get("BigInteger_value"), r1.BigInteger_value);
+					Assert.assertEquals(map.get("BigDecimal_value"), r1.BigDecimal_value);
+					Assert.assertEquals(map.get("secretKey"), r1.secretKey);
+					Assert.assertEquals(map.get("typeSecretKey"), r1.typeSecretKey);
+					Assert.assertEquals(map.get("file"), r1.file);
 					assertEquals((SubField) map.get("subField"), r1.subField);
 					assertEquals((SubSubField) map.get("subSubField"), r1.subSubField);
 
 					for (int i = 0; i < 3; i++)
-						assertTrue(r1.byte_array_value[i] == ((byte[]) map.get("byte_array_value"))[i]);
+						Assert.assertEquals(((byte[]) map.get("byte_array_value"))[i], r1.byte_array_value[i]);
 
                     Assert.assertEquals(r3.pk1, (int) (Integer) map.get("pk1"));
                     Assert.assertEquals(r3.int_value, (int) (Integer) map.get("int_value"));
@@ -4147,22 +4320,22 @@ public abstract class TestDatabase {
                     }
                 }));
 				if (no_thread)
-					assertTrue(l == table1.getRecordsNumber());
+					Assert.assertEquals(table1.getRecordsNumber(), l);
 				table2.getRecords();
 				table6.getRecords();
 			}
 				break;
 			case 15: {
 				long l = table3.getRecordsNumber();
-				assertTrue(table3.removeRecordsWithCascade(new Filter<Table3.Record>() {
+				Assert.assertEquals(table3.removeRecordsWithCascade(new Filter<Table3.Record>() {
 
 					@Override
 					public boolean nextRecord(Table3.Record _record) {
 						return false;
 					}
-				}) == 0);
+				}), 0);
 				if (no_thread)
-					assertTrue(l == table3.getRecordsNumber());
+					Assert.assertEquals(table3.getRecordsNumber(), l);
 				table4.getRecords();
 				table5.getRecords();
 				table6.getRecords();
@@ -4268,34 +4441,36 @@ public abstract class TestDatabase {
 			}
 				break;
 			case 21: {
-				table1.updateRecords(new AlterRecordFilter<Table1.Record>() {
+				if (supportPrimaryKeyUpdateWithCascade()) {
+					table1.updateRecords(new AlterRecordFilter<Table1.Record>() {
 
-					@Override
-					public void nextRecord(Record _record) {
-						HashMap<String, Object> m = new HashMap<>();
-						m.put("int_value", 18);
-						this.update(m);
+						@Override
+						public void nextRecord(Record _record) {
+							HashMap<String, Object> m = new HashMap<>();
+							m.put("int_value", 18);
+							this.update(m);
+						}
+					});
+					if (no_thread) {
+						ArrayList<Table1.Record> records1 = table1.getRecords();
+						for (Table1.Record r1 : records1)
+							Assert.assertEquals(18, r1.int_value);
 					}
-				});
-				if (no_thread) {
-					ArrayList<Table1.Record> records1 = table1.getRecords();
-					for (Table1.Record r1 : records1)
-                        Assert.assertEquals(18, r1.int_value);
-				}
 
-				table3.updateRecords(new AlterRecordFilter<Table3.Record>() {
+					table3.updateRecords(new AlterRecordFilter<Table3.Record>() {
 
-					@Override
-					public void nextRecord(Table3.Record _record) {
-						HashMap<String, Object> m = new HashMap<>();
-						m.put("int_value", 18);
-						this.update(m);
+						@Override
+						public void nextRecord(Table3.Record _record) {
+							HashMap<String, Object> m = new HashMap<>();
+							m.put("int_value", 18);
+							this.update(m);
+						}
+					});
+					if (no_thread) {
+						ArrayList<Table3.Record> records3 = table3.getRecords();
+						for (Table3.Record r3 : records3)
+							Assert.assertEquals(18, r3.int_value);
 					}
-				});
-				if (no_thread) {
-					ArrayList<Table3.Record> records3 = table3.getRecords();
-					for (Table3.Record r3 : records3)
-                        Assert.assertEquals(18, r3.int_value);
 				}
 
 			}
@@ -4307,9 +4482,7 @@ public abstract class TestDatabase {
 
 						@Override
 						public boolean nextRecord(Table1.Record _record) {
-							if ((val++) % 3 == 0)
-								return true;
-							return false;
+							return (val++) % 3 == 0;
 						}
 					});
 					try {
@@ -4341,9 +4514,7 @@ public abstract class TestDatabase {
 
 						@Override
 						public boolean nextRecord(Table3.Record _record) {
-							if ((val++) % 3 == 0)
-								return true;
-							return false;
+							return (val++) % 3 == 0;
 						}
 					});
 					try {
@@ -4380,9 +4551,7 @@ public abstract class TestDatabase {
 
 						@Override
 						public boolean nextRecord(Table1.Record _record) {
-							if ((val++) % 3 == 0)
-								return true;
-							return false;
+							return (val++) % 3 == 0;
 						}
 					});
 					for (Iterator<Table1.Record> it = recs.iterator(); it.hasNext();) {
@@ -4418,9 +4587,7 @@ public abstract class TestDatabase {
 
 						@Override
 						public boolean nextRecord(Table3.Record _record) {
-							if ((val++) % 3 == 0)
-								return true;
-							return false;
+							return (val++) % 3 == 0;
 						}
 					});
 					for (Iterator<Table3.Record> it = recs.iterator(); it.hasNext();) {
@@ -4611,7 +4778,7 @@ public abstract class TestDatabase {
 				if (no_thread) {
 					ArrayList<Table1.Record> r1b = table1.getOrderedRecords(table1.getRecords(), false, "subField.short_value",
 							"LongNumber_value");
-					assertTrue(r1.size() == r1b.size());
+					Assert.assertEquals(r1b.size(), r1.size());
 
 					for (int i = 0; i < r1.size(); i++) {
 						Assert.assertEquals(r1.get(i).subField.short_value, r1b.get(i).subField.short_value);
@@ -4656,7 +4823,7 @@ public abstract class TestDatabase {
 				if (no_thread) {
 					ArrayList<Table3.Record> r3b = table3.getOrderedRecords(table3.getRecords(), true, "subField.short_value",
 							"LongNumber_value");
-					assertTrue(r3.size() == r3b.size());
+					Assert.assertEquals(r3b.size(), r3.size());
 
 					for (int i = 0; i < r3.size(); i++) {
 						assertTrue(table3.equalsAllFields(r3.get(i), r3b.get(i)));
@@ -4965,11 +5132,13 @@ public abstract class TestDatabase {
 
 	@Test(threadPoolSize = 1, dependsOnMethods = { "testBackup" })
 	public void testDatabaseRemove() throws DatabaseException {
-		sql_db.deleteDatabase(dbConfig1);
+		sql_db.deleteDatabase(dbConfig1, true);
 		try {
-			sql_db.loadDatabase(dbConfig1, false);
+			sql_db.getDatabaseConfigurationsBuilder()
+					.addConfiguration(dbConfig1, false, false)
+					.commit();
 			fail();
-		} catch (Exception e) {
+		} catch (Exception ignored) {
 
 		}
 	}

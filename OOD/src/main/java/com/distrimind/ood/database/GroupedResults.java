@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -70,83 +70,20 @@ public final class GroupedResults<T extends DatabaseRecord> {
 			if (this.field==null)
 				throw new ConstraintsNotRespectedDatabaseException("The field " + field_name + " does not exists.");
 
-			/*ArrayList<String> strings = splitPoint(field_name);
-			Table<?> current_table = GroupedResults.this.table;
-
-			for (String f : strings) {
-				if (current_table == null)
-					throw new ConstraintsNotRespectedDatabaseException("The field " + field_name + " does not exists.");
-				FieldAccessor founded_field = null;
-				for (FieldAccessor fa : current_table.getFieldAccessors()) {
-					if (fa.getFieldName().equals(f)) {
-						founded_field = fa;
-						break;
-					}
-				}
-				if (founded_field == null)
-					throw new ConstraintsNotRespectedDatabaseException("The field " + f
-							+ " does not exist into the class/table " + current_table.getClass().getSqlTableName());
-
-				fields.add(founded_field);
-
-				if (founded_field.isForeignKey())
-					current_table = ((ForeignKeyFieldAccessor) founded_field).getPointedTable();
-				else
-					current_table = null;
-			}*/
 		}
 
 		public String getName() {
 			return field_name;
 		}
 
-		/*private ArrayList<String> splitPoint(String s) {
-			ArrayList<String> res = new ArrayList<>(10);
-			int last_index = 0;
-			for (int i = 0; i < s.length(); i++) {
-				if (s.charAt(i) == '.') {
-					if (i != last_index) {
-						res.add(s.substring(last_index, i));
-					}
-					last_index = i + 1;
-				}
-			}
-			if (s.length() != last_index) {
-				res.add(s.substring(last_index));
-			}
-
-			return res;
-		}*/
-
 		public boolean equals(T o1, Object o2) throws DatabaseException {
 			Object record=GroupedResults.this.table.getFieldAccessorAndValue(o1, field_name).getValue();
-			/*Object r1 = o1;
-			for (int i = 0; i < fields.size() - 1; i++) {
-				if (r1 == null)
-					return null == o2;
-				ForeignKeyFieldAccessor f = (ForeignKeyFieldAccessor) fields.get(i);
-				r1 = f.getValue(r1);
-			}
-			if (r1 == null)
-				return null == o2;
-			FieldAccessor fa = fields.get(fields.size() - 1);*/
 			return this.field.equals(record, o2);
 		}
 
 		public Object getValue(T o) throws DatabaseException {
 			Object record=GroupedResults.this.table.getFieldAccessorAndValue(o, field_name).getValue();
 			return this.field.getValue(record);
-			/*Object r = o;
-			for (int i = 0; i < fields.size() - 1; i++) {
-				if (r == null)
-					return null;
-				ForeignKeyFieldAccessor f = (ForeignKeyFieldAccessor) fields.get(i);
-				r = f.getValue(r);
-			}
-			if (r == null)
-				return null;
-			FieldAccessor fa = fields.get(fields.size() - 1);
-			return fa.getValue(r);*/
 		}
 
 	}
@@ -156,13 +93,13 @@ public final class GroupedResults<T extends DatabaseRecord> {
 	private final ArrayList<Group> groups = new ArrayList<>();
 
 	@SuppressWarnings("unchecked")
-	private GroupedResults(DatabaseWrapper _sql_conncection, int databaseVersion, Collection<T> _records, Class<T> _class_record,
+	private GroupedResults(DatabaseWrapper _sql_connection, int databaseVersion, Collection<T> _records, Class<T> _class_record,
 			String... _fields) throws DatabaseException {
 		Class<T> class_record;
 
 		class_record = _class_record;
 
-		table = (Table<T>) _sql_conncection.getTableInstance(Table.getTableClass(class_record), databaseVersion);
+		table = (Table<T>) _sql_connection.getTableInstance(Table.getTableClass(class_record), databaseVersion);
 
 		if (_fields.length == 0)
 			throw new ConstraintsNotRespectedDatabaseException("It must have at mean one field to use.");

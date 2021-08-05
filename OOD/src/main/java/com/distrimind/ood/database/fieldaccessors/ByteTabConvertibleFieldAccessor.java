@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -36,26 +36,21 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database.fieldaccessors;
 
+import com.distrimind.ood.database.*;
+import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
+import com.distrimind.ood.database.exceptions.FieldDatabaseException;
+import com.distrimind.util.io.RandomInputStream;
+import com.distrimind.util.io.RandomOutputStream;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.sql.Blob;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Map;
-
-import com.distrimind.ood.database.DatabaseRecord;
-import com.distrimind.ood.database.DatabaseWrapper;
-import com.distrimind.ood.database.SqlField;
-import com.distrimind.ood.database.SqlFieldInstance;
-import com.distrimind.ood.database.Table;
-import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
-import com.distrimind.ood.database.exceptions.FieldDatabaseException;
-import com.distrimind.util.io.RandomInputStream;
-import com.distrimind.util.io.RandomOutputStream;
 
 /**
  * 
@@ -71,35 +66,39 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 	private final long limit;
 
 	protected ByteTabConvertibleFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection,
-			Field _field, String parentFieldName, ByteTabObjectConverter converter) throws DatabaseException {
-		super(_sql_connection, _field, parentFieldName, getCompatibleClasses(_field), table);
+			Field _field, String parentFieldName, ByteTabObjectConverter converter, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
+		super(_sql_connection, _field, parentFieldName, getCompatibleClasses(_field), table, severalPrimaryKeysPresentIntoTable);
 		sql_fields = new SqlField[1];
-
+		isVarBinary=DatabaseWrapperAccessor.isVarBinarySupported(sql_connection);
 		String type;
 		long l = converter.getDefaultSizeLimit(field.getType());
 		if (l <= 0)
 			l = ByteTabFieldAccessor.defaultByteTabSize;
+		if (!isVarBinary)
+			l*=3;
 		boolean isBigInteger=false;
-		if (l <= ByteTabFieldAccessor.shortTabSizeLimit) {
-			if (DatabaseWrapperAccessor.isVarBinarySupported(sql_connection))
-				type = "VARBINARY(" + l + ")";
+		if (useBlob)
+		{
+			type=DatabaseWrapperAccessor.getBlobType(sql_connection, l);
+		}
+		else if (l <= ByteTabFieldAccessor.shortTabSizeLimit) {
+			if (isVarBinary)
+				type = DatabaseWrapperAccessor.getVarBinaryType(_sql_connection, l);
 			else if (DatabaseWrapperAccessor.isLongVarBinarySupported(sql_connection))
-				type = "LONGVARBINARY(" + l + ")";
+				type = DatabaseWrapperAccessor.getLongVarBinaryType(_sql_connection, l);
 			else
 			{
 				isBigInteger=true;
-				type = DatabaseWrapperAccessor.getBigIntegerType(sql_connection);
+				type = DatabaseWrapperAccessor.getBigDecimalType(sql_connection, l);
 			}
 		} else {
 			if (DatabaseWrapperAccessor.isLongVarBinarySupported(sql_connection))
-				type = "LONGVARBINARY(" + l + ")";
+				type = DatabaseWrapperAccessor.getLongVarBinaryType(_sql_connection, l);
 			else
-				type = "BLOB(" + l + ")";
+				type=DatabaseWrapperAccessor.getBlobType(sql_connection, l);
 		}
 		assert type != null;
-		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(), type, null, null, isNotNull());
-
-		isVarBinary = type.startsWith("VARBINARY") || type.startsWith("LONGVARBINARY");
+		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(), type, isNotNull());
 		this.isBigInteger=isBigInteger;
 		this.converter = converter;
 		this.limit=l;
@@ -131,7 +130,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 								+ ") into the DatabaseField class " + field.getDeclaringClass().getName()
 								+ ", is null and should not be (property NotNull present).");
 		} else if (!(field.getType().isAssignableFrom(_field_instance.getClass())))
-			throw new FieldDatabaseException("The given _field_instance parameter, destinated to the field "
+			throw new FieldDatabaseException("The given _field_instance parameter, destined to the field "
 					+ field.getName() + " of the class " + field.getDeclaringClass().getName() + ", should be a "
 					+ field.getType().getName() + " and not a " + _field_instance.getClass().getName());
 		try {
@@ -155,36 +154,6 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	@Override
-	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			Object obj1 = null;
-			if (_field_instance!=null && !field.getType().isAssignableFrom(_field_instance.getClass()))
-				obj1 = _field_instance;
-
-			byte[] val2;
-
-			if (isVarBinary) {
-				val2 = _result_set.getBytes(_sft.translateField(sql_fields[0]));
-			} else if (isBigInteger){
-				val2 = ByteTabFieldAccessor.getByteTab(_result_set.getBigDecimal(_sft.translateField(sql_fields[0])));
-			} else {
-				Blob b = _result_set.getBlob(_sft.translateField(sql_fields[0]));
-				val2 = b == null ? null : b.getBytes(1, (int) b.length());
-			}
-			
-			Object obj2=val2==null?null:converter.getObject(field.getType(), val2);
-			if (obj1==null)
-				//noinspection ConstantConditions
-				return obj1==obj2;
-			else
-				return obj1.equals(obj2);
-
-		} catch (SQLException e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}
 
 	@Override
 	public Object getValue(Object _class_instance) throws DatabaseException {
@@ -201,7 +170,7 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
+	public SqlFieldInstance[] getSqlFieldsInstances(String sqlTableName, Object _instance) throws DatabaseException {
 		SqlFieldInstance[] res = new SqlFieldInstance[1];
 		try
 		{
@@ -214,21 +183,21 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 								+ field.getDeclaringClass().getCanonicalName());
 			
 			if (isVarBinary)
-				res[0] = new SqlFieldInstance(sql_fields[0], bytes);
+				res[0] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[0], bytes);
 			else if (isBigInteger)
 			{
-				res[0] = new SqlFieldInstance(sql_fields[0], ByteTabFieldAccessor.getBigDecimalValue(bytes));
+				res[0] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[0], ByteTabFieldAccessor.getBigDecimalValue(bytes));
 			}
 			else {
 
 				if (bytes == null)
-					res[0] = new SqlFieldInstance(sql_fields[0], null);
+					res[0] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[0], null);
 				else {
 					Blob blob = DatabaseWrapperAccessor.getBlob(sql_connection, bytes);
 					if (blob == null)
-						res[0] = new SqlFieldInstance(sql_fields[0], new ByteArrayInputStream(bytes));
+						res[0] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[0], new ByteArrayInputStream(bytes));
 					else
-						res[0] = new SqlFieldInstance(sql_fields[0], blob);
+						res[0] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[0], blob);
 				}
 			}
 		}
@@ -256,20 +225,20 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
+	public void setValue(String sqlTableName, Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
 			byte[] res;
 			if (isVarBinary) {
-				res = _result_set.getBytes(getColmunIndex(_result_set, sql_fields[0].field));
+				res = _result_set.getBytes(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
 				if (res == null && isNotNull())
 					throw new DatabaseIntegrityException("Unexpected exception.");
 			} else if (isBigInteger) {
-				res = ByteTabFieldAccessor.getByteTab(_result_set.getBigDecimal(getColmunIndex(_result_set, sql_fields[0].field)));
+				res = ByteTabFieldAccessor.getByteTab(_result_set.getBigDecimal(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0]))));
 				if (res == null && isNotNull())
 					throw new DatabaseIntegrityException("Unexpected exception.");
 			} else {
-				Blob b = _result_set.getBlob(getColmunIndex(_result_set, sql_fields[0].field));
+				Blob b = _result_set.getBlob(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
 				res = b == null ? null : b.getBytes(1, (int) b.length());
 				if (res == null && isNotNull())
 					throw new DatabaseIntegrityException("Unexpected exception.");
@@ -347,80 +316,6 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set)
-			throws DatabaseException {
-		setValue(_class_instance, _field_instance);
-		try {
-			Object o = field.get(_class_instance);
-			byte[] b = null;
-			if (o != null) {
-				b = converter.getBytes(o);
-				if (b == null)
-					throw new FieldDatabaseException(
-							"The given ByteTabObjectConverter should produce an byte tab and not a null reference. This concern the affectation of the field "
-									+ field.getName() + " into the class "
-									+ field.getDeclaringClass().getCanonicalName());
-			}
-			if (isVarBinary)
-				_result_set.updateBytes(sql_fields[0].short_field, b);
-			else if (isBigInteger)
-			{
-				_result_set.updateBigDecimal(sql_fields[0].short_field, ByteTabFieldAccessor.getBigDecimalValue(b));
-			}
-			else {
-				if (b == null)
-					_result_set.updateObject(sql_fields[0].short_field, null);
-				else {
-					Blob blob = DatabaseWrapperAccessor.getBlob(sql_connection, b);
-					if (blob == null)
-						_result_set.updateBinaryStream(sql_fields[0].short_field, new ByteArrayInputStream(b));
-					else
-						_result_set.updateBlob(sql_fields[0].short_field, blob);
-				}
-			}
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-
-	}
-
-	@Override
-	protected void updateResultSetValue(Object _class_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			Object o = field.get(_class_instance);
-			byte[] b = null;
-			if (o != null) {
-				b = converter.getBytes(o);
-				if (b == null)
-					throw new FieldDatabaseException(
-							"The given ByteTabObjectConverter should produce an byte tab and not a null reference. This concern the affectation of the field "
-									+ field.getName() + " into the class "
-									+ field.getDeclaringClass().getCanonicalName());
-			}
-			if (isVarBinary)
-				_result_set.updateBytes(_sft.translateField(sql_fields[0]), b);
-			else if (isBigInteger)
-			{
-				_result_set.updateBigDecimal(_sft.translateField(sql_fields[0]), ByteTabFieldAccessor.getBigDecimalValue(b));
-			}
-			else {
-				if (b == null)
-					_result_set.updateObject(_sft.translateField(sql_fields[0]), null);
-				else {
-					Blob blob = DatabaseWrapperAccessor.getBlob(sql_connection, b);
-					if (blob == null)
-						_result_set.updateBinaryStream(_sft.translateField(sql_fields[0]), new ByteArrayInputStream(b));
-					else
-						_result_set.updateBlob(_sft.translateField(sql_fields[0]), blob);
-				}
-			}
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}
-
-	@Override
 	public boolean canBePrimaryOrUniqueKey() {
 		return true;
 	}
@@ -429,14 +324,15 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 	public void serialize(RandomOutputStream _oos, Object _class_instance) throws DatabaseException {
 		try {
 			Object o = getValue(_class_instance);
+			byte[] b;
 
 			if (o != null) {
-				byte[] b = converter.getBytes(o);
-				_oos.writeInt(b.length);
-				_oos.write(b);
+				 b = converter.getBytes(o);
+
 			} else {
-				_oos.writeInt(-1);
+				b=null;
 			}
+			_oos.writeBytesArray(b, !isAlwaysNotNull(), (int)Math.min(Integer.MAX_VALUE, getLimit()));
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -444,16 +340,10 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 
 	private Object deserialize(RandomInputStream _ois) throws DatabaseException {
 		try {
-			int size = _ois.readInt();
-			if (size > -1) {
-				if (getLimit() > 0 && size > getLimit())
+			byte[] b=_ois.readBytesArray(!isAlwaysNotNull(), (int)Math.min(Integer.MAX_VALUE, getLimit()));
+			if (b!=null) {
+				if (getLimit() > 0 && b.length > getLimit())
 					throw new IOException();
-
-				byte[] b = new byte[size];
-				int os = _ois.read(b);
-				if (os != size)
-					throw new DatabaseException(
-							"read bytes insuficiant (expected size=" + size + ", obtained size=" + os + ")");
 
 				return converter.getObject(field.getType(), b);
 			} else if (isNotNull())

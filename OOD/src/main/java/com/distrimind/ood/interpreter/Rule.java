@@ -5,7 +5,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -44,18 +44,27 @@ import java.util.regex.Pattern;
  */
 public enum Rule {
 
-    TERME("^(<" + SymbolType.IDENTIFIER.name() + ">|<" + SymbolType.NUMBER.name() + ">|<" + SymbolType.STRING.name() + ">|<" + SymbolType.NULL.name() + ">|<" + SymbolType.PARAMETER.name() + ">|\\(<EXPRESSION>\\))$"),
-    EXPRESSION(
-            "^<" + TERME.name() + ">$"), OPCOMP("^(<" + SymbolType.EQUALOPERATOR.name() + ">|<"
+    NULL("^(<" + SymbolType.NULL.name()+">)$"),
+    TERME("^(<" + SymbolType.IDENTIFIER.name() + ">|<" + SymbolType.NUMBER.name() + ">|<" + SymbolType.STRING.name() + ">|<" + SymbolType.PARAMETER.name() + ">|\\(<EXPRESSION>\\))$"),
+    EXPRESSION("^<" + TERME.name() + ">$"),
+    OPCOMP("^(<" + SymbolType.EQUALOPERATOR.name() + ">|<"
             + SymbolType.NOTEQUALOPERATOR.name() + ">|<" + SymbolType.LOWEROPERATOR.name() + ">|<"
             + SymbolType.LOWEROREQUALOPERATOR.name() + ">|<" + SymbolType.GREATEROPERATOR.name() + ">|<"
             + SymbolType.GREATEROREQUALOPERATOR.name() + ">|<" + SymbolType.LIKE.name() + ">|<"
-            + SymbolType.NOTLIKE.name() + ">)$"), COMPARE(
+            + SymbolType.NOTLIKE.name() + ">)$"),
+    ISOP("^(<" + SymbolType.IS.name() + ">|<"
+            + SymbolType.ISNOT.name() + ">)$"),
+    NULLTEST(
+            "^(<" + TERME.name() + "><" + ISOP.name() + "><" + NULL.name()
+                    + ">)$"),
+    COMPARE(
             "^(<" + EXPRESSION.name() + "><" + OPCOMP.name() + "><" + EXPRESSION.name()
-                    + ">|\\(<QUERY>\\))$"), OPCONDITION(
+                    + ">|\\(<QUERY>\\))$"),
+    OPCONDITION(
             "^(<" + SymbolType.ANDCONDITION.name() + ">|<"
-                    + SymbolType.ORCONDITION.name() + ">)$"), QUERY(
-            "^(<" + COMPARE.name() + ">|<QUERY><"
+                    + SymbolType.ORCONDITION.name() + ">)$"),
+    QUERY(
+            "^(<" + COMPARE.name() + ">|<"+NULLTEST.name()+">|<QUERY><"
                     + OPCONDITION.name() + "><QUERY>)$");
 
     private final Pattern pattern;

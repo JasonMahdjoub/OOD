@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -36,8 +36,6 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import javax.swing.*;
-
 /**
  * Interface whose functions are called after the database's creation
  * 
@@ -52,21 +50,21 @@ public interface DatabaseLifeCycles {
 	 * data from old database. If old database does not exists, this function will
 	 * not be called.
 	 *
+	 *
+	 *
 	 * @param wrapper the database wrapper
-	 * @param oldDatabaseConfiguration
-	 *            the old database configuration
 	 * @param newDatabaseConfiguration
 	 *            the new database configuration
 	 *
 	 * @throws Exception
 	 *             if a problem occurs
 	 */
-	void transferDatabaseFromOldVersion(DatabaseWrapper wrapper, DatabaseConfiguration oldDatabaseConfiguration, DatabaseConfiguration newDatabaseConfiguration) throws Exception;
+	void transferDatabaseFromOldVersion(DatabaseWrapper wrapper, DatabaseConfiguration newDatabaseConfiguration) throws Exception;
 
 	/**
 	 * This function is called after the database was created and after the eventual
 	 * call of the function
-	 * {@link #transferDatabaseFromOldVersion(DatabaseWrapper, DatabaseConfiguration, DatabaseConfiguration)}
+	 * {@link #transferDatabaseFromOldVersion(DatabaseWrapper, DatabaseConfiguration)}
 	 * 
 	 * @param wrapper the database wrapper
 	 * @param newDatabaseConfiguration
@@ -85,6 +83,45 @@ public interface DatabaseLifeCycles {
 	 * @throws Exception
 	 *             if a problem occurs
 	 */
-	boolean hasToRemoveOldDatabase() throws Exception;
+	boolean hasToRemoveOldDatabase(DatabaseConfiguration databaseConfiguration) throws Exception;
+
+	/**
+	 * When a new version of the database is created, the synchronizer is reset.
+	 * Then, the new database version must be synchronized with the new distant database version.
+	 * During the synchronization process, if there are records that are conflictual between different peers,
+	 * this function tells if the distant record can be ignored
+	 * @return true if the distant conflictual record can be ignored
+	 */
+	boolean replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized(DatabaseConfiguration databaseConfiguration);
+
+	/**
+	 * This function is called when the database configurations are altered.
+	 * The aim of this function is to save the database configurations and to make it persistent.
+	 *
+	 * @param databaseConfigurations the altered database configuration
+	 */
+	void saveDatabaseConfigurations(DatabaseConfigurations databaseConfigurations);
+
+
+	/**
+	 * This function is call to know if OOD must create a new backup reference which can take lot of time
+	 * according the quantity of data into the database
+	 * @param backupConfiguration the current backup configuration
+	 * @param lastBackupReferenceTimeUTC the last backup reference time UTC
+	 * @return true if OOD must create a new backup reference which can take lot of time
+	 */
+	default boolean mustCreateNewBackupReference(BackupConfiguration backupConfiguration, long lastBackupReferenceTimeUTC)
+	{
+		return backupConfiguration.mustCreateNewBackupReference(lastBackupReferenceTimeUTC);
+	}
+
+	/**
+	 * This function is called when a new backup file was added concerning the given backup restore manager
+	 * @param backupRestoreManager the backup restore manager
+	 */
+	default void newDatabaseBackupFileCreated(BackupRestoreManager backupRestoreManager)
+	{
+
+	}
 
 }

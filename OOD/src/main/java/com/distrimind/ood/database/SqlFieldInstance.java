@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -68,11 +68,12 @@ public class SqlFieldInstance extends SqlField {
 	 * @param _instance
 	 *            The field instance
 	 */
-	public SqlFieldInstance(String _field, String _type, String _pointed_table, String _pointed_field,
+	public SqlFieldInstance(boolean supportQuote, String _field, String _type, String _pointed_table, String pointed_table_alias, String _pointed_field,
 			boolean _not_null, Object _instance) {
-		super(_field, _type, _pointed_table, _pointed_field, _not_null);
+		super(supportQuote, _field, _type, _pointed_table, pointed_table_alias, _pointed_field, _not_null);
 		instance = _instance;
 	}
+
 
 	/**
 	 * Constructor
@@ -82,10 +83,41 @@ public class SqlFieldInstance extends SqlField {
 	 * @param _instance
 	 *            The field instance.
 	 */
-	public SqlFieldInstance(SqlField _sql_field, Object _instance) {
-		super(_sql_field.field, _sql_field.type, _sql_field.pointed_table, _sql_field.pointed_field,
-				_sql_field.not_null);
+	public SqlFieldInstance(boolean supportQuote, SqlField _sql_field, Object _instance) {
+		super(supportQuote, _sql_field.fieldWithoutQuote, _sql_field.type, _sql_field.pointedTable, _sql_field.pointedTableAlias, _sql_field.pointedField,
+				_sql_field.notNull, _sql_field.sqlFieldAliasName);
 		instance = _instance;
 	}
 
+	/**
+	 * Constructor
+	 *
+	 * @param _sql_field
+	 *            The description of the SqlJet field.
+	 * @param _fieldNameWithoutQuote
+	 * 			  the name of the SqlJet field.
+	 * @param _instance
+	 *            The field instance.
+	 */
+	public SqlFieldInstance(boolean supportQuote, SqlField _sql_field, String _fieldNameWithoutQuote, Object _instance) {
+		super(supportQuote, _fieldNameWithoutQuote, _sql_field.type, _sql_field.pointedTable, _sql_field.pointedTableAlias, _sql_field.pointedField,
+				_sql_field.notNull, _sql_field.sqlFieldAliasName);
+		instance = _instance;
+	}
+
+	/**
+	 * Constructor
+	 *
+	 * @param _sqlTableName
+	 * 			  the sql table name
+	 * @param _sql_field
+	 *            The description of the SqlJet field.
+	 * @param _instance
+	 *            The field instance.
+	 */
+	public SqlFieldInstance(boolean supportQuote, String _sqlTableName, SqlField _sql_field, Object _instance) {
+		super(supportQuote, _sqlTableName+"."+_sql_field.shortFieldWithoutQuote, _sql_field.type, _sql_field.pointedTable, _sql_field.pointedTableAlias, _sql_field.pointedField,
+				_sql_field.notNull, _sql_field.sqlFieldAliasName);
+		instance = _instance;
+	}
 }

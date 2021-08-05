@@ -5,7 +5,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -61,19 +61,22 @@ public enum SymbolType {
 	IDENTIFIER(false, false, false, "^[a-zA-Z][a-zA-Z0-9\\._\\-]*+$", null, null), 
 	NUMBER(false, false, false, "^(\\+|\\-)?(([0-9]+(\\.[0-9]+)?(E(\\-|\\+)?[0-9]+)?)|([0-9]*\\.[0-9]+(E(\\-|\\+)?[0-9]+)?))$", null, null), 
 	STRING(false, false, false, "^(\"|\\')[\\p{Alnum}\\p{Blank}\\!\\#\\$\\%\\&\\(\\)\\*\\+\\,\\-\\.\\/:;\\<\\=\\>\\?\\@\\[\\\\\\]\\^_\\`\\{\\|\\}\\~]+(\"|\\')$", null, null),
-	NULL(false, false, false, "^[nN][uU][lL][lL]$", new String[] {"null","NULL"}, "NULL"),
+	NULL(false, false, false, "^(N|n)(U|u)(L|l)(L|l)$", null, "NULL"),
 	PARAMETER( false, false, false, "(\\%|\\:)[a-zA-Z\\-_][0-9a-zA-Z\\-_]*$", null, null), LIKE(true, false, true, "^(L|l)(I|i)(K|k)(E|e)$", new String[] { " LIKE " }, " LIKE "),
-	NOTLIKE(true, false,true,"^(N|n)(O|o)(T|t)_(L|l)(I|i)(K|k)(E|e)$",new String[] {" NOT LIKE "," NOT_LIKE " }," NOT LIKE ");
+	NOTLIKE(true, false,true,"^(N|n)(O|o)(T|t)_(L|l)(I|i)(K|k)(E|e)$",new String[] {" NOT LIKE "," NOT_LIKE " }," NOT LIKE "),
+	IS(true, false,false,"^(I|i)(S|s)$",new String[] {" IS "}," IS "),
+	ISNOT(true, false,true,"^(I|i)(S|s)_(N|n)(O|o)(T|t)$",new String[] {" IS NOT "," IS_NOT " }," IS NOT "),
+	;
 
 	private final Pattern pattern;
 	private final String content;
-	private final String matches[];
+	private final String[] matches;
 	private final boolean isOperator;
 	private final boolean isCondition;
 	private final boolean mustHaveSpaces;
 
-	SymbolType(boolean isOperator, boolean isCondition, boolean mustHaveSpaces, String regex, String matches[],
-			String content) {
+	SymbolType(boolean isOperator, boolean isCondition, boolean mustHaveSpaces, String regex, String[] matches,
+			   String content) {
 		this.isOperator = isOperator;
 		this.isCondition = isCondition;
 		this.mustHaveSpaces = mustHaveSpaces;
@@ -140,7 +143,7 @@ public enum SymbolType {
 		else
 			regex = likeContent;
 		if (regex.startsWith("%"))
-			regex = regex.substring(1, regex.length());
+			regex = regex.substring(1);
 		else
 			regex = "^" + likeContent;
 		if (regex.endsWith("%"))

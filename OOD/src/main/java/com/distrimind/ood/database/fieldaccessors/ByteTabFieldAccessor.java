@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -42,6 +42,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
 import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.data_buffers.WrappedData;
 import com.distrimind.util.io.RandomInputStream;
 import com.distrimind.util.io.RandomOutputStream;
 
@@ -53,7 +54,6 @@ import java.math.BigInteger;
 import java.sql.Blob;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Map;
 
@@ -68,38 +68,43 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 	private final boolean isVarBinary;
 	private final boolean isBigInteger;
 
-	public static final long defaultByteTabSize= 16777216L;
+	public static final long defaultByteTabSize= 512L;
 	public static final int shortTabSizeLimit=32768;
 	
 	protected ByteTabFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection, Field _field,
-			String parentFieldName) throws DatabaseException {
-		super(_sql_connection, _field, parentFieldName, compatible_classes, table);
+			String parentFieldName, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
+		super(_sql_connection, _field, parentFieldName, compatible_classes, table, severalPrimaryKeysPresentIntoTable);
 		sql_fields = new SqlField[1];
 		String type;
-		long l = limit;
-		if (l <= 0)
-			l = defaultByteTabSize;
+		isVarBinary=DatabaseWrapperAccessor.isVarBinarySupported(sql_connection);
+
+		if (limit <= 0)
+			limit = defaultByteTabSize;
 		boolean isBigInteger=false;
-		if (l <= shortTabSizeLimit) {
-			if (DatabaseWrapperAccessor.isVarBinarySupported(sql_connection))
-				type = "VARBINARY(" + l + ")";
+		if (useBlob)
+		{
+			type=DatabaseWrapperAccessor.getBlobType(sql_connection, limit);
+		}
+		else if (limit <= shortTabSizeLimit) {
+			if (isVarBinary)
+				type = DatabaseWrapperAccessor.getVarBinaryType(_sql_connection, limit);
 			else if (DatabaseWrapperAccessor.isLongVarBinarySupported(sql_connection))
-				type = "LONGVARBINARY(" + l + ")";
+				type = DatabaseWrapperAccessor.getLongVarBinaryType(_sql_connection, limit);
 			else
 			{
 				isBigInteger=true;
-				type = DatabaseWrapperAccessor.getBigIntegerType(sql_connection);
+				type = DatabaseWrapperAccessor.getBigDecimalType(sql_connection, limit);
 			}
 		} else {
 			if (DatabaseWrapperAccessor.isLongVarBinarySupported(sql_connection))
-				type = "LONGVARBINARY(" + l + ")";
+				type = DatabaseWrapperAccessor.getLongVarBinaryType(_sql_connection, limit);
 			else
-				type = "BLOB(" + l + ")";
+				type=DatabaseWrapperAccessor.getBlobType(sql_connection, limit);
+
 		}
 		assert type != null;
-		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(), type, null, null, isNotNull());
+		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(), type, isNotNull());
 
-		isVarBinary = type.startsWith("VARBINARY") || type.startsWith("LONGVARBINARY");
 		this.isBigInteger=isBigInteger;
 	}
 	public static byte[] getByteTab(BigDecimal value)
@@ -118,8 +123,20 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 			return res;
 		}
 	}
-	
-	public static BigDecimal getBigDecimalValue(byte[] value)
+	public static class BD extends BigDecimal
+	{
+		public BD(BigInteger val) {
+			super(val);
+		}
+	}
+	public static BigDecimal getBigDecimalValue(WrappedData wd)
+	{
+		if (wd==null)
+			return null;
+		else
+			return getBigDecimalValue(wd.getBytes());
+	}
+	public static BD getBigDecimalValue(byte[] value)
 	{
 		if (value==null)
 			return null;
@@ -128,7 +145,7 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 			byte[] tab = new byte[value.length + 1];
 			tab[0]=1;
 			System.arraycopy(value, 0, tab, 1, value.length);
-			return new BigDecimal(new BigInteger(tab));
+			return new BD(new BigInteger(tab));
 		}
 	}
 	@Override
@@ -145,7 +162,7 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 			} else if (_field_instance.getClass().equals(this.getCompatibleClasses()[0]))
 				field.set(_class_instance, _field_instance);
 			else
-				throw new FieldDatabaseException("The given _field_instance parameter, destinated to the field "
+				throw new FieldDatabaseException("The given _field_instance parameter, destined to the field "
 						+ field.getName() + " of the class " + field.getDeclaringClass().getName()
 						+ ", should be an array of Byte and not a " + _field_instance.getClass().getName());
 		} catch (IllegalArgumentException | IllegalAccessException e) {
@@ -181,43 +198,6 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	@Override
-	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			byte[] val1 = null;
-			if (_field_instance instanceof byte[])
-				val1 = (byte[]) _field_instance;
-
-			byte[] val2;
-
-			if (isVarBinary) {
-				val2 = _result_set.getBytes(_sft.translateField(sql_fields[0]));
-			}
-			else if (isBigInteger){
-				val2 = getByteTab(_result_set.getBigDecimal(_sft.translateField(sql_fields[0])));
-			}
-			else {
-				Blob b = _result_set.getBlob(_sft.translateField(sql_fields[0]));
-				val2 = b == null ? null : b.getBytes(1, (int) b.length());
-			}
-
-			if (val1 == null || val2 == null)
-				return val1 == val2;
-			else {
-				if (val1.length != val2.length)
-					return false;
-				for (int i = 0; i < val1.length; i++)
-					if (val1[i] != val2[i])
-						return false;
-				return true;
-			}
-
-		} catch (SQLException e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}
-
 	private static final Class<?>[] compatible_classes = {byte[].class};
 
 	@Override
@@ -235,26 +215,26 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
+	public SqlFieldInstance[] getSqlFieldsInstances(String sqlTableName, Object _instance) throws DatabaseException {
 		SqlFieldInstance[] res = new SqlFieldInstance[1];
 		try
 		{
 			if (isVarBinary)
-				res[0] = new SqlFieldInstance(sql_fields[0], getValue(_instance));
+				res[0] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[0], getValue(_instance));
 			else if (isBigInteger)
 			{
-				res[0] = new SqlFieldInstance(sql_fields[0], getBigDecimalValue((byte[])getValue(_instance)));
+				res[0] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[0], getBigDecimalValue((byte[])getValue(_instance)));
 			}
 			else {
 				byte[] b = (byte[]) field.get(_instance);
 				if (b == null)
-					res[0] = new SqlFieldInstance(sql_fields[0], null);
+					res[0] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[0], null);
 				else {
 					Blob blob = DatabaseWrapperAccessor.getBlob(sql_connection, b);
 					if (blob == null)
-						res[0] = new SqlFieldInstance(sql_fields[0], new ByteArrayInputStream(b));
+						res[0] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[0], new ByteArrayInputStream(b));
 					else
-						res[0] = new SqlFieldInstance(sql_fields[0], blob);
+						res[0] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[0], blob);
 				}
 			}
 		}
@@ -281,21 +261,21 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
+	public void setValue(String sqlTableName, Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
 			if (isVarBinary) {
-				byte[] res = _result_set.getBytes(getColmunIndex(_result_set, sql_fields[0].field));
+				byte[] res = _result_set.getBytes(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
 				if (res == null && isNotNull())
 					throw new DatabaseIntegrityException("Unexpected exception.");
 				field.set(_class_instance, res);
 			} else if (isBigInteger){
-				byte[] res = getByteTab(_result_set.getBigDecimal(getColmunIndex(_result_set, sql_fields[0].field)));
+				byte[] res = getByteTab(_result_set.getBigDecimal(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0]))));
 				if (res == null && isNotNull())
 					throw new DatabaseIntegrityException("Unexpected exception.");
 				field.set(_class_instance, res);
 			} else {
-				Blob b = _result_set.getBlob(getColmunIndex(_result_set, sql_fields[0].field));
+				Blob b = _result_set.getBlob(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
 				byte[] res = b == null ? null : b.getBytes(1, (int) b.length());
 				if (res == null && isNotNull())
 					throw new DatabaseIntegrityException("Unexpected exception.");
@@ -344,62 +324,6 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set)
-			throws DatabaseException {
-		setValue(_class_instance, _field_instance);
-		try {
-			if (isVarBinary)
-				_result_set.updateBytes(sql_fields[0].short_field, (byte[]) field.get(_class_instance));
-			else if (isBigInteger)
-			{
-				_result_set.updateBigDecimal(sql_fields[0].short_field, getBigDecimalValue((byte[])field.get(_class_instance)));
-			}
-			else {
-				byte[] b = (byte[]) field.get(_class_instance);
-				if (b == null)
-					_result_set.updateObject(sql_fields[0].short_field, null);
-				else {
-					Blob blob = DatabaseWrapperAccessor.getBlob(sql_connection, b);
-					if (blob == null)
-						_result_set.updateBinaryStream(sql_fields[0].short_field, new ByteArrayInputStream(b));
-					else
-						_result_set.updateBlob(sql_fields[0].short_field, blob);
-				}
-			}
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-
-	}
-
-	@Override
-	protected void updateResultSetValue(Object _class_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			if (isVarBinary)
-				_result_set.updateBytes(_sft.translateField(sql_fields[0]), (byte[]) field.get(_class_instance));
-			else if (isBigInteger)
-			{
-				_result_set.updateBigDecimal(_sft.translateField(sql_fields[0]), getBigDecimalValue((byte[])field.get(_class_instance)));
-			}
-			else {
-				byte[] b = (byte[]) field.get(_class_instance);
-				if (b == null)
-					_result_set.updateObject(_sft.translateField(sql_fields[0]), null);
-				else {
-					Blob blob = DatabaseWrapperAccessor.getBlob(sql_connection, b);
-					if (blob == null)
-						_result_set.updateBinaryStream(_sft.translateField(sql_fields[0]), new ByteArrayInputStream(b));
-					else
-						_result_set.updateBlob(_sft.translateField(sql_fields[0]), blob);
-				}
-			}
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}
-
-	@Override
 	public boolean canBePrimaryOrUniqueKey() {
 		return true;
 	}
@@ -434,13 +358,8 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 	@Override
 	public void serialize(RandomOutputStream _oos, Object _class_instance) throws DatabaseException {
 		try {
-			byte[] b = (byte[]) getValue(_class_instance);
-			if (b != null) {
-				_oos.writeInt(b.length);
-				_oos.write(b);
-			} else {
-				_oos.writeInt(-1);
-			}
+			byte[] b = (byte[])getValue(_class_instance);
+			_oos.writeBytesArray(b, !isAlwaysNotNull(), (int)Math.min(Integer.MAX_VALUE, getLimit()));
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -448,16 +367,11 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 
 	private byte[] deserialize(RandomInputStream _ois) throws DatabaseException {
 		try {
-			int size = _ois.readInt();
-			if (size > -1) {
-				if (getLimit() > 0 && size > getLimit())
+			byte[] b=_ois.readBytesArray(!isAlwaysNotNull(), (int)Math.min(Integer.MAX_VALUE, getLimit()));
+			if (b!=null) {
+				if (getLimit() > 0 && b.length > getLimit())
 					throw new IOException();
 
-				byte[] b = new byte[size];
-				int os = _ois.read(b);
-				if (os != size)
-					throw new DatabaseException(
-							"read bytes insuficiant (expected size=" + size + ", obtained size=" + os + ")");
 				return b;
 			} else if (isNotNull())
 				throw new DatabaseException("field should not be null");

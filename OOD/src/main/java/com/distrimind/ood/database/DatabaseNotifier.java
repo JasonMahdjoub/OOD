@@ -5,7 +5,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program
 whose purpose is to manage a local database with the object paradigm
-and the java langage
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use,
@@ -37,6 +37,9 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.DecentralizedValue;
+
+import java.util.Set;
 
 /**
  * @author Jason Mahdjoub
@@ -57,5 +60,34 @@ public interface DatabaseNotifier {
      * @throws DatabaseException if a problem occurs
      */
     void endSynchronizationTransaction() throws DatabaseException;
+
+    /**
+     * The given host was disconnected. Local host is not concerned.
+     * @param hostID the disconnected host
+     */
+    void hostDisconnected(DecentralizedValue hostID);
+
+    /**
+     * The given host was connected. Local host is not concerned.
+     * @param hostID the connected host
+     */
+    void hostConnected(DecentralizedValue hostID);
+
+    /**
+     * The given local host was initialized.
+     * @param hostID the initialized local host
+     */
+    void localHostInitialized(DecentralizedValue hostID);
+
+    /**
+     * This function is called when a peer or more was added
+     * @param peersIdentifiers the identifiers of the added peers
+     */
+    void hostsAdded(Set<DecentralizedValue> peersIdentifiers);
+
+    /**
+     * This function is called when central database backup certificate was revoked
+     */
+    void centralDatabaseBackupCertificateRevoked();
 
 }

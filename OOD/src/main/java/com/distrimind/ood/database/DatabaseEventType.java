@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -48,7 +48,9 @@ public enum DatabaseEventType {
 	UPDATE((byte) 1, true, true),
 	ADD((byte) 2, true, false),
 	REMOVE((byte) 4, false, true),
-	REMOVE_WITH_CASCADE((byte) 8, false, true);
+	REMOVE_WITH_CASCADE((byte) 8, false, true),
+	REMOVE_ALL_RECORDS_WITH_CASCADE((byte) 16, false, false);
+
 
 	private final byte type;
 	private final boolean hasNewValue;
@@ -87,17 +89,4 @@ public enum DatabaseEventType {
 		return list;
 	}
 
-	/*static byte getByte(DatabaseEventType dte, DatabaseEventType... _databaseEventTypes) {
-		byte res = dte.getByte();
-		for (DatabaseEventType d : _databaseEventTypes)
-			res |= d.getByte();
-		return res;
-	}
-
-	static byte getByte(Collection<DatabaseEventType> eventsType) {
-		byte res = 0;
-		for (DatabaseEventType d : eventsType)
-			res |= d.getByte();
-		return res;
-	}*/
 }

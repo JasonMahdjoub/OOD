@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -52,7 +52,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  *            the record type which correspond to its database class.
  */
 public abstract class Filter<T> {
-	private boolean isStoped = false;
+	private boolean isStopped = false;
 
 	/**
 	 * this function is called for every instance record present on the database. It
@@ -70,11 +70,11 @@ public abstract class Filter<T> {
 	 * Stop the parsing of the current table
 	 */
 	public void stopTableParsing() {
-		isStoped = true;
+		isStopped = true;
 	}
 
-	boolean isTableParsingStoped() {
-		return isStoped;
+	boolean isTableParsingStopped() {
+		return isStopped;
 	}
 
 }

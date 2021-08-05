@@ -1,5 +1,13 @@
 # OOD
-Object Oriented Database Using HSQLDB
+OOD is a decentralized and asynchrone ORM (Object-Relational Mapping):
+* Compatible with Java 8 and newer
+* drivers for MySQL, PostgreSQL, H2, H2 for Android, HSQLDB
+* Object Decentralized database with tools of synchronization between peers
+* Database backup, historical tools and possiblity to revert database to a given time
+* Automating backup file's synchronization with central database server. Backup files can be encrypted (end-to-end encryption)
+* pseudo SQL querries possible (where clause)
+
+
 
 # Changes
 
@@ -21,20 +29,15 @@ Adapt into your build.gradle file, the next code :
 	...
 	dependencies {
 		...
-		compile(group:'com.distrimind.ood', name: 'OOD', version: '2.4.2-Stable')
-		//choose this driver for H2 database
-			compile(group:'com.h2database', name: 'h2', version: '1.4.200')
-		//choose one of these optional drivers for HSQLDB
-			//optional and under JDK8 or newer
-			compile(group:'org.hsqldb', name: 'hsqldb', version: '2.5.0')
-			//optional and under JDK7 or newer
-			compile(group:'org.hsqldb', name: 'hsqldb', version: '2.3.4')
-		//choose one of these optional drivers for DerbyDB
-			//optional and under JDK7 or newer
-			compile(group:'org.apache.derby', name: 'derby', version: '10.11.1.1')
-			//optional and under JDK8 or newer
-			compile(group:'org.apache.derby', name: 'derby', version: '10.15.1.3')
-		...
+		compile(group:'com.distrimind.ood', name: 'OOD', version: '3.1.0-BETA2')
+		//choose one of these optional drivers for H2 database
+		testImplementation(group:'com.h2database', name: 'h2', version: '1.4.200')
+		//optional and under JDK8 or newer
+		testImplementation(group:'org.hsqldb', name: 'hsqldb', version: '2.5.1')
+		//choose this optional driver for MySQL
+		testImplementation(group: 'mysql', name: 'mysql-connector-java', version: '8.0.23')
+		//choose this optional driver for PostgreSQL
+		testImplementation(group: 'org.postgresql', name: 'postgresql', version: '42.2.19')
 	}
 	...
 
@@ -50,36 +53,36 @@ Adapt into your pom.xml file, the next code :
 			<dependency>
 				<groupId>com.distrimind.ood</groupId>
 				<artifactId>OOD</artifactId>
-				<version>2.4.2-Stable</version>
+				<version>3.1.0-BETA2</version>
 			</dependency>
 			<!-- choose one of these optional drivers for H2 database-->
 				<dependency>
 					<groupId>com.h2database</groupId>
 					<artifactId>h2</artifactId>
-	
+
+					<!-- under JDK 8 or newer -->
 					<version>1.4.200</version>
 				</dependency>
+
 			<!-- choose one of these optional drivers for HSQLDB-->
 				<dependency>
 					<groupId>org.hsqldb</groupId>
 					<artifactId>hsqldb</artifactId>
-	
+
 					<!-- under JDK 8 or newer -->
-					<version>2.5.0</version>
-	
-					<!-- under JDK 7 or newer -->
-					<version>2.3.4</version>
+					<version>2.5.1</version>
 				</dependency>
-			<!-- choose one of these optional drivers for DerbyDB-->
+			<!-- choose this optional driver for MySQL-->
 				<dependency>
-					<groupId>org.apache.derby</groupId>
-					<artifactId>derby</artifactId>
-	
-					<!-- under JDK 8 or newer -->
-					<version>10.15.1.3</version>
-	
-					<!-- under JDK 7 or newer -->
-					<version>10.11.1.1</version>
+					<groupId>mysql</groupId>
+					<artifactId>mysql-connector-java</artifactId>
+					<version>8.0.22</version>
+				</dependency>
+			<!-- choose this optional driver for PostgreSQL-->
+				<dependency>
+					<groupId>org.postgresql</groupId>
+					<artifactId>postgresql</artifactId>
+					<version>42.2.16</version>
 				</dependency>
 			...
 		</dependencies>

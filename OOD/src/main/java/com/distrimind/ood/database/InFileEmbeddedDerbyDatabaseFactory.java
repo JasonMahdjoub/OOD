@@ -5,7 +5,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -46,19 +46,18 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  * @version 1.2
  * @since OOD 2.0.0
  */
-public class InFileEmbeddedDerbyDatabaseFactory extends DatabaseFactory<EmbeddedDerbyWrapper> {
+class InFileEmbeddedDerbyDatabaseFactory extends DatabaseFactory<EmbeddedDerbyWrapper> {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 5754965997489003893L;
 	private File directory;
 	private boolean alwaysDisconnectAfterOnTransaction=false;
-	protected InFileEmbeddedDerbyDatabaseFactory() {
-
+	protected InFileEmbeddedDerbyDatabaseFactory() throws DatabaseException {
+		super();
 	}
 	/**
 	 * Constructor
-	 *
 	 * @param directory
 	 *            the database directory
 	 * @throws NullPointerException
@@ -67,12 +66,26 @@ public class InFileEmbeddedDerbyDatabaseFactory extends DatabaseFactory<Embedded
 	 *             If the given _directory is not a directory.
 	 * @throws IllegalArgumentException if arguments are incorrect
 	 */
-	public InFileEmbeddedDerbyDatabaseFactory(File directory) {
-		this(directory, false);
+	public InFileEmbeddedDerbyDatabaseFactory(File directory) throws DatabaseException {
+		this(null, directory);
+	}
+
+	/**
+	 * Constructor
+	 * @param databaseConfigurations the database configurations
+	 * @param directory
+	 *            the database directory
+	 * @throws NullPointerException
+	 *             if parameters are null pointers.
+	 * @throws IllegalArgumentException
+	 *             If the given _directory is not a directory.
+	 * @throws IllegalArgumentException if arguments are incorrect
+	 */
+	public InFileEmbeddedDerbyDatabaseFactory(DatabaseConfigurations databaseConfigurations, File directory) throws DatabaseException {
+		this(databaseConfigurations, directory, false);
 	}
 	/**
 	 * Constructor
-	 *
 	 * @param directory
 	 *            the database directory
 	 * @param alwaysDisconnectAfterOnTransaction true if the database must always be connected and detected during one transaction
@@ -82,15 +95,34 @@ public class InFileEmbeddedDerbyDatabaseFactory extends DatabaseFactory<Embedded
 	 *             If the given _directory is not a directory.
 	 * @throws IllegalArgumentException if arguments are incorrect
 	 */
-	public InFileEmbeddedDerbyDatabaseFactory(File directory, boolean alwaysDisconnectAfterOnTransaction) {
-
+	public InFileEmbeddedDerbyDatabaseFactory(File directory, boolean alwaysDisconnectAfterOnTransaction) throws DatabaseException {
+		this(null, directory, alwaysDisconnectAfterOnTransaction);
+	}
+	/**
+	 * Constructor
+	 * @param databaseConfigurations the database configurations
+	 * @param directory
+	 *            the database directory
+	 * @param alwaysDisconnectAfterOnTransaction true if the database must always be connected and detected during one transaction
+	 * @throws NullPointerException
+	 *             if parameters are null pointers.
+	 * @throws IllegalArgumentException
+	 *             If the given _directory is not a directory.
+	 * @throws IllegalArgumentException if arguments are incorrect
+	 */
+	public InFileEmbeddedDerbyDatabaseFactory(DatabaseConfigurations databaseConfigurations, File directory, boolean alwaysDisconnectAfterOnTransaction) throws DatabaseException {
+		super(databaseConfigurations);
 		setDirectory(directory);
 		this.alwaysDisconnectAfterOnTransaction = alwaysDisconnectAfterOnTransaction;
 	}
 
 	@Override
-	protected EmbeddedDerbyWrapper newWrapperInstance() throws DatabaseException {
-		return new EmbeddedDerbyWrapper(directory, alwaysDisconnectAfterOnTransaction);
+	protected EmbeddedDerbyWrapper newWrapperInstance(DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
+		return new EmbeddedDerbyWrapper(directory, databaseConfigurations, databaseLifeCycles,
+				signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup==null?null:signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
+				encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup==null?null:encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
+				protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages==null?null:protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
+				getSecureRandom(), createDatabasesIfNecessaryAndCheckIt, alwaysDisconnectAfterOnTransaction);
 	}
 
 	public File getDirectory() {
@@ -112,4 +144,10 @@ public class InFileEmbeddedDerbyDatabaseFactory extends DatabaseFactory<Embedded
 	public void setAlwaysDisconnectAfterOnTransaction(boolean alwaysDisconnectAfterOnTransaction) {
 		this.alwaysDisconnectAfterOnTransaction = alwaysDisconnectAfterOnTransaction;
 	}
+
+	@Override
+	public void deleteDatabase()  {
+		EmbeddedDerbyWrapper.deleteDatabasesFiles(directory);
+	}
+
 }

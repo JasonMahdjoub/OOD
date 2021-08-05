@@ -7,7 +7,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  * @version 1.0
  * @since OOD 2.4.0
  */
-public class InMemoryEmbeddedDerbyDatabaseFactory extends DatabaseFactory<EmbeddedDerbyWrapper> {
+class InMemoryEmbeddedDerbyDatabaseFactory extends DatabaseFactory<EmbeddedDerbyWrapper> {
 	/**
 	 *
 	 */
@@ -15,23 +15,33 @@ public class InMemoryEmbeddedDerbyDatabaseFactory extends DatabaseFactory<Embedd
 
 	private String databaseName=null;
 
-	public InMemoryEmbeddedDerbyDatabaseFactory() {
-
+	public InMemoryEmbeddedDerbyDatabaseFactory() throws DatabaseException {
+		super();
 	}
-
-	public InMemoryEmbeddedDerbyDatabaseFactory(String databaseName) {
+	public InMemoryEmbeddedDerbyDatabaseFactory(String databaseName) throws DatabaseException {
+		this(null, databaseName);
+	}
+	public InMemoryEmbeddedDerbyDatabaseFactory(DatabaseConfigurations databaseConfigurations, String databaseName) throws DatabaseException {
+		super(databaseConfigurations);
 		this.databaseName = databaseName;
 	}
-
-	public InMemoryEmbeddedDerbyDatabaseFactory(String databaseName, HSQLDBConcurrencyControl concurrencyControl) {
+	public InMemoryEmbeddedDerbyDatabaseFactory(String databaseName, HSQLDBConcurrencyControl concurrencyControl) throws DatabaseException {
+		this(null, databaseName, concurrencyControl);
+	}
+	public InMemoryEmbeddedDerbyDatabaseFactory(DatabaseConfigurations databaseConfigurations, String databaseName, HSQLDBConcurrencyControl concurrencyControl) throws DatabaseException {
+		super(databaseConfigurations);
 		this.databaseName = databaseName;
 		if (concurrencyControl==null)
 			throw new NullPointerException();
 	}
 
 	@Override
-	protected EmbeddedDerbyWrapper newWrapperInstance() throws DatabaseException {
-		return new EmbeddedDerbyWrapper(true, databaseName);
+	protected EmbeddedDerbyWrapper newWrapperInstance(DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
+		return new EmbeddedDerbyWrapper(databaseName, true, databaseConfigurations, databaseLifeCycles,
+				signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup==null?null:signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
+				encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup==null?null:encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
+				protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages==null?null:protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
+				getSecureRandom(), createDatabasesIfNecessaryAndCheckIt);
 	}
 
 	public static long getSerialVersionUID() {
@@ -44,6 +54,11 @@ public class InMemoryEmbeddedDerbyDatabaseFactory extends DatabaseFactory<Embedd
 
 	public void setDatabaseName(String databaseName) {
 		this.databaseName = databaseName;
+	}
+
+	@Override
+	public void deleteDatabase()  {
+		throw new UnsupportedOperationException();
 	}
 
 

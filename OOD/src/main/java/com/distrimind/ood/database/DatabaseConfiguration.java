@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -36,16 +36,14 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import java.lang.reflect.Modifier;
+import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.properties.MultiFormatProperties;
+import com.distrimind.util.properties.PropertiesParseException;
+import org.w3c.dom.Document;
+
+import java.io.IOException;
+import java.io.Reader;
 import java.util.*;
-
-import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.ood.i18n.DatabaseMessages;
-import com.distrimind.util.ListClasses;
-import com.distrimind.util.progress_monitors.ProgressMonitorFactory;
-import com.distrimind.util.progress_monitors.ProgressMonitorParameters;
-
-import javax.swing.*;
 
 /**
  * Describe a database configuration. A database is defined by its package, and
@@ -57,150 +55,212 @@ import javax.swing.*;
  * @since OOD 2.0
  * @see DatabaseLifeCycles
  */
-public class DatabaseConfiguration {
+@SuppressWarnings("FieldMayBeFinal")
+public class DatabaseConfiguration extends MultiFormatProperties {
 
-	private final Set<Class<? extends Table<?>>> classes;
-	private final Package dbPackage;
-	private DatabaseConfiguration oldDatabaseTables;
-	private DatabaseLifeCycles databaseLifeCycles;
+
+	public enum SynchronizationType
+	{
+		NO_SYNCHRONIZATION,
+		DECENTRALIZED_SYNCHRONIZATION,
+		DECENTRALIZED_SYNCHRONIZATION_AND_SYNCHRONIZATION_WITH_CENTRAL_BACKUP_DATABASE
+	}
+
+	private DatabaseSchema databaseSchema;
+	private SynchronizationType synchronizationType;
+	private Set<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase;
 	private BackupConfiguration backupConfiguration;
-	/**
-	 * The progress monitor's parameter for database upgrade
-	 */
-	private ProgressMonitorParameters progressMonitorParametersForDatabaseUpgrade;
+	private transient boolean createDatabaseIfNecessaryAndCheckItDuringCurrentSession;
+	private boolean createDatabaseIfNecessaryAndCheckItDuringLoading;
 
-	/**
-	 * The progress monitor's parameter for database initialisation
-	 */
-	private ProgressMonitorParameters progressMonitorParametersForDatabaseInitialisation;
+	private Long timeUTCInMsForRestoringDatabaseToOldVersion=null;
+	private boolean preferOtherChannelThanLocalChannelIfAvailableDuringRestoration =false;
+	private boolean notifyOtherPeers=false;
+	private boolean chooseNearestBackupIfNoBackupMatch;
 
-	public DatabaseConfiguration(Package _package) {
-		this(_package, ListClasses.getClasses(_package), null, null);
-	}
-	public DatabaseConfiguration(Package _package, DatabaseLifeCycles callable,
-								 DatabaseConfiguration oldVersionOfDatabaseTables)
+	boolean restoreDatabaseToOldVersion(long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, boolean chooseNearestBackupIfNoBackupMatch, boolean notifyOtherPeers)
 	{
-		this(_package, callable, oldVersionOfDatabaseTables, null);
-	}
-	public DatabaseConfiguration(Package _package, DatabaseLifeCycles callable,
-			DatabaseConfiguration oldVersionOfDatabaseTables, BackupConfiguration backupConfiguration) {
-		this(_package, ListClasses.getClasses(_package), callable, oldVersionOfDatabaseTables, backupConfiguration);
-	}
 
-	public DatabaseConfiguration(Package _package, Collection<Class<?>> _classes) {
-		this(_package, _classes, null, null);
-	}
-	public DatabaseConfiguration(Package _package, Collection<Class<?>> _classes, DatabaseLifeCycles callable,
-								 DatabaseConfiguration oldVersionOfDatabaseTables)
-	{
-		this(_package, _classes, callable, oldVersionOfDatabaseTables, null);
-	}
-
-
-	/**
-	 * @return The progress monitor's parameter for database upgrade
-	 */
-	public ProgressMonitorParameters getProgressMonitorParametersForDatabaseUpgrade() {
-		return progressMonitorParametersForDatabaseUpgrade;
-	}
-
-	/**
-	 * Set the progress monitor's parameter for database upgrade
-	 * @param progressMonitorParametersForDatabaseUpgrade the progress monitor parameter
-	 */
-	public void setProgressMonitorParametersForDatabaseUpgrade(ProgressMonitorParameters progressMonitorParametersForDatabaseUpgrade) {
-		this.progressMonitorParametersForDatabaseUpgrade = progressMonitorParametersForDatabaseUpgrade;
-	}
-
-	public ProgressMonitor getProgressMonitorForDatabaseUpgrade()
-	{
-		if (this.progressMonitorParametersForDatabaseUpgrade==null)
+		if (backupConfiguration==null && (this.distantPeersThatCanBeSynchronizedWithThisDatabase==null || distantPeersThatCanBeSynchronizedWithThisDatabase.size()==0 || !isSynchronizedWithCentralBackupDatabase()))
 		{
-			progressMonitorParametersForDatabaseUpgrade=new ProgressMonitorParameters(String.format(DatabaseMessages.CONVERT_DATABASE.toString(), getPackage().toString()), null, 0, 100);
-			progressMonitorParametersForDatabaseUpgrade.setMillisToDecideToPopup(1000);
-			progressMonitorParametersForDatabaseUpgrade.setMillisToPopup(1000);
+			if (timeUTCInMsForRestoringDatabaseToOldVersion==null)
+				return false;
+			timeUTCInMsForRestoringDatabaseToOldVersion=null;
+			this.notifyOtherPeers=false;
+			this.chooseNearestBackupIfNoBackupMatch=false;
 		}
-		return ProgressMonitorFactory.getDefaultProgressMonitorFactory().getProgressMonitor(progressMonitorParametersForDatabaseUpgrade);
+		else {
+			if (timeUTCInMsForRestoringDatabaseToOldVersion!=null && timeUTCInMsForRestoringDatabaseToOldVersion==timeUTCInMs && preferOtherChannelThanLocalChannelIfAvailableDuringRestoration ==preferOtherChannelThanLocalChannelIfAvailable)
+				return false;
+			timeUTCInMsForRestoringDatabaseToOldVersion = timeUTCInMs;
+			preferOtherChannelThanLocalChannelIfAvailableDuringRestoration = preferOtherChannelThanLocalChannelIfAvailable || backupConfiguration==null;
+			this.notifyOtherPeers=notifyOtherPeers;
+			this.chooseNearestBackupIfNoBackupMatch=chooseNearestBackupIfNoBackupMatch;
+		}
+		return true;
 	}
 
-	/**
-	 * @return The progress monitor's parameter for database initialisation
-	 */
-	public ProgressMonitorParameters getProgressMonitorParametersForDatabaseInitialisation() {
-		return progressMonitorParametersForDatabaseInitialisation;
+	Long getTimeUTCInMsForRestoringDatabaseToOldVersion() {
+		return timeUTCInMsForRestoringDatabaseToOldVersion;
 	}
-
-	/**
-	 * Set the progress monitor's parameter for database initialisation
-	 * @param progressMonitorParametersForDatabaseInitialisation the progress monitor parameter
-	 */
-	public void setProgressMonitorParametersForDatabaseInitialisation(ProgressMonitorParameters progressMonitorParametersForDatabaseInitialisation) {
-		this.progressMonitorParametersForDatabaseInitialisation = progressMonitorParametersForDatabaseInitialisation;
-	}
-
-	public ProgressMonitor getProgressMonitorForDatabaseInitialisation()
+	public boolean isRestorationToOldVersionInProgress()
 	{
-		if (this.progressMonitorParametersForDatabaseInitialisation==null)
-		{
-			progressMonitorParametersForDatabaseInitialisation=new ProgressMonitorParameters(String.format(DatabaseMessages.INIT_DATABASE.toString(), getPackage().toString()), null, 0, 100);
-			progressMonitorParametersForDatabaseInitialisation.setMillisToDecideToPopup(1000);
-			progressMonitorParametersForDatabaseInitialisation.setMillisToPopup(1000);
-		}
-		return ProgressMonitorFactory.getDefaultProgressMonitorFactory().getProgressMonitor(progressMonitorParametersForDatabaseInitialisation);
+		return timeUTCInMsForRestoringDatabaseToOldVersion!=null;
 	}
 
-	@SuppressWarnings("unchecked")
-	public DatabaseConfiguration(Package _package, Collection<Class<?>> _classes, DatabaseLifeCycles callable,
-			DatabaseConfiguration oldVersionOfDatabaseTables, BackupConfiguration backupConfiguration) {
-		if (_classes == null)
-			throw new NullPointerException("_classes");
-		if (_package == null)
+	boolean isChooseNearestBackupIfNoBackupMatch() {
+		return chooseNearestBackupIfNoBackupMatch;
+	}
+
+	boolean isNotifyOtherPeers() {
+		return notifyOtherPeers;
+	}
+
+	public void disableDatabaseRestorationToOldVersion() {
+		this.timeUTCInMsForRestoringDatabaseToOldVersion = null;
+		preferOtherChannelThanLocalChannelIfAvailableDuringRestoration=false;
+		this.notifyOtherPeers=false;
+		this.chooseNearestBackupIfNoBackupMatch=false;
+	}
+
+	boolean isPreferOtherChannelThanLocalChannelIfAvailableDuringRestoration() {
+		return preferOtherChannelThanLocalChannelIfAvailableDuringRestoration;
+	}
+
+	boolean setSynchronizationType(SynchronizationType synchronizationType) {
+		if (synchronizationType==null)
+			throw new NullPointerException();
+		if (this.distantPeersThatCanBeSynchronizedWithThisDatabase!=null && this.distantPeersThatCanBeSynchronizedWithThisDatabase.size()>0 && synchronizationType==SynchronizationType.NO_SYNCHRONIZATION)
+			throw new IllegalArgumentException();
+		if (synchronizationType==this.synchronizationType)
+			return false;
+
+		this.synchronizationType = synchronizationType;
+		return true;
+	}
+
+	public DatabaseConfiguration(DatabaseSchema databaseSchema) {
+		this(databaseSchema, SynchronizationType.NO_SYNCHRONIZATION, null, null);
+	}
+
+	boolean isCreateDatabaseIfNecessaryAndCheckItDuringCurrentSession() {
+		return createDatabaseIfNecessaryAndCheckItDuringCurrentSession;
+	}
+
+	void setCreateDatabaseIfNecessaryAndCheckItDuringCurrentSession(boolean createDatabaseIfNecessaryAndCheckItDuringCurrentSession) {
+		this.createDatabaseIfNecessaryAndCheckItDuringCurrentSession = createDatabaseIfNecessaryAndCheckItDuringCurrentSession;
+	}
+
+	public DatabaseConfiguration(DatabaseSchema databaseSchema, BackupConfiguration backupConfiguration) {
+		this(databaseSchema, SynchronizationType.NO_SYNCHRONIZATION, null, backupConfiguration);
+	}
+	public DatabaseConfiguration(DatabaseSchema databaseSchema, SynchronizationType synchronizationType) {
+		this(databaseSchema, synchronizationType, null);
+	}
+	public DatabaseConfiguration(DatabaseSchema databaseSchema, SynchronizationType synchronizationType, Collection<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase) {
+		this(databaseSchema, synchronizationType, distantPeersThatCanBeSynchronizedWithThisDatabase, null);
+	}
+	public DatabaseConfiguration(DatabaseSchema databaseSchema, SynchronizationType synchronizationType, Collection<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase, BackupConfiguration backupConfiguration) {
+		this(databaseSchema, synchronizationType, distantPeersThatCanBeSynchronizedWithThisDatabase, backupConfiguration, true);
+	}
+
+	public DatabaseConfiguration(DatabaseSchema databaseSchema, SynchronizationType synchronizationType, Collection<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase, BackupConfiguration backupConfiguration, boolean createDatabaseIfNecessaryAndCheckItDuringLoading) {
+		super(null);
+		if (databaseSchema == null)
 			throw new NullPointerException("_package");
-		if (_classes.size()>Short.MAX_VALUE*2+1)
-			throw new IllegalArgumentException("Tables number cannot be greater than "+(Short.MAX_VALUE*2+1)+". Here, "+_classes.size()+" tables given.");
-
-		classes = new HashSet<>();
-		dbPackage = _package;
-		if (oldVersionOfDatabaseTables != null && oldVersionOfDatabaseTables.getPackage().equals(_package))
-			throw new IllegalArgumentException("The old database version cannot have the same package");
-		this.databaseLifeCycles = callable;
-		this.oldDatabaseTables = oldVersionOfDatabaseTables;
-		for (Class<?> c : _classes) {
-			if (c != null && Table.class.isAssignableFrom(c) && c.getPackage().equals(_package)
-					&& !Modifier.isAbstract(c.getModifiers()))
-				classes.add((Class<? extends Table<?>>) c);
-		}
+		if (synchronizationType == null)
+			throw new NullPointerException();
+		if (synchronizationType==SynchronizationType.DECENTRALIZED_SYNCHRONIZATION_AND_SYNCHRONIZATION_WITH_CENTRAL_BACKUP_DATABASE && backupConfiguration==null)
+			throw new NullPointerException("Backup configuration cannot be null when "+synchronizationType+" is activated");
+		this.databaseSchema = databaseSchema;
+		this.synchronizationType=synchronizationType;
 		this.backupConfiguration=backupConfiguration;
-	}
+		this.createDatabaseIfNecessaryAndCheckItDuringCurrentSession=createDatabaseIfNecessaryAndCheckItDuringLoading;
+		this.createDatabaseIfNecessaryAndCheckItDuringLoading=createDatabaseIfNecessaryAndCheckItDuringLoading;
+		try {
+			setDistantPeersThatCanBeSynchronizedWithThisDatabase(distantPeersThatCanBeSynchronizedWithThisDatabase);
+		} catch (IllegalAccessException e) {
+			throw new IllegalArgumentException();
+		}
 
+	}
 	public BackupConfiguration getBackupConfiguration() {
 		return backupConfiguration;
 	}
-
-	public Set<Class<? extends Table<?>>> getTableClasses() {
-		return classes;
+	void setBackupConfiguration(BackupConfiguration backupConfiguration) {
+		this.backupConfiguration=backupConfiguration;
 	}
 
-	public List<Class<? extends Table<?>>> getSortedTableClasses(DatabaseWrapper wrapper) throws DatabaseException {
 
 
-		ArrayList<Table<?>> tables=new ArrayList<>(this.classes.size());
-		for (Class<? extends Table<?>> c : this.classes)
-		{
-			tables.add(wrapper.getTableInstance(c));
+	public boolean isCreateDatabaseIfNecessaryAndCheckItDuringLoading() {
+		return createDatabaseIfNecessaryAndCheckItDuringLoading;
+	}
+
+	/*
+	 * 	@param createDatabaseIfNecessaryAndCheckItDuringLoading
+	 *            If set to false, and if the database does not exists, generate a
+	 *            DatabaseException. If set to true, and if the database does not
+	 *            exists, create it. Use
+	 *            {@link DatabaseConfiguration#getDatabaseLifeCycles()} if the
+	 *            database is created and if transfer from old database must done.
+	 */
+	public void setCreateDatabaseIfNecessaryAndCheckItDuringLoading(boolean createDatabaseIfNecessaryAndCheckItDuringLoading) {
+		this.createDatabaseIfNecessaryAndCheckItDuringLoading = createDatabaseIfNecessaryAndCheckItDuringLoading;
+	}
+
+	/*
+	 * 	@return false if an exception is generated if the database loading, when it does not exists. Moreover, do not check the database schema during loading.
+	 */
+	public Set<DecentralizedValue> getDistantPeersThatCanBeSynchronizedWithThisDatabase() {
+		return distantPeersThatCanBeSynchronizedWithThisDatabase==null?null:Collections.unmodifiableSet(distantPeersThatCanBeSynchronizedWithThisDatabase);
+	}
+
+	boolean setDistantPeersThatCanBeSynchronizedWithThisDatabase(Collection<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase) throws IllegalAccessException {
+		if (distantPeersThatCanBeSynchronizedWithThisDatabase!=null && distantPeersThatCanBeSynchronizedWithThisDatabase.size()>0) {
+			if (distantPeersThatCanBeSynchronizedWithThisDatabase.stream().anyMatch(Objects::isNull))
+				throw new NullPointerException();
+			if (synchronizationType==SynchronizationType.NO_SYNCHRONIZATION)
+				throw new IllegalAccessException();
+			if (this.distantPeersThatCanBeSynchronizedWithThisDatabase!=null && this.distantPeersThatCanBeSynchronizedWithThisDatabase.equals(distantPeersThatCanBeSynchronizedWithThisDatabase))
+				return false;
+			this.distantPeersThatCanBeSynchronizedWithThisDatabase = new HashSet<>(distantPeersThatCanBeSynchronizedWithThisDatabase);
 		}
-		Collections.sort(tables);
-		ArrayList<Class<? extends Table<?>>> classes=new ArrayList<>(this.classes.size());
-		for (Table<?> t : tables)
-			//noinspection unchecked
-			classes.add((Class<? extends Table<?>>)t.getClass());
-		return classes;
+		else {
+			if (this.distantPeersThatCanBeSynchronizedWithThisDatabase==null)
+				return false;
+			this.distantPeersThatCanBeSynchronizedWithThisDatabase = null;
+		}
+		return true;
+	}
+	boolean addDistantPeersThatCanBeSynchronizedWithThisDatabase(Collection<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase) throws IllegalAccessException {
+		if (distantPeersThatCanBeSynchronizedWithThisDatabase==null)
+			throw new NullPointerException();
+
+		if (synchronizationType==SynchronizationType.NO_SYNCHRONIZATION)
+			throw new IllegalAccessException();
+		if (this.distantPeersThatCanBeSynchronizedWithThisDatabase==null)
+			this.distantPeersThatCanBeSynchronizedWithThisDatabase=new HashSet<>();
+		return this.distantPeersThatCanBeSynchronizedWithThisDatabase.addAll(distantPeersThatCanBeSynchronizedWithThisDatabase);
+
+	}
+	boolean removeDistantPeersThatCanBeSynchronizedWithThisDatabase(Collection<DecentralizedValue> distantPeersThatCanBeSynchronizedWithThisDatabase) throws IllegalAccessException {
+		if (distantPeersThatCanBeSynchronizedWithThisDatabase==null)
+			throw new NullPointerException();
+
+		if (this.distantPeersThatCanBeSynchronizedWithThisDatabase==null)
+			return false;
+		return this.distantPeersThatCanBeSynchronizedWithThisDatabase.removeAll(distantPeersThatCanBeSynchronizedWithThisDatabase);
 
 	}
 
-	public Package getPackage() {
-		return dbPackage;
+
+	public DatabaseSchema getDatabaseSchema() {
+		return databaseSchema;
 	}
+
+
+
 
 	@Override
 	public boolean equals(Object o) {
@@ -210,29 +270,67 @@ public class DatabaseConfiguration {
 			return true;
 		if (o instanceof DatabaseConfiguration) {
 			DatabaseConfiguration dt = (DatabaseConfiguration) o;
-			return dt.dbPackage.equals(dbPackage);
+			return dt.databaseSchema.equals(databaseSchema);
 		}
 		return false;
 	}
 
 	@Override
 	public int hashCode() {
-		return dbPackage.hashCode();
+		return databaseSchema.hashCode();
 	}
 
-	public DatabaseLifeCycles getDatabaseLifeCycles() {
-		return databaseLifeCycles;
+	public boolean isSynchronizedWithCentralBackupDatabase() {
+		return backupConfiguration!=null && synchronizationType==SynchronizationType.DECENTRALIZED_SYNCHRONIZATION_AND_SYNCHRONIZATION_WITH_CENTRAL_BACKUP_DATABASE;
 	}
 
-	public void setDatabaseLifeCycles(DatabaseLifeCycles _databaseLifeCycles) {
-		databaseLifeCycles = _databaseLifeCycles;
+	public boolean isDecentralized()
+	{
+		return synchronizationType==SynchronizationType.DECENTRALIZED_SYNCHRONIZATION ||
+				synchronizationType==SynchronizationType.DECENTRALIZED_SYNCHRONIZATION_AND_SYNCHRONIZATION_WITH_CENTRAL_BACKUP_DATABASE;
 	}
 
-	public DatabaseConfiguration getOldVersionOfDatabaseConfiguration() {
-		return oldDatabaseTables;
+	public SynchronizationType getSynchronizationType() {
+		return synchronizationType;
 	}
 
-	public void setOldVersionOfDatabaseTables(DatabaseConfiguration _oldDatabaseTables) {
-		oldDatabaseTables = _oldDatabaseTables;
+
+	@Override
+	public void loadXML(Document document) throws PropertiesParseException {
+		super.loadXML(document);
+		reloadedFromDocument();
+	}
+
+	private void reloadedFromDocument()
+	{
+		createDatabaseIfNecessaryAndCheckItDuringCurrentSession=createDatabaseIfNecessaryAndCheckItDuringLoading;
+	}
+
+
+	@Override
+	public void loadFromProperties(Properties properties) throws IllegalArgumentException {
+		super.loadFromProperties(properties);
+		reloadedFromDocument();
+	}
+
+
+	@Override
+	public void loadYAML(Reader reader) throws IOException {
+		super.loadYAML(reader);
+		reloadedFromDocument();
+	}
+
+	@Override
+	public String toString() {
+		return "DatabaseConfiguration{" +
+				"databaseSchema=" + databaseSchema +
+				", synchronizationType=" + synchronizationType +
+				", distantPeersThatCanBeSynchronizedWithThisDatabase=" + distantPeersThatCanBeSynchronizedWithThisDatabase +
+				", backupConfiguration=" + backupConfiguration +
+				", createDatabaseIfNecessaryAndCheckItDuringCurrentSession=" + createDatabaseIfNecessaryAndCheckItDuringCurrentSession +
+				", createDatabaseIfNecessaryAndCheckItDuringLoading=" + createDatabaseIfNecessaryAndCheckItDuringLoading +
+				", timeUTCInMsForRestoringDatabaseToOldVersion=" + timeUTCInMsForRestoringDatabaseToOldVersion +
+				", preferOtherChannelThanLocalChannelIfAvailableDuringRestoration=" + preferOtherChannelThanLocalChannelIfAvailableDuringRestoration +
+				'}';
 	}
 }

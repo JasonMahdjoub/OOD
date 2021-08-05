@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -37,17 +37,13 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database.fieldaccessors;
 
 import com.distrimind.ood.database.exceptions.IncompatibleFieldDatabaseException;
-import com.distrimind.util.crypto.ASymmetricKeyPair;
-import com.distrimind.util.crypto.ASymmetricPrivateKey;
-import com.distrimind.util.crypto.ASymmetricPublicKey;
-import com.distrimind.util.crypto.SymmetricSecretKey;
+import com.distrimind.util.io.SerializationTools;
 
-import java.io.*;
+import java.io.File;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
-import java.util.Calendar;
 
 /**
  * 
@@ -69,34 +65,15 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 			return null;
 		if (_o.getClass() == Inet6Address.class || _o.getClass() == Inet4Address.class)
 			return ((InetAddress) _o).getAddress();
-		else if (_o instanceof ASymmetricKeyPair)
-			return ((ASymmetricKeyPair) _o).encode(true);
-		else if (_o instanceof ASymmetricPublicKey)
-			return ((ASymmetricPublicKey) _o).encode(true);
-		else if (_o instanceof ASymmetricPrivateKey)
-			return ((ASymmetricPrivateKey) _o).encode();
-		else if (_o instanceof SymmetricSecretKey)
-			return ((SymmetricSecretKey) _o).encode();
 		else if (_o instanceof Enum<?>)
 		{
-			return ((Enum<?>)_o).name().getBytes();
+			return ((Enum<?>)_o).name().getBytes(StandardCharsets.UTF_8);
 		}
 		else if (_o instanceof File)
 		{
 			return ((File) _o).getPath().getBytes(StandardCharsets.UTF_8);
 		}
-		else if (_o instanceof Calendar)
-		{
-			try(ByteArrayOutputStream baos=new ByteArrayOutputStream();ObjectOutputStream oos=new ObjectOutputStream(baos))
-			{
-				oos.writeObject(_o);
-				return baos.toByteArray();
-			}
-			catch(Exception e)
-			{
-				throw new IncompatibleFieldDatabaseException("",e);
-			}
-		}
+
 
 		throw new IncompatibleFieldDatabaseException("Incompatible type " + _o.getClass().getCanonicalName());
 	}
@@ -112,35 +89,14 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 				return null;
 			if (_object_type == Inet6Address.class || _object_type == Inet4Address.class)
 				return InetAddress.getByAddress(_bytesTab);
-			else if (ASymmetricKeyPair.class.isAssignableFrom(_object_type)) {
-				return ASymmetricKeyPair.decode(_bytesTab);
-			} else if (ASymmetricPublicKey.class.isAssignableFrom(_object_type)) {
-				return ASymmetricPublicKey.decode(_bytesTab);
-			} else if (ASymmetricPrivateKey.class.isAssignableFrom(_object_type)) {
-				return ASymmetricPrivateKey.decode(_bytesTab);
-			} else if (SymmetricSecretKey.class.isAssignableFrom(_object_type)) {
-				return SymmetricSecretKey.decode(_bytesTab);
-			} else if (Enum.class.isAssignableFrom(_object_type)) {
-				return _object_type.getDeclaredMethod("valueOf", String.class).invoke(null, new String(_bytesTab));
+			else if (Enum.class.isAssignableFrom(_object_type)) {
+				return _object_type.getDeclaredMethod("valueOf", String.class).invoke(null, new String(_bytesTab, StandardCharsets.UTF_8));
 			}
 			else if (File.class.isAssignableFrom(_object_type))
 			{
 				return new File(new String(_bytesTab, StandardCharsets.UTF_8));
 			}
-			else if (Calendar.class.isAssignableFrom(_object_type))
-			{
-				try(ByteArrayInputStream bais=new ByteArrayInputStream(_bytesTab); ObjectInputStream dis=new ObjectInputStream(bais))
-				{
-					Object o=dis.readObject();
-					if (o!=null && !(o instanceof Calendar))
-						throw new IncompatibleFieldDatabaseException("The class "+o.getClass()+" does is not a calendar !");
-					return o;
-				}
-				catch(Exception e)
-				{
-					throw new IncompatibleFieldDatabaseException("",e);
-				}
-			}
+
 		} catch (Exception e) {
 			throw new IncompatibleFieldDatabaseException("A problems occurs", e);
 		}
@@ -155,10 +111,8 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 	 */
 	@Override
 	public boolean isCompatible(Class<?> field_type) {
-		return field_type == Inet4Address.class || field_type == Inet6Address.class
-				|| field_type == ASymmetricKeyPair.class || field_type == ASymmetricPublicKey.class
-				|| field_type == ASymmetricPrivateKey.class || field_type == SymmetricSecretKey.class
-				|| Enum.class.isAssignableFrom(field_type) || Calendar.class.isAssignableFrom(field_type)
+		return field_type == Inet4Address.class || field_type == Inet6Address.class ||
+				Enum.class.isAssignableFrom(field_type)
 				|| File.class.isAssignableFrom(field_type);
 	}
 
@@ -166,25 +120,14 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 	public int getDefaultSizeLimit(Class<?> _object_type) throws IncompatibleFieldDatabaseException{
 		if (_object_type == Inet6Address.class || _object_type == Inet4Address.class)
 			return 128;
-		else if (ASymmetricKeyPair.class.isAssignableFrom(_object_type)) {
-			return 10500;
-		} else if (ASymmetricPublicKey.class.isAssignableFrom(_object_type)) {
-			return 8999;
-		} else if (ASymmetricPrivateKey.class.isAssignableFrom(_object_type)) {
-			return 1200;
-		} else if (SymmetricSecretKey.class.isAssignableFrom(_object_type)) {
-			return 400;
-		} else if (Enum.class.isAssignableFrom(_object_type)) {
-			return 300;
+		else if (Enum.class.isAssignableFrom(_object_type)) {
+			return SerializationTools.MAX_CLASS_LENGTH;
 		}
 		else if (File.class.isAssignableFrom(_object_type))
 		{
 			return 16384;
 		}
-		else if (Calendar.class.isAssignableFrom(_object_type))
-		{
-			return 4000;
-		}
+
 		throw new IncompatibleFieldDatabaseException("Incompatible type " + _object_type.getCanonicalName());
 	}
 

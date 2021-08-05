@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -39,8 +39,12 @@ import com.distrimind.ood.database.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
-import com.distrimind.util.*;
+import com.distrimind.util.AbstractDecentralizedID;
+import com.distrimind.util.AbstractDecentralizedIDGenerator;
+import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.crypto.*;
+import com.distrimind.util.data_buffers.WrappedData;
+import com.distrimind.util.data_buffers.WrappedSecretData;
 import com.distrimind.util.io.RandomInputStream;
 import com.distrimind.util.io.RandomOutputStream;
 
@@ -48,7 +52,6 @@ import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Objects;
@@ -64,34 +67,56 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 	private final boolean encodeExpirationUTC;
 
 	protected DecentralizedValueFieldAccessor(Table<?> table,
-											  DatabaseWrapper _sql_connection, Field _field, String parentFieldName) throws DatabaseException {
-		super(_sql_connection, _field, parentFieldName, new Class<?>[] {_field.getType()}, table);
+											  DatabaseWrapper _sql_connection, Field _field, String parentFieldName, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
+		super(_sql_connection, _field, parentFieldName, new Class<?>[] {_field.getType()}, table, severalPrimaryKeysPresentIntoTable);
 		sql_fields = new SqlField[1];
 		Class<?>[] compatibleClasses = new Class<?>[]{_field.getType()};
+		isVarBinary=DatabaseWrapperAccessor.isVarBinarySupported(sql_connection);
 
-		long limit;
-		if (getLimit()>0)
-			limit=getLimit();
-		else
+		if (limit<=0)
 		{
 			if (AbstractDecentralizedID.class.isAssignableFrom(compatibleClasses[0]))
 			{
-				if (compatibleClasses[0].equals(DecentralizedIDGenerator.class) || compatibleClasses[0].equals(RenforcedDecentralizedIDGenerator.class))
+				if (AbstractDecentralizedIDGenerator.class.isAssignableFrom(compatibleClasses[0]))
 				{
-					limit=17;
+					limit=AbstractDecentralizedIDGenerator.MAX_DECENTRALIZED_ID_SIZE_IN_BYTES;
 				}
 				else
-					limit=33;
+					limit=AbstractDecentralizedID.MAX_DECENTRALIZED_ID_SIZE_IN_BYTES;
 			}
-			else
-				limit= compatibleClasses[0]== ASymmetricPublicKey.class?8999:(compatibleClasses[0]== ASymmetricPrivateKey.class?1200:(compatibleClasses[0]== SymmetricSecretKey.class?55:10500));
+			else {
+				if (compatibleClasses[0]==IASymmetricPublicKey.class)
+					limit=IASymmetricPublicKey.MAX_SIZE_IN_BYTES_OF_PUBLIC_KEY;
+				else if (compatibleClasses[0]==IASymmetricPrivateKey.class)
+					limit=IASymmetricPrivateKey.MAX_SIZE_IN_BYTES_OF_PRIVATE_KEY;
+				else if (compatibleClasses[0]==ASymmetricPublicKey.class)
+					limit=ASymmetricPublicKey.MAX_SIZE_IN_BYTES_OF_NON_HYBRID_PUBLIC_KEY;
+				else if (compatibleClasses[0]==ASymmetricPrivateKey.class)
+					limit=ASymmetricPrivateKey.MAX_SIZE_IN_BYTES_OF_NON_HYBRID_PRIVATE_KEY;
+				else if (compatibleClasses[0]==HybridASymmetricPublicKey.class)
+					limit=HybridASymmetricPublicKey.MAX_SIZE_IN_BYTES_OF_HYBRID_PUBLIC_KEY;
+				else if (compatibleClasses[0]==HybridASymmetricPrivateKey.class)
+					limit=HybridASymmetricPrivateKey.MAX_SIZE_IN_BYTES_OF_HYBRID_PRIVATE_KEY;
+				else if (compatibleClasses[0]==ASymmetricKeyPair.class)
+					limit=ASymmetricKeyPair.MAX_SIZE_IN_BYTES_OF_NON_HYBRID_KEY_PAIR;
+				else if (compatibleClasses[0]==HybridASymmetricKeyPair.class)
+					limit=HybridASymmetricKeyPair.MAX_SIZE_IN_BYTES_OF_HYBRID_KEY_PAIR;
+				else if (compatibleClasses[0]==AbstractKeyPair.class)
+					limit=AbstractKeyPair.MAX_SIZE_IN_BYTES_OF_KEY_PAIR;
+				else if (compatibleClasses[0]==SymmetricSecretKey.class)
+					limit=SymmetricSecretKey.MAX_SIZE_IN_BYTES_OF_SYMMETRIC_KEY;
+				else
+					limit=DecentralizedValue.MAX_SIZE_IN_BYTES_OF_DECENTRALIZED_VALUE;
+			}
 
 		}
-		sql_fields[0] = new SqlField(table_name + "." + this.getSqlFieldName(),
-				Objects.requireNonNull(DatabaseWrapperAccessor.isVarBinarySupported(sql_connection) ? "VARBINARY(" + limit + ")"
-						: DatabaseWrapperAccessor.getBigIntegerType(sql_connection)),
-				null, null, isNotNull());
-		isVarBinary = DatabaseWrapperAccessor.isVarBinarySupported(sql_connection);
+		if (!isVarBinary)
+			limit*=3;
+		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(),
+				Objects.requireNonNull(isVarBinary ? DatabaseWrapperAccessor.getVarBinaryType(_sql_connection, limit)
+						: DatabaseWrapperAccessor.getBigDecimalType(sql_connection, limit)),
+				isNotNull());
+		//isVarBinary = DatabaseWrapperAccessor.isVarBinarySupported(sql_connection);
 
 		if (_field.isAnnotationPresent(com.distrimind.ood.database.annotations.Field.class))
 			encodeExpirationUTC=_field.getAnnotation(com.distrimind.ood.database.annotations.Field.class).includeKeyExpiration();
@@ -100,8 +125,23 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 	}
 
 
-	private static BigDecimal getBigDecimal(byte[] bytes) {
-		return ByteTabFieldAccessor.getBigDecimalValue(bytes);
+	private Object getSQLObject(WrappedData bytes) {
+		if (bytes==null)
+			return null;
+		try {
+			if (isVarBinary) {
+				if (bytes instanceof WrappedSecretData) {
+					return bytes.getBytes().clone();
+				} else
+					return bytes.getBytes();
+			} else {
+				return ByteTabFieldAccessor.getBigDecimalValue(bytes);
+			}
+		}
+		finally {
+			if (bytes instanceof WrappedSecretData)
+				((WrappedSecretData) bytes).zeroize();
+		}
 	}
 
 	private static byte[] getBytes(BigDecimal v) {
@@ -120,7 +160,7 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 								+ ") into the DatabaseField class " + field.getDeclaringClass().getName()
 								+ ", is null and should not be (property NotNull present).");
 		} else if (!(field.getType().isAssignableFrom(_field_instance.getClass())))
-			throw new FieldDatabaseException("The given _field_instance parameter, destinated to the field "
+			throw new FieldDatabaseException("The given _field_instance parameter, destined to the field "
 					+ field.getName() + " of the class " + field.getDeclaringClass().getName() + ", should be a "
 					+ field.getType().getName() + " and not a " + _field_instance.getClass().getName());
 		try {
@@ -144,7 +184,7 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	private byte[] encode(Object instance)
+	private WrappedData encode(Object instance)
 	{
 		if (instance==null)
 			return null;
@@ -169,40 +209,6 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 			throw new IllegalAccessError();
 	}
 	@Override
-	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			byte[] val1;
-			if (_field_instance instanceof byte[])
-				val1 = (byte[]) _field_instance;
-			else
-				val1 = encode(_field_instance);
-
-			byte[] val2;
-
-			if (isVarBinary) {
-				val2 = _result_set.getBytes(_sft.translateField(sql_fields[0]));
-			} else {
-				val2 = getBytes(_result_set.getBigDecimal(_sft.translateField(sql_fields[0])));
-			}
-
-			if (val1 == null || val2 == null)
-				return val1 == val2;
-			else {
-				if (val1.length != val2.length)
-					return false;
-				for (int i = 0; i < val1.length; i++)
-					if (val1[i] != val2[i])
-						return false;
-				return true;
-			}
-
-		} catch (SQLException e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}
-
-	@Override
 	public Object getValue(Object _class_instance) throws DatabaseException {
 		try {
 			return field.get(_class_instance);
@@ -217,13 +223,9 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public SqlFieldInstance[] getSqlFieldsInstances(Object _instance) throws DatabaseException {
+	public SqlFieldInstance[] getSqlFieldsInstances(String sqlTableName, Object _instance) throws DatabaseException {
 		SqlFieldInstance[] res = new SqlFieldInstance[1];
-		if (isVarBinary)
-			res[0] = new SqlFieldInstance(sql_fields[0], encode(getValue(_instance)));
-		else
-			res[0] = new SqlFieldInstance(sql_fields[0],
-					getBigDecimal(encode(getValue(_instance))));
+		res[0] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[0], getSQLObject(encode(getValue(_instance))));
 		return res;
 	}
 
@@ -243,14 +245,14 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
-	public void setValue(Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
+	public void setValue(String sqlTableName, Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
 			byte[] res;
 			if (isVarBinary) {
-				res = _result_set.getBytes(getColmunIndex(_result_set, sql_fields[0].field));
+				res = _result_set.getBytes(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
 			} else {
-				res = getBytes(_result_set.getBigDecimal(getColmunIndex(_result_set, sql_fields[0].field)));
+				res = getBytes(_result_set.getBigDecimal(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0]))));
 			}
 			if (res == null && isNotNull())
 				throw new DatabaseIntegrityException("Unexpected exception. Null value was found into a not null field "
@@ -276,54 +278,14 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 	@Override
 	public void getValue(PreparedStatement _prepared_statement, int _field_start, Object o) throws DatabaseException {
 		try {
-			byte[] b = null;
+			WrappedData b = null;
 			if (o != null) {
 				b = encode(o);
 			}
 			if (isVarBinary)
-				_prepared_statement.setBytes(_field_start, b);
+				_prepared_statement.setBytes(_field_start, (byte[])getSQLObject(b));
 			else {
-				_prepared_statement.setBigDecimal(_field_start, getBigDecimal(b));
-			}
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}
-
-	@Override
-	public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set)
-			throws DatabaseException {
-		setValue(_class_instance, _field_instance);
-		try {
-			Object o = field.get(_class_instance);
-			byte[] b = null;
-			if (o != null) {
-				b = encode(o);
-			}
-			if (isVarBinary)
-				_result_set.updateBytes(sql_fields[0].short_field, b);
-			else {
-				_result_set.updateBigDecimal(sql_fields[0].short_field, getBigDecimal(b));
-			}
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-
-	}
-
-	@Override
-	protected void updateResultSetValue(Object _class_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			Object o = field.get(_class_instance);
-			byte[] b = null;
-			if (o != null) {
-				b = encode(o);
-			}
-			if (isVarBinary)
-				_result_set.updateBytes(_sft.translateField(sql_fields[0]), b);
-			else {
-				_result_set.updateBigDecimal(sql_fields[0].short_field, getBigDecimal(b));
+				_prepared_statement.setBigDecimal(_field_start, (BigDecimal)getSQLObject(b));
 			}
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -359,13 +321,7 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 	@Override
 	public void serialize(RandomOutputStream _oos, Object _class_instance) throws DatabaseException {
 		try {
-			byte[] b = encode(getValue(_class_instance));
-			if (b != null) {
-				_oos.writeInt(b.length);
-				_oos.write(b);
-			} else {
-				_oos.writeInt(-1);
-			}
+			_oos.writeObject(getValue(_class_instance), !isNotNull());
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -374,18 +330,8 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 	@Override
 	public void deserialize(RandomInputStream _ois, Map<String, Object> _map) throws DatabaseException {
 		try {
-			int size = _ois.readInt();
-			if (size > -1) {
-				byte[] b = new byte[size];
-				int os = _ois.read(b);
-				if (os != size)
-					throw new DatabaseException(
-							"read bytes insuficiant (expected size=" + size + ", obtained size=" + os + ")");
-				_map.put(getFieldName(), decode(b));
-			} else if (isNotNull())
-				throw new DatabaseException("field should not be null");
-			else
-				_map.put(getFieldName(), null);
+			_map.put(getFieldName(), _ois.readObject(!isNotNull(), DecentralizedValue.class));
+
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -394,22 +340,9 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 	@Override
 	public Object deserialize(RandomInputStream _ois, Object _classInstance) throws DatabaseException {
 		try {
-			int size = _ois.readInt();
-			if (size > -1) {
-				byte[] b = new byte[size];
-				int os = _ois.read(b);
-				if (os != size)
-					throw new DatabaseException(
-							"read bytes insuficiant (expected size=" + size + ", obtained size=" + os + ")");
-				Object a = decode(b);
-				setValue(_classInstance, a);
-				return a;
-			} else if (isNotNull())
-				throw new DatabaseException("field should not be null");
-			else {
-				setValue(_classInstance, (Object) null);
-				return null;
-			}
+			DecentralizedValue dv=_ois.readObject(!isNotNull(), DecentralizedValue.class);
+			setValue(_classInstance, dv);
+			return dv;
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}

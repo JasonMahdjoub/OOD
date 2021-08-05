@@ -5,7 +5,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -35,12 +35,12 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.interpreter;
 
-import java.util.ArrayList;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import com.distrimind.ood.database.exceptions.DatabaseSyntaxException;
 import com.distrimind.ood.database.exceptions.QueryInterpretationImpossible;
 import com.distrimind.ood.database.exceptions.UnrecognizedSymbolException;
+import com.distrimind.util.Reference;
+
+import java.util.ArrayList;
 
 /**
  * 
@@ -79,7 +79,8 @@ public class Interpreter {
 	 */
 
 	private static String preProcess(String command) {
-		command = command.replaceAll("\\p{Blank}([Nn])([Oo])([Tt]) ([Ll])([Ii])([Kk])([Ee])\\p{Blank}", " NOT_LIKE ");
+		command = command.replaceAll("\\p{Blank}([Nn])([Oo])([Tt])\\p{Blank}([Ll])([Ii])([Kk])([Ee])\\p{Blank}", " NOT_LIKE ");
+		command = command.replaceAll("\\p{Blank}([Ii])([Ss])\\p{Blank}([Nn])([Oo])([Tt])\\p{Blank}", " IS_NOT ");
 
 		StringBuilder sb = new StringBuilder();
 
@@ -112,7 +113,7 @@ public class Interpreter {
 				}
 			}
 			if (bestMatch != null) {
-				boolean space = bestSymbol != SymbolType.LIKE && bestSymbol != SymbolType.NOTLIKE;
+				boolean space = bestSymbol != SymbolType.LIKE && bestSymbol != SymbolType.NOTLIKE && bestSymbol!=SymbolType.IS && bestSymbol!=SymbolType.ISNOT;
 				if (space)
 					sb.append(" ");
 				sb.append(bestMatch);
@@ -129,7 +130,7 @@ public class Interpreter {
 
 	private static ArrayList<Symbol> lexicalAnalyse(String command) throws UnrecognizedSymbolException {
 		command = preProcess(command);
-		String sls[] = command.split(" ");
+		String[] sls = command.split(" ");
 		ArrayList<Symbol> symbols = new ArrayList<>(sls.length);
 		for (String s : sls) {
 			String st = s.trim();
@@ -186,18 +187,24 @@ public class Interpreter {
 		if (command == null)
 			throw new NullPointerException("command");
 
-		AtomicInteger index = new AtomicInteger(0);
+		Reference<Integer> index = new Reference<>(0);
 		ArrayList<QueryPart> res = new ArrayList<>(parts.size());
 		boolean changed = false;
-		while (index.get() < parts.size()) {
-			RuleInstance ri = getQuery(parts, index.get(), index);
 
-			if (ri == null) {
-				res.add(parts.get(index.getAndIncrement()));
+		while (index.get() < parts.size()) {
+			int previousIndex=index.get();
+
+			QueryPart ap = getQuery(parts, index.get(), index);
+
+			if (ap == null) {
+				ap=parts.get(index.get());
+				index.set(index.get()+1);
 			} else {
 				changed = true;
-				res.add(ri);
 			}
+			res.add(ap);
+			if (index.get()==previousIndex && res.size()>0 && ap.equals(res.get(res.size()-1)))
+				throw new DatabaseSyntaxException("Invalid syntax");
 		}
 		if (changed)
 			return res;
@@ -208,9 +215,9 @@ public class Interpreter {
 	}
 
 	private static RuleInstance getQuery(ArrayList<QueryPart> parts, int index,
-										 AtomicInteger newIndex) {
+										 Reference<Integer> newIndex) {
 
-		Rule choosenValidRule = null;
+		Rule chosenValidRule = null;
 
 		StringBuilder currentRule = new StringBuilder();
 		int len = 0;
@@ -218,30 +225,30 @@ public class Interpreter {
 		for (int i = index; i < parts.size(); i++) {
 			boolean valid = true;
 
-			Rule choosenRule = null;
+			Rule chosenRule = null;
 			currentRule.append(parts.get(i).getBackusNaurNotation());
 
 			String rc = currentRule.toString();
 			for (Rule r : Rule.values()) {
 				if (r.match(rc)) {
-					if (choosenRule != null) {
+					if (chosenRule != null) {
 						valid = false;
 						break;
 					}
-					choosenRule = r;
+					chosenRule = r;
 				}
 			}
-			if (valid && choosenRule != null) {
-				choosenValidRule = choosenRule;
+			if (valid && chosenRule != null) {
+				chosenValidRule = chosenRule;
 				len = i - index + 1;
 			}
 		}
-		if (choosenValidRule == null) {
+		if (chosenValidRule == null) {
 			return null;
 		}
 
 		newIndex.set(index + len);
-		return new RuleInstance(choosenValidRule, parts, index, len);
+		return new RuleInstance(chosenValidRule, parts, index, len);
 	}
 
 }

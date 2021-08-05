@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -45,7 +45,7 @@ import java.util.ArrayList;
  * @since OOD 2.0
  */
 public class DatabaseTransactionEvent extends DatabaseEvent {
-	private long id;
+	private final long id;
 	private final ArrayList<TableEvent<?>> events;
 	private boolean force = false;
 
@@ -54,32 +54,6 @@ public class DatabaseTransactionEvent extends DatabaseEvent {
 		events = new ArrayList<>();
 	}
 
-	/*DatabaseTransactionEvent(long id, ArrayList<TableEvent<?>> events) {
-		this.id = id;
-		if (events == null)
-			throw new NullPointerException("events");
-		if (events.isEmpty())
-			throw new IllegalArgumentException("events can't be empty");
-		for (TableEvent<?> de : events)
-			if (de == null)
-				throw new NullPointerException("events element");
-		this.events = events;
-	}
-
-	DatabaseTransactionEvent(long id, TableEvent<?>... events) {
-		this.id = id;
-		if (events == null)
-			throw new NullPointerException("events");
-		if (events.length == 0)
-			throw new IllegalArgumentException("events can't be empty");
-		for (TableEvent<?> de : events)
-			if (de == null)
-				throw new NullPointerException("events element");
-		this.events = new ArrayList<>();
-		for (TableEvent<?> te : events)
-			this.events.add(te);
-
-	}*/
 
 	public ArrayList<TableEvent<?>> getEvents() {
 		return events;
@@ -89,24 +63,18 @@ public class DatabaseTransactionEvent extends DatabaseEvent {
 		return id;
 	}
 
-	/*void setID(long id) {
-		this.id = id;
-	}*/
+
 
 	boolean addEvent(TableEvent<?> event) {
-		force |= event.isForce();
+		force |= event.isForced();
 		return this.events.add(event);
 	}
-
-	/*boolean isForce() {
-		return force;
+	@Override
+	public String toString() {
+		return "DatabaseTransactionEvent{" +
+				"id=" + id +
+				", force=" + force +
+				", events=" + events +
+				'}';
 	}
-
-	byte getTypesByte() {
-		byte b = 0;
-		for (TableEvent<?> de : events)
-			b |= de.getType().getByte();
-		return b;
-	}*/
-	
 }

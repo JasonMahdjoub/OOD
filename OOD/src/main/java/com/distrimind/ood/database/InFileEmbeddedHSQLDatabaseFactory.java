@@ -5,7 +5,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -52,7 +52,7 @@ public class InFileEmbeddedHSQLDatabaseFactory extends DatabaseFactory<EmbeddedH
 	 */
 	private static final long serialVersionUID = -5549181783426731120L;
 
-	private File fileName;
+	private File directory;
 	private HSQLDBConcurrencyControl concurrencyControl=HSQLDBConcurrencyControl.DEFAULT;
 	private int cacheRows=50000;
 	private int cacheSizeBytes =10000*1024;
@@ -61,13 +61,13 @@ public class InFileEmbeddedHSQLDatabaseFactory extends DatabaseFactory<EmbeddedH
 	private boolean lockFile=true;
 	private boolean alwaysDisconnectAfterOneTransaction=false;
 
-	protected InFileEmbeddedHSQLDatabaseFactory() {
-
+	protected InFileEmbeddedHSQLDatabaseFactory() throws DatabaseException {
+		super();
 	}
 	/**
 	 * Constructor
 	 *
-	 * @param databaseFileName
+	 * @param databaseDirectory
 	 *            The directory which contains the database. If this directory does not
 	 *            exists, it will be automatically created with the correspondent
 	 *            database.
@@ -78,14 +78,31 @@ public class InFileEmbeddedHSQLDatabaseFactory extends DatabaseFactory<EmbeddedH
 	 *             If the given file is a directory.
 	 *
 	 */
-	public InFileEmbeddedHSQLDatabaseFactory(File databaseFileName) {
-		this(databaseFileName, false);
+	public InFileEmbeddedHSQLDatabaseFactory(File databaseDirectory) throws DatabaseException {
+		this(null, databaseDirectory);
 	}
-
 	/**
 	 * Constructor
 	 *
-	 * @param databaseFileName
+	 * @param databaseConfigurations the database configurations
+	 * @param databaseDirectory
+	 *            The directory which contains the database. If this directory does not
+	 *            exists, it will be automatically created with the correspondent
+	 *            database.
+	 *
+	 * @throws NullPointerException
+	 *             if parameters are null pointers.
+	 * @throws IllegalArgumentException
+	 *             If the given file is a directory.
+	 *
+	 */
+	public InFileEmbeddedHSQLDatabaseFactory(DatabaseConfigurations databaseConfigurations, File databaseDirectory) throws DatabaseException {
+		this(databaseConfigurations, databaseDirectory, false);
+	}
+	/**
+	 * Constructor
+	 *
+	 * @param databaseDirectory
 	 *            The directory which contains the database. If this directory does not
 	 *            exists, it will be automatically created with the correspondent
 	 *            database.
@@ -96,14 +113,34 @@ public class InFileEmbeddedHSQLDatabaseFactory extends DatabaseFactory<EmbeddedH
 	 *             If the given file is a directory.
 	 *
 	 */
-	public InFileEmbeddedHSQLDatabaseFactory(File databaseFileName, boolean alwaysDisconnectAfterOneTransaction) {
-		setFileName(databaseFileName);
+	public InFileEmbeddedHSQLDatabaseFactory(File databaseDirectory, boolean alwaysDisconnectAfterOneTransaction) throws DatabaseException {
+		this(null, databaseDirectory, alwaysDisconnectAfterOneTransaction);
+	}
+	/**
+	 * Constructor
+	 *
+	 * @param databaseConfigurations the database configurations
+	 * @param databaseDirectory
+	 *            The directory which contains the database. If this directory does not
+	 *            exists, it will be automatically created with the correspondent
+	 *            database.
+	 * @param alwaysDisconnectAfterOneTransaction true if the database must always be connected and detected during one transaction
+	 * @throws NullPointerException
+	 *             if parameters are null pointers.
+	 * @throws IllegalArgumentException
+	 *             If the given file is a directory.
+	 *
+	 */
+	public InFileEmbeddedHSQLDatabaseFactory(DatabaseConfigurations databaseConfigurations, File databaseDirectory, boolean alwaysDisconnectAfterOneTransaction) throws DatabaseException {
+		super(databaseConfigurations);
+		setDirectory(databaseDirectory);
 		this.alwaysDisconnectAfterOneTransaction = alwaysDisconnectAfterOneTransaction;
 	}
 	/**
 	 * Constructor
 	 *
-	 * @param databaseFileName
+	 * @param databaseConfigurations the database configurations
+	 * @param databaseDirectory
 	 *            The directory which contains the database. If this directory does not
 	 *            exists, it will be automatically created with the correspondent
 	 *            database.
@@ -137,10 +174,10 @@ public class InFileEmbeddedHSQLDatabaseFactory extends DatabaseFactory<EmbeddedH
 	 *             If the given file is a directory.
 	 *
 	 */
-	public InFileEmbeddedHSQLDatabaseFactory(File databaseFileName, boolean alwaysDisconnectAfterOneTransaction, HSQLDBConcurrencyControl concurrencyControl, int _cache_rows,
-											 int _cache_size, int _result_max_memory_rows, int _cache_free_count, boolean lockFile) {
-
-		setFileName(databaseFileName);
+	public InFileEmbeddedHSQLDatabaseFactory(DatabaseConfigurations databaseConfigurations, File databaseDirectory, boolean alwaysDisconnectAfterOneTransaction, HSQLDBConcurrencyControl concurrencyControl, int _cache_rows,
+											 int _cache_size, int _result_max_memory_rows, int _cache_free_count, boolean lockFile) throws DatabaseException {
+		super(databaseConfigurations);
+		setDirectory(databaseDirectory);
 		setConcurrencyControl(concurrencyControl);
 		cacheRows = _cache_rows;
 		cacheSizeBytes = _cache_size;
@@ -149,23 +186,68 @@ public class InFileEmbeddedHSQLDatabaseFactory extends DatabaseFactory<EmbeddedH
 		this.alwaysDisconnectAfterOneTransaction = alwaysDisconnectAfterOneTransaction;
 		this.lockFile=lockFile;
 	}
+	/**
+	 * Constructor
+	 *
+	 * @param databaseDirectory
+	 *            The directory which contains the database. If this directory does not
+	 *            exists, it will be automatically created with the correspondent
+	 *            database.
+	 * @param alwaysDisconnectAfterOneTransaction true if the database must always be connected and detected during one transaction
+	 * @param concurrencyControl the concurrency mode
+	 * @param _cache_rows
+	 *            indicates the maximum number of rows of cached tables that are
+	 *            held in memory. The value can range between 100- 4 billion.
+	 *            Default value is 100. Table loaded into memory are not concerned.
+	 * @param _cache_size
+	 *            Indicates the total size (in kilobytes) of rows in the memory
+	 *            cache used with cached tables. The value can range between 100 KB
+	 *            - 4 GB. The default is 10,000, representing 10,000 kilobytes.
+	 * @param _result_max_memory_rows
+	 *            This property can be set to specify how many rows of each results
+	 *            or temporary table are stored in memory before the table is
+	 *            written to disk. The default is zero and means data is always
+	 *            stored in memory. If this setting is used, it should be set above
+	 *            1000.
+	 * @param _cache_free_count
+	 *            The default indicates 512 unused spaces are kept for later use.
+	 *            The value can range between 0 - 8096. When rows are deleted, the
+	 *            space is recovered and kept for reuse for new rows. If too many
+	 *            rows are deleted, the smaller recovered spaces are lost and the
+	 *            largest ones are retained for later use. Normally there is no need
+	 *            to set this property.
+	 * @param lockFile true if the database's file must be locked to avoid concurrent access
+	 * @throws NullPointerException
+	 *             if parameters are null pointers.
+	 * @throws IllegalArgumentException
+	 *             If the given file is a directory.
+	 *
+	 */
+	public InFileEmbeddedHSQLDatabaseFactory(File databaseDirectory, boolean alwaysDisconnectAfterOneTransaction, HSQLDBConcurrencyControl concurrencyControl, int _cache_rows,
+											 int _cache_size, int _result_max_memory_rows, int _cache_free_count, boolean lockFile) throws DatabaseException {
+		this(null, databaseDirectory, alwaysDisconnectAfterOneTransaction, concurrencyControl, _cache_rows, _cache_size, _result_max_memory_rows, _cache_free_count, lockFile);
+	}
 
 	@Override
-	protected EmbeddedHSQLDBWrapper newWrapperInstance() throws DatabaseException {
-		return new EmbeddedHSQLDBWrapper(fileName, alwaysDisconnectAfterOneTransaction, concurrencyControl, cacheRows, cacheSizeBytes,
+	protected EmbeddedHSQLDBWrapper newWrapperInstance(DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
+		return new EmbeddedHSQLDBWrapper(directory, databaseConfigurations, databaseLifeCycles,
+				signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup==null?null:signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
+				encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup==null?null:encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
+				protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages==null?null:protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
+				getSecureRandom(), createDatabasesIfNecessaryAndCheckIt, alwaysDisconnectAfterOneTransaction, concurrencyControl, cacheRows, cacheSizeBytes,
 					resultMaxMemoryRows, cacheFreeCount, lockFile);
 	}
 
-	public File getFileName() {
-		return fileName;
+	public File getDirectory() {
+		return directory;
 	}
 
-	public void setFileName(File _file_name) {
+	public void setDirectory(File _file_name) {
 		if (_file_name == null)
 			throw new NullPointerException("The parameter _file_name is a null pointer !");
 		if (_file_name.exists() && !_file_name.isDirectory())
 			throw new IllegalArgumentException("The given file name is not a directory !");
-		this.fileName = _file_name;
+		this.directory = _file_name;
 	}
 
 	public HSQLDBConcurrencyControl getConcurrencyControl() {
@@ -225,5 +307,10 @@ public class InFileEmbeddedHSQLDatabaseFactory extends DatabaseFactory<EmbeddedH
 
 	public void setAlwaysDisconnectAfterOneTransaction(boolean alwaysDisconnectAfterOneTransaction) {
 		this.alwaysDisconnectAfterOneTransaction = alwaysDisconnectAfterOneTransaction;
+	}
+
+	@Override
+	public void deleteDatabase()  {
+		EmbeddedH2DatabaseWrapper.deleteDatabasesFiles(directory);
 	}
 }

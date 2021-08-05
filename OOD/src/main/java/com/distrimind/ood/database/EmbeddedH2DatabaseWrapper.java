@@ -5,7 +5,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program
 whose purpose is to manage a local database with the object paradigm
-and the java langage
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use,
@@ -35,10 +35,13 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
+
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseVersionException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
+import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.crypto.EncryptionProfileProvider;
 
 import java.io.File;
 import java.lang.reflect.Constructor;
@@ -62,19 +65,75 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	private static Object blobStateNewValue=null;
 	protected int pageSizeBytes;
 	protected int cacheSizeBytes;
+	private final boolean android;
+	private boolean loadedOneTime=false;
+	private boolean autoPrimaryKeyIndexStartFromOne=false;
 
-	EmbeddedH2DatabaseWrapper(boolean loadToMemory, String databaseName) throws DatabaseException {
-		super(databaseName, null, false, true, true);
+
+	EmbeddedH2DatabaseWrapper(String databaseName, boolean loadToMemory,
+							  DatabaseConfigurations databaseConfigurations,
+							  DatabaseLifeCycles databaseLifeCycles,
+							  EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+							  EncryptionProfileProvider encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
+							  EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+							  AbstractSecureRandom secureRandom,
+							  boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
+		super(databaseName, null, false, true,
+				databaseConfigurations, databaseLifeCycles, signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
+				protectedEncryptionProfileProviderForAuthenticatedP2PMessages, secureRandom, createDatabasesIfNecessaryAndCheckIt, true);
 		if (!loadToMemory)
 			throw new IllegalArgumentException();
 		this.pageSizeBytes=0;
 		this.cacheSizeBytes=0;
+		this.android=false;
 	}
-	EmbeddedH2DatabaseWrapper(File _directory_name, boolean alwaysDisconnectAfterOnTransaction, boolean fileLock, int pageSizeBytes
+	EmbeddedH2DatabaseWrapper(File _directory_name,
+							  DatabaseConfigurations databaseConfigurations,
+							  DatabaseLifeCycles databaseLifeCycles,
+							  EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+							  EncryptionProfileProvider encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
+							  EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+							  AbstractSecureRandom secureRandom,
+							  boolean createDatabasesIfNecessaryAndCheckIt, boolean alwaysDisconnectAfterOnTransaction, boolean fileLock, int pageSizeBytes
 			,int cacheSizeBytes) throws DatabaseException {
-		super("Database from file : " + getH2DataFileName(getDatabaseFileName(_directory_name)), _directory_name, alwaysDisconnectAfterOnTransaction, false, fileLock);
+		super("Database from file : " + getH2DataFileName(getDatabaseFileName(_directory_name)), _directory_name,
+				alwaysDisconnectAfterOnTransaction, false,
+				databaseConfigurations,
+				databaseLifeCycles,
+				signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
+				protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+				secureRandom,
+				createDatabasesIfNecessaryAndCheckIt,
+				fileLock);
 		this.pageSizeBytes=pageSizeBytes;
 		this.cacheSizeBytes=cacheSizeBytes;
+		this.android=false;
+	}
+
+	EmbeddedH2DatabaseWrapper(File _directory_name,
+							  DatabaseConfigurations databaseConfigurations,
+							  DatabaseLifeCycles databaseLifeCycles,
+							  EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+							  EncryptionProfileProvider encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
+							  EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+							  AbstractSecureRandom secureRandom,
+							  boolean createDatabasesIfNecessaryAndCheckIt, boolean alwaysDisconnectAfterOnTransaction, int pageSizeBytes
+			,int cacheSizeBytes) throws DatabaseException {
+		super("Database from file : " + getH2DataFileName(getDatabaseFileName(_directory_name)),
+				_directory_name, alwaysDisconnectAfterOnTransaction, false,
+				databaseConfigurations,
+				databaseLifeCycles,
+				signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
+				protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+				secureRandom,
+				createDatabasesIfNecessaryAndCheckIt,
+				true);
+		this.pageSizeBytes=pageSizeBytes;
+		this.cacheSizeBytes=cacheSizeBytes;
+		this.android=true;
 	}
 
 	private static File getDatabaseFileName(File directoryName)
@@ -82,7 +141,11 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 		return new File(directoryName, "data.db");
 	}
 
+	@Override
+	protected String getBigDecimalType(long limit) {
+		return "DECIMAL";
 
+	}
 	private static void ensureH2Loading() throws DatabaseLoadingException {
 		synchronized (EmbeddedHSQLDBWrapper.class) {
 			if (!hsql_loaded) {
@@ -109,7 +172,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 			}
 		}
 	}
-	private static Connection getConnection(String databaseName, File _file_name, boolean loadToMemory, boolean fileLock, int pageSize, int cacheSize)
+	private static Connection getConnection(String databaseName, File _file_name, boolean loadToMemory, boolean android, boolean fileLock, int pageSize, int cacheSize)
 			throws DatabaseLoadingException {
 		ensureH2Loading();
 		try {
@@ -123,7 +186,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 					throw new IllegalArgumentException("The given file name is a directory !");
 
 				c = DriverManager
-						.getConnection("jdbc:h2:file:" + getH2DataFileName(_file_name) + ";PAGE_SIZE=" + pageSize + ";CACHE_SIZE=" + (cacheSize / 1024) + (fileLock ? "" : "FILE_LOCK:NO"), "SA", "");
+						.getConnection("jdbc:h2:file:" + getH2DataFileName(_file_name) + ";PAGE_SIZE=" + pageSize + ";CACHE_SIZE=" + (cacheSize / 1024) + (fileLock ? (android?";FILE_LOCK=FS":"") : ";FILE_LOCK=NO"), "SA", "");
 			}
 			databaseShutdown.set(false);
 			if (c==null)
@@ -168,7 +231,24 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 
 	@Override
 	protected Connection reopenConnectionImpl() throws DatabaseLoadingException {
-		return getConnection(database_name, getDatabaseFileName(super.getDatabaseDirectory()), isLoadedToMemory(), fileLock, pageSizeBytes, cacheSizeBytes);
+
+			Connection c = getConnection(databaseName, getDatabaseFileName(super.getDatabaseDirectory()), isLoadedToMemory(), android, fileLock, pageSizeBytes, cacheSizeBytes);
+			if (loadedOneTime)
+				return c;
+		try {
+			int majorVersion = c.getMetaData().getDriverMajorVersion();
+			int minorVersion = c.getMetaData().getDatabaseMinorVersion();
+			String tmp= majorVersion +"."+ minorVersion +".";
+			tmp=c.getMetaData().getDatabaseProductVersion().substring(tmp.length());
+			int revisionVersion = Integer.parseInt(tmp.substring(0, tmp.indexOf(' ')));
+			autoPrimaryKeyIndexStartFromOne= majorVersion <= 1 && minorVersion <= 4 && revisionVersion <= 199;
+			loadedOneTime=true;
+			return c;
+		}
+		catch (SQLException e)
+		{
+			throw new DatabaseLoadingException("Impossible to get database version", e);
+		}
 	}
 
 	@Override
@@ -236,8 +316,8 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 		String f = path.getAbsolutePath();
 		if (!f.toLowerCase().endsWith(".zip"))
 			f+=".zip";
-
-		final String querry = "BACKUP TO '" + f+"'";
+		final String file=f;
+		final String querry = "BACKUP TO ?";
 		this.runTransaction(new Transaction() {
 
 			@Override
@@ -252,6 +332,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 					lockWrite();
 					Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
 					try (PreparedStatement preparedStatement = sql_connection.prepareStatement(querry)) {
+						preparedStatement.setString(1, file);
 						preparedStatement.execute();
 					}
 					return null;
@@ -277,35 +358,11 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	}
 	@Override
 	protected void checkConstraints(Table<?> table) throws DatabaseException {
-		/*try(ResultSet res = getConnectionAssociatedWithCurrentThread().getConnection().getMetaData().getTables(null, null, null, null)) {
-			while (res.next()) {
-				System.out.println(res.getString("TABLE_NAME"));
-			}
-			try (Statement s = getConnectionAssociatedWithCurrentThread().getConnection().createStatement()) {
-				System.out.println("here");
-				ResultSet rs=s.executeQuery("SELECT * FROM "+ROW_PROPERTIES_OF_TABLES);
-				if (rs.next())
-				{
-					for (int i=1;i<=rs.getMetaData().getColumnCount();i++)
-						System.out.print(rs.getMetaData().getColumnName(i)+" \t; ");
-					System.out.println();
-					do {
-						for (int i=1;i<=rs.getMetaData().getColumnCount();i++)
-							System.out.print(rs.getString(i)+" \t; ");
-						System.out.println();
-					} while(rs.next());
-				}
-			}
-			//System.exit(0);
-		}
-		catch(SQLException e)
-		{
-			throw DatabaseException.getDatabaseException(e);
-		}*/
+
 		Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
-		try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
+		try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection, new Table.SqlQuery(
 				"select CONSTRAINT_NAME, CONSTRAINT_TYPE, COLUMN_LIST from "+getConstraintsTableName()+" WHERE TABLE_NAME='"
-						+ table.getSqlTableName() + "';"))) {
+						+ table.getSqlTableName()+"';"))) {
 			boolean foundPK=false;
 			while (rq.result_set.next()) {
 				String constraint_name = rq.result_set.getString("CONSTRAINT_NAME");
@@ -315,8 +372,6 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 					case "PRIMARY KEY": {
 						if (constraint_name.equals(table.getSqlPrimaryKeyName()))
 							foundPK=true;
-							/*throw new DatabaseVersionException(table, "There a grouped primary key named " + constraint_name
-									+ " which should be named " + table.getSqlPrimaryKeyName());*/
 					}
 					break;
 					case "FOREIGN KEY": {
@@ -328,7 +383,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 						String col=rq.result_set.getString("COLUMN_LIST");
 						for (FieldAccessor fa : table.getFieldAccessors()) {
 							for (SqlField sf : fa.getDeclaredSqlFields()) {
-								if (sf.short_field.toUpperCase().equals(col.toUpperCase()) && fa.isUnique()) {
+								if (sf.shortFieldWithoutQuote.equalsIgnoreCase(col) && fa.isUnique()) {
 									found = true;
 									break;
 								}
@@ -339,29 +394,6 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 						if (!found)
 							throw new DatabaseVersionException(table, "There is a unique sql field " + col
 									+ " which does not exists into the OOD database into table "+table.getClass().getSimpleName());
-						/*try (Table.ReadQuerry rq2 = new Table.ReadQuerry(sql_connection,
-								new Table.SqlQuerry(
-										"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
-												+ table.getSqlTableName() + "' AND CONSTRAINT_NAME='" + constraint_name + "';"))) {
-							if (rq2.result_set.next()) {
-								String col = (table.getSqlTableName() + "." + rq2.result_set.getString("COLUMN_NAME"))
-										.toUpperCase();
-								boolean found = false;
-								for (FieldAccessor fa : table.getFieldAccessors()) {
-									for (SqlField sf : fa.getDeclaredSqlFields()) {
-										if (sf.field.equals(col) && fa.isUnique()) {
-											found = true;
-											break;
-										}
-									}
-									if (found)
-										break;
-								}
-								if (!found)
-									throw new DatabaseVersionException(table, "There is a unique sql field " + col
-											+ " which does not exists into the OOD database.");
-							}
-						}*/
 
 					}
 					break;
@@ -379,18 +411,19 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
-		try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
+		try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection, new Table.SqlQuery(
 				"select PKTABLE_NAME, PKCOLUMN_NAME, FKCOLUMN_NAME from "+getCrossReferencesTableName()+" WHERE FKTABLE_NAME='"
 						+ table.getSqlTableName() + "';"))) {
 			while (rq.result_set.next()) {
 				String pointed_table = rq.result_set.getString("PKTABLE_NAME");
-				String pointed_col = pointed_table + "." + rq.result_set.getString("PKCOLUMN_NAME");
+				String pointed_col = /*pointed_table + "." + */rq.result_set.getString("PKCOLUMN_NAME");
 				String fk = table.getSqlTableName() + "." + rq.result_set.getString("FKCOLUMN_NAME");
 				boolean found = false;
 				for (ForeignKeyFieldAccessor fa : table.getForeignKeysFieldAccessors()) {
 					for (SqlField sf : fa.getDeclaredSqlFields()) {
-						if (sf.field.equals(fk) && sf.pointed_field.equals(pointed_col)
-								&& sf.pointed_table.equals(pointed_table)) {
+						if (sf.fieldWithoutQuote.equals(fk) && fa.getPointedTable().getSqlTableName().equals(pointed_table)
+							&& sf.pointedFieldWithoutQuote.equals(fa.getTableAliasName()+"."+pointed_col)
+								&& sf.pointedTable.equals(pointed_table)) {
 							found = true;
 							break;
 						}
@@ -400,7 +433,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 				}
 				if (!found)
 					throw new DatabaseVersionException(table,
-							"There is foreign keys defined into the Sql database which have not been found in the OOD database.");
+							"There is foreign keys defined into the Sql database which have not been found in the OOD database : "+fk);
 			}
 		} catch (SQLException e) {
 			throw new DatabaseException("Impossible to check constraints of the table " + table.getClass().getSimpleName(), e);
@@ -411,15 +444,8 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 			Pattern col_size_matcher = Pattern.compile("([0-9]+)");
 			for (FieldAccessor fa : table.getFieldAccessors()) {
 				for (SqlField sf : fa.getDeclaredSqlFields()) {
-					/*
-					 * System.out.println("SF : "+sf.short_field);
-					 * System.out.println("SF : "+table.getSqlTableName()); try(ReadQuerry rq=new
-					 * ReadQuerry(sql_connection,
-					 * "SELECT TYPE_NAME, COLUMN_SIZE, IS_NULLABLE, ORDINAL_POSITION, IS_AUTOINCREMENT FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS"
-					 * +getSqlComma())) { while (rq.result_set.next()) {
-					 * System.out.println("\t"+rq.result_set.getString("TABLE_NAME")); } }
-					 */
-					try (Table.ColumnsReadQuerry rq = getColumnMetaData(table.getSqlTableName(), sf.short_field)) {
+
+					try (Table.ColumnsReadQuery rq = getColumnMetaData(table.getSqlTableName(), sf.shortFieldWithoutQuote)) {
 						if (rq.result_set.next()) {
 							String type = rq.tableColumnsResultSet.getTypeName().toUpperCase();
 							if (!sf.type.toUpperCase().startsWith(type))
@@ -433,70 +459,44 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 											+ " has a size equals to " + col_size + " (expected " + sf.type + ")");
 							}
 							boolean is_null = rq.tableColumnsResultSet.isNullable();
-							if (is_null == sf.not_null)
+							if (is_null == sf.notNull)
 								throw new DatabaseVersionException(table, "The field " + fa.getFieldName()
 										+ " is expected to be " + (fa.isNotNull() ? "not null" : "nullable"));
 							boolean is_autoincrement = rq.tableColumnsResultSet.isAutoIncrement();
-							if (is_autoincrement != fa.isAutoPrimaryKey())
+							if (supportSingleAutoPrimaryKeys() && is_autoincrement != fa.isAutoPrimaryKey())
 								throw new DatabaseVersionException(table,
 										"The field " + fa.getFieldName() + " is " + (is_autoincrement ? "" : "not ")
 												+ "autoincremented into the Sql database where it is "
 												+ (is_autoincrement ? "not " : "") + " into the OOD database.");
-							sf.sql_position = rq.tableColumnsResultSet.getOrdinalPosition();
+							sf.sqlPosition = rq.tableColumnsResultSet.getOrdinalPosition();
 						} else
 							throw new DatabaseVersionException(table,
 									"The field " + fa.getFieldName() + " was not found into the database.");
 					}
 					if (fa.isForeignKey()) {
-						try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
+						try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection, new Table.SqlQuery(
 								"select PKTABLE_NAME, FKTABLE_NAME, PKCOLUMN_NAME, FKCOLUMN_NAME from "+ getCrossReferencesTableName()+" WHERE FKTABLE_NAME='"
-										+ table.getSqlTableName() + "' AND PKTABLE_NAME='" + sf.pointed_table
-										+ "' AND PKCOLUMN_NAME='" + sf.short_pointed_field + "' AND FKCOLUMN_NAME='"
-										+ sf.short_field + "'"))) {
+										+ table.getSqlTableName() + "' AND PKTABLE_NAME='" + sf.pointedTable
+										+ "' AND PKCOLUMN_NAME='" + sf.shortPointedFieldWithoutQuote + "' AND FKCOLUMN_NAME='"
+										+ sf.shortFieldWithoutQuote + "'"))) {
 							if (!rq.result_set.next())
 								throw new DatabaseVersionException(table,
 										"The field " + fa.getFieldName() + " is a foreign key. One of its Sql fields "
 												+ sf.field + " is not a foreign key pointing to the table "
-												+ sf.pointed_table);
+												+ sf.pointedTable);
 						}
 					}
 					if (fa.isUnique()) {
 						for(SqlField sf2 : fa.getDeclaredSqlFields())
-							try (Table.ReadQuerry rq = new Table.ReadQuerry(sql_connection, new Table.SqlQuerry(
+							try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection, new Table.SqlQuery(
 									"select COLUMN_LIST from "+getConstraintsTableName()+" WHERE TABLE_NAME='"
-											+ table.getSqlTableName() + "' AND CONSTRAINT_TYPE='UNIQUE' AND COLUMN_LIST='"+sf2.short_field+"';"))) {
+											+ table.getSqlTableName() + "' AND CONSTRAINT_TYPE='UNIQUE' AND COLUMN_LIST='"+sf2.shortFieldWithoutQuote +"';"))) {
 								if (!rq.result_set.next())
 									throw new DatabaseVersionException(table, "The OOD field " + fa.getFieldName()
 											+ " is a unique key, but it not declared as unique into the Sql database.");
 							}
 
 
-						/*boolean found = false;
-						try (ReadQuerry rq = new ReadQuerry(sql_connection, new Table.SqlQuerry(
-								"select CONSTRAINT_NAME, CONSTRAINT_TYPE from "+getConstraintsTableName()+" WHERE TABLE_NAME='"
-										+ table.getSqlTableName() + "';"))) {
-							while (rq.result_set.next()) {
-								if (rq.result_set.getString("CONSTRAINT_TYPE").equals("UNIQUE")) {
-									String constraint_name = rq.result_set.getString("CONSTRAINT_NAME");
-									try (ReadQuerry rq2 = new ReadQuerry(sql_connection, new Table.SqlQuerry(
-											"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
-													+ table.getSqlTableName() + "' AND CONSTRAINT_NAME='" + constraint_name
-													+ "';"))) {
-										if (rq2.result_set.next()) {
-											String col = table.getSqlTableName() + "."
-													+ rq2.result_set.getString("COLUMN_NAME");
-											if (col.equals(sf.field)) {
-												found = true;
-												break;
-											}
-										}
-									}
-								}
-							}
-						}
-						if (!found)
-							throw new DatabaseVersionException(table, "The OOD field " + fa.getFieldName()
-									+ " is a unique key, but it not declared as unique into the Sql database.");*/
 					}
 				}
 			}
@@ -540,12 +540,28 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 		}
 
 	}
-
+	@Override
+	protected String getLimitSqlPart(long startPosition, long rowLimit)
+	{
+		StringBuilder limit=new StringBuilder();
+		if (rowLimit>=0)
+		{
+			limit.append(" { LIMIT ");
+			limit.append(rowLimit);
+			if (startPosition>0)
+			{
+				limit.append(" OFFSET ");
+				limit.append(startPosition);
+			}
+			limit.append("}");
+		}
+		return limit.toString();
+	}
 
 	@Override
-	protected Table.ColumnsReadQuerry getColumnMetaData(String tableName, String columnName) throws Exception {
+	protected Table.ColumnsReadQuery getColumnMetaData(String tableName, String columnName) throws Exception {
 		Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
-		return new CReadQuerry(sql_connection, new Table.SqlQuerry(
+		return new CReadQuery(sql_connection, new Table.SqlQuery(
 				"SELECT COLUMN_NAME, TYPE_NAME, CHARACTER_MAXIMUM_LENGTH, IS_NULLABLE, COLUMN_DEFAULT, ORDINAL_POSITION FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='"
 						+ tableName + (columnName==null?"":"' AND COLUMN_NAME='"+columnName)+ "';"));
 	}
@@ -567,9 +583,16 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 		return "INFORMATION_SCHEMA.CROSS_REFERENCES";
 	}
 
-	static class CReadQuerry extends Table.ColumnsReadQuerry {
+	@Override
+	protected boolean autoPrimaryKeyIndexStartFromOne()
+	{
+		return autoPrimaryKeyIndexStartFromOne;
+	}
 
-		public CReadQuerry(Connection _sql_connection, Table.SqlQuerry _querry) throws SQLException, DatabaseException {
+
+	static class CReadQuery extends Table.ColumnsReadQuery {
+
+		public CReadQuery(Connection _sql_connection, Table.SqlQuery _querry) throws SQLException, DatabaseException {
 			super(_sql_connection, _querry);
 			setTableColumnsResultSet(new TCResultSet(this.result_set));
 		}
@@ -581,6 +604,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 		TCResultSet(ResultSet _rs) {
 			super(_rs);
 		}
+
 
 		@Override
 		public String getColumnName() throws SQLException {
@@ -621,22 +645,8 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	}
 
 	@Override
-	protected boolean isDisconnetionException(SQLException e) {
+	protected boolean isDisconnectionException(SQLException e) {
 		return e.getErrorCode()==90067;
-		/*if (e.getErrorCode()==90067)
-			return true;
-		if (e==null)
-			return false;
-		Throwable cause=e;
-		while ((cause=cause.getCause())!=null)
-		{
-			if (cause instanceof ClosedByInterruptException)
-				return true;
-			if (cause instanceof ClosedChannelException)
-				return true;
-
-		}
-		return false;*/
 	}
 
 

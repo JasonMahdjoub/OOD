@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -51,6 +51,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 @LoadToMemory
 final class IDTable extends Table<IDTable.Record> {
 
+	@SuppressWarnings("FieldMayBeFinal")
 	static class Record extends DatabaseRecord {
 		@SuppressWarnings("unused")
 		@PrimaryKey
@@ -65,36 +66,85 @@ final class IDTable extends Table<IDTable.Record> {
 	}
 
 	long getAndIncrementTransactionID() throws DatabaseException {
-		return getAndIncrementID(TRANSACTIONID);
+		return getAndIncrementID(TRANSACTION_ID);
 	}
 
-	/*void decrementTransactionID() throws DatabaseException {
-		decrementID(TRANSACTIONID);
-	}*/
+	void setMinimumValidatedTransactionID(long lastID) throws DatabaseException {
+		setMinimumValidatedID(TRANSACTION_ID, lastID);
+	}
+
+	@SuppressWarnings("SameParameterValue")
+	private void setMinimumValidatedID(int id, long lastID) throws DatabaseException {
+		getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
+			@Override
+			public Void run() throws Exception {
+				Record r = getRecord("id", id);
+				if (r == null) {
+					addRecord("id", id, "transactionID", lastID);
+				} else {
+					if (r.transactionID<=lastID)
+						r.transactionID=lastID+1;
+					updateRecord(r, "transactionID", r.transactionID);
+				}
+				return null;
+			}
+
+			@Override
+			public TransactionIsolation getTransactionIsolation() {
+				return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
+			}
+
+			@Override
+			public boolean doesWriteData() {
+				return true;
+			}
+
+			@Override
+			public void initOrReset() {
+
+			}
+		});
+
+	}
 
 	@SuppressWarnings("SameParameterValue")
 	private long getAndIncrementID(int id) throws DatabaseException {
-		Record r = getRecord("id", id);
-		if (r == null) {
-			addRecord("id", id, "transactionID", 1L);
-			return 0;
-		} else {
-			long res = r.transactionID++;
-			this.updateRecord(r);
-			return res;
-		}
+
+		return getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Long>() {
+			@Override
+			public Long run() throws Exception {
+				Record r = getRecord("id", id);
+				if (r == null) {
+					addRecord("id", id, "transactionID", 1L);
+					return 0L;
+				} else {
+					long res = r.transactionID++;
+					updateRecord(r, "transactionID", r.transactionID);
+					return res;
+				}
+			}
+
+			@Override
+			public TransactionIsolation getTransactionIsolation() {
+				return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
+			}
+
+			@Override
+			public boolean doesWriteData() {
+				return true;
+			}
+
+			@Override
+			public void initOrReset() {
+
+			}
+		});
+
+
 	}
 
-	/*private void decrementID(int id) throws DatabaseException {
-		Record r = getRecord("id", id);
-		if (r != null) {
-			--r.transactionID;
-			this.updateRecord(r);
-		}
-	}*/
-
-	long setLastValidatedTransactionIDI(long transactionID) throws DatabaseException {
-		return setID(GLOBAL_VALIDATED_TRANSACTIONID, transactionID);
+	long setLastValidatedTransactionID(long transactionID) throws DatabaseException {
+		return setID(GLOBAL_VALIDATED_TRANSACTION_ID, transactionID);
 	}
 
 	@SuppressWarnings("SameParameterValue")
@@ -112,7 +162,7 @@ final class IDTable extends Table<IDTable.Record> {
 	}
 
 	long getLastTransactionID() throws DatabaseException {
-		long id = getLastID(TRANSACTIONID);
+		long id = getLastID(TRANSACTION_ID);
 		if (id == -1)
 			return -1;
 		else
@@ -120,11 +170,11 @@ final class IDTable extends Table<IDTable.Record> {
 	}
 
 	void setLastTransactionID(long id) throws DatabaseException {
-		setID(TRANSACTIONID, id);
+		setID(TRANSACTION_ID, id);
 	}
 
 	long getLastValidatedTransactionID() throws DatabaseException {
-		return getLastID(GLOBAL_VALIDATED_TRANSACTIONID);
+		return getLastID(GLOBAL_VALIDATED_TRANSACTION_ID);
 	}
 
 	private long getLastID(int id) throws DatabaseException {
@@ -137,6 +187,7 @@ final class IDTable extends Table<IDTable.Record> {
 		}
 	}
 
-	private static final int TRANSACTIONID = 1;
-	private static final int GLOBAL_VALIDATED_TRANSACTIONID = 2;
+
+	private static final int TRANSACTION_ID = 1;
+	private static final int GLOBAL_VALIDATED_TRANSACTION_ID = 2;
 }

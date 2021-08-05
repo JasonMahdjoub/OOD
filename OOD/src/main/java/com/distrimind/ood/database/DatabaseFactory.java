@@ -5,7 +5,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -36,13 +36,19 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.crypto.EncryptionProfileProviderFactory;
+import com.distrimind.util.crypto.SecureRandomType;
 import com.distrimind.util.properties.MultiFormatProperties;
+
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 
 /**
  * 
  * 
  * @author Jason Mahdjoub
- * @version 1.0
+ * @version 1.1
  * @since OOD 2.0.0
  */
 public abstract class DatabaseFactory<DW extends DatabaseWrapper> extends MultiFormatProperties {
@@ -52,13 +58,123 @@ public abstract class DatabaseFactory<DW extends DatabaseWrapper> extends MultiF
 	private static final long serialVersionUID = 3751773842248044333L;
 
 	private volatile transient DW wrapper;
+	protected EncryptionProfileProviderFactory signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup;
+	protected EncryptionProfileProviderFactory encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup;
+	protected EncryptionProfileProviderFactory protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages;
+	protected SecureRandomType randomType=SecureRandomType.DEFAULT;
+	protected byte[] randomNonce= "fsg24778kqQVEZYogt1°F_:x=,aért16PHMXv;t/+$eùŜF21F0".getBytes();
+	protected byte[] randomPersonalizationString= "SGJST92?GI1N4: carz:fg *£f14902é\"§e'!(y)ĝùa(!h,qàényŝtufx".getBytes();
+	protected DatabaseConfigurations databaseConfigurations;
 
+	private transient DatabaseLifeCycles databaseLifeCycles=null;
+	private transient boolean createDatabasesIfNecessaryAndCheckIt=true;
 
-	protected DatabaseFactory() {
-		super(null);
+	public DatabaseLifeCycles getDatabaseLifeCycles() {
+		return databaseLifeCycles;
+	}
+
+	public void setDatabaseLifeCycles(DatabaseLifeCycles databaseLifeCycles) {
+		this.databaseLifeCycles = databaseLifeCycles;
+	}
+
+	public boolean isCreateDatabasesIfNecessaryAndCheckIt() {
+		return createDatabasesIfNecessaryAndCheckIt;
+	}
+
+	public void setCreateDatabasesIfNecessaryAndCheckIt(boolean createDatabasesIfNecessaryAndCheckIt) {
+		this.createDatabasesIfNecessaryAndCheckIt = createDatabasesIfNecessaryAndCheckIt;
+	}
+
+	public AbstractSecureRandom getSecureRandom() throws DatabaseException {
+		try {
+			return randomType.getSingleton(randomNonce, randomPersonalizationString );
+		} catch (NoSuchAlgorithmException | NoSuchProviderException e) {
+			throw DatabaseException.getDatabaseException(e);
+		}
+	}
+
+	public EncryptionProfileProviderFactory getSignatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup() {
+		return signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup;
+	}
+
+	public EncryptionProfileProviderFactory getEncryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup() {
+		return encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup;
+	}
+	public void setEncryptionProfileProviders(EncryptionProfileProviderFactory protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages,
+											  SecureRandomType randomType, byte[] randomNonce, byte[] randomPersonalizationString) {
+		setEncryptionProfileProviders(null, null, protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages, randomType,
+				randomNonce, randomPersonalizationString);
+	}
+	public void setEncryptionProfileProviders(EncryptionProfileProviderFactory protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages,
+											  SecureRandomType randomType) {
+		setEncryptionProfileProviders(null, null, protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages, randomType);
+	}
+	public void setEncryptionProfileProviders(EncryptionProfileProviderFactory signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+											  EncryptionProfileProviderFactory encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
+											  EncryptionProfileProviderFactory protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages,
+											  SecureRandomType randomType) {
+		setEncryptionProfileProviders(signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
+				protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages, randomType, this.randomNonce, this.randomPersonalizationString);
+	}
+	public void setEncryptionProfileProviders(EncryptionProfileProviderFactory signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+											  EncryptionProfileProviderFactory encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
+											  EncryptionProfileProviderFactory protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages,
+											  SecureRandomType randomType, byte[] randomNonce, byte[] randomPersonalizationString) {
+		if ((signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup==null)!=(encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup==null))
+			throw new NullPointerException();
+		if (protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages==null)
+			throw new NullPointerException();
+		if (randomType==null)
+			throw new NullPointerException();
+		this.signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup = signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup;
+		this.encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup = encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup;
+		this.protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages=protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages;
+		this.randomType=randomType;
+		this.randomNonce=randomNonce;
+		this.randomPersonalizationString=randomPersonalizationString;
+	}
+
+	public EncryptionProfileProviderFactory getProtectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages() {
+		return protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages;
 	}
 
 
+	public SecureRandomType getRandomType() {
+		return randomType;
+	}
+
+	public byte[] getRandomNonce() {
+		return randomNonce;
+	}
+
+
+	public byte[] getRandomPersonalizationString() {
+		return randomPersonalizationString;
+	}
+
+	public DatabaseConfigurations getDatabaseConfigurations() {
+		return databaseConfigurations;
+	}
+
+	public void setDatabaseConfigurations(DatabaseConfigurations databaseConfigurations) throws DatabaseException {
+		if (databaseConfigurations==null)
+			throw new NullPointerException();
+		if (wrapper!=null)
+			throw new DatabaseException("Cannot change configuration when database wrapper is already instantiated !");
+		this.databaseConfigurations = databaseConfigurations;
+	}
+
+	protected DatabaseFactory() throws DatabaseException {
+		super(null);
+		databaseConfigurations=new DatabaseConfigurations();
+	}
+	protected DatabaseFactory(DatabaseConfigurations databaseConfigurations) throws DatabaseException {
+		super(null);
+		if (databaseConfigurations==null)
+			databaseConfigurations=new DatabaseConfigurations();
+		this.databaseConfigurations = databaseConfigurations;
+	}
 
 	public final DW getDatabaseWrapperSingleton() throws DatabaseException {
 		if (wrapper == null) {
@@ -70,7 +186,27 @@ public abstract class DatabaseFactory<DW extends DatabaseWrapper> extends MultiF
 		return wrapper;
 	}
 
-	protected abstract DW newWrapperInstance() throws DatabaseException;
+	public void closeSingletonIfOpened()
+	{
+		synchronized (this)
+		{
+			if (wrapper!=null)
+			{
+				wrapper.close();
+			}
+		}
+	}
 
+	DW newWrapperInstance() throws DatabaseException
+	{
+		DW res= newWrapperInstance(databaseLifeCycles, createDatabasesIfNecessaryAndCheckIt);
+		res.getDatabaseConfigurationsBuilder().databaseWrapperLoaded();
+		return res;
+	}
+
+	protected abstract DW newWrapperInstance(DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException;
+
+
+	public abstract void deleteDatabase() throws DatabaseException;
 
 }

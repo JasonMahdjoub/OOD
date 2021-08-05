@@ -16,15 +16,21 @@ public class InMemoryEmbeddedHSQLDatabaseFactory extends DatabaseFactory<Embedde
 	private String databaseName=null;
 	private HSQLDBConcurrencyControl concurrencyControl=HSQLDBConcurrencyControl.DEFAULT;
 
-	public InMemoryEmbeddedHSQLDatabaseFactory() {
-
+	public InMemoryEmbeddedHSQLDatabaseFactory() throws DatabaseException {
+		super();
 	}
-
-	public InMemoryEmbeddedHSQLDatabaseFactory(String databaseName) {
+	public InMemoryEmbeddedHSQLDatabaseFactory(String databaseName) throws DatabaseException {
+		this(null, databaseName);
+	}
+	public InMemoryEmbeddedHSQLDatabaseFactory(DatabaseConfigurations databaseConfigurations, String databaseName) throws DatabaseException {
+		super(databaseConfigurations);
 		this.databaseName = databaseName;
 	}
-
-	public InMemoryEmbeddedHSQLDatabaseFactory(String databaseName, HSQLDBConcurrencyControl concurrencyControl) {
+	public InMemoryEmbeddedHSQLDatabaseFactory(String databaseName, HSQLDBConcurrencyControl concurrencyControl) throws DatabaseException {
+		this(null,databaseName, concurrencyControl);
+	}
+	public InMemoryEmbeddedHSQLDatabaseFactory(DatabaseConfigurations databaseConfigurations, String databaseName, HSQLDBConcurrencyControl concurrencyControl) throws DatabaseException {
+		super(databaseConfigurations);
 		this.databaseName = databaseName;
 		if (concurrencyControl==null)
 			throw new NullPointerException();
@@ -32,8 +38,17 @@ public class InMemoryEmbeddedHSQLDatabaseFactory extends DatabaseFactory<Embedde
 	}
 
 	@Override
-	protected EmbeddedHSQLDBWrapper newWrapperInstance() throws DatabaseException {
-		return new EmbeddedHSQLDBWrapper(true, databaseName, concurrencyControl);
+	protected EmbeddedHSQLDBWrapper newWrapperInstance(DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
+		return new EmbeddedHSQLDBWrapper(databaseName, true, databaseConfigurations, databaseLifeCycles,
+				signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup==null?null:signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
+				encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup==null?null:encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
+				protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages==null?null:protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
+				getSecureRandom(), createDatabasesIfNecessaryAndCheckIt, concurrencyControl);
+	}
+
+	@Override
+	public void deleteDatabase()  {
+		throw new UnsupportedOperationException();
 	}
 
 	public static long getSerialVersionUID() {

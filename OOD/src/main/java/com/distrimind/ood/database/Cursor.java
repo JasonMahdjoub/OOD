@@ -48,15 +48,15 @@ import java.util.Map;
  */
 public class Cursor<T extends DatabaseRecord> {
 	public static final int DEFAULT_CACHE_SIZE=64;
-	private Table<T> table;
-	private String whereClause;
-	private int cacheSize;
+	private final Table<T> table;
+	private final String whereClause;
+	private final int cacheSize;
 	private int position;
 	private ArrayList<T> records;
 	private long recordsNumber;
-	private Map<String, Object> parameters;
-	private Boolean ascendant;
-	private String[] fields;
+	private final Map<String, Object> parameters;
+	private final Boolean ascendant;
+	private final String[] fields;
 
 	Cursor(Table<T> table, String whereClause, Map<String, Object> parameters, int cacheSize, Boolean ascendant, String ... fields) {
 		if (table==null)
@@ -69,7 +69,7 @@ public class Cursor<T extends DatabaseRecord> {
 		this.position=-1;
 		this.records=null;
 		this.recordsNumber=-1;
-		this.parameters=parameters==null?new HashMap<String, Object>():parameters;
+		this.parameters=parameters==null? new HashMap<>():parameters;
 		this.ascendant=ascendant;
 		this.fields=fields;
 	}
@@ -95,12 +95,12 @@ public class Cursor<T extends DatabaseRecord> {
 		this.position=position-cacheSize/2;
 		if (ascendant==null) {
 			if (whereClause==null)
-				records = table.getPaginedRecords(position, cacheSize);
+				records = table.getPaginatedRecords(position, cacheSize);
 			else
-				records = table.getPaginedRecords(position, cacheSize, whereClause, parameters);
+				records = table.getPaginatedRecords(position, cacheSize, whereClause, parameters);
 		}
 		else {
-			records = table.getPaginedOrderedRecords(position, cacheSize, whereClause, parameters, ascendant, fields);
+			records = table.getPaginatedOrderedRecords(position, cacheSize, whereClause, parameters, ascendant, fields);
 		}
 	}
 	public T getRecord(int position) throws DatabaseException {

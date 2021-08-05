@@ -5,7 +5,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -52,18 +52,35 @@ public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH2D
 	 */
 	private static final long serialVersionUID = -5549181783426731120L;
 
-	private File directoryName;
-	protected boolean alwaysDisconnectAfterOneTransaction;
-	private boolean fileLock;
+	private File directory;
+	protected boolean alwaysDisconnectAfterOneTransaction=false;
+	private boolean fileLock=true;
 	private int pageSizeBytes=2048;
 	private int cacheSizeBytes=10000*1024;
 
 
-	protected InFileEmbeddedH2DatabaseFactory() {
-
+	protected InFileEmbeddedH2DatabaseFactory() throws DatabaseException {
+		super();
 	}
 	/**
 	 * Constructor
+	 *
+	 * @param databaseConfigurations the database configurations
+	 * @param _directory_name
+	 *            The directory which contains the database. If this directory does not
+	 *            exists, it will be automatically created with the correspondent
+	 *            database.
+	 * @throws NullPointerException
+	 *             if parameters are null pointers.
+	 * @throws IllegalArgumentException
+	 *             If the given file is a directory.
+	 */
+	public InFileEmbeddedH2DatabaseFactory(DatabaseConfigurations databaseConfigurations, File _directory_name) throws DatabaseException {
+		this(databaseConfigurations, _directory_name, false);
+	}
+	/**
+	 * Constructor
+	 *
 	 *
 	 * @param _directory_name
 	 *            The directory which contains the database. If this directory does not
@@ -74,10 +91,29 @@ public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH2D
 	 * @throws IllegalArgumentException
 	 *             If the given file is a directory.
 	 */
-	public InFileEmbeddedH2DatabaseFactory(File _directory_name) {
-		this(_directory_name, false);
+	public InFileEmbeddedH2DatabaseFactory(File _directory_name) throws DatabaseException {
+		this(null, _directory_name);
 	}
 
+	/**
+	 * Constructor
+	 *
+	 * @param databaseConfigurations the database configurations
+	 * @param _directory_name
+	 *            The directory which contains the database. If this directory does not
+	 *            exists, it will be automatically created with the correspondent
+	 *            database.
+	 * @param alwaysDisconnectAfterOneTransaction true if the database must always be connected and detected during one transaction
+	 * @throws NullPointerException
+	 *             if parameters are null pointers.
+	 * @throws IllegalArgumentException
+	 *             If the given file is a directory.
+	 */
+	public InFileEmbeddedH2DatabaseFactory(DatabaseConfigurations databaseConfigurations, File _directory_name, boolean alwaysDisconnectAfterOneTransaction) throws DatabaseException {
+		super(databaseConfigurations);
+		setDirectory(_directory_name);
+		this.alwaysDisconnectAfterOneTransaction = alwaysDisconnectAfterOneTransaction;
+	}
 	/**
 	 * Constructor
 	 *
@@ -91,11 +127,36 @@ public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH2D
 	 * @throws IllegalArgumentException
 	 *             If the given file is a directory.
 	 */
-	public InFileEmbeddedH2DatabaseFactory(File _directory_name, boolean alwaysDisconnectAfterOneTransaction) {
-		setDirectoryName(_directory_name);
-		this.alwaysDisconnectAfterOneTransaction = alwaysDisconnectAfterOneTransaction;
+	public InFileEmbeddedH2DatabaseFactory(File _directory_name, boolean alwaysDisconnectAfterOneTransaction) throws DatabaseException {
+		this(null, _directory_name, alwaysDisconnectAfterOneTransaction);
 	}
 
+	/**
+	 * Constructor
+	 *
+	 * @param databaseConfigurations the database configurations
+	 * @param _directory_name
+	 *            The directory which contains the database. If this directory does not
+	 *            exists, it will be automatically created with the correspondent
+	 *            database.
+	 * @param alwaysDisconnectAfterOneTransaction true if the database must always be connected and detected during one transaction
+	 * @param fileLock true if the database file must be locked when opened
+	 * @param pageSizeBytes the page size of the database in bytes
+	 * @param cacheSizeBytes the cache size in bytes
+	 * @throws NullPointerException
+	 *             if parameters are null pointers.
+	 * @throws IllegalArgumentException
+	 *             If the given file is a directory.
+	 */
+	public InFileEmbeddedH2DatabaseFactory(DatabaseConfigurations databaseConfigurations, File _directory_name, boolean alwaysDisconnectAfterOneTransaction, boolean fileLock, int pageSizeBytes
+			, int cacheSizeBytes) throws DatabaseException {
+		super(databaseConfigurations);
+		setDirectory(_directory_name);
+		this.alwaysDisconnectAfterOneTransaction = alwaysDisconnectAfterOneTransaction;
+		this.fileLock=fileLock;
+		this.pageSizeBytes=pageSizeBytes;
+		this.cacheSizeBytes=cacheSizeBytes;
+	}
 	/**
 	 * Constructor
 	 *
@@ -113,17 +174,17 @@ public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH2D
 	 *             If the given file is a directory.
 	 */
 	public InFileEmbeddedH2DatabaseFactory(File _directory_name, boolean alwaysDisconnectAfterOneTransaction, boolean fileLock, int pageSizeBytes
-			, int cacheSizeBytes) {
-		setDirectoryName(_directory_name);
-		this.alwaysDisconnectAfterOneTransaction = alwaysDisconnectAfterOneTransaction;
-		this.fileLock=fileLock;
-		this.pageSizeBytes=pageSizeBytes;
-		this.cacheSizeBytes=cacheSizeBytes;
+			, int cacheSizeBytes) throws DatabaseException {
+		this(null, _directory_name, alwaysDisconnectAfterOneTransaction, fileLock, pageSizeBytes, cacheSizeBytes);
 	}
 
 	@Override
-	protected EmbeddedH2DatabaseWrapper newWrapperInstance() throws DatabaseException {
-		return new EmbeddedH2DatabaseWrapper(directoryName, alwaysDisconnectAfterOneTransaction, fileLock, pageSizeBytes, cacheSizeBytes);
+	protected EmbeddedH2DatabaseWrapper newWrapperInstance(DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
+		return new EmbeddedH2DatabaseWrapper(directory, databaseConfigurations, databaseLifeCycles,
+				signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup==null?null:signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
+				encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup==null?null:encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
+				protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages==null?null:protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
+				getSecureRandom(), createDatabasesIfNecessaryAndCheckIt, alwaysDisconnectAfterOneTransaction, fileLock, pageSizeBytes, cacheSizeBytes);
 	}
 
 	public boolean isAlwaysDisconnectAfterOneTransaction() {
@@ -134,16 +195,16 @@ public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH2D
 		this.alwaysDisconnectAfterOneTransaction = alwaysDisconnectAfterOneTransaction;
 	}
 
-	public File getDirectoryName() {
-		return directoryName;
+	public File getDirectory() {
+		return directory;
 	}
 
-	public void setDirectoryName(File _file_name) {
+	public void setDirectory(File _file_name) {
 		if (_file_name == null)
 			throw new NullPointerException("The parameter _file_name is a null pointer !");
 		if (_file_name.exists() && !_file_name.isDirectory())
 			throw new IllegalArgumentException("The given file name is not a directory !");
-		directoryName = _file_name;
+		directory = _file_name;
 	}
 
 	public static long getSerialVersionUID() {
@@ -174,5 +235,9 @@ public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH2D
 		this.cacheSizeBytes = cacheSizeBytes;
 	}
 
+	@Override
+	public void deleteDatabase()  {
+		EmbeddedH2DatabaseWrapper.deleteDatabasesFiles(directory);
+	}
 
 }

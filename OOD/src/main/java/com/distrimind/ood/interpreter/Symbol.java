@@ -5,7 +5,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -38,6 +38,7 @@ package com.distrimind.ood.interpreter;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.Table;
@@ -54,8 +55,8 @@ import com.distrimind.util.AbstractDecentralizedID;
  * @since OOD 2.0
  */
 public class Symbol implements QueryPart {
-	private SymbolType type;
-	private String symbol;
+	private final SymbolType type;
+	private final String symbol;
 
 	public Symbol(SymbolType type, String symbol) {
 		if (type == null)
@@ -66,6 +67,19 @@ public class Symbol implements QueryPart {
 		this.type = type;
 		this.symbol = symbol;
 
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		Symbol symbol1 = (Symbol) o;
+		return type == symbol1.type && Objects.equals(symbol, symbol1.symbol);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(type, symbol);
 	}
 
 	public SymbolType getType() {
@@ -99,8 +113,12 @@ public class Symbol implements QueryPart {
 		case NUMBER:
 		case PARAMETER:
 		case STRING:
-		case NULL:
 			return new RuleInstance(Rule.TERME, this);
+		case NULL:
+			return new RuleInstance(Rule.NULL, this);
+		case IS:
+		case ISNOT:
+			return new RuleInstance(Rule.ISOP, this);
 		case OPEN_PARENTHESIS:
 		case CLOSE_PARENTHESIS:
 			return null;
@@ -197,7 +215,7 @@ public class Symbol implements QueryPart {
 
 	}
 	public static <T extends DatabaseRecord> FieldAccessor getFieldAccessor(Table<T> table, Object o) {
-		return getFieldAccessor(table, o, new HashSet<Table<?>>());
+		return getFieldAccessor(table, o, new HashSet<>());
 	}
 	private static <T extends DatabaseRecord> FieldAccessor getFieldAccessor(Table<T> table, Object o, HashSet<Table<?>> tablesDone) {
 		if (o == null)

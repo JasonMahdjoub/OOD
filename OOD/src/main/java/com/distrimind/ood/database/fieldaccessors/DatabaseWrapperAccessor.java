@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -58,21 +58,31 @@ class DatabaseWrapperAccessor {
 	private static final Method m_get_byte_type;
 	private static final Method m_is_var_binary_supported;
 	private static final Method m_is_long_var_binary_supported;
+	private static final Method m_get_blob_base_word;
+	private static final Method m_get_binary_base_word;
+	private static final Method m_get_varbinary_type;
+	private static final Method m_get_longvarbinary_type;
 	private static final Method m_get_blob;
 	private static final Method m_get_double_type;
 	private static final Method m_get_float_type;
 	private static final Method m_get_int_type;
 	private static final Method m_get_long_type;
-	private static final Method m_get_serializable_type;
+	private static final Method m_get_blob_type;
+	private static final Method m_get_text_type;
 	private static final Method m_get_short_type;
+	private static final Method m_get_date_time_type;
 	private static final Method m_get_var_char_limit;
 	private static final Method m_support_full_sql_field_name;
+	private static final Method m_support_multiple_auto_primary_keys;
+	private static final Method m_support_single_auto_primary_keys;
+	private static final Method m_get_max_key_size;
+	private static final Method m_support_italic_quotes_with_table_field_names;
 	private static final Constructor<DecentralizedIDGenerator> m_decentralized_id_constructor;
-	private static final Constructor<RenforcedDecentralizedIDGenerator> m_renforced_decentralized_id_constructor;
+	private static final Constructor<RenforcedDecentralizedIDGenerator> m_reinforced_decentralized_id_constructor;
 
-	static String getBigDecimalType(DatabaseWrapper wrapper) {
+	static String getBigDecimalType(DatabaseWrapper wrapper, @SuppressWarnings("SameParameterValue") long limit) {
 		try {
-			return (String) invoke(m_get_big_decimal_type, wrapper);
+			return (String) invoke(m_get_big_decimal_type, wrapper, limit);
 		} catch (InvocationTargetException e) {
 			System.err.println("Unexpected error :");
 			e.printStackTrace();
@@ -82,9 +92,20 @@ class DatabaseWrapperAccessor {
 
 	}
 
-	static String getBigIntegerType(DatabaseWrapper wrapper) {
+	static String getBigIntegerType(DatabaseWrapper wrapper, long limit) {
 		try {
-			return (String) invoke(m_get_big_integer_type, wrapper);
+			return (String) invoke(m_get_big_integer_type, wrapper, limit);
+		} catch (InvocationTargetException e) {
+			System.err.println("Unexpected error :");
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		return null;
+	}
+
+	static String getDateTimeType(DatabaseWrapper wrapper) {
+		try {
+			return (String) invoke(m_get_date_time_type, wrapper);
 		} catch (InvocationTargetException e) {
 			System.err.println("Unexpected error :");
 			e.printStackTrace();
@@ -148,9 +169,19 @@ class DatabaseWrapperAccessor {
 		return null;
 	}
 
-	static String getSerializableType(DatabaseWrapper wrapper) {
+	static String getBlobType(DatabaseWrapper wrapper, long limit) {
 		try {
-			return (String) invoke(m_get_serializable_type, wrapper);
+			return (String) invoke(m_get_blob_type, wrapper, limit);
+		} catch (InvocationTargetException e) {
+			System.err.println("Unexpected error :");
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		return null;
+	}
+	static String getTextType(DatabaseWrapper wrapper, long limit) {
+		try {
+			return (String) invoke(m_get_text_type, wrapper, limit);
 		} catch (InvocationTargetException e) {
 			System.err.println("Unexpected error :");
 			e.printStackTrace();
@@ -169,6 +200,16 @@ class DatabaseWrapperAccessor {
 		}
 		return null;
 	}
+	static int getMaxKeySize(DatabaseWrapper wrapper) {
+		try {
+			return (int) invoke(m_get_max_key_size, wrapper);
+		} catch (InvocationTargetException e) {
+			System.err.println("Unexpected error :");
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		return -1;
+	}
 
 	static int getVarCharLimit(DatabaseWrapper wrapper) {
 		try {
@@ -186,6 +227,45 @@ class DatabaseWrapperAccessor {
 			throw new NullPointerException();
 		try {
 			return (Boolean) invoke(m_support_full_sql_field_name, wrapper);
+		} catch (InvocationTargetException e) {
+			System.err.println("Unexpected error :");
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		return false;
+	}
+
+	static boolean supportsItalicQuotesWithTableAndFieldNames(DatabaseWrapper wrapper) {
+		if (wrapper == null)
+			throw new NullPointerException();
+		try {
+			return (Boolean) invoke(m_support_italic_quotes_with_table_field_names, wrapper);
+		} catch (InvocationTargetException e) {
+			System.err.println("Unexpected error :");
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		return false;
+	}
+
+	static boolean supportMultipleAutoPrimaryKeys(DatabaseWrapper wrapper) {
+		if (wrapper == null)
+			throw new NullPointerException();
+		try {
+			return (Boolean) invoke(m_support_multiple_auto_primary_keys, wrapper);
+		} catch (InvocationTargetException e) {
+			System.err.println("Unexpected error :");
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		return false;
+	}
+
+	static boolean supportSingleAutoPrimaryKeys(DatabaseWrapper wrapper) {
+		if (wrapper == null)
+			throw new NullPointerException();
+		try {
+			return (Boolean) invoke(m_support_single_auto_primary_keys, wrapper);
 		} catch (InvocationTargetException e) {
 			System.err.println("Unexpected error :");
 			e.printStackTrace();
@@ -216,8 +296,51 @@ class DatabaseWrapperAccessor {
 		return false;
 	}
 
+	static String getBlobBaseWord(DatabaseWrapper wrapper) {
+		try {
+			return (String) invoke(m_get_blob_base_word, wrapper);
+		} catch (InvocationTargetException e) {
+			System.err.println("Unexpected error :");
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		return null;
+	}
+
+	static String getBinaryBaseWord(DatabaseWrapper wrapper) {
+		try {
+			return (String) invoke(m_get_binary_base_word, wrapper);
+		} catch (InvocationTargetException e) {
+			System.err.println("Unexpected error :");
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		return null;
+	}
+	static String getVarBinaryType(DatabaseWrapper wrapper, long limit) {
+		try {
+			return (String) invoke(m_get_varbinary_type, wrapper, limit);
+		} catch (InvocationTargetException e) {
+			System.err.println("Unexpected error :");
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		return null;
+	}
+	static String getLongVarBinaryType(DatabaseWrapper wrapper, long limit) {
+		try {
+			return (String) invoke(m_get_longvarbinary_type, wrapper, limit);
+		} catch (InvocationTargetException e) {
+			System.err.println("Unexpected error :");
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		return null;
+	}
+
 	static Blob getBlob(DatabaseWrapper wrapper, byte[] tab) throws SQLException {
 		try {
+			//noinspection RedundantCast
 			return (Blob) invoke(m_get_blob, wrapper, (Object) tab);
 		} catch (InvocationTargetException e) {
 			e.printStackTrace();
@@ -237,10 +360,10 @@ class DatabaseWrapperAccessor {
 		return null;
 	}
 
-	static RenforcedDecentralizedIDGenerator getRenforcedDecentralizedIDGeneratorInstance(long timestamp,
-			long work_id_sequence) {
+	static RenforcedDecentralizedIDGenerator getReinforcedDecentralizedIDGeneratorInstance(long timestamp,
+																						   long work_id_sequence) {
 		try {
-			return m_renforced_decentralized_id_constructor.newInstance(timestamp,
+			return m_reinforced_decentralized_id_constructor.newInstance(timestamp,
 					work_id_sequence);
 		} catch (InvocationTargetException | InstantiationException | IllegalAccessException
 				| IllegalArgumentException e) {
@@ -251,24 +374,37 @@ class DatabaseWrapperAccessor {
 		return null;
 	}
 
+
+
 	static {
-		m_get_big_decimal_type = getMethod(DatabaseWrapper.class, "getBigDecimalType");
-		m_get_big_integer_type = getMethod(DatabaseWrapper.class, "getBigIntegerType");
+		m_get_big_decimal_type = getMethod(DatabaseWrapper.class, "getBigDecimalType", long.class);
+		m_get_big_integer_type = getMethod(DatabaseWrapper.class, "getBigIntegerType", long.class);
 		m_get_byte_type = getMethod(DatabaseWrapper.class, "getByteType");
 		m_is_var_binary_supported = getMethod(DatabaseWrapper.class, "isVarBinarySupported");
 		m_is_long_var_binary_supported = getMethod(DatabaseWrapper.class, "isLongVarBinarySupported");
+		m_get_blob_base_word = getMethod(DatabaseWrapper.class, "getBlobBaseWord");
+		m_get_binary_base_word = getMethod(DatabaseWrapper.class, "getBinaryBaseWord");
+		m_get_varbinary_type = getMethod(DatabaseWrapper.class, "getVarBinaryType", long.class);
+		m_get_longvarbinary_type = getMethod(DatabaseWrapper.class, "getLongVarBinaryType", long.class);
 		m_get_blob = getMethod(DatabaseWrapper.class, "getBlob", byte[].class);
 		m_get_double_type = getMethod(DatabaseWrapper.class, "getDoubleType");
 		m_get_float_type = getMethod(DatabaseWrapper.class, "getFloatType");
 		m_get_int_type = getMethod(DatabaseWrapper.class, "getIntType");
 		m_get_long_type = getMethod(DatabaseWrapper.class, "getLongType");
-		m_get_serializable_type = getMethod(DatabaseWrapper.class, "getSerializableType");
+		m_get_blob_type = getMethod(DatabaseWrapper.class, "getBlobType", long.class);
+		m_get_text_type = getMethod(DatabaseWrapper.class, "getTextType", long.class);
 		m_get_short_type = getMethod(DatabaseWrapper.class, "getShortType");
 		m_get_var_char_limit = getMethod(DatabaseWrapper.class, "getVarCharLimit");
+		m_get_max_key_size = getMethod(DatabaseWrapper.class, "getMaxKeySize");
+		m_get_date_time_type = getMethod(DatabaseWrapper.class, "getDateTimeType");
 		m_support_full_sql_field_name = getMethod(DatabaseWrapper.class, "supportFullSqlFieldName");
+		m_support_multiple_auto_primary_keys = getMethod(DatabaseWrapper.class, "supportMultipleAutoPrimaryKeys");
+		m_support_single_auto_primary_keys = getMethod(DatabaseWrapper.class, "supportSingleAutoPrimaryKeys");
 		m_decentralized_id_constructor = getConstructor(DecentralizedIDGenerator.class, long.class, long.class);
-		m_renforced_decentralized_id_constructor = getConstructor(RenforcedDecentralizedIDGenerator.class, long.class,
+		m_reinforced_decentralized_id_constructor = getConstructor(RenforcedDecentralizedIDGenerator.class, long.class,
 				long.class);
+		m_support_italic_quotes_with_table_field_names=getMethod(DatabaseWrapper.class, "supportsItalicQuotesWithTableAndFieldNames");
+
 	}
 
 	private static Object invoke(Method m, Object o, Object... args) throws InvocationTargetException {
@@ -313,5 +449,6 @@ class DatabaseWrapperAccessor {
 			return null;
 		}
 	}
+
 
 }

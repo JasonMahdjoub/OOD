@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -36,11 +36,10 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
+import com.distrimind.util.DecentralizedValue;
+
 import java.util.HashMap;
 import java.util.Set;
-
-import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.util.DecentralizedValue;
 
 /**
  * 
@@ -54,47 +53,61 @@ public class TableEvent<T extends DatabaseRecord> extends DatabaseEvent {
 
 	private final T oldDatabaseRecord;
 	private final T newDatabaseRecord;
-	private final boolean force;
+	private final boolean forced;
 	private transient final Set<DecentralizedValue> hostsDestination;
 	private transient HashMap<String, Object> mapKeys = null;
 	private transient boolean oldAlreadyPresent = false;
-	private transient Table<T> table;
+	private Table<? extends T> table;
 
-	TableEvent(int id, DatabaseEventType type, T oldDatabaseRecord, T newDatabaseRecord,
+
+	TableEvent(int id, DatabaseEventType type, Table<? extends T> table, T oldDatabaseRecord, T newDatabaseRecord,
 			Set<DecentralizedValue> resentTo) {
 		if (type == null)
 			throw new NullPointerException("type");
-		if (oldDatabaseRecord == null && type != DatabaseEventType.ADD)
+		if (table==null)
+			throw new NullPointerException();
+		if (oldDatabaseRecord == null && type != DatabaseEventType.ADD && type!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE)
 			throw new NullPointerException("oldDatabaseRecord");
 		if (newDatabaseRecord == null && type != DatabaseEventType.REMOVE
-				&& type != DatabaseEventType.REMOVE_WITH_CASCADE)
+				&& type != DatabaseEventType.REMOVE_WITH_CASCADE
+				&& type!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE)
 			throw new NullPointerException("bewDatabaseRecord");
+		if (type==DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE &&
+				(oldDatabaseRecord!=null || newDatabaseRecord!=null))
+			throw new IllegalArgumentException();
 		this.id = id;
 		this.type = type;
+		this.table=table;
 		this.oldDatabaseRecord = oldDatabaseRecord;
 		this.newDatabaseRecord = newDatabaseRecord;
-		this.force = resentTo != null && !resentTo.isEmpty();
-		this.hostsDestination = force ? resentTo : null;
+		this.forced = resentTo != null && !resentTo.isEmpty();
+		this.hostsDestination = forced ? resentTo : null;
 	}
 
-	TableEvent(int id, DatabaseEventType type, T oldDatabaseRecord, T newDatabaseRecord,
-			Set<DecentralizedValue> resentTo, HashMap<String, Object> mapKeys, boolean oldAlreadyPresent,
-			Table<T> table) {
+	TableEvent(int id, DatabaseEventType type, Table<? extends T> table, T oldDatabaseRecord, T newDatabaseRecord,
+			Set<DecentralizedValue> resentTo, HashMap<String, Object> mapKeys, boolean oldAlreadyPresent) {
 		if (type == null)
 			throw new NullPointerException("type");
-		if (oldDatabaseRecord == null && type != DatabaseEventType.ADD && (mapKeys == null || mapKeys.isEmpty()))
+		if (table==null)
+			throw new NullPointerException();
+		if (oldDatabaseRecord == null && type != DatabaseEventType.ADD && (mapKeys == null || mapKeys.isEmpty())
+				&& type!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE)
 			throw new NullPointerException("oldDatabaseRecord");
 		if (newDatabaseRecord == null && type != DatabaseEventType.REMOVE
-				&& type != DatabaseEventType.REMOVE_WITH_CASCADE)
+				&& type != DatabaseEventType.REMOVE_WITH_CASCADE
+				&& type!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE)
 			throw new NullPointerException("bewDatabaseRecord");
+		if (type==DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE &&
+				(oldDatabaseRecord!=null || newDatabaseRecord!=null || (mapKeys != null && !mapKeys.isEmpty())))
+			throw new IllegalArgumentException();
 		this.id = id;
 		this.type = type;
+		this.table=table;
 		this.oldDatabaseRecord = oldDatabaseRecord;
 		this.newDatabaseRecord = newDatabaseRecord;
-		this.force = resentTo != null && !resentTo.isEmpty();
-		this.hostsDestination = force ? resentTo : null;
+		this.forced = resentTo != null && !resentTo.isEmpty();
+		this.hostsDestination = forced ? resentTo : null;
 		this.oldAlreadyPresent = oldAlreadyPresent;
-		this.table = table;
 		this.mapKeys = mapKeys;
 	}
 
@@ -104,7 +117,7 @@ public class TableEvent<T extends DatabaseRecord> extends DatabaseEvent {
 
 	@Override
 	public String toString() {
-		return "TableEvent[" + type + ", force=" + force + ", old=" + oldDatabaseRecord + ", new=" + newDatabaseRecord
+		return "TableEvent[" + type + ", forced=" + forced + ", old=" + oldDatabaseRecord + ", new=" + newDatabaseRecord
 				+ "]";
 	}
 
@@ -116,8 +129,8 @@ public class TableEvent<T extends DatabaseRecord> extends DatabaseEvent {
 		return mapKeys;
 	}
 
-	boolean isForce() {
-		return force;
+	boolean isForced() {
+		return forced;
 	}
 
 	public int getID() {
@@ -136,19 +149,11 @@ public class TableEvent<T extends DatabaseRecord> extends DatabaseEvent {
 		return newDatabaseRecord;
 	}
 
-	@SuppressWarnings("unchecked")
-	public Table<T> getTable(DatabaseWrapper wrapper) throws DatabaseException {
-		if (wrapper == null)
-			throw new NullPointerException();
-		if (table == null) {
-			if (oldDatabaseRecord == null && newDatabaseRecord == null)
-				throw new NullPointerException();
-			table = (Table<T>) wrapper.getTableInstance(Table.getTableClass(
-					oldDatabaseRecord == null ? newDatabaseRecord.getClass() : oldDatabaseRecord.getClass()));
-		} else if (table.getDatabaseWrapper() != wrapper) {
-			return (Table<T>) wrapper.getTableInstance(table.getClass());
-
-		}
+	public Table<? extends T> getTable() {
 		return table;
+	}
+
+	void setTable(Table<? extends T> table) {
+		this.table = table;
 	}
 }

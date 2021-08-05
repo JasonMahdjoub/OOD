@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -35,17 +35,18 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+import com.distrimind.util.progress_monitors.ProgressMonitorDM;
 import com.distrimind.util.progress_monitors.ProgressMonitorFactory;
 import com.distrimind.util.progress_monitors.ProgressMonitorParameters;
-
-import javax.swing.*;
+import com.distrimind.util.properties.MultiFormatProperties;
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 2.0.0
  */
-public class BackupConfiguration {
+@SuppressWarnings("FieldMayBeFinal")
+public class BackupConfiguration extends MultiFormatProperties {
 	/**
 	 * A complete nativeBackup will be done with this regular interval. If will be understood as a nativeBackup reference.
 	 */
@@ -85,6 +86,7 @@ public class BackupConfiguration {
 	public BackupConfiguration(long backupReferenceDurationInMs, long maxBackupDurationInMs,
 							   int maxBackupFileSizeInBytes, long maxBackupFileAgeInMs/*, int maxIndexSize*/,
 							   ProgressMonitorParameters backupProgressMonitorParameters) {
+		super(null);
 		if (backupReferenceDurationInMs<0)
 			throw new IllegalArgumentException();
 		if (maxBackupDurationInMs<0)
@@ -107,6 +109,11 @@ public class BackupConfiguration {
 		return backupReferenceDurationInMs;
 	}
 
+	public boolean mustCreateNewBackupReference(long lastBackupReferenceTimeUTC)
+	{
+		return lastBackupReferenceTimeUTC+backupReferenceDurationInMs<System.currentTimeMillis();
+	}
+
 	public long getMaxBackupDurationInMs() {
 		return maxBackupDurationInMs;
 	}
@@ -119,7 +126,7 @@ public class BackupConfiguration {
 		return maxBackupFileAgeInMs;
 	}
 
-	public ProgressMonitor getProgressMonitorForBackup()
+	public ProgressMonitorDM getProgressMonitorForBackup()
 	{
 		ProgressMonitorFactory progressMonitorFactory;
 		if (backupProgressMonitorParameters ==null)
@@ -128,7 +135,7 @@ public class BackupConfiguration {
 			progressMonitorFactory=ProgressMonitorFactory.getDefaultProgressMonitorFactory();
 		return progressMonitorFactory.getProgressMonitor(backupProgressMonitorParameters);
 	}
-	public ProgressMonitor getProgressMonitorForRestore()
+	public ProgressMonitorDM getProgressMonitorForRestore()
 	{
 		ProgressMonitorFactory progressMonitorFactory;
 		if (restoreProgressMonitorParameters ==null)
@@ -145,10 +152,6 @@ public class BackupConfiguration {
 	public void setRestoreProgressMonitorParameters(ProgressMonitorParameters restoreProgressMonitorParameters) {
 		this.restoreProgressMonitorParameters = restoreProgressMonitorParameters;
 	}
-
-	/*public int getMaxIndexSize() {
-		return maxIndexSize;
-	}*/
 
 	private static final int maxStreamBufferSizeForBackupRestoration=2097152;
 
@@ -169,4 +172,13 @@ public class BackupConfiguration {
 		return 3;
 	}
 
+	@Override
+	public String toString() {
+		return "BackupConfiguration{" +
+				"backupReferenceDurationInMs=" + backupReferenceDurationInMs +
+				", maxBackupDurationInMs=" + maxBackupDurationInMs +
+				", maxBackupFileSizeInBytes=" + maxBackupFileSizeInBytes +
+				", maxBackupFileAgeInMs=" + maxBackupFileAgeInMs +
+				'}';
+	}
 }

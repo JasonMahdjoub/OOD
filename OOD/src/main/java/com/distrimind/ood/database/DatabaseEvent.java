@@ -36,6 +36,10 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
+import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.messages.MessageDestinedToCentralDatabaseBackup;
+import com.distrimind.ood.database.messages.P2PDatabaseEventToSend;
+
 /**
  * 
  * @author Jason Mahdjoub
@@ -43,5 +47,24 @@ package com.distrimind.ood.database;
  * @since OOD 2.0
  */
 public abstract class DatabaseEvent {
+
+	public enum MergeState
+	{
+		NO_FUSION,
+		DELETE_OLD,
+		DELETE_NEW,
+		DELETE_BOTH
+	}
+
+	final MergeState tryToMerge(DatabaseEvent newEvent) throws DatabaseException {
+		if (this instanceof AuthenticatedP2PMessage)
+			return ((AuthenticatedP2PMessage) this).tryToMergeWithNewAuthenticatedMessage(newEvent);
+		else if (this instanceof P2PDatabaseEventToSend)
+			return ((P2PDatabaseEventToSend) this).mergeWithP2PDatabaseEventToSend(newEvent);
+		else if (this instanceof MessageDestinedToCentralDatabaseBackup)
+			return ((MessageDestinedToCentralDatabaseBackup) this).mergeWithP2PDatabaseEventToSend(newEvent);
+		else
+			return MergeState.NO_FUSION;
+	}
 
 }

@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -36,19 +36,18 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-
 import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.annotations.NotNull;
 import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.SerializationDatabaseException;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
-import com.distrimind.util.Bits;
 import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.Reference;
+
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 
@@ -68,30 +67,30 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 		protected long id;
 
 		@Field
-		private boolean force = false;
+		private boolean forced = false;
+
+		@Field
+		protected Long timeUTC;
 
 		AbstractRecord() {
 
 		}
 
-		AbstractRecord(long id) {
+		AbstractRecord(long id, long timeUTC) {
 			this.id = id;
-		}
-
-		void setID(long id) {
-			this.id = id;
+			this.timeUTC=timeUTC;
 		}
 
 		long getID() {
 			return id;
 		}
 
-		public boolean isForce() {
-			return force;
+		public boolean isForced() {
+			return forced;
 		}
 
-		public void setForce(boolean force) {
-			this.force = force;
+		public void setForced(boolean forced) {
+			this.forced = forced;
 		}
 
 		@Override
@@ -108,6 +107,10 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 			return (int) id;
 		}
 
+		Long getTimeUTC() {
+			return timeUTC;
+		}
+
 	}
 
 	private static final int concernedHostsSizeLimit = 10000;
@@ -118,8 +121,8 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 		@Field
 		protected String concernedDatabasePackage;
 
-		@Field(limit = concernedHostsSizeLimit)
-		private byte[] concernedHosts;
+		@Field(limit = concernedHostsSizeLimit, forceUsingBlobOrClob = true)
+		private Set<DecentralizedValue> concernedHosts;
 		//private AbstractDecentralizedID newHostID;
 
 		Record() {
@@ -127,21 +130,18 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 			this.concernedHosts = null;
 		}
 
-		Record(long id, String concernedDatabasePackage) {
-			super(id);
+		Record(long id, long timeUTC, String concernedDatabasePackage) {
+			super(id, timeUTC);
 			this.concernedDatabasePackage = concernedDatabasePackage;
 			this.concernedHosts = null;
 		}
 
-		Record(long id, String concernedDatabasePackage, Set<DecentralizedValue> concernedHosts) {
-			this(id, concernedDatabasePackage);
+		Record(long id, long timeUTC, String concernedDatabasePackage, Set<DecentralizedValue> concernedHosts) {
+			this(id, timeUTC, concernedDatabasePackage);
 
 			setConcernedHosts(concernedHosts);
 		}
 
-		/*boolean isTemporaryTransaction() {
-			return id < -1;
-		}*/
 
 		@Override
 		public boolean equals(Object o) {
@@ -156,73 +156,43 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 			return (int) getID();
 		}
 
-		boolean isConcernedBy(Package p) {
-			return p.getName().equals(concernedDatabasePackage);
-		}
-
-		boolean isConcernedByOneOf(Package... ps) {
-			if (ps == null)
+		boolean isConcernedByOneOf(Set<String> packages) {
+			if (packages == null)
 				return false;
-			for (Package p : ps)
-				if (concernedDatabasePackage.equals(p.getName()))
-					return true;
-			return false;
+			return packages.contains(concernedDatabasePackage);
 		}
 
-		void setConcernedHosts(Collection<DecentralizedValue> peers) {
+		void addConcernedHost(DecentralizedValue peer)
+		{
+			if (concernedHosts==null) {
+				setForced(true);
+				concernedHosts = new HashSet<>();
+			}
+			concernedHosts.add(peer);
+
+		}
+
+		void setConcernedHosts(Set<DecentralizedValue> peers) {
 			if (peers == null || peers.isEmpty()) {
 				concernedHosts = null;
-				setForce(false);
+				setForced(false);
 				return;
 			} else
-				setForce(true);
-
-			byte[][] bytes = new byte[peers.size()][];
-			int i = 0;
-			int size = 2 + peers.size() * 2;
-			for (DecentralizedValue id : peers) {
-				bytes[i] = id.encode();
-				size += bytes[i++].length + 2;
-			}
-			if (size > concernedHostsSizeLimit) {
-				concernedHosts = null;
-			} else {
-				concernedHosts = new byte[size];
-				i = 2;
-				Bits.putShort(concernedHosts, 0, (short) peers.size());
-				for (byte[] b : bytes) {
-					Bits.putShort(concernedHosts, i, (short) b.length);
-					i += 2;
-					System.arraycopy(b, 0, concernedHosts, i, b.length);
-					i += b.length;
-				}
-			}
+				setForced(true);
+			concernedHosts=peers;
 		}
 
-		List<DecentralizedValue> getConcernedHosts() throws SerializationDatabaseException {
+		Set<DecentralizedValue> getConcernedHosts() {
 			if (concernedHosts == null)
-				return new ArrayList<>(0);
-			short nbPeers = Bits.getShort(concernedHosts, 0);
-			ArrayList<DecentralizedValue> res = new ArrayList<>(nbPeers);
-			int off = 2;
-			for (int i = 0; i < nbPeers; i++) {
-				short size = Bits.getShort(concernedHosts, 2);
-				if (size > 1024)
-					throw new SerializationDatabaseException("Invalid data (hook id size est greater to 1024)");
+				return new HashSet<>();
+			return concernedHosts;
 
-				off += 2;
-				res.add(DecentralizedValue.decode(concernedHosts, off, size));
-				off += size;
-			}
-			return res;
 		}
 
 		boolean isConcernedBy(DecentralizedValue newHostID) throws SerializationDatabaseException {
-			//this.newHostID = newHostID;
 			if (concernedHosts == null)
-				return true;
-			List<DecentralizedValue> l = getConcernedHosts();
-			return !l.contains(newHostID);
+				return false;
+			return concernedHosts.contains(newHostID);
 		}
 
 	}
@@ -270,28 +240,41 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 	}
 
 	void removeTransactionsFromLastID() throws DatabaseException {
-		long globalLast = getDatabaseHooksTable().getGlobalLastValidatedTransactionID();
-		long prevGlobalLast = getIDTable().getLastValidatedTransactionID();
-		if (prevGlobalLast != globalLast) {
-			getIDTable().setLastValidatedTransactionIDI(globalLast);
-			removeTransactionUntilID(globalLast);
+		if (getDatabaseTransactionsPerHostTable().getRecordsNumber()==0)
+		{
+			if (getRecordsNumber()>0)
+			{
+				removeAllRecordsWithCascade();
+				getIDTable().setLastValidatedTransactionID(getIDTable().getLastTransactionID()-1);
+			}
+		}
+		else {
+			long globalLast = getDatabaseHooksTable().getGlobalLastValidatedTransactionID();
+			long prevGlobalLast = getIDTable().getLastValidatedTransactionID();
+			if (prevGlobalLast != globalLast) {
+				getIDTable().setLastValidatedTransactionID(globalLast);
+				removeTransactionUntilID(globalLast);
+			}
 		}
 
 	}
 
-	protected long addTransactionToSynchronizeTables(final List<String> databasePackages,
-													 final ArrayList<DecentralizedValue> hostAlreadySynchronized, final DatabaseHooksTable.Record hook,
-													 boolean force) throws DatabaseException {
-		final Set<String> packageSynchroOneTime = new HashSet<>();
+	protected long addTransactionToSynchronizeTables(final Map<String, Boolean> databasePackages,
+													 final Map<String, Set<DecentralizedValue>> hostsAlreadySynchronized, final DatabaseHooksTable.Record hook) throws DatabaseException {
 
+		final Set<String> packageSynchroOneTime = new HashSet<>();
+		//assert getDatabaseHooksTable().getRecord("id", hook.getID())!=null;
 		getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
 
 			@Override
 			public boolean nextRecord(DatabaseHooksTable.Record _record) {
-				if (!_record.concernsLocalDatabaseHost() && hostAlreadySynchronized.contains(_record.getHostID())) {
-					for (String p : _record.getDatabasePackageNames()) {
-						if (databasePackages.contains(p)) {
-							packageSynchroOneTime.add(p);
+				if (!_record.concernsLocalDatabaseHost()) {
+					Set<String> dpn=_record.getDatabasePackageNames();
+					if (dpn!=null) {
+						for (String p : dpn) {
+							Set<DecentralizedValue> has=hostsAlreadySynchronized.get(p);
+							if (has!=null && has.contains(_record.getHostID()))
+								packageSynchroOneTime.add(p);
 						}
 					}
 
@@ -300,27 +283,29 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 			}
 		});
 
-		for (String databasePackage : databasePackages)
-			if (!packageSynchroOneTime.contains(databasePackage))
-				addTransactionToSynchronizeTables(databasePackage, hook, force);
+		for (Map.Entry<String, Boolean> e : databasePackages.entrySet()) {
+			Set<DecentralizedValue> has=hostsAlreadySynchronized.get(e.getKey());
+			if (has==null || !has.contains(hook.getHostID()))
+			{
+				addTransactionToSynchronizeTables(e.getKey(), hook, e.getValue());
+			}
+		}
 
 		if (packageSynchroOneTime.size() > 0) {
-			final AtomicLong lastTransactionID = new AtomicLong(Long.MAX_VALUE);
+
+			final Reference<Long> lastTransactionID = new Reference<>(Long.MAX_VALUE);
 			getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
 
 				@Override
 				public boolean nextRecord(DatabaseHooksTable.Record _record) {
-					if (!_record.concernsLocalDatabaseHost() && !_record.getHostID().equals(hook.getHostID())) {
-						if (lastTransactionID.get() > _record.getLastValidatedTransaction()) {
-							lastTransactionID.set(_record.getLastValidatedTransaction());
-						}
+					if (lastTransactionID.get() > _record.getLastValidatedLocalTransactionID()) {
+						lastTransactionID.set(_record.getLastValidatedLocalTransactionID());
 					}
 					return false;
 				}
-			});
+			}, "concernsDatabaseHost==%c and hostID!=%h", "c", false, "h", hook.getHostID());
 			if (lastTransactionID.get() == Long.MAX_VALUE)
-				lastTransactionID.set(-1);
-
+				lastTransactionID.set(-1L);
 			if (lastTransactionID.get() < getIDTable().getLastTransactionID()) {
 				StringBuilder sb = new StringBuilder();
 				int index = 0;
@@ -337,29 +322,31 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 				sb.append(")");
 				parameters.put("lastID", lastTransactionID.get());
 
+				getRecords(new Filter<DatabaseTransactionEventsTable.Record>() {
+
+					@Override
+					public boolean nextRecord(Record _record) throws DatabaseException {
+						if (!_record.isConcernedBy(hook.getHostID())) {
+							DatabaseTransactionsPerHostTable.Record r = new DatabaseTransactionsPerHostTable.Record();
+							r.set(_record, hook);
+							getDatabaseTransactionsPerHostTable().addRecord(r);
+						}
+						return false;
+					}
+				}, "id>%lastID" + sb, parameters);
 				updateRecords(new AlterRecordFilter<DatabaseTransactionEventsTable.Record>() {
 
 					@Override
 					public void nextRecord(Record _record) throws DatabaseException {
 						if (!_record.isConcernedBy(hook.getHostID())) {
-							List<DecentralizedValue> l = _record.getConcernedHosts();
-							l.add(hook.getHostID());
-							_record.setConcernedHosts(l);
-							update();
+							_record.addConcernedHost(hook.getHostID());
+							update("concernedHosts", _record.concernedHosts);
 						}
 					}
-				}, "id>%lastID" + sb.toString(), parameters);
-				getRecords(new Filter<DatabaseTransactionEventsTable.Record>() {
+				}, "id>%lastID" + sb, parameters);
 
-					@Override
-					public boolean nextRecord(Record _record) throws DatabaseException {
-						DatabaseTransactionsPerHostTable.Record r = new DatabaseTransactionsPerHostTable.Record();
-						r.set(_record, hook);
-						getDatabaseTransactionsPerHostTable().addRecord(r);
-						return false;
-					}
 
-				}, "id>%lastID" + sb.toString(), parameters);
+
 			}
 			return lastTransactionID.get();
 		} else
@@ -376,6 +363,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 		if (tablesDone.contains(tableClass))
 			return;
 
+
 		final Table<DatabaseRecord> table = (Table<DatabaseRecord>) getDatabaseWrapper().getTableInstance(tableClass);
 		if (!table.supportSynchronizationWithOtherPeers())
 			return;
@@ -387,12 +375,13 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 					(Class<? extends Table<?>>) (fa.getPointedTable().getClass()), tablesDone, currentEventPos,
 					maxEvents, force);
 		}
+
 		table.getRecords(new Filter<DatabaseRecord>() {
 
 			@Override
 			public boolean nextRecord(DatabaseRecord _record) throws DatabaseException {
 				DatabaseEventsTable.Record event = new DatabaseEventsTable.Record(transaction.get(),
-						new TableEvent<>(-1, DatabaseEventType.ADD, null, _record, null),
+						new TableEvent<>(-1, DatabaseEventType.ADD, table, null, _record, null),
 						getDatabaseWrapper());
 				event.setPosition(currentEventPos.getAndIncrement());
 				getDatabaseEventsTable().addRecord(event);
@@ -406,9 +395,10 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 
 					DatabaseTransactionEventsTable.Record tr = new DatabaseTransactionEventsTable.Record();
 					tr.id = getTransactionIDTable().getAndIncrementTransactionID();
+					tr.timeUTC=transaction.get().getTimeUTC();
 					tr.concernedDatabasePackage = databasePackage;
-					tr.setConcernedHosts(Collections.singletonList(hook.getHostID()));
-					tr.setForce(force);
+					tr.addConcernedHost(hook.getHostID());
+					tr.setForced(force);
 					transaction.set(addRecord(tr));
 					currentEventPos.set(0);
 
@@ -420,22 +410,25 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 
 	protected void addTransactionToSynchronizeTables(final String databasePackage, final DatabaseHooksTable.Record hook,
 			final boolean force) throws DatabaseException {
-		// final long previousLastTransacionID=getIDTable().getLastTransactionID();
+
+		//long oldLastID;
 		DatabaseTransactionEventsTable.Record tr = new DatabaseTransactionEventsTable.Record();
 		tr.id = getTransactionIDTable().getAndIncrementTransactionID();
+		//oldLastID=tr.id-1;
+		tr.timeUTC=System.currentTimeMillis();
 		tr.concernedDatabasePackage = databasePackage;
-		tr.setConcernedHosts(Collections.singletonList(hook.getHostID()));
-		tr.setForce(force);
+		tr.addConcernedHost(hook.getHostID());
+		tr.setForced(force);
 
 		AtomicReference<DatabaseTransactionEventsTable.Record> transaction = new AtomicReference<>(addRecord(tr));
 		AtomicInteger currentEventPos = new AtomicInteger(0);
 		Set<Class<? extends Table<?>>> tables = getDatabaseWrapper().getDatabaseConfiguration(databasePackage)
-				.getTableClasses();
+				.getDatabaseSchema().getTableClasses();
 		Set<Class<? extends Table<?>>> tablesDone = new HashSet<>();
 
 		for (Class<? extends Table<?>> c : tables) {
 			addEventsForTablesToSynchronize(transaction, databasePackage, hook, c, tablesDone, currentEventPos,
-					getDatabaseWrapper().getMaxTransactionEventsKeepedIntoMemory(), force);
+					getDatabaseWrapper().getMaxTransactionEventsKeptIntoMemory(), force);
 		}
 		if (currentEventPos.get() > 0) {
 			DatabaseTransactionsPerHostTable.Record trhost = new DatabaseTransactionsPerHostTable.Record();
@@ -444,7 +437,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 		} else {
 			removeRecord(transaction.get());
 		}
-		getDatabaseHooksTable().actualizeLastTransactionID(new ArrayList<DecentralizedValue>(0));
+		getDatabaseHooksTable().actualizeLastTransactionID(new ArrayList<>(0));
 	}
 
 	DatabaseTransactionsPerHostTable getDatabaseTransactionsPerHostTable() throws DatabaseException {

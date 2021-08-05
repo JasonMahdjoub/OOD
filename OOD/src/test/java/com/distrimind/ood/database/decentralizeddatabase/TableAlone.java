@@ -35,17 +35,13 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database.decentralizeddatabase;
 
-import com.distrimind.ood.database.DatabaseEventType;
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.Table;
-import com.distrimind.ood.database.TestDecentralizedDatabase;
 import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.crypto.ASymmetricPublicKey;
-
-import java.util.HashMap;
 
 /**
  * 

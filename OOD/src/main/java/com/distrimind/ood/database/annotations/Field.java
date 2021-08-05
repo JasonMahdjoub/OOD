@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -106,4 +106,10 @@ public @interface Field {
 	 * @return true if the key expiration UTC must be included into the field. Concerns only {@link com.distrimind.util.crypto.ASymmetricPublicKey} and {@link com.distrimind.util.crypto.ASymmetricKeyPair}.
 	 */
 	boolean includeKeyExpiration() default true;
+
+	/**
+	 *
+	 * @return true if the field must use blob type, even if the size limit is lower than the database threshold
+	 */
+	boolean forceUsingBlobOrClob() default false;
 }

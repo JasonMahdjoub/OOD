@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java langage 
+and the java language
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -37,6 +37,8 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 package com.distrimind.ood.database;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * This class represent a field description into the Sql database. The user
  * should not use this class.
@@ -46,10 +48,18 @@ package com.distrimind.ood.database;
  */
 public class SqlField {
 
+	private static final AtomicInteger fieldAliasNumber=new AtomicInteger(0);
+
 	/**
 	 * the name of the Sql field appended with the name of the Sql Table.
 	 */
 	public String field;
+
+	/**
+	 * the name of the Sql field without quote appended with the name of the Sql Table.
+	 */
+	public String fieldWithoutQuote;
+
 
 	/**
 	 * the type of the Sql field.
@@ -59,31 +69,76 @@ public class SqlField {
 	/**
 	 * The name of the pointed Sql table, if this field is a foreign key
 	 */
-	public String pointed_table;
+	public final String pointedTable;
+
+
+	/**
+	 * The name of the pointed Sql table alias given into a sql query, and if this field is a foreign key
+	 */
+	public final String pointedTableAlias;
 
 	/**
 	 * The name of the pointed Sql field appended with its Sql Table, if this field
 	 * is a foreign key
 	 */
-	public String pointed_field;
+	public final String pointedField;
+
+	/**
+	 * The name of the pointed Sql table, if this field is a foreign key
+	 */
+	public final String pointedTableWithoutQuote;
+
+	/**
+	 * The name of the pointed Sql field appended with its Sql Table, if this field
+	 * is a foreign key
+	 */
+	public final String pointedFieldWithoutQuote;
 
 	/**
 	 * the name of the Sql field not appended with the name of the Sql Table.
 	 */
-	public final String short_field;
+	public final String shortField;
+
+	/**
+	 * the name of the Sql field without quote not appended with the name of the Sql Table.
+	 */
+	public final String shortFieldWithoutQuote;
 
 	/**
 	 * The name of the pointed Sql field not appended with its Sql Table, if this
 	 * field is a foreign key
 	 */
-	public String short_pointed_field;
+	public String shortPointedField;
+
+	/**
+	 * The name of the pointed Sql field without quote not appended with its Sql Table, if this
+	 * field is a foreign key
+	 */
+	public final String shortPointedFieldWithoutQuote;
+
 
 	/**
 	 * Tells if this field is not null
 	 */
-	public final boolean not_null;
+	public final boolean notNull;
 
-	public int sql_position = -1;
+	public int sqlPosition = -1;
+
+	public final String sqlFieldAliasName;
+
+	/**
+	 * Constructor
+	 *
+	 * @param _field
+	 *            the name of the Sql field.
+	 * @param _type
+	 *            the type of the Sql field.
+	 * @param _not_null
+	 *            tells if the field is not null
+	 */
+	public SqlField(boolean supportQuote, String _field, String _type, boolean _not_null) {
+		this(supportQuote, _field, _type, null, null, null, _not_null);
+	}
 
 	/**
 	 * Constructor
@@ -96,41 +151,84 @@ public class SqlField {
 	 *            The name of the pointed Sql field, if this field is a foreign key
 	 * @param _pointed_table
 	 *            The name of the pointed Sql table, if this field is a foreign key
+	 * @param pointedTableAlias
+	 *            The name of the pointed Sql table alias given into a sql query, and if this field is a foreign key
 	 * @param _not_null
 	 *            tells if the field is not null
 	 */
-	public SqlField(String _field, String _type, String _pointed_table, String _pointed_field, boolean _not_null) {
-		field = _field.toUpperCase();
+	public SqlField(boolean supportQuote, String _field, String _type, String _pointed_table, String pointedTableAlias, String _pointed_field, boolean _not_null) {
+		this(supportQuote, _field, _type,  _pointed_table, pointedTableAlias, _pointed_field, _not_null, "F"+fieldAliasNumber.incrementAndGet()+"__");
+	}
+	protected SqlField(boolean supportQuote, String _field, String _type, String _pointed_table, String pointedTableAlias, String _pointed_field, boolean _not_null, String sqlFieldAliasName)
+	{
+		if ((_pointed_table==null)!=(pointedTableAlias ==null) && (_pointed_table==null)!=(_pointed_field==null))
+			throw new NullPointerException();
+		if (sqlFieldAliasName ==null || sqlFieldAliasName.length()==0)
+			throw new NullPointerException();
+		this.sqlFieldAliasName = sqlFieldAliasName;
+		fieldWithoutQuote = _field.toUpperCase();
 		type = _type.toUpperCase();
-		pointed_table = _pointed_table == null ? null : _pointed_table.toUpperCase();
-		pointed_field = _pointed_field == null ? null : _pointed_field.toUpperCase();
+		pointedTable = _pointed_table == null ? null : _pointed_table.toUpperCase();
+		this.pointedTableAlias = pointedTableAlias;
+		pointedField = _pointed_field == null ? null : (pointedTableAlias +"."+_pointed_field.substring(_pointed_field.lastIndexOf('.')+1)).toUpperCase();
+
 
 		int index = -1;
-		for (int i = 0; i < field.length(); i++) {
-			if (field.charAt(i) == '.') {
+		for (int i = 0; i < fieldWithoutQuote.length(); i++) {
+			if (fieldWithoutQuote.charAt(i) == '.') {
 				index = i + 1;
 				break;
 			}
 		}
-		if (index != -1)
-			short_field = field.substring(index);
-		else
-			short_field = field;
+		if (index != -1) {
+			shortFieldWithoutQuote = fieldWithoutQuote.substring(index);
+			if (supportQuote) {
+				shortField = "`" + shortFieldWithoutQuote + "`";
+				field = fieldWithoutQuote.substring(0, index) + "`" + fieldWithoutQuote.substring(index) + "`";
+			}
+			else {
+				shortField = shortFieldWithoutQuote;
+				field = fieldWithoutQuote;
+			}
 
-		if (pointed_field != null) {
+		}
+		else {
+			shortFieldWithoutQuote = fieldWithoutQuote;
+			if (supportQuote) {
+				shortField = "`" + fieldWithoutQuote + "`";
+			}
+			else
+				shortField = fieldWithoutQuote;
+
+			field= shortField;
+		}
+
+		if (pointedField != null) {
 			index = -1;
-			for (int i = 0; i < pointed_field.length(); i++) {
-				if (pointed_field.charAt(i) == '.') {
+			for (int i = 0; i < pointedField.length(); i++) {
+				if (pointedField.charAt(i) == '.') {
 					index = i + 1;
 					break;
 				}
 			}
-			if (index != -1)
-				short_pointed_field = pointed_field.substring(index);
+			if (index != -1) {
+				shortPointedField = pointedField.substring(index);
+			}
 			else
-				short_pointed_field = pointed_field;
+				shortPointedField = pointedField;
 		} else
-			short_pointed_field = null;
-		this.not_null = _not_null;
+			shortPointedField = null;
+		if (pointedTable !=null && pointedField !=null)
+		{
+			pointedTableWithoutQuote = pointedTable.replace("`", "");
+			pointedFieldWithoutQuote = pointedField.replace("`", "");
+			shortPointedFieldWithoutQuote = shortPointedField.replace("`", "");
+		}
+		else {
+			pointedTableWithoutQuote = null;
+			pointedFieldWithoutQuote = null;
+			shortPointedFieldWithoutQuote =null;
+		}
+		this.notNull = _not_null;
 	}
 }
