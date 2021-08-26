@@ -767,7 +767,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 				ClientTable.Record channelHost;
 				if (channelHostID==null)
 				{
-					assert message.isForRestoration();
+					assert message.getContext()!= AskForDatabaseBackupPartDestinedToCentralDatabaseBackup.Context.SYNCHRONIZATION;
 					DatabaseBackupPerClientTable.Record r=getMostAppropriateChannelHostIDToCreateNewChannel(message.getPackageString());
 					if (r==null)
 						return Integrity.OK;
@@ -789,10 +789,21 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 				if (r!=null) {
 					EncryptedBackupPartReferenceTable.Record e=getBackupMetaDataPerFile(r, message.getFileCoordinate());
 					if (e!=null) {
-						if (message.isForRestoration())
-							sendMessage(e.readEncryptedBackupPartForRestoration(message.getHostSource(), channelHost.getClientID()));
-						else
-							sendMessage(e.readEncryptedBackupPart(message.getHostSource()));
+						switch (message.getContext())
+						{
+							case SYNCHRONIZATION:
+								sendMessage(e.readEncryptedBackupPart(message.getHostSource()));
+								break;
+							case RESTORATION:
+								sendMessage(e.readEncryptedBackupPartForRestoration(message.getHostSource(), channelHost.getClientID()));
+								break;
+							case INITIAL_SYNCHRONIZATION:
+								sendMessage(e.readEncryptedBackupPartForInitialSynchronization(message.getHostSource(), channelHost.getClientID()));
+								break;
+							default:
+								throw new IllegalAccessError();
+						}
+
 					}
 				}
 				return Integrity.OK;
