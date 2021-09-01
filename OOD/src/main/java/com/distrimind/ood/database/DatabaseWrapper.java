@@ -2946,7 +2946,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (lastFileTimeStampUTC == d.getSynchronizationPlanMessageComingFromCentralDatabaseBackup().getLastBackupPartUTC()) {
 				//TODO apply initial synchronization
 				//TODO update local and distant validated ids into local peer, and into distant central database backup
-
+				return false;
 			} else {
 				addNewDatabaseEvent(
 						new AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(
@@ -6414,8 +6414,16 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	public void deleteDatabasesFiles() {
 		Logger logger=databaseLogger;
 		close();
+		File directory=getDatabaseDirectory();
+		if (directory==null) {
+			if (logger!=null)
+				logger.fine("No databases files to remove");
+			return;
+		}
+
 		if (logger!=null)
 			logger.fine("Start databases files removing: "+getDatabaseDirectory());
+
 		deleteDatabasesFiles(getDatabaseDirectory());
 		if (logger!=null)
 			logger.info("Start databases files removed: "+getDatabaseDirectory());
