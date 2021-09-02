@@ -33,7 +33,7 @@ public final class Teacher extends Table<Teacher.Record> {
 
 	public ArrayList<Lecture.Record> getLectures(DatabaseWrapper sql_connection, final Teacher.Record _teacher)
 			throws DatabaseException {
-		TeacherLecture tl = (TeacherLecture) sql_connection.getTableInstance(TeacherLecture.class);
+		TeacherLecture tl = sql_connection.getTableInstance(TeacherLecture.class);
 		ArrayList<TeacherLecture.Record> tls = tl.getRecords(new Filter<TeacherLecture.Record>() {
 
 			@Override
