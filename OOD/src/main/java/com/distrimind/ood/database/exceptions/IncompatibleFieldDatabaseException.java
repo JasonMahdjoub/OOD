@@ -43,10 +43,6 @@ package com.distrimind.ood.database.exceptions;
  * @since OOD 1.5
  */
 public class IncompatibleFieldDatabaseException extends FieldDatabaseException {
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 4903927419503175764L;
 
 	public IncompatibleFieldDatabaseException(String _message) {
 		super(_message);

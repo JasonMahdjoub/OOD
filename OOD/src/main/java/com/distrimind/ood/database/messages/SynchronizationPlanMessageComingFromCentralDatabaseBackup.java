@@ -1,7 +1,5 @@
 package com.distrimind.ood.database.messages;
 
-import com.distrimind.ood.database.DatabaseWrapper;
-import com.distrimind.ood.database.EncryptionTools;
 import com.distrimind.ood.database.Table;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.crypto.EncryptionProfileProvider;

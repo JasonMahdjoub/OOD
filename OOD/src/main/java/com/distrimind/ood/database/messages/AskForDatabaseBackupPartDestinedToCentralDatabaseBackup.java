@@ -45,7 +45,7 @@ public class AskForDatabaseBackupPartDestinedToCentralDatabaseBackup extends Dat
 	}
 	public AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(String packageString, DecentralizedValue hostSource, DecentralizedValue channelHost, FileCoordinate fileCoordinate, Context context) {
 		this(packageString, hostSource, fileCoordinate, context);
-		if (channelHost ==null && context!=Context.SYNCHRONIZATION)
+		if (channelHost ==null && context!=Context.RESTORATION)
 			throw new NullPointerException();
 		this.channelHost = channelHost;
 	}
@@ -80,7 +80,7 @@ public class AskForDatabaseBackupPartDestinedToCentralDatabaseBackup extends Dat
 	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
 		out.writeEnum(context, false);
 		out.writeObject(hostSource, false);
-		assert channelHost !=null || context==Context.SYNCHRONIZATION;
+		assert channelHost !=null || context==Context.RESTORATION;
 		if (channelHost==null)
 			out.writeBoolean(false);
 		else {
@@ -103,7 +103,7 @@ public class AskForDatabaseBackupPartDestinedToCentralDatabaseBackup extends Dat
 		else
 		{
 			channelHost=null;
-			if (context==Context.SYNCHRONIZATION)
+			if (context!=Context.RESTORATION)
 				throw new MessageExternalizationException(Integrity.FAIL);
 		}
 		fileCoordinate=FileCoordinate.read(in);

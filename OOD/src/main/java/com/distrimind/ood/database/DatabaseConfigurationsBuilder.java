@@ -331,8 +331,8 @@ public class DatabaseConfigurationsBuilder {
 			configuration.setCreateDatabaseIfNecessaryAndCheckItDuringCurrentSession(createDatabaseIfNecessaryAndCheckItDuringCurrentSession);
 			if (configurations.addConfiguration(configuration, makeConfigurationLoadingPersistent)) {
 				t.checkConnexionsToDesynchronize();
-				t.propagate=true;
 			}
+			t.propagate=true;
 			if (makeConfigurationLoadingPersistent)
 				t.updateConfigurationPersistence();
 			t.checkDatabaseLoading(configuration);
@@ -398,7 +398,6 @@ public class DatabaseConfigurationsBuilder {
 		wrapper.getSynchronizer().checkDisconnections();
 	}
 	private Set<DecentralizedValue> checkPeersToAdd() throws DatabaseException {
-
 		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Set<DecentralizedValue>>() {
 			@Override
 			public Set<DecentralizedValue> run() throws Exception {
@@ -475,25 +474,25 @@ public class DatabaseConfigurationsBuilder {
 
 				}
 
-				wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
-					@Override
-					public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
-						for (DatabaseConfiguration c : packagesToSynchronize)
-						{
-							Map<String, Boolean> hm=new HashMap<>();
-							hm.put(c.getDatabaseSchema().getPackage().getName(), DatabaseConfigurationsBuilder.this.lifeCycles != null && DatabaseConfigurationsBuilder.this.lifeCycles.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized(c));
-							_record.offerNewAuthenticatedP2PMessage(wrapper, new HookSynchronizeRequest(configurations.getLocalPeer(), _record.getHostID(), hm, c.getDistantPeersThatCanBeSynchronizedWithThisDatabase()), getSecureRandom(), protectedSignatureProfileProviderForAuthenticatedP2PMessages, this);
-						}
-					}
-				}, "concernsDatabaseHost=%cdh", "cdh", false);
+				if (currentTransaction.propagate) {
+					wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
+						@Override
+						public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
 
-				for (DatabaseConfiguration c : packagesToSynchronize)
-				{
-					Map<String, Boolean> hm=new HashMap<>();
+							for (DatabaseConfiguration c : packagesToSynchronize) {
+								Map<String, Boolean> hm = new HashMap<>();
+								hm.put(c.getDatabaseSchema().getPackage().getName(), DatabaseConfigurationsBuilder.this.lifeCycles != null && DatabaseConfigurationsBuilder.this.lifeCycles.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized(c));
+								_record.offerNewAuthenticatedP2PMessage(wrapper, new HookSynchronizeRequest(configurations.getLocalPeer(), _record.getHostID(), hm, c.getDistantPeersThatCanBeSynchronizedWithThisDatabase()), getSecureRandom(), protectedSignatureProfileProviderForAuthenticatedP2PMessages, this);
+							}
+						}
+					}, "concernsDatabaseHost=%cdh", "cdh", false);
+				}
+				for (DatabaseConfiguration c : packagesToSynchronize) {
+					Map<String, Boolean> hm = new HashMap<>();
 					hm.put(c.getDatabaseSchema().getPackage().getName(), DatabaseConfigurationsBuilder.this.lifeCycles != null && DatabaseConfigurationsBuilder.this.lifeCycles.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized(c));
 					wrapper.getSynchronizer().receivedHookSynchronizeRequest(new HookSynchronizeRequest(configurations.getLocalPeer(), configurations.getLocalPeer(), hm, c.getDistantPeersThatCanBeSynchronizedWithThisDatabase()));
 				}
-				return packagesToSynchronize.size()>0;
+				return packagesToSynchronize.size() > 0;
 			}
 
 			@Override
@@ -796,6 +795,7 @@ public class DatabaseConfigurationsBuilder {
 			}
 			if (changed) {
 				t.updateConfigurationPersistence();
+				t.propagate|=checkNewConnexion;
 				t.checkDatabaseToSynchronize();
 				if (checkNewConnexion)
 					t.checkNewConnexions();
@@ -852,7 +852,7 @@ public class DatabaseConfigurationsBuilder {
 				changed|=configurations.desynchronizeAdditionalDistantPeersWithGivenPackage(p, distantPeers);
 			}
 			if (changed) {
-				t.propagate=propagate;
+				t.propagate|=propagate;
 				t.checkConnexionsToDesynchronize();
 				t.updateConfigurationPersistence();
 				t.checkInitLocalPeer();
