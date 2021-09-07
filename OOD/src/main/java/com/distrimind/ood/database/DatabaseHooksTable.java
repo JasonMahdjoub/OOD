@@ -579,7 +579,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 				});
 	}
 
-	DatabaseHooksTable() throws DatabaseException {
+	protected DatabaseHooksTable() throws DatabaseException {
 		super();
 	}
 

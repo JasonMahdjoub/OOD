@@ -59,7 +59,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 	private volatile DatabaseDistantEventsTable databaseDistantEventsTable = null;
 	private volatile IDTable idTable = null;
 
-	DatabaseTransactionsPerHostTable() throws DatabaseException {
+	protected DatabaseTransactionsPerHostTable() throws DatabaseException {
 		super();
 	}
 
