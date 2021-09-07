@@ -38,11 +38,6 @@ package com.distrimind.ood.database.exceptions;
 
 public class QueryInterpretationImpossible extends DatabaseSyntaxException {
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = -6590395532263276236L;
-
 	public QueryInterpretationImpossible(String query) {
 		super("The next query cannot be interpreted with several rules : " + query);
 	}

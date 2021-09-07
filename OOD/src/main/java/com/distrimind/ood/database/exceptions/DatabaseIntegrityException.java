@@ -56,9 +56,5 @@ public class DatabaseIntegrityException extends DatabaseException {
 		super(_message, e);
 	}
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = -2675688462367701970L;
 
 }

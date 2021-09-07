@@ -43,6 +43,7 @@ import com.distrimind.ood.database.Table.DefaultConstructorAccessPrivilegedActio
 import com.distrimind.ood.database.centraldatabaseapi.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
+import com.distrimind.ood.database.exceptions.DatabaseLoadingException;
 import com.distrimind.ood.database.fieldaccessors.ByteTabObjectConverter;
 import com.distrimind.ood.database.fieldaccessors.DefaultByteTabObjectConverter;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
@@ -1548,7 +1549,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		void cleanTransactionsAfterRestoration(String databasePackage, long timeUTCOfRestorationInMs, long timeWhenRestorationWasDone, Long transactionToDeleteUpperLimitUTC, boolean launchRestoration, boolean chooseNearestBackupIfNoBackupMatch) throws DatabaseException {
 
-			runSynchronizedTransaction(new SynchronizedTransaction<>() {
+			runSynchronizedTransaction(new SynchronizedTransaction<Object>() {
 				@Override
 				public Object run() throws Exception {
 					getDatabaseTable().updateLastRestorationTimeUTCInMS(databasePackage, timeWhenRestorationWasDone);
@@ -1587,9 +1588,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		void receivedRestorationOrderMessage(RestorationOrderMessage m) throws DatabaseException {
-			runSynchronizedTransaction(new SynchronizedTransaction<>() {
+			runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
 				@Override
-				public Object run() throws Exception {
+				public Void run() throws Exception {
 					cleanTransactionsAfterRestoration(m.getDatabasePackage(), m.getTimeUTCOfRestorationInMs(), m.getTimeUTCInMsWhenRestorationIsDone(), null, m.getHostThatApplyRestoration().equals(getLocalHostID()) && !m.getHostSource().equals(getLocalHostID()), m.isChooseNearestBackupIfNoBackupMatch());
 					return null;
 				}
@@ -1763,7 +1764,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			try {
 				lockWrite();
 
-				getDatabaseHooksTable().getRecords(new Filter<>() {
+				getDatabaseHooksTable().getRecords(new Filter<Record>() {
 
 					@Override
 					public boolean nextRecord(Record _record) throws DatabaseException {
@@ -2318,7 +2319,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					minFilePartDurationBeforeBecomingFinalFilePart=d.configuration.getBackupConfiguration().getMaxBackupFileAgeInMs();
 			}
 			getDatabaseHooksTable()
-					.getRecords(new Filter<>() {
+					.getRecords(new Filter<Record>() {
 						@Override
 						public boolean nextRecord(Record _record) {
 							if (!_record.concernsLocalDatabaseHost()) {
@@ -2348,7 +2349,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					&& d.isEmpty())
 			{
 				Reference<Boolean> allFound=new Reference<>(true);
-				getDatabaseHooksTable().getRecords(new Filter<>() {
+				getDatabaseHooksTable().getRecords(new Filter<Record>() {
 					@Override
 					public boolean nextRecord(Record _record) {
 						if (!_record.concernsLocalDatabaseHost()) {
@@ -2878,11 +2879,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new NullPointerException();
 			if (hostThatApplyRestoration==null)
 				throw new NullPointerException();
-			runSynchronizedTransaction(new SynchronizedTransaction<>() {
+			runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
 				@Override
-				public Object run() throws Exception {
+				public Void run() throws Exception {
 					Reference<DatabaseHooksTable.Record> localRecord = new Reference<>(null);
-					getDatabaseHooksTable().updateRecords(new AlterRecordFilter<>() {
+					getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
 
 						@Override
 						public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
@@ -2967,7 +2968,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 								@Override
 								public Void run() throws Exception {
-									getDatabaseHooksTable().updateRecords(new AlterRecordFilter<>() {
+									getDatabaseHooksTable().updateRecords(new AlterRecordFilter<Record>() {
 										@Override
 										public void nextRecord(Record _record) throws DatabaseException {
 											LastValidatedLocalAndDistantID lastValidatedLocalAndDistantID = lastValidatedIDsPerHost.get(_record.getHostID());
@@ -3479,7 +3480,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new NullPointerException("wrapper");
 			if (maxEventsRecords == 0)
 				return false;
-			return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<>() {
+			return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
 
 				@Override
 				public Boolean run() throws Exception {
@@ -4141,7 +4142,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							}
 							else {
 								nb.addAndGet(-(int) getDatabaseEventsTable()
-										.removeRecordsWithCascade(new Filter<>() {
+										.removeRecordsWithCascade(new Filter<com.distrimind.ood.database.DatabaseEventsTable.Record>() {
 
 																	  @Override
 																	  public boolean nextRecord(
@@ -4396,7 +4397,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				if (transactionToSynchronize) {
 					if (eventsStoredIntoMemory) {
 
-						res = runSynchronizedTransaction(new SynchronizedTransaction<>() {
+						res = runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
 							final boolean alreadyDone = false;
 
 							@Override
@@ -4415,7 +4416,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 										 * final AtomicBoolean hasIgnoredHooks=new AtomicBoolean(false);
 										 */
 
-										getDatabaseHooksTable().getRecords(new Filter<>() {
+										getDatabaseHooksTable().getRecords(new Filter<Record>() {
 
 											@Override
 											public boolean nextRecord(Record _record)
@@ -4476,7 +4477,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 					} else {
 
-						res = runSynchronizedTransaction(new SynchronizedTransaction<>() {
+						res = runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
 							boolean alreadyDone = false;
 
 							@Override
@@ -4494,7 +4495,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 										 * previousLastTransactionID=getTransactionIDTable().getLastTransactionID();
 										 * final AtomicBoolean hasIgnoredHooks=new AtomicBoolean(false);
 										 */
-										getDatabaseHooksTable().getRecords(new Filter<>() {
+										getDatabaseHooksTable().getRecords(new Filter<Record>() {
 
 											@Override
 											public boolean nextRecord(Record _record)
@@ -4518,7 +4519,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 															final HashMap<String, Object> hm = new HashMap<>();
 															hm.put("transaction", finalTR.get());
 															getDatabaseEventsTable().updateRecords(
-																	new AlterRecordFilter<>() {
+																	new AlterRecordFilter<DatabaseEventsTable.Record>() {
 
 																		@Override
 																		public void nextRecord(

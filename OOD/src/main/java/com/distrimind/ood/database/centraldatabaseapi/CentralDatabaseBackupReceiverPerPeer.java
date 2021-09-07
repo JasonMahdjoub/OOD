@@ -156,7 +156,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 			return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
 		}
 
-		return centralDatabaseBackupReceiver.clientCloudAccountTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<>() {
+		return centralDatabaseBackupReceiver.clientCloudAccountTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
 			@Override
 			public Integrity run() throws Exception {
 				List<ClientCloudAccountTable.Record> l = centralDatabaseBackupReceiver.clientCloudAccountTable.getRecordsWithAllFields("externalAccountID", certificate.getCertifiedAccountPublicKey());
@@ -291,7 +291,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 
 	}
 	private Integrity received(InitialSynchronizationAppliedMessageDestinedToCentralDatabaseBackup message) throws DatabaseException {
-		return centralDatabaseBackupReceiver.clientTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<>() {
+		return centralDatabaseBackupReceiver.clientTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
 			@Override
 			public Integrity run() throws Exception {
 				try {
@@ -334,7 +334,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 		});
 	}
 	private Integrity received(AskForInitialSynchronizationPlanMessageDestinedToCentralDatabaseBackup message) throws DatabaseException {
-		return centralDatabaseBackupReceiver.clientTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<>() {
+		return centralDatabaseBackupReceiver.clientTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
 			@Override
 			public Integrity run() throws Exception {
 
@@ -352,7 +352,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 						|| clientDB.getRemoveTimeUTC() != null))
 					return Integrity.OK;
 				Reference<DatabaseBackupPerClientTable.Record> chosenBackup = new Reference<>();
-				centralDatabaseBackupReceiver.databaseBackupPerClientTable.getRecords(new Filter<>() {
+				centralDatabaseBackupReceiver.databaseBackupPerClientTable.getRecords(new Filter<DatabaseBackupPerClientTable.Record>() {
 					@Override
 					public boolean nextRecord(DatabaseBackupPerClientTable.Record _record) {
 						if (message.getAcceptedDataSources().contains(_record.getClient().getClientID())) {
@@ -365,7 +365,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 				}, "client!=%c and packageString=%ps and lastFileBackupPartUTC>%minLong and lastValidatedAndEncryptedID is not null and removeTimeUTC is null", "c", clientSource, "ps", message.getPackageString(), "minLong", Long.MIN_VALUE);
 				if (chosenBackup.get() != null) {
 					Reference<Long> referenceUTC = new Reference<>();
-					centralDatabaseBackupReceiver.encryptedBackupPartReferenceTable.getRecords(new Filter<>() {
+					centralDatabaseBackupReceiver.encryptedBackupPartReferenceTable.getRecords(new Filter<EncryptedBackupPartReferenceTable.Record>() {
 						@Override
 						public boolean nextRecord(EncryptedBackupPartReferenceTable.Record _record) {
 							if (referenceUTC.get() == null || referenceUTC.get() < _record.getFileTimeUTC()) {
@@ -409,7 +409,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 
 	}
 	private Integrity received(CompatibleDatabasesMessageDestinedToCentralDatabaseBackup message) throws DatabaseException {
-		return centralDatabaseBackupReceiver.clientTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<>() {
+		return centralDatabaseBackupReceiver.clientTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
 			@Override
 			public Integrity run() throws Exception {
 

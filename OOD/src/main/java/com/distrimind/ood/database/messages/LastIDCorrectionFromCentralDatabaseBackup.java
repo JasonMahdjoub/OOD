@@ -80,7 +80,7 @@ public class LastIDCorrectionFromCentralDatabaseBackup extends DatabaseEvent imp
 	public LastIDCorrectionFromCentralDatabaseBackup(DecentralizedValue _hostIDDestination,
 													 byte[] lastEncryptedValidatedTransaction) {
 		super();
-		if (hostIDDestination==null)
+		if (_hostIDDestination==null)
 			throw new NullPointerException();
 		if (lastEncryptedValidatedTransaction==null)
 			throw new NullPointerException();

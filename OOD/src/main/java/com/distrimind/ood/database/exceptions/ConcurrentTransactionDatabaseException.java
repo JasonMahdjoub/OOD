@@ -57,9 +57,5 @@ public class ConcurrentTransactionDatabaseException extends DatabaseException {
 		super(message);
 	}
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 5359800859903751326L;
 
 }

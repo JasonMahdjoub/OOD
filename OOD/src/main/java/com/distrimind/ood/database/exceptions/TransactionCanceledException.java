@@ -50,9 +50,4 @@ public class TransactionCanceledException extends DatabaseException {
 	}
 
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = -4588234790051724564L;
-
 }

@@ -40,6 +40,7 @@ import com.distrimind.ood.database.Table.ColumnsReadQuery;
 import com.distrimind.ood.database.Table.ReadQuery;
 import com.distrimind.ood.database.Table.SqlQuery;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.exceptions.DatabaseLoadingException;
 import com.distrimind.ood.database.exceptions.DatabaseVersionException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
