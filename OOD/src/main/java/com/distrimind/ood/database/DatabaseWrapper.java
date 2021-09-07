@@ -2310,7 +2310,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 
 		}
-		private void privInitConnectionWithDistantBackupCenter() throws DatabaseException {
+		void privInitConnectionWithDistantBackupCenter() throws DatabaseException {
 			final Map<DecentralizedValue, Long> lastValidatedDistantIDs=new HashMap<>();
 			minFilePartDurationBeforeBecomingFinalFilePart=Long.MAX_VALUE;
 			for (Database d : sql_database.values())
@@ -2339,12 +2339,15 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (!isInitializedWithCentralBackup())
 				return;
 
+			/*if (d.configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase()!=null) {
+				System.out.println("-----------here : "+getLocalHostID()+" ; " + d.configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase().stream().allMatch(this::isInitializedWithCentralBackup));
+			}*/
 			if (d.configuration.isSynchronizedWithCentralBackupDatabase()
 					&& d.lastValidatedTransactionUTCForCentralBackup==Long.MIN_VALUE
 					&& !d.isCurrentDatabaseInRestorationProcessFromCentralDatabaseBackup()
 					&& !d.isCurrentDatabaseInRestorationProcess()
 					&& !d.isCurrentDatabaseInRestorationProcessFromExternalBackup()
-					&& d.configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase().size()>0
+					&& d.configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase()!=null && d.configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase().size()>0
 					&& d.configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase().stream().allMatch(this::isInitializedWithCentralBackup)
 					&& d.isEmpty())
 			{
@@ -2984,11 +2987,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 													update("lastValidatedLocalTransactionID", lastTransactionID);
 												}
 											}
+
 										}
 									});
-
-									addNewDatabaseEvent(new InitialSynchronizationAppliedMessageDestinedToCentralDatabaseBackup(getLocalHostID(), spm.getSourceChannel(), getDatabaseConfigurationsBuilder().getConfigurations().getCentralDatabaseBackupCertificate(),
-											spm.getPackageString(), lastUTC, lastID, getDatabaseConfigurationsBuilder().getSecureRandom(), databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup()));
+									getDatabaseHooksTable().offerNewAuthenticatedMessageDestinedToCentralDatabaseBackup(new InitialSynchronizationAppliedMessageDestinedToCentralDatabaseBackup(getLocalHostID(), spm.getSourceChannel(), getDatabaseConfigurationsBuilder().getConfigurations().getCentralDatabaseBackupCertificate(),
+											spm.getPackageString(), lastUTC, lastID, getDatabaseConfigurationsBuilder().getSecureRandom(), databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup()),
+											getDatabaseConfigurationsBuilder().getSecureRandom(), getDatabaseConfigurationsBuilder().getSignatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup());
 									d.terminateCurrentDatabaseInitialSynchronizationProcessFromCentralDatabaseBackup();
 									return null;
 								}
@@ -3286,6 +3290,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		private void received(IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup message) throws DatabaseException, IOException {
 			Set<String> packagesToCheck=new HashSet<>();
 			for (AuthenticatedP2PMessage a : message.getAuthenticatedP2PMessages(databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup())) {
+				if (networkLogger!=null)
+					networkLogger.finer("Received message : "+a);
 				received(a, true);
 				if (a instanceof HookSynchronizeRequest)
 				{
@@ -6550,7 +6556,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				EncryptedBackupPartForRestorationComingFromCentralDatabaseBackup.class,
 				CompatibleDatabasesP2PMessage.class,
 				CompatibleDatabasesMessageDestinedToCentralDatabaseBackup.class,
-				CompatibleDatabasesMessageComingFromCentralDatabaseBackup.class
+				CompatibleDatabasesMessageComingFromCentralDatabaseBackup.class,
+				InitialSynchronizationAppliedMessageDestinedToCentralDatabaseBackup.class
 
 		));
 		for (Class<?> c : classes)

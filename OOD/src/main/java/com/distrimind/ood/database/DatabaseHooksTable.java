@@ -693,7 +693,6 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							if (packages.keySet().size()>0)
 								synchronizedPackages.put(r.getHostID(), packages.keySet());
 
-
 						}
 						for (Record r : getRecords())
 						{
@@ -720,8 +719,11 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 								builder.synchronizeDistantPeersWithGivenAdditionalPackages(false, Collections.singletonList(e.getKey()), e.getValue().toArray(new String[0]));
 								commit=true;
 							}
-							if (commit)
+							if (commit) {
 								builder.commit();
+								/*if (getDatabaseWrapper().getSynchronizer().isInitializedWithCentralBackup())
+									getDatabaseWrapper().getSynchronizer().privInitConnectionWithDistantBackupCenter();*/
+							}
 						}
 
 
