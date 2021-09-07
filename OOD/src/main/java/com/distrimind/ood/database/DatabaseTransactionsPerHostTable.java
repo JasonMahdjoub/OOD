@@ -59,7 +59,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 	private volatile DatabaseDistantEventsTable databaseDistantEventsTable = null;
 	private volatile IDTable idTable = null;
 
-	protected DatabaseTransactionsPerHostTable() throws DatabaseException {
+	DatabaseTransactionsPerHostTable() throws DatabaseException {
 		super();
 	}
 
@@ -171,7 +171,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 
 				DatabaseTransactionsPerHostTable.this
-						.removeRecordsWithCascade(new Filter<DatabaseTransactionsPerHostTable.Record>() {
+						.removeRecordsWithCascade(new Filter<>() {
 
 							@Override
 							public boolean nextRecord(
@@ -213,7 +213,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 
 				DatabaseTransactionsPerHostTable.this
-						.removeRecords(new Filter<DatabaseTransactionsPerHostTable.Record>() {
+						.removeRecords(new Filter<>() {
 
 							@Override
 							public boolean nextRecord(
@@ -249,103 +249,135 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 		// if (hook.getLastValidatedTransaction()<lastID)
 		{
-			return getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Long>() {
+			return getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<>() {
 
-                @Override
-                public Long run() throws Exception {
-                    removeRecords("transaction.id<=%lastID AND hook=%hook", "lastID", lastID, "hook", hook);
-                    final AtomicLong actualLastID = new AtomicLong(Long.MAX_VALUE);
-                    getRecords(new Filter<Record>() {
+				@Override
+				public Long run() throws Exception {
+					removeRecords("transaction.id<=%lastID AND hook=%hook", "lastID", lastID, "hook", hook);
+					final AtomicLong actualLastID = new AtomicLong(Long.MAX_VALUE);
+					getRecords(new Filter<>() {
 
-                        @Override
-                        public boolean nextRecord(Record _record) {
-                            if (_record.getTransaction().getID() - 1 < actualLastID.get())
-                                actualLastID.set(_record.getTransaction().getID() - 1);
-                            if (actualLastID.get() == lastID)
-                                this.stopTableParsing();
-                            return false;
-                        }
+						@Override
+						public boolean nextRecord(Record _record) {
+							if (_record.getTransaction().getID() - 1 < actualLastID.get())
+								actualLastID.set(_record.getTransaction().getID() - 1);
+							if (actualLastID.get() == lastID)
+								this.stopTableParsing();
+							return false;
+						}
 
-                    }, "hook=%hook", "hook", hook);
-                    if (actualLastID.get() > lastID) {
-                        getDatabaseDistantTransactionEvent()
-                                .getRecords(new Filter<DatabaseDistantTransactionEvent.Record>() {
+					}, "hook=%hook", "hook", hook);
+					if (actualLastID.get() > lastID) {
+						getDatabaseDistantTransactionEvent()
+								.getRecords(new Filter<>() {
 
-                                                @Override
-                                                public boolean nextRecord(
-                                                        DatabaseDistantTransactionEvent.Record _record)
-                                                        throws SerializationDatabaseException {
-                                                    if (_record.isConcernedBy(hook.getHostID())) {
-                                                        if (_record.getLocalID() - 1 < actualLastID.get())
-                                                            actualLastID.set(_record.getLocalID() - 1);
-                                                        if (actualLastID.get() == lastID)
-                                                            this.stopTableParsing();
-                                                    }
-                                                    return false;
-                                                }
-                                            }, "localID<%maxLocalID AND localID>=%minLocalID and peersInformedFull=%peersInformedFull",
-                                        "maxLocalID", actualLastID.get() - 1, "minLocalID",
-                                        lastID + 1, "peersInformedFull", Boolean.FALSE);
-                    }
-                    if (actualLastID.get() == Long.MAX_VALUE) {
-						actualLastID.set(getIDTable().getLastTransactionID());
+												@Override
+												public boolean nextRecord(
+														DatabaseDistantTransactionEvent.Record _record)
+														throws SerializationDatabaseException {
+													if (_record.isConcernedBy(hook.getHostID())) {
+														if (_record.getLocalID() - 1 < actualLastID.get())
+															actualLastID.set(_record.getLocalID() - 1);
+														if (actualLastID.get() == lastID)
+															this.stopTableParsing();
+													}
+													return false;
+												}
+											}, "localID<%maxLocalID AND localID>=%minLocalID and peersInformedFull=%peersInformedFull",
+										"maxLocalID", actualLastID.get() - 1, "minLocalID",
+										lastID + 1, "peersInformedFull", Boolean.FALSE);
 					}
-                    else if (actualLastID.get() < lastID)
-                        throw new IllegalAccessError();
-                    hook.setLastValidatedLocalTransactionID(actualLastID.get());
-                    getDatabaseHooksTable().updateRecord(hook);
+					if (actualLastID.get() == Long.MAX_VALUE) {
+						actualLastID.set(getIDTable().getLastTransactionID());
+					} else if (actualLastID.get() < lastID)
+						throw new IllegalAccessError();
+					hook.setLastValidatedLocalTransactionID(actualLastID.get());
+					getDatabaseHooksTable().updateRecord(hook);
 
 
-                    getDatabaseDistantTransactionEvent()
-                            .updateRecords(new AlterRecordFilter<DatabaseDistantTransactionEvent.Record>() {
+					getDatabaseDistantTransactionEvent()
+							.updateRecords(new AlterRecordFilter<>() {
 
-                                @Override
-                                public void nextRecord(
-                                        DatabaseDistantTransactionEvent.Record _record)
-                                        throws DatabaseException {
-                                    if (_record.addNewHostIDAndTellsIfNewPeersCanBeConcerned(getDatabaseHooksTable(),
-                                            hook.getHostID())) {
-                                        update();
-                                    } else {
-                                        removeWithCascade();
-                                    }
-                                }
+								@Override
+								public void nextRecord(
+										DatabaseDistantTransactionEvent.Record _record)
+										throws DatabaseException {
+									if (_record.addNewHostIDAndTellsIfNewPeersCanBeConcerned(getDatabaseHooksTable(),
+											hook.getHostID())) {
+										update();
+									} else {
+										removeWithCascade();
+									}
+								}
 
-                            }, "localID<=%lastID", "lastID", actualLastID.get());
+							}, "localID<=%lastID", "lastID", actualLastID.get());
 					getDatabaseTransactionEventsTable().removeTransactionsFromLastID();
 
-                    return actualLastID.get();
-                }
+					return actualLastID.get();
+				}
 
-                @Override
-                public TransactionIsolation getTransactionIsolation() {
-                    return TransactionIsolation.TRANSACTION_SERIALIZABLE;
-                }
+				@Override
+				public TransactionIsolation getTransactionIsolation() {
+					return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+				}
 
-                @Override
-                public boolean doesWriteData() {
-                    return true;
-                }
+				@Override
+				public boolean doesWriteData() {
+					return true;
+				}
 
-                @Override
-                public void initOrReset() {
+				@Override
+				public void initOrReset() {
 
-                }
+				}
 
-            });
+			});
 
 		}
 	}
 
 	
 	
-	protected boolean detectCollisionAndGetObsoleteEventsToRemove(final DecentralizedValue comingFrom,
-			final String concernedTable, DatabaseEventType eventType, final byte[] keys, final boolean force,
-			final Set<DatabaseTransactionEventsTable.Record> toRemove)
+	DecentralizedValue detectCollisionAndGetObsoleteDistantEventsToRemove(
+			final DecentralizedValue comingFrom, final String concernedTable, final DatabaseEventType eventType, final byte[] keys,
+			final boolean force,
+			final Set<DatabaseDistantTransactionEvent.Record> recordsToRemove)
+			throws DatabaseException {
+		recordsToRemove.clear();
+		if (force)
+			return null;
+		final Reference<DecentralizedValue> collision = new Reference<>(null);
+		Filter<DatabaseDistantEventsTable.Record> filter= new Filter<>() {
+
+			@Override
+			public boolean nextRecord(com.distrimind.ood.database.DatabaseDistantEventsTable.Record _record)
+					throws DatabaseException {
+				if (_record.getTransaction().isConcernedBy(comingFrom)) {
+					collision.set(_record.getTransaction().getHook().getHostID());
+					recordsToRemove.add(_record.getTransaction());
+				}
+				return false;
+			}
+		};
+		if (eventType==DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE)
+		{
+			getDatabaseDistantEventsTable().getRecords(filter, "concernedTable==%concernedTable",
+					"concernedTable", concernedTable);
+		}
+		else
+			getDatabaseDistantEventsTable().getRecords(filter, "concernedTable==%concernedTable AND concernedSerializedPrimaryKey==%concernedSerializedPrimaryKey",
+					"concernedTable", concernedTable, "concernedSerializedPrimaryKey", keys);
+
+		return collision.get();
+	}
+
+	boolean detectCollisionAndGetObsoleteEventsToRemove(final DecentralizedValue comingFrom,
+																  final String concernedTable, DatabaseEventType eventType, final byte[] keys, final boolean force,
+																  final Set<DatabaseTransactionEventsTable.Record> toRemove)
 			throws DatabaseException {
 
 		final Reference<Boolean> collisionDetected = new Reference<>(false);
-		Filter<DatabaseEventsTable.Record> filter=new Filter<DatabaseEventsTable.Record>() {
+		Filter<DatabaseEventsTable.Record> filter= new Filter<>() {
 
 			@Override
 			public boolean nextRecord(com.distrimind.ood.database.DatabaseEventsTable.Record _record)
@@ -374,39 +406,6 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 		return collisionDetected.get();
 	}
 
-	protected DecentralizedValue detectCollisionAndGetObsoleteDistantEventsToRemove(
-			final DecentralizedValue comingFrom, final String concernedTable, final DatabaseEventType eventType, final byte[] keys,
-			final boolean force,
-			final Set<DatabaseDistantTransactionEvent.Record> recordsToRemove)
-			throws DatabaseException {
-		recordsToRemove.clear();
-		if (force)
-			return null;
-		final Reference<DecentralizedValue> collision = new Reference<>(null);
-		Filter<DatabaseDistantEventsTable.Record> filter=new Filter<DatabaseDistantEventsTable.Record>() {
-
-			@Override
-			public boolean nextRecord(com.distrimind.ood.database.DatabaseDistantEventsTable.Record _record)
-					throws DatabaseException {
-				if (_record.getTransaction().isConcernedBy(comingFrom)) {
-					collision.set(_record.getTransaction().getHook().getHostID());
-					recordsToRemove.add(_record.getTransaction());
-				}
-				return false;
-			}
-		};
-		if (eventType==DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE)
-		{
-			getDatabaseDistantEventsTable().getRecords(filter, "concernedTable==%concernedTable",
-					"concernedTable", concernedTable);
-		}
-		else
-			getDatabaseDistantEventsTable().getRecords(filter, "concernedTable==%concernedTable AND concernedSerializedPrimaryKey==%concernedSerializedPrimaryKey",
-					"concernedTable", concernedTable, "concernedSerializedPrimaryKey", keys);
-
-		return collision.get();
-	}
-	
 
 	void alterDatabase(final DecentralizedValue comingFrom, final RandomInputStream inputStream)
 			throws DatabaseException {
@@ -447,7 +446,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 									.getConcernedHosts();
 							if (transaction.isForced() || concernedHosts.size() > 0) {
 								final Set<DecentralizedValue> l = new HashSet<>();
-								getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
+								getDatabaseHooksTable().getRecords(new Filter<>() {
 
 									@Override
 									public boolean nextRecord(com.distrimind.ood.database.DatabaseHooksTable.Record _record) {
@@ -466,13 +465,13 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 						final DatabaseHooksTable.Record fromHook=_fromHook.get();
 
 						try {
-							transactionNotEmpty = getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
+							transactionNotEmpty = getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<>() {
 
 								@Override
 								public Boolean run() throws Exception {
 									boolean transactionNotEmpty = false;
 									boolean validatedTransaction = true;
-									try (RandomCacheFileOutputStream cos= RandomCacheFileCenter.getSingleton().getNewBufferedRandomCacheFileOutputStream(true, RandomFileOutputStream.AccessMode.READ_AND_WRITE, BufferedRandomInputStream.DEFAULT_MAX_BUFFER_SIZE, 1)) {
+									try (RandomCacheFileOutputStream cos = RandomCacheFileCenter.getSingleton().getNewBufferedRandomCacheFileOutputStream(true, RandomFileOutputStream.AccessMode.READ_AND_WRITE, BufferedRandomInputStream.DEFAULT_MAX_BUFFER_SIZE, 1)) {
 
 										while (iterator.hasNext()) {
 											transactionNotEmpty = true;
@@ -481,15 +480,14 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 											Table<DatabaseRecord> t;
 											try {
 												t = (Table<DatabaseRecord>) getDatabaseWrapper().getTableInstance(event.getConcernedTable());
-												if (databasePackage.get()==null)
+												if (databasePackage.get() == null)
 													databasePackage.set(t.getClass().getPackage().getName());
 											} catch (Exception e) {
-												String p=event.getConcernedPackage();
+												String p = event.getConcernedPackage();
 												if (getDatabaseWrapper().getDatabaseConfigurationsBuilder().getConfigurations().getDatabaseConfigurations().stream().noneMatch(c -> c.getDatabaseSchema().getPackage().getName().equals(p))) {
 													continue;
-												}
-												else
-													throw new SerializationDatabaseException("indirectTransaction="+indirectTransaction, e);
+												} else
+													throw new SerializationDatabaseException("indirectTransaction=" + indirectTransaction, e);
 
 											}
 
@@ -499,8 +497,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 														"Impossible to decode database event type : " + event.getType());
 											DatabaseRecord drNew = null, drOld = null;
 											HashMap<String, Object> mapKeys = new HashMap<>();
-											if (type!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE)
-											{
+											if (type != DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE) {
 												t.deserializePrimaryKeys(mapKeys, event.getConcernedSerializedPrimaryKey());
 												if (type.needsNewValue()) {
 													drNew = t.getDefaultRecordConstructor().newInstance();
@@ -530,14 +527,14 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 												DecentralizedValue indirectCollisionWith = null;
 												if (!collision) {
 													indirectCollisionWith = detectCollisionAndGetObsoleteDistantEventsToRemove(
-															fromHook.getHostID(), event.getConcernedTable(),type,
+															fromHook.getHostID(), event.getConcernedTable(), type,
 															event.getConcernedSerializedPrimaryKey(), transaction.isForced(), ir);
 												}
 
 
 												if (collision || indirectCollisionWith != null) {
 
-													if (!type.hasOldValue() && type!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE)
+													if (!type.hasOldValue() && type != DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE)
 														drOld = t.getRecord(mapKeys);
 													if (!t.areDuplicatedEventsNotConsideredAsCollisions() || (drOld == drNew || (drNew != null && t.equalsAllFields(drNew, drOld))))
 														validatedTransaction = (eventForce = t.collisionDetected(
@@ -593,15 +590,15 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 										if (!validatedTransaction)
 											throw new TransactionCanceledException();
 										try (RandomInputStream cis = cos.getRandomInputStream()) {
-											if (cis.currentPosition()!=0)
+											if (cis.currentPosition() != 0)
 												cis.seek(0);
 											int next = cis.read();
 											while (next != 2) {
 												if (next == 0) {
-													long id=cis.readLong();
+													long id = cis.readLong();
 													getDatabaseTransactionEventsTable().removeRecordsWithAllFieldsWithCascade("id", id);
 												} else if (next == 1) {
-													long id=cis.readLong();
+													long id = cis.readLong();
 													getDatabaseDistantTransactionEvent().removeRecordsWithAllFieldsWithCascade("id", id);
 												} else
 													throw new IllegalAccessError();
@@ -715,18 +712,14 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 								TableEvent<DatabaseRecord> addedEvent = null;
 								switch (type) {
-									case REMOVE_ALL_RECORDS_WITH_CASCADE:
-										localDTE.addEvent(addedEvent = new TableEvent<>(-1, type, table, null, null, null));
-										break;
-									case ADD: {
+									case REMOVE_ALL_RECORDS_WITH_CASCADE -> localDTE.addEvent(addedEvent = new TableEvent<>(-1, type, table, null, null, null));
+									case ADD -> {
 										if (drOld != null)
 											localDTE.addEvent(addedEvent = new TableEvent<>(-1, type, table, drOld, drNew, null, null, true));
 										else
 											localDTE.addEvent(addedEvent = new TableEvent<>(-1, type, table, null, drNew, null));
 									}
-									break;
-									case REMOVE:
-									case REMOVE_WITH_CASCADE: {
+									case REMOVE, REMOVE_WITH_CASCADE -> {
 										if (drOld == null) {
 											localDTE.addEvent(addedEvent =
 													new TableEvent<>(-1, type, table, null, drNew, null, mapKeys, false));
@@ -735,10 +728,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 										}
 
 									}
-									break;
-									case UPDATE:
-										localDTE.addEvent(addedEvent = new TableEvent<>(-1, type, table, drOld, drNew, null));
-										break;
+									case UPDATE -> localDTE.addEvent(addedEvent = new TableEvent<>(-1, type, table, drOld, drNew, null));
 								}
 
 								final boolean transactionToResendFinal = false;
@@ -1218,37 +1208,37 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 				if (number.get() >= maxEventsRecords)
 					return number.get();
 				do {
-					getOrderedRecords(new Filter<DatabaseTransactionsPerHostTable.Record>() {
+					getOrderedRecords(new Filter<>() {
 
-						@Override
-						public boolean nextRecord(Record _record) throws DatabaseException {
-							try {
-								oos.writeByte(EXPORT_DIRECT_TRANSACTION);
-								getDatabaseTransactionEventsTable().serialize(_record.getTransaction(), oos, true,
-										false);
-								getDatabaseEventsTable().getOrderedRecords(new Filter<DatabaseEventsTable.Record>() {
+										  @Override
+										  public boolean nextRecord(Record _record) throws DatabaseException {
+											  try {
+												  oos.writeByte(EXPORT_DIRECT_TRANSACTION);
+												  getDatabaseTransactionEventsTable().serialize(_record.getTransaction(), oos, true,
+														  false);
+												  getDatabaseEventsTable().getOrderedRecords(new Filter<>() {
 
-									@Override
-									public boolean nextRecord(
-											com.distrimind.ood.database.DatabaseEventsTable.Record _record)
-											throws DatabaseException {
-										_record.export(oos);
-										return false;
-									}
+																								 @Override
+																								 public boolean nextRecord(
+																										 com.distrimind.ood.database.DatabaseEventsTable.Record _record)
+																										 throws DatabaseException {
+																									 _record.export(oos);
+																									 return false;
+																								 }
 
-								}, "transaction=%transaction", new Object[] { "transaction", _record.getTransaction() },
-										true, "position");
-								oos.writeByte(EXPORT_DIRECT_TRANSACTION_FINISHED);
-								if (number.incrementAndGet() >= maxEventsRecords) {
-									this.stopTableParsing();
-									return false;
-								}
-								return false;
-							} catch (IOException e) {
-								throw DatabaseException.getDatabaseException(e);
-							}
-						}
-					}, "transaction.id<%nearNextLocalID AND transaction.id>%previousNearTransactionID AND hook=%hook",
+																							 }, "transaction=%transaction", new Object[]{"transaction", _record.getTransaction()},
+														  true, "position");
+												  oos.writeByte(EXPORT_DIRECT_TRANSACTION_FINISHED);
+												  if (number.incrementAndGet() >= maxEventsRecords) {
+													  this.stopTableParsing();
+													  return false;
+												  }
+												  return false;
+											  } catch (IOException e) {
+												  throw DatabaseException.getDatabaseException(e);
+											  }
+										  }
+									  }, "transaction.id<%nearNextLocalID AND transaction.id>%previousNearTransactionID AND hook=%hook",
 							new Object[] { "nearNextLocalID", nearNextLocalID.get(),
 									"previousNearTransactionID", currentTransactionID, "hook", hook },
 							true, "transaction.id");
