@@ -672,11 +672,14 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 								}));
 								nap.removeAll(dpn);
 							}
+							if (nap.size()>0) {
+								r.setDatabasePackageNames(packages.keySet());
+								updateRecord(r, "databasePackageNames", r.databasePackageNames);
+								if (!r.concernsDatabaseHost) {
+									synchronizedPackages.put(r.getHostID(), nap);
+								}
+							}
 
-							r.setDatabasePackageNames(packages.keySet());
-							updateRecord(r, "databasePackageNames", r.databasePackageNames);
-							if (nap.size()>0 && !r.concernsDatabaseHost)
-								synchronizedPackages.put(r.getHostID(), nap);
 							updateLocalDatabaseHostIfNecessary(r);
 
 						}
@@ -714,15 +717,13 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 						if (fromDistantMessage) {
 							DatabaseConfigurationsBuilder builder = getDatabaseWrapper().getDatabaseConfigurationsBuilder();
-							boolean commit=false;
+
 							for (Map.Entry<DecentralizedValue, Set<String>> e : synchronizedPackages.entrySet()) {
 								builder.synchronizeDistantPeersWithGivenAdditionalPackages(false, Collections.singletonList(e.getKey()), e.getValue().toArray(new String[0]));
-								commit=true;
 							}
-							if (commit) {
+							if (synchronizedPackages.size()>0) {
 								builder.commit();
-								/*if (getDatabaseWrapper().getSynchronizer().isInitializedWithCentralBackup())
-									getDatabaseWrapper().getSynchronizer().privInitConnectionWithDistantBackupCenter();*/
+								getDatabaseWrapper().getSynchronizer().updateConnectionWithDistantBackupCenter(synchronizedPackages.keySet());
 							}
 						}
 

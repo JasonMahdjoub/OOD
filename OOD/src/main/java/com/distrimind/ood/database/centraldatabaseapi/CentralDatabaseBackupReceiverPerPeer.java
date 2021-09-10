@@ -265,6 +265,8 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 		{
 			return received((PeerToAddMessageDestinedToCentralDatabaseBackup)message);
 		}
+		else if (message instanceof DistantBackupCenterConnexionUpdate)
+			return received((DistantBackupCenterConnexionUpdate)message);
 		else if (message instanceof DistantBackupCenterConnexionInitialisation)
 			return received((DistantBackupCenterConnexionInitialisation)message);
 		else if (message instanceof LastValidatedDistantTransactionDestinedToCentralDatabaseBackup)
@@ -695,25 +697,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 				if (i!=Integrity.OK)
 					return i;
 
-				Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> lastValidatedAndEncryptedIDsPerHost=getLastValidatedAndEncryptedIDsPerHost(connectedClientID);
-
-				Map<String, Long> lastValidatedTransactionsUTCForDestinationHost=getLastValidatedTransactionsUTCForDestinationHost(connectedClientRecord);
-
-				List<byte[]> lids=connectedClientRecord.getEncryptedAuthenticatedMessagesToSend();
-				if (lids!=null && lids.size()>0)
-					centralDatabaseBackupReceiver.clientTable.updateRecord(connectedClientRecord, "encryptedAuthenticatedMessagesToSend", null);
-				HashMap<DecentralizedValue, byte[]> encryptedCompatibleDatabases=new HashMap<>();
-				parseClients(
-						new Filter<ClientTable.Record>(){
-
-							@Override
-							public boolean nextRecord(ClientTable.Record _record) {
-								if (_record.getEncryptedCompatiblesDatabases()!=null)
-									encryptedCompatibleDatabases.put(_record.getClientID(), _record.getEncryptedCompatiblesDatabases());
-								return false;
-							}
-						},connectedClientRecord.getClientID());
-				sendMessage(new InitialMessageComingFromCentralBackup(message.getHostSource(), lastValidatedAndEncryptedIDsPerHost, lastValidatedTransactionsUTCForDestinationHost, lids, encryptedCompatibleDatabases));
+				sendInitialMessageComingFromCentralBackup(connectedClientRecord);
 
 				return Integrity.OK;
 			}
@@ -734,6 +718,74 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 			}
 		});
 
+	}
+	private Integrity received(DistantBackupCenterConnexionUpdate message) throws DatabaseException {
+		return centralDatabaseBackupReceiver.clientTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
+			@Override
+			public Integrity run() throws Exception {
+				try {
+					connectedClientRecord = getClientRecord(message.getHostSource());
+				}
+				catch (MessageExternalizationException e)
+				{
+					return e.getIntegrity();
+				}
+				Integrity i=centralDatabaseBackupReceiver.lastValidatedDistantIDPerClientTable.received(message, connectedClientRecord);
+				if (i!=Integrity.OK)
+					return i;
+
+				sendInitialMessageComingFromCentralBackup(connectedClientRecord);
+				parseClients(new Filter<ClientTable.Record>() {
+					@Override
+					public boolean nextRecord(ClientTable.Record _record) throws DatabaseException {
+
+						if (message.getEncryptedDistantLastValidatedIDs().containsKey(_record.getClientID()))
+						{
+							sendInitialMessageComingFromCentralBackup(_record);
+						}
+						return false;
+					}
+				}, connectedClientID);
+
+				return Integrity.OK;
+			}
+
+			@Override
+			public TransactionIsolation getTransactionIsolation() {
+				return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+			}
+
+			@Override
+			public boolean doesWriteData() {
+				return true;
+			}
+
+			@Override
+			public void initOrReset()  {
+
+			}
+		});
+	}
+	private void sendInitialMessageComingFromCentralBackup(ClientTable.Record clientRecord) throws DatabaseException {
+		Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> lastValidatedAndEncryptedIDsPerHost=getLastValidatedAndEncryptedIDsPerHost(clientRecord.getClientID());
+
+		Map<String, Long> lastValidatedTransactionsUTCForDestinationHost=getLastValidatedTransactionsUTCForDestinationHost(clientRecord);
+
+		List<byte[]> lids=clientRecord.getEncryptedAuthenticatedMessagesToSend();
+		if (lids!=null && lids.size()>0)
+			centralDatabaseBackupReceiver.clientTable.updateRecord(clientRecord, "encryptedAuthenticatedMessagesToSend", null);
+		HashMap<DecentralizedValue, byte[]> encryptedCompatibleDatabases=new HashMap<>();
+		parseClients(
+				new Filter<ClientTable.Record>(){
+
+					@Override
+					public boolean nextRecord(ClientTable.Record _record) {
+						if (_record.getEncryptedCompatiblesDatabases()!=null)
+							encryptedCompatibleDatabases.put(_record.getClientID(), _record.getEncryptedCompatiblesDatabases());
+						return false;
+					}
+				},clientRecord.getClientID());
+		sendMessage(new InitialMessageComingFromCentralBackup(clientRecord.getClientID(), lastValidatedAndEncryptedIDsPerHost, lastValidatedTransactionsUTCForDestinationHost, lids, encryptedCompatibleDatabases));
 	}
 	private EncryptedBackupPartReferenceTable.Record getBackupMetaDataPerFile(DatabaseBackupPerClientTable.Record databaseBackup, FileCoordinate fileCoordinate) throws DatabaseException {
 		assert databaseBackup!=null;

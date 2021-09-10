@@ -2311,7 +2311,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 
 		}
-		void privInitConnectionWithDistantBackupCenter() throws DatabaseException {
+		private Map<DecentralizedValue, Long> getLastValidatedDistantIDs() throws DatabaseException {
 			final Map<DecentralizedValue, Long> lastValidatedDistantIDs=new HashMap<>();
 			minFilePartDurationBeforeBecomingFinalFilePart=Long.MAX_VALUE;
 			for (Database d : sql_database.values())
@@ -2319,6 +2319,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				if (d.backupRestoreManager!=null && d.configuration.getBackupConfiguration().getMaxBackupFileAgeInMs()<minFilePartDurationBeforeBecomingFinalFilePart)
 					minFilePartDurationBeforeBecomingFinalFilePart=d.configuration.getBackupConfiguration().getMaxBackupFileAgeInMs();
 			}
+
 			getDatabaseHooksTable()
 					.getRecords(new Filter<Record>() {
 						@Override
@@ -2329,8 +2330,16 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							return false;
 						}
 					});
-
-			addNewDatabaseEvent(new DistantBackupCenterConnexionInitialisation(getLocalHostID(), lastValidatedDistantIDs, databaseConfigurationsBuilder.getSecureRandom(), databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup(), databaseConfigurationsBuilder.getConfigurations().getCentralDatabaseBackupCertificate()));
+			return lastValidatedDistantIDs;
+		}
+		void updateConnectionWithDistantBackupCenter(Collection<DecentralizedValue> concernedHosts) throws DatabaseException {
+			Map<DecentralizedValue, Long> m=getLastValidatedDistantIDs();
+			m.keySet().removeIf(k -> !concernedHosts.contains(k));
+			if (m.size()>0)
+				addNewDatabaseEvent(new DistantBackupCenterConnexionUpdate(getLocalHostID(), m, databaseConfigurationsBuilder.getSecureRandom(), databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup(), databaseConfigurationsBuilder.getConfigurations().getCentralDatabaseBackupCertificate()));
+		}
+		void privInitConnectionWithDistantBackupCenter() throws DatabaseException {
+			addNewDatabaseEvent(new DistantBackupCenterConnexionInitialisation(getLocalHostID(), getLastValidatedDistantIDs(), databaseConfigurationsBuilder.getSecureRandom(), databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup(), databaseConfigurationsBuilder.getConfigurations().getCentralDatabaseBackupCertificate()));
 			sendAvailableDatabaseToCentralDatabaseBackup();
 			checkForNewAuthenticatedMessagesToSendToCentralDatabaseBackup();
 		}
@@ -2340,9 +2349,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (!isInitializedWithCentralBackup())
 				return;
 
-			if (d.configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase()!=null) {
-				System.out.println("-----------here : "+getLocalHostID()+" ; " + d.configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase().stream().allMatch(this::isInitializedWithCentralBackup));
-			}
+
 			if (d.configuration.isSynchronizedWithCentralBackupDatabase()
 					&& d.lastValidatedTransactionUTCForCentralBackup==Long.MIN_VALUE
 					&& !d.isCurrentDatabaseInRestorationProcessFromCentralDatabaseBackup()
