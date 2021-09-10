@@ -3008,7 +3008,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 
 			long lastFileTimeStampUTC = d.getTemporaryBackupRestoreManagerForInitialSynchronizationComingFromDistantBackupManager()
-					.getLastTransactionID();
+					.getLastFileTimestampUTC(false);
 			SynchronizationPlanMessageComingFromCentralDatabaseBackup spm=d.getSynchronizationPlanMessageComingFromCentralDatabaseBackup();
 			if (lastFileTimeStampUTC == Long.MIN_VALUE)
 				lastFileTimeStampUTC = spm.getFirstBackupPartTimeUTC() - 1;
@@ -3177,7 +3177,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 		}
 
-		private void received(EncryptedBackupPartComingFromCentralDatabaseBackup backupPart) throws DatabaseException {
+		private void received(AbstractEncryptedBackupPartComingFromCentralDatabaseBackup backupPart) throws DatabaseException {
 
 			if (!backupPart.getHostDestination().equals(getLocalHostID()))
 			{
@@ -3381,8 +3381,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				else if (data instanceof EncryptedBackupPartTransmissionConfirmationFromCentralDatabaseBackup) {
 					received((EncryptedBackupPartTransmissionConfirmationFromCentralDatabaseBackup) data);
 				}
-				else if (data instanceof EncryptedBackupPartComingFromCentralDatabaseBackup) {
-					received((EncryptedBackupPartComingFromCentralDatabaseBackup) data);
+				else if (data instanceof AbstractEncryptedBackupPartComingFromCentralDatabaseBackup) {
+					received((AbstractEncryptedBackupPartComingFromCentralDatabaseBackup) data);
 				} else if (data instanceof EncryptedMetaDataFromCentralDatabaseBackup) {
 					received((EncryptedMetaDataFromCentralDatabaseBackup) data);
 				} else if (data instanceof IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup) {

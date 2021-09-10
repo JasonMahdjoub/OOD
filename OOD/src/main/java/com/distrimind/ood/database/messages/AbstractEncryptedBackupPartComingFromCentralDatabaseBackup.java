@@ -84,7 +84,7 @@ public abstract class AbstractEncryptedBackupPartComingFromCentralDatabaseBackup
 	}
 	@Override
 	public String toString() {
-		return "EncryptedBackupPartForRestorationComingFromCentralDatabaseBackup{" +
+		return getClass().getSimpleName()+"{" +
 				"hostDestination=" + getHostDestination() +
 				", metaData="+getMetaData()+
 				'}';
