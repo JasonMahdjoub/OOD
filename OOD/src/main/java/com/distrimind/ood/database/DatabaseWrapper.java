@@ -631,17 +631,22 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (isCurrentDatabaseInInitialSynchronizationProcessFromCentralDatabaseBackup())
 				cancelCurrentDatabaseInitialSynchronizationProcessFromCentralDatabaseBackup();
 		}
-		void prepareDatabaseInitialSynchronizationFromCentralDatabaseBackupChannel(SynchronizationPlanMessageComingFromCentralDatabaseBackup synchronizationPlanMessageComingFromCentralDatabaseBackup) throws DatabaseException {
-			if (synchronizationPlanMessageComingFromCentralDatabaseBackup==null)
-				throw new NullPointerException();
+		void initDatabaseInitialSynchronizationFromCentralDatabaseBackupChannel() throws DatabaseException {
 			if (isCurrentDatabaseInInitialSynchronizationProcessFromCentralDatabaseBackup())
 				throw new DatabaseException("The database "+this.configuration.getDatabaseSchema().getPackage().getName()+" is already in a initial synchronization process !");
 			if (!isCurrentDatabaseInRestorationProcess()) {
-				this.synchronizationPlanMessageComingFromCentralDatabaseBackup=synchronizationPlanMessageComingFromCentralDatabaseBackup;
 				File f= getTemporaryDatabaseBackupFileNameForInitialSynchronizationComingFromCentralDatabaseBackup();
 				FileTools.checkFolderRecursive(f);
 				initTemporaryBackupRestoreManagerForInitialSynchronizationComingFromDistantBackupRestoreManager(f);
 			}
+		}
+		void prepareDatabaseInitialSynchronizationFromCentralDatabaseBackupChannel(SynchronizationPlanMessageComingFromCentralDatabaseBackup synchronizationPlanMessageComingFromCentralDatabaseBackup) throws DatabaseException {
+			if (synchronizationPlanMessageComingFromCentralDatabaseBackup==null)
+				throw new NullPointerException();
+			if (!isCurrentDatabaseInInitialSynchronizationProcessFromCentralDatabaseBackup())
+				throw new DatabaseException("The database "+this.configuration.getDatabaseSchema().getPackage().getName()+" should be in a initial synchronization process !");
+
+			this.synchronizationPlanMessageComingFromCentralDatabaseBackup=synchronizationPlanMessageComingFromCentralDatabaseBackup;
 		}
 		private void prepareDatabaseRestorationFromDistantDatabaseBackupChannel() throws DatabaseException {
 			checkRestorationNotInProgress();
@@ -761,10 +766,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		void cancelCurrentDatabaseInitialSynchronizationProcessFromCentralDatabaseBackup() {
-			File f=temporaryBackupRestoreManagerForInitialSynchronizationComingFromDistantBackupManager.getBackupDirectory();
-			temporaryBackupRestoreManagerForInitialSynchronizationComingFromDistantBackupManager=null;
-			FileTools.deleteDirectory(f);
-			this.synchronizationPlanMessageComingFromCentralDatabaseBackup=null;
+			if (isCurrentDatabaseInInitialSynchronizationProcessFromCentralDatabaseBackup()) {
+				File f = temporaryBackupRestoreManagerForInitialSynchronizationComingFromDistantBackupManager.getBackupDirectory();
+				temporaryBackupRestoreManagerForInitialSynchronizationComingFromDistantBackupManager = null;
+				FileTools.deleteDirectory(f);
+				this.synchronizationPlanMessageComingFromCentralDatabaseBackup = null;
+			}
 		}
 
 		void terminateCurrentDatabaseInitialSynchronizationProcessFromCentralDatabaseBackup() {
@@ -783,7 +790,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		boolean isCurrentDatabaseInInitialSynchronizationProcessFromCentralDatabaseBackup() {
-			return synchronizationPlanMessageComingFromCentralDatabaseBackup!=null;
+			return temporaryBackupRestoreManagerForInitialSynchronizationComingFromDistantBackupManager!=null;
 		}
 		SynchronizationPlanMessageComingFromCentralDatabaseBackup getSynchronizationPlanMessageComingFromCentralDatabaseBackup()
 		{
@@ -2025,6 +2032,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					if (peerWithCentralBackup==null)
 						throw DatabaseException.getDatabaseException(
 							new IllegalAccessException("hostID " + hostID + " has not been initialized !"));
+
+					for (Database d : sql_database.values())
+						if (d.synchronizationPlanMessageComingFromCentralDatabaseBackup!=null && d.synchronizationPlanMessageComingFromCentralDatabaseBackup.getSourceChannel().equals(hostID))
+							d.cancelCurrentDatabaseInitialSynchronizationProcessFromCentralDatabaseBackup();
+
 					hook = getDatabaseHooksTable().getHook(hostID, true);
 					if (hook==null) {
 						if (networkLogger!=null)
@@ -2391,6 +2403,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					&& d.configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase().stream().allMatch(this::isInitializedWithCentralBackup)
 					&& d.isEmpty())
 			{
+				d.initDatabaseInitialSynchronizationFromCentralDatabaseBackupChannel();
 				Reference<Boolean> allFound=new Reference<>(true);
 				getDatabaseHooksTable().getRecords(new Filter<Record>() {
 					@Override
@@ -2534,6 +2547,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			lockWrite();
 			try {
 				addNewDatabaseEvent(new DisconnectCentralDatabaseBackup(getLocalHostID()));
+				for (Database d : sql_database.values())
+					d.cancelCurrentDatabaseInitialSynchronizationProcessFromCentralDatabaseBackup();
 				centralBackupInitialized=false;
 				backupDatabasePartsSynchronizingWithCentralDatabaseBackup.clear();
 			}
