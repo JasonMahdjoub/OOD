@@ -201,9 +201,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	public Long getNextPossibleEventTimeUTC()
 	{
+		long curTime=System.currentTimeMillis();
 		return this.sql_database.values().stream()
 				.filter(d -> d.backupRestoreManager!=null && d.configuration.isSynchronizedWithCentralBackupDatabase() && d.backupRestoreManager.hasNonFinalFiles())
-				.map(d -> System.currentTimeMillis()+Math.max(0, d.configuration.getBackupConfiguration().getMaxBackupFileAgeInMs()-(System.currentTimeMillis()-d.backupRestoreManager.getLastFileTimestampUTC(false)+100)))
+				.map(d -> curTime+Math.max(0, d.configuration.getBackupConfiguration().getMaxBackupFileAgeInMs()-(curTime-d.backupRestoreManager.getLastFileTimestampUTC(false)-10)))
 				.min(Long::compare)
 				.orElse(null);
 	}
@@ -2339,9 +2340,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (!isInitializedWithCentralBackup())
 				return;
 
-			/*if (d.configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase()!=null) {
+			if (d.configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase()!=null) {
 				System.out.println("-----------here : "+getLocalHostID()+" ; " + d.configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase().stream().allMatch(this::isInitializedWithCentralBackup));
-			}*/
+			}
 			if (d.configuration.isSynchronizedWithCentralBackupDatabase()
 					&& d.lastValidatedTransactionUTCForCentralBackup==Long.MIN_VALUE
 					&& !d.isCurrentDatabaseInRestorationProcessFromCentralDatabaseBackup()
