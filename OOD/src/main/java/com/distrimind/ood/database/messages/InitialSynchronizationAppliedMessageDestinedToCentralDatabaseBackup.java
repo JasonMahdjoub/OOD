@@ -46,6 +46,7 @@ import com.distrimind.util.crypto.EncryptionProfileProvider;
 import com.distrimind.util.io.*;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * @author Jason Mahdjoub
@@ -148,5 +149,15 @@ public class InitialSynchronizationAppliedMessageDestinedToCentralDatabaseBackup
 
 	public String getPackageString() {
 		return packageString;
+	}
+
+	@Override
+	public String toString() {
+		return "InitialSynchronizationAppliedMessageDestinedToCentralDatabaseBackup{" +
+				"hostSource=" + getHostSource()+
+				", clonedHost=" + clonedHost +
+				", lastLocalTransactionUTC=" + lastLocalTransactionUTC +
+				", packageString='" + packageString + '\'' +
+				'}';
 	}
 }

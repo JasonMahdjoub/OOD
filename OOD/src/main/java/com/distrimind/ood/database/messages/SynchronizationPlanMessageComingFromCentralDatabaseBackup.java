@@ -134,4 +134,15 @@ public class SynchronizationPlanMessageComingFromCentralDatabaseBackup implement
 	public Map<DecentralizedValue, LastValidatedLocalAndDistantID> getLastValidatedIDsPerHost(EncryptionProfileProvider encryptionProfileProvider) throws IOException {
 		return InitialMessageComingFromCentralBackup.getLastValidatedIDsPerHost(encryptionProfileProvider, lastValidatedAndEncryptedIDsPerHost);
 	}
+
+	@Override
+	public String toString() {
+		return "SynchronizationPlanMessageComingFromCentralDatabaseBackup{" +
+				"hostDestination=" + hostDestination +
+				", packageString='" + packageString + '\'' +
+				", sourceChannel=" + sourceChannel +
+				", firstBackupPartTimeUTC=" + firstBackupPartTimeUTC +
+				", lastBackupPartUTC=" + lastBackupPartUTC +
+				'}';
+	}
 }

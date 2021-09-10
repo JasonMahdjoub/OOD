@@ -155,6 +155,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	private final DatabaseConfigurationsBuilder databaseConfigurationsBuilder;
 	private volatile Logger networkLogger=null;
 	private volatile Logger databaseLogger=null;
+	private volatile Logger centralDatabaseLogger=null;
 
 	public static int getMaxHostNumbers() {
 		return MAX_HOST_NUMBERS;
@@ -182,7 +183,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				if (databaseLogger == null) {
 					Logger networkLogger = Logger.getAnonymousLogger();
 					Handler databaseLoggerHandler = new ConsoleHandler();
-					databaseLoggerHandler.setFormatter(generatesLogFormatter());
+					databaseLoggerHandler.setFormatter(generatesLogFormatter(false));
 
 					networkLogger.addHandler(databaseLoggerHandler);
 					this.databaseLogger = networkLogger;
@@ -196,7 +197,37 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		finally {
 			unlockWrite();
 		}
+	}
+	public Logger getCentralDatabaseLogger() {
+		return centralDatabaseLogger;
+	}
+	public void setCentralDatabaseLogLevel(Level level)
+	{
 
+		lockWrite();
+		try {
+			if (level==Level.OFF)
+			{
+				centralDatabaseLogger=null;
+			}
+			else {
+				if (centralDatabaseLogger == null) {
+					Logger networkLogger = Logger.getAnonymousLogger();
+					Handler databaseLoggerHandler = new ConsoleHandler();
+					databaseLoggerHandler.setFormatter(generatesLogFormatter(true));
+
+					networkLogger.addHandler(databaseLoggerHandler);
+					this.centralDatabaseLogger = networkLogger;
+				}
+				centralDatabaseLogger.setUseParentHandlers(false);
+				for (Handler h : centralDatabaseLogger.getHandlers())
+					h.setLevel(level);
+				centralDatabaseLogger.setLevel(level);
+			}
+		}
+		finally {
+			unlockWrite();
+		}
 	}
 
 	public Long getNextPossibleEventTimeUTC()
@@ -209,14 +240,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				.orElse(null);
 	}
 
-	private Formatter generatesLogFormatter()
+	private Formatter generatesLogFormatter(boolean central)
 	{
 		return new Formatter() {
 
 			@Override
 			public String format(LogRecord record) {
 				try {
-					StringBuilder sb=new StringBuilder(getSynchronizer().getLocalHostID()+"");
+					StringBuilder sb=new StringBuilder(central?"CentralDatabaseBackup":(getSynchronizer().getLocalHostID()+""));
 					while (sb.length()<55)
 						sb.append(" ");
 					sb.append("::");
@@ -247,7 +278,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				if (networkLogger == null) {
 					Logger networkLogger = Logger.getAnonymousLogger();
 					Handler networkLoggerHandler = new ConsoleHandler();
-					networkLoggerHandler.setFormatter(generatesLogFormatter());
+					networkLoggerHandler.setFormatter(generatesLogFormatter(false));
 
 					networkLogger.addHandler(networkLoggerHandler);
 					this.networkLogger = networkLogger;
@@ -687,7 +718,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		void initBackupRestoreManager(DatabaseWrapper wrapper, File databaseDirectory, DatabaseConfiguration configuration) throws DatabaseException {
 			if (this.backupRestoreManager!=null)
 				return;
-			if (databaseLogger!=null)
+			if (databaseLogger!=null && databaseLogger.isLoggable(Level.FINE))
 				databaseLogger.fine("Loading backup/restore: "+configuration);
 			if (configuration.getBackupConfiguration()!=null)
 			{
@@ -1369,7 +1400,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					}
 					if (events.isEmpty())
 						canNotify = true;
-					if (networkLogger!=null) {
+					if (networkLogger!=null && networkLogger.isLoggable(Level.FINER)) {
 						networkLogger.finer("Send message " + e);
 					}
 					return e;
@@ -2360,7 +2391,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					&& d.configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase().stream().allMatch(this::isInitializedWithCentralBackup)
 					&& d.isEmpty())
 			{
-
 				Reference<Boolean> allFound=new Reference<>(true);
 				getDatabaseHooksTable().getRecords(new Filter<Record>() {
 					@Override
@@ -3248,7 +3278,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		public void received(DatabaseEventToSend data) throws DatabaseException, IOException {
-			if (networkLogger!=null)
+			if (networkLogger!=null && networkLogger.isLoggable(Level.FINER))
 				networkLogger.finer("Received message : "+data);
 			if (data instanceof AuthenticatedP2PMessage)
 				received((AuthenticatedP2PMessage)data, false);
@@ -3300,7 +3330,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		private void received(IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup message) throws DatabaseException, IOException {
 			Set<String> packagesToCheck=new HashSet<>();
 			for (AuthenticatedP2PMessage a : message.getAuthenticatedP2PMessages(databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup())) {
-				if (networkLogger!=null)
+				if (networkLogger!=null && networkLogger.isLoggable(Level.FINER))
 					networkLogger.finer("Received message : "+a);
 				received(a, true);
 				if (a instanceof HookSynchronizeRequest)
@@ -5445,7 +5475,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		try  {
 
 			lockWrite();
-			if (databaseLogger!=null)
+			if (databaseLogger!=null && databaseLogger.isLoggable(Level.FINE))
 				databaseLogger.fine("Start database removing: "+configuration+" (version="+databaseVersion+")");
 			runTransaction(new Transaction() {
 
@@ -5854,7 +5884,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		//final AtomicBoolean allNotFound = new AtomicBoolean(true);
 		if (this.closed)
 			throw new DatabaseException("The given Database was closed : " + this);
-		if (databaseLogger!=null)
+		if (databaseLogger!=null && databaseLogger.isLoggable(Level.FINE))
 			databaseLogger.fine("Start configuration loading: "+configuration);
 		if (isDatabaseLoadedImpl(configuration, databaseVersion))
 			throw new DatabaseException("There is already a database associated to the given wrapper ");
@@ -5892,10 +5922,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 								loadDatabase(oldConfig, lifeCycles);
 							}
 							this.actualDatabaseLoading=actualDatabaseLoading;
-							if (databaseLogger!=null)
+							if (databaseLogger!=null && databaseLogger.isLoggable(Level.FINE))
 								databaseLogger.fine("Transfer database from old to new configuration: "+configuration);
 							lifeCycles.transferDatabaseFromOldVersion(this, configuration);
-							if (databaseLogger!=null)
+							if (databaseLogger!=null && databaseLogger.isLoggable(Level.FINE))
 								databaseLogger.fine("Transfer OK ");
 							oldDatabaseReplaced=true;
 							removeOldDatabase = lifeCycles.hasToRemoveOldDatabase(oldConfig);
@@ -5905,10 +5935,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						}
 					}
 					if (lifeCycles != null) {
-						if (databaseLogger!=null)
+						if (databaseLogger!=null && databaseLogger.isLoggable(Level.FINE))
 							databaseLogger.fine("Starting post database creation script OK: "+configuration);
 						lifeCycles.afterDatabaseCreation(this, configuration);
-						if (databaseLogger!=null)
+						if (databaseLogger!=null && databaseLogger.isLoggable(Level.FINE))
 							databaseLogger.fine("Post database creation script OK: "+configuration);
 						if (removeOldDatabase)
 							deleteDatabase(oldConfig, false, databaseVersion, false);
@@ -6506,16 +6536,16 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		close();
 		File directory=getDatabaseDirectory();
 		if (directory==null) {
-			if (logger!=null)
+			if (logger!=null && logger.isLoggable(Level.FINE))
 				logger.fine("No databases files to remove");
 			return;
 		}
 
-		if (logger!=null)
+		if (logger!=null && logger.isLoggable(Level.FINE))
 			logger.fine("Start databases files removing: "+getDatabaseDirectory());
 
 		deleteDatabasesFiles(getDatabaseDirectory());
-		if (logger!=null)
+		if (logger!=null && logger.isLoggable(Level.INFO))
 			logger.info("Start databases files removed: "+getDatabaseDirectory());
 	}
 
