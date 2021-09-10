@@ -2985,7 +2985,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						return;
 					}
 					Database db=sql_database.get(p);
-					if (db!=null && db.configuration.isSynchronizedWithCentralBackupDatabase()){
+					if (db!=null && db.configuration.isSynchronizedWithCentralBackupDatabase() && !db.isCurrentDatabaseInRestorationProcess()){
 						validateLastSynchronizationWithCentralDatabaseBackup(db, db.lastValidatedTransactionUTCForCentralBackup );
 					}
 				}
@@ -3081,6 +3081,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 				return false;
 			} else {
+				backupDatabasePartsSynchronizingWithCentralDatabaseBackup.add(d.configuration.getDatabaseSchema().getPackage().getName());
 				addNewDatabaseEvent(
 						new AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(
 								d.configuration.getDatabaseSchema().getPackage().getName(), getLocalHostID(),
@@ -3212,6 +3213,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 								}
 									break;
 								case INITIAL_SYNCHRONIZATION:
+									this.backupDatabasePartsSynchronizingWithCentralDatabaseBackup.remove(backupPart.getMetaData().getPackageString());
 									if (d.isCurrentDatabaseInInitialSynchronizationProcessFromCentralDatabaseBackup())
 									{
 										if (d.getTemporaryBackupRestoreManagerForInitialSynchronizationComingFromDistantBackupManager()

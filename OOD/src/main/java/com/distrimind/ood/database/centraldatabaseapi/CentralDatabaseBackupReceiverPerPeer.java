@@ -311,6 +311,8 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 					{
 						centralDatabaseBackupReceiver.databaseBackupPerClientTable.updateRecord(r, "lastFileBackupPartUTC", message.getLastLocalTransactionUTC(), "lastValidatedAndEncryptedID", message.getLastEncryptedLocalTransactionID());
 					}
+					/*sendInitialMessageComingFromCentralBackup(client);
+					sendInitialMessageComingFromCentralBackup(connectedClientRecord);*/
 					return Integrity.OK;
 				}
 				catch (MessageExternalizationException e)
