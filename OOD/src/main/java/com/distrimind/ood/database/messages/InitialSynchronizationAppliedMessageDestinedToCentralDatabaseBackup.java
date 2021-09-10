@@ -90,7 +90,7 @@ public class InitialSynchronizationAppliedMessageDestinedToCentralDatabaseBackup
 			throw new MessageExternalizationException(Integrity.FAIL);
 		lastLocalTransactionUTC =in.readLong();
 		lastEncryptedLocalTransactionID=in.readBytesArray(false, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
-		packageString=in.readObject(false, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
+		packageString=in.readString(false, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
 	}
 
 	@Override
