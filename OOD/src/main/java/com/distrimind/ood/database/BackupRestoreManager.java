@@ -1162,23 +1162,33 @@ public class BackupRestoreManager {
 		return fileReferenceTimeStamps.size()>0;
 	}
 
-	public Long getFirstValidatedTransactionUTCInMs()
-	{
+	public Long getFirstValidatedTransactionUTCInMs() throws DatabaseException {
 		synchronized (this) {
-			if (fileTimeStamps.size()>0)
+			if (fileTimeStamps.size()>1)
+				return fileTimeStamps.get(0);
+			else if (fileTimeStamps.size()>0)
 			{
-				if (fileTimeStamps.size()>1)
-					return fileTimeStamps.get(0);
-				else
+				long ts=fileTimeStamps.get(0);
+				File file=getFile(ts);
+				if (isPartFull(ts, file))
 				{
-					long fts=fileTimeStamps.get(0);
-					if (isPartFull(fts, getFile(fts, true) ))
-						return fts;
+					try(RandomFileInputStream rfis=new RandomFileInputStream(file)) {
+						if (rfis.readLong()!=ts)
+							return ts;
+						if (rfis.readBoolean())
+							return ts;
+						return Long.MIN_VALUE;
+					} catch (IOException e) {
+						throw DatabaseException.getDatabaseException(e);
+					}
 				}
 			}
+
 			return Long.MIN_VALUE;
+
 		}
 	}
+
 
 	/**
 	 * Gets the younger backup event UTC time

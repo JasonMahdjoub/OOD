@@ -2355,10 +2355,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					&& !d.isCurrentDatabaseInRestorationProcessFromCentralDatabaseBackup()
 					&& !d.isCurrentDatabaseInRestorationProcess()
 					&& !d.isCurrentDatabaseInRestorationProcessFromExternalBackup()
+					&& !d.isCurrentDatabaseInInitialSynchronizationProcessFromCentralDatabaseBackup()
 					&& d.configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase()!=null && d.configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase().size()>0
 					&& d.configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase().stream().allMatch(this::isInitializedWithCentralBackup)
 					&& d.isEmpty())
 			{
+
 				Reference<Boolean> allFound=new Reference<>(true);
 				getDatabaseHooksTable().getRecords(new Filter<Record>() {
 					@Override
