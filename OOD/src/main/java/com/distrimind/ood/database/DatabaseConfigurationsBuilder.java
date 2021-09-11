@@ -453,23 +453,24 @@ public class DatabaseConfigurationsBuilder {
 				for (DatabaseConfiguration c : configurations.getDatabaseConfigurations()) {
 					if (c.isDecentralized()) {
 						Set<DecentralizedValue> sps = c.getDistantPeersThatCanBeSynchronizedWithThisDatabase();
-						wrapper.getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
-							@Override
-							public boolean nextRecord(DatabaseHooksTable.Record _record)  {
+						if (sps!=null) {
+							wrapper.getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
+								@Override
+								public boolean nextRecord(DatabaseHooksTable.Record _record) {
 
-								if (currentTransaction.removedPeersID==null || !currentTransaction.removedPeersID.contains(_record.getHostID())) {
+									if (currentTransaction.removedPeersID == null || !currentTransaction.removedPeersID.contains(_record.getHostID())) {
 
-									if (sps != null && sps.contains(_record.getHostID()) &&
-											!_record.isConcernedByDatabasePackage(c.getDatabaseSchema().getPackage().getName())) {
+										if (sps.contains(_record.getHostID()) &&
+												!_record.isConcernedByDatabasePackage(c.getDatabaseSchema().getPackage().getName())) {
+											packagesToSynchronize.add(c);
+											stopTableParsing();
+										}
 
-										packagesToSynchronize.add(c);
-										stopTableParsing();
 									}
-
+									return false;
 								}
-								return false;
-							}
-						}, "concernsDatabaseHost=%cdh", "cdh", false);
+							}, "concernsDatabaseHost=%cdh", "cdh", false);
+						}
 					}
 
 				}

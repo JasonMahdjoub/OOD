@@ -35,58 +35,24 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.ood.database.EncryptedDatabaseBackupMetaDataPerFile;
+import com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupCertificate;
+import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
-import com.distrimind.util.io.RandomInputStream;
-import com.distrimind.util.io.SecuredObjectInputStream;
-import com.distrimind.util.io.SecuredObjectOutputStream;
-import com.distrimind.util.io.SerializationTools;
+import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.crypto.EncryptionProfileProvider;
 
-import java.io.IOException;
+import java.util.Map;
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
- * @since Utils 3.1.0
+ * @since MaDKitLanEdition 3.1.0
  */
-public abstract class AbstractEncryptedBackupPartComingFromCentralDatabaseBackup extends EncryptedBackupPartComingFromCentralDatabaseBackup{
-	private DecentralizedValue channelHost;
-	public AbstractEncryptedBackupPartComingFromCentralDatabaseBackup(DecentralizedValue hostSource, DecentralizedValue hostDestination, EncryptedDatabaseBackupMetaDataPerFile metaData, RandomInputStream partInputStream, DecentralizedValue channelHost) {
-		super(hostSource, hostDestination, metaData, partInputStream);
-		if (channelHost==null)
-			throw new NullPointerException();
-		this.channelHost=channelHost;
+public class DistantBackupCenterConnexionUpdate extends DistantBackupCenterConnexionInitialisation{
+	protected DistantBackupCenterConnexionUpdate() {
 	}
 
-	protected AbstractEncryptedBackupPartComingFromCentralDatabaseBackup() {
-		super();
-	}
-
-	public DecentralizedValue getChannelHost() {
-		return channelHost;
-	}
-
-	@Override
-	public int getInternalSerializedSize() {
-		return super.getInternalSerializedSize()+ SerializationTools.getInternalSize(channelHost);
-	}
-
-	@Override
-	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
-		super.writeExternal(out);
-		out.writeObject(channelHost, false);
-	}
-
-	@Override
-	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
-		super.readExternal(in);
-		channelHost=in.readObject(false);
-	}
-	@Override
-	public String toString() {
-		return getClass().getSimpleName()+"{" +
-				"hostDestination=" + getHostDestination() +
-				", metaData="+getMetaData()+
-				'}';
+	public DistantBackupCenterConnexionUpdate(DecentralizedValue hostSource, Map<DecentralizedValue, Long> distantLastValidatedIDs, AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider, CentralDatabaseBackupCertificate certificate) throws DatabaseException {
+		super(hostSource, distantLastValidatedIDs, random, encryptionProfileProvider, certificate);
 	}
 }

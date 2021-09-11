@@ -80,4 +80,13 @@ public class AskForInitialSynchronizationPlanMessageDestinedToCentralDatabaseBac
 				+ SerializationTools.getInternalSize(packageString, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH)
 				+ SerializationTools.getInternalSize(acceptedDataSources, MAX_SIZE_IN_BYTES_OF_PEERS_COLLECTION);
 	}
+
+	@Override
+	public String toString() {
+		return "AskForInitialSynchronizationPlanMessageDestinedToCentralDatabaseBackup{" +
+				"hostSource=" + getHostSource()+
+				", packageString='" + packageString + '\'' +
+				", acceptedDataSources=" + acceptedDataSources +
+				'}';
+	}
 }

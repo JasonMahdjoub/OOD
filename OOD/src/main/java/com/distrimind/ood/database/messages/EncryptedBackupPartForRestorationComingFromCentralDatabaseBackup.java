@@ -16,4 +16,5 @@ public class EncryptedBackupPartForRestorationComingFromCentralDatabaseBackup ex
 
 	protected EncryptedBackupPartForRestorationComingFromCentralDatabaseBackup() {
 	}
+
 }

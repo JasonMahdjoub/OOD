@@ -47,6 +47,8 @@ import com.distrimind.util.io.Integrity;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * @author Jason Mahdjoub
@@ -90,6 +92,9 @@ public abstract class CentralDatabaseBackupReceiver {
 	protected abstract CentralDatabaseBackupReceiverPerPeer newCentralDatabaseBackupReceiverPerPeerInstance(DatabaseWrapper wrapper);
 
 	public Integrity received(MessageDestinedToCentralDatabaseBackup message) throws DatabaseException, IOException {
+		Logger l=clientTable.getDatabaseWrapper().getCentralDatabaseLogger();
+		if (l!=null && l.isLoggable(Level.FINER))
+			l.finer("receive message " + message);
 		CentralDatabaseBackupReceiverPerPeer r=receiversPerPeer.get(message.getHostSource());
 		if (r==null)
 		{

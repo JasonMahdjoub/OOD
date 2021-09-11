@@ -54,8 +54,7 @@ public class DistantBackupCenterConnexionInitialisation extends AuthenticatedMes
 
 	private static final int MAX_DISTANT_VALIDATED_IDS_SIZE_IN_BYTES=4+DatabaseWrapper.MAX_DISTANT_PEERS*(DatabaseWrapper.MAX_ACCEPTED_SIZE_IN_BYTES_OF_DECENTRALIZED_VALUE+8+EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
 
-	@SuppressWarnings("unused")
-	private DistantBackupCenterConnexionInitialisation() {
+	protected DistantBackupCenterConnexionInitialisation() {
 	}
 
 	public DistantBackupCenterConnexionInitialisation(DecentralizedValue hostSource, Map<DecentralizedValue, Long> distantLastValidatedIDs, AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider, CentralDatabaseBackupCertificate certificate) throws DatabaseException {
@@ -111,7 +110,7 @@ public class DistantBackupCenterConnexionInitialisation extends AuthenticatedMes
 
 	@Override
 	public String toString() {
-		return "DistantBackupCenterConnexionInitialisation{}";
+		return getClass().getSimpleName()+"{}";
 	}
 
 	@Override

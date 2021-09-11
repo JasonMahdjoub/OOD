@@ -6,6 +6,7 @@ import com.distrimind.util.crypto.EncryptionProfileProvider;
 import com.distrimind.util.io.*;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -93,6 +94,8 @@ public class SynchronizationPlanMessageComingFromCentralDatabaseBackup implement
 
 	@Override
 	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
+		lastValidatedAndEncryptedIDsPerHost=new HashMap<>();
+		lastValidatedTransactionsUTCForDestinationHost=new HashMap<>();
 		hostDestination=in.readObject(false);
 		sourceChannel=in.readObject(false);
 		packageString=in.readString(false, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
@@ -133,5 +136,16 @@ public class SynchronizationPlanMessageComingFromCentralDatabaseBackup implement
 	}
 	public Map<DecentralizedValue, LastValidatedLocalAndDistantID> getLastValidatedIDsPerHost(EncryptionProfileProvider encryptionProfileProvider) throws IOException {
 		return InitialMessageComingFromCentralBackup.getLastValidatedIDsPerHost(encryptionProfileProvider, lastValidatedAndEncryptedIDsPerHost);
+	}
+
+	@Override
+	public String toString() {
+		return "SynchronizationPlanMessageComingFromCentralDatabaseBackup{" +
+				"hostDestination=" + hostDestination +
+				", packageString='" + packageString + '\'' +
+				", sourceChannel=" + sourceChannel +
+				", firstBackupPartTimeUTC=" + firstBackupPartTimeUTC +
+				", lastBackupPartUTC=" + lastBackupPartUTC +
+				'}';
 	}
 }
