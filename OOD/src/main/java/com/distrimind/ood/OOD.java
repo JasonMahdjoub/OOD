@@ -66,6 +66,7 @@ public class OOD {
 					.addDeveloper(new PersonDeveloper("mahdjoub", "jason", "2013-04-01"))
 					.addDescription(
 							new Description((short)3, (short)1, (short)0, Version.Type.STABLE, (short)0, "2021-09-07")
+									.addItem("Add file manager")
 									.addItem("Remove concatenated sql queries")
 									.addItem("Clean code")
 									.addItem("Permit indirect initial synchronization between peers through central database backup")

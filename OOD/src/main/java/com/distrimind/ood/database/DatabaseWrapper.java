@@ -48,6 +48,7 @@ import com.distrimind.ood.database.fieldaccessors.ByteTabObjectConverter;
 import com.distrimind.ood.database.fieldaccessors.DefaultByteTabObjectConverter;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
+import com.distrimind.ood.database.filemanager.FileReferenceManager;
 import com.distrimind.ood.database.messages.*;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.FileTools;
@@ -106,6 +107,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			EncryptedBackupPartReferenceTable.class,
 			LastValidatedDistantIDPerClientTable.class,
 			RevokedCertificateTable.class));
+
 	static final Set<Package> reservedDatabases=new HashSet<>(Arrays.asList(DatabaseWrapper.class.getPackage(), CentralDatabaseBackupReceiverPerPeer.class.getPackage()));
 
 
@@ -156,7 +158,26 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	private volatile Logger networkLogger=null;
 	private volatile Logger databaseLogger=null;
 	private volatile Logger centralDatabaseLogger=null;
+	private volatile FileReferenceManager fileReferenceManager=null;
 
+	public FileReferenceManager getFileReferenceManager() throws DatabaseException {
+		FileReferenceManager r=fileReferenceManager;
+		if (r==null)
+		{
+			synchronized(this)
+			{
+				r=fileReferenceManager;
+				if (r==null)
+				{
+					loadDatabase(new DatabaseConfiguration(new DatabaseSchema(FileReferenceManager.class.getPackage(), FileReferenceManager.internalFileManagerClassesList),
+							DatabaseConfiguration.SynchronizationType.NO_SYNCHRONIZATION),
+							null);
+					r=fileReferenceManager=new FileReferenceManager(this);
+				}
+			}
+		}
+		return r;
+	}
 	public static int getMaxHostNumbers() {
 		return MAX_HOST_NUMBERS;
 	}

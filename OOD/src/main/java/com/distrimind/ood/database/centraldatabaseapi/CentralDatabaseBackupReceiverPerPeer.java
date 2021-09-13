@@ -38,6 +38,8 @@ knowledge of the CeCILL-C license and that you accept its terms.
 import com.distrimind.ood.database.*;
 import com.distrimind.ood.database.exceptions.ConstraintsNotRespectedDatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.filemanager.FileRecord;
+import com.distrimind.ood.database.filemanager.FileReference;
 import com.distrimind.ood.database.messages.*;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.Reference;
@@ -545,7 +547,8 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 				FileReference fileReference=getFileReference(message.getMetaData());
 				if (fileReference==null)
 					return Integrity.FAIL;
-				EncryptedBackupPartReferenceTable.Record r=new EncryptedBackupPartReferenceTable.Record(database, fileReference, message);
+				FileRecord fr=centralDatabaseBackupReceiver.databaseBackupPerClientTable.getDatabaseWrapper().getFileReferenceManager().incrementReferenceFile(fileReference);
+				EncryptedBackupPartReferenceTable.Record r=new EncryptedBackupPartReferenceTable.Record(database, fr, message);
 				try {
 
 					if (update)
@@ -877,13 +880,13 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 						switch (message.getContext())
 						{
 							case SYNCHRONIZATION:
-								sendMessage(e.readEncryptedBackupPart(message.getHostSource()));
+								sendMessage(e.readEncryptedBackupPart(centralDatabaseBackupReceiver.databaseBackupPerClientTable.getDatabaseWrapper(), message.getHostSource()));
 								break;
 							case RESTORATION:
-								sendMessage(e.readEncryptedBackupPartForRestoration(message.getHostSource(), channelHost.getClientID()));
+								sendMessage(e.readEncryptedBackupPartForRestoration(centralDatabaseBackupReceiver.databaseBackupPerClientTable.getDatabaseWrapper(), message.getHostSource(), channelHost.getClientID()));
 								break;
 							case INITIAL_SYNCHRONIZATION:
-								sendMessage(e.readEncryptedBackupPartForInitialSynchronization(message.getHostSource(), channelHost.getClientID()));
+								sendMessage(e.readEncryptedBackupPartForInitialSynchronization(centralDatabaseBackupReceiver.databaseBackupPerClientTable.getDatabaseWrapper(), message.getHostSource(), channelHost.getClientID()));
 								break;
 							default:
 								throw new IllegalAccessError();

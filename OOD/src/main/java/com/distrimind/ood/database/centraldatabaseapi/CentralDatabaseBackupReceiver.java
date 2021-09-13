@@ -212,8 +212,8 @@ public abstract class CentralDatabaseBackupReceiver {
 				clientCloudAccountTable.removeRecordsWithCascade("removeAccountQueryUTCInMs is not null and removeAccountQueryUTCInMs<=%t", "t", timeReferenceToRemoveObsoleteAccounts);
 				encryptedBackupPartReferenceTable.removeRecordsWithCascade(new Filter<EncryptedBackupPartReferenceTable.Record>() {
 					@Override
-					public boolean nextRecord(EncryptedBackupPartReferenceTable.Record _record) {
-						_record.getFileReference().delete();
+					public boolean nextRecord(EncryptedBackupPartReferenceTable.Record _record) throws DatabaseException {
+						_record.delete(wrapper);
 						return true;
 					}
 				}, "(database.removeTimeUTC IS NOT NULL AND database.removeTimeUTC<=%ct) OR (database.client.toRemoveOrderTimeUTCInMs IS NOT NULL AND database.client.toRemoveOrderTimeUTCInMs<=%ctc)", "ct", timeReferenceToRemoveObsoleteBackup, "ctc", timeReferenceToRemoveObsoleteHosts);

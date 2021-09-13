@@ -39,6 +39,7 @@ import com.distrimind.ood.database.centraldatabaseapi.*;
 import com.distrimind.ood.database.decentralizeddatabase.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
+import com.distrimind.ood.database.filemanager.FileReference;
 import com.distrimind.ood.database.messages.*;
 import com.distrimind.ood.database.tests.TestDatabaseToOperateActionIntoDecentralizedNetwork;
 import com.distrimind.ood.database.tests.TestRevertToOldVersionIntoDecentralizedNetwork;
@@ -558,7 +559,7 @@ public abstract class CommonDecentralizedTests {
 			setCertificateExpirationTimeUTCInMsArray();
 		}
 	}
-	static class FileReferenceForTests implements FileReference
+	static class FileReferenceForTests extends FileReference
 	{
 		private transient File file;
 		private long fileTimeStamp;
@@ -580,7 +581,7 @@ public abstract class CommonDecentralizedTests {
 			file=new File(centralDatabaseBackupDirectory, fileTimeStamp+".backup");
 		}
 		@Override
-		public boolean equals(Object o) {
+		protected boolean equalsImplementation(Object o) {
 			return o instanceof FileReferenceForTests && ((FileReferenceForTests) o).fileTimeStamp==fileTimeStamp;
 		}
 
@@ -600,17 +601,17 @@ public abstract class CommonDecentralizedTests {
 		}
 
 		@Override
-		public boolean delete() {
+		public boolean deleteImplementation() {
 			return file.delete();
 		}
 
 		@Override
-		public RandomInputStream getRandomInputStream() throws IOException {
+		public RandomInputStream getRandomInputStreamImplementation() throws IOException {
 			return new RandomFileInputStream(file);
 		}
 
 		@Override
-		public RandomOutputStream getRandomOutputStream() throws IOException {
+		public RandomOutputStream getRandomOutputStreamImplementation() throws IOException {
 			return new RandomFileOutputStream(file);
 		}
 

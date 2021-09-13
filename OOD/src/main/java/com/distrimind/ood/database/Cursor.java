@@ -58,7 +58,7 @@ public class Cursor<T extends DatabaseRecord> {
 	private final Boolean ascendant;
 	private final String[] fields;
 
-	Cursor(Table<T> table, String whereClause, Map<String, Object> parameters, int cacheSize, Boolean ascendant, String ... fields) {
+	protected Cursor(Table<T> table, String whereClause, Map<String, Object> parameters, int cacheSize, Boolean ascendant, String ... fields) {
 		if (table==null)
 			throw new NullPointerException();
 		if (cacheSize<2)
