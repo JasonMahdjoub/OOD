@@ -109,6 +109,13 @@ public final class EncryptedBackupPartReferenceTable extends Table<EncryptedBack
 			}
 		}
 
+		public Record(DatabaseBackupPerClientTable.Record database, long fileTimeUTC, boolean isReferenceFile, long fileId, EncryptedDatabaseBackupMetaDataPerFile metaData) {
+			this.database = database;
+			this.fileTimeUTC = fileTimeUTC;
+			this.isReferenceFile = isReferenceFile;
+			this.fileId = fileId;
+			this.metaData = metaData;
+		}
 
 		public EncryptedBackupPartComingFromCentralDatabaseBackup readEncryptedBackupPartForInitialSynchronization(DatabaseWrapper wrapper, DecentralizedValue hostDestination, DecentralizedValue channelHost) throws DatabaseException, IOException {
 			return new EncryptedBackupPartForInitialSynchronizationComingFromCentralDatabaseBackup(database.getClient().getClientID(),hostDestination, metaData, getFileReference(wrapper).getRandomInputStream(), channelHost);
@@ -152,6 +159,10 @@ public final class EncryptedBackupPartReferenceTable extends Table<EncryptedBack
 					", fileReferenceId=" + fileId +
 					", metaData=" + metaData +
 					'}';
+		}
+
+		public long getFileId() {
+			return fileId;
 		}
 	}
 	/*Integrity addEncryptedBackupPartReference(DatabaseBackupPerClientTable databaseBackupPerClientTable, ClientTable.Record clientRecord, FileReference fileReference, EncryptedBackupPartDestinedToCentralDatabaseBackup message) throws DatabaseException {

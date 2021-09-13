@@ -43,8 +43,9 @@ import com.distrimind.util.io.SecureExternalizable;
 import java.io.IOException;
 
 /**
+ * The serialization of this class must always give the same binary array
  * @author Jason Mahdjoub
- * @version 1.0
+ * @version 1.1
  * @since OOD 3.0.0
  */
 public abstract class FileReference implements SecureExternalizable {

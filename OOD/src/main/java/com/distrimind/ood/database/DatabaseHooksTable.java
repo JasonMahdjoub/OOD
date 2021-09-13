@@ -723,7 +723,8 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							}
 							if (synchronizedPackages.size()>0) {
 								builder.commit();
-								getDatabaseWrapper().getSynchronizer().updateConnectionWithDistantBackupCenter(synchronizedPackages.keySet());
+								if (getDatabaseWrapper().getSynchronizer().isInitializedWithCentralBackup())
+									getDatabaseWrapper().getSynchronizer().updateConnectionWithDistantBackupCenter(synchronizedPackages.keySet());
 							}
 						}
 
