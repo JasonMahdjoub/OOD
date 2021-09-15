@@ -1342,13 +1342,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			lockWrite();
 			try {
 				ConnectedPeers cp = initializedHooks.get(authenticatedP2PMessage.getHostDestination());
-				System.out.println("offer1");
+
 				if (cp != null) {
-					System.out.println("offer2");
 					addNewDatabaseEvent((DatabaseEvent) authenticatedP2PMessage);
 				}
 				else if (isInitializedWithCentralBackup()) {
-					System.out.println("offer3");
 					addNewDatabaseEvent(new IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup(Collections.singletonList(authenticatedP2PMessage), databaseConfigurationsBuilder.getSecureRandom(), databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup()));
 				}
 			}

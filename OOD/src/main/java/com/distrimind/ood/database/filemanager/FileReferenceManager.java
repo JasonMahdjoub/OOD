@@ -31,7 +31,7 @@ public class FileReferenceManager {
 		return fileTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<FileRecord>() {
 			@Override
 			public FileTable.Record run() throws Exception {
-				FileTable.Record r=fileTable.getRecords("fileReference", fileReference).stream().findAny().orElse(null);
+				FileTable.Record r=fileTable.getRecordsWithAllFields("fileReference", fileReference).stream().findAny().orElse(null);
 				if (r==null)
 				{
 					long t=System.currentTimeMillis();
@@ -102,7 +102,7 @@ public class FileReferenceManager {
 		return fileTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<FileRecord>() {
 			@Override
 			public FileRecord run() throws Exception {
-				FileTable.Record r = fileTable.getRecords("fileReference", fileReference).stream().findAny().orElse(null);
+				FileTable.Record r = fileTable.getRecordsWithAllFields("fileReference", fileReference).stream().findAny().orElse(null);
 				if (r == null) {
 					throw new RecordNotFoundDatabaseException("Record not found !");
 				} else {
@@ -182,7 +182,7 @@ public class FileReferenceManager {
 		return fileTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<FileRecord>() {
 			@Override
 			public FileRecord run() throws Exception {
-				FileTable.Record r = fileTable.getRecords("fileReference", fileReference).stream().findAny().orElse(null);
+				FileTable.Record r = fileTable.getRecordsWithAllFields("fileReference", fileReference).stream().findAny().orElse(null);
 				if (r == null) {
 					throw new RecordNotFoundDatabaseException("Record not found !");
 				} else {

@@ -394,7 +394,11 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 							}, "client=%c", "c", chosenBackup.get().getClient())) {
 								centralDatabaseBackupReceiver.lastValidatedDistantIDPerClientTable.addRecord(new LastValidatedDistantIDPerClientTable.Record(clientSource, r.getDistantClient(), r.getLastValidatedAndEncryptedDistantID()));
 							}
-							centralDatabaseBackupReceiver.lastValidatedDistantIDPerClientTable.addRecord(new LastValidatedDistantIDPerClientTable.Record(clientSource, chosenBackup.get().getClient(), chosenBackup.get().getLastValidatedAndEncryptedID()));
+							LastValidatedDistantIDPerClientTable.Record r=centralDatabaseBackupReceiver.lastValidatedDistantIDPerClientTable.getRecord("client", clientSource,"distantClient",chosenBackup.get().getClient());
+							if (r==null)
+								centralDatabaseBackupReceiver.lastValidatedDistantIDPerClientTable.addRecord(new LastValidatedDistantIDPerClientTable.Record(clientSource, chosenBackup.get().getClient(), chosenBackup.get().getLastValidatedAndEncryptedID()));
+							else
+								centralDatabaseBackupReceiver.lastValidatedDistantIDPerClientTable.updateRecord(r, "lastValidatedAndEncryptedDistantID",  chosenBackup.get().getLastValidatedAndEncryptedID());
 							return Integrity.OK;
 						} catch (ConstraintsNotRespectedDatabaseException | DatabaseIntegrityException | RecordNotFoundDatabaseException e) {
 							e.printStackTrace();
@@ -702,10 +706,12 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 		try {
 			DecentralizedValue hostID = message.getHostToAdd();
 			ClientTable.Record r = getClientRecord(hostID);
+
 			if (r==null)
 				return Integrity.OK;
 			if (r.getToRemoveOrderTimeUTCInMs()!=null)
 				centralDatabaseBackupReceiver.clientTable.updateRecord(r, "toRemoveOrderTimeUTCInMs", null);
+			//sendInitialMessageComingFromCentralBackup(r);
 			return Integrity.OK;
 		}
 		catch (MessageExternalizationException e)
