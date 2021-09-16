@@ -111,4 +111,11 @@ public abstract class AbstractEncryptedBackupPart extends DatabaseEvent implemen
 		metaData=in.readObject(false, EncryptedDatabaseBackupMetaDataPerFile.class);
 	}
 
+	@Override
+	public String toString() {
+		return getClass().getSimpleName()+"{" +
+				"hostSource=" + hostSource +
+				", metaData=" + metaData +
+				'}';
+	}
 }

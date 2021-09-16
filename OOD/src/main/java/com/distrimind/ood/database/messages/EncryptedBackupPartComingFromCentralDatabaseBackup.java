@@ -46,56 +46,18 @@ import java.io.IOException;
  * @version 1.0
  * @since OOD 3.0.0
  */
-public class EncryptedBackupPartComingFromCentralDatabaseBackup extends AbstractEncryptedBackupPart implements MessageComingFromCentralDatabaseBackup{
-	private DecentralizedValue hostDestination;
+public class EncryptedBackupPartComingFromCentralDatabaseBackup extends AbstractEncryptedBackupPartComingFromCentralDatabaseBackup {
+
 
 	protected EncryptedBackupPartComingFromCentralDatabaseBackup() {
 	}
 
 	public EncryptedBackupPartComingFromCentralDatabaseBackup(DecentralizedValue hostSource, DecentralizedValue hostDestination, EncryptedDatabaseBackupMetaDataPerFile metaData, RandomInputStream partInputStream) {
-		super(hostSource, metaData, partInputStream);
-		if (hostDestination==null)
-			throw new NullPointerException();
-		if (hostDestination!=hostSource && hostDestination.equals(hostSource))
-			this.hostDestination=hostSource;
-		else
-			this.hostDestination=hostDestination;
+		super(hostSource, hostDestination, metaData, partInputStream, hostSource);
 	}
 
-	@Override
-	public DecentralizedValue getHostDestination() {
-		return hostDestination;
-	}
 
-	@Override
-	public int getInternalSerializedSize() {
-		return super.getInternalSerializedSize()+ SerializationTools.getInternalSize(hostDestination)+1;
-	}
 
-	@Override
-	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
-		super.writeExternal(out);
-		assert hostDestination!=null;
-		out.writeObject(hostDestination==getHostSource()?null:hostDestination, true);
-	}
 
-	@Override
-	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
-		super.readExternal(in);
-		hostDestination=in.readObject(true, DecentralizedValue.class);
-		if (hostDestination==null)
-			hostDestination=getHostSource();
-	}
 
-	@Override
-	public boolean cannotBeMerged() {
-		return true;
-	}
-
-	@Override
-	public String toString() {
-		return "EncryptedBackupPartComingFromCentralDatabaseBackup{" +
-				"hostDestination=" + hostDestination +
-				'}';
-	}
 }

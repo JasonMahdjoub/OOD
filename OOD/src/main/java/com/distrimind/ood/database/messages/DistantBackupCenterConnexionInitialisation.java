@@ -110,7 +110,9 @@ public class DistantBackupCenterConnexionInitialisation extends AuthenticatedMes
 
 	@Override
 	public String toString() {
-		return getClass().getSimpleName()+"{}";
+		return getClass().getSimpleName()+"{" +
+				"hostSource=" +getHostSource()+
+				"}";
 	}
 
 	@Override

@@ -49,15 +49,25 @@ import java.io.IOException;
  * @version 1.0
  * @since Utils 3.1.0
  */
-public abstract class AbstractEncryptedBackupPartComingFromCentralDatabaseBackup extends EncryptedBackupPartComingFromCentralDatabaseBackup{
+public abstract class AbstractEncryptedBackupPartComingFromCentralDatabaseBackup extends AbstractEncryptedBackupPart implements MessageComingFromCentralDatabaseBackup{
 	private DecentralizedValue channelHost;
+	private DecentralizedValue hostDestination;
 	public AbstractEncryptedBackupPartComingFromCentralDatabaseBackup(DecentralizedValue hostSource, DecentralizedValue hostDestination, EncryptedDatabaseBackupMetaDataPerFile metaData, RandomInputStream partInputStream, DecentralizedValue channelHost) {
-		super(hostSource, hostDestination, metaData, partInputStream);
+		super(hostSource, metaData, partInputStream);
 		if (channelHost==null)
 			throw new NullPointerException();
+		if (hostDestination==null)
+			throw new NullPointerException();
+		if (hostDestination!=hostSource && hostDestination.equals(hostSource))
+			this.hostDestination=hostSource;
+		else
+			this.hostDestination=hostDestination;
 		this.channelHost=channelHost;
 	}
-
+	@Override
+	public DecentralizedValue getHostDestination() {
+		return hostDestination;
+	}
 	protected AbstractEncryptedBackupPartComingFromCentralDatabaseBackup() {
 		super();
 	}
@@ -68,25 +78,27 @@ public abstract class AbstractEncryptedBackupPartComingFromCentralDatabaseBackup
 
 	@Override
 	public int getInternalSerializedSize() {
-		return super.getInternalSerializedSize()+ SerializationTools.getInternalSize(channelHost);
+		return super.getInternalSerializedSize()+ SerializationTools.getInternalSize(hostDestination)+SerializationTools.getInternalSize(channelHost);
 	}
 
 	@Override
 	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
 		super.writeExternal(out);
+		assert hostDestination!=null;
+		out.writeObject(hostDestination==getHostSource()?null:hostDestination, true);
 		out.writeObject(channelHost, false);
 	}
 
 	@Override
 	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
 		super.readExternal(in);
+		hostDestination=in.readObject(true, DecentralizedValue.class);
+		if (hostDestination==null)
+			hostDestination=getHostSource();
 		channelHost=in.readObject(false);
 	}
 	@Override
-	public String toString() {
-		return getClass().getSimpleName()+"{" +
-				"hostDestination=" + getHostDestination() +
-				", metaData="+getMetaData()+
-				'}';
+	public boolean cannotBeMerged() {
+		return true;
 	}
 }

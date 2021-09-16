@@ -113,8 +113,9 @@ public class EncryptedMetaDataFromCentralDatabaseBackup extends DatabaseEvent im
 	@Override
 	public String toString() {
 		return "EncryptedMetaDataFromCentralDatabaseBackup{" +
-				"hostDestination=" + hostDestination +
-				", hostSource=" + hostSource +
+				"hostSource=" + hostSource +
+				", hostDestination=" + hostDestination +
+				", metaData="+getMetaData()+
 				'}';
 	}
 }

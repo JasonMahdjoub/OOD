@@ -46,10 +46,7 @@ import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.filemanager.FileRecord;
 import com.distrimind.ood.database.filemanager.FileReference;
-import com.distrimind.ood.database.messages.EncryptedBackupPartComingFromCentralDatabaseBackup;
-import com.distrimind.ood.database.messages.EncryptedBackupPartDestinedToCentralDatabaseBackup;
-import com.distrimind.ood.database.messages.EncryptedBackupPartForInitialSynchronizationComingFromCentralDatabaseBackup;
-import com.distrimind.ood.database.messages.EncryptedBackupPartForRestorationComingFromCentralDatabaseBackup;
+import com.distrimind.ood.database.messages.*;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.RandomInputStream;
 
@@ -117,10 +114,10 @@ public final class EncryptedBackupPartReferenceTable extends Table<EncryptedBack
 			this.metaData = metaData;
 		}
 
-		public EncryptedBackupPartComingFromCentralDatabaseBackup readEncryptedBackupPartForInitialSynchronization(DatabaseWrapper wrapper, DecentralizedValue hostDestination, DecentralizedValue channelHost) throws DatabaseException, IOException {
+		public AbstractEncryptedBackupPartComingFromCentralDatabaseBackup readEncryptedBackupPartForInitialSynchronization(DatabaseWrapper wrapper, DecentralizedValue hostDestination, DecentralizedValue channelHost) throws DatabaseException, IOException {
 			return new EncryptedBackupPartForInitialSynchronizationComingFromCentralDatabaseBackup(database.getClient().getClientID(),hostDestination, metaData, getFileReference(wrapper).getRandomInputStream(), channelHost);
 		}
-		public EncryptedBackupPartComingFromCentralDatabaseBackup readEncryptedBackupPartForRestoration(DatabaseWrapper wrapper, DecentralizedValue hostDestination, DecentralizedValue channelHost) throws IOException, DatabaseException {
+		public AbstractEncryptedBackupPartComingFromCentralDatabaseBackup readEncryptedBackupPartForRestoration(DatabaseWrapper wrapper, DecentralizedValue hostDestination, DecentralizedValue channelHost) throws IOException, DatabaseException {
 			return new EncryptedBackupPartForRestorationComingFromCentralDatabaseBackup(database.getClient().getClientID(),hostDestination, metaData, getFileReference(wrapper).getRandomInputStream(), channelHost);
 		}
 

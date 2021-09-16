@@ -38,6 +38,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 import com.distrimind.ood.database.exceptions.ConstraintsNotRespectedDatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
+import com.distrimind.ood.database.messages.AbstractEncryptedBackupPartComingFromCentralDatabaseBackup;
 import com.distrimind.ood.database.messages.EncryptedBackupPartComingFromCentralDatabaseBackup;
 import com.distrimind.ood.database.messages.EncryptedBackupPartDestinedToCentralDatabaseBackup;
 import com.distrimind.ood.i18n.DatabaseMessages;
@@ -134,8 +135,8 @@ public class BackupRestoreManager {
 		}
 		generateRestoreProgressBar= this.backupConfiguration.restoreProgressMonitorParameters == null;
 		scanFiles();
-		if (checkTablesHeader(getFileForBackupReference()))
-			createIfNecessaryNewBackupReference();
+		checkTablesHeader(getFileForBackupReference());
+			//createIfNecessaryNewBackupReference();
 	}
 
 	private void generateProgressBarParameterForRestoration(long timeUTC)
@@ -1328,7 +1329,7 @@ public class BackupRestoreManager {
 		}
 	}
 
-	boolean importEncryptedBackupPartComingFromCentralDatabaseBackup(EncryptedBackupPartComingFromCentralDatabaseBackup backupPart, EncryptionProfileProvider encryptionProfileProvider, @SuppressWarnings("SameParameterValue") boolean replaceExistingFilePart) throws DatabaseException {
+	boolean importEncryptedBackupPartComingFromCentralDatabaseBackup(AbstractEncryptedBackupPartComingFromCentralDatabaseBackup backupPart, EncryptionProfileProvider encryptionProfileProvider, @SuppressWarnings("SameParameterValue") boolean replaceExistingFilePart) throws DatabaseException {
 		try {
 			Integrity i = backupPart.getMetaData().checkSignature(encryptionProfileProvider);
 			if (i != Integrity.OK) {
@@ -1403,6 +1404,10 @@ public class BackupRestoreManager {
 	 */
 	public boolean restoreDatabaseToLastKnownBackup() throws DatabaseException {
 		return restoreDatabaseToDateUTC(Long.MAX_VALUE, false);
+	}
+
+	boolean restoreDatabaseToLastKnownBackupFromEmptyDatabase() throws DatabaseException {
+		return restoreDatabaseToDateUTC(Long.MAX_VALUE, false, false);
 	}
 
 	/**
@@ -1779,8 +1784,11 @@ public class BackupRestoreManager {
 
 	AbstractTransaction startTransaction() throws DatabaseException {
 		synchronized (this) {
-			if (fileTimeStamps.size()==0 && !temporaryDisabled && !computeDatabaseReference.exists())
-				return new TransactionToValidateByABackupReference();
+			if (fileTimeStamps.size()==0 && !temporaryDisabled && !computeDatabaseReference.exists()) {
+				createBackupReference();
+				//return new TransactionToValidateByABackupReference();
+			}
+
 			if (!isReady())
 				return null;
 			int oldLength;

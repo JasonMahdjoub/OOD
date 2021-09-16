@@ -62,7 +62,7 @@ public class FileCoordinate
 		this.boundary = boundary;
 	}
 
-	public long getTimeStamp() {
+	public long getTimeStampUTC() {
 		return timeStamp;
 	}
 

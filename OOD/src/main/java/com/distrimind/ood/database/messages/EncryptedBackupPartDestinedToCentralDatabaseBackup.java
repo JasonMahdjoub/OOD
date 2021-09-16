@@ -90,8 +90,4 @@ public class EncryptedBackupPartDestinedToCentralDatabaseBackup extends Abstract
 		return false;
 	}
 
-	@Override
-	public String toString() {
-		return "EncryptedBackupPartDestinedToCentralDatabaseBackup{}";
-	}
 }

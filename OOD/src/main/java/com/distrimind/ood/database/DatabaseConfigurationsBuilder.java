@@ -1122,6 +1122,14 @@ public class DatabaseConfigurationsBuilder {
 								lifeCycles.saveDatabaseConfigurations(configurations);
 
 						}
+						else if (database.isEmpty())
+						{
+
+							if (database.backupRestoreManager.getLastTransactionID()>-1) {
+								database.backupRestoreManager.restoreDatabaseToLastKnownBackupFromEmptyDatabase();
+							}
+						}
+
 						break;
 					}
 				}
