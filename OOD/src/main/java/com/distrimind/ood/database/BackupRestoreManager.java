@@ -347,6 +347,11 @@ public class BackupRestoreManager {
 			return res;
 		}
 	}
+
+	public ArrayList<Long> getFileTimeStamps() {
+		return fileTimeStamps;
+	}
+
 	public boolean hasNonFinalFiles()
 	{
 		return fileTimeStamps.size()>0 && !isPartFull(fileTimeStamps.get(fileTimeStamps.size()-1));
@@ -2012,8 +2017,15 @@ public class BackupRestoreManager {
 						throw new DatabaseException("Impossible to delete file : " + computeDatabaseReference);
 					closed = true;
 				}
-				if (fileTimeStamp != oldLastFile && isPartFull(fileTimeStamp))
+				if (fileTimeStamp != oldLastFile) {
 					databaseWrapper.getSynchronizer().checkForNewBackupFilePartToSendToCentralDatabaseBackup(dbPackage);
+				}
+				else {
+					if (isPartFull(fileTimeStamp))
+						databaseWrapper.getSynchronizer().checkForNewBackupFilePartToSendToCentralDatabaseBackup(dbPackage);
+					else
+						databaseWrapper.getSynchronizer().notifyNewEventIfNecessary();
+				}
 			}
 			finally {
 				Long m=maxDateUTC;
