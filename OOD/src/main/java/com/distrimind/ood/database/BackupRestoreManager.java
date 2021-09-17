@@ -39,7 +39,6 @@ import com.distrimind.ood.database.exceptions.ConstraintsNotRespectedDatabaseExc
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.messages.AbstractEncryptedBackupPartComingFromCentralDatabaseBackup;
-import com.distrimind.ood.database.messages.EncryptedBackupPartComingFromCentralDatabaseBackup;
 import com.distrimind.ood.database.messages.EncryptedBackupPartDestinedToCentralDatabaseBackup;
 import com.distrimind.ood.i18n.DatabaseMessages;
 import com.distrimind.util.DecentralizedValue;
@@ -135,8 +134,8 @@ public class BackupRestoreManager {
 		}
 		generateRestoreProgressBar= this.backupConfiguration.restoreProgressMonitorParameters == null;
 		scanFiles();
-		checkTablesHeader(getFileForBackupReference());
-			//createIfNecessaryNewBackupReference();
+		if (checkTablesHeader(getFileForBackupReference()) && !databaseWrapper.sql_database.get(dbPackage).isEmpty())
+			createIfNecessaryNewBackupReference();
 	}
 
 	private void generateProgressBarParameterForRestoration(long timeUTC)
@@ -1606,13 +1605,16 @@ public class BackupRestoreManager {
 													assert eventTypeCode == 2;
 													HashMap<String, Object> hm = new HashMap<>();
 													table.deserializeFields(hm, recordBuffer, 0, s, true, false, false);
-
+													HashMap<String, Object> hmpk=hm;
 													if (in.readBoolean()) {
+														hmpk=new HashMap<>(hm);
 														s=in.readBytesArray(recordBuffer, 0, false, Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES);
 														table.deserializeFields(hm, recordBuffer, 0, s, false, true, false);
 													}
 
 													if (in.readBoolean()) {
+														if (hmpk==hm)
+															hmpk=new HashMap<>(hm);
 														s=in.readBytesArray(recordBuffer, 0, false, Table.MAX_NON_KEYS_SIZE_IN_BYTES);
 														table.deserializeFields(hm, recordBuffer, 0, s, false, false, true);
 													}
@@ -1622,7 +1624,7 @@ public class BackupRestoreManager {
 														//newRecord = table.addUntypedRecord(hm, drRecord == null, null);
 													} catch (ConstraintsNotRespectedDatabaseException ignored) {
 														//TODO this exception occurs sometimes but should not. See why.
-														DatabaseRecord newRecord = table.getRecord(hm);
+														DatabaseRecord newRecord = table.getRecord(hmpk);
 														for (FieldAccessor fa : table.getFieldAccessors()) {
 															if (!fa.isPrimaryKey()) {
 																fa.setValue(newRecord, hm.get(fa.getFieldName()));
@@ -1781,16 +1783,35 @@ public class BackupRestoreManager {
 			return false;
 
 	}
+	boolean createNewBackupReferenceIfDatabaseIsEmpty() throws DatabaseException {
+		if (fileTimeStamps.size()==0) {
+
+			return createIfNecessaryNewBackupReference();
+		}
+		else {
+			return false;
+		}
+	}
+
+	void eraseEmptyBackup() throws DatabaseException {
+		if (fileTimeStamps.size()==1 && getLastTransactionUTCInMS()==Long.MIN_VALUE)
+		{
+			File f=getFile(fileTimeStamps.get(0));
+			if (!f.delete())
+				System.err.println("Impossible to delete file "+f);
+			scanFiles();
+		}
+	}
 
 	AbstractTransaction startTransaction() throws DatabaseException {
 		synchronized (this) {
 			if (fileTimeStamps.size()==0 && !temporaryDisabled && !computeDatabaseReference.exists()) {
-				createBackupReference();
-				//return new TransactionToValidateByABackupReference();
+				new TransactionToValidateByABackupReference();
 			}
 
-			if (!isReady())
+			if (!isReady()) {
 				return null;
+			}
 			int oldLength;
 			long oldLastFile;
 			if (fileTimeStamps.size() == 0)

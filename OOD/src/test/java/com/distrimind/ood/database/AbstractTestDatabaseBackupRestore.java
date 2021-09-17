@@ -621,7 +621,7 @@ public abstract class AbstractTestDatabaseBackupRestore {
 		if (internalBRM!=null)
 		{
 			Assert.assertTrue(internalBRM.getFirstTransactionUTCInMs()>dataLoadStart.get());
-			Assert.assertTrue(internalBRM.getFirstTransactionUTCInMs()<internalBRM.getLastTransactionUTCInMS());
+			Assert.assertTrue(internalBRM.getFirstTransactionUTCInMs()<=internalBRM.getLastTransactionUTCInMS() || (restoreToEmptyDatabase && internalBRM.getFirstTransactionUTCInMs()==Long.MAX_VALUE && internalBRM.getLastTransactionUTCInMS()==Long.MIN_VALUE), internalBRM.getFirstTransactionUTCInMs()+" ; "+internalBRM.getLastTransactionUTCInMS());
 			Assert.assertTrue(internalBRM.getLastTransactionUTCInMS()<System.currentTimeMillis());
 		}
 

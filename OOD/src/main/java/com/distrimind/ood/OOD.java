@@ -70,6 +70,8 @@ public class OOD {
 									.addItem("Remove concatenated sql queries")
 									.addItem("Clean code")
 									.addItem("Permit indirect initial synchronization between peers through central database backup")
+									.addItem("Fix issue and avoid creating backup reference when the database is empty. Create first backup reference at the start of the transaction, before the first queries")
+									.addItem("Fix issue when loading all fields instead of loading only primary keys from backup")
 					)
 					.addDescription(
 							new Description((short)3, (short)1, (short)0, Version.Type.BETA, (short)1, "2021-07-07")

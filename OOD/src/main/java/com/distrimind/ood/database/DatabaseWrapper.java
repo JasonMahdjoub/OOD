@@ -108,7 +108,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			LastValidatedDistantIDPerClientTable.class,
 			RevokedCertificateTable.class));
 
-	static final Set<Package> reservedDatabases=new HashSet<>(Arrays.asList(DatabaseWrapper.class.getPackage(), CentralDatabaseBackupReceiverPerPeer.class.getPackage()));
+	static final Set<Package> reservedDatabases=new HashSet<>(Arrays.asList(DatabaseWrapper.class.getPackage(), CentralDatabaseBackupReceiverPerPeer.class.getPackage(), FileReferenceManager.class.getPackage()));
 
 
 	private static final String NATIVE_BACKUPS_DIRECTORY_NAME="native_backups";
@@ -3207,8 +3207,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					{
 						long lts=d.temporaryBackupRestoreManagerComingFromDistantBackupManager.getFirstFileUTCInMs();
 						backupDatabasePartsSynchronizingWithCentralDatabaseBackup.add(d.configuration.getDatabaseSchema().getPackage().getName());
-						if (lts==Long.MAX_VALUE || !d.temporaryBackupRestoreManagerComingFromDistantBackupManager.hasBackupReference()) {
-							if (lts==Long.MAX_VALUE)
+						if (lts==Long.MIN_VALUE || !d.temporaryBackupRestoreManagerComingFromDistantBackupManager.hasBackupReference()) {
+							if (lts==Long.MIN_VALUE)
 								lts=timeUTCInMs+1;
 							else
 								--lts;
@@ -3272,9 +3272,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				return restore;
 			}
 		}
-		private void received(EncryptedBackupPartComingFromCentralDatabaseBackup backupPart) throws DatabaseException {
 
-		}
 		private void received(AbstractEncryptedBackupPartComingFromCentralDatabaseBackup backupPart) throws DatabaseException {
 
 			if (!backupPart.getHostDestination().equals(getLocalHostID()))
@@ -5118,6 +5116,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		if (cw.newTransaction) {
 			try
 			{
+				Database db=null;
+				boolean backupReferenceWasCreated=false;
 				if (needsLock)
 				{
 					if (writeData)
@@ -5127,18 +5127,24 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 				if (databasePackage!=null)
 				{
-					Database db=sql_database.get(databasePackage);
+					db=sql_database.get(databasePackage);
 					if (db!=null)
 					{
 						if (db.isCurrentDatabaseInRestorationProcessFromExternalBackup())
 							throw new DatabaseException("Impossible to write into the database "+databasePackage+" because this database is in a restoration process !");
+						if (db.backupRestoreManager!=null) {
+							backupReferenceWasCreated = db.backupRestoreManager.createNewBackupReferenceIfDatabaseIsEmpty();
+						}
 					}
+
 				}
 
 				boolean retry=true;
 				boolean disconnectionException=false;
+				boolean canceled;
 				while(retry)
 				{
+					canceled=false;
 					retry=false;
 					String savePointName = null;
 					Savepoint savePoint = null;
@@ -5177,6 +5183,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							
 						endTransaction(cw.connection);
 					} catch (DatabaseException e) {
+						canceled=true;
 						Throwable t=e.getCause();
 						while (t!=null)
 						{
@@ -5203,11 +5210,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							}
 							t=t.getCause();
 						}
+
 						try {
 							
 							if (writeData)
 								cw.connection.clearTransactions(false);
 							rollback(cw.connection.getConnection());
+
 							if (writeData) {
 								if ((savePoint != null || savePointName != null) && mustReleaseSavepointAfterRollBack()) {
 									releasePoint(cw.connection.getConnection(), savePointName, savePoint);
@@ -5245,11 +5254,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						 	throw e;
 						}
 					} catch (SQLException e) {
-
+						canceled=true;
 						try {
 							if (writeData)
 								cw.connection.clearTransactions(false);
 							rollback(cw.connection.getConnection());
+
 							if (writeData) {
 								if ((savePoint != null || savePointName != null) && mustReleaseSavepointAfterRollBack()) {
 									releasePoint(cw.connection.getConnection(), savePointName, savePoint);
@@ -5270,6 +5280,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						cw = isNewTransactionAndStartIt();
 						if (!cw.newTransaction)
 							throw new IllegalAccessError();
+					} else if (canceled && backupReferenceWasCreated) {
+						db.backupRestoreManager.eraseEmptyBackup();
 					}
 				}
 			} finally {
