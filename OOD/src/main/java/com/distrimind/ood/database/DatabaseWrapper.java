@@ -539,7 +539,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		private void initTemporaryBackupRestoreManagerComingFromDistantBackupRestoreManager(File f) throws DatabaseException {
-			System.out.println("here");
 			temporaryBackupRestoreManagerComingFromDistantBackupManager=new BackupRestoreManager(DatabaseWrapper.this, f, configuration, true );
 			File hostChannelFile=new File(f, HOST_CHANNEL_ID_FILE_NAME);
 			if (hostChannelFile.exists())
@@ -868,15 +867,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				if (t.getRecordsNumber()>0)
 					return false;
 			return true;
-		}
-		void printTables() throws DatabaseException {
-			DatabasePerVersion dpv=tables_per_versions.get(currentVersion);
-			if (dpv==null)
-				return;
-			for (Table<?> t : dpv.tables_instances.values()) {
-				for (DatabaseRecord dr : t.getRecords())
-					System.out.println(dr);
-			}
 		}
 
 		boolean isCurrentDatabaseInInitialSynchronizationProcessFromCentralDatabaseBackup() {
@@ -1473,7 +1463,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (notify)
 				notifier.newDatabaseEventDetected(DatabaseWrapper.this);
 		}
-
+		void notifyNewEventIfNecessary() throws DatabaseException {
+			Long l=getNextPossibleEventTimeUTC();
+			if (l!=null)
+			{
+				notifier.newDatabaseEventDetected(DatabaseWrapper.this);
+			}
+		}
 		public DatabaseEvent nextEvent() throws DatabaseException {
 			
 			try
@@ -2224,12 +2220,16 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 			ConnectedPeersWithCentralBackup cp = this.initializedHooksWithCentralBackup.get(hostChannel);
 			if (cp!=null) {
-				if (cp.otherBackupMetaDataDatabasePartsSynchronizingWithCentralDatabaseBackup)
+				if (cp.otherBackupMetaDataDatabasePartsSynchronizingWithCentralDatabaseBackup) {
 					return;
+				}
 
 				Collection<String> databasePackagesToSynchronizeWithCentralBackup = getDatabasePackagesToSynchronizeWithCentralBackup();
 				if (databasePackagesToSynchronizeWithCentralBackup.size() == 0)
+				{
 					return;
+				}
+
 				DatabaseHooksTable.Record r = getDatabaseHookRecord(hostChannel);
 				long lastValidatedDistantID = r.getLastValidatedDistantTransactionID();
 				for (String packageString : databasePackagesToSynchronizeWithCentralBackup) {
@@ -3294,6 +3294,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							switch (context)
 							{
 								case SYNCHRONIZATION:
+									this.backupDatabasePartsSynchronizingWithCentralDatabaseBackup.remove(backupPart.getMetaData().getPackageString());
 									if (d.backupRestoreManager.importEncryptedBackupPartComingFromCentralDatabaseBackup(backupPart, databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup(), false)) {
 										checkAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(d);
 									}
