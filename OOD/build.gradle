@@ -70,8 +70,8 @@ dependencies {
 
 }
 def javaVersion="8"
-/*sourceCompatibility = javaVersion
-targetCompatibility= javaVersion*/
+sourceCompatibility = javaVersion
+targetCompatibility= javaVersion
 
 version='??.??.??ToDefine'
 
@@ -275,7 +275,3 @@ javadoc {
         options.addBooleanOption('html5', true)
     }
 }
-
-
-
-
