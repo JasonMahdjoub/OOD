@@ -1122,11 +1122,10 @@ public class DatabaseConfigurationsBuilder {
 								lifeCycles.saveDatabaseConfigurations(configurations);
 
 						}
-						else if (database.isEmpty())
+						else if (database.isEmpty() && database.isCurrentDatabaseInInitialSynchronizationProcessFromCentralDatabaseBackup())
 						{
 
 							if (database.backupRestoreManager.getLastTransactionID()>-1) {
-								assert database.isCurrentDatabaseInInitialSynchronizationProcessFromCentralDatabaseBackup();
 								database.backupRestoreManager.restoreDatabaseToLastKnownBackupFromEmptyDatabase(database.getSynchronizationPlanMessageComingFromCentralDatabaseBackup(), timeUTCInMs);
 								database.terminateCurrentDatabaseInitialSynchronizationProcessFromCentralDatabaseBackup();
 								if (timeUTCInMs!=null)
