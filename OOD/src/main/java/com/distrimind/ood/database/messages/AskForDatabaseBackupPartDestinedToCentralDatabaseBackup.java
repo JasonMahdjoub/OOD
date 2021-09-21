@@ -16,8 +16,8 @@ public class AskForDatabaseBackupPartDestinedToCentralDatabaseBackup extends Dat
 	public enum Context
 	{
 		SYNCHRONIZATION,
-		RESTORATION,
-		INITIAL_SYNCHRONIZATION
+		RESTORATION
+		//INITIAL_SYNCHRONIZATION
 	}
 	private DecentralizedValue hostSource;
 	private DecentralizedValue channelHost;

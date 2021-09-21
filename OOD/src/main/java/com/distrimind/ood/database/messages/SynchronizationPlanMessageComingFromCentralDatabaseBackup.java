@@ -1,5 +1,7 @@
 package com.distrimind.ood.database.messages;
 
+import com.distrimind.ood.database.DatabaseWrapper;
+import com.distrimind.ood.database.EncryptionTools;
 import com.distrimind.ood.database.Table;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
@@ -16,11 +18,14 @@ import java.util.Map;
  */
 public class SynchronizationPlanMessageComingFromCentralDatabaseBackup implements MessageComingFromCentralDatabaseBackup {
 
+	static final int MAX_SIZE_IN_BYTES_OF_VALIDATED_AND_ENCRYPTED_IDS= DatabaseWrapper.MAX_DISTANT_PEERS* (EncryptionTools.MAX_ENCRYPTED_ID_SIZE+DatabaseWrapper.MAX_ACCEPTED_SIZE_IN_BYTES_OF_DECENTRALIZED_VALUE);
 	private DecentralizedValue hostDestination;
 	private String packageString;
 	private DecentralizedValue sourceChannel;
 	private long firstBackupPartTimeUTC, lastBackupPartUTC;
-	private Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> lastValidatedAndEncryptedIDsPerHost;
+	//private Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> lastValidatedAndEncryptedIDsPerHost;
+	private Map<DecentralizedValue, byte[]> lastValidatedAndEncryptedDistantIdsPerHost;
+	private transient Map<DecentralizedValue, Long> lastValidatedDistantIdsPerHost=null;
 	private Map<String, Long> lastValidatedTransactionsUTCForDestinationHost;
 
 	@SuppressWarnings("unused")
@@ -32,7 +37,8 @@ public class SynchronizationPlanMessageComingFromCentralDatabaseBackup implement
 																	 DecentralizedValue sourceChannel,
 																	 long firstBackupPartTimeUTC,
 																	 long lastBackupPartUTC,
-																	 Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> lastValidatedAndEncryptedIDsPerHost,
+																	 Map<DecentralizedValue, byte[]> lastValidatedAndEncryptedDistantIdsPerHost,
+																	 //Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> lastValidatedAndEncryptedIDsPerHost,
 																	 Map<String, Long> lastValidatedTransactionsUTCForDestinationHost) {
 		if (hostDestination==null)
 			throw new NullPointerException();
@@ -40,9 +46,9 @@ public class SynchronizationPlanMessageComingFromCentralDatabaseBackup implement
 			throw new NullPointerException();
 		if (sourceChannel==null)
 			throw new NullPointerException();
-		if (hostDestination.equals(sourceChannel))
-			throw new IllegalArgumentException();
-		InitialMessageComingFromCentralBackup.checkLastValidatedLocalAndDistantEncryptedIDs(lastValidatedAndEncryptedIDsPerHost);
+		if (lastValidatedAndEncryptedDistantIdsPerHost==null)
+			throw new NullPointerException();
+		//InitialMessageComingFromCentralBackup.checkLastValidatedLocalAndDistantEncryptedIDs(lastValidatedAndEncryptedIDsPerHost);
 		InitialMessageComingFromCentralBackup.checkLastValidatedTransactionsUTCForDestinationHost(lastValidatedTransactionsUTCForDestinationHost);
 		if (firstBackupPartTimeUTC==Long.MIN_VALUE)
 			throw new IllegalArgumentException();
@@ -55,7 +61,7 @@ public class SynchronizationPlanMessageComingFromCentralDatabaseBackup implement
 		this.sourceChannel = sourceChannel;
 		this.firstBackupPartTimeUTC = firstBackupPartTimeUTC;
 		this.lastBackupPartUTC = lastBackupPartUTC;
-		this.lastValidatedAndEncryptedIDsPerHost = lastValidatedAndEncryptedIDsPerHost;
+		this.lastValidatedAndEncryptedDistantIdsPerHost = lastValidatedAndEncryptedDistantIdsPerHost;
 		this.lastValidatedTransactionsUTCForDestinationHost = lastValidatedTransactionsUTCForDestinationHost;
 	}
 
@@ -75,7 +81,8 @@ public class SynchronizationPlanMessageComingFromCentralDatabaseBackup implement
 				+SerializationTools.getInternalSize(sourceChannel)
 				+SerializationTools.getInternalSize(packageString, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH)
 				+8
-				+InitialMessageComingFromCentralBackup.getInternalSerializedSize(lastValidatedAndEncryptedIDsPerHost, null)
+				+SerializationTools.getInternalSize(lastValidatedAndEncryptedDistantIdsPerHost, MAX_SIZE_IN_BYTES_OF_VALIDATED_AND_ENCRYPTED_IDS)
+				//+InitialMessageComingFromCentralBackup.getInternalSerializedSize(lastValidatedAndEncryptedIDsPerHost, null)
 				+InitialMessageComingFromCentralBackup.getInternalSerializedSize(lastValidatedTransactionsUTCForDestinationHost);
 	}
 
@@ -86,15 +93,16 @@ public class SynchronizationPlanMessageComingFromCentralDatabaseBackup implement
 		out.writeString(packageString, false, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
 		out.writeLong(firstBackupPartTimeUTC);
 		out.writeLong(lastBackupPartUTC);
-
-		InitialMessageComingFromCentralBackup.write(out, lastValidatedAndEncryptedIDsPerHost, null);
+		out.writeMap(lastValidatedAndEncryptedDistantIdsPerHost, false, MAX_SIZE_IN_BYTES_OF_VALIDATED_AND_ENCRYPTED_IDS, false,false);
+		//InitialMessageComingFromCentralBackup.write(out, lastValidatedAndEncryptedIDsPerHost, null);
 		InitialMessageComingFromCentralBackup.write(out, lastValidatedTransactionsUTCForDestinationHost);
 	}
 
 
 	@Override
 	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
-		lastValidatedAndEncryptedIDsPerHost=new HashMap<>();
+		lastValidatedDistantIdsPerHost=null;
+		//lastValidatedAndEncryptedIDsPerHost=new HashMap<>();
 		lastValidatedTransactionsUTCForDestinationHost=new HashMap<>();
 		hostDestination=in.readObject(false);
 		sourceChannel=in.readObject(false);
@@ -107,7 +115,8 @@ public class SynchronizationPlanMessageComingFromCentralDatabaseBackup implement
 			throw new MessageExternalizationException(Integrity.FAIL);
 		if (firstBackupPartTimeUTC>lastBackupPartUTC)
 			throw new MessageExternalizationException(Integrity.FAIL);
-		InitialMessageComingFromCentralBackup.read(in, lastValidatedAndEncryptedIDsPerHost, null);
+		//InitialMessageComingFromCentralBackup.read(in, lastValidatedAndEncryptedIDsPerHost, null);
+		lastValidatedAndEncryptedDistantIdsPerHost=in.readMap(false, MAX_SIZE_IN_BYTES_OF_VALIDATED_AND_ENCRYPTED_IDS, DecentralizedValue.class, byte[].class);
 		InitialMessageComingFromCentralBackup.read(in, lastValidatedTransactionsUTCForDestinationHost);
 	}
 
@@ -127,15 +136,32 @@ public class SynchronizationPlanMessageComingFromCentralDatabaseBackup implement
 		return lastBackupPartUTC;
 	}
 
-	public Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> getLastValidatedAndEncryptedIDsPerHost() {
+	/*public Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> getLastValidatedAndEncryptedIDsPerHost() {
 		return lastValidatedAndEncryptedIDsPerHost;
+	}*/
+
+	public Map<DecentralizedValue, byte[]> getLastValidatedAndEncryptedDistantIdsPerHost() {
+		return lastValidatedAndEncryptedDistantIdsPerHost;
 	}
 
 	public Map<String, Long> getLastValidatedTransactionsUTCForDestinationHost() {
 		return lastValidatedTransactionsUTCForDestinationHost;
 	}
-	public Map<DecentralizedValue, LastValidatedLocalAndDistantID> getLastValidatedIDsPerHost(EncryptionProfileProvider encryptionProfileProvider) throws IOException {
+	/*public Map<DecentralizedValue, LastValidatedLocalAndDistantID> getLastValidatedIDsPerHost(EncryptionProfileProvider encryptionProfileProvider) throws IOException {
 		return InitialMessageComingFromCentralBackup.getLastValidatedIDsPerHost(encryptionProfileProvider, lastValidatedAndEncryptedIDsPerHost);
+	}*/
+
+	public Map<DecentralizedValue, Long> getLastValidatedIDsPerHost(EncryptionProfileProvider encryptionProfileProvider) throws IOException {
+		if (lastValidatedDistantIdsPerHost==null)
+		{
+			Map<DecentralizedValue, Long> lastValidatedDistantIdsPerHost=new HashMap<>();
+			for (Map.Entry<DecentralizedValue, byte[]> e : lastValidatedAndEncryptedDistantIdsPerHost.entrySet())
+			{
+				lastValidatedDistantIdsPerHost.put(e.getKey(), EncryptionTools.decryptID(encryptionProfileProvider, e.getValue()));
+			}
+			this.lastValidatedDistantIdsPerHost=lastValidatedDistantIdsPerHost;
+		}
+		return this.lastValidatedDistantIdsPerHost;
 	}
 
 	@Override

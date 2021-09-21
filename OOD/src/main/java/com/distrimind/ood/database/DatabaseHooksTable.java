@@ -101,9 +101,15 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		@Field
 		private boolean concernsDatabaseHost;
 
+		/**
+		 * Local transaction ID validated by distant peer
+		 */
 		@Field
 		private long lastValidatedLocalTransactionID = -1;
 
+		/**
+		 * Distant transaction ID validated by local peer
+		 */
 		@Field
 		private long lastValidatedDistantTransactionID = -1;
 

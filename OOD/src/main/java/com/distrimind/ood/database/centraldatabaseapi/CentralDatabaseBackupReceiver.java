@@ -136,6 +136,14 @@ public abstract class CentralDatabaseBackupReceiver {
 		return r!=null && r.isConnected();
 	}
 
+	CentralDatabaseBackupReceiverPerPeer getConnectedIntoThisServer(DecentralizedValue peerID)
+	{
+		CentralDatabaseBackupReceiverPerPeer r=receiversPerPeer.get(peerID);
+		if (r!=null && !r.isConnected())
+			return null;
+		return r;
+	}
+
 	public boolean isConnectedIntoOneOfCentralDatabaseBackupServers(DecentralizedValue peerID) throws DatabaseException {
 		return connectedClientsTable.hasRecordsWithAllFields("clientID", peerID);
 	}

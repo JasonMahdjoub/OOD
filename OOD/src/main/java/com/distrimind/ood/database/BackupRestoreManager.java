@@ -40,6 +40,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.messages.AbstractEncryptedBackupPartComingFromCentralDatabaseBackup;
 import com.distrimind.ood.database.messages.EncryptedBackupPartDestinedToCentralDatabaseBackup;
+import com.distrimind.ood.database.messages.SynchronizationPlanMessageComingFromCentralDatabaseBackup;
 import com.distrimind.ood.i18n.DatabaseMessages;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.FileTools;
@@ -1410,8 +1411,8 @@ public class BackupRestoreManager {
 		return restoreDatabaseToDateUTC(Long.MAX_VALUE, false);
 	}
 
-	boolean restoreDatabaseToLastKnownBackupFromEmptyDatabase() throws DatabaseException {
-		return restoreDatabaseToDateUTC(Long.MAX_VALUE, false, false);
+	void restoreDatabaseToLastKnownBackupFromEmptyDatabase(SynchronizationPlanMessageComingFromCentralDatabaseBackup synchronizationPlanMessageComingFromCentralDatabaseBackup, Long timeOfRestoration) throws DatabaseException {
+		restoreDatabaseToDateUTC(timeOfRestoration==null?Long.MAX_VALUE:timeOfRestoration, false, timeOfRestoration!=null, synchronizationPlanMessageComingFromCentralDatabaseBackup);
 	}
 
 	/**
@@ -1425,10 +1426,68 @@ public class BackupRestoreManager {
 		return restoreDatabaseToDateUTC(dateUTCInMs, chooseNearestBackupIfNoBackupMatch, true);
 	}
 	boolean restoreDatabaseToDateUTC(long dateUTCInMs, boolean chooseNearestBackupIfNoBackupMatch, boolean notifyOtherPeers) throws DatabaseException {
+		return restoreDatabaseToDateUTC(dateUTCInMs, chooseNearestBackupIfNoBackupMatch, notifyOtherPeers, null);
+	}
+	boolean restoreDatabaseToDateUTC(long dateUTCInMs, boolean chooseNearestBackupIfNoBackupMatch, boolean notifyOtherPeers, SynchronizationPlanMessageComingFromCentralDatabaseBackup synchronizationPlanMessageComingFromCentralDatabaseBackup) throws DatabaseException {
 		boolean notify=false;
 		try
 		{
 			databaseWrapper.lockWrite();
+			final Long lastTransactionID=synchronizationPlanMessageComingFromCentralDatabaseBackup==null?null:getLastTransactionID();
+			if (lastTransactionID!=null)
+			{
+				databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Object>() {
+					@Override
+					public Object run() throws Exception {
+						final long lastLocalTID=databaseWrapper.getTransactionIDTable().getLastTransactionID()-1;
+						DatabaseHooksTable dht=databaseWrapper.getDatabaseHooksTable();
+
+
+
+
+						//Map<DecentralizedValue, LastValidatedLocalAndDistantID> lastValidatedIDsPerHost=synchronizationPlanMessageComingFromCentralDatabaseBackup.getLastValidatedIDsPerHost(databaseWrapper.getDatabaseConfigurationsBuilder().getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup());
+						Map<DecentralizedValue, Long> lastValidatedIDsPerHost=synchronizationPlanMessageComingFromCentralDatabaseBackup.getLastValidatedIDsPerHost(databaseWrapper.getDatabaseConfigurationsBuilder().getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup());
+						dht.updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
+							@Override
+							public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
+								if ((_record.getLastValidatedLocalTransactionID()==lastLocalTID || _record.getLastValidatedLocalTransactionID()==-1) && lastLocalTID<lastTransactionID)
+								{
+									update("lastValidatedLocalTransactionID", lastTransactionID);
+								}
+								if (_record.getHostID().equals(synchronizationPlanMessageComingFromCentralDatabaseBackup.getSourceChannel()))
+								{
+									if (_record.getLastValidatedDistantTransactionID() == -1) {
+										update("lastValidatedDistantTransactionID", lastTransactionID);
+									}
+								}
+								else {
+									Long lastValidatedDistantId = lastValidatedIDsPerHost.get(_record.getHostID());
+									if (lastValidatedDistantId!=null && _record.getLastValidatedDistantTransactionID() == -1) {
+										update("lastValidatedDistantTransactionID", lastValidatedDistantId);
+									}
+								}
+							}
+						}, "concernsDatabaseHost=%c", "c", false);
+						return null;
+					}
+
+					@Override
+					public TransactionIsolation getTransactionIsolation() {
+						return TransactionIsolation.TRANSACTION_READ_COMMITTED;
+					}
+
+					@Override
+					public boolean doesWriteData() {
+						return true;
+					}
+
+					@Override
+					public void initOrReset() {
+
+					}
+				});
+
+			}
 			int oldVersion;
 			int newVersion;
 			File currentFile;
@@ -1449,6 +1508,8 @@ public class BackupRestoreManager {
 					return false;
 				lastTransactionUTCInMs=getLastTransactionUTCInMS();
 				databaseWrapper.checkMinimumValidatedTransactionIds();
+				if (synchronizationPlanMessageComingFromCentralDatabaseBackup!=null && !notifyOtherPeers)
+					temporaryDisabled=true;
 				if (lastTransactionUTCInMs>Long.MIN_VALUE && lastTransactionUTCInMs<=dateUTCInMs) {
 					temporaryDisabled = true;
 					dateUTCInMs=lastTransactionUTCInMs;
@@ -1692,6 +1753,7 @@ public class BackupRestoreManager {
 											progressPosition += in.currentPosition() - startRecord;
 											progressMonitor.setProgress((int) (((progressPosition+1) * 1000) / totalSize));
 										}
+
 									}
 								}
 
@@ -1733,8 +1795,35 @@ public class BackupRestoreManager {
 				if (notifyOtherPeers) {
 					databaseWrapper.getSynchronizer().notifyOtherPeersThatDatabaseRestorationWasDone(dbPackage, dateUTCInMs,restorationTimeUTCInMS, lastTransactionUTCInMs);
 				}
-				else
+				else {
 					databaseWrapper.getSynchronizer().cleanTransactionsAfterRestoration(dbPackage.getName(), dateUTCInMs, restorationTimeUTCInMS, lastTransactionUTCInMs, false, chooseNearestBackupIfNoBackupMatch);
+				}
+				if (lastTransactionID!=null) {
+					databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Void>(){
+						@Override
+						public Void run() throws Exception {
+							if (databaseWrapper.getTransactionIDTable().getLastTransactionID() < lastTransactionID+1) {
+								databaseWrapper.getTransactionIDTable().setLastTransactionID(lastTransactionID < 0 ? 0 : lastTransactionID + 1);
+							}
+							return null;
+						}
+
+						@Override
+						public TransactionIsolation getTransactionIsolation() {
+							return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
+						}
+
+						@Override
+						public boolean doesWriteData() {
+							return true;
+						}
+
+						@Override
+						public void initOrReset() {
+
+						}
+					});
+				}
 
 				return res;
 

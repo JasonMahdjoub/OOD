@@ -287,15 +287,15 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 		{
 			return received((AskForInitialSynchronizationPlanMessageDestinedToCentralDatabaseBackup)message);
 		}
-		else if (message instanceof InitialSynchronizationAppliedMessageDestinedToCentralDatabaseBackup)
+		/*else if (message instanceof InitialSynchronizationAppliedMessageDestinedToCentralDatabaseBackup)
 		{
 			return received((InitialSynchronizationAppliedMessageDestinedToCentralDatabaseBackup)message);
-		}
+		}*/
 		else
 			return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
 
 	}
-	private Integrity received(InitialSynchronizationAppliedMessageDestinedToCentralDatabaseBackup message) throws DatabaseException {
+	/*private Integrity received(InitialSynchronizationAppliedMessageDestinedToCentralDatabaseBackup message) throws DatabaseException {
 		return centralDatabaseBackupReceiver.clientTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
 			@Override
 			public Integrity run() throws Exception {
@@ -313,9 +313,18 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 					{
 						centralDatabaseBackupReceiver.databaseBackupPerClientTable.updateRecord(r, "lastFileBackupPartUTC", message.getLastLocalTransactionUTC(), "lastValidatedAndEncryptedID", message.getLastEncryptedLocalTransactionID());
 					}
-					/*sendInitialMessageComingFromCentralBackup(client);
-					sendInitialMessageComingFromCentralBackup(connectedClientRecord);*/
-					return Integrity.OK;
+					/*parseClients(new Filter<ClientTable.Record>() {
+						@Override
+						public boolean nextRecord(ClientTable.Record _record) throws DatabaseException {
+							CentralDatabaseBackupReceiverPerPeer r=centralDatabaseBackupReceiver.getConnectedIntoThisServer(_record.getClientID());
+							if (r!=null)
+								r.sendInitialMessageComingFromCentralBackup();
+							return false;
+						}
+					}, null);*/
+
+
+					/*return Integrity.OK;
 				}
 				catch (MessageExternalizationException e)
 				{
@@ -339,9 +348,10 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 
 			}
 		});
-	}
+	}*/
 	private Integrity received(AskForInitialSynchronizationPlanMessageDestinedToCentralDatabaseBackup message) throws DatabaseException {
 		try {
+
 			Integrity i = centralDatabaseBackupReceiver.clientTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Integrity>() {
 				@Override
 				public Integrity run() throws Exception {
@@ -354,80 +364,108 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 					}
 					if (clientSource == null)
 						return Integrity.FAIL;
-					DatabaseBackupPerClientTable.Record clientDB = centralDatabaseBackupReceiver.databaseBackupPerClientTable.getRecord("client", clientSource, "packageString", message.getPackageString());
-					if (clientDB != null && (clientDB.getLastFileBackupPartUTC() > Long.MIN_VALUE
-							|| clientDB.getLastValidatedAndEncryptedID() != null
-							|| clientDB.getRemoveTimeUTC() != null))
-						return Integrity.OK;
+
 					Reference<DatabaseBackupPerClientTable.Record> chosenBackup = new Reference<>();
 					centralDatabaseBackupReceiver.databaseBackupPerClientTable.getRecords(new Filter<DatabaseBackupPerClientTable.Record>() {
 						@Override
 						public boolean nextRecord(DatabaseBackupPerClientTable.Record _record) {
-							if (message.getAcceptedDataSources().contains(_record.getClient().getClientID())) {
+							if (_record.getClient().getClientID().equals(message.getHostSource()))
+							{
+								if (_record.getClient().getToRemoveOrderTimeUTCInMs()!=null)
+									chosenBackup.set(null);
+								else
+									chosenBackup.set(_record);
+								stopTableParsing();
+							}
+							else if (message.getAcceptedDataSources().contains(_record.getClient().getClientID()) && _record.getRemoveTimeUTC()==null) {
 								if (chosenBackup.get() == null || chosenBackup.get().getLastFileBackupPartUTC() < _record.getLastFileBackupPartUTC()) {
 									chosenBackup.set(_record);
 								}
 							}
 							return false;
 						}
-					}, "client!=%c and packageString=%ps and lastFileBackupPartUTC>%minLong and lastValidatedAndEncryptedID is not null and removeTimeUTC is null", "c", clientSource, "ps", message.getPackageString(), "minLong", Long.MIN_VALUE);
+					}, "packageString=%ps and lastFileBackupPartUTC>%minLong and lastValidatedAndEncryptedID is not null", "ps", message.getPackageString(), "minLong", Long.MIN_VALUE);
 					if (chosenBackup.get() != null) {
+						DatabaseBackupPerClientTable.Record database;
+						Map<DecentralizedValue, byte[]> lastValidatedAndEncryptedDistantIdsPerHost=null;
 						try {
-							DatabaseBackupPerClientTable.Record database = centralDatabaseBackupReceiver.databaseBackupPerClientTable.addRecord(new DatabaseBackupPerClientTable.Record(clientSource, message.getPackageString(), chosenBackup.get().lastFileBackupPartUTC, chosenBackup.get().getLastValidatedAndEncryptedID()));
-							long startPos = 0;
-							long sizeRow = 1000;
-							long rowNumber = centralDatabaseBackupReceiver.encryptedBackupPartReferenceTable.getRecordsNumber("database=%d", "d", database);
-							FileReferenceManager fileReferenceManager = centralDatabaseBackupReceiver.encryptedBackupPartReferenceTable.getDatabaseWrapper().getFileReferenceManager();
-							do {
-								List<EncryptedBackupPartReferenceTable.Record> l = centralDatabaseBackupReceiver.encryptedBackupPartReferenceTable.getPaginatedRecords(startPos, sizeRow, "database=%d", "d", chosenBackup.get());
-								for (EncryptedBackupPartReferenceTable.Record r : l) {
-									FileRecord fr = fileReferenceManager.incrementReferenceFile(r.getFileId());
-									centralDatabaseBackupReceiver.encryptedBackupPartReferenceTable.addRecord(new EncryptedBackupPartReferenceTable.Record(database, r.getFileTimeUTC(), r.isReferenceFile(), fr.getFileId(), r.getMetaData()));
+							if (chosenBackup.get().getClient().getClientID().equals(message.getHostSource()))
+								database=chosenBackup.get();
+							else {
+								database = centralDatabaseBackupReceiver.databaseBackupPerClientTable.addRecord(new DatabaseBackupPerClientTable.Record(clientSource, message.getPackageString(), chosenBackup.get().lastFileBackupPartUTC, chosenBackup.get().getLastValidatedAndEncryptedID()));
+								long startPos = 0;
+								long sizeRow = 1000;
+								long rowNumber = centralDatabaseBackupReceiver.encryptedBackupPartReferenceTable.getRecordsNumber("database=%d", "d", chosenBackup.get());
+								FileReferenceManager fileReferenceManager = centralDatabaseBackupReceiver.encryptedBackupPartReferenceTable.getDatabaseWrapper().getFileReferenceManager();
+								do {
+									List<EncryptedBackupPartReferenceTable.Record> l = centralDatabaseBackupReceiver.encryptedBackupPartReferenceTable.getPaginatedRecords(startPos, sizeRow, "database=%d", "d", chosenBackup.get());
+									for (EncryptedBackupPartReferenceTable.Record r : l) {
+										FileRecord fr = fileReferenceManager.incrementReferenceFile(r.getFileId());
+										centralDatabaseBackupReceiver.encryptedBackupPartReferenceTable.addRecord(new EncryptedBackupPartReferenceTable.Record(database, r.getFileTimeUTC(), r.isReferenceFile(), fr.getFileId(), r.getMetaData()));
+									}
+									startPos += l.size();
+								} while (startPos < rowNumber);
+								lastValidatedAndEncryptedDistantIdsPerHost=new HashMap<>();
+								for (LastValidatedDistantIDPerClientTable.Record r : centralDatabaseBackupReceiver.lastValidatedDistantIDPerClientTable.getRecords(new Filter<LastValidatedDistantIDPerClientTable.Record>() {
+									@Override
+									public boolean nextRecord(LastValidatedDistantIDPerClientTable.Record _record) {
+										return message.getAcceptedDataSources().contains(_record.getDistantClient().getClientID());
+									}
+								}, "client=%c and distantClient!=%c and distantClient!=%c2", "c", chosenBackup.get().getClient(), "c2", clientSource)) {
+									lastValidatedAndEncryptedDistantIdsPerHost.put(r.getDistantClient().getClientID(), r.getLastValidatedAndEncryptedDistantID());
+									try {
+										centralDatabaseBackupReceiver.lastValidatedDistantIDPerClientTable.addRecord(new LastValidatedDistantIDPerClientTable.Record(clientSource, r.getDistantClient(), r.getLastValidatedAndEncryptedDistantID()));
+									}
+									catch (ConstraintsNotRespectedDatabaseException ignored)
+									{
+
+									}
 								}
-								startPos += l.size();
-							} while (startPos < rowNumber);
-							for (LastValidatedDistantIDPerClientTable.Record r : centralDatabaseBackupReceiver.lastValidatedDistantIDPerClientTable.getRecords(new Filter<LastValidatedDistantIDPerClientTable.Record>() {
-								@Override
-								public boolean nextRecord(LastValidatedDistantIDPerClientTable.Record _record) {
-									return message.getAcceptedDataSources().contains(_record.getDistantClient().getClientID());
-								}
-							}, "client=%c", "c", chosenBackup.get().getClient())) {
-								centralDatabaseBackupReceiver.lastValidatedDistantIDPerClientTable.addRecord(new LastValidatedDistantIDPerClientTable.Record(clientSource, r.getDistantClient(), r.getLastValidatedAndEncryptedDistantID()));
+								LastValidatedDistantIDPerClientTable.Record r = centralDatabaseBackupReceiver.lastValidatedDistantIDPerClientTable.getRecord("client", clientSource, "distantClient", chosenBackup.get().getClient());
+								if (r == null)
+									centralDatabaseBackupReceiver.lastValidatedDistantIDPerClientTable.addRecord(new LastValidatedDistantIDPerClientTable.Record(clientSource, chosenBackup.get().getClient(), chosenBackup.get().getLastValidatedAndEncryptedID()));
 							}
-							LastValidatedDistantIDPerClientTable.Record r=centralDatabaseBackupReceiver.lastValidatedDistantIDPerClientTable.getRecord("client", clientSource,"distantClient",chosenBackup.get().getClient());
-							if (r==null)
-								centralDatabaseBackupReceiver.lastValidatedDistantIDPerClientTable.addRecord(new LastValidatedDistantIDPerClientTable.Record(clientSource, chosenBackup.get().getClient(), chosenBackup.get().getLastValidatedAndEncryptedID()));
-							else
-								centralDatabaseBackupReceiver.lastValidatedDistantIDPerClientTable.updateRecord(r, "lastValidatedAndEncryptedDistantID",  chosenBackup.get().getLastValidatedAndEncryptedID());
-							return Integrity.OK;
 						} catch (ConstraintsNotRespectedDatabaseException | DatabaseIntegrityException | RecordNotFoundDatabaseException e) {
 							e.printStackTrace();
 							cancelTransaction();
+							return Integrity.FAIL;
 						}
 
-
-					centralDatabaseBackupReceiver.databaseBackupPerClientTable.getRecords("client=%c and packageString=%ps", "c",chosenBackup.get().getClient(), "ps", message.getPackageString());
-					Reference<Long> referenceUTC = new Reference<>();
-					centralDatabaseBackupReceiver.encryptedBackupPartReferenceTable.getRecords(new Filter<EncryptedBackupPartReferenceTable.Record>() {
-						@Override
-						public boolean nextRecord(EncryptedBackupPartReferenceTable.Record _record) {
-							if (referenceUTC.get() == null || referenceUTC.get() < _record.getFileTimeUTC()) {
-								referenceUTC.set(_record.getFileTimeUTC());
+						//centralDatabaseBackupReceiver.databaseBackupPerClientTable.getRecords("client=%c and packageString=%ps", "c",chosenBackup.get().getClient(), "ps", message.getPackageString());
+						Reference<Long> referenceUTC = new Reference<>();
+						centralDatabaseBackupReceiver.encryptedBackupPartReferenceTable.getRecords(new Filter<EncryptedBackupPartReferenceTable.Record>() {
+							@Override
+							public boolean nextRecord(EncryptedBackupPartReferenceTable.Record _record) {
+								if (referenceUTC.get() == null || referenceUTC.get() < _record.getFileTimeUTC()) {
+									referenceUTC.set(_record.getFileTimeUTC());
+								}
+								return false;
 							}
-							return false;
+						}, "database=%d and isReferenceFile=%irf", "d", database, "irf", true);
+						if (lastValidatedAndEncryptedDistantIdsPerHost==null) {
+							Map<DecentralizedValue, byte[]> l = new HashMap<>();
+							centralDatabaseBackupReceiver.lastValidatedDistantIDPerClientTable.getRecords(new Filter<LastValidatedDistantIDPerClientTable.Record>() {
+								@Override
+								public boolean nextRecord(LastValidatedDistantIDPerClientTable.Record _record) {
+									if (_record.getLastValidatedAndEncryptedDistantID() != null && message.getAcceptedDataSources().contains(_record.getDistantClient().getClientID()))
+										l.put(_record.getDistantClient().getClientID(), _record.getLastValidatedAndEncryptedDistantID());
+									return false;
+								}
+							}, "client=%c and distantClient!=%c", "c", database.getClient());
+							lastValidatedAndEncryptedDistantIdsPerHost=l;
 						}
-					}, "database=%d and isReferenceFile=%irf", "d", chosenBackup.get(), "irf", true);
 
-					sendMessageFromThisCentralDatabaseBackup(
-							new SynchronizationPlanMessageComingFromCentralDatabaseBackup(
-									message.getHostSource(), message.getPackageString(),
-									chosenBackup.get().getClient().getClientID(),
-									referenceUTC.get(),
-									chosenBackup.get().getLastFileBackupPartUTC(),
-									getLastValidatedAndEncryptedIDsPerHost(chosenBackup.get().getClient()),
-									getLastValidatedTransactionsUTCForDestinationHost(chosenBackup.get().getClient())
+						sendMessageFromThisCentralDatabaseBackup(
+								new SynchronizationPlanMessageComingFromCentralDatabaseBackup(
+										message.getHostSource(), message.getPackageString(),
+										chosenBackup.get().getClient().getClientID(),
+										referenceUTC.get(),
+										database.getLastFileBackupPartUTC(),
+										lastValidatedAndEncryptedDistantIdsPerHost,
+										//getLastValidatedAndEncryptedIDsPerHost(chosenBackup.get().getClient()),
+										getLastValidatedTransactionsUTCForDestinationHost()
 
-							));
+								));
 					}
 					return Integrity.OK;
 				}
@@ -452,7 +490,9 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 				parseClients(new Filter<ClientTable.Record>() {
 					@Override
 					public boolean nextRecord(ClientTable.Record _record) throws DatabaseException {
-						sendInitialMessageComingFromCentralBackup(_record);
+						CentralDatabaseBackupReceiverPerPeer r=centralDatabaseBackupReceiver.getConnectedIntoThisServer(_record.getClientID());
+						if (r!=null)
+							r.sendInitialMessageComingFromCentralBackup();
 						return false;
 					}
 				}, null);
@@ -603,7 +643,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 				try {
 
 					if (update)
-						centralDatabaseBackupReceiver.databaseBackupPerClientTable.updateRecord(database, "lastFileBackupPartUTC", message.getMetaData().getFileTimestampUTC());
+						centralDatabaseBackupReceiver.databaseBackupPerClientTable.updateRecord(database, "lastFileBackupPartUTC", message.getMetaData().getFileTimestampUTC(), "lastValidatedAndEncryptedID", message.getLastValidatedAndEncryptedID());
 					else if (add)
 						centralDatabaseBackupReceiver.databaseBackupPerClientTable.addRecord(database);
 					centralDatabaseBackupReceiver.encryptedBackupPartReferenceTable.addRecord(r);
@@ -719,18 +759,18 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 			return e.getIntegrity();
 		}
 	}
-	private Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> getLastValidatedAndEncryptedIDsPerHost(ClientTable.Record fromClientRecord) throws DatabaseException {
+	private Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> getLastValidatedAndEncryptedIDsPerHost() throws DatabaseException {
 		Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> lastValidatedAndEncryptedIDsPerHost=new HashMap<>();
 		parseClients(new Filter<ClientTable.Record>() {
 			@Override
 			public boolean nextRecord(ClientTable.Record r) throws DatabaseException {
-				lastValidatedAndEncryptedIDsPerHost.put(r.getClientID(), new LastValidatedLocalAndDistantEncryptedID(getLastValidatedAndEncryptedDistantID(r, fromClientRecord), getLastValidatedAndEncryptedDistantIDPerDatabase(r)));
+				lastValidatedAndEncryptedIDsPerHost.put(r.getClientID(), new LastValidatedLocalAndDistantEncryptedID(getLastValidatedAndEncryptedDistantID(r, connectedClientRecord), getLastValidatedAndEncryptedDistantIDPerDatabase(r)));
 				return false;
 			}
-		}, fromClientRecord.getClientID());
+		}, connectedClientID);
 		return lastValidatedAndEncryptedIDsPerHost;
 	}
-	private Map<String, Long> getLastValidatedTransactionsUTCForDestinationHost(ClientTable.Record fromConcernedClient) throws DatabaseException {
+	private Map<String, Long> getLastValidatedTransactionsUTCForDestinationHost() throws DatabaseException {
 		Map<String, Long> lastValidatedTransactionsUTCForDestinationHost=new HashMap<>();
 		centralDatabaseBackupReceiver.databaseBackupPerClientTable.getRecords(new Filter<DatabaseBackupPerClientTable.Record>() {
 			@Override
@@ -738,7 +778,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 				lastValidatedTransactionsUTCForDestinationHost.put(_record.getPackageString(), _record.getLastFileBackupPartUTC());
 				return false;
 			}
-		},"client=%c", "c", fromConcernedClient);
+		},"client=%c", "c", connectedClientRecord);
 		return lastValidatedTransactionsUTCForDestinationHost;
 	}
 	private Integrity received(DistantBackupCenterConnexionInitialisation message) throws DatabaseException {
@@ -756,7 +796,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 				if (i!=Integrity.OK)
 					return i;
 
-				sendInitialMessageComingFromCentralBackup(connectedClientRecord);
+				sendInitialMessageComingFromCentralBackup();
 
 				return Integrity.OK;
 			}
@@ -793,14 +833,16 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 				if (i!=Integrity.OK)
 					return i;
 
-				sendInitialMessageComingFromCentralBackup(connectedClientRecord);
+				sendInitialMessageComingFromCentralBackup();
 				parseClients(new Filter<ClientTable.Record>() {
 					@Override
 					public boolean nextRecord(ClientTable.Record _record) throws DatabaseException {
 
 						if (message.getEncryptedDistantLastValidatedIDs().containsKey(_record.getClientID()))
 						{
-							sendInitialMessageComingFromCentralBackup(_record);
+							CentralDatabaseBackupReceiverPerPeer r=centralDatabaseBackupReceiver.getConnectedIntoThisServer(_record.getClientID());
+							if (r!=null)
+								r.sendInitialMessageComingFromCentralBackup();
 						}
 						return false;
 					}
@@ -825,14 +867,14 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 			}
 		});
 	}
-	private void sendInitialMessageComingFromCentralBackup(ClientTable.Record clientRecord) throws DatabaseException {
-		Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> lastValidatedAndEncryptedIDsPerHost=getLastValidatedAndEncryptedIDsPerHost(clientRecord);
+	private void sendInitialMessageComingFromCentralBackup() throws DatabaseException {
+		Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> lastValidatedAndEncryptedIDsPerHost=getLastValidatedAndEncryptedIDsPerHost();
 
-		Map<String, Long> lastValidatedTransactionsUTCForDestinationHost=getLastValidatedTransactionsUTCForDestinationHost(clientRecord);
+		Map<String, Long> lastValidatedTransactionsUTCForDestinationHost=getLastValidatedTransactionsUTCForDestinationHost();
 
-		List<byte[]> lids=clientRecord.getEncryptedAuthenticatedMessagesToSend();
+		List<byte[]> lids=connectedClientRecord.getEncryptedAuthenticatedMessagesToSend();
 		if (lids!=null && lids.size()>0)
-			centralDatabaseBackupReceiver.clientTable.updateRecord(clientRecord, "encryptedAuthenticatedMessagesToSend", null);
+			centralDatabaseBackupReceiver.clientTable.updateRecord(connectedClientRecord, "encryptedAuthenticatedMessagesToSend", null);
 		HashMap<DecentralizedValue, byte[]> encryptedCompatibleDatabases=new HashMap<>();
 		parseClients(
 				new Filter<ClientTable.Record>(){
@@ -843,8 +885,8 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 							encryptedCompatibleDatabases.put(_record.getClientID(), _record.getEncryptedCompatiblesDatabases());
 						return false;
 					}
-				},clientRecord.getClientID());
-		sendMessage(new InitialMessageComingFromCentralBackup(clientRecord.getClientID(), lastValidatedAndEncryptedIDsPerHost, lastValidatedTransactionsUTCForDestinationHost, lids, encryptedCompatibleDatabases));
+				},connectedClientID);
+		sendMessage(new InitialMessageComingFromCentralBackup(connectedClientID, lastValidatedAndEncryptedIDsPerHost, lastValidatedTransactionsUTCForDestinationHost, lids, encryptedCompatibleDatabases));
 	}
 	private EncryptedBackupPartReferenceTable.Record getBackupMetaDataPerFile(DatabaseBackupPerClientTable.Record databaseBackup, FileCoordinate fileCoordinate) throws DatabaseException {
 		assert databaseBackup!=null;
@@ -938,9 +980,9 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 							case RESTORATION:
 								sendMessage(e.readEncryptedBackupPartForRestoration(centralDatabaseBackupReceiver.databaseBackupPerClientTable.getDatabaseWrapper(), message.getHostSource(), channelHost.getClientID()));
 								break;
-							case INITIAL_SYNCHRONIZATION:
+							/*case INITIAL_SYNCHRONIZATION:
 								sendMessage(e.readEncryptedBackupPartForInitialSynchronization(centralDatabaseBackupReceiver.databaseBackupPerClientTable.getDatabaseWrapper(), message.getHostSource(), channelHost.getClientID()));
-								break;
+								break;*/
 							default:
 								throw new IllegalAccessError();
 						}

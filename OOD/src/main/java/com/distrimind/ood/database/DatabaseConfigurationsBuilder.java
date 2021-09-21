@@ -1053,7 +1053,7 @@ public class DatabaseConfigurationsBuilder {
 		}
 	}
 
-	void applyRestorationIfNecessary(DatabaseWrapper.Database database) throws DatabaseException {
+	boolean applyRestorationIfNecessary(DatabaseWrapper.Database database) throws DatabaseException {
 		synchronized (this)
 		{
 			wrapper.lockWrite();
@@ -1061,7 +1061,7 @@ public class DatabaseConfigurationsBuilder {
 				for (DatabaseConfiguration c : configurations.getDatabaseConfigurations()) {
 					if (c.getDatabaseSchema().getPackage().equals(database.getConfiguration().getDatabaseSchema().getPackage())) {
 						Long timeUTCInMs = c.getTimeUTCInMsForRestoringDatabaseToOldVersion();
-						if (timeUTCInMs != null) {
+						if (timeUTCInMs != null && !database.isCurrentDatabaseInInitialSynchronizationProcessFromCentralDatabaseBackup()) {
 							if (c.isPreferOtherChannelThanLocalChannelIfAvailableDuringRestoration()) {
 								if (c.isSynchronizedWithCentralBackupDatabase()) {
 									database.temporaryBackupRestoreManagerComingFromDistantBackupManager.restoreDatabaseToDateUTC(timeUTCInMs, c.isChooseNearestBackupIfNoBackupMatch(), true);
@@ -1126,13 +1126,20 @@ public class DatabaseConfigurationsBuilder {
 						{
 
 							if (database.backupRestoreManager.getLastTransactionID()>-1) {
-								database.backupRestoreManager.restoreDatabaseToLastKnownBackupFromEmptyDatabase();
+								assert database.isCurrentDatabaseInInitialSynchronizationProcessFromCentralDatabaseBackup();
+								database.backupRestoreManager.restoreDatabaseToLastKnownBackupFromEmptyDatabase(database.getSynchronizationPlanMessageComingFromCentralDatabaseBackup(), timeUTCInMs);
+								database.terminateCurrentDatabaseInitialSynchronizationProcessFromCentralDatabaseBackup();
+								if (timeUTCInMs!=null)
+									c.disableDatabaseRestorationToOldVersion();
+
+								return true;
 							}
 						}
 
 						break;
 					}
 				}
+				return false;
 			}
 			finally {
 				wrapper.unlockWrite();
