@@ -101,3 +101,6 @@ Adapt into your pom.xml file, the next code :
 	</project>
 
 To know what last version has been uploaded, please refer to versions availables into [this repository](https://artifactory.distri-mind.fr/artifactory/DistriMind-Public/com/distrimind/ood/OOD/)
+
+###### Requirements under Ubuntu/Debian :
+  * Please install the package ethtool, rng-tools, mtr(only debian)
