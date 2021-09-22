@@ -2258,6 +2258,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 			ConnectedPeersWithCentralBackup cp = this.initializedHooksWithCentralBackup.get(hostChannel);
 			if (cp!=null) {
+				ConnectedPeers cp2=this.initializedHooks.get(hostChannel);
+				if (cp2!=null && cp2.isConnected())
+					return;
 				if (cp.otherBackupMetaDataDatabasePartsSynchronizingWithCentralDatabaseBackup) {
 					return;
 				}
@@ -2527,6 +2530,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (d.configuration.isSynchronizedWithCentralBackupDatabase()
 					&& d.lastValidatedTransactionUTCForCentralBackup==Long.MIN_VALUE
 					&& !d.isCurrentDatabaseInRestorationProcess()
+					&& initializedHooks.size()==0
 					&& d.configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase()!=null && d.configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase().size()>0
 					&& d.configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase().stream().allMatch(this::isInitializedWithCentralBackup)
 					&& d.isEmpty()
@@ -2827,6 +2831,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				if (peerID.equals(getLocalHostID()))
 					return;
 				initializedHooks.put(peerID, new ConnectedPeers(peerID, false));
+				for (Database d : sql_database.values())
+					d.cancelCurrentDatabaseInitialSynchronizationProcessFromCentralDatabaseBackup();
 				sendAvailableDatabaseTo(peerID);
 				if (networkLogger!=null)
 					networkLogger.info("Peer "+peerID+" available for connection !");
@@ -2846,6 +2852,15 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				if (cp!=null && cp.isConnected())
 					disconnectHook(peerID);
 				initializedHooks.remove(peerID);
+				if (initializedHooks.size()==0 && isInitializedWithCentralBackup())
+				{
+					for (Database d : sql_database.values())
+					{
+						if (d.configuration.isSynchronizedWithCentralBackupDatabase())
+							checkFirstIndirectSynchronizationsWithCentralDatabaseBackup(d);
+					}
+				}
+
 
 
 			}
