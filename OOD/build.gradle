@@ -202,6 +202,7 @@ test {
    	useTestNG
    	{
    		suites 'src/test/java/com/distrimind/ood/database/tests/AllTestsNG.xml'
+        suites 'src/test/java/com/distrimind/ood/database/tests/TestAddPeerWithCentralDatabaseBackupConnected.xml'
         suites 'src/test/java/com/distrimind/ood/database/tests/TestRevertToOldVersionIntoDecentralizedNetwork.xml'
         suites 'src/test/java/com/distrimind/ood/database/tests/TestDatabaseAddDatabaseWithCentralDataaseNetwork.xml'
         suites 'src/test/java/com/distrimind/ood/database/tests/TestDatabaseChangeVersionIntoDecentralizedNetwork.xml'

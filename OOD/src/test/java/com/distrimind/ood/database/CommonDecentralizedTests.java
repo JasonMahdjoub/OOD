@@ -1093,7 +1093,7 @@ public abstract class CommonDecentralizedTests {
 			this.centralDatabaseBackupDatabase = getDatabaseFactoryInstanceForCentralDatabaseBackupReceiver().getDatabaseWrapperSingleton();
 			this.centralDatabaseBackupReceiver = new CentralDatabaseBackupReceiverFactory(centralDatabaseBackupKeyPair.getASymmetricPublicKey()).getCentralDatabaseBackupReceiverInstanceSingleton(centralDatabaseBackupDatabase);
 			this.centralDatabaseBackupDatabase.setNetworkLogLevel(networkLogLevel);
-
+			this.centralDatabaseBackupDatabase.setCentralDatabaseLogLevel(networkLogLevel);
 		}
 	}
 	@BeforeClass
@@ -1554,7 +1554,8 @@ public abstract class CommonDecentralizedTests {
 		for (Database d : listDatabase)
 		{
 			assert d.getDbwrapper().getSynchronizer().isInitialized(d.hostID);
-			d.getDbwrapper().getSynchronizer().centralDatabaseBackupAvailable();
+			if (!d.getDbwrapper().getSynchronizer().isInitializedWithCentralBackup())
+				d.getDbwrapper().getSynchronizer().centralDatabaseBackupAvailable();
 			d.setConnected(true);
 			/*if (!d.getDbwrapper().getSynchronizer().isInitialized(d.hostID)) {
 				d.dbwrapper.getSynchronizer().initLocalHostID(d.hostID, true);
