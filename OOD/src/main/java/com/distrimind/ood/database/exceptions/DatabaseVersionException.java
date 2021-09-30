@@ -53,9 +53,5 @@ public class DatabaseVersionException extends DatabaseException {
 				+ _table.getClass().getSimpleName() + " coded into this program. This is a problem of Version. " + _additional_message);
 	}
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = -4067663818886835510L;
 
 }

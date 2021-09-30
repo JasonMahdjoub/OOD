@@ -39,6 +39,7 @@ import com.distrimind.ood.database.DatabaseFactory;
 import com.distrimind.ood.database.EmbeddedH2DatabaseWrapper;
 import com.distrimind.ood.database.InFileEmbeddedH2DatabaseFactory;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import org.testng.annotations.Factory;
 
 import java.io.File;
 
@@ -55,9 +56,12 @@ public class H2TestAddPeerWithCentralDatabaseBackupConnected extends TestAddPeer
 	final String database_file_name3 = "decentralizedDatabaseAddPeer3";
 	final String database_file_name4 = "decentralizedDatabaseAddPeer4";
 
-	public H2TestAddPeerWithCentralDatabaseBackupConnected() {
-		super();
+
+	@Factory(dataProvider = "provideDataFactory")
+	public H2TestAddPeerWithCentralDatabaseBackupConnected(boolean connectOnlyCentralDatabase) {
+		super(connectOnlyCentralDatabase);
 	}
+
 
 	@Override
 	public DatabaseFactory<?> getDatabaseFactoryInstanceForCentralDatabaseBackupReceiver() throws IllegalArgumentException, DatabaseException {

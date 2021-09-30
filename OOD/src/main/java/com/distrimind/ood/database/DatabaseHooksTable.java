@@ -67,9 +67,9 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 	private volatile DatabaseTransactionsPerHostTable databaseTransactionsPerHostTable = null;
 	private volatile DatabaseDistantTransactionEvent databaseDistantTransactionEvent = null;
 	private volatile IDTable idTable = null;
-	protected volatile HashSet<String> supportedDatabasePackages = null;
+	private volatile HashSet<String> supportedDatabasePackages = null;
 	protected volatile DatabaseHooksTable.Record localHost = null;
-	protected final HashMap<HostPair, Long> lastTransactionFieldsBetweenDistantHosts = new HashMap<>();
+	private final HashMap<HostPair, Long> lastTransactionFieldsBetweenDistantHosts = new HashMap<>();
 
 	public enum PairingState
 	{
@@ -101,9 +101,15 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		@Field
 		private boolean concernsDatabaseHost;
 
+		/**
+		 * Local transaction ID validated by distant peer
+		 */
 		@Field
 		private long lastValidatedLocalTransactionID = -1;
 
+		/**
+		 * Distant transaction ID validated by local peer
+		 */
 		@Field
 		private long lastValidatedDistantTransactionID = -1;
 
@@ -424,12 +430,11 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		return getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Record>() {
 			@Override
 			public Record run() throws Exception {
-				List<Record> l=getRecordsWithAllFields("hostID", message.getHostDestination());
-				if (l.size()>1)
+				List<Record> l = getRecordsWithAllFields("hostID", message.getHostDestination());
+				if (l.size() > 1)
 					throw new InternalError();
-				else if (l.size()==1)
-				{
-					Record r=l.get(0);
+				else if (l.size() == 1) {
+					Record r = l.get(0);
 					if (r.removeAuthenticatedMessage(message))
 						updateRecord(r, "authenticatedMessagesQueueToSend", r.authenticatedMessagesQueueToSend);
 					updateLocalDatabaseHostIfNecessary(r);
@@ -464,7 +469,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			throws DatabaseException {
 
 		final ArrayList<DatabaseHooksTable.Record> toUpdate = new ArrayList<>();
-		getRecords(new Filter<DatabaseHooksTable.Record>() {
+		getRecords(new Filter<Record>() {
 
 			@Override
 			public boolean nextRecord(final com.distrimind.ood.database.DatabaseHooksTable.Record h)
@@ -487,27 +492,27 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							}, "hook=%hook", "hook", h);
 					if (actualLastID.get() > h.getLastValidatedLocalTransactionID()) {
 						getDatabaseDistantTransactionEvent()
-								.getRecords(new Filter<DatabaseDistantTransactionEvent.Record>() {
+								.getRecords(new Filter<com.distrimind.ood.database.DatabaseDistantTransactionEvent.Record>() {
 
-									@Override
-									public boolean nextRecord(
-											com.distrimind.ood.database.DatabaseDistantTransactionEvent.Record _record)
-											throws SerializationDatabaseException {
-										if (_record.isConcernedBy(h.getHostID())) {
-											if (_record.getLocalID() - 1 < actualLastID.get())
-												actualLastID.set(_record.getLocalID() - 1);
-											if (actualLastID.get() == h.getLastValidatedLocalTransactionID())
-												this.stopTableParsing();
-										}
-										return false;
-									}
-								}, "localID<=%maxLocalID AND localID>%minLocalID and peersInformedFull=%peersInformedFull",
-										"maxLocalID", actualLastID.get() , "minLocalID",
-										h.getLastValidatedLocalTransactionID() , "peersInformedFull",
+												@Override
+												public boolean nextRecord(
+														com.distrimind.ood.database.DatabaseDistantTransactionEvent.Record _record)
+														throws SerializationDatabaseException {
+													if (_record.isConcernedBy(h.getHostID())) {
+														if (_record.getLocalID() - 1 < actualLastID.get())
+															actualLastID.set(_record.getLocalID() - 1);
+														if (actualLastID.get() == h.getLastValidatedLocalTransactionID())
+															this.stopTableParsing();
+													}
+													return false;
+												}
+											}, "localID<=%maxLocalID AND localID>%minLocalID and peersInformedFull=%peersInformedFull",
+										"maxLocalID", actualLastID.get(), "minLocalID",
+										h.getLastValidatedLocalTransactionID(), "peersInformedFull",
 										Boolean.FALSE);
 					}
 
-					if (actualLastID.get() == Long.MAX_VALUE && h.getLastValidatedLocalTransactionID()<0)
+					if (actualLastID.get() == Long.MAX_VALUE && h.getLastValidatedLocalTransactionID() < 0)
 						actualLastID.set(lastTransactionID);
 					else if (actualLastID.get() < h.getLastValidatedLocalTransactionID())
 						throw new IllegalAccessError();
@@ -550,7 +555,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 					public Map<DecentralizedValue, Long> run() throws Exception {
 						final Map<DecentralizedValue, Long> res = new HashMap<>();
 
-						getRecords(new Filter<DatabaseHooksTable.Record>() {
+						getRecords(new Filter<Record>() {
 
 							@Override
 							public boolean nextRecord(Record _record) {
@@ -575,7 +580,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 					@Override
 					public void initOrReset() {
-						
+
 					}
 				});
 	}
@@ -652,7 +657,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 						Set<DecentralizedValue> peerInCloudRemaining=new HashSet<>(peersInCloud);
 						if (getLocalDatabaseHost()==null)
 							throw new DatabaseException("Local database host not set");
-						List<Record> records=getRecords(new Filter<Record>(){
+						List<Record> records=getRecords(new Filter<Record>() {
 							@Override
 							public boolean nextRecord(Record r) {
 								return peerInCloudRemaining.remove(r.getHostID()) || r.concernsDatabaseHost;
@@ -673,11 +678,14 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 								}));
 								nap.removeAll(dpn);
 							}
+							if (nap.size()>0) {
+								r.setDatabasePackageNames(packages.keySet());
+								updateRecord(r, "databasePackageNames", r.databasePackageNames);
+								if (!r.concernsDatabaseHost) {
+									synchronizedPackages.put(r.getHostID(), nap);
+								}
+							}
 
-							r.setDatabasePackageNames(packages.keySet());
-							updateRecord(r, "databasePackageNames", r.databasePackageNames);
-							if (nap.size()>0 && !r.concernsDatabaseHost)
-								synchronizedPackages.put(r.getHostID(), nap);
 							updateLocalDatabaseHostIfNecessary(r);
 
 						}
@@ -693,7 +701,6 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							r = addRecord(r);
 							if (packages.keySet().size()>0)
 								synchronizedPackages.put(r.getHostID(), packages.keySet());
-
 
 						}
 						for (Record r : getRecords())
@@ -716,13 +723,15 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 						if (fromDistantMessage) {
 							DatabaseConfigurationsBuilder builder = getDatabaseWrapper().getDatabaseConfigurationsBuilder();
-							boolean commit=false;
+
 							for (Map.Entry<DecentralizedValue, Set<String>> e : synchronizedPackages.entrySet()) {
 								builder.synchronizeDistantPeersWithGivenAdditionalPackages(false, Collections.singletonList(e.getKey()), e.getValue().toArray(new String[0]));
-								commit=true;
 							}
-							if (commit)
+							if (synchronizedPackages.size()>0) {
 								builder.commit();
+								if (getDatabaseWrapper().getSynchronizer().isInitializedWithCentralBackup())
+									getDatabaseWrapper().getSynchronizer().updateConnectionWithDistantBackupCenter(synchronizedPackages.keySet());
+							}
 						}
 
 
@@ -833,7 +842,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		if (hostID == null)
 			throw new NullPointerException("hostID");
 		return getDatabaseWrapper()
-				.runSynchronizedTransaction(new SynchronizedTransaction<DatabaseHooksTable.Record>() {
+				.runSynchronizedTransaction(new SynchronizedTransaction<Record>() {
 
 					@Override
 					public Record run() throws Exception {
@@ -846,7 +855,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 							return null;
 						} else {
 							r = l.get(0);
-							if (localHost!=null && localHost.getHostID().equals(hostID)) {
+							if (localHost != null && localHost.getHostID().equals(hostID)) {
 								localHost = null;
 							}
 							supportedDatabasePackages = null;
@@ -854,8 +863,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 									|| e.getKey().getHostToSynchronize().equals(hostID));
 							if (removeAllDependingTransactions) {
 								r.setDatabasePackageNames(null);
-							}
-							else
+							} else
 								r.removePackageDatabase(packages);
 							if (removeHook) {
 								r.setRemoved();
@@ -866,8 +874,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 								updateRecord(r);
 								if (removeAllDependingTransactions) {
 									getDatabaseTransactionsPerHostTable().removeTransactions(r);
-								}
-								else
+								} else
 									getDatabaseTransactionsPerHostTable().removeTransactions(r, packages);
 								return r;
 							}
@@ -888,7 +895,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 					@Override
 					public void initOrReset() {
-						
+
 					}
 
 				});
@@ -908,7 +915,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			@Override
 			public HashSet<String> run() throws Exception {
 				final HashSet<String> databasePackages = new HashSet<>();
-				getRecords(new Filter<DatabaseHooksTable.Record>() {
+				getRecords(new Filter<Record>() {
 
 					@Override
 					public boolean nextRecord(DatabaseHooksTable.Record _record) {
@@ -943,7 +950,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 			@Override
 			public void initOrReset() {
-				
+
 			}
 		});
 	}
@@ -951,7 +958,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 	long getGlobalLastValidatedTransactionID() throws DatabaseException {
 		final AtomicLong min = new AtomicLong(Long.MAX_VALUE);
 
-		getRecords(new Filter<DatabaseHooksTable.Record>() {
+		getRecords(new Filter<Record>() {
 
 			@Override
 			public boolean nextRecord(DatabaseHooksTable.Record _record) {
@@ -973,7 +980,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 	DatabaseHooksTable.Record getLocalDatabaseHost() throws DatabaseException {
 		if (localHost == null) {
 			final Reference<DatabaseHooksTable.Record> res = new Reference<>();
-			getRecords(new Filter<DatabaseHooksTable.Record>() {
+			getRecords(new Filter<Record>() {
 
 				@Override
 				public boolean nextRecord(DatabaseHooksTable.Record _record) {
@@ -1024,8 +1031,8 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		updateRecords(new AlterRecordFilter<Record>() {
 			@Override
 			public void nextRecord(Record _record) throws DatabaseException {
-				Set<String> hs=new HashSet<>(databasePackageNamesThatUseBackup);
-				if (_record.databasePackageNames!=null)
+				Set<String> hs = new HashSet<>(databasePackageNamesThatUseBackup);
+				if (_record.databasePackageNames != null)
 					hs.removeAll(_record.databasePackageNames);
 				if (!hs.equals(_record.databasePackageNamesThatDoNotUseExternalBackup))
 					update("databasePackageNamesThatDoNotUseExternalBackup", hs);

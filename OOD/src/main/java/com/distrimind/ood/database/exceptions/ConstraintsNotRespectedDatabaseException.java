@@ -59,9 +59,4 @@ public class ConstraintsNotRespectedDatabaseException extends DatabaseException 
 		super(_message, e);
 	}
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 6609743812035622427L;
-
 }

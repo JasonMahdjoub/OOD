@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-3.1.0 BETA 2 (Build: 4505) (from 01/04/2013 to 07/07/2021)
+3.1.0 STABLE (Build: 5240) (from 01/04/2013 to 07/09/2021)
 
 # Creator(s):
 Jason MAHDJOUB
@@ -11,8 +11,16 @@ Jason MAHDJOUB (Entered in the team at 01/04/2013)
 # Modifications:
 
 
-### 3.1.0 BETA 2 (07/07/2021)
+### 3.1.0 STABLE (07/09/2021)
+* Add file manager
 * Remove concatenated sql queries
+* Clean code
+* Permit indirect initial synchronization between peers through central database backup
+* Automatically restore database from server during first connection
+* Fix issue and avoid creating backup reference when the database is empty. Create first backup reference at the start of the transaction, before the first queries
+* Fix issue when loading all fields instead of loading only primary keys from backup
+* Fix issue when database is restored to an old version, and when old synchronization message from other peers are received just after the restoration. Now these messages are ignored when timestamp are lower than the last restoration time.
+* Fix synchronization lock when two peers must apply synchronization through central database backup and whereas initial database is empty into each peer.
 
 
 ### 3.1.0 BETA 1 (07/07/2021)

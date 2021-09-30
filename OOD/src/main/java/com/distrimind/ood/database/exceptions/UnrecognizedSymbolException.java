@@ -43,10 +43,6 @@ package com.distrimind.ood.database.exceptions;
  * @since OOD 2.0
  */
 public class UnrecognizedSymbolException extends DatabaseSyntaxException {
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = -4662148092770269660L;
 
 	public UnrecognizedSymbolException(String symbol) {
 		super("The symbol '" + symbol + "' is unknown !");

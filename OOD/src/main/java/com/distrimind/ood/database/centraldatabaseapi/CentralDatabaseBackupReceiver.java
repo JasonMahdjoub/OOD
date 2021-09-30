@@ -47,6 +47,8 @@ import com.distrimind.util.io.Integrity;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * @author Jason Mahdjoub
@@ -90,6 +92,9 @@ public abstract class CentralDatabaseBackupReceiver {
 	protected abstract CentralDatabaseBackupReceiverPerPeer newCentralDatabaseBackupReceiverPerPeerInstance(DatabaseWrapper wrapper);
 
 	public Integrity received(MessageDestinedToCentralDatabaseBackup message) throws DatabaseException, IOException {
+		Logger l=clientTable.getDatabaseWrapper().getCentralDatabaseLogger();
+		if (l!=null && l.isLoggable(Level.FINER))
+			l.finer("receive message " + message);
 		CentralDatabaseBackupReceiverPerPeer r=receiversPerPeer.get(message.getHostSource());
 		if (r==null)
 		{
@@ -129,6 +134,14 @@ public abstract class CentralDatabaseBackupReceiver {
 	{
 		CentralDatabaseBackupReceiverPerPeer r=receiversPerPeer.get(peerID);
 		return r!=null && r.isConnected();
+	}
+
+	CentralDatabaseBackupReceiverPerPeer getConnectedIntoThisServer(DecentralizedValue peerID)
+	{
+		CentralDatabaseBackupReceiverPerPeer r=receiversPerPeer.get(peerID);
+		if (r!=null && !r.isConnected())
+			return null;
+		return r;
 	}
 
 	public boolean isConnectedIntoOneOfCentralDatabaseBackupServers(DecentralizedValue peerID) throws DatabaseException {
@@ -207,8 +220,8 @@ public abstract class CentralDatabaseBackupReceiver {
 				clientCloudAccountTable.removeRecordsWithCascade("removeAccountQueryUTCInMs is not null and removeAccountQueryUTCInMs<=%t", "t", timeReferenceToRemoveObsoleteAccounts);
 				encryptedBackupPartReferenceTable.removeRecordsWithCascade(new Filter<EncryptedBackupPartReferenceTable.Record>() {
 					@Override
-					public boolean nextRecord(EncryptedBackupPartReferenceTable.Record _record) {
-						_record.getFileReference().delete();
+					public boolean nextRecord(EncryptedBackupPartReferenceTable.Record _record) throws DatabaseException {
+						_record.delete(wrapper);
 						return true;
 					}
 				}, "(database.removeTimeUTC IS NOT NULL AND database.removeTimeUTC<=%ct) OR (database.client.toRemoveOrderTimeUTCInMs IS NOT NULL AND database.client.toRemoveOrderTimeUTCInMs<=%ctc)", "ct", timeReferenceToRemoveObsoleteBackup, "ctc", timeReferenceToRemoveObsoleteHosts);

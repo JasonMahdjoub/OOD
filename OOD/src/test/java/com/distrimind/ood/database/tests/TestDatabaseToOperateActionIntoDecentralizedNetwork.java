@@ -82,9 +82,9 @@ public abstract class TestDatabaseToOperateActionIntoDecentralizedNetwork extend
 	public static Object[][] constructorParameters() {
 		Object[][] res=new Object[24][5];
 		int i=0;
-		for (boolean canSendIndirectTransactions : new boolean[]{false, true}) {
-			for (boolean useCentralDatabaseBackup : new boolean[]{false, true}) {
-				for (boolean upgradeDatabaseVersionWhenConnectedWithPeers : new boolean[]{false, true}) {
+		for (boolean canSendIndirectTransactions : new boolean[]{true, false}) {
+			for (boolean useCentralDatabaseBackup : new boolean[]{true, false}) {
+				for (boolean upgradeDatabaseVersionWhenConnectedWithPeers : new boolean[]{true, false}) {
 					for (boolean upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion : useCentralDatabaseBackup?new boolean[]{false, true}:new boolean[]{false}) {
 						for (boolean hasToRemoveOldDatabase : new boolean[]{false, true}) {
 							res[i][0] = useCentralDatabaseBackup;

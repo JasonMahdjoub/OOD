@@ -11,6 +11,7 @@ import com.distrimind.util.crypto.EncryptionProfileProvider;
 
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.logging.Logger;
 
 /**
  * @author Jason Mahdjoub
@@ -331,8 +332,8 @@ public class DatabaseConfigurationsBuilder {
 			configuration.setCreateDatabaseIfNecessaryAndCheckItDuringCurrentSession(createDatabaseIfNecessaryAndCheckItDuringCurrentSession);
 			if (configurations.addConfiguration(configuration, makeConfigurationLoadingPersistent)) {
 				t.checkConnexionsToDesynchronize();
-				t.propagate=true;
 			}
+			t.propagate=true;
 			if (makeConfigurationLoadingPersistent)
 				t.updateConfigurationPersistence();
 			t.checkDatabaseLoading(configuration);
@@ -398,7 +399,6 @@ public class DatabaseConfigurationsBuilder {
 		wrapper.getSynchronizer().checkDisconnections();
 	}
 	private Set<DecentralizedValue> checkPeersToAdd() throws DatabaseException {
-
 		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Set<DecentralizedValue>>() {
 			@Override
 			public Set<DecentralizedValue> run() throws Exception {
@@ -417,10 +417,11 @@ public class DatabaseConfigurationsBuilder {
 							if (peersAdded==null)
 								peersAdded=new HashSet<>();
 							peersAdded.add(dv);
-							if (configurations.useCentralBackupDatabase())
+							if (configurations.useCentralBackupDatabase()) {
 								wrapper.getDatabaseHooksTable().offerNewAuthenticatedMessageDestinedToCentralDatabaseBackup(
-									new PeerToAddMessageDestinedToCentralDatabaseBackup(getConfigurations().getLocalPeer(), getConfigurations().getCentralDatabaseBackupCertificate(), dv),
-									getSecureRandom(), getSignatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup());
+										new PeerToAddMessageDestinedToCentralDatabaseBackup(getConfigurations().getLocalPeer(), getConfigurations().getCentralDatabaseBackupCertificate(), dv),
+										getSecureRandom(), getSignatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup());
+							}
 						}
 					}
 				}
@@ -454,46 +455,47 @@ public class DatabaseConfigurationsBuilder {
 				for (DatabaseConfiguration c : configurations.getDatabaseConfigurations()) {
 					if (c.isDecentralized()) {
 						Set<DecentralizedValue> sps = c.getDistantPeersThatCanBeSynchronizedWithThisDatabase();
-						wrapper.getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
-							@Override
-							public boolean nextRecord(DatabaseHooksTable.Record _record)  {
+						if (sps!=null) {
+							wrapper.getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
+								@Override
+								public boolean nextRecord(DatabaseHooksTable.Record _record) {
 
-								if (currentTransaction.removedPeersID==null || !currentTransaction.removedPeersID.contains(_record.getHostID())) {
+									if (currentTransaction.removedPeersID == null || !currentTransaction.removedPeersID.contains(_record.getHostID())) {
 
-									if (sps != null && sps.contains(_record.getHostID()) &&
-											!_record.isConcernedByDatabasePackage(c.getDatabaseSchema().getPackage().getName())) {
+										if (sps.contains(_record.getHostID()) &&
+												!_record.isConcernedByDatabasePackage(c.getDatabaseSchema().getPackage().getName())) {
+											packagesToSynchronize.add(c);
+											stopTableParsing();
+										}
 
-										packagesToSynchronize.add(c);
-										stopTableParsing();
 									}
-
+									return false;
 								}
-								return false;
-							}
-						}, "concernsDatabaseHost=%cdh", "cdh", false);
+							}, "concernsDatabaseHost=%cdh", "cdh", false);
+						}
 					}
 
 				}
 
-				wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
-					@Override
-					public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
-						for (DatabaseConfiguration c : packagesToSynchronize)
-						{
-							Map<String, Boolean> hm=new HashMap<>();
-							hm.put(c.getDatabaseSchema().getPackage().getName(), DatabaseConfigurationsBuilder.this.lifeCycles != null && DatabaseConfigurationsBuilder.this.lifeCycles.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized(c));
-							_record.offerNewAuthenticatedP2PMessage(wrapper, new HookSynchronizeRequest(configurations.getLocalPeer(), _record.getHostID(), hm, c.getDistantPeersThatCanBeSynchronizedWithThisDatabase()), getSecureRandom(), protectedSignatureProfileProviderForAuthenticatedP2PMessages, this);
-						}
-					}
-				}, "concernsDatabaseHost=%cdh", "cdh", false);
+				if (currentTransaction.propagate) {
+					wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
+						@Override
+						public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
 
-				for (DatabaseConfiguration c : packagesToSynchronize)
-				{
-					Map<String, Boolean> hm=new HashMap<>();
+							for (DatabaseConfiguration c : packagesToSynchronize) {
+								Map<String, Boolean> hm = new HashMap<>();
+								hm.put(c.getDatabaseSchema().getPackage().getName(), DatabaseConfigurationsBuilder.this.lifeCycles != null && DatabaseConfigurationsBuilder.this.lifeCycles.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized(c));
+								_record.offerNewAuthenticatedP2PMessage(wrapper, new HookSynchronizeRequest(configurations.getLocalPeer(), _record.getHostID(), hm, c.getDistantPeersThatCanBeSynchronizedWithThisDatabase()), getSecureRandom(), protectedSignatureProfileProviderForAuthenticatedP2PMessages, this);
+							}
+						}
+					}, "concernsDatabaseHost=%cdh", "cdh", false);
+				}
+				for (DatabaseConfiguration c : packagesToSynchronize) {
+					Map<String, Boolean> hm = new HashMap<>();
 					hm.put(c.getDatabaseSchema().getPackage().getName(), DatabaseConfigurationsBuilder.this.lifeCycles != null && DatabaseConfigurationsBuilder.this.lifeCycles.replaceDistantConflictualRecordsWhenDistributedDatabaseIsResynchronized(c));
 					wrapper.getSynchronizer().receivedHookSynchronizeRequest(new HookSynchronizeRequest(configurations.getLocalPeer(), configurations.getLocalPeer(), hm, c.getDistantPeersThatCanBeSynchronizedWithThisDatabase()));
 				}
-				return packagesToSynchronize.size()>0;
+				return packagesToSynchronize.size() > 0;
 			}
 
 			@Override
@@ -796,6 +798,7 @@ public class DatabaseConfigurationsBuilder {
 			}
 			if (changed) {
 				t.updateConfigurationPersistence();
+				t.propagate|=checkNewConnexion;
 				t.checkDatabaseToSynchronize();
 				if (checkNewConnexion)
 					t.checkNewConnexions();
@@ -852,7 +855,7 @@ public class DatabaseConfigurationsBuilder {
 				changed|=configurations.desynchronizeAdditionalDistantPeersWithGivenPackage(p, distantPeers);
 			}
 			if (changed) {
-				t.propagate=propagate;
+				t.propagate|=propagate;
 				t.checkConnexionsToDesynchronize();
 				t.updateConfigurationPersistence();
 				t.checkInitLocalPeer();
@@ -1003,6 +1006,7 @@ public class DatabaseConfigurationsBuilder {
 								//download database from other database's channel
 								wrapper.prepareDatabaseRestorationFromCentralDatabaseBackupChannel(c.getDatabaseSchema().getPackage());
 								changed = true;
+
 							} else {
 								if (wrapper.getDatabaseHooksTable().hasRecords(new Filter<DatabaseHooksTable.Record>() {
 									@Override
@@ -1051,7 +1055,8 @@ public class DatabaseConfigurationsBuilder {
 		}
 	}
 
-	void applyRestorationIfNecessary(DatabaseWrapper.Database database) throws DatabaseException {
+	boolean applyRestorationIfNecessary(DatabaseWrapper.Database database) throws DatabaseException {
+
 		synchronized (this)
 		{
 			wrapper.lockWrite();
@@ -1059,7 +1064,12 @@ public class DatabaseConfigurationsBuilder {
 				for (DatabaseConfiguration c : configurations.getDatabaseConfigurations()) {
 					if (c.getDatabaseSchema().getPackage().equals(database.getConfiguration().getDatabaseSchema().getPackage())) {
 						Long timeUTCInMs = c.getTimeUTCInMsForRestoringDatabaseToOldVersion();
-						if (timeUTCInMs != null) {
+						Logger l=wrapper.getDatabaseLogger();
+						if (l!=null)
+							l.info("Try to apply restoration : timeUTCInMs="+timeUTCInMs+", isPreferOtherChannelThanLocalChannelIfAvailableDuringRestoration="+c.isPreferOtherChannelThanLocalChannelIfAvailableDuringRestoration()+", isSynchronizedWithCentralBackupDatabase="+c.isSynchronizedWithCentralBackupDatabase()+", isCurrentDatabaseInInitialSynchronizationProcessFromCentralDatabaseBackup="+database.isCurrentDatabaseInInitialSynchronizationProcessFromCentralDatabaseBackup());
+						if (timeUTCInMs != null && !database.isCurrentDatabaseInInitialSynchronizationProcessFromCentralDatabaseBackup()) {
+
+
 							if (c.isPreferOtherChannelThanLocalChannelIfAvailableDuringRestoration()) {
 								if (c.isSynchronizedWithCentralBackupDatabase()) {
 									database.temporaryBackupRestoreManagerComingFromDistantBackupManager.restoreDatabaseToDateUTC(timeUTCInMs, c.isChooseNearestBackupIfNoBackupMatch(), true);
@@ -1120,9 +1130,23 @@ public class DatabaseConfigurationsBuilder {
 								lifeCycles.saveDatabaseConfigurations(configurations);
 
 						}
+						else if (database.isEmpty() && database.isCurrentDatabaseInInitialSynchronizationProcessFromCentralDatabaseBackup())
+						{
+
+							if (database.backupRestoreManager.getLastTransactionID()>-1) {
+								database.backupRestoreManager.restoreDatabaseToLastKnownBackupFromEmptyDatabase(database.getSynchronizationPlanMessageComingFromCentralDatabaseBackup(), timeUTCInMs);
+								database.terminateCurrentDatabaseInitialSynchronizationProcessFromCentralDatabaseBackup();
+								if (timeUTCInMs!=null)
+									c.disableDatabaseRestorationToOldVersion();
+
+								return true;
+							}
+						}
+
 						break;
 					}
 				}
+				return false;
 			}
 			finally {
 				wrapper.unlockWrite();

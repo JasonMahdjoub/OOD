@@ -35,7 +35,7 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-package com.distrimind.ood.database;
+package com.distrimind.ood.database.exceptions;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
 
@@ -55,9 +55,5 @@ public class DatabaseLoadingException extends DatabaseException {
 		super(_message, e);
 	}
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 6220211115965771697L;
 
 }

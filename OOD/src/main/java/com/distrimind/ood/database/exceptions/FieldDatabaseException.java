@@ -56,9 +56,4 @@ public class FieldDatabaseException extends DatabaseException {
 		super(_message, e);
 	}
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 2502508666769880116L;
-
 }

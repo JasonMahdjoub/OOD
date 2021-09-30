@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 import com.distrimind.ood.database.DatabaseRecord;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.EncryptedDatabaseBackupMetaDataPerFile;
 import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.annotations.Field;
@@ -43,9 +44,9 @@ import com.distrimind.ood.database.annotations.ForeignKey;
 import com.distrimind.ood.database.annotations.NotNull;
 import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.ood.database.messages.EncryptedBackupPartComingFromCentralDatabaseBackup;
-import com.distrimind.ood.database.messages.EncryptedBackupPartDestinedToCentralDatabaseBackup;
-import com.distrimind.ood.database.messages.EncryptedBackupPartForRestorationComingFromCentralDatabaseBackup;
+import com.distrimind.ood.database.filemanager.FileRecord;
+import com.distrimind.ood.database.filemanager.FileReference;
+import com.distrimind.ood.database.messages.*;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.RandomInputStream;
 
@@ -57,6 +58,7 @@ import java.io.IOException;
  * @since OOD 3.0.0
  */
 public final class EncryptedBackupPartReferenceTable extends Table<EncryptedBackupPartReferenceTable.Record> {
+	@SuppressWarnings("ProtectedMemberInFinalClass")
 	protected EncryptedBackupPartReferenceTable() throws DatabaseException {
 	}
 
@@ -73,9 +75,8 @@ public final class EncryptedBackupPartReferenceTable extends Table<EncryptedBack
 		@Field
 		private boolean isReferenceFile;
 
-		@Field(limit=FileReference.MAX_FILE_REFERENCE_SIZE_IN_BYTES)
-		@NotNull
-		private FileReference fileReference=null;
+		@Field
+		private long fileId;
 
 		@Field(limit = EncryptedDatabaseBackupMetaDataPerFile.MAX_ENCRYPTED_DATABASE_BACKUP_META_DATA_SIZE_IN_BYTES)
 		@NotNull
@@ -87,29 +88,41 @@ public final class EncryptedBackupPartReferenceTable extends Table<EncryptedBack
 
 		}
 
-		Record(DatabaseBackupPerClientTable.Record database, FileReference fileReference, EncryptedBackupPartDestinedToCentralDatabaseBackup message) throws IOException {
+		Record(DatabaseBackupPerClientTable.Record database, FileRecord fileRecord, EncryptedBackupPartDestinedToCentralDatabaseBackup message) throws IOException {
 			if (database==null)
 				throw new NullPointerException();
-			if (fileReference==null)
+			if (fileRecord==null)
 				throw new NullPointerException();
 			if (message==null)
 				throw new NullPointerException();
 
 			this.database=database;
-			this.fileReference=fileReference;
+			this.fileId=fileRecord.getFileId();
 			this.fileTimeUTC=message.getMetaData().getFileTimestampUTC();
 			this.isReferenceFile=message.getMetaData().isReferenceFile();
 			this.metaData=message.getMetaData();
 			try (RandomInputStream ris = message.getPartInputStream()) {
-				fileReference.save(ris);
+				fileRecord.getFileReference().save(ris);
 			}
 		}
-		public EncryptedBackupPartComingFromCentralDatabaseBackup readEncryptedBackupPartForRestoration(DecentralizedValue hostDestination, DecentralizedValue channelHost) throws IOException {
-			return new EncryptedBackupPartForRestorationComingFromCentralDatabaseBackup(database.getClient().getClientID(),hostDestination, metaData, fileReference.getRandomInputStream(), channelHost);
+
+		public Record(DatabaseBackupPerClientTable.Record database, long fileTimeUTC, boolean isReferenceFile, long fileId, EncryptedDatabaseBackupMetaDataPerFile metaData) {
+			this.database = database;
+			this.fileTimeUTC = fileTimeUTC;
+			this.isReferenceFile = isReferenceFile;
+			this.fileId = fileId;
+			this.metaData = metaData;
 		}
 
-		public EncryptedBackupPartComingFromCentralDatabaseBackup readEncryptedBackupPart(DecentralizedValue hostDestination) throws IOException {
-			return new EncryptedBackupPartComingFromCentralDatabaseBackup(database.getClient().getClientID(),hostDestination, metaData, fileReference.getRandomInputStream());
+		public AbstractEncryptedBackupPartComingFromCentralDatabaseBackup readEncryptedBackupPartForInitialSynchronization(DatabaseWrapper wrapper, DecentralizedValue hostDestination, DecentralizedValue channelHost) throws DatabaseException, IOException {
+			return new EncryptedBackupPartForInitialSynchronizationComingFromCentralDatabaseBackup(database.getClient().getClientID(),hostDestination, metaData, getFileReference(wrapper).getRandomInputStream(), channelHost);
+		}
+		public AbstractEncryptedBackupPartComingFromCentralDatabaseBackup readEncryptedBackupPartForRestoration(DatabaseWrapper wrapper, DecentralizedValue hostDestination, DecentralizedValue channelHost) throws IOException, DatabaseException {
+			return new EncryptedBackupPartForRestorationComingFromCentralDatabaseBackup(database.getClient().getClientID(),hostDestination, metaData, getFileReference(wrapper).getRandomInputStream(), channelHost);
+		}
+
+		public EncryptedBackupPartComingFromCentralDatabaseBackup readEncryptedBackupPart(DatabaseWrapper wrapper, DecentralizedValue hostDestination) throws IOException, DatabaseException {
+			return new EncryptedBackupPartComingFromCentralDatabaseBackup(database.getClient().getClientID(),hostDestination, metaData, getFileReference(wrapper).getRandomInputStream());
 		}
 
 		public DatabaseBackupPerClientTable.Record getDatabase() {
@@ -124,10 +137,12 @@ public final class EncryptedBackupPartReferenceTable extends Table<EncryptedBack
 			return isReferenceFile;
 		}
 
-		public FileReference getFileReference() {
-			return fileReference;
+		public FileReference getFileReference(DatabaseWrapper wrapper) throws DatabaseException {
+			return wrapper.getFileReferenceManager().getFileRecord(fileId).getFileReference();
 		}
-
+		public void delete(DatabaseWrapper wrapper) throws DatabaseException {
+			wrapper.getFileReferenceManager().decrementReferenceFile(fileId);
+		}
 		public EncryptedDatabaseBackupMetaDataPerFile getMetaData() {
 			return metaData;
 		}
@@ -138,9 +153,13 @@ public final class EncryptedBackupPartReferenceTable extends Table<EncryptedBack
 					"database=" + database +
 					", fileTimeUTC=" + fileTimeUTC +
 					", isReferenceFile=" + isReferenceFile +
-					", fileReference=" + fileReference +
+					", fileReferenceId=" + fileId +
 					", metaData=" + metaData +
 					'}';
+		}
+
+		public long getFileId() {
+			return fileId;
 		}
 	}
 	/*Integrity addEncryptedBackupPartReference(DatabaseBackupPerClientTable databaseBackupPerClientTable, ClientTable.Record clientRecord, FileReference fileReference, EncryptedBackupPartDestinedToCentralDatabaseBackup message) throws DatabaseException {

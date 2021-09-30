@@ -1,4 +1,4 @@
-package com.distrimind.ood.database.centraldatabaseapi;
+package com.distrimind.ood.database.messages;
 /*
 Copyright or © or Copr. Jason Mahdjoub (01/04/2013)
 
@@ -35,39 +35,24 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.util.io.RandomInputStream;
-import com.distrimind.util.io.RandomOutputStream;
-import com.distrimind.util.io.SecureExternalizable;
+import com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupCertificate;
+import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.crypto.EncryptionProfileProvider;
 
-import java.io.IOException;
+import java.util.Map;
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
- * @since OOD 3.0.0
+ * @since MaDKitLanEdition 3.1.0
  */
-public interface FileReference extends SecureExternalizable {
-	int MAX_FILE_REFERENCE_SIZE_IN_BYTES=2048;
-	@Override
-	boolean equals(Object o);
-	@Override
-	int hashCode();
-	@Override
-	String toString();
+public class DistantBackupCenterConnexionUpdate extends DistantBackupCenterConnexionInitialisation{
+	protected DistantBackupCenterConnexionUpdate() {
+	}
 
-	long lengthInBytes();
-
-	boolean delete();
-
-	RandomInputStream getRandomInputStream() throws IOException;
-
-	RandomOutputStream getRandomOutputStream() throws IOException;
-
-	default void save(RandomInputStream in) throws IOException
-	{
-		try(RandomOutputStream ros=getRandomOutputStream())
-		{
-			in.transferTo(ros);
-		}
+	public DistantBackupCenterConnexionUpdate(DecentralizedValue hostSource, Map<DecentralizedValue, Long> distantLastValidatedIDs, AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider, CentralDatabaseBackupCertificate certificate) throws DatabaseException {
+		super(hostSource, distantLastValidatedIDs, random, encryptionProfileProvider, certificate);
 	}
 }

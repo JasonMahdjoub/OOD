@@ -42,6 +42,7 @@ import com.distrimind.ood.database.centraldatabaseapi.ClientTable;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.crypto.SecureRandomType;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 /**
@@ -51,7 +52,7 @@ import org.testng.annotations.Test;
  */
 public abstract class TestAddPeerWithCentralDatabaseBackupConnected extends CommonDecentralizedTests {
 	final BackupConfiguration backupConfiguration=new BackupConfiguration(10000, 20000, 1000000, 1000, null);
-
+	private final boolean connectOnlyCentralDatabase ;
 	@Override
 	public BackupConfiguration getBackupConfiguration()
 	{
@@ -68,11 +69,27 @@ public abstract class TestAddPeerWithCentralDatabaseBackupConnected extends Comm
 		return true;
 	}
 
+	public TestAddPeerWithCentralDatabaseBackupConnected(boolean connectOnlyCentralDatabase) {
+		this.connectOnlyCentralDatabase=connectOnlyCentralDatabase;
+	}
+
+	@DataProvider
+	public static Object[][] provideDataFactory()
+	{
+		return new Object[][]{
+				{true},
+				{false}
+		};
+	}
 
 	@Test(dependsOnMethods = { "testSynchroAfterTestsBetweenThreePeers" })
 	public void addPeer()
 			throws Exception {
-		connectAllDatabase();
+		disconnectAllDatabase();
+		if (connectOnlyCentralDatabase)
+			connectCentralDatabaseBackupWithConnectedDatabase();
+		else
+			connectAllDatabase();
 		exchangeMessages();
 		checkAllDatabaseInternalDataUsedForSynchro();
 		testSynchronisation();
@@ -85,6 +102,9 @@ public abstract class TestAddPeerWithCentralDatabaseBackupConnected extends Comm
 		listDatabase.add(db4);
 		addConfiguration(db4);
 		Assert.assertTrue(db4.getDbwrapper().getSynchronizer().isInitialized());
+		if (connectOnlyCentralDatabase) {
+			connectCentralDatabaseBackupWithConnectedDatabase();
+		}
 		testAllConnect();
 		disconnectAllDatabase();
 		checkAllDatabaseInternalDataUsedForSynchro();

@@ -55,14 +55,14 @@ public class FileCoordinate
 	private final long timeStamp;
 	private final Boundary boundary;
 
-	public FileCoordinate(long timeStamp, Boundary boundary) {
+	public FileCoordinate(long timeStampUTCNotIncluded, Boundary boundary) {
 		if (boundary==null)
 			throw new NullPointerException();
-		this.timeStamp = timeStamp;
+		this.timeStamp = timeStampUTCNotIncluded;
 		this.boundary = boundary;
 	}
 
-	public long getTimeStamp() {
+	public long getTimeStampUTC() {
 		return timeStamp;
 	}
 

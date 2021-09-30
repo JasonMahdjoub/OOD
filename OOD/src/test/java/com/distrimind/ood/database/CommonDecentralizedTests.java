@@ -39,6 +39,7 @@ import com.distrimind.ood.database.centraldatabaseapi.*;
 import com.distrimind.ood.database.decentralizeddatabase.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
+import com.distrimind.ood.database.filemanager.FileReference;
 import com.distrimind.ood.database.messages.*;
 import com.distrimind.ood.database.tests.TestDatabaseToOperateActionIntoDecentralizedNetwork;
 import com.distrimind.ood.database.tests.TestRevertToOldVersionIntoDecentralizedNetwork;
@@ -558,7 +559,7 @@ public abstract class CommonDecentralizedTests {
 			setCertificateExpirationTimeUTCInMsArray();
 		}
 	}
-	static class FileReferenceForTests implements FileReference
+	static class FileReferenceForTests extends FileReference
 	{
 		private transient File file;
 		private long fileTimeStamp;
@@ -580,7 +581,7 @@ public abstract class CommonDecentralizedTests {
 			file=new File(centralDatabaseBackupDirectory, fileTimeStamp+".backup");
 		}
 		@Override
-		public boolean equals(Object o) {
+		protected boolean equalsImplementation(Object o) {
 			return o instanceof FileReferenceForTests && ((FileReferenceForTests) o).fileTimeStamp==fileTimeStamp;
 		}
 
@@ -600,17 +601,17 @@ public abstract class CommonDecentralizedTests {
 		}
 
 		@Override
-		public boolean delete() {
+		public boolean deleteImplementation() {
 			return file.delete();
 		}
 
 		@Override
-		public RandomInputStream getRandomInputStream() throws IOException {
+		public RandomInputStream getRandomInputStreamImplementation() throws IOException {
 			return new RandomFileInputStream(file);
 		}
 
 		@Override
-		public RandomOutputStream getRandomOutputStream() throws IOException {
+		public RandomOutputStream getRandomOutputStreamImplementation() throws IOException {
 			return new RandomFileOutputStream(file);
 		}
 
@@ -1092,7 +1093,7 @@ public abstract class CommonDecentralizedTests {
 			this.centralDatabaseBackupDatabase = getDatabaseFactoryInstanceForCentralDatabaseBackupReceiver().getDatabaseWrapperSingleton();
 			this.centralDatabaseBackupReceiver = new CentralDatabaseBackupReceiverFactory(centralDatabaseBackupKeyPair.getASymmetricPublicKey()).getCentralDatabaseBackupReceiverInstanceSingleton(centralDatabaseBackupDatabase);
 			this.centralDatabaseBackupDatabase.setNetworkLogLevel(networkLogLevel);
-
+			this.centralDatabaseBackupDatabase.setCentralDatabaseLogLevel(networkLogLevel);
 		}
 	}
 	@BeforeClass
@@ -1136,6 +1137,7 @@ public abstract class CommonDecentralizedTests {
 		if (db1 != null) {
 			try {
 				db1.close();
+				listDatabase.remove(db1);
 			} finally {
 				db1 = null;
 			}
@@ -1147,6 +1149,7 @@ public abstract class CommonDecentralizedTests {
 		if (db2 != null) {
 			try {
 				db2.close();
+				listDatabase.remove(db2);
 			} finally {
 				db2 = null;
 			}
@@ -1158,6 +1161,7 @@ public abstract class CommonDecentralizedTests {
 		if (db3 != null) {
 			try {
 				db3.close();
+				listDatabase.remove(db3);
 			} finally {
 				db3 = null;
 			}
@@ -1186,6 +1190,7 @@ public abstract class CommonDecentralizedTests {
 	}
 	@AfterClass
 	public void unloadDatabase()  {
+		System.out.println("unload database");
 		try {
 			unloadDatabase1();
 		} finally {
@@ -1198,14 +1203,16 @@ public abstract class CommonDecentralizedTests {
 					try {
 						unloadDatabase4();
 					} finally {
+						Assert.assertEquals(listDatabase.size(), 0);
 						listDatabase.clear();
 						if (centralDatabaseBackupDatabase!=null) {
 							centralDatabaseBackupDatabase.close();
 							centralDatabaseBackupDatabase = null;
 						}
+						removeCentralDatabaseFiles();
 						if (centralDatabaseBackupDirectory.exists())
 							FileTools.deleteDirectory(centralDatabaseBackupDirectory);
-						removeCentralDatabaseFiles();
+
 					}
 				}
 			}
@@ -1553,7 +1560,8 @@ public abstract class CommonDecentralizedTests {
 		for (Database d : listDatabase)
 		{
 			assert d.getDbwrapper().getSynchronizer().isInitialized(d.hostID);
-			d.getDbwrapper().getSynchronizer().centralDatabaseBackupAvailable();
+			if (!d.getDbwrapper().getSynchronizer().isInitializedWithCentralBackup())
+				d.getDbwrapper().getSynchronizer().centralDatabaseBackupAvailable();
 			d.setConnected(true);
 			/*if (!d.getDbwrapper().getSynchronizer().isInitialized(d.hostID)) {
 				d.dbwrapper.getSynchronizer().initLocalHostID(d.hostID, true);
@@ -1729,7 +1737,9 @@ public abstract class CommonDecentralizedTests {
 	}
 
 	protected void addElements() throws DatabaseException {
+		int i=0;
 		for (CommonDecentralizedTests.Database db : listDatabase) {
+			System.out.println("Add element into DB : "+(i++));
 			addElements(db);
 		}
 	}
