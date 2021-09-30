@@ -385,6 +385,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 							return false;
 						}
 					}, "packageString=%ps and lastFileBackupPartUTC>%minLong and lastValidatedAndEncryptedID is not null", "ps", message.getPackageString(), "minLong", Long.MIN_VALUE);
+
 					if (chosenBackup.get() != null) {
 						DatabaseBackupPerClientTable.Record database;
 						Map<DecentralizedValue, byte[]> lastValidatedAndEncryptedDistantIdsPerHost=null;
@@ -464,6 +465,14 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 										lastValidatedAndEncryptedDistantIdsPerHost,
 										//getLastValidatedAndEncryptedIDsPerHost(chosenBackup.get().getClient()),
 										getLastValidatedTransactionsUTCForDestinationHost()
+
+								));
+					}
+					else
+					{
+						sendMessageFromThisCentralDatabaseBackup(
+								new SynchronizationPlanMessageComingFromCentralDatabaseBackup(
+										message.getHostSource(), message.getPackageString()
 
 								));
 					}

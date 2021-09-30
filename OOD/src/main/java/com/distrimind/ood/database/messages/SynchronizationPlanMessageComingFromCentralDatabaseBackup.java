@@ -65,6 +65,26 @@ public class SynchronizationPlanMessageComingFromCentralDatabaseBackup implement
 		this.lastValidatedTransactionsUTCForDestinationHost = lastValidatedTransactionsUTCForDestinationHost;
 	}
 
+	public SynchronizationPlanMessageComingFromCentralDatabaseBackup(DecentralizedValue hostDestination,
+																	 String packageString) {
+		if (hostDestination==null)
+			throw new NullPointerException();
+		if (packageString==null)
+			throw new NullPointerException();
+
+		this.packageString = packageString;
+		this.hostDestination=hostDestination;
+		this.sourceChannel=null;
+		sourceChannelNull();
+	}
+	private void sourceChannelNull()
+	{
+		this.firstBackupPartTimeUTC = -1;
+		this.lastBackupPartUTC = -1;
+		this.lastValidatedAndEncryptedDistantIdsPerHost = null;
+		this.lastValidatedTransactionsUTCForDestinationHost = null;
+	}
+
 	@Override
 	public boolean cannotBeMerged() {
 		return false;
@@ -77,25 +97,29 @@ public class SynchronizationPlanMessageComingFromCentralDatabaseBackup implement
 
 	@Override
 	public int getInternalSerializedSize() {
-		return SerializationTools.getInternalSize(hostDestination)
+		int res=SerializationTools.getInternalSize(hostDestination)
 				+SerializationTools.getInternalSize(sourceChannel)
-				+SerializationTools.getInternalSize(packageString, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH)
-				+8
+				+SerializationTools.getInternalSize(packageString, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
+		if (sourceChannel!=null)
+			res+=16
 				+SerializationTools.getInternalSize(lastValidatedAndEncryptedDistantIdsPerHost, MAX_SIZE_IN_BYTES_OF_VALIDATED_AND_ENCRYPTED_IDS)
 				//+InitialMessageComingFromCentralBackup.getInternalSerializedSize(lastValidatedAndEncryptedIDsPerHost, null)
 				+InitialMessageComingFromCentralBackup.getInternalSerializedSize(lastValidatedTransactionsUTCForDestinationHost);
+		return res;
 	}
 
 	@Override
 	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
 		out.writeObject(hostDestination, false);
-		out.writeObject(sourceChannel, false);
 		out.writeString(packageString, false, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
-		out.writeLong(firstBackupPartTimeUTC);
-		out.writeLong(lastBackupPartUTC);
-		out.writeMap(lastValidatedAndEncryptedDistantIdsPerHost, false, MAX_SIZE_IN_BYTES_OF_VALIDATED_AND_ENCRYPTED_IDS, false,false);
-		//InitialMessageComingFromCentralBackup.write(out, lastValidatedAndEncryptedIDsPerHost, null);
-		InitialMessageComingFromCentralBackup.write(out, lastValidatedTransactionsUTCForDestinationHost);
+		out.writeObject(sourceChannel, true);
+		if (sourceChannel!=null) {
+			out.writeLong(firstBackupPartTimeUTC);
+			out.writeLong(lastBackupPartUTC);
+			out.writeMap(lastValidatedAndEncryptedDistantIdsPerHost, false, MAX_SIZE_IN_BYTES_OF_VALIDATED_AND_ENCRYPTED_IDS, false, false);
+			//InitialMessageComingFromCentralBackup.write(out, lastValidatedAndEncryptedIDsPerHost, null);
+			InitialMessageComingFromCentralBackup.write(out, lastValidatedTransactionsUTCForDestinationHost);
+		}
 	}
 
 
@@ -105,19 +129,23 @@ public class SynchronizationPlanMessageComingFromCentralDatabaseBackup implement
 		//lastValidatedAndEncryptedIDsPerHost=new HashMap<>();
 		lastValidatedTransactionsUTCForDestinationHost=new HashMap<>();
 		hostDestination=in.readObject(false);
-		sourceChannel=in.readObject(false);
 		packageString=in.readString(false, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
-		firstBackupPartTimeUTC=in.readLong();
-		lastBackupPartUTC=in.readLong();
-		if (firstBackupPartTimeUTC==Long.MIN_VALUE)
-			throw new MessageExternalizationException(Integrity.FAIL);
-		if (lastBackupPartUTC==Long.MAX_VALUE)
-			throw new MessageExternalizationException(Integrity.FAIL);
-		if (firstBackupPartTimeUTC>lastBackupPartUTC)
-			throw new MessageExternalizationException(Integrity.FAIL);
-		//InitialMessageComingFromCentralBackup.read(in, lastValidatedAndEncryptedIDsPerHost, null);
-		lastValidatedAndEncryptedDistantIdsPerHost=in.readMap(false, MAX_SIZE_IN_BYTES_OF_VALIDATED_AND_ENCRYPTED_IDS, DecentralizedValue.class, byte[].class);
-		InitialMessageComingFromCentralBackup.read(in, lastValidatedTransactionsUTCForDestinationHost);
+		sourceChannel=in.readObject(true);
+		if (sourceChannel!=null) {
+			firstBackupPartTimeUTC = in.readLong();
+			lastBackupPartUTC = in.readLong();
+			if (firstBackupPartTimeUTC == Long.MIN_VALUE)
+				throw new MessageExternalizationException(Integrity.FAIL);
+			if (lastBackupPartUTC == Long.MAX_VALUE)
+				throw new MessageExternalizationException(Integrity.FAIL);
+			if (firstBackupPartTimeUTC > lastBackupPartUTC)
+				throw new MessageExternalizationException(Integrity.FAIL);
+			//InitialMessageComingFromCentralBackup.read(in, lastValidatedAndEncryptedIDsPerHost, null);
+			lastValidatedAndEncryptedDistantIdsPerHost = in.readMap(false, MAX_SIZE_IN_BYTES_OF_VALIDATED_AND_ENCRYPTED_IDS, DecentralizedValue.class, byte[].class);
+			InitialMessageComingFromCentralBackup.read(in, lastValidatedTransactionsUTCForDestinationHost);
+		}
+		else
+			sourceChannelNull();
 	}
 
 	public String getPackageString() {
@@ -173,5 +201,9 @@ public class SynchronizationPlanMessageComingFromCentralDatabaseBackup implement
 				", firstBackupPartTimeUTC=" + firstBackupPartTimeUTC +
 				", lastBackupPartUTC=" + lastBackupPartUTC +
 				'}';
+	}
+
+	public boolean isEmptyPlan() {
+		return sourceChannel==null;
 	}
 }

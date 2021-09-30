@@ -681,8 +681,53 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new NullPointerException();
 			if (!isCurrentDatabaseInInitialSynchronizationProcessFromCentralDatabaseBackup())
 				throw new DatabaseException("The database "+this.configuration.getDatabaseSchema().getPackage().getName()+" should be in a initial synchronization process !");
+			if (synchronizationPlanMessageComingFromCentralDatabaseBackup.isEmptyPlan()) {
+				runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
+					@Override
+					public Void run() throws Exception {
+						getDatabaseHooksTable().updateRecords(new AlterRecordFilter<Record>() {
+							@Override
+							public void nextRecord(Record _record) throws DatabaseException {
+								if (!_record.concernsLocalDatabaseHost() && _record.getPairingState()== DatabaseHooksTable.PairingState.PAIRED
+										&& _record.getDatabasePackageNames().contains(synchronizationPlanMessageComingFromCentralDatabaseBackup.getPackageString())
+								)
+								{
+									if (_record.getLastValidatedDistantTransactionID()==-1)
+										update("lastValidatedDistantTransactionID", 0L);
+									if (_record.getLastValidatedLocalTransactionID()==-1)
+										update("lastValidatedLocalTransactionID", 0L);
+								}
+							}
+						});
+						long tid=getTransactionIDTable().getLastTransactionID();
+						if (tid<=0)
+							getTransactionIDTable().setLastTransactionID(1);
+						tid=getTransactionIDTable().getLastValidatedTransactionID();
+						if (tid<0)
+							getTransactionIDTable().setLastValidatedTransactionID(0);
+						return null;
+					}
 
-			this.synchronizationPlanMessageComingFromCentralDatabaseBackup=synchronizationPlanMessageComingFromCentralDatabaseBackup;
+					@Override
+					public TransactionIsolation getTransactionIsolation() {
+						return TransactionIsolation.TRANSACTION_SERIALIZABLE;
+					}
+
+					@Override
+					public boolean doesWriteData() {
+						return true;
+					}
+
+					@Override
+					public void initOrReset() {
+
+					}
+				});
+
+				cancelCurrentDatabaseInitialSynchronizationProcessFromCentralDatabaseBackup();
+			}
+			else
+				this.synchronizationPlanMessageComingFromCentralDatabaseBackup=synchronizationPlanMessageComingFromCentralDatabaseBackup;
 		}
 		private void prepareDatabaseRestorationFromDistantDatabaseBackupChannel() throws DatabaseException {
 			checkRestorationNotInProgress();
