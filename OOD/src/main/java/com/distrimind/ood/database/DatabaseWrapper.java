@@ -2316,7 +2316,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		{
 			if (cp==null)
 				return false;
-			if (d.isCurrentDatabaseInRestorationProcessFromCentralDatabaseBackup())
+
+			if (d!=null && d.isCurrentDatabaseInRestorationProcessFromCentralDatabaseBackup())
 				return true;
 			ConnectedPeers cps=this.initializedHooks.get(cp.hookID);
 			return cps==null || !cps.isConnected();
