@@ -1137,6 +1137,7 @@ public abstract class CommonDecentralizedTests {
 		if (db1 != null) {
 			try {
 				db1.close();
+				listDatabase.remove(db1);
 			} finally {
 				db1 = null;
 			}
@@ -1148,6 +1149,7 @@ public abstract class CommonDecentralizedTests {
 		if (db2 != null) {
 			try {
 				db2.close();
+				listDatabase.remove(db2);
 			} finally {
 				db2 = null;
 			}
@@ -1159,6 +1161,7 @@ public abstract class CommonDecentralizedTests {
 		if (db3 != null) {
 			try {
 				db3.close();
+				listDatabase.remove(db3);
 			} finally {
 				db3 = null;
 			}
@@ -1187,6 +1190,7 @@ public abstract class CommonDecentralizedTests {
 	}
 	@AfterClass
 	public void unloadDatabase()  {
+		System.out.println("unload database");
 		try {
 			unloadDatabase1();
 		} finally {
@@ -1199,14 +1203,16 @@ public abstract class CommonDecentralizedTests {
 					try {
 						unloadDatabase4();
 					} finally {
+						Assert.assertEquals(listDatabase.size(), 0);
 						listDatabase.clear();
 						if (centralDatabaseBackupDatabase!=null) {
 							centralDatabaseBackupDatabase.close();
 							centralDatabaseBackupDatabase = null;
 						}
+						removeCentralDatabaseFiles();
 						if (centralDatabaseBackupDirectory.exists())
 							FileTools.deleteDirectory(centralDatabaseBackupDirectory);
-						removeCentralDatabaseFiles();
+
 					}
 				}
 			}

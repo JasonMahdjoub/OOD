@@ -73,6 +73,7 @@ public class OOD {
 									.addItem("Automatically restore database from server during first connection")
 									.addItem("Fix issue and avoid creating backup reference when the database is empty. Create first backup reference at the start of the transaction, before the first queries")
 									.addItem("Fix issue when loading all fields instead of loading only primary keys from backup")
+									.addItem("Fix issue when database is restored to an old version, and when old synchronization message from other peers are received just after the restoration. Now these messages are ignored when timestamp are lower than the last restoration time.")
 					)
 					.addDescription(
 							new Description((short)3, (short)1, (short)0, Version.Type.BETA, (short)1, "2021-07-07")

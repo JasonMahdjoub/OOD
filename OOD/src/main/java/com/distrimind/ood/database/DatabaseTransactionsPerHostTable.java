@@ -428,6 +428,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 					try {
 						final boolean indirectTransaction = transaction instanceof DatabaseDistantTransactionEvent.Record;
 						boolean validatedTransaction = true;
+						final Reference<Boolean> obsoleteTransaction=new Reference<>(false);
 						boolean transactionNotEmpty = false;
 
 
@@ -478,10 +479,13 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 											DatabaseEventsTable.AbstractRecord event = iterator.next();
 
 											Table<DatabaseRecord> t;
+											Long lastRestorationTimeUTCInMS=null;
 											try {
 												t = (Table<DatabaseRecord>) getDatabaseWrapper().getTableInstance(event.getConcernedTable());
-												if (databasePackage.get() == null)
+												if (databasePackage.get() == null) {
 													databasePackage.set(t.getClass().getPackage().getName());
+													lastRestorationTimeUTCInMS = getDatabaseWrapper().getDatabaseTable().getLastRestorationTimeUTCInMS(databasePackage.get());
+												}
 											} catch (Exception e) {
 												String p = event.getConcernedPackage();
 												if (getDatabaseWrapper().getDatabaseConfigurationsBuilder().getConfigurations().getDatabaseConfigurations().stream().noneMatch(c -> c.getDatabaseSchema().getPackage().getName().equals(p))) {
@@ -490,29 +494,35 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 													throw new SerializationDatabaseException("indirectTransaction=" + indirectTransaction, e);
 
 											}
-
+											if (lastRestorationTimeUTCInMS!=null && lastRestorationTimeUTCInMS>=transaction.getTimeUTC())
+											{
+												validatedTransaction=false;
+												obsoleteTransaction.set(true);
+											}
 											final DatabaseEventType type = DatabaseEventType.getEnum(event.getType());
 											if (type == null)
 												throw new SerializationDatabaseException(
 														"Impossible to decode database event type : " + event.getType());
 											DatabaseRecord drNew = null, drOld = null;
 											HashMap<String, Object> mapKeys = new HashMap<>();
-											if (type != DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE) {
-												t.deserializePrimaryKeys(mapKeys, event.getConcernedSerializedPrimaryKey());
-												if (type.needsNewValue()) {
-													drNew = t.getDefaultRecordConstructor().newInstance();
-													t.deserializePrimaryKeys(drNew, event.getConcernedSerializedPrimaryKey());
-													t.deserializeFields(drNew, event.getConcernedSerializedNewForeignKey(), false, true, false);
-													t.deserializeFields(drNew, event.getConcernedSerializedNewNonKey(), false, false, true);
+											if (validatedTransaction) {
+												if (type != DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE) {
+													t.deserializePrimaryKeys(mapKeys, event.getConcernedSerializedPrimaryKey());
+													if (type.needsNewValue()) {
+														drNew = t.getDefaultRecordConstructor().newInstance();
+														t.deserializePrimaryKeys(drNew, event.getConcernedSerializedPrimaryKey());
+														t.deserializeFields(drNew, event.getConcernedSerializedNewForeignKey(), false, true, false);
+														t.deserializeFields(drNew, event.getConcernedSerializedNewNonKey(), false, false, true);
+													}
+
+													if (type.hasOldValue() || transaction.isForced()) {
+														drOld = t.getRecord(mapKeys);
+													}
 												}
 
-												if (type.hasOldValue() || transaction.isForced()) {
-													drOld = t.getRecord(mapKeys);
+												if (transaction.getID() <= fromHook.getLastValidatedDistantTransactionID()) {
+													validatedTransaction = false;
 												}
-											}
-
-											if (transaction.getID() <= fromHook.getLastValidatedDistantTransactionID()) {
-												validatedTransaction = false;
 											}
 											boolean eventForce = false;
 											if (validatedTransaction) {
@@ -655,7 +665,9 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 							}
 						}
 						if (!validatedTransaction) {
-							databasePackage.set(null);
+							if (!obsoleteTransaction.get()) {
+								databasePackage.set(null);
+							}
 							return null;
 						}
 

@@ -952,8 +952,10 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 				{
 					assert message.getContext()!= AskForDatabaseBackupPartDestinedToCentralDatabaseBackup.Context.SYNCHRONIZATION;
 					DatabaseBackupPerClientTable.Record r=getMostAppropriateChannelHostIDToCreateNewChannel(message.getPackageString());
-					if (r==null)
+					if (r==null) {
+						centralDatabaseBackupReceiver.clientCloudAccountTable.getDatabaseWrapper().getCentralDatabaseLogger().fine("No account for restoration was found. Impossible to send encrypted backup part.");
 						return Integrity.OK;
+					}
 					else {
 						channelHost = r.getClient();
 					}
@@ -965,9 +967,10 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 						return e.getIntegrity();
 					}
 				}
-				if (channelHost==null)
+				if (channelHost==null) {
+					centralDatabaseBackupReceiver.clientCloudAccountTable.getDatabaseWrapper().getCentralDatabaseLogger().fine("The asked channel host for restoration was not found. Impossible to send encrypted backup part.");
 					return Integrity.OK;
-
+				}
 				DatabaseBackupPerClientTable.Record r=getDatabaseBackupPerClientRecord(channelHost, message.getPackageString());
 				if (r!=null) {
 					EncryptedBackupPartReferenceTable.Record e=getBackupMetaDataPerFile(r, message.getFileCoordinate());
@@ -988,7 +991,11 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 						}
 
 					}
+					else
+						centralDatabaseBackupReceiver.clientCloudAccountTable.getDatabaseWrapper().getCentralDatabaseLogger().fine("The asked backup for restoration was not found. ");
 				}
+				else
+					centralDatabaseBackupReceiver.clientCloudAccountTable.getDatabaseWrapper().getCentralDatabaseLogger().fine("The asked account for restoration was not found. Impossible to send encrypted backup part.");
 				return Integrity.OK;
 			}
 

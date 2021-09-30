@@ -218,6 +218,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			unlockWrite();
 		}
 	}
+	public Logger getDatabaseLogger()
+	{
+		return databaseLogger;
+	}
 	public Logger getCentralDatabaseLogger() {
 		return centralDatabaseLogger;
 	}
@@ -370,6 +374,22 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		finally {
 			unlockWrite();
 		}
+	}
+	public boolean isCurrentDatabaseInInitialSynchronizationProcessFromCentralDatabaseBackup(Package p)
+	{
+		Database d=sql_database.get(p);
+		if (d==null)
+			return false;
+		else
+			return d.isCurrentDatabaseInInitialSynchronizationProcessFromCentralDatabaseBackup();
+	}
+	public boolean isCurrentDatabaseInInitialSynchronizationProcessFromCentralDatabaseBackup(String p)
+	{
+		Database d=sql_database.values().stream().filter(d2 -> d2.configuration.getDatabaseSchema().getPackage().getName().equals(p)).findAny().orElse(null);
+		if (d==null)
+			return false;
+		else
+			return d.isCurrentDatabaseInInitialSynchronizationProcessFromCentralDatabaseBackup();
 	}
 	void prepareDatabaseRestorationFromCentralDatabaseBackupChannel(Package databasePackage) throws DatabaseException {
 		if (databasePackage==null)
@@ -1049,7 +1069,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			throw new NullPointerException();
 		this.randomForKeys=randomForKeys;
 	}
-	
+	private Database getDatabase(String packageString)
+	{
+		return sql_database.values().stream().filter(d -> d.getConfiguration().getDatabaseSchema().getPackage().getName().equals(packageString)).findAny().orElse(null);
+	}
 	public boolean isReadOnly() throws DatabaseException {
 		return (Boolean) runTransaction(new Transaction() {
 
@@ -1182,6 +1205,19 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		boolean isConnectable(DatabaseWrapper wrapper) {
 			return wrapper.getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations(hookID).allMatch(compatibleDatabasesFromDirectPeer::contains)
 					&& compatibleDatabasesFromDirectPeer.stream().allMatch(p-> wrapper.getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations(hookID).anyMatch(p::equals));
+		}
+
+		@Override
+		public String toString() {
+			return "ConnectedPeers{" +
+					"hookID=" + hookID +
+					", compatibleDatabasesFromDirectPeer=" + compatibleDatabasesFromDirectPeer +
+					", compatibleDatabases=" + compatibleDatabases +
+					", connected=" + connected +
+					", initializing=" + initializing +
+					", transferInProgress=" + transferInProgress +
+					", localHost=" + localHost +
+					'}';
 		}
 	}
 	static class ConnectedPeersWithCentralBackup {
@@ -2231,10 +2267,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			DatabaseHooksTable.Record r = getDatabaseHooksTable().getHook(hostID, true);
 			return r!=null;
 		}
-		private boolean isSynchronizationActivatedWithChannelAndThroughCentralDatabaseBackup(ConnectedPeersWithCentralBackup cp)
+		private boolean isSynchronizationActivatedWithChannelAndThroughCentralDatabaseBackup(Database d, ConnectedPeersWithCentralBackup cp)
 		{
 			if (cp==null)
 				return false;
+			if (d.isCurrentDatabaseInRestorationProcessFromCentralDatabaseBackup())
+				return true;
 			ConnectedPeers cps=this.initializedHooks.get(cp.hookID);
 			return cps==null || !cps.isConnected();
 		}
@@ -2243,7 +2281,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			lockRead();
 			try {
 				ConnectedPeersWithCentralBackup cp = this.initializedHooksWithCentralBackup.get(hostChannel);
-				return isSynchronizationActivatedWithChannelAndThroughCentralDatabaseBackup(cp);
+				return cp!=null;
 			}
 			finally {
 				unlockRead();
@@ -2252,15 +2290,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		private boolean isSynchronizationSuspendedWith(DecentralizedValue hostChannel)
 		{
 			ConnectedPeers cp = this.initializedHooks.get(hostChannel);
-			return (cp!=null && cp.isConnected()) && this.initializedHooksWithCentralBackup.containsKey(hostChannel);
+			return cp!=null && cp.isConnected() && this.initializedHooksWithCentralBackup.containsKey(hostChannel);
 		}
 		private void checkMetaDataUpdate(DecentralizedValue hostChannel) throws DatabaseException {
 
 			ConnectedPeersWithCentralBackup cp = this.initializedHooksWithCentralBackup.get(hostChannel);
 			if (cp!=null) {
-				ConnectedPeers cp2=this.initializedHooks.get(hostChannel);
-				if (cp2!=null && cp2.isConnected())
-					return;
+
 				if (cp.otherBackupMetaDataDatabasePartsSynchronizingWithCentralDatabaseBackup) {
 					return;
 				}
@@ -2274,6 +2310,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				DatabaseHooksTable.Record r = getDatabaseHookRecord(hostChannel);
 				long lastValidatedDistantID = r.getLastValidatedDistantTransactionID();
 				for (String packageString : databasePackagesToSynchronizeWithCentralBackup) {
+					if (!getSynchronizer().isSynchronizationActivatedWithChannelAndThroughCentralDatabaseBackup(getDatabase(packageString), cp))
+						continue;
+
 					Long lastValidatedDistantTransactionIDFromDatabaseBackup=cp.lastValidatedDistantTransactionIDPerDatabaseFromDatabaseBackup.get(packageString);
 					if (lastValidatedDistantTransactionIDFromDatabaseBackup==null) {
 						continue;
@@ -2292,7 +2331,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		private void checkAskForEncryptedBackupFilePart(DecentralizedValue hostChannel, String packageString) throws DatabaseException {
 			ConnectedPeersWithCentralBackup cp=initializedHooksWithCentralBackup.get(hostChannel);
 
-			if (isSynchronizationActivatedWithChannelAndThroughCentralDatabaseBackup(cp)) {
+			if (isSynchronizationActivatedWithChannelAndThroughCentralDatabaseBackup(getDatabase(packageString), cp) ) {
 
 				if (cp.otherBackupDatabasePartsSynchronizingWithCentralDatabaseBackup) {
 					return;
@@ -2530,7 +2569,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (d.configuration.isSynchronizedWithCentralBackupDatabase()
 					&& d.lastValidatedTransactionUTCForCentralBackup==Long.MIN_VALUE
 					&& !d.isCurrentDatabaseInRestorationProcess()
-					&& initializedHooks.size()==0
+					&& initializedHooks.values().stream().filter(h -> h.isConnected() && !h.localHost).map(v -> false).findAny().orElse(true)
 					&& d.configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase()!=null && d.configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase().size()>0
 					&& d.configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase().stream().allMatch(this::isInitializedWithCentralBackup)
 					&& d.isEmpty()
@@ -3257,20 +3296,26 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					Long timeUTCInMs=dc.getTimeUTCInMsForRestoringDatabaseToOldVersion();
 					if (timeUTCInMs==null)
 					{
+						if (networkLogger!=null && networkLogger.isLoggable(Level.FINE))
+							networkLogger.fine("No time of restoration is given whereas restoration is enabled. Canceling restoration.");
 						d.cancelCurrentDatabaseRestorationProcessFromCentralDatabaseBackup();
 					}
 					else
 					{
 						long lts=d.temporaryBackupRestoreManagerComingFromDistantBackupManager.getFirstFileUTCInMs();
-						backupDatabasePartsSynchronizingWithCentralDatabaseBackup.add(d.configuration.getDatabaseSchema().getPackage().getName());
-						if (lts==Long.MIN_VALUE || !d.temporaryBackupRestoreManagerComingFromDistantBackupManager.hasBackupReference()) {
+						long firstFileReferenceUTC=d.temporaryBackupRestoreManagerComingFromDistantBackupManager.getFirstFileReferenceUTCInMs();
+						if (lts==Long.MIN_VALUE || firstFileReferenceUTC>timeUTCInMs) {
 							if (lts==Long.MIN_VALUE)
 								lts=timeUTCInMs+1;
 							else
 								--lts;
+							backupDatabasePartsSynchronizingWithCentralDatabaseBackup.add(d.configuration.getDatabaseSchema().getPackage().getName());
+
 							addNewDatabaseEvent(new AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(d.configuration.getDatabaseSchema().getPackage().getName(), getLocalHostID(), d.temporaryBackupRestoreManagerChannelComingFromDistantBackupManager, new FileCoordinate(lts , FileCoordinate.Boundary.UPPER_LIMIT), AskForDatabaseBackupPartDestinedToCentralDatabaseBackup.Context.RESTORATION));
 						}
 						else {
+							if (networkLogger!=null && networkLogger.isLoggable(Level.FINE))
+								networkLogger.fine("Apply restoration");
 							getDatabaseConfigurationsBuilder().applyRestorationIfNecessary(d);
 							backupDatabasePartsSynchronizingWithCentralDatabaseBackup.remove(d.configuration.getDatabaseSchema().getPackage().getName());
 							checkForNewBackupFilePartToSendToCentralDatabaseBackup(d.configuration.getDatabaseSchema().getPackage());
@@ -3292,7 +3337,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					if (d.isCurrentDatabaseInRestorationProcessFromCentralDatabaseBackup())
 						checkNotAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(d);
 					else {
-						if (getDatabaseConfigurationsBuilder().applyRestorationIfNecessary(d)) {
+						if (d.isCurrentDatabaseInInitialSynchronizationProcessFromCentralDatabaseBackup() && getDatabaseConfigurationsBuilder().applyRestorationIfNecessary(d)) {
 
 							d.lastValidatedTransactionUTCForCentralBackup=d.backupRestoreManager.getLastTransactionUTCInMS();
 							getSynchronizer().checkAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(d);
@@ -3313,6 +3358,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				return false;
 			}
 			else {
+
+
 				boolean restore = false;
 
 				if (d.configuration.isSynchronizedWithCentralBackupDatabase()) {
@@ -3324,14 +3371,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					}
 				} else
 					restore = true;
-
-				if (restore) {
-					if (d.isCurrentDatabaseInRestorationProcessFromCentralDatabaseBackup())
-						checkAskForTemporaryDatabaseBackupPartDestinedToCentralDatabaseBackup(d);
-					else
-						getDatabaseConfigurationsBuilder().applyRestorationIfNecessary(d);
+				if (d.isCurrentDatabaseInRestorationProcessFromCentralDatabaseBackup()) {
+					checkAskForTemporaryDatabaseBackupPartDestinedToCentralDatabaseBackup(d);
+				}
+				else if (restore) {
+					getDatabaseConfigurationsBuilder().applyRestorationIfNecessary(d);
 				}
 				return restore;
+
 			}
 		}
 
@@ -3364,11 +3411,16 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 								case RESTORATION:
 								{
 									this.backupDatabasePartsSynchronizingWithCentralDatabaseBackup.remove(backupPart.getMetaData().getPackageString());
-									if (d.temporaryBackupRestoreManagerComingFromDistantBackupManager==null)
+									if (!d.isCurrentDatabaseInRestorationProcessFromCentralDatabaseBackup()) {
+										if (networkLogger!=null && networkLogger.isLoggable(Level.FINE))
+											networkLogger.fine("Received backup part from central server, but the current database is not in a restoration process. Ignoring.");
 										return;
+									}
 									d.setTemporaryBackupRestoreManagerChannelComingFromDistantBackupManager(backupPart.getChannelHost());
 									if (d.temporaryBackupRestoreManagerComingFromDistantBackupManager.importEncryptedBackupPartComingFromCentralDatabaseBackup(backupPart, databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup(), true))
 										checkAskForTemporaryDatabaseBackupPartDestinedToCentralDatabaseBackup(d);
+									else if (networkLogger!=null && networkLogger.isLoggable(Level.FINE))
+										networkLogger.fine("Received backup part from central server, but something was wrong during import.");
 								}
 									break;
 								/*case INITIAL_SYNCHRONIZATION:
@@ -3397,7 +3449,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 			else {
 				ConnectedPeersWithCentralBackup cp=initializedHooksWithCentralBackup.get(backupPart.getHostSource());
-				if (isSynchronizationActivatedWithChannelAndThroughCentralDatabaseBackup(cp)) {
+				if (isSynchronizationActivatedWithChannelAndThroughCentralDatabaseBackup(getDatabase(backupPart.getMetaData().getPackageString()), cp)){
 					try (RandomCacheFileOutputStream out = RandomCacheFileCenter.getSingleton().getNewBufferedRandomCacheFileOutputStream(true, RandomFileOutputStream.AccessMode.READ_AND_WRITE)) {
 						EncryptionTools.decode(databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup(), backupPart.getPartInputStream(), out);
 						out.flush();

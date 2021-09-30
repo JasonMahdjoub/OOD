@@ -11,6 +11,7 @@ import com.distrimind.util.crypto.EncryptionProfileProvider;
 
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.logging.Logger;
 
 /**
  * @author Jason Mahdjoub
@@ -1005,6 +1006,7 @@ public class DatabaseConfigurationsBuilder {
 								//download database from other database's channel
 								wrapper.prepareDatabaseRestorationFromCentralDatabaseBackupChannel(c.getDatabaseSchema().getPackage());
 								changed = true;
+
 							} else {
 								if (wrapper.getDatabaseHooksTable().hasRecords(new Filter<DatabaseHooksTable.Record>() {
 									@Override
@@ -1054,6 +1056,7 @@ public class DatabaseConfigurationsBuilder {
 	}
 
 	boolean applyRestorationIfNecessary(DatabaseWrapper.Database database) throws DatabaseException {
+
 		synchronized (this)
 		{
 			wrapper.lockWrite();
@@ -1061,7 +1064,12 @@ public class DatabaseConfigurationsBuilder {
 				for (DatabaseConfiguration c : configurations.getDatabaseConfigurations()) {
 					if (c.getDatabaseSchema().getPackage().equals(database.getConfiguration().getDatabaseSchema().getPackage())) {
 						Long timeUTCInMs = c.getTimeUTCInMsForRestoringDatabaseToOldVersion();
+						Logger l=wrapper.getDatabaseLogger();
+						if (l!=null)
+							l.info("Try to apply restoration : timeUTCInMs="+timeUTCInMs+", isPreferOtherChannelThanLocalChannelIfAvailableDuringRestoration="+c.isPreferOtherChannelThanLocalChannelIfAvailableDuringRestoration()+", isSynchronizedWithCentralBackupDatabase="+c.isSynchronizedWithCentralBackupDatabase()+", isCurrentDatabaseInInitialSynchronizationProcessFromCentralDatabaseBackup="+database.isCurrentDatabaseInInitialSynchronizationProcessFromCentralDatabaseBackup());
 						if (timeUTCInMs != null && !database.isCurrentDatabaseInInitialSynchronizationProcessFromCentralDatabaseBackup()) {
+
+
 							if (c.isPreferOtherChannelThanLocalChannelIfAvailableDuringRestoration()) {
 								if (c.isSynchronizedWithCentralBackupDatabase()) {
 									database.temporaryBackupRestoreManagerComingFromDistantBackupManager.restoreDatabaseToDateUTC(timeUTCInMs, c.isChooseNearestBackupIfNoBackupMatch(), true);

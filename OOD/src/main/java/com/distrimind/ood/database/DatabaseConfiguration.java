@@ -81,7 +81,7 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 	boolean restoreDatabaseToOldVersion(long timeUTCInMs, boolean preferOtherChannelThanLocalChannelIfAvailable, boolean chooseNearestBackupIfNoBackupMatch, boolean notifyOtherPeers)
 	{
 
-		if (backupConfiguration==null && (this.distantPeersThatCanBeSynchronizedWithThisDatabase==null || distantPeersThatCanBeSynchronizedWithThisDatabase.size()==0 || !isSynchronizedWithCentralBackupDatabase()))
+		if (backupConfiguration==null && (this.distantPeersThatCanBeSynchronizedWithThisDatabase==null || distantPeersThatCanBeSynchronizedWithThisDatabase.size()==0) && !isSynchronizedWithCentralBackupDatabase())
 		{
 			if (timeUTCInMsForRestoringDatabaseToOldVersion==null)
 				return false;

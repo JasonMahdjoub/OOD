@@ -101,4 +101,14 @@ public abstract class AbstractEncryptedBackupPartComingFromCentralDatabaseBackup
 	public boolean cannotBeMerged() {
 		return true;
 	}
+
+	@Override
+	public String toString() {
+		return getClass().getSimpleName()+"{" +
+				"hostSource=" + getHostSource() +
+				", hostDestination=" + hostDestination +
+				", channelHost=" + channelHost +
+				", metaData=" + getMetaData() +
+				'}';
+	}
 }
