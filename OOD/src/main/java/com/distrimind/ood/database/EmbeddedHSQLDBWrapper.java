@@ -764,7 +764,11 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 	@Override
 	protected void startTransaction(Session _openedConnection, TransactionIsolation transactionIsolation, boolean write)
 			throws SQLException {
-		String isoLevel;
+		Connection c=_openedConnection.getConnection();
+		//c.setReadOnly(!write);
+		//noinspection MagicConstant
+		c.setTransactionIsolation(transactionIsolation.getCode());
+		/*String isoLevel;
 		switch (transactionIsolation) {
 		case TRANSACTION_NONE:
 			isoLevel = null;
@@ -788,8 +792,8 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 
 		try (Statement s = _openedConnection.getConnection().createStatement()) {
 			s.executeQuery("START TRANSACTION" + (isoLevel != null ? (" ISOLATION LEVEL " + isoLevel + ", ") : " ")
-					+ (write ? "READ WRITE" : "READ ONLY") + getSqlComma());
-		}
+					+ (write ? "READ WRITE" : "READ ONLY")+getSqlComma());
+		}*/
 		/*
 		 * try(Statement s=_openedConnection.createStatement()) {
 		 * s.executeQuery("COMMIT"+getSqlComma()); }

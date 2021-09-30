@@ -1737,7 +1737,9 @@ public abstract class CommonDecentralizedTests {
 	}
 
 	protected void addElements() throws DatabaseException {
+		int i=0;
 		for (CommonDecentralizedTests.Database db : listDatabase) {
+			System.out.println("Add element into DB : "+(i++));
 			addElements(db);
 		}
 	}

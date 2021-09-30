@@ -60,7 +60,7 @@ repositories {
 apply from: 'common_dependencies.gradle'
 dependencies {
 
-    testImplementation(group:'org.hsqldb', name: 'hsqldb', version: '2.6.0')
+    testImplementation(group:'org.hsqldb', name: 'hsqldb', version: '2.5.2')
     //testImplementation(group:'org.apache.derby', name: 'derby', version: '10.15.2.0')
     //testImplementation(group:'org.apache.derby', name: 'derbytools', version: '10.15.2.0')
     testImplementation(group:'com.h2database', name:'h2', version:'1.4.200')

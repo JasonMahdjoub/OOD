@@ -209,7 +209,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 
 	@Override
 	protected void startTransaction(Session _openedConnection, TransactionIsolation transactionIsolation, boolean write) throws SQLException {
-		_openedConnection.getConnection().setReadOnly(!write);
+		//_openedConnection.getConnection().setReadOnly(!write);
 		//noinspection MagicConstant
 		_openedConnection.getConnection().setTransactionIsolation(transactionIsolation.getCode());
 	}
