@@ -59,6 +59,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 	private volatile DatabaseDistantEventsTable databaseDistantEventsTable = null;
 	private volatile IDTable idTable = null;
 
+	@SuppressWarnings("ProtectedMemberInFinalClass")
 	protected DatabaseTransactionsPerHostTable() throws DatabaseException {
 		super();
 	}
@@ -411,13 +412,30 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 			throws DatabaseException {
 		alterDatabase(comingFrom, comingFrom, inputStream);
 	}
+
+	private void checkIfAllTablesAreClearedDuringOneCycle(Set<Class<?>> clearedTablesAtOneTime, long transactionUTC, Class<?> tableClass) throws DatabaseException {
+		if (clearedTablesAtOneTime.size()>0 && !clearedTablesAtOneTime.iterator().next().getPackage().equals(tableClass.getPackage()))
+			clearedTablesAtOneTime.clear();
+		clearedTablesAtOneTime.add(tableClass);
+		DatabaseConfiguration dc=getDatabaseWrapper().getDatabaseConfiguration(tableClass.getPackage());
+		if (dc!=null && dc.getDatabaseSchema().getTableClasses().equals(clearedTablesAtOneTime) )
+		{
+			getDatabaseWrapper().getDatabaseTable().updateLastRestorationTimeUTCInMS(dc.getDatabaseSchema().getPackage().getName(), transactionUTC);
+			clearedTablesAtOneTime.clear();
+		}
+	}
+	private void notClearTableEvent(Set<Class<?>> clearedTablesAtOneTime)
+	{
+		clearedTablesAtOneTime.clear();
+	}
 	private void alterDatabase(final DatabaseHooksTable.Record directPeer,
 							   final Reference<DatabaseHooksTable.Record> _fromHook,
 							   final DatabaseTransactionEventsTable.AbstractRecord transaction,
 							   final DatabaseEventsTable.DatabaseEventsIterator iterator, final AtomicLong lastValidatedTransaction,
 							   final HashSet<DecentralizedValue> hooksToNotify,
 							   final Reference<String>	databasePackage, final boolean acceptTransactionEmpty, boolean comingFromBackup) throws DatabaseException {
-			getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
+		final Set<Class<?>> clearedTablesAtOneTime=new HashSet<>();
+		getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
 
 				@SuppressWarnings("unchecked")
 				@Override
@@ -755,6 +773,10 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 									e.setTransaction(distantTransaction);
 									getDatabaseDistantEventsTable().addRecord(e);
 								}
+								if (addedEvent.getType()==DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE)
+									checkIfAllTablesAreClearedDuringOneCycle(clearedTablesAtOneTime, transaction.getTimeUTC(), addedEvent.getTable().getClass());
+								else
+									notClearTableEvent(clearedTablesAtOneTime);
 								switch (addedEvent.getType()) {
 									case ADD:
 										if (addedEvent.isOldAlreadyPresent()) {
@@ -861,6 +883,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 										}
 										break;
 									case REMOVE_ALL_RECORDS_WITH_CASCADE: {
+
 										addedEvent.getTable().removeAllRecordsWithCascade(false);
 									}
 										break;
@@ -1019,6 +1042,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 		long lastDistantTransactionID=getDatabaseWrapper().getSynchronizer().getLastValidatedDistantIDSynchronization(comingFrom);
 		Long lastRestorationTimeUTCInMS=getDatabaseWrapper().getDatabaseTable().getLastRestorationTimeUTCInMS(databasePackage);
+		final Set<Class<?>> clearedTablesAtOneTime=new HashSet<>();
 
 		try  {
 			ois.skipNBytes(8);
@@ -1093,6 +1117,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 							event.setType(eventTypeByte);
 							event.setTransaction(dte);
 							if (eventType!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE) {
+								notClearTableEvent(clearedTablesAtOneTime);
 								event.setConcernedSerializedPrimaryKey(getDataInputStream().readBytesArray(false, Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES));
 								switch (eventType) {
 									case ADD:
@@ -1118,6 +1143,8 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 								}
 							}
+							else
+								checkIfAllTablesAreClearedDuringOneCycle(clearedTablesAtOneTime, transactionUTC, table.getClass());
 
 							int previous=getDataInputStream().readInt();
 							if (previous != startRecord)
