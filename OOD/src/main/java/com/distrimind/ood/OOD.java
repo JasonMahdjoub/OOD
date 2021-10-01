@@ -65,6 +65,11 @@ public class OOD {
 			VERSION.addCreator(new Person("mahdjoub", "jason"))
 					.addDeveloper(new PersonDeveloper("mahdjoub", "jason", "2013-04-01"))
 					.addDescription(
+							new Description((short)3, (short)1, (short)1, Version.Type.STABLE, (short)0, "2021-10-01")
+									.addItem("Update Utils to 5.19.7 STABLE")
+									.addItem("Fix issue and better update last restoration timestamp of a database")
+					)
+					.addDescription(
 							new Description((short)3, (short)1, (short)0, Version.Type.STABLE, (short)0, "2021-09-30")
 									.addItem("Add file manager")
 									.addItem("Remove concatenated sql queries")

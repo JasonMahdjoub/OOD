@@ -3189,6 +3189,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					if (localRecord.get() != null) {
 						getSynchronizer().cleanTransactionsAfterRestoration(p.getName(), timeUTCOfRestorationInMs, timeWhenRestorationIsDone, transactionToDeleteUpperLimitUTC, transactionToDeleteUpperLimitUTC == null && hostThatApplyRestoration.equals(getLocalHostID()), chooseNearestBackupIfNoBackupMatch);
 					}
+					else
+						getDatabaseTable().updateLastRestorationTimeUTCInMS(p.getName(), timeWhenRestorationIsDone);
 
 					return null;
 				}
@@ -6507,7 +6509,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					for (Table<?> t : list_tables) {
 						t.initializeStep3();
 					}
-					if (!configuration.getDatabaseSchema().getPackage().equals(this.getClass().getPackage())) {
+					if (!configuration.getDatabaseSchema().getPackage().equals(DatabaseWrapper.class.getPackage())) {
 						Database actualDatabaseLoading = DatabaseWrapper.this.actualDatabaseLoading;
 						DatabaseWrapper.this.actualDatabaseLoading = null;
 						DatabaseTable.Record dbt = getDatabaseTable().getRecord("databasePackageName", configuration.getDatabaseSchema().getPackage().getName());
