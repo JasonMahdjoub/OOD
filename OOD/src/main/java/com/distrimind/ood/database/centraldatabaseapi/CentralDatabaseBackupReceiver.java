@@ -77,7 +77,7 @@ public abstract class CentralDatabaseBackupReceiver {
 			throw new NullPointerException();
 		this.wrapper = wrapper;
 		this.centralID=centralID;
-
+		wrapper.getSynchronizer().setCentralID(centralID);
 		wrapper.getSynchronizer().loadCentralDatabaseClassesIfNecessary();
 		this.clientTable=wrapper.getTableInstance(ClientTable.class);
 		this.clientCloudAccountTable=wrapper.getTableInstance(ClientCloudAccountTable.class);
