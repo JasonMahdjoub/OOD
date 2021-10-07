@@ -67,6 +67,7 @@ public class OOD {
 					.addDescription(
 							new Description((short)3, (short)1, (short)2, Version.Type.STABLE, (short)0, "2021-10-07")
 									.addItem("Fix issue when sending messages from central server to disconnected peers")
+									.addItem("Better log formatting")
 					)
 					.addDescription(
 							new Description((short)3, (short)1, (short)1, Version.Type.STABLE, (short)0, "2021-10-01")

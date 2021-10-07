@@ -159,6 +159,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	private volatile Logger centralDatabaseLogger=null;
 	private volatile FileReferenceManager fileReferenceManager=null;
 
+
 	public FileReferenceManager getFileReferenceManager() throws DatabaseException {
 		FileReferenceManager r=fileReferenceManager;
 		if (r==null)
@@ -271,8 +272,21 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			@Override
 			public String format(LogRecord record) {
 				try {
-					StringBuilder sb=new StringBuilder(central?"CentralDatabaseBackup":(getSynchronizer().getLocalHostID()+""));
-					while (sb.length()<55)
+					StringBuilder sb=new StringBuilder();
+					DecentralizedValue dv;
+					if (central) {
+						dv=getSynchronizer().getCentralID();
+						sb.append("Server[");
+
+					}
+					else {
+						dv=getSynchronizer().getLocalHostID();
+						sb.append("Peer[");
+					}
+					sb.append(dv==null?"null":dv.toShortString());
+					sb.append("]");
+
+					while (sb.length()<40)
 						sb.append(" ");
 					sb.append("::");
 					sb.append(new Date(record.getMillis()));
@@ -1435,10 +1449,18 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		private long lastTransactionID=Long.MIN_VALUE;
 		final Set<String> backupDatabasePartsSynchronizingWithCentralDatabaseBackup=new HashSet<>();
 		private boolean sendIndirectTransactions;
-
+		private DecentralizedValue centralID;
 		private long minFilePartDurationBeforeBecomingFinalFilePart=Long.MAX_VALUE;
 
 		DatabaseSynchronizer() {
+		}
+
+		public DecentralizedValue getCentralID() {
+			return centralID;
+		}
+
+		public void setCentralID(DecentralizedValue centralID) {
+			this.centralID = centralID;
 		}
 
 		public void loadCentralDatabaseClassesIfNecessary() throws DatabaseException {
