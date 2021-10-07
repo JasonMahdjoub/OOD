@@ -504,7 +504,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 							r.sendInitialMessageComingFromCentralBackup();
 						return false;
 					}
-				}, null);
+				}, null, true);
 			}
 			return i;
 		}
@@ -538,7 +538,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 								sendMessage(new CompatibleDatabasesMessageComingFromCentralDatabaseBackup(message.getEncryptedCompatibleDatabases(), message.getHostSource(), _record.getClientID()));
 								return false;
 							}
-						}, r.getClientID());
+						}, r.getClientID(), false);
 				return Integrity.OK;
 			}
 
@@ -558,11 +558,12 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 			}
 		});
 	}
-	void parseClients(Filter<ClientTable.Record> f, DecentralizedValue exceptThisClientID) throws DatabaseException {
+	void parseClients(Filter<ClientTable.Record> f, DecentralizedValue exceptThisClientID, boolean parseDisconnectedClients) throws DatabaseException {
 		Filter<ClientTable.Record> filter=new Filter<ClientTable.Record>() {
 			@Override
 			public boolean nextRecord(ClientTable.Record _record) throws DatabaseException {
-				f.nextRecord(_record);
+				if (parseDisconnectedClients || centralDatabaseBackupReceiver.isConnectedIntoOneOfCentralDatabaseBackupServers(_record.getClientID()))
+					f.nextRecord(_record);
 				return false;
 			}
 		};
@@ -776,7 +777,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 				lastValidatedAndEncryptedIDsPerHost.put(r.getClientID(), new LastValidatedLocalAndDistantEncryptedID(getLastValidatedAndEncryptedDistantID(r, connectedClientRecord), getLastValidatedAndEncryptedDistantIDPerDatabase(r)));
 				return false;
 			}
-		}, connectedClientID);
+		}, connectedClientID, true);
 		return lastValidatedAndEncryptedIDsPerHost;
 	}
 	private Map<String, Long> getLastValidatedTransactionsUTCForDestinationHost() throws DatabaseException {
@@ -855,7 +856,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 						}
 						return false;
 					}
-				}, connectedClientID);
+				}, connectedClientID, true);
 
 				return Integrity.OK;
 			}
@@ -894,7 +895,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 							encryptedCompatibleDatabases.put(_record.getClientID(), _record.getEncryptedCompatiblesDatabases());
 						return false;
 					}
-				},connectedClientID);
+				},connectedClientID, true);
 		sendMessage(new InitialMessageComingFromCentralBackup(connectedClientID, lastValidatedAndEncryptedIDsPerHost, lastValidatedTransactionsUTCForDestinationHost, lids, encryptedCompatibleDatabases));
 	}
 	private EncryptedBackupPartReferenceTable.Record getBackupMetaDataPerFile(DatabaseBackupPerClientTable.Record databaseBackup, FileCoordinate fileCoordinate) throws DatabaseException {
