@@ -92,6 +92,8 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 			DecentralizedValue sid=centralDatabaseBackupReceiver.getCentralDatabaseBackupServerIDConnectedWithGivenPeerID(message.getHostDestination());
 			if (sid!=null)
 				sendMessageFromOtherCentralDatabaseBackup(sid, message);
+			else if (l!=null)
+				l.warning("Impossible to find central database backup which connect "+DatabaseWrapper.toString(message.getHostDestination()));
 		}
 	}
 	protected abstract void sendMessageFromThisCentralDatabaseBackup(MessageComingFromCentralDatabaseBackup message) throws DatabaseException;
