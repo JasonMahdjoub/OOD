@@ -298,7 +298,7 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 	@Override
 	public String toString() {
 		return "InitialMessageComingFromCentralBackup{" +
-				"hostDestination=" + hostDestination +
+				"hostDestination=" + DatabaseWrapper.toString(hostDestination) +
 				", lastValidatedTransactionsUTCForDestinationHost=" + lastValidatedTransactionsUTCForDestinationHost +
 				", authenticatedP2PMessages=" + authenticatedP2PMessages +
 				'}';

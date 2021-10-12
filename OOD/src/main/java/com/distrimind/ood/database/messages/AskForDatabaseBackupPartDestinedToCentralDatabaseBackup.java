@@ -1,6 +1,7 @@
 package com.distrimind.ood.database.messages;
 
 import com.distrimind.ood.database.DatabaseEvent;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.Table;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.*;
@@ -121,8 +122,8 @@ public class AskForDatabaseBackupPartDestinedToCentralDatabaseBackup extends Dat
 	@Override
 	public String toString() {
 		return "AskForDatabaseBackupPartDestinedToCentralDatabaseBackup{" +
-				"hostSource=" + hostSource +
-				", channelHost=" + channelHost +
+				"hostSource=" + DatabaseWrapper.toString(hostSource) +
+				", channelHost=" + DatabaseWrapper.toString(channelHost) +
 				", fileCoordinate=" + fileCoordinate +
 				", packageString='" + packageString + '\'' +
 				", context='"+context+'\''+

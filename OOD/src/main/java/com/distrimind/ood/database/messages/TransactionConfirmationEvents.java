@@ -35,6 +35,7 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.SecureExternalizable;
 
@@ -65,8 +66,8 @@ public class TransactionConfirmationEvents extends AbstractTransactionConfirmati
 	@Override
 	public String toString() {
 		return "TransactionConfirmationEvents{" +
-				"hostIDSource=" + hostIDSource +
-				", hostIDDestination=" + hostIDDestination +
+				"hostIDSource=" + DatabaseWrapper.toString(hostIDSource) +
+				", hostIDDestination=" + DatabaseWrapper.toString(hostIDDestination) +
 				", lastValidatedTransaction=" + lastValidatedTransaction +
 				'}';
 	}

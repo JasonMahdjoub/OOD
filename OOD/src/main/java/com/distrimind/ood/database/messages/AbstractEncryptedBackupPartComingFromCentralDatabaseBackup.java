@@ -35,6 +35,7 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.EncryptedDatabaseBackupMetaDataPerFile;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.RandomInputStream;
@@ -105,9 +106,9 @@ public abstract class AbstractEncryptedBackupPartComingFromCentralDatabaseBackup
 	@Override
 	public String toString() {
 		return getClass().getSimpleName()+"{" +
-				"hostSource=" + getHostSource() +
-				", hostDestination=" + hostDestination +
-				", channelHost=" + channelHost +
+				"hostSource=" + DatabaseWrapper.toString(getHostSource()) +
+				", hostDestination=" + DatabaseWrapper.toString(hostDestination) +
+				", channelHost=" + DatabaseWrapper.toString(channelHost) +
 				", metaData=" + getMetaData() +
 				'}';
 	}

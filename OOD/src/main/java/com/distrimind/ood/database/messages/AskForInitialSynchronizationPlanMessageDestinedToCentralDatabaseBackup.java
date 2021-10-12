@@ -84,7 +84,7 @@ public class AskForInitialSynchronizationPlanMessageDestinedToCentralDatabaseBac
 	@Override
 	public String toString() {
 		return "AskForInitialSynchronizationPlanMessageDestinedToCentralDatabaseBackup{" +
-				"hostSource=" + getHostSource()+
+				"hostSource=" + DatabaseWrapper.toString(getHostSource())+
 				", packageString='" + packageString + '\'' +
 				", acceptedDataSources=" + acceptedDataSources +
 				'}';

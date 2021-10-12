@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 import com.distrimind.ood.database.DatabaseEvent;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupCertificate;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.crypto.ASymmetricAuthenticatedSignatureType;
@@ -126,7 +127,7 @@ public abstract class AuthenticatedMessageDestinedToCentralDatabaseBackup extend
 	@Override
 	public String toString() {
 		return getClass().getName()+"{" +
-				"hostSource=" + hostSource+
+				"hostSource=" + DatabaseWrapper.toString(hostSource)+
 				'}';
 	}
 

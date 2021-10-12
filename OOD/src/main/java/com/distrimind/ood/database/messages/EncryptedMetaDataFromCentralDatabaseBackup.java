@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database.messages;
 
 import com.distrimind.ood.database.DatabaseEvent;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.EncryptedDatabaseBackupMetaDataPerFile;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.SecureExternalizable;
@@ -113,8 +114,8 @@ public class EncryptedMetaDataFromCentralDatabaseBackup extends DatabaseEvent im
 	@Override
 	public String toString() {
 		return "EncryptedMetaDataFromCentralDatabaseBackup{" +
-				"hostSource=" + hostSource +
-				", hostDestination=" + hostDestination +
+				"hostSource=" + DatabaseWrapper.toString(hostSource) +
+				", hostDestination=" + DatabaseWrapper.toString(hostDestination) +
 				", metaData="+getMetaData()+
 				'}';
 	}

@@ -195,9 +195,9 @@ public class SynchronizationPlanMessageComingFromCentralDatabaseBackup implement
 	@Override
 	public String toString() {
 		return "SynchronizationPlanMessageComingFromCentralDatabaseBackup{" +
-				"hostDestination=" + hostDestination +
+				"hostDestination=" + DatabaseWrapper.toString(hostDestination) +
 				", packageString='" + packageString + '\'' +
-				", sourceChannel=" + sourceChannel +
+				", sourceChannel=" + DatabaseWrapper.toString(sourceChannel) +
 				", firstBackupPartTimeUTC=" + firstBackupPartTimeUTC +
 				", lastBackupPartUTC=" + lastBackupPartUTC +
 				'}';

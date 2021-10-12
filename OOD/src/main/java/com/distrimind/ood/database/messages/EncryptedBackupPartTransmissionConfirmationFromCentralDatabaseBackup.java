@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database.messages;
 
 import com.distrimind.ood.database.DatabaseEvent;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.Table;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.*;
@@ -125,7 +126,7 @@ public class EncryptedBackupPartTransmissionConfirmationFromCentralDatabaseBacku
 		return "EncryptedBackupPartTransmissionConfirmationFromCentralDatabaseBackup{" +
 				"fileUTC=" + fileUTC +
 				", lastTransactionUTC=" + lastTransactionUTC +
-				", hostDestination=" + hostDestination +
+				", hostDestination=" + DatabaseWrapper.toString(hostDestination) +
 				", packageString='" + packageString + '\'' +
 				'}';
 	}
