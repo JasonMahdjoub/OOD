@@ -66,7 +66,7 @@ public class OOD {
 					.addDeveloper(new PersonDeveloper("mahdjoub", "jason", "2013-04-01"))
 					.addDescription(
 							new Description((short)3, (short)1, (short)2, Version.Type.STABLE, (short)0, "2021-10-07")
-									.addItem("Update Utils to 5.20.1 STABLE")
+									.addItem("Update Utils to 5.20.2 STABLE")
 									.addItem("Fix issue when sending messages from central server to disconnected peers")
 									.addItem("Better log formatting")
 					)
