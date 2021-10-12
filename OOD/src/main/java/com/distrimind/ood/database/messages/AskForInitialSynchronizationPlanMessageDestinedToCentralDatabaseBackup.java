@@ -86,7 +86,7 @@ public class AskForInitialSynchronizationPlanMessageDestinedToCentralDatabaseBac
 		return "AskForInitialSynchronizationPlanMessageDestinedToCentralDatabaseBackup{" +
 				"hostSource=" + DatabaseWrapper.toString(getHostSource())+
 				", packageString='" + packageString + '\'' +
-				", acceptedDataSources=" + acceptedDataSources +
+				", acceptedDataSources=" + DatabaseWrapper.toString(acceptedDataSources) +
 				'}';
 	}
 }
