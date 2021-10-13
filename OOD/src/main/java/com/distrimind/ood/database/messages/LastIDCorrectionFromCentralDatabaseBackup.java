@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 import com.distrimind.ood.database.DatabaseEvent;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.EncryptionTools;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.SecureExternalizable;
@@ -80,7 +81,7 @@ public class LastIDCorrectionFromCentralDatabaseBackup extends DatabaseEvent imp
 	public LastIDCorrectionFromCentralDatabaseBackup(DecentralizedValue _hostIDDestination,
 													 byte[] lastEncryptedValidatedTransaction) {
 		super();
-		if (hostIDDestination==null)
+		if (_hostIDDestination==null)
 			throw new NullPointerException();
 		if (lastEncryptedValidatedTransaction==null)
 			throw new NullPointerException();
@@ -105,7 +106,7 @@ public class LastIDCorrectionFromCentralDatabaseBackup extends DatabaseEvent imp
 	@Override
 	public String toString() {
 		return "LastIDCorrectionFromCentralDatabaseBackup{" +
-				"hostIDDestination=" + hostIDDestination +
+				"hostIDDestination=" + DatabaseWrapper.toString(hostIDDestination) +
 				'}';
 	}
 }

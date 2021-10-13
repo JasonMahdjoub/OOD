@@ -37,16 +37,16 @@ package com.distrimind.ood.database.centraldatabaseapi;
 
 import com.distrimind.ood.database.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.ood.database.messages.CentralDatabaseBackupCertificateChangedMessage;
-import com.distrimind.ood.database.messages.DistantBackupCenterConnexionInitialisation;
-import com.distrimind.ood.database.messages.MessageComingFromCentralDatabaseBackup;
-import com.distrimind.ood.database.messages.MessageDestinedToCentralDatabaseBackup;
+import com.distrimind.ood.database.messages.*;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.crypto.IASymmetricPublicKey;
 import com.distrimind.util.io.Integrity;
+import com.distrimind.util.io.MessageExternalizationException;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * @author Jason Mahdjoub
@@ -75,7 +75,7 @@ public abstract class CentralDatabaseBackupReceiver {
 			throw new NullPointerException();
 		this.wrapper = wrapper;
 		this.centralID=centralID;
-
+		wrapper.getSynchronizer().setCentralID(centralID);
 		wrapper.getSynchronizer().loadCentralDatabaseClassesIfNecessary();
 		this.clientTable=wrapper.getTableInstance(ClientTable.class);
 		this.clientCloudAccountTable=wrapper.getTableInstance(ClientCloudAccountTable.class);
@@ -90,6 +90,9 @@ public abstract class CentralDatabaseBackupReceiver {
 	protected abstract CentralDatabaseBackupReceiverPerPeer newCentralDatabaseBackupReceiverPerPeerInstance(DatabaseWrapper wrapper);
 
 	public Integrity received(MessageDestinedToCentralDatabaseBackup message) throws DatabaseException, IOException {
+		Logger l=clientTable.getDatabaseWrapper().getCentralDatabaseLogger();
+		if (l!=null && l.isLoggable(Level.FINER))
+			l.finer("receive message " + message);
 		CentralDatabaseBackupReceiverPerPeer r=receiversPerPeer.get(message.getHostSource());
 		if (r==null)
 		{
@@ -130,6 +133,14 @@ public abstract class CentralDatabaseBackupReceiver {
 		CentralDatabaseBackupReceiverPerPeer r=receiversPerPeer.get(peerID);
 		return r!=null && r.isConnected();
 	}
+
+	/*CentralDatabaseBackupReceiverPerPeer getConnectedIntoThisServer(DecentralizedValue peerID)
+	{
+		CentralDatabaseBackupReceiverPerPeer r=receiversPerPeer.get(peerID);
+		if (r!=null && !r.isConnected())
+			return null;
+		return r;
+	}*/
 
 	public boolean isConnectedIntoOneOfCentralDatabaseBackupServers(DecentralizedValue peerID) throws DatabaseException {
 		return connectedClientsTable.hasRecordsWithAllFields("clientID", peerID);
@@ -207,8 +218,8 @@ public abstract class CentralDatabaseBackupReceiver {
 				clientCloudAccountTable.removeRecordsWithCascade("removeAccountQueryUTCInMs is not null and removeAccountQueryUTCInMs<=%t", "t", timeReferenceToRemoveObsoleteAccounts);
 				encryptedBackupPartReferenceTable.removeRecordsWithCascade(new Filter<EncryptedBackupPartReferenceTable.Record>() {
 					@Override
-					public boolean nextRecord(EncryptedBackupPartReferenceTable.Record _record) {
-						_record.getFileReference().delete();
+					public boolean nextRecord(EncryptedBackupPartReferenceTable.Record _record) throws DatabaseException {
+						_record.delete(wrapper);
 						return true;
 					}
 				}, "(database.removeTimeUTC IS NOT NULL AND database.removeTimeUTC<=%ct) OR (database.client.toRemoveOrderTimeUTCInMs IS NOT NULL AND database.client.toRemoveOrderTimeUTCInMs<=%ctc)", "ct", timeReferenceToRemoveObsoleteBackup, "ctc", timeReferenceToRemoveObsoleteHosts);
@@ -346,6 +357,104 @@ public abstract class CentralDatabaseBackupReceiver {
 
 			}
 		});
+	}
+
+	InitialMessageComingFromCentralBackup getInitialMessageComingFromCentralBackup(ClientTable.Record clientRecord) throws DatabaseException {
+		if (!isConnectedIntoOneOfCentralDatabaseBackupServers(clientRecord.getClientID()))
+			return null;
+		Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> lastValidatedAndEncryptedIDsPerHost=getLastValidatedAndEncryptedIDsPerHost(clientRecord);
+
+		Map<String, Long> lastValidatedTransactionsUTCForDestinationHost=getLastValidatedTransactionsUTCForDestinationHost(clientRecord);
+
+		List<byte[]> lids=clientRecord.getEncryptedAuthenticatedMessagesToSend();
+		if (lids!=null && lids.size()>0)
+			clientTable.updateRecord(clientRecord, "encryptedAuthenticatedMessagesToSend", null);
+
+		HashMap<DecentralizedValue, byte[]> encryptedCompatibleDatabases=new HashMap<>();
+		parseClients(clientRecord,
+				new Filter<ClientTable.Record>(){
+
+					@Override
+					public boolean nextRecord(ClientTable.Record _record) {
+						if (_record.getEncryptedCompatiblesDatabases()!=null)
+							encryptedCompatibleDatabases.put(_record.getClientID(), _record.getEncryptedCompatiblesDatabases());
+						return false;
+					}
+				},clientRecord.getClientID(), true);
+
+		return new InitialMessageComingFromCentralBackup(clientRecord.getClientID(), lastValidatedAndEncryptedIDsPerHost, lastValidatedTransactionsUTCForDestinationHost, lids, encryptedCompatibleDatabases);
+	}
+	ClientTable.Record getClientRecord(ClientCloudAccountTable.Record concernedAccount, DecentralizedValue clientID) throws DatabaseException, MessageExternalizationException {
+		if (clientID==null)
+			throw new NullPointerException();
+
+		ClientTable.Record r= clientTable.getRecord("clientID", clientID);
+		if (r==null)
+			return null;
+		if (concernedAccount!=null && r.getAccount().getAccountID()!=concernedAccount.getAccountID())
+			throw new MessageExternalizationException(Integrity.FAIL_AND_CANDIDATE_TO_BAN);
+		return r;
+
+	}
+
+
+	private Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> getLastValidatedAndEncryptedIDsPerHost(ClientTable.Record fromClient) throws DatabaseException {
+		Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> lastValidatedAndEncryptedIDsPerHost=new HashMap<>();
+		parseClients(fromClient, new Filter<ClientTable.Record>() {
+			@Override
+			public boolean nextRecord(ClientTable.Record r) throws DatabaseException {
+				lastValidatedAndEncryptedIDsPerHost.put(r.getClientID(), new LastValidatedLocalAndDistantEncryptedID(getLastValidatedAndEncryptedDistantID(r, fromClient), getLastValidatedAndEncryptedDistantIDPerDatabase(r)));
+				return false;
+			}
+		},fromClient.getClientID(),true);
+		return lastValidatedAndEncryptedIDsPerHost;
+	}
+
+	byte[] getLastValidatedAndEncryptedDistantID(ClientTable.Record client, ClientTable.Record distantClient) throws DatabaseException {
+		LastValidatedDistantIDPerClientTable.Record r2=lastValidatedDistantIDPerClientTable.getRecord("client", client, "distantClient", distantClient);
+		if (r2==null)
+			return null;
+		else
+			return r2.getLastValidatedAndEncryptedDistantID();
+	}
+	Map<String, byte[]> getLastValidatedAndEncryptedDistantIDPerDatabase(ClientTable.Record client) throws DatabaseException {
+		HashMap<String, byte[]> res=new HashMap<>();
+		databaseBackupPerClientTable.getRecords(new Filter<DatabaseBackupPerClientTable.Record>(){
+			@Override
+			public boolean nextRecord(DatabaseBackupPerClientTable.Record _record) {
+				res.put(_record.getPackageString(), _record.getLastValidatedAndEncryptedID());
+				return false;
+			}
+		}, "client=%c", "c", client);
+		return res;
+	}
+
+	Map<String, Long> getLastValidatedTransactionsUTCForDestinationHost(ClientTable.Record client) throws DatabaseException {
+		Map<String, Long> lastValidatedTransactionsUTCForDestinationHost=new HashMap<>();
+		databaseBackupPerClientTable.getRecords(new Filter<DatabaseBackupPerClientTable.Record>() {
+			@Override
+			public boolean nextRecord(DatabaseBackupPerClientTable.Record _record)  {
+				lastValidatedTransactionsUTCForDestinationHost.put(_record.getPackageString(), _record.getLastFileBackupPartUTC());
+				return false;
+			}
+		},"client=%c", "c", client);
+		return lastValidatedTransactionsUTCForDestinationHost;
+	}
+
+	void parseClients(ClientTable.Record clientRecord, Filter<ClientTable.Record> f, DecentralizedValue exceptThisClientID, boolean parseDisconnectedClients) throws DatabaseException {
+		Filter<ClientTable.Record> filter=new Filter<ClientTable.Record>() {
+			@Override
+			public boolean nextRecord(ClientTable.Record _record) throws DatabaseException {
+				if (parseDisconnectedClients || isConnectedIntoOneOfCentralDatabaseBackupServers(_record.getClientID()))
+					f.nextRecord(_record);
+				return false;
+			}
+		};
+		if (exceptThisClientID==null)
+			clientTable.getRecords(filter, "account=%a and toRemoveOrderTimeUTCInMs is null", "a", clientRecord.getAccount());
+		else
+			clientTable.getRecords(filter, "account=%a and toRemoveOrderTimeUTCInMs is null and clientID!=%c", "a", clientRecord.getAccount(), "c", exceptThisClientID);
+
 	}
 
 }

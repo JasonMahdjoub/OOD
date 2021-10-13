@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database.messages;
 
 import com.distrimind.ood.database.DatabaseEvent;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.SecureExternalizable;
 import com.distrimind.util.io.SecuredObjectInputStream;
@@ -106,8 +107,8 @@ public class LastIDCorrection extends DatabaseEvent implements P2PDatabaseEventT
 	@Override
 	public String toString() {
 		return "LastIDCorrection{" +
-				"hostIDSource=" + hostIDSource +
-				", hostIDDestination=" + hostIDDestination +
+				"hostIDSource=" + DatabaseWrapper.toString(hostIDSource) +
+				", hostIDDestination=" + DatabaseWrapper.toString(hostIDDestination) +
 				", lastValidatedTransaction=" + lastValidatedTransaction +
 				'}';
 	}

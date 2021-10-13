@@ -66,11 +66,28 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 	{
 
 	}
-	public InitialMessageComingFromCentralBackup(DecentralizedValue hostDestination, Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> lastValidatedAndEncryptedIDsPerHost, Map<String, Long> lastValidatedTransactionsUTCForDestinationHost, List<byte[]> encryptedAuthenticatedP2PMessages, Map<DecentralizedValue, byte[]> encryptedCompatibleDatabases) {
+	static void checkLastValidatedLocalAndDistantEncryptedIDs(Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> lastValidatedAndEncryptedIDsPerHost)
+	{
 		if (lastValidatedAndEncryptedIDsPerHost==null)
 			throw new NullPointerException();
-		if (lastValidatedTransactionsUTCForDestinationHost ==null)
+		if (lastValidatedAndEncryptedIDsPerHost.containsValue(null))
 			throw new NullPointerException();
+		if (lastValidatedAndEncryptedIDsPerHost.containsKey(null))
+			throw new NullPointerException();
+
+	}
+	static void checkLastValidatedTransactionsUTCForDestinationHost(Map<String, Long> lastValidatedTransactionsUTCForDestinationHost)
+	{
+		if (lastValidatedTransactionsUTCForDestinationHost==null)
+			throw new NullPointerException();
+	}
+	public InitialMessageComingFromCentralBackup(DecentralizedValue hostDestination,
+												 Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> lastValidatedAndEncryptedIDsPerHost,
+												 Map<String, Long> lastValidatedTransactionsUTCForDestinationHost,
+												 List<byte[]> encryptedAuthenticatedP2PMessages,
+												 Map<DecentralizedValue, byte[]> encryptedCompatibleDatabases) {
+		checkLastValidatedLocalAndDistantEncryptedIDs(lastValidatedAndEncryptedIDsPerHost);
+		checkLastValidatedTransactionsUTCForDestinationHost(lastValidatedTransactionsUTCForDestinationHost);
 		if (hostDestination==null)
 			throw new NullPointerException();
 		if (encryptedCompatibleDatabases==null)
@@ -111,7 +128,8 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 		return AbstractCompatibleEncryptedDatabaseMessage.getDecryptedCompatibleDatabases(e, encryptionProfileProvider);
 	}
 
-	public Map<DecentralizedValue, LastValidatedLocalAndDistantID> getLastValidatedIDsPerHost(EncryptionProfileProvider encryptionProfileProvider) throws IOException {
+	static Map<DecentralizedValue, LastValidatedLocalAndDistantID> getLastValidatedIDsPerHost(EncryptionProfileProvider encryptionProfileProvider,
+																							  Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> lastValidatedAndEncryptedIDsPerHost) throws IOException {
 		Map<DecentralizedValue, LastValidatedLocalAndDistantID> res=new HashMap<>();
 		for (Map.Entry<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> e : lastValidatedAndEncryptedIDsPerHost.entrySet())
 		{
@@ -133,6 +151,10 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 		return res;
 	}
 
+	public Map<DecentralizedValue, LastValidatedLocalAndDistantID> getLastValidatedIDsPerHost(EncryptionProfileProvider encryptionProfileProvider) throws IOException {
+		return getLastValidatedIDsPerHost(encryptionProfileProvider, lastValidatedAndEncryptedIDsPerHost);
+	}
+
 	public Map<String, Long> getLastValidatedTransactionsUTCForDestinationHost() {
 		return lastValidatedTransactionsUTCForDestinationHost;
 	}
@@ -144,28 +166,39 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 
 	@Override
 	public int getInternalSerializedSize() {
-		int res=SerializationTools.getInternalSize(hostDestination)+4+this.lastValidatedTransactionsUTCForDestinationHost.size()*8
-				+SerializationTools.getInternalSize(encryptedAuthenticatedP2PMessages, IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup.SIZE_IN_BYTES_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND);
+
+		return SerializationTools.getInternalSize(hostDestination)
+				+SerializationTools.getInternalSize(encryptedAuthenticatedP2PMessages, IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup.SIZE_IN_BYTES_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND)
+				+getInternalSerializedSize(lastValidatedAndEncryptedIDsPerHost, encryptedCompatibleDatabases)
+				+getInternalSerializedSize(lastValidatedTransactionsUTCForDestinationHost);
+	}
+	static int getInternalSerializedSize(Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> lastValidatedAndEncryptedIDsPerHost,
+										 Map<DecentralizedValue, byte[]> encryptedCompatibleDatabases)
+	{
+		int res=2;
 		for (Map.Entry<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> e : lastValidatedAndEncryptedIDsPerHost.entrySet())
 		{
 			res+=SerializationTools.getInternalSize(e.getKey())+
 					SerializationTools.getInternalSize(e.getValue().getLastValidatedLocalID(), EncryptionTools.MAX_ENCRYPTED_ID_SIZE)+
-					SerializationTools.getInternalSize(encryptedCompatibleDatabases.get(e.getKey()), AbstractCompatibleEncryptedDatabaseMessage.MAX_SIZE_OF_ENCRYPTED_PACKAGES_NAMES_IN_BYTES);
+					(encryptedCompatibleDatabases==null?0:SerializationTools.getInternalSize(encryptedCompatibleDatabases.get(e.getKey()), AbstractCompatibleEncryptedDatabaseMessage.MAX_SIZE_OF_ENCRYPTED_PACKAGES_NAMES_IN_BYTES));
 			for (Map.Entry<String, byte[]> e2 : e.getValue().getLastValidatedDistantIDPerDatabase().entrySet()) {
 				res+=SerializationTools.getInternalSize(e2.getKey(), Table.MAX_DATABASE_PACKAGE_NAME_LENGTH)
 						+SerializationTools.getInternalSize(e2.getValue(), EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
 			}
 		}
-		for (String s : this.lastValidatedTransactionsUTCForDestinationHost.keySet())
-			res+=SerializationTools.getInternalSize(s, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
-
 		return res;
 	}
-
-	@Override
-	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
-		out.writeObject(hostDestination, false);
-		out.writeUnsignedInt16Bits(this.lastValidatedAndEncryptedIDsPerHost.size());
+	static int getInternalSerializedSize(Map<String, Long> lastValidatedTransactionsUTCForDestinationHost)
+	{
+		int res=2+lastValidatedTransactionsUTCForDestinationHost.size()*8;
+		for (String s : lastValidatedTransactionsUTCForDestinationHost.keySet())
+			res+=SerializationTools.getInternalSize(s, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
+		return res;
+	}
+	static void write(SecuredObjectOutputStream out,
+					Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> lastValidatedAndEncryptedIDsPerHost,
+					Map<DecentralizedValue, byte[]> encryptedCompatibleDatabases) throws IOException {
+		out.writeUnsignedInt16Bits(lastValidatedAndEncryptedIDsPerHost.size());
 		for (Map.Entry<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> e : lastValidatedAndEncryptedIDsPerHost.entrySet())
 		{
 			out.writeObject(e.getKey(), false);
@@ -178,26 +211,33 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 				out.writeString(e2.getKey(), false, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
 				out.writeBytesArray(e2.getValue(), false, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
 			}
-			out.writeBytesArray(encryptedCompatibleDatabases.get(e.getKey()), true, AbstractCompatibleEncryptedDatabaseMessage.MAX_SIZE_OF_ENCRYPTED_PACKAGES_NAMES_IN_BYTES);
+			if (encryptedCompatibleDatabases!=null)
+				out.writeBytesArray(encryptedCompatibleDatabases.get(e.getKey()), true, AbstractCompatibleEncryptedDatabaseMessage.MAX_SIZE_OF_ENCRYPTED_PACKAGES_NAMES_IN_BYTES);
 		}
-		out.writeUnsignedInt16Bits(this.lastValidatedTransactionsUTCForDestinationHost.size());
+	}
+	static void write(SecuredObjectOutputStream out,
+				 Map<String, Long> lastValidatedTransactionsUTCForDestinationHost) throws IOException {
+		out.writeUnsignedInt16Bits(lastValidatedTransactionsUTCForDestinationHost.size());
 		for (Map.Entry<String, Long> e : lastValidatedTransactionsUTCForDestinationHost.entrySet())
 		{
 			out.writeString(e.getKey(), false, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
 			out.writeLong(e.getValue());
 		}
-		out.writeCollection(encryptedAuthenticatedP2PMessages, true, IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup.SIZE_IN_BYTES_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND);
 	}
 
 	@Override
-	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
-		this.lastValidatedTransactionsUTCForDestinationHost=new HashMap<>();
-		this.lastValidatedAndEncryptedIDsPerHost=new HashMap<>();
-		hostDestination=in.readObject(false, DecentralizedValue.class);
+	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
+		out.writeObject(hostDestination, false);
+		write(out, lastValidatedAndEncryptedIDsPerHost, encryptedCompatibleDatabases);
+		write(out, this.lastValidatedTransactionsUTCForDestinationHost);
+		out.writeCollection(encryptedAuthenticatedP2PMessages, true, IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup.SIZE_IN_BYTES_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND);
+	}
+	static void read(SecuredObjectInputStream in,
+					 Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> lastValidatedAndEncryptedIDsPerHost,
+					 Map<DecentralizedValue, byte[]> encryptedCompatibleDatabases) throws IOException, ClassNotFoundException {
 		int s=in.readUnsignedShort();
 		if (s>DatabaseWrapper.getMaxHostNumbers())
 			throw new MessageExternalizationException(Integrity.FAIL);
-		this.encryptedCompatibleDatabases=new HashMap<>();
 		for (int i=0;i<s;i++)
 		{
 			DecentralizedValue channelHost=in.readObject(false, DecentralizedValue.class);
@@ -212,13 +252,17 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 				byte[] lastValidatedDistantID=in.readBytesArray(false, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
 				lastValidatedDistantIDPerDatabase.put(db, lastValidatedDistantID);
 			}
-			//byte[] lastValidatedAndEncryptedDistantID=in.readBytesArray(true, EncryptionTools.MAX_ENCRYPTED_ID_SIZE);
-			this.lastValidatedAndEncryptedIDsPerHost.put(channelHost, new LastValidatedLocalAndDistantEncryptedID(lastValidatedAndEncryptedLocalID, lastValidatedDistantIDPerDatabase));
-			byte[] array=in.readBytesArray(true, AbstractCompatibleEncryptedDatabaseMessage.MAX_SIZE_OF_ENCRYPTED_PACKAGES_NAMES_IN_BYTES);
-			if (array!=null)
-				this.encryptedCompatibleDatabases.put(channelHost, array);
+			lastValidatedAndEncryptedIDsPerHost.put(channelHost, new LastValidatedLocalAndDistantEncryptedID(lastValidatedAndEncryptedLocalID, lastValidatedDistantIDPerDatabase));
+			if (encryptedCompatibleDatabases!=null) {
+				byte[] array = in.readBytesArray(true, AbstractCompatibleEncryptedDatabaseMessage.MAX_SIZE_OF_ENCRYPTED_PACKAGES_NAMES_IN_BYTES);
+				if (array != null)
+					encryptedCompatibleDatabases.put(channelHost, array);
+			}
 		}
-		s=in.readUnsignedShort();
+	}
+	static void read(SecuredObjectInputStream in,
+					 Map<String, Long> lastValidatedTransactionsUTCForDestinationHost) throws IOException {
+		int s=in.readUnsignedShort();
 		if (s>DatabaseWrapper.getMaxHostNumbers())
 			throw new MessageExternalizationException(Integrity.FAIL);
 		for (int i=0;i<s;i++)
@@ -227,8 +271,17 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 			if (packageString.trim().length()==0)
 				throw new MessageExternalizationException(Integrity.FAIL);
 			long utc=in.readLong();
-			this.lastValidatedTransactionsUTCForDestinationHost.put(packageString, utc);
+			lastValidatedTransactionsUTCForDestinationHost.put(packageString, utc);
 		}
+	}
+	@Override
+	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
+		this.lastValidatedTransactionsUTCForDestinationHost=new HashMap<>();
+		this.lastValidatedAndEncryptedIDsPerHost=new HashMap<>();
+		this.encryptedCompatibleDatabases=new HashMap<>();
+		hostDestination=in.readObject(false, DecentralizedValue.class);
+		read(in, lastValidatedAndEncryptedIDsPerHost, encryptedCompatibleDatabases);
+		read(in, lastValidatedTransactionsUTCForDestinationHost);
 		encryptedAuthenticatedP2PMessages=in.readCollection(true, IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup.SIZE_IN_BYTES_AUTHENTICATED_MESSAGES_QUEUE_TO_SEND, byte[].class);
 		authenticatedP2PMessages=null;
 	}
@@ -245,7 +298,7 @@ public class InitialMessageComingFromCentralBackup extends DatabaseEvent impleme
 	@Override
 	public String toString() {
 		return "InitialMessageComingFromCentralBackup{" +
-				"hostDestination=" + hostDestination +
+				"hostDestination=" + DatabaseWrapper.toString(hostDestination) +
 				", lastValidatedTransactionsUTCForDestinationHost=" + lastValidatedTransactionsUTCForDestinationHost +
 				", authenticatedP2PMessages=" + authenticatedP2PMessages +
 				'}';

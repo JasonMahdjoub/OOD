@@ -1,6 +1,7 @@
 package com.distrimind.ood.database.messages;
 
 import com.distrimind.ood.database.DatabaseEvent;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.SecureExternalizable;
 import com.distrimind.util.io.SecuredObjectInputStream;
@@ -55,7 +56,7 @@ public class DisconnectCentralDatabaseBackup extends DatabaseEvent implements Me
 	@Override
 	public String toString() {
 		return "DisconnectCentralDatabaseBackup{" +
-				"hostSource=" + hostSource +
+				"hostSource=" + DatabaseWrapper.toString(hostSource) +
 				'}';
 	}
 }

@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 import com.distrimind.ood.database.DatabaseEvent;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.SecureExternalizable;
@@ -117,8 +118,8 @@ public class P2PConnexionInitialization extends DatabaseEvent implements P2PData
 	@Override
 	public String toString() {
 		return "P2PConnexionInitialization{" +
-				"hostSource=" + hostSource +
-				", hostDestination=" + hostDestination +
+				"hostSource=" + DatabaseWrapper.toString(hostSource) +
+				", hostDestination=" + DatabaseWrapper.toString(hostDestination) +
 				", lastValidatedTransactionID=" + lastValidatedTransactionID +
 				'}';
 	}

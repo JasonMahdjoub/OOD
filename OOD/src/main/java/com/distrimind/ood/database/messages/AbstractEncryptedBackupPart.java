@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 import com.distrimind.ood.database.DatabaseEvent;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.EncryptedDatabaseBackupMetaDataPerFile;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.*;
@@ -111,4 +112,11 @@ public abstract class AbstractEncryptedBackupPart extends DatabaseEvent implemen
 		metaData=in.readObject(false, EncryptedDatabaseBackupMetaDataPerFile.class);
 	}
 
+	@Override
+	public String toString() {
+		return getClass().getSimpleName()+"{" +
+				"hostSource=" + DatabaseWrapper.toString(hostSource) +
+				", metaData=" + metaData +
+				'}';
+	}
 }

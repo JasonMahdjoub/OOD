@@ -56,9 +56,5 @@ public class RecordNotFoundDatabaseException extends DatabaseException {
 		super(_message, e);
 	}
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 2909039696931060160L;
 
 }

@@ -38,8 +38,9 @@ knowledge of the CeCILL-C license and that you accept its terms.
 import com.distrimind.ood.database.exceptions.ConstraintsNotRespectedDatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
-import com.distrimind.ood.database.messages.EncryptedBackupPartComingFromCentralDatabaseBackup;
+import com.distrimind.ood.database.messages.AbstractEncryptedBackupPartComingFromCentralDatabaseBackup;
 import com.distrimind.ood.database.messages.EncryptedBackupPartDestinedToCentralDatabaseBackup;
+import com.distrimind.ood.database.messages.SynchronizationPlanMessageComingFromCentralDatabaseBackup;
 import com.distrimind.ood.i18n.DatabaseMessages;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.FileTools;
@@ -134,7 +135,7 @@ public class BackupRestoreManager {
 		}
 		generateRestoreProgressBar= this.backupConfiguration.restoreProgressMonitorParameters == null;
 		scanFiles();
-		if (checkTablesHeader(getFileForBackupReference()))
+		if (checkTablesHeader(getFileForBackupReference()) && !databaseWrapper.sql_database.get(dbPackage).isEmpty())
 			createIfNecessaryNewBackupReference();
 	}
 
@@ -347,6 +348,11 @@ public class BackupRestoreManager {
 			return res;
 		}
 	}
+
+	public ArrayList<Long> getFileTimeStamps() {
+		return fileTimeStamps;
+	}
+
 	public boolean hasNonFinalFiles()
 	{
 		return fileTimeStamps.size()>0 && !isPartFull(fileTimeStamps.get(fileTimeStamps.size()-1));
@@ -1162,23 +1168,33 @@ public class BackupRestoreManager {
 		return fileReferenceTimeStamps.size()>0;
 	}
 
-	public Long getFirstValidatedTransactionUTCInMs()
-	{
+	public Long getFirstValidatedTransactionUTCInMs() throws DatabaseException {
 		synchronized (this) {
-			if (fileTimeStamps.size()>0)
+			if (fileTimeStamps.size()>1)
+				return fileTimeStamps.get(0);
+			else if (fileTimeStamps.size()>0)
 			{
-				if (fileTimeStamps.size()>1)
-					return fileTimeStamps.get(0);
-				else
+				long ts=fileTimeStamps.get(0);
+				File file=getFile(ts);
+				if (isPartFull(ts, file))
 				{
-					long fts=fileTimeStamps.get(0);
-					if (isPartFull(fts, getFile(fts, true) ))
-						return fts;
+					try(RandomFileInputStream rfis=new RandomFileInputStream(file)) {
+						if (rfis.readLong()!=ts)
+							return ts;
+						if (rfis.readBoolean())
+							return ts;
+						return Long.MIN_VALUE;
+					} catch (IOException e) {
+						throw DatabaseException.getDatabaseException(e);
+					}
 				}
 			}
+
 			return Long.MIN_VALUE;
+
 		}
 	}
+
 
 	/**
 	 * Gets the younger backup event UTC time
@@ -1318,7 +1334,7 @@ public class BackupRestoreManager {
 		}
 	}
 
-	boolean importEncryptedBackupPartComingFromCentralDatabaseBackup(EncryptedBackupPartComingFromCentralDatabaseBackup backupPart, EncryptionProfileProvider encryptionProfileProvider, @SuppressWarnings("SameParameterValue") boolean replaceExistingFilePart) throws DatabaseException {
+	boolean importEncryptedBackupPartComingFromCentralDatabaseBackup(AbstractEncryptedBackupPartComingFromCentralDatabaseBackup backupPart, EncryptionProfileProvider encryptionProfileProvider, @SuppressWarnings("SameParameterValue") boolean replaceExistingFilePart) throws DatabaseException {
 		try {
 			Integrity i = backupPart.getMetaData().checkSignature(encryptionProfileProvider);
 			if (i != Integrity.OK) {
@@ -1395,6 +1411,10 @@ public class BackupRestoreManager {
 		return restoreDatabaseToDateUTC(Long.MAX_VALUE, false);
 	}
 
+	void restoreDatabaseToLastKnownBackupFromEmptyDatabase(SynchronizationPlanMessageComingFromCentralDatabaseBackup synchronizationPlanMessageComingFromCentralDatabaseBackup, Long timeOfRestoration) throws DatabaseException {
+		restoreDatabaseToDateUTC(timeOfRestoration==null?Long.MAX_VALUE:timeOfRestoration, false, timeOfRestoration!=null, synchronizationPlanMessageComingFromCentralDatabaseBackup);
+	}
+
 	/**
 	 * Restore the database to the nearest given date UTC
 	 * @param dateUTCInMs the UTC time in milliseconds
@@ -1406,10 +1426,68 @@ public class BackupRestoreManager {
 		return restoreDatabaseToDateUTC(dateUTCInMs, chooseNearestBackupIfNoBackupMatch, true);
 	}
 	boolean restoreDatabaseToDateUTC(long dateUTCInMs, boolean chooseNearestBackupIfNoBackupMatch, boolean notifyOtherPeers) throws DatabaseException {
+		return restoreDatabaseToDateUTC(dateUTCInMs, chooseNearestBackupIfNoBackupMatch, notifyOtherPeers, null);
+	}
+	boolean restoreDatabaseToDateUTC(long dateUTCInMs, boolean chooseNearestBackupIfNoBackupMatch, boolean notifyOtherPeers, SynchronizationPlanMessageComingFromCentralDatabaseBackup synchronizationPlanMessageComingFromCentralDatabaseBackup) throws DatabaseException {
 		boolean notify=false;
 		try
 		{
 			databaseWrapper.lockWrite();
+			final Long lastTransactionID=synchronizationPlanMessageComingFromCentralDatabaseBackup==null?null:getLastTransactionID();
+			if (lastTransactionID!=null)
+			{
+				databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Object>() {
+					@Override
+					public Object run() throws Exception {
+						final long lastLocalTID=databaseWrapper.getTransactionIDTable().getLastTransactionID()-1;
+						DatabaseHooksTable dht=databaseWrapper.getDatabaseHooksTable();
+
+
+
+
+						//Map<DecentralizedValue, LastValidatedLocalAndDistantID> lastValidatedIDsPerHost=synchronizationPlanMessageComingFromCentralDatabaseBackup.getLastValidatedIDsPerHost(databaseWrapper.getDatabaseConfigurationsBuilder().getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup());
+						Map<DecentralizedValue, Long> lastValidatedIDsPerHost=synchronizationPlanMessageComingFromCentralDatabaseBackup.getLastValidatedIDsPerHost(databaseWrapper.getDatabaseConfigurationsBuilder().getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup());
+						dht.updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
+							@Override
+							public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
+								if ((_record.getLastValidatedLocalTransactionID()==lastLocalTID || _record.getLastValidatedLocalTransactionID()==-1) && lastLocalTID<lastTransactionID)
+								{
+									update("lastValidatedLocalTransactionID", lastTransactionID);
+								}
+								if (_record.getHostID().equals(synchronizationPlanMessageComingFromCentralDatabaseBackup.getSourceChannel()))
+								{
+									if (_record.getLastValidatedDistantTransactionID() == -1) {
+										update("lastValidatedDistantTransactionID", lastTransactionID);
+									}
+								}
+								else {
+									Long lastValidatedDistantId = lastValidatedIDsPerHost.get(_record.getHostID());
+									if (lastValidatedDistantId!=null && _record.getLastValidatedDistantTransactionID() == -1) {
+										update("lastValidatedDistantTransactionID", lastValidatedDistantId);
+									}
+								}
+							}
+						}, "concernsDatabaseHost=%c", "c", false);
+						return null;
+					}
+
+					@Override
+					public TransactionIsolation getTransactionIsolation() {
+						return TransactionIsolation.TRANSACTION_READ_COMMITTED;
+					}
+
+					@Override
+					public boolean doesWriteData() {
+						return true;
+					}
+
+					@Override
+					public void initOrReset() {
+
+					}
+				});
+
+			}
 			int oldVersion;
 			int newVersion;
 			File currentFile;
@@ -1430,6 +1508,8 @@ public class BackupRestoreManager {
 					return false;
 				lastTransactionUTCInMs=getLastTransactionUTCInMS();
 				databaseWrapper.checkMinimumValidatedTransactionIds();
+				if (synchronizationPlanMessageComingFromCentralDatabaseBackup!=null && !notifyOtherPeers)
+					temporaryDisabled=true;
 				if (lastTransactionUTCInMs>Long.MIN_VALUE && lastTransactionUTCInMs<=dateUTCInMs) {
 					temporaryDisabled = true;
 					dateUTCInMs=lastTransactionUTCInMs;
@@ -1591,13 +1671,16 @@ public class BackupRestoreManager {
 													assert eventTypeCode == 2;
 													HashMap<String, Object> hm = new HashMap<>();
 													table.deserializeFields(hm, recordBuffer, 0, s, true, false, false);
-
+													HashMap<String, Object> hmpk=hm;
 													if (in.readBoolean()) {
+														hmpk=new HashMap<>(hm);
 														s=in.readBytesArray(recordBuffer, 0, false, Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES);
 														table.deserializeFields(hm, recordBuffer, 0, s, false, true, false);
 													}
 
 													if (in.readBoolean()) {
+														if (hmpk==hm)
+															hmpk=new HashMap<>(hm);
 														s=in.readBytesArray(recordBuffer, 0, false, Table.MAX_NON_KEYS_SIZE_IN_BYTES);
 														table.deserializeFields(hm, recordBuffer, 0, s, false, false, true);
 													}
@@ -1607,7 +1690,7 @@ public class BackupRestoreManager {
 														//newRecord = table.addUntypedRecord(hm, drRecord == null, null);
 													} catch (ConstraintsNotRespectedDatabaseException ignored) {
 														//TODO this exception occurs sometimes but should not. See why.
-														DatabaseRecord newRecord = table.getRecord(hm);
+														DatabaseRecord newRecord = table.getRecord(hmpk);
 														for (FieldAccessor fa : table.getFieldAccessors()) {
 															if (!fa.isPrimaryKey()) {
 																fa.setValue(newRecord, hm.get(fa.getFieldName()));
@@ -1670,6 +1753,7 @@ public class BackupRestoreManager {
 											progressPosition += in.currentPosition() - startRecord;
 											progressMonitor.setProgress((int) (((progressPosition+1) * 1000) / totalSize));
 										}
+
 									}
 								}
 
@@ -1711,8 +1795,35 @@ public class BackupRestoreManager {
 				if (notifyOtherPeers) {
 					databaseWrapper.getSynchronizer().notifyOtherPeersThatDatabaseRestorationWasDone(dbPackage, dateUTCInMs,restorationTimeUTCInMS, lastTransactionUTCInMs);
 				}
-				else
+				else {
 					databaseWrapper.getSynchronizer().cleanTransactionsAfterRestoration(dbPackage.getName(), dateUTCInMs, restorationTimeUTCInMS, lastTransactionUTCInMs, false, chooseNearestBackupIfNoBackupMatch);
+				}
+				if (lastTransactionID!=null) {
+					databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Void>(){
+						@Override
+						public Void run() throws Exception {
+							if (databaseWrapper.getTransactionIDTable().getLastTransactionID() < lastTransactionID+1) {
+								databaseWrapper.getTransactionIDTable().setLastTransactionID(lastTransactionID < 0 ? 0 : lastTransactionID + 1);
+							}
+							return null;
+						}
+
+						@Override
+						public TransactionIsolation getTransactionIsolation() {
+							return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
+						}
+
+						@Override
+						public boolean doesWriteData() {
+							return true;
+						}
+
+						@Override
+						public void initOrReset() {
+
+						}
+					});
+				}
 
 				return res;
 
@@ -1766,13 +1877,35 @@ public class BackupRestoreManager {
 			return false;
 
 	}
+	boolean createNewBackupReferenceIfDatabaseIsEmpty() throws DatabaseException {
+		if (fileTimeStamps.size()==0) {
+
+			return createIfNecessaryNewBackupReference();
+		}
+		else {
+			return false;
+		}
+	}
+
+	void eraseEmptyBackup() throws DatabaseException {
+		if (fileTimeStamps.size()==1 && getLastTransactionUTCInMS()==Long.MIN_VALUE)
+		{
+			File f=getFile(fileTimeStamps.get(0));
+			if (!f.delete())
+				System.err.println("Impossible to delete file "+f);
+			scanFiles();
+		}
+	}
 
 	AbstractTransaction startTransaction() throws DatabaseException {
 		synchronized (this) {
-			if (fileTimeStamps.size()==0 && !temporaryDisabled && !computeDatabaseReference.exists())
-				return new TransactionToValidateByABackupReference();
-			if (!isReady())
+			if (fileTimeStamps.size()==0 && !temporaryDisabled && !computeDatabaseReference.exists()) {
+				new TransactionToValidateByABackupReference();
+			}
+
+			if (!isReady()) {
 				return null;
+			}
 			int oldLength;
 			long oldLastFile;
 			if (fileTimeStamps.size() == 0)
@@ -1973,8 +2106,15 @@ public class BackupRestoreManager {
 						throw new DatabaseException("Impossible to delete file : " + computeDatabaseReference);
 					closed = true;
 				}
-				if (fileTimeStamp != oldLastFile && isPartFull(fileTimeStamp))
+				if (fileTimeStamp != oldLastFile) {
 					databaseWrapper.getSynchronizer().checkForNewBackupFilePartToSendToCentralDatabaseBackup(dbPackage);
+				}
+				else {
+					if (isPartFull(fileTimeStamp))
+						databaseWrapper.getSynchronizer().checkForNewBackupFilePartToSendToCentralDatabaseBackup(dbPackage);
+					else
+						databaseWrapper.getSynchronizer().notifyNewEventIfNecessary();
+				}
 			}
 			finally {
 				Long m=maxDateUTC;

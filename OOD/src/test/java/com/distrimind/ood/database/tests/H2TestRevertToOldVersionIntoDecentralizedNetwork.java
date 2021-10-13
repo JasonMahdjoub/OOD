@@ -43,6 +43,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import org.testng.annotations.Factory;
 
 import java.io.File;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Jason Mahdjoub
@@ -56,7 +57,7 @@ public class H2TestRevertToOldVersionIntoDecentralizedNetwork extends TestRevert
 	final String database_file_name3 ;
 	final String database_file_name4 ;
 	final BackupConfiguration backupConfiguration=new BackupConfiguration(10000, 20000, 1000000, 1000, null);
-
+	final static AtomicInteger counter=new AtomicInteger(0);
 	@Factory(dataProvider = "constructorRevertParameters")
 	public H2TestRevertToOldVersionIntoDecentralizedNetwork(boolean useCentralDatabaseBackup, boolean canSendIndirectTransactions,
 															   boolean upgradeDatabaseVersionWhenConnectedWithPeers,
@@ -65,11 +66,11 @@ public class H2TestRevertToOldVersionIntoDecentralizedNetwork extends TestRevert
 															boolean preferOtherChannelThanLocalChannelIfAvailable) {
 		super(useCentralDatabaseBackup, canSendIndirectTransactions, upgradeDatabaseVersionWhenConnectedWithPeers, upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion, hasToRemoveOldDatabase, preferOtherChannelThanLocalChannelIfAvailable);
 
-		centralDatabaseFileName = "centralDatabaseToTestReversionToOldVersion";
-		database_file_name1 = "decentralizedDatabaseToTestReversionToOldVersionWithBackup1";
-		database_file_name2 = "decentralizedDatabaseToTestReversionToOldVersionWithBackup2";
-		database_file_name3 = "decentralizedDatabaseToTestReversionToOldVersionWithBackup3";
-		database_file_name4 = "decentralizedDatabaseToTestReversionToOldVersionWithBackup4";
+		centralDatabaseFileName = "centralDatabaseToTestReversionToOldVersion_"+counter.getAndIncrement();
+		database_file_name1 = "decentralizedDatabaseToTestReversionToOldVersionWithBackup1_"+counter.getAndIncrement();
+		database_file_name2 = "decentralizedDatabaseToTestReversionToOldVersionWithBackup2_"+counter.getAndIncrement();
+		database_file_name3 = "decentralizedDatabaseToTestReversionToOldVersionWithBackup3_"+counter.getAndIncrement();
+		database_file_name4 = "decentralizedDatabaseToTestReversionToOldVersionWithBackup4_"+counter.getAndIncrement();
 	}
 
 

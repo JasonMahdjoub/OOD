@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database.messages;
 
 import com.distrimind.ood.database.DatabaseEvent;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.EncryptionTools;
 import com.distrimind.ood.database.Table;
 import com.distrimind.util.DecentralizedValue;
@@ -143,8 +144,8 @@ public class BackupChannelUpdateMessageFromCentralDatabaseBackup extends Databas
 	@Override
 	public String toString() {
 		return getClass().getSimpleName()+"{" +
-				"hostDestination=" + hostDestination +
-				", hostChannel=" + hostChannel +
+				"hostDestination=" + DatabaseWrapper.toString(hostDestination) +
+				", hostChannel=" + DatabaseWrapper.toString(hostChannel) +
 				'}';
 	}
 }

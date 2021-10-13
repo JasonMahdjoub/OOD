@@ -46,7 +46,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Map;
-import java.util.Objects;
 
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.DatabaseWrapper;
@@ -68,6 +67,8 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 	protected final SqlField[] sql_fields;
 	protected Method compareTo_method;
 	private final String blobBaseName;
+	private final boolean isVarBinary;
+	private final boolean isBigInteger;
 
 	protected SecureExternalizableFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection,
 												Field _field, String parentFieldName, boolean severalPrimaryKeysPresentIntoTable) throws DatabaseException {
@@ -78,11 +79,35 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 		this.blobBaseName=DatabaseWrapperAccessor.getBlobBaseWord(_sql_connection);
 		sql_fields = new SqlField[1];
 
-		if (limit<=0)
-			limit=ByteTabFieldAccessor.defaultByteTabSize;
+		String type;
+		isVarBinary=DatabaseWrapperAccessor.isVarBinarySupported(sql_connection);
+		if (limit <= 0)
+			limit = ByteTabFieldAccessor.defaultByteTabSize;
+		boolean isBigInteger=false;
+		if (useBlob)
+		{
+			type=DatabaseWrapperAccessor.getBlobType(sql_connection, limit);
+		}
+		else if (limit <= ByteTabFieldAccessor.shortTabSizeLimit) {
+			if (isVarBinary)
+				type = DatabaseWrapperAccessor.getVarBinaryType(_sql_connection, limit);
+			else if (DatabaseWrapperAccessor.isLongVarBinarySupported(sql_connection))
+				type = DatabaseWrapperAccessor.getLongVarBinaryType(_sql_connection, limit);
+			else
+			{
+				isBigInteger=true;
+				type = DatabaseWrapperAccessor.getBigDecimalType(sql_connection, limit);
+			}
+		} else {
+			if (DatabaseWrapperAccessor.isLongVarBinarySupported(sql_connection))
+				type = DatabaseWrapperAccessor.getLongVarBinaryType(_sql_connection, limit);
+			else
+				type=DatabaseWrapperAccessor.getBlobType(sql_connection, limit);
 
-		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(),
-				Objects.requireNonNull(DatabaseWrapperAccessor.getBlobType(sql_connection, limit)), isNotNull());
+		}
+		assert type != null;
+		sql_fields[0] = new SqlField(supportQuotes, table_name + "." + this.getSqlFieldName(), type, isNotNull());
+		this.isBigInteger=isBigInteger;
 
 		if (Comparable.class.isAssignableFrom(field.getType())) {
 			try {
@@ -114,6 +139,7 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 								+ field.getType().getName() + ", declaring_class=" + field.getDeclaringClass().getName()
 								+ ") into the DatabaseField class " + field.getDeclaringClass().getName()
 								+ ", is null and should not be (property NotNull present).");
+
 		} else if (!(field.getType().isAssignableFrom(_field_instance.getClass())))
 			throw new FieldDatabaseException("The given _field_instance parameter, destined to the field "
 					+ field.getName() + " of the class " + field.getDeclaringClass().getName() + ", should be a "
@@ -129,18 +155,30 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 	public void setValue(String sqlTableName, Object _class_instance, ResultSet _result_set, ArrayList<DatabaseRecord> _pointing_records)
 			throws DatabaseException {
 		try {
-			Blob b = _result_set.getBlob(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
-			if (b == null && isNotNull())
-				throw new DatabaseIntegrityException("Unexpected exception.");
+			byte[] res;
+			if (isVarBinary) {
+				res = _result_set.getBytes(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
+				if (res == null && isNotNull())
+					throw new DatabaseIntegrityException("Unexpected exception.");
+			} else if (isBigInteger){
+				res = ByteTabFieldAccessor.getByteTab(_result_set.getBigDecimal(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0]))));
+				if (res == null && isNotNull())
+					throw new DatabaseIntegrityException("Unexpected exception.");
+			} else {
+				Blob b = _result_set.getBlob(getColumnIndex(_result_set, getSqlFieldName(sqlTableName, sql_fields[0])));
+				res = b == null ? null : b.getBytes(1, (int) b.length());
+				if (res == null && isNotNull())
+					throw new DatabaseIntegrityException("Unexpected exception.");
+			}
 
-			if (b == null)
+			if (res == null)
 				field.set(_class_instance, null);
 			else {
-				try (RandomByteArrayInputStream bais = new RandomByteArrayInputStream(b.getBytes(1, (int) b.length()))) {
-					Object res = deserialize(bais);
-					if (res == null && isNotNull())
+				try (RandomByteArrayInputStream bais = new RandomByteArrayInputStream(res)) {
+					Object o = deserialize(bais);
+					if (o == null && isNotNull())
 						throw new DatabaseIntegrityException("Unexpected exception.");
-					field.set(_class_instance, res);
+					field.set(_class_instance, o);
 				}
 			}
 		} catch (Exception e) {
@@ -184,17 +222,28 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 	@Override
 	public void getValue(PreparedStatement _prepared_statement, int _field_start, Object o) throws DatabaseException {
 		try {
-			if (DatabaseWrapperAccessor.getBlobType(sql_connection, getLimit()).contains(blobBaseName)) {
-				try (RandomByteArrayOutputStream baos = new RandomByteArrayOutputStream()) {
-					serializeObject(baos, o);
-					// os.writeObject(o);
+			try (RandomByteArrayOutputStream baos = new RandomByteArrayOutputStream()) {
+				serializeObject(baos, o);
+				// os.writeObject(o);
+				byte[] tab=baos.getBytes();
 
-					try (ByteArrayInputStream bais = new ByteArrayInputStream(baos.getBytes())) {
-						_prepared_statement.setBlob(_field_start, bais);
+				if (isVarBinary)
+					_prepared_statement.setBytes(_field_start, tab);
+				else if (isBigInteger){
+					_prepared_statement.setBigDecimal(_field_start, ByteTabFieldAccessor.getBigDecimalValue(tab));
+				}else {
+					if (o == null)
+						_prepared_statement.setObject(_field_start, null);
+					else {
+						Blob blob = DatabaseWrapperAccessor.getBlob(sql_connection, tab);
+						if (blob == null)
+							_prepared_statement.setBinaryStream(_field_start, new ByteArrayInputStream(tab));
+						else {
+							_prepared_statement.setBlob(_field_start, blob);
+						}
 					}
 				}
-			} else
-				_prepared_statement.setObject(_field_start, o);
+			}
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
@@ -210,8 +259,26 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 		SqlFieldInstance[] res = new SqlFieldInstance[1];
 		if (DatabaseWrapperAccessor.getBlobType(sql_connection, getLimit()).contains(blobBaseName)) {
 			try (RandomByteArrayOutputStream baos = new RandomByteArrayOutputStream()) {
-				this.serialize(baos, _instance);
-				res[0] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[0], baos.getBytes());
+				this.serialize(baos, getValue(_instance));
+				byte[] tab=baos.getBytes();
+				if (isVarBinary)
+					res[0] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[0], tab);
+				else if (isBigInteger)
+				{
+					res[0] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[0], ByteTabFieldAccessor.getBigDecimalValue(tab));
+				}
+				else {
+					byte[] b = (byte[]) field.get(_instance);
+					if (b == null)
+						res[0] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[0], null);
+					else {
+						Blob blob = DatabaseWrapperAccessor.getBlob(sql_connection, tab);
+						if (blob == null)
+							res[0] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[0], new ByteArrayInputStream(tab));
+						else
+							res[0] = new SqlFieldInstance(supportQuotes, sqlTableName, sql_fields[0], blob);
+					}
+				}
 
 			} catch (Exception e) {
 				throw DatabaseException.getDatabaseException(e);
@@ -259,7 +326,7 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 
 	@Override
 	public boolean canBePrimaryOrUniqueKey() {
-		return false;
+		return true;
 	}
 
 	@Override

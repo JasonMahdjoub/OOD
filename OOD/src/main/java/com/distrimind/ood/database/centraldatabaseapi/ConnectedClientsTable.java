@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database.centraldatabaseapi;
 
 import com.distrimind.ood.database.DatabaseRecord;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.annotations.NotNull;
@@ -88,8 +89,8 @@ public final class ConnectedClientsTable extends Table<ConnectedClientsTable.Rec
 		@Override
 		public String toString() {
 			return "Record{" +
-					"clientID=" + clientID +
-					", centralID=" + centralID +
+					"clientID=" + DatabaseWrapper.toString(clientID) +
+					", centralID=" + DatabaseWrapper.toString(centralID) +
 					'}';
 		}
 	}

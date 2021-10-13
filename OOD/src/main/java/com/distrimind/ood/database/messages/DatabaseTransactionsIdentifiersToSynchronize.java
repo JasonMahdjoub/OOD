@@ -120,8 +120,8 @@ public class DatabaseTransactionsIdentifiersToSynchronize extends AbstractDataba
 	@Override
 	public String toString() {
 		return "DatabaseTransactionsIdentifiersToSynchronize{" +
-				"hostIDSource=" + hostIDSource +
-				", hostIDDestination=" + hostIDDestination +
+				"hostIDSource=" + DatabaseWrapper.toString(hostIDSource) +
+				", hostIDDestination=" + DatabaseWrapper.toString(hostIDDestination) +
 				", lastTransactionFieldsBetweenDistantHosts=" + lastTransactionFieldsBetweenDistantHosts +
 				'}';
 	}

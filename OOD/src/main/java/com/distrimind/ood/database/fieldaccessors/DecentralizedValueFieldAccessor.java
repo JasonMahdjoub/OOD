@@ -42,6 +42,7 @@ import com.distrimind.ood.database.exceptions.FieldDatabaseException;
 import com.distrimind.util.AbstractDecentralizedID;
 import com.distrimind.util.AbstractDecentralizedIDGenerator;
 import com.distrimind.util.DecentralizedValue;
+import com.distrimind.util.InvalidEncodedValue;
 import com.distrimind.util.crypto.*;
 import com.distrimind.util.data_buffers.WrappedData;
 import com.distrimind.util.data_buffers.WrappedSecretData;
@@ -196,8 +197,7 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 			throw new IllegalAccessError();
 	}
 
-	public Object decode(byte[] tab)
-	{
+	public Object decode(byte[] tab) throws InvalidEncodedValue {
 		if (tab==null)
 			return null;
 		else if (getFieldClassType()==ASymmetricPublicKey.class)

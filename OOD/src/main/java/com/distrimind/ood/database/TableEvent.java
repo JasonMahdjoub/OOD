@@ -66,8 +66,8 @@ public class TableEvent<T extends DatabaseRecord> extends DatabaseEvent {
 			throw new NullPointerException("type");
 		if (table==null)
 			throw new NullPointerException();
-		if (oldDatabaseRecord == null && type != DatabaseEventType.ADD && type!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE)
-			throw new NullPointerException("oldDatabaseRecord");
+		/*if (oldDatabaseRecord == null && type != DatabaseEventType.ADD && type!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE)
+			throw new NullPointerException("oldDatabaseRecord");*/
 		if (newDatabaseRecord == null && type != DatabaseEventType.REMOVE
 				&& type != DatabaseEventType.REMOVE_WITH_CASCADE
 				&& type!=DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE)

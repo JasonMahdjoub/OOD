@@ -259,14 +259,13 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 				}
 				return false;
 			};
-			if (removed=confs.removeIf(p))
+			removed=confs.removeIf(p);
+			if (removed)
 				allConfigurations.removeIf(p);
 		}
 		confs.add(configuration);
 		if (configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase()!=null) {
 			distPeers.addAll(configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase());
-		}
-		if (configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase()!=null) {
 			allDistantPeers.addAll(configuration.getDistantPeersThatCanBeSynchronizedWithThisDatabase());
 			checkForMaxDistantPeersReached();
 		}
@@ -379,28 +378,28 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 		} catch (IllegalAccessException e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
-		allDistantPeers.clear();
-		if (volatileConf) {
-			volatileDistantPeers.clear();
-			for (DatabaseConfiguration dc : volatileConfigurations)
-			{
-				Set<DecentralizedValue> s=dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase();
-				if (s!=null)
-					volatileDistantPeers.addAll(s);
+		if (changed) {
+			allDistantPeers.clear();
+			if (volatileConf) {
+				volatileDistantPeers.clear();
+				for (DatabaseConfiguration dc : volatileConfigurations) {
+					Set<DecentralizedValue> s = dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase();
+					if (s != null)
+						volatileDistantPeers.addAll(s);
+				}
+			} else {
+				this.distantPeers.clear();
+				for (DatabaseConfiguration dc : configurations) {
+					Set<DecentralizedValue> s = dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase();
+					if (s != null)
+						this.distantPeers.addAll(s);
+				}
 			}
+			allDistantPeers.addAll(this.distantPeers);
+			allDistantPeers.addAll(this.volatileDistantPeers);
+
+			checkForMaxDistantPeersReached();
 		}
-		else {
-			this.distantPeers.clear();
-			for (DatabaseConfiguration dc : configurations)
-			{
-				Set<DecentralizedValue> s=dc.getDistantPeersThatCanBeSynchronizedWithThisDatabase();
-				if (s!=null)
-					this.distantPeers.addAll(s);
-			}
-		}
-		allDistantPeers.addAll(this.distantPeers);
-		allDistantPeers.addAll(this.volatileDistantPeers);
-		checkForMaxDistantPeersReached();
 		return changed;
 	}
 	boolean setDistantPeersWithGivenPackage(String packageString, Collection<DecentralizedValue> distantPeers) throws DatabaseException {

@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 import com.distrimind.ood.database.DatabaseEvent;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.SecuredObjectInputStream;
@@ -112,8 +113,8 @@ public class CompatibleDatabasesP2PMessage extends AbstractCompatibleDatabasesMe
 	@Override
 	public String toString() {
 		return "CompatibleDatabasesP2PMessage{" +
-				"hostSource=" + getHostSource() +
-				", hostDestination=" + hostDestination +
+				"hostSource=" + DatabaseWrapper.toString(getHostSource()) +
+				", hostDestination=" + DatabaseWrapper.toString(hostDestination) +
 				", compatibleDatabases=" + getCompatibleDatabases() +
 				"} ";
 	}

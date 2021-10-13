@@ -37,6 +37,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 import com.distrimind.ood.database.AuthenticatedP2PMessage;
 import com.distrimind.ood.database.DatabaseEvent;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.crypto.*;
@@ -206,8 +207,8 @@ public class IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup extend
 	@Override
 	public String toString() {
 		return "IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup{" +
-				"hostSource=" + hostSource +
-				", hostDestination=" + hostDestination +
+				"hostSource=" + DatabaseWrapper.toString(hostSource) +
+				", hostDestination=" + DatabaseWrapper.toString(hostDestination) +
 				", authenticatedP2PMessages=" + authenticatedP2PMessages +
 				'}';
 	}

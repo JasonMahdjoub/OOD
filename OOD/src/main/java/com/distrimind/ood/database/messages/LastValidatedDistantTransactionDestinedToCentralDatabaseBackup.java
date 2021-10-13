@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 import com.distrimind.ood.database.DatabaseEvent;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.EncryptionTools;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.crypto.AbstractSecureRandom;
@@ -117,8 +118,8 @@ public class LastValidatedDistantTransactionDestinedToCentralDatabaseBackup exte
 	@Override
 	public String toString() {
 		return "LastValidatedDistantTransactionDestinedToCentralDatabaseBackup{" +
-				"hostSource=" + hostSource +
-				", channelHost=" + channelHost +
+				"hostSource=" + DatabaseWrapper.toString(hostSource) +
+				", channelHost=" + DatabaseWrapper.toString(channelHost) +
 				'}';
 	}
 }

@@ -44,11 +44,6 @@ package com.distrimind.ood.database.exceptions;
  */
 public class SerializationDatabaseException extends DatabaseException {
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 7725366683541455501L;
-
 	public SerializationDatabaseException(String _message) {
 		super(_message);
 	}

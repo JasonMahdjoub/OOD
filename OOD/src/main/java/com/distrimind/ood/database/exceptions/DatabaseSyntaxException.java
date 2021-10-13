@@ -43,10 +43,6 @@ package com.distrimind.ood.database.exceptions;
  * @since OOD 2.0
  */
 public class DatabaseSyntaxException extends DatabaseException {
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = -6292361470206289418L;
 
 	public DatabaseSyntaxException(String _message) {
 		super(_message);

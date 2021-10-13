@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java language
+and the java language 
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -35,9 +35,10 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.ood.database.DatabaseEvent;
+import com.distrimind.ood.database.DatabaseWrapper;
+import com.distrimind.ood.database.EncryptedDatabaseBackupMetaDataPerFile;
 import com.distrimind.util.DecentralizedValue;
-import com.distrimind.util.io.SecureExternalizable;
+import com.distrimind.util.io.RandomInputStream;
 import com.distrimind.util.io.SecuredObjectInputStream;
 import com.distrimind.util.io.SecuredObjectOutputStream;
 import com.distrimind.util.io.SerializationTools;
@@ -47,54 +48,68 @@ import java.io.IOException;
 /**
  * @author Jason Mahdjoub
  * @version 1.0
- * @since OOD 3.0.0
+ * @since Utils 3.1.0
  */
-
-public abstract class AbstractDatabaseBackupCenterMessageForSynchronization extends DatabaseEvent implements SecureExternalizable {
-	private DecentralizedValue hostSource;
+public abstract class AbstractEncryptedBackupPartComingFromCentralDatabaseBackup extends AbstractEncryptedBackupPart implements MessageComingFromCentralDatabaseBackup{
+	private DecentralizedValue channelHost;
 	private DecentralizedValue hostDestination;
-	private long fromIncludedDatabaseTransactionID;
-
-	AbstractDatabaseBackupCenterMessageForSynchronization() {
+	public AbstractEncryptedBackupPartComingFromCentralDatabaseBackup(DecentralizedValue hostSource, DecentralizedValue hostDestination, EncryptedDatabaseBackupMetaDataPerFile metaData, RandomInputStream partInputStream, DecentralizedValue channelHost) {
+		super(hostSource, metaData, partInputStream);
+		if (channelHost==null)
+			throw new NullPointerException();
+		if (hostDestination==null)
+			throw new NullPointerException();
+		if (hostDestination!=hostSource && hostDestination.equals(hostSource))
+			this.hostDestination=hostSource;
+		else
+			this.hostDestination=hostDestination;
+		this.channelHost=channelHost;
 	}
-
-	AbstractDatabaseBackupCenterMessageForSynchronization(DecentralizedValue hostSource, DecentralizedValue hostDestination, long fromIncludedDatabaseTransactionID) {
-		this.hostSource=hostSource;
-		this.hostDestination=hostDestination;
-		this.fromIncludedDatabaseTransactionID=fromIncludedDatabaseTransactionID;
-	}
-
-	public long getFromIncludedDatabaseTransactionID() {
-		return fromIncludedDatabaseTransactionID;
-	}
-
-
+	@Override
 	public DecentralizedValue getHostDestination() {
 		return hostDestination;
 	}
+	protected AbstractEncryptedBackupPartComingFromCentralDatabaseBackup() {
+		super();
+	}
 
-
-	public DecentralizedValue getHostSource() {
-		return hostSource;
+	public DecentralizedValue getChannelHost() {
+		return channelHost;
 	}
 
 	@Override
 	public int getInternalSerializedSize() {
-		return 8+ SerializationTools.getInternalSize((SecureExternalizable)hostSource)+SerializationTools.getInternalSize((SecureExternalizable)hostDestination);
+		return super.getInternalSerializedSize()+ SerializationTools.getInternalSize(hostDestination)+SerializationTools.getInternalSize(channelHost);
 	}
 
 	@Override
 	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
-		out.writeLong(fromIncludedDatabaseTransactionID);
-		out.writeObject(hostSource, false);
-		out.writeObject(hostDestination, false);
+		super.writeExternal(out);
+		assert hostDestination!=null;
+		out.writeObject(hostDestination==getHostSource()?null:hostDestination, true);
+		out.writeObject(channelHost, false);
 	}
 
 	@Override
 	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
-		fromIncludedDatabaseTransactionID=in.readLong();
-		hostSource=in.readObject(false, DecentralizedValue.class);
-		hostDestination=in.readObject(false, DecentralizedValue.class);
+		super.readExternal(in);
+		hostDestination=in.readObject(true, DecentralizedValue.class);
+		if (hostDestination==null)
+			hostDestination=getHostSource();
+		channelHost=in.readObject(false);
+	}
+	@Override
+	public boolean cannotBeMerged() {
+		return true;
 	}
 
+	@Override
+	public String toString() {
+		return getClass().getSimpleName()+"{" +
+				"hostSource=" + DatabaseWrapper.toString(getHostSource()) +
+				", hostDestination=" + DatabaseWrapper.toString(hostDestination) +
+				", channelHost=" + DatabaseWrapper.toString(channelHost) +
+				", metaData=" + getMetaData() +
+				'}';
+	}
 }

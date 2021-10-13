@@ -35,6 +35,7 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.SecuredObjectInputStream;
 import com.distrimind.util.io.SecuredObjectOutputStream;
@@ -94,7 +95,7 @@ public class CompatibleDatabasesMessageComingFromCentralDatabaseBackup extends A
 	@Override
 	public String toString() {
 		return "CompatibleDatabasesMessageComingFromCentralDatabaseBackup{" +
-				"hostDestination=" + hostDestination +
+				"hostDestination=" + DatabaseWrapper.toString(hostDestination) +
 				'}';
 	}
 }

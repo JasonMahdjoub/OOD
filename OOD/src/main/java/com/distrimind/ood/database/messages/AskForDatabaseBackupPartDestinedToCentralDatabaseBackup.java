@@ -1,6 +1,7 @@
 package com.distrimind.ood.database.messages;
 
 import com.distrimind.ood.database.DatabaseEvent;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.Table;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.*;
@@ -13,17 +14,21 @@ import java.io.IOException;
  * @since MaDKitLanEdition 3.0.0
  */
 public class AskForDatabaseBackupPartDestinedToCentralDatabaseBackup extends DatabaseEvent implements ChannelMessageDestinedToCentralDatabaseBackup, SecureExternalizable {
-
+	public enum Context
+	{
+		SYNCHRONIZATION,
+		RESTORATION
+	}
 	private DecentralizedValue hostSource;
 	private DecentralizedValue channelHost;
 	private FileCoordinate fileCoordinate;
 	private String packageString;
-	private boolean forRestoration;
+	private Context context;
 
 	@SuppressWarnings("unused")
 	private AskForDatabaseBackupPartDestinedToCentralDatabaseBackup() {
 	}
-	public AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(String packageString, DecentralizedValue hostSource, FileCoordinate fileCoordinate, boolean forRestoration) {
+	public AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(String packageString, DecentralizedValue hostSource, FileCoordinate fileCoordinate, Context context) {
 		if (hostSource==null)
 			throw new NullPointerException();
 		if (packageString==null)
@@ -36,11 +41,11 @@ public class AskForDatabaseBackupPartDestinedToCentralDatabaseBackup extends Dat
 		this.channelHost =hostSource;
 		this.fileCoordinate = fileCoordinate;
 		this.packageString=packageString;
-		this.forRestoration=forRestoration;
+		this.context=context;
 	}
-	public AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(String packageString, DecentralizedValue hostSource, DecentralizedValue channelHost, FileCoordinate fileCoordinate, boolean forRestoration) {
-		this(packageString, hostSource, fileCoordinate, forRestoration);
-		if (channelHost ==null && !forRestoration)
+	public AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(String packageString, DecentralizedValue hostSource, DecentralizedValue channelHost, FileCoordinate fileCoordinate, Context context) {
+		this(packageString, hostSource, fileCoordinate, context);
+		if (channelHost ==null && context!=Context.RESTORATION)
 			throw new NullPointerException();
 		this.channelHost = channelHost;
 	}
@@ -55,9 +60,8 @@ public class AskForDatabaseBackupPartDestinedToCentralDatabaseBackup extends Dat
 		return hostSource;
 	}
 
-
-	public boolean isForRestoration() {
-		return forRestoration;
+	public Context getContext() {
+		return context;
 	}
 
 	public FileCoordinate getFileCoordinate() {
@@ -66,16 +70,17 @@ public class AskForDatabaseBackupPartDestinedToCentralDatabaseBackup extends Dat
 
 	@Override
 	public int getInternalSerializedSize() {
-		return 11+ SerializationTools.getInternalSize(hostSource)
+		return 10+ SerializationTools.getInternalSize(hostSource)
 				+SerializationTools.getInternalSize(channelHost)
-				+SerializationTools.getInternalSize(packageString, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
+				+SerializationTools.getInternalSize(packageString, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH)
+				+SerializationTools.getInternalSize(context);
 	}
 
 	@Override
 	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
-		out.writeBoolean(forRestoration);
+		out.writeEnum(context, false);
 		out.writeObject(hostSource, false);
-		assert channelHost !=null || forRestoration;
+		assert channelHost !=null || context==Context.RESTORATION;
 		if (channelHost==null)
 			out.writeBoolean(false);
 		else {
@@ -88,7 +93,7 @@ public class AskForDatabaseBackupPartDestinedToCentralDatabaseBackup extends Dat
 
 	@Override
 	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
-		forRestoration=in.readBoolean();
+		context=in.readEnum(false);
 		hostSource=in.readObject(false, DecentralizedValue.class);
 		if (in.readBoolean()) {
 			channelHost = in.readObject(true, DecentralizedValue.class);
@@ -98,7 +103,7 @@ public class AskForDatabaseBackupPartDestinedToCentralDatabaseBackup extends Dat
 		else
 		{
 			channelHost=null;
-			if (!forRestoration)
+			if (context!=Context.RESTORATION)
 				throw new MessageExternalizationException(Integrity.FAIL);
 		}
 		fileCoordinate=FileCoordinate.read(in);
@@ -116,10 +121,11 @@ public class AskForDatabaseBackupPartDestinedToCentralDatabaseBackup extends Dat
 	@Override
 	public String toString() {
 		return "AskForDatabaseBackupPartDestinedToCentralDatabaseBackup{" +
-				"hostSource=" + hostSource +
-				", channelHost=" + channelHost +
+				"hostSource=" + DatabaseWrapper.toString(hostSource) +
+				", channelHost=" + DatabaseWrapper.toString(channelHost) +
 				", fileCoordinate=" + fileCoordinate +
 				", packageString='" + packageString + '\'' +
+				", context='"+context+'\''+
 				'}';
 	}
 }

@@ -69,7 +69,7 @@ public abstract class TestRevertToOldVersionIntoDecentralizedNetwork extends Tes
 		Object[][] res= constructorParameters();
 		Object[][] res2=new Object[res.length*2][res[0].length+1];
 		int index=0;
-		for (boolean preferOtherChannelThanLocalChannelIfAvailable : new boolean[]{false, true}) {
+		for (boolean preferOtherChannelThanLocalChannelIfAvailable : new boolean[]{true, false}) {
 			for (Object[] re : res) {
 				System.arraycopy(re, 0, res2[index], 0, re.length);
 				res2[index++][re.length] = preferOtherChannelThanLocalChannelIfAvailable;
@@ -108,19 +108,22 @@ public abstract class TestRevertToOldVersionIntoDecentralizedNetwork extends Tes
 			addElements();
 		}
 		exchangeMessages();
-
+		Assert.assertFalse(db1.getDbwrapper()
+				.isCurrentDatabaseInInitialSynchronizationProcessFromCentralDatabaseBackup(TableAlone.class.getPackage()));
+		System.out.println("Begin reversion :");
 		//db1.getDbwrapper().getBackupRestoreManager(TableAlone.class.getPackage()).restoreDatabaseToDateUTC(timeUTC, false);
 		db1.getDbwrapper().getDatabaseConfigurationsBuilder()
 				.restoreGivenDatabaseToOldVersion(TableAlone.class.getPackage(), timeUTC, preferOtherChannelThanLocalChannelIfAvailable || useCentralDatabaseBackup, false)
 				.commit();
-		//testSynchronizationWithSavedRecords(db1);
 
+		//testSynchronizationWithSavedRecords(db1);
+		System.out.println("End reversion :");
 		if (useCentralDatabaseBackup) {
 			if (!upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion) {
 				connectCentralDatabaseBackupWithConnectedDatabase();
 			}
 			exchangeMessages();
-			Thread.sleep(getBackupConfiguration().getMaxBackupFileAgeInMs());
+			Thread.sleep(getBackupConfiguration().getMaxBackupFileAgeInMs()+1000);
 			exchangeMessages();
 			testSynchronizationWithSavedRecords(db1);
 			testSynchronizationWithSavedRecords(db2);
