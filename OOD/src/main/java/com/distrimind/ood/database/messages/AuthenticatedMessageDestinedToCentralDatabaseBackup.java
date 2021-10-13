@@ -126,7 +126,7 @@ public abstract class AuthenticatedMessageDestinedToCentralDatabaseBackup extend
 
 	@Override
 	public String toString() {
-		return getClass().getName()+"{" +
+		return getClass().getSimpleName()+"{" +
 				"hostSource=" + DatabaseWrapper.toString(hostSource)+
 				'}';
 	}

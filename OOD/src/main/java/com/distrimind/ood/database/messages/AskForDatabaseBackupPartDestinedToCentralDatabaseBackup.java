@@ -18,7 +18,6 @@ public class AskForDatabaseBackupPartDestinedToCentralDatabaseBackup extends Dat
 	{
 		SYNCHRONIZATION,
 		RESTORATION
-		//INITIAL_SYNCHRONIZATION
 	}
 	private DecentralizedValue hostSource;
 	private DecentralizedValue channelHost;

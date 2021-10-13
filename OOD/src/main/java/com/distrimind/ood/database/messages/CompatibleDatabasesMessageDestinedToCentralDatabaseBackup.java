@@ -73,6 +73,8 @@ public class CompatibleDatabasesMessageDestinedToCentralDatabaseBackup extends A
 
 	@Override
 	public String toString() {
-		return "CompatibleDatabasesMessageDestinedToCentralDatabaseBackup{}";
+		return "CompatibleDatabasesMessageDestinedToCentralDatabaseBackup{"
+				+"hostSource="+getHostSource()
+				+"}";
 	}
 }
