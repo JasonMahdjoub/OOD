@@ -448,14 +448,14 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		if (constructors.length != 1)
 			constructor_ok = false;
 		else {
-			if (!Modifier.isProtected(constructors[0].getModifiers()))
+			if (!Modifier.isProtected(constructors[0].getModifiers()) && !Modifier.isPrivate(constructors[0].getModifiers()))
 				constructor_ok = false;
 			else if (constructors[0].getParameterTypes().length != 0)
 				constructor_ok = false;
 		}
 		if (!constructor_ok)
 			throw new DatabaseException("The class " + this.getClass().getName()
-					+ " must have only one constructor which must be declared as protected without any parameter (default constructor)");
+					+ " must have only one constructor which must be declared as protected or private without any parameter (default constructor)");
 
 		@SuppressWarnings("unchecked")
 		Class<T> tmp = (Class<T>) Table.getDatabaseRecord((Class<? extends Table<?>>) this.getClass());
