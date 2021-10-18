@@ -65,8 +65,8 @@ public class OOD {
 			VERSION.addCreator(new Person("mahdjoub", "jason"))
 					.addDeveloper(new PersonDeveloper("mahdjoub", "jason", "2013-04-01"))
 					.addDescription(
-							new Description((short)3, (short)1, (short)5, Version.Type.STABLE, (short)0, "2021-10-18")
-									.addItem("Update Utils to 5.20.5 STABLE")
+							new Description((short)3, (short)1, (short)6, Version.Type.STABLE, (short)0, "2021-10-18")
+									.addItem("Update Utils to 5.20.6 STABLE")
 					)
 					.addDescription(
 							new Description((short)3, (short)1, (short)3, Version.Type.STABLE, (short)0, "2021-10-13")
