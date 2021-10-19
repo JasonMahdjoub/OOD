@@ -5,9 +5,16 @@
 OOD is a decentralized and asynchrone ORM (Object-Relational Mapping):
 * Compatible with Java 8 and newer
 * drivers for MySQL, PostgreSQL, H2, H2 for Android, HSQLDB
-* Object Decentralized database with tools of synchronization between peers
-* Database backup, historical tools and possiblity to revert database to a given time
-* Automating backup file's synchronization with central database server. Backup files can be encrypted (end-to-end encryption)
+* Transparent decentralized and secured database synchronization
+  * Automatically synchronize database with other authorized peers, even if peers where disconnected (asynchronous mode).
+  * Manage eventual conflicts during database synchronization
+  * Automatically backup database and it historical to authorized servers and use end-to-end encryption : the servers are not able to read database in clear. 
+  * Autotatically synchronize peers through server side database backup if peers are not connected (asynchronous mode)
+  * Permit to revert database to an old version with a given time, and synchronize the restoration toward others peers and servers. It is possible to choose data source from local backup, other peers backup, or server backup.
+  * Backups cannot be removed into servers from peers for a certain period. They cannot also be removed from a peer into a distant peer. This permit to garuantee the restoration even after an attack of a ransomware. 
+  * Permit to restore database of peers thanks to other peers or thanks to servers
+  * Automatically synchronize peers though intermediate peers when direct connections are not possible
+  * Use encryption profile provider and to manage different version of secret keys in the case where a secret key was compromised
 * pseudo SQL querries possible (where clause)
 
 
