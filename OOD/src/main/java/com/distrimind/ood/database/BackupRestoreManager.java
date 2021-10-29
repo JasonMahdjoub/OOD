@@ -1073,8 +1073,7 @@ public class BackupRestoreManager {
 		if (firstFileReference==Long.MAX_VALUE)
 			return;
 		try {
-			for (Iterator<Long> it = fileTimeStamps.iterator(); it.hasNext(); ) {
-				Long l = it.next();
+			fileTimeStamps.removeIf(l -> {
 				if (l > firstFileReference || (l == firstFileReference && oldLength <= 0)) {
 					boolean reference = isReferenceFile(l);
 					File f = getFile(l, reference);
@@ -1083,9 +1082,11 @@ public class BackupRestoreManager {
 						throw new IllegalStateException();
 					if (reference)
 						fileReferenceTimeStamps.remove(l);
-					it.remove();
+					return true;
 				}
-			}
+				else
+					return false;
+			});
 			if (oldLength > 0) {
 				if (fileTimeStamps.size() == 0)
 					throw new DatabaseException("Reference not found");
