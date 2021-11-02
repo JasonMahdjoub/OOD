@@ -21,7 +21,7 @@ OOD is a decentralized and asynchrone ORM (Object-Relational Mapping):
 
 # Changes
 
-[See historical of changes](./versions.md)
+[See historical of changes](./changelog.md)
 
 # How to use it ?
 ## With Gradle :
