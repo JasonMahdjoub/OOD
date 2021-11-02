@@ -795,7 +795,7 @@ public class OOD {
 	public static void main(String[] args) throws IOException
 	{
 		String markdown=VERSION.getMarkdownCode();
-		try(FileWriter fw=new FileWriter("../versions.md"))
+		try(FileWriter fw=new FileWriter("../changelog.md"))
 		{
 			fw.write(markdown);
 			fw.flush();

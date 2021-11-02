@@ -42,12 +42,12 @@ Adapt into your build.gradle file, the next code :
 		compile(group:'com.distrimind.ood', name: 'OOD', version: '//PROJECT_VERSION//')
 		//choose one of these optional drivers for H2 database
 		testImplementation(group:'com.h2database', name: 'h2', version: '1.4.200')
-		//optional and under JDK8 or newer
-		testImplementation(group:'org.hsqldb', name: 'hsqldb', version: '2.6.0')
+		//choose this optional driver for HSQLdb
+		testImplementation(group:'org.hsqldb', name: 'hsqldb', version: '2.5.2')
 		//choose this optional driver for MySQL
-		testImplementation(group: 'mysql', name: 'mysql-connector-java', version: '8.0.26')
+		testImplementation(group: 'mysql', name: 'mysql-connector-java', version: '8.0.27')
 		//choose this optional driver for PostgreSQL
-		testImplementation(group: 'org.postgresql', name: 'postgresql', version: '42.2.23')
+		testImplementation(group: 'org.postgresql', name: 'postgresql', version: '42.3.1')
 	}
 	...
 
@@ -69,8 +69,6 @@ Adapt into your pom.xml file, the next code :
 				<dependency>
 					<groupId>com.h2database</groupId>
 					<artifactId>h2</artifactId>
-
-					<!-- under JDK 8 or newer -->
 					<version>1.4.200</version>
 				</dependency>
 
@@ -78,21 +76,19 @@ Adapt into your pom.xml file, the next code :
 				<dependency>
 					<groupId>org.hsqldb</groupId>
 					<artifactId>hsqldb</artifactId>
-
-					<!-- under JDK 8 or newer -->
-					<version>2.6.0</version>
+					<version>2.5.2</version>
 				</dependency>
 			<!-- choose this optional driver for MySQL-->
 				<dependency>
 					<groupId>mysql</groupId>
 					<artifactId>mysql-connector-java</artifactId>
-					<version>8.0.26</version>
+					<version>8.0.27</version>
 				</dependency>
 			<!-- choose this optional driver for PostgreSQL-->
 				<dependency>
 					<groupId>org.postgresql</groupId>
 					<artifactId>postgresql</artifactId>
-					<version>42.2.23</version>
+					<version>42.3.1</version>
 				</dependency>
 			...
 		</dependencies>
