@@ -67,6 +67,8 @@ public class OOD {
 					.addDescription(
 							new Description((short)3, (short)1, (short)7, Version.Type.STABLE, (short)0, "2021-11-02")
 									.addItem(INTERNAL_CHANGE, "Update Utils to 5.21.0 STABLE")
+									.addItem(INTERNAL_CHANGE, "Update MySQL JDBC driver to 8.0.27")
+									.addItem(INTERNAL_CHANGE, "Update PostgreSQL JDBC driver to 42.3.1")
 					)
 					.addDescription(
 							new Description((short)3, (short)1, (short)6, Version.Type.STABLE, (short)0, "2021-10-18")
