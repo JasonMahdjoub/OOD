@@ -64,8 +64,8 @@ dependencies {
     //testImplementation(group:'org.apache.derby', name: 'derby', version: '10.15.2.0')
     //testImplementation(group:'org.apache.derby', name: 'derbytools', version: '10.15.2.0')
     testImplementation(group:'com.h2database', name:'h2', version:'1.4.200')
-    testImplementation(group: 'mysql', name: 'mysql-connector-java', version: '8.0.26')
-    testImplementation(group:'org.postgresql', name:'postgresql', version:'42.2.23')
+    testImplementation(group: 'mysql', name: 'mysql-connector-java', version: '8.0.27')
+    testImplementation(group:'org.postgresql', name:'postgresql', version:'42.3.1')
 
 
 }
@@ -161,7 +161,7 @@ task sourcesJar(type: Jar, dependsOn: classes) {
     archiveClassifier.set("sources")
     from sourceSets.main.allSource
     from project.getProjectDir().getParentFile().getAbsolutePath()+"LICENSE"
-    from project.getProjectDir().getParentFile().getAbsolutePath()+"versions.md"
+    from project.getProjectDir().getParentFile().getAbsolutePath()+"changelog.md"
 
 }
 
@@ -169,7 +169,7 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     archiveClassifier.set("javadoc")
     from javadoc.destinationDir
     from project.getProjectDir().getParentFile().getAbsolutePath()+"LICENSE"
-    from project.getProjectDir().getParentFile().getAbsolutePath()+"versions.md"
+    from project.getProjectDir().getParentFile().getAbsolutePath()+"changelog.md"
 
 }
 
@@ -188,7 +188,7 @@ jar{
                    'Implementation-Version': project.version)
     }
     from project.getProjectDir().getParentFile().getAbsolutePath()+"LICENSE"
-    from project.getProjectDir().getParentFile().getAbsolutePath()+"versions.md"
+    from project.getProjectDir().getParentFile().getAbsolutePath()+"changelog.md"
 
 }
 
