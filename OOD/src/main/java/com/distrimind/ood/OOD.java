@@ -65,6 +65,10 @@ public class OOD {
 			VERSION.addCreator(new Person("mahdjoub", "jason"))
 					.addDeveloper(new PersonDeveloper("mahdjoub", "jason", "2013-04-01"))
 					.addDescription(
+							new Description((short)3, (short)1, (short)8, Version.Type.STABLE, (short)0, "2021-11-03")
+									.addItem(INTERNAL_CHANGE, "Update Utils to 5.21.2 STABLE")
+					)
+					.addDescription(
 							new Description((short)3, (short)1, (short)7, Version.Type.STABLE, (short)0, "2021-11-02")
 									.addItem(INTERNAL_CHANGE, "Update Utils to 5.21.0 STABLE")
 									.addItem(INTERNAL_CHANGE, "Update MySQL JDBC driver to 8.0.27")

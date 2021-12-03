@@ -36,11 +36,10 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.ReflectionTools;
 
 import java.io.File;
 import java.lang.reflect.Field;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.sql.ResultSet;
 
 /**
@@ -69,18 +68,12 @@ public class InFileEmbeddedAndroidH2DatabaseFactory extends DatabaseFactory<Embe
 		} catch (NoSuchMethodException ignored) {
 			try {
 				Class<?> jsr=Class.forName("org.h2.util.JSR310");
-				AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
-
-					try {
-						Field f = jsr.getDeclaredField("PRESENT");
-						f.setAccessible(true);
-						f.setBoolean(null, false);
-					} catch (NoSuchFieldException | IllegalAccessException e) {
-						e.printStackTrace();
-					}
-
-					return null;
-				});
+				try {
+					Field f=ReflectionTools.getField(jsr, "PRESENT");
+					f.setBoolean(null, false);
+				} catch (IllegalAccessException e) {
+					e.printStackTrace();
+				}
 
 			} catch (ClassNotFoundException e) {
 				e.printStackTrace();
