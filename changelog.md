@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-3.1.10 STABLE (Build: 5455) (from 01/04/2013 to 09/12/2021)
+3.1.11 STABLE (Build: 5460) (from 01/04/2013 to 15/12/2021)
 
 # Creator(s):
 Jason MAHDJOUB
@@ -9,6 +9,11 @@ Jason MAHDJOUB
 Jason MAHDJOUB (Entered in the team at 01/04/2013)
 
 # Changes:
+
+
+### 3.1.11 STABLE (15/12/2021)
+##### Internal change(s)
+* Update Gradle to 7.3.1
 
 
 ### 3.1.10 STABLE (09/12/2021)
