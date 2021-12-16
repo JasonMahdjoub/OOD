@@ -65,6 +65,10 @@ public class OOD {
 			VERSION.addCreator(new Person("mahdjoub", "jason"))
 					.addDeveloper(new PersonDeveloper("mahdjoub", "jason", "2013-04-01"))
 					.addDescription(
+							new Description((short)3, (short)1, (short)12, Version.Type.STABLE, (short)0, "2021-12-16")
+									.addItem(INTERNAL_CHANGE, "Update Utils to 5.21.5 STABLE")
+					)
+					.addDescription(
 							new Description((short)3, (short)1, (short)11, Version.Type.STABLE, (short)0, "2021-12-15")
 									.addItem(INTERNAL_CHANGE, "Update Gradle to 7.3.1")
 					)
