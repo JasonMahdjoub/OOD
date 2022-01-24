@@ -43,6 +43,7 @@ import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.data_buffers.WrappedData;
+import com.distrimind.util.data_buffers.WrappedSecretData;
 import com.distrimind.util.io.RandomInputStream;
 import com.distrimind.util.io.RandomOutputStream;
 
@@ -68,7 +69,7 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 	private final boolean isVarBinary;
 	private final boolean isBigInteger;
 
-	public static final long defaultByteTabSize= 512L;
+	public static final int defaultByteTabSize= 512;
 	public static final int shortTabSizeLimit=32768;
 	
 	protected ByteTabFieldAccessor(Table<?> table, DatabaseWrapper _sql_connection, Field _field,
@@ -180,9 +181,19 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 				else
 					return tab1 == null;
 			}
+
 			byte[] tab2;
-			if (_field_instance.getClass().equals(this.getCompatibleClasses()[0]))
+			if (_field_instance.getClass().equals(this.getCompatibleClasses()[0])) {
 				tab2 = (byte[]) _field_instance;
+			}
+			else if (WrappedData.class.isAssignableFrom(_field_instance.getClass()))
+			{
+				tab2=((WrappedData) _field_instance).getBytes();
+				if (WrappedSecretData.class.isAssignableFrom(_field_instance.getClass()))
+				{
+					return com.distrimind.bouncycastle.util.Arrays.constantTimeAreEqual(tab1, tab2);
+				}
+			}
 			else
 				return false;
 
@@ -301,18 +312,22 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 	@Override
 	public void getValue(PreparedStatement _prepared_statement, int _field_start, Object o) throws DatabaseException {
 		try {
-
+			byte[] tab/*;
+			if (o instanceof WrappedData)
+				tab=((WrappedData) o).getBytes();
+			else
+				tab*/=(byte[])o;
 			if (isVarBinary)
-				_prepared_statement.setBytes(_field_start, (byte[]) o);
+				_prepared_statement.setBytes(_field_start, tab);
 			else if (isBigInteger){
-				_prepared_statement.setBigDecimal(_field_start, getBigDecimalValue((byte[])o));
+				_prepared_statement.setBigDecimal(_field_start, getBigDecimalValue(tab));
 			}else {
 				if (o == null)
 					_prepared_statement.setObject(_field_start, null);
 				else {
-					Blob blob = DatabaseWrapperAccessor.getBlob(sql_connection, (byte[]) o);
+					Blob blob = DatabaseWrapperAccessor.getBlob(sql_connection, tab);
 					if (blob == null)
-						_prepared_statement.setBinaryStream(_field_start, new ByteArrayInputStream((byte[]) o));
+						_prepared_statement.setBinaryStream(_field_start, new ByteArrayInputStream(tab));
 					else {
 						_prepared_statement.setBlob(_field_start, blob);
 					}

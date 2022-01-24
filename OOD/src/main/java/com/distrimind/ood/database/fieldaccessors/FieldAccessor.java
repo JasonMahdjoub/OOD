@@ -40,12 +40,9 @@ package com.distrimind.ood.database.fieldaccessors;
 import com.distrimind.ood.database.*;
 import com.distrimind.ood.database.annotations.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.util.AbstractDecentralizedID;
-import com.distrimind.util.DecentralizedIDGenerator;
-import com.distrimind.util.DecentralizedValue;
-import com.distrimind.util.RenforcedDecentralizedIDGenerator;
-import com.distrimind.util.crypto.ASymmetricPublicKey;
+import com.distrimind.util.*;
 import com.distrimind.util.crypto.AbstractSecureRandom;
+import com.distrimind.util.data_buffers.WrappedString;
 import com.distrimind.util.io.RandomInputStream;
 import com.distrimind.util.io.RandomOutputStream;
 import com.distrimind.util.io.SerializationTools;
@@ -247,7 +244,7 @@ public abstract class FieldAccessor {
 
 	public boolean isCacheAlwaysDisabled()
 	{
-		return !ASymmetricPublicKey.class.isAssignableFrom(field.getType()) && DecentralizedValue.class.isAssignableFrom(field.getType());
+		return ISecretValue.class.isAssignableFrom(field.getType());
 	}
 
 	public String getSqlFieldName()
@@ -489,7 +486,7 @@ public abstract class FieldAccessor {
 							res.add(new floatFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (type.equals(double.class))
 							res.add(new doubleFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
-						else if (type.equals(String.class))
+						else if (type.equals(String.class) || WrappedString.class.isAssignableFrom(type))
 							res.add(new StringFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
 						/*else if (type.equals(ASymmetricPublicKey.class) || type.equals(ASymmetricPrivateKey.class) || type.equals(SymmetricSecretKey.class))
 						{

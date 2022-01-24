@@ -37,6 +37,11 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database.fieldaccessors;
 
 import com.distrimind.ood.database.exceptions.IncompatibleFieldDatabaseException;
+import com.distrimind.util.crypto.WrappedEncryptedASymmetricPrivateKey;
+import com.distrimind.util.crypto.WrappedEncryptedSymmetricSecretKey;
+import com.distrimind.util.crypto.WrappedHashedPassword;
+import com.distrimind.util.data_buffers.WrappedData;
+import com.distrimind.util.data_buffers.WrappedSecretData;
 import com.distrimind.util.io.SerializationTools;
 
 import java.io.File;
@@ -73,7 +78,10 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 		{
 			return ((File) _o).getPath().getBytes(StandardCharsets.UTF_8);
 		}
-
+		else if (_o instanceof WrappedData)
+		{
+			return ((WrappedData) _o).getBytes();
+		}
 
 		throw new IncompatibleFieldDatabaseException("Incompatible type " + _o.getClass().getCanonicalName());
 	}
@@ -96,6 +104,26 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 			{
 				return new File(new String(_bytesTab, StandardCharsets.UTF_8));
 			}
+			else if (WrappedEncryptedASymmetricPrivateKey.class.isAssignableFrom(_object_type))
+			{
+				return new WrappedEncryptedASymmetricPrivateKey(_bytesTab);
+			}
+			else if (WrappedEncryptedSymmetricSecretKey.class.isAssignableFrom(_object_type))
+			{
+				return new WrappedEncryptedSymmetricSecretKey(_bytesTab);
+			}
+			else if (WrappedHashedPassword.class.isAssignableFrom(_object_type))
+			{
+				return new WrappedHashedPassword(_bytesTab);
+			}
+			else if (WrappedSecretData.class.isAssignableFrom(_object_type))
+			{
+				return new WrappedSecretData(_bytesTab);
+			}
+			else if (WrappedData.class.isAssignableFrom(_object_type))
+			{
+				return new WrappedData(_bytesTab);
+			}
 
 		} catch (Exception e) {
 			throw new IncompatibleFieldDatabaseException("A problems occurs", e);
@@ -113,7 +141,8 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 	public boolean isCompatible(Class<?> field_type) {
 		return field_type == Inet4Address.class || field_type == Inet6Address.class ||
 				Enum.class.isAssignableFrom(field_type)
-				|| File.class.isAssignableFrom(field_type);
+				|| File.class.isAssignableFrom(field_type)
+				|| WrappedData.class.isAssignableFrom(field_type);
 	}
 
 	@Override
@@ -126,6 +155,26 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 		else if (File.class.isAssignableFrom(_object_type))
 		{
 			return 16384;
+		}
+		else if (WrappedEncryptedASymmetricPrivateKey.class.isAssignableFrom(_object_type))
+		{
+			return WrappedEncryptedASymmetricPrivateKey.MAX_SIZE_IN_BYTES_OF_KEY;
+		}
+		else if (WrappedEncryptedSymmetricSecretKey.class.isAssignableFrom(_object_type))
+		{
+			return WrappedEncryptedSymmetricSecretKey.MAX_SIZE_IN_BYTES_OF_KEY;
+		}
+		else if (WrappedHashedPassword.class.isAssignableFrom(_object_type))
+		{
+			return WrappedHashedPassword.MAX_SIZE_IN_BYTES_OF_DATA;
+		}
+		else if (WrappedSecretData.class.isAssignableFrom(_object_type))
+		{
+			return ByteTabFieldAccessor.defaultByteTabSize;
+		}
+		else if (WrappedData.class.isAssignableFrom(_object_type))
+		{
+			return ByteTabFieldAccessor.defaultByteTabSize;
 		}
 
 		throw new IncompatibleFieldDatabaseException("Incompatible type " + _object_type.getCanonicalName());
