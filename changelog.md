@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-3.1.14 STABLE (Build: 5480) (from 01/04/2013 to 22/12/2021)
+3.1.15 STABLE (Build: 5503) (from 01/04/2013 to 24/01/2022)
 
 # Creator(s):
 * Jason MAHDJOUB
@@ -9,6 +9,13 @@ Object Oriented Database
 * Jason MAHDJOUB (Entered in the team at 01/04/2013)
 
 # Changes:
+
+
+### 3.1.15 STABLE (24/01/2022)
+#### New feature(s)
+* Manage WrappedString and WrappedData classes into field accessors and into queries
+#### Internal change(s)
+* Update Utils to 5.22.0 STABLE
 
 
 ### 3.1.14 STABLE (22/12/2021)

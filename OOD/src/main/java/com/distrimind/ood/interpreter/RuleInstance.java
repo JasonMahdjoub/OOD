@@ -46,6 +46,7 @@ import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.StringFieldAccessor;
 import com.distrimind.util.Reference;
+import com.distrimind.util.data_buffers.WrappedString;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
@@ -318,8 +319,8 @@ public class RuleInstance implements QueryPart {
 					Object parameter1 = parameters.get(s.getSymbol());
 					if (parameter1 == null)
 						throw new DatabaseSyntaxException("Cannot find parameter " + s.getSymbol());
-					if (CharSequence.class.isAssignableFrom(parameter1.getClass())) {
-						return ((CharSequence) parameter1).toString();
+					if (CharSequence.class.isAssignableFrom(parameter1.getClass()) || WrappedString.class.isAssignableFrom(parameter1.getClass())) {
+						return parameter1.toString();
 					} else
 						throw new DatabaseSyntaxException("The parameter " + s.getSymbol() + " is not a string !");
 				} else if (s.getType() == SymbolType.STRING || s.getType() == SymbolType.NUMBER || s.getType()==SymbolType.NULL) {
@@ -421,10 +422,24 @@ public class RuleInstance implements QueryPart {
 	public <T extends DatabaseRecord> boolean equals(Table<T> table, T record, Object o1, Object o2)
 			throws DatabaseSyntaxException {
 		try {
-			if (o1==null)
-				return o2==null || ((o2 instanceof String) && o2.equals(SymbolType.NULL.getContent()));
-			else if ((o1 instanceof String) && (o2 instanceof String) && o1.equals(SymbolType.NULL.getContent()) && o2.equals(SymbolType.NULL.getContent()))
-				return true;
+			if (o1==null) {
+				return o2 == null || ((o2 instanceof String) && o2.equals(SymbolType.NULL.getContent()))
+					|| ((o2 instanceof WrappedString) && o2.toString().equals(SymbolType.NULL.getContent()));
+			}
+			else {
+				String s1=null;
+				String s2=null;
+				if (o1 instanceof String)
+					s1=(String)o1;
+				else if (o1 instanceof WrappedString)
+					s1=o1.toString();
+				if (o2 instanceof String)
+					s2=(String)o2;
+				else if (o2 instanceof WrappedString)
+					s2=o2.toString();
+				if (s1!=null && s2!=null && s1.equals(SymbolType.NULL.getContent()) && s2.equals(SymbolType.NULL.getContent()))
+					return true;
+			}
 			
 			if (o2!=null && ((!Table.FieldAccessorValue.class.isAssignableFrom(o1.getClass())
 					&& Table.FieldAccessorValue.class.isAssignableFrom(o2.getClass()))
@@ -451,14 +466,23 @@ public class RuleInstance implements QueryPart {
 
 				if (fav.getValue() == null)
 					return o2 == null;
-				if (CharSequence.class.isAssignableFrom(fav.getFieldAccessor().getFieldClassType())) {
+				if (CharSequence.class.isAssignableFrom(fav.getFieldAccessor().getFieldClassType())
+				|| WrappedString.class.isAssignableFrom(fav.getFieldAccessor().getFieldClassType()))
+				{
 					if (o2 instanceof String) {
 						String s = (String) o2;
 						if (s.startsWith("\"") && s.endsWith("\""))
 							o2 = s.substring(1, s.length() - 1);
+					} else if (o2 instanceof WrappedString)
+					{
+						String s = o2.toString();
+						if (s.startsWith("\"") && s.endsWith("\""))
+							o2 = s.substring(1, s.length() - 1);
 					}
 					return fav.getFieldAccessor().equals(fav.getValue(), o2);
-				} else if (fav.getFieldAccessor().isComparable() && o2 instanceof BigDecimal) {
+				}
+
+				else if (fav.getFieldAccessor().isComparable() && o2 instanceof BigDecimal) {
 					Object v = fav.getFieldAccessor().getValue(fav.getValue());
 					if (v == null)
 						return false;
@@ -505,13 +529,17 @@ public class RuleInstance implements QueryPart {
 	public <T extends DatabaseRecord> boolean like(Table<T> table, T record, Object o1, Object o2)
 			throws DatabaseSyntaxException {
 		try {
-			if (String.class.isAssignableFrom(o1.getClass())) {
+			if (String.class.isAssignableFrom(o1.getClass()) || WrappedString.class.isAssignableFrom(o1.getClass())) {
 				throw new DatabaseSyntaxException(
 						"When using like operator, the first field must be a table identifier");
 			} else if (Table.FieldAccessorValue.class.isAssignableFrom(o1.getClass()) && StringFieldAccessor.class.isAssignableFrom(((Table.FieldAccessorValue)o1).getFieldAccessor().getClass())) {
+				if (o2 instanceof WrappedString)
+					o2=o2.toString();
 				if (String.class.isAssignableFrom(o2.getClass())) {
-					String s1 = (String) (((Table.FieldAccessorValue)o1).getFieldAccessor())
+					Object o=(((Table.FieldAccessorValue)o1).getFieldAccessor())
 							.getValue(getRecordInstance(table, record, ((Table.FieldAccessorValue)o1).getFieldAccessor()));
+
+					String s1 = (o instanceof WrappedString)?o.toString():(String) o;
 					String s2 = (String) o2;
 
 					if (s2.startsWith("\"") && s2.endsWith("\""))
@@ -532,35 +560,35 @@ public class RuleInstance implements QueryPart {
 
 	}
 
-	public <T extends DatabaseRecord> boolean isIndependantFromOtherTables(Table<T> table) {
+	public <T extends DatabaseRecord> boolean isIndependentFromOtherTables(Table<T> table) {
 		switch (rule) {
 		case COMPARE:
 			if (parts.size() == 3) {
 				RuleInstance ri2 = (RuleInstance) parts.get(1);
 				if (ri2.getRule().equals(Rule.QUERY)) {
-					return ri2.isIndependantFromOtherTables(table);
+					return ri2.isIndependentFromOtherTables(table);
 				} else {
 					RuleInstance ri1 = (RuleInstance) parts.get(0);
 					RuleInstance ri3 = (RuleInstance) parts.get(2);
 
-					return ri1.isIndependantFromOtherTables(table) && ri3.isIndependantFromOtherTables(table);
+					return ri1.isIndependentFromOtherTables(table) && ri3.isIndependentFromOtherTables(table);
 				}
 			} else
 				throw new IllegalAccessError();
 			case NULLTEST:
 				if (parts.size() == 3) {
 					RuleInstance ri1 = (RuleInstance) parts.get(0);
-					return ri1.isIndependantFromOtherTables(table);
+					return ri1.isIndependentFromOtherTables(table);
 				} else
 					throw new IllegalAccessError();
 		case QUERY:
 			if (parts.size() == 1) {
-				return ((RuleInstance) parts.get(0)).isIndependantFromOtherTables(table);
+				return ((RuleInstance) parts.get(0)).isIndependentFromOtherTables(table);
 			} else if (parts.size() == 3) {
 				RuleInstance ri1 = (RuleInstance) parts.get(0);
 				RuleInstance ri3 = (RuleInstance) parts.get(2);
 
-				return ri1.isIndependantFromOtherTables(table) && ri3.isIndependantFromOtherTables(table);
+				return ri1.isIndependentFromOtherTables(table) && ri3.isIndependentFromOtherTables(table);
 			} else
 				throw new IllegalAccessError();
 			case NULL:
@@ -578,12 +606,12 @@ public class RuleInstance implements QueryPart {
 				} else
 					return true;
 			} else if (parts.size() == 3) {
-				return ((RuleInstance) parts.get(1)).isIndependantFromOtherTables(table);
+				return ((RuleInstance) parts.get(1)).isIndependentFromOtherTables(table);
 			} else
 				throw new IllegalAccessError();
 
 		case EXPRESSION:
-			return ((RuleInstance) parts.get(0)).isIndependantFromOtherTables(table);
+			return ((RuleInstance) parts.get(0)).isIndependentFromOtherTables(table);
 		case OPCOMP:
 		case OPCONDITION:
 			case ISOP:
@@ -851,7 +879,7 @@ public class RuleInstance implements QueryPart {
 							} else {
 								StringBuilder res = new StringBuilder();
 								if ((comp.getType() == SymbolType.LIKE || comp.getType() == SymbolType.NOTLIKE)
-										&& (!(parameter2 instanceof CharSequence)))
+										&& (!(parameter2 instanceof CharSequence) && !(parameter2 instanceof WrappedString)))
 									throw new DatabaseSyntaxException("Cannot compare " + fa1.getFieldName() + " with "
 											+ s2.getType().name() + " using operator " + comp.getType().name());
 								if (comp.getType() == SymbolType.EQUALOPERATOR

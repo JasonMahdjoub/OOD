@@ -144,7 +144,7 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 				CommonDecentralizedTests.Database db = concernedDatabase[0];
 				proceedEvent(db, false, levents);
 				System.out.println("sleep");
-				Thread.sleep(1200);
+				Thread.sleep(2000);
 
 				exchangeMessages();
 				Assert.assertTrue(db.getAnomalies().isEmpty());
