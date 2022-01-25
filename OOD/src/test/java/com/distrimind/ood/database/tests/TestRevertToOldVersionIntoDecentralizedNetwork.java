@@ -120,10 +120,13 @@ public abstract class TestRevertToOldVersionIntoDecentralizedNetwork extends Tes
 		System.out.println("End reversion :");
 		if (useCentralDatabaseBackup) {
 			if (!upgradeDatabaseVersionWhenConnectedWithCentralDatabaseVersion) {
+				Thread.sleep(1000);
 				connectCentralDatabaseBackupWithConnectedDatabase();
 			}
 			exchangeMessages();
-			Thread.sleep(getBackupConfiguration().getMaxBackupFileAgeInMs()+1000);
+			Thread.sleep(getBackupConfiguration().getMaxBackupFileAgeInMs());
+			exchangeMessages();
+			Thread.sleep(1000);
 			exchangeMessages();
 			testSynchronizationWithSavedRecords(db1);
 			testSynchronizationWithSavedRecords(db2);

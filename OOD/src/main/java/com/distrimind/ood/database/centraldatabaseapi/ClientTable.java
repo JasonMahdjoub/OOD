@@ -55,6 +55,7 @@ import java.util.List;
  * @since OOD 3.0.0
  */
 public final class ClientTable extends Table<ClientTable.Record> {
+	@SuppressWarnings("ProtectedMemberInFinalClass")
 	protected ClientTable() throws DatabaseException {
 	}
 

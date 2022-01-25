@@ -54,7 +54,7 @@ public class AbstractCompatibleEncryptedDatabaseMessage extends DatabaseEvent im
 	public static final int MAX_SIZE_OF_ENCRYPTED_PACKAGES_NAMES_IN_BYTES=AbstractCompatibleDatabasesMessage.MAX_SIZE_OF_PACKAGES_NAMES_IN_BYTES
 			+32+ SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE
 			+ ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE
-			+MessageDigestType.MAX_HASH_LENGTH+4;
+			+MessageDigestType.MAX_HASH_LENGTH_IN_BYTES+4;
 	private byte[] encryptedCompatibleDatabases;
 	private DecentralizedValue hostSource;
 
