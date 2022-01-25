@@ -65,6 +65,10 @@ public class OOD {
 			VERSION.addCreator(new Person("mahdjoub", "jason"))
 					.addDeveloper(new PersonDeveloper("mahdjoub", "jason", "2013-04-01"))
 					.addDescription(
+							new Description((short)3, (short)1, (short)16, Version.Type.STABLE, (short)0, "2022-01-24")
+									.addItem(INTERNAL_CHANGE, "Update Utils to 5.22.1 STABLE")
+					)
+					.addDescription(
 							new Description((short)3, (short)1, (short)15, Version.Type.STABLE, (short)0, "2022-01-24")
 									.addItem(INTERNAL_CHANGE, "Update Utils to 5.22.0 STABLE")
 									.addItem(NEW_FEATURE, "Manage WrappedString and WrappedData classes into field accessors and into queries")
