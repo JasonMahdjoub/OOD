@@ -223,7 +223,7 @@ publishing {
             pom {
                 name = 'OOD'
                 description = 'OD is a decentralized and asynchrone ORM (Object-Relational Mapping)'
-                url = 'https://github.com/JazZ51/OOD'
+                url = 'https://github.com/JasonMahdjoub/OOD'
                 developers {
                     developer {
                         id = 'mahdjoub'
@@ -233,14 +233,14 @@ publishing {
                 }
                 organization {
                     name = 'DistriMind'
-                    url = 'https://github.com/JazZ51'
+                    url = 'https://github.com/JasonMahdjoub'
                 }
                 issueManagement {
                     system = 'GitHub'
-                    url = 'https://github.com/JazZ51/OOD/issues'
+                    url = 'https://github.com/JasonMahdjoub/OOD/issues'
                 }
                 scm {
-                    connection = 'https://github.com/JazZ51/OOD'
+                    connection = 'https://github.com/JasonMahdjoub/OOD'
                 }
                 licenses {
                     license {

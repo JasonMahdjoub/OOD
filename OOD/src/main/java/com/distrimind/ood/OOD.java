@@ -67,6 +67,7 @@ public class OOD {
 					.addDescription(
 							new Description((short)3, (short)1, (short)17, Version.Type.STABLE, (short)0, "2022-02-03")
 									.addItem(BUG_FIX, "Check if certificate is given when initialising database configurations that are synchronized with central database backup")
+									.addItem(INTERNAL_CHANGE, "Update URLs")
 					)
 					.addDescription(
 							new Description((short)3, (short)1, (short)16, Version.Type.STABLE, (short)0, "2022-01-24")
