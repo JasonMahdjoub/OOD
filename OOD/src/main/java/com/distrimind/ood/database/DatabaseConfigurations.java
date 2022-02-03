@@ -99,12 +99,15 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 		this.centralDatabaseBackupCertificate=databaseConfigurations.centralDatabaseBackupCertificate;
 	}
 	public DatabaseConfigurations(Set<DatabaseConfiguration> configurations, Set<DecentralizedValue> distantPeers, DecentralizedValue localPeer, boolean permitIndirectSynchronizationBetweenPeers) throws DatabaseException {
+		this(configurations, distantPeers, localPeer, permitIndirectSynchronizationBetweenPeers, null);
+	}
+	public DatabaseConfigurations(Set<DatabaseConfiguration> configurations, Set<DecentralizedValue> distantPeers, DecentralizedValue localPeer, boolean permitIndirectSynchronizationBetweenPeers, CentralDatabaseBackupCertificate centralDatabaseBackupCertificate) throws DatabaseException {
 		super(null);
 		if (configurations ==null)
 			throw new NullPointerException();
 		if (configurations.contains(null))
 			throw new NullPointerException();
-
+		this.centralDatabaseBackupCertificate=centralDatabaseBackupCertificate;
 		this.configurations = new HashSet<>(configurations);
 		this.permitIndirectSynchronizationBetweenPeers=permitIndirectSynchronizationBetweenPeers;
 		if (distantPeers==null)
@@ -223,8 +226,11 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 	private void checkConfiguration(DatabaseConfiguration configuration)  {
 		if (configuration==null)
 			throw new NullPointerException();
+
 		if (DatabaseWrapper.reservedDatabases.contains(configuration.getDatabaseSchema().getPackage()))
 			throw new IllegalArgumentException("Impossible to add a database whose package "+configuration.getDatabaseSchema().getPackage()+" corresponds to an internal OOD database : "+DatabaseWrapper.reservedDatabases);
+		if (configuration.isSynchronizedWithCentralBackupDatabase() && getCentralDatabaseBackupCertificate()==null)
+			throw new IllegalArgumentException("Central database certificate must be set before adding configuration that can be synchronized with central database backup");
 
 		if (localPeer!=null)
 		{

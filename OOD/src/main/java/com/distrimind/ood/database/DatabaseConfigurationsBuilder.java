@@ -327,8 +327,6 @@ public class DatabaseConfigurationsBuilder {
 			}
 			if (configuration.isDecentralized() && protectedSignatureProfileProviderForAuthenticatedP2PMessages ==null)
 				throw new IllegalArgumentException("Cannot add configuration without protected encryption profile provider for authenticated P2P messages");
-			if (configuration.isSynchronizedWithCentralBackupDatabase() && getConfigurations().getCentralDatabaseBackupCertificate()==null)
-				throw new IllegalArgumentException("Central database certificate must be set before adding configuration that can be synchronized with central database backup");
 			configuration.setCreateDatabaseIfNecessaryAndCheckItDuringCurrentSession(createDatabaseIfNecessaryAndCheckItDuringCurrentSession);
 			if (configurations.addConfiguration(configuration, makeConfigurationLoadingPersistent)) {
 				t.checkConnexionsToDesynchronize();
