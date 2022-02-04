@@ -54,7 +54,8 @@ repositories {
 	              password "${pwd}"
 	            }
 	         }
-   	} 
+   	}
+    mavenCentral()
 }
 
 apply from: 'common_dependencies.gradle'
