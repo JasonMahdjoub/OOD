@@ -219,7 +219,7 @@ public abstract class TestDatabase {
 		Assert.assertEquals(actual.long_value, expected.long_value);
 		Assert.assertEquals(actual.short_value, expected.short_value);
 		Assert.assertEquals(actual.string_value, expected.string_value);
-		Assert.assertEquals(actual.BigDecimal_value, expected.BigDecimal_value);
+		Assert.assertEquals(actual.BigDecimal_value.compareTo(expected.BigDecimal_value),0, actual.BigDecimal_value+" ; "+expected.BigDecimal_value);
 		Assert.assertEquals(actual.BigInteger_value, expected.BigInteger_value);
 		Assert.assertEquals(actual.BooleanNumber_value, expected.BooleanNumber_value);
 		Assert.assertEquals(actual.ByteNumber_value, expected.ByteNumber_value);
@@ -248,7 +248,7 @@ public abstract class TestDatabase {
 		Assert.assertEquals(actual.long_value, expected.long_value);
 		Assert.assertEquals(actual.short_value, expected.short_value);
 		Assert.assertEquals(actual.string_value, expected.string_value);
-		Assert.assertEquals(actual.BigDecimal_value, expected.BigDecimal_value);
+		Assert.assertEquals(actual.BigDecimal_value.compareTo(expected.BigDecimal_value),0);
 		Assert.assertEquals(actual.BigInteger_value, expected.BigInteger_value);
 		Assert.assertEquals(actual.BooleanNumber_value, expected.BooleanNumber_value);
 		Assert.assertEquals(actual.ByteNumber_value, expected.ByteNumber_value);
@@ -505,7 +505,7 @@ public abstract class TestDatabase {
         Assert.assertEquals(3.3f, r.FloatNumber_value, 0.0);
         Assert.assertEquals(3.3, r.DoubleNumber_value, 0.0);
         Assert.assertEquals(r.BigInteger_value, new BigInteger("5"));
-        Assert.assertEquals(r.BigDecimal_value, new BigDecimal("8.8"));
+        Assert.assertEquals(r.BigDecimal_value.compareTo(new BigDecimal("8.8")),0);
         Assert.assertEquals(r.DateValue, date);
         Assert.assertEquals(r.CalendarValue, calendar);
         Assert.assertEquals(r.secretKey, secretKey);
@@ -545,7 +545,7 @@ public abstract class TestDatabase {
         Assert.assertEquals(3.3f, r.FloatNumber_value, 0.0);
         Assert.assertEquals(3.3, r.DoubleNumber_value, 0.0);
         Assert.assertEquals(r.BigInteger_value, new BigInteger("5"));
-        Assert.assertEquals(r.BigDecimal_value, new BigDecimal("8.8"));
+        Assert.assertEquals(r.BigDecimal_value.compareTo(new BigDecimal("8.8")),0);
         Assert.assertEquals(r.DateValue, date);
         Assert.assertEquals(r.CalendarValue, calendar);
         Assert.assertEquals(r.secretKey, secretKey);
@@ -577,7 +577,7 @@ public abstract class TestDatabase {
         Assert.assertEquals(3.3f, r2.FloatNumber_value, 0.0);
         Assert.assertEquals(3.3, r2.DoubleNumber_value, 0.0);
         Assert.assertEquals(r2.BigInteger_value, new BigInteger("5"));
-        Assert.assertEquals(r2.BigDecimal_value, new BigDecimal("8.8"));
+		Assert.assertEquals(r2.BigDecimal_value.compareTo(new BigDecimal("8.8")),0);
         Assert.assertEquals(r2.DateValue, date);
         Assert.assertEquals(r2.CalendarValue, calendar);
         Assert.assertEquals(r2.secretKey, secretKey);
@@ -619,7 +619,7 @@ public abstract class TestDatabase {
         Assert.assertEquals(3.3f, r2.FloatNumber_value, 0.0);
         Assert.assertEquals(3.3, r2.DoubleNumber_value, 0.0);
         Assert.assertEquals(r2.BigInteger_value, new BigInteger("5"));
-        Assert.assertEquals(r2.BigDecimal_value, new BigDecimal("8.8"));
+        Assert.assertEquals(r2.BigDecimal_value.compareTo(new BigDecimal("8.8")),0);
         Assert.assertEquals(r2.DateValue, date);
         Assert.assertEquals(r2.CalendarValue, calendar);
         Assert.assertEquals(r2.secretKey, secretKey);
@@ -819,7 +819,7 @@ public abstract class TestDatabase {
         Assert.assertEquals(3.3f, r1.FloatNumber_value, 0.0);
         Assert.assertEquals(6.6, r1.DoubleNumber_value, 0.0);
         Assert.assertEquals(r1.BigInteger_value, new BigInteger("5"));
-        Assert.assertEquals(r1.BigDecimal_value, new BigDecimal("8.8"));
+        Assert.assertEquals(r1.BigDecimal_value.compareTo(new BigDecimal("8.8")),0);
         Assert.assertEquals(r1.DateValue, date);
         Assert.assertEquals(r1.CalendarValue, calendar);
         Assert.assertEquals(r1.secretKey, secretKey);
@@ -850,7 +850,7 @@ public abstract class TestDatabase {
         Assert.assertEquals(3.3f, r2.FloatNumber_value, 0.0);
         Assert.assertEquals(6.6, r2.DoubleNumber_value, 0.0);
         Assert.assertEquals(r2.BigInteger_value, new BigInteger("5"));
-        Assert.assertEquals(r2.BigDecimal_value, new BigDecimal("8.8"));
+        Assert.assertEquals(r2.BigDecimal_value.compareTo(new BigDecimal("8.8")),0);
         Assert.assertEquals(r2.DateValue, date);
         Assert.assertEquals(r2.CalendarValue, calendar);
         Assert.assertEquals(r2.secretKey, secretKey);
@@ -884,7 +884,7 @@ public abstract class TestDatabase {
         Assert.assertEquals(3.3f, r1.FloatNumber_value, 0.0);
         Assert.assertEquals(6.6, r1.DoubleNumber_value, 0.0);
         Assert.assertEquals(r1.BigInteger_value, new BigInteger("5"));
-        Assert.assertEquals(r1.BigDecimal_value, new BigDecimal("8.8"));
+        Assert.assertEquals(r1.BigDecimal_value.compareTo(new BigDecimal("8.8")),0);
         Assert.assertEquals(r1.DateValue, date);
         Assert.assertEquals(r1.CalendarValue, calendar);
         Assert.assertEquals(r1.secretKey, secretKey);
@@ -915,7 +915,7 @@ public abstract class TestDatabase {
         Assert.assertEquals(3.3f, r2.FloatNumber_value, 0.0);
         Assert.assertEquals(6.6, r2.DoubleNumber_value, 0.0);
         Assert.assertEquals(r2.BigInteger_value, new BigInteger("5"));
-        Assert.assertEquals(r2.BigDecimal_value, new BigDecimal("8.8"));
+        Assert.assertEquals(r2.BigDecimal_value.compareTo(new BigDecimal("8.8")),0);
         Assert.assertEquals(r2.DateValue, date);
         Assert.assertEquals(r2.CalendarValue, calendar);
         Assert.assertEquals(r2.secretKey, secretKey);
@@ -986,7 +986,7 @@ public abstract class TestDatabase {
         Assert.assertEquals(r1a.FloatNumber_value, r1b.FloatNumber_value);
         Assert.assertEquals(r1a.DoubleNumber_value, r1b.DoubleNumber_value);
         Assert.assertEquals(r1a.BigInteger_value, new BigInteger("5"));
-        Assert.assertEquals(r1a.BigDecimal_value, new BigDecimal("8.8"));
+        Assert.assertEquals(r1a.BigDecimal_value.compareTo(new BigDecimal("8.8")),0);
         Assert.assertEquals(r1a.DateValue, date);
         Assert.assertEquals(r1a.CalendarValue, calendar);
         Assert.assertEquals(r1a.secretKey, secretKey);
@@ -1023,7 +1023,7 @@ public abstract class TestDatabase {
         Assert.assertEquals(r2a.FloatNumber_value, r2b.FloatNumber_value);
         Assert.assertEquals(r2a.DoubleNumber_value, r2b.DoubleNumber_value);
         Assert.assertEquals(r2a.BigInteger_value, new BigInteger("5"));
-        Assert.assertEquals(r2a.BigDecimal_value, new BigDecimal("8.8"));
+        Assert.assertEquals(r2a.BigDecimal_value.compareTo(new BigDecimal("8.8")),0);
         Assert.assertEquals(r2a.DateValue, date);
         Assert.assertEquals(r2a.CalendarValue, calendar);
         Assert.assertEquals(r2a.secretKey, secretKey);
@@ -2094,7 +2094,7 @@ public abstract class TestDatabase {
         Assert.assertEquals(3.3f, r1.FloatNumber_value, 0.0);
         Assert.assertEquals(7.7, r1.DoubleNumber_value, 0.0);
         Assert.assertEquals(r1.BigInteger_value, new BigInteger("5"));
-        Assert.assertEquals(r1.BigDecimal_value, new BigDecimal("8.8"));
+        Assert.assertEquals(r1.BigDecimal_value.compareTo(new BigDecimal("8.8")),0);
         Assert.assertEquals(r1.DateValue, date);
         Assert.assertEquals(r1.CalendarValue, calendar);
         Assert.assertEquals(r1.secretKey, secretKey);
@@ -2125,7 +2125,7 @@ public abstract class TestDatabase {
         Assert.assertEquals(3.3f, r2.FloatNumber_value, 0.0);
         Assert.assertEquals(7.7, r2.DoubleNumber_value, 0.0);
         Assert.assertEquals(r2.BigInteger_value, new BigInteger("5"));
-        Assert.assertEquals(r2.BigDecimal_value, new BigDecimal("8.8"));
+        Assert.assertEquals(r2.BigDecimal_value.compareTo(new BigDecimal("8.8")),0);
         Assert.assertEquals(r2.DateValue, date);
         Assert.assertEquals(r2.CalendarValue, calendar);
         Assert.assertEquals(r2.secretKey, secretKey);
@@ -2908,7 +2908,7 @@ public abstract class TestDatabase {
         Assert.assertEquals(map.get("FloatNumber_value"), r1.FloatNumber_value);
         Assert.assertEquals(map.get("DoubleNumber_value"), r1.DoubleNumber_value);
         Assert.assertEquals(map.get("BigInteger_value"), r1.BigInteger_value);
-        Assert.assertEquals(map.get("BigDecimal_value"), r1.BigDecimal_value);
+        Assert.assertEquals(r1.BigDecimal_value.compareTo((BigDecimal) map.get("BigDecimal_value")), 0);
         Assert.assertEquals(map.get("DateValue"), r1.DateValue);
         Assert.assertEquals(map.get("CalendarValue"), r1.CalendarValue);
         Assert.assertEquals(map.get("secretKey"), r1.secretKey);
@@ -2944,7 +2944,8 @@ public abstract class TestDatabase {
         Assert.assertEquals(map.get("FloatNumber_value"), r3.FloatNumber_value);
         Assert.assertEquals(map.get("DoubleNumber_value"), r3.DoubleNumber_value);
         Assert.assertEquals(map.get("BigInteger_value"), r3.BigInteger_value);
-        Assert.assertEquals(map.get("BigDecimal_value"), r3.BigDecimal_value);
+		Assert.assertEquals(r3.BigDecimal_value.compareTo((BigDecimal) map.get("BigDecimal_value")), 0);
+
         Assert.assertEquals(map.get("DateValue"), r3.DateValue);
         Assert.assertEquals(map.get("CalendarValue"), r3.CalendarValue);
         Assert.assertEquals(map.get("secretKey"), r3.secretKey);
@@ -3092,7 +3093,7 @@ public abstract class TestDatabase {
 		Assert.assertEquals(map.get("FloatNumber_value"), r1.FloatNumber_value);
 		Assert.assertEquals(map.get("DoubleNumber_value"), r1.DoubleNumber_value);
 		Assert.assertEquals(map.get("BigInteger_value"), r1.BigInteger_value);
-		Assert.assertEquals(map.get("BigDecimal_value"), r1.BigDecimal_value);
+		Assert.assertEquals(r1.BigDecimal_value.compareTo((BigDecimal) map.get("BigDecimal_value")), 0);
 		Assert.assertEquals(map.get("file"), r1.file);
 		assertEquals((SubField) map.get("subField"), r1.subField);
 		assertEquals((SubSubField) map.get("subSubField"), r1.subSubField);
@@ -3124,7 +3125,8 @@ public abstract class TestDatabase {
 		Assert.assertEquals(r3.FloatNumber_value, map.get("FloatNumber_value"));
 		Assert.assertEquals(r3.DoubleNumber_value, map.get("DoubleNumber_value"));
 		Assert.assertEquals(r3.BigInteger_value, map.get("BigInteger_value"));
-		Assert.assertEquals(r3.BigDecimal_value, map.get("BigDecimal_value"));
+		Assert.assertEquals(r3.BigDecimal_value.compareTo((BigDecimal) map.get("BigDecimal_value")), 0);
+
 		Assert.assertEquals(r3.file, map.get("file"));
 		assertEquals((SubField) map.get("subField"), r3.subField);
 		assertEquals((SubSubField) map.get("subSubField"), r3.subSubField);

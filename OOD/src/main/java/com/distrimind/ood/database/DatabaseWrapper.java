@@ -6904,7 +6904,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	{
 		return false;
 	}
+	protected boolean areSameTypes(String dbType, String oodType)
+	{
+		dbType=dbType.toUpperCase();
+		oodType=oodType.toUpperCase();
 
+		return oodType.startsWith(dbType) || (dbType.equals("BIT") && oodType.equals("BOOLEAN"));
+	}
 	static
 	{
 		initPreloadedClasses();

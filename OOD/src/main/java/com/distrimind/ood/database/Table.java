@@ -687,18 +687,9 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 	boolean foreign_keys_to_create = false;
 
-	boolean areSameTypes(String dbType, String oodType)
+	protected boolean areSameTypes(String dbType, String oodType)
 	{
-		dbType=dbType.toUpperCase();
-		oodType=oodType.toUpperCase();
-
-		if (sql_connection instanceof DistantPostgreSQLWrapper) {
-			if (dbType.contains("CHAR"))
-				return oodType.contains("CHAR");
-			if (oodType.equals("DECIMAL"))
-				return dbType.equals("DECIMAL") || dbType.equals("NUMERIC");
-		}
-		return oodType.startsWith(dbType) || (dbType.equals("BIT") && oodType.equals("BOOLEAN"));
+		return sql_connection.areSameTypes(dbType, oodType);
 	}
 
 	boolean initializeStep2(final boolean createDatabaseIfNecessaryAndCheckIt) throws DatabaseException {
