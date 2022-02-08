@@ -75,7 +75,7 @@ public class BigDecimalFieldAccessor extends FieldAccessor {
 		useGetBigDecimal=!useString && (binaryBasedWord==null || !type.toUpperCase().contains(binaryBasedWord.toUpperCase())) && !type.toUpperCase().contains(DatabaseWrapperAccessor.getBlobBaseWord(sql_connection).toUpperCase());
 
 		if (limit<=0)
-			limit=useString?128:36;
+			limit=useString?128:56;
 		type=DatabaseWrapperAccessor.getBigDecimalType(sql_connection, limit);
 
 		sql_fields[0] = new SqlField(supportQuotes, this.table_name + "." + this.getSqlFieldName(),

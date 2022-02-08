@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-3.1.16 STABLE (Build: 5508) (from 01/04/2013 to 24/01/2022)
+3.1.17 STABLE (Build: 5658) (from 01/04/2013 to 08/02/2022)
 
 # Creator(s):
 * Jason MAHDJOUB
@@ -9,6 +9,19 @@ Object Oriented Database
 * Jason MAHDJOUB (Entered in the team at 01/04/2013)
 
 # Changes:
+
+
+### 3.1.17 STABLE (08/02/2022)
+#### Internal change(s)
+* Update Utils to 5.22.2 STABLE
+* Update HSQLDB to 2.6.1
+* Update H2 to 2.1.210
+* Update mysql-connector-java 8.0.28
+* Update postgresql 42.3.2
+* Minimum Android version to use H2 is Android 8.0 or API26
+* Update URLs
+#### Bug fixe(s)
+* Check if certificate is given when initialising database configurations that are synchronized with central database backup
 
 
 ### 3.1.16 STABLE (24/01/2022)

@@ -710,4 +710,16 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 	{
 		return false;
 	}
+	@Override
+	protected boolean areSameTypes(String dbType, String oodType)
+	{
+		dbType=dbType.toUpperCase();
+		oodType=oodType.toUpperCase();
+
+		if (dbType.contains("CHAR"))
+			return oodType.contains("CHAR");
+		if (oodType.equals("DECIMAL"))
+			return dbType.equals("DECIMAL") || dbType.equals("NUMERIC");
+		return oodType.startsWith(dbType) || (dbType.equals("BIT") && oodType.equals("BOOLEAN"));
+	}
 }

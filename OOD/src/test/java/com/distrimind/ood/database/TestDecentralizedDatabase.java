@@ -728,7 +728,7 @@ public abstract class TestDecentralizedDatabase extends CommonDecentralizedTests
 
 		manager.restoreDatabaseToDateUTC(backupUTC);
 
-
+		Thread.sleep(backupConfiguration.getMaxBackupFileAgeInMs());
 		connectAllDatabase();
 		exchangeMessages();
 		testSynchronisation();

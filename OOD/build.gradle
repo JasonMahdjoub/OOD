@@ -54,18 +54,19 @@ repositories {
 	              password "${pwd}"
 	            }
 	         }
-   	} 
+   	}
+    mavenCentral()
 }
 
 apply from: 'common_dependencies.gradle'
 dependencies {
 
-    testImplementation(group:'org.hsqldb', name: 'hsqldb', version: '2.5.2')
+    testImplementation(group:'org.hsqldb', name: 'hsqldb', version: '2.6.1')
     //testImplementation(group:'org.apache.derby', name: 'derby', version: '10.15.2.0')
     //testImplementation(group:'org.apache.derby', name: 'derbytools', version: '10.15.2.0')
-    testImplementation(group:'com.h2database', name:'h2', version:'1.4.200')
-    testImplementation(group: 'mysql', name: 'mysql-connector-java', version: '8.0.27')
-    testImplementation(group:'org.postgresql', name:'postgresql', version:'42.3.1')
+    testImplementation(group:'com.h2database', name:'h2', version:'2.1.210')
+    testImplementation(group: 'mysql', name: 'mysql-connector-java', version: '8.0.28')
+    testImplementation(group:'org.postgresql', name:'postgresql', version:'42.3.2')
 
 
 }
@@ -223,7 +224,7 @@ publishing {
             pom {
                 name = 'OOD'
                 description = 'OD is a decentralized and asynchrone ORM (Object-Relational Mapping)'
-                url = 'https://github.com/JazZ51/OOD'
+                url = 'https://github.com/JasonMahdjoub/OOD'
                 developers {
                     developer {
                         id = 'mahdjoub'
@@ -233,14 +234,14 @@ publishing {
                 }
                 organization {
                     name = 'DistriMind'
-                    url = 'https://github.com/JazZ51'
+                    url = 'https://github.com/JasonMahdjoub'
                 }
                 issueManagement {
                     system = 'GitHub'
-                    url = 'https://github.com/JazZ51/OOD/issues'
+                    url = 'https://github.com/JasonMahdjoub/OOD/issues'
                 }
                 scm {
-                    connection = 'https://github.com/JazZ51/OOD'
+                    connection = 'https://github.com/JasonMahdjoub/OOD'
                 }
                 licenses {
                     license {
