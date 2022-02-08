@@ -4,7 +4,7 @@
 
 OOD is a decentralized and asynchrone ORM (Object-Relational Mapping):
 * Compatible with Java 8 and newer
-* drivers for MySQL, PostgreSQL, H2, H2 for Android, HSQLDB
+* drivers for MySQL, PostgreSQL, H2, H2 for Android (>=Android 8, >=API26), HSQLDB
 * Transparent decentralized and secured database synchronization
   * Automatically synchronize database with other authorized peers, even if peers where disconnected (asynchronous mode).
   * Manage eventual conflicts during database synchronization
@@ -41,13 +41,13 @@ Adapt into your build.gradle file, the next code :
 		...
 		compile(group:'com.distrimind.ood', name: 'OOD', version: '3.1.17-STABLE')
 		//choose one of these optional drivers for H2 database
-		testImplementation(group:'com.h2database', name: 'h2', version: '1.4.200')
+		testImplementation(group:'com.h2database', name: 'h2', version: '2.1.210')
 		//choose this optional driver for HSQLdb
-		testImplementation(group:'org.hsqldb', name: 'hsqldb', version: '2.5.2')
+		testImplementation(group:'org.hsqldb', name: 'hsqldb', version: '2.6.1')
 		//choose this optional driver for MySQL
-		testImplementation(group: 'mysql', name: 'mysql-connector-java', version: '8.0.27')
+		testImplementation(group: 'mysql', name: 'mysql-connector-java', version: '8.0.28')
 		//choose this optional driver for PostgreSQL
-		testImplementation(group: 'org.postgresql', name: 'postgresql', version: '42.3.1')
+		testImplementation(group: 'org.postgresql', name: 'postgresql', version: '42.3.2')
 	}
 	...
 
@@ -69,26 +69,26 @@ Adapt into your pom.xml file, the next code :
 				<dependency>
 					<groupId>com.h2database</groupId>
 					<artifactId>h2</artifactId>
-					<version>1.4.200</version>
+					<version>2.1.210</version>
 				</dependency>
 
 			<!-- choose one of these optional drivers for HSQLDB-->
 				<dependency>
 					<groupId>org.hsqldb</groupId>
 					<artifactId>hsqldb</artifactId>
-					<version>2.5.2</version>
+					<version>2.6.1</version>
 				</dependency>
 			<!-- choose this optional driver for MySQL-->
 				<dependency>
 					<groupId>mysql</groupId>
 					<artifactId>mysql-connector-java</artifactId>
-					<version>8.0.27</version>
+					<version>8.0.28</version>
 				</dependency>
 			<!-- choose this optional driver for PostgreSQL-->
 				<dependency>
 					<groupId>org.postgresql</groupId>
 					<artifactId>postgresql</artifactId>
-					<version>42.3.1</version>
+					<version>42.3.2</version>
 				</dependency>
 			...
 		</dependencies>

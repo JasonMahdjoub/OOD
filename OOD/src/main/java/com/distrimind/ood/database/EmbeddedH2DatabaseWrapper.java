@@ -362,7 +362,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 
 		Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
 		try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection, new Table.SqlQuery(
-				"select CONSTRAINT_NAME, CONSTRAINT_TYPE from "+getConstraintsTableName()+" WHERE TABLE_NAME='"
+				"select CONSTRAINT_NAME, CONSTRAINT_TYPE, TABLE_SCHEMA from "+getConstraintsTableName()+" WHERE TABLE_NAME='"
 						+ table.getSqlTableName()+"';"))) {
 			boolean foundPK=false;
 			while (rq.result_set.next()) {
@@ -381,17 +381,29 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 					break;
 					case "UNIQUE": {
 						boolean found=false;
-						//String col=rq.result_set.getString("CONSTRAINT_SCHEMA");
-						for (FieldAccessor fa : table.getFieldAccessors()) {
-							for (SqlField sf : fa.getDeclaredSqlFields()) {
-								if (/*sf.shortFieldWithoutQuote.equalsIgnoreCase(col) &&*/ fa.isUnique()) {
-									found = true;
-									break;
+
+
+						try (ResultSet rs = sql_connection.getMetaData().getIndexInfo(null, null, table.getSqlTableName(), true, false)) {
+
+							while (!found && rs.next()) {
+								String col = rs.getString("COLUMN_NAME");
+								for (FieldAccessor fa : table.getFieldAccessors()) {
+									for (SqlField sf : fa.getDeclaredSqlFields()) {
+										if (sf.shortFieldWithoutQuote.equalsIgnoreCase(col) && fa.isUnique()) {
+											found = true;
+											break;
+										}
+									}
 								}
+
 							}
-							if (found)
-								break;
+
+						} catch (SQLException e) {
+							throw new DatabaseException("Impossible to check constraints of the table " + table.getClass().getSimpleName(), e);
+						} catch (Exception e) {
+							throw DatabaseException.getDatabaseException(e);
 						}
+
 						if (!found)
 							throw new DatabaseVersionException(table, "There is a unique sql field " /*+ col*/
 									+ " which does not exists into the OOD database into table "+table.getClass().getSimpleName());
@@ -412,18 +424,18 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}
-		/*try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection, new Table.SqlQuery(
-				"select PKTABLE_NAME, PKCOLUMN_NAME, FKCOLUMN_NAME from "+getCrossReferencesTableName()+" WHERE FKTABLE_NAME='"
-						+ table.getSqlTableName() + "';"))) {
-			while (rq.result_set.next()) {
-				String pointed_table = rq.result_set.getString("PKTABLE_NAME");
-				String pointed_col = rq.result_set.getString("PKCOLUMN_NAME");
-				String fk = table.getSqlTableName() + "." + rq.result_set.getString("FKCOLUMN_NAME");
+		/*try(ResultSet rs=sql_connection.getMetaData().getCrossReference(null, null, null, null,null, table.getSqlTableName()))
+		{
+			while (rs.next()) {
+
+				String pointed_table = rs.getString("PKTABLE_NAME");
+				String pointed_col = rs.getString("PKCOLUMN_NAME");
+				String fk = table.getSqlTableName() + "." + rs.getString("FKCOLUMN_NAME");
 				boolean found = false;
 				for (ForeignKeyFieldAccessor fa : table.getForeignKeysFieldAccessors()) {
 					for (SqlField sf : fa.getDeclaredSqlFields()) {
 						if (sf.fieldWithoutQuote.equals(fk) && fa.getPointedTable().getSqlTableName().equals(pointed_table)
-							&& sf.pointedFieldWithoutQuote.equals(fa.getTableAliasName()+"."+pointed_col)
+								&& sf.pointedFieldWithoutQuote.equals(fa.getTableAliasName() + "." + pointed_col)
 								&& sf.pointedTable.equals(pointed_table)) {
 							found = true;
 							break;
@@ -434,11 +446,12 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 				}
 				if (!found)
 					throw new DatabaseVersionException(table,
-							"There is foreign keys defined into the Sql database which have not been found in the OOD database : "+fk);
+							"There is foreign keys defined into the Sql database which have not been found in the OOD database : " + fk);
 			}
 		} catch (SQLException e) {
 			throw new DatabaseException("Impossible to check constraints of the table " + table.getClass().getSimpleName(), e);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
 		}*/
 		try {
@@ -475,31 +488,56 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 							throw new DatabaseVersionException(table,
 									"The field " + fa.getFieldName() + " was not found into the database.");
 					}
-					/*if (fa.isForeignKey()) {
-						try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection, new Table.SqlQuery(
-								"select PKTABLE_NAME, FKTABLE_NAME, PKCOLUMN_NAME, FKCOLUMN_NAME from "+ getCrossReferencesTableName()+" WHERE FKTABLE_NAME='"
-										+ table.getSqlTableName() + "' AND PKTABLE_NAME='" + sf.pointedTable
-										+ "' AND PKCOLUMN_NAME='" + sf.shortPointedFieldWithoutQuote + "' AND FKCOLUMN_NAME='"
-										+ sf.shortFieldWithoutQuote + "'"))) {
-							if (!rq.result_set.next())
-								throw new DatabaseVersionException(table,
-										"The field " + fa.getFieldName() + " is a foreign key. One of its Sql fields "
-												+ sf.field + " is not a foreign key pointing to the table "
-												+ sf.pointedTable);
-						}
-					}
-					if (fa.isUnique()) {
-						for(SqlField sf2 : fa.getDeclaredSqlFields())
-							try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection, new Table.SqlQuery(
-									"select COLUMN_LIST from "+getConstraintsTableName()+" WHERE TABLE_NAME='"
-											+ table.getSqlTableName() + "' AND CONSTRAINT_TYPE='UNIQUE' AND COLUMN_LIST='"+sf2.shortFieldWithoutQuote +"';"))) {
-								if (!rq.result_set.next())
-									throw new DatabaseVersionException(table, "The OOD field " + fa.getFieldName()
-											+ " is a unique key, but it not declared as unique into the Sql database.");
+					if (fa.isForeignKey()) {
+						boolean found=false;
+						try(ResultSet rs=sql_connection.getMetaData().getCrossReference(null, null, ((ForeignKeyFieldAccessor)fa).getPointedTable().getSqlTableName(), null,null, table.getSqlTableName()))
+						{
+
+							while (rs.next())
+							{
+								String pointed_col = rs.getString("PKCOLUMN_NAME");
+								String fk = rs.getString("FKCOLUMN_NAME");
+								if (sf.shortPointedFieldWithoutQuote.equals(pointed_col) && sf.shortFieldWithoutQuote.equals(fk)) {
+									found = true;
+									break;
+								}
+
 							}
 
+						} catch (SQLException e) {
+							throw new DatabaseException("Impossible to check constraints of the table " + table.getClass().getSimpleName(), e);
+						}
+						catch (Exception e) {
+							throw DatabaseException.getDatabaseException(e);
+						}
+						if (!found)
+							throw new DatabaseVersionException(table,
+									"The field " + fa.getFieldName() + " is a foreign key. One of its Sql fields "
+											+ sf.field + " is not a foreign key pointing to the table "
+											+ sf.pointedTable);
 
-					}*/
+					}
+
+					if (fa.isUnique()) {
+						boolean found = false;
+						try (ResultSet rs = sql_connection.getMetaData().getIndexInfo(null, null, table.getSqlTableName(), true, false)) {
+
+							while (!found && rs.next()) {
+								String col = rs.getString("COLUMN_NAME");
+								if (col.equals(sf.shortFieldWithoutQuote))
+									found=true;
+
+							}
+
+						} catch (SQLException e) {
+							throw new DatabaseException("Impossible to check constraints of the table " + table.getClass().getSimpleName(), e);
+						} catch (Exception e) {
+							throw DatabaseException.getDatabaseException(e);
+						}
+						if (!found)
+							throw new DatabaseVersionException(table, "The OOD field " + fa.getFieldName()
+									+ " is a unique key, but it not declared as unique into the Sql database.");
+					}
 				}
 			}
 		} catch (SQLException e) {
@@ -587,6 +625,12 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 		if (oodType.startsWith("VARCHAR") && dbType.equals("CHARACTER VARYING"))
 			return true;
 		if (oodType.startsWith("VARBINARY") && dbType.equals("BINARY VARYING"))
+			return true;
+		if (oodType.equals("DECIMAL") && dbType.equals("NUMERIC"))
+			return true;
+		if (oodType.equals("DOUBLE") && dbType.equals("DOUBLE PRECISION"))
+			return true;
+		if (oodType.startsWith("DECIMAL") && dbType.equals("NUMERIC"))
 			return true;
 		return oodType.startsWith(dbType) || (dbType.equals("BIT") && oodType.equals("BOOLEAN"));
 	}
