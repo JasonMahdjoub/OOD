@@ -95,7 +95,7 @@ public abstract class FieldAccessor {
 	{
 		Class<?> c=null;
 		try {
-			c=Class.forName("com.distrimind.ood.database.DatabaseEventsTable$AbstractRecord");
+			c=UtilClassLoader.getLoader().loadClass("com.distrimind.ood.database.DatabaseEventsTable$AbstractRecord");
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 			System.exit(-1);

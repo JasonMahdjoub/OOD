@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.UtilClassLoader;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -68,7 +69,7 @@ public class InFileEmbeddedAndroidH2DatabaseFactory extends DatabaseFactory<Embe
 			ResultSet.class.getDeclaredMethod("getObject", int.class, Class.class);
 		} catch (NoSuchMethodException ignored) {
 			try {
-				Class<?> jsr=Class.forName("org.h2.util.JSR310");
+				Class<?> jsr= UtilClassLoader.getLoader().loadClass("org.h2.util.JSR310");
 				AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
 
 					try {
@@ -82,8 +83,7 @@ public class InFileEmbeddedAndroidH2DatabaseFactory extends DatabaseFactory<Embe
 					return null;
 				});
 
-			} catch (ClassNotFoundException e) {
-				e.printStackTrace();
+			} catch (ClassNotFoundException ignored2) {
 			}
 		}
 

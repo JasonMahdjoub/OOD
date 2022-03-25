@@ -43,6 +43,7 @@ import com.distrimind.ood.database.exceptions.DatabaseLoadingException;
 import com.distrimind.ood.database.exceptions.DatabaseVersionException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
+import com.distrimind.util.UtilClassLoader;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 
@@ -68,7 +69,7 @@ class EmbeddedDerbyWrapper extends DatabaseWrapper {
 		synchronized (EmbeddedDerbyWrapper.class) {
 			if (!derby_loaded) {
 				try {
-					Class.forName("org.apache.derby.jdbc.EmbeddedDriver").getDeclaredConstructor().newInstance();
+					UtilClassLoader.getLoader().loadClass("org.apache.derby.jdbc.EmbeddedDriver").getDeclaredConstructor().newInstance();
 					derby_loaded = true;
 				} catch (Exception e) {
 					throw new DatabaseLoadingException("Impossible to load Derby ", e);

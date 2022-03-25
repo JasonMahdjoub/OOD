@@ -41,6 +41,7 @@ import com.distrimind.ood.database.exceptions.DatabaseLoadingException;
 import com.distrimind.ood.database.exceptions.DatabaseVersionException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
+import com.distrimind.util.UtilClassLoader;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 
@@ -151,13 +152,13 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 		synchronized (EmbeddedHSQLDBWrapper.class) {
 			if (!hsql_loaded) {
 				try {
-					Class.forName("org.h2.Driver");
+					UtilClassLoader.getLoader().loadClass("org.h2.Driver");
 
 					//noinspection SingleStatementInBlock,unchecked
-					H2BlobConstructor=(Constructor<? extends Blob>)Class.forName("org.h2.jdbc.JdbcBlob").getDeclaredConstructor(Class.forName("org.h2.jdbc.JdbcConnection"), Class.forName("org.h2.value.Value"), Class.forName("org.h2.jdbc.JdbcLob$State"), int.class);
-					H2ValueMethod=Class.forName("org.h2.value.ValueVarbinary").getDeclaredMethod("get", byte[].class);
-					//DbBackupMain=Class.forName("org.hsqldb.lib.tar.DbBackupMain").getDeclaredMethod("main", (new String[0]).getClass());
-					for (Object o : Class.forName("org.h2.jdbc.JdbcLob$State").getEnumConstants())
+					H2BlobConstructor=(Constructor<? extends Blob>)UtilClassLoader.getLoader().loadClass("org.h2.jdbc.JdbcBlob").getDeclaredConstructor(UtilClassLoader.getLoader().loadClass("org.h2.jdbc.JdbcConnection"), UtilClassLoader.getLoader().loadClass("org.h2.value.Value"), UtilClassLoader.getLoader().loadClass("org.h2.jdbc.JdbcLob$State"), int.class);
+					H2ValueMethod=UtilClassLoader.getLoader().loadClass("org.h2.value.ValueVarbinary").getDeclaredMethod("get", byte[].class);
+					//DbBackupMain=UtilClassLoader.getLoader().loadClass("org.hsqldb.lib.tar.DbBackupMain").getDeclaredMethod("main", (new String[0]).getClass());
+					for (Object o : UtilClassLoader.getLoader().loadClass("org.h2.jdbc.JdbcLob$State").getEnumConstants())
 					{
 						if (((Enum<?>)o).name().equals("NEW"))
 						{

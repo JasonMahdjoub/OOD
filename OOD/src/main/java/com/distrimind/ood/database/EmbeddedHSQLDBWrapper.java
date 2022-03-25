@@ -44,6 +44,7 @@ import com.distrimind.ood.database.exceptions.DatabaseLoadingException;
 import com.distrimind.ood.database.exceptions.DatabaseVersionException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
+import com.distrimind.util.UtilClassLoader;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 
@@ -818,9 +819,9 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 			if (!hsql_loaded) {
 				try {
 					System.setProperty("hsqldb.reconfig_logging", "false");
-					Class.forName("org.hsqldb.jdbc.JDBCDriver");
-					JDBCBlobConstructor=(Constructor<? extends Blob>)Class.forName("org.hsqldb.jdbc.JDBCBlob").getDeclaredConstructor(byte[].class);
-					DbBackupMain=Class.forName("org.hsqldb.lib.tar.DbBackupMain").getDeclaredMethod("main", String[].class);
+					UtilClassLoader.getLoader().loadClass("org.hsqldb.jdbc.JDBCDriver");
+					JDBCBlobConstructor=(Constructor<? extends Blob>)UtilClassLoader.getLoader().loadClass("org.hsqldb.jdbc.JDBCBlob").getDeclaredConstructor(byte[].class);
+					DbBackupMain=UtilClassLoader.getLoader().loadClass("org.hsqldb.lib.tar.DbBackupMain").getDeclaredMethod("main", String[].class);
 					hsql_loaded = true;
 
 				} catch (Exception e) {

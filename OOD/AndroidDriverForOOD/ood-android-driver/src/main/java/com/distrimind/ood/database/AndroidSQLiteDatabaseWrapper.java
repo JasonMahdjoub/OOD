@@ -72,7 +72,7 @@ public class AndroidSQLiteDatabaseWrapper extends DatabaseWrapper {
         if (!driverLoaded) {
             driverLoaded=true;
             try {
-                DriverManager.registerDriver((Driver) Class.forName("org.sqldroid.SQLDroidDriver").newInstance());
+                DriverManager.registerDriver((Driver) UtilsClassLoader.getLoader().loadClass("org.sqldroid.SQLDroidDriver").newInstance());
             } catch (Exception e) {
                 throw new RuntimeException("Failed to register SQLDroidDriver");
             }

@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 import com.distrimind.util.FileTools;
+import com.distrimind.util.UtilClassLoader;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -51,7 +52,7 @@ import java.sql.*;
 public class H2TestAutoIncrement {
 	@Test
 	public void testAutoIncrement() throws ClassNotFoundException, SQLException {
-		Class.forName("org.h2.Driver");
+		UtilClassLoader.getLoader().loadClass("org.h2.Driver");
 		File databaseFile=new File("tmpH2Dir/h2");
 		FileTools.deleteDirectory(databaseFile.getParentFile());
 		databaseFile.getParentFile().mkdir();

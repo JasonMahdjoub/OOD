@@ -4,7 +4,7 @@
 
 OOD is a decentralized and asynchrone ORM (Object-Relational Mapping):
 * Compatible with Java 8 and newer
-* drivers for MySQL, PostgreSQL, H2, H2 for Android (>=Android 8, >=API26), HSQLDB
+* drivers for MySQL, PostgreSQL, H2, H2 for Android (>=Android 8, >=API26), HSQLDB. When using Android driver of H2, please initialize android context by affecting variable 'com.distrimind.util.harddrive.AndroidHardDriveDetect.context'
 * Transparent decentralized and secured database synchronization
   * Automatically synchronize database with other authorized peers, even if peers where disconnected (asynchronous mode).
   * Manage eventual conflicts during database synchronization
@@ -32,22 +32,22 @@ Adapt into your build.gradle file, the next code :
 	repositories {
 		...
 		maven {
-	       		url "https://artifactory.distri-mind.fr/artifactory/gradle-release"
+	       		url "https://artifactory.distri-mind.fr:443/artifactory/gradle-release/"
 	   	}
 		...
 	}
 	...
 	dependencies {
 		...
-		compile(group:'com.distrimind.ood', name: 'OOD', version: '3.1.17-STABLE')
+		api(group:'com.distrimind.ood', name: 'OOD', version: '3.1.18-STABLE')
 		//choose one of these optional drivers for H2 database
-		testImplementation(group:'com.h2database', name: 'h2', version: '2.1.210')
+		api(group:'com.h2database', name: 'h2', version: '2.1.210')
 		//choose this optional driver for HSQLdb
-		testImplementation(group:'org.hsqldb', name: 'hsqldb', version: '2.6.1')
+		api(group:'org.hsqldb', name: 'hsqldb', version: '2.6.1')
 		//choose this optional driver for MySQL
-		testImplementation(group: 'mysql', name: 'mysql-connector-java', version: '8.0.28')
+		api(group: 'mysql', name: 'mysql-connector-java', version: '8.0.28')
 		//choose this optional driver for PostgreSQL
-		testImplementation(group: 'org.postgresql', name: 'postgresql', version: '42.3.2')
+		api(group: 'org.postgresql', name: 'postgresql', version: '42.3.2')
 	}
 	...
 
@@ -63,7 +63,7 @@ Adapt into your pom.xml file, the next code :
 			<dependency>
 				<groupId>com.distrimind.ood</groupId>
 				<artifactId>OOD</artifactId>
-				<version>3.1.17-STABLE</version>
+				<version>3.1.18-STABLE</version>
 			</dependency>
 			<!-- choose one of these optional drivers for H2 database-->
 				<dependency>
@@ -97,7 +97,7 @@ Adapt into your pom.xml file, the next code :
 			...
 			<repository>
 				<id>DistriMind-Public</id>
-				<url>https://artifactory.distri-mind.fr/artifactory/gradle-release</url>
+				<url>https://artifactory.distri-mind.fr:443/artifactory/gradle-release/</url>
 			</repository>
 			...
 		</repositories>
