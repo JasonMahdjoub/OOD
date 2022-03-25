@@ -39,6 +39,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseVersionException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
+import com.distrimind.util.UtilClassLoader;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 import com.distrimind.util.crypto.WrappedPassword;
@@ -677,7 +678,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 		Constructor<? extends Blob> bc=null;
 		try {
 			//noinspection unchecked
-			bc=(Constructor<? extends Blob>)Class.forName("com.mysql.cj.jdbc.Blob").getDeclaredConstructor(byte[].class, Class.forName("com.mysql.cj.exceptions.ExceptionInterceptor"));
+			bc=(Constructor<? extends Blob>) UtilClassLoader.getLoader().loadClass("com.mysql.cj.jdbc.Blob").getDeclaredConstructor(byte[].class, UtilClassLoader.getLoader().loadClass("com.mysql.cj.exceptions.ExceptionInterceptor"));
 		} catch (NoSuchMethodException | ClassNotFoundException e) {
 			e.printStackTrace();
 			System.exit(-1);

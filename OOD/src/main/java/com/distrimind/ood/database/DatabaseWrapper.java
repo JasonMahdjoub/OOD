@@ -53,6 +53,7 @@ import com.distrimind.ood.database.messages.*;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.FileTools;
 import com.distrimind.util.Reference;
+import com.distrimind.util.UtilClassLoader;
 import com.distrimind.util.crypto.ASymmetricPublicKey;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
@@ -5641,7 +5642,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				throw new NullPointerException("The parameter _table_name is a null pointer !");
 
 			try {
-				Class<?> c = Class.forName(_table_name);
+				Class<?> c = UtilClassLoader.getLoader().loadClass(_table_name);
 				if (Table.class.isAssignableFrom(c)) {
 					@SuppressWarnings("unchecked")
 					Class<? extends Table<?>> class_table = (Class<? extends Table<?>>) c;
@@ -5663,7 +5664,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		 * (_table_name==null) throw new
 		 * NullPointerException("The parameter _table_name is a null pointer !");
 		 * 
-		 * try { Class<?> c=Class.forName(_table_name); if
+		 * try { Class<?> c=UtilClassLoader.getLoader().loadClass(_table_name); if
 		 * (Table.class.isAssignableFrom(c)) {
 		 * 
 		 * @SuppressWarnings("unchecked") Class<? extends Table<?>> class_table=(Class<?
@@ -5786,7 +5787,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		if (i>0) {
 			name = name.substring(0, i);
 			try {
-				c=Class.forName(name);
+				c=UtilClassLoader.getLoader().loadClass(name);
 				if (Table.class.isAssignableFrom(c))
 				{
 					//noinspection unchecked

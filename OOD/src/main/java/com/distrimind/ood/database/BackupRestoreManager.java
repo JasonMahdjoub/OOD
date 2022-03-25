@@ -45,6 +45,7 @@ import com.distrimind.ood.i18n.DatabaseMessages;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.FileTools;
 import com.distrimind.util.Reference;
+import com.distrimind.util.UtilClassLoader;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 import com.distrimind.util.io.*;
@@ -643,7 +644,7 @@ public class BackupRestoreManager {
 				rfis.readFully(tab, 0, l);
 				String className = new String(tab, 0, l, StandardCharsets.UTF_8);
 				@SuppressWarnings("unchecked")
-				Class<? extends Table<?>> c = (Class<? extends Table<?>>) Class.forName(className);
+				Class<? extends Table<?>> c = (Class<? extends Table<?>>) UtilClassLoader.getLoader().loadClass(className);
 				currentClassesList.add(c);
 			}
 

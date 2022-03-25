@@ -65,6 +65,10 @@ public class OOD {
 			VERSION.addCreator(new Person("mahdjoub", "jason"))
 					.addDeveloper(new PersonDeveloper("mahdjoub", "jason", "2013-04-01"))
 					.addDescription(
+							new Description((short)3, (short)1, (short)18, Version.Type.STABLE, (short)0, "2022-03-25")
+									.addItem(INTERNAL_CHANGE, "Update Utils to 5.22.3 STABLE")
+					)
+					.addDescription(
 							new Description((short)3, (short)1, (short)17, Version.Type.STABLE, (short)0, "2022-02-08")
 									.addItem(INTERNAL_CHANGE, "Update Utils to 5.22.2 STABLE")
 									.addItem(INTERNAL_CHANGE, "Update HSQLDB to 2.6.1")

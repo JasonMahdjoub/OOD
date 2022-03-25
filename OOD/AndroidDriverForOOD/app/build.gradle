@@ -5,7 +5,7 @@ plugins {
 }
 Properties props = new Properties()
 def propFile = new File(project.getProjectDir().getParentFile().getParentFile().getParentFile(), 'credentials.properties')
-def artifactory_Url="https://artifactory.distri-mind.fr/artifactory"
+def artifactory_Url="https://artifactory.distri-mind.fr:443/artifactory"
 def user=""
 def pwd=""
 if (propFile.canRead())
@@ -27,7 +27,7 @@ repositories {
 
 
     maven {
-        url "${artifactory_Url}/gradle-release"
+        url "${artifactory_Url}/gradle-release/"
         if (user!="")
         {
             credentials {
@@ -40,11 +40,11 @@ repositories {
 
 android {
     compileSdkVersion 31
-    buildToolsVersion "30.0.3"
+    buildToolsVersion '32.0.0'
 
     defaultConfig {
         applicationId "com.distrimind.ood.android"
-        minSdkVersion 24
+        minSdkVersion 26
         targetSdkVersion 31
         versionCode 1
         versionName "1.0"
