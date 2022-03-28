@@ -5,6 +5,7 @@ import android.annotation.SuppressLint;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseLoadingException;
 import com.distrimind.util.FileTools;
+import com.distrimind.util.UtilClassLoader;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 
@@ -72,7 +73,7 @@ public class AndroidSQLiteDatabaseWrapper extends DatabaseWrapper {
         if (!driverLoaded) {
             driverLoaded=true;
             try {
-                DriverManager.registerDriver((Driver) UtilsClassLoader.getLoader().loadClass("org.sqldroid.SQLDroidDriver").newInstance());
+                DriverManager.registerDriver((Driver) UtilClassLoader.getLoader().loadClass("org.sqldroid.SQLDroidDriver").newInstance());
             } catch (Exception e) {
                 throw new RuntimeException("Failed to register SQLDroidDriver");
             }
