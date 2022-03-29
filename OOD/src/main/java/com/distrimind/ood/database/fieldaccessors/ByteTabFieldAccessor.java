@@ -191,7 +191,7 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 				tab2=((WrappedData) _field_instance).getBytes();
 				if (WrappedSecretData.class.isAssignableFrom(_field_instance.getClass()))
 				{
-					return com.distrimind.bouncycastle.util.Arrays.constantTimeAreEqual(tab1, tab2);
+					return WrappedSecretData.constantTimeAreEqual(tab1, tab2);
 				}
 			}
 			else

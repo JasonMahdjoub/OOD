@@ -35,12 +35,12 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database.centraldatabaseapi;
 
-import com.distrimind.bouncycastle.util.Arrays;
 import com.distrimind.ood.database.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.messages.*;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.crypto.IASymmetricPublicKey;
+import com.distrimind.util.data_buffers.WrappedSecretData;
 import com.distrimind.util.io.Integrity;
 import com.distrimind.util.io.MessageExternalizationException;
 
@@ -173,7 +173,7 @@ public abstract class CentralDatabaseBackupReceiver {
 		for (Iterator<Map.Entry<DecentralizedValue, CentralDatabaseBackupReceiverPerPeer>> it =receiversPerPeer.entrySet().iterator();it.hasNext();)
 		{
 			CentralDatabaseBackupReceiverPerPeer c=it.next().getValue();
-			if (c.connectedClientRecord.getAccount().getExternalAccountID().equals(certificate.getCertifiedAccountPublicKey()) && Arrays.constantTimeAreEqual(c.certificate.getCertificateIdentifier(), certificateToRevoke.getCertificateIdentifier()))
+			if (c.connectedClientRecord.getAccount().getExternalAccountID().equals(certificate.getCertifiedAccountPublicKey()) && WrappedSecretData.constantTimeAreEqual(c.certificate.getCertificateIdentifier(), certificateToRevoke.getCertificateIdentifier()))
 			{
 				if (c.checkCertificate(certificate)) {
 					c.sendMessageFromThisCentralDatabaseBackup(new CentralDatabaseBackupCertificateChangedMessage(c.connectedClientID));
