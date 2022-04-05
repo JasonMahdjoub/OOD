@@ -1,6 +1,6 @@
 # OOD
 
-[![CodeQL](https://github.com/JazZ51/OOD/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/JazZ51/OOD/actions/workflows/codeql-analysis.yml)
+[![CodeQL](https://github.com/JasonMahdjoub/OOD/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/JasonMahdjoub/OOD/actions/workflows/codeql-analysis.yml)
 
 OOD is a decentralized and asynchrone ORM (Object-Relational Mapping):
 * Compatible with Java 8 and newer
