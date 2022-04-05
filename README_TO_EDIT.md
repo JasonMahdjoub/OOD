@@ -1,6 +1,6 @@
 # OOD
 
-[![CodeQL](https://github.com/JazZ51/OOD/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/JazZ51/OOD/actions/workflows/codeql-analysis.yml)
+[![CodeQL](https://github.com/JasonMahdjoub/OOD/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/JasonMahdjoub/OOD/actions/workflows/codeql-analysis.yml)
 
 OOD is a decentralized and asynchrone ORM (Object-Relational Mapping):
 * Compatible with Java 8 and newer
@@ -27,15 +27,7 @@ OOD is a decentralized and asynchrone ORM (Object-Relational Mapping):
 ## With Gradle :
 
 Adapt into your build.gradle file, the next code :
-
-	...
-	repositories {
-		...
-		maven {
-	       		url "https://artifactory.distri-mind.fr:443/artifactory/gradle-release/"
-	   	}
-		...
-	}
+```
 	...
 	dependencies {
 		...
@@ -50,12 +42,24 @@ Adapt into your build.gradle file, the next code :
 		api(group: 'org.postgresql', name: 'postgresql', version: '42.3.2')
 	}
 	...
-
-
+```
+Librairies are available on Maven Central. You can check signatures of dependencies with this [public GPG key](./gpg_key.asc). You can also use the next repository : 
+```
+	...
+	repositories {
+		...
+		maven {
+	       		url "https://artifactory.distri-mind.fr:443/artifactory/gradle-release/"
+	   	}
+		...
+	}
+	...
+```
 To know what last version has been uploaded, please refer to versions availables into [this repository](https://artifactory.distri-mind.fr/artifactory/DistriMind-Public/com/distrimind/ood/OOD/)
 ## With Maven :
 Adapt into your pom.xml file, the next code :
-
+```
+	...
 	<project>
 		...
 		<dependencies>
@@ -93,16 +97,22 @@ Adapt into your pom.xml file, the next code :
 			...
 		</dependencies>
 		...
-		<repositories>
-			...
-			<repository>
-				<id>DistriMind-Public</id>
-				<url>https://artifactory.distri-mind.fr:443/artifactory/gradle-release/</url>
-			</repository>
-			...
-		</repositories>
 	</project>
-
+	...
+```	
+Librairies are available on Maven Central. You can check signatures of dependencies with this [public GPG key](./gpg_key.asc). You can also use the next repository : 
+```
+	...
+	<repositories>
+		...
+		<repository>
+			<id>DistriMind-Public</id>
+			<url>https://artifactory.distri-mind.fr:443/artifactory/gradle-release/</url>
+		</repository>
+		...
+	</repositories>
+	...		
+```
 To know what last version has been uploaded, please refer to versions availables into [this repository](https://artifactory.distri-mind.fr/artifactory/DistriMind-Public/com/distrimind/ood/OOD/)
 
 ###### Requirements under Ubuntu/Debian :
