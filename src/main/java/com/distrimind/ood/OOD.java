@@ -65,6 +65,12 @@ public class OOD {
 			VERSION.addCreator(new Person("mahdjoub", "jason"))
 					.addDeveloper(new PersonDeveloper("mahdjoub", "jason", "2013-04-01"))
 					.addDescription(
+							new Description((short)3, (short)1, (short)22, Version.Type.STABLE, (short)0, "2022-04-05")
+									.addItem(INTERNAL_CHANGE, "Update Utils to 5.23.2 STABLE")
+									.addItem(INTERNAL_CHANGE, "Add lacking files into generated libraries.")
+
+					)
+					.addDescription(
 							new Description((short)3, (short)1, (short)21, Version.Type.STABLE, (short)0, "2022-04-05")
 									.addItem(INTERNAL_CHANGE, "Update Utils to 5.23.1 STABLE")
 									.addItem(INTERNAL_CHANGE, "Remove finalize methods into all classes, and these classes using Cleanable API")
@@ -856,13 +862,13 @@ public class OOD {
 	public static void main(String[] args) throws IOException
 	{
 		String markdown=VERSION.getMarkdownCode();
-		try(FileWriter fw=new FileWriter("../changelog.md"))
+		try(FileWriter fw=new FileWriter("changelog.md"))
 		{
 			fw.write(markdown);
 			fw.flush();
 		}
 		String lastVersion=VERSION.getFileHeadVersion();
-		File f=new File("../lastVersion.md");
+		File f=new File("lastVersion.md");
 		if (f.exists())
 			f.delete();
 		try(FileWriter fr=new FileWriter(f))
