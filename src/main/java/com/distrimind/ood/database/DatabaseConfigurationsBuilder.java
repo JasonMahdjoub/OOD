@@ -217,7 +217,7 @@ public class DatabaseConfigurationsBuilder {
 			if (commitInProgress)
 				throw new IllegalAccessError();
 			commitInProgress=true;
-			wrapper.lockWrite();
+			wrapper.finalizer.lockWrite();
 
 			try {
 				for (ConfigurationQuery q : currentTransaction.queries)
@@ -253,7 +253,7 @@ public class DatabaseConfigurationsBuilder {
 			finally {
 				currentTransaction = null;
 				commitInProgress=false;
-				wrapper.unlockWrite();
+				wrapper.finalizer.unlockWrite();
 			}
 		}
 		DatabaseNotifier notifier=wrapper.getSynchronizer().getNotifier();
@@ -1057,7 +1057,7 @@ public class DatabaseConfigurationsBuilder {
 
 		synchronized (this)
 		{
-			wrapper.lockWrite();
+			wrapper.finalizer.lockWrite();
 			try {
 				for (DatabaseConfiguration c : configurations.getDatabaseConfigurations()) {
 					if (c.getDatabaseSchema().getPackage().equals(database.getConfiguration().getDatabaseSchema().getPackage())) {
@@ -1147,7 +1147,7 @@ public class DatabaseConfigurationsBuilder {
 				return false;
 			}
 			finally {
-				wrapper.unlockWrite();
+				wrapper.finalizer.unlockWrite();
 			}
 		}
 	}

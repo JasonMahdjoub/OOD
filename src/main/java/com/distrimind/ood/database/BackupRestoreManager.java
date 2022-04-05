@@ -136,7 +136,7 @@ public class BackupRestoreManager {
 		}
 		generateRestoreProgressBar= this.backupConfiguration.restoreProgressMonitorParameters == null;
 		scanFiles();
-		if (checkTablesHeader(getFileForBackupReference()) && !databaseWrapper.sql_database.get(dbPackage).isEmpty())
+		if (checkTablesHeader(getFileForBackupReference()) && !databaseWrapper.finalizer.sql_database.get(dbPackage).isEmpty())
 			createIfNecessaryNewBackupReference();
 	}
 
@@ -805,7 +805,7 @@ public class BackupRestoreManager {
 		final AtomicLong globalNumberOfSavedRecords=new AtomicLong(0);
 		boolean notify=false;
 		try {
-			databaseWrapper.lockRead();
+			databaseWrapper.finalizer.lockRead();
 			Thread.sleep(1);
 			synchronized (this) {
 				int oldLength = 0;
@@ -993,7 +993,7 @@ public class BackupRestoreManager {
 			throw DatabaseException.getDatabaseException(e);
 		} finally {
 			cleanCache();
-			databaseWrapper.unlockRead();
+			databaseWrapper.finalizer.unlockRead();
 			if (notify) {
 				databaseWrapper.getSynchronizer().checkForNewBackupFilePartToSendToCentralDatabaseBackup(dbPackage);
 				DatabaseLifeCycles lifeCycles=databaseWrapper.getDatabaseConfigurationsBuilder().getLifeCycles();
@@ -1434,7 +1434,7 @@ public class BackupRestoreManager {
 		boolean notify=false;
 		try
 		{
-			databaseWrapper.lockWrite();
+			databaseWrapper.finalizer.lockWrite();
 			final Long lastTransactionID=synchronizationPlanMessageComingFromCentralDatabaseBackup==null?null:getLastTransactionID();
 			if (lastTransactionID!=null)
 			{
@@ -1849,7 +1849,7 @@ public class BackupRestoreManager {
 			synchronized (this) {
 				temporaryDisabled = false;
 			}
-			databaseWrapper.unlockWrite();
+			databaseWrapper.finalizer.unlockWrite();
 		}
 	}
 	static void positionForDataRead(RandomInputStream in, boolean reference) throws DatabaseException {

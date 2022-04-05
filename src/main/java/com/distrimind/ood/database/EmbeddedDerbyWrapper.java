@@ -77,7 +77,24 @@ class EmbeddedDerbyWrapper extends DatabaseWrapper {
 			}
 		}
 	}
+	private static final class Finalizer extends DatabaseWrapper.Finalizer
+	{
 
+		private Finalizer(String databaseName, boolean loadToMemory, File databaseDirectory) {
+			super(databaseName, loadToMemory, databaseDirectory);
+		}
+
+		@Override
+		protected void closeConnection(Connection connection, boolean deepClose) throws SQLException {
+			connection.close();
+			/*
+			 * try { //DriverManager.getConnection(dbURL + ";shutdown=true"); } catch
+			 * (SQLNonTransientConnectionException e) {
+			 *
+			 * } finally { connection.close(); }
+			 */
+		}
+	}
 	@Override
 	protected boolean supportMultipleAutoPrimaryKeys() {
 		return true;
@@ -90,7 +107,7 @@ class EmbeddedDerbyWrapper extends DatabaseWrapper {
 						 EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 						 AbstractSecureRandom secureRandom,
 						 boolean createDatabasesIfNecessaryAndCheckIt) throws IllegalArgumentException, DatabaseException {
-		super(databaseName, null, false, true, databaseConfigurations, databaseLifeCycles,
+		super(new Finalizer(databaseName, false, null),  true, databaseConfigurations, databaseLifeCycles,
 				signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
 				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 				secureRandom, createDatabasesIfNecessaryAndCheckIt);
@@ -113,8 +130,8 @@ class EmbeddedDerbyWrapper extends DatabaseWrapper {
 						 EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 						 AbstractSecureRandom secureRandom,
 						 boolean createDatabasesIfNecessaryAndCheckIt, boolean alwaysDisconnectAfterOnTransaction) throws IllegalArgumentException, DatabaseException {
-		super(/* getConnection(_directory), */"Database from file : " + _directory.getAbsolutePath(), _directory, alwaysDisconnectAfterOnTransaction, false
-				, databaseConfigurations, databaseLifeCycles,
+		super(new Finalizer(/* getConnection(_directory), */"Database from file : " + _directory.getAbsolutePath(), false, _directory), alwaysDisconnectAfterOnTransaction,
+				databaseConfigurations, databaseLifeCycles,
 				signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
 				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 				secureRandom, createDatabasesIfNecessaryAndCheckIt);
@@ -158,16 +175,7 @@ class EmbeddedDerbyWrapper extends DatabaseWrapper {
 		}
 	}
 
-	@Override
-	protected void closeConnection(Connection connection, boolean deepClose) throws SQLException {
-		connection.close();
-		/*
-		 * try { //DriverManager.getConnection(dbURL + ";shutdown=true"); } catch
-		 * (SQLNonTransientConnectionException e) {
-		 * 
-		 * } finally { connection.close(); }
-		 */
-	}
+
 
 	@Override
 	protected String getCachedKeyword() {
@@ -654,7 +662,7 @@ class EmbeddedDerbyWrapper extends DatabaseWrapper {
 			@Override
 			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 				try {
-					lockRead();
+					finalizer.lockRead();
 					Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
                     try (PreparedStatement preparedStatement = sql_connection.prepareStatement(querry)) {
                         preparedStatement.setString(1, f);
@@ -664,7 +672,7 @@ class EmbeddedDerbyWrapper extends DatabaseWrapper {
 				} catch (Exception e) {
 					throw new DatabaseException("", e);
 				} finally {
-					unlockRead();
+					finalizer.unlockRead();
 				}
 			}
 
@@ -682,7 +690,7 @@ class EmbeddedDerbyWrapper extends DatabaseWrapper {
 
 	@Override
 	protected Connection reopenConnectionImpl() throws DatabaseLoadingException {
-		return getConnection(databaseName, getDatabaseDirectory(), isLoadedToMemory());
+		return getConnection(finalizer.databaseName, getDatabaseDirectory(), isLoadedToMemory());
 	}
 
 	@Override

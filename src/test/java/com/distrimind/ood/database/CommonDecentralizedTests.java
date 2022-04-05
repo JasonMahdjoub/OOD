@@ -1220,11 +1220,6 @@ public abstract class CommonDecentralizedTests {
 
 	}
 
-	@SuppressWarnings("deprecation")
-	@Override
-	public void finalize() {
-		unloadDatabase();
-	}
 
 	@AfterMethod
 	public void cleanPendedEvents() {

@@ -70,7 +70,27 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	private final boolean android;
 	private boolean loadedOneTime=false;
 	private boolean autoPrimaryKeyIndexStartFromOne=false;
+	private static final class Finalizer extends DatabaseWrapper.Finalizer
+	{
 
+		private Finalizer(String databaseName, boolean loadToMemory, File databaseDirectory) {
+			super(databaseName, loadToMemory, databaseDirectory);
+		}
+
+		@Override
+		protected void closeConnection(Connection connection, boolean deepClose) throws SQLException {
+			if (!deepClose || databaseShutdown.getAndSet(true)) {
+				connection.close();
+			} else {
+				try (Statement s = connection.createStatement()) {
+					s.execute("SHUTDOWN;");
+				} finally {
+					connection.close();
+				}
+			}
+
+		}
+	}
 
 	EmbeddedH2DatabaseWrapper(String databaseName, boolean loadToMemory,
 							  DatabaseConfigurations databaseConfigurations,
@@ -80,7 +100,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 							  EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 							  AbstractSecureRandom secureRandom,
 							  boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
-		super(databaseName, null, false, true,
+		super(new Finalizer(databaseName, true, null), false,
 				databaseConfigurations, databaseLifeCycles, signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
 				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
 				protectedEncryptionProfileProviderForAuthenticatedP2PMessages, secureRandom, createDatabasesIfNecessaryAndCheckIt, true);
@@ -99,8 +119,8 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 							  AbstractSecureRandom secureRandom,
 							  boolean createDatabasesIfNecessaryAndCheckIt, boolean alwaysDisconnectAfterOnTransaction, boolean fileLock, int pageSizeBytes
 			,int cacheSizeBytes) throws DatabaseException {
-		super("Database from file : " + getH2DataFileName(getDatabaseFileName(_directory_name)), _directory_name,
-				alwaysDisconnectAfterOnTransaction, false,
+		super(new Finalizer("Database from file : " + getH2DataFileName(getDatabaseFileName(_directory_name)), false, _directory_name),
+				alwaysDisconnectAfterOnTransaction,
 				databaseConfigurations,
 				databaseLifeCycles,
 				signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -123,8 +143,8 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 							  AbstractSecureRandom secureRandom,
 							  boolean createDatabasesIfNecessaryAndCheckIt, boolean alwaysDisconnectAfterOnTransaction, int pageSizeBytes
 			,int cacheSizeBytes) throws DatabaseException {
-		super("Database from file : " + getH2DataFileName(getDatabaseFileName(_directory_name)),
-				_directory_name, alwaysDisconnectAfterOnTransaction, false,
+		super(new Finalizer("Database from file : " + getH2DataFileName(getDatabaseFileName(_directory_name)),
+				false, _directory_name), alwaysDisconnectAfterOnTransaction,
 				databaseConfigurations,
 				databaseLifeCycles,
 				signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -217,24 +237,12 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 		return true;
 	}
 
-	@Override
-	protected void closeConnection(Connection connection, boolean deepClose) throws SQLException {
-		if (!deepClose || databaseShutdown.getAndSet(true)) {
-			connection.close();
-		} else {
-			try (Statement s = connection.createStatement()) {
-				s.execute("SHUTDOWN" + getSqlComma());
-			} finally {
-				connection.close();
-			}
-		}
 
-	}
 
 	@Override
 	protected Connection reopenConnectionImpl() throws DatabaseLoadingException {
 
-			Connection c = getConnection(databaseName, getDatabaseFileName(super.getDatabaseDirectory()), isLoadedToMemory(), android, fileLock, pageSizeBytes, cacheSizeBytes);
+			Connection c = getConnection(finalizer.databaseName, getDatabaseFileName(super.getDatabaseDirectory()), isLoadedToMemory(), android, fileLock, pageSizeBytes, cacheSizeBytes);
 			if (loadedOneTime)
 				return c;
 		try {
@@ -331,7 +339,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 				try {
 
-					lockWrite();
+					finalizer.lockWrite();
 					Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
 					try (PreparedStatement preparedStatement = sql_connection.prepareStatement(querry)) {
 						preparedStatement.setString(1, file);
@@ -342,7 +350,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 					throw new DatabaseException("", e);
 				} finally {
 
-					unlockWrite();
+					finalizer.unlockWrite();
 				}
 			}
 

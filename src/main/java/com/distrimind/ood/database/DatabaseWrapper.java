@@ -50,10 +50,7 @@ import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.ood.database.filemanager.FileReferenceManager;
 import com.distrimind.ood.database.messages.*;
-import com.distrimind.util.DecentralizedValue;
-import com.distrimind.util.FileTools;
-import com.distrimind.util.Reference;
-import com.distrimind.util.UtilClassLoader;
+import com.distrimind.util.*;
 import com.distrimind.util.crypto.ASymmetricPublicKey;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
@@ -94,7 +91,7 @@ import java.util.stream.Stream;
  * @since OOD 1.4
  */
 @SuppressWarnings("ThrowFromFinallyBlock")
-public abstract class DatabaseWrapper implements AutoCloseable {
+public abstract class DatabaseWrapper implements Cleanable {
 
 	public static final int MAX_ACCEPTED_SIZE_IN_BYTES_OF_DECENTRALIZED_VALUE= ASymmetricPublicKey.MAX_SIZE_IN_BYTES_OF_NON_PQC_RSA_NON_HYBRID_PUBLIC_KEY;
 
@@ -126,12 +123,200 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	private static final String TEMPORARY_BACKUPS_COMING_FROM_INTERNAL_BACKUP_DIRECTORY_NAME="temporary_backups_coming_from_internal_db_backup";
 
 	private static final String HOST_CHANNEL_ID_FILE_NAME="host_channel_id";
-	private volatile boolean closed = false;
+	protected static abstract class Finalizer extends Cleanable.Cleaner
+	{
+		private final Lock locker;
+		protected final String databaseIdentifier;
+		volatile HashMap<Package, Database> sql_database = new HashMap<>();
+
+		private volatile Logger networkLogger=null;
+		private volatile Logger databaseLogger=null;
+		private final List<Session> threadPerConnection = new ArrayList<>();
+		protected final boolean loadToMemory;
+		private final File databaseDirectory;
+		protected final String databaseName;
+
+		protected Finalizer(String databaseName, boolean loadToMemory, File databaseDirectory) {
+			this.loadToMemory=loadToMemory;
+
+			this.databaseName=databaseName;
+
+			if (loadToMemory)
+			{
+				this.databaseIdentifier =databaseName;
+				this.databaseDirectory=null;
+			}
+			else {
+				if (databaseName == null)
+					throw new NullPointerException("_database_name");
+				if (databaseDirectory==null)
+					throw new NullPointerException();
+				if (databaseDirectory.exists() && !databaseDirectory.isDirectory())
+					throw new IllegalArgumentException();
+				this.databaseDirectory=databaseDirectory;
+				Disk disk = null;
+				try {
+					Partition p = HardDriveDetect.getInstance().getConcernedPartition(databaseDirectory);
+					disk = p.getDisk();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+
+				if (disk != null)
+					databaseIdentifier = disk.toString();
+				else
+					databaseIdentifier = databaseName;
+			}
+			synchronized (DatabaseWrapper.class) {
+				String f = databaseIdentifier;
+
+				Lock rwl = lockers.get(f);
+				if (rwl == null) {
+
+					rwl = new ReentrantLock();
+					lockers.put(f, rwl);
+					number_of_shared_lockers.put(f, 1);
+				} else
+					number_of_shared_lockers.put(f, number_of_shared_lockers.get(f) + 1);
+
+				this.locker = rwl;
+			}
+
+		}
+
+		protected void lockWrite()
+		{
+			locker.lock();
+		}
+		protected void unlockWrite()
+		{
+			locker.unlock();
+		}
+		protected void lockRead()
+		{
+			locker.lock();
+		}
+
+		protected void unlockRead()
+		{
+			locker.unlock();
+		}
+		@Override
+		protected void performCleanup() {
+			try {
+
+
+				try {
+					lockWrite();
+					setDatabaseLogLevel(Level.OFF, null);
+					setNetworkLogLevel(Level.OFF, null);
+					//removeClosedDatabaseWrapper(this);
+					for (Iterator<Session> it = threadPerConnection.iterator(); it.hasNext();) {
+						Session s = it.next();
+						/*
+						 * if (threadPerConnectionInProgress.containsKey(c.getKey())) continue;
+						 */
+						try {
+							if (!s.getConnection().isClosed())
+								closeConnection(s.getConnection(), true);
+						} catch (SQLException e) {
+							e.printStackTrace();
+						} finally {
+							it.remove();
+						}
+					}
+				}
+				finally
+				{
+					unlockWrite();
+				}
+
+			} finally {
+				synchronized(DatabaseWrapper.class)
+				{
+					DatabaseWrapper.lockers.remove(databaseIdentifier);
+					Integer i=DatabaseWrapper.number_of_shared_lockers.get(databaseIdentifier);
+					if (i!=null) {
+						int v = i - 1;
+						if (v == 0)
+							DatabaseWrapper.number_of_shared_lockers.remove(databaseIdentifier);
+						else if (v > 0)
+							DatabaseWrapper.number_of_shared_lockers.put(databaseIdentifier, v);
+						else
+							throw new IllegalAccessError();
+					}
+					sql_database = new HashMap<>();
+				}
+
+				System.gc();
+			}
+		}
+		private void setDatabaseLogLevel(Level level, Formatter formatter)
+		{
+
+			lockWrite();
+			try {
+				if (level==Level.OFF)
+				{
+					databaseLogger=null;
+				}
+				else {
+					if (databaseLogger == null) {
+						Logger networkLogger = Logger.getAnonymousLogger();
+						Handler databaseLoggerHandler = new ConsoleHandler();
+						databaseLoggerHandler.setFormatter(formatter);
+
+						networkLogger.addHandler(databaseLoggerHandler);
+						this.databaseLogger = networkLogger;
+					}
+					databaseLogger.setUseParentHandlers(false);
+					for (Handler h : databaseLogger.getHandlers())
+						h.setLevel(level);
+					databaseLogger.setLevel(level);
+				}
+			}
+			finally {
+				unlockWrite();
+			}
+		}
+		private void setNetworkLogLevel(Level level, Formatter formatter)
+		{
+
+			lockWrite();
+			try {
+				if (level==Level.OFF)
+				{
+					networkLogger=null;
+				}
+				else {
+					if (networkLogger == null) {
+						Logger networkLogger = Logger.getAnonymousLogger();
+						Handler networkLoggerHandler = new ConsoleHandler();
+						networkLoggerHandler.setFormatter(formatter);
+
+						networkLogger.addHandler(networkLoggerHandler);
+						this.networkLogger = networkLogger;
+					}
+					networkLogger.setUseParentHandlers(false);
+					for (Handler h : networkLogger.getHandlers())
+						h.setLevel(level);
+					networkLogger.setLevel(level);
+				}
+			}
+			finally {
+				unlockWrite();
+			}
+
+		}
+		protected abstract void closeConnection(Connection c, boolean deepClosing) throws SQLException;
+
+	}
+
+	final Finalizer finalizer;
+
 	private volatile boolean openedOneTime = false;
-	protected final String databaseName;
-	protected final boolean loadToMemory;
-	protected final File databaseDirectory;
-	protected final String databaseIdentifier;
+
+
 	private static final HashMap<String, Lock> lockers = new HashMap<>();
 	private static final HashMap<String, Integer> number_of_shared_lockers = new HashMap<>();
 	final static String ROW_PROPERTIES_OF_TABLES = "ROW_PROPERTIES_OF_TABLES__";
@@ -139,7 +324,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	final static String AUTOINCREMENT_TABLE= "AUTOINCREMENT_TABLE__";
 	private final ArrayList<ByteTabObjectConverter> converters;
 
-	volatile HashMap<Package, Database> sql_database = new HashMap<>();
+
 	private volatile DatabaseTransactionEventsTable transactionTable = null;
 	private volatile DatabaseHooksTable databaseHooksTable = null;
 	private volatile DatabaseTable databaseTable =null;
@@ -163,8 +348,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	private static volatile int MAX_HOST_NUMBERS=5;
 	public static final String NETWORK_LOGGER_NAME="OOD_NETWORK_LOGGER_NAME";
 	private final DatabaseConfigurationsBuilder databaseConfigurationsBuilder;
-	private volatile Logger networkLogger=null;
-	private volatile Logger databaseLogger=null;
+
 	private volatile Logger centralDatabaseLogger=null;
 	private volatile FileReferenceManager fileReferenceManager=null;
 
@@ -198,39 +382,15 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	}
 
 	public Logger getNetworkLogger() {
-		return networkLogger;
+		return finalizer.networkLogger;
 	}
 	public void setDatabaseLogLevel(Level level)
 	{
-
-		lockWrite();
-		try {
-			if (level==Level.OFF)
-			{
-				databaseLogger=null;
-			}
-			else {
-				if (databaseLogger == null) {
-					Logger networkLogger = Logger.getAnonymousLogger();
-					Handler databaseLoggerHandler = new ConsoleHandler();
-					databaseLoggerHandler.setFormatter(generatesLogFormatter(false));
-
-					networkLogger.addHandler(databaseLoggerHandler);
-					this.databaseLogger = networkLogger;
-				}
-				databaseLogger.setUseParentHandlers(false);
-				for (Handler h : databaseLogger.getHandlers())
-					h.setLevel(level);
-				databaseLogger.setLevel(level);
-			}
-		}
-		finally {
-			unlockWrite();
-		}
+		finalizer.setDatabaseLogLevel(level, generatesLogFormatter(false));
 	}
 	public Logger getDatabaseLogger()
 	{
-		return databaseLogger;
+		return finalizer.databaseLogger;
 	}
 	public Logger getCentralDatabaseLogger() {
 		return centralDatabaseLogger;
@@ -238,7 +398,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	public void setCentralDatabaseLogLevel(Level level)
 	{
 
-		lockWrite();
+		finalizer.lockWrite();
 		try {
 			if (level==Level.OFF)
 			{
@@ -260,14 +420,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 		}
 		finally {
-			unlockWrite();
+			finalizer.unlockWrite();
 		}
 	}
 
 	public Long getNextPossibleEventTimeUTC()
 	{
 		long curTime=System.currentTimeMillis();
-		return this.sql_database.values().stream()
+		return this.finalizer.sql_database.values().stream()
 				.filter(d -> d.backupRestoreManager!=null && d.configuration.isSynchronizedWithCentralBackupDatabase() && d.backupRestoreManager.hasNonFinalFiles())
 				.map(d -> curTime+Math.max(0, d.configuration.getBackupConfiguration().getMaxBackupFileAgeInMs()-(curTime-d.backupRestoreManager.getLastFileTimestampUTC(false)-10)))
 				.min(Long::compare)
@@ -314,31 +474,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	}
 	public void setNetworkLogLevel(Level level)
 	{
-
-		lockWrite();
-		try {
-			if (level==Level.OFF)
-			{
-				networkLogger=null;
-			}
-			else {
-				if (networkLogger == null) {
-					Logger networkLogger = Logger.getAnonymousLogger();
-					Handler networkLoggerHandler = new ConsoleHandler();
-					networkLoggerHandler.setFormatter(generatesLogFormatter(false));
-
-					networkLogger.addHandler(networkLoggerHandler);
-					this.networkLogger = networkLogger;
-				}
-				networkLogger.setUseParentHandlers(false);
-				for (Handler h : networkLogger.getHandlers())
-					h.setLevel(level);
-				networkLogger.setLevel(level);
-			}
-		}
-		finally {
-			unlockWrite();
-		}
+		finalizer.setNetworkLogLevel(level, generatesLogFormatter(false));
 
 	}
 
@@ -387,20 +523,20 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	public File prepareDatabaseRestorationFromExternalDatabaseBackupAndGetTemporaryBackupDirectoryName(Package databasePackage) throws DatabaseException {
 		if (databasePackage==null)
 			throw new NullPointerException();
-		lockWrite();
+		finalizer.lockWrite();
 		try {
-			Database db = sql_database.get(databasePackage);
+			Database db = finalizer.sql_database.get(databasePackage);
 			if (db == null)
 				throw new DatabaseException("The database " + databasePackage.getName() + " was not loaded");
 			return db.prepareDatabaseRestorationFromExternalDatabaseBackupAndGetTemporaryBackupDirectoryName();
 		}
 		finally {
-			unlockWrite();
+			finalizer.unlockWrite();
 		}
 	}
 	public boolean isCurrentDatabaseInInitialSynchronizationProcessFromCentralDatabaseBackup(Package p)
 	{
-		Database d=sql_database.get(p);
+		Database d=finalizer.sql_database.get(p);
 		if (d==null)
 			return false;
 		else
@@ -408,7 +544,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	}
 	public boolean isCurrentDatabaseInInitialSynchronizationProcessFromCentralDatabaseBackup(String p)
 	{
-		Database d=sql_database.values().stream().filter(d2 -> d2.configuration.getDatabaseSchema().getPackage().getName().equals(p)).findAny().orElse(null);
+		Database d=finalizer.sql_database.values().stream().filter(d2 -> d2.configuration.getDatabaseSchema().getPackage().getName().equals(p)).findAny().orElse(null);
 		if (d==null)
 			return false;
 		else
@@ -417,9 +553,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	void prepareDatabaseRestorationFromCentralDatabaseBackupChannel(Package databasePackage) throws DatabaseException {
 		if (databasePackage==null)
 			throw new NullPointerException();
-		lockWrite();
+		finalizer.lockWrite();
 		try {
-			Database db = sql_database.get(databasePackage);
+			Database db = finalizer.sql_database.get(databasePackage);
 			if (db == null)
 				throw new DatabaseException("The database " + databasePackage.getName() + " was not loaded");
 			if (db.isCurrentDatabaseInInitialSynchronizationProcessFromCentralDatabaseBackup())
@@ -430,15 +566,15 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		}
 		finally {
-			unlockWrite();
+			finalizer.unlockWrite();
 		}
 	}
 	void prepareDatabaseInitialSynchronizationFromCentralDatabaseBackupChannel(SynchronizationPlanMessageComingFromCentralDatabaseBackup synchronizationPlanMessageComingFromCentralDatabaseBackup) throws DatabaseException {
 		if (synchronizationPlanMessageComingFromCentralDatabaseBackup==null)
 			throw new NullPointerException();
-		lockWrite();
+		finalizer.lockWrite();
 		try {
-			Database db = sql_database.entrySet().stream().filter(e -> e.getKey().getName().equals(synchronizationPlanMessageComingFromCentralDatabaseBackup.getPackageString())).map(Map.Entry::getValue).findAny().orElse(null);
+			Database db = finalizer.sql_database.entrySet().stream().filter(e -> e.getKey().getName().equals(synchronizationPlanMessageComingFromCentralDatabaseBackup.getPackageString())).map(Map.Entry::getValue).findAny().orElse(null);
 			if (db == null)
 				throw new DatabaseException("The database " + synchronizationPlanMessageComingFromCentralDatabaseBackup.getPackageString() + " was not loaded");
 			if (!db.configuration.isSynchronizedWithCentralBackupDatabase())
@@ -449,15 +585,15 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		}
 		finally {
-			unlockWrite();
+			finalizer.unlockWrite();
 		}
 	}
 	boolean prepareDatabaseRestorationFromInternalBackupChannel(Package databasePackage) throws DatabaseException {
 		if (databasePackage==null)
 			throw new NullPointerException();
-		lockWrite();
+		finalizer.lockWrite();
 		try {
-			Database db = sql_database.get(databasePackage);
+			Database db = finalizer.sql_database.get(databasePackage);
 			if (db == null)
 				throw new DatabaseException("The database " + databasePackage.getName() + " was not loaded");
 			if (db.isCurrentDatabaseInInitialSynchronizationProcessFromCentralDatabaseBackup())
@@ -466,7 +602,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			return getSynchronizer().checkNotAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(db);
 		}
 		finally {
-			unlockWrite();
+			finalizer.unlockWrite();
 		}
 	}
 	public void restoreDatabaseToDateUTCFromExternalTemporaryDatabaseBackupAndRemoveBackupFiles(DatabaseConfiguration databaseConfiguration, long dateUTCInMs) throws DatabaseException {
@@ -478,16 +614,16 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	public void restoreDatabaseToDateUTCFromExternalTemporaryDatabaseBackupAndRemoveBackupFiles(Package databasePackage, long dateUTCInMs) throws DatabaseException {
 		if (databasePackage==null)
 			throw new NullPointerException();
-		lockWrite();
+		finalizer.lockWrite();
 		try {
-			Database db = sql_database.get(databasePackage);
+			Database db = finalizer.sql_database.get(databasePackage);
 			if (db == null)
 				throw new DatabaseException("The database " + databasePackage.getName() + " was not loaded");
 
 			db.restoreDatabaseToDateUTCFromExternalTemporaryDatabaseBackupAndRemoveBackupFiles(dateUTCInMs);
 		}
 		finally {
-			unlockWrite();
+			finalizer.unlockWrite();
 		}
 	}
 	public void cancelRestorationFromExternalDatabaseBackup(DatabaseConfiguration databaseConfiguration) throws DatabaseException {
@@ -501,31 +637,31 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	void restorationFromInternalDatabaseBackupFinished(Package databasePackage) throws DatabaseException {
 		if (databasePackage==null)
 			throw new NullPointerException();
-		lockWrite();
+		finalizer.lockWrite();
 		try {
-			Database db = sql_database.get(databasePackage);
+			Database db = finalizer.sql_database.get(databasePackage);
 			if (db == null)
 				throw new DatabaseException("The database " + databasePackage.getName() + " was not loaded");
 
 			db.restorationFromInternalDatabaseBackupFinished();
 		}
 		finally {
-			unlockWrite();
+			finalizer.unlockWrite();
 		}
 	}
 	public void cancelRestorationFromExternalDatabaseBackup(Package databasePackage) throws DatabaseException {
 		if (databasePackage==null)
 			throw new NullPointerException();
-		lockWrite();
+		finalizer.lockWrite();
 		try {
-			Database db = sql_database.get(databasePackage);
+			Database db = finalizer.sql_database.get(databasePackage);
 			if (db == null)
 				throw new DatabaseException("The database " + databasePackage.getName() + " was not loaded");
 
 			db.cancelRestorationFromExternalDatabaseBackup();
 		}
 		finally {
-			unlockWrite();
+			finalizer.unlockWrite();
 		}
 	}
 	public boolean isCurrentDatabaseInRestorationProcessFromExternalBackup(DatabaseConfiguration databaseConfiguration) throws DatabaseException {
@@ -537,16 +673,16 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	public boolean isCurrentDatabaseInRestorationProcessFromExternalBackup(Package databasePackage) throws DatabaseException {
 		if (databasePackage==null)
 			throw new NullPointerException();
-		lockRead();
+		finalizer.lockRead();
 		try {
-			Database db = sql_database.get(databasePackage);
+			Database db = finalizer.sql_database.get(databasePackage);
 			if (db == null)
 				throw new DatabaseException("The database " + databasePackage.getName() + " was not loaded");
 
 			return db.isCurrentDatabaseInRestorationProcessFromExternalBackup();
 		}
 		finally {
-			unlockRead();
+			finalizer.unlockRead();
 		}
 	}
 
@@ -675,16 +811,16 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 		private File getExternalTemporaryDatabaseBackupFileName()
 		{
-			return new File(new File(databaseDirectory, EXTERNAL_TEMPORARY_BACKUPS_DIRECTORY_NAME), DatabaseWrapper.getLongPackageName(this.configuration.getDatabaseSchema().getPackage()));
+			return new File(new File(finalizer.databaseDirectory, EXTERNAL_TEMPORARY_BACKUPS_DIRECTORY_NAME), DatabaseWrapper.getLongPackageName(this.configuration.getDatabaseSchema().getPackage()));
 		}
 
 		private File getTemporaryDatabaseBackupFileNameForBackupComingFromCentralDatabaseBackup()
 		{
-			return new File(new File(databaseDirectory, TEMPORARY_BACKUPS_COMING_FROM_CENTRAL_DATABASE_BACKUP_DIRECTORY_NAME), DatabaseWrapper.getLongPackageName(this.configuration.getDatabaseSchema().getPackage()));
+			return new File(new File(finalizer.databaseDirectory, TEMPORARY_BACKUPS_COMING_FROM_CENTRAL_DATABASE_BACKUP_DIRECTORY_NAME), DatabaseWrapper.getLongPackageName(this.configuration.getDatabaseSchema().getPackage()));
 		}
 		private File getTemporaryDatabaseBackupFileNameForBackupComingFromInternalBackup()
 		{
-			return new File(new File(databaseDirectory, TEMPORARY_BACKUPS_COMING_FROM_INTERNAL_BACKUP_DIRECTORY_NAME), DatabaseWrapper.getLongPackageName(this.configuration.getDatabaseSchema().getPackage()));
+			return new File(new File(finalizer.databaseDirectory, TEMPORARY_BACKUPS_COMING_FROM_INTERNAL_BACKUP_DIRECTORY_NAME), DatabaseWrapper.getLongPackageName(this.configuration.getDatabaseSchema().getPackage()));
 		}
 		private void checkRestorationNotInProgress() throws DatabaseException {
 			if (isCurrentDatabaseInRestorationProcess())
@@ -830,8 +966,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		void initBackupRestoreManager(DatabaseWrapper wrapper, File databaseDirectory, DatabaseConfiguration configuration) throws DatabaseException {
 			if (this.backupRestoreManager!=null)
 				return;
-			if (databaseLogger!=null && databaseLogger.isLoggable(Level.FINE))
-				databaseLogger.fine("Loading backup/restore: "+configuration);
+			if (finalizer.databaseLogger!=null && finalizer.databaseLogger.isLoggable(Level.FINE))
+				finalizer.databaseLogger.fine("Loading backup/restore: "+configuration);
 			if (configuration.getBackupConfiguration()!=null)
 			{
 				this.backupRestoreManager =new BackupRestoreManager(wrapper, getDatabaseBackupFileName(databaseDirectory, configuration.getDatabaseSchema()), configuration, false);
@@ -839,8 +975,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 			checkOldDatabaseBackupsRemoving(wrapper, databaseDirectory, configuration);
 			updateTablesThatCanGeneratesBackupEvents();
-			if (databaseLogger!=null)
-				databaseLogger.info("Backup/restore loaded: "+configuration);
+			if (finalizer.databaseLogger!=null)
+				finalizer.databaseLogger.info("Backup/restore loaded: "+configuration);
 		}
 
 		void setCurrentVersion(int version)
@@ -1046,18 +1182,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 		return null;
 	}
-
-	/**
-	 * Constructor
-	 * 
-	 * @param _database_name
-	 *            the database name
-	 * @param databaseDirectory the database file or directory. Can be null for distant database.
-     * @param alwaysDisconnectAfterOnTransaction true if the database must always be connected and detected during one transaction
-	 * @throws DatabaseException if a problem occurs
-	 * 
-	 */
-	protected DatabaseWrapper(String _database_name, File databaseDirectory, boolean alwaysDisconnectAfterOnTransaction, boolean loadToMemory,
+	protected DatabaseWrapper(Finalizer finalizer, boolean alwaysDisconnectAfterOnTransaction,
 							  DatabaseConfigurations databaseConfigurations,
 							  DatabaseLifeCycles databaseLifeCycles,
 							  EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -1065,43 +1190,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							  EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 							  AbstractSecureRandom secureRandom,
 							  boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
-
-		if (loadToMemory)
+		this.finalizer=finalizer;
+		registerCleaner(this.finalizer);
+		if (finalizer.loadToMemory)
 		{
 			this.alwaysDisconnectAfterOnTransaction =false;
-			this.databaseName =_database_name;
-			this.loadToMemory=true;
-			this.databaseIdentifier =this.databaseName;
-			this.databaseDirectory=null;
 		}
 		else {
-			if (_database_name == null)
-				throw new NullPointerException("_database_name");
-			if (databaseDirectory==null)
-				throw new NullPointerException();
-			if (databaseDirectory.exists() && !databaseDirectory.isDirectory())
-				throw new IllegalArgumentException();
-
-			this.loadToMemory=false;
 			this.alwaysDisconnectAfterOnTransaction = alwaysDisconnectAfterOnTransaction;
-			/*
-			 * if (_sql_connection==null) throw new NullPointerException("_sql_connection");
-			 */
-
-			databaseName = _database_name;
-			this.databaseDirectory = databaseDirectory;
-			Disk disk = null;
-			try {
-				Partition p = HardDriveDetect.getInstance().getConcernedPartition(databaseDirectory);
-				disk = p.getDisk();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-
-			if (disk != null)
-				databaseIdentifier = disk.toString();
-			else
-				databaseIdentifier = _database_name;
 		}
 		try {
 			this.randomForKeys = SecureRandomType.BC_FIPS_APPROVED_FOR_KEYS.getSingleton(null);
@@ -1109,7 +1205,6 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 		}
 
-		locker = getLocker();
 		converters = new ArrayList<>();
 		converters.add(new DefaultByteTabObjectConverter());
 		synchronizer=new DatabaseSynchronizer();
@@ -1119,11 +1214,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	public boolean isLoadedToMemory()
 	{
-		return loadToMemory;
+		return finalizer.loadToMemory;
 	}
 
 	public File getDatabaseDirectory() {
-		return databaseDirectory;
+		return finalizer.databaseDirectory;
 	}
 
 	public AbstractSecureRandom getSecureRandomForKeys()
@@ -1139,7 +1234,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	}
 	private Database getDatabase(String packageString)
 	{
-		return sql_database.values().stream().filter(d -> d.getConfiguration().getDatabaseSchema().getPackage().getName().equals(packageString)).findAny().orElse(null);
+		return finalizer.sql_database.values().stream().filter(d -> d.getConfiguration().getDatabaseSchema().getPackage().getName().equals(packageString)).findAny().orElse(null);
 	}
 	public boolean isReadOnly() throws DatabaseException {
 		return (Boolean) runTransaction(new Transaction() {
@@ -1453,7 +1548,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		protected final HashMap<DecentralizedValue, ConnectedPeersWithCentralBackup> initializedHooksWithCentralBackup = new HashMap<>();
 		protected boolean centralBackupInitialized=false;
 		protected boolean centralBackupAvailable=false;
-		private final Condition newEventCondition=locker.newCondition();
+		private final Condition newEventCondition=finalizer.locker.newCondition();
 		private boolean extendedTransactionInProgress=false;
 		private long lastTransactionID=Long.MIN_VALUE;
 		final Set<String> backupDatabasePartsSynchronizingWithCentralDatabaseBackup=new HashSet<>();
@@ -1473,7 +1568,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		public void loadCentralDatabaseClassesIfNecessary() throws DatabaseException {
-			if (!sql_database.containsKey(CentralDatabaseBackupReceiver.class.getPackage()))
+			if (!finalizer.sql_database.containsKey(CentralDatabaseBackupReceiver.class.getPackage()))
 				loadDatabase(new DatabaseConfiguration(new DatabaseSchema(CentralDatabaseBackupReceiver.class.getPackage(), internalCentralDatabaseClassesList)), null);
 		}
 
@@ -1548,7 +1643,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		void notifyNewAuthenticatedMessage(AuthenticatedP2PMessage authenticatedP2PMessage) throws DatabaseException {
-			lockWrite();
+			finalizer.lockWrite();
 			try {
 				ConnectedPeers cp = initializedHooks.get(authenticatedP2PMessage.getHostDestination());
 
@@ -1560,11 +1655,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 			}
 			finally {
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 		}
 		void notifyNewAuthenticatedMessage(AuthenticatedMessageDestinedToCentralDatabaseBackup authenticatedMessage) throws DatabaseException {
-			lockWrite();
+			finalizer.lockWrite();
 			try {
 				if (isInitializedWithCentralBackup())
 				{
@@ -1572,7 +1667,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 			}
 			finally {
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 		}
 
@@ -1584,13 +1679,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		public boolean isInitialized(DecentralizedValue hostID) {
-			lockRead();
+			finalizer.lockRead();
 			try {
 				ConnectedPeers cp=initializedHooks.get(hostID);
 				return cp != null && cp.isConnected();
 			}
 			finally {
-				unlockRead();
+				finalizer.unlockRead();
 			}
 		}
 
@@ -1598,7 +1693,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			boolean notify = false;
 
 			try {
-				lockWrite();
+				finalizer.lockWrite();
 
 				if (!extendedTransactionInProgress && canNotify && notifier != null) {
 					notify = true;
@@ -1608,7 +1703,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 			finally
 			{
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 			if (notify)
 				notifier.newDatabaseEventDetected(DatabaseWrapper.this);
@@ -1624,7 +1719,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			
 			try
 			{
-				lockWrite();
+				finalizer.lockWrite();
 				if (this.extendedTransactionInProgress)
 					return null;
 
@@ -1644,8 +1739,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					}
 					if (events.isEmpty())
 						canNotify = true;
-					if (networkLogger!=null && networkLogger.isLoggable(Level.FINER)) {
-						networkLogger.finer("Send message " + e);
+					if (finalizer.networkLogger!=null && finalizer.networkLogger.isLoggable(Level.FINER)) {
+						finalizer.networkLogger.finer("Send message " + e);
 					}
 					return e;
 				}
@@ -1653,14 +1748,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			finally
 			{
 
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 		}
 
 		public DatabaseEvent waitNextEvent() throws InterruptedException, DatabaseException {
 
 			try {
-				lockWrite();
+				finalizer.lockWrite();
 				DatabaseEvent de;
 				while ((de = nextEvent()) == null) {
 					//noinspection ResultOfMethodCallIgnored
@@ -1670,7 +1765,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 			finally
 			{
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 			
 		}
@@ -1678,13 +1773,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		public void setNotifier(DatabaseNotifier notifier) {
 			
 			try {
-				lockWrite();
+				finalizer.lockWrite();
 				this.notifier = notifier;
 				this.canNotify = true;
 			}
 			finally
 			{
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 			
 		}
@@ -1700,7 +1795,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			getDatabaseTransactionEventsTable().cleanTmpTransactions();
 			
 			try {
-				lockWrite();
+				finalizer.lockWrite();
 				this.sendIndirectTransactions=sendIndirectTransactions;
                 if (initializedHooks.containsKey(local.getHostID())) {
 					throw DatabaseException.getDatabaseException(
@@ -1710,14 +1805,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				initializedHooks.put(localHostID, new ConnectedPeers(local, true, true));
                 if (notifier!=null)
                 	notifier.localHostInitialized(localHostID);
-				if (networkLogger!=null)
-					networkLogger.info("Local peer "+DatabaseWrapper.toString(localHostID)+" connected !");
+				if (finalizer.networkLogger!=null)
+					finalizer.networkLogger.info("Local peer "+DatabaseWrapper.toString(localHostID)+" connected !");
 
 				canNotify = true;
 			}
 			finally
 			{
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 			
 		}
@@ -1729,14 +1824,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 		void receivedHookSynchronizeRequest(HookSynchronizeRequest hookSynchronizeRequest) throws DatabaseException {
 			Map<String, Boolean> packagesToSynchronize=hookSynchronizeRequest.getPackagesToSynchronize(getLocalHostID());
-			lockRead();
+			finalizer.lockRead();
 			try {
 				if (packagesToSynchronize.keySet().stream().anyMatch(p -> getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations().noneMatch(p::equals))) {
 					return;
 				}
 			}
 			finally {
-				unlockRead();
+				finalizer.unlockRead();
 			}
 
 
@@ -1765,7 +1860,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		void connectPeerIfAvailable(DatabaseHooksTable.Record concernedSenderHook) throws DatabaseException {
-			lockWrite();
+			finalizer.lockWrite();
 			try {
 				ConnectedPeers cp=this.initializedHooks.get(concernedSenderHook.getHostID());
 				if (cp!=null)
@@ -1774,7 +1869,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 			}
 			finally {
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 
 
@@ -1929,7 +2024,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			DecentralizedValue peer=null;
 			ConnectedPeers cp=null;
 			try {
-				lockWrite();
+				finalizer.lockWrite();
 
 				if (fromCentral) {
 					ConnectedPeersWithCentralBackup cpcb= initializedHooksWithCentralBackup.get(hostID);
@@ -1944,7 +2039,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 			finally
 			{
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 			if (peer == null)
 				throw DatabaseException.getDatabaseException(
@@ -1985,7 +2080,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		void sendLastValidatedIDIfConnected(DatabaseHooksTable.Record hook) throws DatabaseException {
 			
 			try {
-				lockWrite();
+				finalizer.lockWrite();
 				ConnectedPeers cp=initializedHooks.get(hook.getHostID());
 				if (cp!=null && cp.isConnected()) {
 					addNewDatabaseEvent(new TransactionConfirmationEvents(
@@ -1996,7 +2091,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 			finally
 			{
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 			
 
@@ -2009,7 +2104,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					.getLastValidatedLocalTransactionIDs();
 
 			try {
-				lockWrite();
+				finalizer.lockWrite();
 				DecentralizedValue localHostID=getLocalHostID();
 				for (DecentralizedValue host : lastIds.keySet()) {
 					if (isInitialized(host)) {
@@ -2029,7 +2124,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 			} finally
 			{
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 			
 		}
@@ -2038,7 +2133,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			final long lastID = getTransactionIDTable().getLastTransactionID();
 
 			try {
-				lockWrite();
+				finalizer.lockWrite();
 
 				getDatabaseHooksTable().getRecords(new Filter<Record>() {
 
@@ -2064,7 +2159,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 			finally
 			{
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 
 		}
@@ -2077,7 +2172,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			long lastID = getTransactionIDTable().getLastTransactionID();
 			
 			try {
-				lockWrite();
+				finalizer.lockWrite();
 				DatabaseHooksTable.Record hook = getDatabaseHooksTable().getHook(peer.getHostID());
 				if (lastID > hook.getLastValidatedLocalTransactionID() && !peer.isTransferInProgress()) {
 					peer.setTransferInProgress(true);
@@ -2088,7 +2183,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 			finally
 			{
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 			
 			return lastID;
@@ -2097,7 +2192,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		void addNewTransactionConfirmationEvents(DecentralizedValue hostDestination, String packageString, long lastValidatedTransaction) throws DatabaseException {
 			try
 			{
-				lockWrite();
+				finalizer.lockWrite();
 				ConnectedPeersWithCentralBackup cp=this.initializedHooksWithCentralBackup.get(hostDestination);
 				if (cp!=null)
 				{
@@ -2112,12 +2207,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 			}
 			finally {
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 
 		}
 		private void addNewAuthenticatedDatabaseEvents(DatabaseHooksTable.Record hook) throws DatabaseException {
-			lockWrite();
+			finalizer.lockWrite();
 			try
 			{
 				List<DatabaseEvent> authenticatedMessages=tryToMerge(hook.getAuthenticatedMessagesQueueToSend(initializedHooks));
@@ -2143,7 +2238,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 			}
 			finally {
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 		}
 
@@ -2188,7 +2283,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 
 			try {
-				lockWrite();
+				finalizer.lockWrite();
 				if (e instanceof AuthenticatedMessageDestinedToCentralDatabaseBackup)
 				{
 					((AuthenticatedMessageDestinedToCentralDatabaseBackup) e).generateAndSetSignatures(databaseConfigurationsBuilder.getSecureRandom(), databaseConfigurationsBuilder.getSignatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup());
@@ -2222,7 +2317,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 			finally
 			{
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 			
 		}
@@ -2261,7 +2356,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 			DatabaseHooksTable.Record hook = null;
 			try {
-				lockWrite();
+				finalizer.lockWrite();
 				ConnectedPeers peer = initializedHooks.get(hostID);
 
 				if (peer == null) {
@@ -2270,14 +2365,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						throw DatabaseException.getDatabaseException(
 							new IllegalAccessException("hostID " + hostID + " has not been initialized !"));
 
-					for (Database d : sql_database.values())
+					for (Database d : finalizer.sql_database.values())
 						if (d.synchronizationPlanMessageComingFromCentralDatabaseBackup!=null && d.synchronizationPlanMessageComingFromCentralDatabaseBackup.getSourceChannel().equals(hostID))
 							d.cancelCurrentDatabaseInitialSynchronizationProcessFromCentralDatabaseBackup();
 
 					hook = getDatabaseHooksTable().getHook(hostID, true);
 					if (hook==null) {
-						if (networkLogger!=null)
-							networkLogger.info("peer "+DatabaseWrapper.toString(hostID)+" disconnected !");
+						if (finalizer.networkLogger!=null)
+							finalizer.networkLogger.info("peer "+DatabaseWrapper.toString(hostID)+" disconnected !");
 						cancelEventToSend(hostID, true);
 						if (notifier!=null)
 							notifier.hostDisconnected(hostID);
@@ -2294,8 +2389,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				peer.setConnected(false);
 
 				if (hook == null || !hook.concernsLocalDatabaseHost()) {
-					if (networkLogger!=null)
-						networkLogger.info("peer "+DatabaseWrapper.toString(hostID)+" disconnected !");
+					if (finalizer.networkLogger!=null)
+						finalizer.networkLogger.info("peer "+DatabaseWrapper.toString(hostID)+" disconnected !");
 
 					cancelEventToSend(hostID, false);
 					if (notifier!=null)
@@ -2313,12 +2408,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 				else {
 
-					if (networkLogger!=null)
-						networkLogger.info("Local peer "+DatabaseWrapper.toString(hostID)+" disconnected !");
+					if (finalizer.networkLogger!=null)
+						finalizer.networkLogger.info("Local peer "+DatabaseWrapper.toString(hostID)+" disconnected !");
 					for (ConnectedPeers h : initializedHooks.values()) {
 						h.setConnected(false);
-						if (networkLogger!=null)
-							networkLogger.info(DatabaseWrapper.toString(h.getHostID())+" disconnected !");
+						if (finalizer.networkLogger!=null)
+							finalizer.networkLogger.info(DatabaseWrapper.toString(h.getHostID())+" disconnected !");
 					}
 					this.events.clear();
 					initializedHooks.remove(hostID);
@@ -2331,7 +2426,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 			finally
 			{
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 
 
@@ -2355,13 +2450,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 		public boolean isSynchronizationActivatedWithChannelAndThroughCentralDatabaseBackup(DecentralizedValue hostChannel)
 		{
-			lockRead();
+			finalizer.lockRead();
 			try {
 				ConnectedPeersWithCentralBackup cp = this.initializedHooksWithCentralBackup.get(hostChannel);
 				return cp!=null;
 			}
 			finally {
-				unlockRead();
+				finalizer.unlockRead();
 			}
 		}
 		private boolean isSynchronizationSuspendedWith(DecentralizedValue hostChannel)
@@ -2460,7 +2555,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (r==null)
 				return;
 			try {
-				lockWrite();
+				finalizer.lockWrite();
 				DecentralizedValue hostID=r.getHostID();
 				ConnectedPeersWithCentralBackup cp=initializedHooksWithCentralBackup.get(hostID);
 
@@ -2485,14 +2580,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					synchronizeMetaData();
 				}
 			} finally {
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 		}
 		private void updateDistantBackupCenter(final DatabaseHooksTable.Record r, String databasePackage, final long lastValidatedDistantTransactionID, final long lastValidatedLocalTransactionID) throws DatabaseException {
 			if (r==null)
 				return;
 			try {
-				lockWrite();
+				finalizer.lockWrite();
 				ConnectedPeersWithCentralBackup cp=initializedHooksWithCentralBackup.get(r.getHostID());
 				if (cp==null)
 					return;
@@ -2511,12 +2606,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 
 			} finally {
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 		}
 		private void checkForNewCentralBackupDatabaseEvent() throws DatabaseException {
 			if (centralBackupInitialized) {
-				for (Map.Entry<Package, Database> e : sql_database.entrySet()) {
+				for (Map.Entry<Package, Database> e : finalizer.sql_database.entrySet()) {
 					if (e.getValue().backupRestoreManager != null) {
 						checkForNewBackupFilePartToSendToCentralDatabaseBackup(e.getKey());
 					}
@@ -2525,28 +2620,28 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		public boolean isInitializedWithCentralBackup(){
-			lockRead();
+			finalizer.lockRead();
 			try {
 				return centralBackupInitialized;
 			}
 			finally {
-				unlockRead();
+				finalizer.unlockRead();
 			}
 		}
 
 		public boolean isInitializedWithCentralBackup(DecentralizedValue hostID)
 		{
-			lockRead();
+			finalizer.lockRead();
 			try {
 				return centralBackupInitialized && initializedHooksWithCentralBackup.containsKey(hostID);
 			}
 			finally {
-				unlockRead();
+				finalizer.unlockRead();
 			}
 		}
 
 		public Set<String> getDatabasePackagesToSynchronizeWithCentralBackup() throws DatabaseException {
-			lockRead();
+			finalizer.lockRead();
 			try {
 				List<DatabaseTable.Record> l= getDatabaseTable().getRecords();
 				Set<String> res=new HashSet<>(l.size());
@@ -2557,17 +2652,17 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				return res;
 			}
 			finally {
-				unlockRead();
+				finalizer.unlockRead();
 			}
 		}
 
 		private void initDistantBackupCenterForThisHostWithStringPackages(Map<String, Long> lastValidatedTransactionsUTC) throws DatabaseException {
-			lockWrite();
+			finalizer.lockWrite();
 			try {
 				if (lastValidatedTransactionsUTC==null)
 					throw new NullPointerException();
 
-				for (Database d : sql_database.values())
+				for (Database d : finalizer.sql_database.values())
 					d.lastValidatedTransactionUTCForCentralBackup=Long.MIN_VALUE;
 				Set<String> authorizedPackagesToBeSynchronizedWithCentralDatabaseBackup=getDatabasePackagesToSynchronizeWithCentralBackup();
 				for (Map.Entry<String, Long> e : lastValidatedTransactionsUTC.entrySet()) {
@@ -2585,7 +2680,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 			}
 			finally {
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 
 		}
@@ -2609,7 +2704,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		private Map<DecentralizedValue, Long> getLastValidatedDistantIDs() throws DatabaseException {
 			final Map<DecentralizedValue, Long> lastValidatedDistantIDs=new HashMap<>();
 			minFilePartDurationBeforeBecomingFinalFilePart=Long.MAX_VALUE;
-			for (Database d : sql_database.values())
+			for (Database d : finalizer.sql_database.values())
 			{
 				if (d.backupRestoreManager!=null && d.configuration.getBackupConfiguration().getMaxBackupFileAgeInMs()<minFilePartDurationBeforeBecomingFinalFilePart)
 					minFilePartDurationBeforeBecomingFinalFilePart=d.configuration.getBackupConfiguration().getMaxBackupFileAgeInMs();
@@ -2698,7 +2793,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		public void centralDatabaseBackupAvailable() throws DatabaseException {
-			lockWrite();
+			finalizer.lockWrite();
 			try
 			{
 				centralBackupAvailable=true;
@@ -2709,11 +2804,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 			}
 			finally {
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 		}
 		public void centralDatabaseBackupDisconnected() throws DatabaseException {
-			lockWrite();
+			finalizer.lockWrite();
 			try
 			{
 				centralBackupAvailable=false;
@@ -2723,7 +2818,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				}
 			}
 			finally {
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 		}
 
@@ -2796,23 +2891,23 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		private void disconnectLocalHookFromItsCentralBackup() throws DatabaseException {
-			lockWrite();
+			finalizer.lockWrite();
 			try {
 				addNewDatabaseEvent(new DisconnectCentralDatabaseBackup(getLocalHostID()));
-				for (Database d : sql_database.values())
+				for (Database d : finalizer.sql_database.values())
 					d.cancelCurrentDatabaseInitialSynchronizationProcessFromCentralDatabaseBackup();
 				centralBackupInitialized=false;
 				backupDatabasePartsSynchronizingWithCentralDatabaseBackup.clear();
 			}
 			finally {
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 		}
 
 
 		void disconnectAllHooksFromThereBackups() throws DatabaseException {
 			try {
-				lockWrite();
+				finalizer.lockWrite();
 				disconnectLocalHookFromItsCentralBackup();
 				
 
@@ -2821,16 +2916,16 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					cancelEventToSend(peer.hookID, true);
 				}
 				initializedHooksWithCentralBackup.clear();
-				sql_database.values().forEach(d->d.initialSynchronizationPlanMessageNotAskedToCentralDatabaseBackup=false);
+				finalizer.sql_database.values().forEach(d->d.initialSynchronizationPlanMessageNotAskedToCentralDatabaseBackup=false);
 			}
 			finally
 			{
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 		}
 		void checkConnexionsToInit() throws DatabaseException
 		{
-			lockWrite();
+			finalizer.lockWrite();
 			try {
 				if (databaseConfigurationsBuilder.getConfigurations().getLocalPeer() != null) {
 
@@ -2845,12 +2940,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 			}
 			finally {
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 		}
 		void checkDisconnections() throws DatabaseException
 		{
-			lockWrite();
+			finalizer.lockWrite();
 			try {
 				if (databaseConfigurationsBuilder.getConfigurations().getLocalPeer() != null) {
 
@@ -2872,7 +2967,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 			}
 			finally {
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 		}
 
@@ -2920,14 +3015,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (!isInitialized())
 				return;
 			try {
-				lockWrite();
+				finalizer.lockWrite();
 				disconnectAll();
 				initializedHooks.clear();
 				//initializingHooks.clear();
 				centralBackupAvailable=false;
 			}
 			finally {
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 		}
 
@@ -2940,7 +3035,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				return;
 
 			try {
-				lockWrite();
+				finalizer.lockWrite();
 
 				ConnectedPeers cp=initializedHooks.get(peerID);
 				if (cp!=null)
@@ -2948,22 +3043,22 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				if (peerID.equals(getLocalHostID()))
 					return;
 				initializedHooks.put(peerID, new ConnectedPeers(peerID, false));
-				for (Database d : sql_database.values())
+				for (Database d : finalizer.sql_database.values())
 					d.cancelCurrentDatabaseInitialSynchronizationProcessFromCentralDatabaseBackup();
 				sendAvailableDatabaseTo(peerID);
-				if (networkLogger!=null)
-					networkLogger.info("Peer "+DatabaseWrapper.toString(peerID)+" available for connection !");
+				if (finalizer.networkLogger!=null)
+					finalizer.networkLogger.info("Peer "+DatabaseWrapper.toString(peerID)+" available for connection !");
 
 			}
 			finally {
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 
 		}
 
 		public void peerDisconnected(DecentralizedValue peerID) throws DatabaseException {
 			try {
-				lockWrite();
+				finalizer.lockWrite();
 				ConnectedPeers cp=initializedHooks.get(peerID);
 
 				if (cp!=null && cp.isConnected())
@@ -2971,7 +3066,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				initializedHooks.remove(peerID);
 				if (initializedHooks.size()==0 && isInitializedWithCentralBackup())
 				{
-					for (Database d : sql_database.values())
+					for (Database d : finalizer.sql_database.values())
 					{
 						if (d.configuration.isSynchronizedWithCentralBackupDatabase())
 							checkFirstIndirectSynchronizationsWithCentralDatabaseBackup(d);
@@ -2982,7 +3077,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 			}
 			finally {
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 		}
 
@@ -2990,7 +3085,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			if (hostID == null)
 				throw new NullPointerException("hostID");
 			try {
-				lockWrite();
+				finalizer.lockWrite();
 				ConnectedPeers cp=initializedHooks.get(hostID);
 				if (cp==null)
 					throw DatabaseException.getDatabaseException(
@@ -3003,7 +3098,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 			finally
 			{
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 			DatabaseHooksTable.Record r = getDatabaseHooksTable().getHook(hostID, true);
 			if (r==null)
@@ -3032,7 +3127,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 			
 			try {
-				lockWrite();
+				finalizer.lockWrite();
 				ConnectedPeers cp=initializedHooks.get(r.getHostID());
 				if (cp==null)
 					throw DatabaseException.getDatabaseException(
@@ -3049,14 +3144,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				addNewAuthenticatedDatabaseEvents(r);
 				validateLastSynchronization(r.getHostID(),
 						lastValidatedTransactionID, false);
-				if (networkLogger!=null)
-					networkLogger.info("Peer "+DatabaseWrapper.toString(cp.getHostID())+" connected !");
+				if (finalizer.networkLogger!=null)
+					finalizer.networkLogger.info("Peer "+DatabaseWrapper.toString(cp.getHostID())+" connected !");
 				if (notifier!=null && !r.concernsLocalDatabaseHost())
 					notifier.hostConnected(r.getHostID());
 			}
 			finally
 			{
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 			
 		}
@@ -3092,7 +3187,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 			
 			try {
-				lockWrite();
+				finalizer.lockWrite();
 				ConnectedPeers cp;
 				cp = initializedHooks.get(idCorrection.getHostSource());
 				if (cp == null || !cp.isConnected())
@@ -3101,7 +3196,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}
 			finally
 			{
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 			
 			lastIDCorrection(idCorrection.getHostSource(), idCorrection.getLastValidatedTransaction() );
@@ -3140,11 +3235,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 
 		private void validateLastSynchronizationWithCentralDatabaseBackup(String _package, long lastValidatedTransactionUTC) throws DatabaseException {
-			lockWrite();
+			finalizer.lockWrite();
 			try {
 				if(centralBackupInitialized)
 				{
-					for (Map.Entry<Package, Database> e : sql_database.entrySet())
+					for (Map.Entry<Package, Database> e : finalizer.sql_database.entrySet())
 					{
 						if (e.getKey().getName().equals(_package))
 						{
@@ -3156,7 +3251,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 			}
 			finally {
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 		}
 		private void validateLastSynchronizationWithCentralDatabaseBackup(Database d, long lastValidatedTransactionUTC) throws DatabaseException {
@@ -3245,21 +3340,21 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		void checkForNewBackupFilePartToSendToCentralDatabaseBackup(Package p) throws DatabaseException {
-			lockWrite();
+			finalizer.lockWrite();
 			try {
 				if (this.centralBackupInitialized)
 				{
 					if (backupDatabasePartsSynchronizingWithCentralDatabaseBackup.contains(p.getName())) {
 						return;
 					}
-					Database db=sql_database.get(p);
+					Database db=finalizer.sql_database.get(p);
 					if (db!=null && db.configuration.isSynchronizedWithCentralBackupDatabase() && !db.isCurrentDatabaseInRestorationProcess()){
 						validateLastSynchronizationWithCentralDatabaseBackup(db, db.lastValidatedTransactionUTCForCentralBackup );
 					}
 				}
 			}
 			finally {
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 		}
 
@@ -3376,8 +3471,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					Long timeUTCInMs=dc.getTimeUTCInMsForRestoringDatabaseToOldVersion();
 					if (timeUTCInMs==null)
 					{
-						if (networkLogger!=null && networkLogger.isLoggable(Level.FINE))
-							networkLogger.fine("No time of restoration is given whereas restoration is enabled. Canceling restoration.");
+						if (finalizer.networkLogger!=null && finalizer.networkLogger.isLoggable(Level.FINE))
+							finalizer.networkLogger.fine("No time of restoration is given whereas restoration is enabled. Canceling restoration.");
 						d.cancelCurrentDatabaseRestorationProcessFromCentralDatabaseBackup();
 					}
 					else
@@ -3394,8 +3489,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 							addNewDatabaseEvent(new AskForDatabaseBackupPartDestinedToCentralDatabaseBackup(d.configuration.getDatabaseSchema().getPackage().getName(), getLocalHostID(), d.temporaryBackupRestoreManagerChannelComingFromDistantBackupManager, new FileCoordinate(lts , FileCoordinate.Boundary.UPPER_LIMIT), AskForDatabaseBackupPartDestinedToCentralDatabaseBackup.Context.RESTORATION));
 						}
 						else {
-							if (networkLogger!=null && networkLogger.isLoggable(Level.FINE))
-								networkLogger.fine("Apply restoration");
+							if (finalizer.networkLogger!=null && finalizer.networkLogger.isLoggable(Level.FINE))
+								finalizer.networkLogger.fine("Apply restoration");
 							getDatabaseConfigurationsBuilder().applyRestorationIfNecessary(d);
 							backupDatabasePartsSynchronizingWithCentralDatabaseBackup.remove(d.configuration.getDatabaseSchema().getPackage().getName());
 							checkForNewBackupFilePartToSendToCentralDatabaseBackup(d.configuration.getDatabaseSchema().getPackage());
@@ -3477,7 +3572,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			{
 				String pname = backupPart.getMetaData().getPackageString();
 				if (getDatabasePackagesToSynchronizeWithCentralBackup().contains(pname)) {
-					for (Map.Entry<Package, Database> e : sql_database.entrySet()) {
+					for (Map.Entry<Package, Database> e : finalizer.sql_database.entrySet()) {
 						if (e.getKey().getName().equals(pname)) {
 							Database d = e.getValue();
 							switch (context)
@@ -3492,15 +3587,15 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 								{
 									this.backupDatabasePartsSynchronizingWithCentralDatabaseBackup.remove(backupPart.getMetaData().getPackageString());
 									if (!d.isCurrentDatabaseInRestorationProcessFromCentralDatabaseBackup()) {
-										if (networkLogger!=null && networkLogger.isLoggable(Level.FINE))
-											networkLogger.fine("Received backup part from central server, but the current database is not in a restoration process. Ignoring.");
+										if (finalizer.networkLogger!=null && finalizer.networkLogger.isLoggable(Level.FINE))
+											finalizer.networkLogger.fine("Received backup part from central server, but the current database is not in a restoration process. Ignoring.");
 										return;
 									}
 									d.setTemporaryBackupRestoreManagerChannelComingFromDistantBackupManager(backupPart.getChannelHost());
 									if (d.temporaryBackupRestoreManagerComingFromDistantBackupManager.importEncryptedBackupPartComingFromCentralDatabaseBackup(backupPart, databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup(), true))
 										checkAskForTemporaryDatabaseBackupPartDestinedToCentralDatabaseBackup(d);
-									else if (networkLogger!=null && networkLogger.isLoggable(Level.FINE))
-										networkLogger.fine("Received backup part from central server, but something was wrong during import.");
+									else if (finalizer.networkLogger!=null && finalizer.networkLogger.isLoggable(Level.FINE))
+										finalizer.networkLogger.fine("Received backup part from central server, but something was wrong during import.");
 								}
 									break;
 								/*case INITIAL_SYNCHRONIZATION:
@@ -3585,8 +3680,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 		public void received(DatabaseEventToSend data) throws DatabaseException, IOException {
-			if (networkLogger!=null && networkLogger.isLoggable(Level.FINER))
-				networkLogger.finer("Received message : "+data);
+			if (finalizer.networkLogger!=null && finalizer.networkLogger.isLoggable(Level.FINER))
+				finalizer.networkLogger.finer("Received message : "+data);
 			if (data instanceof AuthenticatedP2PMessage)
 				received((AuthenticatedP2PMessage)data, false);
 			else if (data instanceof P2PDatabaseEventToSend)
@@ -3637,15 +3732,15 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		private void received(IndirectMessagesDestinedToAndComingFromCentralDatabaseBackup message) throws DatabaseException, IOException {
 			Set<String> packagesToCheck=new HashSet<>();
 			for (AuthenticatedP2PMessage a : message.getAuthenticatedP2PMessages(databaseConfigurationsBuilder.getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup())) {
-				if (networkLogger!=null && networkLogger.isLoggable(Level.FINER))
-					networkLogger.finer("Received message : "+a);
+				if (finalizer.networkLogger!=null && finalizer.networkLogger.isLoggable(Level.FINER))
+					finalizer.networkLogger.finer("Received message : "+a);
 				received(a, true);
 				if (a instanceof HookSynchronizeRequest)
 				{
 					packagesToCheck.addAll(((HookSynchronizeRequest) a).getPackagesToSynchronize(a.getHostSource()).keySet());
 				}
 			}
-			for (Database d : sql_database.values()) {
+			for (Database d : finalizer.sql_database.values()) {
 				if (packagesToCheck.contains(d.configuration.getDatabaseSchema().getPackage().getName()))
 					checkFirstIndirectSynchronizationsWithCentralDatabaseBackup(d);
 			}
@@ -3704,7 +3799,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		RECORD_TO_REMOVE_NOT_FOUND, RECORD_TO_REMOVE_HAS_DEPENDENCIES, RECORD_TO_UPDATE_NOT_FOUND, RECORD_TO_UPDATE_HAS_INCOMPATIBLE_PRIMARY_KEYS, RECORD_TO_UPDATE_HAS_DEPENDENCIES_NOT_FOUND, RECORD_TO_ADD_ALREADY_PRESENT, RECORD_TO_ADD_HAS_INCOMPATIBLE_PRIMARY_KEYS, RECORD_TO_ADD_HAS_DEPENDENCIES_NOT_FOUND,
 	}
 	void checkNotAskForDatabaseBackupPartDestinedToCentralDatabaseBackup(Package databasePackage) throws DatabaseException {
-		Database d=sql_database.get(databasePackage);
+		Database d=finalizer.sql_database.get(databasePackage);
 		if (d==null)
 			throw new DatabaseException("Database "+databasePackage.getName()+" is not loaded !");
 
@@ -3714,22 +3809,22 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	public Set<DatabaseConfiguration> getLoadedDatabaseConfigurations()
 	{
-		lockRead();
+		finalizer.lockRead();
 		try {
 			Set<DatabaseConfiguration> res = new HashSet<>();
-			for (Database d : sql_database.values()) {
+			for (Database d : finalizer.sql_database.values()) {
 				res.add(d.configuration);
 			}
 			return res;
 		}
 		finally {
-			unlockRead();
+			finalizer.unlockRead();
 		}
 	}
 
 	private Stream<String> getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations()
 	{
-		return sql_database.values()
+		return finalizer.sql_database.values()
 				.stream()
 				.map(d-> d.configuration)
 				.filter(dc -> {
@@ -3752,7 +3847,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	}
 	private Stream<String> getLoadedDatabaseConfigurationsPresentIntoGlobalDatabaseConfigurations(DecentralizedValue hostID)
 	{
-		return sql_database.values()
+		return finalizer.sql_database.values()
 				.stream()
 				.map(d-> d.configuration)
 				.filter(dc -> {
@@ -3936,22 +4031,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 	}
 
-	private Lock getLocker() {
-		synchronized (DatabaseWrapper.class) {
-			String f = databaseIdentifier;
 
-			Lock rwl = lockers.get(f);
-			if (rwl == null) {
-
-				rwl = new ReentrantLock();
-				lockers.put(f, rwl);
-				number_of_shared_lockers.put(f, 1);
-			} else
-				number_of_shared_lockers.put(f, number_of_shared_lockers.get(f) + 1);
-
-			return rwl;
-		}
-	}
 
 	DatabaseTransactionEventsTable getTransactionsTable() throws DatabaseException {
 		if (transactionTable == null)
@@ -4006,7 +4086,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	void checkMinimumValidatedTransactionIds() throws DatabaseException {
 		long minIds=Long.MIN_VALUE;
-		for (Database d : sql_database.values())
+		for (Database d : finalizer.sql_database.values())
 		{
 			if (d.backupRestoreManager!=null) {
 				long lastTransactionID = d.backupRestoreManager.getLastTransactionID();
@@ -4047,7 +4127,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				 * try {
 				 */
 				if (sql_connection != null && !sql_connection.isValid(5))
-					closeConnection(sql_connection, false);
+					finalizer.closeConnection(sql_connection, false);
 				if (sql_connection == null || sql_connection.isClosed())
 					sql_connection = reopenConnection();
 
@@ -4068,95 +4148,22 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	public abstract boolean supportNoCacheParam();
 
-	protected abstract void closeConnection(Connection c, boolean deepClosing) throws SQLException;
+
 
 	public boolean isClosed() {
-		return closed;
+		return isCleaned();
 	}
 
 	@Override
 	public final void close() {
-		if (!closed) {
-
-			// synchronized(this)
-			{
-				try {
-
-					
-					try {
-						lockWrite();
-						setDatabaseLogLevel(Level.OFF);
-						setNetworkLogLevel(Level.OFF);
-						closed = true;
-						//removeClosedDatabaseWrapper(this);
-						for (Iterator<Session> it = threadPerConnection.iterator(); it.hasNext();) {
-							Session s = it.next();
-							/*
-							 * if (threadPerConnectionInProgress.containsKey(c.getKey())) continue;
-							 */
-							try {
-								if (!s.getConnection().isClosed())
-									closeConnection(s.getConnection(), true);
-							} catch (SQLException e) {
-								e.printStackTrace();
-							} finally {
-								it.remove();
-							}
-						}
-					}
-					finally
-					{
-						unlockWrite();
-					}
-					
-				} finally {
-					synchronized(DatabaseWrapper.class)
-					{
-						DatabaseWrapper.lockers.remove(databaseIdentifier);
-						Integer i=DatabaseWrapper.number_of_shared_lockers.get(databaseIdentifier);
-						if (i!=null) {
-							int v = i - 1;
-							if (v == 0)
-								DatabaseWrapper.number_of_shared_lockers.remove(databaseIdentifier);
-							else if (v > 0)
-								DatabaseWrapper.number_of_shared_lockers.put(databaseIdentifier, v);
-							else
-								throw new IllegalAccessError();
-						}
-						sql_database = new HashMap<>();
-					}
-					
-					System.gc();
-				}
-			}
-			/*
-			 * try(ReadWriteLock.Lock lock=locker.getAutoCloseableWriteLock()) {
-			 * closeConnection(); } catch(SQLException se) { throw
-			 * DatabaseException.getDatabaseException(se); } finally {
-			 * try(ReadWriteLock.Lock lock=locker.getAutoCloseableWriteLock()) {
-			 * DatabaseWrapper.lockers.remove(database_name); int
-			 * v=DatabaseWrapper.number_of_shared_lockers.get(database_name).intValue()-1;
-			 * if (v==0) DatabaseWrapper.number_of_shared_lockers.remove(database_name);
-			 * else if (v>0) DatabaseWrapper.number_of_shared_lockers.put(database_name, new
-			 * Integer(v)); else throw new IllegalAccessError(); sql_database.clear(); }
-			 * closed=true; }
-			 */
-		}
+		clean();
 	}
 
-	@SuppressWarnings("deprecation")
-    @Override
-	protected void finalize() {
-		try {
-			close();
-		} catch (Exception ignored) {
 
-		}
-	}
 
 	@Override
 	public int hashCode() {
-		return databaseName.hashCode();
+		return finalizer.databaseName.hashCode();
 	}
 
 	@Override
@@ -4171,30 +4178,16 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 	@Override
 	public String toString() {
-		return databaseName;
+		return finalizer.databaseName;
 	}
 
-	private final Lock locker;
+
 	
-	protected void lockRead()
-	{
-		locker.lock();
-	}
+
 	
-	protected void unlockRead()
-	{
-		locker.unlock();
-	}
+
 	
-	protected void lockWrite()
-	{
-		locker.lock();
-	}
-	
-	protected void unlockWrite()
-	{
-		locker.unlock();
-	}
+
 
 	protected int getMaxKeySize()
 	{
@@ -4288,7 +4281,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				return false;
 			if (!transactionToSynchronize)
 				return false;
-			Database d = sql_database.get(p);
+			Database d = finalizer.sql_database.get(p);
 
 			if (d != null) {
 				/*
@@ -4997,7 +4990,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	}
 
 	private final List<Session> threadPerConnectionInProgress = new ArrayList<>();
-	private final List<Session> threadPerConnection = new ArrayList<>();
+
 
 	private static Session getSession(List<Session> sessions, Thread t) {
 		for (Session s : sessions)
@@ -5031,14 +5024,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	ConnectionWrapper isNewTransactionAndStartIt() throws DatabaseException {
 		Thread t = Thread.currentThread();
 		try {
-			lockWrite();
+			finalizer.lockWrite();
 			Session c = getSession(threadPerConnectionInProgress, t);
 
 			if (c == null) {
-				c = getSession(threadPerConnection, t);
+				c = getSession(finalizer.threadPerConnection, t);
 				if (c == null) {
 					c = new Session(getOpenedSqlConnection(null), t);
-					threadPerConnection.add(c);
+					finalizer.threadPerConnection.add(c);
 				}
 				threadPerConnectionInProgress.add(c);
 
@@ -5048,7 +5041,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 		finally
 		{
-			unlockWrite();
+			finalizer.unlockWrite();
 		}
 		
 	}
@@ -5056,7 +5049,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	protected Session getConnectionAssociatedWithCurrentThread() throws DatabaseException {
 		
 		try {
-			lockWrite();
+			finalizer.lockWrite();
 			Session c = getSession(threadPerConnectionInProgress, Thread.currentThread());
 
 			Connection c2 = getOpenedSqlConnection(c);
@@ -5069,7 +5062,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 		finally
 		{
-			unlockWrite();
+			finalizer.unlockWrite();
 		}
 
 	}
@@ -5078,21 +5071,21 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		try {
 			
 			try {
-				lockWrite();
+				finalizer.lockWrite();
 				Session c = removeSession(threadPerConnectionInProgress, Thread.currentThread());
 				if (c == null)
 					throw new IllegalAccessError();
-				if (closed || alwaysDisconnectAfterOnTransaction) {
+				if (isClosed() || alwaysDisconnectAfterOnTransaction) {
 					if (!c.getConnection().isClosed())
-						closeConnection(c.getConnection(), true);
+						finalizer.closeConnection(c.getConnection(), true);
 				}
 
-				for (Iterator<Session> it = threadPerConnection.iterator(); it.hasNext();) {
+				for (Iterator<Session> it = finalizer.threadPerConnection.iterator(); it.hasNext();) {
 					Session s = it.next();
 
 					if (!s.getThread().isAlive()) {
 						if (!s.getConnection().isClosed() && !s.getConnection().isClosed())
-							closeConnection(s.getConnection(), alwaysDisconnectAfterOnTransaction);
+							finalizer.closeConnection(s.getConnection(), alwaysDisconnectAfterOnTransaction);
 
 						it.remove();
 					}
@@ -5103,7 +5096,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 		finally
 		{
-			unlockWrite();
+			finalizer.unlockWrite();
 		}
 		
 	}
@@ -5323,13 +5316,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				if (needsLock)
 				{
 					if (writeData)
-						lockWrite();
+						finalizer.lockWrite();
 					else
-						lockRead();
+						finalizer.lockRead();
 				}
 				if (databasePackage!=null)
 				{
-					db=sql_database.get(databasePackage);
+					db=finalizer.sql_database.get(databasePackage);
 					if (db!=null)
 					{
 						if (db.isCurrentDatabaseInRestorationProcessFromExternalBackup())
@@ -5366,7 +5359,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						try
 						{
 							if (writeData)
-								lockWrite();
+								finalizer.lockWrite();
 							commit(cw.connection.getConnection());
 							if (writeData)
 								cw.connection.refreshAllMemoryTables();
@@ -5374,7 +5367,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						finally
 						{
 							if (writeData)
-								unlockWrite();
+								finalizer.unlockWrite();
 						}
 						if (writeData) {
 							
@@ -5489,9 +5482,9 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			} finally {
 				if (needsLock) {
 					if (writeData)
-						unlockWrite();
+						finalizer.unlockWrite();
 					else
-						unlockRead();
+						finalizer.unlockRead();
 				}
 
 			}
@@ -5637,7 +5630,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	final Table<?> getTableInstance(String _table_name, @SuppressWarnings("SameParameterValue") int databaseVersion) throws DatabaseException {
 		
 		try {
-			lockWrite();
+			finalizer.lockWrite();
 			if (_table_name == null)
 				throw new NullPointerException("The parameter _table_name is a null pointer !");
 
@@ -5656,7 +5649,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 		finally
 		{
-			unlockWrite();
+			finalizer.unlockWrite();
 		}
 		
 		/*
@@ -5723,7 +5716,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			throws DatabaseException {
 
 		try {
-			lockWrite();
+			finalizer.lockWrite();
 			if (_class_table == null)
 				throw new NullPointerException("The parameter _class_table is a null pointer !");
 			//Database db = this.sql_database.get(_class_table.getPackage());
@@ -5731,19 +5724,19 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				databaseVersion=0;
 			else if (databaseVersion<0)
 				databaseVersion=getCurrentDatabaseVersion(_class_table.getPackage());
-			Database db=sql_database.get(_class_table.getPackage());
+			Database db=finalizer.sql_database.get(_class_table.getPackage());
 			DatabasePerVersion dpv=db==null?null:db.tables_per_versions.get(databaseVersion);
 
 			if (dpv == null) {
 				if (_class_table.getPackage().equals(DatabaseWrapper.class.getPackage()) && (actualDatabaseLoading == null
 						|| !actualDatabaseLoading.getConfiguration().getDatabaseSchema().getPackage().equals(_class_table.getPackage()) )) {
 					loadDatabase(new DatabaseConfiguration(new DatabaseSchema(_class_table.getPackage(), internalDatabaseClassesList)), 0, null);
-					db=sql_database.get(_class_table.getPackage());
+					db=finalizer.sql_database.get(_class_table.getPackage());
 					dpv=db.tables_per_versions.get(databaseVersion);
 
 				} else {
 					try {
-						lockWrite();
+						finalizer.lockWrite();
 						if (databaseVersion<0)
 							databaseVersion=getCurrentDatabaseVersion(_class_table.getPackage());
 						if (actualDatabaseLoading != null && actualDatabaseLoading.getConfiguration().getDatabaseSchema().getPackage()
@@ -5757,7 +5750,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					}
 					finally
 					{
-						unlockWrite();
+						finalizer.unlockWrite();
 					}
 				}
 
@@ -5773,7 +5766,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 		finally
 		{
-			unlockWrite();
+			finalizer.unlockWrite();
 		}
 
 	}
@@ -5823,16 +5816,16 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	final void deleteDatabase(final DatabaseConfiguration configuration, boolean notifyNewCompatibleDatabases, final int databaseVersion, boolean databaseReplacedByNewVersionThatIsAlreadySynchronized) throws DatabaseException {
 		try  {
 
-			lockWrite();
-			if (databaseLogger!=null && databaseLogger.isLoggable(Level.FINE))
-				databaseLogger.fine("Start database removing: "+configuration+" (version="+databaseVersion+")");
+			finalizer.lockWrite();
+			if (finalizer.databaseLogger!=null && finalizer.databaseLogger.isLoggable(Level.FINE))
+				finalizer.databaseLogger.fine("Start database removing: "+configuration+" (version="+databaseVersion+")");
 			runTransaction(new Transaction() {
 
 				@Override
 				public Void run(DatabaseWrapper sql_connection) throws DatabaseException {
 
 					try {
-						if (!sql_database.containsKey(configuration.getDatabaseSchema().getPackage())) {
+						if (!finalizer.sql_database.containsKey(configuration.getDatabaseSchema().getPackage())) {
 							configuration.setCreateDatabaseIfNecessaryAndCheckItDuringCurrentSession(false);
 							loadDatabase(configuration, databaseVersion, null);
 						}
@@ -5841,7 +5834,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						return null;
 					}
 
-					Database db = sql_database.get(configuration.getDatabaseSchema().getPackage());
+					Database db = finalizer.sql_database.get(configuration.getDatabaseSchema().getPackage());
 					if (db == null)
 						throw new IllegalAccessError();
 
@@ -5864,14 +5857,14 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 
 
-					HashMap<Package, Database> sd = new HashMap<>(sql_database);
+					HashMap<Package, Database> sd = new HashMap<>(finalizer.sql_database);
 					db=sd.get(configuration.getDatabaseSchema().getPackage());
 					db.tables_per_versions.remove(databaseVersion);
 					if (db.tables_per_versions.size()==0)
 						sd.remove(configuration.getDatabaseSchema().getPackage());
 					else
 						db.updateCurrentVersion();
-					sql_database = sd;
+					finalizer.sql_database = sd;
 					if (!databaseReplacedByNewVersionThatIsAlreadySynchronized)
 						getDatabaseTable().removeRecord("databasePackageName", configuration.getDatabaseSchema().getPackage().getName());
 					return null;
@@ -5892,15 +5885,15 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					
 				}
 			}, true);
-			if (databaseLogger!=null)
-				databaseLogger.info("Database removed: "+configuration+" (version="+databaseVersion+")");
+			if (finalizer.databaseLogger!=null)
+				finalizer.databaseLogger.info("Database removed: "+configuration+" (version="+databaseVersion+")");
 			if (notifyNewCompatibleDatabases && !databaseReplacedByNewVersionThatIsAlreadySynchronized)
 				getSynchronizer().broadcastAvailableDatabase();
 
 		}
 		finally
 		{
-			unlockWrite();
+			finalizer.unlockWrite();
 		}
 	}
 
@@ -5938,11 +5931,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		return getCurrentDatabaseVersion(p, forceUpdate, -1);
 	}
 	int getCurrentDatabaseVersion(final Package p, final boolean forceUpdate, final int defaultValue) throws DatabaseException {
-		lockRead();
+		finalizer.lockRead();
 		try {
 			Database db = null;
 			if (!forceUpdate)
-				db = sql_database.get(p);
+				db = finalizer.sql_database.get(p);
 			if (db == null || db.getCurrentVersion()==-1) {
 				final Database fdb=db;
 				return (int) runTransaction(new Transaction() {
@@ -5997,13 +5990,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 				return db.getCurrentVersion();
 		}
 		finally {
-			unlockRead();
+			finalizer.unlockRead();
 		}
 	}
 	final void validateNewDatabaseVersionAndDeleteOldVersion(final DatabaseConfiguration configuration, final int oldDatabaseVersion, final int newDatabaseVersion) throws DatabaseException {
 		try {
 
-			lockWrite();
+			finalizer.lockWrite();
 			runTransaction(new Transaction() {
 				@Override
 				public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
@@ -6018,7 +6011,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 						 if (r != 1)
 							throw new DatabaseException("no record found (r="+r+")");
-						Database db = sql_database.get(configuration.getDatabaseSchema().getPackage());
+						Database db = finalizer.sql_database.get(configuration.getDatabaseSchema().getPackage());
 						if (oldDatabaseVersion >= 0) {
 
 							HashMap<Class<? extends Table<?>>, Table<?>> hm = new HashMap<>(db.tables_per_versions.get(oldDatabaseVersion).tables_instances);
@@ -6058,7 +6051,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			}, false);
 		}
 		finally {
-			unlockWrite();
+			finalizer.unlockWrite();
 		}
 
 	}
@@ -6204,7 +6197,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 
 
 	private boolean isDatabaseLoadedImpl(DatabaseConfiguration configuration, int databaseVersion) throws DatabaseException {
-		Database db = sql_database.get(configuration.getDatabaseSchema().getPackage());
+		Database db = finalizer.sql_database.get(configuration.getDatabaseSchema().getPackage());
 		if (db != null) {
 			return (databaseVersion == -1 && db.tables_per_versions.containsKey(db.getCurrentVersion()))
 					|| (databaseVersion != -1 && db.tables_per_versions.containsKey(databaseVersion));
@@ -6212,13 +6205,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		return false;
 	}
 	boolean isDatabaseLoaded(DatabaseConfiguration configuration) throws DatabaseException {
-		lockRead();
+		finalizer.lockRead();
 		try{
 			return isDatabaseLoadedImpl(configuration, -1);
 
 		}
 		finally {
-			unlockRead();
+			finalizer.unlockRead();
 		}
 	}
 
@@ -6231,10 +6224,10 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 								final DatabaseLifeCycles lifeCycles) throws DatabaseException {
 
 		//final AtomicBoolean allNotFound = new AtomicBoolean(true);
-		if (this.closed)
+		if (isClosed())
 			throw new DatabaseException("The given Database was closed : " + this);
-		if (databaseLogger!=null && databaseLogger.isLoggable(Level.FINE))
-			databaseLogger.fine("Start configuration loading: "+configuration);
+		if (finalizer.databaseLogger!=null && finalizer.databaseLogger.isLoggable(Level.FINE))
+			finalizer.databaseLogger.fine("Start configuration loading: "+configuration);
 		if (isDatabaseLoadedImpl(configuration, databaseVersion))
 			throw new DatabaseException("There is already a database associated to the given wrapper ");
 
@@ -6262,7 +6255,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					boolean removeOldDatabase = false;
 					if (oldSchema != null && lifeCycles != null) {
 						try {
-							Database db=sql_database.get(oldSchema.getPackage());
+							Database db=finalizer.sql_database.get(oldSchema.getPackage());
 							if (db!=null)
 								oldConfig=db.configuration;
 							else {
@@ -6271,11 +6264,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 								loadDatabase(oldConfig, lifeCycles);
 							}
 							this.actualDatabaseLoading=actualDatabaseLoading;
-							if (databaseLogger!=null && databaseLogger.isLoggable(Level.FINE))
-								databaseLogger.fine("Transfer database from old to new configuration: "+configuration);
+							if (finalizer.databaseLogger!=null && finalizer.databaseLogger.isLoggable(Level.FINE))
+								finalizer.databaseLogger.fine("Transfer database from old to new configuration: "+configuration);
 							lifeCycles.transferDatabaseFromOldVersion(this, configuration);
-							if (databaseLogger!=null && databaseLogger.isLoggable(Level.FINE))
-								databaseLogger.fine("Transfer OK ");
+							if (finalizer.databaseLogger!=null && finalizer.databaseLogger.isLoggable(Level.FINE))
+								finalizer.databaseLogger.fine("Transfer OK ");
 							oldDatabaseReplaced=true;
 							removeOldDatabase = lifeCycles.hasToRemoveOldDatabase(oldConfig);
 						} catch (DatabaseException e) {
@@ -6284,11 +6277,11 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 						}
 					}
 					if (lifeCycles != null) {
-						if (databaseLogger!=null && databaseLogger.isLoggable(Level.FINE))
-							databaseLogger.fine("Starting post database creation script OK: "+configuration);
+						if (finalizer.databaseLogger!=null && finalizer.databaseLogger.isLoggable(Level.FINE))
+							finalizer.databaseLogger.fine("Starting post database creation script OK: "+configuration);
 						lifeCycles.afterDatabaseCreation(this, configuration);
-						if (databaseLogger!=null && databaseLogger.isLoggable(Level.FINE))
-							databaseLogger.fine("Post database creation script OK: "+configuration);
+						if (finalizer.databaseLogger!=null && finalizer.databaseLogger.isLoggable(Level.FINE))
+							finalizer.databaseLogger.fine("Post database creation script OK: "+configuration);
 						if (removeOldDatabase)
 							deleteDatabase(oldConfig, false, databaseVersion, false);
 					}
@@ -6304,7 +6297,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 
 
-		HashMap<Package, Database> sd = new HashMap<>(sql_database);
+		HashMap<Package, Database> sd = new HashMap<>(finalizer.sql_database);
 		Database db=sd.get(configuration.getDatabaseSchema().getPackage());
 
 		if (db==null) {
@@ -6318,12 +6311,12 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			db.tables_per_versions.put(databaseVersion, dpv);
 			//db.updateCurrentVersion();
 		}
-		sql_database = sd;
+		finalizer.sql_database = sd;
 		configuration.getDatabaseSchema().setDatabaseWrapper(this);
 		if (initBackupRestore)
 			actualDatabaseLoading.initBackupRestoreManager(this, getDatabaseDirectory(), configuration);
-		if (databaseLogger!=null)
-			databaseLogger.info("Configuration loaded: "+configuration);
+		if (finalizer.databaseLogger!=null)
+			finalizer.databaseLogger.info("Configuration loaded: "+configuration);
 		return oldDatabaseReplaced;
 
 	}
@@ -6359,7 +6352,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 			databaseVersion=0;
 		Reference<Boolean> allNotFound=new Reference<>(false);
 		try  {
-			lockWrite();
+			finalizer.lockWrite();
 			loadDatabaseImpl(configuration,
 					internalPackage,
 					databaseVersion,
@@ -6370,13 +6363,13 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 		finally
 		{
-			unlockWrite();
+			finalizer.unlockWrite();
 		}
 	}
 	final void checkDatabaseToUnload() throws DatabaseException {
 		try  {
-			lockWrite();
-			HashMap<Package, Database> sd = new HashMap<>(sql_database);
+			finalizer.lockWrite();
+			HashMap<Package, Database> sd = new HashMap<>(finalizer.sql_database);
 			for (Iterator<Map.Entry<Package, Database>> it=sd.entrySet().iterator();it.hasNext();)
 			{
 				Map.Entry<Package, Database> e=it.next();
@@ -6393,17 +6386,17 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 					}
 				}
 				if (!found) {
-					if (databaseLogger!=null)
-						databaseLogger.info("Unloading configuration: "+e.getValue().getConfiguration());
+					if (finalizer.databaseLogger!=null)
+						finalizer.databaseLogger.info("Unloading configuration: "+e.getValue().getConfiguration());
 					it.remove();
 				}
 			}
-			sql_database = sd;
+			finalizer.sql_database = sd;
 			getSynchronizer().broadcastAvailableDatabase();
 		}
 		finally
 		{
-			unlockWrite();
+			finalizer.unlockWrite();
 		}
 	}
 
@@ -6439,7 +6432,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		Reference<Boolean> allNotFound=new Reference<>(false);
 		try  {
 			boolean oldDatabaseReplaced=false;
-			lockWrite();
+			finalizer.lockWrite();
 
 			for (DatabaseConfiguration configuration : configurations) {
 				int databaseVersion = -1;
@@ -6458,7 +6451,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 		finally
 		{
-			unlockWrite();
+			finalizer.unlockWrite();
 		}
 	}
 	protected String getPostCreateTable(Long autoIncrementStart)
@@ -6607,8 +6600,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		if (_package == null)
 			throw new NullPointerException();
 		try  {
-			lockWrite();
-			for (Map.Entry<Package, Database> e : sql_database.entrySet()) {
+			finalizer.lockWrite();
+			for (Map.Entry<Package, Database> e : finalizer.sql_database.entrySet()) {
 				if (e.getKey().getName().equals(_package))
 					return e.getValue().getConfiguration();
 			}
@@ -6616,7 +6609,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 		finally
 		{
-			unlockWrite();
+			finalizer.unlockWrite();
 		}
 	}
 
@@ -6631,8 +6624,8 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		if (_package == null)
 			throw new NullPointerException();
 		try  {
-			lockWrite();
-			Database db = sql_database.get(_package);
+			finalizer.lockWrite();
+			Database db = finalizer.sql_database.get(_package);
 			if (db == null)
 				return null;
 			else
@@ -6640,7 +6633,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		}
 		finally
 		{
-			unlockWrite();
+			finalizer.unlockWrite();
 		}
 	}
 
@@ -6747,16 +6740,16 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	protected abstract boolean supportMultipleAutoPrimaryKeys();
 
 	Collection<Table<?>> getListTables(Package p, int databaseVersion) {
-		Database db = this.sql_database.get(p);
+		Database db = finalizer.sql_database.get(p);
 		if (db == null) {
 			try  {
-				lockWrite();
+				finalizer.lockWrite();
 				if (actualDatabaseLoading != null && actualDatabaseLoading.getConfiguration().getDatabaseSchema().getPackage().equals(p))
 					db = actualDatabaseLoading;
 			}
 			finally
 			{
-				unlockWrite();
+				finalizer.unlockWrite();
 			}
 		}
         assert db != null;
@@ -6798,7 +6791,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 */
 	public BackupRestoreManager getBackupRestoreManager(Package _package)
 	{
-		Database d=this.sql_database.get(_package);
+		Database d=finalizer.sql_database.get(_package);
 		if (d==null)
 			return null;
 		else
@@ -6819,7 +6812,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 */
 	public BackupRestoreManager getBackupRestoreManager(String _package)
 	{
-		for (Map.Entry<Package, Database> e : this.sql_database.entrySet()) {
+		for (Map.Entry<Package, Database> e : finalizer.sql_database.entrySet()) {
 			if (e.getKey().getName().equals(_package))
 				return e.getValue().backupRestoreManager;
 		}
@@ -6847,7 +6840,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 		try {
 			if (getDatabaseDirectory().getCanonicalPath().startsWith(backupDirectory.getCanonicalPath()))
 				throw new IllegalArgumentException("External backup managers cannot be located into the directory of the database !");
-			Database d = this.sql_database.get(_package);
+			Database d = finalizer.sql_database.get(_package);
 			if (d == null)
 				return null;
 			else
@@ -6881,7 +6874,7 @@ public abstract class DatabaseWrapper implements AutoCloseable {
 	 *
 	 */
 	public void deleteDatabasesFiles() {
-		Logger logger=databaseLogger;
+		Logger logger=finalizer.databaseLogger;
 		close();
 		File directory=getDatabaseDirectory();
 		if (directory==null) {

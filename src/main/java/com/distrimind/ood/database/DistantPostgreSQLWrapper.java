@@ -61,6 +61,19 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 	protected final WrappedPassword password;
 	private final String url;
 
+	private static final class Finalizer extends DatabaseWrapper.Finalizer
+	{
+
+		private Finalizer(String databaseName, boolean loadToMemory, File databaseDirectory) {
+			super(databaseName, loadToMemory, databaseDirectory);
+		}
+		@Override
+		protected void closeConnection(Connection connection, boolean deepClosing) throws SQLException {
+			if (databaseShutdown.getAndSet(true)) {
+				connection.close();
+			}
+		}
+	}
 
 	protected DistantPostgreSQLWrapper(String databaseName,String urlLocation,
 									   DatabaseConfigurations databaseConfigurations,
@@ -91,7 +104,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 									   int preparedStatementCacheQueries,
 									   int preparedStatementCacheSizeMiB,
 									   int defaultRowFetchSize) throws DatabaseException {
-		super(databaseName, new File(urlLocation), false, false, databaseConfigurations, databaseLifeCycles, signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+		super(new Finalizer(databaseName, false, new File(urlLocation)), false, databaseConfigurations, databaseLifeCycles, signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
 				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 				secureRandom, createDatabasesIfNecessaryAndCheckIt);
 		url=getURL(urlLocation, port, databaseName, loginTimeOutInSeconds, connectTimeOutInSeconds, socketTimeOutSeconds, additionalParams, sslMode, sslFactory, sslKey, sslCert, sslRootCert, sslHostNameVerifier, sslPasswordCallBack, sslPassword, databaseMetadataCacheFields, databaseMetadataCacheFieldsMiB, prepareThreshold, preparedStatementCacheQueries, preparedStatementCacheSizeMiB, defaultRowFetchSize);
@@ -200,12 +213,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 	}
 	private final static AtomicBoolean databaseShutdown = new AtomicBoolean(false);
 
-	@Override
-	protected void closeConnection(Connection connection, boolean deepClosing) throws SQLException {
-		if (databaseShutdown.getAndSet(true)) {
-			connection.close();
-		}
-	}
+
 
 	@Override
 	protected void startTransaction(Session _openedConnection, TransactionIsolation transactionIsolation, boolean write) throws SQLException {
@@ -281,7 +289,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 
 	@Override
 	protected boolean doesTableExists(String tableName) throws Exception {
-		try(ResultSet rs=getConnectionAssociatedWithCurrentThread().getConnection().getMetaData().getTables(databaseName, null, tableName.toLowerCase(), null)) {
+		try(ResultSet rs=getConnectionAssociatedWithCurrentThread().getConnection().getMetaData().getTables(finalizer.databaseName, null, tableName.toLowerCase(), null)) {
 			return rs.next();
 		}
 	}
@@ -336,7 +344,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 	@Override
 	protected Table.ColumnsReadQuery getColumnMetaData(String tableName, String columnName) throws Exception {
 		Connection c;
-		ResultSet rs=(c=getConnectionAssociatedWithCurrentThread().getConnection()).getMetaData().getColumns(databaseName, null, tableName==null?null:tableName.toLowerCase(), columnName==null?null:columnName.toLowerCase());
+		ResultSet rs=(c=getConnectionAssociatedWithCurrentThread().getConnection()).getMetaData().getColumns(finalizer.databaseName, null, tableName==null?null:tableName.toLowerCase(), columnName==null?null:columnName.toLowerCase());
 		return new CReadQuery(c, rs);
 
 	}
@@ -352,7 +360,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 		Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
 		try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection, new Table.SqlQuery(
 				"select CONSTRAINT_NAME, CONSTRAINT_TYPE from INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_NAME='"
-						+ table.getSqlTableName() + "' AND CONSTRAINT_SCHEMA='"+ databaseName +"';"))) {
+						+ table.getSqlTableName() + "' AND CONSTRAINT_SCHEMA='"+ finalizer.databaseName +"';"))) {
 			while (rq.result_set.next()) {
 				String constraint_name = rq.result_set.getString("CONSTRAINT_NAME");
 				String constraint_type = rq.result_set.getString("CONSTRAINT_TYPE");
@@ -371,7 +379,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 						try (Table.ReadQuery rq2 = new Table.ReadQuery(sql_connection,
 								new Table.SqlQuery(
 										"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
-												+ table.getSqlTableName() + "' AND CONSTRAINT_NAME='" + constraint_name + "' AND CONSTRAINT_SCHEMA='"+ databaseName +"';"))) {
+												+ table.getSqlTableName() + "' AND CONSTRAINT_NAME='" + constraint_name + "' AND CONSTRAINT_SCHEMA='"+ finalizer.databaseName +"';"))) {
 							if (rq2.result_set.next()) {
 								String col = (table.getSqlTableName() + "." + rq2.result_set.getString("COLUMN_NAME"))
 										.toUpperCase();
@@ -407,7 +415,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 		}
 		try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection, new Table.SqlQuery(
 				"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
-						+ table.getSqlTableName() + "' AND CONSTRAINT_SCHEMA='"+ databaseName +"';"))) {
+						+ table.getSqlTableName() + "' AND CONSTRAINT_SCHEMA='"+ finalizer.databaseName +"';"))) {
 			while (rq.result_set.next()) {
 				String fk = table.getSqlTableName() + "." + rq.result_set.getString("COLUMN_NAME");
 				boolean found = false;

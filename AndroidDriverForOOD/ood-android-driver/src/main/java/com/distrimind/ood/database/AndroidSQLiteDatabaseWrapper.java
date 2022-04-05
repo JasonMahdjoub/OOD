@@ -27,7 +27,7 @@ import java.sql.Savepoint;
  */
 public class AndroidSQLiteDatabaseWrapper extends DatabaseWrapper {
 
-    private String url;
+    private final String url;
     private static volatile boolean driverLoaded=false;
 
     @SuppressLint("SdCardPath")
@@ -40,7 +40,18 @@ public class AndroidSQLiteDatabaseWrapper extends DatabaseWrapper {
     {
         return getDirectory(_package, _database_name, externalStorage)+ "/"+_database_name+".db";
     }
+    private static final class Finalizer extends DatabaseWrapper.Finalizer
+    {
 
+        private Finalizer(String databaseName, boolean loadToMemory, File databaseDirectory) {
+            super(databaseName, loadToMemory, databaseDirectory);
+        }
+        @Override
+        protected void closeConnection(Connection c, boolean deepClosing) throws SQLException {
+            c.setAutoCommit(true);
+            c.close();
+        }
+    }
     AndroidSQLiteDatabaseWrapper(String _package, String databaseName,
                                  DatabaseConfigurations databaseConfigurations,
                                  DatabaseLifeCycles databaseLifeCycles,
@@ -49,7 +60,7 @@ public class AndroidSQLiteDatabaseWrapper extends DatabaseWrapper {
                                  EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
                                  AbstractSecureRandom secureRandom,
                                  boolean createDatabasesIfNecessaryAndCheckIt, boolean externalStorage) throws DatabaseException {
-        super(databaseName, new File(getDirectory(_package, databaseName, externalStorage)), false,false, databaseConfigurations, databaseLifeCycles, signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup, encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages, secureRandom, createDatabasesIfNecessaryAndCheckIt);
+        super(new Finalizer(databaseName, false, new File(getDirectory(_package, databaseName, externalStorage))), false,databaseConfigurations, databaseLifeCycles, signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup, encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages, secureRandom, createDatabasesIfNecessaryAndCheckIt);
         url = "jdbc:sqldroid:" + getPath(_package, databaseName, externalStorage);
         if (!getDatabaseDirectory().exists()) {
             FileTools.checkFolderRecursive(getDatabaseDirectory());
@@ -110,11 +121,7 @@ public class AndroidSQLiteDatabaseWrapper extends DatabaseWrapper {
         return false;
     }
 
-    @Override
-    protected void closeConnection(Connection c, boolean deepClosing) throws SQLException {
-        c.setAutoCommit(true);
-        c.close();
-    }
+
 
     @Override
     protected void startTransaction(Session _openedConnection, TransactionIsolation transactionIsolation, boolean write) {
@@ -202,7 +209,7 @@ public class AndroidSQLiteDatabaseWrapper extends DatabaseWrapper {
     @Override
     protected Table.ColumnsReadQuery getColumnMetaData(String tableName, String columnName) throws Exception {
         Connection c;
-        ResultSet rs=(c=getConnectionAssociatedWithCurrentThread().getConnection()).getMetaData().getColumns(databaseName, null, tableName, columnName);
+        ResultSet rs=(c=getConnectionAssociatedWithCurrentThread().getConnection()).getMetaData().getColumns(finalizer.databaseName, null, tableName, columnName);
         return new CReadQuerry(c, rs);
     }
 

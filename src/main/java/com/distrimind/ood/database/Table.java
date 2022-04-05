@@ -323,14 +323,14 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		
 		try
 		{
-			sql_connection.lockWrite();
+			sql_connection.finalizer.lockWrite();
 			records_instances.set(res);
 			is_synchronized_with_sql_database = true;
 			last_refresh = System.currentTimeMillis();
 		}
 		finally
 		{
-			sql_connection.unlockWrite();
+			sql_connection.finalizer.unlockWrite();
 		}
 		
 	}
@@ -399,18 +399,18 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	void lockIfNecessary(boolean writeLock) {
 		if (hasToBeLocked()) {
 			if (writeLock)
-				sql_connection.lockWrite();
+				sql_connection.finalizer.lockWrite();
 			else
-				sql_connection.lockRead();
+				sql_connection.finalizer.lockRead();
 		}
 	}
 
 	void unlockIfNecessary(boolean writeLock) {
 		if (hasToBeLocked()) {
 			if (writeLock)
-				sql_connection.unlockWrite();
+				sql_connection.finalizer.unlockWrite();
 			else
-				sql_connection.unlockRead();
+				sql_connection.finalizer.unlockRead();
 		}
 	}
 
@@ -699,7 +699,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		 */
 		boolean table_found;
 		try {
-			sql_connection.lockWrite();
+			sql_connection.finalizer.lockWrite();
 			table_found = (Boolean) sql_connection.runTransaction(new Transaction() {
 				@Override
 				public Package getConcernedDatabasePackage() {
@@ -1048,7 +1048,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					throw new DatabaseException("Table " + this.getClass().getSimpleName() + " doest not exists !");
 			}
 		} finally {
-			sql_connection.unlockWrite();
+			sql_connection.finalizer.unlockWrite();
 		}
 		boolean this_class_found = false;
 		for (Class<? extends Table<?>> c : tables.getDatabaseSchema().getTableClasses()) {
@@ -1092,7 +1092,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 	void initializeStep3() throws DatabaseException {
 		try {
-			sql_connection.lockWrite();
+			sql_connection.finalizer.lockWrite();
 			isPointedByTableLoadedIntoMemory = isPointedByTableLoadedIntoMemoryInCascade(
 					list_tables_pointing_to_this_table, new ArrayList<>());
 
@@ -1172,7 +1172,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			supportSynchronizationWithOtherPeers &= isGloballyDecentralized(new HashSet<>());
 			hasBackupManager =sql_connection.getBackupRestoreManager(Table.this.getClass().getPackage())!=null;
 		} finally {
-			sql_connection.unlockWrite();
+			sql_connection.finalizer.unlockWrite();
 
 		}
 	}
@@ -3065,7 +3065,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				if (!isSynchronizedWithSqlDatabase()) {
 					try
 					{
-						sql_connection.lockWrite();
+						sql_connection.finalizer.lockWrite();
 					
 						final ArrayList<T> res = new ArrayList<>();
 						getListRecordsFromSqlConnection(new Runnable() {
@@ -3086,7 +3086,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					}
 					finally
 					{
-						sql_connection.unlockWrite();
+						sql_connection.finalizer.unlockWrite();
 					}
 					
 					

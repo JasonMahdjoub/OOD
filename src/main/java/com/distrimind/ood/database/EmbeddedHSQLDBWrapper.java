@@ -68,6 +68,27 @@ import java.util.regex.Pattern;
  * @since OOD 1.0
  */
 public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
+	private static final class Finalizer extends DatabaseWrapper.Finalizer
+	{
+
+		private Finalizer(String databaseName, boolean loadToMemory, File databaseDirectory) {
+			super(databaseName, loadToMemory, databaseDirectory);
+		}
+
+		@Override
+		protected void closeConnection(Connection connection, boolean deepClose) throws SQLException {
+			if (!deepClose || databaseShutdown.getAndSet(true)) {
+				connection.close();
+			} else {
+				try (Statement s = connection.createStatement()) {
+					s.executeQuery("SHUTDOWN;" );
+				} finally {
+					connection.close();
+				}
+			}
+
+		}
+	}
 	EmbeddedHSQLDBWrapper(String databaseName, boolean loadToMemory,
 						  DatabaseConfigurations databaseConfigurations,
 						  DatabaseLifeCycles databaseLifeCycles,
@@ -76,7 +97,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 						  EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 						  AbstractSecureRandom secureRandom,
 						  boolean createDatabasesIfNecessaryAndCheckIt, HSQLDBConcurrencyControl concurrencyControl) throws DatabaseException {
-		super(databaseName, null, false, true, databaseConfigurations,
+		super(new Finalizer(databaseName, true, null), false, databaseConfigurations,
 				databaseLifeCycles, signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
 				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
 				protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
@@ -102,10 +123,10 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 						  boolean createDatabasesIfNecessaryAndCheckIt, boolean alwaysDisconnectAfterOnTransaction, HSQLDBConcurrencyControl concurrencyControl, int _cache_rows,
 			int _cache_size, int _result_max_memory_rows, int _cache_free_count, boolean lockFile)
 			throws IllegalArgumentException, DatabaseException {
-		super(/*
+		super(new Finalizer(/*
 				 * getConnection(_file_name, concurrencyControl, _cache_rows, _cache_size,
 				 * _result_max_memory_rows, _cache_free_count),
-				 */"Database from file : " + getHSQLDBDataFileName(getDatabaseFileName(databaseDirectory)) + ".data", databaseDirectory, alwaysDisconnectAfterOnTransaction, false, databaseConfigurations,
+				 */"Database from file : " + getHSQLDBDataFileName(getDatabaseFileName(databaseDirectory)) + ".data", false, databaseDirectory), alwaysDisconnectAfterOnTransaction, databaseConfigurations,
 				databaseLifeCycles, signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
 				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
 				protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
@@ -221,19 +242,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 	 */
 	private final static AtomicBoolean databaseShutdown = new AtomicBoolean(false);
 
-	@Override
-	protected void closeConnection(Connection connection, boolean deepClose) throws SQLException {
-		if (!deepClose || databaseShutdown.getAndSet(true)) {
-			connection.close();
-		} else {
-			try (Statement s = connection.createStatement()) {
-				s.executeQuery("SHUTDOWN" + getSqlComma());
-			} finally {
-				connection.close();
-			}
-		}
 
-	}
 
 
 
@@ -273,7 +282,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 		Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
 		try (ReadQuery rq = new ReadQuery(sql_connection, new SqlQuery(
 				"select CONSTRAINT_NAME, CONSTRAINT_TYPE from INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_NAME='"
-						+ table.getSqlTableName() + "' AND CONSTRAINT_SCHEMA='"+ databaseName +"';"))) {
+						+ table.getSqlTableName() + "' AND CONSTRAINT_SCHEMA='"+ finalizer.databaseName +"';"))) {
 			while (rq.result_set.next()) {
 				String constraint_name = rq.result_set.getString("CONSTRAINT_NAME");
 				String constraint_type = rq.result_set.getString("CONSTRAINT_TYPE");
@@ -292,7 +301,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 					try (ReadQuery rq2 = new ReadQuery(sql_connection,
 							new SqlQuery(
 									"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
-											+ table.getSqlTableName() + "' AND CONSTRAINT_NAME='" + constraint_name + "' AND CONSTRAINT_SCHEMA='"+ databaseName +"';"))) {
+											+ table.getSqlTableName() + "' AND CONSTRAINT_NAME='" + constraint_name + "' AND CONSTRAINT_SCHEMA='"+ finalizer.databaseName +"';"))) {
 						if (rq2.result_set.next()) {
 							String col = (table.getSqlTableName() + "." + rq2.result_set.getString("COLUMN_NAME"))
 									.toUpperCase();
@@ -524,7 +533,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
             @Override
 			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 				try  {
-					lockWrite();
+					finalizer.lockWrite();
 					Statement st = null;
 					try {
 						st = getConnectionAssociatedWithCurrentThread().getConnection().createStatement();
@@ -543,7 +552,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 				}
 				finally
 				{
-					unlockWrite();
+					finalizer.unlockWrite();
 				}
 				return null;
 			}
@@ -685,9 +694,9 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 				try {
 					if (blockDatabase)
-						lockWrite();
+						finalizer.lockWrite();
 					else
-						lockRead();
+						finalizer.lockRead();
 					Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
                     try (PreparedStatement preparedStatement = sql_connection.prepareStatement(querry)) {
                         preparedStatement.execute();
@@ -697,9 +706,9 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 					throw new DatabaseException("", e);
 				} finally {
 					if (blockDatabase)
-						unlockWrite();
+						finalizer.unlockWrite();
 					else
-						unlockRead();
+						finalizer.unlockRead();
 				}
 			}
 
@@ -753,8 +762,8 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 
 	@Override
 	protected Connection reopenConnectionImpl() throws DatabaseLoadingException {
-		return getConnection(databaseName, getDatabaseFileName(getDatabaseDirectory()), concurrencyControl, cache_rows, cache_size, result_max_memory_rows,
-				cache_free_count, fileLock, loadToMemory);
+		return getConnection(finalizer.databaseName, getDatabaseFileName(getDatabaseDirectory()), concurrencyControl, cache_rows, cache_size, result_max_memory_rows,
+				cache_free_count, fileLock, finalizer.loadToMemory);
 	}
 
 	@Override

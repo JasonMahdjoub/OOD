@@ -62,7 +62,20 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 	protected final String url;
 	protected final String charset;
 	protected final int maxCharSize;
+	private static final class Finalizer extends DatabaseWrapper.Finalizer
+	{
 
+		private Finalizer(String databaseName, boolean loadToMemory, File databaseDirectory) {
+			super(databaseName, loadToMemory, databaseDirectory);
+		}
+
+		@Override
+		protected void closeConnection(Connection connection, boolean deepClosing) throws SQLException {
+			if (databaseShutdown.getAndSet(true)) {
+				connection.close();
+			}
+		}
+	}
 
 	protected CommonMySQLWrapper(String _database_name,String urlLocation,
 								 DatabaseConfigurations databaseConfigurations,
@@ -79,7 +92,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 								 String url,
   								 String characterEncoding
 								) throws DatabaseException {
-		super(_database_name, new File(url), false, false,
+		super(new Finalizer(_database_name, false, new File(url)),  false,
 				databaseConfigurations,
 				databaseLifeCycles,
 				signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -106,7 +119,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 								 WrappedPassword password,
 								 String url
 	) throws DatabaseException {
-		super(_database_name, new File(url), false, false,
+		super(new Finalizer(_database_name, false, new File(url)), false,
 				databaseConfigurations,
 				databaseLifeCycles,
 				signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -148,12 +161,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 	}
 	private final static AtomicBoolean databaseShutdown = new AtomicBoolean(false);
 
-	@Override
-	protected void closeConnection(Connection connection, boolean deepClosing) throws SQLException {
-		if (databaseShutdown.getAndSet(true)) {
-			connection.close();
-		}
-	}
+
 
 	@Override
 	protected void startTransaction(DatabaseWrapper.Session _openedConnection, TransactionIsolation transactionIsolation, boolean write) throws SQLException {
@@ -229,7 +237,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 
 	@Override
 	protected boolean doesTableExists(String tableName) throws Exception {
-		try(ResultSet rs=getConnectionAssociatedWithCurrentThread().getConnection().getMetaData().getTables(databaseName, null, tableName, null)) {
+		try(ResultSet rs=getConnectionAssociatedWithCurrentThread().getConnection().getMetaData().getTables(finalizer.databaseName, null, tableName, null)) {
 			return rs.next();
 
 		}
@@ -285,7 +293,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 	@Override
 	protected Table.ColumnsReadQuery getColumnMetaData(String tableName, String columnName) throws Exception {
 		Connection c;
-		ResultSet rs=(c=getConnectionAssociatedWithCurrentThread().getConnection()).getMetaData().getColumns(databaseName, null, tableName, columnName);
+		ResultSet rs=(c=getConnectionAssociatedWithCurrentThread().getConnection()).getMetaData().getColumns(finalizer.databaseName, null, tableName, columnName);
 		return new CReadQuery(c, rs);
 
 
@@ -302,7 +310,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 		Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
 		try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection, new Table.SqlQuery(
 				"select CONSTRAINT_NAME, CONSTRAINT_TYPE from INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_NAME='"
-						+ table.getSqlTableName() + "' AND CONSTRAINT_SCHEMA='"+ databaseName +"';"))) {
+						+ table.getSqlTableName() + "' AND CONSTRAINT_SCHEMA='"+ finalizer.databaseName +"';"))) {
 			while (rq.result_set.next()) {
 				String constraint_name = rq.result_set.getString("CONSTRAINT_NAME");
 				String constraint_type = rq.result_set.getString("CONSTRAINT_TYPE");
@@ -321,7 +329,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 						try (Table.ReadQuery rq2 = new Table.ReadQuery(sql_connection,
 								new Table.SqlQuery(
 										"select COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
-												+ table.getSqlTableName() + "' AND CONSTRAINT_NAME='" + constraint_name + "' AND CONSTRAINT_SCHEMA='"+ databaseName +"';"))) {
+												+ table.getSqlTableName() + "' AND CONSTRAINT_NAME='" + constraint_name + "' AND CONSTRAINT_SCHEMA='"+ finalizer.databaseName +"';"))) {
 							if (rq2.result_set.next()) {
 								String col = (table.getSqlTableName() + "." + rq2.result_set.getString("COLUMN_NAME"))
 										.toUpperCase();
@@ -357,7 +365,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 		}
 		try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection, new Table.SqlQuery(
 				"select REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME, COLUMN_NAME from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
-						+ table.getSqlTableName() + "' AND CONSTRAINT_SCHEMA='"+ databaseName +"';"))) {
+						+ table.getSqlTableName() + "' AND CONSTRAINT_SCHEMA='"+ finalizer.databaseName +"';"))) {
 			while (rq.result_set.next()) {
 				String pointed_table = rq.result_set.getString("REFERENCED_TABLE_NAME");
 				String pointed_col = rq.result_set.getString("REFERENCED_COLUMN_NAME");
@@ -421,7 +429,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 								new Table.SqlQuery(
 										"select * from INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_NAME='"
 												+ table.getSqlTableName() + "' AND COLUMN_NAME='" + sf.shortFieldWithoutQuote
-												+ "' AND CONSTRAINT_NAME='PRIMARY' AND CONSTRAINT_SCHEMA='"+ databaseName +"';"))) {
+												+ "' AND CONSTRAINT_NAME='PRIMARY' AND CONSTRAINT_SCHEMA='"+ finalizer.databaseName +"';"))) {
 							if (!rq.result_set.next())
 								throw new DatabaseVersionException(table, "The field " + fa.getFieldName()
 										+ " is not declared as a primary key into the Sql database.");
@@ -444,7 +452,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 						boolean found = false;
 						try (Table.ReadQuery rq = new Table.ReadQuery(sql_connection, new Table.SqlQuery(
 								"select CONSTRAINT_NAME, CONSTRAINT_TYPE from INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_NAME='"
-										+ table.getSqlTableName() + "' AND CONSTRAINT_SCHEMA='"+ databaseName +"';"))) {
+										+ table.getSqlTableName() + "' AND CONSTRAINT_SCHEMA='"+ finalizer.databaseName +"';"))) {
 							while (rq.result_set.next()) {
 								if (rq.result_set.getString("CONSTRAINT_TYPE").equals("UNIQUE")) {
 									String constraint_name = rq.result_set.getString("CONSTRAINT_NAME");

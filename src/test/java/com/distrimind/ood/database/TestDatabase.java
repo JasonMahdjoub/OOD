@@ -275,12 +275,7 @@ public abstract class TestDatabase {
 		fileTest=new File("fileTest");
 	}
 
-	@Override
-	public void finalize() {
 
-		unloadDatabase();
-
-	}
 
 	@AfterClass
 	public void unloadDatabase()  {

@@ -65,8 +65,9 @@ public class OOD {
 			VERSION.addCreator(new Person("mahdjoub", "jason"))
 					.addDeveloper(new PersonDeveloper("mahdjoub", "jason", "2013-04-01"))
 					.addDescription(
-							new Description((short)3, (short)1, (short)20, Version.Type.STABLE, (short)0, "2022-04-05")
-									.addItem(INTERNAL_CHANGE, "Update Utils to 5.23.0 STABLE")
+							new Description((short)3, (short)1, (short)21, Version.Type.STABLE, (short)0, "2022-04-05")
+									.addItem(INTERNAL_CHANGE, "Update Utils to 5.23.1 STABLE")
+									.addItem(INTERNAL_CHANGE, "Remove finalize methods into all classes, and these classes using Cleanable API")
 					)
 					.addDescription(
 							new Description((short)3, (short)1, (short)20, Version.Type.STABLE, (short)0, "2022-03-29")
