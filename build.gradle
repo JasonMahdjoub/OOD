@@ -234,7 +234,7 @@ publishing {
             artifact javadocJar
             pom {
                 name = 'OOD'
-                description = 'OD is a decentralized and asynchrone ORM (Object-Relational Mapping)'
+                description = 'OOD is a decentralized and asynchrone ORM (Object-Relational Mapping)'
                 url = 'https://github.com/JasonMahdjoub/OOD'
                 developers {
                     developer {

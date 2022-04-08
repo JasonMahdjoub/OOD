@@ -85,15 +85,22 @@ public abstract class CentralDatabaseBackupReceiverFactory<T extends CentralData
 	public abstract T getCentralDatabaseBackupReceiverInstance(DatabaseWrapper wrapper) throws DatabaseException;
 
 	public boolean disconnectSingletonIfUsed() throws DatabaseException {
-		synchronized (this)
-		{
+		T centralDatabaseBackupReceiver=null;
+		try {
+			synchronized (this) {
+				if (this.centralDatabaseBackupReceiver != null) {
+					centralDatabaseBackupReceiver=this.centralDatabaseBackupReceiver;
+					this.centralDatabaseBackupReceiver = null;
+					return true;
+				} else
+					return false;
+			}
+		}
+		finally {
 			if (centralDatabaseBackupReceiver!=null) {
 				centralDatabaseBackupReceiver.disconnect();
-				centralDatabaseBackupReceiver=null;
-				return true;
 			}
-			else
-				return false;
 		}
+
 	}
 }
