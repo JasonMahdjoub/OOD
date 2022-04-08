@@ -65,6 +65,10 @@ public class OOD {
 			VERSION.addCreator(new Person("mahdjoub", "jason"))
 					.addDeveloper(new PersonDeveloper("mahdjoub", "jason", "2013-04-01"))
 					.addDescription(
+							new Description(3, 1, 26, Version.Type.STABLE, 0, "2022-04-07")
+									.addItem(INTERNAL_CHANGE, "Update Utils to 5.23.5 STABLE")
+					)
+					.addDescription(
 							new Description(3, 1, 22, Version.Type.STABLE, 0, "2022-04-05")
 									.addItem(INTERNAL_CHANGE, "Update Utils to 5.23.2 STABLE")
 									.addItem(INTERNAL_CHANGE, "Add lacking files into generated libraries.")

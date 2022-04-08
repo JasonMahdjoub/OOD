@@ -137,6 +137,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 		protected final String databaseName;
 
 		protected Finalizer(String databaseName, boolean loadToMemory, File databaseDirectory) {
+			super(null);
 			this.loadToMemory=loadToMemory;
 
 			this.databaseName=databaseName;
@@ -1191,7 +1192,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 							  AbstractSecureRandom secureRandom,
 							  boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
 		this.finalizer=finalizer;
-		registerCleaner(this.finalizer);
+		registerCleanerIfNotDone(this.finalizer);
 		if (finalizer.loadToMemory)
 		{
 			this.alwaysDisconnectAfterOnTransaction =false;
@@ -5068,9 +5069,8 @@ public abstract class DatabaseWrapper implements Cleanable {
 	}
 
 	void releaseTransaction() throws DatabaseException {
-		try {
-			
 			try {
+
 				finalizer.lockWrite();
 				Session c = removeSession(threadPerConnectionInProgress, Thread.currentThread());
 				if (c == null)
@@ -5079,7 +5079,6 @@ public abstract class DatabaseWrapper implements Cleanable {
 					if (!c.getConnection().isClosed())
 						finalizer.closeConnection(c.getConnection(), true);
 				}
-
 				for (Iterator<Session> it = finalizer.threadPerConnection.iterator(); it.hasNext();) {
 					Session s = it.next();
 
@@ -5093,11 +5092,11 @@ public abstract class DatabaseWrapper implements Cleanable {
 			} catch (Exception e) {
 				throw DatabaseException.getDatabaseException(e);
 			}
-		}
-		finally
-		{
-			finalizer.unlockWrite();
-		}
+			finally
+			{
+				finalizer.unlockWrite();
+			}
+
 		
 	}
 
@@ -5375,7 +5374,6 @@ public abstract class DatabaseWrapper implements Cleanable {
 								releasePoint(cw.connection.getConnection(), savePointName, savePoint);
 		
 						}
-							
 						endTransaction(cw.connection);
 					} catch (DatabaseException e) {
 						canceled=true;
@@ -5486,7 +5484,6 @@ public abstract class DatabaseWrapper implements Cleanable {
 					else
 						finalizer.unlockRead();
 				}
-
 			}
 			
 		} else {
@@ -6958,6 +6955,22 @@ public abstract class DatabaseWrapper implements Cleanable {
 
 		SerializationTools.addPredefinedClasses(classes, enums);
 	}
+	public void lockWrite()
+	{
+		finalizer.lockWrite();
+	}
 
+	public void lockRead()
+	{
+		finalizer.lockRead();
+	}
+	public void unlockWrite()
+	{
+		finalizer.unlockWrite();
+	}
+	public void unlockRead()
+	{
+		finalizer.unlockRead();
+	}
 
 }

@@ -3,6 +3,6 @@ dependencies {
     var slf4jVersion='1.7.35'
     testImplementation 'org.slf4j:slf4j-api:'+slf4jVersion
     testImplementation 'org.slf4j:slf4j-simple:'+slf4jVersion
-    api(group: 'com.distrimind.util', name: 'Utils', version: '5.23.2-STABLE')
+    api(group: 'com.distrimind.util', name: 'Utils', version: '5.23.5-STABLE')
     //api project(':Utils')
 }

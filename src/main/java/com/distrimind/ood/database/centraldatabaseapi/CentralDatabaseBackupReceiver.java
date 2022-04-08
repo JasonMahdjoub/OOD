@@ -91,48 +91,69 @@ public abstract class CentralDatabaseBackupReceiver {
 	protected abstract CentralDatabaseBackupReceiverPerPeer newCentralDatabaseBackupReceiverPerPeerInstance(DatabaseWrapper wrapper);
 
 	public Integrity received(MessageDestinedToCentralDatabaseBackup message) throws DatabaseException, IOException {
-		Logger l=clientTable.getDatabaseWrapper().getCentralDatabaseLogger();
-		if (l!=null && l.isLoggable(Level.FINER))
-			l.finer("receive message " + message);
-		CentralDatabaseBackupReceiverPerPeer r=receiversPerPeer.get(message.getHostSource());
-		if (r==null)
-		{
+		try {
+			wrapper.lockWrite();
+
+			Logger l = clientTable.getDatabaseWrapper().getCentralDatabaseLogger();
+			if (l != null && l.isLoggable(Level.FINER))
+				l.finer("receive message " + message);
+			CentralDatabaseBackupReceiverPerPeer r = receiversPerPeer.get(message.getHostSource());
+			if (r == null) {
 
 
-			if (message instanceof DistantBackupCenterConnexionInitialisation) {
-				r = newCentralDatabaseBackupReceiverPerPeerInstance(wrapper);
-				receiversPerPeer.put(message.getHostSource(), r);
-				Integrity res=r.init((DistantBackupCenterConnexionInitialisation)message);
-				if (!r.isConnected())
-					receiversPerPeer.remove(message.getHostSource());
-				return res;
+				if (message instanceof DistantBackupCenterConnexionInitialisation) {
+					r = newCentralDatabaseBackupReceiverPerPeerInstance(wrapper);
+					receiversPerPeer.put(message.getHostSource(), r);
+					Integrity res = r.init((DistantBackupCenterConnexionInitialisation) message);
+					if (!r.isConnected())
+						receiversPerPeer.remove(message.getHostSource());
+					return res;
+				} else {
+
+					return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
+				}
 			}
-			else {
-
-				return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
-			}
+			Integrity res = r.received(message);
+			if (!r.isConnected())
+				receiversPerPeer.remove(message.getHostSource());
+			return res;
 		}
-		Integrity res=r.received(message);
-		if (!r.isConnected())
-			receiversPerPeer.remove(message.getHostSource());
-		return res;
+		finally {
+			wrapper.unlockWrite();
+		}
 	}
 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	public boolean sendMessageFromThisCentralDatabaseBackup(MessageComingFromCentralDatabaseBackup message) throws DatabaseException {
-		CentralDatabaseBackupReceiverPerPeer r=receiversPerPeer.get(message.getHostDestination());
-		if (r==null)
-			return false;
-		else {
-			r.sendMessageFromThisCentralDatabaseBackup(message);
-			return true;
+
+		try {
+			wrapper.lockRead();
+
+			CentralDatabaseBackupReceiverPerPeer r = receiversPerPeer.get(message.getHostDestination());
+			if (r==null)
+				return false;
+			else {
+				r.sendMessageFromThisCentralDatabaseBackup(message);
+				return true;
+			}
 		}
+		finally {
+			wrapper.unlockRead();
+		}
+
 	}
 
 	public boolean isConnectedIntoThisServer(DecentralizedValue peerID)
 	{
-		CentralDatabaseBackupReceiverPerPeer r=receiversPerPeer.get(peerID);
-		return r!=null && r.isConnected();
+		wrapper.lockRead();
+		try {
+			CentralDatabaseBackupReceiverPerPeer r=receiversPerPeer.get(peerID);
+			return r!=null && r.isConnected();
+		}
+		finally {
+			wrapper.unlockRead();
+		}
+
 	}
 
 	/*CentralDatabaseBackupReceiverPerPeer getConnectedIntoThisServer(DecentralizedValue peerID)
@@ -166,25 +187,29 @@ public abstract class CentralDatabaseBackupReceiver {
 			throw new NullPointerException();
 		if (revokedID==null)
 			throw new NullPointerException();
-		if (revokedCertificateTable.hasRecordsWithAllFields("certificateID", id))
-			return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
-		if (!revokedCertificateTable.hasRecordsWithAllFields("certificateID", revokedID))
-			revokedCertificateTable.addRecord("certificateID", revokedID);
-		for (Iterator<Map.Entry<DecentralizedValue, CentralDatabaseBackupReceiverPerPeer>> it =receiversPerPeer.entrySet().iterator();it.hasNext();)
-		{
-			CentralDatabaseBackupReceiverPerPeer c=it.next().getValue();
-			if (c.connectedClientRecord.getAccount().getExternalAccountID().equals(certificate.getCertifiedAccountPublicKey()) && WrappedSecretData.constantTimeAreEqual(c.certificate.getCertificateIdentifier(), certificateToRevoke.getCertificateIdentifier()))
-			{
-				if (c.checkCertificate(certificate)) {
-					c.sendMessageFromThisCentralDatabaseBackup(new CentralDatabaseBackupCertificateChangedMessage(c.connectedClientID));
-					c.disconnect();
-					it.remove();
+		try {
+			wrapper.lockWrite();
+
+			if (revokedCertificateTable.hasRecordsWithAllFields("certificateID", id))
+				return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
+			if (!revokedCertificateTable.hasRecordsWithAllFields("certificateID", revokedID))
+				revokedCertificateTable.addRecord("certificateID", revokedID);
+			for (Iterator<Map.Entry<DecentralizedValue, CentralDatabaseBackupReceiverPerPeer>> it = receiversPerPeer.entrySet().iterator(); it.hasNext(); ) {
+				CentralDatabaseBackupReceiverPerPeer c = it.next().getValue();
+				if (c.connectedClientRecord.getAccount().getExternalAccountID().equals(certificate.getCertifiedAccountPublicKey()) && WrappedSecretData.constantTimeAreEqual(c.certificate.getCertificateIdentifier(), certificateToRevoke.getCertificateIdentifier())) {
+					if (c.checkCertificate(certificate)) {
+						c.sendMessageFromThisCentralDatabaseBackup(new CentralDatabaseBackupCertificateChangedMessage(c.connectedClientID));
+						c.disconnect();
+						it.remove();
+					} else
+						return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
 				}
-				else
-					return Integrity.FAIL_AND_CANDIDATE_TO_BAN;
 			}
+			return Integrity.OK;
 		}
-		return Integrity.OK;
+		finally {
+			wrapper.unlockWrite();
+		}
 	}
 
 	public DecentralizedValue getCentralID() {
@@ -195,15 +220,28 @@ public abstract class CentralDatabaseBackupReceiver {
 		disconnectAllPeers();
 	}
 	public void disconnectAllPeers() throws DatabaseException {
-		for (CentralDatabaseBackupReceiverPerPeer cpp : receiversPerPeer.values())
-			cpp.disconnect();
-		receiversPerPeer.clear();
-		connectedClientsTable.removeRecordsWithAllFields("centralID", centralID);
+		try {
+			wrapper.lockWrite();
+
+			for (CentralDatabaseBackupReceiverPerPeer cpp : receiversPerPeer.values())
+				cpp.disconnect();
+			this.receiversPerPeer.clear();
+			connectedClientsTable.removeRecordsWithAllFields("centralID", centralID);
+		}
+		finally {
+			wrapper.unlockWrite();
+		}
 	}
 	public void peerDisconnected(DecentralizedValue clientID) throws DatabaseException {
-		CentralDatabaseBackupReceiverPerPeer cpp=receiversPerPeer.remove(clientID);
-		if (cpp!=null)
-			cpp.disconnect();
+		try {
+			wrapper.lockWrite();
+			CentralDatabaseBackupReceiverPerPeer cpp = receiversPerPeer.remove(clientID);
+			if (cpp != null)
+				cpp.disconnect();
+		}
+		finally {
+			wrapper.unlockWrite();
+		}
 	}
 
 	public void cleanObsoleteData() throws DatabaseException {

@@ -77,6 +77,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 		this.connected=false;
 	}
 	protected void sendMessage(MessageComingFromCentralDatabaseBackup message) throws DatabaseException {
+
 		Logger l=centralDatabaseBackupReceiver.clientTable.getDatabaseWrapper().getCentralDatabaseLogger();
 		if (centralDatabaseBackupReceiver.isConnectedIntoThisServer(message.getHostDestination())) {
 			if (l != null && l.isLoggable(Level.FINER))
@@ -97,13 +98,15 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 	protected abstract void sendMessageFromOtherCentralDatabaseBackup(DecentralizedValue centralDatabaseBackupID, MessageComingFromCentralDatabaseBackup message) throws DatabaseException;
 
 	public Integrity disconnect() throws DatabaseException {
-		if (connected)
+		if (connected) {
+			connected=false;
 			centralDatabaseBackupReceiver.connectedClientsTable.removeRecord("clientID", connectedClientID);
+		}
 		this.connectedClientID=null;
 		this.clientCloud=null;
 		this.connectedClientRecord=null;
 
-		connected=false;
+
 		return Integrity.OK;
 	}
 
@@ -475,6 +478,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 
 								));
 					}
+					sendInitialMessages(message.getAcceptedDataSources(), true);
 					return Integrity.OK;
 				}
 
@@ -493,10 +497,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 
 				}
 			});
-			if (i==Integrity.OK)
-			{
-				sendInitialMessages(message.getAcceptedDataSources(), true);
-			}
+
 			return i;
 		}
 		catch (TransactionCanceledException ignored)
