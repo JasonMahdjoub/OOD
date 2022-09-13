@@ -81,7 +81,8 @@ dependencies {
 
 
 }
-sourceCompatibility = "8"
+def javaVersion="8"
+sourceCompatibility = javaVersion
 targetCompatibility= "11"
 
 version='??.??.??ToDefine'

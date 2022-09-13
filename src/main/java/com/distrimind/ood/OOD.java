@@ -67,6 +67,7 @@ public class OOD {
 					.addDescription(
 							new Description(3, 1, 27, Version.Type.STABLE, 0, "2022-09-13")
 									.addItem(INTERNAL_CHANGE, "Target java compatibility is set to Java 11 but source code still use Java 8")
+									.addItem(INTERNAL_CHANGE, "Update dependencies")
 					)
 					.addDescription(
 							new Description(3, 1, 26, Version.Type.STABLE, 0, "2022-04-07")
