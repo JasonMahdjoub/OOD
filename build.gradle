@@ -83,7 +83,7 @@ dependencies {
 }
 def javaVersion="8"
 sourceCompatibility = javaVersion
-targetCompatibility= "11"
+targetCompatibility= "8"
 
 version='??.??.??ToDefine'
 
