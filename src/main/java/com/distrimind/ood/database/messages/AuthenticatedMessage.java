@@ -48,7 +48,7 @@ import java.io.IOException;
  * @since OOD 3.0.0
  */
 public interface AuthenticatedMessage extends SecureExternalizable, DatabaseEventToSend {
-	int MAX_SIGNATURES_SIZE= SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE+MessageDigestType.MAX_HASH_LENGTH_IN_BYTES+ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE+EncryptionSignatureHashEncoder.headSize+10;
+	int MAX_SIGNATURES_SIZE= SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE+MessageDigestType.MAX_HASH_LENGTH_IN_BYTES+ASymmetricAuthenticatedSignatureType.MAX_SIZE_IN_BYTES_OF_ASYMMETRIC_SIGNATURE+EncryptionSignatureHashEncoder.headSize+10;
 	default void writeExternal(SecuredObjectOutputStream out) throws IOException
 	{
 		writeExternalWithoutSignatures(out);

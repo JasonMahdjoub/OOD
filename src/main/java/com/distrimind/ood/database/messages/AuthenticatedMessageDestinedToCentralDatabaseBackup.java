@@ -114,7 +114,7 @@ public abstract class AuthenticatedMessageDestinedToCentralDatabaseBackup extend
 	@Override
 	public int getInternalSerializedSizeWithoutSignatures() {
 		int res= SerializationTools.getInternalSize(hostSource, 0)+2+SerializationTools.getInternalSize(certificate);
-		res+=SerializationTools.getInternalSize(asymmetricSignature, ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE);
+		res+=SerializationTools.getInternalSize(asymmetricSignature, ASymmetricAuthenticatedSignatureType.MAX_SIZE_IN_BYTES_OF_ASYMMETRIC_SIGNATURE);
 		return res;
 	}
 
