@@ -64,11 +64,9 @@ public class OOD {
 				VERSION.loadBuildNumber(is);
 			VERSION.addCreator(new Person("mahdjoub", "jason"))
 					.addDeveloper(new PersonDeveloper("mahdjoub", "jason", "2013-04-01"))
-
 					.addDescription(
-							new Description(3, 1, 27, Version.Type.STABLE, 0, "2022-10-19")
+							new Description(3, 1, 27, Version.Type.STABLE, 0, "2022-09-13")
 									.addItem(INTERNAL_CHANGE, "Target java compatibility is set to Java 11 but source code still use Java 8")
-									.addItem(INTERNAL_CHANGE, "Update Utils to 5.24.0 STABLE")
 									.addItem(INTERNAL_CHANGE, "Update dependencies")
 					)
 					.addDescription(
