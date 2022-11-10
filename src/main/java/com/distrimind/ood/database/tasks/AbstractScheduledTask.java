@@ -1,4 +1,4 @@
-package com.distrimind.ood.database;
+package com.distrimind.ood.database.tasks;
 /*
 Copyright or © or Copr. Jason Mahdjoub (01/04/2013)
 
@@ -35,60 +35,71 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.io.*;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.2.0
  */
-public final class ScheduledPeriodicTask extends AbstractScheduledTask {
-	public static final long MIN_PERIOD_IN_MS=60L*60L*1000L;
-	private long endTimeUTCInMs;
-	private long periodInMs;
+public abstract class AbstractScheduledTask implements SecureExternalizable {
+	public static final Set<Class<?>> internalTaskSchedulingClassesList=new HashSet<>(Collections.singletonList(ExecutedTasksTable.class));
+	private Class<? extends ITaskStrategy> strategyClass;
+	private transient ITaskStrategy strategy=null;
 
-
-	public ScheduledPeriodicTask(Class<? extends ITaskStrategy> strategyClass, long startTimeUTCInMs, long periodInMs, long endTimeUTCInMs) {
-		super(strategyClass, startTimeUTCInMs);
-		if (periodInMs<=MIN_PERIOD_IN_MS)
-			throw new IllegalArgumentException("periodInMs="+periodInMs);
-		this.periodInMs = periodInMs;
-		if (endTimeUTCInMs<startTimeUTCInMs)
+	public AbstractScheduledTask(Class<? extends ITaskStrategy> strategyClass) {
+		if (strategyClass==null)
+			throw new NullPointerException();
+		try {
+			strategyClass.getConstructor();
+		} catch (NoSuchMethodException e) {
 			throw new IllegalArgumentException();
-		this.endTimeUTCInMs=endTimeUTCInMs;
+		}
+
+		this.strategyClass=strategyClass;
 	}
-	public ScheduledPeriodicTask(Class<? extends ITaskStrategy> strategyClass, long startTimeUTCInMs, long periodInMs) {
-		this(strategyClass, startTimeUTCInMs, periodInMs, Long.MAX_VALUE);
+	ITaskStrategy getStrategyInstance() throws DatabaseException {
+		try {
+			return strategyClass.getConstructor().newInstance();
+		} catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+			throw new DatabaseException("Impossible to instantiate "+strategyClass, e);
+		}
 	}
 
-	public long getPeriodInMs() {
-		return periodInMs;
-	}
-
-	public long getEndTimeUTCInMs() {
-		return endTimeUTCInMs;
+	public Class<? extends ITaskStrategy> getStrategyClass() {
+		return strategyClass;
 	}
 
 	@Override
 	public int getInternalSerializedSize() {
-		return super.getInternalSerializedSize()+16;
+		return SerializationTools.getInternalSize(strategyClass);
 	}
 
 	@Override
 	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
-		super.writeExternal(out);
-		out.writeLong(endTimeUTCInMs);
-		out.writeLong(periodInMs);
+		out.writeClass(strategyClass, false);
 	}
 
 	@Override
 	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
-		super.readExternal(in);
-		endTimeUTCInMs=in.readLong();
-		periodInMs=in.readLong();
-		if (endTimeUTCInMs<getStartTimeUTCInMs())
+		Class<?> c=in.readClass(false);
+		if (!ITaskStrategy.class.isAssignableFrom(c))
 			throw new MessageExternalizationException(Integrity.FAIL);
+		//noinspection unchecked
+		strategyClass=(Class<? extends ITaskStrategy>)c;
+		try {
+			strategyClass.getConstructor();
+		} catch (NoSuchMethodException e) {
+			throw new MessageExternalizationException(Integrity.FAIL);
+		}
 	}
+
+
 }

@@ -1,4 +1,4 @@
-package com.distrimind.ood.database;
+package com.distrimind.ood.database.tasks;
 /*
 Copyright or © or Copr. Jason Mahdjoub (01/04/2013)
 
@@ -35,20 +35,44 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+import com.distrimind.ood.database.DatabaseRecord;
+import com.distrimind.ood.database.Table;
+import com.distrimind.ood.database.annotations.Field;
+import com.distrimind.ood.database.annotations.PrimaryKey;
+import com.distrimind.ood.database.exceptions.DatabaseException;
+
 /**
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.2.0
  */
-public interface ITaskStrategy {
-	default boolean checkConstructor()
+class ExecutedTasksTable extends Table<ExecutedTasksTable.Record> {
+	protected ExecutedTasksTable() throws DatabaseException {
+	}
+
+	static class Record extends DatabaseRecord
 	{
-		try {
-			this.getClass().getConstructor();
-			return true;
-		} catch (NoSuchMethodException e) {
-			return false;
+		@PrimaryKey
+		private Class<? extends ITaskStrategy> strategyClass;
+
+		@Field
+		private long lastExecutionTimeUTC;
+
+		Record(Class<? extends ITaskStrategy> strategyClass) {
+			this.strategyClass = strategyClass;
+			this.lastExecutionTimeUTC=System.currentTimeMillis();
 		}
 
+		Class<? extends ITaskStrategy> getStrategyClass() {
+			return strategyClass;
+		}
+
+		long getLastExecutionTimeUTC() {
+			return lastExecutionTimeUTC;
+		}
+
+		void setLastExecutionTimeUTC(long lastExecutionTimeUTC) {
+			this.lastExecutionTimeUTC = lastExecutionTimeUTC;
+		}
 	}
 }

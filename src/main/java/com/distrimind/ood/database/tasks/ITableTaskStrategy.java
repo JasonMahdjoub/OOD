@@ -1,4 +1,4 @@
-package com.distrimind.ood.database.annotations;
+package com.distrimind.ood.database.tasks;
 /*
 Copyright or © or Copr. Jason Mahdjoub (01/04/2013)
 
@@ -35,20 +35,18 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.ood.database.ITableTaskStrategy;
-import com.distrimind.ood.database.ScheduledTask;
-
-import java.lang.annotation.*;
+import com.distrimind.ood.database.Table;
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.2.0
  */
-@Repeatable(TableTasks.class)
-public @interface TableTask {
-
-	Class<? extends ScheduledTask> scheduledTask();
-	long startTimeUTCInMs();
-	Class<? extends ITableTaskStrategy<?>> strategy();
+public interface ITableTaskStrategy<T extends Table<?>> extends ITaskStrategy {
+	void launchTask(T table);
+	@SuppressWarnings("unchecked")
+	default void launchTaskWithUntypedTable(Table<?> table)
+	{
+		this.launchTask((T)table);
+	}
 }

@@ -35,10 +35,11 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.ood.database.ITableTaskStrategy;
-import com.distrimind.ood.database.ScheduledPeriodicTask;
+import com.distrimind.ood.database.tasks.ITableTaskStrategy;
+import com.distrimind.ood.database.tasks.ScheduledPeriodicTask;
 
 import java.lang.annotation.Repeatable;
+import java.time.DayOfWeek;
 
 /**
  * @author Jason Mahdjoub
@@ -48,8 +49,11 @@ import java.lang.annotation.Repeatable;
 @Repeatable(TablePeriodicTasks.class)
 public @interface TablePeriodicTask {
 	Class<? extends ScheduledPeriodicTask> scheduledTask();
-	long startTimeUTCInMs();
 	long endTimeUTCInMs() default Long.MAX_VALUE;
-	long periodInMs();
+	long periodInMs() default -1;
+	byte minute() default -1;
+	byte hour() default -1;
+	byte dayOfWeek() default -1;
+
 	Class<? extends ITableTaskStrategy<?>> strategy();
 }

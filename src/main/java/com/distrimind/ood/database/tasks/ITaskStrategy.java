@@ -1,4 +1,4 @@
-package com.distrimind.ood.database.annotations;
+package com.distrimind.ood.database.tasks;
 /*
 Copyright or © or Copr. Jason Mahdjoub (01/04/2013)
 
@@ -35,19 +35,20 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
 /**
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.2.0
  */
-@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
-public @interface TableTasks {
-	TableTask[] value();
+public interface ITaskStrategy {
+	default boolean checkConstructor()
+	{
+		try {
+			this.getClass().getConstructor();
+			return true;
+		} catch (NoSuchMethodException e) {
+			return false;
+		}
+
+	}
 }

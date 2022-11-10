@@ -1,4 +1,4 @@
-package com.distrimind.ood.database;
+package com.distrimind.ood.database.tasks;
 /*
 Copyright or © or Copr. Jason Mahdjoub (01/04/2013)
 
@@ -35,13 +35,13 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+import com.distrimind.ood.database.DatabaseWrapper;
+
 /**
  * @author Jason Mahdjoub
  * @version 1.0
- * @since MaDKitLanEdition 3.2.0
+ * @since OOD 3.2.0
  */
-public final class ScheduledTask extends AbstractScheduledTask{
-	public ScheduledTask(Class<? extends ITaskStrategy> strategyClass, long startTimeUTCInMs) {
-		super(strategyClass, startTimeUTCInMs);
-	}
+public interface IDatabaseTaskStrategy extends ITaskStrategy {
+	void launchTask(DatabaseWrapper wrapper);
 }

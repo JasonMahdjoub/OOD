@@ -50,6 +50,9 @@ import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.ood.database.filemanager.FileReferenceManager;
 import com.distrimind.ood.database.messages.*;
+import com.distrimind.ood.database.tasks.AbstractScheduledTask;
+import com.distrimind.ood.database.tasks.DatabaseTasksManager;
+import com.distrimind.ood.database.tasks.ScheduledTask;
 import com.distrimind.util.*;
 import com.distrimind.util.crypto.ASymmetricPublicKey;
 import com.distrimind.util.crypto.AbstractSecureRandom;
@@ -106,7 +109,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 			LastValidatedDistantIDPerClientTable.class,
 			RevokedCertificateTable.class));
 
-	static final Set<Package> reservedDatabases=new HashSet<>(Arrays.asList(DatabaseWrapper.class.getPackage(), CentralDatabaseBackupReceiverPerPeer.class.getPackage(), FileReferenceManager.class.getPackage()));
+	static final Set<Package> reservedDatabases=new HashSet<>(Arrays.asList(DatabaseWrapper.class.getPackage(), CentralDatabaseBackupReceiverPerPeer.class.getPackage(), FileReferenceManager.class.getPackage(), ScheduledTask.class.getPackage()));
 
 	public static String toString(DecentralizedValue dv)
 	{
@@ -352,6 +355,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 
 	private volatile Logger centralDatabaseLogger=null;
 	private volatile FileReferenceManager fileReferenceManager=null;
+	private volatile DatabaseTasksManager databaseTasksManager=null;
 
 
 	public FileReferenceManager getFileReferenceManager() throws DatabaseException {
@@ -367,6 +371,31 @@ public abstract class DatabaseWrapper implements Cleanable {
 							DatabaseConfiguration.SynchronizationType.NO_SYNCHRONIZATION),
 							null);
 					r=fileReferenceManager=new FileReferenceManager(this);
+				}
+			}
+		}
+		return r;
+	}
+	public DatabaseTasksManager getDatabaseTasksManager() throws DatabaseException {
+		DatabaseTasksManager r=databaseTasksManager;
+		if (r==null)
+		{
+			synchronized(this)
+			{
+				r=databaseTasksManager;
+				if (r==null)
+				{
+					loadDatabase(new DatabaseConfiguration(new DatabaseSchema(AbstractScheduledTask.class.getPackage(), AbstractScheduledTask.internalTaskSchedulingClassesList),
+									DatabaseConfiguration.SynchronizationType.NO_SYNCHRONIZATION),
+							null);
+					try {
+						Constructor<DatabaseTasksManager> c=DatabaseTasksManager.class.getDeclaredConstructor(DatabaseWrapper.class);
+						c.setAccessible(true);
+						r=databaseTasksManager=c.newInstance(this);
+					} catch (NoSuchMethodException | InstantiationException | IllegalAccessException |
+							 InvocationTargetException e) {
+						throw new DatabaseException("", e);
+					}
 				}
 			}
 		}
@@ -6776,11 +6805,8 @@ public abstract class DatabaseWrapper implements Cleanable {
 
 	/**
 	 * Returns the OOD (and non native) backup manager.
-	 *
 	 * Backups into this manager are done in real time.
-	 *
 	 * Backups and restores into this backup manager can be done manually.
-	 *
 	 * Enables to make incremental database backups, and database restore.
 	 * @param _package the concerned database
 	 * @return the backup manager or null if no backup manager was configured.
@@ -6797,11 +6823,8 @@ public abstract class DatabaseWrapper implements Cleanable {
 
 	/**
 	 * Returns the OOD (and non native) backup manager.
-	 *
 	 * Backups into this manager are done in real time.
-	 *
 	 * Backups and restores into this backup manager can be done manually.
-	 *
 	 * Enables to make incremental database backups, and database restore.
 	 * @param _package the concerned database
 	 * @return the backup manager or null if no backup manager was configured.
@@ -6819,11 +6842,8 @@ public abstract class DatabaseWrapper implements Cleanable {
 
 	/**
 	 * Returns the OOD (and non native) backup manager.
-	 *
 	 * Backups into this manager are NOT done in real time.
-	 *
 	 * Backups and restores into this backup manager can be done manually.
-	 *
 	 * Enables to make incremental database backups, and database restore.
 	 * @param backupDirectory the backup directory
 	 * @param _package the concerned database
