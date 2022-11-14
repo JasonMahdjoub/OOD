@@ -189,7 +189,7 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 		connectCentralDatabaseBackup();
 		checkAllDatabaseInternalDataUsedForSynchro();
 		if (centralDatabaseBackupReceiver!=null)
-			centralDatabaseBackupReceiver.cleanObsoleteData();
+			cleanObsoleteData(centralDatabaseBackupReceiver);
 	}
 
 	@Test(dependsOnMethods = {"testSynchroAfterTestsBetweenThreePeers" })
@@ -215,7 +215,7 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 
 		}
 		if (centralDatabaseBackupReceiver!=null)
-			centralDatabaseBackupReceiver.cleanObsoleteData();
+			cleanObsoleteData(centralDatabaseBackupReceiver);
 	}
 
 
@@ -254,7 +254,7 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 		}
 		testSynchronisation();
 		if (centralDatabaseBackupReceiver!=null)
-			centralDatabaseBackupReceiver.cleanObsoleteData();
+			cleanObsoleteData(centralDatabaseBackupReceiver);
 	}
 
 	@Test(dataProvider = "provideDataSynchroBetweenThreePeers", dependsOnMethods = { "testSynchroAfterTestsBetweenTwoPeersWithCentralBackup" })
@@ -269,7 +269,7 @@ public abstract class TestCentralBackupWithDecentralizedDatabase extends CommonD
 	public void testSynchroAfterTestsBetweenThreePeersWithCentralBackup() throws DatabaseException {
 		testSynchronisation();
 		if (centralDatabaseBackupReceiver!=null)
-			centralDatabaseBackupReceiver.cleanObsoleteData();
+			cleanObsoleteData(centralDatabaseBackupReceiver);
 	}
 
 	@Test(dependsOnMethods = {"testSynchroAfterTestsBetweenThreePeersWithCentralBackup" })

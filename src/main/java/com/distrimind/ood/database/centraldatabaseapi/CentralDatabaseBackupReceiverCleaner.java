@@ -1,4 +1,4 @@
-package com.distrimind.ood.database.tasks;
+package com.distrimind.ood.database.centraldatabaseapi;
 /*
 Copyright or © or Copr. Jason Mahdjoub (01/04/2013)
 
@@ -35,14 +35,30 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.ood.database.DatabaseWrapper;
+import com.distrimind.ood.database.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.tasks.IDatabaseTaskStrategy;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.2.0
  */
-public interface IDatabaseTaskStrategy extends ITaskStrategy {
-	void launchTask(DatabaseWrapper wrapper) throws DatabaseException;
+class CentralDatabaseBackupReceiverCleaner implements IDatabaseTaskStrategy {
+	@Override
+	public void launchTask(DatabaseWrapper wrapper) throws DatabaseException {
+		try {
+			Method getCentralDatabaseBackupReceiverMethod=DatabaseWrapper.DatabaseSynchronizer.class.getDeclaredMethod("getCentralDatabaseBackupReceiver");
+			getCentralDatabaseBackupReceiverMethod.setAccessible(true);
+			CentralDatabaseBackupReceiver r=(CentralDatabaseBackupReceiver)getCentralDatabaseBackupReceiverMethod.invoke(wrapper.getSynchronizer());
+			if (r==null)
+				throw new DatabaseException("", new NullPointerException());
+			r.cleanObsoleteData();
+		} catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+			throw new RuntimeException(e);
+		}
+	}
 }

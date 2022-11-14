@@ -45,6 +45,8 @@ import com.distrimind.util.io.Integrity;
 import com.distrimind.util.io.MessageExternalizationException;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -77,6 +79,13 @@ public abstract class CentralDatabaseBackupReceiver {
 		this.wrapper = wrapper;
 		this.centralID=centralID;
 		wrapper.getSynchronizer().setCentralID(centralID);
+		try {
+			Method setCentralDatabaseBackupReceiverMethod=DatabaseWrapper.DatabaseSynchronizer.class.getDeclaredMethod("setCentralDatabaseBackupReceiver", CentralDatabaseBackupReceiver.class);
+			setCentralDatabaseBackupReceiverMethod.setAccessible(true);
+			setCentralDatabaseBackupReceiverMethod.invoke(wrapper.getSynchronizer(), this);
+		} catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+			throw new RuntimeException(e);
+		}
 		wrapper.getSynchronizer().loadCentralDatabaseClassesIfNecessary();
 		this.clientTable=wrapper.getTableInstance(ClientTable.class);
 		this.clientCloudAccountTable=wrapper.getTableInstance(ClientCloudAccountTable.class);
@@ -244,7 +253,7 @@ public abstract class CentralDatabaseBackupReceiver {
 		}
 	}
 
-	public void cleanObsoleteData() throws DatabaseException {
+	void cleanObsoleteData() throws DatabaseException {
 
 		wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
 			@Override

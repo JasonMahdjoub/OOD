@@ -140,7 +140,7 @@ public abstract class TestAddPeerWithCentralDatabaseBackupConnected extends Comm
 		disconnectAllDatabase();
 		checkAllDatabaseInternalDataUsedForSynchro(false);
 		Thread.sleep(1200);
-		centralDatabaseBackupReceiver.cleanObsoleteData();
+		cleanObsoleteData(centralDatabaseBackupReceiver);
 
 		Assert.assertFalse(t.hasRecordsWithAllFields("clientID", hostID4), ""+t.getRecord("clientID", hostID4));
 	}

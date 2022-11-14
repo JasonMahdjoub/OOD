@@ -1903,8 +1903,26 @@ public abstract class CommonDecentralizedTests {
 	public void testSynchroAfterTestsBetweenThreePeers() throws DatabaseException {
 		testSynchronisation();
 		if (centralDatabaseBackupReceiver!=null)
-			centralDatabaseBackupReceiver.cleanObsoleteData();
+			cleanObsoleteData(centralDatabaseBackupReceiver);
 	}
+
+	protected void cleanObsoleteData(com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupReceiver receiver) throws DatabaseException {
+		try {
+			Method cleanObsoleteDataMethod=com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupReceiver.class.getDeclaredMethod("cleanObsoleteData");
+			cleanObsoleteDataMethod.setAccessible(true);
+			cleanObsoleteDataMethod.invoke(receiver);
+		} catch (NoSuchMethodException | IllegalAccessException e) {
+			throw new RuntimeException(e);
+		}
+		catch (InvocationTargetException e)
+		{
+			if (e.getCause() instanceof Exception)
+				throw DatabaseException.getDatabaseException((Exception)e.getCause());
+			else
+				throw new RuntimeException(e);
+		}
+	}
+
 	/*
 	 * @Test(dependsOnMethods={"testAllConnect"}) public void
 	 * testInitDatabaseNetwork() throws DatabaseException { for (Database db :

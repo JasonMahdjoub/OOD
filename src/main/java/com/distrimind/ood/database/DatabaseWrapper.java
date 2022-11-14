@@ -1594,6 +1594,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 		final Set<String> backupDatabasePartsSynchronizingWithCentralDatabaseBackup=new HashSet<>();
 		private boolean sendIndirectTransactions;
 		private DecentralizedValue centralID;
+		private CentralDatabaseBackupReceiver centralDatabaseBackupReceiver;
 		private long minFilePartDurationBeforeBecomingFinalFilePart=Long.MAX_VALUE;
 
 		DatabaseSynchronizer() {
@@ -1604,7 +1605,24 @@ public abstract class DatabaseWrapper implements Cleanable {
 		}
 
 		public void setCentralID(DecentralizedValue centralID) {
+			if (centralID==null)
+				throw new NullPointerException();
+			if (this.centralID!=null)
+				throw new IllegalAccessError();
 			this.centralID = centralID;
+		}
+		@SuppressWarnings("unused")
+		void setCentralDatabaseBackupReceiver(CentralDatabaseBackupReceiver centralDatabaseBackupReceiver) {
+			if (centralDatabaseBackupReceiver==null)
+				throw new NullPointerException();
+			if (this.centralDatabaseBackupReceiver!=null)
+				throw new IllegalAccessError();
+			this.centralDatabaseBackupReceiver = centralDatabaseBackupReceiver;
+		}
+
+		@SuppressWarnings("unused")
+		CentralDatabaseBackupReceiver getCentralDatabaseBackupReceiver() {
+			return centralDatabaseBackupReceiver;
 		}
 
 		public void loadCentralDatabaseClassesIfNecessary() throws DatabaseException {
