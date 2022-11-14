@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.concurrent.ScheduledPoolExecutor;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProviderFactory;
 import com.distrimind.util.crypto.SecureRandomType;
@@ -68,6 +69,8 @@ public abstract class DatabaseFactory<DW extends DatabaseWrapper> extends MultiF
 
 	private transient DatabaseLifeCycles databaseLifeCycles=null;
 	private transient boolean createDatabasesIfNecessaryAndCheckIt=true;
+
+	private ScheduledPoolExecutor defaultPoolExecutor=null;
 
 	public DatabaseLifeCycles getDatabaseLifeCycles() {
 		return databaseLifeCycles;
@@ -197,14 +200,22 @@ public abstract class DatabaseFactory<DW extends DatabaseWrapper> extends MultiF
 		}
 	}
 
+	public ScheduledPoolExecutor getDefaultPoolExecutor() {
+		return defaultPoolExecutor;
+	}
+
+	public void setDefaultPoolExecutor(ScheduledPoolExecutor defaultPoolExecutor) {
+		this.defaultPoolExecutor = defaultPoolExecutor;
+	}
+
 	DW newWrapperInstance() throws DatabaseException
 	{
-		DW res= newWrapperInstance(databaseLifeCycles, createDatabasesIfNecessaryAndCheckIt);
+		DW res= newWrapperInstance(defaultPoolExecutor, databaseLifeCycles, createDatabasesIfNecessaryAndCheckIt);
 		res.getDatabaseConfigurationsBuilder().databaseWrapperLoaded();
 		return res;
 	}
 
-	protected abstract DW newWrapperInstance(DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException;
+	protected abstract DW newWrapperInstance(ScheduledPoolExecutor defaultPoolExecutor, DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException;
 
 
 	public abstract void deleteDatabase() throws DatabaseException;

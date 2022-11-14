@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.concurrent.ScheduledPoolExecutor;
 import com.distrimind.util.crypto.WrappedPassword;
 
 import java.io.File;
@@ -177,7 +178,7 @@ class DistantMariaDBFactory extends CommonMySQLDatabaseFactory<DistantMariaDBWra
 	}
 
 	@Override
-	protected DistantMariaDBWrapper newWrapperInstance(DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
+	protected DistantMariaDBWrapper newWrapperInstance(ScheduledPoolExecutor defaultPoolExecutor, DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
 		Charset cs=getCharacterEncoding();
 		String css=null;
 		if (cs.name().contains("-")) {
@@ -193,13 +194,13 @@ class DistantMariaDBFactory extends CommonMySQLDatabaseFactory<DistantMariaDBWra
 		else
 			css=cs.name();
 		if (additionalParams ==null)
-			return new DistantMariaDBWrapper(databaseName, urlLocation, databaseConfigurations, databaseLifeCycles,
+			return new DistantMariaDBWrapper(defaultPoolExecutor, databaseName, urlLocation, databaseConfigurations, databaseLifeCycles,
 					signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup==null?null:signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
 					encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup==null?null:encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
 					protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages==null?null:protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
 					getSecureRandom(), createDatabasesIfNecessaryAndCheckIt, port, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, css, useSSL, trustServerCertificate, enabledSslProtocolSuites, enabledSslCipherSuites, serverSslCert, autoReconnect);
 		else
-			return new DistantMariaDBWrapper(databaseName, urlLocation, databaseConfigurations, databaseLifeCycles,
+			return new DistantMariaDBWrapper(defaultPoolExecutor, databaseName, urlLocation, databaseConfigurations, databaseLifeCycles,
 					signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup==null?null:signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
 					encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup==null?null:encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
 					protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages==null?null:protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),

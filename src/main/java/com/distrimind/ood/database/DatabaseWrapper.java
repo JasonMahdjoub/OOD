@@ -54,6 +54,7 @@ import com.distrimind.ood.database.tasks.AbstractScheduledTask;
 import com.distrimind.ood.database.tasks.DatabaseTasksManager;
 import com.distrimind.ood.database.tasks.ScheduledTask;
 import com.distrimind.util.*;
+import com.distrimind.util.concurrent.ScheduledPoolExecutor;
 import com.distrimind.util.crypto.ASymmetricPublicKey;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
@@ -126,6 +127,12 @@ public abstract class DatabaseWrapper implements Cleanable {
 	private static final String TEMPORARY_BACKUPS_COMING_FROM_INTERNAL_BACKUP_DIRECTORY_NAME="temporary_backups_coming_from_internal_db_backup";
 
 	private static final String HOST_CHANNEL_ID_FILE_NAME="host_channel_id";
+	private final ScheduledPoolExecutor defaultPoolExecutor;
+
+	public ScheduledPoolExecutor getDefaultPoolExecutor() {
+		return defaultPoolExecutor;
+	}
+
 	protected static abstract class Finalizer extends Cleanable.Cleaner
 	{
 		private final Lock locker;
@@ -1212,7 +1219,8 @@ public abstract class DatabaseWrapper implements Cleanable {
 		}
 		return null;
 	}
-	protected DatabaseWrapper(Finalizer finalizer, boolean alwaysDisconnectAfterOnTransaction,
+	protected DatabaseWrapper(Finalizer finalizer,
+							  ScheduledPoolExecutor defaultPoolExecutor, boolean alwaysDisconnectAfterOnTransaction,
 							  DatabaseConfigurations databaseConfigurations,
 							  DatabaseLifeCycles databaseLifeCycles,
 							  EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -1220,6 +1228,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 							  EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 							  AbstractSecureRandom secureRandom,
 							  boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
+		this.defaultPoolExecutor=defaultPoolExecutor;
 		this.finalizer=finalizer;
 		registerCleanerIfNotDone(this.finalizer);
 		if (finalizer.loadToMemory)

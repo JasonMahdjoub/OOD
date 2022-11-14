@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.concurrent.ScheduledPoolExecutor;
 import com.distrimind.util.crypto.WrappedPassword;
 
 import java.io.File;
@@ -175,8 +176,8 @@ public class DistantPostgreSQLDatabaseFactory extends DatabaseFactory<DistantPos
 	}
 
 	@Override
-	protected DistantPostgreSQLWrapper newWrapperInstance(DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
-		return new DistantPostgreSQLWrapper(databaseName, urlLocation, databaseConfigurations, databaseLifeCycles,
+	protected DistantPostgreSQLWrapper newWrapperInstance(ScheduledPoolExecutor defaultPoolExecutor, DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
+		return new DistantPostgreSQLWrapper(defaultPoolExecutor, databaseName, urlLocation, databaseConfigurations, databaseLifeCycles,
 				signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup==null?null:signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
 				encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup==null?null:encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
 				protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages==null?null:protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
@@ -386,14 +387,10 @@ public class DistantPostgreSQLDatabaseFactory extends DatabaseFactory<DistantPos
 
 	/**
 	 * Provide the full path for the key file. Defaults to /defaultdir/postgresql.pk8.
-	 *
 	 * Note: The key file must be in PKCS-8 DER format. A PEM key can be converted to DER format using the openssl command:
-	 *
 	 * openssl pkcs8 -topk8 -inform PEM -in postgresql.key -outform DER -out postgresql.pk8 -v1 PBE-MD5-DES
-	 *
 	 * If your key has a password, provide it using the sslpassword connection parameter described below. Otherwise, you can add the flag -nocrypt to the above command to prevent the driver from requesting a password.
-	 *
-	 * Note: The use of -v1 PBE-MD5-DES might be inadequate in environments where high level of security is needed and the key is not protected by other means (e.g. access control of the OS), or the key file is transmitted in untrusted channels. We are depending on the cryptography providers provided by the java runtime. The solution documented here is known to work at the time of writing. If you have stricter security needs, please see https://stackoverflow.com/questions/58488774/configure-tomcat-hibernate-to-have-a-cryptographic-provider-supporting-1-2-840-1 for a discussion of the problem and information on choosing a better cipher suite.
+	 * Note: The use of -v1 PBE-MD5-DES might be inadequate in environments where high level of security is needed and the key is not protected by other means (e.g. access control of the OS), or the key file is transmitted in untrusted channels. We are depending on the cryptography providers provided by the java runtime. The solution documented here is known to work at the time of writing. If you have stricter security needs, please see <a href="https://stackoverflow.com/questions/58488774/configure-tomcat-hibernate-to-have-a-cryptographic-provider-supporting-1-2-840-1">...</a> for a discussion of the problem and information on choosing a better cipher suite.
 	 * @return Provide the full path for the key file. Defaults to /defaultdir/postgresql.pk8.
 	 */
 	public File getSslKey() {
@@ -402,14 +399,10 @@ public class DistantPostgreSQLDatabaseFactory extends DatabaseFactory<DistantPos
 
 	/**
 	 * Provide the full path for the key file. Defaults to /defaultdir/postgresql.pk8.
-	 *
 	 * Note: The key file must be in PKCS-8 DER format. A PEM key can be converted to DER format using the openssl command:
-	 *
 	 * openssl pkcs8 -topk8 -inform PEM -in postgresql.key -outform DER -out postgresql.pk8 -v1 PBE-MD5-DES
-	 *
 	 * If your key has a password, provide it using the sslpassword connection parameter described below. Otherwise, you can add the flag -nocrypt to the above command to prevent the driver from requesting a password.
-	 *
-	 * Note: The use of -v1 PBE-MD5-DES might be inadequate in environments where high level of security is needed and the key is not protected by other means (e.g. access control of the OS), or the key file is transmitted in untrusted channels. We are depending on the cryptography providers provided by the java runtime. The solution documented here is known to work at the time of writing. If you have stricter security needs, please see https://stackoverflow.com/questions/58488774/configure-tomcat-hibernate-to-have-a-cryptographic-provider-supporting-1-2-840-1 for a discussion of the problem and information on choosing a better cipher suite.
+	 * Note: The use of -v1 PBE-MD5-DES might be inadequate in environments where high level of security is needed and the key is not protected by other means (e.g. access control of the OS), or the key file is transmitted in untrusted channels. We depend on the cryptography providers provided by the java runtime. The solution documented here is known to work at the time of writing. If you have stricter security needs, please see <a href="https://stackoverflow.com/questions/58488774/configure-tomcat-hibernate-to-have-a-cryptographic-provider-supporting-1-2-840-1">...</a> for a discussion of the problem and information on choosing a better cipher suite.
 	 * @param sslKey Provide the full path for the key file. Defaults to /defaultdir/postgresql.pk8.
 	 */
 	public void setSslKey(File sslKey) {
@@ -616,7 +609,6 @@ public class DistantPostgreSQLDatabaseFactory extends DatabaseFactory<DistantPos
 
 	/**
 	 * Determine the number of rows fetched in ResultSet by one fetch with trip to the database. Limiting the number of rows are fetch with each trip to the database allow avoids unnecessary memory consumption and as a consequence OutOfMemoryException.
-	 *
 	 *
 	 * @param defaultRowFetchSize  The default is zero, meaning that in ResultSet will be fetch all rows at once. Negative number is not available.
 	 */

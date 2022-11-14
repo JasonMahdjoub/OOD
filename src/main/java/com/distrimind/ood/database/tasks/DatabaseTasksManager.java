@@ -60,11 +60,15 @@ import java.util.concurrent.TimeUnit;
 public class DatabaseTasksManager {
 	private final TreeSet<AbstractS<?>> tasks=new TreeSet<>();
 	private final DatabaseWrapper databaseWrapper;
-	private ScheduledPoolExecutor threadPoolExecutor=null;
+	private final ScheduledPoolExecutor threadPoolExecutor;
 	private ScheduledFuture<?> scheduledFuture=null;
 	private final ExecutedTasksTable executedTasksTable;
 
 	DatabaseTasksManager(DatabaseWrapper databaseWrapper) throws DatabaseException {
+		ScheduledPoolExecutor threadPoolExecutor=databaseWrapper.getDefaultPoolExecutor();
+		if (threadPoolExecutor==null)
+			threadPoolExecutor=new ScheduledPoolExecutor(1, 1, 10, TimeUnit.MINUTES);
+		this.threadPoolExecutor=threadPoolExecutor;
 		this.databaseWrapper = databaseWrapper;
 		this.executedTasksTable=databaseWrapper.getTableInstance(ExecutedTasksTable.class);
 	}

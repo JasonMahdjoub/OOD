@@ -44,6 +44,7 @@ import com.distrimind.ood.database.exceptions.DatabaseVersionException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.util.UtilClassLoader;
+import com.distrimind.util.concurrent.ScheduledPoolExecutor;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 
@@ -99,7 +100,7 @@ class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	protected boolean supportMultipleAutoPrimaryKeys() {
 		return true;
 	}
-	EmbeddedDerbyWrapper(String databaseName, boolean loadToMemory,
+	EmbeddedDerbyWrapper(ScheduledPoolExecutor defaultPoolExecutor, String databaseName, boolean loadToMemory,
 						 DatabaseConfigurations databaseConfigurations,
 						 DatabaseLifeCycles databaseLifeCycles,
 						 EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -107,7 +108,7 @@ class EmbeddedDerbyWrapper extends DatabaseWrapper {
 						 EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 						 AbstractSecureRandom secureRandom,
 						 boolean createDatabasesIfNecessaryAndCheckIt) throws IllegalArgumentException, DatabaseException {
-		super(new Finalizer(databaseName, false, null),  true, databaseConfigurations, databaseLifeCycles,
+		super(new Finalizer(databaseName, false, null),  defaultPoolExecutor, true, databaseConfigurations, databaseLifeCycles,
 				signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
 				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 				secureRandom, createDatabasesIfNecessaryAndCheckIt);
@@ -122,7 +123,7 @@ class EmbeddedDerbyWrapper extends DatabaseWrapper {
 		return true;
 	}
 
-	EmbeddedDerbyWrapper(File _directory,
+	EmbeddedDerbyWrapper(ScheduledPoolExecutor defaultPoolExecutor, File _directory,
 						 DatabaseConfigurations databaseConfigurations,
 						 DatabaseLifeCycles databaseLifeCycles,
 						 EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -130,7 +131,9 @@ class EmbeddedDerbyWrapper extends DatabaseWrapper {
 						 EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 						 AbstractSecureRandom secureRandom,
 						 boolean createDatabasesIfNecessaryAndCheckIt, boolean alwaysDisconnectAfterOnTransaction) throws IllegalArgumentException, DatabaseException {
-		super(new Finalizer(/* getConnection(_directory), */"Database from file : " + _directory.getAbsolutePath(), false, _directory), alwaysDisconnectAfterOnTransaction,
+		super(new Finalizer(/* getConnection(_directory), */"Database from file : " + _directory.getAbsolutePath(), false, _directory),
+				defaultPoolExecutor,
+				alwaysDisconnectAfterOnTransaction,
 				databaseConfigurations, databaseLifeCycles,
 				signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
 				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages,

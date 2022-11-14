@@ -36,10 +36,10 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.concurrent.ScheduledPoolExecutor;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 
-import java.io.File;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Savepoint;
@@ -56,7 +56,8 @@ public abstract class CommonHSQLH2DatabaseWrapper extends DatabaseWrapper{
 
 	protected boolean fileLock;
 
-	protected CommonHSQLH2DatabaseWrapper(Finalizer finalizer, boolean alwaysDisconnectAfterOnTransaction,
+	protected CommonHSQLH2DatabaseWrapper(Finalizer finalizer,
+										  ScheduledPoolExecutor defaultPoolExecutor, boolean alwaysDisconnectAfterOnTransaction,
 										  DatabaseConfigurations databaseConfigurations,
 										  DatabaseLifeCycles databaseLifeCycles,
 										  EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -65,7 +66,7 @@ public abstract class CommonHSQLH2DatabaseWrapper extends DatabaseWrapper{
 										  AbstractSecureRandom secureRandom,
 										  boolean createDatabasesIfNecessaryAndCheckIt, boolean fileLock)
 			throws DatabaseException {
-		super(finalizer, alwaysDisconnectAfterOnTransaction, databaseConfigurations, databaseLifeCycles, signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+		super(finalizer, defaultPoolExecutor, alwaysDisconnectAfterOnTransaction, databaseConfigurations, databaseLifeCycles, signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
 				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages, secureRandom, createDatabasesIfNecessaryAndCheckIt);
 		this.fileLock=true;
 

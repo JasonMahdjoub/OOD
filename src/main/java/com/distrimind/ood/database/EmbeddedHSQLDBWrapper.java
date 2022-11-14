@@ -45,6 +45,7 @@ import com.distrimind.ood.database.exceptions.DatabaseVersionException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.util.UtilClassLoader;
+import com.distrimind.util.concurrent.ScheduledPoolExecutor;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 
@@ -89,7 +90,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 
 		}
 	}
-	EmbeddedHSQLDBWrapper(String databaseName, boolean loadToMemory,
+	EmbeddedHSQLDBWrapper(ScheduledPoolExecutor defaultPoolExecutor, String databaseName, boolean loadToMemory,
 						  DatabaseConfigurations databaseConfigurations,
 						  DatabaseLifeCycles databaseLifeCycles,
 						  EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -97,7 +98,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 						  EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 						  AbstractSecureRandom secureRandom,
 						  boolean createDatabasesIfNecessaryAndCheckIt, HSQLDBConcurrencyControl concurrencyControl) throws DatabaseException {
-		super(new Finalizer(databaseName, true, null), false, databaseConfigurations,
+		super(new Finalizer(databaseName, true, null), defaultPoolExecutor, false, databaseConfigurations,
 				databaseLifeCycles, signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
 				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
 				protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
@@ -113,7 +114,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 		this.cache_free_count = 0;
 
 	}
-	EmbeddedHSQLDBWrapper(File databaseDirectory,
+	EmbeddedHSQLDBWrapper(ScheduledPoolExecutor defaultPoolExecutor, File databaseDirectory,
 						  DatabaseConfigurations databaseConfigurations,
 						  DatabaseLifeCycles databaseLifeCycles,
 						  EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -126,7 +127,9 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 		super(new Finalizer(/*
 				 * getConnection(_file_name, concurrencyControl, _cache_rows, _cache_size,
 				 * _result_max_memory_rows, _cache_free_count),
-				 */"Database from file : " + getHSQLDBDataFileName(getDatabaseFileName(databaseDirectory)) + ".data", false, databaseDirectory), alwaysDisconnectAfterOnTransaction, databaseConfigurations,
+				 */"Database from file : " + getHSQLDBDataFileName(getDatabaseFileName(databaseDirectory)) + ".data", false, databaseDirectory),
+				defaultPoolExecutor,
+				alwaysDisconnectAfterOnTransaction, databaseConfigurations,
 				databaseLifeCycles, signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
 				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
 				protectedEncryptionProfileProviderForAuthenticatedP2PMessages,

@@ -37,6 +37,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseLoadingException;
+import com.distrimind.util.concurrent.ScheduledPoolExecutor;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 import com.distrimind.util.crypto.WrappedPassword;
@@ -50,7 +51,7 @@ import java.sql.*;
  * @since OOD 2.5.0
  */
 class DistantMariaDBWrapper extends CommonMySQLWrapper{
-	protected DistantMariaDBWrapper(String _database_name, String urlLocation,
+	protected DistantMariaDBWrapper(ScheduledPoolExecutor defaultPoolExecutor, String _database_name, String urlLocation,
 									DatabaseConfigurations databaseConfigurations,
 									DatabaseLifeCycles databaseLifeCycles,
 									EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -70,7 +71,7 @@ class DistantMariaDBWrapper extends CommonMySQLWrapper{
 									File serverSslCert,
 									boolean autoReconnect,
 									String additionalParams) throws DatabaseException {
-		super(_database_name, urlLocation, databaseConfigurations,
+		super(defaultPoolExecutor, _database_name, urlLocation, databaseConfigurations,
 				databaseLifeCycles,
 				signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
 				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
@@ -82,7 +83,7 @@ class DistantMariaDBWrapper extends CommonMySQLWrapper{
 			throw new NullPointerException();
 	}
 
-	protected DistantMariaDBWrapper(String _database_name, String urlLocation,
+	protected DistantMariaDBWrapper(ScheduledPoolExecutor defaultPoolExecutor, String _database_name, String urlLocation,
 									DatabaseConfigurations databaseConfigurations,
 									DatabaseLifeCycles databaseLifeCycles,
 									EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -101,7 +102,7 @@ class DistantMariaDBWrapper extends CommonMySQLWrapper{
 									String enabledSslCipherSuites,
 									File serverSslCert,
 									boolean autoReconnect) throws DatabaseException {
-		super(_database_name, urlLocation, databaseConfigurations,
+		super(defaultPoolExecutor, _database_name, urlLocation, databaseConfigurations,
 				databaseLifeCycles,
 				signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
 				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
