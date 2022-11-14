@@ -258,7 +258,7 @@ public class DatabaseTasksManager {
 					long n=scheduledPeriodicTask.getNextOccurrenceInTimeUTCAfter(r.getLastExecutionTimeUTC());
 					if (n>scheduledPeriodicTask.getEndTimeUTCInMs())
 						return Long.MIN_VALUE;
-					r=executedTasksTable.addRecord(r);
+					executedTasksTable.addRecord(r);
 					return n;
 				}
 				else {
@@ -291,6 +291,7 @@ public class DatabaseTasksManager {
 		});
 
 	}
+	@SuppressWarnings("unused")
 	void prePackageLoading(Package databasePackageNameLoading) throws DatabaseException {
 		if (currentDatabasePackageNameLoading!=null)
 			throw new IllegalAccessError();
@@ -302,17 +303,19 @@ public class DatabaseTasksManager {
 			}
 		}, "databasePackageName=%databasePackageLoading", databasePackageNameLoading.getName());
 	}
+	@SuppressWarnings("unused")
 	void endPackageLoading() throws DatabaseException {
 		if (currentDatabasePackageNameLoading==null)
 			throw new IllegalAccessError();
 		executedTasksTable.removeRecords(new Filter<ExecutedTasksTable.Record>() {
 			@Override
-			public boolean nextRecord(ExecutedTasksTable.Record _record) throws DatabaseException {
+			public boolean nextRecord(ExecutedTasksTable.Record _record) {
 				return true;
 			}
 		}, "databasePackageName=%databasePackageLoading and toRemove=true", currentDatabasePackageNameLoading.getName());
 		this.currentDatabasePackageNameLoading=null;
 	}
+	@SuppressWarnings("unused")
 	void loadTable(Table<?> table) throws DatabaseException {
 		if (currentDatabasePackageNameLoading==null)
 			throw new IllegalAccessError();

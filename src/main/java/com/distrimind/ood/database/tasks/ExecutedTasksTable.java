@@ -50,17 +50,23 @@ class ExecutedTasksTable extends Table<ExecutedTasksTable.Record> {
 	protected ExecutedTasksTable() throws DatabaseException {
 	}
 
+
 	static class Record extends DatabaseRecord
 	{
 
+
+
 		@PrimaryKey
+		@SuppressWarnings({"FieldCanBeLocal", "FieldMayBeFinal", "unused"})
 		private String databasePackageName;
 		@PrimaryKey
+		@SuppressWarnings({"FieldCanBeLocal", "FieldMayBeFinal", "unused"})
 		private Class<? extends ITaskStrategy> strategyClass;
 
 		@Field
 		private long lastExecutionTimeUTC;
 
+		@SuppressWarnings({"FieldCanBeLocal", "FieldMayBeFinal", "unused"})
 		private boolean toRemove=false;
 		Record(Package databasePackage, Class<? extends ITaskStrategy> strategyClass) {
 			this(databasePackage.getName(), strategyClass);
@@ -75,10 +81,6 @@ class ExecutedTasksTable extends Table<ExecutedTasksTable.Record> {
 			this.lastExecutionTimeUTC=System.currentTimeMillis();
 		}
 
-		Class<? extends ITaskStrategy> getStrategyClass() {
-			return strategyClass;
-		}
-
 		long getLastExecutionTimeUTC() {
 			return lastExecutionTimeUTC;
 		}
@@ -87,8 +89,5 @@ class ExecutedTasksTable extends Table<ExecutedTasksTable.Record> {
 			this.lastExecutionTimeUTC = lastExecutionTimeUTC;
 		}
 
-		boolean isToRemove() {
-			return toRemove;
-		}
 	}
 }

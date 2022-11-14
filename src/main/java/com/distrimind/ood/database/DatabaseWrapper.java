@@ -68,6 +68,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
@@ -6267,6 +6268,8 @@ public abstract class DatabaseWrapper implements Cleanable {
 			throw new DatabaseException("There is already a database associated to the given wrapper ");
 
 		boolean oldDatabaseReplaced=false;
+
+
 		boolean allNotFound=loadDatabaseTables(configuration, databaseVersion);
 		if (allNotFounds.get() && allNotFound)
 			allNotFounds.set(true);
@@ -6352,6 +6355,30 @@ public abstract class DatabaseWrapper implements Cleanable {
 			actualDatabaseLoading.initBackupRestoreManager(this, getDatabaseDirectory(), configuration);
 		if (finalizer.databaseLogger!=null)
 			finalizer.databaseLogger.info("Configuration loaded: "+configuration);
+		try {
+			Method prePackageLoadingMethod=DatabaseTasksManager.class.getDeclaredMethod("prePackageLoading", Package.class);
+			Method endPackageLoadingMethod=DatabaseTasksManager.class.getDeclaredMethod("endPackageLoading");
+			Method loadTableMethod=DatabaseTasksManager.class.getDeclaredMethod("loadTable", Table.class);
+			prePackageLoadingMethod.setAccessible(true);
+			endPackageLoadingMethod.setAccessible(true);
+			loadTableMethod.setAccessible(true);
+			prePackageLoadingMethod.invoke(getDatabaseTasksManager(), configuration.getDatabaseSchema().getPackage());
+			for (Table<?> t : actualDatabaseLoading.tables_per_versions.get(databaseVersion).tables_instances.values())
+			{
+				loadTableMethod.invoke(getDatabaseTasksManager(), t);
+			}
+			endPackageLoadingMethod.invoke(getDatabaseTasksManager());
+		} catch (NoSuchMethodException | IllegalAccessException e) {
+			throw new RuntimeException(e);
+		}
+		catch (InvocationTargetException e)
+		{
+			if (e.getCause() instanceof Exception)
+				throw DatabaseException.getDatabaseException((Exception)e.getCause());
+			else
+				throw new RuntimeException(e);
+		}
+
 		return oldDatabaseReplaced;
 
 	}

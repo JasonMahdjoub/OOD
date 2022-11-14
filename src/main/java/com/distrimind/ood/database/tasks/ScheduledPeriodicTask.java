@@ -52,9 +52,9 @@ public final class ScheduledPeriodicTask extends AbstractScheduledTask {
 	public static final long MIN_PERIOD_IN_MS=60L*60L*1000L;
 	private long endTimeUTCInMs;
 	private long periodInMs;
-	private DayOfWeek dayOfWeek=null;
-	private byte hour=-1;
-	private byte minute=-1;
+	private DayOfWeek dayOfWeek;
+	private byte hour;
+	private byte minute;
 
 	ScheduledPeriodicTask(Class<? extends ITaskStrategy> strategyClass,
 								 long periodInMs, byte dayOfWeek, byte hour, byte minute,

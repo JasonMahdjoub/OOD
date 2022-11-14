@@ -35,11 +35,9 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.io.*;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -52,7 +50,7 @@ import java.util.Set;
 public abstract class AbstractScheduledTask implements SecureExternalizable {
 	public static final Set<Class<?>> internalTaskSchedulingClassesList=new HashSet<>(Collections.singletonList(ExecutedTasksTable.class));
 	private Class<? extends ITaskStrategy> strategyClass;
-	private transient ITaskStrategy strategy=null;
+
 
 	public AbstractScheduledTask(Class<? extends ITaskStrategy> strategyClass) {
 		if (strategyClass==null)
@@ -65,13 +63,7 @@ public abstract class AbstractScheduledTask implements SecureExternalizable {
 
 		this.strategyClass=strategyClass;
 	}
-	ITaskStrategy getStrategyInstance() throws DatabaseException {
-		try {
-			return strategyClass.getConstructor().newInstance();
-		} catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-			throw new DatabaseException("Impossible to instantiate "+strategyClass, e);
-		}
-	}
+
 
 	public Class<? extends ITaskStrategy> getStrategyClass() {
 		return strategyClass;
