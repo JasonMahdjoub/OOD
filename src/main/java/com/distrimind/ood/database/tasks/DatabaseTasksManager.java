@@ -148,18 +148,24 @@ public class DatabaseTasksManager {
 	}
 	private class DS extends AbstractS<IDatabaseTaskStrategy>
 	{
+		private boolean exception=false;
 		protected DS(AbstractScheduledTask scheduledTask, long timeUTCOfExecution) throws DatabaseException {
 			super(scheduledTask, timeUTCOfExecution);
 		}
 
 		@Override
 		protected void run() {
-			strategy.launchTask(databaseWrapper);
+			try {
+				strategy.launchTask(databaseWrapper);
+			} catch (DatabaseException e) {
+				exception=true;
+				e.printStackTrace();
+			}
 		}
 
 		@Override
 		DS getNextCycle() throws DatabaseException {
-			if (this.scheduledTask instanceof ScheduledPeriodicTask)
+			if (!exception && this.scheduledTask instanceof ScheduledPeriodicTask)
 			{
 				long n=getNextTimeUTCOfExecution();
 				if (n!=Long.MIN_VALUE)
