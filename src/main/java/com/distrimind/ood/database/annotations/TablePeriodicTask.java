@@ -39,7 +39,6 @@ import com.distrimind.ood.database.tasks.ITableTaskStrategy;
 import com.distrimind.ood.database.tasks.ScheduledPeriodicTask;
 
 import java.lang.annotation.Repeatable;
-import java.time.DayOfWeek;
 
 /**
  * @author Jason Mahdjoub

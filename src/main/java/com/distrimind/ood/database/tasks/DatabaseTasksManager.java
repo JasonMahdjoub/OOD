@@ -39,6 +39,8 @@ import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.SynchronizedTransaction;
 import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.TransactionIsolation;
+import com.distrimind.ood.database.annotations.DatabasePeriodicTask;
+import com.distrimind.ood.database.annotations.DatabasePeriodicTasks;
 import com.distrimind.ood.database.annotations.TablePeriodicTask;
 import com.distrimind.ood.database.annotations.TablePeriodicTasks;
 import com.distrimind.ood.database.exceptions.DatabaseException;
@@ -244,11 +246,7 @@ public class DatabaseTasksManager {
 	public void addTask(ScheduledTask scheduledTask) throws DatabaseException {
 		tasks.add(new DS(scheduledTask, scheduledTask.getStartTimeUTCInMs()));
 	}
-	public void addTask(ScheduledPeriodicTask scheduledTask) throws DatabaseException {
-		long n=getNextTimeOfExecution(scheduledTask);
-		if (n!=Long.MIN_VALUE)
-			addTask(new DS(scheduledTask, n));
-	}
+
 
 	private long getNextTimeOfExecution(ScheduledPeriodicTask scheduledPeriodicTask) throws DatabaseException {
 		return databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Long>() {
@@ -305,6 +303,15 @@ public class DatabaseTasksManager {
 						long n=getNextTimeOfExecution(s);
 						if (n!=Long.MIN_VALUE)
 							addTask(new TS(s, n, table));
+					}
+				}
+				for (DatabasePeriodicTask tt : ((DatabasePeriodicTasks) a).value())
+				{
+					if (tt.endTimeUTCInMs()>System.currentTimeMillis()) {
+						ScheduledPeriodicTask s = new ScheduledPeriodicTask(tt.strategy(), tt.periodInMs(), tt.dayOfWeek(), tt.hour(), tt.minute(), tt.endTimeUTCInMs());
+						long n=getNextTimeOfExecution(s);
+						if (n!=Long.MIN_VALUE)
+							addTask(new DS(s, n));
 					}
 				}
 			}
