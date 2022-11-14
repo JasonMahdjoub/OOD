@@ -35,10 +35,7 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.ood.database.DatabaseWrapper;
-import com.distrimind.ood.database.SynchronizedTransaction;
-import com.distrimind.ood.database.Table;
-import com.distrimind.ood.database.TransactionIsolation;
+import com.distrimind.ood.database.*;
 import com.distrimind.ood.database.annotations.DatabasePeriodicTask;
 import com.distrimind.ood.database.annotations.DatabasePeriodicTasks;
 import com.distrimind.ood.database.annotations.TablePeriodicTask;
@@ -63,6 +60,7 @@ public class DatabaseTasksManager {
 	private final ScheduledPoolExecutor threadPoolExecutor;
 	private ScheduledFuture<?> scheduledFuture=null;
 	private final ExecutedTasksTable executedTasksTable;
+	private Package currentDatabasePackageNameLoading=null;
 
 	DatabaseTasksManager(DatabaseWrapper databaseWrapper) throws DatabaseException {
 		ScheduledPoolExecutor threadPoolExecutor=databaseWrapper.getDefaultPoolExecutor();
@@ -81,6 +79,8 @@ public class DatabaseTasksManager {
 
 
 		protected AbstractS(AbstractScheduledTask scheduledTask, long timeUTCOfExecution) throws DatabaseException {
+			if (scheduledTask==null)
+				throw new NullPointerException();
 			this.scheduledTask = scheduledTask;
 			try {
 				//noinspection unchecked
@@ -100,12 +100,7 @@ public class DatabaseTasksManager {
 						ExecutedTasksTable.Record r=executedTasksTable.getRecord("strategyClassName", scheduledPeriodicTask.getStrategyClass());
 						if (r==null)
 						{
-							r=new ExecutedTasksTable.Record(scheduledPeriodicTask.getStrategyClass());
-							long n=scheduledPeriodicTask.getNextOccurrenceInTimeUTCAfter(r.getLastExecutionTimeUTC());
-							if (n>scheduledPeriodicTask.getEndTimeUTCInMs())
-								return Long.MIN_VALUE;
-							executedTasksTable.addRecord(r);
-							return n;
+							return Long.MIN_VALUE;
 						}
 						else {
 							r.setLastExecutionTimeUTC(System.currentTimeMillis());
@@ -256,10 +251,10 @@ public class DatabaseTasksManager {
 		return databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Long>() {
 			@Override
 			public Long run() throws Exception {
-				ExecutedTasksTable.Record r=executedTasksTable.getRecord("strategyClassName", scheduledPeriodicTask.getStrategyClass());
+				ExecutedTasksTable.Record r=executedTasksTable.getRecord("strategyClassName", scheduledPeriodicTask.getStrategyClass(), "databasePackageName", currentDatabasePackageNameLoading.getName());
 				if (r==null)
 				{
-					r=new ExecutedTasksTable.Record(scheduledPeriodicTask.getStrategyClass());
+					r=new ExecutedTasksTable.Record(currentDatabasePackageNameLoading, scheduledPeriodicTask.getStrategyClass());
 					long n=scheduledPeriodicTask.getNextOccurrenceInTimeUTCAfter(r.getLastExecutionTimeUTC());
 					if (n>scheduledPeriodicTask.getEndTimeUTCInMs())
 						return Long.MIN_VALUE;
@@ -272,8 +267,10 @@ public class DatabaseTasksManager {
 						executedTasksTable.removeRecord(r);
 						return Long.MIN_VALUE;
 					}
-					else
+					else {
+						executedTasksTable.updateRecord(r, "toRemove", false);
 						return n;
+					}
 				}
 			}
 
@@ -294,8 +291,31 @@ public class DatabaseTasksManager {
 		});
 
 	}
-
+	void prePackageLoading(Package databasePackageNameLoading) throws DatabaseException {
+		if (currentDatabasePackageNameLoading!=null)
+			throw new IllegalAccessError();
+		this.currentDatabasePackageNameLoading=databasePackageNameLoading;
+		executedTasksTable.updateRecords(new AlterRecordFilter<ExecutedTasksTable.Record>() {
+			@Override
+			public void nextRecord(ExecutedTasksTable.Record _record) throws DatabaseException {
+				update("toRemove", true);
+			}
+		}, "databasePackageName=%databasePackageLoading", databasePackageNameLoading.getName());
+	}
+	void endPackageLoading() throws DatabaseException {
+		if (currentDatabasePackageNameLoading==null)
+			throw new IllegalAccessError();
+		executedTasksTable.removeRecords(new Filter<ExecutedTasksTable.Record>() {
+			@Override
+			public boolean nextRecord(ExecutedTasksTable.Record _record) throws DatabaseException {
+				return true;
+			}
+		}, "databasePackageName=%databasePackageLoading and toRemove=true", currentDatabasePackageNameLoading.getName());
+		this.currentDatabasePackageNameLoading=null;
+	}
 	void loadTable(Table<?> table) throws DatabaseException {
+		if (currentDatabasePackageNameLoading==null)
+			throw new IllegalAccessError();
 		for (Annotation a : table.getClass().getAnnotations())
 		{
 			if (a instanceof TablePeriodicTasks)

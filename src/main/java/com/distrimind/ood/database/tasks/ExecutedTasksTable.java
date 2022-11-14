@@ -52,6 +52,9 @@ class ExecutedTasksTable extends Table<ExecutedTasksTable.Record> {
 
 	static class Record extends DatabaseRecord
 	{
+
+		@PrimaryKey
+		private String databasePackageName;
 		@PrimaryKey
 		private Class<? extends ITaskStrategy> strategyClass;
 
@@ -59,8 +62,15 @@ class ExecutedTasksTable extends Table<ExecutedTasksTable.Record> {
 		private long lastExecutionTimeUTC;
 
 		private boolean toRemove=false;
-
-		Record(Class<? extends ITaskStrategy> strategyClass) {
+		Record(Package databasePackage, Class<? extends ITaskStrategy> strategyClass) {
+			this(databasePackage.getName(), strategyClass);
+		}
+		Record(String databasePackageName, Class<? extends ITaskStrategy> strategyClass) {
+			if (databasePackageName==null)
+				throw new NullPointerException();
+			if (strategyClass==null)
+				throw new NullPointerException();
+			this.databasePackageName=databasePackageName;
 			this.strategyClass = strategyClass;
 			this.lastExecutionTimeUTC=System.currentTimeMillis();
 		}
