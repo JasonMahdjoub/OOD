@@ -59,7 +59,7 @@ public class RepetitiveTableTaskStrategyOnTable2 implements ITableTaskStrategy<T
 		}
 		catch (AssertionError e)
 		{
-			TestScheduledTasks.testFailed.set(true);
+			ScheduledTasksTests.testFailed.set(true);
 			throw e;
 		}
 	}

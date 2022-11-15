@@ -34,7 +34,7 @@
 
 	<test name="testScheduledTasks">
 		<classes>
-			<class name="com.distrimind.ood.database.tasks.TestScheduledTasks" />
+			<class name="com.distrimind.ood.database.tasks.ScheduledTasksTests" />
 		</classes>
 	</test>
 

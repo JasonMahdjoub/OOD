@@ -49,7 +49,6 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.File;
 import java.time.DayOfWeek;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -65,7 +64,7 @@ import static org.testng.Assert.fail;
  * @since OOD 3.2.0
  */
 
-public abstract class TestScheduledTasks {
+public abstract class ScheduledTasksTests {
 	protected Table1 table1;
 	protected Table2 table2;
 	static AtomicBoolean testFailed=new AtomicBoolean(false);
@@ -73,9 +72,6 @@ public abstract class TestScheduledTasks {
 	static Set<Class<?>> listClasses=new HashSet<>(Arrays.asList(Table1.class, Table2.class));
 	static DatabaseConfiguration dbConfig1 = new DatabaseConfiguration(new DatabaseSchema(Table1.class.getPackage(), listClasses));
 	private DatabaseWrapper sql_db;
-
-
-	public abstract File getDatabaseBackupFileName();
 
 	public static final AbstractSecureRandom secureRandom;
 	static {
@@ -108,23 +104,30 @@ public abstract class TestScheduledTasks {
 	@DataProvider
 	public Object[][] getDataProviderForPeriodicTasks()
 	{
-
-		return new Object[][]{
-				{new ScheduledPeriodicTask(RepetitiveDatabaseTaskStrategy.class, 750),240, 240+750},
-				{new ScheduledPeriodicTask(RepetitiveDatabaseTaskStrategy.class, 1250),4000, 4000+1250},
-				{new ScheduledPeriodicTask(RepetitiveDatabaseTaskStrategy.class, 750, (byte)5, (byte)-1, null),8750, 20331000000L},
-				{new ScheduledPeriodicTask(RepetitiveDatabaseTaskStrategy.class, 750, (byte)5, (byte)37, null),8750, 20271000000L},
-				{new ScheduledPeriodicTask(RepetitiveDatabaseTaskStrategy.class, 750, (byte)5, (byte)37, DayOfWeek.FRIDAY),8750, 106851000000L},
-				{new ScheduledPeriodicTask(RepetitiveDatabaseTaskStrategy.class, 750, (byte)-1, (byte)40, DayOfWeek.FRIDAY),8750, 96051000000L},
-				{new ScheduledPeriodicTask(RepetitiveDatabaseTaskStrategy.class, 750, (byte)-1, (byte)-1, DayOfWeek.FRIDAY),8750, 95931000000L},
-				{new ScheduledPeriodicTask(RepetitiveDatabaseTaskStrategy.class, 750, (byte)-1, (byte)-1, DayOfWeek.MONDAY),8750, 384651000000L},
-		};
+		ScheduledPeriodicTask.MIN_PERIOD_IN_MS=100;
+		try {
+			return new Object[][]{
+					{new ScheduledPeriodicTask(RepetitiveDatabaseTaskStrategy.class, 750), 240L, 240L + 750L},
+				{new ScheduledPeriodicTask(RepetitiveDatabaseTaskStrategy.class, 1250),4000L, 4000L+1250L},
+				{new ScheduledPeriodicTask(RepetitiveDatabaseTaskStrategy.class, 750000, (byte)5, (byte)-1, null),8750000L, 20300000L},
+				{new ScheduledPeriodicTask(RepetitiveDatabaseTaskStrategy.class, 750000, (byte)5, (byte)37, null),8750000L, 20240000L},
+				{new ScheduledPeriodicTask(RepetitiveDatabaseTaskStrategy.class, 750000, (byte)5, (byte)37, DayOfWeek.FRIDAY),8750000L, 106640000L},
+				{new ScheduledPeriodicTask(RepetitiveDatabaseTaskStrategy.class, 750000, (byte)-1, (byte)40, DayOfWeek.FRIDAY),8750000L, 96020000L},
+				{new ScheduledPeriodicTask(RepetitiveDatabaseTaskStrategy.class, 750000, (byte)-1, (byte)-1, DayOfWeek.FRIDAY),8750000L, 95900000L},
+				{new ScheduledPeriodicTask(RepetitiveDatabaseTaskStrategy.class, 750000, (byte)-1, (byte)-1, DayOfWeek.MONDAY),8750000L, 355100000L},
+			};
+		}
+		catch (Throwable e)
+		{
+			e.printStackTrace();
+			throw e;
+		}
 	}
 
 	@Test(dataProvider = "getDataProviderForPeriodicTasks")
 	public void testScheduledPeriodicTask(ScheduledPeriodicTask task, long timeUTC, long expectedNextTimeUTC)
 	{
-		Assert.assertEquals(task.getNextOccurrenceInTimeUTCAfter(timeUTC, false), expectedNextTimeUTC,"task="+task+", task.getNextOccurrenceInTimeUTCAfter(timeUTC)="+task.getNextOccurrenceInTimeUTCAfter(timeUTC)+", expectedNextTimeUTC="+expectedNextTimeUTC);
+		Assert.assertEquals(task.getNextOccurrenceInTimeUTCAfter(timeUTC, false), expectedNextTimeUTC,"task="+task+", task.getNextOccurrenceInTimeUTCAfter(timeUTC)="+task.getNextOccurrenceInTimeUTCAfter(timeUTC, false)+", expectedNextTimeUTC="+expectedNextTimeUTC);
 		Assert.assertTrue(task.getNextOccurrenceInTimeUTCAfter(timeUTC)>System.currentTimeMillis());
 	}
 
@@ -201,9 +204,9 @@ public abstract class TestScheduledTasks {
 		} catch (InterruptedException e) {
 			throw new RuntimeException(e);
 		}
+		Assert.assertFalse(testFailed.get());
 		Assert.assertEquals(table1.getRecordsNumber(), 0);
 		Assert.assertEquals(table2.getRecordsNumber(), 0);
-		Assert.assertFalse(testFailed.get());
 	}
 
 

@@ -71,7 +71,7 @@ public class NonAnnotationPeriodicDatabaseTaskStrategy implements IDatabaseTaskS
 		}
 		catch (AssertionError e)
 		{
-			TestScheduledTasks.testFailed.set(true);
+			ScheduledTasksTests.testFailed.set(true);
 			throw e;
 		}
 

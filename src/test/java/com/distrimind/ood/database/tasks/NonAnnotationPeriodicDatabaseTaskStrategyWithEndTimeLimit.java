@@ -67,7 +67,7 @@ public class NonAnnotationPeriodicDatabaseTaskStrategyWithEndTimeLimit implement
 		}
 		catch (AssertionError e)
 		{
-			TestScheduledTasks.testFailed.set(true);
+			ScheduledTasksTests.testFailed.set(true);
 			throw e;
 		}
 

@@ -47,6 +47,6 @@ public class NotLaunchedTaskStrategy implements IDatabaseTaskStrategy {
 	@Override
 	public void launchTask(DatabaseWrapper wrapper)  {
 		Assert.fail();
-		TestScheduledTasks.testFailed.set(true);
+		ScheduledTasksTests.testFailed.set(true);
 	}
 }

@@ -1,4 +1,4 @@
-package com.distrimind.ood.database.tasks;
+package com.distrimind.ood.database.tests;
 /*
 Copyright or © or Copr. Jason Mahdjoub (01/04/2013)
 
@@ -35,48 +35,28 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.util.io.SecuredObjectInputStream;
-import com.distrimind.util.io.SecuredObjectOutputStream;
+import com.distrimind.ood.database.DatabaseWrapper;
+import com.distrimind.ood.database.EmbeddedHSQLDBWrapper;
+import com.distrimind.ood.database.InFileEmbeddedHSQLDatabaseFactory;
+import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.tasks.ScheduledTasksTests;
 
-import java.io.IOException;
+import java.io.File;
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
- * @since MaDKitLanEdition 3.2.0
+ * @since OOD 3.2.0
  */
-public final class ScheduledTask extends AbstractScheduledTask {
-	private long startTimeUTCInMs;
-	public ScheduledTask(Class<? extends ITaskStrategy> strategyClass, long startTimeUTCInMs) {
-		super(strategyClass);
-		this.startTimeUTCInMs = startTimeUTCInMs;
-	}
-	public long getStartTimeUTCInMs() {
-		return startTimeUTCInMs;
+public class HSQLDBScheduledTasksTests extends ScheduledTasksTests {
+	private static final String database_file_name = "hsqldbdatabasetaskstests";
+	@Override
+	public DatabaseWrapper getDatabaseWrapperInstance() throws IllegalArgumentException, DatabaseException {
+		return new InFileEmbeddedHSQLDatabaseFactory(new File(database_file_name)).getDatabaseWrapperSingleton();
 	}
 
 	@Override
-	public int getInternalSerializedSize() {
-		return super.getInternalSerializedSize()+8;
-	}
-
-	@Override
-	public void writeExternal(SecuredObjectOutputStream out) throws IOException {
-		super.writeExternal(out);
-		out.writeLong(startTimeUTCInMs);
-	}
-
-	@Override
-	public void readExternal(SecuredObjectInputStream in) throws IOException, ClassNotFoundException {
-		super.readExternal(in);
-		startTimeUTCInMs=in.readLong();
-	}
-
-	@Override
-	public String toString() {
-		return "ScheduledTask{" +
-				"strategyClass=" + getStrategyClass().getName() +
-				", startTimeUTCInMs=" + startTimeUTCInMs +
-				'}';
+	public void deleteDatabaseFiles() throws IllegalArgumentException {
+		EmbeddedHSQLDBWrapper.deleteDatabasesFiles(new File(database_file_name ));
 	}
 }

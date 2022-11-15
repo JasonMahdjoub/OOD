@@ -42,6 +42,7 @@ import com.distrimind.util.io.SecuredObjectOutputStream;
 
 import java.io.IOException;
 import java.time.*;
+import java.time.temporal.TemporalAccessor;
 
 /**
  * @author Jason Mahdjoub
@@ -49,7 +50,9 @@ import java.time.*;
  * @since OOD 3.2.0
  */
 public final class ScheduledPeriodicTask extends AbstractScheduledTask {
-	public static final long MIN_PERIOD_IN_MS=60L*60L*1000L;
+	public static final long DEFAULT_MIN_PERIOD_IN_MS=60L*60L*1000L;
+	static long MIN_PERIOD_IN_MS=DEFAULT_MIN_PERIOD_IN_MS;
+
 	private long endTimeUTCInMs;
 	private long periodInMs;
 	private DayOfWeek dayOfWeek;
@@ -147,7 +150,7 @@ public final class ScheduledPeriodicTask extends AbstractScheduledTask {
 	}
 	long getNextOccurrenceInTimeUTCAfter(long timeUTCInMs, boolean takeCurrentTimeMillisAsMinimumTime)
 	{
-		LocalDateTime ld= LocalDateTime.ofInstant(Instant.ofEpochMilli(timeUTCInMs), ZoneId.systemDefault());
+		LocalDateTime ld= LocalDateTime.ofInstant(Instant.ofEpochMilli(timeUTCInMs), ZoneOffset.UTC);
 		if (periodInMs!=-1)
 			ld=ld.plus(Duration.ofMillis(periodInMs));
 		if (minute!=-1)
@@ -184,7 +187,7 @@ public final class ScheduledPeriodicTask extends AbstractScheduledTask {
 					ld=ld.plus(Duration.ofDays(7-dow.ordinal()+dayOfWeek.ordinal()));
 			}
 		}
-		long res=ld.toEpochSecond(ZoneOffset.UTC);
+		long res=ld.toInstant(ZoneOffset.UTC).toEpochMilli();
 		if (takeCurrentTimeMillisAsMinimumTime) {
 			if ((res - timeUTCInMs) < ((System.currentTimeMillis() - timeUTCInMs) / 2))
 				return getNextOccurrenceInTimeUTCAfter(System.currentTimeMillis(), false);
@@ -207,7 +210,7 @@ public final class ScheduledPeriodicTask extends AbstractScheduledTask {
 	@Override
 	public String toString() {
 		return "ScheduledPeriodicTask{" +
-				"strategyClass=" + getStrategyClass() +
+				"strategyClass=" + getStrategyClass().getName() +
 				", endTimeUTCInMs=" + endTimeUTCInMs +
 				", periodInMs=" + periodInMs +
 				", dayOfWeek=" + dayOfWeek +

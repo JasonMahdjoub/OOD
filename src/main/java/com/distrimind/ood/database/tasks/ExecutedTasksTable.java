@@ -86,6 +86,10 @@ class ExecutedTasksTable extends Table<ExecutedTasksTable.Record> {
 			this.lastExecutionTimeUTC=System.currentTimeMillis();
 		}
 
+		@SuppressWarnings("unused")
+		private Record() {
+		}
+
 		long getLastExecutionTimeUTC() {
 			return lastExecutionTimeUTC;
 		}
