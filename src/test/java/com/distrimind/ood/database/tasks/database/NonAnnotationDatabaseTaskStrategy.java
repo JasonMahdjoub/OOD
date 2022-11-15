@@ -1,4 +1,4 @@
-package com.distrimind.ood.database.tasks;
+package com.distrimind.ood.database.tasks.database;
 /*
 Copyright or © or Copr. Jason Mahdjoub (01/04/2013)
 
@@ -37,6 +37,8 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.tasks.IDatabaseTaskStrategy;
+import com.distrimind.ood.database.tasks.ScheduledTasksTests;
 import org.testng.Assert;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -47,9 +49,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @since OOD 3.2.0
  */
 public class NonAnnotationDatabaseTaskStrategy implements IDatabaseTaskStrategy {
-	static final AtomicInteger numberOfTaskCall=new AtomicInteger(0);
+	public static final AtomicInteger numberOfTaskCall=new AtomicInteger(0);
 	private final long startTime=System.currentTimeMillis();
-	static final long delay=1000;
+	public static final long delay=1000;
 	@Override
 	public void launchTask(DatabaseWrapper wrapper) throws DatabaseException {
 

@@ -42,6 +42,7 @@ import com.distrimind.ood.database.DatabaseConfiguration;
 import com.distrimind.ood.database.DatabaseSchema;
 import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.tasks.database.*;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.SecureRandomType;
 import org.testng.Assert;
@@ -67,7 +68,7 @@ import static org.testng.Assert.fail;
 public abstract class ScheduledTasksTests {
 	protected Table1 table1;
 	protected Table2 table2;
-	static AtomicBoolean testFailed=new AtomicBoolean(false);
+	public static AtomicBoolean testFailed=new AtomicBoolean(false);
 
 	static Set<Class<?>> listClasses=new HashSet<>(Arrays.asList(Table1.class, Table2.class));
 	static DatabaseConfiguration dbConfig1 = new DatabaseConfiguration(new DatabaseSchema(Table1.class.getPackage(), listClasses));
@@ -158,34 +159,34 @@ public abstract class ScheduledTasksTests {
 		table1.addRecord(new Table1.Record(RepetitiveDatabaseTaskStrategy.class.getSimpleName()+";2"));
 		table1.addRecord(new Table1.Record(RepetitiveDatabaseTaskStrategy.class.getSimpleName()+";3"));
 
-		table2.addRecord(new Table1.Record(RepetitiveDatabaseTaskStrategy.class.getSimpleName()+";1"));
-		table2.addRecord(new Table1.Record(RepetitiveDatabaseTaskStrategy.class.getSimpleName()+";2"));
-		table2.addRecord(new Table1.Record(RepetitiveDatabaseTaskStrategy.class.getSimpleName()+";3"));
+		table2.addRecord(new Table2.Record(RepetitiveDatabaseTaskStrategy.class.getSimpleName()+";1"));
+		table2.addRecord(new Table2.Record(RepetitiveDatabaseTaskStrategy.class.getSimpleName()+";2"));
+		table2.addRecord(new Table2.Record(RepetitiveDatabaseTaskStrategy.class.getSimpleName()+";3"));
 
 		table1.addRecord(new Table1.Record(RepetitiveTableTaskStrategyOnTable1.class.getSimpleName()+";1"));
 		table1.addRecord(new Table1.Record(RepetitiveTableTaskStrategyOnTable1.class.getSimpleName()+";2"));
 		table1.addRecord(new Table1.Record(RepetitiveTableTaskStrategyOnTable1.class.getSimpleName()+";3"));
 
-		table2.addRecord(new Table1.Record(RepetitiveTableTaskStrategyOnTable2.class.getSimpleName()+";1"));
-		table2.addRecord(new Table1.Record(RepetitiveTableTaskStrategyOnTable2.class.getSimpleName()+";2"));
-		table2.addRecord(new Table1.Record(RepetitiveTableTaskStrategyOnTable2.class.getSimpleName()+";3"));
+		table2.addRecord(new Table2.Record(RepetitiveTableTaskStrategyOnTable2.class.getSimpleName()+";1"));
+		table2.addRecord(new Table2.Record(RepetitiveTableTaskStrategyOnTable2.class.getSimpleName()+";2"));
+		table2.addRecord(new Table2.Record(RepetitiveTableTaskStrategyOnTable2.class.getSimpleName()+";3"));
 
 		table1.addRecord(new Table1.Record(NonAnnotationDatabaseTaskStrategy.class.getSimpleName()+";1"));
-		table2.addRecord(new Table1.Record(NonAnnotationDatabaseTaskStrategy.class.getSimpleName()+";1"));
+		table2.addRecord(new Table2.Record(NonAnnotationDatabaseTaskStrategy.class.getSimpleName()+";1"));
 
 		table1.addRecord(new Table1.Record(NonAnnotationPeriodicDatabaseTaskStrategy.class.getSimpleName()+";1"));
 		table1.addRecord(new Table1.Record(NonAnnotationPeriodicDatabaseTaskStrategy.class.getSimpleName()+";2"));
 		table1.addRecord(new Table1.Record(NonAnnotationPeriodicDatabaseTaskStrategy.class.getSimpleName()+";3"));
 
-		table2.addRecord(new Table1.Record(NonAnnotationPeriodicDatabaseTaskStrategy.class.getSimpleName()+";1"));
-		table2.addRecord(new Table1.Record(NonAnnotationPeriodicDatabaseTaskStrategy.class.getSimpleName()+";2"));
-		table2.addRecord(new Table1.Record(NonAnnotationPeriodicDatabaseTaskStrategy.class.getSimpleName()+";3"));
+		table2.addRecord(new Table2.Record(NonAnnotationPeriodicDatabaseTaskStrategy.class.getSimpleName()+";1"));
+		table2.addRecord(new Table2.Record(NonAnnotationPeriodicDatabaseTaskStrategy.class.getSimpleName()+";2"));
+		table2.addRecord(new Table2.Record(NonAnnotationPeriodicDatabaseTaskStrategy.class.getSimpleName()+";3"));
 
 		table1.addRecord(new Table1.Record(NonAnnotationPeriodicDatabaseTaskStrategyWithEndTimeLimit.class.getSimpleName()+";1"));
 		table1.addRecord(new Table1.Record(NonAnnotationPeriodicDatabaseTaskStrategyWithEndTimeLimit.class.getSimpleName()+";2"));
 
-		table2.addRecord(new Table1.Record(NonAnnotationPeriodicDatabaseTaskStrategyWithEndTimeLimit.class.getSimpleName()+";1"));
-		table2.addRecord(new Table1.Record(NonAnnotationPeriodicDatabaseTaskStrategyWithEndTimeLimit.class.getSimpleName()+";2"));
+		table2.addRecord(new Table2.Record(NonAnnotationPeriodicDatabaseTaskStrategyWithEndTimeLimit.class.getSimpleName()+";1"));
+		table2.addRecord(new Table2.Record(NonAnnotationPeriodicDatabaseTaskStrategyWithEndTimeLimit.class.getSimpleName()+";2"));
 
 		sql_db.getDatabaseTasksManager().addTask(new ScheduledTask(NonAnnotationDatabaseTaskStrategy.class, System.currentTimeMillis()-NonAnnotationDatabaseTaskStrategy.delay));
 		sql_db.getDatabaseTasksManager().addTask(new ScheduledPeriodicTask(NonAnnotationPeriodicDatabaseTaskStrategy.class, NonAnnotationPeriodicDatabaseTaskStrategy.periodInMs));

@@ -264,6 +264,7 @@ public class DatabaseConfigurationsBuilder {
 	}
 
 	void databaseWrapperLoaded() throws DatabaseException {
+
 		pushQuery(t-> {
 			t.checkDatabaseLoading(null);
 			t.checkConnexionsToDesynchronize();

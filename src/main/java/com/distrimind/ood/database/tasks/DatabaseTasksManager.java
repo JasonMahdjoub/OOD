@@ -60,7 +60,7 @@ public class DatabaseTasksManager {
 	private final ScheduledPoolExecutor threadPoolExecutor;
 	private ScheduledFuture<?> scheduledFuture=null;
 	private final ExecutedTasksTable executedTasksTable;
-	private Package currentDatabasePackageNameLoading=null;
+	private Package currentDatabasePackageLoading =null;
 
 	DatabaseTasksManager(DatabaseWrapper databaseWrapper) throws DatabaseException {
 		ScheduledPoolExecutor threadPoolExecutor=databaseWrapper.getDefaultPoolExecutor();
@@ -269,8 +269,8 @@ public class DatabaseTasksManager {
 		tasks.add(new DS(scheduledTask, scheduledTask.getStartTimeUTCInMs(), false));
 	}
 	public void addTask(ScheduledPeriodicTask scheduledTask) throws DatabaseException {
-		long n=getNextTimeOfExecution(scheduledTask);
-		if (n!=Long.MIN_VALUE)
+		long n=scheduledTask.getNextOccurrenceInTimeUTCAfter(System.currentTimeMillis(), false);
+		if (n!=Long.MIN_VALUE && n<scheduledTask.getEndTimeUTCInMs())
 			addTask(new DS(scheduledTask, n, false));
 	}
 
@@ -278,10 +278,10 @@ public class DatabaseTasksManager {
 		return databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Long>() {
 			@Override
 			public Long run() throws Exception {
-				ExecutedTasksTable.Record r=executedTasksTable.getRecord("strategyClassName", scheduledPeriodicTask.getStrategyClass(), "databasePackageName", currentDatabasePackageNameLoading.getName());
+				ExecutedTasksTable.Record r=executedTasksTable.getRecord("strategyClassName", scheduledPeriodicTask.getStrategyClass(), "databasePackageName", currentDatabasePackageLoading.getName());
 				if (r==null)
 				{
-					r=new ExecutedTasksTable.Record(currentDatabasePackageNameLoading, scheduledPeriodicTask.getStrategyClass());
+					r=new ExecutedTasksTable.Record(currentDatabasePackageLoading.getName(), scheduledPeriodicTask.getStrategyClass());
 					long n=scheduledPeriodicTask.getNextOccurrenceInTimeUTCAfter(r.getLastExecutionTimeUTC());
 					if (n>scheduledPeriodicTask.getEndTimeUTCInMs())
 						return Long.MIN_VALUE;
@@ -320,31 +320,31 @@ public class DatabaseTasksManager {
 	}
 	@SuppressWarnings("unused")
 	void prePackageLoading(Package databasePackageNameLoading) throws DatabaseException {
-		if (currentDatabasePackageNameLoading!=null)
+		if (currentDatabasePackageLoading !=null)
 			throw new IllegalAccessError();
-		this.currentDatabasePackageNameLoading=databasePackageNameLoading;
+		this.currentDatabasePackageLoading =databasePackageNameLoading;
 		executedTasksTable.updateRecords(new AlterRecordFilter<ExecutedTasksTable.Record>() {
 			@Override
 			public void nextRecord(ExecutedTasksTable.Record _record) throws DatabaseException {
 				update("toRemove", true);
 			}
-		}, "databasePackageName=%databasePackageLoading", databasePackageNameLoading.getName());
+		}, "databasePackageName=%databasePackageLoading", "databasePackageLoading", databasePackageNameLoading.getName());
 	}
 	@SuppressWarnings("unused")
 	void endPackageLoading() throws DatabaseException {
-		if (currentDatabasePackageNameLoading==null)
+		if (currentDatabasePackageLoading ==null)
 			throw new IllegalAccessError();
 		executedTasksTable.removeRecords(new Filter<ExecutedTasksTable.Record>() {
 			@Override
 			public boolean nextRecord(ExecutedTasksTable.Record _record) {
 				return true;
 			}
-		}, "databasePackageName=%databasePackageLoading and toRemove=true", currentDatabasePackageNameLoading.getName());
-		this.currentDatabasePackageNameLoading=null;
+		}, "databasePackageName=%databasePackageLoading and toRemove=%b", "databasePackageLoading", currentDatabasePackageLoading.getName(), "b", true);
+		this.currentDatabasePackageLoading =null;
 	}
 	@SuppressWarnings("unused")
 	void loadTable(Table<?> table) throws DatabaseException {
-		if (currentDatabasePackageNameLoading==null)
+		if (currentDatabasePackageLoading ==null)
 			throw new IllegalAccessError();
 		for (Annotation a : table.getClass().getAnnotations())
 		{

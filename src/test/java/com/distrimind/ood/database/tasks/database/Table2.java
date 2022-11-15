@@ -1,4 +1,4 @@
-package com.distrimind.ood.database.tasks;
+package com.distrimind.ood.database.tasks.database;
 /*
 Copyright or © or Copr. Jason Mahdjoub (01/04/2013)
 
@@ -35,18 +35,37 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.ood.database.DatabaseWrapper;
-import org.testng.Assert;
+import com.distrimind.ood.database.DatabaseRecord;
+import com.distrimind.ood.database.Table;
+import com.distrimind.ood.database.annotations.Field;
+import com.distrimind.ood.database.annotations.NotNull;
+import com.distrimind.ood.database.annotations.RandomPrimaryKey;
+import com.distrimind.ood.database.annotations.TablePeriodicTask;
+import com.distrimind.ood.database.exceptions.DatabaseException;
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.2.0
  */
-public class NotLaunchedTaskStrategy implements IDatabaseTaskStrategy {
-	@Override
-	public void launchTask(DatabaseWrapper wrapper)  {
-		Assert.fail();
-		ScheduledTasksTests.testFailed.set(true);
+@TablePeriodicTask(strategy = RepetitiveTableTaskStrategyOnTable2.class, periodInMs = RepetitiveTableTaskStrategyOnTable1.periodInMs)
+public final class Table2 extends Table<Table2.Record> {
+	private Table2() throws DatabaseException {
+	}
+
+	public static class Record extends DatabaseRecord
+	{
+		@RandomPrimaryKey
+		public int pk;
+		@Field
+		@NotNull
+		public String stringField;
+
+		public Record(String stringField) {
+			this.stringField = stringField;
+		}
+
+		public Record() {
+		}
 	}
 }

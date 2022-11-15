@@ -1,4 +1,4 @@
-package com.distrimind.ood.database.tasks;
+package com.distrimind.ood.database.tasks.database;
 /*
 Copyright or © or Copr. Jason Mahdjoub (01/04/2013)
 
@@ -37,6 +37,8 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.tasks.IDatabaseTaskStrategy;
+import com.distrimind.ood.database.tasks.ScheduledTasksTests;
 import org.testng.Assert;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -46,28 +48,24 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @version 1.0
  * @since OOD 3.2.0
  */
-public class NonAnnotationPeriodicDatabaseTaskStrategy implements IDatabaseTaskStrategy {
-	static final AtomicInteger numberOfTaskCall=new AtomicInteger(0);
-	static final long periodInMs=750;
+public class NonAnnotationPeriodicDatabaseTaskStrategyWithEndTimeLimit implements IDatabaseTaskStrategy {
+	public static final AtomicInteger numberOfTaskCall=new AtomicInteger(0);
+	public static final long periodInMs=500;
 	private final long startUTC=System.currentTimeMillis();
-	static void checkTime(long startUTC, long periodInMs)
-	{
-		long d=System.currentTimeMillis()-startUTC;
-		long p=numberOfTaskCall.get()*periodInMs;
-		Assert.assertTrue(p<=d);
-		Assert.assertTrue(p+periodInMs/2>d);
-	}
+	public static final int maxNumberOfCalls=2;
+	private final long endTimeUTC=startUTC+maxNumberOfCalls*periodInMs+periodInMs/2;
 	@Override
 	public void launchTask(DatabaseWrapper wrapper) throws DatabaseException {
 		try {
-			checkTime(startUTC, periodInMs);
-
+			NonAnnotationPeriodicDatabaseTaskStrategy.checkTime(startUTC, periodInMs);
+			Assert.assertTrue(endTimeUTC > System.currentTimeMillis() - endTimeUTC);
 			Table1 t1 = wrapper.getTableInstance(Table1.class);
 			Assert.assertNotNull(t1);
 			Table2 t2 = wrapper.getTableInstance(Table2.class);
 			Assert.assertNotNull(t2);
-			t1.removeRecordsWithAllFields("stringField", NonAnnotationPeriodicDatabaseTaskStrategy.class.getSimpleName() + ";" + numberOfTaskCall.incrementAndGet());
-			t2.removeRecordsWithAllFields("stringField", NonAnnotationPeriodicDatabaseTaskStrategy.class.getSimpleName() + ";" + numberOfTaskCall.get());
+			t1.removeRecordsWithAllFields("stringField", NonAnnotationPeriodicDatabaseTaskStrategyWithEndTimeLimit.class.getSimpleName() + ";" + numberOfTaskCall.incrementAndGet());
+			t2.removeRecordsWithAllFields("stringField", NonAnnotationPeriodicDatabaseTaskStrategyWithEndTimeLimit.class.getSimpleName() + ";" + numberOfTaskCall.get());
+			Assert.assertTrue(numberOfTaskCall.get() <= maxNumberOfCalls);
 		}
 		catch (AssertionError e)
 		{

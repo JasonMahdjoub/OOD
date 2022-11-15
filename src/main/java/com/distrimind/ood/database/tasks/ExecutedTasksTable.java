@@ -49,8 +49,8 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  * @since OOD 3.2.0
  */
 @LoadToMemory
-class ExecutedTasksTable extends Table<ExecutedTasksTable.Record> {
-	protected ExecutedTasksTable() throws DatabaseException {
+final class ExecutedTasksTable extends Table<ExecutedTasksTable.Record> {
+	private ExecutedTasksTable() throws DatabaseException {
 	}
 
 
@@ -72,6 +72,7 @@ class ExecutedTasksTable extends Table<ExecutedTasksTable.Record> {
 		private long lastExecutionTimeUTC;
 
 		@SuppressWarnings({"FieldCanBeLocal", "FieldMayBeFinal", "unused"})
+		@Field
 		private boolean toRemove=false;
 		Record(Package databasePackage, Class<? extends ITaskStrategy> strategyClass) {
 			this(databasePackage.getName(), strategyClass);

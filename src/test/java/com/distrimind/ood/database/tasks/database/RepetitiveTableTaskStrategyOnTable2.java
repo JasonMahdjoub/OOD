@@ -1,4 +1,4 @@
-package com.distrimind.ood.database.tasks;
+package com.distrimind.ood.database.tasks.database;
 /*
 Copyright or © or Copr. Jason Mahdjoub (01/04/2013)
 
@@ -35,30 +35,34 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.ood.database.DatabaseRecord;
-import com.distrimind.ood.database.Table;
-import com.distrimind.ood.database.annotations.Field;
-import com.distrimind.ood.database.annotations.NotNull;
-import com.distrimind.ood.database.annotations.RandomPrimaryKey;
-import com.distrimind.ood.database.annotations.TablePeriodicTask;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.tasks.ITableTaskStrategy;
+import com.distrimind.ood.database.tasks.ScheduledTasksTests;
+import org.testng.Assert;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.2.0
  */
-@TablePeriodicTask(strategy = RepetitiveTableTaskStrategyOnTable2.class, periodInMs = RepetitiveTableTaskStrategyOnTable1.periodInMs)
-public class Table2 extends Table<Table2.Record> {
-	protected Table2() throws DatabaseException {
-	}
-
-	public static class Record extends DatabaseRecord
-	{
-		@RandomPrimaryKey
-		int pk;
-		@Field
-		@NotNull
-		String stringField;
+public class RepetitiveTableTaskStrategyOnTable2 implements ITableTaskStrategy<Table2> {
+	public static final AtomicInteger numberOfTaskCall=new AtomicInteger(0);
+	public static final long periodInMs=1250;
+	private final long startUTC=System.currentTimeMillis();
+	@Override
+	public void launchTask(Table2 t2) throws DatabaseException {
+		try {
+			NonAnnotationPeriodicDatabaseTaskStrategy.checkTime(startUTC, periodInMs);
+			Assert.assertNotNull(t2);
+			numberOfTaskCall.incrementAndGet();
+			t2.removeRecordsWithAllFields("stringField", RepetitiveTableTaskStrategyOnTable2.class.getSimpleName() + ";" + numberOfTaskCall.incrementAndGet());
+		}
+		catch (AssertionError e)
+		{
+			ScheduledTasksTests.testFailed.set(true);
+			throw e;
+		}
 	}
 }

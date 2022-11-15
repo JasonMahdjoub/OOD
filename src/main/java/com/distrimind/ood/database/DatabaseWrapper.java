@@ -6383,28 +6383,27 @@ public abstract class DatabaseWrapper implements Cleanable {
 			actualDatabaseLoading.initBackupRestoreManager(this, getDatabaseDirectory(), configuration);
 		if (finalizer.databaseLogger!=null)
 			finalizer.databaseLogger.info("Configuration loaded: "+configuration);
-		try {
-			Method prePackageLoadingMethod=DatabaseTasksManager.class.getDeclaredMethod("prePackageLoading", Package.class);
-			Method endPackageLoadingMethod=DatabaseTasksManager.class.getDeclaredMethod("endPackageLoading");
-			Method loadTableMethod=DatabaseTasksManager.class.getDeclaredMethod("loadTable", Table.class);
-			prePackageLoadingMethod.setAccessible(true);
-			endPackageLoadingMethod.setAccessible(true);
-			loadTableMethod.setAccessible(true);
-			prePackageLoadingMethod.invoke(getDatabaseTasksManager(), configuration.getDatabaseSchema().getPackage());
-			for (Table<?> t : actualDatabaseLoading.tables_per_versions.get(databaseVersion).tables_instances.values())
-			{
-				loadTableMethod.invoke(getDatabaseTasksManager(), t);
-			}
-			endPackageLoadingMethod.invoke(getDatabaseTasksManager());
-		} catch (NoSuchMethodException | IllegalAccessException e) {
-			throw new RuntimeException(e);
-		}
-		catch (InvocationTargetException e)
-		{
-			if (e.getCause() instanceof Exception)
-				throw DatabaseException.getDatabaseException((Exception)e.getCause());
-			else
+		if (!DatabaseWrapper.reservedDatabases.contains(configuration.getDatabaseSchema().getPackage())) {
+			try {
+				Method prePackageLoadingMethod = DatabaseTasksManager.class.getDeclaredMethod("prePackageLoading", Package.class);
+				Method endPackageLoadingMethod = DatabaseTasksManager.class.getDeclaredMethod("endPackageLoading");
+				Method loadTableMethod = DatabaseTasksManager.class.getDeclaredMethod("loadTable", Table.class);
+				prePackageLoadingMethod.setAccessible(true);
+				endPackageLoadingMethod.setAccessible(true);
+				loadTableMethod.setAccessible(true);
+				prePackageLoadingMethod.invoke(getDatabaseTasksManager(), configuration.getDatabaseSchema().getPackage());
+				for (Table<?> t : actualDatabaseLoading.tables_per_versions.get(databaseVersion).tables_instances.values()) {
+					loadTableMethod.invoke(getDatabaseTasksManager(), t);
+				}
+				endPackageLoadingMethod.invoke(getDatabaseTasksManager());
+			} catch (NoSuchMethodException | IllegalAccessException e) {
 				throw new RuntimeException(e);
+			} catch (InvocationTargetException e) {
+				if (e.getCause() instanceof Exception)
+					throw DatabaseException.getDatabaseException((Exception) e.getCause());
+				else
+					throw new RuntimeException(e);
+			}
 		}
 
 		return oldDatabaseReplaced;

@@ -1,4 +1,4 @@
-package com.distrimind.ood.database.tasks;
+package com.distrimind.ood.database.tasks.database;
 /*
 Copyright or © or Copr. Jason Mahdjoub (01/04/2013)
 
@@ -35,7 +35,10 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.tasks.IDatabaseTaskStrategy;
+import com.distrimind.ood.database.tasks.ScheduledTasksTests;
 import org.testng.Assert;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -45,17 +48,20 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @version 1.0
  * @since OOD 3.2.0
  */
-public class RepetitiveTableTaskStrategyOnTable1 implements ITableTaskStrategy<Table1> {
-	static final AtomicInteger numberOfTaskCall=new AtomicInteger(0);
-	static final long periodInMs=850;
+public class RepetitiveDatabaseTaskStrategy implements IDatabaseTaskStrategy {
+	public static final AtomicInteger numberOfTaskCall=new AtomicInteger(0);
+	public static final long periodInMs=1000;
 	private final long startUTC=System.currentTimeMillis();
 	@Override
-	public void launchTask(Table1 t1) throws DatabaseException {
+	public void launchTask(DatabaseWrapper wrapper) throws DatabaseException {
 		try {
 			NonAnnotationPeriodicDatabaseTaskStrategy.checkTime(startUTC, periodInMs);
+			Table1 t1 = wrapper.getTableInstance(Table1.class);
 			Assert.assertNotNull(t1);
-			numberOfTaskCall.incrementAndGet();
-			t1.removeRecordsWithAllFields("stringField", RepetitiveTableTaskStrategyOnTable1.class.getSimpleName() + ";" + numberOfTaskCall.incrementAndGet());
+			Table2 t2 = wrapper.getTableInstance(Table2.class);
+			Assert.assertNotNull(t2);
+			t1.removeRecordsWithAllFields("stringField", RepetitiveDatabaseTaskStrategy.class.getSimpleName() + ";" + numberOfTaskCall.incrementAndGet());
+			t2.removeRecordsWithAllFields("stringField", RepetitiveDatabaseTaskStrategy.class.getSimpleName() + ";" + numberOfTaskCall.get());
 		}
 		catch (AssertionError e)
 		{

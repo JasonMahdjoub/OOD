@@ -1,4 +1,4 @@
-package com.distrimind.ood.database.tasks;
+package com.distrimind.ood.database.tasks.database;
 /*
 Copyright or © or Copr. Jason Mahdjoub (01/04/2013)
 
@@ -47,17 +47,17 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  */
 @DatabasePeriodicTask(strategy = RepetitiveDatabaseTaskStrategy.class, periodInMs = RepetitiveTableTaskStrategyOnTable1.periodInMs)
 @TablePeriodicTask(strategy = RepetitiveTableTaskStrategyOnTable1.class, periodInMs = RepetitiveTableTaskStrategyOnTable1.periodInMs)
-public class Table1 extends Table<Table1.Record> {
-	protected Table1() throws DatabaseException {
+public final class Table1 extends Table<Table1.Record> {
+	private Table1() throws DatabaseException {
 	}
 
 	public static class Record extends DatabaseRecord
 	{
 		@RandomPrimaryKey
-		int pk;
+		public int pk;
 		@Field
 		@NotNull
-		String stringField;
+		public String stringField;
 
 		public Record(String stringField) {
 			this.stringField = stringField;
