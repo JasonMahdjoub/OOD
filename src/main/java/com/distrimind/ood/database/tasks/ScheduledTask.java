@@ -71,4 +71,12 @@ public final class ScheduledTask extends AbstractScheduledTask {
 		super.readExternal(in);
 		startTimeUTCInMs=in.readLong();
 	}
+
+	@Override
+	public String toString() {
+		return "ScheduledTask{" +
+				"strategyClass=" + getStrategyClass() +
+				", startTimeUTCInMs=" + startTimeUTCInMs +
+				'}';
+	}
 }

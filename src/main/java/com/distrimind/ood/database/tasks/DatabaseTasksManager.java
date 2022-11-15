@@ -77,6 +77,7 @@ public class DatabaseTasksManager {
 		protected final T strategy;
 		protected final long timeUTCOfExecution;
 		protected final boolean annotation;
+		protected boolean exception=false;
 
 
 		protected AbstractS(AbstractScheduledTask scheduledTask, long timeUTCOfExecution, boolean annotation) throws DatabaseException {
@@ -158,7 +159,7 @@ public class DatabaseTasksManager {
 	}
 	private class DS extends AbstractS<IDatabaseTaskStrategy>
 	{
-		private boolean exception=false;
+
 		protected DS(AbstractScheduledTask scheduledTask, long timeUTCOfExecution, boolean annotation) throws DatabaseException {
 			super(scheduledTask, timeUTCOfExecution, annotation);
 		}
@@ -196,11 +197,17 @@ public class DatabaseTasksManager {
 
 		@Override
 		protected void run() {
-			strategy.launchTaskWithUntypedTable(table);
+			try {
+				strategy.launchTaskWithUntypedTable(table);
+			} catch (DatabaseException e) {
+				exception=true;
+				e.printStackTrace();
+			}
+
 		}
 		@Override
 		TS getNextCycle() throws DatabaseException {
-			if (this.scheduledTask instanceof ScheduledPeriodicTask)
+			if (!exception && this.scheduledTask instanceof ScheduledPeriodicTask)
 			{
 				long n=getNextTimeUTCOfExecution();
 				if (n!=Long.MIN_VALUE)

@@ -32,6 +32,11 @@
         </classes>
     </test>
 
+	<test name="testScheduledTasks">
+		<classes>
+			<class name="com.distrimind.ood.database.tasks.TestScheduledTasks" />
+		</classes>
+	</test>
 
 
 </suite>

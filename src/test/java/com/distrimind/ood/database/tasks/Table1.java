@@ -35,7 +35,9 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.Table;
+import com.distrimind.ood.database.annotations.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 
 /**
@@ -43,10 +45,26 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  * @version 1.0
  * @since OOD 3.2.0
  */
-public interface ITableTaskStrategy<T extends Table<?>> extends ITaskStrategy {
-	void launchTask(T table) throws DatabaseException;
-	@SuppressWarnings("unchecked")
-	default void launchTaskWithUntypedTable(Table<?> table) throws DatabaseException {
-		this.launchTask((T)table);
+@DatabasePeriodicTask(strategy = RepetitiveDatabaseTaskStrategy.class, periodInMs = RepetitiveTableTaskStrategyOnTable1.periodInMs)
+@TablePeriodicTask(strategy = RepetitiveTableTaskStrategyOnTable1.class, periodInMs = RepetitiveTableTaskStrategyOnTable1.periodInMs)
+public class Table1 extends Table<Table1.Record> {
+	protected Table1() throws DatabaseException {
 	}
+
+	public static class Record extends DatabaseRecord
+	{
+		@RandomPrimaryKey
+		int pk;
+		@Field
+		@NotNull
+		String stringField;
+
+		public Record(String stringField) {
+			this.stringField = stringField;
+		}
+
+		public Record() {
+		}
+	}
+
 }

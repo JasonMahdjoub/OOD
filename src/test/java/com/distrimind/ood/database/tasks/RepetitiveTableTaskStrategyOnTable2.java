@@ -35,18 +35,32 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import org.testng.Assert;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.2.0
  */
-public interface ITableTaskStrategy<T extends Table<?>> extends ITaskStrategy {
-	void launchTask(T table) throws DatabaseException;
-	@SuppressWarnings("unchecked")
-	default void launchTaskWithUntypedTable(Table<?> table) throws DatabaseException {
-		this.launchTask((T)table);
+public class RepetitiveTableTaskStrategyOnTable2 implements ITableTaskStrategy<Table2> {
+	static final AtomicInteger numberOfTaskCall=new AtomicInteger(0);
+	static final long periodInMs=1250;
+	private final long startUTC=System.currentTimeMillis();
+	@Override
+	public void launchTask(Table2 t2) throws DatabaseException {
+		try {
+			NonAnnotationPeriodicDatabaseTaskStrategy.checkTime(startUTC, periodInMs);
+			Assert.assertNotNull(t2);
+			numberOfTaskCall.incrementAndGet();
+			t2.removeRecordsWithAllFields("stringField", RepetitiveTableTaskStrategyOnTable2.class.getSimpleName() + ";" + numberOfTaskCall.incrementAndGet());
+		}
+		catch (AssertionError e)
+		{
+			TestScheduledTasks.testFailed.set(true);
+			throw e;
+		}
 	}
 }

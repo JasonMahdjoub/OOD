@@ -35,18 +35,45 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.ood.database.Table;
+import com.distrimind.ood.database.DatabaseWrapper;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import org.testng.Assert;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.2.0
  */
-public interface ITableTaskStrategy<T extends Table<?>> extends ITaskStrategy {
-	void launchTask(T table) throws DatabaseException;
-	@SuppressWarnings("unchecked")
-	default void launchTaskWithUntypedTable(Table<?> table) throws DatabaseException {
-		this.launchTask((T)table);
+public class NonAnnotationPeriodicDatabaseTaskStrategy implements IDatabaseTaskStrategy {
+	static final AtomicInteger numberOfTaskCall=new AtomicInteger(0);
+	static final long periodInMs=750;
+	private final long startUTC=System.currentTimeMillis();
+	static void checkTime(long startUTC, long periodInMs)
+	{
+		long d=System.currentTimeMillis()-startUTC;
+		long p=numberOfTaskCall.get()*periodInMs;
+		Assert.assertTrue(p<=d);
+		Assert.assertTrue(p+periodInMs/2>d);
+	}
+	@Override
+	public void launchTask(DatabaseWrapper wrapper) throws DatabaseException {
+		try {
+			checkTime(startUTC, periodInMs);
+
+			Table1 t1 = wrapper.getTableInstance(Table1.class);
+			Assert.assertNotNull(t1);
+			Table2 t2 = wrapper.getTableInstance(Table2.class);
+			Assert.assertNotNull(t2);
+			t1.removeRecordsWithAllFields("stringField", NonAnnotationPeriodicDatabaseTaskStrategy.class.getSimpleName() + ";" + numberOfTaskCall.incrementAndGet());
+			t2.removeRecordsWithAllFields("stringField", NonAnnotationPeriodicDatabaseTaskStrategy.class.getSimpleName() + ";" + numberOfTaskCall.get());
+		}
+		catch (AssertionError e)
+		{
+			TestScheduledTasks.testFailed.set(true);
+			throw e;
+		}
+
 	}
 }

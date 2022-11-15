@@ -35,18 +35,18 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.ood.database.Table;
-import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.DatabaseWrapper;
+import org.testng.Assert;
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.2.0
  */
-public interface ITableTaskStrategy<T extends Table<?>> extends ITaskStrategy {
-	void launchTask(T table) throws DatabaseException;
-	@SuppressWarnings("unchecked")
-	default void launchTaskWithUntypedTable(Table<?> table) throws DatabaseException {
-		this.launchTask((T)table);
+public class NotLaunchedTaskStrategy implements IDatabaseTaskStrategy {
+	@Override
+	public void launchTask(DatabaseWrapper wrapper)  {
+		Assert.fail();
+		TestScheduledTasks.testFailed.set(true);
 	}
 }

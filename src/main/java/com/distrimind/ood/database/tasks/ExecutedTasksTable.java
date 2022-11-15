@@ -39,6 +39,7 @@ import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.annotations.Field;
 import com.distrimind.ood.database.annotations.LoadToMemory;
+import com.distrimind.ood.database.annotations.NotNull;
 import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 
@@ -60,8 +61,10 @@ class ExecutedTasksTable extends Table<ExecutedTasksTable.Record> {
 
 		@PrimaryKey
 		@SuppressWarnings({"FieldCanBeLocal", "FieldMayBeFinal", "unused"})
+		@NotNull
 		private String databasePackageName;
 		@PrimaryKey
+		@NotNull
 		@SuppressWarnings({"FieldCanBeLocal", "FieldMayBeFinal", "unused"})
 		private Class<? extends ITaskStrategy> strategyClass;
 

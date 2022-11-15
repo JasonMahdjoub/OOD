@@ -145,7 +145,7 @@ public final class ScheduledPeriodicTask extends AbstractScheduledTask {
 	{
 		return getNextOccurrenceInTimeUTCAfter(timeUTCInMs, true);
 	}
-	private long getNextOccurrenceInTimeUTCAfter(long timeUTCInMs, boolean takeCurrentTimeMillisAsMinimumTime)
+	long getNextOccurrenceInTimeUTCAfter(long timeUTCInMs, boolean takeCurrentTimeMillisAsMinimumTime)
 	{
 		LocalDateTime ld= LocalDateTime.ofInstant(Instant.ofEpochMilli(timeUTCInMs), ZoneId.systemDefault());
 		if (periodInMs!=-1)
@@ -202,5 +202,17 @@ public final class ScheduledPeriodicTask extends AbstractScheduledTask {
 
 	public byte getMinute() {
 		return minute;
+	}
+
+	@Override
+	public String toString() {
+		return "ScheduledPeriodicTask{" +
+				"strategyClass=" + getStrategyClass() +
+				", endTimeUTCInMs=" + endTimeUTCInMs +
+				", periodInMs=" + periodInMs +
+				", dayOfWeek=" + dayOfWeek +
+				", hour=" + hour +
+				", minute=" + minute +
+				'}';
 	}
 }
