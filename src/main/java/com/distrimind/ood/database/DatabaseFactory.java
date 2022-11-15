@@ -71,6 +71,7 @@ public abstract class DatabaseFactory<DW extends DatabaseWrapper> extends MultiF
 	private transient boolean createDatabasesIfNecessaryAndCheckIt=true;
 
 	private ScheduledPoolExecutor defaultPoolExecutor=null;
+	private Object context=null;
 
 	public DatabaseLifeCycles getDatabaseLifeCycles() {
 		return databaseLifeCycles;
@@ -208,16 +209,27 @@ public abstract class DatabaseFactory<DW extends DatabaseWrapper> extends MultiF
 		this.defaultPoolExecutor = defaultPoolExecutor;
 	}
 
-	DW newWrapperInstance() throws DatabaseException
+	final DW newWrapperInstance() throws DatabaseException
 	{
-		DW res= newWrapperInstance(defaultPoolExecutor, databaseLifeCycles, createDatabasesIfNecessaryAndCheckIt);
+		DW res= newWrapperInstanceImpl();
 		res.getDatabaseConfigurationsBuilder().databaseWrapperLoaded();
 		return res;
 	}
 
-	protected abstract DW newWrapperInstance(ScheduledPoolExecutor defaultPoolExecutor, DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException;
+	protected abstract DW newWrapperInstanceImpl() throws DatabaseException;
 
 
 	public abstract void deleteDatabase() throws DatabaseException;
+
+	public Object getContext() {
+		return context;
+	}
+
+	public void setContext(Object context) {
+		if (context==null)
+			throw new NullPointerException();
+		this.context = context;
+	}
+
 
 }

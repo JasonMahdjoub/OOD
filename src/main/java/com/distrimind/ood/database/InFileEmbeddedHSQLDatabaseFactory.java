@@ -35,10 +35,9 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import java.io.File;
-
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.util.concurrent.ScheduledPoolExecutor;
+
+import java.io.File;
 
 /**
  * 
@@ -230,12 +229,12 @@ public class InFileEmbeddedHSQLDatabaseFactory extends DatabaseFactory<EmbeddedH
 	}
 
 	@Override
-	protected EmbeddedHSQLDBWrapper newWrapperInstance(ScheduledPoolExecutor defaultPoolExecutor, DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
-		return new EmbeddedHSQLDBWrapper(defaultPoolExecutor, directory, databaseConfigurations, databaseLifeCycles,
+	protected EmbeddedHSQLDBWrapper newWrapperInstanceImpl() throws DatabaseException {
+		return new EmbeddedHSQLDBWrapper(getDefaultPoolExecutor(), getContext(), directory, databaseConfigurations, getDatabaseLifeCycles(),
 				signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup==null?null:signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
 				encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup==null?null:encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
 				protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages==null?null:protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
-				getSecureRandom(), createDatabasesIfNecessaryAndCheckIt, alwaysDisconnectAfterOneTransaction, concurrencyControl, cacheRows, cacheSizeBytes,
+				getSecureRandom(), isCreateDatabasesIfNecessaryAndCheckIt(), alwaysDisconnectAfterOneTransaction, concurrencyControl, cacheRows, cacheSizeBytes,
 					resultMaxMemoryRows, cacheFreeCount, lockFile);
 	}
 

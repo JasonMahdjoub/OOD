@@ -100,7 +100,7 @@ class EmbeddedDerbyWrapper extends DatabaseWrapper {
 	protected boolean supportMultipleAutoPrimaryKeys() {
 		return true;
 	}
-	EmbeddedDerbyWrapper(ScheduledPoolExecutor defaultPoolExecutor, String databaseName, boolean loadToMemory,
+	EmbeddedDerbyWrapper(ScheduledPoolExecutor defaultPoolExecutor, Object context, String databaseName, boolean loadToMemory,
 						 DatabaseConfigurations databaseConfigurations,
 						 DatabaseLifeCycles databaseLifeCycles,
 						 EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -108,7 +108,8 @@ class EmbeddedDerbyWrapper extends DatabaseWrapper {
 						 EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 						 AbstractSecureRandom secureRandom,
 						 boolean createDatabasesIfNecessaryAndCheckIt) throws IllegalArgumentException, DatabaseException {
-		super(new Finalizer(databaseName, false, null),  defaultPoolExecutor, true, databaseConfigurations, databaseLifeCycles,
+		super(new Finalizer(databaseName, false, null),  defaultPoolExecutor,context,
+				true, databaseConfigurations, databaseLifeCycles,
 				signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
 				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 				secureRandom, createDatabasesIfNecessaryAndCheckIt);
@@ -123,7 +124,7 @@ class EmbeddedDerbyWrapper extends DatabaseWrapper {
 		return true;
 	}
 
-	EmbeddedDerbyWrapper(ScheduledPoolExecutor defaultPoolExecutor, File _directory,
+	EmbeddedDerbyWrapper(ScheduledPoolExecutor defaultPoolExecutor, Object context, File _directory,
 						 DatabaseConfigurations databaseConfigurations,
 						 DatabaseLifeCycles databaseLifeCycles,
 						 EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -132,7 +133,7 @@ class EmbeddedDerbyWrapper extends DatabaseWrapper {
 						 AbstractSecureRandom secureRandom,
 						 boolean createDatabasesIfNecessaryAndCheckIt, boolean alwaysDisconnectAfterOnTransaction) throws IllegalArgumentException, DatabaseException {
 		super(new Finalizer(/* getConnection(_directory), */"Database from file : " + _directory.getAbsolutePath(), false, _directory),
-				defaultPoolExecutor,
+				defaultPoolExecutor, context,
 				alwaysDisconnectAfterOnTransaction,
 				databaseConfigurations, databaseLifeCycles,
 				signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,

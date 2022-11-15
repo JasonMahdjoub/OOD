@@ -93,7 +93,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 		}
 	}
 
-	EmbeddedH2DatabaseWrapper(ScheduledPoolExecutor defaultPoolExecutor, String databaseName, boolean loadToMemory,
+	EmbeddedH2DatabaseWrapper(ScheduledPoolExecutor defaultPoolExecutor, Object context, String databaseName, boolean loadToMemory,
 							  DatabaseConfigurations databaseConfigurations,
 							  DatabaseLifeCycles databaseLifeCycles,
 							  EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -101,7 +101,8 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 							  EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 							  AbstractSecureRandom secureRandom,
 							  boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
-		super(new Finalizer(databaseName, true, null), defaultPoolExecutor, false,
+		super(new Finalizer(databaseName, true, null), defaultPoolExecutor, context,
+				false,
 				databaseConfigurations, databaseLifeCycles, signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
 				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
 				protectedEncryptionProfileProviderForAuthenticatedP2PMessages, secureRandom, createDatabasesIfNecessaryAndCheckIt, true);
@@ -111,7 +112,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 		this.cacheSizeBytes=0;
 		this.android=false;
 	}
-	EmbeddedH2DatabaseWrapper(ScheduledPoolExecutor defaultPoolExecutor, File _directory_name,
+	EmbeddedH2DatabaseWrapper(ScheduledPoolExecutor defaultPoolExecutor, Object context, File _directory_name,
 							  DatabaseConfigurations databaseConfigurations,
 							  DatabaseLifeCycles databaseLifeCycles,
 							  EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -121,7 +122,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 							  boolean createDatabasesIfNecessaryAndCheckIt, boolean alwaysDisconnectAfterOnTransaction, boolean fileLock, int pageSizeBytes
 			,int cacheSizeBytes) throws DatabaseException {
 		super(new Finalizer("Database from file : " + getH2DataFileName(getDatabaseFileName(_directory_name)), false, _directory_name),
-				defaultPoolExecutor,
+				defaultPoolExecutor,context,
 				alwaysDisconnectAfterOnTransaction,
 				databaseConfigurations,
 				databaseLifeCycles,
@@ -136,7 +137,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 		this.android=false;
 	}
 
-	EmbeddedH2DatabaseWrapper(ScheduledPoolExecutor defaultPoolExecutor, File _directory_name,
+	EmbeddedH2DatabaseWrapper(ScheduledPoolExecutor defaultPoolExecutor, Object context, File _directory_name,
 							  DatabaseConfigurations databaseConfigurations,
 							  DatabaseLifeCycles databaseLifeCycles,
 							  EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -146,7 +147,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 							  boolean createDatabasesIfNecessaryAndCheckIt, boolean alwaysDisconnectAfterOnTransaction, int pageSizeBytes
 			,int cacheSizeBytes) throws DatabaseException {
 		super(new Finalizer("Database from file : " + getH2DataFileName(getDatabaseFileName(_directory_name)),
-				false, _directory_name), defaultPoolExecutor, alwaysDisconnectAfterOnTransaction,
+				false, _directory_name), defaultPoolExecutor, context, alwaysDisconnectAfterOnTransaction,
 				databaseConfigurations,
 				databaseLifeCycles,
 				signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,

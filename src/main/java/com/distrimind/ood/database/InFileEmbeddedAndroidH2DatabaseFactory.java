@@ -37,7 +37,6 @@ package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.util.UtilClassLoader;
-import com.distrimind.util.concurrent.ScheduledPoolExecutor;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -212,12 +211,12 @@ public class InFileEmbeddedAndroidH2DatabaseFactory extends DatabaseFactory<Embe
 	}
 
 	@Override
-	protected EmbeddedH2DatabaseWrapper newWrapperInstance(ScheduledPoolExecutor defaultPoolExecutor, DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
-		return new EmbeddedH2DatabaseWrapper(defaultPoolExecutor, getDirectory(), databaseConfigurations, databaseLifeCycles,
+	protected EmbeddedH2DatabaseWrapper newWrapperInstanceImpl() throws DatabaseException {
+		return new EmbeddedH2DatabaseWrapper(getDefaultPoolExecutor(), getContext(), getDirectory(), databaseConfigurations, getDatabaseLifeCycles(),
 				signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup==null?null:signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
 				encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup==null?null:encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
 				protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages==null?null:protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
-				getSecureRandom(), createDatabasesIfNecessaryAndCheckIt, alwaysDisconnectAfterOneTransaction, pageSizeBytes, cacheSizeBytes);
+				getSecureRandom(), isCreateDatabasesIfNecessaryAndCheckIt(), alwaysDisconnectAfterOneTransaction, pageSizeBytes, cacheSizeBytes);
 	}
 
 	public boolean isAlwaysDisconnectAfterOneTransaction() {

@@ -1,7 +1,6 @@
 package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.util.concurrent.ScheduledPoolExecutor;
 
 /**
  * @author Jason Mahdjoub
@@ -28,12 +27,12 @@ public class InMemoryEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH
 	}
 
 	@Override
-	protected EmbeddedH2DatabaseWrapper newWrapperInstance(ScheduledPoolExecutor defaultPoolExecutor, DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
-		return new EmbeddedH2DatabaseWrapper(defaultPoolExecutor, databaseName, true, databaseConfigurations, databaseLifeCycles,
+	protected EmbeddedH2DatabaseWrapper newWrapperInstanceImpl() throws DatabaseException {
+		return new EmbeddedH2DatabaseWrapper(getDefaultPoolExecutor(), getContext(), databaseName, true, databaseConfigurations, getDatabaseLifeCycles(),
 				signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup==null?null:signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
 				encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup==null?null:encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
 				protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages==null?null:protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
-				getSecureRandom(), createDatabasesIfNecessaryAndCheckIt);
+				getSecureRandom(), isCreateDatabasesIfNecessaryAndCheckIt());
 	}
 
 	public static long getSerialVersionUID() {

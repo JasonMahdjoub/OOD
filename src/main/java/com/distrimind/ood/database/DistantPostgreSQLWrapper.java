@@ -76,7 +76,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 		}
 	}
 
-	protected DistantPostgreSQLWrapper(ScheduledPoolExecutor defaultPoolExecutor, String databaseName, String urlLocation,
+	protected DistantPostgreSQLWrapper(ScheduledPoolExecutor defaultPoolExecutor, Object context, String databaseName, String urlLocation,
 									   DatabaseConfigurations databaseConfigurations,
 									   DatabaseLifeCycles databaseLifeCycles,
 									   EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -105,7 +105,8 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 									   int preparedStatementCacheQueries,
 									   int preparedStatementCacheSizeMiB,
 									   int defaultRowFetchSize) throws DatabaseException {
-		super(new Finalizer(databaseName, false, new File(urlLocation)), defaultPoolExecutor, false, databaseConfigurations, databaseLifeCycles, signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+		super(new Finalizer(databaseName, false, new File(urlLocation)), defaultPoolExecutor, context,
+				false, databaseConfigurations, databaseLifeCycles, signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
 				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 				secureRandom, createDatabasesIfNecessaryAndCheckIt);
 		url=getURL(urlLocation, port, databaseName, loginTimeOutInSeconds, connectTimeOutInSeconds, socketTimeOutSeconds, additionalParams, sslMode, sslFactory, sslKey, sslCert, sslRootCert, sslHostNameVerifier, sslPasswordCallBack, sslPassword, databaseMetadataCacheFields, databaseMetadataCacheFieldsMiB, prepareThreshold, preparedStatementCacheQueries, preparedStatementCacheSizeMiB, defaultRowFetchSize);

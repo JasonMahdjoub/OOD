@@ -1,7 +1,6 @@
 package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.util.concurrent.ScheduledPoolExecutor;
 
 /**
  * @author Jason Mahdjoub
@@ -37,12 +36,12 @@ class InMemoryEmbeddedDerbyDatabaseFactory extends DatabaseFactory<EmbeddedDerby
 	}
 
 	@Override
-	protected EmbeddedDerbyWrapper newWrapperInstance(ScheduledPoolExecutor defaultPoolExecutor, DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
-		return new EmbeddedDerbyWrapper(defaultPoolExecutor, databaseName, true, databaseConfigurations, databaseLifeCycles,
+	protected EmbeddedDerbyWrapper newWrapperInstanceImpl() throws DatabaseException {
+		return new EmbeddedDerbyWrapper(getDefaultPoolExecutor(), getContext(), databaseName, true, databaseConfigurations, getDatabaseLifeCycles(),
 				signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup==null?null:signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
 				encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup==null?null:encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
 				protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages==null?null:protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
-				getSecureRandom(), createDatabasesIfNecessaryAndCheckIt);
+				getSecureRandom(), isCreateDatabasesIfNecessaryAndCheckIt());
 	}
 
 	public static long getSerialVersionUID() {

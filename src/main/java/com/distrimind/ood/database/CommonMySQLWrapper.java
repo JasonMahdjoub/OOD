@@ -78,7 +78,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 		}
 	}
 
-	protected CommonMySQLWrapper(ScheduledPoolExecutor defaultPoolExecutor, String _database_name, String urlLocation,
+	protected CommonMySQLWrapper(ScheduledPoolExecutor defaultPoolExecutor, Object context, String _database_name, String urlLocation,
 			DatabaseConfigurations databaseConfigurations,
 			DatabaseLifeCycles databaseLifeCycles,
 			EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -93,7 +93,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 			String url,
 			String characterEncoding
 								) throws DatabaseException {
-		super(new Finalizer(_database_name, false, new File(url)),  defaultPoolExecutor,false,
+		super(new Finalizer(_database_name, false, new File(url)),  defaultPoolExecutor,context,false,
 				databaseConfigurations,
 				databaseLifeCycles,
 				signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -107,7 +107,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 		this.charset=characterEncoding;
 		this.maxCharSize=getMaxCharSize(this.charset);
 	}
-	protected CommonMySQLWrapper(ScheduledPoolExecutor defaultPoolExecutor, String _database_name, String urlLocation,
+	protected CommonMySQLWrapper(ScheduledPoolExecutor defaultPoolExecutor, Object context, String _database_name, String urlLocation,
 								 DatabaseConfigurations databaseConfigurations,
 								 DatabaseLifeCycles databaseLifeCycles,
 								 EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -120,7 +120,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 								 WrappedPassword password,
 								 String url
 	) throws DatabaseException {
-		super(new Finalizer(_database_name, false, new File(url)), defaultPoolExecutor,
+		super(new Finalizer(_database_name, false, new File(url)), defaultPoolExecutor, context,
 				false,
 				databaseConfigurations,
 				databaseLifeCycles,

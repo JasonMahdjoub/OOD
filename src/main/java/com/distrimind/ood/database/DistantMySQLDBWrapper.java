@@ -20,7 +20,7 @@ import java.sql.Savepoint;
  */
 public class DistantMySQLDBWrapper extends CommonMySQLWrapper{
 
-	protected DistantMySQLDBWrapper(ScheduledPoolExecutor defaultPoolExecutor, String _database_name, String urlLocation,
+	protected DistantMySQLDBWrapper(ScheduledPoolExecutor defaultPoolExecutor, Object context, String _database_name, String urlLocation,
 									DatabaseConfigurations databaseConfigurations,
 									DatabaseLifeCycles databaseLifeCycles,
 									EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -28,14 +28,14 @@ public class DistantMySQLDBWrapper extends CommonMySQLWrapper{
 									EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 									AbstractSecureRandom secureRandom,
 									boolean createDatabasesIfNecessaryAndCheckIt, int port, String user, WrappedPassword password, int connectTimeInMillis, int socketTimeOutMillis, boolean useCompression, String characterEncoding, DistantMySQLDatabaseFactory.SSLMode sslMode, boolean paranoid, File serverRSAPublicKeyFile, boolean autoReconnect, int prefetchNumberRows, boolean noCache, String additionalParams) throws DatabaseException {
-		super(defaultPoolExecutor, _database_name, urlLocation, databaseConfigurations, databaseLifeCycles, signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+		super(defaultPoolExecutor, context, _database_name, urlLocation, databaseConfigurations, databaseLifeCycles, signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
 				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages, secureRandom, createDatabasesIfNecessaryAndCheckIt, port, user, password,
 				getURL(urlLocation, port, _database_name, connectTimeInMillis, socketTimeOutMillis, useCompression, characterEncoding, sslMode, paranoid, serverRSAPublicKeyFile, autoReconnect, prefetchNumberRows, noCache, additionalParams), characterEncoding);
 		if (additionalParams==null)
 			throw new NullPointerException();
 	}
 
-	protected DistantMySQLDBWrapper(ScheduledPoolExecutor defaultPoolExecutor, String _database_name, String urlLocation,
+	protected DistantMySQLDBWrapper(ScheduledPoolExecutor defaultPoolExecutor, Object context, String _database_name, String urlLocation,
 									DatabaseConfigurations databaseConfigurations,
 									DatabaseLifeCycles databaseLifeCycles,
 									EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -43,7 +43,7 @@ public class DistantMySQLDBWrapper extends CommonMySQLWrapper{
 									EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 									AbstractSecureRandom secureRandom,
 									boolean createDatabasesIfNecessaryAndCheckIt, int port, String user, WrappedPassword password, int connectTimeInMillis, int socketTimeOutMillis, boolean useCompression, String characterEncoding, DistantMySQLDatabaseFactory.SSLMode sslMode, boolean paranoid, File serverRSAPublicKeyFile, boolean autoReconnect, int prefetchNumberRows, boolean noCache) throws DatabaseException {
-		super(defaultPoolExecutor, _database_name, urlLocation, databaseConfigurations, databaseLifeCycles, signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+		super(defaultPoolExecutor, context,_database_name, urlLocation, databaseConfigurations, databaseLifeCycles, signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
 				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages, secureRandom,
 				createDatabasesIfNecessaryAndCheckIt, port, user, password, getURL(urlLocation, port, _database_name, connectTimeInMillis, socketTimeOutMillis, useCompression, characterEncoding, sslMode, paranoid, serverRSAPublicKeyFile, autoReconnect, prefetchNumberRows, noCache, null), characterEncoding);
 	}

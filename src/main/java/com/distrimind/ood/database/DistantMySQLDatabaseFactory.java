@@ -36,7 +36,6 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.util.concurrent.ScheduledPoolExecutor;
 import com.distrimind.util.crypto.WrappedPassword;
 
 import java.io.File;
@@ -188,7 +187,7 @@ public class DistantMySQLDatabaseFactory extends CommonMySQLDatabaseFactory<Dist
 	}
 
 	@Override
-	protected DistantMySQLDBWrapper newWrapperInstance(ScheduledPoolExecutor defaultPoolExecutor, DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
+	protected DistantMySQLDBWrapper newWrapperInstanceImpl() throws DatabaseException {
 		Charset cs=getCharacterEncoding();
 		String css=null;
 		if (cs.name().contains("-")) {
@@ -204,17 +203,17 @@ public class DistantMySQLDatabaseFactory extends CommonMySQLDatabaseFactory<Dist
 		else
 			css=cs.name();
 		if (additionalParams ==null)
-			return new DistantMySQLDBWrapper(defaultPoolExecutor, databaseName, urlLocation, databaseConfigurations, databaseLifeCycles,
+			return new DistantMySQLDBWrapper(getDefaultPoolExecutor(), getContext(), databaseName, urlLocation, databaseConfigurations, getDatabaseLifeCycles(),
 					signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup==null?null:signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
 					encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup==null?null:encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
 					protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages==null?null:protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
-					getSecureRandom(), createDatabasesIfNecessaryAndCheckIt, port, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, css, sslMode, paranoid, serverRSAPublicKeyFile, autoReconnect, prefetchNumberRows, noCache);
+					getSecureRandom(), isCreateDatabasesIfNecessaryAndCheckIt(), port, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, css, sslMode, paranoid, serverRSAPublicKeyFile, autoReconnect, prefetchNumberRows, noCache);
 		else
-			return new DistantMySQLDBWrapper(defaultPoolExecutor, databaseName, urlLocation, databaseConfigurations, databaseLifeCycles,
+			return new DistantMySQLDBWrapper(getDefaultPoolExecutor(), getContext(), databaseName, urlLocation, databaseConfigurations, getDatabaseLifeCycles(),
 					signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup==null?null:signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
 					encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup==null?null:encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
 					protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages==null?null:protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
-					getSecureRandom(), createDatabasesIfNecessaryAndCheckIt, port, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, css, sslMode, paranoid, serverRSAPublicKeyFile, autoReconnect, prefetchNumberRows, noCache, additionalParams);
+					getSecureRandom(), isCreateDatabasesIfNecessaryAndCheckIt(), port, user, password, connectTimeInMillis, socketTimeOutMillis, useCompression, css, sslMode, paranoid, serverRSAPublicKeyFile, autoReconnect, prefetchNumberRows, noCache, additionalParams);
 	}
 
 	/**

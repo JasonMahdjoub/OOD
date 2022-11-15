@@ -90,7 +90,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 
 		}
 	}
-	EmbeddedHSQLDBWrapper(ScheduledPoolExecutor defaultPoolExecutor, String databaseName, boolean loadToMemory,
+	EmbeddedHSQLDBWrapper(ScheduledPoolExecutor defaultPoolExecutor, Object context, String databaseName, boolean loadToMemory,
 						  DatabaseConfigurations databaseConfigurations,
 						  DatabaseLifeCycles databaseLifeCycles,
 						  EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -98,7 +98,8 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 						  EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 						  AbstractSecureRandom secureRandom,
 						  boolean createDatabasesIfNecessaryAndCheckIt, HSQLDBConcurrencyControl concurrencyControl) throws DatabaseException {
-		super(new Finalizer(databaseName, true, null), defaultPoolExecutor, false, databaseConfigurations,
+		super(new Finalizer(databaseName, true, null), defaultPoolExecutor, context,
+				false, databaseConfigurations,
 				databaseLifeCycles, signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
 				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
 				protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
@@ -114,7 +115,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 		this.cache_free_count = 0;
 
 	}
-	EmbeddedHSQLDBWrapper(ScheduledPoolExecutor defaultPoolExecutor, File databaseDirectory,
+	EmbeddedHSQLDBWrapper(ScheduledPoolExecutor defaultPoolExecutor, Object context, File databaseDirectory,
 						  DatabaseConfigurations databaseConfigurations,
 						  DatabaseLifeCycles databaseLifeCycles,
 						  EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -128,7 +129,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 				 * getConnection(_file_name, concurrencyControl, _cache_rows, _cache_size,
 				 * _result_max_memory_rows, _cache_free_count),
 				 */"Database from file : " + getHSQLDBDataFileName(getDatabaseFileName(databaseDirectory)) + ".data", false, databaseDirectory),
-				defaultPoolExecutor,
+				defaultPoolExecutor,context,
 				alwaysDisconnectAfterOnTransaction, databaseConfigurations,
 				databaseLifeCycles, signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
 				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,

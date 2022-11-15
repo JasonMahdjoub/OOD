@@ -51,7 +51,7 @@ import java.sql.*;
  * @since OOD 2.5.0
  */
 class DistantMariaDBWrapper extends CommonMySQLWrapper{
-	protected DistantMariaDBWrapper(ScheduledPoolExecutor defaultPoolExecutor, String _database_name, String urlLocation,
+	protected DistantMariaDBWrapper(ScheduledPoolExecutor defaultPoolExecutor, Object context, String _database_name, String urlLocation,
 									DatabaseConfigurations databaseConfigurations,
 									DatabaseLifeCycles databaseLifeCycles,
 									EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -71,7 +71,7 @@ class DistantMariaDBWrapper extends CommonMySQLWrapper{
 									File serverSslCert,
 									boolean autoReconnect,
 									String additionalParams) throws DatabaseException {
-		super(defaultPoolExecutor, _database_name, urlLocation, databaseConfigurations,
+		super(defaultPoolExecutor, context, _database_name, urlLocation, databaseConfigurations,
 				databaseLifeCycles,
 				signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
 				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
@@ -83,7 +83,7 @@ class DistantMariaDBWrapper extends CommonMySQLWrapper{
 			throw new NullPointerException();
 	}
 
-	protected DistantMariaDBWrapper(ScheduledPoolExecutor defaultPoolExecutor, String _database_name, String urlLocation,
+	protected DistantMariaDBWrapper(ScheduledPoolExecutor defaultPoolExecutor, Object context, String _database_name, String urlLocation,
 									DatabaseConfigurations databaseConfigurations,
 									DatabaseLifeCycles databaseLifeCycles,
 									EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -102,7 +102,7 @@ class DistantMariaDBWrapper extends CommonMySQLWrapper{
 									String enabledSslCipherSuites,
 									File serverSslCert,
 									boolean autoReconnect) throws DatabaseException {
-		super(defaultPoolExecutor, _database_name, urlLocation, databaseConfigurations,
+		super(defaultPoolExecutor, context, _database_name, urlLocation, databaseConfigurations,
 				databaseLifeCycles,
 				signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
 				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,

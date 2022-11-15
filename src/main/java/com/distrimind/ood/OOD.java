@@ -70,6 +70,7 @@ public class OOD {
 									.addItem(INTERNAL_CHANGE, "Update Utils to 5.24.0")
 									.addItem(INTERNAL_CHANGE, "Update dependencies")
 									.addItem(NEW_FEATURE, "Add database tasks manager, that permit to schedule periodic tasks executed into the database. See package com.distrimind.ood.database.tasks")
+									.addItem(NEW_FEATURE, "Add possibility to specify a context with DatabaseWrapper. See DatabaseFactory.setContext(Object)")
 
 					)
 					.addDescription(

@@ -57,7 +57,7 @@ public abstract class CommonHSQLH2DatabaseWrapper extends DatabaseWrapper{
 	protected boolean fileLock;
 
 	protected CommonHSQLH2DatabaseWrapper(Finalizer finalizer,
-										  ScheduledPoolExecutor defaultPoolExecutor, boolean alwaysDisconnectAfterOnTransaction,
+										  ScheduledPoolExecutor defaultPoolExecutor, Object context, boolean alwaysDisconnectAfterOnTransaction,
 										  DatabaseConfigurations databaseConfigurations,
 										  DatabaseLifeCycles databaseLifeCycles,
 										  EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -66,7 +66,7 @@ public abstract class CommonHSQLH2DatabaseWrapper extends DatabaseWrapper{
 										  AbstractSecureRandom secureRandom,
 										  boolean createDatabasesIfNecessaryAndCheckIt, boolean fileLock)
 			throws DatabaseException {
-		super(finalizer, defaultPoolExecutor, alwaysDisconnectAfterOnTransaction, databaseConfigurations, databaseLifeCycles, signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+		super(finalizer, defaultPoolExecutor, context, alwaysDisconnectAfterOnTransaction, databaseConfigurations, databaseLifeCycles, signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
 				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages, secureRandom, createDatabasesIfNecessaryAndCheckIt);
 		this.fileLock=true;
 

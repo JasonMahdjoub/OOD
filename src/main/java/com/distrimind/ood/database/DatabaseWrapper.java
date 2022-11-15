@@ -128,7 +128,8 @@ public abstract class DatabaseWrapper implements Cleanable {
 	private static final String TEMPORARY_BACKUPS_COMING_FROM_INTERNAL_BACKUP_DIRECTORY_NAME="temporary_backups_coming_from_internal_db_backup";
 
 	private static final String HOST_CHANNEL_ID_FILE_NAME="host_channel_id";
-	private final ScheduledPoolExecutor defaultPoolExecutor;
+
+
 
 	public ScheduledPoolExecutor getDefaultPoolExecutor() {
 		return defaultPoolExecutor;
@@ -364,6 +365,8 @@ public abstract class DatabaseWrapper implements Cleanable {
 	private volatile Logger centralDatabaseLogger=null;
 	private volatile FileReferenceManager fileReferenceManager=null;
 	private volatile DatabaseTasksManager databaseTasksManager=null;
+	private final ScheduledPoolExecutor defaultPoolExecutor;
+	private final Object context;
 
 
 	public FileReferenceManager getFileReferenceManager() throws DatabaseException {
@@ -417,6 +420,12 @@ public abstract class DatabaseWrapper implements Cleanable {
 		if (maxHostNumbers>=0xFFFF)
 			throw new IllegalArgumentException();
 		MAX_HOST_NUMBERS = maxHostNumbers;
+	}
+
+	public <T> T getContext()
+	{
+		//noinspection unchecked
+		return (T)context;
 	}
 
 	public Logger getNetworkLogger() {
@@ -1221,7 +1230,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 		return null;
 	}
 	protected DatabaseWrapper(Finalizer finalizer,
-							  ScheduledPoolExecutor defaultPoolExecutor, boolean alwaysDisconnectAfterOnTransaction,
+							  ScheduledPoolExecutor defaultPoolExecutor, Object context, boolean alwaysDisconnectAfterOnTransaction,
 							  DatabaseConfigurations databaseConfigurations,
 							  DatabaseLifeCycles databaseLifeCycles,
 							  EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -1230,6 +1239,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 							  AbstractSecureRandom secureRandom,
 							  boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
 		this.defaultPoolExecutor=defaultPoolExecutor;
+		this.context=context;
 		this.finalizer=finalizer;
 		registerCleanerIfNotDone(this.finalizer);
 		if (finalizer.loadToMemory)

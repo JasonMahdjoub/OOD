@@ -36,7 +36,6 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.util.concurrent.ScheduledPoolExecutor;
 import com.distrimind.util.crypto.WrappedPassword;
 
 import java.io.File;
@@ -176,12 +175,12 @@ public class DistantPostgreSQLDatabaseFactory extends DatabaseFactory<DistantPos
 	}
 
 	@Override
-	protected DistantPostgreSQLWrapper newWrapperInstance(ScheduledPoolExecutor defaultPoolExecutor, DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
-		return new DistantPostgreSQLWrapper(defaultPoolExecutor, databaseName, urlLocation, databaseConfigurations, databaseLifeCycles,
+	protected DistantPostgreSQLWrapper newWrapperInstanceImpl() throws DatabaseException {
+		return new DistantPostgreSQLWrapper(getDefaultPoolExecutor(), getContext(), databaseName, urlLocation, databaseConfigurations, getDatabaseLifeCycles(),
 				signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup==null?null:signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
 				encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup==null?null:encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
 				protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages==null?null:protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
-				getSecureRandom(), createDatabasesIfNecessaryAndCheckIt, port, user, password, loginTimeOutInSeconds, connectTimeOutInSeconds,
+				getSecureRandom(), isCreateDatabasesIfNecessaryAndCheckIt(), port, user, password, loginTimeOutInSeconds, connectTimeOutInSeconds,
 				socketTimeOutSeconds, additionalParams, sslMode, sslFactory,
 				sslKey, sslCert, sslRootCert, sslHostNameVerifier, sslPasswordCallBack,
 				sslPassword, databaseMetadataCacheFields, databaseMetadataCacheFieldsMiB,
