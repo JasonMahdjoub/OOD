@@ -76,11 +76,13 @@ public class DatabaseTasksManager {
 		protected final AbstractScheduledTask scheduledTask;
 		protected final T strategy;
 		protected final long timeUTCOfExecution;
+		protected final boolean annotation;
 
 
-		protected AbstractS(AbstractScheduledTask scheduledTask, long timeUTCOfExecution) throws DatabaseException {
+		protected AbstractS(AbstractScheduledTask scheduledTask, long timeUTCOfExecution, boolean annotation) throws DatabaseException {
 			if (scheduledTask==null)
 				throw new NullPointerException();
+			this.annotation=annotation;
 			this.scheduledTask = scheduledTask;
 			try {
 				//noinspection unchecked
@@ -94,44 +96,52 @@ public class DatabaseTasksManager {
 			if (this.scheduledTask instanceof ScheduledPeriodicTask)
 			{
 				final ScheduledPeriodicTask scheduledPeriodicTask =(ScheduledPeriodicTask)scheduledTask;
-				return databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Long>() {
-					@Override
-					public Long run() throws Exception {
-						ExecutedTasksTable.Record r=executedTasksTable.getRecord("strategyClassName", scheduledPeriodicTask.getStrategyClass());
-						if (r==null)
-						{
-							return Long.MIN_VALUE;
-						}
-						else {
-							r.setLastExecutionTimeUTC(System.currentTimeMillis());
-							executedTasksTable.updateRecord(r, "lastExecutionTimeUTC", r.getLastExecutionTimeUTC());
-							long n= scheduledPeriodicTask.getNextOccurrenceInTimeUTCAfter(r.getLastExecutionTimeUTC());
-							if (n>scheduledPeriodicTask.getEndTimeUTCInMs()) {
-								executedTasksTable.removeRecord(r);
+				if (annotation) {
+					return databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Long>() {
+						@Override
+						public Long run() throws Exception {
+							ExecutedTasksTable.Record r = executedTasksTable.getRecord("strategyClassName", scheduledPeriodicTask.getStrategyClass());
+							if (r == null) {
 								return Long.MIN_VALUE;
+							} else {
+								r.setLastExecutionTimeUTC(System.currentTimeMillis());
+								executedTasksTable.updateRecord(r, "lastExecutionTimeUTC", r.getLastExecutionTimeUTC());
+								long n = scheduledPeriodicTask.getNextOccurrenceInTimeUTCAfter(r.getLastExecutionTimeUTC());
+								if (n > scheduledPeriodicTask.getEndTimeUTCInMs()) {
+									executedTasksTable.removeRecord(r);
+									return Long.MIN_VALUE;
+								} else
+									return n;
 							}
-							else
-								return n;
+
+
 						}
 
+						@Override
+						public TransactionIsolation getTransactionIsolation() {
+							return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
+						}
 
+						@Override
+						public boolean doesWriteData() {
+							return true;
+						}
+
+						@Override
+						public void initOrReset() {
+
+						}
+					});
+				}
+				else
+				{
+					long n=scheduledPeriodicTask.getNextOccurrenceInTimeUTCAfter(System.currentTimeMillis());
+					if (n>scheduledPeriodicTask.getEndTimeUTCInMs()) {
+						return Long.MIN_VALUE;
 					}
-
-					@Override
-					public TransactionIsolation getTransactionIsolation() {
-						return TransactionIsolation.TRANSACTION_REPEATABLE_READ;
-					}
-
-					@Override
-					public boolean doesWriteData() {
-						return true;
-					}
-
-					@Override
-					public void initOrReset() {
-
-					}
-				});
+					else
+						return n;
+				}
 
 			}
 			else
@@ -149,8 +159,8 @@ public class DatabaseTasksManager {
 	private class DS extends AbstractS<IDatabaseTaskStrategy>
 	{
 		private boolean exception=false;
-		protected DS(AbstractScheduledTask scheduledTask, long timeUTCOfExecution) throws DatabaseException {
-			super(scheduledTask, timeUTCOfExecution);
+		protected DS(AbstractScheduledTask scheduledTask, long timeUTCOfExecution, boolean annotation) throws DatabaseException {
+			super(scheduledTask, timeUTCOfExecution, annotation);
 		}
 
 		@Override
@@ -169,7 +179,7 @@ public class DatabaseTasksManager {
 			{
 				long n=getNextTimeUTCOfExecution();
 				if (n!=Long.MIN_VALUE)
-					return new DS(scheduledTask, n);
+					return new DS(scheduledTask, n, annotation);
 			}
 			return null;
 		}
@@ -177,8 +187,8 @@ public class DatabaseTasksManager {
 	private class TS extends AbstractS<ITableTaskStrategy<?>>
 	{
 		private final Table<?> table;
-		protected TS(AbstractScheduledTask scheduledTask, long timeUTCOfExecution, Table<?> table) throws DatabaseException {
-			super(scheduledTask, timeUTCOfExecution);
+		protected TS(AbstractScheduledTask scheduledTask, long timeUTCOfExecution, Table<?> table, boolean annotation) throws DatabaseException {
+			super(scheduledTask, timeUTCOfExecution,annotation);
 			if (table==null)
 				throw new NullPointerException();
 			this.table=table;
@@ -194,7 +204,7 @@ public class DatabaseTasksManager {
 			{
 				long n=getNextTimeUTCOfExecution();
 				if (n!=Long.MIN_VALUE)
-					return new TS(scheduledTask, n, table);
+					return new TS(scheduledTask, n, table, annotation);
 			}
 			return null;
 		}
@@ -249,9 +259,13 @@ public class DatabaseTasksManager {
 		}
 	}
 	public void addTask(ScheduledTask scheduledTask) throws DatabaseException {
-		tasks.add(new DS(scheduledTask, scheduledTask.getStartTimeUTCInMs()));
+		tasks.add(new DS(scheduledTask, scheduledTask.getStartTimeUTCInMs(), false));
 	}
-
+	public void addTask(ScheduledPeriodicTask scheduledTask) throws DatabaseException {
+		long n=getNextTimeOfExecution(scheduledTask);
+		if (n!=Long.MIN_VALUE)
+			addTask(new DS(scheduledTask, n, false));
+	}
 
 	private long getNextTimeOfExecution(ScheduledPeriodicTask scheduledPeriodicTask) throws DatabaseException {
 		return databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Long>() {
@@ -335,7 +349,7 @@ public class DatabaseTasksManager {
 						ScheduledPeriodicTask s = new ScheduledPeriodicTask(tt.strategy(), tt.periodInMs(), tt.dayOfWeek(), tt.hour(), tt.minute(), tt.endTimeUTCInMs());
 						long n=getNextTimeOfExecution(s);
 						if (n!=Long.MIN_VALUE)
-							addTask(new TS(s, n, table));
+							addTask(new TS(s, n, table, true));
 					}
 				}
 				for (DatabasePeriodicTask tt : ((DatabasePeriodicTasks) a).value())
@@ -344,7 +358,7 @@ public class DatabaseTasksManager {
 						ScheduledPeriodicTask s = new ScheduledPeriodicTask(tt.strategy(), tt.periodInMs(), tt.dayOfWeek(), tt.hour(), tt.minute(), tt.endTimeUTCInMs());
 						long n=getNextTimeOfExecution(s);
 						if (n!=Long.MIN_VALUE)
-							addTask(new DS(s, n));
+							addTask(new DS(s, n, true));
 					}
 				}
 			}

@@ -38,6 +38,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 import com.distrimind.ood.database.DatabaseRecord;
 import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.annotations.Field;
+import com.distrimind.ood.database.annotations.LoadToMemory;
 import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 
@@ -46,6 +47,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  * @version 1.0
  * @since OOD 3.2.0
  */
+@LoadToMemory
 class ExecutedTasksTable extends Table<ExecutedTasksTable.Record> {
 	protected ExecutedTasksTable() throws DatabaseException {
 	}
