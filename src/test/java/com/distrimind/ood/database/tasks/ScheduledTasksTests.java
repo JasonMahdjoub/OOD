@@ -110,12 +110,12 @@ public abstract class ScheduledTasksTests {
 			return new Object[][]{
 					{new ScheduledPeriodicTask(RepetitiveDatabaseTaskStrategy.class, 750), 240L, 240L + 750L},
 				{new ScheduledPeriodicTask(RepetitiveDatabaseTaskStrategy.class, 1250),4000L, 4000L+1250L},
-				{new ScheduledPeriodicTask(RepetitiveDatabaseTaskStrategy.class, 750000, (byte)5, (byte)-1, null),8750000L, 20300000L},
-				{new ScheduledPeriodicTask(RepetitiveDatabaseTaskStrategy.class, 750000, (byte)5, (byte)37, null),8750000L, 20240000L},
-				{new ScheduledPeriodicTask(RepetitiveDatabaseTaskStrategy.class, 750000, (byte)5, (byte)37, DayOfWeek.FRIDAY),8750000L, 106640000L},
-				{new ScheduledPeriodicTask(RepetitiveDatabaseTaskStrategy.class, 750000, (byte)-1, (byte)40, DayOfWeek.FRIDAY),8750000L, 96020000L},
-				{new ScheduledPeriodicTask(RepetitiveDatabaseTaskStrategy.class, 750000, (byte)-1, (byte)-1, DayOfWeek.FRIDAY),8750000L, 95900000L},
-				{new ScheduledPeriodicTask(RepetitiveDatabaseTaskStrategy.class, 750000, (byte)-1, (byte)-1, DayOfWeek.MONDAY),8750000L, 355100000L},
+				{new ScheduledPeriodicTask(RepetitiveDatabaseTaskStrategy.class, 750000, (byte)5, (byte)-1, null, null),8750000L, 20300000L},
+				{new ScheduledPeriodicTask(RepetitiveDatabaseTaskStrategy.class, 750000, (byte)5, (byte)37, null, null),8750000L, 20240000L},
+				{new ScheduledPeriodicTask(RepetitiveDatabaseTaskStrategy.class, 750000, (byte)5, (byte)37, DayOfWeek.FRIDAY, null),8750000L, 106640000L},
+				{new ScheduledPeriodicTask(RepetitiveDatabaseTaskStrategy.class, 750000, (byte)-1, (byte)40, DayOfWeek.FRIDAY, null),8750000L, 96020000L},
+				{new ScheduledPeriodicTask(RepetitiveDatabaseTaskStrategy.class, 750000, (byte)-1, (byte)-1, DayOfWeek.FRIDAY, null),8750000L, 95900000L},
+				{new ScheduledPeriodicTask(RepetitiveDatabaseTaskStrategy.class, 750000, (byte)-1, (byte)-1, DayOfWeek.MONDAY, null),8750000L, 355100000L},
 			};
 		}
 		catch (Throwable e)
@@ -192,10 +192,12 @@ public abstract class ScheduledTasksTests {
 		sql_db.getDatabaseTasksManager().addTask(new ScheduledPeriodicTask(NonAnnotationPeriodicDatabaseTaskStrategy.class, NonAnnotationPeriodicDatabaseTaskStrategy.periodInMs));
 		sql_db.getDatabaseTasksManager().addTask(new ScheduledPeriodicTask(NonAnnotationPeriodicDatabaseTaskStrategyWithEndTimeLimit.class, NonAnnotationPeriodicDatabaseTaskStrategyWithEndTimeLimit.periodInMs,
 				(byte)-1, (byte)-1,null,
-				System.currentTimeMillis()+NonAnnotationPeriodicDatabaseTaskStrategyWithEndTimeLimit.maxNumberOfCalls*NonAnnotationPeriodicDatabaseTaskStrategyWithEndTimeLimit.periodInMs+NonAnnotationPeriodicDatabaseTaskStrategyWithEndTimeLimit.periodInMs/2));
+				System.currentTimeMillis()+NonAnnotationPeriodicDatabaseTaskStrategyWithEndTimeLimit.maxNumberOfCalls*NonAnnotationPeriodicDatabaseTaskStrategyWithEndTimeLimit.periodInMs+NonAnnotationPeriodicDatabaseTaskStrategyWithEndTimeLimit.periodInMs/2,
+				null));
 		sql_db.getDatabaseTasksManager().addTask(new ScheduledPeriodicTask(NotLaunchedTaskStrategy.class, 1000,
 				(byte)-1, (byte)-1,null,
-				System.currentTimeMillis()-1
+				System.currentTimeMillis()-1,
+				null
 				));
 		Assert.assertEquals(table1.getRecordsNumber(), 12);
 		Assert.assertEquals(table2.getRecordsNumber(), 12);

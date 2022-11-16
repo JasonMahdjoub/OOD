@@ -38,6 +38,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 import com.distrimind.ood.database.tasks.ITableTaskStrategy;
 
 import java.lang.annotation.*;
+import java.time.ZoneOffset;
 
 /**
  * @author Jason Mahdjoub
@@ -58,4 +59,20 @@ public @interface TablePeriodicTask {
 	byte dayOfWeek() default -1;
 
 	Class<? extends ITableTaskStrategy<?>> strategy();
+
+	/**
+	 * Define zone offset.
+	 * It possible to use zoneId instead of this parameter, but not both parameters.
+	 * @return the zone offset.
+	 * @see ZoneOffset#of(String)
+	 */
+	String zoneOffset() default "";
+
+	/**
+	 * Define zone identifier.
+	 * It possible to use zoneOffset instead of this parameter, but not both parameters.
+	 * @return the zone offset.
+	 * @see ZoneOffset#of(String)
+	 */
+	String zoneId() default "";
 }

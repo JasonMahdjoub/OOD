@@ -42,7 +42,6 @@ import com.distrimind.util.io.SecuredObjectOutputStream;
 
 import java.io.IOException;
 import java.time.*;
-import java.time.temporal.TemporalAccessor;
 
 /**
  * @author Jason Mahdjoub
@@ -59,24 +58,27 @@ public final class ScheduledPeriodicTask extends AbstractScheduledTask {
 	private byte hour;
 	private byte minute;
 
+	private ZoneOffset zoneOffset;
+
 	ScheduledPeriodicTask(Class<? extends ITaskStrategy> strategyClass,
 								 long periodInMs, byte dayOfWeek, byte hour, byte minute,
-								 long endTimeUTCInMs) {
-		this(strategyClass, periodInMs, dayOfWeek==-1?null:DayOfWeek.of(dayOfWeek), hour, minute, endTimeUTCInMs);
+								 long endTimeUTCInMs, ZoneOffset zoneOffset) {
+		this(strategyClass, periodInMs, dayOfWeek==-1?null:DayOfWeek.of(dayOfWeek), hour, minute, endTimeUTCInMs, zoneOffset);
 	}
 	public ScheduledPeriodicTask(Class<? extends IDatabaseTaskStrategy> strategyClass,
 								 byte hour, byte minute,DayOfWeek dayOfWeek,
-								 long endTimeUTCInMs) {
-		this(strategyClass, -1, dayOfWeek, hour, minute, endTimeUTCInMs);
+								 long endTimeUTCInMs, ZoneOffset zoneOffset) {
+		this(strategyClass, -1, dayOfWeek, hour, minute, endTimeUTCInMs, zoneOffset);
 	}
 	public ScheduledPeriodicTask(Class<? extends IDatabaseTaskStrategy> strategyClass,
 						  long periodInMs, byte hour, byte minute,DayOfWeek dayOfWeek,
-						  long endTimeUTCInMs) {
-		this(strategyClass, periodInMs, dayOfWeek, hour, minute, endTimeUTCInMs);
+						  long endTimeUTCInMs, ZoneOffset zoneOffset) {
+		this(strategyClass, periodInMs, dayOfWeek, hour, minute, endTimeUTCInMs, zoneOffset);
 	}
+
 	ScheduledPeriodicTask(Class<? extends ITaskStrategy> strategyClass,
 								 long periodInMs, DayOfWeek dayOfWeek, byte hour, byte minute,
-								 long endTimeUTCInMs) {
+								 long endTimeUTCInMs, ZoneOffset zoneOffset) {
 		super(strategyClass);
 		if (periodInMs==-1 && hour==-1 && minute==-1 && dayOfWeek==null)
 			throw new NullPointerException();
@@ -86,22 +88,25 @@ public final class ScheduledPeriodicTask extends AbstractScheduledTask {
 			throw new IllegalArgumentException("minute="+minute);
 		if (periodInMs!=-1 && periodInMs<=MIN_PERIOD_IN_MS)
 			throw new IllegalArgumentException("periodInMs="+periodInMs);
+		if (zoneOffset==null)
+			zoneOffset=ZoneOffset.systemDefault().getRules().getOffset(Instant.now());
 		this.periodInMs = periodInMs;
 		this.dayOfWeek=dayOfWeek;
 		this.hour=hour;
 		this.minute=minute;
 		this.endTimeUTCInMs=endTimeUTCInMs;
+		this.zoneOffset=zoneOffset;
 	}
 	public ScheduledPeriodicTask(Class<? extends IDatabaseTaskStrategy> strategyClass,
-								 byte hour, byte minute, DayOfWeek dayOfWeek) {
-		this(strategyClass, -1, dayOfWeek, hour, minute, Long.MAX_VALUE);
+								 byte hour, byte minute, DayOfWeek dayOfWeek, ZoneOffset zoneOffset) {
+		this(strategyClass, -1, dayOfWeek, hour, minute, Long.MAX_VALUE, zoneOffset);
 	}
 	public ScheduledPeriodicTask(Class<? extends IDatabaseTaskStrategy> strategyClass,
-								 long periodInMs, byte hour, byte minute, DayOfWeek dayOfWeek) {
-		this(strategyClass, periodInMs, dayOfWeek, hour, minute, Long.MAX_VALUE);
+								 long periodInMs, byte hour, byte minute, DayOfWeek dayOfWeek, ZoneOffset zoneOffset) {
+		this(strategyClass, periodInMs, dayOfWeek, hour, minute, Long.MAX_VALUE, zoneOffset);
 	}
 	public ScheduledPeriodicTask(Class<? extends IDatabaseTaskStrategy> strategyClass, long periodInMs) {
-		this(strategyClass, periodInMs, (byte)-1, (byte)-1, null);
+		this(strategyClass, periodInMs, (byte)-1, (byte)-1, null, ZoneOffset.UTC);
 	}
 
 	public long getPeriodInMs() {
@@ -125,6 +130,7 @@ public final class ScheduledPeriodicTask extends AbstractScheduledTask {
 		out.writeEnum(dayOfWeek, true);
 		out.writeByte(hour);
 		out.writeByte(minute);
+		out.writeInt(zoneOffset.getTotalSeconds());
 	}
 
 	@Override
@@ -135,6 +141,13 @@ public final class ScheduledPeriodicTask extends AbstractScheduledTask {
 		dayOfWeek=in.readEnum(true);
 		hour=in.readByte();
 		minute=in.readByte();
+		try {
+			zoneOffset = ZoneOffset.ofTotalSeconds(in.readInt());
+		}
+		catch (DateTimeException e)
+		{
+			throw new MessageExternalizationException(Integrity.FAIL, e);
+		}
 		if (periodInMs==-1 && hour==-1 && minute==-1 && dayOfWeek==null)
 			throw new MessageExternalizationException(Integrity.FAIL);
 		if (hour!=-1 && (hour<0 || hour>23))
@@ -148,9 +161,14 @@ public final class ScheduledPeriodicTask extends AbstractScheduledTask {
 	{
 		return getNextOccurrenceInTimeUTCAfter(timeUTCInMs, true);
 	}
+
+	public ZoneOffset getZoneOffset()
+	{
+		return zoneOffset;
+	}
 	long getNextOccurrenceInTimeUTCAfter(long timeUTCInMs, boolean takeCurrentTimeMillisAsMinimumTime)
 	{
-		LocalDateTime ld= LocalDateTime.ofInstant(Instant.ofEpochMilli(timeUTCInMs), ZoneOffset.UTC);
+		OffsetDateTime ld= LocalDateTime.ofInstant(Instant.ofEpochMilli(timeUTCInMs), ZoneOffset.UTC).atOffset(getZoneOffset());
 		if (periodInMs!=-1)
 			ld=ld.plus(Duration.ofMillis(periodInMs));
 		if (minute!=-1)
@@ -187,7 +205,7 @@ public final class ScheduledPeriodicTask extends AbstractScheduledTask {
 					ld=ld.plus(Duration.ofDays(7-dow.ordinal()+dayOfWeek.ordinal()));
 			}
 		}
-		long res=ld.toInstant(ZoneOffset.UTC).toEpochMilli();
+		long res=ld.toLocalDateTime().toInstant(ZoneOffset.UTC).toEpochMilli();
 		if (takeCurrentTimeMillisAsMinimumTime) {
 			if ((res - timeUTCInMs) < ((System.currentTimeMillis() - timeUTCInMs) / 2))
 				return getNextOccurrenceInTimeUTCAfter(System.currentTimeMillis(), false);

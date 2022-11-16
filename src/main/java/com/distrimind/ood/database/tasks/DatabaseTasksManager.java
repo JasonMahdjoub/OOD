@@ -45,6 +45,9 @@ import com.distrimind.util.concurrent.ScheduledPoolExecutor;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.TreeSet;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -253,6 +256,7 @@ public class DatabaseTasksManager {
 	{
 		return threadPoolExecutor;
 	}
+	@SuppressWarnings("unused")
 	void close()
 	{
 		synchronized (this)
@@ -395,9 +399,19 @@ public class DatabaseTasksManager {
 		}, "databasePackageName=%databasePackageLoading and toRemove=%b", "databasePackageLoading", currentDatabasePackageLoading.getName(), "b", true);
 		this.currentDatabasePackageLoading =null;
 	}
+	private ZoneOffset getZoneOffset(Table<?> table, String offsetId, String zoneId) throws DatabaseException {
+		if (offsetId.equals("") && zoneId.equals(""))
+			return ZoneOffset.systemDefault().getRules().getStandardOffset(Instant.now());
+		else if (!offsetId.equals("") && !zoneId.equals(""))
+			throw new DatabaseException("Only zoneOffset or zoneId must be defined into annotations of table "+table.getClass().getName());
+		else if (offsetId.equals(""))
+			return ZoneId.of(zoneId).getRules().getStandardOffset(Instant.now());
+		else
+			return ZoneOffset.of(offsetId);
+	}
 	private void loadAnnotation(Table<?> table, int annotationPosition, TablePeriodicTask tt) throws DatabaseException {
 		if (tt.endTimeUTCInMs() > System.currentTimeMillis()) {
-			ScheduledPeriodicTask s = new ScheduledPeriodicTask(tt.strategy(), tt.periodInMs(), tt.dayOfWeek(), tt.hour(), tt.minute(), tt.endTimeUTCInMs());
+			ScheduledPeriodicTask s = new ScheduledPeriodicTask(tt.strategy(), tt.periodInMs(), tt.dayOfWeek(), tt.hour(), tt.minute(), tt.endTimeUTCInMs(), getZoneOffset(table, tt.zoneOffset(), tt.zoneId()));
 			long n = getNextTimeOfExecution(table, annotationPosition, s);
 			if (n != Long.MIN_VALUE)
 				addTask(new TS(s, n, table, annotationPosition));
@@ -405,7 +419,7 @@ public class DatabaseTasksManager {
 	}
 	private void loadAnnotation(Table<?> table, int annotationPosition, DatabasePeriodicTask tt) throws DatabaseException {
 		if (tt.endTimeUTCInMs()>System.currentTimeMillis()) {
-			ScheduledPeriodicTask s = new ScheduledPeriodicTask(tt.strategy(), tt.periodInMs(), tt.dayOfWeek(), tt.hour(), tt.minute(), tt.endTimeUTCInMs());
+			ScheduledPeriodicTask s = new ScheduledPeriodicTask(tt.strategy(), tt.periodInMs(), tt.dayOfWeek(), tt.hour(), tt.minute(), tt.endTimeUTCInMs(), getZoneOffset(table, tt.zoneOffset(), tt.zoneId()));
 			long n=getNextTimeOfExecution(table, annotationPosition, s);
 			if (n!=Long.MIN_VALUE)
 				addTask(new DS(s, n, table, annotationPosition));
