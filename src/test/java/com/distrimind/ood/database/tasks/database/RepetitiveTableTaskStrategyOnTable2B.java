@@ -35,46 +35,33 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.ood.database.DatabaseRecord;
-import com.distrimind.ood.database.Table;
-import com.distrimind.ood.database.annotations.Field;
-import com.distrimind.ood.database.annotations.NotNull;
-import com.distrimind.ood.database.annotations.RandomPrimaryKey;
-import com.distrimind.ood.database.annotations.TablePeriodicTask;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.ood.database.tasks.ITableTaskStrategy;
+import com.distrimind.ood.database.tasks.ScheduledTasksTests;
+import org.testng.Assert;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.2.0
  */
-@TablePeriodicTask(strategy = RepetitiveTableTaskStrategyOnTable2A.class, periodInMs = RepetitiveTableTaskStrategyOnTable2A.periodInMs)
-@TablePeriodicTask(strategy = RepetitiveTableTaskStrategyOnTable2B.class, periodInMs = RepetitiveTableTaskStrategyOnTable2B.periodInMs)
-public final class Table2 extends Table<Table2.Record> {
-	private Table2() throws DatabaseException {
-	}
-
-	public static class Record extends DatabaseRecord
-	{
-		@RandomPrimaryKey
-		public int pk;
-		@Field
-		@NotNull
-		public String stringField;
-
-		public Record(String stringField) {
-			this.stringField = stringField;
+public class RepetitiveTableTaskStrategyOnTable2B implements ITableTaskStrategy<Table2> {
+	public final AtomicInteger numberOfTaskCall=new AtomicInteger(0);
+	public static final long periodInMs=1100;
+	private final long startUTC=System.currentTimeMillis();
+	@Override
+	public void launchTask(Table2 t2) throws DatabaseException {
+		try {
+			NonAnnotationPeriodicDatabaseTaskStrategy.checkTime(numberOfTaskCall, startUTC, periodInMs);
+			Assert.assertNotNull(t2);
+			t2.removeRecordsWithAllFields("stringField", RepetitiveTableTaskStrategyOnTable2B.class.getSimpleName() + ";" + numberOfTaskCall.incrementAndGet());
 		}
-
-		public Record() {
-		}
-
-		@Override
-		public String toString() {
-			return "Table2.Record{" +
-					"pk=" + pk +
-					", stringField='" + stringField + '\'' +
-					'}';
+		catch (AssertionError e)
+		{
+			ScheduledTasksTests.testFailed.set(true);
+			throw e;
 		}
 	}
 }

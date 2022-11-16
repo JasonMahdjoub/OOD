@@ -47,17 +47,16 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @version 1.0
  * @since OOD 3.2.0
  */
-public class RepetitiveTableTaskStrategyOnTable2 implements ITableTaskStrategy<Table2> {
-	public static final AtomicInteger numberOfTaskCall=new AtomicInteger(0);
+public class RepetitiveTableTaskStrategyOnTable2A implements ITableTaskStrategy<Table2> {
+	public final AtomicInteger numberOfTaskCall=new AtomicInteger(0);
 	public static final long periodInMs=1250;
 	private final long startUTC=System.currentTimeMillis();
 	@Override
 	public void launchTask(Table2 t2) throws DatabaseException {
 		try {
-			NonAnnotationPeriodicDatabaseTaskStrategy.checkTime(startUTC, periodInMs);
+			NonAnnotationPeriodicDatabaseTaskStrategy.checkTime(numberOfTaskCall, startUTC, periodInMs);
 			Assert.assertNotNull(t2);
-			numberOfTaskCall.incrementAndGet();
-			t2.removeRecordsWithAllFields("stringField", RepetitiveTableTaskStrategyOnTable2.class.getSimpleName() + ";" + numberOfTaskCall.incrementAndGet());
+			t2.removeRecordsWithAllFields("stringField", RepetitiveTableTaskStrategyOnTable2A.class.getSimpleName() + ";" + numberOfTaskCall.incrementAndGet());
 		}
 		catch (AssertionError e)
 		{

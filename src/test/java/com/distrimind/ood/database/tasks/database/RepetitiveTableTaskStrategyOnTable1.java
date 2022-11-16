@@ -48,15 +48,21 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @since OOD 3.2.0
  */
 public class RepetitiveTableTaskStrategyOnTable1 implements ITableTaskStrategy<Table1> {
-	public static final AtomicInteger numberOfTaskCall=new AtomicInteger(0);
+	private static boolean oneInstance=false;
+	private final AtomicInteger numberOfTaskCall=new AtomicInteger(0);
 	public static final long periodInMs=850;
 	private final long startUTC=System.currentTimeMillis();
+
+	public RepetitiveTableTaskStrategyOnTable1() {
+		assert !oneInstance;
+		RepetitiveTableTaskStrategyOnTable1.oneInstance = true;
+	}
+
 	@Override
 	public void launchTask(Table1 t1) throws DatabaseException {
 		try {
-			NonAnnotationPeriodicDatabaseTaskStrategy.checkTime(startUTC, periodInMs);
+			NonAnnotationPeriodicDatabaseTaskStrategy.checkTime(numberOfTaskCall, startUTC, periodInMs);
 			Assert.assertNotNull(t1);
-			numberOfTaskCall.incrementAndGet();
 			t1.removeRecordsWithAllFields("stringField", RepetitiveTableTaskStrategyOnTable1.class.getSimpleName() + ";" + numberOfTaskCall.incrementAndGet());
 		}
 		catch (AssertionError e)

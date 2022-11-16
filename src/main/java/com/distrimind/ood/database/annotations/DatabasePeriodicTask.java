@@ -37,13 +37,15 @@ knowledge of the CeCILL-C license and that you accept its terms.
 
 import com.distrimind.ood.database.tasks.IDatabaseTaskStrategy;
 
-import java.lang.annotation.Repeatable;
+import java.lang.annotation.*;
 
 /**
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.2.0
  */
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
 @Repeatable(DatabasePeriodicTasks.class)
 public @interface DatabasePeriodicTask {
 

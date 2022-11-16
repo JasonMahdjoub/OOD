@@ -45,7 +45,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  * @version 1.0
  * @since OOD 3.2.0
  */
-@DatabasePeriodicTask(strategy = RepetitiveDatabaseTaskStrategy.class, periodInMs = RepetitiveTableTaskStrategyOnTable1.periodInMs)
+@DatabasePeriodicTask(strategy = RepetitiveDatabaseTaskStrategy.class, periodInMs = RepetitiveDatabaseTaskStrategy.periodInMs)
 @TablePeriodicTask(strategy = RepetitiveTableTaskStrategyOnTable1.class, periodInMs = RepetitiveTableTaskStrategyOnTable1.periodInMs)
 public final class Table1 extends Table<Table1.Record> {
 	private Table1() throws DatabaseException {
@@ -64,6 +64,14 @@ public final class Table1 extends Table<Table1.Record> {
 		}
 
 		public Record() {
+		}
+
+		@Override
+		public String toString() {
+			return "Table1.Record{" +
+					"pk=" + pk +
+					", stringField='" + stringField + '\'' +
+					'}';
 		}
 	}
 

@@ -4224,6 +4224,13 @@ public abstract class DatabaseWrapper implements Cleanable {
 
 	@Override
 	public final void close() {
+		try {
+			Method mc=DatabaseTasksManager.class.getDeclaredMethod("close");
+			mc.setAccessible(true);
+			mc.invoke(getDatabaseTasksManager());
+		} catch (NoSuchMethodException | DatabaseException | IllegalAccessException | InvocationTargetException e) {
+			e.printStackTrace();
+		}
 		clean();
 	}
 

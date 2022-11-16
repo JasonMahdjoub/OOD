@@ -49,13 +49,13 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @since OOD 3.2.0
  */
 public class RepetitiveDatabaseTaskStrategy implements IDatabaseTaskStrategy {
-	public static final AtomicInteger numberOfTaskCall=new AtomicInteger(0);
+	public final AtomicInteger numberOfTaskCall=new AtomicInteger(0);
 	public static final long periodInMs=1000;
 	private final long startUTC=System.currentTimeMillis();
 	@Override
 	public void launchTask(DatabaseWrapper wrapper) throws DatabaseException {
 		try {
-			NonAnnotationPeriodicDatabaseTaskStrategy.checkTime(startUTC, periodInMs);
+			NonAnnotationPeriodicDatabaseTaskStrategy.checkTime(numberOfTaskCall, startUTC, periodInMs);
 			Table1 t1 = wrapper.getTableInstance(Table1.class);
 			Assert.assertNotNull(t1);
 			Table2 t2 = wrapper.getTableInstance(Table2.class);

@@ -42,6 +42,9 @@ import com.distrimind.ood.database.annotations.LoadToMemory;
 import com.distrimind.ood.database.annotations.NotNull;
 import com.distrimind.ood.database.annotations.PrimaryKey;
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.io.SerializationTools;
+
+import java.util.IllformedLocaleException;
 
 /**
  * @author Jason Mahdjoub
@@ -62,7 +65,11 @@ final class ExecutedTasksTable extends Table<ExecutedTasksTable.Record> {
 		@PrimaryKey
 		@SuppressWarnings({"FieldCanBeLocal", "FieldMayBeFinal", "unused"})
 		@NotNull
-		private String databasePackageName;
+		private Class<? extends Table<?>> tableClass;
+
+		@PrimaryKey
+		@SuppressWarnings({"FieldCanBeLocal", "FieldMayBeFinal", "unused"})
+		private int annotationPosition;
 		@PrimaryKey
 		@NotNull
 		@SuppressWarnings({"FieldCanBeLocal", "FieldMayBeFinal", "unused"})
@@ -74,15 +81,25 @@ final class ExecutedTasksTable extends Table<ExecutedTasksTable.Record> {
 		@SuppressWarnings({"FieldCanBeLocal", "FieldMayBeFinal", "unused"})
 		@Field
 		private boolean toRemove=false;
-		Record(Package databasePackage, Class<? extends ITaskStrategy> strategyClass) {
-			this(databasePackage.getName(), strategyClass);
+
+		@Field(limit = SerializationTools.MAX_CLASS_LENGTH)
+		@SuppressWarnings({"FieldCanBeLocal", "FieldMayBeFinal", "unused"})
+		@NotNull
+		private String databasePackageName;
+		Record(Table<?> table, int annotationPosition, Class<? extends ITaskStrategy> strategyClass) {
+			//noinspection unchecked
+			this((Class<Table<?>>)table.getClass(), annotationPosition, strategyClass);
 		}
-		Record(String databasePackageName, Class<? extends ITaskStrategy> strategyClass) {
-			if (databasePackageName==null)
+		Record(Class<? extends Table<?>> tableClass, int annotationPosition, Class<? extends ITaskStrategy> strategyClass) {
+			if (tableClass==null)
 				throw new NullPointerException();
 			if (strategyClass==null)
 				throw new NullPointerException();
-			this.databasePackageName=databasePackageName;
+			if (annotationPosition<0)
+				throw new IllformedLocaleException();
+			this.annotationPosition=annotationPosition;
+			this.tableClass=tableClass;
+			this.databasePackageName=tableClass.getPackage().getName();
 			this.strategyClass = strategyClass;
 			this.lastExecutionTimeUTC=System.currentTimeMillis();
 		}

@@ -49,7 +49,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @since OOD 3.2.0
  */
 public class NonAnnotationPeriodicDatabaseTaskStrategyWithEndTimeLimit implements IDatabaseTaskStrategy {
-	public static final AtomicInteger numberOfTaskCall=new AtomicInteger(0);
+	public final AtomicInteger numberOfTaskCall=new AtomicInteger(0);
 	public static final long periodInMs=500;
 	private final long startUTC=System.currentTimeMillis();
 	public static final int maxNumberOfCalls=2;
@@ -57,7 +57,7 @@ public class NonAnnotationPeriodicDatabaseTaskStrategyWithEndTimeLimit implement
 	@Override
 	public void launchTask(DatabaseWrapper wrapper) throws DatabaseException {
 		try {
-			NonAnnotationPeriodicDatabaseTaskStrategy.checkTime(startUTC, periodInMs);
+			NonAnnotationPeriodicDatabaseTaskStrategy.checkTime(numberOfTaskCall, startUTC, periodInMs);
 			Assert.assertTrue(endTimeUTC > System.currentTimeMillis() - endTimeUTC);
 			Table1 t1 = wrapper.getTableInstance(Table1.class);
 			Assert.assertNotNull(t1);

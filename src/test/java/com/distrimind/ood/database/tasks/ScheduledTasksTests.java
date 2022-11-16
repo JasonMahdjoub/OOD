@@ -167,9 +167,9 @@ public abstract class ScheduledTasksTests {
 		table1.addRecord(new Table1.Record(RepetitiveTableTaskStrategyOnTable1.class.getSimpleName()+";2"));
 		table1.addRecord(new Table1.Record(RepetitiveTableTaskStrategyOnTable1.class.getSimpleName()+";3"));
 
-		table2.addRecord(new Table2.Record(RepetitiveTableTaskStrategyOnTable2.class.getSimpleName()+";1"));
-		table2.addRecord(new Table2.Record(RepetitiveTableTaskStrategyOnTable2.class.getSimpleName()+";2"));
-		table2.addRecord(new Table2.Record(RepetitiveTableTaskStrategyOnTable2.class.getSimpleName()+";3"));
+		table2.addRecord(new Table2.Record(RepetitiveTableTaskStrategyOnTable2A.class.getSimpleName()+";1"));
+		table2.addRecord(new Table2.Record(RepetitiveTableTaskStrategyOnTable2A.class.getSimpleName()+";2"));
+		table2.addRecord(new Table2.Record(RepetitiveTableTaskStrategyOnTable2A.class.getSimpleName()+";3"));
 
 		table1.addRecord(new Table1.Record(NonAnnotationDatabaseTaskStrategy.class.getSimpleName()+";1"));
 		table2.addRecord(new Table2.Record(NonAnnotationDatabaseTaskStrategy.class.getSimpleName()+";1"));
@@ -188,9 +188,9 @@ public abstract class ScheduledTasksTests {
 		table2.addRecord(new Table2.Record(NonAnnotationPeriodicDatabaseTaskStrategyWithEndTimeLimit.class.getSimpleName()+";1"));
 		table2.addRecord(new Table2.Record(NonAnnotationPeriodicDatabaseTaskStrategyWithEndTimeLimit.class.getSimpleName()+";2"));
 
-		sql_db.getDatabaseTasksManager().addTask(new ScheduledTask(NonAnnotationDatabaseTaskStrategy.class, System.currentTimeMillis()-NonAnnotationDatabaseTaskStrategy.delay));
+		sql_db.getDatabaseTasksManager().addTask(new ScheduledTask(NonAnnotationDatabaseTaskStrategy.class, System.currentTimeMillis()+NonAnnotationDatabaseTaskStrategy.delay));
 		sql_db.getDatabaseTasksManager().addTask(new ScheduledPeriodicTask(NonAnnotationPeriodicDatabaseTaskStrategy.class, NonAnnotationPeriodicDatabaseTaskStrategy.periodInMs));
-		sql_db.getDatabaseTasksManager().addTask(new ScheduledPeriodicTask(NonAnnotationPeriodicDatabaseTaskStrategyWithEndTimeLimit.class, NonAnnotationPeriodicDatabaseTaskStrategy.periodInMs,
+		sql_db.getDatabaseTasksManager().addTask(new ScheduledPeriodicTask(NonAnnotationPeriodicDatabaseTaskStrategyWithEndTimeLimit.class, NonAnnotationPeriodicDatabaseTaskStrategyWithEndTimeLimit.periodInMs,
 				(byte)-1, (byte)-1,null,
 				System.currentTimeMillis()+NonAnnotationPeriodicDatabaseTaskStrategyWithEndTimeLimit.maxNumberOfCalls*NonAnnotationPeriodicDatabaseTaskStrategyWithEndTimeLimit.periodInMs+NonAnnotationPeriodicDatabaseTaskStrategyWithEndTimeLimit.periodInMs/2));
 		sql_db.getDatabaseTasksManager().addTask(new ScheduledPeriodicTask(NotLaunchedTaskStrategy.class, 1000,
@@ -206,6 +206,10 @@ public abstract class ScheduledTasksTests {
 			throw new RuntimeException(e);
 		}
 		Assert.assertFalse(testFailed.get());
+		for (Table1.Record r : table1.getRecords())
+			System.out.println(r);
+		for (Table2.Record r : table2.getRecords())
+			System.out.println(r);
 		Assert.assertEquals(table1.getRecordsNumber(), 0);
 		Assert.assertEquals(table2.getRecordsNumber(), 0);
 	}

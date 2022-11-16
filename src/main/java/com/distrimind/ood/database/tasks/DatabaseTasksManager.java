@@ -61,6 +61,7 @@ public class DatabaseTasksManager {
 	private ScheduledFuture<?> scheduledFuture=null;
 	private final ExecutedTasksTable executedTasksTable;
 	private Package currentDatabasePackageLoading =null;
+	private boolean closed=false;
 
 	DatabaseTasksManager(DatabaseWrapper databaseWrapper) throws DatabaseException {
 		ScheduledPoolExecutor threadPoolExecutor=databaseWrapper.getDefaultPoolExecutor();
@@ -71,37 +72,57 @@ public class DatabaseTasksManager {
 		this.executedTasksTable=databaseWrapper.getTableInstance(ExecutedTasksTable.class);
 	}
 
+	private static <T extends ITaskStrategy> T getStrategy(AbstractScheduledTask scheduledTask) throws DatabaseException {
+		try {
+			//noinspection unchecked
+			return (T)scheduledTask.getStrategyClass().getConstructor().newInstance();
+		} catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+			throw new DatabaseException("Impossible to instantiate "+scheduledTask.getStrategyClass(), e);
+		}
+	}
+
 	private abstract class AbstractS<T extends ITaskStrategy> implements Comparable<AbstractS<T>>
 	{
 		protected final AbstractScheduledTask scheduledTask;
 		protected final T strategy;
 		protected final long timeUTCOfExecution;
-		protected final boolean annotation;
+
 		protected boolean exception=false;
+		protected final Table<?> declaredOnTable;
+		protected final int annotationPosition;
 
 
-		protected AbstractS(AbstractScheduledTask scheduledTask, long timeUTCOfExecution, boolean annotation) throws DatabaseException {
+		protected AbstractS(AbstractScheduledTask scheduledTask, long timeUTCOfExecution, Table<?> declaredOnTable, int annotationPosition) throws DatabaseException {
+			this(scheduledTask, timeUTCOfExecution, declaredOnTable, annotationPosition, getStrategy(scheduledTask));
+		}
+		protected AbstractS(AbstractScheduledTask scheduledTask, long timeUTCOfExecution, Table<?> declaredOnTable, int annotationPosition, T strategy) {
 			if (scheduledTask==null)
 				throw new NullPointerException();
-			this.annotation=annotation;
+			if (strategy==null)
+				throw new NullPointerException();
+			if (declaredOnTable!=null && annotationPosition<0)
+				throw new IllegalArgumentException();
+			else if (declaredOnTable==null && annotationPosition!=-1)
+				throw new IllegalArgumentException();
 			this.scheduledTask = scheduledTask;
-			try {
-				//noinspection unchecked
-				strategy=(T)scheduledTask.getStrategyClass().getConstructor().newInstance();
-			} catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-				throw new DatabaseException("Impossible to instantiate "+scheduledTask.getStrategyClass(), e);
-			}
+			this.strategy=strategy;
 			this.timeUTCOfExecution=timeUTCOfExecution;
+			this.declaredOnTable=declaredOnTable;
+			this.annotationPosition=annotationPosition;
+		}
+		protected boolean isAnnotation()
+		{
+			return annotationPosition>=0;
 		}
 		protected long getNextTimeUTCOfExecution() throws DatabaseException {
 			if (this.scheduledTask instanceof ScheduledPeriodicTask)
 			{
 				final ScheduledPeriodicTask scheduledPeriodicTask =(ScheduledPeriodicTask)scheduledTask;
-				if (annotation) {
+				if (isAnnotation()) {
 					return databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Long>() {
 						@Override
 						public Long run() throws Exception {
-							ExecutedTasksTable.Record r = executedTasksTable.getRecord("strategyClassName", scheduledPeriodicTask.getStrategyClass());
+							ExecutedTasksTable.Record r = executedTasksTable.getRecord("tableClass", declaredOnTable.getClass(),"annotationPosition",annotationPosition, "strategyClass", scheduledPeriodicTask.getStrategyClass());
 							if (r == null) {
 								return Long.MIN_VALUE;
 							} else {
@@ -160,8 +181,12 @@ public class DatabaseTasksManager {
 	private class DS extends AbstractS<IDatabaseTaskStrategy>
 	{
 
-		protected DS(AbstractScheduledTask scheduledTask, long timeUTCOfExecution, boolean annotation) throws DatabaseException {
-			super(scheduledTask, timeUTCOfExecution, annotation);
+		protected DS(AbstractScheduledTask scheduledTask, long timeUTCOfExecution, Table<?> declaredOnTable, int annotationPosition) throws DatabaseException {
+			super(scheduledTask, timeUTCOfExecution, declaredOnTable, annotationPosition);
+		}
+
+		protected DS(AbstractScheduledTask scheduledTask, long timeUTCOfExecution, Table<?> declaredOnTable, int annotationPosition, IDatabaseTaskStrategy strategy)  {
+			super(scheduledTask, timeUTCOfExecution, declaredOnTable, annotationPosition, strategy);
 		}
 
 		@Override
@@ -180,25 +205,33 @@ public class DatabaseTasksManager {
 			{
 				long n=getNextTimeUTCOfExecution();
 				if (n!=Long.MIN_VALUE)
-					return new DS(scheduledTask, n, annotation);
+					return new DS(scheduledTask, n, declaredOnTable, annotationPosition, strategy);
 			}
 			return null;
 		}
 	}
 	private class TS extends AbstractS<ITableTaskStrategy<?>>
 	{
-		private final Table<?> table;
-		protected TS(AbstractScheduledTask scheduledTask, long timeUTCOfExecution, Table<?> table, boolean annotation) throws DatabaseException {
-			super(scheduledTask, timeUTCOfExecution,annotation);
-			if (table==null)
+		protected TS(AbstractScheduledTask scheduledTask, long timeUTCOfExecution, Table<?> declaredOnTable, int annotationPosition) throws DatabaseException {
+			super(scheduledTask, timeUTCOfExecution, declaredOnTable, annotationPosition);
+			if (declaredOnTable==null)
 				throw new NullPointerException();
-			this.table=table;
+			if (annotationPosition<0)
+				throw new IllegalArgumentException();
+		}
+
+		public TS(AbstractScheduledTask scheduledTask, long timeUTCOfExecution, Table<?> declaredOnTable, int annotationPosition, ITableTaskStrategy<?> strategy) {
+			super(scheduledTask, timeUTCOfExecution, declaredOnTable, annotationPosition, strategy);
+			if (declaredOnTable==null)
+				throw new NullPointerException();
+			if (annotationPosition<0)
+				throw new IllegalArgumentException();
 		}
 
 		@Override
 		protected void run() {
 			try {
-				strategy.launchTaskWithUntypedTable(table);
+				strategy.launchTaskWithUntypedTable(declaredOnTable);
 			} catch (DatabaseException e) {
 				exception=true;
 				e.printStackTrace();
@@ -211,7 +244,7 @@ public class DatabaseTasksManager {
 			{
 				long n=getNextTimeUTCOfExecution();
 				if (n!=Long.MIN_VALUE)
-					return new TS(scheduledTask, n, table, annotation);
+					return new TS(scheduledTask, n, declaredOnTable, annotationPosition, strategy);
 			}
 			return null;
 		}
@@ -220,9 +253,25 @@ public class DatabaseTasksManager {
 	{
 		return threadPoolExecutor;
 	}
+	void close()
+	{
+		synchronized (this)
+		{
+			closed=true;
+			if (scheduledFuture!=null)
+				scheduledFuture.cancel(true);
+			scheduledFuture=null;
+			if (threadPoolExecutor!=databaseWrapper.getDefaultPoolExecutor())
+				threadPoolExecutor.shutdownNow();
+		}
+	}
 	private void scheduleNextTask()
 	{
+		if (tasks.isEmpty())
+			return;
+
 		ScheduledPoolExecutor p=getThreadPoolExecutor();
+
 		scheduledFuture=p.schedule(() -> {
 			AbstractS<?> task;
 			synchronized (DatabaseTasksManager.this)
@@ -232,23 +281,25 @@ public class DatabaseTasksManager {
 				if (task==null) {
 					return;
 				}
+				if (closed)
+					return;
 			}
 			task.run();
 			try {
 				task=task.getNextCycle();
-				if (task!=null)
+				synchronized (DatabaseTasksManager.this)
 				{
-					synchronized (DatabaseTasksManager.this)
-					{
+					if (task!=null)
 						tasks.add(task);
-						scheduleNextTask();
-					}
+					if (closed)
+						return;
+					scheduleNextTask();
 				}
 			} catch (DatabaseException e) {
 				e.printStackTrace();
 			}
 
-		}, System.currentTimeMillis() - tasks.first().timeUTCOfExecution, TimeUnit.MILLISECONDS);
+		}, tasks.first().timeUTCOfExecution-System.currentTimeMillis(), TimeUnit.MILLISECONDS);
 		if (scheduledFuture.isDone())
 			scheduledFuture=null;
 	}
@@ -256,6 +307,8 @@ public class DatabaseTasksManager {
 	private void addTask(AbstractS<?> t)
 	{
 		synchronized (this) {
+			if (closed)
+				return;
 			if (scheduledFuture!=null)
 			{
 				scheduledFuture.cancel(false);
@@ -266,22 +319,22 @@ public class DatabaseTasksManager {
 		}
 	}
 	public void addTask(ScheduledTask scheduledTask) throws DatabaseException {
-		tasks.add(new DS(scheduledTask, scheduledTask.getStartTimeUTCInMs(), false));
+		addTask(new DS(scheduledTask, scheduledTask.getStartTimeUTCInMs(), null, -1));
 	}
 	public void addTask(ScheduledPeriodicTask scheduledTask) throws DatabaseException {
 		long n=scheduledTask.getNextOccurrenceInTimeUTCAfter(System.currentTimeMillis(), false);
 		if (n!=Long.MIN_VALUE && n<scheduledTask.getEndTimeUTCInMs())
-			addTask(new DS(scheduledTask, n, false));
+			addTask(new DS(scheduledTask, n, null, -1));
 	}
 
-	private long getNextTimeOfExecution(ScheduledPeriodicTask scheduledPeriodicTask) throws DatabaseException {
+	private long getNextTimeOfExecution(Table<?> table, int annotationPosition, ScheduledPeriodicTask scheduledPeriodicTask) throws DatabaseException {
 		return databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Long>() {
 			@Override
 			public Long run() throws Exception {
-				ExecutedTasksTable.Record r=executedTasksTable.getRecord("strategyClassName", scheduledPeriodicTask.getStrategyClass(), "databasePackageName", currentDatabasePackageLoading.getName());
+				ExecutedTasksTable.Record r=executedTasksTable.getRecord("strategyClass", scheduledPeriodicTask.getStrategyClass(), "tableClass", table.getClass(), "annotationPosition", annotationPosition);
 				if (r==null)
 				{
-					r=new ExecutedTasksTable.Record(currentDatabasePackageLoading.getName(), scheduledPeriodicTask.getStrategyClass());
+					r=new ExecutedTasksTable.Record(table, annotationPosition, scheduledPeriodicTask.getStrategyClass());
 					long n=scheduledPeriodicTask.getNextOccurrenceInTimeUTCAfter(r.getLastExecutionTimeUTC());
 					if (n>scheduledPeriodicTask.getEndTimeUTCInMs())
 						return Long.MIN_VALUE;
@@ -342,33 +395,47 @@ public class DatabaseTasksManager {
 		}, "databasePackageName=%databasePackageLoading and toRemove=%b", "databasePackageLoading", currentDatabasePackageLoading.getName(), "b", true);
 		this.currentDatabasePackageLoading =null;
 	}
+	private void loadAnnotation(Table<?> table, int annotationPosition, TablePeriodicTask tt) throws DatabaseException {
+		if (tt.endTimeUTCInMs() > System.currentTimeMillis()) {
+			ScheduledPeriodicTask s = new ScheduledPeriodicTask(tt.strategy(), tt.periodInMs(), tt.dayOfWeek(), tt.hour(), tt.minute(), tt.endTimeUTCInMs());
+			long n = getNextTimeOfExecution(table, annotationPosition, s);
+			if (n != Long.MIN_VALUE)
+				addTask(new TS(s, n, table, annotationPosition));
+		}
+	}
+	private void loadAnnotation(Table<?> table, int annotationPosition, DatabasePeriodicTask tt) throws DatabaseException {
+		if (tt.endTimeUTCInMs()>System.currentTimeMillis()) {
+			ScheduledPeriodicTask s = new ScheduledPeriodicTask(tt.strategy(), tt.periodInMs(), tt.dayOfWeek(), tt.hour(), tt.minute(), tt.endTimeUTCInMs());
+			long n=getNextTimeOfExecution(table, annotationPosition, s);
+			if (n!=Long.MIN_VALUE)
+				addTask(new DS(s, n, table, annotationPosition));
+		}
+	}
 	@SuppressWarnings("unused")
 	void loadTable(Table<?> table) throws DatabaseException {
 		if (currentDatabasePackageLoading ==null)
 			throw new IllegalAccessError();
-		for (Annotation a : table.getClass().getAnnotations())
+		int i=0;
+		for (Annotation a : table.getClass().getDeclaredAnnotations())
 		{
-			if (a instanceof TablePeriodicTasks)
-			{
-				for (TablePeriodicTask tt : ((TablePeriodicTasks) a).value())
-				{
-					if (tt.endTimeUTCInMs()>System.currentTimeMillis()) {
-						ScheduledPeriodicTask s = new ScheduledPeriodicTask(tt.strategy(), tt.periodInMs(), tt.dayOfWeek(), tt.hour(), tt.minute(), tt.endTimeUTCInMs());
-						long n=getNextTimeOfExecution(s);
-						if (n!=Long.MIN_VALUE)
-							addTask(new TS(s, n, table, true));
-					}
-				}
-				for (DatabasePeriodicTask tt : ((DatabasePeriodicTasks) a).value())
-				{
-					if (tt.endTimeUTCInMs()>System.currentTimeMillis()) {
-						ScheduledPeriodicTask s = new ScheduledPeriodicTask(tt.strategy(), tt.periodInMs(), tt.dayOfWeek(), tt.hour(), tt.minute(), tt.endTimeUTCInMs());
-						long n=getNextTimeOfExecution(s);
-						if (n!=Long.MIN_VALUE)
-							addTask(new DS(s, n, true));
-					}
+			if (a instanceof TablePeriodicTasks) {
+				for (TablePeriodicTask tt : ((TablePeriodicTasks) a).value()) {
+					loadAnnotation(table, i, tt);
 				}
 			}
+			else if (a instanceof DatabasePeriodicTasks)
+			{
+				for (DatabasePeriodicTask tt : ((DatabasePeriodicTasks) a).value())
+				{
+					loadAnnotation(table, i, tt);
+				}
+			}
+			else if (a instanceof TablePeriodicTask)
+				loadAnnotation(table, i, (TablePeriodicTask)a);
+			else if (a instanceof DatabasePeriodicTask)
+				loadAnnotation(table, i, (DatabasePeriodicTask)a);
+			i++;
 		}
+
 	}
 }

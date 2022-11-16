@@ -49,14 +49,14 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @since OOD 3.2.0
  */
 public class NonAnnotationDatabaseTaskStrategy implements IDatabaseTaskStrategy {
-	public static final AtomicInteger numberOfTaskCall=new AtomicInteger(0);
+	public final AtomicInteger numberOfTaskCall=new AtomicInteger(0);
 	private final long startTime=System.currentTimeMillis();
 	public static final long delay=1000;
 	@Override
 	public void launchTask(DatabaseWrapper wrapper) throws DatabaseException {
 
 		try {
-			Assert.assertTrue(delay<=System.currentTimeMillis()-startTime);
+			Assert.assertTrue(delay-10<=System.currentTimeMillis()-startTime, "delay-10="+(delay-10)+", System.currentTimeMillis()-startTime="+(System.currentTimeMillis()-startTime));
 			Assert.assertEquals(numberOfTaskCall.get(), 0);
 			Table1 t1 = wrapper.getTableInstance(Table1.class);
 			Assert.assertNotNull(t1);

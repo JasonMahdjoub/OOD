@@ -49,20 +49,27 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @since OOD 3.2.0
  */
 public class NonAnnotationPeriodicDatabaseTaskStrategy implements IDatabaseTaskStrategy {
-	public static final AtomicInteger numberOfTaskCall=new AtomicInteger(0);
+	private static boolean oneInstance=false;
+	public final AtomicInteger numberOfTaskCall=new AtomicInteger(0);
 	public static final long periodInMs=750;
 	private final long startUTC=System.currentTimeMillis();
-	static void checkTime(long startUTC, long periodInMs)
+
+	public NonAnnotationPeriodicDatabaseTaskStrategy() {
+		assert !oneInstance;
+		oneInstance=true;
+	}
+
+	static void checkTime(AtomicInteger numberOfTaskCall, long startUTC, long periodInMs)
 	{
 		long d=System.currentTimeMillis()-startUTC;
-		long p=numberOfTaskCall.get()*periodInMs;
-		Assert.assertTrue(p<=d);
-		Assert.assertTrue(p+periodInMs/2>d);
+		long p=(numberOfTaskCall.get()+1)*periodInMs;
+		Assert.assertTrue(p-20<=d, "p-20="+(p-20)+", d="+d+", periodInMs="+periodInMs+", cycle="+numberOfTaskCall.get());
+		Assert.assertTrue(p+periodInMs/2>d, "p+periodInMs/2="+(p+periodInMs/2)+", d="+d+", cycle="+numberOfTaskCall.get());
 	}
 	@Override
 	public void launchTask(DatabaseWrapper wrapper) throws DatabaseException {
 		try {
-			checkTime(startUTC, periodInMs);
+			checkTime(numberOfTaskCall, startUTC, periodInMs);
 
 			Table1 t1 = wrapper.getTableInstance(Table1.class);
 			Assert.assertNotNull(t1);
