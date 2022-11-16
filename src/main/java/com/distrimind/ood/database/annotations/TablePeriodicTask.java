@@ -36,11 +36,15 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 
 import com.distrimind.ood.database.tasks.ITableTaskStrategy;
+import com.distrimind.util.concurrent.ScheduledPoolExecutor;
 
 import java.lang.annotation.*;
 import java.time.ZoneOffset;
 
 /**
+ * This annotation permit to define a periodic task associated with the table class used with this association.
+ * It is possible to specify a thread pool executor with the function {@link com.distrimind.ood.database.DatabaseFactory#setDefaultPoolExecutor(ScheduledPoolExecutor)}.
+ * If this last function is not used, a thread pool executor will be created to manage database tasks.
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.2.0
@@ -49,14 +53,43 @@ import java.time.ZoneOffset;
 @Retention(RetentionPolicy.RUNTIME)
 @Repeatable(TablePeriodicTasks.class)
 public @interface TablePeriodicTask {
-	long endTimeUTCInMs() default Long.MAX_VALUE;
-	long periodInMs() default -1;
-	byte minute() default -1;
-	byte hour() default -1;
 	/**
+	 * Define the time UTC after what the periodic task is stopped
+	 * @return the time UTC after what the periodic task is stopped
+	 */
+	long endTimeUTCInMs() default Long.MAX_VALUE;
+
+	/**
+	 * Define the task period. -1 means that this parameter will not be used.
+	 * @return the task period
+	 */
+	long periodInMs() default -1;
+
+	/**
+	 * Define the minute when the periodic task can begin. -1 means that this parameter will not be used.
+	 * @return the minute when the periodic task can begin
+	 */
+	byte minute() default -1;
+	/**
+	 * Define the hour when the periodic task can begin. -1 means that this parameter will not be used.
+	 * @return the hour when the periodic task can begin
+	 */
+	byte hour() default -1;
+
+	/**
+	 * Define the day week when the periodic task can begin.
+	 * Day begin with day 1 that correspond to monday.
+	 * -1 means that this parameter will not be used.
 	 * @return Day week that start at 1 with monday and ends at 7 with sunday
 	 */
 	byte dayOfWeek() default -1;
+
+	/**
+	 * Define the class to instantiate in order to execute the task that implements the interface {@link ITableTaskStrategy}.
+	 * The generic type of this last interface must be the table class associated with the class used with this annotation.
+	 *
+	 * @return the class to instantiate in order to execute the task that implements the interface {@link ITableTaskStrategy}
+	 */
 
 	Class<? extends ITableTaskStrategy<?>> strategy();
 

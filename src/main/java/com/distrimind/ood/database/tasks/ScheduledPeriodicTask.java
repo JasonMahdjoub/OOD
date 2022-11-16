@@ -35,12 +35,16 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+import com.distrimind.util.concurrent.ScheduledPoolExecutor;
 import com.distrimind.util.io.*;
 
 import java.io.IOException;
 import java.time.*;
 
 /**
+ * This class permit to define a periodic database task.
+ * It is possible to specify a thread pool executor with the function {@link com.distrimind.ood.database.DatabaseFactory#setDefaultPoolExecutor(ScheduledPoolExecutor)}.
+ * If this last function is not used, a thread pool executor will be created to manage database tasks.
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.2.0
@@ -57,22 +61,61 @@ public final class ScheduledPeriodicTask extends AbstractScheduledTask {
 
 	private ZoneOffset zoneOffset;
 
+	/**
+	 * Schedule a periodic database task
+	 * @param strategyClass the class to instantiate to execute the task
+	 * @param periodInMs the task period. -1 means that this parameter will not be used.
+	 * @param dayOfWeek the day week when the periodic task can begin. Day begin with day 1 that correspond to monday. -1 means that this parameter will not be used.
+	 * @param hour the hour when the periodic task can begin. -1 means that this parameter will not be used.
+	 * @param minute the minute when the periodic task can begin. -1 means that this parameter will not be used.
+	 * @param endTimeUTCInMs the time UTC after what the periodic task is stopped
+	 * @param zoneOffset the zone offset.
+	 */
 	ScheduledPeriodicTask(Class<? extends ITaskStrategy> strategyClass,
 								 long periodInMs, byte dayOfWeek, byte hour, byte minute,
 								 long endTimeUTCInMs, ZoneOffset zoneOffset) {
 		this(strategyClass, periodInMs, dayOfWeek==-1?null:DayOfWeek.of(dayOfWeek), hour, minute, endTimeUTCInMs, zoneOffset);
 	}
+	/**
+	 * Schedule a periodic database task
+	 * @param strategyClass the class to instantiate to execute the task
+	 * @param dayOfWeek the day week when the periodic task can begin. null means that this parameter will not be used.
+	 * @param hour the hour when the periodic task can begin. -1 means that this parameter will not be used.
+	 * @param minute the minute when the periodic task can begin. -1 means that this parameter will not be used.
+	 * @param endTimeUTCInMs the time UTC after what the periodic task is stopped
+	 * @param zoneOffset the zone offset.
+	 */
 	public ScheduledPeriodicTask(Class<? extends IDatabaseTaskStrategy> strategyClass,
 								 byte hour, byte minute,DayOfWeek dayOfWeek,
 								 long endTimeUTCInMs, ZoneOffset zoneOffset) {
 		this(strategyClass, -1, dayOfWeek, hour, minute, endTimeUTCInMs, zoneOffset);
 	}
+	/**
+	 * Schedule a periodic database task
+	 * @param strategyClass the class to instantiate to execute the task
+	 * @param periodInMs the task period. -1 means that this parameter will not be used.
+	 * @param dayOfWeek the day week when the periodic task can begin. null means that this parameter will not be used.
+	 * @param hour the hour when the periodic task can begin. -1 means that this parameter will not be used.
+	 * @param minute the minute when the periodic task can begin. -1 means that this parameter will not be used.
+	 * @param endTimeUTCInMs the time UTC after what the periodic task is stopped
+	 * @param zoneOffset the zone offset.
+	 */
 	public ScheduledPeriodicTask(Class<? extends IDatabaseTaskStrategy> strategyClass,
 						  long periodInMs, byte hour, byte minute,DayOfWeek dayOfWeek,
 						  long endTimeUTCInMs, ZoneOffset zoneOffset) {
 		this(strategyClass, periodInMs, dayOfWeek, hour, minute, endTimeUTCInMs, zoneOffset);
 	}
 
+	/**
+	 * Schedule a periodic database task
+	 * @param strategyClass the class to instantiate to execute the task
+	 * @param periodInMs the task period. -1 means that this parameter will not be used.
+	 * @param dayOfWeek the day week when the periodic task can begin. Day begin with day 1 that correspond to monday. -1 means that this parameter will not be used.
+	 * @param hour the hour when the periodic task can begin. -1 means that this parameter will not be used.
+	 * @param minute the minute when the periodic task can begin. -1 means that this parameter will not be used.
+	 * @param endTimeUTCInMs the time UTC after what the periodic task is stopped
+	 * @param zoneOffset the zone offset.
+	 */
 	ScheduledPeriodicTask(Class<? extends ITaskStrategy> strategyClass,
 								 long periodInMs, DayOfWeek dayOfWeek, byte hour, byte minute,
 								 long endTimeUTCInMs, ZoneOffset zoneOffset) {
@@ -94,14 +137,36 @@ public final class ScheduledPeriodicTask extends AbstractScheduledTask {
 		this.endTimeUTCInMs=endTimeUTCInMs;
 		this.zoneOffset=zoneOffset;
 	}
+	/**
+	 * Schedule a periodic database task
+	 * @param strategyClass the class to instantiate to execute the task
+	 * @param dayOfWeek the day week when the periodic task can begin. null means that this parameter will not be used.
+	 * @param hour the hour when the periodic task can begin. -1 means that this parameter will not be used.
+	 * @param minute the minute when the periodic task can begin. -1 means that this parameter will not be used.
+	 * @param zoneOffset the zone offset.
+	 */
 	public ScheduledPeriodicTask(Class<? extends IDatabaseTaskStrategy> strategyClass,
 								 byte hour, byte minute, DayOfWeek dayOfWeek, ZoneOffset zoneOffset) {
 		this(strategyClass, -1, dayOfWeek, hour, minute, Long.MAX_VALUE, zoneOffset);
 	}
+	/**
+	 * Schedule a periodic database task
+	 * @param strategyClass the class to instantiate to execute the task
+	 * @param periodInMs the task period. -1 means that this parameter will not be used.
+	 * @param dayOfWeek the day week when the periodic task can begin. null means that this parameter will not be used.
+	 * @param hour the hour when the periodic task can begin. -1 means that this parameter will not be used.
+	 * @param minute the minute when the periodic task can begin. -1 means that this parameter will not be used.
+	 * @param zoneOffset the zone offset.
+	 */
 	public ScheduledPeriodicTask(Class<? extends IDatabaseTaskStrategy> strategyClass,
 								 long periodInMs, byte hour, byte minute, DayOfWeek dayOfWeek, ZoneOffset zoneOffset) {
 		this(strategyClass, periodInMs, dayOfWeek, hour, minute, Long.MAX_VALUE, zoneOffset);
 	}
+	/**
+	 * Schedule a periodic database task
+	 * @param strategyClass the class to instantiate to execute the task
+	 * @param periodInMs the task period. -1 means that this parameter will not be used.
+	 */
 	public ScheduledPeriodicTask(Class<? extends IDatabaseTaskStrategy> strategyClass, long periodInMs) {
 		this(strategyClass, periodInMs, (byte)-1, (byte)-1, null, ZoneOffset.UTC);
 	}

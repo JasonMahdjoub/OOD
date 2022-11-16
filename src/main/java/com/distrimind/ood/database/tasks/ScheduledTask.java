@@ -47,6 +47,12 @@ import java.io.IOException;
  */
 public final class ScheduledTask extends AbstractScheduledTask {
 	private long startTimeUTCInMs;
+
+	/**
+	 * Schedule a database task
+	 * @param strategyClass the class to instantiate to execute the task
+	 * @param startTimeUTCInMs the time UTC in milliseconds when the task can begin
+	 */
 	public ScheduledTask(Class<? extends ITaskStrategy> strategyClass, long startTimeUTCInMs) {
 		super(strategyClass);
 		this.startTimeUTCInMs = startTimeUTCInMs;

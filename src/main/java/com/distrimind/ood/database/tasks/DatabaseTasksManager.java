@@ -53,9 +53,14 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * This class permit to add and schedule database tasks.
+ * Tasks can be periodic, or executed with only one time.
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.2.0
+ * @see ScheduledPeriodicTask
+ * @see DatabaseWrapper#getDatabaseTasksManager()
+ *
  */
 public class DatabaseTasksManager {
 	private final TreeSet<AbstractS<?>> tasks=new TreeSet<>();
