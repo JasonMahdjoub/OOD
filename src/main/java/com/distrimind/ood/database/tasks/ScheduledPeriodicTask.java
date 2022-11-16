@@ -35,10 +35,7 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.util.io.Integrity;
-import com.distrimind.util.io.MessageExternalizationException;
-import com.distrimind.util.io.SecuredObjectInputStream;
-import com.distrimind.util.io.SecuredObjectOutputStream;
+import com.distrimind.util.io.*;
 
 import java.io.IOException;
 import java.time.*;
@@ -119,7 +116,7 @@ public final class ScheduledPeriodicTask extends AbstractScheduledTask {
 
 	@Override
 	public int getInternalSerializedSize() {
-		return super.getInternalSerializedSize()+16;
+		return super.getInternalSerializedSize()+22+ SerializationTools.getInternalSize(dayOfWeek);
 	}
 
 	@Override
