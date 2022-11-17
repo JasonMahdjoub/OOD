@@ -66,6 +66,8 @@ public enum SymbolType {
 	NOTLIKE(true, false,true,"^(N|n)(O|o)(T|t)_(L|l)(I|i)(K|k)(E|e)$",new String[] {" NOT LIKE "," NOT_LIKE " }," NOT LIKE "),
 	IS(true, false,false,"^(I|i)(S|s)$",new String[] {" IS "}," IS "),
 	ISNOT(true, false,true,"^(I|i)(S|s)_(N|n)(O|o)(T|t)$",new String[] {" IS NOT "," IS_NOT " }," IS NOT "),
+	IN(true, false,false,"^(I|i)(S|s)$",new String[] {" IN "}," IN "),
+	NOTIN(true, false,false,"^(I|i)(S|s)$",new String[] {" NOT IN "}," NOT IN "),
 	;
 
 	private final Pattern pattern;

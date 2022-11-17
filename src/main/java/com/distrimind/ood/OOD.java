@@ -71,6 +71,7 @@ public class OOD {
 									.addItem(INTERNAL_CHANGE, "Update dependencies")
 									.addItem(NEW_FEATURE, "Add database tasks manager, that permit to schedule periodic tasks executed into the database. See package com.distrimind.ood.database.tasks")
 									.addItem(NEW_FEATURE, "Add possibility to specify a context with DatabaseWrapper. See DatabaseFactory.setContext(Object)")
+									.addItem(NEW_FEATURE, "Add operator IN/NOT IN into pseudo SQL interpreter, that permit to test an identifier with a collection")
 
 					)
 					.addDescription(

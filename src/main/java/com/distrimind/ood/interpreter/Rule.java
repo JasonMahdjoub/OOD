@@ -52,14 +52,19 @@ public enum Rule {
             + SymbolType.LOWEROREQUALOPERATOR.name() + ">|<" + SymbolType.GREATEROPERATOR.name() + ">|<"
             + SymbolType.GREATEROREQUALOPERATOR.name() + ">|<" + SymbolType.LIKE.name() + ">|<"
             + SymbolType.NOTLIKE.name() + ">)$"),
-    ISOP("^(<" + SymbolType.IS.name() + ">|<"
-            + SymbolType.ISNOT.name() + ">)$"),
-    NULLTEST(
-            "^(<" + TERME.name() + "><" + ISOP.name() + "><" + NULL.name()
-                    + ">)$"),
     COMPARE(
             "^(<" + EXPRESSION.name() + "><" + OPCOMP.name() + "><" + EXPRESSION.name()
                     + ">|\\(<QUERY>\\))$"),
+    ISOP("^(<" + SymbolType.IS.name() + ">|<"
+            + SymbolType.ISNOT.name() + ">)$"),
+
+    NULLTEST(
+            "^(<" + TERME.name() + "><" + ISOP.name() + "><" + NULL.name()
+                    + ">)$"),
+    INOP("^(<" + SymbolType.IN.name() + ">|<"
+            + SymbolType.NOTIN.name() + ">)$"),
+    INTEST("^(<"+SymbolType.IDENTIFIER.name()+">" + INOP.name() + "><"
+            + SymbolType.PARAMETER.name()+">)$"),
     OPCONDITION(
             "^(<" + SymbolType.ANDCONDITION.name() + ">|<"
                     + SymbolType.ORCONDITION.name() + ">)$"),

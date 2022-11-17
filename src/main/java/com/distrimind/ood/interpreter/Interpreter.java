@@ -113,7 +113,9 @@ public class Interpreter {
 				}
 			}
 			if (bestMatch != null) {
-				boolean space = bestSymbol != SymbolType.LIKE && bestSymbol != SymbolType.NOTLIKE && bestSymbol!=SymbolType.IS && bestSymbol!=SymbolType.ISNOT;
+				boolean space = bestSymbol != SymbolType.LIKE && bestSymbol != SymbolType.NOTLIKE
+						&& bestSymbol!=SymbolType.IS && bestSymbol!=SymbolType.ISNOT
+						&& bestSymbol!=SymbolType.IN && bestSymbol!=SymbolType.NOTIN;
 				if (space)
 					sb.append(" ");
 				sb.append(bestMatch);
