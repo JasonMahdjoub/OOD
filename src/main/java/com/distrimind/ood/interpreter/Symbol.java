@@ -91,6 +91,13 @@ public class Symbol implements QueryPart {
 	}
 
 	@Override
+	public String toString() {
+		return "Symbol{" +
+				"type=" + type +
+				'}';
+	}
+
+	@Override
 	public Object getContent() {
 		return getSymbol();
 	}
@@ -113,7 +120,7 @@ public class Symbol implements QueryPart {
 			case NUMBER:
 			case PARAMETER:
 			case STRING:
-				return new RuleInstance(Rule.TERME, this);
+				return new RuleInstance(Rule.WORD, this);
 			case NULL:
 				return new RuleInstance(Rule.NULL, this);
 			case IS:

@@ -81,6 +81,7 @@ public class Interpreter {
 	private static String preProcess(String command) {
 		command = command.replaceAll("\\p{Blank}([Nn])([Oo])([Tt])\\p{Blank}([Ll])([Ii])([Kk])([Ee])\\p{Blank}", " NOT_LIKE ");
 		command = command.replaceAll("\\p{Blank}([Ii])([Ss])\\p{Blank}([Nn])([Oo])([Tt])\\p{Blank}", " IS_NOT ");
+		command = command.replaceAll("\\p{Blank}([Nn])([Oo])([Tt])\\p{Blank}([Ii])([Nn])\\p{Blank}", " NOT_IN ");
 
 		StringBuilder sb = new StringBuilder();
 
@@ -211,7 +212,7 @@ public class Interpreter {
 		if (changed)
 			return res;
 		else {
-			throw new QueryInterpretationImpossible(command);
+			throw new QueryInterpretationImpossible(command+"\n"+parts);
 
 		}
 	}

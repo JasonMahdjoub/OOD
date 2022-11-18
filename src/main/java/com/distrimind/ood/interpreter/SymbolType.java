@@ -62,12 +62,13 @@ public enum SymbolType {
 	NUMBER(false, false, false, "^(\\+|\\-)?(([0-9]+(\\.[0-9]+)?(E(\\-|\\+)?[0-9]+)?)|([0-9]*\\.[0-9]+(E(\\-|\\+)?[0-9]+)?))$", null, null), 
 	STRING(false, false, false, "^(\"|\\')[\\p{Alnum}\\p{Blank}\\!\\#\\$\\%\\&\\(\\)\\*\\+\\,\\-\\.\\/:;\\<\\=\\>\\?\\@\\[\\\\\\]\\^_\\`\\{\\|\\}\\~]+(\"|\\')$", null, null),
 	NULL(false, false, false, "^(N|n)(U|u)(L|l)(L|l)$", null, "NULL"),
-	PARAMETER( false, false, false, "(\\%|\\:)[a-zA-Z\\-_][0-9a-zA-Z\\-_]*$", null, null), LIKE(true, false, true, "^(L|l)(I|i)(K|k)(E|e)$", new String[] { " LIKE " }, " LIKE "),
+	PARAMETER( false, false, false, "(\\%|\\:)[a-zA-Z\\-_][0-9a-zA-Z\\-_]*$", null, null),
+	LIKE(true, false, false, "^(L|l)(I|i)(K|k)(E|e)$", new String[] { " LIKE " }, " LIKE "),
 	NOTLIKE(true, false,true,"^(N|n)(O|o)(T|t)_(L|l)(I|i)(K|k)(E|e)$",new String[] {" NOT LIKE "," NOT_LIKE " }," NOT LIKE "),
 	IS(true, false,false,"^(I|i)(S|s)$",new String[] {" IS "}," IS "),
 	ISNOT(true, false,true,"^(I|i)(S|s)_(N|n)(O|o)(T|t)$",new String[] {" IS NOT "," IS_NOT " }," IS NOT "),
-	IN(true, false,false,"^(I|i)(S|s)$",new String[] {" IN "}," IN "),
-	NOTIN(true, false,false,"^(I|i)(S|s)$",new String[] {" NOT IN "}," NOT IN "),
+	IN(true, false,false,"^(I|i)(N|n)$",new String[] {" IN "}," IN "),
+	NOTIN(true, false,true,"^(N|n)(O|o)(T|t)_(I|i)(N|n)$",new String[] {" NOT IN ", " NOT_IN "}," NOT IN "),
 	;
 
 	private final Pattern pattern;

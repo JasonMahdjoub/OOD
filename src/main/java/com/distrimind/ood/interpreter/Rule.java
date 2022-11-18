@@ -45,32 +45,20 @@ import java.util.regex.Pattern;
 public enum Rule {
 
     NULL("^(<" + SymbolType.NULL.name()+">)$"),
-    TERME("^(<" + SymbolType.IDENTIFIER.name() + ">|<" + SymbolType.NUMBER.name() + ">|<" + SymbolType.STRING.name() + ">|<" + SymbolType.PARAMETER.name() + ">|\\(<EXPRESSION>\\))$"),
-    EXPRESSION("^<" + TERME.name() + ">$"),
+    WORD("^(<" + SymbolType.IDENTIFIER.name() + ">|<" + SymbolType.NUMBER.name() + ">|<" + SymbolType.STRING.name() + ">|<" + SymbolType.PARAMETER.name() + ">|\\(<EXPRESSION>\\))$"),
+    EXPRESSION("^<" + WORD.name() + ">$"),
     OPCOMP("^(<" + SymbolType.EQUALOPERATOR.name() + ">|<"
             + SymbolType.NOTEQUALOPERATOR.name() + ">|<" + SymbolType.LOWEROPERATOR.name() + ">|<"
             + SymbolType.LOWEROREQUALOPERATOR.name() + ">|<" + SymbolType.GREATEROPERATOR.name() + ">|<"
             + SymbolType.GREATEROREQUALOPERATOR.name() + ">|<" + SymbolType.LIKE.name() + ">|<"
             + SymbolType.NOTLIKE.name() + ">)$"),
-    COMPARE(
-            "^(<" + EXPRESSION.name() + "><" + OPCOMP.name() + "><" + EXPRESSION.name()
-                    + ">|\\(<QUERY>\\))$"),
-    ISOP("^(<" + SymbolType.IS.name() + ">|<"
-            + SymbolType.ISNOT.name() + ">)$"),
-
-    NULLTEST(
-            "^(<" + TERME.name() + "><" + ISOP.name() + "><" + NULL.name()
-                    + ">)$"),
-    INOP("^(<" + SymbolType.IN.name() + ">|<"
-            + SymbolType.NOTIN.name() + ">)$"),
-    INTEST("^(<"+SymbolType.IDENTIFIER.name()+">" + INOP.name() + "><"
-            + SymbolType.PARAMETER.name()+">)$"),
-    OPCONDITION(
-            "^(<" + SymbolType.ANDCONDITION.name() + ">|<"
-                    + SymbolType.ORCONDITION.name() + ">)$"),
-    QUERY(
-            "^(<" + COMPARE.name() + ">|<"+NULLTEST.name()+">|<QUERY><"
-                    + OPCONDITION.name() + "><QUERY>)$");
+    COMPARE("^(<" + EXPRESSION.name() + "><" + OPCOMP.name() + "><" + EXPRESSION.name()+ ">|\\(<QUERY>\\))$"),
+    ISOP("^(<" + SymbolType.IS.name() + ">|<" + SymbolType.ISNOT.name() + ">)$"),
+    NULLTEST("^(<" + WORD.name() + "><" + ISOP.name() + "><" + NULL.name() + ">)$"),
+    INOP("^(<" + SymbolType.IN.name() + ">|<"+ SymbolType.NOTIN.name() + ">)$"),
+    INTEST("^(<"+WORD.name()+"><" + INOP.name() + "><"+ WORD.name()+">)$"),
+    OPCONDITION("^(<" + SymbolType.ANDCONDITION.name() + ">|<"+ SymbolType.ORCONDITION.name() + ">)$"),
+    QUERY("^(<" + COMPARE.name() + ">|<"+NULLTEST.name()+">|<"+INTEST.name()+">|<QUERY><"+ OPCONDITION.name() + "><QUERY>)$");
 
     private final Pattern pattern;
 

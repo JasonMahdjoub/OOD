@@ -79,6 +79,14 @@ public class RuleInstance implements QueryPart {
 			this.parts.add(parts.get(i));
 	}
 
+	@Override
+	public String toString() {
+		return "RuleInstance{" +
+				"rule=" + rule +
+				", parts=" + parts +
+				'}';
+	}
+
 	public RuleInstance(Rule rule, QueryPart part, QueryPart... parts) {
 		if (rule == null)
 			throw new NullPointerException("rule");
@@ -126,7 +134,7 @@ public class RuleInstance implements QueryPart {
 				return false;
 			case EXPRESSION:
 				return parts.get(0).isMultiType(table, parameters);
-			case TERME: {
+			case WORD: {
 				if (parts.size() == 1) {
 					Symbol s = (Symbol) parts.get(0);
 					return s.isMultiType(table, parameters);
@@ -167,7 +175,7 @@ public class RuleInstance implements QueryPart {
 			case QUERY:
 				return "boolean";
 			case NULL:
-			case TERME:
+			case WORD:
 				if (parts.size() == 1)
 					return parts.get(0).getValueType(table, parameters);
 				else
@@ -209,7 +217,7 @@ public class RuleInstance implements QueryPart {
 				throw new IllegalAccessError();
 			case EXPRESSION:
 				return ((RuleInstance) parts.get(0)).getComparable(table, parameters, record);
-			case TERME:
+			case WORD:
 				if (parts.size() == 1) {
 					Symbol s = (Symbol) parts.get(0);
 					if (s.getType() == SymbolType.IDENTIFIER) {
@@ -257,7 +265,7 @@ public class RuleInstance implements QueryPart {
 			case NULLTEST:
 			case INTEST:
 				throw new IllegalAccessError();
-			case TERME:
+			case WORD:
 				if (parts.size() == 1) {
 					Symbol s = (Symbol) parts.get(0);
 					if (s.getType() == SymbolType.IDENTIFIER) {
@@ -306,7 +314,7 @@ public class RuleInstance implements QueryPart {
 				}
 				else
 					throw new IllegalAccessError();
-			case TERME:
+			case WORD:
 				if (parts.size() == 1) {
 					Symbol s = (Symbol) parts.get(0);
 					if (s.getType() == SymbolType.IDENTIFIER) {
@@ -604,7 +612,7 @@ public class RuleInstance implements QueryPart {
 					throw new IllegalAccessError();
 				case NULL:
 					return true;
-			case TERME:
+			case WORD:
 
 				if (parts.size() == 1) {
 					Symbol s = (Symbol) parts.get(0);
@@ -683,7 +691,7 @@ public class RuleInstance implements QueryPart {
 						for (Object p : parameter)
 						{
 							if (equals(table, record, ri1.getEquallable(table, parameters, record), p))
-								return true;
+								return false;
 						}
 						return true;
 					} else
@@ -747,7 +755,7 @@ public class RuleInstance implements QueryPart {
 						throw new IllegalAccessError();
 				} else
 					throw new IllegalAccessError();
-			case TERME:
+			case WORD:
 			case NULL:
 			case ISOP:
 			case INOP:
@@ -952,7 +960,7 @@ public class RuleInstance implements QueryPart {
 										sfs2 = fa2.getDeclaredSqlFields();
 
 									for (SqlField sf : sfs) {
-										String sql_field_name=sqlTableName1.get()+"."+sf.shortFieldWithoutQuote;
+
 										++fieldsNumber;
 										if (fieldsNumber > 1)
 											res.append(" AND ");
@@ -963,7 +971,7 @@ public class RuleInstance implements QueryPart {
 										if (fa2 == null) {
 											boolean found = false;
 											for (SqlFieldInstance sfi : sfis) {
-												if (sfi.fieldWithoutQuote.equals(sql_field_name)) {
+												if (sfi.field.equals(sf.field)) {
 
 													if (parameter2==null)
 													{
@@ -981,7 +989,7 @@ public class RuleInstance implements QueryPart {
 											}
 											if (!found)
 												throw new DatabaseSyntaxException(
-														"Field " + sql_field_name + " not found. Unexpected error !");
+														"Field " + sf.field + " not found. Unexpected error !");
 
 										} else {
 											if (fa2.getFieldName().equals(fa1.getFieldName()))
@@ -1095,16 +1103,6 @@ public class RuleInstance implements QueryPart {
 
 						if (parameter.size()==0)
 							return new StringBuilder();
-						String cond;
-						if (comp.getType()==SymbolType.IN) {
-							comp = new Symbol(SymbolType.EQUALOPERATOR, "=");
-							cond=" OR ";
-						}
-						else {
-							comp = new Symbol(SymbolType.NOTEQUALOPERATOR, "!=");
-							cond = " AND ";
-						}
-						StringBuilder res = new StringBuilder("(");
 						String fieldName = s1.getSymbol();
 						Reference<String> sqlTableName=new Reference<>();
 						FieldAccessor fa1 = table.getFieldAccessor(fieldName, tablesJunction, sqlTableName);
@@ -1112,63 +1110,111 @@ public class RuleInstance implements QueryPart {
 							throw new DatabaseSyntaxException(
 									"Cannot find field " + fieldName + " into table " + table.getClass().getSimpleName());
 						SqlField[] sfs = fa1.getDeclaredSqlFields();
-						int parameterIndex=0;
-						for (Object p : parameter)
+
+						if (sfs.length==1)
 						{
-							if (parameterIndex>0)
-								res.append(cond);
-							SqlFieldInstance[] sfis;
-							try {
-								Class<?> c=fa1.getField().getDeclaringClass();
-								Constructor<?> cons;
-								if (Modifier.isAbstract(c.getModifiers()))
-									cons=table.getDefaultRecordConstructor();
-								else
-									cons=getConstructor(c);
-								Object value=cons.newInstance();
-								fa1.setValue(value, p);
-								sfis = fa1.getSqlFieldsInstances(sqlTableName.get(), value);
-							} catch (Exception e) {
-								throw new DatabaseSyntaxException("Database exception with "+fa1.getField().getDeclaringClass(), e);
-							}
-
-
-							res.append("(");
-							int fieldsNumber = 0;
-							for (SqlField sf : sfs) {
-								String sql_field_name = sqlTableName.get() + "." + sf.shortFieldWithoutQuote;
-
-								++fieldsNumber;
-								if (fieldsNumber > 1)
-									res.append(" AND ");
-								res.append(sqlTableName.get())
-										.append(".")
-										.append(sf.shortField)
-										.append(comp.getType().getContent());
-								boolean found = false;
-								for (SqlFieldInstance sfi : sfis) {
-									if (sfi.fieldWithoutQuote.equals(sql_field_name)) {
-
-										if (p == null) {
-											res.append("NULL");
-										} else {
-											int id = currentParameterID.getAndIncrement();
-											res.append("?");
-											outputParameters.put(id, sfi.instance);
-										}
-										found = true;
-										break;
+							StringBuilder res = new StringBuilder(sfs[0].field)
+									.append(comp.getType().getContent())
+									.append("(");
+							int parameterIndex=0;
+							for (Object p : parameter) {
+								if (parameterIndex > 0)
+									res.append(", ");
+								if (p==null)
+									res.append("NULL");
+								else {
+									SqlFieldInstance[] sfis;
+									try {
+										Class<?> c = fa1.getField().getDeclaringClass();
+										Constructor<?> cons;
+										if (Modifier.isAbstract(c.getModifiers()))
+											cons = table.getDefaultRecordConstructor();
+										else
+											cons = getConstructor(c);
+										Object value = cons.newInstance();
+										fa1.setValue(value, p);
+										sfis = fa1.getSqlFieldsInstances(sqlTableName.get(), value);
+									} catch (Exception e) {
+										throw new DatabaseSyntaxException("Database exception with " + fa1.getField().getDeclaringClass(), e);
 									}
+									int id = currentParameterID.getAndIncrement();
+									res.append("?");
+									outputParameters.put(id, sfis[0].instance);
 								}
-								if (!found)
-									throw new DatabaseSyntaxException(
-											"Field " + sql_field_name + " not found. Unexpected error !");
+								++parameterIndex;
 							}
 							res.append(")");
-							++parameterIndex;
+							return res;
 						}
-						res.append(")");
-						return res;
+						else {
+
+							String cond;
+							if (comp.getType() == SymbolType.IN) {
+								comp = new Symbol(SymbolType.EQUALOPERATOR, "=");
+								cond = " OR ";
+							} else {
+								comp = new Symbol(SymbolType.NOTEQUALOPERATOR, "!=");
+								cond = " AND ";
+							}
+							StringBuilder res = new StringBuilder("(");
+
+							int parameterIndex = 0;
+							for (Object p : parameter) {
+								if (parameterIndex > 0)
+									res.append(cond);
+								SqlFieldInstance[] sfis;
+								try {
+									Class<?> c = fa1.getField().getDeclaringClass();
+									Constructor<?> cons;
+									if (Modifier.isAbstract(c.getModifiers()))
+										cons = table.getDefaultRecordConstructor();
+									else
+										cons = getConstructor(c);
+									Object value = cons.newInstance();
+									fa1.setValue(value, p);
+									sfis = fa1.getSqlFieldsInstances(sqlTableName.get(), value);
+								} catch (Exception e) {
+									throw new DatabaseSyntaxException("Database exception with " + fa1.getField().getDeclaringClass(), e);
+								}
+
+
+								res.append("(");
+								int fieldsNumber = 0;
+								for (SqlField sf : sfs) {
+
+
+									++fieldsNumber;
+									if (fieldsNumber > 1)
+										res.append(" AND ");
+									res.append(sqlTableName.get())
+											.append(".")
+											.append(sf.shortField)
+											.append(comp.getType().getContent());
+									boolean found = false;
+									for (SqlFieldInstance sfi : sfis) {
+										if (sfi.field.equals(sf.field)) {
+
+											if (p == null) {
+												res.append("NULL");
+											} else {
+												int id = currentParameterID.getAndIncrement();
+												res.append("?");
+												outputParameters.put(id, sfi.instance);
+											}
+											found = true;
+											break;
+										}
+									}
+									if (!found)
+										throw new DatabaseSyntaxException(
+												"Field " + sf.field + " not found. Unexpected error !");
+								}
+								res.append(")");
+								++parameterIndex;
+							}
+							res.append(")");
+							return res;
+						}
 					}
 					else
 						throw new IllegalAccessError();
@@ -1233,7 +1279,7 @@ public class RuleInstance implements QueryPart {
 				else
 					throw new IllegalAccessError();
 			}
-			case TERME:
+			case WORD:
 				if (parts.size() == 1) {
 					Symbol s = (Symbol) parts.get(0);
 					if (s.getType() == SymbolType.IDENTIFIER) {

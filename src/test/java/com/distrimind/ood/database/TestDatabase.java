@@ -45,12 +45,7 @@ import com.distrimind.ood.database.exceptions.*;
 import com.distrimind.ood.database.fieldaccessors.BigDecimalFieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ByteTabFieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
-import com.distrimind.ood.database.schooldatabase.Group;
-import com.distrimind.ood.database.schooldatabase.Lecture;
-import com.distrimind.ood.database.schooldatabase.Student;
-import com.distrimind.ood.database.schooldatabase.StudentGroup;
-import com.distrimind.ood.database.schooldatabase.Teacher;
-import com.distrimind.ood.database.schooldatabase.TeacherLecture;
+import com.distrimind.ood.database.schooldatabase.*;
 import com.distrimind.ood.interpreter.Interpreter;
 import com.distrimind.ood.interpreter.RuleInstance;
 import com.distrimind.ood.interpreter.SymbolType;
@@ -95,7 +90,7 @@ import static org.testng.Assert.*;
  * @version 2.0
  * @since OOD 1.0
  */
-@SuppressWarnings({"deprecation", "ConstantConditions"})
+@SuppressWarnings({"ConstantConditions"})
 
 public abstract class TestDatabase {
 	public abstract int getMultiTestsNumber();
@@ -3333,6 +3328,17 @@ public abstract class TestDatabase {
 		boolean compare=false;
 		if (value==null)
 			return;
+		Collection<?> collection=null;
+		if (op_comp==SymbolType.IN || op_comp==SymbolType.NOTIN)
+		{
+			if (!useParameter)
+				throw new IllegalArgumentException();
+			if (!(value instanceof Collection))
+				throw new IllegalArgumentException();
+			collection=(Collection<?>) value;
+			if (collection.isEmpty())
+				throw new IllegalArgumentException();
+		}
 		if (op_comp == SymbolType.LIKE || op_comp == SymbolType.NOTLIKE) {
 			if (!(value instanceof String))
 				return;
@@ -3367,19 +3373,36 @@ public abstract class TestDatabase {
 		}
 		command.append(fieldName);
 		command.append(cs);
-
 		boolean test = false;
 
-		ArrayList<String> sqlVariablesName = getExpectedParametersName(fieldName, value.getClass());
 
 		Table.FieldAccessorValue fieldAccessorAndValue =table.getFieldAccessorAndValue(record, fieldName);
 		FieldAccessor fa=fieldAccessorAndValue.getFieldAccessor();
 		Object nearestObjectInstance=fieldAccessorAndValue.getValue();
+
 		if (useParameter) {
 			command.append("%");
+			if (collection!=null)
+				command.append("c");
 			command.append(fieldName.replace(".", "_"));
 
-			if (op_comp == SymbolType.EQUALOPERATOR)
+			if (op_comp==SymbolType.IN) {
+				test=false;
+				for (Object r : collection) {
+					test |= fa.equals(nearestObjectInstance, r);
+					if (test)
+						break;
+				}
+			}
+			else if (op_comp==SymbolType.NOTIN) {
+				test=true;
+				for (Object r : collection) {
+					test &= !fa.equals(nearestObjectInstance, r);
+					if (!test)
+						break;
+				}
+			}
+			else if (op_comp == SymbolType.EQUALOPERATOR)
 				test = fa.equals(nearestObjectInstance, value);
 			else if (op_comp == SymbolType.NOTEQUALOPERATOR)
 				test = !fa.equals(nearestObjectInstance, value);
@@ -3409,35 +3432,110 @@ public abstract class TestDatabase {
 				else if (op_comp == SymbolType.LOWEROREQUALOPERATOR)
 					test = comp <= 0;
 			}
+			if (op_comp==SymbolType.IN || op_comp==SymbolType.NOTIN)
+			{
 
-			ArrayList<Object> sqlInstance = getExpectedParameter(fa.getFieldClassType(), value);
-			if (op_comp == SymbolType.EQUALOPERATOR || op_comp == SymbolType.NOTEQUALOPERATOR)
-				expectedCommand.append("(");
-			assert sqlInstance.size()>0;
-			int s=sqlInstance.size();
-			if (compare)
-				s=1;
-			for (int i = 0; i < s; i++) {
-				if (i > 0)
-					expectedCommand.append(" AND ");
-				expectedCommand.append("%Table1Name%");
-				expectedCommand.append(".`");
-				expectedCommand.append(sqlVariablesName.get(i).replace(".", "_").toUpperCase());
-				expectedCommand.append("`");
-				expectedCommand.append(op_comp.getContent());
-				if (value==null)
+				if (fa.getDeclaredSqlFields().length==1)
 				{
-					throw new IllegalAccessError();
+					ArrayList<String> sqlVariablesName = getExpectedParametersName(fieldName, collection.iterator().next().getClass());
+					expectedCommand.append("%Table1Name%")
+							.append(".`")
+							.append(sqlVariablesName.get(0).replace(".", "_").toUpperCase())
+							.append("`")
+							.append(op_comp.getContent())
+							.append("(");
+					int j=0;
+					for (Object p : collection)
+					{
+						ArrayList<Object> sqlInstance = getExpectedParameter(fa.getFieldClassType(), p);
+						assert sqlInstance.size() == 1;
+						if (j>0)
+							expectedCommand.append(", ");
+						if (value == null) {
+							throw new IllegalAccessError();
+						} else {
+							expectedCommand.append("?");
+							expectedParameters.put(expectedParamterIndex.getAndIncrement(), sqlInstance.get(0));
+						}
+						j++;
+					}
+					expectedCommand.append(")");
+
 				}
-				else
-				{
-					expectedCommand.append("?");
-					expectedParameters.put(expectedParamterIndex.getAndIncrement(), sqlInstance.get(i));
+				else {
+					String eq;
+					String cond;
+					if (op_comp == SymbolType.IN) {
+						eq = SymbolType.EQUALOPERATOR.getContent();
+						cond = " OR ";
+					} else {
+						eq = SymbolType.NOTEQUALOPERATOR.getContent();
+						cond = " AND ";
+					}
+					expectedCommand.append("(");
+					int j=0;
+					for (Object p : collection)
+					{
+						if (p==null)
+							continue;
+						ArrayList<String> sqlVariablesName = getExpectedParametersName(fieldName, p.getClass());
+						if (j>0)
+							expectedCommand.append(cond);
+						expectedCommand.append("(");
+						ArrayList<Object> sqlInstance = getExpectedParameter(fa.getFieldClassType(), p);
+						assert sqlInstance.size() > 0;
+						int s = sqlInstance.size();
+						for (int i = 0; i < s; i++) {
+							if (i > 0)
+								expectedCommand.append(" AND ");
+							expectedCommand.append("%Table1Name%");
+							expectedCommand.append(".`");
+							expectedCommand.append(sqlVariablesName.get(i).replace(".", "_").toUpperCase());
+							expectedCommand.append("`");
+							expectedCommand.append(eq);
+							if (value == null) {
+								throw new IllegalAccessError();
+							} else {
+								expectedCommand.append("?");
+								expectedParameters.put(expectedParamterIndex.getAndIncrement(), sqlInstance.get(i));
+							}
+						}
+						expectedCommand.append(")");
+						j++;
+					}
+					expectedCommand.append(")");
 				}
+
 			}
-			if (op_comp == SymbolType.EQUALOPERATOR || op_comp == SymbolType.NOTEQUALOPERATOR)
-				expectedCommand.append(")");
+			else {
+				ArrayList<String> sqlVariablesName = getExpectedParametersName(fieldName, value.getClass());
+				ArrayList<Object> sqlInstance = getExpectedParameter(fa.getFieldClassType(), value);
+				if (op_comp == SymbolType.EQUALOPERATOR || op_comp == SymbolType.NOTEQUALOPERATOR)
+					expectedCommand.append("(");
+				assert sqlInstance.size() > 0;
+				int s = sqlInstance.size();
+				if (compare)
+					s = 1;
+				for (int i = 0; i < s; i++) {
+					if (i > 0)
+						expectedCommand.append(" AND ");
+					expectedCommand.append("%Table1Name%");
+					expectedCommand.append(".`");
+					expectedCommand.append(sqlVariablesName.get(i).replace(".", "_").toUpperCase());
+					expectedCommand.append("`");
+					expectedCommand.append(op_comp.getContent());
+					if (value == null) {
+						throw new IllegalAccessError();
+					} else {
+						expectedCommand.append("?");
+						expectedParameters.put(expectedParamterIndex.getAndIncrement(), sqlInstance.get(i));
+					}
+				}
+				if (op_comp == SymbolType.EQUALOPERATOR || op_comp == SymbolType.NOTEQUALOPERATOR)
+					expectedCommand.append(")");
+			}
 		} else {
+			ArrayList<String> sqlVariablesName = getExpectedParametersName(fieldName, value.getClass());
 			if (op_comp == SymbolType.IS) {
 				test = fa.getValue(nearestObjectInstance)==null;
 			}
@@ -3501,138 +3599,182 @@ public abstract class TestDatabase {
 	@DataProvider(name = "interpreterCommandsProvider")
 	public Object[][] interpreterCommandsProvider()
 			throws IOException, NoSuchAlgorithmException, NoSuchProviderException, DatabaseException {
-		HashMap<String, Object> parametersTable1Equallable = new HashMap<>();
+		try {
+			HashMap<String, Object> parametersTable1Equallable = new HashMap<>();
 
-		AbstractSecureRandom rand = SecureRandomType.DEFAULT.getSingleton(null);
-		ArrayList<Object[]> res = new ArrayList<>();
-		parametersTable1Equallable.put("pk5", new SecuredDecentralizedID(new DecentralizedIDGenerator(), rand));
-		parametersTable1Equallable.put("pk6", new DecentralizedIDGenerator());
-		parametersTable1Equallable.put("pk7", new RenforcedDecentralizedIDGenerator());
-		parametersTable1Equallable.put("int_value", 1);
-		parametersTable1Equallable.put("byte_value", (byte) 1);
-		parametersTable1Equallable.put("char_value", 'a');
-		parametersTable1Equallable.put("boolean_value", Boolean.TRUE);
-		parametersTable1Equallable.put("short_value", (short) 1);
-		parametersTable1Equallable.put("long_value", 1L);
-		parametersTable1Equallable.put("float_value", 1.0f);
-		parametersTable1Equallable.put("double_value", 1.0);
-		parametersTable1Equallable.put("string_value", "string");
+			AbstractSecureRandom rand = SecureRandomType.DEFAULT.getSingleton(null);
+			ArrayList<Object[]> res = new ArrayList<>();
+			parametersTable1Equallable.put("pk5", new SecuredDecentralizedID(new DecentralizedIDGenerator(), rand));
+			parametersTable1Equallable.put("cpk5", Arrays.asList(new SecuredDecentralizedID(new DecentralizedIDGenerator(), rand), new SecuredDecentralizedID(new DecentralizedIDGenerator(), rand)));
+			parametersTable1Equallable.put("pk6", new DecentralizedIDGenerator());
+			parametersTable1Equallable.put("cpk6", Arrays.asList(new DecentralizedIDGenerator(), new DecentralizedIDGenerator()));
+			parametersTable1Equallable.put("pk7", new RenforcedDecentralizedIDGenerator());
+			parametersTable1Equallable.put("cpk7", Arrays.asList(new RenforcedDecentralizedIDGenerator(), new RenforcedDecentralizedIDGenerator()));
+			parametersTable1Equallable.put("int_value", 1);
+			parametersTable1Equallable.put("cint_value", Arrays.asList(1, 5));
+			parametersTable1Equallable.put("byte_value", (byte) 1);
+			parametersTable1Equallable.put("cbyte_value", Arrays.asList((byte) 1, (byte) 5));
+			parametersTable1Equallable.put("char_value", 'a');
+			parametersTable1Equallable.put("cchar_value", Arrays.asList('a', 'b'));
+			parametersTable1Equallable.put("boolean_value", Boolean.TRUE);
+			parametersTable1Equallable.put("cboolean_value", Arrays.asList(Boolean.TRUE, Boolean.TRUE));
+			parametersTable1Equallable.put("short_value", (short) 1);
+			parametersTable1Equallable.put("cshort_value", Arrays.asList((short) 1, (short) 2));
+			parametersTable1Equallable.put("long_value", 1L);
+			parametersTable1Equallable.put("clong_value", Arrays.asList(2L, 3L));
+			parametersTable1Equallable.put("float_value", 1.0f);
+			parametersTable1Equallable.put("cfloat_value", Arrays.asList(1.0f, 2f));
+			parametersTable1Equallable.put("double_value", 1.0);
+			parametersTable1Equallable.put("cdouble_value", Arrays.asList(1.0, 2.0));
+			parametersTable1Equallable.put("string_value", "string");
+			parametersTable1Equallable.put("cstring_value", Arrays.asList("string", "stringb"));
 
-		parametersTable1Equallable.put("IntegerNumber_value", 1);
-		parametersTable1Equallable.put("ByteNumber_value", (byte) 1);
-		parametersTable1Equallable.put("CharacterNumber_value", 'a');
-		parametersTable1Equallable.put("BooleanNumber_value", Boolean.TRUE);
-		parametersTable1Equallable.put("ShortNumber_value", (short) 1);
-		parametersTable1Equallable.put("LongNumber_value", 1L);
-		parametersTable1Equallable.put("FloatNumber_value", 1.0f);
-		parametersTable1Equallable.put("DoubleNumber_value", 1.0);
-		
-
-		Calendar calendar = Calendar.getInstance(Locale.CANADA);
-		calendar.set(2045, Calendar.AUGUST, 29, 18, 32, 43);
-
-		parametersTable1Equallable.put("byte_array_value", new byte[] { (byte) 0, (byte) 1 });
-		parametersTable1Equallable.put("BigInteger_value", BigInteger.valueOf(3));
-		parametersTable1Equallable.put("BigDecimal_value", BigDecimal.valueOf(4));
-		parametersTable1Equallable.put("DateValue", date);
-		parametersTable1Equallable.put("CalendarValue", calendar);
-		parametersTable1Equallable.put("nullField", null);
-		parametersTable1Equallable.put("file", fileTest);
-		parametersTable1Equallable.put("subField.string_value", "string_for_sql_interpreter");
-		parametersTable1Equallable.put("subField.int_value", 15);
+			parametersTable1Equallable.put("IntegerNumber_value", 1);
+			parametersTable1Equallable.put("cIntegerNumber_value", Arrays.asList(1, 2));
+			parametersTable1Equallable.put("ByteNumber_value", (byte) 1);
+			parametersTable1Equallable.put("cByteNumber_value", Arrays.asList((byte) 1, (byte) 5));
+			parametersTable1Equallable.put("CharacterNumber_value", 'a');
+			parametersTable1Equallable.put("cCharacterNumber_value", Arrays.asList('a', 'b'));
+			parametersTable1Equallable.put("BooleanNumber_value", Boolean.TRUE);
+			parametersTable1Equallable.put("cBooleanNumber_value", Arrays.asList(Boolean.FALSE, Boolean.FALSE));
+			parametersTable1Equallable.put("ShortNumber_value", (short) 1);
+			parametersTable1Equallable.put("cShortNumber_value", Arrays.asList((short) 2, (short) 3));
+			parametersTable1Equallable.put("LongNumber_value", 1L);
+			parametersTable1Equallable.put("cLongNumber_value", Arrays.asList(1L, 3L));
+			parametersTable1Equallable.put("FloatNumber_value", 1.0f);
+			parametersTable1Equallable.put("cFloatNumber_value", Arrays.asList(2.0f, 3f));
+			parametersTable1Equallable.put("DoubleNumber_value", 1.0);
+			parametersTable1Equallable.put("cDoubleNumber_value", Arrays.asList(3.0, 2.0));
 
 
-		Table1.Record record = new Table1.Record();
-		record.BigDecimal_value = (BigDecimal) parametersTable1Equallable.get("BigDecimal_value");
-		record.BigInteger_value = (BigInteger) parametersTable1Equallable.get("BigInteger_value");
-		record.boolean_value = (Boolean) parametersTable1Equallable.get("boolean_value");
-		record.BooleanNumber_value = (Boolean) parametersTable1Equallable.get("BooleanNumber_value");
-		record.byte_array_value = (byte[]) parametersTable1Equallable.get("byte_array_value");
-		record.byte_value = (Byte) parametersTable1Equallable.get("byte_value");
-		record.ByteNumber_value = (Byte) parametersTable1Equallable.get("ByteNumber_value");
-		record.CalendarValue = (Calendar) parametersTable1Equallable.get("CalendarValue");
-		record.char_value = (Character) parametersTable1Equallable.get("char_value");
-		record.CharacterNumber_value = (Character) parametersTable1Equallable.get("CharacterNumber_value");
-		record.DateValue = (Date) parametersTable1Equallable.get("DateValue");
-		record.double_value = (Double) parametersTable1Equallable.get("double_value");
-		record.DoubleNumber_value = (Double) parametersTable1Equallable.get("DoubleNumber_value");
-		record.float_value = (Float) parametersTable1Equallable.get("float_value");
-		record.FloatNumber_value = (Float) parametersTable1Equallable.get("FloatNumber_value");
-		record.int_value = (Integer) parametersTable1Equallable.get("int_value");
-		record.IntegerNumber_value = (Integer) parametersTable1Equallable.get("IntegerNumber_value");
-		record.long_value = (Long) parametersTable1Equallable.get("long_value");
-		record.LongNumber_value = ((Long) parametersTable1Equallable.get("LongNumber_value"));
-		record.pk5 = (AbstractDecentralizedID) parametersTable1Equallable.get("pk5");
-		record.pk6 = (DecentralizedIDGenerator) parametersTable1Equallable.get("pk6");
-		record.pk7 = (RenforcedDecentralizedIDGenerator) parametersTable1Equallable.get("pk7");
-		record.secretKey = (SymmetricSecretKey) parametersTable1Equallable.get("secretKey");
-		record.typeSecretKey = (SymmetricEncryptionType) parametersTable1Equallable.get("typeSecretKey");
-		record.short_value = (Short) parametersTable1Equallable.get("short_value");
-		record.ShortNumber_value = (Short) parametersTable1Equallable.get("ShortNumber_value");
-		record.string_value = (String) parametersTable1Equallable.get("string_value");
-		record.nullField= (DecentralizedIDGenerator)parametersTable1Equallable.get("nullField");
-		record.file=(File)parametersTable1Equallable.get("file");
-		record.subField=new SubField();
-		record.subField.string_value=(String)parametersTable1Equallable.get("subField.string_value");
-		record.subField.int_value=(Integer)parametersTable1Equallable.get("subField.int_value");
+			Calendar calendar = Calendar.getInstance(Locale.CANADA);
+			calendar.set(2045, Calendar.AUGUST, 29, 18, 32, 43);
 
-		SymbolType[] ops_cond = new SymbolType[] { SymbolType.ANDCONDITION, SymbolType.ORCONDITION };
-		SymbolType[] ops_comp = new SymbolType[] { SymbolType.EQUALOPERATOR, SymbolType.NOTEQUALOPERATOR,
-				SymbolType.LIKE, SymbolType.NOTLIKE, SymbolType.GREATEROPERATOR, SymbolType.GREATEROREQUALOPERATOR,
-				SymbolType.LOWEROPERATOR, SymbolType.LOWEROREQUALOPERATOR, SymbolType.IS, SymbolType.ISNOT};
+			parametersTable1Equallable.put("byte_array_value", new byte[]{(byte) 0, (byte) 1});
+			parametersTable1Equallable.put("cbyte_array_value", Arrays.asList(new byte[]{(byte) 1, (byte) 1}, new byte[]{(byte) 2, (byte) 3}));
+			parametersTable1Equallable.put("BigInteger_value", BigInteger.valueOf(3));
+			parametersTable1Equallable.put("cBigInteger_value", Arrays.asList(BigInteger.valueOf(3), BigInteger.valueOf(5)));
+			parametersTable1Equallable.put("BigDecimal_value", BigDecimal.valueOf(4));
+			parametersTable1Equallable.put("cBigDecimal_value", Arrays.asList(BigDecimal.valueOf(7), BigDecimal.valueOf(6)));
+			parametersTable1Equallable.put("DateValue", date);
+			parametersTable1Equallable.put("cDateValue", Collections.singleton(date));
+			parametersTable1Equallable.put("CalendarValue", calendar);
+			parametersTable1Equallable.put("cCalendarValue", Collections.singleton(calendar));
+			parametersTable1Equallable.put("nullField", null);
+			parametersTable1Equallable.put("cnullField", Arrays.asList(new DecentralizedIDGenerator(), new DecentralizedIDGenerator()));
+			parametersTable1Equallable.put("file", fileTest);
+			parametersTable1Equallable.put("cfile", Collections.singleton(fileTest));
+			parametersTable1Equallable.put("subField.string_value", "string_for_sql_interpreter");
+			parametersTable1Equallable.put("csubField.string_value", Arrays.asList("string_for_sql_interpreter", "string_for_sql_interpreterb"));
+			parametersTable1Equallable.put("subField.int_value", 15);
+			parametersTable1Equallable.put("csubField.int_value", Arrays.asList(11, 56));
 
-		for (SymbolType op_cond : ops_cond) {
-			for (SymbolType op_comp : ops_comp) {
-				for (String cs : op_comp.getMatches()) {
-					for (boolean useParameter : new boolean[] { false, true }) {
 
-						StringBuffer command = new StringBuffer();
-						StringBuffer expectedCommand = new StringBuffer();
+			Table1.Record record = new Table1.Record();
+			record.BigDecimal_value = (BigDecimal) parametersTable1Equallable.get("BigDecimal_value");
+			record.BigInteger_value = (BigInteger) parametersTable1Equallable.get("BigInteger_value");
+			record.boolean_value = (Boolean) parametersTable1Equallable.get("boolean_value");
+			record.BooleanNumber_value = (Boolean) parametersTable1Equallable.get("BooleanNumber_value");
+			record.byte_array_value = (byte[]) parametersTable1Equallable.get("byte_array_value");
+			record.byte_value = (Byte) parametersTable1Equallable.get("byte_value");
+			record.ByteNumber_value = (Byte) parametersTable1Equallable.get("ByteNumber_value");
+			record.CalendarValue = (Calendar) parametersTable1Equallable.get("CalendarValue");
+			record.char_value = (Character) parametersTable1Equallable.get("char_value");
+			record.CharacterNumber_value = (Character) parametersTable1Equallable.get("CharacterNumber_value");
+			record.DateValue = (Date) parametersTable1Equallable.get("DateValue");
+			record.double_value = (Double) parametersTable1Equallable.get("double_value");
+			record.DoubleNumber_value = (Double) parametersTable1Equallable.get("DoubleNumber_value");
+			record.float_value = (Float) parametersTable1Equallable.get("float_value");
+			record.FloatNumber_value = (Float) parametersTable1Equallable.get("FloatNumber_value");
+			record.int_value = (Integer) parametersTable1Equallable.get("int_value");
+			record.IntegerNumber_value = (Integer) parametersTable1Equallable.get("IntegerNumber_value");
+			record.long_value = (Long) parametersTable1Equallable.get("long_value");
+			record.LongNumber_value = ((Long) parametersTable1Equallable.get("LongNumber_value"));
+			record.pk5 = (AbstractDecentralizedID) parametersTable1Equallable.get("pk5");
+			record.pk6 = (DecentralizedIDGenerator) parametersTable1Equallable.get("pk6");
+			record.pk7 = (RenforcedDecentralizedIDGenerator) parametersTable1Equallable.get("pk7");
+			record.secretKey = (SymmetricSecretKey) parametersTable1Equallable.get("secretKey");
+			record.typeSecretKey = (SymmetricEncryptionType) parametersTable1Equallable.get("typeSecretKey");
+			record.short_value = (Short) parametersTable1Equallable.get("short_value");
+			record.ShortNumber_value = (Short) parametersTable1Equallable.get("ShortNumber_value");
+			record.string_value = (String) parametersTable1Equallable.get("string_value");
+			record.nullField = (DecentralizedIDGenerator) parametersTable1Equallable.get("nullField");
+			record.file = (File) parametersTable1Equallable.get("file");
+			record.subField = new SubField();
+			record.subField.string_value = (String) parametersTable1Equallable.get("subField.string_value");
+			record.subField.int_value = (Integer) parametersTable1Equallable.get("subField.int_value");
 
-						HashMap<Integer, Object> expectedParameters = new HashMap<>();
-						AtomicInteger expectedParamterIndex = new AtomicInteger(1);
-						AtomicInteger openedParenthesis = new AtomicInteger(0);
-						AtomicBoolean expectedTestResult = new AtomicBoolean();
-						HashMap<String, Object> parametersTable1Equallable2 = new HashMap<>();
-						if (op_comp==SymbolType.IS || op_comp==SymbolType.ISNOT)
-						{
-							for (FieldAccessor fa : table1.getFieldAccessors()) {
-								subInterpreterCommandProvider(op_cond, op_comp, command, expectedCommand,
-										fa.getFieldName(), openedParenthesis, table1, record, expectedTestResult);
+			SymbolType[] ops_cond = new SymbolType[]{SymbolType.ANDCONDITION, SymbolType.ORCONDITION};
+			SymbolType[] ops_comp = new SymbolType[]{SymbolType.EQUALOPERATOR, SymbolType.NOTEQUALOPERATOR,
+					SymbolType.LIKE, SymbolType.NOTLIKE, SymbolType.GREATEROPERATOR, SymbolType.GREATEROREQUALOPERATOR,
+					SymbolType.LOWEROPERATOR, SymbolType.LOWEROREQUALOPERATOR, SymbolType.IS, SymbolType.ISNOT,
+					SymbolType.IN,SymbolType.NOTIN};
+
+			for (SymbolType op_cond : ops_cond) {
+				for (SymbolType op_comp : ops_comp) {
+					for (String cs : op_comp.getMatches()) {
+						for (boolean useParameter : new boolean[]{false, true}) {
+							if ((op_comp == SymbolType.IN || op_comp == SymbolType.NOTIN) && !useParameter)
+								continue;
+							StringBuffer command = new StringBuffer();
+							StringBuffer expectedCommand = new StringBuffer();
+
+							HashMap<Integer, Object> expectedParameters = new HashMap<>();
+							AtomicInteger expectedParamterIndex = new AtomicInteger(1);
+							AtomicInteger openedParenthesis = new AtomicInteger(0);
+							AtomicBoolean expectedTestResult = new AtomicBoolean();
+							HashMap<String, Object> parametersTable1Equallable2 = new HashMap<>();
+							if (op_comp == SymbolType.IS || op_comp == SymbolType.ISNOT) {
+								for (FieldAccessor fa : table1.getFieldAccessors()) {
+									subInterpreterCommandProvider(op_cond, op_comp, command, expectedCommand,
+											fa.getFieldName(), openedParenthesis, table1, record, expectedTestResult);
+								}
+							} else {
+
+								for (Map.Entry<String, Object> m : parametersTable1Equallable.entrySet()) {
+									if (op_comp == SymbolType.IN || op_comp == SymbolType.NOTIN) {
+										if (m.getValue() instanceof Collection) {
+
+											subInterpreterCommandProvider(op_cond, op_comp, cs, parametersTable1Equallable, command,
+													expectedCommand, m.getKey().substring(1), m.getValue(), expectedParameters, useParameter,
+													expectedParamterIndex, openedParenthesis, table1, record, expectedTestResult);
+										}
+									} else {
+										if (m.getValue() != null && !(m.getValue() instanceof Collection))
+											subInterpreterCommandProvider(op_cond, op_comp, cs, parametersTable1Equallable, command,
+													expectedCommand, m.getKey(), m.getValue(), expectedParameters, useParameter,
+													expectedParamterIndex, openedParenthesis, table1, record, expectedTestResult);
+									}
+									parametersTable1Equallable2.put(m.getKey().replace(".", "_"), m.getValue());
+								}
 							}
-						}
-						else {
 
-							for (Map.Entry<String, Object> m : parametersTable1Equallable.entrySet()) {
-
-								if (m.getValue() != null/* || op_comp == SymbolType.EQUALOPERATOR*/)
-									subInterpreterCommandProvider(op_cond, op_comp, cs, parametersTable1Equallable, command,
-											expectedCommand, m.getKey(), m.getValue(), expectedParameters, useParameter,
-											expectedParamterIndex, openedParenthesis, table1, record, expectedTestResult);
-								parametersTable1Equallable2.put(m.getKey().replace(".", "_"), m.getValue());
+							while (openedParenthesis.get() > 0) {
+								command.append(")");
+								expectedCommand.append(")");
+								openedParenthesis.decrementAndGet();
 							}
-						}
-
-						while (openedParenthesis.get() > 0) {
-							command.append(")");
-							expectedCommand.append(")");
-							openedParenthesis.decrementAndGet();
-						}
-						if (command.length() > 0) {
-							res.add(new Object[] { Table1.class, command.toString(), parametersTable1Equallable2,
-									expectedCommand.toString(), expectedParameters, record,
-                                    expectedTestResult.get()});
+							if (command.length() > 0) {
+								res.add(new Object[]{Table1.class, command.toString(), parametersTable1Equallable2,
+										expectedCommand.toString(), expectedParameters, record,
+										expectedTestResult.get()});
+							}
 						}
 					}
 				}
 			}
-		}
 
-		Object[][] resO = new Object[res.size()][];
-		for (int i = 0; i < res.size(); i++) {
-			resO[i] = res.get(i);
+			Object[][] resO = new Object[res.size()][];
+			for (int i = 0; i < res.size(); i++) {
+				resO[i] = res.get(i);
+			}
+			return resO;
 		}
-		return resO;
+		catch (Throwable t)
+		{
+			t.printStackTrace();
+			throw t;
+		}
 	}
 
 	// @Test(dependsOnMethods={"setAutoRandomFields"}, dataProvider =
