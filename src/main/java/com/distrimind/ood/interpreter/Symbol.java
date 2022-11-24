@@ -129,6 +129,13 @@ public class Symbol implements QueryPart {
 			case IN:
 			case NOTIN:
 				return new RuleInstance(Rule.INOP, this);
+			case MULTIPLY:
+			case DIVIDE:
+			case MODULO:
+				return new RuleInstance(Rule.MULTIPLY_OPERATOR, this);
+			case PLUS:
+			case MINUS:
+				return new RuleInstance(Rule.ADD_OPERATOR, this);
 			case OPEN_PARENTHESIS:
 			case CLOSE_PARENTHESIS:
 				return null;
@@ -223,6 +230,35 @@ public class Symbol implements QueryPart {
 		else 
 			return getType().name();
 
+	}
+	@Override
+	public <T extends DatabaseRecord> boolean isAlgebraic(Table<T> table, Map<String, Object> parameters)
+			throws DatabaseSyntaxException
+	{
+		if (getType() == SymbolType.IDENTIFIER) {
+			FieldAccessor fa = table.getFieldAccessor(getSymbol());
+			if (fa == null)
+				throw new DatabaseSyntaxException(
+						"Cannot find field " + getSymbol() + " into table " + table.getClass().getSimpleName());
+			if (fa.getDeclaredSqlFields().length!=1)
+				return false;
+			return fa.isAlgebraic();
+		} else if (getType() == SymbolType.PARAMETER) {
+			Object p = parameters.get(getSymbol());
+			if (p == null)
+			{
+				return true;
+			}
+			FieldAccessor fa = getFieldAccessor(table, p);
+
+			if (fa == null)
+				throw new DatabaseSyntaxException("No field accessor corresponds to parameter " + getSymbol()
+						+ " and type " + p.getClass().getName() + " with table " + table.getClass().getName());
+			if (fa.getDeclaredSqlFields().length!=1)
+				return false;
+			return fa.isAlgebraic();
+		} else
+			return getType() == SymbolType.NUMBER;
 	}
 	public static <T extends DatabaseRecord> FieldAccessor getFieldAccessor(Table<T> table, Object o) {
 		return getFieldAccessor(table, o, new HashSet<>());

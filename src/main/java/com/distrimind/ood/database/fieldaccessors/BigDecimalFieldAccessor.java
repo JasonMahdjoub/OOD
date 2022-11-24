@@ -208,6 +208,10 @@ public class BigDecimalFieldAccessor extends FieldAccessor {
 		return true;
 	}
 
+	@Override
+	public boolean isAlgebraic() {
+		return true;
+	}
 
 
 	@Override

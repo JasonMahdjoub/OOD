@@ -69,6 +69,11 @@ public enum SymbolType {
 	ISNOT(true, false,true,"^(I|i)(S|s)_(N|n)(O|o)(T|t)$",new String[] {" IS NOT "," IS_NOT " }," IS NOT "),
 	IN(true, false,false,"^(I|i)(N|n)$",new String[] {" IN "}," IN "),
 	NOTIN(true, false,true,"^(N|n)(O|o)(T|t)_(I|i)(N|n)$",new String[] {" NOT IN ", " NOT_IN "}," NOT IN "),
+	PLUS(true, false,false,"^[+]$",new String[] {" + "}," + "),
+	MINUS(true, false,false,"^[-]$",new String[] {" - "}," - "),
+	MULTIPLY(true, false,false,"^[*]$",new String[] {" * "}," * "),
+	DIVIDE(true, false,false,"^\\$",new String[] {" \\ "}," \\ "),
+	MODULO(true, false,false,"^%$",new String[] {" % "}," % "),
 	;
 
 	private final Pattern pattern;
@@ -157,5 +162,10 @@ public enum SymbolType {
 		regex = regex.replace("_", ".");
 
 		return regex;
+	}
+
+	public boolean isMathematicalOperator()
+	{
+		return this==PLUS || this==MINUS || this==MULTIPLY || this==DIVIDE || this==MODULO;
 	}
 }

@@ -57,6 +57,8 @@ public interface QueryPart {
 
 	<T extends DatabaseRecord> String getValueType(Table<T> table, Map<String, Object> parameters)
 			throws DatabaseSyntaxException;
+	<T extends DatabaseRecord> boolean isAlgebraic(Table<T> table, Map<String, Object> parameters)
+			throws DatabaseSyntaxException ;
 
 	<T extends DatabaseRecord> boolean isMultiType(Table<T> table, Map<String, Object> parameters)
 			throws DatabaseSyntaxException;

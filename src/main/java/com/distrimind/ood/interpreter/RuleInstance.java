@@ -52,6 +52,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
@@ -122,18 +123,25 @@ public class RuleInstance implements QueryPart {
 	public <T extends DatabaseRecord> boolean isMultiType(Table<T> table, Map<String, Object> parameters)
 			throws DatabaseSyntaxException {
 		switch (rule) {
+			case FACTOR:
 			case COMPARE:
 			case QUERY:
 			case OPCONDITION:
 			case OPCOMP:
+			case MULTIPLY_OPERATOR:
+			case ADD_OPERATOR:
 			case NULLTEST:
 			case INTEST:
 			case ISOP:
 			case INOP:
 			case NULL:
 				return false;
-			case EXPRESSION:
-				return parts.get(0).isMultiType(table, parameters);
+			case EXPRESSION: {
+				if (parts.size()==1)
+					return parts.get(0).isMultiType(table, parameters);
+				else
+					return false;
+			}
 			case WORD: {
 				if (parts.size() == 1) {
 					Symbol s = (Symbol) parts.get(0);
@@ -162,9 +170,6 @@ public class RuleInstance implements QueryPart {
 	public <T extends DatabaseRecord> String getValueType(Table<T> table, Map<String, Object> parameters)
 			throws DatabaseSyntaxException {
 		switch (rule) {
-
-			case EXPRESSION:
-				return parts.get(0).getValueType(table, parameters);
 			case ISOP:
 			case INOP:
 			case NULLTEST:
@@ -180,6 +185,45 @@ public class RuleInstance implements QueryPart {
 					return parts.get(0).getValueType(table, parameters);
 				else
 					return parts.get(1).getValueType(table, parameters);
+			case EXPRESSION:
+			case FACTOR:
+				if (parts.size()==1)
+					return parts.get(0).getValueType(table, parameters);
+				else
+					return "comparable";
+
+		}
+		throw new IllegalAccessError();
+	}
+
+	@Override
+	public <T extends DatabaseRecord> boolean isAlgebraic(Table<T> table, Map<String, Object> parameters)
+			throws DatabaseSyntaxException {
+		switch (rule) {
+			case ISOP:
+			case INOP:
+			case NULLTEST:
+			case INTEST:
+			case COMPARE:
+			case OPCOMP:
+			case OPCONDITION:
+			case QUERY:
+			case NULL:
+				return false;
+			case ADD_OPERATOR:
+			case MULTIPLY_OPERATOR:
+				return true;
+			case WORD:
+				if (parts.size() == 1)
+					return parts.get(0).isAlgebraic(table, parameters);
+				else
+					return parts.get(1).isAlgebraic(table, parameters);
+			case EXPRESSION:
+			case FACTOR:
+				if (parts.size()==1)
+					return parts.get(0).isAlgebraic(table, parameters);
+				else
+					return parts.get(0).isAlgebraic(table, parameters) && parts.get(1).isAlgebraic(table, parameters) && parts.get(2).isAlgebraic(table, parameters);
 
 		}
 		throw new IllegalAccessError();
@@ -213,10 +257,20 @@ public class RuleInstance implements QueryPart {
 			case INOP:
 			case NULLTEST:
 			case INTEST:
+			case MULTIPLY_OPERATOR:
+			case ADD_OPERATOR:
 			case NULL:
 				throw new IllegalAccessError();
+			case FACTOR:
 			case EXPRESSION:
-				return ((RuleInstance) parts.get(0)).getComparable(table, parameters, record);
+				if (parts.size()==1)
+					return ((RuleInstance) parts.get(0)).getComparable(table, parameters, record);
+				else if (parts.size()==3)
+				{
+					return getAlgebraic(table, parameters, record);
+				}
+				else
+					throw new IllegalAccessError();
 			case WORD:
 				if (parts.size() == 1) {
 					Symbol s = (Symbol) parts.get(0);
@@ -250,6 +304,132 @@ public class RuleInstance implements QueryPart {
 		throw new IllegalAccessError();
 	}
 
+	private BigDecimal toBigDecimal(Object o) throws DatabaseException {
+		if (o instanceof Date)
+		{
+			return BigDecimal.valueOf(((Date) o).getTime());
+		}
+		else if (o instanceof Number) {
+			if (o instanceof BigDecimal)
+			{
+				return (BigDecimal) o;
+			}
+			else if (o instanceof BigInteger)
+				return new BigDecimal((BigInteger) o);
+			else if (o instanceof Long)
+				return BigDecimal.valueOf(((Number)o).longValue());
+			else
+				return BigDecimal.valueOf(((Number)o).doubleValue());
+		}
+		else
+			return null;
+	}
+
+
+
+	private BigDecimal algebraicOperation(BigDecimal v1, BigDecimal v2, SymbolType symbolType) throws DatabaseException {
+		if (v1==null)
+			return null;
+		if (v2==null)
+			return null;
+
+		switch (symbolType)
+		{
+			case PLUS:
+				return v1.add(v2);
+			case MINUS:
+				return v1.subtract(v2);
+			case MULTIPLY:
+				return v1.multiply(v2);
+			case DIVIDE:
+				return v1.divide(v2, RoundingMode.HALF_UP);
+			case MODULO:
+				return v1.remainder(v2);
+			default:
+				throw new DatabaseException("Not algebraic operator "+symbolType);
+		}
+	}
+	public <T extends DatabaseRecord> BigDecimal getAlgebraic(Table<T> table, Map<String, Object> parameters, T record)
+			throws DatabaseException {
+		switch (rule) {
+			case COMPARE:
+			case QUERY:
+			case OPCOMP:
+			case OPCONDITION:
+			case ISOP:
+			case INOP:
+			case NULLTEST:
+			case INTEST:
+			case MULTIPLY_OPERATOR:
+			case ADD_OPERATOR:
+			case NULL:
+				throw new IllegalAccessError();
+			case FACTOR:
+			case EXPRESSION:
+				if (parts.size()==1)
+					return ((RuleInstance) parts.get(0)).getAlgebraic(table, parameters, record);
+				else if (parts.size()==3)
+				{
+					BigDecimal o1=((RuleInstance) parts.get(0)).getAlgebraic(table, parameters, record);
+					BigDecimal o2=((RuleInstance) parts.get(2)).getAlgebraic(table, parameters, record);
+					RuleInstance op=(RuleInstance) parts.get(1);
+					switch (op.getRule())
+					{
+						case ADD_OPERATOR:
+						case MULTIPLY_OPERATOR:
+							return algebraicOperation(o1, o2, ((Symbol)op.getContent()).getType());
+						default:
+							throw new IllegalAccessError();
+					}
+				}
+				else
+					throw new IllegalAccessError();
+			case WORD:
+				if (parts.size() == 1) {
+					Symbol s = (Symbol) parts.get(0);
+					if (s.getType() == SymbolType.IDENTIFIER) {
+						String fieldName = s.getSymbol();
+						HashSet<TableJunction> tablesJunction = new HashSet<>();
+						Table.FieldAccessorValue fav = table.getFieldAccessorAndValue(record, fieldName, tablesJunction);
+						if (fav == null || fav.getFieldAccessor()==null)
+							throw new DatabaseSyntaxException(
+									"Cannot find field " + fieldName + " into table " + table.getClass().getSimpleName());
+
+						if (fav.getFieldAccessor().getDeclaredSqlFields().length==1 && fav.getFieldAccessor().isAlgebraic())
+						{
+							Object o=fav.getFieldAccessor().getValue(fav.getValue()/*getDatabaseRecord(fav.getFieldAccessor(), tablesJunction, record)*/);
+							if (o==null)
+								return null;
+							BigDecimal r=toBigDecimal(o);
+							if (r==null)
+								throw new DatabaseException("The field "+fieldName+" must be a number");
+							else
+								return r;
+						}
+						else
+							throw new DatabaseSyntaxException(
+									"The " + fieldName + " into table " + table.getClass().getSimpleName() + " is not comparable !");
+					} else if (s.getType() == SymbolType.PARAMETER) {
+						Object parameter1 = parameters.get(s.getSymbol());
+						if (parameter1 == null)
+							throw new DatabaseSyntaxException("Cannot find parameter " + s.getSymbol());
+						BigDecimal r=toBigDecimal(parameter1);
+						if (r==null)
+							throw new DatabaseSyntaxException("The parameter "+s.getSymbol()+" must be a number");
+						return r;
+					} else if (s.getType() == SymbolType.NUMBER)
+						return new BigDecimal(s.getSymbol());
+					else
+						throw new DatabaseSyntaxException("Cannot get comparable with type " + s.getType());
+				} else if (parts.size() == 3) {
+					return ((RuleInstance) parts.get(1)).getAlgebraic(table, parameters, record);
+				} else
+					throw new IllegalAccessError();
+
+		}
+		throw new IllegalAccessError();
+	}
+
 	public <T extends DatabaseRecord> Object getEquallable(Table<T> table, Map<String, Object> parameters, T record)
 			throws DatabaseException {
 		switch (rule) {
@@ -263,6 +443,8 @@ public class RuleInstance implements QueryPart {
 			case INOP:
 			case NULL:
 			case NULLTEST:
+			case MULTIPLY_OPERATOR:
+			case ADD_OPERATOR:
 			case INTEST:
 				throw new IllegalAccessError();
 			case WORD:
@@ -299,14 +481,20 @@ public class RuleInstance implements QueryPart {
 			case QUERY:
 
 			case OPCOMP:
+			case MULTIPLY_OPERATOR:
+			case ADD_OPERATOR:
 			case OPCONDITION:
 			case ISOP:
 			case INOP:
 			case NULLTEST:
 			case INTEST:
 				throw new IllegalAccessError();
+			case FACTOR:
 			case EXPRESSION:
-				return ((RuleInstance) parts.get(0)).getStringable(table, parameters, record);
+				if (parts.size()==1)
+					return ((RuleInstance) parts.get(0)).getStringable(table, parameters, record);
+				else
+					throw new DatabaseSyntaxException("Expression or factor cannot be converted to string value");
 			case NULL:
 				if (parts.size() == 1) {
 					Symbol s = (Symbol) parts.get(0);
@@ -600,6 +788,8 @@ public class RuleInstance implements QueryPart {
 					return ri1.isIndependentFromOtherTables(table);
 				} else
 					throw new IllegalAccessError();
+			case FACTOR:
+			case EXPRESSION:
 			case QUERY:
 				if (parts.size() == 1) {
 					return ((RuleInstance) parts.get(0)).isIndependentFromOtherTables(table);
@@ -628,13 +818,12 @@ public class RuleInstance implements QueryPart {
 					return ((RuleInstance) parts.get(1)).isIndependentFromOtherTables(table);
 				} else
 					throw new IllegalAccessError();
-
-			case EXPRESSION:
-				return ((RuleInstance) parts.get(0)).isIndependentFromOtherTables(table);
 			case OPCOMP:
 			case OPCONDITION:
 			case ISOP:
 			case INOP:
+			case MULTIPLY_OPERATOR:
+			case ADD_OPERATOR:
 				throw new IllegalAccessError();
 		}
 		throw new IllegalAccessError();
@@ -759,9 +948,12 @@ public class RuleInstance implements QueryPart {
 			case NULL:
 			case ISOP:
 			case INOP:
+			case FACTOR:
 			case EXPRESSION:
 			case OPCOMP:
 			case OPCONDITION:
+			case MULTIPLY_OPERATOR:
+			case ADD_OPERATOR:
 				throw new IllegalAccessError();
 		}
 		throw new IllegalAccessError();
@@ -1222,7 +1414,7 @@ public class RuleInstance implements QueryPart {
 
 				} else
 					throw new IllegalAccessError();
-
+			case FACTOR:
 			case EXPRESSION:
 			case QUERY:
 				if (parts.size() == 1) {
@@ -1231,16 +1423,26 @@ public class RuleInstance implements QueryPart {
 				} else if (parts.size() == 3) {
 					RuleInstance ri1 = (RuleInstance) parts.get(0);
 					RuleInstance ri3 = (RuleInstance) parts.get(2);
+					Symbol op = (Symbol) ((RuleInstance) parts.get(1)).parts.get(0);
 					if (rule == Rule.QUERY) {
 						if (!ri1.getValueType(table, parameters).equals("boolean")
 								|| !ri3.getValueType(table, parameters).equals("boolean"))
 							throw new DatabaseSyntaxException(
 									"Cannot make test with " + ri1.getContent() + " and " + ri3.getContent());
 					} else {
-						if (!ri1.getValueType(table, parameters).equals("comparable")
-								|| !ri3.getValueType(table, parameters).equals("comparable"))
-							throw new DatabaseSyntaxException(
-									"Cannot mul/div " + ri1.getContent() + " and " + ri3.getContent());
+						if (op.getType().isMathematicalOperator())
+						{
+							if (!ri1.isAlgebraic(table, parameters)
+									|| !ri3.isAlgebraic(table, parameters))
+								throw new DatabaseSyntaxException(
+										"Cannot mul/div/add/sub/mod " + ri1.getContent() + " and " + ri3.getContent());
+						}
+						else {
+							if (!ri1.getValueType(table, parameters).equals("comparable")
+									|| !ri3.getValueType(table, parameters).equals("comparable"))
+								throw new DatabaseSyntaxException(
+										"Cannot compare " + ri1.getContent() + " and " + ri3.getContent());
+						}
 					}
 
 					StringBuilder sb = new StringBuilder();
@@ -1252,9 +1454,9 @@ public class RuleInstance implements QueryPart {
 					/*
 					 * if (ri1.needParenthesis()) sb.append(")");
 					 */
-					Symbol comp = (Symbol) ((RuleInstance) parts.get(1)).parts.get(0);
+
 					sb.append(" ");
-					sb.append(comp.getType().getContent());
+					sb.append(op.getType().getContent());
 					sb.append(" ");
 					/*
 					 * if (ri3.needParenthesis()) sb.append("(");
@@ -1271,6 +1473,8 @@ public class RuleInstance implements QueryPart {
 			case OPCOMP:
 			case OPCONDITION:
 			case ISOP:
+			case MULTIPLY_OPERATOR:
+			case ADD_OPERATOR:
 			case INOP:
 				throw new IllegalAccessError();
 			case NULL: {

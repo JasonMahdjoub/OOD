@@ -134,7 +134,10 @@ public class booleanFieldAccessor extends FieldAccessor {
 	public boolean isComparable() {
 		return false;
 	}
-
+	@Override
+	public boolean isAlgebraic() {
+		return false;
+	}
 	@Override
 	public int compare(Object _r1, Object _r2) throws DatabaseException {
 		throw new DatabaseException("Unexpected exception");

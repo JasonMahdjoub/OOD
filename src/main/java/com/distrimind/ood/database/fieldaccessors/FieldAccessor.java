@@ -374,6 +374,7 @@ public abstract class FieldAccessor {
 	public abstract boolean isAlwaysNotNull();
 
 	public abstract boolean isComparable();
+	public abstract boolean isAlgebraic();
 
 	public abstract boolean canBePrimaryOrUniqueKey();
 

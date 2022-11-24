@@ -139,7 +139,10 @@ public class shortFieldAccessor extends FieldAccessor {
 	public boolean isComparable() {
 		return true;
 	}
-
+	@Override
+	public boolean isAlgebraic() {
+		return true;
+	}
 	@Override
 	public int compare(Object _r1, Object _r2) throws DatabaseException {
 		try {

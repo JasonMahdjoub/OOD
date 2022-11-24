@@ -234,6 +234,10 @@ public class ComposedFieldAccessor extends FieldAccessor {
 	public boolean isComparable() {
 		return false;
 	}
+	@Override
+	public boolean isAlgebraic() {
+		return false;
+	}
 
 	@Override
 	public boolean canBePrimaryOrUniqueKey() {

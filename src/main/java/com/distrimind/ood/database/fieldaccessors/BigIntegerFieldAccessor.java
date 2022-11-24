@@ -167,6 +167,10 @@ public class BigIntegerFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
+	public boolean isAlgebraic() {
+		return true;
+	}
+	@Override
 	public int compare(Object _r1, Object _r2) throws DatabaseException {
 		try {
 			Object val1 = field.get(_r1);

@@ -144,6 +144,11 @@ public class CharacterNumberFieldAccessor extends FieldAccessor {
 	}
 
 	@Override
+	public boolean isAlgebraic() {
+		return false;
+	}
+
+	@Override
 	public int compare(Object _r1, Object _r2) throws DatabaseException {
 		try {
 			Object obj1 = field.get(_r1);

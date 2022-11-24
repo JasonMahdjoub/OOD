@@ -176,6 +176,11 @@ public class CalendarFieldAccessor extends FieldAccessor{
 	}
 
 	@Override
+	public boolean isAlgebraic() {
+		return false;
+	}
+
+	@Override
 	public int compare(Object _o1, Object _o2) throws DatabaseException {
 		try {
 			Object val1 = field.get(_o1);

@@ -65,14 +65,14 @@ public class OOD {
 			VERSION.addCreator(new Person("mahdjoub", "jason"))
 					.addDeveloper(new PersonDeveloper("mahdjoub", "jason", "2013-04-01"))
 					.addDescription(
-							new Description(3, 2, 0, Version.Type.STABLE, 0, "2022-09-13")
+							new Description(3, 2, 0, Version.Type.STABLE, 0, "2022-11-24")
 									.addItem(INTERNAL_CHANGE, "Target java compatibility is set to Java 11 but source code still use Java 8")
 									.addItem(INTERNAL_CHANGE, "Update Utils to 5.24.0")
 									.addItem(INTERNAL_CHANGE, "Update dependencies")
 									.addItem(NEW_FEATURE, "Add database tasks manager, that permit to schedule periodic tasks executed into the database. See package com.distrimind.ood.database.tasks")
 									.addItem(NEW_FEATURE, "Add possibility to specify a context with DatabaseWrapper. See DatabaseFactory.setContext(Object)")
 									.addItem(NEW_FEATURE, "Add operator IN/NOT IN into pseudo SQL interpreter, that permit to test an identifier with a collection")
-
+									.addItem(NEW_FEATURE, "Implements mathematical operator (+, -, *, /, %) with pseudo SQL queries. Theses operators work with Numbers, and Date values.")
 					)
 					.addDescription(
 							new Description(3, 1, 26, Version.Type.STABLE, 0, "2022-04-07")

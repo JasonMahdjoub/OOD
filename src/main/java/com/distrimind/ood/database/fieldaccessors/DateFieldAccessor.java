@@ -186,7 +186,10 @@ public class DateFieldAccessor extends FieldAccessor {
 	public boolean isComparable() {
 		return true;
 	}
-
+	@Override
+	public boolean isAlgebraic() {
+		return true;
+	}
 	@Override
 	public boolean canBePrimaryOrUniqueKey() {
 		return false;

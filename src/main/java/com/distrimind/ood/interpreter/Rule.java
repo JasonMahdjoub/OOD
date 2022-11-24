@@ -46,7 +46,10 @@ public enum Rule {
 
     NULL("^(<" + SymbolType.NULL.name()+">)$"),
     WORD("^(<" + SymbolType.IDENTIFIER.name() + ">|<" + SymbolType.NUMBER.name() + ">|<" + SymbolType.STRING.name() + ">|<" + SymbolType.PARAMETER.name() + ">|\\(<EXPRESSION>\\))$"),
-    EXPRESSION("^<" + WORD.name() + ">$"),
+    MULTIPLY_OPERATOR("^(<"+SymbolType.MULTIPLY.name()+"<|>"+SymbolType.DIVIDE.name()+"<|>"+SymbolType.MODULO+">)$"),
+    ADD_OPERATOR("^(<"+SymbolType.PLUS.name()+"<|>"+SymbolType.MINUS.name()+">)$"),
+    FACTOR("^(<"+WORD.name()+">|<"+WORD.name()+"><"+MULTIPLY_OPERATOR.name()+"><FACTOR>)$"),
+    EXPRESSION("^<" + WORD.name() + ">|<"+WORD.name()+"><"+ADD_OPERATOR.name()+"><EXPRESSION>$"),
     OPCOMP("^(<" + SymbolType.EQUALOPERATOR.name() + ">|<"
             + SymbolType.NOTEQUALOPERATOR.name() + ">|<" + SymbolType.LOWEROPERATOR.name() + ">|<"
             + SymbolType.LOWEROREQUALOPERATOR.name() + ">|<" + SymbolType.GREATEROPERATOR.name() + ">|<"

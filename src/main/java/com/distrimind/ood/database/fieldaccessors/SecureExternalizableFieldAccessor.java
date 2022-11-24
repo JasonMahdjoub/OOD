@@ -299,6 +299,10 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 	public boolean isComparable() {
 		return compareTo_method != null;
 	}
+	@Override
+	public boolean isAlgebraic() {
+		return false;
+	}
 
 	@Override
 	public int compare(Object _r1, Object _r2) throws DatabaseException {
