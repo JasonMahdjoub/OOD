@@ -304,7 +304,7 @@ public class RuleInstance implements QueryPart {
 		throw new IllegalAccessError();
 	}
 
-	private BigDecimal toBigDecimal(Object o) throws DatabaseException {
+	private BigDecimal toBigDecimal(Object o) {
 		if (o instanceof Date)
 		{
 			return BigDecimal.valueOf(((Date) o).getTime());
@@ -349,6 +349,19 @@ public class RuleInstance implements QueryPart {
 				throw new DatabaseException("Not algebraic operator "+symbolType);
 		}
 	}
+	private <T extends DatabaseRecord>  BigDecimal getAlgebraicWith3partsFactorOrExpression(Table<T> table, Map<String, Object> parameters, T record) throws DatabaseException {
+		BigDecimal o1=((RuleInstance) parts.get(0)).getAlgebraic(table, parameters, record);
+		BigDecimal o2=((RuleInstance) parts.get(2)).getAlgebraic(table, parameters, record);
+		RuleInstance op=(RuleInstance) parts.get(1);
+		switch (op.getRule())
+		{
+			case ADD_OPERATOR:
+			case MULTIPLY_OPERATOR:
+				return algebraicOperation(o1, o2, ((Symbol)op.getContent()).getType());
+			default:
+				throw new IllegalAccessError();
+		}
+	}
 	public <T extends DatabaseRecord> BigDecimal getAlgebraic(Table<T> table, Map<String, Object> parameters, T record)
 			throws DatabaseException {
 		switch (rule) {
@@ -370,17 +383,7 @@ public class RuleInstance implements QueryPart {
 					return ((RuleInstance) parts.get(0)).getAlgebraic(table, parameters, record);
 				else if (parts.size()==3)
 				{
-					BigDecimal o1=((RuleInstance) parts.get(0)).getAlgebraic(table, parameters, record);
-					BigDecimal o2=((RuleInstance) parts.get(2)).getAlgebraic(table, parameters, record);
-					RuleInstance op=(RuleInstance) parts.get(1);
-					switch (op.getRule())
-					{
-						case ADD_OPERATOR:
-						case MULTIPLY_OPERATOR:
-							return algebraicOperation(o1, o2, ((Symbol)op.getContent()).getType());
-						default:
-							throw new IllegalAccessError();
-					}
+					return getAlgebraicWith3partsFactorOrExpression(table, parameters, record);
 				}
 				else
 					throw new IllegalAccessError();
@@ -433,8 +436,15 @@ public class RuleInstance implements QueryPart {
 	public <T extends DatabaseRecord> Object getEquallable(Table<T> table, Map<String, Object> parameters, T record)
 			throws DatabaseException {
 		switch (rule) {
+			case FACTOR:
 			case EXPRESSION:
-				return ((RuleInstance) parts.get(0)).getEquallable(table, parameters, record);
+				if (parts.size()==1)
+					return ((RuleInstance) parts.get(0)).getEquallable(table, parameters, record);
+				else if (parts.size()==3){
+					return getAlgebraicWith3partsFactorOrExpression(table, parameters, record);
+				}
+				else
+					throw new IllegalAccessError();
 			case OPCOMP:
 			case OPCONDITION:
 			case COMPARE:
@@ -839,10 +849,10 @@ public class RuleInstance implements QueryPart {
 					RuleInstance ri3 = (RuleInstance) parts.get(2);
 					if (ri3.rule != Rule.NULL)
 						throw new IllegalAccessError();
-					Symbol s1 = ((Symbol)ri1.parts.get(0));
+					Symbol s1 = ri1.getSymbol();
 					if (s1.getType() != SymbolType.IDENTIFIER)
 						throw new DatabaseSyntaxException("Cannot do null comparison without identifier");
-					Symbol comp = (Symbol) ri2.parts.get(0);
+					Symbol comp = ri2.getSymbol();
 					if (comp.getType() == SymbolType.IS) {
 						return equals(table, record, ri1.getEquallable(table, parameters, record),
 								null);
@@ -858,17 +868,17 @@ public class RuleInstance implements QueryPart {
 					RuleInstance ri1 = (RuleInstance) parts.get(0);
 					RuleInstance ri2 = (RuleInstance) parts.get(1);
 					RuleInstance ri3 = (RuleInstance) parts.get(2);
-					Symbol s1 = ((Symbol)ri1.parts.get(0));
+					Symbol s1 = ri1.getSymbol();
 					if (s1.getType() != SymbolType.IDENTIFIER)
 						throw new DatabaseSyntaxException("Cannot use IN/NOT IN operators without identifier at left");
-					Symbol s3 = ((Symbol)ri3.parts.get(0));
+					Symbol s3 = ri3.getSymbol();
 					if (s3.getType() != SymbolType.PARAMETER)
 						throw new DatabaseSyntaxException("Cannot use IN/NOT IN operator without parameter of type Collection at right");
 					Object o = parameters.get(s3.getSymbol());
 					if (!(o instanceof Collection))
 						throw new DatabaseSyntaxException("Cannot use IN/NOT IN operator without parameter of type Collection at right");
 					Collection<?> parameter=(Collection<?>)o;
-					Symbol comp = (Symbol) ri2.parts.get(0);
+					Symbol comp = ri2.getSymbol();
 					if (comp.getType() == SymbolType.IN) {
 						for (Object p : parameter)
 						{
@@ -896,7 +906,7 @@ public class RuleInstance implements QueryPart {
 						RuleInstance ri1 = (RuleInstance) parts.get(0);
 						RuleInstance ri3 = (RuleInstance) parts.get(2);
 
-						Symbol comp = (Symbol) ri2.parts.get(0);
+						Symbol comp = ri2.getSymbol();
 						if (comp.getType() == SymbolType.EQUALOPERATOR) {
 							return equals(table, record, ri1.getEquallable(table, parameters, record),
 									ri3.getEquallable(table, parameters, record));
@@ -932,7 +942,7 @@ public class RuleInstance implements QueryPart {
 				} else if (parts.size() == 3) {
 					RuleInstance ri1 = (RuleInstance) parts.get(0);
 					RuleInstance ri3 = (RuleInstance) parts.get(2);
-					Symbol comp = (Symbol) ((RuleInstance) parts.get(1)).parts.get(0);
+					Symbol comp = ((RuleInstance) parts.get(1)).getSymbol();
 
 					boolean vri1 = ri1.isConcernedBy(table, parameters, record);
 					boolean vri2 = ri3.isConcernedBy(table, parameters, record);
@@ -1011,6 +1021,18 @@ public class RuleInstance implements QueryPart {
 		}
 	}
 
+	private Symbol getSymbol() throws DatabaseSyntaxException {
+		if (parts.size()!=1)
+			throw new DatabaseSyntaxException("Impossible to find a symbol with a rule instance that contains "+parts.size()+" parts (!=1)");
+		QueryPart qp=parts.get(0);
+		if (qp instanceof Symbol)
+			return (Symbol) qp;
+		else if (qp instanceof RuleInstance)
+			return ((RuleInstance) qp).getSymbol();
+		else
+			throw new IllegalAccessError();
+	}
+
 	<T extends DatabaseRecord> StringBuilder translateToSqlQuery(Table<T> table, Map<String, Object> parameters,
 			Map<Integer, Object> outputParameters, AtomicInteger currentParameterID, Set<TableJunction> tablesJunction)
 			throws DatabaseSyntaxException {
@@ -1029,203 +1051,191 @@ public class RuleInstance implements QueryPart {
 					} else {
 						RuleInstance ri1 = (RuleInstance) parts.get(0);
 						RuleInstance ri3 = (RuleInstance) parts.get(2);
-						Symbol comp = (Symbol) ri2.parts.get(0);
-
+						Symbol comp = ri2.getSymbol();
 						if (comp.getType() == SymbolType.EQUALOPERATOR || comp.getType() == SymbolType.NOTEQUALOPERATOR
 								|| comp.getType() == SymbolType.LIKE || comp.getType() == SymbolType.NOTLIKE) {
 							if (!ri1.isEqualable(table, parameters, ri3)) {
 								throw new DatabaseSyntaxException(
 										"Cannot compare " + ri1.getContent() + " and " + ri3.getContent());
 							}
-							// if (ri1.isMultiType(table, parameters))
-							{
-								Symbol s1 = ((Symbol) (((RuleInstance) ri1.parts.get(0)).parts.get(0)));
-								Symbol s2 = ((Symbol) (((RuleInstance) ri3.parts.get(0)).parts.get(0)));
+							Symbol s1 = ri1.getSymbol();
+							Symbol s2 = ri3.getSymbol();
 
-								if (s1.getType() != SymbolType.IDENTIFIER && s2.getType() != SymbolType.IDENTIFIER)
-									throw new DatabaseSyntaxException("Cannot do comparison between two paramters");
-								FieldAccessor fa1 = null, fa2 = null;
-								Object parameter1 = null, parameter2 = null;
-								Reference<String> sqlTableName1=new Reference<>();
-								//Reference<String> sqlTableName2=new Reference<>();
-								if (s1.getType() == SymbolType.IDENTIFIER) {
-									String fieldName = s1.getSymbol();
-									fa1 = table.getFieldAccessor(fieldName, tablesJunction, sqlTableName1);
-									if (fa1 == null)
-										throw new DatabaseSyntaxException(
-												"Cannot find field " + fieldName + " into table " + table.getClass().getSimpleName());
-								} else if (s1.getType() == SymbolType.PARAMETER) {
-									parameter1 = parameters.get(s1.getSymbol());
-									if (parameter1 == null)
-										throw new DatabaseSyntaxException("Cannot find parameter " + s1.getSymbol());
-								} else if (s1.getType() == SymbolType.NUMBER || s1.getType() == SymbolType.STRING || s1.getType()==SymbolType.NULL) {
-									parameter1 = s1.getContent();
-									if (parameter1 == null)
-										throw new IllegalAccessError();
-								} else
+							if (s1.getType() != SymbolType.IDENTIFIER && s2.getType() != SymbolType.IDENTIFIER)
+								throw new DatabaseSyntaxException("Cannot do comparison between two paramters");
+							FieldAccessor fa1 = null, fa2 = null;
+							Object parameter1 = null, parameter2 = null;
+							Reference<String> sqlTableName1 = new Reference<>();
+							//Reference<String> sqlTableName2=new Reference<>();
+							if (s1.getType() == SymbolType.IDENTIFIER) {
+								String fieldName = s1.getSymbol();
+								fa1 = table.getFieldAccessor(fieldName, tablesJunction, sqlTableName1);
+								if (fa1 == null)
+									throw new DatabaseSyntaxException(
+											"Cannot find field " + fieldName + " into table " + table.getClass().getSimpleName());
+							} else if (s1.getType() == SymbolType.PARAMETER) {
+								parameter1 = parameters.get(s1.getSymbol());
+								if (parameter1 == null)
+									throw new DatabaseSyntaxException("Cannot find parameter " + s1.getSymbol());
+							} else if (s1.getType() == SymbolType.NUMBER || s1.getType() == SymbolType.STRING || s1.getType() == SymbolType.NULL) {
+								parameter1 = s1.getContent();
+								if (parameter1 == null)
 									throw new IllegalAccessError();
+							} else
+								throw new IllegalAccessError();
 
-								if (s2.getType() == SymbolType.IDENTIFIER) {
-									String fieldName = s2.getSymbol();
-									fa2 = table.getFieldAccessor(fieldName, tablesJunction, sqlTableName1);
-									if (fa2 == null)
-										throw new DatabaseSyntaxException(
-												"Cannot find field " + fieldName + " into table " + table.getClass().getSimpleName());
-								} else if (s2.getType() == SymbolType.PARAMETER) {
-									parameter2 = parameters.get(s2.getSymbol());
+							if (s2.getType() == SymbolType.IDENTIFIER) {
+								String fieldName = s2.getSymbol();
+								fa2 = table.getFieldAccessor(fieldName, tablesJunction, sqlTableName1);
+								if (fa2 == null)
+									throw new DatabaseSyntaxException(
+											"Cannot find field " + fieldName + " into table " + table.getClass().getSimpleName());
+							} else if (s2.getType() == SymbolType.PARAMETER) {
+								parameter2 = parameters.get(s2.getSymbol());
 
-								} else if (s2.getType() == SymbolType.NUMBER || s2.getType() == SymbolType.STRING || s2.getType()==SymbolType.NULL) {
-									parameter2 = s2.getContent();
-									if (parameter2 == null)
-										throw new IllegalAccessError();
-								} else
+							} else if (s2.getType() == SymbolType.NUMBER || s2.getType() == SymbolType.STRING || s2.getType() == SymbolType.NULL) {
+								parameter2 = s2.getContent();
+								if (parameter2 == null)
 									throw new IllegalAccessError();
+							} else
+								throw new IllegalAccessError();
 
-								if ((s1.getType() == SymbolType.PARAMETER || s1.getType() == SymbolType.NUMBER
-										|| s1.getType() == SymbolType.STRING || s1.getType()==SymbolType.NULL) && s2.getType() == SymbolType.IDENTIFIER) {
-									fa1 = fa2;
-									//sqlTableName1=sqlTableName2;
-									fa2 = null;
-									parameter2 = parameter1;
-									s2 = s1;
+							if ((s1.getType() == SymbolType.PARAMETER || s1.getType() == SymbolType.NUMBER
+									|| s1.getType() == SymbolType.STRING || s1.getType() == SymbolType.NULL) && s2.getType() == SymbolType.IDENTIFIER) {
+								fa1 = fa2;
+								//sqlTableName1=sqlTableName2;
+								fa2 = null;
+								parameter2 = parameter1;
+								s2 = s1;
+							}
+							int fieldsNumber = 0;
+
+							assert fa1 != null;
+							SqlField[] sfs = fa1.getDeclaredSqlFields();
+							if (s2.getType() == SymbolType.STRING || s2.getType() == SymbolType.NUMBER) {
+								if (sfs.length != 1
+										|| ((comp.getType() == SymbolType.LIKE || comp.getType() == SymbolType.NOTLIKE)
+										&& s2.getType() != SymbolType.STRING))
+									throw new DatabaseSyntaxException("Cannot compare " + fa1.getFieldName() + " with "
+											+ s2.getType().name() + " using operator " + comp.getType().name());
+								StringBuilder res = new StringBuilder();
+								res.append(sqlTableName1.get())
+										.append(".")
+										.append(sfs[0].shortField)
+										.append(comp.getType().getContent());
+								assert parameter2 != null;
+								if (parameter2 instanceof BigDecimal) {
+									int id = currentParameterID.getAndIncrement();
+									res.append("?");
+									String t = DatabaseWrapperAccessor.getBigDecimalType(table.getDatabaseWrapper(), 64);
+									outputParameters.put(id, t.contains("CHAR") ? parameter2.toString() : t.contains(DatabaseWrapperAccessor.getBinaryBaseWord(table.getDatabaseWrapper())) ? BigDecimalFieldAccessor.bigDecimalToBytes((BigDecimal) parameter2) : parameter2);
+								} else if (parameter2 instanceof BigInteger) {
+									int id = currentParameterID.getAndIncrement();
+									res.append("?");
+									String t = DatabaseWrapperAccessor.getBigIntegerType(table.getDatabaseWrapper(), 64);
+									outputParameters.put(id, t.contains("CHAR") ? parameter2.toString() : t.contains(DatabaseWrapperAccessor.getBinaryBaseWord(table.getDatabaseWrapper())) ? ((BigInteger) parameter2).toByteArray() : new BigDecimal(((BigInteger) parameter2)));
+								} else
+									res.append(parameter2);
+								return res;
+							} else {
+								StringBuilder res = new StringBuilder();
+								if ((comp.getType() == SymbolType.LIKE || comp.getType() == SymbolType.NOTLIKE)
+										&& (!(parameter2 instanceof CharSequence) && !(parameter2 instanceof WrappedString)))
+									throw new DatabaseSyntaxException("Cannot compare " + fa1.getFieldName() + " with "
+											+ s2.getType().name() + " using operator " + comp.getType().name());
+								if (comp.getType() == SymbolType.EQUALOPERATOR
+										|| comp.getType() == SymbolType.NOTEQUALOPERATOR)
+									res.append("(");
+								SqlFieldInstance[] sfis = null;
+								try {
+									if (fa2 == null) {
+										Class<?> c = fa1.getField().getDeclaringClass();
+										Constructor<?> cons;
+										if (Modifier.isAbstract(c.getModifiers()))
+											cons = table.getDefaultRecordConstructor();
+										else
+											cons = getConstructor(c);
+										Object value = cons.newInstance();
+										fa1.setValue(value, parameter2);
+										sfis = fa1.getSqlFieldsInstances(sqlTableName1.get(), value);
+									}
+								} catch (Exception e) {
+									throw new DatabaseSyntaxException("Database exception with " + fa1.getField().getDeclaringClass(), e);
 								}
-								int fieldsNumber = 0;
+								SqlField[] sfs2 = null;
+								if (fa2 != null)
+									sfs2 = fa2.getDeclaredSqlFields();
 
-								assert fa1 != null;
-								SqlField[] sfs = fa1.getDeclaredSqlFields();
-								if (s2.getType() == SymbolType.STRING || s2.getType() == SymbolType.NUMBER) {
-									if (sfs.length != 1
-											|| ((comp.getType() == SymbolType.LIKE || comp.getType() == SymbolType.NOTLIKE)
-													&& s2.getType() != SymbolType.STRING))
-										throw new DatabaseSyntaxException("Cannot compare " + fa1.getFieldName() + " with "
-												+ s2.getType().name() + " using operator " + comp.getType().name());
-									StringBuilder res = new StringBuilder();
+								for (SqlField sf : sfs) {
+
+									++fieldsNumber;
+									if (fieldsNumber > 1)
+										res.append(" AND ");
 									res.append(sqlTableName1.get())
 											.append(".")
-											.append(sfs[0].shortField)
-											.append(comp.getType().getContent());
-									assert parameter2 != null;
-									if (parameter2 instanceof BigDecimal)
-									{
-										int id = currentParameterID.getAndIncrement();
-										res.append("?");
-										String t=DatabaseWrapperAccessor.getBigDecimalType(table.getDatabaseWrapper(), 64);
-										outputParameters.put(id, t.contains("CHAR")?parameter2.toString():t.contains(DatabaseWrapperAccessor.getBinaryBaseWord(table.getDatabaseWrapper()))? BigDecimalFieldAccessor.bigDecimalToBytes((BigDecimal)parameter2):parameter2);
-									}
-									else if (parameter2 instanceof BigInteger)
-									{
-										int id = currentParameterID.getAndIncrement();
-										res.append("?");
-										String t=DatabaseWrapperAccessor.getBigIntegerType(table.getDatabaseWrapper(), 64);
-										outputParameters.put(id, t.contains("CHAR")?parameter2.toString():t.contains(DatabaseWrapperAccessor.getBinaryBaseWord(table.getDatabaseWrapper()))? ((BigInteger)parameter2).toByteArray():new BigDecimal(((BigInteger)parameter2)));
-									}
-									else
-										res.append(parameter2);
-									return res;
-								} else {
-									StringBuilder res = new StringBuilder();
-									if ((comp.getType() == SymbolType.LIKE || comp.getType() == SymbolType.NOTLIKE)
-											&& (!(parameter2 instanceof CharSequence) && !(parameter2 instanceof WrappedString)))
-										throw new DatabaseSyntaxException("Cannot compare " + fa1.getFieldName() + " with "
-												+ s2.getType().name() + " using operator " + comp.getType().name());
-									if (comp.getType() == SymbolType.EQUALOPERATOR
-											|| comp.getType() == SymbolType.NOTEQUALOPERATOR)
-										res.append("(");
-									SqlFieldInstance[] sfis = null;
-									try {
-										if (fa2 == null) {
-											Class<?> c=fa1.getField().getDeclaringClass();
-											Constructor<?> cons;
-											if (Modifier.isAbstract(c.getModifiers()))
-												cons=table.getDefaultRecordConstructor();
-											else
-												cons=getConstructor(c);
-											Object value=cons.newInstance();
-											fa1.setValue(value, parameter2);
-											sfis = fa1.getSqlFieldsInstances(sqlTableName1.get(), value);
+											.append(sf.shortField);
+									res.append(comp.getType().getContent());
+									if (fa2 == null) {
+										boolean found = false;
+										for (SqlFieldInstance sfi : sfis) {
+											if (sfi.field.equals(sf.field)) {
+
+												if (parameter2 == null) {
+													res.append("NULL");
+												} else {
+													int id = currentParameterID.getAndIncrement();
+													res.append("?");
+													outputParameters.put(id, sfi.instance);
+												}
+												found = true;
+												break;
+											}
 										}
-									} catch (Exception e) {
-										throw new DatabaseSyntaxException("Database exception with "+fa1.getField().getDeclaringClass(), e);
-									}
-									SqlField[] sfs2 = null;
-									if (fa2 != null)
-										sfs2 = fa2.getDeclaredSqlFields();
+										if (!found)
+											throw new DatabaseSyntaxException(
+													"Field " + sf.field + " not found. Unexpected error !");
 
-									for (SqlField sf : sfs) {
-
-										++fieldsNumber;
-										if (fieldsNumber > 1)
-											res.append(" AND ");
+									} else {
+										if (fa2.getFieldName().equals(fa1.getFieldName()))
+											throw new DatabaseSyntaxException(
+													"Cannot compare two same fields : " + fa1.getFieldName());
+										if (fa1.getClass() != fa2.getClass())
+											throw new DatabaseSyntaxException(
+													"Cannot compare two fields whose type is different : "
+															+ fa1.getFieldName() + " and " + fa2.getFieldName());
 										res.append(sqlTableName1.get())
 												.append(".")
-												.append(sf.shortField);
-										res.append(comp.getType().getContent());
-										if (fa2 == null) {
-											boolean found = false;
-											for (SqlFieldInstance sfi : sfis) {
-												if (sfi.field.equals(sf.field)) {
-
-													if (parameter2==null)
-													{
-														res.append("NULL");
-													}
-													else
-													{
-														int id = currentParameterID.getAndIncrement();
-														res.append("?");
-														outputParameters.put(id, sfi.instance);
-													}
-													found = true;
-													break;
-												}
-											}
-											if (!found)
-												throw new DatabaseSyntaxException(
-														"Field " + sf.field + " not found. Unexpected error !");
-
-										} else {
-											if (fa2.getFieldName().equals(fa1.getFieldName()))
-												throw new DatabaseSyntaxException(
-														"Cannot compare two same fields : " + fa1.getFieldName());
-											if (fa1.getClass() != fa2.getClass())
-												throw new DatabaseSyntaxException(
-														"Cannot compare two fields whose type is different : "
-																+ fa1.getFieldName() + " and " + fa2.getFieldName());
-											res.append(sqlTableName1.get())
-													.append(".")
-													.append(sfs2[fieldsNumber - 1].shortField);
-										}
+												.append(sfs2[fieldsNumber - 1].shortField);
 									}
-									if (comp.getType() == SymbolType.EQUALOPERATOR
-											|| comp.getType() == SymbolType.NOTEQUALOPERATOR)
-										res.append(")");
-									return res;
 								}
-							}
-						} else {
-							if (!ri1.getValueType(table, parameters).equals("comparable")
-									|| !ri3.getValueType(table, parameters).equals("comparable")) {
-								throw new DatabaseSyntaxException(
-										"Cannot compare " + ri1.getContent() + " and " + ri3.getContent());
+								if (comp.getType() == SymbolType.EQUALOPERATOR
+										|| comp.getType() == SymbolType.NOTEQUALOPERATOR)
+									res.append(")");
+								return res;
 							}
 						}
-						StringBuilder res = new StringBuilder();
-						StringBuilder sb = ri1.translateToSqlQuery(table, parameters, outputParameters, currentParameterID,
-								tablesJunction);
-						if (ri1.needParenthesis())
-							res.append("(");
-						res.append(sb);
-						if (ri1.needParenthesis())
-							res.append(")");
-						res.append(comp.getType().getContent());
-						sb = ri3.translateToSqlQuery(table, parameters, outputParameters, currentParameterID,
-								tablesJunction);
-						if (ri3.needParenthesis())
-							res.append("(");
-						res.append(sb);
-						if (ri3.needParenthesis())
-							res.append(")");
-						return res;
+						else {
+							String typeRi1=ri1.getValueType(table, parameters);
+							String typeRi3=ri3.getValueType(table, parameters);
+							if (!(typeRi1.equals(SymbolType.STRING.name()) || typeRi3.equals(SymbolType.STRING.name())))
+							{
+								if (!ri1.getValueType(table, parameters).equals("comparable"))
+									throw new DatabaseSyntaxException("Left element not comparable : "+ri1.getContent());
+								if (!ri3.getValueType(table, parameters).equals("comparable"))
+									throw new DatabaseSyntaxException("Left element not comparable : "+ri3.getContent());
+								if (comp.getType() == SymbolType.LIKE || comp.getType() == SymbolType.NOTLIKE)
+									throw new DatabaseSyntaxException("Invalid operator "+comp+" with "+typeRi1+" type with "+typeRi3+" type");
+
+							}
+
+							return new StringBuilder(ri1.needParenthesis()?"(":"")
+									.append(ri1.translateToSqlQuery(table, parameters, outputParameters, currentParameterID, tablesJunction))
+									.append(ri1.needParenthesis()?")":"")
+									.append(comp.getType().getContent())
+									.append(ri3.needParenthesis()?"(":"")
+									.append(ri3.translateToSqlQuery(table, parameters, outputParameters, currentParameterID, tablesJunction))
+									.append(ri3.needParenthesis()?")":"");
+						}
 					}
 				} else
 					throw new IllegalAccessError();
@@ -1238,10 +1248,10 @@ public class RuleInstance implements QueryPart {
 					if (ri3.rule!=Rule.NULL)
 						throw new IllegalAccessError();
 
-					Symbol comp = (Symbol) ri2.parts.get(0);
+					Symbol comp = ri2.getSymbol();
 
 					if (comp.getType() == SymbolType.IS || comp.getType() == SymbolType.ISNOT) {
-						Symbol s1 = (Symbol)ri1.parts.get(0);
+						Symbol s1 = ri1.getSymbol();
 						if (s1.getType() != SymbolType.IDENTIFIER)
 							throw new DatabaseSyntaxException("Cannot do null comparison without identifier");
 						String fieldName = s1.getSymbol();
@@ -1278,10 +1288,10 @@ public class RuleInstance implements QueryPart {
 					RuleInstance ri1 = (RuleInstance) parts.get(0);
 					RuleInstance ri2 = (RuleInstance) parts.get(1);
 					RuleInstance ri3 = (RuleInstance) parts.get(2);
-					Symbol s1 = ((Symbol)ri1.parts.get(0));
+					Symbol s1 = ri1.getSymbol();
 					if (s1.getType() != SymbolType.IDENTIFIER)
 						throw new DatabaseSyntaxException("Cannot use IN/NOT IN operators without identifier at left");
-					Symbol s3 = ((Symbol)ri3.parts.get(0));
+					Symbol s3 = ri3.getSymbol();
 					if (s3.getType() != SymbolType.PARAMETER)
 						throw new DatabaseSyntaxException("Cannot use IN/NOT IN operator without parameter of type Collection at right");
 					Object o = parameters.get(s3.getSymbol());
@@ -1289,7 +1299,7 @@ public class RuleInstance implements QueryPart {
 						throw new DatabaseSyntaxException("Cannot use IN/NOT IN operator without parameter of type Collection at right");
 					Collection<?> parameter=(Collection<?>)o;
 
-					Symbol comp = (Symbol) ri2.parts.get(0);
+					Symbol comp = ri2.getSymbol();
 					if (comp.getType() == SymbolType.IN || comp.getType() == SymbolType.NOTIN) {
 
 
@@ -1423,7 +1433,7 @@ public class RuleInstance implements QueryPart {
 				} else if (parts.size() == 3) {
 					RuleInstance ri1 = (RuleInstance) parts.get(0);
 					RuleInstance ri3 = (RuleInstance) parts.get(2);
-					Symbol op = (Symbol) ((RuleInstance) parts.get(1)).parts.get(0);
+					Symbol op = ((RuleInstance) parts.get(1)).getSymbol();
 					if (rule == Rule.QUERY) {
 						if (!ri1.getValueType(table, parameters).equals("boolean")
 								|| !ri3.getValueType(table, parameters).equals("boolean"))
@@ -1527,6 +1537,29 @@ public class RuleInstance implements QueryPart {
 							throw new DatabaseSyntaxException("Database exception");
 						outputParameters.put(id, sfis[0].instance);
 						return new StringBuilder("?");
+					} else if (s.getType()==SymbolType.NUMBER) {
+						Object n=s.getContent();
+						if (n==null)
+							throw new DatabaseSyntaxException(s.getContent() + " is not a number !");
+
+						if (n instanceof BigDecimal)
+						{
+							StringBuilder sb=new StringBuilder("?");
+							int id = currentParameterID.getAndIncrement();
+							String t=DatabaseWrapperAccessor.getBigDecimalType(table.getDatabaseWrapper(), 64);
+							outputParameters.put(id, t.contains("CHAR")?n.toString():t.contains(DatabaseWrapperAccessor.getBinaryBaseWord(table.getDatabaseWrapper()))? BigDecimalFieldAccessor.bigDecimalToBytes((BigDecimal) n):n);
+							return sb;
+						}
+						else if (n instanceof BigInteger)
+						{
+							StringBuilder sb=new StringBuilder("?");
+							int id = currentParameterID.getAndIncrement();
+							String t=DatabaseWrapperAccessor.getBigIntegerType(table.getDatabaseWrapper(), 64);
+							outputParameters.put(id, t.contains("CHAR")?n.toString():t.contains(DatabaseWrapperAccessor.getBinaryBaseWord(table.getDatabaseWrapper()))? ((BigInteger)n).toByteArray():new BigDecimal(((BigInteger)n)));
+							return sb;
+						}
+						else
+							return new StringBuilder(n.toString());
 					} else
 						return new StringBuilder(s.getSymbol());
 
@@ -1541,7 +1574,7 @@ public class RuleInstance implements QueryPart {
 					throw new IllegalAccessError();
 
 		}
-		throw new IllegalAccessError();
+		throw new IllegalAccessError(""+rule);
 	}
 
 	private final Map<Class<?>, Constructor<?>> cachedConstructors=new HashMap<>();

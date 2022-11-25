@@ -36,9 +36,9 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database.exceptions;
 
-public class QueryInterpretationImpossible extends DatabaseSyntaxException {
+public class ImpossibleQueryInterpretation extends DatabaseSyntaxException {
 
-	public QueryInterpretationImpossible(String query) {
+	public ImpossibleQueryInterpretation(String query) {
 		super("The next query cannot be interpreted with several rules : " + query);
 	}
 

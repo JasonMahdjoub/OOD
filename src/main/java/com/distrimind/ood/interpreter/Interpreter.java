@@ -36,7 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.interpreter;
 
 import com.distrimind.ood.database.exceptions.DatabaseSyntaxException;
-import com.distrimind.ood.database.exceptions.QueryInterpretationImpossible;
+import com.distrimind.ood.database.exceptions.ImpossibleQueryInterpretation;
 import com.distrimind.ood.database.exceptions.UnrecognizedSymbolException;
 import com.distrimind.util.Reference;
 
@@ -164,21 +164,21 @@ public class Interpreter {
 
 	private static RuleInstance getQuery(String command, ArrayList<QueryPart> parts) throws DatabaseSyntaxException {
 		if (parts.size() == 0)
-			throw new QueryInterpretationImpossible(command);
+			throw new ImpossibleQueryInterpretation(command);
 
 		while (parts.size() > 1 || (!parts.isEmpty() && (!(parts.get(0) instanceof RuleInstance)
 				|| ((RuleInstance) parts.get(0)).getRule() != Rule.QUERY))) {
 			parts = getNewQueryParts(command, parts);
 		}
 		if (parts.isEmpty())
-			throw new QueryInterpretationImpossible(command);
+			throw new ImpossibleQueryInterpretation(command);
 
 		QueryPart ri = parts.get(0);
 		if (!(ri instanceof RuleInstance))
-			throw new QueryInterpretationImpossible(command);
+			throw new ImpossibleQueryInterpretation(command);
 		RuleInstance res = (RuleInstance) ri;
 		if (res.getRule() != Rule.QUERY) {
-			throw new QueryInterpretationImpossible(command);
+			throw new ImpossibleQueryInterpretation(command);
 		}
 		return res;
 	}
@@ -212,7 +212,7 @@ public class Interpreter {
 		if (changed)
 			return res;
 		else {
-			throw new QueryInterpretationImpossible(command+"\n"+parts);
+			throw new ImpossibleQueryInterpretation(command+"\n"+parts);
 
 		}
 	}
