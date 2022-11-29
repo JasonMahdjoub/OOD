@@ -84,7 +84,7 @@ public class RuleInstance implements QueryPart {
 	public String toString() {
 		return "RuleInstance{" +
 				"rule=" + rule +
-				", parts=" + parts +
+				", " +  Interpreter.toString(parts)+
 				'}';
 	}
 
@@ -126,15 +126,16 @@ public class RuleInstance implements QueryPart {
 			case FACTOR:
 			case COMPARE:
 			case QUERY:
-			case OPCONDITION:
-			case OPCOMP:
+			case OP_CONDITION:
+			case OP_COMP:
 			case MULTIPLY_OPERATOR:
 			case ADD_OPERATOR:
-			case NULLTEST:
-			case INTEST:
-			case ISOP:
-			case INOP:
-			case NULL:
+			case NULL_TEST:
+			case IN_TEST:
+			case IS_OP:
+			case IN_OP:
+			case NULL_WORD:
+			case SIGNED_VALUE:
 				return false;
 			case EXPRESSION: {
 				if (parts.size()==1)
@@ -142,6 +143,7 @@ public class RuleInstance implements QueryPart {
 				else
 					return false;
 			}
+
 			case WORD: {
 				if (parts.size() == 1) {
 					return getSymbol().isMultiType(table, parameters);
@@ -169,16 +171,17 @@ public class RuleInstance implements QueryPart {
 	public <T extends DatabaseRecord> String getValueType(Table<T> table, Map<String, Object> parameters)
 			throws DatabaseSyntaxException {
 		switch (rule) {
-			case ISOP:
-			case INOP:
-			case NULLTEST:
-			case INTEST:
+			case IS_OP:
+			case IN_OP:
+			case NULL_TEST:
+			case IN_TEST:
 			case COMPARE:
-			case OPCOMP:
-			case OPCONDITION:
+			case OP_COMP:
+			case OP_CONDITION:
 			case QUERY:
 				return "boolean";
-			case NULL:
+			case NULL_WORD:
+			case SIGNED_VALUE:
 			case WORD:
 				if (parts.size() == 1)
 					return parts.get(0).getValueType(table, parameters);
@@ -199,19 +202,20 @@ public class RuleInstance implements QueryPart {
 	public <T extends DatabaseRecord> boolean isAlgebraic(Table<T> table, Map<String, Object> parameters)
 			throws DatabaseSyntaxException {
 		switch (rule) {
-			case ISOP:
-			case INOP:
-			case NULLTEST:
-			case INTEST:
+			case IS_OP:
+			case IN_OP:
+			case NULL_TEST:
+			case IN_TEST:
 			case COMPARE:
-			case OPCOMP:
-			case OPCONDITION:
+			case OP_COMP:
+			case OP_CONDITION:
 			case QUERY:
-			case NULL:
+			case NULL_WORD:
 				return false;
 			case ADD_OPERATOR:
 			case MULTIPLY_OPERATOR:
 				return true;
+			case SIGNED_VALUE:
 			case WORD:
 				if (parts.size() == 1)
 					return parts.get(0).isAlgebraic(table, parameters);
@@ -250,15 +254,15 @@ public class RuleInstance implements QueryPart {
 		switch (rule) {
 			case COMPARE:
 			case QUERY:
-			case OPCOMP:
-			case OPCONDITION:
-			case ISOP:
-			case INOP:
-			case NULLTEST:
-			case INTEST:
+			case OP_COMP:
+			case OP_CONDITION:
+			case IS_OP:
+			case IN_OP:
+			case NULL_TEST:
+			case IN_TEST:
 			case MULTIPLY_OPERATOR:
 			case ADD_OPERATOR:
-			case NULL:
+			case NULL_WORD:
 				throw new IllegalAccessError();
 			case FACTOR:
 			case EXPRESSION:
@@ -270,8 +274,33 @@ public class RuleInstance implements QueryPart {
 				}
 				else
 					throw new IllegalAccessError();
+			case SIGNED_VALUE:
+				Object n=getRuleInstance(1).getComparable(table, parameters, record);
+				if (n==null)
+					return null;
+				if (n instanceof Number)
+				{
+					if (getRuleInstance(0).getSymbol().getType()!=SymbolType.MINUS)
+						return n;
+					if (n instanceof BigDecimal)
+						return ((BigDecimal)n).negate();
+					else if (n instanceof BigInteger)
+						return ((BigInteger) n).negate();
+					else
+						return -((Number) n).longValue();
+				}
+				else
+					throw new DatabaseSyntaxException("Cannot compute opposite value with type "+n.getClass().getName());
 			case WORD:
 				if (parts.size() == 1) {
+					if (parts.get(0) instanceof RuleInstance)
+					{
+						RuleInstance ri=(RuleInstance) parts.get(0);
+						if (ri.getRule()==Rule.SIGNED_VALUE)
+							return ri.getComparable(table, parameters, record);
+						else
+							throw new IllegalAccessError();
+					}
 					Symbol s = getSymbol();
 					if (s.getType() == SymbolType.IDENTIFIER) {
 						String fieldName = s.getSymbol();
@@ -280,8 +309,14 @@ public class RuleInstance implements QueryPart {
 						if (fav == null || fav.getFieldAccessor()==null)
 							throw new DatabaseSyntaxException(
 									"Cannot find field " + fieldName + " into table " + table.getClass().getSimpleName());
-						if (fav.getFieldAccessor().isComparable())
-							return fav.getFieldAccessor().getValue(fav.getValue()/*getDatabaseRecord(fav.getFieldAccessor(), tablesJunction, record)*/);
+
+						if (fav.getFieldAccessor().isComparable()) {
+							Object o=fav.getFieldAccessor().getValue(fav.getValue()/*getDatabaseRecord(fav.getFieldAccessor(), tablesJunction, record)*/);
+							if (fav.getFieldAccessor().isAlgebraic())
+								return toBigDecimal(o);
+							else
+								return o;
+						}
 						else
 							throw new DatabaseSyntaxException(
 									"The " + fieldName + " into table " + table.getClass().getSimpleName() + " is not comparable !");
@@ -356,7 +391,7 @@ public class RuleInstance implements QueryPart {
 		{
 			case ADD_OPERATOR:
 			case MULTIPLY_OPERATOR:
-				return algebraicOperation(o1, o2, ((Symbol)op.getContent()).getType());
+				return algebraicOperation(o1, o2, op.getSymbol().getType());
 			default:
 				throw new IllegalAccessError();
 		}
@@ -366,15 +401,15 @@ public class RuleInstance implements QueryPart {
 		switch (rule) {
 			case COMPARE:
 			case QUERY:
-			case OPCOMP:
-			case OPCONDITION:
-			case ISOP:
-			case INOP:
-			case NULLTEST:
-			case INTEST:
+			case OP_COMP:
+			case OP_CONDITION:
+			case IS_OP:
+			case IN_OP:
+			case NULL_TEST:
+			case IN_TEST:
 			case MULTIPLY_OPERATOR:
 			case ADD_OPERATOR:
-			case NULL:
+			case NULL_WORD:
 				throw new IllegalAccessError();
 			case FACTOR:
 			case EXPRESSION:
@@ -386,8 +421,24 @@ public class RuleInstance implements QueryPart {
 				}
 				else
 					throw new IllegalAccessError();
+			case SIGNED_VALUE:
+				BigDecimal n=getRuleInstance(1).getAlgebraic(table, parameters, record);
+				if (n==null)
+					return null;
+				if (getRuleInstance(0).getSymbol().getType()!=SymbolType.MINUS)
+					return n;
+				else
+					return n.negate();
 			case WORD:
 				if (parts.size() == 1) {
+					if (parts.get(0) instanceof RuleInstance)
+					{
+						RuleInstance ri=(RuleInstance) parts.get(0);
+						if (ri.getRule()==Rule.SIGNED_VALUE)
+							return ri.getAlgebraic(table, parameters, record);
+						else
+							throw new IllegalAccessError();
+					}
 					Symbol s = getSymbol();
 					if (s.getType() == SymbolType.IDENTIFIER) {
 						String fieldName = s.getSymbol();
@@ -444,20 +495,30 @@ public class RuleInstance implements QueryPart {
 				}
 				else
 					throw new IllegalAccessError();
-			case OPCOMP:
-			case OPCONDITION:
+			case OP_COMP:
+			case OP_CONDITION:
 			case COMPARE:
 			case QUERY:
-			case ISOP:
-			case INOP:
-			case NULL:
-			case NULLTEST:
+			case IS_OP:
+			case IN_OP:
+			case NULL_WORD:
+			case NULL_TEST:
 			case MULTIPLY_OPERATOR:
 			case ADD_OPERATOR:
-			case INTEST:
+			case IN_TEST:
 				throw new IllegalAccessError();
+			case SIGNED_VALUE:
+				return getComparable(table, parameters, record);
 			case WORD:
 				if (parts.size() == 1) {
+					if (parts.get(0) instanceof RuleInstance)
+					{
+						RuleInstance ri=(RuleInstance) parts.get(0);
+						if (ri.getRule()==Rule.SIGNED_VALUE)
+							return ri.getEquallable(table, parameters, record);
+						else
+							throw new IllegalAccessError();
+					}
 					Symbol s = getSymbol();
 					if (s.getType() == SymbolType.IDENTIFIER) {
 						String fieldName = s.getSymbol();
@@ -489,14 +550,15 @@ public class RuleInstance implements QueryPart {
 			case COMPARE:
 			case QUERY:
 
-			case OPCOMP:
+			case OP_COMP:
 			case MULTIPLY_OPERATOR:
 			case ADD_OPERATOR:
-			case OPCONDITION:
-			case ISOP:
-			case INOP:
-			case NULLTEST:
-			case INTEST:
+			case OP_CONDITION:
+			case IS_OP:
+			case IN_OP:
+			case NULL_TEST:
+			case IN_TEST:
+			case SIGNED_VALUE:
 				throw new IllegalAccessError();
 			case FACTOR:
 			case EXPRESSION:
@@ -504,15 +566,24 @@ public class RuleInstance implements QueryPart {
 					return getRuleInstance(0).getStringable(table, parameters, record);
 				else
 					throw new DatabaseSyntaxException("Expression or factor cannot be converted to string value");
-			case NULL:
+			case NULL_WORD:
 				if (parts.size() == 1) {
 					Symbol s = getSymbol();
 					return s.getContent().toString();
 				}
 				else
 					throw new IllegalAccessError();
+
 			case WORD:
 				if (parts.size() == 1) {
+					if (parts.get(0) instanceof RuleInstance)
+					{
+						RuleInstance ri=(RuleInstance) parts.get(0);
+						if (ri.getRule()==Rule.SIGNED_VALUE)
+							return ri.getStringable(table, parameters, record);
+						else
+							throw new IllegalAccessError();
+					}
 					Symbol s = getSymbol();
 					if (s.getType() == SymbolType.IDENTIFIER) {
 						String fieldName = s.getSymbol();
@@ -566,7 +637,7 @@ public class RuleInstance implements QueryPart {
 	public <T extends DatabaseRecord> int compareTo(Table<T> table, T record, Object o1, Object o2)
 			throws DatabaseSyntaxException {
 		try {
-			if (((o1==null || !Table.FieldAccessorValue.class.isAssignableFrom(o1.getClass()))
+			/*if (((o1==null || !Table.FieldAccessorValue.class.isAssignableFrom(o1.getClass()))
 					&& (o2!=null && Table.FieldAccessorValue.class.isAssignableFrom(o2.getClass())))
 					|| ((o1==null || !BigDecimal.class.isAssignableFrom(o1.getClass()))
 							&& (o2!=null && BigDecimal.class.isAssignableFrom(o2.getClass()))
@@ -574,7 +645,7 @@ public class RuleInstance implements QueryPart {
 				Object o = o1;
 				o1 = o2;
 				o2 = o;
-			}
+			}*/
 			if (o1!=null && Table.FieldAccessorValue.class.isAssignableFrom(o1.getClass()))
 				o1 = ((Table.FieldAccessorValue) o1).getFieldAccessor().getValue(getRecordInstance(table, record, ((Table.FieldAccessorValue) o1).getFieldAccessor()));
 			if (o2!=null && Table.FieldAccessorValue.class.isAssignableFrom(o2.getClass()))
@@ -591,13 +662,23 @@ public class RuleInstance implements QueryPart {
 				return 1;
 			}
 			if (BigDecimal.class.isAssignableFrom(o1.getClass())) {
-				if (BigDecimal.class.isAssignableFrom(o2.getClass()))
+				if (Date.class.isAssignableFrom(o2.getClass()))
+					return Long.compare(((BigDecimal) o1).longValue(), ((Date) o2).getTime());
+				else if (Calendar.class.isAssignableFrom(o2.getClass()))
+					return Long.compare(((BigDecimal) o1).longValue(), ((Calendar) o2).getTime().getTime());
+				else if (BigDecimal.class.isAssignableFrom(o2.getClass()))
 					return ((BigDecimal) o1).compareTo((BigDecimal) o2);
 				else if (Number.class.isAssignableFrom(o2.getClass())) {
 					return ((BigDecimal) o1).compareTo(new BigDecimal(o2.toString()));
 				}
 			} else if (Number.class.isAssignableFrom(o1.getClass())) {
-				if (BigDecimal.class.isAssignableFrom(o2.getClass()))
+				if (Long.class.isAssignableFrom(o1.getClass())) {
+					if (Date.class.isAssignableFrom(o2.getClass()))
+						return Long.compare((Long) o1, ((Date) o2).getTime());
+					else if (Calendar.class.isAssignableFrom(o2.getClass()))
+						return Long.compare((Long) o1, ((Calendar) o2).getTime().getTime());
+				}
+				else if (BigDecimal.class.isAssignableFrom(o2.getClass()))
 					return new BigDecimal(o1.toString()).compareTo((BigDecimal) o2);
 				else
 					return new BigDecimal(o1.toString()).compareTo(new BigDecimal(o2.toString()));
@@ -607,17 +688,25 @@ public class RuleInstance implements QueryPart {
 					return ((Date)o1).compareTo((Date) o2);
 				else if (Calendar.class.isAssignableFrom(o2.getClass()))
 					return Long.compare(((Date)o1).getTime(), ((Calendar) o2).getTimeInMillis());
+				else if (Long.class.isAssignableFrom(o2.getClass()))
+					return Long.compare(((Date) o1).getTime(), (Long)o2);
+				else if (BigDecimal.class.isAssignableFrom(o2.getClass()))
+					return Long.compare(((Date) o1).getTime(), ((BigDecimal)o2).longValue());
 			}
 			else if (Calendar.class.isAssignableFrom(o1.getClass())) {
 				if (Calendar.class.isAssignableFrom(o2.getClass()))
 					return ((Calendar)o1).compareTo((Calendar) o2);
 				else if (Date.class.isAssignableFrom(o2.getClass()))
 					return Long.compare(((Calendar)o1).getTimeInMillis(), ((Date) o2).getTime());
+				else if (Long.class.isAssignableFrom(o2.getClass()))
+					return Long.compare(((Calendar)o1).getTimeInMillis(), (Long)o2);
+				else if (BigDecimal.class.isAssignableFrom(o2.getClass()))
+					return Long.compare(((Calendar)o1).getTimeInMillis(), ((BigDecimal)o2).longValue());
 			}
 		} catch (Exception e) {
 			throw new DatabaseSyntaxException("Unexpected exception ! ", e);
 		}
-		throw new DatabaseSyntaxException("Cannot compare " + o1 + " and " + o2);
+		throw new DatabaseSyntaxException("Cannot compare " + o1 + "(type="+ o1.getClass().getName() +") and " + o2+ "(type="+ o2.getClass().getName() +")");
 
 	}
 
@@ -790,8 +879,8 @@ public class RuleInstance implements QueryPart {
 					}
 				} else
 					throw new IllegalAccessError();
-			case NULLTEST:
-			case INTEST:
+			case NULL_TEST:
+			case IN_TEST:
 				if (parts.size() == 3) {
 					RuleInstance ri1 = getRuleInstance(0);
 					return ri1.isIndependentFromOtherTables(table);
@@ -809,11 +898,20 @@ public class RuleInstance implements QueryPart {
 					return ri1.isIndependentFromOtherTables(table) && ri3.isIndependentFromOtherTables(table);
 				} else
 					throw new IllegalAccessError();
-				case NULL:
+				case NULL_WORD:
 					return true;
+			case SIGNED_VALUE:
+				return getRuleInstance(1).isIndependentFromOtherTables(table);
 			case WORD:
-
 				if (parts.size() == 1) {
+					if (parts.get(0) instanceof RuleInstance)
+					{
+						RuleInstance ri=(RuleInstance) parts.get(0);
+						if (ri.getRule()==Rule.SIGNED_VALUE)
+							return ri.isIndependentFromOtherTables(table);
+						else
+							throw new IllegalAccessError();
+					}
 					Symbol s = getSymbol();
 					if (s.getType() == SymbolType.IDENTIFIER) {
 						String fieldName = s.getSymbol();
@@ -827,10 +925,10 @@ public class RuleInstance implements QueryPart {
 					return getRuleInstance(1).isIndependentFromOtherTables(table);
 				} else
 					throw new IllegalAccessError();
-			case OPCOMP:
-			case OPCONDITION:
-			case ISOP:
-			case INOP:
+			case OP_COMP:
+			case OP_CONDITION:
+			case IS_OP:
+			case IN_OP:
 			case MULTIPLY_OPERATOR:
 			case ADD_OPERATOR:
 				throw new IllegalAccessError();
@@ -841,12 +939,12 @@ public class RuleInstance implements QueryPart {
 	public <T extends DatabaseRecord> boolean isConcernedBy(Table<T> table, Map<String, Object> parameters, T record)
 			throws DatabaseException {
 		switch (rule) {
-			case NULLTEST:
+			case NULL_TEST:
 				if (parts.size() == 3) {
 					RuleInstance ri1 = getRuleInstance(0);
 					RuleInstance ri2 = getRuleInstance(1);
 					RuleInstance ri3 = getRuleInstance(2);
-					if (ri3.rule != Rule.NULL)
+					if (ri3.rule != Rule.NULL_WORD)
 						throw new IllegalAccessError();
 					Symbol s1 = ri1.getSymbol();
 					if (s1.getType() != SymbolType.IDENTIFIER)
@@ -855,14 +953,14 @@ public class RuleInstance implements QueryPart {
 					if (comp.getType() == SymbolType.IS) {
 						return equals(table, record, ri1.getEquallable(table, parameters, record),
 								null);
-					} else if (comp.getType() == SymbolType.ISNOT) {
+					} else if (comp.getType() == SymbolType.IS_NOT) {
 						return !equals(table, record, ri1.getEquallable(table, parameters, record),
 								null);
 					} else
 						throw new IllegalAccessError();
 				} else
 					throw new IllegalAccessError();
-			case INTEST:
+			case IN_TEST:
 				if (parts.size() == 3) {
 					RuleInstance ri1 = getRuleInstance(0);
 					RuleInstance ri2 = getRuleInstance(1);
@@ -885,7 +983,7 @@ public class RuleInstance implements QueryPart {
 								return true;
 						}
 						return false;
-					} else if (comp.getType() == SymbolType.NOTIN) {
+					} else if (comp.getType() == SymbolType.NOT_IN) {
 						for (Object p : parameter)
 						{
 							if (equals(table, record, ri1.getEquallable(table, parameters, record), p))
@@ -906,28 +1004,28 @@ public class RuleInstance implements QueryPart {
 						RuleInstance ri3 = getRuleInstance(2);
 
 						Symbol comp = ri2.getSymbol();
-						if (comp.getType() == SymbolType.EQUALOPERATOR) {
+						if (comp.getType() == SymbolType.EQUAL_COMPARATOR) {
 							return equals(table, record, ri1.getEquallable(table, parameters, record),
 									ri3.getEquallable(table, parameters, record));
-						} else if (comp.getType() == SymbolType.NOTEQUALOPERATOR) {
+						} else if (comp.getType() == SymbolType.NOT_EQUAL_COMPARATOR) {
 							return !equals(table, record, ri1.getEquallable(table, parameters, record),
 									ri3.getEquallable(table, parameters, record));
 						} else if (comp.getType() == SymbolType.LIKE) {
 							return like(table, record, ri1.getStringable(table, parameters, record),
 									ri3.getStringable(table, parameters, record));
-						} else if (comp.getType() == SymbolType.NOTLIKE) {
+						} else if (comp.getType() == SymbolType.NOT_LIKE) {
 							return !like(table, record, ri1.getStringable(table, parameters, record),
 									ri3.getStringable(table, parameters, record));
 						} else {
 							int c = compareTo(table, record, ri1.getComparable(table, parameters, record),
 									ri3.getComparable(table, parameters, record));
-							if (comp.getType() == SymbolType.LOWEROPERATOR) {
+							if (comp.getType() == SymbolType.LOWER_COMPARATOR) {
 								return c < 0;
-							} else if (comp.getType() == SymbolType.GREATEROPERATOR) {
+							} else if (comp.getType() == SymbolType.GREATER_COMPARATOR) {
 								return c > 0;
-							} else if (comp.getType() == SymbolType.LOWEROREQUALOPERATOR) {
+							} else if (comp.getType() == SymbolType.LOWER_OR_EQUAL_COMPARATOR) {
 								return c <= 0;
-							} else if (comp.getType() == SymbolType.GREATEROREQUALOPERATOR) {
+							} else if (comp.getType() == SymbolType.GREATER_OR_EQUAL_COMPARATOR) {
 								return c >= 0;
 							} else
 								throw new IllegalAccessError();
@@ -945,22 +1043,23 @@ public class RuleInstance implements QueryPart {
 
 					boolean vri1 = ri1.isConcernedBy(table, parameters, record);
 					boolean vri2 = ri3.isConcernedBy(table, parameters, record);
-					if (comp.getType() == SymbolType.ANDCONDITION)
+					if (comp.getType() == SymbolType.AND_CONDITION)
 						return vri1 && vri2;
-					else if (comp.getType() == SymbolType.ORCONDITION)
+					else if (comp.getType() == SymbolType.OR_CONDITION)
 						return vri1 || vri2;
 					else
 						throw new IllegalAccessError();
 				} else
 					throw new IllegalAccessError();
 			case WORD:
-			case NULL:
-			case ISOP:
-			case INOP:
+			case SIGNED_VALUE:
+			case NULL_WORD:
+			case IS_OP:
+			case IN_OP:
 			case FACTOR:
 			case EXPRESSION:
-			case OPCOMP:
-			case OPCONDITION:
+			case OP_COMP:
+			case OP_CONDITION:
 			case MULTIPLY_OPERATOR:
 			case ADD_OPERATOR:
 				throw new IllegalAccessError();
@@ -1032,7 +1131,7 @@ public class RuleInstance implements QueryPart {
 
 	private Symbol getSymbol() throws DatabaseSyntaxException {
 		if (parts.size()!=1)
-			throw new DatabaseSyntaxException("Impossible to find a symbol with a rule instance that contains "+parts.size()+" parts (!=1)");
+			throw new DatabaseSyntaxException("Impossible to find a symbol with a rule instance that contains "+parts.size()+" parts (!=1) : "+this);
 		QueryPart qp=parts.get(0);
 		if (qp instanceof Symbol)
 			return (Symbol) qp;
@@ -1061,8 +1160,9 @@ public class RuleInstance implements QueryPart {
 						RuleInstance ri1 = getRuleInstance(0);
 						RuleInstance ri3 = getRuleInstance(2);
 						Symbol comp = ri2.getSymbol();
-						if (comp.getType() == SymbolType.EQUALOPERATOR || comp.getType() == SymbolType.NOTEQUALOPERATOR
-								|| comp.getType() == SymbolType.LIKE || comp.getType() == SymbolType.NOTLIKE) {
+						if (((comp.getType() == SymbolType.EQUAL_COMPARATOR || comp.getType() == SymbolType.NOT_EQUAL_COMPARATOR)
+								&& (!ri1.isAlgebraic(table, parameters) || !ri3.isAlgebraic(table, parameters)) )
+								|| comp.getType() == SymbolType.LIKE || comp.getType() == SymbolType.NOT_LIKE) {
 							if (!ri1.isEqualable(table, parameters, ri3)) {
 								throw new DatabaseSyntaxException(
 										"Cannot compare " + ri1.getContent() + " and " + ri3.getContent());
@@ -1123,7 +1223,7 @@ public class RuleInstance implements QueryPart {
 							SqlField[] sfs = fa1.getDeclaredSqlFields();
 							if (s2.getType() == SymbolType.STRING || s2.getType() == SymbolType.NUMBER) {
 								if (sfs.length != 1
-										|| ((comp.getType() == SymbolType.LIKE || comp.getType() == SymbolType.NOTLIKE)
+										|| ((comp.getType() == SymbolType.LIKE || comp.getType() == SymbolType.NOT_LIKE)
 										&& s2.getType() != SymbolType.STRING))
 									throw new DatabaseSyntaxException("Cannot compare " + fa1.getFieldName() + " with "
 											+ s2.getType().name() + " using operator " + comp.getType().name());
@@ -1148,12 +1248,12 @@ public class RuleInstance implements QueryPart {
 								return res;
 							} else {
 								StringBuilder res = new StringBuilder();
-								if ((comp.getType() == SymbolType.LIKE || comp.getType() == SymbolType.NOTLIKE)
+								if ((comp.getType() == SymbolType.LIKE || comp.getType() == SymbolType.NOT_LIKE)
 										&& (!(parameter2 instanceof CharSequence) && !(parameter2 instanceof WrappedString)))
 									throw new DatabaseSyntaxException("Cannot compare " + fa1.getFieldName() + " with "
 											+ s2.getType().name() + " using operator " + comp.getType().name());
-								if (comp.getType() == SymbolType.EQUALOPERATOR
-										|| comp.getType() == SymbolType.NOTEQUALOPERATOR)
+								if (comp.getType() == SymbolType.EQUAL_COMPARATOR
+										|| comp.getType() == SymbolType.NOT_EQUAL_COMPARATOR)
 									res.append("(");
 								SqlFieldInstance[] sfis = null;
 								try {
@@ -1217,8 +1317,8 @@ public class RuleInstance implements QueryPart {
 												.append(sfs2[fieldsNumber - 1].shortField);
 									}
 								}
-								if (comp.getType() == SymbolType.EQUALOPERATOR
-										|| comp.getType() == SymbolType.NOTEQUALOPERATOR)
+								if (comp.getType() == SymbolType.EQUAL_COMPARATOR
+										|| comp.getType() == SymbolType.NOT_EQUAL_COMPARATOR)
 									res.append(")");
 								return res;
 							}
@@ -1232,7 +1332,7 @@ public class RuleInstance implements QueryPart {
 									throw new DatabaseSyntaxException("Left element not comparable : "+ri1.getContent());
 								if (!ri3.getValueType(table, parameters).equals("comparable"))
 									throw new DatabaseSyntaxException("Left element not comparable : "+ri3.getContent());
-								if (comp.getType() == SymbolType.LIKE || comp.getType() == SymbolType.NOTLIKE)
+								if (comp.getType() == SymbolType.LIKE || comp.getType() == SymbolType.NOT_LIKE)
 									throw new DatabaseSyntaxException("Invalid operator "+comp+" with "+typeRi1+" type with "+typeRi3+" type");
 
 							}
@@ -1248,18 +1348,18 @@ public class RuleInstance implements QueryPart {
 					}
 				} else
 					throw new IllegalAccessError();
-			case NULLTEST:
+			case NULL_TEST:
 				if (parts.size() == 3) {
 					RuleInstance ri2 = getRuleInstance(1);
 
 					RuleInstance ri1 = getRuleInstance(0);
 					RuleInstance ri3 = getRuleInstance(2);
-					if (ri3.rule!=Rule.NULL)
+					if (ri3.rule!=Rule.NULL_WORD)
 						throw new IllegalAccessError();
 
 					Symbol comp = ri2.getSymbol();
 
-					if (comp.getType() == SymbolType.IS || comp.getType() == SymbolType.ISNOT) {
+					if (comp.getType() == SymbolType.IS || comp.getType() == SymbolType.IS_NOT) {
 						Symbol s1 = ri1.getSymbol();
 						if (s1.getType() != SymbolType.IDENTIFIER)
 							throw new DatabaseSyntaxException("Cannot do null comparison without identifier");
@@ -1292,7 +1392,7 @@ public class RuleInstance implements QueryPart {
 						throw new IllegalAccessError();
 				} else
 					throw new IllegalAccessError();
-			case INTEST:
+			case IN_TEST:
 				if (parts.size() == 3) {
 					RuleInstance ri1 = getRuleInstance(0);
 					RuleInstance ri2 = getRuleInstance(1);
@@ -1309,7 +1409,7 @@ public class RuleInstance implements QueryPart {
 					Collection<?> parameter=(Collection<?>)o;
 
 					Symbol comp = ri2.getSymbol();
-					if (comp.getType() == SymbolType.IN || comp.getType() == SymbolType.NOTIN) {
+					if (comp.getType() == SymbolType.IN || comp.getType() == SymbolType.NOT_IN) {
 
 
 						if (parameter.size()==0)
@@ -1361,10 +1461,10 @@ public class RuleInstance implements QueryPart {
 
 							String cond;
 							if (comp.getType() == SymbolType.IN) {
-								comp = new Symbol(SymbolType.EQUALOPERATOR, "=");
+								comp = new Symbol(SymbolType.EQUAL_COMPARATOR, "=");
 								cond = " OR ";
 							} else {
-								comp = new Symbol(SymbolType.NOTEQUALOPERATOR, "!=");
+								comp = new Symbol(SymbolType.NOT_EQUAL_COMPARATOR, "!=");
 								cond = " AND ";
 							}
 							StringBuilder res = new StringBuilder("(");
@@ -1489,21 +1589,32 @@ public class RuleInstance implements QueryPart {
 				} else
 					throw new IllegalAccessError();
 
-			case OPCOMP:
-			case OPCONDITION:
-			case ISOP:
+			case OP_COMP:
+			case OP_CONDITION:
+			case IS_OP:
 			case MULTIPLY_OPERATOR:
 			case ADD_OPERATOR:
-			case INOP:
+			case IN_OP:
 				throw new IllegalAccessError();
-			case NULL: {
+			case NULL_WORD: {
 				if (parts.size() == 1)
 					return new StringBuilder( getSymbol().getSymbol());
 				else
 					throw new IllegalAccessError();
 			}
+			case SIGNED_VALUE:
+				return getRuleInstance(1).translateToSqlQuery(table, parameters, outputParameters, tablesJunction)
+						.insert(0, getRuleInstance(0).getSymbol().getType().getContent());
 			case WORD:
 				if (parts.size() == 1) {
+					if (parts.get(0) instanceof RuleInstance)
+					{
+						RuleInstance ri=(RuleInstance) parts.get(0);
+						if (ri.getRule()==Rule.SIGNED_VALUE)
+							return ri.translateToSqlQuery(table, parameters, outputParameters, tablesJunction);
+						else
+							throw new IllegalAccessError();
+					}
 					Symbol s = getSymbol();
 					if (s.getType() == SymbolType.IDENTIFIER) {
 						String fieldName = s.getSymbol();
@@ -1606,5 +1717,10 @@ public class RuleInstance implements QueryPart {
 		}
 
 	}
+
+	ArrayList<QueryPart> getParts() {
+		return parts;
+	}
+
 
 }

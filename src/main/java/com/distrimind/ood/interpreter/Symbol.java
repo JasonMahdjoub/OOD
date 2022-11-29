@@ -104,31 +104,31 @@ public class Symbol implements QueryPart {
 
 	public RuleInstance getRule() {
 		switch (type) {
-			case ANDCONDITION:
-			case ORCONDITION:
-				return new RuleInstance(Rule.OPCONDITION, this);
-			case EQUALOPERATOR:
-			case NOTEQUALOPERATOR:
-			case GREATEROPERATOR:
-			case GREATEROREQUALOPERATOR:
-			case LOWEROPERATOR:
-			case LOWEROREQUALOPERATOR:
+			case AND_CONDITION:
+			case OR_CONDITION:
+				return new RuleInstance(Rule.OP_CONDITION, this);
+			case EQUAL_COMPARATOR:
+			case NOT_EQUAL_COMPARATOR:
+			case GREATER_COMPARATOR:
+			case GREATER_OR_EQUAL_COMPARATOR:
+			case LOWER_COMPARATOR:
+			case LOWER_OR_EQUAL_COMPARATOR:
 			case LIKE:
-			case NOTLIKE:
-				return new RuleInstance(Rule.OPCOMP, this);
+			case NOT_LIKE:
+				return new RuleInstance(Rule.OP_COMP, this);
 			case IDENTIFIER:
 			case NUMBER:
 			case PARAMETER:
 			case STRING:
 				return new RuleInstance(Rule.WORD, this);
 			case NULL:
-				return new RuleInstance(Rule.NULL, this);
+				return new RuleInstance(Rule.NULL_WORD, this);
 			case IS:
-			case ISNOT:
-				return new RuleInstance(Rule.ISOP, this);
+			case IS_NOT:
+				return new RuleInstance(Rule.IS_OP, this);
 			case IN:
-			case NOTIN:
-				return new RuleInstance(Rule.INOP, this);
+			case NOT_IN:
+				return new RuleInstance(Rule.IN_OP, this);
 			case MULTIPLY:
 			case DIVIDE:
 			case MODULO:
@@ -139,9 +139,9 @@ public class Symbol implements QueryPart {
 			case OPEN_PARENTHESIS:
 			case CLOSE_PARENTHESIS:
 				return null;
-
+			default:
+				throw new IllegalAccessError();
 		}
-		return null;
 	}
 
 	@Override

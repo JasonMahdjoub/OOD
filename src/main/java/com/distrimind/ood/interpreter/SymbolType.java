@@ -44,36 +44,32 @@ import java.util.regex.Pattern;
  * @since OOD 2.0
  */
 public enum SymbolType {
-	/*
-	 * ADDOPERATOR(true,false,false,"^\\+$",new String[]{"+"}, "+"),
-	 * SUBOPERATOR(true,false,false,"^\\-$",new String[]{"-"}, "-"),
-	 * MULOPETATOR(true,false,false,"^\\*$",new String[]{"*"}, "*"),
-	 * DIVOPERATOR(true,false,false,"^/$",new String[]{"/"}, "/"),
-	 */
-	LOWEROPERATOR(true, false, false, "^<$", new String[] { "<" }, "<"), 
-	EQUALOPERATOR(true, false, false, "^(=){1,2}$", new String[] { "=", "==" }, "="), 
-	NOTEQUALOPERATOR(true, false, false, "^(!=|<>)$", new String[] { "!=", "<>" },"<>"), 
-	GREATEROPERATOR(true, false, false, "^>$", new String[] { ">" }, ">"), 
-	LOWEROREQUALOPERATOR( true, false, false, "^<=$", new String[] { "<=" }, "<="), GREATEROREQUALOPERATOR(true,false, false, "^>=$", new String[] { ">=" }, ">="), 
-	OPEN_PARENTHESIS(true, false, false, "^\\($", new String[] { "(" }, "("), CLOSE_PARENTHESIS(true, false, false, "^\\)$", new String[] { ")" }, ")"), 
-	ANDCONDITION(false,true, true, "^[Aa][Nn][Dd]$", null, "AND"), 
-	ORCONDITION(false, true, true, "^[Oo][Rr]$", null, "OR"), 
-	IDENTIFIER(false, false, false, "^[a-zA-Z][a-zA-Z0-9\\._\\-]*+$", null, null), 
-	NUMBER(false, false, false, "^(\\+|\\-)?(([0-9]+(\\.[0-9]+)?(E(\\-|\\+)?[0-9]+)?)|([0-9]*\\.[0-9]+(E(\\-|\\+)?[0-9]+)?))$", null, null), 
-	STRING(false, false, false, "^(\"|\\')[\\p{Alnum}\\p{Blank}\\!\\#\\$\\%\\&\\(\\)\\*\\+\\,\\-\\.\\/:;\\<\\=\\>\\?\\@\\[\\\\\\]\\^_\\`\\{\\|\\}\\~]+(\"|\\')$", null, null),
-	NULL(false, false, false, "^(N|n)(U|u)(L|l)(L|l)$", null, "NULL"),
-	PARAMETER( false, false, false, "(\\%|\\:)[a-zA-Z\\-_][0-9a-zA-Z\\-_]*$", null, null),
-	LIKE(true, false, false, "^(L|l)(I|i)(K|k)(E|e)$", new String[] { " LIKE " }, " LIKE "),
-	NOTLIKE(true, false,true,"^(N|n)(O|o)(T|t)_(L|l)(I|i)(K|k)(E|e)$",new String[] {" NOT LIKE "," NOT_LIKE " }," NOT LIKE "),
-	IS(true, false,false,"^(I|i)(S|s)$",new String[] {" IS "}," IS "),
-	ISNOT(true, false,true,"^(I|i)(S|s)_(N|n)(O|o)(T|t)$",new String[] {" IS NOT "," IS_NOT " }," IS NOT "),
-	IN(true, false,false,"^(I|i)(N|n)$",new String[] {" IN "}," IN "),
-	NOTIN(true, false,true,"^(N|n)(O|o)(T|t)_(I|i)(N|n)$",new String[] {" NOT IN ", " NOT_IN "}," NOT IN "),
-	PLUS(true, false,false,"^[+]$",new String[] {" + "}," + "),
-	MINUS(true, false,false,"^[-]$",new String[] {" - "}," - "),
-	MULTIPLY(true, false,false,"^[*]$",new String[] {" * "}," * "),
-	DIVIDE(true, false,false,"^\\$",new String[] {" \\ "}," \\ "),
-	MODULO(true, false,false,"^%$",new String[] {" % "}," % "),
+	LOWER_COMPARATOR(true, false, false, true, false, "^<$", new String[] { "<" }, "<"),
+	EQUAL_COMPARATOR(true, false, false, true, false, "^(=){1,2}$", new String[] { "=", "==" }, "="),
+	NOT_EQUAL_COMPARATOR(true, false, false, true, false, "^(!=|<>)$", new String[] { "!=", "<>" },"<>"),
+	GREATER_COMPARATOR(true, false, false, true, false, "^>$", new String[] { ">" }, ">"),
+	LOWER_OR_EQUAL_COMPARATOR( true, false, false, true, false, "^<=$", new String[] { "<=" }, "<="),
+	GREATER_OR_EQUAL_COMPARATOR(true,false, false, true,false, "^>=$", new String[] { ">=" }, ">="),
+	OPEN_PARENTHESIS(true, false, false, false, false, "^\\($", new String[] { "(" }, "("),
+	CLOSE_PARENTHESIS(true, false, false, false, false, "^\\)$", new String[] { ")" }, ")"),
+	AND_CONDITION(false,true, false, false,true, "^[Aa][Nn][Dd]$", null, "AND"),
+	OR_CONDITION(false, true, false, false,true, "^[Oo][Rr]$", null, "OR"),
+	IDENTIFIER(false, false, false, false,false, "^[a-zA-Z][a-zA-Z0-9\\._\\-]*+$", null, null),
+	NUMBER(false, false, false, false,false, "^(\\+|\\-)?(([0-9]+(\\.[0-9]+)?(E(\\-|\\+)?[0-9]+)?)|([0-9]*\\.[0-9]+(E(\\-|\\+)?[0-9]+)?))$", null, null),
+	STRING(false, false, false, false,false, "^(\"|\\')[\\p{Alnum}\\p{Blank}\\!\\#\\$\\%\\&\\(\\)\\*\\+\\,\\-\\.\\/:;\\<\\=\\>\\?\\@\\[\\\\\\]\\^_\\`\\{\\|\\}\\~]+(\"|\\')$", null, null),
+	NULL(false, false, false, false,false, "^(N|n)(U|u)(L|l)(L|l)$", null, "NULL"),
+	PARAMETER( false, false, false, false,false, "(\\%|\\:)[a-zA-Z\\-_][0-9a-zA-Z\\-_]*$", null, null),
+	LIKE(true, false, false, false,false, "^(L|l)(I|i)(K|k)(E|e)$", new String[] { " LIKE " }, " LIKE "),
+	NOT_LIKE(true, false,false, false,true,"^(N|n)(O|o)(T|t)_(L|l)(I|i)(K|k)(E|e)$",new String[] {" NOT LIKE "," NOT_LIKE " }," NOT LIKE "),
+	IS(true, false,false, false,false,"^(I|i)(S|s)$",new String[] {" IS "}," IS "),
+	IS_NOT(true, false,false, false,true,"^(I|i)(S|s)_(N|n)(O|o)(T|t)$",new String[] {" IS NOT "," IS_NOT " }," IS NOT "),
+	IN(true, false,false, false,false,"^(I|i)(N|n)$",new String[] {" IN "}," IN "),
+	NOT_IN(true, false,false, false,true,"^(N|n)(O|o)(T|t)_(I|i)(N|n)$",new String[] {" NOT IN ", " NOT_IN "}," NOT IN "),
+	PLUS(true, false,true, false,false,"^[+]$",new String[] {"+"},"+"),
+	MINUS(true, false,true, false, false,"^[-]$",new String[] {"-"},"-"),
+	MULTIPLY(true, false,true, false,false,"^[*]$",new String[] {"*"},"*"),
+	DIVIDE(true, false,true, false,false,"^/$",new String[] {"/"},"/"),
+	MODULO(true, false,true, false,false,"^MOD$",new String[] {" MOD "},"%"),
 	;
 
 	private final Pattern pattern;
@@ -81,12 +77,16 @@ public enum SymbolType {
 	private final String[] matches;
 	private final boolean isOperator;
 	private final boolean isCondition;
+	private final boolean isMathematicalOperator;
+	private final boolean isComparator;
 	private final boolean mustHaveSpaces;
 
-	SymbolType(boolean isOperator, boolean isCondition, boolean mustHaveSpaces, String regex, String[] matches,
+	SymbolType(boolean isOperator, boolean isCondition, boolean isMathematicalOperator, boolean isComparator, boolean mustHaveSpaces, String regex, String[] matches,
 			   String content) {
 		this.isOperator = isOperator;
 		this.isCondition = isCondition;
+		this.isMathematicalOperator = isMathematicalOperator;
+		this.isComparator=isComparator;
 		this.mustHaveSpaces = mustHaveSpaces;
 		this.pattern = Pattern.compile(regex);
 		this.content = content;
@@ -166,6 +166,10 @@ public enum SymbolType {
 
 	public boolean isMathematicalOperator()
 	{
-		return this==PLUS || this==MINUS || this==MULTIPLY || this==DIVIDE || this==MODULO;
+		return isMathematicalOperator;
+	}
+
+	public boolean isComparator() {
+		return isComparator;
 	}
 }

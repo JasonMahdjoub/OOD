@@ -65,4 +65,5 @@ public interface QueryPart {
 
 	boolean needParenthesis();
 
+
 }

@@ -66,7 +66,7 @@ public class Interpreter {
 	public static RuleInstance getRuleInstance(String whereCommand) throws DatabaseSyntaxException {
 		if (whereCommand == null)
 			throw new NullPointerException("whereCommand");
-		ArrayList<QueryPart> qp = getRules(lexicalAnalyse(whereCommand));
+		ArrayList<QueryPart> qp = getRules(lexicalAnalysis(whereCommand));
 		return getQuery(whereCommand, qp);
 	}
 	/*
@@ -98,8 +98,8 @@ public class Interpreter {
 					boolean ok = true;
 
 					for (int i = 0; i < symbol.length(); i++) {
-						if (Character.toUpperCase(command.charAt(index + i)) != Character
-								.toUpperCase(symbol.charAt(i))) {
+						if (Character.toUpperCase(command.charAt(index + i)) !=
+								Character.toUpperCase(symbol.charAt(i))) {
 							ok = false;
 							break;
 						}
@@ -114,9 +114,9 @@ public class Interpreter {
 				}
 			}
 			if (bestMatch != null) {
-				boolean space = bestSymbol != SymbolType.LIKE && bestSymbol != SymbolType.NOTLIKE
-						&& bestSymbol!=SymbolType.IS && bestSymbol!=SymbolType.ISNOT
-						&& bestSymbol!=SymbolType.IN && bestSymbol!=SymbolType.NOTIN;
+				boolean space = bestSymbol != SymbolType.LIKE && bestSymbol != SymbolType.NOT_LIKE
+						&& bestSymbol!=SymbolType.IS && bestSymbol!=SymbolType.IS_NOT
+						&& bestSymbol!=SymbolType.IN && bestSymbol!=SymbolType.NOT_IN;
 				if (space)
 					sb.append(" ");
 				sb.append(bestMatch);
@@ -131,7 +131,7 @@ public class Interpreter {
 		return sb.toString();
 	}
 
-	private static ArrayList<Symbol> lexicalAnalyse(String command) throws UnrecognizedSymbolException {
+	private static ArrayList<Symbol> lexicalAnalysis(String command) throws UnrecognizedSymbolException {
 		command = preProcess(command);
 		String[] sls = command.split(" ");
 		ArrayList<Symbol> symbols = new ArrayList<>(sls.length);
@@ -166,9 +166,24 @@ public class Interpreter {
 		if (parts.size() == 0)
 			throw new ImpossibleQueryInterpretation(command);
 
-		while (parts.size() > 1 || (!parts.isEmpty() && (!(parts.get(0) instanceof RuleInstance)
-				|| ((RuleInstance) parts.get(0)).getRule() != Rule.QUERY))) {
-			parts = getNewQueryParts(command, parts);
+		int level = Rule.getLowerPriorLevel();
+		ml:
+		while (level<Rule.values().length
+				&& (parts.size() > 1 || (!parts.isEmpty() && (!(parts.get(0) instanceof RuleInstance)
+				|| ((RuleInstance) parts.get(0)).getRule() != Rule.QUERY)))) {
+
+			ArrayList<QueryPart> p;
+			while ((p= getNewQueryParts(command, parts, level))!=null) {
+				parts = p;
+				if (level!=Rule.getLowerPriorLevel()) {
+					level = Rule.getLowerPriorLevel();
+					continue ml;
+				}
+			}
+			if (level==Rule.getHigherPriorLevel())
+				level=Rule.values().length-1;
+			else
+				level++;
 		}
 		if (parts.isEmpty())
 			throw new ImpossibleQueryInterpretation(command);
@@ -182,8 +197,7 @@ public class Interpreter {
 		}
 		return res;
 	}
-
-	private static ArrayList<QueryPart> getNewQueryParts(String command, ArrayList<QueryPart> parts)
+	private static ArrayList<QueryPart> getNewQueryParts(String command, ArrayList<QueryPart> parts, int level)
 			throws DatabaseSyntaxException {
 		if (parts.size() == 0)
 			throw new DatabaseSyntaxException("No rules");
@@ -197,7 +211,7 @@ public class Interpreter {
 		while (index.get() < parts.size()) {
 			int previousIndex=index.get();
 
-			QueryPart ap = getQuery(parts, index.get(), index);
+			QueryPart ap = getQuery(parts, index.get(), index, level);
 
 			if (ap == null) {
 				ap=parts.get(index.get());
@@ -212,13 +226,58 @@ public class Interpreter {
 		if (changed)
 			return res;
 		else {
-			throw new ImpossibleQueryInterpretation(command+"\n"+parts);
-
+			if (level==Rule.values().length-1)
+				throw new ImpossibleQueryInterpretation(command+"\n"+toString(parts));
+			else
+				return null;
 		}
 	}
+	static String toString(ArrayList<QueryPart> parts)
+	{
+		int l=0;
+		StringBuilder res=new StringBuilder("Syntax tree = \n\t");
+		while (toString(parts, l, res))
+		{
+			res.append("\n\t");
+			++l;
+		}
+		return res.toString();
+	}
+	private static boolean toString(ArrayList<QueryPart> parts, int level, StringBuilder res)
+	{
+		boolean hasSubLevel=false;
+		for (QueryPart qp : parts)
+		{
+			if (qp instanceof Symbol) {
+				Symbol s=(Symbol) qp;
+				if (s.getType()!=SymbolType.CLOSE_PARENTHESIS && s.getType()!=SymbolType.OPEN_PARENTHESIS)
+					throw new IllegalAccessError(s.getType().name());
+				res.append("<")
+						.append(((Symbol) qp).getType().name())
+						.append(">");
+			}
+			else if (qp instanceof RuleInstance){
+
+				RuleInstance ri=(RuleInstance) qp;
+				boolean symbolRule=((ri.getParts().size()==1 && ri.getParts().get(0) instanceof Symbol));
+				if (level==0 || symbolRule) {
+					if (!symbolRule)
+						hasSubLevel = true;
+					res.append("<")
+							.append(ri.getRule().name())
+							.append(">");
+				}
+				else {
+					hasSubLevel |= toString(ri.getParts(), level - 1, res);
+				}
+			}
+		}
+		return hasSubLevel;
+	}
+
 
 	private static RuleInstance getQuery(ArrayList<QueryPart> parts, int index,
-										 Reference<Integer> newIndex) {
+										 Reference<Integer> newIndex, int level) {
 
 		Rule chosenValidRule = null;
 
@@ -233,6 +292,8 @@ public class Interpreter {
 
 			String rc = currentRule.toString();
 			for (Rule r : Rule.values()) {
+				if (r.ordinal()>level)
+					continue;
 				if (r.match(rc)) {
 					if (chosenRule != null) {
 						valid = false;
