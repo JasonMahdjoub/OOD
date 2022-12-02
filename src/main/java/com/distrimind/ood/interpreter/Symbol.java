@@ -120,7 +120,7 @@ public class Symbol implements QueryPart {
 			case NUMBER:
 			case PARAMETER:
 			case STRING:
-				return new RuleInstance(Rule.WORD, this);
+				return new RuleInstance(Rule.WORD_RULE, this);
 			case NULL:
 				return new RuleInstance(Rule.NULL_WORD, this);
 			case IS:

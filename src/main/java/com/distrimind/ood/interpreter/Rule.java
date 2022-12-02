@@ -44,8 +44,10 @@ import java.util.regex.Pattern;
  */
 public enum Rule {
 
+    OPEN_PARENTHESIS(true, "^(<" + SymbolType.OPEN_PARENTHESIS.name()+">)$"),
+    CLOSE_PARENTHESIS(true, "^(<" + SymbolType.CLOSE_PARENTHESIS.name()+">)$"),
     NULL_WORD(true, "^(<" + SymbolType.NULL.name()+">)$"),
-    WORD(true, "^(<" + SymbolType.IDENTIFIER.name() + ">|<" + SymbolType.NUMBER.name() + ">|<" + SymbolType.STRING.name() + ">|<" + SymbolType.PARAMETER.name() + ">|<SIGNED_VALUE>|\\(<EXPRESSION>\\))$"),
+    WORD(true, "^(<" + SymbolType.IDENTIFIER.name() + ">|<" + SymbolType.NUMBER.name() + ">|<" + SymbolType.STRING.name() + ">|<" + SymbolType.PARAMETER.name() + ">"),
     MULTIPLY_OPERATOR(true, "^(<"+SymbolType.MULTIPLY.name()+"<|>"+SymbolType.DIVIDE.name()+"<|>"+SymbolType.MODULO+">)$"),
     ADD_OPERATOR(true, "^(<"+SymbolType.PLUS.name()+"<|>"+SymbolType.MINUS.name()+">)$"),
     OP_COMP(true, "^(<" + SymbolType.EQUAL_COMPARATOR.name() + ">|<"
@@ -57,19 +59,71 @@ public enum Rule {
     IN_OP(true, "^(<" + SymbolType.IN.name() + ">|<"+ SymbolType.NOT_IN.name() + ">)$"),
     OP_CONDITION(true, "^(<" + SymbolType.AND_CONDITION.name() + ">|<"+ SymbolType.OR_CONDITION.name() + ">)$"),
 
-    NULL_TEST(false, "^(<" + WORD.name() + "><" + IS_OP.name() + "><" + NULL_WORD.name() + ">)$"),
-    FACTOR(false, "^(<"+WORD.name()+">|(<EXPRESSION>|<FACTOR>)<"+MULTIPLY_OPERATOR.name()+">(<FACTOR>|<EXPRESSION>))$"),
+    WORD_RULE(true, "^(<"+ WORD.name()+">|<"+ ">|<SIGNED_VALUE>|<"+OPEN_PARENTHESIS.name()+"><EXPRESSION><"+CLOSE_PARENTHESIS.name()+">)$"),
+    NULL_TEST(false, "^(<" + WORD_RULE.name() + "><" + IS_OP.name() + "><" + NULL_WORD.name() + ">)$"),
+    FACTOR(false, "^(<"+ WORD_RULE.name()+">|(<EXPRESSION>|<FACTOR>)<"+MULTIPLY_OPERATOR.name()+">(<FACTOR>|<EXPRESSION>))$"),
     EXPRESSION(false, "^(<FACTOR>|(<FACTOR>|<EXPRESSION>)<"+ADD_OPERATOR.name()+">(<EXPRESSION>|<"+FACTOR.name()+">))$"),
-    SIGNED_VALUE(true, "^(<"+ADD_OPERATOR.name()+">(<"+EXPRESSION.name()+">|<"+FACTOR.name()+">|<"+WORD.name()+">))$"),
+    SIGNED_VALUE(true, "^(<"+ADD_OPERATOR.name()+">(<"+EXPRESSION.name()+">|<"+FACTOR.name()+">|<"+ WORD_RULE.name()+">))$"),
 
-    COMPARE(false, "^(<" + EXPRESSION.name() + "><" + OP_COMP.name() + "><" + EXPRESSION.name()+ ">|\\(<QUERY>\\))$"),
+    COMPARE(false, "^(<" + EXPRESSION.name() + "><" + OP_COMP.name() + "><" + EXPRESSION.name()+ ">|<"+OPEN_PARENTHESIS.name()+"><QUERY><"+CLOSE_PARENTHESIS.name()+">)$"),
 
-    IN_TEST(false, "^(<"+EXPRESSION.name()+"><" + IN_OP.name() + ">(<"+ WORD.name()+">|<"+EXPRESSION.name()+">))$"),
+    IN_TEST(false, "^(<"+EXPRESSION.name()+"><" + IN_OP.name() + ">(<"+ WORD_RULE.name()+">|<"+EXPRESSION.name()+">))$"),
 
     QUERY(false, "^(<" + COMPARE.name() + ">|<"+ NULL_TEST.name()+">|<"+ IN_TEST.name()+">|<QUERY><"+ OP_CONDITION.name() + "><QUERY>)$");
 
     private final boolean isAtomic;
     private final Pattern pattern;
+
+    private Rule[][] rulesComposition=null;
+
+    static
+    {
+        Rule.WORD_RULE.rulesComposition=new Rule[][]{
+                {WORD},
+                {SIGNED_VALUE},
+                {OPEN_PARENTHESIS, EXPRESSION, CLOSE_PARENTHESIS},
+        };
+        Rule.NULL_TEST.rulesComposition=new Rule[][]{{WORD_RULE, IS_OP, NULL_WORD}};
+        Rule.FACTOR.rulesComposition=new Rule[][]{
+                {FACTOR},
+                {EXPRESSION, MULTIPLY_OPERATOR, EXPRESSION},
+                {FACTOR, MULTIPLY_OPERATOR, FACTOR},
+                {EXPRESSION, MULTIPLY_OPERATOR, FACTOR},
+                {FACTOR, MULTIPLY_OPERATOR, EXPRESSION},
+        };
+        Rule.EXPRESSION.rulesComposition=new Rule[][]{
+                {WORD_RULE},
+                {EXPRESSION, ADD_OPERATOR, EXPRESSION},
+                {FACTOR, ADD_OPERATOR, FACTOR},
+                {EXPRESSION, ADD_OPERATOR, FACTOR},
+                {FACTOR, ADD_OPERATOR, EXPRESSION},
+        };
+        Rule.SIGNED_VALUE.rulesComposition=new Rule[][]{
+                {WORD_RULE, EXPRESSION},
+                {WORD_RULE, FACTOR},
+                {WORD_RULE, WORD_RULE}
+        };
+        Rule.COMPARE.rulesComposition=new Rule[][]{
+                {EXPRESSION, OP_COMP, EXPRESSION},
+                {OPEN_PARENTHESIS, QUERY, CLOSE_PARENTHESIS},
+                {WORD_RULE, WORD_RULE}
+        };
+        Rule.IN_TEST.rulesComposition=new Rule[][]{
+                {EXPRESSION, IN_OP, WORD_RULE},
+                {EXPRESSION, IN_OP, EXPRESSION},
+        };
+        Rule.QUERY.rulesComposition=new Rule[][]{
+                {COMPARE},
+                {NULL_TEST},
+                {IN_TEST},
+                {QUERY, OP_CONDITION, QUERY},
+        };
+
+    }
+
+    public Rule[][] getRulesComposition() {
+        return rulesComposition;
+    }
 
     Rule(boolean isAtomic, String regex) {
         if (regex == null)

@@ -144,7 +144,7 @@ public class RuleInstance implements QueryPart {
 					return false;
 			}
 
-			case WORD: {
+			case WORD_RULE: {
 				if (parts.size() == 1) {
 					return getSymbol().isMultiType(table, parameters);
 				} else {
@@ -182,7 +182,7 @@ public class RuleInstance implements QueryPart {
 				return "boolean";
 			case NULL_WORD:
 			case SIGNED_VALUE:
-			case WORD:
+			case WORD_RULE:
 				if (parts.size() == 1)
 					return parts.get(0).getValueType(table, parameters);
 				else
@@ -216,7 +216,7 @@ public class RuleInstance implements QueryPart {
 			case MULTIPLY_OPERATOR:
 				return true;
 			case SIGNED_VALUE:
-			case WORD:
+			case WORD_RULE:
 				if (parts.size() == 1)
 					return parts.get(0).isAlgebraic(table, parameters);
 				else
@@ -291,7 +291,7 @@ public class RuleInstance implements QueryPart {
 				}
 				else
 					throw new DatabaseSyntaxException("Cannot compute opposite value with type "+n.getClass().getName());
-			case WORD:
+			case WORD_RULE:
 				if (parts.size() == 1) {
 					if (parts.get(0) instanceof RuleInstance)
 					{
@@ -429,7 +429,7 @@ public class RuleInstance implements QueryPart {
 					return n;
 				else
 					return n.negate();
-			case WORD:
+			case WORD_RULE:
 				if (parts.size() == 1) {
 					if (parts.get(0) instanceof RuleInstance)
 					{
@@ -509,7 +509,7 @@ public class RuleInstance implements QueryPart {
 				throw new IllegalAccessError();
 			case SIGNED_VALUE:
 				return getComparable(table, parameters, record);
-			case WORD:
+			case WORD_RULE:
 				if (parts.size() == 1) {
 					if (parts.get(0) instanceof RuleInstance)
 					{
@@ -574,7 +574,7 @@ public class RuleInstance implements QueryPart {
 				else
 					throw new IllegalAccessError();
 
-			case WORD:
+			case WORD_RULE:
 				if (parts.size() == 1) {
 					if (parts.get(0) instanceof RuleInstance)
 					{
@@ -902,7 +902,7 @@ public class RuleInstance implements QueryPart {
 					return true;
 			case SIGNED_VALUE:
 				return getRuleInstance(1).isIndependentFromOtherTables(table);
-			case WORD:
+			case WORD_RULE:
 				if (parts.size() == 1) {
 					if (parts.get(0) instanceof RuleInstance)
 					{
@@ -1051,7 +1051,7 @@ public class RuleInstance implements QueryPart {
 						throw new IllegalAccessError();
 				} else
 					throw new IllegalAccessError();
-			case WORD:
+			case WORD_RULE:
 			case SIGNED_VALUE:
 			case NULL_WORD:
 			case IS_OP:
@@ -1605,7 +1605,7 @@ public class RuleInstance implements QueryPart {
 			case SIGNED_VALUE:
 				return getRuleInstance(1).translateToSqlQuery(table, parameters, outputParameters, tablesJunction)
 						.insert(0, getRuleInstance(0).getSymbol().getType().getContent());
-			case WORD:
+			case WORD_RULE:
 				if (parts.size() == 1) {
 					if (parts.get(0) instanceof RuleInstance)
 					{
