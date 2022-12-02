@@ -2,6 +2,7 @@ h2databasetaskstests
 hsqldbdatabasetaskstests
 /centralDatabaseBackup
 /gradle.properties
+/centralDatabaseToTestReversionToOldVersion_**
 
 /tmpH2Dir
 /.gradle/
