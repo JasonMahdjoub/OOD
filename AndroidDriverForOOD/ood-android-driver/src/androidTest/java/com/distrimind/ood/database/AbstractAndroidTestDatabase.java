@@ -210,8 +210,10 @@ public abstract class AbstractAndroidTestDatabase<DW extends DatabaseWrapper> ex
         Log.i("testood", "setAutoRandomFields()");
         setAutoRandomFields();
         Log.i("testood", "testCommandTranslatorInterpreter()");
+        int i=0;
         for (Object[] o : interpreterCommandsProvider())
         {
+            Log.i("testood", "testCommandTranslatorInterpreter() : "+(i++)+", command="+o[1]);
             testCommandTranslatorInterpreter((Class<? extends Table<?>>)o[0], (String)o[1], (Map<String, Object>)o[2], (String)o[3], (Map<Integer, Object>)o[4], (Table1.Record)o[5], (boolean)o[6]);
         }
         Log.i("testood", "prepareMultipleTest()");

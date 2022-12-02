@@ -6,6 +6,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseLoadingException;
 import com.distrimind.util.FileTools;
 import com.distrimind.util.UtilClassLoader;
+import com.distrimind.util.concurrent.ScheduledPoolExecutor;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 
@@ -52,7 +53,7 @@ public class AndroidSQLiteDatabaseWrapper extends DatabaseWrapper {
             c.close();
         }
     }
-    AndroidSQLiteDatabaseWrapper(String _package, String databaseName,
+    AndroidSQLiteDatabaseWrapper(String _package, ScheduledPoolExecutor defaultPoolExecutor, Object context, String databaseName,
                                  DatabaseConfigurations databaseConfigurations,
                                  DatabaseLifeCycles databaseLifeCycles,
                                  EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -60,7 +61,7 @@ public class AndroidSQLiteDatabaseWrapper extends DatabaseWrapper {
                                  EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
                                  AbstractSecureRandom secureRandom,
                                  boolean createDatabasesIfNecessaryAndCheckIt, boolean externalStorage) throws DatabaseException {
-        super(new Finalizer(databaseName, false, new File(getDirectory(_package, databaseName, externalStorage))), false,databaseConfigurations, databaseLifeCycles, signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup, encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages, secureRandom, createDatabasesIfNecessaryAndCheckIt);
+        super(new Finalizer(databaseName, false, new File(getDirectory(_package, databaseName, externalStorage))), defaultPoolExecutor, context, false,databaseConfigurations, databaseLifeCycles, signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup, encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages, secureRandom, createDatabasesIfNecessaryAndCheckIt);
         url = "jdbc:sqldroid:" + getPath(_package, databaseName, externalStorage);
         if (!getDatabaseDirectory().exists()) {
             FileTools.checkFolderRecursive(getDatabaseDirectory());

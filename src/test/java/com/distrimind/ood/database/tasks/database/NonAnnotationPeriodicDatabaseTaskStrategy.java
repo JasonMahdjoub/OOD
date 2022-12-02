@@ -63,7 +63,7 @@ public class NonAnnotationPeriodicDatabaseTaskStrategy implements IDatabaseTaskS
 	{
 		long d=System.currentTimeMillis()-startUTC;
 		long p=(numberOfTaskCall.get()+1)*periodInMs;
-		Assert.assertTrue(p-20<=d, "p-20="+(p-20)+", d="+d+", periodInMs="+periodInMs+", cycle="+numberOfTaskCall.get());
+		Assert.assertTrue(p-25<=d, "p-20="+(p-25)+", d="+d+", periodInMs="+periodInMs+", cycle="+numberOfTaskCall.get());
 		Assert.assertTrue(p+periodInMs/2>d, "p+periodInMs/2="+(p+periodInMs/2)+", d="+d+", cycle="+numberOfTaskCall.get());
 	}
 	@Override
