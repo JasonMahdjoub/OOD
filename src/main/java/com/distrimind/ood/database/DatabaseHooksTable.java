@@ -474,58 +474,55 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			@Override
 			public boolean nextRecord(final com.distrimind.ood.database.DatabaseHooksTable.Record h)
 					throws DatabaseException {
-				if (!excludedHooks.contains(h.getHostID())) {
-					final AtomicLong actualLastID = new AtomicLong(Long.MAX_VALUE);
-					getDatabaseTransactionsPerHostTable()
-							.getRecords(new Filter<DatabaseTransactionsPerHostTable.Record>() {
+				final AtomicLong actualLastID = new AtomicLong(Long.MAX_VALUE);
+				getDatabaseTransactionsPerHostTable()
+						.getRecords(new Filter<DatabaseTransactionsPerHostTable.Record>() {
 
-								@Override
-								public boolean nextRecord(DatabaseTransactionsPerHostTable.Record _record) {
+							@Override
+							public boolean nextRecord(DatabaseTransactionsPerHostTable.Record _record) {
 
-									if (_record.getTransaction().getID() - 1 < actualLastID.get())
-										actualLastID.set(_record.getTransaction().getID() - 1);
-									if (actualLastID.get() == h.getLastValidatedLocalTransactionID())
-										this.stopTableParsing();
-									return false;
-								}
+								if (_record.getTransaction().getID() - 1 < actualLastID.get())
+									actualLastID.set(_record.getTransaction().getID() - 1);
+								if (actualLastID.get() == h.getLastValidatedLocalTransactionID())
+									this.stopTableParsing();
+								return false;
+							}
 
-							}, "hook=%hook", "hook", h);
-					if (actualLastID.get() > h.getLastValidatedLocalTransactionID()) {
-						getDatabaseDistantTransactionEvent()
-								.getRecords(new Filter<com.distrimind.ood.database.DatabaseDistantTransactionEvent.Record>() {
+						}, "hook=%hook", "hook", h);
+				if (actualLastID.get() > h.getLastValidatedLocalTransactionID()) {
+					getDatabaseDistantTransactionEvent()
+							.getRecords(new Filter<com.distrimind.ood.database.DatabaseDistantTransactionEvent.Record>() {
 
-												@Override
-												public boolean nextRecord(
-														com.distrimind.ood.database.DatabaseDistantTransactionEvent.Record _record)
-														throws SerializationDatabaseException {
-													if (_record.isConcernedBy(h.getHostID())) {
-														if (_record.getLocalID() - 1 < actualLastID.get())
-															actualLastID.set(_record.getLocalID() - 1);
-														if (actualLastID.get() == h.getLastValidatedLocalTransactionID())
-															this.stopTableParsing();
-													}
-													return false;
+											@Override
+											public boolean nextRecord(
+													com.distrimind.ood.database.DatabaseDistantTransactionEvent.Record _record)
+													throws SerializationDatabaseException {
+												if (_record.isConcernedBy(h.getHostID())) {
+													if (_record.getLocalID() - 1 < actualLastID.get())
+														actualLastID.set(_record.getLocalID() - 1);
+													if (actualLastID.get() == h.getLastValidatedLocalTransactionID())
+														this.stopTableParsing();
 												}
-											}, "localID<=%maxLocalID AND localID>%minLocalID and peersInformedFull=%peersInformedFull",
-										"maxLocalID", actualLastID.get(), "minLocalID",
-										h.getLastValidatedLocalTransactionID(), "peersInformedFull",
-										Boolean.FALSE);
-					}
+												return false;
+											}
+										}, "localID<=%maxLocalID AND localID>%minLocalID and peersInformedFull=%peersInformedFull",
+									"maxLocalID", actualLastID.get(), "minLocalID",
+									h.getLastValidatedLocalTransactionID(), "peersInformedFull",
+									Boolean.FALSE);
+				}
 
-					if (actualLastID.get() == Long.MAX_VALUE && h.getLastValidatedLocalTransactionID() < 0)
-						actualLastID.set(lastTransactionID);
-					else if (actualLastID.get() < h.getLastValidatedLocalTransactionID())
-						throw new IllegalAccessError();
+				if (actualLastID.get() == Long.MAX_VALUE && h.getLastValidatedLocalTransactionID() < 0)
+					actualLastID.set(lastTransactionID);
+				else if (actualLastID.get() < h.getLastValidatedLocalTransactionID())
+					throw new IllegalAccessError();
 
-					if (actualLastID.get() != Long.MAX_VALUE && h.getLastValidatedLocalTransactionID() < actualLastID.get()) {
-						h.setLastValidatedLocalTransactionID(actualLastID.get());
-						toUpdate.add(h);
-					}
-
+				if (actualLastID.get() != Long.MAX_VALUE && h.getLastValidatedLocalTransactionID() < actualLastID.get()) {
+					h.setLastValidatedLocalTransactionID(actualLastID.get());
+					toUpdate.add(h);
 				}
 				return false;
 			}
-		}, "concernsDatabaseHost=%c", "c", false);
+		}, "concernsDatabaseHost=%c and hostID not in %excludedHooks", "c", false, "excludedHooks", excludedHooks);
 		for (DatabaseHooksTable.Record h : toUpdate) {
 			updateRecord(h, "lastValidatedLocalTransactionID", h.getLastValidatedLocalTransactionID());
 		}

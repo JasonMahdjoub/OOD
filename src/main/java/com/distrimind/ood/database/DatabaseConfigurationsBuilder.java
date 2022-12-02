@@ -408,9 +408,7 @@ public class DatabaseConfigurationsBuilder {
 				{
 					for (DecentralizedValue dv : peersID)
 					{
-
-						List<DatabaseHooksTable.Record> l=wrapper.getDatabaseHooksTable().getRecords("concernsDatabaseHost=%cdh and hostID=%h", "cdh", false, "h", dv);
-						if (l.size() == 0)
+						if (!wrapper.getDatabaseHooksTable().hasRecords("concernsDatabaseHost=%cdh and hostID=%h", "cdh", false, "h", dv))
 						{
 							wrapper.getDatabaseHooksTable().initDistantHook(dv);
 							if (peersAdded==null)
@@ -521,31 +519,31 @@ public class DatabaseConfigurationsBuilder {
 			@Override
 			public Boolean run() throws Exception {
 				HashMap<Set<String>, Set<DecentralizedValue>> packagesToUnsynchronize=new HashMap<>();
-				wrapper.getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
+				Filter<DatabaseHooksTable.Record> f=new Filter<DatabaseHooksTable.Record>() {
 					@Override
 					public boolean nextRecord(DatabaseHooksTable.Record _record) {
 
-						if (currentTransaction.removedPeersID==null || !currentTransaction.removedPeersID.contains(_record.getHostID()))
-						{
-
-							Set<String> packages=_record.getDatabasePackageNames();
-							if (packages!=null && packages.size()>0) {
-								Set<String> ptu=new HashSet<>();
-								for (String p : packages) {
-									Optional<DatabaseConfiguration> o = configurations.getDatabaseConfigurations().stream().filter(c -> c.getDatabaseSchema().getPackage().getName().equals(p)).findAny();
-									if (!o.isPresent() || !o.get().isDecentralized() || o.get().getDistantPeersThatCanBeSynchronizedWithThisDatabase() == null || o.get().getDistantPeersThatCanBeSynchronizedWithThisDatabase().contains(_record.getHostID())) {
-										ptu.add(p);
-									}
+						Set<String> packages=_record.getDatabasePackageNames();
+						if (packages!=null && packages.size()>0) {
+							Set<String> ptu=new HashSet<>();
+							for (String p : packages) {
+								Optional<DatabaseConfiguration> o = configurations.getDatabaseConfigurations().stream().filter(c -> c.getDatabaseSchema().getPackage().getName().equals(p)).findAny();
+								if (!o.isPresent() || !o.get().isDecentralized() || o.get().getDistantPeersThatCanBeSynchronizedWithThisDatabase() == null || o.get().getDistantPeersThatCanBeSynchronizedWithThisDatabase().contains(_record.getHostID())) {
+									ptu.add(p);
 								}
-								if (ptu.size() > 0) {
-									Set<DecentralizedValue> dvs = packagesToUnsynchronize.computeIfAbsent(ptu, k -> new HashSet<>());
-									dvs.add(_record.getHostID());
-								}
+							}
+							if (ptu.size() > 0) {
+								Set<DecentralizedValue> dvs = packagesToUnsynchronize.computeIfAbsent(ptu, k -> new HashSet<>());
+								dvs.add(_record.getHostID());
 							}
 						}
 						return false;
 					}
-				}, "concernsDatabaseHost=%cdh", "cdh", false);
+				};
+				if (currentTransaction.removedPeersID==null)
+					wrapper.getDatabaseHooksTable().getRecords(f, "concernsDatabaseHost=%cdh", "cdh", false);
+				else
+					wrapper.getDatabaseHooksTable().getRecords(f, "concernsDatabaseHost=%cdh and hostID not in %removedPeersID", "cdh", false, "removedPeersID", currentTransaction.removedPeersID);
 
 				if (currentTransaction.propagate)
 				{

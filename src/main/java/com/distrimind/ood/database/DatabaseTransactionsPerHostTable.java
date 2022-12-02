@@ -464,19 +464,21 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 							final Set<DecentralizedValue> concernedHosts = ((DatabaseTransactionEventsTable.Record) transaction)
 									.getConcernedHosts();
 							if (transaction.isForced() || concernedHosts.size() > 0) {
+
 								final Set<DecentralizedValue> l = new HashSet<>();
-								getDatabaseHooksTable().getRecords(new Filter<com.distrimind.ood.database.DatabaseHooksTable.Record>() {
+								Filter<com.distrimind.ood.database.DatabaseHooksTable.Record> f=new Filter<com.distrimind.ood.database.DatabaseHooksTable.Record>() {
 
 									@Override
 									public boolean nextRecord(com.distrimind.ood.database.DatabaseHooksTable.Record _record) {
-										if (_record.concernsLocalDatabaseHost()
-												|| _record.getHostID().equals(directPeer.getHostID())
-												|| (concernedHosts.size() > 0 && !concernedHosts.contains(_record.getHostID())))
-											l.add(_record.getHostID());
+										l.add(_record.getHostID());
 										return false;
 									}
 
-								});
+								};
+								if (concernedHosts.isEmpty())
+									getDatabaseHooksTable().getRecords(f, "concernsDatabaseHost=%cdh or hostID=%dphid", "cdh", true, "dphid", directPeer.getHostID());
+								else
+									getDatabaseHooksTable().getRecords(f, "concernsDatabaseHost=%cdh or hostID=%dphid or hostID not in %chs", "cdh", true, "dphid", directPeer.getHostID(), "chs", concernedHosts);
 
 								distantTransaction.setPeersInformed(l);
 							}

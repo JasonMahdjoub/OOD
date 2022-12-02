@@ -828,25 +828,27 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 		if (!upper && fileCoordinate.getBoundary()!= FileCoordinate.Boundary.LOWER_LIMIT)
 			throw new IllegalAccessError();
 
-		centralDatabaseBackupReceiver.encryptedBackupPartReferenceTable.getRecords(new Filter<EncryptedBackupPartReferenceTable.Record>() {
-			@Override
-			public boolean nextRecord(EncryptedBackupPartReferenceTable.Record _record) {
-				if (upper) {
-					if (_record.getFileTimeUTC() < fileCoordinate.getTimeStampUTC()) {
-						if (found.get() == null || found.get().getFileTimeUTC() < _record.getFileTimeUTC())
-							found.set(_record);
-					}
+		if (upper)
+		{
+			centralDatabaseBackupReceiver.encryptedBackupPartReferenceTable.getRecords(new Filter<EncryptedBackupPartReferenceTable.Record>() {
+				@Override
+				public boolean nextRecord(EncryptedBackupPartReferenceTable.Record _record) {
+					if (found.get() == null || found.get().getFileTimeUTC() < _record.getFileTimeUTC())
+						found.set(_record);
+					return false;
 				}
-				else
-				{
-					if (_record.getFileTimeUTC() > fileCoordinate.getTimeStampUTC()) {
-						if (found.get() == null || found.get().getFileTimeUTC() > _record.getFileTimeUTC())
-							found.set(_record);
-					}
+			}, "database=%d and fileTimeUTC<%ts", "d", databaseBackup, "ts", fileCoordinate.getTimeStampUTC());
+		}
+		else {
+			centralDatabaseBackupReceiver.encryptedBackupPartReferenceTable.getRecords(new Filter<EncryptedBackupPartReferenceTable.Record>() {
+				@Override
+				public boolean nextRecord(EncryptedBackupPartReferenceTable.Record _record) {
+					if (found.get() == null || found.get().getFileTimeUTC() > _record.getFileTimeUTC())
+						found.set(_record);
+					return false;
 				}
-				return false;
-			}
-		}, "database=%d", "d", databaseBackup);
+			}, "database=%d and fileTimeUTC>%ts", "d", databaseBackup, "ts", fileCoordinate.getTimeStampUTC());
+		}
 
 		if (found.get()==null)
 		{
